@@ -1,0 +1,698 @@
+{
+  "claims": {},
+  "in_flight": {},
+  "sessions": {
+    "codex": {
+      "last_seen": "2026-08-15T21:25:35+00:00",
+      "started": "2026-08-15T21:25:35+00:00"
+    },
+    "sequoyah": {
+      "last_seen": "2026-08-15T21:24:40+00:00",
+      "started": "2026-08-15T21:24:40+00:00"
+    }
+  },
+  "tasks": {
+    "0.1": {
+      "done_at": "2026-08-15T21:24:40+00:00",
+      "done_by": "sequoyah",
+      "est": "0.5",
+      "milestone": "M0",
+      "status": "done",
+      "tier": "T0",
+      "title": "`git init`, first commit, verify `.gitignore` covers `.godot/`, `export/`, `*.import` cache"
+    },
+    "0.2": {
+      "est": "0.5",
+      "milestone": "M0",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Create folder structure from `ARCHITECTURE.md` \u00a73 (empty dirs + `.gdignore` where needed)"
+    },
+    "0.3": {
+      "est": "0.5",
+      "milestone": "M0",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Set up input map (move, look, jump, sprint, attack, interact, inventory, build)"
+    },
+    "0.4": {
+      "est": "2",
+      "milestone": "M0",
+      "status": "todo",
+      "tier": "T1",
+      "title": "First-person character controller: `CharacterBody3D`, mouse look, walk/sprint/jump, coyote time"
+    },
+    "0.5": {
+      "est": "2",
+      "milestone": "M0",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Grey-box test level \u2014 ramps, stairs, gaps. Tune the controller until movement *feels good*."
+    },
+    "0.6": {
+      "est": "2",
+      "milestone": "M0",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Debug overlay autoload: FPS, position, entity counts, toggleable log channels, `~` console"
+    },
+    "0.7": {
+      "est": "1.5",
+      "milestone": "M0",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Spike R2 \u2014 generate 100 chunked terrain meshes from noise, measure frame times & hitches"
+    },
+    "0.8": {
+      "est": "1.5",
+      "milestone": "M0",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Spike R3 \u2014 bake a `NavigationRegion3D` on a runtime-generated chunk, measure the hitch"
+    },
+    "0.9": {
+      "est": "0.5",
+      "milestone": "M0",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Record spike results in `DECISIONS.md`. If R3 failed, decide the fallback now."
+    },
+    "1.1": {
+      "est": "1",
+      "milestone": "M1",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Install GodotSteam GDExtension (4.4+ branch), confirm it loads in stock Godot 4.7, pin the engine version"
+    },
+    "1.10": {
+      "est": "1",
+      "milestone": "M1",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Network debug panel: ping, bandwidth up/down, entity count, authority display"
+    },
+    "1.2": {
+      "est": "3",
+      "milestone": "M1",
+      "status": "todo",
+      "tier": "T2",
+      "title": "`NetTransport` autoload \u2014 swap between `ENetMultiplayerPeer` and `SteamMultiplayerPeer` behind one interface"
+    },
+    "1.3": {
+      "est": "2",
+      "milestone": "M1",
+      "status": "todo",
+      "tier": "T2",
+      "title": "`LOCAL` mode: launch 2 instances, auto-host/auto-join, no menus. Make this one keypress."
+    },
+    "1.4": {
+      "est": "3",
+      "milestone": "M1",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Steam lobby: create, invite via overlay, join by ID, leave, member list"
+    },
+    "1.5": {
+      "est": "3",
+      "milestone": "M1",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Networked player: `MultiplayerSpawner` + `MultiplayerSynchronizer`, client-auth movement"
+    },
+    "1.6": {
+      "est": "2",
+      "milestone": "M1",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Remote-player interpolation so other players don't stutter"
+    },
+    "1.7": {
+      "est": "2",
+      "milestone": "M1",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Connection lifecycle: join mid-session, disconnect, host quits, timeout handling"
+    },
+    "1.8": {
+      "est": "1.5",
+      "milestone": "M1",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Interest management: visibility filters + per-class `replication_interval` (`ARCHITECTURE.md` \u00a72.5)"
+    },
+    "1.9": {
+      "est": "1.5",
+      "milestone": "M1",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Spike R1 \u2014 6 peers, 200 synced dummy entities, measure bandwidth and CPU"
+    },
+    "2.1": {
+      "est": "3",
+      "milestone": "M2",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Import a CC0 low-poly pack (Quaternius/Kenney) \u2014 trees, rocks, props. Set up import presets & materials."
+    },
+    "2.10": {
+      "est": "3",
+      "milestone": "M2",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Enemy v1: host-authoritative chase + attack, nav-driven, health, death, ragdoll or dissolve"
+    },
+    "2.11": {
+      "est": "2",
+      "milestone": "M2",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Day/night cycle: sun rotation, `WorldEnvironment` transitions, replicated time-of-day"
+    },
+    "2.12": {
+      "est": "2",
+      "milestone": "M2",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Night wave spawner: N enemies at night, despawn at dawn, scales with player count"
+    },
+    "2.13": {
+      "est": "2",
+      "milestone": "M2",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Death & respawn: downed \u2192 bleed-out \u2192 revive by teammate (`DESIGN.md` \u00a74.5)"
+    },
+    "2.14": {
+      "est": "1",
+      "milestone": "M2",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Playtest with friends. Write down what they said, not what you think they meant."
+    },
+    "2.2": {
+      "est": "2",
+      "milestone": "M2",
+      "status": "todo",
+      "tier": "T2",
+      "title": "`Resource` scripts for `ItemDef`, `RecipeDef` + `registry.gd` boot loader"
+    },
+    "2.3": {
+      "est": "3",
+      "milestone": "M2",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Harvestable prop: hit \u2192 damage \u2192 yield \u2192 despawn \u2192 respawn. Host-authoritative (`ARCHITECTURE.md` \u00a72.2)."
+    },
+    "2.4": {
+      "est": "3",
+      "milestone": "M2",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Inventory system: stacks, add/remove, host-validated. Data layer only."
+    },
+    "2.5": {
+      "est": "4",
+      "milestone": "M2",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Inventory UI \u2014 grid, drag/drop, hotbar"
+    },
+    "2.6": {
+      "est": "3",
+      "milestone": "M2",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Crafting: recipe check, craft request \u2192 host validates \u2192 grants. One station (workbench)."
+    },
+    "2.7": {
+      "est": "3",
+      "milestone": "M2",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Crafting UI"
+    },
+    "2.8": {
+      "est": "3",
+      "milestone": "M2",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Melee combat v1: wind-up \u2192 commit \u2192 recovery, hitbox, hitstop, screenshake, impact SFX"
+    },
+    "2.9": {
+      "est": "3",
+      "milestone": "M2",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Tune combat feel until one enemy with one weapon feels great. Do not proceed otherwise."
+    },
+    "3.1": {
+      "est": "4",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Full tier/fork crafting tree, stations (workbench \u2192 furnace \u2192 anvil) (`DESIGN.md` \u00a74.3)"
+    },
+    "3.10": {
+      "est": "2",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Heavy hauling (2-player carry)"
+    },
+    "3.11": {
+      "est": "1",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Playtest \u2014 does the Attunement split create roles or resentment? (Q4)"
+    },
+    "3.12": {
+      "est": "2",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Balance pass on everything above"
+    },
+    "3.2": {
+      "est": "8",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Author all item/recipe `.tres` content"
+    },
+    "3.3": {
+      "est": "5",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Powerup framework: effect hooks, stacking, tags, Resonance thresholds (`DESIGN.md` \u00a74.4)"
+    },
+    "3.4": {
+      "est": "10",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Author 40\u201360 powerup `.tres` files"
+    },
+    "3.5": {
+      "est": "3",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Coins, chest tiers, chest-opening UI and flow"
+    },
+    "3.6": {
+      "est": "5",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Building system: placement ghost, snapping, rotate, validate, destroy"
+    },
+    "3.7": {
+      "est": "4",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Buildable pieces (walls/floors/ramps/doors) + Ward structures"
+    },
+    "3.8": {
+      "est": "3",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Hunger/health/stamina, food items, consumables"
+    },
+    "3.9": {
+      "est": "3",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Attunement system + selection UI (`DESIGN.md` \u00a74.5)"
+    },
+    "4.1": {
+      "est": "4",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Seeded island heightmap: layered noise + island falloff, deterministic RNG per subsystem"
+    },
+    "4.10": {
+      "est": "4",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Mire visuals: shader ground tint, fog density, particles, audio shift"
+    },
+    "4.11": {
+      "est": "3",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Mire \u2194 world interaction: rotted resources, Blight debuff, corrupted spawns, Ward resistance"
+    },
+    "4.12": {
+      "est": "2",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Playtest \u2014 is the Mire stressful-fun or just stressful? (Q1, Q2)"
+    },
+    "4.2": {
+      "est": "3",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Biome assignment (height \u00d7 moisture), biome `.tres` definitions"
+    },
+    "4.3": {
+      "est": "6",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Chunk streaming + LOD, `WorkerThreadPool` mesh generation"
+    },
+    "4.4": {
+      "est": "4",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Resource scatter via `MultiMeshInstance3D`, per-biome tables"
+    },
+    "4.5": {
+      "est": "5",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Runtime nav baking per chunk \u2014 or the R3 fallback decided in M0"
+    },
+    "4.6": {
+      "est": "4",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Seed replication + client-side regeneration; mutable-state delta sync (`ARCHITECTURE.md` \u00a74)"
+    },
+    "4.7": {
+      "est": "3",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T2",
+      "title": "POI placement: seeded Poisson-disc, Wellsprings + landmarks"
+    },
+    "4.8": {
+      "est": "3",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Wellspring scene, capture ritual, 2-player requirement, defense wave"
+    },
+    "4.9": {
+      "est": "4",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Mire grid simulation + delta replication (`ARCHITECTURE.md` \u00a75)"
+    },
+    "5.1": {
+      "est": "5",
+      "milestone": "M5",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Enemy AI framework: state machine, perception, telegraphed attacks, group behaviour"
+    },
+    "5.10": {
+      "est": "3",
+      "milestone": "M5",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Combat balance pass across the Cycle curve, not at one difficulty"
+    },
+    "5.2": {
+      "est": "14",
+      "milestone": "M5",
+      "status": "todo",
+      "tier": "T0",
+      "title": "8\u201312 enemy types (scenes + `.tres` stats + animation setup)"
+    },
+    "5.3": {
+      "est": "4",
+      "milestone": "M5",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Ranged combat: bow, projectiles, host-authoritative hit validation"
+    },
+    "5.4": {
+      "est": "6",
+      "milestone": "M5",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Weapon variety per fork, weapon-specific movesets"
+    },
+    "5.5": {
+      "est": "5",
+      "milestone": "M5",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Boss framework: phases, arena, telegraphs, health bar, music stinger"
+    },
+    "5.6": {
+      "est": "5",
+      "milestone": "M5",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Boss 1 \u2014 Wellspring guardian (recurring, scales with Cycle)"
+    },
+    "5.7": {
+      "est": "5",
+      "milestone": "M5",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Boss 2 \u2014 roaming elite, spawned by the *Hunt* modifier"
+    },
+    "5.8": {
+      "est": "5",
+      "milestone": "M5",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Boss 3 \u2014 deep-Cycle threat (appears Cycle 7+)"
+    },
+    "5.9": {
+      "est": "3",
+      "milestone": "M5",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Wave director: Cycle-aware pacing, composition, player-count scaling"
+    },
+    "6.1": {
+      "est": "3",
+      "milestone": "M6",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Cycle state machine: advance, escalate spread rate, expand enemy pool, announce (`DESIGN.md` \u00a75.1)"
+    },
+    "6.10": {
+      "est": "5",
+      "milestone": "M6",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Main menu, lobby UI, settings, seed entry"
+    },
+    "6.11": {
+      "est": "4",
+      "milestone": "M6",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Long playtests \u2014 find the wall (Q3), check anyone ever extracts (Q6), check deep modifiers stay fair (Q7)"
+    },
+    "6.2": {
+      "est": "4",
+      "milestone": "M6",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Cycle Modifier framework: deck, draw, stacking, Cycle-weighted rules, incompatibility tags"
+    },
+    "6.3": {
+      "est": "5",
+      "milestone": "M6",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Author 20\u201330 Cycle Modifier `.tres` files"
+    },
+    "6.4": {
+      "est": "1",
+      "milestone": "M6",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Wellspring re-corruption over time"
+    },
+    "6.5": {
+      "est": "3",
+      "milestone": "M6",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Extraction: shipwreck POI, repair recipe, board-to-leave, group confirm flow (`DESIGN.md` \u00a75.2)"
+    },
+    "6.6": {
+      "est": "3",
+      "milestone": "M6",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Salvage: superlinear reward curve, extract-vs-die split, persistence, save-file versioning"
+    },
+    "6.7": {
+      "est": "2",
+      "milestone": "M6",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Lose condition: team wipe / island consumed, defeat flow"
+    },
+    "6.8": {
+      "est": "3",
+      "milestone": "M6",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Run summary: headline Cycle number, stats, modifiers drawn, Salvage earned"
+    },
+    "6.9": {
+      "est": "4",
+      "milestone": "M6",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Unlock tree + UI. Variety only, never power (`DESIGN.md` \u00a74.6)"
+    },
+    "7.1": {
+      "est": "10",
+      "milestone": "M7",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Audio pass: SFX for every action, ambience per biome, mix, buses"
+    },
+    "7.10": {
+      "est": "2",
+      "milestone": "M7",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Replace hero CC0 assets if desired (player hands, bosses, key items)"
+    },
+    "7.2": {
+      "est": "4",
+      "milestone": "M7",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Music: 4\u20136 tracks (act themes, boss, menu). CC0/licensed or commissioned."
+    },
+    "7.3": {
+      "est": "8",
+      "milestone": "M7",
+      "status": "todo",
+      "tier": "T0",
+      "title": "VFX pass: impacts, deaths, gathering, Mire, weather"
+    },
+    "7.4": {
+      "est": "6",
+      "milestone": "M7",
+      "status": "todo",
+      "tier": "T0",
+      "title": "UI/UX polish pass, consistent visual language, transitions"
+    },
+    "7.5": {
+      "est": "4",
+      "milestone": "M7",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Settings: graphics, audio, sensitivity, keybinds, FOV, accessibility basics"
+    },
+    "7.6": {
+      "est": "3",
+      "milestone": "M7",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Gamepad support + Steam Deck compatibility (not verification)"
+    },
+    "7.7": {
+      "est": "4",
+      "milestone": "M7",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Performance pass: profile, LOD tuning, draw calls, target 60fps mid-range"
+    },
+    "7.8": {
+      "est": "3",
+      "milestone": "M7",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Network robustness: packet loss, high latency, hostile disconnect timing"
+    },
+    "7.9": {
+      "est": "6",
+      "milestone": "M7",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Bug bash from playtest backlog"
+    },
+    "8.1": {
+      "est": "2",
+      "milestone": "M8",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Steamworks account, tax/banking, $100 Steam Direct fee, real App ID"
+    },
+    "8.2": {
+      "est": "1",
+      "milestone": "M8",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Swap App ID 480 \u2192 real App ID; verify all Steam features"
+    },
+    "8.3": {
+      "est": "3",
+      "milestone": "M8",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Achievements, stats, rich presence"
+    },
+    "8.4": {
+      "est": "3",
+      "milestone": "M8",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Depots, build pipeline, `steamcmd` upload script, branches"
+    },
+    "8.5": {
+      "est": "4",
+      "milestone": "M8",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Store page: description, tags, screenshots, capsule art"
+    },
+    "8.6": {
+      "est": "4",
+      "milestone": "M8",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Trailer: capture, cut, audio"
+    },
+    "8.7": {
+      "est": "1",
+      "milestone": "M8",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Coming Soon page live (starts the mandatory 2-week clock)"
+    },
+    "8.8": {
+      "est": "1",
+      "milestone": "M8",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Closed beta on a password-protected branch with friends"
+    },
+    "8.9": {
+      "est": "1",
+      "milestone": "M8",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Build review submission, fix findings, release"
+    }
+  },
+  "version": 1
+}

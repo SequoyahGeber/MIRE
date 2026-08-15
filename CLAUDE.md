@@ -1,43 +1,29 @@
 # MIRE
 
 Co-op roguelike survival game. Godot 4.7 · Forward+ · Jolt · GDScript · first-person · 3–6 players.
-Inspired by Muck; endless escalating runs, no win condition. Shipping on Steam.
+Endless escalating runs, no win condition. Shipping on Steam.
 
-> Keep this file short. It loads on every request — bloat here is a tax on every future call.
+## Read AGENTS.md
 
-## Docs — read the relevant one before working
+**[AGENTS.md](AGENTS.md) is the shared protocol** for every agent on this repo — Claude Code, Codex, and
+the human. It is the source of truth for how work is claimed, tracked, and handed off. Read it before
+doing anything. This file only adds what's specific to Claude Code.
 
-| File | When |
-|---|---|
-| `docs/NEXT.md` | **Always, first.** Current status and next task. |
-| `docs/ARCHITECTURE.md` | Before writing any gameplay or network code |
-| `docs/DESIGN.md` | Before changing what the game *does* |
-| `docs/ROADMAP.md` | Planning what to build next |
-| `docs/AI-WORKFLOW.md` | How work is split across agents and the human |
-| `docs/DECISIONS.md` | Before revisiting a settled decision |
-| `docs/STEAM.md` | Release process |
+Non-negotiables, repeated here because they're the ones that cost the most when broken:
 
-## Hard rules
+1. **`.agent/bin/agent start claude`** at the beginning of every session, and **claim before you edit**.
+2. **Never edit `.tscn` / `.tres` / `project.godot`.** Scene files don't merge. Sequoyah wires scenes in
+   the editor; you write `.gd` scripts and tell him what to wire.
+3. **Never explore speculatively.** Quota, not time, is the constraint. Ask which file.
+4. **Every system declares its network authority** (`docs/ARCHITECTURE.md` §2.2). No "multiplayer later."
 
-1. **Every system is network-aware from the first line.** Declare its row in the authority table
-   (`ARCHITECTURE.md` §2.2). Never build singleplayer-first.
-2. **Agents edit `.gd` scripts only.** The human wires scenes in the editor — `.tscn`/`.tres` do not
-   merge safely. (`AI-WORKFLOW.md` §3)
-3. **Content is data, not code.** New items/powerups/modifiers are `.tres` files, never new code.
-4. **Never `randi()` in world generation.** Seeded `RandomNumberGenerator` per subsystem, or clients desync.
-5. **Typed GDScript everywhere** (`var hp: int = 100`).
-6. **Don't upgrade Godot mid-milestone.** The version is pinned.
+## Claude Code specifics
 
-## Quota discipline
+- Prefer `Read` on a named file over `Grep`/`Glob` sweeps — searching burns quota for little gain here.
+- Batch related edits in one session while context is warm; `/clear` between unrelated tasks.
+- Before you stop: `agent done` or `agent handoff`, then commit. Uncommitted work is invisible to Codex.
+- Don't run the Godot editor or try to launch the game — ask Sequoyah to run and report.
 
-The binding constraint on this project is AI usage quota, not time. So:
+## Keep this file short
 
-- Don't explore the codebase — the user will point at the file. Ask if unsure.
-- Prefer targeted edits over rewrites.
-- Don't generate bulk content data; the user authors that by hand for free.
-- Keep files small and single-purpose.
-
-## Conventions
-
-`snake_case` files/functions · `PascalCase` classes/nodes · `SCREAMING_CASE` constants ·
-networked functions prefixed `net_` · cross-system comms via `event_bus`, direct refs within a system.
+It loads on every request. Bloat here is a tax on every future call, forever. Prune it when it grows.

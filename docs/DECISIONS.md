@@ -89,3 +89,16 @@ This is the #1 post-launch feature candidate.
 <why, in 2–4 sentences>
 **Would change my mind:** <the specific evidence that should make you revisit this>
 ```
+
+### D-011 · 2026-08-15 · Multi-agent coordination via files in the repo, not a service
+Three agents (Claude Code, Codex, human) share state through `.agent/state.json`, a generated
+`.agent/BOARD.md`, and an append-only `.agent/JOURNAL.md`, driven by one small script `.agent/bin/agent`.
+Chosen over a hosted tracker or MCP server because: every agent can already read files; it versions with
+git for free; it costs almost nothing in tokens to read; and there's no service to break or authenticate
+against. `AGENTS.md` is the protocol (now a cross-tool standard read by Codex, Cursor and others) and
+`CLAUDE.md` is a thin pointer at it, so the rules live in exactly one place.
+Enforcement is mechanical, not honour-system: a git pre-commit hook runs `agent check`, which blocks any
+agent from editing a file another agent holds, and blocks *any* agent from editing `.tscn`/`.tres`
+(D-007). A protocol that relies on agents remembering to follow it will not be followed.
+**Would change my mind:** agents working concurrently often enough that file claims become a bottleneck —
+at which point move to git worktrees per agent instead of claims.

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Installs the pre-commit hook. Re-run after cloning the repo on a new machine.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+HOOK="$ROOT/.git/hooks/pre-commit"
+
+cat > "$HOOK" <<'EOF'
+#!/usr/bin/env bash
+# Blocks commits that violate file claims or the human-only scene rule.
+# Bypass with: git commit --no-verify
+exec "$(git rev-parse --show-toplevel)/.agent/bin/agent" check
+EOF
+
+chmod +x "$HOOK"
+echo "✓ pre-commit hook installed at .git/hooks/pre-commit"

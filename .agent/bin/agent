@@ -1,0 +1,539 @@
+#!/usr/bin/env python3
+"""
+agent — multi-agent coordination for MIRE.
+
+Shared state so Claude Code, Codex, and the human can hand work off cleanly.
+State lives in .agent/state.json; humans and agents read .agent/BOARD.md.
+
+Deliberately small and dependency-free. If it annoys you, edit it.
+"""
+
+import json
+import os
+import subprocess
+import sys
+from datetime import datetime, timezone
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+AGENT_DIR = os.path.join(ROOT, ".agent")
+STATE = os.path.join(AGENT_DIR, "state.json")
+BOARD = os.path.join(AGENT_DIR, "BOARD.md")
+JOURNAL = os.path.join(AGENT_DIR, "JOURNAL.md")
+SESSION = os.path.join(AGENT_DIR, "session")
+ROADMAP = os.path.join(ROOT, "docs", "ROADMAP.md")
+
+STALE_HOURS = 12
+
+# Files only a human may change. Godot scene/resource files carry internal
+# sub-resource IDs and do not merge; see docs/DECISIONS.md D-007.
+HUMAN_ONLY_SUFFIXES = (".tscn", ".tres", ".import", ".godot")
+HUMAN_ONLY_PATHS = ("project.godot", "export_presets.cfg")
+# Always safe for anyone to edit.
+FREE_PREFIXES = ("docs/", ".agent/", "CLAUDE.md", "AGENTS.md", "README.md", ".gitignore")
+
+C = {
+    "b": "\033[1m", "dim": "\033[2m", "r": "\033[31m", "g": "\033[32m",
+    "y": "\033[33m", "c": "\033[36m", "x": "\033[0m",
+}
+if not sys.stdout.isatty() or os.environ.get("NO_COLOR"):
+    C = {k: "" for k in C}
+
+
+# ---------------------------------------------------------------- state io
+
+def now():
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def age_hours(iso):
+    try:
+        then = datetime.fromisoformat(iso)
+    except ValueError:
+        return 0.0
+    return (datetime.now(timezone.utc) - then).total_seconds() / 3600.0
+
+
+def load():
+    if not os.path.exists(STATE):
+        return {"version": 1, "tasks": {}, "in_flight": {}, "claims": {}, "sessions": {}}
+    with open(STATE) as f:
+        return json.load(f)
+
+
+def save(st):
+    os.makedirs(AGENT_DIR, exist_ok=True)
+    with open(STATE, "w") as f:
+        json.dump(st, f, indent=2, sort_keys=True)
+        f.write("\n")
+    render_board(st)
+
+
+def whoami(required=True):
+    if os.path.exists(SESSION):
+        name = open(SESSION).read().strip()
+        if name:
+            return name
+    if required:
+        die("no active session. Run:  agent start <your-name>")
+    return None
+
+
+def die(msg):
+    print("%s✗ %s%s" % (C["r"], msg, C["x"]))
+    sys.exit(1)
+
+
+def ok(msg):
+    print("%s✓%s %s" % (C["g"], C["x"], msg))
+
+
+def task_sort_key(tid):
+    try:
+        a, b = tid.split(".")
+        return (int(a), int(b))
+    except ValueError:
+        return (999, 999)
+
+
+# ---------------------------------------------------------------- roadmap sync
+
+def cmd_sync(args):
+    """Parse docs/ROADMAP.md task tables into state. Safe to re-run — never
+    overwrites status, only adds new tasks and refreshes titles."""
+    if not os.path.exists(ROADMAP):
+        die("docs/ROADMAP.md not found")
+
+    st = load()
+    milestone = "?"
+    added = updated = 0
+
+    for line in open(ROADMAP):
+        line = line.strip()
+        if line.startswith("## M"):
+            milestone = line[3:].split("·")[0].strip()
+            continue
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) < 4:
+            continue
+        tid = cells[0]
+        if not tid or not tid[0].isdigit() or "." not in tid:
+            continue
+        title = cells[1].replace("**", "")
+        tier = cells[2]
+        est = cells[3]
+        if tid in st["tasks"]:
+            t = st["tasks"][tid]
+            if t.get("title") != title or t.get("tier") != tier:
+                t.update({"title": title, "tier": tier, "est": est, "milestone": milestone})
+                updated += 1
+        else:
+            st["tasks"][tid] = {
+                "title": title, "tier": tier, "est": est,
+                "milestone": milestone, "status": "todo",
+            }
+            added += 1
+
+    save(st)
+    ok("roadmap synced — %d new, %d updated, %d total" % (added, updated, len(st["tasks"])))
+
+
+# ---------------------------------------------------------------- session
+
+def cmd_start(args):
+    if not args:
+        die("usage: agent start <your-name>   (e.g. claude, codex, sequoyah)")
+    name = args[0].strip().lower()
+    st = load()
+    st["sessions"][name] = {"started": now(), "last_seen": now()}
+    with open(SESSION, "w") as f:
+        f.write(name + "\n")
+    save(st)
+
+    print("\n%s%s session started%s\n" % (C["b"], name, C["x"]))
+    if name not in ("sequoyah", "human"):
+        print("  %sYou may edit .gd and doc files. Scene files (.tscn/.tres) are human-only.%s"
+              % (C["dim"], C["x"]))
+    _print_board(st, focus=name)
+    _print_stale(st)
+    _print_git()
+    print("  %sClaim before you edit:%s  agent claim <task-id> <files...>\n" % (C["dim"], C["x"]))
+
+
+def _print_git():
+    try:
+        out = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT,
+                             capture_output=True, text=True).stdout.strip()
+        log = subprocess.run(["git", "log", "--oneline", "-5"], cwd=ROOT,
+                             capture_output=True, text=True).stdout.strip()
+    except Exception:
+        return
+    print("%sRecent commits%s" % (C["b"], C["x"]))
+    for l in log.splitlines():
+        print("  %s" % l)
+    if out:
+        n = len(out.splitlines())
+        print("\n  %s⚠ %d uncommitted file(s) — someone stopped mid-task%s" % (C["y"], n, C["x"]))
+    print()
+
+
+def _print_stale(st):
+    stale = [(t, d) for t, d in st["in_flight"].items()
+             if age_hours(d.get("started", now())) > STALE_HOURS]
+    if not stale:
+        return
+    print("%s%sStale (>%dh, likely abandoned)%s" % (C["y"], C["b"], STALE_HOURS, C["x"]))
+    for tid, d in sorted(stale, key=lambda x: task_sort_key(x[0])):
+        print("  %s  %s  %.0fh — release with:  agent drop %s"
+              % (tid, d["agent"], age_hours(d["started"]), tid))
+    print()
+
+
+# ---------------------------------------------------------------- claiming
+
+def cmd_claim(args):
+    if not args:
+        die("usage: agent claim <task-id> [files...]")
+    me = whoami()
+    tid = args[0]
+    files = [_rel(f) for f in args[1:]]
+    st = load()
+
+    if tid not in st["tasks"]:
+        die("unknown task %s — run 'agent sync' or check docs/ROADMAP.md" % tid)
+    if st["tasks"][tid]["status"] == "done":
+        die("%s is already done" % tid)
+    held = st["in_flight"].get(tid)
+    if held and held["agent"] != me:
+        die("%s is already claimed by %s (started %s)" % (tid, held["agent"], held["started"]))
+
+    conflicts = [(f, st["claims"][f]) for f in files
+                 if f in st["claims"] and st["claims"][f]["agent"] != me]
+    if conflicts:
+        for f, c in conflicts:
+            print("%s✗ %s is claimed by %s for task %s%s" % (C["r"], f, c["agent"], c["task"], C["x"]))
+        die("resolve the overlap before continuing — two agents in one file will conflict")
+
+    if not held:
+        st["in_flight"][tid] = {"agent": me, "started": now(), "files": [], "notes": []}
+    entry = st["in_flight"][tid]
+    for f in files:
+        if f not in entry["files"]:
+            entry["files"].append(f)
+        st["claims"][f] = {"task": tid, "agent": me, "at": now()}
+    st["tasks"][tid]["status"] = "in_flight"
+    save(st)
+
+    ok("%s claimed by %s" % (tid, me))
+    print("  %s" % st["tasks"][tid]["title"])
+    if files:
+        for f in files:
+            print("  %s· %s%s" % (C["dim"], f, C["x"]))
+    else:
+        print("  %sno files claimed yet — add them with:  agent claim %s <files...>%s"
+              % (C["dim"], tid, C["x"]))
+
+
+def _rel(p):
+    p = os.path.abspath(p) if os.path.exists(p) else os.path.join(ROOT, p)
+    return os.path.relpath(p, ROOT)
+
+
+def cmd_note(args):
+    if len(args) < 2:
+        die('usage: agent note <task-id> "what you learned or did"')
+    me = whoami()
+    tid, text = args[0], " ".join(args[1:])
+    st = load()
+    if tid not in st["in_flight"]:
+        die("%s is not in flight" % tid)
+    st["in_flight"][tid]["notes"].append({"at": now(), "by": me, "text": text})
+    save(st)
+    ok("noted on %s" % tid)
+
+
+# ---------------------------------------------------------------- finishing
+
+def _release(st, tid):
+    entry = st["in_flight"].pop(tid, None)
+    if entry:
+        for f in entry.get("files", []):
+            if st["claims"].get(f, {}).get("task") == tid:
+                del st["claims"][f]
+    return entry
+
+
+def _head():
+    try:
+        return subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
+                              capture_output=True, text=True).stdout.strip()
+    except Exception:
+        return "?"
+
+
+def _journal(kind, tid, title, agent, body, files):
+    os.makedirs(AGENT_DIR, exist_ok=True)
+    if not os.path.exists(JOURNAL):
+        with open(JOURNAL, "w") as f:
+            f.write("# Journal\n\nAppend-only. Newest at the bottom. "
+                    "Written by `agent done` / `agent handoff`.\n")
+    with open(JOURNAL, "a") as f:
+        f.write("\n---\n\n### %s · %s · %s · %s\n\n" % (kind, tid, agent, now()))
+        f.write("**%s**\n\n" % title)
+        f.write("%s\n\n" % body)
+        if files:
+            f.write("Files: %s\n\n" % ", ".join("`%s`" % x for x in files))
+        f.write("Commit at time of writing: `%s`\n" % _head())
+
+
+def cmd_done(args):
+    if not args:
+        die('usage: agent done <task-id> ["one-line summary"]')
+    me = whoami()
+    tid = args[0]
+    summary = " ".join(args[1:]) or "Completed."
+    st = load()
+    if tid not in st["tasks"]:
+        die("unknown task %s" % tid)
+    entry = _release(st, tid)
+    st["tasks"][tid]["status"] = "done"
+    st["tasks"][tid]["done_at"] = now()
+    st["tasks"][tid]["done_by"] = me
+    save(st)
+
+    notes = ""
+    if entry and entry.get("notes"):
+        notes = "\n\nNotes along the way:\n" + "\n".join(
+            "- %s" % n["text"] for n in entry["notes"])
+    _journal("DONE", tid, st["tasks"][tid]["title"], me, summary + notes,
+             entry.get("files", []) if entry else [])
+
+    ok("%s done — claims released, journal updated" % tid)
+    _print_ready(load())
+    print("  %sCommit now so the next agent sees it.%s" % (C["dim"], C["x"]))
+
+
+def cmd_handoff(args):
+    if len(args) < 2:
+        die('usage: agent handoff <task-id> "what is done, what is left, what to watch out for"')
+    me = whoami()
+    tid, body = args[0], " ".join(args[1:])
+    st = load()
+    if tid not in st["in_flight"]:
+        die("%s is not in flight" % tid)
+    entry = _release(st, tid)
+    st["tasks"][tid]["status"] = "todo"
+    save(st)
+    _journal("HANDOFF", tid, st["tasks"][tid]["title"], me, body, entry.get("files", []))
+    ok("%s handed off — claims released, next agent can pick it up" % tid)
+    print("  %sCommit your partial work so it isn't lost.%s" % (C["dim"], C["x"]))
+
+
+def cmd_drop(args):
+    if not args:
+        die("usage: agent drop <task-id>")
+    tid = args[0]
+    st = load()
+    entry = _release(st, tid)
+    if not entry:
+        die("%s is not in flight" % tid)
+    st["tasks"][tid]["status"] = "todo"
+    save(st)
+    ok("%s dropped — claims released" % tid)
+
+
+# ---------------------------------------------------------------- check
+
+def cmd_check(args):
+    """Verify uncommitted changes respect claims and the human-only rule.
+    Run by the pre-commit hook."""
+    me = whoami(required=False) or "unknown"
+    st = load()
+    try:
+        # -uall: list untracked files individually. Without it git collapses a
+        # wholly-untracked directory to "dir/" and we never see the files inside.
+        raw = subprocess.run(["git", "status", "--porcelain", "-uall"], cwd=ROOT,
+                             capture_output=True, text=True).stdout
+    except Exception:
+        return
+    changed = [l[3:].strip().strip('"') for l in raw.splitlines() if l.strip()]
+    changed = [c.split(" -> ")[-1] for c in changed]
+
+    errors, warnings = [], []
+    human = me in ("sequoyah", "human", "unknown")
+
+    for f in changed:
+        if any(f.startswith(p) for p in FREE_PREFIXES):
+            continue
+        is_human_only = f.endswith(HUMAN_ONLY_SUFFIXES) or f in HUMAN_ONLY_PATHS
+        if is_human_only and not human:
+            errors.append("%s — scene/resource file, human-only (D-007). "
+                          "Ask Sequoyah to wire this in the editor." % f)
+            continue
+        c = st["claims"].get(f)
+        if c and c["agent"] != me:
+            # The human integrates everyone's work, so they may commit any file.
+            # Agents may not touch a file another agent holds.
+            if human:
+                warnings.append("%s — claimed by %s (task %s); committing as integrator"
+                                % (f, c["agent"], c["task"]))
+            else:
+                errors.append("%s — claimed by %s for task %s" % (f, c["agent"], c["task"]))
+        elif not c and not human:
+            warnings.append("%s — edited without a claim" % f)
+
+    for w in warnings:
+        print("%s⚠ %s%s" % (C["y"], w, C["x"]))
+    for e in errors:
+        print("%s✗ %s%s" % (C["r"], e, C["x"]))
+    if errors:
+        print("\n%sCommit blocked.%s Use --no-verify only if you are certain.\n" % (C["r"], C["x"]))
+        sys.exit(1)
+    if not warnings:
+        ok("check passed (%d changed file(s), session: %s)" % (len(changed), me))
+
+
+# ---------------------------------------------------------------- board
+
+def _print_ready(st, limit=6):
+    done_ms = set()
+    for t in st["tasks"].values():
+        if t["status"] != "done":
+            done_ms.add(t["milestone"])
+    active = sorted(done_ms)[:1]
+    ready = [(tid, t) for tid, t in st["tasks"].items()
+             if t["status"] == "todo" and t["milestone"] in active]
+    ready.sort(key=lambda x: task_sort_key(x[0]))
+    if not ready:
+        return
+    print("\n%sReady to pick up%s" % (C["b"], C["x"]))
+    for tid, t in ready[:limit]:
+        print("  %s%-5s%s %-4s %s" % (C["c"], tid, C["x"], t["tier"], t["title"][:66]))
+    if len(ready) > limit:
+        print("  %s… %d more%s" % (C["dim"], len(ready) - limit, C["x"]))
+    print()
+
+
+def _print_board(st, focus=None):
+    if st["in_flight"]:
+        print("%sIn flight%s" % (C["b"], C["x"]))
+        for tid, d in sorted(st["in_flight"].items(), key=lambda x: task_sort_key(x[0])):
+            mine = " %s← you%s" % (C["g"], C["x"]) if d["agent"] == focus else ""
+            print("  %s%-5s%s %-9s %.0fh  %s%s"
+                  % (C["c"], tid, C["x"], d["agent"], age_hours(d["started"]),
+                     st["tasks"].get(tid, {}).get("title", "?")[:50], mine))
+            for f in d.get("files", []):
+                print("      %s· %s%s" % (C["dim"], f, C["x"]))
+            for n in d.get("notes", [])[-2:]:
+                print("      %s› %s%s" % (C["dim"], n["text"][:70], C["x"]))
+        print()
+    else:
+        print("%sIn flight%s  %snothing — clean slate%s\n" % (C["b"], C["x"], C["dim"], C["x"]))
+    _print_ready(st)
+
+
+def cmd_board(args):
+    st = load()
+    total = len(st["tasks"])
+    done = sum(1 for t in st["tasks"].values() if t["status"] == "done")
+    print("\n%sMIRE%s  %d/%d tasks done\n" % (C["b"], C["x"], done, total))
+    _print_board(st, focus=whoami(required=False))
+    _print_stale(st)
+
+
+def render_board(st):
+    """Write the human/agent-readable BOARD.md."""
+    total = len(st["tasks"])
+    done = sum(1 for t in st["tasks"].values() if t["status"] == "done")
+    L = ["# Board",
+         "",
+         "<!-- Generated by `agent`. Do not hand-edit — run `agent board` instead. -->",
+         "",
+         "**%d / %d tasks complete.** Updated %s" % (done, total, now()),
+         "", "## In flight", ""]
+
+    if st["in_flight"]:
+        L += ["| Task | Agent | Started | Files claimed |", "|---|---|---|---|"]
+        for tid, d in sorted(st["in_flight"].items(), key=lambda x: task_sort_key(x[0])):
+            files = ", ".join("`%s`" % f for f in d.get("files", [])) or "—"
+            L.append("| **%s** %s | %s | %s | %s |"
+                     % (tid, st["tasks"].get(tid, {}).get("title", "?"), d["agent"],
+                        d["started"][:16].replace("T", " "), files))
+        L.append("")
+        for tid, d in sorted(st["in_flight"].items(), key=lambda x: task_sort_key(x[0])):
+            if d.get("notes"):
+                L.append("**%s notes:**" % tid)
+                L += ["- %s" % n["text"] for n in d["notes"]]
+                L.append("")
+    else:
+        L += ["_Nothing in flight._", ""]
+
+    by_ms = {}
+    for tid, t in st["tasks"].items():
+        by_ms.setdefault(t["milestone"], []).append((tid, t))
+
+    L += ["## Milestones", "", "| Milestone | Progress | Remaining |", "|---|---|---|"]
+    for ms in sorted(by_ms):
+        items = by_ms[ms]
+        d = sum(1 for _, t in items if t["status"] == "done")
+        bar = "█" * round(10 * d / len(items)) + "░" * (10 - round(10 * d / len(items)))
+        L.append("| %s | `%s` %d/%d | %s |" % (ms, bar, d, len(items), len(items) - d))
+    L.append("")
+
+    active = [ms for ms in sorted(by_ms)
+              if any(t["status"] != "done" for _, t in by_ms[ms])]
+    if active:
+        ms = active[0]
+        L += ["## %s — current milestone" % ms, "",
+              "| | Task | Tier | Est | Status |", "|---|---|---|---|---|"]
+        for tid, t in sorted(by_ms[ms], key=lambda x: task_sort_key(x[0])):
+            mark = {"done": "✅", "in_flight": "🔵", "todo": "⬜", "blocked": "🚧"}.get(t["status"], "⬜")
+            L.append("| %s | **%s** %s | %s | %s | %s |"
+                     % (mark, tid, t["title"], t["tier"], t["est"], t["status"]))
+        L.append("")
+
+    L += ["## Done", "",
+          " ".join("`%s`" % tid for tid, t in
+                   sorted(st["tasks"].items(), key=lambda x: task_sort_key(x[0]))
+                   if t["status"] == "done") or "_Nothing yet._", ""]
+
+    with open(BOARD, "w") as f:
+        f.write("\n".join(L))
+
+
+# ---------------------------------------------------------------- main
+
+COMMANDS = {
+    "start": cmd_start, "claim": cmd_claim, "note": cmd_note, "done": cmd_done,
+    "handoff": cmd_handoff, "drop": cmd_drop, "check": cmd_check,
+    "board": cmd_board, "sync": cmd_sync,
+}
+
+USAGE = """agent — multi-agent coordination for MIRE
+
+  agent start <name>              begin a session (claude | codex | sequoyah)
+  agent board                     show what's happening
+  agent claim <id> [files...]     claim a task and the files you'll edit
+  agent note <id> "..."           record something mid-task
+  agent done <id> ["summary"]     finish: release claims, write journal
+  agent handoff <id> "..."        stop mid-task: what's left, what to watch out for
+  agent drop <id>                 abandon a task, release claims
+  agent check                     verify changes respect claims (pre-commit hook)
+  agent sync                      re-read tasks from docs/ROADMAP.md
+
+Protocol: AGENTS.md    Board: .agent/BOARD.md    History: .agent/JOURNAL.md"""
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help", "help"):
+        print(USAGE)
+        return
+    cmd = sys.argv[1]
+    if cmd not in COMMANDS:
+        die("unknown command '%s'\n\n%s" % (cmd, USAGE))
+    COMMANDS[cmd](sys.argv[2:])
+
+
+if __name__ == "__main__":
+    main()
