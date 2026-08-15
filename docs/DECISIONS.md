@@ -80,16 +80,6 @@ bug-prone body of work, and it's the kind of bug that only shows up in front of 
 **Would change my mind:** 2h+ runs proving to be a real scheduling problem for your group in practice.
 This is the #1 post-launch feature candidate.
 
----
-
-## Template
-
-```
-### D-0NN · YYYY-MM-DD · <one-line decision>
-<why, in 2–4 sentences>
-**Would change my mind:** <the specific evidence that should make you revisit this>
-```
-
 ### D-011 · 2026-08-15 · Multi-agent coordination via files in the repo, not a service
 Three agents (Claude Code, Codex, human) share state through `.agent/state.json`, a generated
 `.agent/BOARD.md`, and an append-only `.agent/JOURNAL.md`, driven by one small script `.agent/bin/agent`.
@@ -102,3 +92,13 @@ agent from editing a file another agent holds, and blocks *any* agent from editi
 (D-007). A protocol that relies on agents remembering to follow it will not be followed.
 **Would change my mind:** agents working concurrently often enough that file claims become a bottleneck —
 at which point move to git worktrees per agent instead of claims.
+
+---
+
+## Template
+
+```
+### D-0NN · YYYY-MM-DD · <one-line decision>
+<why, in 2–4 sentences>
+**Would change my mind:** <the specific evidence that should make you revisit this>
+```
