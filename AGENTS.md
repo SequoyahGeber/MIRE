@@ -3,9 +3,19 @@
 Instructions for AI coding agents working on **MIRE** — a co-op roguelike survival game.
 Godot 4.7 · Forward+ · Jolt · GDScript · first-person · 3–6 players · host-authoritative multiplayer.
 
-Multiple agents work on this repo: **Claude Code**, **Codex**, and **Sequoyah** (the human, who does all
-Godot editor work). This file is the shared protocol. Follow it exactly — it's what lets one of us pick
-up where another left off.
+Multiple agents work on this repo. This file is the shared protocol. Follow it exactly — it's what lets
+one of us pick up where another left off.
+
+## Who does what (D-014)
+
+| Role | Who | Owns |
+|---|---|---|
+| **Planner** | Claude Code (chat session) | Design, architecture, roadmap, task breakdown, decisions, specs, reviewing landed work. **Does not implement gameplay code.** |
+| **Coder** | Codex · second Claude | Implementing claimed tasks in `.gd`. Works from the planner's spec. |
+| **Integrator** | Sequoyah (human) | All Godot editor work, asset import, tuning, playtesting, commits. |
+
+If you are a coder and the spec is ambiguous, **ask rather than explore** — exploration is the most
+expensive thing an agent can do here, and the planner can answer in one line.
 
 ---
 

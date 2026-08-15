@@ -1,6 +1,28 @@
 {
   "claims": {},
   "in_flight": {},
+  "recent": {
+    "entities/player/player.tscn": {
+      "agent": "claude",
+      "at": "2026-08-15T21:46:15+00:00",
+      "task": "0.3"
+    },
+    "levels/greybox_test.tscn": {
+      "agent": "claude",
+      "at": "2026-08-15T21:46:15+00:00",
+      "task": "0.3"
+    },
+    "project.godot": {
+      "agent": "claude",
+      "at": "2026-08-15T21:46:15+00:00",
+      "task": "0.3"
+    },
+    "tools/setup_project.gd": {
+      "agent": "claude",
+      "at": "2026-08-15T21:46:15+00:00",
+      "task": "0.3"
+    }
+  },
   "tasks": {
     "0.1": {
       "done_at": "2026-08-15T21:24:40+00:00",
@@ -10,6 +32,13 @@
       "status": "done",
       "tier": "T0",
       "title": "`git init`, first commit, verify `.gitignore` covers `.godot/`, `export/`, `*.import` cache"
+    },
+    "0.10": {
+      "est": "1",
+      "milestone": "M0",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Spike R6 \u2014 run `tools/check_determinism.gd` on Windows and Linux, compare against the macOS baseline in `ARCHITECTURE.md` \u00a76a"
     },
     "0.2": {
       "done_at": "2026-08-15T21:29:21+00:00",
@@ -21,9 +50,11 @@
       "title": "Create folder structure from `ARCHITECTURE.md` \u00a73 (empty dirs + `.gdignore` where needed)"
     },
     "0.3": {
+      "done_at": "2026-08-15T21:46:15+00:00",
+      "done_by": "claude",
       "est": "0.5",
       "milestone": "M0",
-      "status": "todo",
+      "status": "done",
       "tier": "T0",
       "title": "Set up input map (move, look, jump, sprint, attack, interact, inventory, build)"
     },
@@ -86,6 +117,20 @@
       "status": "todo",
       "tier": "T1",
       "title": "Network debug panel: ping, bandwidth up/down, entity count, authority display"
+    },
+    "1.11": {
+      "est": "1.5",
+      "milestone": "M1",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Protocol/build version handshake \u2014 refuse mismatched builds with a clear message, not a desync"
+    },
+    "1.12": {
+      "est": "1.5",
+      "milestone": "M1",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Cross-platform join test \u2014 Mac \u2194 Windows \u2194 Linux in one lobby, over Steam"
     },
     "1.2": {
       "est": "3",
@@ -570,6 +615,20 @@
       "tier": "T0",
       "title": "Replace hero CC0 assets if desired (player hands, bosses, key items)"
     },
+    "7.11": {
+      "est": "3",
+      "milestone": "M7",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Export presets for macOS (universal), Windows, Linux \u2014 Steam redistributables bundled per platform, case-sensitivity audit"
+    },
+    "7.12": {
+      "est": "2",
+      "milestone": "M7",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Test each export on its real OS, plus Steam Deck"
+    },
     "7.2": {
       "est": "4",
       "milestone": "M7",
@@ -632,6 +691,20 @@
       "status": "todo",
       "tier": "T0",
       "title": "Steamworks account, tax/banking, $100 Steam Direct fee, real App ID"
+    },
+    "8.10": {
+      "est": "2",
+      "milestone": "M8",
+      "status": "todo",
+      "tier": "T0",
+      "title": "macOS codesign + notarisation (needs an Apple Developer account, $99/yr)"
+    },
+    "8.11": {
+      "est": "2",
+      "milestone": "M8",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Three depots wired to one app, per-platform launch options"
     },
     "8.2": {
       "est": "1",

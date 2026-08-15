@@ -75,3 +75,18 @@ I have not run Godot; report any parse error and I will fix it.
 Files: `autoload/debug_overlay.gd`, `autoload/debug_console.gd`, `core/util/mire_log.gd`
 
 Commit at time of writing: `9772f8d`
+
+---
+
+### DONE · 0.3 · claude · 2026-08-15T21:46:15+00:00
+
+**Set up input map (move, look, jump, sprint, attack, interact, inventory, build)**
+
+Input map (10 actions, keyboard + gamepad), autoloads DebugOverlay/DebugConsole, player.tscn, and greybox_test.tscn — all generated via tools/setup_project.gd so Godot serialises its own formats. Verified with tools/verify_setup.gd: 35 checks incl. live physics (player lands and rests at ground level). Also covers 0.5's build; tuning is still open.
+
+Notes along the way:
+- Godot 4.7.1 found at /Applications/Godot.app — scripts compile-checked headless, all clean except the DebugOverlay autoload ref which resolves on wiring.
+
+Files: `project.godot`, `entities/player/player.tscn`, `levels/greybox_test.tscn`, `tools/setup_project.gd`
+
+Commit at time of writing: `b5c2f7d`

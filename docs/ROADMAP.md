@@ -15,18 +15,18 @@ Every task is tagged with its tier from `AI-WORKFLOW.md`:
 
 | Milestone | Sessions | T0 (free) | T1 (cheap) | T2 (premium) |
 |---|---:|---:|---:|---:|
-| M0 · Foundations & spikes | 10 | 40% | 25% | 35% |
-| M1 · Network spine | 20 | 20% | 20% | **60%** |
+| M0 · Foundations & spikes | 11 | 40% | 25% | 35% |
+| M1 · Network spine | 23 | 20% | 20% | **60%** |
 | M2 · Vertical slice ⭐ | 35 | 50% | 25% | 25% |
 | M3 · Systems depth | 50 | 55% | 25% | 20% |
 | M4 · World & the Mire | 45 | 35% | 20% | 45% |
 | M5 · Combat, enemies, bosses | 55 | 60% | 25% | 15% |
 | M6 · Cycles, extraction & meta | 34 | 50% | 25% | 25% |
-| M7 · Polish & pre-ship | 50 | 75% | 20% | 5% |
-| M8 · Ship | 20 | 85% | 10% | 5% |
-| **Total** | **~320** | **~55%** | **~23%** | **~22%** |
+| M7 · Polish & pre-ship | 55 | 75% | 20% | 5% |
+| M8 · Ship | 24 | 85% | 10% | 5% |
+| **Total** | **~333** | **~55%** | **~23%** | **~22%** |
 
-**~960 hours total, of which only ~210 need premium quota.** That's the number that matters. The
+**~1,000 hours total, of which only ~215 need premium quota.** That's the number that matters. The
 premium spend is heavily front-loaded into M1 and M4 — which is correct, because those are the
 decisions that are expensive to get wrong.
 
@@ -35,7 +35,7 @@ this. Everything before it is scaffolding. Protect it — do not let scope creep
 
 ---
 
-## M0 · Foundations & spikes — 10 sessions
+## M0 · Foundations & spikes — 11 sessions
 
 **Goal:** a repo you can work in, and answers to the three questions that could sink the project.
 
@@ -53,13 +53,14 @@ to R2 and R3 from `ARCHITECTURE.md` §6.
 | 0.7 | **Spike R2** — generate 100 chunked terrain meshes from noise, measure frame times & hitches | T2 | 1.5 |
 | 0.8 | **Spike R3** — bake a `NavigationRegion3D` on a runtime-generated chunk, measure the hitch | T2 | 1.5 |
 | 0.9 | Record spike results in `DECISIONS.md`. If R3 failed, decide the fallback **now**. | T0 | 0.5 |
+| 0.10 | **Spike R6** — run `tools/check_determinism.gd` on Windows and Linux, compare against the macOS baseline in `ARCHITECTURE.md` §6a | T0 | 1 |
 
 > **Do not skip 0.7/0.8.** These are the two things most likely to force a serious redesign, and they
 > are far cheaper to discover here than in M4/M5.
 
 ---
 
-## M1 · Network spine — 20 sessions
+## M1 · Network spine — 23 sessions
 
 **Goal:** the multiplayer foundation, before any gameplay exists. This is the most important milestone
 technically and the heaviest premium-quota spend in the project.
@@ -79,6 +80,8 @@ Plus the same thing in `LOCAL` mode in two windows in under 5 seconds.
 | 1.8 | Interest management: visibility filters + per-class `replication_interval` (`ARCHITECTURE.md` §2.5) | T2 | 1.5 |
 | 1.9 | **Spike R1** — 6 peers, 200 synced dummy entities, measure bandwidth and CPU | T2 | 1.5 |
 | 1.10 | Network debug panel: ping, bandwidth up/down, entity count, authority display | T1 | 1 |
+| 1.11 | Protocol/build version handshake — refuse mismatched builds with a clear message, not a desync | T2 | 1.5 |
+| 1.12 | **Cross-platform join test** — Mac ↔ Windows ↔ Linux in one lobby, over Steam | T0 | 1.5 |
 
 > **Task 1.3 is worth more than it looks.** One-keypress two-window multiplayer testing is the highest
 > ROI thing in this milestone. Every future multiplayer bug gets cheaper to find because of it.
@@ -201,7 +204,7 @@ the project (Q3) — budget real playtest time, not just build time.
 
 ---
 
-## M7 · Polish & pre-ship — 50 sessions
+## M7 · Polish & pre-ship — 55 sessions
 
 **Goal:** the difference between "my friend's game" and "a game." Almost entirely Tier 0 — polish is
 craft, not code, and this is where you can work indefinitely without spending quota.
@@ -218,10 +221,12 @@ craft, not code, and this is where you can work indefinitely without spending qu
 | 7.8 | Network robustness: packet loss, high latency, hostile disconnect timing | T2 | 3 |
 | 7.9 | Bug bash from playtest backlog | T0 | 6 |
 | 7.10 | Replace hero CC0 assets if desired (player hands, bosses, key items) | T0 | 2 |
+| 7.11 | Export presets for macOS (universal), Windows, Linux — Steam redistributables bundled per platform, case-sensitivity audit | T0 | 3 |
+| 7.12 | Test each export on its real OS, plus Steam Deck | T0 | 2 |
 
 ---
 
-## M8 · Ship — 20 sessions
+## M8 · Ship — 24 sessions
 
 See `STEAM.md` for the full checklist and the hard scheduling constraints.
 
@@ -236,6 +241,8 @@ See `STEAM.md` for the full checklist and the hard scheduling constraints.
 | 8.7 | Coming Soon page live (starts the mandatory 2-week clock) | T0 | 1 |
 | 8.8 | Closed beta on a password-protected branch with friends | T0 | 1 |
 | 8.9 | Build review submission, fix findings, release | T0 | 1 |
+| 8.10 | macOS codesign + notarisation (needs an Apple Developer account, $99/yr) | T0 | 2 |
+| 8.11 | Three depots wired to one app, per-platform launch options | T1 | 2 |
 
 ---
 

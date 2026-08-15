@@ -93,6 +93,43 @@ agent from editing a file another agent holds, and blocks *any* agent from editi
 **Would change my mind:** agents working concurrently often enough that file claims become a bottleneck —
 at which point move to git worktrees per agent instead of claims.
 
+### D-012 · 2026-08-15 · Agents may touch scene/config files only by claiming them **by name**
+*Amends D-007, does not repeal it.*
+The blanket ban made bootstrapping impossible — someone has to create `player.tscn` and write the input
+map before there is anything to run, and doing that by hand in the editor is a 30-minute typo hazard on
+action names the code reads by string.
+The amendment: an agent may edit `.tscn`/`.tres`/`project.godot` **only** when it holds an explicit
+claim naming that exact file. Drifting into a scene file is still blocked by the pre-commit hook. This
+keeps the protection where it mattered (no accidental scene edits, no two parties in one scene) while
+making deliberate, logged bootstrapping possible.
+In practice the agent should still generate scenes *via a Godot tool script* rather than hand-writing
+`.tscn` text, so Godot serialises its own formats — see `tools/setup_project.gd`.
+**Would change my mind:** an agent corrupting a scene the human was actively working in. Then go back
+to the blanket ban and accept the manual setup cost.
+
+### D-013 · 2026-08-15 · Ship macOS + Windows + Linux, with cross-play, as a first-class constraint
+Not a port done later. Steam P2P is platform-agnostic, so cross-play itself is nearly free — but it
+imposes one real architectural risk: §4 has clients regenerating terrain from a shared seed, and
+transcendental float results are not guaranteed identical across CPU architectures *or C libraries*.
+Divergence would put two players in the same lobby on different islands.
+`tools/check_determinism.gd` makes this measurable; the macOS arm64 baseline is recorded in
+`ARCHITECTURE.md` §6a. Windows and Linux must be measured before anything is built on §4 (task 0.10).
+Native Linux additionally makes Steam Deck support nearly free, and Linux's case-sensitive filesystem
+surfaces a whole class of export bug early.
+**Would change my mind:** hashes diverging. Then the host ships a compact heightmap and clients stop
+regenerating — costs join bandwidth, removes the risk entirely.
+
+### D-014 · 2026-08-15 · Claude Code (this session) is the planner; Codex and the second Claude are coders
+Planner owns: design, architecture, roadmap and task breakdown, decisions, specs, and reviewing work
+that lands. Coders own: implementing claimed tasks in `.gd`.
+This concentrates the scarce premium quota on exactly the work `AI-WORKFLOW.md` §2 calls Tier 2 —
+decisions that are expensive to get wrong — and pushes implementation toward the cheaper plans. It also
+matches the constraint that the binding limit is tokens, not hours.
+Consequence: the planner writes specs precise enough that a coder needs no exploration, since
+exploration is the single most expensive agent activity.
+**Would change my mind:** the coders producing work that needs so much rework that planning-then-
+delegating costs more than doing it directly.
+
 ---
 
 ## Template

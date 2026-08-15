@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://entities/player/player_controller.gd" id="1_abrql"]
+[ext_resource type="Script" path="res://entities/player/player_camera.gd" id="2_sglur"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_bls4j"]
+radius = 0.4
+height = 1.8
+
+[node name="Player" type="CharacterBody3D" unique_id=619933638]
+floor_max_angle = 0.80285144
+floor_snap_length = 0.3
+script = ExtResource("1_abrql")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=223448851]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_bls4j")
+
+[node name="CameraPivot" type="Node3D" parent="." unique_id=347787632]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+script = ExtResource("2_sglur")
+
+[node name="Camera3D" type="Camera3D" parent="CameraPivot" unique_id=1793355028]
+current = true

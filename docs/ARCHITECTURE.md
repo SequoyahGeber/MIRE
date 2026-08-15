@@ -200,9 +200,63 @@ fails, that's a *success* — you found it in week 3 instead of month 8.
 | **R3** | **Runtime NavMesh baking on procedural chunks** — the known-hardest part of this project in Godot | M0/M4: bake nav on a generated chunk at runtime, measure hitch | Grid-based A* on the heightmap instead of NavMesh; or pre-bake at gen time and accept longer load |
 | **R4** | Mire grid replication too chatty at scale | M4: worst-case tick, measure bytes | Lower tick rate; send run-length-encoded rows; region-of-interest only |
 | **R5** | GodotSteam breaks on a Godot 4.7 point release | M1: verify, then **pin the Godot version** | Stay pinned; upgrade deliberately, never casually |
+| **R6** | **Seeded world gen diverges between macOS arm64 and Windows x86_64** — two players, same lobby, different islands | M0: run `tools/check_determinism.gd` on both, compare hashes | Host generates and ships a compact heightmap; clients stop regenerating (costs bandwidth on join) |
 
 > **R3 is the one to worry about.** Enemy pathfinding on runtime-generated terrain is where Godot is
 > weakest and where an unprepared project stalls hardest. Spike it in M0, not M5.
+
+---
+
+## 6a. Cross-platform: macOS + Windows + Linux, playing together
+
+**Requirement:** the game ships on macOS, Windows and Linux, and any mix of those players must be able
+to play in the same lobby. This is a first-class constraint, not a port done later.
+
+**Bonus:** a native Linux build makes **Steam Deck** support nearly free — SteamOS is Arch Linux, so the
+Linux binary runs directly rather than through Proton. Aim for Deck *compatible* (see `STEAM.md` §6);
+verification remains out of scope.
+
+### What already handles it
+
+- **Steam P2P is platform-agnostic.** One App ID, one lobby, any mix of platforms. Muck itself does
+  exactly this. Choosing `SteamMultiplayerPeer` (§2.4) means cross-play costs no extra work.
+- **Godot exports to both natively** from one project, from either OS.
+- Godot's high-level multiplayer serialises its own types consistently across platforms.
+
+### What does not, and needs deliberate work
+
+| Concern | Why it bites | What to do |
+|---|---|---|
+| **World-gen determinism (R6)** | Clients regenerate terrain from a seed (§4). `sin`/`cos`/`pow` are not guaranteed bit-identical across CPU architectures *or across C libraries* — Linux glibc and Windows MSVC can differ even on the same x86_64. Divergence means different islands. | Run `tools/check_determinism.gd` on all three and compare. **Do this before building on §4.** |
+| **Build-version mismatch** | Steam updates clients at different times; a 1.2 host and a 1.1 client desync in confusing ways. | Protocol-version handshake on join; refuse mismatched builds with a clear message. Task 1.11. |
+| **Path case sensitivity** | Linux filesystems are case-**sensitive**; macOS and Windows usually are not. A wrong-case `res://` path works on your Mac and breaks on Linux. | Always match case exactly. Useful side effect: **test on Linux and this class of bug surfaces immediately.** |
+| **GodotSteam binaries** | The GDExtension ships per-platform libraries. A platform-specific download fails to load on the others. | Install the full release with all platform binaries; verify the `.gdextension` lists macOS, Windows and Linux. |
+| **Steam redistributables** | `libsteam_api.dylib` (macOS), `steam_api64.dll` (Windows) and `libsteam_api.so` (Linux) must ship next to each export. | Part of the export preset checklist, task 7.11. |
+| **Architecture slices** | Apple Silicon vs Intel; Linux x86_64 vs arm64. | macOS universal (arm64 + x86_64); Linux x86_64 only unless someone asks. |
+| **macOS signing / notarisation** | Unsigned Mac builds hit Gatekeeper and look broken to your friends. | Sign and notarise. Task 8.10 — needs an Apple Developer account ($99/yr), so budget for it. |
+| **Linux desktop variance** | Wayland vs X11, driver quality, glibc versions. Far more variable than the other two. | Godot 4.7 handles both session types. Test on one mainstream distro plus Steam Deck; don't chase the long tail. |
+| **Modifier keys** | Cmd on macOS vs Ctrl elsewhere. | Bind by action, never hardcode a modifier. Already the convention. |
+| **Line endings** | Godot text files across three OSes. | Handled — `.gitattributes` normalises to LF. |
+
+### Determinism baseline
+
+Recorded from `tools/check_determinism.gd`. **Run on Windows and Linux and fill in the blanks before
+building anything on §4.**
+
+| | macOS arm64 | Windows x86_64 | Linux x86_64 |
+|---|---|---|---|
+| `rng_sequence` | `0077d6b42cd6f78f` | — | — |
+| `noise_simplex` | `181e558b7b4841cf` | — | — |
+| `noise_perlin` | `6c7a944516e3e64f` | — | — |
+| `float_math` | `063eec62c34fa4ee` | — | — |
+
+Godot 4.7.1-stable in every case — a version difference invalidates the comparison.
+
+If `rng_sequence` differs, nothing seeded can be trusted and the fallback is mandatory. If only
+`noise_*` or `float_math` differ, the fallback applies to terrain only.
+
+If `rng_sequence` differs, nothing seeded can be trusted and the fallback is mandatory. If only
+`noise_*` or `float_math` differ, the fallback applies to terrain only.
 
 ---
 
