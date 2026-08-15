@@ -12,9 +12,11 @@
       "title": "`git init`, first commit, verify `.gitignore` covers `.godot/`, `export/`, `*.import` cache"
     },
     "0.2": {
+      "done_at": "2026-08-15T21:29:21+00:00",
+      "done_by": "claude",
       "est": "0.5",
       "milestone": "M0",
-      "status": "todo",
+      "status": "done",
       "tier": "T0",
       "title": "Create folder structure from `ARCHITECTURE.md` \u00a73 (empty dirs + `.gdignore` where needed)"
     },
@@ -26,9 +28,11 @@
       "title": "Set up input map (move, look, jump, sprint, attack, interact, inventory, build)"
     },
     "0.4": {
+      "done_at": "2026-08-15T21:31:52+00:00",
+      "done_by": "claude",
       "est": "2",
       "milestone": "M0",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "First-person character controller: `CharacterBody3D`, mouse look, walk/sprint/jump, coyote time"
     },
@@ -40,9 +44,11 @@
       "title": "Grey-box test level \u2014 ramps, stairs, gaps. Tune the controller until movement *feels good*."
     },
     "0.6": {
+      "done_at": "2026-08-15T21:34:28+00:00",
+      "done_by": "claude",
       "est": "2",
       "milestone": "M0",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Debug overlay autoload: FPS, position, entity counts, toggleable log channels, `~` console"
     },
