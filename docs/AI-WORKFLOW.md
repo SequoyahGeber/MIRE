@@ -59,6 +59,43 @@ architecture decisions · anything where being wrong costs a rewrite.
 
 ---
 
+## 2a. Which model for which tier
+
+Cost figures are Anthropic API rates (per million tokens). Claude Code plan limits don't map
+one-to-one, but the relative ordering does — treat this as which lever costs you more, not as a bill.
+
+| Tier | Model | Cost | Why |
+|---|---|---|---|
+| **T0** | *(none)* | free | Editor work. No agent involved. |
+| **T1** | **Sonnet 5** | $3/$15 | **The default workhorse.** Near-Opus quality on coding and agentic work at a fraction of the cost. Most `.gd` implementation from a written spec belongs here. |
+| **T1 (trivial)** | Haiku 4.5 | $1/$5 | Mechanical single-file edits, boilerplate, renames. 200K context — too small for anything cross-cutting. |
+| **T2** | **Opus 5** | $5/$25 | Netcode, world gen, the powerup framework, hard bugs, architecture. Things expensive to get wrong. |
+| — | Fable 5 | $10/$50 | Twice Opus. Nothing in this project needs it. |
+
+> ⏳ **Sonnet 5 is on introductory pricing ($2/$10) through 2026-08-31.** Until then it's ~40% of Opus's
+> cost rather than ~60%. If you're planning a big implementation push, front-load it.
+
+### Effort matters more than the model
+
+The single highest-leverage cost setting, and the one most people get wrong. On Opus 5, `low` and
+`medium` effort are unusually strong — Anthropic's own guidance calls effort the primary cost lever
+and warns that effort defaults carried over from older models are usually wrong.
+
+**Opus 5 at medium often beats Sonnet 5 at high, and costs less than Opus 5 at xhigh.** Reserve
+`xhigh` for M1 netcode and M4 world generation. Use `medium` for everything else, and step up only
+when you can see the reasoning is too shallow.
+
+### Ultracode: off by default
+
+Ultracode spawns multi-agent workflows — a dozen or more agents, each re-deriving context from cold.
+It is by far the most token-hungry mode available, and running it on routine coding is the most
+expensive possible configuration for a quota-bound project.
+
+Turn it on deliberately, for problems where being wrong costs a rewrite: the authority model, the
+Mire replication design, a bug you've already failed to fix twice. Turn it off again afterwards.
+
+---
+
 ## 3. The parallel-agent trap: Godot scenes do not merge
 
 `.tscn` and `.tres` are text files, but they carry internal `[sub_resource id="..."]` and
