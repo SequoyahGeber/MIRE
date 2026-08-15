@@ -79,6 +79,12 @@ def save(st):
 
 
 def whoami(required=True):
+    # MIRE_AGENT wins over the session file. The file holds exactly one name, so
+    # without this every parallel agent on this machine would clobber the others
+    # and claims would be attributed to whoever ran `agent start` most recently.
+    env_name = os.environ.get("MIRE_AGENT", "").strip().lower()
+    if env_name:
+        return env_name
     if os.path.exists(SESSION):
         name = open(SESSION).read().strip()
         if name:
@@ -165,6 +171,11 @@ def cmd_start(args):
     if name not in ("sequoyah", "human"):
         print("  %sYou may edit .gd and doc files. Scene files (.tscn/.tres) are human-only.%s"
               % (C["dim"], C["x"]))
+    if os.environ.get("MIRE_AGENT", "").strip().lower() not in ("", name):
+        print("  %s⚠ MIRE_AGENT=%s is set and overrides this — you are acting as '%s'.%s"
+              % (C["y"], os.environ["MIRE_AGENT"], os.environ["MIRE_AGENT"].strip().lower(), C["x"]))
+    print("  %sRunning agents in parallel? Give each its own name:  export MIRE_AGENT=%s%s"
+          % (C["dim"], name, C["x"]))
     _print_board(st, focus=name)
     _print_stale(st)
     _print_git()

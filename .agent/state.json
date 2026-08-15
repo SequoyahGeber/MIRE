@@ -2,6 +2,11 @@
   "claims": {},
   "in_flight": {},
   "recent": {
+    "autoload/net_transport.gd": {
+      "agent": "net",
+      "at": "2026-08-15T21:53:55+00:00",
+      "task": "1.2"
+    },
     "entities/player/player.tscn": {
       "agent": "claude",
       "at": "2026-08-15T21:46:15+00:00",
@@ -21,6 +26,16 @@
       "agent": "claude",
       "at": "2026-08-15T21:46:15+00:00",
       "task": "0.3"
+    },
+    "world/chunk/chunk_mesher.gd": {
+      "agent": "terrain",
+      "at": "2026-08-15T21:53:55+00:00",
+      "task": "0.7"
+    },
+    "world/chunk/nav_bake_probe.gd": {
+      "agent": "nav",
+      "at": "2026-08-15T21:53:55+00:00",
+      "task": "0.8"
     }
   },
   "tasks": {
