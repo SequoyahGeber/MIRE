@@ -1,0 +1,12 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Godot exports
+export/
+
+# macOS
+.DS_Store
+
+# Agent session state (local, per-machine)
+.agent/session
