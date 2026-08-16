@@ -273,6 +273,36 @@ amount of access changes it.
 change despite the check. Then registration goes back to being handed over as a checklist — but as a
 deliberate reversal, not by prompt text quietly contradicting the decision log again.
 
+### D-022 · 2026-08-16 · GodotSteam pinned to GDExtension 4.21; binaries reinstalled, not committed
+Task 1.1. Installed the **GodotSteam GDExtension 4.4+** addon — GodotSteam 4.21, Steamworks SDK 1.65 —
+into `addons/godotsteam/`. It loads in the **stock** Godot 4.7.1 editor and stock export templates, so
+D-001's "no custom engine build" holds and R5 stays a version-pin problem rather than a build problem.
+
+**The upstream moved to Codeberg.** GodotSteam is no longer developed on GitHub. The addon is the
+`gdextension-plugin` branch of `codeberg.org/godotsteam/godotsteam`, pinned at commit
+`50cc0b515b749d98940fc3bb42624b139435b6f1` ("Updated to 4.21", 2026-07-29) — which is the exact commit
+the Godot Asset Store serves for that asset, so a manual install and an in-editor AssetLib install are
+the same bits. Reinstall:
+
+```bash
+curl -fL -o /tmp/gs.zip https://codeberg.org/godotsteam/godotsteam/archive/50cc0b515b749d98940fc3bb42624b139435b6f1.zip
+unzip -q /tmp/gs.zip 'godotsteam/addons/godotsteam/*' -d /tmp/gs && cp -R /tmp/gs/godotsteam/addons/godotsteam addons/
+```
+
+**The 95 MB of platform binaries are gitignored, not committed.** Seven platform folders of `.dylib`/
+`.dll`/`.so` would sit in git history forever, and again on every GodotSteam bump, to save one command
+that is written down above. The Linux test VM syncs by rsync, not git, so it gets them regardless. The
+pin is the commit hash, not the bytes.
+
+**Two things this pins beyond the addon.** The engine is pinned at `4.7.1.stable.official.a13da4feb`,
+asserted by `tools/steam_check.gd` so an accidental engine upgrade fails a check instead of surfacing
+as a confusing Steam bug three tasks later. And `steam_appid.txt` (App ID 480, Spacewar — `STEAM.md`
+§2) is committed so the game can initialise Steam when launched outside the Steam client; **it must not
+ship in a release build**, which is M8's job when the real App ID lands.
+
+**Would change my mind:** a Godot point release the extension can't follow, or needing a feature only
+the compiled module build exposes — either would force the custom-engine-build path D-001 avoids.
+
 ---
 
 ## Template

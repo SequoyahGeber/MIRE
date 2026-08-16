@@ -285,3 +285,15 @@ DevLaunch autoload: --host / --client (also '-- host'/'-- client') auto-hosts or
 Files: `core/dev/dev_launch.gd`, `project.godot`
 
 Commit at time of writing: `c97fe5a`
+
+---
+
+### DONE · 1.1 · steam · 2026-08-16T06:52:27+00:00
+
+**Install GodotSteam GDExtension (4.4+ branch), confirm it loads in stock Godot 4.7, pin the engine version**
+
+GodotSteam GDExtension 4.21 (Steamworks 1.65) installed to addons/godotsteam from Codeberg commit 50cc0b5 — the same commit the Asset Store serves. Loads in stock Godot 4.7.1: Steam + SteamMultiplayerPeer classes registered, 736 methods; steamInitEx() succeeds against App ID 480 with the Steam client running (SteamID resolved, getAppID()==480). Engine pinned at 4.7.1.stable.official.a13da4feb and asserted by tools/steam_check.gd. Binaries gitignored (95 MB) with the reinstall recipe in D-022. Filed F-009: the extension does not load until .godot/extension_list.cfg lists it, and that path is gitignored — a live risk for 1.12 on the Linux VM.
+
+Files: `.gitignore`, `docs/DECISIONS.md`, `tools/steam_check.gd`, `steam_appid.txt`, `docs/FINDINGS.md`
+
+Commit at time of writing: `1a9bbd3`
