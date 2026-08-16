@@ -12,6 +12,11 @@
       "at": "2026-08-16T02:59:39+00:00",
       "task": "2.2"
     },
+    "core/dev/dev_launch.gd": {
+      "agent": "local",
+      "at": "2026-08-16T03:30:06+00:00",
+      "task": "1.3"
+    },
     "core/net/net_config.gd": {
       "agent": "net",
       "at": "2026-08-16T03:10:07+00:00",
@@ -58,9 +63,9 @@
       "task": "0.3"
     },
     "project.godot": {
-      "agent": "claude",
-      "at": "2026-08-16T03:13:21+00:00",
-      "task": "1.0b"
+      "agent": "local",
+      "at": "2026-08-16T03:30:06+00:00",
+      "task": "1.3"
     },
     "systems/crafting/recipe_def.gd": {
       "agent": "claude",
@@ -260,9 +265,11 @@
       "title": "`NetTransport` autoload \u2014 swap between `ENetMultiplayerPeer` and `SteamMultiplayerPeer` behind one interface"
     },
     "1.3": {
+      "done_at": "2026-08-16T03:30:06+00:00",
+      "done_by": "local",
       "est": "2",
       "milestone": "M1",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "`LOCAL` mode: launch 2 instances, auto-host/auto-join, no menus. Make this one keypress."
     },

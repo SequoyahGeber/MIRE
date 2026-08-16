@@ -273,3 +273,15 @@ Registered NetTransport="*res://autoload/net_transport.gd" in project.godot [aut
 Files: `project.godot`
 
 Commit at time of writing: `c8f272e`
+
+---
+
+### DONE · 1.3 · local · 2026-08-16T03:30:06+00:00
+
+**`LOCAL` mode: launch 2 instances, auto-host/auto-join, no menus. Make this one keypress.**
+
+DevLaunch autoload: --host / --client (also '-- host'/'-- client') auto-hosts or auto-joins a LOCAL session at startup. No args = does nothing; also gated on OS.is_debug_build(). Bounded retry (6 attempts, 0.4s apart) covers a client started before its host. Registered in project.godot. Verified by running two headless instances against the real 4.7.1 binary: both connect, peers [1, <client>]; client-first case connects on attempt 2; no-host case gives up after 6 and stops.
+
+Files: `core/dev/dev_launch.gd`, `project.godot`
+
+Commit at time of writing: `c97fe5a`
