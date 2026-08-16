@@ -1033,14 +1033,14 @@
       "task": "2.1e"
     },
     "docs/DECISIONS.md": {
-      "agent": "flint",
-      "at": "2026-08-16T19:34:30+00:00",
-      "task": "F-009"
+      "agent": "slate",
+      "at": "2026-08-16T19:36:41+00:00",
+      "task": "F-006"
     },
     "docs/DELEGATION.md": {
-      "agent": "flint",
-      "at": "2026-08-16T19:34:30+00:00",
-      "task": "F-009"
+      "agent": "slate",
+      "at": "2026-08-16T19:36:41+00:00",
+      "task": "F-006"
     },
     "docs/DESIGN.md": {
       "agent": "kiln",
@@ -1048,19 +1048,24 @@
       "task": "F-022"
     },
     "docs/FINDINGS.md": {
-      "agent": "flint",
-      "at": "2026-08-16T19:34:30+00:00",
-      "task": "F-009"
+      "agent": "slate",
+      "at": "2026-08-16T19:36:41+00:00",
+      "task": "F-006"
     },
     "docs/NEXT.md": {
-      "agent": "flint",
-      "at": "2026-08-16T19:34:30+00:00",
-      "task": "F-009"
+      "agent": "slate",
+      "at": "2026-08-16T19:36:41+00:00",
+      "task": "F-006"
     },
     "docs/ROADMAP.md": {
       "agent": "reed",
       "at": "2026-08-16T19:00:05+00:00",
       "task": "2.1e"
+    },
+    "docs/WINDOWS_TEST_BRIEF.md": {
+      "agent": "slate",
+      "at": "2026-08-16T19:36:41+00:00",
+      "task": "F-006"
     },
     "entities/player/player.tscn": {
       "agent": "claude",

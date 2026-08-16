@@ -609,3 +609,25 @@ Notes along the way:
 Files: `.gitignore`, `.godot/extension_list.cfg`, `docs/FINDINGS.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`, `docs/NEXT.md`
 
 Commit at time of writing: `cda7858`
+
+---
+
+### HANDOFF · F-006 · slate · 2026-08-16T19:34:55+00:00
+
+**Three roadmap tasks assume a Windows or Linux machine we don't have**
+
+New capability recorded: a friend's powerful physical Windows gaming PC is available, can clone the repo, and has Codex to execute precise test briefs and return evidence. This replaces the Windows VM as the preferred Windows target and removes the real-Windows-GPU gap for tasks 0.10, 1.12, and 7.12. Linux stays on the Unraid x86_64 VM; Steam Deck remains unresolved. I did not edit FINDINGS/DECISIONS/DELEGATION because flint/F-009 currently holds those files. Next agent: update F-006 and the standing cross-platform decision after F-009 releases them; create the exact Windows brief when the first test is ready, not prematurely.
+
+Commit at time of writing: `d4a5cdf`
+
+---
+
+### HANDOFF · F-006 · slate · 2026-08-16T19:36:41+00:00
+
+**Three roadmap tasks assume a Windows or Linux machine we don't have**
+
+Windows Codex brief is complete in docs/WINDOWS_TEST_BRIEF.md and ready for Sequoyah's call. Run it on the friend's physical PC and return the full Codex report. Do not resolve F-006 yet: after evidence returns, record Windows hashes in ARCHITECTURE/DECISIONS, then prepare the separate simultaneous multiplayer brief for 1.12.
+
+Files: `docs/WINDOWS_TEST_BRIEF.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/NEXT.md`
+
+Commit at time of writing: `d4a5cdf`
