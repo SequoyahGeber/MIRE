@@ -11,9 +11,11 @@
 **Last session:** 2026-08-16 — task 1.12 is in progress. All three pinned-engine/GodotSteam
 preflights passed and a real Mac-hosted Steam lobby reached three peers across macOS, Windows and
 Linux. Code-built remote-player debug capsules made all three spawns visible, and Linux movement
-replicated to the host. The formal exit run is not complete: the Windows client intermittently
-exceeds the hard 10 s first-join timeout (F-023), the Windows firewall is still disabled from
-diagnosis, and the required 60-second movement run, three screenshots and clean exit sequence remain.
+replicated to the host. A later two-platform rerun proved a fresh `origin/main` Windows client can
+join the macOS host with Windows Firewall enabled: peer `579922246` reached a two-player STEAM
+session and the host despawned it on exit. The formal exit run is still incomplete: the required
+simultaneous Linux client, three first-join latency lines, 60-second all-player movement run, and
+three screenshots remain.
 
 Connection lifecycle (1.7) completed the code-driven M1 work: readable
 admission/version refusals, late joining, automatic LOCAL/LAN rejoin, clean host close, and bounded
@@ -61,8 +63,9 @@ learned in the repo, and ships. What comes back to you is what only you can act 
 
 **Task 1.12 has proved the transport path but has not met every pass criterion.** The Windows and
 Linux guests exist, three distinct mutual-friend Steam accounts pass preflight, and all three peers
-have shared one lobby. Before the final run, restore Windows Firewall and add a narrow program rule
-for the pinned Godot executable; do not leave the profile disabled. Then follow
+have shared one lobby. Windows Firewall is restored and enabled on all profiles. The current Windows
+test checkout is `C:\MIRE-main`; refresh it from `origin/main` before the final run rather than using
+the stale `C:\MIRE` copy. Then follow
 `docs/STEAM_CROSS_PLATFORM_TEST.md`, retain the first Windows timeout if it recurs, and capture the
 full 60-second movement/screenshots/exit evidence.
 

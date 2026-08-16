@@ -112,3 +112,17 @@ Before the session, confirm the mechanism itself still passes on the machine you
 ```bash
 godot --headless --path . --script tools/connect_retry_check.gd
 ```
+
+## Partial rerun — 2026-08-16
+
+A two-platform cleanup run used macOS as host and a fresh `origin/main` archive at `C:\MIRE-main`
+on the Windows Unraid VM. Windows Firewall was enabled on Domain, Private, and Public profiles.
+Windows peer `579922246` joined lobby `109775242382594016`; its F3 overlay showed `STEAM client`,
+peers `[1, 579922246]`, and two players. The host logged admission, spawned the remote player, then
+logged its departure and despawn before exiting with code 0.
+
+This is useful join/cleanup evidence but **not a task 1.12 PASS**: Linux was not present, the Windows
+launch log did not flush its successful-join latency while the interactive scheduled task was live,
+and the required three-platform movement/screenshots were not collected. Do not use the stale
+`C:\MIRE` copy: it still has the superseded 10-second timeout. Refresh `C:\MIRE-main` from
+`origin/main` before the final run.

@@ -703,3 +703,15 @@ WHAT IS LEFT, and it is the finding's original ask: nobody has ever measured a W
 Files: `autoload/net_transport.gd`, `autoload/steam_lobby.gd`, `core/net/net_config.gd`, `core/net/net_session.gd`, `core/dev/dev_launch.gd`, `tools/connect_retry_check.gd`
 
 Commit at time of writing: `10331c4`
+
+---
+
+### HANDOFF · 1.12 · ivy · 2026-08-16T23:19:13+00:00
+
+**Cross-platform join test — Mac ↔ Windows ↔ Linux in one lobby, over Steam**
+
+Two-platform rerun wrapped cleanly. Mac host lobby 109775242382594016 admitted fresh origin/main Windows peer 579922246; Windows F3 showed STEAM client, peers [1,579922246], players 2. Firewall enabled on all profiles. Windows exited first (scheduled-task termination was required because noVNC/WM_CLOSE did not reach Godot); host logged peer leave/despawn, then its window closed with exit 0. Temporary MIRELobbyJoin task deleted. Current Windows test tree is C:\MIRE-main; stale C:\MIRE still has the old 10s timeout. Not a 1.12 PASS: Linux absent, successful Windows latency log did not flush, and three-platform 60s movement/screenshots remain. Docs updated with this exact state.
+
+Files: `docs/STEAM_CROSS_PLATFORM_TEST.md`, `docs/DELEGATION.md`, `docs/NEXT.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `cc62ad9`

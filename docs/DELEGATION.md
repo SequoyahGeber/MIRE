@@ -111,7 +111,8 @@ still incomplete.
 **Task 1.12 live state (2026-08-16):** all three `tools/steam_check.gd` preflights passed on stock
 Godot `4.7.1.stable.official.a13da4feb`, GodotSteam 4.21 and App ID 480. The accounts are macOS
 `TheQuoy`, Windows `quoygeber`, and Linux `sequoyahgeber`, and they are mutual friends. The Windows
-checkout is `C:\MIRE` with Godot at `C:\Tools\Godot\Godot_v4.7.1-stable_win64.exe`; the Linux
+current test checkout is `C:\MIRE-main` with Godot at `C:\Tools\Godot\Godot_v4.7.1-stable_win64.exe`;
+the stale `C:\MIRE` copy still predates D-029 and must not be used. The Linux
 checkout is `/home/ubuntu/mire-task-1.12` with Godot at `/home/ubuntu/.local/bin/godot-4.7.1`.
 Windows Steam IPC is unavailable to an OpenSSH service session, so launch Steam checks and the game
 in the signed-in interactive console session (an interactive scheduled task is suitable).
@@ -122,8 +123,11 @@ registration. Linux movement visibly replicated on the Mac host. Windows first j
 it twice hit `connect to steam:<lobby_id> timed out after 10.0s`, then connected on an immediate
 retry to the same lobby; one of those first-attempt failures occurred with Windows Firewall already
 fully disabled, so F-023 tracks the brittle timeout independently of firewall configuration.
-Sequoyah disabled the firewall during diagnosis and it must be restored with a narrow allow rule for
-the pinned Godot executable before the VM is considered ready. Remaining 1.12 work is a fresh run on
+Windows Firewall was restored and verified enabled on all three profiles before a later two-platform
+rerun. That rerun used a fresh `origin/main` archive at `C:\MIRE-main`: Windows peer `579922246`
+joined a Mac-hosted lobby, showed `STEAM client`, peers `[1, 579922246]`, and two players in F3, and
+the host despawned it on exit. The old checkout's 10-second timeout was retained as failure evidence;
+the fresh checkout used D-029's 20-second budget. Remaining 1.12 work is a fresh run on
 the shipped revision with the firewall enabled, 60 seconds of movement by every player, one F3
 screenshot and complete log per platform, then clients exiting before the host.
 The retained evidence logs are in `/Users/sequoyahgeber/Desktop/MIRETestLogs`; the final diagnostic

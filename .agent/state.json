@@ -1038,8 +1038,8 @@
       "task": "4.0b"
     },
     "docs/DELEGATION.md": {
-      "agent": "hollow",
-      "at": "2026-08-16T22:41:46+00:00",
+      "agent": "ivy",
+      "at": "2026-08-16T23:19:13+00:00",
       "task": "1.12"
     },
     "docs/DESIGN.md": {
@@ -1048,13 +1048,13 @@
       "task": "F-022"
     },
     "docs/FINDINGS.md": {
-      "agent": "hollow",
-      "at": "2026-08-16T22:41:46+00:00",
+      "agent": "ivy",
+      "at": "2026-08-16T23:19:13+00:00",
       "task": "1.12"
     },
     "docs/NEXT.md": {
-      "agent": "hollow",
-      "at": "2026-08-16T22:41:46+00:00",
+      "agent": "ivy",
+      "at": "2026-08-16T23:19:13+00:00",
       "task": "1.12"
     },
     "docs/ROADMAP.md": {
@@ -1063,8 +1063,8 @@
       "task": "2.1e"
     },
     "docs/STEAM_CROSS_PLATFORM_TEST.md": {
-      "agent": "hollow",
-      "at": "2026-08-16T22:41:46+00:00",
+      "agent": "ivy",
+      "at": "2026-08-16T23:19:13+00:00",
       "task": "1.12"
     },
     "docs/WINDOWS_TEST_BRIEF.md": {
