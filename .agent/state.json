@@ -47,9 +47,9 @@
       "task": "F-007"
     },
     ".gitignore": {
-      "agent": "larch",
-      "at": "2026-08-16T16:55:25+00:00",
-      "task": "F-007"
+      "agent": "reed",
+      "at": "2026-08-16T19:12:29+00:00",
+      "task": "F-019"
     },
     "AGENTS.md": {
       "agent": "larch",
@@ -976,6 +976,11 @@
       "at": "2026-08-16T17:19:51+00:00",
       "task": "1.6"
     },
+    "autoload/net_interp.gd.uid": {
+      "agent": "reed",
+      "at": "2026-08-16T19:12:29+00:00",
+      "task": "F-019"
+    },
     "autoload/net_transport.gd": {
       "agent": "lobby",
       "at": "2026-08-16T07:53:23+00:00",
@@ -1021,10 +1026,20 @@
       "at": "2026-08-16T17:14:58+00:00",
       "task": "1.11"
     },
+    "core/net/net_version.gd.uid": {
+      "agent": "reed",
+      "at": "2026-08-16T19:12:29+00:00",
+      "task": "F-019"
+    },
     "core/net/remote_interp.gd": {
       "agent": "ash",
       "at": "2026-08-16T17:19:51+00:00",
       "task": "1.6"
+    },
+    "core/net/remote_interp.gd.uid": {
+      "agent": "reed",
+      "at": "2026-08-16T19:12:29+00:00",
+      "task": "F-019"
     },
     "core/util/mire_log.gd": {
       "agent": "claude",
@@ -1052,9 +1067,9 @@
       "task": "2.1e"
     },
     "docs/FINDINGS.md": {
-      "agent": "larch",
-      "at": "2026-08-16T16:55:25+00:00",
-      "task": "F-007"
+      "agent": "reed",
+      "at": "2026-08-16T19:12:29+00:00",
+      "task": "F-019"
     },
     "docs/NEXT.md": {
       "agent": "claude",
@@ -1080,6 +1095,11 @@
       "agent": "claude",
       "at": "2026-08-15T21:46:15+00:00",
       "task": "0.3"
+    },
+    "levels/playtest_map.tscn": {
+      "agent": "reed",
+      "at": "2026-08-16T19:12:29+00:00",
+      "task": "F-019"
     },
     "project.godot": {
       "agent": "ash",
@@ -1156,15 +1176,30 @@
       "at": "2026-08-16T17:14:58+00:00",
       "task": "1.11"
     },
+    "tools/handshake_check.gd.uid": {
+      "agent": "reed",
+      "at": "2026-08-16T19:12:29+00:00",
+      "task": "F-019"
+    },
     "tools/interest_check.gd": {
       "agent": "birch",
       "at": "2026-08-16T17:16:32+00:00",
       "task": "1.8"
     },
+    "tools/interest_check.gd.uid": {
+      "agent": "reed",
+      "at": "2026-08-16T19:12:29+00:00",
+      "task": "F-019"
+    },
     "tools/interp_check.gd": {
       "agent": "ash",
       "at": "2026-08-16T17:19:51+00:00",
       "task": "1.6"
+    },
+    "tools/interp_check.gd.uid": {
+      "agent": "reed",
+      "at": "2026-08-16T19:12:29+00:00",
+      "task": "F-019"
     },
     "tools/net_debug_panel_check.gd": {
       "agent": "netui",
@@ -2167,6 +2202,15 @@
       "status": "todo",
       "tier": "F",
       "title": "`PlayerNet` has no way to be told when a player spawns, so observers reach into its children"
+    },
+    "F-019": {
+      "done_at": "2026-08-16T19:12:29+00:00",
+      "done_by": "reed",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Generated asset import sidecars flood every clean-tree audit"
     }
   },
   "version": 1

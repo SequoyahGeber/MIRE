@@ -2,6 +2,9 @@
 .godot/
 /android/
 
+# Editor-generated asset import sidecars; source assets and runtime GLTF loading are authoritative.
+*.import
+
 # Godot exports
 export/
 

@@ -379,6 +379,19 @@ file; this is a few lines on top of what it is doing anyway, not a task.
 
 ## Resolved
 
+### F-019 · Generated asset import sidecars flood every clean-tree audit — **fixed**
+
+**Area:** repository hygiene · **Severity:** low · **Found:** 2026-08-16 by reed during repository audit
+
+Opening the project after adding the asset kits created 166 untracked `*.import` sidecars. Agents are
+forbidden from editing or shipping these editor-owned files, but `.gitignore` did not exclude them,
+so `agent start` reported roughly 180 uncommitted files and hid real work in noise.
+
+Fixed by ignoring `*.import` globally. Committed source GLBs remain authoritative and Godot
+regenerates local import state. Verified after a fresh `git fetch`: all 166 sidecars disappeared from
+`git status`, leaving only the active 1.7 work, six delayed script UIDs, and the human-authored map
+scene visible for separate handling.
+
 ### F-007 · Forgetting `MIRE_AGENT` made you silently impersonate another agent — **fixed**
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-15 by nav during 0.8/0.9

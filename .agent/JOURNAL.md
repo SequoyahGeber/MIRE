@@ -548,3 +548,18 @@ Notes along the way:
 Files: `docs/ROADMAP.md`, `docs/DELEGATION.md`, `docs/ASSET_TRACKER.md`, `tools/blender/build_playtest_map.py`, `assets/source/playtest_map.blend`, `assets/maps/playtest_map.glb`, `assets/maps/README.md`, `assets/maps/preview/playtest_map_preview.png`, `world/gen/test_map_props.gd`, `tools/playtest_map_check.gd`
 
 Commit at time of writing: `e23c5f4`
+
+---
+
+### DONE · F-019 · reed · 2026-08-16T19:12:29+00:00
+
+**Generated asset import sidecars flood every clean-tree audit**
+
+Ignored 166 editor-generated .import sidecars, committed six delayed script UIDs from completed tasks, and included Sequoyah's authored playtest_map.tscn after a clean headless boot. Active 1.7 networking work intentionally left uncommitted.
+
+Notes along the way:
+- Audit also recovered six delayed .uid sidecars from completed tasks and the human-authored levels/playtest_map.tscn. The scene booted headlessly without errors; no scene content was edited. Active 1.7 files remain untouched.
+
+Files: `.gitignore`, `autoload/net_interp.gd.uid`, `core/net/net_version.gd.uid`, `core/net/remote_interp.gd.uid`, `tools/handshake_check.gd.uid`, `tools/interest_check.gd.uid`, `tools/interp_check.gd.uid`, `docs/FINDINGS.md`, `levels/playtest_map.tscn`
+
+Commit at time of writing: `423b73a`
