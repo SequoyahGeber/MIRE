@@ -14,25 +14,24 @@ worth writing for a task that is unusually easy to get wrong — a spike with a 
 protocol, or a task where the failure mode is subtle. If you do write one, set the model and effort
 named under its heading. Nothing here is for Sequoyah to run.
 
-**Each parallel chat needs its own identity.** `.agent/session` holds exactly one name, so two chats
-started without this overwrite each other and claims get misattributed to the wrong agent — which
-defeats the entire point of claiming. The name is passed per command:
+**Each parallel chat gets its own identity automatically, and you no longer supply it (F-007).** The
+name is derived from the chat's own session id, which every command carries in its environment — git
+included, so the pre-commit hook resolves the same agent your `agent` commands do. Stable for a whole
+session, unique per chat, nothing to pass:
 
 ```bash
-MIRE_AGENT=net .agent/bin/agent claim 1.2 autoload/net_transport.gd
+.agent/bin/agent claim 1.2 autoload/net_transport.gd
 ```
 
-**Per command, not `export`.** Agent tools run each shell call in a fresh process, so a bare
-`export MIRE_AGENT=net` on its own line is gone by the next command and the agent silently falls back
-to whatever `.agent/session` happens to hold. It fails quietly and produces exactly the misattributed
-claim the identity is there to prevent. Every prompt below carries the prefix on each command.
+**The archived prompt blocks below still carry `MIRE_AGENT=<name>` prefixes.** They shipped under the
+old scheme and are kept verbatim as worked examples. The prefix still works — it overrides everything —
+but do not copy that pattern into a new prompt, and never reintroduce `export`: each shell call is a
+fresh process, which is what made the old scheme fail silently.
 
-**Including `git commit`.** The pre-commit hook re-runs `agent check` under git's environment, so an
-unprefixed commit is checked against the wrong identity and can be blocked despite valid claims.
-Prefer `agent ship`, which gets this right on its own — and it is now safe to prefer: **F-014 is
-fixed** (`ce8128a`), so `ship` commits by pathspec and can no longer be blocked by, or unstage,
-another agent's staged work, and **F-010 is fixed** (`60e85cc`), so it carries `.uid` sidecars along
-with the scripts that own them instead of leaving them untracked.
+**Prefer `agent ship` for commits**, and it is now safe to prefer: **F-014 is fixed** (`ce8128a`), so
+`ship` commits by pathspec and can no longer be blocked by, or unstage, another agent's staged work,
+and **F-010 is fixed** (`60e85cc`), so it carries `.uid` sidecars along with the scripts that own them
+instead of leaving them untracked.
 
 **Roles are not fixed (D-020).** Any agent can take any task; which one gets it depends on which plan
 has quota. Nothing below is reserved for a particular chat.

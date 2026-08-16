@@ -37,7 +37,8 @@ No fixed planner/coder split — any agent (Claude Code chat, Codex, a second Cl
 any task; who picks it up depends on which plan has quota available. Sequoyah is the only fixed role:
 **Integrator** — Godot editor, assets, tuning, playtesting, commits.
 
-Protocol: [AGENTS.md](../AGENTS.md). Start every session with `.agent/bin/agent start <name>`.
+Protocol: [AGENTS.md](../AGENTS.md). Start every session with `.agent/bin/agent start` — no name needed,
+it takes one from the chat itself (F-007).
 
 ---
 
@@ -57,8 +58,8 @@ Any of these can run at once — no two touch the same file. Pick by quota, not 
 | **"start 1.7"** | Connection lifecycle | Join mid-session, host quits, timeouts. 1.5 did the obvious signal handling only, deliberately |
 | **"start 1.11"** | Version handshake | Refuse mismatched builds legibly. Independent of the other three |
 
-Effort: Opus 5 · high for 1.6/1.7/1.8; Sonnet 5 · medium is enough for 1.11. Give each parallel chat
-its own `MIRE_AGENT` name — that is the one thing that still has to come from you.
+Effort: Opus 5 · high for 1.6/1.7/1.8; Sonnet 5 · medium is enough for 1.11. Nothing else has to come
+from you — parallel chats now name themselves, distinctly, with no prefix to remember (F-007).
 
 ---
 
@@ -181,16 +182,15 @@ None yet — first real answers arrive at **M2 task 2.14**. Tracked in `DESIGN.m
 
 **The agent's, in that fresh chat** (already written into every prompt, listed here for reference):
 
-1. `MIRE_AGENT=<name> .agent/bin/agent start <name>` — prints what's in flight
+1. `.agent/bin/agent start` — names this chat and prints what's in flight
 2. Read `AGENTS.md`, then this file
 3. Skim the last entry or two in `.agent/JOURNAL.md` if someone handed off
-4. `MIRE_AGENT=<name> .agent/bin/agent claim <id> <files...>` **before** editing
+4. `.agent/bin/agent claim <id> <files...>` **before** editing
 5. Do the work
 6. `done` or `handoff`, then `ship`, and update this file
 
-The `MIRE_AGENT=` prefix goes on every one of those commands rather than being `export`ed once —
-each shell call is a fresh process, so an exported name is silently lost and claims land under the
-wrong agent.
+No `MIRE_AGENT=` prefix on any of them, and no name to pass: identity comes from the chat's own
+session id, which git inherits too, so commits resolve to the same agent (F-007).
 
 ---
 
