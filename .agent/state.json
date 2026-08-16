@@ -1037,10 +1037,15 @@
       "at": "2026-08-16T19:23:07+00:00",
       "task": "1.7"
     },
+    "docs/DESIGN.md": {
+      "agent": "kiln",
+      "at": "2026-08-16T19:27:42+00:00",
+      "task": "F-022"
+    },
     "docs/FINDINGS.md": {
-      "agent": "reed",
-      "at": "2026-08-16T19:23:07+00:00",
-      "task": "1.7"
+      "agent": "kiln",
+      "at": "2026-08-16T19:27:42+00:00",
+      "task": "F-022"
     },
     "docs/NEXT.md": {
       "agent": "reed",
@@ -1073,9 +1078,9 @@
       "task": "F-019"
     },
     "project.godot": {
-      "agent": "reed",
-      "at": "2026-08-16T19:23:07+00:00",
-      "task": "1.7"
+      "agent": "kiln",
+      "at": "2026-08-16T19:27:42+00:00",
+      "task": "F-022"
     },
     "steam_appid.txt": {
       "agent": "steam",
@@ -2194,6 +2199,29 @@
       "status": "done",
       "tier": "F",
       "title": "Generated asset import sidecars flood every clean-tree audit"
+    },
+    "F-020": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Steam sessions cannot use NetSession's direct-address auto-rejoin loop"
+    },
+    "F-021": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The net debug panel harness passes while Godot reports an uninitialized multiplayer root"
+    },
+    "F-022": {
+      "done_at": "2026-08-16T19:27:42+00:00",
+      "done_by": "kiln",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Project metadata retained the superseded \"Muck but better\" name"
     }
   },
   "version": 1

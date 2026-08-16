@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="Muck but better"
+config/name="MIRE"
 run/main_scene="res://levels/greybox_test.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"

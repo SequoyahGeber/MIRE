@@ -12,7 +12,7 @@ _Nothing in flight._
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `██░░░░░░░░` 3/13 | 10 |
+| Findings | `██░░░░░░░░` 4/16 | 12 |
 | M0 | `██████████` 11/11 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `███░░░░░░░` 5/18 | 13 |
@@ -56,7 +56,9 @@ _Nothing in flight._
 | ⬜ | **F-016** A brand-new `class_name` is not resolvable by bare identifier in a `--script` main loop | todo |
 | ⬜ | **F-017** A brand-new script still ships without its `.uid`, because the sidecar does not exist yet | todo |
 | ⬜ | **F-018** `PlayerNet` has no way to be told when a player spawns, so observers reach into its children | todo |
+| ⬜ | **F-020** Steam sessions cannot use NetSession's direct-address auto-rejoin loop | todo |
+| ⬜ | **F-021** The net debug panel harness passes while Godot reports an uninitialized multiplayer root | todo |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `1.0b` `2.1b` `2.1c` `2.1e` `F-007` `F-015` `F-019`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `1.0b` `2.1b` `2.1c` `2.1e` `F-007` `F-015` `F-019` `F-022`

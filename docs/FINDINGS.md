@@ -721,3 +721,14 @@ The durable half, which is the point: `cmd_ship` now stages `<file>.uid` wheneve
 `<file>.gd`. The root cause was structural — a sidecar is authored by nobody and claimed by nobody, so
 it could never appear in a task's file list, and `ship` stages exactly that list. Every task was
 therefore guaranteed to leak one, and a per-milestone sweep would have been a fix with a timer.
+
+---
+
+### F-022 · Project metadata retained the superseded "Muck but better" name — **fixed**
+
+**Area:** project metadata · **Found:** 2026-08-16 during project rename · **Resolved:** 2026-08-16 by kiln
+
+Renamed the local workspace and GitHub repository to `MIRE`, updated `project.godot` so Godot displays
+`MIRE`, and removed the remaining working-title wording from the design document. A repository scan
+found no remaining "muck but better" references, and `tools/verify_setup.gd` passed headlessly on
+Godot 4.7.1.

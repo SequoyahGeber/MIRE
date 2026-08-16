@@ -579,3 +579,18 @@ Notes along the way:
 Files: `core/net/net_session.gd`, `core/net/net_session.gd.uid`, `autoload/net_transport.gd`, `core/dev/dev_launch.gd`, `tools/session_lifecycle_check.gd`, `tools/session_lifecycle_check.gd.uid`, `project.godot`, `docs/DELEGATION.md`, `docs/DECISIONS.md`, `docs/NEXT.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `af4ae9f`
+
+---
+
+### DONE · F-022 · kiln · 2026-08-16T19:27:42+00:00
+
+**Project metadata retained the superseded "Muck but better" name**
+
+Canonicalized the project name as MIRE locally, in Godot metadata, documentation, and GitHub; headless setup verification passed.
+
+Notes along the way:
+- Renamed the local workspace and GitHub repository to MIRE; updated Godot metadata and removed working-title wording. Headless setup verification passed.
+
+Files: `project.godot`, `docs/DESIGN.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `3acc3ae`

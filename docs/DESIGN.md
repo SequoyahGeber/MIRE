@@ -1,7 +1,7 @@
 # MIRE — Game Design Document
 
-> Working title. `MIRE` = a bog you sink into; also "mired" = stuck. Nods to Muck without being derivative.
-> **Name is a placeholder.** Do a Steam + trademark search before the store page (see `STEAM.md`, S1).
+> `MIRE` = a bog you sink into; also "mired" = stuck. Nods to Muck without being derivative.
+> Do a Steam + trademark search before the store page (see `STEAM.md`, S1).
 
 ---
 
