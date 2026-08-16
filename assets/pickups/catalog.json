@@ -1,0 +1,197 @@
+[
+  {
+    "name": "pickup_log",
+    "family": "wood",
+    "width_m": 1.505,
+    "depth_m": 0.484,
+    "height_m": 0.5,
+    "mesh_parts": 6,
+    "polygons": 57,
+    "materials": [
+      "MIRE_Pickup_Bark",
+      "MIRE_Pickup_Bark_Light",
+      "MIRE_Pickup_Fresh_Wood"
+    ]
+  },
+  {
+    "name": "pickup_branch",
+    "family": "wood",
+    "width_m": 1.252,
+    "depth_m": 0.688,
+    "height_m": 0.414,
+    "mesh_parts": 4,
+    "polygons": 37,
+    "materials": [
+      "MIRE_Pickup_Bark",
+      "MIRE_Pickup_Bark_Light",
+      "MIRE_Pickup_Fresh_Wood"
+    ]
+  },
+  {
+    "name": "pickup_stone",
+    "family": "mineral",
+    "width_m": 1.077,
+    "depth_m": 0.823,
+    "height_m": 0.703,
+    "mesh_parts": 3,
+    "polygons": 60,
+    "materials": [
+      "MIRE_Pickup_Stone",
+      "MIRE_Pickup_Stone_Dark",
+      "MIRE_Pickup_Stone_Light"
+    ]
+  },
+  {
+    "name": "pickup_flint",
+    "family": "mineral",
+    "width_m": 0.804,
+    "depth_m": 0.549,
+    "height_m": 0.649,
+    "mesh_parts": 3,
+    "polygons": 22,
+    "materials": [
+      "MIRE_Pickup_Flint",
+      "MIRE_Pickup_Flint_Edge"
+    ]
+  },
+  {
+    "name": "pickup_iron_ore",
+    "family": "mineral",
+    "width_m": 1.038,
+    "depth_m": 0.987,
+    "height_m": 0.916,
+    "mesh_parts": 5,
+    "polygons": 100,
+    "materials": [
+      "MIRE_Pickup_Iron_Ore",
+      "MIRE_Pickup_Iron_Stone"
+    ]
+  },
+  {
+    "name": "pickup_iron_ingot",
+    "family": "crafted",
+    "width_m": 0.96,
+    "depth_m": 0.44,
+    "height_m": 0.207,
+    "mesh_parts": 2,
+    "polygons": 32,
+    "materials": [
+      "MIRE_Pickup_Ingot_Stamp",
+      "MIRE_Pickup_Iron_Ingot"
+    ]
+  },
+  {
+    "name": "pickup_coal",
+    "family": "mineral",
+    "width_m": 1.016,
+    "depth_m": 0.859,
+    "height_m": 0.684,
+    "mesh_parts": 4,
+    "polygons": 80,
+    "materials": [
+      "MIRE_Pickup_Coal",
+      "MIRE_Pickup_Coal_Glint"
+    ]
+  },
+  {
+    "name": "pickup_fibre_bundle",
+    "family": "organic",
+    "width_m": 1.003,
+    "depth_m": 0.421,
+    "height_m": 0.42,
+    "mesh_parts": 9,
+    "polygons": 76,
+    "materials": [
+      "MIRE_Pickup_Fibre",
+      "MIRE_Pickup_Fibre_Binding",
+      "MIRE_Pickup_Fibre_Light"
+    ]
+  },
+  {
+    "name": "pickup_berry",
+    "family": "food",
+    "width_m": 0.705,
+    "depth_m": 0.53,
+    "height_m": 0.628,
+    "mesh_parts": 8,
+    "polygons": 448,
+    "materials": [
+      "MIRE_Pickup_Berry",
+      "MIRE_Pickup_Berry_Light",
+      "MIRE_Pickup_Leaf",
+      "MIRE_Pickup_Leaf_Light",
+      "MIRE_Pickup_Stem"
+    ]
+  },
+  {
+    "name": "pickup_mushroom",
+    "family": "food",
+    "width_m": 0.833,
+    "depth_m": 0.798,
+    "height_m": 0.624,
+    "mesh_parts": 5,
+    "polygons": 151,
+    "materials": [
+      "MIRE_Pickup_Mushroom_Cap",
+      "MIRE_Pickup_Mushroom_Spot",
+      "MIRE_Pickup_Mushroom_Stem"
+    ]
+  },
+  {
+    "name": "pickup_raw_meat",
+    "family": "food",
+    "width_m": 0.96,
+    "depth_m": 0.56,
+    "height_m": 0.305,
+    "mesh_parts": 5,
+    "polygons": 83,
+    "materials": [
+      "MIRE_Pickup_Bone",
+      "MIRE_Pickup_Fat",
+      "MIRE_Pickup_Raw_Meat"
+    ]
+  },
+  {
+    "name": "pickup_coin",
+    "family": "currency",
+    "width_m": 0.364,
+    "depth_m": 0.101,
+    "height_m": 0.36,
+    "mesh_parts": 3,
+    "polygons": 54,
+    "materials": [
+      "MIRE_Pickup_Coin",
+      "MIRE_Pickup_Coin_Edge",
+      "MIRE_Pickup_Coin_Face"
+    ]
+  },
+  {
+    "name": "pickup_coin_stack",
+    "family": "currency",
+    "width_m": 0.604,
+    "depth_m": 0.378,
+    "height_m": 0.36,
+    "mesh_parts": 12,
+    "polygons": 168,
+    "materials": [
+      "MIRE_Pickup_Coin",
+      "MIRE_Pickup_Coin_Edge",
+      "MIRE_Pickup_Coin_Face"
+    ]
+  },
+  {
+    "name": "pickup_salvage_fragment",
+    "family": "salvage",
+    "width_m": 0.829,
+    "depth_m": 0.74,
+    "height_m": 0.28,
+    "mesh_parts": 6,
+    "polygons": 120,
+    "materials": [
+      "MIRE_Pickup_Salvage",
+      "MIRE_Pickup_Salvage_Dark",
+      "MIRE_Pickup_Salvage_Glow",
+      "MIRE_Pickup_Wire"
+    ]
+  }
+]

@@ -509,3 +509,15 @@ A-001 complete: 12 portable harvestable-state GLBs, dedicated deterministic Blen
 Files: `docs/ASSET_TRACKER.md`, `docs/ROADMAP.md`, `tools/blender/build_harvestable_resources.py`, `assets/source/harvestable_resources.blend`, `assets/harvestables/README.md`, `assets/harvestables/catalog.json`, `assets/harvestables/preview/harvestables_preview.png`, `assets/harvestables/preview/harvestables_scale_preview.png`, `assets/harvestables/exports/harvest_tree_intact.glb`, `assets/harvestables/exports/harvest_tree_damaged_a.glb`, `assets/harvestables/exports/harvest_tree_damaged_b.glb`, `assets/harvestables/exports/harvest_tree_felled_trunk.glb`, `assets/harvestables/exports/harvest_tree_fresh_stump.glb`, `assets/harvestables/exports/harvest_tree_depleted_stump.glb`, `assets/harvestables/exports/stone_node_intact.glb`, `assets/harvestables/exports/stone_node_cracked.glb`, `assets/harvestables/exports/stone_node_depleted.glb`, `assets/harvestables/exports/iron_node_intact.glb`, `assets/harvestables/exports/iron_node_cracked.glb`, `assets/harvestables/exports/iron_node_depleted.glb`, `docs/DELEGATION.md`
 
 Commit at time of writing: `e0f42e1`
+
+---
+
+### HANDOFF · 2.1d · ember · 2026-08-16T18:40:55+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-002 complete: 14 portable pickup GLBs covering wood, minerals, ingot, fibre, food, currency, and salvage; dedicated deterministic Blender generator/source, exact catalog, family README, full-set preview, and scale preview. Verified syntax, clean deterministic rebuild (byte-identical GLBs/catalog; pixel-identical renders), GLB 2.0 structure/catalog/scale/bounds/materials at 2,364 triangles, visual quality, and isolated fresh Godot 4.7.1 import with 14/14 scenes and no errors. Tracker marks A-002 DONE and A-003 NEXT. Next run: build only A-003 in a separate crafting-station generator; keep station use/crafting authority host-owned.
+
+Files: `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `tools/blender/build_pickup_kit.py`, `assets/source/pickup_kit.blend`, `assets/pickups/README.md`, `assets/pickups/catalog.json`, `assets/pickups/preview/pickups_preview.png`, `assets/pickups/preview/pickups_scale_preview.png`, `assets/pickups/exports/pickup_log.glb`, `assets/pickups/exports/pickup_branch.glb`, `assets/pickups/exports/pickup_stone.glb`, `assets/pickups/exports/pickup_flint.glb`, `assets/pickups/exports/pickup_iron_ore.glb`, `assets/pickups/exports/pickup_iron_ingot.glb`, `assets/pickups/exports/pickup_coal.glb`, `assets/pickups/exports/pickup_fibre_bundle.glb`, `assets/pickups/exports/pickup_berry.glb`, `assets/pickups/exports/pickup_mushroom.glb`, `assets/pickups/exports/pickup_raw_meat.glb`, `assets/pickups/exports/pickup_coin.glb`, `assets/pickups/exports/pickup_coin_stack.glb`, `assets/pickups/exports/pickup_salvage_fragment.glb`
+
+Commit at time of writing: `f151625`

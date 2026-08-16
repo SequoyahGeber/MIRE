@@ -93,15 +93,15 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
-**Asset batch A-001 is complete and A-002 is next.** The first harvest-state family lives under
-`assets/harvestables/`: 12 portable GLBs, `catalog.json`, two previews, and the editable
-`assets/source/harvestable_resources.blend`, rebuilt by
-`tools/blender/build_harvestable_resources.py`. Standing tree damage states share their footprint;
-stone and iron intact/cracked states share one rock layout, while depleted rubble stays inside it.
-These meshes contain no collision or authority: task 2.3 must keep hits, state swaps, yields,
-despawn, and respawn host-authoritative. The next asset run takes A-002 from
-`docs/ASSET_TRACKER.md` and should use a separate small pickup-family generator rather than growing
-the harvestable script.
+**Asset batches A-001 and A-002 are complete; A-003 is next.** Harvest states live under
+`assets/harvestables/` (12 GLBs), while the 14 basic world pickups live under `assets/pickups/`.
+Each family has its own catalog, previews, editable source, and deterministic generator:
+`build_harvestable_resources.py` and `build_pickup_kit.py`. Pickups are horizontally centred and
+ground-origin normalized so a future hover/spin presentation can wrap them consistently. None of
+these meshes contain collision or authority: task 2.3 keeps harvest hits/state/yields host-owned,
+and inventory/loot code keeps pickup spawning, collection validation, and grants host-owned. The
+next asset run takes A-003 from `docs/ASSET_TRACKER.md` and should use a separate crafting-station
+generator rather than growing either resource script.
 
 **The playtest map is now populated by task 2.1c.** `TestMapProps` builds six deterministic zones
 inside `GreyboxTest` at runtime: spawn camp, west forest, north ruins, east Mire grove, south ridge,

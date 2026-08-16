@@ -776,6 +776,96 @@
       "at": "2026-08-16T18:32:13+00:00",
       "task": "2.1d"
     },
+    "assets/pickups/README.md": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/catalog.json": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/exports/pickup_berry.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/exports/pickup_branch.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/exports/pickup_coal.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/exports/pickup_coin.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/exports/pickup_coin_stack.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/exports/pickup_fibre_bundle.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/exports/pickup_flint.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/exports/pickup_iron_ingot.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/exports/pickup_iron_ore.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/exports/pickup_log.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/exports/pickup_mushroom.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/exports/pickup_raw_meat.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/exports/pickup_salvage_fragment.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/exports/pickup_stone.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/preview/pickups_preview.png": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
+    "assets/pickups/preview/pickups_scale_preview.png": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
+    },
     "assets/source/.gdignore": {
       "agent": "reed",
       "at": "2026-08-16T17:40:04+00:00",
@@ -790,6 +880,11 @@
       "agent": "reed",
       "at": "2026-08-16T18:01:56+00:00",
       "task": "2.1b"
+    },
+    "assets/source/pickup_kit.blend": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
     },
     "autoload/net_interp.gd": {
       "agent": "ash",
@@ -858,7 +953,7 @@
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "ember",
-      "at": "2026-08-16T18:32:13+00:00",
+      "at": "2026-08-16T18:40:55+00:00",
       "task": "2.1d"
     },
     "docs/DECISIONS.md": {
@@ -868,7 +963,7 @@
     },
     "docs/DELEGATION.md": {
       "agent": "ember",
-      "at": "2026-08-16T18:32:13+00:00",
+      "at": "2026-08-16T18:40:55+00:00",
       "task": "2.1d"
     },
     "docs/FINDINGS.md": {
@@ -950,6 +1045,11 @@
       "agent": "reed",
       "at": "2026-08-16T18:01:56+00:00",
       "task": "2.1b"
+    },
+    "tools/blender/build_pickup_kit.py": {
+      "agent": "ember",
+      "at": "2026-08-16T18:40:55+00:00",
+      "task": "2.1d"
     },
     "tools/check_determinism_ops.gd": {
       "agent": "claude",
