@@ -84,8 +84,29 @@ horizontally centred and ground-origin normalized. The paired tool exports delib
 geometry and materials so Godot scenes can tune world and first-person transforms without silhouette
 drift. None contain collision or authority: harvest mutation, pickup grants, station placement/use,
 crafting validation, fuel, repairs, attacks, hits, and inventory changes remain host-owned. Static
-fire meshes are cosmetic placeholders for later client-local VFX. The next asset run takes A-005
-from `docs/ASSET_TRACKER.md` and should use a separate loot generator.
+fire meshes are cosmetic placeholders for later client-local VFX. A-005 added ten loot meshes under
+`assets/loot/`, and A-006 the first rigged family under `assets/enemies/`. The next asset run takes
+the single `NEXT` row in `docs/ASSET_TRACKER.md` — currently A-007, the Ward set — and should use a
+separate generator per family.
+
+**A-006 is the first rig, and combat code needs three facts from it.** `assets/enemies/exports/`
+holds `enemy_crawler.glb` (skinned, 17 bones, 6 clips) plus static `enemy_crawler_nest`,
+`enemy_crawler_fragment_shell` and `enemy_crawler_fragment_leg`.
+
+1. **Ask the `AnimationPlayer` for `idle`, `locomotion`, `attack_tell`, `attack`, `hit`, `death`.**
+   The GLB names the first two `idle-loop` and `locomotion-loop`; Godot 4 reads that suffix as
+   "loop this clip" and then strips it. The exported name will not resolve at runtime.
+2. **`attack_tell` (0.4 s) and `attack` (0.4 s) chain.** The attack's first frame is the tell's last,
+   so they play back to back without a pop, and the tell can be held or cancelled on its own. The
+   0.4 s tell is `docs/DESIGN.md` §6's readable-telegraph target, not an arbitrary length.
+3. **`death` (1.0 s) ends settled and flat**, so a corpse mesh, ragdoll or fragment burst can take
+   over from its final pose.
+
+The crawler is 1.10 m long, 0.59 m tall, origin at the ground between its feet, facing -Z. It carries
+no collision, health, AI, aggro, or authority; spawning, targeting, attack timing, hit registration
+and death stay host-authoritative. Rebuild with Blender 5.2 via `tools/blender/build_enemy_crawler.py`;
+verify with `Godot --headless --path . --script tools/enemy_crawler_check.gd`, which asserts the
+skeleton, the skin, all six clip names and exactly which two loop.
 
 **Blender generator naming trap:** never put raw float values in object or datablock names. Blender
 5.2 treats the text after the last `.` as a numeric duplicate suffix; a coordinate such as
