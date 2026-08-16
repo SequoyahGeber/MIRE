@@ -22,6 +22,11 @@
       "at": "2026-08-15T21:46:15+00:00",
       "task": "0.3"
     },
+    "tools/bench_chunks.gd": {
+      "agent": "terrain",
+      "at": "2026-08-15T22:02:39+00:00",
+      "task": "0.7"
+    },
     "tools/setup_project.gd": {
       "agent": "claude",
       "at": "2026-08-15T21:46:15+00:00",
@@ -29,7 +34,7 @@
     },
     "world/chunk/chunk_mesher.gd": {
       "agent": "terrain",
-      "at": "2026-08-15T21:53:55+00:00",
+      "at": "2026-08-15T22:02:39+00:00",
       "task": "0.7"
     },
     "world/chunk/nav_bake_probe.gd": {
@@ -99,9 +104,11 @@
       "title": "Debug overlay autoload: FPS, position, entity counts, toggleable log channels, `~` console"
     },
     "0.7": {
+      "done_at": "2026-08-15T22:02:39+00:00",
+      "done_by": "terrain",
       "est": "1.5",
       "milestone": "M0",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Spike R2 \u2014 generate 100 chunked terrain meshes from noise, measure frame times & hitches"
     },

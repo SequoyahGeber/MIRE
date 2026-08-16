@@ -90,3 +90,15 @@ Notes along the way:
 Files: `project.godot`, `entities/player/player.tscn`, `levels/greybox_test.tscn`, `tools/setup_project.gd`
 
 Commit at time of writing: `b5c2f7d`
+
+---
+
+### DONE · 0.7 · terrain · 2026-08-15T22:02:39+00:00
+
+**Spike R2 — generate 100 chunked terrain meshes from noise, measure frame times & hitches**
+
+Spike R2 GREEN. 33x33 verts / 2048 tris per 32m chunk. ArrayMesh direct: 0.330 ms/chunk single-threaded (min 0.299, max 0.435) on M-series/15 cores, Godot 4.7.1 headless. SurfaceTool: 0.353 ms/chunk (7% slower, not worth a rewrite either way). WorkerThreadPool: 100 chunks in 11.2 ms wall = 0.112 ms/chunk amortized. Memory: 4.23 MB static delta for 100 live chunks (43 KB/chunk); raw vertex+index floor 58 KB/chunk. Determinism verified: same seed -> identical verts, different seed -> different. 50 chunks/frame on the main thread with no threading at all — 24x under the 8 ms GREEN threshold. CAVEAT: headless dummy renderer, so no GPU upload cost measured; no collision shape, no material, no LOD. Collision baking is the untested half — R3 should measure it.
+
+Files: `world/chunk/chunk_mesher.gd`, `tools/bench_chunks.gd`
+
+Commit at time of writing: `598523c`
