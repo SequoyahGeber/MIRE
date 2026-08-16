@@ -6,7 +6,9 @@
 
 ## In flight
 
-_Nothing in flight._
+| Task | Agent | Started | Files claimed |
+|---|---|---|---|
+| **0.5** Grey-box test level — ramps, stairs, gaps. Tune the controller until movement *feels good*. | claude | 2026-08-16 02:37 | `entities/player/player_controller.gd`, `docs/DECISIONS.md` |
 
 ## Milestones
 
@@ -30,7 +32,7 @@ _Nothing in flight._
 | ✅ | **0.2** Create folder structure from `ARCHITECTURE.md` §3 (empty dirs + `.gdignore` where needed) | T0 | 0.5 | done |
 | ✅ | **0.3** Set up input map (move, look, jump, sprint, attack, interact, inventory, build) | T0 | 0.5 | done |
 | ✅ | **0.4** First-person character controller: `CharacterBody3D`, mouse look, walk/sprint/jump, coyote time | T1 | 2 | done |
-| ⬜ | **0.5** Grey-box test level — ramps, stairs, gaps. Tune the controller until movement *feels good*. | T0 | 2 | todo |
+| 🔵 | **0.5** Grey-box test level — ramps, stairs, gaps. Tune the controller until movement *feels good*. | T0 | 2 | in_flight |
 | ✅ | **0.6** Debug overlay autoload: FPS, position, entity counts, toggleable log channels, `~` console | T1 | 2 | done |
 | ✅ | **0.7** Spike R2 — generate 100 chunked terrain meshes from noise, measure frame times & hitches | T2 | 1.5 | done |
 | ✅ | **0.8** Spike R3 — bake a `NavigationRegion3D` on a runtime-generated chunk, measure the hitch | T2 | 1.5 | done |

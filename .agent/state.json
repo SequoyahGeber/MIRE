@@ -1,6 +1,27 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "docs/DECISIONS.md": {
+      "agent": "claude",
+      "at": "2026-08-16T02:37:46+00:00",
+      "task": "0.5"
+    },
+    "entities/player/player_controller.gd": {
+      "agent": "claude",
+      "at": "2026-08-16T02:37:46+00:00",
+      "task": "0.5"
+    }
+  },
+  "in_flight": {
+    "0.5": {
+      "agent": "claude",
+      "files": [
+        "entities/player/player_controller.gd",
+        "docs/DECISIONS.md"
+      ],
+      "notes": [],
+      "started": "2026-08-16T02:37:46+00:00"
+    }
+  },
   "recent": {
     "autoload/net_transport.gd": {
       "agent": "net",
@@ -122,7 +143,7 @@
     "0.5": {
       "est": "2",
       "milestone": "M0",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Grey-box test level \u2014 ramps, stairs, gaps. Tune the controller until movement *feels good*."
     },

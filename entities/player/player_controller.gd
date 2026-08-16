@@ -19,9 +19,9 @@ signal landed(impact_speed: float)
 
 @export_group("Speed")
 ## Base ground speed, metres per second.
-@export_range(1.0, 15.0, 0.1) var walk_speed: float = 5.0
+@export_range(1.0, 15.0, 0.1) var walk_speed: float = 4.0
 ## Ground speed while the sprint action is held.
-@export_range(1.0, 25.0, 0.1) var sprint_speed: float = 8.0
+@export_range(1.0, 25.0, 0.1) var sprint_speed: float = 6.0
 
 @export_group("Acceleration")
 ## How fast we reach target speed on the ground. Higher = snappier, more arcade.
@@ -44,7 +44,7 @@ signal landed(impact_speed: float)
 
 @export_group("Gravity")
 ## Multiplies project gravity. >1 makes jumps feel heavier without changing apex height.
-@export_range(0.1, 5.0, 0.05) var gravity_scale: float = 1.6
+@export_range(0.1, 5.0, 0.05) var gravity_scale: float = 2.0
 ## Downward speed cap, metres per second.
 @export_range(10.0, 200.0, 1.0) var terminal_velocity: float = 60.0
 

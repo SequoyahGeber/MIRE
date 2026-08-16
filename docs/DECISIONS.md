@@ -196,6 +196,28 @@ to all shared simulation and would start costing real ergonomics.
 
 ---
 
+### D-018 · 2026-08-15 · Task 0.5 movement feel — tuned values for `player_controller.gd`
+Sequoyah played the greybox (ramps, stairs, gaps) and tuned live. Verdict: acceleration, friction,
+jump height, coyote/buffer time and jump-cut all felt right at their defaults and are untouched.
+Three values moved:
+
+| | was | now |
+|---|---|---|
+| `walk_speed` | 5.0 | **4.0** |
+| `sprint_speed` | 8.0 | **6.0** |
+| `gravity_scale` | 1.6 | **2.0** |
+
+Walk/sprint came down — Muck-fast read as too fast once there was real geometry to navigate, not just
+open ground. Gravity went up so falls read heavier; `jump_height` (1.1, apex in metres) is unchanged
+and unaffected, since launch velocity is derived from `gravity_scale × jump_height` — raising gravity
+alone shortens time-to-apex without changing how high the jump reads.
+Written into the script defaults directly rather than left as a live Inspector override, so a fresh
+Player instance — or anyone who resets to defaults — doesn't silently revert to the untuned feel.
+**Would change my mind:** the values reading differently once ramps/stairs/gaps are dressed with real
+art instead of greybox, or co-op play at 3–6 players surfacing a pace mismatch invisible solo.
+
+---
+
 ## Template
 
 ```
