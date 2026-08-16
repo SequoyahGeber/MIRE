@@ -341,3 +341,18 @@ Notes along the way:
 Files: `autoload/player_net.gd`, `entities/player/player_controller.gd`, `core/net/net_config.gd`, `project.godot`
 
 Commit at time of writing: `4f17bcd`
+
+---
+
+### DONE · 1.9 · load · 2026-08-16T08:27:33+00:00
+
+**Spike R1 — 6 peers, 200 synced dummy entities, measure bandwidth and CPU**
+
+AMBER. 6 real ENet peers + 200 host-authoritative entities, one process, 60Hz paced. Unfiltered 30Hz = 918 KB/s host up on the wire, 7.3x the 125 KB/s ceiling. With §2.5 interest management: 105 KB/s at 30Hz, 57 KB/s at 15Hz (8.8-16x cheaper). CPU never above 1.18 ms/frame of a 16.67 ms budget on any peer, so replication is bandwidth-bound, not CPU-bound. Wire cost is 30.5 B per entity per update per client carrying 16 B of real state, so the §6 R1 hand-rolled-binary fallback could buy at most 1.9x where filtering buys 8.8x — fallback NOT needed, but 1.8 becomes mandatory rather than optional.
+
+Notes along the way:
+- Interest management measured cheaper with players CLUSTERED (100 KB/s) than SPREAD (180 KB/s) at an identical 11.6% visible fraction. The extra cost in SPREAD is reliable-channel traffic (host ACK volume is ~2x), which points at visibility churn: an entity crossing the 120m boundary forces a despawn+respawn per peer. Not isolated. Task 1.8 should budget for churn and consider hysteresis (larger leave-radius than enter-radius) so boundary-hugging entities do not flap.
+
+Files: `core/net/dummy_replicant.gd`, `tools/bench_replication.gd`
+
+Commit at time of writing: `fc05234`

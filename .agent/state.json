@@ -1,27 +1,6 @@
 {
-  "claims": {
-    "core/net/dummy_replicant.gd": {
-      "agent": "load",
-      "at": "2026-08-16T08:15:12+00:00",
-      "task": "1.9"
-    },
-    "tools/bench_replication.gd": {
-      "agent": "load",
-      "at": "2026-08-16T08:15:12+00:00",
-      "task": "1.9"
-    }
-  },
-  "in_flight": {
-    "1.9": {
-      "agent": "load",
-      "files": [
-        "core/net/dummy_replicant.gd",
-        "tools/bench_replication.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-16T08:15:12+00:00"
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".gitignore": {
       "agent": "steam",
@@ -52,6 +31,11 @@
       "agent": "local",
       "at": "2026-08-16T03:30:06+00:00",
       "task": "1.3"
+    },
+    "core/net/dummy_replicant.gd": {
+      "agent": "load",
+      "at": "2026-08-16T08:27:33+00:00",
+      "task": "1.9"
     },
     "core/net/net_config.gd": {
       "agent": "spawn",
@@ -132,6 +116,11 @@
       "agent": "nav",
       "at": "2026-08-16T00:30:42+00:00",
       "task": "0.8"
+    },
+    "tools/bench_replication.gd": {
+      "agent": "load",
+      "at": "2026-08-16T08:27:33+00:00",
+      "task": "1.9"
     },
     "tools/check_determinism_ops.gd": {
       "agent": "claude",
@@ -383,9 +372,11 @@
       "title": "Interest management: visibility filters + per-class `replication_interval` (`ARCHITECTURE.md` \u00a72.5)"
     },
     "1.9": {
+      "done_at": "2026-08-16T08:27:33+00:00",
+      "done_by": "load",
       "est": "1.5",
       "milestone": "M1",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T2",
       "title": "Spike R1 \u2014 6 peers, 200 synced dummy entities, measure bandwidth and CPU"
     },
