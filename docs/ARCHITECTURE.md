@@ -186,6 +186,100 @@ deterministic given a seed — use explicit `RandomNumberGenerator` instances se
 This system is deliberately chosen to be **high design value, low engineering risk** — a 2D scalar
 grid is one of the easiest things to simulate, replicate, and debug.
 
+The 2s tick is **accumulated wall-clock time, not a frame count** — see §5a.
+
+---
+
+## 5a. Time, tick rate, and frame rate
+
+**The rule: nothing about how the game plays may depend on the monitor's refresh rate.** A player on a
+60 Hz laptop and a player on a 240 Hz desktop, in the same lobby, must experience identical movement
+speed, identical jump height, identical corruption spread, identical damage over time. Refresh rate
+buys smoothness and nothing else. This is a correctness requirement, not a polish item — in a
+host-authoritative co-op game, a system that ties simulation to frames is a desync, not just a
+feel bug.
+
+### The two clocks
+
+Godot runs two independent loops, and the distinction is the whole of this section.
+
+| | `_physics_process(delta)` | `_process(delta)` |
+|---|---|---|
+| Rate | **Fixed 60 Hz**, set by `physics/common/physics_ticks_per_second` | Variable — one call per rendered frame |
+| `delta` | Always `1.0/60.0`. Constant. | Whatever the last frame took. Varies constantly. |
+| Tied to monitor? | **No** | Yes |
+| Use for | Movement, gravity, collision, combat, anything simulated or replicated | Rendering, camera smoothing, UI, VFX, audio triggers |
+
+The engine accumulates elapsed real time and runs however many physics steps that time owes. On a
+120 Hz display you get 120 render frames and still exactly 60 physics ticks per second. **The classic
+"game runs at double speed on a 120 Hz monitor" bug comes from a fixed timestep with no accumulator,
+where one simulation step is hard-wired to one rendered frame. Godot does not work that way, and we
+must not reintroduce it.**
+
+### Required project settings
+
+Set these explicitly rather than inheriting defaults, so the contract is visible in `project.godot`
+and a future engine default can't silently change it.
+
+| Setting | Value | Why |
+|---|---|---|
+| `physics/common/physics_ticks_per_second` | `60` | The simulation rate. Changing this changes game feel and invalidates every tuned constant — treat it as frozen after M0. |
+| `physics/common/max_physics_steps_per_frame` | `8` | Catch-up cap. Below ~7.5 fps the game runs in slow motion instead of spiralling. Correct tradeoff; know it exists when profiling. |
+| `physics/common/physics_interpolation` | `true` | Renders bodies smoothly *between* the 60 Hz ticks. Without it, high-refresh displays show judder on everything not directly player-controlled. |
+| `display/window/vsync/vsync_mode` | `enabled` (default), player-overridable | Ships as the safe default; exposed in settings (7.5). |
+| `application/run/max_fps` | `0` (uncapped), player-overridable | An fps cap must never change simulation behaviour. If it does, something violates this section. |
+
+### Rules for writing systems
+
+1. **Simulation goes in `_physics_process`.** Movement, gravity, combat, health, hunger, stamina,
+   enemy AI stepping, projectiles. If it affects game state or is replicated, it belongs here.
+2. **Multiply every rate by `delta`.** A value expressed per-second times `delta` gives the amount for
+   this step. `velocity.y -= gravity * delta`, never `velocity.y -= gravity`.
+3. **Never count frames.** No `if frame_count % 30 == 0`. Accumulate time:
+   ```gdscript
+   _elapsed += delta
+   while _elapsed >= TICK_INTERVAL:
+       _elapsed -= TICK_INTERVAL
+       _do_tick()
+   ```
+   The `while` (not `if`) matters — it stays correct across a hitch that spans several intervals.
+   This is how the Mire's 2s tick (§5), wave spawning, and every other periodic system must work.
+4. **Mouse input is the exception: do *not* multiply by `delta`.** Mouse motion events already
+   accumulate the distance moved. Delta-scaling them makes sensitivity depend on framerate — the bug
+   people introduce while trying to avoid the one this section is about. Read `relative` in
+   `_input`/`_unhandled_input` and apply it directly.
+5. **Gamepad look *is* delta-scaled** — a stick reports a rate, not a displacement. The two input
+   paths are genuinely different; don't unify them.
+6. **Exponential smoothing needs the framerate-correct form.** `lerp(a, b, speed * delta)` converges
+   at different rates on different hardware. For anything gameplay-visible use
+   `lerp(a, b, 1.0 - exp(-speed * delta))`. For pure cosmetics the naive form is tolerable — say so
+   in a comment so the next reader knows it was a choice.
+7. **Never use `Engine.get_frames_per_second()` or frame counts as a time source** in game logic.
+   Debug overlay only.
+8. **Timers:** `Timer` nodes and `await get_tree().create_timer()` run on wall-clock time and are fine
+   for UI and one-shot effects. For anything host-authoritative or replicated, prefer an accumulator
+   in `_physics_process` so the timing is tied to the same clock the simulation uses.
+
+### What this means for networking
+
+Physics ticks are the shared heartbeat between host and clients. Because the rate is fixed and
+identical on every machine regardless of hardware, tick counts are directly comparable across peers —
+which is what makes host-authoritative validation and the determinism work in §6a meaningful. A
+client rendering at 240 fps sends no more input than one at 60 fps, because input is sampled per
+physics tick, not per frame. Replication intervals (§2.5) are expressed in seconds and converted
+against the physics rate, never against frames.
+
+### How to verify
+
+Any system touching movement, timing, or simulation is not done until this is checked:
+
+- Run the same action at capped 30 fps, uncapped, and with vsync forced at a different rate. Distance
+  travelled, jump apex, and elapsed time to complete must match within float tolerance.
+- Two instances in a `LOCAL` lobby (task 1.3) with different fps caps — one 30, one uncapped — must
+  stay in agreement on position and world state.
+- Watch for judder rather than speed differences on high-refresh displays; that's an interpolation
+  problem, not a timestep problem, and has a different fix.
+
 ---
 
 ## 6. Technical risks — spike these before committing
@@ -255,9 +349,6 @@ Godot 4.7.1-stable in every case — a version difference invalidates the compar
 If `rng_sequence` differs, nothing seeded can be trusted and the fallback is mandatory. If only
 `noise_*` or `float_math` differ, the fallback applies to terrain only.
 
-If `rng_sequence` differs, nothing seeded can be trusted and the fallback is mandatory. If only
-`noise_*` or `float_math` differ, the fallback applies to terrain only.
-
 ---
 
 ## 7. Conventions
@@ -267,6 +358,8 @@ If `rng_sequence` differs, nothing seeded can be trusted and the fallback is man
 - Signals via `event_bus` for cross-system comms; direct refs only within a system.
 - `snake_case` files/functions, `PascalCase` classes/nodes, `SCREAMING_CASE` constants.
 - Every networked function is prefixed `net_` or annotated at the top of the file with its authority row (§2.2).
+- **Simulation in `_physics_process`, rendering in `_process`; every rate multiplied by `delta`; never
+  count frames** (§5a). Refresh rate must never change how the game plays.
 - **Pin the Godot version.** Record it in `DECISIONS.md`. Do not upgrade mid-milestone.
 - No `randi()` in world generation — always a seeded `RandomNumberGenerator`.
 
