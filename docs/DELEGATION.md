@@ -1,11 +1,18 @@
-# Delegation — ready-to-paste task prompts
+# Delegation — the state agents start from
 
-**How to use this file:** find the task, select from its `## Task N.N` heading down to the end of its
-fenced block, paste that into a fresh chat, and set the model and effort named just under the heading.
-Nothing here is for you to run — every command lives inside the prompt and the agent executes it.
+**A written prompt is no longer required to start a task.** Say *"start 1.6"* to a fresh chat; the
+agent runs `agent brief 1.6`, which prints the task, the open findings, what recent tasks left it and
+who holds which files, and points it at this file's *Current state* section below. That section is the
+contract: **whatever the next task builds on gets written there by the task that produced it.**
 
-Each block is self-contained on purpose: the agent never needs to explore, which is the single most
-expensive thing an agent can do (`AI-WORKFLOW.md` §4).
+**So the important half of this file is *Current state*, not the prompts.** Keeping it accurate is
+part of closing out a task (`AGENTS.md` step 3) — a stale one is exactly what forced hand-written
+prompts in the first place, because the next agent could not trust anything here.
+
+The prompt blocks that remain are kept as worked examples, and because a hand-written brief is still
+worth writing for a task that is unusually easy to get wrong — a spike with a specific measurement
+protocol, or a task where the failure mode is subtle. If you do write one, set the model and effort
+named under its heading. Nothing here is for Sequoyah to run.
 
 **Each parallel chat needs its own identity.** `.agent/session` holds exactly one name, so two chats
 started without this overwrite each other and claims get misattributed to the wrong agent — which

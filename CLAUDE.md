@@ -15,15 +15,22 @@ Non-negotiables, repeated here because they're the ones that cost the most when 
 2. **Never edit `.tscn` / `.tres`.** Scene files don't merge. Sequoyah wires scenes in the editor.
    **`project.godot` is different (D-021)** — claim it by name and register your own autoload, after
    checking the Godot editor is closed. A script nothing loads isn't shipped.
-3. **Never explore speculatively.** Quota, not time, is the constraint. Ask which file.
-4. **Every system declares its network authority** (`docs/ARCHITECTURE.md` §2.2). No "multiplayer later."
+3. **Never explore speculatively** — but never stop to ask, either. Quota, not time, is the
+   constraint. Run `agent brief <id>`, read the four docs it names, then the files your task touches.
+   Ambiguous spec? Decide it, record why, keep going.
+4. **Finish by putting what you learned in the repo,** not in your closing message: findings →
+   `docs/FINDINGS.md`, settled calls → `docs/DECISIONS.md`, APIs the next task builds on →
+   `docs/DELEGATION.md` *Current state*. Sequoyah starts tasks; he does not relay between them.
+5. **Every system declares its network authority** (`docs/ARCHITECTURE.md` §2.2). No "multiplayer later."
 
 ## Claude Code specifics
 
 - Prefer `Read` on a named file over `Grep`/`Glob` sweeps — searching burns quota for little gain here.
 - Batch related edits in one session while context is warm; `/clear` between unrelated tasks.
 - Before you stop: `agent done` or `agent handoff`, then commit. Uncommitted work is invisible to Codex.
-- Don't run the Godot editor or try to launch the game — ask Sequoyah to run and report.
+- **Verify it yourself, headless** — `Godot --headless --path . --quit-after 120`, or two processes
+  with `-- host` / `-- client` (D-023, task 1.5). Do not open the editor, and do not ask Sequoyah to
+  run it and report back; that is only for things that genuinely need a window or a human's eyes.
 
 ## Keep this file short
 

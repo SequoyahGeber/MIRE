@@ -179,6 +179,7 @@ def cmd_start(args):
     _print_board(st, focus=name)
     _print_stale(st)
     _print_git()
+    print("  %sGiven only a task id? That is enough:%s  agent brief <task-id>" % (C["dim"], C["x"]))
     print("  %sClaim before you edit:%s  agent claim <task-id> <files...>\n" % (C["dim"], C["x"]))
 
 
@@ -209,6 +210,148 @@ def _print_stale(st):
         print("  %s  %s  %.0fh — release with:  agent drop %s"
               % (tid, d["agent"], age_hours(d["started"]), tid))
     print()
+
+
+# ---------------------------------------------------------------- brief
+
+def _journal_entries():
+    """JOURNAL.md parsed into entries, oldest first. Written by _journal(), so the
+    header shape is ours: '### KIND · task · agent · timestamp'."""
+    if not os.path.exists(JOURNAL):
+        return []
+    entries, cur = [], None
+    for line in open(JOURNAL):
+        if line.startswith("### "):
+            parts = [p.strip() for p in line[4:].strip().split("·")]
+            cur = None
+            if len(parts) >= 4:
+                cur = {"kind": parts[0], "task": parts[1], "agent": parts[2], "body": []}
+                entries.append(cur)
+            continue
+        if cur is not None and line.strip():
+            cur["body"].append(line.rstrip())
+    return entries
+
+
+def _open_findings():
+    """(id, title) for every finding under '## Open'. The template example under
+    'How to file one' sits above that heading, so it is skipped for free."""
+    path = os.path.join(ROOT, "docs", "FINDINGS.md")
+    if not os.path.exists(path):
+        return []
+    out, in_open = [], False
+    for line in open(path):
+        if line.startswith("## "):
+            in_open = line.strip() == "## Open"
+        elif in_open and line.startswith("### F-"):
+            fid, _, title = line[4:].strip().partition("·")
+            out.append((fid.strip(), title.strip()))
+    return out
+
+
+def _wrap(text, width=94, indent="      "):
+    words, line, out = text.split(), "", []
+    for w in words:
+        if len(line) + len(w) + 1 > width:
+            out.append(indent + line)
+            line = w
+        else:
+            line = (line + " " + w).strip()
+    if line:
+        out.append(indent + line)
+    return out
+
+
+def cmd_brief(args):
+    """Everything needed to start a task, in one call.
+
+    This exists so that "start task 1.6" is a complete instruction. Before it, the
+    context lived in hand-written prompts that a human pasted in, which made him the
+    courier between agents and made every task cost a prompt-writing session first."""
+    st = load()
+    if not args:
+        print("usage: agent brief <task-id>\n")
+        _print_ready(st)
+        return
+    tid = args[0]
+    if tid not in st["tasks"]:
+        die("unknown task %s — run 'agent sync' or check docs/ROADMAP.md" % tid)
+
+    me = whoami(required=False) or "?"
+    t = st["tasks"][tid]
+    print("\n%s%s · %s%s" % (C["b"], tid, t["title"], C["x"]))
+    print("  %s%s · tier %s · est %s · status %s%s"
+          % (C["dim"], t.get("milestone", "?"), t.get("tier", "?"),
+             t.get("est", "?"), t["status"], C["x"]))
+
+    held = st["in_flight"].get(tid)
+    if held and held["agent"] != me:
+        print("\n  %s⚠ already in flight under '%s' since %s — pick another task%s"
+              % (C["y"], held["agent"], held["started"][:16].replace("T", " "), C["x"]))
+    if t["status"] == "done":
+        print("\n  %s⚠ already done (%s by %s) — check the journal below before redoing it%s"
+              % (C["y"], t.get("done_at", "?")[:10], t.get("done_by", "?"), C["x"]))
+
+    # Read these, in this order. Bounded on purpose: this list is the alternative to
+    # exploring, which is the most expensive thing an agent does here.
+    print("\n%sRead first%s" % (C["b"], C["x"]))
+    for path, why in (
+        ("AGENTS.md", "the protocol — claim, record, close out"),
+        ("docs/ARCHITECTURE.md §2.2", "the authority table. Your system declares a row of it"),
+        ("docs/DELEGATION.md", "'Current state' — what shipped, and the APIs you build against"),
+        ("docs/DECISIONS.md", "settled calls. Check before relitigating one"),
+    ):
+        print("  %-32s %s%s%s" % (path, C["dim"], why, C["x"]))
+
+    findings = _open_findings()
+    if findings:
+        print("\n%sOpen findings — traps someone already paid for%s" % (C["b"], C["x"]))
+        for fid, title in findings:
+            print("  %-8s %s%s%s" % (fid, C["dim"], title[:78], C["x"]))
+
+    entries = _journal_entries()
+    mine_hist = [e for e in entries if e["task"] == tid]
+    milestone = t.get("milestone", "")
+    siblings = [e for e in entries
+                if e["task"] != tid
+                and st["tasks"].get(e["task"], {}).get("milestone") == milestone][-4:]
+
+    if mine_hist:
+        print("\n%sThis task has history — read it before starting over%s" % (C["y"], C["x"]))
+        for e in mine_hist:
+            print("  %s%s by %s%s" % (C["b"], e["kind"], e["agent"], C["x"]))
+            for line in e["body"][1:6]:
+                print("      %s%s%s" % (C["dim"], line[:100], C["x"]))
+
+    if siblings:
+        print("\n%sRecent work in %s — what it left you%s" % (C["b"], milestone, C["x"]))
+        for e in siblings:
+            print("  %s%s · %s · %s%s" % (C["b"], e["kind"], e["task"], e["agent"], C["x"]))
+            notes = [l for l in e["body"] if l.startswith("- ")]
+            for n in notes[:4]:
+                for line in _wrap(n[2:]):
+                    print("    %s%s%s" % (C["dim"], line[4:], C["x"]))
+            if not notes and len(e["body"]) > 1:
+                for line in _wrap(" ".join(e["body"][1:3]))[:2]:
+                    print("    %s%s%s" % (C["dim"], line[4:], C["x"]))
+
+    others = {f: c for f, c in st["claims"].items() if c["agent"] != me}
+    if others:
+        print("\n%sHeld by someone else right now — do not edit%s" % (C["b"], C["x"]))
+        for f, c in sorted(others.items()):
+            print("  %-52s %s%s (%s)%s" % (f, C["dim"], c["agent"], c["task"], C["x"]))
+
+    print("""
+%sHow this task ends%s — all of it yours, none of it Sequoyah's to relay:
+  1. %sagent claim %s <files>%s      before the first edit
+  2. %sagent note %s "..."%s        each trap or decision, as you hit it
+  3. anything outside this task  ->  docs/FINDINGS.md (next F-number)
+     a settled call others must not relitigate  ->  docs/DECISIONS.md
+     an API or layout the next task builds on  ->  docs/DELEGATION.md 'Current state'
+  4. %sagent done %s "..."%s then %sagent ship %s "msg"%s
+%sAmbiguous spec? Decide it, write down why, keep going. Do not stop and wait.%s
+""" % (C["b"], C["x"], C["c"], tid, C["x"], C["c"], tid, C["x"],
+       C["c"], tid, C["x"], C["c"], tid, C["x"], C["dim"], C["x"]))
 
 
 # ---------------------------------------------------------------- claiming
@@ -387,7 +530,9 @@ def cmd_ship(args):
     Deliberately NOT `git add -A`. Parallel agents share one working directory, so a
     blanket add would sweep another agent's half-written files into this commit — the
     real hazard when several chats run at once (push races can't happen from one repo).
-    Only the files this task claimed, plus the coordination state, are staged."""
+    Only the files this task claimed, plus the coordination state, are staged — and the
+    commit itself is limited to those same paths, because one shared index means `add`
+    alone does not decide what a commit contains (F-014)."""
     if not args:
         die('usage: agent ship <task-id> ["commit message"]')
     me = whoami()
@@ -413,14 +558,22 @@ def cmd_ship(args):
 
     others = [f for f in changed if f not in to_stage]
 
+    # `add` first: a pathspec commit cannot name a file git has never seen.
     r = _git("add", "--", *to_stage)
     if r.returncode != 0:
         die("git add failed: %s" % r.stderr.strip())
 
-    # The pre-commit hook re-runs check against the staged set.
-    r = _git("commit", "-m", "%s\n\nTask %s shipped by %s." % (msg, tid, me))
+    # Commit BY PATHSPEC, not the whole index (F-014). Several agents share one working
+    # directory and therefore one index, so a bare `git commit` sweeps in whatever another
+    # agent has staged and not yet committed — the exact hazard the careful `add` list above
+    # exists to prevent. With a pathspec git builds a temporary index from HEAD plus these
+    # paths, so the other agent's staging is neither committed nor disturbed, and the
+    # pre-commit hook sees only this task's files.
+    r = _git("commit", "-m", "%s\n\nTask %s shipped by %s." % (msg, tid, me), "--", *to_stage)
     if r.returncode != 0:
-        _git("reset")
+        # Scoped reset. A bare `git reset` here would unstage the other agent's work too —
+        # reaching into state that is not ours to touch (F-014).
+        _git("reset", "--", *to_stage)
         die("commit blocked:\n%s%s" % (r.stdout, r.stderr))
     ok("committed %d file(s) — %s" % (len(to_stage), _head()))
 
@@ -446,17 +599,23 @@ def cmd_ship(args):
             print("  %sWork is committed locally and safe. Tell Sequoyah the push failed.%s"
                   % (C["dim"], C["x"]))
 
-    print("\n%s%s Task %s complete — relay this to Sequoyah:%s" % (C["b"], "─" * 3, tid, C["x"]))
+    print("\n%s%s Task %s shipped — before you stop:%s" % (C["b"], "─" * 3, tid, C["x"]))
     print("""
-  Task %s (%s) is done, committed and pushed.
+  %sSequoyah is not a courier.%s Anything the NEXT agent needs must already be in the
+  repo, not in your final message. Check each of these, and go do it if it is missing:
 
-  Then state, explicitly:
-    · What you verified, and how (the actual numbers or the command you ran)
-    · WHAT HE MUST WIRE before this runs — autoloads, scene nodes, exported
-      values. You cannot touch .tscn/.tres, so if anything needs wiring the
-      feature does NOT work yet and he must not treat it as finished.
-    · Say plainly whether it is safe to start the next task.
-""" % (tid, title[:70]))
+    · a problem you spotted outside this task      -> docs/FINDINGS.md, next F-number
+    · a call you made that others must not redo    -> docs/DECISIONS.md, next D-number
+    · an API, node layout or constant 1.x builds on -> docs/DELEGATION.md 'Current state'
+    · how it went, what bit you                    -> already in the journal via done/note
+
+  %sThen tell Sequoyah only what is genuinely his:%s
+    · what you verified, with the command and its actual output — not "it works"
+    · whether it RUNS or only compiles, in those words
+    · what he must do in the Godot editor, if anything. You cannot touch .tscn/.tres,
+      so if a scene change is outstanding the feature does NOT work yet — say so
+    · whether it is safe to start the next task
+""" % (C["b"], C["x"], C["b"], C["x"]))
 
 
 # ---------------------------------------------------------------- check
@@ -652,14 +811,15 @@ def render_board(st):
 # ---------------------------------------------------------------- main
 
 COMMANDS = {
-    "start": cmd_start, "claim": cmd_claim, "note": cmd_note, "done": cmd_done,
-    "handoff": cmd_handoff, "drop": cmd_drop, "check": cmd_check,
+    "start": cmd_start, "brief": cmd_brief, "claim": cmd_claim, "note": cmd_note,
+    "done": cmd_done, "handoff": cmd_handoff, "drop": cmd_drop, "check": cmd_check,
     "board": cmd_board, "sync": cmd_sync, "ship": cmd_ship,
 }
 
 USAGE = """agent — multi-agent coordination for MIRE
 
   agent start <name>              begin a session (claude | codex | sequoyah)
+  agent brief <id>                everything you need to start that task
   agent board                     show what's happening
   agent claim <id> [files...]     claim a task and the files you'll edit
   agent note <id> "..."           record something mid-task

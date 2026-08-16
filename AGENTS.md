@@ -13,8 +13,17 @@ planner/coder identity; which agent picks up a task depends on which plan has us
 Sequoyah (human) is the only fixed role: **Integrator** — all Godot editor work, asset import, tuning,
 playtesting, commits.
 
-If the spec for a task is ambiguous, **ask rather than explore** — exploration is the most expensive
-thing an agent can do here, and Sequoyah can answer in one line.
+**Sequoyah starts tasks. He does not carry information between them.** If you find yourself writing
+"tell the next agent X" or "paste this into the 1.7 prompt", stop: that X belongs in the repo, and
+putting it there is part of your task, not an optional extra. See *Close out* below for where each
+kind of X goes.
+
+If the spec for a task is ambiguous, **decide it, write down why, and keep going.** Pick whatever is
+most consistent with `ARCHITECTURE.md` and `DECISIONS.md`, record the call with `agent note` (or as a
+new `D-0NN` if others must not relitigate it), and finish. He reviews at commit level. Stopping
+mid-task to ask costs him more than a wrong-but-documented call, which is cheap to reverse. Ask only
+when proceeding either way would be unsafe or would waste the whole task — and then ask at the end,
+having finished everything that did not depend on the answer.
 
 ---
 
@@ -40,6 +49,25 @@ Then read `docs/NEXT.md` for the current focus.
 
 ---
 
+## Given only a task id? That is a complete instruction
+
+"Start 1.6" is all you should need. Run this before anything else:
+
+```bash
+MIRE_AGENT=<your-name> .agent/bin/agent brief 1.6
+```
+
+It prints the task, the open findings (traps someone already paid for), what recent tasks in the same
+milestone left you, who holds which files right now, and any prior handoff on that task. Then read the
+four files it names — `AGENTS.md`, `ARCHITECTURE.md` §2.2, `DELEGATION.md`'s *Current state*, and
+`DECISIONS.md`. That list is bounded on purpose: it is the cheap alternative to exploring, and it is
+where the previous agent was required to leave what you need.
+
+Derive your own claim set from the task and claim it. If `DELEGATION.md` happens to hold a written
+prompt for the task, use it — but its absence does not block you, and nobody needs to write you one.
+
+---
+
 ## The protocol
 
 ### 1. Claim before you edit
@@ -60,11 +88,22 @@ prevent.
 
 Cheap, and it's what makes a handoff readable later.
 
-**Spotted a problem outside your task?** Don't fix it, don't stay silent — append it to
-`docs/FINDINGS.md` and carry on. Chasing it blows your scope and your quota; dropping it loses a real
-observation forever. Thirty seconds, then back to work.
+### 3. Put what you learned where the next agent will look
 
-### 3. Close out — always, even if you didn't finish
+Not in your final chat message — that is a dead end, and it makes Sequoyah the courier. Four places,
+and the right one is usually obvious:
+
+| What you have | Where it goes |
+|---|---|
+| A problem outside your task — dead code, a stale doc, a bug you must not chase now | `docs/FINDINGS.md`, next `F-0NN`. Thirty seconds, then back to work |
+| A call others must not relitigate, with what would change your mind | `docs/DECISIONS.md`, next `D-0NN` |
+| An API, node layout, constant or verified command the NEXT task builds on | `docs/DELEGATION.md`, *Current state*. Stale state here is what forces hand-written prompts |
+| How the task went, what bit you, what you'd do next | the journal, via `agent note` and `agent done` |
+
+`docs/` needs no claim (F-006 — it is exempt from the hook), so none of this can block on another
+agent. Doing it is the difference between a task that ends and a task that hands off.
+
+### 4. Close out — always, even if you didn't finish
 
 ```bash
 # finished it
@@ -81,7 +120,7 @@ valuable thing you produce when you stop mid-task.** Write it for someone with n
 session — because that is literally who reads it. Say what works, what doesn't, what you'd already
 decided, and what you'd do next.
 
-### 4. Ship it — commit, push, and sign off
+### 5. Ship it — commit, push, and sign off
 
 ```bash
 .agent/bin/agent ship 2.4 "Inventory: host-validated add/remove"
@@ -95,10 +134,10 @@ so a blanket add sweeps another agent's half-written files into your commit. Nev
 Uncommitted work is invisible to everyone else. The pre-commit hook re-runs `agent check` against the
 staged set and blocks you if you've touched a file you don't hold.
 
-### 5. Tell Sequoyah where things actually stand
+### 6. Tell Sequoyah only what is genuinely his
 
-`ship` prints a template. Fill it in as your final chat message — he is deciding whether to start the
-next task based on what you say here, so be precise:
+By now everything another *agent* needs is in the repo (step 3). What is left is the short list only a
+human can act on — he is deciding whether to start the next task based on this, so be precise:
 
 - **What you verified, and how.** The command you ran, the numbers it produced. Not "it works."
 - **Whether it actually runs, or only compiles.** Register your own autoload (D-021, see Hard
@@ -142,7 +181,13 @@ If your work needs a genuine *scene* change, say so explicitly in your `done`/`h
 ### Never explore the codebase speculatively
 
 Sequoyah is limited by AI usage quota across three plans, not by time. "Let me search the codebase to
-understand…" is the most expensive thing you can do. **Ask him which file.** He knows.
+understand…" is the most expensive thing you can do — and it is not the same as being self-sufficient.
+
+The cheap path, in order: `agent brief <id>`, the four docs it names, then the files your task
+actually touches. If you still need something, name your single best guess and `Read` that one file
+rather than grepping the repo. If the guess was wrong, say so in a finding — a doc that failed to
+point you at the right file is itself a finding, and fixing it is how the next agent avoids the same
+search.
 
 ### Never bulk-generate content data
 
@@ -193,6 +238,7 @@ not good enough.
 
 ```bash
 .agent/bin/agent start <name>          begin a session, print full context
+.agent/bin/agent brief <id>            everything you need to start that task
 .agent/bin/agent board                 what's happening right now
 .agent/bin/agent claim <id> [files]    claim a task and its files
 .agent/bin/agent note <id> "..."       record something mid-task

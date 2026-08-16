@@ -7,19 +7,22 @@
 
 ## Status
 
-**Milestone:** M1 · Network spine — **1.4 landed, 6/14.** M0 is closed, 10/10.
-**Last session:** 2026-08-16 (claude) — unblocked 1.5–1.8 with D-023 (replication nodes are built in
-code, not authored in scenes) and wrote the 1.5 prompt. Nothing is in flight.
+**Milestone:** M1 · Network spine — **1.5, 1.9 and 1.10 landed, 9/14.** M0 is closed, 10/10.
+**Last session:** 2026-08-16 — networked players replicating between two processes (1.5), R1 measured
+**AMBER** (1.9), live net debug readout (1.10), and the delegation model replaced with self-briefing
+agents (`agent brief`). Nothing is in flight.
 
-Both risk spikes came back **GREEN**: chunked terrain meshing stays in GDScript (D-015), runtime
-NavMesh baking stays and the grid-A* fallback is dropped (D-016). Neither result is unconditional —
-see *M0 debts* below.
+The M0 spikes came back **GREEN**: chunked terrain meshing stays in GDScript (D-015), runtime NavMesh
+baking stays and the grid-A* fallback is dropped (D-016). Neither is unconditional — see *M0 debts*.
+**R1 (netcode) is AMBER**, which is not a blocker but does promote task 1.8 from optional to required;
+the numbers are under *What changed this session*.
 
 **The game runs.** Open the project and press Play: you spawn in a greybox level and can walk, sprint,
 jump and look around. **F3** overlay · **`~`** console · **Esc** releases the mouse.
 
-**Four autoloads live, verified booting 2026-08-16** on `4.7.1.stable.official.a13da4feb`, Metal
-Forward+ on an M5 Pro: `DebugOverlay`, `DebugConsole`, `Registry`, `NetTransport`. Boot log reads
+**Seven autoloads live, verified booting 2026-08-16** on `4.7.1.stable.official.a13da4feb`, Metal
+Forward+ on an M5 Pro: `DebugOverlay`, `DebugConsole`, `Registry`, `NetTransport`, `DevLaunch`,
+`SteamLobby`, `PlayerNet` — plus `NetDebugPanel`, which you wired. Boot log reads
 `content: loaded 0 item(s), 0 recipe(s)` and `net: NetTransport ready (offline)` — 0/0 is correct,
 no `.tres` content is authored yet. `NetConfig` is a `class_name`, **not** an autoload; don't add it.
 
@@ -38,52 +41,43 @@ Protocol: [AGENTS.md](../AGENTS.md). Start every session with `.agent/bin/agent 
 
 ---
 
-## Next task — three ready-to-paste prompts, none of them yours
+## Next task — say "start 1.6" and stop there
 
-All three are agent chats, none of them share a file, and all three can run at once. Everything you do
-here is copy, paste, and read the sign-off.
+**Starting a task no longer means pasting a prompt.** Open a fresh chat, give it the task id, and the
+agent runs `agent brief <id>` itself: that prints the task, the open findings, what the last tasks in
+this milestone left it, and who holds which files. It claims, works, verifies headless, files what it
+learned in the repo, and ships. What comes back to you is what only you can act on.
 
-### → 1.5 · Networked player: spawner + synchronizer — `[T2]` · ~3h · **an agent chat**
+Any of these can run at once — no two touch the same file. Pick by quota, not by order:
 
-**Paste this one first.** It's what turns "two windows connect" into "two players see each other", and
-1.6, 1.7 and 1.8 are all written against the node layout it establishes.
+| Say this | Task | Why it's next |
+|---|---|---|
+| **"start 1.8"** | Interest management | **Now mandatory, not optional** — R1 came back AMBER and filtering is the only thing that fits the budget. Start here |
+| **"start 1.6"** | Remote-player interpolation | Remote players currently arrive at 30Hz and stutter. Read F-004 first — it argues engine `physics_interpolation` may cover this |
+| **"start 1.7"** | Connection lifecycle | Join mid-session, host quits, timeouts. 1.5 did the obvious signal handling only, deliberately |
+| **"start 1.11"** | Version handshake | Refuse mismatched builds legibly. Independent of the other three |
 
-Ready-to-paste prompt: [DELEGATION.md](DELEGATION.md) → *Task 1.5*. **Opus 5 · effort high · agent
-name `spawn`.**
-
-**It needs nothing from you in the editor.** That's new — see D-023 below. It holds `project.godot`
-while it runs, so **close the Godot editor before you paste it**, or its autoload registration gets
-silently discarded on your next save.
-
-### → 1.9 · Spike R1 — replication load — `[T2]` · ~1.5h · **an agent chat**
-
-The last unspiked risk in `ARCHITECTURE.md` §6. If it comes back red, the fallback rewrites how every
-replicated system in the project gets written — so it wants answering while 1.6–1.8 are still unwritten.
-
-**Opus 5 · effort high · agent name `load`.**
-
-### → 1.10 · Network debug panel — `[T1]` · ~1h · **an agent chat**
-
-Cheap quota, and it's what makes 1.5–1.8 debuggable instead of guessable. **Sonnet 5 · effort medium ·
-agent name `netui`.**
+Effort: Opus 5 · high for 1.6/1.7/1.8; Sonnet 5 · medium is enough for 1.11. Give each parallel chat
+its own `MIRE_AGENT` name — that is the one thing that still has to come from you.
 
 ---
 
-## What changed this session — D-023
+## What changed this session
 
-1.5, 1.6 and 1.8 had been parked for three sessions as *"scene work, only Sequoyah can wire it."*
-That was wrong. `MultiplayerSpawner`, `MultiplayerSynchronizer` and `SceneReplicationConfig` all have
-full script APIs — task 1.9's prompt had been requiring exactly that construction all along, because a
-headless benchmark can't author scenes either. So they get **built in code**, and **1.5 needs no
-`.tscn` change at all**.
+**M1 netcode is real.** 1.5 (networked player), 1.9 (R1 spike) and 1.10 (debug panel) all shipped, and
+none of them needed anything from you in the editor.
 
-Two things fall out of that, both written into D-023 so nobody relitigates them:
-
-- Networked players live at `/root/PlayerNet/Players` — a fixed path, identical on every peer, that
-  survives the level swaps M4 introduces.
-- The `Player` hard-instanced in `greybox_test.tscn` becomes a **spawn point**: in a session the
-  spawner reads its transform, frees it, and spawns per-peer copies. Offline it's untouched, so
-  "press Play and walk around" still works.
+- **Two players, two windows, each driving their own** — `PlayerNet` spawns one player per peer under
+  `/root/PlayerNet/Players`, authority derived from the node's name, position/yaw/pitch replicated at
+  30Hz. Verified with two headless processes, both directions.
+- **R1 is AMBER, and that has teeth.** 200 entities unfiltered = 918 KB/s host up, 7.3× over the
+  125 KB/s ceiling. With §2.5 interest management: 105 KB/s at 30Hz, 57 KB/s at 15Hz. CPU was never
+  the constraint (1.18 ms/frame worst case). So the §6 R1 fallback — hand-rolled binary packets — is
+  **not** needed, but **1.8 stops being optional**: it is the thing that makes the budget fit.
+- **Agents now brief themselves.** `agent brief <id>` plus a close-out contract in `AGENTS.md` step 3
+  replaced the hand-written-prompt model. Findings go to `FINDINGS.md`, settled calls to
+  `DECISIONS.md`, APIs the next task needs to `DELEGATION.md` *Current state* — so nothing has to
+  travel through you to reach the next agent.
 
 ---
 
