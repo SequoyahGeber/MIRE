@@ -1,45 +1,6 @@
 {
-  "claims": {
-    "docs/DECISIONS.md": {
-      "agent": "claude",
-      "at": "2026-08-16T02:37:46+00:00",
-      "task": "0.5"
-    },
-    "docs/FINDINGS.md": {
-      "agent": "claude",
-      "at": "2026-08-16T02:42:48+00:00",
-      "task": "0.5"
-    },
-    "docs/NEXT.md": {
-      "agent": "claude",
-      "at": "2026-08-16T02:42:48+00:00",
-      "task": "0.5"
-    },
-    "entities/player/player_controller.gd": {
-      "agent": "claude",
-      "at": "2026-08-16T02:37:46+00:00",
-      "task": "0.5"
-    },
-    "tools/verify_setup.gd": {
-      "agent": "claude",
-      "at": "2026-08-16T02:42:48+00:00",
-      "task": "0.5"
-    }
-  },
-  "in_flight": {
-    "0.5": {
-      "agent": "claude",
-      "files": [
-        "entities/player/player_controller.gd",
-        "docs/DECISIONS.md",
-        "tools/verify_setup.gd",
-        "docs/FINDINGS.md",
-        "docs/NEXT.md"
-      ],
-      "notes": [],
-      "started": "2026-08-16T02:37:46+00:00"
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     "autoload/net_transport.gd": {
       "agent": "net",
@@ -53,23 +14,28 @@
     },
     "docs/DECISIONS.md": {
       "agent": "claude",
-      "at": "2026-08-16T02:20:14+00:00",
-      "task": "0.10"
+      "at": "2026-08-16T02:46:31+00:00",
+      "task": "0.5"
     },
     "docs/FINDINGS.md": {
       "agent": "claude",
-      "at": "2026-08-16T02:20:14+00:00",
-      "task": "0.10"
+      "at": "2026-08-16T02:46:31+00:00",
+      "task": "0.5"
     },
     "docs/NEXT.md": {
       "agent": "claude",
-      "at": "2026-08-16T02:20:14+00:00",
-      "task": "0.10"
+      "at": "2026-08-16T02:46:31+00:00",
+      "task": "0.5"
     },
     "entities/player/player.tscn": {
       "agent": "claude",
       "at": "2026-08-15T21:46:15+00:00",
       "task": "0.3"
+    },
+    "entities/player/player_controller.gd": {
+      "agent": "claude",
+      "at": "2026-08-16T02:46:31+00:00",
+      "task": "0.5"
     },
     "levels/greybox_test.tscn": {
       "agent": "claude",
@@ -100,6 +66,11 @@
       "agent": "claude",
       "at": "2026-08-15T21:46:15+00:00",
       "task": "0.3"
+    },
+    "tools/verify_setup.gd": {
+      "agent": "claude",
+      "at": "2026-08-16T02:46:31+00:00",
+      "task": "0.5"
     },
     "world/chunk/chunk_mesher.gd": {
       "agent": "terrain",
@@ -159,9 +130,11 @@
       "title": "First-person character controller: `CharacterBody3D`, mouse look, walk/sprint/jump, coyote time"
     },
     "0.5": {
+      "done_at": "2026-08-16T02:46:31+00:00",
+      "done_by": "claude",
       "est": "2",
       "milestone": "M0",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T0",
       "title": "Grey-box test level \u2014 ramps, stairs, gaps. Tune the controller until movement *feels good*."
     },

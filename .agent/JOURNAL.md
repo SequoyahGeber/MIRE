@@ -206,3 +206,15 @@ Completed.
 Files: `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, `docs/FINDINGS.md`, `docs/NEXT.md`, `tools/check_determinism_ops.gd`
 
 Commit at time of writing: `cf62593`
+
+---
+
+### DONE · 0.5 · claude · 2026-08-16T02:46:31+00:00
+
+**Grey-box test level — ramps, stairs, gaps. Tune the controller until movement *feels good*.**
+
+Completed.
+
+Files: `entities/player/player_controller.gd`, `docs/DECISIONS.md`, `tools/verify_setup.gd`, `docs/FINDINGS.md`, `docs/NEXT.md`
+
+Commit at time of writing: `52f5b31`
