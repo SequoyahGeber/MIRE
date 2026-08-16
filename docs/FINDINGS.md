@@ -406,6 +406,53 @@ Windows before choosing a longer deadline or bounded retry policy. Keep this sep
 1.12's evidence run: retain each failed log, restore Windows Firewall with a narrow Godot program
 rule, and do not count a successful retry as a clean PASS.
 
+**2026-08-16, vane — mechanism fixed, measurement still owed. Deliberately still open.**
+
+The diagnosis above was half the story. The deadline being shared with ENet was real, but the larger
+fault was that **nothing retried a first join at all**: `dev_launch.gd` excluded STEAM from its retry
+by hand, `NetSession` never listened to `connection_failed`, and `SteamLobby` does not either. Every
+"immediate retry" in the report above was a human relaunching the game. What landed (D-029):
+
+- `NetConfig.STEAM_CONNECT_TIMEOUT_SEC` — Steam's own budget, **provisionally 20 s**, separate from
+  ENet's 10 s because a rendezvous is a different mechanism, not a slower socket.
+- `NetTransport.EndKind.CONNECT_TIMEOUT`, split from `CONNECT_FAILED`, so a retry policy can repeat an
+  attempt that got no verdict and never repeat a refusal.
+- `NetSession` retries a timed-out first join — STEAM only, twice, at 0.5 s and 2.0 s — and hands the
+  lobby back if it gives up. Visible as `connect_retry_attempted` / `connect_failed`.
+- `NetTransport.last_connect_msec()`, and a `connected … in N.NNs` line on every successful join.
+- Fixed in passing: `host()`/`join()` now clear `_last_end_kind` up front. A synchronous failure used
+  to inherit the previous attempt's ending, which would have made the new retry guard fire for a call
+  that never opened a socket.
+
+Verified headlessly on macOS by `tools/connect_retry_check.gd` (PASS, 0 failures) plus the full netcode
+regression set — lifecycle 8/8, handshake, interp, interest, synced group, debug panel all 0 failures.
+
+**What keeps this open, and it is the original ask:** nobody has still ever measured a Windows Steam
+first join. 20 s is an allowance, not a number from evidence, and the retry has never been exercised
+against a real rendezvous. Task 1.12's next physical run closes both — every join now prints its own
+duration, so collect the `connected … in N.NNs` line from all three platforms, set
+`STEAM_CONNECT_TIMEOUT_SEC` from the observed tail, and only then move this to Resolved. If a Windows
+first join times out and the automatic retry recovers it, that is the fix working — still not a clean
+PASS for 1.12, whose criteria require no connection failure.
+
+---
+
+### F-024 · A shipped LAN first join has no retry — only the debug launcher does
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-16 by vane during F-023
+
+F-023's retry is deliberately STEAM-only, because it rests on a Steam-specific invariant: a timed-out
+attempt tears down without announcing, so lobby membership survives and the retry is a plain `join()`.
+LOCAL and LAN first joins are retried too — but by `core/dev/dev_launch.gd`, which is the two-window
+dev launcher and is debug-only. Nothing in a shipped build retries a LAN join that times out.
+
+Today that costs nothing: LAN has no player-facing entry point yet, so the only way to reach it is
+DevLaunch, which does retry. It becomes real the moment M6 builds a join screen — a player typing an
+address at a host that is still coming up gets one attempt and a dead end, while the same failure over
+Steam quietly recovers. Fix it with the join UI rather than now, and the shape is already there:
+`NetSession._should_retry_connect()` needs its mode gate widened plus a decision about whether
+DevLaunch then defers to it, since two retry loops would double every attempt.
+
 ---
 
 ## Resolved

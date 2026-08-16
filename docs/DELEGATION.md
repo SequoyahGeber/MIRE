@@ -129,6 +129,31 @@ screenshot and complete log per platform, then clients exiting before the host.
 The retained evidence logs are in `/Users/sequoyahgeber/Desktop/MIRETestLogs`; the final diagnostic
 run ended host-first, so both client logs correctly record `CONNECTION_LOST` and are not pass evidence.
 
+**F-023's mechanism is fixed as of 2026-08-16 (vane, D-029) — 1.12's rerun inherits new behaviour and
+one job.** A Steam client no longer gets one 10 s attempt and a dead end:
+
+| API | What it is |
+|---|---|
+| `NetConfig.STEAM_CONNECT_TIMEOUT_SEC` | Steam's own connect budget, **provisionally 20 s**, separate from ENet's `CONNECT_TIMEOUT_SEC` |
+| `NetTransport.connect_timeout_sec(mode)` | static; the budget for a mode. Anything that waits on a connect must derive its own deadline from this, never hard-code one |
+| `NetTransport.EndKind.CONNECT_TIMEOUT` | split from `CONNECT_FAILED`. A refusal is an answer; a timeout is the absence of one, and only the second is retried |
+| `NetTransport.last_connect_msec()` | how long the last successful join took, or -1. Also logged as `connected … in N.NNs` |
+| `NetSession.connect_retry_attempted(attempt, of)` | a first join is being retried. **Not** `rejoin_attempted` — nothing has been lost yet, so a UI must not say "Reconnecting…" |
+| `NetSession.connect_failed(detail)` | the first join gave up. `session_ended` does not fire; there was never a session |
+| `NetSession.is_connect_retrying()` / `auto_connect_retry` | state, and the off switch for probes |
+
+Retries are **STEAM-only** and that is load-bearing: a timed-out attempt tears down without announcing,
+so SteamLobby never leaves the lobby and the retry is a plain `join()`. That is why this is not F-020,
+which is the rejoin-*after-drop* case where the lobby genuinely was left. LOCAL/LAN first joins are
+still DevLaunch's — F-024 records the gap that leaves in a shipped LAN join.
+
+**The one job 1.12's rerun inherits:** every join now prints its own duration, so the run produces the
+first-join latency nobody has ever measured. Collect the `connected … in N.NNs` line from all three
+platforms, then set `STEAM_CONNECT_TIMEOUT_SEC` from the observed tail — 20 s is an allowance, not
+evidence. A Windows timeout that the automatic retry recovers is the fix working, and is still not a
+clean PASS. Verify the mechanism first with
+`Godot --headless --path . --script tools/connect_retry_check.gd` (PASS, 0 failures on macOS).
+
 **Three open findings were closed this session, all of them process rather than game code:** F-013
 (the `&"synced"` convention, D-024 — 1.8 inherits it), F-015 (an F-number is a task id, so a finding
 is startable exactly like a roadmap task), and F-007 (agents name themselves from their chat; no

@@ -456,6 +456,35 @@ determinism but does **not** verify that the game boots cleanly on Windows.
 world gen adding cellular noise/domain warp without a new cross-platform probe; or expanding shared
 deterministic simulation beyond the currently tested terrain inputs.
 
+### D-029 · 2026-08-16 · Steam gets its own connect budget, and NetSession retries a first join that times out
+F-023 read as "the 10 s deadline is too short". It is not primarily a number problem. The deadline was
+shared with ENet, which is a different mechanism — an ENet client already knows the host's address,
+while a Steam client has to be rendezvoused through NAT traversal with a relay fallback behind it — so
+STEAM now has `STEAM_CONNECT_TIMEOUT_SEC` of its own. But the larger half is that **nothing retried a
+first join at all**: `dev_launch.gd` excludes STEAM from its retry by hand, NetSession never listened to
+`connection_failed`, and SteamLobby does not either. The retry that "worked" in the 1.12 run was a human
+relaunching the game. Retrying is therefore NetSession's, as policy, alongside the rejoin loop it
+already owns; `EndKind` splits `CONNECT_TIMEOUT` from `CONNECT_FAILED` so only an attempt that got no
+verdict is repeated, never a refusal.
+
+The retry is STEAM-only, and the reason is a specific invariant rather than caution: a timed-out attempt
+tears down *without announcing*, so SteamLobby never sees `disconnected`, never leaves the lobby, and we
+are still a member — which is the one precondition `connect_to_lobby()` has. **That is what makes this
+not F-020.** F-020 is the rejoin-after-drop case, where the session was announced, the lobby *was* left,
+and getting back in genuinely needs SteamLobby's asynchronous flow. On final give-up the lobby is handed
+back, because a member with no session cannot re-run `join_by_id()` — it refuses while `_state` is
+`IN_LOBBY`, so holding it would break the player's own manual retry.
+
+`STEAM_CONNECT_TIMEOUT_SEC = 20.0` is explicitly **provisional**: no first-join latency had ever been
+recorded when it was chosen. `NetTransport.last_connect_msec()` now records one on every successful
+join and logs it, so 1.12's next run yields the real distribution as a side effect.
+
+**Would change my mind:** measured Windows first-join latency showing the tail sits well under 10 s
+(then the budget was never the issue and the retry alone is the fix, or something else is wrong); a
+Steam retry that fails where a full lobby re-join succeeds (then membership does not survive teardown
+the way the code above reads, and the retry belongs in SteamLobby); or GodotSteam exposing connection-
+state callbacks, which would let a live rendezvous extend its own deadline instead of being guessed at.
+
 ### D-0NN · YYYY-MM-DD · <one-line decision>
 <why, in 2–4 sentences>
 **Would change my mind:** <the specific evidence that should make you revisit this>

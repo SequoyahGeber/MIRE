@@ -64,7 +64,18 @@ Linux guests exist, three distinct mutual-friend Steam accounts pass preflight, 
 have shared one lobby. Before the final run, restore Windows Firewall and add a narrow program rule
 for the pinned Godot executable; do not leave the profile disabled. Then follow
 `docs/STEAM_CROSS_PLATFORM_TEST.md`, retain the first Windows timeout if it recurs, and capture the
-full 60-second movement/screenshots/exit evidence. F-023 owns the intermittent Windows first join.
+full 60-second movement/screenshots/exit evidence.
+
+**Do the rerun on the current revision — F-023's mechanism was fixed on 2026-08-16 (D-029).** The
+Windows first-join timeout that broke the last attempt now retries automatically instead of ending
+the run: Steam has its own connect budget, and `NetSession` retries a timed-out first join twice by
+itself. Two things follow for the rerun, both spelled out in the test doc:
+
+1. **A rescued timeout is still not a PASS.** The criteria require no connection failure; the retry
+   buys a usable session, not a clean result.
+2. **Bring back three numbers.** Every join now prints `connected … in N.NNs`. Capture that line on
+   each platform — it is the first-join latency nobody has ever measured, it is the only thing
+   keeping F-023 open, and `STEAM_CONNECT_TIMEOUT_SEC` (provisionally 20 s) gets set from it.
 
 ---
 

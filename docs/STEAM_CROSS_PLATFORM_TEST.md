@@ -77,7 +77,38 @@ If it fails, retain the logs and screenshots, report the platform and first fail
 change code during the session. A Steam client/account/addon/engine prerequisite failure is BLOCKED;
 a reproducible lobby/session failure with valid prerequisites is FAIL.
 
-Windows currently has a known intermittent first-join failure (F-023): the hard 10 s connection
-timer can expire even with valid prerequisites, while an immediate retry against the same lobby
-connects. Preserve the failed attempt as evidence rather than overwriting it. A retry is diagnostic
-only and does not turn the run into a PASS, because the pass criteria require no connection failure.
+## The first-join timeout, and the measurement this run owes (F-023)
+
+Windows has a known intermittent first-join failure: the connection timer can expire even with valid
+prerequisites, while an immediate retry against the same lobby connects. **As of 2026-08-16 that
+retry is automatic** (D-029) — Steam's budget is now its own constant, provisionally 20 s, and
+`NetSession` retries a timed-out first join twice by itself, at 0.5 s and 2.0 s. Expect these lines
+rather than a dead end:
+
+```
+[warn] net: [client] connect timed out (…) — NetSession retries from here
+[info] net: NetSession: connect retry 1/2 to steam:<lobby_id>
+```
+
+This changes nothing about the verdict. **A first join that times out is still a connection failure,
+so a run the retry rescues is not a PASS** — the criteria above require none. Preserve the failed
+attempt rather than overwriting it, exactly as before.
+
+**This run also owes a measurement, and it is the reason F-023 is still open.** Nobody has ever
+recorded how long a Steam first join actually takes, on any platform; 20 s is an allowance, not
+evidence. Every successful join now prints its own duration:
+
+```
+[info] net: connected to steam:<lobby_id> as peer N (STEAM) in 4.31s
+```
+
+Capture that line from **all three** platforms, including any retried attempt, and report the three
+numbers with the logs. `STEAM_CONNECT_TIMEOUT_SEC` gets set from the observed tail afterwards, and
+F-023 moves to Resolved on the strength of it. If Windows connects well inside 10 s every time, say
+so — that is evidence the budget was never the problem, and it points somewhere else.
+
+Before the session, confirm the mechanism itself still passes on the machine you are driving from:
+
+```bash
+godot --headless --path . --script tools/connect_retry_check.gd
+```
