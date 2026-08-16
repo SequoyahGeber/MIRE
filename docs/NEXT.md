@@ -8,11 +8,15 @@
 ## Status
 
 **Milestone:** M1 · Network spine — **13/14.** M0 is closed, 10/10.
-**Last session:** 2026-08-16 — connection lifecycle (1.7) completed the code-driven M1 work: readable
+**Last session:** 2026-08-16 — task 1.12 is in progress. The Windows physical-machine prerequisite
+and Windows determinism gate are complete; the three-machine Steam session now has a reproducible
+launch procedure in `docs/STEAM_CROSS_PLATFORM_TEST.md`.
+
+Connection lifecycle (1.7) completed the code-driven M1 work: readable
 admission/version refusals, late joining, automatic LOCAL/LAN rejoin, clean host close, and bounded
 dead-peer detection all passed a real multi-process ENet harness. Only the physical cross-platform
-Steam join test (1.12) remains, blocked only on Windows provisioning. F-009 is fixed: the committed
-GDExtension registry now makes GodotSteam loading reproducible in fresh headless environments.
+Steam join test (1.12) remains. F-009 is fixed: the committed GDExtension registry now makes
+GodotSteam loading reproducible in fresh headless environments.
 
 The M0 spikes came back **GREEN**: chunked terrain meshing stays in GDScript (D-015), runtime NavMesh
 baking stays and the grid-A* fallback is dropped (D-016). Neither is unconditional — see *M0 debts*.
@@ -52,9 +56,10 @@ agent runs `agent brief <id>` itself: that prints the task, the open findings, w
 this milestone left it, and who holds which files. It claims, works, verifies headless, files what it
 learned in the repo, and ships. What comes back to you is what only you can act on.
 
-**Do not start 1.12 yet.** It needs a Windows guest; the Linux guest already exists and F-009's
-fresh-clone GodotSteam registration problem is fixed. Once the Windows prerequisite is ready, say
-`start 1.12`. It is a physical Mac ↔ Windows ↔ Linux Steam lobby test, not more lifecycle code.
+**Task 1.12 is ready for its physical run.** The Windows PC and Linux guest exist, and F-009's
+fresh-clone GodotSteam registration problem is fixed. Follow
+`docs/STEAM_CROSS_PLATFORM_TEST.md`: it is a physical Mac ↔ Windows ↔ Linux Steam lobby test, not
+more lifecycle code.
 
 ---
 

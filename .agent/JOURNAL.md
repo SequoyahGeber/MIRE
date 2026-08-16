@@ -655,3 +655,15 @@ Windows x86_64 determinism completed on physical Ryzen 5 5600 with pinned Godot 
 Files: `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, `docs/DELEGATION.md`, `docs/NEXT.md`, `docs/WINDOWS_TEST_BRIEF.md`
 
 Commit at time of writing: `f958400`
+
+---
+
+### HANDOFF · 1.12 · hollow · 2026-08-16T20:16:02+00:00
+
+**Cross-platform join test — Mac ↔ Windows ↔ Linux in one lobby, over Steam**
+
+Windows prerequisite is now complete (aa2efb2). Added debug-only DevLaunch --steam-host and --steam-join=<lobby_id> paths that call SteamLobby in the required asynchronous order, plus docs/STEAM_CROSS_PLATFORM_TEST.md with pinned-engine/addon/import preflight, commands, evidence capture, and pass criteria. Local verify_setup.gd and agent check pass. Final work is the simultaneous macOS host + Windows/Linux client Steam session; retain three steam_check logs, launch logs, and F3 screenshots, then resolve 1.12 from that evidence.
+
+Files: `docs/STEAM_CROSS_PLATFORM_TEST.md`, `docs/DELEGATION.md`, `docs/NEXT.md`, `tools/steam_cross_platform_check.gd`, `tools/steam_cross_platform_check.gd.uid`, `core/dev/dev_launch.gd`
+
+Commit at time of writing: `aa2efb2`

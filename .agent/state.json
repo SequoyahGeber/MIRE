@@ -968,9 +968,9 @@
       "task": "1.4"
     },
     "core/dev/dev_launch.gd": {
-      "agent": "reed",
-      "at": "2026-08-16T19:23:07+00:00",
-      "task": "1.7"
+      "agent": "hollow",
+      "at": "2026-08-16T20:16:02+00:00",
+      "task": "1.12"
     },
     "core/net/dummy_replicant.gd": {
       "agent": "load",
@@ -1038,9 +1038,9 @@
       "task": "4.0b"
     },
     "docs/DELEGATION.md": {
-      "agent": "slate",
-      "at": "2026-08-16T20:11:49+00:00",
-      "task": "4.0b"
+      "agent": "hollow",
+      "at": "2026-08-16T20:16:02+00:00",
+      "task": "1.12"
     },
     "docs/DESIGN.md": {
       "agent": "kiln",
@@ -1053,14 +1053,19 @@
       "task": "4.0b"
     },
     "docs/NEXT.md": {
-      "agent": "slate",
-      "at": "2026-08-16T20:11:49+00:00",
-      "task": "4.0b"
+      "agent": "hollow",
+      "at": "2026-08-16T20:16:02+00:00",
+      "task": "1.12"
     },
     "docs/ROADMAP.md": {
       "agent": "reed",
       "at": "2026-08-16T19:00:05+00:00",
       "task": "2.1e"
+    },
+    "docs/STEAM_CROSS_PLATFORM_TEST.md": {
+      "agent": "hollow",
+      "at": "2026-08-16T20:16:02+00:00",
+      "task": "1.12"
     },
     "docs/WINDOWS_TEST_BRIEF.md": {
       "agent": "slate",
@@ -1226,6 +1231,16 @@
       "agent": "steam",
       "at": "2026-08-16T06:52:27+00:00",
       "task": "1.1"
+    },
+    "tools/steam_cross_platform_check.gd": {
+      "agent": "hollow",
+      "at": "2026-08-16T20:16:02+00:00",
+      "task": "1.12"
+    },
+    "tools/steam_cross_platform_check.gd.uid": {
+      "agent": "hollow",
+      "at": "2026-08-16T20:16:02+00:00",
+      "task": "1.12"
     },
     "tools/steam_lobby_check.gd": {
       "agent": "lobby",

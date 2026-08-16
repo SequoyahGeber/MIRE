@@ -385,15 +385,18 @@ any further replication prompt, and don't reintroduce "tell Sequoyah to add a sy
 | # | Blocked on | Clears when |
 |---|---|---|
 | 1.6 · 1.7 · 1.8 · 1.11 | ~~1.5~~ **Nothing. All four are writable now** against the layout above | cleared by `8d6ddab` |
-| 1.12 | The **Windows** guest (the Ubuntu KVM guest exists and has run headless work — `ARCHITECTURE.md` §6a, F-006) | You provision Windows; F-009 is fixed |
-| 4.0b | A Windows guest existing at all | You provision it |
+| 1.12 | ~~Windows guest~~ **Nothing technical.** The physical Windows PC passed the pinned determinism probes; the Linux KVM guest exists. | Run the simultaneous Steam session in `docs/STEAM_CROSS_PLATFORM_TEST.md` |
+| 4.0b | ~~A Windows guest existing at all~~ **done** | closed by `aa2efb2` |
 
 The foundation is settled: `NetTransport` (1.2), `DevLaunch` (1.3), `SteamLobby` (1.4) and GodotSteam
 4.21 (1.1) are all registered, booting and verified, so every prompt here is written against a real API
 rather than a proposed one.
 
-**Yours, not delegable:** 1.1 (GodotSteam GDExtension + `project.godot`), which 1.4 then needs, and
-1.12 needs both. `4.0b` (Windows determinism) is yours only to the extent of provisioning the VM.
+**1.12 test driver:** `DevLaunch` accepts debug-only `--steam-host` and
+`--steam-join=<lobby_id>` arguments. They call the normal asynchronous `SteamLobby` flow, not
+`NetTransport` directly, so lobby membership and Steam P2P start in the only supported order. The
+complete three-machine commands, fresh-clone addon/import prerequisite, observed-state checks, and
+PASS/FAIL/BLOCKED criteria are in `docs/STEAM_CROSS_PLATFORM_TEST.md`.
 
 M0 is closed. The 0.7 and 0.8 spike prompts that used to live here shipped in `9a1bc19` / `9ebe47b` —
 their results are D-015 and D-016 in `DECISIONS.md`. The unmeasured half of R2 is now task `4.0a`.

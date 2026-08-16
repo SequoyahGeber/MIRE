@@ -2,13 +2,15 @@ extends Node
 ## DevLaunch — autoload. Turns "two connected windows" into one keypress (task 1.3).
 ##
 ## Reads the launch arguments and, in a debug build only, either hosts or joins a
-## LOCAL session at startup. WITH NO ARGUMENTS IT DOES NOTHING AT ALL — this file
+## LOCAL or STEAM session at startup. WITH NO ARGUMENTS IT DOES NOTHING AT ALL — this file
 ## ships in the retail build, and a stray auto-host would open a socket on every
 ## player's machine that they never asked for.
 ##
 ## Accepted arguments (either form works, see "How to launch" below):
 ##     -- host      or  --host      host a LOCAL session
 ##     -- client    or  --client    join a LOCAL session on loopback
+##     --steam-host                 create a friends-only Steam lobby and host in it
+##     --steam-join=<lobby_id>      join a MIRE Steam lobby by its id
 ##
 ## AUTHORITY: none of its own. It only calls NetTransport, which is infrastructure.
 ## The session it opens is host-authoritative per docs/ARCHITECTURE.md §2.2.
@@ -35,7 +37,11 @@ const RETRY_DELAY_SECONDS: float = 0.4
 
 enum Role { NONE, HOST, CLIENT }
 
+enum LaunchMode { LOCAL, STEAM }
+
 var _role: Role = Role.NONE
+var _mode: LaunchMode = LaunchMode.LOCAL
+var _steam_lobby_id: String = ""
 var _join_attempts: int = 0
 var _connected: bool = false
 
@@ -50,7 +56,7 @@ func _ready() -> void:
 	if not OS.is_debug_build():
 		return
 
-	_role = _parse_role()
+	_parse_launch()
 	if _role == Role.NONE:
 		return
 
@@ -67,28 +73,51 @@ func _ready() -> void:
 		_attempt_join()
 
 
-## Returns the role asked for on the command line, or Role.NONE if none was.
+## Reads the role and transport asked for on the command line. Steam arguments are deliberately
+## debug-only: they are a physical cross-platform test driver, not a player-facing lobby UI.
 ## Checks the user args (after a bare `--`) first, then the engine's own arg list,
 ## so it works whichever way the editor's run-instance field passes them through.
-func _parse_role() -> Role:
-	for arg: String in OS.get_cmdline_user_args():
+func _parse_launch() -> void:
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	if args.is_empty():
+		args = OS.get_cmdline_args()
+
+	for index: int in range(args.size()):
+		var arg: String = args[index]
 		if arg == "host" or arg == "--host":
-			return Role.HOST
-		if arg == "client" or arg == "--client":
-			return Role.CLIENT
+			_role = Role.HOST
+			_mode = LaunchMode.LOCAL
+		elif arg == "client" or arg == "--client":
+			_role = Role.CLIENT
+			_mode = LaunchMode.LOCAL
+		elif arg == "--steam-host":
+			_role = Role.HOST
+			_mode = LaunchMode.STEAM
+		elif arg.begins_with("--steam-join="):
+			_role = Role.CLIENT
+			_mode = LaunchMode.STEAM
+			_steam_lobby_id = arg.trim_prefix("--steam-join=")
+		elif arg == "--steam-join" and index + 1 < args.size():
+			_role = Role.CLIENT
+			_mode = LaunchMode.STEAM
+			_steam_lobby_id = args[index + 1]
 
-	# Dashes are required here: an undashed token in the full argument list could
-	# just as easily be a path fragment as an instruction.
-	for arg: String in OS.get_cmdline_args():
-		if arg == "--host":
-			return Role.HOST
-		if arg == "--client":
-			return Role.CLIENT
-
-	return Role.NONE
+	if _mode == LaunchMode.STEAM and _role == Role.CLIENT and _steam_lobby_id.is_empty():
+		MireLog.error(NetConfig.LOG_CHANNEL, "[DevLaunch] --steam-join needs a lobby id")
+		_role = Role.NONE
 
 
 func _start_host() -> void:
+	if _mode == LaunchMode.STEAM:
+		MireLog.info(NetConfig.LOG_CHANNEL, "%s creating a Steam lobby" % _tag())
+		var lobby: Node = _steam_lobby()
+		if lobby == null:
+			MireLog.error(NetConfig.LOG_CHANNEL, "%s SteamLobby autoload is unavailable" % _tag())
+			return
+		var steam_err: Error = lobby.host_session()
+		if steam_err != OK:
+			MireLog.error(NetConfig.LOG_CHANNEL, "%s SteamLobby.host_session() failed: %s" % [_tag(), error_string(steam_err)])
+		return
 	MireLog.info(NetConfig.LOG_CHANNEL, "%s hosting LOCAL session on port %d" % [_tag(), NetConfig.DEFAULT_PORT])
 	var err: Error = NetTransport.host(NetConfig.Mode.LOCAL)
 	if err != OK:
@@ -96,6 +125,16 @@ func _start_host() -> void:
 
 
 func _attempt_join() -> void:
+	if _mode == LaunchMode.STEAM:
+		MireLog.info(NetConfig.LOG_CHANNEL, "%s joining Steam lobby %s" % [_tag(), _steam_lobby_id])
+		var lobby: Node = _steam_lobby()
+		if lobby == null:
+			MireLog.error(NetConfig.LOG_CHANNEL, "%s SteamLobby autoload is unavailable" % _tag())
+			return
+		var steam_err: Error = lobby.join_by_id(_steam_lobby_id)
+		if steam_err != OK:
+			MireLog.error(NetConfig.LOG_CHANNEL, "%s SteamLobby.join_by_id() failed: %s" % [_tag(), error_string(steam_err)])
+		return
 	_join_attempts += 1
 	MireLog.info(NetConfig.LOG_CHANNEL, "%s joining LOCAL session (attempt %d/%d)" % [_tag(), _join_attempts, MAX_JOIN_ATTEMPTS])
 	var err: Error = NetTransport.join(NetConfig.Mode.LOCAL, "")
@@ -141,7 +180,7 @@ func _on_connected_to_host() -> void:
 
 
 func _on_connection_failed(reason: String) -> void:
-	if _role != Role.CLIENT:
+	if _role != Role.CLIENT or _mode == LaunchMode.STEAM:
 		MireLog.error(NetConfig.LOG_CHANNEL, "%s connection failed: %s" % [_tag(), reason])
 		return
 	_retry_join(reason)
@@ -160,11 +199,18 @@ func _on_peer_left(peer_id: int) -> void:
 	MireLog.info(NetConfig.LOG_CHANNEL, "%s peer %d left — peers now %s" % [_tag(), peer_id, NetTransport.peer_ids()])
 
 
+## DevLaunch starts before SteamLobby in [autoload]. Resolve its node path at call time rather than
+## naming the singleton, so the debug-only Steam driver does not depend on autoload parse order.
+func _steam_lobby() -> Node:
+	return get_node_or_null(^"/root/SteamLobby")
+
+
 ## Log prefix. Both windows write to the same editor Output panel, so every line
 ## has to say on sight which instance produced it.
 func _tag() -> String:
 	var role_name: String = "HOST" if _role == Role.HOST else "CLIENT"
+	var mode_name: String = "STEAM" if _mode == LaunchMode.STEAM else "LOCAL"
 	var peer_id: int = NetTransport.local_peer_id()
 	if peer_id == 0:
-		return "[DevLaunch %s peer=?]" % role_name
-	return "[DevLaunch %s peer=%d]" % [role_name, peer_id]
+		return "[DevLaunch %s %s peer=?]" % [mode_name, role_name]
+	return "[DevLaunch %s %s peer=%d]" % [mode_name, role_name, peer_id]
