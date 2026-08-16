@@ -162,7 +162,11 @@ What this does and doesn't close:
   empty columns of the §6a table.
 - **7.12 — partially, and the gap is now confirmed rather than hypothetical.** The server's GTX 1070
   is already passed through to Ollama and Plex, so it is not available to a VM without taking it from
-  services in use. Guests will render in software. VMs therefore answer "does the export launch and
+  services in use. Guests will render in software. **Second obstacle, found 2026-08-15 while building
+  the Ubuntu guest:** Unraid reports the 1070 as the host's *primary adapter* ("GPU is primary adapter,
+  vbios may be required"), so passing it to a VM also needs a dumped and patched vBIOS and risks
+  leaving the host without console output. GPU passthrough here is not a checkbox; treat software
+  rendering in the guests as the plan, not the fallback. VMs therefore answer "does the export launch and
   behave correctly on this OS" — most of the value — but frame rate and rendering artifacts need real
   hardware. Steam Deck remains a separate purchase decision.
 - **1.12 — partially, with friction.** LAN testing over `ENetMultiplayerPeer` works fine between
