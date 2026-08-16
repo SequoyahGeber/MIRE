@@ -297,3 +297,15 @@ GodotSteam GDExtension 4.21 (Steamworks 1.65) installed to addons/godotsteam fro
 Files: `.gitignore`, `docs/DECISIONS.md`, `tools/steam_check.gd`, `steam_appid.txt`, `docs/FINDINGS.md`
 
 Commit at time of writing: `1a9bbd3`
+
+---
+
+### DONE · 1.4 · lobby · 2026-08-16T07:53:23+00:00
+
+**Steam lobby: create, invite via overlay, join by ID, leave, member list**
+
+SteamLobby autoload (registered): create friends-only lobby, invite via overlay, join by lobby id, leave, live member list, plus overlay and cold-start (+connect_lobby) invite acceptance. NetTransport's STEAM seam filled in with no signature changes — host_with_lobby/connect_to_lobby, and is_lobby_id() distinguishes a lobby id from a player id by Steam's account-type bits. Verified end-to-end against the live Steam client on App ID 480 via tools/steam_lobby_check.gd: real lobby created (109775242295168604), ownership + member list correct, STEAM session hosting with peer id 1, leave tears both down, idempotent. NOT verified: the joining half — needs a second Steam account on a second machine, so join_by_id/overlay invite are two-human tests.
+
+Files: `autoload/steam_lobby.gd`, `autoload/net_transport.gd`, `project.godot`, `tools/steam_api_probe.gd`, `core/net/net_config.gd`, `tools/steam_lobby_check.gd`
+
+Commit at time of writing: `3902911`

@@ -263,6 +263,15 @@ static func steam_available() -> bool:
 	return ClassDB.class_exists(NetConfig.STEAM_PEER_CLASS) and Engine.has_singleton(NetConfig.STEAM_SINGLETON)
 
 
+## True if this 64-bit Steam id names a lobby rather than a player. join(Mode.STEAM, id) accepts
+## either and this is how it tells them apart: Steam packs the account type into bits 52-55, so a
+## lobby reads back as k_EAccountTypeChat and a person as k_EAccountTypeIndividual. Cheaper and more
+## reliable than asking Steam, and it works before the addon has been initialised.
+static func is_lobby_id(steam_id: int) -> bool:
+	var account_type: int = (steam_id >> NetConfig.STEAM_ACCOUNT_TYPE_SHIFT) & NetConfig.STEAM_ACCOUNT_TYPE_MASK
+	return account_type == NetConfig.STEAM_ACCOUNT_TYPE_CHAT
+
+
 # ── MultiplayerAPI callbacks ──────────────────────────────────────────────────────────────────────
 
 
@@ -420,21 +429,36 @@ func _create_enet_client(address: String, port: int) -> MultiplayerPeer:
 # addon is installed (task 1.1). Everything below therefore goes through ClassDB/Engine by name: this
 # file parses, and the whole project runs, with the addon absent — which is the state we are in.
 #
-# Task 1.4 owns finishing this. It replaces the two function bodies below and touches nothing else in
-# the file: no signature moves, no caller changes, no gameplay code recompiled. That is the seam.
-# What 1.4 still has to add, in the marked spots:
-#   · Steam.steamInit / App ID 480 bootstrap (NetConfig.STEAM_APP_ID)
-#   · createLobby on host, joinLobby on join, and the lobby id → owner Steam ID lookup
-#   · the overlay invite path, and lobby member list → peer list reconciliation
-#   · verify create_host/create_client signatures against the installed GodotSteam version
+# Task 1.4 filled this in. Both bodies below stayed synchronous and no signature moved, because the
+# asynchronous half of Steam — createLobby and joinLobby answer by callback — lives in the SteamLobby
+# autoload instead. That split is forced by GodotSteam itself, and it is worth knowing why:
+#
+#   · host_with_lobby(id) fails unless you ALREADY own that lobby
+#   · connect_to_lobby(id) fails unless you are ALREADY a member of it
+#
+# (Both verified in godotsteam_multiplayer_peer.cpp at the pinned build, D-022: each calls
+# GetLobbyOwner first and bails on 0.) So the lobby must exist before either call, and something has
+# to wait for Steam's callback. SteamLobby does that waiting and only then calls host()/join() here —
+# by which time the lobby is real and these two functions are ordinary synchronous peer setup.
+#
+# Direct connection by a player's Steam ID still works with no lobby at all; it is just invisible to
+# the friends list, which is what the lobby buys.
 
 
 func _create_steam_host() -> MultiplayerPeer:
 	var peer: MultiplayerPeer = _instantiate_steam_peer()
 	if peer == null:
 		return null
-	# TODO(1.4): create the Steam lobby first and keep its id — create_host() only opens the P2P
-	# listen socket, it does not make the session findable or invitable.
+
+	# host_with_lobby also adds every member already sitting in the lobby as a peer, which is what
+	# makes "friends join the lobby, then the host starts" work rather than only the reverse.
+	var lobby_id: int = _current_steam_lobby()
+	if lobby_id != 0:
+		return _call_steam_peer(peer, &"host_with_lobby", [lobby_id])
+
+	# No lobby: a valid session, reachable only by someone who already knows our Steam ID.
+	MireLog.warn(NetConfig.LOG_CHANNEL,
+		"hosting STEAM without a lobby — friends cannot see or be invited to this session; use SteamLobby.host_session() for that")
 	return _call_steam_peer(peer, &"create_host", [NetConfig.STEAM_VIRTUAL_PORT])
 
 
@@ -445,9 +469,23 @@ func _create_steam_client(steam_id: String) -> MultiplayerPeer:
 	if not steam_id.is_valid_int():
 		_note_failure(ERR_INVALID_PARAMETER, "STEAM mode needs a numeric Steam ID, got '%s'" % steam_id)
 		return null
-	# TODO(1.4): if the caller handed us a *lobby* id, join the lobby and resolve the owner's Steam ID
-	# here before opening the P2P connection.
-	return _call_steam_peer(peer, &"create_client", [steam_id.to_int(), NetConfig.STEAM_VIRTUAL_PORT])
+
+	var id: int = steam_id.to_int()
+	if is_lobby_id(id):
+		# SteamLobby.join_by_id() has already put us in this lobby and waited for the callback, so the
+		# owner lookup inside connect_to_lobby resolves. Reached directly, this is the failure the
+		# GodotSteam source words as "You must be a member of the lobby you are trying to connect".
+		return _call_steam_peer(peer, &"connect_to_lobby", [id])
+	return _call_steam_peer(peer, &"create_client", [id, NetConfig.STEAM_VIRTUAL_PORT])
+
+
+## The lobby SteamLobby currently holds, or 0. Looked up by node path rather than by name so this file
+## keeps working with the SteamLobby autoload absent — the state every non-Steam mode runs in.
+func _current_steam_lobby() -> int:
+	var lobby: Node = get_node_or_null(^"/root/SteamLobby")
+	if lobby == null or not lobby.has_method(&"current_lobby_id"):
+		return 0
+	return int(lobby.call(&"current_lobby_id"))
 
 
 ## Returns null and records a clear reason when GodotSteam is not installed — the "not yet" path that

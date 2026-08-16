@@ -71,6 +71,38 @@ const STEAM_SINGLETON: StringName = &"Steam"
 ## SteamNetworkingMessages channel. 0 unless we ever run two sessions from one process.
 const STEAM_VIRTUAL_PORT: int = 0
 
+# Values below are Steamworks' own, read off the INSTALLED GodotSteam 4.21 build rather than from
+# documentation (D-022 pins that build). They are mirrored here so nothing outside the Steam seam has
+# to reference the `Steam` singleton — a file that names Steam directly stops parsing when the addon
+# is absent, which is the whole reason NetTransport goes through ClassDB.
+
+## ELobbyType.k_ELobbyTypeFriendsOnly. Never PUBLIC: App ID 480's public list is worldwide junk, and
+## STEAM.md §2 is explicit that we join by invite or lobby id only.
+const STEAM_LOBBY_TYPE_FRIENDS_ONLY: int = 1
+
+## EResult.k_EResultOK. Note it is 1, not 0 — Steam's success value is not C's.
+const STEAM_RESULT_OK: int = 1
+
+## EAccountType.k_EAccountTypeChat. Lobby ids carry this in bits 52-55; a player's id carries
+## k_EAccountTypeIndividual (1) instead. That is how one 64-bit number tells us which it is.
+const STEAM_ACCOUNT_TYPE_CHAT: int = 8
+const STEAM_ACCOUNT_TYPE_SHIFT: int = 52
+const STEAM_ACCOUNT_TYPE_MASK: int = 0xF
+
+## Lobby metadata. Set by the host, readable by anyone who can see the lobby — a joiner checks this
+## before connecting so a stray App ID 480 lobby from another developer fails fast and legibly.
+const STEAM_LOBBY_KEY_GAME: String = "game"
+const STEAM_LOBBY_GAME_VALUE: String = "mire"
+const STEAM_LOBBY_KEY_HOST: String = "host"
+
+## createLobby and joinLobby answer by callback with no failure timeout of their own. If Steam never
+## calls back — offline, logged out mid-call — this is when we give up and say so.
+const STEAM_LOBBY_TIMEOUT_SEC: float = 15.0
+
+## Steam appends this to the launch arguments when a friend's invite is accepted while the game is
+## closed: `+connect_lobby <lobby_id>`. The running-game case arrives as a signal instead.
+const STEAM_CONNECT_LOBBY_ARG: String = "+connect_lobby"
+
 # ── Logging ───────────────────────────────────────────────────────────────────────────────────────
 
 ## MireLog channel. `log net off` in the debug console silences everything below WARN.

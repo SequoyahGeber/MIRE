@@ -8,14 +8,19 @@
       "task": "1.1"
     },
     "autoload/net_transport.gd": {
-      "agent": "net",
-      "at": "2026-08-16T03:10:07+00:00",
-      "task": "1.2"
+      "agent": "lobby",
+      "at": "2026-08-16T07:53:23+00:00",
+      "task": "1.4"
     },
     "autoload/registry.gd": {
       "agent": "claude",
       "at": "2026-08-16T02:59:39+00:00",
       "task": "2.2"
+    },
+    "autoload/steam_lobby.gd": {
+      "agent": "lobby",
+      "at": "2026-08-16T07:53:23+00:00",
+      "task": "1.4"
     },
     "core/dev/dev_launch.gd": {
       "agent": "local",
@@ -23,9 +28,9 @@
       "task": "1.3"
     },
     "core/net/net_config.gd": {
-      "agent": "net",
-      "at": "2026-08-16T03:10:07+00:00",
-      "task": "1.2"
+      "agent": "lobby",
+      "at": "2026-08-16T07:53:23+00:00",
+      "task": "1.4"
     },
     "core/util/mire_log.gd": {
       "agent": "claude",
@@ -68,9 +73,9 @@
       "task": "0.3"
     },
     "project.godot": {
-      "agent": "local",
-      "at": "2026-08-16T03:30:06+00:00",
-      "task": "1.3"
+      "agent": "lobby",
+      "at": "2026-08-16T07:53:23+00:00",
+      "task": "1.4"
     },
     "steam_appid.txt": {
       "agent": "steam",
@@ -112,10 +117,20 @@
       "at": "2026-08-15T21:46:15+00:00",
       "task": "0.3"
     },
+    "tools/steam_api_probe.gd": {
+      "agent": "lobby",
+      "at": "2026-08-16T07:53:23+00:00",
+      "task": "1.4"
+    },
     "tools/steam_check.gd": {
       "agent": "steam",
       "at": "2026-08-16T06:52:27+00:00",
       "task": "1.1"
+    },
+    "tools/steam_lobby_check.gd": {
+      "agent": "lobby",
+      "at": "2026-08-16T07:53:23+00:00",
+      "task": "1.4"
     },
     "tools/verify_setup.gd": {
       "agent": "claude",
@@ -291,9 +306,11 @@
       "title": "`LOCAL` mode: launch 2 instances, auto-host/auto-join, no menus. Make this one keypress."
     },
     "1.4": {
+      "done_at": "2026-08-16T07:53:23+00:00",
+      "done_by": "lobby",
       "est": "3",
       "milestone": "M1",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Steam lobby: create, invite via overlay, join by ID, leave, member list"
     },

@@ -22,6 +22,7 @@ DebugConsole="*res://autoload/debug_console.gd"
 Registry="*res://autoload/registry.gd"
 NetTransport="*res://autoload/net_transport.gd"
 DevLaunch="*res://core/dev/dev_launch.gd"
+SteamLobby="*res://autoload/steam_lobby.gd"
 
 [display]
 
