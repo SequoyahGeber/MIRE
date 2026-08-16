@@ -386,3 +386,18 @@ Notes along the way:
 Files: `.agent/bin/agent`, `AGENTS.md`, `docs/FINDINGS.md`, `.gitignore`
 
 Commit at time of writing: `aa91a1a`
+
+---
+
+### DONE · 0.11 · onyx · 2026-08-16T17:02:10+00:00
+
+**Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box**
+
+Added TestMapProps autoload (world/gen/test_map_props.gd) that scatters 66 deterministic test props (30 crates, 16 stumps, 12 cover walls, 8 platforms) around the greybox test level's open field, outside the existing hand-built ramps/stairs/gaps area. Seeded RNG, client-local/no networking needed (same category as terrain gen). Only activates when current_scene.name == GreyboxTest, so it's a no-op once a real level exists. Registered in project.godot autoloads (D-021, editor was closed).
+
+Notes along the way:
+- Runtime spawner autoload instead of scene edits (per hard rule + user confirmed). Verified headless: 'world: TestMapProps scattered 66 test props into GreyboxTest', no errors, godot --headless --path . --quit-after 120.
+
+Files: `world/gen/test_map_props.gd`, `project.godot`, `docs/ROADMAP.md`
+
+Commit at time of writing: `14138a5`

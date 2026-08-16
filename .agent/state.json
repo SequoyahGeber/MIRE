@@ -77,6 +77,11 @@
       "at": "2026-08-16T02:46:31+00:00",
       "task": "0.5"
     },
+    "docs/ROADMAP.md": {
+      "agent": "onyx",
+      "at": "2026-08-16T17:02:10+00:00",
+      "task": "0.11"
+    },
     "entities/player/player.tscn": {
       "agent": "claude",
       "at": "2026-08-15T21:46:15+00:00",
@@ -93,9 +98,9 @@
       "task": "0.3"
     },
     "project.godot": {
-      "agent": "spawn",
-      "at": "2026-08-16T08:15:22+00:00",
-      "task": "1.5"
+      "agent": "onyx",
+      "at": "2026-08-16T17:02:10+00:00",
+      "task": "0.11"
     },
     "steam_appid.txt": {
       "agent": "steam",
@@ -181,6 +186,11 @@
       "agent": "nav",
       "at": "2026-08-16T00:30:42+00:00",
       "task": "0.8"
+    },
+    "world/gen/test_map_props.gd": {
+      "agent": "onyx",
+      "at": "2026-08-16T17:02:10+00:00",
+      "task": "0.11"
     }
   },
   "tasks": {
@@ -201,6 +211,15 @@
       "status": "done",
       "tier": "T0",
       "title": "Spike R6 \u2014 run `tools/check_determinism.gd` on Windows and Linux, compare against the macOS baseline in `ARCHITECTURE.md` \u00a76a"
+    },
+    "0.11": {
+      "done_at": "2026-08-16T17:02:10+00:00",
+      "done_by": "onyx",
+      "est": "1",
+      "milestone": "M0",
+      "status": "done",
+      "tier": "T0",
+      "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.2": {
       "done_at": "2026-08-15T21:29:21+00:00",

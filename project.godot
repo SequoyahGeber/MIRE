@@ -25,6 +25,7 @@ DevLaunch="*res://core/dev/dev_launch.gd"
 SteamLobby="*res://autoload/steam_lobby.gd"
 PlayerNet="*res://autoload/player_net.gd"
 NetDebugPanel="*res://ui/debug/net_debug_panel.gd"
+TestMapProps="*res://world/gen/test_map_props.gd"
 
 [display]
 

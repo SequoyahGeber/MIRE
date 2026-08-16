@@ -54,6 +54,7 @@ to R2 and R3 from `ARCHITECTURE.md` §6.
 | 0.8 | **Spike R3** — bake a `NavigationRegion3D` on a runtime-generated chunk, measure the hitch | T2 | 1.5 |
 | 0.9 | Record spike results in `DECISIONS.md`. If R3 failed, decide the fallback **now**. | T0 | 0.5 |
 | 0.10 | **Spike R6** — run `tools/check_determinism.gd` on Windows and Linux, compare against the macOS baseline in `ARCHITECTURE.md` §6a | T0 | 1 |
+| 0.11 | Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box | T0 | 1 |
 
 > **Do not skip 0.7/0.8.** These are the two things most likely to force a serious redesign, and they
 > are far cheaper to discover here than in M4/M5.
