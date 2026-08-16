@@ -29,7 +29,10 @@ claim the identity is there to prevent. Every prompt below carries the prefix on
 
 **Including `git commit`.** The pre-commit hook re-runs `agent check` under git's environment, so an
 unprefixed commit is checked against the wrong identity and can be blocked despite valid claims.
-Prefer `agent ship`, which gets this right on its own.
+Prefer `agent ship`, which gets this right on its own — and it is now safe to prefer: **F-014 is
+fixed** (`ce8128a`), so `ship` commits by pathspec and can no longer be blocked by, or unstage,
+another agent's staged work, and **F-010 is fixed** (`60e85cc`), so it carries `.uid` sidecars along
+with the scripts that own them instead of leaving them untracked.
 
 **Roles are not fixed (D-020).** Any agent can take any task; which one gets it depends on which plan
 has quota. Nothing below is reserved for a particular chat.
@@ -52,20 +55,52 @@ doesn't.
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
-**1.5 and 1.10 shipped** (`8d6ddab`, `4f17bcd`). **1.9 is in flight** under agent `load`, holding
-`core/net/dummy_replicant.gd` and `tools/bench_replication.gd`.
+**Nothing is in flight — clean slate, 20/108 tasks done.** 1.5, 1.9 and 1.10 all shipped
+(`8d6ddab`, `ef1bc16`, `4f17bcd`), and 1.10 is now actually *wired* (`9f56451`). No file is claimed;
+`1.6`, `1.7`, `1.8`, `1.11` are ready to pick up and `agent brief <id>` will print each one.
 
 | # | Task | Agent name | Model | Effort | Status |
 |---|---|---|---|---|---|
 | 1.5 | Networked player — spawner + synchronizer | `spawn` | Opus 5 | high | **done** — runs; prompt kept for reference |
-| 1.9 | Spike R1 — replication load | `load` | Opus 5 | high | **in flight** |
-| 1.10 | Network debug panel | `netui` | Sonnet 5 | medium | **done** — entity count reads 0 until F-013 is closed |
-| 1.6 · 1.7 · 1.8 | Interpolation · lifecycle · interest management | | | | **unblocked, no prompt written yet** |
+| 1.9 | Spike R1 — replication load | `load` | Opus 5 | high | **done — AMBER.** Read the verdict below before writing 1.8 |
+| 1.10 | Network debug panel | `netui` | Sonnet 5 | medium | **done and wired** — entity count still reads 0 until F-013 is closed |
+| 1.6 · 1.7 · 1.8 | Interpolation · lifecycle · interest management | | | | **ready, no prompt written yet** — 1.8 is now mandatory, not optional |
+| 1.11 | Protocol/build version handshake | | | | **ready, no prompt written yet** |
 | 1.1 · 1.2 · 1.3 · 1.4 | GodotSteam · NetTransport · LOCAL loop · Steam lobby | | | | done and verified |
 | 2.2 | Content framework | `content` | Sonnet 5 | medium | done — prompt kept for reference |
 
 `project.godot` is free again. It is still the one file only one task at a time may hold, so whichever
-of 1.6–1.8 needs an autoload claims it by name and the others do not.
+of 1.6–1.8 needs an autoload claims it by name and the others do not. Two things wiring one cost us
+already (`9f56451`): **an autoload script may not carry a `class_name` equal to its own singleton
+name** — Godot rejects it as hiding the singleton and the autoload never registers — and **autoload
+order is load order**: a script whose `_ready()` resolves `DebugOverlay`/`NetTransport`/`PlayerNet` by
+bare identifier must be registered *after* them.
+
+### What 1.9 measured — 1.8 is now mandatory, and this is the budget it has to hit
+
+**AMBER.** 6 real ENet peers, 200 host-authoritative entities, 60Hz paced:
+
+| Configuration | Host up |
+|---|---|
+| Unfiltered, 30Hz | **918 KB/s** — 7.3× the 125 KB/s ceiling |
+| §2.5 interest management, 30Hz | 105 KB/s |
+| §2.5 interest management, 15Hz | 57 KB/s |
+
+CPU never exceeded 1.18 ms of a 16.67 ms frame on any peer, so replication is **bandwidth-bound, not
+CPU-bound** — do not optimize 1.6/1.8 for CPU. Wire cost is 30.5 B per entity per update per client
+to carry 16 B of real state, so §6 R1's hand-rolled-binary fallback could buy at most 1.9× where
+filtering buys 8.8–16×: **the fallback is not needed, and 1.8 is what makes M1 fit.**
+
+One unexplained result 1.8 must budget for: filtering was *cheaper* with players clustered (100 KB/s)
+than spread (180 KB/s) at an identical 11.6% visible fraction, and the extra cost is reliable-channel
+traffic (~2× host ACK volume). That points at visibility churn — an entity crossing the 120 m boundary
+forces a despawn+respawn per peer. Not isolated. **1.8 should assume churn is real and consider
+hysteresis** (leave-radius larger than enter-radius) so boundary-hugging entities don't flap.
+
+**F-013 is still open** and is now the cheapest task on the board: nothing calls
+`add_to_group(&"synced")`, so the wired panel's entity line reads 0 while players visibly replicate.
+Whoever touches it decides the convention *once* — every synchronizer, or every replicated entity
+root — because 1.8 and 1.9's dummy replicants both need to be counted the same way.
 
 ### What 1.5 established — write 1.6, 1.7 and 1.8 against this, not against a guess
 
