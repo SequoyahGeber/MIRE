@@ -105,7 +105,29 @@ with Blender 5.2 using `tools/blender/build_playtest_map.py`; verify with `Godot
 **1.5, 1.9 and 1.10 shipped earlier** (`8d6ddab`, `ef1bc16`, `4f17bcd`), and 1.10 is now actually
 *wired* (`9f56451`). **1.6, 1.7, 1.8 and 1.11 are now implemented and headlessly verified** — read
 the table and the per-task sections below rather than assuming a clean slate. The only remaining M1
-task is 1.12, the physical cross-platform Steam join test, which is waiting on Windows provisioning.
+task is 1.12, whose three-machine Steam transport has now worked but whose formal evidence run is
+still incomplete.
+
+**Task 1.12 live state (2026-08-16):** all three `tools/steam_check.gd` preflights passed on stock
+Godot `4.7.1.stable.official.a13da4feb`, GodotSteam 4.21 and App ID 480. The accounts are macOS
+`TheQuoy`, Windows `quoygeber`, and Linux `sequoyahgeber`, and they are mutual friends. The Windows
+checkout is `C:\MIRE` with Godot at `C:\Tools\Godot\Godot_v4.7.1-stable_win64.exe`; the Linux
+checkout is `/home/ubuntu/mire-task-1.12` with Godot at `/home/ubuntu/.local/bin/godot-4.7.1`.
+Windows Steam IPC is unavailable to an OpenSSH service session, so launch Steam checks and the game
+in the signed-in interactive console session (an interactive scheduled task is suitable).
+
+A Mac-hosted lobby reached three peers and displayed all three spawned players after
+`player_controller.gd` gained code-built coloured remote debug capsules and `players` group
+registration. Linux movement visibly replicated on the Mac host. Windows first join remains flaky:
+it twice hit `connect to steam:<lobby_id> timed out after 10.0s`, then connected on an immediate
+retry to the same lobby; one of those first-attempt failures occurred with Windows Firewall already
+fully disabled, so F-023 tracks the brittle timeout independently of firewall configuration.
+Sequoyah disabled the firewall during diagnosis and it must be restored with a narrow allow rule for
+the pinned Godot executable before the VM is considered ready. Remaining 1.12 work is a fresh run on
+the shipped revision with the firewall enabled, 60 seconds of movement by every player, one F3
+screenshot and complete log per platform, then clients exiting before the host.
+The retained evidence logs are in `/Users/sequoyahgeber/Desktop/MIRETestLogs`; the final diagnostic
+run ended host-first, so both client logs correctly record `CONNECTION_LOST` and are not pass evidence.
 
 **Three open findings were closed this session, all of them process rather than game code:** F-013
 (the `&"synced"` convention, D-024 — 1.8 inherits it), F-015 (an F-number is a task id, so a finding

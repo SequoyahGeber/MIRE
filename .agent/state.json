@@ -1039,7 +1039,7 @@
     },
     "docs/DELEGATION.md": {
       "agent": "hollow",
-      "at": "2026-08-16T20:16:02+00:00",
+      "at": "2026-08-16T22:41:46+00:00",
       "task": "1.12"
     },
     "docs/DESIGN.md": {
@@ -1048,13 +1048,13 @@
       "task": "F-022"
     },
     "docs/FINDINGS.md": {
-      "agent": "slate",
-      "at": "2026-08-16T20:11:49+00:00",
-      "task": "4.0b"
+      "agent": "hollow",
+      "at": "2026-08-16T22:41:46+00:00",
+      "task": "1.12"
     },
     "docs/NEXT.md": {
       "agent": "hollow",
-      "at": "2026-08-16T20:16:02+00:00",
+      "at": "2026-08-16T22:41:46+00:00",
       "task": "1.12"
     },
     "docs/ROADMAP.md": {
@@ -1064,7 +1064,7 @@
     },
     "docs/STEAM_CROSS_PLATFORM_TEST.md": {
       "agent": "hollow",
-      "at": "2026-08-16T20:16:02+00:00",
+      "at": "2026-08-16T22:41:46+00:00",
       "task": "1.12"
     },
     "docs/WINDOWS_TEST_BRIEF.md": {
@@ -1072,20 +1072,10 @@
       "at": "2026-08-16T20:11:49+00:00",
       "task": "4.0b"
     },
-    "entities/player/player.tscn": {
-      "agent": "claude",
-      "at": "2026-08-15T21:46:15+00:00",
-      "task": "0.3"
-    },
     "entities/player/player_controller.gd": {
-      "agent": "birch",
-      "at": "2026-08-16T17:16:32+00:00",
-      "task": "1.8"
-    },
-    "levels/greybox_test.tscn": {
-      "agent": "claude",
-      "at": "2026-08-15T21:46:15+00:00",
-      "task": "0.3"
+      "agent": "hollow",
+      "at": "2026-08-16T22:41:46+00:00",
+      "task": "1.12"
     },
     "levels/playtest_map.tscn": {
       "agent": "reed",
@@ -1116,11 +1106,6 @@
       "agent": "claude",
       "at": "2026-08-16T02:59:39+00:00",
       "task": "2.2"
-    },
-    "tools/bench_chunks.gd": {
-      "agent": "terrain",
-      "at": "2026-08-15T22:02:39+00:00",
-      "task": "0.7"
     },
     "tools/bench_navbake.gd": {
       "agent": "nav",
@@ -1217,11 +1202,6 @@
       "at": "2026-08-16T19:23:07+00:00",
       "task": "1.7"
     },
-    "tools/setup_project.gd": {
-      "agent": "claude",
-      "at": "2026-08-15T21:46:15+00:00",
-      "task": "0.3"
-    },
     "tools/steam_api_probe.gd": {
       "agent": "lobby",
       "at": "2026-08-16T07:53:23+00:00",
@@ -1256,11 +1236,6 @@
       "agent": "netui",
       "at": "2026-08-16T08:14:40+00:00",
       "task": "1.10"
-    },
-    "world/chunk/chunk_mesher.gd": {
-      "agent": "terrain",
-      "at": "2026-08-15T22:02:39+00:00",
-      "task": "0.7"
     },
     "world/chunk/nav_bake_probe.gd": {
       "agent": "nav",

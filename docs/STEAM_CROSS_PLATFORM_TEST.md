@@ -25,6 +25,12 @@ export preset or port forwarding.
    Substitute the absolute pinned Godot executable on Windows. Do not open and save scenes.
 4. On each machine, run `tools/steam_check.gd` with the Steam client still running. It must pass.
    Keep complete command output, including errors, in a platform-labelled text file.
+5. On Windows, run the preflight and game in the signed-in interactive desktop session. A process
+   launched directly by the OpenSSH service cannot see Steam's per-user IPC even when Steam is open
+   on the console; an interactive scheduled task is acceptable for remote orchestration.
+6. Keep Windows Firewall enabled. Add a program allow rule scoped to the pinned Godot executable and
+   the active network profile. Disabling an entire firewall profile is diagnostic state, not a valid
+   test or completed VM configuration.
 
 ## Run the lobby
 
@@ -70,3 +76,8 @@ PASS requires all of the following:
 If it fails, retain the logs and screenshots, report the platform and first failure line, and do not
 change code during the session. A Steam client/account/addon/engine prerequisite failure is BLOCKED;
 a reproducible lobby/session failure with valid prerequisites is FAIL.
+
+Windows currently has a known intermittent first-join failure (F-023): the hard 10 s connection
+timer can expire even with valid prerequisites, while an immediate retry against the same lobby
+connects. Preserve the failed attempt as evidence rather than overwriting it. A retry is diagnostic
+only and does not turn the run into a PASS, because the pass criteria require no connection failure.

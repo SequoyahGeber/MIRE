@@ -200,10 +200,11 @@ What this does and doesn't close:
   passthrough is the primary-adapter/vBIOS work above. Do not cite the containers as a blocker. VMs therefore answer "does the export launch and
   behave correctly on this OS" — most of the value — but frame rate and rendering artifacts need real
   hardware. Steam Deck remains a separate purchase decision.
-- **1.12 — partially, with friction.** LAN testing over `ENetMultiplayerPeer` works fine between
-  guests. Testing the *Steam* transport needs a Steam client running in each guest and a distinct
-  Steam account per instance, which is a real constraint worth planning for rather than discovering
-  during M1.
+- **1.12 — machines and accounts are now available.** The macOS host, Windows VM and Linux VM each
+  run the pinned engine/GodotSteam build under distinct mutual-friend Steam accounts, and all three
+  peers have joined one Steam lobby. The remaining gap is test evidence and reliability, not machine
+  access: F-023 tracks the intermittent Windows first-join timeout, and the formal 60-second run is
+  still pending. Windows software rendering is sufficient for this transport/replication gate.
 
 The first physical-Windows run formally reported `FAIL` because each probe also emitted 306 unrelated
 startup errors. This was a harness/bootstrap error, not a determinism failure: `addons/godotsteam/` is
@@ -385,6 +386,25 @@ line 111. The custom client `SceneMultiplayer` is assigned an ENet peer without 
 a stable root path before polling, then make engine errors fail the harness so a green exit cannot
 hide them. This is independent of 1.7: `tools/session_lifecycle_check.gd` uses full Godot processes
 with initialized roots and completes cleanly.
+
+---
+
+### F-023 · Windows Steam first join intermittently exceeds the hard 10-second connection timeout
+
+**Area:** netcode/testing · **Severity:** high · **Found:** 2026-08-16 by hollow during 1.12
+
+With all prerequisites valid on pinned Godot `4.7.1.stable.official.a13da4feb`, GodotSteam 4.21 and
+App ID 480, the Windows client twice reported
+`connect to steam:<lobby_id> timed out after 10.0s`; an immediate retry against the same live lobby
+then connected and joined the macOS and Linux peers. One failed first attempt happened after Windows
+Firewall was fully disabled, so a missing firewall rule cannot explain the whole failure. Linux
+joined the same lobbies on its first attempt.
+
+The current fixed 10 s deadline therefore turns a recoverable Steam handshake delay into a failed
+cross-platform run. Investigate Steam connection-state callbacks and measure first-join latency on
+Windows before choosing a longer deadline or bounded retry policy. Keep this separate from task
+1.12's evidence run: retain each failed log, restore Windows Firewall with a narrow Godot program
+rule, and do not count a successful retry as a clean PASS.
 
 ---
 

@@ -8,9 +8,12 @@
 ## Status
 
 **Milestone:** M1 · Network spine — **13/14.** M0 is closed, 10/10.
-**Last session:** 2026-08-16 — task 1.12 is in progress. The Windows physical-machine prerequisite
-and Windows determinism gate are complete; the three-machine Steam session now has a reproducible
-launch procedure in `docs/STEAM_CROSS_PLATFORM_TEST.md`.
+**Last session:** 2026-08-16 — task 1.12 is in progress. All three pinned-engine/GodotSteam
+preflights passed and a real Mac-hosted Steam lobby reached three peers across macOS, Windows and
+Linux. Code-built remote-player debug capsules made all three spawns visible, and Linux movement
+replicated to the host. The formal exit run is not complete: the Windows client intermittently
+exceeds the hard 10 s first-join timeout (F-023), the Windows firewall is still disabled from
+diagnosis, and the required 60-second movement run, three screenshots and clean exit sequence remain.
 
 Connection lifecycle (1.7) completed the code-driven M1 work: readable
 admission/version refusals, late joining, automatic LOCAL/LAN rejoin, clean host close, and bounded
@@ -49,17 +52,19 @@ it takes one from the chat itself (F-007).
 
 ---
 
-## Next task — 1.12 after its machine prerequisites exist
+## Next task — finish 1.12's physical evidence run
 
 **Starting a task no longer means pasting a prompt.** Open a fresh chat, give it the task id, and the
 agent runs `agent brief <id>` itself: that prints the task, the open findings, what the last tasks in
 this milestone left it, and who holds which files. It claims, works, verifies headless, files what it
 learned in the repo, and ships. What comes back to you is what only you can act on.
 
-**Task 1.12 is ready for its physical run.** The Windows PC and Linux guest exist, and F-009's
-fresh-clone GodotSteam registration problem is fixed. Follow
-`docs/STEAM_CROSS_PLATFORM_TEST.md`: it is a physical Mac ↔ Windows ↔ Linux Steam lobby test, not
-more lifecycle code.
+**Task 1.12 has proved the transport path but has not met every pass criterion.** The Windows and
+Linux guests exist, three distinct mutual-friend Steam accounts pass preflight, and all three peers
+have shared one lobby. Before the final run, restore Windows Firewall and add a narrow program rule
+for the pinned Godot executable; do not leave the profile disabled. Then follow
+`docs/STEAM_CROSS_PLATFORM_TEST.md`, retain the first Windows timeout if it recurs, and capture the
+full 60-second movement/screenshots/exit evidence. F-023 owns the intermittent Windows first join.
 
 ---
 

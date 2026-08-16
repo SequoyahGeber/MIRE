@@ -17,6 +17,18 @@ signal jumped
 ## Emitted on landing, with the downward speed at the moment of impact (positive, m/s).
 signal landed(impact_speed: float)
 
+## Temporary network-test colours. The real third-person character belongs to the player-art task;
+## these code-built proxies make movement and facing observable before that asset exists, without
+## putting generated debug geometry in the human-owned player scene.
+const DEBUG_AVATAR_COLOURS: Array[Color] = [
+	Color("55b9ff"),
+	Color("ff7a59"),
+	Color("8ee05d"),
+	Color("d687ff"),
+	Color("ffd45a"),
+	Color("55e0cf"),
+]
+
 @export_group("Speed")
 ## Base ground speed, metres per second.
 @export_range(1.0, 15.0, 0.1) var walk_speed: float = 4.0
@@ -72,6 +84,8 @@ func _ready() -> void:
 	# works standalone for M0. In a session it is the peer this body was spawned for.
 	is_local_authority = is_multiplayer_authority()
 
+	add_to_group(&"players")
+	_build_debug_avatar()
 	_build_synchronizer()
 
 	camera.set_active(is_local_authority)
@@ -80,6 +94,46 @@ func _ready() -> void:
 
 	if is_local_authority:
 		_capture_mouse(true)
+
+
+## Until a third-person character asset exists, remote players still need a visible body for the
+## cross-platform replication test. This subtree is built identically on every peer and is purely
+## client-local presentation; the owning player hides its own proxy so it cannot obstruct the
+## first-person camera.
+func _build_debug_avatar() -> void:
+	var colour_index: int = absi(get_multiplayer_authority()) % DEBUG_AVATAR_COLOURS.size()
+	var material := StandardMaterial3D.new()
+	material.albedo_color = DEBUG_AVATAR_COLOURS[colour_index]
+	material.roughness = 0.8
+
+	var body_mesh := CapsuleMesh.new()
+	body_mesh.radius = 0.4
+	body_mesh.height = 1.8
+
+	var body := MeshInstance3D.new()
+	body.name = "DebugAvatar"
+	body.position.y = 0.9
+	body.mesh = body_mesh
+	body.material_override = material
+	body.visible = not is_local_authority
+	add_child(body)
+
+	# Godot's forward direction is -Z. The dark face plate makes replicated yaw obvious instead of
+	# presenting a rotationally symmetric capsule that appears not to turn.
+	var face_mesh := BoxMesh.new()
+	face_mesh.size = Vector3(0.42, 0.28, 0.08)
+
+	var face_material := StandardMaterial3D.new()
+	face_material.albedo_color = Color("182331")
+	face_material.roughness = 0.45
+
+	var face := MeshInstance3D.new()
+	face.name = "DebugAvatarFace"
+	face.position = Vector3(0.0, 1.42, -0.37)
+	face.mesh = face_mesh
+	face.material_override = face_material
+	face.visible = not is_local_authority
+	add_child(face)
 
 
 ## A player spawned by PlayerNet is NAMED for the peer that owns it, and that name is in place on

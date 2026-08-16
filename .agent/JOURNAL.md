@@ -667,3 +667,15 @@ Windows prerequisite is now complete (aa2efb2). Added debug-only DevLaunch --ste
 Files: `docs/STEAM_CROSS_PLATFORM_TEST.md`, `docs/DELEGATION.md`, `docs/NEXT.md`, `tools/steam_cross_platform_check.gd`, `tools/steam_cross_platform_check.gd.uid`, `core/dev/dev_launch.gd`
 
 Commit at time of writing: `aa2efb2`
+
+---
+
+### HANDOFF · 1.12 · hollow · 2026-08-16T22:41:46+00:00
+
+**Cross-platform join test — Mac ↔ Windows ↔ Linux in one lobby, over Steam**
+
+All three preflights passed on Godot 4.7.1/GodotSteam 4.21/App 480 using mutual-friend accounts TheQuoy (Mac), quoygeber (Windows), sequoyahgeber (Linux). A Mac lobby reached Windows+Linux and F3 showed three peers/players; code-built remote debug capsules plus players-group registration made both remotes visible, and Linux movement replicated. Windows first join twice timed out at the hard 10.0s then immediate retry connected, including once with firewall already off; filed F-023. Windows Steam IPC is unavailable from the OpenSSH service session, so run checks/game interactively. Windows Firewall is STILL DISABLED from diagnosis; restore it and add a narrow allow rule for C:\Tools\Godot\Godot_v4.7.1-stable_win64.exe before final testing. Formal PASS is not achieved: no complete 60s all-player movement observation, no retained screenshot per platform, and final evidence run ended host-first so clients logged CONNECTION_LOST. Evidence logs are /Users/sequoyahgeber/Desktop/MIRETestLogs. Temporary Mac/Linux/Windows test processes/tasks were stopped. Next: firewall-on rerun from shipped revision, preserve first failure if any, capture all three F3 screenshots/logs and 60s movement, clients exit first then host. Validation: import OK; lifecycle 8/8 0 failures; interp PASS; debug panel 0 failures with known F-021 engine errors.
+
+Files: `entities/player/player_controller.gd`, `docs/FINDINGS.md`, `docs/DELEGATION.md`, `docs/NEXT.md`, `docs/STEAM_CROSS_PLATFORM_TEST.md`
+
+Commit at time of writing: `6c3b721`
