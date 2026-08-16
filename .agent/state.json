@@ -1,55 +1,31 @@
 {
-  "claims": {
-    "docs/ARCHITECTURE.md": {
-      "agent": "claude",
-      "at": "2026-08-16T02:17:34+00:00",
-      "task": "0.10"
-    },
-    "docs/DECISIONS.md": {
-      "agent": "claude",
-      "at": "2026-08-16T02:17:34+00:00",
-      "task": "0.10"
-    },
-    "docs/FINDINGS.md": {
-      "agent": "claude",
-      "at": "2026-08-16T02:17:34+00:00",
-      "task": "0.10"
-    },
-    "docs/NEXT.md": {
-      "agent": "claude",
-      "at": "2026-08-16T02:17:34+00:00",
-      "task": "0.10"
-    },
-    "tools/check_determinism_ops.gd": {
-      "agent": "claude",
-      "at": "2026-08-16T02:19:09+00:00",
-      "task": "0.10"
-    }
-  },
-  "in_flight": {
-    "0.10": {
-      "agent": "claude",
-      "files": [
-        "docs/DECISIONS.md",
-        "docs/ARCHITECTURE.md",
-        "docs/FINDINGS.md",
-        "docs/NEXT.md",
-        "tools/check_determinism_ops.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-16T02:17:34+00:00"
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     "autoload/net_transport.gd": {
       "agent": "net",
       "at": "2026-08-15T21:53:55+00:00",
       "task": "1.2"
     },
+    "docs/ARCHITECTURE.md": {
+      "agent": "claude",
+      "at": "2026-08-16T02:20:14+00:00",
+      "task": "0.10"
+    },
     "docs/DECISIONS.md": {
-      "agent": "nav",
-      "at": "2026-08-16T00:41:31+00:00",
-      "task": "0.9"
+      "agent": "claude",
+      "at": "2026-08-16T02:20:14+00:00",
+      "task": "0.10"
+    },
+    "docs/FINDINGS.md": {
+      "agent": "claude",
+      "at": "2026-08-16T02:20:14+00:00",
+      "task": "0.10"
+    },
+    "docs/NEXT.md": {
+      "agent": "claude",
+      "at": "2026-08-16T02:20:14+00:00",
+      "task": "0.10"
     },
     "entities/player/player.tscn": {
       "agent": "claude",
@@ -75,6 +51,11 @@
       "agent": "nav",
       "at": "2026-08-16T00:30:42+00:00",
       "task": "0.8"
+    },
+    "tools/check_determinism_ops.gd": {
+      "agent": "claude",
+      "at": "2026-08-16T02:20:14+00:00",
+      "task": "0.10"
     },
     "tools/setup_project.gd": {
       "agent": "claude",
@@ -103,9 +84,11 @@
       "title": "`git init`, first commit, verify `.gitignore` covers `.godot/`, `export/`, `*.import` cache"
     },
     "0.10": {
+      "done_at": "2026-08-16T02:20:14+00:00",
+      "done_by": "claude",
       "est": "1",
       "milestone": "M0",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T0",
       "title": "Spike R6 \u2014 run `tools/check_determinism.gd` on Windows and Linux, compare against the macOS baseline in `ARCHITECTURE.md` \u00a76a"
     },

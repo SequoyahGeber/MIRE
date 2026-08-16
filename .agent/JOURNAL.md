@@ -194,3 +194,15 @@ Files: `docs/DECISIONS.md`
 
 Commit at time of writing: `9ebe47b`
 
+
+---
+
+### DONE · 0.10 · claude · 2026-08-16T02:20:14+00:00
+
+**Spike R6 — run `tools/check_determinism.gd` on Windows and Linux, compare against the macOS baseline in `ARCHITECTURE.md` §6a**
+
+Completed.
+
+Files: `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, `docs/FINDINGS.md`, `docs/NEXT.md`, `tools/check_determinism_ops.gd`
+
+Commit at time of writing: `cf62593`
