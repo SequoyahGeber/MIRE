@@ -171,16 +171,35 @@ x86_64. If it does, §4's "clients regenerate the world from a seed" design is i
 That question is unanswerable on this hardware, and it is a genuine architectural fork, not a
 verification chore. The macOS column of the §6a table is filled in; the other two cannot be.
 
-Options, none free: a cloud CI runner executing the headless determinism script on both platforms
-(cheapest, and works for 0.10 only); a Linux VM under UTM on Apple Silicon — but note it would be
-**arm64**, so it tests OS divergence and not architecture divergence, which is the actual risk; or a
-friend with a Windows PC running a headless binary and sending back the four hashes. The last is
-probably the fastest path to unblocking 0.10 specifically.
+**Resolution path: VMs on the Unraid server.** Unraid is x86_64 and ships with KVM, so it can host
+Windows and Linux guests on the architecture that actually matters here.
 
-1.12 and 7.12 need real hardware eventually and can't be solved this way, but they're M1 and M7 — time
-to arrange something. Steam Deck is its own purchase decision.
+The distinction that decides where these VMs live:
 
-This needs a decision recorded in `DECISIONS.md`, not just a finding.
+| Host | Guest arch | Answers R6? |
+|---|---|---|
+| MacBook (UTM) | **arm64** | **No** — holds the CPU architecture constant, so it tests OS divergence only. A green result here would be misleading. |
+| Unraid (KVM) | **x86_64** | **Yes** — this is the macOS-arm64 vs Windows-x86_64 comparison R6 is actually asking about. |
+
+Use Unraid for anything determinism- or architecture-sensitive. UTM on the MacBook is still useful for
+quick "does it launch on Linux" checks where architecture is irrelevant.
+
+What this does and doesn't close:
+
+- **0.10 — fully closed.** `check_determinism.gd` is headless and compute-only; no GPU, no display, no
+  Steam. A Godot headless binary in an x86_64 Linux guest and an x86_64 Windows guest fills in both
+  empty columns of the §6a table.
+- **7.12 — partially.** VMs answer "does the export launch and behave correctly on this OS," which is
+  most of the value. They do **not** answer frame rate or rendering-artifact questions without GPU
+  passthrough, since the guest renders in software. Performance verification still wants real
+  hardware, and Steam Deck remains a separate purchase decision.
+- **1.12 — partially, with friction.** LAN testing over `ENetMultiplayerPeer` works fine between
+  guests. Testing the *Steam* transport needs a Steam client running in each guest and a distinct
+  Steam account per instance, which is a real constraint worth planning for rather than discovering
+  during M1.
+
+Still worth a `DECISIONS.md` entry: "cross-platform verification happens on Unraid x86_64 VMs, with
+these known gaps" is a standing decision that shapes M7 and M8, not just a finding.
 
 ---
 
