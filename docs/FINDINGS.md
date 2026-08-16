@@ -150,6 +150,13 @@ main-thread work in Godot.
 0.8 (R3) covers collision/nav baking. **GPU upload remains unmeasured by any planned spike** — worth
 re-running the bench with a real renderer before 4.3 commits to a streaming budget.
 
+**Correction, 2026-08-15 by nav after 0.8 landed:** 0.8 did **not** cover collision baking. R3 spiked
+*navigation* baking only — `world/chunk/nav_bake_probe.gd` feeds triangles straight to Recast via
+`NavigationMeshSourceGeometryData3D.add_faces()` and never creates a `CollisionShape3D`. Physics shape
+cooking (`ConcavePolygonShape3D` from a chunk mesh) is a different code path and is still unmeasured
+by anything. So this entry now covers **two** unmeasured main-thread costs, not one, and neither is on
+the roadmap. Recorded in `DECISIONS.md` D-015 as the standing caveat on the R2 green result.
+
 ---
 
 ### F-006 · Three roadmap tasks assume a Windows or Linux machine we don't have
@@ -208,6 +215,45 @@ results from this box are a closer proxy for the Deck than anything else availab
 
 Still worth a `DECISIONS.md` entry: "cross-platform verification happens on Unraid x86_64 VMs, with
 these known gaps" is a standing decision that shapes M7 and M8, not just a finding.
+
+---
+
+### F-007 · Pre-commit hook can't tell which agent is committing
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-15 by nav during 0.8/0.9
+
+The hook prints `session: claude` for every commit regardless of `MIRE_AGENT`. Three commits from a
+session that had `export MIRE_AGENT=nav` set and had claimed under `nav` (`bdf8587`, `9ebe47b`,
+`70d5635`) were all attributed to `claude`. The hook runs in a fresh shell that does not inherit the
+exported variable, so `598523c`'s identity fix reached the CLI but not the hook.
+
+The failure this causes: with agents in parallel, the claim check evaluates every commit as though one
+fixed agent made it. An agent committing files another agent holds is then judged against the wrong
+identity — which is precisely the collision the claim system exists to catch. It fails open, quietly.
+
+Fix: resolve the agent name from `.agent/state.json`'s active session, or have `agent start` persist
+it to a file the hook reads. Do not depend on an inherited environment variable across the `git`
+process boundary.
+
+Same hook as F-001, different defect — worth fixing in one pass.
+
+---
+
+### F-008 · CLAUDE.md's stated close-out order makes the hook warn on your own files
+
+**Area:** process · **Severity:** low · **Found:** 2026-08-15 by nav during 0.8
+
+`CLAUDE.md` says "Before you stop: `agent done` or `agent handoff`, then commit." Following it
+literally produces `⚠ <file> — edited without a claim` on the very files you just finished, because
+`done` releases the claims before the commit is made. Observed on `bdf8587`; committing first and
+running `done` afterwards (`9ebe47b`) was silent.
+
+Harmless once, but it is a warning that appears when you did everything right, which is the fastest
+way to train people to ignore warnings — and F-001 already documents the same hook pushing people
+toward `--no-verify`.
+
+Fix: swap the order in `CLAUDE.md` to commit-then-`done`, or have the hook ignore files whose claim
+was released by the current session within the last few minutes. The doc change is the cheap one.
 
 ---
 
