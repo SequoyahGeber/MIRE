@@ -102,3 +102,59 @@ Spike R2 GREEN. 33x33 verts / 2048 tris per 32m chunk. ArrayMesh direct: 0.330 m
 Files: `world/chunk/chunk_mesher.gd`, `tools/bench_chunks.gd`
 
 Commit at time of writing: `598523c`
+
+---
+
+### DONE · 0.8 · nav · 2026-08-16T00:30:42+00:00
+
+**Spike R3 — bake a `NavigationRegion3D` on a runtime-generated chunk, measure the hitch**
+
+GREEN. Runtime nav baking is viable; R3 is not the wall we feared.
+
+NUMBERS (Godot 4.7.1, macOS arm64, 15 cores, 32 m chunk, cell 0.25, agent_radius 0.5):
+- Blocking bake: 9.2 ms median (55% of a frame) -> never call the sync bake on the main thread.
+- Async bake (NavigationServer3D.bake_from_source_geometry_data_async): 9.6 ms wall, submit costs
+  0.004 ms, MAIN-THREAD BLOCK 0.011 ms. Effectively free.
+- Realistic streaming episode (24 chunks baked + attached + retired, 3x3 window live):
+  WORST main-thread block 0.034 ms. This is the number that matters. Budget was 2 ms.
+- Attaching a baked region to a live map: 0.003 ms median with async_iterations on (0.289 ms off).
+- 16 bakes fired in one frame: 6.8 ms block. Cap in-flight bakes at 2-4; one at a time is free.
+- cell_size scaling is steeply superlinear: 1.0 m 0.26 ms | 0.5 m 2.1 ms | 0.25 m 9.2 ms |
+  0.15 m 28.7 ms | 0.1 m 80.7 ms. 0.25 m is the right pick; 0.5 m if we ever need headroom.
+- Bigger regions do not amortize: 4x4 chunks in one bake = 116.9 ms (7.3 ms/chunk) vs 9.6 ms for
+  one chunk. Per-chunk bakes win.
+
+SEAMS CONNECT, and the fix is not the obvious one:
+- Chunks baked independently leave a hole exactly 2*agent_radius wide (measured 1.00 m at r=0.5),
+  because Recast erodes the mesh inward from the geometry edge. Default edge_connection_margin
+  0.25 < 1.00, so the default config SPLITS and an agent cannot path across a chunk boundary.
+- FIX: NavigationServer3D.map_set_edge_connection_margin(map, 1.10) (i.e. > 2*agent_radius).
+  8 edge connections form, path crosses the seam. Negative control: two chunks 32 m apart with
+  the same margin stay SPLIT, so the margin is not inventing phantom links.
+- What does NOT work, both measured: filter_baking_aabb (it filters SOURCE GEOMETRY before the
+  bake, so overlap+clip still erodes to 0.5..31.5) and border_size (it shrinks the result further
+  — 4 m border gave an 8 m hole). Overlapping bakes without clipping leave regions overlapping by
+  7 m and still SPLIT. Do not reach for these.
+- Alternative if a wide margin ever bites: agent_radius 0.0 gives a 0.00 m gap and connects on the
+  default 0.25 margin, at the cost of the navmesh hugging cliff edges.
+
+THREE TRAPS, all silent, all cost real time — documented in the code:
+1. Triangle winding. Godot's Recast bridge wants cross(v1-v0, v2-v0).y NEGATIVE for an up-facing
+   face, the opposite of the usual convention. Wrong winding bakes ZERO polygons and reports
+   success with no error. This is what our first run hit.
+2. A nav map is not queryable until the server syncs it on a physics frame. map_force_update()
+   does not force it, and map_get_iteration_id() reaches 1 while the polygon graph is still empty.
+   Both give a false 'ready'; poll a real query instead.
+3. NavigationMesh.cell_size must equal the map's cell size or Godot warns and edges rasterize onto
+   different grids.
+
+NEEDS WIRING: nothing. Both files are throwaway spike code, no scene changes.
+FOLLOW-UP FOR M4: bake off the main thread, one chunk in flight at a time, set the map's
+edge_connection_margin above 2*agent_radius at startup, leave map async_iterations on.
+
+Notes along the way:
+- Seam fix is edge_connection_margin > 2*agent_radius, NOT filter_baking_aabb or border_size (both shrink the mesh, measured). Negative control confirms a 1.10 m margin does not link chunks 32 m apart.
+
+Files: `world/chunk/nav_bake_probe.gd`, `tools/bench_navbake.gd`
+
+Commit at time of writing: `9a1bc19`

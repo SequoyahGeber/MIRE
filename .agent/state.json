@@ -27,6 +27,11 @@
       "at": "2026-08-15T22:02:39+00:00",
       "task": "0.7"
     },
+    "tools/bench_navbake.gd": {
+      "agent": "nav",
+      "at": "2026-08-16T00:30:42+00:00",
+      "task": "0.8"
+    },
     "tools/setup_project.gd": {
       "agent": "claude",
       "at": "2026-08-15T21:46:15+00:00",
@@ -39,7 +44,7 @@
     },
     "world/chunk/nav_bake_probe.gd": {
       "agent": "nav",
-      "at": "2026-08-15T21:53:55+00:00",
+      "at": "2026-08-16T00:30:42+00:00",
       "task": "0.8"
     }
   },
@@ -113,9 +118,11 @@
       "title": "Spike R2 \u2014 generate 100 chunked terrain meshes from noise, measure frame times & hitches"
     },
     "0.8": {
+      "done_at": "2026-08-16T00:30:42+00:00",
+      "done_by": "nav",
       "est": "1.5",
       "milestone": "M0",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Spike R3 \u2014 bake a `NavigationRegion3D` on a runtime-generated chunk, measure the hitch"
     },
