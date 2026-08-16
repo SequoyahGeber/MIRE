@@ -230,6 +230,14 @@ and a future engine default can't silently change it.
 | `display/window/vsync/vsync_mode` | `enabled` (default), player-overridable | Ships as the safe default; exposed in settings (7.5). |
 | `application/run/max_fps` | `0` (uncapped), player-overridable | An fps cap must never change simulation behaviour. If it does, something violates this section. |
 
+> **You cannot do this from the Project Settings UI.** Godot writes only settings whose value differs
+> from the engine default, and prunes the rest on save. Four of the six above — `physics_ticks_per_second`,
+> `max_physics_steps_per_frame`, `vsync_mode` and `max_fps` — *are* the defaults, so setting them in the
+> editor is a no-op on the file and they silently vanish. Only `physics_interpolation` and
+> `physics_jitter_fix` persist on their own. Pin the other four by writing the lines into
+> `project.godot` by hand. This is the whole point of the section: a value that isn't in the file isn't
+> a contract, it's just today's default.
+
 ### Rules for writing systems
 
 1. **Simulation goes in `_physics_process`.** Movement, gravity, combat, health, hunger, stamina,

@@ -86,42 +86,6 @@ affect gameplay.
 
 ---
 
-### F-003 · Four §5a settings can't be pinned from the Godot editor — it prunes default values
-
-**Area:** rendering · **Severity:** low · **Found:** 2026-08-15 by claude · **Updated:** 2026-08-15 by nav
-
-*Originally: none of §5a's six required settings were applied, so `physics_interpolation` was off and
-anything not directly player-controlled would judder on a high-refresh display.*
-
-**The judder risk is closed.** Sequoyah set all six in the editor, and the two that matter behaviourally
-persisted, because their targets differ from the engine default:
-
-```
-[physics]
-common/physics_interpolation=true     # default false
-common/physics_jitter_fix=0.0         # default 0.5
-```
-
-**The other four did not persist, and this is the part worth knowing:** Godot's editor writes only
-settings whose value differs from the engine default, and `physics_ticks_per_second=60`,
-`max_physics_steps_per_frame=8`, `vsync_mode=enabled` and `max_fps=0` all *are* the defaults. Setting
-them in Project Settings is a no-op on the file. So §5a's actual requirement — "set these explicitly
-rather than inheriting defaults, so the contract is visible in `project.godot` and a future engine
-default can't silently change it" — **cannot be satisfied through the editor UI.** The only way to pin
-a default-valued setting is to write the line into `project.godot` by hand.
-
-Behaviour is correct today; what is missing is the guard against a future Godot changing a default
-underneath us. Godot is pinned (D-?/R5), so that exposure is limited to a deliberate engine upgrade.
-
-Remaining fix, human-only (agents can't edit `project.godot` — D-007): add `common/physics_ticks_per_second=60`
-and `common/max_physics_steps_per_frame=8` under `[physics]`, `window/vsync/vsync_mode=1` under
-`[display]`, and `run/max_fps=0` under `[application]`.
-
-Worth folding into §5a itself so the next person doesn't rediscover it: the table should say which of
-these the editor will and won't write.
-
----
-
 ### F-004 · Interpolation is only planned for remote players, not enemies or props
 
 **Area:** rendering · **Severity:** medium · **Found:** 2026-08-15 by claude during the §5a doc update
@@ -254,6 +218,22 @@ would have got this right the first time.
 ---
 
 ## Resolved
+
+### F-003 · §5a project settings not applied — **fixed**
+
+**Area:** rendering · **Filed:** 2026-08-15 by claude · **Fixed:** 2026-08-15 by sequoyah (`ba5945f`)
+
+All six §5a settings are now explicitly written in `project.godot`, so the contract is visible in the
+file rather than inherited. `physics_interpolation=true` with `physics_jitter_fix=0.0` closes the
+high-refresh judder risk that motivated this entry — load-bearing on the ProMotion MacBook, which
+would have shown it before any other hardware.
+
+**The gotcha, kept because it is not obvious and cost time:** Godot's editor writes only settings whose
+value differs from the engine default and prunes the rest on save. `physics_ticks_per_second=60`,
+`max_physics_steps_per_frame=8`, `vsync_mode=enabled` and `max_fps=0` all *are* the defaults, so
+setting them in Project Settings did nothing to the file and they silently disappeared. They had to be
+written into `project.godot` by hand. Now folded into `ARCHITECTURE.md` §5a as a note under the
+settings table, so the next person reads it before spending the ten minutes.
 
 ### F-001 · Pre-commit hook scans the working tree instead of the staged set — **fixed**
 
