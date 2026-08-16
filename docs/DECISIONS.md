@@ -248,6 +248,31 @@ follows quota availability, not a fixed table.
 **Would change my mind:** quota contention making it valuable again to reserve one plan strictly for
 planning — but that would be re-decided explicitly, not assumed from D-014.
 
+### D-021 · 2026-08-16 · Agents wire their own autoloads; the blocker is the editor, not permission
+*Amends D-012, does not repeal it.* D-012 already allowed an agent to edit `project.godot` when it
+holds a claim naming that file, but every prompt in `DELEGATION.md` said "tell me what to register and
+I'll do it" — stricter than the rule, and the reason task 2.2 shipped a `Registry` autoload that
+nothing loaded. Sequoyah: "Why are the agents telling me to do stuff? Why can they not do this
+themselves? They should just have permissions to do whatever they need within the project folder."
+
+He's right that nothing was ever blocking them but our own prompt text. So: **a task that produces an
+autoload registers it, in the same task, under a claim naming `project.godot`.** Shipping a script
+nobody loads is not shipping.
+
+Scene files (`.tscn`/`.tres`) are unchanged and stay human-only. The distinction is that `project.godot`
+is a flat INI-style file that merges and reviews fine, while scene files carry sub-resource and
+node-path IDs that corrupt silently — D-007's actual reasoning, which never applied equally to both.
+
+**The one real condition, and it is not about trust:** an agent must confirm the Godot editor is not
+running before touching `project.godot`. The editor rewrites that file on save and prunes any setting
+equal to the engine default (D-019, F-003 — "fixed" twice, un-fixed itself both times). An agent's
+edit made while the editor is open is silently discarded. This is a race, not a permission, and no
+amount of access changes it.
+
+**Would change my mind:** an agent's `project.godot` edit corrupting the file or clobbering an editor
+change despite the check. Then registration goes back to being handed over as a checklist — but as a
+deliberate reversal, not by prompt text quietly contradicting the decision log again.
+
 ---
 
 ## Template

@@ -12,8 +12,9 @@ doing anything. This file only adds what's specific to Claude Code.
 Non-negotiables, repeated here because they're the ones that cost the most when broken:
 
 1. **`.agent/bin/agent start claude`** at the beginning of every session, and **claim before you edit**.
-2. **Never edit `.tscn` / `.tres` / `project.godot`.** Scene files don't merge. Sequoyah wires scenes in
-   the editor; you write `.gd` scripts and tell him what to wire.
+2. **Never edit `.tscn` / `.tres`.** Scene files don't merge. Sequoyah wires scenes in the editor.
+   **`project.godot` is different (D-021)** — claim it by name and register your own autoload, after
+   checking the Godot editor is closed. A script nothing loads isn't shipped.
 3. **Never explore speculatively.** Quota, not time, is the constraint. Ask which file.
 4. **Every system declares its network authority** (`docs/ARCHITECTURE.md` §2.2). No "multiplayer later."
 

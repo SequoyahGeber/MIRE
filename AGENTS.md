@@ -42,7 +42,7 @@ Then read `docs/NEXT.md` for the current focus.
 ### 1. Claim before you edit
 
 ```bash
-.agent/bin/agent claim 2.4 systems/inventory/inventory.gd core/net/rpc_util.gd
+MIRE_AGENT=<your-name> .agent/bin/agent claim 2.4 systems/inventory/inventory.gd core/net/rpc_util.gd
 ```
 
 Fails loudly if another agent holds that task or any of those files. **If it fails, pick a different
@@ -98,9 +98,9 @@ staged set and blocks you if you've touched a file you don't hold.
 next task based on what you say here, so be precise:
 
 - **What you verified, and how.** The command you ran, the numbers it produced. Not "it works."
-- **What he must wire before it runs.** You cannot touch `.tscn` / `.tres` / `project.godot`
-  (see Hard rules). If a script needs an autoload registered, a node added, or an exported value
-  set, then **the feature does not work yet** — say so in those words.
+- **Whether it actually runs, or only compiles.** Register your own autoload (D-021, see Hard
+  rules) so these stop being different things. If something still needs a `.tscn`/`.tres` change —
+  a node added, an exported value set — then **the feature does not work yet**, in those words.
 - **Whether it is safe to move on.** Say it plainly, either way.
 
 > "Done and pushed" and "working" are different claims. A pushed script that still needs an autoload
@@ -111,15 +111,27 @@ next task based on what you say here, so be precise:
 
 ## Hard rules
 
-### Never edit Godot scene or resource files
+### Never edit Godot scene files
 
-`.tscn` · `.tres` · `.import` · `project.godot` · `export_presets.cfg`
+`.tscn` · `.tres` · `.import` · `export_presets.cfg`
 
 These carry internal sub-resource and node-path IDs. They do not merge, and a bad edit silently
 corrupts a scene. **Only Sequoyah touches these, in the Godot editor.** The pre-commit hook enforces it.
 
-You write `.gd` scripts. He wires them into scenes. If your work needs a scene change, say so
-explicitly in your `done`/`handoff` note:
+### `project.godot` IS yours — claim it by name
+
+Not on the list above (D-021). It's a flat INI file that merges and reviews fine, so the corruption
+argument never applied to it. **A task that produces an autoload registers it, in that same task**,
+under a claim naming `project.godot`. Shipping a script nothing loads is not shipping.
+
+Two conditions, both real:
+
+1. **Check the editor is closed first** — `pgrep -fl Godot`. It rewrites the file on save and will
+   silently discard your edit. If it's running, stop and say so.
+2. **Append only.** Don't reorder or reformat, and never hand-write a setting equal to the engine
+   default — Godot prunes those on its next save, so it isn't a fix, it's a fix with a timer (D-019).
+
+If your work needs a genuine *scene* change, say so explicitly in your `done`/`handoff` note:
 
 > *Needs wiring: attach `inventory.gd` to the Player node, add a `MultiplayerSynchronizer` child, and
 > expose `held_items` on it.*

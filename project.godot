@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 DebugOverlay="*res://autoload/debug_overlay.gd"
 DebugConsole="*res://autoload/debug_console.gd"
+Registry="*res://autoload/registry.gd"
 
 [display]
 

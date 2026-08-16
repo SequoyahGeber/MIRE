@@ -59,7 +59,7 @@ docs/ARCHITECTURE.md §2 (all of §2 — it defines the networking model) before
 code. Then:
 
     MIRE_AGENT=net .agent/bin/agent start net
-    MIRE_AGENT=net .agent/bin/agent claim 1.2 autoload/net_transport.gd core/net/net_config.gd
+    MIRE_AGENT=net .agent/bin/agent claim 1.2 autoload/net_transport.gd core/net/net_config.gd project.godot
 
 Keep the MIRE_AGENT=net prefix on EVERY .agent/bin/agent command you run, including
 done and ship. Do not use `export` — each shell call is a fresh process, so an
@@ -118,8 +118,14 @@ AUTHORITY: this is infrastructure, not simulated state. But read the authority t
 in docs/ARCHITECTURE.md §2.2 and note in a file-header comment which rows this enables.
 
 CONSTRAINTS:
-- .gd files only. NEVER touch .tscn/.tres/project.godot (D-007, hook-enforced).
-  You cannot register the autoload yourself — tell me what to register and I'll do it.
+- Scene files (.tscn/.tres) stay human-only (D-007, hook-enforced).
+- project.godot IS yours here: your claim names it, which D-012/D-021 permit. Register
+  the autoload yourself rather than handing me a checklist. Append one line to the
+  [autoload] section; do not reformat or reorder the file, and do not add settings that
+  equal the engine default — Godot's editor prunes those on its next save (D-019).
+- BEFORE editing project.godot, confirm the Godot editor is not running (pgrep -fl Godot).
+  If it is, STOP and tell me — the editor rewrites that file on save and will silently
+  discard your change. This is the one condition that makes wiring not yours.
 - Don't explore the codebase beyond mire_log.gd. Everything else you need is here.
 
 DELIVERABLE: also give me a 5-line snippet showing how task 1.3 (the two-window LOCAL
@@ -135,10 +141,12 @@ other agents are working in this same directory and you would commit their
 half-written files.
 
 THEN, as your final chat message, tell me:
-  - what you verified and the actual numbers/command
-  - EXACTLY what I must wire before this runs (autoloads, scene nodes). You
-    can't touch .tscn/.tres, so if anything needs wiring, say plainly that the
-    feature does NOT work yet
+  - what you verified, with the actual command you ran and its output. If you
+    could not run it, say so — do not describe unrun code as working
+  - whether the feature actually RUNS now, or only compiles. You registered the
+    autoload yourself, so "shipped" and "working" should finally be the same
+    thing; if they aren't, say which one this is
+  - anything still needing a .tscn/.tres change, which is genuinely mine
   - whether it is safe for me to start the next task
 
 ```
@@ -213,10 +221,12 @@ other agents are working in this same directory and you would commit their
 half-written files.
 
 THEN, as your final chat message, tell me:
-  - what you verified and the actual numbers/command
-  - EXACTLY what I must wire before this runs (autoloads, scene nodes). You
-    can't touch .tscn/.tres, so if anything needs wiring, say plainly that the
-    feature does NOT work yet
+  - what you verified, with the actual command you ran and its output. If you
+    could not run it, say so — do not describe unrun code as working
+  - whether the feature actually RUNS now, or only compiles. You registered the
+    autoload yourself, so "shipped" and "working" should finally be the same
+    thing; if they aren't, say which one this is
+  - anything still needing a .tscn/.tres change, which is genuinely mine
   - whether it is safe for me to start the next task
 
 ```
