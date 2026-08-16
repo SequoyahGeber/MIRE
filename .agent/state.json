@@ -10,25 +10,10 @@
       "at": "2026-08-16T17:09:20+00:00",
       "task": "1.7"
     },
-    "autoload/player_net.gd": {
-      "agent": "birch",
-      "at": "2026-08-16T17:04:00+00:00",
-      "task": "1.8"
-    },
     "core/dev/dev_launch.gd": {
       "agent": "tine",
       "at": "2026-08-16T17:09:20+00:00",
       "task": "1.7"
-    },
-    "core/net/net_config.gd": {
-      "agent": "birch",
-      "at": "2026-08-16T17:04:00+00:00",
-      "task": "1.8"
-    },
-    "core/net/net_interest.gd": {
-      "agent": "birch",
-      "at": "2026-08-16T17:04:00+00:00",
-      "task": "1.8"
     },
     "core/net/net_session.gd": {
       "agent": "tine",
@@ -40,20 +25,10 @@
       "at": "2026-08-16T17:07:25+00:00",
       "task": "1.6"
     },
-    "entities/player/player_controller.gd": {
-      "agent": "birch",
-      "at": "2026-08-16T17:04:00+00:00",
-      "task": "1.8"
-    },
     "project.godot": {
       "agent": "ash",
       "at": "2026-08-16T17:07:25+00:00",
       "task": "1.6"
-    },
-    "tools/interest_check.gd": {
-      "agent": "birch",
-      "at": "2026-08-16T17:04:00+00:00",
-      "task": "1.8"
     },
     "tools/interp_check.gd": {
       "agent": "ash",
@@ -100,34 +75,6 @@
         }
       ],
       "started": "2026-08-16T17:09:20+00:00"
-    },
-    "1.8": {
-      "agent": "birch",
-      "files": [
-        "core/net/net_interest.gd",
-        "core/net/net_config.gd",
-        "entities/player/player_controller.gd",
-        "autoload/player_net.gd",
-        "tools/interest_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-16T17:13:55+00:00",
-          "by": "birch",
-          "text": "NetInterest.configure(sync, source, class) is the single seam: it sets replication_interval + delta_interval from the \u00a72.5 class table, joins NetConfig.SYNCED_GROUP (D-024), and installs the hysteretic distance filter. Called where authority is set, before add_child (F-012)."
-        },
-        {
-          "at": "2026-08-16T17:13:55+00:00",
-          "by": "birch",
-          "text": "Adding a new class_name breaks every headless --script run until 'Godot --headless --path . --import' rebuilds .godot/global_script_class_cache.cfg, which is gitignored. Cost 10 minutes to diagnose; the fix is one command."
-        },
-        {
-          "at": "2026-08-16T17:13:55+00:00",
-          "by": "birch",
-          "text": "MultiplayerSynchronizer in 4.7.1 has no is_visible_to(); get_visibility_for() reads back only the MANUAL override, not the filter result. Whether the engine actually calls our filter can only be proven in a live session \u2014 hence part 3 of the harness."
-        }
-      ],
-      "started": "2026-08-16T17:04:00+00:00"
     }
   },
   "recent": {
@@ -152,9 +99,9 @@
       "task": "1.4"
     },
     "autoload/player_net.gd": {
-      "agent": "spawn",
-      "at": "2026-08-16T08:15:22+00:00",
-      "task": "1.5"
+      "agent": "birch",
+      "at": "2026-08-16T17:16:32+00:00",
+      "task": "1.8"
     },
     "autoload/registry.gd": {
       "agent": "claude",
@@ -177,9 +124,14 @@
       "task": "1.9"
     },
     "core/net/net_config.gd": {
-      "agent": "spawn",
-      "at": "2026-08-16T08:15:22+00:00",
-      "task": "1.5"
+      "agent": "birch",
+      "at": "2026-08-16T17:16:32+00:00",
+      "task": "1.8"
+    },
+    "core/net/net_interest.gd": {
+      "agent": "birch",
+      "at": "2026-08-16T17:16:32+00:00",
+      "task": "1.8"
     },
     "core/net/net_version.gd": {
       "agent": "bram",
@@ -222,9 +174,9 @@
       "task": "0.3"
     },
     "entities/player/player_controller.gd": {
-      "agent": "spawn",
-      "at": "2026-08-16T08:15:22+00:00",
-      "task": "1.5"
+      "agent": "birch",
+      "at": "2026-08-16T17:16:32+00:00",
+      "task": "1.8"
     },
     "levels/greybox_test.tscn": {
       "agent": "claude",
@@ -280,6 +232,11 @@
       "agent": "bram",
       "at": "2026-08-16T17:14:58+00:00",
       "task": "1.11"
+    },
+    "tools/interest_check.gd": {
+      "agent": "birch",
+      "at": "2026-08-16T17:16:32+00:00",
+      "task": "1.8"
     },
     "tools/net_debug_panel_check.gd": {
       "agent": "netui",
@@ -535,9 +492,11 @@
       "title": "Connection lifecycle: join mid-session, disconnect, host quits, timeout handling"
     },
     "1.8": {
+      "done_at": "2026-08-16T17:16:32+00:00",
+      "done_by": "birch",
       "est": "1.5",
       "milestone": "M1",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T2",
       "title": "Interest management: visibility filters + per-class `replication_interval` (`ARCHITECTURE.md` \u00a72.5)"
     },

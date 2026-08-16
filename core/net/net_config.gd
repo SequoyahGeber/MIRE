@@ -125,9 +125,50 @@ const PLAYER_SYNC_NODE: StringName = &"NetSync"
 ## the synchronizer is built with, so a site that builds one cannot forget.
 const SYNCED_GROUP: StringName = &"synced"
 
-## §2.5: players replicate at 30Hz. Enemies (15Hz) and props (on-change) are task 1.8's to add.
+## §2.5: players replicate at 30Hz.
 const PLAYER_SYNC_HZ: float = 30.0
 const PLAYER_SYNC_INTERVAL_SEC: float = 1.0 / PLAYER_SYNC_HZ
+
+# ── Replication: interest management (task 1.8, §2.5) ─────────────────────────────────────────────
+#
+# The per-class table §2.5 asks for. NetInterest.configure() is what reads it — these are the numbers,
+# core/net/net_interest.gd is the mechanism. They live here because every value below has to be
+# byte-identical in the host process and in every client process: a client whose enter radius differs
+# from the host's would disagree about which entities it should have, and disagree silently.
+#
+# What 1.9 measured, so the next person does not have to re-derive the budget: unfiltered 30Hz cost
+# 918 KB/s host-up against a 125 KB/s ceiling; the same load with these filters on cost 105 KB/s at
+# 30Hz and 57 KB/s at 15Hz. Filtering is what makes M1 fit — see docs/DELEGATION.md.
+
+## Enemies: half the player rate. They are host-simulated and there are more of them, and 15Hz plus
+## interpolation (1.6) is indistinguishable from 30Hz on something that is not under your own hand.
+const ENEMY_SYNC_HZ: float = 15.0
+const ENEMY_SYNC_INTERVAL_SEC: float = 1.0 / ENEMY_SYNC_HZ
+
+## Props and containers: "on-change only" (§2.5) is a property-mode decision — every property on a
+## prop is REPLICATION_MODE_ON_CHANGE, so nothing is sent while nothing changes and the interval below
+## never fires. It is set to a full second anyway, deliberately: if someone later adds an ALWAYS
+## property to a prop by mistake, the cost of the mistake is 1Hz rather than every frame (which is
+## what an interval of 0.0 means to the engine).
+const PROP_SYNC_INTERVAL_SEC: float = 1.0
+
+## How often a synchronizer CHECKS its on-change properties. 10Hz: a chopped tree or an opened
+## container reaches every player within 100 ms, which is imperceptible for a state change, and the
+## check costs nothing when the answer is "unchanged".
+const PROP_DELTA_INTERVAL_SEC: float = 0.1
+
+## §2.5's ~120 m, as the radius at which an entity BECOMES visible to a peer.
+const INTEREST_ENTER_RADIUS_M: float = 120.0
+
+## And the larger radius at which it stops being visible again. The gap is hysteresis, and it is not
+## cosmetic: losing visibility despawns the entity on that client and regaining it respawns it, so an
+## entity sitting exactly on a single radius flaps a despawn+respawn per peer per evaluation. 1.9 saw
+## the bill for that — clustered players measured CHEAPER (100 KB/s) than spread ones (180 KB/s) at an
+## identical 11.6% visible fraction, with the difference falling on the reliable channel, which is
+## where spawn traffic lives. 20% of the enter radius is 24 m: two players closing on each other at
+## sprint speed take ~2 s to cross it, so the worst case is one transition every couple of seconds
+## instead of one every physics tick.
+const INTEREST_LEAVE_RADIUS_M: float = 144.0
 
 # ── Host speed sanity check (§2.2 row 1) ──────────────────────────────────────────────────────────
 

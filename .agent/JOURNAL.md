@@ -416,3 +416,20 @@ Notes along the way:
 Files: `core/net/net_version.gd`, `tools/handshake_check.gd`
 
 Commit at time of writing: `0a267f5`
+
+---
+
+### DONE · 1.8 · birch · 2026-08-16T17:16:32+00:00
+
+**Interest management: visibility filters + per-class `replication_interval` (`ARCHITECTURE.md` §2.5)**
+
+Interest management shipped. NetInterest.configure(sync, source, class) is the single seam for every replicated entity: per-class replication_interval/delta_interval from the §2.5 table (PLAYER 30Hz unfiltered, ENEMY 15Hz, PROP on-change 10Hz), SYNCED_GROUP membership (D-024), and a hysteretic distance filter (enter 120m / leave 144m) evaluated on the physics tick. Observers pushed host-side by PlayerNet every tick. D-025 records the two radii and PHYSICS-vs-IDLE. Verified by tools/interest_check.gd — 40 checks including a live 1-host/2-client ENet session where moving one observer makes the entity spawn and despawn on that client only, and the band is sticky in both directions. Not an autoload, so no project.godot claim was needed.
+
+Notes along the way:
+- NetInterest.configure(sync, source, class) is the single seam: it sets replication_interval + delta_interval from the §2.5 class table, joins NetConfig.SYNCED_GROUP (D-024), and installs the hysteretic distance filter. Called where authority is set, before add_child (F-012).
+- Adding a new class_name breaks every headless --script run until 'Godot --headless --path . --import' rebuilds .godot/global_script_class_cache.cfg, which is gitignored. Cost 10 minutes to diagnose; the fix is one command.
+- MultiplayerSynchronizer in 4.7.1 has no is_visible_to(); get_visibility_for() reads back only the MANUAL override, not the filter result. Whether the engine actually calls our filter can only be proven in a live session — hence part 3 of the harness.
+
+Files: `core/net/net_interest.gd`, `core/net/net_config.gd`, `entities/player/player_controller.gd`, `autoload/player_net.gd`, `tools/interest_check.gd`
+
+Commit at time of writing: `982c2ae`

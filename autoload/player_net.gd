@@ -185,6 +185,7 @@ func _despawn(peer_id: int) -> void:
 	player.queue_free()
 	_last_sample.erase(peer_id)
 	_strikes.erase(peer_id)
+	NetInterest.clear_observer(peer_id)
 	MireLog.info(NetConfig.LOG_CHANNEL, "PlayerNet: despawned player %d" % peer_id)
 
 
@@ -253,10 +254,29 @@ func _on_disconnected() -> void:
 	set_physics_process(false)
 	_last_sample.clear()
 	_strikes.clear()
+	NetInterest.clear_observers()
 
 	for child: Node in _players.get_children():
 		_players.remove_child(child)
 		child.queue_free()
+
+
+# ── Interest management observers (§2.5) ──────────────────────────────────────────────────────────
+
+
+## Publish every player's position to NetInterest, which is what the visibility filters on enemies
+## and props measure their distance from.
+##
+## HOST ONLY, because _physics_process is host-only, and that is exactly right today: a visibility
+## filter runs on the peer holding the synchronizer's authority, and every filtered class in §2.5 is
+## host-authoritative. The one client-authoritative row — a player's own movement — is deliberately
+## unfiltered. If a client ever owns something filtered, this is the line that has to move.
+func _publish_observers() -> void:
+	for child: Node in _players.get_children():
+		var body: Node3D = child as Node3D
+		if body == null:
+			continue
+		NetInterest.set_observer(String(body.name).to_int(), body.global_position)
 
 
 # ── Host speed sanity check (§2.2 row 1) ──────────────────────────────────────────────────────────
@@ -269,6 +289,12 @@ func _on_disconnected() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# Interest management (§2.5) reads these; it does not gather them, because a static filter called
+	# 1000 times a tick must not walk the tree. Published every tick, not on the sample timer below —
+	# visibility is re-evaluated at 60Hz, and filtering against a position up to a quarter of a second
+	# stale is how an entity 24 m outside the leave radius stays subscribed.
+	_publish_observers()
+
 	_sample_timer += delta
 	if _sample_timer < NetConfig.SPEED_CHECK_INTERVAL_SEC:
 		return

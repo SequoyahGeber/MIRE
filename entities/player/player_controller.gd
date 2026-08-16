@@ -117,15 +117,15 @@ func _build_synchronizer() -> void:
 	net_sync.name = NetConfig.PLAYER_SYNC_NODE
 	net_sync.root_path = ^".."
 	net_sync.replication_config = config
-	net_sync.replication_interval = NetConfig.PLAYER_SYNC_INTERVAL_SEC
 
 	# The owning peer sends; everyone else receives — and this MUST be set before the synchronizer
 	# enters the tree. Changing a synchronizer's authority once it is already in the tree makes the
 	# replication interface reject the pending spawn ("no network ID"), which the engine reports as
 	# an error on every client and which is exactly the trap this task was warned about.
 	net_sync.set_multiplayer_authority(get_multiplayer_authority())
-	# F-013: counted by the net debug panel. See NetConfig.SYNCED_GROUP for what the group means.
-	net_sync.add_to_group(NetConfig.SYNCED_GROUP)
+	# §2.5 replication class: 30Hz, and deliberately NOT distance-filtered — see NetInterest.FILTERED.
+	# This also joins NetConfig.SYNCED_GROUP, which is why nothing here does (D-024).
+	NetInterest.configure(net_sync, self, NetInterest.Class.PLAYER)
 	add_child(net_sync)
 
 
