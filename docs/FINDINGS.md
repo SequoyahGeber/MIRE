@@ -435,6 +435,13 @@ duration, so collect the `connected … in N.NNs` line from all three platforms,
 first join times out and the automatic retry recovers it, that is the fix working — still not a clean
 PASS for 1.12, whose criteria require no connection failure.
 
+**2026-08-16, later — F-025 is now the leading suspect for the cause.** A live Mac ↔ Windows session
+had the Windows client rendering at 2–3 FPS against the host's 113. Steam's callback pump runs once per
+rendered frame, so that machine serviced the rendezvous roughly 40× slower than the host — which
+explains a 10 s timeout followed by a working immediate retry far better than a slow Steam network
+does. Read F-025 before setting the budget from any measurement: **a number taken on a software-
+rendered machine is contaminated**, and the fix may belong in the pump rather than in the deadline.
+
 ---
 
 ### F-024 · A shipped LAN first join has no retry — only the debug launcher does
@@ -452,6 +459,39 @@ address at a host that is still coming up gets one attempt and a dead end, while
 Steam quietly recovers. Fix it with the join UI rather than now, and the shape is already there:
 `NetSession._should_retry_connect()` needs its mode gate widened plus a decision about whether
 DevLaunch then defers to it, since two retry loops would double every attempt.
+
+---
+
+### F-025 · Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake
+
+**Area:** netcode · **Severity:** high · **Found:** 2026-08-16 by vane, from Sequoyah's Mac ↔ Windows session
+
+`SteamLobby._process()` calls `_steam.run_callbacks()` exactly once per frame, and its own comment says
+it is "the one that makes every other Steam call arrive". Godot polls the MultiplayerAPI per frame too.
+So every Steam callback — lobby entry, the P2P rendezvous, connection state — is serviced at whatever
+rate the machine happens to be *rendering*.
+
+Observed on a live Mac-hosted Steam session: the Windows client ran at **2–3 FPS (387 ms and 312 ms
+frame times)** while the macOS host ran at **113 FPS (16.5 ms)** on an identical scene (nodes 2559 on
+both, objects 6501 vs 6504). Windows physics was 0.25 ms, so simulation was never the constraint —
+5457 draw calls at 387 ms is roughly 70 µs per call, which is software rasterization, almost certainly
+a VM without GPU passthrough rather than the physical Ryzen/RTX box. The session still worked: two
+peers, two players, both synced.
+
+**This is the leading hypothesis for F-023.** A 10 s connect window gets ~1,130 callback pumps at
+113 FPS and ~20 at 2 FPS. A multi-round-trip rendezvous serviced 40× slower is a far better explanation
+of "Windows first join times out, immediate retry connects" than a slow Steam network — the retry lands
+once the scene is warm. D-029's longer budget and automatic retry remain correct (a shipped player on a
+weak GPU or a loading screen hits the same coupling) but they treat the symptom.
+
+Two things to settle, and they are separable:
+
+1. **Decouple the pump from rendering.** Steam's callbacks should be serviced on a fixed cadence that a
+   frame-rate collapse cannot starve, and the connect watchdog in `NetTransport._process` inherits the
+   same problem — at 2 FPS a 10 s deadline is only checked every ~390 ms.
+2. **Do not measure F-023 on a software-rendered machine.** Any first-join latency taken there is
+   contaminated by this. Record frame rate alongside the `connected … in N.NNs` line, and get the
+   number from the physical Windows PC.
 
 ---
 
