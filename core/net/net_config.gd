@@ -58,6 +58,20 @@ const CONNECT_TIMEOUT_SEC: float = 10.0
 ## host window first.
 const LOCAL_CONNECT_TIMEOUT_SEC: float = 3.0
 
+## Steam's own budget, separate from ENet's because it is a different mechanism, not a slower one.
+## An ENet client already knows where it is going: create_client() is a couple of round trips to a
+## machine we can name. A Steam client has to be rendezvoused instead — SteamNetworkingSockets tries
+## direct NAT traversal first and falls back to Valve's relay network, and the fallback is where the
+## tail sits. F-023 watched a Windows first join miss the shared 10 s deadline twice and then connect
+## immediately on a retry, which is the signature of a rendezvous still in progress rather than of a
+## host that is not there.
+##
+## PROVISIONAL — this is an allowance, not a measurement. No first-join latency had ever been recorded
+## when it was chosen. [method NetTransport.last_connect_msec] now records one on every successful
+## join, so task 1.12's next run produces the real distribution across all three platforms; set this
+## from the observed tail then, and say in the commit what the tail was.
+const STEAM_CONNECT_TIMEOUT_SEC: float = 20.0
+
 # ── Steam (task 1.4 consumes these; nothing references them until GodotSteam is installed) ─────────
 
 ## Valve's public test app (Spacewar). Lobbies and P2P work for anyone with a Steam account, without

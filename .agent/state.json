@@ -948,9 +948,9 @@
       "task": "F-019"
     },
     "autoload/net_transport.gd": {
-      "agent": "reed",
-      "at": "2026-08-16T19:23:07+00:00",
-      "task": "1.7"
+      "agent": "vane",
+      "at": "2026-08-16T22:59:02+00:00",
+      "task": "F-023"
     },
     "autoload/player_net.gd": {
       "agent": "birch",
@@ -963,14 +963,14 @@
       "task": "2.2"
     },
     "autoload/steam_lobby.gd": {
-      "agent": "lobby",
-      "at": "2026-08-16T07:53:23+00:00",
-      "task": "1.4"
+      "agent": "vane",
+      "at": "2026-08-16T22:59:02+00:00",
+      "task": "F-023"
     },
     "core/dev/dev_launch.gd": {
-      "agent": "hollow",
-      "at": "2026-08-16T20:16:02+00:00",
-      "task": "1.12"
+      "agent": "vane",
+      "at": "2026-08-16T22:59:02+00:00",
+      "task": "F-023"
     },
     "core/net/dummy_replicant.gd": {
       "agent": "load",
@@ -978,9 +978,9 @@
       "task": "1.9"
     },
     "core/net/net_config.gd": {
-      "agent": "birch",
-      "at": "2026-08-16T17:16:32+00:00",
-      "task": "1.8"
+      "agent": "vane",
+      "at": "2026-08-16T22:59:02+00:00",
+      "task": "F-023"
     },
     "core/net/net_interest.gd": {
       "agent": "birch",
@@ -988,9 +988,9 @@
       "task": "1.8"
     },
     "core/net/net_session.gd": {
-      "agent": "reed",
-      "at": "2026-08-16T19:23:07+00:00",
-      "task": "1.7"
+      "agent": "vane",
+      "at": "2026-08-16T22:59:02+00:00",
+      "task": "F-023"
     },
     "core/net/net_session.gd.uid": {
       "agent": "reed",
@@ -1146,6 +1146,11 @@
       "agent": "claude",
       "at": "2026-08-16T02:20:14+00:00",
       "task": "0.10"
+    },
+    "tools/connect_retry_check.gd": {
+      "agent": "vane",
+      "at": "2026-08-16T22:59:02+00:00",
+      "task": "F-023"
     },
     "tools/handshake_check.gd": {
       "agent": "bram",
@@ -2226,6 +2231,13 @@
       "status": "done",
       "tier": "F",
       "title": "Project metadata retained the superseded \"Muck but better\" name"
+    },
+    "F-023": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Windows Steam first join intermittently exceeds the hard 10-second connection timeout"
     }
   },
   "version": 1

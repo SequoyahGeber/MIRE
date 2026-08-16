@@ -44,11 +44,17 @@ enum _Status { OFFLINE, HOSTING, CONNECTING, CONNECTED }
 ## Why the last session or attempt ended, as far as the transport can tell. NetSession (task 1.7)
 ## refines this into a player-facing reason — the transport cannot tell "the host quit" from "the link
 ## died", because ENet reports both as server_disconnected. Read via [method last_end_kind].
+## The last two are both "an attempt that never became a session", and splitting them is what makes a
+## retry policy possible (F-023). CONNECT_FAILED is an answer — refused, or nothing at that address —
+## and asking again gets the same answer. CONNECT_TIMEOUT is the absence of one: the deadline expired
+## with the handshake still in flight, which on Steam means a rendezvous that had not finished yet.
+## Only the second is worth retrying, and NetSession is what decides to.
 enum EndKind {
-	NONE,           ## Nothing has ended yet this process.
-	LOCAL_LEAVE,    ## We ended it: leave(), or the tree going away.
-	REMOTE_CLOSED,  ## The host went away — cleanly or not. Only a client sees this.
-	CONNECT_FAILED, ## An attempt that never became a session: refused, unreachable, or timed out.
+	NONE,            ## Nothing has ended yet this process.
+	LOCAL_LEAVE,     ## We ended it: leave(), or the tree going away.
+	REMOTE_CLOSED,   ## The host went away — cleanly or not. Only a client sees this.
+	CONNECT_FAILED,  ## Refused, or nothing there. A verdict; repeating the attempt repeats it.
+	CONNECT_TIMEOUT, ## Ran out of time with no verdict either way. Worth one more attempt.
 }
 
 const _STEAM_UNAVAILABLE: String = "STEAM mode unavailable: the GodotSteam GDExtension is not installed yet (task 1.1) — use Mode.LOCAL for the two-window dev loop, or Mode.LAN for a second machine"
@@ -89,6 +95,14 @@ var _port: int = 0
 
 ## Time.get_ticks_msec() past which a CONNECTING session is declared dead. 0 when not connecting.
 var _connect_deadline_msec: int = 0
+
+## Time.get_ticks_msec() at the last join(), and how long that handshake ended up taking. Together
+## they are F-023's missing measurement: the deadline was chosen without anyone ever having recorded
+## what a real first join costs, least of all on Windows over Steam. Every successful join now leaves
+## the number in the log and in last_connect_msec(), so the next cross-platform run produces the
+## distribution as a side effect instead of needing its own trip.
+var _connect_started_msec: int = 0
+var _last_connect_msec: int = -1
 
 ## Set by the _create_*_peer helpers on the way out; read once by host()/join().
 var _create_error: Error = OK
@@ -142,9 +156,9 @@ func _process(_delta: float) -> void:
 		return
 
 	var reason: String = "connect to %s timed out after %.1fs" % [
-		_describe_target(), _timeout_for(_mode)
+		_describe_target(), connect_timeout_sec(_mode)
 	]
-	_last_end_kind = EndKind.CONNECT_FAILED
+	_last_end_kind = EndKind.CONNECT_TIMEOUT
 	_teardown(false)
 	MireLog.error(NetConfig.LOG_CHANNEL, reason)
 	connection_failed.emit(reason)
@@ -156,6 +170,12 @@ func _process(_delta: float) -> void:
 ## Open a session and become the authority. Emits server_started (deferred) on success.
 ## [param port] of -1 means NetConfig.DEFAULT_PORT. Ignored in STEAM mode.
 func host(mode: NetConfig.Mode, port: int = -1) -> Error:
+	# Cleared before the first thing that can fail, not after the last thing that can succeed. A
+	# synchronous failure below must not leave the PREVIOUS attempt's ending standing: NetSession's
+	# retry policy reads this to decide whether to ask again, and a stale CONNECT_TIMEOUT would make
+	# it retry a call that never got as far as opening a socket (F-023).
+	_last_end_kind = EndKind.NONE
+
 	if mode == NetConfig.Mode.OFFLINE:
 		return _fail(ERR_INVALID_PARAMETER, "host() called with Mode.OFFLINE")
 	if _status != _Status.OFFLINE:
@@ -199,6 +219,9 @@ func host(mode: NetConfig.Mode, port: int = -1) -> Error:
 ## [param address] is an IP/hostname for LOCAL and LAN, or a Steam ID for STEAM. Empty means loopback
 ## in LOCAL mode, which is what the two-window launcher passes.
 func join(mode: NetConfig.Mode, address: String, port: int = -1) -> Error:
+	# See host(): cleared up front so a synchronous failure cannot inherit the last attempt's ending.
+	_last_end_kind = EndKind.NONE
+
 	if mode == NetConfig.Mode.OFFLINE:
 		return _fail(ERR_INVALID_PARAMETER, "join() called with Mode.OFFLINE")
 	if _status != _Status.OFFLINE:
@@ -237,7 +260,9 @@ func join(mode: NetConfig.Mode, address: String, port: int = -1) -> Error:
 	# ENet assigns the client id locally at create_client(), so this is already real and stable.
 	_local_id = multiplayer.get_unique_id()
 	_peers = PackedInt32Array()
-	_connect_deadline_msec = Time.get_ticks_msec() + int(_timeout_for(mode) * 1000.0)
+	_connect_started_msec = Time.get_ticks_msec()
+	_last_connect_msec = -1
+	_connect_deadline_msec = _connect_started_msec + int(connect_timeout_sec(mode) * 1000.0)
 	_last_end_kind = EndKind.NONE
 	_target_mode = mode
 	_target_address = resolved_address
@@ -245,7 +270,7 @@ func join(mode: NetConfig.Mode, address: String, port: int = -1) -> Error:
 	set_process(true)
 
 	MireLog.info(NetConfig.LOG_CHANNEL, "connecting to %s (%s, %.1fs timeout)" % [
-		_describe_target(), mode_name(mode), _timeout_for(mode)
+		_describe_target(), mode_name(mode), connect_timeout_sec(mode)
 	])
 	return OK
 
@@ -304,6 +329,13 @@ func is_connecting() -> bool:
 ## until the next host()/join(). NetSession turns this into something a player can read.
 func last_end_kind() -> EndKind:
 	return _last_end_kind
+
+
+## How long the last SUCCESSFUL join took, in milliseconds, or -1 if this process has not completed
+## one since its last join(). This is the number F-023 needed and nobody had: log it per platform,
+## and set NetConfig.STEAM_CONNECT_TIMEOUT_SEC from the tail rather than from a guess.
+func last_connect_msec() -> int:
+	return _last_connect_msec
 
 
 ## The mode of the last join() this process attempted — OFFLINE if it has never joined one. Survives
@@ -426,6 +458,7 @@ func _on_peer_disconnected(id: int) -> void:
 func _on_connected_to_server() -> void:
 	set_process(false)
 	_connect_deadline_msec = 0
+	_last_connect_msec = Time.get_ticks_msec() - _connect_started_msec
 	_status = _Status.CONNECTED
 
 	# Re-read rather than trust the id join() cached: the host has the final say on who we are.
@@ -434,8 +467,10 @@ func _on_connected_to_server() -> void:
 	var pending: PackedInt32Array = _peers.duplicate()
 	_peers = PackedInt32Array([self_id])
 
-	MireLog.info(NetConfig.LOG_CHANNEL, "connected to %s as peer %d (%s)" % [
-		_describe_target(), self_id, mode_name(_mode)
+	# The elapsed time is not decoration. It is the only per-platform record of what a handshake
+	# actually costs, and F-023 exists because the deadline above it was set without one.
+	MireLog.info(NetConfig.LOG_CHANNEL, "connected to %s as peer %d (%s) in %.2fs" % [
+		_describe_target(), self_id, mode_name(_mode), _last_connect_msec / 1000.0
 	])
 	connected_to_host.emit()
 
@@ -709,10 +744,18 @@ func _resolve_address(mode: NetConfig.Mode, address: String) -> String:
 	return address
 
 
-func _timeout_for(mode: NetConfig.Mode) -> float:
-	if mode == NetConfig.Mode.LOCAL:
-		return NetConfig.LOCAL_CONNECT_TIMEOUT_SEC
-	return NetConfig.CONNECT_TIMEOUT_SEC
+## How long a join() in this mode is given before the watchdog calls it dead. Public and static
+## because a caller that waits on a connect has to wait at least this long: NetSession's rejoin
+## backstop used to hard-code the ENet number, which after F-023 gave Steam a 12 s backstop over a
+## 20 s budget and would have cancelled attempts that were still perfectly alive.
+static func connect_timeout_sec(mode: NetConfig.Mode) -> float:
+	match mode:
+		NetConfig.Mode.LOCAL:
+			return NetConfig.LOCAL_CONNECT_TIMEOUT_SEC
+		NetConfig.Mode.STEAM:
+			return NetConfig.STEAM_CONNECT_TIMEOUT_SEC
+		_:
+			return NetConfig.CONNECT_TIMEOUT_SEC
 
 
 func _describe_target() -> String:

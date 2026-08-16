@@ -679,3 +679,27 @@ All three preflights passed on Godot 4.7.1/GodotSteam 4.21/App 480 using mutual-
 Files: `entities/player/player_controller.gd`, `docs/FINDINGS.md`, `docs/DELEGATION.md`, `docs/NEXT.md`, `docs/STEAM_CROSS_PLATFORM_TEST.md`
 
 Commit at time of writing: `6c3b721`
+
+---
+
+### HANDOFF · F-023 · vane · 2026-08-16T22:59:02+00:00
+
+**Windows Steam first join intermittently exceeds the hard 10-second connection timeout**
+
+Mechanism fixed, measurement still owed — F-023 stays open on purpose.
+
+Root cause was bigger than the 10s number: NOTHING retried a Steam first join. dev_launch.gd:183 excluded STEAM from its retry by hand, NetSession never listened to connection_failed, SteamLobby doesn't either. Every 'immediate retry' in the 1.12 report was a human relaunching.
+
+Landed (D-029): NetConfig.STEAM_CONNECT_TIMEOUT_SEC (provisionally 20s, separate from ENet's 10s because a rendezvous is a different mechanism); EndKind.CONNECT_TIMEOUT split from CONNECT_FAILED so only a no-verdict attempt is retried; NetSession retries a timed-out first join STEAM-only, twice at 0.5s/2.0s, and hands the lobby back on give-up; NetTransport.last_connect_msec() plus a 'connected ... in N.NNs' log line on every join.
+
+Retry is STEAM-only for a real reason, not caution: a timed-out attempt tears down WITHOUT announcing, so SteamLobby never leaves the lobby and we are still a member — which is connect_to_lobby()'s one precondition. That is what makes it not F-020 (rejoin-after-drop, where the lobby WAS left).
+
+Two bugs fixed in passing. (1) host()/join() now clear _last_end_kind up front — a synchronous failure used to inherit the previous attempt's ending, which would have made the new retry guard fire for a call that never opened a socket. (2) NetSession._await_connect_result derived its backstop from CONNECT_TIMEOUT_SEC + 2 = 12s, which after the Steam budget went to 20s would have cancelled live attempts; it is now mode-derived via NetTransport.connect_timeout_sec().
+
+Verified headless macOS: tools/connect_retry_check.gd PASS 0 failures (real 13ms LOCAL connect measured, CONNECT_TIMEOUT classified, sync failure clears to NONE). Regressions all 0 failures: lifecycle 8/8, handshake, interp, interest, synced group, debug panel. verify_setup all checks passed.
+
+WHAT IS LEFT, and it is the finding's original ask: nobody has ever measured a Windows Steam first join. 20s is an allowance, not evidence, and the retry has never met a real rendezvous. 1.12's rerun closes both — collect the 'connected ... in N.NNs' line from all three platforms, set STEAM_CONNECT_TIMEOUT_SEC from the tail, then move F-023 to Resolved. A Windows timeout the retry rescues is the fix working and still NOT a clean PASS for 1.12. Filed F-024: shipped LAN joins have no retry, only DevLaunch does; close it with M6's join screen.
+
+Files: `autoload/net_transport.gd`, `autoload/steam_lobby.gd`, `core/net/net_config.gd`, `core/net/net_session.gd`, `core/dev/dev_launch.gd`, `tools/connect_retry_check.gd`
+
+Commit at time of writing: `10331c4`

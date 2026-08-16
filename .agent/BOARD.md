@@ -12,7 +12,7 @@ _Nothing in flight._
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███░░░░░░░` 5/16 | 11 |
+| Findings | `███░░░░░░░` 5/17 | 12 |
 | M0 | `██████████` 11/11 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `███░░░░░░░` 5/18 | 13 |
@@ -57,6 +57,7 @@ _Nothing in flight._
 | ⬜ | **F-018** `PlayerNet` has no way to be told when a player spawns, so observers reach into its children | todo |
 | ⬜ | **F-020** Steam sessions cannot use NetSession's direct-address auto-rejoin loop | todo |
 | ⬜ | **F-021** The net debug panel harness passes while Godot reports an uninitialized multiplayer root | todo |
+| ⬜ | **F-023** Windows Steam first join intermittently exceeds the hard 10-second connection timeout | todo |
 
 ## Done
 

@@ -57,6 +57,16 @@ signal connection_interrupted(detail: String)
 signal rejoin_attempted(attempt: int, of: int)
 signal rejoined()
 
+## Client-side. A join that never connected is being tried again (F-023). Deliberately not the same
+## signal as [signal rejoin_attempted]: that one means a session you were in is being recovered and
+## the world has just vanished, this one means you are still on the join screen and nothing has been
+## lost yet. A UI that conflated them would say "Reconnecting…" to someone who has never connected.
+signal connect_retry_attempted(attempt: int, of: int)
+
+## The first join has given up for good. [param detail] is a sentence for the player. [signal
+## session_ended] does NOT fire for this — there was never a session to end.
+signal connect_failed(detail: String)
+
 ## Host-side. A peer was turned away, with the reason it was given. Capacity/policy refusals happen
 ## before admission; a version refusal happens just after connection and is immediately despawned.
 signal peer_refused(peer_id: int, detail: String)
@@ -75,6 +85,15 @@ const CLOSING_FLUSH_SEC: float = 0.15
 ## still coming up. Four attempts spread over ~7 s covers a transient wifi drop and gives up fast
 ## enough that a genuinely dead host does not look like a hang.
 const REJOIN_BACKOFF_SEC: Array[float] = [0.5, 1.0, 2.0, 4.0]
+
+## Extra attempts at a first join that timed out, and the wait before each (F-023). Short waits,
+## because the manual retries that recovered F-023's failures were immediate: a rendezvous that is
+## going to complete completes quickly on the second attempt, and one that is not going to complete
+## is not helped by waiting longer to ask. Two extra attempts on Steam's 20 s budget is ~43 s worst
+## case before we tell the player it did not work, which is long — but it is bounded, it is visible
+## through connect_retry_attempted, and the alternative F-023 actually observed was a cross-platform
+## session that simply failed.
+const CONNECT_RETRY_BACKOFF_SEC: Array[float] = [0.5, 2.0]
 
 ## How often the rejoin loop checks whether the attempt in flight has resolved.
 const REJOIN_POLL_SEC: float = 0.1
@@ -98,6 +117,10 @@ var accepting_joins: bool = true
 ## drop reported rather than papered over.
 var auto_rejoin: bool = true
 
+## Client-side. Whether a first join that TIMED OUT is retried (F-023). Same reasoning as above, and
+## same off switch for probes — tools/connect_retry_check.gd toggles this to prove both branches.
+var auto_connect_retry: bool = true
+
 # ── State ─────────────────────────────────────────────────────────────────────────────────────────
 
 var _open: bool = false
@@ -110,6 +133,11 @@ var _refusal: String = ""
 
 var _rejoining: bool = false
 
+## True while the first-join retry loop is running. Separate from _rejoining because they are
+## mutually exclusive states with different exits, and because the loop's own failed attempts come
+## back through _on_connection_failed — without this it would start a second loop inside itself.
+var _connect_retrying: bool = false
+
 
 func _ready() -> void:
 	# The rejoin loop and the closing notice both have to survive a paused tree — a pause menu is
@@ -119,6 +147,9 @@ func _ready() -> void:
 	NetTransport.server_started.connect(_on_session_opened)
 	NetTransport.connected_to_host.connect(_on_session_opened)
 	NetTransport.disconnected.connect(_on_disconnected)
+	# A join that never connected fails, it does not disconnect — so before F-023 this file heard
+	# nothing at all about it and no first join was ever retried by anything that ships.
+	NetTransport.connection_failed.connect(_on_connection_failed)
 
 	# Ignored while not hosting, so it can be installed once and left alone.
 	NetTransport.set_admission_gate(_gate_peer)
@@ -142,7 +173,9 @@ func end_session() -> void:
 	if not NetTransport.is_active() and not NetTransport.is_connecting():
 		return
 
-	_rejoining = false  # cancels any attempt in flight; see _run_rejoin.
+	# Cancels any attempt in flight; see _run_rejoin and _run_connect_retry.
+	_rejoining = false
+	_connect_retrying = false
 
 	if NetTransport.is_host():
 		MireLog.info(NetConfig.LOG_CHANNEL, "NetSession: closing the session, telling %d peer(s)" % [
@@ -166,6 +199,12 @@ func refuse_peer(peer_id: int, detail: String) -> void:
 ## given up on one either.
 func is_rejoining() -> bool:
 	return _rejoining
+
+
+## True while a first join that timed out is still being retried (F-023). Distinct from
+## [method is_rejoining]: nothing has been lost, we simply are not in yet.
+func is_connect_retrying() -> bool:
+	return _connect_retrying
 
 
 ## How many more players fit. Host-side; 0 on a client, which does not evaluate capacity.
@@ -277,6 +316,9 @@ func _on_session_opened() -> void:
 	_host_closing = false
 	_refusal = ""
 
+	# Whichever loop got us here has done its job and must not keep running.
+	_connect_retrying = false
+
 	if _rejoining:
 		_rejoining = false
 		MireLog.info(NetConfig.LOG_CHANNEL, "NetSession: rejoined as peer %d" % NetTransport.local_peer_id())
@@ -340,6 +382,95 @@ func _describe_end(reason: EndReason) -> String:
 			return "lost contact with the host"
 
 
+# ── Retrying a first join (CLIENT) ────────────────────────────────────────────────────────────────
+#
+# F-023. Everything below is about a join that never became a session, which is a different animal
+# from the rejoin loop underneath it: there is no world to lose, no host notice to interpret, and the
+# transport is already back at OFFLINE by the time we hear about it.
+
+
+func _on_connection_failed(_reason: String) -> void:
+	# Our own retry attempts fail through here too. Without this guard the loop restarts inside itself.
+	if _connect_retrying or _rejoining or _open:
+		return
+	if not _should_retry_connect():
+		return
+	_run_connect_retry()
+
+
+func _should_retry_connect() -> bool:
+	if not auto_connect_retry:
+		return false
+
+	# The whole point of splitting the enum. A refusal, a bad address or a missing GodotSteam is an
+	# answer, and asking again just gets it again — only a deadline that expired mid-handshake is
+	# worth another attempt.
+	if NetTransport.last_end_kind() != NetTransport.EndKind.CONNECT_TIMEOUT:
+		return false
+
+	# STEAM only, and for a specific reason rather than caution. A timed-out attempt tears down
+	# WITHOUT announcing, so SteamLobby never sees `disconnected`, never calls _leave_lobby(), and we
+	# are still a member of the lobby — which is the one precondition connect_to_lobby() has. That is
+	# what makes the retry a plain NetTransport.join() and NOT F-020's problem: F-020 is the
+	# rejoin-after-drop case, where the session WAS announced, the lobby WAS left, and getting back in
+	# means SteamLobby's asynchronous flow all over again.
+	#
+	# LOCAL and LAN first joins are retried by DevLaunch instead, which is debug-only — see F-024 for
+	# the gap that leaves in a shipped LAN join, which M6's join screen has to close.
+	if NetTransport.last_target_mode() != NetConfig.Mode.STEAM:
+		return false
+	return NetTransport.has_rejoin_target()
+
+
+## Ask again, a bounded number of times. Each attempt is a real join() and the transport's own
+## watchdog decides when it has failed, exactly as in _run_rejoin.
+func _run_connect_retry() -> void:
+	_connect_retrying = true
+	var target: String = NetTransport.last_target_name()
+	var total: int = CONNECT_RETRY_BACKOFF_SEC.size()
+
+	for index: int in range(total):
+		await get_tree().create_timer(CONNECT_RETRY_BACKOFF_SEC[index]).timeout
+		if not _connect_retrying:
+			return
+		if NetTransport.is_active() or NetTransport.is_connecting():
+			_connect_retrying = false
+			return
+
+		var attempt: int = index + 1
+		MireLog.info(NetConfig.LOG_CHANNEL, "NetSession: connect retry %d/%d to %s" % [
+			attempt, total, target
+		])
+		connect_retry_attempted.emit(attempt, total)
+
+		if NetTransport.rejoin_last_target() != OK:
+			continue
+		if await _await_connect_result():
+			# _on_session_opened clears the flag.
+			return
+		if not _connect_retrying:
+			return
+
+	_connect_retrying = false
+	var detail: String = "could not reach %s — gave up after %d attempts" % [target, total + 1]
+	MireLog.error(NetConfig.LOG_CHANNEL, "NetSession: %s" % detail)
+
+	# Hand the lobby back before giving up. We stayed a member on purpose so the retries could use it,
+	# but a member with no session is a trap: SteamLobby.join_by_id() refuses while _state is IN_LOBBY,
+	# so leaving it held would make the player's own manual retry fail with "already in a lobby".
+	_leave_steam_lobby()
+	connect_failed.emit(detail)
+
+
+## By node path, not by name: this file must keep parsing and running with the SteamLobby autoload
+## absent, which is every LOCAL session and every headless probe (same reason, same shape, as
+## NetTransport._current_steam_lobby).
+func _leave_steam_lobby() -> void:
+	var lobby: Node = get_node_or_null(^"/root/SteamLobby")
+	if lobby != null and lobby.has_method(&"leave"):
+		lobby.call(&"leave")
+
+
 # ── Rejoining (CLIENT) ────────────────────────────────────────────────────────────────────────────
 
 
@@ -394,8 +525,13 @@ func _run_rejoin() -> void:
 ## Wait out one join attempt. True if it became a session. The deadline is a backstop only — the
 ## transport's own watchdog resolves every attempt long before it — but without one, a transport bug
 ## would hang the rejoin loop forever instead of failing.
+##
+## It has to be derived from the mode rather than hard-coded, and F-023 is why: Steam's budget is now
+## 20 s, so the old flat CONNECT_TIMEOUT_SEC + 2 would have expired at 12 s and cancelled attempts
+## that were still perfectly alive — turning the fix into a slower version of the same bug.
 func _await_connect_result() -> bool:
-	var deadline: int = Time.get_ticks_msec() + int((NetConfig.CONNECT_TIMEOUT_SEC + 2.0) * 1000.0)
+	var budget: float = NetTransport.connect_timeout_sec(NetTransport.last_target_mode())
+	var deadline: int = Time.get_ticks_msec() + int((budget + 2.0) * 1000.0)
 	while NetTransport.is_connecting() and Time.get_ticks_msec() < deadline:
 		await get_tree().create_timer(REJOIN_POLL_SEC).timeout
 	if NetTransport.is_active():
