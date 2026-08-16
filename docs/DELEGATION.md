@@ -82,7 +82,19 @@ CONSTRAINTS:
 
 FINISH WITH:
     .agent/bin/agent done 0.7 "<the numbers, and which of GREEN/AMBER/RED they support>"
-Then tell me what to paste into docs/DECISIONS.md as D-015.
+    .agent/bin/agent ship 0.7 "M0: chunk mesher spike (R2)"
+
+`ship` commits only this task's files and pushes to origin. Never `git add -A` —
+other agents are working in this same directory and you would commit their
+half-written files.
+
+THEN, as your final chat message, tell me:
+  - what you verified and the actual numbers/command
+  - EXACTLY what I must wire before this runs (autoloads, scene nodes). You
+    can't touch .tscn/.tres, so if anything needs wiring, say plainly that the
+    feature does NOT work yet
+  - whether it is safe for me to start the next task
+  - the text to paste into docs/DECISIONS.md as D-015
 ```
 
 ---
@@ -154,7 +166,19 @@ CONSTRAINTS:
 
 FINISH WITH:
     .agent/bin/agent done 0.8 "<numbers, GREEN/AMBER/RED, and the fallback if RED>"
-Then give me the text to paste into docs/DECISIONS.md as D-016.
+    .agent/bin/agent ship 0.8 "M0: navmesh bake spike (R3)"
+
+`ship` commits only this task's files and pushes to origin. Never `git add -A` —
+other agents are working in this same directory and you would commit their
+half-written files.
+
+THEN, as your final chat message, tell me:
+  - what you verified and the actual numbers/command
+  - EXACTLY what I must wire before this runs (autoloads, scene nodes). You
+    can't touch .tscn/.tres, so if anything needs wiring, say plainly that the
+    feature does NOT work yet
+  - whether it is safe for me to start the next task
+  - the text to paste into docs/DECISIONS.md as D-016
 ```
 
 ---
@@ -233,8 +257,21 @@ DELIVERABLE: also give me a 5-line snippet showing how task 1.3 (the two-window 
 launcher) will call this, so I can sanity-check the interface before we build on it.
 
 FINISH WITH:
-    .agent/bin/agent handoff 1.2 "<what works, what's stubbed, what I must wire>"
-  or done, if nothing is left for me.
+    .agent/bin/agent done 1.2 "<what works, what's stubbed>"
+  (or handoff, if something is genuinely unfinished)
+    .agent/bin/agent ship 1.2 "M1: NetTransport autoload"
+
+`ship` commits only this task's files and pushes to origin. Never `git add -A` —
+other agents are working in this same directory and you would commit their
+half-written files.
+
+THEN, as your final chat message, tell me:
+  - what you verified and the actual numbers/command
+  - EXACTLY what I must wire before this runs (autoloads, scene nodes). You
+    can't touch .tscn/.tres, so if anything needs wiring, say plainly that the
+    feature does NOT work yet
+  - whether it is safe for me to start the next task
+
 ```
 
 ---
@@ -296,7 +333,20 @@ CONSTRAINTS:
 - Don't explore. Everything you need is in this prompt.
 
 FINISH WITH:
-    .agent/bin/agent done 2.2 "<what you built, what I need to wire>"
+    .agent/bin/agent done 2.2 "<what you built>"
+    .agent/bin/agent ship 2.2 "M2: content resource framework"
+
+`ship` commits only this task's files and pushes to origin. Never `git add -A` —
+other agents are working in this same directory and you would commit their
+half-written files.
+
+THEN, as your final chat message, tell me:
+  - what you verified and the actual numbers/command
+  - EXACTLY what I must wire before this runs (autoloads, scene nodes). You
+    can't touch .tscn/.tres, so if anything needs wiring, say plainly that the
+    feature does NOT work yet
+  - whether it is safe for me to start the next task
+
 ```
 
 ---

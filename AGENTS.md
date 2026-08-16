@@ -73,10 +73,34 @@ valuable thing you produce when you stop mid-task.** Write it for someone with n
 session — because that is literally who reads it. Say what works, what doesn't, what you'd already
 decided, and what you'd do next.
 
-### 4. Commit before you stop
+### 4. Ship it — commit, push, and sign off
 
-Uncommitted work is invisible to the next agent. The pre-commit hook runs `agent check` and will block
-you if you've touched a file you don't hold.
+```bash
+.agent/bin/agent ship 2.4 "Inventory: host-validated add/remove"
+```
+
+`ship` stages **only the files your task claimed**, plus the coordination state, then commits and
+pushes to `origin`. It deliberately does not `git add -A`: several agents share one working directory,
+so a blanket add sweeps another agent's half-written files into your commit. Never hand-roll
+`git add -A && git commit` — use `ship`.
+
+Uncommitted work is invisible to everyone else. The pre-commit hook re-runs `agent check` against the
+staged set and blocks you if you've touched a file you don't hold.
+
+### 5. Tell Sequoyah where things actually stand
+
+`ship` prints a template. Fill it in as your final chat message — he is deciding whether to start the
+next task based on what you say here, so be precise:
+
+- **What you verified, and how.** The command you ran, the numbers it produced. Not "it works."
+- **What he must wire before it runs.** You cannot touch `.tscn` / `.tres` / `project.godot`
+  (see Hard rules). If a script needs an autoload registered, a node added, or an exported value
+  set, then **the feature does not work yet** — say so in those words.
+- **Whether it is safe to move on.** Say it plainly, either way.
+
+> "Done and pushed" and "working" are different claims. A pushed script that still needs an autoload
+> registered is the first, not the second. Conflating them costs him an hour of confused debugging —
+> he will trust what you write here.
 
 ---
 
@@ -150,6 +174,7 @@ Host-authoritative by default; client-authoritative only for a player's own move
 .agent/bin/agent claim <id> [files]    claim a task and its files
 .agent/bin/agent note <id> "..."       record something mid-task
 .agent/bin/agent done <id> "..."       finish: release claims, write journal
+.agent/bin/agent ship <id> ["msg"]     commit THIS TASK's files + push, print the sign-off
 .agent/bin/agent handoff <id> "..."    stop mid-task: what's left, what to watch for
 .agent/bin/agent drop <id>             abandon, release claims
 .agent/bin/agent check                 verify changes respect claims
