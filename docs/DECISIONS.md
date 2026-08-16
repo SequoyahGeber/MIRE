@@ -485,6 +485,33 @@ Steam retry that fails where a full lobby re-join succeeds (then membership does
 the way the code above reads, and the retry belongs in SteamLobby); or GodotSteam exposing connection-
 state callbacks, which would let a live rendezvous extend its own deadline instead of being guessed at.
 
+### D-030 · 2026-08-16 · 1.12's formal evidence run is deferred until a lobby can be joined from inside the game; M1 closes at 13/14
+The thing 1.12 exists to de-risk — that macOS, Windows and Linux can share one Steam session — is
+proven. All three platforms passed preflight, three peers shared one lobby, all three players spawned,
+and Linux movement replicated; a later two-platform rerun joined cleanly with Windows Firewall enabled
+and despawned cleanly on exit. What is missing is *ceremony*: 60 seconds of observed movement, three
+screenshots, and a clean ordered exit.
+
+Collecting that ceremony currently costs a scheduled three-machine session driven by command-line
+lobby IDs pasted between terminals, on a Windows VM that renders in software at 2–3 FPS (F-025). That
+is a bad instrument: it is expensive to arrange, it is the slowest possible way to iterate, and the
+frame rate contaminates the one measurement the run still owes. **The test gets cheap the moment a
+player can pick a lobby in-game and join it** — which is roadmap task 6.10 — so the run waits for that
+rather than for more netcode.
+
+M1 therefore closes at **13/14** with 1.12 deferred rather than failed, and this is deliberate: the
+milestone's purpose was a working network spine, and it has one. Development continues into M2.
+
+**Would change my mind:** a cross-play regression appearing in normal LOCAL/LAN development, which
+would mean the deferral is hiding real breakage and the run has to happen on whatever rig exists; the
+physical Ryzen PC becoming routinely available, which removes the software-rendering objection and most
+of the scheduling cost; or M6 slipping far enough that cross-play would go untested for months — in
+which case pull a minimal in-game join forward (see below) instead of waiting for the full menu.
+
+**The cheap version, if 6.10 is too far away:** `SteamLobby` already exposes `host_session()`,
+`join_by_id()` and `open_invite_overlay()`, and the game already has a debug console. A pair of console
+commands is a fraction of 6.10 and would deliver the whole testing benefit without a menu.
+
 ### D-0NN · YYYY-MM-DD · <one-line decision>
 <why, in 2–4 sentences>
 **Would change my mind:** <the specific evidence that should make you revisit this>

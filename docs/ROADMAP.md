@@ -84,7 +84,7 @@ Plus the same thing in `LOCAL` mode in two windows in under 5 seconds.
 | 1.9 | **Spike R1** — 6 peers, 200 synced dummy entities, measure bandwidth and CPU | T2 | 1.5 |
 | 1.10 | Network debug panel: ping, bandwidth up/down, entity count, authority display | T1 | 1 |
 | 1.11 | Protocol/build version handshake — refuse mismatched builds with a clear message, not a desync | T2 | 1.5 |
-| 1.12 | **Cross-platform join test** — Mac ↔ Windows ↔ Linux in one lobby, over Steam | T0 | 1.5 |
+| 1.12 | **DEFERRED to after 6.10 (D-030) — do not start.** Cross-platform join test, Mac ↔ Windows ↔ Linux in one lobby over Steam. Transport is proven; only the evidence ceremony is left, and it waits for an in-game lobby join | T0 | 1.5 |
 
 > **Task 1.3 is worth more than it looks.** One-keypress two-window multiplayer testing is the highest
 > ROI thing in this milestone. Every future multiplayer bug gets cheaper to find because of it.

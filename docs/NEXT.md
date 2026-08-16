@@ -7,7 +7,8 @@
 
 ## Status
 
-**Milestone:** M1 · Network spine — **13/14.** M0 is closed, 10/10.
+**Milestone:** M2 · Vertical slice. **M1 closes at 13/14** — 1.12 is deferred, not outstanding
+(D-030). M0 is closed, 10/10.
 **Last session:** 2026-08-16 — task 1.12 is in progress. All three pinned-engine/GodotSteam
 preflights passed and a real Mac-hosted Steam lobby reached three peers across macOS, Windows and
 Linux. Code-built remote-player debug capsules made all three spawns visible, and Linux movement
@@ -54,31 +55,32 @@ it takes one from the chat itself (F-007).
 
 ---
 
-## Next task — finish 1.12's physical evidence run
+## Next task — M2. 1.12 is deferred, not pending (D-030)
 
 **Starting a task no longer means pasting a prompt.** Open a fresh chat, give it the task id, and the
 agent runs `agent brief <id>` itself: that prints the task, the open findings, what the last tasks in
 this milestone left it, and who holds which files. It claims, works, verifies headless, files what it
 learned in the repo, and ships. What comes back to you is what only you can act on.
 
-**Task 1.12 has proved the transport path but has not met every pass criterion.** The Windows and
-Linux guests exist, three distinct mutual-friend Steam accounts pass preflight, and all three peers
-have shared one lobby. Windows Firewall is restored and enabled on all profiles. The current Windows
-test checkout is `C:\MIRE-main`; refresh it from `origin/main` before the final run rather than using
-the stale `C:\MIRE` copy. Then follow
-`docs/STEAM_CROSS_PLATFORM_TEST.md`, retain the first Windows timeout if it recurs, and capture the
-full 60-second movement/screenshots/exit evidence.
+**Do not start 1.12.** M1 closes at 13/14 on purpose. The thing 1.12 de-risks is proven — three
+platforms in one Steam lobby, all three players spawned, Linux movement replicated, and a later
+two-platform rerun that joined and despawned cleanly with Windows Firewall enabled. What is missing is
+ceremony: 60 s of observed movement, three screenshots, an ordered exit. Collecting it today means a
+scheduled three-machine session driven by lobby IDs pasted between terminals, on a VM rendering at
+2–3 FPS (F-025) — expensive to arrange and a bad instrument. **It waits for an in-game lobby join
+(task 6.10), which makes the test cheap.** Everything needed to resume is in
+`docs/STEAM_CROSS_PLATFORM_TEST.md` and will keep.
 
-**Do the rerun on the current revision — F-023's mechanism was fixed on 2026-08-16 (D-029).** The
-Windows first-join timeout that broke the last attempt now retries automatically instead of ending
-the run: Steam has its own connect budget, and `NetSession` retries a timed-out first join twice by
-itself. Two things follow for the rerun, both spelled out in the test doc:
+**The next code task is `2.3` — the harvestable prop.** Hit → damage → yield → despawn → respawn,
+host-authoritative per `ARCHITECTURE.md` §2.2. It is the first real gameplay system on top of the
+network spine, `2.2` already shipped `ItemDef`/`RecipeDef` and the registry loader it needs, and the
+A-001 harvestable art is already in the authored playtest map. After it, `2.4` (inventory data layer)
+and `2.6` (crafting) are the T2 spine of the vertical slice; `2.5`, `2.7` and `2.1d` are yours.
 
-1. **A rescued timeout is still not a PASS.** The criteria require no connection failure; the retry
-   buys a usable session, not a clean result.
-2. **Bring back three numbers.** Every join now prints `connected … in N.NNs`. Capture that line on
-   each platform — it is the first-join latency nobody has ever measured, it is the only thing
-   keeping F-023 open, and `STEAM_CONNECT_TIMEOUT_SEC` (provisionally 20 s) gets set from it.
+**If cross-play testing starts to feel overdue before M6**, the cheap version is a pair of debug
+console commands over the `SteamLobby` API that already exists (`host_session()`, `join_by_id()`,
+`open_invite_overlay()`). That is a fraction of 6.10 and delivers the whole testing benefit — see
+D-030. Worth pulling forward if M2 or M3 stretches out.
 
 ---
 
@@ -109,10 +111,15 @@ none of them needed anything from you in the editor.
 
 | # | Task | Tier | Who | Est |
 |---|---|---|---|---|
-| 1.12 | Cross-platform join test: Mac ↔ Windows ↔ Linux over Steam | T0 | agent + provisioned machines | 1.5h |
+| 2.3 | Harvestable prop: hit → damage → yield → despawn → respawn, host-authoritative | T2 | agent | 3h |
+| 2.4 | Inventory system: stacks, add/remove, host-validated. Data layer only | T2 | agent | 3h |
+| 2.5 | Inventory UI — grid, drag/drop, hotbar | T0 | you | 4h |
+| 2.6 | Crafting: recipe check, craft request → host validates → grants. One station | T2 | agent | 3h |
+| 2.1d | Next `NEXT` asset batch from `docs/ASSET_TRACKER.md` (A-005, loot) | T0 | you | 4h |
+| 1.12 | Cross-platform join test — **deferred to after 6.10**, D-030 | T0 | — | 1.5h |
 
-Tasks 1.6, 1.7, 1.8 and 1.11 are done. Do not reopen them as prerequisites for 1.12; fix the machine
-and GodotSteam clone reproducibility blockers instead.
+Tasks 1.6, 1.7, 1.8 and 1.11 are done. Do not reopen any M1 task as a prerequisite for M2 — the
+network spine is finished and 2.3 builds directly on it.
 
 ---
 

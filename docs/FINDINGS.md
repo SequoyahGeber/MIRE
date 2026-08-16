@@ -495,7 +495,30 @@ Two things to settle, and they are separable:
 
 ---
 
+---
+
 ## Resolved
+
+### F-026 · A deferred task pins the board's active milestone forever, hiding all remaining work — **fixed**
+
+**Area:** tooling · **Found and fixed:** 2026-08-16 by vane while applying D-030
+
+`_print_ready` in `.agent/bin/agent` picked the active milestone as the lowest one holding any task
+whose status was not `done`, then listed only that milestone's `todo` tasks. `blocked` is not `done`,
+so a single deferred task kept its milestone active permanently while contributing nothing pickable.
+
+Marking 1.12 `blocked` under D-030 reproduced it exactly: M1 stayed active on the strength of that one
+task, M1 had no `todo` left, and the board's *Ready to pick up* section vanished entirely — so
+`agent start`, the one command every session begins with, would have told every future agent there was
+no work at all, with M2 sitting untouched at 5/18.
+
+**Fixed** by excluding `blocked` alongside `done` from that scan: a milestone whose only remaining work
+is deferred is finished for the one question the scan answers, which is "what should I start now". The
+status was never wrong — it already rendered as 🚧 — the milestone scan was.
+
+Verified with `agent board`: *Ready to pick up* now heads M2 with `2.3`, the milestone table still
+reports M1 honestly at **13/14**, and 1.12 still shows 🚧 `blocked` with its do-not-start title. The
+progress counts are untouched, because they only ever counted `done`.
 
 ### F-009 · A GDExtension only loads if gitignored `.godot/extension_list.cfg` lists it — **fixed**
 
