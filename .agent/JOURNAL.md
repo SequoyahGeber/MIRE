@@ -309,3 +309,18 @@ SteamLobby autoload (registered): create friends-only lobby, invite via overlay,
 Files: `autoload/steam_lobby.gd`, `autoload/net_transport.gd`, `project.godot`, `tools/steam_api_probe.gd`, `core/net/net_config.gd`, `tools/steam_lobby_check.gd`
 
 Commit at time of writing: `3902911`
+
+---
+
+### DONE · 1.10 · netui · 2026-08-16T08:14:40+00:00
+
+**Network debug panel: ping, bandwidth up/down, entity count, authority display**
+
+Live net readout via DebugOverlay.watch() extension point (F3 FULL mode only): session line (mode/host-or-client/local id/peer list), per-peer RTT, host in/out bandwidth in KB/s, rolling 5-event connection log, plus DebugOverlay.track_group(&"synced") for entity count. RTT from ENetPacketPeer.get_statistic(PEER_ROUND_TRIP_TIME); bandwidth from ENetConnection.pop_statistic — verified against the pinned 4.7.1 engine source that pop_statistic resets on read, so no manual delta-tracking needed. Both read 'n/a' with a stated reason in STEAM mode: SteamMultiplayerPeer exposes neither stat in this build, not invented. Verified headless: 19/19 checks incl. a real ENet host+client session (tools/net_debug_panel_check.gd) — genuine RTT (69ms) and bandwidth readings, not just offline degrade paths. NOT WIRED: nothing instantiates NetDebugPanel yet. It is not an autoload (none claimed, per the brief) — needs either a one-line project.godot autoload entry, or add_child(preload('res://ui/debug/net_debug_panel.gd').new()) from an existing autoload's _ready(). Also needs task 1.5 (or whatever spawns MultiplayerSynchronizer nodes) to add them to group &'synced' for the entity-count line to read anything but 0 — documented in the file's header comment.
+
+Notes along the way:
+- RTT via ENetPacketPeer.get_statistic(PEER_ROUND_TRIP_TIME), bandwidth via ENetConnection.pop_statistic (confirmed it resets on read against 4.7 engine source) — both n/a in STEAM mode since SteamMultiplayerPeer exposes neither. Verified against a real headless host+client ENet session, not just offline stubs.
+
+Files: `ui/debug/net_debug_panel.gd`, `tools/net_debug_panel_check.gd`
+
+Commit at time of writing: `06621eb`

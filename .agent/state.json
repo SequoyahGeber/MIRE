@@ -1,6 +1,39 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "autoload/player_net.gd": {
+      "agent": "spawn",
+      "at": "2026-08-16T08:04:00+00:00",
+      "task": "1.5"
+    },
+    "core/net/net_config.gd": {
+      "agent": "spawn",
+      "at": "2026-08-16T08:04:00+00:00",
+      "task": "1.5"
+    },
+    "entities/player/player_controller.gd": {
+      "agent": "spawn",
+      "at": "2026-08-16T08:04:00+00:00",
+      "task": "1.5"
+    },
+    "project.godot": {
+      "agent": "spawn",
+      "at": "2026-08-16T08:04:00+00:00",
+      "task": "1.5"
+    }
+  },
+  "in_flight": {
+    "1.5": {
+      "agent": "spawn",
+      "files": [
+        "autoload/player_net.gd",
+        "entities/player/player_controller.gd",
+        "core/net/net_config.gd",
+        "project.godot"
+      ],
+      "notes": [],
+      "started": "2026-08-16T08:04:00+00:00"
+    }
+  },
   "recent": {
     ".gitignore": {
       "agent": "steam",
@@ -112,6 +145,11 @@
       "at": "2026-08-16T02:20:14+00:00",
       "task": "0.10"
     },
+    "tools/net_debug_panel_check.gd": {
+      "agent": "netui",
+      "at": "2026-08-16T08:14:40+00:00",
+      "task": "1.10"
+    },
     "tools/setup_project.gd": {
       "agent": "claude",
       "at": "2026-08-15T21:46:15+00:00",
@@ -136,6 +174,11 @@
       "agent": "claude",
       "at": "2026-08-16T02:46:31+00:00",
       "task": "0.5"
+    },
+    "ui/debug/net_debug_panel.gd": {
+      "agent": "netui",
+      "at": "2026-08-16T08:14:40+00:00",
+      "task": "1.10"
     },
     "world/chunk/chunk_mesher.gd": {
       "agent": "terrain",
@@ -267,9 +310,11 @@
       "title": "Install GodotSteam GDExtension (4.4+ branch), confirm it loads in stock Godot 4.7, pin the engine version"
     },
     "1.10": {
+      "done_at": "2026-08-16T08:14:40+00:00",
+      "done_by": "netui",
       "est": "1",
       "milestone": "M1",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Network debug panel: ping, bandwidth up/down, entity count, authority display"
     },
@@ -317,7 +362,7 @@
     "1.5": {
       "est": "3",
       "milestone": "M1",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "Networked player: `MultiplayerSpawner` + `MultiplayerSynchronizer`, client-auth movement"
     },
