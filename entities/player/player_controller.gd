@@ -124,6 +124,8 @@ func _build_synchronizer() -> void:
 	# replication interface reject the pending spawn ("no network ID"), which the engine reports as
 	# an error on every client and which is exactly the trap this task was warned about.
 	net_sync.set_multiplayer_authority(get_multiplayer_authority())
+	# F-013: counted by the net debug panel. See NetConfig.SYNCED_GROUP for what the group means.
+	net_sync.add_to_group(NetConfig.SYNCED_GROUP)
 	add_child(net_sync)
 
 

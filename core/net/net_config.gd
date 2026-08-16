@@ -118,6 +118,13 @@ const PLAYER_SPAWNER_NODE: StringName = &"PlayerSpawner"
 ## The MultiplayerSynchronizer PlayerController builds as its own child.
 const PLAYER_SYNC_NODE: StringName = &"NetSync"
 
+## CONVENTION (F-013): every MultiplayerSynchronizer this project builds joins this group, and
+## nothing else does. One synchronizer, one member — so the debug panel's "synced" line counts what
+## actually costs bandwidth rather than how many entities happen to exist. An entity carrying two
+## synchronizers is two, correctly: it sends twice. Added at construction, alongside the authority
+## the synchronizer is built with, so a site that builds one cannot forget.
+const SYNCED_GROUP: StringName = &"synced"
+
 ## §2.5: players replicate at 30Hz. Enemies (15Hz) and props (on-change) are task 1.8's to add.
 const PLAYER_SYNC_HZ: float = 30.0
 const PLAYER_SYNC_INTERVAL_SEC: float = 1.0 / PLAYER_SYNC_HZ

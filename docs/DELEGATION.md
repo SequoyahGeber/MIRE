@@ -63,7 +63,7 @@ doesn't.
 |---|---|---|---|---|---|
 | 1.5 | Networked player — spawner + synchronizer | `spawn` | Opus 5 | high | **done** — runs; prompt kept for reference |
 | 1.9 | Spike R1 — replication load | `load` | Opus 5 | high | **done — AMBER.** Read the verdict below before writing 1.8 |
-| 1.10 | Network debug panel | `netui` | Sonnet 5 | medium | **done and wired** — entity count still reads 0 until F-013 is closed |
+| 1.10 | Network debug panel | `netui` | Sonnet 5 | medium | **done, wired, and reading real numbers** — F-013 closed, entity count live |
 | 1.6 · 1.7 · 1.8 | Interpolation · lifecycle · interest management | | | | **ready, no prompt written yet** — 1.8 is now mandatory, not optional |
 | 1.11 | Protocol/build version handshake | | | | **ready, no prompt written yet** |
 | 1.1 · 1.2 · 1.3 · 1.4 | GodotSteam · NetTransport · LOCAL loop · Steam lobby | | | | done and verified |
@@ -97,10 +97,11 @@ traffic (~2× host ACK volume). That points at visibility churn — an entity cr
 forces a despawn+respawn per peer. Not isolated. **1.8 should assume churn is real and consider
 hysteresis** (leave-radius larger than enter-radius) so boundary-hugging entities don't flap.
 
-**F-013 is still open** and is now the cheapest task on the board: nothing calls
-`add_to_group(&"synced")`, so the wired panel's entity line reads 0 while players visibly replicate.
-Whoever touches it decides the convention *once* — every synchronizer, or every replicated entity
-root — because 1.8 and 1.9's dummy replicants both need to be counted the same way.
+**F-013 is closed, and 1.8 inherits its answer.** The convention is settled as **D-024**: the
+`&"synced"` group holds *every `MultiplayerSynchronizer`, one member each* — it counts update streams,
+because that is what maps to the bandwidth budget above. The name lives once as
+`NetConfig.SYNCED_GROUP` and is joined at construction, next to the authority assignment; 1.8's
+per-class synchronizers just do the same and the panel's count stays meaningful.
 
 ### What 1.5 established — write 1.6, 1.7 and 1.8 against this, not against a guess
 

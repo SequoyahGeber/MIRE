@@ -333,6 +333,20 @@ values, keep the construction in code.
 
 ---
 
+### D-024 · 2026-08-16 · `&"synced"` counts synchronizers, not entities
+F-013 left a real choice open: the debug panel's synced count is either "every `MultiplayerSynchronizer`"
+or "every replicated entity root", and those give different numbers the moment an entity carries more
+than one. **It counts synchronizers**, one member each, because the number exists to be read against a
+bandwidth budget — 1.9 measured cost per *update stream*, not per entity, and an entity that sends
+twice should read as two. The group name lives once, as `NetConfig.SYNCED_GROUP`, and is joined at
+construction beside the authority assignment, so a new construction site cannot silently opt out.
+
+**Would change my mind:** 1.8 giving one entity several synchronizers at different intervals, where a
+count of streams stops matching anything a human wants to know. Then the panel shows both — entities
+and streams — rather than redefining this group.
+
+---
+
 ## Template
 
 ```

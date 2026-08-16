@@ -19,9 +19,9 @@ extends Node
 ##
 ## CONVENTION for the synced-entity count: this calls DebugOverlay.track_group(&"synced") rather
 ## than counting MultiplayerSynchronizer nodes itself, matching the group-count pattern DebugOverlay
-## already uses for &"players"/&"enemies". Whatever spawns synchronizers (task 1.5) needs to add
-## them to group &"synced" for that line to read anything but 0 — which is what it correctly reads
-## until then.
+## already uses for &"players"/&"enemies". The group is settled by F-013 and named once as
+## NetConfig.SYNCED_GROUP: every MultiplayerSynchronizer joins it, at construction, and nothing else
+## does. So this line counts senders, not entities — which is the number that maps to bandwidth.
 
 const EVENT_LOG_LIMIT: int = 5
 

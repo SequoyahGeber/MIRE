@@ -118,6 +118,8 @@ func _build_synchronizer() -> void:
 	_sync.set_multiplayer_authority(NetConfig.HOST_PEER_ID)
 	# Interest management starts OFF; the bench turns it on for the phases that measure it.
 	_sync.visibility_update_mode = MultiplayerSynchronizer.VISIBILITY_PROCESS_NONE
+	# F-013: counted by the net debug panel. See NetConfig.SYNCED_GROUP for what the group means.
+	_sync.add_to_group(NetConfig.SYNCED_GROUP)
 	add_child(_sync)
 
 
