@@ -8,9 +8,14 @@
       "task": "F-007"
     },
     ".gitignore": {
-      "agent": "reed",
-      "at": "2026-08-16T19:12:29+00:00",
-      "task": "F-019"
+      "agent": "flint",
+      "at": "2026-08-16T19:34:30+00:00",
+      "task": "F-009"
+    },
+    ".godot/extension_list.cfg": {
+      "agent": "flint",
+      "at": "2026-08-16T19:34:30+00:00",
+      "task": "F-009"
     },
     "AGENTS.md": {
       "agent": "larch",
@@ -1028,14 +1033,14 @@
       "task": "2.1e"
     },
     "docs/DECISIONS.md": {
-      "agent": "reed",
-      "at": "2026-08-16T19:23:07+00:00",
-      "task": "1.7"
+      "agent": "flint",
+      "at": "2026-08-16T19:34:30+00:00",
+      "task": "F-009"
     },
     "docs/DELEGATION.md": {
-      "agent": "reed",
-      "at": "2026-08-16T19:23:07+00:00",
-      "task": "1.7"
+      "agent": "flint",
+      "at": "2026-08-16T19:34:30+00:00",
+      "task": "F-009"
     },
     "docs/DESIGN.md": {
       "agent": "kiln",
@@ -1043,14 +1048,14 @@
       "task": "F-022"
     },
     "docs/FINDINGS.md": {
-      "agent": "kiln",
-      "at": "2026-08-16T19:27:42+00:00",
-      "task": "F-022"
+      "agent": "flint",
+      "at": "2026-08-16T19:34:30+00:00",
+      "task": "F-009"
     },
     "docs/NEXT.md": {
-      "agent": "reed",
-      "at": "2026-08-16T19:23:07+00:00",
-      "task": "1.7"
+      "agent": "flint",
+      "at": "2026-08-16T19:34:30+00:00",
+      "task": "F-009"
     },
     "docs/ROADMAP.md": {
       "agent": "reed",
@@ -2141,9 +2146,11 @@
       "title": "Forgetting `MIRE_AGENT` makes you silently impersonate the last agent to run `agent start`"
     },
     "F-009": {
+      "done_at": "2026-08-16T19:34:30+00:00",
+      "done_by": "flint",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "A GDExtension only loads if gitignored `.godot/extension_list.cfg` lists it"
     },

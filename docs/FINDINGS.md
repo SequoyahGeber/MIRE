@@ -216,31 +216,6 @@ these known gaps" is a standing decision that shapes M7 and M8, not just a findi
 ---
 
 
-### F-009 · A GDExtension only loads if gitignored `.godot/extension_list.cfg` lists it
-
-**Area:** build/tooling · **Filed:** 2026-08-16 by steam during 1.1
-
-Dropping `addons/godotsteam/` into the project is **not** enough to make the extension load. Godot
-reads the list of GDExtensions to load from `.godot/extension_list.cfg`, which the editor generates
-when it scans a new addon — and `.godot/` is gitignored. Before that file existed,
-`tools/steam_check.gd` reported `Steam class registered — FAIL` with the addon fully present and
-correct on disk. Writing the one line by hand fixed it:
-
-```
-res://addons/godotsteam/godotsteam.gdextension
-```
-
-**Why it will bite again, somewhere more expensive:** any environment where the editor is never
-opened has no such file. That is exactly the **Linux test VM** (rsync'd, per-machine `.godot/`) and
-any future CI runner — so **task 1.12's cross-platform join test is a live candidate**: Steam simply
-won't initialise on the Linux side, and the symptom is a networking failure, not a missing-addon
-error. D-022's reinstall recipe copies the addon and stops there, which is the same gap.
-
-**Not fixing it now** — it needs a decision (generate the file in the reinstall recipe? un-ignore just
-that one file? a boot-time check that says "extension missing" in plain words?), and 1.1's scope is
-the install. Whoever takes 1.12 should read this first and budget for it.
-
-
 ### F-011 · Autoloads are not compile-time identifiers in a `--script` main loop
 
 **Area:** tooling/netcode · **Severity:** medium — costs a run, not a day · **Filed:** 2026-08-16 by
@@ -403,6 +378,19 @@ with initialized roots and completes cleanly.
 ---
 
 ## Resolved
+
+### F-009 · A GDExtension only loads if gitignored `.godot/extension_list.cfg` lists it — **fixed**
+
+**Area:** build/tooling · **Filed:** 2026-08-16 by steam during 1.1
+
+Godot loads GDExtensions from `.godot/extension_list.cfg`, but the whole `.godot/` directory was
+ignored. A fresh clone or headless VM could therefore have the pinned GodotSteam addon on disk while
+never registering its classes. The deterministic one-line registry is now the sole tracked exception
+inside `.godot/`; all generated import and editor state remains ignored. D-022's reinstall recipe now
+states that the committed registry is required beside the ignored addon binaries.
+
+Verified by confirming `.godot/extension_list.cfg` is tracked, running `tools/steam_check.gd` against
+the live Steam client (all checks passed on App ID 480), and running a normal headless project boot.
 
 ### F-019 · Generated asset import sidecars flood every clean-tree audit — **fixed**
 

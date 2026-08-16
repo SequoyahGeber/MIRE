@@ -12,7 +12,7 @@ _Nothing in flight._
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `██░░░░░░░░` 4/16 | 12 |
+| Findings | `███░░░░░░░` 5/16 | 11 |
 | M0 | `██████████` 11/11 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `███░░░░░░░` 5/18 | 13 |
@@ -50,7 +50,6 @@ _Nothing in flight._
 | ⬜ | **F-004** Interpolation is only planned for remote players, not enemies or props | todo |
 | ⬜ | **F-005** R2's chunk benchmark excludes GPU upload cost | todo |
 | ⬜ | **F-006** Three roadmap tasks assume a Windows or Linux machine we don't have | todo |
-| ⬜ | **F-009** A GDExtension only loads if gitignored `.godot/extension_list.cfg` lists it | todo |
 | ⬜ | **F-011** Autoloads are not compile-time identifiers in a `--script` main loop | todo |
 | ⬜ | **F-012** A `MultiplayerSynchronizer`'s authority must be set BEFORE `add_child()` | todo |
 | ⬜ | **F-016** A brand-new `class_name` is not resolvable by bare identifier in a `--script` main loop | todo |
@@ -61,4 +60,4 @@ _Nothing in flight._
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `1.0b` `2.1b` `2.1c` `2.1e` `F-007` `F-015` `F-019` `F-022`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `1.0b` `2.1b` `2.1c` `2.1e` `F-007` `F-009` `F-015` `F-019` `F-022`

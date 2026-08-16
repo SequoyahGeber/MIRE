@@ -594,3 +594,18 @@ Notes along the way:
 Files: `project.godot`, `docs/DESIGN.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `3acc3ae`
+
+---
+
+### DONE · F-009 · flint · 2026-08-16T19:34:30+00:00
+
+**A GDExtension only loads if gitignored `.godot/extension_list.cfg` lists it**
+
+Committed .godot/extension_list.cfg as the sole tracked .godot exception, documented it beside the pinned GodotSteam reinstall recipe, and removed F-009 from the 1.12 blocker list. Verified steam_check all passed on App ID 480, normal headless boot clean, agent check clean.
+
+Notes along the way:
+- Committing the single deterministic extension registry file. Keep the rest of .godot ignored; a fresh clone then loads the pinned addon headlessly without editor scanning.
+
+Files: `.gitignore`, `.godot/extension_list.cfg`, `docs/FINDINGS.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`, `docs/NEXT.md`
+
+Commit at time of writing: `cda7858`

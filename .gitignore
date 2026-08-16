@@ -1,5 +1,6 @@
 # Godot 4+ specific ignores
-.godot/
+.godot/*
+!.godot/extension_list.cfg
 /android/
 
 # Editor-generated asset import sidecars; source assets and runtime GLTF loading are authoritative.

@@ -11,7 +11,8 @@
 **Last session:** 2026-08-16 — connection lifecycle (1.7) completed the code-driven M1 work: readable
 admission/version refusals, late joining, automatic LOCAL/LAN rejoin, clean host close, and bounded
 dead-peer detection all passed a real multi-process ENet harness. Only the physical cross-platform
-Steam join test (1.12) remains, blocked on Windows provisioning and F-009.
+Steam join test (1.12) remains, blocked only on Windows provisioning. F-009 is fixed: the committed
+GDExtension registry now makes GodotSteam loading reproducible in fresh headless environments.
 
 The M0 spikes came back **GREEN**: chunked terrain meshing stays in GDScript (D-015), runtime NavMesh
 baking stays and the grid-A* fallback is dropped (D-016). Neither is unconditional — see *M0 debts*.
@@ -51,8 +52,8 @@ agent runs `agent brief <id>` itself: that prints the task, the open findings, w
 this milestone left it, and who holds which files. It claims, works, verifies headless, files what it
 learned in the repo, and ships. What comes back to you is what only you can act on.
 
-**Do not start 1.12 yet.** It needs a Windows guest and a reproducible fix for F-009 so GodotSteam
-loads from a fresh clone; the Linux guest already exists. Once both prerequisites are ready, say
+**Do not start 1.12 yet.** It needs a Windows guest; the Linux guest already exists and F-009's
+fresh-clone GodotSteam registration problem is fixed. Once the Windows prerequisite is ready, say
 `start 1.12`. It is a physical Mac ↔ Windows ↔ Linux Steam lobby test, not more lifecycle code.
 
 ---

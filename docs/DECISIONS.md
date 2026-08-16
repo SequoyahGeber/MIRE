@@ -289,6 +289,10 @@ curl -fL -o /tmp/gs.zip https://codeberg.org/godotsteam/godotsteam/archive/50cc0
 unzip -q /tmp/gs.zip 'godotsteam/addons/godotsteam/*' -d /tmp/gs && cp -R /tmp/gs/godotsteam/addons/godotsteam addons/
 ```
 
+The addon binaries remain ignored, but `.godot/extension_list.cfg` is committed as the sole tracked
+file under `.godot/`. Keep it beside the reinstalled addon: without that registry, a fresh headless
+environment does not load the GDExtension even when every binary is present (F-009).
+
 **The 95 MB of platform binaries are gitignored, not committed.** Seven platform folders of `.dylib`/
 `.dll`/`.so` would sit in git history forever, and again on every GodotSteam bump, to save one command
 that is written down above. The Linux test VM syncs by rsync, not git, so it gets them regardless. The

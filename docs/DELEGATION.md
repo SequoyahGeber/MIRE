@@ -36,19 +36,16 @@ instead of leaving them untracked.
 **Roles are not fixed (D-020).** Any agent can take any task; which one gets it depends on which plan
 has quota. Nothing below is reserved for a particular chat.
 
-**Standing trap — `.godot/` is gitignored, and real setup keeps hiding in it.** Twice now a task has
-finished with its working state in a directory that cannot be committed:
+**Standing trap — most of `.godot/` is gitignored, and real setup can hide in it.** One task still
+depends on local editor state:
 
 | Task | What lives in `.godot/` |
 |---|---|
 | 1.3 | Run-instance config (Debug → Customize Run Instances) — the two-window launch args |
-| 1.1 | `extension_list.cfg`, without which GodotSteam does not load at all (F-009) |
 
-Neither is reproducible from a fresh clone, which makes **1.12 (Mac ↔ Windows ↔ Linux)** the task
-where this bill comes due — the Linux VM will clone the repo and GodotSteam simply won't load. Any
-prompt whose work touches editor state should say so explicitly and hand back either a click-path or
-a committed script. Assume `.godot/` does not exist on anyone else's machine, because effectively it
-doesn't.
+F-009 is fixed: `.godot/extension_list.cfg` is the sole tracked exception and registers GodotSteam in
+a fresh clone or headless VM. Any prompt whose work touches other editor state should still say so
+explicitly and hand back either a click-path or a committed script.
 
 ---
 
@@ -106,7 +103,7 @@ with Blender 5.2 using `tools/blender/build_playtest_map.py`; verify with `Godot
 **1.5, 1.9 and 1.10 shipped earlier** (`8d6ddab`, `ef1bc16`, `4f17bcd`), and 1.10 is now actually
 *wired* (`9f56451`). **1.6, 1.7, 1.8 and 1.11 are now implemented and headlessly verified** — read
 the table and the per-task sections below rather than assuming a clean slate. The only remaining M1
-task is 1.12, the physical cross-platform Steam join test, which is waiting on Windows and F-009.
+task is 1.12, the physical cross-platform Steam join test, which is waiting on Windows provisioning.
 
 **Three open findings were closed this session, all of them process rather than game code:** F-013
 (the `&"synced"` convention, D-024 — 1.8 inherits it), F-015 (an F-number is a task id, so a finding
@@ -386,7 +383,7 @@ any further replication prompt, and don't reintroduce "tell Sequoyah to add a sy
 | # | Blocked on | Clears when |
 |---|---|---|
 | 1.6 · 1.7 · 1.8 · 1.11 | ~~1.5~~ **Nothing. All four are writable now** against the layout above | cleared by `8d6ddab` |
-| 1.12 | The **Windows** guest (the Ubuntu KVM guest exists and has run headless work — `ARCHITECTURE.md` §6a, F-006), plus F-009: `.godot/extension_list.cfg` is gitignored, so GodotSteam does not load from a fresh clone on any other machine | F-009 gets a real fix, and you provision Windows |
+| 1.12 | The **Windows** guest (the Ubuntu KVM guest exists and has run headless work — `ARCHITECTURE.md` §6a, F-006) | You provision Windows; F-009 is fixed |
 | 4.0b | A Windows guest existing at all | You provision it |
 
 The foundation is settled: `NetTransport` (1.2), `DevLaunch` (1.3), `SteamLobby` (1.4) and GodotSteam
