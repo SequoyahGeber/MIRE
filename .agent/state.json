@@ -59,8 +59,8 @@
     },
     "project.godot": {
       "agent": "claude",
-      "at": "2026-08-16T03:12:01+00:00",
-      "task": "1.0"
+      "at": "2026-08-16T03:13:21+00:00",
+      "task": "1.0b"
     },
     "systems/crafting/recipe_def.gd": {
       "agent": "claude",
@@ -212,6 +212,15 @@
       "status": "done",
       "tier": "T0",
       "title": "Register the `Registry` autoload in `project.godot` \u2014 2.2 shipped the script but nothing loads it"
+    },
+    "1.0b": {
+      "done_at": "2026-08-16T03:13:21+00:00",
+      "done_by": "claude",
+      "est": "0.25",
+      "milestone": "M1",
+      "status": "done",
+      "tier": "T0",
+      "title": "Register the `NetTransport` autoload in `project.godot` \u2014 1.2 follow-up, shipped under the pre-D-021 prompt"
     },
     "1.1": {
       "est": "1",

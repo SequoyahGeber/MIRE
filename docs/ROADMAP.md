@@ -71,6 +71,7 @@ Plus the same thing in `LOCAL` mode in two windows in under 5 seconds.
 | # | Task | Tier | Est |
 |---|---|---|---|
 | 1.0 | Register the `Registry` autoload in `project.godot` — 2.2 shipped the script but nothing loads it | T0 | 0.25 |
+| 1.0b | Register the `NetTransport` autoload in `project.godot` — 1.2 follow-up, shipped under the pre-D-021 prompt | T0 | 0.25 |
 | 1.1 | Install GodotSteam GDExtension (4.4+ branch), confirm it loads in stock Godot 4.7, **pin the engine version** | T0 | 1 |
 | 1.2 | `NetTransport` autoload — swap between `ENetMultiplayerPeer` and `SteamMultiplayerPeer` behind one interface | T2 | 3 |
 | 1.3 | `LOCAL` mode: launch 2 instances, auto-host/auto-join, no menus. **Make this one keypress.** | T2 | 2 |

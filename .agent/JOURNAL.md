@@ -261,3 +261,15 @@ Registered Registry="*res://autoload/registry.gd" in project.godot [autoload], a
 Files: `project.godot`
 
 Commit at time of writing: `8291086`
+
+---
+
+### DONE · 1.0b · claude · 2026-08-16T03:13:21+00:00
+
+**Register the `NetTransport` autoload in `project.godot` — 1.2 follow-up, shipped under the pre-D-021 prompt**
+
+Registered NetTransport="*res://autoload/net_transport.gd" in project.godot [autoload], appended after Registry. Godot editor confirmed closed via pgrep first. NOT RUNTIME-VERIFIED — I am blocked from executing Godot in this session, so the project has not been booted with either new autoload. Reviewed the 1.3 interface snippet statically and it is sound: _resolve_address() maps LOCAL+"" to loopback, _resolve_port(-1) gives DEFAULT_PORT 27515, MireLog.info/error are statics taking (StringName, String), and all six signal signatures match the spec.
+
+Files: `project.godot`
+
+Commit at time of writing: `c8f272e`
