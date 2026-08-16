@@ -696,10 +696,95 @@
       "at": "2026-08-16T18:01:56+00:00",
       "task": "2.1b"
     },
+    "assets/harvestables/README.md": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/harvestables/catalog.json": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/harvestables/exports/harvest_tree_damaged_a.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/harvestables/exports/harvest_tree_damaged_b.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/harvestables/exports/harvest_tree_depleted_stump.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/harvestables/exports/harvest_tree_felled_trunk.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/harvestables/exports/harvest_tree_fresh_stump.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/harvestables/exports/harvest_tree_intact.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/harvestables/exports/iron_node_cracked.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/harvestables/exports/iron_node_depleted.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/harvestables/exports/iron_node_intact.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/harvestables/exports/stone_node_cracked.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/harvestables/exports/stone_node_depleted.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/harvestables/exports/stone_node_intact.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/harvestables/preview/harvestables_preview.png": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/harvestables/preview/harvestables_scale_preview.png": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
     "assets/source/.gdignore": {
       "agent": "reed",
       "at": "2026-08-16T17:40:04+00:00",
       "task": "2.1"
+    },
+    "assets/source/harvestable_resources.blend": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
     },
     "assets/source/mire_map_kit.blend": {
       "agent": "reed",
@@ -771,15 +856,20 @@
       "at": "2026-08-16T02:20:14+00:00",
       "task": "0.10"
     },
+    "docs/ASSET_TRACKER.md": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
     "docs/DECISIONS.md": {
       "agent": "steam",
       "at": "2026-08-16T06:52:27+00:00",
       "task": "1.1"
     },
     "docs/DELEGATION.md": {
-      "agent": "reed",
-      "at": "2026-08-16T18:15:43+00:00",
-      "task": "2.1c"
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
     },
     "docs/FINDINGS.md": {
       "agent": "larch",
@@ -792,9 +882,9 @@
       "task": "0.5"
     },
     "docs/ROADMAP.md": {
-      "agent": "reed",
-      "at": "2026-08-16T18:15:43+00:00",
-      "task": "2.1c"
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
     },
     "entities/player/player.tscn": {
       "agent": "claude",
@@ -850,6 +940,11 @@
       "agent": "load",
       "at": "2026-08-16T08:27:33+00:00",
       "task": "1.9"
+    },
+    "tools/blender/build_harvestable_resources.py": {
+      "agent": "ember",
+      "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
     },
     "tools/blender/build_mire_map_kit.py": {
       "agent": "reed",
@@ -1225,6 +1320,13 @@
       "status": "done",
       "tier": "T0",
       "title": "Build a compact runtime-generated playtest map from the environment kit: camp, forest, ruins, Mire grove, ridge, routes, and collision"
+    },
+    "2.1d": {
+      "est": "4",
+      "milestone": "M2",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
     "2.2": {
       "done_at": "2026-08-16T02:59:39+00:00",

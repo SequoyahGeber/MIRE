@@ -497,3 +497,15 @@ Notes along the way:
 Files: `docs/ROADMAP.md`, `world/gen/test_map_props.gd`, `world/gen/test_map_props.gd.uid`, `tools/playtest_map_check.gd`, `tools/playtest_map_check.gd.uid`, `docs/DELEGATION.md`
 
 Commit at time of writing: `04bdedc`
+
+---
+
+### HANDOFF · 2.1d · ember · 2026-08-16T18:32:13+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-001 complete: 12 portable harvestable-state GLBs, dedicated deterministic Blender generator/source, exact catalog, family README, full-set preview, and scale preview. Verified syntax, clean deterministic rebuild (byte-identical GLBs/catalog; pixel-identical renders), GLB 2.0 structure/catalog/scale/bounds/materials at 2,116 triangles, visual quality, and isolated fresh Godot 4.7.1 import with 12/12 scenes and no errors. Tracker marks A-001 DONE and A-002 NEXT. Next run: build only A-002 in a separate pickup-family generator, preserving host authority for pickup state/collection.
+
+Files: `docs/ASSET_TRACKER.md`, `docs/ROADMAP.md`, `tools/blender/build_harvestable_resources.py`, `assets/source/harvestable_resources.blend`, `assets/harvestables/README.md`, `assets/harvestables/catalog.json`, `assets/harvestables/preview/harvestables_preview.png`, `assets/harvestables/preview/harvestables_scale_preview.png`, `assets/harvestables/exports/harvest_tree_intact.glb`, `assets/harvestables/exports/harvest_tree_damaged_a.glb`, `assets/harvestables/exports/harvest_tree_damaged_b.glb`, `assets/harvestables/exports/harvest_tree_felled_trunk.glb`, `assets/harvestables/exports/harvest_tree_fresh_stump.glb`, `assets/harvestables/exports/harvest_tree_depleted_stump.glb`, `assets/harvestables/exports/stone_node_intact.glb`, `assets/harvestables/exports/stone_node_cracked.glb`, `assets/harvestables/exports/stone_node_depleted.glb`, `assets/harvestables/exports/iron_node_intact.glb`, `assets/harvestables/exports/iron_node_cracked.glb`, `assets/harvestables/exports/iron_node_depleted.glb`, `docs/DELEGATION.md`
+
+Commit at time of writing: `e0f42e1`

@@ -1,0 +1,185 @@
+[
+  {
+    "name": "harvest_tree_intact",
+    "family": "tree",
+    "state": "intact",
+    "width_m": 3.504,
+    "depth_m": 3.476,
+    "height_m": 5.487,
+    "mesh_parts": 8,
+    "polygons": 82,
+    "materials": [
+      "MIRE_Harvest_Bark",
+      "MIRE_Harvest_Bark_Dark",
+      "MIRE_Harvest_Pine_Dark",
+      "MIRE_Harvest_Pine_Light"
+    ]
+  },
+  {
+    "name": "harvest_tree_damaged_a",
+    "family": "tree",
+    "state": "damaged_a",
+    "width_m": 3.504,
+    "depth_m": 3.476,
+    "height_m": 5.487,
+    "mesh_parts": 10,
+    "polygons": 94,
+    "materials": [
+      "MIRE_Harvest_Bark",
+      "MIRE_Harvest_Bark_Dark",
+      "MIRE_Harvest_Fresh_Wood",
+      "MIRE_Harvest_Notch",
+      "MIRE_Harvest_Pine_Dark",
+      "MIRE_Harvest_Pine_Light"
+    ]
+  },
+  {
+    "name": "harvest_tree_damaged_b",
+    "family": "tree",
+    "state": "damaged_b",
+    "width_m": 3.504,
+    "depth_m": 3.476,
+    "height_m": 5.487,
+    "mesh_parts": 16,
+    "polygons": 125,
+    "materials": [
+      "MIRE_Harvest_Bark",
+      "MIRE_Harvest_Bark_Dark",
+      "MIRE_Harvest_Deep_Cut",
+      "MIRE_Harvest_Fresh_Wood",
+      "MIRE_Harvest_Notch",
+      "MIRE_Harvest_Pine_Dark",
+      "MIRE_Harvest_Pine_Light"
+    ]
+  },
+  {
+    "name": "harvest_tree_felled_trunk",
+    "family": "tree",
+    "state": "felled",
+    "width_m": 5.294,
+    "depth_m": 1.605,
+    "height_m": 1.674,
+    "mesh_parts": 8,
+    "polygons": 78,
+    "materials": [
+      "MIRE_Harvest_Bark",
+      "MIRE_Harvest_Bark_Dark",
+      "MIRE_Harvest_Fresh_Wood",
+      "MIRE_Harvest_Pine_Dark",
+      "MIRE_Harvest_Pine_Light"
+    ]
+  },
+  {
+    "name": "harvest_tree_fresh_stump",
+    "family": "tree",
+    "state": "fresh_stump",
+    "width_m": 1.581,
+    "depth_m": 1.735,
+    "height_m": 0.651,
+    "mesh_parts": 5,
+    "polygons": 49,
+    "materials": [
+      "MIRE_Harvest_Bark",
+      "MIRE_Harvest_Bark_Dark",
+      "MIRE_Harvest_Fresh_Wood"
+    ]
+  },
+  {
+    "name": "harvest_tree_depleted_stump",
+    "family": "tree",
+    "state": "depleted_stump",
+    "width_m": 1.581,
+    "depth_m": 1.735,
+    "height_m": 0.449,
+    "mesh_parts": 8,
+    "polygons": 67,
+    "materials": [
+      "MIRE_Harvest_Dead_Bark",
+      "MIRE_Harvest_Dead_Wood",
+      "MIRE_Harvest_Notch"
+    ]
+  },
+  {
+    "name": "stone_node_intact",
+    "family": "stone",
+    "state": "intact",
+    "width_m": 2.254,
+    "depth_m": 1.787,
+    "height_m": 1.77,
+    "mesh_parts": 3,
+    "polygons": 60,
+    "materials": [
+      "MIRE_Harvest_Stone"
+    ]
+  },
+  {
+    "name": "stone_node_cracked",
+    "family": "stone",
+    "state": "cracked",
+    "width_m": 2.254,
+    "depth_m": 1.787,
+    "height_m": 1.77,
+    "mesh_parts": 8,
+    "polygons": 121,
+    "materials": [
+      "MIRE_Harvest_Crack",
+      "MIRE_Harvest_Stone"
+    ]
+  },
+  {
+    "name": "stone_node_depleted",
+    "family": "stone",
+    "state": "depleted",
+    "width_m": 1.589,
+    "depth_m": 1.263,
+    "height_m": 0.603,
+    "mesh_parts": 5,
+    "polygons": 100,
+    "materials": [
+      "MIRE_Harvest_Stone_Depleted"
+    ]
+  },
+  {
+    "name": "iron_node_intact",
+    "family": "iron",
+    "state": "intact",
+    "width_m": 2.254,
+    "depth_m": 1.787,
+    "height_m": 1.77,
+    "mesh_parts": 7,
+    "polygons": 140,
+    "materials": [
+      "MIRE_Harvest_Iron_Ore",
+      "MIRE_Harvest_Iron_Stone"
+    ]
+  },
+  {
+    "name": "iron_node_cracked",
+    "family": "iron",
+    "state": "cracked",
+    "width_m": 2.254,
+    "depth_m": 1.787,
+    "height_m": 1.77,
+    "mesh_parts": 12,
+    "polygons": 201,
+    "materials": [
+      "MIRE_Harvest_Crack",
+      "MIRE_Harvest_Iron_Ore",
+      "MIRE_Harvest_Iron_Stone"
+    ]
+  },
+  {
+    "name": "iron_node_depleted",
+    "family": "iron",
+    "state": "depleted",
+    "width_m": 1.589,
+    "depth_m": 1.263,
+    "height_m": 0.603,
+    "mesh_parts": 6,
+    "polygons": 120,
+    "materials": [
+      "MIRE_Harvest_Spent_Iron",
+      "MIRE_Harvest_Stone_Depleted"
+    ]
+  }
+]
