@@ -371,3 +371,18 @@ Notes along the way:
 Files: `.agent/bin/agent`, `docs/FINDINGS.md`, `AGENTS.md`
 
 Commit at time of writing: `3223c5e`
+
+---
+
+### DONE · F-007 · larch · 2026-08-16T16:55:25+00:00
+
+**Forgetting `MIRE_AGENT` makes you silently impersonate the last agent to run `agent start`**
+
+Identity derived from the chat's own session id instead of a shared mutable session file. agent start takes no argument, no MIRE_AGENT prefix anywhere, git commit resolves the same agent because the hook inherits the environment. Two chats cannot collide: different tokens, different auto-assigned names.
+
+Notes along the way:
+- Identity is derived from the chat's session id, not declared: whoami maps CLAUDE_CODE_SESSION_ID (or Codex/TERM equivalents) to a name in gitignored .agent/sessions.json, crc32-keyed so every process in one chat agrees, including the git hook.
+
+Files: `.agent/bin/agent`, `AGENTS.md`, `docs/FINDINGS.md`, `.gitignore`
+
+Commit at time of writing: `aa91a1a`

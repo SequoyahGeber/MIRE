@@ -3,19 +3,19 @@
   "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
-      "agent": "claude",
-      "at": "2026-08-16T16:50:24+00:00",
-      "task": "F-015"
+      "agent": "larch",
+      "at": "2026-08-16T16:55:25+00:00",
+      "task": "F-007"
     },
     ".gitignore": {
-      "agent": "steam",
-      "at": "2026-08-16T06:52:27+00:00",
-      "task": "1.1"
+      "agent": "larch",
+      "at": "2026-08-16T16:55:25+00:00",
+      "task": "F-007"
     },
     "AGENTS.md": {
-      "agent": "claude",
-      "at": "2026-08-16T16:50:24+00:00",
-      "task": "F-015"
+      "agent": "larch",
+      "at": "2026-08-16T16:55:25+00:00",
+      "task": "F-007"
     },
     "autoload/net_transport.gd": {
       "agent": "lobby",
@@ -68,9 +68,9 @@
       "task": "1.1"
     },
     "docs/FINDINGS.md": {
-      "agent": "claude",
-      "at": "2026-08-16T16:50:24+00:00",
-      "task": "F-015"
+      "agent": "larch",
+      "at": "2026-08-16T16:55:25+00:00",
+      "task": "F-007"
     },
     "docs/NEXT.md": {
       "agent": "claude",
@@ -1009,9 +1009,11 @@
       "title": "Three roadmap tasks assume a Windows or Linux machine we don't have"
     },
     "F-007": {
+      "done_at": "2026-08-16T16:55:25+00:00",
+      "done_by": "larch",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Forgetting `MIRE_AGENT` makes you silently impersonate the last agent to run `agent start`"
     },

@@ -10,6 +10,7 @@ export/
 
 # Agent session state (local, per-machine)
 .agent/session
+.agent/sessions.json
 
 # GodotSteam GDExtension — ~95 MB of per-platform binaries, reinstallable in one
 # command. The pinned commit and the reinstall recipe are D-022 in docs/DECISIONS.md.

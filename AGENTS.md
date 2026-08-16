@@ -30,20 +30,20 @@ having finished everything that did not depend on the answer.
 ## Start every session with this
 
 ```bash
-MIRE_AGENT=<your-name> .agent/bin/agent start <your-name>     # claude | codex | net | ...
+.agent/bin/agent start
 ```
 
 It prints the board, your claims, stale work, and recent commits. **Do not skip it** — it's the
 cheapest way to load context, and nothing else you do is safe until you know what's in flight.
 
-**Put `MIRE_AGENT=<your-name>` on every `agent` command — and on `git commit` too — and never
-`export` it once.** The pre-commit hook re-runs `agent check`, and git invokes that hook, so a commit
-without the prefix resolves your identity from the session file and can block a commit whose claims
-are perfectly valid. `agent ship` handles this for you; a hand-rolled `git commit` does not. Most agent
-tools run each shell call in a separate process, so an exported value is gone by your next command.
-The script then falls back to `.agent/session`, which holds a single name shared by every chat in
-this repo — so with two chats running you file claims under the other agent's identity, with no
-error. That is precisely the collision claiming exists to prevent, and it fails silently.
+**No name, and no `MIRE_AGENT` prefix on anything (F-007).** Your identity is derived from your
+chat's own session id, which every command you run carries in its environment — including `git`, so
+the pre-commit hook resolves you the same way your `agent` commands do. It is stable for the whole
+session and unique per chat, so two agents working in parallel cannot file claims under each other's
+name. `agent start` tells you the name you were given; use it when you talk about yourself.
+
+You can still pass a name (`agent start sequoyah`) if you want a specific one on the board, and
+`MIRE_AGENT=<name>` still overrides everything. Neither is needed any more.
 
 Then read `docs/NEXT.md` for the current focus.
 
@@ -54,7 +54,7 @@ Then read `docs/NEXT.md` for the current focus.
 "Start 1.6" is all you should need. Run this before anything else:
 
 ```bash
-MIRE_AGENT=<your-name> .agent/bin/agent brief 1.6
+.agent/bin/agent brief 1.6
 ```
 
 It prints the task, the open findings (traps someone already paid for), what recent tasks in the same
@@ -80,7 +80,7 @@ you did and how you verified it — `agent done` warns you if you forget.
 ### 1. Claim before you edit
 
 ```bash
-MIRE_AGENT=<your-name> .agent/bin/agent claim 2.4 systems/inventory/inventory.gd core/net/rpc_util.gd
+.agent/bin/agent claim 2.4 systems/inventory/inventory.gd core/net/rpc_util.gd
 ```
 
 Fails loudly if another agent holds that task or any of those files. **If it fails, pick a different
@@ -240,11 +240,10 @@ Host-authoritative by default; client-authoritative only for a player's own move
 
 ## Commands
 
-Prefix each of these with `MIRE_AGENT=<your-name>` — see the top of this file for why `export` is
-not good enough.
+Run these as written — no prefix, no name (F-007).
 
 ```bash
-.agent/bin/agent start <name>          begin a session, print full context
+.agent/bin/agent start                 begin a session, print full context
 .agent/bin/agent brief <id>            everything you need to start that task
 .agent/bin/agent board                 what's happening right now
 .agent/bin/agent claim <id> [files]    claim a task and its files

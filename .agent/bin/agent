@@ -8,6 +8,7 @@ State lives in .agent/state.json; humans and agents read .agent/BOARD.md.
 Deliberately small and dependency-free. If it annoys you, edit it.
 """
 
+import binascii
 import json
 import os
 import subprocess
@@ -20,6 +21,7 @@ STATE = os.path.join(AGENT_DIR, "state.json")
 BOARD = os.path.join(AGENT_DIR, "BOARD.md")
 JOURNAL = os.path.join(AGENT_DIR, "JOURNAL.md")
 SESSION = os.path.join(AGENT_DIR, "session")
+SESSIONS = os.path.join(AGENT_DIR, "sessions.json")
 ROADMAP = os.path.join(ROOT, "docs", "ROADMAP.md")
 
 STALE_HOURS = 12
@@ -78,19 +80,118 @@ def save(st):
     render_board(st)
 
 
-def whoami(required=True):
-    # MIRE_AGENT wins over the session file. The file holds exactly one name, so
-    # without this every parallel agent on this machine would clobber the others
-    # and claims would be attributed to whoever ran `agent start` most recently.
+# ---------------------------------------------------------------- identity
+
+# Nobody should have to name an agent. The old scheme — one name in .agent/session, overridden by
+# MIRE_AGENT on every single command — put that chore on Sequoyah and failed silently when skipped
+# (F-007): a second chat overwrote the file and its claims landed under the first chat's name.
+#
+# Identity is now derived from the chat itself. Every tool call from one chat carries the same
+# session id in its environment, and a git hook inherits it too, so the name is stable across a whole
+# session including commits, and two chats cannot collide because their tokens differ.
+SESSION_ENV_KEYS = (
+    "MIRE_SESSION",             # manual override, mostly for testing
+    "CLAUDE_CODE_SESSION_ID",   # Claude Code, one per chat
+    "CODEX_SESSION_ID",         # Codex, if it sets one
+    "CODEX_THREAD_ID",
+    "TERM_SESSION_ID",          # a human's terminal tab
+)
+
+# Short, unlike each other at a glance, and not words that appear in this codebase — a name has to be
+# scannable in a board full of file paths.
+AUTO_NAMES = (
+    "ash", "bram", "cinder", "dusk", "ember", "flint", "gale", "hollow", "ivy", "kiln",
+    "larch", "moss", "nettle", "onyx", "pike", "quill", "reed", "slate", "tine", "vane",
+    "wick", "yarrow", "birch", "coil",
+)
+
+SESSION_KEEP_DAYS = 14
+
+
+def _session_token():
+    for key in SESSION_ENV_KEYS:
+        value = os.environ.get(key, "").strip()
+        if value:
+            return "%s:%s" % (key, value)
+    return None
+
+
+def _load_sessions():
+    try:
+        with open(SESSIONS) as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (IOError, ValueError):
+        return {}
+
+
+def _save_sessions(data):
+    # Machine-local and gitignored: this maps chat ids to names, which means nothing on another
+    # machine and would produce a diff on every command if it were tracked.
+    tmp = SESSIONS + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=2, sort_keys=True)
+    os.replace(tmp, SESSIONS)
+
+
+def _prune_sessions(data):
+    fresh = {}
+    for token, rec in data.items():
+        if isinstance(rec, dict) and age_hours(rec.get("at", "")) < SESSION_KEEP_DAYS * 24:
+            fresh[token] = rec
+    return fresh
+
+
+def _auto_name(token, taken):
+    """Deterministic from the token, so the same chat gets the same name every call — including from
+    a git hook, which is a different process with the same environment. crc32, not hash(): Python
+    randomizes string hashing per process, which would hand one chat a new name every command."""
+    start = binascii.crc32(token.encode()) % len(AUTO_NAMES)
+    for offset in range(len(AUTO_NAMES)):
+        candidate = AUTO_NAMES[(start + offset) % len(AUTO_NAMES)]
+        if candidate not in taken:
+            return candidate
+    return "%s%d" % (AUTO_NAMES[start], start)
+
+
+def _register(token, name):
+    data = _prune_sessions(_load_sessions())
+    data[token] = {"name": name, "at": now()}
+    _save_sessions(data)
+    return name
+
+
+def whoami(required=True, assign=True):
+    """Resolve this chat's agent name, assigning one on first use.
+
+    Order: an explicit MIRE_AGENT, then this chat's registered name, then the legacy single-name
+    file (a human's terminal, or a shell with no session id at all), then a fresh auto-name."""
     env_name = os.environ.get("MIRE_AGENT", "").strip().lower()
     if env_name:
         return env_name
+
+    token = _session_token()
+    sessions = _load_sessions()
+    if token and token in sessions:
+        return sessions[token]["name"]
+
+    legacy = ""
     if os.path.exists(SESSION):
-        name = open(SESSION).read().strip()
-        if name:
-            return name
+        legacy = open(SESSION).read().strip()
+
+    if token and assign:
+        # A name already in use by another live chat is not reusable — that is the collision the
+        # whole scheme exists to prevent.
+        taken = {rec["name"] for rec in _prune_sessions(sessions).values()
+                 if isinstance(rec, dict)}
+        taken.add(legacy)
+        return _register(token, _auto_name(token, taken))
+
+    if legacy:
+        return legacy
     if required:
-        die("no active session. Run:  agent start <your-name>")
+        die("no session id in the environment and no name set.\n"
+            "  Run 'agent start' (it will name you), or set MIRE_AGENT=<name>.")
     return None
 
 
@@ -221,13 +322,22 @@ def cmd_sync(args):
 # ---------------------------------------------------------------- session
 
 def cmd_start(args):
-    if not args:
-        die("usage: agent start <your-name>   (e.g. claude, codex, sequoyah)")
-    name = args[0].strip().lower()
-    # Starting a session must not touch state.json or BOARD.md — otherwise every
-    # `agent start` produces a meaningless diff and the repo is never clean.
-    with open(SESSION, "w") as f:
-        f.write(name + "\n")
+    """`agent start` takes no argument now. A name is derived from the chat's own session id, so
+    parallel agents get distinct names with nobody having to think about it."""
+    token = _session_token()
+    if args:
+        # An explicit name still works — a human wanting to be 'sequoyah' on the board, or a script.
+        name = args[0].strip().lower()
+        if token:
+            _register(token, name)
+        else:
+            with open(SESSION, "w") as f:
+                f.write(name + "\n")
+    else:
+        if not token and not os.environ.get("MIRE_AGENT"):
+            die("no session id in this environment, so a name cannot be derived.\n"
+                "  Run:  agent start <your-name>")
+        name = whoami()
     st = load()
 
     print("\n%s%s session started%s\n" % (C["b"], name, C["x"]))
@@ -237,8 +347,9 @@ def cmd_start(args):
     if os.environ.get("MIRE_AGENT", "").strip().lower() not in ("", name):
         print("  %s⚠ MIRE_AGENT=%s is set and overrides this — you are acting as '%s'.%s"
               % (C["y"], os.environ["MIRE_AGENT"], os.environ["MIRE_AGENT"].strip().lower(), C["x"]))
-    print("  %sRunning agents in parallel? Give each its own name:  export MIRE_AGENT=%s%s"
-          % (C["dim"], name, C["x"]))
+    elif token:
+        print("  %sName derived from this chat's session id — it is yours for the whole session,"
+              " commits included. No MIRE_AGENT prefix needed.%s" % (C["dim"], C["x"]))
     _print_board(st, focus=name)
     _print_stale(st)
     _print_git()
@@ -952,7 +1063,7 @@ COMMANDS = {
 
 USAGE = """agent — multi-agent coordination for MIRE
 
-  agent start <name>              begin a session (claude | codex | sequoyah)
+  agent start                     begin a session (named from this chat automatically)
   agent brief <id>                everything you need to start that task
   agent board                     show what's happening
   agent claim <id> [files...]     claim a task and the files you'll edit

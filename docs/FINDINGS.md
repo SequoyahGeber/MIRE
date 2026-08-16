@@ -201,69 +201,6 @@ these known gaps" is a standing decision that shapes M7 and M8, not just a findi
 
 ---
 
-### F-007 · Forgetting `MIRE_AGENT` makes you silently impersonate the last agent to run `agent start`
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-15 by nav during 0.8/0.9
-
-`whoami()` in `.agent/bin/agent:81` resolves identity as `MIRE_AGENT` → the shared `.agent/session`
-file → die. The session file holds exactly one name, so whoever ran `agent start` most recently owns
-it. With two agents live, the one that forgets the export silently acts as the other:
-
-```
-$ export MIRE_AGENT=nav && .agent/bin/agent check    ->  session: nav
-$ env -u MIRE_AGENT   .agent/bin/agent check         ->  session: claude   # the other agent's start
-```
-
-The consequences are quiet and compounding. Claim checks are evaluated against the wrong agent, so a
-real collision can pass. The `in_grace()` window at `:394` is keyed to `r["agent"] == me`, so a
-mislabelled session also loses the 6-hour grace on its own just-released claims and gets warned about
-files it legitimately owns — which is what produced the spurious warning on `bdf8587`.
-
-This is a known trade-off, not an oversight: the comment at `:82` explains that `MIRE_AGENT` exists
-precisely so parallel agents don't clobber the shared session file. The gap is that forgetting it
-fails *silently* rather than loudly.
-
-Fix, if we want one: warn when the resolved identity comes from the session file while claims exist
-under a different agent — the one case where the fallback is probably wrong. Cheaper alternative: just
-make "always export `MIRE_AGENT`" load-bearing in `AGENTS.md` rather than a parenthetical.
-
-**Filed wrong twice, corrected here.** v1 blamed the hook for not inheriting the environment — false,
-it inherits normally. v2 claimed a hardcoded fallback to `claude` — also false, there is no such
-constant. Both were guesses made without reading `.agent/bin/agent`. Reading it took two minutes and
-would have got this right the first time.
-
-**Mitigated, 2026-08-16 by claude — and the proposed fix above was itself wrong.** This entry's
-cheap option was "make *always export* `MIRE_AGENT` load-bearing in `AGENTS.md`." Exporting does not
-actually work: most agent tools run each shell call in a **separate process**, so `export MIRE_AGENT=net`
-on its own line is gone by the next command and identity falls back to `.agent/session` anyway. Every
-prompt in `DELEGATION.md` used exactly that pattern, so the mitigation this file recommended would
-have left the bug fully intact while reading as fixed.
-
-What landed instead: `MIRE_AGENT=<name>` is now a **per-command prefix** on every `agent` invocation
-in `AGENTS.md`, `NEXT.md` and all three `DELEGATION.md` prompt blocks, with the reason stated inline
-so nobody "simplifies" it back to an `export`. That survives regardless of shell lifetime.
-
-**Still open**, and the reason this stays unresolved: the mitigation is documentation, so it holds
-only as long as every agent follows it. The real fix is the loud-failure one this entry already
-proposes — warn when identity resolves from the session file while claims exist under a different
-name. Worth doing the first time two chats actually run in parallel.
-
-Note for anyone re-reading the v1 correction: the hook inherits the environment fine. It is not the
-problem, and it has now been blamed three times.
-
-**Third failure mode, hit live 2026-08-16 while writing the mitigation above.** Per-command prefixing
-fixes `agent` calls but NOT commits. `git commit` invokes the pre-commit hook, the hook re-runs
-`agent check`, and it resolves identity from git's environment — which has no prefix on it. A commit
-whose claims were entirely valid (`project.godot` claimed by `claude` under D-012) was blocked because
-the hook resolved the committer as `net` from the session file. `MIRE_AGENT=claude git commit` went
-through and printed the expected D-012 warning instead.
-
-So the rule is `MIRE_AGENT=` on every `agent` command **and** on `git commit`, or just use
-`agent ship`, which sets it correctly itself. This is the third distinct way this one shared-state
-design has produced a wrong identity, which is the argument for the loud-failure fix rather than
-another round of documentation.
-
----
 
 ### F-009 · A GDExtension only loads if gitignored `.godot/extension_list.cfg` lists it
 
@@ -346,6 +283,99 @@ player, not by the spawner.
 ---
 
 ## Resolved
+
+### F-007 · Forgetting `MIRE_AGENT` made you silently impersonate another agent — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-15 by nav during 0.8/0.9
+
+`whoami()` in `.agent/bin/agent:81` resolves identity as `MIRE_AGENT` → the shared `.agent/session`
+file → die. The session file holds exactly one name, so whoever ran `agent start` most recently owns
+it. With two agents live, the one that forgets the export silently acts as the other:
+
+```
+$ export MIRE_AGENT=nav && .agent/bin/agent check    ->  session: nav
+$ env -u MIRE_AGENT   .agent/bin/agent check         ->  session: claude   # the other agent's start
+```
+
+The consequences are quiet and compounding. Claim checks are evaluated against the wrong agent, so a
+real collision can pass. The `in_grace()` window at `:394` is keyed to `r["agent"] == me`, so a
+mislabelled session also loses the 6-hour grace on its own just-released claims and gets warned about
+files it legitimately owns — which is what produced the spurious warning on `bdf8587`.
+
+This is a known trade-off, not an oversight: the comment at `:82` explains that `MIRE_AGENT` exists
+precisely so parallel agents don't clobber the shared session file. The gap is that forgetting it
+fails *silently* rather than loudly.
+
+Fix, if we want one: warn when the resolved identity comes from the session file while claims exist
+under a different agent — the one case where the fallback is probably wrong. Cheaper alternative: just
+make "always export `MIRE_AGENT`" load-bearing in `AGENTS.md` rather than a parenthetical.
+
+**Filed wrong twice, corrected here.** v1 blamed the hook for not inheriting the environment — false,
+it inherits normally. v2 claimed a hardcoded fallback to `claude` — also false, there is no such
+constant. Both were guesses made without reading `.agent/bin/agent`. Reading it took two minutes and
+would have got this right the first time.
+
+**Mitigated, 2026-08-16 by claude — and the proposed fix above was itself wrong.** This entry's
+cheap option was "make *always export* `MIRE_AGENT` load-bearing in `AGENTS.md`." Exporting does not
+actually work: most agent tools run each shell call in a **separate process**, so `export MIRE_AGENT=net`
+on its own line is gone by the next command and identity falls back to `.agent/session` anyway. Every
+prompt in `DELEGATION.md` used exactly that pattern, so the mitigation this file recommended would
+have left the bug fully intact while reading as fixed.
+
+What landed instead: `MIRE_AGENT=<name>` is now a **per-command prefix** on every `agent` invocation
+in `AGENTS.md`, `NEXT.md` and all three `DELEGATION.md` prompt blocks, with the reason stated inline
+so nobody "simplifies" it back to an `export`. That survives regardless of shell lifetime.
+
+**Still open**, and the reason this stays unresolved: the mitigation is documentation, so it holds
+only as long as every agent follows it. The real fix is the loud-failure one this entry already
+proposes — warn when identity resolves from the session file while claims exist under a different
+name. Worth doing the first time two chats actually run in parallel.
+
+Note for anyone re-reading the v1 correction: the hook inherits the environment fine. It is not the
+problem, and it has now been blamed three times.
+
+**Third failure mode, hit live 2026-08-16 while writing the mitigation above.** Per-command prefixing
+fixes `agent` calls but NOT commits. `git commit` invokes the pre-commit hook, the hook re-runs
+`agent check`, and it resolves identity from git's environment — which has no prefix on it. A commit
+whose claims were entirely valid (`project.godot` claimed by `claude` under D-012) was blocked because
+the hook resolved the committer as `net` from the session file. `MIRE_AGENT=claude git commit` went
+through and printed the expected D-012 warning instead.
+
+So the rule is `MIRE_AGENT=` on every `agent` command **and** on `git commit`, or just use
+`agent ship`, which sets it correctly itself. This is the third distinct way this one shared-state
+design has produced a wrong identity, which is the argument for the loud-failure fix rather than
+another round of documentation.
+
+
+**Fixed 2026-08-16 by larch — the loud-failure fix this entry kept proposing was the wrong target.**
+Warning on a suspicious identity would have made the fourth failure mode legible instead of removing
+it. The cause was never that agents forget the prefix; it was that identity was **shared mutable
+state** (`.agent/session`, one name for the whole repo) which every parallel chat raced on.
+
+Identity is now **derived, not declared**. `whoami()` resolves a per-chat session token out of the
+environment — `CLAUDE_CODE_SESSION_ID`, Codex's equivalents, `TERM_SESSION_ID` for a human's terminal
+— and maps it to a name in `.agent/sessions.json` (gitignored, machine-local). The name is assigned on
+first use from a short word list, `crc32`-keyed off the token so the same chat resolves to the same
+name in every process, and chosen to avoid names already held by other live sessions.
+
+That kills all four failure modes at once, including the two documentation could never reach:
+
+- **Two chats cannot collide.** Different tokens, different names, nothing shared to overwrite.
+- **`git commit` is fixed too** — the hook is a child process, so it inherits the same session id and
+  resolves the same agent. This was the third failure mode, and it needed no prefix at all.
+- **Nothing to forget**, so nothing to fail silently. `agent start` takes no argument now.
+- **Nobody has to invent names.** That chore was the actual cost to Sequoyah, and it is gone.
+
+`MIRE_AGENT` still overrides everything, and an explicit `agent start <name>` still works — a human
+who wants to be `sequoyah` on the board, or a script. Neither is needed.
+
+Verified: the same chat resolves `larch` on repeated calls; two fabricated session tokens resolve
+`coil` and `quill` with no overwrite; a claim, a `done` and a `git commit` all ran with no prefix and
+the hook reported `session: larch` — the identity that held the claims. Docs updated in step: the
+per-command-prefix rule is gone from `AGENTS.md`, `CLAUDE.md`, `NEXT.md` and `DELEGATION.md`'s rules
+block. The archived prompt blocks in `DELEGATION.md` keep their prefixes, labelled as historical.
+
+---
 
 ### F-015 · A finding could not be claimed, so fixing one always edited unclaimed files — **fixed**
 
