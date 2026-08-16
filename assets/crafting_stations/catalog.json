@@ -1,0 +1,141 @@
+[
+  {
+    "name": "station_workbench_primitive",
+    "family": "workbench",
+    "width_m": 2.05,
+    "depth_m": 0.869,
+    "height_m": 1.243,
+    "mesh_parts": 15,
+    "polygons": 237,
+    "materials": [
+      "MIRE_Station_Iron",
+      "MIRE_Station_Rope",
+      "MIRE_Station_Wood",
+      "MIRE_Station_Wood_Dark",
+      "MIRE_Station_Wood_Light"
+    ]
+  },
+  {
+    "name": "station_workbench_upgraded",
+    "family": "workbench",
+    "width_m": 2.25,
+    "depth_m": 1.045,
+    "height_m": 2.103,
+    "mesh_parts": 25,
+    "polygons": 461,
+    "materials": [
+      "MIRE_Station_Iron",
+      "MIRE_Station_Iron_Dark",
+      "MIRE_Station_Iron_Light",
+      "MIRE_Station_Red_Metal",
+      "MIRE_Station_Wood",
+      "MIRE_Station_Wood_Dark",
+      "MIRE_Station_Wood_Light"
+    ]
+  },
+  {
+    "name": "station_campfire",
+    "family": "fire",
+    "width_m": 1.602,
+    "depth_m": 1.602,
+    "height_m": 1.294,
+    "mesh_parts": 18,
+    "polygons": 306,
+    "materials": [
+      "MIRE_Station_Charred_Wood",
+      "MIRE_Station_Ember",
+      "MIRE_Station_Fire_Orange",
+      "MIRE_Station_Fire_Yellow",
+      "MIRE_Station_Stone",
+      "MIRE_Station_Stone_Light"
+    ]
+  },
+  {
+    "name": "station_cooking_spit",
+    "family": "fire",
+    "width_m": 2.292,
+    "depth_m": 1.602,
+    "height_m": 1.759,
+    "mesh_parts": 24,
+    "polygons": 346,
+    "materials": [
+      "MIRE_Station_Charred_Wood",
+      "MIRE_Station_Cooked_Meat",
+      "MIRE_Station_Cooked_Meat_Dark",
+      "MIRE_Station_Fire_Orange",
+      "MIRE_Station_Fire_Yellow",
+      "MIRE_Station_Iron",
+      "MIRE_Station_Iron_Dark",
+      "MIRE_Station_Stone",
+      "MIRE_Station_Stone_Light"
+    ]
+  },
+  {
+    "name": "station_stone_furnace",
+    "family": "forge",
+    "width_m": 2.412,
+    "depth_m": 1.757,
+    "height_m": 2.305,
+    "mesh_parts": 22,
+    "polygons": 458,
+    "materials": [
+      "MIRE_Station_Fire_Orange",
+      "MIRE_Station_Soot",
+      "MIRE_Station_Stone",
+      "MIRE_Station_Stone_Dark",
+      "MIRE_Station_Stone_Light"
+    ]
+  },
+  {
+    "name": "station_anvil",
+    "family": "forge",
+    "width_m": 1.38,
+    "depth_m": 0.892,
+    "height_m": 1.36,
+    "mesh_parts": 7,
+    "polygons": 136,
+    "materials": [
+      "MIRE_Station_Iron",
+      "MIRE_Station_Iron_Dark",
+      "MIRE_Station_Iron_Light",
+      "MIRE_Station_Soot",
+      "MIRE_Station_Wood_Cut",
+      "MIRE_Station_Wood_Dark"
+    ]
+  },
+  {
+    "name": "station_repair_bench",
+    "family": "repair",
+    "width_m": 2.15,
+    "depth_m": 0.9,
+    "height_m": 1.603,
+    "mesh_parts": 32,
+    "polygons": 635,
+    "materials": [
+      "MIRE_Station_Brass",
+      "MIRE_Station_Iron",
+      "MIRE_Station_Iron_Dark",
+      "MIRE_Station_Iron_Light",
+      "MIRE_Station_Red_Metal",
+      "MIRE_Station_Wood",
+      "MIRE_Station_Wood_Dark",
+      "MIRE_Station_Wood_Light"
+    ]
+  },
+  {
+    "name": "station_woodcutting_block",
+    "family": "woodworking",
+    "width_m": 2.063,
+    "depth_m": 1.24,
+    "height_m": 1.164,
+    "mesh_parts": 10,
+    "polygons": 152,
+    "materials": [
+      "MIRE_Station_Iron",
+      "MIRE_Station_Soot",
+      "MIRE_Station_Wood",
+      "MIRE_Station_Wood_Cut",
+      "MIRE_Station_Wood_Dark"
+    ]
+  }
+]

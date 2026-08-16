@@ -121,8 +121,8 @@ extraction. Make these before broad biome decoration.
 |---|---|---|---:|---|
 | A-001 | `DONE` | Harvestable tree states: intact pine, two damage stages, felled trunk, fresh stump, depleted stump; stone node states: intact, cracked, depleted; iron node states: intact, cracked, depleted. Made 12 in `assets/harvestables/`; deterministic rebuild, GLB/catalog validation, two-preview visual inspection, and fresh Godot import all passed | 12 | A-000 |
 | A-002 | `DONE` | Basic world pickups: log, branch, stone, flint, iron ore, iron ingot, coal, fibre bundle, berry, mushroom, raw meat, coin, coin stack, salvage fragment. Made 14 in `assets/pickups/`; deterministic rebuild, GLB/catalog validation, two-preview visual inspection, and fresh Godot import all passed | 14 | A-001 |
-| A-003 | `NEXT` | First crafting stations: primitive workbench, upgraded workbench, campfire, cooking spit, stone furnace, anvil, repair bench, woodcutting block | 8 | A-002 |
-| A-004 | `QUEUED` | First tool/weapon set: wooden axe, stone axe, wooden pickaxe, stone pickaxe, iron pickaxe, cleaver, skewer, short bow, arrow, repair hammer; world pickup and first-person versions share one design | 20 exports | A-003 |
+| A-003 | `DONE` | First crafting stations: primitive workbench, upgraded workbench, campfire, cooking spit, stone furnace, anvil, repair bench, woodcutting block. Made 8 in `assets/crafting_stations/`; deterministic rebuild, GLB/catalog validation, two-preview visual inspection, and fresh Godot import all passed | 8 | A-002 |
+| A-004 | `NEXT` | First tool/weapon set: wooden axe, stone axe, wooden pickaxe, stone pickaxe, iron pickaxe, cleaver, skewer, short bow, arrow, repair hammer; world pickup and first-person versions share one design | 20 exports | A-003 |
 | A-005 | `QUEUED` | Loot set: small chest closed/open, Wellspring chest closed/open, reinforced chest closed/open, coin pouch, powerup orb, item pickup bag, dropped-player backpack | 10 | A-002 |
 | A-006 | `QUEUED` | Prototype enemy set: Mire crawler mesh, simple rig, idle, locomotion, attack tell, attack, hit, and death animations; spawn nest and death fragments | 4 models + animations | Combat task 2.9 confirms feel target |
 | A-007 | `QUEUED` | Basic Ward set: foundation, healthy Ward, damaged Ward, critical Ward, destroyed remains, repair scaffolding, boundary post, activation crystal | 8 | A-003 |
@@ -198,3 +198,4 @@ editor/playtest feedback here so it survives between agent sessions.
 | A-000 | Awaiting gameplay-map review | Technically validated; check scale, collision choices, and density in the real map |
 | A-001 | Awaiting gameplay-state review | Technically validated; check damage-state readability, collision choices, and swap timing in the harvesting prototype |
 | A-002 | Awaiting pickup-flow review | Technically validated; check hover/spin presentation, pickup collision size, and readability in fog during the inventory prototype |
+| A-003 | Awaiting station-flow review | Technically validated; check interaction reach, collision simplification, fire VFX replacement, and station spacing during crafting playtests |

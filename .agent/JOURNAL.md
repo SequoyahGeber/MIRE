@@ -521,3 +521,15 @@ A-002 complete: 14 portable pickup GLBs covering wood, minerals, ingot, fibre, f
 Files: `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `tools/blender/build_pickup_kit.py`, `assets/source/pickup_kit.blend`, `assets/pickups/README.md`, `assets/pickups/catalog.json`, `assets/pickups/preview/pickups_preview.png`, `assets/pickups/preview/pickups_scale_preview.png`, `assets/pickups/exports/pickup_log.glb`, `assets/pickups/exports/pickup_branch.glb`, `assets/pickups/exports/pickup_stone.glb`, `assets/pickups/exports/pickup_flint.glb`, `assets/pickups/exports/pickup_iron_ore.glb`, `assets/pickups/exports/pickup_iron_ingot.glb`, `assets/pickups/exports/pickup_coal.glb`, `assets/pickups/exports/pickup_fibre_bundle.glb`, `assets/pickups/exports/pickup_berry.glb`, `assets/pickups/exports/pickup_mushroom.glb`, `assets/pickups/exports/pickup_raw_meat.glb`, `assets/pickups/exports/pickup_coin.glb`, `assets/pickups/exports/pickup_coin_stack.glb`, `assets/pickups/exports/pickup_salvage_fragment.glb`
 
 Commit at time of writing: `f151625`
+
+---
+
+### HANDOFF · 2.1d · ember · 2026-08-16T18:50:26+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-003 complete: eight portable station GLBs covering primitive/upgraded workbenches, campfire, cooking spit, stone furnace, anvil, repair bench, and woodcutting block; dedicated deterministic Blender generator/source, exact catalog, family README, full-set preview, and scale preview. Verified syntax, deterministic rebuild (byte-identical GLBs/catalog; pixel-identical renders), GLB 2.0 structure/catalog/scale/bounds/materials at 4,372 triangles total and 1,100 max, visual quality, and isolated fresh Godot 4.7.1 import with 8/8 scenes and no errors. Tracker marks A-003 DONE and A-004 NEXT. Next run: make only A-004 as ten shared designs with paired world/viewmodel exports; preserve host authority for tool use and combat.
+
+Files: `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `tools/blender/build_crafting_stations.py`, `assets/source/crafting_stations.blend`, `assets/crafting_stations/README.md`, `assets/crafting_stations/catalog.json`, `assets/crafting_stations/preview/crafting_stations_preview.png`, `assets/crafting_stations/preview/crafting_stations_scale_preview.png`, `assets/crafting_stations/exports/station_workbench_primitive.glb`, `assets/crafting_stations/exports/station_workbench_upgraded.glb`, `assets/crafting_stations/exports/station_campfire.glb`, `assets/crafting_stations/exports/station_cooking_spit.glb`, `assets/crafting_stations/exports/station_stone_furnace.glb`, `assets/crafting_stations/exports/station_anvil.glb`, `assets/crafting_stations/exports/station_repair_bench.glb`, `assets/crafting_stations/exports/station_woodcutting_block.glb`
+
+Commit at time of writing: `73cf552`

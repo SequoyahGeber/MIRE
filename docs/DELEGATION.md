@@ -93,15 +93,20 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
-**Asset batches A-001 and A-002 are complete; A-003 is next.** Harvest states live under
-`assets/harvestables/` (12 GLBs), while the 14 basic world pickups live under `assets/pickups/`.
-Each family has its own catalog, previews, editable source, and deterministic generator:
-`build_harvestable_resources.py` and `build_pickup_kit.py`. Pickups are horizontally centred and
-ground-origin normalized so a future hover/spin presentation can wrap them consistently. None of
-these meshes contain collision or authority: task 2.3 keeps harvest hits/state/yields host-owned,
-and inventory/loot code keeps pickup spawning, collection validation, and grants host-owned. The
-next asset run takes A-003 from `docs/ASSET_TRACKER.md` and should use a separate crafting-station
-generator rather than growing either resource script.
+**Asset batches A-001 through A-003 are complete; A-004 is next.** Harvest states live under
+`assets/harvestables/` (12 GLBs), basic pickups under `assets/pickups/` (14 GLBs), and the eight
+vertical-slice stations under `assets/crafting_stations/`. Each family has its own catalog, previews,
+editable source, and deterministic generator. Pickups and stations are horizontally centred and
+ground-origin normalized. None contain collision or authority: harvest mutation, pickup grants,
+station placement/use, crafting validation, fuel, and repairs remain host-owned. Static fire meshes
+are cosmetic placeholders for later client-local VFX. The next asset run takes A-004 from
+`docs/ASSET_TRACKER.md`; it is 20 exports sharing ten designs, and should use a separate weapon/tool
+generator with paired `*_world` and `*_viewmodel` names.
+
+**Blender generator naming trap:** never put raw float values in object or datablock names. Blender
+5.2 treats the text after the last `.` as a numeric duplicate suffix; a coordinate such as
+`.30600000000000005` aborts background Blender in libc++ with `stoi: out of range`. Use integer
+indices in procedural names.
 
 **The playtest map is now populated by task 2.1c.** `TestMapProps` builds six deterministic zones
 inside `GreyboxTest` at runtime: spawn camp, west forest, north ruins, east Mire grove, south ridge,

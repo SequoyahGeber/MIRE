@@ -56,6 +56,66 @@
       "at": "2026-08-16T16:55:25+00:00",
       "task": "F-007"
     },
+    "assets/crafting_stations/README.md": {
+      "agent": "ember",
+      "at": "2026-08-16T18:50:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/crafting_stations/catalog.json": {
+      "agent": "ember",
+      "at": "2026-08-16T18:50:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/crafting_stations/exports/station_anvil.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:50:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/crafting_stations/exports/station_campfire.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:50:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/crafting_stations/exports/station_cooking_spit.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:50:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/crafting_stations/exports/station_repair_bench.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:50:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/crafting_stations/exports/station_stone_furnace.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:50:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/crafting_stations/exports/station_woodcutting_block.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:50:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/crafting_stations/exports/station_workbench_primitive.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:50:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/crafting_stations/exports/station_workbench_upgraded.glb": {
+      "agent": "ember",
+      "at": "2026-08-16T18:50:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/crafting_stations/preview/crafting_stations_preview.png": {
+      "agent": "ember",
+      "at": "2026-08-16T18:50:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/crafting_stations/preview/crafting_stations_scale_preview.png": {
+      "agent": "ember",
+      "at": "2026-08-16T18:50:26+00:00",
+      "task": "2.1d"
+    },
     "assets/environment/README.md": {
       "agent": "reed",
       "at": "2026-08-16T18:01:56+00:00",
@@ -871,6 +931,11 @@
       "at": "2026-08-16T17:40:04+00:00",
       "task": "2.1"
     },
+    "assets/source/crafting_stations.blend": {
+      "agent": "ember",
+      "at": "2026-08-16T18:50:26+00:00",
+      "task": "2.1d"
+    },
     "assets/source/harvestable_resources.blend": {
       "agent": "ember",
       "at": "2026-08-16T18:32:13+00:00",
@@ -953,7 +1018,7 @@
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
+      "at": "2026-08-16T18:50:26+00:00",
       "task": "2.1d"
     },
     "docs/DECISIONS.md": {
@@ -963,7 +1028,7 @@
     },
     "docs/DELEGATION.md": {
       "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
+      "at": "2026-08-16T18:50:26+00:00",
       "task": "2.1d"
     },
     "docs/FINDINGS.md": {
@@ -1035,6 +1100,11 @@
       "agent": "load",
       "at": "2026-08-16T08:27:33+00:00",
       "task": "1.9"
+    },
+    "tools/blender/build_crafting_stations.py": {
+      "agent": "ember",
+      "at": "2026-08-16T18:50:26+00:00",
+      "task": "2.1d"
     },
     "tools/blender/build_harvestable_resources.py": {
       "agent": "ember",
