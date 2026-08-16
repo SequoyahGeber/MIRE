@@ -86,22 +86,39 @@ affect gameplay.
 
 ---
 
-### F-003 · Physics interpolation is off; §5a settings not yet applied
+### F-003 · Four §5a settings can't be pinned from the Godot editor — it prunes default values
 
-**Area:** rendering · **Severity:** medium · **Found:** 2026-08-15 by claude during the §5a doc update
+**Area:** rendering · **Severity:** low · **Found:** 2026-08-15 by claude · **Updated:** 2026-08-15 by nav
 
-`ARCHITECTURE.md` §5a requires four `project.godot` settings. None are set explicitly, and
-`physics/common/physics_interpolation` defaults to **off** — so at 60 Hz simulation on a high-refresh
-display, anything not directly player-controlled (remote players, enemies, physics props) will judder.
+*Originally: none of §5a's six required settings were applied, so `physics_interpolation` was off and
+anything not directly player-controlled would judder on a high-refresh display.*
 
-Blocked on Sequoyah: agents can't edit `project.godot`. Not urgent while the only moving thing is the
-local player, who is updated in the same tick that reads input. It becomes visible the moment a second
-player or the first enemy exists — **M1/M2**.
+**The judder risk is closed.** Sequoyah set all six in the editor, and the two that matter behaviourally
+persisted, because their targets differ from the engine default:
 
-Raised in severity by the VRR case (§5a *Variable refresh rate*): interpolation is the load-bearing
-fix there, and `physics_jitter_fix` must go to `0` at the same time or the two corrections fight.
-Development happens exclusively on a ProMotion MacBook Pro (48–120 Hz adaptive), so this judder will
-appear on the only machine we have long before anyone else sees it.
+```
+[physics]
+common/physics_interpolation=true     # default false
+common/physics_jitter_fix=0.0         # default 0.5
+```
+
+**The other four did not persist, and this is the part worth knowing:** Godot's editor writes only
+settings whose value differs from the engine default, and `physics_ticks_per_second=60`,
+`max_physics_steps_per_frame=8`, `vsync_mode=enabled` and `max_fps=0` all *are* the defaults. Setting
+them in Project Settings is a no-op on the file. So §5a's actual requirement — "set these explicitly
+rather than inheriting defaults, so the contract is visible in `project.godot` and a future engine
+default can't silently change it" — **cannot be satisfied through the editor UI.** The only way to pin
+a default-valued setting is to write the line into `project.godot` by hand.
+
+Behaviour is correct today; what is missing is the guard against a future Godot changing a default
+underneath us. Godot is pinned (D-?/R5), so that exposure is limited to a deliberate engine upgrade.
+
+Remaining fix, human-only (agents can't edit `project.godot` — D-007): add `common/physics_ticks_per_second=60`
+and `common/max_physics_steps_per_frame=8` under `[physics]`, `window/vsync/vsync_mode=1` under
+`[display]`, and `run/max_fps=0` under `[application]`.
+
+Worth folding into §5a itself so the next person doesn't rediscover it: the table should say which of
+these the editor will and won't write.
 
 ---
 
