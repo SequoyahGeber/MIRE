@@ -333,6 +333,35 @@ fails, that's a *success* — you found it in week 3 instead of month 8.
 
 > **R3 is the one to worry about.** Enemy pathfinding on runtime-generated terrain is where Godot is
 > weakest and where an unprepared project stalls hardest. Spike it in M0, not M5.
+>
+> **Spiked in M0 (task 0.8) — GREEN.** See `DECISIONS.md` D-016. The fallback is dropped; we keep
+> `NavigationServer3D`. Read §6b before writing any navigation code.
+
+### 6b. Navigation API traps in Godot 4.7.1
+
+Four behaviours found while spiking R3 that cost real time to diagnose. All four fail *silently* —
+no error, no warning, just a wrong result — so nothing in the engine will tell you about them. Working
+examples of all four are in `world/chunk/nav_bake_probe.gd` and `tools/bench_navbake.gd`.
+
+**1. Triangle winding is inverted from the usual convention, and getting it wrong bakes nothing.**
+Godot's Recast bridge treats a triangle as up-facing when `cross(v1-v0, v2-v0).y` is **negative**. Feed
+it faces wound the conventional way and the bake returns *success* with **zero polygons** — no error,
+no warning. This is the single most expensive trap here; it looks exactly like "navigation is broken."
+
+**2. A navigation map is not queryable until the server syncs it on a physics frame,** and both
+obvious readiness signals lie. `map_force_update()` does not force the sync, and
+`map_get_iteration_id()` reaches `1` while the polygon graph is still empty. Querying early fails with
+*"query failed because it was made before first map synchronization."* Poll an actual query — e.g.
+`map_get_closest_point()` returning something other than `Vector3.ZERO` — not a readiness flag.
+
+**3. `NavigationMesh.cell_size` must equal the map's cell size.** Mismatched, region edges rasterize
+onto different grids and connections silently misbehave. Godot warns for this one, at least.
+
+**4. `filter_baking_aabb` filters *source geometry*, not output polygons.** It is the obvious tool for
+trimming a chunk bake back to its footprint and it does not do that — it removes input triangles
+before the bake, so agent-radius erosion still eats the edge. `border_size` makes it worse: it shrinks
+the result further (a 4 m border produced an 8 m hole). Neither is the seam fix. The seam fix is
+`map_set_edge_connection_margin` > `2 × agent_radius`, per D-016.
 
 ---
 
