@@ -1,37 +1,47 @@
 # Delegation — ready-to-paste task prompts
 
-Copy a block below into a fresh chat. Each is self-contained: the agent never needs to explore, which
-is the single most expensive thing an agent can do (`AI-WORKFLOW.md` §4).
+**How to use this file:** find the task, select from its `## Task N.N` heading down to the end of its
+fenced block, paste that into a fresh chat, and set the model and effort named just under the heading.
+Nothing here is for you to run — every command lives inside the prompt and the agent executes it.
 
-**Give every parallel chat its own identity** — `.agent/session` holds one name, so without this they
-overwrite each other and claims get misattributed:
+Each block is self-contained on purpose: the agent never needs to explore, which is the single most
+expensive thing an agent can do (`AI-WORKFLOW.md` §4).
+
+**Each parallel chat needs its own identity.** `.agent/session` holds exactly one name, so two chats
+started without this overwrite each other and claims get misattributed to the wrong agent — which
+defeats the entire point of claiming. The name is passed per command:
 
 ```bash
-export MIRE_AGENT=terrain    # or nav, net, content — one per chat
+MIRE_AGENT=net .agent/bin/agent claim 1.2 autoload/net_transport.gd
 ```
 
-**Model + effort are set per chat, not in the prompt.** See the table in each task.
+**Per command, not `export`.** Agent tools run each shell call in a fresh process, so a bare
+`export MIRE_AGENT=net` on its own line is gone by the next command and the agent silently falls back
+to whatever `.agent/session` happens to hold. It fails quietly and produces exactly the misattributed
+claim the identity is there to prevent. Every prompt below carries the prefix on each command.
+
+**Roles are not fixed (D-020).** Any agent can take any task; which one gets it depends on which plan
+has quota. Nothing below is reserved for a particular chat.
 
 ---
 
-## Ready now — M1
+## Current state — check `.agent/BOARD.md` before pasting anything
 
-| # | Task | Agent name | Model | Effort | Why this model |
+| # | Task | Agent name | Model | Effort | Status |
 |---|---|---|---|---|---|
-| 1.2 | NetTransport autoload | `net` | Opus 5 | xhigh | Everything in M1 sits on this |
-| 2.2 | Content framework *(optional)* | `content` | Sonnet 5 | medium | Pure data defs, mechanical |
+| 1.2 | NetTransport autoload | `net` | Opus 5 | xhigh | **in flight** — don't start a second one |
+| 2.2 | Content framework | `content` | Sonnet 5 | medium | **done** — prompt kept for reference only |
 
-**1.2 is the only thing on the critical path right now.** It gates 1.3, 1.5, 1.6, 1.7, 1.8, 1.10 and
-1.11 — seven of the twelve M1 tasks — so it is worth the premium spend and the xhigh effort. The
-lifecycle requirements are where cheap models produce plausible code that only fails on a real
-disconnect, and Godot's `MultiplayerAPI` shifted across 4.x, which is the same stale-training-data trap
-task 0.8 had to guard against explicitly.
+**1.2 is the critical path.** It gates 1.3, 1.5, 1.6, 1.7, 1.8, 1.10 and 1.11 — seven of the twelve M1
+tasks — which is why it's worth the premium spend and the xhigh effort. The lifecycle requirements are
+where cheap models produce plausible code that only fails on a real disconnect, and Godot's
+`MultiplayerAPI` shifted across 4.x, the same stale-training-data trap task 0.8 had to guard against.
 
-2.2 jumps into M2, but it shares no files with 1.2 and runs on Sonnet — so it's parallelism that costs
-no premium quota. Skip it if you'd rather keep M1 clean.
+**Nothing new should be started until 1.2 lands.** Its interface is what the next seven prompts get
+written against, so anything begun before it either duplicates work or gets rewritten.
 
-**Yours, not delegable:** 1.1 (GodotSteam GDExtension + `project.godot`), then 1.4 needs it. 1.12 needs
-both. `4.0b` (Windows determinism) is yours too, and is quota-free.
+**Yours, not delegable:** 1.1 (GodotSteam GDExtension + `project.godot`), which 1.4 then needs, and
+1.12 needs both. `4.0b` (Windows determinism) is yours only to the extent of provisioning the VM.
 
 M0 is closed. The 0.7 and 0.8 spike prompts that used to live here shipped in `9a1bc19` / `9ebe47b` —
 their results are D-015 and D-016 in `DECISIONS.md`. The unmeasured half of R2 is now task `4.0a`.
@@ -40,7 +50,7 @@ their results are D-015 and D-016 in `DECISIONS.md`. The unmeasured half of R2 i
 
 ## Task 1.2 — NetTransport autoload
 
-> **Model: Opus 5 · effort xhigh · `export MIRE_AGENT=net`**
+> **Model: Opus 5 · effort xhigh** · agent name `net`
 > Every other M1 task sits on this interface. Getting it right is worth the spend.
 
 ```
@@ -48,9 +58,13 @@ You're working on MIRE, a co-op survival game in Godot 4.7.1. Read AGENTS.md and
 docs/ARCHITECTURE.md §2 (all of §2 — it defines the networking model) before writing
 code. Then:
 
-    export MIRE_AGENT=net
-    .agent/bin/agent start net
-    .agent/bin/agent claim 1.2 autoload/net_transport.gd core/net/net_config.gd
+    MIRE_AGENT=net .agent/bin/agent start net
+    MIRE_AGENT=net .agent/bin/agent claim 1.2 autoload/net_transport.gd core/net/net_config.gd
+
+Keep the MIRE_AGENT=net prefix on EVERY .agent/bin/agent command you run, including
+done and ship. Do not use `export` — each shell call is a fresh process, so an
+exported value is gone by your next command and your claims get filed under the
+wrong agent without any error.
 
 TASK: Build the NetTransport autoload — one interface that swaps between transports so
 no gameplay code ever knows which one is live. This is the foundation of milestone M1;
@@ -112,9 +126,9 @@ DELIVERABLE: also give me a 5-line snippet showing how task 1.3 (the two-window 
 launcher) will call this, so I can sanity-check the interface before we build on it.
 
 FINISH WITH:
-    .agent/bin/agent done 1.2 "<what works, what's stubbed>"
+    MIRE_AGENT=net .agent/bin/agent done 1.2 "<what works, what's stubbed>"
   (or handoff, if something is genuinely unfinished)
-    .agent/bin/agent ship 1.2 "M1: NetTransport autoload"
+    MIRE_AGENT=net .agent/bin/agent ship 1.2 "M1: NetTransport autoload"
 
 `ship` commits only this task's files and pushes to origin. Never `git add -A` —
 other agents are working in this same directory and you would commit their
@@ -131,22 +145,25 @@ THEN, as your final chat message, tell me:
 
 ---
 
-## Optional second chat — only if you want more parallelism
+## Already shipped — kept for reference
 
-## Task 2.2 — Content resource framework
+## Task 2.2 — Content resource framework ✅ **DONE**
 
-> **Model: Sonnet 5 · effort medium · `export MIRE_AGENT=content`**
-> This is M2 work pulled forward. It's safe — pure data definitions, no network state,
-> no shared files with 1.2 — but it does jump the milestone. Skip it if you'd rather
-> keep M1 clean.
+> **Model: Sonnet 5 · effort medium** · agent name `content`
+> **Completed 2026-08-16. Do not paste this.** Kept only as a worked example of a
+> framework-shaped prompt, since M2 has several more of them.
 
 ```
 You're working on MIRE, a co-op survival game in Godot 4.7.1. Read AGENTS.md first.
 Then:
 
-    export MIRE_AGENT=content
-    .agent/bin/agent start content
-    .agent/bin/agent claim 2.2 core/content/item_def.gd core/content/recipe_def.gd autoload/registry.gd
+    MIRE_AGENT=content .agent/bin/agent start content
+    MIRE_AGENT=content .agent/bin/agent claim 2.2 core/content/item_def.gd core/content/recipe_def.gd autoload/registry.gd
+
+Keep the MIRE_AGENT=content prefix on EVERY .agent/bin/agent command you run,
+including done and ship. Do not use `export` — each shell call is a fresh process,
+so an exported value is gone by your next command and your claims get filed under
+the wrong agent without any error.
 
 TASK: Build the content resource framework — the thing that makes adding the 60th
 powerup cost the same as the 2nd (docs/DECISIONS.md D-006).
@@ -188,8 +205,8 @@ CONSTRAINTS:
 - Don't explore. Everything you need is in this prompt.
 
 FINISH WITH:
-    .agent/bin/agent done 2.2 "<what you built>"
-    .agent/bin/agent ship 2.2 "M2: content resource framework"
+    MIRE_AGENT=content .agent/bin/agent done 2.2 "<what you built>"
+    MIRE_AGENT=content .agent/bin/agent ship 2.2 "M2: content resource framework"
 
 `ship` commits only this task's files and pushes to origin. Never `git add -A` —
 other agents are working in this same directory and you would commit their
@@ -210,7 +227,7 @@ THEN, as your final chat message, tell me:
 
 ## Task 4.0a — Spike R2b: chunk collision cooking + GPU upload
 
-> **Model: Opus 5 · effort high · `export MIRE_AGENT=collide`**
+> **Model: Opus 5 · effort high** · agent name `collide`
 > **Do not start this during M1.** It's parked here so the reasoning behind it doesn't have to be
 > rebuilt from `FINDINGS.md` F-005 in three milestones' time. Run it immediately before task 4.1.
 
@@ -218,9 +235,13 @@ THEN, as your final chat message, tell me:
 You're working on MIRE, a co-op survival game in Godot 4.7.1. Read AGENTS.md first —
 it's the protocol every agent here follows. Then:
 
-    export MIRE_AGENT=collide
-    .agent/bin/agent start collide
-    .agent/bin/agent claim 4.0a tools/bench_chunk_collide.gd
+    MIRE_AGENT=collide .agent/bin/agent start collide
+    MIRE_AGENT=collide .agent/bin/agent claim 4.0a tools/bench_chunk_collide.gd
+
+Keep the MIRE_AGENT=collide prefix on EVERY .agent/bin/agent command you run,
+including done and ship. Do not use `export` — each shell call is a fresh process,
+so an exported value is gone by your next command and your claims get filed under
+the wrong agent without any error.
 
 TASK: Spike R2b. Close the half of spike R2 that was never measured.
 
@@ -275,8 +296,8 @@ CONSTRAINTS:
 - Don't explore the codebase beyond chunk_mesher.gd. Ask if genuinely blocked.
 
 FINISH WITH:
-    .agent/bin/agent done 4.0a "<the numbers, and which of GREEN/AMBER/RED they support>"
-    .agent/bin/agent ship 4.0a "M4: chunk collision + upload spike (R2b)"
+    MIRE_AGENT=collide .agent/bin/agent done 4.0a "<the numbers, and which of GREEN/AMBER/RED they support>"
+    MIRE_AGENT=collide .agent/bin/agent ship 4.0a "M4: chunk collision + upload spike (R2b)"
 
 `ship` commits only this task's files and pushes to origin. Never `git add -A` —
 other agents are working in this same directory and you would commit their
@@ -294,13 +315,15 @@ THEN, as your final chat message, tell me:
 ## When they finish
 
 Each agent ends with `agent done` or `agent handoff`, which releases its claims and writes
-`.agent/JOURNAL.md`. Then **you** commit — agents can't, since the work usually needs a scene or
-autoload wired first.
+`.agent/JOURNAL.md` itself. `ship` commits and pushes its own files. So there's usually nothing for you
+to run — read `.agent/BOARD.md` to see what landed, or ask any chat to summarise it.
 
-```bash
-.agent/bin/agent board          # see what landed
-```
+What *is* yours: the wiring. Agents can't touch `.tscn`/`.tres`/`project.godot` (D-007), so a shipped
+script is often not a working feature until you register an autoload or add a node. Every prompt here
+ends by demanding the agent state plainly whether the thing works yet — believe that section over the
+word "done".
 
-Bring the result back to the planning chat before building on it. For 1.2 specifically: sanity-check
-the interface snippet it gives you *before* starting 1.3, because seven tasks get written against that
-shape and a change after the fact is a refactor across the milestone.
+For 1.2 specifically: **sanity-check the interface snippet it gives you before starting 1.3.** Seven
+tasks get written against that shape, so changing it afterwards isn't a fix, it's a refactor across the
+milestone. Paste the snippet into a fresh chat and ask whether the API holds up, if you want a second
+read on it.

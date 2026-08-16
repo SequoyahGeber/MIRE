@@ -232,6 +232,25 @@ it inherits normally. v2 claimed a hardcoded fallback to `claude` — also false
 constant. Both were guesses made without reading `.agent/bin/agent`. Reading it took two minutes and
 would have got this right the first time.
 
+**Mitigated, 2026-08-16 by claude — and the proposed fix above was itself wrong.** This entry's
+cheap option was "make *always export* `MIRE_AGENT` load-bearing in `AGENTS.md`." Exporting does not
+actually work: most agent tools run each shell call in a **separate process**, so `export MIRE_AGENT=net`
+on its own line is gone by the next command and identity falls back to `.agent/session` anyway. Every
+prompt in `DELEGATION.md` used exactly that pattern, so the mitigation this file recommended would
+have left the bug fully intact while reading as fixed.
+
+What landed instead: `MIRE_AGENT=<name>` is now a **per-command prefix** on every `agent` invocation
+in `AGENTS.md`, `NEXT.md` and all three `DELEGATION.md` prompt blocks, with the reason stated inline
+so nobody "simplifies" it back to an `export`. That survives regardless of shell lifetime.
+
+**Still open**, and the reason this stays unresolved: the mitigation is documentation, so it holds
+only as long as every agent follows it. The real fix is the loud-failure one this entry already
+proposes — warn when identity resolves from the session file while claims exist under a different
+name. Worth doing the first time two chats actually run in parallel.
+
+Note for anyone re-reading the v1 correction: the hook inherits the environment fine. It is not the
+problem, and it has now been blamed three times.
+
 ---
 
 ---

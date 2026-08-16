@@ -6,27 +6,32 @@ Godot 4.7 · Forward+ · Jolt · GDScript · first-person · 3–6 players · ho
 Multiple agents work on this repo. This file is the shared protocol. Follow it exactly — it's what lets
 one of us pick up where another left off.
 
-## Who does what (D-014)
+## Who does what (D-014, role split superseded by D-020)
 
-| Role | Who | Owns |
-|---|---|---|
-| **Planner** | Claude Code (chat session) | Design, architecture, roadmap, task breakdown, decisions, specs, reviewing landed work. **Does not implement gameplay code.** |
-| **Coder** | Codex · second Claude | Implementing claimed tasks in `.gd`. Works from the planner's spec. |
-| **Integrator** | Sequoyah (human) | All Godot editor work, asset import, tuning, playtesting, commits. |
+Any agent — Claude Code chat, Codex, a second Claude session — can take any task. There's no fixed
+planner/coder identity; which agent picks up a task depends on which plan has usage quota available.
+Sequoyah (human) is the only fixed role: **Integrator** — all Godot editor work, asset import, tuning,
+playtesting, commits.
 
-If you are a coder and the spec is ambiguous, **ask rather than explore** — exploration is the most
-expensive thing an agent can do here, and the planner can answer in one line.
+If the spec for a task is ambiguous, **ask rather than explore** — exploration is the most expensive
+thing an agent can do here, and Sequoyah can answer in one line.
 
 ---
 
 ## Start every session with this
 
 ```bash
-.agent/bin/agent start <your-name>     # claude | codex | sequoyah
+MIRE_AGENT=<your-name> .agent/bin/agent start <your-name>     # claude | codex | net | ...
 ```
 
 It prints the board, your claims, stale work, and recent commits. **Do not skip it** — it's the
 cheapest way to load context, and nothing else you do is safe until you know what's in flight.
+
+**Put `MIRE_AGENT=<your-name>` on every `agent` command, and never `export` it once.** Most agent
+tools run each shell call in a separate process, so an exported value is gone by your next command.
+The script then falls back to `.agent/session`, which holds a single name shared by every chat in
+this repo — so with two chats running you file claims under the other agent's identity, with no
+error. That is precisely the collision claiming exists to prevent, and it fails silently.
 
 Then read `docs/NEXT.md` for the current focus.
 
@@ -167,6 +172,9 @@ Host-authoritative by default; client-authoritative only for a player's own move
 ---
 
 ## Commands
+
+Prefix each of these with `MIRE_AGENT=<your-name>` — see the top of this file for why `export` is
+not good enough.
 
 ```bash
 .agent/bin/agent start <name>          begin a session, print full context

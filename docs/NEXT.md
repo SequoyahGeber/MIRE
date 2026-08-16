@@ -8,7 +8,7 @@
 ## Status
 
 **Milestone:** M1 · Network spine — 0 of 12 tasks done. **M0 is closed, 10/10.**
-**Last session:** 2026-08-16 (claude/planner) — closed M0, filed the two spike verdicts, and booked the
+**Last session:** 2026-08-16 (claude) — closed M0, filed the two spike verdicts, and booked the
 two M0 debts as M4 gates (4.0a, 4.0b) so they can't quietly go missing.
 
 Both risk spikes came back **GREEN**: chunked terrain meshing stays in GDScript (D-015), runtime
@@ -22,13 +22,11 @@ Godot 4.7.1-stable, at `/Applications/Godot.app`. Pinned — don't upgrade mid-m
 
 ---
 
-## Roles (D-014)
+## Roles (D-014, superseded by D-020)
 
-| Role | Who | Owns |
-|---|---|---|
-| **Planner** | Claude Code chat | Design, architecture, roadmap, specs, decisions, reviewing landed work |
-| **Coder** | Codex · second Claude | Implementing claimed tasks in `.gd`, from the planner's spec |
-| **Integrator** | You | Godot editor, assets, tuning, playtesting, commits |
+No fixed planner/coder split — any agent (Claude Code chat, Codex, a second Claude session) can take
+any task; who picks it up depends on which plan has quota available. Sequoyah is the only fixed role:
+**Integrator** — Godot editor, assets, tuning, playtesting, commits.
 
 Protocol: [AGENTS.md](../AGENTS.md). Start every session with `.agent/bin/agent start <name>`.
 
@@ -36,10 +34,10 @@ Protocol: [AGENTS.md](../AGENTS.md). Start every session with `.agent/bin/agent 
 
 ## Next task — two, and they run in parallel
 
-They don't share a file and neither blocks the other. Start the coder chat first, then do 1.1 while it
-works.
+They don't share a file and neither blocks the other. Open the agent chat for 1.2 first, then do 1.1
+while it works.
 
-### → 1.2 · `NetTransport` autoload — `[T2]` · ~3h · **coder chat**
+### → 1.2 · `NetTransport` autoload — `[T2]` · ~3h · **an agent chat**
 
 **The unblock.** Seven of the twelve M1 tasks (1.3, 1.5, 1.6, 1.7, 1.8, 1.10, 1.11) are written
 against this interface, so the API shape matters more than the implementation behind it.
@@ -67,10 +65,10 @@ Gates 1.4 (lobbies) and 1.12 (cross-platform join).
 
 | # | Task | Tier | Who | Est |
 |---|---|---|---|---|
-| 1.3 | `LOCAL` mode — two windows, one keypress, no menus | T2 | coder | 2h |
-| 1.4 | Steam lobby: create, invite via overlay, join by ID, member list | T2 | coder | 3h |
-| 1.5 | Networked player: spawner + synchronizer, client-auth movement | T2 | coder | 3h |
-| 1.6 | Remote-player interpolation | T2 | coder | 2h |
+| 1.3 | `LOCAL` mode — two windows, one keypress, no menus | T2 | agent | 2h |
+| 1.4 | Steam lobby: create, invite via overlay, join by ID, member list | T2 | agent | 3h |
+| 1.5 | Networked player: spawner + synchronizer, client-auth movement | T2 | agent | 3h |
+| 1.6 | Remote-player interpolation | T2 | agent | 2h |
 
 **1.3 is worth more than it looks.** One-keypress two-window multiplayer testing makes every
 multiplayer bug for the rest of the project cheaper to find. Don't let it slip down the list.
@@ -85,7 +83,7 @@ against whatever they return.
 
 | # | What's actually unmeasured | Who | Est |
 |---|---|---|---|
-| 4.0a | `ConcavePolygonShape3D` cooking + GPU mesh upload per chunk. R2 ran headless — no upload, no material, no collision. R3 measured *navigation* baking, a different code path. F-005, and the standing caveat on D-015. | coder | 1.5h |
+| 4.0a | `ConcavePolygonShape3D` cooking + GPU mesh upload per chunk. R2 ran headless — no upload, no material, no collision. R3 measured *navigation* baking, a different code path. F-005, and the standing caveat on D-015. | agent | 1.5h |
 | 4.0b | Determinism on Windows x86_64 — the third column in `ARCHITECTURE.md` §6a is still empty. | you | 30m |
 
 Nothing in M1 depends on either. Don't pull them forward; just don't start 4.1 without them.
@@ -118,12 +116,19 @@ test and not a formality — but the outcome that matters is narrow: `rng_sequen
 match, and the four rows in the ops probe's *first* group must match. Divergence in the second group
 is expected and already accounted for. **Do this before M4 builds anything on seeded generation.**
 
-You have a Linux guest already; a Windows VM is the missing piece. This is a quota-free afternoon —
-good work for a day when the AI budget is spent.
+You have a Linux guest already; a Windows VM is the missing piece — that's the actual work in 4.0b,
+and it's yours because it's provisioning, not code.
+
+**The two commands themselves are not yours to type.** Once the VM exists and is reachable, hand
+4.0b to an agent chat the same way as any other task — the Linux half was driven that way over SSH.
+Getting a Windows guest to that point is the part only you can do.
 
 ---
 
 ## Tools
+
+**You don't run these — ask an agent chat to.** Your side of this project is the Godot editor, asset
+work, tuning, playtesting and pasting task prompts. Anything with a shell belongs to an agent.
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script tools/verify_setup.gd
@@ -148,12 +153,24 @@ None yet — first real answers arrive at **M2 task 2.14**. Tracked in `DESIGN.m
 
 ## Cold-start ritual
 
-1. `.agent/bin/agent start <name>` — the board tells you what's in flight
-2. Read this file
+**Yours, coming back after a break:**
+
+1. Read this file — the *Next task* section is the answer
+2. Open `.agent/BOARD.md` if you want the full picture of what's done
+3. Copy the matching block out of `DELEGATION.md` into a fresh chat at the model it names
+
+**The agent's, in that fresh chat** (already written into every prompt, listed here for reference):
+
+1. `MIRE_AGENT=<name> .agent/bin/agent start <name>` — prints what's in flight
+2. Read `AGENTS.md`, then this file
 3. Skim the last entry or two in `.agent/JOURNAL.md` if someone handed off
-4. `agent claim <id> <files...>` **before** editing
+4. `MIRE_AGENT=<name> .agent/bin/agent claim <id> <files...>` **before** editing
 5. Do the work
-6. `agent done <id> "..."` or `agent handoff <id> "..."`, update this file, **commit**
+6. `done` or `handoff`, then `ship`, and update this file
+
+The `MIRE_AGENT=` prefix goes on every one of those commands rather than being `export`ed once —
+each shell call is a fresh process, so an exported name is silently lost and claims land under the
+wrong agent.
 
 ---
 

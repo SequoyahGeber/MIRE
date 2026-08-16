@@ -236,6 +236,18 @@ default) does persist on save. `ARCHITECTURE.md` §5a no longer instructs pinnin
 against that was always "pin the Godot version, don't upgrade mid-milestone" (already policy), not file
 text, since file text couldn't survive an editor save either way.
 
+### D-020 · 2026-08-15 · Drop fixed planner/coder roles — any agent takes any task, allocated by quota
+*Supersedes D-014's role assignment.* D-014 pinned "Claude Code chat = planner" and "Codex, second
+Claude = coders" as fixed identities. Sequoyah: "I don't want specific roles for specific instances of
+Codex or Claude. They can all do any task I set to them. What they get just depends on what usage
+quotas are available."
+The underlying reasoning in D-014 — concentrate expensive decisions, push implementation to whichever
+plan has quota room — still holds and isn't rejected here, only the binding of specific roles to
+specific agent identities. Any agent (this chat included) may implement `.gd` code; task assignment
+follows quota availability, not a fixed table.
+**Would change my mind:** quota contention making it valuable again to reserve one plan strictly for
+planning — but that would be re-decided explicitly, not assumed from D-014.
+
 ---
 
 ## Template
