@@ -727,3 +727,23 @@ Excluded 'blocked' from the active-milestone scan in _print_ready. A deferred ta
 Files: `.agent/bin/agent`
 
 Commit at time of writing: `6c4cf24`
+
+---
+
+### HANDOFF · 2.1d · vane · 2026-08-16T23:46:09+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-005 (loot set) is DONE and shipped: 10 GLBs in assets/loot/, 2542 polys, generator tools/blender/build_loot_set.py, source assets/source/loot_set.blend, catalog + README + 2 previews.
+
+Verified: two clean rebuilds byte-identical; GLB 2.0 validation 10/10 with catalog exact and no orphans; closed/open base-footprint drift 0.00mm on all three chest pairs; both previews visually inspected; fresh Godot 4.7.1 --import 10/10 zero errors.
+
+Three bugs found and fixed while verifying, all worth knowing before the next batch. (1) Lid rotation sign: the lid extends -Y from a rear hinge, so a positive X-rotation drove its front corner to z=-0.046 and the ground-normalization then lifted every open chest off the floor. (2) Per-state centring: normalizing each state on its own bounds shifted the chest body when the lid swung, which would desync a runtime mesh swap from collision — create_asset now takes anchor_parts and the pair measures 0.00mm. (3) Solid bodies: a chest built as one box reveals nothing when opened and seals its contents inside; chest_shell() builds a real cavity and contents fill to the rim, because anything on the floor of a chest is hidden by its front wall at standing eye height. Traps (2) and (3) are now in the tracker's Art and export contract, and (2) will bite A-007's Ward set directly.
+
+Queue advanced: A-006 marked BLOCKED (its stated dependency is combat task 2.9 confirming the feel target, and 2.9 has not started) — Sequoyah has since authorised gale to work it anyway, so whoever holds it should flip the row and record that authorisation. A-007 (Basic Ward set, after A-003 which is done) is now NEXT. A-006 is also the first rig/animation batch, so it must satisfy the extra verification requirements: deform check, animation-name check, looping check, contact sheet.
+
+Note this task collided: gale adopted A-005 mid-session believing this one had stalled. Resolved by direct agent-to-agent handover. 2.1d is a single repeating task id, so two batches cannot be in flight at once — coordinate before adopting.
+
+Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_loot_set.py`, `assets/source/loot_set.blend`, `assets/loot/README.md`, `assets/loot/catalog.json`, `assets/loot/exports/loot_chest_reinforced_closed.glb`, `assets/loot/exports/loot_chest_reinforced_open.glb`, `assets/loot/exports/loot_chest_small_closed.glb`, `assets/loot/exports/loot_chest_small_open.glb`, `assets/loot/exports/loot_chest_wellspring_closed.glb`, `assets/loot/exports/loot_chest_wellspring_open.glb`, `assets/loot/exports/loot_coin_pouch.glb`, `assets/loot/exports/loot_item_bag.glb`, `assets/loot/exports/loot_player_backpack.glb`, `assets/loot/exports/loot_powerup_orb.glb`, `assets/loot/preview/loot_preview.png`, `assets/loot/preview/loot_scale_preview.png`
+
+Commit at time of writing: `4b7c6cb`

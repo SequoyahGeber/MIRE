@@ -80,7 +80,17 @@ and `A-014b` in this file before making anything. Never silently leave half a ba
 - Suggested polygon targets, not quotas: foliage/ground cover 30–400; ordinary props 50–800; hero
   props 300–2,000; first-person weapons 500–2,500; enemies 1,000–4,000 before animation testing.
 - State sets must retain a recognizably shared footprint so gameplay can swap intact, damaged,
-  depleted, corrupted, and destroyed meshes without collision surprises.
+  depleted, corrupted, and destroyed meshes without collision surprises. **Centre the states on the
+  geometry they share, not on each state's own bounds** — A-005 hit this and the next state set will
+  too. Normalizing each state independently moves the object whenever a state adds geometry the
+  others lack (an opened lid, a debris skirt, a lean), so the mesh visibly jumps at the moment it is
+  swapped and drifts away from collision authored against a sibling. `build_loot_set.py` takes an
+  `anchor_parts` filter for this and verifies the result; A-005 measured 0.00 mm drift across three
+  pairs. Record the drift figure in the batch row.
+- A state that opens or breaks must actually reveal something. A container built as a solid block
+  looks identical opened and closed apart from the lid, and any contents modelled inside it are
+  sealed where nothing can see them — build the cavity, and fill it to near the rim, because
+  anything sitting on the floor of a chest is hidden behind its front wall at standing eye height.
 - Material variants are welcome when they communicate state. Recolouring one mesh does not count as
   several distinct assets in the tracker.
 
@@ -129,9 +139,9 @@ extraction. Make these before broad biome decoration.
 | A-002 | `DONE` | Basic world pickups: log, branch, stone, flint, iron ore, iron ingot, coal, fibre bundle, berry, mushroom, raw meat, coin, coin stack, salvage fragment. Made 14 in `assets/pickups/`; deterministic rebuild, GLB/catalog validation, two-preview visual inspection, and fresh Godot import all passed | 14 | A-001 |
 | A-003 | `DONE` | First crafting stations: primitive workbench, upgraded workbench, campfire, cooking spit, stone furnace, anvil, repair bench, woodcutting block. Made 8 in `assets/crafting_stations/`; deterministic rebuild, GLB/catalog validation, two-preview visual inspection, and fresh Godot import all passed | 8 | A-002 |
 | A-004 | `DONE` | First tool/weapon set: wooden axe, stone axe, wooden pickaxe, stone pickaxe, iron pickaxe, cleaver, skewer, short bow, arrow, repair hammer. Made 20 paired world/viewmodel exports in `assets/tools_weapons/`; deterministic rebuild, paired consistency, GLB/catalog validation, three-preview visual inspection, and fresh Godot import all passed | 20 exports | A-003 |
-| A-005 | `NEXT` | Loot set: small chest closed/open, Wellspring chest closed/open, reinforced chest closed/open, coin pouch, powerup orb, item pickup bag, dropped-player backpack | 10 | A-002 |
-| A-006 | `QUEUED` | Prototype enemy set: Mire crawler mesh, simple rig, idle, locomotion, attack tell, attack, hit, and death animations; spawn nest and death fragments | 4 models + animations | Combat task 2.9 confirms feel target |
-| A-007 | `QUEUED` | Basic Ward set: foundation, healthy Ward, damaged Ward, critical Ward, destroyed remains, repair scaffolding, boundary post, activation crystal | 8 | A-003 |
+| A-005 | `DONE` | Loot set: small/Wellspring/reinforced chests in closed and open states, coin pouch, powerup orb, item pickup bag, dropped-player backpack. Made 10 in `assets/loot/`; 2,542 polygons. Byte-identical deterministic rebuild, GLB 2.0 validation (10/10, catalog exact, no orphans), closed/open base-footprint drift 0.00 mm on all three pairs, two-preview visual inspection, and fresh Godot 4.7.1 import with zero errors all passed | 10 | A-002 |
+| A-006 | `BLOCKED` | **Waiting on combat task 2.9**, which is not started — its dependency is a confirmed feel target, not an asset. Skipped by A-005's agent for that reason; promote it the moment 2.9 lands. Prototype enemy set: Mire crawler mesh, simple rig, idle, locomotion, attack tell, attack, hit, and death animations; spawn nest and death fragments | 4 models + animations | Combat task 2.9 confirms feel target |
+| A-007 | `NEXT` | Basic Ward set: foundation, healthy Ward, damaged Ward, critical Ward, destroyed remains, repair scaffolding, boundary post, activation crystal | 8 | A-003 |
 | A-008 | `QUEUED` | Wellspring set: distant monolith, base, crystal, basin, roots, uncapped state, capped state, re-corrupting state, corrupted state, ritual pedestal, boundary stones, guardian platform | 12 | A-007 |
 | A-009 | `QUEUED` | Extraction ship set: wrecked hull, two repair stages, repaired hull, mast, broken mast, furled sail, raised sail, rudder, anchor, boarding ramp, cargo hatch, donation crate, departure bell, debris cluster | 15 | A-004 |
 | A-010 | `QUEUED` | Missing practical construction: working wood door, double gate, ladder, ramp, bridge straight, bridge broken, rope bridge, dock straight, dock corner, palisade straight/corner/gate, barricade, spike barricade | 14 | A-000 |

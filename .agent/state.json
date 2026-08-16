@@ -802,6 +802,81 @@
       "at": "2026-08-16T18:32:13+00:00",
       "task": "2.1d"
     },
+    "assets/loot": {
+      "agent": "gale",
+      "at": "2026-08-16T23:44:12+00:00",
+      "task": "2.1d"
+    },
+    "assets/loot/README.md": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
+    },
+    "assets/loot/catalog.json": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
+    },
+    "assets/loot/exports/loot_chest_reinforced_closed.glb": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
+    },
+    "assets/loot/exports/loot_chest_reinforced_open.glb": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
+    },
+    "assets/loot/exports/loot_chest_small_closed.glb": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
+    },
+    "assets/loot/exports/loot_chest_small_open.glb": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
+    },
+    "assets/loot/exports/loot_chest_wellspring_closed.glb": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
+    },
+    "assets/loot/exports/loot_chest_wellspring_open.glb": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
+    },
+    "assets/loot/exports/loot_coin_pouch.glb": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
+    },
+    "assets/loot/exports/loot_item_bag.glb": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
+    },
+    "assets/loot/exports/loot_player_backpack.glb": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
+    },
+    "assets/loot/exports/loot_powerup_orb.glb": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
+    },
+    "assets/loot/preview/loot_preview.png": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
+    },
+    "assets/loot/preview/loot_scale_preview.png": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
+    },
     "assets/maps/README.md": {
       "agent": "reed",
       "at": "2026-08-16T19:00:05+00:00",
@@ -922,6 +997,11 @@
       "at": "2026-08-16T18:32:13+00:00",
       "task": "2.1d"
     },
+    "assets/source/loot_set.blend": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
+    },
     "assets/source/mire_map_kit.blend": {
       "agent": "reed",
       "at": "2026-08-16T18:01:56+00:00",
@@ -1028,9 +1108,9 @@
       "task": "4.0b"
     },
     "docs/ASSET_TRACKER.md": {
-      "agent": "reed",
-      "at": "2026-08-16T19:00:05+00:00",
-      "task": "2.1e"
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
+      "task": "2.1d"
     },
     "docs/DECISIONS.md": {
       "agent": "slate",
@@ -1125,6 +1205,11 @@
     "tools/blender/build_harvestable_resources.py": {
       "agent": "ember",
       "at": "2026-08-16T18:32:13+00:00",
+      "task": "2.1d"
+    },
+    "tools/blender/build_loot_set.py": {
+      "agent": "vane",
+      "at": "2026-08-16T23:46:09+00:00",
       "task": "2.1d"
     },
     "tools/blender/build_mire_map_kit.py": {

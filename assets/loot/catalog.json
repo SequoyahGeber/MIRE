@@ -1,0 +1,162 @@
+[
+  {
+    "name": "loot_chest_small_closed",
+    "family": "chest",
+    "width_m": 0.749,
+    "depth_m": 0.486,
+    "height_m": 0.566,
+    "mesh_parts": 16,
+    "polygons": 216,
+    "materials": [
+      "MIRE_Loot_Iron",
+      "MIRE_Loot_Iron_Light",
+      "MIRE_Loot_Wood",
+      "MIRE_Loot_Wood_Dark"
+    ]
+  },
+  {
+    "name": "loot_chest_small_open",
+    "family": "chest",
+    "width_m": 0.749,
+    "depth_m": 0.752,
+    "height_m": 0.848,
+    "mesh_parts": 20,
+    "polygons": 278,
+    "materials": [
+      "MIRE_Loot_Cloth",
+      "MIRE_Loot_Coin",
+      "MIRE_Loot_Iron",
+      "MIRE_Loot_Iron_Light",
+      "MIRE_Loot_Wood",
+      "MIRE_Loot_Wood_Dark"
+    ]
+  },
+  {
+    "name": "loot_chest_wellspring_closed",
+    "family": "chest",
+    "width_m": 0.832,
+    "depth_m": 0.587,
+    "height_m": 0.658,
+    "mesh_parts": 21,
+    "polygons": 240,
+    "materials": [
+      "MIRE_Loot_Mire",
+      "MIRE_Loot_Mire_Crystal",
+      "MIRE_Loot_Mire_Dark",
+      "MIRE_Loot_Mire_Glow"
+    ]
+  },
+  {
+    "name": "loot_chest_wellspring_open",
+    "family": "chest",
+    "width_m": 0.832,
+    "depth_m": 0.899,
+    "height_m": 0.941,
+    "mesh_parts": 24,
+    "polygons": 360,
+    "materials": [
+      "MIRE_Loot_Mire",
+      "MIRE_Loot_Mire_Crystal",
+      "MIRE_Loot_Mire_Dark",
+      "MIRE_Loot_Mire_Glow"
+    ]
+  },
+  {
+    "name": "loot_chest_reinforced_closed",
+    "family": "chest",
+    "width_m": 0.957,
+    "depth_m": 0.645,
+    "height_m": 0.708,
+    "mesh_parts": 24,
+    "polygons": 264,
+    "materials": [
+      "MIRE_Loot_Iron_Dark",
+      "MIRE_Loot_Iron_Light",
+      "MIRE_Loot_Wood",
+      "MIRE_Loot_Wood_Dark"
+    ]
+  },
+  {
+    "name": "loot_chest_reinforced_open",
+    "family": "chest",
+    "width_m": 0.957,
+    "depth_m": 0.964,
+    "height_m": 1.068,
+    "mesh_parts": 30,
+    "polygons": 378,
+    "materials": [
+      "MIRE_Loot_Cloth_Rich",
+      "MIRE_Loot_Coin",
+      "MIRE_Loot_Ingot",
+      "MIRE_Loot_Iron_Dark",
+      "MIRE_Loot_Iron_Light",
+      "MIRE_Loot_Wood",
+      "MIRE_Loot_Wood_Dark"
+    ]
+  },
+  {
+    "name": "loot_coin_pouch",
+    "family": "carried",
+    "width_m": 0.304,
+    "depth_m": 0.3,
+    "height_m": 0.354,
+    "mesh_parts": 11,
+    "polygons": 164,
+    "materials": [
+      "MIRE_Loot_Coin",
+      "MIRE_Loot_Cord",
+      "MIRE_Loot_Leather",
+      "MIRE_Loot_Leather_Dark"
+    ]
+  },
+  {
+    "name": "loot_powerup_orb",
+    "family": "powerup",
+    "width_m": 0.429,
+    "depth_m": 0.461,
+    "height_m": 0.485,
+    "mesh_parts": 10,
+    "polygons": 210,
+    "materials": [
+      "MIRE_Loot_Mire_Dark",
+      "MIRE_Loot_Mire_Glow",
+      "MIRE_Loot_Orb_Core",
+      "MIRE_Loot_Orb_Shell"
+    ]
+  },
+  {
+    "name": "loot_item_bag",
+    "family": "carried",
+    "width_m": 0.418,
+    "depth_m": 0.405,
+    "height_m": 0.437,
+    "mesh_parts": 10,
+    "polygons": 220,
+    "materials": [
+      "MIRE_Loot_Cord",
+      "MIRE_Loot_Ingot",
+      "MIRE_Loot_Patch",
+      "MIRE_Loot_Sack",
+      "MIRE_Loot_Sack_Dark"
+    ]
+  },
+  {
+    "name": "loot_player_backpack",
+    "family": "dropped",
+    "width_m": 0.569,
+    "depth_m": 0.469,
+    "height_m": 0.743,
+    "mesh_parts": 11,
+    "polygons": 212,
+    "materials": [
+      "MIRE_Loot_Canvas",
+      "MIRE_Loot_Canvas_Dark",
+      "MIRE_Loot_Cloth",
+      "MIRE_Loot_Coin",
+      "MIRE_Loot_Ingot",
+      "MIRE_Loot_Iron_Light",
+      "MIRE_Loot_Leather_Dark",
+      "MIRE_Loot_Mire_Glow"
+    ]
+  }
+]
