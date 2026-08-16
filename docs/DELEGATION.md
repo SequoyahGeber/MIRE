@@ -64,16 +64,22 @@ is startable exactly like a roadmap task), and F-007 (agents name themselves fro
 `MIRE_AGENT`, no prefix, commits included). Practical effect on starting work: *"start 1.6"* and
 *"fix F-004"* are now the same shape of instruction, and neither needs a name attached.
 
-The **Agent name** column below is historical — those names were hand-assigned under the old scheme.
-New tasks get their agent name automatically, so leave the column blank when you add a row.
+**Reading the table.** *Agent name* `auto` means the chat names itself on `agent start` (F-007) —
+the named ones are historical, hand-assigned under the old scheme. *Model* and *Effort* are the only
+things left for you to set, because they are set in the client before the chat starts and no script
+can choose them: **Opus 5 · high** for anything that reasons about replication or lifecycle,
+**Sonnet 5 · medium** where the work is mechanical and well-specified. The rows below are ordered by
+what to start next, not by task number.
 
 | # | Task | Agent name | Model | Effort | Status |
 |---|---|---|---|---|---|
+| **1.8** | Interest management — visibility filters, per-class intervals | auto | Opus 5 | high | **ready. Start here** — R1 came back AMBER and this is the only thing that fits the budget |
+| **1.6** | Remote-player interpolation | auto | Opus 5 | high | **ready** — read F-004 first: engine `physics_interpolation` may cover this |
+| **1.7** | Connection lifecycle — mid-session join, disconnect, host quit, timeout | auto | Opus 5 | high | **ready** — 1.5 did the obvious signal handling only, deliberately |
+| **1.11** | Protocol/build version handshake | auto | Sonnet 5 | medium | **ready** — self-contained, independent of the other three |
 | 1.5 | Networked player — spawner + synchronizer | `spawn` | Opus 5 | high | **done** — runs; prompt kept for reference |
 | 1.9 | Spike R1 — replication load | `load` | Opus 5 | high | **done — AMBER.** Read the verdict below before writing 1.8 |
 | 1.10 | Network debug panel | `netui` | Sonnet 5 | medium | **done, wired, and reading real numbers** — F-013 closed, entity count live |
-| 1.6 · 1.7 · 1.8 | Interpolation · lifecycle · interest management | | | | **ready, no prompt written yet** — 1.8 is now mandatory, not optional |
-| 1.11 | Protocol/build version handshake | | | | **ready, no prompt written yet** |
 | 1.1 · 1.2 · 1.3 · 1.4 | GodotSteam · NetTransport · LOCAL loop · Steam lobby | | | | done and verified |
 | 2.2 | Content framework | `content` | Sonnet 5 | medium | done — prompt kept for reference |
 
