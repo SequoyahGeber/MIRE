@@ -1,0 +1,360 @@
+[
+  {
+    "name": "wooden_axe_world",
+    "design": "wooden_axe",
+    "presentation": "world",
+    "width_m": 0.83,
+    "depth_m": 0.194,
+    "height_m": 1.36,
+    "mesh_parts": 11,
+    "polygons": 160,
+    "materials": [
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Hardwood",
+      "MIRE_Tool_Rope",
+      "MIRE_Tool_Wood_Edge"
+    ]
+  },
+  {
+    "name": "wooden_axe_viewmodel",
+    "design": "wooden_axe",
+    "presentation": "viewmodel",
+    "width_m": 0.83,
+    "depth_m": 0.194,
+    "height_m": 1.36,
+    "mesh_parts": 11,
+    "polygons": 160,
+    "materials": [
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Hardwood",
+      "MIRE_Tool_Rope",
+      "MIRE_Tool_Wood_Edge"
+    ]
+  },
+  {
+    "name": "stone_axe_world",
+    "design": "stone_axe",
+    "presentation": "world",
+    "width_m": 0.85,
+    "depth_m": 0.205,
+    "height_m": 1.38,
+    "mesh_parts": 11,
+    "polygons": 163,
+    "materials": [
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Rope",
+      "MIRE_Tool_Stone",
+      "MIRE_Tool_Stone_Edge"
+    ]
+  },
+  {
+    "name": "stone_axe_viewmodel",
+    "design": "stone_axe",
+    "presentation": "viewmodel",
+    "width_m": 0.85,
+    "depth_m": 0.205,
+    "height_m": 1.38,
+    "mesh_parts": 11,
+    "polygons": 163,
+    "materials": [
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Rope",
+      "MIRE_Tool_Stone",
+      "MIRE_Tool_Stone_Edge"
+    ]
+  },
+  {
+    "name": "wooden_pickaxe_world",
+    "design": "wooden_pickaxe",
+    "presentation": "world",
+    "width_m": 0.995,
+    "depth_m": 0.26,
+    "height_m": 1.239,
+    "mesh_parts": 12,
+    "polygons": 190,
+    "materials": [
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Hardwood",
+      "MIRE_Tool_Rope",
+      "MIRE_Tool_Wood_Edge"
+    ]
+  },
+  {
+    "name": "wooden_pickaxe_viewmodel",
+    "design": "wooden_pickaxe",
+    "presentation": "viewmodel",
+    "width_m": 0.995,
+    "depth_m": 0.26,
+    "height_m": 1.239,
+    "mesh_parts": 12,
+    "polygons": 190,
+    "materials": [
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Hardwood",
+      "MIRE_Tool_Rope",
+      "MIRE_Tool_Wood_Edge"
+    ]
+  },
+  {
+    "name": "stone_pickaxe_world",
+    "design": "stone_pickaxe",
+    "presentation": "world",
+    "width_m": 1.134,
+    "depth_m": 0.302,
+    "height_m": 1.288,
+    "mesh_parts": 14,
+    "polygons": 230,
+    "materials": [
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Rope",
+      "MIRE_Tool_Stone",
+      "MIRE_Tool_Stone_Edge"
+    ]
+  },
+  {
+    "name": "stone_pickaxe_viewmodel",
+    "design": "stone_pickaxe",
+    "presentation": "viewmodel",
+    "width_m": 1.134,
+    "depth_m": 0.302,
+    "height_m": 1.288,
+    "mesh_parts": 14,
+    "polygons": 230,
+    "materials": [
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Rope",
+      "MIRE_Tool_Stone",
+      "MIRE_Tool_Stone_Edge"
+    ]
+  },
+  {
+    "name": "iron_pickaxe_world",
+    "design": "iron_pickaxe",
+    "presentation": "world",
+    "width_m": 1.277,
+    "depth_m": 0.24,
+    "height_m": 1.229,
+    "mesh_parts": 10,
+    "polygons": 123,
+    "materials": [
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Iron",
+      "MIRE_Tool_Iron_Dark",
+      "MIRE_Tool_Iron_Edge"
+    ]
+  },
+  {
+    "name": "iron_pickaxe_viewmodel",
+    "design": "iron_pickaxe",
+    "presentation": "viewmodel",
+    "width_m": 1.277,
+    "depth_m": 0.24,
+    "height_m": 1.229,
+    "mesh_parts": 10,
+    "polygons": 123,
+    "materials": [
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Iron",
+      "MIRE_Tool_Iron_Dark",
+      "MIRE_Tool_Iron_Edge"
+    ]
+  },
+  {
+    "name": "cleaver_world",
+    "design": "cleaver",
+    "presentation": "world",
+    "width_m": 0.68,
+    "depth_m": 0.2,
+    "height_m": 1.14,
+    "mesh_parts": 10,
+    "polygons": 117,
+    "materials": [
+      "MIRE_Tool_Brass",
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Iron",
+      "MIRE_Tool_Iron_Dark",
+      "MIRE_Tool_Iron_Edge"
+    ]
+  },
+  {
+    "name": "cleaver_viewmodel",
+    "design": "cleaver",
+    "presentation": "viewmodel",
+    "width_m": 0.68,
+    "depth_m": 0.2,
+    "height_m": 1.14,
+    "mesh_parts": 10,
+    "polygons": 117,
+    "materials": [
+      "MIRE_Tool_Brass",
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Iron",
+      "MIRE_Tool_Iron_Dark",
+      "MIRE_Tool_Iron_Edge"
+    ]
+  },
+  {
+    "name": "skewer_world",
+    "design": "skewer",
+    "presentation": "world",
+    "width_m": 0.429,
+    "depth_m": 0.15,
+    "height_m": 1.93,
+    "mesh_parts": 11,
+    "polygons": 130,
+    "materials": [
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Iron",
+      "MIRE_Tool_Iron_Dark",
+      "MIRE_Tool_Iron_Edge"
+    ]
+  },
+  {
+    "name": "skewer_viewmodel",
+    "design": "skewer",
+    "presentation": "viewmodel",
+    "width_m": 0.429,
+    "depth_m": 0.15,
+    "height_m": 1.93,
+    "mesh_parts": 11,
+    "polygons": 130,
+    "materials": [
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Iron",
+      "MIRE_Tool_Iron_Dark",
+      "MIRE_Tool_Iron_Edge"
+    ]
+  },
+  {
+    "name": "short_bow_world",
+    "design": "short_bow",
+    "presentation": "world",
+    "width_m": 0.389,
+    "depth_m": 0.151,
+    "height_m": 1.567,
+    "mesh_parts": 14,
+    "polygons": 199,
+    "materials": [
+      "MIRE_Tool_Bow_String",
+      "MIRE_Tool_Bow_Wood",
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle_Dark"
+    ]
+  },
+  {
+    "name": "short_bow_viewmodel",
+    "design": "short_bow",
+    "presentation": "viewmodel",
+    "width_m": 0.389,
+    "depth_m": 0.151,
+    "height_m": 1.567,
+    "mesh_parts": 14,
+    "polygons": 199,
+    "materials": [
+      "MIRE_Tool_Bow_String",
+      "MIRE_Tool_Bow_Wood",
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle_Dark"
+    ]
+  },
+  {
+    "name": "arrow_world",
+    "design": "arrow",
+    "presentation": "world",
+    "width_m": 0.191,
+    "depth_m": 0.22,
+    "height_m": 1.48,
+    "mesh_parts": 6,
+    "polygons": 106,
+    "materials": [
+      "MIRE_Tool_Arrow_Shaft",
+      "MIRE_Tool_Fletching",
+      "MIRE_Tool_Fletching_Light",
+      "MIRE_Tool_Stone_Edge"
+    ]
+  },
+  {
+    "name": "arrow_viewmodel",
+    "design": "arrow",
+    "presentation": "viewmodel",
+    "width_m": 0.191,
+    "depth_m": 0.22,
+    "height_m": 1.48,
+    "mesh_parts": 6,
+    "polygons": 106,
+    "materials": [
+      "MIRE_Tool_Arrow_Shaft",
+      "MIRE_Tool_Fletching",
+      "MIRE_Tool_Fletching_Light",
+      "MIRE_Tool_Stone_Edge"
+    ]
+  },
+  {
+    "name": "repair_hammer_world",
+    "design": "repair_hammer",
+    "presentation": "world",
+    "width_m": 1.005,
+    "depth_m": 0.325,
+    "height_m": 1.15,
+    "mesh_parts": 13,
+    "polygons": 232,
+    "materials": [
+      "MIRE_Tool_Brass",
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Iron",
+      "MIRE_Tool_Iron_Dark",
+      "MIRE_Tool_Iron_Edge",
+      "MIRE_Tool_Repair_Red"
+    ]
+  },
+  {
+    "name": "repair_hammer_viewmodel",
+    "design": "repair_hammer",
+    "presentation": "viewmodel",
+    "width_m": 1.005,
+    "depth_m": 0.325,
+    "height_m": 1.15,
+    "mesh_parts": 13,
+    "polygons": 232,
+    "materials": [
+      "MIRE_Tool_Brass",
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Handle",
+      "MIRE_Tool_Handle_Dark",
+      "MIRE_Tool_Iron",
+      "MIRE_Tool_Iron_Dark",
+      "MIRE_Tool_Iron_Edge",
+      "MIRE_Tool_Repair_Red"
+    ]
+  }
+]

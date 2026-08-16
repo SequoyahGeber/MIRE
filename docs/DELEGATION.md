@@ -75,15 +75,17 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
-**Asset batches A-001 through A-003 are complete; A-004 is next.** Harvest states live under
-`assets/harvestables/` (12 GLBs), basic pickups under `assets/pickups/` (14 GLBs), and the eight
-vertical-slice stations under `assets/crafting_stations/`. Each family has its own catalog, previews,
-editable source, and deterministic generator. Pickups and stations are horizontally centred and
-ground-origin normalized. None contain collision or authority: harvest mutation, pickup grants,
-station placement/use, crafting validation, fuel, and repairs remain host-owned. Static fire meshes
-are cosmetic placeholders for later client-local VFX. The next asset run takes A-004 from
-`docs/ASSET_TRACKER.md`; it is 20 exports sharing ten designs, and should use a separate weapon/tool
-generator with paired `*_world` and `*_viewmodel` names.
+**Asset batches A-001 through A-004 are complete; A-005 is next.** Harvest states live under
+`assets/harvestables/` (12 GLBs), basic pickups under `assets/pickups/` (14 GLBs), the eight
+vertical-slice stations under `assets/crafting_stations/`, and ten tool/weapon designs under
+`assets/tools_weapons/` as 20 paired `*_world` and `*_viewmodel` exports. Each family has its own
+catalog, previews, editable source, and deterministic generator. Pickups, stations, and tools are
+horizontally centred and ground-origin normalized. The paired tool exports deliberately share
+geometry and materials so Godot scenes can tune world and first-person transforms without silhouette
+drift. None contain collision or authority: harvest mutation, pickup grants, station placement/use,
+crafting validation, fuel, repairs, attacks, hits, and inventory changes remain host-owned. Static
+fire meshes are cosmetic placeholders for later client-local VFX. The next asset run takes A-005
+from `docs/ASSET_TRACKER.md` and should use a separate loot generator.
 
 **Blender generator naming trap:** never put raw float values in object or datablock names. Blender
 5.2 treats the text after the last `.` as a numeric duplicate suffix; a coordinate such as
