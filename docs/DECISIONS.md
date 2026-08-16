@@ -376,6 +376,38 @@ evaluate on a slower accumulator, still not to hang it off the render frame.
 
 ---
 
+### D-026 · 2026-08-16 · Engine physics interpolation and network interpolation are both needed, and they fight
+F-004 asked which mechanism owns smoothing before 1.6 was written, since `physics_interpolation=true`
+has been on project-wide since F-003 and might have made 1.6 redundant. It does not, and the two are
+not alternatives. Engine interpolation smooths the **60 Hz physics grid up to the render rate**;
+replication arrives at **30 Hz, at arbitrary idle-frame times, with jitter and loss**, so a 33 ms
+staircase survives a 16.7 ms smoothing window — and the engine could not jitter-buffer it even in
+principle, because it has no notion of when a packet arrived. Measured, not argued
+(`tools/interp_check.gd`, and the control stream is read through `get_global_transform_interpolated()`
+so the engine's own smoothing is included in it): **engine interpolation alone leaves 67% of frames
+motionless with a per-frame-distance CV of 1.64; adding snapshot interpolation gives 1.5% and 0.21.**
+
+They also actively conflict. A node driven every rendered frame by `RemoteInterpolator` must have
+`physics_interpolation_mode = OFF`, or the engine resamples our already-smooth output back onto the
+60 Hz grid and adds a tick of lag doing it. `configure()` sets that, and `_exit_tree()` puts it back.
+
+Consequences worth stating, because they are not obvious from either half:
+- **Interpolation is client-local presentation** (§2.2, last row), not replication. Its constants
+  live in `core/net/remote_interp.gd`, deliberately **not** in `NetConfig` — nothing in NetConfig may
+  differ between peers, and every one of these may.
+- **Nothing gameplay-authoritative may read an interpolated transform.** The host speed check reads
+  the replicated value, which this never touches, and must keep doing so.
+- The delay is **derived from the observed arrival interval**, not configured, so the same component
+  covers 15 Hz enemies and on-change props without a second set of numbers — the rest of F-004.
+
+**Would change my mind:** Godot growing a transform-history/interpolation mode that is fed by
+arrival time rather than physics ticks. Then this becomes a thin adapter over it. Also — if profiling
+ever shows the per-frame `_process` write is the cost at hundreds of interpolated entities, the fix is
+to drive the buffer on the physics tick and let engine interpolation cover the last hop, accepting one
+tick of extra lag. That is a real alternative for enemies; it is the wrong trade for players.
+
+---
+
 ## Template
 
 ```

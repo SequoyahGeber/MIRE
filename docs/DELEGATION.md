@@ -93,9 +93,11 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
-**Nothing is in flight — clean slate, 20/108 tasks done.** 1.5, 1.9 and 1.10 all shipped
-(`8d6ddab`, `ef1bc16`, `4f17bcd`), and 1.10 is now actually *wired* (`9f56451`). No file is claimed;
-`1.6`, `1.7`, `1.8`, `1.11` are ready to pick up and `agent brief <id>` will print each one.
+**1.5, 1.9 and 1.10 shipped earlier** (`8d6ddab`, `ef1bc16`, `4f17bcd`), and 1.10 is now actually
+*wired* (`9f56451`). **1.6, 1.8 and 1.11 landed in the same session, in parallel chats** — read the
+table and the per-task sections below rather than assuming a clean slate, and run `agent board`
+before claiming anything, because some of that work may still be in flight in another chat as you
+read this. **1.7 is the one M1 task left untouched by that round.**
 
 **Three open findings were closed this session, all of them process rather than game code:** F-013
 (the `&"synced"` convention, D-024 — 1.8 inherits it), F-015 (an F-number is a task id, so a finding
@@ -113,7 +115,7 @@ what to start next, not by task number.
 | # | Task | Agent name | Model | Effort | Status |
 |---|---|---|---|---|---|
 | **1.8** | Interest management — visibility filters, per-class intervals | `birch` | Opus 5 | high | **done and verified over a real wire.** `NetInterest` is the seam every replicated entity goes through — see below |
-| **1.6** | Remote-player interpolation | auto | Opus 5 | high | **ready** — read F-004 first: engine `physics_interpolation` may cover this |
+| **1.6** | Remote-player interpolation | `ash` | Opus 5 | high | **done and verified.** F-004's question answered as D-026: engine `physics_interpolation` does *not* cover it. See below |
 | **1.7** | Connection lifecycle — mid-session join, disconnect, host quit, timeout | auto | Opus 5 | high | **ready** — 1.5 did the obvious signal handling only, deliberately |
 | **1.11** | Protocol/build version handshake | auto | Sonnet 5 | medium | **ready** — self-contained, independent of the other three |
 | 1.5 | Networked player — spawner + synchronizer | `spawn` | Opus 5 | high | **done** — runs; prompt kept for reference |
@@ -122,12 +124,70 @@ what to start next, not by task number.
 | 1.1 · 1.2 · 1.3 · 1.4 | GodotSteam · NetTransport · LOCAL loop · Steam lobby | | | | done and verified |
 | 2.2 | Content framework | `content` | Sonnet 5 | medium | done — prompt kept for reference |
 
-`project.godot` is free again. It is still the one file only one task at a time may hold, so whichever
-of 1.6–1.8 needs an autoload claims it by name and the others do not. Two things wiring one cost us
+**1.6 took `project.godot`** and registered `NetInterp` with it; it is free again once 1.6 ships. It is
+still the one file only one task at a time may hold, so claim it by name and check `agent board`
+first. **Keep `NetInterp` last in `[autoload]`** — it resolves `PlayerNet` at `_ready()`, and autoload
+order is load order. Two things wiring one cost us
 already (`9f56451`): **an autoload script may not carry a `class_name` equal to its own singleton
 name** — Godot rejects it as hiding the singleton and the autoload never registers — and **autoload
 order is load order**: a script whose `_ready()` resolves `DebugOverlay`/`NetTransport`/`PlayerNet` by
 bare identifier must be registered *after* them.
+
+### What 1.6 leaves you — the smoothing seam, and the rule about who may read it
+
+**`NetInterp` is registered** (`autoload/net_interp.gd`, last in the `[autoload]` list because it
+resolves `PlayerNet`). It watches PlayerNet's `Players` container and gives every player this peer
+does **not** own a `RemoteInterpolator`. Nothing else has to do anything: spawn a body under that
+container and it is smoothed, or is skipped because it is yours. Offline it does nothing.
+
+```gdscript
+NetInterp.attach_to(body) -> bool        # give it an interpolator; false if it owns it / has no NetSync
+NetInterp.interpolator_for(body) -> RemoteInterpolator
+NetInterp.is_watching() -> bool          # false means "wiring is broken", not "netcode is broken"
+NetInterp.debug_snapshot() -> Array[Dictionary]   # {peer, lag_ms, buffered} — 1.10's panel can read this
+```
+
+**`RemoteInterpolator` (`core/net/remote_interp.gd`) is entity-agnostic on purpose** — it is the
+whole of F-004's answer for enemies (2.10) and props too, and it needs no new numbers for them
+because it derives its delay from the *observed* arrival interval rather than being told the class
+rate. 30 Hz players settle at ~67 ms, 15 Hz enemies at ~133 ms, automatically.
+
+```gdscript
+configure(target: Node3D, pitch_target: Node3D = null, sync: MultiplayerSynchronizer = null)
+push_snapshot(position: Vector3, yaw: float, pitch: float)   # for a source that is not a synchronizer
+reset()                                                       # after a teleport/respawn/level swap
+lag_seconds() · buffered() · debug_stats()
+```
+
+Three things it would be expensive to rediscover:
+
+1. **Nothing gameplay-authoritative may read an interpolated transform.** The interpolator overwrites
+   `position`/`rotation.y` every rendered frame with a value ~67 ms in the past. It is attached only
+   on the *receiving* side, so `player_net.gd`'s host speed check is unaffected today — but a future
+   host-side check that runs on a client's copy of another client would be reading fiction. Read the
+   synchronizer's value, or read it on the peer that owns it.
+2. **It hooks `MultiplayerSynchronizer.synchronized`** and samples the node right after the engine
+   writes to it, which is why 1.6 needed *no* change to `player_controller.gd` and added **nothing to
+   the wire** — velocity is still deliberately absent (1.5's call stands; interpolation did not need
+   it, and extrapolation derives it from the last two snapshots).
+3. **`physics_interpolation_mode` is forced OFF on the subtree it drives**, and restored in
+   `_exit_tree()`. D-026 says why: leaving it on makes the engine resample our per-frame output onto
+   the 60 Hz grid and adds a tick of lag. If 1.7 ever detaches an interpolator on an authority change,
+   free the node — don't just stop it — or that restore never runs.
+
+`RemoteInterpolator` is a new `class_name`, so **F-016 applies to it**: both call sites `preload()`
+the script instead of naming the class bare, and anything run via `--script` must keep doing that
+until Sequoyah has opened the editor once since this landed.
+
+**`tools/interp_check.gd`** is the fourth headless harness (`Godot --headless --path .
+--script tools/interp_check.gd`, exits non-zero on failure, currently green). It measures judder as
+*% of frames where the node visibly stopped*, and its control stream is read through
+`get_global_transform_interpolated()` so the engine's own smoothing is included rather than being
+handicapped. Numbers on this machine: **engine interpolation alone 67% still frames / CV 1.64 → plus
+snapshot interpolation 1.5% / CV 0.21**, at a cost of ~67-84 ms of drawn latency. Extend it rather
+than writing a fifth: phase A drives the interpolator directly with jitter and 6% loss (loopback has
+neither), phase B checks a 100 m teleport snaps instead of smearing, phase C is two real ENet peers
+and a real `player.tscn`.
 
 ### What 1.9 measured — 1.8 is now mandatory, and this is the budget it has to hit
 

@@ -98,6 +98,20 @@ If F-003's engine-level `physics_interpolation` is enabled it may cover all of t
 1.6's hand-rolled approach partly redundant. Worth resolving which mechanism owns this **before**
 building 1.6, so we don't write and then delete a system.
 
+**The mechanism question is answered, 2026-08-16 by ash during 1.6 — see D-026.** It does not cover
+them: engine interpolation smooths the physics grid to the render rate, network interpolation absorbs
+packet rate and jitter, and both are needed. Measured with `tools/interp_check.gd`, sampling the
+control through `get_global_transform_interpolated()` so the engine's smoothing counts: engine-only
+leaves 67% of frames motionless (CV 1.64), plus snapshot interpolation gives 1.5% (CV 0.21). They
+also fight — an interpolated node needs `physics_interpolation_mode = OFF` or the engine adds a tick
+of lag back on.
+
+**The rest of this entry stands, and is now cheap to close.** `RemoteInterpolator` is entity-agnostic
+and derives its delay from the observed arrival interval, so 15 Hz enemies and on-change props need
+no new numbers and no second component — one `NetInterp.attach_to(body)` per class. Only players use
+it today. **Stays open until enemies (2.10) and props actually attach it**; the work is one line each
+plus whatever their spawn path is, not a system.
+
 ---
 
 ### F-005 · R2's chunk benchmark excludes GPU upload cost
@@ -335,6 +349,31 @@ the editor.
 **Who this hits:** any `tools/*_check.gd` or spike script that introduces a *new* `class_name` in the
 same session it's first exercised headless — which is most of them, since a check script and the class
 it verifies usually land together.
+
+---
+
+### F-018 · `PlayerNet` has no way to be told when a player spawns, so observers reach into its children
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-16 by ash during 1.6
+
+`autoload/player_net.gd` exposes `player_for()`, `spawned_peers()` and `debug_snapshot()` — all
+*pull*. Nothing pushes. A system that has to act the moment a player appears or disappears has no
+signal to connect to, so 1.6's `NetInterp` does the next-best thing: it resolves PlayerNet's
+container by child name (`NetConfig.PLAYER_CONTAINER_NODE`) and connects to that node's
+`child_entered_tree`. That works and is scoped correctly, but it depends on the container being a
+directly-named child, which the file's own header says is PlayerNet's business and nobody else's:
+
+> Never reach into the tree by path from outside this file; the paths are ours to change.
+
+`autoload/net_interp.gd:50` is the reach. Two more callers are coming — 1.7 wants despawn/reconnect
+edges and 2.10's enemies will want the same shape — and each one that copies this pattern makes the
+container path harder to change later.
+
+Fix, cheap and obvious: `signal player_spawned(peer_id: int, body: Node3D)` and
+`signal player_despawned(peer_id: int)` on `PlayerNet`, emitted from `_spawn_for()`/`_despawn()`,
+plus a `players_root() -> Node` for anyone who genuinely wants the container. Then `NetInterp._bind()`
+loses its child lookup. **1.7 is the natural owner** — it holds the lifecycle and is already in that
+file; this is a few lines on top of what it is doing anyway, not a task.
 
 ---
 
