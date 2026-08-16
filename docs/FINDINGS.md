@@ -289,25 +289,6 @@ error. D-022's reinstall recipe copies the addon and stops there, which is the s
 that one file? a boot-time check that says "extension missing" in plain words?), and 1.1's scope is
 the install. Whoever takes 1.12 should read this first and budget for it.
 
-### F-010 · Two `.uid` files were left untracked when 1.4 shipped
-
-**Area:** build/tooling · **Filed:** 2026-08-16 by claude while picking the next task
-
-`autoload/net_transport.gd.uid` and `core/net/net_config.gd.uid` are untracked. Seventeen other `.uid`
-files in the repo are committed, so this is an omission, not a policy — `agent ship` stages the files
-a task claimed, and a `.uid` Godot regenerates alongside an edited script isn't one of them.
-
-**Low severity today, and worth saying why rather than just "should commit it".** Godot 4.4+ writes a
-`.uid` per script and resolves `uid://` references through it. Our scene files reference scripts by
-`path=`, not `uid=` — checked in `player.tscn` and `greybox_test.tscn` — so a peer with a
-freshly-generated UID currently breaks nothing. That stops being true the first time Sequoyah saves a
-scene in the editor and Godot rewrites those references as `uid://`, which it does on its own.
-
-The failure mode is the same shape as **F-009**: state that only exists on one machine, discovered on
-the Linux VM at 1.12. Cheapest fix is to commit both files. The durable fix is `agent ship` staging
-`<file>.uid` whenever it stages `<file>.gd`.
-
----
 
 ### F-011 · Autoloads are not compile-time identifiers in a `--script` main loop
 
@@ -505,3 +486,32 @@ and uncommitted.
 
 The correction to `ef1bc16`'s commit message stands as written above — the record of a wrong
 hypothesis, tested and disproved by the agent that made it, is worth keeping.
+
+---
+
+### F-010 · Two `.uid` files were left untracked when 1.4 shipped — **fixed**
+
+**Area:** build/tooling · **Filed:** 2026-08-16 by claude while picking the next task
+
+`autoload/net_transport.gd.uid` and `core/net/net_config.gd.uid` are untracked. Seventeen other `.uid`
+files in the repo are committed, so this is an omission, not a policy — `agent ship` stages the files
+a task claimed, and a `.uid` Godot regenerates alongside an edited script isn't one of them.
+
+**Low severity today, and worth saying why rather than just "should commit it".** Godot 4.4+ writes a
+`.uid` per script and resolves `uid://` references through it. Our scene files reference scripts by
+`path=`, not `uid=` — checked in `player.tscn` and `greybox_test.tscn` — so a peer with a
+freshly-generated UID currently breaks nothing. That stops being true the first time Sequoyah saves a
+scene in the editor and Godot rewrites those references as `uid://`, which it does on its own.
+
+The failure mode is the same shape as **F-009**: state that only exists on one machine, discovered on
+the Linux VM at 1.12. Cheapest fix is to commit both files. The durable fix is `agent ship` staging
+`<file>.uid` whenever it stages `<file>.gd`.
+
+**Fixed 2026-08-16 by claude, both halves.** The sweep: nine orphaned sidecars committed in `9cdfe7f`
+— the two named above plus seven more that accumulated as 1.3, 1.4, 1.5, 1.9 and 1.10 shipped, and
+that a Godot editor session had just regenerated.
+
+The durable half, which is the point: `cmd_ship` now stages `<file>.uid` whenever it stages
+`<file>.gd`. The root cause was structural — a sidecar is authored by nobody and claimed by nobody, so
+it could never appear in a task's file list, and `ship` stages exactly that list. Every task was
+therefore guaranteed to leak one, and a per-milestone sweep would have been a fix with a timer.
