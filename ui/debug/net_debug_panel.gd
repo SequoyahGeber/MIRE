@@ -1,5 +1,4 @@
 extends Node
-class_name NetDebugPanel
 
 ## Live network readout, so 1.5-1.8 are debuggable instead of guessed at. Owns no UI of its own —
 ## it is a set of DebugOverlay.watch() readouts (autoload/debug_overlay.gd), shown only in F3's
@@ -11,11 +10,12 @@ class_name NetDebugPanel
 ## anything it reads — if it were, that API would be dead code the moment this panel is stripped
 ## from a release build.
 ##
-## NOT WIRED BY ITSELF: nothing here runs until one instance is added to the tree once at startup.
-## _ready() is where the watch() registrations happen. Two ways to trigger it, pick one:
-##   · a one-line autoload entry: NetDebugPanel="*res://ui/debug/net_debug_panel.gd"
-##   · `add_child(NetDebugPanel.new())` from an existing autoload's own _ready()
-## This file does not claim project.godot, so that line is not added here.
+## Registered as the NetDebugPanel autoload in project.godot, after PlayerNet — order matters here:
+## it references DebugOverlay and NetTransport by bare identifier in _ready(), which only resolves
+## once those two have already loaded earlier in the autoload list.
+##
+## No class_name: an autoload script cannot share its class_name with its own autoload name (Godot
+## rejects it as "hides an autoload singleton"), and nothing outside this file needs to type-hint it.
 ##
 ## CONVENTION for the synced-entity count: this calls DebugOverlay.track_group(&"synced") rather
 ## than counting MultiplayerSynchronizer nodes itself, matching the group-count pattern DebugOverlay
