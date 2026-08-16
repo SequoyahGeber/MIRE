@@ -33,16 +33,15 @@ has quota. Nothing below is reserved for a particular chat.
 
 | # | Task | Agent name | Model | Effort | Status |
 |---|---|---|---|---|---|
-| 1.2 | NetTransport autoload | `net` | Opus 5 | xhigh | **in flight** — don't start a second one |
+| 1.2 | NetTransport autoload | `net` | Opus 5 | xhigh | **done**, registered and verified booting |
 | 2.2 | Content framework | `content` | Sonnet 5 | medium | **done** — prompt kept for reference only |
 
-**1.2 is the critical path.** It gates 1.3, 1.5, 1.6, 1.7, 1.8, 1.10 and 1.11 — seven of the twelve M1
-tasks — which is why it's worth the premium spend and the xhigh effort. The lifecycle requirements are
-where cheap models produce plausible code that only fails on a real disconnect, and Godot's
-`MultiplayerAPI` shifted across 4.x, the same stale-training-data trap task 0.8 had to guard against.
+**1.2 landed and its interface is confirmed good**, so 1.3, 1.5, 1.6, 1.7, 1.8, 1.10 and 1.11 are all
+unblocked. `NetTransport` and `Registry` are registered in `project.godot` and boot clean.
 
-**Nothing new should be started until 1.2 lands.** Its interface is what the next seven prompts get
-written against, so anything begun before it either duplicates work or gets rewritten.
+**Next is 1.3** — the one-keypress two-window LOCAL loop. The roadmap calls it the highest-ROI task in
+M1 and it's right: every multiplayer bug for the rest of the project gets cheaper to find once it
+exists. No prompt written for it yet.
 
 **Yours, not delegable:** 1.1 (GodotSteam GDExtension + `project.godot`), which 1.4 then needs, and
 1.12 needs both. `4.0b` (Windows determinism) is yours only to the extent of provisioning the VM.

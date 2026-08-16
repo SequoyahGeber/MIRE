@@ -7,9 +7,9 @@
 
 ## Status
 
-**Milestone:** M1 · Network spine — 0 of 12 tasks done. **M0 is closed, 10/10.**
-**Last session:** 2026-08-16 (claude) — closed M0, filed the two spike verdicts, and booked the
-two M0 debts as M4 gates (4.0a, 4.0b) so they can't quietly go missing.
+**Milestone:** M1 · Network spine — **1.2 landed.** M0 is closed, 10/10.
+**Last session:** 2026-08-16 (claude) — closed M0, booked the two M0 debts as M4 gates (4.0a, 4.0b),
+and took autoload registration off Sequoyah's plate for good (D-021).
 
 Both risk spikes came back **GREEN**: chunked terrain meshing stays in GDScript (D-015), runtime
 NavMesh baking stays and the grid-A* fallback is dropped (D-016). Neither result is unconditional —
@@ -18,7 +18,13 @@ see *M0 debts* below.
 **The game runs.** Open the project and press Play: you spawn in a greybox level and can walk, sprint,
 jump and look around. **F3** overlay · **`~`** console · **Esc** releases the mouse.
 
-Godot 4.7.1-stable, at `/Applications/Godot.app`. Pinned — don't upgrade mid-milestone.
+**Four autoloads live, verified booting 2026-08-16** on `4.7.1.stable.official.a13da4feb`, Metal
+Forward+ on an M5 Pro: `DebugOverlay`, `DebugConsole`, `Registry`, `NetTransport`. Boot log reads
+`content: loaded 0 item(s), 0 recipe(s)` and `net: NetTransport ready (offline)` — 0/0 is correct,
+no `.tres` content is authored yet. `NetConfig` is a `class_name`, **not** an autoload; don't add it.
+
+Godot 4.7.1-stable, pinned — don't upgrade mid-milestone. That build hash is also the determinism
+baseline in `ARCHITECTURE.md` §6a, so upgrading invalidates R6.
 
 ---
 
