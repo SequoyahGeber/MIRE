@@ -166,7 +166,11 @@ What this does and doesn't close:
   the Ubuntu guest:** Unraid reports the 1070 as the host's *primary adapter* ("GPU is primary adapter,
   vbios may be required"), so passing it to a VM also needs a dumped and patched vBIOS and risks
   leaving the host without console output. GPU passthrough here is not a checkbox; treat software
-  rendering in the guests as the plan, not the fallback. VMs therefore answer "does the export launch and
+  rendering in the guests as the plan, not the fallback.
+
+  **Sequoyah's call, 2026-08-15:** container contention is *not* a real constraint — Plex does not
+  meaningfully need the card and Ollama can be paused on demand. So the only genuine obstacle to GPU
+  passthrough is the primary-adapter/vBIOS work above. Do not cite the containers as a blocker. VMs therefore answer "does the export launch and
   behave correctly on this OS" — most of the value — but frame rate and rendering artifacts need real
   hardware. Steam Deck remains a separate purchase decision.
 - **1.12 — partially, with friction.** LAN testing over `ENetMultiplayerPeer` works fine between
