@@ -56,6 +56,71 @@
       "at": "2026-08-16T16:55:25+00:00",
       "task": "F-007"
     },
+    "assets/environment/README.md": {
+      "agent": "reed",
+      "at": "2026-08-16T17:40:04+00:00",
+      "task": "2.1"
+    },
+    "assets/environment/exports/boulder_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T17:40:04+00:00",
+      "task": "2.1"
+    },
+    "assets/environment/exports/fallen_log_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T17:40:04+00:00",
+      "task": "2.1"
+    },
+    "assets/environment/exports/grass_clump_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T17:40:04+00:00",
+      "task": "2.1"
+    },
+    "assets/environment/exports/mushroom_cluster_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T17:40:04+00:00",
+      "task": "2.1"
+    },
+    "assets/environment/exports/rock_cluster_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T17:40:04+00:00",
+      "task": "2.1"
+    },
+    "assets/environment/exports/stump_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T17:40:04+00:00",
+      "task": "2.1"
+    },
+    "assets/environment/exports/tree_bare_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T17:40:04+00:00",
+      "task": "2.1"
+    },
+    "assets/environment/exports/tree_pine_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T17:40:04+00:00",
+      "task": "2.1"
+    },
+    "assets/environment/mire_map_kit.blend": {
+      "agent": "reed",
+      "at": "2026-08-16T17:40:04+00:00",
+      "task": "2.1"
+    },
+    "assets/environment/preview/mire_map_kit_preview.png": {
+      "agent": "reed",
+      "at": "2026-08-16T17:40:04+00:00",
+      "task": "2.1"
+    },
+    "assets/source/.gdignore": {
+      "agent": "reed",
+      "at": "2026-08-16T17:40:04+00:00",
+      "task": "2.1"
+    },
+    "assets/source/mire_map_kit.blend": {
+      "agent": "reed",
+      "at": "2026-08-16T17:40:04+00:00",
+      "task": "2.1"
+    },
     "autoload/net_interp.gd": {
       "agent": "ash",
       "at": "2026-08-16T17:19:51+00:00",
@@ -195,6 +260,11 @@
       "agent": "load",
       "at": "2026-08-16T08:27:33+00:00",
       "task": "1.9"
+    },
+    "tools/blender/build_mire_map_kit.py": {
+      "agent": "reed",
+      "at": "2026-08-16T17:40:04+00:00",
+      "task": "2.1"
     },
     "tools/check_determinism_ops.gd": {
       "agent": "claude",
@@ -490,9 +560,11 @@
       "title": "Spike R1 \u2014 6 peers, 200 synced dummy entities, measure bandwidth and CPU"
     },
     "2.1": {
+      "done_at": "2026-08-16T17:40:04+00:00",
+      "done_by": "reed",
       "est": "3",
       "milestone": "M2",
-      "status": "todo",
+      "status": "done",
       "tier": "T0",
       "title": "Import a CC0 low-poly pack (Quaternius/Kenney) \u2014 trees, rocks, props. Set up import presets & materials."
     },

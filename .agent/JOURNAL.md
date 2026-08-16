@@ -448,3 +448,19 @@ Notes along the way:
 Files: `core/net/remote_interp.gd`, `autoload/net_interp.gd`, `tools/interp_check.gd`, `project.godot`
 
 Commit at time of writing: `ff837c4`
+
+---
+
+### DONE · 2.1 · reed · 2026-08-16T17:40:04+00:00
+
+**Import a CC0 low-poly pack (Quaternius/Kenney) — trees, rocks, props. Set up import presets & materials.**
+
+Original eight-piece low-poly environment kit built in Blender 5.2: pine, dead tree, boulder, rock cluster, stump, fallen log, grass, and Mire mushrooms. Individual metre-scale GLBs have embedded flat-shaded materials and no collision; editable source is isolated under assets/source/.gdignore. Verified all GLBs re-import in Blender (72–172 polygons per compound asset), a fresh Godot 4.7.1 import produced all eight .scn artifacts, and the 1280x720 preview rendered successfully. No scene wiring is required; map placement and simple primitive collision remain editor work when the map is built.
+
+Notes along the way:
+- Replaced the generic-pack import with an original eight-piece MIRE environment kit: editable Blender source, individual ground-centred GLBs, embedded flat-shaded materials, and a rendered preview. Runtime meshes are presentation-only; future harvest/mutation remains host-authoritative.
+- Godot tried to import the .blend and required a machine-local Blender path, so source art now lives under assets/source/.gdignore while runtime GLBs remain in assets/environment/exports. Fresh headless Godot import produced all eight .scn artifacts successfully.
+
+Files: `tools/blender/build_mire_map_kit.py`, `assets/environment/mire_map_kit.blend`, `assets/environment/exports/tree_pine_a.glb`, `assets/environment/exports/tree_bare_a.glb`, `assets/environment/exports/boulder_a.glb`, `assets/environment/exports/rock_cluster_a.glb`, `assets/environment/exports/stump_a.glb`, `assets/environment/exports/fallen_log_a.glb`, `assets/environment/exports/grass_clump_a.glb`, `assets/environment/exports/mushroom_cluster_a.glb`, `assets/environment/preview/mire_map_kit_preview.png`, `assets/source/.gdignore`, `assets/source/mire_map_kit.blend`, `assets/environment/README.md`
+
+Commit at time of writing: `18aa989`
