@@ -247,6 +247,12 @@ setting them in Project Settings did nothing to the file and they silently disap
 written into `project.godot` by hand. Now folded into `ARCHITECTURE.md` §5a as a note under the
 settings table, so the next person reads it before spending the ten minutes.
 
+**Reopened and re-fixed, 2026-08-15, same day:** the prune is not a one-time editor quirk — it fires on
+*any* editor save, not just a Project Settings edit. Setting the main scene during task 0.5 resaved
+`project.godot` and silently dropped all four lines again. `tools/verify_setup.gd` now reads the raw
+file text (§ pinned settings) so the next prune shows up as a failed check instead of a quiet
+regression waiting to surface as judder on real hardware.
+
 ### F-001 · Pre-commit hook scans the working tree instead of the staged set — **fixed**
 
 **Area:** tooling · **Filed:** 2026-08-15 by claude during the §5a doc update · **Fixed:** 2026-08-15 by nav

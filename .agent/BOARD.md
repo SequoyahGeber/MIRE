@@ -8,7 +8,7 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **0.5** Grey-box test level — ramps, stairs, gaps. Tune the controller until movement *feels good*. | claude | 2026-08-16 02:37 | `entities/player/player_controller.gd`, `docs/DECISIONS.md` |
+| **0.5** Grey-box test level — ramps, stairs, gaps. Tune the controller until movement *feels good*. | claude | 2026-08-16 02:37 | `entities/player/player_controller.gd`, `docs/DECISIONS.md`, `tools/verify_setup.gd`, `docs/FINDINGS.md`, `docs/NEXT.md` |
 
 ## Milestones
 

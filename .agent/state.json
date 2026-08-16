@@ -5,9 +5,24 @@
       "at": "2026-08-16T02:37:46+00:00",
       "task": "0.5"
     },
+    "docs/FINDINGS.md": {
+      "agent": "claude",
+      "at": "2026-08-16T02:42:48+00:00",
+      "task": "0.5"
+    },
+    "docs/NEXT.md": {
+      "agent": "claude",
+      "at": "2026-08-16T02:42:48+00:00",
+      "task": "0.5"
+    },
     "entities/player/player_controller.gd": {
       "agent": "claude",
       "at": "2026-08-16T02:37:46+00:00",
+      "task": "0.5"
+    },
+    "tools/verify_setup.gd": {
+      "agent": "claude",
+      "at": "2026-08-16T02:42:48+00:00",
       "task": "0.5"
     }
   },
@@ -16,7 +31,10 @@
       "agent": "claude",
       "files": [
         "entities/player/player_controller.gd",
-        "docs/DECISIONS.md"
+        "docs/DECISIONS.md",
+        "tools/verify_setup.gd",
+        "docs/FINDINGS.md",
+        "docs/NEXT.md"
       ],
       "notes": [],
       "started": "2026-08-16T02:37:46+00:00"

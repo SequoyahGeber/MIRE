@@ -99,8 +99,12 @@ is expected and already accounted for. **Do this before M4 builds anything on se
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script tools/verify_setup.gd
 ```
 
-35 checks: input map responds to real key presses, autoloads registered, scenes have the node names the
-scripts expect, and the player actually falls and lands. Run it after anything structural.
+Input map responds to real key presses, autoloads registered, scenes have the node names the scripts
+expect, the player actually falls and lands, and the four `project.godot` settings F-003 pins
+(`vsync_mode`, `max_fps`, `physics_ticks_per_second`, `max_physics_steps_per_frame`) are still literally
+in the file rather than pruned back out. **Run it after anything structural, and after any editor save
+of `project.godot`** — setting the main scene alone was enough to silently re-prune those four lines
+once already.
 
 `tools/setup_project.gd` regenerates the input map, autoloads and both scenes. **Don't re-run it once
 you start tuning in the editor** — it overwrites the scenes.

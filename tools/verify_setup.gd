@@ -28,6 +28,8 @@ func _initialize() -> void:
 	_verify_autoloads()
 	print("\n-- scenes --")
 	_verify_scenes()
+	print("\n-- project.godot pinned settings (F-003) --")
+	_verify_pinned_settings()
 
 	# Static checks done. Now actually run the level so physics gets exercised — this is what
 	# catches a mis-centred capsule (player sinks or hovers) that every static check would pass.
@@ -65,6 +67,30 @@ func _finish() -> void:
 	else:
 		print("%d check(s) failed" % _failures)
 	quit(1 if _failures > 0 else 0)
+
+
+## ProjectSettings.get_setting() applies the engine default when a key is absent from the file, so it
+## cannot distinguish "explicit in project.godot" from "silently pruned, but happens to match the
+## default anyway" (F-003). Both read identical from inside the engine. Only reading the raw text
+## catches a value the editor pruned back out on its next save — which is what actually happened here,
+## twice, from an unrelated action (setting the main scene) re-triggering the prune.
+func _verify_pinned_settings() -> void:
+	var text := FileAccess.get_file_as_string("res://project.godot")
+	_check("project.godot readable", text != "", "FileAccess.get_file_as_string returned empty")
+	if text == "":
+		return
+
+	var required: Array = [
+		"run/max_fps=0",
+		"window/vsync/vsync_mode=1",
+		"common/physics_ticks_per_second=60",
+		"common/max_physics_steps_per_frame=8",
+	]
+	for line in required:
+		_check("project.godot has '%s'" % line, text.contains(line),
+			"pruned again — Godot omits any line matching the engine default on save (§5a); re-enter it " +
+			"in Project Settings with Advanced Settings on, changing it away from and back to the target " +
+			"value forces the write")
 
 
 func _verify_input() -> void:
