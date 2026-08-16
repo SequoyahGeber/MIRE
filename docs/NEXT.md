@@ -100,11 +100,10 @@ is expected and already accounted for. **Do this before M4 builds anything on se
 ```
 
 Input map responds to real key presses, autoloads registered, scenes have the node names the scripts
-expect, the player actually falls and lands, and the four `project.godot` settings F-003 pins
-(`vsync_mode`, `max_fps`, `physics_ticks_per_second`, `max_physics_steps_per_frame`) are still literally
-in the file rather than pruned back out. **Run it after anything structural, and after any editor save
-of `project.godot`** — setting the main scene alone was enough to silently re-prune those four lines
-once already.
+expect, the player actually falls and lands, and the §5a physics/vsync/fps settings resolve to their
+correct *effective* values regardless of whether `project.godot` spells them out or Godot is silently
+supplying its own default (F-003) — no need to re-run this after every editor save just to catch a
+prune, since a pruned default-equal value still reads correct. Run it after anything structural.
 
 `tools/setup_project.gd` regenerates the input map, autoloads and both scenes. **Don't re-run it once
 you start tuning in the editor** — it overwrites the scenes.

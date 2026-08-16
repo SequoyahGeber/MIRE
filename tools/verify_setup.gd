@@ -69,28 +69,28 @@ func _finish() -> void:
 	quit(1 if _failures > 0 else 0)
 
 
-## ProjectSettings.get_setting() applies the engine default when a key is absent from the file, so it
-## cannot distinguish "explicit in project.godot" from "silently pruned, but happens to match the
-## default anyway" (F-003). Both read identical from inside the engine. Only reading the raw text
-## catches a value the editor pruned back out on its next save — which is what actually happened here,
-## twice, from an unrelated action (setting the main scene) re-triggering the prune.
+## Checks the *effective* runtime value via ProjectSettings.get_setting(), not the raw file text.
+## Godot's editor prunes any setting matching the engine default on every save it performs — not just
+## a Project Settings edit, any action that resaves project.godot — regardless of whether that value
+## was set through the UI or hand-written into the file (ARCHITECTURE.md §5a, F-003, twice now). Chasing
+## file presence is unwinnable for a value that equals the default. get_setting() is correct either
+## way: it returns the override when one exists and the engine default otherwise, so this check can
+## only fail on the thing that actually matters — someone changing a value away from the target, which
+## (because it then differs from default) persists on save and would show up here.
 func _verify_pinned_settings() -> void:
-	var text := FileAccess.get_file_as_string("res://project.godot")
-	_check("project.godot readable", text != "", "FileAccess.get_file_as_string returned empty")
-	if text == "":
-		return
-
-	var required: Array = [
-		"run/max_fps=0",
-		"window/vsync/vsync_mode=1",
-		"common/physics_ticks_per_second=60",
-		"common/max_physics_steps_per_frame=8",
+	var expected: Array = [
+		["physics/common/physics_ticks_per_second", 60],
+		["physics/common/max_physics_steps_per_frame", 8],
+		["physics/common/physics_interpolation", true],
+		["physics/common/physics_jitter_fix", 0.0],
+		["display/window/vsync/vsync_mode", 1],
+		["application/run/max_fps", 0],
 	]
-	for line in required:
-		_check("project.godot has '%s'" % line, text.contains(line),
-			"pruned again — Godot omits any line matching the engine default on save (§5a); re-enter it " +
-			"in Project Settings with Advanced Settings on, changing it away from and back to the target " +
-			"value forces the write")
+	for pair in expected:
+		var key: String = pair[0]
+		var want = pair[1]
+		var got = ProjectSettings.get_setting(key, null)
+		_check("%s == %s" % [key, str(want)], got == want, "got %s" % str(got))
 
 
 func _verify_input() -> void:

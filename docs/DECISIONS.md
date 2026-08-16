@@ -216,6 +216,24 @@ Player instance — or anyone who resets to defaults — doesn't silently revert
 **Would change my mind:** the values reading differently once ramps/stairs/gaps are dressed with real
 art instead of greybox, or co-op play at 3–6 players surfacing a pace mismatch invisible solo.
 
+### D-019 · 2026-08-15 · Stop pinning default-equal project.godot settings by hand — check effective values instead
+F-003 was "fixed" twice by hand-writing four settings into `project.godot` that equal the engine
+default. Both times an unrelated editor save (once a Project Settings edit, once just setting the main
+scene) silently pruned them again. That's not bad luck — Godot's editor prunes any setting matching the
+default on *every* save it performs, regardless of how the value got there, so hand-writing it is not a
+fix, it's a fix with a timer on it.
+
+Sequoyah caught this: "I don't think it matters... that's why they disappeared before, no?" — correctly
+identifying that the second fix attempt (mine) was about to repeat the first one's mistake.
+
+`tools/verify_setup.gd` now asserts the effective value via `ProjectSettings.get_setting()`, which
+returns the override when present and the engine default otherwise — correct either way, and it only
+fails on the case that's actually dangerous: a value changed *away* from the target, which (unlike the
+default) does persist on save. `ARCHITECTURE.md` §5a no longer instructs pinning these by hand.
+**Would change my mind:** a future Godot version changing one of these defaults — the actual protection
+against that was always "pin the Godot version, don't upgrade mid-milestone" (already policy), not file
+text, since file text couldn't survive an editor save either way.
+
 ---
 
 ## Template

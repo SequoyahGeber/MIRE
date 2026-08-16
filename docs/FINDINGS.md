@@ -247,11 +247,15 @@ setting them in Project Settings did nothing to the file and they silently disap
 written into `project.godot` by hand. Now folded into `ARCHITECTURE.md` §5a as a note under the
 settings table, so the next person reads it before spending the ten minutes.
 
-**Reopened and re-fixed, 2026-08-15, same day:** the prune is not a one-time editor quirk — it fires on
-*any* editor save, not just a Project Settings edit. Setting the main scene during task 0.5 resaved
-`project.godot` and silently dropped all four lines again. `tools/verify_setup.gd` now reads the raw
-file text (§ pinned settings) so the next prune shows up as a failed check instead of a quiet
-regression waiting to surface as judder on real hardware.
+**Reopened and closed differently, 2026-08-15, same day:** the prune is not a one-time editor quirk —
+it fires on *any* editor save, not just a Project Settings edit. Setting the main scene during task 0.5
+resaved `project.godot` and silently dropped all four lines again, proving the original fix (hand-write
+the lines) doesn't hold: the next resave strips them regardless of how they got there. Chasing file
+presence for a value that equals the engine default is unwinnable, so this stopped being the goal.
+`tools/verify_setup.gd` now checks the *effective* runtime value via `ProjectSettings.get_setting()`
+instead of raw file text — correct either way the value is sourced, and it can only fail on the thing
+that actually matters: someone changing a value away from the target. Genuinely closed this time
+because it no longer depends on the file staying in a state Godot won't hold.
 
 ### F-001 · Pre-commit hook scans the working tree instead of the staged set — **fixed**
 

@@ -223,9 +223,6 @@ must not reintroduce it.**
 
 ### Required project settings
 
-Set these explicitly rather than inheriting defaults, so the contract is visible in `project.godot`
-and a future engine default can't silently change it.
-
 | Setting | Value | Why |
 |---|---|---|
 | `physics/common/physics_ticks_per_second` | `60` | The simulation rate. Changing this changes game feel and invalidates every tuned constant — treat it as frozen after M0. |
@@ -235,13 +232,17 @@ and a future engine default can't silently change it.
 | `display/window/vsync/vsync_mode` | `enabled` (default), player-overridable | Ships as the safe default; exposed in settings (7.5). |
 | `application/run/max_fps` | `0` (uncapped), player-overridable | An fps cap must never change simulation behaviour. If it does, something violates this section. |
 
-> **You cannot do this from the Project Settings UI.** Godot writes only settings whose value differs
-> from the engine default, and prunes the rest on save. Four of the six above — `physics_ticks_per_second`,
-> `max_physics_steps_per_frame`, `vsync_mode` and `max_fps` — *are* the defaults, so setting them in the
-> editor is a no-op on the file and they silently vanish. Only `physics_interpolation` and
-> `physics_jitter_fix` persist on their own. Pin the other four by writing the lines into
-> `project.godot` by hand. This is the whole point of the section: a value that isn't in the file isn't
-> a contract, it's just today's default.
+> **Four of these six equal the engine default, and that's fine — do not chase pinning them into
+> `project.godot` by hand.** Godot writes only settings whose value differs from the default and
+> prunes the rest on *every* save the editor performs, not only a Project Settings edit — any action
+> that resaves the file (setting the main scene did it once) silently drops them again regardless of
+> how they got there. Hand-editing the file is not a fix, it's F-003 again on a timer (see
+> `FINDINGS.md`). The value is correct either way, because absence just means "use the default," which
+> already **is** the target value. The actual protection against a future engine default changing this
+> out from under us is the version pin below, not file text — an upgrade is already the moment to
+> re-check this table. `tools/verify_setup.gd` asserts the *effective* runtime values via
+> `ProjectSettings.get_setting()`, which is correct whether the value comes from the file or the
+> engine default and isn't fooled by pruning either way.
 
 ### Rules for writing systems
 
