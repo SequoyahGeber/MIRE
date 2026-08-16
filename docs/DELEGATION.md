@@ -33,15 +33,24 @@ has quota. Nothing below is reserved for a particular chat.
 
 | # | Task | Agent name | Model | Effort | Status |
 |---|---|---|---|---|---|
-| 1.2 | NetTransport autoload | `net` | Opus 5 | xhigh | **done**, registered and verified booting |
-| 2.2 | Content framework | `content` | Sonnet 5 | medium | **done** — prompt kept for reference only |
+| 1.3 | LOCAL two-window loop | `local` | Opus 5 | high | **ready to paste** |
+| 1.10 | Network debug panel | `netui` | Sonnet 5 | medium | **ready to paste** — optional parallel |
+| 1.2 | NetTransport autoload | `net` | Opus 5 | xhigh | done, registered, verified booting |
+| 2.2 | Content framework | `content` | Sonnet 5 | medium | done — prompt kept for reference |
 
-**1.2 landed and its interface is confirmed good**, so 1.3, 1.5, 1.6, 1.7, 1.8, 1.10 and 1.11 are all
-unblocked. `NetTransport` and `Registry` are registered in `project.godot` and boot clean.
+**Start 1.3 first.** It's the highest-ROI task in the milestone: once two connected windows cost one
+keypress, every multiplayer bug in 1.5–1.8 gets cheaper to reproduce. Everything after it is verified
+against it.
 
-**Next is 1.3** — the one-keypress two-window LOCAL loop. The roadmap calls it the highest-ROI task in
-M1 and it's right: every multiplayer bug for the rest of the project gets cheaper to find once it
-exists. No prompt written for it yet.
+**1.10 is safe to run at the same time** — different files, no dependency between them, and it's on
+cheap quota. It also makes 1.5–1.8 debuggable, which is why it's worth pulling ahead of its roadmap
+position rather than building it after the tasks that need it.
+
+**Don't start 1.5–1.8 yet.** They're unblocked on paper, but they all touch player scenes and are far
+easier to verify once 1.3 exists. Wait for it.
+
+`NetTransport` and `Registry` are registered and boot clean, so 1.2's interface is settled and both
+prompts above are written against the real API.
 
 **Yours, not delegable:** 1.1 (GodotSteam GDExtension + `project.godot`), which 1.4 then needs, and
 1.12 needs both. `4.0b` (Windows determinism) is yours only to the extent of provisioning the VM.
@@ -51,10 +60,229 @@ their results are D-015 and D-016 in `DECISIONS.md`. The unmeasured half of R2 i
 
 ---
 
-## Task 1.2 — NetTransport autoload
+## Task 1.3 — LOCAL mode: two windows, one keypress
+
+> **Model: Opus 5 · effort high** · agent name `local`
+> The roadmap calls this the highest-ROI task in M1. It is: every multiplayer bug for the
+> rest of the project gets cheaper to reproduce once this exists. Worth doing properly.
+
+```
+You're working on MIRE, a co-op survival game in Godot 4.7.1. Read AGENTS.md first — it
+is the protocol every agent here follows. Then:
+
+    MIRE_AGENT=local .agent/bin/agent start local
+    MIRE_AGENT=local .agent/bin/agent claim 1.3 core/dev/dev_launch.gd project.godot
+
+Keep the MIRE_AGENT=local prefix on EVERY .agent/bin/agent command AND on `git commit`.
+Do not use `export` — each shell call is a fresh process, so an exported value is gone by
+your next command and your claims get filed under the wrong agent with no error. `agent
+ship` handles this itself.
+
+TASK: Make "two windows, host and client, already connected" cost one keypress. Today
+testing multiplayer means launching twice by hand and wiring a connection each time; this
+task removes that and is the reason every later M1 task is cheap to verify.
+
+WHAT ALREADY EXISTS — do not rebuild any of it:
+
+  NetTransport is a registered, working autoload (task 1.2, verified booting). API:
+
+    signal peer_joined(peer_id: int)
+    signal peer_left(peer_id: int)
+    signal connection_failed(reason: String)
+    signal connected_to_host()
+    signal server_started()
+    signal disconnected()
+
+    func host(mode: NetConfig.Mode, port: int = -1) -> Error
+    func join(mode: NetConfig.Mode, address: String, port: int = -1) -> Error
+    func leave() -> void
+    func is_host() -> bool
+    func local_peer_id() -> int
+    func peer_ids() -> PackedInt32Array
+    func current_mode() -> NetConfig.Mode
+    func is_active() -> bool
+    func is_connecting() -> bool
+
+  NetConfig is a class_name (NOT an autoload — do not register it). Constants you need:
+    NetConfig.Mode.{OFFLINE, LOCAL, LAN, STEAM}
+    NetConfig.DEFAULT_PORT = 27515
+    NetConfig.LOOPBACK_ADDRESS = "127.0.0.1"
+    NetConfig.MAX_PLAYERS = 6
+    NetConfig.LOG_CHANNEL = &"net"
+
+  join(Mode.LOCAL, "") resolves the address to loopback and port -1 to DEFAULT_PORT, so
+  the LOCAL call needs no literals at the call site.
+
+  MireLog (core/util/mire_log.gd, class_name) has statics:
+    MireLog.info(channel: StringName, message: String)
+    MireLog.warn / .error / .debug, same shape.
+
+WRITE ONE FILE: core/dev/dev_launch.gd — an autoload, and register it yourself.
+
+Behaviour, driven by user command-line args (OS.get_cmdline_user_args(), the args after
+a bare `--`):
+
+    -- host      host a LOCAL session on startup
+    -- client    join a LOCAL session on startup
+    (no args)    DO NOTHING AT ALL
+
+THE NO-ARGS CASE IS THE IMPORTANT ONE. This autoload ships in the retail build. If it
+ever auto-hosts without being asked, every player who launches the game opens a socket
+they did not ask for. Guard it: no args means return immediately from _ready(), touching
+nothing. Also gate the whole thing on OS.is_debug_build() so it is inert in an export.
+
+Beyond that:
+- Log every transition through MireLog on NetConfig.LOG_CHANNEL, prefixed so the two
+  windows are tellable apart at a glance (peer id, and host/client role).
+- Connect to connection_failed and log the reason. A client that starts a half-second
+  before the host WILL fail to connect; if that happens, retry a small number of times
+  with a short delay before giving up, and say so in the log. Do not retry forever.
+- Typed GDScript throughout.
+
+VERIFY THE LAUNCH MECHANISM BEFORE YOU DESIGN AROUND IT. Godot 4.x has a built-in
+"Run Multiple Instances" feature (Debug menu → Customize Run Instances) that launches N
+instances with per-instance arguments. Check what actually exists in 4.7.1 and how args
+are passed, rather than assuming — the feature moved and changed across 4.x releases.
+
+IMPORTANT CONSTRAINT ON THAT: run-instance configuration lives under `.godot/`, which is
+in .gitignore. So you CANNOT commit that config, and it is not reproducible for anyone
+else from the repo. Therefore:
+  - the .gd side is yours and must work from args alone
+  - the editor-side setup is Sequoyah's, and you must write him the exact click-path
+    (menu, field, and the literal arg strings to type into each instance slot)
+  - if you find a way to make this work that does NOT depend on gitignored editor state,
+    say so and explain the tradeoff — a committed tools/ launcher script that spawns two
+    OS processes is a legitimate alternative. Recommend one, do not build both.
+
+AUTHORITY: none of its own. It only calls NetTransport, which is infrastructure. The
+session it opens is host-authoritative per docs/ARCHITECTURE.md §2.2.
+
+CONSTRAINTS:
+- Scene files (.tscn/.tres) stay human-only (D-007, hook-enforced).
+- project.godot IS yours — your claim names it (D-021). Register the autoload yourself.
+  Append one line to [autoload]; do not reorder or reformat the file, and never write a
+  setting equal to the engine default (Godot prunes those on save — D-019).
+- BEFORE editing project.godot, run `pgrep -fl -i godot`. If the editor is running, STOP
+  and tell Sequoyah — the editor rewrites that file on save and will silently discard
+  your change. Check immediately before the write, not at the start of your session.
+- Don't explore the codebase. Everything you need is above.
+
+FINISH WITH:
+    MIRE_AGENT=local .agent/bin/agent done 1.3 "<what works, and how you verified it>"
+    MIRE_AGENT=local .agent/bin/agent ship 1.3 "M1: LOCAL two-window dev loop"
+
+`ship` commits only this task's files and pushes. Never `git add -A` — other agents work
+in this same directory and you would commit their half-written files.
+
+THEN, as your final chat message, tell me:
+  - what you verified, with the actual command and its output. You cannot press F5 in the
+    editor; if the only real test is a manual two-window run, say so plainly and give me
+    the exact steps and the log lines I should expect to see in each window
+  - whether the feature RUNS now or only compiles
+  - the exact editor click-path and arg strings I must enter, if any
+  - whether it is safe for me to start the next task
+```
+
+---
+
+## Task 1.10 — Network debug panel
+
+> **Model: Sonnet 5 · effort medium** · agent name `netui`
+> Optional parallel chat. Shares no files with 1.3 and runs on cheap quota. It is also
+> the thing that makes 1.5–1.8 debuggable, so it earns its slot early rather than late.
+
+```
+You're working on MIRE, a co-op survival game in Godot 4.7.1. Read AGENTS.md first. Then:
+
+    MIRE_AGENT=netui .agent/bin/agent start netui
+    MIRE_AGENT=netui .agent/bin/agent claim 1.10 ui/debug/net_debug_panel.gd
+
+Keep the MIRE_AGENT=netui prefix on EVERY .agent/bin/agent command AND on `git commit`.
+Do not use `export` — each shell call is a fresh process, so the value is lost and your
+claims get filed under the wrong agent silently. `agent ship` handles this itself.
+
+TASK: A live network readout, so that when 1.5–1.8 misbehave you can see WHY instead of
+guessing. Every later M1 task is easier to debug because this exists.
+
+Show, updating a few times a second (NOT every frame):
+  - current mode (OFFLINE / LOCAL / LAN / STEAM) and whether we are host or client
+  - our own peer id, and the list of connected peer ids
+  - ping/RTT per peer
+  - bandwidth in and out, per second, human-readable (KB/s)
+  - total synced node count
+  - a short rolling log of the last few connection events (joined / left / failed)
+
+WHAT ALREADY EXISTS — do not rebuild any of it:
+
+  NetTransport, a registered working autoload. Query it, never touch
+  multiplayer.multiplayer_peer directly:
+    func is_host() -> bool
+    func local_peer_id() -> int
+    func peer_ids() -> PackedInt32Array
+    func current_mode() -> NetConfig.Mode
+    func is_active() -> bool
+    func is_connecting() -> bool
+    static func mode_name(mode: NetConfig.Mode) -> String
+  Signals to subscribe to for the event log:
+    peer_joined(peer_id: int), peer_left(peer_id: int),
+    connection_failed(reason: String), connected_to_host(),
+    server_started(), disconnected()
+
+  NetConfig is a class_name, not an autoload. NetConfig.LOG_CHANNEL = &"net".
+
+  MireLog statics: MireLog.info/warn/error/debug(channel: StringName, message: String).
+
+  DebugOverlay is an existing registered autoload at autoload/debug_overlay.gd, with the
+  F3 overlay. READ THAT FILE — it is the one file worth opening — and follow whatever
+  pattern it already uses for registering a panel or a line of readout. Match it rather
+  than inventing a second, parallel overlay system. If it has no extension point, say so
+  and propose the smallest one rather than editing that file (you do not hold its claim).
+
+REQUIREMENTS:
+- Typed GDScript throughout.
+- Poll on a timer, not in _process. This is a debug readout; costing frames to display
+  performance data is self-defeating.
+- Get RTT and bandwidth from the real Godot APIs. VERIFY WHAT 4.7.1 ACTUALLY EXPOSES
+  before writing against it — ENetPacketPeer and the MultiplayerPeer statistics surface
+  changed across 4.x and your training data may be stale. If a figure genuinely is not
+  available, display "n/a" and say so in your writeup. Do NOT invent a plausible number:
+  a debug panel that lies is worse than one that admits a gap.
+- Degrade cleanly when offline. Not connected is the normal state, not an error.
+- No allocations per update where you can avoid them.
+
+AUTHORITY: none — display only. This panel must never mutate game state, and must never
+be the only thing calling something (if it is the sole caller of an API, that API is
+about to be dead code in a release build).
+
+CONSTRAINTS:
+- .gd only. Scene files (.tscn/.tres) are human-only (D-007, hook-enforced).
+- You did NOT claim project.godot and this needs no autoload of its own — it is a panel
+  owned by DebugOverlay. If you conclude it genuinely must be an autoload, stop and ask
+  before claiming that file.
+- Don't explore beyond autoload/debug_overlay.gd.
+
+FINISH WITH:
+    MIRE_AGENT=netui .agent/bin/agent done 1.10 "<what it shows, what is n/a and why>"
+    MIRE_AGENT=netui .agent/bin/agent ship 1.10 "M1: network debug panel"
+
+`ship` commits only this task's files. Never `git add -A`.
+
+THEN, as your final chat message, tell me:
+  - what you verified and how, including which figures are real and which are "n/a"
+  - whether it RUNS or only compiles
+  - exactly what I must wire in the editor, if anything
+  - whether it is safe for me to start the next task
+```
+
+---
+
+## Already shipped — kept for reference
+
+## Task 1.2 — NetTransport autoload ✅ **DONE**
 
 > **Model: Opus 5 · effort xhigh** · agent name `net`
-> Every other M1 task sits on this interface. Getting it right is worth the spend.
+> **Completed 2026-08-16, registered and verified booting. Do not paste this.** Kept as the
+> worked example of an interface-first prompt — 1.5–1.8 are all written against what it defined.
 
 ```
 You're working on MIRE, a co-op survival game in Godot 4.7.1. Read AGENTS.md and
@@ -155,8 +383,6 @@ THEN, as your final chat message, tell me:
 ```
 
 ---
-
-## Already shipped — kept for reference
 
 ## Task 2.2 — Content resource framework ✅ **DONE**
 
