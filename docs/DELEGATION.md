@@ -48,7 +48,8 @@ doesn't.
 | # | Task | Agent name | Model | Effort | Status |
 |---|---|---|---|---|---|
 | 1.4 | Steam lobby | `lobby` | — | — | **IN FLIGHT** — do not start a second one |
-| 1.10 | Network debug panel | `netui` | Sonnet 5 | medium | **ready to paste** — safe alongside 1.4 |
+| 1.9 | Spike R1 — replication load | `load` | Opus 5 | high | **ready to paste** — start this first |
+| 1.10 | Network debug panel | `netui` | Sonnet 5 | medium | **ready to paste** — safe alongside |
 | 1.1 · 1.2 · 1.3 | GodotSteam · NetTransport · LOCAL loop | | | | done and verified |
 | 2.2 | Content framework | `content` | Sonnet 5 | medium | done — prompt kept for reference |
 
@@ -62,12 +63,24 @@ autoload/steam_lobby.gd · autoload/net_transport.gd · project.godot · tools/s
 **That includes `project.godot`.** Any task that would register an autoload must wait for 1.4 to
 close, or it will be blocked at commit. 1.10 needs no autoload, which is why it's still safe.
 
-**1.10 is the only thing to start right now.** It shares no files with 1.4, runs on cheap quota, and
-it's what makes 1.5–1.8 debuggable — so it earns its slot before the tasks that need it, not after.
+**Two are startable right now**, 1.9 and 1.10. Neither touches a file `lobby` holds, and they don't
+collide with each other. 1.9 is the more urgent of the two — it's the last unspiked risk in
+`ARCHITECTURE.md` §6, and if it comes back red the fallback rewrites how every replicated system in
+the project is written, so it wants answering *before* 1.5–1.8 assume it's fine.
 
-**1.5 and 1.6 are genuinely unblocked** now that 1.3 gives you two windows, but both need scene work
-(`MultiplayerSpawner`, `MultiplayerSynchronizer` on the player) that only you can do. They need a
-spec conversation before they need a prompt — ask for one when 1.4 lands.
+### Blocked, and why — so nobody writes a prompt that gets rejected at commit
+
+| # | Blocked on | Clears when |
+|---|---|---|
+| 1.7 | `autoload/net_transport.gd` — held by `lobby` | 1.4 closes |
+| 1.11 | same file; the version handshake hooks the connection path | 1.4 closes |
+| 1.5 · 1.6 · 1.8 | Scene work — `MultiplayerSpawner`/`MultiplayerSynchronizer` on the player, which only Sequoyah can wire | A spec conversation, not a prompt. Ask for one. |
+| 1.12 | Two VMs, plus F-009 (`.godot/extension_list.cfg` is gitignored, so GodotSteam won't load from a fresh clone) | F-009 gets a real fix |
+| 4.0b | A Windows guest existing at all | You provision it |
+
+1.5–1.8 are the ones to resist starting early. They look unblocked now that 1.3 gives you two windows,
+but each needs a decision about node layout that's cheaper to make in conversation than to discover in
+a rejected prompt.
 
 The foundation is settled: `NetTransport` (1.2), `DevLaunch` (1.3) and GodotSteam 4.21 (1.1) are all
 registered, booting and verified, so every prompt here is written against a real API rather than a
@@ -78,6 +91,119 @@ proposed one.
 
 M0 is closed. The 0.7 and 0.8 spike prompts that used to live here shipped in `9a1bc19` / `9ebe47b` —
 their results are D-015 and D-016 in `DECISIONS.md`. The unmeasured half of R2 is now task `4.0a`.
+
+---
+
+## Task 1.9 — Spike R1: 6 peers, 200 synced entities
+
+> **Model: Opus 5 · effort high** · agent name `load`
+> `ARCHITECTURE.md` §6 R1. If this is red, the fallback is hand-rolled binary state packets
+> over raw ENet — a rewrite of how every replicated system is written. Worth knowing before
+> 1.5–1.8 build on the assumption it's fine.
+
+```
+You're working on MIRE, a co-op survival game in Godot 4.7.1. Read AGENTS.md first — it is
+the protocol every agent here follows. Then:
+
+    MIRE_AGENT=load .agent/bin/agent start load
+    MIRE_AGENT=load .agent/bin/agent claim 1.9 core/net/dummy_replicant.gd tools/bench_replication.gd
+
+Keep the MIRE_AGENT=load prefix on EVERY .agent/bin/agent command AND on `git commit`. Do
+not use `export` — each shell call is a fresh process, so the value is lost and your claims
+get filed under the wrong agent with no error. `agent ship` handles this itself.
+
+TASK: Spike R1. Answer one question with measurements, not opinion:
+"Can Godot's high-level multiplayer carry 6 peers and 200 synced entities?"
+
+This is a SPIKE — throwaway code that produces a number. Do not build the real replication
+layer. Do not make it pretty. Measure, report, stop.
+
+WHAT ALREADY EXISTS — use it, do not rebuild it:
+
+  NetTransport is a registered, verified autoload (task 1.2). Relevant API:
+    func host(mode: NetConfig.Mode, port: int = -1) -> Error
+    func join(mode: NetConfig.Mode, address: String, port: int = -1) -> Error
+    func leave() -> void
+    func peer_ids() -> PackedInt32Array
+    func local_peer_id() -> int
+    signal peer_joined(peer_id: int) / peer_left(peer_id: int)
+    signal server_started() / connected_to_host() / connection_failed(reason: String)
+
+  NetConfig is a class_name, NOT an autoload. NetConfig.MAX_PLAYERS = 6,
+  NetConfig.DEFAULT_PORT = 27515, NetConfig.LOG_CHANNEL = &"net".
+  join(Mode.LOCAL, "") resolves to loopback and the default port.
+
+  DevLaunch (core/dev/dev_launch.gd, task 1.3) already does headless multi-instance
+  host/join via `--host` / `--client` user args, with a bounded retry. Read it — it is the
+  one file worth opening — and drive your peers the same way rather than inventing a second
+  launch mechanism.
+
+  MireLog statics: MireLog.info/warn/error/debug(channel: StringName, message: String).
+
+WRITE EXACTLY TWO FILES:
+
+1. core/net/dummy_replicant.gd — a minimal host-authoritative entity that moves and
+   replicates. Position plus a couple of small fields, nothing else. Build its
+   MultiplayerSynchronizer and SceneReplicationConfig IN CODE — you cannot create .tscn
+   files, and this must run headless with no scene authoring.
+
+2. tools/bench_replication.gd — extends SceneTree, headless. Spawns 1 host + 5 clients
+   (six peers total, the real MAX_PLAYERS) and 200 dummy replicants under host authority.
+
+MEASURE AND PRINT:
+   - bytes/sec up and down at the host, and at one client
+   - bytes/sec per entity, so the number scales to other entity counts
+   - host CPU: ms/frame spent in replication
+   - client CPU: same
+   - how all of the above change at replication_interval 0 (every frame) vs 30Hz vs 15Hz
+   - packet loss / delivery failures, if the peer reports any
+
+  Run it yourself:
+    /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script tools/bench_replication.gd
+
+SUCCESS CRITERIA — state clearly which the measurements support. The budget that matters is
+a typical home upload, so treat ~1 Mbit/s (125 KB/s) at the host as the ceiling for 5
+clients, and remember real gameplay adds far more than 200 dummies:
+   GREEN : host up < 60 KB/s at 15-30Hz and CPU under ~2 ms/frame → §2.5 interest management
+           is enough; 1.5-1.8 proceed as designed
+   AMBER : fits only with aggressive intervals or culling → say exactly which knobs bought
+           it, because 1.8 then has to ship them rather than treat them as optional
+   RED   : cannot fit → the §6 R1 fallback (hand-rolled binary state packets over raw ENet)
+           is on the table. Do not just report red: sketch what that costs us, since it
+           changes how every replicated system in the project gets written.
+
+IMPORTANT — measure interest management too. §2.5 says enemies/props replicate only within
+~120m and replication_interval is set per class (players 30Hz, enemies 15Hz, props
+on-change). Task 1.8 implements that. Your job is to produce the numbers that tell 1.8
+whether visibility filtering is optional or mandatory, so measure with filters OFF and ON.
+
+AUTHORITY: host-authoritative, per docs/ARCHITECTURE.md §2.2 — the host owns every dummy
+and clients only receive. Do not give clients authority over anything here.
+
+CONSTRAINTS:
+- .gd only. NEVER create or edit .tscn/.tres/project.godot — another agent holds
+  project.godot right now (task 1.4) and you would be blocked at commit. You need no
+  autoload for this; if you conclude you do, STOP and ask rather than claiming that file.
+- Typed GDScript throughout.
+- Deterministic movement for the dummies: seeded RandomNumberGenerator only, never global
+  randi(), so two runs are comparable.
+- Don't explore beyond core/dev/dev_launch.gd. Everything else you need is above.
+
+FINISH WITH:
+    MIRE_AGENT=load .agent/bin/agent done 1.9 "<the numbers, and which of GREEN/AMBER/RED>"
+    MIRE_AGENT=load .agent/bin/agent ship 1.9 "M1: replication load spike (R1)"
+
+`ship` commits only this task's files. Never `git add -A` — other agents work in this same
+directory and you would commit their half-written files.
+
+THEN, as your final chat message, tell me:
+  - the actual numbers and the exact command that produced them
+  - which of GREEN/AMBER/RED they support, and if AMBER, exactly which knobs task 1.8 now
+    has to ship as mandatory rather than optional
+  - whether anything you measured was simulated rather than real (six peers on one machine
+    over loopback is NOT a network — say plainly what that does and does not tell us)
+  - the text to paste into docs/DECISIONS.md as the R1 verdict
+```
 
 ---
 
