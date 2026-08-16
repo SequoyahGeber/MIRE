@@ -58,6 +58,15 @@ doesn't.
 (`8d6ddab`, `ef1bc16`, `4f17bcd`), and 1.10 is now actually *wired* (`9f56451`). No file is claimed;
 `1.6`, `1.7`, `1.8`, `1.11` are ready to pick up and `agent brief <id>` will print each one.
 
+**Three open findings were closed this session, all of them process rather than game code:** F-013
+(the `&"synced"` convention, D-024 — 1.8 inherits it), F-015 (an F-number is a task id, so a finding
+is startable exactly like a roadmap task), and F-007 (agents name themselves from their chat; no
+`MIRE_AGENT`, no prefix, commits included). Practical effect on starting work: *"start 1.6"* and
+*"fix F-004"* are now the same shape of instruction, and neither needs a name attached.
+
+The **Agent name** column below is historical — those names were hand-assigned under the old scheme.
+New tasks get their agent name automatically, so leave the column blank when you add a row.
+
 | # | Task | Agent name | Model | Effort | Status |
 |---|---|---|---|---|---|
 | 1.5 | Networked player — spawner + synchronizer | `spawn` | Opus 5 | high | **done** — runs; prompt kept for reference |
@@ -101,6 +110,22 @@ hysteresis** (leave-radius larger than enter-radius) so boundary-hugging entitie
 because that is what maps to the bandwidth budget above. The name lives once as
 `NetConfig.SYNCED_GROUP` and is joined at construction, next to the authority assignment; 1.8's
 per-class synchronizers just do the same and the panel's count stays meaningful.
+
+### Headless verification you inherit — extend these rather than writing a fourth harness
+
+All three run without an editor, exit non-zero on failure, and are the pattern 1.6/1.7/1.8 should
+copy. **Verify your own work with them; do not ask Sequoyah to press Play and report back.**
+
+| Tool | What it proves | Command |
+|---|---|---|
+| `tools/synced_group_check.gd` | Every synchronizer construction site joins `&"synced"` — builds both for real and reads the live tree back | `Godot --headless --path . --script tools/synced_group_check.gd` |
+| `tools/net_debug_panel_check.gd` | The panel's 19 checks, including a real ENet host+client session with genuine RTT and bandwidth | same form |
+| `tools/bench_replication.gd` | 1.9's spike: 6 peers, 200 entities, interest management on and off | same form |
+
+Two process notes that cost time when they were learned: a `--script` main loop compiles before
+autoloads register, so `load()` them at runtime rather than preloading at class scope (**F-011**); and
+nodes added in `_initialize()` have not run `_ready()` yet, so anything a node builds for itself must
+be checked on the next frame via `call_deferred`.
 
 ### What 1.5 established — write 1.6, 1.7 and 1.8 against this, not against a guess
 
@@ -154,7 +179,7 @@ any further replication prompt, and don't reintroduce "tell Sequoyah to add a sy
 | # | Blocked on | Clears when |
 |---|---|---|
 | 1.6 · 1.7 · 1.8 · 1.11 | ~~1.5~~ **Nothing. All four are writable now** against the layout above | cleared by `8d6ddab` |
-| 1.12 | Two VMs, plus F-009 (`.godot/extension_list.cfg` is gitignored, so GodotSteam won't load from a fresh clone) | F-009 gets a real fix |
+| 1.12 | The **Windows** guest (the Ubuntu KVM guest exists and has run headless work — `ARCHITECTURE.md` §6a, F-006), plus F-009: `.godot/extension_list.cfg` is gitignored, so GodotSteam does not load from a fresh clone on any other machine | F-009 gets a real fix, and you provision Windows |
 | 4.0b | A Windows guest existing at all | You provision it |
 
 The foundation is settled: `NetTransport` (1.2), `DevLaunch` (1.3), `SteamLobby` (1.4) and GodotSteam
