@@ -401,3 +401,18 @@ Notes along the way:
 Files: `world/gen/test_map_props.gd`, `project.godot`, `docs/ROADMAP.md`
 
 Commit at time of writing: `14138a5`
+
+---
+
+### DONE · 1.11 · bram · 2026-08-16T17:14:58+00:00
+
+**Protocol/build version handshake — refuse mismatched builds with a clear message, not a desync**
+
+NetVersion.mismatch_reason() + PROTOCOL_VERSION written and verified via tools/handshake_check.gd (real ENet round-trip, matched and mismatched cases both green). Wiring into autoload/net_transport.gd left undone — that file was claimed by 1.7 (tine) when this task started, so integrating would have been two agents in one file. Exact drop-in (RPC methods, call sites, signal reuse) documented in docs/DELEGATION.md Current state. Filed F-016 (new class_name scripts need preload() in --script harnesses until an editor pass).
+
+Notes along the way:
+- Wrote NetVersion.mismatch_reason() (pure) and tools/handshake_check.gd (real ENet round-trip, all green). Could not wire the send/reject into autoload/net_transport.gd — tine holds it for 1.7. Drop-in documented in DELEGATION.md Current state. Filed F-016: new class_name scripts need preload(), not bare reference, in --script harnesses until an editor pass refreshes global_script_class_cache.cfg.
+
+Files: `core/net/net_version.gd`, `tools/handshake_check.gd`
+
+Commit at time of writing: `0a267f5`

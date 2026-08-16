@@ -1,6 +1,135 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "autoload/net_interp.gd": {
+      "agent": "ash",
+      "at": "2026-08-16T17:07:25+00:00",
+      "task": "1.6"
+    },
+    "autoload/net_transport.gd": {
+      "agent": "tine",
+      "at": "2026-08-16T17:09:20+00:00",
+      "task": "1.7"
+    },
+    "autoload/player_net.gd": {
+      "agent": "birch",
+      "at": "2026-08-16T17:04:00+00:00",
+      "task": "1.8"
+    },
+    "core/dev/dev_launch.gd": {
+      "agent": "tine",
+      "at": "2026-08-16T17:09:20+00:00",
+      "task": "1.7"
+    },
+    "core/net/net_config.gd": {
+      "agent": "birch",
+      "at": "2026-08-16T17:04:00+00:00",
+      "task": "1.8"
+    },
+    "core/net/net_interest.gd": {
+      "agent": "birch",
+      "at": "2026-08-16T17:04:00+00:00",
+      "task": "1.8"
+    },
+    "core/net/net_session.gd": {
+      "agent": "tine",
+      "at": "2026-08-16T17:09:20+00:00",
+      "task": "1.7"
+    },
+    "core/net/remote_interp.gd": {
+      "agent": "ash",
+      "at": "2026-08-16T17:07:25+00:00",
+      "task": "1.6"
+    },
+    "entities/player/player_controller.gd": {
+      "agent": "birch",
+      "at": "2026-08-16T17:04:00+00:00",
+      "task": "1.8"
+    },
+    "project.godot": {
+      "agent": "ash",
+      "at": "2026-08-16T17:07:25+00:00",
+      "task": "1.6"
+    },
+    "tools/interest_check.gd": {
+      "agent": "birch",
+      "at": "2026-08-16T17:04:00+00:00",
+      "task": "1.8"
+    },
+    "tools/interp_check.gd": {
+      "agent": "ash",
+      "at": "2026-08-16T17:07:25+00:00",
+      "task": "1.6"
+    },
+    "tools/session_lifecycle_check.gd": {
+      "agent": "tine",
+      "at": "2026-08-16T17:09:20+00:00",
+      "task": "1.7"
+    }
+  },
+  "in_flight": {
+    "1.6": {
+      "agent": "ash",
+      "files": [
+        "core/net/remote_interp.gd",
+        "autoload/net_interp.gd",
+        "tools/interp_check.gd",
+        "project.godot"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-16T17:11:49+00:00",
+          "by": "ash",
+          "text": "F-004 resolved: engine physics_interpolation (already ON project-wide, F-003) does NOT cover network interpolation. It smooths the 60Hz physics grid to render rate; replication arrives at 30Hz at arbitrary idle-frame times with jitter, so a 33ms staircase survives a 16.7ms smoothing window, and the engine has no notion of arrival time so it cannot jitter-buffer. Both are needed. They also FIGHT: engine interp would re-interpolate our per-frame output across physics ticks. RemoteInterpolator sets physics_interpolation_mode=OFF on the subtree it drives."
+        }
+      ],
+      "started": "2026-08-16T17:07:25+00:00"
+    },
+    "1.7": {
+      "agent": "tine",
+      "files": [
+        "core/net/net_session.gd",
+        "autoload/net_transport.gd",
+        "core/dev/dev_launch.gd",
+        "tools/session_lifecycle_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-16T17:09:23+00:00",
+          "by": "tine",
+          "text": "project.godot is held by ash (1.6) for the NetInterp autoload \u2014 writing NetSession first, taking project.godot last to register it. Nothing else of mine touches it."
+        }
+      ],
+      "started": "2026-08-16T17:09:20+00:00"
+    },
+    "1.8": {
+      "agent": "birch",
+      "files": [
+        "core/net/net_interest.gd",
+        "core/net/net_config.gd",
+        "entities/player/player_controller.gd",
+        "autoload/player_net.gd",
+        "tools/interest_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-16T17:13:55+00:00",
+          "by": "birch",
+          "text": "NetInterest.configure(sync, source, class) is the single seam: it sets replication_interval + delta_interval from the \u00a72.5 class table, joins NetConfig.SYNCED_GROUP (D-024), and installs the hysteretic distance filter. Called where authority is set, before add_child (F-012)."
+        },
+        {
+          "at": "2026-08-16T17:13:55+00:00",
+          "by": "birch",
+          "text": "Adding a new class_name breaks every headless --script run until 'Godot --headless --path . --import' rebuilds .godot/global_script_class_cache.cfg, which is gitignored. Cost 10 minutes to diagnose; the fix is one command."
+        },
+        {
+          "at": "2026-08-16T17:13:55+00:00",
+          "by": "birch",
+          "text": "MultiplayerSynchronizer in 4.7.1 has no is_visible_to(); get_visibility_for() reads back only the MANUAL override, not the filter result. Whether the engine actually calls our filter can only be proven in a live session \u2014 hence part 3 of the harness."
+        }
+      ],
+      "started": "2026-08-16T17:04:00+00:00"
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
       "agent": "larch",
@@ -51,6 +180,11 @@
       "agent": "spawn",
       "at": "2026-08-16T08:15:22+00:00",
       "task": "1.5"
+    },
+    "core/net/net_version.gd": {
+      "agent": "bram",
+      "at": "2026-08-16T17:14:58+00:00",
+      "task": "1.11"
     },
     "core/util/mire_log.gd": {
       "agent": "claude",
@@ -141,6 +275,11 @@
       "agent": "claude",
       "at": "2026-08-16T02:20:14+00:00",
       "task": "0.10"
+    },
+    "tools/handshake_check.gd": {
+      "agent": "bram",
+      "at": "2026-08-16T17:14:58+00:00",
+      "task": "1.11"
     },
     "tools/net_debug_panel_check.gd": {
       "agent": "netui",
@@ -330,9 +469,11 @@
       "title": "Network debug panel: ping, bandwidth up/down, entity count, authority display"
     },
     "1.11": {
+      "done_at": "2026-08-16T17:14:58+00:00",
+      "done_by": "bram",
       "est": "1.5",
       "milestone": "M1",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Protocol/build version handshake \u2014 refuse mismatched builds with a clear message, not a desync"
     },
@@ -382,21 +523,21 @@
     "1.6": {
       "est": "2",
       "milestone": "M1",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "Remote-player interpolation so other players don't stutter"
     },
     "1.7": {
       "est": "2",
       "milestone": "M1",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "Connection lifecycle: join mid-session, disconnect, host quits, timeout handling"
     },
     "1.8": {
       "est": "1.5",
       "milestone": "M1",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "Interest management: visibility filters + per-class `replication_interval` (`ARCHITECTURE.md` \u00a72.5)"
     },
