@@ -218,54 +218,57 @@ these known gaps" is a standing decision that shapes M7 and M8, not just a findi
 
 ---
 
-### F-007 · Unset `MIRE_AGENT` silently resolves to `claude` instead of failing
+### F-007 · Forgetting `MIRE_AGENT` makes you silently impersonate the last agent to run `agent start`
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-15 by nav during 0.8/0.9
 
-When `MIRE_AGENT` is not set, agent identity falls back to `claude` — a real agent name — with no
-warning. Demonstrated directly:
+`whoami()` in `.agent/bin/agent:81` resolves identity as `MIRE_AGENT` → the shared `.agent/session`
+file → die. The session file holds exactly one name, so whoever ran `agent start` most recently owns
+it. With two agents live, the one that forgets the export silently acts as the other:
 
 ```
 $ export MIRE_AGENT=nav && .agent/bin/agent check    ->  session: nav
-$ env -u MIRE_AGENT   .agent/bin/agent check         ->  session: claude
+$ env -u MIRE_AGENT   .agent/bin/agent check         ->  session: claude   # the other agent's start
 ```
 
-The failure this causes: any agent that forgets the export, or any tooling that invokes `git` with a
-scrubbed environment, commits under `claude`'s identity. Its claims are then checked against the wrong
-agent, so the check can pass when it should fail — and it fails *open*, quietly. With one agent per
-name that is invisible; with `nav` and `claude` running at once it is the exact collision the claim
-system exists to catch.
+The consequences are quiet and compounding. Claim checks are evaluated against the wrong agent, so a
+real collision can pass. The `in_grace()` window at `:394` is keyed to `r["agent"] == me`, so a
+mislabelled session also loses the 6-hour grace on its own just-released claims and gets warned about
+files it legitimately owns — which is what produced the spurious warning on `bdf8587`.
 
-Fix: fall back to an explicit `unknown` that fails the check loudly, rather than to a name that
-belongs to a real agent. Better still, read the active session from `.agent/state.json` when the
-variable is absent.
+This is a known trade-off, not an oversight: the comment at `:82` explains that `MIRE_AGENT` exists
+precisely so parallel agents don't clobber the shared session file. The gap is that forgetting it
+fails *silently* rather than loudly.
 
-**Note on how this was filed:** the original version of this entry claimed the pre-commit hook does
-not inherit `MIRE_AGENT` across the `git` process boundary. That was wrong — the hook inherits the
-environment normally. Commits `bdf8587`, `9ebe47b` and `70d5635` printed `session: claude` because the
-agent that made them ran each shell command in a fresh process and had not re-exported the variable in
-those particular ones. The residual defect is the silent fallback described above, not the hook.
+Fix, if we want one: warn when the resolved identity comes from the session file while claims exist
+under a different agent — the one case where the fallback is probably wrong. Cheaper alternative: just
+make "always export `MIRE_AGENT`" load-bearing in `AGENTS.md` rather than a parenthetical.
+
+**Filed wrong twice, corrected here.** v1 blamed the hook for not inheriting the environment — false,
+it inherits normally. v2 claimed a hardcoded fallback to `claude` — also false, there is no such
+constant. Both were guesses made without reading `.agent/bin/agent`. Reading it took two minutes and
+would have got this right the first time.
 
 ---
-
-### F-008 · CLAUDE.md's stated close-out order makes the hook warn on your own files
-
-**Area:** process · **Severity:** low · **Found:** 2026-08-15 by nav during 0.8
-
-`CLAUDE.md` says "Before you stop: `agent done` or `agent handoff`, then commit." Following it
-literally produces `⚠ <file> — edited without a claim` on the very files you just finished, because
-`done` releases the claims before the commit is made. Observed on `bdf8587`; committing first and
-running `done` afterwards (`9ebe47b`) was silent.
-
-Harmless once, but it is a warning that appears when you did everything right, which is the fastest
-way to train people to ignore warnings — and F-001 already documents the same hook pushing people
-toward `--no-verify`.
-
-Fix: swap the order in `CLAUDE.md` to commit-then-`done`, or have the hook ignore files whose claim
-was released by the current session within the last few minutes. The doc change is the cheap one.
 
 ---
 
 ## Resolved
 
-_Nothing yet._
+### F-008 · CLAUDE.md's close-out order makes the hook warn on your own files — **won't fix, not a defect**
+
+**Area:** process · **Filed:** 2026-08-15 by nav during 0.8 · **Resolved:** 2026-08-15 by nav, same day
+
+Filed on the belief that `CLAUDE.md`'s "`agent done`, then commit" ordering causes
+`⚠ <file> — edited without a claim`, because `done` releases claims before the commit runs.
+
+**It doesn't.** `.agent/bin/agent` already handles this: `cmd_done` records released files under
+`st["recent"]` (`:287`) and `in_grace()` (`:394`) suppresses the warning for `RECENT_GRACE_HOURS = 6`.
+The documented order is fine and needs no change.
+
+The warning on `bdf8587` had a different cause. `in_grace()` matches on `r["agent"] == me`, and that
+commit resolved `me` to `claude` rather than `nav`, so the grace record didn't match — a symptom of
+**F-007**, not of the ordering. Fixing this here would have treated the symptom and left the cause.
+
+Kept as a record so nobody refiles it. Anyone who sees this warning after a correct close-out should
+check their `MIRE_AGENT`, not the docs.
