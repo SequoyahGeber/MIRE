@@ -57,7 +57,7 @@ When it feels right, write the numbers into `DECISIONS.md` so a future refactor 
 |---|---|---|---|---|
 | 0.7 | **Spike R2** — 100 chunked terrain meshes, measure frame times | T2 | coder | 1.5h |
 | 0.8 | **Spike R3** — runtime NavMesh bake on a generated chunk | T2 | coder | 1.5h |
-| 0.10 | **Spike R6** — determinism on Windows + Linux (below) | T0 | you | 1h |
+| 0.10 | **Spike R6** — determinism: Linux ✅ done (D-017), **Windows outstanding** (below) | T0 | you | 30m |
 | 0.9 | Record all spike results in `DECISIONS.md`; pick fallbacks if any failed | T0 | you | 30m |
 
 **0.7 and 0.8 are the ones that matter.** They're the two things most likely to force a redesign, and
@@ -71,14 +71,25 @@ Shipping macOS + Windows + Linux with cross-play. Steam P2P makes cross-play its
 creates one real risk: clients regenerate terrain from a shared seed, and float results aren't
 guaranteed identical across architectures and C libraries.
 
-**Task 0.10 — run this on a Windows machine and a Linux machine:**
+**Linux is done — see D-017.** Noise and PRNG are bit-identical across macOS arm64 and Linux x86_64;
+raw `sin`/`cos`/`pow`/`exp`/`log` are not. §4 stands, and the price is the world-gen safe set now
+written into `ARCHITECTURE.md` §7.
+
+**Task 0.10, remaining — the same two commands on a Windows x86_64 guest:**
 
 ```bash
-godot --headless --path . --script tools/check_determinism.gd
+godot.exe --headless --path . --script tools/check_determinism.gd
 ```
 
-Compare all four hashes against the macOS baseline in `ARCHITECTURE.md` §6a. Same Godot version, or the
-comparison means nothing. **Do this before M4 builds anything on seeded generation.**
+```bash
+godot.exe --headless --path . --script tools/check_determinism_ops.gd
+```
+
+Godot **4.7.1-stable build `a13da4feb`**, or the comparison means nothing. Compare against
+`ARCHITECTURE.md` §6a and fill in the Windows column. MSVC is a third C library, so this is a real
+test and not a formality — but the outcome that matters is narrow: `rng_sequence` and `noise_*` must
+match, and the four rows in the ops probe's *first* group must match. Divergence in the second group
+is expected and already accounted for. **Do this before M4 builds anything on seeded generation.**
 
 ---
 

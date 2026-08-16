@@ -161,6 +161,11 @@ This keeps join bandwidth near zero and is the standard approach. It requires ge
 deterministic given a seed — use explicit `RandomNumberGenerator` instances seeded per-subsystem,
 **never the global `randi()`**, which will desync.
 
+**Measured and confirmed viable (D-017), with one constraint:** everything in the pipeline below must
+stay inside the world-gen safe set in §7 — no `sin`/`cos`/`pow`/`exp`/`log`, because those are not
+bit-identical across CPU architectures. `FastNoiseLite` itself is, which is why this design survives.
+The island falloff is `1.0 - d * d * d`, never `1.0 - pow(d, 3.0)`.
+
 **Pipeline:**
 1. Heightmap from layered noise (`FastNoiseLite`) masked to an island falloff
 2. Biome assignment from height + moisture noise
@@ -337,7 +342,7 @@ fails, that's a *success* — you found it in week 3 instead of month 8.
 | **R3** | **Runtime NavMesh baking on procedural chunks** — the known-hardest part of this project in Godot | M0/M4: bake nav on a generated chunk at runtime, measure hitch | Grid-based A* on the heightmap instead of NavMesh; or pre-bake at gen time and accept longer load |
 | **R4** | Mire grid replication too chatty at scale | M4: worst-case tick, measure bytes | Lower tick rate; send run-length-encoded rows; region-of-interest only |
 | **R5** | GodotSteam breaks on a Godot 4.7 point release | M1: verify, then **pin the Godot version** | Stay pinned; upgrade deliberately, never casually |
-| **R6** | **Seeded world gen diverges between macOS arm64 and Windows x86_64** — two players, same lobby, different islands | M0: run `tools/check_determinism.gd` on both, compare hashes | Host generates and ships a compact heightmap; clients stop regenerating (costs bandwidth on join) |
+| **R6** ✅ | **Seeded world gen diverges between macOS arm64 and Windows x86_64** — two players, same lobby, different islands | M0: run `tools/check_determinism.gd` on both, compare hashes | Host generates and ships a compact heightmap; clients stop regenerating (costs bandwidth on join) |
 
 > **R3 is the one to worry about.** Enemy pathfinding on runtime-generated terrain is where Godot is
 > weakest and where an unprepared project stalls hardest. Spike it in M0, not M5.
@@ -393,7 +398,7 @@ verification remains out of scope.
 
 | Concern | Why it bites | What to do |
 |---|---|---|
-| **World-gen determinism (R6)** | Clients regenerate terrain from a seed (§4). `sin`/`cos`/`pow` are not guaranteed bit-identical across CPU architectures *or across C libraries* — Linux glibc and Windows MSVC can differ even on the same x86_64. Divergence means different islands. | Run `tools/check_determinism.gd` on all three and compare. **Do this before building on §4.** |
+| **World-gen determinism (R6)** — *macOS↔Linux measured, D-017* | Clients regenerate terrain from a seed (§4). `sin`/`cos`/`pow` are **confirmed** not bit-identical across CPU architectures; `FastNoiseLite`, `sqrt` and basic arithmetic **are**. Divergence means different islands. | Keep world gen inside the §7 safe set. Run `tools/check_determinism.gd` on Windows to close the last column. |
 | **Build-version mismatch** | Steam updates clients at different times; a 1.2 host and a 1.1 client desync in confusing ways. | Protocol-version handshake on join; refuse mismatched builds with a clear message. Task 1.11. |
 | **Path case sensitivity** | Linux filesystems are case-**sensitive**; macOS and Windows usually are not. A wrong-case `res://` path works on your Mac and breaks on Linux. | Always match case exactly. Useful side effect: **test on Linux and this class of bug surfaces immediately.** |
 | **GodotSteam binaries** | The GDExtension ships per-platform libraries. A platform-specific download fails to load on the others. | Install the full release with all platform binaries; verify the `.gdextension` lists macOS, Windows and Linux. |
@@ -406,20 +411,35 @@ verification remains out of scope.
 
 ### Determinism baseline
 
-Recorded from `tools/check_determinism.gd`. **Run on Windows and Linux and fill in the blanks before
-building anything on §4.**
+Recorded from `tools/check_determinism.gd`. **Windows is still unmeasured — fill it in before M4.**
 
-| | macOS arm64 | Windows x86_64 | Linux x86_64 |
+| | macOS arm64 | Linux x86_64 | Windows x86_64 |
 |---|---|---|---|
-| `rng_sequence` | `0077d6b42cd6f78f` | — | — |
-| `noise_simplex` | `181e558b7b4841cf` | — | — |
-| `noise_perlin` | `6c7a944516e3e64f` | — | — |
-| `float_math` | `063eec62c34fa4ee` | — | — |
+| `rng_sequence` | `0077d6b42cd6f78f` | `0077d6b42cd6f78f` ✅ | — |
+| `noise_simplex` | `181e558b7b4841cf` | `181e558b7b4841cf` ✅ | — |
+| `noise_perlin` | `6c7a944516e3e64f` | `6c7a944516e3e64f` ✅ | — |
+| `float_math` | `063eec62c34fa4ee` | `187304c753e6e1ce` ❌ | — |
 
-Godot 4.7.1-stable in every case — a version difference invalidates the comparison.
+Godot 4.7.1-stable build `a13da4feb` in every case — a version difference invalidates the comparison.
+Linux measured 2026-08-15 on an Unraid KVM guest (Ryzen 5 3600X, Ubuntu, glibc).
 
-If `rng_sequence` differs, nothing seeded can be trusted and the fallback is mandatory. If only
-`noise_*` or `float_math` differ, the fallback applies to terrain only.
+`float_math` bundles six operations, so a follow-up probe split them per-operation. The result (D-017)
+is that the divergence falls exactly on the IEEE-754 line:
+
+| Bit-identical across architectures | Diverges (1 ULP, compounding) |
+|---|---|
+| `+ − × ÷` — correctly rounded by IEEE-754 | `sin` `cos` `tan` |
+| `sqrt` — also correctly rounded by IEEE-754 | `exp` `log` |
+| `Vector2/3.length()` — built on `sqrt` | `pow`, at any exponent |
+| `FastNoiseLite` — integer hash + polynomial, never calls libm | |
+| Seeded `RandomNumberGenerator` — integer PRNG | |
+
+**So §4 stands, conditional on the §7 world-gen safe-set rule.** The noise that actually builds the
+island is bit-identical; only raw libm calls diverge, and world gen does not need them. If
+`rng_sequence` or `noise_*` had differed, the §6 R6 fallback would have been mandatory instead.
+
+Not yet covered: `TYPE_CELLULAR` and domain warp are separate code paths and were not tested. Re-run
+the probe before world gen uses either.
 
 ---
 
@@ -434,6 +454,13 @@ If `rng_sequence` differs, nothing seeded can be trusted and the fallback is man
   count frames** (§5a). Refresh rate must never change how the game plays.
 - **Pin the Godot version.** Record it in `DECISIONS.md`. Do not upgrade mid-milestone.
 - No `randi()` in world generation — always a seeded `RandomNumberGenerator`.
+- **No transcendentals in world generation.** Anything a client regenerates from a seed (§4) may use
+  only the safe set: `+ − × ÷`, `sqrt`, `Vector2/3.length()`, `FastNoiseLite`, and a seeded
+  `RandomNumberGenerator`. **`sin` `cos` `tan` `exp` `log` `pow` are banned there** — they resolve to
+  the platform's libm, which is not bit-identical across architectures, and one ULP of drift means two
+  players stand on different islands (D-017). Write `pow(d, 3.0)` as `d * d * d`; it is exact, and
+  faster. Outside world gen — rendering, UI, animation, anything not regenerated from a seed — they
+  are fine.
 
 ---
 

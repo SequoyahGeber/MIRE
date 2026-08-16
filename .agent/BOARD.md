@@ -6,7 +6,9 @@
 
 ## In flight
 
-_Nothing in flight._
+| Task | Agent | Started | Files claimed |
+|---|---|---|---|
+| **0.10** Spike R6 — run `tools/check_determinism.gd` on Windows and Linux, compare against the macOS baseline in `ARCHITECTURE.md` §6a | claude | 2026-08-16 02:17 | `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, `docs/FINDINGS.md`, `docs/NEXT.md`, `tools/check_determinism_ops.gd` |
 
 ## Milestones
 
@@ -35,7 +37,7 @@ _Nothing in flight._
 | ✅ | **0.7** Spike R2 — generate 100 chunked terrain meshes from noise, measure frame times & hitches | T2 | 1.5 | done |
 | ✅ | **0.8** Spike R3 — bake a `NavigationRegion3D` on a runtime-generated chunk, measure the hitch | T2 | 1.5 | done |
 | ✅ | **0.9** Record spike results in `DECISIONS.md`. If R3 failed, decide the fallback now. | T0 | 0.5 | done |
-| ⬜ | **0.10** Spike R6 — run `tools/check_determinism.gd` on Windows and Linux, compare against the macOS baseline in `ARCHITECTURE.md` §6a | T0 | 1 | todo |
+| 🔵 | **0.10** Spike R6 — run `tools/check_determinism.gd` on Windows and Linux, compare against the macOS baseline in `ARCHITECTURE.md` §6a | T0 | 1 | in_flight |
 
 ## Done
 

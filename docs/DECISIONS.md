@@ -168,6 +168,32 @@ that should stay separated once cliffs and water exist. Either pushes us to bake
 `agent_radius = 0` (measured: 0.00 m gap, connects on the default margin) and carry the agent radius
 in `NavigationAgent3D` instead.
 
+### D-017 · 2026-08-15 · R6 is GREEN for macOS↔Linux — §4 shared-seed world gen stands, and transcendentals are banned from it
+`tools/check_determinism.gd` on macOS arm64 and Linux x86_64 (Godot 4.7.1-stable `a13da4feb`, both):
+`rng_sequence`, `noise_simplex` and `noise_perlin` are **bit-identical**; `float_math` is not
+(`063eec62c34fa4ee` vs `187304c753e6e1ce`). A follow-up per-operation probe put the divergence exactly
+on the IEEE-754 line. Correctly-rounded-by-spec operations match everywhere: `+ − × ÷`, `sqrt`, and
+`Vector2/3.length()` built on it. Everything routed to the platform's libm diverges by ~1 ULP:
+`sin`, `cos`, `tan`, `exp`, `log`, and `pow` at any exponent. **`FastNoiseLite` is in the safe group** —
+integer hashing plus polynomial interpolation, it never calls libm — and it is the thing that actually
+generates the island.
+
+So the §6 R6 fallback (host ships a heightmap) is **not adopted**. Clients keep regenerating from a
+seed, and the cost is a coding rule rather than join bandwidth: `ARCHITECTURE.md` §7 now bans
+transcendentals from anything regenerated from a seed, and §4's island falloff becomes `1.0 - d*d*d`
+instead of `1.0 - pow(d, 3.0)` — exact, and faster. Outside world gen they remain fine.
+
+Method note: measured on an Unraid KVM guest, because the guest is x86_64. A UTM guest on the MacBook
+would have held the CPU architecture constant and returned a green result that meant nothing (F-006).
+The trap this decision avoided is the reverse of the obvious one — the risk register expected noise to
+break and it didn't; what broke was the falloff maths nobody was worried about.
+
+**Would change my mind:** (1) **Windows x86_64 disagreeing on `rng_sequence` or `noise_*`** — MSVC is a
+third C library and is still unmeasured; that result would reinstate the fallback outright. (2) World
+gen needing `TYPE_CELLULAR` or domain warp, which are separate code paths and untested. (3) Any future
+requirement for lockstep simulation beyond terrain, where the ban would have to widen from world gen
+to all shared simulation and would start costing real ergonomics.
+
 ---
 
 ## Template

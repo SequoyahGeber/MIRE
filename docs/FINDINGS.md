@@ -157,9 +157,13 @@ quick "does it launch on Linux" checks where architecture is irrelevant.
 
 What this does and doesn't close:
 
-- **0.10 — fully closed.** `check_determinism.gd` is headless and compute-only; no GPU, no display, no
-  Steam. A Godot headless binary in an x86_64 Linux guest and an x86_64 Windows guest fills in both
-  empty columns of the §6a table.
+- **0.10 — approach confirmed, Linux column done 2026-08-15.** `check_determinism.gd` is headless and
+  compute-only; no GPU, no display, no Steam. The Ubuntu guest ran it with no `sudo` and no extra
+  packages — `wget` and `rsync` were already present, so the project went over by `rsync` from the Mac
+  rather than `git clone`, sidestepping credentials on the guest entirely. Result in **D-017**: noise
+  and PRNG are bit-identical, raw libm calls are not. The Windows guest still has to fill the last
+  column. Practical note for whoever builds it: drive the guest over SSH, not the noVNC console —
+  pasting in is awkward and copying results back out is worse.
 - **7.12 — partially, and the gap is now confirmed rather than hypothetical.** The server's GTX 1070
   is already passed through to Ollama and Plex, so it is not available to a VM without taking it from
   services in use. Guests will render in software. **Second obstacle, found 2026-08-15 while building
