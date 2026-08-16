@@ -158,3 +158,38 @@ Notes along the way:
 Files: `world/chunk/nav_bake_probe.gd`, `tools/bench_navbake.gd`
 
 Commit at time of writing: `9a1bc19`
+
+---
+
+### DONE · 0.9 · nav · 2026-08-16T00:41:31+00:00
+
+**Record spike results in `DECISIONS.md`. If R3 failed, decide the fallback now.**
+
+Filed both spike verdicts in docs/DECISIONS.md.
+
+D-015 (R2, GREEN): chunked terrain meshing stays in GDScript. 0.330 ms/chunk single-threaded,
+0.112 ms amortized threaded, 43 KB/chunk. No GDExtension, no C#, no threading until proven necessary.
+Flagged the gap the R2 journal entry itself raised: COLLISION SHAPE GENERATION IS STILL UNMEASURED.
+R3 spiked navigation baking, not physics cooking — those are different things and the untested half
+of R2 stayed untested. Worth its own spike before M4 commits to a chunk streaming budget.
+
+D-016 (R3, GREEN): runtime NavMesh baking stays; enemy AI keeps NavigationServer3D and the
+grid-A*-on-heightmap fallback in ARCHITECTURE.md 6 R3 is dropped. 0.034 ms worst main-thread block
+across a 24-chunk streaming episode. Operative rule recorded: map_set_edge_connection_margin must
+exceed 2*agent_radius (1.10 m at r=0.5) or agents cannot path across a chunk boundary at all.
+
+The three silent traps (triangle winding, false map-ready signals, cell_size mismatch) are NOT in
+DECISIONS.md — they are findings, not decisions. They live in the code comments in
+world/chunk/nav_bake_probe.gd and tools/bench_navbake.gd, and in the 0.8 journal entry. If they
+should be in docs/FINDINGS.md, that file was unclaimed and another agent was active in the docs, so
+I left it alone.
+
+PROTOCOL NOTE: committing BEFORE 'agent done' avoids the 'edited without a claim' hook warning that
+0.8 produced by following CLAUDE.md's stated order. Also: the pre-commit hook reported 'session:
+claude' rather than 'nav' — it runs in a fresh shell that does not inherit MIRE_AGENT, so agent
+identity is not resolved correctly from inside the hook. Check passed anyway, but with agents in
+parallel that is the exact case the claim system exists to catch.
+
+Files: `docs/DECISIONS.md`
+
+Commit at time of writing: `9ebe47b`

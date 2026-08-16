@@ -7,6 +7,11 @@
       "at": "2026-08-15T21:53:55+00:00",
       "task": "1.2"
     },
+    "docs/DECISIONS.md": {
+      "agent": "nav",
+      "at": "2026-08-16T00:41:31+00:00",
+      "task": "0.9"
+    },
     "entities/player/player.tscn": {
       "agent": "claude",
       "at": "2026-08-15T21:46:15+00:00",
@@ -127,9 +132,11 @@
       "title": "Spike R3 \u2014 bake a `NavigationRegion3D` on a runtime-generated chunk, measure the hitch"
     },
     "0.9": {
+      "done_at": "2026-08-16T00:41:31+00:00",
+      "done_by": "nav",
       "est": "0.5",
       "milestone": "M0",
-      "status": "todo",
+      "status": "done",
       "tier": "T0",
       "title": "Record spike results in `DECISIONS.md`. If R3 failed, decide the fallback now."
     },
