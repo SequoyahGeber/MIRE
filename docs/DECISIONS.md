@@ -130,6 +130,44 @@ exploration is the single most expensive agent activity.
 **Would change my mind:** the coders producing work that needs so much rework that planning-then-
 delegating costs more than doing it directly.
 
+### D-015 · 2026-08-15 · R2 is GREEN — chunked terrain meshing stays in GDScript
+`tools/bench_chunks.gd` builds a 32 m chunk (33×33 verts, 2048 tris) in **0.330 ms single-threaded**,
+or 0.112 ms/chunk amortized through `WorkerThreadPool` — 24× under the 8 ms threshold, so we can
+build 50 chunks in a single main-thread frame before threading enters the picture. `SurfaceTool` is
+7% slower than writing `ArrayMesh` arrays directly, which is close enough that we use whichever reads
+better. Memory is 43 KB/chunk live. Seeded generation is deterministic (same seed → identical verts),
+which R6 still has to confirm holds across platforms.
+No GDExtension, no C#, no threading until something proves it necessary.
+**Would change my mind:** the two costs this spike did not measure turning out to dominate — GPU
+upload (it ran headless against the dummy renderer) and **collision shape generation, which is still
+untested**; R3 measured *navigation* baking, not physics. If `ConcavePolygonShape3D` cooking costs
+more than the mesh build, chunk streaming gets rebudgeted around it, not around mesh generation.
+
+### D-016 · 2026-08-15 · R3 is GREEN — runtime NavMesh baking stays; enemy AI keeps NavigationServer3D
+`tools/bench_navbake.gd` measured **0.034 ms of worst-case main-thread block across a realistic
+24-chunk streaming episode** (bake, attach, retire a 3×3 live window), against a 2 ms budget. The
+blocking bake costs 9.2 ms per 32 m chunk — 55% of a frame — so the rule is that
+`bake_from_source_geometry_data_async` is the only bake we ever call; submitting one costs 0.004 ms
+and attaching the finished region to a live map costs 0.003 ms. **The grid-A*-on-heightmap fallback
+in `ARCHITECTURE.md` §6 R3 is not needed**, and we keep off-mesh links, dynamic obstacle avoidance
+and `NavigationAgent3D` steering for free. R3 was the risk most likely to reshape the enemy design;
+it didn't.
+Chunk seams connect, but not with the defaults and not by the obvious route. Independent bakes leave
+a hole exactly `2 × agent_radius` wide (1.00 m measured) because Recast erodes inward from the
+geometry edge, and the default `edge_connection_margin` of 0.25 m cannot bridge it — agents simply
+cannot path across a chunk boundary. **Set `map_set_edge_connection_margin` above 2 × agent_radius**
+(1.10 m for our 0.5 m radius). `filter_baking_aabb` and `border_size` both *shrink* the result and
+make it worse; a negative control confirms the wide margin does not link chunks 32 m apart.
+Consequences for M4: one bake in flight at a time (16 fired in one frame blocks 6.8 ms), `cell_size`
+stays at 0.25 m (scaling is steeply superlinear — 0.1 m costs 80.7 ms), per-chunk bakes rather than
+one large region (a 4×4 bake costs 7.3 ms/chunk vs 9.6 ms for a single chunk, so there is nothing to
+amortize), and map `async_iterations` stays on. Pathfinding is host-authoritative per §2.2.
+**Would change my mind:** the block reappearing once real geometry — rocks, structures, `MultiMesh`
+scatter — is in the source data rather than a bare heightmap, or the 1.10 m margin bridging terrain
+that should stay separated once cliffs and water exist. Either pushes us to bake with
+`agent_radius = 0` (measured: 0.00 m gap, connects on the default margin) and carry the agent radius
+in `NavigationAgent3D` instead.
+
 ---
 
 ## Template
