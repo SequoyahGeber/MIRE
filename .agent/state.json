@@ -3,9 +3,9 @@
   "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
-      "agent": "larch",
-      "at": "2026-08-16T16:55:25+00:00",
-      "task": "F-007"
+      "agent": "vane",
+      "at": "2026-08-16T23:24:50+00:00",
+      "task": "F-026"
     },
     ".gitignore": {
       "agent": "flint",
@@ -1406,9 +1406,9 @@
     "1.12": {
       "est": "1.5",
       "milestone": "M1",
-      "status": "todo",
+      "status": "blocked",
       "tier": "T0",
-      "title": "Cross-platform join test \u2014 Mac \u2194 Windows \u2194 Linux in one lobby, over Steam"
+      "title": "DEFERRED to after 6.10 (D-030) \u2014 do not start. Cross-platform join test, Mac \u2194 Windows \u2194 Linux in one lobby over Steam. Transport is proven; only the evidence ceremony is left, and it waits for an in-game lobby join"
     },
     "1.2": {
       "done_at": "2026-08-16T03:10:07+00:00",
@@ -2238,6 +2238,29 @@
       "status": "todo",
       "tier": "F",
       "title": "Windows Steam first join intermittently exceeds the hard 10-second connection timeout"
+    },
+    "F-024": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A shipped LAN first join has no retry \u2014 only the debug launcher does"
+    },
+    "F-025": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake"
+    },
+    "F-026": {
+      "done_at": "2026-08-16T23:24:50+00:00",
+      "done_by": "vane",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "A deferred task pins the board's active milestone forever, hiding all remaining work"
     }
   },
   "version": 1

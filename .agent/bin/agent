@@ -918,9 +918,14 @@ def cmd_check(args):
 def _print_ready(st, limit=6):
     # Findings are deliberately excluded from the milestone scan: "Findings" sorts before "M0",
     # so counting it here would make the current milestone the findings list forever.
+    # "blocked" counts as settled here, not as outstanding. A deliberately deferred task (D-030's
+    # 1.12) would otherwise pin its milestone active forever while offering nothing pickable, and
+    # since only that milestone's todo tasks are listed, the whole board would go silent — F-026.
+    # A milestone whose only remaining work is deferred is finished for the one question this scan
+    # answers, which is "what should I start now".
     done_ms = set()
     for t in st["tasks"].values():
-        if t["status"] != "done" and t["milestone"] != FINDINGS_MILESTONE:
+        if t["status"] not in ("done", "blocked") and t["milestone"] != FINDINGS_MILESTONE:
             done_ms.add(t["milestone"])
     active = sorted(done_ms)[:1]
     ready = [(tid, t) for tid, t in st["tasks"].items()

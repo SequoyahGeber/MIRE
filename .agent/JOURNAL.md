@@ -715,3 +715,15 @@ Two-platform rerun wrapped cleanly. Mac host lobby 109775242382594016 admitted f
 Files: `docs/STEAM_CROSS_PLATFORM_TEST.md`, `docs/DELEGATION.md`, `docs/NEXT.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `cc62ad9`
+
+---
+
+### DONE · F-026 · vane · 2026-08-16T23:24:50+00:00
+
+**A deferred task pins the board's active milestone forever, hiding all remaining work**
+
+Excluded 'blocked' from the active-milestone scan in _print_ready. A deferred task no longer pins its milestone active with nothing pickable. Verified: board now heads M2 with 2.3, M1 still honestly 13/14, 1.12 still 🚧 blocked.
+
+Files: `.agent/bin/agent`
+
+Commit at time of writing: `6c4cf24`

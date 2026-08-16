@@ -12,7 +12,7 @@ _Nothing in flight._
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███░░░░░░░` 5/17 | 12 |
+| Findings | `███░░░░░░░` 6/20 | 14 |
 | M0 | `██████████` 11/11 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `███░░░░░░░` 5/18 | 13 |
@@ -39,7 +39,7 @@ _Nothing in flight._
 | ✅ | **1.9** Spike R1 — 6 peers, 200 synced dummy entities, measure bandwidth and CPU | T2 | 1.5 | done |
 | ✅ | **1.10** Network debug panel: ping, bandwidth up/down, entity count, authority display | T1 | 1 | done |
 | ✅ | **1.11** Protocol/build version handshake — refuse mismatched builds with a clear message, not a desync | T2 | 1.5 | done |
-| ⬜ | **1.12** Cross-platform join test — Mac ↔ Windows ↔ Linux in one lobby, over Steam | T0 | 1.5 | todo |
+| 🚧 | **1.12** DEFERRED to after 6.10 (D-030) — do not start. Cross-platform join test, Mac ↔ Windows ↔ Linux in one lobby over Steam. Transport is proven; only the evidence ceremony is left, and it waits for an in-game lobby join | T0 | 1.5 | blocked |
 | ✅ | **1.0b** Register the `NetTransport` autoload in `project.godot` — 1.2 follow-up, shipped under the pre-D-021 prompt | T0 | 0.25 | done |
 
 ## Open findings — claim by F-number
@@ -58,7 +58,9 @@ _Nothing in flight._
 | ⬜ | **F-020** Steam sessions cannot use NetSession's direct-address auto-rejoin loop | todo |
 | ⬜ | **F-021** The net debug panel harness passes while Godot reports an uninitialized multiplayer root | todo |
 | ⬜ | **F-023** Windows Steam first join intermittently exceeds the hard 10-second connection timeout | todo |
+| ⬜ | **F-024** A shipped LAN first join has no retry — only the debug launcher does | todo |
+| ⬜ | **F-025** Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake | todo |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `1.0b` `2.1b` `2.1c` `2.1e` `4.0b` `F-007` `F-009` `F-015` `F-019` `F-022`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `1.0b` `2.1b` `2.1c` `2.1e` `4.0b` `F-007` `F-009` `F-015` `F-019` `F-022` `F-026`
