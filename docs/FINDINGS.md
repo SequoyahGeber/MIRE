@@ -218,24 +218,33 @@ these known gaps" is a standing decision that shapes M7 and M8, not just a findi
 
 ---
 
-### F-007 · Pre-commit hook can't tell which agent is committing
+### F-007 · Unset `MIRE_AGENT` silently resolves to `claude` instead of failing
 
-**Area:** tooling · **Severity:** high · **Found:** 2026-08-15 by nav during 0.8/0.9
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-15 by nav during 0.8/0.9
 
-The hook prints `session: claude` for every commit regardless of `MIRE_AGENT`. Three commits from a
-session that had `export MIRE_AGENT=nav` set and had claimed under `nav` (`bdf8587`, `9ebe47b`,
-`70d5635`) were all attributed to `claude`. The hook runs in a fresh shell that does not inherit the
-exported variable, so `598523c`'s identity fix reached the CLI but not the hook.
+When `MIRE_AGENT` is not set, agent identity falls back to `claude` — a real agent name — with no
+warning. Demonstrated directly:
 
-The failure this causes: with agents in parallel, the claim check evaluates every commit as though one
-fixed agent made it. An agent committing files another agent holds is then judged against the wrong
-identity — which is precisely the collision the claim system exists to catch. It fails open, quietly.
+```
+$ export MIRE_AGENT=nav && .agent/bin/agent check    ->  session: nav
+$ env -u MIRE_AGENT   .agent/bin/agent check         ->  session: claude
+```
 
-Fix: resolve the agent name from `.agent/state.json`'s active session, or have `agent start` persist
-it to a file the hook reads. Do not depend on an inherited environment variable across the `git`
-process boundary.
+The failure this causes: any agent that forgets the export, or any tooling that invokes `git` with a
+scrubbed environment, commits under `claude`'s identity. Its claims are then checked against the wrong
+agent, so the check can pass when it should fail — and it fails *open*, quietly. With one agent per
+name that is invisible; with `nav` and `claude` running at once it is the exact collision the claim
+system exists to catch.
 
-Same hook as F-001, different defect — worth fixing in one pass.
+Fix: fall back to an explicit `unknown` that fails the check loudly, rather than to a name that
+belongs to a real agent. Better still, read the active session from `.agent/state.json` when the
+variable is absent.
+
+**Note on how this was filed:** the original version of this entry claimed the pre-commit hook does
+not inherit `MIRE_AGENT` across the `git` process boundary. That was wrong — the hook inherits the
+environment normally. Commits `bdf8587`, `9ebe47b` and `70d5635` printed `session: claude` because the
+agent that made them ran each shell command in a fresh process and had not re-exported the variable in
+those particular ones. The residual defect is the silent fallback described above, not the hook.
 
 ---
 
