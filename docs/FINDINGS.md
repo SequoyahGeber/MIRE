@@ -117,8 +117,8 @@ player or the first enemy exists — **M1/M2**.
 
 Raised in severity by the VRR case (§5a *Variable refresh rate*): interpolation is the load-bearing
 fix there, and `physics_jitter_fix` must go to `0` at the same time or the two corrections fight.
-Sequoyah develops on a variable-refresh display, so this will be visible on the primary dev machine
-before it's visible to anyone else.
+Development happens exclusively on a ProMotion MacBook Pro (48–120 Hz adaptive), so this judder will
+appear on the only machine we have long before anyone else sees it.
 
 ---
 
@@ -149,6 +149,38 @@ main-thread work in Godot.
 
 0.8 (R3) covers collision/nav baking. **GPU upload remains unmeasured by any planned spike** — worth
 re-running the bench with a real renderer before 4.3 commits to a streaming budget.
+
+---
+
+### F-006 · Three roadmap tasks assume a Windows or Linux machine we don't have
+
+**Area:** process · **Severity:** high · **Found:** 2026-08-15 by claude
+
+Development happens exclusively on a 14-inch M5 Pro MacBook Pro, permanently — there is no second
+machine and no plan to get one. Three tasks are written as though there is:
+
+| Task | Assumes |
+|---|---|
+| **0.10** (M0) | Running `tools/check_determinism.gd` on Windows and Linux to fill in the `ARCHITECTURE.md` §6a baseline table |
+| **1.12** (M1) | A Mac ↔ Windows ↔ Linux lobby over Steam |
+| **7.12** (M7) | Testing each export on its real OS, plus Steam Deck |
+
+**0.10 is the urgent one.** R6 asks whether seeded world gen diverges between macOS arm64 and Windows
+x86_64. If it does, §4's "clients regenerate the world from a seed" design is invalid and the fallback
+— host ships a compact heightmap — has to be adopted *before* M4 is built on the current assumption.
+That question is unanswerable on this hardware, and it is a genuine architectural fork, not a
+verification chore. The macOS column of the §6a table is filled in; the other two cannot be.
+
+Options, none free: a cloud CI runner executing the headless determinism script on both platforms
+(cheapest, and works for 0.10 only); a Linux VM under UTM on Apple Silicon — but note it would be
+**arm64**, so it tests OS divergence and not architecture divergence, which is the actual risk; or a
+friend with a Windows PC running a headless binary and sending back the four hashes. The last is
+probably the fastest path to unblocking 0.10 specifically.
+
+1.12 and 7.12 need real hardware eventually and can't be solved this way, but they're M1 and M7 — time
+to arrange something. Steam Deck is its own purchase decision.
+
+This needs a decision recorded in `DECISIONS.md`, not just a finding.
 
 ---
 
