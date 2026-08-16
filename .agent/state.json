@@ -2,10 +2,20 @@
   "claims": {},
   "in_flight": {},
   "recent": {
+    ".agent/bin/agent": {
+      "agent": "claude",
+      "at": "2026-08-16T16:50:24+00:00",
+      "task": "F-015"
+    },
     ".gitignore": {
       "agent": "steam",
       "at": "2026-08-16T06:52:27+00:00",
       "task": "1.1"
+    },
+    "AGENTS.md": {
+      "agent": "claude",
+      "at": "2026-08-16T16:50:24+00:00",
+      "task": "F-015"
     },
     "autoload/net_transport.gd": {
       "agent": "lobby",
@@ -58,9 +68,9 @@
       "task": "1.1"
     },
     "docs/FINDINGS.md": {
-      "agent": "steam",
-      "at": "2026-08-16T06:52:27+00:00",
-      "task": "1.1"
+      "agent": "claude",
+      "at": "2026-08-16T16:50:24+00:00",
+      "task": "F-015"
     },
     "docs/NEXT.md": {
       "agent": "claude",
@@ -969,6 +979,71 @@
       "status": "todo",
       "tier": "T0",
       "title": "Build review submission, fix findings, release"
+    },
+    "F-002": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Sprint-FOV lerp uses the framerate-dependent smoothing form"
+    },
+    "F-004": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Interpolation is only planned for remote players, not enemies or props"
+    },
+    "F-005": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "R2's chunk benchmark excludes GPU upload cost"
+    },
+    "F-006": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Three roadmap tasks assume a Windows or Linux machine we don't have"
+    },
+    "F-007": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Forgetting `MIRE_AGENT` makes you silently impersonate the last agent to run `agent start`"
+    },
+    "F-009": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A GDExtension only loads if gitignored `.godot/extension_list.cfg` lists it"
+    },
+    "F-011": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Autoloads are not compile-time identifiers in a `--script` main loop"
+    },
+    "F-012": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A `MultiplayerSynchronizer`'s authority must be set BEFORE `add_child()`"
+    },
+    "F-015": {
+      "done_at": "2026-08-16T16:50:24+00:00",
+      "done_by": "claude",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "A finding cannot be claimed, so fixing one always edits unclaimed files"
     }
   },
   "version": 1

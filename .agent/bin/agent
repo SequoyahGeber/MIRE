@@ -104,11 +104,70 @@ def ok(msg):
 
 
 def task_sort_key(tid):
+    if _is_finding(tid):
+        # After every roadmap task, in filed order. Findings are work, but they are not the
+        # milestone plan, and sorting them into it would reorder the plan every time one is filed.
+        try:
+            return (1000, int(tid.split("-")[1]))
+        except (IndexError, ValueError):
+            return (1000, 999)
     try:
         a, b = tid.split(".")
         return (int(a), int(b))
     except ValueError:
         return (999, 999)
+
+
+# ---------------------------------------------------------------- findings as work (F-015)
+
+# Findings are the work most likely to happen BETWEEN roadmap tasks, and until F-015 they had no
+# claimable id at all — so fixing one always meant editing unclaimed files and being warned at for
+# it. A warning that fires during correct work is how agents learn to ignore it. So an F-number is
+# a task id everywhere a task id is accepted: claim, brief, note, done, handoff, drop, ship.
+FINDINGS_MILESTONE = "Findings"
+
+
+def _is_finding(tid):
+    return tid.upper().startswith("F-")
+
+
+def _norm_id(tid):
+    return tid.upper() if _is_finding(tid) else tid
+
+
+def _sync_findings(st):
+    """Mirror docs/FINDINGS.md's open section into tasks. Same shape as cmd_sync's roadmap pass:
+    adds and refreshes titles, never touches status. A finding moved to '## Resolved' stops being
+    synced but keeps whatever state it already had, so its journal entry survives."""
+    added = 0
+    for fid, title in _open_findings():
+        title = title or fid
+        if fid in st["tasks"]:
+            st["tasks"][fid]["title"] = title
+        else:
+            st["tasks"][fid] = {
+                "title": title, "tier": "F", "est": "—",
+                "milestone": FINDINGS_MILESTONE, "status": "todo",
+            }
+            added += 1
+    return added
+
+
+def _require_task(st, tid, verb="that"):
+    """Resolve a task id, syncing findings on demand so an F-number never has to be pre-registered.
+    Returns the canonical id; exits with a message that names the right file otherwise."""
+    tid = _norm_id(tid)
+    if tid in st["tasks"]:
+        return tid
+    if _is_finding(tid):
+        if _sync_findings(st):
+            save(st)
+        if tid in st["tasks"]:
+            return tid
+        die("unknown finding %s — it is not under '## Open' in docs/FINDINGS.md.\n"
+            "  A resolved finding is not claimable; file a new one if there is more to do." % tid)
+    die("unknown task %s — run 'agent sync' or check docs/ROADMAP.md.\n"
+        "  Fixing a finding? Use its F-number directly: agent %s F-013" % (tid, verb))
 
 
 # ---------------------------------------------------------------- roadmap sync
@@ -151,8 +210,12 @@ def cmd_sync(args):
             }
             added += 1
 
+    findings = _sync_findings(st)
     save(st)
     ok("roadmap synced — %d new, %d updated, %d total" % (added, updated, len(st["tasks"])))
+    if findings:
+        print("  %s+%d open finding(s) from docs/FINDINGS.md, claimable by F-number%s"
+              % (C["dim"], findings, C["x"]))
 
 
 # ---------------------------------------------------------------- session
@@ -249,6 +312,31 @@ def _open_findings():
     return out
 
 
+def _finding_body(fid):
+    """The prose of one open finding, so `agent brief F-013` is self-contained — the whole point of
+    brief is that the agent does not have to go reading to find out what it was asked to do."""
+    path = os.path.join(ROOT, "docs", "FINDINGS.md")
+    if not os.path.exists(path):
+        return []
+    out, in_open, in_this = [], False, False
+    for line in open(path):
+        if line.startswith("## "):
+            if in_this:
+                break
+            in_open = line.strip() == "## Open"
+        elif line.startswith("### "):
+            if in_this:
+                break
+            in_this = in_open and line[4:].strip().upper().startswith(fid.upper())
+        elif in_this:
+            out.append(line.rstrip())
+    while out and not out[0].strip():
+        out.pop(0)
+    while out and (not out[-1].strip() or out[-1].strip() == "---"):
+        out.pop()
+    return out
+
+
 def _wrap(text, width=94, indent="      "):
     words, line, out = text.split(), "", []
     for w in words:
@@ -273,9 +361,7 @@ def cmd_brief(args):
         print("usage: agent brief <task-id>\n")
         _print_ready(st)
         return
-    tid = args[0]
-    if tid not in st["tasks"]:
-        die("unknown task %s — run 'agent sync' or check docs/ROADMAP.md" % tid)
+    tid = _require_task(st, args[0], "brief")
 
     me = whoami(required=False) or "?"
     t = st["tasks"][tid]
@@ -303,9 +389,20 @@ def cmd_brief(args):
     ):
         print("  %-32s %s%s%s" % (path, C["dim"], why, C["x"]))
 
-    findings = _open_findings()
+    if _is_finding(tid):
+        body = _finding_body(tid)
+        if body:
+            print("\n%sThe finding, in full — this is the spec%s" % (C["b"], C["x"]))
+            for line in body:
+                print("  %s%s%s" % (C["dim"], line[:110], C["x"]))
+            print("\n  %sClosing it means the fix AND moving the section to '## Resolved' in"
+                  " docs/FINDINGS.md,%s" % (C["dim"], C["x"]))
+            print("  %swith what you did and how you verified it. A fix nobody can find is not"
+                  " closed.%s" % (C["dim"], C["x"]))
+
+    findings = [(fid, title) for fid, title in _open_findings() if fid != tid]
     if findings:
-        print("\n%sOpen findings — traps someone already paid for%s" % (C["b"], C["x"]))
+        print("\n%sOther open findings — traps someone already paid for%s" % (C["b"], C["x"]))
         for fid, title in findings:
             print("  %-8s %s%s%s" % (fid, C["dim"], title[:78], C["x"]))
 
@@ -360,12 +457,10 @@ def cmd_claim(args):
     if not args:
         die("usage: agent claim <task-id> [files...]")
     me = whoami()
-    tid = args[0]
     files = [_rel(f) for f in args[1:]]
     st = load()
+    tid = _require_task(st, args[0], "claim")
 
-    if tid not in st["tasks"]:
-        die("unknown task %s — run 'agent sync' or check docs/ROADMAP.md" % tid)
     if st["tasks"][tid]["status"] == "done":
         die("%s is already done" % tid)
     held = st["in_flight"].get(tid)
@@ -408,7 +503,7 @@ def cmd_note(args):
     if len(args) < 2:
         die('usage: agent note <task-id> "what you learned or did"')
     me = whoami()
-    tid, text = args[0], " ".join(args[1:])
+    tid, text = _norm_id(args[0]), " ".join(args[1:])
     st = load()
     if tid not in st["in_flight"]:
         die("%s is not in flight" % tid)
@@ -462,11 +557,9 @@ def cmd_done(args):
     if not args:
         die('usage: agent done <task-id> ["one-line summary"]')
     me = whoami()
-    tid = args[0]
     summary = " ".join(args[1:]) or "Completed."
     st = load()
-    if tid not in st["tasks"]:
-        die("unknown task %s" % tid)
+    tid = _require_task(st, args[0], "done")
     entry = _release(st, tid)
     st["tasks"][tid]["status"] = "done"
     st["tasks"][tid]["done_at"] = now()
@@ -481,6 +574,11 @@ def cmd_done(args):
              entry.get("files", []) if entry else [])
 
     ok("%s done — claims released, journal updated" % tid)
+    if _is_finding(tid) and tid in dict(_open_findings()):
+        print("  %s⚠ %s is still under '## Open' in docs/FINDINGS.md — move it to '## Resolved'"
+              % (C["y"], tid))
+        print("    with what you did and how you verified it, or the next agent re-fixes it.%s"
+              % C["x"])
     _print_ready(load())
     print("  %sCommit now so the next agent sees it.%s" % (C["dim"], C["x"]))
 
@@ -489,7 +587,7 @@ def cmd_handoff(args):
     if len(args) < 2:
         die('usage: agent handoff <task-id> "what is done, what is left, what to watch out for"')
     me = whoami()
-    tid, body = args[0], " ".join(args[1:])
+    tid, body = _norm_id(args[0]), " ".join(args[1:])
     st = load()
     if tid not in st["in_flight"]:
         die("%s is not in flight" % tid)
@@ -504,7 +602,7 @@ def cmd_handoff(args):
 def cmd_drop(args):
     if not args:
         die("usage: agent drop <task-id>")
-    tid = args[0]
+    tid = _norm_id(args[0])
     st = load()
     entry = _release(st, tid)
     if not entry:
@@ -536,10 +634,8 @@ def cmd_ship(args):
     if not args:
         die('usage: agent ship <task-id> ["commit message"]')
     me = whoami()
-    tid = args[0]
     st = load()
-    if tid not in st["tasks"]:
-        die("unknown task %s" % tid)
+    tid = _require_task(st, args[0], "ship")
     if tid in st["in_flight"]:
         die("%s is still in flight — run 'agent done %s' or 'agent handoff %s' first" % (tid, tid, tid))
 
@@ -709,22 +805,36 @@ def cmd_check(args):
 # ---------------------------------------------------------------- board
 
 def _print_ready(st, limit=6):
+    # Findings are deliberately excluded from the milestone scan: "Findings" sorts before "M0",
+    # so counting it here would make the current milestone the findings list forever.
     done_ms = set()
     for t in st["tasks"].values():
-        if t["status"] != "done":
+        if t["status"] != "done" and t["milestone"] != FINDINGS_MILESTONE:
             done_ms.add(t["milestone"])
     active = sorted(done_ms)[:1]
     ready = [(tid, t) for tid, t in st["tasks"].items()
              if t["status"] == "todo" and t["milestone"] in active]
     ready.sort(key=lambda x: task_sort_key(x[0]))
-    if not ready:
-        return
-    print("\n%sReady to pick up%s" % (C["b"], C["x"]))
-    for tid, t in ready[:limit]:
-        print("  %s%-5s%s %-4s %s" % (C["c"], tid, C["x"], t["tier"], t["title"][:66]))
-    if len(ready) > limit:
-        print("  %s… %d more%s" % (C["dim"], len(ready) - limit, C["x"]))
-    print()
+    if ready:
+        print("\n%sReady to pick up%s" % (C["b"], C["x"]))
+        for tid, t in ready[:limit]:
+            print("  %s%-5s%s %-4s %s" % (C["c"], tid, C["x"], t["tier"], t["title"][:66]))
+        if len(ready) > limit:
+            print("  %s… %d more%s" % (C["dim"], len(ready) - limit, C["x"]))
+        print()
+
+    # Their own section, so an open finding is visibly pickable work rather than a footnote in a
+    # doc — which is what left F-013 sitting open across three sessions.
+    open_findings = [(tid, t) for tid, t in st["tasks"].items()
+                     if t["milestone"] == FINDINGS_MILESTONE and t["status"] == "todo"]
+    open_findings.sort(key=lambda x: task_sort_key(x[0]))
+    if open_findings:
+        print("%sOpen findings — claimable by F-number%s" % (C["b"], C["x"]))
+        for tid, t in open_findings[:limit]:
+            print("  %s%-5s%s %-4s %s" % (C["c"], tid, C["x"], t["tier"], t["title"][:66]))
+        if len(open_findings) > limit:
+            print("  %s… %d more%s" % (C["dim"], len(open_findings) - limit, C["x"]))
+        print()
 
 
 def _print_board(st, focus=None):
@@ -745,10 +855,16 @@ def _print_board(st, focus=None):
     _print_ready(st)
 
 
+def _roadmap_progress(st):
+    """Done/total over ROADMAP tasks only. Findings are counted separately — folding them in would
+    make the milestone number move every time someone files one, which is the opposite of useful."""
+    items = [t for t in st["tasks"].values() if t["milestone"] != FINDINGS_MILESTONE]
+    return sum(1 for t in items if t["status"] == "done"), len(items)
+
+
 def cmd_board(args):
     st = load()
-    total = len(st["tasks"])
-    done = sum(1 for t in st["tasks"].values() if t["status"] == "done")
+    done, total = _roadmap_progress(st)
     print("\n%sMIRE%s  %d/%d tasks done\n" % (C["b"], C["x"], done, total))
     _print_board(st, focus=whoami(required=False))
     _print_stale(st)
@@ -756,8 +872,7 @@ def cmd_board(args):
 
 def render_board(st):
     """Write the human/agent-readable BOARD.md."""
-    total = len(st["tasks"])
-    done = sum(1 for t in st["tasks"].values() if t["status"] == "done")
+    done, total = _roadmap_progress(st)
     L = ["# Board",
          "",
          "<!-- Generated by `agent`. Do not hand-edit — run `agent board` instead. -->",
@@ -794,7 +909,8 @@ def render_board(st):
     L.append("")
 
     active = [ms for ms in sorted(by_ms)
-              if any(t["status"] != "done" for _, t in by_ms[ms])]
+              if ms != FINDINGS_MILESTONE
+              and any(t["status"] != "done" for _, t in by_ms[ms])]
     if active:
         ms = active[0]
         L += ["## %s — current milestone" % ms, "",
@@ -803,6 +919,18 @@ def render_board(st):
             mark = {"done": "✅", "in_flight": "🔵", "todo": "⬜", "blocked": "🚧"}.get(t["status"], "⬜")
             L.append("| %s | **%s** %s | %s | %s | %s |"
                      % (mark, tid, t["title"], t["tier"], t["est"], t["status"]))
+        L.append("")
+
+    open_findings = sorted(
+        ((tid, t) for tid, t in st["tasks"].items()
+         if t["milestone"] == FINDINGS_MILESTONE and t["status"] != "done"),
+        key=lambda x: task_sort_key(x[0]))
+    if open_findings:
+        L += ["## Open findings — claim by F-number", "",
+              "| | Finding | Status |", "|---|---|---|"]
+        for tid, t in open_findings:
+            mark = {"in_flight": "🔵", "blocked": "🚧"}.get(t["status"], "⬜")
+            L.append("| %s | **%s** %s | %s |" % (mark, tid, t["title"], t["status"]))
         L.append("")
 
     L += ["## Done", "",

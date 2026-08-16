@@ -356,3 +356,18 @@ Notes along the way:
 Files: `core/net/dummy_replicant.gd`, `tools/bench_replication.gd`
 
 Commit at time of writing: `fc05234`
+
+---
+
+### DONE · F-015 · claude · 2026-08-16T16:50:24+00:00
+
+**A finding cannot be claimed, so fixing one always edits unclaimed files**
+
+An F-number is a task id everywhere a task id is accepted: findings sync out of FINDINGS.md's open section, claim/brief/note/done/ship all take one, brief prints the finding as its spec, and done warns if the section was not moved to Resolved. Findings sit in their own milestone, excluded from the progress count and the current-milestone scan.
+
+Notes along the way:
+- Findings sync into tasks under a Findings milestone, excluded from roadmap counts and the current-milestone scan.
+
+Files: `.agent/bin/agent`, `docs/FINDINGS.md`, `AGENTS.md`
+
+Commit at time of writing: `3223c5e`

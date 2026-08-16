@@ -12,6 +12,7 @@ _Nothing in flight._
 
 | Milestone | Progress | Remaining |
 |---|---|---|
+| Findings | `█░░░░░░░░░` 1/9 | 8 |
 | M0 | `██████████` 10/10 | 0 |
 | M1 | `██████░░░░` 9/14 | 5 |
 | M2 | `█░░░░░░░░░` 1/14 | 13 |
@@ -41,6 +42,19 @@ _Nothing in flight._
 | ⬜ | **1.12** Cross-platform join test — Mac ↔ Windows ↔ Linux in one lobby, over Steam | T0 | 1.5 | todo |
 | ✅ | **1.0b** Register the `NetTransport` autoload in `project.godot` — 1.2 follow-up, shipped under the pre-D-021 prompt | T0 | 0.25 | done |
 
+## Open findings — claim by F-number
+
+| | Finding | Status |
+|---|---|---|
+| ⬜ | **F-002** Sprint-FOV lerp uses the framerate-dependent smoothing form | todo |
+| ⬜ | **F-004** Interpolation is only planned for remote players, not enemies or props | todo |
+| ⬜ | **F-005** R2's chunk benchmark excludes GPU upload cost | todo |
+| ⬜ | **F-006** Three roadmap tasks assume a Windows or Linux machine we don't have | todo |
+| ⬜ | **F-007** Forgetting `MIRE_AGENT` makes you silently impersonate the last agent to run `agent start` | todo |
+| ⬜ | **F-009** A GDExtension only loads if gitignored `.godot/extension_list.cfg` lists it | todo |
+| ⬜ | **F-011** Autoloads are not compile-time identifiers in a `--script` main loop | todo |
+| ⬜ | **F-012** A `MultiplayerSynchronizer`'s authority must be set BEFORE `add_child()` | todo |
+
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.9` `1.10` `2.2` `1.0b`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.9` `1.10` `2.2` `1.0b` `F-015`

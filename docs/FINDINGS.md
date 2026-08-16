@@ -345,9 +345,12 @@ player, not by the spawner.
 
 ---
 
-### F-015 · A finding cannot be claimed, so fixing one always edits unclaimed files
+## Resolved
 
-**Area:** agent tooling · **Severity:** low · **Filed:** 2026-08-16 by claude, while fixing F-013
+### F-015 · A finding could not be claimed, so fixing one always edited unclaimed files — **fixed**
+
+**Area:** agent tooling · **Severity:** low · **Filed:** 2026-08-16 by claude, while fixing F-013 ·
+**Fixed:** 2026-08-16 by claude
 
 `agent claim` resolves ids against `docs/ROADMAP.md`, so `agent claim F-013 <files>` fails with
 "unknown task F-013". Findings are exactly the work most likely to run *between* roadmap tasks, and
@@ -355,14 +358,33 @@ the only way to do one is to edit without a claim — which the pre-commit hook 
 line per file. Two costs, and the second is the real one: a warning that fires during correct work
 teaches agents to ignore the warning that fires during incorrect work.
 
-`ce8128a`'s commit was warned at for the same reason. Fix is small and belongs in `.agent/bin/agent`:
-accept an `F-0NN` id by resolving it against `docs/FINDINGS.md`'s open section the way task ids
-resolve against the roadmap, so a finding claims files, appears on the board, and closes out through
-`agent done` like anything else. Until then, prefix `MIRE_AGENT=<name>` and expect the warning.
+`ce8128a`'s commit was warned at for the same reason.
 
----
+**Fixed in `.agent/bin/agent`: an F-number is a task id everywhere a task id is accepted.** Open
+findings sync out of this file's `## Open` section into state the same way `agent sync` reads the
+roadmap — adding and refreshing titles, never touching status — so `claim`, `brief`, `note`, `done`,
+`handoff`, `drop` and `ship` all take `F-013` (case-insensitively, and syncing on demand so a
+just-filed finding is claimable without `agent sync` first).
 
-## Resolved
+Three details that were not obvious, and are the reason this wasn't a one-line change:
+
+- **Findings live in their own `Findings` milestone, excluded from the milestone plan.** `"Findings"`
+  sorts before `"M0"`, so folding them into the existing scan would have made the current milestone
+  the findings list forever — on the terminal board and in `BOARD.md` both.
+- **They are excluded from the progress count** (`20/108` is roadmap work). Filing a finding must not
+  move the milestone number; otherwise the number punishes the filing.
+- **They sort after every roadmap task, in filed order** — `task_sort_key` gives them `(1000, n)`
+  rather than the `(999, 999)` catch-all, which would have collapsed them into one indistinguishable
+  bucket in every sorted view.
+
+`agent brief F-013` prints the finding's full prose as its spec, so a finding is as self-briefing as
+a roadmap task, plus the close-out contract that a fix is not done until the section moves here.
+`agent done` re-reads this file and warns if the section is still under `## Open`.
+
+Verified end-to-end on F-015 itself: claimed by F-number, noted via a lowercase `f-015`, briefed,
+closed out and shipped through the hook — the commit that fixes this finding is the test that it
+works. Error paths checked too: a resolved finding is refused with a reason, and an unknown task id
+now points at the F-number form.
 
 ### F-013 · Spawned replication nodes were not in group `&"synced"` — **fixed**
 

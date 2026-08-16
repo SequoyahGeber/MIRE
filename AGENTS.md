@@ -66,6 +66,13 @@ where the previous agent was required to leave what you need.
 Derive your own claim set from the task and claim it. If `DELEGATION.md` happens to hold a written
 prompt for the task, use it — but its absence does not block you, and nobody needs to write you one.
 
+**A finding is a task id too (F-015).** "Fix F-013" works exactly like "start 1.6" — `agent brief
+F-013` prints the finding in full as its spec, and `claim` / `note` / `done` / `ship` all take the
+F-number. Open findings are synced from `docs/FINDINGS.md` and shown on the board as their own
+section; they are deliberately kept out of the milestone progress count, so filing one never moves
+the roadmap number. Closing one means the fix **and** moving its section to `## Resolved` with what
+you did and how you verified it — `agent done` warns you if you forget.
+
 ---
 
 ## The protocol
