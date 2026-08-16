@@ -381,45 +381,6 @@ intervals) and 1.9's dummy replicants will both want to be counted the same way:
 
 ---
 
-### F-014 · Parallel agents share one git index, so `agent ship` can be blocked by — and then unstage — another agent's staged work
-
-**Area:** process · **Severity:** medium · **Found:** 2026-08-16 by load during 1.9
-
-`agent ship 1.9` was blocked by the pre-commit hook naming `project.godot` (spawn's, task 1.5) and
-`ui/debug/net_debug_panel.gd` (netui's, task 1.10) — two files 1.9 never touched.
-
-**The hook was right, and this is not F-001 regressing.** Verified: with only 1.9's files staged and
-`GIT_INDEX_FILE` set, `.git/hooks/pre-commit` passes, *while those same two files are dirty in the
-working tree* — so the staged-set scope is working as F-001 intended. Plain `git commit` does export
-`GIT_INDEX_FILE` (checked against git 2.54.0); that is not the problem either.
-
-The problem is one level up: **several agents share one working directory and therefore one git
-index.** If agent A has run `git add` and not yet committed, agent B's `ship` stages its own files on
-top of A's, and the hook correctly refuses a commit that would have swept A's files in. The claim
-system prevents two agents editing one file; it does nothing about two agents staging into one index.
-
-Two consequences, the second worse than the first:
-
-1. A blocked `ship` looks like a tooling bug — the message names files you have never touched, which
-   is exactly the shape that teaches people to reach for `--no-verify`. `cmd_ship` (`:424`) prints the
-   hook output raw with no hint that the extra files may be another agent's staging.
-2. **`cmd_ship`'s failure path runs `_git("reset")` (`:423`), which unstages *everything*, including
-   the other agent's work.** B's failed commit silently discards A's staging. Nothing is lost from the
-   working tree, but A's next `ship` restages from its own claim list and recovers — so this is
-   survivable, not silent corruption. It is still B reaching into A's state.
-
-Fixing it: `cmd_ship` should compare the pre-existing staged set against `to_stage` before committing,
-say plainly "N staged file(s) belong to another agent — wait for them or ask", and on failure reset
-only the paths it added (`git reset -- <paths>`) rather than the whole index.
-
-**Correction to the commit record:** `ef1bc16`'s message asserts the hook "fell back to scanning the
-whole working tree." That was my hypothesis at the time and it is **wrong** — the evidence above
-disproves it. The commit's staged set was verified to be 1.9's files only before it went in, so the
-commit itself is clean; only its explanation is. Not amended because `main` is shared with two live
-agents and a force-push is worse than a wrong sentence. This entry is the correction.
-
----
-
 ## Resolved
 
 ### F-003 · §5a project settings not applied — **fixed**
@@ -489,3 +450,58 @@ commit resolved `me` to `claude` rather than `nav`, so the grace record didn't m
 
 Kept as a record so nobody refiles it. Anyone who sees this warning after a correct close-out should
 check their `MIRE_AGENT`, not the docs.
+
+---
+
+### F-014 · Parallel agents share one git index, so `agent ship` can be blocked by — and then unstage — another agent's staged work — **fixed**
+
+**Area:** process · **Severity:** medium · **Found:** 2026-08-16 by load during 1.9
+
+`agent ship 1.9` was blocked by the pre-commit hook naming `project.godot` (spawn's, task 1.5) and
+`ui/debug/net_debug_panel.gd` (netui's, task 1.10) — two files 1.9 never touched.
+
+**The hook was right, and this is not F-001 regressing.** Verified: with only 1.9's files staged and
+`GIT_INDEX_FILE` set, `.git/hooks/pre-commit` passes, *while those same two files are dirty in the
+working tree* — so the staged-set scope is working as F-001 intended. Plain `git commit` does export
+`GIT_INDEX_FILE` (checked against git 2.54.0); that is not the problem either.
+
+The problem is one level up: **several agents share one working directory and therefore one git
+index.** If agent A has run `git add` and not yet committed, agent B's `ship` stages its own files on
+top of A's, and the hook correctly refuses a commit that would have swept A's files in. The claim
+system prevents two agents editing one file; it does nothing about two agents staging into one index.
+
+Two consequences, the second worse than the first:
+
+1. A blocked `ship` looks like a tooling bug — the message names files you have never touched, which
+   is exactly the shape that teaches people to reach for `--no-verify`. `cmd_ship` (`:424`) prints the
+   hook output raw with no hint that the extra files may be another agent's staging.
+2. **`cmd_ship`'s failure path runs `_git("reset")` (`:423`), which unstages *everything*, including
+   the other agent's work.** B's failed commit silently discards A's staging. Nothing is lost from the
+   working tree, but A's next `ship` restages from its own claim list and recovers — so this is
+   survivable, not silent corruption. It is still B reaching into A's state.
+
+Fixing it: `cmd_ship` should compare the pre-existing staged set against `to_stage` before committing,
+say plainly "N staged file(s) belong to another agent — wait for them or ask", and on failure reset
+only the paths it added (`git reset -- <paths>`) rather than the whole index.
+
+**Correction to the commit record:** `ef1bc16`'s message asserts the hook "fell back to scanning the
+whole working tree." That was my hypothesis at the time and it is **wrong** — the evidence above
+disproves it. The commit's staged set was verified to be 1.9's files only before it went in, so the
+commit itself is clean; only its explanation is. Not amended because `main` is shared with two live
+agents and a force-push is worse than a wrong sentence. This entry is the correction.
+
+**Fixed 2026-08-16 by claude, in `4d2d64a`** — at the root rather than at the message. `cmd_ship` now
+commits **by pathspec** (`git commit -m ... -- <this task's files>`) instead of committing the whole
+index, and its failure path resets only the paths it added. Git builds a temporary index from HEAD
+plus the named paths for a partial commit, so another agent's staged work is neither committed nor
+disturbed, and the pre-commit hook sees only this task's files.
+
+That makes the blocked-`ship` case impossible rather than merely legible, so the suggested "N staged
+file(s) belong to another agent" warning was not added — there is nothing left to warn about.
+
+Verified: with a foreign file staged, a pathspec commit of five unrelated files passed the hook
+(`check passed (5 changed file(s))`), committed exactly those five, and left the foreign file staged
+and uncommitted.
+
+The correction to `ef1bc16`'s commit message stands as written above — the record of a wrong
+hypothesis, tested and disproved by the agent that made it, is worth keeping.
