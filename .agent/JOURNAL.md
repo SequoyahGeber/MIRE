@@ -233,3 +233,19 @@ Notes along the way:
 Files: `systems/inventory/item_def.gd`, `systems/crafting/recipe_ingredient.gd`, `systems/crafting/recipe_def.gd`, `autoload/registry.gd`, `core/util/mire_log.gd`
 
 Commit at time of writing: `1bc4650`
+
+---
+
+### DONE · 1.2 · net · 2026-08-16T03:10:07+00:00
+
+**`NetTransport` autoload — swap between `ENetMultiplayerPeer` and `SteamMultiplayerPeer` behind one interface**
+
+NetTransport autoload + NetConfig. LOCAL and LAN fully working over ENet: host, join, leave, host-quit, client-timeout, and leave-and-rejoin in the same process without restarting. Full public API as specced (6 signals, 7 methods) plus is_active()/is_connecting()/mode_name()/steam_available(). STEAM is stubbed: the whole code path exists but goes through ClassDB/Engine by name so the project parses with GodotSteam absent, and every STEAM call returns ERR_UNAVAILABLE with a 'not installed yet (task 1.1)' reason. Task 1.4 replaces two function bodies (_create_steam_host/_create_steam_client) and touches nothing else. Verified headless: 51/51 checks across a solo state-machine probe and a real two-process host+client handshake, exit 0 on all three. NOT WIRED — Sequoyah must register the autoload NetTransport -> res://autoload/net_transport.gd before any of this runs.
+
+Notes along the way:
+- Two-process probe caught a real one: _teardown() filtered 'don't announce yourself' using multiplayer.get_unique_id(), but on the host-quit path ENet has already dropped the connection and that no longer returns our id — so every client emitted peer_left for ITSELF. Local id is now cached in _local_id (set on host/join, re-read on connected_to_server). Do not go back to reading get_unique_id() at teardown time.
+- LOCAL binds 127.0.0.1 only (LAN binds *). Keeps dev traffic off the network and stops the macOS firewall prompt firing on every launch — that prompt is most of what makes the two-window loop feel slow.
+
+Files: `autoload/net_transport.gd`, `core/net/net_config.gd`
+
+Commit at time of writing: `cf7d09f`

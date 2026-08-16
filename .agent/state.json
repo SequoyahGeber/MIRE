@@ -1,37 +1,36 @@
 {
   "claims": {
-    "autoload/net_transport.gd": {
-      "agent": "net",
-      "at": "2026-08-16T02:56:21+00:00",
-      "task": "1.2"
-    },
-    "core/net/net_config.gd": {
-      "agent": "net",
-      "at": "2026-08-16T02:56:21+00:00",
-      "task": "1.2"
+    "project.godot": {
+      "agent": "claude",
+      "at": "2026-08-16T03:07:12+00:00",
+      "task": "1.0"
     }
   },
   "in_flight": {
-    "1.2": {
-      "agent": "net",
+    "1.0": {
+      "agent": "claude",
       "files": [
-        "autoload/net_transport.gd",
-        "core/net/net_config.gd"
+        "project.godot"
       ],
       "notes": [],
-      "started": "2026-08-16T02:56:21+00:00"
+      "started": "2026-08-16T03:07:12+00:00"
     }
   },
   "recent": {
     "autoload/net_transport.gd": {
       "agent": "net",
-      "at": "2026-08-15T21:53:55+00:00",
+      "at": "2026-08-16T03:10:07+00:00",
       "task": "1.2"
     },
     "autoload/registry.gd": {
       "agent": "claude",
       "at": "2026-08-16T02:59:39+00:00",
       "task": "2.2"
+    },
+    "core/net/net_config.gd": {
+      "agent": "net",
+      "at": "2026-08-16T03:10:07+00:00",
+      "task": "1.2"
     },
     "core/util/mire_log.gd": {
       "agent": "claude",
@@ -220,6 +219,13 @@
       "tier": "T0",
       "title": "Record spike results in `DECISIONS.md`. If R3 failed, decide the fallback now."
     },
+    "1.0": {
+      "est": "0.25",
+      "milestone": "M1",
+      "status": "in_flight",
+      "tier": "T0",
+      "title": "Register the `Registry` autoload in `project.godot` \u2014 2.2 shipped the script but nothing loads it"
+    },
     "1.1": {
       "est": "1",
       "milestone": "M1",
@@ -249,9 +255,11 @@
       "title": "Cross-platform join test \u2014 Mac \u2194 Windows \u2194 Linux in one lobby, over Steam"
     },
     "1.2": {
+      "done_at": "2026-08-16T03:10:07+00:00",
+      "done_by": "net",
       "est": "3",
       "milestone": "M1",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T2",
       "title": "`NetTransport` autoload \u2014 swap between `ENetMultiplayerPeer` and `SteamMultiplayerPeer` behind one interface"
     },
