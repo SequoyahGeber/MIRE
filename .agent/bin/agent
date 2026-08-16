@@ -371,6 +371,94 @@ def cmd_drop(args):
     ok("%s dropped — claims released" % tid)
 
 
+# ---------------------------------------------------------------- ship
+
+def _git(*a):
+    return subprocess.run(["git"] + list(a), cwd=ROOT, capture_output=True, text=True)
+
+
+def _branch():
+    return _git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip() or "main"
+
+
+def cmd_ship(args):
+    """Commit and push exactly this task's files, then print the completion notice.
+
+    Deliberately NOT `git add -A`. Parallel agents share one working directory, so a
+    blanket add would sweep another agent's half-written files into this commit — the
+    real hazard when several chats run at once (push races can't happen from one repo).
+    Only the files this task claimed, plus the coordination state, are staged."""
+    if not args:
+        die('usage: agent ship <task-id> ["commit message"]')
+    me = whoami()
+    tid = args[0]
+    st = load()
+    if tid not in st["tasks"]:
+        die("unknown task %s" % tid)
+    if tid in st["in_flight"]:
+        die("%s is still in flight — run 'agent done %s' or 'agent handoff %s' first" % (tid, tid, tid))
+
+    title = st["tasks"][tid]["title"]
+    msg = " ".join(args[1:]) or ("%s %s" % (tid, title[:60]))
+
+    # The files this task held, recorded by _release() when it closed out.
+    mine = sorted(f for f, d in st.get("recent", {}).items() if d.get("task") == tid)
+    changed = [l[3:].strip().strip('"').split(" -> ")[-1]
+               for l in _git("status", "--porcelain", "-uall").stdout.splitlines() if l.strip()]
+
+    to_stage = [f for f in mine if f in changed]
+    to_stage += [f for f in changed if f.startswith(".agent/")]
+    if not to_stage:
+        die("nothing to ship for %s — no changed files from this task" % tid)
+
+    others = [f for f in changed if f not in to_stage]
+
+    r = _git("add", "--", *to_stage)
+    if r.returncode != 0:
+        die("git add failed: %s" % r.stderr.strip())
+
+    # The pre-commit hook re-runs check against the staged set.
+    r = _git("commit", "-m", "%s\n\nTask %s shipped by %s." % (msg, tid, me))
+    if r.returncode != 0:
+        _git("reset")
+        die("commit blocked:\n%s%s" % (r.stdout, r.stderr))
+    ok("committed %d file(s) — %s" % (len(to_stage), _head()))
+
+    if others:
+        print("  %sLeft alone (not this task's, may belong to another agent):%s" % (C["dim"], C["x"]))
+        for f in others[:8]:
+            print("      %s· %s%s" % (C["dim"], f, C["x"]))
+
+    if not _git("remote").stdout.strip():
+        print("\n%s⚠ No git remote configured — committed locally, nothing pushed.%s"
+              % (C["y"], C["x"]))
+        print("  %sSequoyah: gh repo create mire --private --source=. --remote=origin --push%s"
+              % (C["dim"], C["x"]))
+    else:
+        br = _branch()
+        r = _git("push")
+        if r.returncode != 0:
+            r = _git("push", "-u", "origin", br)
+        if r.returncode == 0:
+            ok("pushed to origin/%s" % br)
+        else:
+            print("%s✗ push failed:%s %s" % (C["r"], C["x"], (r.stderr or r.stdout).strip()[:300]))
+            print("  %sWork is committed locally and safe. Tell Sequoyah the push failed.%s"
+                  % (C["dim"], C["x"]))
+
+    print("\n%s%s Task %s complete — relay this to Sequoyah:%s" % (C["b"], "─" * 3, tid, C["x"]))
+    print("""
+  Task %s (%s) is done, committed and pushed.
+
+  Then state, explicitly:
+    · What you verified, and how (the actual numbers or the command you ran)
+    · WHAT HE MUST WIRE before this runs — autoloads, scene nodes, exported
+      values. You cannot touch .tscn/.tres, so if anything needs wiring the
+      feature does NOT work yet and he must not treat it as finished.
+    · Say plainly whether it is safe to start the next task.
+""" % (tid, title[:70]))
+
+
 # ---------------------------------------------------------------- check
 
 def cmd_check(args):
@@ -566,7 +654,7 @@ def render_board(st):
 COMMANDS = {
     "start": cmd_start, "claim": cmd_claim, "note": cmd_note, "done": cmd_done,
     "handoff": cmd_handoff, "drop": cmd_drop, "check": cmd_check,
-    "board": cmd_board, "sync": cmd_sync,
+    "board": cmd_board, "sync": cmd_sync, "ship": cmd_ship,
 }
 
 USAGE = """agent — multi-agent coordination for MIRE
@@ -576,6 +664,7 @@ USAGE = """agent — multi-agent coordination for MIRE
   agent claim <id> [files...]     claim a task and the files you'll edit
   agent note <id> "..."           record something mid-task
   agent done <id> ["summary"]     finish: release claims, write journal
+  agent ship <id> ["message"]     commit THIS TASK's files + push, print the sign-off
   agent handoff <id> "..."        stop mid-task: what's left, what to watch out for
   agent drop <id>                 abandon a task, release claims
   agent check                     verify changes respect claims (pre-commit hook)

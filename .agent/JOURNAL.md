@@ -193,3 +193,13 @@ parallel that is the exact case the claim system exists to catch.
 Files: `docs/DECISIONS.md`
 
 Commit at time of writing: `9ebe47b`
+
+---
+
+### DONE · 0.7 · terrain · 2026-08-16T01:51:51+00:00
+
+**Spike R2 — generate 100 chunked terrain meshes from noise, measure frame times & hitches**
+
+Mesher builds 33x33 chunks from seeded noise.
+
+Commit at time of writing: `f0772db`
