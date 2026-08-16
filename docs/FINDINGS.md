@@ -69,23 +69,6 @@ do is worth as much as the record of what we did.
 
 ## Open
 
-### F-001 · Pre-commit hook scans the working tree instead of the staged set
-
-**Area:** tooling · **Severity:** high · **Found:** 2026-08-15 by claude during the §5a doc update
-
-The claim check blocks a commit when *any* file in the working tree is claimed by another agent, even
-when that file isn't staged. Committing `docs/ARCHITECTURE.md` while the nav agent had uncommitted
-work on `world/chunk/nav_bake_probe.gd` was refused, and only went through with `--no-verify`.
-
-This defeats the parallel-agent workflow that `MIRE_AGENT` was added to enable (`598523c`): any two
-agents working simultaneously block each other's commits regardless of overlap. Worse, it trains
-everyone to reach for `--no-verify`, which is exactly when the check would have caught a real
-conflict.
-
-Fix: check `git diff --cached --name-only` rather than `git status`.
-
----
-
 ### F-002 · Sprint-FOV lerp uses the framerate-dependent smoothing form
 
 **Area:** gameplay feel · **Severity:** low · **Found:** 2026-08-15 by claude during the §5a doc update
@@ -254,6 +237,30 @@ would have got this right the first time.
 ---
 
 ## Resolved
+
+### F-001 · Pre-commit hook scans the working tree instead of the staged set — **fixed**
+
+**Area:** tooling · **Filed:** 2026-08-15 by claude during the §5a doc update · **Fixed:** 2026-08-15 by nav
+
+The claim check blocked a commit when *any* file in the working tree was claimed by another agent,
+even when that file wasn't staged — so two agents working at once blocked each other regardless of
+overlap, and it trained everyone toward `--no-verify`.
+
+Fixed in `cmd_check`: when `GIT_INDEX_FILE` is set, git is running us as a hook, so we judge
+`git diff --cached --name-only` — what is actually being committed. Run by hand, `agent check` still
+scans the working tree, which is the useful scope there. Falls back to the working tree if the diff
+fails (e.g. a repo with no HEAD yet) rather than failing open.
+
+Detecting the hook via `GIT_INDEX_FILE` rather than adding a `--staged` flag was deliberate: the
+installed hook in `.git/hooks/` is not version-controlled, so a flag would have needed every clone to
+re-run `install-hooks` before the fix took effect.
+
+Verified: with `codex` holding a dirty unstaged `world/chunk/chunk_mesher.gd`, committing an unrelated
+staged file now passes; staging `chunk_mesher.gd` itself still blocks.
+
+Noted while testing: `FREE_PREFIXES` (`:32`) exempts `docs/`, `.agent/`, `CLAUDE.md`, `AGENTS.md`,
+`README.md` and `.gitignore` from claim checking entirely. Claiming a docs file is therefore
+ceremony — harmless, and still useful as a signal to other agents, but it is not enforced.
 
 ### F-008 · CLAUDE.md's close-out order makes the hook warn on your own files — **won't fix, not a defect**
 

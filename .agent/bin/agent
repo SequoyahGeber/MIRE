@@ -378,15 +378,35 @@ def cmd_check(args):
     Run by the pre-commit hook."""
     me = whoami(required=False) or "unknown"
     st = load()
-    try:
-        # -uall: list untracked files individually. Without it git collapses a
-        # wholly-untracked directory to "dir/" and we never see the files inside.
-        raw = subprocess.run(["git", "status", "--porcelain", "-uall"], cwd=ROOT,
-                             capture_output=True, text=True).stdout
-    except Exception:
-        return
-    changed = [l[3:].strip().strip('"') for l in raw.splitlines() if l.strip()]
-    changed = [c.split(" -> ")[-1] for c in changed]
+
+    # Inside a git hook, judge the STAGED set — that is what is actually being
+    # committed (F-001). Scanning the working tree instead made any two agents
+    # working at once block each other's commits over files neither was
+    # committing, which taught everyone to reach for --no-verify. Git exports
+    # GIT_INDEX_FILE to its hooks and nowhere else, so it tells us which we are.
+    # Run by hand, the working tree is still the useful scope.
+    staged_only = bool(os.environ.get("GIT_INDEX_FILE"))
+    changed = None
+    if staged_only:
+        try:
+            r = subprocess.run(["git", "diff", "--cached", "--name-only"], cwd=ROOT,
+                               capture_output=True, text=True)
+            if r.returncode == 0:
+                changed = [l.strip().strip('"') for l in r.stdout.splitlines() if l.strip()]
+        except Exception:
+            changed = None
+    if changed is None:
+        # Fall back to the working tree: manual runs, and the first-commit case
+        # where there is no HEAD to diff against. Never fail open.
+        try:
+            # -uall: list untracked files individually. Without it git collapses a
+            # wholly-untracked directory to "dir/" and we never see the files inside.
+            raw = subprocess.run(["git", "status", "--porcelain", "-uall"], cwd=ROOT,
+                                 capture_output=True, text=True).stdout
+        except Exception:
+            return
+        changed = [l[3:].strip().strip('"') for l in raw.splitlines() if l.strip()]
+        changed = [c.split(" -> ")[-1] for c in changed]
 
     errors, warnings = [], []
     human = me in ("sequoyah", "human", "unknown")
