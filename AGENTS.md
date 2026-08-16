@@ -52,6 +52,10 @@ prevent.
 
 Cheap, and it's what makes a handoff readable later.
 
+**Spotted a problem outside your task?** Don't fix it, don't stay silent — append it to
+`docs/FINDINGS.md` and carry on. Chasing it blows your scope and your quota; dropping it loses a real
+observation forever. Thirty seconds, then back to work.
+
 ### 3. Close out — always, even if you didn't finish
 
 ```bash
@@ -133,6 +137,7 @@ Host-authoritative by default; client-authoritative only for a player's own move
 | `docs/DESIGN.md` | What the game is and why. |
 | `docs/ROADMAP.md` | All 97 tasks with IDs. Task IDs in commands come from here. |
 | `docs/DECISIONS.md` | Settled decisions, each with what would change our mind. **Check before relitigating.** |
+| `docs/FINDINGS.md` | Problems noticed but not yet scheduled. **File what you spot outside your task here.** |
 | `docs/AI-WORKFLOW.md` | How work is split across agents and the human. |
 
 ---
