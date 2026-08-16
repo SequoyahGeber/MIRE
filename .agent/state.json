@@ -776,6 +776,11 @@
       "at": "2026-08-16T06:52:27+00:00",
       "task": "1.1"
     },
+    "docs/DELEGATION.md": {
+      "agent": "reed",
+      "at": "2026-08-16T18:15:43+00:00",
+      "task": "2.1c"
+    },
     "docs/FINDINGS.md": {
       "agent": "larch",
       "at": "2026-08-16T16:55:25+00:00",
@@ -788,8 +793,8 @@
     },
     "docs/ROADMAP.md": {
       "agent": "reed",
-      "at": "2026-08-16T18:01:56+00:00",
-      "task": "2.1b"
+      "at": "2026-08-16T18:15:43+00:00",
+      "task": "2.1c"
     },
     "entities/player/player.tscn": {
       "agent": "claude",
@@ -876,6 +881,16 @@
       "at": "2026-08-16T08:14:40+00:00",
       "task": "1.10"
     },
+    "tools/playtest_map_check.gd": {
+      "agent": "reed",
+      "at": "2026-08-16T18:15:43+00:00",
+      "task": "2.1c"
+    },
+    "tools/playtest_map_check.gd.uid": {
+      "agent": "reed",
+      "at": "2026-08-16T18:15:43+00:00",
+      "task": "2.1c"
+    },
     "tools/setup_project.gd": {
       "agent": "claude",
       "at": "2026-08-15T21:46:15+00:00",
@@ -917,9 +932,14 @@
       "task": "0.8"
     },
     "world/gen/test_map_props.gd": {
-      "agent": "onyx",
-      "at": "2026-08-16T17:02:10+00:00",
-      "task": "0.11"
+      "agent": "reed",
+      "at": "2026-08-16T18:15:43+00:00",
+      "task": "2.1c"
+    },
+    "world/gen/test_map_props.gd.uid": {
+      "agent": "reed",
+      "at": "2026-08-16T18:15:43+00:00",
+      "task": "2.1c"
     }
   },
   "tasks": {
@@ -1196,6 +1216,15 @@
       "status": "done",
       "tier": "T0",
       "title": "Expand the original Blender environment kit from 8 to 116 assets across trees, rocks, forest debris, ground cover, Mire growths, ruins, and modular wood/stone building pieces"
+    },
+    "2.1c": {
+      "done_at": "2026-08-16T18:15:43+00:00",
+      "done_by": "reed",
+      "est": "4",
+      "milestone": "M2",
+      "status": "done",
+      "tier": "T0",
+      "title": "Build a compact runtime-generated playtest map from the environment kit: camp, forest, ruins, Mire grove, ridge, routes, and collision"
     },
     "2.2": {
       "done_at": "2026-08-16T02:59:39+00:00",

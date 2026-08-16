@@ -93,6 +93,14 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+**The playtest map is now populated by task 2.1c.** `TestMapProps` builds six deterministic zones
+inside `GreyboxTest` at runtime: spawn camp, west forest, north ruins, east Mire grove, south ridge,
+and routes/boundary. The current layout is 171 visible kit pieces with 113 simplified collision
+shapes. It loads the committed `.glb` sources through `GLTFDocument` and caches them as
+`PackedScene`s, so it does not depend on editor-generated `.import` sidecars. Keep the static layout
+client-local from seed `20260816`; future harvesting, construction, damage, or map mutation is
+host-authoritative. Verify with `Godot --headless --path . --script tools/playtest_map_check.gd`.
+
 **1.5, 1.9 and 1.10 shipped earlier** (`8d6ddab`, `ef1bc16`, `4f17bcd`), and 1.10 is now actually
 *wired* (`9f56451`). **1.6, 1.8 and 1.11 landed in the same session, in parallel chats** — read the
 table and the per-task sections below rather than assuming a clean slate, and run `agent board`
