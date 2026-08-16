@@ -433,3 +433,18 @@ Notes along the way:
 Files: `core/net/net_interest.gd`, `core/net/net_config.gd`, `entities/player/player_controller.gd`, `autoload/player_net.gd`, `tools/interest_check.gd`
 
 Commit at time of writing: `982c2ae`
+
+---
+
+### DONE · 1.6 · ash · 2026-08-16T17:19:51+00:00
+
+**Remote-player interpolation so other players don't stutter**
+
+Snapshot interpolation for remote players. NetInterp autoload (registered, last in [autoload]) watches PlayerNet's Players container and attaches a RemoteInterpolator to every player this peer does NOT own; RemoteInterpolator buffers arrivals stamped with LOCAL ARRIVAL TIME and renders ~2 send-intervals in the past, deriving the delay from the observed interval so 15Hz enemies work unchanged (rest of F-004). Zero change to player_controller.gd/player_net.gd/net_config.gd (all three held by 1.8) and ZERO added to the wire — it hooks MultiplayerSynchronizer.synchronized and samples the node after the engine writes it, so velocity stays deliberately absent per 1.5. F-004's mechanism question answered as D-026: engine physics_interpolation does NOT cover this (it smooths the 60Hz physics grid to render rate; replication is a 33ms staircase with jitter that no 16.7ms window can flatten and that the engine cannot jitter-buffer since it has no arrival times) AND the two fight, so physics_interpolation_mode is forced OFF on the driven subtree and restored in _exit_tree. Measured by tools/interp_check.gd with the control read through get_global_transform_interpolated() so engine smoothing counts for the control: 67% still frames / CV 1.64 -> 1.5% / CV 0.21 synthetic (30Hz + 8ms jitter + 6% loss), 70% / CV 1.86 -> 0.0% / CV 0.12 over real ENet, at 67-84ms of drawn latency. 100m teleport snaps in one frame instead of smearing. Verified additionally by a real two-process --host/--client run: each peer smooths exactly the other's player and neither smooths its own; offline boot unchanged. Filed F-018 (PlayerNet has no spawn/despawn signal, so NetInterp reaches for its container by child name; 1.7 is the natural owner).
+
+Notes along the way:
+- F-004 resolved: engine physics_interpolation (already ON project-wide, F-003) does NOT cover network interpolation. It smooths the 60Hz physics grid to render rate; replication arrives at 30Hz at arbitrary idle-frame times with jitter, so a 33ms staircase survives a 16.7ms smoothing window, and the engine has no notion of arrival time so it cannot jitter-buffer. Both are needed. They also FIGHT: engine interp would re-interpolate our per-frame output across physics ticks. RemoteInterpolator sets physics_interpolation_mode=OFF on the subtree it drives.
+
+Files: `core/net/remote_interp.gd`, `autoload/net_interp.gd`, `tools/interp_check.gd`, `project.godot`
+
+Commit at time of writing: `ff837c4`

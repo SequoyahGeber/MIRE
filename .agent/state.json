@@ -1,10 +1,5 @@
 {
   "claims": {
-    "autoload/net_interp.gd": {
-      "agent": "ash",
-      "at": "2026-08-16T17:07:25+00:00",
-      "task": "1.6"
-    },
     "autoload/net_transport.gd": {
       "agent": "tine",
       "at": "2026-08-16T17:09:20+00:00",
@@ -20,21 +15,6 @@
       "at": "2026-08-16T17:09:20+00:00",
       "task": "1.7"
     },
-    "core/net/remote_interp.gd": {
-      "agent": "ash",
-      "at": "2026-08-16T17:07:25+00:00",
-      "task": "1.6"
-    },
-    "project.godot": {
-      "agent": "ash",
-      "at": "2026-08-16T17:07:25+00:00",
-      "task": "1.6"
-    },
-    "tools/interp_check.gd": {
-      "agent": "ash",
-      "at": "2026-08-16T17:07:25+00:00",
-      "task": "1.6"
-    },
     "tools/session_lifecycle_check.gd": {
       "agent": "tine",
       "at": "2026-08-16T17:09:20+00:00",
@@ -42,23 +22,6 @@
     }
   },
   "in_flight": {
-    "1.6": {
-      "agent": "ash",
-      "files": [
-        "core/net/remote_interp.gd",
-        "autoload/net_interp.gd",
-        "tools/interp_check.gd",
-        "project.godot"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-16T17:11:49+00:00",
-          "by": "ash",
-          "text": "F-004 resolved: engine physics_interpolation (already ON project-wide, F-003) does NOT cover network interpolation. It smooths the 60Hz physics grid to render rate; replication arrives at 30Hz at arbitrary idle-frame times with jitter, so a 33ms staircase survives a 16.7ms smoothing window, and the engine has no notion of arrival time so it cannot jitter-buffer. Both are needed. They also FIGHT: engine interp would re-interpolate our per-frame output across physics ticks. RemoteInterpolator sets physics_interpolation_mode=OFF on the subtree it drives."
-        }
-      ],
-      "started": "2026-08-16T17:07:25+00:00"
-    },
     "1.7": {
       "agent": "tine",
       "files": [
@@ -92,6 +55,11 @@
       "agent": "larch",
       "at": "2026-08-16T16:55:25+00:00",
       "task": "F-007"
+    },
+    "autoload/net_interp.gd": {
+      "agent": "ash",
+      "at": "2026-08-16T17:19:51+00:00",
+      "task": "1.6"
     },
     "autoload/net_transport.gd": {
       "agent": "lobby",
@@ -137,6 +105,11 @@
       "agent": "bram",
       "at": "2026-08-16T17:14:58+00:00",
       "task": "1.11"
+    },
+    "core/net/remote_interp.gd": {
+      "agent": "ash",
+      "at": "2026-08-16T17:19:51+00:00",
+      "task": "1.6"
     },
     "core/util/mire_log.gd": {
       "agent": "claude",
@@ -184,9 +157,9 @@
       "task": "0.3"
     },
     "project.godot": {
-      "agent": "onyx",
-      "at": "2026-08-16T17:02:10+00:00",
-      "task": "0.11"
+      "agent": "ash",
+      "at": "2026-08-16T17:19:51+00:00",
+      "task": "1.6"
     },
     "steam_appid.txt": {
       "agent": "steam",
@@ -237,6 +210,11 @@
       "agent": "birch",
       "at": "2026-08-16T17:16:32+00:00",
       "task": "1.8"
+    },
+    "tools/interp_check.gd": {
+      "agent": "ash",
+      "at": "2026-08-16T17:19:51+00:00",
+      "task": "1.6"
     },
     "tools/net_debug_panel_check.gd": {
       "agent": "netui",
@@ -478,9 +456,11 @@
       "title": "Networked player: `MultiplayerSpawner` + `MultiplayerSynchronizer`, client-auth movement"
     },
     "1.6": {
+      "done_at": "2026-08-16T17:19:51+00:00",
+      "done_by": "ash",
       "est": "2",
       "milestone": "M1",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T2",
       "title": "Remote-player interpolation so other players don't stutter"
     },
