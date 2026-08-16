@@ -103,6 +103,39 @@ const STEAM_LOBBY_TIMEOUT_SEC: float = 15.0
 ## closed: `+connect_lobby <lobby_id>`. The running-game case arrives as a signal instead.
 const STEAM_CONNECT_LOBBY_ARG: String = "+connect_lobby"
 
+# ── Replication: players (task 1.5) ───────────────────────────────────────────────────────────────
+
+# Node names under the PlayerNet autoload. The high-level multiplayer API matches nodes by path, so
+# host and client must arrive at identical names — they are named once, here, rather than spelled out
+# at each construction site (D-023).
+
+## Container every networked player is spawned into: /root/PlayerNet/Players.
+const PLAYER_CONTAINER_NODE: StringName = &"Players"
+
+## The MultiplayerSpawner itself: /root/PlayerNet/PlayerSpawner.
+const PLAYER_SPAWNER_NODE: StringName = &"PlayerSpawner"
+
+## The MultiplayerSynchronizer PlayerController builds as its own child.
+const PLAYER_SYNC_NODE: StringName = &"NetSync"
+
+## §2.5: players replicate at 30Hz. Enemies (15Hz) and props (on-change) are task 1.8's to add.
+const PLAYER_SYNC_HZ: float = 30.0
+const PLAYER_SYNC_INTERVAL_SEC: float = 1.0 / PLAYER_SYNC_HZ
+
+# ── Host speed sanity check (§2.2 row 1) ──────────────────────────────────────────────────────────
+
+## How often the host measures a remote player's implied speed. Well below the sync rate, so each
+## sample spans several replicated positions and a single dropped packet cannot inflate one.
+const SPEED_CHECK_INTERVAL_SEC: float = 0.25
+
+## Multiple of sprint_speed that counts as impossible. Generous on purpose: slopes, stairs and
+## knockback all move a player faster than sprint_speed legitimately.
+const SPEED_CHECK_TOLERANCE: float = 1.8
+
+## Consecutive over-limit samples before we say anything. One sample is a lag spike or a teleport;
+## four in a row is a second of sustained impossible movement.
+const SPEED_CHECK_STRIKES: int = 4
+
 # ── Logging ───────────────────────────────────────────────────────────────────────────────────────
 
 ## MireLog channel. `log net off` in the debug console silences everything below WARN.

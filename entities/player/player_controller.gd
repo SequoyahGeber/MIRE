@@ -6,8 +6,8 @@ extends CharacterBody3D
 ## Network authority: OWN PLAYER MOVEMENT — CLIENT (ARCHITECTURE.md §2.2, row 1).
 ## The peer that owns this node simulates it locally and its transform is replicated outward by a
 ## MultiplayerSynchronizer. Remote copies of this node run no input and no physics — they are moved
-## purely by replication (interpolation lands in task 1.6). The host sanity-checks speed later (1.5);
-## nothing here is trusted by anyone but the owner.
+## purely by replication (interpolation lands in task 1.6). The host sanity-checks the resulting
+## speed in autoload/player_net.gd and warns; nothing here is trusted by anyone but the owner.
 ##
 ## Everything below is @export'd on purpose. Task 0.5 is "tune until movement feels good", and that
 ## tuning should happen in the inspector with the game running, not in this file.
@@ -53,6 +53,10 @@ var is_local_authority: bool = true
 
 @onready var camera: PlayerCamera = $CameraPivot
 
+## Built in _ready(), never authored in the scene (D-023). Replicates the minimum that makes a
+## remote player look right; 1.6 owns smoothing what arrives through it.
+var net_sync: MultiplayerSynchronizer
+
 var _gravity: float = 9.8
 var _time_since_grounded: float = INF
 var _time_since_jump_pressed: float = INF
@@ -62,9 +66,13 @@ var _was_on_floor: bool = true
 func _ready() -> void:
 	_gravity = float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
 
+	_adopt_spawn_authority()
+
 	# Offline this returns true (no peer -> unique id 1, default authority 1), so the controller
-	# works standalone for M0. Task 1.5 assigns real authority at spawn time.
+	# works standalone for M0. In a session it is the peer this body was spawned for.
 	is_local_authority = is_multiplayer_authority()
+
+	_build_synchronizer()
 
 	camera.set_active(is_local_authority)
 	set_physics_process(is_local_authority)
@@ -72,6 +80,51 @@ func _ready() -> void:
 
 	if is_local_authority:
 		_capture_mouse(true)
+
+
+## A player spawned by PlayerNet is NAMED for the peer that owns it, and that name is in place on
+## every peer before the node enters the tree — so both sides derive the same authority from it with
+## nothing extra on the wire. Any other name (the level's hand-placed "Player", or anything offline)
+## is left alone, which is why pressing Play still works with no session.
+func _adopt_spawn_authority() -> void:
+	var node_name: String = String(name)
+	if not node_name.is_valid_int():
+		return
+
+	var owner_peer: int = node_name.to_int()
+	if owner_peer <= 0:
+		return
+
+	set_multiplayer_authority(owner_peer)
+
+
+## Runs unconditionally, on every peer, so host and client build the same tree — only the
+## CONFIGURATION differs, in who holds authority. A synchronizer built on one side only fails as
+## silence, which is the expensive kind of bug.
+##
+## Replicates position, body yaw and camera pitch, and nothing else. Yaw is on the body and pitch is
+## on the pivot (see player_camera.gd), so a remote player needs both to face the right way.
+## Velocity is deliberately absent: if 1.6 needs it for interpolation, 1.6 adds it and pays for it.
+func _build_synchronizer() -> void:
+	var config: SceneReplicationConfig = SceneReplicationConfig.new()
+	for property: NodePath in [^".:position", ^".:rotation:y", ^"CameraPivot:rotation:x"]:
+		config.add_property(property)
+		config.property_set_replication_mode(
+			property, SceneReplicationConfig.REPLICATION_MODE_ALWAYS
+		)
+
+	net_sync = MultiplayerSynchronizer.new()
+	net_sync.name = NetConfig.PLAYER_SYNC_NODE
+	net_sync.root_path = ^".."
+	net_sync.replication_config = config
+	net_sync.replication_interval = NetConfig.PLAYER_SYNC_INTERVAL_SEC
+
+	# The owning peer sends; everyone else receives — and this MUST be set before the synchronizer
+	# enters the tree. Changing a synchronizer's authority once it is already in the tree makes the
+	# replication interface reject the pending spawn ("no network ID"), which the engine reports as
+	# an error on every client and which is exactly the trap this task was warned about.
+	net_sync.set_multiplayer_authority(get_multiplayer_authority())
+	add_child(net_sync)
 
 
 func _unhandled_input(event: InputEvent) -> void:

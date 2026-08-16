@@ -324,3 +324,20 @@ Notes along the way:
 Files: `ui/debug/net_debug_panel.gd`, `tools/net_debug_panel_check.gd`
 
 Commit at time of writing: `06621eb`
+
+---
+
+### DONE · 1.5 · spawn · 2026-08-16T08:15:22+00:00
+
+**Networked player: `MultiplayerSpawner` + `MultiplayerSynchronizer`, client-auth movement**
+
+PlayerNet autoload spawns one player per peer under /root/PlayerNet/Players, named for its owner; PlayerController builds its own MultiplayerSynchronizer + SceneReplicationConfig in code (position, body yaw, CameraPivot pitch, 30Hz). Verified with two headless processes: both show 2 players, each holds authority over exactly one, and driving the local one moves the remote copy on the far side in both directions. Host speed check warns on a sustained 40 m/s client (limit 10.8) and stays quiet at 3 m/s; it never corrects. Offline is unchanged — nothing spawns, the level's Player is left alone.
+
+Notes along the way:
+- Authority is derived from the node NAME (players are named for their peer id), not replicated: the spawner sets it before add_child and PlayerController._ready() re-derives it, so host and client agree with nothing extra on the wire.
+- Trap for 1.6/1.8: a MultiplayerSynchronizer's authority MUST be set BEFORE add_child(). Setting it after (still inside _ready) makes the engine reject the pending spawn — 'no network ID' — on every client.
+- Trap for 1.9: autoload singletons are NOT compile-time identifiers in a '--script' SceneTree main loop (the script compiles before autoloads register). Look them up with root.get_node(^"NetTransport") instead.
+
+Files: `autoload/player_net.gd`, `entities/player/player_controller.gd`, `core/net/net_config.gd`, `project.godot`
+
+Commit at time of writing: `4f17bcd`
