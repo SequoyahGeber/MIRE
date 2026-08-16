@@ -377,6 +377,31 @@ file; this is a few lines on top of what it is doing anyway, not a task.
 
 ---
 
+### F-020 · Steam sessions cannot use NetSession's direct-address auto-rejoin loop
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-16 by tine during 1.7
+
+LOCAL and LAN clients can rejoin by repeating the last mode/address/port. A Steam client must first
+re-enter its asynchronous lobby through `SteamLobby`; calling `NetTransport.join()` with the old ID
+alone is not the same lifecycle. `NetSession` therefore reports a lost Steam session without automatic
+rejoin instead of pretending the retry worked. Fix when Steam lobby reconnect UX is implemented by
+routing the retry through `SteamLobby` and only handing the joined lobby back to `NetTransport`.
+
+---
+
+### F-021 · The net debug panel harness passes while Godot reports an uninitialized multiplayer root
+
+**Area:** tests/netcode · **Severity:** medium · **Found:** 2026-08-16 by reed during 1.7
+
+`tools/net_debug_panel_check.gd` exits 0 with all 19 assertions passing, but its real-ENet section
+repeatedly emits `Multiplayer root was not initialized` from `SceneMultiplayer._process_packet()` at
+line 111. The custom client `SceneMultiplayer` is assigned an ENet peer without a root path. Give it
+a stable root path before polling, then make engine errors fail the harness so a green exit cannot
+hide them. This is independent of 1.7: `tools/session_lifecycle_check.gd` uses full Godot processes
+with initialized roots and completes cleanly.
+
+---
+
 ## Resolved
 
 ### F-019 · Generated asset import sidecars flood every clean-tree audit — **fixed**

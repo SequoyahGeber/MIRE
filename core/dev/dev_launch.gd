@@ -39,6 +39,12 @@ var _role: Role = Role.NONE
 var _join_attempts: int = 0
 var _connected: bool = false
 
+## Latches on the first successful connection and never clears. Everything below it is about the
+## cold-start race — two instances launched together, the client winning by a few milliseconds. Once
+## a session has actually existed, reconnecting is NetSession's job (task 1.7), and two systems
+## calling join() at once produce ERR_ALREADY_IN_USE and a leave() that kills the other's attempt.
+var _ever_connected: bool = false
+
 
 func _ready() -> void:
 	if not OS.is_debug_build():
@@ -104,6 +110,10 @@ func _retry_join(reason: String) -> void:
 	if _connected:
 		return
 
+	if _ever_connected:
+		MireLog.info(NetConfig.LOG_CHANNEL, "%s not retrying (%s) — reconnection belongs to NetSession" % [_tag(), reason])
+		return
+
 	if _join_attempts >= MAX_JOIN_ATTEMPTS:
 		MireLog.error(NetConfig.LOG_CHANNEL, "%s giving up after %d attempts — last failure: %s" % [_tag(), _join_attempts, reason])
 		return
@@ -120,11 +130,13 @@ func _retry_join(reason: String) -> void:
 
 func _on_server_started() -> void:
 	_connected = true
+	_ever_connected = true
 	MireLog.info(NetConfig.LOG_CHANNEL, "%s server up, waiting for peers" % _tag())
 
 
 func _on_connected_to_host() -> void:
 	_connected = true
+	_ever_connected = true
 	MireLog.info(NetConfig.LOG_CHANNEL, "%s connected to host" % _tag())
 
 

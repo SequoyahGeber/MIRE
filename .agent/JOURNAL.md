@@ -563,3 +563,19 @@ Notes along the way:
 Files: `.gitignore`, `autoload/net_interp.gd.uid`, `core/net/net_version.gd.uid`, `core/net/remote_interp.gd.uid`, `tools/handshake_check.gd.uid`, `tools/interest_check.gd.uid`, `tools/interp_check.gd.uid`, `docs/FINDINGS.md`, `levels/playtest_map.tscn`
 
 Commit at time of writing: `423b73a`
+
+---
+
+### DONE · 1.7 · reed · 2026-08-16T19:23:07+00:00
+
+**Connection lifecycle: join mid-session, disconnect, host quits, timeout handling**
+
+Connection lifecycle complete: NetSession is registered and owns host admission, readable end reasons, clean host close, LOCAL/LAN auto-rejoin, and the wired protocol handshake. Real multi-process ENet harness completed 8/8 sections with 0 failures; killed peer detected/despawned in 2.6s. Setup, boot, handshake, interest, interpolation and synced-group regressions pass. Steam lobby rejoin remains F-020; net debug harness false-green engine errors recorded separately as F-021. No scene or resource wiring is needed.
+
+Notes along the way:
+- Took over stale tine claim from quota-exhausted Claude handoff. Read AGENTS, NEXT, ARCHITECTURE 2.2, DELEGATION Current state, and DECISIONS. Registered NetSession after NetTransport and before DevLaunch with editor confirmed closed; harness now preloads NetVersion per F-016.
+- Implemented and registered NetSession after NetTransport. Real multi-process lifecycle harness completed 8/8 sections with 0 failures: capacity/refusal, late roster, version mismatch cleanup, auto-rejoin, 2.6s dead-peer detection, clean host close. Regressions green: handshake 0 failures, interest PASS, interpolation PASS, synced group PASS, setup all checks passed, normal headless boot clean. net_debug_panel_check exits 0 but exposes pre-existing custom SceneMultiplayer root errors; filed F-021 instead of widening 1.7. Steam rejoin limitation filed F-020; admission policy recorded D-027.
+
+Files: `core/net/net_session.gd`, `core/net/net_session.gd.uid`, `autoload/net_transport.gd`, `core/dev/dev_launch.gd`, `tools/session_lifecycle_check.gd`, `tools/session_lifecycle_check.gd.uid`, `project.godot`, `docs/DELEGATION.md`, `docs/DECISIONS.md`, `docs/NEXT.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `af4ae9f`

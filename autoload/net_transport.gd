@@ -41,7 +41,35 @@ signal disconnected()
 ## Private on purpose — callers branch on is_host() / is_active() / current_mode(), not on this.
 enum _Status { OFFLINE, HOSTING, CONNECTING, CONNECTED }
 
+## Why the last session or attempt ended, as far as the transport can tell. NetSession (task 1.7)
+## refines this into a player-facing reason — the transport cannot tell "the host quit" from "the link
+## died", because ENet reports both as server_disconnected. Read via [method last_end_kind].
+enum EndKind {
+	NONE,           ## Nothing has ended yet this process.
+	LOCAL_LEAVE,    ## We ended it: leave(), or the tree going away.
+	REMOTE_CLOSED,  ## The host went away — cleanly or not. Only a client sees this.
+	CONNECT_FAILED, ## An attempt that never became a session: refused, unreachable, or timed out.
+}
+
 const _STEAM_UNAVAILABLE: String = "STEAM mode unavailable: the GodotSteam GDExtension is not installed yet (task 1.1) — use Mode.LOCAL for the two-window dev loop, or Mode.LAN for a second machine"
+
+## Extra connection slots ENet accepts beyond the game's own capacity. The game's limit is enforced by
+## the admission gate below, NOT by the backend, and that is deliberate (D-027): a peer refused by ENet
+## itself is dropped at the socket with nothing said, so the joiner sees only "timed out" and has no
+## idea the session was full. Accepting them costs one short-lived connection and buys a real reason.
+## Two, so a pair of friends clicking Join at the same moment both get told, rather than one being told
+## and the other timing out.
+const ADMISSION_SLACK: int = 2
+
+# ENet's own dead-peer detection, which is what turns "someone's wifi died" into peer_left. Defaults
+# are 32 / 5000 / 30000 ms, and the 30 s ceiling is far too long to leave a body standing in the world.
+# ENet declares a peer dead once an unacknowledged reliable packet has gone unanswered for
+# timeout_limit × mean-RTT-deviation, clamped to [timeout_min, timeout_max]. Lowering the ceiling to
+# 8 s is the part that matters; the floor stays well above any plausible stall so a peer that is merely
+# hitching (an asset load, an OS sleep of a second or two) is not thrown out of the game for it.
+const _PEER_TIMEOUT_LIMIT: int = 32
+const _PEER_TIMEOUT_MIN_MSEC: int = 2500
+const _PEER_TIMEOUT_MAX_MSEC: int = 8000
 
 var _status: _Status = _Status.OFFLINE
 var _mode: NetConfig.Mode = NetConfig.Mode.OFFLINE
@@ -66,6 +94,20 @@ var _connect_deadline_msec: int = 0
 var _create_error: Error = OK
 var _create_reason: String = ""
 
+## Survives teardown on purpose — it is read by whoever handles the disconnected signal, which fires
+## after the session state has already been cleared.
+var _last_end_kind: EndKind = EndKind.NONE
+
+## Where the last join() pointed, kept past teardown for the same reason: a reconnect has to know
+## where it was, and by the time anything hears about the drop, _address and _port are already gone.
+## Only join() writes these — a host has nothing to reconnect to.
+var _target_mode: NetConfig.Mode = NetConfig.Mode.OFFLINE
+var _target_address: String = ""
+var _target_port: int = 0
+
+## Host-only. Consulted for each connecting peer BEFORE it is announced; see set_admission_gate().
+var _admission_gate: Callable = Callable()
+
 
 func _ready() -> void:
 	# The connect watchdog has to keep ticking while the game is paused — a lobby screen that pauses
@@ -88,6 +130,7 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	# Quiet: the tree is going away, nobody is left to hear the signals, but the socket still has to
 	# be released or a fast relaunch hits "address already in use".
+	_last_end_kind = EndKind.LOCAL_LEAVE
 	_teardown(false)
 
 
@@ -101,6 +144,7 @@ func _process(_delta: float) -> void:
 	var reason: String = "connect to %s timed out after %.1fs" % [
 		_describe_target(), _timeout_for(_mode)
 	]
+	_last_end_kind = EndKind.CONNECT_FAILED
 	_teardown(false)
 	MireLog.error(NetConfig.LOG_CHANNEL, reason)
 	connection_failed.emit(reason)
@@ -141,6 +185,7 @@ func host(mode: NetConfig.Mode, port: int = -1) -> Error:
 	_port = resolved_port
 	_local_id = NetConfig.HOST_PEER_ID
 	_peers = PackedInt32Array([NetConfig.HOST_PEER_ID])
+	_last_end_kind = EndKind.NONE
 
 	MireLog.info(NetConfig.LOG_CHANNEL, "hosting %s on %s — room for %d more" % [
 		mode_name(mode), _describe_target(), NetConfig.MAX_CLIENTS
@@ -193,6 +238,10 @@ func join(mode: NetConfig.Mode, address: String, port: int = -1) -> Error:
 	_local_id = multiplayer.get_unique_id()
 	_peers = PackedInt32Array()
 	_connect_deadline_msec = Time.get_ticks_msec() + int(_timeout_for(mode) * 1000.0)
+	_last_end_kind = EndKind.NONE
+	_target_mode = mode
+	_target_address = resolved_address
+	_target_port = resolved_port
 	set_process(true)
 
 	MireLog.info(NetConfig.LOG_CHANNEL, "connecting to %s (%s, %.1fs timeout)" % [
@@ -212,6 +261,7 @@ func leave() -> void:
 	MireLog.info(NetConfig.LOG_CHANNEL, "leaving %s session (%s)" % [
 		mode_name(_mode), "mid-connect" if was_connecting else "established"
 	])
+	_last_end_kind = EndKind.LOCAL_LEAVE
 	# An attempt that never completed was never a session, so it does not get a disconnected.
 	_teardown(not was_connecting)
 
@@ -250,6 +300,72 @@ func is_connecting() -> bool:
 	return _status == _Status.CONNECTING
 
 
+## Why the last session or attempt ended. Valid while handling disconnected / connection_failed, and
+## until the next host()/join(). NetSession turns this into something a player can read.
+func last_end_kind() -> EndKind:
+	return _last_end_kind
+
+
+## The mode of the last join() this process attempted — OFFLINE if it has never joined one. Survives
+## teardown, unlike current_mode(), because it is what a rejoin has to repeat AFTER the drop.
+func last_target_mode() -> NetConfig.Mode:
+	return _target_mode
+
+
+## Human-readable form of the same target, for logs and "reconnecting to …" text.
+func last_target_name() -> String:
+	if _target_mode == NetConfig.Mode.OFFLINE:
+		return "nowhere"
+	if _target_mode == NetConfig.Mode.STEAM:
+		return "steam:%s" % _target_address
+	return "%s:%d" % [_target_address, _target_port]
+
+
+## True if this process has a client session to get back to.
+func has_rejoin_target() -> bool:
+	return _target_mode != NetConfig.Mode.OFFLINE and not _target_address.is_empty()
+
+
+## Repeat the last join() at the same target. Same contract as join(): OK means the attempt started,
+## not that it succeeded. Exists so a reconnect does not have to carry a mode enum around the codebase
+## — the target is the transport's own memory of where it was.
+func rejoin_last_target() -> Error:
+	if not has_rejoin_target():
+		return _fail(ERR_UNCONFIGURED, "rejoin_last_target(): this process has never joined a session")
+	return join(_target_mode, _target_address, _target_port)
+
+
+## Install the host's admission policy. [param gate] takes a peer id and returns "" to admit, or a
+## refusal reason to reject. It is consulted BEFORE peer_joined is emitted, so a refused peer is never
+## announced: nothing spawns for it, nothing has to be despawned, and no other system ever sees it.
+##
+## The gate does NOT disconnect the peer — it only decides. Saying why (an RPC the joiner can read)
+## and then closing the connection is the gate owner's job, on the deferred call queue, because the
+## refusal has to reach the joiner before the socket shuts. NetSession (task 1.7) owns both halves.
+##
+## Ignored while not hosting. Only one gate at a time; installing a second replaces the first.
+func set_admission_gate(gate: Callable) -> void:
+	_admission_gate = gate
+
+
+func clear_admission_gate() -> void:
+	_admission_gate = Callable()
+
+
+## Close a peer's connection. Host only. The peer is disconnected gracefully — pending reliable
+## packets still go out, which is what lets a refusal reason arrive ahead of the close — and both
+## sides then see it as an ordinary departure: peer_left here, disconnected there.
+func kick_peer(peer_id: int) -> void:
+	if _status != _Status.HOSTING:
+		MireLog.warn(NetConfig.LOG_CHANNEL, "kick_peer(%d) ignored — not hosting" % peer_id)
+		return
+	var peer: MultiplayerPeer = multiplayer.multiplayer_peer
+	if peer == null or peer is OfflineMultiplayerPeer:
+		return
+	MireLog.info(NetConfig.LOG_CHANNEL, "disconnecting peer %d" % peer_id)
+	peer.disconnect_peer(peer_id)
+
+
 ## For logs and UI. Static so callers can name a mode they have not connected with yet.
 static func mode_name(mode: NetConfig.Mode) -> String:
 	var index: int = int(mode)
@@ -276,16 +392,24 @@ static func is_lobby_id(steam_id: int) -> bool:
 
 
 func _on_peer_connected(id: int) -> void:
-	match _status:
-		_Status.OFFLINE:
-			return
-		_Status.CONNECTING:
-			# Godot can deliver the host's id before it tells us the handshake finished. Record it,
-			# but hold the peer_joined: nobody should hear about membership in a session they have
-			# not yet been told they are in. _on_connected_to_server flushes these.
-			_track_peer(id)
-		_:
-			_add_peer(id)
+	if _status == _Status.OFFLINE:
+		return
+
+	# ENet clients connect directly only to peer 1; their notifications for other clients describe
+	# relayed high-level peers which ENetPacketPeer cannot look up. The host owns every client link.
+	if _status == _Status.HOSTING or id == NetConfig.HOST_PEER_ID:
+		_tune_peer_timeout(id)
+
+	if _status == _Status.HOSTING and not _admit(id):
+		return
+
+	if _status == _Status.CONNECTING:
+		# Godot can deliver the host's id before it tells us the handshake finished. Record it, but
+		# hold the peer_joined: nobody should hear about membership in a session they have not yet
+		# been told they are in. _on_connected_to_server flushes these.
+		_track_peer(id)
+		return
+	_add_peer(id)
 
 
 func _on_peer_disconnected(id: int) -> void:
@@ -326,6 +450,7 @@ func _on_connected_to_server() -> void:
 
 func _on_connection_failed() -> void:
 	var reason: String = "%s refused the connection or is not there" % _describe_target()
+	_last_end_kind = EndKind.CONNECT_FAILED
 	_teardown(false)
 	MireLog.error(NetConfig.LOG_CHANNEL, reason)
 	connection_failed.emit(reason)
@@ -333,11 +458,38 @@ func _on_connection_failed() -> void:
 
 func _on_server_disconnected() -> void:
 	MireLog.warn(NetConfig.LOG_CHANNEL, "host closed the session")
+	_last_end_kind = EndKind.REMOTE_CLOSED
 	# Announces: every remote peer gets a peer_left so gameplay can despawn them, then disconnected.
 	_teardown(true)
 
 
 # ── Peer bookkeeping ──────────────────────────────────────────────────────────────────────────────
+
+
+## Ask the installed gate whether this peer may join. True when there is no gate — an ungated host
+## admits everyone, which is exactly what every mode did before the gate existed.
+func _admit(peer_id: int) -> bool:
+	if not _admission_gate.is_valid():
+		return true
+	var refusal: String = str(_admission_gate.call(peer_id))
+	if refusal.is_empty():
+		return true
+	# Deliberately not announced and deliberately not disconnected here: the gate owner still has to
+	# get the reason onto the wire, and disconnecting inside this callback would beat it there.
+	MireLog.warn(NetConfig.LOG_CHANNEL, "peer %d refused: %s" % [peer_id, refusal])
+	return false
+
+
+## Bound ENet's dead-peer detection for a directly connected peer. No-op on any other transport —
+## SteamMultiplayerPeer has no equivalent knob, so Steam keeps its own keepalive policy.
+func _tune_peer_timeout(id: int) -> void:
+	var enet := multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	if enet == null:
+		return
+	var link: ENetPacketPeer = enet.get_peer(id)
+	if link == null:
+		return
+	link.set_timeout(_PEER_TIMEOUT_LIMIT, _PEER_TIMEOUT_MIN_MSEC, _PEER_TIMEOUT_MAX_MSEC)
 
 
 ## Add to the roster without announcing it.
@@ -403,7 +555,8 @@ func _create_enet_host(mode: NetConfig.Mode, port: int) -> MultiplayerPeer:
 	peer.set_bind_ip(
 		NetConfig.LOOPBACK_ADDRESS if mode == NetConfig.Mode.LOCAL else NetConfig.ANY_ADDRESS
 	)
-	var err: Error = peer.create_server(port, NetConfig.MAX_CLIENTS)
+	# Capacity is the admission gate's call, not ENet's — see ADMISSION_SLACK.
+	var err: Error = peer.create_server(port, NetConfig.MAX_CLIENTS + ADMISSION_SLACK)
 	if err != OK:
 		_note_failure(err, "could not bind port %d (%s) — another instance is probably still running" % [
 			port, error_string(err)

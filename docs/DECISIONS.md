@@ -408,6 +408,22 @@ tick of extra lag. That is a real alternative for enemies; it is the wrong trade
 
 ---
 
+### D-027 · 2026-08-16 · Session admission is host policy, with two backend slack connections
+`NetSession` is the host-authoritative policy layer for capacity and temporary join closure;
+`NetTransport` remains the mechanism that accepts, announces, and closes peers. ENet accepts two
+connections beyond `MAX_CLIENTS` so simultaneous over-capacity joiners reach the policy layer and
+receive a reliable human-readable refusal before disconnect, rather than timing out at the socket.
+Capacity/policy checks run before `peer_joined`, so refused peers never spawn. Protocol version is
+checked by a client hello immediately after connection; a mismatch may exist for a few milliseconds
+and is then refused and despawned through the same notice/flush/close path.
+
+**Would change my mind:** a measured denial-of-service or backend resource problem from the two slack
+slots, or Godot exposing a pre-admission authentication callback that can deliver a structured refusal
+without first admitting the peer. Either would move version checking earlier; neither changes host
+authority over admission.
+
+---
+
 ## Template
 
 ```

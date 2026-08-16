@@ -52,38 +52,23 @@ doesn't.
 
 ---
 
-### Task 1.11 — version handshake logic is written; wiring it into `net_transport.gd` is not
+### Task 1.11 — version handshake is wired through `NetSession`
 
-`core/net/net_version.gd` (`NetVersion`, new `class_name`, `RefCounted`) is done and verified:
-`PROTOCOL_VERSION: int` and a pure `mismatch_reason(local_version, remote_version) -> String` (empty
-string when they agree). `tools/handshake_check.gd` proves the mechanics against a real two-peer ENet
-exchange (`Godot --headless --path . --script tools/handshake_check.gd`, currently green) — a hello
-RPC naming the sender's version, a reject RPC naming both when they differ, then `disconnect_peer()`
-after a 0.2s flush so the reliable RPC actually reaches the wire first.
+`core/net/net_version.gd` remains the pure version source: `PROTOCOL_VERSION: int` and
+`mismatch_reason(local_version, remote_version) -> String`. Task 1.7 integrated it at the lifecycle
+policy layer instead of the transport mechanism. On connection, a client calls
+`NetSession.net_client_hello(PROTOCOL_VERSION)` on the host. The host compares versions, sends the
+same human-readable refusal used by capacity/policy admission, waits 0.25 s for the reliable notice
+to flush, then kicks the peer.
 
-**Not wired into `autoload/net_transport.gd`** — it was claimed by 1.7 when 1.11 started, so this
-would have been two agents in one file (AGENTS.md step 1). Whoever next holds that file for a task
-that touches connection setup, drop this in:
+Version is necessarily checked just after ENet admits the connection, so the mismatched peer may
+briefly spawn before the refusal arrives; it is then despawned and leaves no player behind. D-027
+records that tradeoff and what would justify moving to `SceneMultiplayer.auth_callback`. The real
+multi-process lifecycle harness verifies the complete path. `tools/handshake_check.gd` remains the
+smaller pure-mechanics probe.
 
-- In `_on_connected_to_server()`, after `connected_to_host.emit()`: `rpc_id(NetConfig.HOST_PEER_ID,
-  &"_rpc_client_hello", NetVersion.PROTOCOL_VERSION)`. Only the client sends it — the host never hellos
-  itself.
-- Two new `@rpc` methods on `NetTransport` (this project's first use of `@rpc` — nothing to be
-  consistent with yet, `tools/handshake_check.gd`'s `_HandshakeProbe` inner class is the reference
-  shape):
-  - `_rpc_client_hello(remote_version: int)` — `@rpc("any_peer", "reliable")`. Guard `is_host()`, read
-    `multiplayer.get_remote_sender_id()`, call `NetVersion.mismatch_reason(NetVersion.PROTOCOL_VERSION,
-    remote_version)`; empty means fine, do nothing. Non-empty: `rpc_id(sender_id, &"_rpc_host_reject",
-    reason)`, then disconnect that peer after a short flush delay (`await
-    get_tree().create_timer(0.2).timeout` — do not `disconnect_peer()` in the same frame the reject
-    RPC was queued, or the client never receives the reason).
-  - `_rpc_host_reject(reason: String)` — `@rpc("authority", "reliable")`. Guard `not is_host()`,
-    `_teardown(false)`, `connection_failed.emit(reason)`. No new signal needed — `connection_failed`'s
-    documented contract ("fires for every failure, synchronous or not") already covers this.
-- `NetVersion` is a new `class_name`, so it is **not yet in `.godot/global_script_class_cache.cfg`**
-  (F-016) — reference it bare in `net_transport.gd` once Sequoyah has opened the editor at least once
-  since 1.11 landed; until then, `preload("res://core/net/net_version.gd")` in anything run via
-  `--script`.
+F-016 still applies to `NetVersion`: headless `--script` entry points should preload
+`res://core/net/net_version.gd` rather than relying on the gitignored global-class cache.
 
 Bump `NetVersion.PROTOCOL_VERSION` in the same commit as any change that would desync two builds
 silently — see the constant's own doc comment for the exact list (replicated property, RPC signature,
@@ -119,10 +104,9 @@ with Blender 5.2 using `tools/blender/build_playtest_map.py`; verify with `Godot
 --script tools/playtest_map_check.gd`.
 
 **1.5, 1.9 and 1.10 shipped earlier** (`8d6ddab`, `ef1bc16`, `4f17bcd`), and 1.10 is now actually
-*wired* (`9f56451`). **1.6, 1.8 and 1.11 landed in the same session, in parallel chats** — read the
-table and the per-task sections below rather than assuming a clean slate, and run `agent board`
-before claiming anything, because some of that work may still be in flight in another chat as you
-read this. **1.7 is the one M1 task left untouched by that round.**
+*wired* (`9f56451`). **1.6, 1.7, 1.8 and 1.11 are now implemented and headlessly verified** — read
+the table and the per-task sections below rather than assuming a clean slate. The only remaining M1
+task is 1.12, the physical cross-platform Steam join test, which is waiting on Windows and F-009.
 
 **Three open findings were closed this session, all of them process rather than game code:** F-013
 (the `&"synced"` convention, D-024 — 1.8 inherits it), F-015 (an F-number is a task id, so a finding
@@ -141,8 +125,8 @@ what to start next, not by task number.
 |---|---|---|---|---|---|
 | **1.8** | Interest management — visibility filters, per-class intervals | `birch` | Opus 5 | high | **done and verified over a real wire.** `NetInterest` is the seam every replicated entity goes through — see below |
 | **1.6** | Remote-player interpolation | `ash` | Opus 5 | high | **done and verified.** F-004's question answered as D-026: engine `physics_interpolation` does *not* cover it. See below |
-| **1.7** | Connection lifecycle — mid-session join, disconnect, host quit, timeout | auto | Opus 5 | high | **ready** — 1.5 did the obvious signal handling only, deliberately |
-| **1.11** | Protocol/build version handshake | auto | Sonnet 5 | medium | **ready** — self-contained, independent of the other three |
+| **1.7** | Connection lifecycle — mid-session join, disconnect, host quit, timeout | `reed` | Opus 5 | high | **done and verified over real multi-process ENet.** `NetSession` owns host admission and client-local LOCAL/LAN rejoin — see below |
+| **1.11** | Protocol/build version handshake | auto | Sonnet 5 | medium | **done and wired through `NetSession`.** A mismatched build gets a readable refusal and leaves no player behind |
 | 1.5 | Networked player — spawner + synchronizer | `spawn` | Opus 5 | high | **done** — runs; prompt kept for reference |
 | 1.9 | Spike R1 — replication load | `load` | Opus 5 | high | **done — AMBER.** Read the verdict below before writing 1.8 |
 | 1.10 | Network debug panel | `netui` | Sonnet 5 | medium | **done, wired, and reading real numbers** — F-013 closed, entity count live |
@@ -157,6 +141,39 @@ already (`9f56451`): **an autoload script may not carry a `class_name` equal to 
 name** — Godot rejects it as hiding the singleton and the autoload never registers — and **autoload
 order is load order**: a script whose `_ready()` resolves `DebugOverlay`/`NetTransport`/`PlayerNet` by
 bare identifier must be registered *after* them.
+
+### What 1.7 shipped — one lifecycle policy above every transport
+
+**`NetSession` is registered** between `NetTransport` and `DevLaunch`. `NetTransport` remains the
+pipe; `NetSession` owns host-authoritative admission, player-facing end reasons, clean host shutdown,
+and client-local rejoin policy. Mid-session roster replay remains `MultiplayerSpawner`'s job.
+
+```gdscript
+NetSession.end_session()                         # awaitable clean close; tells clients first
+NetSession.refuse_peer(peer_id, detail)          # host-only readable refusal
+NetSession.free_slots() -> int                   # host-side capacity remaining
+NetSession.is_rejoining() -> bool
+NetSession.capacity · accepting_joins · auto_rejoin
+
+session_opened(is_host)
+connection_interrupted(detail)
+rejoin_attempted(attempt, of) · rejoined()
+session_ended(reason, detail)                    # LOCAL_LEAVE / HOST_CLOSED / CONNECTION_LOST / REFUSED
+peer_refused(peer_id, detail)                    # host-side
+```
+
+`NetTransport` gained the mechanism needed underneath: `last_end_kind()`, `has_rejoin_target()`,
+`rejoin_last_target()`, `set_admission_gate()`, and `kick_peer()`. ENet accepts two short-lived
+connections beyond game capacity so the host can say *why* it refused them (D-027), and dead-peer
+timeouts are capped at 8 s. The lifecycle harness measured a killed client being detected and
+despawned in **2.6 s** on this machine.
+
+`tools/session_lifecycle_check.gd` is the real-process regression command. Its eight sections cover
+autoload registration, host capacity, ordinary admission, over-capacity refusal without a spawn,
+late joining with the complete roster, version mismatch cleanup, automatic rejoin after an unclean
+drop, dead-process timeout, and clean host close without a rejoin loop. It completed 8/8 with zero
+failures. LOCAL and LAN can retry their retained direct address; Steam requires asynchronous lobby
+re-entry and deliberately does not pretend otherwise (F-020).
 
 ### What 1.6 leaves you — the smoothing seam, and the rule about who may read it
 

@@ -7,10 +7,11 @@
 
 ## Status
 
-**Milestone:** M1 · Network spine — **1.5, 1.9 and 1.10 landed, 9/14.** M0 is closed, 10/10.
-**Last session:** 2026-08-16 — networked players replicating between two processes (1.5), R1 measured
-**AMBER** (1.9), live net debug readout (1.10), and the delegation model replaced with self-briefing
-agents (`agent brief`). Nothing is in flight.
+**Milestone:** M1 · Network spine — **13/14.** M0 is closed, 10/10.
+**Last session:** 2026-08-16 — connection lifecycle (1.7) completed the code-driven M1 work: readable
+admission/version refusals, late joining, automatic LOCAL/LAN rejoin, clean host close, and bounded
+dead-peer detection all passed a real multi-process ENet harness. Only the physical cross-platform
+Steam join test (1.12) remains, blocked on Windows provisioning and F-009.
 
 The M0 spikes came back **GREEN**: chunked terrain meshing stays in GDScript (D-015), runtime NavMesh
 baking stays and the grid-A* fallback is dropped (D-016). Neither is unconditional — see *M0 debts*.
@@ -20,9 +21,10 @@ the numbers are under *What changed this session*.
 **The game runs.** Open the project and press Play: you spawn in a greybox level and can walk, sprint,
 jump and look around. **F3** overlay · **`~`** console · **Esc** releases the mouse.
 
-**Seven autoloads live, verified booting 2026-08-16** on `4.7.1.stable.official.a13da4feb`, Metal
-Forward+ on an M5 Pro: `DebugOverlay`, `DebugConsole`, `Registry`, `NetTransport`, `DevLaunch`,
-`SteamLobby`, `PlayerNet` — plus `NetDebugPanel`, which you wired. Boot log reads
+**Eleven autoloads live, verified headlessly 2026-08-16** on
+`4.7.1.stable.official.a13da4feb`: `NetSession` is ordered after `NetTransport` and before
+`DevLaunch`; `SteamLobby`, `PlayerNet`, `NetDebugPanel`, `TestMapProps`, and `NetInterp` follow their
+dependencies. Boot log reads
 `content: loaded 0 item(s), 0 recipe(s)` and `net: NetTransport ready (offline)` — 0/0 is correct,
 no `.tres` content is authored yet. `NetConfig` is a `class_name`, **not** an autoload; don't add it.
 
@@ -42,24 +44,16 @@ it takes one from the chat itself (F-007).
 
 ---
 
-## Next task — say "start 1.6" and stop there
+## Next task — 1.12 after its machine prerequisites exist
 
 **Starting a task no longer means pasting a prompt.** Open a fresh chat, give it the task id, and the
 agent runs `agent brief <id>` itself: that prints the task, the open findings, what the last tasks in
 this milestone left it, and who holds which files. It claims, works, verifies headless, files what it
 learned in the repo, and ships. What comes back to you is what only you can act on.
 
-Any of these can run at once — no two touch the same file. Pick by quota, not by order:
-
-| Say this | Task | Why it's next |
-|---|---|---|
-| **"start 1.8"** | Interest management | **Now mandatory, not optional** — R1 came back AMBER and filtering is the only thing that fits the budget. Start here |
-| **"start 1.6"** | Remote-player interpolation | Remote players currently arrive at 30Hz and stutter. Read F-004 first — it argues engine `physics_interpolation` may cover this |
-| **"start 1.7"** | Connection lifecycle | Join mid-session, host quits, timeouts. 1.5 did the obvious signal handling only, deliberately |
-| **"start 1.11"** | Version handshake | Refuse mismatched builds legibly. Independent of the other three |
-
-Effort: Opus 5 · high for 1.6/1.7/1.8; Sonnet 5 · medium is enough for 1.11. Nothing else has to come
-from you — parallel chats now name themselves, distinctly, with no prefix to remember (F-007).
+**Do not start 1.12 yet.** It needs a Windows guest and a reproducible fix for F-009 so GodotSteam
+loads from a fresh clone; the Linux guest already exists. Once both prerequisites are ready, say
+`start 1.12`. It is a physical Mac ↔ Windows ↔ Linux Steam lobby test, not more lifecycle code.
 
 ---
 
@@ -68,6 +62,10 @@ from you — parallel chats now name themselves, distinctly, with no prefix to r
 **M1 netcode is real.** 1.5 (networked player), 1.9 (R1 spike) and 1.10 (debug panel) all shipped, and
 none of them needed anything from you in the editor.
 
+- **Connection lifecycle is now one coherent layer.** `NetSession` owns host admission and readable
+  endings above `NetTransport`: late join, capacity refusal without spawning, version mismatch,
+  automatic LOCAL/LAN rejoin, dead-process despawn and clean host close all passed in real processes.
+  The dead client was detected in 2.6 s; the harness completed 8/8 sections with zero failures.
 - **Two players, two windows, each driving their own** — `PlayerNet` spawns one player per peer under
   `/root/PlayerNet/Players`, authority derived from the node's name, position/yaw/pitch replicated at
   30Hz. Verified with two headless processes, both directions.
@@ -86,13 +84,10 @@ none of them needed anything from you in the editor.
 
 | # | Task | Tier | Who | Est |
 |---|---|---|---|---|
-| 1.6 | Remote-player interpolation | T2 | agent | 2h |
-| 1.7 | Connection lifecycle: join mid-session, disconnect, host quits, timeouts | T2 | agent | 2h |
-| 1.8 | Interest management: visibility filters + per-class `replication_interval` | T2 | agent | 1.5h |
-| 1.11 | Protocol/build version handshake | T2 | agent | 1.5h |
+| 1.12 | Cross-platform join test: Mac ↔ Windows ↔ Linux over Steam | T0 | agent + provisioned machines | 1.5h |
 
-1.6 and 1.8 want 1.5's node layout in hand before their prompts get written — writing them now means
-guessing at names. 1.7 and 1.11 are writable earlier if you'd rather accept a rebase.
+Tasks 1.6, 1.7, 1.8 and 1.11 are done. Do not reopen them as prerequisites for 1.12; fix the machine
+and GodotSteam clone reproducibility blockers instead.
 
 ---
 

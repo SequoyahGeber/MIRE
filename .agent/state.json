@@ -1,45 +1,6 @@
 {
-  "claims": {
-    "autoload/net_transport.gd": {
-      "agent": "tine",
-      "at": "2026-08-16T17:09:20+00:00",
-      "task": "1.7"
-    },
-    "core/dev/dev_launch.gd": {
-      "agent": "tine",
-      "at": "2026-08-16T17:09:20+00:00",
-      "task": "1.7"
-    },
-    "core/net/net_session.gd": {
-      "agent": "tine",
-      "at": "2026-08-16T17:09:20+00:00",
-      "task": "1.7"
-    },
-    "tools/session_lifecycle_check.gd": {
-      "agent": "tine",
-      "at": "2026-08-16T17:09:20+00:00",
-      "task": "1.7"
-    }
-  },
-  "in_flight": {
-    "1.7": {
-      "agent": "tine",
-      "files": [
-        "core/net/net_session.gd",
-        "autoload/net_transport.gd",
-        "core/dev/dev_launch.gd",
-        "tools/session_lifecycle_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-16T17:09:23+00:00",
-          "by": "tine",
-          "text": "project.godot is held by ash (1.6) for the NetInterp autoload \u2014 writing NetSession first, taking project.godot last to register it. Nothing else of mine touches it."
-        }
-      ],
-      "started": "2026-08-16T17:09:20+00:00"
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
       "agent": "larch",
@@ -982,9 +943,9 @@
       "task": "F-019"
     },
     "autoload/net_transport.gd": {
-      "agent": "lobby",
-      "at": "2026-08-16T07:53:23+00:00",
-      "task": "1.4"
+      "agent": "reed",
+      "at": "2026-08-16T19:23:07+00:00",
+      "task": "1.7"
     },
     "autoload/player_net.gd": {
       "agent": "birch",
@@ -1002,9 +963,9 @@
       "task": "1.4"
     },
     "core/dev/dev_launch.gd": {
-      "agent": "local",
-      "at": "2026-08-16T03:30:06+00:00",
-      "task": "1.3"
+      "agent": "reed",
+      "at": "2026-08-16T19:23:07+00:00",
+      "task": "1.7"
     },
     "core/net/dummy_replicant.gd": {
       "agent": "load",
@@ -1020,6 +981,16 @@
       "agent": "birch",
       "at": "2026-08-16T17:16:32+00:00",
       "task": "1.8"
+    },
+    "core/net/net_session.gd": {
+      "agent": "reed",
+      "at": "2026-08-16T19:23:07+00:00",
+      "task": "1.7"
+    },
+    "core/net/net_session.gd.uid": {
+      "agent": "reed",
+      "at": "2026-08-16T19:23:07+00:00",
+      "task": "1.7"
     },
     "core/net/net_version.gd": {
       "agent": "bram",
@@ -1057,24 +1028,24 @@
       "task": "2.1e"
     },
     "docs/DECISIONS.md": {
-      "agent": "steam",
-      "at": "2026-08-16T06:52:27+00:00",
-      "task": "1.1"
+      "agent": "reed",
+      "at": "2026-08-16T19:23:07+00:00",
+      "task": "1.7"
     },
     "docs/DELEGATION.md": {
       "agent": "reed",
-      "at": "2026-08-16T19:00:05+00:00",
-      "task": "2.1e"
+      "at": "2026-08-16T19:23:07+00:00",
+      "task": "1.7"
     },
     "docs/FINDINGS.md": {
       "agent": "reed",
-      "at": "2026-08-16T19:12:29+00:00",
-      "task": "F-019"
+      "at": "2026-08-16T19:23:07+00:00",
+      "task": "1.7"
     },
     "docs/NEXT.md": {
-      "agent": "claude",
-      "at": "2026-08-16T02:46:31+00:00",
-      "task": "0.5"
+      "agent": "reed",
+      "at": "2026-08-16T19:23:07+00:00",
+      "task": "1.7"
     },
     "docs/ROADMAP.md": {
       "agent": "reed",
@@ -1102,9 +1073,9 @@
       "task": "F-019"
     },
     "project.godot": {
-      "agent": "ash",
-      "at": "2026-08-16T17:19:51+00:00",
-      "task": "1.6"
+      "agent": "reed",
+      "at": "2026-08-16T19:23:07+00:00",
+      "task": "1.7"
     },
     "steam_appid.txt": {
       "agent": "steam",
@@ -1215,6 +1186,16 @@
       "agent": "reed",
       "at": "2026-08-16T18:15:43+00:00",
       "task": "2.1c"
+    },
+    "tools/session_lifecycle_check.gd": {
+      "agent": "reed",
+      "at": "2026-08-16T19:23:07+00:00",
+      "task": "1.7"
+    },
+    "tools/session_lifecycle_check.gd.uid": {
+      "agent": "reed",
+      "at": "2026-08-16T19:23:07+00:00",
+      "task": "1.7"
     },
     "tools/setup_project.gd": {
       "agent": "claude",
@@ -1465,9 +1446,11 @@
       "title": "Remote-player interpolation so other players don't stutter"
     },
     "1.7": {
+      "done_at": "2026-08-16T19:23:07+00:00",
+      "done_by": "reed",
       "est": "2",
       "milestone": "M1",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T2",
       "title": "Connection lifecycle: join mid-session, disconnect, host quits, timeout handling"
     },
