@@ -115,6 +115,11 @@ Blocked on Sequoyah: agents can't edit `project.godot`. Not urgent while the onl
 local player, who is updated in the same tick that reads input. It becomes visible the moment a second
 player or the first enemy exists — **M1/M2**.
 
+Raised in severity by the VRR case (§5a *Variable refresh rate*): interpolation is the load-bearing
+fix there, and `physics_jitter_fix` must go to `0` at the same time or the two corrections fight.
+Sequoyah develops on a variable-refresh display, so this will be visible on the primary dev machine
+before it's visible to anyone else.
+
 ---
 
 ### F-004 · Interpolation is only planned for remote players, not enemies or props

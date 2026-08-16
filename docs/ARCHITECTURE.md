@@ -225,7 +225,8 @@ and a future engine default can't silently change it.
 |---|---|---|
 | `physics/common/physics_ticks_per_second` | `60` | The simulation rate. Changing this changes game feel and invalidates every tuned constant — treat it as frozen after M0. |
 | `physics/common/max_physics_steps_per_frame` | `8` | Catch-up cap. Below ~7.5 fps the game runs in slow motion instead of spiralling. Correct tradeoff; know it exists when profiling. |
-| `physics/common/physics_interpolation` | `true` | Renders bodies smoothly *between* the 60 Hz ticks. Without it, high-refresh displays show judder on everything not directly player-controlled. |
+| `physics/common/physics_interpolation` | `true` | Renders bodies smoothly *between* the 60 Hz ticks. Without it, high-refresh displays show judder on everything not directly player-controlled. Load-bearing — see *Variable refresh rate* below. |
+| `physics/common/physics_jitter_fix` | `0` | Its correction assumes a **stable** refresh rate, which is false on VRR, and it duplicates what interpolation does properly. Off. |
 | `display/window/vsync/vsync_mode` | `enabled` (default), player-overridable | Ships as the safe default; exposed in settings (7.5). |
 | `application/run/max_fps` | `0` (uncapped), player-overridable | An fps cap must never change simulation behaviour. If it does, something violates this section. |
 
@@ -259,6 +260,40 @@ and a future engine default can't silently change it.
 8. **Timers:** `Timer` nodes and `await get_tree().create_timer()` run on wall-clock time and are fine
    for UI and one-shot effects. For anything host-authoritative or replicated, prefer an accumulator
    in `_physics_process` so the timing is tied to the same clock the simulation uses.
+
+### Variable refresh rate (G-Sync, FreeSync, ProMotion)
+
+VRR displays vary their refresh rate continuously — a ProMotion Mac drifts anywhere in 48–120 Hz
+depending on what the compositor is doing. **This does not affect simulation speed**; the accumulator
+above is indifferent to how long a frame took. It affects *smoothness*, and it is the most commonly
+noticed way a fixed-timestep game feels broken on modern hardware.
+
+The mechanism: a rendered frame usually lands *between* two 60 Hz ticks. Without interpolation the
+renderer draws the last completed tick, so on any refresh rate that isn't a clean multiple of 60, some
+frames advance two ticks and some advance one — objects move in uneven jumps. At a fixed 144 Hz this
+is a repeating artifact the eye learns to ignore. Under VRR the refresh rate drifts, so the pattern
+keeps reshuffling and never settles into something ignorable. **VRR feels worse than a plain
+mismatched refresh rate for this reason**, and it's why some games are specifically annoying on VRR
+panels while fine everywhere else.
+
+What follows from that:
+
+- **`physics_interpolation` is the fix, and it is not optional.** Everything else here is secondary.
+- **`physics_jitter_fix` must be `0`.** It nudges the physics delta toward the display's refresh
+  interval, which assumes that interval is stable. Under VRR it chases a moving target and adds the
+  jitter it exists to remove. It also overlaps with interpolation, so running both invites the two
+  corrections to fight. *(Confirm the current default and semantics against the Godot 4.7 docs when
+  applying these settings — this is stated from the mechanism, not from a doc read.)*
+- **Don't render past the panel's maximum.** Above it you drop out of the VRR window and fall back to
+  ordinary vsync behaviour, reintroducing the tearing or latency VRR was there to avoid. The usual
+  mitigation is capping a few fps below the panel maximum — a **settings-menu affordance (7.5), not a
+  hardcoded number**, since it depends on the player's display.
+- **Never derive gameplay timing from the frame rate.** Already rule 7, restated because VRR is where
+  that mistake stops being theoretical: the frame rate is now a continuously moving number.
+
+Testing this needs a real VRR panel — the failure is a smoothness artifact that no headless run and no
+frame-time graph will surface. Add it to the 7.12 hardware pass, and check it on Steam Deck, whose
+display is also variable-refresh.
 
 ### What this means for networking
 
