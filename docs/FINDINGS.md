@@ -345,24 +345,45 @@ player, not by the spawner.
 
 ---
 
-### F-013 · Spawned replication nodes are not in group `&"synced"`, so 1.10's entity count reads 0
+### F-015 · A finding cannot be claimed, so fixing one always edits unclaimed files
 
-**Area:** netcode/debug · **Severity:** low · **Filed:** 2026-08-16 by spawn, after 1.5 and 1.10
-shipped within a minute of each other
+**Area:** agent tooling · **Severity:** low · **Filed:** 2026-08-16 by claude, while fixing F-013
 
-`net_debug_panel.gd` (1.10) counts synced entities via `DebugOverlay.track_group(&"synced")`, and its
-header asks whoever spawns `MultiplayerSynchronizer` nodes to add them to that group. 1.5 shipped
-without doing so — the two tasks ran in parallel and neither prompt mentioned the other — so the
-panel's entity line reads 0 in a real session while two players are visibly replicating.
+`agent claim` resolves ids against `docs/ROADMAP.md`, so `agent claim F-013 <files>` fails with
+"unknown task F-013". Findings are exactly the work most likely to run *between* roadmap tasks, and
+the only way to do one is to edit without a claim — which the pre-commit hook then warns about, one
+line per file. Two costs, and the second is the real one: a warning that fires during correct work
+teaches agents to ignore the warning that fires during incorrect work.
 
-One line in `PlayerController._build_synchronizer()` (`net_sync.add_to_group(&"synced")`) closes it
-for players. **Whoever picks it up should decide the convention once**, because 1.8 (per-class
-intervals) and 1.9's dummy replicants will both want to be counted the same way: the group is either
-"every synchronizer" or "every replicated entity root", and those give different numbers.
+`ce8128a`'s commit was warned at for the same reason. Fix is small and belongs in `.agent/bin/agent`:
+accept an `F-0NN` id by resolving it against `docs/FINDINGS.md`'s open section the way task ids
+resolve against the roadmap, so a finding claims files, appears on the board, and closes out through
+`agent done` like anything else. Until then, prefix `MIRE_AGENT=<name>` and expect the warning.
 
 ---
 
 ## Resolved
+
+### F-013 · Spawned replication nodes were not in group `&"synced"` — **fixed**
+
+**Area:** netcode/debug · **Severity:** low · **Filed:** 2026-08-16 by spawn, after 1.5 and 1.10
+shipped within a minute of each other · **Fixed:** 2026-08-16 by claude
+
+`net_debug_panel.gd` (1.10) counts synced entities via `DebugOverlay.track_group(&"synced")`, and its
+header asks whoever spawns `MultiplayerSynchronizer` nodes to add them to that group. 1.5 shipped
+without doing so — the two tasks ran in parallel and neither prompt mentioned the other — so the
+panel's entity line read 0 in a real session while two players were visibly replicating.
+
+**Fixed by settling the convention rather than by adding the line** (D-024): the group is *every
+`MultiplayerSynchronizer`, one member each*, named once as `NetConfig.SYNCED_GROUP` and joined at
+construction next to the authority assignment — so the two sites that build one today
+(`PlayerController._build_synchronizer()`, `DummyReplicant._build_synchronizer()`) both do it, and
+1.8's per-class synchronizers inherit the answer instead of re-deciding it.
+
+Verified headless by `tools/synced_group_check.gd`: both sites are built for real, and the group is
+read back off the live tree — a synchronizer added to a group after it enters the tree, or built on a
+node nothing adds, would pass a grep and fail this. `tools/net_debug_panel_check.gd` still passes
+19/19, including its real ENet host+client session.
 
 ### F-003 · §5a project settings not applied — **fixed**
 
