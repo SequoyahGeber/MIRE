@@ -747,3 +747,25 @@ Note this task collided: gale adopted A-005 mid-session believing this one had s
 Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_loot_set.py`, `assets/source/loot_set.blend`, `assets/loot/README.md`, `assets/loot/catalog.json`, `assets/loot/exports/loot_chest_reinforced_closed.glb`, `assets/loot/exports/loot_chest_reinforced_open.glb`, `assets/loot/exports/loot_chest_small_closed.glb`, `assets/loot/exports/loot_chest_small_open.glb`, `assets/loot/exports/loot_chest_wellspring_closed.glb`, `assets/loot/exports/loot_chest_wellspring_open.glb`, `assets/loot/exports/loot_coin_pouch.glb`, `assets/loot/exports/loot_item_bag.glb`, `assets/loot/exports/loot_player_backpack.glb`, `assets/loot/exports/loot_powerup_orb.glb`, `assets/loot/preview/loot_preview.png`, `assets/loot/preview/loot_scale_preview.png`
 
 Commit at time of writing: `4b7c6cb`
+
+---
+
+### HANDOFF · 2.1d · gale · 2026-08-16T23:59:35+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-006 complete: four portable enemy GLBs in assets/enemies/ — a six-legged Mire crawler (skinned mesh, 17-bone rig, 6 clips), its spawn nest, and shell/leg death fragments. Deterministic generator at tools/blender/build_enemy_crawler.py, editable source at assets/source/enemy_crawler.blend, plus tools/enemy_crawler_check.gd for the Godot-side rig verification.
+
+Verification: two clean rebuilds gave byte-identical GLBs and catalog and pixel-identical previews; GLB 2.0 validation 4/4 with catalog exact and no orphans; deform check confirms all 16 deform bones own geometry (root is deliberately non-deforming); clip durations match the authored timing exactly; three previews inspected including a rendered eight-pose contact sheet; fresh Godot 4.7.1 import 4/4 clean and enemy_crawler_check.gd passes on skeleton, skin, six clip names and loop modes.
+
+Two traps this batch paid for, both now written into the tracker's verification contract. First, glTF stores animation in SECONDS, so the exporter divides frames by scene.render.fps and Blender defaults to 24 — every clip shipped 25 percent slow until the frame rate was set before the first export, and nothing in the .blend looked wrong because the frame numbers were right. Second, a multi-material mesh exports as one primitive per material, so a deform check that reads meshes[0].primitives[0] samples a sixth of the model and falsely reports most bones as carrying no geometry; union the joints over all primitives.
+
+Also worth knowing for anything that plays these: Godot consumes the -loop name suffix, so the GLB's idle-loop and locomotion-loop arrive in engine as idle and locomotion. Asking for the exported name fails at runtime. Recorded in docs/DELEGATION.md Current state.
+
+A-006's gate was waived by Sequoyah rather than met — combat task 2.9 has not started, so the 0.4 s tell and the rest of the timing come from DESIGN.md section 6 and not from playtest. The tracker row and the review column both say so; 2.9 should re-time the clips if it disagrees.
+
+Next: A-007 (Ward set) is the single NEXT row and is a state set, so it needs A-005's anchor_parts treatment — centre every state on the shared foundation, not on its own bounds.
+
+Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_enemy_crawler.py`, `assets/enemies`, `assets/source/enemy_crawler.blend`, `tools/enemy_crawler_check.gd`, `assets/enemies/README.md`, `assets/enemies/catalog.json`, `assets/enemies/exports`, `assets/enemies/preview`, `assets/enemies/exports/enemy_crawler.glb`, `assets/enemies/exports/enemy_crawler_fragment_leg.glb`, `assets/enemies/exports/enemy_crawler_fragment_shell.glb`, `assets/enemies/exports/enemy_crawler_nest.glb`, `assets/enemies/preview/crawler_pose_sheet.png`, `assets/enemies/preview/enemies_preview.png`, `assets/enemies/preview/enemies_scale_preview.png`
+
+Commit at time of writing: `f77d528`

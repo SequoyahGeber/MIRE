@@ -107,7 +107,28 @@ Every completed batch records evidence for all applicable checks:
   consistency, and first-person readability where applicable.
 - Fresh Godot 4.7.1 import with zero missing imported scenes and no Blender-path dependency.
 - For rigs/animation batches: deform check, animation-name check, looping check where applicable, and
-  a rendered contact sheet of key poses. Godot scene hookup remains Sequoyah's work.
+  a rendered contact sheet of key poses. Godot scene hookup remains Sequoyah's work. A-006 ran these
+  first and the specifics are worth reusing:
+  - **Deform check across every primitive.** The exporter splits a multi-material mesh into one
+    primitive per material, so reading `meshes[0].primitives[0]` samples a fraction of the model and
+    reports most bones as owning no geometry. Union `JOINTS_0`/`WEIGHTS_0` over all primitives, then
+    assert that every deform bone appears. A bone with no vertices is a limb that will not move.
+  - **Check clip duration in seconds, not frames.** glTF stores animation time in seconds, so the
+    exporter divides frame numbers by whatever `scene.render.fps` holds — Blender's default is 24.
+    Set the frame rate before the first export, and compare each exported clip's `max - min` sample
+    time against its authored length. A-006 shipped every clip 25% slow until this check caught it,
+    and nothing in the .blend looked wrong, because the frame numbers were correct.
+  - **Check the animation names Godot ends up with, not the ones exported.** Godot 4 reads a `-loop`
+    name suffix as an instruction to loop the clip and then removes it, so `idle-loop` imports as
+    `idle`. Verify names and loop modes on the imported scene, in Godot, and record the engine-side
+    names for gameplay — this is what `tools/enemy_crawler_check.gd` is for.
+- **An opening has to survive being drawn from standing eye height, not just exist.** A-005's rule
+  that a state which opens must reveal something has a sibling: a cavity is only visible along a
+  sightline. A-006's nest was first built as a dome with a throat inside it, then as a ring of lobes
+  of even height, and both read as a pile of rocks in the preview, because at a player's eye level
+  the far wall is simply the near wall's backdrop. It needed the rim dropped away on the viewing side
+  before the mouth was legible. Judge these on a preview shot from roughly player height, never from
+  above.
 
 ## Completed baseline
 
@@ -140,7 +161,7 @@ extraction. Make these before broad biome decoration.
 | A-003 | `DONE` | First crafting stations: primitive workbench, upgraded workbench, campfire, cooking spit, stone furnace, anvil, repair bench, woodcutting block. Made 8 in `assets/crafting_stations/`; deterministic rebuild, GLB/catalog validation, two-preview visual inspection, and fresh Godot import all passed | 8 | A-002 |
 | A-004 | `DONE` | First tool/weapon set: wooden axe, stone axe, wooden pickaxe, stone pickaxe, iron pickaxe, cleaver, skewer, short bow, arrow, repair hammer. Made 20 paired world/viewmodel exports in `assets/tools_weapons/`; deterministic rebuild, paired consistency, GLB/catalog validation, three-preview visual inspection, and fresh Godot import all passed | 20 exports | A-003 |
 | A-005 | `DONE` | Loot set: small/Wellspring/reinforced chests in closed and open states, coin pouch, powerup orb, item pickup bag, dropped-player backpack. Made 10 in `assets/loot/`; 2,542 polygons. Byte-identical deterministic rebuild, GLB 2.0 validation (10/10, catalog exact, no orphans), closed/open base-footprint drift 0.00 mm on all three pairs, two-preview visual inspection, and fresh Godot 4.7.1 import with zero errors all passed | 10 | A-002 |
-| A-006 | `BLOCKED` | **Waiting on combat task 2.9**, which is not started — its dependency is a confirmed feel target, not an asset. Skipped by A-005's agent for that reason; promote it the moment 2.9 lands. Prototype enemy set: Mire crawler mesh, simple rig, idle, locomotion, attack tell, attack, hit, and death animations; spawn nest and death fragments | 4 models + animations | Combat task 2.9 confirms feel target |
+| A-006 | `DONE` | **Gate waived by Sequoyah on 2026-08-16, not missed.** A-005's agent had marked this `BLOCKED` on combat task 2.9, which is still not started; Sequoyah directed it built anyway, so the crawler's feel targets come from `docs/DESIGN.md` §6 rather than from playtest, and 2.9 should re-check them. Prototype enemy set: six-legged Mire crawler with a 17-bone rig and idle, locomotion, attack tell, attack, hit and death clips; spawn nest; shell and leg death fragments. Made 4 in `assets/enemies/`; 1,172 polygons, crawler 794. Byte-identical deterministic rebuild (GLBs + catalog; previews pixel-identical), GLB 2.0 validation (4/4, catalog exact, no orphans), deform check 16/16 deform bones own geometry, clip-name and duration check against the authored timing, three-preview visual inspection including a rendered pose contact sheet, and a fresh Godot 4.7.1 import plus `tools/enemy_crawler_check.gd` (skeleton, skin, six clips, loop modes) all passed | 4 models + 6 clips | Combat task 2.9 confirms feel target |
 | A-007 | `NEXT` | Basic Ward set: foundation, healthy Ward, damaged Ward, critical Ward, destroyed remains, repair scaffolding, boundary post, activation crystal | 8 | A-003 |
 | A-008 | `QUEUED` | Wellspring set: distant monolith, base, crystal, basin, roots, uncapped state, capped state, re-corrupting state, corrupted state, ritual pedestal, boundary stones, guardian platform | 12 | A-007 |
 | A-009 | `QUEUED` | Extraction ship set: wrecked hull, two repair stages, repaired hull, mast, broken mast, furled sail, raised sail, rudder, anchor, boarding ramp, cargo hatch, donation crate, departure bell, debris cluster | 15 | A-004 |
@@ -216,4 +237,5 @@ editor/playtest feedback here so it survives between agent sessions.
 | A-002 | Awaiting pickup-flow review | Technically validated; check hover/spin presentation, pickup collision size, and readability in fog during the inventory prototype |
 | A-003 | Awaiting station-flow review | Technically validated; check interaction reach, collision simplification, fire VFX replacement, and station spacing during crafting playtests |
 | A-004 | Awaiting combat/viewmodel review | Technically validated; check grip transforms, first-person framing, hit reach, sockets, and collision during harvesting/combat prototypes |
+| A-006 | Awaiting combat-feel review | Technically validated, but its gate was waived: the 0.4 s tell, the 0.3 s flinch and the walk speed come from `docs/DESIGN.md` §6, not from playtest. Check tell readability in fog and first-person, silhouette at aggro range, whether 1.10 m is the right size next to a player, collision choices, and where the fragments should spawn — then re-time the clips if 2.9 disagrees |
 | Authored playtest map | Awaiting layout review | Fixed Blender-authored layout is running in Godot; check route widths, zone density, sightlines, and whether the 60 m square is large enough for the first multiplayer loop |

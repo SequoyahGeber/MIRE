@@ -1,0 +1,79 @@
+[
+  {
+    "name": "enemy_crawler",
+    "family": "enemy",
+    "width_m": 0.781,
+    "depth_m": 1.095,
+    "height_m": 0.589,
+    "mesh_parts": 1,
+    "polygons": 794,
+    "bones": 17,
+    "animations": [
+      "idle-loop",
+      "locomotion-loop",
+      "attack_tell",
+      "attack",
+      "hit",
+      "death"
+    ],
+    "materials": [
+      "MIRE_Enemy_Chitin",
+      "MIRE_Enemy_Chitin_Dark",
+      "MIRE_Enemy_Chitin_Light",
+      "MIRE_Enemy_Crystal",
+      "MIRE_Enemy_Eye",
+      "MIRE_Enemy_Glow"
+    ]
+  },
+  {
+    "name": "enemy_crawler_nest",
+    "family": "spawner",
+    "width_m": 1.55,
+    "depth_m": 1.44,
+    "height_m": 0.742,
+    "mesh_parts": 20,
+    "polygons": 283,
+    "bones": 0,
+    "animations": [],
+    "materials": [
+      "MIRE_Enemy_Chitin_Light",
+      "MIRE_Enemy_Crystal",
+      "MIRE_Enemy_Glow",
+      "MIRE_Enemy_Nest",
+      "MIRE_Enemy_Nest_Dark",
+      "MIRE_Enemy_Throat"
+    ]
+  },
+  {
+    "name": "enemy_crawler_fragment_shell",
+    "family": "debris",
+    "width_m": 0.315,
+    "depth_m": 0.263,
+    "height_m": 0.176,
+    "mesh_parts": 3,
+    "polygons": 59,
+    "bones": 0,
+    "animations": [],
+    "materials": [
+      "MIRE_Enemy_Chitin",
+      "MIRE_Enemy_Chitin_Dark",
+      "MIRE_Enemy_Crystal"
+    ]
+  },
+  {
+    "name": "enemy_crawler_fragment_leg",
+    "family": "debris",
+    "width_m": 0.33,
+    "depth_m": 0.145,
+    "height_m": 0.087,
+    "mesh_parts": 3,
+    "polygons": 36,
+    "bones": 0,
+    "animations": [],
+    "materials": [
+      "MIRE_Enemy_Chitin",
+      "MIRE_Enemy_Chitin_Dark",
+      "MIRE_Enemy_Chitin_Light"
+    ]
+  }
+]
