@@ -553,6 +553,12 @@ def cmd_ship(args):
 
     to_stage = [f for f in mine if f in changed]
     to_stage += [f for f in changed if f.startswith(".agent/")]
+    # Godot writes a .uid sidecar beside every script and regenerates it when the script
+    # changes. Nobody authors one and nobody claims one, so it never appeared in any task's
+    # file list — which is precisely how F-010 left a trail of untracked .uid files behind
+    # shipped tasks. Ship each sidecar with the script it belongs to.
+    to_stage += [f + ".uid" for f in list(to_stage) if f + ".uid" in changed]
+    to_stage = list(dict.fromkeys(to_stage))
     if not to_stage:
         die("nothing to ship for %s — no changed files from this task" % tid)
 
