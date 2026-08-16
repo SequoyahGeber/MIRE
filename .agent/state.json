@@ -1,11 +1,42 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "autoload/net_transport.gd": {
+      "agent": "net",
+      "at": "2026-08-16T02:56:21+00:00",
+      "task": "1.2"
+    },
+    "core/net/net_config.gd": {
+      "agent": "net",
+      "at": "2026-08-16T02:56:21+00:00",
+      "task": "1.2"
+    }
+  },
+  "in_flight": {
+    "1.2": {
+      "agent": "net",
+      "files": [
+        "autoload/net_transport.gd",
+        "core/net/net_config.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-16T02:56:21+00:00"
+    }
+  },
   "recent": {
     "autoload/net_transport.gd": {
       "agent": "net",
       "at": "2026-08-15T21:53:55+00:00",
       "task": "1.2"
+    },
+    "autoload/registry.gd": {
+      "agent": "claude",
+      "at": "2026-08-16T02:59:39+00:00",
+      "task": "2.2"
+    },
+    "core/util/mire_log.gd": {
+      "agent": "claude",
+      "at": "2026-08-16T02:59:39+00:00",
+      "task": "2.2"
     },
     "docs/ARCHITECTURE.md": {
       "agent": "claude",
@@ -46,6 +77,21 @@
       "agent": "claude",
       "at": "2026-08-15T21:46:15+00:00",
       "task": "0.3"
+    },
+    "systems/crafting/recipe_def.gd": {
+      "agent": "claude",
+      "at": "2026-08-16T02:59:39+00:00",
+      "task": "2.2"
+    },
+    "systems/crafting/recipe_ingredient.gd": {
+      "agent": "claude",
+      "at": "2026-08-16T02:59:39+00:00",
+      "task": "2.2"
+    },
+    "systems/inventory/item_def.gd": {
+      "agent": "claude",
+      "at": "2026-08-16T02:59:39+00:00",
+      "task": "2.2"
     },
     "tools/bench_chunks.gd": {
       "agent": "terrain",
@@ -205,7 +251,7 @@
     "1.2": {
       "est": "3",
       "milestone": "M1",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "`NetTransport` autoload \u2014 swap between `ENetMultiplayerPeer` and `SteamMultiplayerPeer` behind one interface"
     },
@@ -301,9 +347,11 @@
       "title": "Playtest with friends. Write down what they said, not what you think they meant."
     },
     "2.2": {
+      "done_at": "2026-08-16T02:59:39+00:00",
+      "done_by": "claude",
       "est": "2",
       "milestone": "M2",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "`Resource` scripts for `ItemDef`, `RecipeDef` + `registry.gd` boot loader"
     },

@@ -218,3 +218,18 @@ Completed.
 Files: `entities/player/player_controller.gd`, `docs/DECISIONS.md`, `tools/verify_setup.gd`, `docs/FINDINGS.md`, `docs/NEXT.md`
 
 Commit at time of writing: `52f5b31`
+
+---
+
+### DONE · 2.2 · claude · 2026-08-16T02:59:39+00:00
+
+**`Resource` scripts for `ItemDef`, `RecipeDef` + `registry.gd` boot loader**
+
+ItemDef, RecipeDef/RecipeIngredient Resource scripts + registry.gd boot loader. registry.gd scans content/items and content/recipes for .tres, indexes by id, logs to MireLog 'content' channel.
+
+Notes along the way:
+- ItemDef (systems/inventory/), RecipeDef+RecipeIngredient (systems/crafting/), registry.gd autoload loading content/items+recipes .tres by id. Smoke-tested headless: loads clean with empty content dirs (0 items, 0 recipes, no errors). Not yet wired as autoload in project.godot -- needs Sequoyah.
+
+Files: `systems/inventory/item_def.gd`, `systems/crafting/recipe_ingredient.gd`, `systems/crafting/recipe_def.gd`, `autoload/registry.gd`, `core/util/mire_log.gd`
+
+Commit at time of writing: `1bc4650`
