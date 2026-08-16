@@ -52,6 +52,45 @@ doesn't.
 
 ---
 
+### Task 1.11 — version handshake logic is written; wiring it into `net_transport.gd` is not
+
+`core/net/net_version.gd` (`NetVersion`, new `class_name`, `RefCounted`) is done and verified:
+`PROTOCOL_VERSION: int` and a pure `mismatch_reason(local_version, remote_version) -> String` (empty
+string when they agree). `tools/handshake_check.gd` proves the mechanics against a real two-peer ENet
+exchange (`Godot --headless --path . --script tools/handshake_check.gd`, currently green) — a hello
+RPC naming the sender's version, a reject RPC naming both when they differ, then `disconnect_peer()`
+after a 0.2s flush so the reliable RPC actually reaches the wire first.
+
+**Not wired into `autoload/net_transport.gd`** — it was claimed by 1.7 when 1.11 started, so this
+would have been two agents in one file (AGENTS.md step 1). Whoever next holds that file for a task
+that touches connection setup, drop this in:
+
+- In `_on_connected_to_server()`, after `connected_to_host.emit()`: `rpc_id(NetConfig.HOST_PEER_ID,
+  &"_rpc_client_hello", NetVersion.PROTOCOL_VERSION)`. Only the client sends it — the host never hellos
+  itself.
+- Two new `@rpc` methods on `NetTransport` (this project's first use of `@rpc` — nothing to be
+  consistent with yet, `tools/handshake_check.gd`'s `_HandshakeProbe` inner class is the reference
+  shape):
+  - `_rpc_client_hello(remote_version: int)` — `@rpc("any_peer", "reliable")`. Guard `is_host()`, read
+    `multiplayer.get_remote_sender_id()`, call `NetVersion.mismatch_reason(NetVersion.PROTOCOL_VERSION,
+    remote_version)`; empty means fine, do nothing. Non-empty: `rpc_id(sender_id, &"_rpc_host_reject",
+    reason)`, then disconnect that peer after a short flush delay (`await
+    get_tree().create_timer(0.2).timeout` — do not `disconnect_peer()` in the same frame the reject
+    RPC was queued, or the client never receives the reason).
+  - `_rpc_host_reject(reason: String)` — `@rpc("authority", "reliable")`. Guard `not is_host()`,
+    `_teardown(false)`, `connection_failed.emit(reason)`. No new signal needed — `connection_failed`'s
+    documented contract ("fires for every failure, synchronous or not") already covers this.
+- `NetVersion` is a new `class_name`, so it is **not yet in `.godot/global_script_class_cache.cfg`**
+  (F-016) — reference it bare in `net_transport.gd` once Sequoyah has opened the editor at least once
+  since 1.11 landed; until then, `preload("res://core/net/net_version.gd")` in anything run via
+  `--script`.
+
+Bump `NetVersion.PROTOCOL_VERSION` in the same commit as any change that would desync two builds
+silently — see the constant's own doc comment for the exact list (replicated property, RPC signature,
+`SceneReplicationConfig`).
+
+---
+
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
 **Nothing is in flight — clean slate, 20/108 tasks done.** 1.5, 1.9 and 1.10 all shipped
@@ -73,7 +112,7 @@ what to start next, not by task number.
 
 | # | Task | Agent name | Model | Effort | Status |
 |---|---|---|---|---|---|
-| **1.8** | Interest management — visibility filters, per-class intervals | auto | Opus 5 | high | **ready. Start here** — R1 came back AMBER and this is the only thing that fits the budget |
+| **1.8** | Interest management — visibility filters, per-class intervals | `birch` | Opus 5 | high | **done and verified over a real wire.** `NetInterest` is the seam every replicated entity goes through — see below |
 | **1.6** | Remote-player interpolation | auto | Opus 5 | high | **ready** — read F-004 first: engine `physics_interpolation` may cover this |
 | **1.7** | Connection lifecycle — mid-session join, disconnect, host quit, timeout | auto | Opus 5 | high | **ready** — 1.5 did the obvious signal handling only, deliberately |
 | **1.11** | Protocol/build version handshake | auto | Sonnet 5 | medium | **ready** — self-contained, independent of the other three |
@@ -117,6 +156,50 @@ because that is what maps to the bandwidth budget above. The name lives once as
 `NetConfig.SYNCED_GROUP` and is joined at construction, next to the authority assignment; 1.8's
 per-class synchronizers just do the same and the panel's count stays meaningful.
 
+### What 1.8 shipped — every replicated entity from here on goes through one call
+
+`core/net/net_interest.gd`, `class_name NetInterest`. **Not an autoload**, so it costs nobody a
+`project.godot` claim, and the observer registry is `static` because the filter runs once per entity
+per peer per physics tick — 1.9's shape is 1000 calls a tick, which must not resolve a singleton or
+walk the tree to answer.
+
+```gdscript
+# In the entity's _ready(), where authority is set, BEFORE add_child() (F-012):
+sync.set_multiplayer_authority(NetConfig.HOST_PEER_ID)
+NetInterest.configure(sync, self, NetInterest.Class.ENEMY)   # returns the filter, or null
+add_child(sync)
+```
+
+`configure()` is the only seam, and it does three things so a construction site cannot half-opt-in:
+sets `replication_interval` and `delta_interval` from the class, joins `NetConfig.SYNCED_GROUP`
+(D-024 — nothing else joins it any more, including `PlayerController`), and installs the distance
+filter for the filtered classes. The numbers live in `NetConfig`, not in `NetInterest`.
+
+| `NetInterest.Class` | interval | delta | filtered | for |
+|---|---|---|---|---|
+| `PLAYER` | 30 Hz | 30 Hz | **no** | six of them; a teammate vanishing at 121 m is a bug report |
+| `ENEMY` | 15 Hz | 15 Hz | yes | host-simulated, many, 15 Hz + interpolation is indistinguishable |
+| `PROP` | 1 s | 100 ms | yes | on-change only — the 1 s interval is a cheap ceiling on a mistake, not a rate |
+
+Observers — where each peer looks from — are pushed by `autoload/player_net.gd:_publish_observers()`,
+every physics tick, **host only**, because every filtered row of §2.2 is host-authoritative. If a
+client ever owns something filtered, that is the line to move. `NetInterest.clear_observer(peer)` on
+despawn and `clear_observers()` on disconnect are already wired.
+
+**D-025 settles the two calls that look like tuning and aren't:** two radii instead of one (enter
+120 m / leave 144 m, so a boundary-hugging entity does not pay a despawn+respawn per peer per tick —
+this is the churn 1.9 could only infer from reliable-channel volume), and
+`VISIBILITY_PROCESS_PHYSICS` instead of `IDLE`, because re-evaluation rate *is* bandwidth and §5a
+forbids hanging that off the render frame. `RadiusFilter.transitions` counts churn if you want to
+measure rather than infer it.
+
+**Two API facts worth not rediscovering.** `MultiplayerSynchronizer` in 4.7.1 has **no**
+`is_visible_to()`; `get_visibility_for()` reads back only the *manual* `set_visibility_for()`
+override, never the filter's answer, and `update_visibility()` pushes straight into the replicator,
+which needs a live session. So there is no offline way to ask the engine what a filter decided —
+proving the engine calls your filter at all requires real peers. And `replication_interval = 0.0`
+means *every frame*, not "never", which is why `PROP` is 1 s.
+
 ### Headless verification you inherit — extend these rather than writing a fourth harness
 
 All three run without an editor, exit non-zero on failure, and are the pattern 1.6/1.7/1.8 should
@@ -127,11 +210,27 @@ copy. **Verify your own work with them; do not ask Sequoyah to press Play and re
 | `tools/synced_group_check.gd` | Every synchronizer construction site joins `&"synced"` — builds both for real and reads the live tree back | `Godot --headless --path . --script tools/synced_group_check.gd` |
 | `tools/net_debug_panel_check.gd` | The panel's 19 checks, including a real ENet host+client session with genuine RTT and bandwidth | same form |
 | `tools/bench_replication.gd` | 1.9's spike: 6 peers, 200 entities, interest management on and off | same form |
+| `tools/interest_check.gd` | 1.8's 40 checks: per-class intervals, hysteresis in both directions, and a live 1-host/2-client ENet session where moving one observer makes the entity appear and disappear on that client only | same form |
 
 Two process notes that cost time when they were learned: a `--script` main loop compiles before
 autoloads register, so `load()` them at runtime rather than preloading at class scope (**F-011**); and
 nodes added in `_initialize()` have not run `_ready()` yet, so anything a node builds for itself must
 be checked on the next frame via `call_deferred`.
+
+Three more, all paid for on 2026-08-16:
+
+- **A new `class_name` resolves nowhere until you rebuild the class cache** (**F-016**, hit
+  independently by 1.8 and 1.11). `.godot/global_script_class_cache.cfg` is gitignored and only the
+  editor's project scan writes it, so a brand-new global class is "not declared in the current scope"
+  in every headless run *and* in the game itself. Fix, once, no editor window:
+  `Godot --headless --path . --import`. It also generates the new script's `.uid` (**F-017**).
+- **Do not pace a two-process game run with `--fixed-fps`.** It pins the *delta*, not the wall clock,
+  so 420 "seconds" of simulation elapse in a fraction of a real one and the ENet handshake never gets
+  time to happen — the client just sits on "connecting" and quits. `--max-fps 60 --quit-after 900`
+  paces against the real clock and connects reliably.
+- **A script error inside an `await`ed harness coroutine kills only that coroutine.** The run
+  continues and prints `PASS` over whatever checks happened to have already run. `interest_check.gd`
+  guards against that with a section counter asserted at the end; copy it.
 
 ### What 1.5 established — write 1.6, 1.7 and 1.8 against this, not against a guess
 

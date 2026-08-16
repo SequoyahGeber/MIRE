@@ -347,6 +347,35 @@ and streams — rather than redefining this group.
 
 ---
 
+### D-025 · 2026-08-16 · Interest management has hysteresis, and it is evaluated on the physics tick
+Two calls inside task 1.8, both of which look like tuning and are not.
+
+**One radius became two.** An entity is visible to a peer inside `INTEREST_ENTER_RADIUS_M` (120 m,
+§2.5's number) and stops being visible outside the larger `INTEREST_LEAVE_RADIUS_M` (144 m); between
+them the answer is whatever it was last evaluation. This is not smoothing — losing visibility
+*despawns* the entity on that client and regaining it *respawns* it, both on the reliable channel, so
+a single radius makes an entity standing on the boundary pay a spawn packet per peer per tick. 1.9
+measured the bill without being able to name it: clustered players cost 100 KB/s and spread ones 180
+KB/s at an *identical* 11.6% visible fraction, with the difference falling on reliable traffic and
+host ACK volume at ~2×. 24 m of band is ~2 s of closing at sprint speed, so the worst case becomes
+one transition every couple of seconds. `NetInterest.RadiusFilter.transitions` counts them, so the
+next person can measure this instead of inferring it.
+
+**`VISIBILITY_PROCESS_PHYSICS`, not `IDLE`.** How often visibility is re-evaluated decides how much
+spawn/despawn traffic a given amount of movement generates, which makes it a bandwidth decision, and
+§5a is unconditional that nothing about how the game plays may follow the monitor. On `IDLE` a 240 Hz
+host would re-evaluate four times as often as a 60 Hz one and pay up to four times the churn for the
+same walk. `PHYSICS` is 60 Hz on every machine.
+
+**Would change my mind:** on the band — a measurement showing hysteresis costs more in stale
+subscriptions (an entity kept for 24 m past the point anyone can see it, times every peer) than it
+saves in churn. Widen or narrow the band then; do not go back to one radius. On the tick — evidence
+that 60 Hz evaluation is a CPU problem at real entity counts. It is not one today: 1.9 measured
+replication as bandwidth-bound, peaking at 1.18 ms of a 16.67 ms frame. The answer then is to
+evaluate on a slower accumulator, still not to hang it off the render frame.
+
+---
+
 ## Template
 
 ```
