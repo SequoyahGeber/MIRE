@@ -14,172 +14,27 @@ export MIRE_AGENT=terrain    # or nav, net, content — one per chat
 
 ---
 
-## Ready now — these three can run in parallel
-
-No shared files, no dependencies between them.
+## Ready now — M1
 
 | # | Task | Agent name | Model | Effort | Why this model |
 |---|---|---|---|---|---|
-| 0.7 | Terrain meshing spike | `terrain` | Opus 5 | high | Perf analysis + threading design |
-| 0.8 | NavMesh bake spike | `nav` | Opus 5 | xhigh | **The riskiest unknown in the project** |
 | 1.2 | NetTransport autoload | `net` | Opus 5 | xhigh | Everything in M1 sits on this |
+| 2.2 | Content framework *(optional)* | `content` | Sonnet 5 | medium | Pure data defs, mechanical |
 
-Blocked until 1.2 lands: 1.3, 1.5, 1.6, 1.7, 1.8, 1.10, 1.11.
-Blocked on you: 1.1 (install GodotSteam), 1.4 (needs 1.1), 0.5, 0.9, 0.10.
+**1.2 is the only thing on the critical path right now.** It gates 1.3, 1.5, 1.6, 1.7, 1.8, 1.10 and
+1.11 — seven of the twelve M1 tasks — so it is worth the premium spend and the xhigh effort. The
+lifecycle requirements are where cheap models produce plausible code that only fails on a real
+disconnect, and Godot's `MultiplayerAPI` shifted across 4.x, which is the same stale-training-data trap
+task 0.8 had to guard against explicitly.
 
----
+2.2 jumps into M2, but it shares no files with 1.2 and runs on Sonnet — so it's parallelism that costs
+no premium quota. Skip it if you'd rather keep M1 clean.
 
-## Task 0.7 — Spike R2: chunked terrain meshing performance
+**Yours, not delegable:** 1.1 (GodotSteam GDExtension + `project.godot`), then 1.4 needs it. 1.12 needs
+both. `4.0b` (Windows determinism) is yours too, and is quota-free.
 
-> **Model: Opus 5 · effort high · `export MIRE_AGENT=terrain`**
-
-```
-You're working on MIRE, a co-op survival game in Godot 4.7.1. Read AGENTS.md first —
-it's the protocol every agent here follows. Then:
-
-    export MIRE_AGENT=terrain
-    .agent/bin/agent start terrain
-    .agent/bin/agent claim 0.7 world/chunk/chunk_mesher.gd tools/bench_chunks.gd
-
-TASK: Spike R2. Answer one question with measurements, not opinion:
-"Can Godot 4.7 generate chunked terrain meshes fast enough to stream an island at 60fps?"
-
-This is a SPIKE — throwaway code that produces a number. Do not build the real
-terrain system. Do not make it pretty. Measure, report, stop.
-
-Write exactly two files:
-
-1. world/chunk/chunk_mesher.gd — class_name ChunkMesher, extends RefCounted
-   - static func build_mesh(chunk_x: int, chunk_z: int, seed: int) -> ArrayMesh
-   - 32m x 32m chunk, 1m vertex spacing (33x33 verts), heights from FastNoiseLite
-   - Use SurfaceTool or ArrayMesh directly, whichever you measure as faster
-   - Must be deterministic: seeded RandomNumberGenerator / FastNoiseLite.seed only,
-     never global randi(). Clients regenerate terrain from a shared seed
-     (docs/ARCHITECTURE.md §4), so nondeterminism means players on different islands.
-
-2. tools/bench_chunks.gd — extends SceneTree, runs headless
-   Measure and print:
-   - ms per chunk, single-threaded, averaged over 100 chunks
-   - ms per chunk via WorkerThreadPool across available cores
-   - peak memory delta for 100 chunks held in memory
-   - total triangles per chunk
-   Run it yourself with:
-     /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script tools/bench_chunks.gd
-
-SUCCESS CRITERIA — state clearly which of these the measurements support:
-   GREEN : <8ms/chunk single-threaded → stream on the main thread, no complexity needed
-   AMBER : 8-25ms → needs WorkerThreadPool; confirm the threaded number makes it viable
-   RED   : >25ms threaded → GDScript can't do this; escalate (GDExtension, or coarser chunks)
-
-AUTHORITY: none — this is offline generation, no networking involved.
-
-CONSTRAINTS:
-- .gd files only. NEVER create or edit .tscn/.tres/project.godot — those are human-only
-  (docs/DECISIONS.md D-007) and the pre-commit hook will block you.
-- Typed GDScript everywhere.
-- Don't explore the codebase. Everything you need is in this prompt. If something is
-  genuinely ambiguous, ask rather than searching.
-
-FINISH WITH:
-    .agent/bin/agent done 0.7 "<the numbers, and which of GREEN/AMBER/RED they support>"
-    .agent/bin/agent ship 0.7 "M0: chunk mesher spike (R2)"
-
-`ship` commits only this task's files and pushes to origin. Never `git add -A` —
-other agents are working in this same directory and you would commit their
-half-written files.
-
-THEN, as your final chat message, tell me:
-  - what you verified and the actual numbers/command
-  - EXACTLY what I must wire before this runs (autoloads, scene nodes). You
-    can't touch .tscn/.tres, so if anything needs wiring, say plainly that the
-    feature does NOT work yet
-  - whether it is safe for me to start the next task
-  - the text to paste into docs/DECISIONS.md as D-015
-```
-
----
-
-## Task 0.8 — Spike R3: runtime NavMesh bake
-
-> **Model: Opus 5 · effort xhigh · `export MIRE_AGENT=nav`**
-> This is the highest-risk unknown in the project. Worth the effort setting.
-
-```
-You're working on MIRE, a co-op survival game in Godot 4.7.1. Read AGENTS.md first —
-it's the protocol every agent here follows. Then:
-
-    export MIRE_AGENT=nav
-    .agent/bin/agent start nav
-    .agent/bin/agent claim 0.8 world/chunk/nav_bake_probe.gd tools/bench_navbake.gd
-
-TASK: Spike R3, the riskiest unknown in this project. Answer with measurements:
-"Can we bake navigation on runtime-generated terrain chunks without visible hitching?"
-
-Enemy pathfinding over procedurally generated terrain is where Godot is weakest. If
-this is red, the whole enemy AI design changes — so we're finding out now, in week
-one, rather than in month eight.
-
-This is a SPIKE. Throwaway code, produces a number. Self-contained — generate your own
-trivial heightmap mesh inside the probe; do NOT depend on world/chunk/chunk_mesher.gd
-(another agent holds that file right now).
-
-Write exactly two files:
-
-1. world/chunk/nav_bake_probe.gd — generates a 32x32m heightmap mesh with some slopes,
-   and bakes a NavigationMesh over it. Try BOTH:
-   - Synchronous NavigationMeshGenerator / NavigationServer3D bake
-   - Async bake (NavigationServer3D.bake_from_source_geometry_data_async or the 4.7
-     equivalent — check what actually exists in 4.7.1 before assuming an API)
-
-2. tools/bench_navbake.gd — extends SceneTree, headless. Measure:
-   - ms to bake one chunk, sync
-   - ms of MAIN THREAD BLOCKING during an async bake (this is the number that matters —
-     a 200ms bake that doesn't block is fine; a 40ms bake that blocks every frame is not)
-   - whether adjacent baked chunks actually connect (can an agent path across a seam?
-     this is the classic failure and the reason chunked navmesh is hard)
-   - how bake time scales with cell_size
-
-   Run it yourself with:
-     /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script tools/bench_navbake.gd
-
-SUCCESS CRITERIA:
-   GREEN : async bake, <2ms main-thread block, chunks connect across seams
-   AMBER : works but chunks don't connect, or hitches on bake → mitigations exist
-           (bake a larger region less often, pre-bake at gen time, stitch manually)
-   RED   : can't bake at runtime without visible hitching, or seams can't be joined
-
-IF RED: don't stop there. Evaluate the fallback from docs/ARCHITECTURE.md §6 R3 —
-grid-based A* directly on the heightmap, no NavigationServer at all. Sketch what that
-costs us (no off-mesh links, no dynamic obstacle avoidance, hand-rolled steering) so we
-can make an informed call.
-
-AUTHORITY: none for the spike. For the record, enemy pathfinding will be
-host-authoritative (docs/ARCHITECTURE.md §2.2).
-
-CONSTRAINTS:
-- .gd files only. NEVER touch .tscn/.tres/project.godot (D-007, hook-enforced).
-- Typed GDScript.
-- Verify the Godot 4.7 navigation API before writing against it — it changed across
-  4.x releases and your training data may be stale. Read the actual class reference
-  or test in a scratch script.
-- Don't explore the codebase. Ask if genuinely blocked.
-
-FINISH WITH:
-    .agent/bin/agent done 0.8 "<numbers, GREEN/AMBER/RED, and the fallback if RED>"
-    .agent/bin/agent ship 0.8 "M0: navmesh bake spike (R3)"
-
-`ship` commits only this task's files and pushes to origin. Never `git add -A` —
-other agents are working in this same directory and you would commit their
-half-written files.
-
-THEN, as your final chat message, tell me:
-  - what you verified and the actual numbers/command
-  - EXACTLY what I must wire before this runs (autoloads, scene nodes). You
-    can't touch .tscn/.tres, so if anything needs wiring, say plainly that the
-    feature does NOT work yet
-  - whether it is safe for me to start the next task
-  - the text to paste into docs/DECISIONS.md as D-016
-```
+M0 is closed. The 0.7 and 0.8 spike prompts that used to live here shipped in `9a1bc19` / `9ebe47b` —
+their results are D-015 and D-016 in `DECISIONS.md`. The unmeasured half of R2 is now task `4.0a`.
 
 ---
 
@@ -276,14 +131,14 @@ THEN, as your final chat message, tell me:
 
 ---
 
-## Optional fourth chat — only if you want more parallelism
+## Optional second chat — only if you want more parallelism
 
 ## Task 2.2 — Content resource framework
 
 > **Model: Sonnet 5 · effort medium · `export MIRE_AGENT=content`**
 > This is M2 work pulled forward. It's safe — pure data definitions, no network state,
-> no shared files with the three above — but it does jump the milestone. Skip it if
-> you'd rather keep M1 clean.
+> no shared files with 1.2 — but it does jump the milestone. Skip it if you'd rather
+> keep M1 clean.
 
 ```
 You're working on MIRE, a co-op survival game in Godot 4.7.1. Read AGENTS.md first.
@@ -351,6 +206,91 @@ THEN, as your final chat message, tell me:
 
 ---
 
+## Not yet — M4 gate, written down now while the context is fresh
+
+## Task 4.0a — Spike R2b: chunk collision cooking + GPU upload
+
+> **Model: Opus 5 · effort high · `export MIRE_AGENT=collide`**
+> **Do not start this during M1.** It's parked here so the reasoning behind it doesn't have to be
+> rebuilt from `FINDINGS.md` F-005 in three milestones' time. Run it immediately before task 4.1.
+
+```
+You're working on MIRE, a co-op survival game in Godot 4.7.1. Read AGENTS.md first —
+it's the protocol every agent here follows. Then:
+
+    export MIRE_AGENT=collide
+    .agent/bin/agent start collide
+    .agent/bin/agent claim 4.0a tools/bench_chunk_collide.gd
+
+TASK: Spike R2b. Close the half of spike R2 that was never measured.
+
+BACKGROUND — read this carefully, it is the whole point of the task:
+R2 (task 0.7) benchmarked chunk mesh generation at 0.330 ms/chunk and came back GREEN.
+It ran HEADLESS against the dummy renderer, so it measured noise sampling and vertex
+array construction and NOTHING ELSE — no GPU buffer upload, no material, no collision
+shape. R3 (task 0.8) measured NAVIGATION baking, which people assume covers this. It
+does not: physics collision cooking is a different code path from Recast navmesh
+generation. So the chunk streaming budget for task 4.3 is currently derived from a
+number that excludes two costs that could each dominate it.
+
+This is recorded as FINDINGS.md F-005 and as the standing caveat on DECISIONS.md D-015.
+
+Reuse world/chunk/chunk_mesher.gd — it exists and is the real mesher from R2. Do not
+rewrite it.
+
+Write one file: tools/bench_chunk_collide.gd — extends SceneTree.
+
+Measure, per 32x32m chunk (33x33 verts), averaged over 100 chunks:
+  - ms to cook a ConcavePolygonShape3D from the chunk mesh
+  - ms to cook the same as a HeightMapShape3D instead — heightfield chunks may not
+    need a trimesh at all, and if the heightfield is much cheaper that is the finding
+  - whether cooking is threadable (does it block the main thread? try WorkerThreadPool)
+  - memory per cooked shape
+
+CRITICAL: this benchmark must NOT run headless with --headless / the dummy renderer.
+That is exactly the mistake that made R2 incomplete. Run it windowed against the real
+Forward+ renderer so GPU upload is actually exercised:
+  /Applications/Godot.app/Contents/MacOS/Godot --path . --script tools/bench_chunk_collide.gd
+Measure mesh upload separately from cooking — instance the ArrayMesh into the live scene
+tree and time to first rendered frame, so upload cost lands somewhere real.
+If you cannot separate upload from cook cleanly, say so and report the combined number
+with that stated plainly. A number with an honest caveat is worth more than a clean
+number that quietly measures the wrong thing — that is how we got here.
+
+SUCCESS CRITERIA — state which the measurements support, and remember the budget is
+shared with meshing (0.330 ms) and nav baking (0.034 ms main-thread block):
+   GREEN : cook + upload < 4 ms/chunk, or cook is threadable → 4.3 streams as designed
+   AMBER : 4-15 ms → 4.3 needs a chunk budget per frame; say how many chunks/frame fit
+   RED   : >15 ms and not threadable → chunk size or collision strategy must change
+           before 4.1 is written. Evaluate HeightMapShape3D-only as the fallback.
+
+AUTHORITY: none — offline generation, no networking.
+
+CONSTRAINTS:
+- .gd files only. NEVER create or edit .tscn/.tres/project.godot (D-007, hook-enforced).
+- Typed GDScript.
+- Deterministic: seeded RandomNumberGenerator / FastNoiseLite.seed only, never global
+  randi(). And per D-017 + ARCHITECTURE.md §7, no sin/cos/tan/exp/log/pow anywhere in
+  seed-derived generation — those diverge ~1 ULP across platforms.
+- Don't explore the codebase beyond chunk_mesher.gd. Ask if genuinely blocked.
+
+FINISH WITH:
+    .agent/bin/agent done 4.0a "<the numbers, and which of GREEN/AMBER/RED they support>"
+    .agent/bin/agent ship 4.0a "M4: chunk collision + upload spike (R2b)"
+
+`ship` commits only this task's files and pushes to origin. Never `git add -A` —
+other agents are working in this same directory and you would commit their
+half-written files.
+
+THEN, as your final chat message, tell me:
+  - what you verified and the actual numbers/command
+  - whether it is safe for me to start 4.1
+  - the text to amend onto DECISIONS.md D-015, since this either confirms or
+    overturns its GREEN verdict
+```
+
+---
+
 ## When they finish
 
 Each agent ends with `agent done` or `agent handoff`, which releases its claims and writes
@@ -359,8 +299,8 @@ autoload wired first.
 
 ```bash
 .agent/bin/agent board          # see what landed
-git add -A && git commit -m "M0: terrain and navmesh spikes"
 ```
 
-Bring the spike results back to the planning chat before starting M1 proper. If R3 came back RED,
-the enemy AI design changes and the roadmap needs revising before anyone writes more code.
+Bring the result back to the planning chat before building on it. For 1.2 specifically: sanity-check
+the interface snippet it gives you *before* starting 1.3, because seven tasks get written against that
+shape and a change after the fact is a refactor across the milestone.

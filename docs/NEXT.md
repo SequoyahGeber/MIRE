@@ -7,9 +7,13 @@
 
 ## Status
 
-**Milestone:** M0 · Foundations & spikes — 5 of 10 tasks done
-**Last session:** 2026-08-15 (claude/planner) — wired the input map, autoloads, player scene and greybox
-level; verified against a real Godot 4.7.1 install.
+**Milestone:** M1 · Network spine — 0 of 12 tasks done. **M0 is closed, 10/10.**
+**Last session:** 2026-08-16 (claude/planner) — closed M0, filed the two spike verdicts, and booked the
+two M0 debts as M4 gates (4.0a, 4.0b) so they can't quietly go missing.
+
+Both risk spikes came back **GREEN**: chunked terrain meshing stays in GDScript (D-015), runtime
+NavMesh baking stays and the grid-A* fallback is dropped (D-016). Neither result is unconditional —
+see *M0 debts* below.
 
 **The game runs.** Open the project and press Play: you spawn in a greybox level and can walk, sprint,
 jump and look around. **F3** overlay · **`~`** console · **Esc** releases the mouse.
@@ -30,24 +34,32 @@ Protocol: [AGENTS.md](../AGENTS.md). Start every session with `.agent/bin/agent 
 
 ---
 
-## Next task
+## Next task — two, and they run in parallel
 
-### → 0.5 · Tune the controller until it feels good — `[T0]` · ~2h · **yours**
+They don't share a file and neither blocks the other. Start the coder chat first, then do 1.1 while it
+works.
 
-This is the one that can't be delegated. Press Play, open the Player node, and adjust the exported
-sliders **while the game is running**. Every feel number is exposed on purpose.
+### → 1.2 · `NetTransport` autoload — `[T2]` · ~3h · **coder chat**
 
-The greybox is built to answer specific questions:
+**The unblock.** Seven of the twelve M1 tasks (1.3, 1.5, 1.6, 1.7, 1.8, 1.10, 1.11) are written
+against this interface, so the API shape matters more than the implementation behind it.
 
-| Feature | What it's testing |
-|---|---|
-| Ramps at 15° / 30° / 45° / 50° | `floor_max_angle` is 46° — you should climb the 45° and slide off the 50° |
-| Stairs at 0.2 / 0.3 / 0.4m | Whether `floor_snap_length` (0.3) carries you up cleanly or catches |
-| Gaps at 1.5 / 2.5 / 3.5 / 4.5m | Where your jump distance actually lands |
-| Corridor + low lip | Wall slide, and stepping over small obstacles |
+Ready-to-paste prompt: [DELEGATION.md](DELEGATION.md) → *Task 1.2*.
+**Opus 5 · effort xhigh · `export MIRE_AGENT=net`.**
 
-Start with `walk_speed`, `sprint_speed`, `jump_height`, `gravity_scale`. Muck feels fast — don't be shy.
-When it feels right, write the numbers into `DECISIONS.md` so a future refactor can't quietly lose them.
+It does **not** need GodotSteam installed. The prompt scopes `STEAM` to a stubbed seam that returns a
+clear "not yet installed" error, and task 1.4 fills it in as a drop-in.
+
+### → 1.1 · Install GodotSteam GDExtension — `[T0]` · ~1h · **yours**
+
+Can't be delegated: it's a GDExtension drop plus `project.godot`, both human-only under D-007.
+4.4+ branch, confirm it loads in stock Godot 4.7.1, and pin the engine version.
+
+**Use App ID 480 (Spacewar) — don't pay the $100 yet.** [STEAM.md](STEAM.md) §2. It gives you lobbies,
+P2P and the overlay with no Steamworks account. Always join by invite or direct lobby ID; 480's public
+lobby list is worldwide junk, so never build against a lobby browser.
+
+Gates 1.4 (lobbies) and 1.12 (cross-platform join).
 
 ---
 
@@ -55,13 +67,28 @@ When it feels right, write the numbers into `DECISIONS.md` so a future refactor 
 
 | # | Task | Tier | Who | Est |
 |---|---|---|---|---|
-| 0.7 | **Spike R2** — 100 chunked terrain meshes, measure frame times | T2 | coder | 1.5h |
-| 0.8 | **Spike R3** — runtime NavMesh bake on a generated chunk | T2 | coder | 1.5h |
-| 0.10 | **Spike R6** — determinism: Linux ✅ done (D-017), **Windows outstanding** (below) | T0 | you | 30m |
-| 0.9 | Record all spike results in `DECISIONS.md`; pick fallbacks if any failed | T0 | you | 30m |
+| 1.3 | `LOCAL` mode — two windows, one keypress, no menus | T2 | coder | 2h |
+| 1.4 | Steam lobby: create, invite via overlay, join by ID, member list | T2 | coder | 3h |
+| 1.5 | Networked player: spawner + synchronizer, client-auth movement | T2 | coder | 3h |
+| 1.6 | Remote-player interpolation | T2 | coder | 2h |
 
-**0.7 and 0.8 are the ones that matter.** They're the two things most likely to force a redesign, and
-they're far cheaper to discover now than in M4/M5.
+**1.3 is worth more than it looks.** One-keypress two-window multiplayer testing makes every
+multiplayer bug for the rest of the project cheaper to find. Don't let it slip down the list.
+
+---
+
+## M0 debts — booked as M4 gates, don't lose them
+
+Both spikes went green with half the question unanswered. Both are now real tasks (`4.0a`, `4.0b`) at
+the top of M4 rather than notes in a findings file, because M4's chunk streaming budget gets designed
+against whatever they return.
+
+| # | What's actually unmeasured | Who | Est |
+|---|---|---|---|
+| 4.0a | `ConcavePolygonShape3D` cooking + GPU mesh upload per chunk. R2 ran headless — no upload, no material, no collision. R3 measured *navigation* baking, a different code path. F-005, and the standing caveat on D-015. | coder | 1.5h |
+| 4.0b | Determinism on Windows x86_64 — the third column in `ARCHITECTURE.md` §6a is still empty. | you | 30m |
+
+Nothing in M1 depends on either. Don't pull them forward; just don't start 4.1 without them.
 
 ---
 
@@ -75,7 +102,7 @@ guaranteed identical across architectures and C libraries.
 raw `sin`/`cos`/`pow`/`exp`/`log` are not. §4 stands, and the price is the world-gen safe set now
 written into `ARCHITECTURE.md` §7.
 
-**Task 0.10, remaining — the same two commands on a Windows x86_64 guest:**
+**Task 4.0b — the same two commands on a Windows x86_64 guest:**
 
 ```bash
 godot.exe --headless --path . --script tools/check_determinism.gd
@@ -90,6 +117,9 @@ Godot **4.7.1-stable build `a13da4feb`**, or the comparison means nothing. Compa
 test and not a formality — but the outcome that matters is narrow: `rng_sequence` and `noise_*` must
 match, and the four rows in the ops probe's *first* group must match. Divergence in the second group
 is expected and already accounted for. **Do this before M4 builds anything on seeded generation.**
+
+You have a Linux guest already; a Windows VM is the missing piece. This is a quota-free afternoon —
+good work for a day when the AI budget is spent.
 
 ---
 

@@ -143,6 +143,23 @@ one night. If this isn't fun, nothing built on top of it will be.
 
 **Goal:** a real procedural island, and the signature mechanic. Second-heaviest premium spend.
 
+**Two gates must clear before anything else in M4 starts.** Both are M0 debts — measurements M0
+recorded as green while leaving half the question unanswered. Both are cheap now and expensive later,
+because 4.3 and 4.6 get designed against whatever they return.
+
+| # | Task | Tier | Est |
+|---|---|---|---|
+| 4.0a | **Spike R2b** — `ConcavePolygonShape3D` cooking + GPU mesh upload cost per chunk, on a real renderer (`FINDINGS.md` F-005) | T2 | 1.5 |
+| 4.0b | **Finish Spike R6** — determinism probe on Windows x86_64, fill the third column in `ARCHITECTURE.md` §6a | T0 | 0.5 |
+
+> **4.0a:** R2 measured 0.330 ms/chunk headless — no GPU upload, no material, no collision shape. R3
+> measured *navigation* baking, which is a different code path from physics cooking. The chunk
+> streaming budget in 4.3 is being set from a number that excludes both. Measure before you commit.
+>
+> **4.0b:** MSVC is a third C library. `rng_sequence` and `noise_*` must match the macOS/Linux hashes,
+> and so must the first group of the ops probe. If they don't, shared-seed world gen (§4) is dead on
+> Windows and 4.6 changes shape entirely.
+
 | # | Task | Tier | Est |
 |---|---|---|---|
 | 4.1 | Seeded island heightmap: layered noise + island falloff, deterministic RNG per subsystem | T2 | 4 |

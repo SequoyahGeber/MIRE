@@ -412,7 +412,8 @@ verification remains out of scope.
 
 ### Determinism baseline
 
-Recorded from `tools/check_determinism.gd`. **Windows is still unmeasured — fill it in before M4.**
+Recorded from `tools/check_determinism.gd`. **Windows is still unmeasured — that's task `4.0b`, a gate
+before 4.1.**
 
 | | macOS arm64 | Linux x86_64 | Windows x86_64 |
 |---|---|---|---|

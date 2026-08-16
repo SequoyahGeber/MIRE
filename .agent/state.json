@@ -440,6 +440,20 @@
       "tier": "T2",
       "title": "Attunement system + selection UI (`DESIGN.md` \u00a74.5)"
     },
+    "4.0a": {
+      "est": "1.5",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Spike R2b \u2014 `ConcavePolygonShape3D` cooking + GPU mesh upload cost per chunk, on a real renderer (`FINDINGS.md` F-005)"
+    },
+    "4.0b": {
+      "est": "0.5",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Finish Spike R6 \u2014 determinism probe on Windows x86_64, fill the third column in `ARCHITECTURE.md` \u00a76a"
+    },
     "4.1": {
       "est": "4",
       "milestone": "M4",

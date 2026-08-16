@@ -142,6 +142,8 @@ No GDExtension, no C#, no threading until something proves it necessary.
 upload (it ran headless against the dummy renderer) and **collision shape generation, which is still
 untested**; R3 measured *navigation* baking, not physics. If `ConcavePolygonShape3D` cooking costs
 more than the mesh build, chunk streaming gets rebudgeted around it, not around mesh generation.
+**Both are now task `4.0a` (Spike R2b), a gate before 4.1** — this verdict is provisional until it
+reports (`FINDINGS.md` F-005).
 
 ### D-016 · 2026-08-15 · R3 is GREEN — runtime NavMesh baking stays; enemy AI keeps NavigationServer3D
 `tools/bench_navbake.gd` measured **0.034 ms of worst-case main-thread block across a realistic

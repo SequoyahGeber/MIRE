@@ -121,6 +121,13 @@ cooking (`ConcavePolygonShape3D` from a chunk mesh) is a different code path and
 by anything. So this entry now covers **two** unmeasured main-thread costs, not one, and neither is on
 the roadmap. Recorded in `DECISIONS.md` D-015 as the standing caveat on the R2 green result.
 
+**Now tracked, 2026-08-16 by claude/planner:** both costs are task **`4.0a`** (Spike R2b), a gate at
+the top of M4 that must clear before 4.1 starts — `ROADMAP.md` M4, prompt in `DELEGATION.md`. The nav
+correction above was right that neither was on the roadmap; that was the actual defect here, since a
+finding with no task ID is a finding that gets rediscovered too late. This entry stays open until
+4.0a reports numbers, and 4.0a is explicitly required to run windowed rather than headless — running
+headless is the specific mistake that produced this finding.
+
 ---
 
 ### F-006 · Three roadmap tasks assume a Windows or Linux machine we don't have
