@@ -1,0 +1,1553 @@
+[
+  {
+    "name": "tree_pine_a",
+    "category": "trees",
+    "width_m": 3.604,
+    "depth_m": 3.558,
+    "height_m": 5.677,
+    "mesh_parts": 5,
+    "polygons": 50,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Pine_Dark",
+      "MIRE_Pine_Mid",
+      "MIRE_Pine_Tip"
+    ]
+  },
+  {
+    "name": "tree_pine_b",
+    "category": "trees",
+    "width_m": 4.594,
+    "depth_m": 4.629,
+    "height_m": 4.536,
+    "mesh_parts": 4,
+    "polygons": 42,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Pine_Dark",
+      "MIRE_Pine_Mid",
+      "MIRE_Pine_Tip"
+    ]
+  },
+  {
+    "name": "tree_pine_c",
+    "category": "trees",
+    "width_m": 4.27,
+    "depth_m": 4.253,
+    "height_m": 5.622,
+    "mesh_parts": 6,
+    "polygons": 59,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Pine_Dark",
+      "MIRE_Pine_Mid",
+      "MIRE_Pine_Tip"
+    ]
+  },
+  {
+    "name": "tree_pine_d",
+    "category": "trees",
+    "width_m": 4.566,
+    "depth_m": 4.583,
+    "height_m": 4.987,
+    "mesh_parts": 4,
+    "polygons": 41,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Pine_Dark",
+      "MIRE_Pine_Mid",
+      "MIRE_Pine_Tip"
+    ]
+  },
+  {
+    "name": "tree_pine_e",
+    "category": "trees",
+    "width_m": 4.309,
+    "depth_m": 4.194,
+    "height_m": 5.522,
+    "mesh_parts": 6,
+    "polygons": 63,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Pine_Dark",
+      "MIRE_Pine_Mid",
+      "MIRE_Pine_Tip"
+    ]
+  },
+  {
+    "name": "tree_pine_f",
+    "category": "trees",
+    "width_m": 4.714,
+    "depth_m": 4.663,
+    "height_m": 5.513,
+    "mesh_parts": 4,
+    "polygons": 37,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Pine_Dark",
+      "MIRE_Pine_Mid",
+      "MIRE_Pine_Tip"
+    ]
+  },
+  {
+    "name": "tree_bare_a",
+    "category": "trees",
+    "width_m": 3.483,
+    "depth_m": 0.974,
+    "height_m": 4.473,
+    "mesh_parts": 8,
+    "polygons": 65,
+    "materials": [
+      "MIRE_Bark_Light"
+    ]
+  },
+  {
+    "name": "tree_bare_b",
+    "category": "trees",
+    "width_m": 3.571,
+    "depth_m": 0.894,
+    "height_m": 5.712,
+    "mesh_parts": 6,
+    "polygons": 49,
+    "materials": [
+      "MIRE_Bark_Light"
+    ]
+  },
+  {
+    "name": "tree_bare_c",
+    "category": "trees",
+    "width_m": 3.149,
+    "depth_m": 0.744,
+    "height_m": 5.145,
+    "mesh_parts": 6,
+    "polygons": 49,
+    "materials": [
+      "MIRE_Bark_Light"
+    ]
+  },
+  {
+    "name": "tree_bare_d",
+    "category": "trees",
+    "width_m": 3.562,
+    "depth_m": 0.972,
+    "height_m": 4.88,
+    "mesh_parts": 6,
+    "polygons": 49,
+    "materials": [
+      "MIRE_Bark_Light"
+    ]
+  },
+  {
+    "name": "tree_birch_a",
+    "category": "trees",
+    "width_m": 3.391,
+    "depth_m": 2.579,
+    "height_m": 5.738,
+    "mesh_parts": 9,
+    "polygons": 130,
+    "materials": [
+      "MIRE_Birch",
+      "MIRE_Birch_Mark",
+      "MIRE_Leaf_Gold"
+    ]
+  },
+  {
+    "name": "tree_birch_b",
+    "category": "trees",
+    "width_m": 3.439,
+    "depth_m": 2.907,
+    "height_m": 5.292,
+    "mesh_parts": 9,
+    "polygons": 130,
+    "materials": [
+      "MIRE_Birch",
+      "MIRE_Birch_Mark",
+      "MIRE_Leaf_Gold"
+    ]
+  },
+  {
+    "name": "tree_birch_c",
+    "category": "trees",
+    "width_m": 3.349,
+    "depth_m": 3.237,
+    "height_m": 6.841,
+    "mesh_parts": 10,
+    "polygons": 150,
+    "materials": [
+      "MIRE_Birch",
+      "MIRE_Birch_Mark",
+      "MIRE_Leaf_Gold"
+    ]
+  },
+  {
+    "name": "tree_birch_d",
+    "category": "trees",
+    "width_m": 2.965,
+    "depth_m": 2.924,
+    "height_m": 6.856,
+    "mesh_parts": 10,
+    "polygons": 150,
+    "materials": [
+      "MIRE_Birch",
+      "MIRE_Birch_Mark",
+      "MIRE_Leaf_Gold"
+    ]
+  },
+  {
+    "name": "tree_crooked_a",
+    "category": "trees",
+    "width_m": 3.827,
+    "depth_m": 3.06,
+    "height_m": 6.316,
+    "mesh_parts": 6,
+    "polygons": 87,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Leaf_Gold"
+    ]
+  },
+  {
+    "name": "tree_crooked_b",
+    "category": "trees",
+    "width_m": 3.642,
+    "depth_m": 2.774,
+    "height_m": 6.62,
+    "mesh_parts": 7,
+    "polygons": 107,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Leaf"
+    ]
+  },
+  {
+    "name": "tree_crooked_c",
+    "category": "trees",
+    "width_m": 3.867,
+    "depth_m": 3.491,
+    "height_m": 5.862,
+    "mesh_parts": 8,
+    "polygons": 127,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Leaf"
+    ]
+  },
+  {
+    "name": "tree_crooked_d",
+    "category": "trees",
+    "width_m": 3.817,
+    "depth_m": 3.252,
+    "height_m": 6.08,
+    "mesh_parts": 8,
+    "polygons": 127,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Leaf_Gold"
+    ]
+  },
+  {
+    "name": "boulder_a",
+    "category": "rocks",
+    "width_m": 3.805,
+    "depth_m": 4.186,
+    "height_m": 2.615,
+    "mesh_parts": 2,
+    "polygons": 40,
+    "materials": [
+      "MIRE_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "boulder_b",
+    "category": "rocks",
+    "width_m": 2.84,
+    "depth_m": 4.179,
+    "height_m": 3.383,
+    "mesh_parts": 1,
+    "polygons": 20,
+    "materials": [
+      "MIRE_Stone"
+    ]
+  },
+  {
+    "name": "boulder_c",
+    "category": "rocks",
+    "width_m": 3.023,
+    "depth_m": 2.243,
+    "height_m": 1.917,
+    "mesh_parts": 2,
+    "polygons": 40,
+    "materials": [
+      "MIRE_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "boulder_d",
+    "category": "rocks",
+    "width_m": 4.088,
+    "depth_m": 4.122,
+    "height_m": 2.555,
+    "mesh_parts": 1,
+    "polygons": 20,
+    "materials": [
+      "MIRE_Stone"
+    ]
+  },
+  {
+    "name": "boulder_e",
+    "category": "rocks",
+    "width_m": 2.804,
+    "depth_m": 3.507,
+    "height_m": 2.786,
+    "mesh_parts": 2,
+    "polygons": 40,
+    "materials": [
+      "MIRE_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "boulder_f",
+    "category": "rocks",
+    "width_m": 2.761,
+    "depth_m": 2.702,
+    "height_m": 2.126,
+    "mesh_parts": 1,
+    "polygons": 20,
+    "materials": [
+      "MIRE_Stone"
+    ]
+  },
+  {
+    "name": "boulder_g",
+    "category": "rocks",
+    "width_m": 2.625,
+    "depth_m": 3.214,
+    "height_m": 2.235,
+    "mesh_parts": 2,
+    "polygons": 40,
+    "materials": [
+      "MIRE_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "boulder_h",
+    "category": "rocks",
+    "width_m": 3.046,
+    "depth_m": 3.799,
+    "height_m": 3.309,
+    "mesh_parts": 1,
+    "polygons": 20,
+    "materials": [
+      "MIRE_Stone"
+    ]
+  },
+  {
+    "name": "rock_cluster_a",
+    "category": "rocks",
+    "width_m": 2.547,
+    "depth_m": 1.894,
+    "height_m": 2.144,
+    "mesh_parts": 3,
+    "polygons": 60,
+    "materials": [
+      "MIRE_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "rock_cluster_b",
+    "category": "rocks",
+    "width_m": 2.768,
+    "depth_m": 2.539,
+    "height_m": 2.108,
+    "mesh_parts": 3,
+    "polygons": 60,
+    "materials": [
+      "MIRE_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "rock_cluster_c",
+    "category": "rocks",
+    "width_m": 2.295,
+    "depth_m": 2.21,
+    "height_m": 2.079,
+    "mesh_parts": 3,
+    "polygons": 60,
+    "materials": [
+      "MIRE_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "rock_cluster_d",
+    "category": "rocks",
+    "width_m": 2.127,
+    "depth_m": 1.783,
+    "height_m": 1.899,
+    "mesh_parts": 5,
+    "polygons": 100,
+    "materials": [
+      "MIRE_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "rock_cluster_e",
+    "category": "rocks",
+    "width_m": 1.899,
+    "depth_m": 2.972,
+    "height_m": 2.098,
+    "mesh_parts": 4,
+    "polygons": 80,
+    "materials": [
+      "MIRE_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "rock_cluster_f",
+    "category": "rocks",
+    "width_m": 2.68,
+    "depth_m": 1.884,
+    "height_m": 2.1,
+    "mesh_parts": 4,
+    "polygons": 80,
+    "materials": [
+      "MIRE_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "standing_stone_a",
+    "category": "rocks",
+    "width_m": 1.61,
+    "depth_m": 1.859,
+    "height_m": 3.258,
+    "mesh_parts": 6,
+    "polygons": 94,
+    "materials": [
+      "MIRE_Rune",
+      "MIRE_Stone",
+      "MIRE_Stone_Dark"
+    ]
+  },
+  {
+    "name": "standing_stone_b",
+    "category": "rocks",
+    "width_m": 1.608,
+    "depth_m": 1.529,
+    "height_m": 2.891,
+    "mesh_parts": 5,
+    "polygons": 73,
+    "materials": [
+      "MIRE_Rune",
+      "MIRE_Stone",
+      "MIRE_Stone_Dark"
+    ]
+  },
+  {
+    "name": "standing_stone_c",
+    "category": "rocks",
+    "width_m": 1.694,
+    "depth_m": 1.546,
+    "height_m": 2.203,
+    "mesh_parts": 5,
+    "polygons": 73,
+    "materials": [
+      "MIRE_Rune",
+      "MIRE_Stone",
+      "MIRE_Stone_Dark"
+    ]
+  },
+  {
+    "name": "standing_stone_d",
+    "category": "rocks",
+    "width_m": 1.605,
+    "depth_m": 1.359,
+    "height_m": 2.352,
+    "mesh_parts": 4,
+    "polygons": 55,
+    "materials": [
+      "MIRE_Rune",
+      "MIRE_Stone",
+      "MIRE_Stone_Dark"
+    ]
+  },
+  {
+    "name": "stump_a",
+    "category": "forest_debris",
+    "width_m": 1.673,
+    "depth_m": 1.358,
+    "height_m": 1.386,
+    "mesh_parts": 5,
+    "polygons": 47,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Cut_Wood"
+    ]
+  },
+  {
+    "name": "stump_b",
+    "category": "forest_debris",
+    "width_m": 1.957,
+    "depth_m": 1.572,
+    "height_m": 1.433,
+    "mesh_parts": 7,
+    "polygons": 66,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Cut_Wood"
+    ]
+  },
+  {
+    "name": "stump_c",
+    "category": "forest_debris",
+    "width_m": 1.95,
+    "depth_m": 1.208,
+    "height_m": 0.783,
+    "mesh_parts": 5,
+    "polygons": 49,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Cut_Wood"
+    ]
+  },
+  {
+    "name": "stump_d",
+    "category": "forest_debris",
+    "width_m": 1.738,
+    "depth_m": 2.169,
+    "height_m": 1.224,
+    "mesh_parts": 6,
+    "polygons": 56,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Cut_Wood"
+    ]
+  },
+  {
+    "name": "fallen_log_a",
+    "category": "forest_debris",
+    "width_m": 2.844,
+    "depth_m": 1.64,
+    "height_m": 1.159,
+    "mesh_parts": 6,
+    "polygons": 67,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Cut_Wood",
+      "MIRE_Moss"
+    ]
+  },
+  {
+    "name": "fallen_log_b",
+    "category": "forest_debris",
+    "width_m": 3.035,
+    "depth_m": 1.312,
+    "height_m": 1.126,
+    "mesh_parts": 5,
+    "polygons": 57,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Cut_Wood",
+      "MIRE_Moss"
+    ]
+  },
+  {
+    "name": "fallen_log_c",
+    "category": "forest_debris",
+    "width_m": 4.472,
+    "depth_m": 1.053,
+    "height_m": 0.984,
+    "mesh_parts": 5,
+    "polygons": 57,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Cut_Wood",
+      "MIRE_Moss"
+    ]
+  },
+  {
+    "name": "fallen_log_d",
+    "category": "forest_debris",
+    "width_m": 4.44,
+    "depth_m": 1.517,
+    "height_m": 1.114,
+    "mesh_parts": 5,
+    "polygons": 58,
+    "materials": [
+      "MIRE_Bark",
+      "MIRE_Cut_Wood",
+      "MIRE_Moss"
+    ]
+  },
+  {
+    "name": "root_cluster_a",
+    "category": "forest_debris",
+    "width_m": 2.578,
+    "depth_m": 2.736,
+    "height_m": 1.03,
+    "mesh_parts": 17,
+    "polygons": 148,
+    "materials": [
+      "MIRE_Bark"
+    ]
+  },
+  {
+    "name": "root_cluster_b",
+    "category": "forest_debris",
+    "width_m": 3.071,
+    "depth_m": 2.914,
+    "height_m": 1.149,
+    "mesh_parts": 17,
+    "polygons": 148,
+    "materials": [
+      "MIRE_Bark"
+    ]
+  },
+  {
+    "name": "root_cluster_c",
+    "category": "forest_debris",
+    "width_m": 2.491,
+    "depth_m": 2.199,
+    "height_m": 1.342,
+    "mesh_parts": 13,
+    "polygons": 116,
+    "materials": [
+      "MIRE_Bark"
+    ]
+  },
+  {
+    "name": "root_cluster_d",
+    "category": "forest_debris",
+    "width_m": 2.074,
+    "depth_m": 2.09,
+    "height_m": 0.936,
+    "mesh_parts": 11,
+    "polygons": 100,
+    "materials": [
+      "MIRE_Bark"
+    ]
+  },
+  {
+    "name": "grass_clump_a",
+    "category": "ground_cover",
+    "width_m": 0.813,
+    "depth_m": 0.759,
+    "height_m": 1.178,
+    "mesh_parts": 9,
+    "polygons": 54,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Light"
+    ]
+  },
+  {
+    "name": "grass_clump_b",
+    "category": "ground_cover",
+    "width_m": 0.629,
+    "depth_m": 0.771,
+    "height_m": 1.086,
+    "mesh_parts": 6,
+    "polygons": 36,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Light"
+    ]
+  },
+  {
+    "name": "grass_clump_c",
+    "category": "ground_cover",
+    "width_m": 0.84,
+    "depth_m": 1.07,
+    "height_m": 1.138,
+    "mesh_parts": 11,
+    "polygons": 66,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Light"
+    ]
+  },
+  {
+    "name": "grass_clump_d",
+    "category": "ground_cover",
+    "width_m": 0.746,
+    "depth_m": 0.556,
+    "height_m": 1.191,
+    "mesh_parts": 9,
+    "polygons": 54,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Light"
+    ]
+  },
+  {
+    "name": "grass_clump_e",
+    "category": "ground_cover",
+    "width_m": 1.003,
+    "depth_m": 0.572,
+    "height_m": 1.164,
+    "mesh_parts": 9,
+    "polygons": 54,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Light"
+    ]
+  },
+  {
+    "name": "grass_clump_f",
+    "category": "ground_cover",
+    "width_m": 0.828,
+    "depth_m": 0.689,
+    "height_m": 1.179,
+    "mesh_parts": 10,
+    "polygons": 60,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Light"
+    ]
+  },
+  {
+    "name": "fern_a",
+    "category": "ground_cover",
+    "width_m": 2.016,
+    "depth_m": 1.806,
+    "height_m": 0.416,
+    "mesh_parts": 24,
+    "polygons": 402,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Leaf",
+      "MIRE_Leaf_Light"
+    ]
+  },
+  {
+    "name": "fern_b",
+    "category": "ground_cover",
+    "width_m": 2.089,
+    "depth_m": 1.706,
+    "height_m": 0.344,
+    "mesh_parts": 20,
+    "polygons": 335,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Leaf",
+      "MIRE_Leaf_Light"
+    ]
+  },
+  {
+    "name": "fern_c",
+    "category": "ground_cover",
+    "width_m": 1.996,
+    "depth_m": 1.994,
+    "height_m": 0.435,
+    "mesh_parts": 20,
+    "polygons": 335,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Leaf",
+      "MIRE_Leaf_Light"
+    ]
+  },
+  {
+    "name": "fern_d",
+    "category": "ground_cover",
+    "width_m": 1.958,
+    "depth_m": 2.014,
+    "height_m": 0.447,
+    "mesh_parts": 20,
+    "polygons": 335,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Leaf",
+      "MIRE_Leaf_Light"
+    ]
+  },
+  {
+    "name": "fern_e",
+    "category": "ground_cover",
+    "width_m": 1.905,
+    "depth_m": 1.853,
+    "height_m": 0.452,
+    "mesh_parts": 20,
+    "polygons": 335,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Leaf",
+      "MIRE_Leaf_Light"
+    ]
+  },
+  {
+    "name": "fern_f",
+    "category": "ground_cover",
+    "width_m": 2.337,
+    "depth_m": 1.957,
+    "height_m": 0.456,
+    "mesh_parts": 24,
+    "polygons": 402,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Leaf",
+      "MIRE_Leaf_Light"
+    ]
+  },
+  {
+    "name": "reeds_a",
+    "category": "ground_cover",
+    "width_m": 0.948,
+    "depth_m": 0.641,
+    "height_m": 1.92,
+    "mesh_parts": 14,
+    "polygons": 117,
+    "materials": [
+      "MIRE_Cattail",
+      "MIRE_Reed"
+    ]
+  },
+  {
+    "name": "reeds_b",
+    "category": "ground_cover",
+    "width_m": 0.828,
+    "depth_m": 0.728,
+    "height_m": 1.967,
+    "mesh_parts": 8,
+    "polygons": 67,
+    "materials": [
+      "MIRE_Cattail",
+      "MIRE_Reed"
+    ]
+  },
+  {
+    "name": "reeds_c",
+    "category": "ground_cover",
+    "width_m": 0.651,
+    "depth_m": 1.127,
+    "height_m": 1.447,
+    "mesh_parts": 8,
+    "polygons": 67,
+    "materials": [
+      "MIRE_Cattail",
+      "MIRE_Reed"
+    ]
+  },
+  {
+    "name": "reeds_d",
+    "category": "ground_cover",
+    "width_m": 0.446,
+    "depth_m": 0.71,
+    "height_m": 1.898,
+    "mesh_parts": 14,
+    "polygons": 117,
+    "materials": [
+      "MIRE_Cattail",
+      "MIRE_Reed"
+    ]
+  },
+  {
+    "name": "mushroom_cluster_a",
+    "category": "mire_growth",
+    "width_m": 1.699,
+    "depth_m": 1.191,
+    "height_m": 0.809,
+    "mesh_parts": 8,
+    "polygons": 127,
+    "materials": [
+      "MIRE_Corruption",
+      "MIRE_Cut_Wood",
+      "MIRE_Mushroom",
+      "MIRE_Mushroom_Spot"
+    ]
+  },
+  {
+    "name": "mushroom_cluster_b",
+    "category": "mire_growth",
+    "width_m": 1.866,
+    "depth_m": 1.305,
+    "height_m": 1.321,
+    "mesh_parts": 18,
+    "polygons": 272,
+    "materials": [
+      "MIRE_Corruption",
+      "MIRE_Cut_Wood",
+      "MIRE_Mushroom",
+      "MIRE_Mushroom_Spot"
+    ]
+  },
+  {
+    "name": "mushroom_cluster_c",
+    "category": "mire_growth",
+    "width_m": 1.699,
+    "depth_m": 1.471,
+    "height_m": 1.352,
+    "mesh_parts": 16,
+    "polygons": 243,
+    "materials": [
+      "MIRE_Corruption",
+      "MIRE_Cut_Wood",
+      "MIRE_Mushroom",
+      "MIRE_Mushroom_Spot"
+    ]
+  },
+  {
+    "name": "mushroom_cluster_d",
+    "category": "mire_growth",
+    "width_m": 1.849,
+    "depth_m": 1.191,
+    "height_m": 1.242,
+    "mesh_parts": 12,
+    "polygons": 185,
+    "materials": [
+      "MIRE_Corruption",
+      "MIRE_Cut_Wood",
+      "MIRE_Mushroom",
+      "MIRE_Mushroom_Spot"
+    ]
+  },
+  {
+    "name": "mushroom_cluster_e",
+    "category": "mire_growth",
+    "width_m": 1.699,
+    "depth_m": 1.398,
+    "height_m": 0.926,
+    "mesh_parts": 16,
+    "polygons": 243,
+    "materials": [
+      "MIRE_Corruption",
+      "MIRE_Cut_Wood",
+      "MIRE_Mushroom",
+      "MIRE_Mushroom_Spot"
+    ]
+  },
+  {
+    "name": "mushroom_cluster_f",
+    "category": "mire_growth",
+    "width_m": 1.699,
+    "depth_m": 1.898,
+    "height_m": 1.017,
+    "mesh_parts": 10,
+    "polygons": 156,
+    "materials": [
+      "MIRE_Corruption",
+      "MIRE_Cut_Wood",
+      "MIRE_Mushroom",
+      "MIRE_Mushroom_Spot"
+    ]
+  },
+  {
+    "name": "mire_crystal_a",
+    "category": "mire_growth",
+    "width_m": 1.646,
+    "depth_m": 1.225,
+    "height_m": 1.82,
+    "mesh_parts": 8,
+    "polygons": 78,
+    "materials": [
+      "MIRE_Corruption_Mid",
+      "MIRE_Crystal",
+      "MIRE_Crystal_Tip"
+    ]
+  },
+  {
+    "name": "mire_crystal_b",
+    "category": "mire_growth",
+    "width_m": 1.716,
+    "depth_m": 1.29,
+    "height_m": 1.988,
+    "mesh_parts": 6,
+    "polygons": 60,
+    "materials": [
+      "MIRE_Corruption_Mid",
+      "MIRE_Crystal",
+      "MIRE_Crystal_Tip"
+    ]
+  },
+  {
+    "name": "mire_crystal_c",
+    "category": "mire_growth",
+    "width_m": 1.646,
+    "depth_m": 1.368,
+    "height_m": 1.992,
+    "mesh_parts": 7,
+    "polygons": 69,
+    "materials": [
+      "MIRE_Corruption_Mid",
+      "MIRE_Crystal",
+      "MIRE_Crystal_Tip"
+    ]
+  },
+  {
+    "name": "mire_crystal_d",
+    "category": "mire_growth",
+    "width_m": 1.646,
+    "depth_m": 1.225,
+    "height_m": 2.001,
+    "mesh_parts": 8,
+    "polygons": 75,
+    "materials": [
+      "MIRE_Corruption_Mid",
+      "MIRE_Crystal",
+      "MIRE_Crystal_Tip"
+    ]
+  },
+  {
+    "name": "mire_crystal_e",
+    "category": "mire_growth",
+    "width_m": 1.646,
+    "depth_m": 1.225,
+    "height_m": 1.507,
+    "mesh_parts": 5,
+    "polygons": 54,
+    "materials": [
+      "MIRE_Corruption_Mid",
+      "MIRE_Crystal",
+      "MIRE_Crystal_Tip"
+    ]
+  },
+  {
+    "name": "mire_crystal_f",
+    "category": "mire_growth",
+    "width_m": 1.646,
+    "depth_m": 1.283,
+    "height_m": 1.312,
+    "mesh_parts": 6,
+    "polygons": 60,
+    "materials": [
+      "MIRE_Corruption_Mid",
+      "MIRE_Crystal",
+      "MIRE_Crystal_Tip"
+    ]
+  },
+  {
+    "name": "mire_tendril_a",
+    "category": "mire_growth",
+    "width_m": 1.503,
+    "depth_m": 1.157,
+    "height_m": 2.288,
+    "mesh_parts": 16,
+    "polygons": 176,
+    "materials": [
+      "MIRE_Corruption",
+      "MIRE_Corruption_Mid",
+      "MIRE_Crystal_Tip"
+    ]
+  },
+  {
+    "name": "mire_tendril_b",
+    "category": "mire_growth",
+    "width_m": 1.503,
+    "depth_m": 1.157,
+    "height_m": 2.203,
+    "mesh_parts": 31,
+    "polygons": 332,
+    "materials": [
+      "MIRE_Corruption",
+      "MIRE_Corruption_Mid",
+      "MIRE_Crystal_Tip"
+    ]
+  },
+  {
+    "name": "mire_tendril_c",
+    "category": "mire_growth",
+    "width_m": 1.503,
+    "depth_m": 1.157,
+    "height_m": 2.091,
+    "mesh_parts": 16,
+    "polygons": 176,
+    "materials": [
+      "MIRE_Corruption",
+      "MIRE_Corruption_Mid",
+      "MIRE_Crystal_Tip"
+    ]
+  },
+  {
+    "name": "mire_tendril_d",
+    "category": "mire_growth",
+    "width_m": 1.503,
+    "depth_m": 1.168,
+    "height_m": 2.338,
+    "mesh_parts": 21,
+    "polygons": 228,
+    "materials": [
+      "MIRE_Corruption",
+      "MIRE_Corruption_Mid",
+      "MIRE_Crystal_Tip"
+    ]
+  },
+  {
+    "name": "ruin_wall_a",
+    "category": "ruins",
+    "width_m": 4.479,
+    "depth_m": 0.79,
+    "height_m": 2.413,
+    "mesh_parts": 18,
+    "polygons": 122,
+    "materials": [
+      "MIRE_Moss",
+      "MIRE_Ruin_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "ruin_wall_b",
+    "category": "ruins",
+    "width_m": 4.478,
+    "depth_m": 0.792,
+    "height_m": 2.417,
+    "mesh_parts": 18,
+    "polygons": 122,
+    "materials": [
+      "MIRE_Moss",
+      "MIRE_Ruin_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "ruin_wall_c",
+    "category": "ruins",
+    "width_m": 4.469,
+    "depth_m": 0.789,
+    "height_m": 2.411,
+    "mesh_parts": 21,
+    "polygons": 140,
+    "materials": [
+      "MIRE_Moss",
+      "MIRE_Ruin_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "ruin_wall_d",
+    "category": "ruins",
+    "width_m": 4.48,
+    "depth_m": 0.792,
+    "height_m": 2.419,
+    "mesh_parts": 22,
+    "polygons": 146,
+    "materials": [
+      "MIRE_Moss",
+      "MIRE_Ruin_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "ruin_column_a",
+    "category": "ruins",
+    "width_m": 1.1,
+    "depth_m": 1.1,
+    "height_m": 3.137,
+    "mesh_parts": 5,
+    "polygons": 30,
+    "materials": [
+      "MIRE_Ruin_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "ruin_column_b",
+    "category": "ruins",
+    "width_m": 1.1,
+    "depth_m": 1.1,
+    "height_m": 3.531,
+    "mesh_parts": 7,
+    "polygons": 42,
+    "materials": [
+      "MIRE_Ruin_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "ruin_column_c",
+    "category": "ruins",
+    "width_m": 1.1,
+    "depth_m": 1.1,
+    "height_m": 2.739,
+    "mesh_parts": 4,
+    "polygons": 24,
+    "materials": [
+      "MIRE_Ruin_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "ruin_column_d",
+    "category": "ruins",
+    "width_m": 1.1,
+    "depth_m": 1.1,
+    "height_m": 3.42,
+    "mesh_parts": 6,
+    "polygons": 36,
+    "materials": [
+      "MIRE_Ruin_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "ruin_arch_a",
+    "category": "ruins",
+    "width_m": 3.447,
+    "depth_m": 1.02,
+    "height_m": 3.27,
+    "mesh_parts": 14,
+    "polygons": 84,
+    "materials": [
+      "MIRE_Ruin_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "ruin_arch_b",
+    "category": "ruins",
+    "width_m": 3.454,
+    "depth_m": 1.02,
+    "height_m": 3.27,
+    "mesh_parts": 14,
+    "polygons": 84,
+    "materials": [
+      "MIRE_Ruin_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "stone_marker_a",
+    "category": "ruins",
+    "width_m": 1.35,
+    "depth_m": 0.85,
+    "height_m": 2.8,
+    "mesh_parts": 4,
+    "polygons": 24,
+    "materials": [
+      "MIRE_Ruin_Stone",
+      "MIRE_Rune",
+      "MIRE_Stone_Dark"
+    ]
+  },
+  {
+    "name": "stone_marker_b",
+    "category": "ruins",
+    "width_m": 1.35,
+    "depth_m": 0.85,
+    "height_m": 2.799,
+    "mesh_parts": 4,
+    "polygons": 24,
+    "materials": [
+      "MIRE_Ruin_Stone",
+      "MIRE_Rune",
+      "MIRE_Stone_Dark"
+    ]
+  },
+  {
+    "name": "wood_foundation",
+    "category": "building_pieces",
+    "width_m": 4.0,
+    "depth_m": 4.0,
+    "height_m": 0.4,
+    "mesh_parts": 8,
+    "polygons": 48,
+    "materials": [
+      "MIRE_Build_Wood",
+      "MIRE_Build_Wood_Light"
+    ]
+  },
+  {
+    "name": "wood_floor",
+    "category": "building_pieces",
+    "width_m": 3.96,
+    "depth_m": 4.0,
+    "height_m": 0.24,
+    "mesh_parts": 8,
+    "polygons": 48,
+    "materials": [
+      "MIRE_Build_Wood",
+      "MIRE_Build_Wood_Light"
+    ]
+  },
+  {
+    "name": "wood_wall_solid",
+    "category": "building_pieces",
+    "width_m": 4.2,
+    "depth_m": 0.321,
+    "height_m": 3.0,
+    "mesh_parts": 10,
+    "polygons": 60,
+    "materials": [
+      "MIRE_Build_Wood",
+      "MIRE_Build_Wood_Light"
+    ]
+  },
+  {
+    "name": "wood_wall_window",
+    "category": "building_pieces",
+    "width_m": 3.961,
+    "depth_m": 0.34,
+    "height_m": 3.0,
+    "mesh_parts": 10,
+    "polygons": 60,
+    "materials": [
+      "MIRE_Build_Wood",
+      "MIRE_Build_Wood_Light"
+    ]
+  },
+  {
+    "name": "wood_wall_door",
+    "category": "building_pieces",
+    "width_m": 3.961,
+    "depth_m": 0.36,
+    "height_m": 3.0,
+    "mesh_parts": 9,
+    "polygons": 54,
+    "materials": [
+      "MIRE_Build_Wood",
+      "MIRE_Build_Wood_Light"
+    ]
+  },
+  {
+    "name": "wood_half_wall",
+    "category": "building_pieces",
+    "width_m": 4.2,
+    "depth_m": 0.34,
+    "height_m": 1.63,
+    "mesh_parts": 9,
+    "polygons": 54,
+    "materials": [
+      "MIRE_Build_Wood",
+      "MIRE_Build_Wood_Light"
+    ]
+  },
+  {
+    "name": "wood_roof_slope",
+    "category": "building_pieces",
+    "width_m": 4.2,
+    "depth_m": 4.2,
+    "height_m": 2.0,
+    "mesh_parts": 1,
+    "polygons": 5,
+    "materials": [
+      "MIRE_Wood_Roof"
+    ]
+  },
+  {
+    "name": "wood_roof_corner",
+    "category": "building_pieces",
+    "width_m": 4.2,
+    "depth_m": 4.2,
+    "height_m": 2.0,
+    "mesh_parts": 1,
+    "polygons": 5,
+    "materials": [
+      "MIRE_Wood_Roof"
+    ]
+  },
+  {
+    "name": "wood_stairs",
+    "category": "building_pieces",
+    "width_m": 2.0,
+    "depth_m": 4.07,
+    "height_m": 1.744,
+    "mesh_parts": 10,
+    "polygons": 64,
+    "materials": [
+      "MIRE_Build_Wood",
+      "MIRE_Build_Wood_Light"
+    ]
+  },
+  {
+    "name": "wood_beam",
+    "category": "building_pieces",
+    "width_m": 4.0,
+    "depth_m": 0.36,
+    "height_m": 0.36,
+    "mesh_parts": 1,
+    "polygons": 6,
+    "materials": [
+      "MIRE_Build_Wood"
+    ]
+  },
+  {
+    "name": "wood_post",
+    "category": "building_pieces",
+    "width_m": 0.62,
+    "depth_m": 0.62,
+    "height_m": 3.0,
+    "mesh_parts": 2,
+    "polygons": 12,
+    "materials": [
+      "MIRE_Build_Wood",
+      "MIRE_Build_Wood_Light"
+    ]
+  },
+  {
+    "name": "wood_railing",
+    "category": "building_pieces",
+    "width_m": 4.1,
+    "depth_m": 0.22,
+    "height_m": 1.27,
+    "mesh_parts": 7,
+    "polygons": 42,
+    "materials": [
+      "MIRE_Build_Wood",
+      "MIRE_Build_Wood_Light"
+    ]
+  },
+  {
+    "name": "stone_foundation",
+    "category": "building_pieces",
+    "width_m": 3.94,
+    "depth_m": 3.94,
+    "height_m": 0.72,
+    "mesh_parts": 32,
+    "polygons": 192,
+    "materials": [
+      "MIRE_Build_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "stone_floor",
+    "category": "building_pieces",
+    "width_m": 3.94,
+    "depth_m": 3.94,
+    "height_m": 0.24,
+    "mesh_parts": 16,
+    "polygons": 96,
+    "materials": [
+      "MIRE_Build_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "stone_wall_solid",
+    "category": "building_pieces",
+    "width_m": 4.09,
+    "depth_m": 0.46,
+    "height_m": 2.95,
+    "mesh_parts": 40,
+    "polygons": 240,
+    "materials": [
+      "MIRE_Build_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "stone_wall_window",
+    "category": "building_pieces",
+    "width_m": 4.09,
+    "depth_m": 0.58,
+    "height_m": 2.95,
+    "mesh_parts": 30,
+    "polygons": 180,
+    "materials": [
+      "MIRE_Build_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "stone_wall_door",
+    "category": "building_pieces",
+    "width_m": 4.09,
+    "depth_m": 0.62,
+    "height_m": 2.95,
+    "mesh_parts": 25,
+    "polygons": 150,
+    "materials": [
+      "MIRE_Build_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "stone_half_wall",
+    "category": "building_pieces",
+    "width_m": 4.09,
+    "depth_m": 0.46,
+    "height_m": 1.6,
+    "mesh_parts": 24,
+    "polygons": 144,
+    "materials": [
+      "MIRE_Build_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "stone_stairs",
+    "category": "building_pieces",
+    "width_m": 2.2,
+    "depth_m": 4.04,
+    "height_m": 1.76,
+    "mesh_parts": 8,
+    "polygons": 48,
+    "materials": [
+      "MIRE_Build_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "stone_pillar",
+    "category": "building_pieces",
+    "width_m": 0.9,
+    "depth_m": 0.9,
+    "height_m": 3.15,
+    "mesh_parts": 7,
+    "polygons": 42,
+    "materials": [
+      "MIRE_Build_Stone",
+      "MIRE_Stone_Light"
+    ]
+  },
+  {
+    "name": "fence_straight",
+    "category": "building_pieces",
+    "width_m": 4.24,
+    "depth_m": 0.24,
+    "height_m": 1.56,
+    "mesh_parts": 5,
+    "polygons": 30,
+    "materials": [
+      "MIRE_Build_Wood",
+      "MIRE_Build_Wood_Light"
+    ]
+  },
+  {
+    "name": "fence_corner",
+    "category": "building_pieces",
+    "width_m": 4.24,
+    "depth_m": 2.24,
+    "height_m": 1.56,
+    "mesh_parts": 9,
+    "polygons": 54,
+    "materials": [
+      "MIRE_Build_Wood",
+      "MIRE_Build_Wood_Light"
+    ]
+  },
+  {
+    "name": "fence_gate",
+    "category": "building_pieces",
+    "width_m": 4.3,
+    "depth_m": 1.232,
+    "height_m": 1.84,
+    "mesh_parts": 5,
+    "polygons": 30,
+    "materials": [
+      "MIRE_Build_Wood",
+      "MIRE_Build_Wood_Light"
+    ]
+  },
+  {
+    "name": "fence_post",
+    "category": "building_pieces",
+    "width_m": 0.56,
+    "depth_m": 0.56,
+    "height_m": 2.18,
+    "mesh_parts": 2,
+    "polygons": 12,
+    "materials": [
+      "MIRE_Build_Wood",
+      "MIRE_Build_Wood_Light"
+    ]
+  }
+]

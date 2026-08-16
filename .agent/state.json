@@ -58,58 +58,643 @@
     },
     "assets/environment/README.md": {
       "agent": "reed",
-      "at": "2026-08-16T17:40:04+00:00",
-      "task": "2.1"
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/catalog.csv": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/catalog.json": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
     },
     "assets/environment/exports/boulder_a.glb": {
       "agent": "reed",
-      "at": "2026-08-16T17:40:04+00:00",
-      "task": "2.1"
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/boulder_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/boulder_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/boulder_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/boulder_e.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/boulder_f.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/boulder_g.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/boulder_h.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
     },
     "assets/environment/exports/fallen_log_a.glb": {
       "agent": "reed",
-      "at": "2026-08-16T17:40:04+00:00",
-      "task": "2.1"
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/fallen_log_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/fallen_log_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/fallen_log_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/fence_corner.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/fence_gate.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/fence_post.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/fence_straight.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/fern_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/fern_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/fern_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/fern_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/fern_e.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/fern_f.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
     },
     "assets/environment/exports/grass_clump_a.glb": {
       "agent": "reed",
-      "at": "2026-08-16T17:40:04+00:00",
-      "task": "2.1"
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/grass_clump_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/grass_clump_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/grass_clump_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/grass_clump_e.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/grass_clump_f.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/mire_crystal_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/mire_crystal_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/mire_crystal_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/mire_crystal_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/mire_crystal_e.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/mire_crystal_f.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/mire_tendril_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/mire_tendril_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/mire_tendril_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/mire_tendril_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
     },
     "assets/environment/exports/mushroom_cluster_a.glb": {
       "agent": "reed",
-      "at": "2026-08-16T17:40:04+00:00",
-      "task": "2.1"
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/mushroom_cluster_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/mushroom_cluster_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/mushroom_cluster_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/mushroom_cluster_e.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/mushroom_cluster_f.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/reeds_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/reeds_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/reeds_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/reeds_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
     },
     "assets/environment/exports/rock_cluster_a.glb": {
       "agent": "reed",
-      "at": "2026-08-16T17:40:04+00:00",
-      "task": "2.1"
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/rock_cluster_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/rock_cluster_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/rock_cluster_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/rock_cluster_e.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/rock_cluster_f.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/root_cluster_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/root_cluster_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/root_cluster_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/root_cluster_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/ruin_arch_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/ruin_arch_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/ruin_column_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/ruin_column_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/ruin_column_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/ruin_column_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/ruin_wall_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/ruin_wall_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/ruin_wall_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/ruin_wall_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/standing_stone_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/standing_stone_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/standing_stone_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/standing_stone_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/stone_floor.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/stone_foundation.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/stone_half_wall.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/stone_marker_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/stone_marker_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/stone_pillar.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/stone_stairs.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/stone_wall_door.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/stone_wall_solid.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/stone_wall_window.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
     },
     "assets/environment/exports/stump_a.glb": {
       "agent": "reed",
-      "at": "2026-08-16T17:40:04+00:00",
-      "task": "2.1"
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/stump_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/stump_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/stump_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
     },
     "assets/environment/exports/tree_bare_a.glb": {
       "agent": "reed",
-      "at": "2026-08-16T17:40:04+00:00",
-      "task": "2.1"
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_bare_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_bare_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_bare_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_birch_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_birch_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_birch_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_birch_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_crooked_a.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_crooked_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_crooked_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_crooked_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
     },
     "assets/environment/exports/tree_pine_a.glb": {
       "agent": "reed",
-      "at": "2026-08-16T17:40:04+00:00",
-      "task": "2.1"
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_pine_b.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_pine_c.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_pine_d.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_pine_e.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/tree_pine_f.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/wood_beam.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/wood_floor.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/wood_foundation.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/wood_half_wall.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/wood_post.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/wood_railing.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/wood_roof_corner.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/wood_roof_slope.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/wood_stairs.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/wood_wall_door.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/wood_wall_solid.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/exports/wood_wall_window.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
     },
     "assets/environment/mire_map_kit.blend": {
       "agent": "reed",
       "at": "2026-08-16T17:40:04+00:00",
       "task": "2.1"
     },
+    "assets/environment/preview/building_pieces_preview.png": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/preview/forest_debris_preview.png": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/preview/ground_cover_preview.png": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/preview/mire_growth_preview.png": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
     "assets/environment/preview/mire_map_kit_preview.png": {
       "agent": "reed",
-      "at": "2026-08-16T17:40:04+00:00",
-      "task": "2.1"
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/preview/rocks_preview.png": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/preview/ruins_preview.png": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
+    },
+    "assets/environment/preview/trees_preview.png": {
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
     },
     "assets/source/.gdignore": {
       "agent": "reed",
@@ -118,8 +703,8 @@
     },
     "assets/source/mire_map_kit.blend": {
       "agent": "reed",
-      "at": "2026-08-16T17:40:04+00:00",
-      "task": "2.1"
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
     },
     "autoload/net_interp.gd": {
       "agent": "ash",
@@ -202,9 +787,9 @@
       "task": "0.5"
     },
     "docs/ROADMAP.md": {
-      "agent": "onyx",
-      "at": "2026-08-16T17:02:10+00:00",
-      "task": "0.11"
+      "agent": "reed",
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
     },
     "entities/player/player.tscn": {
       "agent": "claude",
@@ -263,8 +848,8 @@
     },
     "tools/blender/build_mire_map_kit.py": {
       "agent": "reed",
-      "at": "2026-08-16T17:40:04+00:00",
-      "task": "2.1"
+      "at": "2026-08-16T18:01:56+00:00",
+      "task": "2.1b"
     },
     "tools/check_determinism_ops.gd": {
       "agent": "claude",
@@ -602,6 +1187,15 @@
       "status": "todo",
       "tier": "T0",
       "title": "Playtest with friends. Write down what they said, not what you think they meant."
+    },
+    "2.1b": {
+      "done_at": "2026-08-16T18:01:56+00:00",
+      "done_by": "reed",
+      "est": "8",
+      "milestone": "M2",
+      "status": "done",
+      "tier": "T0",
+      "title": "Expand the original Blender environment kit from 8 to 116 assets across trees, rocks, forest debris, ground cover, Mire growths, ruins, and modular wood/stone building pieces"
     },
     "2.2": {
       "done_at": "2026-08-16T02:59:39+00:00",
@@ -1217,6 +1811,27 @@
       "status": "done",
       "tier": "F",
       "title": "A finding cannot be claimed, so fixing one always edits unclaimed files"
+    },
+    "F-016": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A brand-new `class_name` is not resolvable by bare identifier in a `--script` main loop"
+    },
+    "F-017": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A brand-new script still ships without its `.uid`, because the sidecar does not exist yet"
+    },
+    "F-018": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`PlayerNet` has no way to be told when a player spawns, so observers reach into its children"
     }
   },
   "version": 1
