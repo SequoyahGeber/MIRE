@@ -27,7 +27,10 @@ MIRE_AGENT=<your-name> .agent/bin/agent start <your-name>     # claude | codex |
 It prints the board, your claims, stale work, and recent commits. **Do not skip it** — it's the
 cheapest way to load context, and nothing else you do is safe until you know what's in flight.
 
-**Put `MIRE_AGENT=<your-name>` on every `agent` command, and never `export` it once.** Most agent
+**Put `MIRE_AGENT=<your-name>` on every `agent` command — and on `git commit` too — and never
+`export` it once.** The pre-commit hook re-runs `agent check`, and git invokes that hook, so a commit
+without the prefix resolves your identity from the session file and can block a commit whose claims
+are perfectly valid. `agent ship` handles this for you; a hand-rolled `git commit` does not. Most agent
 tools run each shell call in a separate process, so an exported value is gone by your next command.
 The script then falls back to `.agent/session`, which holds a single name shared by every chat in
 this repo — so with two chats running you file claims under the other agent's identity, with no

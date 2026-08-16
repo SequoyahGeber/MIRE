@@ -20,6 +20,10 @@ MIRE_AGENT=net .agent/bin/agent claim 1.2 autoload/net_transport.gd
 to whatever `.agent/session` happens to hold. It fails quietly and produces exactly the misattributed
 claim the identity is there to prevent. Every prompt below carries the prefix on each command.
 
+**Including `git commit`.** The pre-commit hook re-runs `agent check` under git's environment, so an
+unprefixed commit is checked against the wrong identity and can be blocked despite valid claims.
+Prefer `agent ship`, which gets this right on its own.
+
 **Roles are not fixed (D-020).** Any agent can take any task; which one gets it depends on which plan
 has quota. Nothing below is reserved for a particular chat.
 

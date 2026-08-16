@@ -249,3 +249,15 @@ Notes along the way:
 Files: `autoload/net_transport.gd`, `core/net/net_config.gd`
 
 Commit at time of writing: `cf7d09f`
+
+---
+
+### DONE · 1.0 · claude · 2026-08-16T03:12:01+00:00
+
+**Register the `Registry` autoload in `project.godot` — 2.2 shipped the script but nothing loads it**
+
+Registered Registry="*res://autoload/registry.gd" in project.godot [autoload], appended after DebugConsole. Godot editor confirmed not running first (pgrep). NOT VERIFIED AT RUNTIME — I was blocked from executing Godot, so the project has not been booted with this autoload. Someone must run tools/verify_setup.gd or press Play to confirm it loads and that content/ scanning reports 0/0 cleanly.
+
+Files: `project.godot`
+
+Commit at time of writing: `8291086`

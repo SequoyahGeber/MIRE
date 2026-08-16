@@ -1,21 +1,6 @@
 {
-  "claims": {
-    "project.godot": {
-      "agent": "claude",
-      "at": "2026-08-16T03:07:12+00:00",
-      "task": "1.0"
-    }
-  },
-  "in_flight": {
-    "1.0": {
-      "agent": "claude",
-      "files": [
-        "project.godot"
-      ],
-      "notes": [],
-      "started": "2026-08-16T03:07:12+00:00"
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     "autoload/net_transport.gd": {
       "agent": "net",
@@ -74,8 +59,8 @@
     },
     "project.godot": {
       "agent": "claude",
-      "at": "2026-08-15T21:46:15+00:00",
-      "task": "0.3"
+      "at": "2026-08-16T03:12:01+00:00",
+      "task": "1.0"
     },
     "systems/crafting/recipe_def.gd": {
       "agent": "claude",
@@ -220,9 +205,11 @@
       "title": "Record spike results in `DECISIONS.md`. If R3 failed, decide the fallback now."
     },
     "1.0": {
+      "done_at": "2026-08-16T03:12:01+00:00",
+      "done_by": "claude",
       "est": "0.25",
       "milestone": "M1",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T0",
       "title": "Register the `Registry` autoload in `project.godot` \u2014 2.2 shipped the script but nothing loads it"
     },

@@ -251,6 +251,18 @@ name. Worth doing the first time two chats actually run in parallel.
 Note for anyone re-reading the v1 correction: the hook inherits the environment fine. It is not the
 problem, and it has now been blamed three times.
 
+**Third failure mode, hit live 2026-08-16 while writing the mitigation above.** Per-command prefixing
+fixes `agent` calls but NOT commits. `git commit` invokes the pre-commit hook, the hook re-runs
+`agent check`, and it resolves identity from git's environment — which has no prefix on it. A commit
+whose claims were entirely valid (`project.godot` claimed by `claude` under D-012) was blocked because
+the hook resolved the committer as `net` from the session file. `MIRE_AGENT=claude git commit` went
+through and printed the expected D-012 warning instead.
+
+So the rule is `MIRE_AGENT=` on every `agent` command **and** on `git commit`, or just use
+`agent ship`, which sets it correctly itself. This is the third distinct way this one shared-state
+design has produced a wrong identity, which is the argument for the loud-failure fix rather than
+another round of documentation.
+
 ---
 
 ---
