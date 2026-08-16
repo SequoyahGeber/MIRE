@@ -54,8 +54,9 @@ func _run() -> void:
 	var visuals: Array[Node] = get_nodes_in_group(&"playtest_visual")
 	var colliders: Array[Node] = get_nodes_in_group(&"playtest_collider")
 	var zones: Array[Node] = get_nodes_in_group(&"playtest_zone")
-	_check(assets.size() >= 150, "at least 150 placed asset instances (%d)" % assets.size())
-	_check(visuals.size() == assets.size(), "every placed asset has a visual (%d)" % visuals.size())
+	_check(map_root.get_node_or_null(^"AuthoredVisuals") != null, "authored GLB root exists")
+	_check(assets.size() >= 150, "at least 150 collision placement markers (%d)" % assets.size())
+	_check(visuals.size() >= 300, "authored map contains at least 300 visible meshes (%d)" % visuals.size())
 	_check(colliders.size() >= 80, "at least 80 collision shapes (%d)" % colliders.size())
 	_check(zones.size() == 6, "exactly 6 map zones (%d)" % zones.size())
 
@@ -63,7 +64,7 @@ func _run() -> void:
 		_check(scene.get_node_or_null(NodePath(old_name)) == null, "old greybox group removed: %s" % old_name)
 
 	var ground_mesh := scene.get_node_or_null(^"Ground/Mesh") as MeshInstance3D
-	_check(ground_mesh != null and ground_mesh.material_override != null, "ground received map material")
+	_check(ground_mesh != null and not ground_mesh.visible, "greybox ground visual is hidden")
 	_check(scene.get_node_or_null(^"Player") != null, "player remains in the map")
 	print(
 		"PLAYTEST_MAP_SUMMARY zones=%d assets=%d visuals=%d colliders=%d failures=%d"

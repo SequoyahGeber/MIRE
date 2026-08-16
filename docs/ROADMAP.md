@@ -104,6 +104,7 @@ one night. If this isn't fun, nothing built on top of it will be.
 | 2.1b | Expand the original Blender environment kit from 8 to 116 assets across trees, rocks, forest debris, ground cover, Mire growths, ruins, and modular wood/stone building pieces | T0 | 8 |
 | 2.1c | Build a compact runtime-generated playtest map from the environment kit: camp, forest, ruins, Mire grove, ridge, routes, and collision | T0 | 4 |
 | 2.1d | Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | T0 | 4 |
+| 2.1e | Replace the runtime-scattered playtest visuals with an authored Blender map asset, incorporating harvestables and crafting stations | T0 | 6 |
 | 2.2 | `Resource` scripts for `ItemDef`, `RecipeDef` + `registry.gd` boot loader | T2 | 2 |
 | 2.3 | Harvestable prop: hit → damage → yield → despawn → respawn. **Host-authoritative** (`ARCHITECTURE.md` §2.2). | T2 | 3 |
 | 2.4 | Inventory system: stacks, add/remove, host-validated. Data layer only. | T2 | 3 |

@@ -1,14 +1,14 @@
 extends Node
 
-## Builds a compact, deterministic playtest map from the original MIRE asset kit.
+## Loads the authored Blender playtest map and adds gameplay collision.
 ##
-## The map is client-local presentation/static collision, matching seeded terrain generation in
-## ARCHITECTURE.md §2.2/§4. Every peer builds the same layout from PLAYTEST_SEED; no state is
-## replicated. Future harvesting, construction, damage, and mutation remain host-authoritative.
+## The visible layout lives in assets/source/playtest_map.blend and exports as one GLB. This script
+## does not choose or scatter visible prop positions. Static map presentation/collision is
+## client-local; future harvesting, construction, damage, and mutation remain host-authoritative.
 ## Only activates for GreyboxTest and never edits the human-owned .tscn file.
 
 const GREYBOX_SCENE_NAME: String = "GreyboxTest"
-const ASSET_ROOT: String = "res://assets/environment/exports/"
+const AUTHORED_MAP_PATH: String = "res://assets/maps/playtest_map.glb"
 const PLAYTEST_SEED: int = 20260816
 
 const ASSET_GROUP: StringName = &"playtest_asset"
@@ -27,8 +27,8 @@ const MUSHROOM_ASSETS := ["mushroom_cluster_a", "mushroom_cluster_b", "mushroom_
 const CRYSTAL_ASSETS := ["mire_crystal_a", "mire_crystal_b", "mire_crystal_c", "mire_crystal_d", "mire_crystal_e", "mire_crystal_f"]
 const TENDRIL_ASSETS := ["mire_tendril_a", "mire_tendril_b", "mire_tendril_c", "mire_tendril_d"]
 
-var _asset_cache: Dictionary[String, PackedScene] = {}
 var _spawned_asset_count: int = 0
+var _visual_mesh_count: int = 0
 var _collision_shape_count: int = 0
 
 
@@ -40,12 +40,18 @@ func _ready() -> void:
 		return
 
 	_remove_old_greybox_obstacles(scene)
-	_tint_ground(scene)
+	_hide_greybox_ground_visual(scene)
 
 	var map_root := Node3D.new()
 	map_root.name = "PlaytestMap"
 	scene.add_child(map_root)
+	var authored_map := _load_authored_map()
+	if authored_map != null:
+		authored_map.name = "AuthoredVisuals"
+		map_root.add_child(authored_map)
+		_visual_mesh_count = _tag_visual_meshes(authored_map)
 
+	# Collision stays separate from the visual source so it can become gameplay-aware later.
 	var rng := RandomNumberGenerator.new()
 	rng.seed = PLAYTEST_SEED
 	_build_spawn_camp(_zone(map_root, "SpawnCamp"), rng)
@@ -56,8 +62,8 @@ func _ready() -> void:
 	_build_routes_and_boundary(_zone(map_root, "RoutesAndBoundary"), rng)
 
 	print(
-		"world: PlaytestMap built 6 zones, %d asset instances, %d collision shapes"
-		% [_spawned_asset_count, _collision_shape_count]
+		"world: PlaytestMap loaded authored GLB with %d meshes; built %d collision markers and %d shapes"
+		% [_visual_mesh_count, _spawned_asset_count, _collision_shape_count]
 	)
 
 
@@ -68,14 +74,11 @@ func _remove_old_greybox_obstacles(scene: Node) -> void:
 			old_node.queue_free()
 
 
-func _tint_ground(scene: Node) -> void:
+func _hide_greybox_ground_visual(scene: Node) -> void:
 	var ground_mesh := scene.get_node_or_null(^"Ground/Mesh") as MeshInstance3D
 	if ground_mesh == null:
 		return
-	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.105, 0.19, 0.095)
-	material.roughness = 0.96
-	ground_mesh.material_override = material
+	ground_mesh.visible = false
 
 
 func _zone(parent: Node3D, zone_name: String) -> Node3D:
@@ -86,34 +89,32 @@ func _zone(parent: Node3D, zone_name: String) -> Node3D:
 	return zone
 
 
-func _asset_scene(asset_id: String) -> PackedScene:
-	if _asset_cache.has(asset_id):
-		return _asset_cache[asset_id]
-	var path: String = "%s%s.glb" % [ASSET_ROOT, asset_id]
+func _load_authored_map() -> Node3D:
 	var document := GLTFDocument.new()
 	var state := GLTFState.new()
-	var import_error: Error = document.append_from_file(ProjectSettings.globalize_path(path), state)
+	var import_error: Error = document.append_from_file(
+		ProjectSettings.globalize_path(AUTHORED_MAP_PATH), state
+	)
 	if import_error != OK:
 		push_error(
-			"PlaytestMap could not read asset %s: %s"
-			% [path, error_string(import_error)]
+			"PlaytestMap could not read authored map %s: %s"
+			% [AUTHORED_MAP_PATH, error_string(import_error)]
 		)
 		return null
-	var generated := document.generate_scene(state)
+	var generated := document.generate_scene(state) as Node3D
 	if generated == null:
-		push_error("PlaytestMap could not generate scene for asset: %s" % path)
-		return null
-	var packed := PackedScene.new()
-	var pack_error: Error = packed.pack(generated)
-	generated.free()
-	if pack_error != OK:
-		push_error(
-			"PlaytestMap could not cache asset %s: %s"
-			% [path, error_string(pack_error)]
-		)
-		return null
-	_asset_cache[asset_id] = packed
-	return packed
+		push_error("PlaytestMap authored map root is not Node3D: %s" % AUTHORED_MAP_PATH)
+	return generated
+
+
+func _tag_visual_meshes(node: Node) -> int:
+	var count: int = 0
+	if node is MeshInstance3D:
+		node.add_to_group(VISUAL_GROUP)
+		count += 1
+	for child: Node in node.get_children():
+		count += _tag_visual_meshes(child)
+	return count
 
 
 func _spawn_asset(
@@ -123,7 +124,6 @@ func _spawn_asset(
 	yaw: float = 0.0,
 	scale_value: float = 1.0
 ) -> Node3D:
-	var packed := _asset_scene(asset_id)
 	var holder := Node3D.new()
 	holder.name = "%s_%03d" % [asset_id, _spawned_asset_count]
 	holder.position = position
@@ -132,15 +132,6 @@ func _spawn_asset(
 	holder.add_to_group(ASSET_GROUP)
 	parent.add_child(holder)
 	_spawned_asset_count += 1
-
-	if packed == null:
-		return holder
-	var visual := packed.instantiate() as Node3D
-	if visual == null:
-		push_error("PlaytestMap asset root is not Node3D: %s" % asset_id)
-		return holder
-	visual.add_to_group(VISUAL_GROUP)
-	holder.add_child(visual)
 	return holder
 
 
@@ -278,6 +269,11 @@ func _build_spawn_camp(zone: Node3D, rng: RandomNumberGenerator) -> void:
 
 	_spawn_asset(zone, "fallen_log_a", Vector3(2.4, 0.0, 5.0), -0.25)
 	_spawn_asset(zone, "stump_b", Vector3(0.0, 0.0, 4.0), 0.4)
+	_add_box_collider(_spawn_asset(zone, "station_workbench_primitive", Vector3(5.0, 0.65, 8.1), PI), Vector3(2.1, 1.25, 0.9), Vector3(0.0, 0.625, 0.0))
+	_add_box_collider(_spawn_asset(zone, "station_repair_bench", Vector3(5.0, 0.65, 9.8)), Vector3(2.2, 1.6, 0.95), Vector3(0.0, 0.8, 0.0))
+	_add_cylinder_collider(_spawn_asset(zone, "station_campfire", Vector3(0.0, 0.0, 7.0)), 0.8, 0.75, 0.375)
+	_add_box_collider(_spawn_asset(zone, "station_cooking_spit", Vector3(0.0, 0.0, 4.5), PI * 0.5), Vector3(2.3, 1.75, 1.65), Vector3(0.0, 0.875, 0.0))
+	_add_box_collider(_spawn_asset(zone, "station_woodcutting_block", Vector3(-1.8, 0.0, 4.0), -0.35), Vector3(2.1, 1.2, 1.3), Vector3(0.0, 0.6, 0.0))
 	for i: int in 10:
 		var flat := Vector2(rng.randf_range(-9.0, 9.0), rng.randf_range(3.0, 13.0))
 		if flat.distance_to(Vector2(0.0, 8.0)) > 3.2:
@@ -332,6 +328,8 @@ func _build_north_ruins(zone: Node3D, _rng: RandomNumberGenerator) -> void:
 	_spawn_building_piece(zone, "stone_floor", Vector3(10.0, 0.72, -21.0))
 	_spawn_building_piece(zone, "stone_half_wall", Vector3(10.0, 0.72, -23.0))
 	_spawn_building_piece(zone, "stone_stairs", Vector3(10.0, 0.0, -17.3))
+	_add_box_collider(_spawn_asset(zone, "station_stone_furnace", Vector3(10.0, 0.85, -21.0), PI), Vector3(2.45, 2.3, 1.8), Vector3(0.0, 1.15, 0.0))
+	_add_box_collider(_spawn_asset(zone, "station_anvil", Vector3(7.8, 0.75, -20.0), 0.35), Vector3(1.4, 1.4, 0.95), Vector3(0.0, 0.7, 0.0))
 	_spawn_boulder(zone, "boulder_d", Vector2(-8.0, -22.0), 0.6)
 	_spawn_boulder(zone, "boulder_f", Vector2(7.0, -26.0), 1.1)
 

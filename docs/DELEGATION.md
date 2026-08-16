@@ -108,13 +108,15 @@ generator with paired `*_world` and `*_viewmodel` names.
 `.30600000000000005` aborts background Blender in libc++ with `stoi: out of range`. Use integer
 indices in procedural names.
 
-**The playtest map is now populated by task 2.1c.** `TestMapProps` builds six deterministic zones
-inside `GreyboxTest` at runtime: spawn camp, west forest, north ruins, east Mire grove, south ridge,
-and routes/boundary. The current layout is 171 visible kit pieces with 113 simplified collision
-shapes. It loads the committed `.glb` sources through `GLTFDocument` and caches them as
-`PackedScene`s, so it does not depend on editor-generated `.import` sidecars. Keep the static layout
-client-local from seed `20260816`; future harvesting, construction, damage, or map mutation is
-host-authoritative. Verify with `Godot --headless --path . --script tools/playtest_map_check.gd`.
+**The playtest map is an authored asset as of 2.1e.** Its editable source is
+`assets/source/playtest_map.blend`, exported as the single `assets/maps/playtest_map.glb`; Godot no
+longer chooses visible prop positions at runtime. The GLB contains named camp, forest, ruins, Mire,
+ridge, routes, and terrain hierarchies, plus the A-001 harvestables and A-003 crafting stations. The
+current export produces 1,732 visible mesh nodes in Godot. `TestMapProps` loads that one map and adds
+178 collision placement markers / 120 simplified shapes; static collision remains client-local,
+while future harvesting, construction, damage, or map mutation stays host-authoritative. Rebuild
+with Blender 5.2 using `tools/blender/build_playtest_map.py`; verify with `Godot --headless --path .
+--script tools/playtest_map_check.gd`.
 
 **1.5, 1.9 and 1.10 shipped earlier** (`8d6ddab`, `ef1bc16`, `4f17bcd`), and 1.10 is now actually
 *wired* (`9f56451`). **1.6, 1.8 and 1.11 landed in the same session, in parallel chats** — read the

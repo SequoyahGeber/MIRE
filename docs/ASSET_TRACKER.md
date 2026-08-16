@@ -112,6 +112,12 @@ The baseline is presentation-ready but not editor-wired: it has no collision, ha
 gameplay scenes. Do not count those missing behaviors as missing meshes unless a batch below names a
 visual state for them.
 
+The compact playtest layout is now a separate authored asset rather than runtime scatter:
+`assets/source/playtest_map.blend` exports `assets/maps/playtest_map.glb` and its preview. It directly
+uses A-000 environment pieces, A-001 harvestables, and A-003 crafting stations across six named
+zones. `tools/blender/build_playtest_map.py` is its deterministic rebuild path; gameplay collision
+and authority remain outside the Blender source.
+
 ## P0 — first complete playable loop
 
 These assets support gathering, crafting, one satisfying fight, loot, a Ward, a Wellspring, and
@@ -199,3 +205,4 @@ editor/playtest feedback here so it survives between agent sessions.
 | A-001 | Awaiting gameplay-state review | Technically validated; check damage-state readability, collision choices, and swap timing in the harvesting prototype |
 | A-002 | Awaiting pickup-flow review | Technically validated; check hover/spin presentation, pickup collision size, and readability in fog during the inventory prototype |
 | A-003 | Awaiting station-flow review | Technically validated; check interaction reach, collision simplification, fire VFX replacement, and station spacing during crafting playtests |
+| Authored playtest map | Awaiting layout review | Fixed Blender-authored layout is running in Godot; check route widths, zone density, sightlines, and whether the 60 m square is large enough for the first multiplayer loop |

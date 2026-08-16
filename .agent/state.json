@@ -836,6 +836,21 @@
       "at": "2026-08-16T18:32:13+00:00",
       "task": "2.1d"
     },
+    "assets/maps/README.md": {
+      "agent": "reed",
+      "at": "2026-08-16T19:00:05+00:00",
+      "task": "2.1e"
+    },
+    "assets/maps/playtest_map.glb": {
+      "agent": "reed",
+      "at": "2026-08-16T19:00:05+00:00",
+      "task": "2.1e"
+    },
+    "assets/maps/preview/playtest_map_preview.png": {
+      "agent": "reed",
+      "at": "2026-08-16T19:00:05+00:00",
+      "task": "2.1e"
+    },
     "assets/pickups/README.md": {
       "agent": "ember",
       "at": "2026-08-16T18:40:55+00:00",
@@ -951,6 +966,11 @@
       "at": "2026-08-16T18:40:55+00:00",
       "task": "2.1d"
     },
+    "assets/source/playtest_map.blend": {
+      "agent": "reed",
+      "at": "2026-08-16T19:00:05+00:00",
+      "task": "2.1e"
+    },
     "autoload/net_interp.gd": {
       "agent": "ash",
       "at": "2026-08-16T17:19:51+00:00",
@@ -1017,9 +1037,9 @@
       "task": "0.10"
     },
     "docs/ASSET_TRACKER.md": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
+      "agent": "reed",
+      "at": "2026-08-16T19:00:05+00:00",
+      "task": "2.1e"
     },
     "docs/DECISIONS.md": {
       "agent": "steam",
@@ -1027,9 +1047,9 @@
       "task": "1.1"
     },
     "docs/DELEGATION.md": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
+      "agent": "reed",
+      "at": "2026-08-16T19:00:05+00:00",
+      "task": "2.1e"
     },
     "docs/FINDINGS.md": {
       "agent": "larch",
@@ -1042,9 +1062,9 @@
       "task": "0.5"
     },
     "docs/ROADMAP.md": {
-      "agent": "ember",
-      "at": "2026-08-16T18:32:13+00:00",
-      "task": "2.1d"
+      "agent": "reed",
+      "at": "2026-08-16T19:00:05+00:00",
+      "task": "2.1e"
     },
     "entities/player/player.tscn": {
       "agent": "claude",
@@ -1121,6 +1141,11 @@
       "at": "2026-08-16T18:40:55+00:00",
       "task": "2.1d"
     },
+    "tools/blender/build_playtest_map.py": {
+      "agent": "reed",
+      "at": "2026-08-16T19:00:05+00:00",
+      "task": "2.1e"
+    },
     "tools/check_determinism_ops.gd": {
       "agent": "claude",
       "at": "2026-08-16T02:20:14+00:00",
@@ -1148,8 +1173,8 @@
     },
     "tools/playtest_map_check.gd": {
       "agent": "reed",
-      "at": "2026-08-16T18:15:43+00:00",
-      "task": "2.1c"
+      "at": "2026-08-16T19:00:05+00:00",
+      "task": "2.1e"
     },
     "tools/playtest_map_check.gd.uid": {
       "agent": "reed",
@@ -1198,8 +1223,8 @@
     },
     "world/gen/test_map_props.gd": {
       "agent": "reed",
-      "at": "2026-08-16T18:15:43+00:00",
-      "task": "2.1c"
+      "at": "2026-08-16T19:00:05+00:00",
+      "task": "2.1e"
     },
     "world/gen/test_map_props.gd.uid": {
       "agent": "reed",
@@ -1497,6 +1522,15 @@
       "status": "todo",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
+    },
+    "2.1e": {
+      "done_at": "2026-08-16T19:00:05+00:00",
+      "done_by": "reed",
+      "est": "6",
+      "milestone": "M2",
+      "status": "done",
+      "tier": "T0",
+      "title": "Replace the runtime-scattered playtest visuals with an authored Blender map asset, incorporating harvestables and crafting stations"
     },
     "2.2": {
       "done_at": "2026-08-16T02:59:39+00:00",

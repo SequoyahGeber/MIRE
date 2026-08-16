@@ -533,3 +533,18 @@ A-003 complete: eight portable station GLBs covering primitive/upgraded workbenc
 Files: `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `tools/blender/build_crafting_stations.py`, `assets/source/crafting_stations.blend`, `assets/crafting_stations/README.md`, `assets/crafting_stations/catalog.json`, `assets/crafting_stations/preview/crafting_stations_preview.png`, `assets/crafting_stations/preview/crafting_stations_scale_preview.png`, `assets/crafting_stations/exports/station_workbench_primitive.glb`, `assets/crafting_stations/exports/station_workbench_upgraded.glb`, `assets/crafting_stations/exports/station_campfire.glb`, `assets/crafting_stations/exports/station_cooking_spit.glb`, `assets/crafting_stations/exports/station_stone_furnace.glb`, `assets/crafting_stations/exports/station_anvil.glb`, `assets/crafting_stations/exports/station_repair_bench.glb`, `assets/crafting_stations/exports/station_woodcutting_block.glb`
 
 Commit at time of writing: `73cf552`
+
+---
+
+### DONE · 2.1e · reed · 2026-08-16T19:00:05+00:00
+
+**Replace the runtime-scattered playtest visuals with an authored Blender map asset, incorporating harvestables and crafting stations**
+
+Replaced runtime visual scatter with an authored Blender map. Editable source + fixed GLB + preview include six zones, paths/terrain, A-001 harvestables, and A-003 stations. GLB hash remained 8cb6c1c7e1e07d54c396ff5a2086c8375e740e25ae15a03c132a9be3ce78ab79 across clean rebuilds. Headless Godot check passed: 1,732 visible meshes, 178 collision markers, 120 shapes, 0 failures. Normal Metal Forward+ launch rendered at 120 FPS and was visually inspected from spawn. Runs now; no editor wiring or scene-resource edit needed. Safe to move on.
+
+Notes along the way:
+- Visible placement now lives in editable assets/source/playtest_map.blend and one 3.6 MB authored GLB. The GLB is byte-identical across clean Blender 5.2 rebuilds. Godot loads 1,732 mesh nodes at 120 FPS; TestMapProps now supplies collision only (178 markers / 120 shapes). Added A-001 harvest trees/ore and A-003 camp/forge stations. No .tscn/.tres/.import edits.
+
+Files: `docs/ROADMAP.md`, `docs/DELEGATION.md`, `docs/ASSET_TRACKER.md`, `tools/blender/build_playtest_map.py`, `assets/source/playtest_map.blend`, `assets/maps/playtest_map.glb`, `assets/maps/README.md`, `assets/maps/preview/playtest_map_preview.png`, `world/gen/test_map_props.gd`, `tools/playtest_map_check.gd`
+
+Commit at time of writing: `e23c5f4`
