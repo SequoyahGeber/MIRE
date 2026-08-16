@@ -303,6 +303,34 @@ ship in a release build**, which is M8's job when the real App ID lands.
 **Would change my mind:** a Godot point release the extension can't follow, or needing a feature only
 the compiled module build exposes — either would force the custom-engine-build path D-001 avoids.
 
+### D-023 · 2026-08-16 · Replication nodes are built in code, never authored in a scene
+Tasks 1.5, 1.6 and 1.8 sat blocked in `DELEGATION.md` for one reason: `MultiplayerSpawner`,
+`MultiplayerSynchronizer` and `SceneReplicationConfig` were assumed to be editor work, which put them
+behind D-007's scene-file wall and made four M1 tasks wait on a human. **They don't have to be.** All
+three have a complete script API, and task 1.9's spike prompt already required building them in code
+because a headless benchmark can't author scenes. What was true for the spike is true for the game.
+
+So: **replication nodes are created in code**, by the script that owns them, identically on every peer.
+That last word is the whole constraint — the high-level multiplayer API matches nodes by path, so host
+and client must run the same construction code and arrive at the same names. A synchronizer built in
+`_ready()` on a scene both sides instantiate satisfies this for free; one built conditionally does not.
+
+Two consequences worth writing down, because they're the parts that look like scene decisions:
+
+- **Networked players live at `/root/<spawner autoload>/Players`, not under the level.** A fixed path
+  is identical on every peer and survives the level swaps M4 introduces. Levels are scenery; players
+  are session state and outlive them.
+- **A player instance placed in a level scene is a spawn point, not a player.** `greybox_test.tscn`
+  has one hard-instanced `Player`. On session start the spawner reads its transform, frees it, and
+  spawns per-peer copies. Offline, nothing happens and it stays the player you walk around with — so
+  "open the project and press Play" keeps working with no scene edit.
+
+**Would change my mind:** a code-built `SceneReplicationConfig` resolving differently on host and
+client at the pinned build — that would be a real reason to author it as a `.tres`. Note that even
+then the fix is a resource Sequoyah authors and the code loads, not a `.tscn` edit; D-007 is untouched
+either way. Wanting to tune replication intervals in the inspector is the same story: export the
+values, keep the construction in code.
+
 ---
 
 ## Template

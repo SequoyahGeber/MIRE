@@ -45,52 +45,233 @@ doesn't.
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+**Nothing is in flight.** 1.4 closed in `d2efca5`, and with it the `project.godot` hold that was
+blocking every autoload-producing task.
+
 | # | Task | Agent name | Model | Effort | Status |
 |---|---|---|---|---|---|
-| 1.4 | Steam lobby | `lobby` | — | — | **IN FLIGHT** — do not start a second one |
-| 1.9 | Spike R1 — replication load | `load` | Opus 5 | high | **ready to paste** — start this first |
-| 1.10 | Network debug panel | `netui` | Sonnet 5 | medium | **ready to paste** — safe alongside |
-| 1.1 · 1.2 · 1.3 | GodotSteam · NetTransport · LOCAL loop | | | | done and verified |
+| 1.5 | Networked player — spawner + synchronizer | `spawn` | Opus 5 | high | **ready to paste** — start this first |
+| 1.9 | Spike R1 — replication load | `load` | Opus 5 | high | **ready to paste** — paste alongside 1.5 |
+| 1.10 | Network debug panel | `netui` | Sonnet 5 | medium | **ready to paste** — safe alongside both |
+| 1.1 · 1.2 · 1.3 · 1.4 | GodotSteam · NetTransport · LOCAL loop · Steam lobby | | | | done and verified |
 | 2.2 | Content framework | `content` | Sonnet 5 | medium | done — prompt kept for reference |
 
-**`lobby` currently holds four files**, and a claim collision is the one failure this system exists to
-prevent — check `.agent/BOARD.md` before pasting anything:
+**All three are startable right now** and no two of them name the same file — check `.agent/BOARD.md`
+before pasting anyway, since a claim collision is the one failure this whole system exists to prevent:
 
-```
-autoload/steam_lobby.gd · autoload/net_transport.gd · project.godot · tools/steam_api_probe.gd
-```
+| Agent | Holds |
+|---|---|
+| `spawn` (1.5) | `autoload/player_net.gd` · `entities/player/player_controller.gd` · `core/net/net_config.gd` · `project.godot` |
+| `load` (1.9) | `core/net/dummy_replicant.gd` · `tools/bench_replication.gd` |
+| `netui` (1.10) | `ui/debug/net_debug_panel.gd` |
 
-**That includes `project.godot`.** Any task that would register an autoload must wait for 1.4 to
-close, or it will be blocked at commit. 1.10 needs no autoload, which is why it's still safe.
+**`spawn` holds `project.godot`**, so it is again the one task at a time that can register an autoload.
+Neither 1.9 nor 1.10 needs one, which is what makes all three safe together.
 
-**Two are startable right now**, 1.9 and 1.10. Neither touches a file `lobby` holds, and they don't
-collide with each other. 1.9 is the more urgent of the two — it's the last unspiked risk in
-`ARCHITECTURE.md` §6, and if it comes back red the fallback rewrites how every replicated system in
-the project is written, so it wants answering *before* 1.5–1.8 assume it's fine.
+**Order, if you only start one:** 1.5. It is the task that turns "two windows connect" into "two
+players see each other", and 1.6, 1.7 and 1.8 are all written against the node layout it establishes.
+1.9 is the counter-argument — it's the last unspiked risk in `ARCHITECTURE.md` §6, and a red result
+rewrites how every replicated system gets written, so it wants answering before 1.6–1.8 build on the
+assumption it's fine. **Paste both.** They share no files, and if R1 comes back red the thing you most
+want in hand is a real networked player to re-measure against.
+
+### 1.5–1.8 are unblocked — D-023
+
+They sat here for three sessions as *"Scene work, which only Sequoyah can wire — a spec conversation,
+not a prompt."* That was wrong, and the correction is **D-023**: `MultiplayerSpawner`,
+`MultiplayerSynchronizer` and `SceneReplicationConfig` all have complete script APIs, so they get
+**built in code**, never authored in a scene. Task 1.9's prompt had already been requiring exactly that
+for months of calendar-free session time — a headless benchmark can't author scenes either — so the
+technique was proven in this repo before it was ever written down as a rule.
+
+Consequence for the prompts below: **1.5 needs no `.tscn` change at all.** Read D-023 before writing
+any further replication prompt, and don't reintroduce "tell Sequoyah to add a synchronizer node".
 
 ### Blocked, and why — so nobody writes a prompt that gets rejected at commit
 
 | # | Blocked on | Clears when |
 |---|---|---|
-| 1.7 | `autoload/net_transport.gd` — held by `lobby` | 1.4 closes |
-| 1.11 | same file; the version handshake hooks the connection path | 1.4 closes |
-| 1.5 · 1.6 · 1.8 | Scene work — `MultiplayerSpawner`/`MultiplayerSynchronizer` on the player, which only Sequoyah can wire | A spec conversation, not a prompt. Ask for one. |
+| 1.6 · 1.8 | Nothing structural — they extend the node layout 1.5 establishes, so a prompt written now would be guessing at names | 1.5 ships |
+| 1.7 · 1.11 | `autoload/net_transport.gd` is free again, but both also want the spawner's join path to exist | 1.5 ships. Writable before then if you accept a rebase. |
 | 1.12 | Two VMs, plus F-009 (`.godot/extension_list.cfg` is gitignored, so GodotSteam won't load from a fresh clone) | F-009 gets a real fix |
 | 4.0b | A Windows guest existing at all | You provision it |
 
-1.5–1.8 are the ones to resist starting early. They look unblocked now that 1.3 gives you two windows,
-but each needs a decision about node layout that's cheaper to make in conversation than to discover in
-a rejected prompt.
-
-The foundation is settled: `NetTransport` (1.2), `DevLaunch` (1.3) and GodotSteam 4.21 (1.1) are all
-registered, booting and verified, so every prompt here is written against a real API rather than a
-proposed one.
+The foundation is settled: `NetTransport` (1.2), `DevLaunch` (1.3), `SteamLobby` (1.4) and GodotSteam
+4.21 (1.1) are all registered, booting and verified, so every prompt here is written against a real API
+rather than a proposed one.
 
 **Yours, not delegable:** 1.1 (GodotSteam GDExtension + `project.godot`), which 1.4 then needs, and
 1.12 needs both. `4.0b` (Windows determinism) is yours only to the extent of provisioning the VM.
 
 M0 is closed. The 0.7 and 0.8 spike prompts that used to live here shipped in `9a1bc19` / `9ebe47b` —
 their results are D-015 and D-016 in `DECISIONS.md`. The unmeasured half of R2 is now task `4.0a`.
+
+---
+
+## Task 1.5 — Networked player: spawner + synchronizer, client-auth movement
+
+> **Model: Opus 5 · effort high** · agent name `spawn`
+> The task that turns "two windows connect" into "two players see each other". 1.6, 1.7 and
+> 1.8 are all written against the node layout it establishes, so the layout matters as much
+> as the code. **Read D-023 first** — it is the decision that unblocked this, and it says
+> every replication node is built in code. There is no scene work in this task, and any plan
+> that ends with "Sequoyah adds a synchronizer node" is the wrong plan.
+
+```
+You're working on MIRE, a co-op survival game in Godot 4.7.1. Read AGENTS.md first — it is
+the protocol every agent here follows. Then read docs/DECISIONS.md D-023, which is the
+decision this task exists under. Then:
+
+    MIRE_AGENT=spawn .agent/bin/agent start spawn
+    MIRE_AGENT=spawn .agent/bin/agent claim 1.5 autoload/player_net.gd entities/player/player_controller.gd core/net/net_config.gd project.godot
+
+Keep the MIRE_AGENT=spawn prefix on EVERY .agent/bin/agent command AND on `git commit`. Do
+not use `export` — each shell call is a fresh process, so the value is lost and your claims
+get filed under the wrong agent with no error. `agent ship` handles this itself.
+
+TASK: One player per peer, spawned by the host, moving under its owner's control, visible to
+everyone else. Two windows, two players, each drives their own and sees the other move.
+
+AUTHORITY (docs/ARCHITECTURE.md §2.2, rows 1 and 2):
+  Own player movement      → CLIENT-authoritative. The owning peer simulates locally and
+                             sends its transform. Responsiveness beats anti-cheat here; these
+                             are friends.
+  Other players' movement  → host relays, MultiplayerSynchronizer + interpolation. Remote
+                             copies run NO input and NO physics — they are moved purely by
+                             replication. (Interpolation itself is task 1.6, not yours.)
+  Spawning                 → HOST. Only the host decides a player exists. Clients receive.
+
+WHAT ALREADY EXISTS — use it, do not rebuild it:
+
+  NetTransport, a registered verified autoload (task 1.2). Query it; never touch
+  multiplayer.multiplayer_peer yourself:
+    func is_host() -> bool              # NOT multiplayer.is_server() — read that method's note
+    func local_peer_id() -> int         # 0 when offline
+    func peer_ids() -> PackedInt32Array # everyone INCLUDING us, ascending, host first
+    func is_active() -> bool
+    signal peer_joined(peer_id: int) / peer_left(peer_id: int)
+    signal server_started() / connected_to_host() / disconnected()
+  Contract worth knowing: the local peer never produces peer_joined. You learn you are in a
+  session from server_started (host) or connected_to_host (client), and peer_joined is remote
+  peers only. disconnected fires exactly once when an established session ends, any reason.
+
+  NetConfig — a class_name, NOT an autoload. NetConfig.MAX_PLAYERS = 6,
+  NetConfig.HOST_PEER_ID = 1, NetConfig.LOG_CHANNEL = &"net".
+
+  PlayerController (entities/player/player_controller.gd) — CharacterBody3D, first-person
+  walk/sprint/jump, already written and tuned. It ALREADY has the authority seam you need:
+    var is_local_authority: bool = true      # set from is_multiplayer_authority() in _ready()
+    @onready var camera: PlayerCamera = $CameraPivot
+  and _ready() already gates camera.set_active(), set_physics_process() and
+  set_process_unhandled_input() on it. Do not restructure that. Body yaw is on the
+  CharacterBody3D; only pitch is on CameraPivot (see player_camera.gd) — so a remote player
+  facing the right way needs the body's rotation, and its head angle needs the pivot's.
+
+  entities/player/player.tscn — root "Player" (CharacterBody3D) > CollisionShape3D,
+  CameraPivot (Node3D) > Camera3D. That is the whole scene.
+
+  DevLaunch (core/dev/dev_launch.gd, task 1.3) — `--host` / `--client` user args auto-host or
+  auto-join a LOCAL session at startup, with a bounded retry. This is how you test. Read it;
+  it is one of the two files worth opening.
+
+  MireLog statics: MireLog.info/warn/error/debug(channel: StringName, message: String).
+
+WRITE / EDIT EXACTLY THESE:
+
+1. autoload/player_net.gd — NEW. The spawner. Register it in project.godot as PlayerNet
+   (see AUTOLOAD below). It owns:
+     - a MultiplayerSpawner built IN CODE, plus a container node, at fixed paths
+       /root/PlayerNet/PlayerSpawner and /root/PlayerNet/Players. Fixed because the high-level
+       API matches nodes by path across peers, and because M4 swaps levels underneath this.
+     - spawn on session start: host spawns one player per peer in NetTransport.peer_ids(),
+       then one more on each peer_joined; frees on peer_left; clears everything on
+       disconnected. (Mid-session join edge cases, host-quit and timeouts are task 1.7 — do
+       the obvious signal handling, don't build a lifecycle system.)
+     - a public read API for 1.6/1.7/1.10 to use rather than reaching into the tree:
+       something like player_for(peer_id: int) -> Node3D and spawned_peers() -> PackedInt32Array.
+     - offline behaviour: does NOTHING. No session, no spawning. "Open the project and press
+       Play and walk around" must still work exactly as it does today.
+
+2. entities/player/player_controller.gd — EDIT. Build its MultiplayerSynchronizer and
+   SceneReplicationConfig in code in _ready(), identically on every peer, so the paths match.
+   Replicate the minimum that makes a remote player look right:
+       position, body rotation (yaw), CameraPivot rotation (pitch)
+   and NOTHING else. Per §2.5, players sync at 30Hz — set replication_interval accordingly,
+   and put the number in NetConfig as a named constant rather than a literal. Do NOT replicate
+   velocity "for 1.6" — if 1.6 needs it, 1.6 adds it and pays for it then.
+
+3. core/net/net_config.gd — EDIT, constants only. The sync rate, and the spawn-node names if
+   you want them named once. Nothing with logic; read that file's header.
+
+4. project.godot — EDIT, to register PlayerNet. Append only.
+
+THE FOUR THINGS THAT WILL BITE YOU — all four are the actual content of this task:
+
+  a) AUTHORITY MUST BE SET BEFORE add_child(). PlayerController._ready() reads
+     is_multiplayer_authority() and immediately decides whether to run physics, capture the
+     mouse and activate the camera. Set the owning peer as authority on the instance BEFORE it
+     enters the tree, or every client runs input on every player and captures the mouse for
+     six of them. If a spawn path makes that impossible, make the controller re-evaluate on an
+     authority-changed signal rather than papering over it.
+
+  b) THE LEVEL HAS A PLAYER IN IT ALREADY. levels/greybox_test.tscn hard-instances one
+     "Player" at the scene root. In a session that node is a SPAWN POINT, not a player: read
+     its global transform, use it as the spawn origin, free it, then spawn per-peer. You may
+     NOT edit that scene (D-007, hook-enforced) and you do not need to. Offline, leave it
+     completely alone.
+
+  c) BOTH PEERS MUST BUILD THE SAME TREE. A synchronizer created only on the authority, or
+     named differently on the two sides, fails as "node not found" or as silence. Construction
+     runs unconditionally in _ready(); only the CONFIGURATION (who has authority) differs.
+
+  d) SIX MICE. Only the local player's camera is current and only the local player captures
+     the mouse. The controller already gates this correctly — verify it still holds once nodes
+     are spawned rather than placed, because that changes when _ready() sees authority.
+
+HOST SPEED SANITY CHECK — in scope, deliberately small. §2.2 row 1 says the host
+sanity-checks speed, and player_controller.gd's own header promises it lands in this task. On
+the host only: watch each remote player's replicated position between samples, and if the
+implied horizontal speed exceeds sprint_speed by a clear margin for several consecutive
+samples, log a WARN naming the peer. Do NOT correct, rubber-band, kick or teleport — that is a
+later decision and the wrong one to make silently now. A warning that fires on a real speed
+hack and never fires during normal play is the entire deliverable here.
+
+CONSTRAINTS:
+- .gd and project.godot only. NEVER create or edit .tscn/.tres — human-only, hook-enforced.
+- project.godot: check `pgrep -fl Godot` FIRST. If the editor is running it rewrites that file
+  on save and silently discards your edit — stop and say so rather than racing it. Append
+  only; never reorder, reformat, or hand-write a setting equal to the engine default (D-019).
+- Typed GDScript throughout. Networked functions prefixed net_.
+- Do not build interpolation (1.6), visibility filters or per-class intervals beyond players
+  (1.8), reconnection handling (1.7), or a version handshake (1.11). Each is someone's task.
+- Don't explore beyond core/dev/dev_launch.gd, entities/player/player_camera.gd and the files
+  you claimed. Everything else you need is above.
+
+VERIFY IT, DON'T ASSERT IT. Two real processes, headless, using DevLaunch:
+
+    /Applications/Godot.app/Contents/MacOS/Godot --headless --path . -- host
+    /Applications/Godot.app/Contents/MacOS/Godot --headless --path . -- client
+
+Show that on BOTH processes there are two players under /root/PlayerNet/Players, that each
+process has authority over exactly one of them, and that moving the local one changes the
+remote copy's position on the other process. Print positions from both sides; a log line
+saying "spawned" proves nothing. If you cannot drive input headlessly, move the authoritative
+player from code and show the far side following.
+
+FINISH WITH:
+    MIRE_AGENT=spawn .agent/bin/agent done 1.5 "<what replicates, what you measured on both sides>"
+    MIRE_AGENT=spawn .agent/bin/agent ship 1.5 "M1: networked player — spawner, synchronizer, client-auth movement"
+
+`ship` commits only this task's files. Never `git add -A` — other agents work in this same
+directory and you would commit their half-written files.
+
+THEN, as your final chat message, tell me:
+  - the exact commands you ran and what the two processes actually printed
+  - whether it RUNS or only compiles — and say plainly if anything still needs wiring
+  - the node layout you settled on, as a path tree, since 1.6/1.7/1.8 get written against it
+  - what the speed check fires on, and what it does NOT do
+  - whether it is safe for me to start the next task
+```
 
 ---
 
@@ -182,7 +363,7 @@ and clients only receive. Do not give clients authority over anything here.
 
 CONSTRAINTS:
 - .gd only. NEVER create or edit .tscn/.tres/project.godot — another agent holds
-  project.godot right now (task 1.4) and you would be blocked at commit. You need no
+  project.godot right now (task 1.5) and you would be blocked at commit. You need no
   autoload for this; if you conclude you do, STOP and ask rather than claiming that file.
 - Typed GDScript throughout.
 - Deterministic movement for the dummies: seeded RandomNumberGenerator only, never global

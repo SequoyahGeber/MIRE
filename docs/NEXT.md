@@ -7,9 +7,9 @@
 
 ## Status
 
-**Milestone:** M1 · Network spine — **1.2 landed.** M0 is closed, 10/10.
-**Last session:** 2026-08-16 (claude) — closed M0, booked the two M0 debts as M4 gates (4.0a, 4.0b),
-and took autoload registration off Sequoyah's plate for good (D-021).
+**Milestone:** M1 · Network spine — **1.4 landed, 6/14.** M0 is closed, 10/10.
+**Last session:** 2026-08-16 (claude) — unblocked 1.5–1.8 with D-023 (replication nodes are built in
+code, not authored in scenes) and wrote the 1.5 prompt. Nothing is in flight.
 
 Both risk spikes came back **GREEN**: chunked terrain meshing stays in GDScript (D-015), runtime
 NavMesh baking stays and the grid-A* fallback is dropped (D-016). Neither result is unconditional —
@@ -38,32 +38,52 @@ Protocol: [AGENTS.md](../AGENTS.md). Start every session with `.agent/bin/agent 
 
 ---
 
-## Next task — two, and they run in parallel
+## Next task — three ready-to-paste prompts, none of them yours
 
-They don't share a file and neither blocks the other. Open the agent chat for 1.2 first, then do 1.1
-while it works.
+All three are agent chats, none of them share a file, and all three can run at once. Everything you do
+here is copy, paste, and read the sign-off.
 
-### → 1.2 · `NetTransport` autoload — `[T2]` · ~3h · **an agent chat**
+### → 1.5 · Networked player: spawner + synchronizer — `[T2]` · ~3h · **an agent chat**
 
-**The unblock.** Seven of the twelve M1 tasks (1.3, 1.5, 1.6, 1.7, 1.8, 1.10, 1.11) are written
-against this interface, so the API shape matters more than the implementation behind it.
+**Paste this one first.** It's what turns "two windows connect" into "two players see each other", and
+1.6, 1.7 and 1.8 are all written against the node layout it establishes.
 
-Ready-to-paste prompt: [DELEGATION.md](DELEGATION.md) → *Task 1.2*.
-**Opus 5 · effort xhigh · `export MIRE_AGENT=net`.**
+Ready-to-paste prompt: [DELEGATION.md](DELEGATION.md) → *Task 1.5*. **Opus 5 · effort high · agent
+name `spawn`.**
 
-It does **not** need GodotSteam installed. The prompt scopes `STEAM` to a stubbed seam that returns a
-clear "not yet installed" error, and task 1.4 fills it in as a drop-in.
+**It needs nothing from you in the editor.** That's new — see D-023 below. It holds `project.godot`
+while it runs, so **close the Godot editor before you paste it**, or its autoload registration gets
+silently discarded on your next save.
 
-### → 1.1 · Install GodotSteam GDExtension — `[T0]` · ~1h · **yours**
+### → 1.9 · Spike R1 — replication load — `[T2]` · ~1.5h · **an agent chat**
 
-Can't be delegated: it's a GDExtension drop plus `project.godot`, both human-only under D-007.
-4.4+ branch, confirm it loads in stock Godot 4.7.1, and pin the engine version.
+The last unspiked risk in `ARCHITECTURE.md` §6. If it comes back red, the fallback rewrites how every
+replicated system in the project gets written — so it wants answering while 1.6–1.8 are still unwritten.
 
-**Use App ID 480 (Spacewar) — don't pay the $100 yet.** [STEAM.md](STEAM.md) §2. It gives you lobbies,
-P2P and the overlay with no Steamworks account. Always join by invite or direct lobby ID; 480's public
-lobby list is worldwide junk, so never build against a lobby browser.
+**Opus 5 · effort high · agent name `load`.**
 
-Gates 1.4 (lobbies) and 1.12 (cross-platform join).
+### → 1.10 · Network debug panel — `[T1]` · ~1h · **an agent chat**
+
+Cheap quota, and it's what makes 1.5–1.8 debuggable instead of guessable. **Sonnet 5 · effort medium ·
+agent name `netui`.**
+
+---
+
+## What changed this session — D-023
+
+1.5, 1.6 and 1.8 had been parked for three sessions as *"scene work, only Sequoyah can wire it."*
+That was wrong. `MultiplayerSpawner`, `MultiplayerSynchronizer` and `SceneReplicationConfig` all have
+full script APIs — task 1.9's prompt had been requiring exactly that construction all along, because a
+headless benchmark can't author scenes either. So they get **built in code**, and **1.5 needs no
+`.tscn` change at all**.
+
+Two things fall out of that, both written into D-023 so nobody relitigates them:
+
+- Networked players live at `/root/PlayerNet/Players` — a fixed path, identical on every peer, that
+  survives the level swaps M4 introduces.
+- The `Player` hard-instanced in `greybox_test.tscn` becomes a **spawn point**: in a session the
+  spawner reads its transform, frees it, and spawns per-peer copies. Offline it's untouched, so
+  "press Play and walk around" still works.
 
 ---
 
@@ -71,13 +91,13 @@ Gates 1.4 (lobbies) and 1.12 (cross-platform join).
 
 | # | Task | Tier | Who | Est |
 |---|---|---|---|---|
-| 1.3 | `LOCAL` mode — two windows, one keypress, no menus | T2 | agent | 2h |
-| 1.4 | Steam lobby: create, invite via overlay, join by ID, member list | T2 | agent | 3h |
-| 1.5 | Networked player: spawner + synchronizer, client-auth movement | T2 | agent | 3h |
 | 1.6 | Remote-player interpolation | T2 | agent | 2h |
+| 1.7 | Connection lifecycle: join mid-session, disconnect, host quits, timeouts | T2 | agent | 2h |
+| 1.8 | Interest management: visibility filters + per-class `replication_interval` | T2 | agent | 1.5h |
+| 1.11 | Protocol/build version handshake | T2 | agent | 1.5h |
 
-**1.3 is worth more than it looks.** One-keypress two-window multiplayer testing makes every
-multiplayer bug for the rest of the project cheaper to find. Don't let it slip down the list.
+1.6 and 1.8 want 1.5's node layout in hand before their prompts get written — writing them now means
+guessing at names. 1.7 and 1.11 are writable earlier if you'd rather accept a rebase.
 
 ---
 

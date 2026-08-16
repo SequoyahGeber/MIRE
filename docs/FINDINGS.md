@@ -289,6 +289,24 @@ error. D-022's reinstall recipe copies the addon and stops there, which is the s
 that one file? a boot-time check that says "extension missing" in plain words?), and 1.1's scope is
 the install. Whoever takes 1.12 should read this first and budget for it.
 
+### F-010 · Two `.uid` files were left untracked when 1.4 shipped
+
+**Area:** build/tooling · **Filed:** 2026-08-16 by claude while picking the next task
+
+`autoload/net_transport.gd.uid` and `core/net/net_config.gd.uid` are untracked. Seventeen other `.uid`
+files in the repo are committed, so this is an omission, not a policy — `agent ship` stages the files
+a task claimed, and a `.uid` Godot regenerates alongside an edited script isn't one of them.
+
+**Low severity today, and worth saying why rather than just "should commit it".** Godot 4.4+ writes a
+`.uid` per script and resolves `uid://` references through it. Our scene files reference scripts by
+`path=`, not `uid=` — checked in `player.tscn` and `greybox_test.tscn` — so a peer with a
+freshly-generated UID currently breaks nothing. That stops being true the first time Sequoyah saves a
+scene in the editor and Godot rewrites those references as `uid://`, which it does on its own.
+
+The failure mode is the same shape as **F-009**: state that only exists on one machine, discovered on
+the Linux VM at 1.12. Cheapest fix is to commit both files. The durable fix is `agent ship` staging
+`<file>.uid` whenever it stages `<file>.gd`.
+
 ---
 
 ---
