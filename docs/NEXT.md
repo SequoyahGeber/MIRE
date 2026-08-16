@@ -101,7 +101,7 @@ against whatever they return.
 | # | What's actually unmeasured | Who | Est |
 |---|---|---|---|
 | 4.0a | `ConcavePolygonShape3D` cooking + GPU mesh upload per chunk. R2 ran headless — no upload, no material, no collision. R3 measured *navigation* baking, a different code path. F-005, and the standing caveat on D-015. | agent | 1.5h |
-| 4.0b | Determinism on Windows x86_64 — the third column in `ARCHITECTURE.md` §6a is still empty. | you | 30m |
+| 4.0b | Determinism on Windows x86_64 — all required hashes matched on a physical Ryzen 5 5600 PC. | done | ✅ |
 
 Nothing in M1 depends on either. Don't pull them forward; just don't start 4.1 without them.
 
@@ -117,7 +117,7 @@ guaranteed identical across architectures and C libraries.
 raw `sin`/`cos`/`pow`/`exp`/`log` are not. §4 stands, and the price is the world-gen safe set now
 written into `ARCHITECTURE.md` §7.
 
-**Task 4.0b — the same two commands on a Windows x86_64 guest:**
+**Task 4.0b — DONE 2026-08-16 on a physical Windows x86_64 PC:**
 
 ```bash
 godot.exe --headless --path . --script tools/check_determinism.gd
@@ -127,18 +127,15 @@ godot.exe --headless --path . --script tools/check_determinism.gd
 godot.exe --headless --path . --script tools/check_determinism_ops.gd
 ```
 
-Godot **4.7.1-stable build `a13da4feb`**, or the comparison means nothing. Compare against
-`ARCHITECTURE.md` §6a and fill in the Windows column. MSVC is a third C library, so this is a real
-test and not a formality — but the outcome that matters is narrow: `rng_sequence` and `noise_*` must
-match, and the four rows in the ops probe's *first* group must match. Divergence in the second group
-is expected and already accounted for. **Do this before M4 builds anything on seeded generation.**
+Godot **4.7.1-stable build `a13da4feb`** ran both probes twice on Windows 11 25H2, Ryzen 5 5600.
+`rng_sequence`, both noise hashes, and all four safe-operation hashes matched macOS exactly;
+`float_math` differed as expected. See `ARCHITECTURE.md` §6a and D-028. M4 may build on seeded
+generation under the §7 safe-set rule.
 
-You have a Linux guest already; a Windows VM is the missing piece — that's the actual work in 4.0b,
-and it's yours because it's provisioning, not code.
-
-**The two commands themselves are not yours to type.** Once the VM exists and is reachable, hand
-4.0b to an agent chat the same way as any other task — the Linux half was driven that way over SSH.
-Getting a Windows guest to that point is the part only you can do.
+The run also exposed a separate harness trap: a raw clone lacks the intentionally gitignored
+GodotSteam binaries and the generated global class cache. Install the D-022-pinned addon and run one
+headless editor import before treating startup errors as game defects. The probes still completed and
+their built-in-only hashes were valid, but that run did not verify a clean Windows game boot.
 
 ---
 

@@ -163,8 +163,10 @@ x86_64. If it does, §4's "clients regenerate the world from a seed" design is i
 That question is unanswerable on this hardware, and it is a genuine architectural fork, not a
 verification chore. The macOS column of the §6a table is filled in; the other two cannot be.
 
-**Resolution path: VMs on the Unraid server.** Unraid is x86_64 and ships with KVM, so it can host
-Windows and Linux guests on the architecture that actually matters here.
+**Updated resolution path, 2026-08-16:** Linux stays on the Unraid x86_64 KVM guest. A friend's
+physical Ryzen 5 5600 / RTX 3060 Windows 11 PC is now available, has Codex, and can clone the repo and
+run repo-authored validation briefs. Prefer it to a Windows VM: it answers the architecture question
+and supplies the real Windows GPU that Unraid passthrough could not safely provide.
 
 The distinction that decides where these VMs live:
 
@@ -178,13 +180,13 @@ quick "does it launch on Linux" checks where architecture is irrelevant.
 
 What this does and doesn't close:
 
-- **0.10 — approach confirmed, Linux column done 2026-08-15.** `check_determinism.gd` is headless and
+- **0.10 / 4.0b — complete across macOS, Linux, and Windows.** `check_determinism.gd` is headless and
   compute-only; no GPU, no display, no Steam. The Ubuntu guest ran it with no `sudo` and no extra
   packages — `wget` and `rsync` were already present, so the project went over by `rsync` from the Mac
   rather than `git clone`, sidestepping credentials on the guest entirely. Result in **D-017**: noise
-  and PRNG are bit-identical, raw libm calls are not. The Windows guest still has to fill the last
-  column. Practical note for whoever builds it: drive the guest over SSH, not the noVNC console —
-  pasting in is awkward and copying results back out is worse.
+  and PRNG are bit-identical, raw libm calls are not. On 2026-08-16 the physical Windows PC ran both
+  probes twice on pinned Godot `4.7.1.stable.official.a13da4feb`; the three world-generation hashes
+  and all four safe-operation hashes matched macOS exactly. See D-028 and `ARCHITECTURE.md` §6a.
 - **7.12 — partially, and the gap is now confirmed rather than hypothetical.** The server's GTX 1070
   is already passed through to Ollama and Plex, so it is not available to a VM without taking it from
   services in use. Guests will render in software. **Second obstacle, found 2026-08-15 while building
@@ -202,6 +204,15 @@ What this does and doesn't close:
   guests. Testing the *Steam* transport needs a Steam client running in each guest and a distinct
   Steam account per instance, which is a real constraint worth planning for rather than discovering
   during M1.
+
+The first physical-Windows run formally reported `FAIL` because each probe also emitted 306 unrelated
+startup errors. This was a harness/bootstrap error, not a determinism failure: `addons/godotsteam/` is
+intentionally gitignored by D-022, and a raw clone has no generated global class cache. A fresh local
+clone reproduced all 306; one `--headless --editor --quit` scan removed 303, leaving exactly the three
+missing-GodotSteam errors. Future clean-machine briefs must install the D-022-pinned addon first and
+run that scan. The probe scripts use only engine built-ins, reached their output, exited 0, and were
+bit-identical across both Windows runs, so their R6 evidence remains valid. This does **not** count as
+a clean Windows game boot test.
 
 Practical notes for whoever builds the guests: the host is a Ryzen 5 3600X with 32 GB, shared with the
 Ollama and Plex containers — assume only part of that RAM is free, and don't run both guests plus a

@@ -412,18 +412,22 @@ verification remains out of scope.
 
 ### Determinism baseline
 
-Recorded from `tools/check_determinism.gd`. **Windows is still unmeasured — that's task `4.0b`, a gate
-before 4.1.**
+Recorded from `tools/check_determinism.gd`. **All three shipping desktop platforms are now measured;
+task `4.0b` closed the Windows column on 2026-08-16.**
 
 | | macOS arm64 | Linux x86_64 | Windows x86_64 |
 |---|---|---|---|
-| `rng_sequence` | `0077d6b42cd6f78f` | `0077d6b42cd6f78f` ✅ | — |
-| `noise_simplex` | `181e558b7b4841cf` | `181e558b7b4841cf` ✅ | — |
-| `noise_perlin` | `6c7a944516e3e64f` | `6c7a944516e3e64f` ✅ | — |
-| `float_math` | `063eec62c34fa4ee` | `187304c753e6e1ce` ❌ | — |
+| `rng_sequence` | `0077d6b42cd6f78f` | `0077d6b42cd6f78f` ✅ | `0077d6b42cd6f78f` ✅ |
+| `noise_simplex` | `181e558b7b4841cf` | `181e558b7b4841cf` ✅ | `181e558b7b4841cf` ✅ |
+| `noise_perlin` | `6c7a944516e3e64f` | `6c7a944516e3e64f` ✅ | `6c7a944516e3e64f` ✅ |
+| `float_math` | `063eec62c34fa4ee` | `187304c753e6e1ce` ❌ | `9a92d5895a7daf08` ❌ |
 
 Godot 4.7.1-stable build `a13da4feb` in every case — a version difference invalidates the comparison.
-Linux measured 2026-08-15 on an Unraid KVM guest (Ryzen 5 3600X, Ubuntu, glibc).
+Linux measured 2026-08-15 on an Unraid KVM guest (Ryzen 5 3600X, Ubuntu, glibc). Windows measured
+twice, identically, on 2026-08-16 on a physical Ryzen 5 5600 / Windows 11 25H2 machine. The four
+safe-operation hashes also matched macOS arm64 exactly: `arith a26c08c6939c9c70`,
+`sqrt 8df50e64f11d53c4`, `vec2_length baa1bfdb8ba31f7b`, and
+`falloff_safe fd601eb57df68bf0`.
 
 `float_math` bundles six operations, so a follow-up probe split them per-operation. The result (D-017)
 is that the divergence falls exactly on the IEEE-754 line:

@@ -20,8 +20,13 @@ Rules:
    edit project.godot, or run formatting.
 4. Use only the stock Godot 4.7.1 executable from an official Godot download. Do not substitute a
    different engine version, a Steam build, Mono/.NET build, custom build, or GodotSteam editor.
-5. If any prerequisite or version is wrong, stop and report it; do not improvise around it.
-6. Preserve complete stdout and stderr. A mismatch is valuable evidence and must not be hidden.
+5. Before running project checks, install the pinned GodotSteam addon using D-022's recipe (adapt its
+   `curl`/`unzip`/copy steps to PowerShell without changing the URL or commit), then run
+   `<godot-exe> --headless --editor --path . --quit` once to generate imports and the global class
+   cache. The addon is intentionally absent from Git; skipping this produces 306 misleading startup
+   errors on a raw clone.
+6. If any prerequisite or version is wrong, stop and report it; do not improvise around it.
+7. Preserve complete stdout and stderr. A mismatch is valuable evidence and must not be hidden.
 
 Procedure:
 

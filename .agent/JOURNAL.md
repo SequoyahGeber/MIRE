@@ -631,3 +631,27 @@ Windows Codex brief is complete in docs/WINDOWS_TEST_BRIEF.md and ready for Sequ
 Files: `docs/WINDOWS_TEST_BRIEF.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/NEXT.md`
 
 Commit at time of writing: `d4a5cdf`
+
+---
+
+### HANDOFF · F-006 · slate · 2026-08-16T20:11:48+00:00
+
+**Three roadmap tasks assume a Windows or Linux machine we don't have**
+
+Windows hardware gap is now largely resolved: physical Ryzen 5 5600/RTX 3060 PC is the preferred Windows target; determinism passed and docs are updated. F-006 remains open only for actually scheduling/running 1.12 cross-platform Steam and later 7.12 export checks; Steam Deck remains separate. Future fresh clones must reinstall D-022 GodotSteam and run a headless editor scan before checks.
+
+Files: `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, `docs/DELEGATION.md`, `docs/NEXT.md`, `docs/WINDOWS_TEST_BRIEF.md`
+
+Commit at time of writing: `f958400`
+
+---
+
+### DONE · 4.0b · slate · 2026-08-16T20:11:49+00:00
+
+**Finish Spike R6 — determinism probe on Windows x86_64, fill the third column in `ARCHITECTURE.md` §6a**
+
+Windows x86_64 determinism completed on physical Ryzen 5 5600 with pinned Godot 4.7.1 a13da4feb. Two runs were identical; PRNG, both noise hashes, and all four safe-operation hashes matched macOS. Startup errors were separately reproduced as missing gitignored GodotSteam plus first-scan cache state, so this clears R6 but is not a clean Windows boot test.
+
+Files: `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/ARCHITECTURE.md`, `docs/DELEGATION.md`, `docs/NEXT.md`, `docs/WINDOWS_TEST_BRIEF.md`
+
+Commit at time of writing: `f958400`

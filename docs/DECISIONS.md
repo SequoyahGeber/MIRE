@@ -431,6 +431,31 @@ authority over admission.
 ## Template
 
 ```
+### D-028 · 2026-08-16 · R6 is GREEN on Windows too; shared-seed world generation is cleared for M4
+The last unmeasured platform is now measured. A physical Windows 11 25H2 x86_64 PC (Ryzen 5 5600)
+ran `check_determinism.gd` and `check_determinism_ops.gd` twice on the pinned stock Godot
+`4.7.1.stable.official.a13da4feb`. Both runs were internally identical. The three values that build
+the island matched macOS arm64 and Linux x86_64 exactly: `rng_sequence 0077d6b42cd6f78f`,
+`noise_simplex 181e558b7b4841cf`, and `noise_perlin 6c7a944516e3e64f`. The safe operation group also
+matched macOS exactly: `arith a26c08c6939c9c70`, `sqrt 8df50e64f11d53c4`,
+`vec2_length baa1bfdb8ba31f7b`, and `falloff_safe fd601eb57df68bf0`. Windows `float_math` was
+`9a92d5895a7daf08`, different from both other platforms exactly where D-017 predicted.
+
+So D-017's conditional verdict is now final for all three desktop targets: clients regenerate terrain
+from the shared seed, and world generation stays inside the §7 safe set. The heightmap fallback is not
+adopted. The physical Windows PC also becomes the preferred Windows export/GPU target; Linux remains
+the Unraid KVM guest, and Steam Deck hardware remains unprovisioned.
+
+The run's formal report said `FAIL` because a raw clone emitted 306 startup errors before each probe.
+That does not reverse the R6 evidence: the probes use engine built-ins, printed complete stable values,
+and exited 0. The errors were independently reproduced and traced to skipping D-022's intentionally
+gitignored GodotSteam install plus the first editor filesystem scan. This run therefore clears
+determinism but does **not** verify that the game boots cleanly on Windows.
+
+**Would change my mind:** a future Windows run on the pinned engine disagreeing on a required hash;
+world gen adding cellular noise/domain warp without a new cross-platform probe; or expanding shared
+deterministic simulation beyond the currently tested terrain inputs.
+
 ### D-0NN · YYYY-MM-DD · <one-line decision>
 <why, in 2–4 sentences>
 **Would change my mind:** <the specific evidence that should make you revisit this>
