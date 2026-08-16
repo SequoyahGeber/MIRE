@@ -309,6 +309,78 @@ the Linux VM at 1.12. Cheapest fix is to commit both files. The durable fix is `
 
 ---
 
+### F-011 · Autoloads are not compile-time identifiers in a `--script` main loop
+
+**Area:** tooling/netcode · **Severity:** medium — costs a run, not a day · **Filed:** 2026-08-16 by
+spawn during 1.5
+
+A script run as the main loop (`Godot --headless --path . --script tools/foo.gd`, `extends SceneTree`)
+is **compiled before the autoloads are registered**, so naming one fails at compile time, not at run
+time:
+
+```
+SCRIPT ERROR: Compile Error: Identifier not found: NetTransport
+ERROR: Failed to load script "res://tools/foo.gd" with error "Compilation failed".
+```
+
+The autoloads themselves are fine — they exist and have run `_ready()` by the time `_initialize()` is
+called. Only the *identifier* is unavailable. Look them up by path instead, into an untyped `Node`:
+
+```gdscript
+var _net: Node = root.get_node(^"NetTransport")
+```
+
+**Who this hits:** every headless harness in `tools/`. Task **1.9**'s `bench_replication.gd` is
+specified as `extends SceneTree` and drives `NetTransport` directly, so it hits this on its first run.
+So does anything 4.0a writes later.
+
+**Not worth "fixing".** It is how GDScript resolves autoload names, not a defect of ours. It is filed
+so the next person loses a compile cycle instead of an hour.
+
+---
+
+### F-012 · A `MultiplayerSynchronizer`'s authority must be set BEFORE `add_child()`
+
+**Area:** netcode · **Severity:** medium · **Filed:** 2026-08-16 by spawn during 1.5
+
+Building a synchronizer in code (D-023) and then setting its authority once it is already in the tree
+— even in the same `_ready()` — makes the replication interface reject the pending spawn, on every
+client, for every spawned instance:
+
+```
+ERROR: The MultiplayerSynchronizer at path ".../NetSync" is unable to process the pending spawn
+since it has no network ID. This might happen when changing the multiplayer authority during the
+"_ready" callback.
+```
+
+Replication appeared to work anyway in the 1.5 two-process test, which is the dangerous part: the
+symptom is error spam plus an unknown amount of silently degraded state, not a clean failure.
+
+Fixed in `player_controller.gd` by setting `set_multiplayer_authority()` on the synchronizer before
+`add_child()`, and noted in a comment there. **Filed because 1.6 and 1.8 both add or reconfigure
+synchronizers**, and the engine's own advice ("only change authority during `_enter_tree` of their
+spawner") points somewhere that does not exist in our layout — the synchronizers are built by the
+player, not by the spawner.
+
+---
+
+### F-013 · Spawned replication nodes are not in group `&"synced"`, so 1.10's entity count reads 0
+
+**Area:** netcode/debug · **Severity:** low · **Filed:** 2026-08-16 by spawn, after 1.5 and 1.10
+shipped within a minute of each other
+
+`net_debug_panel.gd` (1.10) counts synced entities via `DebugOverlay.track_group(&"synced")`, and its
+header asks whoever spawns `MultiplayerSynchronizer` nodes to add them to that group. 1.5 shipped
+without doing so — the two tasks ran in parallel and neither prompt mentioned the other — so the
+panel's entity line reads 0 in a real session while two players are visibly replicating.
+
+One line in `PlayerController._build_synchronizer()` (`net_sync.add_to_group(&"synced")`) closes it
+for players. **Whoever picks it up should decide the convention once**, because 1.8 (per-class
+intervals) and 1.9's dummy replicants will both want to be counted the same way: the group is either
+"every synchronizer" or "every replicated entity root", and those give different numbers.
+
+---
+
 ---
 
 ## Resolved

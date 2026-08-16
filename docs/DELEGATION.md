@@ -45,37 +45,57 @@ doesn't.
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
-**Nothing is in flight.** 1.4 closed in `d2efca5`, and with it the `project.godot` hold that was
-blocking every autoload-producing task.
+**1.5 and 1.10 shipped** (`8d6ddab`, `4f17bcd`). **1.9 is in flight** under agent `load`, holding
+`core/net/dummy_replicant.gd` and `tools/bench_replication.gd`.
 
 | # | Task | Agent name | Model | Effort | Status |
 |---|---|---|---|---|---|
-| 1.5 | Networked player — spawner + synchronizer | `spawn` | Opus 5 | high | **ready to paste** — start this first |
-| 1.9 | Spike R1 — replication load | `load` | Opus 5 | high | **ready to paste** — paste alongside 1.5 |
-| 1.10 | Network debug panel | `netui` | Sonnet 5 | medium | **ready to paste** — safe alongside both |
+| 1.5 | Networked player — spawner + synchronizer | `spawn` | Opus 5 | high | **done** — runs; prompt kept for reference |
+| 1.9 | Spike R1 — replication load | `load` | Opus 5 | high | **in flight** |
+| 1.10 | Network debug panel | `netui` | Sonnet 5 | medium | **done** — entity count reads 0 until F-013 is closed |
+| 1.6 · 1.7 · 1.8 | Interpolation · lifecycle · interest management | | | | **unblocked, no prompt written yet** |
 | 1.1 · 1.2 · 1.3 · 1.4 | GodotSteam · NetTransport · LOCAL loop · Steam lobby | | | | done and verified |
 | 2.2 | Content framework | `content` | Sonnet 5 | medium | done — prompt kept for reference |
 
-**All three are startable right now** and no two of them name the same file — check `.agent/BOARD.md`
-before pasting anyway, since a claim collision is the one failure this whole system exists to prevent:
+`project.godot` is free again. It is still the one file only one task at a time may hold, so whichever
+of 1.6–1.8 needs an autoload claims it by name and the others do not.
 
-| Agent | Holds |
-|---|---|
-| `spawn` (1.5) | `autoload/player_net.gd` · `entities/player/player_controller.gd` · `core/net/net_config.gd` · `project.godot` |
-| `load` (1.9) | `core/net/dummy_replicant.gd` · `tools/bench_replication.gd` |
-| `netui` (1.10) | `ui/debug/net_debug_panel.gd` |
+### What 1.5 established — write 1.6, 1.7 and 1.8 against this, not against a guess
 
-**`spawn` holds `project.godot`**, so it is again the one task at a time that can register an autoload.
-Neither 1.9 nor 1.10 needs one, which is what makes all three safe together.
+Node layout, built in code by `autoload/player_net.gd` and identical on every peer. The names are
+load-bearing: the high-level API matches nodes by path.
 
-**Order, if you only start one:** 1.5. It is the task that turns "two windows connect" into "two
-players see each other", and 1.6, 1.7 and 1.8 are all written against the node layout it establishes.
-1.9 is the counter-argument — it's the last unspiked risk in `ARCHITECTURE.md` §6, and a red result
-rewrites how every replicated system gets written, so it wants answering before 1.6–1.8 build on the
-assumption it's fine. **Paste both.** They share no files, and if R1 comes back red the thing you most
-want in hand is a real networked player to re-measure against.
+```
+/root/PlayerNet
+  ├── Players                 Node3D                 every networked player lives here
+  │     ├── "1"               PlayerController       named for the peer id that OWNS it
+  │     │     ├── CollisionShape3D
+  │     │     ├── CameraPivot  ├── Camera3D
+  │     │     └── NetSync      MultiplayerSynchronizer — authority = owning peer, 30Hz
+  │     └── "1210651288"      PlayerController       (ENet ids are random, not 2/3/4)
+  └── PlayerSpawner           MultiplayerSpawner, spawn_path → ../Players
+```
 
-### 1.5–1.8 are unblocked — D-023
+Replicated today, and nothing else: `.:position`, `.:rotation:y` (body yaw),
+`CameraPivot:rotation:x` (head pitch). **Velocity is deliberately absent** — if 1.6 needs it for
+interpolation, 1.6 adds it and pays for it.
+
+Read the tree through `PlayerNet`'s public API rather than by path, so the paths stay ours to change:
+`player_for(peer_id) -> Node3D` · `spawned_peers() -> PackedInt32Array` ·
+`debug_snapshot() -> Array[Dictionary]`. `PlayerController` exposes `net_sync` and `is_local_authority`.
+
+**Authority is derived from the node's NAME, not replicated.** The spawn function names each player
+for its peer and sets authority before `add_child()`; `PlayerController._ready()` re-derives the same
+value from that name. Both sides therefore agree with nothing extra on the wire — and a player node
+named anything non-numeric (the level's hand-placed `Player`, or anything offline) is left alone,
+which is why "press Play and walk around" still works with no session.
+
+Three traps 1.6/1.8 will hit, all of them already paid for once: **F-012** (a synchronizer's authority
+must be set *before* `add_child()`, or every client logs "no network ID" and state degrades silently),
+**F-011** (autoloads are not compile-time identifiers in a `--script` harness), and **F-013** (spawned
+synchronizers are not yet in group `&"synced"`, so 1.10's entity count reads 0).
+
+### 1.5–1.8 were unblocked by D-023
 
 They sat here for three sessions as *"Scene work, which only Sequoyah can wire — a spec conversation,
 not a prompt."* That was wrong, and the correction is **D-023**: `MultiplayerSpawner`,
@@ -91,8 +111,7 @@ any further replication prompt, and don't reintroduce "tell Sequoyah to add a sy
 
 | # | Blocked on | Clears when |
 |---|---|---|
-| 1.6 · 1.8 | Nothing structural — they extend the node layout 1.5 establishes, so a prompt written now would be guessing at names | 1.5 ships |
-| 1.7 · 1.11 | `autoload/net_transport.gd` is free again, but both also want the spawner's join path to exist | 1.5 ships. Writable before then if you accept a rebase. |
+| 1.6 · 1.7 · 1.8 · 1.11 | ~~1.5~~ **Nothing. All four are writable now** against the layout above | cleared by `8d6ddab` |
 | 1.12 | Two VMs, plus F-009 (`.godot/extension_list.cfg` is gitignored, so GodotSteam won't load from a fresh clone) | F-009 gets a real fix |
 | 4.0b | A Windows guest existing at all | You provision it |
 
@@ -108,14 +127,14 @@ their results are D-015 and D-016 in `DECISIONS.md`. The unmeasured half of R2 i
 
 ---
 
-## Task 1.5 — Networked player: spawner + synchronizer, client-auth movement
+## Task 1.5 — Networked player: spawner + synchronizer, client-auth movement ✅ **DONE**
 
 > **Model: Opus 5 · effort high** · agent name `spawn`
-> The task that turns "two windows connect" into "two players see each other". 1.6, 1.7 and
-> 1.8 are all written against the node layout it establishes, so the layout matters as much
-> as the code. **Read D-023 first** — it is the decision that unblocked this, and it says
-> every replication node is built in code. There is no scene work in this task, and any plan
-> that ends with "Sequoyah adds a synchronizer node" is the wrong plan.
+> **Shipped 2026-08-16 in `8d6ddab`. Do not paste this.** It runs — `PlayerNet` registered
+> itself, no scene work was needed, and D-023 held: every replication node is built in code.
+> The layout it established, and the traps it paid for, are in *Current state* above; the
+> prompt is kept as the worked example of a replication-shaped brief, since 1.6, 1.7 and 1.8
+> are all the same shape.
 
 ```
 You're working on MIRE, a co-op survival game in Godot 4.7.1. Read AGENTS.md first — it is
@@ -388,11 +407,13 @@ THEN, as your final chat message, tell me:
 
 ---
 
-## Task 1.10 — Network debug panel
+## Task 1.10 — Network debug panel ✅ **DONE**
 
 > **Model: Sonnet 5 · effort medium** · agent name `netui`
-> Optional parallel chat. Shares no files with 1.3 and runs on cheap quota. It is also
-> the thing that makes 1.5–1.8 debuggable, so it earns its slot early rather than late.
+> **Shipped 2026-08-16 in `4f17bcd`. Do not paste this.** Live readout through
+> `DebugOverlay.watch()` (F3, FULL mode): session line, per-peer RTT, host bandwidth, event
+> log. RTT and bandwidth read `n/a` in STEAM mode, stated rather than invented. Its
+> entity-count line reads 0 until **F-013** is closed.
 
 ```
 You're working on MIRE, a co-op survival game in Godot 4.7.1. Read AGENTS.md first. Then:
