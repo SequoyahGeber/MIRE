@@ -189,14 +189,22 @@ What this does and doesn't close:
 - **0.10 — fully closed.** `check_determinism.gd` is headless and compute-only; no GPU, no display, no
   Steam. A Godot headless binary in an x86_64 Linux guest and an x86_64 Windows guest fills in both
   empty columns of the §6a table.
-- **7.12 — partially.** VMs answer "does the export launch and behave correctly on this OS," which is
-  most of the value. They do **not** answer frame rate or rendering-artifact questions without GPU
-  passthrough, since the guest renders in software. Performance verification still wants real
-  hardware, and Steam Deck remains a separate purchase decision.
+- **7.12 — partially, and the gap is now confirmed rather than hypothetical.** The server's GTX 1070
+  is already passed through to Ollama and Plex, so it is not available to a VM without taking it from
+  services in use. Guests will render in software. VMs therefore answer "does the export launch and
+  behave correctly on this OS" — most of the value — but frame rate and rendering artifacts need real
+  hardware. Steam Deck remains a separate purchase decision.
 - **1.12 — partially, with friction.** LAN testing over `ENetMultiplayerPeer` works fine between
   guests. Testing the *Steam* transport needs a Steam client running in each guest and a distinct
   Steam account per instance, which is a real constraint worth planning for rather than discovering
   during M1.
+
+Practical notes for whoever builds the guests: the host is a Ryzen 5 3600X with 32 GB, shared with the
+Ollama and Plex containers — assume only part of that RAM is free, and don't run both guests plus a
+loaded Ollama at once. Put the vdisks on the 2 TB NVMe, not the HDD array.
+
+Worth noting for later: Zen 2 is also the Steam Deck's CPU architecture, so CPU-side determinism
+results from this box are a closer proxy for the Deck than anything else available here.
 
 Still worth a `DECISIONS.md` entry: "cross-platform verification happens on Unraid x86_64 VMs, with
 these known gaps" is a standing decision that shapes M7 and M8, not just a finding.
