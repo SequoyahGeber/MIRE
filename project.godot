@@ -35,6 +35,7 @@ CraftingService="*res://autoload/crafting_service.gd"
 CraftingUI="*res://ui/crafting/crafting_ui.gd"
 CombatService="*res://autoload/combat_service.gd"
 EnemyWorld="*res://autoload/enemy_world.gd"
+DevLoadout="*res://core/dev/dev_loadout.gd"
 
 [display]
 

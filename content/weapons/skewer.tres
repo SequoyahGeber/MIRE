@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/weapon_def.gd" id="1_male7"]
+
+[resource]
+script = ExtResource("1_male7")
+item_id = &"skewer"
+display_name = "Skewer"
+wind_up_seconds = 0.18
+commit_seconds = 0.1
+recovery_seconds = 0.25
+range_m = 3.1
+arc_degrees = 104.0
+hitstop_seconds = 0.055
+shake_magnitude = 0.085
+shake_duration = 0.17

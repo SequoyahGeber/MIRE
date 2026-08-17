@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_arrow.png" id="1_d80us"]
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="2_7txkx"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/arrow_world.glb" id="3_utpvm"]
+
+[resource]
+script = ExtResource("2_7txkx")
+id = &"arrow"
+display_name = "Arrow"
+description = "Waiting for something to fire it."
+icon = ExtResource("1_d80us")
+stack_size = 64
+world_model = ExtResource("3_utpvm")

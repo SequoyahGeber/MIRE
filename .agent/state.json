@@ -1479,8 +1479,8 @@
     },
     "autoload/enemy_world.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T15:58:44+00:00",
-      "task": "2.10"
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
     },
     "autoload/enemy_world.gd.uid": {
       "agent": "dusk3",
@@ -1567,15 +1567,45 @@
       "at": "2026-08-17T01:24:51+00:00",
       "task": "F-029"
     },
+    "content/items/arrow.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
+    "content/items/cleaver.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
     "content/items/iron_ore.tres": {
       "agent": "kiln9",
       "at": "2026-08-17T04:31:26+00:00",
       "task": "2.1d"
     },
+    "content/items/iron_pickaxe.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
     "content/items/log.tres": {
       "agent": "kiln9",
       "at": "2026-08-17T04:31:26+00:00",
       "task": "2.1d"
+    },
+    "content/items/repair_hammer.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
+    "content/items/short_bow.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
+    "content/items/skewer.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
     },
     "content/items/stone.tres": {
       "agent": "kiln9",
@@ -1587,20 +1617,80 @@
       "at": "2026-08-17T04:31:26+00:00",
       "task": "2.1d"
     },
+    "content/items/stone_pickaxe.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
+    "content/items/wooden_axe.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
+    "content/items/wooden_pickaxe.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
     "content/recipes/stone_axe.tres": {
       "agent": "dusk3",
       "at": "2026-08-17T02:52:00+00:00",
       "task": "2.6"
+    },
+    "content/weapons/cleaver.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
+    "content/weapons/iron_pickaxe.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
+    "content/weapons/repair_hammer.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
+    "content/weapons/skewer.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
     },
     "content/weapons/stone_axe.tres": {
       "agent": "dusk3",
       "at": "2026-08-17T16:04:25+00:00",
       "task": "2.9"
     },
+    "content/weapons/stone_pickaxe.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
+    "content/weapons/wooden_axe.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
+    "content/weapons/wooden_pickaxe.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
     "core/dev/dev_launch.gd": {
       "agent": "vane",
       "at": "2026-08-16T22:59:02+00:00",
       "task": "F-023"
+    },
+    "core/dev/dev_loadout.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
+    "core/dev/dev_loadout.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
     },
     "core/events/event_bus.gd": {
       "agent": "dusk3",
@@ -1739,8 +1829,8 @@
     },
     "project.godot": {
       "agent": "dusk3",
-      "at": "2026-08-17T15:58:44+00:00",
-      "task": "2.10"
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
     },
     "systems/combat/weapon_def.gd": {
       "agent": "dusk3",
@@ -1941,6 +2031,16 @@
       "agent": "dusk3",
       "at": "2026-08-17T04:01:51+00:00",
       "task": "2.7"
+    },
+    "tools/dev_loadout_check.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
+    "tools/dev_loadout_check.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
     },
     "tools/enemy_check.gd": {
       "agent": "dusk3",
@@ -2181,6 +2281,16 @@
       "agent": "nettle",
       "at": "2026-08-17T01:24:51+00:00",
       "task": "F-029"
+    },
+    "tools/setup_tool_content.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
+    },
+    "tools/setup_tool_content.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:22:54+00:00",
+      "task": "2.14"
     },
     "tools/steam_cross_platform_check.gd": {
       "agent": "hollow",

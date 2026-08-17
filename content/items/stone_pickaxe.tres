@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_stone_pickaxe.png" id="1_vyipw"]
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="2_ceaxx"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/stone_pickaxe_world.glb" id="3_wimky"]
+
+[resource]
+script = ExtResource("2_ceaxx")
+id = &"stone_pickaxe"
+display_name = "Stone Pickaxe"
+description = "Heavy enough to break stone, and to be a poor weapon."
+icon = ExtResource("1_vyipw")
+category = 1
+stack_size = 1
+world_model = ExtResource("3_wimky")

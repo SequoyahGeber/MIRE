@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/weapon_def.gd" id="1_b1bpo"]
+
+[resource]
+script = ExtResource("1_b1bpo")
+item_id = &"wooden_axe"
+display_name = "Wooden Axe"
+wind_up_seconds = 0.21
+commit_seconds = 0.11
+recovery_seconds = 0.29
+range_m = 2.45
+damage = 4
+hitstop_seconds = 0.065
+shake_magnitude = 0.1
+shake_duration = 0.19

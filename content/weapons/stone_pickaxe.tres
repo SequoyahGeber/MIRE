@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/weapon_def.gd" id="1_b5xg2"]
+
+[resource]
+script = ExtResource("1_b5xg2")
+item_id = &"stone_pickaxe"
+display_name = "Stone Pickaxe"
+wind_up_seconds = 0.26
+commit_seconds = 0.13
+recovery_seconds = 0.36
+arc_degrees = 92.0
+damage = 5
+hitstop_seconds = 0.08
+shake_magnitude = 0.13

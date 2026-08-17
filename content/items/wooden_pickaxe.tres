@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_wooden_pickaxe.png" id="1_466da"]
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="2_nfvuo"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/wooden_pickaxe_world.glb" id="3_8q6gr"]
+
+[resource]
+script = ExtResource("2_nfvuo")
+id = &"wooden_pickaxe"
+display_name = "Wooden Pickaxe"
+description = "Better at rock than the rock is at it. Barely."
+icon = ExtResource("1_466da")
+category = 1
+stack_size = 1
+world_model = ExtResource("3_8q6gr")

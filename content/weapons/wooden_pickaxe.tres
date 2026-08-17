@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/weapon_def.gd" id="1_yq2ye"]
+
+[resource]
+script = ExtResource("1_yq2ye")
+item_id = &"wooden_pickaxe"
+display_name = "Wooden Pickaxe"
+wind_up_seconds = 0.23
+recovery_seconds = 0.32
+range_m = 2.5
+arc_degrees = 97.0
+damage = 4
+shake_magnitude = 0.115
+shake_duration = 0.2

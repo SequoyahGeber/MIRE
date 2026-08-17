@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_short_bow.png" id="1_uhe0b"]
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="2_xy7ha"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/short_bow_world.glb" id="3_axb2g"]
+
+[resource]
+script = ExtResource("2_xy7ha")
+id = &"short_bow"
+display_name = "Short Bow"
+description = "Ranged combat is not built yet. It is a stick with intent."
+icon = ExtResource("1_uhe0b")
+category = 2
+stack_size = 1
+world_model = ExtResource("3_axb2g")

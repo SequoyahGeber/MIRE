@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/weapon_def.gd" id="1_rh7iq"]
+
+[resource]
+script = ExtResource("1_rh7iq")
+item_id = &"iron_pickaxe"
+display_name = "Iron Pickaxe"
+wind_up_seconds = 0.29
+commit_seconds = 0.14
+recovery_seconds = 0.4
+range_m = 2.75
+arc_degrees = 88.0
+damage = 6
+hitstop_seconds = 0.095
+shake_magnitude = 0.15
+shake_duration = 0.25

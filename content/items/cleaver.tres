@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_cleaver.png" id="1_nwlxh"]
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="2_an173"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/cleaver_world.glb" id="3_wldif"]
+
+[resource]
+script = ExtResource("2_an173")
+id = &"cleaver"
+display_name = "Cleaver"
+description = "Fast, mean, and not remotely a tool."
+icon = ExtResource("1_nwlxh")
+category = 2
+stack_size = 1
+world_model = ExtResource("3_wldif")

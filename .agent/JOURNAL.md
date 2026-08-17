@@ -1178,3 +1178,15 @@ Mechanical work complete; the GATE IS NOT PASSED and only Sequoyah can pass it. 
 Files: `systems/enemies/enemy.gd`, `content/enemies/crawler.tres`, `content/weapons/stone_axe.tres`, `tools/setup_enemy_content.gd`, `tools/setup_combat_content.gd`, `tools/combat_feel_check.gd`, `tools/combat_feel_check.gd.uid`
 
 Commit at time of writing: `6b0d5a8`
+
+---
+
+### HANDOFF · 2.14 · dusk3 · 2026-08-17T16:22:54+00:00
+
+**Playtest with friends. Write down what they said, not what you think they meant.**
+
+PLAYABILITY ONLY - the actual playtest with friends is untouched and still the task. What landed: a starting loadout (10 tools + resources, 8 stacks moved onto the hotbar so you can swing immediately), 9 generated ItemDefs and 7 WeaponDefs from the A-004 catalog, and ambient crawler spawning (4, respawning, at the East Mire nest marker) with an offline bootstrap that bakes the level navmesh - 2529 polygons - because pressing Play opens no session and nothing called bake_navigation. Verified: dev_loadout_check 16/16 against the REAL main scene; enemy, combat, crafting, inventory, inventory_ui, crafting_ui, combat_feel, verify_setup all 0 failures. One trap worth knowing: DevLoadout must stay gated on get_tree().current_scene, or it grants inside every --script harness and four checks fail on a non-empty inventory. Weapon numbers are derived, not tuned - 2.9 owns them.
+
+Files: `tools/setup_tool_content.gd`, `tools/setup_tool_content.gd.uid`, `core/dev/dev_loadout.gd`, `core/dev/dev_loadout.gd.uid`, `autoload/enemy_world.gd`, `project.godot`, `tools/dev_loadout_check.gd`, `tools/dev_loadout_check.gd.uid`, `content/items/wooden_axe.tres`, `content/items/wooden_pickaxe.tres`, `content/items/stone_pickaxe.tres`, `content/items/iron_pickaxe.tres`, `content/items/cleaver.tres`, `content/items/skewer.tres`, `content/items/short_bow.tres`, `content/items/arrow.tres`, `content/items/repair_hammer.tres`, `content/weapons/wooden_axe.tres`, `content/weapons/wooden_pickaxe.tres`, `content/weapons/stone_pickaxe.tres`, `content/weapons/iron_pickaxe.tres`, `content/weapons/cleaver.tres`, `content/weapons/skewer.tres`, `content/weapons/repair_hammer.tres`
+
+Commit at time of writing: `01be471`

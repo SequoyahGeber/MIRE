@@ -25,6 +25,20 @@ const NAV_AGENT_HEIGHT_M: float = 0.7
 const NAV_MAX_CLIMB_M: float = 0.6
 const NAV_MAX_SLOPE_DEG: float = 46.0
 const NAV_CELL_SIZE_M: float = 0.25
+## Grace before the first bake/spawn, so the level has entered the tree. Short enough that crawlers
+## are there by the time you have finished looking around.
+const BOOTSTRAP_DELAY_SEC: float = 0.75
+
+## Ambient spawning: enough crawlers to make the world not empty, and nothing more. This is NOT task
+## 2.12's wave director — there is no day/night gate, no scaling with Cycle, no despawn at dawn. It
+## exists because the map had a nest marker and no enemies, and 2.12 is expected to turn it off and
+## take over.
+@export var ambient_enabled: bool = true
+@export_range(0, 24, 1) var ambient_population: int = 4
+@export_range(1.0, 60.0, 0.5) var ambient_respawn_seconds: float = 12.0
+## Spread around the marker, so four crawlers do not stack in one spot.
+@export_range(0.0, 20.0, 0.5) var ambient_scatter_m: float = 4.0
+@export var ambient_enemy: StringName = &"crawler"
 
 signal enemy_spawned(enemy: Node3D)
 signal enemy_died(enemy_id: StringName, instigator_peer_id: int, position: Vector3)
@@ -36,9 +50,16 @@ var _spawner: MultiplayerSpawner
 var _region: NavigationRegion3D
 var _next_index: int = 1
 var _nav_polygon_count: int = 0
+var _ambient_accumulator: float = 0.0
+## Seeded, never randi(): every peer boots the same registry, and a spawn scatter that differs per
+## machine is the kind of thing that looks fine until it does not (AGENTS.md).
+var _ambient_rng := RandomNumberGenerator.new()
+var _bootstrapped: bool = false
+var _bootstrap_elapsed: float = 0.0
 
 
 func _ready() -> void:
+	_ambient_rng.seed = 0x4352414d  # "CRAM"
 	_load_defs()
 	_build_replication_nodes()
 	var transport: Node = get_node_or_null(^"/root/NetTransport")
@@ -46,7 +67,125 @@ func _ready() -> void:
 		transport.get("server_started").connect(_on_session_opened)
 		transport.get("connected_to_host").connect(_on_session_opened)
 		transport.get("disconnected").connect(_on_disconnected)
+	_register_commands()
 	MireLog.info(&"content", "loaded %d enemy definition(s)" % defs.size())
+
+
+func _register_commands() -> void:
+	var console: Node = get_node_or_null(^"/root/DebugConsole")
+	if console == null or not console.has_method("register"):
+		return
+	console.call("register", &"spawn", _cmd_spawn, "spawn [enemy_id] [count] — spawn near you")
+	console.call("register", &"killall", _cmd_killall, "killall — despawn every enemy")
+	console.call("register", &"enemies", _cmd_enemies, "enemies — how many are alive, and where")
+
+
+func _cmd_spawn(args: PackedStringArray) -> String:
+	if not _owns_spawning():
+		return "only the host can spawn enemies"
+	var id := StringName(args[0]) if not args.is_empty() else ambient_enemy
+	if not has_def(id):
+		return "no such enemy '%s' — have: %s" % [id, ", ".join(defs.keys())]
+	var count: int = maxi(int(args[1]) if args.size() > 1 else 1, 1)
+	# In front of the local player, not at the origin — a crawler spawned across the map is
+	# indistinguishable from one that did not spawn.
+	var origin: Vector3 = Vector3.ZERO
+	for node: Node in get_tree().get_nodes_in_group(&"players"):
+		var player := node as Node3D
+		if player != null and player.is_multiplayer_authority():
+			origin = player.global_position + player.global_transform.basis.z * -5.0
+			break
+	var made: int = 0
+	for i: int in count:
+		if host_spawn(id, origin + Vector3(float(i) * 1.5, 0.0, 0.0)) != null:
+			made += 1
+	return "spawned %d %s" % [made, id]
+
+
+func _cmd_killall(_args: PackedStringArray) -> String:
+	if not _owns_spawning():
+		return "only the host can despawn enemies"
+	var count: int = live_count()
+	host_despawn_all()
+	return "despawned %d" % count
+
+
+func _cmd_enemies(_args: PackedStringArray) -> String:
+	var points: Array[Vector3] = ambient_spawn_points()
+	return "%d alive, ambient %s (population %d), %d spawn point(s), navmesh %d polygons" % [
+		live_count(), "on" if ambient_enabled else "off", ambient_population,
+		points.size(), _nav_polygon_count
+	]
+
+
+## Host-only, and the whole ambient loop. Deliberately coarse: it tops the population back up on a
+## timer rather than tracking individual deaths, so a crawler killed at any moment is replaced within
+## `ambient_respawn_seconds` and nothing has to be unsubscribed.
+func _physics_process(delta: float) -> void:
+	if not ambient_enabled or not _owns_spawning() or defs.is_empty():
+		return
+
+	# Pressing Play opens no session, so nothing calls _on_session_opened and neither the bake nor
+	# the first spawn would ever happen — which is exactly how the game shipped with a nest marker
+	# and no crawlers. The short delay is for the level: an autoload's _ready runs before
+	# get_tree().current_scene exists, so there is nothing to bake from yet.
+	if not _bootstrapped:
+		_bootstrap_elapsed += delta
+		if _bootstrap_elapsed < BOOTSTRAP_DELAY_SEC:
+			return
+		_bootstrapped = true
+		if _nav_polygon_count == 0:
+			bake_navigation()
+		top_up_ambient()
+		return
+
+	_ambient_accumulator += delta
+	if _ambient_accumulator < ambient_respawn_seconds:
+		return
+	_ambient_accumulator = 0.0
+	top_up_ambient()
+
+
+## Spawns up to `ambient_population` living enemies at the level's enemy_spawn markers. Returns how
+## many it added. Public so a console command and task 2.12 can both drive it.
+func top_up_ambient() -> int:
+	if not _owns_spawning():
+		return 0
+	var points: Array[Vector3] = ambient_spawn_points()
+	if points.is_empty():
+		return 0
+	var added: int = 0
+	# live_count() alone, NOT live_count() + added: a spawned enemy joins the `enemies` group inside
+	# its own _ready, so it is already counted by the next iteration. Adding both stopped the loop at
+	# half the population.
+	var attempts: int = 0
+	while live_count() < ambient_population and attempts < ambient_population:
+		attempts += 1
+		var origin: Vector3 = points[_ambient_rng.randi_range(0, points.size() - 1)]
+		var offset := Vector3(
+			_ambient_rng.randf_range(-ambient_scatter_m, ambient_scatter_m),
+			0.0,
+			_ambient_rng.randf_range(-ambient_scatter_m, ambient_scatter_m)
+		)
+		if host_spawn(ambient_enemy, origin + offset) == null:
+			break
+		added += 1
+	return added
+
+
+## Every `enemy_spawn` marker the level published. `playtest_hollow.gd` puts them in
+## `playtest_hollow_marker` with a `kind` meta; an empty result means the level has no nest and
+## ambient spawning quietly does nothing rather than dropping crawlers at the origin.
+func ambient_spawn_points() -> Array[Vector3]:
+	var points: Array[Vector3] = []
+	for node: Node in get_tree().get_nodes_in_group(&"playtest_hollow_marker"):
+		var marker := node as Node3D
+		if marker == null:
+			continue
+		if String(marker.get_meta(&"kind", "")) != "enemy_spawn":
+			continue
+		points.append(marker.global_position)
+	return points
 
 
 func get_def(id: StringName) -> Resource:
@@ -172,12 +311,16 @@ func _load_defs() -> void:
 
 
 func _on_session_opened() -> void:
-	if _owns_spawning():
-		bake_navigation()
+	# Re-bake for the session's level rather than trusting whatever the offline bootstrap found.
+	_bootstrapped = false
+	_bootstrap_elapsed = 0.0
+	_nav_polygon_count = 0
 
 
 func _on_disconnected() -> void:
 	host_despawn_all()
+	_bootstrapped = false
+	_bootstrap_elapsed = 0.0
 
 
 ## Bakes one region from whatever static collision the current scene has. Synchronous on purpose:

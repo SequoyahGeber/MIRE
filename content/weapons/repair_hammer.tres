@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/weapon_def.gd" id="1_qbn0l"]
+
+[resource]
+script = ExtResource("1_qbn0l")
+item_id = &"repair_hammer"
+display_name = "Repair Hammer"
+wind_up_seconds = 0.32
+commit_seconds = 0.15
+recovery_seconds = 0.43
+range_m = 2.85
+arc_degrees = 83.0
+damage = 7
+hitstop_seconds = 0.105
+shake_magnitude = 0.17
+shake_duration = 0.27

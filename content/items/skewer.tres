@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_skewer.png" id="1_yk17t"]
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="2_wae5a"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/skewer_world.glb" id="3_e6g7n"]
+
+[resource]
+script = ExtResource("2_wae5a")
+id = &"skewer"
+display_name = "Skewer"
+description = "All reach, no weight. Poke first."
+icon = ExtResource("1_yk17t")
+category = 2
+stack_size = 1
+world_model = ExtResource("3_e6g7n")
