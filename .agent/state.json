@@ -65,16 +65,6 @@
       "at": "2026-08-17T23:24:30+00:00",
       "task": "2.1j"
     },
-    "core/dev/dev_launch.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T23:23:15+00:00",
-      "task": "F-054"
-    },
-    "docs/FINDINGS.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T23:23:15+00:00",
-      "task": "F-054"
-    },
     "tools/blender/audit_all_sides.py": {
       "agent": "tine18",
       "at": "2026-08-17T19:30:14+00:00",
@@ -119,11 +109,6 @@
       "agent": "tine18",
       "at": "2026-08-17T19:30:14+00:00",
       "task": "2.1j"
-    },
-    "tools/lan_launch_check.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T23:23:15+00:00",
-      "task": "F-054"
     }
   },
   "in_flight": {
@@ -155,16 +140,6 @@
       ],
       "notes": [],
       "started": "2026-08-17T19:30:14+00:00"
-    },
-    "F-054": {
-      "agent": "flint5",
-      "files": [
-        "core/dev/dev_launch.gd",
-        "docs/FINDINGS.md",
-        "tools/lan_launch_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-17T23:23:15+00:00"
     }
   },
   "recent": {
@@ -1728,6 +1703,11 @@
       "at": "2026-08-17T16:22:54+00:00",
       "task": "2.14"
     },
+    "core/dev/dev_launch.gd": {
+      "agent": "flint5",
+      "at": "2026-08-17T23:25:50+00:00",
+      "task": "F-054"
+    },
     "core/dev/dev_loadout.gd": {
       "agent": "flint5",
       "at": "2026-08-17T19:28:04+00:00",
@@ -1805,8 +1785,8 @@
     },
     "docs/FINDINGS.md": {
       "agent": "flint5",
-      "at": "2026-08-17T23:15:28+00:00",
-      "task": "F-053"
+      "at": "2026-08-17T23:25:50+00:00",
+      "task": "F-054"
     },
     "docs/NEXT.md": {
       "agent": "flint5",
@@ -2222,6 +2202,11 @@
       "agent": "reed16",
       "at": "2026-08-17T17:01:21+00:00",
       "task": "2.1d"
+    },
+    "tools/lan_launch_check.gd": {
+      "agent": "flint5",
+      "at": "2026-08-17T23:25:50+00:00",
+      "task": "F-054"
     },
     "tools/mapgen/hollow_layout.py": {
       "agent": "pike",
@@ -3704,9 +3689,11 @@
       "title": "Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why"
     },
     "F-054": {
+      "done_at": "2026-08-17T23:25:50+00:00",
+      "done_by": "flint5",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "There is no launch path into LAN mode, so a second physical machine cannot join at all"
     }

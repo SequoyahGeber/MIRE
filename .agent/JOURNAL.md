@@ -1481,3 +1481,15 @@ Implemented systems/waves/wave_spawner.gd and tools/wave_spawner_check.gd under 
 Files: `systems/waves/wave_spawner.gd`, `tools/wave_spawner_check.gd`
 
 Commit at time of writing: `bb59ab3`
+
+---
+
+### DONE · F-054 · flint5 · 2026-08-17T23:25:50+00:00
+
+**There is no launch path into LAN mode, so a second physical machine cannot join at all**
+
+DevLaunch gained --lan-host, --lan-join=<address> and --port=<n>, reusing the existing retry path so a client started before its host still connects. Verified by new tools/lan_launch_check.gd: two real processes over this machine's routable LAN IP 192.168.50.176, 10/10 assertions, 0 engine errors — peers [1, 962503467], both players spawned on the host, clean departure observed. LOCAL and STEAM paths untouched.
+
+Files: `core/dev/dev_launch.gd`, `docs/FINDINGS.md`, `tools/lan_launch_check.gd`
+
+Commit at time of writing: `915c881`

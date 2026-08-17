@@ -2,15 +2,23 @@ extends Node
 ## DevLaunch — autoload. Turns "two connected windows" into one keypress (task 1.3).
 ##
 ## Reads the launch arguments and, in a debug build only, either hosts or joins a
-## LOCAL or STEAM session at startup. WITH NO ARGUMENTS IT DOES NOTHING AT ALL — this file
+## LOCAL, LAN or STEAM session at startup. WITH NO ARGUMENTS IT DOES NOTHING AT ALL — this file
 ## ships in the retail build, and a stray auto-host would open a socket on every
 ## player's machine that they never asked for.
 ##
 ## Accepted arguments (either form works, see "How to launch" below):
 ##     -- host      or  --host      host a LOCAL session
 ##     -- client    or  --client    join a LOCAL session on loopback
+##     --lan-host                   host a LAN session, bound to every interface
+##     --lan-join=<address>         join a LAN session at that host's IP or hostname
+##     --port=<n>                   override the port for LAN/LOCAL (default NetConfig.DEFAULT_PORT)
 ##     --steam-host                 create a friends-only Steam lobby and host in it
 ##     --steam-join=<lobby_id>      join a MIRE Steam lobby by its id
+##
+## LAN is the cheap cross-platform test (F-054): it exercises admission, the version handshake,
+## spawning and replication over real sockets between real machines, with no Steam accounts and —
+## unlike Steam, whose callback pump ticks once per rendered frame (F-025) — no dependence on the
+## client's frame rate. That makes it the right instrument for a correctness run on a slow VM.
 ##
 ## AUTHORITY: none of its own. It only calls NetTransport, which is infrastructure.
 ## The session it opens is host-authoritative per docs/ARCHITECTURE.md §2.2.
@@ -37,11 +45,17 @@ const RETRY_DELAY_SECONDS: float = 0.4
 
 enum Role { NONE, HOST, CLIENT }
 
-enum LaunchMode { LOCAL, STEAM }
+enum LaunchMode { LOCAL, LAN, STEAM }
 
 var _role: Role = Role.NONE
 var _mode: LaunchMode = LaunchMode.LOCAL
 var _steam_lobby_id: String = ""
+## Where a LAN client dials. No default on purpose: LOCAL means loopback, LAN means "a machine you
+## have to name", and silently falling back to 127.0.0.1 would turn a typo'd address into a
+## confusing local session that looks like it worked.
+var _lan_address: String = ""
+## -1 means "whatever NetTransport resolves", i.e. NetConfig.DEFAULT_PORT.
+var _port: int = -1
 var _join_attempts: int = 0
 var _connected: bool = false
 
@@ -101,9 +115,26 @@ func _parse_launch() -> void:
 			_role = Role.CLIENT
 			_mode = LaunchMode.STEAM
 			_steam_lobby_id = args[index + 1]
+		elif arg == "--lan-host":
+			_role = Role.HOST
+			_mode = LaunchMode.LAN
+		elif arg.begins_with("--lan-join="):
+			_role = Role.CLIENT
+			_mode = LaunchMode.LAN
+			_lan_address = arg.trim_prefix("--lan-join=").strip_edges()
+		elif arg == "--lan-join" and index + 1 < args.size():
+			_role = Role.CLIENT
+			_mode = LaunchMode.LAN
+			_lan_address = args[index + 1].strip_edges()
+		elif arg.begins_with("--port="):
+			_port = arg.trim_prefix("--port=").strip_edges().to_int()
 
 	if _mode == LaunchMode.STEAM and _role == Role.CLIENT and _steam_lobby_id.is_empty():
 		MireLog.error(NetConfig.LOG_CHANNEL, "[DevLaunch] --steam-join needs a lobby id")
+		_role = Role.NONE
+
+	if _mode == LaunchMode.LAN and _role == Role.CLIENT and _lan_address.is_empty():
+		MireLog.error(NetConfig.LOG_CHANNEL, "[DevLaunch] --lan-join needs the host's address")
 		_role = Role.NONE
 
 
@@ -118,8 +149,12 @@ func _start_host() -> void:
 		if steam_err != OK:
 			MireLog.error(NetConfig.LOG_CHANNEL, "%s SteamLobby.host_session() failed: %s" % [_tag(), error_string(steam_err)])
 		return
-	MireLog.info(NetConfig.LOG_CHANNEL, "%s hosting LOCAL session on port %d" % [_tag(), NetConfig.DEFAULT_PORT])
-	var err: Error = NetTransport.host(NetConfig.Mode.LOCAL)
+	var mode: NetConfig.Mode = NetConfig.Mode.LAN if _mode == LaunchMode.LAN else NetConfig.Mode.LOCAL
+	var port: int = _port if _port > 0 else NetConfig.DEFAULT_PORT
+	MireLog.info(NetConfig.LOG_CHANNEL, "%s hosting %s session on port %d" % [
+		_tag(), NetConfig.MODE_NAMES[mode], port
+	])
+	var err: Error = NetTransport.host(mode, _port)
 	if err != OK:
 		MireLog.error(NetConfig.LOG_CHANNEL, "%s host() failed: %s" % [_tag(), error_string(err)])
 
@@ -135,9 +170,14 @@ func _attempt_join() -> void:
 		if steam_err != OK:
 			MireLog.error(NetConfig.LOG_CHANNEL, "%s SteamLobby.join_by_id() failed: %s" % [_tag(), error_string(steam_err)])
 		return
+	var mode: NetConfig.Mode = NetConfig.Mode.LAN if _mode == LaunchMode.LAN else NetConfig.Mode.LOCAL
 	_join_attempts += 1
-	MireLog.info(NetConfig.LOG_CHANNEL, "%s joining LOCAL session (attempt %d/%d)" % [_tag(), _join_attempts, MAX_JOIN_ATTEMPTS])
-	var err: Error = NetTransport.join(NetConfig.Mode.LOCAL, "")
+	MireLog.info(NetConfig.LOG_CHANNEL, "%s joining %s session at %s (attempt %d/%d)" % [
+		_tag(), NetConfig.MODE_NAMES[mode],
+		_lan_address if mode == NetConfig.Mode.LAN else NetConfig.LOOPBACK_ADDRESS,
+		_join_attempts, MAX_JOIN_ATTEMPTS
+	])
+	var err: Error = NetTransport.join(mode, _lan_address, _port)
 	if err != OK:
 		_retry_join("join() returned %s" % error_string(err))
 

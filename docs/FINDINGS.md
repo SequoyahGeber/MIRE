@@ -562,6 +562,30 @@ sections get the same rewording when that claim releases.
 
 ---
 
+### F-054 · There is no launch path into LAN mode, so a second physical machine cannot join at all
+
+**Area:** netcode/tooling · **Severity:** medium — it blocks the cheapest cross-platform test we
+have · **Found:** 2026-08-17 by flint5, setting up a two-VM session for Sequoyah
+
+`NetConfig.Mode.LAN` exists, `NetTransport.host(Mode.LAN)` binds to `ANY_ADDRESS` and
+`join(Mode.LAN, "<ip>")` works — the transport half has been finished since 1.2. But `DevLaunch`
+parses only `--host`/`--client` (LOCAL, hard-coded loopback) and `--steam-host`/`--steam-join`.
+**Nothing in the shipped project can open or join a LAN session**, so testing against a real second
+machine requires either Steam (three accounts, a friends list, and F-025's frame-rate-bound callback
+pump on a 2–3 FPS VM) or hand-editing code at test time.
+
+That is backwards for the thing being tested. ENet over a routable address exercises the entire
+gameplay stack — admission, version handshake, spawning, replication, harvest/inventory/craft/combat
+— with no Steam prerequisites and no dependence on render frame rate, which is exactly what a
+correctness-only VM session wants. D-030 already argued the cheap-testing case for Steam console
+commands; this is the same argument one layer down, and cheaper still.
+
+Fix: `--lan-host`, `--lan-join=<address>`, and a shared `--port=<n>` in `DevLaunch`, reusing the
+existing retry path so a client started before its host still connects (which is also half of F-024's
+complaint).
+
+---
+
 ## Resolved
 
 ### F-052 · The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it — **fixed**
