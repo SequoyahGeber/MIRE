@@ -1116,3 +1116,25 @@ Item 1 fixed: SteamLobby's run_callbacks and NetTransport's connect watchdog mov
 Files: `autoload/steam_lobby.gd`, `autoload/net_transport.gd`
 
 Commit at time of writing: `6f28dd9`
+
+---
+
+### DONE · F-017 · dusk3 · 2026-08-17T04:51:38+00:00
+
+**A brand-new script still ships without its `.uid`, because the sidecar does not exist yet**
+
+ship now runs a Godot import when its staged set has a .gd with no sidecar, then stages what appeared. Skips with a warning if Godot is running (D-031), not found (GODOT= names it), or the import fails - ship must never fail for environmental reasons. Verified end-to-end with a throwaway probe script.
+
+Files: `.agent/bin/agent`
+
+Commit at time of writing: `cbd3357`
+
+---
+
+### DONE · F-034 · dusk3 · 2026-08-17T04:51:38+00:00
+
+**`agent ship` silently drops directory claims and appends stray argv to the commit message**
+
+All three parts fixed: directory claims expand to their changed files at ship time, path-shaped arguments are rejected before any state is loaded instead of being glued onto the commit subject, and the sign-off prints how many files were left alone and how many it truncated. The fourth observation (shipping a claimed doc that held another agent's edits) is working practice, not a ship bug - recorded as such.
+
+Commit at time of writing: `cbd3357`

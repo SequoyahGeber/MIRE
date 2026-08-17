@@ -3,9 +3,9 @@
   "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
-      "agent": "vane",
-      "at": "2026-08-16T23:24:50+00:00",
-      "task": "F-026"
+      "agent": "dusk3",
+      "at": "2026-08-17T04:51:38+00:00",
+      "task": "F-017"
     },
     ".gitignore": {
       "agent": "flint",
@@ -3183,9 +3183,11 @@
       "title": "A brand-new `class_name` is not resolvable by bare identifier in a `--script` main loop"
     },
     "F-017": {
+      "done_at": "2026-08-17T04:51:38+00:00",
+      "done_by": "dusk3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "A brand-new script still ships without its `.uid`, because the sidecar does not exist yet"
     },
@@ -3313,9 +3315,11 @@
       "title": "Inventory hotbar aliases eight backpack slots instead of adding eight separate slots"
     },
     "F-034": {
+      "done_at": "2026-08-17T04:51:38+00:00",
+      "done_by": "dusk3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`agent ship` silently drops directory claims and appends stray argv to the commit message"
     },

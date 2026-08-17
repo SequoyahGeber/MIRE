@@ -732,6 +732,77 @@ def _branch():
     return _git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip() or "main"
 
 
+GODOT_CANDIDATES = (
+    os.environ.get("GODOT", ""),
+    "/Applications/Godot.app/Contents/MacOS/Godot",
+    "godot",
+    "godot4",
+)
+
+
+def _find_godot():
+    """The pinned engine, or None. Never fatal: Codex on another machine may not have it."""
+    for c in GODOT_CANDIDATES:
+        if not c:
+            continue
+        if os.path.sep in c:
+            if os.path.isfile(c) and os.access(c, os.X_OK):
+                return c
+            continue
+        try:
+            if subprocess.run(["which", c], capture_output=True, text=True).returncode == 0:
+                return c
+        except FileNotFoundError:
+            pass
+    return None
+
+
+def _generate_missing_uids(to_stage, changed):
+    """Run one Godot import if any staged .gd has no .uid, and return a refreshed `changed` list.
+
+    F-017. `ship` can only stage what is on disk, and Godot writes the sidecar at import time — so a
+    task whose work never required an import shipped a script with no .uid, every time. Harmless
+    while .tscn files reference scripts by `path=`, and not harmless the first time Godot rewrites
+    those as `uid://`. This is the same command that rebuilds the global class cache (F-016), so it
+    fixes both failures rather than leaving a per-milestone sweep to catch them.
+    """
+    orphans = [f for f in to_stage
+               if f.endswith(".gd") and not os.path.exists(os.path.join(ROOT, f + ".uid"))]
+    if not orphans:
+        return changed
+
+    try:
+        editor_up = subprocess.run(["pgrep", "-fl", "Godot"],
+                                   capture_output=True, text=True).returncode == 0
+    except FileNotFoundError:
+        editor_up = True  # Never fail open on the safety check.
+    if editor_up:
+        print("  %s⚠ %d script(s) have no .uid, and Godot is running — skipping import (D-031).%s"
+              % (C["y"], len(orphans), C["x"]))
+        print("  %sClose the editor and re-run ship, or the sidecars ship late (F-017).%s"
+              % (C["dim"], C["x"]))
+        return changed
+
+    godot = _find_godot()
+    if godot is None:
+        print("  %s⚠ %d script(s) have no .uid and Godot was not found — sidecars will ship late.%s"
+              % (C["y"], len(orphans), C["x"]))
+        print("  %sSet GODOT=/path/to/Godot to let ship generate them (F-017).%s"
+              % (C["dim"], C["x"]))
+        return changed
+
+    print("  %sgenerating .uid for %d new script(s) — one Godot import…%s"
+          % (C["dim"], len(orphans), C["x"]))
+    r = subprocess.run([godot, "--headless", "--path", ROOT, "--import"],
+                       cwd=ROOT, capture_output=True, text=True)
+    if r.returncode != 0:
+        print("  %s⚠ import failed (%d) — sidecars will ship late.%s" % (C["y"], r.returncode, C["x"]))
+        return changed
+
+    return [l[3:].strip().strip('"').split(" -> ")[-1]
+            for l in _git("status", "--porcelain", "-uall").stdout.splitlines() if l.strip()]
+
+
 def cmd_ship(args):
     """Commit and push exactly this task's files, then print the completion notice.
 
@@ -743,6 +814,20 @@ def cmd_ship(args):
     alone does not decide what a commit contains (F-014)."""
     if not args:
         die('usage: agent ship <task-id> ["commit message"]')
+
+    # F-034: `claim` takes a file list, so passing one to `ship` too is the natural guess — and it
+    # used to be silently glued onto the commit subject, which is how 340d9a3 ended up titled
+    # "Art: rebuild the tool set and add inventory icons tools/blender/build_tool_weapon_set.py …".
+    # Reject anything that looks like a path rather than prose. A message word is essentially never
+    # an existing path, so this catches the mistake without breaking an unquoted message.
+    pathish = [a for a in args[1:]
+               if os.path.exists(os.path.join(ROOT, a)) or (("/" in a) and not a.endswith(("/", ".")))]
+    if pathish:
+        die("ship takes a task id and a MESSAGE, not a file list — it commits what the task claimed.\n"
+            "  Looks like a path: %s\n"
+            '  Did you mean:  agent ship %s "your message here"'
+            % (", ".join(pathish[:4]), args[0]))
+
     me = whoami()
     st = load()
     tid = _require_task(st, args[0], "ship")
@@ -757,7 +842,16 @@ def cmd_ship(args):
     changed = [l[3:].strip().strip('"').split(" -> ")[-1]
                for l in _git("status", "--porcelain", "-uall").stdout.splitlines() if l.strip()]
 
+    # F-034: a claim on a directory is legal — `agent check` and the pre-commit hook both honour it —
+    # but it names nothing in `changed`, which lists files. 2.1d claimed `assets/tools_weapons` and
+    # `assets/icons`, shipped a third of its work, and still printed a clean sign-off. Expand every
+    # claimed directory to the changed files underneath it.
+    claimed_dirs = [p for p in mine if os.path.isdir(os.path.join(ROOT, p))]
+    expanded = [f for f in changed
+                if any(f.startswith(d.rstrip("/") + "/") for d in claimed_dirs)]
+
     to_stage = [f for f in mine if f in changed]
+    to_stage += expanded
     to_stage += [f for f in changed if f.startswith(".agent/")]
     # Godot writes a .uid sidecar beside every script and regenerates it when the script
     # changes. Nobody authors one and nobody claims one, so it never appeared in any task's
@@ -767,6 +861,13 @@ def cmd_ship(args):
     to_stage = list(dict.fromkeys(to_stage))
     if not to_stage:
         die("nothing to ship for %s — no changed files from this task" % tid)
+
+    # F-017: the line above can only stage a sidecar that already exists. Godot writes .uid at IMPORT
+    # time, so a task that never had a reason to import ships before the file exists at all — which
+    # is why every new script left one behind. Import now, then look again.
+    changed = _generate_missing_uids(to_stage, changed)
+    to_stage += [f + ".uid" for f in list(to_stage) if f + ".uid" in changed]
+    to_stage = list(dict.fromkeys(to_stage))
 
     others = [f for f in changed if f not in to_stage]
 
@@ -790,9 +891,16 @@ def cmd_ship(args):
     ok("committed %d file(s) — %s" % (len(to_stage), _head()))
 
     if others:
-        print("  %sLeft alone (not this task's, may belong to another agent):%s" % (C["dim"], C["x"]))
+        # F-034: the count and the truncation both matter. "Left alone" used to print at most eight
+        # paths with no total, so a run that shipped a third of its work read exactly like one that
+        # shipped all of it.
+        print("  %sLeft alone — %d file(s), not this task's, may belong to another agent:%s"
+              % (C["dim"], len(others), C["x"]))
         for f in others[:8]:
             print("      %s· %s%s" % (C["dim"], f, C["x"]))
+        if len(others) > 8:
+            print("      %s… and %d more — run 'git status' to see them all%s"
+                  % (C["dim"], len(others) - 8, C["x"]))
 
     if not _git("remote").stdout.strip():
         print("\n%s⚠ No git remote configured — committed locally, nothing pushed.%s"
