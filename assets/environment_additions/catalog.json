@@ -1,0 +1,40 @@
+[
+  {
+    "name": "mire_mossy_boulder",
+    "family": "boulder",
+    "width_m": 2.42,
+    "depth_m": 1.578,
+    "height_m": 1.812,
+    "mesh_parts": 19,
+    "polygons": 848,
+    "materials": [
+      "MIRE_Adapted_Lichen",
+      "MIRE_Adapted_Moss_Dark",
+      "MIRE_Adapted_Moss_Light",
+      "MIRE_Adapted_Moss_Mid",
+      "MIRE_Adapted_Rock_Blue",
+      "MIRE_Adapted_Rock_Crack",
+      "MIRE_Adapted_Rock_Dark",
+      "MIRE_Adapted_Rock_Light",
+      "MIRE_Adapted_Rock_Mid"
+    ]
+  },
+  {
+    "name": "mire_broadleaf_tree",
+    "family": "tree",
+    "width_m": 4.476,
+    "depth_m": 2.877,
+    "height_m": 5.747,
+    "mesh_parts": 39,
+    "polygons": 872,
+    "materials": [
+      "MIRE_Adapted_Bark",
+      "MIRE_Adapted_Bark_Dark",
+      "MIRE_Adapted_Bark_Light",
+      "MIRE_Adapted_Leaf_Deep",
+      "MIRE_Adapted_Leaf_Light",
+      "MIRE_Adapted_Leaf_Mid",
+      "MIRE_Adapted_Leaf_Warm"
+    ]
+  }
+]

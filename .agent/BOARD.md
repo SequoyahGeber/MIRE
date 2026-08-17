@@ -8,12 +8,8 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | ember | 2026-08-17 00:55 | `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `tools/blender/build_ward_set.py`, `assets/source/ward_set.blend`, `assets/wards`, `tools/blender/build_adapted_nature_set.py`, `assets/source/adapted_nature_set.blend`, `assets/source/reference_imports`, `assets/environment_additions` |
-| **2.1h** Polish `playtest_hollow`: open the spawn-camp gates, enlarge and better connect the zones, improve grass, and add complementary ground-cover variants | pike | 2026-08-17 01:02 | `docs/ROADMAP.md`, `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `tools/blender/build_playtest_hollow.py`, `assets/source/playtest_hollow.blend`, `assets/maps/playtest_hollow.glb`, `assets/maps/preview/playtest_hollow_preview.png`, `tools/playtest_hollow_check.gd`, `tools/blender/build_mire_map_kit.py`, `assets/source/mire_map_kit.blend`, `assets/environment`, `assets/environment/README.md`, `assets/environment/catalog.json`, `assets/environment/exports/grass_clump_a.glb`, `assets/environment/exports/grass_clump_b.glb`, `assets/environment/exports/grass_clump_c.glb`, `assets/environment/exports/grass_clump_d.glb`, `assets/environment/exports/grass_clump_e.glb`, `assets/environment/exports/grass_clump_f.glb`, `assets/environment/exports/grass_meadow_a.glb`, `assets/environment/exports/grass_meadow_b.glb`, `assets/environment/exports/grass_meadow_c.glb`, `assets/environment/exports/grass_meadow_d.glb`, `assets/environment/exports/grass_tuft_a.glb`, `assets/environment/exports/grass_tuft_b.glb`, `assets/environment/exports/grass_tuft_c.glb`, `assets/environment/exports/grass_tuft_d.glb`, `assets/environment/exports/grass_seedhead_a.glb`, `assets/environment/exports/grass_seedhead_b.glb`, `assets/environment/exports/grass_seedhead_c.glb`, `assets/environment/exports/grass_seedhead_d.glb`, `assets/environment/exports/fence_gate.glb`, `assets/environment/preview/ground_cover_preview.png`, `assets/environment/preview/mire_map_kit_preview.png` |
-
-**2.1d notes:**
-- Claimed A-007 Ward batch: eight exports (foundation, healthy, damaged, critical, destroyed, repair scaffolding, boundary post, activation crystal). State meshes will share a foundation anchor so swaps do not drift; presentation only, no collision or gameplay authority.
-- Sequoyah added two user-supplied generated nature models. Keeping them as a separately catalogued adapted-nature addition, not inflating A-007's count. Rock: remove preview artifacts/black underside, rescale and recolor to MIRE stone/moss. Tree: remove the display island and loose dressing, retain/rework trunk canopy and roots, normalize to portable ground-centred scale.
+| **2.1h** Polish `playtest_hollow`: open the spawn-camp gates, enlarge and better connect the zones, improve grass, and add complementary ground-cover variants | pike | 2026-08-17 01:02 | `docs/ROADMAP.md`, `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `tools/blender/build_playtest_hollow.py`, `assets/source/playtest_hollow.blend`, `assets/maps/playtest_hollow.glb`, `assets/maps/preview/playtest_hollow_preview.png`, `tools/playtest_hollow_check.gd`, `tools/blender/build_mire_map_kit.py`, `assets/source/mire_map_kit.blend`, `assets/environment`, `assets/environment/README.md`, `assets/environment/catalog.json`, `assets/environment/exports/grass_clump_a.glb`, `assets/environment/exports/grass_clump_b.glb`, `assets/environment/exports/grass_clump_c.glb`, `assets/environment/exports/grass_clump_d.glb`, `assets/environment/exports/grass_clump_e.glb`, `assets/environment/exports/grass_clump_f.glb`, `assets/environment/exports/grass_meadow_a.glb`, `assets/environment/exports/grass_meadow_b.glb`, `assets/environment/exports/grass_meadow_c.glb`, `assets/environment/exports/grass_meadow_d.glb`, `assets/environment/exports/grass_tuft_a.glb`, `assets/environment/exports/grass_tuft_b.glb`, `assets/environment/exports/grass_tuft_c.glb`, `assets/environment/exports/grass_tuft_d.glb`, `assets/environment/exports/grass_seedhead_a.glb`, `assets/environment/exports/grass_seedhead_b.glb`, `assets/environment/exports/grass_seedhead_c.glb`, `assets/environment/exports/grass_seedhead_d.glb`, `assets/environment/exports/fence_gate.glb`, `assets/environment/preview/ground_cover_preview.png`, `assets/environment/preview/mire_map_kit_preview.png`, `tools/playtest_hollow_render_check.gd`, `tools/playtest_hollow_render_check.gd.uid` |
+| **F-029** Task 2.3's harvest lifecycle is not wired into the playable map | nettle | 2026-08-17 01:14 | `autoload/harvest_world.gd`, `autoload/harvest_world.gd.uid`, `project.godot`, `content/items/log.tres`, `content/items/stone.tres`, `content/items/iron_ore.tres`, `content/harvestables/tree.tres`, `content/harvestables/stone_node.tres`, `content/harvestables/iron_node.tres`, `tools/setup_harvest_content.gd`, `tools/setup_harvest_content.gd.uid`, `tools/harvest_world_check.gd`, `tools/harvest_world_check.gd.uid`, `docs/FINDINGS.md`, `docs/NEXT.md` |
 
 **2.1h notes:**
 - Authority: static visuals/collision and foliage VFX are client-local. Fence trap is in shared asset/layout data, not playtest_hollow.tscn: fence_gate has a full-width collider and closed-leaf mesh. Keep the scene untouched so visual and collision consumers stay aligned.
@@ -22,7 +18,7 @@
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███░░░░░░░` 6/21 | 15 |
+| Findings | `███░░░░░░░` 6/23 | 17 |
 | M0 | `██████████` 11/11 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████░░░░░░` 8/21 | 13 |
@@ -71,6 +67,8 @@
 | ⬜ | **F-024** A shipped LAN first join has no retry — only the debug launcher does | todo |
 | ⬜ | **F-025** Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake | todo |
 | ⬜ | **F-027** `NetInterest.configure()` does not keep its returned filter alive | todo |
+| ⬜ | **F-028** `verify_setup.gd` hard-codes the superseded greybox main scene | todo |
+| 🔵 | **F-029** Task 2.3's harvest lifecycle is not wired into the playable map | in_flight |
 
 ## Done
 

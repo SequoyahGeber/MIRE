@@ -120,11 +120,6 @@
       "at": "2026-08-17T01:10:53+00:00",
       "task": "2.1h"
     },
-    "assets/environment_additions": {
-      "agent": "ember",
-      "at": "2026-08-17T01:02:46+00:00",
-      "task": "2.1d"
-    },
     "assets/maps/playtest_hollow.glb": {
       "agent": "pike",
       "at": "2026-08-17T01:02:46+00:00",
@@ -134,11 +129,6 @@
       "agent": "pike",
       "at": "2026-08-17T01:02:46+00:00",
       "task": "2.1h"
-    },
-    "assets/source/adapted_nature_set.blend": {
-      "agent": "ember",
-      "at": "2026-08-17T01:02:46+00:00",
-      "task": "2.1d"
     },
     "assets/source/mire_map_kit.blend": {
       "agent": "pike",
@@ -150,40 +140,65 @@
       "at": "2026-08-17T01:02:46+00:00",
       "task": "2.1h"
     },
-    "assets/source/reference_imports": {
-      "agent": "ember",
-      "at": "2026-08-17T01:02:46+00:00",
-      "task": "2.1d"
+    "autoload/harvest_world.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:14:31+00:00",
+      "task": "F-029"
     },
-    "assets/source/ward_set.blend": {
-      "agent": "ember",
-      "at": "2026-08-17T00:55:02+00:00",
-      "task": "2.1d"
+    "autoload/harvest_world.gd.uid": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:14:31+00:00",
+      "task": "F-029"
     },
-    "assets/wards": {
-      "agent": "ember",
-      "at": "2026-08-17T00:55:02+00:00",
-      "task": "2.1d"
+    "content/harvestables/iron_node.tres": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:14:31+00:00",
+      "task": "F-029"
     },
-    "docs/ASSET_TRACKER.md": {
-      "agent": "ember",
-      "at": "2026-08-17T00:55:02+00:00",
-      "task": "2.1d"
+    "content/harvestables/stone_node.tres": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:14:31+00:00",
+      "task": "F-029"
     },
-    "docs/DELEGATION.md": {
-      "agent": "ember",
-      "at": "2026-08-17T00:55:02+00:00",
-      "task": "2.1d"
+    "content/harvestables/tree.tres": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:14:31+00:00",
+      "task": "F-029"
+    },
+    "content/items/iron_ore.tres": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:14:31+00:00",
+      "task": "F-029"
+    },
+    "content/items/log.tres": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:14:31+00:00",
+      "task": "F-029"
+    },
+    "content/items/stone.tres": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:14:31+00:00",
+      "task": "F-029"
+    },
+    "docs/FINDINGS.md": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:14:31+00:00",
+      "task": "F-029"
+    },
+    "docs/NEXT.md": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:14:31+00:00",
+      "task": "F-029"
     },
     "docs/ROADMAP.md": {
       "agent": "pike",
       "at": "2026-08-17T01:02:46+00:00",
       "task": "2.1h"
     },
-    "tools/blender/build_adapted_nature_set.py": {
-      "agent": "ember",
-      "at": "2026-08-17T01:02:46+00:00",
-      "task": "2.1d"
+    "project.godot": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:14:31+00:00",
+      "task": "F-029"
     },
     "tools/blender/build_mire_map_kit.py": {
       "agent": "pike",
@@ -195,10 +210,15 @@
       "at": "2026-08-17T01:02:46+00:00",
       "task": "2.1h"
     },
-    "tools/blender/build_ward_set.py": {
-      "agent": "ember",
-      "at": "2026-08-17T00:55:02+00:00",
-      "task": "2.1d"
+    "tools/harvest_world_check.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:14:31+00:00",
+      "task": "F-029"
+    },
+    "tools/harvest_world_check.gd.uid": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:14:31+00:00",
+      "task": "F-029"
     },
     "tools/mapgen/hollow_layout.py": {
       "agent": "pike",
@@ -210,6 +230,26 @@
       "at": "2026-08-17T01:02:46+00:00",
       "task": "2.1h"
     },
+    "tools/playtest_hollow_render_check.gd": {
+      "agent": "pike",
+      "at": "2026-08-17T01:15:12+00:00",
+      "task": "2.1h"
+    },
+    "tools/playtest_hollow_render_check.gd.uid": {
+      "agent": "pike",
+      "at": "2026-08-17T01:15:12+00:00",
+      "task": "2.1h"
+    },
+    "tools/setup_harvest_content.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:14:31+00:00",
+      "task": "F-029"
+    },
+    "tools/setup_harvest_content.gd.uid": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:14:31+00:00",
+      "task": "F-029"
+    },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "pike",
       "at": "2026-08-17T01:02:46+00:00",
@@ -217,33 +257,6 @@
     }
   },
   "in_flight": {
-    "2.1d": {
-      "agent": "ember",
-      "files": [
-        "docs/ASSET_TRACKER.md",
-        "docs/DELEGATION.md",
-        "tools/blender/build_ward_set.py",
-        "assets/source/ward_set.blend",
-        "assets/wards",
-        "tools/blender/build_adapted_nature_set.py",
-        "assets/source/adapted_nature_set.blend",
-        "assets/source/reference_imports",
-        "assets/environment_additions"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-17T00:55:02+00:00",
-          "by": "ember",
-          "text": "Claimed A-007 Ward batch: eight exports (foundation, healthy, damaged, critical, destroyed, repair scaffolding, boundary post, activation crystal). State meshes will share a foundation anchor so swaps do not drift; presentation only, no collision or gameplay authority."
-        },
-        {
-          "at": "2026-08-17T01:02:46+00:00",
-          "by": "ember",
-          "text": "Sequoyah added two user-supplied generated nature models. Keeping them as a separately catalogued adapted-nature addition, not inflating A-007's count. Rock: remove preview artifacts/black underside, rescale and recolor to MIRE stone/moss. Tree: remove the display island and loose dressing, retain/rework trunk canopy and roots, normalize to portable ground-centred scale."
-        }
-      ],
-      "started": "2026-08-17T00:55:02+00:00"
-    },
     "2.1h": {
       "agent": "pike",
       "files": [
@@ -280,7 +293,9 @@
         "assets/environment/exports/grass_seedhead_d.glb",
         "assets/environment/exports/fence_gate.glb",
         "assets/environment/preview/ground_cover_preview.png",
-        "assets/environment/preview/mire_map_kit_preview.png"
+        "assets/environment/preview/mire_map_kit_preview.png",
+        "tools/playtest_hollow_render_check.gd",
+        "tools/playtest_hollow_render_check.gd.uid"
       ],
       "notes": [
         {
@@ -290,6 +305,28 @@
         }
       ],
       "started": "2026-08-17T01:02:46+00:00"
+    },
+    "F-029": {
+      "agent": "nettle",
+      "files": [
+        "autoload/harvest_world.gd",
+        "autoload/harvest_world.gd.uid",
+        "project.godot",
+        "content/items/log.tres",
+        "content/items/stone.tres",
+        "content/items/iron_ore.tres",
+        "content/harvestables/tree.tres",
+        "content/harvestables/stone_node.tres",
+        "content/harvestables/iron_node.tres",
+        "tools/setup_harvest_content.gd",
+        "tools/setup_harvest_content.gd.uid",
+        "tools/harvest_world_check.gd",
+        "tools/harvest_world_check.gd.uid",
+        "docs/FINDINGS.md",
+        "docs/NEXT.md"
+      ],
+      "notes": [],
+      "started": "2026-08-17T01:14:31+00:00"
     }
   },
   "recent": {
@@ -1073,6 +1110,61 @@
       "at": "2026-08-16T18:01:56+00:00",
       "task": "2.1b"
     },
+    "assets/environment_additions": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/environment_additions/README.md": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/environment_additions/catalog.json": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/environment_additions/exports/mire_broadleaf_tree.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/environment_additions/exports/mire_broadleaf_tree.glb.import": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/environment_additions/exports/mire_mossy_boulder.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/environment_additions/exports/mire_mossy_boulder.glb.import": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/environment_additions/preview/adapted_nature_preview.png": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/environment_additions/preview/adapted_nature_preview.png.import": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/environment_additions/preview/adapted_nature_scale_preview.png": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/environment_additions/preview/adapted_nature_scale_preview.png.import": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
     "assets/harvestables/README.md": {
       "agent": "ember",
       "at": "2026-08-16T18:32:13+00:00",
@@ -1343,6 +1435,11 @@
       "at": "2026-08-16T17:40:04+00:00",
       "task": "2.1"
     },
+    "assets/source/adapted_nature_set.blend": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
     "assets/source/crafting_stations.blend": {
       "agent": "ember",
       "at": "2026-08-16T18:50:26+00:00",
@@ -1377,6 +1474,141 @@
       "agent": "reed",
       "at": "2026-08-16T19:00:05+00:00",
       "task": "2.1e"
+    },
+    "assets/source/reference_imports": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/source/reference_imports/low_poly_rock_asset.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/source/reference_imports/low_poly_tree_asset.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/source/ward_set.blend": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/README.md": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/catalog.json": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_activation_crystal.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_activation_crystal.glb.import": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_boundary_post.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_boundary_post.glb.import": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_critical.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_critical.glb.import": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_damaged.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_damaged.glb.import": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_destroyed.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_destroyed.glb.import": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_foundation.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_foundation.glb.import": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_healthy.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_healthy.glb.import": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_repair_scaffolding.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/exports/ward_repair_scaffolding.glb.import": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/preview/ward_preview.png": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/preview/ward_preview.png.import": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/preview/ward_scale_preview.png": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards/preview/ward_scale_preview.png.import": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
     },
     "autoload/environment_vfx.gd": {
       "agent": "wick",
@@ -1489,8 +1721,8 @@
       "task": "4.0b"
     },
     "docs/ASSET_TRACKER.md": {
-      "agent": "gale",
-      "at": "2026-08-16T23:59:35+00:00",
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
       "task": "2.1d"
     },
     "docs/DECISIONS.md": {
@@ -1499,9 +1731,9 @@
       "task": "2.1g"
     },
     "docs/DELEGATION.md": {
-      "agent": "wick",
-      "at": "2026-08-17T00:47:21+00:00",
-      "task": "2.1g"
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
     },
     "docs/DESIGN.md": {
       "agent": "kiln",
@@ -1598,6 +1830,11 @@
       "at": "2026-08-16T08:27:33+00:00",
       "task": "1.9"
     },
+    "tools/blender/build_adapted_nature_set.py": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
     "tools/blender/build_crafting_stations.py": {
       "agent": "ember",
       "at": "2026-08-16T18:50:26+00:00",
@@ -1637,6 +1874,11 @@
       "agent": "reed",
       "at": "2026-08-16T19:00:05+00:00",
       "task": "2.1e"
+    },
+    "tools/blender/build_ward_set.py": {
+      "agent": "ember",
+      "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
     },
     "tools/check_determinism_ops.gd": {
       "agent": "claude",
@@ -2113,7 +2355,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
@@ -2861,6 +3103,20 @@
       "status": "todo",
       "tier": "F",
       "title": "`NetInterest.configure()` does not keep its returned filter alive"
+    },
+    "F-028": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`verify_setup.gd` hard-codes the superseded greybox main scene"
+    },
+    "F-029": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Task 2.3's harvest lifecycle is not wired into the playable map"
     }
   },
   "version": 1
