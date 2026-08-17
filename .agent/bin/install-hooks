@@ -6,7 +6,7 @@ HOOK="$ROOT/.git/hooks/pre-commit"
 
 cat > "$HOOK" <<'EOF'
 #!/usr/bin/env bash
-# Blocks commits that violate file claims or the human-only scene rule.
+# Blocks commits that violate file claims or the closed-editor Godot-file rule.
 # Bypass with: git commit --no-verify
 exec "$(git rev-parse --show-toplevel)/.agent/bin/agent" check
 EOF

@@ -1502,11 +1502,6 @@
       "at": "2026-08-16T17:16:32+00:00",
       "task": "1.8"
     },
-    "autoload/registry.gd": {
-      "agent": "claude",
-      "at": "2026-08-16T02:59:39+00:00",
-      "task": "2.2"
-    },
     "autoload/steam_lobby.gd": {
       "agent": "vane",
       "at": "2026-08-16T22:59:02+00:00",
@@ -1684,23 +1679,13 @@
     },
     "project.godot": {
       "agent": "dusk3",
-      "at": "2026-08-17T02:52:00+00:00",
-      "task": "2.6"
+      "at": "2026-08-17T04:01:51+00:00",
+      "task": "2.7"
     },
     "steam_appid.txt": {
       "agent": "steam",
       "at": "2026-08-16T06:52:27+00:00",
       "task": "1.1"
-    },
-    "systems/crafting/recipe_def.gd": {
-      "agent": "claude",
-      "at": "2026-08-16T02:59:39+00:00",
-      "task": "2.2"
-    },
-    "systems/crafting/recipe_ingredient.gd": {
-      "agent": "claude",
-      "at": "2026-08-16T02:59:39+00:00",
-      "task": "2.2"
     },
     "systems/harvesting/harvestable.gd": {
       "agent": "nettle",
@@ -1731,11 +1716,6 @@
       "agent": "nettle",
       "at": "2026-08-17T01:48:54+00:00",
       "task": "2.4"
-    },
-    "systems/inventory/item_def.gd": {
-      "agent": "claude",
-      "at": "2026-08-16T02:59:39+00:00",
-      "task": "2.2"
     },
     "tools/bench_replication.gd": {
       "agent": "load",
@@ -1814,13 +1794,33 @@
     },
     "tools/crafting_net_check.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T02:52:00+00:00",
-      "task": "2.6"
+      "at": "2026-08-17T04:01:51+00:00",
+      "task": "2.7"
     },
     "tools/crafting_net_check.gd.uid": {
       "agent": "dusk3",
       "at": "2026-08-17T02:52:00+00:00",
       "task": "2.6"
+    },
+    "tools/crafting_ui_check.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:01:51+00:00",
+      "task": "2.7"
+    },
+    "tools/crafting_ui_check.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:01:51+00:00",
+      "task": "2.7"
+    },
+    "tools/crafting_ui_render_check.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:01:51+00:00",
+      "task": "2.7"
+    },
+    "tools/crafting_ui_render_check.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:01:51+00:00",
+      "task": "2.7"
     },
     "tools/enemy_crawler_check.gd": {
       "agent": "gale",
@@ -2031,6 +2031,16 @@
       "agent": "lobby",
       "at": "2026-08-16T07:53:23+00:00",
       "task": "1.4"
+    },
+    "ui/crafting/crafting_ui.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:01:51+00:00",
+      "task": "2.7"
+    },
+    "ui/crafting/crafting_ui.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:01:51+00:00",
+      "task": "2.7"
     },
     "ui/debug/net_debug_panel.gd": {
       "agent": "netui",
@@ -2472,9 +2482,11 @@
       "title": "Crafting: recipe check, craft request \u2192 host validates \u2192 grants. One station (workbench)."
     },
     "2.7": {
+      "done_at": "2026-08-17T04:01:51+00:00",
+      "done_by": "dusk3",
       "est": "3",
       "milestone": "M2",
-      "status": "todo",
+      "status": "done",
       "tier": "T0",
       "title": "Crafting UI"
     },

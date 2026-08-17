@@ -32,6 +32,7 @@ HarvestWorld="*res://autoload/harvest_world.gd"
 InventoryService="*res://autoload/inventory_service.gd"
 InventoryUI="*res://ui/inventory/inventory_ui.gd"
 CraftingService="*res://autoload/crafting_service.gd"
+CraftingUI="*res://ui/crafting/crafting_ui.gd"
 
 [display]
 

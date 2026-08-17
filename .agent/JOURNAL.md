@@ -952,3 +952,19 @@ Notes along the way:
 Files: `autoload/crafting_service.gd`, `autoload/crafting_service.gd.uid`, `tools/setup_crafting_content.gd`, `tools/setup_crafting_content.gd.uid`, `content/items/stone_axe.tres`, `content/recipes/stone_axe.tres`, `tools/crafting_check.gd`, `tools/crafting_check.gd.uid`, `tools/crafting_net_check.gd`, `tools/crafting_net_check.gd.uid`, `core/net/net_version.gd`, `project.godot`, `docs/NEXT.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `6a4cb45`
+
+---
+
+### DONE · 2.7 · dusk3 · 2026-08-17T04:01:51+00:00
+
+**Crafting UI**
+
+CraftingUI autoload: interact-gated workbench panel, in-range prompt, per-ingredient have/need from the authoritative snapshot, and host-confirmed crafting with no prediction. One cursor UI at a time via blocks_gameplay_input (D-032); the panel closes itself when the player leaves station range. Verified on Godot 4.7.1: crafting_ui_check 46/46, crafting_ui_render_check at 1280x720 and 375x667, extended crafting_net_check 28/28 in two real ENet processes (client sees 'Waiting for the host...' then the host's verbatim accept/reject), and inherited crafting_check 32/32, inventory_ui_check 29/29, inventory_check all-pass.
+
+Notes along the way:
+- Authority: client-local presentation only. CraftingUI reads CraftingService's presentation helpers over immutable InventoryService snapshots and turns the craft button into request_craft(); the host revalidates recipe, station range and ingredients, and the panel renders craft_confirmed verbatim with no prediction.
+- A local host confirms INSIDE request_craft(), before the id it returns exists to compare against — so the confirmation handler gates on an in-flight flag, not an id. Gating on the id made the 'Waiting for the host' status overwrite an answer that had already arrived.
+
+Files: `ui/crafting/crafting_ui.gd`, `ui/crafting/crafting_ui.gd.uid`, `tools/crafting_ui_check.gd`, `tools/crafting_ui_check.gd.uid`, `tools/crafting_ui_render_check.gd`, `tools/crafting_ui_render_check.gd.uid`, `project.godot`, `tools/crafting_net_check.gd`
+
+Commit at time of writing: `51d75be`

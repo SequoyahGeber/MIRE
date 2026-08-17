@@ -26,10 +26,9 @@ ROADMAP = os.path.join(ROOT, "docs", "ROADMAP.md")
 
 STALE_HOURS = 12
 
-# Files only a human may change. Godot scene/resource files carry internal
-# sub-resource IDs and do not merge; see docs/DECISIONS.md D-007.
-HUMAN_ONLY_SUFFIXES = (".tscn", ".tres", ".import", ".godot")
-HUMAN_ONLY_PATHS = ("project.godot", "export_presets.cfg")
+# Godot-authored files require an exact claim and a closed editor (D-031).
+EDITOR_GUARDED_SUFFIXES = (".tscn", ".tres", ".import", ".godot")
+EDITOR_GUARDED_PATHS = ("project.godot", "export_presets.cfg")
 # Always safe for anyone to edit.
 FREE_PREFIXES = ("docs/", ".agent/", "CLAUDE.md", "AGENTS.md", "README.md", ".gitignore")
 # Engine-generated sidecars. Godot writes .uid files next to every script; they are not authored
@@ -342,7 +341,7 @@ def cmd_start(args):
 
     print("\n%s%s session started%s\n" % (C["b"], name, C["x"]))
     if name not in ("sequoyah", "human"):
-        print("  %sYou may edit .gd and doc files. Scene files (.tscn/.tres) are human-only.%s"
+        print("  %sYou may edit Godot files under exact claims, but only while Godot is closed (D-031).%s"
               % (C["dim"], C["x"]))
     if os.environ.get("MIRE_AGENT", "").strip().lower() not in ("", name):
         print("  %s⚠ MIRE_AGENT=%s is set and overrides this — you are acting as '%s'.%s"
@@ -825,8 +824,8 @@ def cmd_ship(args):
   %sThen tell Sequoyah only what is genuinely his:%s
     · what you verified, with the command and its actual output — not "it works"
     · whether it RUNS or only compiles, in those words
-    · what he must do in the Godot editor, if anything. You cannot touch .tscn/.tres,
-      so if a scene change is outstanding the feature does NOT work yet — say so
+    · what he must do in the Godot editor, if anything. Make required .tscn/.tres changes
+      yourself under exact claims while Godot is closed; hand off only genuine visual tuning
     · whether it is safe to start the next task
 """ % (C["b"], C["x"], C["b"], C["x"]))
 
@@ -834,7 +833,7 @@ def cmd_ship(args):
 # ---------------------------------------------------------------- check
 
 def cmd_check(args):
-    """Verify uncommitted changes respect claims and the human-only rule.
+    """Verify uncommitted changes respect claims and the closed-editor rule.
     Run by the pre-commit hook."""
     me = whoami(required=False) or "unknown"
     st = load()
@@ -870,6 +869,18 @@ def cmd_check(args):
 
     errors, warnings = [], []
     human = me in ("sequoyah", "human", "unknown")
+    editor_running = None
+
+    def godot_is_running():
+        nonlocal editor_running
+        if editor_running is None:
+            try:
+                editor_running = subprocess.run(
+                    ["pgrep", "-fl", "Godot"], capture_output=True, text=True
+                ).returncode == 0
+            except FileNotFoundError:
+                editor_running = True  # Never fail open when the safety check is unavailable.
+        return editor_running
 
     def in_grace(path):
         r = st.get("recent", {}).get(path)
@@ -879,16 +890,17 @@ def cmd_check(args):
         if any(f.startswith(p) for p in FREE_PREFIXES) or f.endswith(GENERATED_SUFFIXES):
             continue
         c = st["claims"].get(f)
-        is_human_only = f.endswith(HUMAN_ONLY_SUFFIXES) or f in HUMAN_ONLY_PATHS
-        if is_human_only and not human:
-            # Narrow, deliberate exception (D-012): an agent may touch a scene or
-            # project-config file only by claiming it *by name*. Drifting into one
-            # is still blocked; bootstrapping one on purpose is allowed and logged.
+        is_editor_guarded = f.endswith(EDITOR_GUARDED_SUFFIXES) or f in EDITOR_GUARDED_PATHS
+        if is_editor_guarded and not human:
+            # D-031: agents may edit Godot-authored files under an exact claim, but
+            # never while the editor is running because it may overwrite them.
             if (c and c["agent"] == me) or in_grace(f):
-                warnings.append("%s — scene/config file edited under an explicit claim (D-012)" % f)
+                if godot_is_running():
+                    errors.append("%s — Godot is running; close it before committing editor-guarded files (D-031)" % f)
+                else:
+                    warnings.append("%s — Godot file edited under an exact claim with the editor closed (D-031)" % f)
                 continue
-            errors.append("%s — scene/config file, human-only (D-007). Claim it by name "
-                          "if this is deliberate, or ask Sequoyah to wire it in the editor." % f)
+            errors.append("%s — Godot file requires an exact-file claim and a closed editor (D-031)" % f)
             continue
         if c and c["agent"] != me:
             # The human integrates everyone's work, so they may commit any file.

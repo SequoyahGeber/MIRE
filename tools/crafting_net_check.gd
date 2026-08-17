@@ -1,7 +1,10 @@
 extends SceneTree
 
-## Real two-process ENet proof for task 2.6. A client submits only a recipe id; the host derives its
-## peer/player, validates workbench range, atomically spends ingredients, and confirms the result.
+## Real two-process ENet proof for tasks 2.6 and 2.7. A client submits only a recipe id; the host
+## derives its peer/player, validates workbench range, atomically spends ingredients, and confirms
+## the result. 2.7 drives that request through the client's own CraftingUI button, so the panel's
+## waiting/confirmed states and its requirement counts are proven against a genuinely remote host
+## rather than a same-process one that answers before the call returns.
 
 const PORT: int = 47426
 const RESULT_PATH: String = "user://crafting_net_client.json"
@@ -12,6 +15,7 @@ var transport: Node
 var player_net: Node
 var inventory: Node
 var crafting: Node
+var crafting_ui: Node
 var child_pid: int = 0
 var confirmations: Dictionary[int, Dictionary] = {}
 
@@ -26,8 +30,15 @@ func _start() -> void:
 	player_net = root.get_node_or_null(^"PlayerNet")
 	inventory = root.get_node_or_null(^"InventoryService")
 	crafting = root.get_node_or_null(^"CraftingService")
-	if transport == null or player_net == null or inventory == null or crafting == null:
-		fail("NetTransport, PlayerNet, InventoryService, and CraftingService autoloads must exist")
+	crafting_ui = root.get_node_or_null(^"CraftingUI")
+	if (
+		transport == null
+		or player_net == null
+		or inventory == null
+		or crafting == null
+		or crafting_ui == null
+	):
+		fail("NetTransport, PlayerNet, InventoryService, CraftingService and CraftingUI must exist")
 		finish()
 		return
 	crafting.get("craft_confirmed").connect(_on_craft_confirmed)
@@ -94,6 +105,22 @@ func _run_driver() -> void:
 	check(int(inventory.call("host_count", NetConfig.HOST_PEER_ID, &"stone_axe")) == 0,
 		"client craft does not leak output to host inventory")
 
+	check(bool(result.get("ui_in_range", false)), "client panel sees its own workbench")
+	check(bool(result.get("ui_craftable_before", false)),
+		"client panel enables the recipe from the host's granted ingredients")
+	check(String(result.get("ui_requirements_before", "")) == "2/2 Log  ·  3/3 Stone",
+		"client panel counts requirements from the replicated snapshot")
+	check(String(result.get("ui_waiting_status", "")).contains("Waiting for the host"),
+		"client panel waits for a remote answer instead of predicting one")
+	check(String(result.get("ui_confirmed_status", "")).contains("crafted"),
+		"client panel shows the host's acceptance")
+	check(String(result.get("ui_requirements_after", "")) == "0/2 Log  ·  0/3 Stone",
+		"client panel spends requirements only on the host's snapshot")
+	check(not bool(result.get("ui_craftable_after", true)),
+		"client panel disables the spent recipe")
+	check(String(result.get("ui_rejected_status", "")).contains("missing ingredients"),
+		"client panel shows the host's rejection verbatim")
+
 	var child_exited: bool = await _until(
 		func() -> bool: return child_pid <= 0 or not OS.is_process_running(child_pid), TIMEOUT_SEC
 	)
@@ -147,7 +174,32 @@ func _client_drive() -> void:
 	_write_result({"connected": true, "peer_id": peer_id, "granted": true, "complete": false})
 	await create_timer(0.25).timeout
 
-	var craft_id: int = int(crafting.call("request_craft", &"stone_axe"))
+	# The client's own workbench sits on its own replicated player, so its panel presents the same
+	# proximity the host will independently revalidate.
+	# GDScript lambdas capture locals by value, so the poll must not try to assign one.
+	var player_spawned: bool = await _until(
+		func() -> bool: return _local_player() != null, TIMEOUT_SEC
+	)
+	var local_player: Node3D = _local_player()
+	if not player_spawned or local_player == null:
+		_write_result({"connected": true, "peer_id": peer_id, "error": "no replicated local player"})
+		finish()
+		return
+	var workbench := Node3D.new()
+	workbench.name = "ClientCheckWorkbench"
+	workbench.global_position = local_player.global_position
+	workbench.set_meta(&"asset", "station_workbench_primitive")
+	workbench.add_to_group(&"playtest_hollow_asset")
+	root.add_child(workbench)
+	crafting_ui.call("poll_station")
+
+	var ui_in_range: bool = bool(crafting_ui.call("is_station_in_range"))
+	var ui_craftable_before: bool = bool(crafting_ui.call("is_recipe_craftable", 0))
+	var ui_requirements_before: String = String(crafting_ui.call("recipe_requirement_text", 0))
+
+	var craft_id: int = int(crafting_ui.call("request_craft_at", 0))
+	# Captured before any answer can have arrived: a remote host cannot confirm inside the call.
+	var ui_waiting_status: String = String(crafting_ui.call("status_text"))
 	var craft_confirmed: bool = await _until(
 		func() -> bool: return confirmations.has(craft_id), TIMEOUT_SEC
 	)
@@ -164,7 +216,11 @@ func _client_drive() -> void:
 		TIMEOUT_SEC
 	)
 
-	var repeat_id: int = int(crafting.call("request_craft", &"stone_axe"))
+	var ui_confirmed_status: String = String(crafting_ui.call("status_text"))
+	var ui_requirements_after: String = String(crafting_ui.call("recipe_requirement_text", 0))
+	var ui_craftable_after: bool = bool(crafting_ui.call("is_recipe_craftable", 0))
+
+	var repeat_id: int = int(crafting_ui.call("request_craft_at", 0))
 	var repeat_confirmed: bool = await _until(
 		func() -> bool: return confirmations.has(repeat_id), TIMEOUT_SEC
 	)
@@ -182,6 +238,14 @@ func _client_drive() -> void:
 		"axe_count": int(inventory.call("local_count", &"stone_axe")),
 		"log_count": int(inventory.call("local_count", &"log")),
 		"stone_count": int(inventory.call("local_count", &"stone")),
+		"ui_in_range": ui_in_range,
+		"ui_craftable_before": ui_craftable_before,
+		"ui_craftable_after": ui_craftable_after,
+		"ui_requirements_before": ui_requirements_before,
+		"ui_requirements_after": ui_requirements_after,
+		"ui_waiting_status": ui_waiting_status,
+		"ui_confirmed_status": ui_confirmed_status,
+		"ui_rejected_status": String(crafting_ui.call("status_text")),
 	})
 	await create_timer(1.0).timeout
 	finish()
@@ -189,6 +253,14 @@ func _client_drive() -> void:
 
 func _on_craft_confirmed(request_id: int, accepted: bool, detail: String) -> void:
 	confirmations[request_id] = {"accepted": accepted, "detail": detail}
+
+
+func _local_player() -> Node3D:
+	for node: Node in root.get_tree().get_nodes_in_group(&"players"):
+		var player := node as Node3D
+		if player != null and player.is_multiplayer_authority():
+			return player
+	return null
 
 
 func _client_inventory_ready() -> bool:
