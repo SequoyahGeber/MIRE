@@ -507,11 +507,17 @@ def main() -> None:
     for record in records:
         set_visible(record, record["name"] in {"pickup_log", "pickup_iron_ingot", "pickup_stone",
                                                "pickup_mushroom", "pickup_berry", "pickup_coin"})
-    ref = box("Scale_Reference_Human", (-0.95, 0.0, 0.90), (0.34, 0.20, 1.80), mat("reference_blue"))
+    # The reference stands clear of the row rather than on top of it, and the
+    # frame holds all 1.80 m of it — a scale shot that crops the yardstick is
+    # how the old kit passed inspection at ten times life size.
+    ref = box("Scale_Reference_Human", (-1.95, 0.10, 0.90), (0.34, 0.20, 1.80), mat("reference_blue"))
     move_to_collection([ref], preview_collection)
-    camera.data.ortho_scale = 3.0
-    camera.location = (1.6, -3.4, 1.4)
-    look_at(camera, (-0.3, 0.0, 0.45))
+    # Vertical extent of an ortho frame is ortho_scale * (res_y / res_x) =
+    # 4.6 * 1000/1600 = 2.88 m; centred at z=0.95 that spans -0.49..2.39, so all
+    # 1.80 m of the reference is inside the frame with headroom.
+    camera.data.ortho_scale = 4.6
+    camera.location = (2.4, -4.2, 2.1)
+    look_at(camera, (-0.35, 0.0, 0.95))
     scene.render.filepath = str(PREVIEW_DIR / "pickups_scale_preview.png")
     bpy.ops.render.render(write_still=True)
 
