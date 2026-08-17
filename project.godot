@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="MIRE"
-run/main_scene="res://levels/greybox_test.tscn"
+run/main_scene="res://levels/playtest_hollow.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -28,6 +28,7 @@ PlayerNet="*res://autoload/player_net.gd"
 NetDebugPanel="*res://ui/debug/net_debug_panel.gd"
 TestMapProps="*res://world/gen/test_map_props.gd"
 NetInterp="*res://autoload/net_interp.gd"
+HarvestWorld="*res://autoload/harvest_world.gd"
 
 [display]
 

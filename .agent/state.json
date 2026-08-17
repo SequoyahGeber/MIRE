@@ -85,46 +85,6 @@
       "at": "2026-08-17T01:19:21+00:00",
       "task": "2.1d"
     },
-    "autoload/harvest_world.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:14:31+00:00",
-      "task": "F-029"
-    },
-    "autoload/harvest_world.gd.uid": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:14:31+00:00",
-      "task": "F-029"
-    },
-    "content/harvestables/iron_node.tres": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:14:31+00:00",
-      "task": "F-029"
-    },
-    "content/harvestables/stone_node.tres": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:14:31+00:00",
-      "task": "F-029"
-    },
-    "content/harvestables/tree.tres": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:14:31+00:00",
-      "task": "F-029"
-    },
-    "content/items/iron_ore.tres": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:14:31+00:00",
-      "task": "F-029"
-    },
-    "content/items/log.tres": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:14:31+00:00",
-      "task": "F-029"
-    },
-    "content/items/stone.tres": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:14:31+00:00",
-      "task": "F-029"
-    },
     "docs/ASSET_TRACKER.md": {
       "agent": "ember",
       "at": "2026-08-17T01:19:21+00:00",
@@ -135,50 +95,10 @@
       "at": "2026-08-17T01:19:21+00:00",
       "task": "2.1d"
     },
-    "docs/FINDINGS.md": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:14:31+00:00",
-      "task": "F-029"
-    },
-    "docs/NEXT.md": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:14:31+00:00",
-      "task": "F-029"
-    },
-    "project.godot": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:14:31+00:00",
-      "task": "F-029"
-    },
     "tools/blender/build_wellspring_set.py": {
       "agent": "ember",
       "at": "2026-08-17T01:19:21+00:00",
       "task": "2.1d"
-    },
-    "tools/harvest_world_check.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:14:31+00:00",
-      "task": "F-029"
-    },
-    "tools/harvest_world_check.gd.uid": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:14:31+00:00",
-      "task": "F-029"
-    },
-    "tools/harvest_world_net_check.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:18:24+00:00",
-      "task": "F-029"
-    },
-    "tools/setup_harvest_content.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:14:31+00:00",
-      "task": "F-029"
-    },
-    "tools/setup_harvest_content.gd.uid": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:14:31+00:00",
-      "task": "F-029"
     }
   },
   "in_flight": {
@@ -214,29 +134,6 @@
         }
       ],
       "started": "2026-08-17T01:19:21+00:00"
-    },
-    "F-029": {
-      "agent": "nettle",
-      "files": [
-        "autoload/harvest_world.gd",
-        "autoload/harvest_world.gd.uid",
-        "project.godot",
-        "content/items/log.tres",
-        "content/items/stone.tres",
-        "content/items/iron_ore.tres",
-        "content/harvestables/tree.tres",
-        "content/harvestables/stone_node.tres",
-        "content/harvestables/iron_node.tres",
-        "tools/setup_harvest_content.gd",
-        "tools/setup_harvest_content.gd.uid",
-        "tools/harvest_world_check.gd",
-        "tools/harvest_world_check.gd.uid",
-        "docs/FINDINGS.md",
-        "docs/NEXT.md",
-        "tools/harvest_world_net_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-17T01:14:31+00:00"
     }
   },
   "recent": {
@@ -1605,6 +1502,16 @@
       "at": "2026-08-17T00:47:21+00:00",
       "task": "2.1g"
     },
+    "autoload/harvest_world.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
+    },
+    "autoload/harvest_world.gd.uid": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
+    },
     "autoload/net_interp.gd": {
       "agent": "ash",
       "at": "2026-08-16T17:19:51+00:00",
@@ -1634,6 +1541,36 @@
       "agent": "vane",
       "at": "2026-08-16T22:59:02+00:00",
       "task": "F-023"
+    },
+    "content/harvestables/iron_node.tres": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
+    },
+    "content/harvestables/stone_node.tres": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
+    },
+    "content/harvestables/tree.tres": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
+    },
+    "content/items/iron_ore.tres": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
+    },
+    "content/items/log.tres": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
+    },
+    "content/items/stone.tres": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
     },
     "core/dev/dev_launch.gd": {
       "agent": "vane",
@@ -1696,9 +1633,9 @@
       "task": "F-019"
     },
     "core/util/mire_log.gd": {
-      "agent": "claude",
-      "at": "2026-08-16T02:59:39+00:00",
-      "task": "2.2"
+      "agent": "nettle",
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
     },
     "docs/ARCHITECTURE.md": {
       "agent": "slate",
@@ -1727,13 +1664,13 @@
     },
     "docs/FINDINGS.md": {
       "agent": "nettle",
-      "at": "2026-08-17T01:11:22+00:00",
-      "task": "2.3"
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
     },
     "docs/NEXT.md": {
       "agent": "nettle",
-      "at": "2026-08-17T01:11:22+00:00",
-      "task": "2.3"
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
     },
     "docs/ROADMAP.md": {
       "agent": "pike",
@@ -1766,9 +1703,9 @@
       "task": "F-019"
     },
     "project.godot": {
-      "agent": "wick",
-      "at": "2026-08-17T00:47:21+00:00",
-      "task": "2.1g"
+      "agent": "nettle",
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
     },
     "steam_appid.txt": {
       "agent": "steam",
@@ -1787,8 +1724,8 @@
     },
     "systems/harvesting/harvestable.gd": {
       "agent": "nettle",
-      "at": "2026-08-17T01:11:22+00:00",
-      "task": "2.3"
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
     },
     "systems/harvesting/harvestable.gd.uid": {
       "agent": "nettle",
@@ -1900,6 +1837,21 @@
       "at": "2026-08-16T19:12:29+00:00",
       "task": "F-019"
     },
+    "tools/harvest_world_check.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
+    },
+    "tools/harvest_world_check.gd.uid": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
+    },
+    "tools/harvest_world_net_check.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
+    },
     "tools/harvestable_check.gd": {
       "agent": "nettle",
       "at": "2026-08-17T01:11:22+00:00",
@@ -1984,6 +1936,16 @@
       "agent": "reed",
       "at": "2026-08-16T19:23:07+00:00",
       "task": "1.7"
+    },
+    "tools/setup_harvest_content.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
+    },
+    "tools/setup_harvest_content.gd.uid": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:24:51+00:00",
+      "task": "F-029"
     },
     "tools/steam_api_probe.gd": {
       "agent": "lobby",
@@ -3109,9 +3071,11 @@
       "title": "`verify_setup.gd` hard-codes the superseded greybox main scene"
     },
     "F-029": {
+      "done_at": "2026-08-17T01:24:51+00:00",
+      "done_by": "nettle",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Task 2.3's harvest lifecycle is not wired into the playable map"
     }

@@ -9,10 +9,12 @@
 
 **Milestone:** M2 · Vertical slice. **M1 closes at 13/14** — 1.12 is deferred, not outstanding
 (D-030). M0 is closed, 10/10.
-**Task 2.3 is code-complete:** `HarvestableDef` plus the host-authoritative `Harvestable` lifecycle
-passed both a 39-assertion headless check and a real two-process ENet depletion/respawn run. The
-system is not yet present in the playable map: harvestable `.tres` definitions and scene/runtime
-wiring are human-owned content work, and task 2.4 still has to consume `EventBus` yield events.
+**Task 2.3 is playable:** `HarvestableDef` plus the host-authoritative `Harvestable` lifecycle now
+wires the 11 intact tree/stone/iron props in `playtest_hollow` at runtime. Serialized definitions
+provide log, stone and iron-ore yields; the captured-mouse `attack` action raycasts up to 4 m and
+submits the component's host-validated request. Real-level offline and two-process ENet checks both
+passed depletion, one authoritative yield, collision disable, visual state and respawn. Task 2.4
+still has to consume `EventBus` yield events into inventory.
 **Last session:** 2026-08-16 — task 1.12 is in progress. All three pinned-engine/GodotSteam
 preflights passed and a real Mac-hosted Steam lobby reached three peers across macOS, Windows and
 Linux. Code-built remote-player debug capsules made all three spawns visible, and Linux movement
@@ -33,15 +35,16 @@ baking stays and the grid-A* fallback is dropped (D-016). Neither is uncondition
 **R1 (netcode) is AMBER**, which is not a blocker but does promote task 1.8 from optional to required;
 the numbers are under *What changed this session*.
 
-**The game runs.** Open the project and press Play: you spawn in a greybox level and can walk, sprint,
-jump and look around. **F3** overlay · **`~`** console · **Esc** releases the mouse.
+**The game runs.** Open the project and press Play: you spawn in Playtest Hollow and can walk, sprint,
+jump, look around, and attack intact resource props at close range. **F3** overlay · **`~`** console ·
+**Esc** releases the mouse.
 
-**Eleven autoloads live, verified headlessly 2026-08-16** on
+**Twelve autoloads live, verified headlessly 2026-08-16** on
 `4.7.1.stable.official.a13da4feb`: `NetSession` is ordered after `NetTransport` and before
 `DevLaunch`; `SteamLobby`, `PlayerNet`, `NetDebugPanel`, `TestMapProps`, and `NetInterp` follow their
-dependencies. Boot log reads
-`content: loaded 0 item(s), 0 recipe(s)` and `net: NetTransport ready (offline)` — 0/0 is correct,
-no `.tres` content is authored yet. `NetConfig` is a `class_name`, **not** an autoload; don't add it.
+dependencies, and `HarvestWorld` follows `Registry`. Boot log reads
+`content: loaded 3 item(s), 0 recipe(s)` and `net: NetTransport ready (offline)`. `NetConfig` is a
+`class_name`, **not** an autoload; don't add it.
 
 Godot 4.7.1-stable, pinned — don't upgrade mid-milestone. That build hash is also the determinism
 baseline in `ARCHITECTURE.md` §6a, so upgrading invalidates R6.

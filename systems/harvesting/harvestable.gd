@@ -33,7 +33,7 @@ var visual_state: int = 0:
 		if visual_state == value:
 			return
 		visual_state = value
-		_refresh_visual()
+		_schedule_visual_refresh()
 
 var active: bool = true:
 	set(value):
@@ -41,7 +41,7 @@ var active: bool = true:
 			return
 		active = value
 		_refresh_collision()
-		_refresh_visual()
+		_schedule_visual_refresh()
 
 var _configuration_valid: bool = false
 var _collision_body: CollisionObject3D
@@ -49,6 +49,7 @@ var _collision_layer: int = 0
 var _collision_mask: int = 0
 var _visual: Node3D
 var _sync: MultiplayerSynchronizer
+var _visual_refresh_scheduled: bool = false
 var _respawn_remaining: float = 0.0
 var _last_request_msec: Dictionary[int, int] = {}
 
@@ -93,6 +94,9 @@ func host_apply_damage(amount: int, instigator_peer_id: int) -> bool:
 
 	if health == 0:
 		_deplete(instigator_peer_id)
+	# Host calls retain immediate presentation semantics for signals/checks. Network replication may
+	# assign visual_state and active back-to-back, so their setters coalesce into one deferred rebuild.
+	_flush_visual_refresh()
 	return true
 
 
@@ -106,6 +110,7 @@ func host_respawn() -> bool:
 	visual_state = 0
 	active = true
 	_last_request_msec.clear()
+	_flush_visual_refresh()
 	respawned.emit()
 	return true
 
@@ -248,6 +253,20 @@ func _refresh_visual() -> void:
 		return
 	_visual.name = VISUAL_NODE_NAME
 	add_child(_visual)
+
+
+func _schedule_visual_refresh() -> void:
+	if _visual_refresh_scheduled:
+		return
+	_visual_refresh_scheduled = true
+	call_deferred("_flush_visual_refresh")
+
+
+func _flush_visual_refresh() -> void:
+	if not _visual_refresh_scheduled:
+		return
+	_visual_refresh_scheduled = false
+	_refresh_visual()
 
 
 func _validate_configuration() -> bool:

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="HarvestableDef" format=3]
+
+[ext_resource type="PackedScene" path="res://assets/harvestables/exports/stone_node_intact.glb" id="1_wg3mi"]
+[ext_resource type="PackedScene" path="res://assets/harvestables/exports/stone_node_cracked.glb" id="2_3wsxp"]
+[ext_resource type="PackedScene" path="res://assets/harvestables/exports/stone_node_depleted.glb" id="3_3t04n"]
+[ext_resource type="Script" path="res://systems/harvesting/harvestable_def.gd" id="4_cwdwb"]
+
+[resource]
+script = ExtResource("4_cwdwb")
+id = &"stone_node"
+yield_item_id = &"stone"
+yield_amount = 3
+respawn_seconds = 90.0
+active_state_scenes = Array[PackedScene]([ExtResource("1_wg3mi"), ExtResource("2_3wsxp")])
+depleted_scene = ExtResource("3_3t04n")

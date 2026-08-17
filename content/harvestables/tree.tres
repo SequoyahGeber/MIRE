@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="HarvestableDef" format=3]
+
+[ext_resource type="PackedScene" path="res://assets/harvestables/exports/harvest_tree_intact.glb" id="1_ke5cw"]
+[ext_resource type="PackedScene" path="res://assets/harvestables/exports/harvest_tree_damaged_a.glb" id="2_ld30c"]
+[ext_resource type="PackedScene" path="res://assets/harvestables/exports/harvest_tree_damaged_b.glb" id="3_8hs26"]
+[ext_resource type="PackedScene" path="res://assets/harvestables/exports/harvest_tree_depleted_stump.glb" id="4_6e77h"]
+[ext_resource type="Script" path="res://systems/harvesting/harvestable_def.gd" id="5_f51r6"]
+
+[resource]
+script = ExtResource("5_f51r6")
+id = &"tree"
+yield_item_id = &"log"
+yield_amount = 3
+respawn_seconds = 120.0
+active_state_scenes = Array[PackedScene]([ExtResource("1_ke5cw"), ExtResource("2_ld30c"), ExtResource("3_8hs26")])
+depleted_scene = ExtResource("4_6e77h")

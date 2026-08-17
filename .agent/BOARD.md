@@ -9,7 +9,6 @@
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | ember | 2026-08-17 01:19 | `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `tools/blender/build_wellspring_set.py`, `assets/source/wellspring_set.blend`, `assets/wellsprings/README.md`, `assets/wellsprings/catalog.json`, `assets/wellsprings/exports/wellspring_distant_monolith.glb`, `assets/wellsprings/exports/wellspring_base.glb`, `assets/wellsprings/exports/wellspring_crystal.glb`, `assets/wellsprings/exports/wellspring_basin.glb`, `assets/wellsprings/exports/wellspring_roots.glb`, `assets/wellsprings/exports/wellspring_uncapped.glb`, `assets/wellsprings/exports/wellspring_capped.glb`, `assets/wellsprings/exports/wellspring_recorrupting.glb`, `assets/wellsprings/exports/wellspring_corrupted.glb`, `assets/wellsprings/exports/wellspring_ritual_pedestal.glb`, `assets/wellsprings/exports/wellspring_boundary_stones.glb`, `assets/wellsprings/exports/wellspring_guardian_platform.glb`, `assets/wellsprings/preview/wellspring_preview.png`, `assets/wellsprings/preview/wellspring_scale_preview.png` |
-| **F-029** Task 2.3's harvest lifecycle is not wired into the playable map | nettle | 2026-08-17 01:14 | `autoload/harvest_world.gd`, `autoload/harvest_world.gd.uid`, `project.godot`, `content/items/log.tres`, `content/items/stone.tres`, `content/items/iron_ore.tres`, `content/harvestables/tree.tres`, `content/harvestables/stone_node.tres`, `content/harvestables/iron_node.tres`, `tools/setup_harvest_content.gd`, `tools/setup_harvest_content.gd.uid`, `tools/harvest_world_check.gd`, `tools/harvest_world_check.gd.uid`, `docs/FINDINGS.md`, `docs/NEXT.md`, `tools/harvest_world_net_check.gd` |
 
 **2.1d notes:**
 - Claimed A-008 Wellspring batch. Four condition meshes will share exact basin/base anchor geometry; progression must read through silhouette and revealed/occluded crystal growth, not recolour alone. Assets remain presentation-only; host owns cap/corruption state.
@@ -18,7 +17,7 @@
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███░░░░░░░` 6/23 | 17 |
+| Findings | `███░░░░░░░` 7/23 | 16 |
 | M0 | `██████████` 11/11 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████░░░░░░` 9/21 | 12 |
@@ -68,8 +67,7 @@
 | ⬜ | **F-025** Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake | todo |
 | ⬜ | **F-027** `NetInterest.configure()` does not keep its returned filter alive | todo |
 | ⬜ | **F-028** `verify_setup.gd` hard-codes the superseded greybox main scene | todo |
-| 🔵 | **F-029** Task 2.3's harvest lifecycle is not wired into the playable map | in_flight |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `4.0b` `F-007` `F-009` `F-015` `F-019` `F-022` `F-026`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `4.0b` `F-007` `F-009` `F-015` `F-019` `F-022` `F-026` `F-029`

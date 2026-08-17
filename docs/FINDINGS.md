@@ -509,6 +509,35 @@ validate the configured main scene structurally instead of pinning the old path.
 
 ## Resolved
 
+### F-030 · Replicated harvest state could briefly create a doomed VFX target — **fixed**
+
+**Area:** gameplay/presentation · **Severity:** low · **Found/fixed:** 2026-08-16 by nettle during F-029
+
+The first real-map ENet run logged eight deferred-call errors from `environment_vfx.gd::_apply_mesh`.
+Replication assigned `visual_state` and `active` back-to-back, and both setters rebuilt the harvest
+visual immediately; the environment controller had correctly deferred work for the first visual,
+but Harvestable freed it in the same frame. `Harvestable` now coalesces replicated presentation
+setters into one deferred rebuild while host methods explicitly flush once to preserve immediate
+local feedback. The 39-assertion component check still passes, and the real-map two-process run now
+passes depletion/respawn with no VFX or deferred-call errors.
+
+### F-029 · Task 2.3's harvest lifecycle was not wired into the playable map — **fixed**
+
+**Area:** gameplay · **Severity:** high · **Found/fixed:** 2026-08-16 by nettle after 2.3
+
+Added serialized log, stone and iron-ore item definitions plus tree, stone-node and iron-node
+harvestable definitions. The `HarvestWorld` autoload discovers the deterministic A-001 runtime
+holders without editing the live map generator, moves each holder's collision under a
+host-authoritative `Harvestable`, hides only the matching intact authored duplicate, and provides a
+4 m first-person attack ray. Damaged/depleted props already placed as scenery remain decorative.
+
+`harvest_world_check.gd` loaded the actual `playtest_hollow.tscn`, found the expected 5 trees, 4 stone
+nodes and 2 iron nodes, and passed depletion, a single three-log yield, collision disable, explicit
+respawn and collider-to-component targeting with zero failures. `harvest_world_net_check.gd` then
+loaded that same map in two ENet processes: host depletion and respawn of layout prop 240 replicated
+to the client, the host yielded exactly once, and the client yielded zero times. The original
+39-assertion component check and its parameterless client-request ENet check also still pass.
+
 ### F-027 · `NetInterest.configure()` did not keep its returned filter alive — **fixed**
 
 **Area:** netcode · **Severity:** high · **Found/fixed:** 2026-08-16 by nettle during 2.3
