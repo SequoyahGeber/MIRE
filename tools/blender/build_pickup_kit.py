@@ -1,22 +1,71 @@
-"""Build MIRE's first world-pickup kit (asset batch A-002).
+"""Build MIRE's world-pickup kit (asset batch A-002, overhauled by task 2.1j).
 
 Run with:
   Blender --background --python tools/blender/build_pickup_kit.py
 
-Outputs 14 individual metre-scale GLBs, an editable Blender source, a JSON
-catalog, and two preview renders. Geometry and layout are deterministic.
+Outputs 14 individual GLBs, an editable Blender source, a JSON catalog, and two
+preview renders. Geometry and layout are deterministic.
+
+What task 2.1j changed
+----------------------
+**Scale.** The kit was authored so each pickup filled its own preview frame, and
+nothing was ever checked against the 1.80 m player. A coin came out 0.36 m across
+— a dinner plate — a berry 0.71 m, a stone 1.08 m. Fourteen objects whose real
+sizes span roughly 50:1 all landed within 4:1 of each other. Every asset now
+builds to its ``mire_art.SCALE`` entry and ``main()`` fails the build if one
+drifts more than 12% off.
+
+**All-sided detail.** Decoration was placed by writing coordinates by hand, which
+put it wherever the preview camera was looking: the log's three bark ridges all
+sat at y=-0.20 running the same direction, the mushroom's three cap spots at
+y=-0.25/-0.31/-0.18, the salvage fragment's three glow nodes at y=-0.20. Every
+one of those is now placed with ``mire_art.radial()``, so detail wraps the form
+and the asset reads from any angle. Verify with::
+
+    Blender --background --python tools/blender/audit_all_sides.py -- --only pickup_
+
+**Palette.** Thirty-seven private ``MIRE_Pickup_*`` colours are gone; the kit
+draws from ``mire_art.PALETTE``, so its wood matches the forest's wood and its
+iron matches a tool's iron. Iron ore's seams were bright orange (0.74, 0.23,
+0.05) and read as copper; they are iron and brass now.
+
+**Legibility by quantity, not inflation.** A true-size coin is 26 mm and would be
+a pixel on the ground, which is presumably why it was inflated. Instead the coin
+pickup is a small spill of five coins and the berry pickup a handful of seven —
+honest next to a player, and still visible.
 """
 
 from __future__ import annotations
 
 import json
 import math
+import sys
 from pathlib import Path
 from typing import Callable
+
+sys.path.append(str(Path(__file__).resolve().parent))
 
 import bpy
 from mathutils import Vector
 
+from mire_art import (
+    SCALE,
+    around,
+    assign,
+    box,
+    check_scale,
+    cone,
+    cylinder_between,
+    eevee_engine,
+    ico,
+    look_at,
+    mat,
+    mesh_object,
+    move_to_collection,
+    radial,
+    reset_materials,
+    world_bounds,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSET_DIR = ROOT / "assets" / "pickups"
@@ -42,138 +91,14 @@ EXPECTED_NAMES = [
 ]
 
 
-def material(
-    name: str,
-    color: tuple[float, float, float, float],
-    roughness: float = 0.9,
-    metallic: float = 0.0,
-    emission: tuple[float, float, float, float] | None = None,
-    emission_strength: float = 0.0,
-) -> bpy.types.Material:
-    mat = bpy.data.materials.new(name)
-    mat.diffuse_color = color
-    mat.use_nodes = True
-    shader = mat.node_tree.nodes.get("Principled BSDF")
-    shader.inputs["Base Color"].default_value = color
-    shader.inputs["Roughness"].default_value = roughness
-    shader.inputs["Metallic"].default_value = metallic
-    if emission is not None:
-        shader.inputs["Emission Color"].default_value = emission
-        shader.inputs["Emission Strength"].default_value = emission_strength
-    return mat
-
-
-def assign(obj: bpy.types.Object, mat: bpy.types.Material) -> bpy.types.Object:
-    obj.data.materials.append(mat)
-    for polygon in obj.data.polygons:
-        polygon.use_smooth = False
-    return obj
-
-
-def box(
-    name: str,
-    location: tuple[float, float, float],
-    dimensions: tuple[float, float, float],
-    mat: bpy.types.Material,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-    bevel: float = 0.0,
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_cube_add(location=location, rotation=rotation)
-    obj = bpy.context.object
-    obj.name = name
-    obj.scale = (dimensions[0] * 0.5, dimensions[1] * 0.5, dimensions[2] * 0.5)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    if bevel > 0.0:
-        modifier = obj.modifiers.new("Low_Poly_Bevel", "BEVEL")
-        modifier.width = bevel
-        modifier.segments = 1
-        bpy.context.view_layer.objects.active = obj
-        bpy.ops.object.modifier_apply(modifier=modifier.name)
-    return assign(obj, mat)
-
-
-def cone(
-    name: str,
-    radius_bottom: float,
-    radius_top: float,
-    depth: float,
-    location: tuple[float, float, float],
-    mat: bpy.types.Material,
-    vertices: int = 8,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_cone_add(
-        vertices=vertices,
-        radius1=radius_bottom,
-        radius2=radius_top,
-        depth=depth,
-        location=location,
-        rotation=rotation,
-    )
-    obj = bpy.context.object
-    obj.name = name
-    return assign(obj, mat)
-
-
-def ico(
-    name: str,
-    location: tuple[float, float, float],
-    scale: tuple[float, float, float],
-    mat: bpy.types.Material,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-    subdivisions: int = 1,
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_ico_sphere_add(
-        subdivisions=subdivisions,
-        radius=1.0,
-        location=location,
-        rotation=rotation,
-    )
-    obj = bpy.context.object
-    obj.name = name
-    obj.scale = scale
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    return assign(obj, mat)
-
-
-def cylinder_between(
-    name: str,
-    start: tuple[float, float, float],
-    end: tuple[float, float, float],
-    radius: float,
-    mat: bpy.types.Material,
-    vertices: int = 8,
-) -> bpy.types.Object:
-    first = Vector(start)
-    second = Vector(end)
-    direction = second - first
-    obj = cone(name, radius, radius * 0.92, direction.length, tuple((first + second) * 0.5), mat, vertices)
-    obj.rotation_mode = "QUATERNION"
-    obj.rotation_quaternion = direction.to_track_quat("Z", "Y")
-    return obj
-
-
-def mesh_object(
-    name: str,
-    vertices: list[tuple[float, float, float]],
-    faces: list[tuple[int, ...]],
-    mat: bpy.types.Material,
-) -> bpy.types.Object:
-    mesh = bpy.data.meshes.new(f"{name}_Mesh")
-    mesh.from_pydata(vertices, [], faces)
-    mesh.update()
-    obj = bpy.data.objects.new(name, mesh)
-    bpy.context.scene.collection.objects.link(obj)
-    return assign(obj, mat)
-
-
 def shard(
     name: str,
     location: tuple[float, float, float],
     scale: tuple[float, float, float],
-    mat: bpy.types.Material,
+    material: bpy.types.Material,
     rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
 ) -> bpy.types.Object:
+    """An angular chip with two apexes — the low-poly stand-in for fracture."""
     vertices = [
         (0.0, 0.0, 0.55),
         (-0.50, -0.30, 0.0),
@@ -183,7 +108,7 @@ def shard(
         (0.0, 0.0, -0.45),
     ]
     faces = [(0, 1, 2), (0, 2, 3), (0, 3, 4), (0, 4, 1), (5, 2, 1), (5, 3, 2), (5, 4, 3), (5, 1, 4)]
-    obj = mesh_object(name, vertices, faces, mat)
+    obj = mesh_object(name, vertices, faces, material)
     obj.location = location
     obj.scale = scale
     obj.rotation_euler = rotation
@@ -195,34 +120,227 @@ def shard(
     return obj
 
 
-def look_at(obj: bpy.types.Object, target: tuple[float, float, float]) -> None:
-    obj.rotation_euler = (Vector(target) - obj.location).to_track_quat("-Z", "Y").to_euler()
+# ---------------------------------------------------------------------------
+# Builders — all dimensions in real metres against a 1.80 m player
+# ---------------------------------------------------------------------------
 
 
-def move_to_collection(objects: list[bpy.types.Object], collection: bpy.types.Collection) -> None:
-    for obj in objects:
-        for old_collection in list(obj.users_collection):
-            old_collection.objects.unlink(obj)
-        collection.objects.link(obj)
+def build_log() -> None:
+    """A 1.20 m bucked log: tapered, knotted, bark texture right around it."""
+    half, r0, r1 = 0.60, 0.115, 0.098
+    # Two segments with a slight kink, so the silhouette is not a perfect tube.
+    cylinder_between("Log_A", (-half, 0.0, r0), (0.02, 0.012, r0 * 0.99), r0, mat("wood_bark"), 10, 0.97)
+    cylinder_between("Log_B", (0.02, 0.012, r0 * 0.99), (half, -0.008, r1 * 1.02), r1, mat("wood_bark"), 10, 0.97)
+    # End grain, slightly proud of the bark so the ring reads as a cut face.
+    cone("Cut_L", r0 * 0.97, r0 * 0.90, 0.020, (-half - 0.008, 0.0, r0), mat("wood_cut"), 10, (0.0, math.radians(90), 0.0))
+    cone("Cut_R", r1 * 0.97, r1 * 0.90, 0.020, (half + 0.008, -0.008, r1 * 1.02), mat("wood_cut"), 10, (0.0, math.radians(90), 0.0))
+    # Bark plates: long ridges running WITH the grain, spaced right around the
+    # trunk. Short nubs read as dirt at gameplay distance; a plate that runs a
+    # third of the length catches the light and says "bark" from any azimuth.
+    for i, (angle, rad) in enumerate(radial(6, r0 * 0.90, seed=201, jitter=0.38)):
+        x0 = -0.46 + (i * 0.19) % 0.88
+        length = 0.26 + (i % 3) * 0.09
+        drift = 0.055 * (1 if i % 2 else -1)
+        a0, a1 = angle, angle + drift
+        p0 = around((x0, 0.0, r0), a0, rad)
+        p1 = around((min(x0 + length, half - 0.03), 0.0, r0 * 0.99), a1, rad * 0.97)
+        cylinder_between(f"Bark_Plate_{i + 1}", p0, p1, 0.019,
+                         mat("wood_bark_light" if i % 2 else "wood_bark_dark"), 5, 0.88)
+    # Branch stubs on opposite flanks, big enough to break the silhouette.
+    for i, (angle, rad) in enumerate(radial(3, r0, seed=77, jitter=0.22, phase=0.9)):
+        cx = -0.26 + i * 0.30
+        base = around((cx, 0.0, r0), angle, rad * 0.80)
+        tip = around((cx + (0.06 if i % 2 else -0.05), 0.0, r0 + 0.012), angle, rad + 0.075 + (i % 2) * 0.022)
+        cylinder_between(f"Branch_Stub_{i + 1}", base, tip, 0.030 - (i % 2) * 0.006, mat("wood_bark"), 7, 0.72)
+        cone(f"Stub_Cut_{i + 1}", 0.023 - (i % 2) * 0.005, 0.019, 0.009, tip, mat("wood_cut"), 7,
+             (0.0, math.radians(90), angle))
+    # Knots on two different faces, not one decal on the front.
+    for i, (angle, rad) in enumerate(radial(2, r1 * 0.86, seed=88, jitter=0.0, phase=2.4)):
+        ico(f"Knot_{i + 1}", around((0.18 + i * 0.26, 0.0, r1), angle, rad),
+            (0.034, 0.030, 0.024), mat("wood_bark_dark"), (0.2, 0.4 * i, 0.0))
 
 
-def world_bounds(objects: list[bpy.types.Object]) -> tuple[Vector, Vector]:
-    bpy.context.view_layer.update()
-    corners: list[Vector] = []
-    for obj in objects:
-        if obj.type == "MESH":
-            corners.extend(obj.matrix_world @ Vector(corner) for corner in obj.bound_box)
-    minimum = Vector((min(v.x for v in corners), min(v.y for v in corners), min(v.z for v in corners)))
-    maximum = Vector((max(v.x for v in corners), max(v.y for v in corners), max(v.z for v in corners)))
-    return minimum, maximum
+def build_branch() -> None:
+    """0.85 m forked branch; twigs leave at three different angles."""
+    cylinder_between("Branch_Main", (-0.40, 0.0, 0.055), (0.40, 0.02, 0.075), 0.030, mat("wood_bark_light"), 8, 0.82)
+    for i, (angle, rad) in enumerate(radial(3, 0.030, seed=311, jitter=0.30)):
+        x = -0.20 + i * 0.26
+        base = around((x, 0.0, 0.065), angle, rad * 0.8)
+        tip = around((x + 0.13 - i * 0.05, 0.0, 0.065 + 0.05 + i * 0.02), angle, rad + 0.075 + i * 0.012)
+        cylinder_between(f"Twig_{i + 1}", base, tip, 0.013 - i * 0.002, mat("wood_bark"), 6, 0.7)
+    cone("Broken_End", 0.028, 0.010, 0.030, (-0.415, 0.0, 0.054), mat("wood_cut"), 8, (0.0, math.radians(-92), 0.0))
 
 
-def create_asset(
-    name: str,
-    family: str,
-    build_fn: Callable[[], None],
-    display_location: tuple[float, float, float],
-) -> dict:
+def build_stone() -> None:
+    """0.18 m rock: three overlapping masses, no single flat face."""
+    ico("Stone_Core", (0.0, 0.0, 0.062), (0.082, 0.070, 0.058), mat("stone"), (0.18, -0.12, 0.34))
+    for i, (angle, rad) in enumerate(radial(3, 0.052, seed=404, jitter=0.40)):
+        p = around((0.0, 0.0, 0.050 + i * 0.012), angle, rad)
+        ico(f"Stone_Lobe_{i + 1}", p, (0.040 - i * 0.006, 0.036, 0.030),
+            mat("stone_light" if i == 0 else "stone_dark" if i == 2 else "stone"),
+            (0.3 * i, 0.2 - i * 0.3, 0.4 * i))
+
+
+def build_flint() -> None:
+    """0.13 m flint nodule with fracture flakes on several faces."""
+    shard("Flint_Core", (0.0, 0.0, 0.044), (0.100, 0.074, 0.092), mat("stone_dark"), (0.12, -0.28, 0.18))
+    for i, (angle, rad) in enumerate(radial(4, 0.038, seed=515, jitter=0.38)):
+        p = around((0.0, 0.0, 0.033 + (i % 2) * 0.019), angle, rad)
+        shard(f"Flint_Flake_{i + 1}", p, (0.029, 0.022, 0.021),
+              mat("stone_light" if i % 2 else "stone"), (0.3 - i * 0.2, 0.4, 0.5 * i))
+
+
+def build_iron_ore() -> None:
+    """0.20 m ore chunk. Seams are iron and brass, never the old orange."""
+    ico("Ore_Rock", (0.0, 0.0, 0.064), (0.079, 0.069, 0.061), mat("stone_dark"), (0.2, -0.3, 0.4))
+    for i, (angle, rad) in enumerate(radial(6, 0.059, seed=626, jitter=0.36)):
+        p = around((0.0, 0.0, 0.051 + (i % 3) * 0.017), angle, rad)
+        ico(f"Ore_Seam_{i + 1}", p, (0.024 - (i % 3) * 0.004, 0.017, 0.015),
+            mat("iron" if i % 3 else "brass"), (0.2 * i, 0.4 - i * 0.2, 0.1 * i))
+
+
+def build_ingot() -> None:
+    """0.26 m cast ingot with draft angle and a struck mark."""
+    hx, hy, h = 0.130, 0.055, 0.052
+    tx, ty = 0.104, 0.038
+    vertices = [
+        (-hx, -hy, 0.0), (hx, -hy, 0.0), (hx, hy, 0.0), (-hx, hy, 0.0),
+        (-tx, -ty, h), (tx, -ty, h), (tx, ty, h), (-tx, ty, h),
+    ]
+    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
+    mesh_object("Iron_Ingot", vertices, faces, mat("iron"))
+    box("Ingot_Stamp", (0.0, 0.0, h - 0.004), (0.068, 0.030, 0.010), mat("iron_dark"),
+        (0.0, 0.0, math.radians(-8)), 0.004)
+    # Casting seam down both long flanks, not one.
+    for sign in (-1.0, 1.0):
+        box(f"Cast_Seam_{'p' if sign > 0 else 'n'}", (0.0, sign * (hy - 0.004), h * 0.42),
+            (0.22, 0.007, 0.008), mat("iron_dark"))
+
+
+def build_coal() -> None:
+    """0.16 m heap of six lumps at genuinely different orientations."""
+    ico("Coal_Base", (0.0, 0.0, 0.030), (0.062, 0.055, 0.030), mat("coal"), (0.1, 0.2, 0.3))
+    for i, (angle, rad) in enumerate(radial(5, 0.048, seed=737, jitter=0.42)):
+        p = around((0.0, 0.0, 0.038 + (i % 3) * 0.016), angle, rad)
+        ico(f"Coal_{i + 1}", p, (0.034 - (i % 3) * 0.006, 0.029, 0.026),
+            mat("coal" if i % 4 else "stone_dark"), (0.4 * i, 0.3 - i * 0.2, 0.5 * i))
+
+
+def build_fibre() -> None:
+    """0.32 m bundle; stalks splay around the binding instead of lying flat."""
+    for i, (angle, rad) in enumerate(radial(9, 0.032, seed=848, jitter=0.44)):
+        y0, z0 = around((0.0, 0.0, 0.038), angle, rad)[1:]
+        spread = 1.55
+        cylinder_between(
+            f"Fibre_{i + 1}",
+            (-0.150, y0 * spread, max(z0 * spread, 0.008)),
+            (0.150, y0 * spread * 0.82 + 0.006, max(z0 * spread * 0.9, 0.008)),
+            0.0085, mat("fibre" if i % 3 else "grass_dry"), 5,
+        )
+    for x in (-0.055, 0.055):
+        cone(f"Binding_{'a' if x < 0 else 'b'}", 0.040, 0.040, 0.014, (x, 0.0, 0.038),
+             mat("rope"), 8, (0.0, math.radians(90), 0.0))
+
+
+def build_berry() -> None:
+    """0.12 m handful of seven berries, each a true ~18 mm."""
+    r = 0.0095
+    ico("Berry_Base_A", (-0.017, 0.006, r), (r, r, r * 0.92), mat("blood"), subdivisions=1)
+    ico("Berry_Base_B", (0.019, -0.008, r), (r, r, r * 0.92), mat("blood"), subdivisions=1)
+    for i, (angle, rad) in enumerate(radial(5, 0.024, seed=959, jitter=0.40)):
+        p = around((0.0, 0.0, r + 0.008 + (i % 2) * 0.007), angle, rad)
+        ico(f"Berry_{i + 1}", p, (r, r, r * 0.94), mat("blood" if i % 2 else "cloth_red"), subdivisions=1)
+    cylinder_between("Sprig", (0.004, 0.0, 0.030), (0.016, 0.010, 0.048), 0.0035, mat("grass_dark"), 5)
+    for i, (angle, rad) in enumerate(radial(2, 0.020, seed=96, jitter=0.0, phase=0.6)):
+        leaf = ico(f"Leaf_{i + 1}", around((0.012, 0.006, 0.044), angle, rad), (0.020, 0.009, 0.004),
+                   mat("leaf" if i else "leaf_light"), (0.1, 0.25, 0.0))
+        leaf.rotation_euler[2] = angle
+
+
+def build_mushroom() -> None:
+    """0.16 m pair of caps. Gills are modelled, so the bottom view reads."""
+    for i, (cap_r, cap_h, stem_h, offset) in enumerate(
+        ((0.055, 0.026, 0.052, (-0.026, 0.008)), (0.036, 0.018, 0.034, (0.038, -0.012)))
+    ):
+        ox, oy = offset
+        cone(f"Stem_{i + 1}", 0.013, 0.010, stem_h, (ox, oy, stem_h * 0.5), mat("flesh_fat"), 9)
+        ico(f"Cap_{i + 1}", (ox, oy, stem_h + cap_h * 0.42), (cap_r, cap_r * 0.94, cap_h),
+            mat("mire_flesh" if i == 0 else "mire_light"), (0.0, 0.0, 0.18 * (i + 1)), 2)
+        # Radial gills under the cap — the underside was a blank dome before.
+        for j, (angle, rad) in enumerate(radial(7, cap_r * 0.62, seed=1070 + i * 7, jitter=0.12)):
+            g = around((ox, oy, stem_h + cap_h * 0.06), angle, rad)
+            blade = box(f"Gill_{i + 1}_{j + 1}", g, (cap_r * 0.60, 0.0035, cap_h * 0.30), mat("flesh_fat"))
+            blade.rotation_euler[2] = angle
+        # Spots wrapped round the cap rather than pasted on the front.
+        for j, (angle, rad) in enumerate(radial(4, cap_r * 0.58, seed=1180 + i * 11, jitter=0.40)):
+            s = around((ox, oy, stem_h + cap_h * 0.80), angle, rad)
+            ico(f"Spot_{i + 1}_{j + 1}", s, (0.008, 0.008, 0.004), mat("flesh_fat"), subdivisions=1)
+
+
+def build_meat() -> None:
+    """0.30 m cut of meat: the bone passes through it, marbling wraps it."""
+    top, mid = 0.072, 0.030
+    vertices = [
+        (-0.150, -0.062, 0.0), (0.108, -0.078, 0.0), (0.150, 0.010, 0.0), (0.066, 0.082, 0.0), (-0.098, 0.070, 0.0),
+        (-0.138, -0.052, top), (0.096, -0.066, top), (0.134, 0.008, top), (0.058, 0.070, top), (-0.088, 0.058, top),
+    ]
+    faces = [(0, 4, 3, 2, 1), (5, 6, 7, 8, 9), (0, 1, 6, 5), (1, 2, 7, 6), (2, 3, 8, 7), (3, 4, 9, 8), (4, 0, 5, 9)]
+    mesh_object("Raw_Meat", vertices, faces, mat("flesh_raw"))
+    # The bone runs THROUGH the cut and shows a sawn face at each end, instead of
+    # lying on the surface like a garnish.
+    cylinder_between("Bone", (-0.128, 0.004, mid), (0.126, 0.008, mid + 0.006), 0.021, mat("bone"), 8, 0.96)
+    for sign, x in ((-1.0, -0.132), (1.0, 0.130)):
+        cone(f"Bone_Face_{'l' if sign < 0 else 'r'}", 0.021, 0.019, 0.006, (x, 0.006, mid + (0.003 if sign > 0 else 0.0)),
+             mat("flesh_fat"), 8, (0.0, math.radians(90), 0.0))
+    # Marbling on several faces, wrapped, not a single front stripe.
+    for i, (angle, rad) in enumerate(radial(4, 0.088, seed=1212, jitter=0.36)):
+        p = around((0.0, 0.0, 0.018 + (i % 2) * 0.030), angle, rad)
+        strip = box(f"Fat_{i + 1}", p, (0.058, 0.010, 0.011), mat("flesh_fat"))
+        strip.rotation_euler[2] = angle + 1.57
+
+
+def add_coin(name: str, location: tuple[float, float, float], upright: bool, spin: float = 0.0) -> None:
+    rotation = (math.radians(90), 0.0, spin) if upright else (0.0, 0.0, spin)
+    cone(name, 0.0132, 0.0132, 0.0026, location, mat("gold"), 12, rotation)
+    cone(f"{name}_Face", 0.0082, 0.0082, 0.0011, location, mat("brass"), 12, rotation)
+
+
+def build_coin() -> None:
+    """0.11 m spill of five coins — a true 26 mm coin, made visible by number."""
+    add_coin("Coin_Flat_A", (0.0, 0.0, 0.0014), False, 0.0)
+    for i, (angle, rad) in enumerate(radial(3, 0.036, seed=1313, jitter=0.34)):
+        p = around((0.0, 0.0, 0.0014 + (i % 2) * 0.0026), angle, rad)
+        add_coin(f"Coin_Flat_{i + 1}", p, False, angle)
+    lean = around((0.0, 0.0, 0.0132), 2.1, 0.036)
+    add_coin("Coin_Leaning", lean, True, 2.1)
+
+
+def build_coin_stack() -> None:
+    """0.14 m stack plus loose coins fallen around its base."""
+    for i in range(7):
+        add_coin(f"Coin_Stacked_{i + 1}", (0.0, 0.0, 0.0014 + i * 0.0027), False, i * 0.22)
+    for i, (angle, rad) in enumerate(radial(3, 0.050, seed=1414, jitter=0.38)):
+        add_coin(f"Coin_Loose_{i + 1}", around((0.0, 0.0, 0.0014), angle, rad), False, angle)
+
+
+def build_salvage() -> None:
+    """0.19 m torn plate; the emissive nodes sit on more than one face."""
+    plate = box("Salvage_Plate", (0.0, 0.0, 0.048), (0.155, 0.098, 0.028), mat("iron"), (0.05, -0.15, 0.28), 0.016)
+    plate.rotation_euler[2] += 0.12
+    box("Salvage_Brace", (-0.042, -0.046, 0.052), (0.028, 0.112, 0.024), mat("iron_dark"), (0.2, -0.1, -0.38), 0.006)
+    for i, (angle, rad) in enumerate(radial(3, 0.056, seed=1515, jitter=0.42)):
+        p = around((0.0, 0.0, 0.052 + (i % 2) * 0.014), angle, rad)
+        ico(f"Salvage_Node_{i + 1}", p, (0.013, 0.008, 0.013), mat("mire_glow"), subdivisions=1)
+    cylinder_between("Loose_Wire", (0.052, 0.026, 0.056), (0.094, 0.052, 0.020), 0.0045, mat("brass"), 6)
+
+
+# ---------------------------------------------------------------------------
+# Assembly
+# ---------------------------------------------------------------------------
+
+
+def create_asset(name: str, family: str, build_fn: Callable[[], None],
+                 display_location: tuple[float, float, float]) -> dict:
     collection = bpy.data.collections.new(name)
     bpy.context.scene.collection.children.link(collection)
     root = bpy.data.objects.new(name, None)
@@ -232,7 +350,7 @@ def create_asset(
     build_fn()
     made = [obj for obj in bpy.data.objects if obj not in before]
 
-    # Normalize every pickup to a horizontal centre origin at ground level.
+    bpy.context.view_layer.update()
     minimum, maximum = world_bounds(made)
     offset = Vector((-(minimum.x + maximum.x) * 0.5, -(minimum.y + maximum.y) * 0.5, -minimum.z))
     for obj in made:
@@ -240,10 +358,11 @@ def create_asset(
     move_to_collection(made, collection)
     for obj in made:
         obj.parent = root
+    bpy.context.view_layer.update()
     minimum, maximum = world_bounds(made)
     dimensions = maximum - minimum
     polygons = sum(len(obj.data.polygons) for obj in made if obj.type == "MESH")
-    materials = sorted({mat.name for obj in made if obj.type == "MESH" for mat in obj.data.materials if mat})
+    materials = sorted({m.name for obj in made if obj.type == "MESH" for m in obj.data.materials if m})
 
     bpy.ops.object.select_all(action="DESELECT")
     for obj in collection.objects:
@@ -258,150 +377,11 @@ def create_asset(
     )
     root.location = display_location
     return {
-        "name": name,
-        "family": family,
-        "root": root,
-        "width": dimensions.x,
-        "depth": dimensions.y,
-        "height": dimensions.z,
+        "name": name, "family": family, "root": root,
+        "width": dimensions.x, "depth": dimensions.y, "height": dimensions.z,
         "parts": sum(1 for obj in made if obj.type == "MESH"),
-        "polygons": polygons,
-        "materials": materials,
+        "polygons": polygons, "materials": materials,
     }
-
-
-def build_log(mats: dict[str, bpy.types.Material]) -> None:
-    cylinder_between("Log", (-0.72, 0.0, 0.23), (0.72, 0.04, 0.27), 0.23, mats["bark"], 10)
-    cone("Cut_Left", 0.215, 0.215, 0.028, (-0.735, -0.001, 0.228), mats["wood"], 10, (0.0, math.radians(89), 0.0))
-    cone("Cut_Right", 0.205, 0.205, 0.028, (0.735, 0.041, 0.268), mats["wood"], 10, (0.0, math.radians(89), 0.0))
-    for index, x in enumerate((-0.38, 0.18, 0.48)):
-        cylinder_between(f"Bark_Ridge_{index + 1}", (x, -0.20, 0.19), (x + 0.12, -0.19, 0.39), 0.025, mats["bark_light"], 5)
-
-
-def build_branch(mats: dict[str, bpy.types.Material]) -> None:
-    cylinder_between("Branch_Main", (-0.62, 0.0, 0.10), (0.58, 0.04, 0.16), 0.085, mats["bark_light"], 8)
-    cylinder_between("Branch_Fork", (0.18, 0.02, 0.14), (0.55, 0.34, 0.38), 0.055, mats["bark"], 7)
-    cylinder_between("Branch_Twig", (-0.16, 0.0, 0.13), (0.05, -0.26, 0.29), 0.038, mats["bark"], 6)
-    cone("Broken_End", 0.074, 0.074, 0.025, (-0.635, 0.0, 0.098), mats["wood"], 8, (0.0, math.radians(88), 0.0))
-
-
-def build_stone(mats: dict[str, bpy.types.Material]) -> None:
-    ico("Stone_Main", (-0.12, 0.02, 0.23), (0.38, 0.31, 0.27), mats["stone"], (0.18, -0.12, 0.34))
-    ico("Stone_Side", (0.27, -0.08, 0.14), (0.22, 0.19, 0.17), mats["stone_light"], (-0.22, 0.34, 0.10))
-    ico("Stone_Chip", (-0.31, -0.20, 0.08), (0.13, 0.11, 0.09), mats["stone_dark"], (0.4, 0.1, -0.2))
-
-
-def build_flint(mats: dict[str, bpy.types.Material]) -> None:
-    shard("Flint_Main", (0.0, 0.0, 0.22), (0.58, 0.36, 0.48), mats["flint"], (0.12, -0.28, 0.18))
-    shard("Flint_Flake", (0.31, -0.10, 0.075), (0.20, 0.14, 0.13), mats["flint_edge"], (-0.2, 0.4, 0.5))
-    box("Flint_Edge", (0.0, -0.29, 0.26), (0.58, 0.035, 0.055), mats["flint_edge"], (0.0, 0.0, -0.08))
-
-
-def build_iron_ore(mats: dict[str, bpy.types.Material]) -> None:
-    ico("Ore_Rock", (0.0, 0.0, 0.26), (0.42, 0.35, 0.31), mats["iron_stone"], (0.2, -0.3, 0.4))
-    for index, (location, scale, rotation) in enumerate(
-        (
-            ((-0.20, -0.29, 0.28), (0.17, 0.09, 0.12), (0.2, 0.4, 0.1)),
-            ((0.15, -0.31, 0.18), (0.14, 0.08, 0.10), (-0.3, 0.1, 0.5)),
-            ((0.24, -0.10, 0.42), (0.12, 0.08, 0.09), (0.3, -0.4, 0.2)),
-            ((-0.10, 0.08, 0.50), (0.13, 0.10, 0.08), (-0.2, 0.3, -0.1)),
-        )
-    ):
-        ico(f"Ore_Seam_{index + 1}", location, scale, mats["iron"], rotation)
-
-
-def build_ingot(mats: dict[str, bpy.types.Material]) -> None:
-    vertices = [
-        (-0.48, -0.22, 0.0), (0.48, -0.22, 0.0), (0.48, 0.22, 0.0), (-0.48, 0.22, 0.0),
-        (-0.35, -0.15, 0.19), (0.35, -0.15, 0.19), (0.35, 0.15, 0.19), (-0.35, 0.15, 0.19),
-    ]
-    faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
-    mesh_object("Iron_Ingot", vertices, faces, mats["ingot"])
-    box("Ingot_Stamp", (0.0, 0.0, 0.198), (0.25, 0.11, 0.018), mats["ingot_dark"], (0.0, 0.0, math.radians(-8)), 0.015)
-
-
-def build_coal(mats: dict[str, bpy.types.Material]) -> None:
-    chunks = (
-        ((-0.20, 0.02, 0.18), (0.30, 0.25, 0.22), (0.2, 0.4, 0.1)),
-        ((0.17, -0.08, 0.14), (0.26, 0.22, 0.18), (-0.3, 0.1, 0.5)),
-        ((0.02, 0.23, 0.11), (0.21, 0.18, 0.15), (0.3, -0.4, 0.2)),
-        ((0.32, 0.18, 0.08), (0.14, 0.13, 0.11), (-0.2, 0.3, -0.1)),
-    )
-    for index, (location, scale, rotation) in enumerate(chunks):
-        ico(f"Coal_{index + 1}", location, scale, mats["coal" if index < 3 else "coal_glint"], rotation)
-
-
-def build_fibre(mats: dict[str, bpy.types.Material]) -> None:
-    strands = ((-0.14, -0.07, -0.08), (-0.07, 0.08, 0.10), (0.0, -0.03, -0.04), (0.07, 0.07, 0.06), (0.14, -0.06, -0.10), (-0.18, 0.03, 0.14), (0.18, 0.02, -0.15))
-    for index, (y, z_offset, angle) in enumerate(strands):
-        cylinder_between(
-            f"Fibre_{index + 1}",
-            (-0.50, y, 0.13 + z_offset * 0.10),
-            (0.50, y + angle * 0.18, 0.14 - z_offset * 0.10),
-            0.035,
-            mats["fibre_light" if index % 3 == 0 else "fibre"],
-            6,
-        )
-    for x in (-0.25, 0.25):
-        cone(f"Binding_{x}", 0.21, 0.21, 0.045, (x, 0.0, 0.14), mats["binding"], 8, (0.0, math.radians(90), 0.0))
-
-
-def build_berry(mats: dict[str, bpy.types.Material]) -> None:
-    berries = ((-0.12, 0.0, 0.14), (0.10, -0.03, 0.13), (0.0, 0.12, 0.15), (-0.02, -0.13, 0.17), (0.02, 0.0, 0.29))
-    for index, location in enumerate(berries):
-        ico(f"Berry_{index + 1}", location, (0.14, 0.14, 0.14), mats["berry" if index % 2 == 0 else "berry_light"], subdivisions=2)
-    cylinder_between("Berry_Stem", (0.02, 0.0, 0.34), (0.10, 0.02, 0.52), 0.025, mats["stem"], 6)
-    leaf_a = ico("Berry_Leaf_A", (-0.08, 0.0, 0.46), (0.22, 0.055, 0.10), mats["leaf"], (0.1, 0.3, -0.2))
-    leaf_a.rotation_euler[2] = 0.4
-    leaf_b = ico("Berry_Leaf_B", (0.22, 0.02, 0.43), (0.19, 0.05, 0.09), mats["leaf_light"], (-0.2, 0.1, 0.3))
-    leaf_b.rotation_euler[2] = -0.5
-
-
-def build_mushroom(mats: dict[str, bpy.types.Material]) -> None:
-    cone("Mushroom_Stem", 0.13, 0.09, 0.42, (0.0, 0.0, 0.21), mats["stem_pale"], 9)
-    ico("Mushroom_Cap", (0.0, 0.0, 0.48), (0.38, 0.34, 0.144), mats["mushroom"], (0.0, 0.0, 0.18), 2)
-    for index, location in enumerate(((-0.15, -0.25, 0.53), (0.08, -0.31, 0.57), (0.18, -0.18, 0.50))):
-        ico(f"Cap_Spot_{index + 1}", location, (0.045, 0.025, 0.035), mats["spot"], subdivisions=1)
-
-
-def build_meat(mats: dict[str, bpy.types.Material]) -> None:
-    vertices = [
-        (-0.46, -0.22, 0.02), (0.36, -0.28, 0.02), (0.50, 0.02, 0.02), (0.22, 0.28, 0.02), (-0.32, 0.24, 0.02),
-        (-0.40, -0.18, 0.20), (0.30, -0.22, 0.22), (0.42, 0.02, 0.20), (0.18, 0.22, 0.21), (-0.28, 0.19, 0.20),
-    ]
-    faces = [(0, 4, 3, 2, 1), (5, 6, 7, 8, 9), (0, 1, 6, 5), (1, 2, 7, 6), (2, 3, 8, 7), (3, 4, 9, 8), (4, 0, 5, 9)]
-    mesh_object("Raw_Meat", vertices, faces, mats["meat"])
-    cylinder_between("Bone", (-0.34, 0.02, 0.23), (0.31, 0.03, 0.25), 0.055, mats["bone"], 8)
-    ico("Bone_End_L", (-0.37, 0.02, 0.23), (0.10, 0.075, 0.075), mats["bone"], subdivisions=1)
-    ico("Bone_End_R", (0.34, 0.03, 0.25), (0.10, 0.075, 0.075), mats["bone"], subdivisions=1)
-    box("Fat_Strip", (0.02, -0.225, 0.16), (0.54, 0.035, 0.065), mats["fat"], (0.0, 0.0, -0.07), 0.015)
-
-
-def add_coin(name: str, location: tuple[float, float, float], mats: dict[str, bpy.types.Material], upright: bool) -> None:
-    rotation = (math.radians(90), 0.0, 0.12) if upright else (0.0, 0.0, 0.0)
-    coin = cone(name, 0.18, 0.18, 0.055, location, mats["coin"], 12, rotation)
-    coin.data.materials.append(mats["coin_edge"])
-    cone(f"{name}_Face", 0.112, 0.112, 0.020, location, mats["coin_face"], 12, rotation)
-
-
-def build_coin(mats: dict[str, bpy.types.Material]) -> None:
-    add_coin("Coin", (0.0, 0.0, 0.19), mats, True)
-    box("Coin_Rune", (0.0, -0.038, 0.19), (0.045, 0.018, 0.15), mats["coin_edge"], (0.0, 0.0, 0.22), 0.01)
-
-
-def build_coin_stack(mats: dict[str, bpy.types.Material]) -> None:
-    for index, (x, y) in enumerate(((0.0, 0.0), (0.015, -0.005), (-0.012, 0.01), (0.01, 0.0), (-0.008, -0.008))):
-        add_coin(f"Coin_{index + 1}", (x, y, 0.03 + index * 0.058), mats, False)
-    add_coin("Coin_Leaning", (0.23, -0.02, 0.18), mats, True)
-
-
-def build_salvage(mats: dict[str, bpy.types.Material]) -> None:
-    plate = box("Salvage_Plate", (0.0, 0.0, 0.18), (0.62, 0.38, 0.12), mats["salvage"], (0.05, -0.15, 0.28), 0.07)
-    plate.rotation_euler[2] += 0.12
-    box("Salvage_Brace", (-0.18, -0.20, 0.20), (0.12, 0.46, 0.10), mats["salvage_dark"], (0.2, -0.1, -0.38), 0.025)
-    for index, location in enumerate(((-0.17, -0.205, 0.25), (0.03, -0.225, 0.29), (0.22, -0.19, 0.25))):
-        ico(f"Salvage_Node_{index + 1}", location, (0.055, 0.025, 0.055), mats["salvage_glow"], subdivisions=1)
-    cylinder_between("Loose_Wire", (0.22, 0.10, 0.22), (0.45, 0.24, 0.10), 0.018, mats["wire"], 6)
 
 
 def set_visible(record: dict, visible: bool) -> None:
@@ -410,13 +390,13 @@ def set_visible(record: dict, visible: bool) -> None:
         child.hide_render = not visible
 
 
-def setup_render(mats: dict[str, bpy.types.Material]) -> tuple[bpy.types.Scene, bpy.types.Object, bpy.types.Collection]:
+def setup_render() -> tuple[bpy.types.Scene, bpy.types.Object, bpy.types.Collection]:
     preview_collection = bpy.data.collections.new("PREVIEW_ONLY")
     bpy.context.scene.collection.children.link(preview_collection)
-    bpy.ops.mesh.primitive_plane_add(size=40, location=(0.0, 0.0, -0.025))
+    bpy.ops.mesh.primitive_plane_add(size=40, location=(0.0, 0.0, -0.004))
     floor = bpy.context.object
     floor.name = "Preview_Ground"
-    assign(floor, mats["ground"])
+    assign(floor, mat("preview_ground"))
     move_to_collection([floor], preview_collection)
     bpy.ops.object.light_add(type="SUN", location=(0.0, 0.0, 15.0))
     sun = bpy.context.object
@@ -441,7 +421,7 @@ def setup_render(mats: dict[str, bpy.types.Material]) -> tuple[bpy.types.Scene, 
     bpy.context.scene.camera = camera
     move_to_collection([camera], preview_collection)
     scene = bpy.context.scene
-    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.engine = eevee_engine()
     scene.render.resolution_x = 1600
     scene.render.resolution_y = 1000
     scene.render.resolution_percentage = 100
@@ -465,62 +445,23 @@ def main() -> None:
     for datablocks in (bpy.data.materials, bpy.data.curves, bpy.data.cameras, bpy.data.lights):
         for block in list(datablocks):
             datablocks.remove(block)
-
-    mats = {
-        "bark": material("MIRE_Pickup_Bark", (0.22, 0.065, 0.022, 1.0)),
-        "bark_light": material("MIRE_Pickup_Bark_Light", (0.43, 0.16, 0.04, 1.0)),
-        "wood": material("MIRE_Pickup_Fresh_Wood", (0.84, 0.47, 0.13, 1.0)),
-        "stone": material("MIRE_Pickup_Stone", (0.34, 0.39, 0.40, 1.0)),
-        "stone_light": material("MIRE_Pickup_Stone_Light", (0.53, 0.58, 0.57, 1.0)),
-        "stone_dark": material("MIRE_Pickup_Stone_Dark", (0.15, 0.18, 0.20, 1.0)),
-        "flint": material("MIRE_Pickup_Flint", (0.16, 0.21, 0.25, 1.0), 0.45),
-        "flint_edge": material("MIRE_Pickup_Flint_Edge", (0.57, 0.68, 0.71, 1.0), 0.35),
-        "iron_stone": material("MIRE_Pickup_Iron_Stone", (0.23, 0.24, 0.24, 1.0)),
-        "iron": material("MIRE_Pickup_Iron_Ore", (0.74, 0.23, 0.05, 1.0), 0.55, 0.40),
-        "ingot": material("MIRE_Pickup_Iron_Ingot", (0.42, 0.50, 0.53, 1.0), 0.35, 0.68),
-        "ingot_dark": material("MIRE_Pickup_Ingot_Stamp", (0.12, 0.16, 0.18, 1.0), 0.42, 0.55),
-        "coal": material("MIRE_Pickup_Coal", (0.025, 0.031, 0.040, 1.0), 0.48),
-        "coal_glint": material("MIRE_Pickup_Coal_Glint", (0.10, 0.14, 0.19, 1.0), 0.30),
-        "fibre": material("MIRE_Pickup_Fibre", (0.55, 0.48, 0.12, 1.0)),
-        "fibre_light": material("MIRE_Pickup_Fibre_Light", (0.82, 0.70, 0.20, 1.0)),
-        "binding": material("MIRE_Pickup_Fibre_Binding", (0.25, 0.11, 0.035, 1.0)),
-        "berry": material("MIRE_Pickup_Berry", (0.62, 0.025, 0.08, 1.0)),
-        "berry_light": material("MIRE_Pickup_Berry_Light", (0.93, 0.06, 0.17, 1.0)),
-        "leaf": material("MIRE_Pickup_Leaf", (0.06, 0.35, 0.10, 1.0)),
-        "leaf_light": material("MIRE_Pickup_Leaf_Light", (0.16, 0.58, 0.18, 1.0)),
-        "stem": material("MIRE_Pickup_Stem", (0.12, 0.28, 0.06, 1.0)),
-        "stem_pale": material("MIRE_Pickup_Mushroom_Stem", (0.77, 0.66, 0.46, 1.0)),
-        "mushroom": material("MIRE_Pickup_Mushroom_Cap", (0.63, 0.08, 0.46, 1.0)),
-        "spot": material("MIRE_Pickup_Mushroom_Spot", (0.98, 0.68, 0.89, 1.0)),
-        "meat": material("MIRE_Pickup_Raw_Meat", (0.68, 0.06, 0.09, 1.0)),
-        "fat": material("MIRE_Pickup_Fat", (0.95, 0.64, 0.55, 1.0)),
-        "bone": material("MIRE_Pickup_Bone", (0.84, 0.79, 0.62, 1.0)),
-        "coin": material("MIRE_Pickup_Coin", (1.0, 0.68, 0.04, 1.0), 0.35, 0.45),
-        "coin_face": material("MIRE_Pickup_Coin_Face", (1.0, 0.88, 0.22, 1.0), 0.30, 0.50),
-        "coin_edge": material("MIRE_Pickup_Coin_Edge", (0.67, 0.30, 0.018, 1.0), 0.38, 0.42),
-        "salvage": material("MIRE_Pickup_Salvage", (0.22, 0.29, 0.32, 1.0), 0.38, 0.62),
-        "salvage_dark": material("MIRE_Pickup_Salvage_Dark", (0.075, 0.095, 0.11, 1.0), 0.45, 0.50),
-        "salvage_glow": material("MIRE_Pickup_Salvage_Glow", (0.37, 0.04, 0.65, 1.0), 0.25, 0.18, (0.65, 0.08, 1.0, 1.0), 2.2),
-        "wire": material("MIRE_Pickup_Wire", (0.83, 0.22, 0.04, 1.0), 0.45, 0.45),
-        "ground": material("MIRE_Pickup_Preview_Ground", (0.048, 0.085, 0.056, 1.0)),
-        "scale": material("MIRE_Pickup_Scale_Reference", (0.15, 0.53, 0.78, 1.0)),
-    }
+    reset_materials()
 
     builders: list[tuple[str, str, Callable[[], None]]] = [
-        ("pickup_log", "wood", lambda: build_log(mats)),
-        ("pickup_branch", "wood", lambda: build_branch(mats)),
-        ("pickup_stone", "mineral", lambda: build_stone(mats)),
-        ("pickup_flint", "mineral", lambda: build_flint(mats)),
-        ("pickup_iron_ore", "mineral", lambda: build_iron_ore(mats)),
-        ("pickup_iron_ingot", "crafted", lambda: build_ingot(mats)),
-        ("pickup_coal", "mineral", lambda: build_coal(mats)),
-        ("pickup_fibre_bundle", "organic", lambda: build_fibre(mats)),
-        ("pickup_berry", "food", lambda: build_berry(mats)),
-        ("pickup_mushroom", "food", lambda: build_mushroom(mats)),
-        ("pickup_raw_meat", "food", lambda: build_meat(mats)),
-        ("pickup_coin", "currency", lambda: build_coin(mats)),
-        ("pickup_coin_stack", "currency", lambda: build_coin_stack(mats)),
-        ("pickup_salvage_fragment", "salvage", lambda: build_salvage(mats)),
+        ("pickup_log", "wood", build_log),
+        ("pickup_branch", "wood", build_branch),
+        ("pickup_stone", "mineral", build_stone),
+        ("pickup_flint", "mineral", build_flint),
+        ("pickup_iron_ore", "mineral", build_iron_ore),
+        ("pickup_iron_ingot", "crafted", build_ingot),
+        ("pickup_coal", "mineral", build_coal),
+        ("pickup_fibre_bundle", "organic", build_fibre),
+        ("pickup_berry", "food", build_berry),
+        ("pickup_mushroom", "food", build_mushroom),
+        ("pickup_raw_meat", "food", build_meat),
+        ("pickup_coin", "currency", build_coin),
+        ("pickup_coin_stack", "currency", build_coin_stack),
+        ("pickup_salvage_fragment", "salvage", build_salvage),
     ]
     if [name for name, _, _ in builders] != EXPECTED_NAMES:
         raise RuntimeError("A-002 specification and expected export list diverged")
@@ -529,8 +470,13 @@ def main() -> None:
     for index, (name, family, builder) in enumerate(builders):
         column = index % 7
         row = index // 7
-        location = ((column - 3) * 2.05, (0.95 - row * 2.35), 0.0)
+        location = ((column - 3) * 0.42, (0.30 - row * 0.52), 0.0)
         records.append(create_asset(name, family, builder, location))
+
+    # Scale is a build-time contract now, not something a preview might reveal.
+    complaints = [c for c in (check_scale(r["name"], (r["width"], r["depth"], r["height"])) for r in records) if c]
+    if complaints:
+        raise SystemExit("scale contract failed:\n  " + "\n  ".join(complaints))
 
     catalog = [
         {
@@ -545,52 +491,35 @@ def main() -> None:
         }
         for record in records
     ]
-    with (ASSET_DIR / "catalog.json").open("w", encoding="utf-8") as handle:
-        json.dump(catalog, handle, indent=2)
-        handle.write("\n")
+    (ASSET_DIR / "catalog.json").write_text(json.dumps(catalog, indent=2) + "\n")
 
-    scene, camera, preview_collection = setup_render(mats)
-    camera.data.ortho_scale = 16.8
-    camera.location = (0.0, -16.0, 10.0)
-    look_at(camera, (0.0, -0.15, 0.28))
+    scene, camera, preview_collection = setup_render()
+
+    for record in records:
+        set_visible(record, True)
+    camera.data.ortho_scale = 3.2
+    camera.location = (2.2, -3.1, 1.9)
+    look_at(camera, (0.0, -0.1, 0.06))
     scene.render.filepath = str(PREVIEW_DIR / "pickups_preview.png")
     bpy.ops.render.render(write_still=True)
 
-    original_locations = {record["name"]: record["root"].location.copy() for record in records}
-    showcase_positions = {
-        "pickup_log": (-3.6, 0.6, 0.0),
-        "pickup_iron_ore": (-1.8, 0.4, 0.0),
-        "pickup_fibre_bundle": (0.0, 0.45, 0.0),
-        "pickup_berry": (1.55, 0.35, 0.0),
-        "pickup_coin_stack": (2.75, 0.35, 0.0),
-        "pickup_salvage_fragment": (4.0, 0.40, 0.0),
-    }
+    # Scale preview: a 1.80 m human bar so nothing can quietly drift again.
     for record in records:
-        set_visible(record, record["name"] in showcase_positions)
-        if record["name"] in showcase_positions:
-            record["root"].location = showcase_positions[record["name"]]
-    scale_parts = [
-        box("Scale_Post", (-4.8, -0.65, 0.5), (0.10, 0.10, 1.0), mats["scale"]),
-        box("Scale_Tick_20", (-4.70, -0.65, 0.20), (0.22, 0.08, 0.025), mats["scale"]),
-        box("Scale_Tick_40", (-4.70, -0.65, 0.40), (0.22, 0.08, 0.025), mats["scale"]),
-        box("Scale_Tick_60", (-4.70, -0.65, 0.60), (0.22, 0.08, 0.025), mats["scale"]),
-        box("Scale_Tick_80", (-4.70, -0.65, 0.80), (0.22, 0.08, 0.025), mats["scale"]),
-        box("Scale_Tick_100", (-4.70, -0.65, 1.00), (0.28, 0.08, 0.03), mats["scale"]),
-        box("Scale_20cm_Cube", (-4.25, -0.65, 0.10), (0.20, 0.20, 0.20), mats["scale"]),
-    ]
-    move_to_collection(scale_parts, preview_collection)
-    camera.data.ortho_scale = 12.5
-    camera.location = (8.5, -12.5, 6.5)
-    look_at(camera, (-0.1, 0.0, 0.35))
+        set_visible(record, record["name"] in {"pickup_log", "pickup_iron_ingot", "pickup_stone",
+                                               "pickup_mushroom", "pickup_berry", "pickup_coin"})
+    ref = box("Scale_Reference_Human", (-0.95, 0.0, 0.90), (0.34, 0.20, 1.80), mat("reference_blue"))
+    move_to_collection([ref], preview_collection)
+    camera.data.ortho_scale = 3.0
+    camera.location = (1.6, -3.4, 1.4)
+    look_at(camera, (-0.3, 0.0, 0.45))
     scene.render.filepath = str(PREVIEW_DIR / "pickups_scale_preview.png")
     bpy.ops.render.render(write_still=True)
 
-    for record in records:
-        record["root"].location = original_locations[record["name"]]
-        set_visible(record, True)
     bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE_DIR / "pickup_kit.blend"))
-    total_polygons = sum(record["polygons"] for record in records)
-    print(f"Built {len(records)} A-002 pickup assets ({total_polygons} polygons total)")
+    total = sum(r["polygons"] for r in records)
+    print(f"pickup kit: {len(records)} assets, {total} polygons")
+    for r in records:
+        print(f"  {r['name']:26s} {r['width']:.3f} x {r['depth']:.3f} x {r['height']:.3f} m  {r['polygons']:4d} polys")
 
 
 if __name__ == "__main__":

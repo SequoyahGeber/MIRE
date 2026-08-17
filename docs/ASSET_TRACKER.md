@@ -96,6 +96,73 @@ and `A-014b` in this file before making anything. Never silently leave half a ba
 - Material variants are welcome when they communicate state. Recolouring one mesh does not count as
   several distinct assets in the tracker.
 
+## Look at the back of the asset (task 2.1j)
+
+Every batch above recorded a "two-preview visual inspection", and **both of those previews are one
+camera angle**. Only A-004R and A-021S ever orbited an asset. So the back, the far side and the
+underside of most of MIRE's 224 exports had never been looked at by anyone, and the art shows it.
+Sequoyah's example: *"the log only having branches on the front pointing all in the same
+direction"*. In `build_pickup_kit.py` that was literally three ridges at `y = -0.20` running the
+same direction, and the same hand put the mushroom's three cap spots at y=-0.25/-0.31/-0.18 and the
+salvage fragment's three glow nodes at y=-0.20.
+
+**The instrument now exists. Use it before marking any batch `DONE`:**
+
+```text
+Blender --background --python tools/blender/audit_all_sides.py -- --only <substring>
+```
+
+It renders every matching GLB from eight azimuths plus top and bottom into one contact sheet under
+`assets/audit/sheets/`, with the key light following the camera so no side is hidden by shadow, and
+writes numeric checks to `assets/audit/geometry_report.json`. `tools/blender/detail_distribution.py`
+ranks assets by how tightly their protruding detail clusters on one side.
+
+Two things learned the hard way while building it, so nobody re-learns them:
+
+- **`recalc_face_normals` cannot judge these meshes.** They are unwelded face soup, so every edge
+  reads as non-manifold and the recalc reports nonsense — it claimed 46 of 128 faces inverted on a
+  clean asset. Signed volume (divergence theorem) is the check that works, and by it **no shipped
+  asset is inside out**.
+- **`smooth_shaded_faces` measured on an imported GLB is not a defect.** glTF stores flat shading as
+  split per-vertex normals, which Blender re-imports as smooth-with-custom-normals. The generators
+  do force flat shading. Do not chase this number.
+- **The one-sidedness metric is triage, not an oracle.** It correctly flagged `pickup_log` (R=0.86)
+  but *missed* `fallen_log_a` (R=0.15), because a branch stub is itself a cylinder whose vertices
+  spread across sectors and dilute the signal. It also over-flags intentional asymmetry — a roof
+  slope, an open chest lid, an axe head. Rank with it; judge with the contact sheet.
+
+### Scale was never checked against the player
+
+A second failure with the same root cause: each asset was sized to fill its own preview frame.
+Measured across the pickup kit — a coin **0.36 m** across, a berry **0.71 m**, a stone **1.08 m**, a
+1.50 m log. Fourteen objects whose real sizes span roughly 50:1 all landed within 4:1 of each other.
+The scale previews existed but were only used to confirm a reference was *present*, never to check
+each object against it.
+
+`mire_art.SCALE` now holds the real longest-axis dimension for anything a player can size against
+their own 1.80 m body, and `mire_art.check_scale()` **fails the build** when an asset drifts more
+than 12%. It caught five drifts on the first rebuild. Small items are made legible by *quantity*
+rather than inflation: the coin pickup is a spill of five true-size 26 mm coins, the berry pickup a
+handful of seven.
+
+### One palette, one set of primitives
+
+`tools/blender/mire_art.py` is now the shared art library and generators must draw from it.
+Before it: **233 material definitions across 11 generators, 216 of them a distinct colour, and not
+one colour shared between two families** — wood was seven different browns, iron four greys,
+leather two. `material()` existed in five different signatures and four generators could not express
+metal at all because their copy had no `metallic` parameter; `box()`, `ico()` and `cone()` were
+copy-pasted 9–11 times each. Colour is now authored in **sRGB hex** (a human can see that `#2E1A10`
+is charred wood; nobody could see it in `(0.075, 0.025, 0.014)`), stored linear, and reached by
+semantic token. A raw RGB tuple in a generator is a bug.
+
+`mire_art.radial()` is the direct cure for one-sided detail: it hands out angles around an axis
+instead of coordinates, so the even spread is the default and the one-sided cluster is the thing you
+have to work at.
+
+Reserved hues, so they keep meaning something: **purple is corruption, teal is the Ward.** Do not
+spend either on decoration.
+
 ## Verification contract
 
 Every completed batch records evidence for all applicable checks:

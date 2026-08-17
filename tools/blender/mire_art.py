@@ -1,0 +1,549 @@
+"""MIRE's shared art library: one palette, one scale table, one set of primitives.
+
+Import from a generator with::
+
+    import sys, pathlib
+    sys.path.append(str(pathlib.Path(__file__).resolve().parent))
+    from mire_art import PALETTE, SCALE, mat, box, ico, cone, cylinder_between
+
+Why this module exists
+----------------------
+Before it, every generator carried its own copy of ``material()``, ``box()``,
+``ico()`` and ``cone()`` — five different signatures of the first and nine to
+eleven copies of the rest — and every generator invented its own colours inline
+as raw linear floats. The result, measured across ``build_*.py``: **233 material
+definitions, 216 of them a distinct colour, and not one colour shared between
+two families.** Wood was seven different browns depending on which file drew it,
+iron four different greys, leather two. A tool's oak haft and a crafting
+station's oak bench top had no reason to match, so they did not.
+
+Three rules keep that from coming back:
+
+1. **Colour is named, never numeric.** Generators ask for ``PALETTE["wood_bark"]``.
+   A raw RGB tuple in a generator is a bug.
+2. **Colour is authored in sRGB hex, stored in linear.** The old floats were
+   linear, which is the right thing to hand Blender and the wrong thing to hand
+   a human: nobody can look at ``(0.075, 0.025, 0.014)`` and see charred wood, so
+   nobody noticed the drift. ``#2E1A10`` is legible, so it is checkable.
+3. **Size is named too.** ``SCALE`` holds the real dimension of anything whose
+   size a player can judge against their own body. Assets were previously sized
+   to fill their own preview frame, which is why a coin ended up 0.36 m across
+   and a berry 0.71 m, and why fourteen pickups that should span 50:1 in size
+   spanned 4:1.
+
+The palette is deliberately small. Flat-shaded low-poly reads by value contrast
+and silhouette, not by hue variety; a wide palette makes a scene look noisy, not
+rich.
+"""
+
+from __future__ import annotations
+
+import math
+import random
+from typing import Sequence
+
+import bpy
+from mathutils import Vector
+
+
+# ---------------------------------------------------------------------------
+# Colour
+# ---------------------------------------------------------------------------
+
+
+def srgb_to_linear(c: float) -> float:
+    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def hex_rgba(value: str, alpha: float = 1.0) -> tuple[float, float, float, float]:
+    """``"#2E1A10"`` -> linear RGBA, which is what Blender's shader sockets want."""
+    value = value.lstrip("#")
+    r, g, b = (int(value[i : i + 2], 16) / 255.0 for i in (0, 2, 4))
+    return (srgb_to_linear(r), srgb_to_linear(g), srgb_to_linear(b), alpha)
+
+
+class Swatch:
+    """A named surface: colour plus how it behaves under light.
+
+    Roughness and metallic travel with the colour because they are part of what
+    makes a substance recognisable. Iron that is 0.9 rough reads as painted grey
+    plastic no matter how correct its hue is, and that was happening — the old
+    per-family ``material()`` copies disagreed about whether metallic was even a
+    parameter, so four of eleven generators could not express metal at all.
+    """
+
+    __slots__ = ("hex", "roughness", "metallic", "emission_hex", "emission_strength", "note")
+
+    def __init__(
+        self,
+        hex_value: str,
+        roughness: float = 0.88,
+        metallic: float = 0.0,
+        emission_hex: str | None = None,
+        emission_strength: float = 0.0,
+        note: str = "",
+    ) -> None:
+        self.hex = hex_value
+        self.roughness = roughness
+        self.metallic = metallic
+        self.emission_hex = emission_hex
+        self.emission_strength = emission_strength
+        self.note = note
+
+    @property
+    def rgba(self) -> tuple[float, float, float, float]:
+        return hex_rgba(self.hex)
+
+    @property
+    def emission_rgba(self) -> tuple[float, float, float, float] | None:
+        return hex_rgba(self.emission_hex) if self.emission_hex else None
+
+
+#: The MIRE palette. Ramps are three stops of one hue (dark / mid / light) so a
+#: flat-shaded form reads as one substance catching light at three angles.
+#:
+#: Art direction, stated once so a generator never has to guess:
+#:   * Naturals are warm and muted — the world is wet, overcast and rotting.
+#:   * The Mire is desaturated purple-black, and it is the ONLY purple.
+#:   * Wards answer the Mire in teal. Purple means corruption, teal means safety;
+#:     those two hues are reserved and must not be spent on decoration.
+#:   * Fire and brass are the only warm accents, so a lit camp reads instantly.
+PALETTE: dict[str, Swatch] = {
+    # -- wood ---------------------------------------------------------------
+    "wood_bark_dark": Swatch("#2E1A10", 0.94, note="shadowed bark, trunk undersides"),
+    "wood_bark": Swatch("#4A2A18", 0.94, note="standing tree bark"),
+    "wood_bark_light": Swatch("#6B4026", 0.92, note="lit bark, root flares"),
+    "wood_timber": Swatch("#8A5A2E", 0.86, note="worked/planed wood: benches, planks, hafts"),
+    "wood_timber_light": Swatch("#A87542", 0.84, note="lit plank faces, fresh boards"),
+    "wood_cut": Swatch("#C9A063", 0.80, note="fresh cut end-grain and axe scars"),
+    "wood_charred": Swatch("#241812", 0.96, note="burnt wood around fire"),
+    # -- stone --------------------------------------------------------------
+    "stone_dark": Swatch("#3A4246", 0.95, note="crevices, undersides"),
+    "stone": Swatch("#5A6469", 0.94, note="boulders, walls, node bodies"),
+    "stone_light": Swatch("#808B8F", 0.92, note="lit faces, fresh fracture"),
+    "stone_ruin": Swatch("#6E736B", 0.94, note="dressed/lichened ruin masonry"),
+    # -- metal --------------------------------------------------------------
+    "iron_dark": Swatch("#23292E", 0.52, 0.62, note="wrought shadow, hammer faces"),
+    "iron": Swatch("#4A555C", 0.42, 0.72, note="tool heads, fittings"),
+    "iron_light": Swatch("#8D9BA1", 0.26, 0.80, note="ground cutting edges only"),
+    "brass": Swatch("#A8752A", 0.34, 0.62, note="caps, quillons, fittings"),
+    "gold": Swatch("#C9962E", 0.30, 0.66, note="coins and treasure"),
+    # -- foliage ------------------------------------------------------------
+    "pine_dark": Swatch("#12331F", 0.94),
+    "pine": Swatch("#1D4A2A", 0.94),
+    "pine_light": Swatch("#2E6B39", 0.92),
+    "leaf_deep": Swatch("#1B3D1C", 0.94),
+    "leaf": Swatch("#2F6B2A", 0.93),
+    "leaf_light": Swatch("#4E8F35", 0.92),
+    "leaf_gold": Swatch("#9A7327", 0.92, note="autumn accent; use sparingly"),
+    "grass_dark": Swatch("#23491F", 0.95),
+    "grass": Swatch("#3A6B28", 0.94),
+    "grass_light": Swatch("#5C8F33", 0.93),
+    "grass_dry": Swatch("#8A7A3A", 0.94, note="reeds, thatch, straw, dry tufts"),
+    "moss": Swatch("#35592A", 0.96),
+    "reed": Swatch("#6B7A32", 0.94),
+    # -- organic / creature -------------------------------------------------
+    "flesh_raw": Swatch("#8E3B3B", 0.82, note="raw meat; muted, never fire-engine red"),
+    "flesh_fat": Swatch("#C4B08A", 0.84),
+    "bone": Swatch("#CFC6AE", 0.86),
+    "leather": Swatch("#6B4A30", 0.90, note="ONE leather: grips, pouches, hides, straps"),
+    "cloth": Swatch("#8E7A5C", 0.95),
+    "cloth_red": Swatch("#8E2B22", 0.93, note="the only red textile"),
+    "rope": Swatch("#A8873F", 0.95),
+    "fibre": Swatch("#BFA766", 0.95),
+    "chitin_dark": Swatch("#1F1826", 0.72, note="crawler shell shadow"),
+    "chitin": Swatch("#33283F", 0.68, note="crawler shell"),
+    # -- mire corruption (purple is reserved) -------------------------------
+    "mire_black": Swatch("#140E1A", 0.92),
+    "mire": Swatch("#2A1838", 0.90),
+    "mire_light": Swatch("#45255C", 0.88),
+    "mire_flesh": Swatch("#5C2A66", 0.84, note="wet corrupted tissue"),
+    "mire_glow": Swatch("#3A1C4E", 0.60, 0.0, "#A03CE6", 2.0, note="emissive corruption veins"),
+    "crystal": Swatch("#4A1E80", 0.34, 0.0, "#8A34E0", 1.8, note="mire crystal body"),
+    "crystal_tip": Swatch("#6B2BB5", 0.24, 0.0, "#B14EFF", 2.4, note="crystal highlights"),
+    # -- ward (teal answers the mire) ---------------------------------------
+    "ward_stone": Swatch("#4C5A5E", 0.92, note="ward masonry, cooler than world stone"),
+    "ward_glow": Swatch("#1E5A54", 0.40, 0.0, "#3CE0C8", 2.2, note="healthy ward emissive"),
+    "ward_crystal": Swatch("#2A7A72", 0.28, 0.0, "#5CF0D8", 2.6),
+    # -- fire and accents ---------------------------------------------------
+    "ember": Swatch("#E06A22", 0.60, 0.0, "#FF7A28", 3.0),
+    "flame": Swatch("#F2A03C", 0.50, 0.0, "#FFC24E", 4.5),
+    "coal": Swatch("#17181A", 0.96),
+    "blood": Swatch("#7A1E1E", 0.86),
+    "ice": Swatch("#7FD6E6", 0.30, 0.0, "#A8E8F4", 0.8),
+    # -- utility ------------------------------------------------------------
+    "preview_ground": Swatch("#1B241A", 0.98, note="preview backdrop only, never shipped"),
+    "reference_blue": Swatch("#2E7ACC", 0.90, note="scale-reference figure only"),
+}
+
+
+# ---------------------------------------------------------------------------
+# Scale
+# ---------------------------------------------------------------------------
+
+#: Player eye height. Every "does this read?" judgement is made from here.
+EYE_HEIGHT_M = 1.65
+PLAYER_HEIGHT_M = 1.80
+
+#: A dropped item smaller than this is a pixel at gameplay distance. Rather than
+#: inflating a single coin to the size of a dinner plate — which is what the old
+#: art did, at 0.36 m — small items are authored true-size and made *legible by
+#: quantity*: a dropped "coin" is a small spill of coins, a "berry" is a handful.
+#: The object is honest next to a 1.8 m player and still visible on the ground.
+READABILITY_FLOOR_M = 0.10
+
+#: Real longest-axis dimension, in metres, for anything a player can size up
+#: against themselves. Generators assert against this instead of eyeballing a
+#: preview. Where a pickup is a cluster, the figure is the cluster's extent and
+#: the per-unit size is in the comment.
+SCALE: dict[str, float] = {
+    # pickups — the family that drifted worst
+    "pickup_coin": 0.10,            # spill of ~5 coins, each 0.026 across
+    "pickup_coin_stack": 0.12,      # stacked column plus a few loose
+    "pickup_berry": 0.09,           # handful of ~7 berries, each 0.019
+    "pickup_mushroom": 0.16,        # pair of caps, larger 0.11 across
+    "pickup_raw_meat": 0.30,        # a cut off the bone, not a whole carcass
+    "pickup_stone": 0.18,
+    "pickup_flint": 0.13,
+    "pickup_coal": 0.16,            # small heap of lumps
+    "pickup_iron_ore": 0.20,
+    "pickup_iron_ingot": 0.26,
+    "pickup_salvage_fragment": 0.19,
+    "pickup_fibre_bundle": 0.32,
+    "pickup_branch": 0.85,
+    "pickup_log": 1.20,
+    # tools and weapons — length along the haft
+    "wooden_axe": 0.78,
+    "stone_axe": 0.80,
+    "wooden_pickaxe": 0.92,
+    "stone_pickaxe": 0.95,
+    "iron_pickaxe": 0.98,
+    "cleaver": 0.42,
+    "skewer": 1.05,
+    "short_bow": 1.15,
+    "arrow": 0.74,
+    "repair_hammer": 0.55,
+    "iron_sword": 1.02,
+    # world fixtures
+    "station_workbench": 1.30,
+    "station_campfire": 1.10,
+    "station_anvil": 0.95,
+    "ward_healthy": 2.10,
+    "wellspring_monolith": 7.25,
+    "enemy_crawler": 1.10,
+}
+
+
+def check_scale(name: str, dimensions: Sequence[float], tolerance: float = 0.12) -> str | None:
+    """Return a complaint if a built asset misses its ``SCALE`` entry."""
+    target = SCALE.get(name)
+    if target is None:
+        return None
+    longest = max(dimensions)
+    if target <= 0:
+        return None
+    ratio = longest / target
+    if abs(ratio - 1.0) > tolerance:
+        return f"{name}: longest axis {longest:.3f} m vs target {target:.3f} m ({ratio:.2f}x)"
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Materials
+# ---------------------------------------------------------------------------
+
+_MATERIAL_CACHE: dict[str, bpy.types.Material] = {}
+
+
+def mat(token: str, suffix: str = "") -> bpy.types.Material:
+    """Fetch (or build once) the shared material for a palette token.
+
+    Materials are cached per token so a scene with forty objects sharing
+    ``wood_timber`` exports one material, not forty near-identical ones.
+    """
+    if token not in PALETTE:
+        raise KeyError(f"unknown palette token {token!r}; add it to mire_art.PALETTE rather than inlining a colour")
+    key = f"{token}{suffix}"
+    cached = _MATERIAL_CACHE.get(key)
+    if cached is not None and key in bpy.data.materials:
+        return cached
+
+    sw = PALETTE[token]
+    name = "MIRE_" + "".join(part.capitalize() for part in key.split("_"))
+    material = bpy.data.materials.new(name)
+    material.diffuse_color = sw.rgba
+    material.use_nodes = True
+    shader = material.node_tree.nodes.get("Principled BSDF")
+    shader.inputs["Base Color"].default_value = sw.rgba
+    shader.inputs["Roughness"].default_value = sw.roughness
+    shader.inputs["Metallic"].default_value = sw.metallic
+    emission = sw.emission_rgba
+    if emission is not None:
+        shader.inputs["Emission Color"].default_value = emission
+        shader.inputs["Emission Strength"].default_value = sw.emission_strength
+    _MATERIAL_CACHE[key] = material
+    return material
+
+
+def reset_materials() -> None:
+    """Drop the cache. Call after clearing the scene between builds."""
+    _MATERIAL_CACHE.clear()
+
+
+def palette_report() -> list[str]:
+    """Human-checkable dump, used by the palette contact sheet."""
+    return [f"{k:18s} {v.hex}  rough={v.roughness:.2f} metal={v.metallic:.2f}  {v.note}" for k, v in PALETTE.items()]
+
+
+# ---------------------------------------------------------------------------
+# Primitives
+# ---------------------------------------------------------------------------
+
+
+def assign(obj: bpy.types.Object, material: bpy.types.Material) -> bpy.types.Object:
+    obj.data.materials.append(material)
+    for polygon in obj.data.polygons:
+        polygon.use_smooth = False
+    return obj
+
+
+def make_consistent(obj: bpy.types.Object) -> None:
+    """Recalculate outward normals.
+
+    Hand-authored face loops are not reliably wound the same way, and Godot
+    imports glTF with back-face culling on, so an inverted face is an invisible
+    face rather than a shading nit.
+    """
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.mesh.normals_make_consistent(inside=False)
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+
+def mesh_object(
+    name: str,
+    vertices: list[tuple[float, float, float]],
+    faces: list[tuple[int, ...]],
+    material: bpy.types.Material,
+    recalculate: bool = True,
+) -> bpy.types.Object:
+    mesh = bpy.data.meshes.new(f"{name}_Mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    assign(obj, material)
+    if recalculate:
+        make_consistent(obj)
+        for polygon in obj.data.polygons:
+            polygon.use_smooth = False
+    return obj
+
+
+def box(
+    name: str,
+    location: tuple[float, float, float],
+    dimensions: tuple[float, float, float],
+    material: bpy.types.Material,
+    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    bevel: float = 0.0,
+) -> bpy.types.Object:
+    bpy.ops.mesh.primitive_cube_add(location=location, rotation=rotation)
+    obj = bpy.context.object
+    obj.name = name
+    obj.scale = (dimensions[0] * 0.5, dimensions[1] * 0.5, dimensions[2] * 0.5)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    if bevel > 0.0:
+        modifier = obj.modifiers.new("Low_Poly_Bevel", "BEVEL")
+        modifier.width = bevel
+        modifier.segments = 1
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.modifier_apply(modifier=modifier.name)
+    return assign(obj, material)
+
+
+def cone(
+    name: str,
+    radius_bottom: float,
+    radius_top: float,
+    depth: float,
+    location: tuple[float, float, float],
+    material: bpy.types.Material,
+    vertices: int = 8,
+    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
+) -> bpy.types.Object:
+    bpy.ops.mesh.primitive_cone_add(
+        vertices=vertices,
+        radius1=radius_bottom,
+        radius2=radius_top,
+        depth=depth,
+        location=location,
+        rotation=rotation,
+    )
+    obj = bpy.context.object
+    obj.name = name
+    return assign(obj, material)
+
+
+def ico(
+    name: str,
+    location: tuple[float, float, float],
+    scale: tuple[float, float, float],
+    material: bpy.types.Material,
+    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    subdivisions: int = 1,
+) -> bpy.types.Object:
+    bpy.ops.mesh.primitive_ico_sphere_add(
+        subdivisions=subdivisions, radius=1.0, location=location, rotation=rotation
+    )
+    obj = bpy.context.object
+    obj.name = name
+    obj.scale = scale
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    return assign(obj, material)
+
+
+def cylinder_between(
+    name: str,
+    start: tuple[float, float, float],
+    end: tuple[float, float, float],
+    radius: float,
+    material: bpy.types.Material,
+    vertices: int = 8,
+    end_radius_ratio: float = 0.94,
+) -> bpy.types.Object:
+    first, second = Vector(start), Vector(end)
+    direction = second - first
+    obj = cone(
+        name, radius, radius * end_radius_ratio, direction.length,
+        tuple((first + second) * 0.5), material, vertices,
+    )
+    obj.rotation_mode = "QUATERNION"
+    obj.rotation_quaternion = direction.to_track_quat("Z", "Y")
+    return obj
+
+
+def tapered_between(
+    name: str,
+    start: tuple[float, float, float],
+    end: tuple[float, float, float],
+    start_radius: float,
+    end_radius: float,
+    material: bpy.types.Material,
+    vertices: int = 8,
+) -> bpy.types.Object:
+    first, second = Vector(start), Vector(end)
+    direction = second - first
+    obj = cone(name, start_radius, end_radius, direction.length, tuple((first + second) * 0.5), material, vertices)
+    obj.rotation_mode = "QUATERNION"
+    obj.rotation_quaternion = direction.to_track_quat("Z", "Y")
+    return obj
+
+
+# ---------------------------------------------------------------------------
+# Scene and bounds helpers
+# ---------------------------------------------------------------------------
+
+
+def radial(
+    count: int,
+    radius: float,
+    seed: int = 0,
+    jitter: float = 0.34,
+    radius_jitter: float = 0.12,
+    phase: float = 0.0,
+) -> list[tuple[float, float]]:
+    """``count`` (angle, radius) pairs spread right around an axis.
+
+    This is the cure for the defect that prompted the overhaul. The old code
+    placed decoration by writing coordinates by hand, and a hand that is looking
+    at one preview writes them all on the side it can see::
+
+        for x in (-0.38, 0.18, 0.48):
+            cylinder_between(f"Bark_Ridge", (x, -0.20, 0.19), (x + 0.12, -0.19, 0.39), ...)
+
+    Three ridges, all at y = -0.20, all running the same direction: a log with a
+    front and a bare back. Asking for angles instead of coordinates makes the
+    even spread the default and the one-sided cluster the thing you have to work
+    at. Jitter is deterministic, seeded per asset, so rebuilds stay identical.
+    """
+    rng = random.Random(seed)
+    step = math.tau / max(count, 1)
+    out: list[tuple[float, float]] = []
+    for i in range(count):
+        angle = phase + i * step + rng.uniform(-jitter, jitter) * step
+        out.append((angle, radius * (1.0 + rng.uniform(-radius_jitter, radius_jitter))))
+    return out
+
+
+def around(
+    axis_point: tuple[float, float, float],
+    angle: float,
+    radius: float,
+    axis: str = "z",
+) -> tuple[float, float, float]:
+    """Point at ``angle``/``radius`` around an axis through ``axis_point``."""
+    x, y, z = axis_point
+    c, s = math.cos(angle) * radius, math.sin(angle) * radius
+    if axis == "z":
+        return (x + c, y + s, z)
+    if axis == "x":
+        return (x, y + c, z + s)
+    return (x + c, y, z + s)
+
+
+def look_at(obj: bpy.types.Object, target: tuple[float, float, float]) -> None:
+    direction = obj.location - Vector(target)
+    obj.rotation_euler = direction.to_track_quat("Z", "Y").to_euler()
+
+
+def descendants(obj: bpy.types.Object) -> list[bpy.types.Object]:
+    out = [obj]
+    for child in obj.children:
+        out.extend(descendants(child))
+    return out
+
+
+def move_to_collection(objects: list[bpy.types.Object], collection: bpy.types.Collection) -> None:
+    for obj in objects:
+        for existing in list(obj.users_collection):
+            existing.objects.unlink(obj)
+        collection.objects.link(obj)
+
+
+def world_bounds(objects: list[bpy.types.Object]) -> tuple[Vector, Vector]:
+    lo = Vector((1e9, 1e9, 1e9))
+    hi = Vector((-1e9, -1e9, -1e9))
+    for obj in objects:
+        if obj.type != "MESH":
+            continue
+        for corner in obj.bound_box:
+            world = obj.matrix_world @ Vector(corner)
+            lo = Vector((min(lo[i], world[i]) for i in range(3)))
+            hi = Vector((max(hi[i], world[i]) for i in range(3)))
+    return lo, hi
+
+
+def ground_and_centre(objects: list[bpy.types.Object], anchor: list[bpy.types.Object] | None = None) -> None:
+    """Sit the asset on z=0 and centre it in x/y.
+
+    ``anchor`` restricts the centring to the geometry a state set shares, which
+    is what keeps an opened lid or a debris skirt from shifting the whole object
+    sideways the moment gameplay swaps the mesh (the A-005 rule).
+    """
+    lo, hi = world_bounds(anchor or objects)
+    offset = Vector(((lo.x + hi.x) * 0.5, (lo.y + hi.y) * 0.5, lo.z))
+    for obj in objects:
+        if obj.parent is None:
+            obj.location -= offset
+
+
+def eevee_engine() -> str:
+    items = bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items.keys()
+    for candidate in ("BLENDER_EEVEE_NEXT", "BLENDER_EEVEE"):
+        if candidate in items:
+            return candidate
+    return items[0]

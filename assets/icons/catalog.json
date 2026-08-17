@@ -6,8 +6,8 @@
     "azimuth_deg": 55.0,
     "elevation_deg": 21.0,
     "roll_deg": 0.0,
-    "ortho_scale_m": 1.3792,
-    "source_polygons": 156
+    "ortho_scale_m": 1.0374,
+    "source_polygons": 424
   },
   {
     "id": "branch",
@@ -16,8 +16,8 @@
     "azimuth_deg": 55.0,
     "elevation_deg": 21.0,
     "roll_deg": 0.0,
-    "ortho_scale_m": 0.941,
-    "source_polygons": 100
+    "ortho_scale_m": 0.6699,
+    "source_polygons": 116
   },
   {
     "id": "fibre_bundle",
@@ -26,8 +26,8 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.9963,
-    "source_polygons": 196
+    "ortho_scale_m": 0.2851,
+    "source_polygons": 200
   },
   {
     "id": "stone",
@@ -36,8 +36,8 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.8885,
-    "source_polygons": 60
+    "ortho_scale_m": 0.1661,
+    "source_polygons": 80
   },
   {
     "id": "flint",
@@ -46,8 +46,8 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.6359,
-    "source_polygons": 28
+    "ortho_scale_m": 0.1052,
+    "source_polygons": 40
   },
   {
     "id": "coal",
@@ -56,8 +56,8 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.7929,
-    "source_polygons": 80
+    "ortho_scale_m": 0.1649,
+    "source_polygons": 120
   },
   {
     "id": "iron_ore",
@@ -65,9 +65,9 @@
     "size_px": 256,
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
-    "roll_deg": 0.0,
-    "ortho_scale_m": 0.837,
-    "source_polygons": 100
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.1735,
+    "source_polygons": 140
   },
   {
     "id": "iron_ingot",
@@ -76,8 +76,8 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.9441,
-    "source_polygons": 56
+    "ortho_scale_m": 0.2623,
+    "source_polygons": 80
   },
   {
     "id": "salvage_fragment",
@@ -86,7 +86,7 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.6647,
+    "ortho_scale_m": 0.1608,
     "source_polygons": 168
   },
   {
@@ -96,8 +96,8 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 0.0,
-    "ortho_scale_m": 0.675,
-    "source_polygons": 460
+    "ortho_scale_m": 0.0799,
+    "source_polygons": 196
   },
   {
     "id": "mushroom",
@@ -106,8 +106,8 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.8218,
-    "source_polygons": 172
+    "ortho_scale_m": 0.157,
+    "source_polygons": 552
   },
   {
     "id": "raw_meat",
@@ -116,8 +116,8 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 45.0,
-    "ortho_scale_m": 0.9074,
-    "source_polygons": 128
+    "ortho_scale_m": 0.2826,
+    "source_polygons": 148
   },
   {
     "id": "coin",
@@ -125,9 +125,9 @@
     "size_px": 256,
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
-    "roll_deg": 0.0,
-    "ortho_scale_m": 0.4139,
-    "source_polygons": 132
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.0964,
+    "source_polygons": 440
   },
   {
     "id": "coin_stack",
@@ -136,8 +136,8 @@
     "azimuth_deg": 35.0,
     "elevation_deg": 21.0,
     "roll_deg": 0.0,
-    "ortho_scale_m": 0.6456,
-    "source_polygons": 528
+    "ortho_scale_m": 0.0814,
+    "source_polygons": 880
   },
   {
     "id": "wooden_axe",
