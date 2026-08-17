@@ -13,9 +13,10 @@ Non-negotiables, repeated here because they're the ones that cost the most when 
 
 1. **`.agent/bin/agent start`** at the beginning of every session, and **claim before you edit**.
    It names this chat itself — no `MIRE_AGENT`, no prefix, commits included (F-007).
-2. **Never edit `.tscn` / `.tres`.** Scene files don't merge. Sequoyah wires scenes in the editor.
-   **`project.godot` is different (D-021)** — claim it by name and register your own autoload, after
-   checking the Godot editor is closed. A script nothing loads isn't shipped.
+2. **Godot-authored files (`.tscn` / `.tres` / `.import`) only under an exact per-file claim, with
+   the editor closed (D-031).** They don't merge, so never share one. **`project.godot` (D-021)**:
+   claim it by name, append only — a task that ships an autoload registers it in that same task.
+   A script nothing loads isn't shipped.
 3. **Never explore speculatively** — but never stop to ask, either. Quota, not time, is the
    constraint. Run `agent brief <id>`, read the four docs it names, then the files your task touches.
    Ambiguous spec? Decide it, record why, keep going.

@@ -143,6 +143,28 @@ closed **editor** (D-021, D-031). `agent order` refuses such an order while the 
 checks for the real thing rather than trusting `pgrep -fl Godot`, which matches nine processes when
 one engine is running (F-045).
 
+### Autoloads are registered with a lock, not a claim
+
+D-021 is right that a task shipping an autoload must register it in that same task — a script nothing
+loads is not shipped. But a *claim* on `project.godot` is held for the task's whole duration, and
+**five specs claim it** (2.11, 2.12, 2.13, 3.3, 3.6). Ordering any two of them at once was refused,
+which would have collapsed three lanes back to one for most of M2 and M3.
+
+A registration is one appended line, so it takes a lock instead:
+
+```bash
+agent autoload DayNight res://systems/environment/day_night.gd
+```
+
+Seconds, not an hour. It verifies the editor is closed, appends at the end of `[autoload]` so load
+order is preserved, is idempotent, refuses a conflicting path, and never rewrites an existing line
+(append-only, D-019). **`agent order` therefore drops `project.godot` from a derived claim set** and
+tells the lane to use this instead — so the three M2 tasks above now dispatch to three lanes in
+parallel with fully disjoint claim sets.
+
+> Worth filing as a finding against `SPECS.md` (its blocks still list `project.godot` under
+> **Claim:**) once `docs/FINDINGS.md` is free — it was held by the audit when this was written.
+
 ---
 
 ## 6. Routing: which lane gets what

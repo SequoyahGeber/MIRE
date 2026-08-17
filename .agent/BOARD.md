@@ -8,7 +8,7 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **F-050** Governing docs contradict D-031 in six places, an unclosed code fence hides eight decisions, and the budget table is 51 sessions stale | flint5 | 2026-08-17 18:44 | `docs/NEXT.md`, `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `docs/AUDIT-2026-08-17.md`, `AGENTS.md`, `content/recipes/stone_axe.tres`, `docs/DECISIONS.md`, `docs/ROADMAP.md`, `docs/FINDINGS.md`, `CLAUDE.md` |
+| **F-050** Governing docs contradict D-031 in six places, an unclosed code fence hides eight decisions, and the budget table is 51 sessions stale | flint5 | 2026-08-17 18:44 | `docs/NEXT.md`, `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `docs/AUDIT-2026-08-17.md`, `AGENTS.md`, `content/recipes/stone_axe.tres`, `docs/DECISIONS.md`, `docs/ROADMAP.md`, `docs/FINDINGS.md`, `CLAUDE.md`, `docs/SPECS.md` |
 
 ## Milestones
 

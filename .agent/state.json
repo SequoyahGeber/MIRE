@@ -49,6 +49,11 @@
       "agent": "flint5",
       "at": "2026-08-17T18:49:57+00:00",
       "task": "F-050"
+    },
+    "docs/SPECS.md": {
+      "agent": "flint5",
+      "at": "2026-08-17T19:01:24+00:00",
+      "task": "F-050"
     }
   },
   "in_flight": {
@@ -64,7 +69,8 @@
         "docs/DECISIONS.md",
         "docs/ROADMAP.md",
         "docs/FINDINGS.md",
-        "CLAUDE.md"
+        "CLAUDE.md",
+        "docs/SPECS.md"
       ],
       "notes": [],
       "started": "2026-08-17T18:44:35+00:00"
@@ -1096,20 +1102,10 @@
       "at": "2026-08-17T01:22:00+00:00",
       "task": "2.1h"
     },
-    "assets/maps/playtest_map.glb": {
-      "agent": "reed",
-      "at": "2026-08-16T19:00:05+00:00",
-      "task": "2.1e"
-    },
     "assets/maps/preview/playtest_hollow_preview.png": {
       "agent": "pike",
       "at": "2026-08-17T01:22:00+00:00",
       "task": "2.1h"
-    },
-    "assets/maps/preview/playtest_map_preview.png": {
-      "agent": "reed",
-      "at": "2026-08-16T19:00:05+00:00",
-      "task": "2.1e"
     },
     "assets/source/adapted_nature_set.blend": {
       "agent": "pike14",
@@ -1140,11 +1136,6 @@
       "agent": "pike",
       "at": "2026-08-17T01:22:00+00:00",
       "task": "2.1h"
-    },
-    "assets/source/playtest_map.blend": {
-      "agent": "reed",
-      "at": "2026-08-16T19:00:05+00:00",
-      "task": "2.1e"
     },
     "assets/source/reference_imports": {
       "agent": "ember",
@@ -1911,11 +1902,6 @@
       "at": "2026-08-17T01:22:00+00:00",
       "task": "2.1h"
     },
-    "tools/blender/build_playtest_map.py": {
-      "agent": "reed",
-      "at": "2026-08-16T19:00:05+00:00",
-      "task": "2.1e"
-    },
     "tools/blender/build_tool_weapon_set.py": {
       "agent": "reed16",
       "at": "2026-08-17T17:01:21+00:00",
@@ -2191,11 +2177,6 @@
       "at": "2026-08-17T01:22:00+00:00",
       "task": "2.1h"
     },
-    "tools/playtest_map_check.gd": {
-      "agent": "reed",
-      "at": "2026-08-16T19:00:05+00:00",
-      "task": "2.1e"
-    },
     "tools/run_identity_check.gd": {
       "agent": "dusk3",
       "at": "2026-08-17T15:43:36+00:00",
@@ -2345,11 +2326,6 @@
       "agent": "wick",
       "at": "2026-08-17T00:47:21+00:00",
       "task": "2.1g"
-    },
-    "world/gen/test_map_props.gd": {
-      "agent": "reed",
-      "at": "2026-08-16T19:00:05+00:00",
-      "task": "2.1e"
     }
   },
   "tasks": {
@@ -2381,7 +2357,7 @@
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.12": {
-      "done_at": "2026-08-17T18:51:35+00:00",
+      "done_at": "2026-08-17T19:02:10+00:00",
       "done_by": "yarrow21",
       "est": "1.5",
       "milestone": "M0",

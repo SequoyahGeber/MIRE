@@ -35,6 +35,7 @@ ORDERS = os.path.join(AGENT_DIR, "orders")
 LOCKS = os.path.join(AGENT_DIR, "locks")
 LANE_BIN = os.path.join(AGENT_DIR, "bin", "lane")
 LANES_FILE = os.path.join(AGENT_DIR, "lanes.json")
+PROJECT_GODOT = os.path.join(ROOT, "project.godot")
 
 STALE_HOURS = 12
 
@@ -1296,6 +1297,75 @@ def _suggest_check(tid, title):
     return [p for _, p in scored[:3]]
 
 
+SPECS = os.path.join(ROOT, "docs", "SPECS.md")
+
+
+def _spec_body(tid):
+    """This task's execution spec from docs/SPECS.md, if it has one.
+
+    SPECS.md exists so a lane needs zero exploration, and an order that merely *points* at it makes
+    the lane open and search a 34 KB file — which is exploration with extra steps. Inline the block."""
+    if not os.path.exists(SPECS):
+        return []
+    out, capturing = [], False
+    for line in open(SPECS):
+        if line.startswith("## "):
+            key = re.split(r"[ ·]", line[3:].strip())[0]
+            if capturing:
+                break
+            capturing = (key == tid)
+            if capturing:
+                out.append(line.rstrip())
+            continue
+        if line.startswith("# ") and capturing:
+            break
+        if capturing:
+            out.append(line.rstrip())
+    while out and not out[-1].strip():
+        out.pop()
+    return out
+
+
+def _spec_claims(spec):
+    """The claim set the spec itself declares.
+
+    SPECS.md blocks carry a `**Claim:** \\`a.gd\\`, \\`b.gd\\`` line, sometimes wrapped over two
+    lines. That list is authoritative — it was written against the code — so it is a better default
+    than whatever the director remembered to type. A mismatch here surfaces as a failed claim
+    halfway through a dispatch, after the lane has already spent quota getting there."""
+    text, capturing = [], False
+    for line in spec:
+        stripped = line.strip()
+        if stripped.startswith("**Claim:**"):
+            capturing = True
+            text.append(stripped[len("**Claim:**"):])
+            continue
+        if capturing:
+            # Keep consuming wrapped continuation lines, stop at the next field or a blank line.
+            if not stripped or re.match(r"\*\*[A-Z]", stripped) or stripped.startswith(("-", "#")):
+                break
+            text.append(stripped)
+    found = re.findall(r"`([^`]+)`", " ".join(text))
+    return [f for f in found if "/" in f or f.endswith((".gd", ".godot", ".tres", ".tscn", ".cfg"))]
+
+
+def _spec_verify(spec):
+    """The checks the spec names, which beat guessing from the title.
+
+    A spec's `Verify:` line names the checks that actually prove this task — including ones the task
+    is meant to *write*. Keyword-matching against existing tools/ can only ever find checks that
+    already exist, so for any task that adds one it points at the wrong file."""
+    names = []
+    for line in spec:
+        stripped = line.strip()
+        if stripped.startswith(("Verify:", "**Verify:**")):
+            for tok in re.findall(r"`([^`]+)`", stripped):
+                tok = tok.strip().replace("tools/", "").replace(".gd", "")
+                if tok.endswith("_check") and tok not in names:
+                    names.append(tok)
+    return ["tools/%s.gd" % n for n in names]
+
+
 def _order_path(tid):
     return os.path.join(ORDERS, "%s.md" % tid.replace("/", "_"))
 
@@ -1331,6 +1401,7 @@ Work autonomously and finish. **Do not stop to ask questions.** If the spec is a
 the way `ARCHITECTURE.md` and `DECISIONS.md` point, record the call, and keep going — a
 wrong-but-documented decision is cheap to reverse, and a stalled lane is not.
 
+%(spec)s
 ## 1. Claim before your first edit
 
 ```bash
@@ -1421,6 +1492,19 @@ def cmd_order(args):
     if t["status"] == "done":
         die("%s is already done — check the journal before re-ordering it" % tid)
 
+    spec = _spec_body(tid)
+    from_spec = False
+    if not files:
+        files = [_rel(f) for f in _spec_claims(spec)]
+        from_spec = bool(files)
+
+    # A spec that claims project.godot only wants to register an autoload. Holding the file for the
+    # whole task serialises every autoload-producing task against every other one (F-051), so drop it
+    # from the claim set and let the lane use the locked `agent autoload` instead.
+    autoload_only = "project.godot" in files
+    if autoload_only:
+        files = [f for f in files if f != "project.godot"]
+
     # Never hand out two orders that fight. This is the single most important safety property once
     # three lanes run at once: the claim system catches a collision, but only after a lane has
     # already spent quota getting to its first edit.
@@ -1443,7 +1527,9 @@ def cmd_order(args):
         die("this order touches Godot-authored files (%s) and Godot is open. Close the editor first "
             "(D-021, D-031)." % ", ".join(guarded))
 
-    checks = _suggest_check(tid, t["title"])
+    # The spec knows; the title heuristic only guesses.
+    checks = _spec_verify(spec) or _suggest_check(tid, t["title"])
+    missing = [c for c in checks if not os.path.exists(os.path.join(ROOT, c))]
     if not verify:
         verify = ("\n".join(".agent/bin/agent godot --script %s" % c for c in checks)
                   if checks else
@@ -1452,13 +1538,29 @@ def cmd_order(args):
 
     claim = ".agent/bin/agent claim %s%s" % (tid, (" " + " ".join(files)) if files else
                                              " <the files you will edit>")
+    if autoload_only:
+        claim += ("\n\n# Your spec lists project.godot. Do NOT claim it — registering an autoload is\n"
+                  "# one locked, atomic append, and holding the file would block every other lane\n"
+                  "# that needs one (F-051). When your script exists, run instead:\n"
+                  ".agent/bin/agent autoload <Name> res://<path to your script>.gd")
     lanes = _lane_state()
     account = lanes.get(lane, {}).get("account", "unassigned")
+
+    if spec:
+        spec_block = ("## 0. Your spec — this is the work, and it assumes docs/SPECS.md's preamble\n\n"
+                      "%s\n\n> Read `docs/SPECS.md`'s *four standing rules* and *Seams that already\n"
+                      "> exist* before your first edit. They have already cost real sessions.\n"
+                      % "\n".join(spec))
+    else:
+        spec_block = ("## 0. No spec block exists for %s in docs/SPECS.md\n\n"
+                      "Write one as part of this task — SPECS.md says fixing a missing spec belongs to\n"
+                      "the task that discovers it. Read its preamble and follow the shape of a\n"
+                      "neighbouring block.\n" % tid)
 
     os.makedirs(ORDERS, exist_ok=True)
     body = ORDER_TEMPLATE % {
         "lane": lane, "account": account, "agent": lane.lower(), "tid": tid,
-        "files": " ".join(files), "claim": claim, "verify": verify,
+        "files": " ".join(files), "claim": claim, "verify": verify, "spec": spec_block,
         "brief": _plain(cmd_brief, [tid]).strip(),
     }
     path = _order_path(tid)
@@ -1469,13 +1571,16 @@ def cmd_order(args):
     print("  %s%s%s" % (C["dim"], t["title"][:88], C["x"]))
     print("  %s%s · %d bytes%s" % (C["dim"], os.path.relpath(path, ROOT), len(body), C["x"]))
     if files:
+        if from_spec:
+            print("  %sclaim set taken from docs/SPECS.md%s" % (C["dim"], C["x"]))
         for f in files:
             print("  %s· %s%s" % (C["dim"], f, C["x"]))
     else:
-        print("  %s⚠ no --files given: the lane claims as it goes, so collisions surface at claim "
-              "time rather than now%s" % (C["y"], C["x"]))
-    if checks:
-        print("  %sverify: %s%s" % (C["dim"], checks[0], C["x"]))
+        print("  %s⚠ no claim set: SPECS.md declares none and none was given, so the lane claims as "
+              "it goes and collisions surface mid-dispatch rather than now%s" % (C["y"], C["x"]))
+    for c in checks:
+        note = " %s(this task writes it)%s" % (C["y"], C["x"]) if c in missing else ""
+        print("  %sverify: %s%s%s" % (C["dim"], c, C["x"], note))
     if lane != "?":
         print("\n  next:  %sagent dispatch %s%s" % (C["c"], lane, C["x"]))
 
@@ -1559,6 +1664,72 @@ def cmd_godot(args):
     with file_lock("godot", timeout=1800):
         print("%s· %s%s" % (C["dim"], " ".join(argv[3:]), C["x"]))
         return subprocess.call(argv, cwd=ROOT)
+
+
+def cmd_autoload(args):
+    """Register one autoload in project.godot, atomically, without claiming the file for a whole task.
+
+    D-021 is right that a task shipping an autoload must register it — a script nothing loads is not
+    shipped. But holding `project.godot` for the task's whole duration serialises every autoload-
+    producing task against every other one, and five upcoming specs (2.11, 2.12, 2.13, 3.3, 3.6) each
+    claim it. That would collapse three lanes back to one for most of M2 and M3 (F-051).
+
+    A registration is one appended line. So take a short lock, verify the editor is closed, append,
+    release — seconds instead of an hour, and the claim is never needed. Idempotent, and append-only
+    per D-019: existing lines are never reordered or rewritten."""
+    if len(args) < 2:
+        die('usage: agent autoload <Name> <res://path/to/script.gd>\n'
+            '  e.g. agent autoload DayNight res://systems/environment/day_night.gd')
+    name, path = args[0], args[1]
+    if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", name):
+        die("'%s' is not a valid autoload name — PascalCase identifier, no spaces" % name)
+    if not path.startswith("res://"):
+        path = "res://" + path.lstrip("/")
+    target = os.path.join(ROOT, path[len("res://"):])
+    if not os.path.exists(target):
+        die("%s does not exist — write the script before registering it" % path)
+
+    with file_lock("project", timeout=300):
+        if _godot_running():
+            die("the Godot editor is open. It rewrites project.godot on save and will silently "
+                "discard this edit (D-021). Close it and re-run.")
+        with open(PROJECT_GODOT) as f:
+            lines = f.read().splitlines()
+
+        entry = '%s="*%s"' % (name, path)
+        for line in lines:
+            stripped = line.strip()
+            if stripped == entry:
+                ok("%s is already registered" % name)
+                return 0
+            if stripped.startswith("%s=" % name):
+                die("%s is already registered as a different path:\n  %s\n"
+                    "Append-only (D-019) — resolve this by hand." % (name, stripped))
+
+        # Append at the END of [autoload]. Order is load order, and a new autoload must not be
+        # inserted ahead of one that already exists and might be its dependency.
+        try:
+            start = next(i for i, l in enumerate(lines) if l.strip() == "[autoload]")
+        except StopIteration:
+            lines += ["", "[autoload]", "", entry]
+        else:
+            end = len(lines)
+            for i in range(start + 1, len(lines)):
+                if lines[i].strip().startswith("[") and lines[i].strip().endswith("]"):
+                    end = i
+                    break
+            while end > start + 1 and not lines[end - 1].strip():
+                end -= 1
+            lines.insert(end, entry)
+
+        tmp = PROJECT_GODOT + ".tmp"
+        with open(tmp, "w") as f:
+            f.write("\n".join(lines) + "\n")
+        os.replace(tmp, PROJECT_GODOT)
+
+    ok("registered %s" % entry)
+    print("  %sverify it loads:  agent godot --quit-after 5%s" % (C["dim"], C["x"]))
+    return 0
 
 
 def cmd_reap(args):
@@ -1767,6 +1938,7 @@ COMMANDS = {
     # Orchestration (D-036)
     "order": cmd_order, "dispatch": cmd_dispatch, "lanes": cmd_lanes,
     "collect": cmd_collect, "report": cmd_report, "reap": cmd_reap, "godot": cmd_godot,
+    "autoload": cmd_autoload,
 }
 
 USAGE = """agent — multi-agent coordination for MIRE
@@ -1786,6 +1958,7 @@ USAGE = """agent — multi-agent coordination for MIRE
 Verifying — always launch the engine through this, never bare (F-044):
 
   agent godot --script tools/x_check.gd     headless Godot, under a lock
+  agent autoload <Name> <res://path.gd>     register an autoload atomically — no claim needed
 
 Directing three worker accounts (docs/ORCHESTRATION.md):
 

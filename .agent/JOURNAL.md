@@ -1351,3 +1351,13 @@ Commit at time of writing: `f595c8b`
 Added lane login with device auth by default (two ChatGPT accounts share one browser session, so the browser flow would silently put both lanes on one quota pool). doctor now asks each CLI's own login/auth status instead of guessing from files — verified the lane homes read 'Not logged in' while the main ~/.codex reads 'Logged in using ChatGPT', proving the isolation works.
 
 Commit at time of writing: `6747f40`
+
+---
+
+### DONE · 0.12 · yarrow21 · 2026-08-17T19:02:10+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+Orders now inline the task's SPECS.md block, derive the claim set and check names from it, and route autoload registration through the new locked 'agent autoload' instead of a task-long project.godot claim. Verified: 2.11/2.12/2.13 now order to LC2/LC1/LP with fully disjoint claim sets (previously all three collided on project.godot); autoload append/idempotency/conflict all tested and project.godot restored byte-identical.
+
+Commit at time of writing: `d5faa62`

@@ -9,26 +9,35 @@ Every task is tagged with its tier from `AI-WORKFLOW.md`:
 - **`[T1]`** — cheap agent (Codex / second Claude). Well-specified, self-contained.
 - **`[T2]`** — premium quota. Reasoning other code depends on.
 
+**Per-task execution specs live in [`SPECS.md`](SPECS.md).** A lane or agent given a task id reads
+its spec there and should need zero exploration; the director's work orders point at it. If a task's
+spec is missing or stale, fixing the spec is part of the task.
+
 ---
 
 ## Budget at a glance
 
+Recomputed 2026-08-17 by summing the actual task rows below (the previous table understated M2 by
+45 sessions after the authored-art program landed there — see the note under M2). If rows change,
+re-sum; this table is derived, not authoritative.
+
 | Milestone | Sessions | T0 (free) | T1 (cheap) | T2 (premium) |
 |---|---:|---:|---:|---:|
-| M0 · Foundations & spikes | 11 | 40% | 25% | 35% |
-| M1 · Network spine | 23 | 20% | 20% | **60%** |
-| M2 · Vertical slice ⭐ | 35 | 50% | 25% | 25% |
-| M3 · Systems depth | 50 | 55% | 25% | 20% |
-| M4 · World & the Mire | 45 | 35% | 20% | 45% |
-| M5 · Combat, enemies, bosses | 55 | 60% | 25% | 15% |
-| M6 · Cycles, extraction & meta | 34 | 50% | 25% | 25% |
-| M7 · Polish & pre-ship | 55 | 75% | 20% | 5% |
-| M8 · Ship | 24 | 85% | 10% | 5% |
-| **Total** | **~333** | **~55%** | **~23%** | **~22%** |
+| M0 · Foundations & spikes | 14.5 | 42% | 28% | 30% |
+| M1 · Network spine | 23.5 | 13% | 4% | **83%** |
+| M2 · Vertical slice ⭐ | 80 | 68% | 12% | 20% |
+| M3 · Systems depth | 52 | 48% | 19% | 33% |
+| M4 · World & the Mire | 47 | 14% | 13% | **73%** |
+| M5 · Combat, enemies, bosses | 55 | 69% | 5% | 25% |
+| M6 · Cycles, extraction & meta | 37 | 46% | 19% | 35% |
+| M7 · Polish & pre-ship | 55 | 75% | 13% | 13% |
+| M8 · Ship | 24.5 | 67% | 33% | 0% |
+| **Total** | **~388** | **~53%** | **~14%** | **~32%** |
 
-**~1,000 hours total, of which only ~215 need premium quota.** That's the number that matters. The
-premium spend is heavily front-loaded into M1 and M4 — which is correct, because those are the
-decisions that are expensive to get wrong.
+**~1,165 hours total, of which ~375 need premium quota.** The premium spend is front-loaded into M1
+and M4 — correct, because those are the decisions that are expensive to get wrong. The old
+"~1,000 h / ~215 premium" figures predate the art program and the D-036 lanes; with three worker
+lanes running in parallel, wall-clock shrinks but the quota split above is what still binds.
 
 ⭐ **M2 is the milestone that matters most.** It's the first time you and your friends actually play
 this. Everything before it is scaffolding. Protect it — do not let scope creep push it later.
@@ -92,7 +101,7 @@ Plus the same thing in `LOCAL` mode in two windows in under 5 seconds.
 
 ---
 
-## M2 · Vertical slice — 35 sessions ⭐
+## M2 · Vertical slice — 80 sessions ⭐ (43 of them the authored-art program, 2.1b–2.1i)
 
 **Goal:** the thinnest possible complete loop, played with friends. One biome, one tool, one enemy,
 one night. If this isn't fun, nothing built on top of it will be.
@@ -117,8 +126,8 @@ one night. If this isn't fun, nothing built on top of it will be.
 | 2.6 | Crafting: recipe check, craft request → host validates → grants. One station (workbench). | T2 | 3 |
 | 2.7 | Crafting UI | T0 | 3 |
 | 2.8 | Melee combat v1: wind-up → commit → recovery, hitbox, hitstop, screenshake, impact SFX | T1 | 3 |
-| 2.9 | **Tune combat feel until one enemy with one weapon feels great.** Do not proceed otherwise. | T0 | 3 |
-| 2.10 | Enemy v1: host-authoritative chase + attack, nav-driven, health, death, ragdoll or dissolve | T2 | 3 |
+| 2.9 | **Tune combat feel until one enemy with one weapon feels great.** Do not proceed otherwise. *(Order swapped with 2.10 — F-036 option 1. Code, content and the `combat_feel_check` instrument shipped; only the human verdict is open.)* | T0 | 3 |
+| 2.10 | Enemy v1: host-authoritative chase + attack, nav-driven, health, death, ragdoll or dissolve *(shipped before 2.9, per F-036)* | T2 | 3 |
 | 2.11 | Day/night cycle: sun rotation, `WorldEnvironment` transitions, replicated time-of-day | T1 | 2 |
 | 2.12 | Night wave spawner: N enemies at night, despawn at dawn, scales with player count | T1 | 2 |
 | 2.13 | Death & respawn: downed → bleed-out → revive by teammate (`DESIGN.md` §4.5) | T2 | 2 |
@@ -144,8 +153,9 @@ one night. If this isn't fun, nothing built on top of it will be.
 | 3.6 | Building system: placement ghost, snapping, rotate, validate, destroy | T2 | 5 |
 | 3.7 | Buildable pieces (walls/floors/ramps/doors) + Ward structures | T0 | 4 |
 | 3.8 | Hunger/health/stamina, food items, consumables | T1 | 3 |
+| 3.8b | Dodge: stamina-gated dash, client-auth own movement. `DESIGN.md` §6 says stamina gates *dodging*, and Void Resonance's "dodge blinks" (§4.4) needs the verb to hook | T1 | 2 |
 | 3.9 | Attunement system + selection UI (`DESIGN.md` §4.5) | T2 | 3 |
-| 3.10 | Heavy hauling (2-player carry) | T1 | 2 |
+| 3.10 | Heavy hauling (2-player carry; solo fallback = slow one-player drag, `DESIGN.md` §5 solo rule) | T1 | 2 |
 | 3.11 | **Playtest — does the Attunement split create roles or resentment? (Q4)** | T0 | 1 |
 | 3.12 | Balance pass on everything above | T0 | 2 |
 
@@ -181,7 +191,7 @@ because 4.3 and 4.6 get designed against whatever they return.
 | 4.5 | Runtime nav baking per chunk — **or the R3 fallback decided in M0** | T2 | 5 |
 | 4.6 | Seed replication + client-side regeneration; mutable-state delta sync (`ARCHITECTURE.md` §4) | T2 | 4 |
 | 4.7 | POI placement: seeded Poisson-disc, Wellsprings + landmarks | T2 | 3 |
-| 4.8 | Wellspring scene, capture ritual, 2-player requirement, defense wave | T1 | 3 |
+| 4.8 | Wellspring scene, capture ritual, 2-player requirement, defense wave (solo fallback: 1-player ritual with a longer timer, `DESIGN.md` §5 solo rule) | T1 | 3 |
 | 4.9 | **Mire grid simulation** + delta replication (`ARCHITECTURE.md` §5) | T2 | 4 |
 | 4.10 | Mire visuals: shader ground tint, fog density, particles, audio shift | T0 | 4 |
 | 4.11 | Mire ↔ world interaction: rotted resources, Blight debuff, corrupted spawns, Ward resistance | T1 | 3 |
@@ -261,6 +271,7 @@ See `STEAM.md` for the full checklist and the hard scheduling constraints.
 
 | # | Task | Tier | Est |
 |---|---|---|---|
+| 8.0 | **Name search** — Steam store + trademark search for "MIRE" (`STEAM.md` S1 calls this blocking; `DESIGN.md` header repeats it). Do before any store-page work; a rename after 8.5/8.7 costs the Coming Soon clock | T0 | 0.5 |
 | 8.1 | Steamworks account, tax/banking, $100 Steam Direct fee, real App ID | T0 | 2 |
 | 8.2 | Swap App ID 480 → real App ID; verify all Steam features | T0 | 1 |
 | 8.3 | Achievements, stats, rich presence | T1 | 3 |
