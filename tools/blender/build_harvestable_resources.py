@@ -11,10 +11,14 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from pathlib import Path
 from typing import Callable
 
 import bpy
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from mire_art import mat, radial, around, reset_materials  # noqa: E402
 from mathutils import Vector
 
 
@@ -540,6 +544,7 @@ def main() -> None:
     for expected in EXPECTED_NAMES:
         (EXPORT_DIR / f"{expected}.glb").unlink(missing_ok=True)
 
+    reset_materials()
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
@@ -548,23 +553,26 @@ def main() -> None:
             datablocks.remove(block)
 
     mats = {
-        "bark": material("MIRE_Harvest_Bark", (0.23, 0.075, 0.025, 1.0)),
-        "bark_dark": material("MIRE_Harvest_Bark_Dark", (0.10, 0.025, 0.012, 1.0)),
-        "dead_bark": material("MIRE_Harvest_Dead_Bark", (0.16, 0.12, 0.10, 1.0)),
-        "cut": material("MIRE_Harvest_Fresh_Wood", (0.95, 0.54, 0.16, 1.0)),
-        "cut_dark": material("MIRE_Harvest_Deep_Cut", (0.48, 0.19, 0.055, 1.0)),
-        "dead_cut": material("MIRE_Harvest_Dead_Wood", (0.38, 0.30, 0.21, 1.0)),
-        "notch": material("MIRE_Harvest_Notch", (0.055, 0.012, 0.008, 1.0)),
-        "pine_dark": material("MIRE_Harvest_Pine_Dark", (0.018, 0.22, 0.095, 1.0)),
-        "pine_light": material("MIRE_Harvest_Pine_Light", (0.08, 0.48, 0.19, 1.0)),
-        "stone": material("MIRE_Harvest_Stone", (0.31, 0.36, 0.38, 1.0)),
-        "stone_dark": material("MIRE_Harvest_Stone_Depleted", (0.12, 0.14, 0.15, 1.0)),
-        "iron_stone": material("MIRE_Harvest_Iron_Stone", (0.24, 0.25, 0.25, 1.0)),
-        "iron": material("MIRE_Harvest_Iron_Ore", (0.72, 0.22, 0.055, 1.0), 0.55, 0.42),
-        "iron_dull": material("MIRE_Harvest_Spent_Iron", (0.31, 0.14, 0.08, 1.0), 0.85, 0.12),
-        "crack": material("MIRE_Harvest_Crack", (0.045, 0.018, 0.014, 1.0)),
-        "ground": material("MIRE_Harvest_Preview_Ground", (0.048, 0.085, 0.056, 1.0)),
-        "scale": material("MIRE_Harvest_Scale_Reference", (0.15, 0.53, 0.78, 1.0)),
+        # Shared palette: a harvestable tree stands next to an environment
+        # tree, so their bark has to be the same bark. Geometry helpers stay
+        # local — this kit's cylinder_between tapers to 0.82, mire_art's to 0.94.
+        "bark": mat("wood_bark"),
+        "bark_dark": mat("wood_bark_dark"),
+        "dead_bark": mat("wood_dead"),
+        "cut": mat("wood_cut"),
+        "cut_dark": mat("wood_timber"),
+        "dead_cut": mat("wood_dead_cut"),
+        "notch": mat("wood_bark_dark"),
+        "pine_dark": mat("pine_dark"),
+        "pine_light": mat("pine_light"),
+        "stone": mat("stone"),
+        "stone_dark": mat("stone_dark"),
+        "iron_stone": mat("stone_dark"),
+        "iron": mat("iron"),
+        "iron_dull": mat("iron_dark"),
+        "crack": mat("coal"),
+        "ground": mat("preview_ground"),
+        "scale": mat("reference_blue"),
     }
 
     specs: list[tuple[str, str, str, Callable[[], None], tuple[float, float, float]]] = [

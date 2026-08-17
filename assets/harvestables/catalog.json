@@ -9,10 +9,10 @@
     "mesh_parts": 56,
     "polygons": 838,
     "materials": [
-      "MIRE_Harvest_Bark",
-      "MIRE_Harvest_Bark_Dark",
-      "MIRE_Harvest_Pine_Dark",
-      "MIRE_Harvest_Pine_Light"
+      "MIRE_PineDark",
+      "MIRE_PineLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkDark"
     ]
   },
   {
@@ -25,12 +25,12 @@
     "mesh_parts": 58,
     "polygons": 873,
     "materials": [
-      "MIRE_Harvest_Bark",
-      "MIRE_Harvest_Bark_Dark",
-      "MIRE_Harvest_Deep_Cut",
-      "MIRE_Harvest_Fresh_Wood",
-      "MIRE_Harvest_Pine_Dark",
-      "MIRE_Harvest_Pine_Light"
+      "MIRE_PineDark",
+      "MIRE_PineLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkDark",
+      "MIRE_WoodCut",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -43,12 +43,12 @@
     "mesh_parts": 59,
     "polygons": 860,
     "materials": [
-      "MIRE_Harvest_Bark",
-      "MIRE_Harvest_Bark_Dark",
-      "MIRE_Harvest_Fresh_Wood",
-      "MIRE_Harvest_Notch",
-      "MIRE_Harvest_Pine_Dark",
-      "MIRE_Harvest_Pine_Light"
+      "MIRE_PineDark",
+      "MIRE_PineLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkDark",
+      "MIRE_WoodBarkDark.001",
+      "MIRE_WoodCut"
     ]
   },
   {
@@ -61,11 +61,11 @@
     "mesh_parts": 15,
     "polygons": 216,
     "materials": [
-      "MIRE_Harvest_Bark",
-      "MIRE_Harvest_Bark_Dark",
-      "MIRE_Harvest_Fresh_Wood",
-      "MIRE_Harvest_Pine_Dark",
-      "MIRE_Harvest_Pine_Light"
+      "MIRE_PineDark",
+      "MIRE_PineLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkDark",
+      "MIRE_WoodCut"
     ]
   },
   {
@@ -78,10 +78,10 @@
     "mesh_parts": 11,
     "polygons": 154,
     "materials": [
-      "MIRE_Harvest_Bark",
-      "MIRE_Harvest_Bark_Dark",
-      "MIRE_Harvest_Deep_Cut",
-      "MIRE_Harvest_Fresh_Wood"
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkDark",
+      "MIRE_WoodCut",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -94,9 +94,9 @@
     "mesh_parts": 12,
     "polygons": 109,
     "materials": [
-      "MIRE_Harvest_Dead_Bark",
-      "MIRE_Harvest_Dead_Wood",
-      "MIRE_Harvest_Notch"
+      "MIRE_WoodBarkDark.001",
+      "MIRE_WoodDead",
+      "MIRE_WoodDeadCut"
     ]
   },
   {
@@ -109,7 +109,7 @@
     "mesh_parts": 3,
     "polygons": 60,
     "materials": [
-      "MIRE_Harvest_Stone"
+      "MIRE_Stone"
     ]
   },
   {
@@ -122,8 +122,8 @@
     "mesh_parts": 8,
     "polygons": 121,
     "materials": [
-      "MIRE_Harvest_Crack",
-      "MIRE_Harvest_Stone"
+      "MIRE_Coal",
+      "MIRE_Stone"
     ]
   },
   {
@@ -136,7 +136,7 @@
     "mesh_parts": 5,
     "polygons": 100,
     "materials": [
-      "MIRE_Harvest_Stone_Depleted"
+      "MIRE_StoneDark"
     ]
   },
   {
@@ -149,8 +149,8 @@
     "mesh_parts": 7,
     "polygons": 140,
     "materials": [
-      "MIRE_Harvest_Iron_Ore",
-      "MIRE_Harvest_Iron_Stone"
+      "MIRE_Iron",
+      "MIRE_StoneDark.001"
     ]
   },
   {
@@ -163,9 +163,9 @@
     "mesh_parts": 12,
     "polygons": 201,
     "materials": [
-      "MIRE_Harvest_Crack",
-      "MIRE_Harvest_Iron_Ore",
-      "MIRE_Harvest_Iron_Stone"
+      "MIRE_Coal",
+      "MIRE_Iron",
+      "MIRE_StoneDark.001"
     ]
   },
   {
@@ -178,8 +178,8 @@
     "mesh_parts": 6,
     "polygons": 120,
     "materials": [
-      "MIRE_Harvest_Spent_Iron",
-      "MIRE_Harvest_Stone_Depleted"
+      "MIRE_IronDark",
+      "MIRE_StoneDark"
     ]
   }
 ]

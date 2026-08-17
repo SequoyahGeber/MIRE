@@ -117,6 +117,8 @@ PALETTE: dict[str, Swatch] = {
     "wood_timber_light": Swatch("#A87542", 0.84, note="lit plank faces, fresh boards"),
     "wood_cut": Swatch("#C9A063", 0.80, note="fresh cut end-grain and axe scars"),
     "wood_charred": Swatch("#241812", 0.96, note="burnt wood around fire"),
+    "wood_dead": Swatch("#6E6058", 0.95, note="grey weathered deadwood bark"),
+    "wood_dead_cut": Swatch("#A2917F", 0.92, note="dry punky interior of deadwood"),
     "wood_birch": Swatch("#C2C4B2", 0.90, note="birch bark; the one pale trunk"),
     "wood_birch_mark": Swatch("#2E332C", 0.92, note="birch lenticels and scars"),
     # -- stone --------------------------------------------------------------
