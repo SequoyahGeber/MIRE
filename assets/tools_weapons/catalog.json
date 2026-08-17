@@ -9,13 +9,13 @@
     "mesh_parts": 15,
     "polygons": 298,
     "materials": [
-      "MIRE_Tool_Grip_Wrap",
-      "MIRE_Tool_Handle",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Hardwood",
-      "MIRE_Tool_Hardwood_Dark",
-      "MIRE_Tool_Rope",
-      "MIRE_Tool_Wood_Edge"
+      "MIRE_ClothRed",
+      "MIRE_Rope",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight",
+      "MIRE_WoodCut",
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -28,13 +28,13 @@
     "mesh_parts": 15,
     "polygons": 298,
     "materials": [
-      "MIRE_Tool_Grip_Wrap",
-      "MIRE_Tool_Handle",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Hardwood",
-      "MIRE_Tool_Hardwood_Dark",
-      "MIRE_Tool_Rope",
-      "MIRE_Tool_Wood_Edge"
+      "MIRE_ClothRed",
+      "MIRE_Rope",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight",
+      "MIRE_WoodCut",
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -47,12 +47,12 @@
     "mesh_parts": 17,
     "polygons": 348,
     "materials": [
-      "MIRE_Tool_Grip_Wrap",
-      "MIRE_Tool_Handle",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Rope",
-      "MIRE_Tool_Stone",
-      "MIRE_Tool_Stone_Edge"
+      "MIRE_ClothRed",
+      "MIRE_Rope",
+      "MIRE_Stone",
+      "MIRE_StoneLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -65,12 +65,12 @@
     "mesh_parts": 17,
     "polygons": 348,
     "materials": [
-      "MIRE_Tool_Grip_Wrap",
-      "MIRE_Tool_Handle",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Rope",
-      "MIRE_Tool_Stone",
-      "MIRE_Tool_Stone_Edge"
+      "MIRE_ClothRed",
+      "MIRE_Rope",
+      "MIRE_Stone",
+      "MIRE_StoneLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -83,12 +83,12 @@
     "mesh_parts": 17,
     "polygons": 308,
     "materials": [
-      "MIRE_Tool_Grip_Wrap",
-      "MIRE_Tool_Handle",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Hardwood",
-      "MIRE_Tool_Rope",
-      "MIRE_Tool_Wood_Edge"
+      "MIRE_ClothRed",
+      "MIRE_Rope",
+      "MIRE_WoodBark",
+      "MIRE_WoodCut",
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -101,12 +101,12 @@
     "mesh_parts": 17,
     "polygons": 308,
     "materials": [
-      "MIRE_Tool_Grip_Wrap",
-      "MIRE_Tool_Handle",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Hardwood",
-      "MIRE_Tool_Rope",
-      "MIRE_Tool_Wood_Edge"
+      "MIRE_ClothRed",
+      "MIRE_Rope",
+      "MIRE_WoodBark",
+      "MIRE_WoodCut",
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -119,12 +119,12 @@
     "mesh_parts": 19,
     "polygons": 348,
     "materials": [
-      "MIRE_Tool_Grip_Wrap",
-      "MIRE_Tool_Handle",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Rope",
-      "MIRE_Tool_Stone",
-      "MIRE_Tool_Stone_Edge"
+      "MIRE_ClothRed",
+      "MIRE_Rope",
+      "MIRE_Stone",
+      "MIRE_StoneLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -137,12 +137,12 @@
     "mesh_parts": 19,
     "polygons": 348,
     "materials": [
-      "MIRE_Tool_Grip_Wrap",
-      "MIRE_Tool_Handle",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Rope",
-      "MIRE_Tool_Stone",
-      "MIRE_Tool_Stone_Edge"
+      "MIRE_ClothRed",
+      "MIRE_Rope",
+      "MIRE_Stone",
+      "MIRE_StoneLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -155,12 +155,12 @@
     "mesh_parts": 18,
     "polygons": 282,
     "materials": [
-      "MIRE_Tool_Grip_Wrap",
-      "MIRE_Tool_Handle",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Iron",
-      "MIRE_Tool_Iron_Dark",
-      "MIRE_Tool_Iron_Edge"
+      "MIRE_ClothRed",
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -173,12 +173,12 @@
     "mesh_parts": 18,
     "polygons": 282,
     "materials": [
-      "MIRE_Tool_Grip_Wrap",
-      "MIRE_Tool_Handle",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Iron",
-      "MIRE_Tool_Iron_Dark",
-      "MIRE_Tool_Iron_Edge"
+      "MIRE_ClothRed",
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -191,11 +191,11 @@
     "mesh_parts": 13,
     "polygons": 174,
     "materials": [
-      "MIRE_Tool_Brass",
-      "MIRE_Tool_Iron",
-      "MIRE_Tool_Iron_Dark",
-      "MIRE_Tool_Iron_Edge",
-      "MIRE_Tool_Leather"
+      "MIRE_Brass",
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_Leather"
     ]
   },
   {
@@ -208,11 +208,11 @@
     "mesh_parts": 13,
     "polygons": 174,
     "materials": [
-      "MIRE_Tool_Brass",
-      "MIRE_Tool_Iron",
-      "MIRE_Tool_Iron_Dark",
-      "MIRE_Tool_Iron_Edge",
-      "MIRE_Tool_Leather"
+      "MIRE_Brass",
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_Leather"
     ]
   },
   {
@@ -225,11 +225,11 @@
     "mesh_parts": 19,
     "polygons": 310,
     "materials": [
-      "MIRE_Tool_Handle",
-      "MIRE_Tool_Iron",
-      "MIRE_Tool_Iron_Dark",
-      "MIRE_Tool_Iron_Edge",
-      "MIRE_Tool_Leather"
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_Leather",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -242,11 +242,11 @@
     "mesh_parts": 19,
     "polygons": 310,
     "materials": [
-      "MIRE_Tool_Handle",
-      "MIRE_Tool_Iron",
-      "MIRE_Tool_Iron_Dark",
-      "MIRE_Tool_Iron_Edge",
-      "MIRE_Tool_Leather"
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_Leather",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -259,11 +259,11 @@
     "mesh_parts": 13,
     "polygons": 217,
     "materials": [
-      "MIRE_Tool_Bow_String",
-      "MIRE_Tool_Bow_Wood",
-      "MIRE_Tool_Grip_Wrap",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Leather"
+      "MIRE_ClothRed",
+      "MIRE_Fibre",
+      "MIRE_Leather",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimberLight.001"
     ]
   },
   {
@@ -276,11 +276,11 @@
     "mesh_parts": 13,
     "polygons": 217,
     "materials": [
-      "MIRE_Tool_Bow_String",
-      "MIRE_Tool_Bow_Wood",
-      "MIRE_Tool_Grip_Wrap",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Leather"
+      "MIRE_ClothRed",
+      "MIRE_Fibre",
+      "MIRE_Leather",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimberLight.001"
     ]
   },
   {
@@ -293,13 +293,13 @@
     "mesh_parts": 9,
     "polygons": 114,
     "materials": [
-      "MIRE_Tool_Arrow_Shaft",
-      "MIRE_Tool_Fletching",
-      "MIRE_Tool_Fletching_Light",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Iron_Dark",
-      "MIRE_Tool_Rope",
-      "MIRE_Tool_Stone_Edge"
+      "MIRE_Cloth",
+      "MIRE_ClothRed.002",
+      "MIRE_IronDark",
+      "MIRE_Rope",
+      "MIRE_StoneLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber.001"
     ]
   },
   {
@@ -312,13 +312,13 @@
     "mesh_parts": 9,
     "polygons": 114,
     "materials": [
-      "MIRE_Tool_Arrow_Shaft",
-      "MIRE_Tool_Fletching",
-      "MIRE_Tool_Fletching_Light",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Iron_Dark",
-      "MIRE_Tool_Rope",
-      "MIRE_Tool_Stone_Edge"
+      "MIRE_Cloth",
+      "MIRE_ClothRed.002",
+      "MIRE_IronDark",
+      "MIRE_Rope",
+      "MIRE_StoneLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber.001"
     ]
   },
   {
@@ -331,14 +331,14 @@
     "mesh_parts": 19,
     "polygons": 348,
     "materials": [
-      "MIRE_Tool_Brass",
-      "MIRE_Tool_Handle",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Iron",
-      "MIRE_Tool_Iron_Dark",
-      "MIRE_Tool_Iron_Edge",
-      "MIRE_Tool_Leather",
-      "MIRE_Tool_Repair_Red"
+      "MIRE_Brass",
+      "MIRE_ClothRed.001",
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_Leather",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -351,14 +351,14 @@
     "mesh_parts": 19,
     "polygons": 348,
     "materials": [
-      "MIRE_Tool_Brass",
-      "MIRE_Tool_Handle",
-      "MIRE_Tool_Handle_Dark",
-      "MIRE_Tool_Iron",
-      "MIRE_Tool_Iron_Dark",
-      "MIRE_Tool_Iron_Edge",
-      "MIRE_Tool_Leather",
-      "MIRE_Tool_Repair_Red"
+      "MIRE_Brass",
+      "MIRE_ClothRed.001",
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_Leather",
+      "MIRE_WoodBark",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -371,12 +371,12 @@
     "mesh_parts": 19,
     "polygons": 439,
     "materials": [
-      "MIRE_Tool_Brass",
-      "MIRE_Tool_Grip_Wrap",
-      "MIRE_Tool_Iron",
-      "MIRE_Tool_Iron_Dark",
-      "MIRE_Tool_Iron_Edge",
-      "MIRE_Tool_Leather"
+      "MIRE_Brass",
+      "MIRE_ClothRed",
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_Leather"
     ]
   },
   {
@@ -389,12 +389,12 @@
     "mesh_parts": 19,
     "polygons": 439,
     "materials": [
-      "MIRE_Tool_Brass",
-      "MIRE_Tool_Grip_Wrap",
-      "MIRE_Tool_Iron",
-      "MIRE_Tool_Iron_Dark",
-      "MIRE_Tool_Iron_Edge",
-      "MIRE_Tool_Leather"
+      "MIRE_Brass",
+      "MIRE_ClothRed",
+      "MIRE_Iron",
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_Leather"
     ]
   }
 ]

@@ -25,10 +25,17 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from pathlib import Path
 from typing import Callable, Sequence
 
 import bpy
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from mire_art import (  # noqa: E402
+    assign, box, cone, cylinder_between, eevee_engine, ico, look_at, make_consistent, mat,
+    mesh_object, move_to_collection, radial, around, reset_materials, tapered_between, world_bounds,
+)
 from mathutils import Vector
 
 
@@ -61,169 +68,6 @@ PREVIEW_ROW_SPACING = 3.4
 # ---------------------------------------------------------------------------
 # Mesh primitives
 # ---------------------------------------------------------------------------
-
-
-def material(
-    name: str,
-    color: tuple[float, float, float, float],
-    roughness: float = 0.9,
-    metallic: float = 0.0,
-) -> bpy.types.Material:
-    mat = bpy.data.materials.new(name)
-    mat.diffuse_color = color
-    mat.use_nodes = True
-    shader = mat.node_tree.nodes.get("Principled BSDF")
-    shader.inputs["Base Color"].default_value = color
-    shader.inputs["Roughness"].default_value = roughness
-    shader.inputs["Metallic"].default_value = metallic
-    return mat
-
-
-def assign(obj: bpy.types.Object, mat: bpy.types.Material) -> bpy.types.Object:
-    obj.data.materials.append(mat)
-    for polygon in obj.data.polygons:
-        polygon.use_smooth = False
-    return obj
-
-
-def make_consistent(obj: bpy.types.Object) -> None:
-    """Recalculate outward normals.
-
-    Hand-authored face loops here are not reliably wound the same way, and Godot
-    imports glTF with back-face culling on, so an inverted face is an invisible
-    face rather than a shading nit.
-    """
-    bpy.ops.object.select_all(action="DESELECT")
-    obj.select_set(True)
-    bpy.context.view_layer.objects.active = obj
-    bpy.ops.object.mode_set(mode="EDIT")
-    bpy.ops.mesh.select_all(action="SELECT")
-    bpy.ops.mesh.normals_make_consistent(inside=False)
-    bpy.ops.object.mode_set(mode="OBJECT")
-
-
-def mesh_object(
-    name: str,
-    vertices: list[tuple[float, float, float]],
-    faces: list[tuple[int, ...]],
-    mat: bpy.types.Material,
-    recalculate: bool = True,
-) -> bpy.types.Object:
-    mesh = bpy.data.meshes.new(f"{name}_Mesh")
-    mesh.from_pydata(vertices, [], faces)
-    mesh.update()
-    obj = bpy.data.objects.new(name, mesh)
-    bpy.context.scene.collection.objects.link(obj)
-    assign(obj, mat)
-    if recalculate:
-        make_consistent(obj)
-        for polygon in obj.data.polygons:
-            polygon.use_smooth = False
-    return obj
-
-
-def box(
-    name: str,
-    location: tuple[float, float, float],
-    dimensions: tuple[float, float, float],
-    mat: bpy.types.Material,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-    bevel: float = 0.0,
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_cube_add(location=location, rotation=rotation)
-    obj = bpy.context.object
-    obj.name = name
-    obj.scale = (dimensions[0] * 0.5, dimensions[1] * 0.5, dimensions[2] * 0.5)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    if bevel > 0.0:
-        modifier = obj.modifiers.new("Low_Poly_Bevel", "BEVEL")
-        modifier.width = bevel
-        modifier.segments = 1
-        bpy.context.view_layer.objects.active = obj
-        bpy.ops.object.modifier_apply(modifier=modifier.name)
-    return assign(obj, mat)
-
-
-def cone(
-    name: str,
-    radius_bottom: float,
-    radius_top: float,
-    depth: float,
-    location: tuple[float, float, float],
-    mat: bpy.types.Material,
-    vertices: int = 8,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_cone_add(
-        vertices=vertices,
-        radius1=radius_bottom,
-        radius2=radius_top,
-        depth=depth,
-        location=location,
-        rotation=rotation,
-    )
-    obj = bpy.context.object
-    obj.name = name
-    return assign(obj, mat)
-
-
-def ico(
-    name: str,
-    location: tuple[float, float, float],
-    scale: tuple[float, float, float],
-    mat: bpy.types.Material,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=1.0, location=location, rotation=rotation)
-    obj = bpy.context.object
-    obj.name = name
-    obj.scale = scale
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    return assign(obj, mat)
-
-
-def cylinder_between(
-    name: str,
-    start: tuple[float, float, float],
-    end: tuple[float, float, float],
-    radius: float,
-    mat: bpy.types.Material,
-    vertices: int = 8,
-    end_radius_ratio: float = 0.94,
-) -> bpy.types.Object:
-    first = Vector(start)
-    second = Vector(end)
-    direction = second - first
-    obj = cone(
-        name,
-        radius,
-        radius * end_radius_ratio,
-        direction.length,
-        tuple((first + second) * 0.5),
-        mat,
-        vertices,
-    )
-    obj.rotation_mode = "QUATERNION"
-    obj.rotation_quaternion = direction.to_track_quat("Z", "Y")
-    return obj
-
-
-def tapered_between(
-    name: str,
-    start: tuple[float, float, float],
-    end: tuple[float, float, float],
-    start_radius: float,
-    end_radius: float,
-    mat: bpy.types.Material,
-    vertices: int = 8,
-) -> bpy.types.Object:
-    first = Vector(start)
-    second = Vector(end)
-    direction = second - first
-    obj = cone(name, start_radius, end_radius, direction.length, tuple((first + second) * 0.5), mat, vertices)
-    obj.rotation_mode = "QUATERNION"
-    obj.rotation_quaternion = direction.to_track_quat("Z", "Y")
-    return obj
 
 
 def _fanned(value: float | Sequence[float], count: int) -> list[float]:
@@ -1126,34 +970,12 @@ def build_iron_sword(mats: dict[str, bpy.types.Material]) -> None:
 # ---------------------------------------------------------------------------
 
 
-def look_at(obj: bpy.types.Object, target: tuple[float, float, float]) -> None:
-    obj.rotation_euler = (Vector(target) - obj.location).to_track_quat("-Z", "Y").to_euler()
-
-
 def grid_position(design_index: int) -> tuple[float, float]:
     """Where a design stands in the preview grid, centred on the camera."""
     column = design_index % PREVIEW_COLUMNS
     row = design_index // PREVIEW_COLUMNS
     x = (column - (PREVIEW_COLUMNS - 1) * 0.5) * PREVIEW_COLUMN_SPACING
     return x, 1.8 - row * PREVIEW_ROW_SPACING
-
-
-def move_to_collection(objects: list[bpy.types.Object], collection: bpy.types.Collection) -> None:
-    for obj in objects:
-        for old_collection in list(obj.users_collection):
-            old_collection.objects.unlink(obj)
-        collection.objects.link(obj)
-
-
-def world_bounds(objects: list[bpy.types.Object]) -> tuple[Vector, Vector]:
-    bpy.context.view_layer.update()
-    corners: list[Vector] = []
-    for obj in objects:
-        if obj.type == "MESH":
-            corners.extend(obj.matrix_world @ Vector(corner) for corner in obj.bound_box)
-    minimum = Vector((min(v.x for v in corners), min(v.y for v in corners), min(v.z for v in corners)))
-    maximum = Vector((max(v.x for v in corners), max(v.y for v in corners), max(v.z for v in corners)))
-    return minimum, maximum
 
 
 def create_asset(
@@ -1246,7 +1068,7 @@ def setup_render(mats: dict[str, bpy.types.Material]) -> tuple[bpy.types.Scene, 
     bpy.context.scene.camera = camera
     move_to_collection([camera], preview_collection)
     scene = bpy.context.scene
-    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.engine = eevee_engine()
     scene.render.resolution_x = 1600
     scene.render.resolution_y = 780
     scene.render.resolution_percentage = 100
@@ -1258,29 +1080,30 @@ def setup_render(mats: dict[str, bpy.types.Material]) -> tuple[bpy.types.Scene, 
 
 
 def build_materials() -> dict[str, bpy.types.Material]:
+    """Local names onto the shared palette, so a haft is the same oak as a bench."""
     return {
-        "handle": material("MIRE_Tool_Handle", (0.35, 0.12, 0.025, 1.0)),
-        "handle_dark": material("MIRE_Tool_Handle_Dark", (0.14, 0.035, 0.012, 1.0)),
-        "wood_blade": material("MIRE_Tool_Hardwood", (0.55, 0.26, 0.055, 1.0)),
-        "hardwood_dark": material("MIRE_Tool_Hardwood_Dark", (0.26, 0.085, 0.018, 1.0)),
-        "wood_cut": material("MIRE_Tool_Wood_Edge", (0.93, 0.79, 0.46, 1.0)),
-        "rope": material("MIRE_Tool_Rope", (0.70, 0.51, 0.13, 1.0)),
-        "wrap": material("MIRE_Tool_Grip_Wrap", (0.47, 0.045, 0.025, 1.0)),
-        "leather": material("MIRE_Tool_Leather", (0.24, 0.10, 0.045, 1.0), 0.86),
-        "stone": material("MIRE_Tool_Stone", (0.26, 0.31, 0.33, 1.0)),
-        "stone_edge": material("MIRE_Tool_Stone_Edge", (0.60, 0.68, 0.68, 1.0), 0.48),
-        "iron": material("MIRE_Tool_Iron", (0.30, 0.38, 0.41, 1.0), 0.38, 0.68),
-        "iron_light": material("MIRE_Tool_Iron_Edge", (0.63, 0.72, 0.73, 1.0), 0.28, 0.75),
-        "iron_dark": material("MIRE_Tool_Iron_Dark", (0.08, 0.12, 0.14, 1.0), 0.48, 0.58),
-        "brass": material("MIRE_Tool_Brass", (0.82, 0.45, 0.055, 1.0), 0.34, 0.56),
-        "red": material("MIRE_Tool_Repair_Red", (0.67, 0.04, 0.025, 1.0), 0.55, 0.25),
-        "bow_wood": material("MIRE_Tool_Bow_Wood", (0.57, 0.22, 0.045, 1.0)),
-        "string": material("MIRE_Tool_Bow_String", (0.80, 0.75, 0.58, 1.0)),
-        "arrow_wood": material("MIRE_Tool_Arrow_Shaft", (0.58, 0.30, 0.075, 1.0)),
-        "fletching": material("MIRE_Tool_Fletching", (0.12, 0.40, 0.62, 1.0)),
-        "fletching_light": material("MIRE_Tool_Fletching_Light", (0.35, 0.72, 0.87, 1.0)),
-        "ground": material("MIRE_Tool_Preview_Ground", (0.048, 0.085, 0.056, 1.0)),
-        "scale": material("MIRE_Tool_Scale_Reference", (0.15, 0.53, 0.78, 1.0)),
+        "handle": mat("wood_timber"),
+        "handle_dark": mat("wood_bark"),
+        "wood_blade": mat("wood_timber_light"),
+        "hardwood_dark": mat("wood_bark_light"),
+        "wood_cut": mat("wood_cut"),
+        "rope": mat("rope"),
+        "wrap": mat("cloth_red"),
+        "leather": mat("leather"),
+        "stone": mat("stone"),
+        "stone_edge": mat("stone_light"),
+        "iron": mat("iron"),
+        "iron_light": mat("iron_light"),
+        "iron_dark": mat("iron_dark"),
+        "brass": mat("brass"),
+        "red": mat("cloth_red"),
+        "bow_wood": mat("wood_timber_light"),
+        "string": mat("fibre"),
+        "arrow_wood": mat("wood_timber"),
+        "fletching": mat("cloth_red"),
+        "fletching_light": mat("cloth"),
+        "ground": mat("preview_ground"),
+        "scale": mat("reference_blue"),
     }
 
 
@@ -1290,6 +1113,7 @@ def main() -> None:
     SOURCE_DIR.mkdir(parents=True, exist_ok=True)
     for expected in EXPECTED_NAMES:
         (EXPORT_DIR / f"{expected}.glb").unlink(missing_ok=True)
+    reset_materials()
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
