@@ -75,6 +75,31 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+**Work can now be dispatched to three paid accounts in parallel, and you may be one of them.** If you
+are `lc1`, `lc2` or `lp`, you were started by `agent dispatch` and your whole spec is the work order
+piped into you — no one is going to answer a question, so decide and keep going. `docs/ORCHESTRATION.md`
+is the protocol; D-036 and D-037 are the calls behind it. The commands, for a director:
+
+```bash
+agent order <id> --lane LC2 --files a.gd b.gd   # self-contained order; refuses overlapping claim sets
+agent dispatch LC2 [--dry-run]                  # runs it on that account, headless
+agent report | agent collect | agent reap       # who's working / what came back / free dead claims
+```
+
+Two things changed for **everyone**, agent or human, whether or not you use the lanes:
+
+- **Launch the engine with `agent godot --script tools/x_check.gd`, never bare `Godot --headless`.**
+  All ~49 checks share one 42 MB import cache and concurrent runs race on it (F-044) — the most
+  likely explanation for F-038. `agent godot` takes an exclusive lock; a bare invocation bypasses it.
+- **`agent ship` now takes a git lock**, so concurrent ships no longer contend on one index. Nothing
+  to remember — it is automatic.
+
+A lane that dies on a quota wall releases its claims and files its own handoff, so a dead lane never
+blocks a file. If a process vanished too suddenly for that, `agent reap` is the backstop. Quota
+exhaustion is detected only from a *failed* run's error text, and the pattern deliberately ignores
+this project's ordinary `rate_limit`/`429` vocabulary — `lane selftest` holds that line at 14 cases,
+so run it if you touch the classifier.
+
 **Items now have icons, and `ItemDef.icon` is populated.** `assets/icons/exports/icon_<id>.png` holds
 24 transparent 256×256 icons — every A-002 pickup and every A-004 tool/weapon — where `<id>` matches
 `ItemDef.id`. `iron_ore`, `log`, `stone`, and `stone_axe` are wired; a new item wires its icon by
