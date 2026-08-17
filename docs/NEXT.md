@@ -9,7 +9,7 @@
 
 **Milestone:** M2 · Vertical slice. **M1 closes at 13/14** — 1.12 is deferred, not outstanding
 (D-030). M0 is closed, 10/10.
-**Tasks 2.3 through 2.7 are playable:** `HarvestableDef` plus the host-authoritative `Harvestable` lifecycle
+**Tasks 2.3 through 2.8 are playable:** `HarvestableDef` plus the host-authoritative `Harvestable` lifecycle
 wires the 11 intact tree/stone/iron props in `playtest_hollow`, and each completed harvest now grants
 the validated peer a host-owned inventory stack. Inventory uses 24 backpack slots plus eight separate
 hotbar slots, owner-only revisioned snapshots, explicit request confirmations, and atomic crafting
@@ -20,11 +20,17 @@ primitive workbench, the host validates a Stone Axe recipe and atomically exchan
 three stone for one axe; clients submit only the recipe id and request id. Walking up to that
 workbench now shows an `E USE WORKBENCH` prompt; E opens a panel listing the recipe with live
 have/need counts, and the craft button waits for the host's answer instead of predicting one.
-**Last session:** 2026-08-16 — task 2.7 shipped `CraftingUI`, the client-local workbench panel and
-interact prompt. It opens only in range, closes when you step away, refuses to stack on the field
-pack (D-032), and renders the host's accept/reject detail verbatim. Focused (46/46), rendered
-(1280×720 and 375×667) and extended two-process ENet (28/28) checks pass. Task 2.8, melee combat v1,
-is next.
+Left-click swings: wind-up → commit → recovery, host-resolved, with hitstop, screenshake and a
+placeholder impact thud. Trees and rocks are the only damageable targets until enemies land in 2.10.
+**Last session:** 2026-08-16 — tasks 2.7 and 2.8 shipped. 2.7 added `CraftingUI`, the client-local
+workbench panel and interact prompt (46/46 focused, rendered at two widths, 28/28 two-process ENet).
+2.8 added `CombatService`, `WeaponDef`, the `&"damageable"` seam and camera impact shake (42/42
+focused, 23/23 two-process ENet). Authority split is D-034: the client predicts its own swing, the
+host reads its own inventory to decide the weapon and owns every hit.
+**Next is 2.9 — tune combat feel until one enemy with one weapon feels great, and do not proceed
+otherwise.** It is inspector work on `content/weapons/stone_axe.tres` and `player_camera.gd`, and it
+needs an authored impact sound; 2.8 shipped a code-built placeholder thud. Note 2.9's "one enemy"
+does not exist until 2.10, so it may have to run against a tree first, or 2.10 may come first.
 The deferred 1.12 evidence remains unchanged: all three pinned-engine/GodotSteam
 preflights passed and a real Mac-hosted Steam lobby reached three peers across macOS, Windows and
 Linux. Code-built remote-player debug capsules made all three spawns visible, and Linux movement
@@ -49,11 +55,13 @@ the numbers are under *What changed this session*.
 jump, look around, and attack intact resource props at close range. **F3** overlay · **`~`** console ·
 **Esc** releases the mouse.
 
-**Fourteen autoloads live, verified headlessly 2026-08-17** on
+**Sixteen autoloads live, verified headlessly 2026-08-16** on
 `4.7.1.stable.official.a13da4feb`: `NetSession` is ordered after `NetTransport` and before
 `DevLaunch`; `SteamLobby`, `PlayerNet`, `NetDebugPanel`, `TestMapProps`, and `NetInterp` follow their
-dependencies; `HarvestWorld`, `InventoryService`, `InventoryUI`, and `CraftingService` follow
-`Registry`. Boot log reads `content: loaded 4 item(s), 1 recipe(s)` and
+dependencies; `HarvestWorld`, `InventoryService`, `InventoryUI`, `CraftingService`, `CraftingUI` and
+`CombatService` follow `Registry`, in that order — `CraftingUI` resolves `CraftingService` and
+`CombatService` resolves both `Registry` and `InventoryService`. Boot log reads
+`content: loaded 4 item(s), 1 recipe(s), 1 weapon(s)` and
 `net: NetTransport ready (offline)`. `NetConfig` is a
 `class_name`, **not** an autoload; don't add it.
 
@@ -89,10 +97,16 @@ scheduled three-machine session driven by lobby IDs pasted between terminals, on
 (task 6.10), which makes the test cheap.** Everything needed to resume is in
 `docs/STEAM_CROSS_PLATFORM_TEST.md` and will keep.
 
-**The next task is `2.7` — crafting UI.** Build its recipe list and request feedback on
-`CraftingService`'s local preview/query API and authoritative confirmations. The service already
-owns station proximity, validation and inventory mutation; the UI must not duplicate authority or
-predict a successful craft.
+**2.7 and 2.8 are done.** The next roadmap task is `2.9` — tune combat feel — but read **F-033**
+first: 2.9's gate is "one enemy with one weapon feels great", and there is no enemy until `2.10`.
+Either swap 2.9 and 2.10, or tune the weapon side against a tree now and re-run the real gate right
+after 2.10. That choice is Sequoyah's, because it changes roadmap order.
+
+**The exact 2.8 seams:** targets join `&"damageable"` and implement
+`host_apply_damage(amount, instigator_peer_id) -> bool`; 2.10's enemies join the same group and
+`CombatService` needs no change. Weapon feel is `content/weapons/stone_axe.tres` plus the
+`@export`s on `player_camera.gd` — inspector work, not code. Do not re-run
+`tools/setup_combat_content.gd` after tuning; it overwrites the resource.
 
 **The exact 2.4 seams:** local UI reads 32 stable slot dictionaries and never mutates the snapshot;
 slots 0–23 are the backpack and 24–31 are the separate hotbar. Client remove/move requests carry no

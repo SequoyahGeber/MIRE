@@ -69,6 +69,34 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-033 · Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10
+
+**Area:** roadmap · **Severity:** medium — it gates a "never cut" item · **Found:** 2026-08-16 by dusk3
+during 2.8
+
+`ROADMAP.md` orders 2.8 (melee combat) → **2.9 "tune combat feel until one enemy with one weapon
+feels great; do not proceed otherwise"** → 2.10 (Enemy v1). 2.9 is one of the four things `ROADMAP.md`
+§"Never cut" names, and `DESIGN.md` §6 states its rule of thumb in the same terms: *if hitting one
+enemy with one weapon doesn't feel great, do not build the second weapon.*
+
+But after 2.8 there is no enemy. The only things in the `&"damageable"` group are harvestables, and a
+tree does not exercise what 2.9 is actually gating: an enemy's 0.4 s telegraph, backpedal pressure,
+whether the hit reads as a *kill* rather than a resource tick, or death feedback. Tuning against a
+tree and declaring the gate passed is the failure mode the gate exists to prevent — and it would be
+easy to do accidentally, because the swing, hitstop, shake and impact sound all *work* against a
+tree.
+
+Two ways out, and this is Sequoyah's call because it changes roadmap order:
+
+1. **Swap 2.9 and 2.10.** Build Enemy v1, then tune. This is what the gate's own wording assumes.
+2. **Keep the order but split 2.9**: tune the weapon-side feel (swing weights, hitstop, shake, sound)
+   against a tree now, and re-run the real gate immediately after 2.10 before anything else starts.
+
+Not fixed here: 2.8 owns combat code, not the roadmap. Filed rather than silently tuning against a
+tree, which would have looked like the gate passing.
+
+---
+
 ### F-002 · Sprint-FOV lerp uses the framerate-dependent smoothing form
 
 **Area:** gameplay feel · **Severity:** low · **Found:** 2026-08-15 by claude during the §5a doc update
