@@ -8,13 +8,14 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-17 19:30 | `AGENTS.md`, `tools/blender/audit_all_sides.py`, `tools/blender/detail_distribution.py`, `tools/blender/build_pickup_kit.py`, `assets/pickups`, `tools/blender/build_crafting_stations.py`, `assets/crafting_stations`, `assets/source/crafting_stations.blend`, `tools/blender/build_mire_map_kit.py`, `assets/environment`, `assets/source/mire_map_kit.blend`, `tools/blender/build_playtest_map.py`, `tools/blender/build_playtest_hollow.py`, `assets/maps`, `assets/source/playtest_map.blend`, `assets/source/playtest_hollow.blend` |
+| **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-17 19:30 | `AGENTS.md`, `tools/blender/audit_all_sides.py`, `tools/blender/detail_distribution.py`, `tools/blender/build_pickup_kit.py`, `assets/pickups`, `tools/blender/build_crafting_stations.py`, `assets/crafting_stations`, `assets/source/crafting_stations.blend`, `tools/blender/build_mire_map_kit.py`, `assets/environment`, `assets/source/mire_map_kit.blend`, `tools/blender/build_playtest_map.py`, `tools/blender/build_playtest_hollow.py`, `assets/maps`, `assets/source/playtest_map.blend`, `assets/source/playtest_hollow.blend`, `tools/blender/build_harvestable_resources.py`, `assets/harvestables`, `assets/source/harvestable_resources.blend`, `tools/blender/build_tool_weapon_set.py`, `assets/tools_weapons`, `assets/source/tool_weapon_set.blend` |
+| **F-054** There is no launch path into LAN mode, so a second physical machine cannot join at all | flint5 | 2026-08-17 23:23 | `core/dev/dev_launch.gd`, `docs/FINDINGS.md`, `tools/lan_launch_check.gd` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███████░░░` 31/46 | 15 |
+| Findings | `███████░░░` 31/47 | 16 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `███████░░░` 16/23 | 7 |
@@ -63,6 +64,7 @@
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-045** `pgrep -fl Godot` is too blunt to be the closed-editor guard | todo |
 | ⬜ | **F-053** Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why | todo |
+| 🔵 | **F-054** There is no launch path into LAN mode, so a second physical machine cannot join at all | in_flight |
 
 ## Done
 

@@ -1469,3 +1469,15 @@ Commit at time of writing: `53d00de`
 Restore QUOTA_PAT, dropped by the usage-accounting rewrite and shipped broken in 798ed7f. lane selftest caught it on the very next run — which is the argument for having it. 20/20 again.
 
 Commit at time of writing: `798ed7f`
+
+---
+
+### HANDOFF · 2.12 · lc1 · 2026-08-17T23:24:25+00:00
+
+**Night wave spawner: N enemies at night, despawn at dawn, scales with player count**
+
+Implemented systems/waves/wave_spawner.gd and tools/wave_spawner_check.gd under the ordered claim. WaveSpawner is HOST/offline-host only, subscribes by /root/DayNight path, disables and saves EnemyWorld ambient state, spawns one seeded crawler population using base_count + per_player * live PlayerNet bodies (offline floor 1), ignores repeated night signals, then despawns at dawn, restores ambient state, and defers daytime top-up until queued frees leave. The check directly emits fake DayNight signals and passes formulas for 1 (5) and 3 (9) players, repeated-night one-shot behavior, dawn empty/restore, and prior-false preservation. Verified with '.agent/bin/agent godot --script tools/wave_spawner_check.gd': failures=0 and grep ERROR count=0. BLOCKER: task 2.11 is still READY; systems/environment/day_night.gd does not exist and DayNight is not registered. Do not register WaveSpawner before it. Next: ship 2.11, reclaim these exact files, rerun the check, run 'agent autoload WaveSpawner res://systems/waves/wave_spawner.gd', add the ambient save/restore handshake to DELEGATION Current state, then done+ship. Note: global 'agent check' currently reports unrelated dirty/claimed art and F-054 files; our two files pass git diff --check.
+
+Files: `systems/waves/wave_spawner.gd`, `tools/wave_spawner_check.gd`
+
+Commit at time of writing: `bb59ab3`

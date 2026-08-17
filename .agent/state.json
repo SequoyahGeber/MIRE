@@ -15,6 +15,11 @@
       "at": "2026-08-17T23:12:54+00:00",
       "task": "2.1j"
     },
+    "assets/harvestables": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:22:52+00:00",
+      "task": "2.1j"
+    },
     "assets/maps": {
       "agent": "tine18",
       "at": "2026-08-17T23:20:42+00:00",
@@ -28,6 +33,11 @@
     "assets/source/crafting_stations.blend": {
       "agent": "tine18",
       "at": "2026-08-17T23:07:07+00:00",
+      "task": "2.1j"
+    },
+    "assets/source/harvestable_resources.blend": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:22:52+00:00",
       "task": "2.1j"
     },
     "assets/source/mire_map_kit.blend": {
@@ -45,6 +55,26 @@
       "at": "2026-08-17T23:20:42+00:00",
       "task": "2.1j"
     },
+    "assets/source/tool_weapon_set.blend": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:24:30+00:00",
+      "task": "2.1j"
+    },
+    "assets/tools_weapons": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:24:30+00:00",
+      "task": "2.1j"
+    },
+    "core/dev/dev_launch.gd": {
+      "agent": "flint5",
+      "at": "2026-08-17T23:23:15+00:00",
+      "task": "F-054"
+    },
+    "docs/FINDINGS.md": {
+      "agent": "flint5",
+      "at": "2026-08-17T23:23:15+00:00",
+      "task": "F-054"
+    },
     "tools/blender/audit_all_sides.py": {
       "agent": "tine18",
       "at": "2026-08-17T19:30:14+00:00",
@@ -53,6 +83,11 @@
     "tools/blender/build_crafting_stations.py": {
       "agent": "tine18",
       "at": "2026-08-17T23:07:07+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_harvestable_resources.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:22:52+00:00",
       "task": "2.1j"
     },
     "tools/blender/build_mire_map_kit.py": {
@@ -75,10 +110,20 @@
       "at": "2026-08-17T23:20:42+00:00",
       "task": "2.1j"
     },
+    "tools/blender/build_tool_weapon_set.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:24:30+00:00",
+      "task": "2.1j"
+    },
     "tools/blender/detail_distribution.py": {
       "agent": "tine18",
       "at": "2026-08-17T19:30:14+00:00",
       "task": "2.1j"
+    },
+    "tools/lan_launch_check.gd": {
+      "agent": "flint5",
+      "at": "2026-08-17T23:23:15+00:00",
+      "task": "F-054"
     }
   },
   "in_flight": {
@@ -100,10 +145,26 @@
         "tools/blender/build_playtest_hollow.py",
         "assets/maps",
         "assets/source/playtest_map.blend",
-        "assets/source/playtest_hollow.blend"
+        "assets/source/playtest_hollow.blend",
+        "tools/blender/build_harvestable_resources.py",
+        "assets/harvestables",
+        "assets/source/harvestable_resources.blend",
+        "tools/blender/build_tool_weapon_set.py",
+        "assets/tools_weapons",
+        "assets/source/tool_weapon_set.blend"
       ],
       "notes": [],
       "started": "2026-08-17T19:30:14+00:00"
+    },
+    "F-054": {
+      "agent": "flint5",
+      "files": [
+        "core/dev/dev_launch.gd",
+        "docs/FINDINGS.md",
+        "tools/lan_launch_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-17T23:23:15+00:00"
     }
   },
   "recent": {
@@ -1867,6 +1928,11 @@
       "at": "2026-08-17T18:38:17+00:00",
       "task": "2.12"
     },
+    "systems/waves/wave_spawner.gd": {
+      "agent": "lc1",
+      "at": "2026-08-17T23:24:25+00:00",
+      "task": "2.12"
+    },
     "tools/blender/audit_all_sides.py": {
       "agent": "tine18",
       "at": "2026-08-17T19:29:08+00:00",
@@ -2266,6 +2332,11 @@
       "agent": "dusk3",
       "at": "2026-08-17T16:52:06+00:00",
       "task": "F-041"
+    },
+    "tools/wave_spawner_check.gd": {
+      "agent": "lc1",
+      "at": "2026-08-17T23:24:25+00:00",
+      "task": "2.12"
     },
     "ui/crafting/crafting_ui.gd": {
       "agent": "dusk3",
@@ -3631,6 +3702,13 @@
       "status": "todo",
       "tier": "F",
       "title": "Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why"
+    },
+    "F-054": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "There is no launch path into LAN mode, so a second physical machine cannot join at all"
     }
   },
   "version": 1
