@@ -1537,3 +1537,13 @@ STILL NEEDS SEQUOYAH'S EYES: (a) pickup sizes changed hard (stone 1.08m -> 0.185
 Files: `AGENTS.md`, `tools/blender/audit_all_sides.py`, `tools/blender/detail_distribution.py`, `tools/blender/build_pickup_kit.py`, `assets/pickups`, `tools/blender/build_crafting_stations.py`, `assets/crafting_stations`, `assets/source/crafting_stations.blend`, `tools/blender/build_mire_map_kit.py`, `assets/environment`, `assets/source/mire_map_kit.blend`, `tools/blender/build_playtest_map.py`, `tools/blender/build_playtest_hollow.py`, `assets/maps`, `assets/source/playtest_map.blend`, `assets/source/playtest_hollow.blend`, `tools/blender/build_harvestable_resources.py`, `assets/harvestables`, `assets/source/harvestable_resources.blend`, `tools/blender/build_tool_weapon_set.py`, `assets/tools_weapons`, `assets/source/tool_weapon_set.blend`, `docs/ASSET_TRACKER.md`
 
 Commit at time of writing: `86ced32`
+
+---
+
+### DONE · 0.12 · quill15 · 2026-08-17T23:40:23+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+Keep every rate-limit window, not just the last event. Claude Pro runs five_hour and weekly limits simultaneously and they are not interchangeable — observed live at 15 percent session against 73 percent weekly, and it is the weekly that actually stops work. The ledger now records each window and parks on whichever is blocking, using that window's own reset so a weekly wall is not retried at the five-hour reset.
+
+Commit at time of writing: `a23683a`

@@ -255,7 +255,7 @@ def is_logged_in(lane):
 
 def new_acc():
     return {"in": 0, "out": 0, "cached": 0, "cost": 0.0, "raw": {}, "final": False,
-            "rate_limit": None}
+            "rate_limit": None, "rate_limits": {}}
 
 
 def harvest(obj, acc, cli):
@@ -278,6 +278,11 @@ def harvest(obj, acc, cli):
     if obj.get("type") == "rate_limit_event":
         info = obj.get("rate_limit_info")
         if isinstance(info, dict):
+            # Keep EVERY window, keyed by type. Claude Pro runs a five_hour and a weekly limit at
+            # once and they are not interchangeable: a session can read 15% used while the weekly
+            # sits at 73%, and it is the weekly that actually stops work. Overwriting on each event
+            # kept only whichever arrived last, which is how you dispatch into a wall you knew about.
+            acc.setdefault("rate_limits", {})[info.get("rateLimitType") or "?"] = info
             acc["rate_limit"] = info
         return
 
@@ -605,15 +610,25 @@ def _finish(name, task, code, acc, tail, logpath, elapsed):
 
 def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, elapsed, exhausted):
     # Authoritative quota, when the CLI gave us any.
-    info = acc.get("rate_limit")
-    if isinstance(info, dict):
+    windows = acc.get("rate_limits") or {}
+    if windows:
+        lane["quota_windows"] = {
+            k: {"status": v.get("status"),
+                "resets_at": (datetime.fromtimestamp(v["resetsAt"], timezone.utc)
+                              .isoformat(timespec="seconds")
+                              if isinstance(v.get("resetsAt"), (int, float)) else None)}
+            for k, v in windows.items()}
+        # Park on the FIRST window that is not allowing work, and use that window's own reset —
+        # parking a weekly wall until the five-hour reset would just walk straight back into it.
+        blocked = [(k, v) for k, v in windows.items() if v.get("status") not in (None, "allowed")]
+        chosen = (blocked or sorted(windows.items()))[0]
+        info = chosen[1]
         lane["quota_status"] = info.get("status")
-        lane["quota_window"] = info.get("rateLimitType")
-        resets = info.get("resetsAt")
-        if isinstance(resets, (int, float)):
+        lane["quota_window"] = chosen[0]
+        if isinstance(info.get("resetsAt"), (int, float)):
             lane["quota_resets_at"] = datetime.fromtimestamp(
-                resets, timezone.utc).isoformat(timespec="seconds")
-        if info.get("status") not in (None, "allowed"):
+                info["resetsAt"], timezone.utc).isoformat(timespec="seconds")
+        if blocked:
             exhausted = True
 
     lane["runs"] += 1

@@ -1,5 +1,35 @@
 {
   "claims": {
+    "assets/loot": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:36:31+00:00",
+      "task": "2.1j"
+    },
+    "assets/source/loot_set.blend": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:36:31+00:00",
+      "task": "2.1j"
+    },
+    "assets/source/ward_set.blend": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:37:51+00:00",
+      "task": "2.1j"
+    },
+    "assets/source/wellspring_set.blend": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:37:51+00:00",
+      "task": "2.1j"
+    },
+    "assets/wards": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:37:51+00:00",
+      "task": "2.1j"
+    },
+    "assets/wellsprings": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:37:51+00:00",
+      "task": "2.1j"
+    },
     "core/dev/dev_loadout.gd": {
       "agent": "lp",
       "at": "2026-08-17T23:33:01+00:00",
@@ -24,6 +54,21 @@
       "agent": "lp",
       "at": "2026-08-17T23:33:01+00:00",
       "task": "2.13"
+    },
+    "tools/blender/build_loot_set.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:36:31+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_ward_set.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:37:51+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_wellspring_set.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:37:51+00:00",
+      "task": "2.1j"
     },
     "tools/player_health_check.gd": {
       "agent": "lp",
@@ -50,6 +95,22 @@
       ],
       "notes": [],
       "started": "2026-08-17T23:31:05+00:00"
+    },
+    "2.1j": {
+      "agent": "tine18",
+      "files": [
+        "tools/blender/build_loot_set.py",
+        "assets/loot",
+        "assets/source/loot_set.blend",
+        "tools/blender/build_ward_set.py",
+        "assets/wards",
+        "assets/source/ward_set.blend",
+        "tools/blender/build_wellspring_set.py",
+        "assets/wellsprings",
+        "assets/source/wellspring_set.blend"
+      ],
+      "notes": [],
+      "started": "2026-08-17T23:36:31+00:00"
     }
   },
   "recent": {
@@ -2343,7 +2404,7 @@
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.12": {
-      "done_at": "2026-08-17T23:34:37+00:00",
+      "done_at": "2026-08-17T23:40:23+00:00",
       "done_by": "quill15",
       "est": "1.5",
       "milestone": "M0",
@@ -2666,7 +2727,7 @@
     "2.1j": {
       "est": "8",
       "milestone": "M2",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle"
     },

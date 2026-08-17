@@ -9,6 +9,7 @@
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
 | **2.13** Death & respawn: downed → bleed-out → revive by teammate (`DESIGN.md` §4.5) | lp | 2026-08-17 23:31 | `systems/health/player_health.gd`, `systems/health/downed_state.gd`, `entities/player/player_controller.gd`, `tools/player_health_check.gd`, `tools/player_health_net_check.gd`, `core/net/net_version.gd`, `core/dev/dev_loadout.gd` |
+| **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-17 23:36 | `tools/blender/build_loot_set.py`, `assets/loot`, `assets/source/loot_set.blend`, `tools/blender/build_ward_set.py`, `assets/wards`, `assets/source/ward_set.blend`, `tools/blender/build_wellspring_set.py`, `assets/wellsprings`, `assets/source/wellspring_set.blend` |
 
 ## Milestones
 
