@@ -3,7 +3,7 @@
 Run with:
   Blender --background --python tools/blender/build_mire_map_kit.py
 
-Outputs 116 individual, metre-scale GLBs, an editable Blender source file,
+Outputs 128 individual, metre-scale GLBs, an editable Blender source file,
 a machine-readable catalog, and category preview renders. All variation is
 seeded so repeated builds preserve geometry and naming.
 """
@@ -36,7 +36,7 @@ CATEGORY_PREVIEWS = {
     "ruins": "ruins_preview.png",
     "building_pieces": "building_pieces_preview.png",
 }
-CATEGORY_TOTALS = {"trees": 18, "rocks": 18, "forest_debris": 12, "ground_cover": 16, "mire_growth": 16, "ruins": 12, "building_pieces": 24}
+CATEGORY_TOTALS = {"trees": 18, "rocks": 18, "forest_debris": 12, "ground_cover": 28, "mire_growth": 16, "ruins": 12, "building_pieces": 24}
 
 
 def material(name: str, color: tuple[float, float, float, float], roughness: float = 0.9, emission: tuple[float, float, float, float] | None = None, emission_strength: float = 0.0) -> bpy.types.Material:
@@ -181,6 +181,7 @@ def main() -> None:
         "leaf": material("MIRE_Leaf", (0.10, 0.43, 0.13, 1.0)), "leaf_light": material("MIRE_Leaf_Light", (0.30, 0.62, 0.17, 1.0)), "leaf_gold": material("MIRE_Leaf_Gold", (0.66, 0.43, 0.08, 1.0)),
         "stone": material("MIRE_Stone", (0.22, 0.27, 0.29, 1.0)), "stone_light": material("MIRE_Stone_Light", (0.41, 0.47, 0.45, 1.0)), "stone_dark": material("MIRE_Stone_Dark", (0.10, 0.13, 0.15, 1.0)),
         "moss": material("MIRE_Moss", (0.12, 0.35, 0.09, 1.0)), "grass": material("MIRE_Grass", (0.15, 0.46, 0.16, 1.0)), "grass_light": material("MIRE_Grass_Light", (0.37, 0.67, 0.18, 1.0)),
+        "grass_dark": material("MIRE_Grass_Dark", (0.07, 0.29, 0.11, 1.0)), "grass_dry": material("MIRE_Grass_Dry", (0.48, 0.43, 0.16, 1.0)), "seed_head": material("MIRE_Grass_Seed", (0.32, 0.24, 0.075, 1.0)),
         "reed": material("MIRE_Reed", (0.38, 0.52, 0.12, 1.0)), "cattail": material("MIRE_Cattail", (0.29, 0.10, 0.03, 1.0)),
         "mushroom": material("MIRE_Mushroom", (0.67, 0.14, 0.55, 1.0)), "mushroom_blue": material("MIRE_Mushroom_Blue", (0.16, 0.40, 0.71, 1.0)), "mushroom_spot": material("MIRE_Mushroom_Spot", (0.95, 0.68, 0.92, 1.0)),
         "mire": material("MIRE_Corruption", (0.11, 0.018, 0.17, 1.0)), "mire_mid": material("MIRE_Corruption_Mid", (0.31, 0.045, 0.43, 1.0)),
@@ -262,10 +263,101 @@ def main() -> None:
             angle = index / count * math.tau + rng.uniform(-0.2, 0.2); length = rng.uniform(0.8, 1.65); start = (math.cos(angle) * 0.18, math.sin(angle) * 0.18, 0.24); middle = (math.cos(angle) * length * 0.55, math.sin(angle) * length * 0.55, rng.uniform(0.10, 0.26)); end = (math.cos(angle) * length, math.sin(angle) * length, 0.035)
             cylinder_between(f"Root_{index + 1}_A", start, middle, rng.uniform(0.09, 0.16), mats["bark"], 6); cylinder_between(f"Root_{index + 1}_B", middle, end, rng.uniform(0.045, 0.09), mats["bark"], 6)
 
+    def grass_cluster(name: str, rng: random.Random, count: int, radius: float,
+                      height_range: tuple[float, float], width_range: tuple[float, float],
+                      palette: list[bpy.types.Material], lean_range: tuple[float, float]) -> None:
+        """Build full, bent grass from a few combined meshes instead of sparse cone spikes."""
+        vertices_by_material: list[list[tuple[float, float, float]]] = [[] for _ in palette]
+        faces_by_material: list[list[tuple[int, ...]]] = [[] for _ in palette]
+        for index in range(count):
+            material_index = index % len(palette)
+            vertices = vertices_by_material[material_index]
+            faces = faces_by_material[material_index]
+            distance = radius * (rng.random() ** 0.62)
+            position_angle = rng.uniform(0.0, math.tau)
+            cx = math.cos(position_angle) * distance
+            cy = math.sin(position_angle) * distance
+            blade_angle = position_angle + rng.uniform(-1.15, 1.15)
+            width = rng.uniform(*width_range)
+            height = rng.uniform(*height_range)
+            thickness = max(0.012, width * 0.18)
+            lean_angle = blade_angle + rng.uniform(-0.7, 0.7)
+            lean = height * rng.uniform(*lean_range)
+            lean_x = math.cos(lean_angle) * lean
+            lean_y = math.sin(lean_angle) * lean
+            ux, uy = math.cos(blade_angle) * width * 0.5, math.sin(blade_angle) * width * 0.5
+            vx, vy = -math.sin(blade_angle) * thickness * 0.5, math.cos(blade_angle) * thickness * 0.5
+            middle = (cx + lean_x * 0.42, cy + lean_y * 0.42, height * 0.58)
+            tip = (cx + lean_x, cy + lean_y, height)
+            base = len(vertices)
+            vertices.extend([
+                (cx - ux - vx, cy - uy - vy, 0.015),
+                (cx + ux - vx, cy + uy - vy, 0.015),
+                (cx - ux + vx, cy - uy + vy, 0.015),
+                (cx + ux + vx, cy + uy + vy, 0.015),
+                (middle[0] - ux * 0.72 - vx, middle[1] - uy * 0.72 - vy, middle[2]),
+                (middle[0] + ux * 0.72 - vx, middle[1] + uy * 0.72 - vy, middle[2]),
+                (middle[0] - ux * 0.72 + vx, middle[1] - uy * 0.72 + vy, middle[2]),
+                (middle[0] + ux * 0.72 + vx, middle[1] + uy * 0.72 + vy, middle[2]),
+                tip,
+            ])
+            faces.extend([
+                (base, base + 1, base + 3, base + 2),
+                (base, base + 4, base + 5, base + 1),
+                (base + 2, base + 3, base + 7, base + 6),
+                (base, base + 2, base + 6, base + 4),
+                (base + 1, base + 5, base + 7, base + 3),
+                (base + 4, base + 6, base + 8),
+                (base + 6, base + 7, base + 8),
+                (base + 7, base + 5, base + 8),
+                (base + 5, base + 4, base + 8),
+            ])
+        for material_index, grass_material in enumerate(palette):
+            if vertices_by_material[material_index]:
+                mesh_object(
+                    f"{name}_{material_index + 1}",
+                    vertices_by_material[material_index],
+                    faces_by_material[material_index],
+                    grass_material,
+                )
+
     def build_grass(seed: int) -> None:
         rng = random.Random(seed)
-        for index in range(rng.randint(6, 11)):
-            angle = rng.uniform(0, math.tau); distance = rng.uniform(0, 0.48); height = rng.uniform(0.42, 1.18); blade = cone(f"Blade_{index + 1}", rng.uniform(0.07, 0.13), 0.01, height, (math.cos(angle) * distance, math.sin(angle) * distance, height * 0.5), mats["grass_light"] if index % 3 == 0 else mats["grass"], 4); blade.rotation_euler[1] = rng.uniform(-0.15, 0.15)
+        grass_cluster(
+            "Grass", rng, rng.randint(24, 32), 0.78, (0.34, 0.72), (0.05, 0.105),
+            [mats["grass_dark"], mats["grass"], mats["grass"], mats["grass_light"]], (0.06, 0.22),
+        )
+
+    def build_grass_meadow(seed: int) -> None:
+        rng = random.Random(seed)
+        grass_cluster(
+            "Meadow", rng, rng.randint(42, 56), 1.22, (0.22, 0.54), (0.04, 0.09),
+            [mats["grass_dark"], mats["grass"], mats["grass_light"]], (0.04, 0.16),
+        )
+
+    def build_grass_tuft(seed: int) -> None:
+        rng = random.Random(seed)
+        grass_cluster(
+            "Tuft", rng, rng.randint(22, 30), 0.34, (0.62, 1.14), (0.045, 0.085),
+            [mats["grass_dark"], mats["grass"], mats["grass_light"]], (0.14, 0.36),
+        )
+
+    def build_grass_seedhead(seed: int) -> None:
+        rng = random.Random(seed)
+        grass_cluster(
+            "SeedGrass", rng, rng.randint(24, 34), 0.74, (0.36, 0.76), (0.04, 0.08),
+            [mats["grass"], mats["grass_dry"], mats["grass_light"]], (0.06, 0.22),
+        )
+        for index in range(rng.randint(5, 8)):
+            angle = rng.uniform(0.0, math.tau)
+            distance = rng.uniform(0.12, 0.68)
+            height = rng.uniform(0.78, 1.16)
+            x, y = math.cos(angle) * distance, math.sin(angle) * distance
+            lean = rng.uniform(0.04, 0.16)
+            end = (x + math.cos(angle) * lean, y + math.sin(angle) * lean, height)
+            cylinder_between(f"Seed_Stem_{index + 1}", (x, y, 0.02), end, 0.014, mats["grass_dry"], 5)
+            cone(f"Seed_Head_{index + 1}", 0.055, 0.025, rng.uniform(0.16, 0.25),
+                 (end[0], end[1], end[2] + 0.08), mats["seed_head"], 6)
 
     def build_fern(seed: int) -> None:
         rng = random.Random(seed); fronds = rng.randint(5, 8)
@@ -381,9 +473,20 @@ def main() -> None:
         for y in (1, 2): box(f"Corner_Post_{y}", (2, y, 0.78), (0.24, 0.24, 1.56), mats["wood_build"])
         for z in (0.48, 1.08): box(f"Corner_Rail_{z}", (2, 1, z), (0.18, 2.1, 0.18), mats["wood_build_light"])
     def build_fence_gate() -> None:
-        for x in (-2, 2): box(f"Post_{x}", (x, 0, 0.92), (0.30, 0.30, 1.84), mats["wood_build"])
-        for z in (0.48, 1.10): box(f"Gate_Rail_{z}", (0, 0.02, z), (3.65, 0.18, 0.18), mats["wood_build_light"])
-        box("Gate_Brace", (0, 0.04, 0.80), (3.65, 0.16, 0.16), mats["wood_build"], (0, 0, 0.30))
+        # Two short leaves are modelled swung open, so the map's four exits read as exits.
+        for post_index, x in enumerate((-2.05, 2.05), start=1):
+            box(f"Post_{post_index}", (x, 0, 0.92), (0.32, 0.32, 1.84), mats["wood_build"])
+        leaf_length = 1.58
+        for side, pivot_x, angle in (("Left", -2.05, math.radians(72.0)),
+                                     ("Right", 2.05, math.radians(108.0))):
+            cx = pivot_x + math.cos(angle) * leaf_length * 0.5
+            cy = math.sin(angle) * leaf_length * 0.5
+            for rail_index, height in enumerate((0.48, 1.10), start=1):
+                box(f"Gate_{side}_Rail_{rail_index}", (cx, cy, height),
+                    (leaf_length, 0.18, 0.18), mats["wood_build_light"], (0, 0, angle))
+            end_x = pivot_x + math.cos(angle) * leaf_length
+            end_y = math.sin(angle) * leaf_length
+            box(f"Gate_{side}_Stile", (end_x, end_y, 0.80), (0.18, 0.18, 1.28), mats["wood_build"])
     def build_fence_post() -> None: box("Post", (0, 0, 0.90), (0.34, 0.34, 1.80), mats["wood_build"]); cone("Post_Cap", 0.28, 0.02, 0.38, (0, 0, 1.99), mats["wood_build_light"], 4)
 
     specs: list[tuple[str, str, Callable[[], None]]] = []
@@ -392,12 +495,16 @@ def main() -> None:
     add_seeded([f"tree_pine_{x}" for x in "abcdef"], "trees", build_pine); add_seeded([f"tree_bare_{x}" for x in "abcd"], "trees", build_bare); add_seeded([f"tree_birch_{x}" for x in "abcd"], "trees", build_birch); add_seeded([f"tree_crooked_{x}" for x in "abcd"], "trees", build_crooked)
     add_seeded([f"boulder_{x}" for x in "abcdefgh"], "rocks", build_boulder); add_seeded([f"rock_cluster_{x}" for x in "abcdef"], "rocks", build_rock_cluster); add_seeded([f"standing_stone_{x}" for x in "abcd"], "rocks", build_standing_stone)
     add_seeded([f"stump_{x}" for x in "abcd"], "forest_debris", build_stump); add_seeded([f"fallen_log_{x}" for x in "abcd"], "forest_debris", build_fallen_log); add_seeded([f"root_cluster_{x}" for x in "abcd"], "forest_debris", build_root_cluster)
-    add_seeded([f"grass_clump_{x}" for x in "abcdef"], "ground_cover", build_grass); add_seeded([f"fern_{x}" for x in "abcdef"], "ground_cover", build_fern); add_seeded([f"reeds_{x}" for x in "abcd"], "ground_cover", build_reeds)
+    add_seeded([f"grass_clump_{x}" for x in "abcdef"], "ground_cover", build_grass)
+    add_seeded([f"grass_meadow_{x}" for x in "abcd"], "ground_cover", build_grass_meadow)
+    add_seeded([f"grass_tuft_{x}" for x in "abcd"], "ground_cover", build_grass_tuft)
+    add_seeded([f"grass_seedhead_{x}" for x in "abcd"], "ground_cover", build_grass_seedhead)
+    add_seeded([f"fern_{x}" for x in "abcdef"], "ground_cover", build_fern); add_seeded([f"reeds_{x}" for x in "abcd"], "ground_cover", build_reeds)
     add_seeded([f"mushroom_cluster_{x}" for x in "abcdef"], "mire_growth", build_mushrooms); add_seeded([f"mire_crystal_{x}" for x in "abcdef"], "mire_growth", build_crystals); add_seeded([f"mire_tendril_{x}" for x in "abcd"], "mire_growth", build_tendrils)
     add_seeded([f"ruin_wall_{x}" for x in "abcd"], "ruins", build_ruin_wall); add_seeded([f"ruin_column_{x}" for x in "abcd"], "ruins", build_ruin_column); add_seeded([f"ruin_arch_{x}" for x in "ab"], "ruins", build_ruin_arch); add_seeded([f"stone_marker_{x}" for x in "ab"], "ruins", build_marker)
     building_specs = [("wood_foundation", build_wood_foundation), ("wood_floor", build_wood_floor), ("wood_wall_solid", build_wood_wall_solid), ("wood_wall_window", build_wood_wall_window), ("wood_wall_door", build_wood_wall_door), ("wood_half_wall", build_wood_half_wall), ("wood_roof_slope", build_wood_roof_slope), ("wood_roof_corner", build_wood_roof_corner), ("wood_stairs", build_wood_stairs), ("wood_beam", build_wood_beam), ("wood_post", build_wood_post), ("wood_railing", build_wood_railing), ("stone_foundation", build_stone_foundation), ("stone_floor", build_stone_floor), ("stone_wall_solid", build_stone_solid), ("stone_wall_window", build_stone_window), ("stone_wall_door", build_stone_door), ("stone_half_wall", build_stone_half), ("stone_stairs", build_stone_stairs), ("stone_pillar", build_stone_pillar), ("fence_straight", build_fence_straight), ("fence_corner", build_fence_corner), ("fence_gate", build_fence_gate), ("fence_post", build_fence_post)]
     specs.extend((name, "building_pieces", builder) for name, builder in building_specs)
-    if len(specs) != 116: raise RuntimeError(f"Catalog must contain 116 assets, found {len(specs)}")
+    if len(specs) != 128: raise RuntimeError(f"Catalog must contain 128 assets, found {len(specs)}")
     if len({name for name, _, _ in specs}) != len(specs): raise RuntimeError("Asset names must be unique")
 
     counters = {category: 0 for category in CATEGORY_ORDER}; records: list[dict] = []
@@ -421,7 +528,7 @@ def main() -> None:
         for child in record["root"].children_recursive:
             child.hide_render = not visible
 
-    preview_scales = {"trees": 43.0, "rocks": 36.0, "forest_debris": 34.0, "ground_cover": 32.0, "mire_growth": 34.0, "ruins": 34.0, "building_pieces": 40.0}
+    preview_scales = {"trees": 43.0, "rocks": 36.0, "forest_debris": 34.0, "ground_cover": 42.0, "mire_growth": 34.0, "ruins": 34.0, "building_pieces": 40.0}
     preview_heights = {"trees": 2.7, "rocks": 1.2, "forest_debris": 0.8, "ground_cover": 0.5, "mire_growth": 0.9, "ruins": 1.6, "building_pieces": 1.5}
     for category in CATEGORY_ORDER:
         category_y = CATEGORY_ORDER.index(category) * 38.0

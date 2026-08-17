@@ -67,6 +67,7 @@ def terrain_box(data: dict, mat: bpy.types.Material, parent: bpy.types.Object) -
         obj.rotation_euler[1] = -tilt
     else:
         obj.rotation_euler[0] = tilt
+    obj.rotation_euler[2] = float(data.get("yaw", 0.0))
     obj.data.materials.append(mat)
     obj.parent = parent
     obj["mire_zone"] = data["zone"]
@@ -128,7 +129,7 @@ class AssetLibrary:
 
 
 def setup_preview(root: bpy.types.Object) -> None:
-    bpy.ops.object.camera_add(location=(72.0, -88.0, 68.0))
+    bpy.ops.object.camera_add(location=(94.0, -116.0, 88.0))
     camera = bpy.context.object
     camera.name = "PreviewCamera"
     camera.data.lens = 52

@@ -39,11 +39,33 @@ func _run() -> void:
 	var runtime := scene.get_node_or_null(^"LayoutRuntime") as Node3D
 	check(runtime != null, "layout runtime exists")
 	check(scene.get_node_or_null(^"AuthoredVisuals") != null, "authored GLB exists")
-	check(scene.get_node_or_null(^"Player") != null, "player exists at the camp spawn")
+	var player := scene.get_node_or_null(^"Player") as Node3D
+	check(player != null, "player exists at the camp spawn")
 	_check_atmosphere(scene)
 	if runtime == null:
 		finish()
 		return
+	var layout := _load_layout()
+	if layout.is_empty():
+		finish()
+		return
+	var layout_props: Array = layout.get("props", []) as Array
+	var layout_terrain: Array = layout.get("terrain", []) as Array
+	var expected_terrain: int = 0
+	var expected_colliders: int = 0
+	for terrain_value: Variant in layout_terrain:
+		if bool((terrain_value as Dictionary).get("collide", false)):
+			expected_terrain += 1
+			expected_colliders += 1
+	for prop_value: Variant in layout_props:
+		expected_colliders += ((prop_value as Dictionary).get("cols", []) as Array).size()
+	if player != null:
+		var expected_spawn := _vector3((layout.get("spawn", {}) as Dictionary).get("pos", []))
+		check(
+			Vector2(player.position.x, player.position.z).distance_to(Vector2(expected_spawn.x, expected_spawn.z)) < 0.01,
+			"scene player matches the shared horizontal spawn record"
+		)
+		_check_gate_egress(scene, player)
 
 	var zones := get_nodes_in_group(&"playtest_hollow_zone")
 	var props := get_nodes_in_group(&"playtest_hollow_asset")
@@ -51,9 +73,9 @@ func _run() -> void:
 	var terrain := get_nodes_in_group(&"playtest_hollow_terrain")
 	var markers := get_nodes_in_group(&"playtest_hollow_marker")
 	check(zones.size() == 6, "exactly six collision zones (%d)" % zones.size())
-	check(props.size() == 463, "all 463 prop records consumed (%d)" % props.size())
-	check(terrain.size() == 20, "all 20 colliding terrain records consumed (%d)" % terrain.size())
-	check(colliders.size() == 274, "254 prop shapes plus 20 terrain shapes built (%d)" % colliders.size())
+	check(props.size() == layout_props.size(), "all prop records consumed (%d)" % props.size())
+	check(terrain.size() == expected_terrain, "all colliding terrain records consumed (%d)" % terrain.size())
+	check(colliders.size() == expected_colliders, "all terrain and prop shapes built (%d)" % colliders.size())
 	check(markers.size() == 1, "enemy spawn marker built (%d)" % markers.size())
 	for zone_name: String in EXPECTED_ZONES:
 		check(
@@ -64,7 +86,7 @@ func _run() -> void:
 	var visual_root := scene.get_node_or_null(^"AuthoredVisuals")
 	var visual_meshes := _count_meshes(visual_root)
 	check(visual_meshes >= 1000, "authored visual contains at least 1000 meshes (%d)" % visual_meshes)
-	_check_layout_file(visual_root)
+	_check_layout_file(visual_root, layout)
 	print(
 		"PLAYTEST_HOLLOW_CHECK zones=%d props=%d terrain=%d colliders=%d visuals=%d failures=%d"
 		% [zones.size(), props.size(), terrain.size(), colliders.size(), visual_meshes, failures]
@@ -72,18 +94,20 @@ func _run() -> void:
 	finish()
 
 
-func _check_layout_file(visual_root: Node) -> void:
+func _load_layout() -> Dictionary:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(LAYOUT_PATH))
 	check(parsed is Dictionary, "shared layout JSON parses")
-	if not parsed is Dictionary:
-		return
-	var layout := parsed as Dictionary
+	return parsed as Dictionary if parsed is Dictionary else {}
+
+
+func _check_layout_file(visual_root: Node, layout: Dictionary) -> void:
 	check(int(layout.get("seed", 0)) == 20260817, "layout seed is frozen")
-	check(float(layout.get("bound", 0.0)) == 34.0, "closed hollow boundary is 34m")
+	check(float(layout.get("bound", 0.0)) == 44.0, "closed hollow boundary is 44m")
 	var props: Array = layout.get("props", []) as Array
 	var terrain: Array = layout.get("terrain", []) as Array
-	check(props.size() == 463, "layout contains 463 props")
-	check(terrain.size() == 26, "layout contains 26 terrain records")
+	check(props.size() >= 700, "enlarged layout contains at least 700 props (%d)" % props.size())
+	check(terrain.size() >= 30, "layout contains transition terrain and trails (%d)" % terrain.size())
+	_check_open_gates_and_grass(props)
 	var aligned_visuals: int = 0
 	var visual_alignment_examples: Array[String] = []
 	for index: int in props.size():
@@ -108,6 +132,54 @@ func _check_layout_file(visual_root: Node) -> void:
 		if absf(float(record.get("tilt", 0.0))) > deg_to_rad(40.0):
 			steep_ramps += 1
 	check(steep_ramps == 0, "no terrain ramp exceeds 40 degrees")
+
+
+func _check_open_gates_and_grass(props: Array) -> void:
+	var gates: int = 0
+	var blocked_gates: int = 0
+	var grass_count: int = 0
+	var grass_assets: Dictionary = {}
+	for prop_value: Variant in props:
+		var prop := prop_value as Dictionary
+		var asset := String(prop.get("asset", ""))
+		if asset.begins_with("grass_"):
+			grass_count += 1
+			grass_assets[asset] = true
+		if asset != "fence_gate":
+			continue
+		gates += 1
+		for shape_value: Variant in prop.get("cols", []):
+			var shape := shape_value as Dictionary
+			if String(shape.get("t", "")) != "box":
+				continue
+			var size := _vector3(shape.get("size", []))
+			var offset := _vector3(shape.get("off", []))
+			if absf(offset.x) - size.x * 0.5 < 0.9:
+				blocked_gates += 1
+	check(gates == 4, "spawn camp has four gates (%d)" % gates)
+	check(blocked_gates == 0, "every gate leaves a 1.8m clear centre passage")
+	check(grass_count >= 220, "map uses at least 220 grass placements (%d)" % grass_count)
+	check(grass_assets.size() >= 14, "map uses at least 14 grass variants (%d)" % grass_assets.size())
+
+
+func _check_gate_egress(scene: Node3D, player: Node3D) -> void:
+	var world := scene.get_world_3d()
+	check(world != null, "playtest hollow has a physics world")
+	if world == null:
+		return
+	var rays := {
+		"north": [Vector3(0.0, 1.0, -4.0), Vector3(0.0, 1.0, -12.0)],
+		"south": [Vector3(0.0, 1.0, 7.4), Vector3(0.0, 1.0, 16.0)],
+		"west": [Vector3(-4.0, 1.0, 2.1), Vector3(-14.0, 1.0, 2.1)],
+		"east": [Vector3(4.0, 1.0, 2.1), Vector3(14.0, 1.0, 2.1)],
+	}
+	for direction: String in rays:
+		var endpoints: Array = rays[direction] as Array
+		var query := PhysicsRayQueryParameters3D.create(endpoints[0] as Vector3, endpoints[1] as Vector3)
+		if player is CollisionObject3D:
+			query.exclude = [(player as CollisionObject3D).get_rid()]
+		var hit := world.direct_space_state.intersect_ray(query)
+		check(hit.is_empty(), "%s spawn-camp gate has a clear physical egress" % direction)
 
 
 func _check_atmosphere(scene: Node3D) -> void:

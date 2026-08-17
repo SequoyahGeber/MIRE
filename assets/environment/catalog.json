@@ -638,79 +638,257 @@
   {
     "name": "grass_clump_a",
     "category": "ground_cover",
-    "width_m": 0.813,
-    "depth_m": 0.759,
-    "height_m": 1.178,
-    "mesh_parts": 9,
-    "polygons": 54,
+    "width_m": 1.38,
+    "depth_m": 1.488,
+    "height_m": 0.695,
+    "mesh_parts": 4,
+    "polygons": 270,
     "materials": [
       "MIRE_Grass",
+      "MIRE_Grass_Dark",
       "MIRE_Grass_Light"
     ]
   },
   {
     "name": "grass_clump_b",
     "category": "ground_cover",
-    "width_m": 0.629,
-    "depth_m": 0.771,
-    "height_m": 1.086,
-    "mesh_parts": 6,
-    "polygons": 36,
+    "width_m": 1.227,
+    "depth_m": 1.524,
+    "height_m": 0.698,
+    "mesh_parts": 4,
+    "polygons": 225,
     "materials": [
       "MIRE_Grass",
+      "MIRE_Grass_Dark",
       "MIRE_Grass_Light"
     ]
   },
   {
     "name": "grass_clump_c",
     "category": "ground_cover",
-    "width_m": 0.84,
-    "depth_m": 1.07,
-    "height_m": 1.138,
-    "mesh_parts": 11,
-    "polygons": 66,
+    "width_m": 1.519,
+    "depth_m": 1.428,
+    "height_m": 0.7,
+    "mesh_parts": 4,
+    "polygons": 288,
     "materials": [
       "MIRE_Grass",
+      "MIRE_Grass_Dark",
       "MIRE_Grass_Light"
     ]
   },
   {
     "name": "grass_clump_d",
     "category": "ground_cover",
-    "width_m": 0.746,
-    "depth_m": 0.556,
-    "height_m": 1.191,
-    "mesh_parts": 9,
-    "polygons": 54,
+    "width_m": 1.355,
+    "depth_m": 1.514,
+    "height_m": 0.682,
+    "mesh_parts": 4,
+    "polygons": 279,
     "materials": [
       "MIRE_Grass",
+      "MIRE_Grass_Dark",
       "MIRE_Grass_Light"
     ]
   },
   {
     "name": "grass_clump_e",
     "category": "ground_cover",
-    "width_m": 1.003,
-    "depth_m": 0.572,
-    "height_m": 1.164,
-    "mesh_parts": 9,
-    "polygons": 54,
+    "width_m": 1.363,
+    "depth_m": 1.554,
+    "height_m": 0.689,
+    "mesh_parts": 4,
+    "polygons": 279,
     "materials": [
       "MIRE_Grass",
+      "MIRE_Grass_Dark",
       "MIRE_Grass_Light"
     ]
   },
   {
     "name": "grass_clump_f",
     "category": "ground_cover",
-    "width_m": 0.828,
-    "depth_m": 0.689,
-    "height_m": 1.179,
-    "mesh_parts": 10,
-    "polygons": 60,
+    "width_m": 1.52,
+    "depth_m": 1.61,
+    "height_m": 0.7,
+    "mesh_parts": 4,
+    "polygons": 288,
     "materials": [
       "MIRE_Grass",
+      "MIRE_Grass_Dark",
       "MIRE_Grass_Light"
+    ]
+  },
+  {
+    "name": "grass_meadow_a",
+    "category": "ground_cover",
+    "width_m": 2.042,
+    "depth_m": 2.417,
+    "height_m": 0.523,
+    "mesh_parts": 3,
+    "polygons": 387,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Dark",
+      "MIRE_Grass_Light"
+    ]
+  },
+  {
+    "name": "grass_meadow_b",
+    "category": "ground_cover",
+    "width_m": 2.135,
+    "depth_m": 1.864,
+    "height_m": 0.493,
+    "mesh_parts": 3,
+    "polygons": 378,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Dark",
+      "MIRE_Grass_Light"
+    ]
+  },
+  {
+    "name": "grass_meadow_c",
+    "category": "ground_cover",
+    "width_m": 2.244,
+    "depth_m": 1.968,
+    "height_m": 0.518,
+    "mesh_parts": 3,
+    "polygons": 432,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Dark",
+      "MIRE_Grass_Light"
+    ]
+  },
+  {
+    "name": "grass_meadow_d",
+    "category": "ground_cover",
+    "width_m": 2.305,
+    "depth_m": 2.271,
+    "height_m": 0.521,
+    "mesh_parts": 3,
+    "polygons": 450,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Dark",
+      "MIRE_Grass_Light"
+    ]
+  },
+  {
+    "name": "grass_tuft_a",
+    "category": "ground_cover",
+    "width_m": 0.985,
+    "depth_m": 0.822,
+    "height_m": 1.121,
+    "mesh_parts": 3,
+    "polygons": 207,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Dark",
+      "MIRE_Grass_Light"
+    ]
+  },
+  {
+    "name": "grass_tuft_b",
+    "category": "ground_cover",
+    "width_m": 1.164,
+    "depth_m": 0.844,
+    "height_m": 1.117,
+    "mesh_parts": 3,
+    "polygons": 261,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Dark",
+      "MIRE_Grass_Light"
+    ]
+  },
+  {
+    "name": "grass_tuft_c",
+    "category": "ground_cover",
+    "width_m": 0.847,
+    "depth_m": 0.835,
+    "height_m": 1.108,
+    "mesh_parts": 3,
+    "polygons": 243,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Dark",
+      "MIRE_Grass_Light"
+    ]
+  },
+  {
+    "name": "grass_tuft_d",
+    "category": "ground_cover",
+    "width_m": 0.957,
+    "depth_m": 1.108,
+    "height_m": 1.119,
+    "mesh_parts": 3,
+    "polygons": 252,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Dark",
+      "MIRE_Grass_Light"
+    ]
+  },
+  {
+    "name": "grass_seedhead_a",
+    "category": "ground_cover",
+    "width_m": 1.388,
+    "depth_m": 1.215,
+    "height_m": 1.227,
+    "mesh_parts": 15,
+    "polygons": 315,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Dry",
+      "MIRE_Grass_Light",
+      "MIRE_Grass_Seed"
+    ]
+  },
+  {
+    "name": "grass_seedhead_b",
+    "category": "ground_cover",
+    "width_m": 1.427,
+    "depth_m": 1.496,
+    "height_m": 1.309,
+    "mesh_parts": 17,
+    "polygons": 339,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Dry",
+      "MIRE_Grass_Light",
+      "MIRE_Grass_Seed"
+    ]
+  },
+  {
+    "name": "grass_seedhead_c",
+    "category": "ground_cover",
+    "width_m": 1.408,
+    "depth_m": 1.432,
+    "height_m": 1.309,
+    "mesh_parts": 17,
+    "polygons": 348,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Dry",
+      "MIRE_Grass_Light",
+      "MIRE_Grass_Seed"
+    ]
+  },
+  {
+    "name": "grass_seedhead_d",
+    "category": "ground_cover",
+    "width_m": 1.063,
+    "depth_m": 1.5,
+    "height_m": 1.343,
+    "mesh_parts": 15,
+    "polygons": 396,
+    "materials": [
+      "MIRE_Grass",
+      "MIRE_Grass_Dry",
+      "MIRE_Grass_Light",
+      "MIRE_Grass_Seed"
     ]
   },
   {
@@ -1527,11 +1705,11 @@
   {
     "name": "fence_gate",
     "category": "building_pieces",
-    "width_m": 4.3,
-    "depth_m": 1.232,
+    "width_m": 4.42,
+    "depth_m": 1.753,
     "height_m": 1.84,
-    "mesh_parts": 5,
-    "polygons": 30,
+    "mesh_parts": 8,
+    "polygons": 48,
     "materials": [
       "MIRE_Build_Wood",
       "MIRE_Build_Wood_Light"

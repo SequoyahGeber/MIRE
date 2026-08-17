@@ -44,7 +44,7 @@ MAP_ID = "playtest_hollow"
 
 # Playable half-extent. The rock wall ring stands from BOUND outward, so the hollow is closed:
 # no falling off a floating slab, which is what the 60x60 ground plane used to allow.
-BOUND = 34.0
+BOUND = 44.0
 WALL_THICK = 3.0
 WALL_HEIGHT = 6.0
 
@@ -54,6 +54,7 @@ ZONES = ["SpawnCamp", "WestForest", "NorthRuins", "EastMire", "SouthRidge", "Rou
 CAMP_X0, CAMP_X1 = -10.7, 10.7
 CAMP_Z0, CAMP_Z1 = -8.6, 12.8
 CAMP_CX, CAMP_CZ = 0.0, 2.1
+SPAWN_POS = (0.0, 0.2, 7.4)
 
 # Basin: the Mire sits BELOW grade rather than being a purple rectangle painted on flat ground.
 BASIN_X0, BASIN_X1 = 15.0, 31.0
@@ -67,7 +68,9 @@ FLOOR_TOP = 0.64  # wood_foundation (0.40) + wood_floor (0.24)
 STONE_TOP = 0.96  # stone_foundation (0.72) + stone_floor (0.24)
 
 MATERIALS = {
-    "ground": {"color": [0.085, 0.17, 0.075, 1.0], "roughness": 0.98},
+    "ground": {"color": [0.09, 0.18, 0.08, 1.0], "roughness": 0.98},
+    "meadow": {"color": [0.12, 0.235, 0.09, 1.0], "roughness": 0.99},
+    "forest_floor": {"color": [0.095, 0.125, 0.055, 1.0], "roughness": 1.0},
     "path": {"color": [0.205, 0.15, 0.085, 1.0], "roughness": 1.0},
     "mud": {"color": [0.13, 0.115, 0.155, 1.0], "roughness": 0.72},
     "rock": {"color": [0.155, 0.16, 0.175, 1.0], "roughness": 0.95},
@@ -78,9 +81,22 @@ MATERIALS = {
 # Road corridors, as (x0, z0, x1, z1). Solid props stay out of these; ground cover may sit inside.
 ROADS = [
     ("Road_North", -3.0, -26.0, 3.0, CAMP_Z0),
-    ("Road_South", -3.0, CAMP_Z1, 3.0, 21.0),
-    ("Road_West", -17.0, -1.0, CAMP_X0, 5.0),
-    ("Road_East", CAMP_X1, -1.0, 17.0, 5.0),
+    ("Road_South", -3.0, CAMP_Z1, 3.0, 23.0),
+    ("Road_West", -18.0, -1.0, CAMP_X0, 5.0),
+    ("Road_East", CAMP_X1, -1.0, 18.0, 5.0),
+]
+
+# Visible trail ribbons overlap slightly and bend toward each landmark. ROADS remains the conservative
+# clearance envelope used by placement validation; TRAILS is presentation only.
+TRAILS = [
+    ("Trail_NorthA", (0.0, CAMP_Z0), (-0.8, -19.0), 5.6),
+    ("Trail_NorthB", (-0.8, -19.0), (0.0, -27.0), 4.8),
+    ("Trail_SouthA", (0.0, CAMP_Z1), (0.0, 20.5), 5.6),
+    ("Trail_SouthB", (0.0, 20.5), (8.2, 27.2), 4.4),
+    ("Trail_WestA", (CAMP_X0, CAMP_CZ), (-17.2, 2.8), 5.6),
+    ("Trail_WestB", (-17.2, 2.8), (-23.0, 2.0), 4.2),
+    ("Trail_EastA", (CAMP_X1, CAMP_CZ), (16.2, 1.8), 5.6),
+    ("Trail_EastB", (16.2, 1.8), (19.8, 1.5), 4.2),
 ]
 
 
@@ -145,7 +161,7 @@ def colliders_for(asset: str) -> list[dict]:
     w, dp, h = d["w"], d["d"], d["h"]
 
     # Walk-through dressing. Grass you brush past; a tendril you push through.
-    if asset.startswith(("grass_clump", "fern_", "reeds_", "mushroom_cluster", "mire_tendril")):
+    if asset.startswith(("grass_", "fern_", "reeds_", "mushroom_cluster", "mire_tendril")):
         return []
     # Pickups are collected, not collided with — 2.3/2.4 replace these with real interactables.
     if asset.startswith("pickup_") or asset.endswith("_world") or asset.startswith("loot_coin"):
@@ -223,6 +239,11 @@ def colliders_for(asset: str) -> list[dict]:
         return [box((w, h, max(dp, 0.24)), (0.0, h * 0.5, 0.0))]
     if asset in ("wood_roof_slope", "wood_roof_corner"):
         return [box((w, 0.35, dp), (0.0, h - 0.18, 0.0))]
+    if asset == "fence_gate":
+        return [
+            box((0.42, h, 0.42), (-2.05, h * 0.5, 0.0)),
+            box((0.42, h, 0.42), (2.05, h * 0.5, 0.0)),
+        ]
     if asset.startswith("fence_"):
         return [box((w, h, max(dp, 0.28)), (0.0, h * 0.5, 0.0))]
 
@@ -282,6 +303,20 @@ class Layout:
               y: float = 0.03) -> None:
         """A flat decal laid on the ground: visible, never collidable, never a support."""
         self.slab(name, zone, mat, x0, z0, x1, z1, top=y, thickness=0.06, collide=False, support=False)
+
+    def paint_strip(self, name: str, zone: str, mat: str, start: tuple[float, float],
+                    end: tuple[float, float], width: float, y: float = 0.035) -> None:
+        """A rotated visual-only strip, used to make routes bend rather than form a rigid cross."""
+        dx, dz = end[0] - start[0], end[1] - start[1]
+        length = math.hypot(dx, dz)
+        self.terrain.append({
+            "name": name, "zone": zone, "mat": mat,
+            "pos": [round((start[0] + end[0]) * 0.5, 3), round(y - 0.03, 3),
+                    round((start[1] + end[1]) * 0.5, 3)],
+            "size": [round(width, 3), 0.06, round(length, 3)],
+            "tilt": 0.0, "axis": "x", "yaw": round(math.atan2(dx, dz), 6),
+            "collide": False,
+        })
 
     def ramp_z(self, name: str, zone: str, mat: str, x: float, width: float,
                z0: float, y0: float, z1: float, y1: float, thickness: float = 0.5) -> float:
@@ -462,9 +497,15 @@ def build_terrain(L: Layout) -> None:
     L.slab("Wall_West", "RoutesAndBoundary", "rock", -outer, -B, -B, B, top=WALL_HEIGHT, thickness=WALL_HEIGHT + 1.2)
     L.slab("Wall_East", "RoutesAndBoundary", "rock", B, -B, outer, B, top=WALL_HEIGHT, thickness=WALL_HEIGHT + 1.2)
 
-    # Roads, painted so the route reads from a distance. Visual only.
-    for name, x0, z0, x1, z1 in ROADS:
-        L.paint(name, "RoutesAndBoundary", "path", x0, z0, x1, z1)
+    # Broad material zones are lightly overlapped so forest, meadow, and ridge do not read as
+    # unrelated boxes dropped onto one green slab. These are visual skins, never collision/support.
+    L.paint("ForestFloor", "WestForest", "forest_floor", -B + 1.0, -B + 1.0, -15.0, B - 5.0, y=0.025)
+    L.paint("ForestMeadowSeam", "WestForest", "meadow", -16.2, -B + 3.0, -12.8, B - 7.0, y=0.032)
+    L.paint("RidgeMeadowApron", "SouthRidge", "meadow", -24.0, 13.5, 26.0, 20.7, y=0.032)
+
+    # Bent trail ribbons steer toward the landmarks and overlap enough to read as one network.
+    for name, start, end, width in TRAILS:
+        L.paint_strip(name, "RoutesAndBoundary", "path", start, end, width)
     L.paint("Camp_Plaza", "SpawnCamp", "path", -4.0, -1.5, 4.0, 6.5)
     L.paint("Ruins_Court", "NorthRuins", "path", -9.0, -34.0, 9.0, -24.0)
 
@@ -556,8 +597,10 @@ def build_camp(L: Layout) -> None:
 
     inside = (CAMP_X0 + 1.2, CAMP_Z0 + 1.2, CAMP_X1 - 1.2, CAMP_Z1 - 1.2,
               lambda x, z: math.hypot(x - 0.0, z - 2.0) > 3.4)
-    L.scatter(Z, ["grass_clump_%s" % c for c in "abcdef"], 16, inside, min_gap=0.3,
-              scale_range=(0.8, 1.15), avoid_roads=False, name_hint="dressing")
+    camp_grass = (["grass_clump_%s" % c for c in "abcdef"]
+                  + ["grass_meadow_%s" % c for c in "abcd"])
+    L.scatter(Z, camp_grass, 18, inside, min_gap=0.26,
+              scale_range=(0.72, 1.05), avoid_roads=False, name_hint="dressing")
 
 
 # ---------------------------------------------------------------------------
@@ -611,9 +654,13 @@ def build_ruins(L: Layout) -> None:
     L.scatter(Z, ["rock_cluster_%s" % c for c in "abcdef"], 7, court, min_gap=1.4, name_hint="rubble")
     L.scatter(Z, ["grass_clump_%s" % c for c in "abcdef"], 14, court, min_gap=0.2,
               scale_range=(0.7, 1.0), avoid_roads=False, name_hint="dressing")
-    outskirts = (-16.0, -33.0, 18.0, -19.0, lambda x, z: abs(x) > 10.0 or z < -23.0)
-    L.scatter(Z, ["boulder_%s" % c for c in "abcdefgh"], 8, outskirts, min_gap=1.6, name_hint="outskirts")
-    L.scatter(Z, ["tree_bare_%s" % c for c in "abcd"], 6, outskirts, min_gap=1.8, name_hint="outskirts")
+    ruins_grass = (["grass_meadow_%s" % c for c in "abcd"]
+                   + ["grass_seedhead_%s" % c for c in "abcd"])
+    L.scatter(Z, ruins_grass, 22, (-18.0, -41.5, 20.0, -18.0), min_gap=0.32,
+              scale_range=(0.75, 1.12), avoid_roads=False, name_hint="weathered_grass")
+    outskirts = (-20.0, -41.0, 21.0, -18.0, lambda x, z: abs(x) > 10.0 or z < -23.0)
+    L.scatter(Z, ["boulder_%s" % c for c in "abcdefgh"], 13, outskirts, min_gap=1.6, name_hint="outskirts")
+    L.scatter(Z, ["tree_bare_%s" % c for c in "abcd"], 10, outskirts, min_gap=1.8, name_hint="outskirts")
 
 
 # ---------------------------------------------------------------------------
@@ -627,9 +674,9 @@ def build_forest(L: Layout) -> None:
     def outside_clearing(x: float, z: float) -> bool:
         return math.hypot(x - clearing[0], z - clearing[1]) > 7.0
 
-    band = (-33.0, -30.0, -14.0, 30.0, outside_clearing)
-    L.scatter(Z, ["tree_pine_%s" % c for c in "abcdef"], 22, band, min_gap=1.7, name_hint="canopy")
-    L.scatter(Z, ["tree_birch_%s" % c for c in "abcd"], 12, band, min_gap=1.6, name_hint="canopy")
+    band = (-42.5, -40.0, -14.0, 38.5, outside_clearing)
+    L.scatter(Z, ["tree_pine_%s" % c for c in "abcdef"], 36, band, min_gap=1.7, name_hint="canopy")
+    L.scatter(Z, ["tree_birch_%s" % c for c in "abcd"], 20, band, min_gap=1.6, name_hint="canopy")
 
     # The logging clearing: this is where wood comes from, and it reads as a place.
     for i, (ax, az) in enumerate(((-25.4, -0.6), (-24.6, 5.2), (-19.2, -1.4), (-18.6, 5.6), (-22.2, 7.6))):
@@ -648,16 +695,19 @@ def build_forest(L: Layout) -> None:
     L.prop(Z, "loot_coin_pouch", -28.0, 16.4, yaw=0.0, note="reward")
     L.prop(Z, "loot_powerup_orb", -30.4, 8.2, y=0.6, yaw=0.0, note="reward", float_ok=True)
 
-    L.scatter(Z, ["fallen_log_%s" % c for c in "abcd"], 5, band, min_gap=1.2, name_hint="debris")
-    L.scatter(Z, ["stump_%s" % c for c in "acd"], 5, band, min_gap=1.0, name_hint="debris")
-    L.scatter(Z, ["root_cluster_%s" % c for c in "abcd"], 4, band, min_gap=1.0, name_hint="debris")
-    L.scatter(Z, ["boulder_%s" % c for c in "bcefg"], 5, band, min_gap=1.5, name_hint="debris")
-    undergrowth = (-33.0, -30.0, -14.0, 30.0)
-    L.scatter(Z, ["fern_%s" % c for c in "abcdef"], 26, undergrowth, min_gap=0.4,
+    L.scatter(Z, ["fallen_log_%s" % c for c in "abcd"], 8, band, min_gap=1.2, name_hint="debris")
+    L.scatter(Z, ["stump_%s" % c for c in "acd"], 8, band, min_gap=1.0, name_hint="debris")
+    L.scatter(Z, ["root_cluster_%s" % c for c in "abcd"], 7, band, min_gap=1.0, name_hint="debris")
+    L.scatter(Z, ["boulder_%s" % c for c in "bcefg"], 8, band, min_gap=1.5, name_hint="debris")
+    undergrowth = (-42.5, -40.0, -14.0, 38.5)
+    L.scatter(Z, ["fern_%s" % c for c in "abcdef"], 42, undergrowth, min_gap=0.4,
               scale_range=(0.85, 1.25), avoid_roads=False, name_hint="undergrowth")
-    L.scatter(Z, ["grass_clump_%s" % c for c in "abcdef"], 22, undergrowth, min_gap=0.3,
+    forest_grass = (["grass_clump_%s" % c for c in "abcdef"]
+                    + ["grass_meadow_%s" % c for c in "abcd"]
+                    + ["grass_tuft_%s" % c for c in "abcd"])
+    L.scatter(Z, forest_grass, 58, undergrowth, min_gap=0.3,
               scale_range=(0.8, 1.2), avoid_roads=False, name_hint="undergrowth")
-    L.scatter(Z, ["mushroom_cluster_%s" % c for c in "abcdef"], 8, undergrowth, min_gap=0.4,
+    L.scatter(Z, ["mushroom_cluster_%s" % c for c in "abcdef"], 14, undergrowth, min_gap=0.4,
               avoid_roads=False, name_hint="undergrowth")
 
 
@@ -694,6 +744,10 @@ def build_mire(L: Layout) -> None:
               scale_range=(0.85, 1.2), avoid_roads=False, name_hint="growth")
     L.scatter(Z, ["reeds_%s" % c for c in "abcd"], 18, floor, min_gap=0.3,
               scale_range=(0.9, 1.3), avoid_roads=False, name_hint="growth")
+    mire_grass = (["grass_tuft_%s" % c for c in "abcd"]
+                  + ["grass_seedhead_%s" % c for c in "abcd"])
+    L.scatter(Z, mire_grass, 20, floor, min_gap=0.32,
+              scale_range=(0.82, 1.16), avoid_roads=False, name_hint="marsh_grass")
     L.prop(Z, "pickup_mushroom", 22.0, -4.6, yaw=0.4, note="forage")
     L.prop(Z, "pickup_mushroom", 19.6, 6.2, yaw=1.1, note="forage")
     L.prop(Z, "pickup_salvage_fragment", 26.4, 4.8, yaw=0.7, note="forage")
@@ -703,6 +757,8 @@ def build_mire(L: Layout) -> None:
            lambda x, z: not (BASIN_X0 - 1.0 < x < BASIN_X1 + 1.0 and BASIN_Z0 - 1.0 < z < BASIN_Z1 + 1.0))
     L.scatter(Z, ["tree_crooked_%s" % c for c in "abcd"], 7, rim, min_gap=1.8, name_hint="rim")
     L.scatter(Z, ["boulder_%s" % c for c in "acdfh"], 6, rim, min_gap=1.6, name_hint="rim")
+    L.scatter(Z, ["grass_seedhead_%s" % c for c in "abcd"], 18, rim, min_gap=0.35,
+              scale_range=(0.8, 1.18), avoid_roads=False, name_hint="rim_grass")
     L.prop(Z, "standing_stone_c", 31.2, 19.0, yaw=-0.3, note="rim")
     L.prop(Z, "standing_stone_d", 16.2, -16.2, yaw=0.4, note="rim")
 
@@ -739,8 +795,19 @@ def build_ridge(L: Layout) -> None:
     tier1 = (-19.0, 22.0, 21.0, 33.0, lambda x, z: not (1.0 < x < 19.0 and z > 25.0) and abs(x) > 4.5)
     L.scatter(Z, ["boulder_%s" % c for c in "abcdefgh"], 9, tier1, min_gap=1.5, name_hint="ridge")
     L.scatter(Z, ["rock_cluster_%s" % c for c in "abcdef"], 6, tier1, min_gap=1.2, name_hint="ridge")
-    L.scatter(Z, ["grass_clump_%s" % c for c in "abcdef"], 18, tier1, min_gap=0.3,
+    ridge_grass = (["grass_clump_%s" % c for c in "abcdef"]
+                   + ["grass_meadow_%s" % c for c in "abcd"]
+                   + ["grass_tuft_%s" % c for c in "abcd"])
+    L.scatter(Z, ridge_grass, 38, tier1, min_gap=0.3,
               scale_range=(0.75, 1.1), avoid_roads=False, name_hint="ridge")
+
+    # The enlarged south edge earns its space with a wind-beaten back ridge, not an empty green shelf.
+    back_ridge = (3.0, 34.0, 17.0, 42.2)
+    L.prop(Z, "standing_stone_b", 10.0, 39.5, yaw=0.3, note="back_ridge")
+    L.scatter(Z, ["tree_bare_%s" % c for c in "abcd"], 4, back_ridge, min_gap=1.8, name_hint="back_ridge")
+    L.scatter(Z, ["boulder_%s" % c for c in "abcdefgh"], 5, back_ridge, min_gap=1.5, name_hint="back_ridge")
+    L.scatter(Z, ["grass_tuft_%s" % c for c in "abcd"], 16, back_ridge, min_gap=0.3,
+              scale_range=(0.8, 1.2), avoid_roads=False, name_hint="back_ridge")
 
     # Below the ridge face, so the climb reads as a climb.
     apron = (-22.0, 14.0, 24.0, 20.6, lambda x, z: abs(x) > 4.5)
@@ -759,7 +826,7 @@ def build_routes(L: Layout) -> None:
     # Verge grass hugs each road without standing in it.
     for name, x0, z0, x1, z1 in ROADS:
         horizontal = (x1 - x0) > (z1 - z0)
-        for i in range(12):
+        for i in range(18):
             t = L.rng.uniform(0.05, 0.95)
             side = -1.0 if i % 2 == 0 else 1.0
             if horizontal:
@@ -770,7 +837,10 @@ def build_routes(L: Layout) -> None:
                 x = (x0 + x1) * 0.5 + side * L.rng.uniform(3.4, 4.6)
             if abs(x) > BOUND - 2.0 or abs(z) > BOUND - 2.0:
                 continue
-            asset = "grass_clump_%s" % "abcdef"[L.rng.randrange(6)]
+            family = L.rng.randrange(3)
+            asset = ("grass_clump_%s" % "abcdef"[L.rng.randrange(6)] if family == 0
+                     else "grass_meadow_%s" % "abcd"[L.rng.randrange(4)] if family == 1
+                     else "grass_seedhead_%s" % "abcd"[L.rng.randrange(4)])
             if L.blocked(x, z, 0.4):
                 continue
             L.prop(Z, asset, x, z, yaw=L.rng.uniform(0.0, math.tau),
@@ -779,7 +849,7 @@ def build_routes(L: Layout) -> None:
     # Talus against the inner face of the rock wall, so the boundary reads as geology.
     inner = 1.6
     for _ in range(240):
-        if len([p for p in L.props if p.get("note") == "talus"]) >= 26:
+        if len([p for p in L.props if p.get("note") == "talus"]) >= 42:
             break
         edge = L.rng.randrange(4)
         along = L.rng.uniform(-BOUND + 4.0, BOUND - 4.0)
@@ -794,8 +864,19 @@ def build_routes(L: Layout) -> None:
         L.prop(Z, asset, x, z, yaw=L.rng.uniform(0.0, math.tau), note="talus")
 
     # A tree line behind the forest so the wall is not the first thing you see to the west.
-    treeline = (-32.5, -31.0, -28.0, 31.0)
-    L.scatter(Z, ["tree_pine_%s" % c for c in "abcdef"], 10, treeline, min_gap=1.4, name_hint="treeline")
+    treeline = (-42.5, -39.0, -37.0, 39.0)
+    L.scatter(Z, ["tree_pine_%s" % c for c in "abcdef"], 18, treeline, min_gap=1.4, name_hint="treeline")
+
+    # Transition cover carries the eye between landmarks and fills the new breathing room without
+    # turning every added metre into another dense forest.
+    north_meadow = (-19.0, -42.0, 22.0, -35.0)
+    east_meadow = (32.0, -31.0, 42.0, 31.0)
+    transition_grass = (["grass_meadow_%s" % c for c in "abcd"]
+                        + ["grass_seedhead_%s" % c for c in "abcd"])
+    L.scatter(Z, transition_grass, 28, north_meadow, min_gap=0.4,
+              scale_range=(0.8, 1.2), avoid_roads=False, name_hint="transition")
+    L.scatter(Z, transition_grass, 36, east_meadow, min_gap=0.4,
+              scale_range=(0.8, 1.2), avoid_roads=False, name_hint="transition")
 
 
 # ---------------------------------------------------------------------------
@@ -844,6 +925,25 @@ def validate(L: Layout) -> list[str]:
         if math.hypot(prop["pos"][0], prop["pos"][2] - 2.0) < 2.6 and prop.get("note") != "hearth":
             errors.append("%s crowds the hearth at (%.1f, %.1f)" % (prop["asset"], prop["pos"][0], prop["pos"][2]))
 
+    gates = [prop for prop in L.props if prop["asset"] == "fence_gate"]
+    if len(gates) != 4:
+        errors.append("spawn camp needs four gates, found %d" % len(gates))
+    for gate in gates:
+        for shape in gate["cols"]:
+            if shape["t"] != "box":
+                continue
+            half_width = shape["size"][0] * 0.5
+            centre_x = shape["off"][0]
+            if abs(centre_x) - half_width < 0.9:
+                errors.append("fence gate at (%.1f, %.1f) blocks its 1.8m centre passage"
+                              % (gate["pos"][0], gate["pos"][2]))
+
+    grass_assets = {prop["asset"] for prop in L.props if prop["asset"].startswith("grass_")}
+    grass_count = sum(1 for prop in L.props if prop["asset"].startswith("grass_"))
+    if len(grass_assets) < 14 or grass_count < 220:
+        errors.append("ground cover is under-dressed: %d grass placements across %d variants"
+                      % (grass_count, len(grass_assets)))
+
     return errors
 
 
@@ -864,7 +964,7 @@ def build() -> tuple[Layout, dict]:
         "bound": BOUND,
         "zones": ZONES,
         "materials": MATERIALS,
-        "spawn": {"pos": [0.0, 0.2, 7.4], "yaw": 0.0},
+        "spawn": {"pos": list(SPAWN_POS), "yaw": 0.0},
         "terrain": L.terrain,
         "props": L.props,
         "lights": L.lights,

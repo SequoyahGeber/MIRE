@@ -6,14 +6,14 @@ the portable GLBs without requiring Blender to be configured in Editor Settings.
 
 ## Included assets
 
-The kit contains **116 individual GLBs** across seven families:
+The kit contains **128 individual GLBs** across seven families:
 
 | Family | Count | Contents |
 |---|---:|---|
 | Trees | 18 | Six pines; four each of bare, birch, and crooked broadleaf trees |
 | Rocks | 18 | Eight boulders, six clusters, and four rune-bearing standing stones |
 | Forest debris | 12 | Four each of stumps, fallen logs, and exposed root clusters |
-| Ground cover | 16 | Six grass clumps, six ferns, and four reed/cattail clusters |
+| Ground cover | 28 | Six dense grass clumps; four each of meadow patches, tall tufts, and seeded grass; six ferns; four reed/cattail clusters |
 | Mire growth | 16 | Six mushroom clusters, six crystal growths, and four tendril clusters |
 | Ruins | 12 | Broken walls, columns, arches, and rune markers |
 | Building pieces | 24 | Modular wood, stone, roof, stair, railing, fence, corner, and gate pieces |
@@ -43,5 +43,5 @@ render the selected pieces.
   --python tools/blender/build_mire_map_kit.py
 ```
 
-The script rebuilds all 116 GLBs, the editable `.blend`, `catalog.json`, and eight preview images
+The script rebuilds all 128 GLBs, the editable `.blend`, `catalog.json`, and eight preview images
 deterministically. Blender 5.2.0 LTS was used for the initial build.
