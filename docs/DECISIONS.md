@@ -681,6 +681,30 @@ contract, and any Blender upgrade re-verifies a rebuild before the next batch sh
 **Would change my mind:** the queue outpacing what authored batches can deliver before M7 — then CC0
 fills the gaps and hero assets stay authored, which is D-005's original shape run in reverse.
 
+### D-039 · 2026-08-17 · Do-it-yourself disposition: an agent never hands Sequoyah work it could do itself
+
+From Sequoyah directly, after one too many "you'll need to wire this in the editor" endings: agents
+may edit **whatever files the task needs** — scene files included — being careful when something is
+high-stakes; and *"if an agent can do something, I never want it to tell me to do it unless I could
+do it significantly faster."* Per-task commits are the accepted safety model: a bad edit costs one
+`git revert`, not a catastrophe.
+
+So the disposition flips, while the mechanics stay exactly as D-031 wrote them — exact per-file
+claims, and the Godot editor closed for Godot-authored files (that is corruption physics, not a
+permission gate). What changes: **"left for the editor" is no longer a valid way to end a task.**
+Wire the node, set the export, add the collision shape, register the autoload — then verify
+headlessly and *report what you did*, not what remains. Hand-off to Sequoyah is reserved for three
+things: genuine visual/taste/playfeel judgment (2.9's gate is the canonical example), work that
+needs his accounts or hardware, and work he is *significantly* faster at. "Careful on high-stakes"
+means verify and note the risk — not stop and ask.
+
+The tier labels in `AI-WORKFLOW.md` survive as a **cost model** (T0 = zero quota when Sequoyah does
+it), not an ownership rule: a dispatched agent takes a T0 task like any other.
+
+**Would change my mind:** an agent-authored scene edit that costs more than one revert — corruption
+a commit boundary didn't contain — argues for review-first on `.tscn` specifically, never for
+bringing back hand-offs.
+
 ---
 
 ## Template

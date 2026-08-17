@@ -543,6 +543,25 @@ they should say `agent order` refuses the dispatch for you, or point at the same
 
 ---
 
+### F-053 · Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why
+
+**Area:** docs/process · **Severity:** medium — it costs Sequoyah a hand-off on tasks agents should
+finish · **Found:** 2026-08-17, from Sequoyah directly: agents "keep telling me that they cant edit
+scene files and i want them to be able to edit whatever files they need to complete their task"
+
+D-031 already *permits* Godot-file edits under exact claim with the editor closed — but permission
+is not disposition, and several documents still carry the old default: `AI-WORKFLOW.md`'s Tier 0
+framing reads as "editor work belongs to the human" and calls agents "consistently bad" at UI
+layout; `ASSET_TRACKER.md` says "Sequoyah adds simple collision and scene wiring in the editor when
+needed" and "Godot scene hookup remains Sequoyah's work"; nothing anywhere states the rule Sequoyah
+actually wants: **an agent never hands him work it could do itself unless he is significantly
+faster.** Recorded as D-039; this finding is the doc alignment.
+
+Remaining when filed: `AGENTS.md` is claimed by 2.1j (tine18) — its Hard-rules and close-out
+sections get the same rewording when that claim releases.
+
+---
+
 ## Resolved
 
 ### F-052 · The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it — **fixed**

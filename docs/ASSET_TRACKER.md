@@ -75,8 +75,9 @@ and `A-014b` in this file before making anything. Never silently leave half a ba
   `assets/source/`, which is excluded from Godot import by `.gdignore`.
 - Assets contain no gameplay authority. Placement, harvesting, damage, loot, Ward behavior, enemy
   state, and destruction remain host-authoritative systems.
-- Static presentation meshes contain no authored Godot collision. Sequoyah adds simple collision and
-  scene wiring in the editor when needed.
+- Static presentation meshes contain no authored Godot collision. When a task needs collision or
+  scene wiring, the agent adds it under a D-031 exact claim and verifies headlessly (D-039) — hand
+  it to Sequoyah only when it needs his eyes.
 - Prefer a new small generator/source kit per coherent family over turning
   `build_mire_map_kit.py` into one enormous file.
 - Suggested polygon targets, not quotas: foliage/ground cover 30–400; ordinary props 50–800; hero
@@ -189,7 +190,8 @@ Every completed batch records evidence for all applicable checks:
   consistency, and first-person readability where applicable.
 - Fresh Godot 4.7.1 import with zero missing imported scenes and no Blender-path dependency.
 - For rigs/animation batches: deform check, animation-name check, looping check where applicable, and
-  a rendered contact sheet of key poses. Godot scene hookup remains Sequoyah's work. A-006 ran these
+  a rendered contact sheet of key poses. Godot scene hookup is done by whichever task needs it,
+  under D-031 claims (D-039) — visual tuning stays Sequoyah's. A-006 ran these
   first and the specifics are worth reusing:
   - **Deform check across every primitive.** The exporter splits a multi-material mesh into one
     primitive per material, so reading `meshes[0].primitives[0]` samples a fraction of the model and

@@ -104,8 +104,8 @@
     },
     "CLAUDE.md": {
       "agent": "flint5",
-      "at": "2026-08-17T19:02:17+00:00",
-      "task": "F-050"
+      "at": "2026-08-17T23:15:28+00:00",
+      "task": "F-053"
     },
     "assets/enemies": {
       "agent": "gale",
@@ -1688,14 +1688,14 @@
       "task": "F-029"
     },
     "docs/AI-WORKFLOW.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "0.12"
+      "agent": "flint5",
+      "at": "2026-08-17T23:15:28+00:00",
+      "task": "F-053"
     },
     "docs/ASSET_TRACKER.md": {
-      "agent": "tine18",
-      "at": "2026-08-17T19:29:08+00:00",
-      "task": "2.1j"
+      "agent": "flint5",
+      "at": "2026-08-17T23:15:28+00:00",
+      "task": "F-053"
     },
     "docs/AUDIT-2026-08-17.md": {
       "agent": "flint5",
@@ -1704,8 +1704,8 @@
     },
     "docs/DECISIONS.md": {
       "agent": "flint5",
-      "at": "2026-08-17T19:02:17+00:00",
-      "task": "F-050"
+      "at": "2026-08-17T23:15:28+00:00",
+      "task": "F-053"
     },
     "docs/DELEGATION.md": {
       "agent": "flint5",
@@ -1714,8 +1714,8 @@
     },
     "docs/FINDINGS.md": {
       "agent": "flint5",
-      "at": "2026-08-17T23:13:44+00:00",
-      "task": "F-052"
+      "at": "2026-08-17T23:15:28+00:00",
+      "task": "F-053"
     },
     "docs/NEXT.md": {
       "agent": "flint5",
@@ -1734,8 +1734,8 @@
     },
     "docs/SPECS.md": {
       "agent": "flint5",
-      "at": "2026-08-17T23:13:44+00:00",
-      "task": "F-052"
+      "at": "2026-08-17T23:15:28+00:00",
+      "task": "F-053"
     },
     "docs/STEAM_CROSS_PLATFORM_TEST.md": {
       "agent": "ivy",
@@ -3599,6 +3599,13 @@
       "status": "done",
       "tier": "F",
       "title": "The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it"
+    },
+    "F-053": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why"
     }
   },
   "version": 1

@@ -13,10 +13,12 @@ Non-negotiables, repeated here because they're the ones that cost the most when 
 
 1. **`.agent/bin/agent start`** at the beginning of every session, and **claim before you edit**.
    It names this chat itself — no `MIRE_AGENT`, no prefix, commits included (F-007).
-2. **Godot-authored files (`.tscn` / `.tres` / `.import`) only under an exact per-file claim, with
-   the editor closed (D-031).** They don't merge, so never share one. **`project.godot` (D-021)**:
-   claim it by name, append only — a task that ships an autoload registers it in that same task.
-   A script nothing loads isn't shipped.
+2. **Edit whatever files the task needs — never end with "Sequoyah must wire X" if you can wire X
+   (D-039).** Hand-off is only for visual judgment, his accounts/hardware, or work he is
+   significantly faster at. Godot-authored files (`.tscn`/`.tres`/`.import`) still take an exact
+   per-file claim with the editor closed (D-031) — they don't merge, so never share one.
+   **`project.godot`**: never claimed; register autoloads via `agent autoload <Name> <script>`
+   (F-051). A script nothing loads isn't shipped.
 3. **Never explore speculatively** — but never stop to ask, either. Quota, not time, is the
    constraint. Run `agent brief <id>`, read the four docs it names, then the files your task touches.
    Ambiguous spec? Decide it, record why, keep going.

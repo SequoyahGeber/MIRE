@@ -1437,3 +1437,15 @@ Tails triaged and closed. Lifecycle baseline exit-1 gone post-DevLoadout-gate (3
 Files: `tools/session_lifecycle_check.gd`, `tools/connect_retry_check.gd`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `da327b8`
+
+---
+
+### HANDOFF · F-053 · flint5 · 2026-08-17T23:15:28+00:00
+
+**Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why**
+
+D-039 recorded and the disposition aligned everywhere I could claim: CLAUDE.md rule 2, AI-WORKFLOW Tier-0 reframed as a cost label not ownership, ASSET_TRACKER's two Sequoyah-wires-it lines, SPECS preamble step 7. ONE item remains and is the whole reason this stays open: AGENTS.md is claimed by 2.1j (tine18) — when it releases, reword its Hard-rules intro and close-out step 6 to the D-039 disposition (never hand Sequoyah doable work; wire it, verify it, report what you did). Two-minute edit; the D-039 entry has the exact language.
+
+Files: `docs/DECISIONS.md`, `docs/FINDINGS.md`, `CLAUDE.md`, `docs/AI-WORKFLOW.md`, `docs/ASSET_TRACKER.md`, `docs/SPECS.md`
+
+Commit at time of writing: `3fdf7c7`

@@ -30,15 +30,18 @@ So the strategy is not "use less AI." It is: **stop spending AI on work that was
 
 Classify every task before you spend anything on it.
 
-### Tier 0 — Do it yourself in the Godot editor. Costs zero quota.
+### Tier 0 — zero quota when Sequoyah does it. A cost label, not an ownership rule (D-039).
 
 Scene trees and node hierarchies · collision shapes and areas · materials and `WorldEnvironment` ·
-importing and configuring CC0 assets · `AnimationPlayer` / `AnimationTree` setup · `GPUParticles3D` ·
-lighting and fog · **all UI layout** (Control anchors and containers — agents are consistently bad at
-this) · input map · tuning `@export` values · **authoring `.tres` content resources** · playtesting ·
-audio buses · navigation region config.
+asset import config · `AnimationPlayer` / `AnimationTree` setup · `GPUParticles3D` · lighting and
+fog · UI layout · input map · tuning `@export` values · **authoring `.tres` content resources** ·
+playtesting · audio buses · navigation region config.
 
-> This is the majority of your project. Get comfortable here. It's also the fun part.
+> Sequoyah doing this costs nothing and is the fun part — but a dispatched agent takes a T0 task
+> like any other, edits the scene under a D-031 claim, and verifies with a headless or render
+> check. The two T0 items agents genuinely cannot do: **playtesting**, and judgment calls about
+> how something *feels* (2.9). Everything else on this list, an agent finishes rather than hands
+> back — see D-039.
 
 ### Tier 1 — Cheap agent (Codex / secondary Claude Pro). Well-specified, self-contained.
 

@@ -14,7 +14,7 @@
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███████░░░` 31/45 | 14 |
+| Findings | `███████░░░` 31/46 | 15 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `███████░░░` 16/23 | 7 |
@@ -62,6 +62,7 @@
 | ⬜ | **F-043** The iron sword ships complete and nothing puts it in a player's hand | todo |
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-045** `pgrep -fl Godot` is too blunt to be the closed-editor guard | todo |
+| ⬜ | **F-053** Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why | todo |
 
 ## Done
 

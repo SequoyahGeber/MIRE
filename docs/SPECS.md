@@ -30,6 +30,10 @@ each names the **GATE** it must not start before — a gate line is a hard stop,
    `tools/handshake_check.gd`, and say so in your close-out.
 6. Close out (AGENTS.md step 3–5): findings → `FINDINGS.md`, settled calls → `DECISIONS.md`, new
    seams → `DELEGATION.md` *Current state*, then `done`/`handoff` + `ship`.
+7. **Disposition (D-039): if you can do it, do it.** Never end a task with "Sequoyah must
+   wire/attach/set X" when you could — wire it under the proper claim, verify headlessly, report
+   what you DID. Hand-off is only for visual/taste/playfeel judgment, his accounts or hardware, or
+   work he is significantly faster at. Per-task commits make bold edits one revert from safe.
 
 ### The four standing rules (they have already cost real sessions)
 
