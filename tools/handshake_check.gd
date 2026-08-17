@@ -52,6 +52,11 @@ func _initialize() -> void:
 		not NetVersion.mismatch_reason(1, 0).is_empty())
 	_check("PROTOCOL_VERSION is a positive int",
 		NetVersion.PROTOCOL_VERSION > 0, str(NetVersion.PROTOCOL_VERSION))
+	# Task 2.13 bumped 6 -> 7 for the health RPCs (net_request_revive, net_health_snapshot,
+	# net_downed_flag, net_force_respawn). A hard-coded expectation here is deliberate: this check's
+	# whole point is to fail loudly the day someone adds a wire-shape change and forgets the bump.
+	_check("PROTOCOL_VERSION reflects task 2.13's health RPCs",
+		NetVersion.PROTOCOL_VERSION == 7, str(NetVersion.PROTOCOL_VERSION))
 
 	call_deferred(&"_run_wire_checks")
 

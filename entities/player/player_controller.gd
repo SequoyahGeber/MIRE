@@ -29,6 +29,10 @@ const DEBUG_AVATAR_COLOURS: Array[Color] = [
 	Color("55e0cf"),
 ]
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
+## Shared melee target seam (2.8/2.10) — see autoload/combat_service.gd and systems/enemies/enemy.gd.
+## A player joining it is what lets 2.13's downed/revive flow exist without new plumbing: damage in
+## is already "anything in this group", and what it costs a player is systems/health/player_health.gd.
+const DAMAGEABLE_GROUP: StringName = &"damageable"
 ## preload, not the bare `PlayerViewmodel` (F-016): a new class_name is not in the global class cache
 ## until an editor scan puts it there, so naming it here stops this script compiling in every
 ## `--script` harness — and a player whose script failed to compile never joins the `players` group,
@@ -66,6 +70,12 @@ const PLAYER_VIEWMODEL := preload("res://entities/player/viewmodel.gd")
 ## Downward speed cap, metres per second.
 @export_range(10.0, 200.0, 1.0) var terminal_velocity: float = 60.0
 
+@export_group("Downed")
+## Ground speed while downed. Far below walk_speed on purpose — DESIGN.md §4.5's "downed, not dead"
+## is a crawl toward a teammate, not an escape; sprint and jump are blocked outright (see
+## gameplay_input_allowed()'s callers below).
+@export_range(0.1, 5.0, 0.05) var crawl_speed: float = 1.0
+
 ## Set false on remote copies of this player so they are driven by replication only.
 var is_local_authority: bool = true
 
@@ -80,6 +90,13 @@ var _time_since_grounded: float = INF
 var _time_since_jump_pressed: float = INF
 var _was_on_floor: bool = true
 
+## Client-local prediction of a revive hold (task 2.13). The host re-validates range and both
+## players' states the moment the hold completes — see systems/health/player_health.gd's own note on
+## why the timing itself does not have to be authoritative.
+var _revive_target_peer: int = 0
+var _revive_hold_elapsed: float = 0.0
+var _revive_request_sent: bool = false
+
 
 func _ready() -> void:
 	_gravity = float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
@@ -91,6 +108,7 @@ func _ready() -> void:
 	is_local_authority = is_multiplayer_authority()
 
 	add_to_group(&"players")
+	add_to_group(DAMAGEABLE_GROUP)
 	_build_debug_avatar()
 	_build_synchronizer()
 
@@ -159,6 +177,32 @@ func _build_debug_avatar() -> void:
 	add_child(face)
 
 
+## The shared melee target seam (2.8): entities that join &"damageable" implement this. Authority for
+## what a hit actually costs lives in systems/health/player_health.gd, keyed by peer id — this only
+## forwards the call with the peer id this body belongs to. Returning false while downed/dead is
+## PlayerHealth's job (no corpse-kicking in M2); this never second-guesses that answer.
+func host_apply_damage(amount: int, instigator_peer_id: int) -> bool:
+	var health: Node = get_node_or_null(^"/root/PlayerHealth")
+	if health == null or not health.has_method(&"host_apply_damage"):
+		return false
+	return bool(
+		health.call(&"host_apply_damage", get_multiplayer_authority(), amount, instigator_peer_id)
+	)
+
+
+## Read-only presentation queries against PlayerHealth, resolved by path (F-011: this file is reached
+## bare by tools/verify_setup.gd through the PlayerController class, so an autoload referenced here
+## must never be a bare identifier).
+func _is_downed() -> bool:
+	var health: Node = get_node_or_null(^"/root/PlayerHealth")
+	return health != null and bool(health.call(&"local_is_downed"))
+
+
+func _is_dead() -> bool:
+	var health: Node = get_node_or_null(^"/root/PlayerHealth")
+	return health != null and bool(health.call(&"local_is_dead"))
+
+
 ## A player spawned by PlayerNet is NAMED for the peer that owns it, and that name is in place on
 ## every peer before the node enters the tree — so both sides derive the same authority from it with
 ## nothing extra on the wire. Any other name (the level's hand-placed "Player", or anything offline)
@@ -220,7 +264,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	# compiles the scripts it depends on in the same pass, before autoloads are registered — and
 	# `tools/verify_setup.gd` depends on this file through `PlayerController`. Naming the autoload
 	# here took the whole harness down with "Identifier not found: CombatService".
-	if event.is_action_pressed(&"attack") and gameplay_input_allowed():
+	if event.is_action_pressed(&"attack") and gameplay_input_allowed() \
+			and not _is_downed() and not _is_dead():
 		var combat: Node = get_node_or_null(^"/root/CombatService")
 		if combat != null:
 			combat.call(&"request_attack")
@@ -243,6 +288,7 @@ func _physics_process(delta: float) -> void:
 	_apply_gravity(delta)
 	_apply_horizontal_movement(delta)
 	_try_jump()
+	_tick_revive_hold(delta)
 
 	# move_and_slide() zeroes vertical velocity on contact, so read the fall speed before it runs.
 	var fall_speed: float = maxf(-velocity.y, 0.0)
@@ -278,18 +324,21 @@ func _apply_gravity(delta: float) -> void:
 
 
 func _apply_horizontal_movement(delta: float) -> void:
-	# Cursor-owning UI suppresses gameplay input without pausing the simulation. Pausing a multiplayer
+	# Cursor-owning UI suppresses gameplay input without pausing the simulation, and a dead player
+	# (mid-respawn) gets no input at all — downed still allows the crawl. Pausing a multiplayer
 	# client would stall networking and is not a valid UI boundary.
 	var input_2d: Vector2 = Vector2.ZERO
-	if gameplay_input_allowed():
+	if gameplay_input_allowed() and not _is_dead():
 		input_2d = Input.get_vector(
 			&"move_left", &"move_right", &"move_forward", &"move_back"
 		)
 	# Body yaw defines the movement basis; the camera only pitches (see player_camera.gd).
 	var wish_dir: Vector3 = (transform.basis * Vector3(input_2d.x, 0.0, input_2d.y)).normalized()
 
-	var sprinting: bool = Input.is_action_pressed(&"sprint") and wish_dir != Vector3.ZERO
-	var target: Vector3 = wish_dir * (sprint_speed if sprinting else walk_speed)
+	var downed: bool = _is_downed()
+	var sprinting: bool = not downed and Input.is_action_pressed(&"sprint") and wish_dir != Vector3.ZERO
+	var move_speed: float = crawl_speed if downed else walk_speed
+	var target: Vector3 = wish_dir * (sprint_speed if sprinting else move_speed)
 
 	var rate: float
 	if is_on_floor():
@@ -307,7 +356,7 @@ func _apply_horizontal_movement(delta: float) -> void:
 
 
 func _try_jump() -> void:
-	if not gameplay_input_allowed():
+	if not gameplay_input_allowed() or _is_downed() or _is_dead():
 		return
 	var buffered: bool = _time_since_jump_pressed <= jump_buffer_time
 	var grounded_recently: bool = _time_since_grounded <= coyote_time
@@ -332,3 +381,62 @@ func _detect_landing(fall_speed: float) -> void:
 
 func _capture_mouse(captured: bool) -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if captured else Input.MOUSE_MODE_VISIBLE
+
+
+# ── Revive (task 2.13) ────────────────────────────────────────────────────────────────────────────
+
+
+## Holding interact near a downed teammate revives them. The hold itself is client-local prediction —
+## exactly one net_request_revive is sent, the instant the local timer reaches PlayerHealth's
+## revive_seconds — and the host is what actually decides whether it counts (range, both states).
+func _tick_revive_hold(delta: float) -> void:
+	var health: Node = get_node_or_null(^"/root/PlayerHealth")
+	if health == null or _is_downed() or _is_dead():
+		_reset_revive_hold()
+		return
+	if not gameplay_input_allowed() or not Input.is_action_pressed(&"interact"):
+		_reset_revive_hold()
+		return
+
+	var target_peer: int = _nearest_downed_teammate(health)
+	if target_peer <= 0:
+		_reset_revive_hold()
+		return
+	if target_peer != _revive_target_peer:
+		_revive_target_peer = target_peer
+		_revive_hold_elapsed = 0.0
+		_revive_request_sent = false
+
+	_revive_hold_elapsed += delta
+	if _revive_request_sent:
+		return
+	if _revive_hold_elapsed >= float(health.get(&"revive_seconds")):
+		_revive_request_sent = true
+		health.call(&"request_revive", target_peer)
+
+
+func _reset_revive_hold() -> void:
+	_revive_target_peer = 0
+	_revive_hold_elapsed = 0.0
+	_revive_request_sent = false
+
+
+## Nearest OTHER player PlayerHealth's broadcast flag says is downed, within revive_radius_m. Reads
+## only replicated data — a client has no business knowing more about a peer it might not even see.
+func _nearest_downed_teammate(health: Node) -> int:
+	var radius: float = float(health.get(&"revive_radius_m"))
+	var best: int = 0
+	var best_distance: float = radius
+	for node: Node in get_tree().get_nodes_in_group(&"players"):
+		var other := node as Node3D
+		if other == null or other == self:
+			continue
+		var peer_id: int = other.get_multiplayer_authority()
+		if not bool(health.call(&"is_downed_known", peer_id)):
+			continue
+		var distance: float = global_position.distance_to(other.global_position)
+		if distance > best_distance:
+			continue
+		best = peer_id
+		best_distance = distance
+	return best

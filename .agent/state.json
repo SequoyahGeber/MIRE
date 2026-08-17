@@ -50,30 +50,15 @@
       "at": "2026-08-17T23:37:51+00:00",
       "task": "2.1j"
     },
-    "core/dev/dev_loadout.gd": {
-      "agent": "lp",
-      "at": "2026-08-17T23:33:01+00:00",
-      "task": "2.13"
+    "levels/playtest_map.tscn": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:48:24+00:00",
+      "task": "2.1j"
     },
-    "core/net/net_version.gd": {
-      "agent": "lp",
-      "at": "2026-08-17T23:33:01+00:00",
-      "task": "2.13"
-    },
-    "entities/player/player_controller.gd": {
-      "agent": "lp",
-      "at": "2026-08-17T23:33:01+00:00",
-      "task": "2.13"
-    },
-    "systems/health/downed_state.gd": {
-      "agent": "lp",
-      "at": "2026-08-17T23:33:01+00:00",
-      "task": "2.13"
-    },
-    "systems/health/player_health.gd": {
-      "agent": "lp",
-      "at": "2026-08-17T23:33:01+00:00",
-      "task": "2.13"
+    "project.godot": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:48:24+00:00",
+      "task": "2.1j"
     },
     "tools/blender/build_adapted_nature_set.py": {
       "agent": "tine18",
@@ -100,38 +85,38 @@
       "at": "2026-08-17T23:37:51+00:00",
       "task": "2.1j"
     },
-    "tools/handshake_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-17T23:43:45+00:00",
-      "task": "2.13"
+    "tools/mapgen/hollow_layout.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:50:28+00:00",
+      "task": "2.1j"
     },
-    "tools/player_health_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-17T23:33:01+00:00",
-      "task": "2.13"
+    "tools/playtest_hollow_check.gd": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:50:28+00:00",
+      "task": "2.1j"
     },
-    "tools/player_health_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-17T23:33:01+00:00",
-      "task": "2.13"
+    "tools/playtest_map_check.gd": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:48:24+00:00",
+      "task": "2.1j"
+    },
+    "world/gen/layouts/playtest_hollow.json": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:50:28+00:00",
+      "task": "2.1j"
+    },
+    "world/gen/playtest_hollow.gd": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:50:28+00:00",
+      "task": "2.1j"
+    },
+    "world/gen/test_map_props.gd": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:48:24+00:00",
+      "task": "2.1j"
     }
   },
   "in_flight": {
-    "2.13": {
-      "agent": "lp",
-      "files": [
-        "systems/health/player_health.gd",
-        "systems/health/downed_state.gd",
-        "entities/player/player_controller.gd",
-        "tools/player_health_check.gd",
-        "tools/player_health_net_check.gd",
-        "core/net/net_version.gd",
-        "core/dev/dev_loadout.gd",
-        "tools/handshake_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-17T23:31:05+00:00"
-    },
     "2.1j": {
       "agent": "tine18",
       "files": [
@@ -149,7 +134,15 @@
         "assets/source/enemy_crawler.blend",
         "tools/blender/build_adapted_nature_set.py",
         "assets/environment_additions",
-        "assets/source/adapted_nature_set.blend"
+        "assets/source/adapted_nature_set.blend",
+        "project.godot",
+        "levels/playtest_map.tscn",
+        "world/gen/test_map_props.gd",
+        "tools/playtest_map_check.gd",
+        "tools/mapgen/hollow_layout.py",
+        "world/gen/layouts/playtest_hollow.json",
+        "world/gen/playtest_hollow.gd",
+        "tools/playtest_hollow_check.gd"
       ],
       "notes": [],
       "started": "2026-08-17T23:36:31+00:00"
@@ -1106,81 +1099,6 @@
       "at": "2026-08-17T17:01:21+00:00",
       "task": "2.1d"
     },
-    "assets/loot": {
-      "agent": "gale",
-      "at": "2026-08-16T23:44:12+00:00",
-      "task": "2.1d"
-    },
-    "assets/loot/README.md": {
-      "agent": "vane",
-      "at": "2026-08-16T23:46:09+00:00",
-      "task": "2.1d"
-    },
-    "assets/loot/catalog.json": {
-      "agent": "vane",
-      "at": "2026-08-16T23:46:09+00:00",
-      "task": "2.1d"
-    },
-    "assets/loot/exports/loot_chest_reinforced_closed.glb": {
-      "agent": "vane",
-      "at": "2026-08-16T23:46:09+00:00",
-      "task": "2.1d"
-    },
-    "assets/loot/exports/loot_chest_reinforced_open.glb": {
-      "agent": "vane",
-      "at": "2026-08-16T23:46:09+00:00",
-      "task": "2.1d"
-    },
-    "assets/loot/exports/loot_chest_small_closed.glb": {
-      "agent": "vane",
-      "at": "2026-08-16T23:46:09+00:00",
-      "task": "2.1d"
-    },
-    "assets/loot/exports/loot_chest_small_open.glb": {
-      "agent": "vane",
-      "at": "2026-08-16T23:46:09+00:00",
-      "task": "2.1d"
-    },
-    "assets/loot/exports/loot_chest_wellspring_closed.glb": {
-      "agent": "vane",
-      "at": "2026-08-16T23:46:09+00:00",
-      "task": "2.1d"
-    },
-    "assets/loot/exports/loot_chest_wellspring_open.glb": {
-      "agent": "vane",
-      "at": "2026-08-16T23:46:09+00:00",
-      "task": "2.1d"
-    },
-    "assets/loot/exports/loot_coin_pouch.glb": {
-      "agent": "vane",
-      "at": "2026-08-16T23:46:09+00:00",
-      "task": "2.1d"
-    },
-    "assets/loot/exports/loot_item_bag.glb": {
-      "agent": "vane",
-      "at": "2026-08-16T23:46:09+00:00",
-      "task": "2.1d"
-    },
-    "assets/loot/exports/loot_player_backpack.glb": {
-      "agent": "vane",
-      "at": "2026-08-16T23:46:09+00:00",
-      "task": "2.1d"
-    },
-    "assets/loot/exports/loot_powerup_orb.glb": {
-      "agent": "vane",
-      "at": "2026-08-16T23:46:09+00:00",
-      "task": "2.1d"
-    },
-    "assets/loot/preview/loot_preview.png": {
-      "agent": "vane",
-      "at": "2026-08-16T23:46:09+00:00",
-      "task": "2.1d"
-    },
-    "assets/loot/preview/loot_scale_preview.png": {
-      "agent": "vane",
-      "at": "2026-08-16T23:46:09+00:00",
-      "task": "2.1d"
-    },
     "assets/maps": {
       "agent": "tine18",
       "at": "2026-08-17T23:34:54+00:00",
@@ -1225,11 +1143,6 @@
       "agent": "tine18",
       "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
-    },
-    "assets/source/loot_set.blend": {
-      "agent": "vane",
-      "at": "2026-08-16T23:46:09+00:00",
-      "task": "2.1d"
     },
     "assets/source/mire_map_kit.blend": {
       "agent": "tine18",
@@ -1747,9 +1660,9 @@
       "task": "F-054"
     },
     "core/dev/dev_loadout.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T19:28:04+00:00",
-      "task": "F-052"
+      "agent": "lp",
+      "at": "2026-08-17T23:58:38+00:00",
+      "task": "2.13"
     },
     "core/dev/dev_loadout.gd.uid": {
       "agent": "dusk3",
@@ -1777,9 +1690,9 @@
       "task": "F-032"
     },
     "core/net/net_version.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T15:43:36+00:00",
-      "task": "F-032"
+      "agent": "lp",
+      "at": "2026-08-17T23:58:38+00:00",
+      "task": "2.13"
     },
     "core/net/run_identity.gd": {
       "agent": "dusk3",
@@ -1852,9 +1765,9 @@
       "task": "F-002"
     },
     "entities/player/player_controller.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:52:06+00:00",
-      "task": "F-041"
+      "agent": "lp",
+      "at": "2026-08-17T23:58:38+00:00",
+      "task": "2.13"
     },
     "entities/player/viewmodel.gd": {
       "agent": "flint5",
@@ -1925,6 +1838,16 @@
       "agent": "nettle",
       "at": "2026-08-17T01:11:22+00:00",
       "task": "2.3"
+    },
+    "systems/health/downed_state.gd": {
+      "agent": "lp",
+      "at": "2026-08-17T23:58:38+00:00",
+      "task": "2.13"
+    },
+    "systems/health/player_health.gd": {
+      "agent": "lp",
+      "at": "2026-08-17T23:58:38+00:00",
+      "task": "2.13"
     },
     "systems/inventory/inventory_store.gd": {
       "agent": "dusk3",
@@ -2161,6 +2084,11 @@
       "at": "2026-08-17T00:47:21+00:00",
       "task": "2.1g"
     },
+    "tools/handshake_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-17T23:58:38+00:00",
+      "task": "2.13"
+    },
     "tools/harvest_world_check.gd": {
       "agent": "flint5",
       "at": "2026-08-17T18:49:19+00:00",
@@ -2260,6 +2188,16 @@
       "agent": "dusk3",
       "at": "2026-08-17T04:46:47+00:00",
       "task": "F-021"
+    },
+    "tools/player_health_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-17T23:58:38+00:00",
+      "task": "2.13"
+    },
+    "tools/player_health_net_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-17T23:58:38+00:00",
+      "task": "2.13"
     },
     "tools/playtest_hollow_check.gd": {
       "agent": "pike",
@@ -2683,9 +2621,11 @@
       "title": "Night wave spawner: N enemies at night, despawn at dawn, scales with player count"
     },
     "2.13": {
+      "done_at": "2026-08-17T23:58:38+00:00",
+      "done_by": "lp",
       "est": "2",
       "milestone": "M2",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T2",
       "title": "Death & respawn: downed \u2192 bleed-out \u2192 revive by teammate (`DESIGN.md` \u00a74.5)"
     },

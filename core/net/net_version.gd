@@ -27,7 +27,10 @@ extends RefCounted
 ## maintained one and desync instead of being told to update. There is no compatibility window: this
 ## project ships from source control, not distributed binaries with staggered rollout, so "N and N+1
 ## interoperate" is a guarantee nobody needs and nobody should spend effort keeping true.
-const PROTOCOL_VERSION: int = 6
+##
+## 7 (task 2.13): systems/health/player_health.gd added three RPCs — net_request_revive,
+## net_health_snapshot, net_downed_flag — and net_force_respawn.
+const PROTOCOL_VERSION: int = 7
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).

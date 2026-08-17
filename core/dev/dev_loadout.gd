@@ -27,6 +27,14 @@ const HOTBAR_START_INDEX: int = 24
 ## starting gear becomes a design question rather than a "let me actually play it" one.
 @export var enabled: bool = true
 
+## F-043, decided in 2.13: the iron sword stays OUT of this list (option b — console-only until 3.x
+## loot places it in the world). Two reasons, not one: the hotbar below is already full at 8/8
+## (HOTBAR_SLOT_COUNT), so adding it `hotbar: true` would silently fail to reach the bar per
+## _move_to_hotbar's own contract, landing in the backpack instead — not "in someone's hand"; and its
+## WeaponDef numbers are still 2.9's unpassed placeholders (F-036), so handing out the strongest
+## melee option by default would pollute 2.14's playtest signal on the weapons that ARE tuned. `give
+## iron_sword` still reaches it for anyone who wants to test it deliberately.
+##
 ## Given to every player when they spawn. Tools first so they land in the backpack in a readable
 ## order, then the resources 2.6's recipe wants.
 ## `hotbar: true` puts a stack on the bar instead of leaving it in the pack. This matters more than

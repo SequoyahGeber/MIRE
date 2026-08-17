@@ -1557,3 +1557,20 @@ Commit at time of writing: `a23683a`
 Two-machine LAN run PASSED: macOS host + Linux VM (192.168.50.124) in one ENet session. Host log shows admitting peer 1470581916, peers [1, 1470581916], both players spawned, DevLoadout granting 13 stacks to each. Client connected in 0.20s, agreed on the same peer list, and NetInterp smoothed the host player plus all four ambient crawlers. Zero ERROR lines on both machines. Also fixed _tag() logging a LAN session as LOCAL.
 
 Commit at time of writing: `2ef0b95`
+
+---
+
+### DONE · 2.13 · lp · 2026-08-17T23:58:38+00:00
+
+**Death & respawn: downed → bleed-out → revive by teammate (`DESIGN.md` §4.5)**
+
+PlayerHealth autoload (host-keyed DownedState per peer): damage in via &"damageable" (player_controller.gd) and EventBus.enemy_attack_landed, hp 0 -> DOWNED (crawl, input-gated) -> bleed_out_seconds -> DEAD -> respawn_seconds -> ALIVE at full hp; teammate interact-hold -> host-validated revive (range+state, never trusts client). D-035 rebind/expire wired. Protocol 7. Verified: agent godot --script tools/player_health_check.gd (offline, 0 failures) and agent godot --script tools/player_health_net_check.gd (two real ENet peers, 0 failures) and tools/handshake_check.gd all green with zero engine ERROR lines; verify_setup.gd and combat/enemy/dev_loadout checks still green after the player_controller.gd and dev_loadout.gd edits. F-043 decided (console-only). F-055 filed (mire_log health channel).
+
+Notes along the way:
+- PlayerHealth mirrors InventoryService exactly: DownedState (systems/health/downed_state.gd) is the pure ALIVE/DOWNED/DEAD state machine, autoload owns replication+RPCs+D-035 rebind. Revive hold is client-predicted (player_controller.gd tracks the interact-hold timer), host re-validates state+range on request_revive -> net_request_revive, matching D-034's swing-prediction split.
+- Respawn teleport: host cannot write another peer's position (own movement is CLIENT authority, §2.2 row 1), so net_force_respawn tells the owning client to place itself at the transform captured off PlayerNet.player_spawned. F-055 filed: mire_log.gd has no 'health' channel (not in this task's claim), so player_health.gd logs under 'combat' for now.
+- project.godot: PlayerHealth registered via 'agent autoload' (bypasses the claims system by design, F-051). tine18 currently holds project.godot for 2.1j, so my one-line append sits uncommitted in the shared tree until 2.1j ships (or any other task that legitimately claims project.godot next) — this matches agent autoload's documented behavior, not a gap. Verified live: verify_setup.gd shows 'PlayerHealth registered as singleton' and --quit-after boots clean with it active.
+
+Files: `systems/health/player_health.gd`, `systems/health/downed_state.gd`, `entities/player/player_controller.gd`, `tools/player_health_check.gd`, `tools/player_health_net_check.gd`, `core/net/net_version.gd`, `core/dev/dev_loadout.gd`, `tools/handshake_check.gd`
+
+Commit at time of writing: `384a296`
