@@ -388,6 +388,12 @@ Two ways out, and this is Sequoyah's call because it changes roadmap order:
 Not fixed here: 2.8 owns combat code, not the roadmap. Filed rather than silently tuning against a
 tree, which would have looked like the gate passing.
 
+**2026-08-17, dusk3 — resolved by taking option 1.** 2.10 shipped before 2.9, so the enemy the gate
+is about now exists and 2.9 was tuned against a crawler rather than a tree. The ordering concern is
+spent; what remains is that **2.9's gate is still open**, because passing it requires a human
+playtest and `tools/combat_feel_check.gd` deliberately measures relationships rather than declaring
+anything fun. This entry stays open only until Sequoyah plays it and says yes or no.
+
 *Filed as F-033, then F-035, and finally renumbered to F-036 on 2026-08-16: both earlier numbers were taken by entries that landed
 concurrently (a resolved F-033, and kiln9's F-034 and F-035). `NEXT.md` and the 2.8 journal note refer to it by the new number.*
 

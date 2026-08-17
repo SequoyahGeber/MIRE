@@ -94,6 +94,40 @@ outline with per-point bevel *distances*, which is how a head gets a square poll
 and `swept_shaft()` (a tube along a polyline with a radius per point, which is how hafts get taper and
 an oval section).
 
+**Task 2.9 is a gate, and only Sequoyah can pass it.** `ROADMAP.md` says *tune combat feel until one
+enemy with one weapon feels great; do not proceed otherwise*, and no agent can judge that. What 2.9
+shipped is everything that makes the judgement possible, plus the instrument to argue about numbers
+instead of adjectives:
+
+`Godot --headless --path . --script tools/combat_feel_check.gd` prints the whole picture and asserts
+the *relationships* between authored values — never whether a value is fun. Current reading:
+
+```
+time-to-kill 4 swings, 2.72 s of swinging
+reaction     0.28 s of the 0.40 s tell is thinking time; 0.50 m of retreat costs 0.12 s
+worst case   standing at contact needs 0.50 s to clear 2.00 m — sprint or trade, do not walk
+retreat      walking loses 0.40 m/s; sprinting gains 1.60 m/s
+```
+
+**The one tuning call that is a design decision, not a number: the crawler moves at 4.4 m/s, faster
+than the 4.0 m/s walk and slower than the 6.0 m/s sprint.** At 2.10's original 3.4 a player could
+walk backwards forever and never be caught — which is exactly the "backpedal spam" `DESIGN.md` §6
+names as the thing to fix, and it makes the 0.4 s telegraph decorative. Now retreating costs 0.4 m/s
+per second, sprinting still disengages, and standing your ground is sometimes correct.
+
+2.9 also filled two feedback gaps 2.10 left. An enemy now **reacts** to being hit: a replicated
+`hit_counter` (a counter, not a flag — a flag can go true and false between two snapshots and be
+missed) drives A-006's `hit` clip plus a 0.12 s white overlay, so a connect is visible even when the
+clip is masked by a committed attack. And a corpse **sinks and fades** over `corpse_seconds` instead
+of blinking out, which is the "ragdoll or dissolve" 2.10's line asked for, done as geometry rather
+than as a shader on an imported GLB.
+
+**What is left for the playtest**, in the order it will matter: does the 0.4 s tell read at all in
+first person; does the axe's 100° arc make hitting a moving crawler feel generous or sloppy; is
+0.075 s of hitstop an impact or a hitch; and does 4 swings per crawler stay right when there are
+three of them. **There is still no authored impact sound** — the thud is 2.8's code-built
+placeholder, and it is the single biggest remaining gap in "loud, satisfying impact".
+
 **Task 2.10 ships Enemy v1, and 2.12's wave spawner drives it through `EnemyWorld`.** `EnemyWorld`
 is an autoload registered last, after `CombatService`. It loads `content/enemies/*.tres` into
 `get_def(id)` / `has_def(id)`, owns the code-built `MultiplayerSpawner` (D-023), and exposes the
