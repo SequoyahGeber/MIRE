@@ -1547,3 +1547,13 @@ Commit at time of writing: `86ced32`
 Keep every rate-limit window, not just the last event. Claude Pro runs five_hour and weekly limits simultaneously and they are not interchangeable — observed live at 15 percent session against 73 percent weekly, and it is the weekly that actually stops work. The ledger now records each window and parks on whichever is blocking, using that window's own reset so a weekly wall is not retried at the five-hour reset.
 
 Commit at time of writing: `a23683a`
+
+---
+
+### DONE · F-054 · flint5 · 2026-08-17T23:43:56+00:00
+
+**There is no launch path into LAN mode, so a second physical machine cannot join at all**
+
+Two-machine LAN run PASSED: macOS host + Linux VM (192.168.50.124) in one ENet session. Host log shows admitting peer 1470581916, peers [1, 1470581916], both players spawned, DevLoadout granting 13 stacks to each. Client connected in 0.20s, agreed on the same peer list, and NetInterp smoothed the host player plus all four ambient crawlers. Zero ERROR lines on both machines. Also fixed _tag() logging a LAN session as LOCAL.
+
+Commit at time of writing: `2ef0b95`

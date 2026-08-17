@@ -260,7 +260,10 @@ func _steam_lobby() -> Node:
 ## has to say on sight which instance produced it.
 func _tag() -> String:
 	var role_name: String = "HOST" if _role == Role.HOST else "CLIENT"
-	var mode_name: String = "STEAM" if _mode == LaunchMode.STEAM else "LOCAL"
+	# All three modes, not just STEAM-or-LOCAL: a LAN run used to log itself as LOCAL, which is
+	# exactly backwards in the one situation where the log is the only evidence you have — two
+	# machines, one of them headless over SSH.
+	var mode_name: String = ["LOCAL", "LAN", "STEAM"][_mode]
 	var peer_id: int = NetTransport.local_peer_id()
 	if peer_id == 0:
 		return "[DevLaunch %s %s peer=?]" % [mode_name, role_name]
