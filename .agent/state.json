@@ -15,6 +15,11 @@
       "at": "2026-08-17T23:12:54+00:00",
       "task": "2.1j"
     },
+    "assets/maps": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:20:42+00:00",
+      "task": "2.1j"
+    },
     "assets/pickups": {
       "agent": "tine18",
       "at": "2026-08-17T23:07:07+00:00",
@@ -28,6 +33,16 @@
     "assets/source/mire_map_kit.blend": {
       "agent": "tine18",
       "at": "2026-08-17T23:12:54+00:00",
+      "task": "2.1j"
+    },
+    "assets/source/playtest_hollow.blend": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:20:42+00:00",
+      "task": "2.1j"
+    },
+    "assets/source/playtest_map.blend": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:20:42+00:00",
       "task": "2.1j"
     },
     "tools/blender/audit_all_sides.py": {
@@ -50,6 +65,16 @@
       "at": "2026-08-17T23:07:07+00:00",
       "task": "2.1j"
     },
+    "tools/blender/build_playtest_hollow.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:20:42+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_playtest_map.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:20:42+00:00",
+      "task": "2.1j"
+    },
     "tools/blender/detail_distribution.py": {
       "agent": "tine18",
       "at": "2026-08-17T19:30:14+00:00",
@@ -70,7 +95,12 @@
         "assets/source/crafting_stations.blend",
         "tools/blender/build_mire_map_kit.py",
         "assets/environment",
-        "assets/source/mire_map_kit.blend"
+        "assets/source/mire_map_kit.blend",
+        "tools/blender/build_playtest_map.py",
+        "tools/blender/build_playtest_hollow.py",
+        "assets/maps",
+        "assets/source/playtest_map.blend",
+        "assets/source/playtest_hollow.blend"
       ],
       "notes": [],
       "started": "2026-08-17T19:30:14+00:00"
@@ -2317,7 +2347,7 @@
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.12": {
-      "done_at": "2026-08-17T23:20:28+00:00",
+      "done_at": "2026-08-17T23:21:05+00:00",
       "done_by": "quill15",
       "est": "1.5",
       "milestone": "M0",

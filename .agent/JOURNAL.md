@@ -1459,3 +1459,13 @@ Commit at time of writing: `3fdf7c7`
 Probed both CLIs live and fixed a real accounting bug: codex reports cached_input_tokens as a SUBSET of input_tokens (adding them double-counted, 24878 vs the true 13870) while claude reports input_tokens as the uncached remainder with cache_creation/cache_read separate (must be added, 2+19587=19589). Usage parsing is now CLI-aware and verified against captured output from both. Also: orders now carry per-task model and effort derived from tier (T1 medium, T2 high, M1/M4 T2 xhigh), which lane run applies over the lane default.
 
 Commit at time of writing: `53d00de`
+
+---
+
+### DONE · 0.12 · quill15 · 2026-08-17T23:21:06+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+Restore QUOTA_PAT, dropped by the usage-accounting rewrite and shipped broken in 798ed7f. lane selftest caught it on the very next run — which is the argument for having it. 20/20 again.
+
+Commit at time of writing: `798ed7f`

@@ -267,6 +267,24 @@ def totals(acc):
     return int(acc["in"]), int(acc["out"]), float(acc["cost"])
 
 
+# Be specific about the *account's* quota, not about rate limiting in general. MIRE is a netcode
+# project: `rate_limit_ms`, `429` and "too many requests" are ordinary vocabulary here, and a lane
+# that failed to compile while discussing them must not be parked for five hours as "exhausted".
+# Every branch below requires wording that only an account-limit message actually uses.
+QUOTA_PAT = re.compile(
+    r"(usage limit (?:reached|exceeded)"
+    r"|you(?:'ve| have)\s+(?:hit|reached|exceeded)\s+(?:your|the)\s+\w*\s*limit"
+    r"|rate[_ -]?limit_?error"
+    r"|rate[_ -]?limit(?:ed)?[^.\n]{0,30}(?:exceeded|try again|retry after)"
+    r"|insufficient_quota"
+    r"|quota\s+(?:exceeded|exhausted|reached)"
+    r"|(?:limit|quota)\s+will\s+reset"
+    r"|(?:status|code)[\"'\s:=]+429"
+    r"|429\s+too many requests"
+    r"|upgrade\s+(?:your plan\s+)?to\s+(?:increase|continue)"
+    r"|out of (?:credits|tokens)"
+    r")", re.I)
+
 ISO_PAT = re.compile(r"\b(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2})?(?:[+-]\d{2}:?\d{2}|Z)?)")
 CLOCK_PAT = re.compile(r"reset\w*(?:\s+\w+){0,3}?\s+(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?", re.I)
 CLOCK24_PAT = re.compile(r"reset\w*(?:\s+\w+){0,3}?\s+(\d{1,2}):(\d{2})", re.I)
