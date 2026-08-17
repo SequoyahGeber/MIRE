@@ -22,10 +22,17 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from pathlib import Path
 from typing import Callable
 
 import bpy
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from mire_art import (  # noqa: E402
+    assign, box, cone, eevee_engine, ico, look_at, mat, move_to_collection,
+    radial, around, reset_materials, world_bounds,
+)
 from mathutils import Vector
 
 
@@ -60,122 +67,6 @@ EXPECTED_NAMES = [
 ## the ground and their lids underneath. Negative rotation lifts the tip up and
 ## back, which is what an opened lid actually does.
 OPEN_LID_DEGREES = -104.0
-
-
-def material(
-    name: str,
-    color: tuple[float, float, float, float],
-    roughness: float = 0.9,
-    metallic: float = 0.0,
-    emission: tuple[float, float, float, float] | None = None,
-    emission_strength: float = 0.0,
-) -> bpy.types.Material:
-    mat = bpy.data.materials.new(name)
-    mat.diffuse_color = color
-    mat.use_nodes = True
-    shader = mat.node_tree.nodes.get("Principled BSDF")
-    shader.inputs["Base Color"].default_value = color
-    shader.inputs["Roughness"].default_value = roughness
-    shader.inputs["Metallic"].default_value = metallic
-    if emission is not None:
-        shader.inputs["Emission Color"].default_value = emission
-        shader.inputs["Emission Strength"].default_value = emission_strength
-    return mat
-
-
-def assign(obj: bpy.types.Object, mat: bpy.types.Material) -> bpy.types.Object:
-    obj.data.materials.append(mat)
-    for polygon in obj.data.polygons:
-        polygon.use_smooth = False
-    return obj
-
-
-def box(
-    name: str,
-    location: tuple[float, float, float],
-    dimensions: tuple[float, float, float],
-    mat: bpy.types.Material,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-    bevel: float = 0.0,
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_cube_add(location=location, rotation=rotation)
-    obj = bpy.context.object
-    obj.name = name
-    obj.scale = (dimensions[0] * 0.5, dimensions[1] * 0.5, dimensions[2] * 0.5)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    if bevel > 0.0:
-        modifier = obj.modifiers.new("Low_Poly_Bevel", "BEVEL")
-        modifier.width = bevel
-        modifier.segments = 1
-        bpy.context.view_layer.objects.active = obj
-        bpy.ops.object.modifier_apply(modifier=modifier.name)
-    return assign(obj, mat)
-
-
-def cone(
-    name: str,
-    radius_bottom: float,
-    radius_top: float,
-    depth: float,
-    location: tuple[float, float, float],
-    mat: bpy.types.Material,
-    vertices: int = 8,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_cone_add(
-        vertices=vertices,
-        radius1=radius_bottom,
-        radius2=radius_top,
-        depth=depth,
-        location=location,
-        rotation=rotation,
-    )
-    obj = bpy.context.object
-    obj.name = name
-    return assign(obj, mat)
-
-
-def ico(
-    name: str,
-    location: tuple[float, float, float],
-    scale: tuple[float, float, float],
-    mat: bpy.types.Material,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-    subdivisions: int = 1,
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_ico_sphere_add(
-        subdivisions=subdivisions,
-        radius=1.0,
-        location=location,
-        rotation=rotation,
-    )
-    obj = bpy.context.object
-    obj.name = name
-    obj.scale = scale
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    return assign(obj, mat)
-
-
-def look_at(obj: bpy.types.Object, target: tuple[float, float, float]) -> None:
-    obj.rotation_euler = (Vector(target) - obj.location).to_track_quat("-Z", "Y").to_euler()
-
-
-def move_to_collection(objects: list[bpy.types.Object], collection: bpy.types.Collection) -> None:
-    for obj in objects:
-        for old_collection in list(obj.users_collection):
-            old_collection.objects.unlink(obj)
-        collection.objects.link(obj)
-
-
-def world_bounds(objects: list[bpy.types.Object]) -> tuple[Vector, Vector]:
-    bpy.context.view_layer.update()
-    corners: list[Vector] = []
-    for obj in objects:
-        if obj.type == "MESH":
-            corners.extend(obj.matrix_world @ Vector(corner) for corner in obj.bound_box)
-    minimum = Vector((min(v.x for v in corners), min(v.y for v in corners), min(v.z for v in corners)))
-    maximum = Vector((max(v.x for v in corners), max(v.y for v in corners), max(v.z for v in corners)))
-    return minimum, maximum
 
 
 def rotate_about(obj: bpy.types.Object, pivot: tuple[float, float, float], degrees: float) -> None:
@@ -552,7 +443,7 @@ def setup_render(mats: dict[str, bpy.types.Material]) -> tuple[bpy.types.Scene, 
     bpy.context.scene.camera = camera
     move_to_collection([camera], preview_collection)
     scene = bpy.context.scene
-    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.engine = eevee_engine()
     scene.render.resolution_x = 1600
     scene.render.resolution_y = 1000
     scene.render.resolution_percentage = 100
@@ -570,6 +461,7 @@ def main() -> None:
     for expected in EXPECTED_NAMES:
         (EXPORT_DIR / f"{expected}.glb").unlink(missing_ok=True)
 
+    reset_materials()
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
@@ -578,32 +470,33 @@ def main() -> None:
             datablocks.remove(block)
 
     mats = {
-        "wood": material("MIRE_Loot_Wood", (0.55, 0.29, 0.10, 1.0)),
-        "wood_dark": material("MIRE_Loot_Wood_Dark", (0.26, 0.13, 0.05, 1.0)),
-        "iron": material("MIRE_Loot_Iron", (0.30, 0.33, 0.35, 1.0), 0.45, 0.62),
-        "iron_dark": material("MIRE_Loot_Iron_Dark", (0.13, 0.15, 0.17, 1.0), 0.48, 0.58),
-        "iron_light": material("MIRE_Loot_Iron_Light", (0.58, 0.63, 0.66, 1.0), 0.35, 0.72),
-        "ingot": material("MIRE_Loot_Ingot", (0.42, 0.50, 0.53, 1.0), 0.35, 0.68),
-        "coin": material("MIRE_Loot_Coin", (1.0, 0.68, 0.04, 1.0), 0.35, 0.45),
-        "cloth": material("MIRE_Loot_Cloth", (0.63, 0.16, 0.14, 1.0)),
-        "cloth_rich": material("MIRE_Loot_Cloth_Rich", (0.36, 0.10, 0.45, 1.0)),
-        "leather": material("MIRE_Loot_Leather", (0.46, 0.24, 0.09, 1.0)),
-        "leather_dark": material("MIRE_Loot_Leather_Dark", (0.24, 0.12, 0.045, 1.0)),
-        "cord": material("MIRE_Loot_Cord", (0.80, 0.68, 0.32, 1.0)),
-        "sack": material("MIRE_Loot_Sack", (0.68, 0.58, 0.34, 1.0)),
-        "sack_dark": material("MIRE_Loot_Sack_Dark", (0.42, 0.34, 0.18, 1.0)),
-        "patch": material("MIRE_Loot_Patch", (0.30, 0.44, 0.22, 1.0)),
-        "canvas": material("MIRE_Loot_Canvas", (0.24, 0.40, 0.34, 1.0)),
-        "canvas_dark": material("MIRE_Loot_Canvas_Dark", (0.13, 0.24, 0.21, 1.0)),
-        # The Mire palette: desaturated purple-black with emissive accents.
-        "mire": material("MIRE_Loot_Mire", (0.13, 0.08, 0.18, 1.0)),
-        "mire_dark": material("MIRE_Loot_Mire_Dark", (0.055, 0.035, 0.085, 1.0)),
-        "mire_glow": material("MIRE_Loot_Mire_Glow", (0.47, 0.10, 0.82, 1.0), 0.25, 0.0, (0.66, 0.16, 1.0, 1.0), 2.6),
-        "mire_crystal": material("MIRE_Loot_Mire_Crystal", (0.58, 0.22, 0.90, 1.0), 0.20, 0.0, (0.72, 0.30, 1.0, 1.0), 3.1),
-        "orb_core": material("MIRE_Loot_Orb_Core", (1.0, 0.82, 0.30, 1.0), 0.18, 0.0, (1.0, 0.76, 0.22, 1.0), 3.6),
-        "orb_shell": material("MIRE_Loot_Orb_Shell", (0.96, 0.55, 0.12, 1.0), 0.30, 0.0, (1.0, 0.52, 0.08, 1.0), 1.1),
-        "ground": material("MIRE_Loot_Preview_Ground", (0.048, 0.085, 0.056, 1.0)),
-        "scale": material("MIRE_Loot_Scale_Reference", (0.15, 0.53, 0.78, 1.0)),
+        # Shared palette. Purple stays reserved for corruption, which is why the
+        # Wellspring chest's rich lining is the one cloth allowed to use it.
+        "wood": mat("wood_timber_light"),
+        "wood_dark": mat("wood_timber"),
+        "iron": mat("iron"),
+        "iron_dark": mat("iron_dark"),
+        "iron_light": mat("iron_light"),
+        "ingot": mat("iron"),
+        "coin": mat("gold"),
+        "cloth": mat("cloth_red"),
+        "cloth_rich": mat("mire_light"),
+        "leather": mat("leather"),
+        "leather_dark": mat("leather_dark"),
+        "cord": mat("rope"),
+        "sack": mat("cloth"),
+        "sack_dark": mat("cloth_dark"),
+        "patch": mat("leaf"),
+        "canvas": mat("canvas"),
+        "canvas_dark": mat("canvas_dark"),
+        "mire": mat("mire"),
+        "mire_dark": mat("mire_black"),
+        "mire_glow": mat("mire_glow"),
+        "mire_crystal": mat("crystal_tip"),
+        "orb_core": mat("flame"),
+        "orb_shell": mat("ember"),
+        "ground": mat("preview_ground"),
+        "scale": mat("reference_blue"),
     }
 
     # The third element is anchor_parts: for a closed/open pair it names the

@@ -12,10 +12,14 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from pathlib import Path
 from typing import Callable
 
 import bpy
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from mire_art import mat, radial, around, reset_materials  # noqa: E402
 from mathutils import Vector
 
 
@@ -669,6 +673,7 @@ def main() -> None:
     for expected in EXPECTED_NAMES:
         (EXPORT_DIR / f"{expected}.glb").unlink(missing_ok=True)
 
+    reset_materials()
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
@@ -677,30 +682,33 @@ def main() -> None:
             datablocks.remove(block)
 
     mats = {
-        "stone": material("MIRE_Wellspring_Stone", (0.29, 0.33, 0.34, 1.0)),
-        "stone_light": material("MIRE_Wellspring_Stone_Light", (0.43, 0.47, 0.45, 1.0)),
-        "stone_dark": material("MIRE_Wellspring_Stone_Dark", (0.105, 0.13, 0.15, 1.0)),
-        "slate": material("MIRE_Wellspring_Slate", (0.075, 0.105, 0.13, 1.0)),
-        "basin_dark": material("MIRE_Wellspring_Basin_Dark", (0.045, 0.04, 0.07, 1.0)),
-        "bronze": material("MIRE_Wellspring_Bronze", (0.68, 0.40, 0.10, 1.0), 0.38, 0.62),
-        "bronze_dark": material("MIRE_Wellspring_Bronze_Dark", (0.27, 0.15, 0.045, 1.0), 0.48, 0.54),
-        "mire_metal": material("MIRE_Wellspring_Mire_Metal", (0.16, 0.075, 0.20, 1.0), 0.52, 0.34),
-        "ancient_glow": material("MIRE_Wellspring_Ancient_Glow", (0.18, 0.86, 0.78, 1.0), 0.18, 0.0, (0.10, 1.0, 0.82, 1.0), 3.2),
-        "split_glow": material("MIRE_Wellspring_Split_Glow", (0.24, 0.40, 0.48, 1.0), 0.26, 0.0, (0.34, 0.26, 0.60, 1.0), 1.6),
-        "clear_crystal": material("MIRE_Wellspring_Clear_Crystal", (0.22, 0.90, 0.84, 1.0), 0.18, 0.0, (0.12, 1.0, 0.88, 1.0), 3.3),
-        "clear_crystal_dim": material("MIRE_Wellspring_Clear_Dim", (0.15, 0.48, 0.48, 1.0), 0.30, 0.0, (0.08, 0.48, 0.50, 1.0), 1.2),
-        "mire_stone": material("MIRE_Wellspring_Mire_Stone", (0.105, 0.055, 0.15, 1.0)),
-        "mire_root": material("MIRE_Wellspring_Mire_Root", (0.115, 0.045, 0.14, 1.0)),
-        "root_dormant": material("MIRE_Wellspring_Dormant_Root", (0.19, 0.16, 0.18, 1.0)),
-        "mire_crystal": material("MIRE_Wellspring_Mire_Crystal", (0.46, 0.10, 0.76, 1.0), 0.20, 0.0, (0.66, 0.12, 1.0, 1.0), 3.2),
-        "mire_crystal_dim": material("MIRE_Wellspring_Mire_Crystal_Dim", (0.25, 0.08, 0.39, 1.0), 0.30, 0.0, (0.39, 0.08, 0.62, 1.0), 1.4),
-        "mire_glow": material("MIRE_Wellspring_Mire_Glow", (0.58, 0.12, 0.90, 1.0), 0.18, 0.0, (0.78, 0.12, 1.0, 1.0), 3.5),
-        "mire_liquid": material("MIRE_Wellspring_Mire_Liquid", (0.19, 0.055, 0.31, 1.0), 0.16, 0.0, (0.40, 0.06, 0.62, 1.0), 1.8),
-        "clear_liquid": material("MIRE_Wellspring_Clear_Liquid", (0.05, 0.50, 0.49, 1.0), 0.14, 0.0, (0.06, 0.72, 0.66, 1.0), 1.7),
-        "split_liquid": material("MIRE_Wellspring_Split_Liquid", (0.24, 0.20, 0.40, 1.0), 0.18, 0.0, (0.32, 0.22, 0.55, 1.0), 1.4),
-        "crack": material("MIRE_Wellspring_Crack", (0.025, 0.018, 0.035, 1.0)),
-        "ground": material("MIRE_Wellspring_Preview_Ground", (0.045, 0.075, 0.060, 1.0)),
-        "scale": material("MIRE_Wellspring_Scale", (0.18, 0.50, 0.78, 1.0)),
+        # Shared palette. Geometry helpers stay local: this kit's cone defaults
+        # to 10 vertices where mire_art's uses 8, and its box is bevel-free for
+        # the same Apple Silicon determinism reason as the Ward's.
+        "stone": mat("stone"),
+        "stone_light": mat("stone_light"),
+        "stone_dark": mat("stone_dark"),
+        "slate": mat("ward_slate"),
+        "basin_dark": mat("mire_black"),
+        "bronze": mat("brass"),
+        "bronze_dark": mat("brass_dark"),
+        "mire_metal": mat("mire_metal"),
+        "ancient_glow": mat("ward_glow"),
+        "split_glow": mat("split_glow"),
+        "clear_crystal": mat("ward_crystal_light"),
+        "clear_crystal_dim": mat("ward_crystal_dim"),
+        "mire_stone": mat("mire"),
+        "mire_root": mat("mire"),
+        "root_dormant": mat("mire_dormant"),
+        "mire_crystal": mat("crystal_tip"),
+        "mire_crystal_dim": mat("crystal"),
+        "mire_glow": mat("mire_glow"),
+        "mire_liquid": mat("mire_liquid"),
+        "clear_liquid": mat("clear_liquid"),
+        "split_liquid": mat("split_liquid"),
+        "crack": mat("coal"),
+        "ground": mat("preview_ground"),
+        "scale": mat("reference_blue"),
     }
 
     state_anchor = ("Wellspring_State_Anchor_",)

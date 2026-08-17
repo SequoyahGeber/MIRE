@@ -8,10 +8,10 @@
     "mesh_parts": 16,
     "polygons": 216,
     "materials": [
-      "MIRE_Loot_Iron",
-      "MIRE_Loot_Iron_Light",
-      "MIRE_Loot_Wood",
-      "MIRE_Loot_Wood_Dark"
+      "MIRE_Iron",
+      "MIRE_IronLight",
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -23,12 +23,12 @@
     "mesh_parts": 20,
     "polygons": 278,
     "materials": [
-      "MIRE_Loot_Cloth",
-      "MIRE_Loot_Coin",
-      "MIRE_Loot_Iron",
-      "MIRE_Loot_Iron_Light",
-      "MIRE_Loot_Wood",
-      "MIRE_Loot_Wood_Dark"
+      "MIRE_ClothRed",
+      "MIRE_Gold",
+      "MIRE_Iron",
+      "MIRE_IronLight",
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -40,10 +40,10 @@
     "mesh_parts": 21,
     "polygons": 240,
     "materials": [
-      "MIRE_Loot_Mire",
-      "MIRE_Loot_Mire_Crystal",
-      "MIRE_Loot_Mire_Dark",
-      "MIRE_Loot_Mire_Glow"
+      "MIRE_CrystalTip",
+      "MIRE_Mire",
+      "MIRE_MireBlack",
+      "MIRE_MireGlow"
     ]
   },
   {
@@ -55,10 +55,10 @@
     "mesh_parts": 24,
     "polygons": 360,
     "materials": [
-      "MIRE_Loot_Mire",
-      "MIRE_Loot_Mire_Crystal",
-      "MIRE_Loot_Mire_Dark",
-      "MIRE_Loot_Mire_Glow"
+      "MIRE_CrystalTip",
+      "MIRE_Mire",
+      "MIRE_MireBlack",
+      "MIRE_MireGlow"
     ]
   },
   {
@@ -70,10 +70,10 @@
     "mesh_parts": 24,
     "polygons": 264,
     "materials": [
-      "MIRE_Loot_Iron_Dark",
-      "MIRE_Loot_Iron_Light",
-      "MIRE_Loot_Wood",
-      "MIRE_Loot_Wood_Dark"
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -85,13 +85,13 @@
     "mesh_parts": 30,
     "polygons": 378,
     "materials": [
-      "MIRE_Loot_Cloth_Rich",
-      "MIRE_Loot_Coin",
-      "MIRE_Loot_Ingot",
-      "MIRE_Loot_Iron_Dark",
-      "MIRE_Loot_Iron_Light",
-      "MIRE_Loot_Wood",
-      "MIRE_Loot_Wood_Dark"
+      "MIRE_Gold",
+      "MIRE_Iron.001",
+      "MIRE_IronDark",
+      "MIRE_IronLight",
+      "MIRE_MireLight",
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -103,10 +103,10 @@
     "mesh_parts": 11,
     "polygons": 164,
     "materials": [
-      "MIRE_Loot_Coin",
-      "MIRE_Loot_Cord",
-      "MIRE_Loot_Leather",
-      "MIRE_Loot_Leather_Dark"
+      "MIRE_Gold",
+      "MIRE_Leather",
+      "MIRE_LeatherDark",
+      "MIRE_Rope"
     ]
   },
   {
@@ -118,10 +118,10 @@
     "mesh_parts": 10,
     "polygons": 210,
     "materials": [
-      "MIRE_Loot_Mire_Dark",
-      "MIRE_Loot_Mire_Glow",
-      "MIRE_Loot_Orb_Core",
-      "MIRE_Loot_Orb_Shell"
+      "MIRE_Ember",
+      "MIRE_Flame",
+      "MIRE_MireBlack",
+      "MIRE_MireGlow"
     ]
   },
   {
@@ -133,11 +133,11 @@
     "mesh_parts": 10,
     "polygons": 220,
     "materials": [
-      "MIRE_Loot_Cord",
-      "MIRE_Loot_Ingot",
-      "MIRE_Loot_Patch",
-      "MIRE_Loot_Sack",
-      "MIRE_Loot_Sack_Dark"
+      "MIRE_Cloth",
+      "MIRE_ClothDark",
+      "MIRE_Iron.001",
+      "MIRE_Leaf",
+      "MIRE_Rope"
     ]
   },
   {
@@ -149,14 +149,14 @@
     "mesh_parts": 11,
     "polygons": 212,
     "materials": [
-      "MIRE_Loot_Canvas",
-      "MIRE_Loot_Canvas_Dark",
-      "MIRE_Loot_Cloth",
-      "MIRE_Loot_Coin",
-      "MIRE_Loot_Ingot",
-      "MIRE_Loot_Iron_Light",
-      "MIRE_Loot_Leather_Dark",
-      "MIRE_Loot_Mire_Glow"
+      "MIRE_Canvas",
+      "MIRE_CanvasDark",
+      "MIRE_ClothRed",
+      "MIRE_Gold",
+      "MIRE_Iron.001",
+      "MIRE_IronLight",
+      "MIRE_LeatherDark",
+      "MIRE_MireGlow"
     ]
   }
 ]

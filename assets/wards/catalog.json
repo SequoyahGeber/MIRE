@@ -8,11 +8,11 @@
     "mesh_parts": 22,
     "polygons": 176,
     "materials": [
-      "MIRE_Ward_Bronze",
-      "MIRE_Ward_Glow_Dim",
-      "MIRE_Ward_Slate",
-      "MIRE_Ward_Stone",
-      "MIRE_Ward_Stone_Dark"
+      "MIRE_Brass",
+      "MIRE_WardGlowDim",
+      "MIRE_WardSlate",
+      "MIRE_WardStone",
+      "MIRE_WardStoneDark"
     ]
   },
   {
@@ -24,15 +24,15 @@
     "mesh_parts": 56,
     "polygons": 581,
     "materials": [
-      "MIRE_Ward_Bronze",
-      "MIRE_Ward_Bronze_Dark",
-      "MIRE_Ward_Crystal",
-      "MIRE_Ward_Crystal_Light",
-      "MIRE_Ward_Glow",
-      "MIRE_Ward_Slate",
-      "MIRE_Ward_Stone",
-      "MIRE_Ward_Stone_Dark",
-      "MIRE_Ward_Wood_Dark"
+      "MIRE_Brass",
+      "MIRE_BrassDark",
+      "MIRE_WardCrystal",
+      "MIRE_WardCrystalLight",
+      "MIRE_WardGlow",
+      "MIRE_WardSlate",
+      "MIRE_WardStone",
+      "MIRE_WardStoneDark",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -44,17 +44,17 @@
     "mesh_parts": 50,
     "polygons": 542,
     "materials": [
-      "MIRE_Ward_Bronze",
-      "MIRE_Ward_Bronze_Dark",
-      "MIRE_Ward_Crack",
-      "MIRE_Ward_Crystal",
-      "MIRE_Ward_Crystal_Dim",
-      "MIRE_Ward_Glow",
-      "MIRE_Ward_Glow_Dim",
-      "MIRE_Ward_Slate",
-      "MIRE_Ward_Stone",
-      "MIRE_Ward_Stone_Dark",
-      "MIRE_Ward_Wood_Dark"
+      "MIRE_Brass",
+      "MIRE_BrassDark",
+      "MIRE_Coal",
+      "MIRE_WardCrystal",
+      "MIRE_WardCrystalDim",
+      "MIRE_WardGlow",
+      "MIRE_WardGlowDim",
+      "MIRE_WardSlate",
+      "MIRE_WardStone",
+      "MIRE_WardStoneDark",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -66,17 +66,17 @@
     "mesh_parts": 45,
     "polygons": 471,
     "materials": [
-      "MIRE_Ward_Bronze",
-      "MIRE_Ward_Bronze_Dark",
-      "MIRE_Ward_Critical",
-      "MIRE_Ward_Critical_Light",
-      "MIRE_Ward_Crystal_Dim",
-      "MIRE_Ward_Glow",
-      "MIRE_Ward_Slate",
-      "MIRE_Ward_Stone",
-      "MIRE_Ward_Stone_Dark",
-      "MIRE_Ward_Wood",
-      "MIRE_Ward_Wood_Dark"
+      "MIRE_Brass",
+      "MIRE_BrassDark",
+      "MIRE_Critical",
+      "MIRE_CriticalLight",
+      "MIRE_WardCrystalDim",
+      "MIRE_WardGlow",
+      "MIRE_WardSlate",
+      "MIRE_WardStone",
+      "MIRE_WardStoneDark",
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -88,13 +88,13 @@
     "mesh_parts": 31,
     "polygons": 308,
     "materials": [
-      "MIRE_Ward_Bronze_Dark",
-      "MIRE_Ward_Critical",
-      "MIRE_Ward_Glow_Dead",
-      "MIRE_Ward_Slate",
-      "MIRE_Ward_Stone",
-      "MIRE_Ward_Stone_Dark",
-      "MIRE_Ward_Wood_Dark"
+      "MIRE_BrassDark",
+      "MIRE_Critical",
+      "MIRE_WardDead",
+      "MIRE_WardSlate",
+      "MIRE_WardStone",
+      "MIRE_WardStoneDark",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -106,9 +106,9 @@
     "mesh_parts": 28,
     "polygons": 168,
     "materials": [
-      "MIRE_Ward_Stone_Dark",
-      "MIRE_Ward_Wood",
-      "MIRE_Ward_Wood_Dark"
+      "MIRE_WardStoneDark",
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -120,12 +120,12 @@
     "mesh_parts": 10,
     "polygons": 94,
     "materials": [
-      "MIRE_Ward_Bronze",
-      "MIRE_Ward_Crystal_Light",
-      "MIRE_Ward_Glow",
-      "MIRE_Ward_Stone",
-      "MIRE_Ward_Stone_Dark",
-      "MIRE_Ward_Wood_Dark"
+      "MIRE_Brass",
+      "MIRE_WardCrystalLight",
+      "MIRE_WardGlow",
+      "MIRE_WardStone",
+      "MIRE_WardStoneDark",
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -137,10 +137,10 @@
     "mesh_parts": 7,
     "polygons": 120,
     "materials": [
-      "MIRE_Ward_Bronze",
-      "MIRE_Ward_Bronze_Dark",
-      "MIRE_Ward_Crystal_Light",
-      "MIRE_Ward_Glow"
+      "MIRE_Brass",
+      "MIRE_BrassDark",
+      "MIRE_WardCrystalLight",
+      "MIRE_WardGlow"
     ]
   }
 ]

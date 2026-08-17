@@ -13,11 +13,45 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from pathlib import Path
 from typing import Callable
 
 import bpy
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from mire_art import (  # noqa: E402
+    assign, cone, eevee_engine, ico, look_at, mat, move_to_collection,
+    radial, around, reset_materials, world_bounds,
+)
 from mathutils import Vector
+
+
+
+def box(
+    name: str,
+    location: tuple[float, float, float],
+    dimensions: tuple[float, float, float],
+    mat: bpy.types.Material,
+    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    bevel: float = 0.0,
+) -> bpy.types.Object:
+    """Bevel-free box, overriding ``mire_art.box`` on purpose.
+
+    This family keeps boxes modifier-free for two reasons, and 2.1j re-learned
+    both by briefly swapping in the shared version: Blender's bevel modifier
+    changed four float bytes between otherwise identical background exports on
+    Apple Silicon, which breaks the deterministic-rebuild contract, and it
+    doubled the repair scaffolding from 168 to 328 polygons. Hard edges also fit
+    this intentionally chunky low-poly family. The ``bevel`` argument is accepted
+    and ignored so call sites read the same as everywhere else.
+    """
+    bpy.ops.mesh.primitive_cube_add(location=location, rotation=rotation)
+    obj = bpy.context.object
+    obj.name = name
+    obj.scale = (dimensions[0] * 0.5, dimensions[1] * 0.5, dimensions[2] * 0.5)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    return assign(obj, mat)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -37,97 +71,6 @@ EXPECTED_NAMES = [
     "ward_activation_crystal",
 ]
 STATE_NAMES = ("ward_healthy", "ward_damaged", "ward_critical", "ward_destroyed")
-
-
-def material(
-    name: str,
-    color: tuple[float, float, float, float],
-    roughness: float = 0.9,
-    metallic: float = 0.0,
-    emission: tuple[float, float, float, float] | None = None,
-    emission_strength: float = 0.0,
-) -> bpy.types.Material:
-    mat = bpy.data.materials.new(name)
-    mat.diffuse_color = color
-    mat.use_nodes = True
-    shader = mat.node_tree.nodes.get("Principled BSDF")
-    shader.inputs["Base Color"].default_value = color
-    shader.inputs["Roughness"].default_value = roughness
-    shader.inputs["Metallic"].default_value = metallic
-    if emission is not None:
-        shader.inputs["Emission Color"].default_value = emission
-        shader.inputs["Emission Strength"].default_value = emission_strength
-    return mat
-
-
-def assign(obj: bpy.types.Object, mat: bpy.types.Material) -> bpy.types.Object:
-    obj.data.materials.append(mat)
-    for polygon in obj.data.polygons:
-        polygon.use_smooth = False
-    return obj
-
-
-def box(
-    name: str,
-    location: tuple[float, float, float],
-    dimensions: tuple[float, float, float],
-    mat: bpy.types.Material,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-    bevel: float = 0.0,
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_cube_add(location=location, rotation=rotation)
-    obj = bpy.context.object
-    obj.name = name
-    obj.scale = (dimensions[0] * 0.5, dimensions[1] * 0.5, dimensions[2] * 0.5)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    # Keep boxes modifier-free. Blender's bevel modifier changed four float
-    # bytes between otherwise identical background exports on Apple Silicon;
-    # hard edges also fit this intentionally chunky low-poly family better.
-    return assign(obj, mat)
-
-
-def cone(
-    name: str,
-    radius_bottom: float,
-    radius_top: float,
-    depth: float,
-    location: tuple[float, float, float],
-    mat: bpy.types.Material,
-    vertices: int = 8,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_cone_add(
-        vertices=vertices,
-        radius1=radius_bottom,
-        radius2=radius_top,
-        depth=depth,
-        location=location,
-        rotation=rotation,
-    )
-    obj = bpy.context.object
-    obj.name = name
-    return assign(obj, mat)
-
-
-def ico(
-    name: str,
-    location: tuple[float, float, float],
-    scale: tuple[float, float, float],
-    mat: bpy.types.Material,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-    subdivisions: int = 1,
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_ico_sphere_add(
-        subdivisions=subdivisions,
-        radius=1.0,
-        location=location,
-        rotation=rotation,
-    )
-    obj = bpy.context.object
-    obj.name = name
-    obj.scale = scale
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    return assign(obj, mat)
 
 
 def beam_between(
@@ -151,33 +94,6 @@ def beam_between(
     )
     obj.rotation_euler = direction.to_track_quat("Z", "Y").to_euler()
     return obj
-
-
-def look_at(obj: bpy.types.Object, target: tuple[float, float, float]) -> None:
-    obj.rotation_euler = (Vector(target) - obj.location).to_track_quat("-Z", "Y").to_euler()
-
-
-def move_to_collection(objects: list[bpy.types.Object], collection: bpy.types.Collection) -> None:
-    for obj in objects:
-        for old_collection in list(obj.users_collection):
-            old_collection.objects.unlink(obj)
-        collection.objects.link(obj)
-
-
-def world_bounds(objects: list[bpy.types.Object]) -> tuple[Vector, Vector]:
-    bpy.context.view_layer.update()
-    corners: list[Vector] = []
-    for obj in objects:
-        if obj.type == "MESH":
-            corners.extend(obj.matrix_world @ Vector(corner) for corner in obj.bound_box)
-    if not corners:
-        raise RuntimeError("Cannot measure an asset with no mesh geometry")
-    minimum = Vector((min(v.x for v in corners), min(v.y for v in corners), min(v.z for v in corners)))
-    maximum = Vector((max(v.x for v in corners), max(v.y for v in corners), max(v.z for v in corners)))
-    return minimum, maximum
-
-
-# ── Shared Ward foundation and state geometry ────────────────────────────────
 
 
 def build_foundation(
@@ -560,7 +476,7 @@ def setup_render(mats: dict[str, bpy.types.Material]) -> tuple[bpy.types.Scene, 
     bpy.context.scene.camera = camera
     move_to_collection([camera], preview_collection)
     scene = bpy.context.scene
-    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.engine = eevee_engine()
     scene.render.resolution_x = 1600
     scene.render.resolution_y = 1000
     scene.render.resolution_percentage = 100
@@ -588,6 +504,7 @@ def main() -> None:
     for expected in EXPECTED_NAMES:
         (EXPORT_DIR / f"{expected}.glb").unlink(missing_ok=True)
 
+    reset_materials()
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
@@ -596,24 +513,26 @@ def main() -> None:
             datablocks.remove(block)
 
     mats = {
-        "stone": material("MIRE_Ward_Stone", (0.36, 0.40, 0.38, 1.0)),
-        "stone_dark": material("MIRE_Ward_Stone_Dark", (0.15, 0.19, 0.19, 1.0)),
-        "slate": material("MIRE_Ward_Slate", (0.10, 0.15, 0.17, 1.0)),
-        "wood": material("MIRE_Ward_Wood", (0.48, 0.27, 0.10, 1.0)),
-        "wood_dark": material("MIRE_Ward_Wood_Dark", (0.24, 0.12, 0.045, 1.0)),
-        "bronze": material("MIRE_Ward_Bronze", (0.70, 0.43, 0.12, 1.0), 0.42, 0.58),
-        "bronze_dark": material("MIRE_Ward_Bronze_Dark", (0.30, 0.18, 0.06, 1.0), 0.48, 0.52),
-        "crystal": material("MIRE_Ward_Crystal", (0.06, 0.62, 0.67, 1.0), 0.22, 0.05, (0.05, 0.72, 0.80, 1.0), 2.2),
-        "crystal_light": material("MIRE_Ward_Crystal_Light", (0.28, 0.92, 0.88, 1.0), 0.18, 0.02, (0.18, 1.0, 0.90, 1.0), 3.0),
-        "crystal_dim": material("MIRE_Ward_Crystal_Dim", (0.16, 0.42, 0.44, 1.0), 0.38, 0.0, (0.08, 0.38, 0.42, 1.0), 0.8),
-        "ward_glow": material("MIRE_Ward_Glow", (0.20, 0.86, 0.78, 1.0), 0.20, 0.0, (0.12, 1.0, 0.82, 1.0), 3.4),
-        "ward_dim": material("MIRE_Ward_Glow_Dim", (0.10, 0.38, 0.36, 1.0), 0.34, 0.0, (0.06, 0.34, 0.31, 1.0), 0.8),
-        "ward_dead": material("MIRE_Ward_Glow_Dead", (0.075, 0.09, 0.09, 1.0), 0.72),
-        "critical_glow": material("MIRE_Ward_Critical", (0.88, 0.18, 0.12, 1.0), 0.30, 0.0, (1.0, 0.08, 0.03, 1.0), 2.5),
-        "critical_light": material("MIRE_Ward_Critical_Light", (1.0, 0.48, 0.08, 1.0), 0.22, 0.0, (1.0, 0.26, 0.03, 1.0), 3.0),
-        "crack": material("MIRE_Ward_Crack", (0.035, 0.028, 0.045, 1.0)),
-        "ground": material("MIRE_Ward_Preview_Ground", (0.052, 0.085, 0.062, 1.0)),
-        "scale": material("MIRE_Ward_Scale_Reference", (0.18, 0.50, 0.78, 1.0)),
+        # Shared palette. The Ward's teal is the counter-signal to the Mire's
+        # purple; both hues are reserved and neither is spent on decoration.
+        "stone": mat("ward_stone"),
+        "stone_dark": mat("ward_stone_dark"),
+        "slate": mat("ward_slate"),
+        "wood": mat("wood_timber_light"),
+        "wood_dark": mat("wood_timber"),
+        "bronze": mat("brass"),
+        "bronze_dark": mat("brass_dark"),
+        "crystal": mat("ward_crystal"),
+        "crystal_light": mat("ward_crystal_light"),
+        "crystal_dim": mat("ward_crystal_dim"),
+        "ward_glow": mat("ward_glow"),
+        "ward_dim": mat("ward_glow_dim"),
+        "ward_dead": mat("ward_dead"),
+        "critical_glow": mat("critical"),
+        "critical_light": mat("critical_light"),
+        "crack": mat("coal"),
+        "ground": mat("preview_ground"),
+        "scale": mat("reference_blue"),
     }
 
     foundation_anchor = ("Ward_Foundation_",)

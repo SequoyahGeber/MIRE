@@ -158,6 +158,10 @@ PALETTE: dict[str, Swatch] = {
     "flesh_cooked": Swatch("#A56540", 0.86, note="cooked meat; browner and darker than raw"),
     "flesh_charred": Swatch("#4E3628", 0.92, note="seared edges on cooked food"),
     "leather": Swatch("#B58655", 0.90, note="ONE leather: grips, pouches, hides, straps"),
+    "leather_dark": Swatch("#86613C", 0.92, note="shadowed leather, straps and welts"),
+    "cloth_dark": Swatch("#AD9E76", 0.95, note="sackcloth in shadow"),
+    "canvas": Swatch("#86AA9E", 0.95, note="sage tarpaulin and pack canvas"),
+    "canvas_dark": Swatch("#65867E", 0.96, note="canvas in shadow"),
     "cloth": Swatch("#C2AE8C", 0.95),
     "cloth_red": Swatch("#C1503F", 0.93, note="the only red textile"),
     "rope": Swatch("#DABD65", 0.95),
@@ -172,10 +176,27 @@ PALETTE: dict[str, Swatch] = {
     "mire_glow": Swatch("#3A1C4E", 0.60, 0.0, "#A03CE6", 2.0, note="emissive corruption veins"),
     "crystal": Swatch("#8E50BF", 0.34, 0.0, "#8A34E0", 1.8, note="mire crystal body"),
     "crystal_tip": Swatch("#C47CF1", 0.24, 0.0, "#B14EFF", 2.4, note="crystal highlights"),
-    # -- ward (teal answers the mire) ---------------------------------------
-    "ward_stone": Swatch("#4C5A5E", 0.92, note="ward masonry, cooler than world stone"),
-    "ward_glow": Swatch("#1E5A54", 0.40, 0.0, "#3CE0C8", 2.2, note="healthy ward emissive"),
-    "ward_crystal": Swatch("#2A7A72", 0.28, 0.0, "#5CF0D8", 2.6),
+    # -- ward: teal is the answer to the Mire's purple, and is reserved ---
+    "ward_stone": Swatch("#A2AAA6", 0.94, 0.00),
+    "ward_stone_dark": Swatch("#6C7979", 0.95, 0.00),
+    "ward_slate": Swatch("#596C73", 0.90, 0.00),
+    "ward_crystal": Swatch("#45CED6", 0.22, 0.05, "#3FDDE7", 2.2),
+    "ward_crystal_light": Swatch("#90F6F1", 0.18, 0.02, "#76FFF3", 3.0),
+    "ward_crystal_dim": Swatch("#6FADB1", 0.38, 0.00, "#50A6AD", 0.8),
+    "ward_glow": Swatch("#7CEFE5", 0.20, 0.00, "#61FFEA", 3.4),
+    "ward_glow_dim": Swatch("#59A6A2", 0.34, 0.00, "#459E97", 0.8),
+    "ward_dead": Swatch("#4D5555", 0.72, 0.00),
+    "critical": Swatch("#F17661", 0.30, 0.00, "#FF5030", 2.5),
+    "critical_light": Swatch("#FFB850", 0.22, 0.00, "#FF8B30", 3.0),
+    "brass_dark": Swatch("#957645", 0.48, 0.52),
+    # -- wellspring corruption states: the objective's own language, read
+    #    left to right as clear -> split -> corrupted --------------------
+    "mire_metal": Swatch("#6F4D7C", 0.52, 0.34, note="corrupted metal fittings"),
+    "mire_dormant": Swatch("#796F76", 0.92, 0.00, note="roots gone quiet; neither clear nor corrupt"),
+    "mire_liquid": Swatch("#794297", 0.16, 0.00, "#AA45CE", 1.8, note="corrupted Wellspring water"),
+    "clear_liquid": Swatch("#3FBCBA", 0.14, 0.00, "#45DDD4", 1.7, note="cleansed Wellspring water"),
+    "split_glow": Swatch("#86AAB8", 0.26, 0.00, "#9E8BCB", 1.6, note="re-corrupting: teal losing to purple"),
+    "split_liquid": Swatch("#867CAA", 0.18, 0.00, "#9981C4", 1.4, note="water mid-turn between the two"),
     # -- fire and accents ---------------------------------------------------
     "ember": Swatch("#E06A22", 0.60, 0.0, "#FF6A18", 1.7, note="outer flame / hot coals"),
     "flame": Swatch("#F2A03C", 0.50, 0.0, "#FFB03A", 2.5, note="flame core; brighter than ember, still coloured"),
@@ -362,6 +383,14 @@ def box(
     rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
     bevel: float = 0.0,
 ) -> bpy.types.Object:
+    """A cube. ``bevel`` > 0 applies a one-segment bevel modifier.
+
+    Beware the bevel on families that must rebuild byte-identically:
+    ``build_ward_set.py`` found Blender's bevel modifier changing four float
+    bytes between otherwise identical background exports on Apple Silicon, so it
+    overrides this function with a bevel-free version. If a family's contract
+    includes a deterministic rebuild, check that before turning bevels on.
+    """
     bpy.ops.mesh.primitive_cube_add(location=location, rotation=rotation)
     obj = bpy.context.object
     obj.name = name
