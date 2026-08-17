@@ -146,6 +146,78 @@ than 12%. It caught five drifts on the first rebuild. Small items are made legib
 rather than inflation: the coin pickup is a spill of five true-size 26 mm coins, the berry pickup a
 handful of seven.
 
+### Pick palette values from base colour, never from a render
+
+The first cut of `mire_art.PALETTE` was authored by eyeballing hex values against
+the existing preview renders. Every one of them came out 25-40% too dark, because
+a preview has AgX tone mapping applied on top — matching the *rendered* look means
+the base colour gets darkened twice, once by you and once by the renderer. `iron`
+should be `#95A6AC`; it was set to `#4A555C`. The icon contact sheet is what
+exposed it: the cleaver, skewer, iron pickaxe and iron sword all read as
+near-black silhouettes on the dark hotbar.
+
+All 53 tokens were re-anchored by converting the shipped art's own linear base
+colours to sRGB, so the palette inherits brightness that was already tuned to read
+in-game while still collapsing seven browns and four greys down to one each. If
+you add a token, take its value from a base colour, and check it on the icon sheet
+rather than in a lit preview.
+
+### Migration status (2.1j)
+
+Five of twelve generators are on the shared palette. The order below is by how much
+of the screen each family occupies during the M2 playtest.
+
+| Generator | State | Notes |
+|---|---|---|
+| `build_pickup_kit.py` | **full** | palette + primitives + true scale + all-round detail |
+| `build_tool_weapon_set.py` | **full** | palette + primitives; 185 helper lines deleted, zero dimension change |
+| `build_crafting_stations.py` | palette | primitives left local |
+| `build_mire_map_kit.py` | palette | + fallen logs rebuilt all-round |
+| `build_harvestable_resources.py` | palette | |
+| `build_loot_set.py` | not started | |
+| `build_ward_set.py` | not started | teal is reserved for these |
+| `build_wellspring_set.py` | not started | |
+| `build_enemy_crawler.py` | not started | rigged; check deform after any change |
+| `build_adapted_nature_set.py` | not started | |
+| `build_playtest_map.py` | n/a | imports shipped GLBs; just rebuild it |
+| `build_playtest_hollow.py` | n/a | imports shipped GLBs; just rebuild it |
+
+**Only swap the geometry primitives when the local ones match.** `mire_art`'s
+`cylinder_between` uses 8 vertices and a 0.94 end taper. `build_mire_map_kit.py`
+uses 7 and no taper; `build_harvestable_resources.py` tapers to 0.82. Swapping
+those would reshape every asset in the kit, and the environment and harvestable
+families are placed in both authored maps. Migrate the palette, leave the
+primitives, and prove it with a catalog dimension diff — colour-only migrations
+must show zero dimension changes.
+
+**`world_bounds` must flush the depsgraph before measuring.** Assigning
+`obj.location` does not refresh `matrix_world`, so measuring without
+`bpy.context.view_layer.update()` reads the object where it was *before* the
+builder moved it. This is silent: the asset still exports, just mis-measured and
+mis-grounded. It cost the woodcutting block 0.31 m of height and only a catalog
+diff noticed. `mire_art.world_bounds` now does it for every caller.
+
+**`around()` defaults to `axis="z"`.** For anything whose long axis is X — a log,
+a haft, a beam — pass `axis="x"` or the "radial" spread fans out horizontally and
+the asset ends up just as flat as the one-sided version you were fixing. And bias
+the spread off the underside: a branch aimed straight down jacks the whole asset
+up onto it when `create_asset` grounds it.
+
+### Rebuild order after touching the palette
+
+`mire_art.PALETTE` is upstream of everything. After changing a token:
+
+1. Rebuild every migrated generator.
+2. `render_item_icons.py` — icons are rendered from the shipped GLBs and go stale.
+3. `build_playtest_map.py` and `build_playtest_hollow.py` — both import the
+   shipped GLBs at build time, so the authored maps keep the old art until rebuilt.
+4. `agent godot --script tools/item_icons_check.gd`, `playtest_hollow_check.gd`,
+   `playtest_map_check.gd`.
+
+Godot caches glTF imports, and a check run immediately after a rebuild can report
+the *previous* import. A hollow visual count that jumps with no change in GLB bytes
+or per-asset part counts is that cache, not your geometry — re-run to confirm.
+
 ### One palette, one set of primitives
 
 `tools/blender/mire_art.py` is now the shared art library and generators must draw from it.
