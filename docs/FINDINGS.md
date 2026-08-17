@@ -450,6 +450,71 @@ hides the race rather than removing it.
 
 ## Resolved
 
+### F-039 · A-006's crawler faces +Z, but its generator, catalog and docs all say -Z — **fixed**
+
+**Area:** assets/gameplay · **Severity:** medium · **Found:** 2026-08-17 by dusk3 from Sequoyah's playtest
+
+Sequoyah: *"they come after me but they walk backwards and when they attack they're facing away"*.
+Both symptoms are one bug, and it is not in the AI.
+
+`tools/blender/build_enemy_crawler.py:82` says *"Forward is -Y in Blender, which becomes -Z after the
+exporter's +Y-up conversion"*, `assets/enemies/README.md:65` repeats it, and
+`DELEGATION.md` states *"facing -Z"*. `Enemy._face()` was written against that and is correct for it:
+`atan2(-flat.x, -flat.z)` is exactly the yaw that points a node's -Z at a target.
+
+The asset does not agree. Rendered at yaw 0 from both sides (`tools/enemy_facing_check.gd`), the **+Z
+side shows two glowing eyes and mandibles** and the -Z side shows the abdomen. So the model's front
+is +Z, the code points its back at the player, and a crawler chasing you arrives rear-first.
+
+**Worked around, not fixed:** `EnemyDef.model_yaw_offset_degrees` rotates the visual only, and the
+crawler is set to 180. That corrects presentation without touching an asset other things may already
+be placed against, and it is a real knob any future enemy with a different export convention needs.
+
+**The actual fix is an asset one** and belongs with whoever next rebuilds A-006: either rotate the
+model 180° in `build_enemy_crawler.py` so the export matches its own stated convention, or change the
+three places that claim -Z. Doing the first means re-checking the nest prop and the two fragment
+meshes, which is why it is not done here. Whoever does it must also reset the yaw offset to 0.
+
+---
+
+**Resolved:** 2026-08-17 by dusk3 · worked around; the asset fix is still owed
+
+`EnemyDef.model_yaw_offset_degrees` rotates the visual only, and `content/enemies/crawler.tres` is
+set to 180. Verified by rendering a real spawned crawler, turned by the real `_face()` toward a real
+player, from the player's own eye position: it now shows its eyes and mandibles instead of its
+abdomen (`tools/enemy_facing_check.gd`, `/tmp/mire_crawler_facing_player.png`).
+
+Closing this because the symptom is gone and the knob is one a second enemy would have needed
+anyway. **The asset half is not done and is recorded above**: three places still document a facing
+the export does not have, and whoever rebuilds A-006 should make them agree and reset the offset.
+
+### F-040 · A dead enemy falls through the world — **fixed**
+
+**Area:** gameplay · **Severity:** medium · **Found:** 2026-08-17 by dusk3 from Sequoyah's playtest
+
+Sequoyah: *"they die after a few hits and fall through the ground"*.
+
+`Enemy._enter_death()` disabled **every** `CollisionShape3D` on the body so a corpse would not block
+the player. But an `Enemy` is a `CharacterBody3D` that keeps applying gravity through `_tick_corpse`,
+and a body with no shape has no floor to stand on — so it accelerates through the terrain for the
+whole `corpse_seconds` window, in full view.
+
+Fixed by zeroing `collision_layer` instead of disabling shapes: nothing detects or collides *with* a
+corpse, but its `collision_mask` still finds the ground, so it lands where it died. The layer is
+restored on respawn — enemies are pooled by nothing today, but leaving a one-way door in state that
+is meant to be reusable is how the next bug gets written.
+
+---
+
+**Resolved:** 2026-08-17 by dusk3 · fixed
+
+`collision_layer = 0` on death instead of disabling every `CollisionShape3D`. The corpse keeps its
+`collision_mask`, so it still finds the ground and lands where it died, while nothing detects or
+collides with it. The alive layer is stored at `_ready` and restored on respawn.
+
+Verified by `tools/enemy_check.gd` (44 assertions, 0 failures), which already covers death and the
+corpse window.
+
 ### F-032 · Auto-rejoin assigns a new peer id, so peer-keyed gameplay state cannot follow it — **fixed**
 
 **Area:** multiplayer/gameplay state · **Severity:** high · **Found:** 2026-08-16 by nettle during 2.4
