@@ -1613,9 +1613,9 @@
       "task": "2.1g"
     },
     "docs/DELEGATION.md": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:48:54+00:00",
-      "task": "2.4"
+      "agent": "dusk3",
+      "at": "2026-08-17T02:30:40+00:00",
+      "task": "2.5"
     },
     "docs/DESIGN.md": {
       "agent": "kiln",
@@ -1628,9 +1628,9 @@
       "task": "2.4"
     },
     "docs/NEXT.md": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:48:54+00:00",
-      "task": "2.4"
+      "agent": "dusk3",
+      "at": "2026-08-17T02:30:40+00:00",
+      "task": "2.5"
     },
     "docs/ROADMAP.md": {
       "agent": "pike14",
@@ -1648,9 +1648,9 @@
       "task": "4.0b"
     },
     "entities/player/player_controller.gd": {
-      "agent": "hollow",
-      "at": "2026-08-16T22:41:46+00:00",
-      "task": "1.12"
+      "agent": "dusk3",
+      "at": "2026-08-17T02:30:40+00:00",
+      "task": "2.5"
     },
     "levels/playtest_hollow.tscn": {
       "agent": "moss",
@@ -1663,9 +1663,9 @@
       "task": "F-019"
     },
     "project.godot": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:48:54+00:00",
-      "task": "2.4"
+      "agent": "dusk3",
+      "at": "2026-08-17T02:30:40+00:00",
+      "task": "2.5"
     },
     "steam_appid.txt": {
       "agent": "steam",
@@ -1777,11 +1777,6 @@
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
     },
-    "tools/check_determinism_ops.gd": {
-      "agent": "claude",
-      "at": "2026-08-16T02:20:14+00:00",
-      "task": "0.10"
-    },
     "tools/connect_retry_check.gd": {
       "agent": "vane",
       "at": "2026-08-16T22:59:02+00:00",
@@ -1887,6 +1882,26 @@
       "at": "2026-08-17T01:48:54+00:00",
       "task": "2.4"
     },
+    "tools/inventory_ui_check.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:30:40+00:00",
+      "task": "2.5"
+    },
+    "tools/inventory_ui_check.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:30:40+00:00",
+      "task": "2.5"
+    },
+    "tools/inventory_ui_render_check.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:30:40+00:00",
+      "task": "2.5"
+    },
+    "tools/inventory_ui_render_check.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:30:40+00:00",
+      "task": "2.5"
+    },
     "tools/mapgen/hollow_layout.py": {
       "agent": "pike",
       "at": "2026-08-17T01:22:00+00:00",
@@ -1976,6 +1991,16 @@
       "agent": "netui",
       "at": "2026-08-16T08:14:40+00:00",
       "task": "1.10"
+    },
+    "ui/inventory/inventory_ui.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:30:40+00:00",
+      "task": "2.5"
+    },
+    "ui/inventory/inventory_ui.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:30:40+00:00",
+      "task": "2.5"
     },
     "world/environment/foliage_wind.gdshader": {
       "agent": "wick",
@@ -2384,9 +2409,11 @@
       "title": "Inventory system: stacks, add/remove, host-validated. Data layer only."
     },
     "2.5": {
+      "done_at": "2026-08-17T02:30:40+00:00",
+      "done_by": "dusk3",
       "est": "4",
       "milestone": "M2",
-      "status": "todo",
+      "status": "done",
       "tier": "T0",
       "title": "Inventory UI \u2014 grid, drag/drop, hotbar"
     },

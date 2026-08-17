@@ -9,13 +9,17 @@
 
 **Milestone:** M2 · Vertical slice. **M1 closes at 13/14** — 1.12 is deferred, not outstanding
 (D-030). M0 is closed, 10/10.
-**Tasks 2.3 and 2.4 are playable:** `HarvestableDef` plus the host-authoritative `Harvestable` lifecycle
+**Tasks 2.3 through 2.5 are playable:** `HarvestableDef` plus the host-authoritative `Harvestable` lifecycle
 wires the 11 intact tree/stone/iron props in `playtest_hollow`, and each completed harvest now grants
 the validated peer a host-owned inventory stack. Inventory uses 24 stable slots (first eight reserved
 for the hotbar), owner-only revisioned snapshots, explicit request confirmations, and atomic crafting
-transactions. Offline and two-process ENet checks cover grants, stacking, removal, movement,
-overspend rejection, peer isolation and cleanup. The inventory UI is still task 2.5.
-**Last session:** 2026-08-16 — task 1.12 is in progress. All three pinned-engine/GodotSteam
+transactions. The always-visible hotbar and Tab field pack render those snapshots, and drag/drop
+submits host-validated full-stack moves without prediction. Offline and two-process ENet checks cover
+grants, stacking, removal, movement, overspend rejection, peer isolation and cleanup.
+**Last session:** 2026-08-16 — task 2.5 completed. The inventory UI is registered and runs without
+scene wiring; its focused check passed 29 assertions, the existing inventory checks stayed green, and
+Forward+ desktop/narrow screenshots were rendered for visual inspection. Task 2.6 is next.
+The deferred 1.12 evidence remains unchanged: all three pinned-engine/GodotSteam
 preflights passed and a real Mac-hosted Steam lobby reached three peers across macOS, Windows and
 Linux. Code-built remote-player debug capsules made all three spawns visible, and Linux movement
 replicated to the host. A later two-platform rerun proved a fresh `origin/main` Windows client can
@@ -78,10 +82,9 @@ scheduled three-machine session driven by lobby IDs pasted between terminals, on
 (task 6.10), which makes the test cheap.** Everything needed to resume is in
 `docs/STEAM_CROSS_PLATFORM_TEST.md` and will keep.
 
-**The next task is `2.5` — inventory UI: grid, drag/drop and hotbar.** It renders
-`InventoryService.local_slots()`, listens to `local_inventory_changed`, and submits moves through
-`request_move_stack()`. The next T2 code task is `2.6` (crafting), which consumes the atomic
-`host_transaction()` seam; 2.7 adds its UI.
+**The next task is `2.6` — crafting.** It checks recipes, submits a craft request to the host, and
+grants output only after host validation at one workbench. Build it on InventoryService's atomic
+`host_transaction()` seam. Task 2.7 adds the crafting UI; do not mix it into 2.6.
 
 **The exact 2.4 seams:** local UI reads 24 stable slot dictionaries and never mutates the snapshot;
 the first eight are its hotbar. Client remove/move requests carry no peer id and complete through
@@ -125,7 +128,7 @@ none of them needed anything from you in the editor.
 |---|---|---|---|---|
 | 2.3 | Harvestable prop: hit → damage → yield → despawn → respawn, host-authoritative | T2 | done | ✅ |
 | 2.4 | Inventory system: stacks, add/remove, host-validated. Data layer only | T2 | done | ✅ |
-| 2.5 | Inventory UI — grid, drag/drop, hotbar | T0 | you | 4h |
+| 2.5 | Inventory UI — grid, drag/drop, hotbar | T0 | done | ✅ |
 | 2.6 | Crafting: recipe check, craft request → host validates → grants. One station | T2 | agent | 3h |
 | 2.1d | Next `NEXT` asset batch from `docs/ASSET_TRACKER.md` (A-005, loot) | T0 | you | 4h |
 | 1.12 | Cross-platform join test — **deferred to after 6.10**, D-030 | T0 | — | 1.5h |

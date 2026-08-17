@@ -75,6 +75,20 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+**Task 2.5 ships the client-local inventory presentation.** `InventoryUI` is an autoload ordered after
+`InventoryService`. The hotbar always renders stable slots 0–7; Tab opens the full 24-slot field pack,
+and Escape or Tab closes it. Drag/drop sends a full-stack `request_move_stack()` and renders only the
+next authoritative snapshot — there is no optimistic mutation. `operation_confirmed` supplies the
+accepted/rejected status line. Number keys 1–8 and clicking a hotbar cell change the local highlight;
+held-item behavior is deliberately not invented before its gameplay system exists. Item icons render
+when an `ItemDef.icon` exists, with compact names as the current content fallback.
+
+Opening the inventory makes the cursor visible and joins `&"blocks_gameplay_input"`; the local player
+gates movement and jump while any UI owns that group. This does not pause the tree, so a network client
+continues processing. Closing removes the blocker and restores prior mouse capture. The focused check
+is `Godot --headless --path . --script tools/inventory_ui_check.gd`; the rendered desktop and narrow
+proof is `Godot --path . --script tools/inventory_ui_render_check.gd`.
+
 **Task 2.4 ships the host-owned inventory seam that 2.5 and 2.6 build against.** `InventoryService`
 is an autoload after `Registry`, with one 24-slot `InventoryStore` per peer and the first eight slots
 reserved for the hotbar presentation. Slots are stable dictionaries shaped as

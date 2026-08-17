@@ -28,6 +28,7 @@ const DEBUG_AVATAR_COLOURS: Array[Color] = [
 	Color("ffd45a"),
 	Color("55e0cf"),
 ]
+const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
 
 @export_group("Speed")
 ## Base ground speed, metres per second.
@@ -236,9 +237,13 @@ func _apply_gravity(delta: float) -> void:
 
 
 func _apply_horizontal_movement(delta: float) -> void:
-	var input_2d: Vector2 = Input.get_vector(
-		&"move_left", &"move_right", &"move_forward", &"move_back"
-	)
+	# Cursor-owning UI suppresses gameplay input without pausing the simulation. Pausing a multiplayer
+	# client would stall networking and is not a valid UI boundary.
+	var input_2d: Vector2 = Vector2.ZERO
+	if get_tree().get_first_node_in_group(BLOCKING_UI_GROUP) == null:
+		input_2d = Input.get_vector(
+			&"move_left", &"move_right", &"move_forward", &"move_back"
+		)
 	# Body yaw defines the movement basis; the camera only pitches (see player_camera.gd).
 	var wish_dir: Vector3 = (transform.basis * Vector3(input_2d.x, 0.0, input_2d.y)).normalized()
 
@@ -261,6 +266,8 @@ func _apply_horizontal_movement(delta: float) -> void:
 
 
 func _try_jump() -> void:
+	if get_tree().get_first_node_in_group(BLOCKING_UI_GROUP) != null:
+		return
 	var buffered: bool = _time_since_jump_pressed <= jump_buffer_time
 	var grounded_recently: bool = _time_since_grounded <= coyote_time
 	if not (buffered and grounded_recently):
