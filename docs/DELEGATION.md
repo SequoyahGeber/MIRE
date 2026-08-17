@@ -89,6 +89,15 @@ fire meshes are cosmetic placeholders for later client-local VFX. A-005 added te
 the single `NEXT` row in `docs/ASSET_TRACKER.md` — currently A-007, the Ward set — and should use a
 separate generator per family.
 
+**Environmental animation is automatic in `playtest_hollow`.** `world/gen/playtest_hollow.gd`
+creates the client-local `EnvironmentVfx` controller. It discovers grass, fern, reed and sedge mesh
+parts in the authored GLB and applies the shared height-masked wind shader; new placements inherit
+motion without material wiring. It also replaces authored outer/furnace flame placeholders with
+procedural flame, spark and smoke particles plus a flickering local light. None of this carries
+gameplay state or network authority. Verify with
+`Godot --headless --path . --script tools/environment_vfx_check.gd` and visually tune the constants
+in `autoload/environment_vfx.gd` or `world/environment/foliage_wind.gdshader`.
+
 **A-006 is the first rig, and combat code needs three facts from it.** `assets/enemies/exports/`
 holds `enemy_crawler.glb` (skinned, 17 bones, 6 clips) plus static `enemy_crawler_nest`,
 `enemy_crawler_fragment_shell` and `enemy_crawler_fragment_leg`.

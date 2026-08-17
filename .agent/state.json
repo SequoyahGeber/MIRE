@@ -1087,6 +1087,16 @@
       "at": "2026-08-16T19:00:05+00:00",
       "task": "2.1e"
     },
+    "autoload/environment_vfx.gd": {
+      "agent": "wick",
+      "at": "2026-08-17T00:47:21+00:00",
+      "task": "2.1g"
+    },
+    "autoload/environment_vfx.gd.uid": {
+      "agent": "wick",
+      "at": "2026-08-17T00:47:21+00:00",
+      "task": "2.1g"
+    },
     "autoload/net_interp.gd": {
       "agent": "ash",
       "at": "2026-08-16T17:19:51+00:00",
@@ -1183,14 +1193,14 @@
       "task": "2.1d"
     },
     "docs/DECISIONS.md": {
-      "agent": "slate",
-      "at": "2026-08-16T20:11:49+00:00",
-      "task": "4.0b"
+      "agent": "wick",
+      "at": "2026-08-17T00:47:21+00:00",
+      "task": "2.1g"
     },
     "docs/DELEGATION.md": {
-      "agent": "ivy",
-      "at": "2026-08-16T23:19:13+00:00",
-      "task": "1.12"
+      "agent": "wick",
+      "at": "2026-08-17T00:47:21+00:00",
+      "task": "2.1g"
     },
     "docs/DESIGN.md": {
       "agent": "kiln",
@@ -1203,14 +1213,14 @@
       "task": "1.12"
     },
     "docs/NEXT.md": {
-      "agent": "ivy",
-      "at": "2026-08-16T23:19:13+00:00",
-      "task": "1.12"
+      "agent": "wick",
+      "at": "2026-08-17T00:47:21+00:00",
+      "task": "2.1g"
     },
     "docs/ROADMAP.md": {
-      "agent": "reed",
-      "at": "2026-08-16T19:00:05+00:00",
-      "task": "2.1e"
+      "agent": "wick",
+      "at": "2026-08-17T00:47:21+00:00",
+      "task": "2.1g"
     },
     "docs/STEAM_CROSS_PLATFORM_TEST.md": {
       "agent": "ivy",
@@ -1238,9 +1248,9 @@
       "task": "F-019"
     },
     "project.godot": {
-      "agent": "kiln",
-      "at": "2026-08-16T19:27:42+00:00",
-      "task": "F-022"
+      "agent": "wick",
+      "at": "2026-08-17T00:47:21+00:00",
+      "task": "2.1g"
     },
     "steam_appid.txt": {
       "agent": "steam",
@@ -1261,11 +1271,6 @@
       "agent": "claude",
       "at": "2026-08-16T02:59:39+00:00",
       "task": "2.2"
-    },
-    "tools/bench_navbake.gd": {
-      "agent": "nav",
-      "at": "2026-08-16T00:30:42+00:00",
-      "task": "0.8"
     },
     "tools/bench_replication.gd": {
       "agent": "load",
@@ -1326,6 +1331,16 @@
       "agent": "gale",
       "at": "2026-08-16T23:59:35+00:00",
       "task": "2.1d"
+    },
+    "tools/environment_vfx_check.gd": {
+      "agent": "wick",
+      "at": "2026-08-17T00:47:21+00:00",
+      "task": "2.1g"
+    },
+    "tools/environment_vfx_check.gd.uid": {
+      "agent": "wick",
+      "at": "2026-08-17T00:47:21+00:00",
+      "task": "2.1g"
     },
     "tools/handshake_check.gd": {
       "agent": "bram",
@@ -1427,10 +1442,25 @@
       "at": "2026-08-16T08:14:40+00:00",
       "task": "1.10"
     },
-    "world/chunk/nav_bake_probe.gd": {
-      "agent": "nav",
-      "at": "2026-08-16T00:30:42+00:00",
-      "task": "0.8"
+    "world/environment/foliage_wind.gdshader": {
+      "agent": "wick",
+      "at": "2026-08-17T00:47:21+00:00",
+      "task": "2.1g"
+    },
+    "world/environment/foliage_wind.gdshader.uid": {
+      "agent": "wick",
+      "at": "2026-08-17T00:47:21+00:00",
+      "task": "2.1g"
+    },
+    "world/environment/particle_billboard.gdshader": {
+      "agent": "wick",
+      "at": "2026-08-17T00:47:21+00:00",
+      "task": "2.1g"
+    },
+    "world/environment/particle_billboard.gdshader.uid": {
+      "agent": "wick",
+      "at": "2026-08-17T00:47:21+00:00",
+      "task": "2.1g"
     },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "moss",
@@ -1438,9 +1468,9 @@
       "task": "2.1f"
     },
     "world/gen/playtest_hollow.gd": {
-      "agent": "moss",
-      "at": "2026-08-17T00:24:32+00:00",
-      "task": "2.1f"
+      "agent": "wick",
+      "at": "2026-08-17T00:47:21+00:00",
+      "task": "2.1g"
     },
     "world/gen/test_map_props.gd": {
       "agent": "reed",
@@ -1763,6 +1793,15 @@
       "status": "done",
       "tier": "T0",
       "title": "Author `playtest_hollow` \u2014 one shared layout file driving both the Blender visuals and the Godot collision, with elevation, a closed boundary, road clearance, and the loot/pickup/enemy kits placed"
+    },
+    "2.1g": {
+      "done_at": "2026-08-17T00:47:21+00:00",
+      "done_by": "wick",
+      "est": "3",
+      "milestone": "M2",
+      "status": "done",
+      "tier": "T1",
+      "title": "Animate environmental presentation: client-local foliage wind and campfire flame, spark, smoke, and light VFX; scalable and scene-safe"
     },
     "2.2": {
       "done_at": "2026-08-16T02:59:39+00:00",

@@ -781,3 +781,19 @@ Built playtest_hollow from one deterministic JSON layout: 463 props, 26 terrain 
 Files: `world/gen/playtest_hollow.gd`, `world/gen/layouts/playtest_hollow.json`, `levels/playtest_hollow.tscn`, `tools/mapgen/hollow_layout.py`, `tools/blender/build_playtest_hollow.py`, `tools/playtest_hollow_check.gd`, `assets/maps/playtest_hollow.glb`, `assets/maps/README.md`
 
 Commit at time of writing: `c358300`
+
+---
+
+### DONE · 2.1g · wick · 2026-08-17T00:47:21+00:00
+
+**Animate environmental presentation: client-local foliage wind and campfire flame, spark, smoke, and light VFX; scalable and scene-safe**
+
+Client-local environmental animation is live in Playtest Hollow: height-masked shared wind animates grass/fern/reed/sedge meshes; procedural billboard flames, sparks, smoke, and flickering lights replace static fire placeholders. Dedicated check: 1,772 foliage mesh parts, 4 fire sources, 0 failures. Full playtest_hollow_check: 4,102 visual meshes, 463 props, 274 colliders, 0 failures. Forward+ rendered inspection passed at the 120 FPS cap with corrected soft particle shapes; no scene wiring required.
+
+Notes along the way:
+- Environmental animation is client-local per ARCHITECTURE 2.2. Runtime discovery animates authored GLB placements automatically: shared vertex-wind materials plus code-built fire particles/lights; no scene/resource edits required.
+- Rendered Forward+ inspection caught and fixed solid rectangular particle quads. Procedural billboard shader now shapes flame tongues, round sparks, and soft smoke; rendered run held the 120 FPS cap with no shader/runtime errors.
+
+Files: `autoload/environment_vfx.gd`, `world/environment/foliage_wind.gdshader`, `tools/environment_vfx_check.gd`, `project.godot`, `docs/ROADMAP.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`, `world/environment/particle_billboard.gdshader`, `docs/NEXT.md`, `world/gen/playtest_hollow.gd`, `autoload/environment_vfx.gd.uid`, `tools/environment_vfx_check.gd.uid`, `world/environment/foliage_wind.gdshader.uid`, `world/environment/particle_billboard.gdshader.uid`
+
+Commit at time of writing: `9121a9e`

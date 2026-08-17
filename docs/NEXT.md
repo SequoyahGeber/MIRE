@@ -121,6 +121,12 @@ none of them needed anything from you in the editor.
 Tasks 1.6, 1.7, 1.8 and 1.11 are done. Do not reopen any M1 task as a prerequisite for M2 — the
 network spine is finished and 2.3 builds directly on it.
 
+**Playtest Hollow environmental motion is implemented as task 2.1g.** Grass, ferns, reeds and sedges
+receive client-local vertex wind automatically, and authored fire placeholders become procedural
+flame, spark and smoke particles with flickering light. No scene wiring is required; the shared
+layout runtime creates the controller. The dedicated headless check covers 1,772 foliage mesh parts
+and four fire sources, and a Forward+ rendered run held the existing 120 FPS cap on the test Mac.
+
 ---
 
 ## M0 debts — booked as M4 gates, don't lose them

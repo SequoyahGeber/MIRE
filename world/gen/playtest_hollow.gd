@@ -4,6 +4,7 @@ extends Node3D
 ## Visual placement is exported in assets/maps/playtest_hollow.glb; this script never scatters.
 
 const LAYOUT_PATH: String = "res://world/gen/layouts/playtest_hollow.json"
+const ENVIRONMENT_VFX := preload("res://autoload/environment_vfx.gd")
 const ASSET_GROUP: StringName = &"playtest_hollow_asset"
 const COLLIDER_GROUP: StringName = &"playtest_hollow_collider"
 const TERRAIN_GROUP: StringName = &"playtest_hollow_terrain"
@@ -16,6 +17,9 @@ var terrain_body_count: int = 0
 
 
 func _ready() -> void:
+	var environment_vfx := ENVIRONMENT_VFX.new() as Node
+	environment_vfx.name = "EnvironmentVfx"
+	add_child(environment_vfx)
 	build_from_layout()
 
 
