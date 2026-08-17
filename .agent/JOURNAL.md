@@ -769,3 +769,15 @@ Next: A-007 (Ward set) is the single NEXT row and is a state set, so it needs A-
 Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_enemy_crawler.py`, `assets/enemies`, `assets/source/enemy_crawler.blend`, `tools/enemy_crawler_check.gd`, `assets/enemies/README.md`, `assets/enemies/catalog.json`, `assets/enemies/exports`, `assets/enemies/preview`, `assets/enemies/exports/enemy_crawler.glb`, `assets/enemies/exports/enemy_crawler_fragment_leg.glb`, `assets/enemies/exports/enemy_crawler_fragment_shell.glb`, `assets/enemies/exports/enemy_crawler_nest.glb`, `assets/enemies/preview/crawler_pose_sheet.png`, `assets/enemies/preview/enemies_preview.png`, `assets/enemies/preview/enemies_scale_preview.png`
 
 Commit at time of writing: `f77d528`
+
+---
+
+### DONE · 2.1f · ember · 2026-08-17T00:24:32+00:00
+
+**Author `playtest_hollow` — one shared layout file driving both the Blender visuals and the Godot collision, with elevation, a closed boundary, road clearance, and the loot/pickup/enemy kits placed**
+
+Built playtest_hollow from one deterministic JSON layout: 463 props, 26 terrain records, 20 terrain bodies, 254 prop collision shapes, 4102 visual meshes, exact visual/collision origin parity, fresh Godot import, and repeatable Blender/GLB/preview validation.
+
+Files: `world/gen/playtest_hollow.gd`, `world/gen/layouts/playtest_hollow.json`, `levels/playtest_hollow.tscn`, `tools/mapgen/hollow_layout.py`, `tools/blender/build_playtest_hollow.py`, `tools/playtest_hollow_check.gd`, `assets/maps/playtest_hollow.glb`, `assets/maps/README.md`
+
+Commit at time of writing: `c358300`

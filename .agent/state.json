@@ -938,9 +938,14 @@
       "task": "2.1d"
     },
     "assets/maps/README.md": {
-      "agent": "reed",
-      "at": "2026-08-16T19:00:05+00:00",
-      "task": "2.1e"
+      "agent": "moss",
+      "at": "2026-08-17T00:24:32+00:00",
+      "task": "2.1f"
+    },
+    "assets/maps/playtest_hollow.glb": {
+      "agent": "moss",
+      "at": "2026-08-17T00:24:32+00:00",
+      "task": "2.1f"
     },
     "assets/maps/playtest_map.glb": {
       "agent": "reed",
@@ -1222,6 +1227,11 @@
       "at": "2026-08-16T22:41:46+00:00",
       "task": "1.12"
     },
+    "levels/playtest_hollow.tscn": {
+      "agent": "moss",
+      "at": "2026-08-17T00:24:32+00:00",
+      "task": "2.1f"
+    },
     "levels/playtest_map.tscn": {
       "agent": "reed",
       "at": "2026-08-16T19:12:29+00:00",
@@ -1292,6 +1302,11 @@
       "at": "2026-08-16T18:40:55+00:00",
       "task": "2.1d"
     },
+    "tools/blender/build_playtest_hollow.py": {
+      "agent": "moss",
+      "at": "2026-08-17T00:24:32+00:00",
+      "task": "2.1f"
+    },
     "tools/blender/build_playtest_map.py": {
       "agent": "reed",
       "at": "2026-08-16T19:00:05+00:00",
@@ -1342,10 +1357,20 @@
       "at": "2026-08-16T19:12:29+00:00",
       "task": "F-019"
     },
+    "tools/mapgen/hollow_layout.py": {
+      "agent": "moss",
+      "at": "2026-08-17T00:24:32+00:00",
+      "task": "2.1f"
+    },
     "tools/net_debug_panel_check.gd": {
       "agent": "netui",
       "at": "2026-08-16T08:14:40+00:00",
       "task": "1.10"
+    },
+    "tools/playtest_hollow_check.gd": {
+      "agent": "moss",
+      "at": "2026-08-17T00:24:32+00:00",
+      "task": "2.1f"
     },
     "tools/playtest_map_check.gd": {
       "agent": "reed",
@@ -1406,6 +1431,16 @@
       "agent": "nav",
       "at": "2026-08-16T00:30:42+00:00",
       "task": "0.8"
+    },
+    "world/gen/layouts/playtest_hollow.json": {
+      "agent": "moss",
+      "at": "2026-08-17T00:24:32+00:00",
+      "task": "2.1f"
+    },
+    "world/gen/playtest_hollow.gd": {
+      "agent": "moss",
+      "at": "2026-08-17T00:24:32+00:00",
+      "task": "2.1f"
     },
     "world/gen/test_map_props.gd": {
       "agent": "reed",
@@ -1719,6 +1754,15 @@
       "status": "done",
       "tier": "T0",
       "title": "Replace the runtime-scattered playtest visuals with an authored Blender map asset, incorporating harvestables and crafting stations"
+    },
+    "2.1f": {
+      "done_at": "2026-08-17T00:24:32+00:00",
+      "done_by": "ember",
+      "est": "6",
+      "milestone": "M2",
+      "status": "done",
+      "tier": "T0",
+      "title": "Author `playtest_hollow` \u2014 one shared layout file driving both the Blender visuals and the Godot collision, with elevation, a closed boundary, road clearance, and the loot/pickup/enemy kits placed"
     },
     "2.2": {
       "done_at": "2026-08-16T02:59:39+00:00",

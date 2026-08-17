@@ -123,6 +123,19 @@ while future harvesting, construction, damage, or map mutation stays host-author
 with Blender 5.2 using `tools/blender/build_playtest_map.py`; verify with `Godot --headless --path .
 --script tools/playtest_map_check.gd`.
 
+**`playtest_hollow` is the larger replacement playtest level from 2.1f.** Open
+`levels/playtest_hollow.tscn` directly; the project default remains the older greybox until Sequoyah
+chooses to switch it after an editor playtest. Its 463 prop placements and 26 terrain records live in
+the single deterministic `world/gen/layouts/playtest_hollow.json`. Blender consumes that file to
+produce `assets/source/playtest_hollow.blend`, the 4,102-mesh `assets/maps/playtest_hollow.glb`, and
+its preview; `world/gen/playtest_hollow.gd` consumes the same records to create 20 terrain bodies and
+254 prop collision shapes. The new scene has six zones, a four-gate camp, clear roads, a lowered Mire
+basin, two ridge terraces, five traversable ramps, a closed boundary, loot/pickup/tool placements, and
+the crawler nest marker. Rebuild with `tools/mapgen/hollow_layout.py` then
+`tools/blender/build_playtest_hollow.py`; verify with `tools/playtest_hollow_check.gd`. Static map
+collision remains client-local; harvesting, inventory, loot, enemies, damage, and mutation remain
+host-authoritative.
+
 **1.5, 1.9 and 1.10 shipped earlier** (`8d6ddab`, `ef1bc16`, `4f17bcd`), and 1.10 is now actually
 *wired* (`9f56451`). **1.6, 1.7, 1.8 and 1.11 are now implemented and headlessly verified** — read
 the table and the per-task sections below rather than assuming a clean slate. The only remaining M1

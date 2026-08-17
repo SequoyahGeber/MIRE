@@ -1,0 +1,10277 @@
+{
+ "id": "playtest_hollow",
+ "seed": 20260817,
+ "bound": 34.0,
+ "zones": [
+  "SpawnCamp",
+  "WestForest",
+  "NorthRuins",
+  "EastMire",
+  "SouthRidge",
+  "RoutesAndBoundary"
+ ],
+ "materials": {
+  "ground": {
+   "color": [
+    0.085,
+    0.17,
+    0.075,
+    1.0
+   ],
+   "roughness": 0.98
+  },
+  "path": {
+   "color": [
+    0.205,
+    0.15,
+    0.085,
+    1.0
+   ],
+   "roughness": 1.0
+  },
+  "mud": {
+   "color": [
+    0.13,
+    0.115,
+    0.155,
+    1.0
+   ],
+   "roughness": 0.72
+  },
+  "rock": {
+   "color": [
+    0.155,
+    0.16,
+    0.175,
+    1.0
+   ],
+   "roughness": 0.95
+  },
+  "ridge": {
+   "color": [
+    0.115,
+    0.15,
+    0.085,
+    1.0
+   ],
+   "roughness": 0.97
+  },
+  "timber": {
+   "color": [
+    0.22,
+    0.145,
+    0.08,
+    1.0
+   ],
+   "roughness": 0.9
+  }
+ },
+ "spawn": {
+  "pos": [
+   0.0,
+   0.2,
+   7.4
+  ],
+  "yaw": 0.0
+ },
+ "terrain": [
+  {
+   "name": "Ground_Main",
+   "zone": "RoutesAndBoundary",
+   "mat": "ground",
+   "pos": [
+    -9.5,
+    -0.6,
+    0.0
+   ],
+   "size": [
+    49.0,
+    1.2,
+    68.0
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Ground_MireNorth",
+   "zone": "RoutesAndBoundary",
+   "mat": "ground",
+   "pos": [
+    24.5,
+    -0.6,
+    -23.5
+   ],
+   "size": [
+    19.0,
+    1.2,
+    21.0
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Ground_MireSouth",
+   "zone": "RoutesAndBoundary",
+   "mat": "ground",
+   "pos": [
+    24.5,
+    -0.6,
+    23.5
+   ],
+   "size": [
+    19.0,
+    1.2,
+    21.0
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Ground_MireEast",
+   "zone": "RoutesAndBoundary",
+   "mat": "ground",
+   "pos": [
+    32.5,
+    -0.6,
+    0.0
+   ],
+   "size": [
+    3.0,
+    1.2,
+    26.0
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Mire_BasinFloor",
+   "zone": "EastMire",
+   "mat": "mud",
+   "pos": [
+    23.0,
+    -1.2,
+    0.0
+   ],
+   "size": [
+    16.0,
+    1.0,
+    26.0
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Mire_BankWest",
+   "zone": "EastMire",
+   "mat": "mud",
+   "pos": [
+    16.7,
+    -0.596,
+    0.0
+   ],
+   "size": [
+    3.864,
+    0.5,
+    26.0
+   ],
+   "tilt": -0.182168,
+   "axis": "z",
+   "collide": true
+  },
+  {
+   "name": "Mire_BankEast",
+   "zone": "EastMire",
+   "mat": "mud",
+   "pos": [
+    29.3,
+    -0.596,
+    0.0
+   ],
+   "size": [
+    3.864,
+    0.5,
+    26.0
+   ],
+   "tilt": 0.182168,
+   "axis": "z",
+   "collide": true
+  },
+  {
+   "name": "Mire_BankNorth",
+   "zone": "EastMire",
+   "mat": "mud",
+   "pos": [
+    23.0,
+    -0.596,
+    -11.3
+   ],
+   "size": [
+    16.0,
+    0.5,
+    3.864
+   ],
+   "tilt": 0.182168,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Mire_BankSouth",
+   "zone": "EastMire",
+   "mat": "mud",
+   "pos": [
+    23.0,
+    -0.596,
+    11.3
+   ],
+   "size": [
+    16.0,
+    0.5,
+    3.864
+   ],
+   "tilt": -0.182168,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Ridge_Tier1",
+   "zone": "SouthRidge",
+   "mat": "ridge",
+   "pos": [
+    1.0,
+    0.4,
+    27.5
+   ],
+   "size": [
+    42.0,
+    1.6,
+    13.0
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Ridge_Tier2",
+   "zone": "SouthRidge",
+   "mat": "ridge",
+   "pos": [
+    10.0,
+    1.8,
+    30.0
+   ],
+   "size": [
+    16.0,
+    2.0,
+    8.0
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Ridge_Ramp1",
+   "zone": "SouthRidge",
+   "mat": "ridge",
+   "pos": [
+    0.0,
+    0.358,
+    18.85
+   ],
+   "size": [
+    8.0,
+    0.5,
+    4.851
+   ],
+   "tilt": -0.249979,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Ridge_Ramp2",
+   "zone": "SouthRidge",
+   "mat": "ridge",
+   "pos": [
+    10.0,
+    1.764,
+    23.9
+   ],
+   "size": [
+    6.0,
+    0.5,
+    4.87
+   ],
+   "tilt": -0.334737,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Ruins_ForgeRamp",
+   "zone": "NorthRuins",
+   "mat": "rock",
+   "pos": [
+    9.2,
+    0.237,
+    -28.0
+   ],
+   "size": [
+    4.114,
+    0.5,
+    3.4
+   ],
+   "tilt": 0.235545,
+   "axis": "z",
+   "collide": true
+  },
+  {
+   "name": "Camp_CabinRamp",
+   "zone": "SpawnCamp",
+   "mat": "timber",
+   "pos": [
+    -7.0,
+    0.077,
+    2.3
+   ],
+   "size": [
+    3.2,
+    0.5,
+    2.678
+   ],
+   "tilt": 0.241355,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Camp_WorkshopRamp",
+   "zone": "SpawnCamp",
+   "mat": "timber",
+   "pos": [
+    7.0,
+    0.077,
+    2.3
+   ],
+   "size": [
+    3.2,
+    0.5,
+    2.678
+   ],
+   "tilt": 0.241355,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Wall_North",
+   "zone": "RoutesAndBoundary",
+   "mat": "rock",
+   "pos": [
+    0.0,
+    2.4,
+    -35.5
+   ],
+   "size": [
+    74.0,
+    7.2,
+    3.0
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Wall_South",
+   "zone": "RoutesAndBoundary",
+   "mat": "rock",
+   "pos": [
+    0.0,
+    2.4,
+    35.5
+   ],
+   "size": [
+    74.0,
+    7.2,
+    3.0
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Wall_West",
+   "zone": "RoutesAndBoundary",
+   "mat": "rock",
+   "pos": [
+    -35.5,
+    2.4,
+    0.0
+   ],
+   "size": [
+    3.0,
+    7.2,
+    68.0
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Wall_East",
+   "zone": "RoutesAndBoundary",
+   "mat": "rock",
+   "pos": [
+    35.5,
+    2.4,
+    0.0
+   ],
+   "size": [
+    3.0,
+    7.2,
+    68.0
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": true
+  },
+  {
+   "name": "Road_North",
+   "zone": "RoutesAndBoundary",
+   "mat": "path",
+   "pos": [
+    0.0,
+    0.0,
+    -17.3
+   ],
+   "size": [
+    6.0,
+    0.06,
+    17.4
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": false
+  },
+  {
+   "name": "Road_South",
+   "zone": "RoutesAndBoundary",
+   "mat": "path",
+   "pos": [
+    0.0,
+    0.0,
+    16.9
+   ],
+   "size": [
+    6.0,
+    0.06,
+    8.2
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": false
+  },
+  {
+   "name": "Road_West",
+   "zone": "RoutesAndBoundary",
+   "mat": "path",
+   "pos": [
+    -13.85,
+    0.0,
+    2.0
+   ],
+   "size": [
+    6.3,
+    0.06,
+    6.0
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": false
+  },
+  {
+   "name": "Road_East",
+   "zone": "RoutesAndBoundary",
+   "mat": "path",
+   "pos": [
+    13.85,
+    0.0,
+    2.0
+   ],
+   "size": [
+    6.3,
+    0.06,
+    6.0
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": false
+  },
+  {
+   "name": "Camp_Plaza",
+   "zone": "SpawnCamp",
+   "mat": "path",
+   "pos": [
+    0.0,
+    0.0,
+    2.5
+   ],
+   "size": [
+    8.0,
+    0.06,
+    8.0
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": false
+  },
+  {
+   "name": "Ruins_Court",
+   "zone": "NorthRuins",
+   "mat": "path",
+   "pos": [
+    0.0,
+    0.0,
+    -29.0
+   ],
+   "size": [
+    18.0,
+    0.06,
+    10.0
+   ],
+   "tilt": 0.0,
+   "axis": "x",
+   "collide": false
+  }
+ ],
+ "props": [
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -8.6,
+    0.0,
+    -8.6
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -8.6,
+    0.0,
+    12.8
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -4.3,
+    0.0,
+    -8.6
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -4.3,
+    0.0,
+    12.8
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    4.3,
+    0.0,
+    -8.6
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    4.3,
+    0.0,
+    12.8
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    8.6,
+    0.0,
+    -8.6
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    8.6,
+    0.0,
+    12.8
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -10.7,
+    0.0,
+    -6.5
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    10.7,
+    0.0,
+    -6.5
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -10.7,
+    0.0,
+    -2.2
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    10.7,
+    0.0,
+    -2.2
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -10.7,
+    0.0,
+    6.4
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    10.7,
+    0.0,
+    6.4
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -10.7,
+    0.0,
+    10.7
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_straight",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    10.7,
+    0.0,
+    10.7
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.24,
+      1.56,
+      0.28
+     ],
+     "off": [
+      0.0,
+      0.78,
+      0.0
+     ]
+    }
+   ],
+   "note": "perimeter",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_gate",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    0.0,
+    0.0,
+    -8.6
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.3,
+      1.84,
+      1.232
+     ],
+     "off": [
+      0.0,
+      0.92,
+      0.0
+     ]
+    }
+   ],
+   "note": "gate:north",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_gate",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    0.0,
+    0.0,
+    12.8
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.3,
+      1.84,
+      1.232
+     ],
+     "off": [
+      0.0,
+      0.92,
+      0.0
+     ]
+    }
+   ],
+   "note": "gate:south",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_gate",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -10.7,
+    0.0,
+    2.1
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.3,
+      1.84,
+      1.232
+     ],
+     "off": [
+      0.0,
+      0.92,
+      0.0
+     ]
+    }
+   ],
+   "note": "gate:west",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_gate",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    10.7,
+    0.0,
+    2.1
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.3,
+      1.84,
+      1.232
+     ],
+     "off": [
+      0.0,
+      0.92,
+      0.0
+     ]
+    }
+   ],
+   "note": "gate:east",
+   "road_ok": true
+  },
+  {
+   "asset": "fence_post",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -10.7,
+    0.0,
+    -8.6
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.56,
+      2.18,
+      0.56
+     ],
+     "off": [
+      0.0,
+      1.09,
+      0.0
+     ]
+    }
+   ],
+   "note": "corner"
+  },
+  {
+   "asset": "fence_post",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    10.7,
+    0.0,
+    -8.6
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.56,
+      2.18,
+      0.56
+     ],
+     "off": [
+      0.0,
+      1.09,
+      0.0
+     ]
+    }
+   ],
+   "note": "corner"
+  },
+  {
+   "asset": "fence_post",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -10.7,
+    0.0,
+    12.8
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.56,
+      2.18,
+      0.56
+     ],
+     "off": [
+      0.0,
+      1.09,
+      0.0
+     ]
+    }
+   ],
+   "note": "corner"
+  },
+  {
+   "asset": "fence_post",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    10.7,
+    0.0,
+    12.8
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.56,
+      2.18,
+      0.56
+     ],
+     "off": [
+      0.0,
+      1.09,
+      0.0
+     ]
+    }
+   ],
+   "note": "corner"
+  },
+  {
+   "asset": "station_campfire",
+   "kit": "crafting_stations",
+   "zone": "SpawnCamp",
+   "pos": [
+    0.0,
+    0.0,
+    2.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.602,
+      1.294,
+      1.602
+     ],
+     "off": [
+      0.0,
+      0.647,
+      0.0
+     ]
+    }
+   ],
+   "note": "hearth"
+  },
+  {
+   "asset": "station_cooking_spit",
+   "kit": "crafting_stations",
+   "zone": "SpawnCamp",
+   "pos": [
+    3.3,
+    0.0,
+    4.3
+   ],
+   "yaw": -2.2,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.292,
+      1.759,
+      1.602
+     ],
+     "off": [
+      0.0,
+      0.879,
+      0.0
+     ]
+    }
+   ],
+   "note": "hearth"
+  },
+  {
+   "asset": "station_woodcutting_block",
+   "kit": "crafting_stations",
+   "zone": "SpawnCamp",
+   "pos": [
+    -3.5,
+    0.0,
+    4.4
+   ],
+   "yaw": 2.5,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.063,
+      1.164,
+      1.24
+     ],
+     "off": [
+      0.0,
+      0.582,
+      0.0
+     ]
+    }
+   ],
+   "note": "hearth"
+  },
+  {
+   "asset": "wood_foundation",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -7.0,
+    0.0,
+    -5.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.0,
+      0.4,
+      4.0
+     ],
+     "off": [
+      0.0,
+      0.2,
+      0.0
+     ]
+    }
+   ],
+   "note": "cabin"
+  },
+  {
+   "asset": "wood_floor",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -7.0,
+    0.4,
+    -5.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      3.96,
+      0.24,
+      3.96
+     ],
+     "off": [
+      0.0,
+      0.12,
+      0.0
+     ]
+    }
+   ],
+   "note": "cabin",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_foundation",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -7.0,
+    0.0,
+    -1.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.0,
+      0.4,
+      4.0
+     ],
+     "off": [
+      0.0,
+      0.2,
+      0.0
+     ]
+    }
+   ],
+   "note": "cabin"
+  },
+  {
+   "asset": "wood_floor",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -7.0,
+    0.4,
+    -1.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      3.96,
+      0.24,
+      3.96
+     ],
+     "off": [
+      0.0,
+      0.12,
+      0.0
+     ]
+    }
+   ],
+   "note": "cabin",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_wall_solid",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -7.0,
+    0.64,
+    -7.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.2,
+      3.0,
+      0.4
+     ],
+     "off": [
+      0.0,
+      1.5,
+      0.0
+     ]
+    }
+   ],
+   "note": "cabin",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_wall_window",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -9.0,
+    0.64,
+    -5.0
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.05,
+      3.0,
+      0.44
+     ],
+     "off": [
+      -1.48,
+      1.5,
+      0.0
+     ]
+    },
+    {
+     "t": "box",
+     "size": [
+      1.05,
+      3.0,
+      0.44
+     ],
+     "off": [
+      1.48,
+      1.5,
+      0.0
+     ]
+    },
+    {
+     "t": "box",
+     "size": [
+      1.95,
+      0.86,
+      0.44
+     ],
+     "off": [
+      0.0,
+      0.43,
+      0.0
+     ]
+    },
+    {
+     "t": "box",
+     "size": [
+      1.95,
+      0.52,
+      0.44
+     ],
+     "off": [
+      0.0,
+      2.74,
+      0.0
+     ]
+    }
+   ],
+   "note": "cabin",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_wall_solid",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -9.0,
+    0.64,
+    -1.0
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.2,
+      3.0,
+      0.4
+     ],
+     "off": [
+      0.0,
+      1.5,
+      0.0
+     ]
+    }
+   ],
+   "note": "cabin",
+   "float_ok": true,
+   "road_ok": true
+  },
+  {
+   "asset": "wood_wall_solid",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -5.0,
+    0.64,
+    -5.0
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.2,
+      3.0,
+      0.4
+     ],
+     "off": [
+      0.0,
+      1.5,
+      0.0
+     ]
+    }
+   ],
+   "note": "cabin",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_wall_window",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -5.0,
+    0.64,
+    -1.0
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.05,
+      3.0,
+      0.44
+     ],
+     "off": [
+      -1.48,
+      1.5,
+      0.0
+     ]
+    },
+    {
+     "t": "box",
+     "size": [
+      1.05,
+      3.0,
+      0.44
+     ],
+     "off": [
+      1.48,
+      1.5,
+      0.0
+     ]
+    },
+    {
+     "t": "box",
+     "size": [
+      1.95,
+      0.86,
+      0.44
+     ],
+     "off": [
+      0.0,
+      0.43,
+      0.0
+     ]
+    },
+    {
+     "t": "box",
+     "size": [
+      1.95,
+      0.52,
+      0.44
+     ],
+     "off": [
+      0.0,
+      2.74,
+      0.0
+     ]
+    }
+   ],
+   "note": "cabin",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_wall_door",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -7.0,
+    0.64,
+    1.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.05,
+      3.0,
+      0.44
+     ],
+     "off": [
+      -1.48,
+      1.5,
+      0.0
+     ]
+    },
+    {
+     "t": "box",
+     "size": [
+      1.05,
+      3.0,
+      0.44
+     ],
+     "off": [
+      1.48,
+      1.5,
+      0.0
+     ]
+    },
+    {
+     "t": "box",
+     "size": [
+      1.95,
+      0.42,
+      0.44
+     ],
+     "off": [
+      0.0,
+      2.79,
+      0.0
+     ]
+    }
+   ],
+   "note": "cabin",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_roof_slope",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -7.0,
+    3.64,
+    -5.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.2,
+      0.35,
+      4.2
+     ],
+     "off": [
+      0.0,
+      1.82,
+      0.0
+     ]
+    }
+   ],
+   "note": "cabin",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_roof_slope",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -7.0,
+    3.64,
+    -1.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.2,
+      0.35,
+      4.2
+     ],
+     "off": [
+      0.0,
+      1.82,
+      0.0
+     ]
+    }
+   ],
+   "note": "cabin",
+   "float_ok": true
+  },
+  {
+   "asset": "loot_chest_small_closed",
+   "kit": "loot",
+   "zone": "SpawnCamp",
+   "pos": [
+    -8.1,
+    0.64,
+    -0.2
+   ],
+   "yaw": 0.35,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.749,
+      0.481,
+      0.486
+     ],
+     "off": [
+      0.0,
+      0.238,
+      0.0
+     ]
+    }
+   ],
+   "note": "cabin",
+   "float_ok": true
+  },
+  {
+   "asset": "loot_player_backpack",
+   "kit": "loot",
+   "zone": "SpawnCamp",
+   "pos": [
+    -8.2,
+    0.64,
+    -3.4
+   ],
+   "yaw": -0.6,
+   "scale": 1.0,
+   "cols": [],
+   "note": "cabin",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_foundation",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    7.0,
+    0.0,
+    -5.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.0,
+      0.4,
+      4.0
+     ],
+     "off": [
+      0.0,
+      0.2,
+      0.0
+     ]
+    }
+   ],
+   "note": "workshop"
+  },
+  {
+   "asset": "wood_floor",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    7.0,
+    0.4,
+    -5.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      3.96,
+      0.24,
+      3.96
+     ],
+     "off": [
+      0.0,
+      0.12,
+      0.0
+     ]
+    }
+   ],
+   "note": "workshop",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_foundation",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    7.0,
+    0.0,
+    -1.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.0,
+      0.4,
+      4.0
+     ],
+     "off": [
+      0.0,
+      0.2,
+      0.0
+     ]
+    }
+   ],
+   "note": "workshop"
+  },
+  {
+   "asset": "wood_floor",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    7.0,
+    0.4,
+    -1.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      3.96,
+      0.24,
+      3.96
+     ],
+     "off": [
+      0.0,
+      0.12,
+      0.0
+     ]
+    }
+   ],
+   "note": "workshop",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_half_wall",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    7.0,
+    0.64,
+    -7.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.2,
+      1.63,
+      0.4
+     ],
+     "off": [
+      0.0,
+      0.815,
+      0.0
+     ]
+    }
+   ],
+   "note": "workshop",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_railing",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    9.0,
+    0.64,
+    -5.0
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.1,
+      1.27,
+      0.24
+     ],
+     "off": [
+      0.0,
+      0.635,
+      0.0
+     ]
+    }
+   ],
+   "note": "workshop",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_railing",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    9.0,
+    0.64,
+    -1.0
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.1,
+      1.27,
+      0.24
+     ],
+     "off": [
+      0.0,
+      0.635,
+      0.0
+     ]
+    }
+   ],
+   "note": "workshop",
+   "float_ok": true,
+   "road_ok": true
+  },
+  {
+   "asset": "wood_post",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    5.3,
+    0.64,
+    -6.7
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.62,
+      3.0,
+      0.62
+     ],
+     "off": [
+      0.0,
+      1.5,
+      0.0
+     ]
+    }
+   ],
+   "note": "workshop",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_post",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    8.7,
+    0.64,
+    -6.7
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.62,
+      3.0,
+      0.62
+     ],
+     "off": [
+      0.0,
+      1.5,
+      0.0
+     ]
+    }
+   ],
+   "note": "workshop",
+   "float_ok": true
+  },
+  {
+   "asset": "station_workbench_primitive",
+   "kit": "crafting_stations",
+   "zone": "SpawnCamp",
+   "pos": [
+    7.0,
+    0.64,
+    -6.2
+   ],
+   "yaw": 3.14159,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.05,
+      1.243,
+      0.869
+     ],
+     "off": [
+      0.0,
+      0.622,
+      0.0
+     ]
+    }
+   ],
+   "note": "workshop",
+   "float_ok": true
+  },
+  {
+   "asset": "station_repair_bench",
+   "kit": "crafting_stations",
+   "zone": "SpawnCamp",
+   "pos": [
+    8.2,
+    0.64,
+    -2.6
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.15,
+      1.603,
+      0.9
+     ],
+     "off": [
+      0.0,
+      0.801,
+      0.0
+     ]
+    }
+   ],
+   "note": "workshop",
+   "float_ok": true
+  },
+  {
+   "asset": "repair_hammer_world",
+   "kit": "tools_weapons",
+   "zone": "SpawnCamp",
+   "pos": [
+    6.2,
+    0.64,
+    -2.4
+   ],
+   "yaw": 1.1,
+   "scale": 1.0,
+   "cols": [],
+   "note": "workshop",
+   "float_ok": true
+  },
+  {
+   "asset": "loot_chest_reinforced_closed",
+   "kit": "loot",
+   "zone": "SpawnCamp",
+   "pos": [
+    -8.4,
+    0.0,
+    7.4
+   ],
+   "yaw": 0.2,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.957,
+      0.602,
+      0.645
+     ],
+     "off": [
+      0.0,
+      0.297,
+      0.0
+     ]
+    }
+   ],
+   "note": "supply"
+  },
+  {
+   "asset": "loot_chest_small_closed",
+   "kit": "loot",
+   "zone": "SpawnCamp",
+   "pos": [
+    -6.9,
+    0.0,
+    8.4
+   ],
+   "yaw": -0.5,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.749,
+      0.481,
+      0.486
+     ],
+     "off": [
+      0.0,
+      0.238,
+      0.0
+     ]
+    }
+   ],
+   "note": "supply"
+  },
+  {
+   "asset": "loot_item_bag",
+   "kit": "loot",
+   "zone": "SpawnCamp",
+   "pos": [
+    -7.9,
+    0.0,
+    9.6
+   ],
+   "yaw": 0.9,
+   "scale": 1.0,
+   "cols": [],
+   "note": "supply"
+  },
+  {
+   "asset": "pickup_log",
+   "kit": "pickups",
+   "zone": "SpawnCamp",
+   "pos": [
+    -5.6,
+    0.0,
+    6.6
+   ],
+   "yaw": 0.4,
+   "scale": 1.0,
+   "cols": [],
+   "note": "supply"
+  },
+  {
+   "asset": "pickup_log",
+   "kit": "pickups",
+   "zone": "SpawnCamp",
+   "pos": [
+    -5.2,
+    0.0,
+    7.7
+   ],
+   "yaw": 1.3,
+   "scale": 1.0,
+   "cols": [],
+   "note": "supply"
+  },
+  {
+   "asset": "pickup_log",
+   "kit": "pickups",
+   "zone": "SpawnCamp",
+   "pos": [
+    -6.3,
+    0.0,
+    9.9
+   ],
+   "yaw": 2.2,
+   "scale": 1.0,
+   "cols": [],
+   "note": "supply"
+  },
+  {
+   "asset": "pickup_stone",
+   "kit": "pickups",
+   "zone": "SpawnCamp",
+   "pos": [
+    -4.6,
+    0.0,
+    9.2
+   ],
+   "yaw": 0.3,
+   "scale": 1.0,
+   "cols": [],
+   "note": "supply"
+  },
+  {
+   "asset": "pickup_fibre_bundle",
+   "kit": "pickups",
+   "zone": "SpawnCamp",
+   "pos": [
+    -4.4,
+    0.0,
+    8.1
+   ],
+   "yaw": -0.8,
+   "scale": 1.0,
+   "cols": [],
+   "note": "supply"
+  },
+  {
+   "asset": "harvest_tree_felled_trunk",
+   "kit": "harvestables",
+   "zone": "SpawnCamp",
+   "pos": [
+    7.4,
+    0.0,
+    8.2
+   ],
+   "yaw": 0.5,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.659,
+      1.507,
+      1.284
+     ],
+     "off": [
+      0.0,
+      0.753,
+      0.0
+     ]
+    }
+   ],
+   "note": "woodcutting"
+  },
+  {
+   "asset": "stump_b",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    5.2,
+    0.0,
+    6.4
+   ],
+   "yaw": 0.9,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.566,
+      1.433,
+      1.258
+     ],
+     "off": [
+      0.0,
+      0.717,
+      0.0
+     ]
+    }
+   ],
+   "note": "woodcutting"
+  },
+  {
+   "asset": "stone_axe_world",
+   "kit": "tools_weapons",
+   "zone": "SpawnCamp",
+   "pos": [
+    5.9,
+    0.0,
+    7.5
+   ],
+   "yaw": -0.4,
+   "scale": 1.0,
+   "cols": [],
+   "note": "woodcutting"
+  },
+  {
+   "asset": "wooden_pickaxe_world",
+   "kit": "tools_weapons",
+   "zone": "SpawnCamp",
+   "pos": [
+    4.6,
+    0.0,
+    9.8
+   ],
+   "yaw": 1.6,
+   "scale": 1.0,
+   "cols": [],
+   "note": "woodcutting"
+  },
+  {
+   "asset": "pickup_branch",
+   "kit": "pickups",
+   "zone": "SpawnCamp",
+   "pos": [
+    8.6,
+    0.0,
+    10.2
+   ],
+   "yaw": 1.2,
+   "scale": 1.0,
+   "cols": [],
+   "note": "woodcutting"
+  },
+  {
+   "asset": "pickup_branch",
+   "kit": "pickups",
+   "zone": "SpawnCamp",
+   "pos": [
+    9.4,
+    0.0,
+    9.0
+   ],
+   "yaw": 1.9,
+   "scale": 1.0,
+   "cols": [],
+   "note": "woodcutting"
+  },
+  {
+   "asset": "pickup_branch",
+   "kit": "pickups",
+   "zone": "SpawnCamp",
+   "pos": [
+    7.7,
+    0.0,
+    10.9
+   ],
+   "yaw": 2.6,
+   "scale": 1.0,
+   "cols": [],
+   "note": "woodcutting"
+  },
+  {
+   "asset": "stone_marker_a",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -3.4,
+    0.0,
+    -10.8
+   ],
+   "yaw": 0.15,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.08,
+      2.8,
+      0.68
+     ],
+     "off": [
+      0.0,
+      1.4,
+      0.0
+     ]
+    }
+   ],
+   "note": "wayfinding",
+   "road_ok": true
+  },
+  {
+   "asset": "stone_marker_b",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    3.4,
+    0.0,
+    -10.8
+   ],
+   "yaw": -0.15,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.08,
+      2.799,
+      0.68
+     ],
+     "off": [
+      0.0,
+      1.399,
+      0.0
+     ]
+    }
+   ],
+   "note": "wayfinding",
+   "road_ok": true
+  },
+  {
+   "asset": "stone_marker_a",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -3.4,
+    0.0,
+    15.0
+   ],
+   "yaw": 0.15,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.08,
+      2.8,
+      0.68
+     ],
+     "off": [
+      0.0,
+      1.4,
+      0.0
+     ]
+    }
+   ],
+   "note": "wayfinding",
+   "road_ok": true
+  },
+  {
+   "asset": "stone_marker_b",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    3.4,
+    0.0,
+    15.0
+   ],
+   "yaw": -0.15,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.08,
+      2.799,
+      0.68
+     ],
+     "off": [
+      0.0,
+      1.399,
+      0.0
+     ]
+    }
+   ],
+   "note": "wayfinding",
+   "road_ok": true
+  },
+  {
+   "asset": "stone_marker_a",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -12.9,
+    0.0,
+    -1.3
+   ],
+   "yaw": 1.7208,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.08,
+      2.8,
+      0.68
+     ],
+     "off": [
+      0.0,
+      1.4,
+      0.0
+     ]
+    }
+   ],
+   "note": "wayfinding",
+   "road_ok": true
+  },
+  {
+   "asset": "stone_marker_b",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -12.9,
+    0.0,
+    5.5
+   ],
+   "yaw": 1.4208,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.08,
+      2.799,
+      0.68
+     ],
+     "off": [
+      0.0,
+      1.399,
+      0.0
+     ]
+    }
+   ],
+   "note": "wayfinding",
+   "road_ok": true
+  },
+  {
+   "asset": "stone_marker_a",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    12.9,
+    0.0,
+    -1.3
+   ],
+   "yaw": 1.7208,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.08,
+      2.8,
+      0.68
+     ],
+     "off": [
+      0.0,
+      1.4,
+      0.0
+     ]
+    }
+   ],
+   "note": "wayfinding",
+   "road_ok": true
+  },
+  {
+   "asset": "stone_marker_b",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    12.9,
+    0.0,
+    5.5
+   ],
+   "yaw": 1.4208,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.08,
+      2.799,
+      0.68
+     ],
+     "off": [
+      0.0,
+      1.399,
+      0.0
+     ]
+    }
+   ],
+   "note": "wayfinding",
+   "road_ok": true
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    8.679,
+    0.0,
+    4.823
+   ],
+   "yaw": 0.29338,
+   "scale": 0.8217,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_b",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    2.735,
+    0.0,
+    -4.799
+   ],
+   "yaw": 5.65974,
+   "scale": 0.8515,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_f",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -0.977,
+    0.0,
+    -5.924
+   ],
+   "yaw": 5.83054,
+   "scale": 0.9,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -0.357,
+    0.0,
+    -5.502
+   ],
+   "yaw": 0.06309,
+   "scale": 0.9026,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    3.817,
+    0.0,
+    -5.767
+   ],
+   "yaw": 0.52167,
+   "scale": 0.9871,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -0.292,
+    0.0,
+    -1.863
+   ],
+   "yaw": 0.9966,
+   "scale": 1.0666,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -1.908,
+    0.0,
+    5.869
+   ],
+   "yaw": 4.10423,
+   "scale": 1.0026,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    0.044,
+    0.0,
+    -3.35
+   ],
+   "yaw": 5.43916,
+   "scale": 0.8703,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    0.044,
+    0.0,
+    6.334
+   ],
+   "yaw": 4.41905,
+   "scale": 1.0066,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_f",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -2.303,
+    0.0,
+    9.222
+   ],
+   "yaw": 2.20928,
+   "scale": 1.022,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    3.715,
+    0.0,
+    6.541
+   ],
+   "yaw": 0.96495,
+   "scale": 1.047,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -0.098,
+    0.0,
+    6.156
+   ],
+   "yaw": 0.73515,
+   "scale": 0.9109,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_d",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -6.147,
+    0.0,
+    10.753
+   ],
+   "yaw": 3.76303,
+   "scale": 0.8388,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_b",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -0.975,
+    0.0,
+    5.765
+   ],
+   "yaw": 3.41557,
+   "scale": 1.034,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -4.369,
+    0.0,
+    2.691
+   ],
+   "yaw": 1.79478,
+   "scale": 0.894,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_f",
+   "kit": "environment",
+   "zone": "SpawnCamp",
+   "pos": [
+    -1.524,
+    0.0,
+    -4.532
+   ],
+   "yaw": 1.41188,
+   "scale": 1.0232,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "stone_marker_a",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -4.6,
+    0.0,
+    -18.0
+   ],
+   "yaw": 0.2,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.08,
+      2.8,
+      0.68
+     ],
+     "off": [
+      0.0,
+      1.4,
+      0.0
+     ]
+    }
+   ],
+   "note": "approach"
+  },
+  {
+   "asset": "stone_marker_b",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    4.6,
+    0.0,
+    -18.0
+   ],
+   "yaw": -0.2,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.08,
+      2.799,
+      0.68
+     ],
+     "off": [
+      0.0,
+      1.399,
+      0.0
+     ]
+    }
+   ],
+   "note": "approach"
+  },
+  {
+   "asset": "ruin_arch_a",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    0.0,
+    0.0,
+    -21.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.8,
+      2.878,
+      1.02
+     ],
+     "off": [
+      -1.35,
+      1.439,
+      0.0
+     ]
+    },
+    {
+     "t": "box",
+     "size": [
+      0.8,
+      2.878,
+      1.02
+     ],
+     "off": [
+      1.35,
+      1.439,
+      0.0
+     ]
+    },
+    {
+     "t": "box",
+     "size": [
+      2.137,
+      0.65,
+      1.02
+     ],
+     "off": [
+      0.0,
+      2.94,
+      0.0
+     ]
+    }
+   ],
+   "note": "gateway",
+   "road_ok": true
+  },
+  {
+   "asset": "ruin_wall_c",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -9.0,
+    0.0,
+    -26.0
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.469,
+      2.411,
+      0.789
+     ],
+     "off": [
+      0.0,
+      1.206,
+      0.0
+     ]
+    }
+   ],
+   "note": "court"
+  },
+  {
+   "asset": "ruin_wall_d",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    9.0,
+    0.0,
+    -26.0
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.48,
+      2.419,
+      0.792
+     ],
+     "off": [
+      0.0,
+      1.21,
+      0.0
+     ]
+    }
+   ],
+   "note": "court"
+  },
+  {
+   "asset": "ruin_wall_a",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -9.0,
+    0.0,
+    -30.5
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.479,
+      2.413,
+      0.79
+     ],
+     "off": [
+      0.0,
+      1.206,
+      0.0
+     ]
+    }
+   ],
+   "note": "court"
+  },
+  {
+   "asset": "ruin_wall_b",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    9.0,
+    0.0,
+    -30.5
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.478,
+      2.417,
+      0.792
+     ],
+     "off": [
+      0.0,
+      1.208,
+      0.0
+     ]
+    }
+   ],
+   "note": "court"
+  },
+  {
+   "asset": "ruin_wall_c",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -4.7,
+    0.0,
+    -33.5
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.469,
+      2.411,
+      0.789
+     ],
+     "off": [
+      0.0,
+      1.206,
+      0.0
+     ]
+    }
+   ],
+   "note": "court"
+  },
+  {
+   "asset": "ruin_wall_d",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    4.7,
+    0.0,
+    -33.5
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.48,
+      2.419,
+      0.792
+     ],
+     "off": [
+      0.0,
+      1.21,
+      0.0
+     ]
+    }
+   ],
+   "note": "court"
+  },
+  {
+   "asset": "ruin_column_a",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -6.2,
+    0.0,
+    -24.2
+   ],
+   "yaw": 0.1,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.55,
+     "h": 3.137,
+     "y": 1.569
+    }
+   ],
+   "note": "court"
+  },
+  {
+   "asset": "ruin_column_c",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    6.2,
+    0.0,
+    -24.2
+   ],
+   "yaw": -0.1,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.55,
+     "h": 2.739,
+     "y": 1.369
+    }
+   ],
+   "note": "court"
+  },
+  {
+   "asset": "ruin_column_b",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -6.6,
+    0.0,
+    -31.8
+   ],
+   "yaw": 0.2,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.55,
+     "h": 3.531,
+     "y": 1.766
+    }
+   ],
+   "note": "court"
+  },
+  {
+   "asset": "ruin_column_d",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    6.6,
+    0.0,
+    -31.8
+   ],
+   "yaw": -0.2,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.55,
+     "h": 3.42,
+     "y": 1.71
+    }
+   ],
+   "note": "court"
+  },
+  {
+   "asset": "stone_foundation",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    13.0,
+    0.0,
+    -28.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      3.94,
+      0.72,
+      3.94
+     ],
+     "off": [
+      0.0,
+      0.36,
+      0.0
+     ]
+    }
+   ],
+   "note": "forge"
+  },
+  {
+   "asset": "stone_floor",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    13.0,
+    0.72,
+    -28.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      3.96,
+      0.24,
+      3.96
+     ],
+     "off": [
+      0.0,
+      0.12,
+      0.0
+     ]
+    }
+   ],
+   "note": "forge",
+   "float_ok": true
+  },
+  {
+   "asset": "stone_half_wall",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    14.9,
+    0.96,
+    -28.0
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.09,
+      1.6,
+      0.46
+     ],
+     "off": [
+      0.0,
+      0.8,
+      0.0
+     ]
+    }
+   ],
+   "note": "forge",
+   "float_ok": true
+  },
+  {
+   "asset": "station_stone_furnace",
+   "kit": "crafting_stations",
+   "zone": "NorthRuins",
+   "pos": [
+    13.2,
+    0.96,
+    -29.0
+   ],
+   "yaw": 3.14159,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.412,
+      2.305,
+      1.757
+     ],
+     "off": [
+      0.0,
+      1.153,
+      0.0
+     ]
+    }
+   ],
+   "note": "forge",
+   "float_ok": true
+  },
+  {
+   "asset": "station_anvil",
+   "kit": "crafting_stations",
+   "zone": "NorthRuins",
+   "pos": [
+    12.4,
+    0.96,
+    -26.8
+   ],
+   "yaw": 0.4,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.38,
+      1.36,
+      0.892
+     ],
+     "off": [
+      0.0,
+      0.68,
+      0.0
+     ]
+    }
+   ],
+   "note": "forge",
+   "float_ok": true
+  },
+  {
+   "asset": "loot_chest_reinforced_closed",
+   "kit": "loot",
+   "zone": "NorthRuins",
+   "pos": [
+    11.6,
+    0.96,
+    -29.4
+   ],
+   "yaw": -0.4,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.957,
+      0.602,
+      0.645
+     ],
+     "off": [
+      0.0,
+      0.297,
+      0.0
+     ]
+    }
+   ],
+   "note": "forge",
+   "float_ok": true
+  },
+  {
+   "asset": "pickup_iron_ingot",
+   "kit": "pickups",
+   "zone": "NorthRuins",
+   "pos": [
+    11.5,
+    0.96,
+    -27.2
+   ],
+   "yaw": 0.5,
+   "scale": 1.0,
+   "cols": [],
+   "note": "forge",
+   "float_ok": true
+  },
+  {
+   "asset": "pickup_coal",
+   "kit": "pickups",
+   "zone": "NorthRuins",
+   "pos": [
+    14.1,
+    0.96,
+    -26.6
+   ],
+   "yaw": 1.1,
+   "scale": 1.0,
+   "cols": [],
+   "note": "forge",
+   "float_ok": true
+  },
+  {
+   "asset": "iron_pickaxe_world",
+   "kit": "tools_weapons",
+   "zone": "NorthRuins",
+   "pos": [
+    13.9,
+    0.96,
+    -27.6
+   ],
+   "yaw": -1.2,
+   "scale": 1.0,
+   "cols": [],
+   "note": "forge",
+   "float_ok": true
+  },
+  {
+   "asset": "iron_node_intact",
+   "kit": "harvestables",
+   "zone": "NorthRuins",
+   "pos": [
+    16.6,
+    0.0,
+    -25.2
+   ],
+   "yaw": 0.9,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.984,
+      1.593,
+      1.573
+     ],
+     "off": [
+      0.0,
+      0.796,
+      0.0
+     ]
+    }
+   ],
+   "note": "ore"
+  },
+  {
+   "asset": "iron_node_intact",
+   "kit": "harvestables",
+   "zone": "NorthRuins",
+   "pos": [
+    17.8,
+    0.0,
+    -30.4
+   ],
+   "yaw": -0.6,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.984,
+      1.593,
+      1.573
+     ],
+     "off": [
+      0.0,
+      0.796,
+      0.0
+     ]
+    }
+   ],
+   "note": "ore"
+  },
+  {
+   "asset": "stone_node_intact",
+   "kit": "harvestables",
+   "zone": "NorthRuins",
+   "pos": [
+    -6.0,
+    0.0,
+    -27.5
+   ],
+   "yaw": 0.4,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.984,
+      1.593,
+      1.573
+     ],
+     "off": [
+      0.0,
+      0.796,
+      0.0
+     ]
+    }
+   ],
+   "note": "ore"
+  },
+  {
+   "asset": "stone_node_intact",
+   "kit": "harvestables",
+   "zone": "NorthRuins",
+   "pos": [
+    5.2,
+    0.0,
+    -30.0
+   ],
+   "yaw": -0.8,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.984,
+      1.593,
+      1.573
+     ],
+     "off": [
+      0.0,
+      0.796,
+      0.0
+     ]
+    }
+   ],
+   "note": "ore"
+  },
+  {
+   "asset": "stone_node_cracked",
+   "kit": "harvestables",
+   "zone": "NorthRuins",
+   "pos": [
+    -2.4,
+    0.0,
+    -29.6
+   ],
+   "yaw": 1.3,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.984,
+      1.593,
+      1.573
+     ],
+     "off": [
+      0.0,
+      0.796,
+      0.0
+     ]
+    }
+   ],
+   "note": "ore"
+  },
+  {
+   "asset": "pickup_stone",
+   "kit": "pickups",
+   "zone": "NorthRuins",
+   "pos": [
+    -3.4,
+    0.0,
+    -26.4
+   ],
+   "yaw": 0.7,
+   "scale": 1.0,
+   "cols": [],
+   "note": "ore"
+  },
+  {
+   "asset": "pickup_iron_ore",
+   "kit": "pickups",
+   "zone": "NorthRuins",
+   "pos": [
+    16.0,
+    0.0,
+    -27.6
+   ],
+   "yaw": 0.2,
+   "scale": 1.0,
+   "cols": [],
+   "note": "ore"
+  },
+  {
+   "asset": "loot_chest_small_closed",
+   "kit": "loot",
+   "zone": "NorthRuins",
+   "pos": [
+    -6.2,
+    0.0,
+    -29.0
+   ],
+   "yaw": 0.6,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.749,
+      0.481,
+      0.486
+     ],
+     "off": [
+      0.0,
+      0.238,
+      0.0
+     ]
+    }
+   ],
+   "note": "reward"
+  },
+  {
+   "asset": "loot_coin_pouch",
+   "kit": "loot",
+   "zone": "NorthRuins",
+   "pos": [
+    7.9,
+    0.0,
+    -33.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [],
+   "note": "reward"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    3.21,
+    0.0,
+    -28.095
+   ],
+   "yaw": 0.93539,
+   "scale": 0.8443,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    2.544,
+    0.0,
+    -27.313
+   ],
+   "yaw": 3.69273,
+   "scale": 0.935,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_d",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -0.99,
+    0.0,
+    -26.65
+   ],
+   "yaw": 1.65059,
+   "scale": 0.8207,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    0.334,
+    0.0,
+    -26.863
+   ],
+   "yaw": 4.64318,
+   "scale": 0.7335,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_d",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    4.075,
+    0.0,
+    -26.532
+   ],
+   "yaw": 2.82329,
+   "scale": 0.8344,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -1.498,
+    0.0,
+    -25.68
+   ],
+   "yaw": 1.89192,
+   "scale": 0.7754,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_f",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    1.046,
+    0.0,
+    -30.41
+   ],
+   "yaw": 3.96319,
+   "scale": 0.9793,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_d",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -4.074,
+    0.0,
+    -26.43
+   ],
+   "yaw": 1.37182,
+   "scale": 0.9303,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_b",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -5.083,
+    0.0,
+    -30.351
+   ],
+   "yaw": 5.68944,
+   "scale": 0.7301,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    7.501,
+    0.0,
+    -32.738
+   ],
+   "yaw": 4.61053,
+   "scale": 0.8642,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_d",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    7.08,
+    0.0,
+    -33.005
+   ],
+   "yaw": 5.60566,
+   "scale": 0.7824,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_f",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -3.584,
+    0.0,
+    -25.061
+   ],
+   "yaw": 1.50721,
+   "scale": 0.7545,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_f",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    0.757,
+    0.0,
+    -26.625
+   ],
+   "yaw": 3.7148,
+   "scale": 0.8501,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    5.441,
+    0.0,
+    -26.913
+   ],
+   "yaw": 1.14611,
+   "scale": 0.9666,
+   "cols": [],
+   "note": "dressing"
+  },
+  {
+   "asset": "boulder_d",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -13.341,
+    0.0,
+    -19.478
+   ],
+   "yaw": 2.55582,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      3.352,
+      2.197,
+      3.38
+     ],
+     "off": [
+      0.0,
+      1.099,
+      0.0
+     ]
+    }
+   ],
+   "note": "outskirts"
+  },
+  {
+   "asset": "boulder_e",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -15.978,
+    0.0,
+    -29.73
+   ],
+   "yaw": 5.526,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.299,
+      2.396,
+      2.876
+     ],
+     "off": [
+      0.0,
+      1.198,
+      0.0
+     ]
+    }
+   ],
+   "note": "outskirts"
+  },
+  {
+   "asset": "boulder_e",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    12.246,
+    0.0,
+    -19.967
+   ],
+   "yaw": 4.79392,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.299,
+      2.396,
+      2.876
+     ],
+     "off": [
+      0.0,
+      1.198,
+      0.0
+     ]
+    }
+   ],
+   "note": "outskirts"
+  },
+  {
+   "asset": "boulder_c",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    17.657,
+    0.0,
+    -19.556
+   ],
+   "yaw": 5.63987,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.479,
+      1.649,
+      1.839
+     ],
+     "off": [
+      0.0,
+      0.824,
+      0.0
+     ]
+    }
+   ],
+   "note": "outskirts"
+  },
+  {
+   "asset": "tree_bare_d",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    0.985,
+    0.0,
+    -28.222
+   ],
+   "yaw": 3.77923,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 3.806,
+     "y": 1.903
+    }
+   ],
+   "note": "outskirts"
+  },
+  {
+   "asset": "tree_bare_c",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -13.699,
+    0.0,
+    -25.569
+   ],
+   "yaw": 5.48478,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.013,
+     "y": 2.007
+    }
+   ],
+   "note": "outskirts"
+  },
+  {
+   "asset": "tree_bare_a",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    14.715,
+    0.0,
+    -32.88
+   ],
+   "yaw": 4.47112,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 3.489,
+     "y": 1.744
+    }
+   ],
+   "note": "outskirts"
+  },
+  {
+   "asset": "tree_bare_a",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -15.947,
+    0.0,
+    -23.908
+   ],
+   "yaw": 5.02179,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 3.489,
+     "y": 1.744
+    }
+   ],
+   "note": "outskirts"
+  },
+  {
+   "asset": "tree_bare_d",
+   "kit": "environment",
+   "zone": "NorthRuins",
+   "pos": [
+    -0.271,
+    0.0,
+    -32.633
+   ],
+   "yaw": 5.60686,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 3.806,
+     "y": 1.903
+    }
+   ],
+   "note": "outskirts"
+  },
+  {
+   "asset": "tree_pine_f",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -28.657,
+    0.0,
+    15.075
+   ],
+   "yaw": 0.88386,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.3,
+     "y": 2.15
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_e",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -28.175,
+    0.0,
+    -22.174
+   ],
+   "yaw": 1.25688,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.307,
+     "y": 2.154
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -30.768,
+    0.0,
+    -26.115
+   ],
+   "yaw": 0.88909,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.428,
+     "y": 2.214
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -21.701,
+    0.0,
+    12.969
+   ],
+   "yaw": 5.0071,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.385,
+     "y": 2.193
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_e",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -28.587,
+    0.0,
+    -6.282
+   ],
+   "yaw": 0.18257,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.307,
+     "y": 2.154
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_f",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -31.251,
+    0.0,
+    23.23
+   ],
+   "yaw": 3.34054,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.3,
+     "y": 2.15
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -17.17,
+    0.0,
+    -14.451
+   ],
+   "yaw": 0.90238,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.428,
+     "y": 2.214
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -30.642,
+    0.0,
+    28.659
+   ],
+   "yaw": 4.39649,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.428,
+     "y": 2.214
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_f",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -32.909,
+    0.0,
+    3.719
+   ],
+   "yaw": 3.07362,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.3,
+     "y": 2.15
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -26.68,
+    0.0,
+    -13.243
+   ],
+   "yaw": 2.22855,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.385,
+     "y": 2.193
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_e",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -19.814,
+    1.2,
+    24.76
+   ],
+   "yaw": 4.01173,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.307,
+     "y": 2.154
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -28.031,
+    0.0,
+    -15.91
+   ],
+   "yaw": 4.52004,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.385,
+     "y": 2.193
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -23.622,
+    0.0,
+    18.531
+   ],
+   "yaw": 1.94062,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.428,
+     "y": 2.214
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_e",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -23.475,
+    0.0,
+    -6.774
+   ],
+   "yaw": 0.90775,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.307,
+     "y": 2.154
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -31.127,
+    0.0,
+    8.571
+   ],
+   "yaw": 3.46815,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.428,
+     "y": 2.214
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_f",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -31.175,
+    0.0,
+    15.704
+   ],
+   "yaw": 0.65169,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.3,
+     "y": 2.15
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -29.697,
+    0.0,
+    -11.197
+   ],
+   "yaw": 5.30584,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 3.538,
+     "y": 1.769
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -32.51,
+    0.0,
+    -6.895
+   ],
+   "yaw": 1.50526,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 3.538,
+     "y": 1.769
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -28.632,
+    0.0,
+    21.238
+   ],
+   "yaw": 0.39005,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 3.538,
+     "y": 1.769
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_d",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -14.282,
+    0.0,
+    19.122
+   ],
+   "yaw": 4.89113,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 3.89,
+     "y": 1.945
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -20.133,
+    0.0,
+    16.227
+   ],
+   "yaw": 2.5984,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 3.538,
+     "y": 1.769
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_pine_f",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -16.842,
+    0.0,
+    -7.322
+   ],
+   "yaw": 1.6143,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.3,
+     "y": 2.15
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_birch_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -18.536,
+    0.0,
+    -19.301
+   ],
+   "yaw": 5.5322,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.476,
+     "y": 2.238
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_birch_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -18.375,
+    0.0,
+    -22.282
+   ],
+   "yaw": 3.1958,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.128,
+     "y": 2.064
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_birch_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -30.741,
+    0.0,
+    -23.1
+   ],
+   "yaw": 4.22295,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.128,
+     "y": 2.064
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_birch_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -23.551,
+    0.0,
+    10.613
+   ],
+   "yaw": 1.24433,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 5.336,
+     "y": 2.668
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_birch_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -32.559,
+    0.0,
+    12.42
+   ],
+   "yaw": 4.74851,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.128,
+     "y": 2.064
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_birch_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -26.588,
+    0.0,
+    25.341
+   ],
+   "yaw": 3.68538,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.476,
+     "y": 2.238
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_birch_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -21.186,
+    0.0,
+    -5.84
+   ],
+   "yaw": 3.8768,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.476,
+     "y": 2.238
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_birch_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -26.004,
+    0.0,
+    -5.351
+   ],
+   "yaw": 1.57658,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 5.336,
+     "y": 2.668
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_birch_d",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -29.046,
+    0.0,
+    -0.014
+   ],
+   "yaw": 5.45628,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 5.348,
+     "y": 2.674
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_birch_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -14.36,
+    1.2,
+    28.526
+   ],
+   "yaw": 4.08224,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 5.336,
+     "y": 2.668
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_birch_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -19.756,
+    0.0,
+    -24.861
+   ],
+   "yaw": 2.84573,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.476,
+     "y": 2.238
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "tree_birch_d",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -22.101,
+    0.0,
+    -26.768
+   ],
+   "yaw": 5.72324,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 5.348,
+     "y": 2.674
+    }
+   ],
+   "note": "canopy"
+  },
+  {
+   "asset": "harvest_tree_intact",
+   "kit": "harvestables",
+   "zone": "WestForest",
+   "pos": [
+    -25.4,
+    0.0,
+    -0.6
+   ],
+   "yaw": 0.4,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.28,
+     "y": 2.14
+    }
+   ],
+   "note": "logging"
+  },
+  {
+   "asset": "harvest_tree_intact",
+   "kit": "harvestables",
+   "zone": "WestForest",
+   "pos": [
+    -24.6,
+    0.0,
+    5.2
+   ],
+   "yaw": 1.5,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.28,
+     "y": 2.14
+    }
+   ],
+   "note": "logging"
+  },
+  {
+   "asset": "harvest_tree_intact",
+   "kit": "harvestables",
+   "zone": "WestForest",
+   "pos": [
+    -19.2,
+    0.0,
+    -1.4
+   ],
+   "yaw": 2.6,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.28,
+     "y": 2.14
+    }
+   ],
+   "note": "logging"
+  },
+  {
+   "asset": "harvest_tree_intact",
+   "kit": "harvestables",
+   "zone": "WestForest",
+   "pos": [
+    -18.6,
+    0.0,
+    5.6
+   ],
+   "yaw": 3.7,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.28,
+     "y": 2.14
+    }
+   ],
+   "note": "logging"
+  },
+  {
+   "asset": "harvest_tree_intact",
+   "kit": "harvestables",
+   "zone": "WestForest",
+   "pos": [
+    -22.2,
+    0.0,
+    7.6
+   ],
+   "yaw": 4.8,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.28,
+     "y": 2.14
+    }
+   ],
+   "note": "logging"
+  },
+  {
+   "asset": "harvest_tree_felled_trunk",
+   "kit": "harvestables",
+   "zone": "WestForest",
+   "pos": [
+    -22.0,
+    0.0,
+    0.0
+   ],
+   "yaw": -0.35,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.659,
+      1.507,
+      1.284
+     ],
+     "off": [
+      0.0,
+      0.753,
+      0.0
+     ]
+    }
+   ],
+   "note": "logging"
+  },
+  {
+   "asset": "harvest_tree_fresh_stump",
+   "kit": "harvestables",
+   "zone": "WestForest",
+   "pos": [
+    -24.3,
+    0.0,
+    3.4
+   ],
+   "yaw": 0.4,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.265,
+      0.651,
+      1.388
+     ],
+     "off": [
+      0.0,
+      0.326,
+      0.0
+     ]
+    }
+   ],
+   "note": "logging"
+  },
+  {
+   "asset": "harvest_tree_fresh_stump",
+   "kit": "harvestables",
+   "zone": "WestForest",
+   "pos": [
+    -19.2,
+    0.0,
+    3.8
+   ],
+   "yaw": 1.2,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.265,
+      0.651,
+      1.388
+     ],
+     "off": [
+      0.0,
+      0.326,
+      0.0
+     ]
+    }
+   ],
+   "note": "logging"
+  },
+  {
+   "asset": "harvest_tree_depleted_stump",
+   "kit": "harvestables",
+   "zone": "WestForest",
+   "pos": [
+    -21.0,
+    0.0,
+    4.6
+   ],
+   "yaw": -0.9,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.265,
+      0.449,
+      1.388
+     ],
+     "off": [
+      0.0,
+      0.225,
+      0.0
+     ]
+    }
+   ],
+   "note": "logging"
+  },
+  {
+   "asset": "wooden_axe_world",
+   "kit": "tools_weapons",
+   "zone": "WestForest",
+   "pos": [
+    -22.6,
+    0.0,
+    3.6
+   ],
+   "yaw": 0.8,
+   "scale": 1.0,
+   "cols": [],
+   "note": "logging"
+  },
+  {
+   "asset": "pickup_log",
+   "kit": "pickups",
+   "zone": "WestForest",
+   "pos": [
+    -20.8,
+    0.0,
+    2.4
+   ],
+   "yaw": 0.6,
+   "scale": 1.0,
+   "cols": [],
+   "note": "logging"
+  },
+  {
+   "asset": "pickup_log",
+   "kit": "pickups",
+   "zone": "WestForest",
+   "pos": [
+    -21.4,
+    0.0,
+    3.2
+   ],
+   "yaw": 1.9,
+   "scale": 1.0,
+   "cols": [],
+   "note": "logging"
+  },
+  {
+   "asset": "pickup_log",
+   "kit": "pickups",
+   "zone": "WestForest",
+   "pos": [
+    -22.9,
+    0.0,
+    0.6
+   ],
+   "yaw": 3.2,
+   "scale": 1.0,
+   "cols": [],
+   "note": "logging"
+  },
+  {
+   "asset": "pickup_fibre_bundle",
+   "kit": "pickups",
+   "zone": "WestForest",
+   "pos": [
+    -19.8,
+    0.0,
+    1.8
+   ],
+   "yaw": 0.2,
+   "scale": 1.0,
+   "cols": [],
+   "note": "logging"
+  },
+  {
+   "asset": "pickup_berry",
+   "kit": "pickups",
+   "zone": "WestForest",
+   "pos": [
+    -24.2,
+    0.0,
+    4.0
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [],
+   "note": "logging"
+  },
+  {
+   "asset": "loot_chest_small_closed",
+   "kit": "loot",
+   "zone": "WestForest",
+   "pos": [
+    -29.6,
+    0.0,
+    -14.8
+   ],
+   "yaw": 0.5,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.749,
+      0.481,
+      0.486
+     ],
+     "off": [
+      0.0,
+      0.238,
+      0.0
+     ]
+    }
+   ],
+   "note": "reward"
+  },
+  {
+   "asset": "loot_coin_pouch",
+   "kit": "loot",
+   "zone": "WestForest",
+   "pos": [
+    -28.0,
+    0.0,
+    16.4
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [],
+   "note": "reward"
+  },
+  {
+   "asset": "loot_powerup_orb",
+   "kit": "loot",
+   "zone": "WestForest",
+   "pos": [
+    -30.4,
+    0.6,
+    8.2
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [],
+   "note": "reward",
+   "float_ok": true
+  },
+  {
+   "asset": "fallen_log_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -20.82,
+    0.0,
+    -11.518
+   ],
+   "yaw": 4.67317,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.503,
+      1.043,
+      1.312
+     ],
+     "off": [
+      0.0,
+      0.522,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "fallen_log_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -27.825,
+    0.0,
+    7.551
+   ],
+   "yaw": 5.4125,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.503,
+      1.043,
+      1.312
+     ],
+     "off": [
+      0.0,
+      0.522,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "fallen_log_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -14.192,
+    0.0,
+    15.898
+   ],
+   "yaw": 2.93276,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.671,
+      1.013,
+      1.05
+     ],
+     "off": [
+      0.0,
+      0.507,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "fallen_log_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -23.972,
+    0.0,
+    -17.713
+   ],
+   "yaw": 3.84817,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      3.935,
+      0.886,
+      0.842
+     ],
+     "off": [
+      0.0,
+      0.443,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "fallen_log_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -16.186,
+    0.0,
+    -10.789
+   ],
+   "yaw": 5.94573,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.503,
+      1.043,
+      1.312
+     ],
+     "off": [
+      0.0,
+      0.522,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "stump_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -25.951,
+    0.0,
+    21.828
+   ],
+   "yaw": 2.03246,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.338,
+      1.386,
+      1.086
+     ],
+     "off": [
+      0.0,
+      0.693,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "stump_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -17.193,
+    1.2,
+    25.731
+   ],
+   "yaw": 0.05042,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.338,
+      1.386,
+      1.086
+     ],
+     "off": [
+      0.0,
+      0.693,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "stump_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -25.421,
+    0.0,
+    -21.639
+   ],
+   "yaw": 4.17106,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.338,
+      1.386,
+      1.086
+     ],
+     "off": [
+      0.0,
+      0.693,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "stump_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -32.031,
+    0.0,
+    -11.648
+   ],
+   "yaw": 5.91868,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.56,
+      0.783,
+      0.966
+     ],
+     "off": [
+      0.0,
+      0.392,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "stump_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -30.531,
+    0.0,
+    2.778
+   ],
+   "yaw": 1.49515,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.56,
+      0.783,
+      0.966
+     ],
+     "off": [
+      0.0,
+      0.392,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "root_cluster_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -22.326,
+    0.0,
+    22.303
+   ],
+   "yaw": 2.47914,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.269,
+      0.927,
+      2.189
+     ],
+     "off": [
+      0.0,
+      0.464,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "root_cluster_d",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -17.04,
+    0.0,
+    11.647
+   ],
+   "yaw": 6.22766,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.825,
+      0.842,
+      1.672
+     ],
+     "off": [
+      0.0,
+      0.421,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "root_cluster_d",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -29.471,
+    0.0,
+    -3.285
+   ],
+   "yaw": 2.36506,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.825,
+      0.842,
+      1.672
+     ],
+     "off": [
+      0.0,
+      0.421,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "root_cluster_d",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -24.723,
+    0.0,
+    -28.387
+   ],
+   "yaw": 6.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.825,
+      0.842,
+      1.672
+     ],
+     "off": [
+      0.0,
+      0.421,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "boulder_g",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -23.444,
+    0.0,
+    27.151
+   ],
+   "yaw": 0.31438,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.152,
+      1.922,
+      2.635
+     ],
+     "off": [
+      0.0,
+      0.961,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "boulder_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -32.764,
+    0.0,
+    -29.976
+   ],
+   "yaw": 4.84422,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.479,
+      1.649,
+      1.839
+     ],
+     "off": [
+      0.0,
+      0.824,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "boulder_f",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -32.529,
+    0.0,
+    -17.811
+   ],
+   "yaw": 0.14677,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.264,
+      1.828,
+      2.216
+     ],
+     "off": [
+      0.0,
+      0.914,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "boulder_f",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -18.707,
+    1.2,
+    29.493
+   ],
+   "yaw": 6.27804,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.264,
+      1.828,
+      2.216
+     ],
+     "off": [
+      0.0,
+      0.914,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "boulder_f",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -16.611,
+    1.2,
+    21.812
+   ],
+   "yaw": 3.62391,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.264,
+      1.828,
+      2.216
+     ],
+     "off": [
+      0.0,
+      0.914,
+      0.0
+     ]
+    }
+   ],
+   "note": "debris"
+  },
+  {
+   "asset": "fern_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -20.188,
+    0.0,
+    5.732
+   ],
+   "yaw": 2.33631,
+   "scale": 1.2132,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -29.085,
+    0.0,
+    -11.713
+   ],
+   "yaw": 5.53533,
+   "scale": 1.0999,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -29.505,
+    0.0,
+    -9.306
+   ],
+   "yaw": 6.11429,
+   "scale": 0.929,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_f",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -25.492,
+    0.0,
+    -19.786
+   ],
+   "yaw": 0.85002,
+   "scale": 1.1437,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -31.101,
+    0.0,
+    -5.051
+   ],
+   "yaw": 2.4947,
+   "scale": 1.0902,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_f",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -17.847,
+    0.0,
+    -11.738
+   ],
+   "yaw": 0.58069,
+   "scale": 0.8778,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_f",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -26.799,
+    0.0,
+    18.762
+   ],
+   "yaw": 0.92321,
+   "scale": 0.8792,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -19.629,
+    0.0,
+    1.942
+   ],
+   "yaw": 0.71774,
+   "scale": 0.9919,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_d",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -22.724,
+    0.0,
+    -9.763
+   ],
+   "yaw": 5.83188,
+   "scale": 0.9507,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -15.858,
+    0.0,
+    -21.954
+   ],
+   "yaw": 1.2481,
+   "scale": 0.8602,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -14.752,
+    1.2,
+    27.209
+   ],
+   "yaw": 5.75245,
+   "scale": 0.9766,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -17.095,
+    0.0,
+    -17.538
+   ],
+   "yaw": 1.4394,
+   "scale": 0.9568,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_d",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -19.884,
+    0.0,
+    -16.695
+   ],
+   "yaw": 2.87913,
+   "scale": 1.0063,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -15.841,
+    1.2,
+    24.055
+   ],
+   "yaw": 0.05517,
+   "scale": 1.0947,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -22.566,
+    0.0,
+    6.763
+   ],
+   "yaw": 5.25312,
+   "scale": 0.983,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_e",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -27.44,
+    0.0,
+    -23.928
+   ],
+   "yaw": 2.84579,
+   "scale": 1.1472,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -30.834,
+    0.0,
+    7.665
+   ],
+   "yaw": 5.62055,
+   "scale": 1.1368,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -29.58,
+    0.0,
+    -5.525
+   ],
+   "yaw": 2.30086,
+   "scale": 1.1934,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -16.421,
+    0.0,
+    -4.487
+   ],
+   "yaw": 2.88145,
+   "scale": 1.2094,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_f",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -29.286,
+    0.0,
+    26.015
+   ],
+   "yaw": 1.15678,
+   "scale": 0.8523,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_e",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -21.371,
+    0.0,
+    -21.3
+   ],
+   "yaw": 4.91834,
+   "scale": 0.9178,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_d",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -31.981,
+    0.0,
+    0.62
+   ],
+   "yaw": 0.232,
+   "scale": 1.1701,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_d",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -16.855,
+    0.0,
+    -20.998
+   ],
+   "yaw": 2.42343,
+   "scale": 0.9967,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_e",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -29.075,
+    0.0,
+    -26.211
+   ],
+   "yaw": 4.04651,
+   "scale": 1.2209,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_f",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -20.906,
+    0.0,
+    -19.026
+   ],
+   "yaw": 0.81355,
+   "scale": 1.2454,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "fern_e",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -20.143,
+    0.0,
+    14.025
+   ],
+   "yaw": 5.11199,
+   "scale": 1.2269,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -21.292,
+    0.0,
+    23.745
+   ],
+   "yaw": 3.48933,
+   "scale": 0.937,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -32.204,
+    0.0,
+    16.037
+   ],
+   "yaw": 0.59903,
+   "scale": 0.8748,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -17.095,
+    0.0,
+    -20.211
+   ],
+   "yaw": 2.03086,
+   "scale": 0.9349,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -30.561,
+    0.0,
+    26.142
+   ],
+   "yaw": 5.45859,
+   "scale": 1.0658,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -21.705,
+    0.0,
+    10.409
+   ],
+   "yaw": 1.9714,
+   "scale": 0.8705,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -27.065,
+    0.0,
+    16.667
+   ],
+   "yaw": 0.32056,
+   "scale": 1.1702,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -32.9,
+    0.0,
+    15.867
+   ],
+   "yaw": 1.92081,
+   "scale": 0.8381,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_d",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -23.794,
+    0.0,
+    9.641
+   ],
+   "yaw": 0.84779,
+   "scale": 1.1362,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -29.276,
+    0.0,
+    9.266
+   ],
+   "yaw": 0.18854,
+   "scale": 1.1708,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -26.875,
+    0.0,
+    -18.023
+   ],
+   "yaw": 4.85616,
+   "scale": 1.128,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -17.597,
+    0.0,
+    -1.476
+   ],
+   "yaw": 5.42439,
+   "scale": 1.032,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -20.843,
+    0.0,
+    13.142
+   ],
+   "yaw": 0.94936,
+   "scale": 1.0395,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -17.285,
+    0.0,
+    4.397
+   ],
+   "yaw": 5.77541,
+   "scale": 0.8691,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -19.574,
+    0.0,
+    14.06
+   ],
+   "yaw": 3.58244,
+   "scale": 1.118,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -32.339,
+    0.0,
+    13.899
+   ],
+   "yaw": 2.6987,
+   "scale": 1.0708,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -21.433,
+    0.0,
+    -7.908
+   ],
+   "yaw": 2.24132,
+   "scale": 0.816,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -26.997,
+    0.0,
+    24.84
+   ],
+   "yaw": 0.78871,
+   "scale": 0.8141,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_f",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -31.906,
+    0.0,
+    -4.945
+   ],
+   "yaw": 2.34518,
+   "scale": 0.9946,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -31.549,
+    0.0,
+    0.642
+   ],
+   "yaw": 1.5883,
+   "scale": 1.0033,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -29.075,
+    0.0,
+    25.372
+   ],
+   "yaw": 1.0452,
+   "scale": 0.931,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_f",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -32.078,
+    0.0,
+    9.034
+   ],
+   "yaw": 5.58125,
+   "scale": 0.9349,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -25.663,
+    0.0,
+    19.419
+   ],
+   "yaw": 2.20866,
+   "scale": 0.8851,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "mushroom_cluster_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -25.019,
+    0.0,
+    -24.263
+   ],
+   "yaw": 0.01585,
+   "scale": 1.0,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "mushroom_cluster_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -29.895,
+    0.0,
+    -12.343
+   ],
+   "yaw": 0.87977,
+   "scale": 1.0,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "mushroom_cluster_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -31.318,
+    0.0,
+    14.785
+   ],
+   "yaw": 4.27268,
+   "scale": 1.0,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "mushroom_cluster_e",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -17.148,
+    0.0,
+    -4.904
+   ],
+   "yaw": 0.1204,
+   "scale": 1.0,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "mushroom_cluster_c",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -20.852,
+    0.0,
+    -13.895
+   ],
+   "yaw": 0.98965,
+   "scale": 1.0,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "mushroom_cluster_d",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -26.578,
+    0.0,
+    -6.409
+   ],
+   "yaw": 1.00098,
+   "scale": 1.0,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "mushroom_cluster_a",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -18.335,
+    0.0,
+    19.24
+   ],
+   "yaw": 4.03874,
+   "scale": 1.0,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "mushroom_cluster_b",
+   "kit": "environment",
+   "zone": "WestForest",
+   "pos": [
+    -28.796,
+    0.0,
+    -10.11
+   ],
+   "yaw": 1.70495,
+   "scale": 1.0,
+   "cols": [],
+   "note": "undergrowth"
+  },
+  {
+   "asset": "standing_stone_a",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    23.0,
+    -0.7,
+    1.5
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.369,
+      3.258,
+      1.58
+     ],
+     "off": [
+      0.0,
+      1.629,
+      0.0
+     ]
+    }
+   ],
+   "note": "landmark"
+  },
+  {
+   "asset": "loot_powerup_orb",
+   "kit": "loot",
+   "zone": "EastMire",
+   "pos": [
+    23.0,
+    2.56,
+    1.5
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [],
+   "note": "landmark",
+   "float_ok": true
+  },
+  {
+   "asset": "mire_crystal_a",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    21.2,
+    -0.7,
+    3.4
+   ],
+   "yaw": 0.3,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.988,
+      1.674,
+      0.735
+     ],
+     "off": [
+      0.0,
+      0.837,
+      0.0
+     ]
+    }
+   ],
+   "note": "vein"
+  },
+  {
+   "asset": "mire_crystal_b",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    24.8,
+    -0.7,
+    3.6
+   ],
+   "yaw": 1.7,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.03,
+      1.829,
+      0.774
+     ],
+     "off": [
+      0.0,
+      0.914,
+      0.0
+     ]
+    }
+   ],
+   "note": "vein"
+  },
+  {
+   "asset": "mire_crystal_c",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    24.2,
+    -0.7,
+    -0.9
+   ],
+   "yaw": 3.1,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.988,
+      1.833,
+      0.821
+     ],
+     "off": [
+      0.0,
+      0.916,
+      0.0
+     ]
+    }
+   ],
+   "note": "vein"
+  },
+  {
+   "asset": "mire_crystal_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    21.4,
+    -0.7,
+    -0.7
+   ],
+   "yaw": 4.5,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.988,
+      1.841,
+      0.735
+     ],
+     "off": [
+      0.0,
+      0.92,
+      0.0
+     ]
+    }
+   ],
+   "note": "vein"
+  },
+  {
+   "asset": "mire_crystal_e",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    27.6,
+    -0.7,
+    -6.4
+   ],
+   "yaw": 0.9,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.988,
+      1.386,
+      0.735
+     ],
+     "off": [
+      0.0,
+      0.693,
+      0.0
+     ]
+    }
+   ],
+   "note": "vein"
+  },
+  {
+   "asset": "mire_crystal_f",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    18.4,
+    -0.7,
+    8.2
+   ],
+   "yaw": -0.5,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.988,
+      1.207,
+      0.77
+     ],
+     "off": [
+      0.0,
+      0.604,
+      0.0
+     ]
+    }
+   ],
+   "note": "vein"
+  },
+  {
+   "asset": "enemy_crawler_nest",
+   "kit": "enemies",
+   "zone": "EastMire",
+   "pos": [
+    25.4,
+    -0.7,
+    -8.2
+   ],
+   "yaw": 0.6,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.317,
+      0.668,
+      1.224
+     ],
+     "off": [
+      0.0,
+      0.334,
+      0.0
+     ]
+    }
+   ],
+   "note": "threat"
+  },
+  {
+   "asset": "loot_chest_wellspring_closed",
+   "kit": "loot",
+   "zone": "EastMire",
+   "pos": [
+    28.2,
+    -0.7,
+    -9.6
+   ],
+   "yaw": -0.7,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.832,
+      0.559,
+      0.587
+     ],
+     "off": [
+      0.0,
+      0.276,
+      0.0
+     ]
+    }
+   ],
+   "note": "threat"
+  },
+  {
+   "asset": "loot_item_bag",
+   "kit": "loot",
+   "zone": "EastMire",
+   "pos": [
+    26.8,
+    -0.7,
+    -10.4
+   ],
+   "yaw": 0.3,
+   "scale": 1.0,
+   "cols": [],
+   "note": "threat"
+  },
+  {
+   "asset": "tree_bare_c",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    21.438,
+    -0.7,
+    -6.184
+   ],
+   "yaw": 4.36741,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.013,
+     "y": 2.007
+    }
+   ],
+   "note": "deadwood"
+  },
+  {
+   "asset": "tree_bare_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    22.503,
+    -0.7,
+    7.448
+   ],
+   "yaw": 2.62077,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 3.806,
+     "y": 1.903
+    }
+   ],
+   "note": "deadwood"
+  },
+  {
+   "asset": "tree_bare_b",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    24.151,
+    -0.7,
+    -4.307
+   ],
+   "yaw": 2.9409,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.455,
+     "y": 2.228
+    }
+   ],
+   "note": "deadwood"
+  },
+  {
+   "asset": "tree_bare_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    26.244,
+    -0.7,
+    6.433
+   ],
+   "yaw": 2.9384,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 3.806,
+     "y": 1.903
+    }
+   ],
+   "note": "deadwood"
+  },
+  {
+   "asset": "tree_bare_c",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    19.468,
+    -0.7,
+    -8.477
+   ],
+   "yaw": 5.21505,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.013,
+     "y": 2.007
+    }
+   ],
+   "note": "deadwood"
+  },
+  {
+   "asset": "tree_crooked_a",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    19.464,
+    -0.7,
+    -3.843
+   ],
+   "yaw": 2.34593,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.926,
+     "y": 2.463
+    }
+   ],
+   "note": "deadwood"
+  },
+  {
+   "asset": "mire_tendril_b",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    26.393,
+    -0.7,
+    3.272
+   ],
+   "yaw": 3.89341,
+   "scale": 1.0,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mire_tendril_c",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    21.012,
+    -0.7,
+    5.337
+   ],
+   "yaw": 1.44449,
+   "scale": 1.0,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mire_tendril_b",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    19.445,
+    -0.7,
+    -5.346
+   ],
+   "yaw": 3.45302,
+   "scale": 1.0,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mire_tendril_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    19.816,
+    -0.7,
+    6.905
+   ],
+   "yaw": 5.60697,
+   "scale": 1.0,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mire_tendril_c",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    21.348,
+    -0.7,
+    -2.382
+   ],
+   "yaw": 0.87518,
+   "scale": 1.0,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mire_tendril_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    23.098,
+    -0.7,
+    5.464
+   ],
+   "yaw": 2.27226,
+   "scale": 1.0,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mushroom_cluster_f",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    24.879,
+    -0.7,
+    6.107
+   ],
+   "yaw": 1.75449,
+   "scale": 0.892,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mushroom_cluster_b",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    24.543,
+    -0.7,
+    -3.245
+   ],
+   "yaw": 0.50422,
+   "scale": 0.8657,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mushroom_cluster_c",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    21.876,
+    -0.7,
+    -4.513
+   ],
+   "yaw": 2.71092,
+   "scale": 1.0884,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mushroom_cluster_b",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    19.836,
+    -0.7,
+    4.761
+   ],
+   "yaw": 0.06461,
+   "scale": 0.9671,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mushroom_cluster_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    26.335,
+    -0.7,
+    -1.455
+   ],
+   "yaw": 0.66589,
+   "scale": 1.0158,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mushroom_cluster_a",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    22.23,
+    -0.7,
+    5.358
+   ],
+   "yaw": 1.82543,
+   "scale": 1.0458,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mushroom_cluster_b",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    25.624,
+    -0.7,
+    -5.355
+   ],
+   "yaw": 3.26344,
+   "scale": 0.8717,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mushroom_cluster_f",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    25.583,
+    -0.7,
+    2.824
+   ],
+   "yaw": 5.27658,
+   "scale": 1.0371,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mushroom_cluster_f",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    26.253,
+    -0.7,
+    -6.573
+   ],
+   "yaw": 1.36321,
+   "scale": 0.9186,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mushroom_cluster_f",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    22.677,
+    -0.7,
+    -0.357
+   ],
+   "yaw": 5.38769,
+   "scale": 0.9826,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mushroom_cluster_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    23.069,
+    -0.7,
+    -5.717
+   ],
+   "yaw": 3.6273,
+   "scale": 0.8504,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "mushroom_cluster_a",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    25.578,
+    -0.7,
+    -1.608
+   ],
+   "yaw": 1.34287,
+   "scale": 1.0883,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_b",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    24.165,
+    -0.7,
+    6.264
+   ],
+   "yaw": 0.93908,
+   "scale": 1.0619,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_a",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    21.2,
+    -0.7,
+    -5.624
+   ],
+   "yaw": 3.11056,
+   "scale": 0.9649,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_b",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    21.201,
+    -0.7,
+    -1.566
+   ],
+   "yaw": 3.53179,
+   "scale": 1.0772,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_a",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    26.585,
+    -0.7,
+    1.387
+   ],
+   "yaw": 2.60915,
+   "scale": 1.0847,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_c",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    25.525,
+    -0.7,
+    -0.218
+   ],
+   "yaw": 3.89014,
+   "scale": 1.229,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_b",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    22.476,
+    -0.7,
+    -7.451
+   ],
+   "yaw": 0.07584,
+   "scale": 1.1792,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_c",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    20.046,
+    -0.7,
+    2.735
+   ],
+   "yaw": 2.2564,
+   "scale": 1.077,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_c",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    23.52,
+    -0.7,
+    -3.838
+   ],
+   "yaw": 2.168,
+   "scale": 1.0178,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_b",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    21.952,
+    -0.7,
+    -3.062
+   ],
+   "yaw": 1.8156,
+   "scale": 0.9734,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_c",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    19.516,
+    -0.7,
+    -2.238
+   ],
+   "yaw": 4.08932,
+   "scale": 1.0285,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    22.842,
+    -0.7,
+    -1.974
+   ],
+   "yaw": 3.70483,
+   "scale": 1.0085,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_c",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    25.023,
+    -0.7,
+    -3.358
+   ],
+   "yaw": 2.41964,
+   "scale": 1.1556,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_c",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    22.929,
+    -0.7,
+    -5.053
+   ],
+   "yaw": 3.01229,
+   "scale": 1.1856,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    25.189,
+    -0.7,
+    -0.115
+   ],
+   "yaw": 0.06006,
+   "scale": 1.1604,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_a",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    26.549,
+    -0.7,
+    -3.47
+   ],
+   "yaw": 2.23486,
+   "scale": 0.9869,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    24.332,
+    -0.7,
+    -7.799
+   ],
+   "yaw": 5.11842,
+   "scale": 1.2232,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_b",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    25.176,
+    -0.7,
+    8.528
+   ],
+   "yaw": 2.07329,
+   "scale": 1.0006,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "reeds_a",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    21.433,
+    -0.7,
+    5.586
+   ],
+   "yaw": 1.51122,
+   "scale": 1.2985,
+   "cols": [],
+   "note": "growth"
+  },
+  {
+   "asset": "pickup_mushroom",
+   "kit": "pickups",
+   "zone": "EastMire",
+   "pos": [
+    22.0,
+    -0.7,
+    -4.6
+   ],
+   "yaw": 0.4,
+   "scale": 1.0,
+   "cols": [],
+   "note": "forage"
+  },
+  {
+   "asset": "pickup_mushroom",
+   "kit": "pickups",
+   "zone": "EastMire",
+   "pos": [
+    19.6,
+    -0.7,
+    6.2
+   ],
+   "yaw": 1.1,
+   "scale": 1.0,
+   "cols": [],
+   "note": "forage"
+  },
+  {
+   "asset": "pickup_salvage_fragment",
+   "kit": "pickups",
+   "zone": "EastMire",
+   "pos": [
+    26.4,
+    -0.7,
+    4.8
+   ],
+   "yaw": 0.7,
+   "scale": 1.0,
+   "cols": [],
+   "note": "forage"
+  },
+  {
+   "asset": "tree_crooked_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    23.093,
+    0.0,
+    24.633
+   ],
+   "yaw": 1.6933,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.742,
+     "y": 2.371
+    }
+   ],
+   "note": "rim"
+  },
+  {
+   "asset": "tree_crooked_b",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    22.973,
+    0.0,
+    20.743
+   ],
+   "yaw": 0.8639,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 5.164,
+     "y": 2.582
+    }
+   ],
+   "note": "rim"
+  },
+  {
+   "asset": "tree_crooked_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    14.77,
+    1.2,
+    23.421
+   ],
+   "yaw": 2.51548,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.742,
+     "y": 2.371
+    }
+   ],
+   "note": "rim"
+  },
+  {
+   "asset": "tree_crooked_a",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    17.302,
+    1.2,
+    25.327
+   ],
+   "yaw": 3.06877,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.926,
+     "y": 2.463
+    }
+   ],
+   "note": "rim"
+  },
+  {
+   "asset": "tree_crooked_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    19.788,
+    0.0,
+    19.946
+   ],
+   "yaw": 0.36953,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.742,
+     "y": 2.371
+    }
+   ],
+   "note": "rim"
+  },
+  {
+   "asset": "tree_crooked_c",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    28.356,
+    0.0,
+    20.095
+   ],
+   "yaw": 1.24704,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.572,
+     "y": 2.286
+    }
+   ],
+   "note": "rim"
+  },
+  {
+   "asset": "tree_crooked_a",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    29.428,
+    0.0,
+    22.532
+   ],
+   "yaw": 2.64535,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.926,
+     "y": 2.463
+    }
+   ],
+   "note": "rim"
+  },
+  {
+   "asset": "boulder_f",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    24.477,
+    0.0,
+    -21.408
+   ],
+   "yaw": 0.16249,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.264,
+      1.828,
+      2.216
+     ],
+     "off": [
+      0.0,
+      0.914,
+      0.0
+     ]
+    }
+   ],
+   "note": "rim"
+  },
+  {
+   "asset": "boulder_c",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    13.483,
+    0.0,
+    17.193
+   ],
+   "yaw": 4.29468,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.479,
+      1.649,
+      1.839
+     ],
+     "off": [
+      0.0,
+      0.824,
+      0.0
+     ]
+    }
+   ],
+   "note": "rim"
+  },
+  {
+   "asset": "boulder_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    29.772,
+    0.0,
+    15.684
+   ],
+   "yaw": 6.1458,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      3.352,
+      2.197,
+      3.38
+     ],
+     "off": [
+      0.0,
+      1.099,
+      0.0
+     ]
+    }
+   ],
+   "note": "rim"
+  },
+  {
+   "asset": "boulder_a",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    30.501,
+    0.0,
+    -14.256
+   ],
+   "yaw": 1.04442,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      3.12,
+      2.249,
+      3.433
+     ],
+     "off": [
+      0.0,
+      1.124,
+      0.0
+     ]
+    }
+   ],
+   "note": "rim"
+  },
+  {
+   "asset": "boulder_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    28.851,
+    0.0,
+    -25.356
+   ],
+   "yaw": 5.25691,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      3.352,
+      2.197,
+      3.38
+     ],
+     "off": [
+      0.0,
+      1.099,
+      0.0
+     ]
+    }
+   ],
+   "note": "rim"
+  },
+  {
+   "asset": "boulder_f",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    17.955,
+    0.0,
+    14.605
+   ],
+   "yaw": 2.79819,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.264,
+      1.828,
+      2.216
+     ],
+     "off": [
+      0.0,
+      0.914,
+      0.0
+     ]
+    }
+   ],
+   "note": "rim"
+  },
+  {
+   "asset": "standing_stone_c",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    31.2,
+    0.0,
+    19.0
+   ],
+   "yaw": -0.3,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.44,
+      2.203,
+      1.314
+     ],
+     "off": [
+      0.0,
+      1.101,
+      0.0
+     ]
+    }
+   ],
+   "note": "rim"
+  },
+  {
+   "asset": "standing_stone_d",
+   "kit": "environment",
+   "zone": "EastMire",
+   "pos": [
+    16.2,
+    0.0,
+    -16.2
+   ],
+   "yaw": 0.4,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.364,
+      2.352,
+      1.155
+     ],
+     "off": [
+      0.0,
+      1.176,
+      0.0
+     ]
+    }
+   ],
+   "note": "rim"
+  },
+  {
+   "asset": "wood_post",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    7.0,
+    2.8,
+    26.8
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.62,
+      3.0,
+      0.62
+     ],
+     "off": [
+      0.0,
+      1.5,
+      0.0
+     ]
+    }
+   ],
+   "note": "lookout"
+  },
+  {
+   "asset": "wood_post",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    13.0,
+    2.8,
+    26.8
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.62,
+      3.0,
+      0.62
+     ],
+     "off": [
+      0.0,
+      1.5,
+      0.0
+     ]
+    }
+   ],
+   "note": "lookout"
+  },
+  {
+   "asset": "wood_post",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    7.0,
+    2.8,
+    31.4
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.62,
+      3.0,
+      0.62
+     ],
+     "off": [
+      0.0,
+      1.5,
+      0.0
+     ]
+    }
+   ],
+   "note": "lookout"
+  },
+  {
+   "asset": "wood_post",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    13.0,
+    2.8,
+    31.4
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.62,
+      3.0,
+      0.62
+     ],
+     "off": [
+      0.0,
+      1.5,
+      0.0
+     ]
+    }
+   ],
+   "note": "lookout"
+  },
+  {
+   "asset": "wood_beam",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    10.0,
+    5.8,
+    26.8
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.0,
+      0.36,
+      0.36
+     ],
+     "off": [
+      0.0,
+      0.18,
+      0.0
+     ]
+    }
+   ],
+   "note": "lookout",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_beam",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    10.0,
+    5.8,
+    31.4
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.0,
+      0.36,
+      0.36
+     ],
+     "off": [
+      0.0,
+      0.18,
+      0.0
+     ]
+    }
+   ],
+   "note": "lookout",
+   "float_ok": true
+  },
+  {
+   "asset": "wood_railing",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    10.0,
+    2.8,
+    31.6
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.1,
+      1.27,
+      0.24
+     ],
+     "off": [
+      0.0,
+      0.635,
+      0.0
+     ]
+    }
+   ],
+   "note": "lookout"
+  },
+  {
+   "asset": "wood_railing",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    6.8,
+    2.8,
+    29.1
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.1,
+      1.27,
+      0.24
+     ],
+     "off": [
+      0.0,
+      0.635,
+      0.0
+     ]
+    }
+   ],
+   "note": "lookout"
+  },
+  {
+   "asset": "wood_railing",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    13.2,
+    2.8,
+    29.1
+   ],
+   "yaw": 1.5708,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      4.1,
+      1.27,
+      0.24
+     ],
+     "off": [
+      0.0,
+      0.635,
+      0.0
+     ]
+    }
+   ],
+   "note": "lookout"
+  },
+  {
+   "asset": "station_campfire",
+   "kit": "crafting_stations",
+   "zone": "SouthRidge",
+   "pos": [
+    10.0,
+    2.8,
+    29.2
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.602,
+      1.294,
+      1.602
+     ],
+     "off": [
+      0.0,
+      0.647,
+      0.0
+     ]
+    }
+   ],
+   "note": "lookout"
+  },
+  {
+   "asset": "loot_chest_small_closed",
+   "kit": "loot",
+   "zone": "SouthRidge",
+   "pos": [
+    15.4,
+    2.8,
+    28.6
+   ],
+   "yaw": -0.5,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      0.749,
+      0.481,
+      0.486
+     ],
+     "off": [
+      0.0,
+      0.238,
+      0.0
+     ]
+    }
+   ],
+   "note": "reward"
+  },
+  {
+   "asset": "short_bow_world",
+   "kit": "tools_weapons",
+   "zone": "SouthRidge",
+   "pos": [
+    8.4,
+    2.8,
+    28.2
+   ],
+   "yaw": 0.9,
+   "scale": 1.0,
+   "cols": [],
+   "note": "lookout"
+  },
+  {
+   "asset": "stone_node_intact",
+   "kit": "harvestables",
+   "zone": "SouthRidge",
+   "pos": [
+    -8.4,
+    1.2,
+    25.0
+   ],
+   "yaw": 0.5,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.984,
+      1.593,
+      1.573
+     ],
+     "off": [
+      0.0,
+      0.796,
+      0.0
+     ]
+    }
+   ],
+   "note": "quarry"
+  },
+  {
+   "asset": "stone_node_intact",
+   "kit": "harvestables",
+   "zone": "SouthRidge",
+   "pos": [
+    -11.2,
+    1.2,
+    28.0
+   ],
+   "yaw": -0.7,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.984,
+      1.593,
+      1.573
+     ],
+     "off": [
+      0.0,
+      0.796,
+      0.0
+     ]
+    }
+   ],
+   "note": "quarry"
+  },
+  {
+   "asset": "stone_node_cracked",
+   "kit": "harvestables",
+   "zone": "SouthRidge",
+   "pos": [
+    -10.6,
+    1.2,
+    30.2
+   ],
+   "yaw": 1.0,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.984,
+      1.593,
+      1.573
+     ],
+     "off": [
+      0.0,
+      0.796,
+      0.0
+     ]
+    }
+   ],
+   "note": "quarry"
+  },
+  {
+   "asset": "pickup_stone",
+   "kit": "pickups",
+   "zone": "SouthRidge",
+   "pos": [
+    -9.6,
+    1.2,
+    27.0
+   ],
+   "yaw": 0.3,
+   "scale": 1.0,
+   "cols": [],
+   "note": "quarry"
+  },
+  {
+   "asset": "pickup_flint",
+   "kit": "pickups",
+   "zone": "SouthRidge",
+   "pos": [
+    -11.8,
+    1.2,
+    24.6
+   ],
+   "yaw": 0.8,
+   "scale": 1.0,
+   "cols": [],
+   "note": "quarry"
+  },
+  {
+   "asset": "stone_pickaxe_world",
+   "kit": "tools_weapons",
+   "zone": "SouthRidge",
+   "pos": [
+    -10.2,
+    1.2,
+    26.0
+   ],
+   "yaw": -0.4,
+   "scale": 1.0,
+   "cols": [],
+   "note": "quarry"
+  },
+  {
+   "asset": "loot_coin_pouch",
+   "kit": "loot",
+   "zone": "SouthRidge",
+   "pos": [
+    -15.6,
+    1.2,
+    30.8
+   ],
+   "yaw": 0.0,
+   "scale": 1.0,
+   "cols": [],
+   "note": "reward"
+  },
+  {
+   "asset": "boulder_h",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -5.321,
+    1.2,
+    28.963
+   ],
+   "yaw": 0.61295,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.498,
+      2.846,
+      3.115
+     ],
+     "off": [
+      0.0,
+      1.423,
+      0.0
+     ]
+    }
+   ],
+   "note": "ridge"
+  },
+  {
+   "asset": "boulder_d",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    19.987,
+    1.2,
+    32.745
+   ],
+   "yaw": 4.70466,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      3.352,
+      2.197,
+      3.38
+     ],
+     "off": [
+      0.0,
+      1.099,
+      0.0
+     ]
+    }
+   ],
+   "note": "ridge"
+  },
+  {
+   "asset": "boulder_f",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    7.343,
+    1.2,
+    22.138
+   ],
+   "yaw": 5.05691,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.264,
+      1.828,
+      2.216
+     ],
+     "off": [
+      0.0,
+      0.914,
+      0.0
+     ]
+    }
+   ],
+   "note": "ridge"
+  },
+  {
+   "asset": "boulder_f",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -14.987,
+    1.2,
+    32.35
+   ],
+   "yaw": 5.31392,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.264,
+      1.828,
+      2.216
+     ],
+     "off": [
+      0.0,
+      0.914,
+      0.0
+     ]
+    }
+   ],
+   "note": "ridge"
+  },
+  {
+   "asset": "boulder_f",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    20.424,
+    1.2,
+    27.191
+   ],
+   "yaw": 1.37102,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.264,
+      1.828,
+      2.216
+     ],
+     "off": [
+      0.0,
+      0.914,
+      0.0
+     ]
+    }
+   ],
+   "note": "ridge"
+  },
+  {
+   "asset": "rock_cluster_c",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -7.585,
+    1.2,
+    32.908
+   ],
+   "yaw": 5.63704,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.882,
+      1.788,
+      1.812
+     ],
+     "off": [
+      0.0,
+      0.894,
+      0.0
+     ]
+    }
+   ],
+   "note": "ridge"
+  },
+  {
+   "asset": "rock_cluster_a",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    17.622,
+    1.2,
+    22.199
+   ],
+   "yaw": 4.37068,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.089,
+      1.844,
+      1.553
+     ],
+     "off": [
+      0.0,
+      0.922,
+      0.0
+     ]
+    }
+   ],
+   "note": "ridge"
+  },
+  {
+   "asset": "rock_cluster_d",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -12.642,
+    1.2,
+    23.804
+   ],
+   "yaw": 0.41171,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      1.744,
+      1.633,
+      1.462
+     ],
+     "off": [
+      0.0,
+      0.817,
+      0.0
+     ]
+    }
+   ],
+   "note": "ridge"
+  },
+  {
+   "asset": "rock_cluster_f",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    11.966,
+    1.2,
+    22.199
+   ],
+   "yaw": 0.65415,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.198,
+      1.806,
+      1.545
+     ],
+     "off": [
+      0.0,
+      0.903,
+      0.0
+     ]
+    }
+   ],
+   "note": "ridge"
+  },
+  {
+   "asset": "rock_cluster_a",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -4.545,
+    1.2,
+    23.862
+   ],
+   "yaw": 0.62278,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.089,
+      1.844,
+      1.553
+     ],
+     "off": [
+      0.0,
+      0.922,
+      0.0
+     ]
+    }
+   ],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_d",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    16.784,
+    1.2,
+    24.62
+   ],
+   "yaw": 3.6436,
+   "scale": 0.8467,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -4.849,
+    1.2,
+    25.373
+   ],
+   "yaw": 3.03935,
+   "scale": 0.9023,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    6.892,
+    1.2,
+    24.705
+   ],
+   "yaw": 3.68936,
+   "scale": 1.0954,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -11.983,
+    1.2,
+    26.094
+   ],
+   "yaw": 2.9385,
+   "scale": 1.0023,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -8.966,
+    1.2,
+    30.898
+   ],
+   "yaw": 1.38125,
+   "scale": 0.9518,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    19.332,
+    1.2,
+    25.357
+   ],
+   "yaw": 5.13218,
+   "scale": 1.0376,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_b",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -5.347,
+    1.2,
+    31.482
+   ],
+   "yaw": 5.21152,
+   "scale": 1.0222,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    14.729,
+    1.2,
+    22.293
+   ],
+   "yaw": 5.19028,
+   "scale": 0.8537,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -8.121,
+    1.2,
+    22.536
+   ],
+   "yaw": 3.88835,
+   "scale": 1.0074,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -6.375,
+    1.2,
+    26.488
+   ],
+   "yaw": 0.93558,
+   "scale": 0.8459,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_b",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -6.149,
+    1.2,
+    23.015
+   ],
+   "yaw": 5.30297,
+   "scale": 1.0445,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_d",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -15.248,
+    1.2,
+    25.669
+   ],
+   "yaw": 1.12199,
+   "scale": 1.031,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_d",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    13.605,
+    1.2,
+    22.919
+   ],
+   "yaw": 3.41814,
+   "scale": 0.8324,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_d",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -14.87,
+    1.2,
+    25.001
+   ],
+   "yaw": 1.20548,
+   "scale": 0.8867,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_f",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    19.846,
+    1.2,
+    24.409
+   ],
+   "yaw": 2.03814,
+   "scale": 0.9437,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -14.938,
+    1.2,
+    27.817
+   ],
+   "yaw": 3.09145,
+   "scale": 1.0693,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_d",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    5.691,
+    1.2,
+    24.86
+   ],
+   "yaw": 3.79558,
+   "scale": 0.8631,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -13.733,
+    1.2,
+    25.564
+   ],
+   "yaw": 1.16703,
+   "scale": 0.944,
+   "cols": [],
+   "note": "ridge"
+  },
+  {
+   "asset": "boulder_f",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -6.849,
+    0.0,
+    19.844
+   ],
+   "yaw": 0.30126,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.264,
+      1.828,
+      2.216
+     ],
+     "off": [
+      0.0,
+      0.914,
+      0.0
+     ]
+    }
+   ],
+   "note": "apron"
+  },
+  {
+   "asset": "boulder_f",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    23.438,
+    0.0,
+    14.557
+   ],
+   "yaw": 6.04367,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.264,
+      1.828,
+      2.216
+     ],
+     "off": [
+      0.0,
+      0.914,
+      0.0
+     ]
+    }
+   ],
+   "note": "apron"
+  },
+  {
+   "asset": "reeds_a",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    17.236,
+    0.0,
+    16.58
+   ],
+   "yaw": 0.45813,
+   "scale": 1.1982,
+   "cols": [],
+   "note": "apron"
+  },
+  {
+   "asset": "reeds_d",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    8.096,
+    0.0,
+    15.811
+   ],
+   "yaw": 4.60875,
+   "scale": 1.1766,
+   "cols": [],
+   "note": "apron"
+  },
+  {
+   "asset": "reeds_c",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    5.245,
+    0.0,
+    15.067
+   ],
+   "yaw": 1.01358,
+   "scale": 1.0738,
+   "cols": [],
+   "note": "apron"
+  },
+  {
+   "asset": "reeds_d",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -5.745,
+    0.0,
+    14.952
+   ],
+   "yaw": 1.5495,
+   "scale": 1.0272,
+   "cols": [],
+   "note": "apron"
+  },
+  {
+   "asset": "reeds_d",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    11.083,
+    0.0,
+    17.497
+   ],
+   "yaw": 0.27255,
+   "scale": 1.1935,
+   "cols": [],
+   "note": "apron"
+  },
+  {
+   "asset": "reeds_b",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    17.533,
+    0.0,
+    19.36
+   ],
+   "yaw": 0.12829,
+   "scale": 1.0111,
+   "cols": [],
+   "note": "apron"
+  },
+  {
+   "asset": "reeds_a",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    15.721,
+    0.0,
+    17.315
+   ],
+   "yaw": 5.16824,
+   "scale": 1.0718,
+   "cols": [],
+   "note": "apron"
+  },
+  {
+   "asset": "reeds_b",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -16.015,
+    0.0,
+    18.409
+   ],
+   "yaw": 4.80549,
+   "scale": 0.9769,
+   "cols": [],
+   "note": "apron"
+  },
+  {
+   "asset": "reeds_b",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -20.26,
+    0.0,
+    20.45
+   ],
+   "yaw": 4.93075,
+   "scale": 0.9076,
+   "cols": [],
+   "note": "apron"
+  },
+  {
+   "asset": "reeds_c",
+   "kit": "environment",
+   "zone": "SouthRidge",
+   "pos": [
+    -20.469,
+    0.0,
+    16.966
+   ],
+   "yaw": 4.12068,
+   "scale": 1.0333,
+   "cols": [],
+   "note": "apron"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -4.112,
+    0.0,
+    -22.527
+   ],
+   "yaw": 4.76547,
+   "scale": 0.8491,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_b",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    3.613,
+    0.0,
+    -21.272
+   ],
+   "yaw": 0.58691,
+   "scale": 0.7843,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_f",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -3.416,
+    0.0,
+    -12.591
+   ],
+   "yaw": 1.63836,
+   "scale": 0.8475,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    3.788,
+    0.0,
+    -24.692
+   ],
+   "yaw": 2.33175,
+   "scale": 0.9412,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -4.577,
+    0.0,
+    -20.776
+   ],
+   "yaw": 0.37947,
+   "scale": 1.0252,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -4.496,
+    0.0,
+    -21.122
+   ],
+   "yaw": 5.82106,
+   "scale": 0.7777,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_b",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -3.719,
+    0.0,
+    -16.252
+   ],
+   "yaw": 5.15117,
+   "scale": 0.8833,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    3.546,
+    0.0,
+    -12.406
+   ],
+   "yaw": 1.67171,
+   "scale": 0.7794,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -3.76,
+    0.0,
+    -19.637
+   ],
+   "yaw": 4.43396,
+   "scale": 0.8649,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    4.129,
+    0.0,
+    -21.507
+   ],
+   "yaw": 5.51706,
+   "scale": 0.8167,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -4.117,
+    0.0,
+    16.096
+   ],
+   "yaw": 6.24181,
+   "scale": 0.8503,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    4.492,
+    0.0,
+    20.163
+   ],
+   "yaw": 5.41725,
+   "scale": 1.0179,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    3.404,
+    0.0,
+    20.462
+   ],
+   "yaw": 5.62276,
+   "scale": 0.9157,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -3.754,
+    0.0,
+    16.245
+   ],
+   "yaw": 0.29531,
+   "scale": 0.8022,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_f",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    4.063,
+    0.0,
+    19.365
+   ],
+   "yaw": 5.49652,
+   "scale": 0.8921,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -3.626,
+    0.0,
+    20.37
+   ],
+   "yaw": 1.22212,
+   "scale": 0.8367,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    4.241,
+    0.0,
+    17.573
+   ],
+   "yaw": 2.99545,
+   "scale": 0.8019,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -16.632,
+    0.0,
+    -1.814
+   ],
+   "yaw": 3.46025,
+   "scale": 0.7846,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -14.836,
+    0.0,
+    6.186
+   ],
+   "yaw": 6.20652,
+   "scale": 0.8579,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -14.721,
+    0.0,
+    -2.152
+   ],
+   "yaw": 4.11961,
+   "scale": 0.908,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -14.64,
+    0.0,
+    6.313
+   ],
+   "yaw": 4.4221,
+   "scale": 0.998,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -14.609,
+    0.0,
+    -2.034
+   ],
+   "yaw": 3.77414,
+   "scale": 1.0414,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_d",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -13.892,
+    0.0,
+    -2.566
+   ],
+   "yaw": 2.72296,
+   "scale": 0.9844,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_f",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -16.088,
+    0.0,
+    -1.53
+   ],
+   "yaw": 2.0294,
+   "scale": 0.7833,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -15.71,
+    0.0,
+    5.52
+   ],
+   "yaw": 0.38093,
+   "scale": 0.8894,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_d",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -13.878,
+    0.0,
+    -2.26
+   ],
+   "yaw": 4.80688,
+   "scale": 0.9103,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_f",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -15.056,
+    0.0,
+    6.446
+   ],
+   "yaw": 3.15779,
+   "scale": 0.8491,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_d",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    15.693,
+    -0.7,
+    5.791
+   ],
+   "yaw": 4.91728,
+   "scale": 0.9945,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_a",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    14.311,
+    0.0,
+    5.737
+   ],
+   "yaw": 3.59865,
+   "scale": 1.0168,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_e",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    14.406,
+    0.0,
+    6.277
+   ],
+   "yaw": 6.26072,
+   "scale": 0.8461,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_f",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    15.945,
+    -0.7,
+    6.345
+   ],
+   "yaw": 3.20732,
+   "scale": 0.9889,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "grass_clump_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    14.548,
+    0.0,
+    -1.731
+   ],
+   "yaw": 1.54451,
+   "scale": 0.951,
+   "cols": [],
+   "note": "verge"
+  },
+  {
+   "asset": "boulder_a",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -23.397,
+    0.0,
+    31.295
+   ],
+   "yaw": 3.22395,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      3.12,
+      2.249,
+      3.433
+     ],
+     "off": [
+      0.0,
+      1.124,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    31.7,
+    0.0,
+    -20.136
+   ],
+   "yaw": 5.30207,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.479,
+      1.649,
+      1.839
+     ],
+     "off": [
+      0.0,
+      0.824,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_b",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    24.717,
+    0.0,
+    31.407
+   ],
+   "yaw": 4.15894,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.329,
+      2.909,
+      3.427
+     ],
+     "off": [
+      0.0,
+      1.455,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_b",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    22.09,
+    0.0,
+    -31.182
+   ],
+   "yaw": 2.0607,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.329,
+      2.909,
+      3.427
+     ],
+     "off": [
+      0.0,
+      1.455,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_f",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    31.756,
+    0.0,
+    23.928
+   ],
+   "yaw": 0.85123,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.264,
+      1.828,
+      2.216
+     ],
+     "off": [
+      0.0,
+      0.914,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_g",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    32.15,
+    0.0,
+    -28.613
+   ],
+   "yaw": 1.5543,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.152,
+      1.922,
+      2.635
+     ],
+     "off": [
+      0.0,
+      0.961,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_g",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    32.22,
+    0.0,
+    0.668
+   ],
+   "yaw": 4.09942,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.152,
+      1.922,
+      2.635
+     ],
+     "off": [
+      0.0,
+      0.961,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -30.538,
+    0.0,
+    13.627
+   ],
+   "yaw": 5.58685,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.479,
+      1.649,
+      1.839
+     ],
+     "off": [
+      0.0,
+      0.824,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_a",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -28.338,
+    0.0,
+    30.463
+   ],
+   "yaw": 4.75771,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      3.12,
+      2.249,
+      3.433
+     ],
+     "off": [
+      0.0,
+      1.124,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_h",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    32.227,
+    0.0,
+    -3.986
+   ],
+   "yaw": 2.78391,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.498,
+      2.846,
+      3.115
+     ],
+     "off": [
+      0.0,
+      1.423,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -30.657,
+    0.0,
+    -8.172
+   ],
+   "yaw": 3.98972,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.479,
+      1.649,
+      1.839
+     ],
+     "off": [
+      0.0,
+      0.824,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_h",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    26.639,
+    0.0,
+    -31.984
+   ],
+   "yaw": 5.13785,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.498,
+      2.846,
+      3.115
+     ],
+     "off": [
+      0.0,
+      1.423,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_a",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -20.472,
+    0.0,
+    -30.937
+   ],
+   "yaw": 4.95551,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      3.12,
+      2.249,
+      3.433
+     ],
+     "off": [
+      0.0,
+      1.124,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_f",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -30.746,
+    0.0,
+    5.667
+   ],
+   "yaw": 5.08095,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.264,
+      1.828,
+      2.216
+     ],
+     "off": [
+      0.0,
+      0.914,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_f",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    32.356,
+    0.0,
+    29.366
+   ],
+   "yaw": 0.22431,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.264,
+      1.828,
+      2.216
+     ],
+     "off": [
+      0.0,
+      0.914,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_b",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    29.062,
+    0.0,
+    32.315
+   ],
+   "yaw": 4.5531,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.329,
+      2.909,
+      3.427
+     ],
+     "off": [
+      0.0,
+      1.455,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_f",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -25.773,
+    0.0,
+    -32.28
+   ],
+   "yaw": 3.91263,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.264,
+      1.828,
+      2.216
+     ],
+     "off": [
+      0.0,
+      0.914,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "boulder_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    32.37,
+    0.0,
+    5.542
+   ],
+   "yaw": 2.87538,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "box",
+     "size": [
+      2.479,
+      1.649,
+      1.839
+     ],
+     "off": [
+      0.0,
+      0.824,
+      0.0
+     ]
+    }
+   ],
+   "note": "talus"
+  },
+  {
+   "asset": "tree_pine_a",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -31.908,
+    0.0,
+    18.288
+   ],
+   "yaw": 4.1545,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.428,
+     "y": 2.214
+    }
+   ],
+   "note": "treeline"
+  },
+  {
+   "asset": "tree_pine_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -31.509,
+    0.0,
+    25.527
+   ],
+   "yaw": 4.71164,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.385,
+     "y": 2.193
+    }
+   ],
+   "note": "treeline"
+  },
+  {
+   "asset": "tree_pine_d",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -28.616,
+    0.0,
+    -29.039
+   ],
+   "yaw": 5.81619,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 3.89,
+     "y": 1.945
+    }
+   ],
+   "note": "treeline"
+  },
+  {
+   "asset": "tree_pine_e",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -28.256,
+    0.0,
+    -25.129
+   ],
+   "yaw": 3.26219,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.307,
+     "y": 2.154
+    }
+   ],
+   "note": "treeline"
+  },
+  {
+   "asset": "tree_pine_f",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -29.14,
+    0.0,
+    18.791
+   ],
+   "yaw": 4.55619,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.3,
+     "y": 2.15
+    }
+   ],
+   "note": "treeline"
+  },
+  {
+   "asset": "tree_pine_a",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -31.731,
+    0.0,
+    -0.694
+   ],
+   "yaw": 4.5361,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.428,
+     "y": 2.214
+    }
+   ],
+   "note": "treeline"
+  },
+  {
+   "asset": "tree_pine_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -29.04,
+    0.0,
+    -18.942
+   ],
+   "yaw": 3.84605,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.385,
+     "y": 2.193
+    }
+   ],
+   "note": "treeline"
+  },
+  {
+   "asset": "tree_pine_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -28.02,
+    0.0,
+    11.182
+   ],
+   "yaw": 4.02157,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.385,
+     "y": 2.193
+    }
+   ],
+   "note": "treeline"
+  },
+  {
+   "asset": "tree_pine_f",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -28.924,
+    0.0,
+    24.075
+   ],
+   "yaw": 1.7436,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.3,
+     "y": 2.15
+    }
+   ],
+   "note": "treeline"
+  },
+  {
+   "asset": "tree_pine_c",
+   "kit": "environment",
+   "zone": "RoutesAndBoundary",
+   "pos": [
+    -31.967,
+    0.0,
+    21.094
+   ],
+   "yaw": 3.99991,
+   "scale": 1.0,
+   "cols": [
+    {
+     "t": "cyl",
+     "r": 0.42,
+     "h": 4.385,
+     "y": 2.193
+    }
+   ],
+   "note": "treeline"
+  }
+ ],
+ "lights": [
+  {
+   "name": "CampFire",
+   "zone": "SpawnCamp",
+   "pos": [
+    0.0,
+    2.2,
+    2.0
+   ],
+   "color": [
+    1.0,
+    0.55,
+    0.2
+   ],
+   "energy": 3.2,
+   "range": 12.0
+  },
+  {
+   "name": "ForgeGlow",
+   "zone": "NorthRuins",
+   "pos": [
+    13.2,
+    2.06,
+    -29.0
+   ],
+   "color": [
+    1.0,
+    0.42,
+    0.12
+   ],
+   "energy": 2.6,
+   "range": 9.0
+  },
+  {
+   "name": "MireVein",
+   "zone": "EastMire",
+   "pos": [
+    23.0,
+    1.5,
+    1.5
+   ],
+   "color": [
+    0.55,
+    0.35,
+    0.95
+   ],
+   "energy": 2.4,
+   "range": 14.0
+  },
+  {
+   "name": "NestGlow",
+   "zone": "EastMire",
+   "pos": [
+    25.4,
+    0.3,
+    -8.2
+   ],
+   "color": [
+    0.85,
+    0.3,
+    0.35
+   ],
+   "energy": 1.4,
+   "range": 7.0
+  },
+  {
+   "name": "RidgeFire",
+   "zone": "SouthRidge",
+   "pos": [
+    10.0,
+    4.0,
+    29.2
+   ],
+   "color": [
+    1.0,
+    0.6,
+    0.25
+   ],
+   "energy": 2.4,
+   "range": 11.0
+  }
+ ],
+ "markers": [
+  {
+   "name": "NestSpawn",
+   "zone": "EastMire",
+   "kind": "enemy_spawn",
+   "pos": [
+    25.4,
+    -0.7,
+    -8.2
+   ]
+  }
+ ],
+ "roads": [
+  {
+   "name": "Road_North",
+   "rect": [
+    -3.0,
+    -26.0,
+    3.0,
+    -8.6
+   ]
+  },
+  {
+   "name": "Road_South",
+   "rect": [
+    -3.0,
+    12.8,
+    3.0,
+    21.0
+   ]
+  },
+  {
+   "name": "Road_West",
+   "rect": [
+    -17.0,
+    -1.0,
+    -10.7,
+    5.0
+   ]
+  },
+  {
+   "name": "Road_East",
+   "rect": [
+    10.7,
+    -1.0,
+    17.0,
+    5.0
+   ]
+  }
+ ]
+}
