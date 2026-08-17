@@ -497,7 +497,26 @@ Two things to settle, and they are separable:
 
 ---
 
+### F-028 · `verify_setup.gd` hard-codes the superseded greybox main scene
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-16 by nettle during 2.3
+
+`tools/verify_setup.gd` fails only its “main_scene points at the level” assertion after the current
+human-owned `project.godot` change selected `levels/playtest_hollow.tscn`; it still compares against
+`greybox_test.tscn`. The new default scene itself boots headlessly and reports 463 props, 20 terrain
+bodies, 274 shapes, and one marker. Update the assertion to accept the current playable level or
+validate the configured main scene structurally instead of pinning the old path.
+
 ## Resolved
+
+### F-027 · `NetInterest.configure()` did not keep its returned filter alive — **fixed**
+
+**Area:** netcode · **Severity:** high · **Found/fixed:** 2026-08-16 by nettle during 2.3
+
+Godot 4.7.1 releases a `RefCounted` callable target when the caller discards the returned
+`RadiusFilter`, causing repeated visibility call errors. `NetInterest.configure()` now stores the
+filter as synchronizer metadata, which gives it exactly the synchronizer's lifetime; the interest
+harness asserts that ownership and its full live-wire visibility run passes.
 
 ### F-026 · A deferred task pins the board's active milestone forever, hiding all remaining work — **fixed**
 

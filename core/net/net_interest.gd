@@ -53,6 +53,10 @@ const DELTA_INTERVALS: PackedFloat32Array = [
 ## problem worth solving, and a teammate who vanishes at 121 m is a bug report, not an optimization.
 const FILTERED: Array[bool] = [false, true, true]
 
+## Strong reference owned by the synchronizer. Callable does not retain a RefCounted target strongly
+## in Godot 4.7.1 (F-027), so configure() stores the filter as metadata as well as registering it.
+const RADIUS_FILTER_META: StringName = &"mire_radius_filter"
+
 # ── Observer registry ─────────────────────────────────────────────────────────────────────────────
 #
 # Where each peer is looking from — its own player's position. Written by autoload/player_net.gd once
@@ -121,8 +125,9 @@ static func configure(
 		return null
 
 	var filter := RadiusFilter.new(source)
-	# The Callable holds the only strong reference to the filter, and the synchronizer holds the
-	# Callable — so the hysteresis state lives exactly as long as the synchronizer does.
+	# The Callable alone does NOT retain its RefCounted target strongly in the pinned engine. Metadata
+	# gives the filter the same lifetime as the synchronizer and makes discarding this return value safe.
+	sync.set_meta(RADIUS_FILTER_META, filter)
 	sync.add_visibility_filter(filter.evaluate)
 
 	# PHYSICS, not IDLE. Visibility changes cost despawn/respawn packets, so how often it is
@@ -169,6 +174,13 @@ class RadiusFilter extends RefCounted:
 		# "invisible", which is the safe direction: a client is told the entity is gone.
 		if not is_instance_valid(_source) or not _source.is_inside_tree():
 			return false
+
+		# The host owns every filtered entity and must always be addressable. This matters on client
+		# copies too: clients do not publish observer positions, but Godot consults local visibility
+		# before allowing an RPC to peer 1. Returning false here makes a valid client->host request fail
+		# in the RPC layer as "peer cannot see this node" before authority validation can run.
+		if peer_id == NetConfig.HOST_PEER_ID:
+			return true
 
 		# A peer with no player has no viewpoint. Sending it the world would be the one case where
 		# interest management costs more than it saves.

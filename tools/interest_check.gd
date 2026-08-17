@@ -202,6 +202,8 @@ func _check_configuration() -> void:
 
 		if row["filtered"]:
 			_check("%s has a visibility filter" % label, entity.filter != null)
+			_check("%s synchronizer retains its filter target" % label,
+				sync.get_meta(NetInterest.RADIUS_FILTER_META) == entity.filter)
 			_check("%s re-evaluates on the physics tick, not the render frame" % label,
 				sync.visibility_update_mode == MultiplayerSynchronizer.VISIBILITY_PROCESS_PHYSICS,
 				"mode %d" % sync.visibility_update_mode)
@@ -262,6 +264,8 @@ func _check_filter_semantics() -> void:
 
 	NetInterest.clear_observers()
 	_check("a peer with no observer sees nothing", not filter.evaluate(TEST_PEER))
+	_check("the authoritative host stays addressable without an observer",
+		filter.evaluate(NetConfig.HOST_PEER_ID))
 
 	NetInterest.set_observer(TEST_PEER, Vector3.ZERO)
 

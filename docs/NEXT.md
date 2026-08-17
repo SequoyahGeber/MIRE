@@ -9,6 +9,10 @@
 
 **Milestone:** M2 · Vertical slice. **M1 closes at 13/14** — 1.12 is deferred, not outstanding
 (D-030). M0 is closed, 10/10.
+**Task 2.3 is code-complete:** `HarvestableDef` plus the host-authoritative `Harvestable` lifecycle
+passed both a 39-assertion headless check and a real two-process ENet depletion/respawn run. The
+system is not yet present in the playable map: harvestable `.tres` definitions and scene/runtime
+wiring are human-owned content work, and task 2.4 still has to consume `EventBus` yield events.
 **Last session:** 2026-08-16 — task 1.12 is in progress. All three pinned-engine/GodotSteam
 preflights passed and a real Mac-hosted Steam lobby reached three peers across macOS, Windows and
 Linux. Code-built remote-player debug capsules made all three spawns visible, and Linux movement
@@ -71,11 +75,19 @@ scheduled three-machine session driven by lobby IDs pasted between terminals, on
 (task 6.10), which makes the test cheap.** Everything needed to resume is in
 `docs/STEAM_CROSS_PLATFORM_TEST.md` and will keep.
 
-**The next code task is `2.3` — the harvestable prop.** Hit → damage → yield → despawn → respawn,
-host-authoritative per `ARCHITECTURE.md` §2.2. It is the first real gameplay system on top of the
-network spine, `2.2` already shipped `ItemDef`/`RecipeDef` and the registry loader it needs, and the
-A-001 harvestable art is already in the authored playtest map. After it, `2.4` (inventory data layer)
-and `2.6` (crafting) are the T2 spine of the vertical slice; `2.5`, `2.7` and `2.1d` are yours.
+**The next code task is `2.4` — the inventory data layer.** Consume the host-only harvest yield seam
+through `EventBus.subscribe_harvest_yielded()`, implement stacks plus add/remove, and keep all client
+changes request/validate/confirm. `2.3` deliberately emits ids and amounts but has no inventory
+reference. After it, `2.6` (crafting) is the remaining T2 spine of the vertical slice; `2.5`, `2.7`
+and asset work are yours.
+
+**The exact 2.3 → 2.4 seam:** subscribe a `Callable` whose signature is
+`(harvestable_id: StringName, peer_id: int, item_id: StringName, amount: int, world_position: Vector3)`
+and unsubscribe when the inventory owner leaves the tree. The event fires on the host exactly once
+per depletion. `Harvestable.request_hit()` is the parameterless client request; trusted host combat
+uses `host_apply_damage(amount, instigator_peer_id)`. The new RPC/schema makes the current protocol
+version 2. Filtered entities now always treat peer 1 as addressable, and `NetInterest.configure()`
+retains its radius filter on the synchronizer (F-027), so future props should use that seam unchanged.
 
 **If cross-play testing starts to feel overdue before M6**, the cheap version is a pair of debug
 console commands over the `SteamLobby` API that already exists (`host_session()`, `join_by_id()`,
@@ -111,7 +123,7 @@ none of them needed anything from you in the editor.
 
 | # | Task | Tier | Who | Est |
 |---|---|---|---|---|
-| 2.3 | Harvestable prop: hit → damage → yield → despawn → respawn, host-authoritative | T2 | agent | 3h |
+| 2.3 | Harvestable prop: hit → damage → yield → despawn → respawn, host-authoritative | T2 | done | ✅ |
 | 2.4 | Inventory system: stacks, add/remove, host-validated. Data layer only | T2 | agent | 3h |
 | 2.5 | Inventory UI — grid, drag/drop, hotbar | T0 | you | 4h |
 | 2.6 | Crafting: recipe check, craft request → host validates → grants. One station | T2 | agent | 3h |

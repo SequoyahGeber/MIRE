@@ -1,6 +1,297 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "assets/environment": {
+      "agent": "pike",
+      "at": "2026-08-17T01:02:46+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/README.md": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/catalog.json": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/fence_gate.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_clump_a.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_clump_b.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_clump_c.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_clump_d.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_clump_e.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_clump_f.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_meadow_a.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_meadow_b.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_meadow_c.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_meadow_d.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_seedhead_a.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_seedhead_b.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_seedhead_c.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_seedhead_d.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_tuft_a.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_tuft_b.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_tuft_c.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/exports/grass_tuft_d.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/preview/ground_cover_preview.png": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment/preview/mire_map_kit_preview.png": {
+      "agent": "pike",
+      "at": "2026-08-17T01:10:53+00:00",
+      "task": "2.1h"
+    },
+    "assets/environment_additions": {
+      "agent": "ember",
+      "at": "2026-08-17T01:02:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/maps/playtest_hollow.glb": {
+      "agent": "pike",
+      "at": "2026-08-17T01:02:46+00:00",
+      "task": "2.1h"
+    },
+    "assets/maps/preview/playtest_hollow_preview.png": {
+      "agent": "pike",
+      "at": "2026-08-17T01:02:46+00:00",
+      "task": "2.1h"
+    },
+    "assets/source/adapted_nature_set.blend": {
+      "agent": "ember",
+      "at": "2026-08-17T01:02:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/source/mire_map_kit.blend": {
+      "agent": "pike",
+      "at": "2026-08-17T01:02:46+00:00",
+      "task": "2.1h"
+    },
+    "assets/source/playtest_hollow.blend": {
+      "agent": "pike",
+      "at": "2026-08-17T01:02:46+00:00",
+      "task": "2.1h"
+    },
+    "assets/source/reference_imports": {
+      "agent": "ember",
+      "at": "2026-08-17T01:02:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/source/ward_set.blend": {
+      "agent": "ember",
+      "at": "2026-08-17T00:55:02+00:00",
+      "task": "2.1d"
+    },
+    "assets/wards": {
+      "agent": "ember",
+      "at": "2026-08-17T00:55:02+00:00",
+      "task": "2.1d"
+    },
+    "docs/ASSET_TRACKER.md": {
+      "agent": "ember",
+      "at": "2026-08-17T00:55:02+00:00",
+      "task": "2.1d"
+    },
+    "docs/DELEGATION.md": {
+      "agent": "ember",
+      "at": "2026-08-17T00:55:02+00:00",
+      "task": "2.1d"
+    },
+    "docs/ROADMAP.md": {
+      "agent": "pike",
+      "at": "2026-08-17T01:02:46+00:00",
+      "task": "2.1h"
+    },
+    "tools/blender/build_adapted_nature_set.py": {
+      "agent": "ember",
+      "at": "2026-08-17T01:02:46+00:00",
+      "task": "2.1d"
+    },
+    "tools/blender/build_mire_map_kit.py": {
+      "agent": "pike",
+      "at": "2026-08-17T01:02:46+00:00",
+      "task": "2.1h"
+    },
+    "tools/blender/build_playtest_hollow.py": {
+      "agent": "pike",
+      "at": "2026-08-17T01:02:46+00:00",
+      "task": "2.1h"
+    },
+    "tools/blender/build_ward_set.py": {
+      "agent": "ember",
+      "at": "2026-08-17T00:55:02+00:00",
+      "task": "2.1d"
+    },
+    "tools/mapgen/hollow_layout.py": {
+      "agent": "pike",
+      "at": "2026-08-17T01:02:46+00:00",
+      "task": "2.1h"
+    },
+    "tools/playtest_hollow_check.gd": {
+      "agent": "pike",
+      "at": "2026-08-17T01:02:46+00:00",
+      "task": "2.1h"
+    },
+    "world/gen/layouts/playtest_hollow.json": {
+      "agent": "pike",
+      "at": "2026-08-17T01:02:46+00:00",
+      "task": "2.1h"
+    }
+  },
+  "in_flight": {
+    "2.1d": {
+      "agent": "ember",
+      "files": [
+        "docs/ASSET_TRACKER.md",
+        "docs/DELEGATION.md",
+        "tools/blender/build_ward_set.py",
+        "assets/source/ward_set.blend",
+        "assets/wards",
+        "tools/blender/build_adapted_nature_set.py",
+        "assets/source/adapted_nature_set.blend",
+        "assets/source/reference_imports",
+        "assets/environment_additions"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-17T00:55:02+00:00",
+          "by": "ember",
+          "text": "Claimed A-007 Ward batch: eight exports (foundation, healthy, damaged, critical, destroyed, repair scaffolding, boundary post, activation crystal). State meshes will share a foundation anchor so swaps do not drift; presentation only, no collision or gameplay authority."
+        },
+        {
+          "at": "2026-08-17T01:02:46+00:00",
+          "by": "ember",
+          "text": "Sequoyah added two user-supplied generated nature models. Keeping them as a separately catalogued adapted-nature addition, not inflating A-007's count. Rock: remove preview artifacts/black underside, rescale and recolor to MIRE stone/moss. Tree: remove the display island and loose dressing, retain/rework trunk canopy and roots, normalize to portable ground-centred scale."
+        }
+      ],
+      "started": "2026-08-17T00:55:02+00:00"
+    },
+    "2.1h": {
+      "agent": "pike",
+      "files": [
+        "docs/ROADMAP.md",
+        "tools/mapgen/hollow_layout.py",
+        "world/gen/layouts/playtest_hollow.json",
+        "tools/blender/build_playtest_hollow.py",
+        "assets/source/playtest_hollow.blend",
+        "assets/maps/playtest_hollow.glb",
+        "assets/maps/preview/playtest_hollow_preview.png",
+        "tools/playtest_hollow_check.gd",
+        "tools/blender/build_mire_map_kit.py",
+        "assets/source/mire_map_kit.blend",
+        "assets/environment",
+        "assets/environment/README.md",
+        "assets/environment/catalog.json",
+        "assets/environment/exports/grass_clump_a.glb",
+        "assets/environment/exports/grass_clump_b.glb",
+        "assets/environment/exports/grass_clump_c.glb",
+        "assets/environment/exports/grass_clump_d.glb",
+        "assets/environment/exports/grass_clump_e.glb",
+        "assets/environment/exports/grass_clump_f.glb",
+        "assets/environment/exports/grass_meadow_a.glb",
+        "assets/environment/exports/grass_meadow_b.glb",
+        "assets/environment/exports/grass_meadow_c.glb",
+        "assets/environment/exports/grass_meadow_d.glb",
+        "assets/environment/exports/grass_tuft_a.glb",
+        "assets/environment/exports/grass_tuft_b.glb",
+        "assets/environment/exports/grass_tuft_c.glb",
+        "assets/environment/exports/grass_tuft_d.glb",
+        "assets/environment/exports/grass_seedhead_a.glb",
+        "assets/environment/exports/grass_seedhead_b.glb",
+        "assets/environment/exports/grass_seedhead_c.glb",
+        "assets/environment/exports/grass_seedhead_d.glb",
+        "assets/environment/exports/fence_gate.glb",
+        "assets/environment/preview/ground_cover_preview.png",
+        "assets/environment/preview/mire_map_kit_preview.png"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-17T01:04:48+00:00",
+          "by": "pike",
+          "text": "Authority: static visuals/collision and foliage VFX are client-local. Fence trap is in shared asset/layout data, not playtest_hollow.tscn: fence_gate has a full-width collider and closed-leaf mesh. Keep the scene untouched so visual and collision consumers stay aligned."
+        }
+      ],
+      "started": "2026-08-17T01:02:46+00:00"
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
       "agent": "vane",
@@ -1132,6 +1423,16 @@
       "at": "2026-08-16T22:59:02+00:00",
       "task": "F-023"
     },
+    "core/events/event_bus.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:11:22+00:00",
+      "task": "2.3"
+    },
+    "core/events/event_bus.gd.uid": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:11:22+00:00",
+      "task": "2.3"
+    },
     "core/net/dummy_replicant.gd": {
       "agent": "load",
       "at": "2026-08-16T08:27:33+00:00",
@@ -1143,9 +1444,9 @@
       "task": "F-023"
     },
     "core/net/net_interest.gd": {
-      "agent": "birch",
-      "at": "2026-08-16T17:16:32+00:00",
-      "task": "1.8"
+      "agent": "nettle",
+      "at": "2026-08-17T01:11:22+00:00",
+      "task": "2.3"
     },
     "core/net/net_session.gd": {
       "agent": "vane",
@@ -1158,9 +1459,9 @@
       "task": "1.7"
     },
     "core/net/net_version.gd": {
-      "agent": "bram",
-      "at": "2026-08-16T17:14:58+00:00",
-      "task": "1.11"
+      "agent": "nettle",
+      "at": "2026-08-17T01:11:22+00:00",
+      "task": "2.3"
     },
     "core/net/net_version.gd.uid": {
       "agent": "reed",
@@ -1208,14 +1509,14 @@
       "task": "F-022"
     },
     "docs/FINDINGS.md": {
-      "agent": "ivy",
-      "at": "2026-08-16T23:19:13+00:00",
-      "task": "1.12"
+      "agent": "nettle",
+      "at": "2026-08-17T01:11:22+00:00",
+      "task": "2.3"
     },
     "docs/NEXT.md": {
-      "agent": "wick",
-      "at": "2026-08-17T00:47:21+00:00",
-      "task": "2.1g"
+      "agent": "nettle",
+      "at": "2026-08-17T01:11:22+00:00",
+      "task": "2.3"
     },
     "docs/ROADMAP.md": {
       "agent": "wick",
@@ -1266,6 +1567,26 @@
       "agent": "claude",
       "at": "2026-08-16T02:59:39+00:00",
       "task": "2.2"
+    },
+    "systems/harvesting/harvestable.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:11:22+00:00",
+      "task": "2.3"
+    },
+    "systems/harvesting/harvestable.gd.uid": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:11:22+00:00",
+      "task": "2.3"
+    },
+    "systems/harvesting/harvestable_def.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:11:22+00:00",
+      "task": "2.3"
+    },
+    "systems/harvesting/harvestable_def.gd.uid": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:11:22+00:00",
+      "task": "2.3"
     },
     "systems/inventory/item_def.gd": {
       "agent": "claude",
@@ -1352,10 +1673,30 @@
       "at": "2026-08-16T19:12:29+00:00",
       "task": "F-019"
     },
+    "tools/harvestable_check.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:11:22+00:00",
+      "task": "2.3"
+    },
+    "tools/harvestable_check.gd.uid": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:11:22+00:00",
+      "task": "2.3"
+    },
+    "tools/harvestable_net_check.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:11:22+00:00",
+      "task": "2.3"
+    },
+    "tools/harvestable_net_check.gd.uid": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:11:22+00:00",
+      "task": "2.3"
+    },
     "tools/interest_check.gd": {
-      "agent": "birch",
-      "at": "2026-08-16T17:16:32+00:00",
-      "task": "1.8"
+      "agent": "nettle",
+      "at": "2026-08-17T01:11:22+00:00",
+      "task": "2.3"
     },
     "tools/interest_check.gd.uid": {
       "agent": "reed",
@@ -1772,7 +2113,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
@@ -1803,6 +2144,13 @@
       "tier": "T1",
       "title": "Animate environmental presentation: client-local foliage wind and campfire flame, spark, smoke, and light VFX; scalable and scene-safe"
     },
+    "2.1h": {
+      "est": "6",
+      "milestone": "M2",
+      "status": "in_flight",
+      "tier": "T0",
+      "title": "Polish `playtest_hollow`: open the spawn-camp gates, enlarge and better connect the zones, improve grass, and add complementary ground-cover variants"
+    },
     "2.2": {
       "done_at": "2026-08-16T02:59:39+00:00",
       "done_by": "claude",
@@ -1813,9 +2161,11 @@
       "title": "`Resource` scripts for `ItemDef`, `RecipeDef` + `registry.gd` boot loader"
     },
     "2.3": {
+      "done_at": "2026-08-17T01:11:22+00:00",
+      "done_by": "nettle",
       "est": "3",
       "milestone": "M2",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Harvestable prop: hit \u2192 damage \u2192 yield \u2192 despawn \u2192 respawn. Host-authoritative (`ARCHITECTURE.md` \u00a72.2)."
     },
@@ -2504,6 +2854,13 @@
       "status": "done",
       "tier": "F",
       "title": "A deferred task pins the board's active milestone forever, hiding all remaining work"
+    },
+    "F-027": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`NetInterest.configure()` does not keep its returned filter alive"
     }
   },
   "version": 1

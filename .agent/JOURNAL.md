@@ -797,3 +797,21 @@ Notes along the way:
 Files: `autoload/environment_vfx.gd`, `world/environment/foliage_wind.gdshader`, `tools/environment_vfx_check.gd`, `project.godot`, `docs/ROADMAP.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`, `world/environment/particle_billboard.gdshader`, `docs/NEXT.md`, `world/gen/playtest_hollow.gd`, `autoload/environment_vfx.gd.uid`, `tools/environment_vfx_check.gd.uid`, `world/environment/foliage_wind.gdshader.uid`, `world/environment/particle_billboard.gdshader.uid`
 
 Commit at time of writing: `9121a9e`
+
+---
+
+### DONE · 2.3 · nettle · 2026-08-17T01:11:22+00:00
+
+**Harvestable prop: hit → damage → yield → despawn → respawn. Host-authoritative (`ARCHITECTURE.md` §2.2).**
+
+Built data-authored HarvestableDef, host-authoritative Harvestable hit/damage/deplete/respawn with parameterless client RPC, range/cooldown validation, on-change PROP replication, collision/visual state changes, and one host-only EventBus yield seam for 2.4. Protocol is v2. Fixed filtered-host addressability and F-027 filter lifetime in NetInterest. Verified: harvestable_check 39 PASS/0; real two-process ENet request/depletion/respawn PASS; interest_check all 3 sections PASS; handshake 0 failures; playtest_hollow default boot 463 props/274 shapes. Needs wiring: author ItemDef and HarvestableDef .tres resources and attach/instantiate Harvestable wrappers for A-001 map props; until then harvesting does not work in the playable map. Safe to start 2.4 against the EventBus callback signature recorded in docs/NEXT.md. verify_setup's one stale greybox-main assertion is F-028; pre-existing project.godot and other agents' files were untouched.
+
+Notes along the way:
+- Authority: host owns health, damage acceptance, yield emission, logical despawn and respawn. Client hit RPC carries no damage; host validates sender range and per-peer cooldown. Static definitions stay data-authored, and yield crosses into task 2.4 through EventBus rather than a direct inventory reference. Protocol version bumps because this adds an RPC and replicated property schema.
+- Harness reproduced F-027: MultiplayerSynchronizer's visibility Callable does not strongly retain NetInterest.RadiusFilter on Godot 4.7.1. Harvestable stores the returned filter beside HarvestSync; shared NetInterest still needs a follow-up fix.
+- Real ENet exposed that a client-side prop filter answers false for peer 1 (clients publish no NetInterest observers), so Godot rejects client-to-host RPCs as targeting a peer that cannot see the node. Host authority must always be visible/addressable for filtered world entities; encode that invariant in RadiusFilter and its check.
+- Regression checks: harvestable_check 39 PASS/0 failures; harvestable_net_check real two-process ENet PASS; interest_check all 3 sections PASS; handshake_check 0 failures; default playtest_hollow boot exits 0 with 463 props/274 shapes. verify_setup has one unrelated stale main-scene assertion, filed F-028; project.godot was already user-modified and remains untouched.
+
+Files: `systems/harvesting/harvestable_def.gd`, `systems/harvesting/harvestable_def.gd.uid`, `systems/harvesting/harvestable.gd`, `systems/harvesting/harvestable.gd.uid`, `core/events/event_bus.gd`, `core/events/event_bus.gd.uid`, `core/net/net_version.gd`, `tools/harvestable_check.gd`, `tools/harvestable_check.gd.uid`, `tools/harvestable_net_check.gd`, `tools/harvestable_net_check.gd.uid`, `core/net/net_interest.gd`, `tools/interest_check.gd`, `docs/FINDINGS.md`, `docs/NEXT.md`
+
+Commit at time of writing: `32d853e`
