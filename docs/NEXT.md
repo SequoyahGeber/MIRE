@@ -97,7 +97,7 @@ scheduled three-machine session driven by lobby IDs pasted between terminals, on
 (task 6.10), which makes the test cheap.** Everything needed to resume is in
 `docs/STEAM_CROSS_PLATFORM_TEST.md` and will keep.
 
-**2.7 and 2.8 are done.** The next roadmap task is `2.9` — tune combat feel — but read **F-033**
+**2.7 and 2.8 are done.** The next roadmap task is `2.9` — tune combat feel — but read **F-036**
 first: 2.9's gate is "one enemy with one weapon feels great", and there is no enemy until `2.10`.
 Either swap 2.9 and 2.10, or tune the weapon side against a tree now and re-run the real gate right
 after 2.10. That choice is Sequoyah's, because it changes roadmap order.

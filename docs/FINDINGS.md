@@ -69,56 +69,6 @@ do is worth as much as the record of what we did.
 
 ## Open
 
-## Resolved
-
-### F-035 · Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10
-
-**Area:** roadmap · **Severity:** medium — it gates a "never cut" item · **Found:** 2026-08-16 by dusk3
-during 2.8
-
-`ROADMAP.md` orders 2.8 (melee combat) → **2.9 "tune combat feel until one enemy with one weapon
-feels great; do not proceed otherwise"** → 2.10 (Enemy v1). 2.9 is one of the four things `ROADMAP.md`
-§"Never cut" names, and `DESIGN.md` §6 states its rule of thumb in the same terms: *if hitting one
-enemy with one weapon doesn't feel great, do not build the second weapon.*
-
-But after 2.8 there is no enemy. The only things in the `&"damageable"` group are harvestables, and a
-tree does not exercise what 2.9 is actually gating: an enemy's 0.4 s telegraph, backpedal pressure,
-whether the hit reads as a *kill* rather than a resource tick, or death feedback. Tuning against a
-tree and declaring the gate passed is the failure mode the gate exists to prevent — and it would be
-easy to do accidentally, because the swing, hitstop, shake and impact sound all *work* against a
-tree.
-
-Two ways out, and this is Sequoyah's call because it changes roadmap order:
-
-1. **Swap 2.9 and 2.10.** Build Enemy v1, then tune. This is what the gate's own wording assumes.
-2. **Keep the order but split 2.9**: tune the weapon-side feel (swing weights, hitstop, shake, sound)
-   against a tree now, and re-run the real gate immediately after 2.10 before anything else starts.
-
-Not fixed here: 2.8 owns combat code, not the roadmap. Filed rather than silently tuning against a
-tree, which would have looked like the gate passing.
-
-*Filed as F-033 and renumbered to F-035 on 2026-08-16: F-033 was already taken by a resolved entry,
-and kiln9 filed F-034 concurrently. `NEXT.md` and the 2.8 journal note refer to it by the new number.*
-
----
-
-### F-002 · Sprint-FOV lerp uses the framerate-dependent smoothing form
-
-**Area:** gameplay feel · **Severity:** low · **Found:** 2026-08-15 by claude during the §5a doc update
-
-`entities/player/player_camera.gd:66` uses `lerpf(camera.fov, target_fov, minf(fov_lerp_speed * delta,
-1.0))`. This converges at slightly different rates at 60 vs 240 fps, so the sprint FOV punch feels
-marginally snappier on faster hardware.
-
-Purely cosmetic, and `ARCHITECTURE.md` §5a rule 6 explicitly permits the naive form for cosmetics —
-but it wants a comment marking the choice as deliberate, which isn't there. Either add the comment or
-switch to `1.0 - exp(-speed * delta)`.
-
-Flagged mainly because this is the pattern most likely to get copy-pasted into something that *does*
-affect gameplay.
-
----
-
 ### F-004 · Interpolation is only planned for remote players, not enemies or props
 
 **Area:** rendering · **Severity:** medium · **Found:** 2026-08-15 by claude during the §5a doc update
@@ -261,61 +211,6 @@ these known gaps" is a standing decision that shapes M7 and M8, not just a findi
 ---
 
 
-### F-011 · Autoloads are not compile-time identifiers in a `--script` main loop
-
-**Area:** tooling/netcode · **Severity:** medium — costs a run, not a day · **Filed:** 2026-08-16 by
-spawn during 1.5
-
-A script run as the main loop (`Godot --headless --path . --script tools/foo.gd`, `extends SceneTree`)
-is **compiled before the autoloads are registered**, so naming one fails at compile time, not at run
-time:
-
-```
-SCRIPT ERROR: Compile Error: Identifier not found: NetTransport
-ERROR: Failed to load script "res://tools/foo.gd" with error "Compilation failed".
-```
-
-The autoloads themselves are fine — they exist and have run `_ready()` by the time `_initialize()` is
-called. Only the *identifier* is unavailable. Look them up by path instead, into an untyped `Node`:
-
-```gdscript
-var _net: Node = root.get_node(^"NetTransport")
-```
-
-**Who this hits:** every headless harness in `tools/`. Task **1.9**'s `bench_replication.gd` is
-specified as `extends SceneTree` and drives `NetTransport` directly, so it hits this on its first run.
-So does anything 4.0a writes later.
-
-**Not worth "fixing".** It is how GDScript resolves autoload names, not a defect of ours. It is filed
-so the next person loses a compile cycle instead of an hour.
-
----
-
-### F-012 · A `MultiplayerSynchronizer`'s authority must be set BEFORE `add_child()`
-
-**Area:** netcode · **Severity:** medium · **Filed:** 2026-08-16 by spawn during 1.5
-
-Building a synchronizer in code (D-023) and then setting its authority once it is already in the tree
-— even in the same `_ready()` — makes the replication interface reject the pending spawn, on every
-client, for every spawned instance:
-
-```
-ERROR: The MultiplayerSynchronizer at path ".../NetSync" is unable to process the pending spawn
-since it has no network ID. This might happen when changing the multiplayer authority during the
-"_ready" callback.
-```
-
-Replication appeared to work anyway in the 1.5 two-process test, which is the dangerous part: the
-symptom is error spam plus an unknown amount of silently degraded state, not a clean failure.
-
-Fixed in `player_controller.gd` by setting `set_multiplayer_authority()` on the synchronizer before
-`add_child()`, and noted in a comment there. **Filed because 1.6 and 1.8 both add or reconfigure
-synchronizers**, and the engine's own advice ("only change authority during `_enter_tree` of their
-spawner") points somewhere that does not exist in our layout — the synchronizers are built by the
-player, not by the spawner.
-
----
-
 ### F-017 · A brand-new script still ships without its `.uid`, because the sidecar does not exist yet
 
 **Area:** build/tooling · **Severity:** low · **Filed:** 2026-08-16 by birch during 1.8
@@ -343,60 +238,6 @@ sweep — is explicitly the thing F-010 called "a fix with a timer".
 
 ---
 
-### F-016 · A brand-new `class_name` is not resolvable by bare identifier in a `--script` main loop
-
-**Area:** tooling · **Severity:** low — costs a run, not a day · **Filed:** 2026-08-16 by bram during
-1.11
-
-Distinct from F-011 (autoloads): this is about *new* `class_name` scripts. `.godot/global_script_class_cache.cfg`
-is only regenerated by the editor scanning the project, so a `class_name` a headless `--script` run has
-never seen through an editor session fails the same way an autoload does:
-
-```
-SCRIPT ERROR: Parse Error: Identifier "NetVersion" not declared in the current scope.
-```
-
-`--headless --path . --quit-after N` (the normal boot path, not `--script`) does **not** trigger the
-rescan either — confirmed by running it after adding `core/net/net_version.gd` and grepping the cache
-file afterward; the class was still absent. Existing classes like `NetConfig` already work bare because
-their cache entry predates this session, not because the mechanism is different.
-
-Fix: `preload()` it instead of naming it bare, same as `tools/bench_replication.gd` already does for
-`Dummy` — `const NetVersion = preload("res://core/net/net_version.gd")`. Cheap and it keeps working
-after the cache does eventually pick the class up, so there's no reason to revert it once Sequoyah opens
-the editor.
-
-**Who this hits:** any `tools/*_check.gd` or spike script that introduces a *new* `class_name` in the
-same session it's first exercised headless — which is most of them, since a check script and the class
-it verifies usually land together.
-
----
-
-### F-018 · `PlayerNet` has no way to be told when a player spawns, so observers reach into its children
-
-**Area:** netcode · **Severity:** low · **Found:** 2026-08-16 by ash during 1.6
-
-`autoload/player_net.gd` exposes `player_for()`, `spawned_peers()` and `debug_snapshot()` — all
-*pull*. Nothing pushes. A system that has to act the moment a player appears or disappears has no
-signal to connect to, so 1.6's `NetInterp` does the next-best thing: it resolves PlayerNet's
-container by child name (`NetConfig.PLAYER_CONTAINER_NODE`) and connects to that node's
-`child_entered_tree`. That works and is scoped correctly, but it depends on the container being a
-directly-named child, which the file's own header says is PlayerNet's business and nobody else's:
-
-> Never reach into the tree by path from outside this file; the paths are ours to change.
-
-`autoload/net_interp.gd:50` is the reach. Two more callers are coming — 1.7 wants despawn/reconnect
-edges and 2.10's enemies will want the same shape — and each one that copies this pattern makes the
-container path harder to change later.
-
-Fix, cheap and obvious: `signal player_spawned(peer_id: int, body: Node3D)` and
-`signal player_despawned(peer_id: int)` on `PlayerNet`, emitted from `_spawn_for()`/`_despawn()`,
-plus a `players_root() -> Node` for anyone who genuinely wants the container. Then `NetInterp._bind()`
-loses its child lookup. **1.7 is the natural owner** — it holds the lifecycle and is already in that
-file; this is a few lines on top of what it is doing anyway, not a task.
-
----
-
 ### F-020 · Steam sessions cannot use NetSession's direct-address auto-rejoin loop
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-16 by tine during 1.7
@@ -406,19 +247,6 @@ re-enter its asynchronous lobby through `SteamLobby`; calling `NetTransport.join
 alone is not the same lifecycle. `NetSession` therefore reports a lost Steam session without automatic
 rejoin instead of pretending the retry worked. Fix when Steam lobby reconnect UX is implemented by
 routing the retry through `SteamLobby` and only handing the joined lobby back to `NetTransport`.
-
----
-
-### F-021 · The net debug panel harness passes while Godot reports an uninitialized multiplayer root
-
-**Area:** tests/netcode · **Severity:** medium · **Found:** 2026-08-16 by reed during 1.7
-
-`tools/net_debug_panel_check.gd` exits 0 with all 19 assertions passing, but its real-ENet section
-repeatedly emits `Multiplayer root was not initialized` from `SceneMultiplayer._process_packet()` at
-line 111. The custom client `SceneMultiplayer` is assigned an ENet peer without a root path. Give it
-a stable root path before polling, then make engine errors fail the harness so a green exit cannot
-hide them. This is independent of 1.7: `tools/session_lifecycle_check.gd` uses full Godot processes
-with initialized roots and completes cleanly.
 
 ---
 
@@ -526,28 +354,30 @@ Two things to settle, and they are separable:
    contaminated by this. Record frame rate alongside the `connected … in N.NNs` line, and get the
    number from the physical Windows PC.
 
----
+**2026-08-16, dusk3 — item 1 is fixed. Item 2 is the whole of what keeps this open.**
+
+`SteamLobby.run_callbacks()` and `NetTransport`'s connect watchdog both moved from `_process` to
+`_physics_process`. The physics tick is fixed at `physics/common/physics_ticks_per_second` and the
+engine runs up to `max_physics_steps_per_frame` of them inside one rendered frame, so a frame-rate
+collapse no longer starves Steam by the same factor it starves rendering. At a healthy frame rate
+nothing changes — it is the same 60 Hz the render loop was giving. At the observed 2–3 FPS it is up
+to 8× more pumps per frame, and the 10 s deadline is no longer only *checked* every ~390 ms.
+
+This is a mitigation, not a decoupling to an independent clock: physics steps are still capped per
+frame, so a truly pathological frame rate still dilates. A dedicated thread or a `Timer` on
+`PROCESS_MODE_ALWAYS` would be the real fix, and neither is worth building before item 2 says whether
+it is needed.
+
+Verified by the netcode regression set on macOS — `connect_retry_check`, `session_lifecycle_check`,
+`steam_lobby_check`, `handshake_check`, `interest_check`, `synced_group_check`, `net_debug_panel_check`
+all 0 failures — plus the four two-process ENet checks. **None of that touches real Steam**: no macOS
+check can, and the change is exactly in the path only a real rendezvous exercises. Item 2 stands
+unchanged and now covers this fix too: measure on the physical Windows PC, record frame rate beside
+the latency, and only then set `STEAM_CONNECT_TIMEOUT_SEC` from evidence.
 
 ---
 
-### F-028 · `verify_setup.gd` hard-codes the superseded greybox main scene
-
-**Area:** tooling · **Severity:** low · **Found:** 2026-08-16 by nettle during 2.3
-
-`tools/verify_setup.gd` fails only its “main_scene points at the level” assertion after the current
-human-owned `project.godot` change selected `levels/playtest_hollow.tscn`; it still compares against
-`greybox_test.tscn`. The new default scene itself boots headlessly and reports 463 props, 20 terrain
-bodies, 274 shapes, and one marker. Update the assertion to accept the current playable level or
-validate the configured main scene structurally instead of pinning the old path.
-
-### F-031 · `DELEGATION.md` still describes the pre-polish Playtest Hollow layout
-
-**Area:** documentation · **Severity:** low · **Found:** 2026-08-16 by nettle during 2.4
-
-The bounded `DELEGATION.md` *Current state* read still says Playtest Hollow has 463 props, 254 prop
-collision shapes and 4,102 visual meshes from task 2.1f. Task 2.1h shipped an 88×88 m replacement
-with 783 props, 339 prop shapes, 359 total colliders and 6,256 meshes. Update that inherited-state
-paragraph from task 2.1h's journal evidence so future tasks do not plan against the smaller map.
+---
 
 ### F-032 · Auto-rejoin assigns a new peer id, so peer-keyed gameplay state cannot follow it
 
@@ -589,6 +419,382 @@ Until this is fixed: **claim files individually, never directories**, and check 
 every `ship` rather than trusting its sign-off. The fix is to expand directory claims to their files
 at ship time, reject unexpected positional arguments instead of concatenating them, and print the
 committed file count.
+
+### F-037 · `net_debug_panel_check` fakes its second peer in-process, so host and client share one tree
+
+**Area:** tests/netcode · **Severity:** low · **Found:** 2026-08-16 by dusk3 while fixing F-021
+
+F-021 is fixed and the uninitialized-root errors are gone, but the harness still emits two:
+
+```
+ERROR: Condition "parent->has_node(name)" is true. Returning: ERR_INVALID_DATA
+```
+
+Cause: the "client" is a second `MultiplayerAPI` in the *same process*, and F-021's fix correctly
+points its `root_path` at `/root` so autoload-addressed RPCs resolve. But that is the host's tree too,
+so when `PlayerNet` spawns a body for the fake peer, the `MultiplayerSpawner` also replicates it back
+into the same container and the name is already taken.
+
+Harmless — the panel numbers this harness checks (RTT, bandwidth, peer list) are all correct, and it
+exits 0 with 0 assertion failures. Filed because it is the last thing standing between this harness
+and a clean error-free run, and because "two expected errors" is exactly the kind of allowance that
+later hides a third.
+
+Fix: use a real second process, the way `session_lifecycle_check`, `inventory_net_check`,
+`crafting_net_check` and `combat_net_check` all do. That pattern is well established here — driver
+spawns `OS.create_process` with a `--` probe argument and they talk through a `user://` JSON file — so
+this is a rewrite of one function, not new machinery.
+
+---
+
+### F-038 · `inventory_net_check` intermittently fails its grant wait under machine load
+
+**Area:** tests/netcode · **Severity:** medium · **Found:** 2026-08-16 by dusk3 during the findings sweep
+
+Running the four two-process ENet checks back to back, `inventory_net_check` failed 10 assertions with
+the client reporting `"error": "grant timeout"` — it never saw the host's granted items inside the
+15 s `TIMEOUT_SEC`. An immediate re-run passed with 0 failures, and `harvestable_net`, `crafting_net`
+and `combat_net` all passed in the same sequence, including ones that grant inventory over the same
+wire.
+
+So this is a race in the harness, not in `InventoryService`. It matters because it makes the check set
+non-deterministic: a red run that goes green on retry trains everyone to re-run rather than
+investigate, which is how a real intermittent failure gets ignored.
+
+Two candidates, both cheap to test: the driver may grant before the client has finished subscribing
+(the same class of bug as `combat_net_check`'s host-player race, which was fixed by polling for the
+precondition instead of asserting it once), or 15 s is simply not enough when several Godot processes
+are competing for the machine. Prefer fixing the ordering over raising the timeout — a longer timeout
+hides the race rather than removing it.
+
+---
+
+### F-036 · Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10
+
+**Area:** roadmap · **Severity:** medium — it gates a "never cut" item · **Found:** 2026-08-16 by dusk3
+during 2.8
+
+`ROADMAP.md` orders 2.8 (melee combat) → **2.9 "tune combat feel until one enemy with one weapon
+feels great; do not proceed otherwise"** → 2.10 (Enemy v1). 2.9 is one of the four things `ROADMAP.md`
+§"Never cut" names, and `DESIGN.md` §6 states its rule of thumb in the same terms: *if hitting one
+enemy with one weapon doesn't feel great, do not build the second weapon.*
+
+But after 2.8 there is no enemy. The only things in the `&"damageable"` group are harvestables, and a
+tree does not exercise what 2.9 is actually gating: an enemy's 0.4 s telegraph, backpedal pressure,
+whether the hit reads as a *kill* rather than a resource tick, or death feedback. Tuning against a
+tree and declaring the gate passed is the failure mode the gate exists to prevent — and it would be
+easy to do accidentally, because the swing, hitstop, shake and impact sound all *work* against a
+tree.
+
+Two ways out, and this is Sequoyah's call because it changes roadmap order:
+
+1. **Swap 2.9 and 2.10.** Build Enemy v1, then tune. This is what the gate's own wording assumes.
+2. **Keep the order but split 2.9**: tune the weapon-side feel (swing weights, hitstop, shake, sound)
+   against a tree now, and re-run the real gate immediately after 2.10 before anything else starts.
+
+Not fixed here: 2.8 owns combat code, not the roadmap. Filed rather than silently tuning against a
+tree, which would have looked like the gate passing.
+
+*Filed as F-033, then F-035, and finally renumbered to F-036 on 2026-08-16: both earlier numbers were taken by entries that landed
+concurrently (a resolved F-033, and kiln9's F-034 and F-035). `NEXT.md` and the 2.8 journal note refer to it by the new number.*
+
+---
+
+## Resolved
+
+### F-002 · Sprint-FOV lerp uses the framerate-dependent smoothing form — **fixed**
+
+**Area:** gameplay feel · **Severity:** low · **Found:** 2026-08-15 by claude during the §5a doc update
+
+`entities/player/player_camera.gd:66` uses `lerpf(camera.fov, target_fov, minf(fov_lerp_speed * delta,
+1.0))`. This converges at slightly different rates at 60 vs 240 fps, so the sprint FOV punch feels
+marginally snappier on faster hardware.
+
+Purely cosmetic, and `ARCHITECTURE.md` §5a rule 6 explicitly permits the naive form for cosmetics —
+but it wants a comment marking the choice as deliberate, which isn't there. Either add the comment or
+switch to `1.0 - exp(-speed * delta)`.
+
+Flagged mainly because this is the pattern most likely to get copy-pasted into something that *does*
+affect gameplay.
+
+---
+
+**Resolved:** 2026-08-16 by dusk3 · fixed
+
+`entities/player/player_camera.gd` now uses `lerpf(camera.fov, target_fov, 1.0 - exp(-fov_lerp_speed * delta))`,
+with a comment naming this finding and §5a rule 6. Switched rather than documented as a deliberate
+exception, precisely for the reason the entry gives: it is the shape most likely to be copy-pasted
+into something that does affect gameplay, and there is now no framerate-dependent copy left to
+inherit. The same file's new impact shake (2.8) integrates elapsed time instead of lerping, so it
+never had the problem.
+
+Verified by `tools/verify_setup.gd` (0 failures) — no behavioural check exists for FOV feel, and
+2.9 owns tuning the constant.
+
+### F-011 · Autoloads are not compile-time identifiers in a `--script` main loop — **fixed**
+
+**Area:** tooling/netcode · **Severity:** medium — costs a run, not a day · **Filed:** 2026-08-16 by
+spawn during 1.5
+
+A script run as the main loop (`Godot --headless --path . --script tools/foo.gd`, `extends SceneTree`)
+is **compiled before the autoloads are registered**, so naming one fails at compile time, not at run
+time:
+
+```
+SCRIPT ERROR: Compile Error: Identifier not found: NetTransport
+ERROR: Failed to load script "res://tools/foo.gd" with error "Compilation failed".
+```
+
+The autoloads themselves are fine — they exist and have run `_ready()` by the time `_initialize()` is
+called. Only the *identifier* is unavailable. Look them up by path instead, into an untyped `Node`:
+
+```gdscript
+var _net: Node = root.get_node(^"NetTransport")
+```
+
+**Who this hits:** every headless harness in `tools/`. Task **1.9**'s `bench_replication.gd` is
+specified as `extends SceneTree` and drives `NetTransport` directly, so it hits this on its first run.
+So does anything 4.0a writes later.
+
+**Not worth "fixing".** It is how GDScript resolves autoload names, not a defect of ours. It is filed
+so the next person loses a compile cycle instead of an hour.
+
+---
+
+**Resolved:** 2026-08-16 by dusk3 · fixed, and it caught a live regression
+
+The entry said "not worth fixing" because it describes how GDScript resolves autoload names. That was
+right about the mechanism and wrong about the blast radius: **a `--script` main loop compiles the
+scripts it *depends on* in the same pass**, so the restriction reaches any script pulled in through a
+`class_name` reference — not just the harness itself.
+
+Found the hard way. Task 2.8 added a bare `CombatService.request_attack()` to
+`entities/player/player_controller.gd`. `tools/verify_setup.gd` references `PlayerController`, so the
+controller compiled in the harness's own pass, before autoloads existed:
+
+```
+SCRIPT ERROR: Compile Error: Identifier not found: CombatService
+SCRIPT ERROR: Compile Error: Failed to compile depended scripts.
+```
+
+That silently broke **two** harnesses. `verify_setup.gd` went from 0 to 4 failures and
+`tools/interp_check.gd` to 3 — the interp failures looked like a netcode defect ("NetInterp refused to
+attach an interpolator", 100% still frames) but were just bodies whose script never compiled, so they
+had no synchronizer to smooth.
+
+Fixed by resolving the autoload by path, the pattern `systems/harvesting/harvestable.gd` already used:
+
+```gdscript
+var combat: Node = get_node_or_null(^"/root/CombatService")
+if combat != null:
+	combat.call(&"request_attack")
+```
+
+**The rule, now in `DELEGATION.md`: a gameplay script that a harness can reach must never name an
+autoload as a bare identifier.** Verified: `verify_setup.gd` 0 failures (was 4), `interp_check.gd`
+0 failures (was 3).
+
+### F-012 · A `MultiplayerSynchronizer`'s authority must be set BEFORE `add_child()` — **fixed**
+
+**Area:** netcode · **Severity:** medium · **Filed:** 2026-08-16 by spawn during 1.5
+
+Building a synchronizer in code (D-023) and then setting its authority once it is already in the tree
+— even in the same `_ready()` — makes the replication interface reject the pending spawn, on every
+client, for every spawned instance:
+
+```
+ERROR: The MultiplayerSynchronizer at path ".../NetSync" is unable to process the pending spawn
+since it has no network ID. This might happen when changing the multiplayer authority during the
+"_ready" callback.
+```
+
+Replication appeared to work anyway in the 1.5 two-process test, which is the dangerous part: the
+symptom is error spam plus an unknown amount of silently degraded state, not a clean failure.
+
+Fixed in `player_controller.gd` by setting `set_multiplayer_authority()` on the synchronizer before
+`add_child()`, and noted in a comment there. **Filed because 1.6 and 1.8 both add or reconfigure
+synchronizers**, and the engine's own advice ("only change authority during `_enter_tree` of their
+spawner") points somewhere that does not exist in our layout — the synchronizers are built by the
+player, not by the spawner.
+
+---
+
+**Resolved:** 2026-08-16 by dusk3 · promoted out of findings, not un-fixed
+
+The defect itself was fixed in `player_controller.gd` during 1.5. This entry stayed open to warn 1.6
+and 1.8, and both have since shipped having honoured it. What is left is not a finding — it is a
+permanent rule about building replication nodes in code (D-023), and it belongs where someone writing
+one will read it rather than on a findings board they may not open.
+
+Recorded in `DELEGATION.md` alongside the D-023 guidance: **set `set_multiplayer_authority()` on a
+synchronizer before `add_child()`, never after.** Task 2.10's enemies are the next code to need it.
+Closing rather than leaving it to survive a third triage as a warning nobody can action.
+
+### F-016 · A brand-new `class_name` is not resolvable by bare identifier in a `--script` main loop — **fixed**
+
+**Area:** tooling · **Severity:** low — costs a run, not a day · **Filed:** 2026-08-16 by bram during
+1.11
+
+Distinct from F-011 (autoloads): this is about *new* `class_name` scripts. `.godot/global_script_class_cache.cfg`
+is only regenerated by the editor scanning the project, so a `class_name` a headless `--script` run has
+never seen through an editor session fails the same way an autoload does:
+
+```
+SCRIPT ERROR: Parse Error: Identifier "NetVersion" not declared in the current scope.
+```
+
+`--headless --path . --quit-after N` (the normal boot path, not `--script`) does **not** trigger the
+rescan either — confirmed by running it after adding `core/net/net_version.gd` and grepping the cache
+file afterward; the class was still absent. Existing classes like `NetConfig` already work bare because
+their cache entry predates this session, not because the mechanism is different.
+
+Fix: `preload()` it instead of naming it bare, same as `tools/bench_replication.gd` already does for
+`Dummy` — `const NetVersion = preload("res://core/net/net_version.gd")`. Cheap and it keeps working
+after the cache does eventually pick the class up, so there's no reason to revert it once Sequoyah opens
+the editor.
+
+**Who this hits:** any `tools/*_check.gd` or spike script that introduces a *new* `class_name` in the
+same session it's first exercised headless — which is most of them, since a check script and the class
+it verifies usually land together.
+
+---
+
+**Resolved:** 2026-08-16 by dusk3 · promoted out of findings
+
+Same disposition as F-011 and for the same reason: this describes how the global class cache works,
+not a defect of ours, and it has an established workaround already used across `tools/` —
+`const Thing = preload("res://path/to/thing.gd")` instead of naming a fresh `class_name` bare.
+
+The convention is now in `DELEGATION.md` with F-011's, so a harness author meets both rules in the
+same paragraph. Nothing about the engine behaviour changed; only where it is written down.
+
+### F-018 · `PlayerNet` has no way to be told when a player spawns, so observers reach into its children — **fixed**
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-16 by ash during 1.6
+
+`autoload/player_net.gd` exposes `player_for()`, `spawned_peers()` and `debug_snapshot()` — all
+*pull*. Nothing pushes. A system that has to act the moment a player appears or disappears has no
+signal to connect to, so 1.6's `NetInterp` does the next-best thing: it resolves PlayerNet's
+container by child name (`NetConfig.PLAYER_CONTAINER_NODE`) and connects to that node's
+`child_entered_tree`. That works and is scoped correctly, but it depends on the container being a
+directly-named child, which the file's own header says is PlayerNet's business and nobody else's:
+
+> Never reach into the tree by path from outside this file; the paths are ours to change.
+
+`autoload/net_interp.gd:50` is the reach. Two more callers are coming — 1.7 wants despawn/reconnect
+edges and 2.10's enemies will want the same shape — and each one that copies this pattern makes the
+container path harder to change later.
+
+Fix, cheap and obvious: `signal player_spawned(peer_id: int, body: Node3D)` and
+`signal player_despawned(peer_id: int)` on `PlayerNet`, emitted from `_spawn_for()`/`_despawn()`,
+plus a `players_root() -> Node` for anyone who genuinely wants the container. Then `NetInterp._bind()`
+loses its child lookup. **1.7 is the natural owner** — it holds the lifecycle and is already in that
+file; this is a few lines on top of what it is doing anyway, not a task.
+
+---
+
+**Resolved:** 2026-08-16 by dusk3 · fixed
+
+`PlayerNet` now pushes instead of only being pulled from:
+
+```gdscript
+signal player_spawned(peer_id: int, body: Node3D)
+signal player_despawned(peer_id: int, body: Node3D)
+func players_root() -> Node
+```
+
+Both are emitted from PlayerNet's *own* subscription to its container's `child_entered_tree` /
+`child_exiting_tree`, not from `_spawn_for()`. That detail is load-bearing: `_spawn_for()` runs on the
+host only, while on a client the `MultiplayerSpawner` puts the body into the container directly — a
+signal emitted from the spawn call would never fire for the peers that need it most.
+
+`autoload/net_interp.gd` no longer resolves `NetConfig.PLAYER_CONTAINER_NODE` by name; it connects to
+`player_spawned` and uses `players_root()` only for its catch-up sweep. The reach the entry named
+(`net_interp.gd:50`) is gone, and the two callers it predicted — 1.7's despawn edges and 2.10's
+enemies — now have a signal to use instead of a copy of the pattern.
+
+Verified by `tools/interp_check.gd` (0 failures) and the four two-process ENet checks
+(`harvestable_net`, `inventory_net`, `crafting_net`, `combat_net`), which exercise real spawns over a
+real wire.
+
+### F-021 · The net debug panel harness passes while Godot reports an uninitialized multiplayer root — **fixed**
+
+**Area:** tests/netcode · **Severity:** medium · **Found:** 2026-08-16 by reed during 1.7
+
+`tools/net_debug_panel_check.gd` exits 0 with all 19 assertions passing, but its real-ENet section
+repeatedly emits `Multiplayer root was not initialized` from `SceneMultiplayer._process_packet()` at
+line 111. The custom client `SceneMultiplayer` is assigned an ENet peer without a root path. Give it
+a stable root path before polling, then make engine errors fail the harness so a green exit cannot
+hide them. This is independent of 1.7: `tools/session_lifecycle_check.gd` uses full Godot processes
+with initialized roots and completes cleanly.
+
+---
+
+**Resolved:** 2026-08-16 by dusk3 · fixed
+
+`tools/net_debug_panel_check.gd` gives its second in-process peer a `root_path` before the peer is
+attached, so no packet is ever processed without one. `Multiplayer root was not initialized` is gone —
+0 occurrences, from a stream of them.
+
+One correction to the entry's suggested fix: the root must be `/root`, not a private node. Rooting the
+fake peer at its own node silences that error and immediately produces a different one, because the
+host addresses RPCs at autoload paths like `/root/InventoryService` — the same hidden-error problem
+wearing a new message. The harness went 11 engine errors → 2 with `/root`.
+
+**The residual 2 are a different problem and are filed as F-037**, not swept in here: they come from
+faking a second peer inside one process, where host and client share a tree and the spawner tries to
+add the same player name twice.
+
+On the entry's second ask — "make engine errors fail the harness" — GDScript has no supported hook to
+intercept engine-level `push_error`. The durable guard is to run checks as
+`… 2>&1 | grep -c 'ERROR:'` and treat a non-zero count as a failure; that is now recorded in
+`DELEGATION.md` as how to run the check set.
+
+### F-028 · `verify_setup.gd` hard-codes the superseded greybox main scene — **fixed**
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-16 by nettle during 2.3
+
+`tools/verify_setup.gd` fails only its “main_scene points at the level” assertion after the current
+human-owned `project.godot` change selected `levels/playtest_hollow.tscn`; it still compares against
+`greybox_test.tscn`. The new default scene itself boots headlessly and reports 463 props, 20 terrain
+bodies, 274 shapes, and one marker. Update the assertion to accept the current playable level or
+validate the configured main scene structurally instead of pinning the old path.
+
+**Resolved:** 2026-08-16 by dusk3 · fixed
+
+`tools/verify_setup.gd` no longer pins a path. It keeps `greybox_test.tscn` as an explicitly named
+physics fixture (`PHYSICS_FIXTURE_SCENE` — small, has a Player and a Ground, cheap to instantiate) and
+validates whatever `application/run/main_scene` actually points at, structurally: the setting is
+non-empty, the resource exists, it loads as a `PackedScene`, its root is a `Node3D`, and it contains a
+`WorldEnvironment`, a `DirectionalLight3D` and a `CharacterBody3D` player body.
+
+Chosen over "accept the current playable level" because pinning is what produced this finding; the new
+form survives the next level change without an edit. Verified against the current main scene
+(`levels/playtest_hollow.tscn`): 0 failures.
+
+### F-031 · `DELEGATION.md` still describes the pre-polish Playtest Hollow layout — **fixed**
+
+**Area:** documentation · **Severity:** low · **Found:** 2026-08-16 by nettle during 2.4
+
+The bounded `DELEGATION.md` *Current state* read still says Playtest Hollow has 463 props, 254 prop
+collision shapes and 4,102 visual meshes from task 2.1f. Task 2.1h shipped an 88×88 m replacement
+with 783 props, 339 prop shapes, 359 total colliders and 6,256 meshes. Update that inherited-state
+paragraph from task 2.1h's journal evidence so future tasks do not plan against the smaller map.
+
+**Resolved:** 2026-08-16 by dusk3 · fixed
+
+`DELEGATION.md`'s *Current state* paragraph now carries 2.1h's numbers — 88 × 88 m, 783 props,
+33 terrain records (20 colliding), 6,256 meshes, 359 collision shapes — replacing 2.1f's 463 props /
+4,102 meshes / 68 × 68 m. The figures are `tools/playtest_hollow_check.gd`'s own output rather than a
+hand copy from a journal entry, re-run to confirm:
+
+```
+PLAYTEST_HOLLOW_CHECK zones=6 props=783 terrain=20 colliders=359 visuals=6256 failures=0
+```
+
+The paragraph now says to re-read them from that check rather than editing them by hand, which is how
+they went stale in the first place. Also corrected there: it claimed the project still booted the old
+greybox level, which stopped being true when `main_scene` became `playtest_hollow.tscn`.
 
 ### F-035 · Inventory icons are capped at 26 px because a `CenterContainer` sizes children to their minimum — **fixed**
 

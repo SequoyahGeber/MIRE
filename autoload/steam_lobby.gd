@@ -62,10 +62,11 @@ func _ready() -> void:
 	# Steam's callbacks must keep being pumped while the tree is paused — a paused lobby screen that
 	# stops calling run_callbacks() silently stops receiving joins, which looks like a network bug.
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	# Not a plain set_process(false): initialise() can legitimately have run before _ready — an
-	# autoload's _ready lands late under a --script main loop — and turning processing back off here
-	# would silently stop pumping Steam's callbacks, so every request would hang until it timed out.
-	set_process(_initialised)
+	# Not a plain set_physics_process(false): initialise() can legitimately have run before _ready —
+	# an autoload's _ready lands late under a --script main loop — and turning processing back off
+	# here would silently stop pumping Steam's callbacks, so every request would hang until it timed
+	# out.
+	set_physics_process(_initialised)
 
 	if not _bind_steam():
 		MireLog.info(NetConfig.LOG_CHANNEL, "SteamLobby idle — GodotSteam not installed, STEAM mode unavailable")
@@ -95,8 +96,16 @@ func _bind_steam() -> bool:
 	return _steam != null
 
 
-func _process(_delta: float) -> void:
-	# One Steam call per frame, and it is the one that makes every other Steam call arrive.
+## Pumped on the PHYSICS tick, not the render frame (F-025). `run_callbacks()` is the call that makes
+## every other Steam call arrive — lobby entry, the P2P rendezvous, connection state — so servicing it
+## once per rendered frame tied the whole handshake to frame rate. Measured on a live session: a
+## software-rendered Windows client at 2-3 FPS got ~20 pumps inside a 10 s connect window while the
+## macOS host at 113 FPS got ~1,130, which is a far better explanation of that client's connect
+## timeouts than a slow Steam network. The physics tick is fixed at
+## `physics/common/physics_ticks_per_second` and the engine runs up to
+## `max_physics_steps_per_frame` of them per rendered frame, so a frame-rate collapse no longer
+## starves Steam by the same factor. At a healthy frame rate this is the same 60 Hz as before.
+func _physics_process(_delta: float) -> void:
 	_steam.run_callbacks()
 
 	if _deadline_msec == 0 or Time.get_ticks_msec() < _deadline_msec:
@@ -126,7 +135,7 @@ func initialise() -> bool:
 		return false
 
 	_initialised = true
-	set_process(true)
+	set_physics_process(true)
 	_connect_steam_signals()
 	MireLog.info(NetConfig.LOG_CHANNEL, "Steam ready — %s (%d), App ID %d" % [
 		str(_steam.getPersonaName()), int(_steam.getSteamID()), NetConfig.STEAM_APP_ID

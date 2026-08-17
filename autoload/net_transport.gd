@@ -127,7 +127,7 @@ func _ready() -> void:
 	# The connect watchdog has to keep ticking while the game is paused — a lobby screen that pauses
 	# the tree would otherwise hang forever on a dead host.
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	set_process(false)
+	set_physics_process(false)
 
 	# These live on the MultiplayerAPI, not on the peer, so they survive every leave/rejoin. Connect
 	# once, here, and never re-connect them — doing it per-session is how you get duplicate signals
@@ -148,9 +148,13 @@ func _exit_tree() -> void:
 	_teardown(false)
 
 
-func _process(_delta: float) -> void:
+## The connect watchdog runs on the PHYSICS tick for the same reason SteamLobby's pump does (F-025):
+## on the render frame, a machine at 2 FPS checks a 10 s deadline roughly every 390 ms, so the
+## deadline it enforces is not the deadline that was configured. The physics tick is fixed and the
+## engine runs several of them per slow frame.
+func _physics_process(_delta: float) -> void:
 	if _status != _Status.CONNECTING:
-		set_process(false)
+		set_physics_process(false)
 		return
 	if Time.get_ticks_msec() < _connect_deadline_msec:
 		return
@@ -267,7 +271,7 @@ func join(mode: NetConfig.Mode, address: String, port: int = -1) -> Error:
 	_target_mode = mode
 	_target_address = resolved_address
 	_target_port = resolved_port
-	set_process(true)
+	set_physics_process(true)
 
 	MireLog.info(NetConfig.LOG_CHANNEL, "connecting to %s (%s, %.1fs timeout)" % [
 		_describe_target(), mode_name(mode), connect_timeout_sec(mode)
@@ -456,7 +460,7 @@ func _on_peer_disconnected(id: int) -> void:
 
 
 func _on_connected_to_server() -> void:
-	set_process(false)
+	set_physics_process(false)
 	_connect_deadline_msec = 0
 	_last_connect_msec = Time.get_ticks_msec() - _connect_started_msec
 	_status = _Status.CONNECTED
@@ -554,7 +558,7 @@ func _teardown(announce: bool) -> void:
 	var departed: PackedInt32Array = _peers.duplicate()
 	var local_id: int = _local_id
 
-	set_process(false)
+	set_physics_process(false)
 	_connect_deadline_msec = 0
 
 	# close() before dropping the reference. Without it the UDP socket lingers and re-hosting on the

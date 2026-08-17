@@ -193,8 +193,15 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	# The swing starts locally on the press (own-action prediction) and the host resolves the hit —
 	# see autoload/combat_service.gd. Nothing about damage is decided here.
+	#
+	# Resolved by path, never as the bare identifier `CombatService` (F-011). A `--script` main loop
+	# compiles the scripts it depends on in the same pass, before autoloads are registered — and
+	# `tools/verify_setup.gd` depends on this file through `PlayerController`. Naming the autoload
+	# here took the whole harness down with "Identifier not found: CombatService".
 	if event.is_action_pressed(&"attack") and gameplay_input_allowed():
-		CombatService.request_attack()
+		var combat: Node = get_node_or_null(^"/root/CombatService")
+		if combat != null:
+			combat.call(&"request_attack")
 		return
 
 	# Temporary mouse release. Replaced by the pause menu in M7 — until then it is how you get your

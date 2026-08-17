@@ -1008,3 +1008,111 @@ Icon TextureRect moved out of the CenterContainer into its own full-slot MarginC
 Files: `ui/inventory/inventory_ui.gd`, `docs/FINDINGS.md`
 
 Commit at time of writing: `8564d5c`
+
+---
+
+### DONE · F-002 · dusk3 · 2026-08-17T04:46:46+00:00
+
+**Sprint-FOV lerp uses the framerate-dependent smoothing form**
+
+Switched the sprint-FOV lerp to the framerate-independent 1.0 - exp(-speed*delta) form with a comment naming the finding and ARCHITECTURE 5a rule 6. verify_setup 0 failures.
+
+Files: `entities/player/player_camera.gd`
+
+Commit at time of writing: `6f28dd9`
+
+---
+
+### DONE · F-011 · dusk3 · 2026-08-17T04:46:46+00:00
+
+**Autoloads are not compile-time identifiers in a `--script` main loop**
+
+Closed by fixing, not by documenting: a --script main loop compiles its DEPENDED scripts in the same pass, so the restriction reaches any script reachable through a class_name. 2.8's bare CombatService in player_controller.gd had silently broken verify_setup (4 failures) and interp_check (3). Now resolved by path. Both harnesses back to 0. Rule promoted to DELEGATION.
+
+Files: `entities/player/player_controller.gd`
+
+Commit at time of writing: `6f28dd9`
+
+---
+
+### DONE · F-012 · dusk3 · 2026-08-17T04:46:47+00:00
+
+**A `MultiplayerSynchronizer`'s authority must be set BEFORE `add_child()`**
+
+Fix landed in 1.5 and 1.6/1.8 both honoured it; promoted the permanent rule (authority before add_child) into DELEGATION rather than leaving a warning on the findings board.
+
+Files: `docs/FINDINGS.md`
+
+Commit at time of writing: `6f28dd9`
+
+---
+
+### DONE · F-016 · dusk3 · 2026-08-17T04:46:47+00:00
+
+**A brand-new `class_name` is not resolvable by bare identifier in a `--script` main loop**
+
+Promoted the preload-instead-of-bare-class_name convention into DELEGATION alongside F-011. Engine behaviour unchanged; only where it is written down.
+
+Files: `docs/FINDINGS.md`
+
+Commit at time of writing: `6f28dd9`
+
+---
+
+### DONE · F-018 · dusk3 · 2026-08-17T04:46:47+00:00
+
+**`PlayerNet` has no way to be told when a player spawns, so observers reach into its children**
+
+PlayerNet now emits player_spawned/player_despawned from its own container subscription (not from _spawn_for, which is host-only) and exposes players_root(). NetInterp no longer resolves the container by name. interp_check 0 failures plus all four two-process ENet checks.
+
+Files: `autoload/player_net.gd`, `autoload/net_interp.gd`
+
+Commit at time of writing: `6f28dd9`
+
+---
+
+### DONE · F-021 · dusk3 · 2026-08-17T04:46:47+00:00
+
+**The net debug panel harness passes while Godot reports an uninitialized multiplayer root**
+
+Gave the harness's second peer a root_path before attaching its peer; it must be /root, not a private node, or autoload-addressed RPCs answer 'Node not found' instead. Uninitialized-root errors 0 (was a stream); engine errors 11 -> 2. Residual 2 filed as F-037. GDScript has no hook to fail on engine errors; the grep convention is now in DELEGATION.
+
+Files: `tools/net_debug_panel_check.gd`
+
+Commit at time of writing: `6f28dd9`
+
+---
+
+### DONE · F-028 · dusk3 · 2026-08-17T04:46:47+00:00
+
+**`verify_setup.gd` hard-codes the superseded greybox main scene**
+
+verify_setup no longer pins a main scene path: greybox is now an explicit physics fixture and the configured main_scene is validated structurally. 0 failures against playtest_hollow.
+
+Files: `tools/verify_setup.gd`
+
+Commit at time of writing: `6f28dd9`
+
+---
+
+### DONE · F-031 · dusk3 · 2026-08-17T04:46:47+00:00
+
+**`DELEGATION.md` still describes the pre-polish Playtest Hollow layout**
+
+DELEGATION now carries playtest_hollow_check's own output (88x88m, 783 props, 33 terrain records, 6256 meshes, 359 shapes) and says to re-read them from the check rather than hand-editing.
+
+Files: `docs/FINDINGS.md`
+
+Commit at time of writing: `6f28dd9`
+
+---
+
+### HANDOFF · F-025 · dusk3 · 2026-08-17T04:46:47+00:00
+
+**Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake**
+
+Item 1 fixed: SteamLobby's run_callbacks and NetTransport's connect watchdog moved from _process to _physics_process, so a frame-rate collapse no longer starves Steam by the same factor. Mitigation, not full decoupling - physics steps are still capped per frame. Item 2 is untouched and is what keeps this open: nobody has measured a real Windows Steam first join, and no macOS check can exercise this path. Measure on the physical Windows PC, record frame rate beside the latency, then set STEAM_CONNECT_TIMEOUT_SEC from evidence.
+
+Files: `autoload/steam_lobby.gd`, `autoload/net_transport.gd`
+
+Commit at time of writing: `6f28dd9`

@@ -28,6 +28,13 @@ extends Node
 
 const PLAYER_SCENE: PackedScene = preload("res://entities/player/player.tscn")
 
+## A player body appeared on THIS peer — spawned locally on the host, replicated in on a client.
+## Fires during `add_child`, so [param body] has not run its own `_ready()` yet and its
+## MultiplayerSynchronizer does not exist; defer anything that needs a finished node (F-018).
+signal player_spawned(peer_id: int, body: Node3D)
+## A player body is leaving this peer's tree. Still valid when the signal fires, gone right after.
+signal player_despawned(peer_id: int, body: Node3D)
+
 ## Where the Nth player of a session stands relative to the level's spawn point, so six players do
 ## not spawn inside one another. A fixed table rather than a ring computed with sin/cos: the values
 ## are decided once, by hand, and are easier to read than the formula that would produce them.
@@ -76,6 +83,12 @@ func _ready() -> void:
 func _build_replication_nodes() -> void:
 	_players = Node3D.new()
 	_players.name = NetConfig.PLAYER_CONTAINER_NODE
+	# F-018: observers used to connect to these two themselves, which meant reaching in for the
+	# container by name from outside this file. PlayerNet listens to its own container and re-emits,
+	# so the paths stay ours. This is also why the signals cannot be emitted from _spawn_for(): that
+	# runs on the host only, while on a client the MultiplayerSpawner puts the body here directly.
+	_players.child_entered_tree.connect(_on_player_child_entered)
+	_players.child_exiting_tree.connect(_on_player_child_exiting)
 	add_child(_players)
 
 	_spawner = MultiplayerSpawner.new()
@@ -98,6 +111,14 @@ func player_for(peer_id: int) -> Node3D:
 	if _players == null:
 		return null
 	return _players.get_node_or_null(NodePath(str(peer_id))) as Node3D
+
+
+## The container every player body hangs off. For the rare caller that genuinely needs the node
+## itself — a group query, a debug dump — rather than one player or one signal. Prefer
+## `player_spawned` / `player_despawned`; this exists so that wanting the container is not a reason
+## to hard-code its name from outside (F-018).
+func players_root() -> Node:
+	return _players
 
 
 ## Every peer that currently has a player node, ascending. Empty offline.
@@ -173,6 +194,29 @@ func _spawn_for(peer_id: int) -> void:
 		return
 
 	MireLog.info(NetConfig.LOG_CHANNEL, "PlayerNet: spawned player %d at %v" % [peer_id, origin])
+
+
+## Container children are named for the peer that owns them (see `_net_spawn_player`), on every peer,
+## before the node enters the tree — so the peer id is readable here with nothing extra on the wire.
+func _on_player_child_entered(child: Node) -> void:
+	var body := child as Node3D
+	var peer_id: int = _peer_id_of(child)
+	if body == null or peer_id <= 0:
+		return
+	player_spawned.emit(peer_id, body)
+
+
+func _on_player_child_exiting(child: Node) -> void:
+	var body := child as Node3D
+	var peer_id: int = _peer_id_of(child)
+	if body == null or peer_id <= 0:
+		return
+	player_despawned.emit(peer_id, body)
+
+
+func _peer_id_of(child: Node) -> int:
+	var node_name: String = String(child.name)
+	return node_name.to_int() if node_name.is_valid_int() else 0
 
 
 func _despawn(peer_id: int) -> void:

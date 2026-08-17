@@ -39,33 +39,37 @@ func _ready() -> void:
 
 
 ## PlayerNet builds its container inside its own _ready(), and it is registered before this file, so
-## by the time we run the container exists. Resolved by path rather than by identifier so this also
-## works in a --script main loop, where autoloads are not compile-time names (F-011).
+## by the time we run it is ready to subscribe to. Resolved by path rather than by identifier so this
+## also works in a --script main loop, where autoloads are not compile-time names (F-011).
+##
+## F-018: this used to find PlayerNet's container by name and connect to its `child_entered_tree`,
+## which is exactly what PlayerNet's own header forbids — "the paths are ours to change". PlayerNet
+## now pushes `player_spawned`, so the container's shape is nobody else's business.
 func _bind() -> void:
 	var player_net: Node = get_node_or_null(^"/root/PlayerNet")
 	if player_net == null:
 		MireLog.warn(NetConfig.LOG_CHANNEL, "NetInterp: PlayerNet not registered — remote players will not be smoothed")
 		return
 
-	_players = player_net.get_node_or_null(NodePath(NetConfig.PLAYER_CONTAINER_NODE))
-	if _players == null:
-		MireLog.warn(NetConfig.LOG_CHANNEL, "NetInterp: PlayerNet has no %s container" % NetConfig.PLAYER_CONTAINER_NODE)
+	if not player_net.has_signal(&"player_spawned"):
+		MireLog.warn(NetConfig.LOG_CHANNEL, "NetInterp: PlayerNet exposes no player_spawned signal")
 		return
-
-	_players.child_entered_tree.connect(_on_player_entered)
+	player_net.connect(&"player_spawned", _on_player_spawned)
 
 	# Catch up on anything already spawned, in case registration order ever changes underneath us.
-	for child: Node in _players.get_children():
-		attach_to(child)
+	_players = player_net.call(&"players_root") as Node
+	if _players != null:
+		for child: Node in _players.get_children():
+			attach_to(child)
 
 
 # ── Attaching ─────────────────────────────────────────────────────────────────────────────────────
 
 
-## child_entered_tree fires DURING add_child, before the player's own _ready() has built its
+## player_spawned fires DURING add_child, before the player's own _ready() has built its
 ## MultiplayerSynchronizer — so decide one call later, when the node is actually finished.
-func _on_player_entered(node: Node) -> void:
-	attach_to.call_deferred(node)
+func _on_player_spawned(_peer_id: int, body: Node3D) -> void:
+	attach_to.call_deferred(body)
 
 
 ## Give [param body] an interpolator if it deserves one. Returns whether one is now attached.

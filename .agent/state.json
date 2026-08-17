@@ -1,53 +1,6 @@
 {
-  "claims": {
-    "autoload/net_interp.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:36:01+00:00",
-      "task": "F-018"
-    },
-    "autoload/player_net.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:36:01+00:00",
-      "task": "F-018"
-    },
-    "entities/player/player_camera.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:34:32+00:00",
-      "task": "F-002"
-    },
-    "tools/verify_setup.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:34:32+00:00",
-      "task": "F-028"
-    }
-  },
-  "in_flight": {
-    "F-002": {
-      "agent": "dusk3",
-      "files": [
-        "entities/player/player_camera.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-17T04:34:32+00:00"
-    },
-    "F-018": {
-      "agent": "dusk3",
-      "files": [
-        "autoload/player_net.gd",
-        "autoload/net_interp.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-17T04:36:01+00:00"
-    },
-    "F-028": {
-      "agent": "dusk3",
-      "files": [
-        "tools/verify_setup.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-17T04:34:32+00:00"
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
       "agent": "vane",
@@ -1555,9 +1508,9 @@
       "task": "2.4"
     },
     "autoload/net_interp.gd": {
-      "agent": "ash",
-      "at": "2026-08-16T17:19:51+00:00",
-      "task": "1.6"
+      "agent": "dusk3",
+      "at": "2026-08-17T04:46:47+00:00",
+      "task": "F-018"
     },
     "autoload/net_interp.gd.uid": {
       "agent": "reed",
@@ -1565,14 +1518,14 @@
       "task": "F-019"
     },
     "autoload/net_transport.gd": {
-      "agent": "vane",
-      "at": "2026-08-16T22:59:02+00:00",
-      "task": "F-023"
+      "agent": "dusk3",
+      "at": "2026-08-17T04:46:47+00:00",
+      "task": "F-025"
     },
     "autoload/player_net.gd": {
-      "agent": "birch",
-      "at": "2026-08-16T17:16:32+00:00",
-      "task": "1.8"
+      "agent": "dusk3",
+      "at": "2026-08-17T04:46:47+00:00",
+      "task": "F-018"
     },
     "autoload/registry.gd": {
       "agent": "dusk3",
@@ -1580,9 +1533,9 @@
       "task": "2.8"
     },
     "autoload/steam_lobby.gd": {
-      "agent": "vane",
-      "at": "2026-08-16T22:59:02+00:00",
-      "task": "F-023"
+      "agent": "dusk3",
+      "at": "2026-08-17T04:46:47+00:00",
+      "task": "F-025"
     },
     "content/harvestables/iron_node.tres": {
       "agent": "nettle",
@@ -1720,9 +1673,9 @@
       "task": "F-022"
     },
     "docs/FINDINGS.md": {
-      "agent": "kiln9",
-      "at": "2026-08-17T04:39:09+00:00",
-      "task": "F-035"
+      "agent": "dusk3",
+      "at": "2026-08-17T04:46:47+00:00",
+      "task": "F-031"
     },
     "docs/NEXT.md": {
       "agent": "dusk3",
@@ -1746,13 +1699,13 @@
     },
     "entities/player/player_camera.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T04:31:24+00:00",
-      "task": "2.8"
+      "at": "2026-08-17T04:46:46+00:00",
+      "task": "F-002"
     },
     "entities/player/player_controller.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T04:31:24+00:00",
-      "task": "2.8"
+      "at": "2026-08-17T04:46:46+00:00",
+      "task": "F-011"
     },
     "levels/playtest_hollow.tscn": {
       "agent": "moss",
@@ -2080,9 +2033,9 @@
       "task": "2.1h"
     },
     "tools/net_debug_panel_check.gd": {
-      "agent": "netui",
-      "at": "2026-08-16T08:14:40+00:00",
-      "task": "1.10"
+      "agent": "dusk3",
+      "at": "2026-08-17T04:46:47+00:00",
+      "task": "F-021"
     },
     "tools/playtest_hollow_check.gd": {
       "agent": "pike",
@@ -2173,6 +2126,11 @@
       "agent": "lobby",
       "at": "2026-08-16T07:53:23+00:00",
       "task": "1.4"
+    },
+    "tools/verify_setup.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:46:47+00:00",
+      "task": "F-028"
     },
     "ui/crafting/crafting_ui.gd": {
       "agent": "dusk3",
@@ -3141,9 +3099,11 @@
       "title": "Build review submission, fix findings, release"
     },
     "F-002": {
+      "done_at": "2026-08-17T04:46:46+00:00",
+      "done_by": "dusk3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Sprint-FOV lerp uses the framerate-dependent smoothing form"
     },
@@ -3187,16 +3147,20 @@
       "title": "A GDExtension only loads if gitignored `.godot/extension_list.cfg` lists it"
     },
     "F-011": {
+      "done_at": "2026-08-17T04:46:46+00:00",
+      "done_by": "dusk3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Autoloads are not compile-time identifiers in a `--script` main loop"
     },
     "F-012": {
+      "done_at": "2026-08-17T04:46:47+00:00",
+      "done_by": "dusk3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "A `MultiplayerSynchronizer`'s authority must be set BEFORE `add_child()`"
     },
@@ -3210,9 +3174,11 @@
       "title": "A finding cannot be claimed, so fixing one always edits unclaimed files"
     },
     "F-016": {
+      "done_at": "2026-08-17T04:46:47+00:00",
+      "done_by": "dusk3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "A brand-new `class_name` is not resolvable by bare identifier in a `--script` main loop"
     },
@@ -3224,9 +3190,11 @@
       "title": "A brand-new script still ships without its `.uid`, because the sidecar does not exist yet"
     },
     "F-018": {
+      "done_at": "2026-08-17T04:46:47+00:00",
+      "done_by": "dusk3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`PlayerNet` has no way to be told when a player spawns, so observers reach into its children"
     },
@@ -3247,9 +3215,11 @@
       "title": "Steam sessions cannot use NetSession's direct-address auto-rejoin loop"
     },
     "F-021": {
+      "done_at": "2026-08-17T04:46:47+00:00",
+      "done_by": "dusk3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The net debug panel harness passes while Godot reports an uninitialized multiplayer root"
     },
@@ -3300,9 +3270,11 @@
       "title": "`NetInterest.configure()` does not keep its returned filter alive"
     },
     "F-028": {
+      "done_at": "2026-08-17T04:46:47+00:00",
+      "done_by": "dusk3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`verify_setup.gd` hard-codes the superseded greybox main scene"
     },
@@ -3316,9 +3288,11 @@
       "title": "Task 2.3's harvest lifecycle is not wired into the playable map"
     },
     "F-031": {
+      "done_at": "2026-08-17T04:46:47+00:00",
+      "done_by": "dusk3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`DELEGATION.md` still describes the pre-polish Playtest Hollow layout"
     },

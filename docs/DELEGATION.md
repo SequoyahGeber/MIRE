@@ -94,6 +94,28 @@ outline with per-point bevel *distances*, which is how a head gets a square poll
 and `swept_shaft()` (a tube along a polyline with a radius per point, which is how hafts get taper and
 an oval section).
 
+**Four standing rules, promoted out of `FINDINGS.md` so they are read before they are rediscovered.**
+F-011, F-012, F-016 and F-021 were closed on 2026-08-16 not because the engine changed but because a
+permanent rule does not belong on a board of unscheduled problems.
+
+1. **A gameplay script that a harness can reach must never name an autoload as a bare identifier**
+   (F-011). A `--script` main loop is compiled *before* autoloads are registered, and it compiles the
+   scripts it depends on in the same pass — so the restriction reaches any script pulled in through a
+   `class_name`. Use `get_node_or_null(^"/root/Thing")` and `call(&"method")`. This is not
+   theoretical: 2.8 put `CombatService.request_attack()` in `player_controller.gd`, which
+   `verify_setup.gd` reaches through `PlayerController`, and silently broke that harness *and*
+   `interp_check.gd` — the latter reporting what looked like a netcode defect.
+2. **A new `class_name` is not resolvable bare in a headless run either** (F-016) — the global class
+   cache is only rebuilt by an editor scan. `const Thing = preload("res://path/thing.gd")` works
+   before and after the cache catches up.
+3. **Set `set_multiplayer_authority()` on a synchronizer BEFORE `add_child()`** (F-012, D-023).
+   Setting it once the node is in the tree makes the replication interface reject the pending spawn on
+   every client, and the symptom is error spam plus silently degraded state, not a clean failure.
+4. **Grep every check run for engine errors** — `… 2>&1 | grep -c 'ERROR:'` — and treat a non-zero
+   count as a failure (F-021). GDScript has no supported hook to fail a harness on engine-level
+   `push_error`, so a green exit code alone is not evidence: `net_debug_panel_check` passed 19
+   assertions for weeks on top of a stream of `Multiplayer root was not initialized`.
+
 **Task 2.8 ships melee combat v1 — and 2.9 tunes it in the inspector, not in code.** `CombatService`
 is an autoload registered last. The split is D-034: the swing is client-predicted, the hit is host.
 `request_attack()` starts the local wind-up on the press and returns a request id; the client sends
@@ -279,15 +301,20 @@ while future harvesting, construction, damage, or map mutation stays host-author
 with Blender 5.2 using `tools/blender/build_playtest_map.py`; verify with `Godot --headless --path .
 --script tools/playtest_map_check.gd`.
 
-**`playtest_hollow` is the larger replacement playtest level from 2.1f.** Open
-`levels/playtest_hollow.tscn` directly; the project default remains the older greybox until Sequoyah
-chooses to switch it after an editor playtest. Its 463 prop placements and 26 terrain records live in
-the single deterministic `world/gen/layouts/playtest_hollow.json`. Blender consumes that file to
-produce `assets/source/playtest_hollow.blend`, the 4,102-mesh `assets/maps/playtest_hollow.glb`, and
-its preview; `world/gen/playtest_hollow.gd` consumes the same records to create 20 terrain bodies and
-254 prop collision shapes. The new scene has six zones, a four-gate camp, clear roads, a lowered Mire
-basin, two ridge terraces, five traversable ramps, a closed boundary, loot/pickup/tool placements, and
-the crawler nest marker. Rebuild with `tools/mapgen/hollow_layout.py` then
+**`playtest_hollow` is the playtest level, and it is now the project's main scene.** Its **88 × 88 m**
+layout — **783 prop placements and 33 terrain records**, of which 20 collide — lives in the single
+deterministic `world/gen/layouts/playtest_hollow.json`. Blender consumes that file to produce
+`assets/source/playtest_hollow.blend`, the **6,256-mesh** `assets/maps/playtest_hollow.glb`, and its
+preview; `world/gen/playtest_hollow.gd` consumes the same records to build **359 terrain and prop
+collision shapes**. The scene has six zones, a camp with two swung-open gate leaves and four verified
+1.8 m-clear egress routes, clear roads, a lowered Mire basin, two ridge terraces, five traversable
+ramps, a closed boundary, loot/pickup/tool placements, and the crawler nest marker.
+
+*(F-031: this paragraph described the superseded 2.1f layout — 463 props, 4,102 meshes, 68 × 68 m —
+long after 2.1h replaced it, so tasks were planning against a map that no longer existed. The figures
+above are `tools/playtest_hollow_check.gd`'s own output, re-run 2026-08-16:
+`zones=6 props=783 terrain=20 colliders=359 visuals=6256 failures=0`. Re-read them from that check
+rather than editing this paragraph by hand.)* Rebuild with `tools/mapgen/hollow_layout.py` then
 `tools/blender/build_playtest_hollow.py`; verify with `tools/playtest_hollow_check.gd`. Static map
 collision remains client-local; harvesting, inventory, loot, enemies, damage, and mutation remain
 host-authoritative. `world/environment/playtest_atmosphere.gd` controls its physical sky, sun, and

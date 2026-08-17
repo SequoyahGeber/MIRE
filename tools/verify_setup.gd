@@ -6,6 +6,13 @@ extends SceneTree
 ##   /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script tools/verify_setup.gd
 ##
 ## Exits non-zero on failure, so it can be wired into a pre-commit or CI check later.
+##
+## The playable level is deliberately NOT pinned here (F-028). `greybox_test.tscn` is kept only as a
+## small physics fixture — it has a Player, a Ground and nothing else to load — while the level the
+## project actually boots is validated structurally, whatever it happens to be.
+
+## Minimal scene used to exercise real physics. Not the game's main scene, and not required to be.
+const PHYSICS_FIXTURE_SCENE: String = "res://levels/greybox_test.tscn"
 
 var _failures: int = 0
 var _live_level: Node = null
@@ -34,7 +41,7 @@ func _initialize() -> void:
 	# Static checks done. Now actually run the level so physics gets exercised — this is what
 	# catches a mis-centred capsule (player sinks or hovers) that every static check would pass.
 	print("\n-- live physics --")
-	_live_level = load("res://levels/greybox_test.tscn").instantiate()
+	_live_level = load(PHYSICS_FIXTURE_SCENE).instantiate()
 	root.add_child(_live_level)
 	_live_player = _live_level.get_node_or_null("Player")
 	if _live_player == null:
@@ -172,14 +179,49 @@ func _verify_scenes() -> void:
 		"%.1f" % rad_to_deg(player.floor_max_angle))
 	player.free()
 
-	var level_packed: PackedScene = load("res://levels/greybox_test.tscn")
-	_check("greybox_test.tscn loads", level_packed != null)
+	var level_packed: PackedScene = load(PHYSICS_FIXTURE_SCENE)
+	_check("%s loads" % PHYSICS_FIXTURE_SCENE.get_file(), level_packed != null)
 	if level_packed == null:
 		return
 	var level: Node = level_packed.instantiate()
-	_check("level contains Player", level.has_node("Player"))
-	_check("level has WorldEnvironment", level.has_node("WorldEnvironment"))
-	_check("level has Ground", level.has_node("Ground"))
-	_check("main_scene points at the level",
-		str(ProjectSettings.get_setting("application/run/main_scene", "")) == "res://levels/greybox_test.tscn")
+	_check("fixture level contains Player", level.has_node("Player"))
+	_check("fixture level has WorldEnvironment", level.has_node("WorldEnvironment"))
+	_check("fixture level has Ground", level.has_node("Ground"))
 	level.free()
+
+	_verify_main_scene()
+
+
+## F-028: this used to assert `main_scene == greybox_test.tscn` and started failing the moment the
+## playable level changed. Pinning a path makes this check a maintenance tax that reports a false
+## defect; what it should verify is that whatever scene is configured is loadable and playable.
+func _verify_main_scene() -> void:
+	var main_scene_path: String = str(
+		ProjectSettings.get_setting("application/run/main_scene", "")
+	)
+	_check("main_scene is set", not main_scene_path.is_empty(), main_scene_path)
+	if main_scene_path.is_empty():
+		return
+	_check("main_scene resource exists", ResourceLoader.exists(main_scene_path), main_scene_path)
+	var main_packed: PackedScene = load(main_scene_path) as PackedScene
+	_check("main_scene loads as a PackedScene", main_packed != null, main_scene_path)
+	if main_packed == null:
+		return
+
+	var main_root: Node = main_packed.instantiate()
+	_check("main_scene root is a Node3D", main_root is Node3D, main_root.get_class())
+	_check("main_scene has a WorldEnvironment", _has_child_of_type(main_root, "WorldEnvironment"))
+	_check("main_scene has a directional light", _has_child_of_type(main_root, "DirectionalLight3D"))
+	# A playable level must contain a player body; PlayerNet replaces it per peer in a session, but
+	# pressing Play with no session has to spawn you somewhere.
+	_check("main_scene contains a player body", _has_child_of_type(main_root, "CharacterBody3D"))
+	main_root.free()
+
+
+func _has_child_of_type(node: Node, type_name: String) -> bool:
+	if node.is_class(type_name):
+		return true
+	for child: Node in node.get_children():
+		if _has_child_of_type(child, type_name):
+			return true
+	return false

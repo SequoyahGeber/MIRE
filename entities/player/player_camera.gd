@@ -96,7 +96,13 @@ func shake_remaining() -> float:
 func _process(delta: float) -> void:
 	if sprint_fov_boost > 0.0:
 		var target_fov: float = _base_fov + (sprint_fov_boost if _sprinting else 0.0)
-		camera.fov = lerpf(camera.fov, target_fov, minf(fov_lerp_speed * delta, 1.0))
+		# Framerate-independent exponential smoothing (F-002, ARCHITECTURE.md §5a rule 6). The naive
+		# `lerpf(a, b, speed * delta)` form converges at different rates at 60 and 240 fps, so the
+		# same `fov_lerp_speed` produced a snappier punch on faster hardware. This form reaches the
+		# same fraction of the remaining distance per unit of *time*, whatever the frame rate. Kept
+		# here rather than left as a documented cosmetic exception because it is the shape most
+		# likely to be copy-pasted into something that does affect gameplay.
+		camera.fov = lerpf(camera.fov, target_fov, 1.0 - exp(-fov_lerp_speed * delta))
 	_apply_shake(delta)
 
 

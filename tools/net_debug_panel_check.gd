@@ -92,6 +92,16 @@ func _check_real_session() -> void:
 	var cerr: Error = client_peer.create_client("127.0.0.1", 47399)
 	_check("client create_client() ok", cerr == OK, error_string(cerr))
 	var client_mp := MultiplayerAPI.create_default_interface()
+	# F-021: a SceneMultiplayer with no root_path polls happily and emits
+	# "Multiplayer root was not initialized" from _process_packet() on every packet — 19 green
+	# assertions sitting on top of a stream of engine errors. Give it a real node to resolve against
+	# BEFORE the peer is attached, so no packet is ever processed without one.
+	# It has to be `/root`, not a private node: the host addresses its RPCs at autoload paths like
+	# `/root/InventoryService`, so a fake peer rooted anywhere else answers every one of them with
+	# "Node not found" — the same class of hidden error, just a different message.
+	client_mp.root_path = root.get_path()
+	_check("client multiplayer has a root path", not client_mp.root_path.is_empty(),
+		str(client_mp.root_path))
 	client_mp.multiplayer_peer = client_peer
 
 	# connected_to_server is racy to catch from outside — it can fire between two of our poll()
