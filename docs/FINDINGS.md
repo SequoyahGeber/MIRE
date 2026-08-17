@@ -450,6 +450,62 @@ hides the race rather than removing it.
 
 ## Resolved
 
+### F-041 · Held items are invisible in first person, so there is no swing to read — **fixed**
+
+**Area:** gameplay/presentation · **Severity:** high · **Found:** 2026-08-17 by dusk3 from Sequoyah's playtest
+
+Sequoyah: *"the tools in my hotbar don't render in my hand when I'm holding them so there's obviously
+no swing animation... I can click when facing the crawlers and see that they flash white and there's
+a sound effect"*.
+
+Everything behind the swing works — 2.8 resolves the hit, the enemy flashes and takes damage, hitstop
+and shake fire — and none of it is legible, because **nothing renders the held item at all**. The
+player sees an empty screen, clicks, and things die. `D-004` chose first-person *with a viewmodel*
+specifically so melee would read; the viewmodel half was never built.
+
+The assets have been ready since A-004: ten designs, each with a `*_viewmodel.glb` posed for
+first-person, twenty exports total. Nothing consumed them — `ItemDef` had `world_model` and no
+viewmodel field, so there was no path from "slot 1 is selected" to "a thing is on screen".
+
+This is the largest gap between what the game does and what it looks like it does, and it makes 2.9's
+gate unassessable: you cannot judge whether a 0.4 s telegraph reads when your own swing has no
+animation to compare it against.
+
+---
+
+**Resolved:** 2026-08-17 by dusk3 · fixed
+
+`entities/player/viewmodel.gd` renders the selected hotbar item under the camera and drives a
+procedural swing from `CombatService.local_phase_progress()`. Only the owning player builds one; it
+is client-local and tells nobody anything. `ItemDef` gained `view_model`, `grip_offset`,
+`grip_rotation_degrees` and `grip_scale`, and all ten A-004 viewmodel exports are now wired up.
+
+**The swing is procedural, not authored, on purpose.** Every weapon's phase durations are already
+data that task 2.9 retunes, so an authored clip per weapon would need re-authoring every time a
+number moved. Driving the pose from phase progress means a weapon given a slower wind-up gets a
+slower wind-up animation for free — and hitstop freezes the pose with no extra code, because the
+swing clock simply stops advancing.
+
+**The structural mistake worth remembering: swing and grip must live on different nodes.** The first
+version applied the swing rotation on top of a grip that already yaws the weapon ~160°, so "pitch
+down" was expressed in the weapon's own rotated axes and came out as an upward flail. The node now
+carries the swing in camera axes and the item carries only its grip, and neither has to know about
+the other.
+
+Two things this cost on the way, both of them rules I had promoted to `DELEGATION.md` that same
+morning and then walked into: naming `CombatService` bare in a `--script` harness (F-011), and
+naming the new `PlayerViewmodel` class bare in `player_controller.gd` (F-016) — the second failed as
+*"the level has a player"* rather than as anything about viewmodels, because a controller whose
+script will not compile never joins the `players` group.
+
+Verified by `tools/viewmodel_check.gd` against the **real main scene**: the viewmodel exists under
+the camera, resolves the held item, instantiates its mesh, follows a hotbar change, and renders one
+frame per swing phase to `/tmp/mire_viewmodel_*.png`. Grip values and the three swing constants are
+starting points — judging an arc needs motion, which is 2.9's playtest, not a still.
+
+*Also fixed in passing: regenerating `content/items/stone_axe.tres` had silently dropped the icon
+A-042 wired to it, so slot 1 fell back to rendering the letters "SA". The generator now sets it.*
+
 ### F-039 · A-006's crawler faces +Z, but its generator, catalog and docs all say -Z — **fixed**
 
 **Area:** assets/gameplay · **Severity:** medium · **Found:** 2026-08-17 by dusk3 from Sequoyah's playtest
