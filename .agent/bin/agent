@@ -1489,6 +1489,63 @@ If you run out of quota or hit a wall, stop cleanly instead of thrashing:
 """
 
 
+REVIEW_TEMPLATE = """<!-- lane:%(lane)s model:%(model)s effort:%(effort)s review:%(tid)s files: -->
+# Review order — %(tid)s  ·  lane %(lane)s  (%(account)s)
+
+You are **%(lane)s**, reviewing work another lane implemented. Your agent name is `%(agent)s`.
+
+**You are not here to implement.** Do not edit source. Read the change, judge it against its spec,
+and report. The one exception is `docs/FINDINGS.md`, where your findings belong.
+
+## What to review
+
+```bash
+git log --oneline -8
+git show --stat %(sha)s
+git diff %(sha)s~1..%(sha)s
+```
+
+## Judge it against these, in order
+
+1. **The spec** — the `%(tid)s` block in `docs/SPECS.md` is the contract. Does the change do what it
+   says, including its acceptance criteria? Anything the spec called a trap — did they fall in it?
+2. **Network authority** — every system declares its `ARCHITECTURE.md` §2.2 row. Host-authoritative
+   by default; client-authoritative only for a player's own movement. A client that mutates shared
+   state is a bug, not a style note.
+3. **The four standing rules** in `docs/SPECS.md` — especially rule 1 (no bare autoload identifiers
+   in anything a `--script` harness can reach), which has cost real sessions (F-011, F-046).
+4. **Its own check** — run it, don't trust the commit message:
+   ```bash
+   %(verify)s
+   ```
+   Grep the output for `ERROR:` and treat any as failure even when the exit code is 0 (F-021).
+5. **Determinism** — no `randi()` in world generation; seeded `RandomNumberGenerator` per subsystem.
+6. **Typed GDScript**, `net_` prefix on networked functions, cross-system comms via `event_bus`.
+
+## How to report
+
+For each real problem, append to `docs/FINDINGS.md` as the next `F-0NN`, in that file's format
+(**Area** / **Severity** / **Found**), naming the file and line and the concrete failure. Severity
+per its table: `high` only if it ships broken, desyncs, or blocks a milestone.
+
+**Be specific or say nothing.** "The netcode feels fragile" is unactionable and rots there forever.
+If you cannot name a file and a concrete failure, you have a hunch — keep it.
+
+If the change is sound, say so plainly and file nothing. A clean review is a real result.
+
+Close out with:
+
+```bash
+.agent/bin/agent done %(tid)s-review "verdict, and the check output you actually saw"
+.agent/bin/agent ship %(tid)s-review "Review %(tid)s: <verdict>"
+```
+
+---
+
+%(brief)s
+"""
+
+
 def cmd_order(args):
     """Compose a self-contained work order for one task and park it for a lane.
 
@@ -1513,6 +1570,8 @@ def cmd_order(args):
         model = args[args.index("--model") + 1]
     if "--effort" in args:
         effort = args[args.index("--effort") + 1]
+    review = "--review" in args
+    sha = args[args.index("--sha") + 1] if "--sha" in args else "HEAD"
     if "--files" in args:
         rest = args[args.index("--files") + 1:]
         for a in rest:
@@ -1597,6 +1656,23 @@ def cmd_order(args):
                       "neighbouring block.\n" % tid)
 
     os.makedirs(ORDERS, exist_ok=True)
+    if review:
+        # A reviewer claims nothing: it reads a commit and writes findings. Claiming source would
+        # block the lane that has to act on the review.
+        body = REVIEW_TEMPLATE % {
+            "lane": lane, "account": account, "agent": lane.lower(), "tid": tid, "sha": sha,
+            "model": model or lanes.get(lane, {}).get("model", "default"), "effort": effort,
+            "verify": verify, "brief": _plain(cmd_brief, [tid]).strip(),
+        }
+        path = os.path.join(ORDERS, "%s-review.md" % tid.replace("/", "_"))
+        with open(path, "w") as f:
+            f.write(body)
+        ok("review order written for %s → %s  (%s, effort %s)"
+           % (tid, lane, model or lanes.get(lane, {}).get("model", "lane default"), effort))
+        print("  %s%s · reviewing %s%s" % (C["dim"], os.path.relpath(path, ROOT), sha, C["x"]))
+        print("\n  next:  %sagent dispatch %s %s-review%s" % (C["c"], lane, tid, C["x"]))
+        return
+
     body = ORDER_TEMPLATE % {
         "lane": lane, "account": account, "agent": lane.lower(), "tid": tid,
         "files": " ".join(files), "claim": claim, "verify": verify, "spec": spec_block,
@@ -2004,6 +2080,7 @@ Verifying — always launch the engine through this, never bare (F-044):
 Directing three worker accounts (docs/ORCHESTRATION.md):
 
   agent order <id> --lane LC1 --files ...   write a self-contained work order
+  agent order <id> --lane LC1 --review     review order: judge a commit, file findings, no edits
   agent dispatch <LANE> [id] [--dry-run]    run that order on its account, headless
   agent lanes [--doctor]                    lane health; --doctor checks CLI + login
   agent report                              who's doing what, what it cost, what's stuck

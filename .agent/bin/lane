@@ -20,6 +20,8 @@ lane's claims, notes and commits all land under a stable name that outlives any 
 Deliberately dependency-free, like `agent`. If it annoys you, edit it.
 """
 
+import contextlib
+import fcntl
 import glob
 import json
 import os
@@ -77,20 +79,20 @@ DEFAULT_LANES = {
     "LC1": {
         "account": "ChatGPT Plus #1", "cli": "codex",
         "home": "~/.mire/lanes/codex-a", "model": "gpt-5.6-sol", "effort": "medium",
-        "areas": ["systems/", "core/", "entities/"], "tier": "T1",
+        "areas": ["systems/", "core/", "entities/"], "tier": "T1", "role": "review",
         "sandbox": "danger-full-access",
     },
     "LC2": {
         "account": "ChatGPT Plus #2", "cli": "codex",
         "home": "~/.mire/lanes/codex-b", "model": "gpt-5.6-sol", "effort": "medium",
-        "areas": ["ui/", "tools/", "world/"], "tier": "T1",
+        "areas": ["ui/", "tools/", "world/"], "tier": "T1", "role": "review",
         "sandbox": "danger-full-access",
     },
     "LP": {
         "account": "Claude Pro", "cli": "claude",
         "home": "~/.mire/lanes/claude-pro", "model": "sonnet", "effort": "medium",
-        "areas": ["systems/", "ui/", "autoload/"], "tier": "T1",
-        "permissions": "bypass",
+        "areas": ["systems/", "ui/", "autoload/", "core/", "entities/"], "tier": "T1",
+        "role": "code", "permissions": "bypass",
     },
 }
 
@@ -119,6 +121,30 @@ def load_lanes():
         lane.update(data.get(name, {}))
         data[name] = lane
     return data
+
+
+LOCKS = os.path.join(AGENT_DIR, "locks")
+
+
+@contextlib.contextmanager
+def lanes_locked():
+    """Read-modify-write lanes.json under an exclusive lock.
+
+    Without this, two lanes running at once clobber each other: LC1 loads the ledger at start, LP
+    writes 'running' a moment later, then LC1 finishes and writes back its whole stale dict — erasing
+    LP's status. Observed live on 2026-08-17: `lane run LP` was four minutes into a task while the
+    ledger read `idle, pid None`, which is exactly the state that lets the director dispatch a second
+    task to a lane that is already busy. Always re-read inside the lock; never mutate a copy loaded
+    before it."""
+    os.makedirs(LOCKS, exist_ok=True)
+    with open(os.path.join(LOCKS, "lanes.lock"), "w") as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        try:
+            data = load_lanes()
+            yield data
+            save_lanes(data)
+        finally:
+            fcntl.flock(fh, fcntl.LOCK_UN)
 
 
 def save_lanes(data):
@@ -228,7 +254,7 @@ def is_logged_in(lane):
 
 
 def new_acc():
-    return {"in": 0, "out": 0, "cached": 0, "cost": 0.0, "raw": {}}
+    return {"in": 0, "out": 0, "cached": 0, "cost": 0.0, "raw": {}, "final": False}
 
 
 def harvest(obj, acc, cli):
@@ -245,12 +271,23 @@ def harvest(obj, acc, cli):
         acc["raw"] = {k: v for k, v in u.items() if isinstance(v, (int, float))}
         return
 
+    final = obj.get("type") == "result" or "total_cost_usd" in obj
     u = obj.get("usage")
+    if not isinstance(u, dict):
+        # Streamed assistant events nest it one level down.
+        u = (obj.get("message") or {}).get("usage") if isinstance(obj.get("message"), dict) else None
     if isinstance(u, dict):
-        acc["in"] = (_int(u.get("input_tokens")) + _int(u.get("cache_creation_input_tokens"))
-                     + _int(u.get("cache_read_input_tokens")))
-        acc["out"] = _int(u.get("output_tokens"))
-        acc["cached"] = _int(u.get("cache_read_input_tokens"))
+        tin = (_int(u.get("input_tokens")) + _int(u.get("cache_creation_input_tokens"))
+               + _int(u.get("cache_read_input_tokens")))
+        tout = _int(u.get("output_tokens"))
+        if final:
+            acc["in"], acc["out"] = tin, tout          # the aggregate — authoritative
+            acc["cached"] = _int(u.get("cache_read_input_tokens"))
+            acc["final"] = True
+        elif not acc.get("final"):
+            # Best effort while streaming, so a killed run still reports something rather than 0.
+            acc["in"] = max(acc["in"], tin)
+            acc["out"] += tout
         acc["raw"] = {k: v for k, v in u.items() if isinstance(v, (int, float))}
     if "total_cost_usd" in obj:
         try:
@@ -394,7 +431,10 @@ def build(lane, name, last_msg):
         env["CLAUDE_CONFIG_DIR"] = home
         argv = [
             binary, "-p",
-            "--output-format", "json",
+            # stream-json, not json: with a single buffered object nothing reaches the log until the
+            # run ends, so a long task is invisible and a run killed on a quota wall reports zero
+            # tokens — losing exactly the usage figure the director schedules on. Requires --verbose.
+            "--output-format", "stream-json", "--verbose",
             "--model", lane["model"],
             "--add-dir", ROOT,
         ]
@@ -473,9 +513,10 @@ def cmd_run(args):
             print("  %s✓ would run%s" % (C["g"], C["x"]))
         return
 
-    roll_window(lane)
-    lane.update({"status": "running", "task": task, "started": now()})
-    save_lanes(lanes)
+    with lanes_locked() as live:
+        roll_window(live[name])
+        live[name].update({"status": "running", "task": task, "started": now()})
+        lane = dict(live[name])
 
     print("%s▶ %s → %s%s  %s(%s, %s, effort %s)%s"
           % (C["c"], name, task, C["x"], C["dim"], lane["account"], lane["model"],
@@ -488,8 +529,8 @@ def cmd_run(args):
         proc = subprocess.Popen(argv, cwd=ROOT, env=env, stdin=subprocess.PIPE,
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                 text=True, bufsize=1)
-        lanes[name]["pid"] = proc.pid
-        save_lanes(lanes)
+        with lanes_locked() as live:
+            live[name]["pid"] = proc.pid
         proc.stdin.write(prompt)
         proc.stdin.close()
 
@@ -518,7 +559,7 @@ def cmd_run(args):
         if proc and proc.poll() is None:
             proc.kill()
 
-    _finish(lanes, name, task, code, acc, "".join(tail), logpath, time.time() - started)
+    return _finish(name, task, code, acc, "".join(tail), logpath, time.time() - started)
 
 
 def _q(a):
@@ -526,7 +567,7 @@ def _q(a):
     return "'%s'" % a if " " in a or '"' in a else a
 
 
-def _finish(lanes, name, task, code, acc, tail, logpath, elapsed):
+def _finish(name, task, code, acc, tail, logpath, elapsed):
     """Record the run, and — the part that matters — make sure a dead lane never keeps its claims.
 
     A lane that hits its quota wall mid-task is the expected case, not the exceptional one. If it
@@ -535,15 +576,30 @@ def _finish(lanes, name, task, code, acc, tail, logpath, elapsed):
     the working diff is left alone, and the next lane reads why it stopped instead of rediscovering
     it. That is the whole anti-waste story in twenty lines.
     """
-    lane = lanes[name]
     tin, tout, cost = totals(acc)
     exhausted = code != 0 and looks_exhausted(tail)
 
+    with lanes_locked() as live:
+        lane = live[name]
+        _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, elapsed,
+                      exhausted)
+    if code != 0:
+        reason = ("%s stopped on %s at %s (exit %d, %s). Tokens this run: %s in / %s out. "
+                  "Working diff is untouched — read the log at %s, then continue or drop. "
+                  "Tail of the failure:\n%s"
+                  % (name, task, now(), code, "quota wall" if exhausted else "error",
+                     f"{tin:,}", f"{tout:,}", os.path.relpath(logpath, ROOT), tail[-400:].strip()))
+        _release(name, task, reason)
+    return 0 if code == 0 else 1
+
+
+def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, elapsed, exhausted):
     lane["runs"] += 1
     lane["tokens_in"] += tin
     lane["tokens_out"] += tout
     lane["cost_usd"] = round(lane["cost_usd"] + cost, 4)
-    lane["raw_usage"] = acc
+    lane["raw_usage"] = acc.get("raw", {})
+    lane["tokens_cached"] = lane.get("tokens_cached", 0) + int(acc.get("cached", 0))
     lane["pid"] = None
     lane["task"] = None
     lane["last_finished"] = now()
@@ -571,15 +627,7 @@ def _finish(lanes, name, task, code, acc, tail, logpath, elapsed):
             print("%s✗ %s failed %s (exit %d)%s" % (C["r"], name, task, code, C["x"]))
         print("  %slog: %s%s" % (C["dim"], os.path.relpath(logpath, ROOT), C["x"]))
 
-        reason = ("%s stopped on %s at %s (exit %d, %s). Tokens this run: %s in / %s out. "
-                  "Working diff is untouched — read the log at %s, then continue or drop. "
-                  "Tail of the failure:\n%s"
-                  % (name, task, now(), code, "quota wall" if exhausted else "error",
-                     f"{tin:,}", f"{tout:,}", os.path.relpath(logpath, ROOT), tail[-400:].strip()))
-        _release(name, task, reason)
 
-    save_lanes(lanes)
-    return 0 if code == 0 else 1
 
 
 def _release(name, task, reason):
