@@ -1513,3 +1513,27 @@ Commit at time of writing: `fcdd87d`
 Capture Claude's rate_limit_event as authoritative quota state (status, window type, exact reset), replacing inference where it is available. Observed live: five_hour window, allowed, resets 2026-08-18T04:10Z.
 
 Commit at time of writing: `3792399`
+
+---
+
+### HANDOFF · 2.1j · tine18 · 2026-08-17T23:34:54+00:00
+
+**Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle**
+
+DONE this session: 5 of 12 generators on the shared palette — pickups and tools/weapons FULLY migrated (palette + primitives), crafting stations, environment kit and harvestables palette-only. mire_art.py holds the palette (63 tokens, sRGB hex), SCALE table with a build-time contract, shared primitives, and radial()/around() for all-round detail. audit_all_sides.py + detail_distribution.py are the inspection harness and both checkpoint per item. Fallen logs and the pickup log rebuilt so branches wrap the trunk instead of all leaving one face. Both authored maps rebuilt; item_icons_check, playtest_hollow_check (783 props) and playtest_map_check all PASS with 0 failures.
+
+REMAINING: build_loot_set.py, build_ward_set.py, build_wellspring_set.py, build_enemy_crawler.py, build_adapted_nature_set.py. Follow docs/ASSET_TRACKER.md section 'Migration status (2.1j)'.
+
+READ BEFORE YOU START — four traps already paid for, all written up in ASSET_TRACKER:
+1. Only swap geometry primitives when the local ones MATCH mire_art's (8 verts, 0.94 taper). map_kit uses 7/no-taper, harvestables 0.82. Palette-only otherwise, and prove it with a catalog dimension diff showing ZERO changes.
+2. Pick palette values from BASE COLOUR, never from a render — AgX darkens on top, so matching a render darkens twice. My first pass was 25-40% too dark across all 53 tokens.
+3. around() defaults to axis='z'. Anything whose long axis is X needs axis='x', or your radial spread fans out horizontally and is just as flat as what you were fixing.
+4. Godot caches glTF imports; a check run right after a rebuild can report the previous import. Re-run before believing a jump.
+
+AFTER ANY PALETTE CHANGE rebuild in this order: migrated generators -> render_item_icons.py -> both map builders -> the three Godot checks. Icons and maps both go stale silently.
+
+STILL NEEDS SEQUOYAH'S EYES: (a) pickup sizes changed hard (stone 1.08m -> 0.185m, coin 0.36m -> 0.10m) — check how dropped items read in the Hollow; (b) iron ore nodes now read as dark rock with metallic seams rather than the old orange, confirm ore is distinguishable from stone at a glance; (c) every environment asset sits below z=0 (boulder_a at -0.79m) — pre-existing, not from this task, but decide whether half-buried is intended.
+
+Files: `AGENTS.md`, `tools/blender/audit_all_sides.py`, `tools/blender/detail_distribution.py`, `tools/blender/build_pickup_kit.py`, `assets/pickups`, `tools/blender/build_crafting_stations.py`, `assets/crafting_stations`, `assets/source/crafting_stations.blend`, `tools/blender/build_mire_map_kit.py`, `assets/environment`, `assets/source/mire_map_kit.blend`, `tools/blender/build_playtest_map.py`, `tools/blender/build_playtest_hollow.py`, `assets/maps`, `assets/source/playtest_map.blend`, `assets/source/playtest_hollow.blend`, `tools/blender/build_harvestable_resources.py`, `assets/harvestables`, `assets/source/harvestable_resources.blend`, `tools/blender/build_tool_weapon_set.py`, `assets/tools_weapons`, `assets/source/tool_weapon_set.blend`, `docs/ASSET_TRACKER.md`
+
+Commit at time of writing: `86ced32`

@@ -9,7 +9,6 @@
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
 | **2.13** Death & respawn: downed → bleed-out → revive by teammate (`DESIGN.md` §4.5) | lp | 2026-08-17 23:31 | `systems/health/player_health.gd`, `systems/health/downed_state.gd`, `entities/player/player_controller.gd`, `tools/player_health_check.gd`, `tools/player_health_net_check.gd`, `core/net/net_version.gd`, `core/dev/dev_loadout.gd` |
-| **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-17 19:30 | `AGENTS.md`, `tools/blender/audit_all_sides.py`, `tools/blender/detail_distribution.py`, `tools/blender/build_pickup_kit.py`, `assets/pickups`, `tools/blender/build_crafting_stations.py`, `assets/crafting_stations`, `assets/source/crafting_stations.blend`, `tools/blender/build_mire_map_kit.py`, `assets/environment`, `assets/source/mire_map_kit.blend`, `tools/blender/build_playtest_map.py`, `tools/blender/build_playtest_hollow.py`, `assets/maps`, `assets/source/playtest_map.blend`, `assets/source/playtest_hollow.blend`, `tools/blender/build_harvestable_resources.py`, `assets/harvestables`, `assets/source/harvestable_resources.blend`, `tools/blender/build_tool_weapon_set.py`, `assets/tools_weapons`, `assets/source/tool_weapon_set.blend`, `docs/ASSET_TRACKER.md` |
 
 ## Milestones
 

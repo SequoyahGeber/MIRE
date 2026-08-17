@@ -1,70 +1,5 @@
 {
   "claims": {
-    "AGENTS.md": {
-      "agent": "tine18",
-      "at": "2026-08-17T19:30:14+00:00",
-      "task": "2.1j"
-    },
-    "assets/crafting_stations": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:07:07+00:00",
-      "task": "2.1j"
-    },
-    "assets/environment": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:12:54+00:00",
-      "task": "2.1j"
-    },
-    "assets/harvestables": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:22:52+00:00",
-      "task": "2.1j"
-    },
-    "assets/maps": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:20:42+00:00",
-      "task": "2.1j"
-    },
-    "assets/pickups": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:07:07+00:00",
-      "task": "2.1j"
-    },
-    "assets/source/crafting_stations.blend": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:07:07+00:00",
-      "task": "2.1j"
-    },
-    "assets/source/harvestable_resources.blend": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:22:52+00:00",
-      "task": "2.1j"
-    },
-    "assets/source/mire_map_kit.blend": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:12:54+00:00",
-      "task": "2.1j"
-    },
-    "assets/source/playtest_hollow.blend": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:20:42+00:00",
-      "task": "2.1j"
-    },
-    "assets/source/playtest_map.blend": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:20:42+00:00",
-      "task": "2.1j"
-    },
-    "assets/source/tool_weapon_set.blend": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:24:30+00:00",
-      "task": "2.1j"
-    },
-    "assets/tools_weapons": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:24:30+00:00",
-      "task": "2.1j"
-    },
     "core/dev/dev_loadout.gd": {
       "agent": "lp",
       "at": "2026-08-17T23:33:01+00:00",
@@ -74,11 +9,6 @@
       "agent": "lp",
       "at": "2026-08-17T23:33:01+00:00",
       "task": "2.13"
-    },
-    "docs/ASSET_TRACKER.md": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:04+00:00",
-      "task": "2.1j"
     },
     "entities/player/player_controller.gd": {
       "agent": "lp",
@@ -94,51 +24,6 @@
       "agent": "lp",
       "at": "2026-08-17T23:33:01+00:00",
       "task": "2.13"
-    },
-    "tools/blender/audit_all_sides.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T19:30:14+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/build_crafting_stations.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:07:07+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/build_harvestable_resources.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:22:52+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/build_mire_map_kit.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:12:54+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/build_pickup_kit.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:07:07+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/build_playtest_hollow.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:20:42+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/build_playtest_map.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:20:42+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/build_tool_weapon_set.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:24:30+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/detail_distribution.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T19:30:14+00:00",
-      "task": "2.1j"
     },
     "tools/player_health_check.gd": {
       "agent": "lp",
@@ -165,36 +50,6 @@
       ],
       "notes": [],
       "started": "2026-08-17T23:31:05+00:00"
-    },
-    "2.1j": {
-      "agent": "tine18",
-      "files": [
-        "AGENTS.md",
-        "tools/blender/audit_all_sides.py",
-        "tools/blender/detail_distribution.py",
-        "tools/blender/build_pickup_kit.py",
-        "assets/pickups",
-        "tools/blender/build_crafting_stations.py",
-        "assets/crafting_stations",
-        "assets/source/crafting_stations.blend",
-        "tools/blender/build_mire_map_kit.py",
-        "assets/environment",
-        "assets/source/mire_map_kit.blend",
-        "tools/blender/build_playtest_map.py",
-        "tools/blender/build_playtest_hollow.py",
-        "assets/maps",
-        "assets/source/playtest_map.blend",
-        "assets/source/playtest_hollow.blend",
-        "tools/blender/build_harvestable_resources.py",
-        "assets/harvestables",
-        "assets/source/harvestable_resources.blend",
-        "tools/blender/build_tool_weapon_set.py",
-        "assets/tools_weapons",
-        "assets/source/tool_weapon_set.blend",
-        "docs/ASSET_TRACKER.md"
-      ],
-      "notes": [],
-      "started": "2026-08-17T19:30:14+00:00"
     }
   },
   "recent": {
@@ -219,14 +74,19 @@
       "task": "0.12"
     },
     "AGENTS.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T19:02:17+00:00",
-      "task": "F-050"
+      "agent": "tine18",
+      "at": "2026-08-17T23:34:54+00:00",
+      "task": "2.1j"
     },
     "CLAUDE.md": {
       "agent": "flint5",
       "at": "2026-08-17T23:15:28+00:00",
       "task": "F-053"
+    },
+    "assets/crafting_stations": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:34:54+00:00",
+      "task": "2.1j"
     },
     "assets/enemies": {
       "agent": "gale",
@@ -289,9 +149,9 @@
       "task": "2.1d"
     },
     "assets/environment": {
-      "agent": "pike",
-      "at": "2026-08-17T01:22:00+00:00",
-      "task": "2.1h"
+      "agent": "tine18",
+      "at": "2026-08-17T23:34:54+00:00",
+      "task": "2.1j"
     },
     "assets/environment/README.md": {
       "agent": "pike14",
@@ -1038,6 +898,11 @@
       "at": "2026-08-17T01:15:29+00:00",
       "task": "2.1d"
     },
+    "assets/harvestables": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:34:54+00:00",
+      "task": "2.1j"
+    },
     "assets/harvestables/README.md": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
@@ -1213,6 +1078,11 @@
       "at": "2026-08-16T23:46:09+00:00",
       "task": "2.1d"
     },
+    "assets/maps": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:34:54+00:00",
+      "task": "2.1j"
+    },
     "assets/maps/README.md": {
       "agent": "moss",
       "at": "2026-08-17T00:24:32+00:00",
@@ -1230,7 +1100,7 @@
     },
     "assets/pickups": {
       "agent": "tine18",
-      "at": "2026-08-17T19:29:08+00:00",
+      "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
     "assets/source/adapted_nature_set.blend": {
@@ -1238,15 +1108,20 @@
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
     },
+    "assets/source/crafting_stations.blend": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:34:54+00:00",
+      "task": "2.1j"
+    },
     "assets/source/enemy_crawler.blend": {
       "agent": "gale",
       "at": "2026-08-16T23:59:35+00:00",
       "task": "2.1d"
     },
     "assets/source/harvestable_resources.blend": {
-      "agent": "pike14",
-      "at": "2026-08-17T02:10:02+00:00",
-      "task": "2.1i"
+      "agent": "tine18",
+      "at": "2026-08-17T23:34:54+00:00",
+      "task": "2.1j"
     },
     "assets/source/loot_set.blend": {
       "agent": "vane",
@@ -1254,9 +1129,9 @@
       "task": "2.1d"
     },
     "assets/source/mire_map_kit.blend": {
-      "agent": "pike14",
-      "at": "2026-08-17T02:10:02+00:00",
-      "task": "2.1i"
+      "agent": "tine18",
+      "at": "2026-08-17T23:34:54+00:00",
+      "task": "2.1j"
     },
     "assets/source/pickup_kit.blend": {
       "agent": "tine18",
@@ -1264,9 +1139,14 @@
       "task": "2.1j"
     },
     "assets/source/playtest_hollow.blend": {
-      "agent": "pike",
-      "at": "2026-08-17T01:22:00+00:00",
-      "task": "2.1h"
+      "agent": "tine18",
+      "at": "2026-08-17T23:34:54+00:00",
+      "task": "2.1j"
+    },
+    "assets/source/playtest_map.blend": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:34:54+00:00",
+      "task": "2.1j"
     },
     "assets/source/reference_imports": {
       "agent": "ember",
@@ -1284,9 +1164,9 @@
       "task": "2.1d"
     },
     "assets/source/tool_weapon_set.blend": {
-      "agent": "reed16",
-      "at": "2026-08-17T17:01:21+00:00",
-      "task": "2.1d"
+      "agent": "tine18",
+      "at": "2026-08-17T23:34:54+00:00",
+      "task": "2.1j"
     },
     "assets/source/ward_set.blend": {
       "agent": "pike14",
@@ -1299,9 +1179,9 @@
       "task": "2.1i"
     },
     "assets/tools_weapons": {
-      "agent": "reed16",
-      "at": "2026-08-17T17:01:21+00:00",
-      "task": "2.1d"
+      "agent": "tine18",
+      "at": "2026-08-17T23:34:54+00:00",
+      "task": "2.1j"
     },
     "assets/tools_weapons/README.md": {
       "agent": "reed16",
@@ -1819,9 +1699,9 @@
       "task": "F-053"
     },
     "docs/ASSET_TRACKER.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T23:15:28+00:00",
-      "task": "F-053"
+      "agent": "tine18",
+      "at": "2026-08-17T23:34:54+00:00",
+      "task": "2.1j"
     },
     "docs/AUDIT-2026-08-17.md": {
       "agent": "flint5",
@@ -1970,7 +1850,7 @@
     },
     "tools/blender/audit_all_sides.py": {
       "agent": "tine18",
-      "at": "2026-08-17T19:29:08+00:00",
+      "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
     "tools/blender/build_adapted_nature_set.py": {
@@ -1980,7 +1860,7 @@
     },
     "tools/blender/build_crafting_stations.py": {
       "agent": "tine18",
-      "at": "2026-08-17T19:29:08+00:00",
+      "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
     "tools/blender/build_enemy_crawler.py": {
@@ -1990,7 +1870,7 @@
     },
     "tools/blender/build_harvestable_resources.py": {
       "agent": "tine18",
-      "at": "2026-08-17T19:29:08+00:00",
+      "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
     "tools/blender/build_loot_set.py": {
@@ -2000,22 +1880,27 @@
     },
     "tools/blender/build_mire_map_kit.py": {
       "agent": "tine18",
-      "at": "2026-08-17T19:29:08+00:00",
+      "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
     "tools/blender/build_pickup_kit.py": {
       "agent": "tine18",
-      "at": "2026-08-17T19:29:08+00:00",
+      "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
     "tools/blender/build_playtest_hollow.py": {
-      "agent": "pike",
-      "at": "2026-08-17T01:22:00+00:00",
-      "task": "2.1h"
+      "agent": "tine18",
+      "at": "2026-08-17T23:34:54+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_playtest_map.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:34:54+00:00",
+      "task": "2.1j"
     },
     "tools/blender/build_tool_weapon_set.py": {
       "agent": "tine18",
-      "at": "2026-08-17T19:29:08+00:00",
+      "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
     "tools/blender/build_ward_set.py": {
@@ -2030,7 +1915,7 @@
     },
     "tools/blender/detail_distribution.py": {
       "agent": "tine18",
-      "at": "2026-08-17T19:29:08+00:00",
+      "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
     "tools/blender/mire_art.py": {
@@ -2781,7 +2666,7 @@
     "2.1j": {
       "est": "8",
       "milestone": "M2",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle"
     },
