@@ -557,6 +557,34 @@ when two players reconnect together. Before reconnect can preserve inventory, he
 Attunement, add a host-issued opaque run-player token to admission/rejoin and an explicit old-peer to
 new-peer rebind event that gameplay systems can consume.
 
+### F-034 · `agent ship` silently drops directory claims and appends stray argv to the commit message
+
+**Area:** agent tooling · **Severity:** medium · **Found:** 2026-08-16 by kiln9 during 2.1d
+
+`agent ship <id> ["message"]` takes a message only, and commits the task's *claimed* files. Two things
+follow that cost a commit to notice:
+
+1. **A claim on a directory is not expanded at ship time.** 2.1d was claimed with
+   `assets/tools_weapons` and `assets/icons`. `agent check` accepted those claims and the pre-commit
+   hook was happy, but `ship` committed only the individually-named files — the generators, the docs,
+   the four `.tres`. Every rebuilt GLB, every preview, and the entire new `assets/icons/` tree stayed
+   uncommitted, and `ship` still printed `✓ pushed to origin/main` and the sign-off. Nothing in the
+   output distinguishes "shipped everything" from "shipped a third of it".
+2. **Extra arguments become part of the commit subject.** Passing a file list after the message (a
+   reasonable guess, since `claim` takes files) produced the subject
+   `Art: rebuild the tool set and add inventory icons tools/blender/build_tool_weapon_set.py …
+   docs/DELEGATION.md` — the whole pathspec glued on. `340d9a3` is stuck with it: it was pushed, and
+   another agent committed on top before it could be amended.
+
+`ship` also committed `docs/DECISIONS.md` including another agent's uncommitted D-031/D-032, because
+the file was claimed by this task for one added decision. Content was preserved, but it is attributed
+to the wrong commit.
+
+Until this is fixed: **claim files individually, never directories**, and check `git status` after
+every `ship` rather than trusting its sign-off. The fix is to expand directory claims to their files
+at ship time, reject unexpected positional arguments instead of concatenating them, and print the
+committed file count.
+
 ## Resolved
 
 ### F-033 · Inventory hotbar aliases eight backpack slots instead of adding eight separate slots — **fixed**
