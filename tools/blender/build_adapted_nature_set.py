@@ -12,9 +12,13 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from pathlib import Path
 
 import bpy
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from mire_art import mat, radial, around, reset_materials  # noqa: E402
 from mathutils import Vector
 
 
@@ -26,20 +30,6 @@ PREVIEW_DIR = ASSET_DIR / "preview"
 SOURCE_PATH = ROOT / "assets" / "source" / "adapted_nature_set.blend"
 
 EXPECTED_NAMES = ["mire_mossy_boulder", "mire_broadleaf_tree"]
-
-
-def material(
-    name: str,
-    color: tuple[float, float, float, float],
-    roughness: float = 0.9,
-) -> bpy.types.Material:
-    mat = bpy.data.materials.new(name)
-    mat.diffuse_color = color
-    mat.use_nodes = True
-    shader = mat.node_tree.nodes.get("Principled BSDF")
-    shader.inputs["Base Color"].default_value = color
-    shader.inputs["Roughness"].default_value = roughness
-    return mat
 
 
 def assign_only(obj: bpy.types.Object, mat: bpy.types.Material) -> None:
@@ -322,6 +312,7 @@ def main() -> None:
     for expected in EXPECTED_NAMES:
         (EXPORT_DIR / f"{expected}.glb").unlink(missing_ok=True)
 
+    reset_materials()
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
@@ -330,24 +321,26 @@ def main() -> None:
             datablocks.remove(block)
 
     mats = {
-        "rock_dark": material("MIRE_Adapted_Rock_Dark", (0.12, 0.17, 0.19, 1.0)),
-        "rock_mid": material("MIRE_Adapted_Rock_Mid", (0.24, 0.32, 0.34, 1.0)),
-        "rock_blue": material("MIRE_Adapted_Rock_Blue", (0.28, 0.39, 0.44, 1.0)),
-        "rock_light": material("MIRE_Adapted_Rock_Light", (0.43, 0.48, 0.46, 1.0)),
-        "rock_crack": material("MIRE_Adapted_Rock_Crack", (0.07, 0.09, 0.10, 1.0)),
-        "moss_dark": material("MIRE_Adapted_Moss_Dark", (0.07, 0.25, 0.11, 1.0)),
-        "moss_mid": material("MIRE_Adapted_Moss_Mid", (0.20, 0.44, 0.14, 1.0)),
-        "moss_light": material("MIRE_Adapted_Moss_Light", (0.46, 0.61, 0.18, 1.0)),
-        "lichen": material("MIRE_Adapted_Lichen", (0.58, 0.62, 0.22, 1.0)),
-        "bark_dark": material("MIRE_Adapted_Bark_Dark", (0.15, 0.065, 0.025, 1.0)),
-        "bark": material("MIRE_Adapted_Bark", (0.31, 0.13, 0.045, 1.0)),
-        "bark_light": material("MIRE_Adapted_Bark_Light", (0.48, 0.23, 0.07, 1.0)),
-        "leaf_deep": material("MIRE_Adapted_Leaf_Deep", (0.045, 0.21, 0.10, 1.0)),
-        "leaf_mid": material("MIRE_Adapted_Leaf_Mid", (0.075, 0.35, 0.15, 1.0)),
-        "leaf_light": material("MIRE_Adapted_Leaf_Light", (0.21, 0.49, 0.21, 1.0)),
-        "leaf_warm": material("MIRE_Adapted_Leaf_Warm", (0.43, 0.50, 0.12, 1.0)),
-        "ground": material("MIRE_Adapted_Preview_Ground", (0.052, 0.085, 0.060, 1.0)),
-        "scale": material("MIRE_Adapted_Scale", (0.18, 0.50, 0.78, 1.0)),
+        # Shared palette, so the supplied boulder and broadleaf match the kit
+        # they stand beside rather than the pack they came from.
+        "rock_dark": mat("stone_dark"),
+        "rock_mid": mat("stone"),
+        "rock_blue": mat("stone"),
+        "rock_light": mat("stone_light"),
+        "rock_crack": mat("coal"),
+        "moss_dark": mat("grass_dark"),
+        "moss_mid": mat("moss"),
+        "moss_light": mat("grass_light"),
+        "lichen": mat("lichen"),
+        "bark_dark": mat("wood_bark_dark"),
+        "bark": mat("wood_bark"),
+        "bark_light": mat("wood_bark_light"),
+        "leaf_deep": mat("leaf_deep"),
+        "leaf_mid": mat("leaf"),
+        "leaf_light": mat("leaf_light"),
+        "leaf_warm": mat("leaf_gold"),
+        "ground": mat("preview_ground"),
+        "scale": mat("reference_blue"),
     }
 
     boulder = prepare_asset(

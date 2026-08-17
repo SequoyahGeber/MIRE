@@ -34,10 +34,14 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from pathlib import Path
 from typing import Callable
 
 import bpy
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from mire_art import mat, radial, around, reset_materials  # noqa: E402
 import numpy as np
 from mathutils import Vector
 
@@ -85,27 +89,6 @@ FORWARD = -1.0
 
 
 # ── Primitives ────────────────────────────────────────────────────────────────
-
-
-def material(
-    name: str,
-    color: tuple[float, float, float, float],
-    roughness: float = 0.9,
-    metallic: float = 0.0,
-    emission: tuple[float, float, float, float] | None = None,
-    emission_strength: float = 0.0,
-) -> bpy.types.Material:
-    mat = bpy.data.materials.new(name)
-    mat.diffuse_color = color
-    mat.use_nodes = True
-    shader = mat.node_tree.nodes.get("Principled BSDF")
-    shader.inputs["Base Color"].default_value = color
-    shader.inputs["Roughness"].default_value = roughness
-    shader.inputs["Metallic"].default_value = metallic
-    if emission is not None:
-        shader.inputs["Emission Color"].default_value = emission
-        shader.inputs["Emission Strength"].default_value = emission_strength
-    return mat
 
 
 def assign(obj: bpy.types.Object, mat: bpy.types.Material) -> bpy.types.Object:
@@ -887,6 +870,7 @@ def main() -> None:
     # that docs/DESIGN.md §6 asks for arrived as 0.5 s, and nothing in the file
     # looked wrong, because the frame numbers were right.
     bpy.context.scene.render.fps = FPS
+    reset_materials()
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
@@ -895,19 +879,20 @@ def main() -> None:
             datablocks.remove(block)
 
     mats = {
-        # The Mire palette: desaturated purple-black chitin, emissive accents.
-        "chitin": material("MIRE_Enemy_Chitin", (0.17, 0.11, 0.22, 1.0), 0.75),
-        "chitin_dark": material("MIRE_Enemy_Chitin_Dark", (0.075, 0.048, 0.105, 1.0), 0.80),
-        "chitin_light": material("MIRE_Enemy_Chitin_Light", (0.36, 0.28, 0.42, 1.0), 0.60),
-        "crystal": material("MIRE_Enemy_Crystal", (0.58, 0.22, 0.90, 1.0), 0.20, 0.0, (0.72, 0.30, 1.0, 1.0), 3.1),
-        "glow": material("MIRE_Enemy_Glow", (0.47, 0.10, 0.82, 1.0), 0.25, 0.0, (0.66, 0.16, 1.0, 1.0), 2.6),
-        # Eyes are the aim point, so they are the brightest thing on the model.
-        "eye": material("MIRE_Enemy_Eye", (1.0, 0.62, 0.14, 1.0), 0.18, 0.0, (1.0, 0.55, 0.10, 1.0), 4.2),
-        "nest": material("MIRE_Enemy_Nest", (0.21, 0.13, 0.19, 1.0), 0.88),
-        "nest_dark": material("MIRE_Enemy_Nest_Dark", (0.105, 0.062, 0.098, 1.0), 0.90),
-        "throat": material("MIRE_Enemy_Throat", (0.045, 0.025, 0.055, 1.0), 0.95),
-        "ground": material("MIRE_Enemy_Preview_Ground", (0.048, 0.085, 0.056, 1.0)),
-        "scale": material("MIRE_Enemy_Scale_Reference", (0.15, 0.53, 0.78, 1.0)),
+        # Shared palette. Geometry helpers stay local: this kit's cone defaults
+        # to 6 vertices where mire_art's uses 8, and the mesh is skinned — any
+        # geometry change needs the deform check re-run.
+        "chitin": mat("chitin"),
+        "chitin_dark": mat("chitin_dark"),
+        "chitin_light": mat("chitin_light"),
+        "crystal": mat("crystal_tip"),
+        "glow": mat("mire_glow"),
+        "eye": mat("eye"),
+        "nest": mat("nest"),
+        "nest_dark": mat("nest_dark"),
+        "throat": mat("throat"),
+        "ground": mat("preview_ground"),
+        "scale": mat("reference_blue"),
     }
 
     records: list[dict] = []

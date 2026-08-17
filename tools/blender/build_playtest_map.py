@@ -10,10 +10,14 @@ single asset; it does not scatter or choose the visible prop locations at boot.
 from __future__ import annotations
 
 import math
+import sys
 import random
 from pathlib import Path
 
 import bpy
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from mire_art import mat, reset_materials  # noqa: E402
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -33,16 +37,6 @@ def reset_scene() -> None:
         for datablock in list(datablocks):
             if datablock.users == 0:
                 datablocks.remove(datablock)
-
-
-def material(name: str, color: tuple[float, float, float, float], roughness: float = 0.9) -> bpy.types.Material:
-    mat = bpy.data.materials.new(name)
-    mat.diffuse_color = color
-    mat.use_nodes = True
-    shader = mat.node_tree.nodes.get("Principled BSDF")
-    shader.inputs["Base Color"].default_value = color
-    shader.inputs["Roughness"].default_value = roughness
-    return mat
 
 
 def box(
@@ -267,9 +261,9 @@ def build_routes(root: bpy.types.Object, rng: random.Random) -> None:
 
 def add_ground(root: bpy.types.Object) -> None:
     terrain = zone(root, "AuthoredTerrain")
-    ground = material("MIRE_Map_Ground", (0.075, 0.16, 0.065, 1.0), 0.98)
-    path = material("MIRE_Map_Path", (0.19, 0.135, 0.075, 1.0), 1.0)
-    mire = material("MIRE_Map_Mire", (0.12, 0.105, 0.16, 1.0), 0.72)
+    ground = mat("terrain_ground")
+    path = mat("terrain_path")
+    mire = mat("terrain_mire")
     box("Map_Ground", (0, 0, -0.18), (60, 60, 0.36), ground, terrain)
     box("Path_CampToRuins", (0, 5.5, 0.025), (5.5, 34, 0.05), path, terrain)
     box("Path_CampToMire", (10.5, -1.5, 0.03), (22, 4.0, 0.06), path, terrain, rotation_z=-0.08)

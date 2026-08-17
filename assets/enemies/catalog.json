@@ -17,12 +17,12 @@
       "death"
     ],
     "materials": [
-      "MIRE_Enemy_Chitin",
-      "MIRE_Enemy_Chitin_Dark",
-      "MIRE_Enemy_Chitin_Light",
-      "MIRE_Enemy_Crystal",
-      "MIRE_Enemy_Eye",
-      "MIRE_Enemy_Glow"
+      "MIRE_Chitin",
+      "MIRE_ChitinDark",
+      "MIRE_ChitinLight",
+      "MIRE_CrystalTip",
+      "MIRE_Eye",
+      "MIRE_MireGlow"
     ]
   },
   {
@@ -36,12 +36,12 @@
     "bones": 0,
     "animations": [],
     "materials": [
-      "MIRE_Enemy_Chitin_Light",
-      "MIRE_Enemy_Crystal",
-      "MIRE_Enemy_Glow",
-      "MIRE_Enemy_Nest",
-      "MIRE_Enemy_Nest_Dark",
-      "MIRE_Enemy_Throat"
+      "MIRE_ChitinLight",
+      "MIRE_CrystalTip",
+      "MIRE_MireGlow",
+      "MIRE_Nest",
+      "MIRE_NestDark",
+      "MIRE_Throat"
     ]
   },
   {
@@ -55,9 +55,9 @@
     "bones": 0,
     "animations": [],
     "materials": [
-      "MIRE_Enemy_Chitin",
-      "MIRE_Enemy_Chitin_Dark",
-      "MIRE_Enemy_Crystal"
+      "MIRE_Chitin",
+      "MIRE_ChitinDark",
+      "MIRE_CrystalTip"
     ]
   },
   {
@@ -71,9 +71,9 @@
     "bones": 0,
     "animations": [],
     "materials": [
-      "MIRE_Enemy_Chitin",
-      "MIRE_Enemy_Chitin_Dark",
-      "MIRE_Enemy_Chitin_Light"
+      "MIRE_Chitin",
+      "MIRE_ChitinDark",
+      "MIRE_ChitinLight"
     ]
   }
 ]

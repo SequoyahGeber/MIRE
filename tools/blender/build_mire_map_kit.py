@@ -43,19 +43,6 @@ CATEGORY_PREVIEWS = {
 CATEGORY_TOTALS = {"trees": 18, "rocks": 18, "forest_debris": 12, "ground_cover": 28, "mire_growth": 16, "ruins": 12, "building_pieces": 24}
 
 
-def material(name: str, color: tuple[float, float, float, float], roughness: float = 0.9, emission: tuple[float, float, float, float] | None = None, emission_strength: float = 0.0) -> bpy.types.Material:
-    mat = bpy.data.materials.new(name)
-    mat.diffuse_color = color
-    mat.use_nodes = True
-    shader = mat.node_tree.nodes.get("Principled BSDF")
-    shader.inputs["Base Color"].default_value = color
-    shader.inputs["Roughness"].default_value = roughness
-    if emission is not None:
-        shader.inputs["Emission Color"].default_value = emission
-        shader.inputs["Emission Strength"].default_value = emission_strength
-    return mat
-
-
 def assign(obj: bpy.types.Object, mat: bpy.types.Material) -> bpy.types.Object:
     obj.data.materials.append(mat)
     for polygon in obj.data.polygons:

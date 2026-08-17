@@ -166,8 +166,14 @@ PALETTE: dict[str, Swatch] = {
     "cloth_red": Swatch("#C1503F", 0.93, note="the only red textile"),
     "rope": Swatch("#DABD65", 0.95),
     "fibre": Swatch("#EADA7C", 0.95),
-    "chitin_dark": Swatch("#3A3149", 0.72, note="crawler shell shadow"),
-    "chitin": Swatch("#5D5073", 0.68, note="crawler shell"),
+    "chitin_light": Swatch("#A290AD", 0.60, note="lit carapace plates"),
+    "nest": Swatch("#7E6579", 0.88, note="crawler nest wall"),
+    "nest_dark": Swatch("#5B4658", 0.90),
+    "throat": Swatch("#3C2C42", 0.95, note="the dark inside a nest mouth"),
+    "eye": Swatch("#FFCE69", 0.18, 0.0, "#FFC459", 4.2, note="crawler eye; the one warm emissive on an enemy"),
+    "lichen": Swatch("#C8CE81", 0.94, note="yellow-green crust on old stone"),
+    "chitin_dark": Swatch("#4D3E5B", 0.72, note="crawler shell shadow"),
+    "chitin": Swatch("#735D81", 0.68, note="crawler shell"),
     # -- mire corruption (purple is reserved) -------------------------------
     "mire_black": Swatch("#2E123A", 0.92),
     "mire": Swatch("#5D2473", 0.90),
@@ -204,6 +210,10 @@ PALETTE: dict[str, Swatch] = {
     "blood": Swatch("#7A1E1E", 0.86),
     "ice": Swatch("#7FD6E6", 0.30, 0.0, "#A8E8F4", 0.8),
     # -- utility ------------------------------------------------------------
+    # -- terrain: the authored maps' own ground planes ---------------------
+    "terrain_ground": Swatch("#4D6F48", 0.98, note="map ground plane"),
+    "terrain_path": Swatch("#79674D", 1.00, note="worn dirt route"),
+    "terrain_mire": Swatch("#615B6F", 0.72, note="corrupted ground"),
     "preview_ground": Swatch("#3D5242", 0.98, note="preview backdrop only, never shipped"),
     "reference_blue": Swatch("#2E7ACC", 0.90, note="scale-reference figure only"),
 }
