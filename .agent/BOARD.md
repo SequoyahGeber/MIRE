@@ -8,14 +8,13 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **F-048** Three content generators overwrite tuned or later-batch values silently; one strips icons today | flint5 | 2026-08-17 18:43 | `tools/setup_harvest_content.gd`, `tools/setup_crafting_content.gd`, `tools/setup_project.gd` |
 | **F-050** Governing docs contradict D-031 in six places, an unclosed code fence hides eight decisions, and the budget table is 51 sessions stale | flint5 | 2026-08-17 18:44 | `docs/NEXT.md`, `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `docs/AUDIT-2026-08-17.md`, `AGENTS.md`, `content/recipes/stone_axe.tres` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `██████░░░░` 25/43 | 18 |
+| Findings | `██████░░░░` 26/43 | 17 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `███████░░░` 16/22 | 6 |
@@ -64,10 +63,9 @@
 | ⬜ | **F-043** The iron sword ships complete and nothing puts it in a player's hand | todo |
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-045** `pgrep -fl Godot` is too blunt to be the closed-editor guard | todo |
-| 🔵 | **F-048** Three content generators overwrite tuned or later-batch values silently; one strips icons today | in_flight |
 | ⬜ | **F-049** The board never closes a finding resolved out-of-band, and never learns of new ones until a claim | todo |
 | 🔵 | **F-050** Governing docs contradict D-031 in six places, an unclosed code fence hides eight decisions, and the budget table is 51 sessions stale | in_flight |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `4.0b` `F-002` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-046` `F-047`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `4.0b` `F-002` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-046` `F-047` `F-048`

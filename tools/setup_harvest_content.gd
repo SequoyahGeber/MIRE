@@ -2,6 +2,11 @@ extends SceneTree
 
 ## One-time, deterministic authoring helper for F-029. Resources are serialized by Godot rather
 ## than hand-written, preserving script/resource UIDs and external PackedScene references.
+##
+## RE-RUNNING OVERWRITES content/items/{log,stone,iron_ore}.tres and all three
+## content/harvestables/*.tres — inspector-tuned values there do not survive (F-048). Fields owned
+## by later batches (A-042a's icons) are carried forward from the existing resource in _save_item,
+## so a re-run cannot silently strip them the way it once stripped stone_axe's icon.
 
 const ITEM_DEF_SCRIPT := preload("res://systems/inventory/item_def.gd")
 const HARVESTABLE_DEF_SCRIPT := preload("res://systems/harvesting/harvestable_def.gd")
@@ -69,7 +74,15 @@ func _save_item(id: StringName, display_name: String, description: String, model
 	item.set("category", 0)
 	item.set("stack_size", 99)
 	item.set("world_model", load(model_path) as PackedScene)
-	_save(item, "res://content/items/%s.tres" % id)
+	# A later batch wired fields this generator does not own — A-042a put icons on all three of
+	# these .tres. Carry them forward so a re-run cannot silently strip them (F-048); this is the
+	# same loss setup_crafting_content.gd:26 records already happening once to stone_axe.
+	var path: String = "res://content/items/%s.tres" % id
+	if ResourceLoader.exists(path):
+		var existing: Resource = load(path)
+		if existing != null and existing.get("icon") != null:
+			item.set("icon", existing.get("icon"))
+	_save(item, path)
 
 
 func _save_harvestable(

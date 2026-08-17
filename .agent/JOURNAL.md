@@ -1329,3 +1329,15 @@ harvest_world_check asserts the +3 log delta against a captured baseline instead
 Files: `tools/harvest_world_check.gd`
 
 Commit at time of writing: `51b8090`
+
+---
+
+### DONE · F-048 · flint5 · 2026-08-17T18:49:21+00:00
+
+**Three content generators overwrite tuned or later-batch values silently; one strips icons today**
+
+setup_harvest_content and setup_crafting_content now carry RE-RUNNING OVERWRITES warnings; _save_item carries existing icons forward; setup_project's header no longer claims re-running is safe and it only sets main_scene when the project has none, so it cannot revert playtest_hollow to the greybox. All three parse clean under --check-only; not executed on purpose.
+
+Files: `tools/setup_harvest_content.gd`, `tools/setup_crafting_content.gd`, `tools/setup_project.gd`
+
+Commit at time of writing: `f595c8b`

@@ -29,34 +29,9 @@
       "agent": "flint5",
       "at": "2026-08-17T18:44:35+00:00",
       "task": "F-050"
-    },
-    "tools/setup_crafting_content.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "F-048"
-    },
-    "tools/setup_harvest_content.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "F-048"
-    },
-    "tools/setup_project.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "F-048"
     }
   },
   "in_flight": {
-    "F-048": {
-      "agent": "flint5",
-      "files": [
-        "tools/setup_harvest_content.gd",
-        "tools/setup_crafting_content.gd",
-        "tools/setup_project.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-17T18:43:41+00:00"
-    },
     "F-050": {
       "agent": "flint5",
       "files": [
@@ -2298,9 +2273,9 @@
       "task": "2.8"
     },
     "tools/setup_crafting_content.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:52:06+00:00",
-      "task": "F-041"
+      "agent": "flint5",
+      "at": "2026-08-17T18:49:21+00:00",
+      "task": "F-048"
     },
     "tools/setup_crafting_content.gd.uid": {
       "agent": "dusk3",
@@ -2318,14 +2293,19 @@
       "task": "2.10"
     },
     "tools/setup_harvest_content.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
+      "agent": "flint5",
+      "at": "2026-08-17T18:49:21+00:00",
+      "task": "F-048"
     },
     "tools/setup_harvest_content.gd.uid": {
       "agent": "nettle",
       "at": "2026-08-17T01:24:51+00:00",
       "task": "F-029"
+    },
+    "tools/setup_project.gd": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:49:21+00:00",
+      "task": "F-048"
     },
     "tools/setup_tool_content.gd": {
       "agent": "dusk3",
@@ -3660,9 +3640,11 @@
       "title": "`harvest_world_check` asserts an absolute log count that DevLoadout's starting grant breaks"
     },
     "F-048": {
+      "done_at": "2026-08-17T18:49:21+00:00",
+      "done_by": "flint5",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Three content generators overwrite tuned or later-batch values silently; one strips icons today"
     },

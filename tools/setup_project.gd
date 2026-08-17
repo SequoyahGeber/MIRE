@@ -6,11 +6,14 @@ extends SceneTree
 ##   /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script tools/setup_project.gd
 ##
 ## Written as a script rather than done by hand so that Godot serialises its own formats — hand-authored
-## .tscn files and input-event literals are easy to get subtly wrong. Re-running it is safe: it
-## overwrites the generated scenes and rewrites the settings it owns, nothing else.
+## .tscn files and input-event literals are easy to get subtly wrong.
 ##
-## This file is disposable. Once you start tuning in the editor, the scenes are the source of truth —
-## do not re-run this and clobber your work. It exists to get you from zero to "press play".
+## RE-RUNNING IS DESTRUCTIVE once hand-tuning has begun (F-048): it overwrites player.tscn and
+## greybox_test.tscn wholesale and rewrites the full input map. The moment 2.9 serialises tuned
+## camera @exports into player.tscn, a re-run erases them. It exists to take a fresh clone from zero
+## to "press play" — after that, the editor is the source of truth and this file is history. The one
+## thing it deliberately does NOT touch any more: an existing main_scene (the playable level moved on
+## from the greybox — F-028 — and a bootstrap must not silently move it back).
 
 const PLAYER_SCENE := "res://entities/player/player.tscn"
 const LEVEL_SCENE := "res://levels/greybox_test.tscn"
@@ -28,7 +31,12 @@ func _initialize() -> void:
 	_build_player_scene()
 	_build_greybox_level()
 
-	ProjectSettings.set_setting("application/run/main_scene", LEVEL_SCENE)
+	# Claim the main scene only when the project has none: reverting playtest_hollow to the M0
+	# greybox on a re-run is the F-048 trap, and verify_setup deliberately does not pin the main
+	# scene (F-028), so nothing downstream would catch the swap.
+	var current_main: String = str(ProjectSettings.get_setting("application/run/main_scene", ""))
+	if current_main.is_empty():
+		ProjectSettings.set_setting("application/run/main_scene", LEVEL_SCENE)
 	var err: int = ProjectSettings.save()
 	if err != OK:
 		push_error("Failed to save project.godot: %d" % err)

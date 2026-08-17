@@ -2,6 +2,12 @@ extends SceneTree
 
 ## Deterministic authoring helper for task 2.6's single vertical-slice recipe. Bulk item/recipe
 ## content remains task 3.2; Godot serializes these resources so typed subresources stay valid.
+##
+## RE-RUNNING OVERWRITES content/items/stone_axe.tres and content/recipes/stone_axe.tres —
+## including the grip_* values below, which are exactly what task 2.9 tunes in the inspector
+## (F-048). The icon is pinned below so a re-run keeps it; nothing else authored after 2.6
+## survives. Do not re-run once tuning has started. Note the split ownership: this file writes the
+## stone_axe ITEM, setup_combat_content.gd writes the stone_axe WEAPON.
 
 const ITEM_DEF_SCRIPT := preload("res://systems/inventory/item_def.gd")
 const RECIPE_DEF_SCRIPT := preload("res://systems/crafting/recipe_def.gd")
