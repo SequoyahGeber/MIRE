@@ -142,21 +142,22 @@ def build_log() -> None:
         length = 0.26 + (i % 3) * 0.09
         drift = 0.055 * (1 if i % 2 else -1)
         a0, a1 = angle, angle + drift
-        p0 = around((x0, 0.0, r0), a0, rad)
-        p1 = around((min(x0 + length, half - 0.03), 0.0, r0 * 0.99), a1, rad * 0.97)
+        p0 = around((x0, 0.0, r0), a0, rad, axis="x")
+        p1 = around((min(x0 + length, half - 0.03), 0.0, r0 * 0.99), a1, rad * 0.97, axis="x")
         cylinder_between(f"Bark_Plate_{i + 1}", p0, p1, 0.019,
                          mat("wood_bark_light" if i % 2 else "wood_bark_dark"), 5, 0.88)
     # Branch stubs on opposite flanks, big enough to break the silhouette.
     for i, (angle, rad) in enumerate(radial(3, r0, seed=77, jitter=0.22, phase=0.9)):
+        angle = angle * 0.70 + 0.35  # keep stubs off the underside; one aimed down lifts the log
         cx = -0.26 + i * 0.30
-        base = around((cx, 0.0, r0), angle, rad * 0.80)
-        tip = around((cx + (0.06 if i % 2 else -0.05), 0.0, r0 + 0.012), angle, rad + 0.075 + (i % 2) * 0.022)
+        base = around((cx, 0.0, r0), angle, rad * 0.80, axis="x")
+        tip = around((cx + (0.06 if i % 2 else -0.05), 0.0, r0 + 0.012), angle, rad + 0.075 + (i % 2) * 0.022, axis="x")
         cylinder_between(f"Branch_Stub_{i + 1}", base, tip, 0.030 - (i % 2) * 0.006, mat("wood_bark"), 7, 0.72)
         cone(f"Stub_Cut_{i + 1}", 0.023 - (i % 2) * 0.005, 0.019, 0.009, tip, mat("wood_cut"), 7,
              (0.0, math.radians(90), angle))
     # Knots on two different faces, not one decal on the front.
     for i, (angle, rad) in enumerate(radial(2, r1 * 0.86, seed=88, jitter=0.0, phase=2.4)):
-        ico(f"Knot_{i + 1}", around((0.18 + i * 0.26, 0.0, r1), angle, rad),
+        ico(f"Knot_{i + 1}", around((0.18 + i * 0.26, 0.0, r1), angle, rad, axis="x"),
             (0.034, 0.030, 0.024), mat("wood_bark_dark"), (0.2, 0.4 * i, 0.0))
 
 

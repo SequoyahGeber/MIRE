@@ -8,11 +8,11 @@
     "mesh_parts": 63,
     "polygons": 944,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Bark_Light",
-      "MIRE_Pine_Dark",
-      "MIRE_Pine_Mid",
-      "MIRE_Pine_Tip"
+      "MIRE_Pine",
+      "MIRE_PineDark",
+      "MIRE_PineLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight"
     ]
   },
   {
@@ -24,11 +24,11 @@
     "mesh_parts": 48,
     "polygons": 710,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Bark_Light",
-      "MIRE_Pine_Dark",
-      "MIRE_Pine_Mid",
-      "MIRE_Pine_Tip"
+      "MIRE_Pine",
+      "MIRE_PineDark",
+      "MIRE_PineLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight"
     ]
   },
   {
@@ -40,11 +40,11 @@
     "mesh_parts": 63,
     "polygons": 944,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Bark_Light",
-      "MIRE_Pine_Dark",
-      "MIRE_Pine_Mid",
-      "MIRE_Pine_Tip"
+      "MIRE_Pine",
+      "MIRE_PineDark",
+      "MIRE_PineLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight"
     ]
   },
   {
@@ -56,11 +56,11 @@
     "mesh_parts": 63,
     "polygons": 944,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Bark_Light",
-      "MIRE_Pine_Dark",
-      "MIRE_Pine_Mid",
-      "MIRE_Pine_Tip"
+      "MIRE_Pine",
+      "MIRE_PineDark",
+      "MIRE_PineLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight"
     ]
   },
   {
@@ -72,11 +72,11 @@
     "mesh_parts": 63,
     "polygons": 944,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Bark_Light",
-      "MIRE_Pine_Dark",
-      "MIRE_Pine_Mid",
-      "MIRE_Pine_Tip"
+      "MIRE_Pine",
+      "MIRE_PineDark",
+      "MIRE_PineLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight"
     ]
   },
   {
@@ -88,11 +88,11 @@
     "mesh_parts": 63,
     "polygons": 944,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Bark_Light",
-      "MIRE_Pine_Dark",
-      "MIRE_Pine_Mid",
-      "MIRE_Pine_Tip"
+      "MIRE_Pine",
+      "MIRE_PineDark",
+      "MIRE_PineLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight"
     ]
   },
   {
@@ -104,8 +104,8 @@
     "mesh_parts": 24,
     "polygons": 205,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Bark_Light"
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight"
     ]
   },
   {
@@ -117,8 +117,8 @@
     "mesh_parts": 24,
     "polygons": 205,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Bark_Light"
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight"
     ]
   },
   {
@@ -130,8 +130,8 @@
     "mesh_parts": 24,
     "polygons": 205,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Bark_Light"
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight"
     ]
   },
   {
@@ -143,8 +143,8 @@
     "mesh_parts": 24,
     "polygons": 205,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Bark_Light"
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight"
     ]
   },
   {
@@ -156,11 +156,11 @@
     "mesh_parts": 20,
     "polygons": 264,
     "materials": [
-      "MIRE_Birch",
-      "MIRE_Birch_Mark",
       "MIRE_Leaf",
-      "MIRE_Leaf_Gold",
-      "MIRE_Leaf_Light"
+      "MIRE_LeafGold",
+      "MIRE_LeafLight",
+      "MIRE_WoodBirch",
+      "MIRE_WoodBirchMark"
     ]
   },
   {
@@ -172,11 +172,11 @@
     "mesh_parts": 20,
     "polygons": 264,
     "materials": [
-      "MIRE_Birch",
-      "MIRE_Birch_Mark",
       "MIRE_Leaf",
-      "MIRE_Leaf_Gold",
-      "MIRE_Leaf_Light"
+      "MIRE_LeafGold",
+      "MIRE_LeafLight",
+      "MIRE_WoodBirch",
+      "MIRE_WoodBirchMark"
     ]
   },
   {
@@ -188,11 +188,11 @@
     "mesh_parts": 20,
     "polygons": 264,
     "materials": [
-      "MIRE_Birch",
-      "MIRE_Birch_Mark",
       "MIRE_Leaf",
-      "MIRE_Leaf_Gold",
-      "MIRE_Leaf_Light"
+      "MIRE_LeafGold",
+      "MIRE_LeafLight",
+      "MIRE_WoodBirch",
+      "MIRE_WoodBirchMark"
     ]
   },
   {
@@ -204,11 +204,11 @@
     "mesh_parts": 20,
     "polygons": 264,
     "materials": [
-      "MIRE_Birch",
-      "MIRE_Birch_Mark",
       "MIRE_Leaf",
-      "MIRE_Leaf_Gold",
-      "MIRE_Leaf_Light"
+      "MIRE_LeafGold",
+      "MIRE_LeafLight",
+      "MIRE_WoodBirch",
+      "MIRE_WoodBirchMark"
     ]
   },
   {
@@ -220,11 +220,11 @@
     "mesh_parts": 20,
     "polygons": 246,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Bark_Light",
       "MIRE_Leaf",
-      "MIRE_Leaf_Gold",
-      "MIRE_Leaf_Light"
+      "MIRE_LeafGold",
+      "MIRE_LeafLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight"
     ]
   },
   {
@@ -236,11 +236,11 @@
     "mesh_parts": 20,
     "polygons": 246,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Bark_Light",
       "MIRE_Leaf",
-      "MIRE_Leaf_Gold",
-      "MIRE_Leaf_Light"
+      "MIRE_LeafGold",
+      "MIRE_LeafLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight"
     ]
   },
   {
@@ -252,11 +252,11 @@
     "mesh_parts": 20,
     "polygons": 246,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Bark_Light",
       "MIRE_Leaf",
-      "MIRE_Leaf_Gold",
-      "MIRE_Leaf_Light"
+      "MIRE_LeafGold",
+      "MIRE_LeafLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight"
     ]
   },
   {
@@ -268,11 +268,11 @@
     "mesh_parts": 20,
     "polygons": 246,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Bark_Light",
       "MIRE_Leaf",
-      "MIRE_Leaf_Gold",
-      "MIRE_Leaf_Light"
+      "MIRE_LeafGold",
+      "MIRE_LeafLight",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight"
     ]
   },
   {
@@ -285,7 +285,7 @@
     "polygons": 40,
     "materials": [
       "MIRE_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -310,7 +310,7 @@
     "polygons": 40,
     "materials": [
       "MIRE_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -335,7 +335,7 @@
     "polygons": 40,
     "materials": [
       "MIRE_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -360,7 +360,7 @@
     "polygons": 40,
     "materials": [
       "MIRE_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -385,7 +385,7 @@
     "polygons": 60,
     "materials": [
       "MIRE_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -398,7 +398,7 @@
     "polygons": 60,
     "materials": [
       "MIRE_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -411,7 +411,7 @@
     "polygons": 60,
     "materials": [
       "MIRE_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -424,7 +424,7 @@
     "polygons": 100,
     "materials": [
       "MIRE_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -437,7 +437,7 @@
     "polygons": 80,
     "materials": [
       "MIRE_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -450,7 +450,7 @@
     "polygons": 80,
     "materials": [
       "MIRE_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -462,9 +462,9 @@
     "mesh_parts": 6,
     "polygons": 94,
     "materials": [
-      "MIRE_Rune",
+      "MIRE_MireGlow",
       "MIRE_Stone",
-      "MIRE_Stone_Dark"
+      "MIRE_StoneDark"
     ]
   },
   {
@@ -476,9 +476,9 @@
     "mesh_parts": 5,
     "polygons": 73,
     "materials": [
-      "MIRE_Rune",
+      "MIRE_MireGlow",
       "MIRE_Stone",
-      "MIRE_Stone_Dark"
+      "MIRE_StoneDark"
     ]
   },
   {
@@ -490,9 +490,9 @@
     "mesh_parts": 5,
     "polygons": 73,
     "materials": [
-      "MIRE_Rune",
+      "MIRE_MireGlow",
       "MIRE_Stone",
-      "MIRE_Stone_Dark"
+      "MIRE_StoneDark"
     ]
   },
   {
@@ -504,9 +504,9 @@
     "mesh_parts": 4,
     "polygons": 55,
     "materials": [
-      "MIRE_Rune",
+      "MIRE_MireGlow",
       "MIRE_Stone",
-      "MIRE_Stone_Dark"
+      "MIRE_StoneDark"
     ]
   },
   {
@@ -518,8 +518,8 @@
     "mesh_parts": 5,
     "polygons": 47,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Cut_Wood"
+      "MIRE_WoodBark",
+      "MIRE_WoodCut"
     ]
   },
   {
@@ -531,8 +531,8 @@
     "mesh_parts": 7,
     "polygons": 66,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Cut_Wood"
+      "MIRE_WoodBark",
+      "MIRE_WoodCut"
     ]
   },
   {
@@ -544,8 +544,8 @@
     "mesh_parts": 5,
     "polygons": 49,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Cut_Wood"
+      "MIRE_WoodBark",
+      "MIRE_WoodCut"
     ]
   },
   {
@@ -557,64 +557,68 @@
     "mesh_parts": 6,
     "polygons": 56,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Cut_Wood"
+      "MIRE_WoodBark",
+      "MIRE_WoodCut"
     ]
   },
   {
     "name": "fallen_log_a",
     "category": "forest_debris",
-    "width_m": 2.844,
-    "depth_m": 1.64,
-    "height_m": 1.159,
-    "mesh_parts": 6,
-    "polygons": 67,
+    "width_m": 2.776,
+    "depth_m": 1.735,
+    "height_m": 1.397,
+    "mesh_parts": 11,
+    "polygons": 132,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Cut_Wood",
-      "MIRE_Moss"
+      "MIRE_Moss",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight",
+      "MIRE_WoodCut"
     ]
   },
   {
     "name": "fallen_log_b",
     "category": "forest_debris",
-    "width_m": 3.035,
-    "depth_m": 1.312,
-    "height_m": 1.126,
-    "mesh_parts": 5,
-    "polygons": 57,
+    "width_m": 3.056,
+    "depth_m": 1.516,
+    "height_m": 1.563,
+    "mesh_parts": 10,
+    "polygons": 111,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Cut_Wood",
-      "MIRE_Moss"
+      "MIRE_Moss",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight",
+      "MIRE_WoodCut"
     ]
   },
   {
     "name": "fallen_log_c",
     "category": "forest_debris",
-    "width_m": 4.472,
-    "depth_m": 1.053,
-    "height_m": 0.984,
-    "mesh_parts": 5,
-    "polygons": 57,
+    "width_m": 4.463,
+    "depth_m": 1.523,
+    "height_m": 1.738,
+    "mesh_parts": 15,
+    "polygons": 175,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Cut_Wood",
-      "MIRE_Moss"
+      "MIRE_Moss",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight",
+      "MIRE_WoodCut"
     ]
   },
   {
     "name": "fallen_log_d",
     "category": "forest_debris",
-    "width_m": 4.44,
-    "depth_m": 1.517,
-    "height_m": 1.114,
-    "mesh_parts": 5,
-    "polygons": 58,
+    "width_m": 4.408,
+    "depth_m": 1.347,
+    "height_m": 1.551,
+    "mesh_parts": 11,
+    "polygons": 121,
     "materials": [
-      "MIRE_Bark",
-      "MIRE_Cut_Wood",
-      "MIRE_Moss"
+      "MIRE_Moss",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkLight",
+      "MIRE_WoodCut"
     ]
   },
   {
@@ -626,7 +630,7 @@
     "mesh_parts": 17,
     "polygons": 148,
     "materials": [
-      "MIRE_Bark"
+      "MIRE_WoodBark"
     ]
   },
   {
@@ -638,7 +642,7 @@
     "mesh_parts": 17,
     "polygons": 148,
     "materials": [
-      "MIRE_Bark"
+      "MIRE_WoodBark"
     ]
   },
   {
@@ -650,7 +654,7 @@
     "mesh_parts": 13,
     "polygons": 116,
     "materials": [
-      "MIRE_Bark"
+      "MIRE_WoodBark"
     ]
   },
   {
@@ -662,7 +666,7 @@
     "mesh_parts": 11,
     "polygons": 100,
     "materials": [
-      "MIRE_Bark"
+      "MIRE_WoodBark"
     ]
   },
   {
@@ -675,8 +679,8 @@
     "polygons": 270,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dark",
-      "MIRE_Grass_Light"
+      "MIRE_GrassDark",
+      "MIRE_GrassLight"
     ]
   },
   {
@@ -689,8 +693,8 @@
     "polygons": 225,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dark",
-      "MIRE_Grass_Light"
+      "MIRE_GrassDark",
+      "MIRE_GrassLight"
     ]
   },
   {
@@ -703,8 +707,8 @@
     "polygons": 288,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dark",
-      "MIRE_Grass_Light"
+      "MIRE_GrassDark",
+      "MIRE_GrassLight"
     ]
   },
   {
@@ -717,8 +721,8 @@
     "polygons": 279,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dark",
-      "MIRE_Grass_Light"
+      "MIRE_GrassDark",
+      "MIRE_GrassLight"
     ]
   },
   {
@@ -731,8 +735,8 @@
     "polygons": 279,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dark",
-      "MIRE_Grass_Light"
+      "MIRE_GrassDark",
+      "MIRE_GrassLight"
     ]
   },
   {
@@ -745,8 +749,8 @@
     "polygons": 288,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dark",
-      "MIRE_Grass_Light"
+      "MIRE_GrassDark",
+      "MIRE_GrassLight"
     ]
   },
   {
@@ -759,8 +763,8 @@
     "polygons": 387,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dark",
-      "MIRE_Grass_Light"
+      "MIRE_GrassDark",
+      "MIRE_GrassLight"
     ]
   },
   {
@@ -773,8 +777,8 @@
     "polygons": 378,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dark",
-      "MIRE_Grass_Light"
+      "MIRE_GrassDark",
+      "MIRE_GrassLight"
     ]
   },
   {
@@ -787,8 +791,8 @@
     "polygons": 432,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dark",
-      "MIRE_Grass_Light"
+      "MIRE_GrassDark",
+      "MIRE_GrassLight"
     ]
   },
   {
@@ -801,8 +805,8 @@
     "polygons": 450,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dark",
-      "MIRE_Grass_Light"
+      "MIRE_GrassDark",
+      "MIRE_GrassLight"
     ]
   },
   {
@@ -815,8 +819,8 @@
     "polygons": 207,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dark",
-      "MIRE_Grass_Light"
+      "MIRE_GrassDark",
+      "MIRE_GrassLight"
     ]
   },
   {
@@ -829,8 +833,8 @@
     "polygons": 261,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dark",
-      "MIRE_Grass_Light"
+      "MIRE_GrassDark",
+      "MIRE_GrassLight"
     ]
   },
   {
@@ -843,8 +847,8 @@
     "polygons": 243,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dark",
-      "MIRE_Grass_Light"
+      "MIRE_GrassDark",
+      "MIRE_GrassLight"
     ]
   },
   {
@@ -857,8 +861,8 @@
     "polygons": 252,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dark",
-      "MIRE_Grass_Light"
+      "MIRE_GrassDark",
+      "MIRE_GrassLight"
     ]
   },
   {
@@ -871,9 +875,9 @@
     "polygons": 315,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dry",
-      "MIRE_Grass_Light",
-      "MIRE_Grass_Seed"
+      "MIRE_GrassDry",
+      "MIRE_GrassLight",
+      "MIRE_GrassSeed"
     ]
   },
   {
@@ -886,9 +890,9 @@
     "polygons": 339,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dry",
-      "MIRE_Grass_Light",
-      "MIRE_Grass_Seed"
+      "MIRE_GrassDry",
+      "MIRE_GrassLight",
+      "MIRE_GrassSeed"
     ]
   },
   {
@@ -901,9 +905,9 @@
     "polygons": 348,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dry",
-      "MIRE_Grass_Light",
-      "MIRE_Grass_Seed"
+      "MIRE_GrassDry",
+      "MIRE_GrassLight",
+      "MIRE_GrassSeed"
     ]
   },
   {
@@ -916,9 +920,9 @@
     "polygons": 396,
     "materials": [
       "MIRE_Grass",
-      "MIRE_Grass_Dry",
-      "MIRE_Grass_Light",
-      "MIRE_Grass_Seed"
+      "MIRE_GrassDry",
+      "MIRE_GrassLight",
+      "MIRE_GrassSeed"
     ]
   },
   {
@@ -932,7 +936,7 @@
     "materials": [
       "MIRE_Grass",
       "MIRE_Leaf",
-      "MIRE_Leaf_Light"
+      "MIRE_LeafLight"
     ]
   },
   {
@@ -946,7 +950,7 @@
     "materials": [
       "MIRE_Grass",
       "MIRE_Leaf",
-      "MIRE_Leaf_Light"
+      "MIRE_LeafLight"
     ]
   },
   {
@@ -960,7 +964,7 @@
     "materials": [
       "MIRE_Grass",
       "MIRE_Leaf",
-      "MIRE_Leaf_Light"
+      "MIRE_LeafLight"
     ]
   },
   {
@@ -974,7 +978,7 @@
     "materials": [
       "MIRE_Grass",
       "MIRE_Leaf",
-      "MIRE_Leaf_Light"
+      "MIRE_LeafLight"
     ]
   },
   {
@@ -988,7 +992,7 @@
     "materials": [
       "MIRE_Grass",
       "MIRE_Leaf",
-      "MIRE_Leaf_Light"
+      "MIRE_LeafLight"
     ]
   },
   {
@@ -1002,7 +1006,7 @@
     "materials": [
       "MIRE_Grass",
       "MIRE_Leaf",
-      "MIRE_Leaf_Light"
+      "MIRE_LeafLight"
     ]
   },
   {
@@ -1014,8 +1018,8 @@
     "mesh_parts": 14,
     "polygons": 117,
     "materials": [
-      "MIRE_Cattail",
-      "MIRE_Reed"
+      "MIRE_Reed",
+      "MIRE_WoodBark.001"
     ]
   },
   {
@@ -1027,8 +1031,8 @@
     "mesh_parts": 8,
     "polygons": 67,
     "materials": [
-      "MIRE_Cattail",
-      "MIRE_Reed"
+      "MIRE_Reed",
+      "MIRE_WoodBark.001"
     ]
   },
   {
@@ -1040,8 +1044,8 @@
     "mesh_parts": 8,
     "polygons": 67,
     "materials": [
-      "MIRE_Cattail",
-      "MIRE_Reed"
+      "MIRE_Reed",
+      "MIRE_WoodBark.001"
     ]
   },
   {
@@ -1053,8 +1057,8 @@
     "mesh_parts": 14,
     "polygons": 117,
     "materials": [
-      "MIRE_Cattail",
-      "MIRE_Reed"
+      "MIRE_Reed",
+      "MIRE_WoodBark.001"
     ]
   },
   {
@@ -1066,10 +1070,10 @@
     "mesh_parts": 8,
     "polygons": 127,
     "materials": [
-      "MIRE_Corruption",
-      "MIRE_Cut_Wood",
-      "MIRE_Mushroom",
-      "MIRE_Mushroom_Spot"
+      "MIRE_FleshFat",
+      "MIRE_FungusCap",
+      "MIRE_Mire",
+      "MIRE_WoodCut"
     ]
   },
   {
@@ -1081,10 +1085,10 @@
     "mesh_parts": 18,
     "polygons": 272,
     "materials": [
-      "MIRE_Corruption",
-      "MIRE_Cut_Wood",
-      "MIRE_Mushroom",
-      "MIRE_Mushroom_Spot"
+      "MIRE_FleshFat",
+      "MIRE_FungusCap",
+      "MIRE_Mire",
+      "MIRE_WoodCut"
     ]
   },
   {
@@ -1096,10 +1100,10 @@
     "mesh_parts": 16,
     "polygons": 243,
     "materials": [
-      "MIRE_Corruption",
-      "MIRE_Cut_Wood",
-      "MIRE_Mushroom",
-      "MIRE_Mushroom_Spot"
+      "MIRE_FleshFat",
+      "MIRE_FungusCap",
+      "MIRE_Mire",
+      "MIRE_WoodCut"
     ]
   },
   {
@@ -1111,10 +1115,10 @@
     "mesh_parts": 12,
     "polygons": 185,
     "materials": [
-      "MIRE_Corruption",
-      "MIRE_Cut_Wood",
-      "MIRE_Mushroom",
-      "MIRE_Mushroom_Spot"
+      "MIRE_FleshFat",
+      "MIRE_FungusCap",
+      "MIRE_Mire",
+      "MIRE_WoodCut"
     ]
   },
   {
@@ -1126,10 +1130,10 @@
     "mesh_parts": 16,
     "polygons": 243,
     "materials": [
-      "MIRE_Corruption",
-      "MIRE_Cut_Wood",
-      "MIRE_Mushroom",
-      "MIRE_Mushroom_Spot"
+      "MIRE_FleshFat",
+      "MIRE_FungusCap",
+      "MIRE_Mire",
+      "MIRE_WoodCut"
     ]
   },
   {
@@ -1141,10 +1145,10 @@
     "mesh_parts": 10,
     "polygons": 156,
     "materials": [
-      "MIRE_Corruption",
-      "MIRE_Cut_Wood",
-      "MIRE_Mushroom",
-      "MIRE_Mushroom_Spot"
+      "MIRE_FleshFat",
+      "MIRE_FungusCap",
+      "MIRE_Mire",
+      "MIRE_WoodCut"
     ]
   },
   {
@@ -1156,9 +1160,9 @@
     "mesh_parts": 8,
     "polygons": 78,
     "materials": [
-      "MIRE_Corruption_Mid",
       "MIRE_Crystal",
-      "MIRE_Crystal_Tip"
+      "MIRE_CrystalTip",
+      "MIRE_MireLight"
     ]
   },
   {
@@ -1170,9 +1174,9 @@
     "mesh_parts": 6,
     "polygons": 60,
     "materials": [
-      "MIRE_Corruption_Mid",
       "MIRE_Crystal",
-      "MIRE_Crystal_Tip"
+      "MIRE_CrystalTip",
+      "MIRE_MireLight"
     ]
   },
   {
@@ -1184,9 +1188,9 @@
     "mesh_parts": 7,
     "polygons": 69,
     "materials": [
-      "MIRE_Corruption_Mid",
       "MIRE_Crystal",
-      "MIRE_Crystal_Tip"
+      "MIRE_CrystalTip",
+      "MIRE_MireLight"
     ]
   },
   {
@@ -1198,9 +1202,9 @@
     "mesh_parts": 8,
     "polygons": 75,
     "materials": [
-      "MIRE_Corruption_Mid",
       "MIRE_Crystal",
-      "MIRE_Crystal_Tip"
+      "MIRE_CrystalTip",
+      "MIRE_MireLight"
     ]
   },
   {
@@ -1212,9 +1216,9 @@
     "mesh_parts": 5,
     "polygons": 54,
     "materials": [
-      "MIRE_Corruption_Mid",
       "MIRE_Crystal",
-      "MIRE_Crystal_Tip"
+      "MIRE_CrystalTip",
+      "MIRE_MireLight"
     ]
   },
   {
@@ -1226,9 +1230,9 @@
     "mesh_parts": 6,
     "polygons": 60,
     "materials": [
-      "MIRE_Corruption_Mid",
       "MIRE_Crystal",
-      "MIRE_Crystal_Tip"
+      "MIRE_CrystalTip",
+      "MIRE_MireLight"
     ]
   },
   {
@@ -1240,9 +1244,9 @@
     "mesh_parts": 16,
     "polygons": 176,
     "materials": [
-      "MIRE_Corruption",
-      "MIRE_Corruption_Mid",
-      "MIRE_Crystal_Tip"
+      "MIRE_CrystalTip",
+      "MIRE_Mire",
+      "MIRE_MireLight"
     ]
   },
   {
@@ -1254,9 +1258,9 @@
     "mesh_parts": 31,
     "polygons": 332,
     "materials": [
-      "MIRE_Corruption",
-      "MIRE_Corruption_Mid",
-      "MIRE_Crystal_Tip"
+      "MIRE_CrystalTip",
+      "MIRE_Mire",
+      "MIRE_MireLight"
     ]
   },
   {
@@ -1268,9 +1272,9 @@
     "mesh_parts": 16,
     "polygons": 176,
     "materials": [
-      "MIRE_Corruption",
-      "MIRE_Corruption_Mid",
-      "MIRE_Crystal_Tip"
+      "MIRE_CrystalTip",
+      "MIRE_Mire",
+      "MIRE_MireLight"
     ]
   },
   {
@@ -1282,9 +1286,9 @@
     "mesh_parts": 21,
     "polygons": 228,
     "materials": [
-      "MIRE_Corruption",
-      "MIRE_Corruption_Mid",
-      "MIRE_Crystal_Tip"
+      "MIRE_CrystalTip",
+      "MIRE_Mire",
+      "MIRE_MireLight"
     ]
   },
   {
@@ -1297,8 +1301,8 @@
     "polygons": 122,
     "materials": [
       "MIRE_Moss",
-      "MIRE_Ruin_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight",
+      "MIRE_StoneRuin"
     ]
   },
   {
@@ -1311,8 +1315,8 @@
     "polygons": 122,
     "materials": [
       "MIRE_Moss",
-      "MIRE_Ruin_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight",
+      "MIRE_StoneRuin"
     ]
   },
   {
@@ -1325,8 +1329,8 @@
     "polygons": 140,
     "materials": [
       "MIRE_Moss",
-      "MIRE_Ruin_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight",
+      "MIRE_StoneRuin"
     ]
   },
   {
@@ -1339,8 +1343,8 @@
     "polygons": 146,
     "materials": [
       "MIRE_Moss",
-      "MIRE_Ruin_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight",
+      "MIRE_StoneRuin"
     ]
   },
   {
@@ -1352,8 +1356,8 @@
     "mesh_parts": 5,
     "polygons": 30,
     "materials": [
-      "MIRE_Ruin_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight",
+      "MIRE_StoneRuin"
     ]
   },
   {
@@ -1365,8 +1369,8 @@
     "mesh_parts": 7,
     "polygons": 42,
     "materials": [
-      "MIRE_Ruin_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight",
+      "MIRE_StoneRuin"
     ]
   },
   {
@@ -1378,8 +1382,8 @@
     "mesh_parts": 4,
     "polygons": 24,
     "materials": [
-      "MIRE_Ruin_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight",
+      "MIRE_StoneRuin"
     ]
   },
   {
@@ -1391,8 +1395,8 @@
     "mesh_parts": 6,
     "polygons": 36,
     "materials": [
-      "MIRE_Ruin_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight",
+      "MIRE_StoneRuin"
     ]
   },
   {
@@ -1404,8 +1408,8 @@
     "mesh_parts": 14,
     "polygons": 84,
     "materials": [
-      "MIRE_Ruin_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight",
+      "MIRE_StoneRuin"
     ]
   },
   {
@@ -1417,8 +1421,8 @@
     "mesh_parts": 14,
     "polygons": 84,
     "materials": [
-      "MIRE_Ruin_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_StoneLight",
+      "MIRE_StoneRuin"
     ]
   },
   {
@@ -1430,9 +1434,9 @@
     "mesh_parts": 4,
     "polygons": 24,
     "materials": [
-      "MIRE_Ruin_Stone",
-      "MIRE_Rune",
-      "MIRE_Stone_Dark"
+      "MIRE_MireGlow",
+      "MIRE_StoneDark",
+      "MIRE_StoneRuin"
     ]
   },
   {
@@ -1444,9 +1448,9 @@
     "mesh_parts": 4,
     "polygons": 24,
     "materials": [
-      "MIRE_Ruin_Stone",
-      "MIRE_Rune",
-      "MIRE_Stone_Dark"
+      "MIRE_MireGlow",
+      "MIRE_StoneDark",
+      "MIRE_StoneRuin"
     ]
   },
   {
@@ -1458,8 +1462,8 @@
     "mesh_parts": 8,
     "polygons": 48,
     "materials": [
-      "MIRE_Build_Wood",
-      "MIRE_Build_Wood_Light"
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -1471,8 +1475,8 @@
     "mesh_parts": 8,
     "polygons": 48,
     "materials": [
-      "MIRE_Build_Wood",
-      "MIRE_Build_Wood_Light"
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -1484,8 +1488,8 @@
     "mesh_parts": 10,
     "polygons": 60,
     "materials": [
-      "MIRE_Build_Wood",
-      "MIRE_Build_Wood_Light"
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -1497,8 +1501,8 @@
     "mesh_parts": 10,
     "polygons": 60,
     "materials": [
-      "MIRE_Build_Wood",
-      "MIRE_Build_Wood_Light"
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -1510,8 +1514,8 @@
     "mesh_parts": 9,
     "polygons": 54,
     "materials": [
-      "MIRE_Build_Wood",
-      "MIRE_Build_Wood_Light"
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -1523,8 +1527,8 @@
     "mesh_parts": 9,
     "polygons": 54,
     "materials": [
-      "MIRE_Build_Wood",
-      "MIRE_Build_Wood_Light"
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -1536,7 +1540,7 @@
     "mesh_parts": 1,
     "polygons": 5,
     "materials": [
-      "MIRE_Wood_Roof"
+      "MIRE_WoodBarkDark"
     ]
   },
   {
@@ -1548,7 +1552,7 @@
     "mesh_parts": 1,
     "polygons": 5,
     "materials": [
-      "MIRE_Wood_Roof"
+      "MIRE_WoodBarkDark"
     ]
   },
   {
@@ -1560,8 +1564,8 @@
     "mesh_parts": 10,
     "polygons": 64,
     "materials": [
-      "MIRE_Build_Wood",
-      "MIRE_Build_Wood_Light"
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -1573,7 +1577,7 @@
     "mesh_parts": 1,
     "polygons": 6,
     "materials": [
-      "MIRE_Build_Wood"
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -1585,8 +1589,8 @@
     "mesh_parts": 2,
     "polygons": 12,
     "materials": [
-      "MIRE_Build_Wood",
-      "MIRE_Build_Wood_Light"
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -1598,8 +1602,8 @@
     "mesh_parts": 7,
     "polygons": 42,
     "materials": [
-      "MIRE_Build_Wood",
-      "MIRE_Build_Wood_Light"
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -1611,8 +1615,8 @@
     "mesh_parts": 32,
     "polygons": 192,
     "materials": [
-      "MIRE_Build_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_Stone.001",
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -1624,8 +1628,8 @@
     "mesh_parts": 16,
     "polygons": 96,
     "materials": [
-      "MIRE_Build_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_Stone.001",
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -1637,8 +1641,8 @@
     "mesh_parts": 40,
     "polygons": 240,
     "materials": [
-      "MIRE_Build_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_Stone.001",
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -1650,8 +1654,8 @@
     "mesh_parts": 30,
     "polygons": 180,
     "materials": [
-      "MIRE_Build_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_Stone.001",
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -1663,8 +1667,8 @@
     "mesh_parts": 25,
     "polygons": 150,
     "materials": [
-      "MIRE_Build_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_Stone.001",
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -1676,8 +1680,8 @@
     "mesh_parts": 24,
     "polygons": 144,
     "materials": [
-      "MIRE_Build_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_Stone.001",
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -1689,8 +1693,8 @@
     "mesh_parts": 8,
     "polygons": 48,
     "materials": [
-      "MIRE_Build_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_Stone.001",
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -1702,8 +1706,8 @@
     "mesh_parts": 7,
     "polygons": 42,
     "materials": [
-      "MIRE_Build_Stone",
-      "MIRE_Stone_Light"
+      "MIRE_Stone.001",
+      "MIRE_StoneLight"
     ]
   },
   {
@@ -1715,8 +1719,8 @@
     "mesh_parts": 5,
     "polygons": 30,
     "materials": [
-      "MIRE_Build_Wood",
-      "MIRE_Build_Wood_Light"
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -1728,8 +1732,8 @@
     "mesh_parts": 9,
     "polygons": 54,
     "materials": [
-      "MIRE_Build_Wood",
-      "MIRE_Build_Wood_Light"
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -1741,8 +1745,8 @@
     "mesh_parts": 8,
     "polygons": 48,
     "materials": [
-      "MIRE_Build_Wood",
-      "MIRE_Build_Wood_Light"
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -1754,8 +1758,8 @@
     "mesh_parts": 2,
     "polygons": 12,
     "materials": [
-      "MIRE_Build_Wood",
-      "MIRE_Build_Wood_Light"
+      "MIRE_WoodTimber",
+      "MIRE_WoodTimberLight"
     ]
   }
 ]

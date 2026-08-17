@@ -12,11 +12,15 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 import random
 from pathlib import Path
 from typing import Callable
 
 import bpy
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from mire_art import mat, radial, around, reset_materials  # noqa: E402
 from mathutils import Vector
 
 
@@ -177,6 +181,7 @@ def main() -> None:
     EXPORT_DIR.mkdir(parents=True, exist_ok=True)
     PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
     SOURCE_DIR.mkdir(parents=True, exist_ok=True)
+    reset_materials()
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
@@ -184,21 +189,47 @@ def main() -> None:
         for block in list(datablocks):
             datablocks.remove(block)
 
+    # Shared palette. Geometry helpers stay local in this kit: its
+    # cylinder_between defaults to 7 vertices and no end taper where
+    # mire_art's uses 8 and 0.94, and swapping them would reshape all 128
+    # assets — which are placed in both authored maps.
     mats = {
-        "bark": material("MIRE_Bark", (0.18, 0.065, 0.025, 1.0)), "bark_light": material("MIRE_Bark_Light", (0.37, 0.15, 0.05, 1.0)), "cut": material("MIRE_Cut_Wood", (0.72, 0.40, 0.13, 1.0)),
-        "birch": material("MIRE_Birch", (0.72, 0.74, 0.64, 1.0)), "birch_dark": material("MIRE_Birch_Mark", (0.12, 0.14, 0.12, 1.0)),
-        "pine_dark": material("MIRE_Pine_Dark", (0.02, 0.20, 0.10, 1.0)), "pine_mid": material("MIRE_Pine_Mid", (0.03, 0.36, 0.17, 1.0)), "pine_tip": material("MIRE_Pine_Tip", (0.10, 0.55, 0.24, 1.0)),
-        "leaf": material("MIRE_Leaf", (0.10, 0.43, 0.13, 1.0)), "leaf_light": material("MIRE_Leaf_Light", (0.30, 0.62, 0.17, 1.0)), "leaf_gold": material("MIRE_Leaf_Gold", (0.66, 0.43, 0.08, 1.0)),
-        "stone": material("MIRE_Stone", (0.22, 0.27, 0.29, 1.0)), "stone_light": material("MIRE_Stone_Light", (0.41, 0.47, 0.45, 1.0)), "stone_dark": material("MIRE_Stone_Dark", (0.10, 0.13, 0.15, 1.0)),
-        "moss": material("MIRE_Moss", (0.12, 0.35, 0.09, 1.0)), "grass": material("MIRE_Grass", (0.15, 0.46, 0.16, 1.0)), "grass_light": material("MIRE_Grass_Light", (0.37, 0.67, 0.18, 1.0)),
-        "grass_dark": material("MIRE_Grass_Dark", (0.07, 0.29, 0.11, 1.0)), "grass_dry": material("MIRE_Grass_Dry", (0.48, 0.43, 0.16, 1.0)), "seed_head": material("MIRE_Grass_Seed", (0.32, 0.24, 0.075, 1.0)),
-        "reed": material("MIRE_Reed", (0.38, 0.52, 0.12, 1.0)), "cattail": material("MIRE_Cattail", (0.29, 0.10, 0.03, 1.0)),
-        "mushroom": material("MIRE_Mushroom", (0.67, 0.14, 0.55, 1.0)), "mushroom_blue": material("MIRE_Mushroom_Blue", (0.16, 0.40, 0.71, 1.0)), "mushroom_spot": material("MIRE_Mushroom_Spot", (0.95, 0.68, 0.92, 1.0)),
-        "mire": material("MIRE_Corruption", (0.11, 0.018, 0.17, 1.0)), "mire_mid": material("MIRE_Corruption_Mid", (0.31, 0.045, 0.43, 1.0)),
-        "crystal": material("MIRE_Crystal", (0.27, 0.08, 0.52, 1.0), 0.35, (0.50, 0.09, 0.90, 1.0), 1.8), "crystal_tip": material("MIRE_Crystal_Tip", (0.55, 0.20, 0.88, 1.0), 0.25, (0.72, 0.22, 1.0, 1.0), 2.2),
-        "ruin": material("MIRE_Ruin_Stone", (0.36, 0.37, 0.32, 1.0)), "rune": material("MIRE_Rune", (0.31, 0.11, 0.48, 1.0), 0.5, (0.52, 0.12, 0.79, 1.0), 1.2),
-        "wood_build": material("MIRE_Build_Wood", (0.34, 0.14, 0.045, 1.0)), "wood_build_light": material("MIRE_Build_Wood_Light", (0.53, 0.25, 0.075, 1.0)), "roof": material("MIRE_Wood_Roof", (0.20, 0.07, 0.035, 1.0)),
-        "stone_build": material("MIRE_Build_Stone", (0.33, 0.36, 0.35, 1.0)), "ground": material("MIRE_Preview_Ground", (0.075, 0.12, 0.065, 1.0)),
+        "bark": mat("wood_bark"),
+        "bark_light": mat("wood_bark_light"),
+        "cut": mat("wood_cut"),
+        "birch": mat("wood_birch"),
+        "birch_dark": mat("wood_birch_mark"),
+        "pine_dark": mat("pine_dark"),
+        "pine_mid": mat("pine"),
+        "pine_tip": mat("pine_light"),
+        "leaf": mat("leaf"),
+        "leaf_light": mat("leaf_light"),
+        "leaf_gold": mat("leaf_gold"),
+        "stone": mat("stone"),
+        "stone_light": mat("stone_light"),
+        "stone_dark": mat("stone_dark"),
+        "moss": mat("moss"),
+        "grass": mat("grass"),
+        "grass_light": mat("grass_light"),
+        "grass_dark": mat("grass_dark"),
+        "grass_dry": mat("grass_dry"),
+        "seed_head": mat("grass_seed"),
+        "reed": mat("reed"),
+        "cattail": mat("wood_bark"),
+        "mushroom": mat("fungus_cap"),
+        "mushroom_blue": mat("fungus_blue"),
+        "mushroom_spot": mat("flesh_fat"),
+        "mire": mat("mire"),
+        "mire_mid": mat("mire_light"),
+        "crystal": mat("crystal"),
+        "crystal_tip": mat("crystal_tip"),
+        "ruin": mat("stone_ruin"),
+        "rune": mat("mire_glow"),
+        "wood_build": mat("wood_timber"),
+        "wood_build_light": mat("wood_timber_light"),
+        "roof": mat("wood_bark_dark"),
+        "stone_build": mat("stone"),
+        "ground": mat("preview_ground"),
     }
 
     def build_pine(seed: int) -> None:
@@ -350,11 +381,48 @@ def main() -> None:
             angle = index / 4 * math.tau + rng.uniform(-0.4, 0.4); cylinder_between(f"Root_{index + 1}", (math.cos(angle) * radius * 0.2, math.sin(angle) * radius * 0.2, 0.20), (math.cos(angle) * rng.uniform(0.7, 1.2), math.sin(angle) * rng.uniform(0.7, 1.2), 0.05), rng.uniform(0.09, 0.16), mats["bark"], 7)
 
     def build_fallen_log(seed: int) -> None:
-        rng = random.Random(seed); length = rng.uniform(2.6, 4.5); radius = rng.uniform(0.28, 0.48)
-        cylinder_between("Log", (-length * 0.5, 0, radius), (length * 0.5, rng.uniform(-0.22, 0.22), radius), radius, mats["bark"], rng.randint(7, 10)); cylinder_between("Cut", (-length * 0.51, 0, radius), (-length * 0.50, 0, radius), radius * 0.86, mats["cut"], 9)
-        for index in range(rng.randint(1, 3)):
-            x = rng.uniform(-length * 0.25, length * 0.35); cylinder_between(f"Branch_{index + 1}", (x, 0, radius * 1.4), (x + rng.uniform(0.25, 0.65), rng.choice([-1, 1]) * rng.uniform(0.45, 0.85), radius + rng.uniform(0.35, 0.8)), 0.08, mats["bark"], 6)
-        ico("Moss", (rng.uniform(-0.5, 0.5), -radius * 0.72, radius * 1.55), (length * 0.22, radius * 0.22, 0.10), mats["moss"])
+        """A log that reads from any angle.
+
+        The old one put every branch at y=0 on the TOP of the trunk with its tip
+        at +x/+z, so all of them left the same face pointing the same way, and
+        the moss was a single flattened ellipsoid stuck on one flank. From the
+        far side it was a bare tube. Branches now leave at angles spread around
+        the trunk axis and point outward along their own radial direction; moss
+        sits in several patches at different angles; both ends are cut.
+        """
+        rng = random.Random(seed)
+        length = rng.uniform(2.6, 4.5)
+        radius = rng.uniform(0.28, 0.48)
+        tip_radius = radius * rng.uniform(0.78, 0.90)
+        half = length * 0.5
+        sag = rng.uniform(-0.22, 0.22)
+        tapered_between("Log", (-half, 0.0, radius), (half, sag, tip_radius * 1.02),
+                        radius, tip_radius, mats["bark"], rng.randint(7, 10))
+        cylinder_between("Cut_A", (-half - 0.012, 0.0, radius), (-half, 0.0, radius),
+                         radius * 0.88, mats["cut"], 9)
+        cylinder_between("Cut_B", (half, sag, tip_radius * 1.02), (half + 0.012, sag, tip_radius * 1.02),
+                         tip_radius * 0.88, mats["cut"], 9)
+
+        count = rng.randint(3, 5)
+        for index, (angle, rad) in enumerate(radial(count, radius, seed=seed + 601, jitter=0.34, phase=0.45)):
+            angle = angle * 0.72 + 0.30  # bias off the underside; a downward branch lifts the log
+            x = rng.uniform(-length * 0.34, length * 0.36)
+            reach = rng.uniform(0.34, 0.78)
+            base = around((x, 0.0, radius), angle, rad * 0.82, axis="x")
+            tip = around((x + rng.uniform(-0.22, 0.30), 0.0, radius), angle, rad + reach, axis="x")
+            tapered_between(f"Branch_{index + 1}", base, tip, 0.085, 0.035, mats["bark"], 6)
+            if rng.random() < 0.55:
+                stub = around((x + rng.uniform(-0.10, 0.10), 0.0, radius), angle + rng.uniform(-0.5, 0.5),
+                              rad + rng.uniform(0.10, 0.22), axis="x")
+                tapered_between(f"Twig_{index + 1}", base, stub, 0.05, 0.022, mats["bark_light"], 5)
+
+        for index, (angle, rad) in enumerate(radial(rng.randint(2, 4), radius * 0.96,
+                                                    seed=seed + 977, jitter=0.46)):
+            centre = around((rng.uniform(-half * 0.7, half * 0.7), 0.0, radius), angle, rad, axis="x")
+            patch = ico(f"Moss_{index + 1}", centre,
+                        (rng.uniform(0.22, 0.46), rng.uniform(0.16, 0.30), 0.055),
+                        mats["moss"])
+            patch.rotation_euler = (angle, 0.0, rng.uniform(-0.4, 0.4))
 
     def build_root_cluster(seed: int) -> None:
         rng = random.Random(seed); ico("Root_Knot", (0, 0, 0.28), (0.52, 0.44, 0.38), mats["bark"], (rng.random(), rng.random(), rng.random())); count = rng.randint(5, 8)

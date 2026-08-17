@@ -3,8 +3,8 @@
     "name": "pickup_log",
     "family": "wood",
     "width_m": 1.236,
-    "depth_m": 0.389,
-    "height_m": 0.231,
+    "depth_m": 0.309,
+    "height_m": 0.321,
     "mesh_parts": 18,
     "polygons": 184,
     "materials": [

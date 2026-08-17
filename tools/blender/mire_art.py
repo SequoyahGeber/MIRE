@@ -117,6 +117,8 @@ PALETTE: dict[str, Swatch] = {
     "wood_timber_light": Swatch("#A87542", 0.84, note="lit plank faces, fresh boards"),
     "wood_cut": Swatch("#C9A063", 0.80, note="fresh cut end-grain and axe scars"),
     "wood_charred": Swatch("#241812", 0.96, note="burnt wood around fire"),
+    "wood_birch": Swatch("#C2C4B2", 0.90, note="birch bark; the one pale trunk"),
+    "wood_birch_mark": Swatch("#2E332C", 0.92, note="birch lenticels and scars"),
     # -- stone --------------------------------------------------------------
     "stone_dark": Swatch("#3A4246", 0.95, note="crevices, undersides"),
     "stone": Swatch("#5A6469", 0.94, note="boulders, walls, node bodies"),
@@ -142,6 +144,11 @@ PALETTE: dict[str, Swatch] = {
     "grass_dry": Swatch("#8A7A3A", 0.94, note="reeds, thatch, straw, dry tufts"),
     "moss": Swatch("#35592A", 0.96),
     "reed": Swatch("#6B7A32", 0.94),
+    "grass_seed": Swatch("#6B5B33", 0.94, note="seed heads and dry stalk tips"),
+    # Fungus is the one place a non-corruption pink/blue is allowed. Kept muted so
+    # it never competes with the reserved Mire purple or Ward teal.
+    "fungus_cap": Swatch("#A8437F", 0.88, note="pink toadstool cap"),
+    "fungus_blue": Swatch("#4A79A8", 0.88, note="blue toadstool cap"),
     # -- organic / creature -------------------------------------------------
     "flesh_raw": Swatch("#8E3B3B", 0.82, note="raw meat; muted, never fire-engine red"),
     "flesh_fat": Swatch("#C4B08A", 0.84),

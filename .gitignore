@@ -27,3 +27,4 @@ export/
 # command. The pinned commit and the reinstall recipe are D-022 in docs/DECISIONS.md.
 /addons/godotsteam/
 tools/blender/__pycache__/
+*.blend1
