@@ -1212,3 +1212,15 @@ Commit at time of writing: `51aafe5`
 Death zeroes collision_layer instead of disabling every CollisionShape3D. A corpse kept applying gravity with no shape, so it fell through the terrain for the whole corpse window. It now keeps its mask, lands where it died, and collides with nothing. enemy_check 44/44.
 
 Commit at time of writing: `51aafe5`
+
+---
+
+### HANDOFF · 2.1d · dusk3 · 2026-08-17T16:35:34+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+Only the queue was touched - no assets were produced. Promoted A-021S (iron sword, split out of A-021 at Sequoyah's direct request) to the single NEXT row and returned A-009 to QUEUED. The next asset agent takes 2.1d normally and reads the A-021S row for the full brief. Boundary: that agent owns tools/blender/, assets/tools_weapons/, assets/icons/, docs/ASSET_TRACKER.md and its own new content/items/iron_sword.tres + content/weapons/iron_sword.tres - it must NOT re-run tools/setup_tool_content.gd, which regenerates the nine existing tool items and is owned by the viewmodel work in flight.
+
+Files: `docs/ASSET_TRACKER.md`
+
+Commit at time of writing: `2dfcc4d`
