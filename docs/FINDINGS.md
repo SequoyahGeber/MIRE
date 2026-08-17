@@ -446,6 +446,13 @@ precondition instead of asserting it once), or 15 s is simply not enough when se
 are competing for the machine. Prefer fixing the ordering over raising the timeout — a longer timeout
 hides the race rather than removing it.
 
+**2026-08-17, flint5 — `combat_net_check` shows the sibling flake.** After F-052's deterministic
+roots were fixed, three back-to-back runs under the `agent godot` lock went green, green, then
+5 failures — the client probe timing out waiting to "complete both swings and the spam rejection"
+(its stage marker read `?`). All three lanes were idle (exhausted), so this is not lane load. When
+this finding is taken, test both checks together: same wait-ordering class, roughly 1-in-3 on this
+machine for combat.
+
 ### F-042 · Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one
 
 **Area:** asset pipeline · **Severity:** low · **Found:** 2026-08-17 by reed16 during 2.1d (A-021S)
@@ -533,6 +540,45 @@ in opposite directions:
 `_godot_running()` in `.agent/bin/agent` now matches the real binary path and excludes `--headless`
 invocations, which is the question the rule was always trying to ask. The docs still say `pgrep`;
 they should say `agent order` refuses the dispatch for you, or point at the same check.
+
+---
+
+### F-052 · The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it
+
+**Area:** tests/netcode · **Severity:** high — every lane order tells lanes to run these checks ·
+**Found:** 2026-08-17 by flint5, from the audit's baseline run of the multi-process suite
+
+Baseline (all via `agent godot`, sequential): `inventory_net_check` 14 fails, `crafting_net_check`
+19, `combat_net_check` 15, `session_lifecycle_check` exit 1 — while `harvestable_net`,
+`harvest_world_net` and `enemy_net` stay green. Sessions establish fine (first four PASSes
+everywhere); everything inventory-shaped dies from the first content assertion on.
+
+Two roots, both shipped this morning, neither followed by a net-suite run:
+
+1. **`DevLoadout` (6471403, 09:22) grants its 13-entry kit on `player_spawned` in real sessions** —
+   and every net-check probe opens a real session. Its `current_scene` gate only covers the offline
+   path; `core/dev/dev_loadout.gd:123` records fixing the four *offline* harnesses and the
+   in-session class was left open. First failing assertion is literally "host creates the client
+   inventory empty". All four red checks were last modified before that commit.
+2. **D-035 (975382a, 08:43) parks a departed peer's inventory for 90 s by design**, and
+   `inventory_net_check:103` still polls for `host_slots(peer)` to empty on departure — a stale
+   assertion against a settled decision. F-032's fix updated `session_lifecycle_check` and shipped
+   `run_identity_check`, but never revisited this one.
+
+The general lesson is F-047's, one level up: a change to what a *spawn* does must re-run the checks
+that spawn players — which is now cheap to say: `docs/SPECS.md`'s verify sections name them.
+
+**2026-08-17, flint5 — both roots fixed, three of four checks recovered; two tails remain.**
+`DevLoadout` now refuses grants in any `--script` process unless it opts in via
+`MIRE_DEV_LOADOUT=1` set in `_initialize()` — `dev_loadout_check` and `viewmodel_check` opt in and
+stay green. The departed-peer assertions in `inventory_net_check` and `crafting_net_check` now
+assert D-035 *parking* (slots survive + `orphaned_run_players() == 1`). Two per-frame engine errors
+from reading transforms on despawned/mid-spawn nodes were guarded in `combat_net_check` and
+`crafting_net_check`. Post-fix: inventory 0/0, crafting 0 failures, combat 0/0 twice with a
+residual ~1-in-3 intermittent recorded under F-038 (its proper home). **Left for whoever takes this
+next: `session_lifecycle_check` exits 1 (2 ERROR lines) and `connect_retry_check` logs 2 ERROR
+lines at exit 0 — neither triaged; the session hit its quota wall.** Both predate today's roots or
+relate to them in ways not yet established — do not assume either.
 
 ---
 

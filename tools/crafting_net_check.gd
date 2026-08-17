@@ -127,11 +127,15 @@ func _run_driver() -> void:
 	check(child_exited, "client exits cleanly")
 	if child_exited:
 		child_pid = 0
-	var peer_removed: bool = await _until(
-		func() -> bool: return (inventory.call("host_slots", peer_id) as Array).is_empty(),
+	# D-035 (F-052): parked, not released — same rewrite as inventory_net_check. The crafted axe
+	# must SURVIVE the departure; emptying here is the bug F-032 fixed.
+	var session: Node = root.get_node_or_null(^"NetSession")
+	var parked: bool = await _until(
+		func() -> bool: return (not (inventory.call("host_slots", peer_id) as Array).is_empty()
+			and session != null and int(session.call("orphaned_run_players")) == 1),
 		TIMEOUT_SEC
 	)
-	check(peer_removed, "host releases departed client's crafted inventory")
+	check(parked, "host parks the departed client's crafted inventory for the D-035 grace window")
 	transport.call("leave")
 	print("CRAFTING_NET_CHECK peer=%d axe_count=%d failures=%d result=%s" % [
 		peer_id, int(result.get("axe_count", -1)), failures, result
@@ -187,10 +191,13 @@ func _client_drive() -> void:
 		return
 	var workbench := Node3D.new()
 	workbench.name = "ClientCheckWorkbench"
-	workbench.global_position = local_player.global_position
+	# Add to the tree BEFORE reading/writing global transforms (F-052 cleanup): the read of
+	# local_player.global_position on a node mid-spawn logged one engine ERROR per run.
+	root.add_child(workbench)
+	if local_player.is_inside_tree():
+		workbench.global_position = local_player.global_position
 	workbench.set_meta(&"asset", "station_workbench_primitive")
 	workbench.add_to_group(&"playtest_hollow_asset")
-	root.add_child(workbench)
 	crafting_ui.call("poll_station")
 
 	var ui_in_range: bool = bool(crafting_ui.call("is_station_in_range"))

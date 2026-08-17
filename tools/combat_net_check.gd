@@ -37,7 +37,9 @@ class TestTarget extends Node3D:
 		add_to_group(&"damageable")
 
 	func _process(_delta: float) -> void:
-		if follow != null and is_instance_valid(follow):
+		# is_inside_tree too (F-052 cleanup): after the peer despawns, its body is valid-but-removed
+		# for a frame or two, and reading global_transform then logs an engine ERROR per frame.
+		if follow != null and is_instance_valid(follow) and follow.is_inside_tree():
 			global_position = follow.global_position + follow.global_transform.basis.z * -2.0
 
 	func host_apply_damage(amount: int, instigator_peer_id: int) -> bool:

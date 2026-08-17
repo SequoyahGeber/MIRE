@@ -1397,3 +1397,15 @@ _sync_findings closes departed findings (FINDINGS.md ## Open is the truth; journ
 Files: `.agent/bin/agent`, `docs/FINDINGS.md`
 
 Commit at time of writing: `85d4eaf`
+
+---
+
+### HANDOFF · F-052 · flint5 · 2026-08-17T19:28:04+00:00
+
+**The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it**
+
+Both roots fixed and shipped: DevLoadout refuses grants in --script processes unless MIRE_DEV_LOADOUT=1 (dev_loadout_check and viewmodel_check opt in); inventory+crafting departed-peer assertions rewritten to D-035 parking; transform-read guards in combat and crafting probes. Post-fix: inventory 0 failures 0 errors, crafting same, combat green 2 of 3 with the residual intermittent recorded under F-038. NOT triaged, quota wall: session_lifecycle_check exits 1 with 2 ERROR lines, connect_retry_check 2 ERROR lines at exit 0 — next agent starts there, the finding body has the details.
+
+Files: `core/dev/dev_loadout.gd`, `tools/inventory_net_check.gd`, `tools/dev_loadout_check.gd`, `tools/viewmodel_check.gd`, `docs/FINDINGS.md`, `tools/crafting_net_check.gd`, `tools/session_lifecycle_check.gd`, `tools/connect_retry_check.gd`, `tools/combat_net_check.gd`
+
+Commit at time of writing: `72896f8`

@@ -11,6 +11,15 @@ extends Node
 ##
 ## It hangs off `PlayerNet.player_spawned` (F-018) rather than polling or reaching into PlayerNet's
 ## container, which is exactly what that signal was added for.
+##
+## HARNESSES GET NO KIT (F-052). The offline `current_scene` gate below only protects `--script`
+## runs that never open a session — but the two-process net checks open REAL sessions, players
+## spawn, and this node silently granted 13 stacks into inventories whose checks begin with "host
+## creates the client inventory empty". Four checks went red the day this shipped. So: a process
+## launched with `--script` never grants, unless it opts in by setting the environment variable
+## `MIRE_DEV_LOADOUT=1` in its `_initialize()` (autoloads are ready but no player has spawned yet,
+## so the opt-in always lands in time). `dev_loadout_check` and `viewmodel_check` opt in — they are
+## ABOUT the loadout. The shipped game never runs with `--script`, so players are unaffected.
 
 const HOTBAR_START_INDEX: int = 24
 
@@ -60,7 +69,8 @@ func _ready() -> void:
 
 
 func grant(peer_id: int) -> bool:
-	if not enabled or not _owns_grants() or peer_id <= 0 or _granted.has(peer_id):
+	if not enabled or _harness_without_optin() or not _owns_grants() or peer_id <= 0 \
+			or _granted.has(peer_id):
 		return false
 	var inventory: Node = get_node_or_null(^"/root/InventoryService")
 	if inventory == null:
@@ -108,6 +118,15 @@ func granted_peers() -> PackedInt32Array:
 		ids.append(peer_id)
 	ids.sort()
 	return ids
+
+
+## A `--script` process is a harness; harnesses assert exact inventory contents, so the kit stays
+## out unless the harness says it is about the kit (F-052). Checked per call, not cached: the
+## opt-in env var is set in a harness's `_initialize()`, which runs after this autoload's `_ready`.
+func _harness_without_optin() -> bool:
+	if not OS.get_cmdline_args().has("--script"):
+		return false
+	return OS.get_environment("MIRE_DEV_LOADOUT") != "1"
 
 
 func _on_player_spawned(peer_id: int, _body: Node3D) -> void:

@@ -1,6 +1,105 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "docs/ASSET_TRACKER.md": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:27:27+00:00",
+      "task": "2.1j"
+    },
+    "docs/ROADMAP.md": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:17:50+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/audit_all_sides.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:17:50+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_adapted_nature_set.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:17:50+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_crafting_stations.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:17:50+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_enemy_crawler.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:17:50+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_harvestable_resources.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:17:50+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_loot_set.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:17:50+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_mire_map_kit.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:17:50+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_pickup_kit.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:17:50+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_tool_weapon_set.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:17:50+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_ward_set.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:17:50+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_wellspring_set.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:17:50+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/detail_distribution.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:17:50+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/mire_art.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:17:50+00:00",
+      "task": "2.1j"
+    }
+  },
+  "in_flight": {
+    "2.1j": {
+      "agent": "tine18",
+      "files": [
+        "tools/blender/mire_art.py",
+        "tools/blender/audit_all_sides.py",
+        "tools/blender/detail_distribution.py",
+        "tools/blender/build_pickup_kit.py",
+        "tools/blender/build_tool_weapon_set.py",
+        "tools/blender/build_crafting_stations.py",
+        "tools/blender/build_mire_map_kit.py",
+        "tools/blender/build_harvestable_resources.py",
+        "tools/blender/build_loot_set.py",
+        "tools/blender/build_ward_set.py",
+        "tools/blender/build_wellspring_set.py",
+        "tools/blender/build_enemy_crawler.py",
+        "tools/blender/build_adapted_nature_set.py",
+        "docs/ROADMAP.md",
+        "docs/ASSET_TRACKER.md"
+      ],
+      "notes": [],
+      "started": "2026-08-17T19:17:50+00:00"
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
       "agent": "flint5",
@@ -1563,9 +1662,9 @@
       "task": "F-023"
     },
     "core/dev/dev_loadout.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:22:54+00:00",
-      "task": "2.14"
+      "agent": "flint5",
+      "at": "2026-08-17T19:28:04+00:00",
+      "task": "F-052"
     },
     "core/dev/dev_loadout.gd.uid": {
       "agent": "dusk3",
@@ -1596,11 +1695,6 @@
       "agent": "dusk3",
       "at": "2026-08-17T15:43:36+00:00",
       "task": "F-032"
-    },
-    "core/net/net_session.gd.uid": {
-      "agent": "reed",
-      "at": "2026-08-16T19:23:07+00:00",
-      "task": "1.7"
     },
     "core/net/net_version.gd": {
       "agent": "dusk3",
@@ -1652,15 +1746,10 @@
       "at": "2026-08-17T19:02:17+00:00",
       "task": "F-050"
     },
-    "docs/DESIGN.md": {
-      "agent": "kiln",
-      "at": "2026-08-16T19:27:42+00:00",
-      "task": "F-022"
-    },
     "docs/FINDINGS.md": {
       "agent": "flint5",
-      "at": "2026-08-17T19:12:34+00:00",
-      "task": "F-049"
+      "at": "2026-08-17T19:28:04+00:00",
+      "task": "F-052"
     },
     "docs/NEXT.md": {
       "agent": "flint5",
@@ -1863,9 +1952,9 @@
       "task": "2.9"
     },
     "tools/combat_net_check.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:31:24+00:00",
-      "task": "2.8"
+      "agent": "flint5",
+      "at": "2026-08-17T19:28:04+00:00",
+      "task": "F-052"
     },
     "tools/combat_net_check.gd.uid": {
       "agent": "dusk3",
@@ -1873,9 +1962,9 @@
       "task": "2.8"
     },
     "tools/connect_retry_check.gd": {
-      "agent": "vane",
-      "at": "2026-08-16T22:59:02+00:00",
-      "task": "F-023"
+      "agent": "flint5",
+      "at": "2026-08-17T19:28:04+00:00",
+      "task": "F-052"
     },
     "tools/crafting_check.gd": {
       "agent": "dusk3",
@@ -1888,9 +1977,9 @@
       "task": "2.6"
     },
     "tools/crafting_net_check.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:01:51+00:00",
-      "task": "2.7"
+      "agent": "flint5",
+      "at": "2026-08-17T19:28:04+00:00",
+      "task": "F-052"
     },
     "tools/crafting_net_check.gd.uid": {
       "agent": "dusk3",
@@ -1918,9 +2007,9 @@
       "task": "2.7"
     },
     "tools/dev_loadout_check.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:22:54+00:00",
-      "task": "2.14"
+      "agent": "flint5",
+      "at": "2026-08-17T19:28:04+00:00",
+      "task": "F-052"
     },
     "tools/dev_loadout_check.gd.uid": {
       "agent": "dusk3",
@@ -2023,9 +2112,9 @@
       "task": "2.4"
     },
     "tools/inventory_net_check.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T02:41:22+00:00",
-      "task": "F-033"
+      "agent": "flint5",
+      "at": "2026-08-17T19:28:04+00:00",
+      "task": "F-052"
     },
     "tools/inventory_net_check.gd.uid": {
       "agent": "nettle",
@@ -2093,14 +2182,9 @@
       "task": "F-032"
     },
     "tools/session_lifecycle_check.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T15:43:36+00:00",
-      "task": "F-032"
-    },
-    "tools/session_lifecycle_check.gd.uid": {
-      "agent": "reed",
-      "at": "2026-08-16T19:23:07+00:00",
-      "task": "1.7"
+      "agent": "flint5",
+      "at": "2026-08-17T19:28:04+00:00",
+      "task": "F-052"
     },
     "tools/setup_combat_content.gd": {
       "agent": "dusk3",
@@ -2174,8 +2258,8 @@
     },
     "tools/viewmodel_check.gd": {
       "agent": "flint5",
-      "at": "2026-08-17T18:48:57+00:00",
-      "task": "F-046"
+      "at": "2026-08-17T19:28:04+00:00",
+      "task": "F-052"
     },
     "tools/viewmodel_check.gd.uid": {
       "agent": "dusk3",
@@ -2581,6 +2665,13 @@
       "status": "done",
       "tier": "T0",
       "title": "Audit existing art and improve the highest-impact hero/environment assets without bypassing their gameplay-review gates"
+    },
+    "2.1j": {
+      "est": "8",
+      "milestone": "M2",
+      "status": "in_flight",
+      "tier": "T0",
+      "title": "Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle"
     },
     "2.2": {
       "done_at": "2026-08-16T02:59:39+00:00",
@@ -3523,6 +3614,13 @@
       "status": "done",
       "tier": "F",
       "title": "Five SPECS blocks claim `project.godot`, which would collapse three lanes back to one"
+    },
+    "F-052": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it"
     }
   },
   "version": 1

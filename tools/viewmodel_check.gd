@@ -16,6 +16,8 @@ var combat: Node
 
 
 func _initialize() -> void:
+	# The held-item assertions need the starting kit; opt in past F-052's harness gate.
+	OS.set_environment("MIRE_DEV_LOADOUT", "1")
 	_run.call_deferred()
 
 

@@ -12,6 +12,9 @@ var level: Node
 
 
 func _initialize() -> void:
+	# This check is ABOUT the loadout — opt in to grants, which F-052 gates out of every other
+	# --script harness so net checks start from genuinely empty inventories.
+	OS.set_environment("MIRE_DEV_LOADOUT", "1")
 	_run.call_deferred()
 
 

@@ -99,11 +99,17 @@ func _run_driver() -> void:
 	check(child_exited, "client exits cleanly")
 	if child_exited:
 		child_pid = 0
-	var peer_removed: bool = await _until(
-		func() -> bool: return (inventory.call("host_slots", client_peer_id) as Array).is_empty(),
+	# D-035 (F-052): a departed peer's inventory is PARKED, not released — `peer_left` cannot tell a
+	# drop from a rejoin, so the host holds the slots until `run_player_expired` (90 s grace).
+	# The old assertion here polled for the slots to empty, which is the exact behaviour F-032's fix
+	# removed on purpose. Assert the parking instead, plus the registry counting one orphan.
+	var session: Node = root.get_node_or_null(^"NetSession")
+	var parked: bool = await _until(
+		func() -> bool: return (not (inventory.call("host_slots", client_peer_id) as Array).is_empty()
+			and session != null and int(session.call("orphaned_run_players")) == 1),
 		TIMEOUT_SEC
 	)
-	check(peer_removed, "host releases a departed peer's inventory")
+	check(parked, "host parks a departed peer's inventory for the D-035 grace window")
 	transport.call("leave")
 	print("INVENTORY_NET_CHECK peer=%d final_logs=%d failures=%d result=%s" % [
 		client_peer_id, int(result.get("log_count", -1)), failures, result
