@@ -1341,3 +1341,13 @@ setup_harvest_content and setup_crafting_content now carry RE-RUNNING OVERWRITES
 Files: `tools/setup_harvest_content.gd`, `tools/setup_crafting_content.gd`, `tools/setup_project.gd`
 
 Commit at time of writing: `f595c8b`
+
+---
+
+### DONE · 0.12 · yarrow21 · 2026-08-17T18:51:35+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+Added lane login with device auth by default (two ChatGPT accounts share one browser session, so the browser flow would silently put both lanes on one quota pool). doctor now asks each CLI's own login/auth status instead of guessing from files — verified the lane homes read 'Not logged in' while the main ~/.codex reads 'Logged in using ChatGPT', proving the isolation works.
+
+Commit at time of writing: `6747f40`

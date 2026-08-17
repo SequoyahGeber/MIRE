@@ -1,8 +1,11 @@
 # Decision log
 
-One entry per decision that would be expensive to reverse. **Append, never rewrite.** When you change
-your mind, add a new entry that supersedes the old one — the reasoning you rejected is as valuable as
-the reasoning you kept, and future-you (or an agent) will otherwise re-litigate it for free.
+One entry per decision that would be expensive to reverse. **Append, never rewrite the reasoning.**
+When you change your mind, add a new entry that supersedes the old one — the reasoning you rejected
+is as valuable as the reasoning you kept, and future-you (or an agent) will otherwise re-litigate it
+for free. The one permitted retro-edit is a one-line `*Superseded by D-0NN.*` pointer under a
+superseded entry's heading, so nobody reads a dead rule as live (D-007, D-012, D-014 and D-005 all
+carry one).
 
 Format: `D-NNN · date · decision · why · what would change my mind`
 
@@ -36,6 +39,7 @@ collision. Saves an estimated 4–6 months of a skill you don't currently have. 
 first with better hit feedback before considering third-person.
 
 ### D-005 · 2026-08-15 · Art: CC0 low-poly packs (Quaternius / Kenney), hero assets swapped later
+*Superseded by D-038 — the art is authored in Blender in-house; no CC0 pack was ever imported.*
 $0, no attribution burden, and stylistically close to Muck already. Removes art as a blocker entirely
 and defers all art cost until the project has proven it will survive.
 **Would change my mind:** the game succeeding and the generic look becoming the main criticism. That's a
@@ -123,6 +127,7 @@ surfaces a whole class of export bug early.
 regenerating — costs join bandwidth, removes the risk entirely.
 
 ### D-014 · 2026-08-15 · Claude Code (this session) is the planner; Codex and the second Claude are coders
+*Superseded by D-020 (any agent takes any task), and the scheduling half by D-036 (director + lanes).*
 Planner owns: design, architecture, roadmap and task breakdown, decisions, specs, and reviewing work
 that lands. Coders own: implementing claimed tasks in `.gd`.
 This concentrates the scarce premium quota on exactly the work `AI-WORKFLOW.md` §2 calls Tier 2 —
@@ -174,6 +179,7 @@ that should stay separated once cliffs and water exist. Either pushes us to bake
 in `NavigationAgent3D` instead.
 
 ### D-017 · 2026-08-15 · R6 is GREEN for macOS↔Linux — §4 shared-seed world gen stands, and transcendentals are banned from it
+*Windows column closed by D-028 — the conditional verdict is now final for all three desktop targets.*
 `tools/check_determinism.gd` on macOS arm64 and Linux x86_64 (Godot 4.7.1-stable `a13da4feb`, both):
 `rng_sequence`, `noise_simplex` and `noise_perlin` are **bit-identical**; `float_math` is not
 (`063eec62c34fa4ee` vs `187304c753e6e1ce`). A follow-up per-operation probe put the divergence exactly
@@ -334,8 +340,9 @@ Two consequences worth writing down, because they're the parts that look like sc
 
 **Would change my mind:** a code-built `SceneReplicationConfig` resolving differently on host and
 client at the pinned build — that would be a real reason to author it as a `.tres`. Note that even
-then the fix is a resource Sequoyah authors and the code loads, not a `.tscn` edit; D-007 is untouched
-either way. Wanting to tune replication intervals in the inspector is the same story: export the
+then the fix is a resource authored in the inspector and loaded by code, not a `.tscn` edit (written
+when D-007 stood; D-031 now permits scene edits, and the preference for code-built replication config
+still holds). Wanting to tune replication intervals in the inspector is the same story: export the
 values, keep the construction in code.
 
 ---
@@ -431,9 +438,6 @@ authority over admission.
 
 ---
 
-## Template
-
-```
 ### D-028 · 2026-08-16 · R6 is GREEN on Windows too; shared-seed world generation is cleared for M4
 The last unmeasured platform is now measured. A physical Windows 11 25H2 x86_64 PC (Ryzen 5 5600)
 ran `check_determinism.gd` and `check_determinism_ops.gd` twice on the pinned stock Godot
@@ -548,6 +552,25 @@ truth next to a group the player controller already reads.
 beside a container, drag-and-drop between them). That needs a real stack, and this rule should be
 replaced rather than special-cased per pair.
 
+### D-033 · 2026-08-16 · Inventory icons are rendered from the shipped GLBs, never drawn
+
+`assets/icons/` holds no original art. Every icon is an orthographic render of a model that already
+ships in `assets/`, produced by `tools/blender/render_item_icons.py`, so an icon cannot drift from the
+thing it stands for: when a model changes, re-running the script is the entire update. Framing is
+measured rather than hand-tuned — vertices are projected into camera space and the script keeps
+whichever of upright or 45°-rolled packs the silhouette into the smaller square — so a 1.97 m skewer
+and a 12 cm coin both fill their slot with only a yaw authored per asset.
+
+The rig renders in Cycles with a pinned seed. EEVEE resolved anti-aliasing on thin silhouettes (a
+cleaver edge, a pick tip) a few samples differently between runs, which cost the batch its
+deterministic rebuild for no visual gain; 24 icons at 256px cost about ten seconds in Cycles. Verify
+icons by comparing decoded pixels, not file hashes — the PNG encoder emits a few bytes of differing
+metadata even when the image is identical.
+
+**Would change my mind:** icons that need art direction a render cannot give — a readable silhouette
+for a 32px slot, a rarity frame, a damaged-state overlay. Hand-authored icons then become a real asset
+family with its own batch, and this script becomes the base pass they are painted over.
+
 ### D-034 · 2026-08-16 · Melee splits across two authority rows, and hitstop is never `Engine.time_scale`
 
 Task 2.8 puts the *swing* and the *hit* in different rows of ARCHITECTURE.md §2.2 on purpose. The
@@ -572,25 +595,6 @@ able to throttle networking.
 to a night wave with six players attacking — then the host resolves on the request itself and pays
 for it with a worse tell. On hitstop, a single-player-only context where time_scale is measurably
 better; it would still have to be off in a session.
-
-### D-033 · 2026-08-16 · Inventory icons are rendered from the shipped GLBs, never drawn
-
-`assets/icons/` holds no original art. Every icon is an orthographic render of a model that already
-ships in `assets/`, produced by `tools/blender/render_item_icons.py`, so an icon cannot drift from the
-thing it stands for: when a model changes, re-running the script is the entire update. Framing is
-measured rather than hand-tuned — vertices are projected into camera space and the script keeps
-whichever of upright or 45°-rolled packs the silhouette into the smaller square — so a 1.97 m skewer
-and a 12 cm coin both fill their slot with only a yaw authored per asset.
-
-The rig renders in Cycles with a pinned seed. EEVEE resolved anti-aliasing on thin silhouettes (a
-cleaver edge, a pick tip) a few samples differently between runs, which cost the batch its
-deterministic rebuild for no visual gain; 24 icons at 256px cost about ten seconds in Cycles. Verify
-icons by comparing decoded pixels, not file hashes — the PNG encoder emits a few bytes of differing
-metadata even when the image is identical.
-
-**Would change my mind:** icons that need art direction a render cannot give — a readable silhouette
-for a 32px slot, a rarity frame, a damaged-state overlay. Hand-authored icons then become a real asset
-family with its own batch, and this script becomes the base pass they are painted over.
 
 ### D-035 · 2026-08-17 · A run-player is a host-issued opaque token, and peer_left is not a departure
 
@@ -659,6 +663,29 @@ them; nothing else needs one.
 `godot.lock` than running — or a check suite that grows long enough that serialising it dominates the
 wall clock. Then give each lane a worktree and eat the reimport.
 
+### D-038 · 2026-08-17 · The art is authored in Blender, not imported CC0; the Blender toolchain is pinned like the engine
+
+D-005 chose CC0 packs to remove art as a blocker. In practice no pack was ever imported: task 2.1 was
+satisfied by an original 8-asset Blender kit, 2.1b grew it to 116, and every batch since — thirteen
+source kits, 128 environment models, a rigged crawler, a Cycles icon renderer with
+deterministic-rebuild verification — is authored in-house under `docs/ASSET_TRACKER.md`'s contracts.
+Recorded so D-005 stops describing a pipeline that does not exist, and so `DESIGN.md`'s "it's what
+CC0 asset packs give you for free" rationale stops misleading the asset agents who are ordered to
+read it.
+
+Consequence: those batches' byte-identical-rebuild evidence depends on the Blender version and the
+Cycles seed exactly the way gameplay determinism depends on the pinned Godot build (D-001). Treat
+Blender as pinned; the next asset batch records the version in `ASSET_TRACKER.md`'s verification
+contract, and any Blender upgrade re-verifies a rebuild before the next batch ships.
+
+**Would change my mind:** the queue outpacing what authored batches can deliver before M7 — then CC0
+fills the gaps and hero assets stay authored, which is D-005's original shape run in reverse.
+
+---
+
+## Template
+
+```
 ### D-0NN · YYYY-MM-DD · <one-line decision>
 <why, in 2–4 sentences>
 **Would change my mind:** <the specific evidence that should make you revisit this>

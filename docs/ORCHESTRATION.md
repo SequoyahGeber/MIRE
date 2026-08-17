@@ -47,16 +47,25 @@ claude   ~/Library/Application Support/Claude/claude-code/<version>/claude.app/C
 ```
 
 ```bash
-.agent/bin/setup-lanes
-```
+.agent/bin/setup-lanes               # creates the auth homes and per-lane config
 
-It creates the three auth homes, writes each Codex lane's `config.toml`, and prints three `login`
-commands. **Run those yourself** — an agent must never handle account credentials. Sign each into a
-*different* account, or two lanes share one quota pool and the point is lost.
+.agent/bin/lane login LC1            # sign in — run these in YOUR terminal, they're interactive
+.agent/bin/lane login LC2
+.agent/bin/lane login LP
 
-```bash
 .agent/bin/agent lanes --doctor      # ✓ ready, or exactly what's missing
 ```
+
+**An agent must never handle account credentials**, so the three logins are yours to run.
+
+**Sign each into a *different* account.** This is the one step that silently ruins everything: your
+browser is already signed into one ChatGPT account, so the ordinary browser flow reuses it and you
+end up with `LC1` and `LC2` on a single quota pool — the exact thing the harness exists to avoid.
+`lane login` therefore defaults Codex to **device auth**, which gives you a code you can enter in any
+browser or profile. `--browser` opts out.
+
+`lane doctor` asks each CLI's own `login status` / `auth status`, so "ready" means that account really
+is signed in, not that a directory exists.
 
 ---
 

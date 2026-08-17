@@ -5,6 +5,11 @@
       "at": "2026-08-17T18:44:35+00:00",
       "task": "F-050"
     },
+    "CLAUDE.md": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:49:57+00:00",
+      "task": "F-050"
+    },
     "content/recipes/stone_axe.tres": {
       "agent": "flint5",
       "at": "2026-08-17T18:44:35+00:00",
@@ -20,14 +25,29 @@
       "at": "2026-08-17T18:44:35+00:00",
       "task": "F-050"
     },
+    "docs/DECISIONS.md": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:49:57+00:00",
+      "task": "F-050"
+    },
     "docs/DELEGATION.md": {
       "agent": "flint5",
       "at": "2026-08-17T18:44:35+00:00",
       "task": "F-050"
     },
+    "docs/FINDINGS.md": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:49:57+00:00",
+      "task": "F-050"
+    },
     "docs/NEXT.md": {
       "agent": "flint5",
       "at": "2026-08-17T18:44:35+00:00",
+      "task": "F-050"
+    },
+    "docs/ROADMAP.md": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:49:57+00:00",
       "task": "F-050"
     }
   },
@@ -40,7 +60,11 @@
         "docs/DELEGATION.md",
         "docs/AUDIT-2026-08-17.md",
         "AGENTS.md",
-        "content/recipes/stone_axe.tres"
+        "content/recipes/stone_axe.tres",
+        "docs/DECISIONS.md",
+        "docs/ROADMAP.md",
+        "docs/FINDINGS.md",
+        "CLAUDE.md"
       ],
       "notes": [],
       "started": "2026-08-17T18:44:35+00:00"
@@ -76,66 +100,6 @@
       "agent": "yarrow21",
       "at": "2026-08-17T18:43:41+00:00",
       "task": "0.12"
-    },
-    "assets/crafting_stations/README.md": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/crafting_stations/catalog.json": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/crafting_stations/exports/station_anvil.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/crafting_stations/exports/station_campfire.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/crafting_stations/exports/station_cooking_spit.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/crafting_stations/exports/station_repair_bench.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/crafting_stations/exports/station_stone_furnace.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/crafting_stations/exports/station_woodcutting_block.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/crafting_stations/exports/station_workbench_primitive.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/crafting_stations/exports/station_workbench_upgraded.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/crafting_stations/preview/crafting_stations_preview.png": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/crafting_stations/preview/crafting_stations_scale_preview.png": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
     },
     "assets/enemies": {
       "agent": "gale",
@@ -1152,11 +1116,6 @@
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
     },
-    "assets/source/crafting_stations.blend": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
-    },
     "assets/source/enemy_crawler.blend": {
       "agent": "gale",
       "at": "2026-08-16T23:59:35+00:00",
@@ -1927,11 +1886,6 @@
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
     },
-    "tools/blender/build_crafting_stations.py": {
-      "agent": "ember",
-      "at": "2026-08-16T18:50:26+00:00",
-      "task": "2.1d"
-    },
     "tools/blender/build_enemy_crawler.py": {
       "agent": "gale",
       "at": "2026-08-16T23:59:35+00:00",
@@ -2427,7 +2381,7 @@
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.12": {
-      "done_at": "2026-08-17T18:47:57+00:00",
+      "done_at": "2026-08-17T18:51:35+00:00",
       "done_by": "yarrow21",
       "est": "1.5",
       "milestone": "M0",

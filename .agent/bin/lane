@@ -166,19 +166,47 @@ def lane_home(lane):
     return os.path.expanduser(lane["home"])
 
 
-def is_logged_in(lane):
-    """Cheap, offline evidence that `setup-lanes`' login step actually happened for this account.
+def auth_env(lane):
+    """Environment that points a CLI at THIS lane's account and nothing else."""
+    env = os.environ.copy()
+    env.pop("CLAUDE_CODE_SESSION_ID", None)
+    env.pop("CODEX_SESSION_ID", None)
+    if lane["cli"] == "codex":
+        env["CODEX_HOME"] = lane_home(lane)
+    else:
+        env["CLAUDE_CONFIG_DIR"] = lane_home(lane)
+    return env
 
-    Heuristic on purpose. The only conclusive test is a real request, and a real request costs the
-    quota this whole harness exists to conserve — so we look for artifacts a CLI only writes once
-    it has authenticated, and let the first dispatch be the proof."""
+
+def is_logged_in(lane):
+    """Ask the CLI itself whether this account is signed in.
+
+    Both CLIs expose a status subcommand that reads local credentials without spending model quota,
+    which beats guessing from files on disk — Claude Code keeps its credentials in the macOS keychain,
+    so the config directory proves nothing (setup-lanes creates it). Fall back to the file heuristic
+    only if the status call is unavailable."""
     home = lane_home(lane)
-    if not os.path.isdir(home):
+    binary = lane_binary(lane)
+    if not os.path.isdir(home) or not binary:
         return False
+
+    argv = ([binary, "login", "status"] if lane["cli"] == "codex"
+            else [binary, "auth", "status"])
+    try:
+        r = subprocess.run(argv, env=auth_env(lane), capture_output=True, text=True, timeout=25)
+        text = (r.stdout or "") + (r.stderr or "")
+        if re.search(r"not logged in|logged out|no credentials|not authenticated", text, re.I):
+            return False
+        if r.returncode == 0 and re.search(r"logged in|authenticated|account|api key|email",
+                                           text, re.I):
+            return True
+        if r.returncode == 0 and text.strip():
+            return True
+    except (OSError, subprocess.SubprocessError):
+        pass
+
     if lane["cli"] == "codex":
         return os.path.exists(os.path.join(home, "auth.json"))
-    # Claude Code keeps credentials in the macOS keychain, so the config dir alone proves nothing —
-    # setup-lanes itself creates it. Look for state that only exists after a session has run.
     return any(os.path.exists(os.path.join(home, m)) for m in
                (".credentials.json", "statsig", "projects", "history.jsonl", "sessions"))
 
@@ -700,6 +728,50 @@ def cmd_selftest(args):
     return 0
 
 
+def cmd_login(args):
+    """Sign one lane into its account. Run this in YOUR terminal — it is interactive by design.
+
+    Codex defaults to device auth here, and that is the important detail: two ChatGPT Plus accounts
+    on one machine share one browser session, so the ordinary browser flow silently reuses whichever
+    account is already signed in and you end up with two lanes on one quota pool — the exact thing
+    this harness exists to avoid. Device auth gives you a code to enter wherever you like, so each
+    lane can be a different account. Use --browser to override."""
+    if not args:
+        die("usage: lane login <LANE> [--browser]")
+    lanes = load_lanes()
+    name = args[0].upper()
+    if name not in lanes:
+        die("unknown lane '%s' — known: %s" % (name, ", ".join(sorted(lanes))))
+    lane = lanes[name]
+    binary = lane_binary(lane)
+    if not binary:
+        die("%s's CLI (%s) is not installed" % (name, lane["cli"]))
+    home = lane_home(lane)
+    os.makedirs(home, mode=0o700, exist_ok=True)
+
+    if lane["cli"] == "codex":
+        argv = [binary, "login"]
+        if "--browser" not in args:
+            argv.append("--device-auth")
+    else:
+        argv = [binary, "auth", "login"]
+
+    print("%s%s → %s%s" % (C["b"], name, lane["account"], C["x"]))
+    print("  %sauth home: %s%s" % (C["dim"], home, C["x"]))
+    print("  %sSign in as %s — NOT whichever account your browser already has.%s\n"
+          % (C["y"], lane["account"], C["x"]))
+    code = subprocess.call(argv, env=auth_env(lane))
+    if code != 0:
+        print("%s✗ login exited %d%s" % (C["r"], code, C["x"]))
+        return code
+    if is_logged_in(lane):
+        ok("%s is signed in" % name)
+    else:
+        print("%s⚠ login finished but %s still reads as signed out — check with:  lane doctor%s"
+              % (C["y"], name, C["x"]))
+    return 0
+
+
 def cmd_park(args):
     """Tell the harness a lane is dry until a known time, so the director stops routing to it.
 
@@ -734,13 +806,14 @@ def cmd_park(args):
 
 
 COMMANDS = {"run": cmd_run, "status": cmd_status, "doctor": cmd_doctor, "park": cmd_park,
-            "reset": cmd_reset, "selftest": cmd_selftest}
+            "login": cmd_login, "reset": cmd_reset, "selftest": cmd_selftest}
 
 USAGE = """lane — headless dispatcher for MIRE's worker accounts
 
   lane run <LANE> <task-id> [--dry-run] [--timeout N]   dispatch a prepared work order
   lane status                                           ledger: usage, health, what's running
   lane doctor                                           check each lane's CLI and login
+  lane login <LANE> [--browser]                         sign that lane into its own account
   lane park <LANE> <when>                               it's dry until then — stop routing to it
   lane reset <LANE>                                     clear an exhausted/error flag
   lane selftest                                         prove the quota classifier still works

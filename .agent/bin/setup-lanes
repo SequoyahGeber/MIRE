@@ -71,11 +71,9 @@ def main():
                         "model": lane["model"], "effort": lane.get("effort", "medium"),
                         "sandbox": lane.get("sandbox", "danger-full-access")})
                 print("  %s✓%s wrote config.toml" % (C["g"], C["x"]))
-            logins.append((name, lane["account"],
-                           'CODEX_HOME="%s" "%s" login' % (home, binary)))
+            logins.append((name, lane["account"], ".agent/bin/lane login %s" % name))
         else:
-            logins.append((name, lane["account"],
-                           'CLAUDE_CONFIG_DIR="%s" "%s"   # then: /login' % (home, binary)))
+            logins.append((name, lane["account"], ".agent/bin/lane login %s" % name))
 
         if lanemod.is_logged_in(lane):
             print("  %s✓ already logged in%s" % (C["g"], C["x"]))
@@ -93,7 +91,11 @@ def main():
           % (C["b"], C["x"]))
     print("%sSign each one into a DIFFERENT account, or two lanes will share one quota pool and the%s"
           % (C["dim"], C["x"]))
-    print("%swhole point of the harness is lost.%s\n" % (C["dim"], C["x"]))
+    print("%swhole point of the harness is lost. Codex uses device auth by default for exactly this%s"
+          % (C["dim"], C["x"]))
+    print("%sreason: your browser is already signed into one ChatGPT account, and the browser flow%s"
+          % (C["dim"], C["x"]))
+    print("%swould silently reuse it for both lanes.%s\n" % (C["dim"], C["x"]))
     for name, account, cmd in pending:
         print("  %s# %s → %s%s" % (C["dim"], name, account, C["x"]))
         print("  %s\n" % cmd)
