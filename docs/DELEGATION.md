@@ -75,6 +75,30 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+**Task 2.7 ships the client-local crafting presentation.** `CraftingUI` is an autoload ordered last,
+after `CraftingService`. It is opened by the `interact` action (E) and only while
+`CraftingService.local_station_in_range(&"workbench")` is true; `interact` again, Escape, or walking
+out of range closes it. An "E USE WORKBENCH" prompt sits above the hotbar whenever a workbench is in
+range and no cursor UI is open. Rows are built once from `recipes_for_station(&"workbench")`, and each
+renders `have/need` per ingredient straight off the authoritative snapshot — `2/2 Log · 3/3 Stone` —
+plus READY / MISSING MATERIALS / OUT OF RANGE. The craft button is a hint, not a gate: pressing it
+sends `request_craft()`, shows *Waiting for the host…*, and the panel then displays the host's
+`craft_confirmed` detail verbatim. Nothing is predicted; requirement counts change only when the next
+authoritative snapshot arrives.
+
+The seams a later UI should reuse: `is_open()`, `set_open(open)`, `try_open_station()` (returns
+whether it actually opened, so the caller knows if the input was consumed), `poll_station()`,
+`is_station_in_range()`, `is_prompt_visible()`, `recipe_row_count()`, `displayed_recipe_id(i)`,
+`is_recipe_craftable(i)`, `craft_button_disabled(i)`, `recipe_requirement_text(i)`,
+`request_craft_at(i)`, and `status_text()`. `request_craft_at()` presses the real button, so a harness
+exercises the shipped path. Two traps this cost: a **local** host answers *inside* `request_craft()`,
+before the request id exists to compare against — hence the in-flight flag rather than an id check
+(a naive id comparison silently overwrites the answer with "Waiting…"); and **GDScript lambdas capture
+locals by value**, so an `_until()` poll must never assign to an outer variable it also wants to read.
+The focused check is `Godot --headless --path . --script tools/crafting_ui_check.gd`; the rendered
+proof at both widths is `Godot --path . --script tools/crafting_ui_render_check.gd`; the client-side
+waiting/confirmed states are proven over real ENet by the extended `tools/crafting_net_check.gd`.
+
 **Task 2.6 ships host-authoritative workbench crafting.** `CraftingService` is an autoload ordered
 after `InventoryService` and exposes `recipes_for_station(station)`,
 `local_recipe_status(recipe_id)`, `local_station_in_range(station)`, and

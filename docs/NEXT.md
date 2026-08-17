@@ -9,7 +9,7 @@
 
 **Milestone:** M2 · Vertical slice. **M1 closes at 13/14** — 1.12 is deferred, not outstanding
 (D-030). M0 is closed, 10/10.
-**Tasks 2.3 through 2.6 are playable:** `HarvestableDef` plus the host-authoritative `Harvestable` lifecycle
+**Tasks 2.3 through 2.7 are playable:** `HarvestableDef` plus the host-authoritative `Harvestable` lifecycle
 wires the 11 intact tree/stone/iron props in `playtest_hollow`, and each completed harvest now grants
 the validated peer a host-owned inventory stack. Inventory uses 24 backpack slots plus eight separate
 hotbar slots, owner-only revisioned snapshots, explicit request confirmations, and atomic crafting
@@ -17,10 +17,14 @@ transactions. The always-visible hotbar and Tab field pack render those snapshot
 submits host-validated full-stack moves without prediction. Offline and two-process ENet checks cover
 grants, stacking, removal, movement, crafting, overspend rejection, peer isolation and cleanup. At the
 primitive workbench, the host validates a Stone Axe recipe and atomically exchanges two logs plus
-three stone for one axe; clients submit only the recipe id and request id.
-**Last session:** 2026-08-17 — task 2.6 shipped the host-owned crafting service and one workbench
-vertical-slice recipe. Focused offline and real two-process ENet checks pass accepted, missing-input,
-out-of-range and repeat-request paths without prediction or duplication. Task 2.7 is next.
+three stone for one axe; clients submit only the recipe id and request id. Walking up to that
+workbench now shows an `E USE WORKBENCH` prompt; E opens a panel listing the recipe with live
+have/need counts, and the craft button waits for the host's answer instead of predicting one.
+**Last session:** 2026-08-16 — task 2.7 shipped `CraftingUI`, the client-local workbench panel and
+interact prompt. It opens only in range, closes when you step away, refuses to stack on the field
+pack (D-032), and renders the host's accept/reject detail verbatim. Focused (46/46), rendered
+(1280×720 and 375×667) and extended two-process ENet (28/28) checks pass. Task 2.8, melee combat v1,
+is next.
 The deferred 1.12 evidence remains unchanged: all three pinned-engine/GodotSteam
 preflights passed and a real Mac-hosted Steam lobby reached three peers across macOS, Windows and
 Linux. Code-built remote-player debug capsules made all three spawns visible, and Linux movement
