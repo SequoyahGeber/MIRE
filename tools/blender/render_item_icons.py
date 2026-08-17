@@ -1,0 +1,319 @@
+"""Render MIRE's inventory icons from the shipped GLBs (A-042a).
+
+Run with:
+  Blender --background --python tools/blender/render_item_icons.py
+
+Every icon is a transparent 256x256 orthographic render of an asset that already
+exists in `assets/`, so an icon can never drift from the model it stands for: the
+source of truth is the GLB, and this script is a camera, not a second art pass.
+
+Framing is measured, not guessed. Each asset's vertices are projected into camera
+space, the script tries the icon upright and rolled 45 degrees, keeps whichever
+packs the silhouette into a smaller square, and then centres and scales the camera
+on the projected bounds. That is what lets a 1.9 m skewer and a 12 cm coin both
+fill their slot without per-item hand tuning.
+"""
+
+from __future__ import annotations
+
+import json
+import math
+from pathlib import Path
+
+import bpy
+from mathutils import Matrix, Vector
+
+
+ROOT = Path(__file__).resolve().parents[2]
+ICON_DIR = ROOT / "assets" / "icons"
+EXPORT_DIR = ICON_DIR / "exports"
+PREVIEW_DIR = ICON_DIR / "preview"
+
+ICON_SIZE = 256
+SHEET_COLUMNS = 6
+MARGIN = 1.18
+
+#: (icon id, source GLB relative to assets/). Order drives the contact sheet.
+SOURCES: list[tuple[str, str]] = [
+    ("log", "pickups/exports/pickup_log.glb"),
+    ("branch", "pickups/exports/pickup_branch.glb"),
+    ("fibre_bundle", "pickups/exports/pickup_fibre_bundle.glb"),
+    ("stone", "pickups/exports/pickup_stone.glb"),
+    ("flint", "pickups/exports/pickup_flint.glb"),
+    ("coal", "pickups/exports/pickup_coal.glb"),
+    ("iron_ore", "pickups/exports/pickup_iron_ore.glb"),
+    ("iron_ingot", "pickups/exports/pickup_iron_ingot.glb"),
+    ("salvage_fragment", "pickups/exports/pickup_salvage_fragment.glb"),
+    ("berry", "pickups/exports/pickup_berry.glb"),
+    ("mushroom", "pickups/exports/pickup_mushroom.glb"),
+    ("raw_meat", "pickups/exports/pickup_raw_meat.glb"),
+    ("coin", "pickups/exports/pickup_coin.glb"),
+    ("coin_stack", "pickups/exports/pickup_coin_stack.glb"),
+    ("wooden_axe", "tools_weapons/exports/wooden_axe_world.glb"),
+    ("stone_axe", "tools_weapons/exports/stone_axe_world.glb"),
+    ("wooden_pickaxe", "tools_weapons/exports/wooden_pickaxe_world.glb"),
+    ("stone_pickaxe", "tools_weapons/exports/stone_pickaxe_world.glb"),
+    ("iron_pickaxe", "tools_weapons/exports/iron_pickaxe_world.glb"),
+    ("cleaver", "tools_weapons/exports/cleaver_world.glb"),
+    ("skewer", "tools_weapons/exports/skewer_world.glb"),
+    ("short_bow", "tools_weapons/exports/short_bow_world.glb"),
+    ("arrow", "tools_weapons/exports/arrow_world.glb"),
+    ("repair_hammer", "tools_weapons/exports/repair_hammer_world.glb"),
+]
+
+#: Yaw applied before framing, for assets whose default face is not their best one.
+AZIMUTH: dict[str, float] = {
+    "wooden_axe": 20.0,
+    "stone_axe": 20.0,
+    "wooden_pickaxe": 12.0,
+    "stone_pickaxe": 12.0,
+    "iron_pickaxe": 12.0,
+    "cleaver": 18.0,
+    "short_bow": 8.0,
+    "skewer": 24.0,
+    "arrow": 24.0,
+    "repair_hammer": 18.0,
+    "log": 55.0,
+    "branch": 55.0,
+}
+DEFAULT_AZIMUTH = 35.0
+ELEVATION = 21.0
+
+
+def clear_scene() -> None:
+    bpy.ops.object.select_all(action="SELECT")
+    bpy.ops.object.delete(use_global=False)
+    for datablocks in (bpy.data.meshes, bpy.data.materials, bpy.data.cameras, bpy.data.lights, bpy.data.images):
+        for block in list(datablocks):
+            if block.users == 0 or datablocks is not bpy.data.images:
+                datablocks.remove(block, do_unlink=True)
+
+
+def build_rig() -> tuple[bpy.types.Scene, bpy.types.Object]:
+    scene = bpy.context.scene
+    # Cycles, not EEVEE. EEVEE resolves anti-aliasing on thin silhouettes — a
+    # cleaver edge, a pick tip — a few samples differently from run to run, so the
+    # icons were not reproducible. Cycles with a pinned seed is, and 24 renders at
+    # 256px cost seconds.
+    scene.render.engine = "CYCLES"
+    scene.cycles.device = "CPU"
+    scene.cycles.seed = 0
+    scene.cycles.use_animated_seed = False
+    scene.cycles.samples = 256
+    scene.cycles.use_denoising = False
+    scene.cycles.use_adaptive_sampling = False
+    scene.render.resolution_x = ICON_SIZE
+    scene.render.resolution_y = ICON_SIZE
+    scene.render.resolution_percentage = 100
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.image_settings.color_mode = "RGBA"
+    scene.render.film_transparent = True
+    scene.view_settings.look = "AgX - Punchy"
+
+    bpy.ops.object.light_add(type="SUN", location=(0.0, 0.0, 6.0))
+    key = bpy.context.object
+    key.name = "Icon_Key"
+    key.data.energy = 3.4
+    key.data.angle = math.radians(12)
+    key.rotation_euler = (math.radians(52), 0.0, math.radians(-38))
+
+    bpy.ops.object.light_add(type="AREA", location=(-4.0, -3.2, 2.4))
+    fill = bpy.context.object
+    fill.name = "Icon_Fill"
+    fill.data.energy = 260
+    fill.data.color = (0.55, 0.45, 0.85)
+    fill.data.shape = "DISK"
+    fill.data.size = 5.0
+    fill.rotation_euler = (math.radians(74), 0.0, math.radians(-52))
+
+    bpy.ops.object.light_add(type="AREA", location=(3.4, 2.8, 2.0))
+    rim = bpy.context.object
+    rim.name = "Icon_Rim"
+    rim.data.energy = 190
+    rim.data.color = (0.75, 0.86, 1.0)
+    rim.data.shape = "DISK"
+    rim.data.size = 4.0
+    rim.rotation_euler = (math.radians(102), 0.0, math.radians(128))
+
+    bpy.ops.object.camera_add(location=(0.0, -6.0, 0.0))
+    camera = bpy.context.object
+    camera.name = "Icon_Camera"
+    camera.data.type = "ORTHO"
+    scene.camera = camera
+    return scene, camera
+
+
+def import_glb(path: Path) -> list[bpy.types.Object]:
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=str(path))
+    return [obj for obj in bpy.data.objects if obj not in before]
+
+
+def mesh_points(objects: list[bpy.types.Object]) -> list[Vector]:
+    bpy.context.view_layer.update()
+    points: list[Vector] = []
+    for obj in objects:
+        if obj.type != "MESH":
+            continue
+        matrix = obj.matrix_world
+        points.extend(matrix @ vertex.co for vertex in obj.data.vertices)
+    return points
+
+
+def projected_bounds(points: list[Vector], basis: Matrix, roll: float) -> tuple[float, float, float, float]:
+    right = basis.col[0].to_3d()
+    up = basis.col[1].to_3d()
+    cosine, sine = math.cos(roll), math.sin(roll)
+    xs: list[float] = []
+    ys: list[float] = []
+    for point in points:
+        local_x = point.dot(right)
+        local_y = point.dot(up)
+        xs.append(local_x * cosine + local_y * sine)
+        ys.append(-local_x * sine + local_y * cosine)
+    return min(xs), max(xs), min(ys), max(ys)
+
+
+def frame_icon(camera: bpy.types.Object, points: list[Vector]) -> tuple[float, float]:
+    """Point the camera at the asset and choose upright or rolled 45 degrees."""
+    direction = Vector(
+        (
+            0.0,
+            -math.cos(math.radians(ELEVATION)),
+            math.sin(math.radians(ELEVATION)),
+        )
+    )
+    # Quaternion mode throughout: setting `rotation_euler` on a quaternion-mode
+    # object is silently ignored, which would leave the basis below reading the
+    # previous icon's orientation and mis-centre every icon after the first.
+    camera.rotation_mode = "QUATERNION"
+    camera.rotation_quaternion = (-direction).to_track_quat("-Z", "Y")
+    bpy.context.view_layer.update()
+    basis = camera.matrix_world.to_3x3()
+
+    best: tuple[float, float, tuple[float, float, float, float]] | None = None
+    for roll in (0.0, math.radians(45.0)):
+        minimum_x, maximum_x, minimum_y, maximum_y = projected_bounds(points, basis, roll)
+        extent = max(maximum_x - minimum_x, maximum_y - minimum_y)
+        if best is None or extent < best[1]:
+            best = (roll, extent, (minimum_x, maximum_x, minimum_y, maximum_y))
+    roll, extent, (minimum_x, maximum_x, minimum_y, maximum_y) = best
+
+    center_x = (minimum_x + maximum_x) * 0.5
+    center_y = (minimum_y + maximum_y) * 0.5
+    cosine, sine = math.cos(-roll), math.sin(-roll)
+    unrolled_x = center_x * cosine + center_y * sine
+    unrolled_y = -center_x * sine + center_y * cosine
+
+    right = basis.col[0].to_3d()
+    up = basis.col[1].to_3d()
+    # `direction` points from the subject out to the camera, so the camera sits at
+    # +direction and looks back along -direction.
+    camera.location = direction * 6.0 + right * unrolled_x + up * unrolled_y
+    camera.rotation_quaternion = (
+        (-direction).to_track_quat("-Z", "Y") @ Matrix.Rotation(roll, 4, "Z").to_quaternion()
+    )
+    camera.data.ortho_scale = extent * MARGIN
+    return math.degrees(roll), extent * MARGIN
+
+
+def render_icon(scene: bpy.types.Scene, camera: bpy.types.Object, icon_id: str, source: Path) -> dict:
+    objects = import_glb(source)
+    yaw = math.radians(AZIMUTH.get(icon_id, DEFAULT_AZIMUTH))
+    for obj in objects:
+        if obj.parent is None:
+            obj.rotation_mode = "XYZ"
+            obj.rotation_euler.rotate(Matrix.Rotation(yaw, 4, "Z").to_euler())
+    points = mesh_points(objects)
+    if not points:
+        raise RuntimeError(f"{source} imported with no mesh geometry")
+    roll, ortho_scale = frame_icon(camera, points)
+    scene.render.filepath = str(EXPORT_DIR / f"icon_{icon_id}.png")
+    bpy.ops.render.render(write_still=True)
+    polygons = sum(len(obj.data.polygons) for obj in objects if obj.type == "MESH")
+
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in objects:
+        obj.select_set(True)
+    bpy.ops.object.delete(use_global=False)
+    return {
+        "id": icon_id,
+        "source": f"assets/{source.relative_to(ROOT / 'assets')}".replace("\\", "/"),
+        "size_px": ICON_SIZE,
+        "azimuth_deg": round(math.degrees(yaw), 1),
+        "elevation_deg": ELEVATION,
+        "roll_deg": round(roll, 1),
+        "ortho_scale_m": round(ortho_scale, 4),
+        "source_polygons": polygons,
+    }
+
+
+def write_contact_sheet(records: list[dict]) -> Path:
+    """Blit the rendered icons into one sheet over the Mire's UI background."""
+    columns = SHEET_COLUMNS
+    rows = (len(records) + columns - 1) // columns
+    width = columns * ICON_SIZE
+    height = rows * ICON_SIZE
+    sheet = bpy.data.images.new("icon_contact_sheet", width=width, height=height, alpha=True)
+    background = (0.055, 0.062, 0.085, 1.0)
+    buffer = list(background) * (width * height)
+
+    for index, record in enumerate(records):
+        image = bpy.data.images.load(str(EXPORT_DIR / f"icon_{record['id']}.png"))
+        pixels = list(image.pixels)
+        column = index % columns
+        # Blender images are bottom-up; fill rows from the top of the sheet.
+        row = rows - 1 - index // columns
+        for y in range(ICON_SIZE):
+            source_offset = y * ICON_SIZE * 4
+            target_offset = ((row * ICON_SIZE + y) * width + column * ICON_SIZE) * 4
+            for x in range(ICON_SIZE):
+                source_index = source_offset + x * 4
+                alpha = pixels[source_index + 3]
+                target_index = target_offset + x * 4
+                for channel in range(3):
+                    buffer[target_index + channel] = (
+                        pixels[source_index + channel] * alpha + background[channel] * (1.0 - alpha)
+                    )
+                buffer[target_index + 3] = 1.0
+        bpy.data.images.remove(image)
+
+    sheet.pixels = buffer
+    path = PREVIEW_DIR / "item_icons_sheet.png"
+    sheet.filepath_raw = str(path)
+    sheet.file_format = "PNG"
+    sheet.save()
+    return path
+
+
+def main() -> None:
+    EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+    PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
+    for icon_id, _ in SOURCES:
+        (EXPORT_DIR / f"icon_{icon_id}.png").unlink(missing_ok=True)
+
+    clear_scene()
+    scene, camera = build_rig()
+
+    seen: set[str] = set()
+    records: list[dict] = []
+    for icon_id, relative in SOURCES:
+        if icon_id in seen:
+            raise RuntimeError(f"duplicate icon id {icon_id}")
+        seen.add(icon_id)
+        source = ROOT / "assets" / relative
+        if not source.exists():
+            raise RuntimeError(f"missing source asset {source}")
+        records.append(render_icon(scene, camera, icon_id, source))
+
+    with (ICON_DIR / "catalog.json").open("w", encoding="utf-8") as handle:
+        json.dump(records, handle, indent=2)
+        handle.write("\n")
+
+    sheet = write_contact_sheet(records)
+    print(f"Rendered {len(records)} inventory icons at {ICON_SIZE}px into {EXPORT_DIR}")
+    print(f"Contact sheet: {sheet}")
+
+
+if __name__ == "__main__":
+    main()

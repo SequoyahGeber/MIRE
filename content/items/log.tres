@@ -2,10 +2,12 @@
 
 [ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_wx35d"]
 [ext_resource type="PackedScene" path="res://assets/pickups/exports/pickup_log.glb" id="2_ndaxd"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_log.png" id="3_iconlog"]
 
 [resource]
 script = ExtResource("1_wx35d")
 id = &"log"
 display_name = "Log"
 description = "Sturdy timber harvested from Mire pines."
+icon = ExtResource("3_iconlog")
 world_model = ExtResource("2_ndaxd")

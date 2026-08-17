@@ -2,10 +2,12 @@
 
 [ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_8qss8"]
 [ext_resource type="PackedScene" path="res://assets/pickups/exports/pickup_stone.glb" id="2_58wb0"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_stone.png" id="3_iconsto"]
 
 [resource]
 script = ExtResource("1_8qss8")
 id = &"stone"
 display_name = "Stone"
 description = "Rough stone used for tools and structures."
+icon = ExtResource("3_iconsto")
 world_model = ExtResource("2_58wb0")

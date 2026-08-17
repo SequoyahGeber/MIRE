@@ -75,6 +75,67 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+**Items now have icons, and `ItemDef.icon` is populated.** `assets/icons/exports/icon_<id>.png` holds
+24 transparent 256×256 icons — every A-002 pickup and every A-004 tool/weapon — where `<id>` matches
+`ItemDef.id`. `iron_ore`, `log`, `stone`, and `stone_axe` are wired; a new item wires its icon by
+setting `icon` on its `.tres`. Icons are renders of the shipped GLBs, not drawings (D-033), so a model
+change is followed by re-running `tools/blender/render_item_icons.py`, never by editing a PNG. Adding
+an icon for a new asset family means appending to `SOURCES` in that script, not starting a second
+pipeline. `assets/icons/catalog.json` records each icon's source GLB and framing;
+`tools/item_icons_check.gd` is the headless proof that they import and that every `ItemDef` carries
+one.
+
+**The A-004 tool and weapon exports were rebuilt (A-004R) and every mesh in them changed.** File names,
+the ten design names, and the world/viewmodel pairing are unchanged, and dimensions moved by at most
+about 6 cm, so anything referencing these GLBs keeps working — but a scene that was tuned against the
+old silhouettes is worth re-checking. `tools/blender/build_tool_weapon_set.py` gained two reusable
+builders worth knowing about before hand-modelling anything similar: `ground_profile()` (a silhouette
+outline with per-point bevel *distances*, which is how a head gets a square poll and a ground edge)
+and `swept_shaft()` (a tube along a polyline with a radius per point, which is how hafts get taper and
+an oval section).
+
+**Task 2.8 ships melee combat v1 — and 2.9 tunes it in the inspector, not in code.** `CombatService`
+is an autoload registered last. The split is D-034: the swing is client-predicted, the hit is host.
+`request_attack()` starts the local wind-up on the press and returns a request id; the client sends
+only its hotbar slot index, and the host reads its *own* `InventoryService.host_slots(peer_id)` for
+that slot to decide the weapon, uses the yaw/pitch the player synchronizer already replicates for
+aim, runs its own swing clock, and resolves the hitbox at the end of the wind-up.
+
+Read/observe seams: `local_phase()` → `CombatService.Phase.{IDLE, WIND_UP, COMMIT, RECOVERY}`,
+`local_swing_progress()`, `local_hitstop_remaining()`, `host_swing_active(peer_id)`,
+`weapon_for_hotbar_index(i)`, and the signals `swing_started(weapon_id)`,
+`swing_phase_changed(phase)`, `attack_landed(peer_id, position, damage, target_name)`,
+`attack_missed(peer_id)`, `attack_rejected(request_id, detail)`. A swing cannot be cancelled or
+recut: `request_attack()` returns -1 while one is running and the host separately rejects a second
+request with *previous swing has not recovered*.
+
+**The melee target seam is the group `&"damageable"` plus
+`host_apply_damage(amount: int, instigator_peer_id: int) -> bool`.** Harvestable joins it and already
+had that exact method; **task 2.10's enemies join the same group and `CombatService` needs no
+change**. Returning false is a miss, not a phantom hit. Targeting is a horizontal arc
+(`arc_degrees`) with a separate vertical band (`vertical_reach_m`) rather than a shapecast, so a prop
+whose mesh origin sits on the ground is hit by a level swing.
+
+Weapons are content: `WeaponDef` (`systems/combat/weapon_def.gd`) is a `.tres` in `content/weapons/`
+**keyed by the `ItemDef.id` it belongs to**, loaded by `Registry` into `get_weapon(item_id)` /
+`has_weapon(item_id)`. `content/weapons/stone_axe.tres` is the one authored weapon; an item with no
+WeaponDef swings `CombatService.unarmed`, which is built in code so an empty hand is never an
+authoring job. **Task 2.9 tunes `stone_axe.tres` and the `@export`s on `player_camera.gd` in the
+inspector — do not re-run `tools/setup_combat_content.gd` after that, it overwrites the resource.**
+Impact audio falls back to a code-built placeholder thud (seeded, deterministic) so 2.9 has something
+audible before any audio asset exists; assigning `WeaponDef.impact_sound` replaces it with no code
+change. **There is still no authored impact sound in the repo** — that is Sequoyah's, and it is the
+one part of 2.8's "impact SFX" that is a placeholder rather than final.
+
+Checks: `Godot --headless --path . --script tools/combat_check.gd` (offline, ~40 s — it waits out
+real swing timings, so do not assume a 15 s timeout is enough) and
+`tools/combat_net_check.gd` (two real ENet processes). Three traps they cost: a harness target must
+`add_to_group(&"damageable")` or every swing correctly finds nothing; `node.get("method_name")`
+returns **null** — `get()` resolves properties and signals, so an RPC driven from a harness needs
+`Callable(node, "method").rpc_id(...)`; and these net harnesses spawn players into an empty root with
+no floor, so the player falls continuously and a fixed-position target drifts out of reach between
+swings.
+
 **Task 2.7 ships the client-local crafting presentation.** `CraftingUI` is an autoload ordered last,
 after `CraftingService`. It is opened by the `interact` action (E) and only while
 `CraftingService.local_station_in_range(&"workbench")` is true; `interact` again, Escape, or walking

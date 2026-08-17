@@ -49,6 +49,7 @@ tokens either way.
 **Would change my mind:** nothing. This gets more correct the longer the project runs.
 
 ### D-007 · 2026-08-15 · Agents write scripts; the human wires scenes
+*Superseded by D-031.*
 Godot `.tscn`/`.tres` files do not merge — they carry internal sub-resource and node-path IDs that
 conflict badly and can silently corrupt. Restricting agents to `.gd` files makes parallel agent work
 safe, and happens to match what each party is actually good at.
@@ -88,18 +89,20 @@ git for free; it costs almost nothing in tokens to read; and there's no service 
 against. `AGENTS.md` is the protocol (now a cross-tool standard read by Codex, Cursor and others) and
 `CLAUDE.md` is a thin pointer at it, so the rules live in exactly one place.
 Enforcement is mechanical, not honour-system: a git pre-commit hook runs `agent check`, which blocks any
-agent from editing a file another agent holds, and blocks *any* agent from editing `.tscn`/`.tres`
-(D-007). A protocol that relies on agents remembering to follow it will not be followed.
+agent from editing a file another agent holds. For Godot-authored files it additionally requires an
+exact-file claim and confirms the editor is closed (D-031). A protocol that relies on agents
+remembering to follow it will not be followed.
 **Would change my mind:** agents working concurrently often enough that file claims become a bottleneck —
 at which point move to git worktrees per agent instead of claims.
 
 ### D-012 · 2026-08-15 · Agents may touch scene/config files only by claiming them **by name**
-*Amends D-007, does not repeal it.*
+*Amended by D-031.*
 The blanket ban made bootstrapping impossible — someone has to create `player.tscn` and write the input
 map before there is anything to run, and doing that by hand in the editor is a 30-minute typo hazard on
 action names the code reads by string.
 The amendment: an agent may edit `.tscn`/`.tres`/`project.godot` **only** when it holds an explicit
-claim naming that exact file. Drifting into a scene file is still blocked by the pre-commit hook. This
+claim naming that exact file. D-031 adds `.import` and requires Godot to be closed. Drifting into a
+scene file is still blocked by the pre-commit hook. This
 keeps the protection where it mattered (no accidental scene edits, no two parties in one scene) while
 making deliberate, logged bootstrapping possible.
 In practice the agent should still generate scenes *via a Godot tool script* rather than hand-writing
@@ -259,9 +262,9 @@ He's right that nothing was ever blocking them but our own prompt text. So: **a 
 autoload registers it, in the same task, under a claim naming `project.godot`.** Shipping a script
 nobody loads is not shipping.
 
-Scene files (`.tscn`/`.tres`) are unchanged and stay human-only. The distinction is that `project.godot`
-is a flat INI-style file that merges and reviews fine, while scene files carry sub-resource and
-node-path IDs that corrupt silently — D-007's actual reasoning, which never applied equally to both.
+This decision's former human-only scene restriction is superseded by D-031. Scene and resource files
+remain higher-risk than `project.godot`, but agents may now edit them under an exact claim while the
+editor is closed.
 
 **The one real condition, and it is not about trust:** an agent must confirm the Godot editor is not
 running before touching `project.godot`. The editor rewrites that file on save and prunes any setting
@@ -511,6 +514,83 @@ which case pull a minimal in-game join forward (see below) instead of waiting fo
 **The cheap version, if 6.10 is too far away:** `SteamLobby` already exposes `host_session()`,
 `join_by_id()` and `open_invite_overlay()`, and the game already has a debug console. A pair of console
 commands is a fraction of 6.10 and would deliver the whole testing benefit without a menu.
+
+### D-031 · 2026-08-16 · Agents may edit Godot scenes, resources, and import metadata while the editor is closed
+*Supersedes D-007's human-only restriction and amends D-012 and D-021.*
+
+Agents may edit `.tscn`, `.tres`, `.import`, `project.godot`, and `export_presets.cfg` when they hold
+an explicit claim naming each exact file and have confirmed Godot is not running. Required wiring
+belongs in the same task instead of being handed to Sequoyah solely because it lives in a Godot file.
+
+The original merge-risk reasoning still applies: these formats carry internal IDs and Godot rewrites
+them on save. The protection is therefore exclusivity plus elimination of the editor race, not a
+blanket human-only ban. The pre-commit checker enforces both conditions. Complex authored changes
+should preferably be produced through a Godot tool script so the engine serializes its own format;
+visual judgment, tuning, and playtesting may still be handed to Sequoyah when genuinely appropriate.
+
+**Would change my mind:** a claimed, closed-editor workflow still causing repeated corruption or lost
+work. Then move scene/resource work to isolated worktrees or restore a narrower editor-only rule.
+
+### D-032 · 2026-08-16 · One cursor-owning UI at a time, and `blocks_gameplay_input` is the interlock
+
+The group `&"blocks_gameplay_input"` already told `player_controller.gd` to suppress movement without
+pausing the tree (2.5). From 2.7 it is also how cursor UIs exclude each other: a UI refuses to open —
+and hides its world prompt — while any *other* node is in that group. The workbench panel therefore
+cannot stack on the field pack, and a future build menu, ward panel or map inherits the rule for free
+by joining the group and checking it. World-proximity UIs additionally close themselves when the
+player leaves the station's range, because presenting a craft the host will reject is a lie.
+
+The alternative — a UI manager autoload owning a stack of open panels — buys ordering and z-index
+policy we do not need for 3–6 players and one panel at a time, and it would be a second source of
+truth next to a group the player controller already reads.
+
+**Would change my mind:** a case where two panels genuinely must be open together (an inventory
+beside a container, drag-and-drop between them). That needs a real stack, and this rule should be
+replaced rather than special-cased per pair.
+
+### D-034 · 2026-08-16 · Melee splits across two authority rows, and hitstop is never `Engine.time_scale`
+
+Task 2.8 puts the *swing* and the *hit* in different rows of ARCHITECTURE.md §2.2 on purpose. The
+swing animation is the owning player's own action, so it starts locally the frame the button goes
+down and never waits on a round trip — but it decides nothing. The hit is host: a client sends only a
+hotbar slot index, and the **host reads its own authoritative inventory for that slot** to decide
+which weapon swung. The worst a lying client can do is swing one of the eight items it genuinely
+holds. Aim is not sent either; the host uses the body yaw and camera pitch the player's own
+synchronizer already replicates.
+
+Targets join `&"damageable"` and implement `host_apply_damage(amount, instigator_peer_id) -> bool`.
+Harvestable implements it today and 2.10's enemies join the same group with no change to
+`CombatService`. A target that returns false is a miss, not a phantom hit.
+
+Hitstop, screenshake and impact audio are client-local and follow one host broadcast that says a
+connect happened. Hitstop stalls **the attacker's own swing clock**, never `Engine.time_scale`:
+time_scale slows the whole frame loop, and every transport's pump is polled from that loop (the same
+mechanism as F-025, where a slow frame rate slows Steam's callbacks). A feel effect must never be
+able to throttle networking.
+
+**Would change my mind:** on the authority split, evidence that host-side swing clocks do not scale
+to a night wave with six players attacking — then the host resolves on the request itself and pays
+for it with a worse tell. On hitstop, a single-player-only context where time_scale is measurably
+better; it would still have to be off in a session.
+
+### D-033 · 2026-08-16 · Inventory icons are rendered from the shipped GLBs, never drawn
+
+`assets/icons/` holds no original art. Every icon is an orthographic render of a model that already
+ships in `assets/`, produced by `tools/blender/render_item_icons.py`, so an icon cannot drift from the
+thing it stands for: when a model changes, re-running the script is the entire update. Framing is
+measured rather than hand-tuned — vertices are projected into camera space and the script keeps
+whichever of upright or 45°-rolled packs the silhouette into the smaller square — so a 1.97 m skewer
+and a 12 cm coin both fill their slot with only a yaw authored per asset.
+
+The rig renders in Cycles with a pinned seed. EEVEE resolved anti-aliasing on thin silhouettes (a
+cleaver edge, a pick tip) a few samples differently between runs, which cost the batch its
+deterministic rebuild for no visual gain; 24 icons at 256px cost about ten seconds in Cycles. Verify
+icons by comparing decoded pixels, not file hashes — the PNG encoder emits a few bytes of differing
+metadata even when the image is identical.
+
+**Would change my mind:** icons that need art direction a render cannot give — a readable silhouette
+for a 32px slot, a rarity frame, a damaged-state overlay. Hand-authored icons then become a real asset
+family with its own batch, and this script becomes the base pass they are painted over.
 
 ### D-0NN · YYYY-MM-DD · <one-line decision>
 <why, in 2–4 sentences>

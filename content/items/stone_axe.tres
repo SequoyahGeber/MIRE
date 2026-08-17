@@ -2,12 +2,14 @@
 
 [ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_4ojq5"]
 [ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/stone_axe_world.glb" id="2_k8e8q"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_stone_axe.png" id="3_iconsto"]
 
 [resource]
 script = ExtResource("1_4ojq5")
 id = &"stone_axe"
 display_name = "Stone Axe"
 description = "A rough chopping tool that doubles as a close-range weapon."
+icon = ExtResource("3_iconsto")
 category = 2
 stack_size = 1
 world_model = ExtResource("2_k8e8q")
