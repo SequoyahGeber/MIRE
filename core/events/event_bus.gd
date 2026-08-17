@@ -11,6 +11,7 @@ extends RefCounted
 ## yield event on the host, and the host-owned inventory layer introduced by task 2.4 consumes it.
 
 static var _harvest_yielded_subscribers: Array[Callable] = []
+static var _enemy_attack_landed_subscribers: Array[Callable] = []
 
 
 ## Listener signature:
@@ -43,6 +44,36 @@ static func emit_harvest_yielded(
 static func harvest_yielded_subscriber_count() -> int:
 	_prune_invalid(_harvest_yielded_subscribers)
 	return _harvest_yielded_subscribers.size()
+
+
+## Listener signature:
+##     (enemy_id: StringName, peer_id: int, damage: int, world_position: Vector3) -> void
+##
+## Emitted by the HOST only, at the moment an enemy's telegraphed swing resolves (task 2.10). It
+## exists because player health does not: task 2.13 (downed → bleed-out → revive) owns what an
+## enemy hit costs, and inventing a health field inside the enemy to avoid an event would have put
+## player state under the wrong system.
+static func subscribe_enemy_attack_landed(listener: Callable) -> void:
+	_prune_invalid(_enemy_attack_landed_subscribers)
+	if listener.is_valid() and not _enemy_attack_landed_subscribers.has(listener):
+		_enemy_attack_landed_subscribers.append(listener)
+
+
+static func unsubscribe_enemy_attack_landed(listener: Callable) -> void:
+	_enemy_attack_landed_subscribers.erase(listener)
+
+
+static func emit_enemy_attack_landed(
+	enemy_id: StringName, peer_id: int, damage: int, world_position: Vector3
+) -> void:
+	_prune_invalid(_enemy_attack_landed_subscribers)
+	for listener: Callable in _enemy_attack_landed_subscribers.duplicate():
+		listener.call(enemy_id, peer_id, damage, world_position)
+
+
+static func enemy_attack_landed_subscriber_count() -> int:
+	_prune_invalid(_enemy_attack_landed_subscribers)
+	return _enemy_attack_landed_subscribers.size()
 
 
 static func _prune_invalid(subscribers: Array[Callable]) -> void:

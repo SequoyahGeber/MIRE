@@ -1150,3 +1150,19 @@ Host-issued opaque run-player token (core/net/run_identity.gd) minted on the cli
 Files: `core/net/net_session.gd`, `core/net/net_version.gd`, `core/net/run_identity.gd`, `core/net/run_identity.gd.uid`, `autoload/inventory_service.gd`, `tools/session_lifecycle_check.gd`, `tools/run_identity_check.gd`, `tools/run_identity_check.gd.uid`
 
 Commit at time of writing: `5483f2f`
+
+---
+
+### DONE · 2.10 · dusk3 · 2026-08-17T15:58:44+00:00
+
+**Enemy v1: host-authoritative chase + attack, nav-driven, health, death, ragdoll or dissolve**
+
+Enemy v1: EnemyWorld autoload (host-only spawning, per-session navmesh bake from the level's static collision, registry for 2.12) plus Enemy - IDLE/CHASE/TELL/ATTACK/RECOVER/DEAD, nav-driven with straight-line fallback, aggro hysteresis, 0.4s telegraph resolving at its END so backing out beats the swing, uncancellable committed attack, health, death and a corpse that leaves the damageable group. One authored crawler.tres over A-006. Verified on Godot 4.7.1: enemy_check 44/44 offline, enemy_net_check 15/15 in two real ENet processes (client copy runs no physics and is NetInterp-smoothed). Regression: combat, harvest_world, interp, verify_setup, run_identity, crafting_ui all 0 failures. Player damage is an EventBus event - 2.13 owns player health.
+
+Notes along the way:
+- Authority: host owns every enemy decision - target, path, turn, when the swing lands, health, death. Clients run no AI; position/yaw/state/health replicate through a code-built synchronizer named NetConfig.PLAYER_SYNC_NODE so NetInterp smooths enemies unchanged (closes F-004's enemy half). Enemies join 'damageable' so 2.8's CombatService needed no change.
+- Two bugs the checks caught: the held-target lookup went through PlayerNet, which knows only players IT spawned, so aggro hysteresis silently never worked outside a session - now scans the players group first. And the enemy attack emits an EventBus event rather than inventing player health, because 2.13 owns what a hit costs.
+
+Files: `systems/enemies/enemy_def.gd`, `systems/enemies/enemy_def.gd.uid`, `systems/enemies/enemy.gd`, `systems/enemies/enemy.gd.uid`, `autoload/enemy_world.gd`, `autoload/enemy_world.gd.uid`, `content/enemies/crawler.tres`, `tools/setup_enemy_content.gd`, `tools/setup_enemy_content.gd.uid`, `tools/enemy_check.gd`, `tools/enemy_check.gd.uid`, `tools/enemy_net_check.gd`, `tools/enemy_net_check.gd.uid`, `project.godot`, `core/events/event_bus.gd`
+
+Commit at time of writing: `77d3f96`

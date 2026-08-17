@@ -34,6 +34,7 @@ InventoryUI="*res://ui/inventory/inventory_ui.gd"
 CraftingService="*res://autoload/crafting_service.gd"
 CraftingUI="*res://ui/crafting/crafting_ui.gd"
 CombatService="*res://autoload/combat_service.gd"
+EnemyWorld="*res://autoload/enemy_world.gd"
 
 [display]
 

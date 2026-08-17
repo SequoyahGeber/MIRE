@@ -1477,6 +1477,16 @@
       "at": "2026-08-17T02:52:00+00:00",
       "task": "2.6"
     },
+    "autoload/enemy_world.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:58:44+00:00",
+      "task": "2.10"
+    },
+    "autoload/enemy_world.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:58:44+00:00",
+      "task": "2.10"
+    },
     "autoload/environment_vfx.gd": {
       "agent": "wick",
       "at": "2026-08-17T00:47:21+00:00",
@@ -1537,6 +1547,11 @@
       "at": "2026-08-17T04:46:47+00:00",
       "task": "F-025"
     },
+    "content/enemies/crawler.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:58:44+00:00",
+      "task": "2.10"
+    },
     "content/harvestables/iron_node.tres": {
       "agent": "nettle",
       "at": "2026-08-17T01:24:51+00:00",
@@ -1588,9 +1603,9 @@
       "task": "F-023"
     },
     "core/events/event_bus.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:11:22+00:00",
-      "task": "2.3"
+      "agent": "dusk3",
+      "at": "2026-08-17T15:58:44+00:00",
+      "task": "2.10"
     },
     "core/events/event_bus.gd.uid": {
       "agent": "nettle",
@@ -1724,8 +1739,8 @@
     },
     "project.godot": {
       "agent": "dusk3",
-      "at": "2026-08-17T04:31:24+00:00",
-      "task": "2.8"
+      "at": "2026-08-17T15:58:44+00:00",
+      "task": "2.10"
     },
     "systems/combat/weapon_def.gd": {
       "agent": "dusk3",
@@ -1736,6 +1751,26 @@
       "agent": "dusk3",
       "at": "2026-08-17T04:31:24+00:00",
       "task": "2.8"
+    },
+    "systems/enemies/enemy.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:58:44+00:00",
+      "task": "2.10"
+    },
+    "systems/enemies/enemy.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:58:44+00:00",
+      "task": "2.10"
+    },
+    "systems/enemies/enemy_def.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:58:44+00:00",
+      "task": "2.10"
+    },
+    "systems/enemies/enemy_def.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:58:44+00:00",
+      "task": "2.10"
     },
     "systems/harvesting/harvestable.gd": {
       "agent": "dusk3",
@@ -1897,10 +1932,30 @@
       "at": "2026-08-17T04:01:51+00:00",
       "task": "2.7"
     },
+    "tools/enemy_check.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:58:44+00:00",
+      "task": "2.10"
+    },
+    "tools/enemy_check.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:58:44+00:00",
+      "task": "2.10"
+    },
     "tools/enemy_crawler_check.gd": {
       "agent": "gale",
       "at": "2026-08-16T23:59:35+00:00",
       "task": "2.1d"
+    },
+    "tools/enemy_net_check.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:58:44+00:00",
+      "task": "2.10"
+    },
+    "tools/enemy_net_check.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:58:44+00:00",
+      "task": "2.10"
     },
     "tools/environment_vfx_check.gd": {
       "agent": "wick",
@@ -2096,6 +2151,16 @@
       "agent": "dusk3",
       "at": "2026-08-17T02:52:00+00:00",
       "task": "2.6"
+    },
+    "tools/setup_enemy_content.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:58:44+00:00",
+      "task": "2.10"
+    },
+    "tools/setup_enemy_content.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:58:44+00:00",
+      "task": "2.10"
     },
     "tools/setup_harvest_content.gd": {
       "agent": "nettle",
@@ -2417,9 +2482,11 @@
       "title": "Import a CC0 low-poly pack (Quaternius/Kenney) \u2014 trees, rocks, props. Set up import presets & materials."
     },
     "2.10": {
+      "done_at": "2026-08-17T15:58:44+00:00",
+      "done_by": "dusk3",
       "est": "3",
       "milestone": "M2",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Enemy v1: host-authoritative chase + attack, nav-driven, health, death, ragdoll or dissolve"
     },
