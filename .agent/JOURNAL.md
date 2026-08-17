@@ -1449,3 +1449,13 @@ D-039 recorded and the disposition aligned everywhere I could claim: CLAUDE.md r
 Files: `docs/DECISIONS.md`, `docs/FINDINGS.md`, `CLAUDE.md`, `docs/AI-WORKFLOW.md`, `docs/ASSET_TRACKER.md`, `docs/SPECS.md`
 
 Commit at time of writing: `3fdf7c7`
+
+---
+
+### DONE · 0.12 · quill15 · 2026-08-17T23:20:28+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+Probed both CLIs live and fixed a real accounting bug: codex reports cached_input_tokens as a SUBSET of input_tokens (adding them double-counted, 24878 vs the true 13870) while claude reports input_tokens as the uncached remainder with cache_creation/cache_read separate (must be added, 2+19587=19589). Usage parsing is now CLI-aware and verified against captured output from both. Also: orders now carry per-task model and effort derived from tier (T1 medium, T2 high, M1/M4 T2 xhigh), which lane run applies over the lane default.
+
+Commit at time of writing: `53d00de`

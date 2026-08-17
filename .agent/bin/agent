@@ -1220,6 +1220,10 @@ def render_board(st):
 
 LANE_NAMES = ("LC1", "LC2", "LP")
 
+# Tier → reasoning effort. T0 is mechanical, T1 is spec-following, T2 is the work where being wrong
+# costs a rewrite. M1/M4 T2 tasks step up again in cmd_order.
+TIER_EFFORT = {"T0": "low", "T1": "medium", "T2": "high"}
+
 
 @contextlib.contextmanager
 def file_lock(name, timeout=600):
@@ -1399,16 +1403,21 @@ def _open_orders():
                 if line.startswith("<!-- lane:"):
                     head = line.strip()
                     break
-        m = re.search(r"lane:(\S+)\s+files:(.*?)-->", head)
+        def field(key, default="?"):
+            m = re.search(r"%s:(\S+)" % key, head)
+            return m.group(1) if m else default
+        files = re.search(r"files:(.*?)-->", head)
         out[tid] = {
             "path": path,
-            "lane": m.group(1) if m else "?",
-            "files": [x for x in (m.group(2).split() if m else []) if x],
+            "lane": field("lane"),
+            "model": field("model", ""),
+            "effort": field("effort", ""),
+            "files": [x for x in (files.group(1).split() if files else []) if x],
         }
     return out
 
 
-ORDER_TEMPLATE = """<!-- lane:%(lane)s files:%(files)s -->
+ORDER_TEMPLATE = """<!-- lane:%(lane)s model:%(model)s effort:%(effort)s files:%(files)s -->
 # Work order — %(tid)s  ·  lane %(lane)s  (%(account)s)
 
 You are **%(lane)s**, one of three worker lanes on MIRE. Your agent name is `%(agent)s` and it is
@@ -1493,12 +1502,17 @@ def cmd_order(args):
 
     lane = "?"
     files, verify = [], None
+    model = effort = None
     if "--lane" in args:
         lane = args[args.index("--lane") + 1].upper()
         if lane not in LANE_NAMES:
             die("unknown lane '%s' — known: %s" % (lane, ", ".join(LANE_NAMES)))
     if "--verify" in args:
         verify = args[args.index("--verify") + 1]
+    if "--model" in args:
+        model = args[args.index("--model") + 1]
+    if "--effort" in args:
+        effort = args[args.index("--effort") + 1]
     if "--files" in args:
         rest = args[args.index("--files") + 1:]
         for a in rest:
@@ -1508,6 +1522,14 @@ def cmd_order(args):
 
     if t["status"] == "done":
         die("%s is already done — check the journal before re-ordering it" % tid)
+
+    # Effort matters more than the model (AI-WORKFLOW.md §2a): reserve the expensive settings for
+    # work that is expensive to get wrong, and let everything else run cheap. Tier already encodes
+    # exactly that judgement, so derive from it rather than making the director remember.
+    if not effort:
+        effort = TIER_EFFORT.get(t.get("tier", "T1"), "medium")
+        if t.get("milestone") in ("M1", "M4") and t.get("tier") == "T2":
+            effort = "xhigh"      # netcode and world gen — the two rewrites we cannot afford
 
     spec = _spec_body(tid)
     from_spec = False
@@ -1578,13 +1600,15 @@ def cmd_order(args):
     body = ORDER_TEMPLATE % {
         "lane": lane, "account": account, "agent": lane.lower(), "tid": tid,
         "files": " ".join(files), "claim": claim, "verify": verify, "spec": spec_block,
+        "model": model or lanes.get(lane, {}).get("model", "default"), "effort": effort,
         "brief": _plain(cmd_brief, [tid]).strip(),
     }
     path = _order_path(tid)
     with open(path, "w") as f:
         f.write(body)
 
-    ok("order written for %s → %s" % (tid, lane))
+    ok("order written for %s → %s  (%s, effort %s)"
+       % (tid, lane, model or lanes.get(lane, {}).get("model", "lane default"), effort))
     print("  %s%s%s" % (C["dim"], t["title"][:88], C["x"]))
     print("  %s%s · %d bytes%s" % (C["dim"], os.path.relpath(path, ROOT), len(body), C["x"]))
     if files:

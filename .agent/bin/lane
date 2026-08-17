@@ -213,61 +213,60 @@ def is_logged_in(lane):
 
 # ---------------------------------------------------------------- usage
 
-# Codex and Claude both report token counts, but nest them differently and move the shape between
-# versions. Never index a fixed path — walk the JSON and pick up any counter we recognise. Counters
-# are cumulative in codex's stream and single-shot in claude's result object, so `max` is correct
-# for both and double-counts neither.
-TOKEN_KEYS = (
-    "input_tokens", "prompt_tokens", "output_tokens", "completion_tokens",
-    "reasoning_output_tokens", "cached_input_tokens",
-    "cache_read_input_tokens", "cache_creation_input_tokens", "total_tokens",
-    "total_cost_usd",
-)
+# The two CLIs account for tokens DIFFERENTLY, and it is not a detail — getting it wrong misreports
+# every lane's usage, which is the number the director schedules on. Measured against both CLIs on
+# 2026-08-17 with a trivial prompt:
+#
+#   codex   {"type":"turn.completed","usage":{"input_tokens":13870,"cached_input_tokens":11008,...}}
+#           input_tokens is the FULL input; cached_input_tokens is a SUBSET of it. Adding them
+#           double-counts. One event per turn, so turns sum.
+#
+#   claude  {"type":"result","usage":{"input_tokens":2,"cache_creation_input_tokens":19587,
+#                                     "cache_read_input_tokens":0,"output_tokens":4},...}
+#           input_tokens is only the UNCACHED remainder; the cache fields are separate and must be
+#           ADDED to get real input. One aggregate object, so it is assigned, not summed.
 
 
-def harvest(obj, acc):
-    if isinstance(obj, dict):
-        for k, v in obj.items():
-            if isinstance(v, bool):
-                continue
-            if isinstance(v, (int, float)) and k in TOKEN_KEYS:
-                acc[k] = max(acc.get(k, 0), v)
-            else:
-                harvest(v, acc)
-    elif isinstance(obj, list):
-        for v in obj:
-            harvest(v, acc)
+def new_acc():
+    return {"in": 0, "out": 0, "cached": 0, "cost": 0.0, "raw": {}}
+
+
+def harvest(obj, acc, cli):
+    """Accumulate usage from one streamed JSON object, per that CLI's accounting."""
+    if not isinstance(obj, dict):
+        return
+    if cli == "codex":
+        if obj.get("type") != "turn.completed":
+            return
+        u = obj.get("usage") or {}
+        acc["in"] += _int(u.get("input_tokens"))
+        acc["out"] += _int(u.get("output_tokens")) + _int(u.get("reasoning_output_tokens"))
+        acc["cached"] += _int(u.get("cached_input_tokens"))
+        acc["raw"] = {k: v for k, v in u.items() if isinstance(v, (int, float))}
+        return
+
+    u = obj.get("usage")
+    if isinstance(u, dict):
+        acc["in"] = (_int(u.get("input_tokens")) + _int(u.get("cache_creation_input_tokens"))
+                     + _int(u.get("cache_read_input_tokens")))
+        acc["out"] = _int(u.get("output_tokens"))
+        acc["cached"] = _int(u.get("cache_read_input_tokens"))
+        acc["raw"] = {k: v for k, v in u.items() if isinstance(v, (int, float))}
+    if "total_cost_usd" in obj:
+        try:
+            acc["cost"] = float(obj["total_cost_usd"] or 0.0)
+        except (TypeError, ValueError):
+            pass
+
+
+def _int(v):
+    return int(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else 0
 
 
 def totals(acc):
-    tin = max(acc.get("input_tokens", 0), acc.get("prompt_tokens", 0))
-    tin += acc.get("cache_read_input_tokens", 0) + acc.get("cache_creation_input_tokens", 0)
-    tin += acc.get("cached_input_tokens", 0)
-    tout = max(acc.get("output_tokens", 0), acc.get("completion_tokens", 0))
-    return int(tin), int(tout), float(acc.get("total_cost_usd", 0.0))
+    return int(acc["in"]), int(acc["out"]), float(acc["cost"])
 
 
-# A run only counts as quota-exhausted if it FAILED and the failure text says so. Scanning the whole
-# transcript would misfire the first time a lane writes code about rate limiting — which, on a
-# netcode project, is a matter of time.
-#
-# Be specific about the *account's* quota, not about rate limiting in general. MIRE is a netcode
-# project: `rate_limit_ms`, `429` and "too many requests" are ordinary vocabulary here, and a lane
-# that failed to compile while discussing them must not be parked for five hours as "exhausted".
-# Every branch below requires wording that only an account-limit message actually uses.
-QUOTA_PAT = re.compile(
-    r"(usage limit (?:reached|exceeded)"
-    r"|you(?:'ve| have)\s+(?:hit|reached|exceeded)\s+(?:your|the)\s+\w*\s*limit"
-    r"|rate[_ -]?limit_?error"
-    r"|rate[_ -]?limit(?:ed)?[^.\n]{0,30}(?:exceeded|try again|retry after)"
-    r"|insufficient_quota"
-    r"|quota\s+(?:exceeded|exhausted|reached)"
-    r"|(?:limit|quota)\s+will\s+reset"
-    r"|(?:status|code)[\"'\s:=]+429"
-    r"|429\s+too many requests"
-    r"|upgrade\s+(?:your plan\s+)?to\s+(?:increase|continue)"
-    r"|out of (?:credits|tokens)"
-    r")", re.I)
 ISO_PAT = re.compile(r"\b(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2})?(?:[+-]\d{2}:?\d{2}|Z)?)")
 CLOCK_PAT = re.compile(r"reset\w*(?:\s+\w+){0,3}?\s+(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?", re.I)
 CLOCK24_PAT = re.compile(r"reset\w*(?:\s+\w+){0,3}?\s+(\d{1,2}):(\d{2})", re.I)
@@ -385,6 +384,9 @@ def build(lane, name, last_msg):
             argv.append("--dangerously-skip-permissions")
         else:
             argv += ["--permission-mode", "acceptEdits"]
+        # Claude Code has no --effort flag; effort is expressed as a thinking budget in the prompt,
+        # which the work order already carries. Recorded here so the ledger still reports what was
+        # asked for rather than implying a flag that was silently dropped.
     return argv, env
 
 
@@ -428,6 +430,14 @@ def cmd_run(args):
     last_msg = os.path.join(LOGS, "%s-%s-%s.last.txt" % (name, task.replace("/", "_"), stamp))
     prompt = open(order).read()
 
+    # The order carries the model and effort the director chose for THIS task. A lane's own values
+    # are only the fallback — tier, not account, should decide how hard a task is thought about.
+    head = prompt.split("\n", 1)[0]
+    for key in ("model", "effort"):
+        m = re.search(r"%s:(\S+)" % key, head)
+        if m and m.group(1) not in ("?", "", "default", "lane"):
+            lane[key] = m.group(1)
+
     argv, env = build(lane, name, last_msg)
 
     if dry:
@@ -449,10 +459,11 @@ def cmd_run(args):
     lane.update({"status": "running", "task": task, "started": now()})
     save_lanes(lanes)
 
-    print("%s▶ %s → %s%s  %s(%s, %s)%s"
-          % (C["c"], name, task, C["x"], C["dim"], lane["account"], lane["model"], C["x"]))
+    print("%s▶ %s → %s%s  %s(%s, %s, effort %s)%s"
+          % (C["c"], name, task, C["x"], C["dim"], lane["account"], lane["model"],
+             lane.get("effort", "medium"), C["x"]))
 
-    acc, tail, code = {}, [], 1
+    acc, tail, code = new_acc(), [], 1
     started = time.time()
     proc = None
     try:
@@ -472,7 +483,7 @@ def cmd_run(args):
                 line = line.strip()
                 if line.startswith("{"):
                     try:
-                        harvest(json.loads(line), acc)
+                        harvest(json.loads(line), acc, lane["cli"])
                     except ValueError:
                         pass
                 if time.time() - started > timeout:

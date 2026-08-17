@@ -1737,11 +1737,6 @@
       "at": "2026-08-17T23:15:28+00:00",
       "task": "F-053"
     },
-    "docs/STEAM_CROSS_PLATFORM_TEST.md": {
-      "agent": "ivy",
-      "at": "2026-08-16T23:19:13+00:00",
-      "task": "1.12"
-    },
     "entities/player/player_camera.gd": {
       "agent": "dusk3",
       "at": "2026-08-17T04:46:46+00:00",
@@ -2322,8 +2317,8 @@
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.12": {
-      "done_at": "2026-08-17T19:02:10+00:00",
-      "done_by": "yarrow21",
+      "done_at": "2026-08-17T23:20:28+00:00",
+      "done_by": "quill15",
       "est": "1.5",
       "milestone": "M0",
       "status": "done",
