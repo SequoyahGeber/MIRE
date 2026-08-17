@@ -26,3 +26,4 @@ export/
 # GodotSteam GDExtension — ~95 MB of per-platform binaries, reinstallable in one
 # command. The pinned commit and the reinstall recipe are D-022 in docs/DECISIONS.md.
 /addons/godotsteam/
+tools/blender/__pycache__/
