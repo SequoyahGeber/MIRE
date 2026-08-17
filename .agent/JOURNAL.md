@@ -1373,3 +1373,15 @@ Docs agree with reality again: DECISIONS fence closed (D-028..D-038 render), D-0
 Files: `docs/NEXT.md`, `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `docs/AUDIT-2026-08-17.md`, `AGENTS.md`, `content/recipes/stone_axe.tres`, `docs/DECISIONS.md`, `docs/ROADMAP.md`, `docs/FINDINGS.md`, `CLAUDE.md`, `docs/SPECS.md`
 
 Commit at time of writing: `9dc536a`
+
+---
+
+### DONE · F-051 · flint5 · 2026-08-17T19:05:38+00:00
+
+**Five SPECS blocks claim `project.godot`, which would collapse three lanes back to one**
+
+project.godot removed from all five SPECS Claim lines (2.11, 2.12, 2.13, 3.3, 3.6); registration is now an end-of-task 'agent autoload' step with the rule in the preamble, so both order-driven lanes and interactive agents get the same behaviour. Harness half was yarrow21's 9dc536a. Verified: grep shows only the preamble rule + two never-claim reminders.
+
+Files: `docs/SPECS.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `2bcce25`

@@ -555,6 +555,30 @@ file. Fold both halves in there, or take this finding after 0.12 ships.
 
 ## Resolved
 
+### F-051 · Five SPECS blocks claimed `project.godot`, which would collapse three lanes back to one — **fixed**
+
+**Area:** docs/orchestration · **Severity:** medium · **Found:** 2026-08-17 by yarrow21 during 0.12
+· **Resolved:** 2026-08-17 by flint5
+
+`docs/SPECS.md` put `project.godot` in the opening `**Claim:**` line of every autoload-producing
+task — 2.11, 2.12, 2.13, 3.3 and 3.6. Claims are exclusive and order templates say a failed claim
+drops the whole task, so two such orders dispatched concurrently would stall a lane on a file whose
+real use is a one-line append at the end. D-021 is right that the task shipping an autoload
+registers it; holding the file for the task's *duration* was never the requirement.
+
+Fixed in two halves. Harness (`9dc536a`, yarrow21): `agent autoload <Name> res://<script>` performs
+the registration as one short-locked, editor-checked, atomic append — no claim held — and
+`agent order` strips `project.godot` from any spec-derived claim set, injecting the `agent autoload`
+instruction instead. Specs (this commit, flint5): `project.godot` removed from all five Claim lines,
+registration rewritten as an `agent autoload` end-of-task step (load order = registration order, so
+register after your dependencies), and the rule added to the preamble so an interactive agent
+working from the spec directly — not through an order — gets the same behaviour, and future specs
+cannot reintroduce the pattern. Verified: `grep -n 'project.godot' docs/SPECS.md` returns only the
+preamble rule and two "never claim" reminders; `agent order`'s strip branch stays as
+belt-and-suspenders for any spec written carelessly later.
+
+---
+
 ### F-050 · Governing docs contradicted D-031 in six places; an unclosed fence hid eight decisions; the budget table was 51 sessions stale — **fixed**
 
 **Area:** docs · **Severity:** high · **Found & resolved:** 2026-08-17 by flint5 during the project audit

@@ -1674,8 +1674,8 @@
     },
     "docs/FINDINGS.md": {
       "agent": "flint5",
-      "at": "2026-08-17T19:02:17+00:00",
-      "task": "F-050"
+      "at": "2026-08-17T19:05:38+00:00",
+      "task": "F-051"
     },
     "docs/NEXT.md": {
       "agent": "flint5",
@@ -1694,8 +1694,8 @@
     },
     "docs/SPECS.md": {
       "agent": "flint5",
-      "at": "2026-08-17T19:02:17+00:00",
-      "task": "F-050"
+      "at": "2026-08-17T19:05:38+00:00",
+      "task": "F-051"
     },
     "docs/STEAM_CROSS_PLATFORM_TEST.md": {
       "agent": "ivy",
@@ -3547,6 +3547,15 @@
       "status": "done",
       "tier": "F",
       "title": "Governing docs contradict D-031 in six places, an unclosed code fence hides eight decisions, and the budget table is 51 sessions stale"
+    },
+    "F-051": {
+      "done_at": "2026-08-17T19:05:38+00:00",
+      "done_by": "flint5",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Five SPECS blocks claim `project.godot`, which would collapse three lanes back to one"
     }
   },
   "version": 1

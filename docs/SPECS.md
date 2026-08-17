@@ -18,6 +18,11 @@ each names the **GATE** it must not start before — a gate line is a hard stop,
    four docs the brief names. Nothing else — never explore.
 2. `agent claim <id> <every file the block lists>` — exact paths. If the claim fails, `agent drop`
    and stop; another agent holds it.
+   **`project.godot` is never in a claim set (F-051).** Registering an autoload is one locked,
+   atomic append: `agent autoload <Name> res://<path>.gd` — it checks the editor is closed and takes
+   the lock itself, so D-021's "the task that ships an autoload registers it" holds without any lane
+   ever holding the file. Autoload load order = registration order, so register only after every
+   autoload yours depends on already appears in `project.godot`.
 3. Godot runs go through **`agent godot --script tools/<check>.gd`** (never bare `Godot --headless`
    — one shared import cache, D-037/F-044).
 4. Every new system's script header declares its `ARCHITECTURE.md` §2.2 authority row, verbatim.
@@ -79,16 +84,20 @@ Everything is shipped; this is the verdict. **How to run the gate:**
 ## 2.11 · Day/night cycle (T1) — HOST-authoritative time, client-local sky
 
 **Authority:** §2.2 row 7 (day/night: HOST). The sky rendering stays client-local.
-**Claim:** `systems/environment/day_night.gd`, `project.godot`, `tools/day_night_check.gd`,
-`tools/day_night_net_check.gd`.
+**Claim:** `systems/environment/day_night.gd`, `tools/day_night_check.gd`,
+`tools/day_night_net_check.gd`. Registration via `agent autoload` (preamble rule, F-051) — never
+claim `project.godot`.
 **THE TRAP THIS SPEC EXISTS FOR:** do **not** set `cycle_enabled = true` on
 `playtest_atmosphere.gd`. That flag free-runs a local clock per peer from its own boot time —
 divergent time-of-day with no error. It stays false forever; the host **pushes** time.
 
 Build:
-- `DayNight` autoload (append to `project.godot` under claim, editor closed, after `EnemyWorld`).
-  Host owns `time_of_day: float` (0..1), advancing `delta / day_length_seconds` (default 900 — read
-  the atmosphere node's export, don't duplicate the constant). Offline runs host-of-one, same code.
+- `DayNight` autoload — when the script exists and its check passes, register with
+  `agent autoload DayNight res://systems/environment/day_night.gd` (it must land after `EnemyWorld`
+  in the list; `agent autoload` appends, so just register at the end of the task as the preamble
+  says). Host owns `time_of_day: float` (0..1), advancing `delta / day_length_seconds` (default 900
+  — read the atmosphere node's export, don't duplicate the constant). Offline runs host-of-one,
+  same code.
 - Replicate host→clients at 1 Hz (code-built synchronizer per D-023, or an unreliable RPC push);
   clients lerp locally between updates and **never advance time themselves**.
 - Every peer (host included) applies received/owned time via the level's Atmosphere node:
@@ -108,11 +117,13 @@ DELEGATION *Current state* gains the `DayNight` seam block (time, signals, how 2
 ## 2.12 · Night wave spawner (T1) — HOST-only, drives EnemyWorld
 
 **Authority:** §2.2 row 7 (wave director: HOST).
-**Claim:** `systems/waves/wave_spawner.gd` (dir exists, `.gitkeep` only), `project.godot`,
-`tools/wave_spawner_check.gd`. **GATE: needs 2.11's `night_started`/`day_started` signals.**
+**Claim:** `systems/waves/wave_spawner.gd` (dir exists, `.gitkeep` only),
+`tools/wave_spawner_check.gd`. Registration via `agent autoload` (preamble rule, F-051).
+**GATE: needs 2.11's `night_started`/`day_started` signals.**
 
 Build:
-- `WaveSpawner` autoload registered after `DayNight`. On `night_started`: set
+- `WaveSpawner` autoload — `agent autoload WaveSpawner res://systems/waves/wave_spawner.gd` at task
+  end (after `DayNight` is already registered). On `night_started`: set
   `EnemyWorld.ambient_enabled = false` (waves own the field at night; DELEGATION says 2.12 is
   expected to do exactly this), then spawn `base_count + per_player × player_count` crawlers across
   the `enemy_spawn` markers (`EnemyWorld.ambient_spawn_points()`), host-only, seeded RNG for scatter.
@@ -134,10 +145,10 @@ Done means: check green with 0 `ERROR:`; DELEGATION notes the ambient handshake
 
 **Authority:** §2.2 row: player health is HOST; the downed/revive interaction is HOST-validated;
 death/downed presentation is client-local.
-**Claim:** `systems/health/player_health.gd`, `systems/health/downed_state.gd`, `project.godot`,
+**Claim:** `systems/health/player_health.gd`, `systems/health/downed_state.gd`,
 `entities/player/player_controller.gd` (input gating while downed), `tools/player_health_check.gd`,
 `tools/player_health_net_check.gd`, and `core/net/net_version.gd` if any new RPC lands (it will —
-the revive request). **Also decide F-043 here** (see its block below) — the loadout file is
+the revive request). Registration via `agent autoload` (preamble rule, F-051). **Also decide F-043 here** (see its block below) — the loadout file is
 `core/dev/dev_loadout.gd`.
 
 Build:
@@ -232,8 +243,9 @@ stack sizes 99 for resources / 1 for tools. `Registry` prints the count; `item_i
 
 ## 3.3 · Powerup framework (T2)
 
-**Claim:** `systems/powerups/powerup_def.gd`, `autoload/powerup_service.gd`, `project.godot`,
+**Claim:** `systems/powerups/powerup_def.gd`, `autoload/powerup_service.gd`,
 `autoload/registry.gd`, `tools/powerup_check.gd`, `content/powerups/` (one worked example).
+Registration via `agent autoload` (preamble rule, F-051).
 - `PowerupDef`: `id`, `display_name`, `icon`, `tags: Array[StringName]`, `max_stacks`,
   `modifiers: Dictionary` (StringName stat → additive/multiplicative pair), plus `resonance_family`
   for §4.4 thresholds.
@@ -258,7 +270,8 @@ currency system. Loot rolls host-side from a per-run seeded `RandomNumberGenerat
 
 ## 3.6 · Building system (T2)
 
-**Claim:** `systems/building/` (ghost, placement validator, buildable_def), `project.godot`, checks.
+**Claim:** `systems/building/` (ghost, placement validator, buildable_def) and its checks.
+Registration via `agent autoload` (preamble rule, F-051).
 - Ghost is client-local presentation (last §2.2 row): grid snap, rotate, red/green validity preview.
 - Placement is a host request carrying piece id + transform; **host revalidates from scratch**
   (overlap, support, range, cost via `host_transaction`) — the client's green ghost is a hint, not
