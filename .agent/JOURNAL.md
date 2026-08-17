@@ -1409,3 +1409,19 @@ Both roots fixed and shipped: DevLoadout refuses grants in --script processes un
 Files: `core/dev/dev_loadout.gd`, `tools/inventory_net_check.gd`, `tools/dev_loadout_check.gd`, `tools/viewmodel_check.gd`, `docs/FINDINGS.md`, `tools/crafting_net_check.gd`, `tools/session_lifecycle_check.gd`, `tools/connect_retry_check.gd`, `tools/combat_net_check.gd`
 
 Commit at time of writing: `72896f8`
+
+---
+
+### HANDOFF · 2.1j · tine18 · 2026-08-17T19:29:08+00:00
+
+**Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle**
+
+DONE: tools/blender/mire_art.py (shared palette+SCALE+primitives, sRGB hex tokens, radial() for all-round detail); tools/blender/audit_all_sides.py (8 azimuths + top + bottom contact sheets -> assets/audit/); tools/blender/detail_distribution.py (one-sidedness ranking); build_pickup_kit.py fully overhauled and verified (14/14 scale contract, item_icons_check PASS, icons re-rendered). Commit 902db3e on branch art/2.1j-cross-family-overhaul.
+
+REMAINING: 11 generators still carry private palettes and hand-placed one-sided detail. Do them one per session, following build_pickup_kit.py as the reference: import from mire_art, replace every inline colour with a PALETTE token, replace hand-written detail coordinates with radial()/around(), add SCALE entries + check_scale() to main(), then verify with audit_all_sides.py --only <family> and LOOK at the contact sheets. Priority by playtest visibility: build_crafting_stations.py (repair bench has a blue-grey wood top, flames are literal cones, wood tones disagree across the 8 stations), build_mire_map_kit.py (128 assets, biggest win; fallen_log_a/b have parallel one-sided branch stubs and flat oval moss decals), build_harvestable_resources.py, build_tool_weapon_set.py (arrow fletching is a saturated blue found nowhere else; cleaver grip is yellow vs everyone else's orange), then loot/wards/wellsprings/enemies/adapted_nature.
+
+WATCH OUT: (1) Rebuilding a family changes GLB dimensions, so re-render icons afterwards with render_item_icons.py and re-run tools/item_icons_check.gd. (2) Pickup sizes changed a LOT (stone 1.08m -> 0.185m, coin 0.36m -> 0.10m); anything placing pickups in an authored scene needs Sequoyah's eyes. (3) Do not trust recalc_face_normals or smooth_shaded_faces on imported GLBs - see the new ASSET_TRACKER section for why. (4) The one-sidedness metric misses cases (fallen_log_a scores clean but is visibly defective) - it is triage, judge on the contact sheet. (5) docs/FINDINGS.md was held by flint5/F-052 so the 2.1j findings went into docs/ASSET_TRACKER.md instead; move them if you prefer.
+
+Files: `tools/blender/mire_art.py`, `tools/blender/audit_all_sides.py`, `tools/blender/detail_distribution.py`, `tools/blender/build_pickup_kit.py`, `tools/blender/build_tool_weapon_set.py`, `tools/blender/build_crafting_stations.py`, `tools/blender/build_mire_map_kit.py`, `tools/blender/build_harvestable_resources.py`, `tools/blender/build_loot_set.py`, `tools/blender/build_ward_set.py`, `tools/blender/build_wellspring_set.py`, `tools/blender/build_enemy_crawler.py`, `tools/blender/build_adapted_nature_set.py`, `docs/ROADMAP.md`, `docs/ASSET_TRACKER.md`, `assets/pickups`, `assets/icons`, `assets/source/pickup_kit.blend`
+
+Commit at time of writing: `902db3e`
