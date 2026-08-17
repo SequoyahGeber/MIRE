@@ -1442,6 +1442,16 @@
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
     },
+    "autoload/crafting_service.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:52:00+00:00",
+      "task": "2.6"
+    },
+    "autoload/crafting_service.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:52:00+00:00",
+      "task": "2.6"
+    },
     "autoload/environment_vfx.gd": {
       "agent": "wick",
       "at": "2026-08-17T00:47:21+00:00",
@@ -1532,6 +1542,16 @@
       "at": "2026-08-17T01:24:51+00:00",
       "task": "F-029"
     },
+    "content/items/stone_axe.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:52:00+00:00",
+      "task": "2.6"
+    },
+    "content/recipes/stone_axe.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:52:00+00:00",
+      "task": "2.6"
+    },
     "core/dev/dev_launch.gd": {
       "agent": "vane",
       "at": "2026-08-16T22:59:02+00:00",
@@ -1574,8 +1594,8 @@
     },
     "core/net/net_version.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T02:41:22+00:00",
-      "task": "F-033"
+      "at": "2026-08-17T02:52:00+00:00",
+      "task": "2.6"
     },
     "core/net/net_version.gd.uid": {
       "agent": "reed",
@@ -1614,8 +1634,8 @@
     },
     "docs/DELEGATION.md": {
       "agent": "dusk3",
-      "at": "2026-08-17T02:41:22+00:00",
-      "task": "F-033"
+      "at": "2026-08-17T02:52:00+00:00",
+      "task": "2.6"
     },
     "docs/DESIGN.md": {
       "agent": "kiln",
@@ -1629,8 +1649,8 @@
     },
     "docs/NEXT.md": {
       "agent": "dusk3",
-      "at": "2026-08-17T02:41:22+00:00",
-      "task": "F-033"
+      "at": "2026-08-17T02:52:00+00:00",
+      "task": "2.6"
     },
     "docs/ROADMAP.md": {
       "agent": "pike14",
@@ -1664,8 +1684,8 @@
     },
     "project.godot": {
       "agent": "dusk3",
-      "at": "2026-08-17T02:30:40+00:00",
-      "task": "2.5"
+      "at": "2026-08-17T02:52:00+00:00",
+      "task": "2.6"
     },
     "steam_appid.txt": {
       "agent": "steam",
@@ -1781,6 +1801,26 @@
       "agent": "vane",
       "at": "2026-08-16T22:59:02+00:00",
       "task": "F-023"
+    },
+    "tools/crafting_check.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:52:00+00:00",
+      "task": "2.6"
+    },
+    "tools/crafting_check.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:52:00+00:00",
+      "task": "2.6"
+    },
+    "tools/crafting_net_check.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:52:00+00:00",
+      "task": "2.6"
+    },
+    "tools/crafting_net_check.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:52:00+00:00",
+      "task": "2.6"
     },
     "tools/enemy_crawler_check.gd": {
       "agent": "gale",
@@ -1947,6 +1987,16 @@
       "at": "2026-08-16T19:23:07+00:00",
       "task": "1.7"
     },
+    "tools/setup_crafting_content.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:52:00+00:00",
+      "task": "2.6"
+    },
+    "tools/setup_crafting_content.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T02:52:00+00:00",
+      "task": "2.6"
+    },
     "tools/setup_harvest_content.gd": {
       "agent": "nettle",
       "at": "2026-08-17T01:24:51+00:00",
@@ -1981,11 +2031,6 @@
       "agent": "lobby",
       "at": "2026-08-16T07:53:23+00:00",
       "task": "1.4"
-    },
-    "tools/verify_setup.gd": {
-      "agent": "claude",
-      "at": "2026-08-16T02:46:31+00:00",
-      "task": "0.5"
     },
     "ui/debug/net_debug_panel.gd": {
       "agent": "netui",
@@ -2418,9 +2463,11 @@
       "title": "Inventory UI \u2014 grid, drag/drop, hotbar"
     },
     "2.6": {
+      "done_at": "2026-08-17T02:52:00+00:00",
+      "done_by": "dusk3",
       "est": "3",
       "milestone": "M2",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Crafting: recipe check, craft request \u2192 host validates \u2192 grants. One station (workbench)."
     },

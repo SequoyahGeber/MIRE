@@ -935,3 +935,20 @@ Notes along the way:
 Files: `autoload/inventory_service.gd`, `systems/inventory/inventory_store.gd`, `ui/inventory/inventory_ui.gd`, `tools/inventory_check.gd`, `tools/inventory_net_check.gd`, `tools/inventory_ui_check.gd`, `tools/inventory_ui_render_check.gd`, `core/net/net_version.gd`, `docs/FINDINGS.md`, `docs/NEXT.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `ac0e0f7`
+
+---
+
+### DONE · 2.6 · dusk3 · 2026-08-17T02:52:00+00:00
+
+**Crafting: recipe check, craft request → host validates → grants. One station (workbench).**
+
+Host-authoritative workbench crafting is implemented and registered: one Stone Axe recipe spends 2 logs plus 3 stone atomically, client requests carry no peer identity, and host validates the authoritative player within 3.25 m of the mapped primitive workbench. Offline, UI/inventory regression, handshake, Playtest Hollow, main-scene smoke, and real two-process ENet checks all pass. Protocol is v5. No editor or scene wiring remains; task 2.7 can build directly on CraftingService's query/request/confirmation API.
+
+Notes along the way:
+- Authority: crafting is host-owned. Client requests carry recipe_id and request_id only; host derives sender, validates the registered RecipeDef, authoritative player proximity to the mapped primitive workbench, and commits inputs/output through InventoryService.host_transaction. One stone-axe vertical-slice recipe is authored; bulk content remains 3.2. New RPC bumps protocol v4 to v5.
+- Godot rejected PackedStringArray(...) as a const expression in CraftingService; because 2.6 intentionally supports exactly one primitive workbench, replaced the collection with one StringName constant. The content authoring run still serialized both resources successfully, but does not count as a clean validation run.
+- Verified on Godot 4.7.1: crafting_check 32/32, crafting_net_check 18/18 in two real ENet processes, inventory_check 49/49, inventory_ui_check 31/31, handshake_check 14/14, playtest_hollow_check 50/50, and a 180-frame main-scene smoke all pass. The authored hollow contains station_workbench_primitive. CraftingService is registered; no editor or scene wiring remains.
+
+Files: `autoload/crafting_service.gd`, `autoload/crafting_service.gd.uid`, `tools/setup_crafting_content.gd`, `tools/setup_crafting_content.gd.uid`, `content/items/stone_axe.tres`, `content/recipes/stone_axe.tres`, `tools/crafting_check.gd`, `tools/crafting_check.gd.uid`, `tools/crafting_net_check.gd`, `tools/crafting_net_check.gd.uid`, `core/net/net_version.gd`, `project.godot`, `docs/NEXT.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `6a4cb45`

@@ -9,17 +9,18 @@
 
 **Milestone:** M2 · Vertical slice. **M1 closes at 13/14** — 1.12 is deferred, not outstanding
 (D-030). M0 is closed, 10/10.
-**Tasks 2.3 through 2.5 are playable:** `HarvestableDef` plus the host-authoritative `Harvestable` lifecycle
+**Tasks 2.3 through 2.6 are playable:** `HarvestableDef` plus the host-authoritative `Harvestable` lifecycle
 wires the 11 intact tree/stone/iron props in `playtest_hollow`, and each completed harvest now grants
 the validated peer a host-owned inventory stack. Inventory uses 24 backpack slots plus eight separate
 hotbar slots, owner-only revisioned snapshots, explicit request confirmations, and atomic crafting
 transactions. The always-visible hotbar and Tab field pack render those snapshots, and drag/drop
 submits host-validated full-stack moves without prediction. Offline and two-process ENet checks cover
-grants, stacking, removal, movement, overspend rejection, peer isolation and cleanup.
-**Last session:** 2026-08-17 — F-033 corrected task 2.5's slot contract. The registered UI now has
-24 backpack slots plus eight distinct hotbar slots, with host-authoritative moves between them;
-focused offline/UI checks and the two-process ENet check pass, and Forward+ desktop/narrow renders
-show independent contents. Task 2.6 is next.
+grants, stacking, removal, movement, crafting, overspend rejection, peer isolation and cleanup. At the
+primitive workbench, the host validates a Stone Axe recipe and atomically exchanges two logs plus
+three stone for one axe; clients submit only the recipe id and request id.
+**Last session:** 2026-08-17 — task 2.6 shipped the host-owned crafting service and one workbench
+vertical-slice recipe. Focused offline and real two-process ENet checks pass accepted, missing-input,
+out-of-range and repeat-request paths without prediction or duplication. Task 2.7 is next.
 The deferred 1.12 evidence remains unchanged: all three pinned-engine/GodotSteam
 preflights passed and a real Mac-hosted Steam lobby reached three peers across macOS, Windows and
 Linux. Code-built remote-player debug capsules made all three spawns visible, and Linux movement
@@ -44,11 +45,12 @@ the numbers are under *What changed this session*.
 jump, look around, and attack intact resource props at close range. **F3** overlay · **`~`** console ·
 **Esc** releases the mouse.
 
-**Thirteen autoloads live, verified headlessly 2026-08-16** on
+**Fourteen autoloads live, verified headlessly 2026-08-17** on
 `4.7.1.stable.official.a13da4feb`: `NetSession` is ordered after `NetTransport` and before
 `DevLaunch`; `SteamLobby`, `PlayerNet`, `NetDebugPanel`, `TestMapProps`, and `NetInterp` follow their
-dependencies; `HarvestWorld` and `InventoryService` follow `Registry`. Boot log reads
-`content: loaded 3 item(s), 0 recipe(s)` and `net: NetTransport ready (offline)`. `NetConfig` is a
+dependencies; `HarvestWorld`, `InventoryService`, `InventoryUI`, and `CraftingService` follow
+`Registry`. Boot log reads `content: loaded 4 item(s), 1 recipe(s)` and
+`net: NetTransport ready (offline)`. `NetConfig` is a
 `class_name`, **not** an autoload; don't add it.
 
 Godot 4.7.1-stable, pinned — don't upgrade mid-milestone. That build hash is also the determinism
@@ -83,16 +85,17 @@ scheduled three-machine session driven by lobby IDs pasted between terminals, on
 (task 6.10), which makes the test cheap.** Everything needed to resume is in
 `docs/STEAM_CROSS_PLATFORM_TEST.md` and will keep.
 
-**The next task is `2.6` — crafting.** It checks recipes, submits a craft request to the host, and
-grants output only after host validation at one workbench. Build it on InventoryService's atomic
-`host_transaction()` seam. Task 2.7 adds the crafting UI; do not mix it into 2.6.
+**The next task is `2.7` — crafting UI.** Build its recipe list and request feedback on
+`CraftingService`'s local preview/query API and authoritative confirmations. The service already
+owns station proximity, validation and inventory mutation; the UI must not duplicate authority or
+predict a successful craft.
 
 **The exact 2.4 seams:** local UI reads 32 stable slot dictionaries and never mutates the snapshot;
 slots 0–23 are the backpack and 24–31 are the separate hotbar. Client remove/move requests carry no
 peer id and complete through
 `operation_confirmed`. Trusted host gameplay uses `host_add` or atomic `host_transaction`; there is
-no client grant RPC. Owner-only full snapshots carry monotonic revisions. The new RPC set makes the
-current protocol version 4.
+no client grant RPC. Owner-only full snapshots carry monotonic revisions. Inventory introduced
+protocol version 4; the crafting request/confirmation RPC set makes the current protocol version 5.
 
 **If cross-play testing starts to feel overdue before M6**, the cheap version is a pair of debug
 console commands over the `SteamLobby` API that already exists (`host_session()`, `join_by_id()`,
@@ -131,7 +134,8 @@ none of them needed anything from you in the editor.
 | 2.3 | Harvestable prop: hit → damage → yield → despawn → respawn, host-authoritative | T2 | done | ✅ |
 | 2.4 | Inventory system: stacks, add/remove, host-validated. Data layer only | T2 | done | ✅ |
 | 2.5 | Inventory UI — grid, drag/drop, hotbar | T0 | done | ✅ |
-| 2.6 | Crafting: recipe check, craft request → host validates → grants. One station | T2 | agent | 3h |
+| 2.6 | Crafting: recipe check, craft request → host validates → grants. One station | T2 | done | ✅ |
+| 2.7 | Crafting UI | T1 | next | 2h |
 | 2.1d | Next `NEXT` asset batch from `docs/ASSET_TRACKER.md` (A-005, loot) | T0 | you | 4h |
 | 1.12 | Cross-platform join test — **deferred to after 6.10**, D-030 | T0 | — | 1.5h |
 

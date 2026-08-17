@@ -75,6 +75,22 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+**Task 2.6 ships host-authoritative workbench crafting.** `CraftingService` is an autoload ordered
+after `InventoryService` and exposes `recipes_for_station(station)`,
+`local_recipe_status(recipe_id)`, `local_station_in_range(station)`, and
+`request_craft(recipe_id)`. The first three are presentation helpers only. A request carries only a
+recipe id and local request id; the host derives the sending peer, looks up that peer's authoritative
+`PlayerNet` player, requires it within 3.25 m of the mapped `station_workbench_primitive`, revalidates
+the registered `RecipeDef`, and commits through `InventoryService.host_transaction()`. The
+`craft_confirmed(request_id, accepted, detail)` signal is the UI's accepted/rejected feedback seam;
+clients do not predict inventory changes.
+
+The one authored vertical-slice recipe is `stone_axe`: two `log` plus three `stone` produce one
+non-stackable Stone Axe at `&"workbench"`. Bulk recipes remain task 3.2. The focused offline proof is
+`Godot --headless --path . --script tools/crafting_check.gd`; the real two-process ownership/RPC proof
+is `Godot --headless --path . --script tools/crafting_net_check.gd`. The new RPCs make the current
+protocol version 5.
+
 **Task 2.5 ships the client-local inventory presentation.** `InventoryUI` is an autoload ordered after
 `InventoryService`. The hotbar always renders its own stable slots 24–31; Tab opens the separate
 24-slot field pack at slots 0–23, and Escape or Tab closes it. Drag/drop sends a full-stack
@@ -107,8 +123,8 @@ validated instigator peer. Crafting should use
 slot layout unless every removal and addition fits. `host_count`, `host_can_add`, `host_can_remove`,
 `host_remove`, and `host_slots` are host-only seams. Owner-only reliable snapshots carry full stable
 slots plus a monotonic revision; a client request carries no peer id, so the host always derives the
-inventory owner from `multiplayer.get_remote_sender_id()`. The 32-slot snapshot makes protocol
-version 4.
+inventory owner from `multiplayer.get_remote_sender_id()`. The 32-slot snapshot introduced protocol
+version 4; crafting's request and confirmation RPCs make the current protocol version 5.
 Inventories are currently keyed to the transport peer id and released on `peer_left`; F-032 records
 the missing stable run-player identity required for task 1.7 auto-rejoin to preserve gameplay state.
 
