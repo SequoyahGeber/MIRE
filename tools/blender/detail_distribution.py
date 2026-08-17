@@ -103,7 +103,26 @@ def main() -> None:
     root = Path("/Users/sequoyahgeber/Desktop/MIRE")
     outdir = Path(opt("--outdir", "."))
     glbs = sorted(p for p in (root / "assets").rglob("*.glb"))
+    # Checkpoint per asset so an interrupted run keeps everything it finished
+    # (AGENTS.md, "Any agent working a list must be killable at any moment").
+    ledger = outdir / "detail_distribution.jsonl"
     out: dict[str, dict] = {}
+    if ledger.exists():
+        for line in ledger.read_text().splitlines():
+            if line.strip():
+                try:
+                    out.update(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+        print(f"resuming: {len(out)} assets already done")
+
+    def record(key: str, value: dict) -> None:
+        out[key] = value
+        with ledger.open("a") as handle:
+            handle.write(json.dumps({key: value}) + "\n")
+            handle.flush()
+
+    glbs = [g for g in glbs if g.relative_to(root / "assets").as_posix() not in out]
 
     for i, glb in enumerate(glbs, 1):
         rel = glb.relative_to(root / "assets").as_posix()
@@ -111,7 +130,7 @@ def main() -> None:
         try:
             bpy.ops.import_scene.gltf(filepath=str(glb))
         except Exception as exc:  # noqa: BLE001
-            out[rel] = {"error": str(exc)}
+            record(rel, {"error": str(exc)})
             continue
         meshes = [o for o in bpy.context.scene.objects if o.type == "MESH"]
         if not meshes:
@@ -135,7 +154,7 @@ def main() -> None:
         entry.update(analyse(verts, axis))
         if len(centroids) >= 4:
             entry["part_centroids"] = analyse(np.array(centroids, dtype=np.float64), axis)
-        out[rel] = entry
+        record(rel, entry)
         if i % 40 == 0:
             print(f"  {i}/{len(glbs)}", flush=True)
 

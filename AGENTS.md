@@ -159,6 +159,41 @@ human can act on — he is deciding whether to start the next task based on this
 
 ## Hard rules
 
+### Any agent working a list must be killable at any moment without losing what it did
+
+A subagent that gathers results in its context and reports them once, at the end, is a **total loss
+if it is stopped** — and long fan-outs get stopped, by a quota ceiling, a timeout, a crash, or a
+human who changed their mind. This is not hypothetical: task 2.1j launched nine inspectors over 224
+render sheets, stopped them at the 5-hour quota ceiling, and recovered **408 characters** from 302
+completed image reads. One of them had just written "I've reviewed all 24 sheets" and had not yet
+emitted a single finding. Every token was spent; nothing was kept.
+
+So, for any agent or script that processes a list of items:
+
+1. **Append each result the moment that item is done** — one JSON object per line, to a file whose
+   path is given up front. Never hold results in memory until the end. Flush after each write; a
+   buffered line is a lost line when the process is killed.
+2. **Read that file on start and skip what is already in it.** Being stopped then costs the one item
+   in flight, and resuming costs nothing. Tolerate a torn final line — a hard kill mid-write leaves
+   one, and it must not poison the resume.
+3. **The orchestrator reads the ledger, not the return value.** A return value only exists if the
+   agent finished. The ledger exists either way, so partial work is still usable work.
+4. **Say where the ledger is in the prompt**, and tell the agent to write a line per item. An agent
+   given no path will hold everything in context, because that is the natural thing to do.
+
+`tools/blender/audit_all_sides.py` is the worked example: `--outdir X` writes `X/geometry_report.jsonl`
+one asset at a time and rebuilds the tidy `.json` view from it each run; re-running prints
+`resuming: N assets already done` and re-renders nothing. Copy that shape.
+
+Prompt block to paste into any list-processing agent:
+
+```text
+Append your result for EACH item to <LEDGER>.jsonl as one JSON object per line, the moment
+you finish that item — never batch them to the end, because you may be stopped at any time
+and anything still in your context is lost. Before you start, read <LEDGER>.jsonl and skip
+every item already recorded there. Your final message should summarise, not carry, the results.
+```
+
 ### Godot-authored files require a closed editor and an exact claim
 
 Agents may edit `.tscn`, `.tres`, `.import`, and `export_presets.cfg` when both conditions hold:

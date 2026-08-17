@@ -237,11 +237,37 @@ def main() -> None:
     sheets = outdir / "sheets"
     sheets.mkdir(parents=True, exist_ok=True)
 
+    # Checkpoint as we go. A 224-asset sweep takes minutes, and anything that
+    # only writes its results at the end throws all of them away when it is
+    # interrupted. Each asset is appended to a JSONL the moment it is finished,
+    # and a re-run skips whatever is already in there — so stopping this script
+    # costs at most the one asset in flight, and resuming costs nothing.
+    ledger = outdir / "geometry_report.jsonl"
+    report: dict[str, dict] = {}
+    if ledger.exists():
+        for line in ledger.read_text().splitlines():
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue  # a torn final line from a hard kill
+            report.update(row)
+        print(f"resuming: {len(report)} assets already done")
+
+    pending = [g for g in glbs if g.relative_to(root / "assets").as_posix() not in report]
+    if not pending:
+        print("nothing to do; every asset is already in the ledger")
     clear_scene()
     cam, key = build_rig(size)
-    report: dict[str, dict] = {}
 
-    for index, glb in enumerate(glbs, 1):
+    def record(key: str, value: dict) -> None:
+        report[key] = value
+        with ledger.open("a") as handle:
+            handle.write(json.dumps({key: value}) + "\n")
+            handle.flush()
+
+    for index, glb in enumerate(pending, 1):
         rel = glb.relative_to(root / "assets").as_posix()
         for o in list(bpy.context.scene.objects):
             if o.type not in {"CAMERA", "LIGHT"}:
@@ -249,12 +275,12 @@ def main() -> None:
         try:
             bpy.ops.import_scene.gltf(filepath=str(glb))
         except Exception as exc:  # noqa: BLE001 - a broken export is a finding
-            report[rel] = {"error": f"import failed: {exc}"}
+            record(rel, {"error": f"import failed: {exc}"})
             continue
 
         objs = imported_meshes()
         if not objs:
-            report[rel] = {"error": "no mesh objects in export"}
+            record(rel, {"error": "no mesh objects in export"})
             continue
 
         lo, hi = bounds(objs)
@@ -290,10 +316,12 @@ def main() -> None:
         out.save()
         bpy.data.images.remove(out)
 
-        report[rel] = geometry_report(objs, lo, hi)
-        report[rel]["sheet"] = f"sheets/{name}.png"
-        print(f"[{index}/{len(glbs)}] {rel}", flush=True)
+        entry = geometry_report(objs, lo, hi)
+        entry["sheet"] = f"sheets/{name}.png"
+        record(rel, entry)
+        print(f"[{index}/{len(pending)}] {rel}", flush=True)
 
+    # The JSON is a convenience view of the ledger, rewritten from it each run.
     (outdir / "geometry_report.json").write_text(json.dumps(report, indent=2, sort_keys=True))
     print(f"\nWrote {len(report)} entries to {outdir/'geometry_report.json'}")
     print("View order: azimuth 0/45/90/135/180 (row 0), 225/270/315, top, bottom (row 1)")
