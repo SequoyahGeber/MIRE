@@ -114,17 +114,37 @@ func _check_atmosphere(scene: Node3D) -> void:
 	var world_environment := scene.get_node_or_null(^"WorldEnvironment") as WorldEnvironment
 	var sun := scene.get_node_or_null(^"Sun") as DirectionalLight3D
 	var atmosphere := scene.get_node_or_null(^"Atmosphere")
-	var mire_fog := scene.get_node_or_null(^"MireGroundFog") as FogVolume
+	var fog_volumes: Array[FogVolume] = []
+	for fog_path: NodePath in [^"MireGroundFog", ^"ForestMist", ^"RuinsMist"]:
+		var volume := scene.get_node_or_null(fog_path) as FogVolume
+		if volume != null:
+			fog_volumes.append(volume)
+	var cloud_deck := scene.get_node_or_null(^"CloudDeck") as Node3D
 	check(world_environment != null and world_environment.environment != null, "atmosphere environment exists")
 	check(sun != null and sun.shadow_enabled, "shadow-casting sun exists")
 	check(atmosphere != null and atmosphere.has_method("set_time_of_day"), "time-of-day controller exists")
-	check(mire_fog != null and mire_fog.material is FogMaterial, "localized Mire fog volume exists")
+	check(fog_volumes.size() == 3, "three localized fog pockets exist")
+	check(
+		fog_volumes.all(func(volume: FogVolume) -> bool: return volume.material is FogMaterial),
+		"all fog pockets have local FogMaterials"
+	)
+	check(cloud_deck != null and cloud_deck.get_child_count() == 2, "two-layer cloud deck exists")
+	if cloud_deck != null:
+		var lower_clouds := cloud_deck.get_node_or_null(^"LowerClouds") as MeshInstance3D
+		var upper_clouds := cloud_deck.get_node_or_null(^"UpperClouds") as MeshInstance3D
+		check(
+			lower_clouds != null and upper_clouds != null
+			and lower_clouds.get_active_material(0) is ShaderMaterial
+			and upper_clouds.get_active_material(0) is ShaderMaterial,
+			"both cloud layers use the procedural cloud shader"
+		)
 	if world_environment == null or world_environment.environment == null or sun == null:
 		return
 	var environment := world_environment.environment
 	check(environment.sky != null and environment.sky.sky_material is PhysicalSkyMaterial, "physical sky is active")
-	check(environment.fog_enabled, "distance fog is enabled")
+	check(not environment.fog_enabled, "blanket distance fog is disabled")
 	check(environment.volumetric_fog_enabled, "volumetric fog is enabled")
+	check(environment.volumetric_fog_density <= 0.001, "global volumetric haze stays nearly clear")
 	check(environment.volumetric_fog_anisotropy >= 0.65, "fog is directional enough for light shafts")
 	check(sun.light_volumetric_fog_energy >= 0.8, "sun injects energy into volumetric fog")
 	check(sun.directional_shadow_max_distance >= 68.0, "sun shadows cover the playable hollow")

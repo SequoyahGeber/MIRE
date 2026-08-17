@@ -15,6 +15,8 @@ extends Node
 
 var _environment: Environment
 var _sky_material: PhysicalSkyMaterial
+var _local_fog_materials: Array[FogMaterial] = []
+var _local_fog_densities: Array[float] = [0.028, 0.01, 0.008]
 
 
 func _ready() -> void:
@@ -25,6 +27,10 @@ func _ready() -> void:
 	_environment = world_environment.environment
 	if _environment.sky != null:
 		_sky_material = _environment.sky.sky_material as PhysicalSkyMaterial
+	for fog_path: NodePath in [^"../MireGroundFog", ^"../ForestMist", ^"../RuinsMist"]:
+		var fog_volume := get_node_or_null(fog_path) as FogVolume
+		if fog_volume != null and fog_volume.material is FogMaterial:
+			_local_fog_materials.append(fog_volume.material as FogMaterial)
 	apply_atmosphere()
 	set_process(cycle_enabled)
 
@@ -74,9 +80,13 @@ func apply_atmosphere() -> void:
 	_environment.fog_light_color = Color(0.19, 0.22, 0.3).lerp(
 		Color(0.62, 0.67, 0.72), daylight
 	)
-	_environment.fog_density = 0.0035 * haze_strength * lerpf(1.4, 0.82, daylight)
-	_environment.volumetric_fog_density = 0.0105 * haze_strength * lerpf(1.25, 0.86, daylight)
+	# Keep the open routes clear. FogVolume nodes, not the global environment, define mist pockets.
+	_environment.fog_density = 0.0
+	_environment.volumetric_fog_density = 0.00045 * haze_strength
 	_environment.volumetric_fog_ambient_inject = lerpf(0.28, 0.62, daylight)
+	var local_density_scale := haze_strength * lerpf(1.18, 0.92, daylight)
+	for index: int in mini(_local_fog_materials.size(), _local_fog_densities.size()):
+		_local_fog_materials[index].density = _local_fog_densities[index] * local_density_scale
 	if _sky_material != null:
 		_sky_material.energy_multiplier = lerpf(0.18, 0.9, daylight)
 		_sky_material.turbidity = lerpf(10.0, 5.2, daylight)
