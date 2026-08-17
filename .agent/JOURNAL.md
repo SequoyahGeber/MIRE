@@ -1138,3 +1138,15 @@ Commit at time of writing: `cbd3357`
 All three parts fixed: directory claims expand to their changed files at ship time, path-shaped arguments are rejected before any state is loaded instead of being glued onto the commit subject, and the sign-off prints how many files were left alone and how many it truncated. The fourth observation (shipping a claimed doc that held another agent's edits) is working practice, not a ship bug - recorded as such.
 
 Commit at time of writing: `cbd3357`
+
+---
+
+### DONE · F-032 · dusk3 · 2026-08-17T15:43:36+00:00
+
+**Auto-rejoin assigns a new peer id, so peer-keyed gameplay state cannot follow it**
+
+Host-issued opaque run-player token (core/net/run_identity.gd) minted on the client hello; NetSession emits run_player_rebound(old,new) and run_player_expired(peer). The fix that matters is a deletion: InventoryService no longer releases on peer_left, because peer_left cannot tell a reconnect from a departure. A live peer's token is never reassigned and a parked identity expires after 90s. Protocol 5 -> 6. Verified: run_identity_check 37/37 offline, and session_lifecycle_check over real multi-process ENet - peer 1545394978 came back as 175915464 with its 7 logs intact and nothing left behind. Recorded as D-035.
+
+Files: `core/net/net_session.gd`, `core/net/net_version.gd`, `core/net/run_identity.gd`, `core/net/run_identity.gd.uid`, `autoload/inventory_service.gd`, `tools/session_lifecycle_check.gd`, `tools/run_identity_check.gd`, `tools/run_identity_check.gd.uid`
+
+Commit at time of writing: `5483f2f`

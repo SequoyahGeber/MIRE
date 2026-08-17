@@ -36,6 +36,13 @@ func _ready() -> void:
 	transport.get("disconnected").connect(_on_disconnected)
 	transport.get("peer_joined").connect(_on_peer_joined)
 	transport.get("peer_left").connect(_on_peer_left)
+	# F-032: NetSession owns run-player identity, so it decides when a departure is final. Connected
+	# by path rather than by identifier because this autoload is reached from --script harnesses
+	# (F-011), and guarded because a harness may drive InventoryService without a session layer.
+	var session: Node = get_node_or_null(^"/root/NetSession")
+	if session != null and session.has_signal(&"run_player_rebound"):
+		session.connect(&"run_player_rebound", _on_run_player_rebound)
+		session.connect(&"run_player_expired", _on_run_player_expired)
 	if bool(transport.call("is_active")):
 		_on_session_opened.call_deferred()
 	else:
@@ -270,8 +277,34 @@ func _on_peer_joined(peer_id: int) -> void:
 	_publish_snapshot(peer_id)
 
 
-func _on_peer_left(peer_id: int) -> void:
-	if not bool(_transport().call("is_host")):
+## Deliberately does NOT release the inventory (F-032). Between a drop and a rejoin the player is
+## still a player, and this used to be where their whole inventory went — 1.7 proved a reconnecting
+## client returns under a new peer id, so releasing here made every reconnect a wipe. NetSession
+## holds the identity for its grace window and then says which of the two things happened:
+## `run_player_rebound` (move it) or `run_player_expired` (release it). If no session layer is
+## present at all, nothing here holds state anyway — an offline host is the only peer.
+func _on_peer_left(_peer_id: int) -> void:
+	pass
+
+
+## The same player is back under a new peer id. Carry the store and its revision across, so the
+## client's next snapshot continues its own history instead of starting from an empty pack.
+func _on_run_player_rebound(old_peer_id: int, new_peer_id: int) -> void:
+	# _owns_mutation(), not is_host(): offline the local peer owns every store, and that is the mode
+	# the focused check drives these signals in.
+	if not _owns_mutation() or not _host_stores.has(old_peer_id):
+		return
+	# A rejoining peer may already have had an empty store created for it by _on_peer_joined, which
+	# fires before the hello that identifies it. The old store wins; the placeholder is discarded.
+	_host_stores[new_peer_id] = _host_stores[old_peer_id]
+	_revisions[new_peer_id] = int(_revisions.get(old_peer_id, 0))
+	_host_stores.erase(old_peer_id)
+	_revisions.erase(old_peer_id)
+	_publish_snapshot(new_peer_id)
+
+
+func _on_run_player_expired(peer_id: int) -> void:
+	if not _owns_mutation():
 		return
 	_host_stores.erase(peer_id)
 	_revisions.erase(peer_id)

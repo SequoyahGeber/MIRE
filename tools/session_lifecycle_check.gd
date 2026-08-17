@@ -47,6 +47,8 @@ var _drive_finished: bool = false
 var _transport: Node
 var _session: Node
 var _player_net: Node
+## F-032's consumer: peer-keyed gameplay state that has to survive a reconnect.
+var _inventory: Node
 
 # Driver-side observations, filled from NetTransport/NetSession signals.
 var _session_was_registered: bool = false
@@ -90,6 +92,7 @@ func _start() -> void:
 func _autoloads() -> bool:
 	_transport = root.get_node_or_null(^"NetTransport")
 	_player_net = root.get_node_or_null(^"PlayerNet")
+	_inventory = root.get_node_or_null(^"InventoryService")
 	_session = root.get_node_or_null(^"NetSession")
 	_session_was_registered = _session != null
 	if _session == null:
@@ -236,6 +239,14 @@ func _drive() -> void:
 
 	print("\n-- an unclean drop: the client reconnects by itself --")
 	_joined.clear()
+	# F-032: give the peer about to be dropped something to lose. A rejoining client returns under a
+	# NEW peer id, and before the run-player token existed this inventory was released the moment the
+	# drop was noticed — so every reconnect was a silent wipe.
+	var had_inventory: bool = _inventory != null and bool(
+		_inventory.call("host_add", c1_id, &"log", 7)
+	)
+	_check("c1 holds an inventory before it drops", had_inventory
+		and int(_inventory.call("host_count", c1_id, &"log")) == 7)
 	_transport.kick_peer(c1_id)
 	var c1_gone: bool = await _until(func() -> bool: return _left.has(c1_id), EVENT_TIMEOUT_SEC)
 	_check("host saw c1 drop", c1_gone)
@@ -248,6 +259,20 @@ func _drive() -> void:
 	var c1_result: Dictionary = _read_result("c1")
 	_check("c1 reports a rejoin, not an ending", int(c1_result.get("rejoins", 0)) >= 1,
 		str(c1_result.get("events", [])))
+
+	# The peer id genuinely changed — that is the whole premise of F-032, so assert it rather than
+	# assuming it, or this section could pass on a transport that happened to reuse ids.
+	var rejoined_id: int = int(_joined[0]) if not _joined.is_empty() else 0
+	_check("the rejoiner came back under a different peer id", rejoined_id > 0
+		and rejoined_id != c1_id, "was %d, now %d" % [c1_id, rejoined_id])
+	if _inventory != null and rejoined_id > 0:
+		var carried: bool = await _until(
+			func() -> bool: return int(_inventory.call("host_count", rejoined_id, &"log")) == 7,
+			EVENT_TIMEOUT_SEC)
+		_check("the inventory followed the player across the new peer id", carried,
+			"peer %d holds %d log(s)" % [rejoined_id, int(_inventory.call("host_count", rejoined_id, &"log"))])
+		_check("nothing was left behind under the old peer id",
+			(_inventory.call("host_slots", c1_id) as Array).is_empty())
 	_sections_completed += 1
 
 	print("\n-- a client's process dies: how long until the host notices --")

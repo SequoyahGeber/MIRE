@@ -1499,8 +1499,8 @@
     },
     "autoload/inventory_service.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T02:41:22+00:00",
-      "task": "F-033"
+      "at": "2026-08-17T15:43:36+00:00",
+      "task": "F-032"
     },
     "autoload/inventory_service.gd.uid": {
       "agent": "nettle",
@@ -1597,11 +1597,6 @@
       "at": "2026-08-17T01:11:22+00:00",
       "task": "2.3"
     },
-    "core/net/dummy_replicant.gd": {
-      "agent": "load",
-      "at": "2026-08-16T08:27:33+00:00",
-      "task": "1.9"
-    },
     "core/net/net_config.gd": {
       "agent": "vane",
       "at": "2026-08-16T22:59:02+00:00",
@@ -1613,9 +1608,9 @@
       "task": "2.3"
     },
     "core/net/net_session.gd": {
-      "agent": "vane",
-      "at": "2026-08-16T22:59:02+00:00",
-      "task": "F-023"
+      "agent": "dusk3",
+      "at": "2026-08-17T15:43:36+00:00",
+      "task": "F-032"
     },
     "core/net/net_session.gd.uid": {
       "agent": "reed",
@@ -1624,8 +1619,8 @@
     },
     "core/net/net_version.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T02:52:00+00:00",
-      "task": "2.6"
+      "at": "2026-08-17T15:43:36+00:00",
+      "task": "F-032"
     },
     "core/net/net_version.gd.uid": {
       "agent": "reed",
@@ -1641,6 +1636,16 @@
       "agent": "reed",
       "at": "2026-08-16T19:12:29+00:00",
       "task": "F-019"
+    },
+    "core/net/run_identity.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:43:36+00:00",
+      "task": "F-032"
+    },
+    "core/net/run_identity.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:43:36+00:00",
+      "task": "F-032"
     },
     "core/util/mire_log.gd": {
       "agent": "nettle",
@@ -1722,11 +1727,6 @@
       "at": "2026-08-17T04:31:24+00:00",
       "task": "2.8"
     },
-    "steam_appid.txt": {
-      "agent": "steam",
-      "at": "2026-08-16T06:52:27+00:00",
-      "task": "1.1"
-    },
     "systems/combat/weapon_def.gd": {
       "agent": "dusk3",
       "at": "2026-08-17T04:31:24+00:00",
@@ -1766,11 +1766,6 @@
       "agent": "nettle",
       "at": "2026-08-17T01:48:54+00:00",
       "task": "2.4"
-    },
-    "tools/bench_replication.gd": {
-      "agent": "load",
-      "at": "2026-08-16T08:27:33+00:00",
-      "task": "1.9"
     },
     "tools/blender/build_adapted_nature_set.py": {
       "agent": "pike14",
@@ -2062,10 +2057,20 @@
       "at": "2026-08-16T18:15:43+00:00",
       "task": "2.1c"
     },
+    "tools/run_identity_check.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:43:36+00:00",
+      "task": "F-032"
+    },
+    "tools/run_identity_check.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T15:43:36+00:00",
+      "task": "F-032"
+    },
     "tools/session_lifecycle_check.gd": {
-      "agent": "reed",
-      "at": "2026-08-16T19:23:07+00:00",
-      "task": "1.7"
+      "agent": "dusk3",
+      "at": "2026-08-17T15:43:36+00:00",
+      "task": "F-032"
     },
     "tools/session_lifecycle_check.gd.uid": {
       "agent": "reed",
@@ -2102,16 +2107,6 @@
       "at": "2026-08-17T01:24:51+00:00",
       "task": "F-029"
     },
-    "tools/steam_api_probe.gd": {
-      "agent": "lobby",
-      "at": "2026-08-16T07:53:23+00:00",
-      "task": "1.4"
-    },
-    "tools/steam_check.gd": {
-      "agent": "steam",
-      "at": "2026-08-16T06:52:27+00:00",
-      "task": "1.1"
-    },
     "tools/steam_cross_platform_check.gd": {
       "agent": "hollow",
       "at": "2026-08-16T20:16:02+00:00",
@@ -2121,11 +2116,6 @@
       "agent": "hollow",
       "at": "2026-08-16T20:16:02+00:00",
       "task": "1.12"
-    },
-    "tools/steam_lobby_check.gd": {
-      "agent": "lobby",
-      "at": "2026-08-16T07:53:23+00:00",
-      "task": "1.4"
     },
     "tools/verify_setup.gd": {
       "agent": "dusk3",
@@ -2141,11 +2131,6 @@
       "agent": "dusk3",
       "at": "2026-08-17T04:01:51+00:00",
       "task": "2.7"
-    },
-    "ui/debug/net_debug_panel.gd": {
-      "agent": "netui",
-      "at": "2026-08-16T08:14:40+00:00",
-      "task": "1.10"
     },
     "ui/inventory/inventory_ui.gd": {
       "agent": "kiln9",
@@ -3299,9 +3284,11 @@
       "title": "`DELEGATION.md` still describes the pre-polish Playtest Hollow layout"
     },
     "F-032": {
+      "done_at": "2026-08-17T15:43:36+00:00",
+      "done_by": "dusk3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Auto-rejoin assigns a new peer id, so peer-keyed gameplay state cannot follow it"
     },

@@ -38,6 +38,9 @@ extends Node
 ## F-016: NetVersion is a class_name that is not in .godot/global_script_class_cache.cfg yet, so a bare
 ## reference does not resolve in a --script main loop. preload() resolves in both.
 const NET_VERSION: GDScript = preload("res://core/net/net_version.gd")
+## Preloaded, not named bare: a new class_name is not resolvable in a --script run until an editor
+## scan rebuilds the cache (F-016).
+const RUN_IDENTITY: GDScript = preload("res://core/net/run_identity.gd")
 
 ## Why a session ended. LOCAL_LEAVE covers the host ending its own session too: from the host's side,
 ## quitting is leaving.
@@ -71,6 +74,17 @@ signal connect_failed(detail: String)
 ## before admission; a version refusal happens just after connection and is immediately despawned.
 signal peer_refused(peer_id: int, detail: String)
 
+## F-032. A reconnecting client arrives under a NEW peer id, and every host-owned system keys its
+## state by peer id. These two signals are how that state follows the player instead of being
+## orphaned. HOST-ONLY — a client never sees another player's identity.
+##
+## The same run-player is now [param new_peer_id] and was [param old_peer_id]. Move whatever you
+## keyed under the old id; it is gone the moment this returns.
+signal run_player_rebound(old_peer_id: int, new_peer_id: int)
+## [param peer_id] is not coming back — its grace window expired. Release its state now. Consumers
+## must NOT release on `peer_left`: between a drop and a rejoin, a player is still a player.
+signal run_player_expired(peer_id: int)
+
 ## How long the refusal notice gets to reach the joiner before its connection is closed. The RPC is
 ## reliable, so this is flush time, not hope: a loopback round trip is under a millisecond and a bad
 ## home connection is well inside this.
@@ -97,6 +111,10 @@ const CONNECT_RETRY_BACKOFF_SEC: Array[float] = [0.5, 2.0]
 
 ## How often the rejoin loop checks whether the attempt in flight has resolved.
 const REJOIN_POLL_SEC: float = 0.1
+
+## How often the host sweeps for identities whose grace has run out. Coarse on purpose: the grace
+## window is 90 s, so a second of slack either side is irrelevant and a per-frame sweep is waste.
+const IDENTITY_SWEEP_SEC: float = 5.0
 
 # ── Policy — the host's, and only the host's ──────────────────────────────────────────────────────
 #
@@ -139,6 +157,14 @@ var _rejoining: bool = false
 var _connect_retrying: bool = false
 
 
+## Host-only registry of who is who this run. A client's copy stays empty.
+var _identity: RefCounted = RUN_IDENTITY.new()
+## This peer's own token, issued by the host and presented again on every rejoin. In memory only —
+## a run is one sitting (D-010), so there is nothing to persist and nothing to leak.
+var _run_token: String = ""
+var _identity_sweep_accumulator: float = 0.0
+
+
 func _ready() -> void:
 	# The rejoin loop and the closing notice both have to survive a paused tree — a pause menu is
 	# exactly where "the host quit" tends to be noticed.
@@ -153,6 +179,10 @@ func _ready() -> void:
 
 	# Ignored while not hosting, so it can be installed once and left alone.
 	NetTransport.set_admission_gate(_gate_peer)
+
+	# F-032: the host has to notice a departure to start that identity's grace clock. Consumers of
+	# the two run_player_* signals deliberately do NOT watch peer_left themselves.
+	NetTransport.peer_left.connect(_on_peer_left_identity)
 
 	# DevLaunch opens its session inside its own _ready(), which runs before this autoload exists to
 	# hear server_started. Catch up rather than depend on registration order — same reason PlayerNet
@@ -277,17 +307,85 @@ func _refuse(peer_id: int, detail: String) -> void:
 ## that ever calls it; the guard below is what makes that safe. A mismatch is refused exactly like a
 ## full session — same notice, same flush, same reason on the client's screen (task 1.11).
 @rpc("any_peer", "call_remote", "reliable")
-func net_client_hello(protocol_version: int) -> void:
+func net_client_hello(protocol_version: int, run_token: String = "") -> void:
 	if not NetTransport.is_host():
 		return
 	var sender: int = multiplayer.get_remote_sender_id()
 	var reason: String = NET_VERSION.mismatch_reason(NET_VERSION.PROTOCOL_VERSION, protocol_version)
 	if reason.is_empty():
+		_admit_identity(sender, run_token)
 		return
 	MireLog.warn(NetConfig.LOG_CHANNEL, "NetSession: peer %d speaks protocol v%d, we speak v%d" % [
 		sender, protocol_version, NET_VERSION.PROTOCOL_VERSION
 	])
 	_refuse(sender, reason)
+
+
+# ── Run-player identity (F-032) ───────────────────────────────────────────────────────────────────
+
+
+## The identity sweep is the only per-tick work this node does, and it is host-only. Physics tick
+## rather than render frame for the same reason as F-025: a housekeeping deadline should not be
+## measured by how fast the machine happens to be drawing.
+func _physics_process(delta: float) -> void:
+	_sweep_identities(delta)
+
+
+## Host side of the hello. Decides whether this peer is somebody we have seen this run, tells it its
+## token, and announces a rebind so peer-keyed state can follow.
+func _admit_identity(peer_id: int, presented: String) -> void:
+	var result: Dictionary = _identity.call("claim", peer_id, presented)
+	var token: String = String(result.get("token", ""))
+	if token.is_empty():
+		return
+	net_run_identity.rpc_id(peer_id, token)
+
+	var previous: int = int(result.get("rebound_from", 0))
+	if previous <= 0 or previous == peer_id:
+		return
+	MireLog.info(NetConfig.LOG_CHANNEL,
+		"NetSession: peer %d is peer %d returning — rebinding run state" % [peer_id, previous])
+	run_player_rebound.emit(previous, peer_id)
+
+
+## Host → one client, never broadcast: a token is that player's identity and nobody else's business.
+@rpc("authority", "call_remote", "reliable")
+func net_run_identity(token: String) -> void:
+	_run_token = token
+
+
+## Starts the grace clock. Deliberately does not release anything — that is what makes a rejoin able
+## to reclaim state, and it is why consumers must not do their own cleanup on peer_left.
+func _on_peer_left_identity(peer_id: int) -> void:
+	if not NetTransport.is_host():
+		return
+	_identity.call("mark_left", peer_id, Time.get_ticks_msec())
+
+
+func _sweep_identities(delta: float) -> void:
+	if not NetTransport.is_host() or not _open:
+		return
+	_identity_sweep_accumulator += delta
+	if _identity_sweep_accumulator < IDENTITY_SWEEP_SEC:
+		return
+	_identity_sweep_accumulator = 0.0
+	for peer_id: int in (_identity.call("expire", Time.get_ticks_msec()) as Array[int]):
+		if peer_id <= 0:
+			continue
+		MireLog.info(NetConfig.LOG_CHANNEL,
+			"NetSession: peer %d did not return — releasing its run state" % peer_id)
+		run_player_expired.emit(peer_id)
+
+
+## Read-only, for checks and a future lobby UI: how many players are parked waiting to reconnect.
+func orphaned_run_players() -> int:
+	return int(_identity.call("orphan_count"))
+
+
+## This peer's own run token. Empty until the host has issued one. Exposed for harnesses; gameplay
+## code should use the two signals rather than reasoning about tokens.
+func run_token() -> String:
+	return _run_token
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -331,7 +429,7 @@ func _on_session_opened() -> void:
 	# Only the client hellos — the host never has to tell itself what it is running. The host is the
 	# arbiter of the answer (task 1.11); we report our version and accept its verdict.
 	if not _was_host:
-		net_client_hello.rpc_id(NetConfig.HOST_PEER_ID, NET_VERSION.PROTOCOL_VERSION)
+		net_client_hello.rpc_id(NetConfig.HOST_PEER_ID, NET_VERSION.PROTOCOL_VERSION, _run_token)
 
 	session_opened.emit(_was_host)
 
@@ -340,6 +438,12 @@ func _on_disconnected() -> void:
 	if not _open:
 		return
 	_open = false
+
+	# A run's identities do not outlive its session: the host forgets everyone, and a client forgets
+	# the token it was issued so a later join to a DIFFERENT host starts clean. The rejoin path below
+	# runs before this on a drop it intends to recover, so a genuine reconnect still presents it.
+	if _was_host:
+		_identity.call("clear")
 
 	var reason: EndReason = _classify_end()
 	var detail: String = _describe_end(reason)
