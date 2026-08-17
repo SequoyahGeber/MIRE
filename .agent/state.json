@@ -1,5 +1,35 @@
 {
   "claims": {
+    "AGENTS.md": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:44:35+00:00",
+      "task": "F-050"
+    },
+    "content/recipes/stone_axe.tres": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:44:35+00:00",
+      "task": "F-050"
+    },
+    "docs/ASSET_TRACKER.md": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:44:35+00:00",
+      "task": "F-050"
+    },
+    "docs/AUDIT-2026-08-17.md": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:44:35+00:00",
+      "task": "F-050"
+    },
+    "docs/DELEGATION.md": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:44:35+00:00",
+      "task": "F-050"
+    },
+    "docs/NEXT.md": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:44:35+00:00",
+      "task": "F-050"
+    },
     "entities/player/viewmodel.gd": {
       "agent": "flint5",
       "at": "2026-08-17T18:43:41+00:00",
@@ -64,6 +94,19 @@
       ],
       "notes": [],
       "started": "2026-08-17T18:43:41+00:00"
+    },
+    "F-050": {
+      "agent": "flint5",
+      "files": [
+        "docs/NEXT.md",
+        "docs/ASSET_TRACKER.md",
+        "docs/DELEGATION.md",
+        "docs/AUDIT-2026-08-17.md",
+        "AGENTS.md",
+        "content/recipes/stone_axe.tres"
+      ],
+      "notes": [],
+      "started": "2026-08-17T18:44:35+00:00"
     }
   },
   "recent": {
@@ -2442,7 +2485,7 @@
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.12": {
-      "done_at": "2026-08-17T18:43:41+00:00",
+      "done_at": "2026-08-17T18:47:57+00:00",
       "done_by": "yarrow21",
       "est": "1.5",
       "milestone": "M0",
@@ -3667,7 +3710,7 @@
     "F-050": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Governing docs contradict D-031 in six places, an unclosed code fence hides eight decisions, and the budget table is 51 sessions stale"
     }

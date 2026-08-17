@@ -1295,3 +1295,13 @@ Notes along the way:
 Files: `.agent/bin/lane`, `.agent/bin/setup-lanes`, `.agent/bin/agent`, `docs/ORCHESTRATION.md`, `docs/ROADMAP.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/AI-WORKFLOW.md`, `CLAUDE.md`, `.gitignore`
 
 Commit at time of writing: `732072c`
+
+---
+
+### DONE · 0.12 · yarrow21 · 2026-08-17T18:47:57+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+Follow-up fixes found while recording real quota state: parse_reset now returns a comparable ISO stamp (a bare '11:00pm' read as long-expired and re-dispatched into the wall), quota_block fails safe on an unreadable stamp, agent main propagates exit codes (agent godot returned 0 on a FAILING check), and lane park records a known-dry account. selftest 20/20.
+
+Commit at time of writing: `aca8389`

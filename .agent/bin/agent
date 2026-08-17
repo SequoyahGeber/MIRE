@@ -1806,7 +1806,10 @@ def main():
     cmd = sys.argv[1]
     if cmd not in COMMANDS:
         die("unknown command '%s'\n\n%s" % (cmd, USAGE))
-    COMMANDS[cmd](sys.argv[2:])
+    # Propagate the command's exit code. `agent godot` wraps a check whose failure MUST be visible to
+    # whoever ran it — a lane that reads exit 0 from a failing check will ship a broken change and
+    # report it verified. Commands that return None (all the original ones) still exit 0.
+    sys.exit(COMMANDS[cmd](sys.argv[2:]) or 0)
 
 
 if __name__ == "__main__":

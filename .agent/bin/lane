@@ -240,7 +240,10 @@ QUOTA_PAT = re.compile(
     r"|upgrade\s+(?:your plan\s+)?to\s+(?:increase|continue)"
     r"|out of (?:credits|tokens)"
     r")", re.I)
-RESET_PAT = re.compile(r"reset[s]?(?: at)?\s+([0-9]{1,2}:[0-9]{2}\s*(?:am|pm)?|[0-9T:\-]{8,})", re.I)
+ISO_PAT = re.compile(r"\b(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2})?(?:[+-]\d{2}:?\d{2}|Z)?)")
+CLOCK_PAT = re.compile(r"reset\w*(?:\s+\w+){0,3}?\s+(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?", re.I)
+CLOCK24_PAT = re.compile(r"reset\w*(?:\s+\w+){0,3}?\s+(\d{1,2}):(\d{2})", re.I)
+RELATIVE_PAT = re.compile(r"in\s+(\d+)\s*(second|minute|hour|day)s?", re.I)
 
 
 def looks_exhausted(text):
@@ -248,8 +251,70 @@ def looks_exhausted(text):
 
 
 def parse_reset(text):
-    m = RESET_PAT.search(text or "")
-    return m.group(1).strip() if m else None
+    """Resolve a CLI's reset wording into a timestamp that can actually be compared.
+
+    Returning the raw "11:00pm" is worse than returning nothing: `age_hours` cannot parse it, so the
+    lane reads as long-expired and gets dispatched straight back into the wall it just hit. Always
+    an aware ISO string, or None."""
+    if not text:
+        return None
+
+    m = ISO_PAT.search(text)
+    if m:
+        try:
+            dt = datetime.fromisoformat(m.group(1).replace("Z", "+00:00").replace(" ", "T"))
+            return _as_utc(dt)
+        except ValueError:
+            pass
+
+    m = RELATIVE_PAT.search(text)
+    if m:
+        n, unit = int(m.group(1)), m.group(2).lower()
+        delta = {"second": timedelta(seconds=n), "minute": timedelta(minutes=n),
+                 "hour": timedelta(hours=n), "day": timedelta(days=n)}[unit]
+        return (datetime.now(timezone.utc) + delta).isoformat(timespec="seconds")
+
+    m = CLOCK_PAT.search(text)
+    hour = minute = None
+    if m:
+        hour, minute = int(m.group(1)), int(m.group(2) or 0)
+        if m.group(3).lower() == "p" and hour < 12:
+            hour += 12
+        elif m.group(3).lower() == "a" and hour == 12:
+            hour = 0
+    else:
+        m = CLOCK24_PAT.search(text)
+        if m:
+            hour, minute = int(m.group(1)), int(m.group(2))
+    if hour is None or not (0 <= hour <= 23 and 0 <= minute <= 59):
+        return None
+
+    # A bare clock time means the next time that clock reads it, in the user's own timezone.
+    local = datetime.now().astimezone()
+    target = local.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if target <= local:
+        target += timedelta(days=1)
+    return _as_utc(target)
+
+
+def _as_utc(dt):
+    if dt.tzinfo is None:
+        dt = dt.astimezone()          # interpret a naive stamp as local, which is how CLIs print it
+    return dt.astimezone(timezone.utc).isoformat(timespec="seconds")
+
+
+def until_passed(iso):
+    """True / False, or None when the stamp cannot be read.
+
+    Callers must treat None as 'still parked'. Failing open here means dispatching into a wall that
+    is still up — burning a run to learn what we already knew."""
+    try:
+        dt = datetime.fromisoformat(iso)
+    except (TypeError, ValueError):
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) >= dt
 
 
 # ---------------------------------------------------------------- command
@@ -489,13 +554,17 @@ def quota_block(lane):
     """Why this lane must not be dispatched right now, or None."""
     if lane.get("status") == "exhausted":
         until = lane.get("exhausted_until")
-        if until and age_hours(until) < 0:
+        if not until:
+            return "marked exhausted; clear it with  lane reset <LANE>"
+        passed = until_passed(until)
+        if passed is None:
+            return ("marked exhausted with an unreadable reset time (%r) — staying parked. "
+                    "Clear it with  lane reset <LANE>" % until)
+        if not passed:
             return "quota resets %s" % until
-        if until and age_hours(until) >= 0:
-            lane["status"] = "idle"          # window lapsed, let it back in
-            lane["exhausted_until"] = None
-            return None
-        return "marked exhausted; clear it with  lane reset <LANE>"
+        lane["status"] = "idle"              # window lapsed, let it back in
+        lane["exhausted_until"] = None
+        return None
     if lane.get("consecutive_failures", 0) >= 3:
         return "3 consecutive failures — inspect .agent/logs before dispatching again"
     budget = lane.get("budget_tokens")
@@ -606,14 +675,65 @@ def cmd_selftest(args):
             print("%s✗ false positive:%s %s" % (C["r"], C["x"], text[:72]))
             bad += 1
     total = len(QUOTA_SAMPLES) + len(INNOCENT_SAMPLES)
+
+    # A reset time we cannot compare is worse than no reset time: it reads as long-expired and the
+    # lane gets dispatched straight back into the wall. Every one of these must yield a usable stamp.
+    for text in ("Your limit will reset at 11:00pm.",
+                 "resets at 3:30 PM",
+                 "limit will reset at 14:00",
+                 "try again in 5 hours",
+                 "Rate limit exceeded. Resets 2026-08-19T07:00:00Z"):
+        got = parse_reset(text)
+        if until_passed(got) is None:
+            print("%s✗ unusable reset stamp:%s %r -> %r" % (C["r"], C["x"], text, got))
+            bad += 1
+        total += 1
+    if until_passed("11:00pm") is not None:
+        print("%s✗ until_passed must return None for an unreadable stamp%s" % (C["r"], C["x"]))
+        bad += 1
+    total += 1
+
     if bad:
         print("%s%d/%d correct%s" % (C["r"], total - bad, total, C["x"]))
         return 1
-    ok("quota classifier: %d/%d correct" % (total, total))
+    ok("quota classifier and reset parsing: %d/%d correct" % (total, total))
     return 0
 
 
-COMMANDS = {"run": cmd_run, "status": cmd_status, "doctor": cmd_doctor,
+def cmd_park(args):
+    """Tell the harness a lane is dry until a known time, so the director stops routing to it.
+
+    You usually know this before the lane does — the plan's own usage screen said so. Recording it
+    here is the difference between the director planning around a dry account and discovering it one
+    wasted dispatch at a time."""
+    if len(args) < 2:
+        die("usage: lane park <LANE> <when>\n"
+            "  when: 2026-08-19 · 2026-08-19T15:00 · 3pm · 15:00 · 'in 4 hours'")
+    lanes = load_lanes()
+    name = args[0].upper()
+    if name not in lanes:
+        die("unknown lane '%s' — known: %s" % (name, ", ".join(sorted(lanes))))
+    raw = " ".join(args[1:])
+
+    when = parse_reset(raw) or parse_reset("resets at " + raw)
+    if not when:
+        # A bare date means the start of that day, local.
+        try:
+            d = datetime.fromisoformat(raw.strip())
+            when = _as_utc(d)
+        except ValueError:
+            die("could not read a time from %r — try 2026-08-19, 15:00, 3pm, or 'in 4 hours'" % raw)
+    if until_passed(when):
+        die("%s is in the past — nothing to park" % when)
+
+    lanes[name].update({"status": "exhausted", "exhausted_until": when, "task": None, "pid": None})
+    save_lanes(lanes)
+    ok("%s parked until %s" % (name, when))
+    print("  %sdispatch will refuse it until then; clear early with  lane reset %s%s"
+          % (C["dim"], name, C["x"]))
+
+
+COMMANDS = {"run": cmd_run, "status": cmd_status, "doctor": cmd_doctor, "park": cmd_park,
             "reset": cmd_reset, "selftest": cmd_selftest}
 
 USAGE = """lane — headless dispatcher for MIRE's worker accounts
@@ -621,6 +741,7 @@ USAGE = """lane — headless dispatcher for MIRE's worker accounts
   lane run <LANE> <task-id> [--dry-run] [--timeout N]   dispatch a prepared work order
   lane status                                           ledger: usage, health, what's running
   lane doctor                                           check each lane's CLI and login
+  lane park <LANE> <when>                               it's dry until then — stop routing to it
   lane reset <LANE>                                     clear an exhausted/error flag
   lane selftest                                         prove the quota classifier still works
 

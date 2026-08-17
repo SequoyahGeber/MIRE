@@ -11,6 +11,7 @@
 | **F-046** `viewmodel.gd` names autoloads bare, so any harness compiling `PlayerController` gets a viewmodel-less player | flint5 | 2026-08-17 18:43 | `entities/player/viewmodel.gd`, `tools/verify_setup.gd`, `tools/viewmodel_check.gd` |
 | **F-047** `harvest_world_check` asserts an absolute log count that DevLoadout's starting grant breaks | flint5 | 2026-08-17 18:43 | `tools/harvest_world_check.gd` |
 | **F-048** Three content generators overwrite tuned or later-batch values silently; one strips icons today | flint5 | 2026-08-17 18:43 | `tools/setup_harvest_content.gd`, `tools/setup_crafting_content.gd`, `tools/setup_project.gd` |
+| **F-050** Governing docs contradict D-031 in six places, an unclosed code fence hides eight decisions, and the budget table is 51 sessions stale | flint5 | 2026-08-17 18:44 | `docs/NEXT.md`, `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `docs/AUDIT-2026-08-17.md`, `AGENTS.md`, `content/recipes/stone_axe.tres` |
 
 ## Milestones
 
@@ -69,7 +70,7 @@
 | 🔵 | **F-047** `harvest_world_check` asserts an absolute log count that DevLoadout's starting grant breaks | in_flight |
 | 🔵 | **F-048** Three content generators overwrite tuned or later-batch values silently; one strips icons today | in_flight |
 | ⬜ | **F-049** The board never closes a finding resolved out-of-band, and never learns of new ones until a claim | todo |
-| ⬜ | **F-050** Governing docs contradict D-031 in six places, an unclosed code fence hides eight decisions, and the budget table is 51 sessions stale | todo |
+| 🔵 | **F-050** Governing docs contradict D-031 in six places, an unclosed code fence hides eight decisions, and the budget table is 51 sessions stale | in_flight |
 
 ## Done
 
