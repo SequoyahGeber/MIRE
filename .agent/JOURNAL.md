@@ -1385,3 +1385,15 @@ project.godot removed from all five SPECS Claim lines (2.11, 2.12, 2.13, 3.3, 3.
 Files: `docs/SPECS.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `2bcce25`
+
+---
+
+### DONE · F-049 · flint5 · 2026-08-17T19:12:34+00:00
+
+**The board never closes a finding resolved out-of-band, and never learns of new ones until a claim**
+
+_sync_findings closes departed findings (FINDINGS.md ## Open is the truth; journal unaffected) and cmd_start/cmd_board sync-and-save before rendering. Verified live: F-027 todo->done on first board render; state's open set now equals the file's ## Open exactly. Taken the moment 0.12's claim released.
+
+Files: `.agent/bin/agent`, `docs/FINDINGS.md`
+
+Commit at time of writing: `85d4eaf`

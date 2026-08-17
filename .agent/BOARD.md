@@ -12,7 +12,7 @@ _Nothing in flight._
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `██████░░░░` 28/44 | 16 |
+| Findings | `███████░░░` 30/44 | 14 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `███████░░░` 16/22 | 6 |
@@ -53,7 +53,6 @@ _Nothing in flight._
 | ⬜ | **F-023** Windows Steam first join intermittently exceeds the hard 10-second connection timeout | todo |
 | ⬜ | **F-024** A shipped LAN first join has no retry — only the debug launcher does | todo |
 | ⬜ | **F-025** Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake | todo |
-| ⬜ | **F-027** `NetInterest.configure()` does not keep its returned filter alive | todo |
 | ⬜ | **F-036** Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10 | todo |
 | ⬜ | **F-037** `net_debug_panel_check` fakes its second peer in-process, so host and client share one tree | todo |
 | ⬜ | **F-038** `inventory_net_check` intermittently fails its grant wait under machine load | todo |
@@ -61,8 +60,7 @@ _Nothing in flight._
 | ⬜ | **F-043** The iron sword ships complete and nothing puts it in a player's hand | todo |
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-045** `pgrep -fl Godot` is too blunt to be the closed-editor guard | todo |
-| ⬜ | **F-049** The board never closes a finding resolved out-of-band, and never learns of new ones until a claim | todo |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `4.0b` `F-002` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-046` `F-047` `F-048` `F-050` `F-051`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `4.0b` `F-002` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051`

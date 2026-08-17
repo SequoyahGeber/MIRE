@@ -250,10 +250,15 @@ def _norm_id(tid):
 
 def _sync_findings(st):
     """Mirror docs/FINDINGS.md's open section into tasks. Same shape as cmd_sync's roadmap pass:
-    adds and refreshes titles, never touches status. A finding moved to '## Resolved' stops being
-    synced but keeps whatever state it already had, so its journal entry survives."""
+    adds and refreshes titles, and never downgrades a status — but a finding that has LEFT '## Open'
+    while still marked todo gets marked done (F-049). FINDINGS.md is the source of truth for what is
+    open; before this, a finding resolved without `agent done` (F-027 sat that way for a day) stayed
+    on the board as claimable work forever, and once a director routes off the board that is a
+    dispatch waiting to happen. Journal entries are append-only and unaffected by status."""
     added = 0
+    open_ids = set()
     for fid, title in _open_findings():
+        open_ids.add(fid)
         title = title or fid
         if fid in st["tasks"]:
             st["tasks"][fid]["title"] = title
@@ -263,6 +268,10 @@ def _sync_findings(st):
                 "milestone": FINDINGS_MILESTONE, "status": "todo",
             }
             added += 1
+    for fid, t in st["tasks"].items():
+        if (t.get("milestone") == FINDINGS_MILESTONE and t.get("status") == "todo"
+                and fid not in open_ids):
+            t["status"] = "done"
     return added
 
 
@@ -351,6 +360,10 @@ def cmd_start(args):
                 "  Run:  agent start <your-name>")
         name = whoami()
     st = load()
+    # The board a session starts from must reflect FINDINGS.md as it is NOW — new findings filed
+    # since the last sync, and any resolved out-of-band, both surface here (F-049).
+    _sync_findings(st)
+    save(st)
 
     print("\n%s%s session started%s\n" % (C["b"], name, C["x"]))
     if name not in ("sequoyah", "human"):
@@ -1113,6 +1126,10 @@ def _roadmap_progress(st):
 
 def cmd_board(args):
     st = load()
+    # Same freshness rule as cmd_start (F-049): the board is read to pick work, so it must mirror
+    # FINDINGS.md's open section at read time, not at last-sync time.
+    _sync_findings(st)
+    save(st)
     done, total = _roadmap_progress(st)
     print("\n%sMIRE%s  %d/%d tasks done\n" % (C["b"], C["x"], done, total))
     _print_board(st, focus=whoami(required=False))

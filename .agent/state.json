@@ -3,9 +3,9 @@
   "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
-      "agent": "yarrow21",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "0.12"
+      "agent": "flint5",
+      "at": "2026-08-17T19:12:34+00:00",
+      "task": "F-049"
     },
     ".agent/bin/lane": {
       "agent": "yarrow21",
@@ -1397,11 +1397,6 @@
       "at": "2026-08-17T04:46:47+00:00",
       "task": "F-018"
     },
-    "autoload/net_interp.gd.uid": {
-      "agent": "reed",
-      "at": "2026-08-16T19:12:29+00:00",
-      "task": "F-019"
-    },
     "autoload/net_transport.gd": {
       "agent": "dusk3",
       "at": "2026-08-17T04:46:47+00:00",
@@ -1612,16 +1607,6 @@
       "at": "2026-08-17T15:43:36+00:00",
       "task": "F-032"
     },
-    "core/net/net_version.gd.uid": {
-      "agent": "reed",
-      "at": "2026-08-16T19:12:29+00:00",
-      "task": "F-019"
-    },
-    "core/net/remote_interp.gd.uid": {
-      "agent": "reed",
-      "at": "2026-08-16T19:12:29+00:00",
-      "task": "F-019"
-    },
     "core/net/run_identity.gd": {
       "agent": "dusk3",
       "at": "2026-08-17T15:43:36+00:00",
@@ -1674,8 +1659,8 @@
     },
     "docs/FINDINGS.md": {
       "agent": "flint5",
-      "at": "2026-08-17T19:05:38+00:00",
-      "task": "F-051"
+      "at": "2026-08-17T19:12:34+00:00",
+      "task": "F-049"
     },
     "docs/NEXT.md": {
       "agent": "flint5",
@@ -1731,11 +1716,6 @@
       "agent": "moss",
       "at": "2026-08-17T00:24:32+00:00",
       "task": "2.1f"
-    },
-    "levels/playtest_map.tscn": {
-      "agent": "reed",
-      "at": "2026-08-16T19:12:29+00:00",
-      "task": "F-019"
     },
     "project.godot": {
       "agent": "dusk3",
@@ -1992,11 +1972,6 @@
       "at": "2026-08-17T00:47:21+00:00",
       "task": "2.1g"
     },
-    "tools/handshake_check.gd.uid": {
-      "agent": "reed",
-      "at": "2026-08-16T19:12:29+00:00",
-      "task": "F-019"
-    },
     "tools/harvest_world_check.gd": {
       "agent": "flint5",
       "at": "2026-08-17T18:49:19+00:00",
@@ -2036,16 +2011,6 @@
       "agent": "nettle",
       "at": "2026-08-17T01:11:22+00:00",
       "task": "2.3"
-    },
-    "tools/interest_check.gd.uid": {
-      "agent": "reed",
-      "at": "2026-08-16T19:12:29+00:00",
-      "task": "F-019"
-    },
-    "tools/interp_check.gd.uid": {
-      "agent": "reed",
-      "at": "2026-08-16T19:12:29+00:00",
-      "task": "F-019"
     },
     "tools/inventory_check.gd": {
       "agent": "dusk3",
@@ -3362,7 +3327,7 @@
     "F-027": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`NetInterest.configure()` does not keep its returned filter alive"
     },
@@ -3533,9 +3498,11 @@
       "title": "Three content generators overwrite tuned or later-batch values silently; one strips icons today"
     },
     "F-049": {
+      "done_at": "2026-08-17T19:12:34+00:00",
+      "done_by": "flint5",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The board never closes a finding resolved out-of-band, and never learns of new ones until a claim"
     },

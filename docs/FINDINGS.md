@@ -536,24 +536,28 @@ they should say `agent order` refuses the dispatch for you, or point at the same
 
 ---
 
-### F-049 · The board never closes a finding resolved out-of-band, and never learns of new ones until a claim
+## Resolved
 
-**Area:** coordination tooling · **Severity:** low · **Found:** 2026-08-17 by flint5 during the project audit
+### F-049 · The board never closed a finding resolved out-of-band, and never learned of new ones until a claim — **fixed**
+
+**Area:** coordination tooling · **Severity:** low · **Found:** 2026-08-17 by flint5 during the
+project audit · **Resolved:** 2026-08-17 by flint5, after 0.12 released the file
 
 Two halves, both in `.agent/bin/agent`. (1) `_sync_findings()` "never touches status", so a finding
-moved to `## Resolved` without `agent done` keeps `status: todo` forever — F-027 sits on the board as
-open now, resolved in this file since 2026-08-16. The sync should mark departed findings done. (2)
-`_sync_findings()` runs only from `cmd_sync` and `_require_task`, not `cmd_start` or `cmd_board`, so
-a freshly filed finding (F-042/F-043 today) is invisible on the board until somebody happens to claim
-one. Net effect at audit time: the board said 11 open findings; the truth was 12, and one of the 11
-was false.
+moved to `## Resolved` without `agent done` kept `status: todo` forever — F-027 sat on the board as
+claimable work for a day after being resolved, and once a director routes off the board that is a
+mis-dispatch waiting to happen. (2) The sync ran only from `cmd_sync` and `_require_task`, so a
+freshly filed finding was invisible until somebody happened to claim one — at audit time the board
+said 11 open findings, the truth was 12, and one of the 11 was false.
 
-Not fixed here: `.agent/bin/agent` is claimed by task 0.12 (yarrow21), which is rewriting the same
-file. Fold both halves in there, or take this finding after 0.12 ships.
+Fixed: `_sync_findings()` now marks a Findings-milestone task done when its id has left `## Open`
+(FINDINGS.md is the source of truth for openness; journal entries are append-only and unaffected),
+and both `cmd_start` and `cmd_board` sync-and-save before rendering, so the board mirrors the file
+at read time. Verified with a live before/after: F-027 `todo → done` on the first `agent board`
+after the fix, and the state's open-finding set became exactly FINDINGS.md's `## Open` section.
+Deliberately deferred while 0.12 (yarrow21) held this file — taken the moment its claim released.
 
 ---
-
-## Resolved
 
 ### F-051 · Five SPECS blocks claimed `project.godot`, which would collapse three lanes back to one — **fixed**
 
