@@ -982,6 +982,11 @@
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
     },
+    "assets/icons": {
+      "agent": "kiln9",
+      "at": "2026-08-17T04:31:26+00:00",
+      "task": "2.1d"
+    },
     "assets/loot": {
       "agent": "gale",
       "at": "2026-08-16T23:44:12+00:00",
@@ -1237,6 +1242,11 @@
       "at": "2026-08-17T01:15:29+00:00",
       "task": "2.1d"
     },
+    "assets/source/tool_weapon_set.blend": {
+      "agent": "kiln9",
+      "at": "2026-08-17T04:31:26+00:00",
+      "task": "2.1d"
+    },
     "assets/source/ward_set.blend": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
@@ -1246,6 +1256,11 @@
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
+    },
+    "assets/tools_weapons": {
+      "agent": "kiln9",
+      "at": "2026-08-17T04:31:26+00:00",
+      "task": "2.1d"
     },
     "assets/wards": {
       "agent": "ember",
@@ -1442,6 +1457,16 @@
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
     },
+    "autoload/combat_service.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
+    },
+    "autoload/combat_service.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
+    },
     "autoload/crafting_service.gd": {
       "agent": "dusk3",
       "at": "2026-08-17T02:52:00+00:00",
@@ -1502,6 +1527,11 @@
       "at": "2026-08-16T17:16:32+00:00",
       "task": "1.8"
     },
+    "autoload/registry.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
+    },
     "autoload/steam_lobby.gd": {
       "agent": "vane",
       "at": "2026-08-16T22:59:02+00:00",
@@ -1523,29 +1553,34 @@
       "task": "F-029"
     },
     "content/items/iron_ore.tres": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
+      "agent": "kiln9",
+      "at": "2026-08-17T04:31:26+00:00",
+      "task": "2.1d"
     },
     "content/items/log.tres": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
+      "agent": "kiln9",
+      "at": "2026-08-17T04:31:26+00:00",
+      "task": "2.1d"
     },
     "content/items/stone.tres": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
+      "agent": "kiln9",
+      "at": "2026-08-17T04:31:26+00:00",
+      "task": "2.1d"
     },
     "content/items/stone_axe.tres": {
-      "agent": "dusk3",
-      "at": "2026-08-17T02:52:00+00:00",
-      "task": "2.6"
+      "agent": "kiln9",
+      "at": "2026-08-17T04:31:26+00:00",
+      "task": "2.1d"
     },
     "content/recipes/stone_axe.tres": {
       "agent": "dusk3",
       "at": "2026-08-17T02:52:00+00:00",
       "task": "2.6"
+    },
+    "content/weapons/stone_axe.tres": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
     },
     "core/dev/dev_launch.gd": {
       "agent": "vane",
@@ -1618,19 +1653,19 @@
       "task": "4.0b"
     },
     "docs/ASSET_TRACKER.md": {
-      "agent": "pike14",
-      "at": "2026-08-17T02:10:02+00:00",
-      "task": "2.1i"
+      "agent": "kiln9",
+      "at": "2026-08-17T04:31:26+00:00",
+      "task": "2.1d"
     },
     "docs/DECISIONS.md": {
-      "agent": "wick",
-      "at": "2026-08-17T00:47:21+00:00",
-      "task": "2.1g"
+      "agent": "kiln9",
+      "at": "2026-08-17T04:31:26+00:00",
+      "task": "2.1d"
     },
     "docs/DELEGATION.md": {
-      "agent": "dusk3",
-      "at": "2026-08-17T02:52:00+00:00",
-      "task": "2.6"
+      "agent": "kiln9",
+      "at": "2026-08-17T04:31:26+00:00",
+      "task": "2.1d"
     },
     "docs/DESIGN.md": {
       "agent": "kiln",
@@ -1662,10 +1697,15 @@
       "at": "2026-08-16T20:11:49+00:00",
       "task": "4.0b"
     },
+    "entities/player/player_camera.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
+    },
     "entities/player/player_controller.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T02:30:40+00:00",
-      "task": "2.5"
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
     },
     "levels/playtest_hollow.tscn": {
       "agent": "moss",
@@ -1679,18 +1719,28 @@
     },
     "project.godot": {
       "agent": "dusk3",
-      "at": "2026-08-17T04:01:51+00:00",
-      "task": "2.7"
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
     },
     "steam_appid.txt": {
       "agent": "steam",
       "at": "2026-08-16T06:52:27+00:00",
       "task": "1.1"
     },
+    "systems/combat/weapon_def.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
+    },
+    "systems/combat/weapon_def.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
+    },
     "systems/harvesting/harvestable.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
+      "agent": "dusk3",
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
     },
     "systems/harvesting/harvestable.gd.uid": {
       "agent": "nettle",
@@ -1767,6 +1817,11 @@
       "at": "2026-08-16T19:00:05+00:00",
       "task": "2.1e"
     },
+    "tools/blender/build_tool_weapon_set.py": {
+      "agent": "kiln9",
+      "at": "2026-08-17T04:31:26+00:00",
+      "task": "2.1d"
+    },
     "tools/blender/build_ward_set.py": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
@@ -1776,6 +1831,31 @@
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
+    },
+    "tools/blender/render_item_icons.py": {
+      "agent": "kiln9",
+      "at": "2026-08-17T04:31:26+00:00",
+      "task": "2.1d"
+    },
+    "tools/combat_check.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
+    },
+    "tools/combat_check.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
+    },
+    "tools/combat_net_check.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
+    },
+    "tools/combat_net_check.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
     },
     "tools/connect_retry_check.gd": {
       "agent": "vane",
@@ -1942,6 +2022,11 @@
       "at": "2026-08-17T02:30:40+00:00",
       "task": "2.5"
     },
+    "tools/item_icons_check.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-17T04:31:26+00:00",
+      "task": "2.1d"
+    },
     "tools/mapgen/hollow_layout.py": {
       "agent": "pike",
       "at": "2026-08-17T01:22:00+00:00",
@@ -1986,6 +2071,16 @@
       "agent": "reed",
       "at": "2026-08-16T19:23:07+00:00",
       "task": "1.7"
+    },
+    "tools/setup_combat_content.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
+    },
+    "tools/setup_combat_content.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:31:24+00:00",
+      "task": "2.8"
     },
     "tools/setup_crafting_content.gd": {
       "agent": "dusk3",
@@ -2491,9 +2586,11 @@
       "title": "Crafting UI"
     },
     "2.8": {
+      "done_at": "2026-08-17T04:31:24+00:00",
+      "done_by": "dusk3",
       "est": "3",
       "milestone": "M2",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Melee combat v1: wind-up \u2192 commit \u2192 recovery, hitbox, hitstop, screenshake, impact SFX"
     },

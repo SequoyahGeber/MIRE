@@ -191,10 +191,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		camera.apply_look((event as InputEventMouseMotion).relative)
 		return
 
+	# The swing starts locally on the press (own-action prediction) and the host resolves the hit —
+	# see autoload/combat_service.gd. Nothing about damage is decided here.
+	if event.is_action_pressed(&"attack") and gameplay_input_allowed():
+		CombatService.request_attack()
+		return
+
 	# Temporary mouse release. Replaced by the pause menu in M7 — until then it is how you get your
 	# cursor back without killing the process.
 	if event.is_action_pressed(&"ui_cancel"):
 		_capture_mouse(Input.mouse_mode != Input.MOUSE_MODE_CAPTURED)
+
+
+## False while any cursor-owning UI holds the blocking group (D-032). Suppressing input without
+## pausing the tree is deliberate: pausing a multiplayer client would stall networking.
+func gameplay_input_allowed() -> bool:
+	return get_tree().get_first_node_in_group(BLOCKING_UI_GROUP) == null
 
 
 func _physics_process(delta: float) -> void:
@@ -240,7 +252,7 @@ func _apply_horizontal_movement(delta: float) -> void:
 	# Cursor-owning UI suppresses gameplay input without pausing the simulation. Pausing a multiplayer
 	# client would stall networking and is not a valid UI boundary.
 	var input_2d: Vector2 = Vector2.ZERO
-	if get_tree().get_first_node_in_group(BLOCKING_UI_GROUP) == null:
+	if gameplay_input_allowed():
 		input_2d = Input.get_vector(
 			&"move_left", &"move_right", &"move_forward", &"move_back"
 		)
@@ -266,7 +278,7 @@ func _apply_horizontal_movement(delta: float) -> void:
 
 
 func _try_jump() -> void:
-	if get_tree().get_first_node_in_group(BLOCKING_UI_GROUP) != null:
+	if not gameplay_input_allowed():
 		return
 	var buffered: bool = _time_since_jump_pressed <= jump_buffer_time
 	var grounded_recently: bool = _time_since_grounded <= coyote_time

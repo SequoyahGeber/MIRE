@@ -15,6 +15,10 @@ const HARVESTABLE_DEFINITION := preload("res://systems/harvesting/harvestable_de
 const SYNC_NODE_NAME: StringName = &"HarvestSync"
 const VISUAL_NODE_NAME: StringName = &"HarvestVisual"
 const HARVESTABLE_GROUP: StringName = &"harvestable"
+## The cross-system melee target seam (task 2.8). Anything in this group must implement
+## `host_apply_damage(amount, instigator_peer_id) -> bool` and expect host-only callers; 2.10's
+## enemies join it too and CombatService needs no change when they do.
+const DAMAGEABLE_GROUP: StringName = &"damageable"
 
 signal hit_accepted(peer_id: int, damage: int, health_remaining: int)
 signal depleted(peer_id: int, item_id: StringName, amount: int)
@@ -57,6 +61,7 @@ var _last_request_msec: Dictionary[int, int] = {}
 func _ready() -> void:
 	set_multiplayer_authority(NetConfig.HOST_PEER_ID)
 	add_to_group(HARVESTABLE_GROUP)
+	add_to_group(DAMAGEABLE_GROUP)
 	_resolve_collision_body()
 	_configuration_valid = _validate_configuration()
 

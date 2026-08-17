@@ -12,15 +12,22 @@ extends Node
 
 const ITEMS_PATH: String = "res://content/items"
 const RECIPES_PATH: String = "res://content/recipes"
+const WEAPONS_PATH: String = "res://content/weapons"
 
 var items: Dictionary[StringName, ItemDef] = {}
 var recipes: Dictionary[StringName, RecipeDef] = {}
+## Keyed by the ItemDef id the weapon belongs to, not by an id of its own — a WeaponDef describes
+## how an existing item swings (task 2.8).
+var weapons: Dictionary[StringName, WeaponDef] = {}
 
 
 func _ready() -> void:
 	_load_items()
 	_load_recipes()
-	MireLog.info(&"content", "loaded %d item(s), %d recipe(s)" % [items.size(), recipes.size()])
+	_load_weapons()
+	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d weapon(s)" % [
+		items.size(), recipes.size(), weapons.size()
+	])
 
 
 func get_item(id: StringName) -> ItemDef:
@@ -37,6 +44,14 @@ func get_recipe(id: StringName) -> RecipeDef:
 
 func has_recipe(id: StringName) -> bool:
 	return recipes.has(id)
+
+
+func get_weapon(item_id: StringName) -> WeaponDef:
+	return weapons.get(item_id)
+
+
+func has_weapon(item_id: StringName) -> bool:
+	return weapons.has(item_id)
 
 
 func _load_items() -> void:
@@ -69,6 +84,28 @@ func _load_recipes() -> void:
 			MireLog.error(&"content", "duplicate recipe id '%s' at %s, keeping first" % [recipe.id, file_path])
 			continue
 		recipes[recipe.id] = recipe
+
+
+func _load_weapons() -> void:
+	for file_path: String in _tres_files_in(WEAPONS_PATH):
+		var res: Resource = load(file_path)
+		if not (res is WeaponDef):
+			MireLog.error(&"content", "%s does not contain a WeaponDef, skipped" % file_path)
+			continue
+		var weapon: WeaponDef = res
+		if weapon.item_id == &"":
+			MireLog.error(&"content", "%s has no item_id set, skipped" % file_path)
+			continue
+		var errors: PackedStringArray = weapon.validation_errors()
+		if not errors.is_empty():
+			MireLog.error(&"content", "%s is invalid (%s), skipped" % [file_path, "; ".join(errors)])
+			continue
+		if weapons.has(weapon.item_id):
+			MireLog.error(&"content", "duplicate weapon for item '%s' at %s, keeping first" % [
+				weapon.item_id, file_path
+			])
+			continue
+		weapons[weapon.item_id] = weapon
 
 
 func _tres_files_in(dir_path: String) -> Array[String]:

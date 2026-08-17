@@ -968,3 +968,31 @@ Notes along the way:
 Files: `ui/crafting/crafting_ui.gd`, `ui/crafting/crafting_ui.gd.uid`, `tools/crafting_ui_check.gd`, `tools/crafting_ui_check.gd.uid`, `tools/crafting_ui_render_check.gd`, `tools/crafting_ui_render_check.gd.uid`, `project.godot`, `tools/crafting_net_check.gd`
 
 Commit at time of writing: `51d75be`
+
+---
+
+### DONE · 2.8 · dusk3 · 2026-08-17T04:31:24+00:00
+
+**Melee combat v1: wind-up → commit → recovery, hitbox, hitstop, screenshake, impact SFX**
+
+Melee v1: CombatService autoload with committed wind-up/commit/recovery, host-resolved hitbox over the new 'damageable' seam, WeaponDef content (content/weapons/stone_axe.tres) keyed by item id and loaded by Registry, code-built unarmed fallback, client-local hitstop, camera impact shake and a placeholder impact thud. Client predicts its own swing; the host derives the weapon from its own inventory and owns every hit (D-034). Verified on Godot 4.7.1: combat_check 42/42, combat_net_check 23/23 in two real ENet processes (host applied 3 damage for the held axe and 1 for an empty slot, proving host-side weapon derivation; spam rejected mid-recovery). Regression: harvest_world 70/70, harvestable 43/43, harvestable_net 12/12, inventory 51/51, crafting 32/32, crafting_ui 47/47. No authored impact sound exists yet - the thud is a code-built placeholder.
+
+Notes along the way:
+- Authority split (D-034): the swing is client-predicted on the press, the hit is host. A client sends only a hotbar slot index; the host reads its OWN host_slots(peer_id) for that slot to decide the weapon, and uses the yaw/pitch the player synchronizer already replicates for aim. Targets are the group 'damageable' + host_apply_damage(amount, peer) -> bool, which Harvestable already had; 2.10's enemies join the same group with no CombatService change.
+- Hitstop is the attacker's own swing clock, never Engine.time_scale - time_scale slows the frame loop every transport pump is polled from (same mechanism as F-025). Filed F-033: task 2.9's gate ('one enemy with one weapon feels great') cannot be met before 2.10 builds the enemy; tuning against a tree would look like the gate passing.
+
+Files: `systems/combat/weapon_def.gd`, `systems/combat/weapon_def.gd.uid`, `autoload/combat_service.gd`, `autoload/combat_service.gd.uid`, `entities/player/player_camera.gd`, `entities/player/player_controller.gd`, `systems/harvesting/harvestable.gd`, `autoload/registry.gd`, `content/weapons/stone_axe.tres`, `tools/setup_combat_content.gd`, `tools/setup_combat_content.gd.uid`, `tools/combat_check.gd`, `tools/combat_check.gd.uid`, `tools/combat_net_check.gd`, `tools/combat_net_check.gd.uid`, `project.godot`
+
+Commit at time of writing: `95969ac`
+
+---
+
+### HANDOFF · 2.1d · kiln9 · 2026-08-17T04:31:26+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-004R + A-042a done, both OUT OF QUEUE at Sequoyah's direct request ('better tool assets, and inventory icons'). A-009 is untouched and still the NEXT batch — start there. A-004R rebuilt all ten tool/weapon designs in place (same names, same 20 exports, dimensions within ~6 cm) using two new reusable builders in build_tool_weapon_set.py: ground_profile() takes per-point bevel DISTANCES in metres, not fractions, and swept_shaft() takes a radius per path point. Two traps paid for: a fractional inset rounds off exactly the corners that make a silhouette, and a bright edge laid over a head is invisible because it loses to the head's own silhouette at the rim — butt the two shapes along a seam instead. Judge heads on a six-azimuth orbit render, never head-on; both bugs were invisible from the front. A-042a added 24 inventory icons in assets/icons/, rendered from the shipped GLBs rather than drawn (D-033), with measured framing and Cycles + pinned seed because EEVEE would not reproduce anti-aliasing on thin silhouettes. Extend SOURCES in render_item_icons.py for new families; do not start a second icon pipeline. Verify with tools/item_icons_check.gd. Still open for Sequoyah: icons have not been seen at real inventory slot size.
+
+Files: `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `tools/blender/build_tool_weapon_set.py`, `tools/blender/render_item_icons.py`, `assets/source/tool_weapon_set.blend`, `assets/tools_weapons`, `assets/icons`, `docs/DECISIONS.md`, `content/items/iron_ore.tres`, `content/items/log.tres`, `content/items/stone.tres`, `content/items/stone_axe.tres`, `tools/item_icons_check.gd`
+
+Commit at time of writing: `95969ac`
