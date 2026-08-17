@@ -211,33 +211,6 @@ these known gaps" is a standing decision that shapes M7 and M8, not just a findi
 ---
 
 
-### F-017 · A brand-new script still ships without its `.uid`, because the sidecar does not exist yet
-
-**Area:** build/tooling · **Severity:** low · **Filed:** 2026-08-16 by birch during 1.8
-
-F-010's durable half — `cmd_ship` stages `<file>.uid` whenever it stages `<file>.gd` — closes the case
-where the sidecar exists and nobody claimed it. It cannot close this one: **Godot writes the `.uid`
-at import time, and a task that never runs an import ships before the file exists.** `ship` stages
-what is on disk, and there is nothing there to stage.
-
-Seen live: `0a267f5` shipped `world/gen/test_map_props.gd` with no sidecar. It appeared in this
-working directory ten minutes later, untracked, the moment 1.8 ran `Godot --headless --path . --import`
-to rebuild the global class cache (**F-016** — three tasks hit that one on the same day). Nothing was
-wrong with how 0.11 shipped: the file genuinely did not exist yet.
-
-So this recurs for **every new script from every task that has no reason to import**, and the two
-halves of F-010 between them still leave the repo one sidecar short each time. The consequence is
-F-010's, unchanged: harmless while our `.tscn` files reference scripts by `path=`, and not harmless
-the first time Sequoyah saves a scene and Godot rewrites those as `uid://`.
-
-**Likely fix, not attempted here** (it is `.agent/bin/agent`, which 1.8 does not hold): have `ship`
-run `Godot --headless --path . --import` before it stages, when the staged set contains a `.gd` with
-no sidecar. That is a few seconds, it is the same command that fixes the class-cache problem, and it
-makes both failures impossible rather than periodically swept. The alternative — a per-milestone
-sweep — is explicitly the thing F-010 called "a fix with a timer".
-
----
-
 ### F-020 · Steam sessions cannot use NetSession's direct-address auto-rejoin loop
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-16 by tine during 1.7
@@ -392,33 +365,36 @@ when two players reconnect together. Before reconnect can preserve inventory, he
 Attunement, add a host-issued opaque run-player token to admission/rejoin and an explicit old-peer to
 new-peer rebind event that gameplay systems can consume.
 
-### F-034 · `agent ship` silently drops directory claims and appends stray argv to the commit message
+### F-036 · Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10
 
-**Area:** agent tooling · **Severity:** medium · **Found:** 2026-08-16 by kiln9 during 2.1d
+**Area:** roadmap · **Severity:** medium — it gates a "never cut" item · **Found:** 2026-08-16 by dusk3
+during 2.8
 
-`agent ship <id> ["message"]` takes a message only, and commits the task's *claimed* files. Two things
-follow that cost a commit to notice:
+`ROADMAP.md` orders 2.8 (melee combat) → **2.9 "tune combat feel until one enemy with one weapon
+feels great; do not proceed otherwise"** → 2.10 (Enemy v1). 2.9 is one of the four things `ROADMAP.md`
+§"Never cut" names, and `DESIGN.md` §6 states its rule of thumb in the same terms: *if hitting one
+enemy with one weapon doesn't feel great, do not build the second weapon.*
 
-1. **A claim on a directory is not expanded at ship time.** 2.1d was claimed with
-   `assets/tools_weapons` and `assets/icons`. `agent check` accepted those claims and the pre-commit
-   hook was happy, but `ship` committed only the individually-named files — the generators, the docs,
-   the four `.tres`. Every rebuilt GLB, every preview, and the entire new `assets/icons/` tree stayed
-   uncommitted, and `ship` still printed `✓ pushed to origin/main` and the sign-off. Nothing in the
-   output distinguishes "shipped everything" from "shipped a third of it".
-2. **Extra arguments become part of the commit subject.** Passing a file list after the message (a
-   reasonable guess, since `claim` takes files) produced the subject
-   `Art: rebuild the tool set and add inventory icons tools/blender/build_tool_weapon_set.py …
-   docs/DELEGATION.md` — the whole pathspec glued on. `340d9a3` is stuck with it: it was pushed, and
-   another agent committed on top before it could be amended.
+But after 2.8 there is no enemy. The only things in the `&"damageable"` group are harvestables, and a
+tree does not exercise what 2.9 is actually gating: an enemy's 0.4 s telegraph, backpedal pressure,
+whether the hit reads as a *kill* rather than a resource tick, or death feedback. Tuning against a
+tree and declaring the gate passed is the failure mode the gate exists to prevent — and it would be
+easy to do accidentally, because the swing, hitstop, shake and impact sound all *work* against a
+tree.
 
-`ship` also committed `docs/DECISIONS.md` including another agent's uncommitted D-031/D-032, because
-the file was claimed by this task for one added decision. Content was preserved, but it is attributed
-to the wrong commit.
+Two ways out, and this is Sequoyah's call because it changes roadmap order:
 
-Until this is fixed: **claim files individually, never directories**, and check `git status` after
-every `ship` rather than trusting its sign-off. The fix is to expand directory claims to their files
-at ship time, reject unexpected positional arguments instead of concatenating them, and print the
-committed file count.
+1. **Swap 2.9 and 2.10.** Build Enemy v1, then tune. This is what the gate's own wording assumes.
+2. **Keep the order but split 2.9**: tune the weapon-side feel (swing weights, hitstop, shake, sound)
+   against a tree now, and re-run the real gate immediately after 2.10 before anything else starts.
+
+Not fixed here: 2.8 owns combat code, not the roadmap. Filed rather than silently tuning against a
+tree, which would have looked like the gate passing.
+
+*Filed as F-033, then F-035, and finally renumbered to F-036 on 2026-08-16: both earlier numbers were taken by entries that landed
+concurrently (a resolved F-033, and kiln9's F-034 and F-035). `NEXT.md` and the 2.8 journal note refer to it by the new number.*
+
+---
 
 ### F-037 · `net_debug_panel_check` fakes its second peer in-process, so host and client share one tree
 
@@ -469,38 +445,113 @@ hides the race rather than removing it.
 
 ---
 
-### F-036 · Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10
+## Resolved
 
-**Area:** roadmap · **Severity:** medium — it gates a "never cut" item · **Found:** 2026-08-16 by dusk3
-during 2.8
+### F-017 · A brand-new script still ships without its `.uid`, because the sidecar does not exist yet — **fixed**
 
-`ROADMAP.md` orders 2.8 (melee combat) → **2.9 "tune combat feel until one enemy with one weapon
-feels great; do not proceed otherwise"** → 2.10 (Enemy v1). 2.9 is one of the four things `ROADMAP.md`
-§"Never cut" names, and `DESIGN.md` §6 states its rule of thumb in the same terms: *if hitting one
-enemy with one weapon doesn't feel great, do not build the second weapon.*
+**Area:** build/tooling · **Severity:** low · **Filed:** 2026-08-16 by birch during 1.8
 
-But after 2.8 there is no enemy. The only things in the `&"damageable"` group are harvestables, and a
-tree does not exercise what 2.9 is actually gating: an enemy's 0.4 s telegraph, backpedal pressure,
-whether the hit reads as a *kill* rather than a resource tick, or death feedback. Tuning against a
-tree and declaring the gate passed is the failure mode the gate exists to prevent — and it would be
-easy to do accidentally, because the swing, hitstop, shake and impact sound all *work* against a
-tree.
+F-010's durable half — `cmd_ship` stages `<file>.uid` whenever it stages `<file>.gd` — closes the case
+where the sidecar exists and nobody claimed it. It cannot close this one: **Godot writes the `.uid`
+at import time, and a task that never runs an import ships before the file exists.** `ship` stages
+what is on disk, and there is nothing there to stage.
 
-Two ways out, and this is Sequoyah's call because it changes roadmap order:
+Seen live: `0a267f5` shipped `world/gen/test_map_props.gd` with no sidecar. It appeared in this
+working directory ten minutes later, untracked, the moment 1.8 ran `Godot --headless --path . --import`
+to rebuild the global class cache (**F-016** — three tasks hit that one on the same day). Nothing was
+wrong with how 0.11 shipped: the file genuinely did not exist yet.
 
-1. **Swap 2.9 and 2.10.** Build Enemy v1, then tune. This is what the gate's own wording assumes.
-2. **Keep the order but split 2.9**: tune the weapon-side feel (swing weights, hitstop, shake, sound)
-   against a tree now, and re-run the real gate immediately after 2.10 before anything else starts.
+So this recurs for **every new script from every task that has no reason to import**, and the two
+halves of F-010 between them still leave the repo one sidecar short each time. The consequence is
+F-010's, unchanged: harmless while our `.tscn` files reference scripts by `path=`, and not harmless
+the first time Sequoyah saves a scene and Godot rewrites those as `uid://`.
 
-Not fixed here: 2.8 owns combat code, not the roadmap. Filed rather than silently tuning against a
-tree, which would have looked like the gate passing.
-
-*Filed as F-033, then F-035, and finally renumbered to F-036 on 2026-08-16: both earlier numbers were taken by entries that landed
-concurrently (a resolved F-033, and kiln9's F-034 and F-035). `NEXT.md` and the 2.8 journal note refer to it by the new number.*
+**Likely fix, not attempted here** (it is `.agent/bin/agent`, which 1.8 does not hold): have `ship`
+run `Godot --headless --path . --import` before it stages, when the staged set contains a `.gd` with
+no sidecar. That is a few seconds, it is the same command that fixes the class-cache problem, and it
+makes both failures impossible rather than periodically swept. The alternative — a per-milestone
+sweep — is explicitly the thing F-010 called "a fix with a timer".
 
 ---
 
-## Resolved
+**Resolved:** 2026-08-16 by dusk3 · fixed
+
+`ship` now runs `Godot --headless --path . --import` when its staged set contains a `.gd` with no
+sidecar, then re-reads `git status` and stages whatever appeared. This is the entry's own suggested
+fix, and it was the right one: it is the same command that rebuilds the global class cache (F-016), so
+one call closes both failures instead of leaving a per-milestone sweep — "a fix with a timer" — to
+catch them.
+
+Three guards, because `ship` must never become a command that can fail for environmental reasons:
+
+- **Godot running → skip with a warning.** Importing under a live editor is the D-031 hazard; the
+  sidecars ship late rather than risking the editor's own write.
+- **Godot not found → skip with a warning**, naming `GODOT=/path/to/Godot`. Codex on another machine
+  must still be able to ship.
+- **Import fails → skip with a warning.** A non-zero import never blocks the commit.
+
+Verified end-to-end: created `tools/_f017_probe.gd` with no sidecar, called `_generate_missing_uids()`
+against a real `git status`, and confirmed `tools/_f017_probe.gd.uid` was created and appeared in the
+refreshed change list. Probe removed afterwards.
+
+### F-034 · `agent ship` silently drops directory claims and appends stray argv to the commit message — **fixed**
+
+**Area:** agent tooling · **Severity:** medium · **Found:** 2026-08-16 by kiln9 during 2.1d
+
+`agent ship <id> ["message"]` takes a message only, and commits the task's *claimed* files. Two things
+follow that cost a commit to notice:
+
+1. **A claim on a directory is not expanded at ship time.** 2.1d was claimed with
+   `assets/tools_weapons` and `assets/icons`. `agent check` accepted those claims and the pre-commit
+   hook was happy, but `ship` committed only the individually-named files — the generators, the docs,
+   the four `.tres`. Every rebuilt GLB, every preview, and the entire new `assets/icons/` tree stayed
+   uncommitted, and `ship` still printed `✓ pushed to origin/main` and the sign-off. Nothing in the
+   output distinguishes "shipped everything" from "shipped a third of it".
+2. **Extra arguments become part of the commit subject.** Passing a file list after the message (a
+   reasonable guess, since `claim` takes files) produced the subject
+   `Art: rebuild the tool set and add inventory icons tools/blender/build_tool_weapon_set.py …
+   docs/DELEGATION.md` — the whole pathspec glued on. `340d9a3` is stuck with it: it was pushed, and
+   another agent committed on top before it could be amended.
+
+`ship` also committed `docs/DECISIONS.md` including another agent's uncommitted D-031/D-032, because
+the file was claimed by this task for one added decision. Content was preserved, but it is attributed
+to the wrong commit.
+
+Until this is fixed: **claim files individually, never directories**, and check `git status` after
+every `ship` rather than trusting its sign-off. The fix is to expand directory claims to their files
+at ship time, reject unexpected positional arguments instead of concatenating them, and print the
+committed file count.
+
+**Resolved:** 2026-08-16 by dusk3 · fixed, all three parts
+
+1. **Directory claims expand at ship time.** `ship` matched claimed paths against `git status`
+   output, which lists *files*, so a claim on `assets/tools_weapons` matched nothing while
+   `agent check` and the pre-commit hook both accepted it. It now collects every changed file under
+   each claimed directory. Verified against 2.1d's exact shape: claims
+   `["assets/tools_weapons", "docs/DELEGATION.md"]` over changed files including
+   `assets/tools_weapons/exports/a.glb` now expand to both nested files and leave `autoload/x.gd`
+   alone.
+
+2. **Path-shaped arguments are rejected, not concatenated.** Validation runs before any state is
+   loaded, so the mistake is caught whatever the task's status:
+
+   ```
+   ✗ ship takes a task id and a MESSAGE, not a file list — it commits what the task claimed.
+     Looks like a path: docs/FINDINGS.md
+     Did you mean:  agent ship F-017 "your message here"
+   ```
+
+   The test is "does this argument exist on disk, or contain a `/`" rather than an argument count,
+   so an unquoted prose message still works — that usage was never the bug.
+
+3. **The sign-off distinguishes a full ship from a partial one.** "Left alone" now prints its total
+   and says how many it truncated, instead of showing at most eight paths with no count.
+
+The entry's fourth observation — that `ship` committed another agent's uncommitted `D-031`/`D-032`
+because the file was claimed for one added decision — is **not** fixed and is not a bug in `ship`:
+committing a claimed file means committing its current contents. The working practice that avoids it
+is to keep shared documents out of a claim when another agent is mid-edit in them, which is what the
+2.8 sweep did by hand.
 
 ### F-002 · Sprint-FOV lerp uses the framerate-dependent smoothing form — **fixed**
 
