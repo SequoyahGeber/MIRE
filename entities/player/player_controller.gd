@@ -29,6 +29,11 @@ const DEBUG_AVATAR_COLOURS: Array[Color] = [
 	Color("55e0cf"),
 ]
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
+## preload, not the bare `PlayerViewmodel` (F-016): a new class_name is not in the global class cache
+## until an editor scan puts it there, so naming it here stops this script compiling in every
+## `--script` harness — and a player whose script failed to compile never joins the `players` group,
+## which fails as "the level has no player" rather than as a missing viewmodel.
+const PLAYER_VIEWMODEL := preload("res://entities/player/viewmodel.gd")
 
 @export_group("Speed")
 ## Base ground speed, metres per second.
@@ -89,12 +94,29 @@ func _ready() -> void:
 	_build_debug_avatar()
 	_build_synchronizer()
 
+	# Only the owning player builds a viewmodel: it hangs off the camera, and a remote player has no
+	# camera of ours to hang it off (F-041). Built in code rather than authored into player.tscn,
+	# same reasoning as the synchronizer.
+	if is_local_authority:
+		_build_viewmodel()
+
 	camera.set_active(is_local_authority)
 	set_physics_process(is_local_authority)
 	set_process_unhandled_input(is_local_authority)
 
 	if is_local_authority:
 		_capture_mouse(true)
+
+
+## The held item lives under the Camera3D, not the pivot, so it inherits pitch as well as yaw and
+## stays locked to the view the way a first-person weapon has to.
+func _build_viewmodel() -> void:
+	var camera_3d: Camera3D = camera.get_node_or_null(^"Camera3D") as Camera3D
+	if camera_3d == null:
+		return
+	var viewmodel: Node3D = PLAYER_VIEWMODEL.new()
+	viewmodel.name = "Viewmodel"
+	camera_3d.add_child(viewmodel)
 
 
 ## Until a third-person character asset exists, remote players still need a visible body for the

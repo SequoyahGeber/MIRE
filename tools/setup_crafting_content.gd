@@ -23,10 +23,21 @@ func _run() -> void:
 	axe.set("display_name", "Stone Axe")
 	axe.set("description", "A rough chopping tool that doubles as a close-range weapon.")
 	axe.set("category", 2)
+	# Regenerating this file used to drop the icon kiln9's A-042 batch wired up, so the hotbar fell
+	# back to a two-letter name. Set it here so a re-run cannot silently undo that again.
+	axe.set("icon", load("res://assets/icons/exports/icon_stone_axe.png") as Texture2D)
 	axe.set("stack_size", 1)
 	axe.set("world_model", load(
 		"res://assets/tools_weapons/exports/stone_axe_world.glb"
 	) as PackedScene)
+	# F-041: the first-person presentation. Grip values match what setup_tool_content derives for a
+	# 1.32 m design; both are starting points for the inspector.
+	axe.set("view_model", load(
+		"res://assets/tools_weapons/exports/stone_axe_viewmodel.glb"
+	) as PackedScene)
+	axe.set("grip_offset", Vector3(0.17, -0.30, -0.55))
+	axe.set("grip_rotation_degrees", Vector3(-6.0, 158.0, 10.0))
+	axe.set("grip_scale", 0.22)
 	_save(axe, "res://content/items/stone_axe.tres")
 	var saved_axe := load("res://content/items/stone_axe.tres") as ItemDef
 

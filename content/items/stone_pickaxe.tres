@@ -2,6 +2,7 @@
 
 [ext_resource type="Texture2D" path="res://assets/icons/exports/icon_stone_pickaxe.png" id="1_vyipw"]
 [ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="2_ceaxx"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/stone_pickaxe_viewmodel.glb" id="3_ceaxx"]
 [ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/stone_pickaxe_world.glb" id="3_wimky"]
 
 [resource]
@@ -13,3 +14,7 @@ icon = ExtResource("1_vyipw")
 category = 1
 stack_size = 1
 world_model = ExtResource("3_wimky")
+view_model = ExtResource("3_ceaxx")
+grip_offset = Vector3(0.17, -0.3002, -0.55)
+grip_rotation_degrees = Vector3(-6, 158, 10)
+grip_scale = 0.22

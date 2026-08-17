@@ -3,6 +3,7 @@
 [ext_resource type="Texture2D" path="res://assets/icons/exports/icon_repair_hammer.png" id="1_2roaq"]
 [ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="2_uhtd7"]
 [ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/repair_hammer_world.glb" id="3_rm7ab"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/repair_hammer_viewmodel.glb" id="3_uhtd7"]
 
 [resource]
 script = ExtResource("2_uhtd7")
@@ -13,3 +14,7 @@ icon = ExtResource("1_2roaq")
 category = 1
 stack_size = 1
 world_model = ExtResource("3_rm7ab")
+view_model = ExtResource("3_uhtd7")
+grip_offset = Vector3(0.17, -0.2885, -0.55)
+grip_rotation_degrees = Vector3(-6, 158, 10)
+grip_scale = 0.32

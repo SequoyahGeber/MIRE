@@ -3,6 +3,7 @@
 [ext_resource type="Texture2D" path="res://assets/icons/exports/icon_skewer.png" id="1_yk17t"]
 [ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="2_wae5a"]
 [ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/skewer_world.glb" id="3_e6g7n"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/skewer_viewmodel.glb" id="3_wae5a"]
 
 [resource]
 script = ExtResource("2_wae5a")
@@ -13,3 +14,7 @@ icon = ExtResource("1_yk17t")
 category = 2
 stack_size = 1
 world_model = ExtResource("3_e6g7n")
+view_model = ExtResource("3_wae5a")
+grip_offset = Vector3(0.17, -0.2915, -0.55)
+grip_rotation_degrees = Vector3(-6, 158, 10)
+grip_scale = 0.29

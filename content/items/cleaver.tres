@@ -2,6 +2,7 @@
 
 [ext_resource type="Texture2D" path="res://assets/icons/exports/icon_cleaver.png" id="1_nwlxh"]
 [ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="2_an173"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/cleaver_viewmodel.glb" id="3_an173"]
 [ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/cleaver_world.glb" id="3_wldif"]
 
 [resource]
@@ -13,3 +14,7 @@ icon = ExtResource("1_nwlxh")
 category = 2
 stack_size = 1
 world_model = ExtResource("3_wldif")
+view_model = ExtResource("3_an173")
+grip_offset = Vector3(0.17, -0.2786, -0.55)
+grip_rotation_degrees = Vector3(-6, 158, 10)
+grip_scale = 0.45

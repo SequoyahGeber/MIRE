@@ -1,6 +1,80 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "assets/icons": {
+      "agent": "reed16",
+      "at": "2026-08-17T16:37:00+00:00",
+      "task": "2.1d"
+    },
+    "assets/source/tool_weapon_set.blend": {
+      "agent": "reed16",
+      "at": "2026-08-17T16:37:00+00:00",
+      "task": "2.1d"
+    },
+    "assets/tools_weapons": {
+      "agent": "reed16",
+      "at": "2026-08-17T16:37:00+00:00",
+      "task": "2.1d"
+    },
+    "content/items/iron_sword.tres": {
+      "agent": "reed16",
+      "at": "2026-08-17T16:37:00+00:00",
+      "task": "2.1d"
+    },
+    "content/weapons/iron_sword.tres": {
+      "agent": "reed16",
+      "at": "2026-08-17T16:37:00+00:00",
+      "task": "2.1d"
+    },
+    "docs/ASSET_TRACKER.md": {
+      "agent": "reed16",
+      "at": "2026-08-17T16:37:00+00:00",
+      "task": "2.1d"
+    },
+    "docs/DELEGATION.md": {
+      "agent": "reed16",
+      "at": "2026-08-17T16:37:00+00:00",
+      "task": "2.1d"
+    },
+    "tools/blender/build_tool_weapon_set.py": {
+      "agent": "reed16",
+      "at": "2026-08-17T16:37:00+00:00",
+      "task": "2.1d"
+    },
+    "tools/blender/render_item_icons.py": {
+      "agent": "reed16",
+      "at": "2026-08-17T16:37:00+00:00",
+      "task": "2.1d"
+    }
+  },
+  "in_flight": {
+    "2.1d": {
+      "agent": "reed16",
+      "files": [
+        "docs/ASSET_TRACKER.md",
+        "docs/DELEGATION.md",
+        "tools/blender/build_tool_weapon_set.py",
+        "tools/blender/render_item_icons.py",
+        "assets/source/tool_weapon_set.blend",
+        "assets/tools_weapons",
+        "assets/icons",
+        "content/items/iron_sword.tres",
+        "content/weapons/iron_sword.tres"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-17T16:40:28+00:00",
+          "by": "reed16",
+          "text": "A-021S taken as the single NEXT batch (iron sword). Trap: the row claims 'ItemDef.view_model and entities/player/viewmodel.gd render the held item in first person'. Neither exists \u2014 item_def.gd has world_model only, and entities/player/ has no viewmodel.gd. The viewmodel GLB still has no runtime consumer, so 'check it in the running game' is not possible this session; will verify import/instantiation instead and file a finding."
+        },
+        {
+          "at": "2026-08-17T16:51:22+00:00",
+          "by": "reed16",
+          "text": "Correction to my earlier note: the viewmodel consumer DOES exist now \u2014 a parallel session landed entities/player/viewmodel.gd, ItemDef.view_model/grip_offset/grip_rotation_degrees/grip_scale, and tools/viewmodel_check.gd while I was reading. iron_sword.tres must set view_model and a grip. Second finding, unrelated: re-running render_item_icons.py rewrites all 24 existing icon PNGs in git, but the pixels are byte-identical \u2014 Cycles stamps a 'cycles.ViewLayer.total_time' tEXt chunk (its own render wall-clock) into every PNG, so those files can never be byte-identical across runs. Verified by decompressing IDAT for all 24: 24/24 pixel-identical, 0 changed. Restored them rather than committing metadata churn."
+        }
+      ],
+      "started": "2026-08-17T16:37:00+00:00"
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
       "agent": "dusk3",
@@ -1459,8 +1533,8 @@
     },
     "autoload/combat_service.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T04:31:24+00:00",
-      "task": "2.8"
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "autoload/combat_service.gd.uid": {
       "agent": "dusk3",
@@ -1569,13 +1643,13 @@
     },
     "content/items/arrow.tres": {
       "agent": "dusk3",
-      "at": "2026-08-17T16:22:54+00:00",
-      "task": "2.14"
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "content/items/cleaver.tres": {
       "agent": "dusk3",
-      "at": "2026-08-17T16:22:54+00:00",
-      "task": "2.14"
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "content/items/iron_ore.tres": {
       "agent": "kiln9",
@@ -1584,8 +1658,8 @@
     },
     "content/items/iron_pickaxe.tres": {
       "agent": "dusk3",
-      "at": "2026-08-17T16:22:54+00:00",
-      "task": "2.14"
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "content/items/log.tres": {
       "agent": "kiln9",
@@ -1594,18 +1668,18 @@
     },
     "content/items/repair_hammer.tres": {
       "agent": "dusk3",
-      "at": "2026-08-17T16:22:54+00:00",
-      "task": "2.14"
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "content/items/short_bow.tres": {
       "agent": "dusk3",
-      "at": "2026-08-17T16:22:54+00:00",
-      "task": "2.14"
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "content/items/skewer.tres": {
       "agent": "dusk3",
-      "at": "2026-08-17T16:22:54+00:00",
-      "task": "2.14"
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "content/items/stone.tres": {
       "agent": "kiln9",
@@ -1613,24 +1687,24 @@
       "task": "2.1d"
     },
     "content/items/stone_axe.tres": {
-      "agent": "kiln9",
-      "at": "2026-08-17T04:31:26+00:00",
-      "task": "2.1d"
+      "agent": "dusk3",
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "content/items/stone_pickaxe.tres": {
       "agent": "dusk3",
-      "at": "2026-08-17T16:22:54+00:00",
-      "task": "2.14"
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "content/items/wooden_axe.tres": {
       "agent": "dusk3",
-      "at": "2026-08-17T16:22:54+00:00",
-      "task": "2.14"
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "content/items/wooden_pickaxe.tres": {
       "agent": "dusk3",
-      "at": "2026-08-17T16:22:54+00:00",
-      "task": "2.14"
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "content/recipes/stone_axe.tres": {
       "agent": "dusk3",
@@ -1814,8 +1888,18 @@
     },
     "entities/player/player_controller.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T04:46:46+00:00",
-      "task": "F-011"
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
+    },
+    "entities/player/viewmodel.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
+    },
+    "entities/player/viewmodel.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "levels/playtest_hollow.tscn": {
       "agent": "moss",
@@ -1891,6 +1975,11 @@
       "agent": "nettle",
       "at": "2026-08-17T01:48:54+00:00",
       "task": "2.4"
+    },
+    "systems/inventory/item_def.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "tools/blender/build_adapted_nature_set.py": {
       "agent": "pike14",
@@ -2264,8 +2353,8 @@
     },
     "tools/setup_crafting_content.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T02:52:00+00:00",
-      "task": "2.6"
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "tools/setup_crafting_content.gd.uid": {
       "agent": "dusk3",
@@ -2294,8 +2383,8 @@
     },
     "tools/setup_tool_content.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T16:22:54+00:00",
-      "task": "2.14"
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "tools/setup_tool_content.gd.uid": {
       "agent": "dusk3",
@@ -2316,6 +2405,16 @@
       "agent": "dusk3",
       "at": "2026-08-17T04:46:47+00:00",
       "task": "F-028"
+    },
+    "tools/viewmodel_check.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
+    },
+    "tools/viewmodel_check.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:52:06+00:00",
+      "task": "F-041"
     },
     "ui/crafting/crafting_ui.gd": {
       "agent": "dusk3",
@@ -2669,7 +2768,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
@@ -3554,6 +3653,15 @@
       "status": "done",
       "tier": "F",
       "title": "A dead enemy falls through the world"
+    },
+    "F-041": {
+      "done_at": "2026-08-17T16:52:06+00:00",
+      "done_by": "dusk3",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Held items are invisible in first person, so there is no swing to read"
     }
   },
   "version": 1

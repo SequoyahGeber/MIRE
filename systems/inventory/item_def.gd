@@ -19,3 +19,16 @@ enum Category { RESOURCE, TOOL, WEAPON, CONSUMABLE }
 ## Scene used when this item exists as a physical pickup in the world (dropped, harvested). Optional —
 ## items that are only ever crafting intermediates may not need one yet.
 @export var world_model: PackedScene
+
+@export_group("First person")
+## Shown in the player's hand while this item is the selected hotbar slot (F-041). A-004 exports a
+## `*_viewmodel.glb` beside every `*_world.glb` for exactly this. Null means an empty hand, which is
+## correct for a log or a lump of stone.
+@export var view_model: PackedScene
+## Where the viewmodel sits relative to the camera. Per-item on purpose: A-004's exports are
+## horizontally centred with **ground-level origins**, so the grip is somewhere up the handle and
+## differs by design — a 1.38 m axe and a sword do not hold the same way. Tunable in the inspector so
+## a new weapon that sits wrong is three numbers, not a code change.
+@export var grip_offset: Vector3 = Vector3(0.24, -0.26, -0.42)
+@export var grip_rotation_degrees: Vector3 = Vector3(-8.0, 168.0, 6.0)
+@export_range(0.05, 3.0, 0.01) var grip_scale: float = 0.55

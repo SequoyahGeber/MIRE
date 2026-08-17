@@ -104,6 +104,31 @@ func local_swing_progress() -> float:
 	return clampf(_local_elapsed / _local_weapon.swing_seconds(), 0.0, 1.0)
 
 
+## 0..1 through the CURRENT phase, which is what an animation wants — `local_swing_progress()` runs
+## across the whole swing and cannot tell a wind-up from a recovery. Returns 0 while idle.
+func local_phase_progress() -> float:
+	if _local_phase == Phase.IDLE or _local_weapon == null:
+		return 0.0
+	var wind_up: float = _local_weapon.wind_up_seconds
+	var commit_end: float = wind_up + _local_weapon.commit_seconds
+	match _local_phase:
+		Phase.WIND_UP:
+			return clampf(_local_elapsed / maxf(wind_up, 0.001), 0.0, 1.0)
+		Phase.COMMIT:
+			return clampf((_local_elapsed - wind_up) / maxf(_local_weapon.commit_seconds, 0.001), 0.0, 1.0)
+		Phase.RECOVERY:
+			return clampf(
+				(_local_elapsed - commit_end) / maxf(_local_weapon.recovery_seconds, 0.001), 0.0, 1.0
+			)
+	return 0.0
+
+
+## The item id currently being swung, or &"" while idle. The viewmodel uses it to keep showing the
+## weapon that threw the swing even if the selection changes mid-arc.
+func local_swing_item() -> StringName:
+	return _local_weapon.item_id if _local_weapon != null else &""
+
+
 func local_hitstop_remaining() -> float:
 	return _local_hitstop_remaining
 

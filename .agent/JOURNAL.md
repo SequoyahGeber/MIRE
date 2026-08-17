@@ -1224,3 +1224,15 @@ Only the queue was touched - no assets were produced. Promoted A-021S (iron swor
 Files: `docs/ASSET_TRACKER.md`
 
 Commit at time of writing: `2dfcc4d`
+
+---
+
+### DONE · F-041 · dusk3 · 2026-08-17T16:52:06+00:00
+
+**Held items are invisible in first person, so there is no swing to read**
+
+Viewmodel system: entities/player/viewmodel.gd renders the selected hotbar item under the camera with a procedural swing driven by CombatService.local_phase_progress(). ItemDef gained view_model plus per-item grip offset/rotation/scale so a weapon that sits wrong is an inspector fix, not a code change. All ten A-004 viewmodel exports are wired. Key structural point: the swing lives on the viewmodel node in camera axes and the grip lives on the item child - applying both to one node makes 'swing down' come out as an upward flail. Verified by tools/viewmodel_check.gd against the real main scene, 10 assertions plus a render per swing phase. Also restored the stone_axe icon that regenerating its .tres had dropped.
+
+Files: `systems/inventory/item_def.gd`, `entities/player/viewmodel.gd`, `entities/player/viewmodel.gd.uid`, `entities/player/player_controller.gd`, `autoload/combat_service.gd`, `tools/setup_tool_content.gd`, `tools/setup_crafting_content.gd`, `tools/viewmodel_check.gd`, `tools/viewmodel_check.gd.uid`, `content/items/stone_axe.tres`, `content/items/wooden_axe.tres`, `content/items/wooden_pickaxe.tres`, `content/items/stone_pickaxe.tres`, `content/items/iron_pickaxe.tres`, `content/items/cleaver.tres`, `content/items/skewer.tres`, `content/items/short_bow.tres`, `content/items/arrow.tres`, `content/items/repair_hammer.tres`
+
+Commit at time of writing: `0010110`

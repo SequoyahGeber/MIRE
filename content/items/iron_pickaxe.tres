@@ -3,6 +3,7 @@
 [ext_resource type="Texture2D" path="res://assets/icons/exports/icon_iron_pickaxe.png" id="1_ufo3n"]
 [ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="2_qoymt"]
 [ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/iron_pickaxe_world.glb" id="3_4b430"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/iron_pickaxe_viewmodel.glb" id="3_qoymt"]
 
 [resource]
 script = ExtResource("2_qoymt")
@@ -13,3 +14,7 @@ icon = ExtResource("1_ufo3n")
 category = 1
 stack_size = 1
 world_model = ExtResource("3_4b430")
+view_model = ExtResource("3_qoymt")
+grip_offset = Vector3(0.17, -0.3008, -0.55)
+grip_rotation_degrees = Vector3(-6, 158, 10)
+grip_scale = 0.22

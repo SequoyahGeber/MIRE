@@ -21,21 +21,21 @@ const WEAPON_DEF_SCRIPT := preload("res://systems/combat/weapon_def.gd")
 ## category: 1 = TOOL, 2 = WEAPON (ItemDef.Category).
 ## weight drives the derived swing: 0.0 is a paring knife, 1.0 is a sledgehammer.
 const DESIGNS: Array[Dictionary] = [
-	{"id": &"wooden_axe", "name": "Wooden Axe", "category": 1, "weight": 0.35, "melee": true,
+	{"id": &"wooden_axe", "name": "Wooden Axe", "category": 1, "weight": 0.35, "melee": true, "length_m": 1.38,
 		"desc": "A green-wood axe. It bites, eventually."},
-	{"id": &"wooden_pickaxe", "name": "Wooden Pickaxe", "category": 1, "weight": 0.45, "melee": true,
+	{"id": &"wooden_pickaxe", "name": "Wooden Pickaxe", "category": 1, "weight": 0.45, "melee": true, "length_m": 1.30,
 		"desc": "Better at rock than the rock is at it. Barely."},
-	{"id": &"stone_pickaxe", "name": "Stone Pickaxe", "category": 1, "weight": 0.6, "melee": true,
+	{"id": &"stone_pickaxe", "name": "Stone Pickaxe", "category": 1, "weight": 0.6, "melee": true, "length_m": 1.34,
 		"desc": "Heavy enough to break stone, and to be a poor weapon."},
-	{"id": &"iron_pickaxe", "name": "Iron Pickaxe", "category": 1, "weight": 0.75, "melee": true,
+	{"id": &"iron_pickaxe", "name": "Iron Pickaxe", "category": 1, "weight": 0.75, "melee": true, "length_m": 1.36,
 		"desc": "The good one. Do not lose it in the Mire."},
-	{"id": &"cleaver", "name": "Cleaver", "category": 2, "weight": 0.3, "melee": true,
+	{"id": &"cleaver", "name": "Cleaver", "category": 2, "weight": 0.3, "melee": true, "length_m": 0.62,
 		"desc": "Fast, mean, and not remotely a tool."},
-	{"id": &"skewer", "name": "Skewer", "category": 2, "weight": 0.2, "melee": true,
+	{"id": &"skewer", "name": "Skewer", "category": 2, "weight": 0.2, "melee": true, "length_m": 1.05,
 		"desc": "All reach, no weight. Poke first."},
-	{"id": &"repair_hammer", "name": "Repair Hammer", "category": 1, "weight": 0.9, "melee": true,
+	{"id": &"repair_hammer", "name": "Repair Hammer", "category": 1, "weight": 0.9, "melee": true, "length_m": 0.95,
 		"desc": "For mending wards. Also for endings."},
-	{"id": &"short_bow", "name": "Short Bow", "category": 2, "weight": 0.0, "melee": false,
+	{"id": &"short_bow", "name": "Short Bow", "category": 2, "weight": 0.0, "melee": false, "length_m": 1.10,
 		"desc": "Ranged combat is not built yet. It is a stick with intent."},
 	{"id": &"arrow", "name": "Arrow", "category": 0, "weight": 0.0, "melee": false, "stack": 64,
 		"desc": "Waiting for something to fire it."},
@@ -77,6 +77,19 @@ func _save_item(id: StringName, design: Dictionary) -> void:
 	item.set("world_model", _load_if_present(
 		"res://assets/tools_weapons/exports/%s_world.glb" % id
 	))
+	# F-041: A-004 exported a viewmodel beside every world mesh and nothing consumed them until now.
+	item.set("view_model", _load_if_present(
+		"res://assets/tools_weapons/exports/%s_viewmodel.glb" % id
+	))
+	# Ground-origin exports, so the grip sits some way up the handle and taller designs hang lower.
+	# Starting values only — they are @export'd so a weapon that sits wrong is an inspector fix.
+	# A viewmodel sits ~0.55 m from the near plane, so a 1.38 m axe at scale 1.0 fills the screen.
+	# Scale is derived from the design's own length to keep every tool about the same on-screen size,
+	# then the grip drops taller designs slightly so the head stays in frame.
+	var length: float = float(design.get("length_m", 1.1))
+	item.set("grip_offset", Vector3(0.17, -0.26 - length * 0.03, -0.55))
+	item.set("grip_rotation_degrees", Vector3(-6.0, 158.0, 10.0))
+	item.set("grip_scale", snappedf(clampf(0.30 / maxf(length, 0.2), 0.12, 0.45), 0.01))
 	if _save(item, "res://content/items/%s.tres" % id):
 		made_items += 1
 

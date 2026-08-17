@@ -1,15 +1,20 @@
 [gd_resource type="Resource" script_class="ItemDef" format=3]
 
 [ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_4ojq5"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_stone_axe.png" id="1_s6mdt"]
 [ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/stone_axe_world.glb" id="2_k8e8q"]
-[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_stone_axe.png" id="3_iconsto"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/stone_axe_viewmodel.glb" id="2_s6mdt"]
 
 [resource]
 script = ExtResource("1_4ojq5")
 id = &"stone_axe"
 display_name = "Stone Axe"
 description = "A rough chopping tool that doubles as a close-range weapon."
-icon = ExtResource("3_iconsto")
+icon = ExtResource("1_s6mdt")
 category = 2
 stack_size = 1
 world_model = ExtResource("2_k8e8q")
+view_model = ExtResource("2_s6mdt")
+grip_offset = Vector3(0.17, -0.3, -0.55)
+grip_rotation_degrees = Vector3(-6, 158, 10)
+grip_scale = 0.22

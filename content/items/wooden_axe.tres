@@ -2,6 +2,7 @@
 
 [ext_resource type="Texture2D" path="res://assets/icons/exports/icon_wooden_axe.png" id="1_huql4"]
 [ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="2_cdk4j"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/wooden_axe_viewmodel.glb" id="3_cdk4j"]
 [ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/wooden_axe_world.glb" id="3_du50f"]
 
 [resource]
@@ -13,3 +14,7 @@ icon = ExtResource("1_huql4")
 category = 1
 stack_size = 1
 world_model = ExtResource("3_du50f")
+view_model = ExtResource("3_cdk4j")
+grip_offset = Vector3(0.17, -0.3014, -0.55)
+grip_rotation_degrees = Vector3(-6, 158, 10)
+grip_scale = 0.22
