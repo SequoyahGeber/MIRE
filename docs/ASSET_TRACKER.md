@@ -50,8 +50,10 @@ An agent starting 2.1d must:
 3. Confirm there is exactly one `NEXT` row. Change it to `IN PROGRESS` and record the batch ID with
    `agent note 2.1d`.
 4. Claim `docs/ASSET_TRACKER.md`, `docs/ROADMAP.md` if this run bootstrapped 2.1d, and every source,
-   generator, catalog, preview, and export path the batch will touch. Never edit `.tscn`, `.tres`,
-   `.import`, or `export_presets.cfg`.
+   generator, catalog, preview, and export path the batch will touch — plus, by exact path with the
+   Godot editor closed, any `content/*.tres` the batch itself owns (D-031; the boundary A-021S ran
+   under, see *Explicitly not asset-agent work* below). Scenes and resources belonging to other
+   batches or tasks stay untouched.
 5. Make only the named batch. Closely related state variants count as part of the same asset; unrelated
    bonus models do not.
 6. Run the verification contract. Visually inspect every preview, not just file existence.
@@ -98,6 +100,10 @@ and `A-014b` in this file before making anything. Never silently leave half a ba
 
 Every completed batch records evidence for all applicable checks:
 
+- **Record the exact Blender version the batch was built with** (D-038 — the toolchain is pinned the
+  way the engine is; every deterministic-rebuild claim below depends on it). After any Blender
+  upgrade, the first batch re-verifies a clean rebuild of an existing family before shipping
+  anything new.
 - Generator syntax check and deterministic clean rebuild.
 - **Compare rendered PNGs by pixels, never by file hash.** Blender stamps its own render wall-clock
   and the current date into `tEXt` chunks — `RenderTime`/`Date` from EEVEE, `cycles.ViewLayer.total_time`
@@ -188,6 +194,11 @@ extraction. Make these before broad biome decoration.
 
 ## P1 — world identity and survival readability
 
+Do not start this phase until the M2 playtest (task 2.14) has produced its first feedback — "fun
+before content" is the rule this queue runs under, and P1 is where a top-to-bottom reader would
+otherwise sail past it (the audit found no gate here at all). Sequoyah can waive a specific batch
+by saying so in its row, the way A-006 records its waiver.
+
 | Batch | Status | Asset set | Planned models | After |
 |---|---|---|---:|---|
 | A-011 | `QUEUED` | Gatherable plants: berry bush full/harvested, poison berry bush, fibre plant, medicinal herb, wild onion, honeycomb, clay deposit, peat deposit, resin node | 10 | A-002 |
@@ -209,7 +220,7 @@ Do not start this phase until the one-enemy/one-weapon combat gate in `docs/ROAD
 |---|---|---|---:|---|
 | A-021 | `QUEUED` | Weapon forks I: iron axe, iron pickaxe, heavy cleaver, barbed skewer, spear, longbow, crossbow, bolt, buckler. **Iron sword removed — split out as A-021S and delivered early**, so this batch is nine designs | 9 world + 9 viewmodel | Combat gate |
 | A-022 | `QUEUED` | Weapon forks II: mithril axe, mithril pickaxe, throwing axe, throwing knife, sling, wooden shield, Ward shield, Tinker hammer | 8 world + 8 viewmodel | A-021 |
-| A-023 | `QUEUED` | Enemy roster I: sporeling, Mire hound, root walker, crystal crab; each with mesh, rig, required core animations, and death treatment | 4 characters | A-006 |
+| A-023 | `QUEUED` | Enemy roster I: sporeling, Mire hound, root walker, crystal crab; each with mesh, rig, required core animations, and death treatment | 4 characters | A-006 **and the 2.9 combat gate** (the phase rule above, put in the row so a row-reader cannot miss it) |
 | A-024 | `QUEUED` | Enemy roster II: bog skeleton, corrupted scarecrow, spore thrower, mud elemental; each with mesh, rig, required core animations, and death treatment | 4 characters | A-023 |
 | A-025 | `QUEUED` | Enemy roster III: thorn beast, floating Mire eye, shielded husk, burrower; each with mesh, rig, required core animations, and death treatment | 4 characters | A-024 and only if playtests justify 12 enemies |
 | A-026 | `QUEUED` | Elites: armoured root brute, crystal-backed charger, fungal broodmother, Void stalker, Ward breaker, Hunt beast | 6 characters | Enemy framework and Cycle modifiers exist |

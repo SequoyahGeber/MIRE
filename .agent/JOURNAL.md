@@ -1361,3 +1361,15 @@ Commit at time of writing: `6747f40`
 Orders now inline the task's SPECS.md block, derive the claim set and check names from it, and route autoload registration through the new locked 'agent autoload' instead of a task-long project.godot claim. Verified: 2.11/2.12/2.13 now order to LC2/LC1/LP with fully disjoint claim sets (previously all three collided on project.godot); autoload append/idempotency/conflict all tested and project.godot restored byte-identical.
 
 Commit at time of writing: `d5faa62`
+
+---
+
+### DONE · F-050 · flint5 · 2026-08-17T19:02:17+00:00
+
+**Governing docs contradict D-031 in six places, an unclosed code fence hides eight decisions, and the budget table is 51 sessions stale**
+
+Docs agree with reality again: DECISIONS fence closed (D-028..D-038 render), D-038 records the authored-art pipeline + Blender pin, budget table recomputed from rows (M2=80, ~388 total), CLAUDE/ASSET_TRACKER/AGENTS/DELEGATION aligned with D-031, NEXT.md rewritten to today, ROADMAP gains 3.8b dodge + 8.0 name-search + solo-fallback notes, and docs/SPECS.md now specs every remaining task lane-executably. Verified: fence grep = 4, D-order clean, agent sync registered the new rows.
+
+Files: `docs/NEXT.md`, `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `docs/AUDIT-2026-08-17.md`, `AGENTS.md`, `content/recipes/stone_axe.tres`, `docs/DECISIONS.md`, `docs/ROADMAP.md`, `docs/FINDINGS.md`, `CLAUDE.md`, `docs/SPECS.md`
+
+Commit at time of writing: `9dc536a`

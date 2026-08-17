@@ -75,6 +75,9 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+> Execution specs for every remaining roadmap task live in **`docs/SPECS.md`** — this section holds
+> the *shipped* seams those specs build on.
+
 **Work can now be dispatched to three paid accounts in parallel, and you may be one of them.** If you
 are `lc1`, `lc2` or `lp`, you were started by `agent dispatch` and your whole spec is the work order
 piped into you — no one is going to answer a question, so decide and keep going. `docs/ORCHESTRATION.md`
@@ -101,9 +104,9 @@ this project's ordinary `rate_limit`/`429` vocabulary — `lane selftest` holds 
 so run it if you touch the classifier.
 
 **Items now have icons, and `ItemDef.icon` is populated.** `assets/icons/exports/icon_<id>.png` holds
-24 transparent 256×256 icons — every A-002 pickup and every A-004 tool/weapon — where `<id>` matches
-`ItemDef.id`. `iron_ore`, `log`, `stone`, and `stone_axe` are wired; a new item wires its icon by
-setting `icon` on its `.tres`. Icons are renders of the shipped GLBs, not drawings (D-033), so a model
+25 transparent 256×256 icons — every A-002 pickup, every A-004 tool/weapon, and A-021S's iron sword —
+where `<id>` matches `ItemDef.id`. **All 14 item `.tres` files carry their icon**; a new item wires
+its icon by setting `icon` on its `.tres`. Icons are renders of the shipped GLBs, not drawings (D-033), so a model
 change is followed by re-running `tools/blender/render_item_icons.py`, never by editing a PNG. Adding
 an icon for a new asset family means appending to `SOURCES` in that script, not starting a second
 pipeline. `assets/icons/catalog.json` records each icon's source GLB and framing;
@@ -140,7 +143,8 @@ bootstraps offline: pressing Play opens no session, so nothing called `bake_navi
 now a short delay after boot bakes the level's navmesh (2,529 polygons in Playtest Hollow) and fills
 the field.
 
-Console commands, all host-only: `give <item_id> [count]`, `loadout`, `items`, `spawn [enemy_id]
+Console commands — every mutating one host-only; `items` and `enemies` are read-only and answer on
+any peer: `give <item_id> [count]`, `loadout`, `items`, `spawn [enemy_id]
 [count]`, `killall`, `enemies`. Check: `tools/dev_loadout_check.gd`, which loads the **real main
 scene** rather than a bare tree — a bare tree would have passed throughout both of these bugs.
 
@@ -187,7 +191,8 @@ three of them. **There is still no authored impact sound** — the thud is 2.8's
 placeholder, and it is the single biggest remaining gap in "loud, satisfying impact".
 
 **Task 2.10 ships Enemy v1, and 2.12's wave spawner drives it through `EnemyWorld`.** `EnemyWorld`
-is an autoload registered last, after `CombatService`. It loads `content/enemies/*.tres` into
+is an autoload registered after `CombatService` (later autoloads have since followed it — the
+[autoload] section of `project.godot` is the truth, not any "last" claim here). It loads `content/enemies/*.tres` into
 `get_def(id)` / `has_def(id)`, owns the code-built `MultiplayerSpawner` (D-023), and exposes the
 host-only seams task 2.12 needs: `host_spawn(def_id, position) -> Node3D`, `host_despawn_all()`,
 `live_enemies()`, `live_count()`, and the signals `enemy_spawned(enemy)` and
@@ -270,7 +275,7 @@ permanent rule does not belong on a board of unscheduled problems.
    assertions for weeks on top of a stream of `Multiplayer root was not initialized`.
 
 **Task 2.8 ships melee combat v1 — and 2.9 tunes it in the inspector, not in code.** `CombatService`
-is an autoload registered last. The split is D-034: the swing is client-predicted, the hit is host.
+is an autoload late in the load order. The split is D-034: the swing is client-predicted, the hit is host.
 `request_attack()` starts the local wind-up on the press and returns a request id; the client sends
 only its hotbar slot index, and the host reads its *own* `InventoryService.host_slots(peer_id)` for
 that slot to decide the weapon, uses the yaw/pitch the player synchronizer already replicates for
@@ -311,7 +316,7 @@ returns **null** — `get()` resolves properties and signals, so an RPC driven f
 no floor, so the player falls continuously and a fixed-position target drifts out of reach between
 swings.
 
-**Task 2.7 ships the client-local crafting presentation.** `CraftingUI` is an autoload ordered last,
+**Task 2.7 ships the client-local crafting presentation.** `CraftingUI` is an autoload ordered
 after `CraftingService`. It is opened by the `interact` action (E) and only while
 `CraftingService.local_station_in_range(&"workbench")` is true; `interact` again, Escape, or walking
 out of range closes it. An "E USE WORKBENCH" prompt sits above the hotbar whenever a workbench is in
@@ -348,8 +353,9 @@ clients do not predict inventory changes.
 The one authored vertical-slice recipe is `stone_axe`: two `log` plus three `stone` produce one
 non-stackable Stone Axe at `&"workbench"`. Bulk recipes remain task 3.2. The focused offline proof is
 `Godot --headless --path . --script tools/crafting_check.gd`; the real two-process ownership/RPC proof
-is `Godot --headless --path . --script tools/crafting_net_check.gd`. The new RPCs make the current
-protocol version 5.
+is `agent godot --script tools/crafting_net_check.gd`. The new RPCs made the protocol version 5 at
+the time; later additions have moved it on — `core/net/net_version.gd` is the single source of
+truth (6 as of F-032's hello argument).
 
 **Task 2.5 ships the client-local inventory presentation.** `InventoryUI` is an autoload ordered after
 `InventoryService`. The hotbar always renders its own stable slots 24–31; Tab opens the separate
@@ -384,9 +390,11 @@ slot layout unless every removal and addition fits. `host_count`, `host_can_add`
 `host_remove`, and `host_slots` are host-only seams. Owner-only reliable snapshots carry full stable
 slots plus a monotonic revision; a client request carries no peer id, so the host always derives the
 inventory owner from `multiplayer.get_remote_sender_id()`. The 32-slot snapshot introduced protocol
-version 4; crafting's request and confirmation RPCs make the current protocol version 5.
-Inventories are currently keyed to the transport peer id and released on `peer_left`; F-032 records
-the missing stable run-player identity required for task 1.7 auto-rejoin to preserve gameplay state.
+version 4; later RPC additions moved it on — `core/net/net_version.gd` is the single source of
+truth. Inventories are keyed by transport peer id but are **NOT released on `peer_left`** — F-032
+is fixed (D-035): `_on_peer_left` is a deliberate no-op, state moves on
+`NetSession.run_player_rebound(old, new)` and is released only on `run_player_expired(peer)`. Any
+system that copies the old released-on-peer_left behaviour reintroduces the bug F-032 describes.
 
 **Asset batches A-001 through A-008 plus A-004R, A-042a and A-021S are complete; A-009 is next.**
 Harvest states live under `assets/harvestables/` (12 GLBs), basic pickups under `assets/pickups/`
@@ -579,7 +587,8 @@ what to start next, not by task number.
 
 **1.6 took `project.godot`** and registered `NetInterp` with it; it is free again once 1.6 ships. It is
 still the one file only one task at a time may hold, so claim it by name and check `agent board`
-first. **Keep `NetInterp` last in `[autoload]`** — it resolves `PlayerNet` at `_ready()`, and autoload
+first. **Keep `NetInterp` after `PlayerNet` in `[autoload]`** (not "last" — eight gameplay autoloads
+legitimately follow it now) — it resolves `PlayerNet` at `_ready()`, and autoload
 order is load order. Two things wiring one cost us
 already (`9f56451`): **an autoload script may not carry a `class_name` equal to its own singleton
 name** — Godot rejects it as hiding the singleton and the autoload never registers — and **autoload
@@ -1222,6 +1231,11 @@ THEN, as your final chat message, tell me:
 ---
 
 ## Already shipped — kept for reference
+
+> **Historical documents.** Prompts below predate D-021 (agents register their own autoloads),
+> D-031 (agents may edit Godot-authored files under exact claim), and the D-036 lane system. Where
+> a prompt says `.tscn`/`.tres`/`project.godot` are human-only or hook-blocked, that was true when
+> it ran and is **not policy now** — `AGENTS.md` Hard rules and `docs/SPECS.md` are current.
 
 ## Task 1.3 — LOCAL mode: two windows, one keypress ✅ **DONE**
 

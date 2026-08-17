@@ -1,81 +1,6 @@
 {
-  "claims": {
-    "AGENTS.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:44:35+00:00",
-      "task": "F-050"
-    },
-    "CLAUDE.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:49:57+00:00",
-      "task": "F-050"
-    },
-    "content/recipes/stone_axe.tres": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:44:35+00:00",
-      "task": "F-050"
-    },
-    "docs/ASSET_TRACKER.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:44:35+00:00",
-      "task": "F-050"
-    },
-    "docs/AUDIT-2026-08-17.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:44:35+00:00",
-      "task": "F-050"
-    },
-    "docs/DECISIONS.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:49:57+00:00",
-      "task": "F-050"
-    },
-    "docs/DELEGATION.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:44:35+00:00",
-      "task": "F-050"
-    },
-    "docs/FINDINGS.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:49:57+00:00",
-      "task": "F-050"
-    },
-    "docs/NEXT.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:44:35+00:00",
-      "task": "F-050"
-    },
-    "docs/ROADMAP.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:49:57+00:00",
-      "task": "F-050"
-    },
-    "docs/SPECS.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T19:01:24+00:00",
-      "task": "F-050"
-    }
-  },
-  "in_flight": {
-    "F-050": {
-      "agent": "flint5",
-      "files": [
-        "docs/NEXT.md",
-        "docs/ASSET_TRACKER.md",
-        "docs/DELEGATION.md",
-        "docs/AUDIT-2026-08-17.md",
-        "AGENTS.md",
-        "content/recipes/stone_axe.tres",
-        "docs/DECISIONS.md",
-        "docs/ROADMAP.md",
-        "docs/FINDINGS.md",
-        "CLAUDE.md",
-        "docs/SPECS.md"
-      ],
-      "notes": [],
-      "started": "2026-08-17T18:44:35+00:00"
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
       "agent": "yarrow21",
@@ -102,10 +27,15 @@
       "at": "2026-08-16T19:34:30+00:00",
       "task": "F-009"
     },
+    "AGENTS.md": {
+      "agent": "flint5",
+      "at": "2026-08-17T19:02:17+00:00",
+      "task": "F-050"
+    },
     "CLAUDE.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "0.12"
+      "agent": "flint5",
+      "at": "2026-08-17T19:02:17+00:00",
+      "task": "F-050"
     },
     "assets/enemies": {
       "agent": "gale",
@@ -1583,9 +1513,9 @@
       "task": "F-041"
     },
     "content/recipes/stone_axe.tres": {
-      "agent": "dusk3",
-      "at": "2026-08-17T02:52:00+00:00",
-      "task": "2.6"
+      "agent": "flint5",
+      "at": "2026-08-17T19:02:17+00:00",
+      "task": "F-050"
     },
     "content/weapons/cleaver.tres": {
       "agent": "dusk3",
@@ -1718,19 +1648,24 @@
       "task": "4.0b"
     },
     "docs/ASSET_TRACKER.md": {
-      "agent": "reed16",
-      "at": "2026-08-17T17:01:21+00:00",
-      "task": "2.1d"
+      "agent": "flint5",
+      "at": "2026-08-17T19:02:17+00:00",
+      "task": "F-050"
+    },
+    "docs/AUDIT-2026-08-17.md": {
+      "agent": "flint5",
+      "at": "2026-08-17T19:02:17+00:00",
+      "task": "F-050"
     },
     "docs/DECISIONS.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "0.12"
+      "agent": "flint5",
+      "at": "2026-08-17T19:02:17+00:00",
+      "task": "F-050"
     },
     "docs/DELEGATION.md": {
-      "agent": "reed16",
-      "at": "2026-08-17T17:01:21+00:00",
-      "task": "2.1d"
+      "agent": "flint5",
+      "at": "2026-08-17T19:02:17+00:00",
+      "task": "F-050"
     },
     "docs/DESIGN.md": {
       "agent": "kiln",
@@ -1738,14 +1673,14 @@
       "task": "F-022"
     },
     "docs/FINDINGS.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "0.12"
+      "agent": "flint5",
+      "at": "2026-08-17T19:02:17+00:00",
+      "task": "F-050"
     },
     "docs/NEXT.md": {
-      "agent": "dusk3",
-      "at": "2026-08-17T02:52:00+00:00",
-      "task": "2.6"
+      "agent": "flint5",
+      "at": "2026-08-17T19:02:17+00:00",
+      "task": "F-050"
     },
     "docs/ORCHESTRATION.md": {
       "agent": "yarrow21",
@@ -1753,9 +1688,14 @@
       "task": "0.12"
     },
     "docs/ROADMAP.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "0.12"
+      "agent": "flint5",
+      "at": "2026-08-17T19:02:17+00:00",
+      "task": "F-050"
+    },
+    "docs/SPECS.md": {
+      "agent": "flint5",
+      "at": "2026-08-17T19:02:17+00:00",
+      "task": "F-050"
     },
     "docs/STEAM_CROSS_PLATFORM_TEST.md": {
       "agent": "ivy",
@@ -2577,7 +2517,7 @@
       "milestone": "M2",
       "status": "done",
       "tier": "T2",
-      "title": "Enemy v1: host-authoritative chase + attack, nav-driven, health, death, ragdoll or dissolve"
+      "title": "Enemy v1: host-authoritative chase + attack, nav-driven, health, death, ragdoll or dissolve *(shipped before 2.9, per F-036)*"
     },
     "2.11": {
       "est": "2",
@@ -2745,7 +2685,7 @@
       "milestone": "M2",
       "status": "todo",
       "tier": "T0",
-      "title": "Tune combat feel until one enemy with one weapon feels great. Do not proceed otherwise."
+      "title": "Tune combat feel until one enemy with one weapon feels great. Do not proceed otherwise. *(Order swapped with 2.10 \u2014 F-036 option 1. Code, content and the `combat_feel_check` instrument shipped; only the human verdict is open.)*"
     },
     "3.1": {
       "est": "4",
@@ -2759,7 +2699,7 @@
       "milestone": "M3",
       "status": "todo",
       "tier": "T1",
-      "title": "Heavy hauling (2-player carry)"
+      "title": "Heavy hauling (2-player carry; solo fallback = slow one-player drag, `DESIGN.md` \u00a75 solo rule)"
     },
     "3.11": {
       "est": "1",
@@ -2823,6 +2763,13 @@
       "status": "todo",
       "tier": "T1",
       "title": "Hunger/health/stamina, food items, consumables"
+    },
+    "3.8b": {
+      "est": "2",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Dodge: stamina-gated dash, client-auth own movement. `DESIGN.md` \u00a76 says stamina gates *dodging*, and Void Resonance's \"dodge blinks\" (\u00a74.4) needs the verb to hook"
     },
     "3.9": {
       "est": "3",
@@ -2922,7 +2869,7 @@
       "milestone": "M4",
       "status": "todo",
       "tier": "T1",
-      "title": "Wellspring scene, capture ritual, 2-player requirement, defense wave"
+      "title": "Wellspring scene, capture ritual, 2-player requirement, defense wave (solo fallback: 1-player ritual with a longer timer, `DESIGN.md` \u00a75 solo rule)"
     },
     "4.9": {
       "est": "4",
@@ -3161,6 +3108,13 @@
       "status": "todo",
       "tier": "T0",
       "title": "Bug bash from playtest backlog"
+    },
+    "8.0": {
+      "est": "0.5",
+      "milestone": "M8",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Name search \u2014 Steam store + trademark search for \"MIRE\" (`STEAM.md` S1 calls this blocking; `DESIGN.md` header repeats it). Do before any store-page work; a rename after 8.5/8.7 costs the Coming Soon clock"
     },
     "8.1": {
       "est": "2",
@@ -3586,9 +3540,11 @@
       "title": "The board never closes a finding resolved out-of-band, and never learns of new ones until a claim"
     },
     "F-050": {
+      "done_at": "2026-08-17T19:02:17+00:00",
+      "done_by": "flint5",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Governing docs contradict D-031 in six places, an unclosed code fence hides eight decisions, and the budget table is 51 sessions stale"
     }

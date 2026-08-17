@@ -7,239 +7,122 @@
 
 ## Status
 
-**Milestone:** M2 · Vertical slice. **M1 closes at 13/14** — 1.12 is deferred, not outstanding
-(D-030). M0 is closed, 10/10.
-**Tasks 2.3 through 2.8 are playable:** `HarvestableDef` plus the host-authoritative `Harvestable` lifecycle
-wires the 11 intact tree/stone/iron props in `playtest_hollow`, and each completed harvest now grants
-the validated peer a host-owned inventory stack. Inventory uses 24 backpack slots plus eight separate
-hotbar slots, owner-only revisioned snapshots, explicit request confirmations, and atomic crafting
-transactions. The always-visible hotbar and Tab field pack render those snapshots, and drag/drop
-submits host-validated full-stack moves without prediction. Offline and two-process ENet checks cover
-grants, stacking, removal, movement, crafting, overspend rejection, peer isolation and cleanup. At the
-primitive workbench, the host validates a Stone Axe recipe and atomically exchanges two logs plus
-three stone for one axe; clients submit only the recipe id and request id. Walking up to that
-workbench now shows an `E USE WORKBENCH` prompt; E opens a panel listing the recipe with live
-have/need counts, and the craft button waits for the host's answer instead of predicting one.
-Enemies hunt: the Hollow Crawler chases, telegraphs for 0.4 s, commits, and dies to melee.
-Left-click swings: wind-up → commit → recovery, host-resolved, with hitstop, screenshake and a
-placeholder impact thud. Trees and rocks are the only damageable targets until enemies land in 2.10.
-**Last session:** 2026-08-16 — tasks 2.7 and 2.8 shipped. 2.7 added `CraftingUI`, the client-local
-workbench panel and interact prompt (46/46 focused, rendered at two widths, 28/28 two-process ENet).
-2.8 added `CombatService`, `WeaponDef`, the `&"damageable"` seam and camera impact shake (42/42
-focused, 23/23 two-process ENet). Authority split is D-034: the client predicts its own swing, the
-host reads its own inventory to decide the weapon and owns every hit.
-**Next is 2.9 — tune combat feel until one enemy with one weapon feels great, and do not proceed
-otherwise.** It is inspector work on `content/weapons/stone_axe.tres` and `player_camera.gd`, and it
-needs an authored impact sound; 2.8 shipped a code-built placeholder thud. Note 2.9's "one enemy"
-does not exist until 2.10, so it may have to run against a tree first, or 2.10 may come first.
-The deferred 1.12 evidence remains unchanged: all three pinned-engine/GodotSteam
-preflights passed and a real Mac-hosted Steam lobby reached three peers across macOS, Windows and
-Linux. Code-built remote-player debug capsules made all three spawns visible, and Linux movement
-replicated to the host. A later two-platform rerun proved a fresh `origin/main` Windows client can
-join the macOS host with Windows Firewall enabled: peer `579922246` reached a two-player STEAM
-session and the host despawned it on exit. The formal exit run is still incomplete: the required
-simultaneous Linux client, three first-join latency lines, 60-second all-player movement run, and
-three screenshots remain.
+**Milestone:** M2 · Vertical slice — 16/22, and everything left is either yours or dispatched.
+M1 closed at 13/14 (1.12 deferred, D-030). M0 closed 11/11 plus 0.12 (orchestration).
 
-Connection lifecycle (1.7) completed the code-driven M1 work: readable
-admission/version refusals, late joining, automatic LOCAL/LAN rejoin, clean host close, and bounded
-dead-peer detection all passed a real multi-process ENet harness. Only the physical cross-platform
-Steam join test (1.12) remains. F-009 is fixed: the committed GDExtension registry now makes
-GodotSteam loading reproducible in fresh headless environments.
+**The game runs, and the loop is visible.** Press Play: you spawn in Playtest Hollow with a stocked
+hotbar, **the held item renders and swings** (F-041), and four crawlers hunt out of the East Mire
+nest. Walk, sprint, jump, harvest, craft at the workbench, fight, kill. Crawlers telegraph 0.4 s,
+outrun a walk (4.4 m/s), lose to a sprint, react to hits, and their corpses sink away. **What
+crawler hits do NOT yet do is hurt you — player health is task 2.13**, so the current build is
+shadow-boxing with real swords. **F3** overlay · **`~`** console · **Esc** releases the mouse.
 
-The M0 spikes came back **GREEN**: chunked terrain meshing stays in GDScript (D-015), runtime NavMesh
-baking stays and the grid-A* fallback is dropped (D-016). Neither is unconditional — see *M0 debts*.
-**R1 (netcode) is AMBER**, which is not a blocker but does promote task 1.8 from optional to required;
-the numbers are under *What changed this session*.
+**2026-08-17 was three sessions in one day:**
 
-**The game runs.** Open the project and press Play: you spawn in Playtest Hollow with a stocked
-hotbar (axe, cleaver, skewer, hammer, pickaxe, bow, log, stone) and four crawlers hunting out of the
-East Mire nest. Walk, sprint, jump, harvest props, craft at the workbench, and fight. **F3** overlay · **`~`** console ·
-**Esc** releases the mouse.
+- **2.10 + 2.9's code shipped** (dusk3): host-authoritative Enemy v1, the combat-feel instrument
+  (`agent godot --script tools/combat_feel_check.gd`), hit reactions, corpse fade. F-036 resolved by
+  swapping 2.9/2.10; **2.9's human gate is the one thing still open in it.**
+- **The audit + remediation landed** (flint5): `docs/AUDIT-2026-08-17.md` is the full report. Every
+  single-process harness now runs at **0 failures and 0 engine-error lines** (F-046/F-047 fixed the
+  three that were green-over-errors and the one red one); the content generators warn before
+  overwriting tuned values and can no longer strip icons or revert the main scene (F-048);
+  `verify_setup` checks all 19 autoloads; the governing docs agree with D-031 again; and
+  **`docs/SPECS.md` now holds an execution spec for every remaining roadmap task** — lanes and
+  agents read their task's block there and should need zero exploration.
+- **The director/lane system shipped** (yarrow21, task 0.12, D-036/D-037): one director routes work
+  orders to three subscription lanes (2× Codex, 1× Claude Pro) via `agent order/dispatch/collect`;
+  lanes claim, verify through the shared `agent godot` lock (F-044), and ship under the same
+  protocol as everyone else. `docs/ORCHESTRATION.md` is the manual.
 
-**Sixteen autoloads live, verified headlessly 2026-08-16** on
-`4.7.1.stable.official.a13da4feb`: `NetSession` is ordered after `NetTransport` and before
-`DevLaunch`; `SteamLobby`, `PlayerNet`, `NetDebugPanel`, `TestMapProps`, and `NetInterp` follow their
-dependencies; `HarvestWorld`, `InventoryService`, `InventoryUI`, `CraftingService`, `CraftingUI` and
-`CombatService` follow `Registry`, in that order — `CraftingUI` resolves `CraftingService` and
-`CombatService` resolves both `Registry` and `InventoryService`. Boot log reads
-`content: loaded 13 item(s), 1 recipe(s), 8 weapon(s)` and
-`net: NetTransport ready (offline)`. `NetConfig` is a
-`class_name`, **not** an autoload; don't add it.
+**Nineteen autoloads live**, `verify_setup` asserts every one. Boot log:
+`content: loaded 14 item(s), 1 recipe(s), 9 weapon(s)` + `1 enemy definition(s)` +
+`net: NetTransport ready (offline)`. `NetConfig` is a `class_name`, **not** an autoload; don't add it.
+Protocol version lives in `core/net/net_version.gd` (currently 6); any new RPC bumps it.
 
-Godot 4.7.1-stable, pinned — don't upgrade mid-milestone. That build hash is also the determinism
-baseline in `ARCHITECTURE.md` §6a, so upgrading invalidates R6.
+Godot 4.7.1-stable `a13da4feb`, pinned (D-001) — also the determinism baseline (§6a), so upgrading
+invalidates R6. Blender is pinned the same way now (D-038); the next asset batch records the version.
 
 ---
 
-## Roles (D-014, superseded by D-020)
+## Roles (D-020, D-036)
 
-No fixed planner/coder split — any agent (Claude Code chat, Codex, a second Claude session) can take
-any task; who picks it up depends on which plan has quota available. Sequoyah is the only fixed role:
-**Integrator** — Godot editor, assets, tuning, playtesting, commits.
+Sequoyah: **Integrator** — Godot editor, tuning, playtesting, the calls only a human can make.
+The **director** (Claude Max chat) routes and verifies; it does not implement (D-036). **Lanes**
+LC1/LC2/LP implement dispatched orders. Any interactive agent chat can still take any task the
+old way — `agent start`, claim, work — the orchestration is additive.
 
-Protocol: [AGENTS.md](../AGENTS.md). Start every session with `.agent/bin/agent start` — no name needed,
-it takes one from the chat itself (F-007).
-
----
-
-## Next task — M2. 1.12 is deferred, not pending (D-030)
-
-**Starting a task no longer means pasting a prompt.** Open a fresh chat, give it the task id, and the
-agent runs `agent brief <id>` itself: that prints the task, the open findings, what the last tasks in
-this milestone left it, and who holds which files. It claims, works, verifies headless, files what it
-learned in the repo, and ships. What comes back to you is what only you can act on.
-
-**Do not start 1.12.** M1 closes at 13/14 on purpose. The thing 1.12 de-risks is proven — three
-platforms in one Steam lobby, all three players spawned, Linux movement replicated, and a later
-two-platform rerun that joined and despawned cleanly with Windows Firewall enabled. What is missing is
-ceremony: 60 s of observed movement, three screenshots, an ordered exit. Collecting it today means a
-scheduled three-machine session driven by lobby IDs pasted between terminals, on a VM rendering at
-2–3 FPS (F-025) — expensive to arrange and a bad instrument. **It waits for an in-game lobby join
-(task 6.10), which makes the test cheap.** Everything needed to resume is in
-`docs/STEAM_CROSS_PLATFORM_TEST.md` and will keep.
-
-**2.7 and 2.8 are done.** The next roadmap task is `2.9` — tune combat feel — but read **F-036**
-first: 2.9's gate is "one enemy with one weapon feels great", and there is no enemy until `2.10`.
-Either swap 2.9 and 2.10, or tune the weapon side against a tree now and re-run the real gate right
-after 2.10. That choice is Sequoyah's, because it changes roadmap order.
-
-**The exact 2.8 seams:** targets join `&"damageable"` and implement
-`host_apply_damage(amount, instigator_peer_id) -> bool`; 2.10's enemies join the same group and
-`CombatService` needs no change. Weapon feel is `content/weapons/stone_axe.tres` plus the
-`@export`s on `player_camera.gd` — inspector work, not code. Do not re-run
-`tools/setup_combat_content.gd` after tuning; it overwrites the resource.
-
-**The exact 2.4 seams:** local UI reads 32 stable slot dictionaries and never mutates the snapshot;
-slots 0–23 are the backpack and 24–31 are the separate hotbar. Client remove/move requests carry no
-peer id and complete through
-`operation_confirmed`. Trusted host gameplay uses `host_add` or atomic `host_transaction`; there is
-no client grant RPC. Owner-only full snapshots carry monotonic revisions. Inventory introduced
-protocol version 4; the crafting request/confirmation RPC set makes the current protocol version 6 (task 2.8 left it at 5; F-032's hello argument made it 6).
-
-**If cross-play testing starts to feel overdue before M6**, the cheap version is a pair of debug
-console commands over the `SteamLobby` API that already exists (`host_session()`, `join_by_id()`,
-`open_invite_overlay()`). That is a fraction of 6.10 and delivers the whole testing benefit — see
-D-030. Worth pulling forward if M2 or M3 stretches out.
+Protocol: [AGENTS.md](../AGENTS.md) · specs: [SPECS.md](SPECS.md) · dispatch: [ORCHESTRATION.md](ORCHESTRATION.md).
 
 ---
 
-## What changed this session
+## Next, in order
 
-**M1 netcode is real.** 1.5 (networked player), 1.9 (R1 spike) and 1.10 (debug panel) all shipped, and
-none of them needed anything from you in the editor.
+| # | What | Who | State |
+|---|---|---|---|
+| 2.9 | **Play the combat gate** — SPECS.md has the run-sheet: ten crawler kills, judge tell/arc/hitstop/kill-length, tune in the inspector only, then pass or fail it out loud. Know that enemy hits cost nothing until 2.13 — judge feel, not danger. Passing closes F-036. | **You** | open |
+| 2.11 | Day/night — host-authoritative clock, sky client-local. Order exists; **the trap is in the spec**: never flip `cycle_enabled`. | lane | order ready |
+| 2.12 | Night waves over `EnemyWorld` seams; needs 2.11's signals. | lane | order ready |
+| 2.13 | Death & respawn — player health, downed→bleed-out→revive, the `enemy_attack_landed` subscriber that makes crawlers matter. Decides F-043 (iron sword reachability) in passing. | T2 agent | spec ready |
+| 2.14 | **Playtest with friends** — protocol in SPECS.md: verbatim quotes, one full night, then re-read DESIGN §8 before anything in M3. | You + friends | after the above |
+| 2.1d | A-009 extraction ship (15 models) — the asset queue's NEXT; tracker governs. | asset agent | ready |
 
-- **Connection lifecycle is now one coherent layer.** `NetSession` owns host admission and readable
-  endings above `NetTransport`: late join, capacity refusal without spawning, version mismatch,
-  automatic LOCAL/LAN rejoin, dead-process despawn and clean host close all passed in real processes.
-  The dead client was detected in 2.6 s; the harness completed 8/8 sections with zero failures.
-- **Two players, two windows, each driving their own** — `PlayerNet` spawns one player per peer under
-  `/root/PlayerNet/Players`, authority derived from the node's name, position/yaw/pitch replicated at
-  30Hz. Verified with two headless processes, both directions.
-- **R1 is AMBER, and that has teeth.** 200 entities unfiltered = 918 KB/s host up, 7.3× over the
-  125 KB/s ceiling. With §2.5 interest management: 105 KB/s at 30Hz, 57 KB/s at 15Hz. CPU was never
-  the constraint (1.18 ms/frame worst case). So the §6 R1 fallback — hand-rolled binary packets — is
-  **not** needed, but **1.8 stops being optional**: it is the thing that makes the budget fit.
-- **Agents now brief themselves.** `agent brief <id>` plus a close-out contract in `AGENTS.md` step 3
-  replaced the hand-written-prompt model. Findings go to `FINDINGS.md`, settled calls to
-  `DECISIONS.md`, APIs the next task needs to `DELEGATION.md` *Current state* — so nothing has to
-  travel through you to reach the next agent.
+**Do not start 1.12** (D-030 — it waits for 6.10's in-game lobby join; everything needed to resume is
+in `STEAM_CROSS_PLATFORM_TEST.md`). **Do not start M3** before 2.14's DESIGN §8 re-read.
 
----
-
-## Then, in order
-
-| # | Task | Tier | Who | Est |
-|---|---|---|---|---|
-| 2.3 | Harvestable prop: hit → damage → yield → despawn → respawn, host-authoritative | T2 | done | ✅ |
-| 2.4 | Inventory system: stacks, add/remove, host-validated. Data layer only | T2 | done | ✅ |
-| 2.5 | Inventory UI — grid, drag/drop, hotbar | T0 | done | ✅ |
-| 2.6 | Crafting: recipe check, craft request → host validates → grants. One station | T2 | done | ✅ |
-| 2.7 | Crafting UI | T1 | next | 2h |
-| 2.1d | Next `NEXT` asset batch from `docs/ASSET_TRACKER.md` (A-005, loot) | T0 | you | 4h |
-| 1.12 | Cross-platform join test — **deferred to after 6.10**, D-030 | T0 | — | 1.5h |
-
-Tasks 1.6, 1.7, 1.8 and 1.11 are done. Do not reopen any M1 task as a prerequisite for M2 — the
-network spine is finished and 2.3 builds directly on it.
-
-**Playtest Hollow environmental motion is implemented as task 2.1g.** Grass, ferns, reeds and sedges
-receive client-local vertex wind automatically, and authored fire placeholders become procedural
-flame, spark and smoke particles with flickering light. No scene wiring is required; the shared
-layout runtime creates the controller. The dedicated headless check covers 1,772 foliage mesh parts
-and four fire sources, and a Forward+ rendered run held the existing 120 FPS cap on the test Mac.
+If cross-play testing feels overdue before M6: two debug console commands over the existing
+`SteamLobby` API (`host_session()`, `join_by_id()`, `open_invite_overlay()`) deliver the whole
+testing benefit at a fraction of 6.10 — see D-030.
 
 ---
 
 ## M0 debts — booked as M4 gates, don't lose them
 
-Both spikes went green with half the question unanswered. Both are now real tasks (`4.0a`, `4.0b`) at
-the top of M4 rather than notes in a findings file, because M4's chunk streaming budget gets designed
-against whatever they return.
-
 | # | What's actually unmeasured | Who | Est |
 |---|---|---|---|
-| 4.0a | `ConcavePolygonShape3D` cooking + GPU mesh upload per chunk. R2 ran headless — no upload, no material, no collision. R3 measured *navigation* baking, a different code path. F-005, and the standing caveat on D-015. | agent | 1.5h |
-| 4.0b | Determinism on Windows x86_64 — all required hashes matched on a physical Ryzen 5 5600 PC. | done | ✅ |
+| 4.0a | `ConcavePolygonShape3D` cooking + GPU mesh upload per chunk, on a real renderer. R2 ran headless — no upload, no material, no collision; R3 measured *navigation* baking, a different code path. F-005, and the standing caveat on D-015. **Gates all of M4.** | agent | 1.5h |
+| 4.0b | Determinism on Windows x86_64 — **DONE** on a physical Ryzen 5 5600 (D-028). | done | ✅ |
 
-Nothing in M1 depends on either. Don't pull them forward; just don't start 4.1 without them.
+Nothing in M2/M3 depends on 4.0a. Don't pull it forward; just don't start 4.1 without it.
 
 ---
 
 ## Cross-platform (D-013)
 
-Shipping macOS + Windows + Linux with cross-play. Steam P2P makes cross-play itself nearly free, but it
-creates one real risk: clients regenerate terrain from a shared seed, and float results aren't
-guaranteed identical across architectures and C libraries.
+Shipping macOS + Windows + Linux with cross-play. Steam P2P makes cross-play nearly free; the real
+risk is shared-seed regeneration, and it is **measured and closed on all three platforms**:
+macOS↔Linux (D-017) and Windows (D-028) agree bit-for-bit on `rng_sequence`, both noise hashes, and
+the four safe-operation hashes; raw transcendentals differ as predicted and are banned from world
+gen (§7 safe set). M4 builds on seeded generation under that rule.
 
-**Linux is done — see D-017.** Noise and PRNG are bit-identical across macOS arm64 and Linux x86_64;
-raw `sin`/`cos`/`pow`/`exp`/`log` are not. §4 stands, and the price is the world-gen safe set now
-written into `ARCHITECTURE.md` §7.
-
-**Task 4.0b — DONE 2026-08-16 on a physical Windows x86_64 PC:**
-
-```bash
-godot.exe --headless --path . --script tools/check_determinism.gd
-```
-
-```bash
-godot.exe --headless --path . --script tools/check_determinism_ops.gd
-```
-
-Godot **4.7.1-stable build `a13da4feb`** ran both probes twice on Windows 11 25H2, Ryzen 5 5600.
-`rng_sequence`, both noise hashes, and all four safe-operation hashes matched macOS exactly;
-`float_math` differed as expected. See `ARCHITECTURE.md` §6a and D-028. M4 may build on seeded
-generation under the §7 safe-set rule.
-
-The run also exposed a separate harness trap: a raw clone lacks the intentionally gitignored
-GodotSteam binaries and the generated global class cache. Install the D-022-pinned addon and run one
-headless editor import before treating startup errors as game defects. The probes still completed and
-their built-in-only hashes were valid, but that run did not verify a clean Windows game boot.
+The D-028 run also exposed the fresh-clone trap: a raw clone lacks the intentionally gitignored
+GodotSteam binaries and the global class cache — install the D-022-pinned addon and run one headless
+editor import before treating startup errors as game defects.
 
 ---
 
 ## Tools
 
-**You don't run these — ask an agent chat to.** Your side of this project is the Godot editor, asset
-work, tuning, playtesting and pasting task prompts. Anything with a shell belongs to an agent.
+**Agents run these, not you** — and they run them through the lock:
 
 ```bash
-/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script tools/verify_setup.gd
+.agent/bin/agent godot --script tools/verify_setup.gd
 ```
 
-Input map responds to real key presses, autoloads registered, scenes have the node names the scripts
-expect, the player actually falls and lands, and the §5a physics/vsync/fps settings resolve to their
-correct *effective* values regardless of whether `project.godot` spells them out or Godot is silently
-supplying its own default (F-003) — no need to re-run this after every editor save just to catch a
-prune, since a pruned default-equal value still reads correct. Run it after anything structural.
+Input map, all 19 autoloads, scene structure, live physics, §5a effective settings (F-003) — run it
+after anything structural. `agent godot` serialises engine runs against the lanes (F-044); a bare
+`Godot --headless` is how two engines corrupt one import cache.
 
-`tools/setup_project.gd` regenerates the input map, autoloads and both scenes. **Don't re-run it once
-you start tuning in the editor** — it overwrites the scenes.
+`tools/setup_project.gd` regenerates the input map and both scenes — its header now tells the truth
+about re-running (F-048): destructive once tuning starts, and it no longer touches an existing
+`main_scene`. The content generators (`setup_*_content.gd`) all warn in-file before overwriting
+tuned `.tres` values. **Never re-run a generator after 2.9 tuning begins.**
 
 ---
 
 ## Open questions waiting on playtests
 
-None yet — first real answers arrive at **M2 task 2.14**. Tracked in `DESIGN.md` §8.
+First real answers arrive at **2.14**. Tracked in `DESIGN.md` §8 — and 2.14's protocol (SPECS.md)
+ends with re-reading that section against the verbatim quotes.
 
 ---
 
@@ -247,21 +130,13 @@ None yet — first real answers arrive at **M2 task 2.14**. Tracked in `DESIGN.m
 
 **Yours, coming back after a break:**
 
-1. Read this file — the *Next task* section is the answer
-2. Open `.agent/BOARD.md` if you want the full picture of what's done
-3. Copy the matching block out of `DELEGATION.md` into a fresh chat at the model it names
+1. Read this file — *Next, in order* is the answer
+2. `.agent/bin/agent board` for the full picture; `agent report` for lane status
+3. Either play (2.9 / 2.14 are yours) or dispatch: the director chat writes orders from
+   `docs/SPECS.md` blocks
 
-**The agent's, in that fresh chat** (already written into every prompt, listed here for reference):
-
-1. `.agent/bin/agent start` — names this chat and prints what's in flight
-2. Read `AGENTS.md`, then this file
-3. Skim the last entry or two in `.agent/JOURNAL.md` if someone handed off
-4. `.agent/bin/agent claim <id> <files...>` **before** editing
-5. Do the work
-6. `done` or `handoff`, then `ship`, and update this file
-
-No `MIRE_AGENT=` prefix on any of them, and no name to pass: identity comes from the chat's own
-session id, which git inherits too, so commits resolve to the same agent (F-007).
+**An agent's, in a fresh chat:** `agent start` → `agent brief <id>` → read the task's SPECS.md
+block → claim → work → verify via `agent godot` → close out per AGENTS.md → ship.
 
 ---
 
@@ -270,4 +145,4 @@ session id, which git inherits too, so commits resolve to the same agent (F-007)
 - Seed sharing / daily seed with a friends leaderboard by Cycle depth
 - Spectator mode for dead players
 - A "Cycle 1 speedrun" mode
-- Cosmetic hats. There must be hats.
+- Cosmetic hats. There must be hats. (A-041 queues them; §4.6 says variety, never power.)

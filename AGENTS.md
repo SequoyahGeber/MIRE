@@ -147,9 +147,8 @@ By now everything another *agent* needs is in the repo (step 3). What is left is
 human can act on — he is deciding whether to start the next task based on this, so be precise:
 
 - **What you verified, and how.** The command you ran, the numbers it produced. Not "it works."
-- **Whether it actually runs, or only compiles.** Register your own autoload (D-021, see Hard
-  rules) so these stop being different things. If something still needs a `.tscn`/`.tres` change —
-  a node added, an exported value set — then **the feature does not work yet**, in those words.
+- **Whether it actually runs, or only compiles.** Register autoloads and make required scene/resource
+  edits in the same task when Godot is closed (D-021, D-031), so these stop being different things.
 - **Whether it is safe to move on.** Say it plainly, either way.
 
 > "Done and pushed" and "working" are different claims. A pushed script that still needs an autoload
@@ -160,12 +159,22 @@ human can act on — he is deciding whether to start the next task based on this
 
 ## Hard rules
 
-### Never edit Godot scene files
+### Godot-authored files require a closed editor and an exact claim
 
-`.tscn` · `.tres` · `.import` · `export_presets.cfg`
+Agents may edit `.tscn`, `.tres`, `.import`, and `export_presets.cfg` when both conditions hold:
 
-These carry internal sub-resource and node-path IDs. They do not merge, and a bad edit silently
-corrupts a scene. **Only Sequoyah touches these, in the Godot editor.** The pre-commit hook enforces it.
+1. **Check the editor is closed first.** The agent tool does this correctly — `agent order` refuses
+   dispatch and the pre-commit hook refuses the commit while the editor runs, matching the real
+   editor process rather than any command line containing "Godot" (F-045 — a raw `pgrep -fl Godot`
+   also matches your own check loop and the `agent` command itself). Checking by hand:
+   `pgrep -fl 'Godot.app.*--editor'`. If the editor is running, stop and say so.
+2. **Claim every file by its exact path before editing it.** Directory or implied ownership is not
+   enough for these files.
+
+These files carry internal IDs and node-path references, and Godot may rewrite them on save. Never
+edit one concurrently with Godot or another agent. Prefer generating complex scenes/resources via a
+Godot tool script so the engine serializes its own format. The pre-commit hook enforces both the exact
+claim and closed-editor conditions (D-031).
 
 ### `project.godot` IS yours — claim it by name
 
@@ -173,17 +182,16 @@ Not on the list above (D-021). It's a flat INI file that merges and reviews fine
 argument never applied to it. **A task that produces an autoload registers it, in that same task**,
 under a claim naming `project.godot`. Shipping a script nothing loads is not shipping.
 
-Two conditions, both real:
+Two additional rules apply:
 
-1. **Check the editor is closed first** — `pgrep -fl Godot`. It rewrites the file on save and will
-   silently discard your edit. If it's running, stop and say so.
+1. **Check the editor is closed first** — same check as above (F-045). It rewrites the file on save
+   and will silently discard your edit. If it's running, stop and say so.
 2. **Append only.** Don't reorder or reformat, and never hand-write a setting equal to the engine
    default — Godot prunes those on its next save, so it isn't a fix, it's a fix with a timer (D-019).
 
-If your work needs a genuine *scene* change, say so explicitly in your `done`/`handoff` note:
-
-> *Needs wiring: attach `inventory.gd` to the Player node, add a `MultiplayerSynchronizer` child, and
-> expose `held_items` on it.*
+If your work needs a genuine scene/resource change, make it in the same task under an exact claim.
+Only leave editor wiring to Sequoyah when it requires visual judgment or interactive tuning that the
+task cannot verify safely.
 
 ### Never explore the codebase speculatively
 
@@ -231,7 +239,9 @@ Host-authoritative by default; client-authoritative only for a player's own move
 | `docs/NEXT.md` | Current focus and the immediate next task. |
 | `docs/ARCHITECTURE.md` | Netcode, authority table, world gen, known risks. **Read before writing gameplay code.** |
 | `docs/DESIGN.md` | What the game is and why. |
-| `docs/ROADMAP.md` | All 97 tasks with IDs. Task IDs in commands come from here. |
+| `docs/ROADMAP.md` | Every task with its ID. Task IDs in commands come from here. |
+| `docs/SPECS.md` | **Per-task execution specs.** Read your task's block before touching code — it names the files to claim, the seams to build on, and what "done" means. |
+| `docs/ORCHESTRATION.md` | The director/lane system (D-036/D-037): how work orders are routed to the three subscription lanes. |
 | `docs/DECISIONS.md` | Settled decisions, each with what would change our mind. **Check before relitigating.** |
 | `docs/FINDINGS.md` | Problems noticed but not yet scheduled. **File what you spot outside your task here.** |
 | `docs/AI-WORKFLOW.md` | How work is split across agents and the human. |
@@ -254,7 +264,13 @@ Run these as written — no prefix, no name (F-007).
 .agent/bin/agent drop <id>             abandon, release claims
 .agent/bin/agent check                 verify changes respect claims
 .agent/bin/agent sync                  re-read tasks from docs/ROADMAP.md
+.agent/bin/agent godot <args>          run headless Godot under the shared lock — ALWAYS use this
+                                       for checks; bare `Godot --headless` races other lanes on the
+                                       one import cache (F-044, D-037)
 ```
+
+Director-side commands (`order`/`dispatch`/`lanes`/`collect`/`report`/`reap`) are documented in
+`docs/ORCHESTRATION.md` — worker agents and lanes never need them.
 
 Run `.agent/bin/install-hooks` once per clone to install the pre-commit hook.
 
