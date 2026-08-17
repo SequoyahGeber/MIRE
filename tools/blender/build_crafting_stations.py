@@ -11,11 +11,18 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from pathlib import Path
 from typing import Callable
 
 import bpy
 from mathutils import Vector
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from mire_art import (  # noqa: E402
+    SCALE, assign, box, check_scale, cone, cylinder_between, eevee_engine, ico,
+    look_at, mat, mesh_object, move_to_collection, radial, reset_materials, world_bounds,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -34,125 +41,6 @@ EXPECTED_NAMES = [
     "station_repair_bench",
     "station_woodcutting_block",
 ]
-
-
-def material(
-    name: str,
-    color: tuple[float, float, float, float],
-    roughness: float = 0.9,
-    metallic: float = 0.0,
-    emission: tuple[float, float, float, float] | None = None,
-    emission_strength: float = 0.0,
-) -> bpy.types.Material:
-    mat = bpy.data.materials.new(name)
-    mat.diffuse_color = color
-    mat.use_nodes = True
-    shader = mat.node_tree.nodes.get("Principled BSDF")
-    shader.inputs["Base Color"].default_value = color
-    shader.inputs["Roughness"].default_value = roughness
-    shader.inputs["Metallic"].default_value = metallic
-    if emission is not None:
-        shader.inputs["Emission Color"].default_value = emission
-        shader.inputs["Emission Strength"].default_value = emission_strength
-    return mat
-
-
-def assign(obj: bpy.types.Object, mat: bpy.types.Material) -> bpy.types.Object:
-    obj.data.materials.append(mat)
-    for polygon in obj.data.polygons:
-        polygon.use_smooth = False
-    return obj
-
-
-def box(
-    name: str,
-    location: tuple[float, float, float],
-    dimensions: tuple[float, float, float],
-    mat: bpy.types.Material,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-    bevel: float = 0.0,
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_cube_add(location=location, rotation=rotation)
-    obj = bpy.context.object
-    obj.name = name
-    obj.scale = (dimensions[0] * 0.5, dimensions[1] * 0.5, dimensions[2] * 0.5)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    if bevel > 0.0:
-        modifier = obj.modifiers.new("Low_Poly_Bevel", "BEVEL")
-        modifier.width = bevel
-        modifier.segments = 1
-        bpy.context.view_layer.objects.active = obj
-        bpy.ops.object.modifier_apply(modifier=modifier.name)
-    return assign(obj, mat)
-
-
-def cone(
-    name: str,
-    radius_bottom: float,
-    radius_top: float,
-    depth: float,
-    location: tuple[float, float, float],
-    mat: bpy.types.Material,
-    vertices: int = 8,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_cone_add(
-        vertices=vertices,
-        radius1=radius_bottom,
-        radius2=radius_top,
-        depth=depth,
-        location=location,
-        rotation=rotation,
-    )
-    obj = bpy.context.object
-    obj.name = name
-    return assign(obj, mat)
-
-
-def ico(
-    name: str,
-    location: tuple[float, float, float],
-    scale: tuple[float, float, float],
-    mat: bpy.types.Material,
-    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=1.0, location=location, rotation=rotation)
-    obj = bpy.context.object
-    obj.name = name
-    obj.scale = scale
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    return assign(obj, mat)
-
-
-def cylinder_between(
-    name: str,
-    start: tuple[float, float, float],
-    end: tuple[float, float, float],
-    radius: float,
-    mat: bpy.types.Material,
-    vertices: int = 8,
-) -> bpy.types.Object:
-    first = Vector(start)
-    second = Vector(end)
-    direction = second - first
-    obj = cone(name, radius, radius * 0.93, direction.length, tuple((first + second) * 0.5), mat, vertices)
-    obj.rotation_mode = "QUATERNION"
-    obj.rotation_quaternion = direction.to_track_quat("Z", "Y")
-    return obj
-
-
-def mesh_object(
-    name: str,
-    vertices: list[tuple[float, float, float]],
-    faces: list[tuple[int, ...]],
-    mat: bpy.types.Material,
-) -> bpy.types.Object:
-    mesh = bpy.data.meshes.new(f"{name}_Mesh")
-    mesh.from_pydata(vertices, [], faces)
-    mesh.update()
-    obj = bpy.data.objects.new(name, mesh)
-    bpy.context.scene.collection.objects.link(obj)
-    return assign(obj, mat)
 
 
 def flame(
@@ -181,28 +69,6 @@ def flame(
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     obj.select_set(False)
     return obj
-
-
-def look_at(obj: bpy.types.Object, target: tuple[float, float, float]) -> None:
-    obj.rotation_euler = (Vector(target) - obj.location).to_track_quat("-Z", "Y").to_euler()
-
-
-def move_to_collection(objects: list[bpy.types.Object], collection: bpy.types.Collection) -> None:
-    for obj in objects:
-        for old_collection in list(obj.users_collection):
-            old_collection.objects.unlink(obj)
-        collection.objects.link(obj)
-
-
-def world_bounds(objects: list[bpy.types.Object]) -> tuple[Vector, Vector]:
-    bpy.context.view_layer.update()
-    corners: list[Vector] = []
-    for obj in objects:
-        if obj.type == "MESH":
-            corners.extend(obj.matrix_world @ Vector(corner) for corner in obj.bound_box)
-    minimum = Vector((min(v.x for v in corners), min(v.y for v in corners), min(v.z for v in corners)))
-    maximum = Vector((max(v.x for v in corners), max(v.y for v in corners), max(v.z for v in corners)))
-    return minimum, maximum
 
 
 def create_asset(
@@ -476,7 +342,7 @@ def setup_render(mats: dict[str, bpy.types.Material]) -> tuple[bpy.types.Scene, 
     bpy.context.scene.camera = camera
     move_to_collection([camera], preview_collection)
     scene = bpy.context.scene
-    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.engine = eevee_engine()
     scene.render.resolution_x = 1600
     scene.render.resolution_y = 1000
     scene.render.resolution_percentage = 100
@@ -493,6 +359,7 @@ def main() -> None:
     SOURCE_DIR.mkdir(parents=True, exist_ok=True)
     for expected in EXPECTED_NAMES:
         (EXPORT_DIR / f"{expected}.glb").unlink(missing_ok=True)
+    reset_materials()
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
@@ -500,29 +367,31 @@ def main() -> None:
         for block in list(datablocks):
             datablocks.remove(block)
 
+    # Every colour now comes from the shared palette, so a bench top and a
+    # tool haft are the same oak and the furnace is the same stone as a boulder.
     mats = {
-        "wood": material("MIRE_Station_Wood", (0.34, 0.12, 0.025, 1.0)),
-        "wood_light": material("MIRE_Station_Wood_Light", (0.62, 0.28, 0.065, 1.0)),
-        "wood_dark": material("MIRE_Station_Wood_Dark", (0.15, 0.045, 0.014, 1.0)),
-        "wood_cut": material("MIRE_Station_Wood_Cut", (0.83, 0.50, 0.16, 1.0)),
-        "rope": material("MIRE_Station_Rope", (0.63, 0.48, 0.16, 1.0)),
-        "stone": material("MIRE_Station_Stone", (0.31, 0.36, 0.37, 1.0)),
-        "stone_light": material("MIRE_Station_Stone_Light", (0.48, 0.52, 0.50, 1.0)),
-        "stone_dark": material("MIRE_Station_Stone_Dark", (0.16, 0.19, 0.20, 1.0)),
-        "soot": material("MIRE_Station_Soot", (0.025, 0.018, 0.020, 1.0)),
-        "charred": material("MIRE_Station_Charred_Wood", (0.075, 0.025, 0.014, 1.0)),
-        "iron": material("MIRE_Station_Iron", (0.27, 0.33, 0.35, 1.0), 0.42, 0.65),
-        "iron_light": material("MIRE_Station_Iron_Light", (0.51, 0.59, 0.60, 1.0), 0.32, 0.72),
-        "iron_dark": material("MIRE_Station_Iron_Dark", (0.09, 0.13, 0.15, 1.0), 0.50, 0.58),
-        "brass": material("MIRE_Station_Brass", (0.77, 0.43, 0.06, 1.0), 0.38, 0.58),
-        "red_metal": material("MIRE_Station_Red_Metal", (0.61, 0.055, 0.035, 1.0), 0.45, 0.45),
-        "fire_orange": material("MIRE_Station_Fire_Orange", (1.0, 0.19, 0.015, 1.0), 0.45, 0.0, (1.0, 0.10, 0.01, 1.0), 3.2),
-        "fire_yellow": material("MIRE_Station_Fire_Yellow", (1.0, 0.73, 0.04, 1.0), 0.40, 0.0, (1.0, 0.48, 0.015, 1.0), 4.0),
-        "ember": material("MIRE_Station_Ember", (0.85, 0.045, 0.015, 1.0), 0.55, 0.0, (1.0, 0.04, 0.01, 1.0), 2.0),
-        "cooked_meat": material("MIRE_Station_Cooked_Meat", (0.48, 0.075, 0.025, 1.0)),
-        "cooked_meat_dark": material("MIRE_Station_Cooked_Meat_Dark", (0.18, 0.025, 0.012, 1.0)),
-        "ground": material("MIRE_Station_Preview_Ground", (0.048, 0.085, 0.056, 1.0)),
-        "scale": material("MIRE_Station_Scale_Reference", (0.15, 0.53, 0.78, 1.0)),
+        "wood": mat("wood_timber"),
+        "wood_light": mat("wood_timber_light"),
+        "wood_dark": mat("wood_bark_dark"),
+        "wood_cut": mat("wood_cut"),
+        "rope": mat("rope"),
+        "stone": mat("stone"),
+        "stone_light": mat("stone_light"),
+        "stone_dark": mat("stone_dark"),
+        "soot": mat("coal"),
+        "charred": mat("wood_charred"),
+        "iron": mat("iron"),
+        "iron_light": mat("iron_light"),
+        "iron_dark": mat("iron_dark"),
+        "brass": mat("brass"),
+        "red_metal": mat("cloth_red"),
+        "fire_orange": mat("ember"),
+        "fire_yellow": mat("flame"),
+        "ember": mat("ember"),
+        "cooked_meat": mat("flesh_cooked"),
+        "cooked_meat_dark": mat("flesh_charred"),
+        "ground": mat("preview_ground"),
+        "scale": mat("reference_blue"),
     }
 
     builders: list[tuple[str, str, Callable[[], None]]] = [

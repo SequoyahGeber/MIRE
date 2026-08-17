@@ -146,6 +146,8 @@ PALETTE: dict[str, Swatch] = {
     "flesh_raw": Swatch("#8E3B3B", 0.82, note="raw meat; muted, never fire-engine red"),
     "flesh_fat": Swatch("#C4B08A", 0.84),
     "bone": Swatch("#CFC6AE", 0.86),
+    "flesh_cooked": Swatch("#6B3A22", 0.86, note="cooked meat; browner and darker than raw"),
+    "flesh_charred": Swatch("#2E1A12", 0.92, note="seared edges on cooked food"),
     "leather": Swatch("#6B4A30", 0.90, note="ONE leather: grips, pouches, hides, straps"),
     "cloth": Swatch("#8E7A5C", 0.95),
     "cloth_red": Swatch("#8E2B22", 0.93, note="the only red textile"),
@@ -166,13 +168,13 @@ PALETTE: dict[str, Swatch] = {
     "ward_glow": Swatch("#1E5A54", 0.40, 0.0, "#3CE0C8", 2.2, note="healthy ward emissive"),
     "ward_crystal": Swatch("#2A7A72", 0.28, 0.0, "#5CF0D8", 2.6),
     # -- fire and accents ---------------------------------------------------
-    "ember": Swatch("#E06A22", 0.60, 0.0, "#FF7A28", 3.0),
-    "flame": Swatch("#F2A03C", 0.50, 0.0, "#FFC24E", 4.5),
+    "ember": Swatch("#E06A22", 0.60, 0.0, "#FF6A18", 1.7, note="outer flame / hot coals"),
+    "flame": Swatch("#F2A03C", 0.50, 0.0, "#FFB03A", 2.5, note="flame core; brighter than ember, still coloured"),
     "coal": Swatch("#17181A", 0.96),
     "blood": Swatch("#7A1E1E", 0.86),
     "ice": Swatch("#7FD6E6", 0.30, 0.0, "#A8E8F4", 0.8),
     # -- utility ------------------------------------------------------------
-    "preview_ground": Swatch("#1B241A", 0.98, note="preview backdrop only, never shipped"),
+    "preview_ground": Swatch("#3D5242", 0.98, note="preview backdrop only, never shipped"),
     "reference_blue": Swatch("#2E7ACC", 0.90, note="scale-reference figure only"),
 }
 
@@ -515,6 +517,13 @@ def move_to_collection(objects: list[bpy.types.Object], collection: bpy.types.Co
 
 
 def world_bounds(objects: list[bpy.types.Object]) -> tuple[Vector, Vector]:
+    # Flush pending transforms first. `obj.location = ...` does not refresh
+    # `matrix_world` on its own, so measuring without this reads the object at
+    # wherever it was BEFORE the builder moved it. That is not a visible error —
+    # the asset still exports, just mis-measured and mis-grounded. It cost the
+    # woodcutting block 0.31 m of height (its splitting wedge was measured at
+    # the origin) and the catalog diff was the only thing that noticed.
+    bpy.context.view_layer.update()
     lo = Vector((1e9, 1e9, 1e9))
     hi = Vector((-1e9, -1e9, -1e9))
     for obj in objects:
