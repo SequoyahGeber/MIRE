@@ -1305,3 +1305,15 @@ Commit at time of writing: `732072c`
 Follow-up fixes found while recording real quota state: parse_reset now returns a comparable ISO stamp (a bare '11:00pm' read as long-expired and re-dispatched into the wall), quota_block fails safe on an unreadable stamp, agent main propagates exit codes (agent godot returned 0 on a FAILING check), and lane park records a known-dry account. selftest 20/20.
 
 Commit at time of writing: `aca8389`
+
+---
+
+### DONE · F-046 · flint5 · 2026-08-17T18:48:57+00:00
+
+**`viewmodel.gd` names autoloads bare, so any harness compiling `PlayerController` gets a viewmodel-less player**
+
+viewmodel.gd resolves autoloads by path with local PHASE_* constants (must NOT preload combat_service.gd — its bare autoload refs are legal for an autoload but poison the early compile pass). verify_setup now checks all 19 autoloads, not 2. viewmodel_check skips renders under the headless DisplayServer instead of erroring. Verified: verify_setup, viewmodel_check, interp_check, combat_feel_check, dev_loadout_check all 0 ERROR-lines, failures=0 — interp_check's 4 and combat_feel's 4 were this same compile chain.
+
+Files: `entities/player/viewmodel.gd`, `tools/verify_setup.gd`, `tools/viewmodel_check.gd`
+
+Commit at time of writing: `47f5530`

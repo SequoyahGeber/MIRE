@@ -30,11 +30,6 @@
       "at": "2026-08-17T18:44:35+00:00",
       "task": "F-050"
     },
-    "entities/player/viewmodel.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "F-046"
-    },
     "tools/harvest_world_check.gd": {
       "agent": "flint5",
       "at": "2026-08-17T18:43:41+00:00",
@@ -54,29 +49,9 @@
       "agent": "flint5",
       "at": "2026-08-17T18:43:41+00:00",
       "task": "F-048"
-    },
-    "tools/verify_setup.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "F-046"
-    },
-    "tools/viewmodel_check.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "F-046"
     }
   },
   "in_flight": {
-    "F-046": {
-      "agent": "flint5",
-      "files": [
-        "entities/player/viewmodel.gd",
-        "tools/verify_setup.gd",
-        "tools/viewmodel_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-17T18:43:41+00:00"
-    },
     "F-047": {
       "agent": "flint5",
       "files": [
@@ -1891,9 +1866,9 @@
       "task": "F-041"
     },
     "entities/player/viewmodel.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:52:06+00:00",
-      "task": "F-041"
+      "agent": "flint5",
+      "at": "2026-08-17T18:48:57+00:00",
+      "task": "F-046"
     },
     "entities/player/viewmodel.gd.uid": {
       "agent": "dusk3",
@@ -2386,14 +2361,14 @@
       "task": "1.12"
     },
     "tools/verify_setup.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:46:47+00:00",
-      "task": "F-028"
+      "agent": "flint5",
+      "at": "2026-08-17T18:48:57+00:00",
+      "task": "F-046"
     },
     "tools/viewmodel_check.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:52:06+00:00",
-      "task": "F-041"
+      "agent": "flint5",
+      "at": "2026-08-17T18:48:57+00:00",
+      "task": "F-046"
     },
     "tools/viewmodel_check.gd.uid": {
       "agent": "dusk3",
@@ -3680,9 +3655,11 @@
       "title": "`pgrep -fl Godot` is too blunt to be the closed-editor guard"
     },
     "F-046": {
+      "done_at": "2026-08-17T18:48:57+00:00",
+      "done_by": "flint5",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`viewmodel.gd` names autoloads bare, so any harness compiling `PlayerController` gets a viewmodel-less player"
     },

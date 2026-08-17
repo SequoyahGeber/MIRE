@@ -142,9 +142,22 @@ func _press_resolves(key: Key, action: String) -> bool:
 
 
 func _verify_autoloads() -> void:
-	for name in ["DebugOverlay", "DebugConsole"]:
-		var path: String = str(ProjectSettings.get_setting("autoload/" + name, ""))
-		_check("%s registered" % name, path.begins_with("*res://"), "got '%s'" % path)
+	# Every registered autoload, not a hardcoded two (F-046): a dropped [autoload] line should fail
+	# HERE, not as a null-reference at runtime — tasks 1.0/1.0b exist because it once did. Walk the
+	# whole section; get_setting cannot enumerate, but the property list can.
+	var found: int = 0
+	for prop: Dictionary in ProjectSettings.get_property_list():
+		var setting_name: String = str(prop.get("name", ""))
+		if not setting_name.begins_with("autoload/"):
+			continue
+		found += 1
+		var short_name: String = setting_name.trim_prefix("autoload/")
+		var path: String = str(ProjectSettings.get_setting(setting_name, ""))
+		_check("%s registered as singleton" % short_name, path.begins_with("*res://"), "got '%s'" % path)
+		_check("%s script exists" % short_name, ResourceLoader.exists(path.trim_prefix("*")))
+	# >= not ==: adding an autoload must not red this harness, dropping one must. Bump the floor
+	# when a registration is deliberately added or removed.
+	_check("all 19 autoloads present (%d)" % found, found >= 19)
 
 
 func _verify_scenes() -> void:

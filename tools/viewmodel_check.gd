@@ -108,7 +108,18 @@ func _run() -> void:
 func _shoot(path: String, label: String) -> void:
 	await process_frame
 	await process_frame
-	var image: Image = root.get_texture().get_image()
+	# The dummy rasterizer in a plain --headless run has no frame to read back — get_texture()
+	# hands back a ViewportTexture whose RID is dead, and merely calling get_image() on it logs an
+	# engine ERROR per shot (F-046). The renders are evidence for eyes, not assertions, so detect
+	# headless BEFORE touching the texture and skip loudly. Run WITHOUT --headless to capture PNGs.
+	if DisplayServer.get_name() == "headless":
+		print("VIEWMODEL_RENDER skipped (%s) — headless dummy renderer, no frame to save" % label)
+		return
+	var texture: ViewportTexture = root.get_texture()
+	var image: Image = texture.get_image() if texture != null else null
+	if image == null:
+		print("VIEWMODEL_RENDER skipped (%s) — no frame to save" % label)
+		return
 	if image.save_png(path) != OK:
 		push_error("FAIL: could not save %s" % path)
 		failures += 1
