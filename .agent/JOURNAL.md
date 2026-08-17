@@ -1266,3 +1266,32 @@ FOR A-009. Read assets/tools_weapons/README.md for the lofted() rationale, and A
 Files: `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `tools/blender/build_tool_weapon_set.py`, `tools/blender/render_item_icons.py`, `assets/source/tool_weapon_set.blend`, `assets/tools_weapons`, `assets/icons`, `content/items/iron_sword.tres`, `content/weapons/iron_sword.tres`, `tools/item_icons_check.gd`, `docs/FINDINGS.md`, `assets/tools_weapons/README.md`, `assets/icons/catalog.json`, `assets/icons/preview/item_icons_sheet.png`, `assets/icons/exports/icon_iron_sword.png`, `assets/tools_weapons/catalog.json`, `assets/tools_weapons/preview/tools_weapons_scale_preview.png`, `assets/tools_weapons/preview/tools_weapons_viewmodel_preview.png`, `assets/tools_weapons/preview/tools_weapons_world_preview.png`, `assets/tools_weapons/exports/iron_sword_world.glb`, `assets/tools_weapons/exports/iron_sword_viewmodel.glb`
 
 Commit at time of writing: `423fb8f`
+
+---
+
+### HANDOFF · 2.12 · lc1 · 2026-08-17T18:38:17+00:00
+
+**Night wave spawner: N enemies at night, despawn at dawn, scales with player count**
+
+LC1 stopped on 2.12 at 2026-08-17T18:38:17+00:00 (exit 1, quota wall). Tokens this run: 41,000 in / 9,000 out. Working diff is untouched — read the log at .agent/logs/simulated.jsonl, then continue or drop. Tail of the failure:
+Error: You've hit your usage limit. Your limit will reset at 11:00pm.
+
+Files: `systems/spawning/wave_spawner.gd`
+
+Commit at time of writing: `732072c`
+
+---
+
+### DONE · 0.12 · yarrow21 · 2026-08-17T18:43:41+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+Director/lane harness. agent order|dispatch|lanes|collect|report|reap|godot + .agent/bin/lane + setup-lanes. Three lanes (2x ChatGPT Plus via codex, 1x Claude Pro via claude) isolated by CODEX_HOME/CLAUDE_CONFIG_DIR, identified via MIRE_AGENT so the existing claim protocol is unchanged. Verified: doctor, dry-run both CLIs, order collision refusal, godot lock serialises (6s vs 3s), simulated quota death releases claims and files a handoff, lane selftest 14/14. Lanes are inert until Sequoyah runs the three logins.
+
+Notes along the way:
+- Both CLIs already ship inside the desktop apps — no npm install needed. codex at /Applications/ChatGPT.app/Contents/Resources/codex, claude under ~/Library/Application Support/Claude/claude-code/<ver>/.
+- Quota classifier needed tightening: 'rate_limit' and '429' are ordinary netcode vocabulary here, so a naive pattern parks healthy lanes. lane selftest holds the line at 14 cases.
+
+Files: `.agent/bin/lane`, `.agent/bin/setup-lanes`, `.agent/bin/agent`, `docs/ORCHESTRATION.md`, `docs/ROADMAP.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/AI-WORKFLOW.md`, `CLAUDE.md`, `.gitignore`
+
+Commit at time of writing: `732072c`

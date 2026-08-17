@@ -70,7 +70,26 @@ one-to-one, but the relative ordering does — treat this as which lever costs y
 | **T1** | **Sonnet 5** | $3/$15 | **The default workhorse.** Near-Opus quality on coding and agentic work at a fraction of the cost. Most `.gd` implementation from a written spec belongs here. |
 | **T1 (trivial)** | Haiku 4.5 | $1/$5 | Mechanical single-file edits, boilerplate, renames. 200K context — too small for anything cross-cutting. |
 | **T2** | **Opus 5** | $5/$25 | Netcode, world gen, the powerup framework, hard bugs, architecture. Things expensive to get wrong. |
-| — | Fable 5 | $10/$50 | Twice Opus. Nothing in this project needs it. |
+| **Design only** | Fable 5 | $10/$50 | Twice Opus. Three problems justify it — see below. Never for implementation. |
+
+### Fable: specs only, never code
+
+The rule that makes scarce Fable quota worth having: **Fable writes the spec, cheap lanes build it.**
+One Fable turn producing a design document that three lanes then implement is the best conversion of
+premium quota into shipped work available here — and it is exactly what the lane system (D-036) is
+built to exploit.
+
+Its edge is one-shot design where the space is wide and being wrong costs a rewrite. Spend it on
+exactly three things, in this order:
+
+1. **M4 world generation / Mire replication design.** Thirteen unstarted tasks descend from it. A
+   wrong call here is not a bug, it is rewriting M4.
+2. **The powerup / Resonance framework.** You then hand-author ~60 `.tres` against it. A bad framework
+   means re-authoring *content* — the one thing that cannot be cheaply redone.
+3. **Save/load and the migration schema.** Versioned data that ships to players.
+
+**Never** on: debugging (long loops, huge context — Opus at medium is better value *and* usually
+better), implementation from a written spec, or anything a `tools/*_check.gd` already proves.
 
 > ⏳ **Sonnet 5 is on introductory pricing ($2/$10) through 2026-08-31.** Until then it's ~40% of Opus's
 > cost rather than ~60%. If you're planning a big implementation push, front-load it.
@@ -102,21 +121,39 @@ Mire replication design, a bug you've already failed to fix twice. Turn it off a
 `[ext_resource id="..."]` identifiers and node-path references. Two agents editing the same scene
 produce conflicts that are painful at best and silently corrupt the scene at worst.
 
-**The partition that solves this, and happens to be optimal anyway:**
+The protection is exact file ownership plus a closed editor (D-031):
 
-> ### Agents write `.gd` scripts. You wire them into scenes.
-
-This is merge-safe, quota-efficient, and plays to everyone's strengths simultaneously. It means:
-
-- Agents produce and edit **code files only**
-- You attach scripts to nodes, set exports, and build hierarchies in the editor
-- Two agents can safely work in parallel **only if they own disjoint folders** — assign folder
-  ownership explicitly at the start of a session and never overlap
-- Never run two agents against the same file. Ever.
-- Commit before and after each agent session, so a bad run is one `git restore` away
+- Agents may edit `.tscn`, `.tres`, and `.import` files only under an explicit exact-file claim.
+- Before touching any Godot-authored file, run `pgrep -fl Godot`. If Godot is open, stop; it can
+  overwrite an agent's work on save.
+- Two agents may work in parallel only on disjoint claimed files. Never overlap a scene or resource.
+- Prefer a Godot tool script for complex scene/resource generation so Godot serializes its own format.
+- Visual layout, tuning, and playtesting remain good Tier 0 editor work, but they are no longer a
+  mandatory human handoff when an agent can safely implement and verify the change.
+- Commit before and after each agent session, so a bad run is one `git restore` away.
 
 **Practical parallel split:** premium agent works in `core/` or `systems/`; cheap agent works in
 `ui/`, `content/`, or tooling. These rarely touch.
+
+**This split is now mechanical.** Each paid account is a *lane* with an area, and one director routes
+work to all three — see **`ORCHESTRATION.md`** (D-036):
+
+| Lane | Account | Tier | Area |
+|---|---|---|---|
+| `LD` | Claude Max 5x (Opus) | T2 | routing, design, verification — does not implement |
+| `LC1` | ChatGPT Plus #1 (codex) | T1 | `systems/` `core/` `entities/` |
+| `LC2` | ChatGPT Plus #2 (codex) | T1 | `ui/` `tools/` `world/` |
+| `LP` | Claude Pro (Sonnet) | T1-heavy | `systems/` `ui/` `autoload/` |
+| `L0` | Sequoyah | T0 | the editor. Free, never dispatched |
+
+```bash
+agent order 2.11 --lane LC2 --files systems/environment/day_night.gd
+agent dispatch LC2          # headless, on that account's quota
+agent report                # who's working, what it cost, what's stuck
+```
+
+One more rule the lanes make load-bearing: **launch the engine with `agent godot`, never bare.** All
+~49 checks share one import cache and concurrent runs race on it (F-044).
 
 ---
 

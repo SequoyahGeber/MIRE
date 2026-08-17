@@ -9,10 +9,16 @@ Deliberately small and dependency-free. If it annoys you, edit it.
 """
 
 import binascii
+import contextlib
+import fcntl
+import glob
+import io
 import json
 import os
+import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -23,6 +29,12 @@ JOURNAL = os.path.join(AGENT_DIR, "JOURNAL.md")
 SESSION = os.path.join(AGENT_DIR, "session")
 SESSIONS = os.path.join(AGENT_DIR, "sessions.json")
 ROADMAP = os.path.join(ROOT, "docs", "ROADMAP.md")
+# Orchestration (D-036): the director prepares orders here, lanes execute them, locks keep three
+# concurrent lanes from colliding on the two things they genuinely share.
+ORDERS = os.path.join(AGENT_DIR, "orders")
+LOCKS = os.path.join(AGENT_DIR, "locks")
+LANE_BIN = os.path.join(AGENT_DIR, "bin", "lane")
+LANES_FILE = os.path.join(AGENT_DIR, "lanes.json")
 
 STALE_HOURS = 12
 
@@ -1178,12 +1190,583 @@ def render_board(st):
         f.write("\n".join(L))
 
 
+# ------------------------------------------------------- orchestration (D-036)
+#
+# Everything above this line is pull-based: an agent opens a chat, runs `start`, and picks something.
+# That works, but it makes Sequoyah the scheduler — he opens every chat and is the one who notices
+# when an account runs dry.
+#
+# Below is the push half. One director (Claude Max, Opus) routes tasks to three worker lanes, each
+# pinned to its own paid account, and watches their quota. The director does not implement; it
+# routes and verifies. See docs/ORCHESTRATION.md.
+
+LANE_NAMES = ("LC1", "LC2", "LP")
+
+
+@contextlib.contextmanager
+def file_lock(name, timeout=600):
+    """Serialise the two resources three concurrent lanes actually share.
+
+    `godot` — one headless Godot at a time. Lanes share a single 42 MB import cache, and two engines
+    reimporting it at once is the most plausible explanation for F-038's intermittent failures.
+    `git`  — one index at a time. Three lanes running `ship` together means index.lock contention.
+    """
+    os.makedirs(LOCKS, exist_ok=True)
+    path = os.path.join(LOCKS, "%s.lock" % name)
+    waited = False
+    with open(path, "w") as fh:
+        deadline = time.time() + timeout
+        while True:
+            try:
+                fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except OSError:
+                if not waited:
+                    print("%s· waiting for the %s lock%s" % (C["dim"], name, C["x"]))
+                    waited = True
+                if time.time() > deadline:
+                    die("timed out after %ds waiting for the %s lock. If nothing is running, "
+                        "remove %s" % (timeout, name, os.path.relpath(path, ROOT)))
+                time.sleep(0.4)
+        try:
+            yield
+        finally:
+            fcntl.flock(fh, fcntl.LOCK_UN)
+
+
+def with_lock(name, fn):
+    """Wrap a command so it holds a lock for its whole run, without touching the command's body."""
+    def wrapped(args):
+        with file_lock(name):
+            return fn(args)
+    return wrapped
+
+
+def _lane_state():
+    try:
+        with open(LANES_FILE) as f:
+            return json.load(f)
+    except (IOError, ValueError):
+        return {}
+
+
+def _plain(fn, args):
+    """Capture a command's output with colour off — work orders are piped into another CLI as a
+    prompt, and ANSI escapes in a prompt are just noise the model has to read past."""
+    saved = dict(C)
+    C.update({k: "" for k in C})
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            fn(args)
+    finally:
+        C.update(saved)
+    return buf.getvalue()
+
+
+STOPWORDS = {"the", "and", "for", "with", "from", "into", "that", "this", "not", "but", "its",
+             "one", "two", "all", "any", "per", "run", "make", "add", "use", "when", "then",
+             "than", "each", "only", "over", "under", "before", "after", "until", "does", "must"}
+
+
+def _tokens(text):
+    """Words worth matching on. Splits camelCase too, so `WorldEnvironment` in a task title can find
+    environment_vfx_check.gd."""
+    text = re.sub(r"([a-z])([A-Z])", r"\1 \2", text)
+    return {w for w in re.findall(r"[a-z]{4,}", text.lower()) if w not in STOPWORDS}
+
+
+def _suggest_check(tid, title):
+    """Point the lane at the headless proof that already exists for its area.
+
+    A task that ends with a check someone can re-run is a task the director can verify by reading
+    one exit code instead of re-deriving the work. There are ~49 of these in tools/ already.
+
+    Match on name parts, not substrings: 'cycle' must not select session_lifecycle_check."""
+    words = _tokens(title)
+    scored = []
+    for path in sorted(glob.glob(os.path.join(ROOT, "tools", "*_check.gd"))):
+        stem = os.path.basename(path)[:-3]
+        parts = [p for p in stem.split("_") if p != "check"]
+        hits = sum(1 for w in words
+                   if any(p.startswith(w[:5]) or w.startswith(p[:5]) for p in parts))
+        if hits:
+            scored.append((-hits, "tools/%s.gd" % stem))
+    scored.sort()
+    return [p for _, p in scored[:3]]
+
+
+def _order_path(tid):
+    return os.path.join(ORDERS, "%s.md" % tid.replace("/", "_"))
+
+
+def _open_orders():
+    if not os.path.isdir(ORDERS):
+        return {}
+    out = {}
+    for path in sorted(glob.glob(os.path.join(ORDERS, "*.md"))):
+        tid = os.path.basename(path)[:-3]
+        head = ""
+        with open(path) as f:
+            for line in f:
+                if line.startswith("<!-- lane:"):
+                    head = line.strip()
+                    break
+        m = re.search(r"lane:(\S+)\s+files:(.*?)-->", head)
+        out[tid] = {
+            "path": path,
+            "lane": m.group(1) if m else "?",
+            "files": [x for x in (m.group(2).split() if m else []) if x],
+        }
+    return out
+
+
+ORDER_TEMPLATE = """<!-- lane:%(lane)s files:%(files)s -->
+# Work order — %(tid)s  ·  lane %(lane)s  (%(account)s)
+
+You are **%(lane)s**, one of three worker lanes on MIRE. Your agent name is `%(agent)s` and it is
+already set in your environment, so every `agent` command you run files under it automatically.
+
+Work autonomously and finish. **Do not stop to ask questions.** If the spec is ambiguous, decide it
+the way `ARCHITECTURE.md` and `DECISIONS.md` point, record the call, and keep going — a
+wrong-but-documented decision is cheap to reverse, and a stalled lane is not.
+
+## 1. Claim before your first edit
+
+```bash
+%(claim)s
+```
+
+If that fails, another lane holds a file you need. **Stop and run `.agent/bin/agent drop %(tid)s`** —
+do not work around it. Two agents in one file is the failure this whole system exists to prevent.
+
+## 2. Verify it yourself, headless — never ask a human to run it
+
+```bash
+%(verify)s
+```
+
+Always launch Godot through `agent godot`. It takes a lock so your run cannot collide with another
+lane's; a bare `Godot --headless` can corrupt the shared import cache (F-038, F-044).
+
+## 3. Close out — this part is not optional
+
+Everything the next agent needs goes **in the repo**, not in a closing message. Nobody reads your
+final message; Sequoyah does not relay between tasks.
+
+| What you have | Where it goes |
+|---|---|
+| A problem outside this task | `docs/FINDINGS.md`, next `F-0NN` |
+| A call others must not relitigate | `docs/DECISIONS.md`, next `D-0NN` |
+| An API or layout the next task builds on | `docs/DELEGATION.md` *Current state* |
+
+Then, in order:
+
+```bash
+.agent/bin/agent done %(tid)s "what works, and the command that proves it"
+.agent/bin/agent ship %(tid)s "%(tid)s: short imperative summary"
+```
+
+If you run out of quota or hit a wall, stop cleanly instead of thrashing:
+
+```bash
+.agent/bin/agent handoff %(tid)s "what works, what doesn't, what you'd decided, what's next"
+```
+
+## 4. Hard rules
+
+- **Never edit `.tscn`/`.tres`/`.import`/`project.godot` unless this order's claim set names it**, and
+  never while Godot is open (`pgrep -fl Godot`). D-021, D-031.
+- **Never explore speculatively.** Read the four docs below, then the files this task touches. If you
+  need one more file, name your best guess and read that one — do not grep the repo.
+- **Never bulk-generate content data.** `.tres` items/recipes/powerups are hand-authored. Build the
+  framework, not the content.
+- **Every system declares its network authority** (`ARCHITECTURE.md` §2.2). Host-authoritative by
+  default. There is no "multiplayer later" here.
+- **Typed GDScript everywhere.** `snake_case` files/functions, `PascalCase` classes, `net_` prefix on
+  networked functions, cross-system comms through `event_bus`, never `randi()` in world generation.
+
+---
+
+%(brief)s
+"""
+
+
+def cmd_order(args):
+    """Compose a self-contained work order for one task and park it for a lane.
+
+    The order is generated, not hand-written. Hand-written prompts are what made Sequoyah the
+    courier; anything a lane needs that isn't in here is a bug in the docs, not a missing prompt."""
+    if not args:
+        die('usage: agent order <task-id> [--lane LC1] [--files a.gd b.gd] [--verify "cmd"]')
+    st = load()
+    tid = _require_task(st, args[0], "order")
+    t = st["tasks"][tid]
+
+    lane = "?"
+    files, verify = [], None
+    if "--lane" in args:
+        lane = args[args.index("--lane") + 1].upper()
+        if lane not in LANE_NAMES:
+            die("unknown lane '%s' — known: %s" % (lane, ", ".join(LANE_NAMES)))
+    if "--verify" in args:
+        verify = args[args.index("--verify") + 1]
+    if "--files" in args:
+        rest = args[args.index("--files") + 1:]
+        for a in rest:
+            if a.startswith("--"):
+                break
+            files.append(_rel(a))
+
+    if t["status"] == "done":
+        die("%s is already done — check the journal before re-ordering it" % tid)
+
+    # Never hand out two orders that fight. This is the single most important safety property once
+    # three lanes run at once: the claim system catches a collision, but only after a lane has
+    # already spent quota getting to its first edit.
+    conflicts = [(f, st["claims"][f]) for f in files if f in st["claims"]]
+    for f, c in conflicts:
+        print("%s✗ %s is claimed by %s for %s%s" % (C["r"], f, c["agent"], c["task"], C["x"]))
+    if conflicts:
+        die("that claim set overlaps live work — order a different task")
+    for other, meta in _open_orders().items():
+        if other == tid:
+            continue
+        overlap = set(files) & set(meta["files"])
+        if overlap:
+            die("claim set overlaps the open order for %s (%s) on: %s"
+                % (other, meta["lane"], ", ".join(sorted(overlap))))
+
+    guarded = [f for f in files if f.endswith(EDITOR_GUARDED_SUFFIXES)
+               or os.path.basename(f) in EDITOR_GUARDED_PATHS]
+    if guarded and _godot_running():
+        die("this order touches Godot-authored files (%s) and Godot is open. Close the editor first "
+            "(D-021, D-031)." % ", ".join(guarded))
+
+    checks = _suggest_check(tid, t["title"])
+    if not verify:
+        verify = ("\n".join(".agent/bin/agent godot --script %s" % c for c in checks)
+                  if checks else
+                  ".agent/bin/agent godot --quit-after 120   # no focused check exists yet — "
+                  "write one in tools/ as part of this task")
+
+    claim = ".agent/bin/agent claim %s%s" % (tid, (" " + " ".join(files)) if files else
+                                             " <the files you will edit>")
+    lanes = _lane_state()
+    account = lanes.get(lane, {}).get("account", "unassigned")
+
+    os.makedirs(ORDERS, exist_ok=True)
+    body = ORDER_TEMPLATE % {
+        "lane": lane, "account": account, "agent": lane.lower(), "tid": tid,
+        "files": " ".join(files), "claim": claim, "verify": verify,
+        "brief": _plain(cmd_brief, [tid]).strip(),
+    }
+    path = _order_path(tid)
+    with open(path, "w") as f:
+        f.write(body)
+
+    ok("order written for %s → %s" % (tid, lane))
+    print("  %s%s%s" % (C["dim"], t["title"][:88], C["x"]))
+    print("  %s%s · %d bytes%s" % (C["dim"], os.path.relpath(path, ROOT), len(body), C["x"]))
+    if files:
+        for f in files:
+            print("  %s· %s%s" % (C["dim"], f, C["x"]))
+    else:
+        print("  %s⚠ no --files given: the lane claims as it goes, so collisions surface at claim "
+              "time rather than now%s" % (C["y"], C["x"]))
+    if checks:
+        print("  %sverify: %s%s" % (C["dim"], checks[0], C["x"]))
+    if lane != "?":
+        print("\n  next:  %sagent dispatch %s%s" % (C["c"], lane, C["x"]))
+
+
+def cmd_dispatch(args):
+    """Hand a lane its order and run it headlessly."""
+    if not args:
+        die("usage: agent dispatch <LANE> [task-id] [--dry-run]")
+    lane = args[0].upper()
+    if lane not in LANE_NAMES:
+        die("unknown lane '%s' — known: %s" % (lane, ", ".join(LANE_NAMES)))
+
+    tid = None
+    for a in args[1:]:
+        if not a.startswith("--"):
+            tid = a
+            break
+    if not tid:
+        waiting = [k for k, v in _open_orders().items() if v["lane"] == lane]
+        if not waiting:
+            die("no open order for %s — run:  agent order <task-id> --lane %s" % (lane, lane))
+        tid = waiting[0]
+
+    if not os.path.exists(_order_path(tid)):
+        die("no work order for %s — run:  agent order %s --lane %s" % (tid, tid, lane))
+
+    argv = [LANE_BIN, "run", lane, tid] + [a for a in args[1:] if a.startswith("--")]
+    return subprocess.call(argv, cwd=ROOT)
+
+
+def cmd_lanes(args):
+    """Lane health. --doctor also checks each account's CLI and login."""
+    if "--doctor" in args:
+        return subprocess.call([LANE_BIN, "doctor"], cwd=ROOT)
+    return subprocess.call([LANE_BIN, "status"], cwd=ROOT)
+
+
+def _godot_running():
+    """True only if the Godot *editor* is open.
+
+    The protocol's `pgrep -fl Godot` is too blunt for a machine running three lanes: on this repo it
+    matches nine processes when one real engine is running, because every shell whose command line
+    mentions Godot counts — including the loop that runs the headless checks. Worse, it cannot tell
+    the editor from a headless run, and only the editor matters: the editor rewrites .tscn/.tres on
+    save and will silently discard an agent's edit. A `--headless --script` check never does.
+
+    So: match the actual binary, then exclude headless invocations. See F-045."""
+    try:
+        out = subprocess.run(["ps", "-Ao", "pid,command"], capture_output=True,
+                             text=True, timeout=10).stdout
+    except (OSError, subprocess.SubprocessError):
+        return False
+    for line in out.splitlines():
+        if "Godot.app/Contents/MacOS/Godot" not in line and "/godot" not in line:
+            continue
+        if "grep" in line or "ps -Ao" in line:
+            continue
+        if "--headless" in line:
+            continue          # a check run, not the editor — harmless
+        return True
+    return False
+
+
+GODOT_CANDIDATES = (
+    "/Applications/Godot.app/Contents/MacOS/Godot",
+    "/usr/local/bin/godot",
+    "/opt/homebrew/bin/godot",
+)
+
+
+def cmd_godot(args):
+    """Run Godot headless under a lock, so concurrent lanes cannot corrupt one import cache.
+
+    Every headless verification in this project should go through here rather than calling Godot
+    directly — see F-044. Usage mirrors the engine's: `agent godot --script tools/x_check.gd`."""
+    binary = os.environ.get("GODOT_BIN") or next(
+        (p for p in GODOT_CANDIDATES if os.path.exists(p)), None)
+    if not binary:
+        die("no Godot binary found. Set GODOT_BIN, or install Godot.app.")
+    argv = [binary, "--headless", "--path", ROOT] + list(args)
+    with file_lock("godot", timeout=1800):
+        print("%s· %s%s" % (C["dim"], " ".join(argv[3:]), C["x"]))
+        return subprocess.call(argv, cwd=ROOT)
+
+
+def cmd_reap(args):
+    """Release claims held by a lane whose process is gone.
+
+    A lane killed hard — closed laptop, OOM, a hung CLI — leaves its claims behind, and every other
+    lane that needs those files is blocked behind a corpse. `lane run` files a handoff on any exit
+    it survives to see; this is the backstop for the exits it doesn't."""
+    st = load()
+    lanes = _lane_state()
+    alive = {}
+    for name, lane in lanes.items():
+        pid = lane.get("pid")
+        if pid:
+            try:
+                os.kill(pid, 0)
+                alive[name.lower()] = pid
+            except (OSError, TypeError):
+                pass
+
+    freed, tasks = [], set()
+    for path, claim in list(st["claims"].items()):
+        holder = claim["agent"]
+        if holder in (n.lower() for n in LANE_NAMES) and holder not in alive:
+            del st["claims"][path]
+            freed.append((path, holder, claim["task"]))
+            tasks.add(claim["task"])
+
+    for tid in list(st["in_flight"]):
+        entry = st["in_flight"][tid]
+        if entry["agent"] in (n.lower() for n in LANE_NAMES) and entry["agent"] not in alive:
+            del st["in_flight"][tid]
+            if st["tasks"].get(tid, {}).get("status") == "in_flight":
+                st["tasks"][tid]["status"] = "todo"
+            tasks.add(tid)
+
+    if not freed and not tasks:
+        ok("nothing to reap — no lane is holding claims it shouldn't")
+        if alive:
+            print("  %slive: %s%s" % (C["dim"], ", ".join(sorted(alive)), C["x"]))
+        return
+    save(st)
+    ok("reaped %d claim(s) across %d task(s)" % (len(freed), len(tasks)))
+    for path, holder, tid in freed:
+        print("  %s· %s (was %s, %s)%s" % (C["dim"], path, holder, tid, C["x"]))
+    print("  %sthose tasks are back on the board — re-order them when a lane frees up%s"
+          % (C["dim"], C["x"]))
+
+
+def _git_since(hours):
+    try:
+        out = subprocess.run(
+            ["git", "log", "--since=%d hours ago" % hours, "--pretty=%h\t%an\t%s"],
+            cwd=ROOT, capture_output=True, text=True, timeout=20).stdout
+        return [l.split("\t", 2) for l in out.strip().splitlines() if l]
+    except (OSError, subprocess.SubprocessError):
+        return []
+
+
+def cmd_collect(args):
+    """What came back from the lanes: what shipped, what stopped, what needs the director."""
+    hours = int(args[args.index("--hours") + 1]) if "--hours" in args else 24
+    st = load()
+    lanes = _lane_state()
+    lane_agents = {n.lower() for n in LANE_NAMES}
+
+    print("\n%sCollected — last %dh%s" % (C["b"], hours, C["x"]))
+
+    entries = [e for e in _journal_entries() if age_hours(e.get("at", "")) < hours]
+    shipped = [e for e in entries if e["kind"] == "done"]
+    stopped = [e for e in entries if e["kind"] == "handoff"]
+
+    if shipped:
+        print("\n%sFinished%s" % (C["g"], C["x"]))
+        for e in shipped:
+            who = e["agent"]
+            tag = " %s(lane)%s" % (C["c"], C["x"]) if who in lane_agents else ""
+            print("  %s✓%s %-7s %s%s" % (C["g"], C["x"], e["task"], who, tag))
+            for line in e["body"][1:3]:
+                if line.strip():
+                    print("      %s%s%s" % (C["dim"], line.strip()[:96], C["x"]))
+
+    if stopped:
+        print("\n%sStopped mid-task — needs a decision%s" % (C["y"], C["x"]))
+        for e in stopped:
+            print("  %s◐%s %-7s %s" % (C["y"], C["x"], e["task"], e["agent"]))
+            for line in e["body"][1:4]:
+                if line.strip():
+                    print("      %s%s%s" % (C["dim"], line.strip()[:96], C["x"]))
+
+    broken = [(n, l) for n, l in lanes.items() if l.get("status") in ("error", "exhausted")]
+    if broken:
+        print("\n%sLanes needing attention%s" % (C["r"], C["x"]))
+        for name, lane in sorted(broken):
+            why = ("quota, resets %s" % lane.get("exhausted_until")
+                   if lane["status"] == "exhausted" else "error")
+            print("  %s%s%s %s — %s" % (C["r"], name, C["x"], lane["account"], why))
+            if lane.get("last_error"):
+                first = lane["last_error"].strip().splitlines()[-1][:96]
+                print("      %s%s%s" % (C["dim"], first, C["x"]))
+
+    commits = _git_since(hours)
+    if commits:
+        print("\n%sCommits%s" % (C["b"], C["x"]))
+        for sha, who, subject in commits[:12]:
+            print("  %s%s%s %-9s %s" % (C["dim"], sha, C["x"], who[:9], subject[:74]))
+
+    if not (shipped or stopped or broken or commits):
+        print("  %snothing came back in the last %dh%s" % (C["dim"], hours, C["x"]))
+    print()
+
+
+def cmd_report(args):
+    """One screen: who is doing what, what it cost, what's waiting, what's stuck.
+
+    This is the director's answer to 'keep me informed' — Sequoyah reads this instead of watching
+    three terminals."""
+    st = load()
+    lanes = _lane_state()
+    orders = _open_orders()
+
+    total_in = sum(l.get("tokens_in", 0) for l in lanes.values())
+    total_out = sum(l.get("tokens_out", 0) for l in lanes.values())
+    total_cost = sum(l.get("cost_usd", 0.0) for l in lanes.values())
+    # Findings are deliberately outside the milestone count, so filing one never moves the roadmap
+    # number (AGENTS.md). Count the same way the board does or the two disagree on screen.
+    roadmap = {k: v for k, v in st["tasks"].items() if not _is_finding(k)}
+    done = sum(1 for t in roadmap.values() if t["status"] == "done")
+    open_findings = sum(1 for k, v in st["tasks"].items()
+                        if _is_finding(k) and v["status"] != "done")
+
+    print("\n%sMIRE — orchestration report%s   %s%s%s"
+          % (C["b"], C["x"], C["dim"], now()[:16].replace("T", " "), C["x"]))
+    print("%s%d/%d tasks done · %d open findings · %s tokens this window · $%.2f%s"
+          % (C["dim"], done, len(roadmap), open_findings,
+             f"{total_in + total_out:,}", total_cost, C["x"]))
+
+    print("\n%sLanes%s" % (C["b"], C["x"]))
+    print("  %s%-5s %-18s %-9s %11s %9s %s%s"
+          % (C["dim"], "lane", "account", "status", "tokens", "cost", "runs/fail", C["x"]))
+    for name in LANE_NAMES:
+        lane = lanes.get(name)
+        if not lane:
+            print("  %-5s %s(not configured — run .agent/bin/setup-lanes)%s"
+                  % (name, C["dim"], C["x"]))
+            continue
+        used = lane.get("tokens_in", 0) + lane.get("tokens_out", 0)
+        colour = {"idle": C["g"], "running": C["c"],
+                  "exhausted": C["y"], "error": C["r"]}.get(lane["status"], "")
+        print("  %s%-5s%s %-18s %s%-9s%s %11s %9s %d/%d"
+              % (C["b"], name, C["x"], lane["account"][:18], colour, lane["status"], C["x"],
+                 f"{used:,}", "$%.2f" % lane.get("cost_usd", 0.0),
+                 lane.get("runs", 0), lane.get("failures", 0)))
+        if lane.get("task"):
+            print("        %s▶ %s since %s%s"
+                  % (C["c"], lane["task"], (lane.get("started") or "")[11:16], C["x"]))
+        if lane.get("exhausted_until"):
+            print("        %s◐ parked until %s%s" % (C["y"], lane["exhausted_until"], C["x"]))
+        budget = lane.get("budget_tokens")
+        if budget:
+            print("        %s%d%% of window budget%s" % (C["dim"], 100 * used // budget, C["x"]))
+
+    if st["in_flight"]:
+        print("\n%sIn flight%s" % (C["b"], C["x"]))
+        for tid, e in sorted(st["in_flight"].items()):
+            hrs = age_hours(e["started"])
+            warn = " %s(stale)%s" % (C["y"], C["x"]) if hrs > STALE_HOURS else ""
+            print("  %-7s %-9s %.1fh%s  %s%s%s"
+                  % (tid, e["agent"], hrs, warn, C["dim"],
+                     st["tasks"].get(tid, {}).get("title", "")[:56], C["x"]))
+
+    queued = {k: v for k, v in orders.items()
+              if st["tasks"].get(k, {}).get("status") != "done" and k not in st["in_flight"]}
+    if queued:
+        print("\n%sOrders waiting%s" % (C["b"], C["x"]))
+        for tid, meta in sorted(queued.items()):
+            print("  %-7s → %-4s %s%s%s"
+                  % (tid, meta["lane"], C["dim"],
+                     st["tasks"].get(tid, {}).get("title", "")[:60], C["x"]))
+
+    blocked = []
+    for name in LANE_NAMES:
+        lane = lanes.get(name)
+        if lane and lane.get("status") in ("exhausted", "error"):
+            blocked.append(name)
+        elif lane and lane.get("consecutive_failures", 0) >= 3:
+            blocked.append(name)
+    print("\n%s%s%s" % (
+        C["y"] if blocked else C["g"],
+        ("⚠ %s unavailable — route around %s" % (", ".join(blocked),
+                                                 "them" if len(blocked) > 1 else "it"))
+        if blocked else "✓ all lanes available",
+        C["x"]))
+    print()
+
+
 # ---------------------------------------------------------------- main
 
 COMMANDS = {
     "start": cmd_start, "brief": cmd_brief, "claim": cmd_claim, "note": cmd_note,
     "done": cmd_done, "handoff": cmd_handoff, "drop": cmd_drop, "check": cmd_check,
-    "board": cmd_board, "sync": cmd_sync, "ship": cmd_ship,
+    "board": cmd_board, "sync": cmd_sync,
+    # Three lanes running `ship` at once means three processes in one git index. Serialising it
+    # costs nothing and removes a whole class of confusing failures.
+    "ship": with_lock("git", cmd_ship),
+    # Orchestration (D-036)
+    "order": cmd_order, "dispatch": cmd_dispatch, "lanes": cmd_lanes,
+    "collect": cmd_collect, "report": cmd_report, "reap": cmd_reap, "godot": cmd_godot,
 }
 
 USAGE = """agent — multi-agent coordination for MIRE
@@ -1199,6 +1782,19 @@ USAGE = """agent — multi-agent coordination for MIRE
   agent drop <id>                 abandon a task, release claims
   agent check                     verify changes respect claims (pre-commit hook)
   agent sync                      re-read tasks from docs/ROADMAP.md
+
+Verifying — always launch the engine through this, never bare (F-044):
+
+  agent godot --script tools/x_check.gd     headless Godot, under a lock
+
+Directing three worker accounts (docs/ORCHESTRATION.md):
+
+  agent order <id> --lane LC1 --files ...   write a self-contained work order
+  agent dispatch <LANE> [id] [--dry-run]    run that order on its account, headless
+  agent lanes [--doctor]                    lane health; --doctor checks CLI + login
+  agent report                              who's doing what, what it cost, what's stuck
+  agent collect [--hours N]                 what shipped, what stopped, what needs you
+  agent reap                                free claims from lanes whose process died
 
 Protocol: AGENTS.md    Board: .agent/BOARD.md    History: .agent/JOURNAL.md"""
 

@@ -16,6 +16,13 @@ export/
 .agent/session
 .agent/sessions.json
 
+# Orchestration working state (D-036). Orders are regenerable with `agent order`, logs and locks are
+# machine-local, and lanes.json holds this machine's auth paths and quota ledger.
+.agent/orders/
+.agent/locks/
+.agent/logs/
+.agent/lanes.json
+
 # GodotSteam GDExtension — ~95 MB of per-platform binaries, reinstallable in one
 # command. The pinned commit and the reinstall recipe are D-022 in docs/DECISIONS.md.
 /addons/godotsteam/

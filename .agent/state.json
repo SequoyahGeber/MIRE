@@ -1,21 +1,101 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "entities/player/viewmodel.gd": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "F-046"
+    },
+    "tools/harvest_world_check.gd": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "F-047"
+    },
+    "tools/setup_crafting_content.gd": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "F-048"
+    },
+    "tools/setup_harvest_content.gd": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "F-048"
+    },
+    "tools/setup_project.gd": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "F-048"
+    },
+    "tools/verify_setup.gd": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "F-046"
+    },
+    "tools/viewmodel_check.gd": {
+      "agent": "flint5",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "F-046"
+    }
+  },
+  "in_flight": {
+    "F-046": {
+      "agent": "flint5",
+      "files": [
+        "entities/player/viewmodel.gd",
+        "tools/verify_setup.gd",
+        "tools/viewmodel_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-17T18:43:41+00:00"
+    },
+    "F-047": {
+      "agent": "flint5",
+      "files": [
+        "tools/harvest_world_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-17T18:43:41+00:00"
+    },
+    "F-048": {
+      "agent": "flint5",
+      "files": [
+        "tools/setup_harvest_content.gd",
+        "tools/setup_crafting_content.gd",
+        "tools/setup_project.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-17T18:43:41+00:00"
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:51:38+00:00",
-      "task": "F-017"
+      "agent": "yarrow21",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "0.12"
+    },
+    ".agent/bin/lane": {
+      "agent": "yarrow21",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "0.12"
+    },
+    ".agent/bin/setup-lanes": {
+      "agent": "yarrow21",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "0.12"
     },
     ".gitignore": {
-      "agent": "flint",
-      "at": "2026-08-16T19:34:30+00:00",
-      "task": "F-009"
+      "agent": "yarrow21",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "0.12"
     },
     ".godot/extension_list.cfg": {
       "agent": "flint",
       "at": "2026-08-16T19:34:30+00:00",
       "task": "F-009"
+    },
+    "CLAUDE.md": {
+      "agent": "yarrow21",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "0.12"
     },
     "assets/crafting_stations/README.md": {
       "agent": "ember",
@@ -146,11 +226,6 @@
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
-    },
-    "assets/environment/catalog.csv": {
-      "agent": "reed",
-      "at": "2026-08-16T18:01:56+00:00",
-      "task": "2.1b"
     },
     "assets/environment/catalog.json": {
       "agent": "pike14",
@@ -797,11 +872,6 @@
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
     },
-    "assets/environment/mire_map_kit.blend": {
-      "agent": "reed",
-      "at": "2026-08-16T17:40:04+00:00",
-      "task": "2.1"
-    },
     "assets/environment/preview/building_pieces_preview.png": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
@@ -1097,101 +1167,6 @@
       "at": "2026-08-16T19:00:05+00:00",
       "task": "2.1e"
     },
-    "assets/pickups/README.md": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/catalog.json": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/exports/pickup_berry.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/exports/pickup_branch.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/exports/pickup_coal.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/exports/pickup_coin.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/exports/pickup_coin_stack.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/exports/pickup_fibre_bundle.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/exports/pickup_flint.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/exports/pickup_iron_ingot.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/exports/pickup_iron_ore.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/exports/pickup_log.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/exports/pickup_mushroom.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/exports/pickup_raw_meat.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/exports/pickup_salvage_fragment.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/exports/pickup_stone.glb": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/preview/pickups_preview.png": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/pickups/preview/pickups_scale_preview.png": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
-    },
-    "assets/source/.gdignore": {
-      "agent": "reed",
-      "at": "2026-08-16T17:40:04+00:00",
-      "task": "2.1"
-    },
     "assets/source/adapted_nature_set.blend": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
@@ -1221,11 +1196,6 @@
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
-    },
-    "assets/source/pickup_kit.blend": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
     },
     "assets/source/playtest_hollow.blend": {
       "agent": "pike",
@@ -1787,11 +1757,6 @@
       "at": "2026-08-16T19:12:29+00:00",
       "task": "F-019"
     },
-    "core/net/remote_interp.gd": {
-      "agent": "ash",
-      "at": "2026-08-16T17:19:51+00:00",
-      "task": "1.6"
-    },
     "core/net/remote_interp.gd.uid": {
       "agent": "reed",
       "at": "2026-08-16T19:12:29+00:00",
@@ -1812,6 +1777,11 @@
       "at": "2026-08-17T01:24:51+00:00",
       "task": "F-029"
     },
+    "docs/AI-WORKFLOW.md": {
+      "agent": "yarrow21",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "0.12"
+    },
     "docs/ARCHITECTURE.md": {
       "agent": "slate",
       "at": "2026-08-16T20:11:49+00:00",
@@ -1823,9 +1793,9 @@
       "task": "2.1d"
     },
     "docs/DECISIONS.md": {
-      "agent": "kiln9",
-      "at": "2026-08-17T04:31:26+00:00",
-      "task": "2.1d"
+      "agent": "yarrow21",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "0.12"
     },
     "docs/DELEGATION.md": {
       "agent": "reed16",
@@ -1838,19 +1808,24 @@
       "task": "F-022"
     },
     "docs/FINDINGS.md": {
-      "agent": "reed16",
-      "at": "2026-08-17T17:01:21+00:00",
-      "task": "2.1d"
+      "agent": "yarrow21",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "0.12"
     },
     "docs/NEXT.md": {
       "agent": "dusk3",
       "at": "2026-08-17T02:52:00+00:00",
       "task": "2.6"
     },
+    "docs/ORCHESTRATION.md": {
+      "agent": "yarrow21",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "0.12"
+    },
     "docs/ROADMAP.md": {
-      "agent": "pike14",
-      "at": "2026-08-17T02:10:02+00:00",
-      "task": "2.1i"
+      "agent": "yarrow21",
+      "at": "2026-08-17T18:43:41+00:00",
+      "task": "0.12"
     },
     "docs/STEAM_CROSS_PLATFORM_TEST.md": {
       "agent": "ivy",
@@ -1962,6 +1937,11 @@
       "at": "2026-08-17T16:52:06+00:00",
       "task": "F-041"
     },
+    "systems/spawning/wave_spawner.gd": {
+      "agent": "lc1",
+      "at": "2026-08-17T18:38:17+00:00",
+      "task": "2.12"
+    },
     "tools/blender/build_adapted_nature_set.py": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
@@ -1991,11 +1971,6 @@
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
-    },
-    "tools/blender/build_pickup_kit.py": {
-      "agent": "ember",
-      "at": "2026-08-16T18:40:55+00:00",
-      "task": "2.1d"
     },
     "tools/blender/build_playtest_hollow.py": {
       "agent": "pike",
@@ -2157,11 +2132,6 @@
       "at": "2026-08-17T00:47:21+00:00",
       "task": "2.1g"
     },
-    "tools/handshake_check.gd": {
-      "agent": "bram",
-      "at": "2026-08-16T17:14:58+00:00",
-      "task": "1.11"
-    },
     "tools/handshake_check.gd.uid": {
       "agent": "reed",
       "at": "2026-08-16T19:12:29+00:00",
@@ -2211,11 +2181,6 @@
       "agent": "reed",
       "at": "2026-08-16T19:12:29+00:00",
       "task": "F-019"
-    },
-    "tools/interp_check.gd": {
-      "agent": "ash",
-      "at": "2026-08-16T17:19:51+00:00",
-      "task": "1.6"
     },
     "tools/interp_check.gd.uid": {
       "agent": "reed",
@@ -2296,11 +2261,6 @@
       "agent": "reed",
       "at": "2026-08-16T19:00:05+00:00",
       "task": "2.1e"
-    },
-    "tools/playtest_map_check.gd.uid": {
-      "agent": "reed",
-      "at": "2026-08-16T18:15:43+00:00",
-      "task": "2.1c"
     },
     "tools/run_identity_check.gd": {
       "agent": "dusk3",
@@ -2451,11 +2411,6 @@
       "agent": "reed",
       "at": "2026-08-16T19:00:05+00:00",
       "task": "2.1e"
-    },
-    "world/gen/test_map_props.gd.uid": {
-      "agent": "reed",
-      "at": "2026-08-16T18:15:43+00:00",
-      "task": "2.1c"
     }
   },
   "tasks": {
@@ -2485,6 +2440,15 @@
       "status": "done",
       "tier": "T0",
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
+    },
+    "0.12": {
+      "done_at": "2026-08-17T18:43:41+00:00",
+      "done_by": "yarrow21",
+      "est": "1.5",
+      "milestone": "M0",
+      "status": "done",
+      "tier": "T2",
+      "title": "Orchestration harness \u2014 `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)"
     },
     "0.2": {
       "done_at": "2026-08-15T21:29:21+00:00",
@@ -3643,6 +3607,69 @@
       "status": "done",
       "tier": "F",
       "title": "Held items are invisible in first person, so there is no swing to read"
+    },
+    "F-042": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one"
+    },
+    "F-043": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The iron sword ships complete and nothing puts it in a player's hand"
+    },
+    "F-044": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Concurrent headless Godot runs share one import cache, which is the likely cause of F-038"
+    },
+    "F-045": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`pgrep -fl Godot` is too blunt to be the closed-editor guard"
+    },
+    "F-046": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "`viewmodel.gd` names autoloads bare, so any harness compiling `PlayerController` gets a viewmodel-less player"
+    },
+    "F-047": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "`harvest_world_check` asserts an absolute log count that DevLoadout's starting grant breaks"
+    },
+    "F-048": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Three content generators overwrite tuned or later-batch values silently; one strips icons today"
+    },
+    "F-049": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The board never closes a finding resolved out-of-band, and never learns of new ones until a claim"
+    },
+    "F-050": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Governing docs contradict D-031 in six places, an unclosed code fence hides eight decisions, and the budget table is 51 sessions stale"
     }
   },
   "version": 1

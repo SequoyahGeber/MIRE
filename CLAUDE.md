@@ -29,9 +29,17 @@ Non-negotiables, repeated here because they're the ones that cost the most when 
 - Prefer `Read` on a named file over `Grep`/`Glob` sweeps — searching burns quota for little gain here.
 - Batch related edits in one session while context is warm; `/clear` between unrelated tasks.
 - Before you stop: `agent done` or `agent handoff`, then commit. Uncommitted work is invisible to Codex.
-- **Verify it yourself, headless** — `Godot --headless --path . --quit-after 120`, or two processes
-  with `-- host` / `-- client` (D-023, task 1.5). Do not open the editor, and do not ask Sequoyah to
-  run it and report back; that is only for things that genuinely need a window or a human's eyes.
+- **Verify it yourself, headless** — `agent godot --script tools/x_check.gd`, or `--quit-after 120`,
+  or two processes with `-- host` / `-- client` (D-023, task 1.5). Always through `agent godot`, never
+  bare: it locks the shared import cache that every check races on (F-044). Do not open the editor,
+  and do not ask Sequoyah to run it and report back; that is only for things that genuinely need a
+  window or a human's eyes.
+
+## Directing the other accounts
+
+Two ChatGPT Plus lanes and a Claude Pro lane run headlessly from here — `agent order` → `agent
+dispatch` → `agent report`. **[docs/ORCHESTRATION.md](docs/ORCHESTRATION.md)** is the protocol; read
+it before dispatching. As director you route and verify, you don't implement (D-036).
 
 ## Keep this file short
 

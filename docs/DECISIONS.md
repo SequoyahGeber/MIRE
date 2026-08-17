@@ -617,6 +617,48 @@ to "the next joiner", which hands the wrong inventory over the moment two player
 supersede D-010 first), or a transport that already guarantees stable ids across a reconnect for all
 three modes — then this becomes a shim over that instead of its own registry.
 
+### D-036 · 2026-08-17 · One director routes work to three subscription lanes; it does not implement
+
+The coordination system was pull-based: an agent opens a chat, runs `agent start`, picks a task. That
+works, but it makes Sequoyah the scheduler — he opens every chat, chooses every task, and is the one
+who notices when an account runs dry. Meanwhile four paid plans sit on one MacBook and only one of
+them is ever working.
+
+So: a **director** (Claude Max, Opus) routes tasks to three **lanes**, each pinned to one paid account
+with its own auth home — `LC1`/`LC2` on ChatGPT Plus via `codex`, `LP` on Claude Pro via `claude`.
+`CODEX_HOME` and `CLAUDE_CONFIG_DIR` are what let two Codex accounts and a second Claude account
+coexist without fighting over one credential file. Each lane runs with `MIRE_AGENT=<lane>`, so it
+inherits the whole existing claim/journal protocol unchanged — the orchestration is additive, and
+`start`/`claim`/`ship` behave exactly as before for a human or a chat agent.
+
+**The director's rule is that it routes and verifies, and does not write gameplay code.** A director
+that implements has spent the most expensive quota in the project on work a $2/Mtok lane would have
+done as well. Its output is orders, routing decisions, and judgement on what came back.
+
+The lane split follows `AI-WORKFLOW.md` §3 — premium in `core/`/`systems/`, cheap in `ui/`/`tools/` —
+because those areas rarely touch and so rarely block each other.
+
+**Would change my mind:** if collisions between lanes turn out to cost more than the parallelism buys
+(watch `agent report` for lanes idling on refused orders), or if a single account's quota grows
+enough that fanning out stops being the binding constraint.
+
+### D-037 · 2026-08-17 · Lanes share one working directory; two locks cover what they actually contend on
+
+The obvious isolation for three concurrent lanes is a git worktree each. Rejected: `.godot/` is
+gitignored, so every worktree reimports 71 MB of `assets/` into its own 42 MB cache, and the reimport
+is paid per worktree and again after every asset change. That is a large, recurring cost to solve a
+problem the claim system already solves — two agents cannot hold the same file, and `ship` stages only
+the claiming task's files.
+
+What a shared directory genuinely contends on is two things, and both get a lock
+(`.agent/locks/`): **`godot`**, because all ~49 checks share one import cache (F-044), and **`git`**,
+because three `ship`s at once means three processes in one index. `agent godot` and `agent ship` take
+them; nothing else needs one.
+
+**Would change my mind:** measurable lock starvation — a lane spending more time waiting on
+`godot.lock` than running — or a check suite that grows long enough that serialising it dominates the
+wall clock. Then give each lane a worktree and eat the reimport.
+
 ### D-0NN · YYYY-MM-DD · <one-line decision>
 <why, in 2–4 sentences>
 **Would change my mind:** <the specific evidence that should make you revisit this>

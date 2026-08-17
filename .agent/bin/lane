@@ -1,0 +1,642 @@
+#!/usr/bin/env python3
+"""
+lane — headless dispatcher for MIRE's worker subscription accounts.
+
+The director (Claude Max, Opus) routes work; lanes execute it. A lane is one paid account pinned to
+its own auth home, so two ChatGPT Plus accounts and a second Claude account coexist on one machine
+without fighting over a single credential file:
+
+    LC1  ChatGPT Plus #1   codex   CODEX_HOME=~/.mire/lanes/codex-a
+    LC2  ChatGPT Plus #2   codex   CODEX_HOME=~/.mire/lanes/codex-b
+    LP   Claude Pro        claude  CLAUDE_CONFIG_DIR=~/.mire/lanes/claude-pro
+
+Anti-waste is the point of this file, not a feature of it. A lane that dies on a quota wall must
+release its claims and leave a handoff, or every other lane is blocked behind a corpse and the next
+agent re-derives everything the dead one already learned. See `_finish()`.
+
+Identity: each lane runs with MIRE_AGENT=<lane>, which `agent` honours above everything else, so a
+lane's claims, notes and commits all land under a stable name that outlives any single process.
+
+Deliberately dependency-free, like `agent`. If it annoys you, edit it.
+"""
+
+import glob
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+from datetime import datetime, timedelta, timezone
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+AGENT_DIR = os.path.join(ROOT, ".agent")
+LANES = os.path.join(AGENT_DIR, "lanes.json")
+ORDERS = os.path.join(AGENT_DIR, "orders")
+LOGS = os.path.join(AGENT_DIR, "logs")
+AGENT = os.path.join(AGENT_DIR, "bin", "agent")
+
+DEFAULT_TIMEOUT = 3600          # a hung lane must not block the board forever
+SOFT_STOP_PCT = 0.85            # stop before the wall, so the lane can still write its handoff
+
+C = {
+    "b": "\033[1m", "dim": "\033[2m", "r": "\033[31m", "g": "\033[32m",
+    "y": "\033[33m", "c": "\033[36m", "x": "\033[0m",
+}
+if not sys.stdout.isatty() or os.environ.get("NO_COLOR"):
+    C = {k: "" for k in C}
+
+
+def now():
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def age_hours(iso):
+    try:
+        return (datetime.now(timezone.utc) - datetime.fromisoformat(iso)).total_seconds() / 3600.0
+    except (ValueError, TypeError):
+        return 1e9
+
+
+def die(msg):
+    print("%s✗ %s%s" % (C["r"], msg, C["x"]), file=sys.stderr)
+    sys.exit(1)
+
+
+def ok(msg):
+    print("%s✓%s %s" % (C["g"], C["x"], msg))
+
+
+# ---------------------------------------------------------------- registry
+
+# Areas are advisory — they are what `agent order` uses to pick a lane when you don't name one.
+# The split mirrors AI-WORKFLOW.md §3: premium in core/systems, cheap in ui/tools, because those
+# rarely touch and so rarely block each other.
+DEFAULT_LANES = {
+    "LC1": {
+        "account": "ChatGPT Plus #1", "cli": "codex",
+        "home": "~/.mire/lanes/codex-a", "model": "gpt-5.6-sol", "effort": "medium",
+        "areas": ["systems/", "core/", "entities/"], "tier": "T1",
+        "sandbox": "danger-full-access",
+    },
+    "LC2": {
+        "account": "ChatGPT Plus #2", "cli": "codex",
+        "home": "~/.mire/lanes/codex-b", "model": "gpt-5.6-sol", "effort": "medium",
+        "areas": ["ui/", "tools/", "world/"], "tier": "T1",
+        "sandbox": "danger-full-access",
+    },
+    "LP": {
+        "account": "Claude Pro", "cli": "claude",
+        "home": "~/.mire/lanes/claude-pro", "model": "sonnet", "effort": "medium",
+        "areas": ["systems/", "ui/", "autoload/"], "tier": "T1",
+        "permissions": "bypass",
+    },
+}
+
+LEDGER_DEFAULTS = {
+    "status": "idle",       # idle | running | exhausted | error
+    "task": None, "pid": None, "started": None,
+    "runs": 0, "failures": 0, "consecutive_failures": 0,
+    "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0,
+    "window_started": None, "budget_tokens": None,   # set once you learn your real cap
+    "exhausted_until": None, "last_error": None, "last_finished": None,
+    "raw_usage": {},
+}
+
+
+def load_lanes():
+    data = {}
+    if os.path.exists(LANES):
+        try:
+            with open(LANES) as f:
+                data = json.load(f)
+        except ValueError:
+            data = {}
+    for name, spec in DEFAULT_LANES.items():
+        lane = dict(LEDGER_DEFAULTS)
+        lane.update(spec)
+        lane.update(data.get(name, {}))
+        data[name] = lane
+    return data
+
+
+def save_lanes(data):
+    os.makedirs(AGENT_DIR, exist_ok=True)
+    tmp = LANES + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=2, sort_keys=True)
+        f.write("\n")
+    os.replace(tmp, LANES)
+
+
+# ---------------------------------------------------------------- binaries
+
+def find_codex():
+    """Codex ships inside ChatGPT.app. Prefer a PATH install if the user has one, since that is the
+    copy they can upgrade independently."""
+    return shutil.which("codex") or _first_existing([
+        "/Applications/ChatGPT.app/Contents/Resources/codex",
+    ])
+
+
+def find_claude():
+    """Claude Code ships inside Claude.app under a versioned directory. Glob and take the newest so
+    this keeps working across app updates instead of pinning a version that will rot."""
+    found = shutil.which("claude")
+    if found:
+        return found
+    pattern = os.path.expanduser(
+        "~/Library/Application Support/Claude/claude-code/*/claude.app/Contents/MacOS/claude")
+    return max(glob.glob(pattern), default=None)
+
+
+def _first_existing(paths):
+    for p in paths:
+        if os.path.exists(p):
+            return p
+    return None
+
+
+def lane_binary(lane):
+    return find_codex() if lane["cli"] == "codex" else find_claude()
+
+
+def lane_home(lane):
+    return os.path.expanduser(lane["home"])
+
+
+def is_logged_in(lane):
+    """Cheap, offline evidence that `setup-lanes`' login step actually happened for this account.
+
+    Heuristic on purpose. The only conclusive test is a real request, and a real request costs the
+    quota this whole harness exists to conserve — so we look for artifacts a CLI only writes once
+    it has authenticated, and let the first dispatch be the proof."""
+    home = lane_home(lane)
+    if not os.path.isdir(home):
+        return False
+    if lane["cli"] == "codex":
+        return os.path.exists(os.path.join(home, "auth.json"))
+    # Claude Code keeps credentials in the macOS keychain, so the config dir alone proves nothing —
+    # setup-lanes itself creates it. Look for state that only exists after a session has run.
+    return any(os.path.exists(os.path.join(home, m)) for m in
+               (".credentials.json", "statsig", "projects", "history.jsonl", "sessions"))
+
+
+# ---------------------------------------------------------------- usage
+
+# Codex and Claude both report token counts, but nest them differently and move the shape between
+# versions. Never index a fixed path — walk the JSON and pick up any counter we recognise. Counters
+# are cumulative in codex's stream and single-shot in claude's result object, so `max` is correct
+# for both and double-counts neither.
+TOKEN_KEYS = (
+    "input_tokens", "prompt_tokens", "output_tokens", "completion_tokens",
+    "reasoning_output_tokens", "cached_input_tokens",
+    "cache_read_input_tokens", "cache_creation_input_tokens", "total_tokens",
+    "total_cost_usd",
+)
+
+
+def harvest(obj, acc):
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if isinstance(v, bool):
+                continue
+            if isinstance(v, (int, float)) and k in TOKEN_KEYS:
+                acc[k] = max(acc.get(k, 0), v)
+            else:
+                harvest(v, acc)
+    elif isinstance(obj, list):
+        for v in obj:
+            harvest(v, acc)
+
+
+def totals(acc):
+    tin = max(acc.get("input_tokens", 0), acc.get("prompt_tokens", 0))
+    tin += acc.get("cache_read_input_tokens", 0) + acc.get("cache_creation_input_tokens", 0)
+    tin += acc.get("cached_input_tokens", 0)
+    tout = max(acc.get("output_tokens", 0), acc.get("completion_tokens", 0))
+    return int(tin), int(tout), float(acc.get("total_cost_usd", 0.0))
+
+
+# A run only counts as quota-exhausted if it FAILED and the failure text says so. Scanning the whole
+# transcript would misfire the first time a lane writes code about rate limiting — which, on a
+# netcode project, is a matter of time.
+#
+# Be specific about the *account's* quota, not about rate limiting in general. MIRE is a netcode
+# project: `rate_limit_ms`, `429` and "too many requests" are ordinary vocabulary here, and a lane
+# that failed to compile while discussing them must not be parked for five hours as "exhausted".
+# Every branch below requires wording that only an account-limit message actually uses.
+QUOTA_PAT = re.compile(
+    r"(usage limit (?:reached|exceeded)"
+    r"|you(?:'ve| have)\s+(?:hit|reached|exceeded)\s+(?:your|the)\s+\w*\s*limit"
+    r"|rate[_ -]?limit_?error"
+    r"|rate[_ -]?limit(?:ed)?[^.\n]{0,30}(?:exceeded|try again|retry after)"
+    r"|insufficient_quota"
+    r"|quota\s+(?:exceeded|exhausted|reached)"
+    r"|(?:limit|quota)\s+will\s+reset"
+    r"|(?:status|code)[\"'\s:=]+429"
+    r"|429\s+too many requests"
+    r"|upgrade\s+(?:your plan\s+)?to\s+(?:increase|continue)"
+    r"|out of (?:credits|tokens)"
+    r")", re.I)
+RESET_PAT = re.compile(r"reset[s]?(?: at)?\s+([0-9]{1,2}:[0-9]{2}\s*(?:am|pm)?|[0-9T:\-]{8,})", re.I)
+
+
+def looks_exhausted(text):
+    return bool(text and QUOTA_PAT.search(text))
+
+
+def parse_reset(text):
+    m = RESET_PAT.search(text or "")
+    return m.group(1).strip() if m else None
+
+
+# ---------------------------------------------------------------- command
+
+def build(lane, name, last_msg):
+    """Return (argv, env). The prompt is passed on stdin, not argv — work orders run to several KB
+    and argv limits are a silly way to lose a dispatch."""
+    env = os.environ.copy()
+    env["MIRE_AGENT"] = name.lower()          # stable identity in the claim system
+    env.pop("CLAUDE_CODE_SESSION_ID", None)   # do not inherit the director's chat identity
+    env.pop("CODEX_SESSION_ID", None)
+    env.pop("MIRE_SESSION", None)
+    home = lane_home(lane)
+    binary = lane_binary(lane)
+
+    if lane["cli"] == "codex":
+        env["CODEX_HOME"] = home
+        argv = [
+            binary, "exec", "--json",
+            "--cd", ROOT,
+            "-m", lane["model"],
+            "-c", 'model_reasoning_effort="%s"' % lane.get("effort", "medium"),
+            "-s", lane.get("sandbox", "danger-full-access"),
+            "-o", last_msg,
+        ]
+        if lane.get("sandbox") == "danger-full-access":
+            # Non-interactive means nothing can answer an approval prompt; without this the run
+            # blocks until the timeout and burns the dispatch for nothing.
+            argv.append("--dangerously-bypass-approvals-and-sandbox")
+        argv.append("-")                      # read the prompt from stdin
+    else:
+        env["CLAUDE_CONFIG_DIR"] = home
+        argv = [
+            binary, "-p",
+            "--output-format", "json",
+            "--model", lane["model"],
+            "--add-dir", ROOT,
+        ]
+        if lane.get("permissions", "bypass") == "bypass":
+            argv.append("--dangerously-skip-permissions")
+        else:
+            argv += ["--permission-mode", "acceptEdits"]
+    return argv, env
+
+
+# ---------------------------------------------------------------- run
+
+def cmd_run(args):
+    if len(args) < 2:
+        die("usage: lane run <LANE> <task-id> [--timeout N] [--dry-run]")
+    name, task = args[0].upper(), args[1]
+    dry = "--dry-run" in args
+    timeout = DEFAULT_TIMEOUT
+    if "--timeout" in args:
+        timeout = int(args[args.index("--timeout") + 1])
+
+    lanes = load_lanes()
+    if name not in lanes:
+        die("unknown lane '%s' — known: %s" % (name, ", ".join(sorted(lanes))))
+    lane = lanes[name]
+
+    order = os.path.join(ORDERS, "%s.md" % task)
+    if not os.path.exists(order):
+        die("no work order at %s — run:  agent order %s --lane %s" % (order, task, name))
+
+    # A dry run exists to show what WOULD happen without spending anything, so it must survive a
+    # lane that is not set up yet — that is exactly when you want to inspect the command.
+    binary = lane_binary(lane)
+    unready = []
+    if not binary:
+        unready.append("%s CLI is not installed" % lane["cli"])
+    elif not is_logged_in(lane):
+        unready.append("not logged in (%s)" % lane["home"])
+    blocked = quota_block(lane)
+    if blocked:
+        unready.append(blocked)
+    if unready and not dry:
+        die("%s: %s — run .agent/bin/setup-lanes" % (name, "; ".join(unready)))
+
+    os.makedirs(LOGS, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    logpath = os.path.join(LOGS, "%s-%s-%s.jsonl" % (name, task.replace("/", "_"), stamp))
+    last_msg = os.path.join(LOGS, "%s-%s-%s.last.txt" % (name, task.replace("/", "_"), stamp))
+    prompt = open(order).read()
+
+    argv, env = build(lane, name, last_msg)
+
+    if dry:
+        print("%s%s → %s%s" % (C["b"], name, task, C["x"]))
+        print("  %saccount%s %s" % (C["dim"], C["x"], lane["account"]))
+        print("  %sauth   %s %s" % (C["dim"], C["x"], lane_home(lane)))
+        print("  %sbinary %s %s" % (C["dim"], C["x"], binary or "(not installed)"))
+        keys = [k for k in ("CODEX_HOME", "CLAUDE_CONFIG_DIR", "MIRE_AGENT") if k in env]
+        print("  %senv    %s %s" % (C["dim"], C["x"], " ".join("%s=%s" % (k, env[k]) for k in keys)))
+        print("  %sargv   %s %s" % (C["dim"], C["x"], " ".join(_q(a) for a in argv)))
+        print("  %sstdin  %s %s (%d bytes)" % (C["dim"], C["x"], order, len(prompt)))
+        for why in unready:
+            print("  %s⚠ would be refused: %s%s" % (C["y"], why, C["x"]))
+        if not unready:
+            print("  %s✓ would run%s" % (C["g"], C["x"]))
+        return
+
+    roll_window(lane)
+    lane.update({"status": "running", "task": task, "started": now()})
+    save_lanes(lanes)
+
+    print("%s▶ %s → %s%s  %s(%s, %s)%s"
+          % (C["c"], name, task, C["x"], C["dim"], lane["account"], lane["model"], C["x"]))
+
+    acc, tail, code = {}, [], 1
+    started = time.time()
+    proc = None
+    try:
+        proc = subprocess.Popen(argv, cwd=ROOT, env=env, stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                text=True, bufsize=1)
+        lanes[name]["pid"] = proc.pid
+        save_lanes(lanes)
+        proc.stdin.write(prompt)
+        proc.stdin.close()
+
+        with open(logpath, "w") as log:
+            for line in proc.stdout:
+                log.write(line)
+                tail.append(line)
+                del tail[:-80]                 # keep the end, which is where failures explain
+                line = line.strip()
+                if line.startswith("{"):
+                    try:
+                        harvest(json.loads(line), acc)
+                    except ValueError:
+                        pass
+                if time.time() - started > timeout:
+                    proc.kill()
+                    raise TimeoutError("exceeded %ds" % timeout)
+        code = proc.wait()
+    except TimeoutError as exc:
+        code, tail = 124, tail + ["timeout: %s\n" % exc]
+    except KeyboardInterrupt:
+        if proc:
+            proc.kill()
+        code, tail = 130, tail + ["interrupted by the director\n"]
+    finally:
+        if proc and proc.poll() is None:
+            proc.kill()
+
+    _finish(lanes, name, task, code, acc, "".join(tail), logpath, time.time() - started)
+
+
+def _q(a):
+    a = "(not installed)" if a is None else str(a)
+    return "'%s'" % a if " " in a or '"' in a else a
+
+
+def _finish(lanes, name, task, code, acc, tail, logpath, elapsed):
+    """Record the run, and — the part that matters — make sure a dead lane never keeps its claims.
+
+    A lane that hits its quota wall mid-task is the expected case, not the exceptional one. If it
+    exits holding claims, every other lane that needs those files is blocked until a human notices.
+    So on any failure we file the handoff the lane could not file for itself: claims are released,
+    the working diff is left alone, and the next lane reads why it stopped instead of rediscovering
+    it. That is the whole anti-waste story in twenty lines.
+    """
+    lane = lanes[name]
+    tin, tout, cost = totals(acc)
+    exhausted = code != 0 and looks_exhausted(tail)
+
+    lane["runs"] += 1
+    lane["tokens_in"] += tin
+    lane["tokens_out"] += tout
+    lane["cost_usd"] = round(lane["cost_usd"] + cost, 4)
+    lane["raw_usage"] = acc
+    lane["pid"] = None
+    lane["task"] = None
+    lane["last_finished"] = now()
+
+    if code == 0:
+        lane["status"] = "idle"
+        lane["consecutive_failures"] = 0
+        lane["last_error"] = None
+        ok("%s finished %s in %ds  %s(+%s in / +%s out%s)%s"
+           % (name, task, elapsed, C["dim"], f"{tin:,}", f"{tout:,}",
+              ", $%.3f" % cost if cost else "", C["x"]))
+    else:
+        lane["failures"] += 1
+        lane["consecutive_failures"] += 1
+        lane["last_error"] = tail[-600:].strip()
+        if exhausted:
+            lane["status"] = "exhausted"
+            reset = parse_reset(tail)
+            lane["exhausted_until"] = reset or (
+                datetime.now(timezone.utc) + timedelta(hours=5)).isoformat(timespec="seconds")
+            print("%s✗ %s hit its quota wall on %s — parked until %s%s"
+                  % (C["y"], name, task, lane["exhausted_until"], C["x"]))
+        else:
+            lane["status"] = "error"
+            print("%s✗ %s failed %s (exit %d)%s" % (C["r"], name, task, code, C["x"]))
+        print("  %slog: %s%s" % (C["dim"], os.path.relpath(logpath, ROOT), C["x"]))
+
+        reason = ("%s stopped on %s at %s (exit %d, %s). Tokens this run: %s in / %s out. "
+                  "Working diff is untouched — read the log at %s, then continue or drop. "
+                  "Tail of the failure:\n%s"
+                  % (name, task, now(), code, "quota wall" if exhausted else "error",
+                     f"{tin:,}", f"{tout:,}", os.path.relpath(logpath, ROOT), tail[-400:].strip()))
+        _release(name, task, reason)
+
+    save_lanes(lanes)
+    return 0 if code == 0 else 1
+
+
+def _release(name, task, reason):
+    """Hand off under the lane's own identity so its claims are the ones that get released."""
+    env = os.environ.copy()
+    env["MIRE_AGENT"] = name.lower()
+    for argv in ([AGENT, "handoff", task, reason], [AGENT, "drop", task]):
+        try:
+            r = subprocess.run(argv, cwd=ROOT, env=env, capture_output=True, text=True, timeout=60)
+            if r.returncode == 0:
+                print("  %s↳ claims released, handoff filed for %s%s" % (C["dim"], task, C["x"]))
+                return
+        except (OSError, subprocess.SubprocessError):
+            pass
+    print("  %s⚠ could not release %s's claims automatically — run: agent drop %s%s"
+          % (C["y"], name, task, C["x"]))
+
+
+# ---------------------------------------------------------------- quota
+
+def roll_window(lane):
+    """Usage is only meaningful inside a rolling window. Reset the counters when one lapses."""
+    hours = lane.get("window_hours", 5)
+    if not lane.get("window_started") or age_hours(lane["window_started"]) >= hours:
+        lane.update({"window_started": now(), "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0})
+
+
+def quota_block(lane):
+    """Why this lane must not be dispatched right now, or None."""
+    if lane.get("status") == "exhausted":
+        until = lane.get("exhausted_until")
+        if until and age_hours(until) < 0:
+            return "quota resets %s" % until
+        if until and age_hours(until) >= 0:
+            lane["status"] = "idle"          # window lapsed, let it back in
+            lane["exhausted_until"] = None
+            return None
+        return "marked exhausted; clear it with  lane reset <LANE>"
+    if lane.get("consecutive_failures", 0) >= 3:
+        return "3 consecutive failures — inspect .agent/logs before dispatching again"
+    budget = lane.get("budget_tokens")
+    if budget:
+        used = lane.get("tokens_in", 0) + lane.get("tokens_out", 0)
+        if used >= budget * SOFT_STOP_PCT:
+            return ("at %d%% of its %s-token window budget — held back so it keeps enough headroom "
+                    "to finish and hand off" % (100 * used // budget, f"{budget:,}"))
+    return None
+
+
+# ---------------------------------------------------------------- reporting
+
+def cmd_status(args):
+    lanes = load_lanes()
+    print("%sLanes%s" % (C["b"], C["x"]))
+    for name in sorted(lanes):
+        lane = lanes[name]
+        used = lane.get("tokens_in", 0) + lane.get("tokens_out", 0)
+        block = quota_block(lane)
+        dot = {"idle": C["g"] + "●", "running": C["c"] + "▶",
+               "exhausted": C["y"] + "◐", "error": C["r"] + "✗"}.get(lane["status"], "?")
+        print("  %s%s %-4s%s %-18s %-9s %s tok  %s runs  %s fail%s"
+              % (dot, C["x"], name, "", lane["account"], lane["status"],
+                 f"{used:,}".rjust(9), str(lane["runs"]).rjust(3),
+                 str(lane["failures"]).rjust(3), ""))
+        if lane.get("task"):
+            print("      %son %s since %s%s" % (C["dim"], lane["task"], lane["started"], C["x"]))
+        if block:
+            print("      %s⚠ %s%s" % (C["y"], block, C["x"]))
+    save_lanes(lanes)
+
+
+def cmd_doctor(args):
+    lanes = load_lanes()
+    problems = 0
+    print("%sLane doctor%s" % (C["b"], C["x"]))
+    for name in sorted(lanes):
+        lane = lanes[name]
+        binary, home = lane_binary(lane), lane_home(lane)
+        issues = []
+        if not binary:
+            issues.append("%s CLI not found" % lane["cli"])
+        if not os.path.isdir(home):
+            issues.append("auth home missing (%s)" % lane["home"])
+        elif not is_logged_in(lane):
+            issues.append("not logged in")
+        problems += len(issues)
+        mark = "%s✓%s" % (C["g"], C["x"]) if not issues else "%s✗%s" % (C["r"], C["x"])
+        print("  %s %-4s %-18s %s" % (mark, name, lane["account"],
+                                      "; ".join(issues) if issues else "ready"))
+        if binary:
+            print("      %s%s%s" % (C["dim"], binary, C["x"]))
+    if problems:
+        print("\n%sRun .agent/bin/setup-lanes — it prints the exact login commands.%s"
+              % (C["y"], C["x"]))
+    return problems
+
+
+def cmd_reset(args):
+    if not args:
+        die("usage: lane reset <LANE>")
+    lanes = load_lanes()
+    name = args[0].upper()
+    if name not in lanes:
+        die("unknown lane '%s'" % name)
+    lanes[name].update({"status": "idle", "exhausted_until": None,
+                        "consecutive_failures": 0, "last_error": None, "pid": None, "task": None})
+    save_lanes(lanes)
+    ok("%s reset to idle" % name)
+
+
+# Wording that means "this account is out of quota", and wording that merely mentions rate limiting.
+# The second list is the one that matters: MIRE is a netcode project, so a lane that fails to compile
+# while discussing `rate_limit_ms` must not be parked for five hours. Run: lane selftest
+QUOTA_SAMPLES = (
+    "Claude usage limit reached. Your limit will reset at 11:00pm.",
+    "Error: You've hit your usage limit. Try again later.",
+    '{"type":"error","error":{"type":"rate_limit_error","message":"Number of requests"}}',
+    "insufficient_quota: You exceeded your current quota",
+    "HTTP status: 429 Too Many Requests",
+    "You have reached your weekly limit for gpt-5.6-sol",
+    "Upgrade to increase your usage limits",
+    "You're out of credits.",
+)
+INNOCENT_SAMPLES = (
+    "Implemented rate_limit_ms for the replication throttle; 429 is not involved here.",
+    "SCRIPT ERROR: Parse Error: Identifier 'rate_limit' not declared in current scope.",
+    "FAILED: net_interest_check expected 429 entities, got 412",
+    "Test failed: too many requests queued in the spawn buffer (expected < 8)",
+    "Added quota tracking to the powerup budget system.",
+    "error: could not compile world_gen.gd — 3 parse errors",
+)
+
+
+def cmd_selftest(args):
+    """Prove the quota classifier still tells an account limit from ordinary netcode vocabulary.
+
+    Misclassifying here is expensive in both directions: a false negative thrashes a dead lane, a
+    false positive parks a healthy one for hours."""
+    bad = 0
+    for text in QUOTA_SAMPLES:
+        if not looks_exhausted(text):
+            print("%s✗ missed quota:%s %s" % (C["r"], C["x"], text[:72]))
+            bad += 1
+    for text in INNOCENT_SAMPLES:
+        if looks_exhausted(text):
+            print("%s✗ false positive:%s %s" % (C["r"], C["x"], text[:72]))
+            bad += 1
+    total = len(QUOTA_SAMPLES) + len(INNOCENT_SAMPLES)
+    if bad:
+        print("%s%d/%d correct%s" % (C["r"], total - bad, total, C["x"]))
+        return 1
+    ok("quota classifier: %d/%d correct" % (total, total))
+    return 0
+
+
+COMMANDS = {"run": cmd_run, "status": cmd_status, "doctor": cmd_doctor,
+            "reset": cmd_reset, "selftest": cmd_selftest}
+
+USAGE = """lane — headless dispatcher for MIRE's worker accounts
+
+  lane run <LANE> <task-id> [--dry-run] [--timeout N]   dispatch a prepared work order
+  lane status                                           ledger: usage, health, what's running
+  lane doctor                                           check each lane's CLI and login
+  lane reset <LANE>                                     clear an exhausted/error flag
+  lane selftest                                         prove the quota classifier still works
+
+Lanes: LC1, LC2 (ChatGPT Plus, codex) · LP (Claude Pro, claude)
+Orders come from `agent order <id>`. Protocol: docs/ORCHESTRATION.md"""
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help", "help"):
+        print(USAGE)
+        return
+    cmd = sys.argv[1]
+    if cmd not in COMMANDS:
+        die("unknown command '%s'\n\n%s" % (cmd, USAGE))
+    sys.exit(COMMANDS[cmd](sys.argv[2:]) or 0)
+
+
+if __name__ == "__main__":
+    main()

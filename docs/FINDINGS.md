@@ -491,6 +491,146 @@ loadout so it can be played with" and "give it to players at spawn" are differen
 
 ---
 
+### F-044 · Concurrent headless Godot runs share one import cache, which is the likely cause of F-038
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by yarrow21 during 0.12
+
+Every check in `tools/` runs `Godot --headless --path .`, and every one of them reads and writes the
+same 42 MB `.godot/` import cache. Nothing serialises them. With one agent that was fine; with three
+lanes dispatched at once (D-036) it is a race, and it costs a whole dispatch when it fires.
+
+This is almost certainly what **F-038** is describing — `inventory_net_check` "intermittently fails
+its grant wait under machine load." Machine load is the symptom; a second engine rewriting the
+import cache mid-run is a better explanation than slowness, because a slow machine should make the
+wait *longer*, not make the grant never arrive.
+
+Observed while building 0.12: an audit session was running ten checks in a bare `for` loop
+(`Godot --headless --path . --script tools/$s.gd`) at the same time as this task's own verification.
+
+**Mitigated, not fixed:** `agent godot --script tools/x_check.gd` now takes an exclusive lock
+(`.agent/locks/godot.lock`) and every work order tells lanes to launch the engine that way. The
+mitigation only binds callers who use it — a bare `Godot --headless` still bypasses it. Fixing it
+properly means either making the checks tolerate a shared cache or giving each lane its own
+`.godot/`, which costs a full reimport per lane. Re-test F-038 under the lock before doing either.
+
+---
+
+### F-045 · `pgrep -fl Godot` is too blunt to be the closed-editor guard
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by yarrow21 during 0.12
+
+`AGENTS.md` and `AI-WORKFLOW.md` both tell agents to run `pgrep -fl Godot` before touching a
+`.tscn`/`.tres`/`project.godot`, and to stop if it matches. It has two failure modes, and they point
+in opposite directions:
+
+- **False positives.** It matches any process whose command line contains "Godot" — including the
+  shell running a check loop, and the `agent` command itself. Measured on this repo mid-audit: nine
+  matches, one actual engine. An agent following the rule literally would refuse a legitimate edit.
+- **Wrong question.** The rule exists because *the editor* rewrites these files on save and silently
+  discards an agent's edit. A `--headless --script` check does not. So it blocks on runs that are
+  harmless while giving no signal about the one that isn't.
+
+`_godot_running()` in `.agent/bin/agent` now matches the real binary path and excludes `--headless`
+invocations, which is the question the rule was always trying to ask. The docs still say `pgrep`;
+they should say `agent order` refuses the dispatch for you, or point at the same check.
+
+---
+
+### F-046 · `viewmodel.gd` names autoloads bare, so any harness compiling `PlayerController` gets a viewmodel-less player
+
+**Area:** player/harness · **Severity:** medium · **Found:** 2026-08-17 by flint5 during the project audit
+
+`entities/player/viewmodel.gd` uses `InventoryService`, `CombatService` and `Registry` as bare
+identifiers (lines 51–57, 69, 73, 102, 124–141). That is standing rule 1 (F-011): a `--script` main
+loop compiles its dependency chain before autoloads are registered, and `verify_setup.gd:158` reaches
+this file at compile time through the `PlayerController` class_name → `player_controller.gd:36`
+preload. Result: five `SCRIPT ERROR: Nonexistent function 'new' in base 'GDScript'` per run — and
+`verify_setup` still prints **"all checks passed"** over them. `combat_feel_check` emits four of the
+same. The game itself is fine (autoloads exist by the time a scene loads), which is why
+`viewmodel_check` — which `load()`s the scene at runtime — passes and cannot see it.
+
+Two aggravations, same theme: `viewmodel_check._shoot()` calls `root.get_texture()`, which is null
+under the headless dummy renderer, so it errors twice per shot and the "render per swing phase"
+evidence in F-041's close-out does not exist in a plain headless run. And `verify_setup` checks only
+2 of 19 registered autoloads, so rule 4's error grep is the only net under all of this — and nothing
+runs it.
+
+The fix must NOT preload `combat_service.gd` for its `Phase` enum: autoload scripts legitimately use
+bare autoload identifiers (they compile at registration time), so preloading one drags the same trap
+one file deeper. Mirror the phase constants locally — `viewmodel_check.gd:94,99` already compares
+against raw ints for exactly this reason.
+
+---
+
+### F-047 · `harvest_world_check` asserts an absolute log count that DevLoadout's starting grant breaks
+
+**Area:** tests · **Severity:** low — red harness, sound logic · **Found:** 2026-08-17 by flint5 during the project audit
+
+`tools/harvest_world_check.gd:85` asserts `local_count("log") == 3` after the lifecycle harvest.
+`DevLoadout` grants 20 logs at spawn (`core/dev/dev_loadout.gd:34`), so the count is 23 and the check
+fails — the only red single-process harness. The harvest itself is right: the yield event fires once
+with `log × 3`. `core/dev/dev_loadout.gd:123` records four harnesses fixed when that autoload landed;
+this was the fifth. Assert the delta, not the absolute.
+
+---
+
+### F-048 · Three content generators overwrite tuned or later-batch values silently; one strips icons today
+
+**Area:** tooling · **Severity:** medium — the window closes when 2.9 tuning starts · **Found:** 2026-08-17 by flint5 during the project audit
+
+`setup_combat_content.gd`, `setup_tool_content.gd` and `setup_enemy_content.gd` all warn in-file that
+re-running overwrites inspector-tuned values. Three others do not:
+
+- **`setup_harvest_content.gd` is destructive right now**: `_save_item()` (`:64-72`) never sets
+  `icon`, and `content/items/{log,stone,iron_ore}.tres` all carry icons wired by A-042a. A re-run
+  silently strips all three — the identical loss `setup_crafting_content.gd:26-27` records having
+  already suffered once for `stone_axe`, fixed there and never propagated.
+- **`setup_crafting_content.gd`** overwrites `content/items/stone_axe.tres` (including the `grip_*`
+  values its own comment calls inspector-tunable) and `content/recipes/stone_axe.tres`, with no
+  warning anywhere.
+- **`setup_project.gd:10`** says "Re-running it is safe" three lines before `:12-13` says the
+  opposite — and `:31` sets `main_scene` back to the M0 greybox, silently reverting
+  `playtest_hollow` (`project.godot:14`). `verify_setup` deliberately does not pin the main scene
+  (F-028), so nothing catches the swap.
+
+No hand-tuning exists yet — every on-disk value still matches its generator — so the fix costs
+nothing today and a session of lost tuning next week.
+
+---
+
+### F-049 · The board never closes a finding resolved out-of-band, and never learns of new ones until a claim
+
+**Area:** coordination tooling · **Severity:** low · **Found:** 2026-08-17 by flint5 during the project audit
+
+Two halves, both in `.agent/bin/agent`. (1) `_sync_findings()` "never touches status", so a finding
+moved to `## Resolved` without `agent done` keeps `status: todo` forever — F-027 sits on the board as
+open now, resolved in this file since 2026-08-16. The sync should mark departed findings done. (2)
+`_sync_findings()` runs only from `cmd_sync` and `_require_task`, not `cmd_start` or `cmd_board`, so
+a freshly filed finding (F-042/F-043 today) is invisible on the board until somebody happens to claim
+one. Net effect at audit time: the board said 11 open findings; the truth was 12, and one of the 11
+was false.
+
+Not fixed here: `.agent/bin/agent` is claimed by task 0.12 (yarrow21), which is rewriting the same
+file. Fold both halves in there, or take this finding after 0.12 ships.
+
+---
+
+### F-050 · Governing docs contradict D-031 in six places, an unclosed code fence hides eight decisions, and the budget table is 51 sessions stale
+
+**Area:** docs · **Severity:** high — `CLAUDE.md` loads on every request and states a revoked rule · **Found:** 2026-08-17 by flint5 during the project audit
+
+The full inventory is `docs/AUDIT-2026-08-17.md` §3–§6. The load-bearing items: `DECISIONS.md:436`
+opens a code fence that never closes until `:623`, so D-028 through D-035 — including D-031, the
+current scene-file rule — render as template sample text, and every reader on the prescribed path
+stops at D-027. Downstream, six documents still assert the pre-D-031 "never edit `.tscn`/`.tres`"
+rule (`CLAUDE.md:16`; `ASSET_TRACKER.md:53-54` in the same file that records A-021S legally writing
+two `.tres`; `AGENTS.md` at HEAD; six DELEGATION prompt blocks). `ROADMAP.md`'s budget table says M2
+= 35 sessions; the rows sum to 80. `NEXT.md` — the cold-start entry point — still says "Next is
+2.9", marks 2.7 `next`, and understates the autoload count and boot log. D-014/D-005/D-017 lack
+supersession markers; D-033 and D-034 are out of order.
+
+---
+
 ## Resolved
 
 ### F-041 · Held items are invisible in first person, so there is no swing to read — **fixed**
