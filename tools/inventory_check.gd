@@ -30,10 +30,12 @@ func _run() -> void:
 	inventory.get("operation_confirmed").connect(_on_confirmed)
 
 	var slots: Array = inventory.call("local_slots")
-	check(slots.size() == 24, "inventory exposes 24 stable slots")
+	check(slots.size() == 32, "inventory exposes 24 backpack plus eight hotbar slots")
 	check(_occupied(slots) == 0, "offline inventory starts empty")
+	check(int(inventory.call("inventory_slot_count")) == 24, "backpack exposes 24 stable slots")
 	check(int(inventory.call("hotbar_slot_count")) == 8,
-		"first eight stable slots are reserved for hotbar UI")
+		"hotbar exposes eight additional stable slots")
+	check(int(inventory.call("hotbar_start_index")) == 24, "hotbar begins after the backpack")
 	check(EVENT_BUS.harvest_yielded_subscriber_count() == 1,
 		"InventoryService owns one harvest-yield subscription")
 
@@ -41,6 +43,8 @@ func _run() -> void:
 	check(int(inventory.call("local_count", &"log")) == 3, "real harvest seam grants three logs")
 	check(local_changes == 1 and host_changes == 1, "harvest publishes one confirmed revision")
 	check(int(inventory.call("local_revision")) == 1, "first mutation advances revision to one")
+	slots = inventory.call("local_slots")
+	check((slots[24] as Dictionary).is_empty(), "new grants fill the backpack before the hotbar")
 
 	check(bool(inventory.call("host_add", 1, &"log", 96)), "host fills the existing log stack")
 	slots = inventory.call("local_slots")
@@ -79,20 +83,41 @@ func _run() -> void:
 	slots = inventory.call("local_slots")
 	var stone_index: int = _first_item(slots, &"stone")
 	check(stone_index >= 0, "stone stack has a stable slot")
-	check(bool(inventory.call("host_move_stack", 1, stone_index, 7)), "host can move a whole stack")
-	check(StringName(String((inventory.call("local_slots") as Array)[7].get("item_id", ""))) == &"stone",
-		"moved stack lands in requested slot")
+	var hotbar_start: int = int(inventory.call("hotbar_start_index"))
+	check(bool(inventory.call("host_move_stack", 1, stone_index, hotbar_start)),
+		"host can move a whole stack into the separate hotbar")
+	check(StringName(String(
+		(inventory.call("local_slots") as Array)[hotbar_start].get("item_id", "")
+	)) == &"stone", "moved stack lands in the requested hotbar slot")
 	check(bool(inventory.call("host_add", 1, &"stone", 97)), "same-item grant fills moved stack")
-	var move_request: int = int(inventory.call("request_move_stack", 7, 8, 20))
+	var move_request: int = int(inventory.call("request_move_stack", hotbar_start, 8, 20))
 	check(_confirmation(move_request).get("accepted", false), "split move is host-confirmed")
 	slots = inventory.call("local_slots")
-	check(int((slots[7] as Dictionary).get("amount", 0)) == 79, "split leaves source remainder")
+	check(int((slots[hotbar_start] as Dictionary).get("amount", 0)) == 79,
+		"split leaves the hotbar source remainder")
 	check(int((slots[8] as Dictionary).get("amount", 0)) == 20, "split creates exact destination amount")
+	check(bool(inventory.call("host_remove", 1, &"stone", 5)), "host removes a backpack ingredient")
+	slots = inventory.call("local_slots")
+	check(int((slots[8] as Dictionary).get("amount", 0)) == 15,
+		"removal consumes backpack stacks before equipped hotbar stacks")
+	check(int((slots[hotbar_start] as Dictionary).get("amount", 0)) == 79,
+		"backpack removal preserves the hotbar stack")
 
 	var tiny: RefCounted = INVENTORY_STORE_SCRIPT.new(registry, 2)
 	check(bool(tiny.call("add", &"log", 198)), "isolated two-slot store fills exactly")
 	check(not bool(tiny.call("add", &"log", 1)), "full store rejects the entire excess grant")
 	check(int(tiny.call("count", &"log")) == 198, "failed grant loses and duplicates nothing")
+	var segmented: RefCounted = INVENTORY_STORE_SCRIPT.new(registry, 4, 2)
+	check(bool(segmented.call("add", &"log", 198)), "segmented store fills its primary slots")
+	var segmented_slots: Array = segmented.call("slots_snapshot")
+	check((segmented_slots[2] as Dictionary).is_empty(), "grant leaves trailing slots empty while primary fits")
+	check(bool(segmented.call("add", &"log", 1)), "grant uses trailing capacity after primary fills")
+	check(bool(segmented.call("remove", &"log", 1)), "segmented removal succeeds")
+	segmented_slots = segmented.call("slots_snapshot")
+	check(int((segmented_slots[1] as Dictionary).get("amount", 0)) == 98,
+		"segmented removal consumes primary before trailing slots")
+	check(int((segmented_slots[2] as Dictionary).get("amount", 0)) == 1,
+		"segmented removal preserves trailing hotbar capacity")
 	var valid_snapshot: Array = tiny.call("slots_snapshot")
 	check(bool(INVENTORY_STORE_SCRIPT.snapshot_is_valid(valid_snapshot, registry, 2)),
 		"valid authoritative snapshot passes client validation")

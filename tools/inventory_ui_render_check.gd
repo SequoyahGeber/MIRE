@@ -20,8 +20,9 @@ func _render() -> void:
 	inventory.call("host_add", 1, &"log", 37)
 	inventory.call("host_add", 1, &"stone", 18)
 	inventory.call("host_add", 1, &"iron_ore", 6)
-	inventory.call("host_move_stack", 1, 1, 7)
-	inventory.call("host_move_stack", 1, 2, 13)
+	inventory.call("host_move_stack", 1, 0, 24, 12)
+	inventory.call("host_move_stack", 1, 1, 31, 5)
+	inventory.call("host_move_stack", 1, 2, 29, 2)
 	ui.call("select_hotbar_slot", 7)
 	ui.call("set_open", true)
 	await process_frame

@@ -10,8 +10,10 @@ extends Node
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const INVENTORY_STORE_SCRIPT := preload("res://systems/inventory/inventory_store.gd")
 
-const SLOT_COUNT: int = 24
+const INVENTORY_SLOT_COUNT: int = 24
 const HOTBAR_SLOT_COUNT: int = 8
+const HOTBAR_START_INDEX: int = INVENTORY_SLOT_COUNT
+const SLOT_COUNT: int = INVENTORY_SLOT_COUNT + HOTBAR_SLOT_COUNT
 
 signal local_inventory_changed(slots: Array[Dictionary], revision: int)
 signal host_inventory_changed(peer_id: int, slots: Array[Dictionary], revision: int)
@@ -53,8 +55,16 @@ func slot_count() -> int:
 	return SLOT_COUNT
 
 
+func inventory_slot_count() -> int:
+	return INVENTORY_SLOT_COUNT
+
+
 func hotbar_slot_count() -> int:
 	return HOTBAR_SLOT_COUNT
+
+
+func hotbar_start_index() -> int:
+	return HOTBAR_START_INDEX
 
 
 func local_revision() -> int:
@@ -300,7 +310,9 @@ func _owns_mutation() -> bool:
 func _ensure_host_store(peer_id: int) -> void:
 	if _host_stores.has(peer_id):
 		return
-	_host_stores[peer_id] = INVENTORY_STORE_SCRIPT.new(_registry(), SLOT_COUNT)
+	_host_stores[peer_id] = INVENTORY_STORE_SCRIPT.new(
+		_registry(), SLOT_COUNT, INVENTORY_SLOT_COUNT
+	)
 	_revisions[peer_id] = 0
 
 

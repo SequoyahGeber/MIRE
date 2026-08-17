@@ -23,8 +23,8 @@ func _run() -> void:
 		return
 
 	inventory.get("operation_confirmed").connect(_on_confirmed)
-	check(int(ui.call("inventory_slot_view_count")) == 24, "inventory grid renders 24 stable slots")
-	check(int(ui.call("hotbar_slot_view_count")) == 8, "hotbar renders the first eight slots")
+	check(int(ui.call("inventory_slot_view_count")) == 24, "inventory grid renders 24 backpack slots")
+	check(int(ui.call("hotbar_slot_view_count")) == 8, "hotbar renders eight additional slots")
 	check(not bool(ui.call("is_inventory_open")), "inventory panel starts closed")
 	check((ui.get_node(^"InventoryUIRoot/HotbarCenter") as Control).visible,
 		"hotbar remains visible while the inventory is closed")
@@ -32,7 +32,7 @@ func _run() -> void:
 	check(bool(inventory.call("host_add", 1, &"log", 3)), "host grants test logs")
 	check(ui.call("displayed_item_id", 0, false) == &"log", "grid follows authoritative item id")
 	check(int(ui.call("displayed_amount", 0, false)) == 3, "grid follows authoritative amount")
-	check(ui.call("displayed_item_id", 0, true) == &"log", "hotbar mirrors stable slot zero")
+	check(ui.call("displayed_item_id", 0, true) == &"", "backpack grants do not alias into hotbar zero")
 
 	var revision_before: int = int(inventory.call("local_revision"))
 	var request_id: int = int(ui.call("request_slot_move", 0, 10))
@@ -50,16 +50,21 @@ func _run() -> void:
 	check(int(inventory.call("local_revision")) == revision_before,
 		"rejected UI move does not predict or publish a revision")
 	check(String(ui.call("status_text")) == "move rejected", "rejection is visible in the inventory")
-	var slot_views: Array = ui.get("_inventory_slots") as Array
+	var hotbar_views: Array = ui.get("_hotbar_slots") as Array
 	var drag_payload: Dictionary = {
 		"kind": &"inventory_slot", "from_index": 10, "item_id": &"log"
 	}
 	check(
-		bool((slot_views[11] as Control).call("_can_drop_data", Vector2.ZERO, drag_payload)),
-		"another stable slot accepts the typed drag payload"
+		bool((hotbar_views[0] as Control).call("_can_drop_data", Vector2.ZERO, drag_payload)),
+		"separate hotbar slot accepts the backpack drag payload"
 	)
-	(slot_views[11] as Control).call("_drop_data", Vector2.ZERO, drag_payload)
-	check(ui.call("displayed_item_id", 11, false) == &"log", "drop callback routes the stack move")
+	(hotbar_views[0] as Control).call("_drop_data", Vector2.ZERO, drag_payload)
+	check(ui.call("displayed_item_id", 10, false) == &"", "hotbar drop clears the backpack source")
+	check(ui.call("displayed_item_id", 0, true) == &"log", "hotbar drop targets authoritative slot 24")
+	var authoritative_slots: Array = inventory.call("local_slots")
+	check((authoritative_slots[0] as Dictionary).is_empty(), "backpack slot zero remains independent")
+	check(StringName(String((authoritative_slots[24] as Dictionary).get("item_id", ""))) == &"log",
+		"hotbar zero owns a distinct stable dictionary")
 
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	ui.call("set_open", true)
@@ -78,8 +83,8 @@ func _run() -> void:
 	ui.call("_apply_layout_for_width", 375.0)
 	await process_frame
 	check(int(ui.call("inventory_columns")) == 6, "phone-width inventory reflows to six columns")
-	check((ui.call("hotbar_slot_size") as Vector2).x <= 41.0,
-		"phone-width hotbar keeps all eight slots on screen")
+	var hotbar_panel := ui.get_node(^"InventoryUIRoot/HotbarCenter/HotbarPanel") as Control
+	check(hotbar_panel.size.x <= 375.0, "phone-width hotbar keeps all eight slots on screen")
 
 	print("INVENTORY_UI_CHECK confirmations=%d failures=%d" % [confirmations.size(), failures])
 	finish()

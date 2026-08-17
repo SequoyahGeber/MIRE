@@ -4,8 +4,10 @@ extends CanvasLayer
 ## renders duplicated InventoryService snapshots and turns every drag/drop into a move request.
 ## It never mutates a slot dictionary or predicts the result of a request.
 
-const SLOT_COUNT: int = 24
+const INVENTORY_SLOT_COUNT: int = 24
 const HOTBAR_SLOT_COUNT: int = 8
+const HOTBAR_START_INDEX: int = INVENTORY_SLOT_COUNT
+const TOTAL_SLOT_COUNT: int = INVENTORY_SLOT_COUNT + HOTBAR_SLOT_COUNT
 const DESKTOP_INVENTORY_COLUMNS: int = 8
 const NARROW_INVENTORY_COLUMNS: int = 6
 const NARROW_BREAKPOINT_PX: float = 700.0
@@ -24,7 +26,8 @@ const COLOUR_ERROR := Color(0.96, 0.47, 0.39, 1.0)
 
 class InventorySlot extends PanelContainer:
 	var slot_index: int = -1
-	var hotbar_copy: bool = false
+	var view_index: int = -1
+	var hotbar_slot: bool = false
 	var item_id: StringName = &""
 	var amount: int = 0
 	var move_requested: Callable
@@ -34,18 +37,26 @@ class InventorySlot extends PanelContainer:
 	var _icon: TextureRect
 	var _item_label: Label
 	var _amount_label: Label
+	var _content_margin: MarginContainer
 	var _base_style: StyleBoxFlat
 	var _hover_style: StyleBoxFlat
 	var _selected_style: StyleBoxFlat
 	var _selected: bool = false
 
 
-	func setup(index: int, is_hotbar_copy: bool, move_callback: Callable, select_callback: Callable) -> void:
-		slot_index = index
-		hotbar_copy = is_hotbar_copy
+	func setup(
+		authority_index: int,
+		display_index: int,
+		is_hotbar_slot: bool,
+		move_callback: Callable,
+		select_callback: Callable
+	) -> void:
+		slot_index = authority_index
+		view_index = display_index
+		hotbar_slot = is_hotbar_slot
 		move_requested = move_callback
 		selected_requested = select_callback
-		name = ("HotbarSlot%d" if hotbar_copy else "InventorySlot%d") % index
+		name = ("HotbarSlot%d" if hotbar_slot else "InventorySlot%d") % display_index
 		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		focus_mode = Control.FOCUS_ALL
 		_build_contents()
@@ -79,12 +90,18 @@ class InventorySlot extends PanelContainer:
 			]
 
 		add_theme_stylebox_override("panel", _selected_style if selected else _base_style)
-		accessibility_name = "%s, slot %d" % [tooltip_text.replace("\n", ", "), slot_index + 1]
+		var region_name: String = "Hotbar" if hotbar_slot else "Inventory"
+		accessibility_name = "%s, %s slot %d" % [
+			tooltip_text.replace("\n", ", "), region_name, view_index + 1
+		]
 
 
 	func set_slot_size(size_px: float) -> void:
 		custom_minimum_size = Vector2(size_px, size_px)
 		var compact: bool = size_px < 50.0
+		var content_padding: int = 2 if compact else 5
+		_content_margin.add_theme_constant_override("margin_left", content_padding)
+		_content_margin.add_theme_constant_override("margin_right", content_padding)
 		_item_label.add_theme_font_size_override("font_size", 11 if compact else 12)
 		_amount_label.add_theme_font_size_override("font_size", 11 if compact else 13)
 		_key_label.add_theme_font_size_override("font_size", 10 if compact else 11)
@@ -126,12 +143,12 @@ class InventorySlot extends PanelContainer:
 
 	func _gui_input(event: InputEvent) -> void:
 		if (
-			hotbar_copy
+			hotbar_slot
 			and event is InputEventMouseButton
 			and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT
 			and (event as InputEventMouseButton).pressed
 		):
-			selected_requested.call(slot_index)
+			selected_requested.call(view_index)
 
 
 	func _notification(what: int) -> void:
@@ -142,19 +159,19 @@ class InventorySlot extends PanelContainer:
 
 
 	func _build_contents() -> void:
-		var margin := MarginContainer.new()
-		margin.add_theme_constant_override("margin_left", 5)
-		margin.add_theme_constant_override("margin_top", 4)
-		margin.add_theme_constant_override("margin_right", 5)
-		margin.add_theme_constant_override("margin_bottom", 4)
-		add_child(margin)
+		_content_margin = MarginContainer.new()
+		_content_margin.add_theme_constant_override("margin_left", 5)
+		_content_margin.add_theme_constant_override("margin_top", 4)
+		_content_margin.add_theme_constant_override("margin_right", 5)
+		_content_margin.add_theme_constant_override("margin_bottom", 4)
+		add_child(_content_margin)
 
 		var stack := VBoxContainer.new()
 		stack.add_theme_constant_override("separation", 0)
-		margin.add_child(stack)
+		_content_margin.add_child(stack)
 
 		_key_label = Label.new()
-		_key_label.text = str(slot_index + 1) if hotbar_copy else ""
+		_key_label.text = str(view_index + 1) if hotbar_slot else ""
 		_key_label.add_theme_color_override("font_color", COLOUR_MUTED)
 		stack.add_child(_key_label)
 
@@ -296,7 +313,7 @@ func selected_hotbar_slot() -> int:
 
 
 func request_slot_move(from_index: int, to_index: int, amount: int = 0) -> int:
-	if from_index < 0 or from_index >= SLOT_COUNT or to_index < 0 or to_index >= SLOT_COUNT:
+	if from_index < 0 or from_index >= TOTAL_SLOT_COUNT or to_index < 0 or to_index >= TOTAL_SLOT_COUNT:
 		_show_status("That slot move is out of range.", true)
 		return -1
 	if from_index == to_index:
@@ -385,7 +402,7 @@ func _build_ui() -> void:
 	inventory_stack.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "24 SLOTS  ·  FIRST 8 FEED THE HOTBAR"
+	subtitle.text = "24 BACKPACK SLOTS  ·  8 SEPARATE HOTBAR SLOTS"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.add_theme_font_size_override("font_size", 11)
 	subtitle.add_theme_color_override("font_color", COLOUR_MUTED)
@@ -398,9 +415,9 @@ func _build_ui() -> void:
 	_inventory_grid.add_theme_constant_override("v_separation", 6)
 	inventory_stack.add_child(_inventory_grid)
 
-	for index: int in SLOT_COUNT:
+	for index: int in INVENTORY_SLOT_COUNT:
 		var slot := InventorySlot.new()
-		slot.setup(index, false, _on_move_requested, _on_hotbar_selected)
+		slot.setup(index, index, false, _on_move_requested, _on_hotbar_selected)
 		_inventory_slots.append(slot)
 		_inventory_grid.add_child(slot)
 
@@ -446,7 +463,9 @@ func _build_ui() -> void:
 
 	for index: int in HOTBAR_SLOT_COUNT:
 		var slot := InventorySlot.new()
-		slot.setup(index, true, _on_move_requested, _on_hotbar_selected)
+		slot.setup(
+			HOTBAR_START_INDEX + index, index, true, _on_move_requested, _on_hotbar_selected
+		)
 		_hotbar_slots.append(slot)
 		hotbar_row.add_child(slot)
 
@@ -469,10 +488,12 @@ func _on_inventory_changed(slots: Array[Dictionary], _revision: int) -> void:
 
 func _refresh_slots() -> void:
 	for index: int in _inventory_slots.size():
-		var slot: Dictionary = _snapshot[index] if index < _snapshot.size() else {}
+		var authority_index: int = _inventory_slots[index].slot_index
+		var slot: Dictionary = _snapshot[authority_index] if authority_index < _snapshot.size() else {}
 		_inventory_slots[index].present(slot, _item_for(slot), false)
 	for index: int in _hotbar_slots.size():
-		var slot: Dictionary = _snapshot[index] if index < _snapshot.size() else {}
+		var authority_index: int = _hotbar_slots[index].slot_index
+		var slot: Dictionary = _snapshot[authority_index] if authority_index < _snapshot.size() else {}
 		_hotbar_slots[index].present(slot, _item_for(slot), index == _selected_hotbar_index)
 
 

@@ -87,9 +87,10 @@ func _run_driver() -> void:
 		"host and client agree on the final count")
 	var client_slots: Array = inventory.call("host_slots", client_peer_id)
 	check(
-		client_slots.size() == 24
-		and StringName(String((client_slots[7] as Dictionary).get("item_id", ""))) == &"log",
-		"host owns the requested stable slot layout"
+		client_slots.size() == 32
+		and (client_slots[0] as Dictionary).is_empty()
+		and StringName(String((client_slots[24] as Dictionary).get("item_id", ""))) == &"log",
+		"host owns distinct backpack and hotbar slot layouts"
 	)
 
 	var child_exited: bool = await _until(
@@ -169,12 +170,12 @@ func _client_drive() -> void:
 		overspend_confirmed and not bool(confirmations.get(overspend_id, true))
 	)
 
-	var move_id: int = int(inventory.call("request_move_stack", 0, 7))
+	var move_id: int = int(inventory.call("request_move_stack", 0, 24))
 	var move_confirmed: bool = await _until(
 		func() -> bool: return confirmations.has(move_id), TIMEOUT_SEC
 	)
 	var move_accepted: bool = move_confirmed and bool(confirmations.get(move_id, false))
-	var move_applied: bool = await _until(_client_log_in_slot_seven, TIMEOUT_SEC)
+	var move_applied: bool = await _until(_client_log_in_hotbar_zero, TIMEOUT_SEC)
 	var direct_add_rejected: bool = not bool(inventory.call("host_add", peer_id, &"log", 50))
 	_write_result({
 		"connected": true,
@@ -204,9 +205,13 @@ func _client_inventory_ready() -> bool:
 	)
 
 
-func _client_log_in_slot_seven() -> bool:
+func _client_log_in_hotbar_zero() -> bool:
 	var slots: Array = inventory.call("local_slots")
-	return StringName(String((slots[7] as Dictionary).get("item_id", ""))) == &"log"
+	return (
+		slots.size() == 32
+		and (slots[0] as Dictionary).is_empty()
+		and StringName(String((slots[24] as Dictionary).get("item_id", ""))) == &"log"
+	)
 
 
 func _spawn_client() -> int:

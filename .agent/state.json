@@ -1463,9 +1463,9 @@
       "task": "F-029"
     },
     "autoload/inventory_service.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:48:54+00:00",
-      "task": "2.4"
+      "agent": "dusk3",
+      "at": "2026-08-17T02:41:22+00:00",
+      "task": "F-033"
     },
     "autoload/inventory_service.gd.uid": {
       "agent": "nettle",
@@ -1573,9 +1573,9 @@
       "task": "1.7"
     },
     "core/net/net_version.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:48:54+00:00",
-      "task": "2.4"
+      "agent": "dusk3",
+      "at": "2026-08-17T02:41:22+00:00",
+      "task": "F-033"
     },
     "core/net/net_version.gd.uid": {
       "agent": "reed",
@@ -1614,8 +1614,8 @@
     },
     "docs/DELEGATION.md": {
       "agent": "dusk3",
-      "at": "2026-08-17T02:30:40+00:00",
-      "task": "2.5"
+      "at": "2026-08-17T02:41:22+00:00",
+      "task": "F-033"
     },
     "docs/DESIGN.md": {
       "agent": "kiln",
@@ -1623,14 +1623,14 @@
       "task": "F-022"
     },
     "docs/FINDINGS.md": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:48:54+00:00",
-      "task": "2.4"
+      "agent": "dusk3",
+      "at": "2026-08-17T02:41:22+00:00",
+      "task": "F-033"
     },
     "docs/NEXT.md": {
       "agent": "dusk3",
-      "at": "2026-08-17T02:30:40+00:00",
-      "task": "2.5"
+      "at": "2026-08-17T02:41:22+00:00",
+      "task": "F-033"
     },
     "docs/ROADMAP.md": {
       "agent": "pike14",
@@ -1703,9 +1703,9 @@
       "task": "2.3"
     },
     "systems/inventory/inventory_store.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:48:54+00:00",
-      "task": "2.4"
+      "agent": "dusk3",
+      "at": "2026-08-17T02:41:22+00:00",
+      "task": "F-033"
     },
     "systems/inventory/inventory_store.gd.uid": {
       "agent": "nettle",
@@ -1863,9 +1863,9 @@
       "task": "F-019"
     },
     "tools/inventory_check.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:48:54+00:00",
-      "task": "2.4"
+      "agent": "dusk3",
+      "at": "2026-08-17T02:41:22+00:00",
+      "task": "F-033"
     },
     "tools/inventory_check.gd.uid": {
       "agent": "nettle",
@@ -1873,9 +1873,9 @@
       "task": "2.4"
     },
     "tools/inventory_net_check.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:48:54+00:00",
-      "task": "2.4"
+      "agent": "dusk3",
+      "at": "2026-08-17T02:41:22+00:00",
+      "task": "F-033"
     },
     "tools/inventory_net_check.gd.uid": {
       "agent": "nettle",
@@ -1884,8 +1884,8 @@
     },
     "tools/inventory_ui_check.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T02:30:40+00:00",
-      "task": "2.5"
+      "at": "2026-08-17T02:41:22+00:00",
+      "task": "F-033"
     },
     "tools/inventory_ui_check.gd.uid": {
       "agent": "dusk3",
@@ -1894,8 +1894,8 @@
     },
     "tools/inventory_ui_render_check.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T02:30:40+00:00",
-      "task": "2.5"
+      "at": "2026-08-17T02:41:22+00:00",
+      "task": "F-033"
     },
     "tools/inventory_ui_render_check.gd.uid": {
       "agent": "dusk3",
@@ -1994,8 +1994,8 @@
     },
     "ui/inventory/inventory_ui.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T02:30:40+00:00",
-      "task": "2.5"
+      "at": "2026-08-17T02:41:22+00:00",
+      "task": "F-033"
     },
     "ui/inventory/inventory_ui.gd.uid": {
       "agent": "dusk3",
@@ -3125,6 +3125,15 @@
       "status": "todo",
       "tier": "F",
       "title": "Auto-rejoin assigns a new peer id, so peer-keyed gameplay state cannot follow it"
+    },
+    "F-033": {
+      "done_at": "2026-08-17T02:41:22+00:00",
+      "done_by": "dusk3",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Inventory hotbar aliases eight backpack slots instead of adding eight separate slots"
     }
   },
   "version": 1

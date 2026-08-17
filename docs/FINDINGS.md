@@ -531,6 +531,22 @@ new-peer rebind event that gameplay systems can consume.
 
 ## Resolved
 
+### F-033 · Inventory hotbar aliases eight backpack slots instead of adding eight separate slots — **fixed**
+
+**Area:** inventory/UI · **Severity:** high · **Found:** 2026-08-17 by Sequoyah after task 2.5 ·
+**Resolved:** 2026-08-17 by dusk3
+
+Expanded the authoritative snapshot from 24 to 32 stable slots. Backpack slots are 0–23 and separate
+hotbar slots are 24–31; grants fill backpack empties before hotbar overflow, and ingredient removal
+uses backpack stacks before equipped hotbar stacks. `InventoryUI` maps its two regions to those
+distinct ranges and drag/drop moves between them through the unchanged host-validated request seam.
+The wire contract is protocol v4.
+
+Verified with `inventory_check.gd` (51 passes, 0 failures), `inventory_ui_check.gd` (32 passes,
+0 failures), and the two-process `inventory_net_check.gd` (0 failures, including a client move from
+backpack slot 0 to hotbar slot 24). Forward+ renders at 1280×720 and 374×666 show independent contents
+in both regions with all eight hotbar cells visible.
+
 ### F-030 · Replicated harvest state could briefly create a doomed VFX target — **fixed**
 
 **Area:** gameplay/presentation · **Severity:** low · **Found/fixed:** 2026-08-16 by nettle during F-029

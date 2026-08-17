@@ -919,3 +919,19 @@ Notes along the way:
 Files: `ui/inventory/inventory_ui.gd`, `ui/inventory/inventory_ui.gd.uid`, `tools/inventory_ui_check.gd`, `tools/inventory_ui_check.gd.uid`, `tools/inventory_ui_render_check.gd`, `tools/inventory_ui_render_check.gd.uid`, `entities/player/player_controller.gd`, `project.godot`, `docs/NEXT.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `97024c6`
+
+---
+
+### DONE · F-033 · dusk3 · 2026-08-17T02:41:22+00:00
+
+**Inventory hotbar aliases eight backpack slots instead of adding eight separate slots**
+
+Corrected the inventory contract to 24 backpack slots plus eight separate hotbar slots. The host owns 32 stable dictionaries; grants and crafting removals prefer backpack slots, hotbar is 24-31, UI moves between regions without aliasing, and protocol is v4. Verified 51 inventory assertions, 32 UI assertions, two-process ENet inventory movement, version handshake, Playtest Hollow, 180-frame main scene, and desktop/narrow Forward+ renders with zero task failures. F-033 moved to Resolved. No editor work remains; safe to start 2.6.
+
+Notes along the way:
+- Corrected contract: 32 stable authoritative slots total. Backpack is 0-23 so grants fill it first; hotbar is separate 24-31. InventoryStore will prefer backpack for empty-slot grants and ingredient removal, using hotbar capacity only as overflow/last resort. Snapshot shape changes wire compatibility, so protocol bumps from 3 to 4.
+- Fixed and verified: authoritative snapshots are 32 slots (backpack 0-23, hotbar 24-31); grants and removals prefer backpack; UI drag/drop maps to distinct ranges; protocol v4. inventory_check 51/0, inventory_ui_check 32/0, two-process inventory_net_check failures=0, handshake 0 failures, Playtest Hollow failures=0, main scene 180 frames, Forward+ renders show independent contents and full narrow hotbar.
+
+Files: `autoload/inventory_service.gd`, `systems/inventory/inventory_store.gd`, `ui/inventory/inventory_ui.gd`, `tools/inventory_check.gd`, `tools/inventory_net_check.gd`, `tools/inventory_ui_check.gd`, `tools/inventory_ui_render_check.gd`, `core/net/net_version.gd`, `docs/FINDINGS.md`, `docs/NEXT.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `ac0e0f7`

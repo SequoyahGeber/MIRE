@@ -76,8 +76,9 @@ silently — see the constant's own doc comment for the exact list (replicated p
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
 **Task 2.5 ships the client-local inventory presentation.** `InventoryUI` is an autoload ordered after
-`InventoryService`. The hotbar always renders stable slots 0–7; Tab opens the full 24-slot field pack,
-and Escape or Tab closes it. Drag/drop sends a full-stack `request_move_stack()` and renders only the
+`InventoryService`. The hotbar always renders its own stable slots 24–31; Tab opens the separate
+24-slot field pack at slots 0–23, and Escape or Tab closes it. Drag/drop sends a full-stack
+`request_move_stack()` and renders only the
 next authoritative snapshot — there is no optimistic mutation. `operation_confirmed` supplies the
 accepted/rejected status line. Number keys 1–8 and clicking a hotbar cell change the local highlight;
 held-item behavior is deliberately not invented before its gameplay system exists. Item icons render
@@ -90,8 +91,9 @@ is `Godot --headless --path . --script tools/inventory_ui_check.gd`; the rendere
 proof is `Godot --path . --script tools/inventory_ui_render_check.gd`.
 
 **Task 2.4 ships the host-owned inventory seam that 2.5 and 2.6 build against.** `InventoryService`
-is an autoload after `Registry`, with one 24-slot `InventoryStore` per peer and the first eight slots
-reserved for the hotbar presentation. Slots are stable dictionaries shaped as
+is an autoload after `Registry`, with one 32-slot `InventoryStore` per peer: backpack slots 0–23 and
+separate hotbar slots 24–31. New grants use backpack empties before hotbar overflow, and removals use
+backpack stacks before equipped hotbar stacks. Slots are stable dictionaries shaped as
 `{"item_id": StringName, "amount": int}`; empty slots are `{}`. UI reads `local_slots()` and
 `local_revision()`, listens to `local_inventory_changed(slots, revision)`, and sends drag/drop through
 `request_move_stack(from_index, to_index, amount = 0)`. Destructive requests return a request id and
@@ -105,7 +107,8 @@ validated instigator peer. Crafting should use
 slot layout unless every removal and addition fits. `host_count`, `host_can_add`, `host_can_remove`,
 `host_remove`, and `host_slots` are host-only seams. Owner-only reliable snapshots carry full stable
 slots plus a monotonic revision; a client request carries no peer id, so the host always derives the
-inventory owner from `multiplayer.get_remote_sender_id()`. The wire changes make protocol version 3.
+inventory owner from `multiplayer.get_remote_sender_id()`. The 32-slot snapshot makes protocol
+version 4.
 Inventories are currently keyed to the transport peer id and released on `peer_left`; F-032 records
 the missing stable run-player identity required for task 1.7 auto-rejoin to preserve gameplay state.
 

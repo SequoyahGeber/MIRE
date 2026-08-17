@@ -6,12 +6,16 @@ extends RefCounted
 
 var _registry: Node
 var _slot_count: int
+var _primary_slot_count: int
 var _slots: Array[Dictionary] = []
 
 
-func _init(registry: Node, slot_count: int) -> void:
+func _init(registry: Node, slot_count: int, primary_slot_count: int = 0) -> void:
 	_registry = registry
 	_slot_count = maxi(slot_count, 1)
+	_primary_slot_count = (
+		_slot_count if primary_slot_count <= 0 else clampi(primary_slot_count, 1, _slot_count)
+	)
 	_clear()
 
 
@@ -57,7 +61,8 @@ func can_add(item_id: StringName, amount: int) -> bool:
 	return amount > 0 and capacity_for(item_id) >= amount
 
 
-## All-or-nothing. A grant never silently drops the part that did not fit.
+## All-or-nothing. A grant never silently drops the part that did not fit. Empty primary slots are
+## visited before the trailing region, so InventoryService fills the backpack before hotbar overflow.
 func add(item_id: StringName, amount: int) -> bool:
 	if not can_add(item_id, amount):
 		return false
@@ -90,12 +95,14 @@ func can_remove(item_id: StringName, amount: int) -> bool:
 	return amount > 0 and _stack_size(item_id) > 0 and count(item_id) >= amount
 
 
-## All-or-nothing. Consume high slots first so early slots (including the future hotbar) stay stable.
+## All-or-nothing. Consume high primary slots first, then the trailing region. InventoryService uses
+## the backpack as primary and the hotbar as trailing, so crafting/removal preserves equipped stacks
+## whenever the backpack alone can pay the cost.
 func remove(item_id: StringName, amount: int) -> bool:
 	if not can_remove(item_id, amount):
 		return false
 	var remaining: int = amount
-	for index: int in range(_slots.size() - 1, -1, -1):
+	for index: int in _removal_order():
 		var slot: Dictionary = _slots[index]
 		if _slot_item_id(slot) != item_id:
 			continue
@@ -107,6 +114,15 @@ func remove(item_id: StringName, amount: int) -> bool:
 		if remaining == 0:
 			return true
 	return false
+
+
+func _removal_order() -> Array[int]:
+	var result: Array[int] = []
+	for index: int in range(_primary_slot_count - 1, -1, -1):
+		result.append(index)
+	for index: int in range(_slot_count - 1, _primary_slot_count - 1, -1):
+		result.append(index)
+	return result
 
 
 ## Move/split/merge for task 2.5's drag/drop UI. amount <= 0 means the whole source stack.

@@ -11,14 +11,15 @@
 (D-030). M0 is closed, 10/10.
 **Tasks 2.3 through 2.5 are playable:** `HarvestableDef` plus the host-authoritative `Harvestable` lifecycle
 wires the 11 intact tree/stone/iron props in `playtest_hollow`, and each completed harvest now grants
-the validated peer a host-owned inventory stack. Inventory uses 24 stable slots (first eight reserved
-for the hotbar), owner-only revisioned snapshots, explicit request confirmations, and atomic crafting
+the validated peer a host-owned inventory stack. Inventory uses 24 backpack slots plus eight separate
+hotbar slots, owner-only revisioned snapshots, explicit request confirmations, and atomic crafting
 transactions. The always-visible hotbar and Tab field pack render those snapshots, and drag/drop
 submits host-validated full-stack moves without prediction. Offline and two-process ENet checks cover
 grants, stacking, removal, movement, overspend rejection, peer isolation and cleanup.
-**Last session:** 2026-08-16 — task 2.5 completed. The inventory UI is registered and runs without
-scene wiring; its focused check passed 29 assertions, the existing inventory checks stayed green, and
-Forward+ desktop/narrow screenshots were rendered for visual inspection. Task 2.6 is next.
+**Last session:** 2026-08-17 — F-033 corrected task 2.5's slot contract. The registered UI now has
+24 backpack slots plus eight distinct hotbar slots, with host-authoritative moves between them;
+focused offline/UI checks and the two-process ENet check pass, and Forward+ desktop/narrow renders
+show independent contents. Task 2.6 is next.
 The deferred 1.12 evidence remains unchanged: all three pinned-engine/GodotSteam
 preflights passed and a real Mac-hosted Steam lobby reached three peers across macOS, Windows and
 Linux. Code-built remote-player debug capsules made all three spawns visible, and Linux movement
@@ -86,11 +87,12 @@ scheduled three-machine session driven by lobby IDs pasted between terminals, on
 grants output only after host validation at one workbench. Build it on InventoryService's atomic
 `host_transaction()` seam. Task 2.7 adds the crafting UI; do not mix it into 2.6.
 
-**The exact 2.4 seams:** local UI reads 24 stable slot dictionaries and never mutates the snapshot;
-the first eight are its hotbar. Client remove/move requests carry no peer id and complete through
+**The exact 2.4 seams:** local UI reads 32 stable slot dictionaries and never mutates the snapshot;
+slots 0–23 are the backpack and 24–31 are the separate hotbar. Client remove/move requests carry no
+peer id and complete through
 `operation_confirmed`. Trusted host gameplay uses `host_add` or atomic `host_transaction`; there is
 no client grant RPC. Owner-only full snapshots carry monotonic revisions. The new RPC set makes the
-current protocol version 3.
+current protocol version 4.
 
 **If cross-play testing starts to feel overdue before M6**, the cheap version is a pair of debug
 console commands over the `SteamLobby` API that already exists (`host_session()`, `join_by_id()`,
