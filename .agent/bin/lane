@@ -254,7 +254,8 @@ def is_logged_in(lane):
 
 
 def new_acc():
-    return {"in": 0, "out": 0, "cached": 0, "cost": 0.0, "raw": {}, "final": False}
+    return {"in": 0, "out": 0, "cached": 0, "cost": 0.0, "raw": {}, "final": False,
+            "rate_limit": None}
 
 
 def harvest(obj, acc, cli):
@@ -269,6 +270,15 @@ def harvest(obj, acc, cli):
         acc["out"] += _int(u.get("output_tokens")) + _int(u.get("reasoning_output_tokens"))
         acc["cached"] += _int(u.get("cached_input_tokens"))
         acc["raw"] = {k: v for k, v in u.items() if isinstance(v, (int, float))}
+        return
+
+    # Claude Code streams the real thing: status, window type, and an exact reset timestamp from the
+    # API itself. Infinitely better than inferring a wall from error prose, so prefer it whenever it
+    # appears and keep the regex classifier only as the fallback for CLIs that offer nothing.
+    if obj.get("type") == "rate_limit_event":
+        info = obj.get("rate_limit_info")
+        if isinstance(info, dict):
+            acc["rate_limit"] = info
         return
 
     final = obj.get("type") == "result" or "total_cost_usd" in obj
@@ -594,6 +604,18 @@ def _finish(name, task, code, acc, tail, logpath, elapsed):
 
 
 def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, elapsed, exhausted):
+    # Authoritative quota, when the CLI gave us any.
+    info = acc.get("rate_limit")
+    if isinstance(info, dict):
+        lane["quota_status"] = info.get("status")
+        lane["quota_window"] = info.get("rateLimitType")
+        resets = info.get("resetsAt")
+        if isinstance(resets, (int, float)):
+            lane["quota_resets_at"] = datetime.fromtimestamp(
+                resets, timezone.utc).isoformat(timespec="seconds")
+        if info.get("status") not in (None, "allowed"):
+            exhausted = True
+
     lane["runs"] += 1
     lane["tokens_in"] += tin
     lane["tokens_out"] += tout
@@ -611,13 +633,17 @@ def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, e
         ok("%s finished %s in %ds  %s(+%s in / +%s out%s)%s"
            % (name, task, elapsed, C["dim"], f"{tin:,}", f"{tout:,}",
               ", $%.3f" % cost if cost else "", C["x"]))
+        if lane.get("quota_resets_at"):
+            print("  %squota: %s, %s window resets %s%s"
+                  % (C["dim"], lane.get("quota_status", "?"), lane.get("quota_window", "?"),
+                     lane["quota_resets_at"], C["x"]))
     else:
         lane["failures"] += 1
         lane["consecutive_failures"] += 1
         lane["last_error"] = tail[-600:].strip()
         if exhausted:
             lane["status"] = "exhausted"
-            reset = parse_reset(tail)
+            reset = lane.get("quota_resets_at") or parse_reset(tail)
             lane["exhausted_until"] = reset or (
                 datetime.now(timezone.utc) + timedelta(hours=5)).isoformat(timespec="seconds")
             print("%s✗ %s hit its quota wall on %s — parked until %s%s"

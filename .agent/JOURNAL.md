@@ -1503,3 +1503,13 @@ Commit at time of writing: `915c881`
 Fixed a lanes.json read-modify-write race found live: LC1 finishing wrote back its stale dict and erased LP's running status, so the ledger read idle while LP was six minutes into a task — the state that lets the director dispatch onto a busy lane. All ledger writes now go through lanes_locked(); verified 25/25/25 across three concurrent processes. Also switched Claude to stream-json (a buffered single object meant zero visibility for 8 minutes and would report 0 tokens if killed), and set roles: Claude implements, Codex reviews, with a new 'agent order --review' order type.
 
 Commit at time of writing: `fcdd87d`
+
+---
+
+### DONE · 0.12 · quill15 · 2026-08-17T23:34:37+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+Capture Claude's rate_limit_event as authoritative quota state (status, window type, exact reset), replacing inference where it is available. Observed live: five_hour window, allowed, resets 2026-08-18T04:10Z.
+
+Commit at time of writing: `3792399`
