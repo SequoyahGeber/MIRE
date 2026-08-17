@@ -52,8 +52,9 @@ baking stays and the grid-A* fallback is dropped (D-016). Neither is uncondition
 **R1 (netcode) is AMBER**, which is not a blocker but does promote task 1.8 from optional to required;
 the numbers are under *What changed this session*.
 
-**The game runs.** Open the project and press Play: you spawn in Playtest Hollow and can walk, sprint,
-jump, look around, and attack intact resource props at close range. **F3** overlay · **`~`** console ·
+**The game runs.** Open the project and press Play: you spawn in Playtest Hollow with a stocked
+hotbar (axe, cleaver, skewer, hammer, pickaxe, bow, log, stone) and four crawlers hunting out of the
+East Mire nest. Walk, sprint, jump, harvest props, craft at the workbench, and fight. **F3** overlay · **`~`** console ·
 **Esc** releases the mouse.
 
 **Sixteen autoloads live, verified headlessly 2026-08-16** on
@@ -62,7 +63,7 @@ jump, look around, and attack intact resource props at close range. **F3** overl
 dependencies; `HarvestWorld`, `InventoryService`, `InventoryUI`, `CraftingService`, `CraftingUI` and
 `CombatService` follow `Registry`, in that order — `CraftingUI` resolves `CraftingService` and
 `CombatService` resolves both `Registry` and `InventoryService`. Boot log reads
-`content: loaded 4 item(s), 1 recipe(s), 1 weapon(s)` and
+`content: loaded 13 item(s), 1 recipe(s), 8 weapon(s)` and
 `net: NetTransport ready (offline)`. `NetConfig` is a
 `class_name`, **not** an autoload; don't add it.
 

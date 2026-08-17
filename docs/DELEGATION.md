@@ -94,6 +94,39 @@ outline with per-point bevel *distances*, which is how a head gets a square poll
 and `swept_shaft()` (a tube along a polyline with a radius per point, which is how hafts get taper and
 an oval section).
 
+**You now start with gear, and the world has crawlers in it.** Both were missing when Sequoyah first
+pressed Play, and both were wiring rather than logic — `EnemyWorld.host_spawn()` worked and nothing
+called it; the nest marker existed and nothing read it.
+
+`DevLoadout` (`core/dev/dev_loadout.gd`, autoload, registered last) grants a starting kit through
+`InventoryService.host_add()` — a host seam with no client RPC, so a client cannot ask for one. It
+hangs off `PlayerNet.player_spawned` (F-018) and, offline, off a `current_scene` gate. **That gate is
+load-bearing: a `--script` harness is its own main loop and has no `current_scene`, and without it
+every headless check in `tools/` boots with a full inventory** — four of them failed the moment this
+autoload existed, correctly. Entries marked `hotbar: true` are moved onto the bar, because 2.4 fills
+backpack slots first and a grant without that leaves you unable to swing without opening Tab.
+`enabled = false` turns the whole thing off when task 3.x decides what a real run starts with.
+
+`EnemyWorld` gained **ambient spawning** — `ambient_enabled`, `ambient_population` (4),
+`ambient_respawn_seconds`, spawning at every level marker whose `kind` meta is `enemy_spawn`. **This
+is not task 2.12**: no day/night gate, no Cycle scaling, no despawn at dawn. 2.12 is expected to set
+`ambient_enabled = false` and drive `top_up_ambient()` / `host_despawn_all()` itself. It also
+bootstraps offline: pressing Play opens no session, so nothing called `bake_navigation()` either —
+now a short delay after boot bakes the level's navmesh (2,529 polygons in Playtest Hollow) and fills
+the field.
+
+Console commands, all host-only: `give <item_id> [count]`, `loadout`, `items`, `spawn [enemy_id]
+[count]`, `killall`, `enemies`. Check: `tools/dev_loadout_check.gd`, which loads the **real main
+scene** rather than a bare tree — a bare tree would have passed throughout both of these bugs.
+
+**Content warning, in the AGENTS.md sense.** `tools/setup_tool_content.gd` bulk-generated nine
+ItemDefs and seven WeaponDefs from `assets/tools_weapons/catalog.json`, which is the thing agents are
+told not to do. It was done because Sequoyah asked for one of each tool and nine of the ten designs
+had no ItemDef, so there was nothing to grant. **The weapon numbers are derived from one rule —
+heavier swings slower, hits harder, reaches further — not tuned.** They exist so the ten weapons
+differ in a way 2.9 can feel and argue with. Retune in the inspector; re-running that script
+overwrites them.
+
 **Task 2.9 is a gate, and only Sequoyah can pass it.** `ROADMAP.md` says *tune combat feel until one
 enemy with one weapon feels great; do not proceed otherwise*, and no agent can judge that. What 2.9
 shipped is everything that makes the judgement possible, plus the instrument to argue about numbers
