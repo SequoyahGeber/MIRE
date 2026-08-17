@@ -1,6 +1,273 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "assets/environment_additions/README.md": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/environment_additions/catalog.json": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/environment_additions/exports/mire_broadleaf_tree.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/environment_additions/exports/mire_mossy_boulder.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/environment_additions/preview/adapted_nature_preview.png": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/environment_additions/preview/adapted_nature_scale_preview.png": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/source/adapted_nature_set.blend": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/source/ward_set.blend": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/source/wellspring_set.blend": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wards/README.md": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wards/catalog.json": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wards/exports/ward_activation_crystal.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wards/exports/ward_boundary_post.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wards/exports/ward_critical.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wards/exports/ward_damaged.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wards/exports/ward_destroyed.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wards/exports/ward_foundation.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wards/exports/ward_healthy.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wards/exports/ward_repair_scaffolding.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wards/preview/ward_preview.png": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wards/preview/ward_scale_preview.png": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/README.md": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/catalog.json": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/exports/wellspring_base.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/exports/wellspring_basin.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/exports/wellspring_boundary_stones.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/exports/wellspring_capped.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/exports/wellspring_corrupted.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/exports/wellspring_crystal.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/exports/wellspring_distant_monolith.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/exports/wellspring_guardian_platform.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/exports/wellspring_recorrupting.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/exports/wellspring_ritual_pedestal.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/exports/wellspring_roots.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/exports/wellspring_uncapped.glb": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/preview/wellspring_preview.png": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "assets/wellsprings/preview/wellspring_scale_preview.png": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "docs/ASSET_TRACKER.md": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "docs/ROADMAP.md": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "tools/blender/build_adapted_nature_set.py": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "tools/blender/build_ward_set.py": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    },
+    "tools/blender/build_wellspring_set.py": {
+      "agent": "pike14",
+      "at": "2026-08-17T01:44:21+00:00",
+      "task": "2.1i"
+    }
+  },
+  "in_flight": {
+    "2.1i": {
+      "agent": "pike14",
+      "files": [
+        "docs/ROADMAP.md",
+        "docs/ASSET_TRACKER.md",
+        "tools/blender/build_ward_set.py",
+        "tools/blender/build_wellspring_set.py",
+        "tools/blender/build_adapted_nature_set.py",
+        "assets/source/ward_set.blend",
+        "assets/source/wellspring_set.blend",
+        "assets/source/adapted_nature_set.blend",
+        "assets/wards/README.md",
+        "assets/wards/catalog.json",
+        "assets/wards/exports/ward_activation_crystal.glb",
+        "assets/wards/exports/ward_boundary_post.glb",
+        "assets/wards/exports/ward_critical.glb",
+        "assets/wards/exports/ward_damaged.glb",
+        "assets/wards/exports/ward_destroyed.glb",
+        "assets/wards/exports/ward_foundation.glb",
+        "assets/wards/exports/ward_healthy.glb",
+        "assets/wards/exports/ward_repair_scaffolding.glb",
+        "assets/wards/preview/ward_preview.png",
+        "assets/wards/preview/ward_scale_preview.png",
+        "assets/wellsprings/README.md",
+        "assets/wellsprings/catalog.json",
+        "assets/wellsprings/exports/wellspring_base.glb",
+        "assets/wellsprings/exports/wellspring_basin.glb",
+        "assets/wellsprings/exports/wellspring_boundary_stones.glb",
+        "assets/wellsprings/exports/wellspring_capped.glb",
+        "assets/wellsprings/exports/wellspring_corrupted.glb",
+        "assets/wellsprings/exports/wellspring_crystal.glb",
+        "assets/wellsprings/exports/wellspring_distant_monolith.glb",
+        "assets/wellsprings/exports/wellspring_guardian_platform.glb",
+        "assets/wellsprings/exports/wellspring_recorrupting.glb",
+        "assets/wellsprings/exports/wellspring_ritual_pedestal.glb",
+        "assets/wellsprings/exports/wellspring_roots.glb",
+        "assets/wellsprings/exports/wellspring_uncapped.glb",
+        "assets/wellsprings/preview/wellspring_preview.png",
+        "assets/wellsprings/preview/wellspring_scale_preview.png",
+        "assets/environment_additions/README.md",
+        "assets/environment_additions/catalog.json",
+        "assets/environment_additions/exports/mire_broadleaf_tree.glb",
+        "assets/environment_additions/exports/mire_mossy_boulder.glb",
+        "assets/environment_additions/preview/adapted_nature_preview.png",
+        "assets/environment_additions/preview/adapted_nature_scale_preview.png"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-17T01:44:21+00:00",
+          "by": "pike14",
+          "text": "Scoped to standalone assets only; maps/layouts are excluded. Audit keeps blockout families behind their named playtest gates and targets A-007 Ward, A-008 Wellspring, and S-001 adapted nature for high-impact silhouette, state-readability, and grounding polish. Static visuals remain client-local cosmetics; gameplay state/authority stays host-owned."
+        }
+      ],
+      "started": "2026-08-17T01:44:21+00:00"
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
       "agent": "vane",
@@ -1462,6 +1729,16 @@
       "at": "2026-08-17T01:24:51+00:00",
       "task": "F-029"
     },
+    "autoload/inventory_service.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:48:54+00:00",
+      "task": "2.4"
+    },
+    "autoload/inventory_service.gd.uid": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:48:54+00:00",
+      "task": "2.4"
+    },
     "autoload/net_interp.gd": {
       "agent": "ash",
       "at": "2026-08-16T17:19:51+00:00",
@@ -1564,8 +1841,8 @@
     },
     "core/net/net_version.gd": {
       "agent": "nettle",
-      "at": "2026-08-17T01:11:22+00:00",
-      "task": "2.3"
+      "at": "2026-08-17T01:48:54+00:00",
+      "task": "2.4"
     },
     "core/net/net_version.gd.uid": {
       "agent": "reed",
@@ -1603,9 +1880,9 @@
       "task": "2.1g"
     },
     "docs/DELEGATION.md": {
-      "agent": "ember",
-      "at": "2026-08-17T01:27:46+00:00",
-      "task": "2.1d"
+      "agent": "nettle",
+      "at": "2026-08-17T01:48:54+00:00",
+      "task": "2.4"
     },
     "docs/DESIGN.md": {
       "agent": "kiln",
@@ -1614,13 +1891,13 @@
     },
     "docs/FINDINGS.md": {
       "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
+      "at": "2026-08-17T01:48:54+00:00",
+      "task": "2.4"
     },
     "docs/NEXT.md": {
       "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
+      "at": "2026-08-17T01:48:54+00:00",
+      "task": "2.4"
     },
     "docs/ROADMAP.md": {
       "agent": "pike",
@@ -1654,8 +1931,8 @@
     },
     "project.godot": {
       "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
+      "at": "2026-08-17T01:48:54+00:00",
+      "task": "2.4"
     },
     "steam_appid.txt": {
       "agent": "steam",
@@ -1691,6 +1968,16 @@
       "agent": "nettle",
       "at": "2026-08-17T01:11:22+00:00",
       "task": "2.3"
+    },
+    "systems/inventory/inventory_store.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:48:54+00:00",
+      "task": "2.4"
+    },
+    "systems/inventory/inventory_store.gd.uid": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:48:54+00:00",
+      "task": "2.4"
     },
     "systems/inventory/item_def.gd": {
       "agent": "claude",
@@ -1794,8 +2081,8 @@
     },
     "tools/harvest_world_check.gd": {
       "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
+      "at": "2026-08-17T01:48:54+00:00",
+      "task": "2.4"
     },
     "tools/harvest_world_check.gd.uid": {
       "agent": "nettle",
@@ -1809,8 +2096,8 @@
     },
     "tools/harvestable_check.gd": {
       "agent": "nettle",
-      "at": "2026-08-17T01:11:22+00:00",
-      "task": "2.3"
+      "at": "2026-08-17T01:48:54+00:00",
+      "task": "2.4"
     },
     "tools/harvestable_check.gd.uid": {
       "agent": "nettle",
@@ -1846,6 +2133,26 @@
       "agent": "reed",
       "at": "2026-08-16T19:12:29+00:00",
       "task": "F-019"
+    },
+    "tools/inventory_check.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:48:54+00:00",
+      "task": "2.4"
+    },
+    "tools/inventory_check.gd.uid": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:48:54+00:00",
+      "task": "2.4"
+    },
+    "tools/inventory_net_check.gd": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:48:54+00:00",
+      "task": "2.4"
+    },
+    "tools/inventory_net_check.gd.uid": {
+      "agent": "nettle",
+      "at": "2026-08-17T01:48:54+00:00",
+      "task": "2.4"
     },
     "tools/mapgen/hollow_layout.py": {
       "agent": "pike",
@@ -2307,6 +2614,13 @@
       "tier": "T0",
       "title": "Polish `playtest_hollow`: open the spawn-camp gates, enlarge and better connect the zones, improve grass, and add complementary ground-cover variants"
     },
+    "2.1i": {
+      "est": "6",
+      "milestone": "M2",
+      "status": "in_flight",
+      "tier": "T0",
+      "title": "Audit existing art and improve the highest-impact hero/environment assets without bypassing their gameplay-review gates"
+    },
     "2.2": {
       "done_at": "2026-08-16T02:59:39+00:00",
       "done_by": "claude",
@@ -2326,9 +2640,11 @@
       "title": "Harvestable prop: hit \u2192 damage \u2192 yield \u2192 despawn \u2192 respawn. Host-authoritative (`ARCHITECTURE.md` \u00a72.2)."
     },
     "2.4": {
+      "done_at": "2026-08-17T01:48:54+00:00",
+      "done_by": "nettle",
       "est": "3",
       "milestone": "M2",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Inventory system: stacks, add/remove, host-validated. Data layer only."
     },
@@ -3033,6 +3349,20 @@
       "status": "done",
       "tier": "F",
       "title": "Task 2.3's harvest lifecycle is not wired into the playable map"
+    },
+    "F-031": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`DELEGATION.md` still describes the pre-polish Playtest Hollow layout"
+    },
+    "F-032": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Auto-rejoin assigns a new peer id, so peer-keyed gameplay state cannot follow it"
     }
   },
   "version": 1

@@ -870,3 +870,19 @@ A-008 Wellspring batch finished and verified; A-009 extraction ship is the sole 
 Files: `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `tools/blender/build_wellspring_set.py`, `assets/source/wellspring_set.blend`, `assets/wellsprings/README.md`, `assets/wellsprings/catalog.json`, `assets/wellsprings/exports/wellspring_distant_monolith.glb`, `assets/wellsprings/exports/wellspring_base.glb`, `assets/wellsprings/exports/wellspring_crystal.glb`, `assets/wellsprings/exports/wellspring_basin.glb`, `assets/wellsprings/exports/wellspring_roots.glb`, `assets/wellsprings/exports/wellspring_uncapped.glb`, `assets/wellsprings/exports/wellspring_capped.glb`, `assets/wellsprings/exports/wellspring_recorrupting.glb`, `assets/wellsprings/exports/wellspring_corrupted.glb`, `assets/wellsprings/exports/wellspring_ritual_pedestal.glb`, `assets/wellsprings/exports/wellspring_boundary_stones.glb`, `assets/wellsprings/exports/wellspring_guardian_platform.glb`, `assets/wellsprings/preview/wellspring_preview.png`, `assets/wellsprings/preview/wellspring_scale_preview.png`
 
 Commit at time of writing: `6ce71ab`
+
+---
+
+### DONE · 2.4 · nettle · 2026-08-17T01:48:54+00:00
+
+**Inventory system: stacks, add/remove, host-validated. Data layer only.**
+
+Host-owned 24-slot inventories now stack by ItemDef limits, consume harvest yields, support all-or-nothing add/remove and atomic crafting transactions, confirm owner-only remove/move requests, and publish revisioned snapshots; first 8 stable slots are the hotbar seam. Inventory offline check: local_changes=9, host_changes=9, confirmations=3, failures=0. Real two-process ENet: targeted grant, isolation, accepted/rejected operations, anti-grant and peer cleanup all pass with failures=0. Real Hollow tree grants 3 logs with failures=0; harvest component/net, interest, protocol-v3 handshake, default boot, and all 8 session-lifecycle sections pass. Filed F-031 stale map handoff and F-032 stable identity needed for reconnect state.
+
+Notes along the way:
+- Inventory/crafting authority is host-owned. InventoryService keeps 24 stable slots per peer (first 8 reserved for hotbar UI), grants only through trusted host_add/host_transaction, and exposes no client add RPC. Client remove/move requests carry no peer id; host derives sender, validates, publishes a revisioned owner-only snapshot, and explicitly confirms accept/reject.
+- Lifecycle regression exposed F-032: LOCAL auto-rejoin changes the ENet peer id, and the project has no stable run-player identity. Inventory cleanup on peer_left is correct and unambiguous today; preserving an orphan by join order would misassign state when multiple clients reconnect. Filed the cross-system rebind requirement rather than hiding it in inventory.
+
+Files: `systems/inventory/inventory_store.gd`, `systems/inventory/inventory_store.gd.uid`, `autoload/inventory_service.gd`, `autoload/inventory_service.gd.uid`, `project.godot`, `core/net/net_version.gd`, `tools/inventory_check.gd`, `tools/inventory_check.gd.uid`, `tools/inventory_net_check.gd`, `tools/inventory_net_check.gd.uid`, `tools/harvest_world_check.gd`, `docs/NEXT.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`, `tools/harvestable_check.gd`
+
+Commit at time of writing: `e57a88f`

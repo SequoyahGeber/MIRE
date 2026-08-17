@@ -1,0 +1,260 @@
+extends SceneTree
+
+## Real two-process ENet proof for task 2.4. A trusted host harvest grant targets the client, the
+## client receives only its snapshot, accepted/rejected destructive requests are confirmed, and no
+## client path can mint items.
+
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
+
+const PORT: int = 47425
+const RESULT_PATH: String = "user://inventory_net_client.json"
+const TIMEOUT_SEC: float = 15.0
+
+var failures: int = 0
+var transport: Node
+var inventory: Node
+var child_pid: int = 0
+var confirmations: Dictionary[int, bool] = {}
+
+
+func _initialize() -> void:
+	_start.call_deferred()
+
+
+func _start() -> void:
+	await process_frame
+	transport = root.get_node_or_null(^"NetTransport")
+	inventory = root.get_node_or_null(^"InventoryService")
+	if transport == null or inventory == null:
+		fail("NetTransport and InventoryService autoloads must exist")
+		finish()
+		return
+	inventory.get("operation_confirmed").connect(_on_operation_confirmed)
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	if not args.is_empty() and args[0] == "inventory-probe":
+		_run_client()
+	else:
+		_run_driver()
+
+
+func _run_driver() -> void:
+	print("\n== inventory network check (task 2.4) ==")
+	if FileAccess.file_exists(RESULT_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(RESULT_PATH))
+	var error: Error = transport.call("host", NetConfig.Mode.LOCAL, PORT)
+	check(error == OK, "host starts on port %d" % PORT)
+	if error != OK:
+		finish()
+		return
+	await process_frame
+	child_pid = _spawn_client()
+	check(child_pid > 0, "client process launches")
+	var connected: bool = await _until(
+		func() -> bool: return bool(_read_result().get("connected", false)), TIMEOUT_SEC
+	)
+	check(connected, "client receives its initial authoritative snapshot")
+	if not connected:
+		finish()
+		return
+	var client_peer_id: int = int(_read_result().get("peer_id", 0))
+	check(client_peer_id > NetConfig.HOST_PEER_ID, "client reports a real peer id")
+	check(int(inventory.call("host_count", client_peer_id, &"log")) == 0,
+		"host creates the client inventory empty")
+	check(int(inventory.call("host_count", NetConfig.HOST_PEER_ID, &"log")) == 0,
+		"host inventory is isolated from client inventory")
+
+	EVENT_BUS.emit_harvest_yielded(&"net_tree", client_peer_id, &"log", 3, Vector3.ZERO)
+	var granted: bool = await _until(
+		func() -> bool: return bool(_read_result().get("granted", false)), TIMEOUT_SEC
+	)
+	check(granted, "client receives its host-only harvest grant")
+	check(int(inventory.call("host_count", client_peer_id, &"log")) == 3,
+		"host owns the granted count")
+	check(int(inventory.call("host_count", NetConfig.HOST_PEER_ID, &"log")) == 0,
+		"grant does not leak into host inventory")
+
+	var complete: bool = await _until(
+		func() -> bool: return bool(_read_result().get("complete", false)), TIMEOUT_SEC
+	)
+	check(complete, "client completes accepted, rejected, and move requests")
+	var result: Dictionary = _read_result()
+	check(bool(result.get("remove_accepted", false)), "client receives accepted removal confirmation")
+	check(bool(result.get("overspend_rejected", false)), "client receives rejected overspend confirmation")
+	check(bool(result.get("move_accepted", false)), "client receives accepted slot-move confirmation")
+	check(bool(result.get("direct_add_rejected", false)), "client cannot call the trusted host grant seam")
+	check(int(result.get("log_count", -1)) == 1, "client finishes with one confirmed log")
+	check(int(inventory.call("host_count", client_peer_id, &"log")) == 1,
+		"host and client agree on the final count")
+	var client_slots: Array = inventory.call("host_slots", client_peer_id)
+	check(
+		client_slots.size() == 24
+		and StringName(String((client_slots[7] as Dictionary).get("item_id", ""))) == &"log",
+		"host owns the requested stable slot layout"
+	)
+
+	var child_exited: bool = await _until(
+		func() -> bool: return child_pid <= 0 or not OS.is_process_running(child_pid), TIMEOUT_SEC
+	)
+	check(child_exited, "client exits cleanly")
+	if child_exited:
+		child_pid = 0
+	var peer_removed: bool = await _until(
+		func() -> bool: return (inventory.call("host_slots", client_peer_id) as Array).is_empty(),
+		TIMEOUT_SEC
+	)
+	check(peer_removed, "host releases a departed peer's inventory")
+	transport.call("leave")
+	print("INVENTORY_NET_CHECK peer=%d final_logs=%d failures=%d result=%s" % [
+		client_peer_id, int(result.get("log_count", -1)), failures, result
+	])
+	finish()
+
+
+func _run_client() -> void:
+	_write_result({"connected": false})
+	var error: Error = transport.call(
+		"join", NetConfig.Mode.LOCAL, NetConfig.LOOPBACK_ADDRESS, PORT
+	)
+	if error != OK:
+		_write_result({"error": error_string(error)})
+		finish()
+		return
+	_client_drive()
+
+
+func _client_drive() -> void:
+	var ready: bool = await _until(_client_inventory_ready, TIMEOUT_SEC)
+	if not ready:
+		_write_result({"error": "initial inventory snapshot timeout"})
+		finish()
+		return
+	var peer_id: int = int(transport.call("local_peer_id"))
+	_write_result({
+		"connected": true,
+		"peer_id": peer_id,
+		"granted": false,
+		"complete": false,
+	})
+	var grant_seen: bool = await _until(
+		func() -> bool: return int(inventory.call("local_count", &"log")) == 3,
+		TIMEOUT_SEC
+	)
+	if not grant_seen:
+		_write_result({"connected": true, "peer_id": peer_id, "error": "grant timeout"})
+		finish()
+		return
+	_write_result({
+		"connected": true,
+		"peer_id": peer_id,
+		"granted": true,
+		"complete": false,
+	})
+	await create_timer(0.5).timeout
+
+	var remove_id: int = int(inventory.call("request_remove", &"log", 2))
+	var remove_confirmed: bool = await _until(
+		func() -> bool: return confirmations.has(remove_id), TIMEOUT_SEC
+	)
+	var remove_accepted: bool = remove_confirmed and bool(confirmations.get(remove_id, false))
+	var remove_applied: bool = await _until(
+		func() -> bool: return int(inventory.call("local_count", &"log")) == 1,
+		TIMEOUT_SEC
+	)
+
+	var overspend_id: int = int(inventory.call("request_remove", &"log", 99))
+	var overspend_confirmed: bool = await _until(
+		func() -> bool: return confirmations.has(overspend_id), TIMEOUT_SEC
+	)
+	var overspend_rejected: bool = (
+		overspend_confirmed and not bool(confirmations.get(overspend_id, true))
+	)
+
+	var move_id: int = int(inventory.call("request_move_stack", 0, 7))
+	var move_confirmed: bool = await _until(
+		func() -> bool: return confirmations.has(move_id), TIMEOUT_SEC
+	)
+	var move_accepted: bool = move_confirmed and bool(confirmations.get(move_id, false))
+	var move_applied: bool = await _until(_client_log_in_slot_seven, TIMEOUT_SEC)
+	var direct_add_rejected: bool = not bool(inventory.call("host_add", peer_id, &"log", 50))
+	_write_result({
+		"connected": true,
+		"peer_id": peer_id,
+		"granted": true,
+		"complete": remove_applied and move_applied,
+		"remove_accepted": remove_accepted,
+		"overspend_rejected": overspend_rejected,
+		"move_accepted": move_accepted,
+		"direct_add_rejected": direct_add_rejected,
+		"log_count": int(inventory.call("local_count", &"log")),
+	})
+	# Keep the peer present long enough for the driver to inspect host-owned state before proving
+	# peer_left cleanup. The result file is not a transport acknowledgement.
+	await create_timer(1.0).timeout
+	finish()
+
+
+func _on_operation_confirmed(request_id: int, accepted: bool, _detail: String) -> void:
+	confirmations[request_id] = accepted
+
+
+func _client_inventory_ready() -> bool:
+	return (
+		int(transport.call("local_peer_id")) > NetConfig.HOST_PEER_ID
+		and int(inventory.call("local_revision")) >= 0
+	)
+
+
+func _client_log_in_slot_seven() -> bool:
+	var slots: Array = inventory.call("local_slots")
+	return StringName(String((slots[7] as Dictionary).get("item_id", ""))) == &"log"
+
+
+func _spawn_client() -> int:
+	var project_dir: String = ProjectSettings.globalize_path("res://")
+	var args := PackedStringArray([
+		"--headless", "--path", project_dir, "--script", "tools/inventory_net_check.gd",
+		"--", "inventory-probe",
+	])
+	return OS.create_process(OS.get_executable_path(), args)
+
+
+func _until(condition: Callable, timeout_seconds: float) -> bool:
+	var deadline_msec: int = Time.get_ticks_msec() + int(timeout_seconds * 1000.0)
+	while Time.get_ticks_msec() < deadline_msec:
+		if bool(condition.call()):
+			return true
+		await create_timer(0.05).timeout
+	return bool(condition.call())
+
+
+func _write_result(result: Dictionary) -> void:
+	var file := FileAccess.open(RESULT_PATH, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_string(JSON.stringify(result))
+	file.close()
+
+
+func _read_result() -> Dictionary:
+	if not FileAccess.file_exists(RESULT_PATH):
+		return {}
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(RESULT_PATH))
+	return parsed if parsed is Dictionary else {}
+
+
+func check(condition: bool, description: String) -> void:
+	if condition:
+		print("PASS: %s" % description)
+		return
+	fail(description)
+
+
+func fail(description: String) -> void:
+	failures += 1
+	push_error("FAIL: %s" % description)
+
+
+func finish() -> void:
+	if child_pid > 0 and OS.is_process_running(child_pid):
+		OS.kill(child_pid)
+	quit(0 if failures == 0 else 1)

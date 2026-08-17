@@ -33,8 +33,10 @@ func _run() -> void:
 
 	var registry: Node = root.get_node_or_null(^"Registry")
 	var harvest_world: Node = root.get_node_or_null(^"HarvestWorld")
+	var inventory: Node = root.get_node_or_null(^"InventoryService")
 	check(registry != null, "Registry autoload exists")
 	check(harvest_world != null, "HarvestWorld autoload exists")
+	check(inventory != null, "InventoryService autoload exists")
 	for item_id: StringName in [&"log", &"stone", &"iron_ore"]:
 		check(bool(registry.call("has_item", item_id)), "Registry loaded item '%s'" % item_id)
 	if harvest_world == null:
@@ -79,6 +81,9 @@ func _run() -> void:
 		if yield_events.size() == 1:
 			check(yield_events[0].get("item_id") == &"log", "actual tree yields log")
 			check(int(yield_events[0].get("amount", 0)) == 3, "actual tree yields three logs")
+		if inventory != null:
+			check(int(inventory.call("local_count", &"log")) == 3,
+				"actual map harvest grants three logs to offline inventory")
 		var body := tree.get_node_or_null(^"CollisionBody") as CollisionObject3D
 		check(body != null and body.collision_layer == 0, "depleted map collision is disabled")
 		check(bool(tree.call("host_respawn")), "actual map tree respawns")

@@ -507,6 +507,28 @@ human-owned `project.godot` change selected `levels/playtest_hollow.tscn`; it st
 bodies, 274 shapes, and one marker. Update the assertion to accept the current playable level or
 validate the configured main scene structurally instead of pinning the old path.
 
+### F-031 · `DELEGATION.md` still describes the pre-polish Playtest Hollow layout
+
+**Area:** documentation · **Severity:** low · **Found:** 2026-08-16 by nettle during 2.4
+
+The bounded `DELEGATION.md` *Current state* read still says Playtest Hollow has 463 props, 254 prop
+collision shapes and 4,102 visual meshes from task 2.1f. Task 2.1h shipped an 88×88 m replacement
+with 783 props, 339 prop shapes, 359 total colliders and 6,256 meshes. Update that inherited-state
+paragraph from task 2.1h's journal evidence so future tasks do not plan against the smaller map.
+
+### F-032 · Auto-rejoin assigns a new peer id, so peer-keyed gameplay state cannot follow it
+
+**Area:** multiplayer/gameplay state · **Severity:** high · **Found:** 2026-08-16 by nettle during 2.4
+
+Task 1.7's live lifecycle check proves that a reconnecting ENet client gets a new id (for example,
+peer `1037623507` rejoined as `361299977`). `PlayerNet` can respawn a body under the new id, but there
+is no stable run-player identity to tell host-owned systems that the new peer is the old player.
+`InventoryService` therefore releases the departed peer's inventory and correctly creates a fresh
+one on rejoin; retaining or assigning an orphan to "the next joiner" would give the wrong inventory
+when two players reconnect together. Before reconnect can preserve inventory, health, powerups or
+Attunement, add a host-issued opaque run-player token to admission/rejoin and an explicit old-peer to
+new-peer rebind event that gameplay systems can consume.
+
 ## Resolved
 
 ### F-030 · Replicated harvest state could briefly create a doomed VFX target — **fixed**

@@ -29,6 +29,7 @@ NetDebugPanel="*res://ui/debug/net_debug_panel.gd"
 TestMapProps="*res://world/gen/test_map_props.gd"
 NetInterp="*res://autoload/net_interp.gd"
 HarvestWorld="*res://autoload/harvest_world.gd"
+InventoryService="*res://autoload/inventory_service.gd"
 
 [display]
 

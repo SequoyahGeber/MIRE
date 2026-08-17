@@ -75,6 +75,26 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+**Task 2.4 ships the host-owned inventory seam that 2.5 and 2.6 build against.** `InventoryService`
+is an autoload after `Registry`, with one 24-slot `InventoryStore` per peer and the first eight slots
+reserved for the hotbar presentation. Slots are stable dictionaries shaped as
+`{"item_id": StringName, "amount": int}`; empty slots are `{}`. UI reads `local_slots()` and
+`local_revision()`, listens to `local_inventory_changed(slots, revision)`, and sends drag/drop through
+`request_move_stack(from_index, to_index, amount = 0)`. Destructive requests return a request id and
+finish through `operation_confirmed(request_id, accepted, detail)`. Callers never mutate returned
+snapshots.
+
+Only trusted host systems can grant items: `host_add(peer_id, item_id, amount)` is all-or-nothing,
+and no client add RPC exists. Harvest yields are already subscribed and grant the yielded item to the
+validated instigator peer. Crafting should use
+`host_transaction(peer_id, removals: Dictionary, additions: Dictionary)`, which rolls back the exact
+slot layout unless every removal and addition fits. `host_count`, `host_can_add`, `host_can_remove`,
+`host_remove`, and `host_slots` are host-only seams. Owner-only reliable snapshots carry full stable
+slots plus a monotonic revision; a client request carries no peer id, so the host always derives the
+inventory owner from `multiplayer.get_remote_sender_id()`. The wire changes make protocol version 3.
+Inventories are currently keyed to the transport peer id and released on `peer_left`; F-032 records
+the missing stable run-player identity required for task 1.7 auto-rejoin to preserve gameplay state.
+
 **Asset batches A-001 through A-008 are complete; A-009 is next.** Harvest states live under
 `assets/harvestables/` (12 GLBs), basic pickups under `assets/pickups/` (14 GLBs), the eight
 vertical-slice stations under `assets/crafting_stations/`, and ten tool/weapon designs under

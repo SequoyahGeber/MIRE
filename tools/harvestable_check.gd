@@ -61,8 +61,12 @@ func _run() -> void:
 	await process_frame
 	await physics_frame
 
+	var subscriber_baseline: int = EVENT_BUS.harvest_yielded_subscriber_count()
 	EVENT_BUS.subscribe_harvest_yielded(_on_harvest_yielded)
-	check(EVENT_BUS.harvest_yielded_subscriber_count() == 1, "EventBus registers one yield listener")
+	check(
+		EVENT_BUS.harvest_yielded_subscriber_count() == subscriber_baseline + 1,
+		"EventBus registers the check's yield listener beside persistent systems"
+	)
 	check(int(prop.get("health")) == 3, "prop starts at full health")
 	check(bool(prop.get("active")), "prop starts active")
 	check(_visual_source_name(prop) == "Intact", "intact visual is selected")
@@ -107,7 +111,10 @@ func _run() -> void:
 	check(yield_events.size() == 1, "respawn does not duplicate yield")
 
 	EVENT_BUS.unsubscribe_harvest_yielded(_on_harvest_yielded)
-	check(EVENT_BUS.harvest_yielded_subscriber_count() == 0, "EventBus listener unsubscribes cleanly")
+	check(
+		EVENT_BUS.harvest_yielded_subscriber_count() == subscriber_baseline,
+		"EventBus listener unsubscribes without disturbing persistent systems"
+	)
 	registry.get("items").erase(TEST_ITEM_ID)
 	prop.queue_free()
 	print("HARVESTABLE_CHECK events=%d failures=%d" % [yield_events.size(), failures])
