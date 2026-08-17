@@ -1317,3 +1317,15 @@ viewmodel.gd resolves autoloads by path with local PHASE_* constants (must NOT p
 Files: `entities/player/viewmodel.gd`, `tools/verify_setup.gd`, `tools/viewmodel_check.gd`
 
 Commit at time of writing: `47f5530`
+
+---
+
+### DONE · F-047 · flint5 · 2026-08-17T18:49:19+00:00
+
+**`harvest_world_check` asserts an absolute log count that DevLoadout's starting grant breaks**
+
+harvest_world_check asserts the +3 log delta against a captured baseline instead of an absolute 3, so DevLoadout's 20-log grant no longer reds it. Verified: failures=0, 0 ERROR-lines.
+
+Files: `tools/harvest_world_check.gd`
+
+Commit at time of writing: `51b8090`

@@ -30,11 +30,6 @@
       "at": "2026-08-17T18:44:35+00:00",
       "task": "F-050"
     },
-    "tools/harvest_world_check.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "F-047"
-    },
     "tools/setup_crafting_content.gd": {
       "agent": "flint5",
       "at": "2026-08-17T18:43:41+00:00",
@@ -52,14 +47,6 @@
     }
   },
   "in_flight": {
-    "F-047": {
-      "agent": "flint5",
-      "files": [
-        "tools/harvest_world_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-17T18:43:41+00:00"
-    },
     "F-048": {
       "agent": "flint5",
       "files": [
@@ -2156,9 +2143,9 @@
       "task": "F-019"
     },
     "tools/harvest_world_check.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:48:54+00:00",
-      "task": "2.4"
+      "agent": "flint5",
+      "at": "2026-08-17T18:49:19+00:00",
+      "task": "F-047"
     },
     "tools/harvest_world_check.gd.uid": {
       "agent": "nettle",
@@ -3664,9 +3651,11 @@
       "title": "`viewmodel.gd` names autoloads bare, so any harness compiling `PlayerController` gets a viewmodel-less player"
     },
     "F-047": {
+      "done_at": "2026-08-17T18:49:19+00:00",
+      "done_by": "flint5",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`harvest_world_check` asserts an absolute log count that DevLoadout's starting grant breaks"
     },

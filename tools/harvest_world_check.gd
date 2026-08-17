@@ -72,6 +72,9 @@ func _run() -> void:
 	var tree: Node3D = _first_asset(harvestables, &"harvest_tree_intact")
 	check(tree != null, "an actual map tree is available for lifecycle proof")
 	if tree != null:
+		# Delta, not absolute (F-047): DevLoadout grants 20 logs at spawn, so asserting a total of 3
+		# is asserting the starting kit doesn't exist — the fifth harness that autoload broke.
+		var logs_before: int = int(inventory.call("local_count", &"log")) if inventory != null else 0
 		var definition: Resource = tree.get("definition")
 		check(bool(tree.call("host_apply_damage", int(definition.get("max_health")), 1)),
 			"actual map tree accepts lethal host damage")
@@ -82,8 +85,9 @@ func _run() -> void:
 			check(yield_events[0].get("item_id") == &"log", "actual tree yields log")
 			check(int(yield_events[0].get("amount", 0)) == 3, "actual tree yields three logs")
 		if inventory != null:
-			check(int(inventory.call("local_count", &"log")) == 3,
-				"actual map harvest grants three logs to offline inventory")
+			check(int(inventory.call("local_count", &"log")) - logs_before == 3,
+				"actual map harvest grants three more logs to offline inventory (started at %d)"
+				% logs_before)
 		var body := tree.get_node_or_null(^"CollisionBody") as CollisionObject3D
 		check(body != null and body.collision_layer == 0, "depleted map collision is disabled")
 		check(bool(tree.call("host_respawn")), "actual map tree respawns")
