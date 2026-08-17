@@ -25,9 +25,16 @@ func _run() -> void:
 	# A-006 measured it: 1.10 m long, 0.59 m tall, origin at the ground between its feet.
 	crawler.set("radius_m", 0.45)
 	crawler.set("height_m", 0.6)
+	# 12 HP against the stone axe's 3 damage is four swings — long enough that a fight is a fight,
+	# short enough that one crawler is not a chore. Time-to-kill lands at ~2.7 s of swinging.
 	crawler.set("max_health", 12)
+	# The corpse sinks and fades over this window rather than vanishing (2.9).
 	crawler.set("corpse_seconds", 2.5)
-	crawler.set("move_speed", 3.4)
+	# 2.9 tuning call: FASTER than the player's 4.0 m/s walk, slower than the 6.0 m/s sprint. At 3.4
+	# a player could walk backwards forever and never be caught, which is precisely Muck's
+	# "backpedal spam" that DESIGN.md §6 names as the thing to fix — the 0.4 s telegraph only means
+	# something if standing your ground is sometimes the better option.
+	crawler.set("move_speed", 4.4)
 	crawler.set("stop_distance_m", 1.5)
 	crawler.set("turn_speed_rad", 6.0)
 	crawler.set("aggro_radius_m", 18.0)
@@ -38,6 +45,8 @@ func _run() -> void:
 	# re-authoring the clips desynchronises the telegraph from the hit (DESIGN.md §6).
 	crawler.set("attack_tell_seconds", 0.4)
 	crawler.set("attack_seconds", 0.4)
+	# 0.5 s of recovery is the window a player trades their own swing into. Shorter and the crawler
+	# is oppressive at melee range; longer and it stops threatening at all.
 	crawler.set("attack_recovery_seconds", 0.5)
 	_save(crawler, "res://content/enemies/crawler.tres")
 

@@ -8,3 +8,4 @@ script = ExtResource("2_d3gob")
 id = &"crawler"
 display_name = "Hollow Crawler"
 model = ExtResource("1_uh0gl")
+move_speed = 4.4

@@ -1549,8 +1549,8 @@
     },
     "content/enemies/crawler.tres": {
       "agent": "dusk3",
-      "at": "2026-08-17T15:58:44+00:00",
-      "task": "2.10"
+      "at": "2026-08-17T16:04:25+00:00",
+      "task": "2.9"
     },
     "content/harvestables/iron_node.tres": {
       "agent": "nettle",
@@ -1594,8 +1594,8 @@
     },
     "content/weapons/stone_axe.tres": {
       "agent": "dusk3",
-      "at": "2026-08-17T04:31:24+00:00",
-      "task": "2.8"
+      "at": "2026-08-17T16:04:25+00:00",
+      "task": "2.9"
     },
     "core/dev/dev_launch.gd": {
       "agent": "vane",
@@ -1754,8 +1754,8 @@
     },
     "systems/enemies/enemy.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T15:58:44+00:00",
-      "task": "2.10"
+      "at": "2026-08-17T16:04:25+00:00",
+      "task": "2.9"
     },
     "systems/enemies/enemy.gd.uid": {
       "agent": "dusk3",
@@ -1876,6 +1876,16 @@
       "agent": "dusk3",
       "at": "2026-08-17T04:31:24+00:00",
       "task": "2.8"
+    },
+    "tools/combat_feel_check.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:04:25+00:00",
+      "task": "2.9"
+    },
+    "tools/combat_feel_check.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:04:25+00:00",
+      "task": "2.9"
     },
     "tools/combat_net_check.gd": {
       "agent": "dusk3",
@@ -2134,8 +2144,8 @@
     },
     "tools/setup_combat_content.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T04:31:24+00:00",
-      "task": "2.8"
+      "at": "2026-08-17T16:04:25+00:00",
+      "task": "2.9"
     },
     "tools/setup_combat_content.gd.uid": {
       "agent": "dusk3",
@@ -2154,8 +2164,8 @@
     },
     "tools/setup_enemy_content.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T15:58:44+00:00",
-      "task": "2.10"
+      "at": "2026-08-17T16:04:25+00:00",
+      "task": "2.9"
     },
     "tools/setup_enemy_content.gd.uid": {
       "agent": "dusk3",

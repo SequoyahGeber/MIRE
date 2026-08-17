@@ -1166,3 +1166,15 @@ Notes along the way:
 Files: `systems/enemies/enemy_def.gd`, `systems/enemies/enemy_def.gd.uid`, `systems/enemies/enemy.gd`, `systems/enemies/enemy.gd.uid`, `autoload/enemy_world.gd`, `autoload/enemy_world.gd.uid`, `content/enemies/crawler.tres`, `tools/setup_enemy_content.gd`, `tools/setup_enemy_content.gd.uid`, `tools/enemy_check.gd`, `tools/enemy_check.gd.uid`, `tools/enemy_net_check.gd`, `tools/enemy_net_check.gd.uid`, `project.godot`, `core/events/event_bus.gd`
 
 Commit at time of writing: `77d3f96`
+
+---
+
+### HANDOFF · 2.9 · dusk3 · 2026-08-17T16:04:25+00:00
+
+**Tune combat feel until one enemy with one weapon feels great. Do not proceed otherwise.**
+
+Mechanical work complete; the GATE IS NOT PASSED and only Sequoyah can pass it. Done: crawler move_speed 3.4 -> 4.4 (outruns a 4.0 walk, loses to a 6.0 sprint) so backpedaling is no longer free and the 0.4s telegraph matters; enemy hit reaction via a replicated hit_counter driving A-006's hit clip plus a 0.12s white overlay; corpse sinks and fades over corpse_seconds instead of blinking out; tools/combat_feel_check.gd prints the whole picture and asserts relationships between authored values (0 failures). Verified: enemy_check 44/44, enemy_net_check 15/15, combat_check 0 failures. NEXT: a real playtest. Judge the 0.4s tell in first person, whether the 100-degree arc feels generous or sloppy, whether 0.075s hitstop reads as impact or hitch, and whether 4 swings per crawler holds with three of them. Tune content/weapons/stone_axe.tres and content/enemies/crawler.tres in the inspector - do NOT re-run the setup_*_content tools afterwards, they overwrite. Still missing: an authored impact sound; the thud is a code-built placeholder.
+
+Files: `systems/enemies/enemy.gd`, `content/enemies/crawler.tres`, `content/weapons/stone_axe.tres`, `tools/setup_enemy_content.gd`, `tools/setup_combat_content.gd`, `tools/combat_feel_check.gd`, `tools/combat_feel_check.gd.uid`
+
+Commit at time of writing: `6b0d5a8`

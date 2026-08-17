@@ -32,6 +32,13 @@ const ANIM_ATTACK: StringName = &"attack"
 const ANIM_HIT: StringName = &"hit"
 const ANIM_DEATH: StringName = &"death"
 
+## Feel constants (2.9). Short enough to read as an impact rather than a state change.
+const HIT_FLASH_SEC: float = 0.12
+const HIT_FLASH_ALPHA: float = 0.75
+## Fraction of the corpse's life spent lying still before it starts sinking, so the death clip lands
+## before anything moves.
+const DISSOLVE_HOLD_FRACTION: float = 0.35
+
 enum State { IDLE, CHASE, TELL, ATTACK, RECOVER, DEAD }
 
 ## Host-only. Cosmetic consumers on every peer should watch `state` through the synchronizer instead.
@@ -49,6 +56,16 @@ var state: int = State.IDLE:
 
 var health: int = 0
 
+## Bumped by the host on every accepted hit. Replicated as a counter rather than as a "was hit" flag
+## because a flag that goes true and false again can land between two snapshots and be missed
+## entirely — a counter that changes is a hit, however many packets it took to arrive (2.9).
+var hit_counter: int = 0:
+	set(value):
+		var jumped: bool = value > hit_counter
+		hit_counter = value
+		if jumped:
+			_react_to_hit()
+
 var _target_peer: int = 0
 var _phase_remaining: float = 0.0
 var _corpse_remaining: float = 0.0
@@ -59,9 +76,19 @@ var _anim: AnimationPlayer
 var _gravity: float = 9.8
 var _nav_ready: bool = false
 
+## Client-local hit/death feedback (2.9). Runs on EVERY peer, including the host's own copy, and is
+## never networked beyond the two replicated values that trigger it — §2.2's last row.
+var _flash_remaining: float = 0.0
+var _flash_material: StandardMaterial3D
+var _dissolve_elapsed: float = 0.0
+var _visual_rest_y: float = 0.0
+
 
 func _ready() -> void:
 	set_multiplayer_authority(NetConfig.HOST_PEER_ID)
+	# Feedback is presentation, so it runs everywhere — a client that only saw the host's physics
+	# would see a crawler die with no reaction at all.
+	set_process(true)
 	add_to_group(ENEMY_GROUP)
 	add_to_group(DAMAGEABLE_GROUP)
 	_gravity = float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
@@ -95,6 +122,7 @@ func host_apply_damage(amount: int, instigator_peer_id: int) -> bool:
 		return false
 
 	health = maxi(health - amount, 0)
+	hit_counter += 1
 	# Being hit does not interrupt a committed attack. An enemy whose swing can be cancelled by any
 	# chip of damage cannot threaten a group, and DESIGN.md §6's readable telegraph only means
 	# anything if the thing it telegraphs actually arrives.
@@ -305,6 +333,7 @@ func _build_visual() -> void:
 	if _visual == null:
 		return
 	_visual.name = VISUAL_NODE
+	_visual_rest_y = _visual.position.y
 	add_child(_visual)
 	var players: Array[Node] = _visual.find_children("*", "AnimationPlayer", true, false)
 	if not players.is_empty():
@@ -332,7 +361,9 @@ func _confirm_nav_map() -> void:
 
 func _build_synchronizer() -> void:
 	var config := SceneReplicationConfig.new()
-	for property: NodePath in [^".:position", ^".:rotation:y", ^".:state", ^".:health"]:
+	for property: NodePath in [
+		^".:position", ^".:rotation:y", ^".:state", ^".:health", ^".:hit_counter"
+	]:
 		config.add_property(property)
 		config.property_set_spawn(property, true)
 		config.property_set_replication_mode(
@@ -350,6 +381,69 @@ func _build_synchronizer() -> void:
 	_sync.set_multiplayer_authority(NetConfig.HOST_PEER_ID)
 	NetInterest.configure(_sync, self, NetInterest.Class.ENEMY)
 	add_child(_sync)
+
+
+# ── Feedback (client-local, every peer — never networked) ─────────────────────────────────────────
+
+
+func _process(delta: float) -> void:
+	_tick_flash(delta)
+	_tick_dissolve(delta)
+
+
+## A hit with no reaction reads as a hit that did not land. This is the cheap half of that: the
+## `hit` clip, plus a brief white overlay so a connect is visible even when the clip is masked by a
+## committed attack.
+func _react_to_hit() -> void:
+	_flash_remaining = HIT_FLASH_SEC
+	if _anim != null and state != State.DEAD and _anim.has_animation(String(ANIM_HIT)):
+		if state != State.TELL and state != State.ATTACK:
+			_anim.play(String(ANIM_HIT))
+
+
+func _tick_flash(delta: float) -> void:
+	if _visual == null:
+		return
+	if _flash_remaining <= 0.0:
+		return
+	_flash_remaining = maxf(_flash_remaining - delta, 0.0)
+	var strength: float = _flash_remaining / HIT_FLASH_SEC
+	_apply_overlay(Color(1.0, 1.0, 1.0, strength * HIT_FLASH_ALPHA))
+	if _flash_remaining <= 0.0 and _dissolve_elapsed <= 0.0:
+		_clear_overlay()
+
+
+## Stands in for a ragdoll. The corpse sinks and fades over its remaining time instead of blinking
+## out, which is what makes a kill read as finished rather than as a despawn bug. Deliberately not a
+## shader: a dissolve shader on an imported GLB means touching its materials, and this reads well at
+## this art scale for a fraction of the work.
+func _tick_dissolve(delta: float) -> void:
+	if state != State.DEAD or _visual == null or definition == null:
+		return
+	_dissolve_elapsed += delta
+	var total: float = maxf(definition.corpse_seconds, 0.001)
+	var progress: float = clampf(_dissolve_elapsed / total, 0.0, 1.0)
+	# Held still until the death clip has had its moment, then sunk.
+	var sink: float = smoothstep(DISSOLVE_HOLD_FRACTION, 1.0, progress)
+	_visual.position.y = _visual_rest_y - sink * (definition.height_m + 0.35)
+	_apply_overlay(Color(0.05, 0.06, 0.05, sink * 0.85))
+
+
+func _apply_overlay(colour: Color) -> void:
+	if _flash_material == null:
+		_flash_material = StandardMaterial3D.new()
+		_flash_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_flash_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_flash_material.albedo_color = colour
+	for node: Node in _visual.find_children("*", "MeshInstance3D", true, false):
+		(node as MeshInstance3D).material_overlay = _flash_material
+
+
+func _clear_overlay() -> void:
+	if _visual == null:
+		return
+	for node: Node in _visual.find_children("*", "MeshInstance3D", true, false):
+		(node as MeshInstance3D).material_overlay = null
 
 
 # ── Presentation (client-local, every peer) ───────────────────────────────────────────────────────
