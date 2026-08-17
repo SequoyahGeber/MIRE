@@ -128,15 +128,24 @@ func _check_atmosphere(scene: Node3D) -> void:
 		fog_volumes.all(func(volume: FogVolume) -> bool: return volume.material is FogMaterial),
 		"all fog pockets have local FogMaterials"
 	)
-	check(cloud_deck != null and cloud_deck.get_child_count() == 2, "two-layer cloud deck exists")
-	if cloud_deck != null:
-		var lower_clouds := cloud_deck.get_node_or_null(^"LowerClouds") as MeshInstance3D
-		var upper_clouds := cloud_deck.get_node_or_null(^"UpperClouds") as MeshInstance3D
+	check(
+		fog_volumes.all(func(volume: FogVolume) -> bool: return (volume.material as FogMaterial).density >= 0.05),
+		"localized fog is dense enough to remain visible"
+	)
+	var cloud_clusters := get_nodes_in_group(&"low_poly_cloud")
+	var cloud_puffs := get_nodes_in_group(&"low_poly_cloud_puff")
+	check(
+		cloud_deck != null and cloud_deck.has_method("rebuild_clouds"),
+		"faceted cloud field controller exists"
+	)
+	check(cloud_clusters.size() == 12, "twelve low-poly cloud clusters exist (%d)" % cloud_clusters.size())
+	check(cloud_puffs.size() >= 84, "cloud field contains at least 84 overlapping mesh puffs (%d)" % cloud_puffs.size())
+	if not cloud_puffs.is_empty():
+		var first_puff := cloud_puffs[0] as MeshInstance3D
 		check(
-			lower_clouds != null and upper_clouds != null
-			and lower_clouds.get_active_material(0) is ShaderMaterial
-			and upper_clouds.get_active_material(0) is ShaderMaterial,
-			"both cloud layers use the procedural cloud shader"
+			first_puff != null and first_puff.mesh is ArrayMesh
+			and first_puff.get_active_material(0) is StandardMaterial3D,
+			"cloud puffs use faceted geometry and a standard material"
 		)
 	if world_environment == null or world_environment.environment == null or sun == null:
 		return

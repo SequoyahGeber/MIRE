@@ -134,9 +134,10 @@ basin, two ridge terraces, five traversable ramps, a closed boundary, loot/picku
 the crawler nest marker. Rebuild with `tools/mapgen/hollow_layout.py` then
 `tools/blender/build_playtest_hollow.py`; verify with `tools/playtest_hollow_check.gd`. Static map
 collision remains client-local; harvesting, inventory, loot, enemies, damage, and mutation remain
-host-authoritative. `world/environment/playtest_atmosphere.gd` controls its physical sky, sun, two
-procedural cloud layers, and localized volumetric light shafts. Blanket fog is disabled; the only
-fog volumes are Mire haze, forest-floor mist, and a thin ruins layer. The optional local clock
+host-authoritative. `world/environment/playtest_atmosphere.gd` controls its physical sky, sun, and
+localized volumetric light shafts; `world/environment/low_poly_clouds.gd` builds deterministic,
+faceted mesh-cloud clusters that drift locally. Blanket fog is disabled; the only readable fog
+volumes are Mire haze, forest-floor mist, and a thin ruins layer. The optional local clock
 defaults off; task 2.11 must drive `set_time_of_day()` from replicated host time rather than letting
 peers advance it independently.
 

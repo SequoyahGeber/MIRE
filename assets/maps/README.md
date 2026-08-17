@@ -36,10 +36,11 @@ Editable visual source: `assets/source/playtest_hollow.blend`. Runnable Godot sc
 `world/gen/playtest_hollow.gd`; none of this map owns harvesting, inventory, loot, enemy, damage,
 or multiplayer authority.
 
-The scene's presentation layer uses a physical sky, a two-layer procedural cloud deck, and a
-shadowed directional sun. Open routes remain clear: volumetric fog is authored only in three local
-pockets — purple Mire haze, light forest-floor mist, and a thin ruins layer — where it can catch the
-sun as light shafts. Runtime tuning lives in `world/environment/playtest_atmosphere.gd`; cloud
-shaping lives in `world/environment/cloud_deck.gdshader`. The optional local clock is off by default;
-call `set_time_of_day()` from the future host-authoritative day/night system rather than independently
+The scene's presentation layer uses a physical sky, a field of deterministic faceted mesh clouds,
+and a shadowed directional sun. Open routes and the camp remain clear: readable volumetric fog is
+authored only in three local pockets — purple Mire haze, light forest-floor mist, and a thin ruins
+layer — where it can catch the sun as light shafts. Runtime tuning lives in
+`world/environment/playtest_atmosphere.gd`; cloud construction and drift live in
+`world/environment/low_poly_clouds.gd`. The optional local clock is off by default; call
+`set_time_of_day()` from the future host-authoritative day/night system rather than independently
 advancing time on each peer.

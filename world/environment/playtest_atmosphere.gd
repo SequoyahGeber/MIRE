@@ -16,7 +16,7 @@ extends Node
 var _environment: Environment
 var _sky_material: PhysicalSkyMaterial
 var _local_fog_materials: Array[FogMaterial] = []
-var _local_fog_densities: Array[float] = [0.028, 0.01, 0.008]
+var _local_fog_densities: Array[float] = [0.24, 0.07, 0.09]
 
 
 func _ready() -> void:
