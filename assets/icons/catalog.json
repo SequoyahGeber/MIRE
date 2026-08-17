@@ -1,0 +1,242 @@
+[
+  {
+    "id": "log",
+    "source": "assets/pickups/exports/pickup_log.glb",
+    "size_px": 256,
+    "azimuth_deg": 55.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 1.3792,
+    "source_polygons": 156
+  },
+  {
+    "id": "branch",
+    "source": "assets/pickups/exports/pickup_branch.glb",
+    "size_px": 256,
+    "azimuth_deg": 55.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 0.941,
+    "source_polygons": 100
+  },
+  {
+    "id": "fibre_bundle",
+    "source": "assets/pickups/exports/pickup_fibre_bundle.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.9963,
+    "source_polygons": 196
+  },
+  {
+    "id": "stone",
+    "source": "assets/pickups/exports/pickup_stone.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.8885,
+    "source_polygons": 60
+  },
+  {
+    "id": "flint",
+    "source": "assets/pickups/exports/pickup_flint.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.6359,
+    "source_polygons": 28
+  },
+  {
+    "id": "coal",
+    "source": "assets/pickups/exports/pickup_coal.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.7929,
+    "source_polygons": 80
+  },
+  {
+    "id": "iron_ore",
+    "source": "assets/pickups/exports/pickup_iron_ore.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 0.837,
+    "source_polygons": 100
+  },
+  {
+    "id": "iron_ingot",
+    "source": "assets/pickups/exports/pickup_iron_ingot.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.9441,
+    "source_polygons": 56
+  },
+  {
+    "id": "salvage_fragment",
+    "source": "assets/pickups/exports/pickup_salvage_fragment.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.6647,
+    "source_polygons": 168
+  },
+  {
+    "id": "berry",
+    "source": "assets/pickups/exports/pickup_berry.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 0.675,
+    "source_polygons": 460
+  },
+  {
+    "id": "mushroom",
+    "source": "assets/pickups/exports/pickup_mushroom.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.8218,
+    "source_polygons": 172
+  },
+  {
+    "id": "raw_meat",
+    "source": "assets/pickups/exports/pickup_raw_meat.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 0.9074,
+    "source_polygons": 128
+  },
+  {
+    "id": "coin",
+    "source": "assets/pickups/exports/pickup_coin.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 0.4139,
+    "source_polygons": 132
+  },
+  {
+    "id": "coin_stack",
+    "source": "assets/pickups/exports/pickup_coin_stack.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 0.6456,
+    "source_polygons": 528
+  },
+  {
+    "id": "wooden_axe",
+    "source": "assets/tools_weapons/exports/wooden_axe_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 20.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 1.6074,
+    "source_polygons": 696
+  },
+  {
+    "id": "stone_axe",
+    "source": "assets/tools_weapons/exports/stone_axe_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 20.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 1.6239,
+    "source_polygons": 736
+  },
+  {
+    "id": "wooden_pickaxe",
+    "source": "assets/tools_weapons/exports/wooden_pickaxe_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 12.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 1.3218,
+    "source_polygons": 706
+  },
+  {
+    "id": "stone_pickaxe",
+    "source": "assets/tools_weapons/exports/stone_pickaxe_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 12.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 1.3768,
+    "source_polygons": 746
+  },
+  {
+    "id": "iron_pickaxe",
+    "source": "assets/tools_weapons/exports/iron_pickaxe_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 12.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 1.4558,
+    "source_polygons": 672
+  },
+  {
+    "id": "cleaver",
+    "source": "assets/tools_weapons/exports/cleaver_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 18.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 1.2575,
+    "source_polygons": 406
+  },
+  {
+    "id": "skewer",
+    "source": "assets/tools_weapons/exports/skewer_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 24.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 1.568,
+    "source_polygons": 736
+  },
+  {
+    "id": "short_bow",
+    "source": "assets/tools_weapons/exports/short_bow_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 8.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 1.3126,
+    "source_polygons": 502
+  },
+  {
+    "id": "arrow",
+    "source": "assets/tools_weapons/exports/arrow_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 24.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 1.1713,
+    "source_polygons": 262
+  },
+  {
+    "id": "repair_hammer",
+    "source": "assets/tools_weapons/exports/repair_hammer_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 18.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 1.2238,
+    "source_polygons": 842
+  }
+]
