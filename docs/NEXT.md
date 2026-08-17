@@ -20,6 +20,7 @@ primitive workbench, the host validates a Stone Axe recipe and atomically exchan
 three stone for one axe; clients submit only the recipe id and request id. Walking up to that
 workbench now shows an `E USE WORKBENCH` prompt; E opens a panel listing the recipe with live
 have/need counts, and the craft button waits for the host's answer instead of predicting one.
+Enemies hunt: the Hollow Crawler chases, telegraphs for 0.4 s, commits, and dies to melee.
 Left-click swings: wind-up → commit → recovery, host-resolved, with hitstop, screenshake and a
 placeholder impact thud. Trees and rocks are the only damageable targets until enemies land in 2.10.
 **Last session:** 2026-08-16 — tasks 2.7 and 2.8 shipped. 2.7 added `CraftingUI`, the client-local

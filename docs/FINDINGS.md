@@ -95,6 +95,16 @@ no new numbers and no second component — one `NetInterp.attach_to(body)` per c
 it today. **Stays open until enemies (2.10) and props actually attach it**; the work is one line each
 plus whatever their spawn path is, not a system.
 
+**2026-08-17, dusk3 — the enemy half is done; props are what is left.** Task 2.10's `Enemy` names its
+code-built synchronizer `NetConfig.PLAYER_SYNC_NODE` and calls `NetInterp.attach_to(self)` on every
+peer that is not simulating it, so a 15 Hz enemy is smoothed by the same entity-agnostic component
+players use — no new numbers and no second implementation, exactly as this entry predicted.
+`tools/enemy_net_check.gd` asserts it over real ENet (`the client's copy is smoothed by NetInterp`).
+**Harvestables and physics props still do not attach one.** They replicate on-change and are mostly
+still, so they judder only when they actually move — which today is a harvest state swap, not motion.
+Closing this needs someone to decide whether on-change props are worth interpolating at all; that is
+a smaller question than the one this entry opened with.
+
 ---
 
 ### F-005 · R2's chunk benchmark excludes GPU upload cost

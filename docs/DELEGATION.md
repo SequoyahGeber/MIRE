@@ -94,6 +94,45 @@ outline with per-point bevel *distances*, which is how a head gets a square poll
 and `swept_shaft()` (a tube along a polyline with a radius per point, which is how hafts get taper and
 an oval section).
 
+**Task 2.10 ships Enemy v1, and 2.12's wave spawner drives it through `EnemyWorld`.** `EnemyWorld`
+is an autoload registered last, after `CombatService`. It loads `content/enemies/*.tres` into
+`get_def(id)` / `has_def(id)`, owns the code-built `MultiplayerSpawner` (D-023), and exposes the
+host-only seams task 2.12 needs: `host_spawn(def_id, position) -> Node3D`, `host_despawn_all()`,
+`live_enemies()`, `live_count()`, and the signals `enemy_spawned(enemy)` and
+`enemy_died(enemy_id, instigator_peer_id, position)`. **There is no client spawn RPC and there must
+not be one.**
+
+`Enemy` (`systems/enemies/enemy.gd`) is a `CharacterBody3D` whose every decision is the host's:
+target choice, pathing, turning, when the swing lands, health and death. Its state machine is
+`IDLE → CHASE → TELL → ATTACK → RECOVER`, plus `DEAD`, replicated as an int alongside position, yaw
+and health. Three behaviours are deliberate and worth not "fixing":
+
+- **The hit resolves at the END of the tell, against where the target is then.** That is what makes
+  backing out of a telegraphed swing work, and it is the entire point of DESIGN.md §6's 0.4 s.
+- **Damage does not interrupt a committed attack.** An enemy whose swing any chip of damage cancels
+  cannot threaten a group.
+- **Aggro has hysteresis** — `aggro_radius_m` to acquire, the wider `deaggro_radius_m` to drop —
+  because one radius makes a target on the boundary flicker every tick.
+
+Enemies join `&"damageable"` and implement `host_apply_damage()`, so **2.8's `CombatService` needed
+no change to make them hittable**. Damage going the other way is `EventBus.emit_enemy_attack_landed(
+enemy_id, peer_id, damage, world_position)` — player health does not exist yet, and **task 2.13 owns
+what an enemy hit costs**; subscribe rather than adding a health field to the player.
+
+Two things to know before building on it. **Navigation is baked once per session from the level's
+static collision** by `EnemyWorld.bake_navigation()`, and `nav_polygon_count()` reports the result;
+if it bakes zero polygons the enemy steers straight at its target instead of freezing, which is the
+right failure but is *not* pathing — check that number before blaming the AI. And the enemy's
+synchronizer is deliberately named `NetConfig.PLAYER_SYNC_NODE`, so **`NetInterp` smooths enemies
+with no change (F-004)**.
+
+Content is one authored `content/enemies/crawler.tres` over A-006's model. **Its `attack_tell_seconds`
+and `attack_seconds` are both 0.4 because the authored clips are** — changing either without
+re-authoring the clip desynchronises the telegraph from the hit. Checks:
+`tools/enemy_check.gd` (44 assertions, steps the state machine directly rather than sleeping) and
+`tools/enemy_net_check.gd` (two real ENet processes; its interesting assertions are the negative
+ones — the client's copy runs no physics).
+
 **Run-player identity is how host-owned state survives a reconnect (F-032, D-035).** An ENet client
 that rejoins gets a **new peer id**, so a system that keys state by peer id sees one player leave and
 a different one arrive. `NetSession` now mints an opaque token per run-player on the client hello,
