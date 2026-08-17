@@ -11,6 +11,8 @@ const ICON_DIR: String = "res://assets/icons/exports"
 const ITEM_DIR: String = "res://content/items"
 const TOOL_EXPORTS: String = "res://assets/tools_weapons/exports"
 const EXPECTED_SIZE: int = 256
+## A floor, not a target: an empty or unparsed catalog must not read as a pass.
+const MINIMUM_ICONS: int = 24
 
 var _failures: int = 0
 
@@ -21,7 +23,21 @@ func _initialize() -> void:
 
 func _run() -> void:
 	var catalog := _load_catalog()
-	_check(catalog.size() == 24, "icon catalog lists 24 icons (got %d)" % catalog.size())
+	# Derived from the directory, not hard-coded. The literal 24 here went red the
+	# moment A-021S rendered a 25th icon, which is a check failing at the one thing it
+	# was meant to allow — adding an icon. What actually matters is that the catalog
+	# and the exports agree exactly, in both directions.
+	_check(catalog.size() >= MINIMUM_ICONS, "icon catalog is populated (got %d)" % catalog.size())
+	var catalogued: Dictionary = {}
+	for entry: Dictionary in catalog:
+		var id: String = entry.get("id", "")
+		_check(not catalogued.has(id), "icon catalog lists %s exactly once" % id)
+		catalogued[id] = true
+	for file_name: String in DirAccess.get_files_at(ICON_DIR):
+		if not file_name.ends_with(".png"):
+			continue
+		var id := file_name.trim_prefix("icon_").trim_suffix(".png")
+		_check(catalogued.has(id), "exported icon_%s.png has a catalog record" % id)
 
 	for entry: Dictionary in catalog:
 		var id: String = entry.get("id", "")
@@ -78,7 +94,7 @@ func _check_items() -> void:
 func _check_tool_scenes() -> void:
 	# The refreshed A-004 exports have to still instantiate: the rebuild changed
 	# every mesh in them.
-	for design: String in ["wooden_axe", "stone_axe", "iron_pickaxe", "cleaver", "short_bow"]:
+	for design: String in ["wooden_axe", "stone_axe", "iron_pickaxe", "cleaver", "short_bow", "iron_sword"]:
 		for presentation: String in ["world", "viewmodel"]:
 			var path := "%s/%s_%s.glb" % [TOOL_EXPORTS, design, presentation]
 			var packed := load(path) as PackedScene

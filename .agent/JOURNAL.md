@@ -1236,3 +1236,33 @@ Viewmodel system: entities/player/viewmodel.gd renders the selected hotbar item 
 Files: `systems/inventory/item_def.gd`, `entities/player/viewmodel.gd`, `entities/player/viewmodel.gd.uid`, `entities/player/player_controller.gd`, `autoload/combat_service.gd`, `tools/setup_tool_content.gd`, `tools/setup_crafting_content.gd`, `tools/viewmodel_check.gd`, `tools/viewmodel_check.gd.uid`, `content/items/stone_axe.tres`, `content/items/wooden_axe.tres`, `content/items/wooden_pickaxe.tres`, `content/items/stone_pickaxe.tres`, `content/items/iron_pickaxe.tres`, `content/items/cleaver.tres`, `content/items/skewer.tres`, `content/items/short_bow.tres`, `content/items/arrow.tres`, `content/items/repair_hammer.tres`
 
 Commit at time of writing: `0010110`
+
+---
+
+### HANDOFF · 2.1d · reed16 · 2026-08-17T17:01:21+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-021S (iron sword) is DONE and shipped; 2.1d stays open with A-009 (extraction ship set, 15 models) promoted to the single NEXT row.
+
+WHAT LANDED. iron_sword_world.glb + iron_sword_viewmodel.glb (421 polys / 1,000 tris, 0.510 x 0.114 x 1.724 m), icon_iron_sword.png, content/items/iron_sword.tres and content/weapons/iron_sword.tres. Diamond-section blade with a fuller, bright ground edges butted onto the core, upswept crossguard with brass quillon caps, brass ecusson, leather grip with cord risers, faceted wheel pommel.
+
+VERIFIED, WITH NUMBERS. Two clean rebuilds: 22/22 GLBs and catalog byte-identical. GLB 2.0 validation 22/22 — catalog exact, no orphans/duplicates/missing, ground origin, horizontally centred, embedded materials, TRIANGLES only, no skins/animations/cameras. Six-azimuth orbit render of the sword plus a blade-section close-up; three previews re-inspected. Fresh Godot 4.7.1 import clean. tools/item_icons_check.gd PASS (25 icons). And in the RUNNING GAME at 1280x720: granted, held in the selected hotbar slot, viewmodel mesh instantiated, swung through idle/wind-up/commit/recovery — 14/14 checks, zero failures.
+
+FOUR TRAPS THIS BATCH PAID FOR.
+1. ground_profile() is wrong for a blade. It insets walls toward the profile CENTROID, so on a metre-long blade the pull near the point is almost entirely downward and the section stays a square wall where the edge should be. Added lofted(name, rings, mat, apex) — explicit cross-sections, optional apex fan. Use it for anything much longer than it is wide.
+2. Rendered PNGs can never be byte-identical (F-042). Blender stamps RenderTime/Date (EEVEE) and cycles.ViewLayer.total_time (Cycles) into tEXt chunks. Re-running the icon pipeline unchanged marked all 24 existing icons modified in git; decompressing IDAT showed 24/24 pixel-identical, 0 changed. Compare IDAT, never file hashes. Now in the verification contract.
+3. Proportions have to be judged by looking. First pass had a 0.10 m half-width blade and read as a gladius; the quillon caps sat at a guard width I had already shrunk and rendered as two brass nubs floating in mid-air. Both were invisible in the grid preview and obvious in the orbit render. Render an orbit before believing a silhouette.
+4. Directory claims do not work. 'agent check' reported every file under my claimed assets/tools_weapons and assets/icons as unclaimed until I re-claimed each exact path — F-034 covers this for 'agent ship' and it applies to check too. Claim exact paths for assets.
+
+WHAT IS NOT DONE, AND IS NOT MINE.
+- F-043: nothing puts the sword in a player's hand. core/dev/dev_loadout.gd lists the six A-004 tools and not the sword, so only 'give iron_sword' reaches it. One line, but that file is task 2.14's and what a run starts with is 2.9/3.x's design call.
+- The WeaponDef numbers (0.19/0.11/0.26 s, 2.9 m, 95 deg, 6 damage) are placeholders I chose to sit between the cleaver and the axe. Task 2.9 owns them; its gate is still unpassed (F-036).
+- grip_scale 0.32 / offset (0.27, -0.30, -0.48) was tuned by eye at 1280x720. Stills cannot show whether the blade clips the near plane at the commit, where the swing drives it down past the camera. That needs motion.
+- tools/item_icons_check.gd had a hard-coded 24 that my 25th icon turned red. Fixed properly: it now derives the count from the exports directory and asserts catalog<->files agree both ways, so the next batch does not hit it.
+
+FOR A-009. Read assets/tools_weapons/README.md for the lofted() rationale, and A-005's anchor_parts note in the tracker before building the ship's repair stages — a state set that shares a hull needs the shared geometry as its anchor, not each state's own bounds.
+
+Files: `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `tools/blender/build_tool_weapon_set.py`, `tools/blender/render_item_icons.py`, `assets/source/tool_weapon_set.blend`, `assets/tools_weapons`, `assets/icons`, `content/items/iron_sword.tres`, `content/weapons/iron_sword.tres`, `tools/item_icons_check.gd`, `docs/FINDINGS.md`, `assets/tools_weapons/README.md`, `assets/icons/catalog.json`, `assets/icons/preview/item_icons_sheet.png`, `assets/icons/exports/icon_iron_sword.png`, `assets/tools_weapons/catalog.json`, `assets/tools_weapons/preview/tools_weapons_scale_preview.png`, `assets/tools_weapons/preview/tools_weapons_viewmodel_preview.png`, `assets/tools_weapons/preview/tools_weapons_world_preview.png`, `assets/tools_weapons/exports/iron_sword_world.glb`, `assets/tools_weapons/exports/iron_sword_viewmodel.glb`
+
+Commit at time of writing: `423fb8f`

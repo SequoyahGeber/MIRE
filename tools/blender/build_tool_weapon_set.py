@@ -1,9 +1,9 @@
-"""Build MIRE's paired world/viewmodel tool and weapon set (A-004, refreshed by A-004R).
+"""Build MIRE's paired world/viewmodel tool and weapon set (A-004, refreshed by A-004R, extended by A-021S).
 
 Run with:
   Blender --background --python tools/blender/build_tool_weapon_set.py
 
-Ten shared designs produce 20 portable GLBs. World and viewmodel exports use
+Eleven shared designs produce 22 portable GLBs. World and viewmodel exports use
 the same geometry and materials so their silhouettes cannot drift.
 
 A-004R replaced the original flat-extrusion construction. Heads are now built as
@@ -12,6 +12,13 @@ rings — so a blade actually tapers to its edge and a poll actually stays squar
 Hafts are swept oval shafts with per-point radii instead of straight cylinders.
 Overall dimensions stay within a few centimetres of A-004 so grip transforms
 authored against the old exports still frame correctly.
+
+A-021S added the iron sword and one new primitive with it. A ground profile insets
+its walls *toward the profile's centroid*, which is right for a head that is about
+as tall as it is long, and wrong for a blade a metre long: near the point the pull
+is almost entirely downward, so the section there stays a square wall instead of
+grinding to an edge. A sword is therefore lofted through explicit cross-sections
+(`lofted`) rather than profiled.
 """
 
 from __future__ import annotations
@@ -42,8 +49,13 @@ DESIGNS = [
     "short_bow",
     "arrow",
     "repair_hammer",
+    "iron_sword",
 ]
 EXPECTED_NAMES = [f"{design}_{presentation}" for design in DESIGNS for presentation in ("world", "viewmodel")]
+#: Preview grid. Eleven designs no longer fit the original five columns in two rows.
+PREVIEW_COLUMNS = 6
+PREVIEW_COLUMN_SPACING = 2.75
+PREVIEW_ROW_SPACING = 3.4
 
 
 # ---------------------------------------------------------------------------
@@ -331,6 +343,53 @@ def swept_shaft(
     if capped:
         faces.append(tuple(range(sides - 1, -1, -1)))
         faces.append(tuple(range((count - 1) * sides, count * sides)))
+    return mesh_object(name, vertices, faces, mat)
+
+
+def lofted(
+    name: str,
+    rings: list[list[tuple[float, float, float]]],
+    mat: bpy.types.Material,
+    apex: tuple[float, float, float] | None = None,
+    cap_start: bool = True,
+) -> bpy.types.Object:
+    """A solid lofted through explicit cross-sections, optionally closing on a point.
+
+    `swept_shaft` sweeps one circular section along a path; a blade needs a
+    *changing* section — broad and thin at the shoulder, narrow and stiff near the
+    point, with a fuller channel down the middle — so the sections are given
+    outright. `apex` fans the last ring into a single vertex, which is what makes a
+    point a point rather than a small flat.
+    """
+    sides = len(rings[0])
+    vertices: list[tuple[float, float, float]] = []
+    for ring in rings:
+        if len(ring) != sides:
+            raise ValueError(f"{name}: every ring needs {sides} points, got {len(ring)}")
+        vertices.extend(ring)
+
+    faces: list[tuple[int, ...]] = []
+    for index in range(len(rings) - 1):
+        for side in range(sides):
+            following = (side + 1) % sides
+            faces.append(
+                (
+                    index * sides + side,
+                    index * sides + following,
+                    (index + 1) * sides + following,
+                    (index + 1) * sides + side,
+                )
+            )
+    if cap_start:
+        faces.append(tuple(range(sides - 1, -1, -1)))
+    last = (len(rings) - 1) * sides
+    if apex is None:
+        faces.append(tuple(range(last, last + sides)))
+    else:
+        vertices.append(apex)
+        tip = len(vertices) - 1
+        for side in range(sides):
+            faces.append((last + side, last + (side + 1) % sides, tip))
     return mesh_object(name, vertices, faces, mat)
 
 
@@ -894,6 +953,174 @@ def build_repair_hammer(mats: dict[str, bpy.types.Material]) -> None:
         wrap_band(f"Repair_Band_{index + 1}", haft, haft_radii, t, 0.034, mats["red"], 1.15, 0.82, 9)
 
 
+SWORD_GRIP = [(0.0, 0.0, 0.115), (0.0, 0.0, 0.245), (0.0, 0.0, 0.395), (0.0, 0.0, 0.548)]
+SWORD_GRIP_RADII = [0.048, 0.040, 0.040, 0.050]
+#: One blade cross-section per row: (height, half width, half thickness, fuller depth).
+#: The fuller is a fraction of the half thickness, so it shallows out toward the point
+#: the way a real one stops short of it.
+#:
+#: The width barely moves over the first 60% and then all the taper happens at once.
+#: A blade that narrows evenly from the guard is a leaf, and a leaf reads as a dagger
+#: no matter how long it is — the first pass here was 0.10 m at the shoulder and
+#: looked like a gladius beside the axes.
+SWORD_STATIONS = [
+    (0.600, 0.072, 0.028, 0.52),
+    (0.720, 0.074, 0.027, 0.52),
+    (0.920, 0.072, 0.026, 0.53),
+    (1.110, 0.069, 0.024, 0.55),
+    (1.290, 0.065, 0.022, 0.58),
+    (1.430, 0.058, 0.019, 0.64),
+    (1.540, 0.046, 0.016, 0.74),
+    (1.618, 0.030, 0.013, 0.86),
+    (1.664, 0.016, 0.010, 0.94),
+]
+SWORD_TIP = (0.0, 0.0, 1.716)
+#: Share of the half width held by the dark body. The rest is the bright ground edge,
+#: which is its own closed solid butted onto the body's ridge — see the axes.
+SWORD_CORE = 0.74
+#: Where the flat meets the edge bevel, and where the fuller wall starts, both as a
+#: share of the core's half width.
+SWORD_SHOULDER = 0.72
+SWORD_FULLER = 0.40
+
+
+def _blade_ring(z: float, half_width: float, half_thickness: float, fuller: float) -> list[tuple[float, float, float]]:
+    """The blade's dark core: a flat either side of a fuller running down the middle."""
+    core = half_width * SWORD_CORE
+    shoulder = core * SWORD_SHOULDER
+    wall = core * SWORD_FULLER
+    channel = half_thickness * fuller
+    return [
+        (core, 0.0, z),
+        (shoulder, half_thickness, z),
+        (wall, channel, z),
+        (-wall, channel, z),
+        (-shoulder, half_thickness, z),
+        (-core, 0.0, z),
+        (-shoulder, -half_thickness, z),
+        (-wall, -channel, z),
+        (wall, -channel, z),
+        (shoulder, -half_thickness, z),
+    ]
+
+
+def _blade_edge_ring(z: float, half_width: float, half_thickness: float, side: float) -> list[tuple[float, float, float]]:
+    """One ground edge. Its inner faces sit exactly on the core's, so the two butt
+    along a seam instead of the bright material being a strip laid over the body."""
+    core = half_width * SWORD_CORE
+    return [
+        (side * core, 0.0, z),
+        (side * core * SWORD_SHOULDER, half_thickness, z),
+        (side * half_width, 0.0, z),
+        (side * core * SWORD_SHOULDER, -half_thickness, z),
+    ]
+
+
+def build_iron_sword(mats: dict[str, bpy.types.Material]) -> None:
+    lofted(
+        "Sword_Blade",
+        [_blade_ring(z, half_width, half_thickness, fuller) for z, half_width, half_thickness, fuller in SWORD_STATIONS],
+        mats["iron"],
+        apex=SWORD_TIP,
+    )
+    for index, side in enumerate((-1.0, 1.0)):
+        lofted(
+            f"Sword_Edge_{index + 1}",
+            [_blade_edge_ring(z, half_width, half_thickness, side) for z, half_width, half_thickness, _ in SWORD_STATIONS],
+            mats["iron_light"],
+            apex=SWORD_TIP,
+        )
+    # Quillons sweeping up toward the blade and flaring at the tips. Kept to half a
+    # metre tip to tip: a crossguard as wide as the axe head is wide reads as a
+    # crucifix, and the cross is the only silhouette this weapon has.
+    ground_profile(
+        "Sword_Guard",
+        [
+            (-0.235, 0.596),
+            (-0.180, 0.556),
+            (-0.086, 0.540),
+            (0.000, 0.536),
+            (0.086, 0.540),
+            (0.180, 0.556),
+            (0.235, 0.596),
+            (0.247, 0.642),
+            (0.178, 0.624),
+            (0.084, 0.606),
+            (0.000, 0.602),
+            (-0.084, 0.606),
+            (-0.178, 0.624),
+            (-0.247, 0.642),
+        ],
+        [0.020, 0.034, 0.044, 0.048, 0.044, 0.034, 0.020, 0.020, 0.034, 0.044, 0.048, 0.044, 0.034, 0.020],
+        [0.026, 0.014, 0.008, 0.006, 0.008, 0.014, 0.026, 0.026, 0.014, 0.008, 0.006, 0.008, 0.014, 0.026],
+        mats["iron"],
+        center=(0.0, 0.588),
+    )
+    # Brass end caps on the quillons. These sat at the old guard's width on the first
+    # pass and rendered as two nubs floating in space either side of it — a detail
+    # placed by remembered numbers rather than by the numbers actually in the file.
+    for index, side in enumerate((-1.0, 1.0)):
+        cone(
+            f"Sword_Quillon_Cap_{index + 1}",
+            0.030,
+            0.023,
+            0.028,
+            (side * 0.241, 0.0, 0.619),
+            mats["brass"],
+            6,
+            (0.0, math.radians(90), 0.0),
+        )
+    # Écusson: the brass shield where the blade enters the guard. Proud of the blade
+    # faces and narrower than it, so it covers the joint without eating the edges.
+    ground_profile(
+        "Sword_Escutcheon",
+        [(-0.050, 0.575), (0.050, 0.575), (0.058, 0.630), (0.038, 0.692), (0.000, 0.712), (-0.038, 0.692), (-0.058, 0.630)],
+        [0.036, 0.036, 0.040, 0.036, 0.032, 0.036, 0.040],
+        [0.008, 0.008, 0.012, 0.014, 0.016, 0.014, 0.012],
+        mats["brass"],
+        center=(0.0, 0.632),
+    )
+    # Waisted grip, flattened across the blade's plane so it reads as something you
+    # could index the edge from rather than a dowel.
+    swept_shaft("Sword_Grip", SWORD_GRIP, SWORD_GRIP_RADII, mats["leather"], 10, 0.62)
+    for index, (low, high, radius) in enumerate(((0.112, 0.158, 0.056), (0.508, 0.554, 0.058))):
+        swept_shaft(
+            f"Sword_Ferrule_{index + 1}",
+            [(0.0, 0.0, low), (0.0, 0.0, (low + high) * 0.5), (0.0, 0.0, high)],
+            [radius * 0.88, radius, radius * 0.88],
+            mats["brass"],
+            10,
+            0.62,
+        )
+    for index in range(5):
+        wrap_band(
+            f"Sword_Riser_{index + 1}",
+            SWORD_GRIP,
+            SWORD_GRIP_RADII,
+            0.20 + 0.60 * index / 4,
+            0.030,
+            mats["wrap"],
+            1.13,
+            0.62,
+            8,
+        )
+    # Wheel pommel, faceted rather than smooth, with a brass boss on each cheek and
+    # the peened tang end underneath — which is also what the sword stands on.
+    ground_profile(
+        "Sword_Pommel",
+        [
+            (math.cos(math.tau * index / 10) * 0.072, 0.084 + math.sin(math.tau * index / 10) * 0.072)
+            for index in range(10)
+        ],
+        0.038,
+        0.021,
+        mats["iron_dark"],
+        center=(0.0, 0.084),
+    )
+    add_rivets(mats, ((0.0, 0.084),), 0.038, "brass", 0.028)
+    cone("Sword_Pommel_Button", 0.028, 0.022, 0.028, (0.0, 0.0, 0.006), mats["brass"], 6)
+
+
 # ---------------------------------------------------------------------------
 # Assembly, catalog, previews
 # ---------------------------------------------------------------------------
@@ -901,6 +1128,14 @@ def build_repair_hammer(mats: dict[str, bpy.types.Material]) -> None:
 
 def look_at(obj: bpy.types.Object, target: tuple[float, float, float]) -> None:
     obj.rotation_euler = (Vector(target) - obj.location).to_track_quat("-Z", "Y").to_euler()
+
+
+def grid_position(design_index: int) -> tuple[float, float]:
+    """Where a design stands in the preview grid, centred on the camera."""
+    column = design_index % PREVIEW_COLUMNS
+    row = design_index // PREVIEW_COLUMNS
+    x = (column - (PREVIEW_COLUMNS - 1) * 0.5) * PREVIEW_COLUMN_SPACING
+    return x, 1.8 - row * PREVIEW_ROW_SPACING
 
 
 def move_to_collection(objects: list[bpy.types.Object], collection: bpy.types.Collection) -> None:
@@ -1074,20 +1309,17 @@ def main() -> None:
         "short_bow": lambda: build_short_bow(mats),
         "arrow": lambda: build_arrow(mats),
         "repair_hammer": lambda: build_repair_hammer(mats),
+        "iron_sword": lambda: build_iron_sword(mats),
     }
     records: list[dict] = []
     for design_index, design in enumerate(DESIGNS):
         for presentation in ("world", "viewmodel"):
             name = f"{design}_{presentation}"
-            column = design_index % 5
-            row = design_index // 5
-            if presentation == "world":
-                location = ((column - 2) * 2.75, 1.8 - row * 3.4, 0.0)
-            else:
-                location = ((column - 2) * 2.75, 26.0 + row * 3.4, 0.0)
+            x, y = grid_position(design_index)
+            location = (x, y, 0.0) if presentation == "world" else (x, y + 24.0, 0.0)
             records.append(create_asset(name, design, presentation, builders[design], location))
     if [record["name"] for record in records] != EXPECTED_NAMES:
-        raise RuntimeError("A-004 specification and export order diverged")
+        raise RuntimeError("tool/weapon specification and export order diverged")
 
     catalog = [
         {
@@ -1110,9 +1342,9 @@ def main() -> None:
     scene, camera, preview_collection = setup_render(mats)
     for record in records:
         set_visible(record, record["presentation"] == "world")
-    camera.data.ortho_scale = 14.6
-    camera.location = (0.0, -16.0, 6.4)
-    look_at(camera, (0.0, 0.0, 0.80))
+    camera.data.ortho_scale = 17.4
+    camera.location = (0.0, -16.0, 6.6)
+    look_at(camera, (0.0, 0.0, 0.85))
     scene.render.filepath = str(PREVIEW_DIR / "tools_weapons_world_preview.png")
     bpy.ops.render.render(write_still=True)
 
@@ -1123,14 +1355,12 @@ def main() -> None:
     for record in records:
         set_visible(record, record["presentation"] == "viewmodel")
         if record["presentation"] == "viewmodel":
-            index = DESIGNS.index(record["design"])
-            column = index % 5
-            row = index // 5
-            record["root"].location = ((column - 2) * 2.75, 1.8 - row * 3.4, 0.0)
+            x, y = grid_position(DESIGNS.index(record["design"]))
+            record["root"].location = (x, y, 0.0)
             record["root"].rotation_euler = (math.radians(-12), math.radians(18), math.radians(-10))
-    camera.data.ortho_scale = 14.6
-    camera.location = (0.0, -16.0, 6.4)
-    look_at(camera, (0.0, 0.0, 0.82))
+    camera.data.ortho_scale = 17.4
+    camera.location = (0.0, -16.0, 6.6)
+    look_at(camera, (0.0, 0.0, 0.87))
     scene.render.filepath = str(PREVIEW_DIR / "tools_weapons_viewmodel_preview.png")
     bpy.ops.render.render(write_still=True)
 
@@ -1139,6 +1369,7 @@ def main() -> None:
         "skewer_world": (-0.8, 0.2, 0.0),
         "short_bow_world": (1.6, 0.2, 0.0),
         "cleaver_world": (3.7, 0.2, 0.0),
+        "iron_sword_world": (5.7, 0.2, 0.0),
     }
     for record in records:
         set_visible(record, record["name"] in showcase_positions)

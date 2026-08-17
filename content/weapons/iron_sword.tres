@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="WeaponDef" format=3]
+
+[ext_resource type="Script" path="res://systems/combat/weapon_def.gd" id="1_swrdw"]
+
+[resource]
+script = ExtResource("1_swrdw")
+item_id = &"iron_sword"
+display_name = "Iron Sword"
+wind_up_seconds = 0.19
+commit_seconds = 0.11
+recovery_seconds = 0.26
+range_m = 2.9
+arc_degrees = 95.0
+vertical_reach_m = 2.4
+damage = 6
+hitstop_seconds = 0.075
+shake_magnitude = 0.105
+shake_duration = 0.2

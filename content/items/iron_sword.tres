@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_swrdi"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_iron_sword.png" id="2_swrdc"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/iron_sword_world.glb" id="3_swrdw"]
+[ext_resource type="PackedScene" path="res://assets/tools_weapons/exports/iron_sword_viewmodel.glb" id="4_swrdv"]
+
+[resource]
+script = ExtResource("1_swrdi")
+id = &"iron_sword"
+display_name = "Iron Sword"
+description = "Finally, something that is only for hitting things."
+icon = ExtResource("2_swrdc")
+category = 2
+stack_size = 1
+world_model = ExtResource("3_swrdw")
+view_model = ExtResource("4_swrdv")
+grip_offset = Vector3(0.27, -0.3, -0.48)
+grip_rotation_degrees = Vector3(-8, 168, 6)
+grip_scale = 0.32

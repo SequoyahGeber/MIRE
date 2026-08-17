@@ -363,10 +363,11 @@ version 4; crafting's request and confirmation RPCs make the current protocol ve
 Inventories are currently keyed to the transport peer id and released on `peer_left`; F-032 records
 the missing stable run-player identity required for task 1.7 auto-rejoin to preserve gameplay state.
 
-**Asset batches A-001 through A-008 are complete; A-009 is next.** Harvest states live under
-`assets/harvestables/` (12 GLBs), basic pickups under `assets/pickups/` (14 GLBs), the eight
-vertical-slice stations under `assets/crafting_stations/`, and ten tool/weapon designs under
-`assets/tools_weapons/` as 20 paired `*_world` and `*_viewmodel` exports. Each family has its own
+**Asset batches A-001 through A-008 plus A-004R, A-042a and A-021S are complete; A-009 is next.**
+Harvest states live under `assets/harvestables/` (12 GLBs), basic pickups under `assets/pickups/`
+(14 GLBs), the eight vertical-slice stations under `assets/crafting_stations/`, and eleven
+tool/weapon designs under `assets/tools_weapons/` as 22 paired `*_world` and `*_viewmodel` exports.
+Each family has its own
 catalog, previews, editable source, and deterministic generator. Pickups, stations, and tools are
 horizontally centred and ground-origin normalized. The paired tool exports deliberately share
 geometry and materials so Godot scenes can tune world and first-person transforms without silhouette
@@ -385,6 +386,24 @@ authority; the host owns those states. Sequoyah's supplied tree and rock were ad
 under `assets/environment_additions/` rather than counted in A-007. The next asset run takes the
 single `NEXT` row in `docs/ASSET_TRACKER.md` — currently A-009, the extraction ship set — and should
 use a separate generator per family.
+
+**A-021S added the iron sword, and the tool/weapon generator gained a primitive for it.**
+`lofted(name, rings, mat, apex)` in `tools/blender/build_tool_weapon_set.py` builds a solid through
+explicit cross-sections and optionally closes it on a point. Reach for it instead of
+`ground_profile()` whenever a shape is much longer than it is wide: a ground profile insets its walls
+toward the profile's *centroid*, so on a metre-long blade the pull near the point is almost entirely
+downward and leaves a square wall where the edge should be. The sword is the set's only design that
+spends real budget — 421 polygons / 1,000 triangles against 114–348 for the ten tools.
+
+A-021S is also the first batch to author its own content resources under D-031:
+`content/items/iron_sword.tres` and `content/weapons/iron_sword.tres`, written while a parallel
+session held the other nine item `.tres` files. The boundary that made that safe was claiming the two
+files by exact path, not by directory. The `WeaponDef` numbers (0.19 / 0.11 / 0.26 s, 2.9 m, 95°,
+6 damage) are placeholders chosen to sit between the cleaver and the axe — **task 2.9 owns them** and
+its gate is unpassed. `ItemDef.grip_scale` is 0.32 rather than the axes' 0.55 because the sword is
+1.72 m tall and at 0.55 its blade leaves the top of the screen; per-item grip data exists for exactly
+this. F-043 records that nothing puts the sword in a player's hand: it is not in
+`core/dev/dev_loadout.gd`, so only `give iron_sword` reaches it.
 
 **Environmental animation is automatic in `playtest_hollow`.** `world/gen/playtest_hollow.gd`
 creates the client-local `EnvironmentVfx` controller. It discovers grass, fern, reed and sedge mesh

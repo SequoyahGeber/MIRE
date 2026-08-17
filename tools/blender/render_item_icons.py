@@ -59,6 +59,7 @@ SOURCES: list[tuple[str, str]] = [
     ("short_bow", "tools_weapons/exports/short_bow_world.glb"),
     ("arrow", "tools_weapons/exports/arrow_world.glb"),
     ("repair_hammer", "tools_weapons/exports/repair_hammer_world.glb"),
+    ("iron_sword", "tools_weapons/exports/iron_sword_world.glb"),
 ]
 
 #: Yaw applied before framing, for assets whose default face is not their best one.
@@ -73,6 +74,9 @@ AZIMUTH: dict[str, float] = {
     "skewer": 24.0,
     "arrow": 24.0,
     "repair_hammer": 18.0,
+    # Enough to catch the crossguard's depth without turning the blade edge-on: a
+    # sword yawed much further is a line with a hilt.
+    "iron_sword": 22.0,
     "log": 55.0,
     "branch": 55.0,
 }

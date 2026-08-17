@@ -360,5 +360,41 @@
       "MIRE_Tool_Leather",
       "MIRE_Tool_Repair_Red"
     ]
+  },
+  {
+    "name": "iron_sword_world",
+    "design": "iron_sword",
+    "presentation": "world",
+    "width_m": 0.51,
+    "depth_m": 0.114,
+    "height_m": 1.724,
+    "mesh_parts": 19,
+    "polygons": 439,
+    "materials": [
+      "MIRE_Tool_Brass",
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Iron",
+      "MIRE_Tool_Iron_Dark",
+      "MIRE_Tool_Iron_Edge",
+      "MIRE_Tool_Leather"
+    ]
+  },
+  {
+    "name": "iron_sword_viewmodel",
+    "design": "iron_sword",
+    "presentation": "viewmodel",
+    "width_m": 0.51,
+    "depth_m": 0.114,
+    "height_m": 1.724,
+    "mesh_parts": 19,
+    "polygons": 439,
+    "materials": [
+      "MIRE_Tool_Brass",
+      "MIRE_Tool_Grip_Wrap",
+      "MIRE_Tool_Iron",
+      "MIRE_Tool_Iron_Dark",
+      "MIRE_Tool_Iron_Edge",
+      "MIRE_Tool_Leather"
+    ]
   }
 ]

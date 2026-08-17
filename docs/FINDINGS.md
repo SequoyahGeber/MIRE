@@ -446,6 +446,49 @@ precondition instead of asserting it once), or 15 s is simply not enough when se
 are competing for the machine. Prefer fixing the ordering over raising the timeout — a longer timeout
 hides the race rather than removing it.
 
+### F-042 · Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one
+
+**Area:** asset pipeline · **Severity:** low · **Found:** 2026-08-17 by reed16 during 2.1d (A-021S)
+
+Blender writes non-deterministic metadata into every PNG it renders: `RenderTime` and `Date` `tEXt`
+chunks from EEVEE, `cycles.ViewLayer.total_time` from Cycles. The pixels are reproducible; the files
+are not, and never can be.
+
+The concrete failure is a false alarm that costs a session. A-021S added one icon to
+`render_item_icons.py`, which re-renders all of them, and `git status` came back with all 24
+pre-existing icons modified — against A-042a's recorded evidence that "two rebuilds [were]
+pixel-identical on every channel". Decompressing the `IDAT` chunks showed 24/24 pixel-identical and
+zero changed. An agent reading only the file hashes concludes the icon pipeline lost determinism and
+goes looking for a bug that is not there, or commits 24 meaningless binary diffs.
+
+The fix is a habit, not code: compare the decompressed `IDAT` stream, not the file. It is now written
+into the verification contract in `docs/ASSET_TRACKER.md`. A tool worth having, if this recurs: a
+small `tools/png_pixels_equal.py` that any batch can run.
+
+Second-order, and separate: EEVEE also jitters anti-aliasing on thin diagonal silhouettes between
+runs — the same instability that moved the icons to Cycles in A-042a. A-021S's viewmodel preview
+differed by 9 bytes in 4,992,780 with a maximum delta of 3/255, which is the noise floor rather than
+a rebuild that changed. The world and scale previews were exactly pixel-identical, so this only bites
+frames full of near-diagonal edges.
+
+### F-043 · The iron sword ships complete and nothing puts it in a player's hand
+
+**Area:** content/playability · **Severity:** medium · **Found:** 2026-08-17 by reed16 during 2.1d (A-021S)
+
+A-021S delivered `iron_sword` end to end: both GLBs, the icon, `content/items/iron_sword.tres` with
+a tuned grip, and `content/weapons/iron_sword.tres`. `Registry` loads all of it, and granting one by
+hand puts it in the hand and swings it. But the starting loadout in `core/dev/dev_loadout.gd` lists
+the six A-004 tools and not the sword, so in an actual session nobody ever holds it — the hero weapon
+of the vertical slice is reachable only through the `give iron_sword` console command.
+
+One line in that array fixes it. It was left alone deliberately: `core/dev/dev_loadout.gd` belongs to
+task 2.14, an asset batch has no business editing another task's gameplay content, and *what a run
+starts with* is a design question that 2.9 and 3.x own — the loadout's own comment says as much.
+
+Worth deciding at the same time: the sword is meant to be better than the cleaver, so handing it to
+every player at spawn beside five tools makes the first weapon choice trivial. "Add it to the dev
+loadout so it can be played with" and "give it to players at spawn" are different calls.
+
 ---
 
 ## Resolved

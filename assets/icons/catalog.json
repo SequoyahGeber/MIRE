@@ -238,5 +238,15 @@
     "roll_deg": 45.0,
     "ortho_scale_m": 1.2238,
     "source_polygons": 842
+  },
+  {
+    "id": "iron_sword",
+    "source": "assets/tools_weapons/exports/iron_sword_world.glb",
+    "size_px": 256,
+    "azimuth_deg": 22.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 45.0,
+    "ortho_scale_m": 1.3672,
+    "source_polygons": 1000
   }
 ]

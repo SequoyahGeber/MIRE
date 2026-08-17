@@ -1,8 +1,8 @@
 # MIRE first tool and weapon set
 
-Batch A-004 contains ten shared designs, each exported as a world pickup and first-person viewmodel
-for 20 portable GLBs. Runtime files are in `exports/`; the editable source is
-`../source/tool_weapon_set.blend`. The source directory is excluded from Godot import by
+Eleven shared designs, each exported as a world pickup and first-person viewmodel for 22 portable
+GLBs: A-004's ten tools plus A-021S's iron sword. Runtime files are in `exports/`; the editable
+source is `../source/tool_weapon_set.blend`. The source directory is excluded from Godot import by
 `../source/.gdignore`.
 
 **A-004R rebuilt every design.** The originals were flat extrusions: a straight cylinder haft with a
@@ -26,15 +26,30 @@ every export stays within about 6 cm of its A-004 dimensions so grip transforms 
 old files still frame correctly. Every design was inspected on a six-azimuth orbit render, not only
 from the front — the mallet-shaped poll and the invisible edge strip were both invisible head-on.
 
+**A-021S added the iron sword, and one new primitive with it.** A ground profile insets its walls
+toward the profile's *centroid*, which is right for a head about as tall as it is long and wrong for
+a blade a metre long: near the point the pull is almost entirely downward, so the section there stays
+a square wall instead of grinding to an edge. `lofted()` takes explicit cross-sections instead, which
+is also what lets the blade carry a fuller — a broad flat either side of a channel that shallows out
+toward the point. The bright edges are still separate closed solids butted onto the core's ridge, the
+same construction as the axes.
+
 ## Included designs
 
 | Family | Designs |
 |---|---|
 | Axes | Wooden axe, stone axe |
 | Pickaxes | Wooden pickaxe, stone pickaxe, iron pickaxe |
-| Weapons | Cleaver, skewer, short bow |
+| Weapons | Cleaver, skewer, short bow, **iron sword** |
 | Ammunition | Arrow |
 | Utility | Repair hammer |
+
+The sword is the set's hero and the only design that spends real budget: 421 faces / 1,000 triangles
+against 114–348 faces for the ten tools, 0.51 × 0.11 × 1.72 m. Two proportions were tuned by looking
+rather than by arithmetic, and both matter if it is ever rebuilt. The blade holds its width for the
+first 60% and takes all its taper at once, because a blade that narrows evenly from the guard reads
+as a dagger at any length; and the crossguard is half a metre tip to tip rather than the axe head's
+0.74 m, because a wider cross reads as a crucifix and the cross is the only silhouette a sword has.
 
 Every design has a `*_world.glb` and matching `*_viewmodel.glb`. Both presentations are rebuilt from
 the same geometry function and embedded materials, preventing silhouette drift while allowing Godot
@@ -50,8 +65,14 @@ The preview set contains:
 All exports are horizontally centred with ground-level origins, following the asset-library contract.
 They contain no collision, sockets, animation, hitboxes, damage, durability, harvesting, ammunition,
 or network authority. Tool use, combat, repair, inventory consumption, projectile spawning, and hit
-validation remain host-authoritative. Sequoyah will create the world/viewmodel scenes and grip
-transforms in the Godot editor.
+validation remain host-authoritative.
+
+The `*_viewmodel.glb` exports are no longer decorative: `ItemDef.view_model` and
+`entities/player/viewmodel.gd` put the selected hotbar item in the player's hand, so each item also
+carries `grip_offset`, `grip_rotation_degrees` and `grip_scale` in its `content/items/*.tres`. Those
+are per-item because the origin is at ground level and the grip is somewhere up the handle — the
+sword's `grip_scale` is 0.32 against the axes' 0.55, and at the axes' value its blade ran off the top
+of the screen. Judge them in the running game, not in these previews.
 
 ## Rebuild
 
@@ -60,5 +81,10 @@ transforms in the Godot editor.
   --python tools/blender/build_tool_weapon_set.py
 ```
 
-Blender 5.2.0 LTS was used for the initial build. The generator cleanly rebuilds all 20 exports, the
+Blender 5.2.0 LTS was used for the initial build. The generator cleanly rebuilds all 22 exports, the
 catalog, three previews, and the editable source.
+
+Two clean rebuilds give byte-identical GLBs and catalog. **The previews cannot be compared by file
+hash**: Blender writes its own render wall-clock and the current date into `tEXt` chunks, so those
+PNGs differ every run while the pixels are identical. Compare the decompressed `IDAT` stream instead.
+The same applies to `assets/icons/exports/*.png`, where Cycles stamps `cycles.ViewLayer.total_time`.

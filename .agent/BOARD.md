@@ -6,13 +6,7 @@
 
 ## In flight
 
-| Task | Agent | Started | Files claimed |
-|---|---|---|---|
-| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | reed16 | 2026-08-17 16:37 | `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `tools/blender/build_tool_weapon_set.py`, `tools/blender/render_item_icons.py`, `assets/source/tool_weapon_set.blend`, `assets/tools_weapons`, `assets/icons`, `content/items/iron_sword.tres`, `content/weapons/iron_sword.tres` |
-
-**2.1d notes:**
-- A-021S taken as the single NEXT batch (iron sword). Trap: the row claims 'ItemDef.view_model and entities/player/viewmodel.gd render the held item in first person'. Neither exists — item_def.gd has world_model only, and entities/player/ has no viewmodel.gd. The viewmodel GLB still has no runtime consumer, so 'check it in the running game' is not possible this session; will verify import/instantiation instead and file a finding.
-- Correction to my earlier note: the viewmodel consumer DOES exist now — a parallel session landed entities/player/viewmodel.gd, ItemDef.view_model/grip_offset/grip_rotation_degrees/grip_scale, and tools/viewmodel_check.gd while I was reading. iron_sword.tres must set view_model and a grip. Second finding, unrelated: re-running render_item_icons.py rewrites all 24 existing icon PNGs in git, but the pixels are byte-identical — Cycles stamps a 'cycles.ViewLayer.total_time' tEXt chunk (its own render wall-clock) into every PNG, so those files can never be byte-identical across runs. Verified by decompressing IDAT for all 24: 24/24 pixel-identical, 0 changed. Restored them rather than committing metadata churn.
+_Nothing in flight._
 
 ## Milestones
 
