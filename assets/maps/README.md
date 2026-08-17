@@ -35,3 +35,9 @@ Editable visual source: `assets/source/playtest_hollow.blend`. Runnable Godot sc
 `levels/playtest_hollow.tscn`. Collision, lights, and gameplay markers are built by
 `world/gen/playtest_hollow.gd`; none of this map owns harvesting, inventory, loot, enemy, damage,
 or multiplayer authority.
+
+The scene's presentation layer uses a physical sky, shadowed directional sun, depth fog, global
+volumetric haze, and a localized purple FogVolume over the Mire basin. Runtime tuning lives in
+`world/environment/playtest_atmosphere.gd`. Its optional local clock is off by default; call
+`set_time_of_day()` from the future host-authoritative day/night system rather than independently
+advancing time on each peer.

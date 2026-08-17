@@ -40,6 +40,7 @@ func _run() -> void:
 	check(runtime != null, "layout runtime exists")
 	check(scene.get_node_or_null(^"AuthoredVisuals") != null, "authored GLB exists")
 	check(scene.get_node_or_null(^"Player") != null, "player exists at the camp spawn")
+	_check_atmosphere(scene)
 	if runtime == null:
 		finish()
 		return
@@ -107,6 +108,31 @@ func _check_layout_file(visual_root: Node) -> void:
 		if absf(float(record.get("tilt", 0.0))) > deg_to_rad(40.0):
 			steep_ramps += 1
 	check(steep_ramps == 0, "no terrain ramp exceeds 40 degrees")
+
+
+func _check_atmosphere(scene: Node3D) -> void:
+	var world_environment := scene.get_node_or_null(^"WorldEnvironment") as WorldEnvironment
+	var sun := scene.get_node_or_null(^"Sun") as DirectionalLight3D
+	var atmosphere := scene.get_node_or_null(^"Atmosphere")
+	var mire_fog := scene.get_node_or_null(^"MireGroundFog") as FogVolume
+	check(world_environment != null and world_environment.environment != null, "atmosphere environment exists")
+	check(sun != null and sun.shadow_enabled, "shadow-casting sun exists")
+	check(atmosphere != null and atmosphere.has_method("set_time_of_day"), "time-of-day controller exists")
+	check(mire_fog != null and mire_fog.material is FogMaterial, "localized Mire fog volume exists")
+	if world_environment == null or world_environment.environment == null or sun == null:
+		return
+	var environment := world_environment.environment
+	check(environment.sky != null and environment.sky.sky_material is PhysicalSkyMaterial, "physical sky is active")
+	check(environment.fog_enabled, "distance fog is enabled")
+	check(environment.volumetric_fog_enabled, "volumetric fog is enabled")
+	check(environment.volumetric_fog_anisotropy >= 0.65, "fog is directional enough for light shafts")
+	check(sun.light_volumetric_fog_energy >= 0.8, "sun injects energy into volumetric fog")
+	check(sun.directional_shadow_max_distance >= 68.0, "sun shadows cover the playable hollow")
+	if atmosphere != null:
+		var morning_energy := sun.light_energy
+		atmosphere.call("set_time_of_day", 19.0)
+		check(not is_equal_approx(sun.light_energy, morning_energy), "time-of-day updates sun energy")
+		atmosphere.call("set_time_of_day", 8.35)
 
 
 func _count_meshes(node: Node) -> int:

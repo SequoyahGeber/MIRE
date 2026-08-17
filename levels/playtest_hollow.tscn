@@ -1,14 +1,20 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="PackedScene" path="res://entities/player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://assets/maps/playtest_hollow.glb" id="2_map"]
 [ext_resource type="Script" path="res://world/gen/playtest_hollow.gd" id="3_builder"]
+[ext_resource type="Script" path="res://world/environment/playtest_atmosphere.gd" id="4_atmosphere"]
 
-[sub_resource type="ProceduralSkyMaterial" id="SkyMaterial"]
-sky_top_color = Color(0.09, 0.13, 0.18, 1)
-sky_horizon_color = Color(0.56, 0.58, 0.55, 1)
-ground_bottom_color = Color(0.035, 0.05, 0.045, 1)
-ground_horizon_color = Color(0.32, 0.35, 0.31, 1)
+[sub_resource type="PhysicalSkyMaterial" id="SkyMaterial"]
+rayleigh_coefficient = 3.0
+rayleigh_color = Color(0.22, 0.43, 0.92, 1)
+mie_coefficient = 0.0045
+mie_eccentricity = 0.72
+mie_color = Color(0.95, 0.68, 0.45, 1)
+turbidity = 5.2
+sun_disk_scale = 3.5
+ground_color = Color(0.07, 0.095, 0.075, 1)
+energy_multiplier = 0.9
 
 [sub_resource type="Sky" id="Sky"]
 sky_material = SubResource("SkyMaterial")
@@ -17,8 +23,45 @@ sky_material = SubResource("SkyMaterial")
 background_mode = 2
 sky = SubResource("Sky")
 ambient_light_source = 3
-ambient_light_energy = 0.55
+ambient_light_sky_contribution = 0.72
+ambient_light_energy = 0.52
+reflected_light_source = 2
 tonemap_mode = 2
+tonemap_exposure = 1.08
+glow_enabled = true
+glow_normalized = true
+glow_intensity = 0.85
+glow_bloom = 0.08
+fog_enabled = true
+fog_light_color = Color(0.62, 0.67, 0.72, 1)
+fog_light_energy = 0.72
+fog_sun_scatter = 0.45
+fog_density = 0.003
+fog_aerial_perspective = 0.38
+fog_sky_affect = 0.18
+fog_height = 1.6
+fog_height_density = 0.12
+fog_depth_curve = 1.25
+fog_depth_begin = 12.0
+fog_depth_end = 82.0
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.0085
+volumetric_fog_albedo = Color(0.76, 0.8, 0.86, 1)
+volumetric_fog_emission = Color(0.018, 0.022, 0.035, 1)
+volumetric_fog_emission_energy = 0.18
+volumetric_fog_anisotropy = 0.82
+volumetric_fog_length = 78.0
+volumetric_fog_detail_spread = 2.0
+volumetric_fog_ambient_inject = 0.62
+volumetric_fog_sky_affect = 0.24
+volumetric_fog_temporal_reprojection_enabled = true
+volumetric_fog_temporal_reprojection_amount = 0.9
+
+[sub_resource type="FogMaterial" id="MireFogMaterial"]
+density = 0.035
+albedo = Color(0.31, 0.2, 0.48, 1)
+emission = Color(0.018, 0.006, 0.038, 1)
+height_falloff = 0.65
 
 [node name="PlaytestHollow" type="Node3D"]
 
@@ -26,10 +69,28 @@ tonemap_mode = 2
 environment = SubResource("Environment")
 
 [node name="Sun" type="DirectionalLight3D" parent="."]
-rotation_degrees = Vector3(-52, -32, 0)
-light_color = Color(1, 0.84, 0.68, 1)
-light_energy = 1.15
+rotation_degrees = Vector3(-51, -36, 0)
+light_color = Color(1, 0.89, 0.75, 1)
+light_energy = 1.22
+light_volumetric_fog_energy = 1.35
+light_angular_distance = 0.65
 shadow_enabled = true
+shadow_bias = 0.035
+shadow_normal_bias = 1.15
+shadow_blur = 1.15
+directional_shadow_mode = 2
+directional_shadow_blend_splits = true
+directional_shadow_fade_start = 0.86
+directional_shadow_max_distance = 72.0
+
+[node name="Atmosphere" type="Node" parent="."]
+script = ExtResource("4_atmosphere")
+
+[node name="MireGroundFog" type="FogVolume" parent="."]
+position = Vector3(23, 0.65, 0)
+size = Vector3(20, 4, 30)
+shape = 3
+material = SubResource("MireFogMaterial")
 
 [node name="AuthoredVisuals" parent="." instance=ExtResource("2_map")]
 
