@@ -6,12 +6,7 @@
 
 ## In flight
 
-| Task | Agent | Started | Files claimed |
-|---|---|---|---|
-| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | ember | 2026-08-17 01:19 | `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `tools/blender/build_wellspring_set.py`, `assets/source/wellspring_set.blend`, `assets/wellsprings/README.md`, `assets/wellsprings/catalog.json`, `assets/wellsprings/exports/wellspring_distant_monolith.glb`, `assets/wellsprings/exports/wellspring_base.glb`, `assets/wellsprings/exports/wellspring_crystal.glb`, `assets/wellsprings/exports/wellspring_basin.glb`, `assets/wellsprings/exports/wellspring_roots.glb`, `assets/wellsprings/exports/wellspring_uncapped.glb`, `assets/wellsprings/exports/wellspring_capped.glb`, `assets/wellsprings/exports/wellspring_recorrupting.glb`, `assets/wellsprings/exports/wellspring_corrupted.glb`, `assets/wellsprings/exports/wellspring_ritual_pedestal.glb`, `assets/wellsprings/exports/wellspring_boundary_stones.glb`, `assets/wellsprings/exports/wellspring_guardian_platform.glb`, `assets/wellsprings/preview/wellspring_preview.png`, `assets/wellsprings/preview/wellspring_scale_preview.png` |
-
-**2.1d notes:**
-- Claimed A-008 Wellspring batch. Four condition meshes will share exact basin/base anchor geometry; progression must read through silhouette and revealed/occluded crystal growth, not recolour alone. Assets remain presentation-only; host owns cap/corruption state.
+_Nothing in flight._
 
 ## Milestones
 

@@ -75,7 +75,7 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
-**Asset batches A-001 through A-007 are complete; A-008 is next.** Harvest states live under
+**Asset batches A-001 through A-008 are complete; A-009 is next.** Harvest states live under
 `assets/harvestables/` (12 GLBs), basic pickups under `assets/pickups/` (14 GLBs), the eight
 vertical-slice stations under `assets/crafting_stations/`, and ten tool/weapon designs under
 `assets/tools_weapons/` as 20 paired `*_world` and `*_viewmodel` exports. Each family has its own
@@ -85,13 +85,18 @@ geometry and materials so Godot scenes can tune world and first-person transform
 drift. None contain collision or authority: harvest mutation, pickup grants, station placement/use,
 crafting validation, fuel, repairs, attacks, hits, and inventory changes remain host-owned. Static
 fire meshes are cosmetic placeholders for later client-local VFX. A-005 added ten loot meshes under
-`assets/loot/`, A-006 the first rigged family under `assets/enemies/`, and A-007 eight Ward condition
-and support meshes under `assets/wards/`. The Ward condition meshes share the exact same 2.48 m
-foundation bounds with 0.00 mm centre/size drift; author collision from `ward_foundation.glb` and do
-not expand it around damaged debris. Sequoyah's supplied tree and rock were adapted separately under
-`assets/environment_additions/` rather than counted in A-007. The next asset run takes the single
-`NEXT` row in `docs/ASSET_TRACKER.md` — currently A-008, the Wellspring set — and should use a
-separate generator per family.
+`assets/loot/`, A-006 the first rigged family under `assets/enemies/`, A-007 eight Ward condition and
+support meshes under `assets/wards/`, and A-008 twelve Wellspring landmark, modular, condition,
+ritual, boundary and arena meshes under `assets/wellsprings/`. The Ward condition meshes share the
+exact same 2.48 m foundation bounds with 0.00 mm centre/size drift; author collision from
+`ward_foundation.glb` and do not expand it around damaged debris. The four Wellspring condition
+meshes likewise share the exact 4.6 m foundation with 0.00 mm centre/size drift; author collision
+from `wellspring_base.glb`, not roots or state-specific crystals. The distant monolith is 7.245 m
+tall. Wellspring meshes contain no objective, ritual, corruption, reward, guardian or network
+authority; the host owns those states. Sequoyah's supplied tree and rock were adapted separately
+under `assets/environment_additions/` rather than counted in A-007. The next asset run takes the
+single `NEXT` row in `docs/ASSET_TRACKER.md` — currently A-009, the extraction ship set — and should
+use a separate generator per family.
 
 **Environmental animation is automatic in `playtest_hollow`.** `world/gen/playtest_hollow.gd`
 creates the client-local `EnvironmentVfx` controller. It discovers grass, fern, reed and sedge mesh

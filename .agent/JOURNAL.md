@@ -858,3 +858,15 @@ Notes along the way:
 Files: `autoload/harvest_world.gd`, `autoload/harvest_world.gd.uid`, `project.godot`, `content/items/log.tres`, `content/items/stone.tres`, `content/items/iron_ore.tres`, `content/harvestables/tree.tres`, `content/harvestables/stone_node.tres`, `content/harvestables/iron_node.tres`, `tools/setup_harvest_content.gd`, `tools/setup_harvest_content.gd.uid`, `tools/harvest_world_check.gd`, `tools/harvest_world_check.gd.uid`, `docs/FINDINGS.md`, `docs/NEXT.md`, `tools/harvest_world_net_check.gd`, `core/util/mire_log.gd`, `systems/harvesting/harvestable.gd`
 
 Commit at time of writing: `2382da8`
+
+---
+
+### HANDOFF · 2.1d · ember · 2026-08-17T01:27:46+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-008 Wellspring batch finished and verified; A-009 extraction ship is the sole NEXT batch.
+
+Files: `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `tools/blender/build_wellspring_set.py`, `assets/source/wellspring_set.blend`, `assets/wellsprings/README.md`, `assets/wellsprings/catalog.json`, `assets/wellsprings/exports/wellspring_distant_monolith.glb`, `assets/wellsprings/exports/wellspring_base.glb`, `assets/wellsprings/exports/wellspring_crystal.glb`, `assets/wellsprings/exports/wellspring_basin.glb`, `assets/wellsprings/exports/wellspring_roots.glb`, `assets/wellsprings/exports/wellspring_uncapped.glb`, `assets/wellsprings/exports/wellspring_capped.glb`, `assets/wellsprings/exports/wellspring_recorrupting.glb`, `assets/wellsprings/exports/wellspring_corrupted.glb`, `assets/wellsprings/exports/wellspring_ritual_pedestal.glb`, `assets/wellsprings/exports/wellspring_boundary_stones.glb`, `assets/wellsprings/exports/wellspring_guardian_platform.glb`, `assets/wellsprings/preview/wellspring_preview.png`, `assets/wellsprings/preview/wellspring_scale_preview.png`
+
+Commit at time of writing: `6ce71ab`

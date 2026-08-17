@@ -1,141 +1,6 @@
 {
-  "claims": {
-    "assets/source/wellspring_set.blend": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/README.md": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/catalog.json": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/exports/wellspring_base.glb": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/exports/wellspring_basin.glb": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/exports/wellspring_boundary_stones.glb": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/exports/wellspring_capped.glb": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/exports/wellspring_corrupted.glb": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/exports/wellspring_crystal.glb": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/exports/wellspring_distant_monolith.glb": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/exports/wellspring_guardian_platform.glb": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/exports/wellspring_recorrupting.glb": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/exports/wellspring_ritual_pedestal.glb": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/exports/wellspring_roots.glb": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/exports/wellspring_uncapped.glb": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/preview/wellspring_preview.png": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/wellsprings/preview/wellspring_scale_preview.png": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "docs/ASSET_TRACKER.md": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "docs/DELEGATION.md": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    },
-    "tools/blender/build_wellspring_set.py": {
-      "agent": "ember",
-      "at": "2026-08-17T01:19:21+00:00",
-      "task": "2.1d"
-    }
-  },
-  "in_flight": {
-    "2.1d": {
-      "agent": "ember",
-      "files": [
-        "docs/ASSET_TRACKER.md",
-        "docs/DELEGATION.md",
-        "tools/blender/build_wellspring_set.py",
-        "assets/source/wellspring_set.blend",
-        "assets/wellsprings/README.md",
-        "assets/wellsprings/catalog.json",
-        "assets/wellsprings/exports/wellspring_distant_monolith.glb",
-        "assets/wellsprings/exports/wellspring_base.glb",
-        "assets/wellsprings/exports/wellspring_crystal.glb",
-        "assets/wellsprings/exports/wellspring_basin.glb",
-        "assets/wellsprings/exports/wellspring_roots.glb",
-        "assets/wellsprings/exports/wellspring_uncapped.glb",
-        "assets/wellsprings/exports/wellspring_capped.glb",
-        "assets/wellsprings/exports/wellspring_recorrupting.glb",
-        "assets/wellsprings/exports/wellspring_corrupted.glb",
-        "assets/wellsprings/exports/wellspring_ritual_pedestal.glb",
-        "assets/wellsprings/exports/wellspring_boundary_stones.glb",
-        "assets/wellsprings/exports/wellspring_guardian_platform.glb",
-        "assets/wellsprings/preview/wellspring_preview.png",
-        "assets/wellsprings/preview/wellspring_scale_preview.png"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-17T01:19:21+00:00",
-          "by": "ember",
-          "text": "Claimed A-008 Wellspring batch. Four condition meshes will share exact basin/base anchor geometry; progression must read through silhouette and revealed/occluded crystal growth, not recolour alone. Assets remain presentation-only; host owns cap/corruption state."
-        }
-      ],
-      "started": "2026-08-17T01:19:21+00:00"
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
       "agent": "vane",
@@ -1377,6 +1242,11 @@
       "at": "2026-08-17T01:15:29+00:00",
       "task": "2.1d"
     },
+    "assets/source/wellspring_set.blend": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
     "assets/wards": {
       "agent": "ember",
       "at": "2026-08-17T01:15:29+00:00",
@@ -1490,6 +1360,86 @@
     "assets/wards/preview/ward_scale_preview.png.import": {
       "agent": "ember",
       "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/README.md": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/catalog.json": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/exports/wellspring_base.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/exports/wellspring_basin.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/exports/wellspring_boundary_stones.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/exports/wellspring_capped.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/exports/wellspring_corrupted.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/exports/wellspring_crystal.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/exports/wellspring_distant_monolith.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/exports/wellspring_guardian_platform.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/exports/wellspring_recorrupting.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/exports/wellspring_ritual_pedestal.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/exports/wellspring_roots.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/exports/wellspring_uncapped.glb": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/preview/wellspring_preview.png": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
+      "task": "2.1d"
+    },
+    "assets/wellsprings/preview/wellspring_scale_preview.png": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
       "task": "2.1d"
     },
     "autoload/environment_vfx.gd": {
@@ -1644,7 +1594,7 @@
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
+      "at": "2026-08-17T01:27:46+00:00",
       "task": "2.1d"
     },
     "docs/DECISIONS.md": {
@@ -1654,7 +1604,7 @@
     },
     "docs/DELEGATION.md": {
       "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
+      "at": "2026-08-17T01:27:46+00:00",
       "task": "2.1d"
     },
     "docs/DESIGN.md": {
@@ -1800,6 +1750,11 @@
     "tools/blender/build_ward_set.py": {
       "agent": "ember",
       "at": "2026-08-17T01:15:29+00:00",
+      "task": "2.1d"
+    },
+    "tools/blender/build_wellspring_set.py": {
+      "agent": "ember",
+      "at": "2026-08-17T01:27:46+00:00",
       "task": "2.1d"
     },
     "tools/check_determinism_ops.gd": {
@@ -2312,7 +2267,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
