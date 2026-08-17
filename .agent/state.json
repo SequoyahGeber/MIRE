@@ -1,6 +1,53 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "autoload/net_interp.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:36:01+00:00",
+      "task": "F-018"
+    },
+    "autoload/player_net.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:36:01+00:00",
+      "task": "F-018"
+    },
+    "entities/player/player_camera.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:34:32+00:00",
+      "task": "F-002"
+    },
+    "tools/verify_setup.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T04:34:32+00:00",
+      "task": "F-028"
+    }
+  },
+  "in_flight": {
+    "F-002": {
+      "agent": "dusk3",
+      "files": [
+        "entities/player/player_camera.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-17T04:34:32+00:00"
+    },
+    "F-018": {
+      "agent": "dusk3",
+      "files": [
+        "autoload/player_net.gd",
+        "autoload/net_interp.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-17T04:36:01+00:00"
+    },
+    "F-028": {
+      "agent": "dusk3",
+      "files": [
+        "tools/verify_setup.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-17T04:34:32+00:00"
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
       "agent": "vane",
@@ -1673,9 +1720,9 @@
       "task": "F-022"
     },
     "docs/FINDINGS.md": {
-      "agent": "dusk3",
-      "at": "2026-08-17T02:41:22+00:00",
-      "task": "F-033"
+      "agent": "kiln9",
+      "at": "2026-08-17T04:39:09+00:00",
+      "task": "F-035"
     },
     "docs/NEXT.md": {
       "agent": "dusk3",
@@ -2143,9 +2190,9 @@
       "task": "1.10"
     },
     "ui/inventory/inventory_ui.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T02:41:22+00:00",
-      "task": "F-033"
+      "agent": "kiln9",
+      "at": "2026-08-17T04:39:09+00:00",
+      "task": "F-035"
     },
     "ui/inventory/inventory_ui.gd.uid": {
       "agent": "dusk3",
@@ -3096,7 +3143,7 @@
     "F-002": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Sprint-FOV lerp uses the framerate-dependent smoothing form"
     },
@@ -3179,7 +3226,7 @@
     "F-018": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "`PlayerNet` has no way to be told when a player spawns, so observers reach into its children"
     },
@@ -3255,7 +3302,7 @@
     "F-028": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "`verify_setup.gd` hard-codes the superseded greybox main scene"
     },
@@ -3290,6 +3337,22 @@
       "status": "done",
       "tier": "F",
       "title": "Inventory hotbar aliases eight backpack slots instead of adding eight separate slots"
+    },
+    "F-034": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`agent ship` silently drops directory claims and appends stray argv to the commit message"
+    },
+    "F-035": {
+      "done_at": "2026-08-17T04:39:09+00:00",
+      "done_by": "kiln9",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Inventory icons are capped at 26 px because a `CenterContainer` sizes children to their minimum"
     }
   },
   "version": 1

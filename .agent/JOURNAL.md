@@ -996,3 +996,15 @@ A-004R + A-042a done, both OUT OF QUEUE at Sequoyah's direct request ('better to
 Files: `docs/ASSET_TRACKER.md`, `docs/DELEGATION.md`, `tools/blender/build_tool_weapon_set.py`, `tools/blender/render_item_icons.py`, `assets/source/tool_weapon_set.blend`, `assets/tools_weapons`, `assets/icons`, `docs/DECISIONS.md`, `content/items/iron_ore.tres`, `content/items/log.tres`, `content/items/stone.tres`, `content/items/stone_axe.tres`, `tools/item_icons_check.gd`
 
 Commit at time of writing: `95969ac`
+
+---
+
+### DONE · F-035 · kiln9 · 2026-08-17T04:39:09+00:00
+
+**Inventory icons are capped at 26 px because a `CenterContainer` sizes children to their minimum**
+
+Icon TextureRect moved out of the CenterContainer into its own full-slot MarginContainer, added as the PanelContainer's first child so it fills the slot and draws behind the key/amount labels; padding scales with slot size. Verified with inventory_ui_check.gd (3 confirmations, 0 failures) and Forward+ renders at 1280x720 and 374x666.
+
+Files: `ui/inventory/inventory_ui.gd`, `docs/FINDINGS.md`
+
+Commit at time of writing: `8564d5c`

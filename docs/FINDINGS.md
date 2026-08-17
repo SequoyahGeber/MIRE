@@ -69,7 +69,9 @@ do is worth as much as the record of what we did.
 
 ## Open
 
-### F-033 · Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10
+## Resolved
+
+### F-035 · Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10
 
 **Area:** roadmap · **Severity:** medium — it gates a "never cut" item · **Found:** 2026-08-16 by dusk3
 during 2.8
@@ -94,6 +96,9 @@ Two ways out, and this is Sequoyah's call because it changes roadmap order:
 
 Not fixed here: 2.8 owns combat code, not the roadmap. Filed rather than silently tuning against a
 tree, which would have looked like the gate passing.
+
+*Filed as F-033 and renumbered to F-035 on 2026-08-16: F-033 was already taken by a resolved entry,
+and kiln9 filed F-034 concurrently. `NEXT.md` and the 2.8 journal note refer to it by the new number.*
 
 ---
 
@@ -585,7 +590,29 @@ every `ship` rather than trusting its sign-off. The fix is to expand directory c
 at ship time, reject unexpected positional arguments instead of concatenating them, and print the
 committed file count.
 
-## Resolved
+### F-035 · Inventory icons are capped at 26 px because a `CenterContainer` sizes children to their minimum — **fixed**
+
+**Area:** inventory/UI · **Severity:** medium · **Found:** 2026-08-16 by Sequoyah after A-042a ·
+**Resolved:** 2026-08-16 by kiln9
+
+`InventorySlot._build_contents()` put the icon `TextureRect` inside a `CenterContainer` with
+`custom_minimum_size = Vector2(26, 26)`. A `CenterContainer` centres each child **at its minimum
+size** and never expands it, so the icon stayed 26 px regardless of `set_slot_size()` — about a third
+of a 72 px backpack slot. The cap was invisible while slots showed text, and only became wrong when
+A-042a gave items real icons.
+
+`STRETCH_KEEP_ASPECT_CENTERED` was already set, which is why this reads as "the icons are small"
+rather than as a broken layout: the texture was scaled correctly, into a box that was too small.
+
+Fix: the icon is now its own full-slot layer. `InventorySlot` is a `PanelContainer`, which lays every
+child out across its content rect, so adding the icon as the *first* child makes it fill the slot and
+draw behind the key and amount labels, with padding from a dedicated `MarginContainer` that scales
+with slot size. Anything else laid out this way should be checked for the same mistake — a fixed
+`custom_minimum_size` inside a `CenterContainer` is a cap, not a hint.
+
+Verified with `inventory_ui_check.gd` (3 confirmations, 0 failures) and Forward+ renders at 1280×720
+and 374×666: icons now fill their slot at both sizes instead of sitting at a third of it, and the
+amount and key labels still read over them.
 
 ### F-033 · Inventory hotbar aliases eight backpack slots instead of adding eight separate slots — **fixed**
 

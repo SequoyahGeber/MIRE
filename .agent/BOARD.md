@@ -6,13 +6,17 @@
 
 ## In flight
 
-_Nothing in flight._
+| Task | Agent | Started | Files claimed |
+|---|---|---|---|
+| **F-002** Sprint-FOV lerp uses the framerate-dependent smoothing form | dusk3 | 2026-08-17 04:34 | `entities/player/player_camera.gd` |
+| **F-018** `PlayerNet` has no way to be told when a player spawns, so observers reach into its children | dusk3 | 2026-08-17 04:36 | `autoload/player_net.gd`, `autoload/net_interp.gd` |
+| **F-028** `verify_setup.gd` hard-codes the superseded greybox main scene | dusk3 | 2026-08-17 04:34 | `tools/verify_setup.gd` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███░░░░░░░` 8/26 | 18 |
+| Findings | `███░░░░░░░` 9/28 | 19 |
 | M0 | `██████████` 11/11 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `███████░░░` 15/22 | 7 |
@@ -46,7 +50,7 @@ _Nothing in flight._
 
 | | Finding | Status |
 |---|---|---|
-| ⬜ | **F-002** Sprint-FOV lerp uses the framerate-dependent smoothing form | todo |
+| 🔵 | **F-002** Sprint-FOV lerp uses the framerate-dependent smoothing form | in_flight |
 | ⬜ | **F-004** Interpolation is only planned for remote players, not enemies or props | todo |
 | ⬜ | **F-005** R2's chunk benchmark excludes GPU upload cost | todo |
 | ⬜ | **F-006** Three roadmap tasks assume a Windows or Linux machine we don't have | todo |
@@ -54,17 +58,18 @@ _Nothing in flight._
 | ⬜ | **F-012** A `MultiplayerSynchronizer`'s authority must be set BEFORE `add_child()` | todo |
 | ⬜ | **F-016** A brand-new `class_name` is not resolvable by bare identifier in a `--script` main loop | todo |
 | ⬜ | **F-017** A brand-new script still ships without its `.uid`, because the sidecar does not exist yet | todo |
-| ⬜ | **F-018** `PlayerNet` has no way to be told when a player spawns, so observers reach into its children | todo |
+| 🔵 | **F-018** `PlayerNet` has no way to be told when a player spawns, so observers reach into its children | in_flight |
 | ⬜ | **F-020** Steam sessions cannot use NetSession's direct-address auto-rejoin loop | todo |
 | ⬜ | **F-021** The net debug panel harness passes while Godot reports an uninitialized multiplayer root | todo |
 | ⬜ | **F-023** Windows Steam first join intermittently exceeds the hard 10-second connection timeout | todo |
 | ⬜ | **F-024** A shipped LAN first join has no retry — only the debug launcher does | todo |
 | ⬜ | **F-025** Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake | todo |
 | ⬜ | **F-027** `NetInterest.configure()` does not keep its returned filter alive | todo |
-| ⬜ | **F-028** `verify_setup.gd` hard-codes the superseded greybox main scene | todo |
+| 🔵 | **F-028** `verify_setup.gd` hard-codes the superseded greybox main scene | in_flight |
 | ⬜ | **F-031** `DELEGATION.md` still describes the pre-polish Playtest Hollow layout | todo |
 | ⬜ | **F-032** Auto-rejoin assigns a new peer id, so peer-keyed gameplay state cannot follow it | todo |
+| ⬜ | **F-034** `agent ship` silently drops directory claims and appends stray argv to the commit message | todo |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `4.0b` `F-007` `F-009` `F-015` `F-019` `F-022` `F-026` `F-029` `F-033`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `4.0b` `F-007` `F-009` `F-015` `F-019` `F-022` `F-026` `F-029` `F-033` `F-035`

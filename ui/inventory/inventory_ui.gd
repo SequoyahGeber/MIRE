@@ -38,6 +38,7 @@ class InventorySlot extends PanelContainer:
 	var _item_label: Label
 	var _amount_label: Label
 	var _content_margin: MarginContainer
+	var _icon_margin: MarginContainer
 	var _base_style: StyleBoxFlat
 	var _hover_style: StyleBoxFlat
 	var _selected_style: StyleBoxFlat
@@ -102,6 +103,9 @@ class InventorySlot extends PanelContainer:
 		var content_padding: int = 2 if compact else 5
 		_content_margin.add_theme_constant_override("margin_left", content_padding)
 		_content_margin.add_theme_constant_override("margin_right", content_padding)
+		var icon_padding: int = maxi(3, int(size_px * 0.09))
+		for side: String in ["margin_left", "margin_top", "margin_right", "margin_bottom"]:
+			_icon_margin.add_theme_constant_override(side, icon_padding)
 		_item_label.add_theme_font_size_override("font_size", 11 if compact else 12)
 		_amount_label.add_theme_font_size_override("font_size", 11 if compact else 13)
 		_key_label.add_theme_font_size_override("font_size", 10 if compact else 11)
@@ -159,6 +163,21 @@ class InventorySlot extends PanelContainer:
 
 
 	func _build_contents() -> void:
+		# The icon is its own full-slot layer, added first so the labels draw over it.
+		# `InventorySlot` is a PanelContainer, which lays every child across its content
+		# rect, so this scales with the slot for free. It used to sit in the
+		# CenterContainer below at a fixed 26 px, and a CenterContainer centres a child
+		# *at its minimum size* — that was a cap, not a hint (F-035).
+		_icon_margin = MarginContainer.new()
+		_icon_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_icon_margin)
+
+		_icon = TextureRect.new()
+		_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_icon_margin.add_child(_icon)
+
 		_content_margin = MarginContainer.new()
 		_content_margin.add_theme_constant_override("margin_left", 5)
 		_content_margin.add_theme_constant_override("margin_top", 4)
@@ -179,13 +198,6 @@ class InventorySlot extends PanelContainer:
 		item_center.custom_minimum_size = Vector2(0.0, 24.0)
 		item_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		stack.add_child(item_center)
-
-		_icon = TextureRect.new()
-		_icon.custom_minimum_size = Vector2(26.0, 26.0)
-		_icon.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-		_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		item_center.add_child(_icon)
 
 		_item_label = Label.new()
 		_item_label.custom_minimum_size = Vector2(34.0, 20.0)
