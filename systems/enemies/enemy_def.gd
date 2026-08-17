@@ -15,6 +15,12 @@ extends Resource
 ## (D-023). A-006's crawler is the vertical-slice model.
 @export var model: PackedScene
 
+## Rotates the VISUAL only, never the body or its facing logic. Exists because an exported model's
+## forward is a property of whoever authored it: A-006's crawler faces +Z while its own generator and
+## catalog say -Z (F-039), and rotating the mesh here is cheaper and safer than re-exporting an asset
+## other things are already placed against. 0 means the model faces -Z, which is Godot's forward.
+@export_range(-180.0, 180.0, 1.0) var model_yaw_offset_degrees: float = 0.0
+
 @export_group("Body")
 @export_range(0.1, 4.0, 0.05) var radius_m: float = 0.45
 @export_range(0.2, 6.0, 0.05) var height_m: float = 0.6

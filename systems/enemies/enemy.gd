@@ -82,6 +82,8 @@ var _flash_remaining: float = 0.0
 var _flash_material: StandardMaterial3D
 var _dissolve_elapsed: float = 0.0
 var _visual_rest_y: float = 0.0
+## Restored if this body is ever revived or reused; death zeroes it (F-040).
+var _alive_collision_layer: int = 1
 
 
 func _ready() -> void:
@@ -95,6 +97,7 @@ func _ready() -> void:
 
 	if definition != null:
 		health = definition.max_health
+	_alive_collision_layer = collision_layer
 
 	_build_body()
 	_build_visual()
@@ -244,10 +247,11 @@ func _enter_death(instigator_peer_id: int) -> void:
 	_target_peer = 0
 	velocity = Vector3.ZERO
 	_corpse_remaining = definition.corpse_seconds + _clip_length(ANIM_DEATH)
-	# Collision off, not the node freed: the death clip has to finish somewhere, and a corpse you can
-	# still walk into reads as a bug.
-	for shape: Node in find_children("*", "CollisionShape3D", true, false):
-		(shape as CollisionShape3D).set_deferred("disabled", true)
+	# F-040: zero the LAYER, never disable the shapes. A corpse still needs its collision_mask to
+	# find the ground — gravity keeps running through _tick_corpse, so a body with no shape falls
+	# through the terrain for the whole corpse window, in full view. Zeroing the layer alone means
+	# nothing detects or collides with it while it still lands where it died.
+	collision_layer = 0
 	remove_from_group(DAMAGEABLE_GROUP)
 	died.emit(instigator_peer_id)
 
@@ -333,6 +337,9 @@ func _build_visual() -> void:
 	if _visual == null:
 		return
 	_visual.name = VISUAL_NODE
+	# F-039: the body's yaw is the truth; this only corrects a model whose exported forward is not
+	# Godot's. Applied to the visual so nothing about targeting, pathing or the hitbox has to know.
+	_visual.rotation.y = deg_to_rad(definition.model_yaw_offset_degrees)
 	_visual_rest_y = _visual.position.y
 	add_child(_visual)
 	var players: Array[Node] = _visual.find_children("*", "AnimationPlayer", true, false)

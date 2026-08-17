@@ -23,6 +23,9 @@ func _run() -> void:
 	crawler.set("display_name", "Hollow Crawler")
 	crawler.set("model", load("res://assets/enemies/exports/enemy_crawler.glb") as PackedScene)
 	# A-006 measured it: 1.10 m long, 0.59 m tall, origin at the ground between its feet.
+	# F-039: the export faces +Z despite this generator's own comment saying -Z, so the visual is
+	# turned around. Reset to 0 if A-006 is ever rebuilt facing the documented direction.
+	crawler.set("model_yaw_offset_degrees", 180.0)
 	crawler.set("radius_m", 0.45)
 	crawler.set("height_m", 0.6)
 	# 12 HP against the stone axe's 3 damage is four swings — long enough that a fight is a fight,

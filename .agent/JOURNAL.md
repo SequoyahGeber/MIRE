@@ -1190,3 +1190,25 @@ PLAYABILITY ONLY - the actual playtest with friends is untouched and still the t
 Files: `tools/setup_tool_content.gd`, `tools/setup_tool_content.gd.uid`, `core/dev/dev_loadout.gd`, `core/dev/dev_loadout.gd.uid`, `autoload/enemy_world.gd`, `project.godot`, `tools/dev_loadout_check.gd`, `tools/dev_loadout_check.gd.uid`, `content/items/wooden_axe.tres`, `content/items/wooden_pickaxe.tres`, `content/items/stone_pickaxe.tres`, `content/items/iron_pickaxe.tres`, `content/items/cleaver.tres`, `content/items/skewer.tres`, `content/items/short_bow.tres`, `content/items/arrow.tres`, `content/items/repair_hammer.tres`, `content/weapons/wooden_axe.tres`, `content/weapons/wooden_pickaxe.tres`, `content/weapons/stone_pickaxe.tres`, `content/weapons/iron_pickaxe.tres`, `content/weapons/cleaver.tres`, `content/weapons/skewer.tres`, `content/weapons/repair_hammer.tres`
 
 Commit at time of writing: `01be471`
+
+---
+
+### DONE · F-039 · dusk3 · 2026-08-17T16:31:36+00:00
+
+**A-006's crawler faces +Z, but its generator, catalog and docs all say -Z**
+
+EnemyDef.model_yaw_offset_degrees rotates the visual only; crawler set to 180. A-006 exports facing +Z while its generator, catalog and DELEGATION all say -Z, so the correct _face() math pointed the model's tail at the player - that is both 'walks backwards' and 'attacks facing away'. Verified by rendering a real spawned crawler from the player's eye. The asset half is still owed and is recorded in the finding.
+
+Files: `systems/enemies/enemy.gd`, `systems/enemies/enemy_def.gd`, `content/enemies/crawler.tres`, `tools/setup_enemy_content.gd`, `tools/enemy_facing_check.gd`, `tools/enemy_facing_check.gd.uid`
+
+Commit at time of writing: `51aafe5`
+
+---
+
+### DONE · F-040 · dusk3 · 2026-08-17T16:31:36+00:00
+
+**A dead enemy falls through the world**
+
+Death zeroes collision_layer instead of disabling every CollisionShape3D. A corpse kept applying gravity with no shape, so it fell through the terrain for the whole corpse window. It now keeps its mask, lands where it died, and collides with nothing. enemy_check 44/44.
+
+Commit at time of writing: `51aafe5`

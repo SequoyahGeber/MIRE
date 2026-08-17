@@ -1549,8 +1549,8 @@
     },
     "content/enemies/crawler.tres": {
       "agent": "dusk3",
-      "at": "2026-08-17T16:04:25+00:00",
-      "task": "2.9"
+      "at": "2026-08-17T16:31:36+00:00",
+      "task": "F-039"
     },
     "content/harvestables/iron_node.tres": {
       "agent": "nettle",
@@ -1844,8 +1844,8 @@
     },
     "systems/enemies/enemy.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T16:04:25+00:00",
-      "task": "2.9"
+      "at": "2026-08-17T16:31:36+00:00",
+      "task": "F-039"
     },
     "systems/enemies/enemy.gd.uid": {
       "agent": "dusk3",
@@ -1854,8 +1854,8 @@
     },
     "systems/enemies/enemy_def.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T15:58:44+00:00",
-      "task": "2.10"
+      "at": "2026-08-17T16:31:36+00:00",
+      "task": "F-039"
     },
     "systems/enemies/enemy_def.gd.uid": {
       "agent": "dusk3",
@@ -2056,6 +2056,16 @@
       "agent": "gale",
       "at": "2026-08-16T23:59:35+00:00",
       "task": "2.1d"
+    },
+    "tools/enemy_facing_check.gd": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:31:36+00:00",
+      "task": "F-039"
+    },
+    "tools/enemy_facing_check.gd.uid": {
+      "agent": "dusk3",
+      "at": "2026-08-17T16:31:36+00:00",
+      "task": "F-039"
     },
     "tools/enemy_net_check.gd": {
       "agent": "dusk3",
@@ -2264,8 +2274,8 @@
     },
     "tools/setup_enemy_content.gd": {
       "agent": "dusk3",
-      "at": "2026-08-17T16:04:25+00:00",
-      "task": "2.9"
+      "at": "2026-08-17T16:31:36+00:00",
+      "task": "F-039"
     },
     "tools/setup_enemy_content.gd.uid": {
       "agent": "dusk3",
@@ -3505,6 +3515,45 @@
       "status": "done",
       "tier": "F",
       "title": "Inventory icons are capped at 26 px because a `CenterContainer` sizes children to their minimum"
+    },
+    "F-036": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Task 2.9's gate cannot be met in its roadmap position \u2014 the enemy it tunes against lands in 2.10"
+    },
+    "F-037": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`net_debug_panel_check` fakes its second peer in-process, so host and client share one tree"
+    },
+    "F-038": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`inventory_net_check` intermittently fails its grant wait under machine load"
+    },
+    "F-039": {
+      "done_at": "2026-08-17T16:31:36+00:00",
+      "done_by": "dusk3",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "A-006's crawler faces +Z, but its generator, catalog and docs all say -Z"
+    },
+    "F-040": {
+      "done_at": "2026-08-17T16:31:36+00:00",
+      "done_by": "dusk3",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "A dead enemy falls through the world"
     }
   },
   "version": 1
