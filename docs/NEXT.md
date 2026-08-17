@@ -113,7 +113,7 @@ slots 0–23 are the backpack and 24–31 are the separate hotbar. Client remove
 peer id and complete through
 `operation_confirmed`. Trusted host gameplay uses `host_add` or atomic `host_transaction`; there is
 no client grant RPC. Owner-only full snapshots carry monotonic revisions. Inventory introduced
-protocol version 4; the crafting request/confirmation RPC set makes the current protocol version 5.
+protocol version 4; the crafting request/confirmation RPC set makes the current protocol version 6 (task 2.8 left it at 5; F-032's hello argument made it 6).
 
 **If cross-play testing starts to feel overdue before M6**, the cheap version is a pair of debug
 console commands over the `SteamLobby` API that already exists (`host_session()`, `join_by_id()`,

@@ -592,6 +592,31 @@ metadata even when the image is identical.
 for a 32px slot, a rarity frame, a damaged-state overlay. Hand-authored icons then become a real asset
 family with its own batch, and this script becomes the base pass they are painted over.
 
+### D-035 · 2026-08-17 · A run-player is a host-issued opaque token, and peer_left is not a departure
+
+An ENet client that reconnects gets a new peer id — 1.7 measured it, and the lifecycle check now
+asserts it. Every host-owned system keys state by peer id, so without a stable identity a reconnect
+is indistinguishable from one player leaving and another arriving (F-032).
+
+The host mints an opaque 16-byte token per run-player, hands each client only its own, and takes it
+back on the next hello. Two rules make trusting a client-presented token safe: a token whose peer is
+still connected is never reassigned, so a live player's state cannot be stolen; and a parked token
+expires after 90 s, so state is not held for someone who is not coming back. Tokens are in memory
+only — a run is one sitting (D-010), so there is nothing to persist.
+
+**The consumer contract is the load-bearing half: a gameplay system must NOT release peer-keyed state
+on `peer_left`.** It waits for `NetSession.run_player_rebound(old, new)` to move it or
+`run_player_expired(peer)` to drop it. Between a drop and a rejoin a player is still a player, and
+`peer_left` cannot tell the two apart — which is exactly why `InventoryService` used to wipe an
+inventory on every reconnect.
+
+Rejected: reusing the Steam ID, which only works in one of three transports; and matching an orphan
+to "the next joiner", which hands the wrong inventory over the moment two players reconnect together.
+
+**Would change my mind:** needing identity to survive the process (a save/resume feature would
+supersede D-010 first), or a transport that already guarantees stable ids across a reconnect for all
+three modes — then this becomes a shim over that instead of its own registry.
+
 ### D-0NN · YYYY-MM-DD · <one-line decision>
 <why, in 2–4 sentences>
 **Would change my mind:** <the specific evidence that should make you revisit this>

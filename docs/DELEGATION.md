@@ -94,6 +94,28 @@ outline with per-point bevel *distances*, which is how a head gets a square poll
 and `swept_shaft()` (a tube along a polyline with a radius per point, which is how hafts get taper and
 an oval section).
 
+**Run-player identity is how host-owned state survives a reconnect (F-032, D-035).** An ENet client
+that rejoins gets a **new peer id**, so a system that keys state by peer id sees one player leave and
+a different one arrive. `NetSession` now mints an opaque token per run-player on the client hello,
+hands each client only its own, and exposes two signals:
+
+| Signal | Meaning |
+|---|---|
+| `run_player_rebound(old_peer_id, new_peer_id)` | Same player, new id. **Move** whatever you keyed under the old one; it is gone when this returns. |
+| `run_player_expired(peer_id)` | Not coming back — its 90 s grace ran out. **Release** its state now. |
+
+**The rule every host-owned system must follow: do NOT release peer-keyed state on `peer_left`.**
+Between a drop and a rejoin the player is still a player, and `peer_left` cannot tell the two apart.
+`InventoryService` is the worked example — its `_on_peer_left()` is deliberately a no-op with a
+comment saying why. Health, powerups, Attunement and any peer-keyed enemy aggro inherit this by
+connecting to the same two signals.
+
+Also on `NetSession`: `run_token()` (this peer's own token, harnesses only) and
+`orphaned_run_players()` (how many are parked). The registry itself is `core/net/run_identity.gd` —
+pure data, no node, testable without a session. **Protocol version is now 6**: the hello gained an
+argument. Checks: `tools/run_identity_check.gd` for the rules,
+`tools/session_lifecycle_check.gd` for the real multi-process reconnect.
+
 **Four standing rules, promoted out of `FINDINGS.md` so they are read before they are rediscovered.**
 F-011, F-012, F-016 and F-021 were closed on 2026-08-16 not because the engine changed but because a
 permanent rule does not belong on a board of unscheduled problems.

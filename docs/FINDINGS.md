@@ -352,19 +352,6 @@ the latency, and only then set `STEAM_CONNECT_TIMEOUT_SEC` from evidence.
 
 ---
 
-### F-032 · Auto-rejoin assigns a new peer id, so peer-keyed gameplay state cannot follow it
-
-**Area:** multiplayer/gameplay state · **Severity:** high · **Found:** 2026-08-16 by nettle during 2.4
-
-Task 1.7's live lifecycle check proves that a reconnecting ENet client gets a new id (for example,
-peer `1037623507` rejoined as `361299977`). `PlayerNet` can respawn a body under the new id, but there
-is no stable run-player identity to tell host-owned systems that the new peer is the old player.
-`InventoryService` therefore releases the departed peer's inventory and correctly creates a fresh
-one on rejoin; retaining or assigning an orphan to "the next joiner" would give the wrong inventory
-when two players reconnect together. Before reconnect can preserve inventory, health, powerups or
-Attunement, add a host-issued opaque run-player token to admission/rejoin and an explicit old-peer to
-new-peer rebind event that gameplay systems can consume.
-
 ### F-036 · Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10
 
 **Area:** roadmap · **Severity:** medium — it gates a "never cut" item · **Found:** 2026-08-16 by dusk3
@@ -446,6 +433,50 @@ hides the race rather than removing it.
 ---
 
 ## Resolved
+
+### F-032 · Auto-rejoin assigns a new peer id, so peer-keyed gameplay state cannot follow it — **fixed**
+
+**Area:** multiplayer/gameplay state · **Severity:** high · **Found:** 2026-08-16 by nettle during 2.4
+
+Task 1.7's live lifecycle check proves that a reconnecting ENet client gets a new id (for example,
+peer `1037623507` rejoined as `361299977`). `PlayerNet` can respawn a body under the new id, but there
+is no stable run-player identity to tell host-owned systems that the new peer is the old player.
+`InventoryService` therefore releases the departed peer's inventory and correctly creates a fresh
+one on rejoin; retaining or assigning an orphan to "the next joiner" would give the wrong inventory
+when two players reconnect together. Before reconnect can preserve inventory, health, powerups or
+Attunement, add a host-issued opaque run-player token to admission/rejoin and an explicit old-peer to
+new-peer rebind event that gameplay systems can consume.
+
+**Resolved:** 2026-08-17 by dusk3 · fixed
+
+`core/net/run_identity.gd` is the host-side registry; `NetSession` mints a token on the client hello,
+hands each client only its own, and emits the two signals gameplay systems consume:
+`run_player_rebound(old_peer_id, new_peer_id)` and `run_player_expired(peer_id)`. D-035 records the
+call and the consumer contract. Protocol version 5 → 6, because the hello gained an argument.
+
+**The half that actually fixes the bug is a deletion.** `InventoryService._on_peer_left()` no longer
+releases anything — between a drop and a rejoin the player is still a player, and `peer_left` cannot
+tell a reconnect from a departure. It now waits to be told which happened.
+
+The entry's two hazards are both covered by rules in the registry rather than by hope: a token whose
+peer is still connected is never reassigned, so a live player's state cannot be claimed by someone
+presenting their token; and identities park for 90 s — an order of magnitude past `NetSession`'s
+0.5 + 1 + 2 + 4 s rejoin ladder — then expire, so state is not held forever for someone who left. The
+entry's specific worry about "two players reconnecting together" is asserted directly: each returning
+player rebinds to its own previous peer id, in either order.
+
+Verified two ways. `tools/run_identity_check.gd` (37 passes, 0 failures) drives the registry rules
+and the InventoryService handover offline. `tools/session_lifecycle_check.gd` proves it over real
+multi-process ENet — the harness grants 7 logs, kicks the client, and asserts the reconnect:
+
+```
+ok    the rejoiner came back under a different peer id  — was 1545394978, now 175915464
+ok    the inventory followed the player across the new peer id  — peer 175915464 holds 7 log(s)
+ok    nothing was left behind under the old peer id
+```
+
+Health, powerups and Attunement do not exist yet; when they do, they inherit this seam by connecting
+to the same two signals and by *not* cleaning up on `peer_left`.
 
 ### F-017 · A brand-new script still ships without its `.uid`, because the sidecar does not exist yet — **fixed**
 
