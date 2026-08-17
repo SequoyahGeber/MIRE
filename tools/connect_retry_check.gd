@@ -5,6 +5,12 @@ extends SceneTree
 ##
 ##     /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script tools/connect_retry_check.gd
 ##
+## EXPECTED ENGINE ERRORS (F-052 triage): this check deliberately provokes a connect timeout and an
+## out-of-range port, and production code correctly reports both via `MireLog.error` → `push_error`.
+## Declared by PATTERN in the verdict line; rule 4's grader ignores matching `ERROR:` lines and
+## fails on anything else:
+##   grep 'ERROR:' | grep -vE 'connect to .* timed out|is outside 1024..65535' | wc -l   → must be 0
+##
 ## Exits non-zero on failure. Takes about 15 seconds — most of it one real 3 s LOCAL timeout, which is
 ## the point: the classification it checks is produced by the watchdog actually firing, not asserted.
 ##
@@ -119,7 +125,8 @@ func _run_driver() -> void:
 	if _host_pid != 0:
 		OS.kill(_host_pid)
 
-	print("\n%s — %d failure(s)\n" % ["PASS" if _failures == 0 else "FAIL", _failures])
+	print("\n%s — %d failure(s) · EXPECTED_ERROR_PATTERNS=\"connect to .* timed out|is outside 1024..65535\"\n"
+		% ["PASS" if _failures == 0 else "FAIL", _failures])
 	quit(1 if _failures > 0 else 0)
 
 

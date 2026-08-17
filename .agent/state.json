@@ -1,6 +1,81 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "AGENTS.md": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:30:14+00:00",
+      "task": "2.1j"
+    },
+    "assets/crafting_stations": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:07:07+00:00",
+      "task": "2.1j"
+    },
+    "assets/environment": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:12:54+00:00",
+      "task": "2.1j"
+    },
+    "assets/pickups": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:07:07+00:00",
+      "task": "2.1j"
+    },
+    "assets/source/crafting_stations.blend": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:07:07+00:00",
+      "task": "2.1j"
+    },
+    "assets/source/mire_map_kit.blend": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:12:54+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/audit_all_sides.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:30:14+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_crafting_stations.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:07:07+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_mire_map_kit.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:12:54+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/build_pickup_kit.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T23:07:07+00:00",
+      "task": "2.1j"
+    },
+    "tools/blender/detail_distribution.py": {
+      "agent": "tine18",
+      "at": "2026-08-17T19:30:14+00:00",
+      "task": "2.1j"
+    }
+  },
+  "in_flight": {
+    "2.1j": {
+      "agent": "tine18",
+      "files": [
+        "AGENTS.md",
+        "tools/blender/audit_all_sides.py",
+        "tools/blender/detail_distribution.py",
+        "tools/blender/build_pickup_kit.py",
+        "assets/pickups",
+        "tools/blender/build_crafting_stations.py",
+        "assets/crafting_stations",
+        "assets/source/crafting_stations.blend",
+        "tools/blender/build_mire_map_kit.py",
+        "assets/environment",
+        "assets/source/mire_map_kit.blend"
+      ],
+      "notes": [],
+      "started": "2026-08-17T19:30:14+00:00"
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
       "agent": "flint5",
@@ -21,11 +96,6 @@
       "agent": "yarrow21",
       "at": "2026-08-17T18:43:41+00:00",
       "task": "0.12"
-    },
-    ".godot/extension_list.cfg": {
-      "agent": "flint",
-      "at": "2026-08-16T19:34:30+00:00",
-      "task": "F-009"
     },
     "AGENTS.md": {
       "agent": "flint5",
@@ -1567,11 +1637,6 @@
       "at": "2026-08-17T16:22:54+00:00",
       "task": "2.14"
     },
-    "core/dev/dev_launch.gd": {
-      "agent": "vane",
-      "at": "2026-08-16T22:59:02+00:00",
-      "task": "F-023"
-    },
     "core/dev/dev_loadout.gd": {
       "agent": "flint5",
       "at": "2026-08-17T19:28:04+00:00",
@@ -1591,11 +1656,6 @@
       "agent": "nettle",
       "at": "2026-08-17T01:11:22+00:00",
       "task": "2.3"
-    },
-    "core/net/net_config.gd": {
-      "agent": "vane",
-      "at": "2026-08-16T22:59:02+00:00",
-      "task": "F-023"
     },
     "core/net/net_interest.gd": {
       "agent": "nettle",
@@ -1632,11 +1692,6 @@
       "at": "2026-08-17T18:43:41+00:00",
       "task": "0.12"
     },
-    "docs/ARCHITECTURE.md": {
-      "agent": "slate",
-      "at": "2026-08-16T20:11:49+00:00",
-      "task": "4.0b"
-    },
     "docs/ASSET_TRACKER.md": {
       "agent": "tine18",
       "at": "2026-08-17T19:29:08+00:00",
@@ -1654,12 +1709,12 @@
     },
     "docs/DELEGATION.md": {
       "agent": "flint5",
-      "at": "2026-08-17T19:02:17+00:00",
-      "task": "F-050"
+      "at": "2026-08-17T23:13:44+00:00",
+      "task": "F-052"
     },
     "docs/FINDINGS.md": {
       "agent": "flint5",
-      "at": "2026-08-17T19:28:04+00:00",
+      "at": "2026-08-17T23:13:44+00:00",
       "task": "F-052"
     },
     "docs/NEXT.md": {
@@ -1679,18 +1734,13 @@
     },
     "docs/SPECS.md": {
       "agent": "flint5",
-      "at": "2026-08-17T19:05:38+00:00",
-      "task": "F-051"
+      "at": "2026-08-17T23:13:44+00:00",
+      "task": "F-052"
     },
     "docs/STEAM_CROSS_PLATFORM_TEST.md": {
       "agent": "ivy",
       "at": "2026-08-16T23:19:13+00:00",
       "task": "1.12"
-    },
-    "docs/WINDOWS_TEST_BRIEF.md": {
-      "agent": "slate",
-      "at": "2026-08-16T20:11:49+00:00",
-      "task": "4.0b"
     },
     "entities/player/player_camera.gd": {
       "agent": "dusk3",
@@ -1899,7 +1949,7 @@
     },
     "tools/connect_retry_check.gd": {
       "agent": "flint5",
-      "at": "2026-08-17T19:28:04+00:00",
+      "at": "2026-08-17T23:13:44+00:00",
       "task": "F-052"
     },
     "tools/crafting_check.gd": {
@@ -2119,7 +2169,7 @@
     },
     "tools/session_lifecycle_check.gd": {
       "agent": "flint5",
-      "at": "2026-08-17T19:28:04+00:00",
+      "at": "2026-08-17T23:13:44+00:00",
       "task": "F-052"
     },
     "tools/setup_combat_content.gd": {
@@ -2176,16 +2226,6 @@
       "agent": "dusk3",
       "at": "2026-08-17T16:22:54+00:00",
       "task": "2.14"
-    },
-    "tools/steam_cross_platform_check.gd": {
-      "agent": "hollow",
-      "at": "2026-08-16T20:16:02+00:00",
-      "task": "1.12"
-    },
-    "tools/steam_cross_platform_check.gd.uid": {
-      "agent": "hollow",
-      "at": "2026-08-16T20:16:02+00:00",
-      "task": "1.12"
     },
     "tools/verify_setup.gd": {
       "agent": "flint5",
@@ -2605,7 +2645,7 @@
     "2.1j": {
       "est": "8",
       "milestone": "M2",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle"
     },
@@ -3552,9 +3592,11 @@
       "title": "Five SPECS blocks claim `project.godot`, which would collapse three lanes back to one"
     },
     "F-052": {
+      "done_at": "2026-08-17T23:13:44+00:00",
+      "done_by": "flint5",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it"
     }

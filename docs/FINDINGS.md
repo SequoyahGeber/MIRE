@@ -543,7 +543,9 @@ they should say `agent order` refuses the dispatch for you, or point at the same
 
 ---
 
-### F-052 · The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it
+## Resolved
+
+### F-052 · The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it — **fixed**
 
 **Area:** tests/netcode · **Severity:** high — every lane order tells lanes to run these checks ·
 **Found:** 2026-08-17 by flint5, from the audit's baseline run of the multi-process suite
@@ -575,14 +577,19 @@ stay green. The departed-peer assertions in `inventory_net_check` and `crafting_
 assert D-035 *parking* (slots survive + `orphaned_run_players() == 1`). Two per-frame engine errors
 from reading transforms on despawned/mid-spawn nodes were guarded in `combat_net_check` and
 `crafting_net_check`. Post-fix: inventory 0/0, crafting 0 failures, combat 0/0 twice with a
-residual ~1-in-3 intermittent recorded under F-038 (its proper home). **Left for whoever takes this
-next: `session_lifecycle_check` exits 1 (2 ERROR lines) and `connect_retry_check` logs 2 ERROR
-lines at exit 0 — neither triaged; the session hit its quota wall.** Both predate today's roots or
-relate to them in ways not yet established — do not assume either.
+residual ~1-in-3 intermittent recorded under F-038 (its proper home).
+
+**2026-08-17 (later), flint5 — tails triaged; resolved.** `session_lifecycle_check`'s baseline
+exit-1 did not reproduce across three post-gate runs — attributed to the DevLoadout kit
+contaminating a section, uncertainty noted. Its 2 recurring ERROR lines, and `connect_retry_check`'s
+2, are the **refusals and timeouts under test**: production code correctly reports them through
+`MireLog.error` → `push_error`, and the checks assert those very refusals as `ok`. Both checks now
+declare them in their verdict line as `EXPECTED_ERROR_PATTERNS="…"` (patterns, not counts — one
+sweep run logged a timing-dependent third timeout line), and standing rule 4 in SPECS.md/DELEGATION
+now grades undeclared-error lines only. Final suite: 7 of 8 checks at 0 failures / 0 undeclared
+errors; `combat_net_check`'s ~1-in-3 probe stall is F-038's, documented there with today's data.
 
 ---
-
-## Resolved
 
 ### F-049 · The board never closed a finding resolved out-of-band, and never learned of new ones until a claim — **fixed**
 

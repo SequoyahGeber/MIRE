@@ -6,13 +6,15 @@
 
 ## In flight
 
-_Nothing in flight._
+| Task | Agent | Started | Files claimed |
+|---|---|---|---|
+| **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-17 19:30 | `AGENTS.md`, `tools/blender/audit_all_sides.py`, `tools/blender/detail_distribution.py`, `tools/blender/build_pickup_kit.py`, `assets/pickups`, `tools/blender/build_crafting_stations.py`, `assets/crafting_stations`, `assets/source/crafting_stations.blend`, `tools/blender/build_mire_map_kit.py`, `assets/environment`, `assets/source/mire_map_kit.blend` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███████░░░` 30/45 | 15 |
+| Findings | `███████░░░` 31/45 | 14 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `███████░░░` 16/23 | 7 |
@@ -60,8 +62,7 @@ _Nothing in flight._
 | ⬜ | **F-043** The iron sword ships complete and nothing puts it in a player's hand | todo |
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-045** `pgrep -fl Godot` is too blunt to be the closed-editor guard | todo |
-| ⬜ | **F-052** The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it | todo |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `4.0b` `F-002` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `4.0b` `F-002` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052`

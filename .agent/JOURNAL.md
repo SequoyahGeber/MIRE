@@ -1425,3 +1425,15 @@ WATCH OUT: (1) Rebuilding a family changes GLB dimensions, so re-render icons af
 Files: `tools/blender/mire_art.py`, `tools/blender/audit_all_sides.py`, `tools/blender/detail_distribution.py`, `tools/blender/build_pickup_kit.py`, `tools/blender/build_tool_weapon_set.py`, `tools/blender/build_crafting_stations.py`, `tools/blender/build_mire_map_kit.py`, `tools/blender/build_harvestable_resources.py`, `tools/blender/build_loot_set.py`, `tools/blender/build_ward_set.py`, `tools/blender/build_wellspring_set.py`, `tools/blender/build_enemy_crawler.py`, `tools/blender/build_adapted_nature_set.py`, `docs/ROADMAP.md`, `docs/ASSET_TRACKER.md`, `assets/pickups`, `assets/icons`, `assets/source/pickup_kit.blend`
 
 Commit at time of writing: `902db3e`
+
+---
+
+### DONE · F-052 · flint5 · 2026-08-17T23:13:44+00:00
+
+**The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it**
+
+Tails triaged and closed. Lifecycle baseline exit-1 gone post-DevLoadout-gate (3 clean runs). The recurring ERROR lines in lifecycle and connect_retry are the refusals and timeouts UNDER TEST, reported by production MireLog.error; both checks now declare them as EXPECTED_ERROR_PATTERNS in their verdict line, and standing rule 4 grades undeclared lines only (patterns not counts — a slow run logs a timing-dependent extra timeout). Final suite: 7 of 8 at 0 failures 0 undeclared; combat's 1-in-3 probe stall documented under F-038.
+
+Files: `tools/session_lifecycle_check.gd`, `tools/connect_retry_check.gd`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `da327b8`

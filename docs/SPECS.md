@@ -39,8 +39,14 @@ each names the **GATE** it must not start before — a gate line is a hard stop,
    consts. Autoload scripts themselves and scenes `load()`ed at runtime may use bare names.
 2. A brand-new `class_name` is not bare-resolvable in a fresh headless clone — `preload` it (F-016).
 3. `set_multiplayer_authority()` on a synchronizer **before** `add_child()` (F-012, D-023).
-4. Grep every check run for engine errors — `2>&1 | grep -c 'ERROR:'` — and treat non-zero as
-   failure even when the exit code is 0 (F-021).
+4. Grep every check run for engine errors and treat any UNDECLARED error line as failure even when
+   the exit code is 0 (F-021). A check that deliberately provokes error paths (refusals, timeouts,
+   bad input) declares them by PATTERN in its verdict line —
+   `EXPECTED_ERROR_PATTERNS="pat1|pat2"` — because provoked-error *counts* vary with timing. Grade
+   with `grep 'ERROR:' | grep -vE '<declared patterns>' | wc -l` → must be 0. Only
+   `session_lifecycle_check` and `connect_retry_check` declare patterns today (F-052). A check
+   with no declaration gets zero allowance, and never "fix" a declared error by silencing the
+   production log call that emits it.
 
 ### Seams that already exist (build on these, never reinvent)
 

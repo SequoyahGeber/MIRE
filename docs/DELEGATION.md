@@ -269,10 +269,16 @@ permanent rule does not belong on a board of unscheduled problems.
 3. **Set `set_multiplayer_authority()` on a synchronizer BEFORE `add_child()`** (F-012, D-023).
    Setting it once the node is in the tree makes the replication interface reject the pending spawn on
    every client, and the symptom is error spam plus silently degraded state, not a clean failure.
-4. **Grep every check run for engine errors** — `… 2>&1 | grep -c 'ERROR:'` — and treat a non-zero
-   count as a failure (F-021). GDScript has no supported hook to fail a harness on engine-level
-   `push_error`, so a green exit code alone is not evidence: `net_debug_panel_check` passed 19
-   assertions for weeks on top of a stream of `Multiplayer root was not initialized`.
+4. **Grep every check run for engine errors** — `… 2>&1 | grep -c 'ERROR:'` — and treat any
+   UNDECLARED error line as a failure (F-021). GDScript has no supported hook to fail a harness on
+   engine-level `push_error`, so a green exit code alone is not evidence: `net_debug_panel_check`
+   passed 19 assertions for weeks on top of a stream of `Multiplayer root was not initialized`.
+   One refinement (F-052): a check that deliberately provokes error paths declares them by PATTERN
+   in its verdict line — `EXPECTED_ERROR_PATTERNS="pat1|pat2"` — because provoked-error counts vary
+   with timing (a slow run logs an extra rejoin timeout). Grade with
+   `grep 'ERROR:' | grep -vE '<declared>' | wc -l` → 0. Today only `session_lifecycle_check` and
+   `connect_retry_check` declare (the refusals and timeouts they exist to test, which production
+   code correctly reports via `MireLog.error`).
 
 **Task 2.8 ships melee combat v1 — and 2.9 tunes it in the inspector, not in code.** `CombatService`
 is an autoload late in the load order. The split is D-034: the swing is client-predicted, the hit is host.

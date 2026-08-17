@@ -7,6 +7,13 @@ extends SceneTree
 ## Exits non-zero on failure. Takes about 40 seconds — most of it is waiting for real timeouts, which
 ## is the point: the numbers this prints are measurements, not assertions about what should happen.
 ##
+## EXPECTED ENGINE ERRORS (F-052 triage): this check provokes refusals and timeouts on purpose, and
+## production code correctly reports them via `MireLog.error` → `push_error`. Their COUNT varies
+## with timing (a slow run can log one extra rejoin timeout), so the declaration is by PATTERN, in
+## the verdict line. Rule 4's grader ignores `ERROR:` lines matching the declared patterns and
+## fails on anything else:
+##   grep 'ERROR:' | grep -vE 'refused by host|connect to .* timed out' | wc -l   → must be 0
+##
 ## WHY THIS ONE IS NOT IN-PROCESS like the other three harnesses. Every claim here is about what the
 ## OTHER SIDE ends up believing — that a refused joiner is told why, that a dropped client reconnects
 ## by itself, that a late joiner sees the players who were already there. A second raw
@@ -306,7 +313,8 @@ func _drive() -> void:
 		"completed %d/8" % _sections_completed)
 
 	_cleanup([c1, c2, c3, c4])
-	print("\n%d failure(s)\n" % _failures)
+	print("\n%d failure(s) · EXPECTED_ERROR_PATTERNS=\"refused by host|connect to .* timed out\"\n"
+		% _failures)
 	_drive_finished = true
 	quit(1 if _failures > 0 else 0)
 
