@@ -174,10 +174,15 @@ def world_bounds(objects: list[bpy.types.Object]) -> tuple[Vector, Vector]:
 # ── Shared modular pieces ────────────────────────────────────────────────────
 
 
-def build_base(mats: dict[str, bpy.types.Material], prefix: str = "Wellspring_Base") -> None:
+def build_base(
+    mats: dict[str, bpy.types.Material],
+    prefix: str = "Wellspring_Base",
+    rune_material: str = "ancient_glow",
+    inlay_material: str = "bronze",
+) -> None:
     cone(f"{prefix}_Lower", 2.30, 2.14, 0.24, (0.0, 0.0, 0.12), mats["stone_dark"], 12)
     cone(f"{prefix}_Middle", 2.12, 1.98, 0.18, (0.0, 0.0, 0.33), mats["stone"], 12)
-    cone(f"{prefix}_Inlay", 1.82, 1.78, 0.055, (0.0, 0.0, 0.448), mats["bronze"], 12)
+    cone(f"{prefix}_Inlay", 1.82, 1.78, 0.055, (0.0, 0.0, 0.448), mats[inlay_material], 12)
     cone(f"{prefix}_Inner", 1.58, 1.55, 0.07, (0.0, 0.0, 0.51), mats["slate"], 12)
     for index in range(6):
         angle = index * math.pi / 3.0
@@ -194,7 +199,7 @@ def build_base(mats: dict[str, bpy.types.Material], prefix: str = "Wellspring_Ba
             f"{prefix}_Rune_{index + 1}",
             (math.cos(angle) * 1.70, math.sin(angle) * 1.70, 0.558),
             (0.27, 0.075, 0.025),
-            mats["ancient_glow"],
+            mats[rune_material],
             (0.0, 0.0, angle),
         )
 
@@ -280,6 +285,31 @@ def build_crystal_cluster(
         )
 
 
+def build_capping_crown(
+    mats: dict[str, bpy.types.Material],
+    prefix: str,
+    intact_segments: set[int],
+    height: float,
+    glow_material: str,
+    metal_material: str = "bronze",
+) -> None:
+    """Build the unmistakable ritual crown that visually means 'capped'."""
+    radius = 0.76
+    for index in sorted(intact_segments):
+        angle_a = index * math.tau / 8.0 + math.pi * 0.125
+        angle_b = (index + 1) * math.tau / 8.0 + math.pi * 0.125
+        start = (math.cos(angle_a) * radius, math.sin(angle_a) * radius, height)
+        end = (math.cos(angle_b) * radius, math.sin(angle_b) * radius, height)
+        beam_between(f"{prefix}_Crown_Segment_{index + 1}", start, end, 0.105, 0.075, mats[metal_material])
+        midpoint = (Vector(start) + Vector(end)) * 0.5
+        ico(
+            f"{prefix}_Crown_Glyph_{index + 1}",
+            tuple(midpoint + Vector((0.0, 0.0, 0.09))),
+            (0.085, 0.065, 0.13),
+            mats[glow_material],
+        )
+
+
 # ── Twelve requested assets ──────────────────────────────────────────────────
 
 
@@ -294,6 +324,20 @@ def build_distant_monolith(mats: dict[str, bpy.types.Material]) -> None:
             f"Distant_Monolith_Base_Shard_{index + 1}",
             (math.cos(angle) * 0.92, math.sin(angle) * 0.92, 0.52),
             (0.24, 0.19, 0.48),
+            mats["mire_crystal_dim"],
+            (0.2, 0.3, angle),
+        )
+    # Broken shoulder fins give the landmark a unique horizon silhouette from
+    # every approach instead of reading as a generic obelisk in fog.
+    for index, (angle, z, length) in enumerate(((0.3, 4.35, 0.92), (2.4, 5.05, 0.74), (4.55, 3.75, 0.82))):
+        radial = Vector((math.cos(angle), math.sin(angle), 0.0))
+        start = radial * 0.44 + Vector((0.0, 0.0, z))
+        end = radial * length + Vector((0.0, 0.0, z + 0.32))
+        beam_between(f"Distant_Monolith_Shoulder_{index + 1}", tuple(start), tuple(end), 0.28, 0.20, mats["mire_stone"])
+        ico(
+            f"Distant_Monolith_Shoulder_Crystal_{index + 1}",
+            tuple(end + Vector((0.0, 0.0, 0.12))),
+            (0.20, 0.15, 0.40),
             mats["mire_crystal_dim"],
             (0.2, 0.3, angle),
         )
@@ -322,13 +366,30 @@ def build_roots_asset(mats: dict[str, bpy.types.Material]) -> None:
 def build_state(mats: dict[str, bpy.types.Material], condition: str) -> None:
     # Exact geometry and names across all four states. Only these parts define
     # horizontal normalization and the recommended static collision footprint.
-    build_base(mats, "Wellspring_State_Anchor")
+    base_style = {
+        "uncapped": ("mire_glow", "bronze_dark"),
+        "capped": ("ancient_glow", "bronze"),
+        "recorrupting": ("split_glow", "bronze_dark"),
+        "corrupted": ("mire_glow", "mire_metal"),
+    }[condition]
+    build_base(mats, "Wellspring_State_Anchor", *base_style)
     if condition == "uncapped":
         build_basin(mats, "Uncapped_Basin", "mire_liquid")
         build_root_system(mats, "Uncapped_Root", 7, "mire_root", 1.10)
         build_crystal_cluster(mats, "Uncapped_Crystal", "mire_crystal", 0.62, 3.15, 0.56, -0.05)
         for index, z in enumerate((1.30, 2.10, 2.85)):
             box(f"Uncapped_Crack_{index + 1}", (0.0, -0.53, z), (0.10, 0.035, 0.46), mats["crack"], (0.15, 0.0, -0.20 + index * 0.16))
+        for index, (angle, height) in enumerate(((1.1, 1.15), (3.45, 0.88))):
+            cone(
+                f"Uncapped_Satellite_Spire_{index + 1}",
+                0.22,
+                0.02,
+                height,
+                (math.cos(angle) * 0.72, math.sin(angle) * 0.72, 0.70 + height * 0.5),
+                mats["mire_crystal_dim"],
+                5,
+                (0.18, -0.22, angle),
+            )
     elif condition == "capped":
         build_basin(mats, "Capped_Basin", "clear_liquid")
         build_root_system(mats, "Capped_Retreated_Root", 4, "root_dormant", 0.70)
@@ -341,6 +402,7 @@ def build_state(mats: dict[str, bpy.types.Material], condition: str) -> None:
             ico(f"Capped_Brace_Gem_{index + 1}", end, (0.13, 0.11, 0.18), mats["ancient_glow"])
         cone("Capped_Collar_Lower", 0.66, 0.64, 0.13, (0.0, 0.0, 1.48), mats["bronze"], 10)
         cone("Capped_Collar_Upper", 0.56, 0.54, 0.12, (0.0, 0.0, 2.38), mats["bronze"], 10)
+        build_capping_crown(mats, "Capped", set(range(8)), 3.02, "ancient_glow")
     elif condition == "recorrupting":
         build_basin(mats, "Recorrupting_Basin", "split_liquid")
         build_root_system(mats, "Recorrupting_Root", 6, "mire_root", 0.94)
@@ -359,6 +421,8 @@ def build_state(mats: dict[str, bpy.types.Material], condition: str) -> None:
                 mats["bronze_dark"],
             )
         ico("Recorrupting_Fallen_Collar", (1.28, -0.42, 0.73), (0.42, 0.12, 0.11), mats["bronze"], (0.2, 0.5, -0.4))
+        build_capping_crown(mats, "Recorrupting", {0, 1, 2, 5, 6}, 2.76, "split_glow", "bronze_dark")
+        ico("Recorrupting_Fallen_Crown", (-1.05, -0.74, 0.78), (0.48, 0.12, 0.10), mats["bronze_dark"], (0.18, 0.42, 0.65))
     elif condition == "corrupted":
         build_basin(mats, "Corrupted_Basin", "mire_liquid")
         build_root_system(mats, "Corrupted_Root", 9, "mire_root", 1.34)
@@ -376,6 +440,17 @@ def build_state(mats: dict[str, bpy.types.Material], condition: str) -> None:
             )
         for index, z in enumerate((1.20, 2.05, 2.90)):
             box(f"Corrupted_Vein_{index + 1}", (0.03, -0.61, z), (0.15, 0.04, 0.62), mats["mire_glow"], (0.18, 0.0, 0.18 - index * 0.15))
+        for index, (angle, height, width) in enumerate(((0.85, 1.65, 0.28), (3.75, 1.28, 0.24))):
+            cone(
+                f"Corrupted_Crown_Spire_{index + 1}",
+                width,
+                0.02,
+                height,
+                (math.cos(angle) * 0.78, math.sin(angle) * 0.78, 0.72 + height * 0.5),
+                mats["mire_crystal_dim"],
+                6,
+                (0.22, -0.18, angle),
+            )
     else:
         raise ValueError(f"Unknown Wellspring state: {condition}")
 
@@ -479,9 +554,9 @@ def create_asset(
     root = bpy.data.objects.new(name, None)
     root.empty_display_type = "PLAIN_AXES"
     collection.objects.link(root)
-    before = set(bpy.data.objects)
+    before_names = {obj.name for obj in bpy.data.objects}
     build_fn()
-    made = [obj for obj in bpy.data.objects if obj not in before]
+    made = sorted((obj for obj in bpy.data.objects if obj.name not in before_names), key=lambda obj: obj.name)
     anchors = [obj for obj in made if any(part in obj.name for part in anchor_parts)] if anchor_parts else made
     if not anchors:
         raise RuntimeError(f"{name}: anchor_parts {anchor_parts} matched no geometry")
@@ -609,7 +684,9 @@ def main() -> None:
         "basin_dark": material("MIRE_Wellspring_Basin_Dark", (0.045, 0.04, 0.07, 1.0)),
         "bronze": material("MIRE_Wellspring_Bronze", (0.68, 0.40, 0.10, 1.0), 0.38, 0.62),
         "bronze_dark": material("MIRE_Wellspring_Bronze_Dark", (0.27, 0.15, 0.045, 1.0), 0.48, 0.54),
+        "mire_metal": material("MIRE_Wellspring_Mire_Metal", (0.16, 0.075, 0.20, 1.0), 0.52, 0.34),
         "ancient_glow": material("MIRE_Wellspring_Ancient_Glow", (0.18, 0.86, 0.78, 1.0), 0.18, 0.0, (0.10, 1.0, 0.82, 1.0), 3.2),
+        "split_glow": material("MIRE_Wellspring_Split_Glow", (0.24, 0.40, 0.48, 1.0), 0.26, 0.0, (0.34, 0.26, 0.60, 1.0), 1.6),
         "clear_crystal": material("MIRE_Wellspring_Clear_Crystal", (0.22, 0.90, 0.84, 1.0), 0.18, 0.0, (0.12, 1.0, 0.88, 1.0), 3.3),
         "clear_crystal_dim": material("MIRE_Wellspring_Clear_Dim", (0.15, 0.48, 0.48, 1.0), 0.30, 0.0, (0.08, 0.48, 0.50, 1.0), 1.2),
         "mire_stone": material("MIRE_Wellspring_Mire_Stone", (0.105, 0.055, 0.15, 1.0)),

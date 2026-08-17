@@ -21,6 +21,10 @@ The kit contains **128 individual GLBs** across seven families:
 `catalog.json` is the exact index. It records every filename, family, dimensions, mesh-part count,
 polygon count, and embedded materials. Category renders live in `preview/`.
 
+Task 2.1i rebuilt all 18 trees around coherent low-poly anatomy: tapered multi-part trunks, visible
+roots, radial branches and forks, and faceted crowns attached to those branches. Pines no longer read
+as stacked cones, while bare, birch, and crooked variants now have distinct silhouettes at fog range.
+
 ### Construction grid
 
 Building pieces use a **4 m horizontal bay** and **3 m wall/post height**. Origins sit at ground level
@@ -43,5 +47,6 @@ render the selected pieces.
   --python tools/blender/build_mire_map_kit.py
 ```
 
-The script rebuilds all 128 GLBs, the editable `.blend`, `catalog.json`, and eight preview images
-deterministically. Blender 5.2.0 LTS was used for the initial build.
+The script rebuilds all 128 GLBs, the editable `.blend`, `catalog.json`, and eight preview images.
+GLB and catalog output ordering is deterministic by generated-object name; preview pixels may vary
+slightly with Blender's render sampling. Blender 5.2.0 LTS was used for the build.

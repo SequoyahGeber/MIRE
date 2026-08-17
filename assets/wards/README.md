@@ -24,6 +24,8 @@ The Ward's warm stone, timber, and bronze body belongs with player construction.
 is deliberately opposite the Mire's desaturated purple-black palette. Damage is communicated through
 silhouette rather than recolour alone: supports fall, the ring loses segments, the crystal splits,
 the critical core collapses and turns warning-orange, and the destroyed state leaves only low rubble.
+Task 2.1i strengthened the hero read with a socketed four-prong foundation, state-aware rune inlays,
+satellite shards around the healthy crystal, and a broken tip shard in the damaged state.
 
 ## State-swap contract
 

@@ -180,11 +180,15 @@ def world_bounds(objects: list[bpy.types.Object]) -> tuple[Vector, Vector]:
 # ── Shared Ward foundation and state geometry ────────────────────────────────
 
 
-def build_foundation(mats: dict[str, bpy.types.Material]) -> None:
+def build_foundation(
+    mats: dict[str, bpy.types.Material],
+    rune_material: str = "ward_glow",
+    inlay_material: str = "bronze",
+) -> None:
     """The immutable 2.4 m footprint shared by every gameplay condition state."""
     cone("Ward_Foundation_Base", 1.20, 1.10, 0.18, (0.0, 0.0, 0.09), mats["stone_dark"], 12)
     cone("Ward_Foundation_Upper", 1.02, 0.93, 0.13, (0.0, 0.0, 0.245), mats["stone"], 12)
-    cone("Ward_Foundation_Inlay", 0.80, 0.76, 0.035, (0.0, 0.0, 0.328), mats["bronze"], 12)
+    cone("Ward_Foundation_Inlay", 0.80, 0.76, 0.035, (0.0, 0.0, 0.328), mats[inlay_material], 12)
     cone("Ward_Foundation_Core", 0.64, 0.62, 0.045, (0.0, 0.0, 0.368), mats["slate"], 12)
     for index in range(4):
         angle = index * math.pi * 0.5
@@ -204,8 +208,26 @@ def build_foundation(mats: dict[str, bpy.types.Material]) -> None:
             f"Ward_Foundation_Rune_{index + 1}",
             (math.cos(angle) * 0.70, math.sin(angle) * 0.70, 0.397),
             (0.22, 0.065, 0.025),
-            mats["ward_glow"],
+            mats[rune_material],
             (0.0, 0.0, angle),
+        )
+    # A visible socket makes the bare foundation read as an intentionally
+    # inactive Ward rather than an unfinished stone pad. These parts remain
+    # identical across states; only their materials change with condition.
+    cone("Ward_Foundation_Socket", 0.41, 0.34, 0.12, (0.0, 0.0, 0.45), mats[inlay_material], 10)
+    cone("Ward_Foundation_Socket_Well", 0.30, 0.27, 0.10, (0.0, 0.0, 0.56), mats["slate"], 10)
+    for index in range(4):
+        angle = index * math.pi * 0.5 + math.pi * 0.25
+        radial = Vector((math.cos(angle), math.sin(angle), 0.0))
+        start = radial * 0.34 + Vector((0.0, 0.0, 0.47))
+        end = radial * 0.23 + Vector((0.0, 0.0, 0.70))
+        beam_between(
+            f"Ward_Foundation_Socket_Prong_{index + 1}",
+            tuple(start),
+            tuple(end),
+            0.075,
+            mats[inlay_material],
+            0.055,
         )
 
 
@@ -250,7 +272,12 @@ def build_support(
         ico(f"Ward_Support_Gem_{index + 1}", tuple(top), (0.12, 0.10, 0.17), mats["ward_glow"])
 
 
-def build_ring(mats: dict[str, bpy.types.Material], segments: set[int], radius: float = 0.62) -> None:
+def build_ring(
+    mats: dict[str, bpy.types.Material],
+    segments: set[int],
+    radius: float = 0.62,
+    glow_material: str = "ward_glow",
+) -> None:
     for index in sorted(segments):
         angle_a = index * math.pi * 0.25 + math.pi * 0.125
         angle_b = (index + 1) * math.pi * 0.25 + math.pi * 0.125
@@ -258,7 +285,7 @@ def build_ring(mats: dict[str, bpy.types.Material], segments: set[int], radius: 
         end = (math.cos(angle_b) * radius, math.sin(angle_b) * radius, 1.34)
         beam_between(f"Ward_Energy_Ring_{index + 1}", start, end, 0.075, mats["bronze"], 0.055)
         midpoint = (Vector(start) + Vector(end)) * 0.5
-        ico(f"Ward_Ring_Glyph_{index + 1}", tuple(midpoint), (0.075, 0.06, 0.075), mats["ward_glow"])
+        ico(f"Ward_Ring_Glyph_{index + 1}", tuple(midpoint), (0.075, 0.06, 0.075), mats[glow_material])
 
 
 def build_crystal(
@@ -269,12 +296,29 @@ def build_crystal(
         cone("Ward_Crystal_Core", 0.31, 0.19, 1.24, (0.0, 0.0, 1.04), mats["crystal"], 6)
         cone("Ward_Crystal_Tip", 0.19, 0.0, 0.44, (0.0, 0.0, 1.88), mats["crystal_light"], 6)
         ico("Ward_Crystal_Heart", (0.0, 0.0, 0.78), (0.18, 0.18, 0.23), mats["ward_glow"])
+        for index, (angle, height, radius, lean) in enumerate((
+            (0.55, 0.72, 0.28, -0.26),
+            (2.55, 0.58, 0.24, 0.30),
+            (4.45, 0.48, 0.21, -0.22),
+        )):
+            shard = cone(
+                f"Ward_Crystal_Satellite_{index + 1}",
+                radius * 0.54,
+                0.0,
+                height,
+                (math.cos(angle) * 0.34, math.sin(angle) * 0.34, 0.70 + height * 0.5),
+                mats["crystal_light" if index == 0 else "crystal"],
+                5,
+                (0.0, lean, angle),
+            )
+            shard.rotation_euler[1] = lean
     elif condition == "damaged":
         cone("Ward_Crystal_Lower", 0.31, 0.22, 0.68, (0.0, 0.0, 0.76), mats["crystal"], 6)
         upper = cone("Ward_Crystal_Upper", 0.24, 0.06, 0.58, (0.08, 0.0, 1.36), mats["crystal_dim"], 6, (0.0, 0.16, -0.08))
         upper.rotation_euler[1] = 0.14
         box("Ward_Crystal_Fracture", (0.0, -0.235, 1.06), (0.07, 0.035, 0.36), mats["crack"], (0.22, 0.0, -0.18))
         ico("Ward_Damage_Shard", (0.42, -0.10, 0.48), (0.11, 0.07, 0.24), mats["crystal_dim"], (0.2, 0.5, 0.1))
+        ico("Ward_Damage_Broken_Tip", (0.31, 0.10, 1.43), (0.13, 0.10, 0.28), mats["crystal_dim"], (0.45, 0.28, -0.35))
     elif condition == "critical":
         cone("Ward_Crystal_Remainder", 0.31, 0.16, 0.62, (0.0, 0.0, 0.70), mats["critical_glow"], 6, (0.05, -0.12, 0.08))
         ico("Ward_Critical_Heart", (0.0, -0.02, 0.70), (0.19, 0.16, 0.20), mats["critical_light"])
@@ -287,7 +331,13 @@ def build_crystal(
 
 
 def build_ward_state(mats: dict[str, bpy.types.Material], condition: str) -> None:
-    build_foundation(mats)
+    foundation_style = {
+        "healthy": ("ward_glow", "bronze"),
+        "damaged": ("ward_dim", "bronze"),
+        "critical": ("critical_glow", "bronze_dark"),
+        "destroyed": ("ward_dead", "bronze_dark"),
+    }[condition]
+    build_foundation(mats, *foundation_style)
     if condition == "healthy":
         for index in range(4):
             build_support(index, mats)
@@ -297,7 +347,7 @@ def build_ward_state(mats: dict[str, bpy.types.Material], condition: str) -> Non
         for index in range(3):
             build_support(index, mats)
         build_support(3, mats, fallen=True)
-        build_ring(mats, {0, 1, 2, 3, 4})
+        build_ring(mats, {0, 1, 2, 3, 4}, glow_material="ward_dim")
         build_crystal(mats, condition)
         ico("Ward_Damage_Rubble_1", (0.77, -0.55, 0.47), (0.15, 0.12, 0.10), mats["stone"])
         ico("Ward_Damage_Rubble_2", (0.58, -0.78, 0.44), (0.11, 0.09, 0.08), mats["stone_dark"])
@@ -306,7 +356,7 @@ def build_ward_state(mats: dict[str, bpy.types.Material], condition: str) -> Non
         build_support(1, mats, broken=True)
         build_support(2, mats, fallen=True)
         build_support(3, mats, broken=True)
-        build_ring(mats, {0, 1})
+        build_ring(mats, {0, 1}, glow_material="critical_light")
         build_crystal(mats, condition)
         for index, angle in enumerate((0.2, 2.4, 4.3)):
             cone(
@@ -423,9 +473,9 @@ def create_asset(
     root = bpy.data.objects.new(name, None)
     root.empty_display_type = "PLAIN_AXES"
     collection.objects.link(root)
-    before = set(bpy.data.objects)
+    before_names = {obj.name for obj in bpy.data.objects}
     build_fn()
-    made = [obj for obj in bpy.data.objects if obj not in before]
+    made = sorted((obj for obj in bpy.data.objects if obj.name not in before_names), key=lambda obj: obj.name)
     anchors = [obj for obj in made if any(part in obj.name for part in anchor_parts)] if anchor_parts else made
     if not anchors:
         raise RuntimeError(f"{name}: anchor_parts {anchor_parts} matched no geometry")
@@ -557,6 +607,8 @@ def main() -> None:
         "crystal_light": material("MIRE_Ward_Crystal_Light", (0.28, 0.92, 0.88, 1.0), 0.18, 0.02, (0.18, 1.0, 0.90, 1.0), 3.0),
         "crystal_dim": material("MIRE_Ward_Crystal_Dim", (0.16, 0.42, 0.44, 1.0), 0.38, 0.0, (0.08, 0.38, 0.42, 1.0), 0.8),
         "ward_glow": material("MIRE_Ward_Glow", (0.20, 0.86, 0.78, 1.0), 0.20, 0.0, (0.12, 1.0, 0.82, 1.0), 3.4),
+        "ward_dim": material("MIRE_Ward_Glow_Dim", (0.10, 0.38, 0.36, 1.0), 0.34, 0.0, (0.06, 0.34, 0.31, 1.0), 0.8),
+        "ward_dead": material("MIRE_Ward_Glow_Dead", (0.075, 0.09, 0.09, 1.0), 0.72),
         "critical_glow": material("MIRE_Ward_Critical", (0.88, 0.18, 0.12, 1.0), 0.30, 0.0, (1.0, 0.08, 0.03, 1.0), 2.5),
         "critical_light": material("MIRE_Ward_Critical_Light", (1.0, 0.48, 0.08, 1.0), 0.22, 0.0, (1.0, 0.26, 0.03, 1.0), 3.0),
         "crack": material("MIRE_Ward_Crack", (0.035, 0.028, 0.045, 1.0)),
@@ -566,7 +618,7 @@ def main() -> None:
 
     foundation_anchor = ("Ward_Foundation_",)
     builders: list[tuple[str, str, Callable[[], None], tuple[str, ...]]] = [
-        ("ward_foundation", "ward_state", lambda: build_foundation(mats), foundation_anchor),
+        ("ward_foundation", "ward_state", lambda: build_foundation(mats, "ward_dim"), foundation_anchor),
         ("ward_healthy", "ward_state", lambda: build_ward_state(mats, "healthy"), foundation_anchor),
         ("ward_damaged", "ward_state", lambda: build_ward_state(mats, "damaged"), foundation_anchor),
         ("ward_critical", "ward_state", lambda: build_ward_state(mats, "critical"), foundation_anchor),

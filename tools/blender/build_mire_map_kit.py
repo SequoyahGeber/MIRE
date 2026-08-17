@@ -101,6 +101,16 @@ def cylinder_between(name: str, start: tuple[float, float, float], end: tuple[fl
     return obj
 
 
+def tapered_between(name: str, start: tuple[float, float, float], end: tuple[float, float, float], radius_start: float, radius_end: float, mat: bpy.types.Material, vertices: int = 7) -> bpy.types.Object:
+    a = Vector(start)
+    b = Vector(end)
+    direction = b - a
+    obj = cone(name, radius_start, radius_end, direction.length, tuple((a + b) * 0.5), mat, vertices)
+    obj.rotation_mode = "QUATERNION"
+    obj.rotation_quaternion = direction.to_track_quat("Z", "Y")
+    return obj
+
+
 def mesh_object(name: str, vertices: list[tuple[float, float, float]], faces: list[tuple[int, ...]], mat: bpy.types.Material) -> bpy.types.Object:
     mesh = bpy.data.meshes.new(f"{name}_Mesh")
     mesh.from_pydata(vertices, [], faces)
@@ -136,9 +146,9 @@ def create_asset(name: str, category: str, build_fn: Callable[[], None], display
     root = bpy.data.objects.new(name, None)
     root.empty_display_type = "PLAIN_AXES"
     collection.objects.link(root)
-    before = set(bpy.data.objects)
+    before_names = {obj.name for obj in bpy.data.objects}
     build_fn()
-    made = [obj for obj in bpy.data.objects if obj not in before]
+    made = sorted((obj for obj in bpy.data.objects if obj.name not in before_names), key=lambda obj: obj.name)
     for obj in made:
         for old_collection in list(obj.users_collection):
             old_collection.objects.unlink(obj)
@@ -192,38 +202,127 @@ def main() -> None:
     }
 
     def build_pine(seed: int) -> None:
-        rng = random.Random(seed); height = rng.uniform(4.3, 6.3); lean = (rng.uniform(-0.22, 0.22), rng.uniform(-0.22, 0.22))
-        cylinder_between("Trunk", (0, 0, 0), (lean[0], lean[1], height * 0.76), rng.uniform(0.23, 0.39), mats["bark"], 8)
-        tiers = rng.randint(3, 5)
-        for index in range(tiers):
-            t = index / max(1, tiers - 1); z = height * (0.42 + t * 0.45); radius = (1.72 - 1.12 * t) * rng.uniform(0.90, 1.12); depth = rng.uniform(1.25, 1.75)
-            foliage = cone(f"Foliage_{index + 1}", radius, max(0.03, radius * 0.08), depth, (lean[0] * z / height, lean[1] * z / height, z), [mats["pine_dark"], mats["pine_mid"], mats["pine_tip"]][min(2, int(t * 3))], rng.randint(7, 10)); foliage.rotation_euler[2] = rng.uniform(0, math.tau)
+        rng = random.Random(seed)
+        height = rng.uniform(4.8, 6.5)
+        lean = Vector((rng.uniform(-0.34, 0.34), rng.uniform(-0.28, 0.28), 0.0))
+        lower_top = lean * 0.38 + Vector((0.0, 0.0, height * 0.48))
+        upper_top = lean + Vector((0.0, 0.0, height * 0.95))
+        base_radius = rng.uniform(0.34, 0.46)
+        tapered_between("Trunk_Lower", (0.0, 0.0, 0.0), tuple(lower_top), base_radius, base_radius * 0.70, mats["bark"], 8)
+        tapered_between("Trunk_Upper", tuple(lower_top), tuple(upper_top), base_radius * 0.70, 0.10, mats["bark_light"], 8)
+        root_count = 4
+        for index in range(root_count):
+            angle = index * math.tau / root_count + rng.uniform(-0.20, 0.20)
+            tapered_between(
+                f"Root_{index + 1}",
+                (math.cos(angle) * 0.10, math.sin(angle) * 0.10, 0.14),
+                (math.cos(angle) * rng.uniform(0.72, 1.05), math.sin(angle) * rng.uniform(0.72, 1.05), 0.025),
+                0.15,
+                0.045,
+                mats["bark"],
+                7,
+            )
+        tiers = 4 if height > 5.3 else 3
+        foliage_mats = (mats["pine_dark"], mats["pine_mid"], mats["pine_tip"])
+        for tier in range(tiers):
+            t = tier / max(1, tiers - 1)
+            z = height * (0.34 + t * 0.42)
+            center = lean * (z / height) + Vector((0.0, 0.0, z))
+            branch_count = 5 + ((seed + tier) % 2)
+            branch_length = (1.55 - t * 0.58) * rng.uniform(0.90, 1.10)
+            for branch in range(branch_count):
+                angle = branch * math.tau / branch_count + tier * 0.58 + rng.uniform(-0.16, 0.16)
+                radial = Vector((math.cos(angle), math.sin(angle), 0.0))
+                end = center + radial * branch_length + Vector((0.0, 0.0, rng.uniform(-0.28, 0.10)))
+                tapered_between(
+                    f"Branch_{tier + 1}_{branch + 1}",
+                    tuple(center),
+                    tuple(end),
+                    0.11 - t * 0.025,
+                    0.035,
+                    mats["bark"],
+                    7,
+                )
+                foliage_scale = 0.58 - t * 0.12
+                ico(
+                    f"Needles_{tier + 1}_{branch + 1}",
+                    tuple(center.lerp(end, 0.82)),
+                    (foliage_scale * 1.18, foliage_scale * 0.66, foliage_scale * 0.62),
+                    foliage_mats[min(2, tier)],
+                    (rng.uniform(-0.16, 0.16), rng.uniform(-0.16, 0.16), angle),
+                )
+                if branch % 2 == 0:
+                    ico(
+                        f"Needle_Tip_{tier + 1}_{branch + 1}",
+                        tuple(end),
+                        (foliage_scale * 0.72, foliage_scale * 0.48, foliage_scale * 0.52),
+                        foliage_mats[min(2, tier + 1)],
+                        (rng.uniform(-0.2, 0.2), rng.uniform(-0.2, 0.2), angle + 0.35),
+                    )
+        cone("Leader_Needles", 0.62, 0.04, height * 0.24, tuple(lean * 0.88 + Vector((0.0, 0.0, height * 0.85))), mats["pine_tip"], 8)
 
     def build_bare(seed: int) -> None:
-        rng = random.Random(seed); height = rng.uniform(4.1, 6.0); top = (rng.uniform(-0.35, 0.35), rng.uniform(-0.25, 0.25), height)
-        trunk = cone("Trunk", rng.uniform(0.38, 0.52), rng.uniform(0.14, 0.23), height, (top[0] * 0.5, top[1] * 0.5, height * 0.5), mats["bark_light"], 7); trunk.rotation_euler[1] = -top[0] / height
-        for index in range(rng.randint(4, 7)):
-            side = -1 if index % 2 == 0 else 1; start_z = rng.uniform(height * 0.48, height * 0.83); angle = rng.uniform(-0.5, 0.5); length = rng.uniform(1.0, 2.0)
-            start = (top[0] * start_z / height, top[1] * start_z / height, start_z); end = (start[0] + side * math.cos(angle) * length, start[1] + math.sin(angle) * length * 0.45, start_z + rng.uniform(0.7, 1.45))
-            cylinder_between(f"Branch_{index + 1}", start, end, rng.uniform(0.075, 0.15), mats["bark_light"], 6)
+        rng = random.Random(seed)
+        height = rng.uniform(4.5, 6.2)
+        bend = Vector((rng.uniform(-0.42, 0.42), rng.uniform(-0.30, 0.30), height * 0.55))
+        top = bend + Vector((rng.uniform(-0.40, 0.40), rng.uniform(-0.30, 0.30), height * 0.45))
+        tapered_between("Trunk_Lower", (0.0, 0.0, 0.0), tuple(bend), 0.46, 0.29, mats["bark"], 8)
+        tapered_between("Trunk_Upper", tuple(bend), tuple(top), 0.29, 0.10, mats["bark_light"], 7)
+        for index in range(4):
+            angle = index * math.tau / 4.0 + rng.uniform(-0.25, 0.25)
+            tapered_between(f"Root_{index + 1}", (0.0, 0.0, 0.14), (math.cos(angle) * 0.92, math.sin(angle) * 0.92, 0.025), 0.14, 0.035, mats["bark"], 7)
+        for index in range(6):
+            start_z = height * (0.40 + index * 0.075)
+            trunk_point = bend.lerp(top, max(0.0, min(1.0, (start_z - bend.z) / max(0.01, top.z - bend.z))))
+            angle = index * 2.37 + rng.uniform(-0.32, 0.32)
+            length = rng.uniform(1.10, 1.75) * (1.0 - index * 0.035)
+            end = trunk_point + Vector((math.cos(angle) * length, math.sin(angle) * length, rng.uniform(0.55, 1.10)))
+            tapered_between(f"Branch_{index + 1}", tuple(trunk_point), tuple(end), 0.14 - index * 0.009, 0.045, mats["bark_light"], 7)
+            for twig in (-1, 1):
+                twig_end = end + Vector((math.cos(angle + twig * 0.68) * 0.58, math.sin(angle + twig * 0.68) * 0.58, rng.uniform(0.28, 0.62)))
+                tapered_between(f"Twig_{index + 1}_{twig + 2}", tuple(end), tuple(twig_end), 0.050, 0.018, mats["bark_light"], 6)
 
     def build_birch(seed: int) -> None:
-        rng = random.Random(seed); height = rng.uniform(4.8, 6.6); lean_x = rng.uniform(-0.28, 0.28)
-        cylinder_between("Trunk", (0, 0, 0), (lean_x, 0, height), rng.uniform(0.18, 0.27), mats["birch"], 8)
-        for index in range(4):
-            z = height * (0.20 + index * 0.17); cylinder(f"Bark_Mark_{index + 1}", 0.285, 0.055, (lean_x * z / height, 0, z), mats["birch_dark"], 8)
-        crown_mat = mats["leaf_light"] if seed % 2 == 0 else mats["leaf_gold"]
-        for index in range(rng.randint(4, 6)):
-            angle = index / 5 * math.tau + rng.uniform(-0.3, 0.3); radius = rng.uniform(0.35, 0.85); z = rng.uniform(height * 0.67, height * 0.98)
-            ico(f"Crown_{index + 1}", (lean_x + math.cos(angle) * radius, math.sin(angle) * radius, z), (rng.uniform(0.65, 1.05), rng.uniform(0.55, 0.9), rng.uniform(0.55, 0.9)), crown_mat, (rng.random(), rng.random(), rng.random()))
+        rng = random.Random(seed)
+        height = rng.uniform(5.0, 6.7)
+        lean = Vector((rng.uniform(-0.38, 0.38), rng.uniform(-0.20, 0.20), 0.0))
+        mid = lean * 0.35 + Vector((0.0, 0.0, height * 0.52))
+        top = lean + Vector((0.0, 0.0, height))
+        tapered_between("Trunk_Lower", (0.0, 0.0, 0.0), tuple(mid), 0.30, 0.22, mats["birch"], 8)
+        tapered_between("Trunk_Upper", tuple(mid), tuple(top), 0.22, 0.075, mats["birch"], 8)
+        for index in range(5):
+            z = height * (0.16 + index * 0.14)
+            center = lean * (z / height) + Vector((0.0, 0.0, z))
+            cylinder(f"Bark_Mark_{index + 1}", 0.27 - index * 0.018, 0.045, tuple(center), mats["birch_dark"], 8)
+        for index in range(6):
+            z = height * (0.48 + index * 0.07)
+            center = lean * (z / height) + Vector((0.0, 0.0, z))
+            angle = index * 2.18 + rng.uniform(-0.28, 0.28)
+            length = rng.uniform(0.95, 1.48)
+            end = center + Vector((math.cos(angle) * length, math.sin(angle) * length, rng.uniform(0.32, 0.86)))
+            tapered_between(f"Branch_{index + 1}", tuple(center), tuple(end), 0.10, 0.028, mats["birch"], 7)
+            crown_mat = (mats["leaf"], mats["leaf_light"], mats["leaf_gold"])[(seed + index) % 3]
+            ico(f"Crown_{index + 1}", tuple(end), (rng.uniform(0.62, 0.92), rng.uniform(0.48, 0.72), rng.uniform(0.52, 0.82)), crown_mat, (rng.random(), rng.random(), angle))
+        ico("Crown_Top", tuple(top + Vector((0.0, 0.0, -0.10))), (0.68, 0.58, 0.82), mats["leaf_light"], (rng.random(), rng.random(), rng.random()))
 
     def build_crooked(seed: int) -> None:
-        rng = random.Random(seed); points = [(0.0, 0.0, 0.0)]
-        for index in range(1, 4): points.append((points[-1][0] + rng.uniform(-0.65, 0.65), points[-1][1] + rng.uniform(-0.28, 0.28), index * rng.uniform(1.25, 1.55)))
-        for index in range(3): cylinder_between(f"Trunk_{index + 1}", points[index], points[index + 1], 0.34 - index * 0.065, mats["bark"], 7)
-        leaf_mat = mats["leaf_gold"] if seed % 3 == 0 else mats["leaf"]
-        for index in range(rng.randint(3, 5)):
-            anchor = points[-1]; ico(f"Crown_{index + 1}", (anchor[0] + rng.uniform(-1, 1), anchor[1] + rng.uniform(-0.8, 0.8), anchor[2] + rng.uniform(-0.2, 1)), (rng.uniform(0.7, 1.2), rng.uniform(0.6, 1), rng.uniform(0.55, 0.95)), leaf_mat, (rng.random(), rng.random(), rng.random()))
+        rng = random.Random(seed)
+        points = [Vector((0.0, 0.0, 0.0))]
+        for index in range(1, 5):
+            points.append(points[-1] + Vector((rng.uniform(-0.68, 0.68), rng.uniform(-0.38, 0.38), rng.uniform(1.05, 1.42))))
+        for index in range(4):
+            tapered_between(f"Trunk_{index + 1}", tuple(points[index]), tuple(points[index + 1]), 0.40 - index * 0.07, 0.33 - index * 0.07, mats["bark" if index < 2 else "bark_light"], 7)
+        for index in range(4):
+            angle = index * math.tau / 4.0 + rng.uniform(-0.25, 0.25)
+            tapered_between(f"Root_{index + 1}", (0.0, 0.0, 0.14), (math.cos(angle) * 0.94, math.sin(angle) * 0.94, 0.025), 0.15, 0.04, mats["bark"], 7)
+        leaf_palette = (mats["leaf"], mats["leaf_light"], mats["leaf_gold"])
+        for index in range(6):
+            anchor = points[2 + index % 3]
+            angle = index * 2.31 + rng.uniform(-0.28, 0.28)
+            length = rng.uniform(0.85, 1.38)
+            end = anchor + Vector((math.cos(angle) * length, math.sin(angle) * length, rng.uniform(0.20, 0.78)))
+            tapered_between(f"Branch_{index + 1}", tuple(anchor), tuple(end), 0.12, 0.03, mats["bark_light"], 7)
+            ico(f"Crown_{index + 1}", tuple(end), (rng.uniform(0.62, 1.00), rng.uniform(0.50, 0.82), rng.uniform(0.55, 0.88)), leaf_palette[(seed + index) % 3], (rng.random(), rng.random(), angle))
 
     def build_boulder(seed: int) -> None:
         rng = random.Random(seed); sx, sy, sz = rng.uniform(0.9, 1.8), rng.uniform(0.75, 1.5), rng.uniform(0.65, 1.4)

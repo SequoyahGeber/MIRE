@@ -25,11 +25,16 @@ The Wellspring is a fixed objective visible on the horizon. Its ancient grey sto
 connect it visually to player Wards, while the condition state carries the run's territory story:
 
 - **Uncapped:** open purple basin, aggressive roots, fractured Mire crystal.
-- **Capped:** clear teal basin and crystal held by four bronze braces and two collars.
-- **Re-corrupting:** dim leaning crystal, broken cap hardware, returning roots, and purple growth
+- **Capped:** clear teal basin and crystal held by four bronze braces, two collars, and a complete
+  eight-segment ritual crown.
+- **Re-corrupting:** dim leaning crystal, a visibly broken five-segment crown, fallen cap hardware,
+  returning roots, and purple growth
   visibly overtaking one side.
 - **Corrupted:** tallest and widest purple crystal treatment, nine climbing roots, secondary spires,
   and exposed glowing veins.
+
+Task 2.1i also added asymmetrical shoulder fins to the distant monolith and made foundation inlays
+track each condition, improving state reads without changing the shared gameplay footprint.
 
 ## State-swap contract
 

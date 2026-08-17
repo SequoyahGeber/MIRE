@@ -9,12 +9,13 @@ their presentation scenes and produces the runtime assets here.
 
 - `mire_mossy_boulder` keeps the faceted boulder, fracture slabs, moss, and lichen. Its near-black
   underside/fractures were remapped to readable blue-grey stone, the full model was reduced to a
-  practical hero-boulder scale, its lowest facets were flattened into a natural ground-contact plane,
-  and all transforms and naming were normalized.
+  practical hero-boulder scale, three small faceted footing stones were added inside its footprint to
+  ground the floating lower silhouette, and all transforms and naming were normalized.
 - `mire_broadleaf_tree` keeps the authored trunk, collars, roots, branches, canopy clusters, and leaf
   accents. The 6.3 m display island and its loose rocks, grass, and mushrooms were removed so this is
   a portable tree rather than a miniature diorama. The pale canopy was remapped to MIRE's saturated
-  forest greens and the model was normalized to ground level.
+  forest greens, deterministic cluster variation was added, and the model was normalized to ground
+  level.
 
 Runtime GLBs are in `exports/`. The editable combined source is
 `assets/source/adapted_nature_set.blend`. `catalog.json` records exact dimensions, part counts,

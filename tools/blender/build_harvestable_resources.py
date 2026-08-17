@@ -146,6 +146,91 @@ def cylinder_between(
     return obj
 
 
+def tapered_between(
+    name: str,
+    start: tuple[float, float, float],
+    end: tuple[float, float, float],
+    radius_start: float,
+    radius_end: float,
+    mat: bpy.types.Material,
+    vertices: int = 8,
+) -> bpy.types.Object:
+    first = Vector(start)
+    second = Vector(end)
+    direction = second - first
+    obj = cone(
+        name,
+        radius_start,
+        radius_end,
+        direction.length,
+        tuple((first + second) * 0.5),
+        mat,
+        vertices,
+    )
+    obj.rotation_mode = "QUATERNION"
+    obj.rotation_quaternion = direction.to_track_quat("Z", "Y")
+    return obj
+
+
+def notched_trunk_band(
+    name: str,
+    z_bottom: float,
+    z_top: float,
+    radius_bottom: float,
+    radius_top: float,
+    depth: float,
+    bark_mat: bpy.types.Material,
+    cut_mat: bpy.types.Material,
+    core_mat: bpy.types.Material,
+) -> bpy.types.Object:
+    """Build a concave axe notch into the trunk rather than pasting one on."""
+    segments = 12
+    rings = (z_bottom, (z_bottom + z_top) * 0.5, z_top)
+    vertices: list[tuple[float, float, float]] = []
+    for ring_index, z in enumerate(rings):
+        blend = ring_index / 2.0
+        outer_radius = radius_bottom + (radius_top - radius_bottom) * blend
+        for segment in range(segments):
+            angle = segment * math.tau / segments
+            front_delta = abs(math.atan2(math.sin(angle + math.pi * 0.5), math.cos(angle + math.pi * 0.5)))
+            radius = outer_radius
+            if ring_index == 1 and front_delta < math.radians(18):
+                radius *= depth
+            elif ring_index == 1 and front_delta < math.radians(48):
+                radius *= min(0.88, depth + 0.32)
+            vertices.append((math.cos(angle) * radius, math.sin(angle) * radius, z))
+
+    faces: list[tuple[int, int, int, int]] = []
+    material_indices: list[int] = []
+    for ring_index in range(2):
+        for segment in range(segments):
+            following = (segment + 1) % segments
+            faces.append(
+                (
+                    ring_index * segments + segment,
+                    ring_index * segments + following,
+                    (ring_index + 1) * segments + following,
+                    (ring_index + 1) * segments + segment,
+                )
+            )
+            angle = (segment + 0.5) * math.tau / segments
+            front_delta = abs(math.atan2(math.sin(angle + math.pi * 0.5), math.cos(angle + math.pi * 0.5)))
+            material_indices.append(2 if front_delta < math.radians(17) else 1 if front_delta < math.radians(50) else 0)
+
+    mesh = bpy.data.meshes.new(f"{name}_Mesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    obj.data.materials.append(bark_mat)
+    obj.data.materials.append(cut_mat)
+    obj.data.materials.append(core_mat)
+    for polygon, material_index in zip(obj.data.polygons, material_indices):
+        polygon.material_index = material_index
+        polygon.use_smooth = False
+    return obj
+
+
 def look_at(obj: bpy.types.Object, target: tuple[float, float, float]) -> None:
     obj.rotation_euler = (Vector(target) - obj.location).to_track_quat("-Z", "Y").to_euler()
 
@@ -169,9 +254,9 @@ def create_asset(
     root = bpy.data.objects.new(name, None)
     root.empty_display_type = "PLAIN_AXES"
     collection.objects.link(root)
-    before = set(bpy.data.objects)
+    before_names = {obj.name for obj in bpy.data.objects}
     build_fn()
-    made = [obj for obj in bpy.data.objects if obj not in before]
+    made = sorted((obj for obj in bpy.data.objects if obj.name not in before_names), key=lambda obj: obj.name)
     move_to_collection(made, collection)
     for obj in made:
         obj.parent = root
@@ -216,87 +301,138 @@ def create_asset(
 
 
 def build_tree_base(mats: dict[str, bpy.types.Material], damage: int) -> None:
-    cone("Trunk", 0.48, 0.23, 5.25, (0.0, 0.0, 2.625), mats["bark"], 9)
-    for index, (z, radius, depth) in enumerate(
-        ((2.65, 1.62, 1.50), (3.45, 1.42, 1.42), (4.18, 1.15, 1.32), (4.82, 0.82, 1.18))
-    ):
-        if damage >= 2 and index == 0:
-            continue
-        foliage = cone(
-            f"Foliage_{index + 1}",
-            radius,
-            0.08,
-            depth,
-            (0.05 * (index % 2), 0.0, z),
-            mats["pine_dark" if index < 2 else "pine_light"],
-            9,
+    height = 5.35
+    lower_top = Vector((0.04, -0.02, 2.65))
+    upper_top = Vector((0.16, 0.03, height))
+    if damage == 0:
+        tapered_between("Trunk_Lower", (0.0, 0.0, 0.0), tuple(lower_top), 0.48, 0.31, mats["bark"], 9)
+    else:
+        tapered_between("Trunk_Base", (0.0, 0.0, 0.0), (0.01, -0.005, 0.80), 0.48, 0.43, mats["bark"], 9)
+        notch = notched_trunk_band(
+            "Axe_Notch",
+            0.80,
+            1.48,
+            0.43,
+            0.39,
+            0.54 if damage == 1 else 0.24,
+            mats["bark"],
+            mats["cut"],
+            mats["cut_dark" if damage == 1 else "notch"],
         )
-        foliage.rotation_euler[2] = index * 0.31
+        notch.location = (0.01, -0.005, 0.0)
+        tapered_between("Trunk_Above_Notch", (0.01, -0.005, 1.48), tuple(lower_top), 0.39, 0.31, mats["bark"], 9)
+    tapered_between("Trunk_Upper", tuple(lower_top), tuple(upper_top), 0.31, 0.075, mats["bark_dark"], 8)
+
+    foliage_mats = (mats["pine_dark"], mats["pine_dark"], mats["pine_light"], mats["pine_light"])
+    for tier, z in enumerate((2.45, 3.15, 3.82, 4.46)):
+        t = tier / 3.0
+        center = lower_top.lerp(upper_top, max(0.0, (z - lower_top.z) / (upper_top.z - lower_top.z)))
+        branch_count = 5
+        branch_length = 1.45 - t * 0.52
+        for branch in range(branch_count):
+            angle = branch * math.tau / branch_count + tier * 0.57
+            radial = Vector((math.cos(angle), math.sin(angle), 0.0))
+            end = center + radial * branch_length + Vector((0.0, 0.0, -0.18 + (branch % 2) * 0.10))
+            broken = damage >= 2 and (tier, branch) in {(0, 1), (1, 3), (2, 0)}
+            if broken:
+                end = center.lerp(end, 0.42)
+            tapered_between(
+                f"Branch_{tier + 1}_{branch + 1}",
+                tuple(center),
+                tuple(end),
+                0.105 - t * 0.018,
+                0.026,
+                mats["bark_dark"],
+                7,
+            )
+            if broken:
+                cone(f"Broken_Branch_Cut_{tier + 1}_{branch + 1}", 0.037, 0.037, 0.025, tuple(end), mats["cut"], 7)
+                continue
+            scale = 0.54 - t * 0.10
+            ico(
+                f"Needles_{tier + 1}_{branch + 1}",
+                tuple(center.lerp(end, 0.80)),
+                (scale * 1.18, scale * 0.68, scale * 0.60),
+                foliage_mats[tier],
+                (0.08 * (branch % 2), -0.06 * (tier % 2), angle),
+            )
+            if branch % 2 == tier % 2:
+                ico(
+                    f"Needle_Tip_{tier + 1}_{branch + 1}",
+                    tuple(end),
+                    (scale * 0.72, scale * 0.48, scale * 0.48),
+                    mats["pine_light"],
+                    (-0.10, 0.07, angle + 0.30),
+                )
+    cone("Leader_Needles", 0.56, 0.035, 1.30, (0.15, 0.03, 4.92), mats["pine_light"], 8)
+
     for index, angle in enumerate((0.15, 2.18, 4.24)):
         start = (math.cos(angle) * 0.16, math.sin(angle) * 0.16, 0.12)
         end = (math.cos(angle) * 1.00, math.sin(angle) * 1.00, 0.04)
-        cylinder_between(f"Root_{index + 1}", start, end, 0.13, mats["bark_dark"], 7)
+        tapered_between(f"Root_{index + 1}", start, end, 0.15, 0.035, mats["bark_dark"], 7)
 
-    if damage >= 1:
-        # A bright exposed cut over a dark inset reads as an axe notch without
-        # using a brittle boolean modifier in the portable source.
-        box("Notch_Shadow", (0.0, -0.445, 1.12), (0.55, 0.08, 0.54), mats["notch"], (0.0, 0.0, math.radians(45)))
-        box("Fresh_Cut", (0.0, -0.49, 1.12), (0.38, 0.055, 0.38), mats["cut"], (0.0, 0.0, math.radians(45)))
     if damage >= 2:
-        box("Deep_Notch", (0.0, -0.51, 1.12), (0.58, 0.065, 0.58), mats["notch"], (0.0, 0.0, math.radians(45)))
-        box("Deep_Cut_Core", (0.0, -0.55, 1.12), (0.37, 0.045, 0.37), mats["cut_dark"], (0.0, 0.0, math.radians(45)))
-        box("Cut_Score_L", (-0.14, -0.577, 1.12), (0.035, 0.03, 0.39), mats["cut"], (0.0, 0.0, math.radians(-22)))
-        box("Cut_Score_R", (0.14, -0.577, 1.12), (0.035, 0.03, 0.39), mats["cut"], (0.0, 0.0, math.radians(22)))
-        for index, (x, y, z, rz) in enumerate(
-            ((-0.48, -0.48, 0.18, -0.35), (0.42, -0.58, 0.12, 0.62), (0.68, -0.32, 0.08, -0.18))
+        for index, (location, scale, rotation) in enumerate(
+            (
+                ((-0.44, -0.52, 0.10), (0.18, 0.08, 0.055), (0.1, -0.4, 0.2)),
+                ((0.36, -0.66, 0.075), (0.14, 0.07, 0.045), (-0.2, 0.5, -0.1)),
+                ((0.64, -0.34, 0.06), (0.11, 0.06, 0.04), (0.3, 0.2, 0.6)),
+            )
         ):
-            box(f"Wood_Chip_{index + 1}", (x, y, z), (0.30, 0.12, 0.12), mats["cut"], (0.0, rz, rz))
+            ico(f"Wood_Chip_{index + 1}", location, scale, mats["cut"], rotation)
 
 
 def build_felled_tree(mats: dict[str, bpy.types.Material]) -> None:
-    cylinder_between("Felled_Trunk", (-2.45, 0.0, 0.46), (2.40, 0.12, 0.62), 0.43, mats["bark"], 9)
+    tapered_between("Felled_Trunk", (-2.45, 0.0, 0.46), (2.40, 0.12, 0.62), 0.43, 0.16, mats["bark"], 9)
     cone("Fresh_Cut_End", 0.405, 0.405, 0.035, (-2.47, -0.001, 0.458), mats["cut"], 9, (0.0, math.radians(88), 0.0))
-    for index, (x, side) in enumerate(((-1.25, -1), (-0.15, 1), (1.02, -1), (1.78, 1))):
-        cylinder_between(
-            f"Branch_Stub_{index + 1}",
-            (x, 0.0, 0.55),
-            (x + 0.15, side * 0.70, 0.30),
-            0.115,
-            mats["bark_dark"],
-            7,
-        )
-    for index, x in enumerate((1.35, 2.00)):
-        foliage = cone(
-            f"Crown_Remnant_{index + 1}",
-            0.78 - index * 0.12,
-            0.06,
-            0.95,
-            (x, 0.15, 0.95),
-            mats["pine_dark" if index == 0 else "pine_light"],
-            8,
-            (math.radians(90), 0.0, 0.12),
-        )
-        foliage.rotation_euler[2] = index * 0.4
+    for tier, x in enumerate((0.45, 1.20, 1.86)):
+        length = 1.02 - tier * 0.15
+        for branch, side in enumerate((-1, 1)):
+            start = (x, 0.04, 0.56 + tier * 0.025)
+            end = (x + 0.08, side * length, 0.86 + branch * 0.18)
+            tapered_between(f"Felled_Branch_{tier + 1}_{branch + 1}", start, end, 0.10, 0.025, mats["bark_dark"], 7)
+            scale = 0.47 - tier * 0.05
+            ico(
+                f"Felled_Needles_{tier + 1}_{branch + 1}",
+                tuple(Vector(start).lerp(Vector(end), 0.82)),
+                (scale * 0.72, scale * 1.22, scale * 0.58),
+                mats["pine_dark" if tier == 0 else "pine_light"],
+                (side * 0.10, 0.08, side * 0.20),
+            )
+    ico("Felled_Crown", (2.30, 0.12, 0.85), (0.72, 0.58, 0.72), mats["pine_light"], (0.1, -0.2, 0.3))
 
 
 def build_stump(mats: dict[str, bpy.types.Material], depleted: bool) -> None:
-    height = 0.54 if not depleted else 0.32
-    radius = 0.50 if not depleted else 0.45
+    height = 0.68 if not depleted else 0.52
+    radius = 0.52 if not depleted else 0.48
     cone("Stump", radius, radius * 0.88, height, (0.0, 0.0, height * 0.5), mats["bark" if not depleted else "dead_bark"], 9)
     cone("Cut_Surface", radius * 0.82, radius * 0.82, 0.035, (0.0, 0.0, height + 0.012), mats["cut" if not depleted else "dead_cut"], 9)
-    for index, angle in enumerate((0.10, 2.18, 4.26)):
+    for index, angle in enumerate((0.10, 1.67, 3.24, 4.81)):
         start = (math.cos(angle) * 0.16, math.sin(angle) * 0.16, 0.12)
-        end = (math.cos(angle) * 0.92, math.sin(angle) * 0.92, 0.035)
-        cylinder_between(f"Root_{index + 1}", start, end, 0.13, mats["bark_dark" if not depleted else "dead_bark"], 7)
+        end = (math.cos(angle) * 0.96, math.sin(angle) * 0.96, 0.035)
+        tapered_between(f"Root_{index + 1}", start, end, 0.14, 0.035, mats["bark_dark" if not depleted else "dead_bark"], 7)
     if depleted:
-        for index, angle in enumerate((0.6, 2.7, 4.7)):
-            box(
-                f"Split_{index + 1}",
-                (math.cos(angle) * 0.22, math.sin(angle) * 0.22, height + 0.035),
-                (0.035, 0.34, 0.025),
-                mats["notch"],
-                (0.0, 0.0, angle),
+        cone("Hollow_Core", 0.25, 0.23, 0.055, (0.0, 0.0, height + 0.035), mats["notch"], 9)
+        for index, angle in enumerate((0.35, 1.78, 3.12, 4.58, 5.62)):
+            base = (math.cos(angle) * 0.32, math.sin(angle) * 0.32, height)
+            tip = (math.cos(angle) * 0.35, math.sin(angle) * 0.35, height + 0.18 + 0.06 * (index % 2))
+            tapered_between(f"Weathered_Splinter_{index + 1}", base, tip, 0.075, 0.018, mats["dead_bark"], 6)
+    else:
+        for index, ring_radius in enumerate((0.18, 0.32)):
+            bpy.ops.mesh.primitive_torus_add(
+                major_segments=9,
+                minor_segments=4,
+                location=(0.0, 0.0, height + 0.035),
+                major_radius=ring_radius,
+                minor_radius=0.014,
             )
+            ring = bpy.context.object
+            ring.name = f"Growth_Ring_{index + 1}"
+            assign(ring, mats["cut_dark"])
+        for index, angle in enumerate((0.52, 2.65, 4.78)):
+            base = (math.cos(angle) * 0.39, math.sin(angle) * 0.39, height - 0.02)
+            tip = (math.cos(angle) * 0.42, math.sin(angle) * 0.42, height + 0.16 + 0.05 * index)
+            tapered_between(f"Fresh_Splinter_{index + 1}", base, tip, 0.065, 0.014, mats["cut"], 6)
 
 
 ROCK_LAYOUT = (

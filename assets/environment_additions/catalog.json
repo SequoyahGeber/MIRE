@@ -4,9 +4,9 @@
     "family": "boulder",
     "width_m": 2.42,
     "depth_m": 1.578,
-    "height_m": 1.812,
-    "mesh_parts": 19,
-    "polygons": 848,
+    "height_m": 2.324,
+    "mesh_parts": 22,
+    "polygons": 908,
     "materials": [
       "MIRE_Adapted_Lichen",
       "MIRE_Adapted_Moss_Dark",
@@ -22,9 +22,9 @@
   {
     "name": "mire_broadleaf_tree",
     "family": "tree",
-    "width_m": 4.476,
+    "width_m": 4.398,
     "depth_m": 2.877,
-    "height_m": 5.747,
+    "height_m": 5.723,
     "mesh_parts": 39,
     "polygons": 872,
     "materials": [

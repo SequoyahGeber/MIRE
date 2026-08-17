@@ -65,6 +65,21 @@ def box(
     return obj
 
 
+def ico(
+    name: str,
+    location: tuple[float, float, float],
+    scale: tuple[float, float, float],
+    mat: bpy.types.Material,
+) -> bpy.types.Object:
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=1.0, location=location)
+    obj = bpy.context.object
+    obj.name = name
+    obj.scale = scale
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    assign_only(obj, mat)
+    return obj
+
+
 def look_at(obj: bpy.types.Object, target: tuple[float, float, float]) -> None:
     obj.rotation_euler = (Vector(target) - obj.location).to_track_quat("-Z", "Y").to_euler()
 
@@ -85,9 +100,9 @@ def world_bounds(objects: list[bpy.types.Object]) -> tuple[Vector, Vector]:
 
 
 def imported_objects(path: Path) -> list[bpy.types.Object]:
-    before = set(bpy.data.objects)
+    before_names = {obj.name for obj in bpy.data.objects}
     bpy.ops.import_scene.gltf(filepath=str(path))
-    return [obj for obj in bpy.data.objects if obj not in before]
+    return sorted((obj for obj in bpy.data.objects if obj.name not in before_names), key=lambda obj: obj.name)
 
 
 def delete_objects(objects: list[bpy.types.Object]) -> None:
@@ -197,6 +212,23 @@ def build_boulder(mats: dict[str, bpy.types.Material]) -> list[bpy.types.Object]
         assign_only(obj, mat)
     if len(kept) != 19:
         raise RuntimeError(f"Expected 19 supplied boulder meshes, found {len(kept)}")
+    minimum, maximum = world_bounds(kept)
+    center = (minimum + maximum) * 0.5
+    width = maximum.x - minimum.x
+    depth = maximum.y - minimum.y
+    for index, (x_ratio, y_ratio, size_ratio) in enumerate((
+        (-0.18, -0.05, 1.00),
+        (0.14, -0.09, 0.86),
+        (0.02, 0.15, 0.78),
+    )):
+        footing = ico(
+            f"mire_mossy_boulder_grounding_{index + 1:02d}",
+            (center.x + width * x_ratio, center.y + depth * y_ratio, minimum.z + 0.24),
+            (width * 0.13 * size_ratio, depth * 0.16 * size_ratio, 0.30 * size_ratio),
+            mats["rock_dark" if index != 1 else "rock_mid"],
+        )
+        footing.data.name = f"{footing.name}_mesh"
+        kept.append(footing)
     return kept
 
 
@@ -223,6 +255,13 @@ def build_tree(mats: dict[str, bpy.types.Material]) -> list[bpy.types.Object]:
             category = "foliage"
             foliage_index = counters.get(category, 0)
             mat = mats[("leaf_deep", "leaf_mid", "leaf_light")[foliage_index % 3]]
+            # The supplied canopy repeated several clusters at nearly the same
+            # facing, which collapsed into one faceted ball at game distance.
+            # Small deterministic turns and scale variation expose the authored
+            # facets without redesigning or adding geometry.
+            obj.rotation_euler.z += ((foliage_index % 5) - 2) * 0.11
+            cluster_scale = 0.94 + (foliage_index % 4) * 0.025
+            obj.scale = tuple(value * cluster_scale for value in obj.scale)
         else:
             category = "leaf_accent"
             mat = mats["leaf_warm"]
@@ -296,23 +335,23 @@ def main() -> None:
         "rock_blue": material("MIRE_Adapted_Rock_Blue", (0.28, 0.39, 0.44, 1.0)),
         "rock_light": material("MIRE_Adapted_Rock_Light", (0.43, 0.48, 0.46, 1.0)),
         "rock_crack": material("MIRE_Adapted_Rock_Crack", (0.07, 0.09, 0.10, 1.0)),
-        "moss_dark": material("MIRE_Adapted_Moss_Dark", (0.08, 0.23, 0.10, 1.0)),
-        "moss_mid": material("MIRE_Adapted_Moss_Mid", (0.20, 0.40, 0.12, 1.0)),
-        "moss_light": material("MIRE_Adapted_Moss_Light", (0.42, 0.55, 0.16, 1.0)),
+        "moss_dark": material("MIRE_Adapted_Moss_Dark", (0.07, 0.25, 0.11, 1.0)),
+        "moss_mid": material("MIRE_Adapted_Moss_Mid", (0.20, 0.44, 0.14, 1.0)),
+        "moss_light": material("MIRE_Adapted_Moss_Light", (0.46, 0.61, 0.18, 1.0)),
         "lichen": material("MIRE_Adapted_Lichen", (0.58, 0.62, 0.22, 1.0)),
         "bark_dark": material("MIRE_Adapted_Bark_Dark", (0.15, 0.065, 0.025, 1.0)),
         "bark": material("MIRE_Adapted_Bark", (0.31, 0.13, 0.045, 1.0)),
         "bark_light": material("MIRE_Adapted_Bark_Light", (0.48, 0.23, 0.07, 1.0)),
-        "leaf_deep": material("MIRE_Adapted_Leaf_Deep", (0.035, 0.17, 0.085, 1.0)),
-        "leaf_mid": material("MIRE_Adapted_Leaf_Mid", (0.07, 0.31, 0.13, 1.0)),
-        "leaf_light": material("MIRE_Adapted_Leaf_Light", (0.17, 0.44, 0.18, 1.0)),
+        "leaf_deep": material("MIRE_Adapted_Leaf_Deep", (0.045, 0.21, 0.10, 1.0)),
+        "leaf_mid": material("MIRE_Adapted_Leaf_Mid", (0.075, 0.35, 0.15, 1.0)),
+        "leaf_light": material("MIRE_Adapted_Leaf_Light", (0.21, 0.49, 0.21, 1.0)),
         "leaf_warm": material("MIRE_Adapted_Leaf_Warm", (0.43, 0.50, 0.12, 1.0)),
         "ground": material("MIRE_Adapted_Preview_Ground", (0.052, 0.085, 0.060, 1.0)),
         "scale": material("MIRE_Adapted_Scale", (0.18, 0.50, 0.78, 1.0)),
     }
 
     boulder = prepare_asset(
-        "mire_mossy_boulder", "boulder", build_boulder(mats), 0.58, (-2.25, 0.0, 0.0), 0.20
+        "mire_mossy_boulder", "boulder", build_boulder(mats), 0.58, (-2.25, 0.0, 0.0)
     )
     tree = prepare_asset(
         "mire_broadleaf_tree", "tree", build_tree(mats), 0.82, (2.15, 0.4, 0.0)
