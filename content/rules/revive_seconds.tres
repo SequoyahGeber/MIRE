@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RuleDef" format=3]
+
+[ext_resource type="Script" path="res://systems/rules/rule_def.gd" id="1_revive_seconds"]
+
+[resource]
+script = ExtResource("1_revive_seconds")
+id = &"revive_seconds"
+display_name = "Revive hold"
+type = 2
+default_value = 3.0
+min_value = 0.5
+max_value = 15.0
+description = "Seconds a teammate must hold to pick you up. Long enough to be a real commitment during a wave; this is the co-op tension knob, not a convenience one."

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RuleDef" format=3]
+
+[ext_resource type="Script" path="res://systems/rules/rule_def.gd" id="1_day_length_seconds"]
+
+[resource]
+script = ExtResource("1_day_length_seconds")
+id = &"day_length_seconds"
+display_name = "Day length"
+type = 2
+default_value = 900.0
+min_value = 60.0
+max_value = 3600.0
+description = "Real seconds for one full day/night cycle. Shortening it is the fastest way to reach a night for testing; the wave director keys off the same cycle."

@@ -75,6 +75,80 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 3.14: gamerules ship — `RuleDef` content family, host-replicated `RuleService`, `rule`/`rules`, eight knobs migrated with defaults unchanged (hollow7)
+
+**What shipped, verified:** `systems/rules/rule_def.gd` (`class_name RuleDef`, a `Resource` — the
+AUTHORED half of a knob: `id`, `display_name`, `type` (BOOL/INT/FLOAT), `default_value`,
+`min_value`/`max_value`, `description`), `autoload/rule_service.gd` (the live values, host-
+authoritative and replicated), and eight `content/rules/*.tres` — the exact first-wave set
+`COMMANDS.md` §4.3 names. `registry.gd` gained the family the same way every other one arrives:
+`Registry.rules`, `rule_defs()`/`get_rule(id)`/`has_rule(id)`, boot log now prints the count
+(`… 2 scatter table(s), 8 rule(s)`). `RuleService` is registered **right after `Registry`** in
+`project.godot` — it must load before the systems that adopt values in their own `_ready()`, which
+`agent autoload`'s append-only placement could not do, so the line was placed by hand with the
+editor confirmed closed (same exception 3.13 took for `CommandService`).
+
+**Protocol 16 → 17**: `net_rule_snapshot` (host → one joining peer, the full id → value map) and
+`net_rule_changed` (host → everyone, one id). `tools/handshake_check.gd` extended to match.
+
+**The read seam — what a system that wants a knob does.** Two lines in `_ready()`, and the export
+stays exactly where it was:
+
+```gdscript
+func _bind_rules() -> void:
+    var rules: Node = get_node_or_null(^"/root/RuleService")
+    if rules == null:
+        return                                   # no service → the @export stands. Documented, not a bug.
+    rules.connect(&"rule_changed", _on_rule_changed)
+    if bool(rules.call("has_rule", &"my_knob")):
+        my_knob = float(rules.call("value", &"my_knob", my_knob))
+
+func _on_rule_changed(id: StringName, new_value: float) -> void:
+    if id == &"my_knob":
+        my_knob = new_value
+```
+
+Reads available on the service: `value(id, fallback)` (fallback returned untouched when the rule
+does not exist — that IS the §4.3 export fallback), `value_int`, `value_bool`, `has_rule`, `def`,
+`rule_ids`, `value_text`, and `is_overridden(id)` (D-085's precedence signal). Host mutation:
+`host_set(id, raw) -> float` returning the value actually stored after the RuleDef coerced it, and
+`host_reset(id)`.
+
+**Adding a knob to a later wave is one `.tres` plus the block above** — that is the whole point of
+the family. Nothing else needs to change, and nothing needs a protocol bump: the wire shape is
+`id → float` and already carries anything you author.
+
+**Two calls a later task should know about.** **D-085**: a rule sitting at its authored default
+defers to a level-authored value; only an overridden one wins. Exactly one knob needs this today
+(`day_length_seconds`, because `DayNight._level_atmosphere()` already overwrote its export from the
+level's `Atmosphere` node). If a *second* knob acquires a competing authored source, the fix is an
+authored `defers_to_level` flag on `RuleDef`, not another hand-written branch. **D-086**: a
+`CommandSpec`'s `scope` may now be a `Callable(PackedStringArray) -> StringName`, resolved per
+invocation — that is how one `rule` verb reads locally and sets on the host. **3.15 gets this for
+free** if its entity verbs want the same split (a `tp` that reports a position versus one that
+moves a player); `_invocation_scope()` in `command_service.gd` is the mechanism, and
+`_declared_scope()` is what introspection reports (the max, `&"host"`).
+
+**`rule_id` is now a central `CommandService` arg type**, validated against `RuleService.has_rule`
+— "no such rule 'x' — try `rules`", same voice as `item_id`/`enemy_id`.
+
+**What is deliberately NOT here.** No persistence: a run is one sitting (D-010), so rules reset to
+their authored defaults every boot. 3.17's `content/functions/autoexec.mcmd` is how a dev keeps
+preferred rules across boots — that is a content file, not a save system, and this task did not
+build a stand-in for it. `NetConfig` and world-gen-seeded values stay out of wave 1 for the reasons
+§4.3 gives.
+
+**Checks:** `tools/rule_check.gd` (offline — coercion, the family loading through the Registry front
+door rather than the service's disk fallback, defaults byte-for-byte unchanged against the numbers
+the owners shipped with, `rule`/`rules`, clamps that announce themselves, the LOCAL-read /
+HOST-set split, and every owner actually following its knob) and `tools/rule_net_check.gd`
+(two-process ENet — snapshot on join reaching the joiner's OWNER and not just its service, host
+broadcast mid-session, a non-op client reading but not setting, and an opped client's set crossing
+`net_submit_command` to move the host's own `WaveSpawner`). Both 0 failures, 0 engine ERROR lines,
+alongside `command_check`, `command_net_check`, `handshake_check`, `day_night_check`,
+`wave_spawner_check`, `player_health_check`, `dev_loadout_check`, `enemy_check`, `verify_setup`.
+
+
 ### 2026-08-18 — Task 4.4: resource scatter ships — per-biome tables, MultiMesh visuals, and harvest proxies that reuse the existing wiring unmodified (lm)
 
 **What shipped, verified:** `world/gen/scatter_entry.gd` (`class_name ScatterEntry`, a `Resource` —

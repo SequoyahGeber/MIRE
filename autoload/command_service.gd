@@ -75,8 +75,8 @@ func _ready() -> void:
 # ── Registration ─────────────────────────────────────────────────────────────────────────────────
 
 
-## spec: {scope: &"local"|&"host", args: Array[Dictionary], handler: Callable(ctx, args) -> Dictionary,
-## help: String}. `args` entries: {name: String, type: StringName, optional: bool, default: Variant,
+## spec: {scope: &"local"|&"host"|Callable, args: Array[Dictionary], handler: Callable(ctx, args) ->
+## Dictionary, help: String}. A Callable `scope` decides per invocation — see `_invocation_scope`. `args` entries: {name: String, type: StringName, optional: bool, default: Variant,
 ## min/max: Variant, values: Array} — see `_register_type_parsers()` for the type table (COMMANDS.md
 ## §2.2). A spec with no `args` key takes none. Re-registering a name replaces it silently — content
 ## reload and test setup both want that, not a duplicate-registration error.
@@ -105,8 +105,36 @@ func help_text(name: StringName) -> String:
 	return String(_specs.get(name, {}).get("help", String(name)))
 
 
+## The scope to SHOW for a command — help text, the `commands` listing, the §2.5 JSON dump. A
+## dynamic-scope command reports &"host", its maximum: that is the honest thing to tell someone
+## reading the list ("this one can mutate"), and it matches COMMANDS.md §5.1's own rule that a
+## function's effective scope is the max of its lines' scopes.
 func scope_of(name: StringName) -> StringName:
-	return _specs.get(name, {}).get("scope", &"local")
+	return _declared_scope(_specs.get(name, {}))
+
+
+func _declared_scope(spec: Dictionary) -> StringName:
+	var scope: Variant = spec.get("scope", &"local")
+	return &"host" if scope is Callable else StringName(scope)
+
+
+## The scope of ONE invocation (D-086). A spec may declare `scope` as a Callable(PackedStringArray)
+## -> StringName when the same verb reads on the machine that typed it but mutates on the host —
+## `rule <id>` versus `rule <id> <value>` (COMMANDS.md §4.2), and 3.15's entity verbs after it. The
+## callable sees the RAW argument tokens, before typed parsing, because routing has to be decided
+## before the host is the one parsing them; it must therefore not assume the tokens are valid, only
+## count and shape them. Evaluated identically on the client (to decide whether to forward) and on
+## the host (to decide whether to demand op), from the same raw line — the host re-derives it from
+## its own re-parse and never trusts the client's routing decision, same stance as everything else
+## crossing `net_submit_command`.
+func _invocation_scope(spec: Dictionary, raw_args: PackedStringArray) -> StringName:
+	var scope: Variant = spec.get("scope", &"local")
+	if scope is Callable:
+		var resolver: Callable = scope
+		if not resolver.is_valid():
+			return &"host"
+		return StringName(resolver.call(raw_args))
+	return StringName(scope)
 
 
 # ── Execution ────────────────────────────────────────────────────────────────────────────────────
@@ -141,18 +169,19 @@ func execute(line: String, ctx: Dictionary) -> Dictionary:
 	if spec.is_empty():
 		return _result(false, "unknown command: %s — try `help`" % name, {})
 
-	var scope: StringName = spec.get("scope", &"local")
+	var raw_args: PackedStringArray = parts.slice(1)
+	var scope: StringName = _invocation_scope(spec, raw_args)
 	var source: StringName = ctx.get("source", &"console")
 	if scope == &"host" and source != &"rpc" and not _owns_execution():
 		return await _submit_to_host(trimmed)
 
-	return _execute_locally(spec, name, ctx, parts.slice(1))
+	return _execute_locally(spec, name, ctx, raw_args)
 
 
 func _execute_locally(
 	spec: Dictionary, name: StringName, ctx: Dictionary, raw_args: PackedStringArray
 ) -> Dictionary:
-	var scope: StringName = spec.get("scope", &"local")
+	var scope: StringName = _invocation_scope(spec, raw_args)
 	var peer_id: int = int(ctx.get("peer_id", NetConfig.HOST_PEER_ID))
 	if scope == &"host" and not _is_op(peer_id):
 		return _result(false, NOT_OP_MESSAGE, {})
@@ -300,7 +329,7 @@ func _cmd_commands(_ctx: Dictionary, args: Dictionary) -> Dictionary:
 		var spec: Dictionary = _specs[command_name]
 		dump.append({
 			"name": String(command_name),
-			"scope": String(spec.get("scope", &"local")),
+			"scope": String(_declared_scope(spec)),
 			"help": String(spec.get("help", "")),
 			"arg_count": (spec.get("args", []) as Array).size(),
 		})
@@ -344,7 +373,8 @@ func _register_type_parsers() -> void:
 	_type_parsers[&"item_id"] = _parse_item_id
 	_type_parsers[&"enemy_id"] = _parse_enemy_id
 	_type_parsers[&"peer"] = _parse_peer
-	# vec3/selector/recipe_id/etc. land with the tasks that need them (3.14/3.15) — one new entry
+	_type_parsers[&"rule_id"] = _parse_rule_id
+	# vec3/selector/recipe_id/etc. land with the tasks that need them (3.15) — one new entry
 	# here each time, per the file header's extensibility note.
 
 
@@ -441,6 +471,18 @@ func _parse_enemy_id(raw: String, _spec: Dictionary) -> Dictionary:
 	var id := StringName(raw)
 	if enemy_world == null or not bool(enemy_world.call("has_def", id)):
 		return {"ok": false, "error": "no such enemy '%s' — try 'enemies'" % raw}
+	return {"ok": true, "value": id}
+
+
+## Validated against RuleService rather than Registry — the Registry knows which RuleDefs were
+## AUTHORED, but a rule only exists as something you can read or set once the service has seeded a
+## live value for it (COMMANDS.md §4.2). Asking the service is therefore the honest check, and it is
+## also what makes a harness that hand-instantiates RuleService alone still able to parse `rule`.
+func _parse_rule_id(raw: String, _spec: Dictionary) -> Dictionary:
+	var rule_service: Node = get_node_or_null(^"/root/RuleService")
+	var id := StringName(raw)
+	if rule_service == null or not bool(rule_service.call("has_rule", id)):
+		return {"ok": false, "error": "no such rule '%s' — try 'rules'" % raw}
 	return {"ok": true, "value": id}
 
 

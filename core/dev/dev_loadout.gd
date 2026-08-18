@@ -25,6 +25,11 @@ const HOTBAR_START_INDEX: int = 24
 
 ## The switch. Off means no grants and the console commands still work — turn it off the moment
 ## starting gear becomes a design question rather than a "let me actually play it" one.
+##
+## Gamerule `dev_loadout_enabled` (task 3.14) — the export is the COMMANDS.md §4.3 fallback and
+## `_bind_rules()` adopts the rule's value into it. Turning it off mid-session does not take anything
+## back: `_granted` already holds whoever was kitted out, and confiscating items a player is holding
+## is not what a knob should do. It decides what the NEXT joiner gets.
 @export var enabled: bool = true
 
 ## F-043, decided in 2.13: the iron sword stays OUT of this list (option b — console-only until 3.x
@@ -71,9 +76,25 @@ func _ready() -> void:
 		transport.get("disconnected").connect(func() -> void: _granted.clear())
 
 	_register_commands()
+	_bind_rules()
 	# Offline there is no spawn signal — the level's hand-placed Player is already there — so the
 	# grant is driven from _process instead, gated on a real level being up. See _process.
 	set_process(true)
+
+
+## COMMANDS.md §4.3's export-fallback seam — this file asks, the service never reaches in.
+func _bind_rules() -> void:
+	var rules: Node = get_node_or_null(^"/root/RuleService")
+	if rules == null:
+		return
+	rules.connect(&"rule_changed", _on_rule_changed)
+	if bool(rules.call("has_rule", &"dev_loadout_enabled")):
+		enabled = bool(rules.call("value_bool", &"dev_loadout_enabled", enabled))
+
+
+func _on_rule_changed(id: StringName, new_value: float) -> void:
+	if id == &"dev_loadout_enabled":
+		enabled = new_value != 0.0
 
 
 func grant(peer_id: int) -> bool:

@@ -34,6 +34,9 @@ const BOOTSTRAP_DELAY_SEC: float = 0.75
 ## exists because the map had a nest marker and no enemies, and 2.12 is expected to turn it off and
 ## take over.
 @export var ambient_enabled: bool = true
+## Gamerule `ambient_enemy_population` (task 3.14). The export is the fallback COMMANDS.md §4.3
+## describes; `_bind_rules()` adopts the rule's value into it when one is authored, so every reader
+## below — the loop, the `enemies` status line — keeps reading one field and pays nothing per tick.
 @export_range(0, 24, 1) var ambient_population: int = 4
 @export_range(1.0, 60.0, 0.5) var ambient_respawn_seconds: float = 12.0
 ## Spread around the marker, so four crawlers do not stack in one spot.
@@ -72,7 +75,36 @@ func _ready() -> void:
 		transport.get("connected_to_host").connect(_on_session_opened)
 		transport.get("disconnected").connect(_on_disconnected)
 	_register_commands()
+	_bind_rules()
 	MireLog.info(&"content", "loaded %d enemy definition(s)" % defs.size())
+
+
+## COMMANDS.md §4.3's export-fallback seam, in the direction the framework requires: this file ASKS
+## RuleService once and then listens; the service never reaches in here. Adopting into the export
+## rather than reading the service at each use keeps the hot `while live_count() < …` loop free of a
+## cross-autoload call, and leaves the inspector showing the value actually in force. No RuleDef, no
+## RuleService, or a harness without either — nothing happens and the export stands, which is the
+## documented fallback.
+func _bind_rules() -> void:
+	var rules: Node = get_node_or_null(^"/root/RuleService")
+	if rules == null:
+		return
+	rules.connect(&"rule_changed", _on_rule_changed)
+	if bool(rules.call("has_rule", &"ambient_enemy_population")):
+		ambient_population = int(rules.call("value_int", &"ambient_enemy_population", ambient_population))
+
+
+## Raising the population mid-session should populate the world now, not at the next respawn tick —
+## the point of a runtime knob is seeing the change. Lowering it does NOT cull: an enemy already in
+## the world is a live thing a player may be fighting, and the field drains to the new number as
+## those die. `top_up_ambient` is host-guarded on its own.
+func _on_rule_changed(id: StringName, new_value: float) -> void:
+	if id != &"ambient_enemy_population":
+		return
+	var previous: int = ambient_population
+	ambient_population = roundi(new_value)
+	if ambient_enabled and ambient_population > previous:
+		top_up_ambient()
 
 
 ## docs/COMMANDS.md §2.1 — migrated off DebugConsole.register() in task 3.13. `spawn`/`killall` are

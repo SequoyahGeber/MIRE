@@ -3259,3 +3259,39 @@ Notes along the way:
 Files: `world/gen/scatter_entry.gd`, `world/gen/scatter_def.gd`, `world/gen/resource_scatter.gd`, `world/gen/resource_scatter_field.gd`, `autoload/registry.gd`, `content/scatter/forest_undergrowth.tres`, `tools/resource_scatter_check.gd`, `content/scatter/forest_canopy.tres`
 
 Commit at time of writing: `90b387f`
+
+---
+
+### DONE · F-128 · wick20 · 2026-08-18T20:59:26+00:00
+
+**Task 4.3's chunk streamer has no LOD-boundary stitching — adjacent chunks at different LOD tiers crack — **fixed****
+
+Completed.
+
+Files: `world/chunk/chunk_mesher.gd`, `tools/chunk_stream_check.gd`, `tools/bench_chunk_gpu.gd`, `tools/bench_chunks.gd`, `world/chunk/chunk_streamer.gd`, `tools/chunk_seam_shot.gd`, `docs/FINDINGS.md`
+
+Commit at time of writing: `9505cfd`
+
+---
+
+### DONE · F-133 · wick20 · 2026-08-18T20:59:26+00:00
+
+**Task 4.3's chunk mesher winds every terrain triangle inside-out — the ground renders and collides only from below**
+
+Completed.
+
+Files: `world/chunk/chunk_mesher.gd`
+
+Commit at time of writing: `9505cfd`
+
+---
+
+### DONE · 3.14 · hollow7 · 2026-08-18T21:00:45+00:00
+
+**Gamerules — `RuleDef` content family + host-replicated `RuleService`, `rule`/`rules` commands, first-wave knob migration with export fallback (`COMMANDS.md` §4)**
+
+RuleDef content family + host-replicated RuleService shipped. 8 first-wave knobs migrated with defaults unchanged, verified byte-for-byte against the numbers the owners shipped with. Owners ADOPT the value into their own export via a rule_changed subscription rather than calling the service per use — same seam direction, but it keeps hunger_drain_per_sec a plain field read in the physics tick and keeps player_controller.gd's existing health.get(revive_seconds) working on the client. D-085: a rule at its authored default defers to a level-authored value, only an overridden one wins (day_length_seconds is the sole knob with a competing source). D-086: a CommandSpec scope may be a Callable resolved per invocation, which is how one rule verb reads locally and sets on the host; 3.15 gets it free. Protocol 16 to 17. rule_check + rule_net_check both 0 failures, 0 engine ERROR lines, plus 9 regressions green.
+
+Files: `systems/rules/rule_def.gd`, `autoload/rule_service.gd`, `content/rules`, `autoload/command_service.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `systems/environment/day_night.gd`, `autoload/enemy_world.gd`, `systems/waves/wave_spawner.gd`, `systems/health/player_health.gd`, `core/dev/dev_loadout.gd`, `tools/rule_check.gd`, `tools/rule_net_check.gd`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/ARCHITECTURE.md`, `docs/COMMANDS.md`, `autoload/registry.gd`, `content/rules/ambient_enemy_population.tres`, `content/rules/bleed_out_seconds.tres`, `content/rules/day_length_seconds.tres`, `content/rules/dev_loadout_enabled.tres`, `content/rules/hunger_drain_per_sec.tres`, `content/rules/revive_seconds.tres`, `content/rules/wave_base_count.tres`, `content/rules/wave_per_player.tres`
+
+Commit at time of writing: `c8e10b3`

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RuleDef" format=3]
+
+[ext_resource type="Script" path="res://systems/rules/rule_def.gd" id="1_ambient_enemy_population"]
+
+[resource]
+script = ExtResource("1_ambient_enemy_population")
+id = &"ambient_enemy_population"
+display_name = "Ambient enemy population"
+type = 1
+default_value = 4.0
+min_value = 0.0
+max_value = 24.0
+description = "How many enemies the daytime field keeps alive. 0 empties the world without disabling the spawner, which is what you want while testing anything that is not combat."

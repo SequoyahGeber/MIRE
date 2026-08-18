@@ -1970,3 +1970,101 @@ keeps measuring what the game actually does.
 
 **One surface, not two.** Putting the skirt in its own surface would read more cleanly and cost a
 second draw call on each of ~289 resident chunks. This ships to the worst machine we target.
+
+### D-085 · 2026-08-18 · A gamerule at its authored default does not outrank a level-authored value; one somebody set does
+
+Task 3.14's first-wave migration follows `COMMANDS.md` §4.3 exactly — the owner's `@export` stays
+and becomes the fallback — for seven of its eight knobs. `day_length_seconds` is the exception,
+because it is the only one that already had a *second* source of truth before it was a rule:
+`DayNight._level_atmosphere()` overwrites the export from the level's own `Atmosphere` node the
+moment one is found, and has since 2.11.
+
+Reading the rule unconditionally would therefore be a silent behaviour change: the RuleDef's default
+is 900 s (chosen to match), so a level that authored 600 s would quietly start running 900 s days
+the day this task shipped, with nothing in any log to say why. Keeping the level unconditionally
+authoritative would be worse — the knob would appear to work, print a new value, and change nothing.
+
+**So the precedence is explicit: an OVERRIDDEN rule wins; a rule sitting at its authored default
+defers to the level.** `RuleService.is_overridden(id)` is the test, and it is derived from the value
+rather than stored as a flag — `not is_equal_approx(current, default)` — so a client computes the
+same answer from its replicated value and `rule <id> reset` clears it with no bookkeeping.
+`DayNight._resolve_day_length()` is the single place that consults it.
+
+The cost is one genuinely odd corner: setting a rule to *exactly* its default is indistinguishable
+from never having touched it. That is the right trade here, because "back to default" and "no
+opinion" are the same statement for a gamerule, and it buys a rule that can be reset by value
+instead of by a second command.
+
+**Would change my mind:** a second knob acquiring a competing authored source. Two exceptions is a
+pattern, and the pattern is "RuleDef needs an authored `defers_to_level` flag" rather than a second
+hand-written branch in another owner.
+
+### D-086 · 2026-08-18 · A CommandSpec's `scope` may be a Callable, so one verb can read locally and mutate on the host
+
+`COMMANDS.md` §4.2 asks for `rule <rule_id> [value]` to be "HOST scope to set; read answers
+locally". 3.13 built `scope` as a fixed `&"local"`/`&"host"` per spec, which cannot express that —
+and the alternatives are both worse. Registering `rule` as HOST would send a client's every *read*
+on a network round trip to answer a question its own replicated copy already knows. Splitting it
+into two verbs (`rule` and `ruleset`) would contradict the spec and read badly at the console.
+
+**So `scope` accepts a `Callable(PackedStringArray) -> StringName` alongside the two literals.**
+`CommandService._invocation_scope()` resolves it per invocation; `_declared_scope()` reports
+`&"host"` — the maximum — for introspection (`commands`, `commands --json`, `help`), matching §5.1's
+existing rule that a function's effective scope is the max of its lines' scopes.
+
+Two properties make this safe rather than a hole in the trust model. The callable sees only the
+**raw, unparsed** tokens, because routing has to be decided before the host is the one parsing them
+— so it can count and shape arguments but must never assume they are valid. And the host
+**re-derives the scope from its own re-parse** of the raw line, exactly as it re-derives everything
+else crossing `net_submit_command` (D-077); a client that lied about routing gains nothing, because
+the only thing it can achieve is submitting a read to the host, which the host answers as a read.
+
+`tools/rule_check.gd` pins both halves: a non-op peer can `rule revive_seconds` and cannot
+`rule revive_seconds 9`.
+
+**Would change my mind:** nothing here yet. If 3.15's entity verbs want the same split (a `tp` that
+reports a position versus one that moves a player), this is already the mechanism.
+
+### D-087 · 2026-08-18 · Dodge i-frames decouple from the dash's movement — F-125 takes option 2, and `dodging` becomes the invulnerability window
+
+D-072 collapsed the i-frame window into `dodge_duration_sec`: "there is no state where the flag is
+true without the dash also being in progress or vice versa." That was right for 3.8b, and it left
+`dodge_iframe_seconds` — a stat in `PowerupDef.KNOWN_STATS`, authored into
+`content/powerups/thin_step.tres` by 3.4 — with nothing to modify. F-125 filed the choice rather than
+making it in a hurry: feed the stat into `dodge_duration_sec`, or give i-frames their own timer.
+
+**Taken: the second, and the authored content decides it.** Thin Step's own description is *"you are
+untouchable for the whole of the trip rather than most of it."* That is a promise about
+invulnerability, not about travel. Feeding the stat into `dodge_duration_sec` would add 0.12 s of
+dash at 3 stacks and move where the player ends up — F-125's own words for it, "a different powerup
+from the one the description promises."
+
+**Three consequences worth recording.**
+
+1. **`dodging` now means "invulnerable", not "dashing".** The dash's movement is
+   `_dodge_time_remaining`, and `_apply_horizontal_movement()` branches on that; `dodging` outlives
+   it by the powerup bonus. D-072's invariant is deliberately relaxed, in the direction D-072 itself
+   said was safe — a longer true-window is more likely to be observed by the host, not less.
+2. **The name stays, and that is a constraint talking, not a preference.** The host reads the
+   property by name off the replicated synchronizer, and its reader —
+   `systems/health/player_health.gd` `_is_dodging()` — was another task's claimed file at the time
+   (3.14). Renaming it to `invulnerable` would be more honest and is worth doing when both files are
+   free in one task; it is a pure rename with no wire-format change, since the property name is
+   already the wire name. In the meantime the flag's own doc comment says plainly what it now means.
+   Note the reader was already asking the right question: `_is_dodging()` exists to answer "should
+   this hit be ignored".
+3. **The window can grow but never shrink below `dodge_duration_sec`** (`maxf` in `_execute_dodge`).
+   D-072's replication-reliability argument rests on the true-window comfortably exceeding one
+   `NetConfig.PLAYER_SYNC_INTERVAL_SEC` (~0.033 s), and `dodge_duration_sec`'s 0.1 s export floor is
+   what guarantees it. A negative `dodge_iframe_seconds` — a plausible future curse or Cycle
+   modifier — would otherwise undercut that floor silently, producing not "shorter i-frames" but
+   *intermittently missing* ones, which is a bug wearing a balance change's clothes. A powerup that
+   genuinely wants a shorter dodge changes the dash.
+
+**No protocol bump.** Same property, same `REPLICATION_MODE_ALWAYS` slot on the same synchronizer;
+only how long it stays true changed. `core/net/net_version.gd` is untouched.
+
+**Would change my mind:** DESIGN §4.4's Void Resonance "dodge blinks" landing, if it makes the dash
+instantaneous — then "the dash window" stops being a sensible floor for the i-frame window and the
+floor should become an explicit constant instead of `dodge_duration_sec`. D-072 already anticipated
+that case and kept `_execute_dodge()` wrappable for it.

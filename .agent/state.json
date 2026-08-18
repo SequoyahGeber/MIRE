@@ -5,40 +5,10 @@
       "at": "2026-08-18T20:36:00+00:00",
       "task": "2.1d"
     },
-    "autoload/command_service.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:37:43+00:00",
-      "task": "3.14"
-    },
-    "autoload/enemy_world.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:37:43+00:00",
-      "task": "3.14"
-    },
-    "autoload/registry.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:56:14+00:00",
-      "task": "3.14"
-    },
-    "autoload/rule_service.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:37:43+00:00",
-      "task": "3.14"
-    },
     "autoload/world_delta_log.gd": {
       "agent": "lm",
       "at": "2026-08-18T20:58:57+00:00",
       "task": "4.6"
-    },
-    "content/rules": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:37:43+00:00",
-      "task": "3.14"
-    },
-    "core/dev/dev_loadout.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:37:43+00:00",
-      "task": "3.14"
     },
     "core/game_state.gd": {
       "agent": "lm",
@@ -50,60 +20,25 @@
       "at": "2026-08-18T20:58:57+00:00",
       "task": "4.6"
     },
-    "core/net/net_version.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:37:43+00:00",
-      "task": "3.14"
-    },
-    "docs/ARCHITECTURE.md": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:54:37+00:00",
-      "task": "3.14"
-    },
     "docs/ASSET_TRACKER.md": {
       "agent": "slate17",
       "at": "2026-08-18T20:32:24+00:00",
       "task": "2.1d"
     },
-    "docs/COMMANDS.md": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:54:37+00:00",
-      "task": "3.14"
+    "docs/FINDINGS.md": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T21:00:03+00:00",
+      "task": "F-125"
     },
-    "docs/DECISIONS.md": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:54:37+00:00",
-      "task": "3.14"
-    },
-    "docs/DELEGATION.md": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:54:37+00:00",
-      "task": "3.14"
+    "docs/POWERUPS.md": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T21:00:03+00:00",
+      "task": "F-125"
     },
     "entities/player/player_controller.gd": {
       "agent": "yarrow21",
       "at": "2026-08-18T20:51:52+00:00",
       "task": "F-125"
-    },
-    "systems/environment/day_night.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:37:43+00:00",
-      "task": "3.14"
-    },
-    "systems/health/player_health.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:37:43+00:00",
-      "task": "3.14"
-    },
-    "systems/rules/rule_def.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:37:43+00:00",
-      "task": "3.14"
-    },
-    "systems/waves/wave_spawner.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:37:43+00:00",
-      "task": "3.14"
     },
     "tools/blender/build_construction_set.py": {
       "agent": "slate17",
@@ -124,21 +59,6 @@
       "agent": "yarrow21",
       "at": "2026-08-18T20:51:52+00:00",
       "task": "F-125"
-    },
-    "tools/handshake_check.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:37:43+00:00",
-      "task": "3.14"
-    },
-    "tools/rule_check.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:37:43+00:00",
-      "task": "3.14"
-    },
-    "tools/rule_net_check.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T20:37:43+00:00",
-      "task": "3.14"
     },
     "tools/seed_sync_check.gd": {
       "agent": "lm",
@@ -170,31 +90,6 @@
       ],
       "started": "2026-08-18T20:32:24+00:00"
     },
-    "3.14": {
-      "agent": "hollow7",
-      "files": [
-        "systems/rules/rule_def.gd",
-        "autoload/rule_service.gd",
-        "content/rules",
-        "autoload/command_service.gd",
-        "core/net/net_version.gd",
-        "tools/handshake_check.gd",
-        "systems/environment/day_night.gd",
-        "autoload/enemy_world.gd",
-        "systems/waves/wave_spawner.gd",
-        "systems/health/player_health.gd",
-        "core/dev/dev_loadout.gd",
-        "tools/rule_check.gd",
-        "tools/rule_net_check.gd",
-        "docs/DECISIONS.md",
-        "docs/DELEGATION.md",
-        "docs/ARCHITECTURE.md",
-        "docs/COMMANDS.md",
-        "autoload/registry.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T20:37:43+00:00"
-    },
     "4.6": {
       "agent": "lm",
       "files": [
@@ -211,7 +106,9 @@
       "agent": "yarrow21",
       "files": [
         "entities/player/player_controller.gd",
-        "tools/dodge_check.gd"
+        "tools/dodge_check.gd",
+        "docs/FINDINGS.md",
+        "docs/POWERUPS.md"
       ],
       "notes": [],
       "started": "2026-08-18T20:51:52+00:00"
@@ -567,10 +464,10 @@
       "task": "F-113"
     },
     "autoload/command_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T19:52:51+00:00",
-      "hash": "cbc84060849c27c0776d87ff2cf7018ab641e8f66a909a1c325edfa6f9ec4476",
-      "task": "3.13"
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "2e66452709189c03c3c52aafa411d7aebe09158d4f60bc77aac8185d5de3046e",
+      "task": "3.14"
     },
     "autoload/crafting_service.gd": {
       "agent": "kiln9",
@@ -589,10 +486,10 @@
       "task": "F-099"
     },
     "autoload/enemy_world.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T19:52:51+00:00",
-      "hash": "e50c92905e2f8073f3ac1211cd82160da48b9e0fc430f1eebcb31328111d28c3",
-      "task": "3.13"
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "fc9c1e694f1a313709027fbe0e34fca4685ac23e49955ccc2213750f397af4f6",
+      "task": "3.14"
     },
     "autoload/environment_vfx.gd": {
       "agent": "vane19",
@@ -637,10 +534,16 @@
       "task": "F-099"
     },
     "autoload/registry.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T20:54:23+00:00",
-      "hash": "9e841b96b9e6214f5950ff6b3e1f97834733c9ee42a748f3c0ec21944b898c00",
-      "task": "4.4"
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "dece79609a72f35de89fb31769bf2e28a399c1f56ea4bf41e7043db7201fe4e8",
+      "task": "3.14"
+    },
+    "autoload/rule_service.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "47dba118dc19dd04fac474c592051e20a16c653cbe6d9909b38c888b4e6c7517",
+      "task": "3.14"
     },
     "autoload/steam_lobby.gd": {
       "agent": "pike14",
@@ -1314,6 +1217,60 @@
       "at": "2026-08-18T17:57:51+00:00",
       "task": "3.2"
     },
+    "content/rules": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": null,
+      "task": "3.14"
+    },
+    "content/rules/ambient_enemy_population.tres": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "c1c10728d91bbce8f590d30f4ad07ba190dc4579b92c379ffab3da1aefb23dbf",
+      "task": "3.14"
+    },
+    "content/rules/bleed_out_seconds.tres": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "4c2470175dddc1ce871cc8650b8bc39bb27363d91ddc1b65bea6a8966aba7629",
+      "task": "3.14"
+    },
+    "content/rules/day_length_seconds.tres": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "d1db5b2f271a901e12bd5fe11a6516cf46f4c17605af17fbe8560d3c8cb047cb",
+      "task": "3.14"
+    },
+    "content/rules/dev_loadout_enabled.tres": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "c45065f52ab1e4e881789d4b27d47afdeadea6a856693c031e661688a0b1bc42",
+      "task": "3.14"
+    },
+    "content/rules/hunger_drain_per_sec.tres": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "0cdae843988a8aeb00129760a237ccb5901bdeb9bd98ed268e25e5f8a9f334b1",
+      "task": "3.14"
+    },
+    "content/rules/revive_seconds.tres": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "f597fcf34587d6e8de500b3f312c7e405b87290958f0e1ed2e10fd869f9392e7",
+      "task": "3.14"
+    },
+    "content/rules/wave_base_count.tres": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "54b7dba47256f01a11809bf15f147ab87d9113b86736875be886cd7be73987f2",
+      "task": "3.14"
+    },
+    "content/rules/wave_per_player.tres": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "ea9548e2235988480385fb54e622abface08de2d26e04ad8582a73d7235b83b7",
+      "task": "3.14"
+    },
     "content/scatter/forest_canopy.tres": {
       "agent": "lm",
       "at": "2026-08-18T20:54:23+00:00",
@@ -1392,10 +1349,10 @@
       "task": "F-054"
     },
     "core/dev/dev_loadout.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T19:52:51+00:00",
-      "hash": "2af03bbbebe3b0871d72a91943b7c6463e5c53c367479781f6cf4e5ce49048e3",
-      "task": "3.13"
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "ecf0664f3a14a627ec5b7cf4330f95dcf91106a6d0e750f6ac5e93aa977a3426",
+      "task": "3.14"
     },
     "core/net/net_session.gd": {
       "agent": "kiln9",
@@ -1403,10 +1360,10 @@
       "task": "F-099"
     },
     "core/net/net_version.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T19:52:51+00:00",
-      "hash": "cb5a4bcab92b36680cb18789e6494f5729c367e96ec07351561fcd717f974378",
-      "task": "3.13"
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "5952f09d3913bd59311f6e3a7a2c33e85392494070585a5faf1ae78650ab29d1",
+      "task": "3.14"
     },
     "core/util/mire_log.gd": {
       "agent": "gale6",
@@ -1419,10 +1376,10 @@
       "task": "F-053"
     },
     "docs/ARCHITECTURE.md": {
-      "agent": "lm",
-      "at": "2026-08-18T20:24:23+00:00",
-      "hash": "3ca39a409c59b5f1153839695ae73bf857e931a047e7b81dd9b5624c4dfc7a73",
-      "task": "4.3"
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "0df0722e168cb66894306b60d4ce7bcb8ab43df3bfea409533940cedfac36ce6",
+      "task": "3.14"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "lm",
@@ -1430,17 +1387,23 @@
       "hash": "885b36bc53bf89a1cfab6eab6a6b97fe59e5061184fde1530e54ac96040094c2",
       "task": "F-109"
     },
+    "docs/COMMANDS.md": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "19f90c0fa4f522785a9e7ba3a3cbf7edb9e681bad407133eaf94fb36ae2cbd6e",
+      "task": "3.14"
+    },
     "docs/DECISIONS.md": {
-      "agent": "lm",
-      "at": "2026-08-18T20:24:23+00:00",
-      "hash": "3e0477ad9a8085c15c6fda7277aa14e7f660a8f98def69efb00f31241eeefa9c",
-      "task": "4.3"
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "ebd504fb0dd288dfbb57969464a7fdb7b3c0e6127ad1ce5acf2bfa767c52cc17",
+      "task": "3.14"
     },
     "docs/DELEGATION.md": {
-      "agent": "lm",
-      "at": "2026-08-18T20:24:23+00:00",
-      "hash": "4de1a5652b1171e5bd8efd4dcc7a1b574f2d9e82220c15fe278da07d4a72677c",
-      "task": "4.3"
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "93ea68b419be8dd79c248d7a6109981f90d8efcf1b9c0739157269b8d51033a5",
+      "task": "3.14"
     },
     "docs/FINDINGS.md": {
       "agent": "wick20",
@@ -1569,9 +1532,10 @@
       "task": "F-111"
     },
     "systems/environment/day_night.gd": {
-      "agent": "kiln9",
-      "at": "2026-08-18T14:10:44+00:00",
-      "task": "F-099"
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "ad8c5e5ce1465be2db7cd862af4b402d259d1f6b083db8ff11a9ace96c694617",
+      "task": "3.14"
     },
     "systems/harvesting/harvest_library.gd": {
       "agent": "vane19",
@@ -1612,10 +1576,10 @@
       "task": "3.8"
     },
     "systems/health/player_health.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T19:16:34+00:00",
-      "hash": "06e9d8feadce31576e64a1a4903b8928c789bdcfef1189245c7ee5057e8b5fd8",
-      "task": "3.8b"
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "0e5508ef201dece223a28d7ffb948369ea10b3cc8294b6a877aea73725f693a7",
+      "task": "3.14"
     },
     "systems/inventory/item_def.gd": {
       "agent": "flint5",
@@ -1642,10 +1606,17 @@
       "at": "2026-08-18T04:53:36+00:00",
       "task": "F-078"
     },
+    "systems/rules/rule_def.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "cc46a82cfa337d7e24e3a3c02aba529f22ed15343fa973e249fa407543cc48f8",
+      "task": "3.14"
+    },
     "systems/waves/wave_spawner.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T02:53:04+00:00",
-      "task": "F-068"
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "392d6b49da006b54688819b503136d10ade9c56a556a101b1498053719ef6edb",
+      "task": "3.14"
     },
     "tools/atmosphere_look_shot.gd": {
       "agent": "vane19",
@@ -1990,10 +1961,10 @@
       "task": "F-115"
     },
     "tools/handshake_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T19:52:51+00:00",
-      "hash": "8be6bbc8e2589ace585c2d7d98dd26659213e2b0e97f6e9dea1f22cf17d1145c",
-      "task": "3.13"
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "90d46a6c3a822d8bb415ea616e020701208e8a76224b9eacc824ba1bcf33badd",
+      "task": "3.14"
     },
     "tools/harness_check.py": {
       "agent": "yarrow21",
@@ -2180,6 +2151,18 @@
       "at": "2026-08-18T20:38:46+00:00",
       "hash": "4721ae3b0838565cad056314059d2f441c3efba255e21b89890759330a2df12d",
       "task": "F-127"
+    },
+    "tools/rule_check.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "439c3db65a20fbeb7442a86fd7bebb7f7fabae68f73961217755fb83c1269ed0",
+      "task": "3.14"
+    },
+    "tools/rule_net_check.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:00:45+00:00",
+      "hash": "0653b479730a65b55c359f187ac1329b8f14212b9a141d77bbffc6f4edbe26cc",
+      "task": "3.14"
     },
     "tools/session_lifecycle_check.gd": {
       "agent": "flint5",
@@ -2920,9 +2903,11 @@
       "title": "Command core \u2014 `CommandService` front door: typed arg specs, LOCAL/HOST scopes, client\u2192host RPC + op permissions, migrate every existing console command (`docs/COMMANDS.md` \u00a71\u20132)"
     },
     "3.14": {
+      "done_at": "2026-08-18T21:00:45+00:00",
+      "done_by": "hollow7",
       "est": "2.5",
       "milestone": "M3",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T2",
       "title": "Gamerules \u2014 `RuleDef` content family + host-replicated `RuleService`, `rule`/`rules` commands, first-wave knob migration with export fallback (`COMMANDS.md` \u00a74)"
     },

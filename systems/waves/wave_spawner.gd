@@ -9,6 +9,11 @@ extends Node
 
 const DEFAULT_SEED: int = 0x57415645  # "WAVE"
 
+## Gamerules `wave_base_count` and `wave_per_player` (task 3.14). Both exports stay as the
+## COMMANDS.md §4.3 fallback and are adopted from RuleService by `_bind_rules()` when authored.
+## Nothing re-sizes a wave already on the ground: these are read once, at dusk, in `_on_night_started`
+## — so a change mid-night lands on the NEXT night, which is the only reading that does not leave
+## players fighting a population that grew around them.
 @export_range(0, 128, 1) var base_count: int = 4
 @export_range(0, 32, 1) var per_player: int = 2
 @export_range(0.0, 20.0, 0.25) var scatter_m: float = 4.0
@@ -21,6 +26,9 @@ var _ambient_was_enabled: bool = true
 
 func _ready() -> void:
 	_rng.seed = DEFAULT_SEED
+	# Before the DayNight lookup, which returns early when there is none (a harness, the main menu).
+	# Binding rules is not conditional on a day cycle existing — the wave sizes are still the sizes.
+	_bind_rules()
 	var day_night: Node = get_node_or_null(^"/root/DayNight")
 	if day_night == null:
 		return
@@ -28,6 +36,26 @@ func _ready() -> void:
 		day_night.connect(&"night_started", _on_night_started)
 	if day_night.has_signal(&"day_started"):
 		day_night.connect(&"day_started", _on_day_started)
+
+
+## COMMANDS.md §4.3's export-fallback seam — this file asks, the service never reaches in. Both
+## values are adopted into their exports so `_on_night_started`'s arithmetic stays one expression.
+func _bind_rules() -> void:
+	var rules: Node = get_node_or_null(^"/root/RuleService")
+	if rules == null:
+		return
+	rules.connect(&"rule_changed", _on_rule_changed)
+	if bool(rules.call("has_rule", &"wave_base_count")):
+		base_count = int(rules.call("value_int", &"wave_base_count", base_count))
+	if bool(rules.call("has_rule", &"wave_per_player")):
+		per_player = int(rules.call("value_int", &"wave_per_player", per_player))
+
+
+func _on_rule_changed(id: StringName, new_value: float) -> void:
+	if id == &"wave_base_count":
+		base_count = roundi(new_value)
+	elif id == &"wave_per_player":
+		per_player = roundi(new_value)
 
 
 ## Starts exactly one population for the night. A repeated threshold signal cannot add a second

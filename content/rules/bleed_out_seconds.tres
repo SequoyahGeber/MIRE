@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RuleDef" format=3]
+
+[ext_resource type="Script" path="res://systems/rules/rule_def.gd" id="1_bleed_out_seconds"]
+
+[resource]
+script = ExtResource("1_bleed_out_seconds")
+id = &"bleed_out_seconds"
+display_name = "Bleed-out time"
+type = 2
+default_value = 30.0
+min_value = 1.0
+max_value = 120.0
+description = "Seconds you stay downed before dying outright. Together with the revive hold it sets how far a teammate can be and still save you."

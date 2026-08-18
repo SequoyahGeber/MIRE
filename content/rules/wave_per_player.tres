@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RuleDef" format=3]
+
+[ext_resource type="Script" path="res://systems/rules/rule_def.gd" id="1_wave_per_player"]
+
+[resource]
+script = ExtResource("1_wave_per_player")
+id = &"wave_per_player"
+display_name = "Night wave per player"
+type = 1
+default_value = 2.0
+min_value = 0.0
+max_value = 32.0
+description = "Extra wave enemies per live player. This is the knob that decides whether a six-player night is six times harder or barely harder than a solo one."

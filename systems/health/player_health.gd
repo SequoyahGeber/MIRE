@@ -57,8 +57,17 @@ const HUNGER_SNAPSHOT_INTERVAL_SEC: float = 1.0
 ## unlocks +health) — this is the M2 flat value every player starts and returns to.
 @export_range(1, 500, 1) var max_hp: int = 100
 ## DESIGN.md §4.5 "Downed, not dead" — how long a downed player can be revived before dying.
+## Gamerule `bleed_out_seconds` (task 3.14) — export stays as the COMMANDS.md §4.3 fallback,
+## adopted by `_bind_rules()`. Read at the moment a player goes down, so a change mid-bleed does not
+## retroactively lengthen or shorten a timer already counting.
 @export_range(1.0, 120.0, 1.0) var bleed_out_seconds: float = 30.0
 ## How long a teammate must hold interact next to a downed player to revive them.
+## Gamerule `revive_seconds` (task 3.14) — same export-fallback shape. Adopting into the property
+## rather than reading the service at the call site matters here specifically: the reviving player's
+## own controller reads it off this autoload by name (`health.get(&"revive_seconds")`,
+## entities/player/player_controller.gd), and that read happens on the CLIENT. Replication is what
+## makes the client's local hold timer agree with the host's range check instead of drifting the
+## moment somebody retunes the rule.
 @export_range(0.5, 15.0, 0.5) var revive_seconds: float = 3.0
 ## How close a reviver must stay, re-checked by the host at the moment the request lands.
 @export_range(0.5, 10.0, 0.1) var revive_radius_m: float = 3.0
@@ -73,6 +82,10 @@ const HUNGER_SNAPSHOT_INTERVAL_SEC: float = 1.0
 ## eating restores it.
 @export_range(1.0, 500.0, 1.0) var max_hunger: float = 100.0
 ## Drain rate. The default empties a full bar over 20 minutes (100 / 1200 s) with nothing eaten.
+## Gamerule `hunger_drain_per_sec` (task 3.14) — same export-fallback shape. This one is read every
+## physics tick, which is the reason the whole first wave adopts into exports instead of calling the
+## service per use: a cross-autoload `.call()` in the hunger tick would be a per-frame cost on the
+## low-end machines this project targets, for a value that changes a handful of times a session.
 @export_range(0.0, 10.0, 0.01) var hunger_drain_per_sec: float = 0.0833
 ## Hp lost per second once hunger is at zero, accumulated as a float and applied in whole points
 ## through DownedState.apply_damage() — the same path a melee hit uses, so starving can down a
@@ -170,6 +183,8 @@ func _ready() -> void:
 	if session != null and session.has_signal(&"run_player_rebound"):
 		session.connect(&"run_player_rebound", _on_run_player_rebound)
 		session.connect(&"run_player_expired", _on_run_player_expired)
+
+	_bind_rules()
 
 	set_physics_process(true)
 	if bool(transport.call("is_active")):
@@ -964,6 +979,33 @@ func _take_request_id() -> int:
 func _local_peer_id() -> int:
 	var peer_id: int = int(_transport().call("local_peer_id"))
 	return peer_id if peer_id > 0 else NetConfig.HOST_PEER_ID
+
+
+## COMMANDS.md §4.3's export-fallback seam — this file asks RuleService once, then listens; the
+## service never reaches in here. No RuleDef or no service means the exports stand unchanged, which
+## is the documented fallback rather than a failure: a harness driving PlayerHealth with no content
+## loaded gets exactly today's numbers.
+func _bind_rules() -> void:
+	var rules: Node = get_node_or_null(^"/root/RuleService")
+	if rules == null:
+		return
+	rules.connect(&"rule_changed", _on_rule_changed)
+	if bool(rules.call("has_rule", &"bleed_out_seconds")):
+		bleed_out_seconds = float(rules.call("value", &"bleed_out_seconds", bleed_out_seconds))
+	if bool(rules.call("has_rule", &"revive_seconds")):
+		revive_seconds = float(rules.call("value", &"revive_seconds", revive_seconds))
+	if bool(rules.call("has_rule", &"hunger_drain_per_sec")):
+		hunger_drain_per_sec = float(rules.call("value", &"hunger_drain_per_sec", hunger_drain_per_sec))
+
+
+func _on_rule_changed(id: StringName, new_value: float) -> void:
+	match id:
+		&"bleed_out_seconds":
+			bleed_out_seconds = new_value
+		&"revive_seconds":
+			revive_seconds = new_value
+		&"hunger_drain_per_sec":
+			hunger_drain_per_sec = new_value
 
 
 func _transport() -> Node:

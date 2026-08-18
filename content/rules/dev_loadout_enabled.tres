@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RuleDef" format=3]
+
+[ext_resource type="Script" path="res://systems/rules/rule_def.gd" id="1_dev_loadout_enabled"]
+
+[resource]
+script = ExtResource("1_dev_loadout_enabled")
+id = &"dev_loadout_enabled"
+display_name = "Dev starting loadout"
+type = 0
+default_value = 1.0
+min_value = 0.0
+max_value = 1.0
+description = "Whether joining players are handed the debug starting kit. Turn it off to see what an empty-handed run actually feels like."

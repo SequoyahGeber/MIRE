@@ -60,7 +60,12 @@ extends RefCounted
 ## console line + a request id) and net_command_result (host -> the one requester, its CommandResult).
 ## The command framework's whole trust model is the host re-parsing that raw line from scratch, so
 ## the wire shape is deliberately just one String — no client-parsed structure ever crosses the RPC.
-const PROTOCOL_VERSION: int = 16
+## 17 (task 3.14): autoload/rule_service.gd added net_rule_snapshot (host -> one joining peer, the
+## full gamerule id -> value map) and net_rule_changed (host -> everyone, one id and its new value).
+## Both reliable: a dropped rule change leaves two machines simulating different games, and it is the
+## kind of disagreement nobody notices until the consequence lands (a night that falls on one screen
+## and not the other).
+const PROTOCOL_VERSION: int = 17
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).

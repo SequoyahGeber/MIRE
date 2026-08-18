@@ -29,6 +29,11 @@ const REPLICATE_INTERVAL_SEC: float = 1.0
 ## second source of truth in practice: _resolve_day_length() overwrites it from the level's own
 ## Atmosphere node export the moment one is found, so this value only matters before a level with an
 ## Atmosphere node has loaded (harnesses, main menu).
+##
+## Task 3.14 made this a gamerule (`day_length_seconds`). It is the ONE first-wave knob with a
+## pre-existing competing source, so the precedence is explicit and recorded as D-085: a rule
+## somebody actually set beats the level's Atmosphere; a rule still sitting at its authored default
+## defers to it, exactly as before. `_resolve_day_length()` is the single place that decides.
 @export_range(60.0, 3600.0, 1.0) var day_length_seconds: float = 900.0
 ## Fires once per crossing, HOST ONLY — consumers are host-side systems (2.12's WaveSpawner).
 @export_range(0.0, 1.0, 0.001) var night_started_at: float = 0.75
@@ -45,6 +50,7 @@ var _replicate_elapsed: float = 0.0
 var _atmosphere: Node
 var _atmosphere_scene: Node
 var _transport_node: Node
+var _rule_service: Node
 # Client-side interpolation source: the last two host snapshots, and how long ago the second one
 # arrived. Nothing here ever advances on its own — see _advance_client().
 var _client_prev_time: float = 0.0
@@ -107,7 +113,19 @@ func host_advance(delta: float) -> void:
 
 func _resolve_day_length() -> float:
 	_level_atmosphere()  # refreshes day_length_seconds whenever the level's Atmosphere is re-found
+	var rules: Node = _rules()
+	if rules != null and bool(rules.call("is_overridden", &"day_length_seconds")):
+		return float(rules.call("value", &"day_length_seconds", day_length_seconds))
 	return day_length_seconds
+
+
+## COMMANDS.md §4.3's export-fallback seam. Path-resolved and cached (F-011/F-099) because this runs
+## inside the per-tick advance; a null service simply means the export wins, which is the documented
+## fallback rather than an error — a harness that never loaded content still ticks a normal day.
+func _rules() -> Node:
+	if _rule_service == null or not is_instance_valid(_rule_service):
+		_rule_service = get_node_or_null(^"/root/RuleService")
+	return _rule_service
 
 
 ## The cached Atmosphere for the current scene, or null. Re-resolves on scene change or a freed

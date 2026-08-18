@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="RuleDef" format=3]
+
+[ext_resource type="Script" path="res://systems/rules/rule_def.gd" id="1_hunger_drain_per_sec"]
+
+[resource]
+script = ExtResource("1_hunger_drain_per_sec")
+id = &"hunger_drain_per_sec"
+display_name = "Hunger drain"
+type = 2
+default_value = 0.0833
+min_value = 0.0
+max_value = 10.0
+description = "Hunger points lost per second — the default empties a full bar in about 20 minutes. 0 switches hunger off entirely without touching the food items."

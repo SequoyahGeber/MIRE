@@ -233,6 +233,14 @@ The pattern per knob: **the `@export` stays and becomes the fallback**; the syst
 missing `.tres` can never brick a system, and inspector tuning keeps working until a knob
 formally moves.
 
+*As shipped (3.14):* an owner **adopts** the value into its own export — it calls `value()` once in
+`_bind_rules()` and then follows the `rule_changed` signal — rather than calling the service at each
+use. The seam direction is unchanged (the owner asks and decides; the service never reaches in), and
+it buys two things a per-use read would not: `hunger_drain_per_sec` stays a plain field read in a
+per-physics-tick loop on the low-end machines this project targets, and every *existing* reader of
+the property keeps working untouched — including `entities/player/player_controller.gd`, which reads
+`revive_seconds` off the `PlayerHealth` autoload by name, on the client.
+
 | Rule id | Today | Owner file |
 |---|---|---|
 | `day_length_seconds` | `DayNight.day_length_seconds` (via Atmosphere export) | `systems/environment/day_night.gd` |
@@ -354,7 +362,11 @@ with reasoning, so the tasks file them verbatim rather than relitigating:
    ever mattering at 6 peers (it won't).
 3. **(3.14)** Rules are a content family with host-replicated values and export-fallback reads;
    no persistence (D-010). *Would change:* meta-progression wanting persistent difficulty
-   settings — that lands in `core/save/` beside Salvage, not here.
+   settings — that lands in `core/save/` beside Salvage, not here. **Filed as shipped**, plus two
+   calls this item did not anticipate: **D-085** (a rule at its authored default defers to a
+   level-authored value; only an overridden one wins — `day_length_seconds` is the single knob with
+   a competing source) and **D-086** (a CommandSpec's `scope` may be a `Callable`, which is how one
+   `rule` verb reads locally and sets on the host as §4.2 asks).
 4. **(3.15)** EntityDirectory is host-side and unreplicated; selectors resolve on the executing
    side. *Would change:* a client-side UI needing to browse entities it can't see — replicate a
    filtered view then, not the registry.
