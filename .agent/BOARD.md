@@ -6,13 +6,16 @@
 
 ## In flight
 
-_Nothing in flight._
+| Task | Agent | Started | Files claimed |
+|---|---|---|---|
+| **F-140** Task 3.5 closed without the four chest changes `ITEMS.md` §6 assigned to it, so two shipped stats had no consumer | reed16 | 2026-08-18 21:51 | `tools/chest_check.gd` |
+| **F-144** Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance | nettle12 | 2026-08-18 21:51 | `tools/render_census.gd`, `world/gen/authored_world.gd`, `world/gen/undergrowth.gd`, `autoload/graphics_quality.gd`, `tools/_probe_lods.gd` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 124/142 | 18 |
+| Findings | `█████████░` 127/145 | 18 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -58,13 +61,13 @@ _Nothing in flight._
 | ⬜ | **F-130** Three console commands never migrated to CommandService — they register via console.call("register", ...), which 3.13's sweep could not see | todo |
 | ⬜ | **F-132** A remote client's scattered harvestable proxy may have no host counterpart to reach, because `ChunkStreamer` streams per-peer independently | todo |
 | ⬜ | **F-135** A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface | todo |
-| ⬜ | **F-136** The player controller has no step-up, so any lip in a walkable surface is a wall | todo |
 | ⬜ | **F-137** The build module lives in one `.tres` and nothing else knows it | todo |
 | ⬜ | **F-138** Rotating an AABB's corners is still the wrong ruler when the thing you are rotating is a moving part | todo |
 | ⬜ | **F-139** `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline | todo |
-| ⬜ | **F-140** Task 3.5 closed without the four chest changes `ITEMS.md` §6 assigned to it, so two shipped stats had no consumer | todo |
+| 🔵 | **F-140** Task 3.5 closed without the four chest changes `ITEMS.md` §6 assigned to it, so two shipped stats had no consumer | in_flight |
 | ⬜ | **F-141** `Wellspring.net_request_toggle_channel` has no two-process net check — only the host-side logic it calls into is proven | todo |
+| 🔵 | **F-144** Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance | in_flight |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.4` `3.5` `3.6` `3.8` `3.9` `3.10` `3.13` `3.14` `3.15` `4.1` `4.2` `4.3` `4.4` `4.6` `4.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `3.8b` `4.0a` `4.0b` `F-001` `F-002` `F-003` `F-004` `F-005` `F-007` `F-008` `F-009` `F-010` `F-011` `F-012` `F-013` `F-014` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-030` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-042` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-103` `F-104` `F-105` `F-106` `F-107` `F-108` `F-109` `F-110` `F-111` `F-113` `F-114` `F-115` `F-116` `F-117` `F-118` `F-119` `F-120` `F-121` `F-122` `F-123` `F-124` `F-125` `F-127` `F-128` `F-129` `F-131` `F-133` `F-134` `F-142`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.4` `3.5` `3.6` `3.8` `3.9` `3.10` `3.13` `3.14` `3.15` `4.1` `4.2` `4.3` `4.4` `4.6` `4.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `3.8b` `4.0a` `4.0b` `F-001` `F-002` `F-003` `F-004` `F-005` `F-007` `F-008` `F-009` `F-010` `F-011` `F-012` `F-013` `F-014` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-030` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-042` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-103` `F-104` `F-105` `F-106` `F-107` `F-108` `F-109` `F-110` `F-111` `F-113` `F-114` `F-115` `F-116` `F-117` `F-118` `F-119` `F-120` `F-121` `F-122` `F-123` `F-124` `F-125` `F-127` `F-128` `F-129` `F-131` `F-133` `F-134` `F-136` `F-142` `F-143` `F-145`

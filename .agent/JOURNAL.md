@@ -3421,3 +3421,39 @@ failures/consecutive_failures now increment only on a genuine error exit; a quot
 Files: `.agent/bin/lane`, `docs/FINDINGS.md`
 
 Commit at time of writing: `8d9804f`
+
+---
+
+### DONE · F-143 · nettle12 · 2026-08-18T21:51:44+00:00
+
+**Audit contact sheets escape .gitignore when written to a per-audit subdirectory**
+
+Matched audit sheets at any depth under assets/audit/ (assets/audit/**/sheets/) instead of the single fixed path. Verified with git check-ignore: a009/sheets, top-level sheets, a hypothetical a010/sheets and a nested case are all ignored, while the committed geometry_report.json/.jsonl beside them stay tracked. 6.4 MB of stageable PNGs left the working tree.
+
+Files: `.gitignore`
+
+Commit at time of writing: `2f07f91`
+
+---
+
+### DONE · F-145 · nettle12 · 2026-08-18T21:56:28+00:00
+
+**Auto-name collisions defeat the claim guard: the exhaustion fallback ignores the taken set, so concurrent sessions share one identity**
+
+Pool-exhausted fallback in _auto_name now suffixes with 24 bits of the token crc32 instead of the 24-value pool index. Four real tokens that had all become nettle12 now get distinct names; determinism and the has-room path both verified; 5000 synthetic ids gave 0 duplicates.
+
+Files: `.agent/bin/agent`
+
+Commit at time of writing: `4739dc9`
+
+---
+
+### DONE · F-136 · lm · 2026-08-18T21:57:34+00:00
+
+**The player controller has no step-up, so any lip in a walkable surface is a wall**
+
+PlayerController gains step-up (_apply_step_up, grounded, before move_and_slide). Combined diagonal test_move (forward+down in one sweep) is the fix that actually works -- a separate advance-then-drop stalled at every lip since per-tick motion << capsule radius. tools/step_up_check.gd (new): agent godot --script tools/step_up_check.gd -> 0 failure(s). Regression-checked: dodge_check.gd 0 failures, spawn_ground_probe.gd failures=0, verify_setup.gd all checks passed.
+
+Files: `entities/player/player_controller.gd`, `tools/step_up_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `6b10b0b`

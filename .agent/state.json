@@ -1,12 +1,64 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "autoload/graphics_quality.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-18T21:51:43+00:00",
+      "task": "F-144"
+    },
+    "tools/_probe_lods.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-18T21:54:18+00:00",
+      "task": "F-144"
+    },
+    "tools/chest_check.gd": {
+      "agent": "reed16",
+      "at": "2026-08-18T21:51:09+00:00",
+      "task": "F-140"
+    },
+    "tools/render_census.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-18T21:51:43+00:00",
+      "task": "F-144"
+    },
+    "world/gen/authored_world.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-18T21:51:43+00:00",
+      "task": "F-144"
+    },
+    "world/gen/undergrowth.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-18T21:51:43+00:00",
+      "task": "F-144"
+    }
+  },
+  "in_flight": {
+    "F-140": {
+      "agent": "reed16",
+      "files": [
+        "tools/chest_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T21:51:09+00:00"
+    },
+    "F-144": {
+      "agent": "nettle12",
+      "files": [
+        "tools/render_census.gd",
+        "world/gen/authored_world.gd",
+        "world/gen/undergrowth.gd",
+        "autoload/graphics_quality.gd",
+        "tools/_probe_lods.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T21:51:43+00:00"
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T21:05:35+00:00",
-      "hash": "809acf93a70747eb39af269d15e68bc5095dfa34c34bed5038ec1d974652a07e",
-      "task": "F-134"
+      "agent": "nettle12",
+      "at": "2026-08-18T21:56:28+00:00",
+      "hash": "e3d5b435dba1f6b3460ac1d7f8e2e13c3619918650abdd9b8f5b4690d54e2e43",
+      "task": "F-145"
     },
     ".agent/bin/lane": {
       "agent": "bram1",
@@ -18,6 +70,12 @@
       "agent": "ivy8",
       "at": "2026-08-18T05:14:05+00:00",
       "task": "F-091"
+    },
+    ".gitignore": {
+      "agent": "nettle12",
+      "at": "2026-08-18T21:51:44+00:00",
+      "hash": "74e2dec5b778d0b0fe2a0b229b93f4d88cbb980af8623257451c75d05b296535",
+      "task": "F-143"
     },
     "AGENTS.md": {
       "agent": "yarrow21",
@@ -1440,16 +1498,16 @@
       "task": "3.2"
     },
     "docs/DELEGATION.md": {
-      "agent": "slate17",
-      "at": "2026-08-18T21:26:59+00:00",
-      "hash": "51a63bafa110fe23c75686c45e47015467474fc90b9558b201ea962c8daa683b",
-      "task": "3.2"
+      "agent": "lm",
+      "at": "2026-08-18T21:57:34+00:00",
+      "hash": "c2ee9e6f68979939fd3fa1591f219fca73fe54cd7a88440abae03f0fd2324124",
+      "task": "F-136"
     },
     "docs/FINDINGS.md": {
-      "agent": "bram1",
-      "at": "2026-08-18T21:41:43+00:00",
-      "hash": "027af458aa15d09c0618996b33117036b032482797eec41663da826bdb18a947",
-      "task": "F-142"
+      "agent": "lm",
+      "at": "2026-08-18T21:57:34+00:00",
+      "hash": "53a1e556562a6912e563d882ae606179f5cd4ddc9a8cdd41b23eb23deee4c19f",
+      "task": "F-136"
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -1480,9 +1538,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lm",
-      "at": "2026-08-18T21:40:25+00:00",
-      "hash": "cfdf65d0f32e1fcd303d774308db10585bce484d3c9f3dc3bb21eefbe91c2bad",
-      "task": "F-122"
+      "at": "2026-08-18T21:57:34+00:00",
+      "hash": "d78fa131863b7daff3ba300c40fcadaa2fe9ad05e081573b2b3d9068e2ae81dd",
+      "task": "F-136"
     },
     "docs/STEAM_CROSS_PLATFORM_TEST.md": {
       "agent": "flint5",
@@ -1495,10 +1553,10 @@
       "task": "F-075"
     },
     "entities/player/player_controller.gd": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T21:01:16+00:00",
-      "hash": "ded1932ad0f1359600874d3e5740a72dedd7c73cdfc0a35ae2a9dcf561990e7c",
-      "task": "F-125"
+      "agent": "lm",
+      "at": "2026-08-18T21:57:34+00:00",
+      "hash": "074b376738a15e125b96f81afb67c255dea7d4f75b72625c4e4b4e7067569aba",
+      "task": "F-136"
     },
     "entities/player/viewmodel.gd": {
       "agent": "kiln9",
@@ -2324,6 +2382,12 @@
       "at": "2026-08-18T20:38:46+00:00",
       "hash": "10da7456685e283a2a31f98d611f66936a6b5439ad89a88050f7e40c1f0668df",
       "task": "F-129"
+    },
+    "tools/step_up_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T21:57:34+00:00",
+      "hash": "cc7468eb06b868ffbc1b32f75d811c4794e8a095219f9f558adad53afbbaa6e3",
+      "task": "F-136"
     },
     "tools/terrain_check.gd": {
       "agent": "lm",
@@ -4754,9 +4818,11 @@
       "title": "A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface"
     },
     "F-136": {
+      "done_at": "2026-08-18T21:57:34+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The player controller has no step-up, so any lip in a walkable surface is a wall"
     },
@@ -4784,7 +4850,7 @@
     "F-140": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Task 3.5 closed without the four chest changes `ITEMS.md` \u00a76 assigned to it, so two shipped stats had no consumer"
     },
@@ -4803,6 +4869,31 @@
       "status": "done",
       "tier": "F",
       "title": "A quota park is counted as a lane failure, so three ordinary window resets in a row mark a healthy lane blocked"
+    },
+    "F-143": {
+      "done_at": "2026-08-18T21:51:44+00:00",
+      "done_by": "nettle12",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Audit contact sheets escape .gitignore when written to a per-audit subdirectory"
+    },
+    "F-144": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance"
+    },
+    "F-145": {
+      "done_at": "2026-08-18T21:56:28+00:00",
+      "done_by": "nettle12",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Auto-name collisions defeat the claim guard: the exhaustion fallback ignores the taken set, so concurrent sessions share one identity"
     }
   },
   "version": 1

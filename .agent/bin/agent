@@ -190,7 +190,14 @@ def _auto_name(token, taken):
         candidate = AUTO_NAMES[(start + offset) % len(AUTO_NAMES)]
         if candidate not in taken:
             return candidate
-    return "%s%d" % (AUTO_NAMES[start], start)
+    # Pool exhausted. The suffix has to be wide and token-derived, NOT the pool index: `start` has
+    # only len(AUTO_NAMES) values, so the old `AUTO_NAMES[start] + str(start)` collapsed every chat
+    # sharing a base name onto one identical string. Identity is exactly what `claim` and the
+    # pre-commit `check` compare, so two concurrent sessions that collided stopped being able to see
+    # each other's claims and the guard failed open (F-145).
+    # Still a pure function of the token, and deliberately does not consult `taken`: a git hook is a
+    # separate process that must derive the same name later, when `taken` has grown.
+    return "%s%06x" % (AUTO_NAMES[start], binascii.crc32(token.encode()) & 0xFFFFFF)
 
 
 def _register(token, name):
