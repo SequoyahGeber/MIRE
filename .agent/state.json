@@ -1,15 +1,5 @@
 {
   "claims": {
-    ".agent/bin/agent": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T13:23:57+00:00",
-      "task": "F-077"
-    },
-    "AGENTS.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T13:23:57+00:00",
-      "task": "F-077"
-    },
     "assets/maps": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
@@ -99,11 +89,6 @@
       "agent": "ivy8",
       "at": "2026-08-18T13:01:13+00:00",
       "task": "2.1d"
-    },
-    "docs/FINDINGS.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T13:23:57+00:00",
-      "task": "F-077"
     },
     "entities/player/viewmodel.gd": {
       "agent": "kiln9",
@@ -251,16 +236,6 @@
       "notes": [],
       "started": "2026-08-18T13:26:55+00:00"
     },
-    "F-077": {
-      "agent": "yarrow21",
-      "files": [
-        ".agent/bin/agent",
-        "AGENTS.md",
-        "docs/FINDINGS.md"
-      ],
-      "notes": [],
-      "started": "2026-08-18T13:23:57+00:00"
-    },
     "F-097": {
       "agent": "larch10",
       "files": [
@@ -312,8 +287,8 @@
   "recent": {
     ".agent/bin/agent": {
       "agent": "yarrow21",
-      "at": "2026-08-18T13:22:55+00:00",
-      "task": "F-080"
+      "at": "2026-08-18T13:30:42+00:00",
+      "task": "F-077"
     },
     ".agent/bin/lane": {
       "agent": "yarrow21",
@@ -337,8 +312,8 @@
     },
     "AGENTS.md": {
       "agent": "yarrow21",
-      "at": "2026-08-18T13:22:55+00:00",
-      "task": "F-080"
+      "at": "2026-08-18T13:30:42+00:00",
+      "task": "F-077"
     },
     "CLAUDE.md": {
       "agent": "flint5",
@@ -822,13 +797,13 @@
     },
     "docs/DELEGATION.md": {
       "agent": "yarrow21",
-      "at": "2026-08-18T13:22:55+00:00",
-      "task": "F-080"
+      "at": "2026-08-18T13:30:42+00:00",
+      "task": "F-077"
     },
     "docs/FINDINGS.md": {
       "agent": "yarrow21",
-      "at": "2026-08-18T13:22:55+00:00",
-      "task": "F-080"
+      "at": "2026-08-18T13:30:42+00:00",
+      "task": "F-077"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -1222,8 +1197,8 @@
     },
     "tools/harness_check.py": {
       "agent": "yarrow21",
-      "at": "2026-08-18T13:22:55+00:00",
-      "task": "F-080"
+      "at": "2026-08-18T13:30:42+00:00",
+      "task": "F-077"
     },
     "tools/harvest_world_check.gd": {
       "agent": "flint5",
@@ -3118,9 +3093,11 @@
       "title": "A new map inherits none of the systems keyed to the old map's group names"
     },
     "F-077": {
+      "done_at": "2026-08-18T13:30:42+00:00",
+      "done_by": "yarrow21",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`agent godot` is always headless, so no in-engine screenshot can ever be captured"
     },

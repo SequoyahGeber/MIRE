@@ -332,6 +332,13 @@ Run these as written — no prefix, no name (F-007).
 .agent/bin/agent godot <args>          run headless Godot under the shared lock — ALWAYS use this
                                        for checks; bare `Godot --headless` races other lanes on the
                                        one import cache (F-044, D-037)
+.agent/bin/agent godot --windowed …    same, with a framebuffer. Headless has none, so a render
+                                       check can only print "capture skipped" without this. The
+                                       window is 64x64 and parked offscreen; a SubViewport still
+                                       renders full size, so captures are unaffected (F-077)
+.agent/bin/agent baseline <args>       the same run against a throwaway checkout of HEAD — "did
+                                       this already fail before my change?" without `git stash`,
+                                       which is repo-wide and takes every lane with it (F-080)
 ```
 
 Director-side commands (`order`/`dispatch`/`lanes`/`collect`/`report`/`reap`) are documented in

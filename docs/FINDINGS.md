@@ -96,45 +96,6 @@ which `tools/hollowmere_check.gd` now does for this map (`_check_crawlers_actual
 rather than counting markers). That pattern should be lifted into something a new map gets for free,
 and the group names themselves should probably converge on one map-agnostic set.
 
-### F-077 · `agent godot` is always headless, so no in-engine screenshot can ever be captured
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8 during 2.1k
-
-`tools/hollowmere_render_check.gd` exists to let the map be *looked at* without opening the editor,
-and it cannot: `agent godot` passes `--headless`, headless has no framebuffer, and the script
-correctly prints `capture skipped`. The only documented alternative is to run Godot bare, which is
-what `agent godot` exists to prevent (F-044 — the shared import cache).
-
-So between "the validator passed" and "a human opened the editor" there is nothing, on a project whose
-whole point is that agents verify their own work. 2.1k worked around it with
-`tools/mapgen/hollowmere_plan.py`, which draws the layout as a plan view in pure Python — useful, and
-not a screenshot.
-
-**What to do about it:** `agent godot` should take a `--windowed` passthrough that keeps the lock and
-drops `--headless`, which is a few lines in `.agent/bin/agent` and makes every render check usable.
-It was left alone here because that file belongs to the whole protocol and this was a map task.
-
-**Correction, 2026-08-17 by flint5 during F-073 — no tool change is needed, this already works.**
-`cmd_godot` builds `[binary, "--headless", "--path", ROOT] + args`, and because your arguments are
-**appended**, a later flag wins. Appending `--display-driver macos` overrides the injected
-`--headless` while keeping the lock and the wrapper:
-
-```bash
-.agent/bin/agent godot --display-driver macos --resolution 64x64 --position 2400,1400 \
-  --script tools/hollowmere_render_check.gd
-```
-
-`--resolution 64x64 --position 2400,1400` shrinks the OS window and parks it offscreen; a
-`SubViewport` still renders at its own full size, so the capture is unaffected. Verified against the
-*unmodified* `tools/viewmodel_check.gd`, which goes from `capture skipped` to four real 1280x720 PNGs
-of the running game — that is how both the F-073 bug and its fix were confirmed. Two cautions: a
-script that errors inside `_initialize()` before its `call_deferred` hangs forever with no main loop
-to quit it, so keep `--quit-after` or an external kill guard; and this opens a real window, so it is
-for a deliberate render run, not for every check.
-
-So this can be closed without touching `.agent/bin/agent`. Left in Open rather than moved because it
-is 2.1k's finding and `hollowmere_render_check.gd` is ivy8's file to re-run.
-
 ### F-005 · R2's chunk benchmark excludes GPU upload cost
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-15 by terrain during 0.7
@@ -877,6 +838,67 @@ resolving a finding *moves* a section rather than appending one.
 
 ## Resolved
 
+### F-077 · `agent godot` was always headless, so no in-engine screenshot could be captured — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8 during 2.1k · **Resolved
+2026-08-18 by yarrow21.**
+
+`tools/hollowmere_render_check.gd` exists to let the map be *looked at* without opening the editor,
+and it cannot: `agent godot` passes `--headless`, headless has no framebuffer, and the script
+correctly prints `capture skipped`. The only documented alternative is to run Godot bare, which is
+what `agent godot` exists to prevent (F-044 — the shared import cache).
+
+So between "the validator passed" and "a human opened the editor" there is nothing, on a project whose
+whole point is that agents verify their own work. 2.1k worked around it with
+`tools/mapgen/hollowmere_plan.py`, which draws the layout as a plan view in pure Python — useful, and
+not a screenshot.
+
+**What to do about it:** `agent godot` should take a `--windowed` passthrough that keeps the lock and
+drops `--headless`, which is a few lines in `.agent/bin/agent` and makes every render check usable.
+It was left alone here because that file belongs to the whole protocol and this was a map task.
+
+**Correction, 2026-08-17 by flint5 during F-073 — no tool change is needed, this already works.**
+`cmd_godot` builds `[binary, "--headless", "--path", ROOT] + args`, and because your arguments are
+**appended**, a later flag wins. Appending `--display-driver macos` overrides the injected
+`--headless` while keeping the lock and the wrapper:
+
+```bash
+.agent/bin/agent godot --display-driver macos --resolution 64x64 --position 2400,1400 \
+  --script tools/hollowmere_render_check.gd
+```
+
+`--resolution 64x64 --position 2400,1400` shrinks the OS window and parks it offscreen; a
+`SubViewport` still renders at its own full size, so the capture is unaffected. Verified against the
+*unmodified* `tools/viewmodel_check.gd`, which goes from `capture skipped` to four real 1280x720 PNGs
+of the running game — that is how both the F-073 bug and its fix were confirmed. Two cautions: a
+script that errors inside `_initialize()` before its `call_deferred` hangs forever with no main loop
+to quit it, so keep `--quit-after` or an external kill guard; and this opens a real window, so it is
+for a deliberate render run, not for every check.
+
+So this can be closed without touching `.agent/bin/agent`. Left in Open rather than moved because it
+is 2.1k's finding and `hollowmere_render_check.gd` is ivy8's file to re-run.
+
+**Fixed** by making it a flag instead of an incantation. `agent godot --windowed --script
+tools/viewmodel_check.gd` *drops* the injected `--headless` rather than overriding it, keeps the
+lock, and parks a 64x64 window offscreen at 2400,1400 — a `SubViewport` still renders at its own
+full size, so captures are unaffected. The injected flags go first and the caller's last, so an
+explicit `--resolution` of your own still wins; `--windowed` is consumed by the wrapper and never
+reaches the engine. `agent baseline` accepts it too — both build their argv through one
+`_godot_argv`.
+
+flint5's append-override trick above still works and is still worth knowing. But a correction buried
+in a finding is not a feature: it was findable only by someone who already knew to look, which is
+how this stayed open for a day after it had been solved.
+
+**Verified** end to end. `agent baseline --windowed --script tools/viewmodel_check.gd` printed
+`VIEWMODEL_CHECK failures=0` and wrote four real 1280x720 PNGs to `/tmp` — first-person axe
+mid-swing over Hollowmere, hotbar and vitals drawn, the sky and undergrowth from F-090's work all
+present. The same check headless prints `capture skipped`. Two cases in `tools/harness_check.py`
+pin the argv (headless by default; `--windowed` drops it, parks the window, and does not leak the
+flag through to the engine), both failing against the previous harness.
+
+---
+
 ### F-080 · `git stash` in this repo stashed every other lane's uncommitted work too — **fixed**
 
 **Area:** tooling · **Severity:** high · **Found:** 2026-08-17 by flint5 during F-073 · **Resolved
@@ -930,6 +952,33 @@ Steam-client-not-running failure the shared tree gives, in 1.4 s total. The graf
 
 **Not fixed, and not fixable from here:** git has no pre-stash hook, so nothing can *block*
 `git stash` in this repo. This is a better road, not a fence.
+
+**Correction, 2026-08-18 by yarrow21 (same day, while verifying F-077).** The graft above was
+written as "clone the directory unless it already exists", and `.godot` *always* already exists:
+`.gitignore` ignores `.godot/*` but un-ignores `.godot/extension_list.cfg`, so a fresh checkout has
+a `.godot` holding exactly one file. The import cache was therefore never grafted at all, and the
+claim above that it was is wrong. Two things were missing with it:
+
+- **The global class cache.** Without `.godot/global_script_class_cache.cfg`, every `class_name` in
+  the project is "not declared in the current scope", so any check naming one fails to parse.
+- **`*.import` sidecars**, gitignored as well (547 files, 1.8 MB) and sitting beside their assets
+  rather than in one directory. Without them no `ext_resource` pointing at a `.glb` or `.png`
+  resolves, so every `content/items/*.tres` loads as null and reports "does not contain an ItemDef".
+
+Both symptoms read as *this revision is broken*, which is the worst failure available to a tool
+whose entire job is telling you whether the revision is broken — it would have sent someone hunting
+a bug that did not exist. The graft is now entry by entry with anything git already placed winning,
+plus a walk for `*.import`, and `tools/harness_check.py` has a case for each shape. A baseline
+`viewmodel_check` run goes from a parse error to `failures=0` and four PNGs. The round trip is ~6 s
+with a real engine run rather than the 1.4 s claimed above, which was 1.4 s of not running the
+project.
+
+**Also changed:** `baseline` no longer takes the shared `godot` lock. That lock exists for one thing
+— concurrent runs corrupting one import cache (F-044) — and a baseline run has its own cache in its
+own worktree, so the hazard is absent. Taking it anyway put "did this already fail?" behind whatever
+long check a lane happened to be running, which is precisely when the answer is wanted. Not
+hypothetical: it is what happened the first time this tool was used, queued behind a 25-minute
+check in another lane.
 
 ---
 

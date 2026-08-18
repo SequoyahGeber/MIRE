@@ -1653,6 +1653,13 @@ happened once (task 3.5 ended itself waiting on the Godot lock). So:
 
 - **Blocking commands are fine — let them block.** `agent godot` waits for the shared engine lock and
   returns when it is free. That is normal; wait for it in-process rather than ending your turn.
+- **Never background your verification and then wait to be told about it.** No `run_in_background`,
+  no `Monitor`, no `&`, no "I will pick this up when it reports back" — the notification you are
+  waiting for cannot be delivered, because there is no next turn to deliver it into. Run
+  `agent godot` in the foreground and let it sit on the lock for as long as it takes; with five or
+  six agents on this machine, minutes of waiting is normal and is not a failure. F-086 was lost
+  exactly this way: it backgrounded its check, armed a monitor, said "I will pick back up as soon as
+  it reports back", and stopped there with the whole build wiring uncommitted.
 - If something is genuinely unavailable and you cannot proceed, **do not go quiet** — run
   `.agent/bin/agent handoff %(tid)s "..."` so your claims are released and the next agent knows where
   you stopped. Stopping silently is the one outcome worse than failing.
@@ -1677,6 +1684,13 @@ Always launch Godot through `agent godot`. It takes a lock so your run cannot co
 lane's; a bare `Godot --headless` can corrupt the shared import cache (F-038, F-044).
 
 ## 3. Close out — this part is not optional
+
+**Verify first, then write the docs — never the other way round.** Moving a finding to
+`## Resolved`, or marking it `**fixed**`, is a claim that a check has *already passed*. The board
+believes that claim: `agent start` derives a finding's done-ness from `docs/FINDINGS.md`, so a
+finding you resolve before your check runs is reported as finished work whether or not it works. If
+you then stop for any reason, nothing will ever be routed to it again. F-086 did this — resolved in
+the doc, stalled before the check, and the board called it done with the work unverified on disk.
 
 Everything the next agent needs goes **in the repo**, not in a closing message. Nobody reads your
 final message; Sequoyah does not relay between tasks.
@@ -2227,6 +2241,29 @@ GODOT_CANDIDATES = (
 )
 
 
+# A windowed run parks a real OS window offscreen at 64x64: the engine needs a framebuffer to read
+# back, but nobody needs to look at the window itself, and a SubViewport still renders at its own
+# full size so captures are unaffected. These go FIRST among the caller's arguments so an explicit
+# --resolution or --position of their own still wins — Godot takes the last occurrence.
+GODOT_WINDOWED_ARGS = ("--resolution", "64x64", "--position", "2400,1400")
+
+
+def _godot_argv(project_path, args):
+    """Engine argv for a run against `project_path`, honouring the wrapper's own `--windowed`.
+
+    F-077: this wrapper always injected `--headless`, and headless has no framebuffer, so every
+    render check under `tools/` could only ever print "capture skipped" — on a project whose whole
+    point is that agents verify their own work without opening the editor. `--windowed` drops the
+    injection rather than relying on a later flag to override it, and is consumed here rather than
+    passed on. The override trick still works for anything this does not cover: arguments are
+    appended, so a trailing `--display-driver macos` beats an injected `--headless`.
+    """
+    rest = [a for a in args if a != "--windowed"]
+    if len(rest) != len(list(args)):
+        return [_godot_binary(), "--path", project_path] + list(GODOT_WINDOWED_ARGS) + rest
+    return [_godot_binary(), "--headless", "--path", project_path] + rest
+
+
 def _godot_binary():
     binary = os.environ.get("GODOT_BIN") or next(
         (p for p in GODOT_CANDIDATES if os.path.exists(p)), None)
@@ -2243,16 +2280,27 @@ def _godot_binary():
 # named `godotsteam` does not match `.gitignore`'s `/addons/godotsteam/`, so it would show up as
 # untracked inside the checkout and mislead anything that reads git status there.
 BASELINE_GRAFTS = ("addons/godotsteam", ".godot")
+# Whole directories are not enough. `*.import` is gitignored too — the sidecar Godot writes beside
+# every .glb/.png, naming the file under `.godot/imported/` that the engine actually loads. Without
+# them a checkout cannot resolve any `ext_resource` pointing at an imported asset, so every
+# `content/items/*.tres` loads as null and reports "does not contain an ItemDef": a baseline that
+# looks like the revision is broken when it is the graft that is. 547 files, 1.8 MB, walked directly
+# because they sit beside their assets rather than in one place.
+BASELINE_SIDECARS = ".import"
+BASELINE_WALK_SKIP = {".git", ".godot", "addons", "node_modules"}
 
 
 def cmd_godot(args):
     """Run Godot headless under a lock, so concurrent lanes cannot corrupt one import cache.
 
     Every headless verification in this project should go through here rather than calling Godot
-    directly — see F-044. Usage mirrors the engine's: `agent godot --script tools/x_check.gd`."""
-    argv = [_godot_binary(), "--headless", "--path", ROOT] + list(args)
+    directly — see F-044. Usage mirrors the engine's: `agent godot --script tools/x_check.gd`.
+    Add `--windowed` when the check captures PNGs; see `_godot_argv` (F-077)."""
+    argv = _godot_argv(ROOT, args)
     with file_lock("godot", timeout=1800):
-        print("%s· %s%s" % (C["dim"], " ".join(argv[3:]), C["x"]))
+        # Everything but the binary: whether --headless was injected is exactly what F-077 was
+        # about not being able to see.
+        print("%s· %s%s" % (C["dim"], " ".join(argv[1:]), C["x"]))
         return subprocess.call(argv, cwd=ROOT)
 
 
@@ -2306,23 +2354,44 @@ def cmd_baseline(args):
 
     for rel in BASELINE_GRAFTS:
         src, dst = os.path.join(ROOT, rel), os.path.join(wt, rel)
-        if not os.path.isdir(src) or os.path.exists(dst):
+        if not os.path.isdir(src):
             continue
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
-        # -c is APFS's copy-on-write clone: ~190 MB grafted for no disk and no wait, and a real
-        # copy the moment either side writes — which is the property that keeps the caches apart.
-        if subprocess.run(["cp", "-Rc", src, dst], capture_output=True).returncode != 0:
-            shutil.copytree(src, dst, symlinks=True, dirs_exist_ok=True)
+        os.makedirs(dst, exist_ok=True)
+        # Entry by entry, not "clone the directory unless it exists". `.gitignore` ignores `.godot/*`
+        # but un-ignores `.godot/extension_list.cfg`, so a fresh checkout already HAS a `.godot`
+        # holding exactly one file — and a skip-if-exists graft therefore silently grafted nothing,
+        # leaving no global class cache. The symptom is a checkout where every `class_name` is
+        # "not declared in the current scope", which reads like a broken revision rather than a
+        # broken tool. Anything git already placed wins; it is the tracked version for this commit.
+        for name in os.listdir(src):
+            s2, d2 = os.path.join(src, name), os.path.join(dst, name)
+            if os.path.exists(d2):
+                continue
+            # -c is APFS's copy-on-write clone: ~190 MB grafted for no disk and no wait, and a real
+            # copy the moment either side writes — the property that keeps the two caches apart.
+            if subprocess.run(["cp", "-Rc", s2, d2], capture_output=True).returncode != 0:
+                if os.path.isdir(s2):
+                    shutil.copytree(s2, d2, symlinks=True, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(s2, d2)
+
+    for rel in _sidecar_paths():
+        src, dst = os.path.join(ROOT, rel), os.path.join(wt, rel)
+        if os.path.exists(dst) or not os.path.isdir(os.path.dirname(dst)):
+            continue           # not tracked at this revision — the sidecar means nothing here
+        shutil.copy2(src, dst)
 
     print("%s· %s at %s%s" % (C["dim"], wt, sha, C["x"]))
     try:
         if rest[0].startswith("-"):
-            argv = [_godot_binary(), "--headless", "--path", wt] + rest
-            # The worktree has its own import cache, so this cannot corrupt the shared one — but two
-            # headless Godots still thrash one machine, and every other engine run in this repo goes
-            # through the same lock (F-044). Keep it that way.
-            with file_lock("godot", timeout=1800):
-                code = subprocess.call(argv, cwd=wt)
+            # Deliberately NOT under the shared `godot` lock. That lock exists for one thing —
+            # concurrent runs corrupting one import cache (F-044) — and this run has its own cache
+            # in its own worktree, so the hazard is absent. Taking it anyway would put "did this
+            # already fail?" behind whatever long check a lane happens to be running, which is the
+            # moment you most want the answer; that is not hypothetical, it is what happened the
+            # first time this was tried. The cost is a second engine process on the machine, and a
+            # clone taken mid-write by another run at worst re-imports one asset.
+            code = subprocess.call(_godot_argv(wt, rest), cwd=wt)
         else:
             code = subprocess.call(rest, cwd=wt)
     except FileNotFoundError as e:
@@ -2333,6 +2402,17 @@ def cmd_baseline(args):
         raise
     _baseline_clean(wt, keep)
     return code
+
+
+def _sidecar_paths():
+    """Every gitignored `*.import` under the tree, repo-relative."""
+    out = []
+    for dirpath, dirnames, filenames in os.walk(ROOT):
+        dirnames[:] = [d for d in dirnames if d not in BASELINE_WALK_SKIP]
+        for name in filenames:
+            if name.endswith(BASELINE_SIDECARS):
+                out.append(os.path.relpath(os.path.join(dirpath, name), ROOT))
+    return out
 
 
 def _baseline_clean(wt, keep):
@@ -2460,6 +2540,20 @@ def cmd_finding(args):
     ok("filed %s — %s" % (fid, title[:70]))
     print("  %sdocs/FINDINGS.md · claim it later with:  agent brief %s%s" % (C["dim"], fid, C["x"]))
     return 0
+
+
+def _done_without_closeout(st):
+    """Tasks the board calls done whose newest journal entry is a handoff.
+
+    `agent done` and `agent handoff` both write the journal, so the newest entry for a task is what
+    actually happened to it last. A finding-task can still go `done` without one — `_sync_findings`
+    derives that from docs/FINDINGS.md — which is exactly how an abandoned task acquires a finished
+    board entry."""
+    last = {}
+    for e in _journal_entries():          # oldest first, so the last write wins
+        last[e["task"]] = e["kind"]
+    return [t for t, kind in sorted(last.items())
+            if kind == "handoff" and st["tasks"].get(t, {}).get("status") == "done"]
 
 
 def cmd_reap(args):
@@ -2648,6 +2742,18 @@ def cmd_report(args):
                   % (tid, meta["lane"], C["dim"],
                      st["tasks"].get(tid, {}).get("title", "")[:60], C["x"]))
 
+    # A task whose last journal word was a handoff, but which the board calls done, is the most
+    # dangerous state this system can reach: it reads as finished work and nothing will ever be
+    # routed to it again. F-086 got there — the lane wrote its docs close-out (moving the finding to
+    # '## Resolved', marked **fixed**) BEFORE running the check that would justify the word, then
+    # stalled on the shared Godot lock and never verified. `_sync_findings` reads the doc, so the
+    # finding went done on the strength of a claim nobody had tested. Trust a DONE entry, not a doc.
+    for tid in _done_without_closeout(st):
+        print("\n%s⚠ %s is marked done but its last journal entry is a HANDOFF — no close-out ever "
+              "ran%s" % (C["y"], tid, C["x"]))
+        print("  %sits work may be unverified and on disk. Read the handoff, verify it yourself, "
+              "then close it honestly or reopen it.%s" % (C["dim"], C["x"]))
+
     blocked = []
     for name in LANE_NAMES:
         lane = lanes.get(name)
@@ -2698,6 +2804,8 @@ USAGE = """agent — multi-agent coordination for MIRE
 Verifying — always launch the engine through this, never bare (F-044):
 
   agent godot --script tools/x_check.gd     headless Godot, under a lock
+  agent godot --windowed --script x.gd      same, with a framebuffer — render checks that save
+                                            PNGs need this; the window parks offscreen (F-077)
   agent baseline --script tools/x_check.gd  the same check at HEAD, in a throwaway worktree —
                                             "did this already fail?" without `git stash` (F-080)
   agent autoload <Name> <res://path.gd>     register an autoload atomically — no claim needed

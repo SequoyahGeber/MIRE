@@ -2453,3 +2453,15 @@ Verified here, on the working diff exactly as LP left it: `agent godot --script 
 So the board's 'done' was correct, but only by luck: it was recorded on the strength of a doc edit nothing had tested, and would have read identically had the check failed. Two guards shipped with this commit so it cannot recur silently — `agent report` now flags any task marked done whose newest journal entry is a HANDOFF, and the work-order template bans backgrounding a verification and requires the check to pass before the docs are written.
 
 Commit at time of writing: `ac7d9cc`
+
+---
+
+### DONE · F-077 · yarrow21 · 2026-08-18T13:30:42+00:00
+
+**`agent godot` is always headless, so no in-engine screenshot can ever be captured**
+
+agent godot --windowed drops the injected --headless instead of overriding it, keeps the lock, parks a 64x64 window offscreen; agent baseline takes it too. Also fixed baseline's graft, which silently grafted nothing for .godot and missed all 547 *.import sidecars. Verified: viewmodel_check goes from a parse error to failures=0 and four real 1280x720 PNGs; 10/10 in tools/harness_check.py, 8/10 against HEAD.
+
+Files: `.agent/bin/agent`, `AGENTS.md`, `docs/FINDINGS.md`, `tools/harness_check.py`, `docs/DELEGATION.md`
+
+Commit at time of writing: `fddb659`

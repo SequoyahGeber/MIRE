@@ -91,9 +91,17 @@ file it declined to carry, in the "left alone" block.
 without `git stash`, which is repo-wide and takes every other lane's uncommitted files with it.
 `agent baseline --script tools/foo_check.gd` runs that check at HEAD in a throwaway worktree —
 `--rev` for another commit, a non-`-` first argument for any other command, `--keep` to leave the
-checkout behind. It grafts in `addons/godotsteam` and `.godot` (both gitignored, and a checkout will
-not run without them) as copy-on-write clones, so the round trip is about a second. **Never
-`git stash` in this repo.**
+checkout behind. It grafts in everything gitignored that a checkout cannot run without —
+`addons/godotsteam`, the `.godot` caches, and all 547 `*.import` sidecars — so the round trip is
+about six seconds with a real engine run inside it. **Never `git stash` in this repo.**
+
+**Render checks work now: `agent godot --windowed --script tools/x_render_check.gd` (F-077).**
+Headless has no framebuffer, so every check that saves a PNG could only ever print `capture
+skipped`; `--windowed` drops the injected `--headless`, keeps the lock, and parks a 64x64 window
+offscreen — a `SubViewport` still renders at its full size, so nothing about the capture changes.
+`agent baseline` takes it too. If you are writing a check whose output is meant for eyes, this is
+how it gets run, and `tools/viewmodel_check.gd` is the pattern to copy: detect
+`DisplayServer.get_name() == "headless"` and skip loudly rather than reading a dead texture (F-046).
 
 ### 2026-08-18 — performance base (F-090): the probe, the presets, and the scatter pattern the generator must inherit
 
