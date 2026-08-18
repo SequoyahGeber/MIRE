@@ -19,7 +19,7 @@
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 119/133 | 14 |
+| Findings | `█████████░` 119/134 | 15 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -67,6 +67,7 @@
 | ⬜ | **F-126** CommandService's `peer` argument type has no display-name resolution — peer ids only | todo |
 | ⬜ | **F-130** Three console commands never migrated to CommandService — they register via console.call("register", ...), which 3.13's sweep could not see | todo |
 | ⬜ | **F-132** A remote client's scattered harvestable proxy may have no host counterpart to reach, because `ChunkStreamer` streams per-peer independently | todo |
+| ⬜ | **F-134** Hand-moving a finding to '## Resolved' eats the heading when it is the last entry under '## Open' — twice now, and the second time made all 121 resolved findings parse as open | todo |
 
 ## Done
 

@@ -453,41 +453,6 @@ still holds against the corrected numbers rather than assuming it does.
 
 
 
-### F-125 · Thin Step authors dodge_iframe_seconds, but D-072 left no i-frame timer for it to extend
-
-**Area:** netcode · **Severity:** medium · **Found:** 2026-08-18 by wick20
-
-Task 3.4 authored `content/powerups/thin_step.tres` (Void, `dodge_iframe_seconds` (0.04, 0),
-max_stacks 3) because `dodge_iframe_seconds` is in `PowerupDef.KNOWN_STATS` and in POWERUPS.md §2's
-pending table. The data is correct and validates. The problem is that there is nothing for it to
-modify, and the reason is a decision made the same day.
-
-**D-072 (task 3.8b) collapsed the i-frame window into the dash duration.** Its words: "The i-frame
-window IS `dodge_duration_sec`, not a separate `dodge_iframe_sec` ... there is no state where the
-flag is true without the dash also being in progress or vice versa." The replicated `dodging` bool
-on the player's SceneReplicationConfig is the whole mechanism, and the host reads it in
-`systems/health/player_health.gd` `_on_enemy_attack_landed()`.
-
-So whoever routes `dodge_iframe_seconds` through `PowerupService.stat()` faces a choice that is a
-design decision, not a wiring detail, and should not be made silently in a hurry:
-
-1. **Feed it into `dodge_duration_sec`.** Cheapest, and keeps D-072's invariant exactly. But the
-   stat then lengthens the dash *movement* too — at 3 stacks Thin Step adds 0.12s of travel, which
-   changes where the player ends up, not only whether they were hit. That is a different powerup
-   from the one the description promises.
-2. **Decouple the two.** D-072 explicitly left room for this: "`_execute_dodge()` was kept a
-   wrappable function precisely so that kind of change has somewhere to live." Costs a second
-   timer and breaks the "flag true implies dash in progress" invariant, so the ALWAYS-replication
-   reasoning in D-072 §2 has to be re-checked against the longer window (it gets safer, not
-   riskier — a longer true-window is more likely to be observed, not less).
-
-**Why this is filed rather than fixed:** 3.4 authors content, and POWERUPS.md is explicit that a
-`pending` stat is correct data that waits for its system's own task. This is a note for that task,
-so the choice above is made deliberately with D-072 in front of whoever makes it.
-
-Nothing is broken today: the stat is inert until something reads it, exactly like the rest of the
-pending table. Thin Step's description ("untouchable for the whole of the trip rather than most of
-it") is written for option 2 and should be re-read if option 1 is chosen.
 
 ### F-126 · CommandService's `peer` argument type has no display-name resolution — peer ids only
 
@@ -509,85 +474,6 @@ to a player who needs to look one up. This is scheduling information for whichev
 which owns the rest of §2.2's argument-type completeness) or whatever eventually adds player display
 names to the project for other reasons (a lobby roster label, a kill-feed name) — `_parse_peer`
 should grow a name lookup against that same registry rather than inventing its own.
-
----
-
-
-### F-128 · Task 4.3's chunk streamer has no LOD-boundary stitching — adjacent chunks at different LOD tiers crack — **fixed**
-
-**Area:** world-gen · **Severity:** low · **Found:** 2026-08-18 by lm during 4.3
-
-`world/chunk/chunk_mesher.gd` samples `IslandHeightmap.height()` at world coordinates, so two
-neighbouring chunks at the **same** LOD tile seamlessly — both sample the identical world-space
-point at their shared edge, byte-for-byte. Two neighbouring chunks at **different** LOD tiers do
-not: `ChunkStreamer`'s ring design puts a different LOD on every tier boundary by construction
-(D-080), and a chunk's outer edge has `verts_per_side(lod)` vertices along it — 33 at LOD0, 17 at
-LOD1, 9 at LOD2. The coarser chunk's edge samples a subset of the finer chunk's edge samples in
-world space, but the two meshes connect those samples with different triangle counts, so wherever
-the terrain isn't flat along that edge the two surfaces diverge — a classic T-junction crack.
-
-**Not fixed as part of 4.3.** The task's acceptance test (`docs/SPECS.md`'s 4.3 block) is
-specifically about per-frame streaming *cost* — "walk 500 m ... zero hitches over 16 ms" — not
-visual continuity, and nothing yet instantiates a `ChunkStreamer` in the shipped game to look at
-(4.6, seed replication + client regen, is the task that will). `agent godot` runs headless for
-everything except the collision-cook measurement itself, so there was no way to visually confirm
-or deny this by eye during the task either way — it follows directly from the vertex-count
-mismatch, not from a render.
-
-**Likely fix, when it matters:** vertical skirts — extend each chunk's outer border ring of
-vertices down by a fixed depth, forming a thin wall that hides the gap without solving the vertex
-mismatch itself (the standard cheap mitigation for this exact problem). Proper stitching
-(welding/re-triangulating the coarser edge to match the finer one) is the alternative if skirts
-read as visibly wrong at a real camera angle; either is additive to `chunk_mesher.gd` and does not
-require reworking the ring/LOD design in `chunk_streamer.gd`.
-
-**Resolved 2026-08-18 by wick20.** Vertical skirts, per this finding's own suggested fix and now
-recorded as **D-084** — a wall hanging `SKIRT_DEPTH` metres below every chunk's outer border, on
-both sides of every boundary, so the gap is covered whichever surface sits higher along the seam.
-Stitching was rejected deliberately: it would take the neighbours' tiers as a fifth input to
-`build_mesh()` and force a re-mesh of the finer chunk whenever a neighbour changed tier, cascading
-work through the very frame budget task 4.3 exists to protect. The skirt needs no neighbour
-knowledge at all, so the function stays pure in `(chunk_x, chunk_z, world_seed, lod)`.
-
-**Depth is 10% of `IslandHeightmap.HEIGHT_SCALE`, not a metre count**, because 4.1 calls that scale
-a placeholder. Measured worst-case divergence over the whole island across four seeds: **0.52 m**
-at a LOD0/LOD1 boundary, **1.78 m** at LOD1/LOD2 — against a 6.00 m skirt, a 3.4x margin that
-survives the terrain being retuned.
-
-**The skirt never reaches the physics server.** New `ChunkMesher.collision_faces()` slices the
-terrain triangles off the front of the index buffer; `ChunkStreamer._cook_collision()` and
-`tools/bench_chunk_gpu.gd` both use it in place of `ArrayMesh.get_faces()`. A skirt is a vertical
-wall standing exactly on the seam a player walks across — free snagging, plus ~12% more faces
-(LOD0) to cook against D-074's gating main-thread cost.
-
-**Verified** by `tools/chunk_stream_check.gd` (windowed) — **21 assertions, 0 failures**, including
-the pre-existing 4.3 acceptance test, which now reports **zero hitches in total frame time**, not
-just in the streamer's own cost. New assertions: skirt counts/layout at every LOD; `collision_faces()`
-returning exactly `tri_count(lod) * 3` faces with its minimum y exactly `SKIRT_DEPTH` above the
-mesh's; every skirt triangle facing outward; an island-wide re-sweep of the divergence asserting
-the skirt still clears it (so retuning the heightmap fails here rather than silently reopening the
-crack); and the precondition the sizing rests on — that neighbouring chunks never differ by more
-than one LOD tier — checked on the settled ring and again after the 500 m walk.
-
-**Verified by eye as well, which is what this finding asked for** ("if skirts read as visibly wrong
-at a real camera angle"). New `tools/chunk_seam_shot.gd` renders a LOD0/LOD1 seam twice from an
-identical camera — once with the skirt, once with the index buffer truncated back to the terrain
-triangles, which is exactly the pre-fix geometry — and diffs the two. **541 of 921,600 pixels
-changed (0.059%)**, and they trace the crack line and nothing else: no solid band along the
-boundary, which is the flange failure mode skirts are warned about. The tool locates its own seam
-(roughest west edge that is also above water), so it does not rot when the heightmap changes.
-
-**API note for 4.4 / 4.6, since `docs/DELEGATION.md` was held by another lane when this landed.**
-`ChunkMesher.build_mesh()` now returns terrain **plus** a skirt in one surface, terrain first:
-vertices `0 ..< vert_count(lod)` and triangles `0 ..< tri_count(lod)` are the terrain grid exactly
-as before, with `skirt_vert_count(lod)` / `skirt_tri_count(lod)` appended after. Anything cooking
-collision from a chunk must call **`ChunkMesher.collision_faces(mesh, lod)`**, never
-`ArrayMesh.get_faces()`. `ChunkStreamer`'s own colliders already do.
-
-**This is what surfaced F-133.** The first render came back as skirts standing in a lattice with
-sky where the ground should be: the 4.3 mesher had every terrain triangle wound inside-out. The
-seam fix could not be judged visually until that was fixed too.
-
 
 ---
 
@@ -676,7 +562,139 @@ picks this up.
 
 ---
 
+### F-134 · Hand-moving a finding to '## Resolved' eats the heading when it is the last entry under '## Open' — twice now, and the second time made all 121 resolved findings parse as open
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-18 by yarrow21
+
+**It is not `agent finding`.** That command inserts correctly — it does
+`text.replace("\n## Resolved\n", "\n" + entry + "## Resolved\n", 1)`, which preserves the heading. The
+damage comes from the *other* half of a finding's life, which has no command at all: **moving a
+resolved entry from `## Open` to `## Resolved`**. Every agent hand-rolls that with a script, and the
+natural way to write it has a bug that only fires in one case.
+
+The natural extraction is "from this finding's heading up to the next `### F-` heading". When the
+finding being moved is the **last entry under `## Open`**, the next `### F-` heading is the first
+entry *inside* `## Resolved` — so the slice swallows the `## Resolved` heading itself, and writing
+the remainder back deletes it.
+
+**Two incidents, both this shape:**
+
+- `89fea39` (filing F-117) overwrote **F-112's heading**, orphaning its body. That silently closed
+  F-112 through the sync rule, which is the whole of F-131.
+- `9505cfd` (4.4 docs, lm) deleted the **`## Resolved` heading itself**. Every one of the 121
+  resolved findings then parsed as open: `tools/findings_numbering_check.gd` went from
+  `open=15 resolved=121 failures=0` to `open=136 resolved=0 failures=2`. Restored by hand in the
+  commit that files this.
+
+I hit the identical bug in my own F-131 script an hour earlier and only escaped it because my version
+used `src.index(...)`, which *raised* when the anchor was missing, instead of `find(...)`, which
+returns a bad offset and writes. That is luck, not skill, and it is not a basis for the next agent
+avoiding it.
+
+**Fix: `agent resolve <F-NNN>`, resolution note on stdin** — the mirror of `agent finding`, and the
+same shape:
+
+- bound the extraction at `min(next '### F-' heading, index of '## Resolved')`, never at the heading
+  alone;
+- append ` — **fixed**` to the title line, append the note to the body, splice it in directly after
+  the `## Resolved` heading;
+- refuse loudly if the finding is not under `## Open`, or if `## Resolved` is missing — a missing
+  heading means the file is already damaged and the right move is to say so, not to append blindly;
+- write through the same `.tmp` + `os.replace()` the filing path already uses.
+
+Then `AGENTS.md`'s close-out rule ("closing one means the fix **and** moving its section to
+`## Resolved`") names a command instead of describing an edit, and nobody writes the slice again.
+`tools/findings_numbering_check.gd` already exists and is the acceptance test — it catches both
+incidents — but it only runs when somebody thinks to run it, which neither offending commit did.
+
+---
+
 ## Resolved
+
+### F-125 · Thin Step authors dodge_iframe_seconds, but D-072 left no i-frame timer for it to extend — **fixed**
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-18 by wick20
+
+Task 3.4 authored `content/powerups/thin_step.tres` (Void, `dodge_iframe_seconds` (0.04, 0),
+max_stacks 3) because `dodge_iframe_seconds` is in `PowerupDef.KNOWN_STATS` and in POWERUPS.md §2's
+pending table. The data is correct and validates. The problem is that there is nothing for it to
+modify, and the reason is a decision made the same day.
+
+**D-072 (task 3.8b) collapsed the i-frame window into the dash duration.** Its words: "The i-frame
+window IS `dodge_duration_sec`, not a separate `dodge_iframe_sec` ... there is no state where the
+flag is true without the dash also being in progress or vice versa." The replicated `dodging` bool
+on the player's SceneReplicationConfig is the whole mechanism, and the host reads it in
+`systems/health/player_health.gd` `_on_enemy_attack_landed()`.
+
+So whoever routes `dodge_iframe_seconds` through `PowerupService.stat()` faces a choice that is a
+design decision, not a wiring detail, and should not be made silently in a hurry:
+
+1. **Feed it into `dodge_duration_sec`.** Cheapest, and keeps D-072's invariant exactly. But the
+   stat then lengthens the dash *movement* too — at 3 stacks Thin Step adds 0.12s of travel, which
+   changes where the player ends up, not only whether they were hit. That is a different powerup
+   from the one the description promises.
+2. **Decouple the two.** D-072 explicitly left room for this: "`_execute_dodge()` was kept a
+   wrappable function precisely so that kind of change has somewhere to live." Costs a second
+   timer and breaks the "flag true implies dash in progress" invariant, so the ALWAYS-replication
+   reasoning in D-072 §2 has to be re-checked against the longer window (it gets safer, not
+   riskier — a longer true-window is more likely to be observed, not less).
+
+**Why this is filed rather than fixed:** 3.4 authors content, and POWERUPS.md is explicit that a
+`pending` stat is correct data that waits for its system's own task. This is a note for that task,
+so the choice above is made deliberately with D-072 in front of whoever makes it.
+
+Nothing is broken today: the stat is inert until something reads it, exactly like the rest of the
+pending table. Thin Step's description ("untouchable for the whole of the trip rather than most of
+it") is written for option 2 and should be re-read if option 1 is chosen.
+
+**Resolved 2026-08-18 by yarrow21 — option 2, decoupled.** The finding was right that this is a
+design decision, not a wiring detail, and the authored content turned out to settle it: Thin Step's
+own description promises *"untouchable for the whole of the trip rather than most of it"* — a claim
+about invulnerability, not travel. Option 1 would have added 0.12 s of dash at 3 stacks and moved
+where the player ends up. **D-087** records the call and its three consequences.
+
+**What changed** (`entities/player/player_controller.gd`):
+
+- `_iframe_time_remaining` is a second timer alongside `_dodge_time_remaining`. `_execute_dodge()`
+  sets the dash window to `dodge_duration_sec` and the i-frame window to `dodge_duration_sec +
+  PowerupService.local_stat(&"dodge_iframe_seconds", 0.0)`.
+- `_apply_horizontal_movement()`'s dash branch now keys off `_dodge_time_remaining`, **not**
+  `dodging`. This is the line that matters: leaving it on the flag would have made the i-frame stat
+  silently lengthen the dash — shipping option 1 while claiming option 2.
+- `dodging` clears with the *later* window, so it now means "invulnerable". D-072's invariant is
+  relaxed in the direction D-072 itself called safe (a longer true-window is more likely to be
+  observed, not less).
+- The window is floored at `dodge_duration_sec` via `maxf`. A negative modifier must not undercut
+  D-072's replication guarantee — that would produce intermittently *missing* i-frames, not shorter
+  ones.
+
+**Deliberately not done: renaming `dodging` to `invulnerable`.** The host reads the property by name
+off the synchronizer, and its reader (`systems/health/player_health.gd` `_is_dodging()`) was held by
+task 3.14 throughout. It is a pure rename with no wire-format change — the property name is already
+the wire name — and worth doing whenever both files are free in one task. The flag's doc comment
+states what it now means in the meantime. `_is_dodging()` was already asking the right question: it
+exists to decide whether a hit should be ignored.
+
+**No protocol bump** — same property, same slot, same `ALWAYS` mode; only its duration changed.
+`core/net/net_version.gd` untouched.
+
+**Verified**, all through `agent godot`:
+
+- `tools/dodge_check.gd` → **0 failures**, with a new section that grants 3 real stacks of
+  `content/powerups/thin_step.tres` (+0.120 s, read back off `PowerupService`) and asserts the pair
+  that matters *at the same instant*: `dodging` still true past `dodge_duration_sec`, while
+  `_dodge_time_remaining == 0` and horizontal speed has dropped below `dodge_impulse`. It calls
+  `host_clear` afterwards so no later check inherits the powerup.
+- **The new section was proved to catch the bug**, not merely to pass: reintroducing the old
+  `if dodging:` movement branch fails it with `horizontal speed 10.00 m/s` — still dashing — then
+  reverted and re-run green.
+- No regressions: `tools/dodge_net_check.gd` (real two-process ENet) `failures=0`, including "the
+  client's `dodging` flag replicates to the host over the real synchronizer wire";
+  `tools/powerup_check.gd` `failures=0`; `tools/player_health_check.gd` 0 failures.
+
+`docs/POWERUPS.md` moves `dodge_iframe_seconds` out of the "Pending systems" table into the wired
+one, with its floor rule.
+
 
 ### F-131 · A finding auto-closed by the F-049 sync rule can never reopen, so a transient FINDINGS.md error permanently hides real work — F-112 and F-036 are both invisible to the board right now — **fixed**
 
@@ -5675,6 +5693,83 @@ and the PASS rerun above confirmed it. Full spec: `docs/SPECS.md` F-108.
 **`tools/flora_check.gd:126` has the identical construction** and is currently green only because its
 20 mm tolerance and height-only comparison happen to absorb the error. It belongs to A-000V's file
 set, outside this task's claim — filed separately as **F-122**.
+
+### F-128 · Task 4.3's chunk streamer has no LOD-boundary stitching — adjacent chunks at different LOD tiers crack — **fixed**
+
+**Area:** world-gen · **Severity:** low · **Found:** 2026-08-18 by lm during 4.3
+
+`world/chunk/chunk_mesher.gd` samples `IslandHeightmap.height()` at world coordinates, so two
+neighbouring chunks at the **same** LOD tile seamlessly — both sample the identical world-space
+point at their shared edge, byte-for-byte. Two neighbouring chunks at **different** LOD tiers do
+not: `ChunkStreamer`'s ring design puts a different LOD on every tier boundary by construction
+(D-080), and a chunk's outer edge has `verts_per_side(lod)` vertices along it — 33 at LOD0, 17 at
+LOD1, 9 at LOD2. The coarser chunk's edge samples a subset of the finer chunk's edge samples in
+world space, but the two meshes connect those samples with different triangle counts, so wherever
+the terrain isn't flat along that edge the two surfaces diverge — a classic T-junction crack.
+
+**Not fixed as part of 4.3.** The task's acceptance test (`docs/SPECS.md`'s 4.3 block) is
+specifically about per-frame streaming *cost* — "walk 500 m ... zero hitches over 16 ms" — not
+visual continuity, and nothing yet instantiates a `ChunkStreamer` in the shipped game to look at
+(4.6, seed replication + client regen, is the task that will). `agent godot` runs headless for
+everything except the collision-cook measurement itself, so there was no way to visually confirm
+or deny this by eye during the task either way — it follows directly from the vertex-count
+mismatch, not from a render.
+
+**Likely fix, when it matters:** vertical skirts — extend each chunk's outer border ring of
+vertices down by a fixed depth, forming a thin wall that hides the gap without solving the vertex
+mismatch itself (the standard cheap mitigation for this exact problem). Proper stitching
+(welding/re-triangulating the coarser edge to match the finer one) is the alternative if skirts
+read as visibly wrong at a real camera angle; either is additive to `chunk_mesher.gd` and does not
+require reworking the ring/LOD design in `chunk_streamer.gd`.
+
+**Resolved 2026-08-18 by wick20.** Vertical skirts, per this finding's own suggested fix and now
+recorded as **D-084** — a wall hanging `SKIRT_DEPTH` metres below every chunk's outer border, on
+both sides of every boundary, so the gap is covered whichever surface sits higher along the seam.
+Stitching was rejected deliberately: it would take the neighbours' tiers as a fifth input to
+`build_mesh()` and force a re-mesh of the finer chunk whenever a neighbour changed tier, cascading
+work through the very frame budget task 4.3 exists to protect. The skirt needs no neighbour
+knowledge at all, so the function stays pure in `(chunk_x, chunk_z, world_seed, lod)`.
+
+**Depth is 10% of `IslandHeightmap.HEIGHT_SCALE`, not a metre count**, because 4.1 calls that scale
+a placeholder. Measured worst-case divergence over the whole island across four seeds: **0.52 m**
+at a LOD0/LOD1 boundary, **1.78 m** at LOD1/LOD2 — against a 6.00 m skirt, a 3.4x margin that
+survives the terrain being retuned.
+
+**The skirt never reaches the physics server.** New `ChunkMesher.collision_faces()` slices the
+terrain triangles off the front of the index buffer; `ChunkStreamer._cook_collision()` and
+`tools/bench_chunk_gpu.gd` both use it in place of `ArrayMesh.get_faces()`. A skirt is a vertical
+wall standing exactly on the seam a player walks across — free snagging, plus ~12% more faces
+(LOD0) to cook against D-074's gating main-thread cost.
+
+**Verified** by `tools/chunk_stream_check.gd` (windowed) — **21 assertions, 0 failures**, including
+the pre-existing 4.3 acceptance test, which now reports **zero hitches in total frame time**, not
+just in the streamer's own cost. New assertions: skirt counts/layout at every LOD; `collision_faces()`
+returning exactly `tri_count(lod) * 3` faces with its minimum y exactly `SKIRT_DEPTH` above the
+mesh's; every skirt triangle facing outward; an island-wide re-sweep of the divergence asserting
+the skirt still clears it (so retuning the heightmap fails here rather than silently reopening the
+crack); and the precondition the sizing rests on — that neighbouring chunks never differ by more
+than one LOD tier — checked on the settled ring and again after the 500 m walk.
+
+**Verified by eye as well, which is what this finding asked for** ("if skirts read as visibly wrong
+at a real camera angle"). New `tools/chunk_seam_shot.gd` renders a LOD0/LOD1 seam twice from an
+identical camera — once with the skirt, once with the index buffer truncated back to the terrain
+triangles, which is exactly the pre-fix geometry — and diffs the two. **541 of 921,600 pixels
+changed (0.059%)**, and they trace the crack line and nothing else: no solid band along the
+boundary, which is the flange failure mode skirts are warned about. The tool locates its own seam
+(roughest west edge that is also above water), so it does not rot when the heightmap changes.
+
+**API note for 4.4 / 4.6, since `docs/DELEGATION.md` was held by another lane when this landed.**
+`ChunkMesher.build_mesh()` now returns terrain **plus** a skirt in one surface, terrain first:
+vertices `0 ..< vert_count(lod)` and triangles `0 ..< tri_count(lod)` are the terrain grid exactly
+as before, with `skirt_vert_count(lod)` / `skirt_tri_count(lod)` appended after. Anything cooking
+collision from a chunk must call **`ChunkMesher.collision_faces(mesh, lod)`**, never
+`ArrayMesh.get_faces()`. `ChunkStreamer`'s own colliders already do.
+
+**This is what surfaced F-133.** The first render came back as skirts standing in a lattice with
+sky where the ground should be: the 4.3 mesher had every terrain triangle wound inside-out. The
+seam fix could not be judged visually until that was fixed too.
+
+---
 
 ### F-133 · Task 4.3's chunk mesher winds every terrain triangle inside-out — the ground renders and collides only from below — **fixed**
 

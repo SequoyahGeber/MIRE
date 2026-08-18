@@ -4600,6 +4600,13 @@
       "status": "done",
       "tier": "F",
       "title": "Task 4.3's chunk mesher winds every terrain triangle inside-out \u2014 the ground renders and collides only from below"
+    },
+    "F-134": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Hand-moving a finding to '## Resolved' eats the heading when it is the last entry under '## Open' \u2014 twice now, and the second time made all 121 resolved findings parse as open"
     }
   },
   "version": 1
