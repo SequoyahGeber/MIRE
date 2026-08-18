@@ -3220,3 +3220,27 @@ One editor check for the whole repo. The finding named the by-hand pgrep; the au
 Files: `.agent/bin/agent`, `AGENTS.md`, `tools/harness_check.py`
 
 Commit at time of writing: `d0ad1c8`
+
+---
+
+### REOPEN · F-036 · yarrow21 · 2026-08-18T20:46:55+00:00
+
+**Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10**
+
+Reopened (was marked done 2026-08-18 by lp).
+
+Never resolved — lp's own DONE entry for it says so: 'F-036 intentionally stays Open in FINDINGS.md -- closing it needs Sequoyah's playtest verdict (D-039's canonical hand-off case), which no agent can substitute.' The agent done recorded a finished session (lp wrote the missing SPECS.md F-036 block and re-ran combat_feel_check.gd clean), not a resolved finding. It has been in the board's Done row ever since while brief still offered it, so the one genuine human hand-off in the queue was invisible to any director routing off the board. The ordering half IS spent (2.9/2.10 swapped on disk); what remains is 2.9's combat-feel gate, which needs Sequoyah to play the current build and say yes or no.
+
+Commit at time of writing: `9758dc4`
+
+---
+
+### DONE · F-131 · yarrow21 · 2026-08-18T20:50:46+00:00
+
+**A finding auto-closed by the F-049 sync rule can never reopen, so a transient FINDINGS.md error permanently hides real work — F-112 and F-036 are both invisible to the board right now**
+
+Two findings were invisible to the board — F-112 and F-036 both sat in the Done row while brief still offered them, so no director could dispatch either. Two different causes, two fixes. (1) _sync_findings()'s F-049 inference rule was one-way, so when an unrelated commit clobbered F-112's heading for five minutes the next sync closed it and restoring the heading could not undo that. It now restores todo when a finding is under '## Open', marked done, and has NO done_at — done_at being the discriminator, since every real agent done stamps it and the inference never does. F-112 healed on the next sync, F-036 (real done_at) correctly untouched. (2) agent reopen <id> "why" for the case a tool cannot judge: agent done is the only close-out verb so it also gets used for 'my session ended', which is what happened to F-036 — lp's own DONE entry says it stays open pending Sequoyah's playtest. Reopened it with that quote. The drift warning now names both actions instead of assuming the doc is stale, which was wrong on both findings it fired on. Also fixed two KeyError crashes found while testing: a task missing 'milestone' or 'est' took down every command that writes state, because both reads are inside save(). Verified: harness_check 18/18 with two new cases; --rev HEAD reproduces 16/18 and the sync case fails there on its behavioural assertion, not just a missing subcommand. agent start no longer prints the drift warning and F-036 is claimable again. D-082 records the rule.
+
+Files: `.agent/bin/agent`, `tools/harness_check.py`, `AGENTS.md`
+
+Commit at time of writing: `9758dc4`

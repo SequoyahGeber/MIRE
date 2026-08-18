@@ -127,8 +127,22 @@ merge_stacks() handles the simple case but not partial overflow across three sta
 is settled, don't change it. Next: finish the overflow case, then wire the UI signal."
 ```
 
-Both release your claims and write to `.agent/JOURNAL.md`. **A `handoff` note is the single most
-valuable thing you produce when you stop mid-task.** Write it for someone with no memory of your
+**On a finding, `agent done` means *the finding is resolved*, not "my session on it ended."** Those
+come apart more often than you would think — you can do a full task's worth of real work on an
+`F-number` and leave the finding genuinely open, because what closes it is a playtest verdict, or a
+check nobody has written yet. If that is where you are, `agent handoff` it. If you already ran `done`
+and it was not resolved, correct it — the correction is a command, not a state-file edit:
+
+```bash
+.agent/bin/agent reopen F-036 "the done recorded my session; closing this needs Sequoyah's playtest"
+```
+
+This matters because the two readers disagree when it drifts: `board` lists findings from state so it
+hides them, `brief` lists them from the doc so it offers them. Two findings sat in the Done row for
+days that way, invisible to any director routing work off the board (F-131).
+
+Both `done` and `handoff` release your claims and write to `.agent/JOURNAL.md`. **A `handoff` note is
+the single most valuable thing you produce when you stop mid-task.** Write it for someone with no memory of your
 session — because that is literally who reads it. Say what works, what doesn't, what you'd already
 decided, and what you'd do next.
 

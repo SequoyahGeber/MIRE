@@ -296,9 +296,25 @@ def _sync_findings(st):
             }
             added += 1
     for fid, t in st["tasks"].items():
-        if (t.get("milestone") == FINDINGS_MILESTONE and t.get("status") == "todo"
-                and fid not in open_ids):
+        if t.get("milestone") != FINDINGS_MILESTONE:
+            continue
+        if t.get("status") == "todo" and fid not in open_ids:
             t["status"] = "done"
+        # The reverse, narrowly (F-131). The rule above is an *inference* — "it left the doc, so
+        # somebody must have fixed it" — and it was one-way, so a transient error in a markdown file
+        # became a permanent state change with no way back. That is not hypothetical: F-112's
+        # heading was accidentally overwritten by an unrelated commit (89fea39), the next sync
+        # inferred it closed, a later task restored the heading, and the status stayed `done`
+        # forever. It sat in the board's Done row while `brief` still offered it as work, so no
+        # director would ever dispatch a real, unwritten check.
+        #
+        # `done_at` is what separates the inference from a fact: every real `agent done` stamps it,
+        # and this rule never does. So a finding that is back under '## Open' with no `done_at` was
+        # closed by nobody, and the source of truth F-049 already defers to says it is open. Restore
+        # it. A finding an agent actually closed is untouched — it keeps its `done_at`, and moving it
+        # out of '## Open' stays a human judgement (`agent reopen` is the verb for changing it).
+        if t.get("status") == "done" and not t.get("done_at") and fid in open_ids:
+            t["status"] = "todo"
     return added
 
 
@@ -309,8 +325,10 @@ def _require_task(st, tid, verb="that"):
     if tid in st["tasks"]:
         return tid
     if _is_finding(tid):
-        if _sync_findings(st):
-            save(st)
+        # Save unconditionally: the sync's return value counts only NEW findings, and F-131's heal
+        # changes a status without adding one. Conditioning the save on the count dropped it.
+        _sync_findings(st)
+        save(st)
         if tid in st["tasks"]:
             return tid
         die("unknown finding %s — it is not under '## Open' in docs/FINDINGS.md.\n"
@@ -430,17 +448,23 @@ def _print_git():
 def _findings_drift(st):
     """F-071: `docs/FINDINGS.md` and `state.json` are two records of the same fact, and they drift.
 
-    `_sync_findings()` deliberately never downgrades a status, so a finding closed with `agent done`
-    but never moved out of '## Open' stays *done* in state and *open* in the doc. The two readers
-    then disagree in opposite directions: `board` lists findings from state, so it hides it; `brief`
-    lists them from the doc, so it advertises it as claimable work. Eight had drifted that way at
-    once — a quarter of what `brief` called the queue was already finished, and claiming one only
-    failed because state happened to disagree.
+    A finding closed with `agent done` but never moved out of '## Open' stays *done* in state and
+    *open* in the doc. The two readers then disagree in opposite directions: `board` lists findings
+    from state, so it hides it; `brief` lists them from the doc, so it advertises it as claimable
+    work. Eight had drifted that way at once — a quarter of what `brief` called the queue was
+    already finished, and claiming one only failed because state happened to disagree.
 
-    Neither reader is wrong on its own, so this does not pick a winner and does not silently rewrite
-    either record: the doc is the source of truth for what is open (F-049), but only a human or an
-    agent who knows what was actually fixed can write the resolution note that makes the move
-    meaningful. Printing the disagreement is the part a tool can do."""
+    Neither reader is wrong on its own, so this does not pick a winner: the doc is the source of
+    truth for what is open (F-049), but only a human or an agent who knows what was actually fixed
+    can write the resolution note that makes the move meaningful. Printing the disagreement is the
+    part a tool can do.
+
+    **F-131 narrowed what is left here.** The half of this that needed no judgement — a finding
+    marked done with no `done_at`, i.e. closed by `_sync_findings()`'s inference rather than by
+    anyone — now heals itself in `_sync_findings()`, so it never reaches this warning. What still
+    prints is the half that genuinely needs a reader: a finding an agent really did run `agent done`
+    on, which is still open in the doc. That has two legitimate resolutions and the warning names
+    both, because assuming the first one was wrong on both findings it was firing on."""
     done_ids = {fid for fid, t in st["tasks"].items()
                 if t.get("milestone") == FINDINGS_MILESTONE and t.get("status") == "done"}
     return sorted({fid for fid, _ in _open_findings() if fid in done_ids})
@@ -515,12 +539,17 @@ def _print_findings_drift(st):
     drift = _findings_drift(st)
     if not drift:
         return
-    print("  %s⚠ %d finding(s) closed but still under '## Open' in docs/FINDINGS.md%s"
+    print("  %s⚠ %d finding(s) marked done but still under '## Open' in docs/FINDINGS.md%s"
           % (C["y"], len(drift), C["x"]))
     print("    %s%s%s" % (C["dim"], "  ".join(drift), C["x"]))
-    print("    %s`agent brief` reads the doc, so it is still offering these as work. Move each"
+    print("    %s`board` hides these; `brief` still offers them. Read the entry, then pick one:"
           % C["dim"])
-    print("    section to '## Resolved' with what you did and how you verified it.%s" % C["x"])
+    print("      · it IS fixed  -> move its section to '## Resolved' with what you did and how")
+    print("                        you verified it")
+    print("      · it is NOT    -> agent reopen %s \"why\"   — `agent done` also gets used to mean"
+          % drift[0])
+    print("                        \"my session ended\", and that is not the same fact (F-131)%s"
+          % C["x"])
     print()
 
 
@@ -837,6 +866,45 @@ def _journal(kind, tid, title, agent, body, files):
         if files:
             f.write("Files: %s\n\n" % ", ".join("`%s`" % x for x in files))
         f.write("Commit at time of writing: `%s`\n" % _head())
+
+
+def cmd_reopen(args):
+    """Mark a finding open again, with a reason, in the journal (F-131).
+
+    `agent done` is the only close-out verb, so it gets used for "my session on this finding ended"
+    as well as "this finding is resolved" — and those are different facts. F-036 is the worked
+    example: lp did real work on it, ran `agent done`, and wrote in the same journal entry that the
+    finding *stays open* because closing it needs Sequoyah's playtest verdict. State said done; the
+    doc said open; `board` hid it and `brief` offered it, so the one genuine human hand-off in the
+    queue became invisible to the director routing work off the board.
+
+    The alternative was hand-editing `state.json`, which leaves no trace of who decided what. This
+    is the same act with a journal entry attached.
+    """
+    if len(args) < 2:
+        die('usage: agent reopen <task-id> "why it is not actually resolved"\n'
+            "  For a finding that was marked done but was never resolved — a status correction,\n"
+            "  not a new finding. If there is genuinely NEW work, file a new F-number instead.")
+    me = whoami()
+    st = load()
+    tid = _require_task(st, args[0], "reopen")
+    reason = " ".join(args[1:])
+    t = st["tasks"][tid]
+    if t.get("status") != "done":
+        die("%s is already %s — nothing to reopen." % (tid, t.get("status", "todo")))
+    was = "%s by %s" % (t.get("done_at", "?")[:10], t.get("done_by", "?"))
+    t["status"] = "todo"
+    t.pop("done_at", None)
+    t.pop("done_by", None)
+    save(st)
+    _journal("REOPEN", tid, t["title"], me,
+             "Reopened (was marked done %s).\n\n%s" % (was, reason), [])
+    ok("%s reopened — claimable again, journal updated" % tid)
+    if _is_finding(tid) and tid not in dict(_open_findings()):
+        print("  %s⚠ %s is under '## Resolved' in docs/FINDINGS.md — move its section back to"
+              % (C["y"], tid))
+        print("    '## Open', or the next sync will close it again.%s" % C["x"])
+    print("  %sCommit now so the next agent sees it.%s" % (C["dim"], C["x"]))
 
 
 def cmd_done(args):
@@ -1376,7 +1444,10 @@ def _print_board(st, focus=None):
 def _roadmap_progress(st):
     """Done/total over ROADMAP tasks only. Findings are counted separately — folding them in would
     make the milestone number move every time someone files one, which is the opposite of useful."""
-    items = [t for t in st["tasks"].values() if t["milestone"] != FINDINGS_MILESTONE]
+    # .get, not ["milestone"]: a task without one is a hand-edited or half-migrated state file, and
+    # a KeyError here takes down `board`, `start` and every `save()` — i.e. the whole harness — over
+    # a field that is only used to exclude findings from the roadmap count.
+    items = [t for t in st["tasks"].values() if t.get("milestone") != FINDINGS_MILESTONE]
     return sum(1 for t in items if t["status"] == "done"), len(items)
 
 
@@ -1439,9 +1510,14 @@ def render_board(st):
         L += ["## %s — current milestone" % ms, "",
               "| | Task | Tier | Est | Status |", "|---|---|---|---|---|"]
         for tid, t in sorted(by_ms[ms], key=lambda x: task_sort_key(x[0])):
-            mark = {"done": "✅", "in_flight": "🔵", "todo": "⬜", "blocked": "🚧"}.get(t["status"], "⬜")
+            # .get throughout, same reason as _roadmap_progress above: rendering the board is
+            # inside save(), so one task missing one field does not fail to draw a row — it takes
+            # down every command that writes state.
+            mark = {"done": "✅", "in_flight": "🔵", "todo": "⬜",
+                    "blocked": "🚧"}.get(t.get("status"), "⬜")
             L.append("| %s | **%s** %s | %s | %s | %s |"
-                     % (mark, tid, t["title"], t["tier"], t["est"], t["status"]))
+                     % (mark, tid, t.get("title", ""), t.get("tier", "?"),
+                        t.get("est", "—"), t.get("status", "todo")))
         L.append("")
 
     open_findings = sorted(
@@ -3072,6 +3148,7 @@ COMMANDS = {
     "baseline": cmd_baseline,
     "autoload": cmd_autoload,
     "editor-running": cmd_editor_running,
+    "reopen": cmd_reopen,
 }
 
 USAGE = """agent — multi-agent coordination for MIRE
@@ -3085,6 +3162,8 @@ USAGE = """agent — multi-agent coordination for MIRE
   agent ship <id> ["message"]     commit THIS TASK's files + push, print the sign-off
   agent handoff <id> "..."        stop mid-task: what's left, what to watch out for
   agent drop <id>                 abandon a task, release claims
+  agent reopen <id> "why"         a finding marked done that was never resolved — status
+                                  correction, journalled (F-131). Not for new work: file that
   agent check                     verify changes respect claims (pre-commit hook)
   agent sync                      re-read tasks from docs/ROADMAP.md
 

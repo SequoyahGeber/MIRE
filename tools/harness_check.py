@@ -15,6 +15,7 @@ fixed script passes all five.
 
 import argparse
 import hashlib
+import json
 import os
 import shutil
 import subprocess
@@ -427,6 +428,105 @@ def _(harness):
         "verdict says %s but exit code is %d (expected %d)"
         % ("open" if open_verdict else "closed", r.returncode, expected_code))
     return "verdict: %s" % ("open" if open_verdict else "closed")
+
+
+# F-131. Two findings under '## Open', both marked done in state — but for different reasons, and
+# only one of them is a fact anybody recorded. F-901 has a `done_at`, so an agent really did run
+# `agent done` on it; F-902 has none, so its `done` came from `_sync_findings()`'s own inference
+# after the doc transiently lost its heading. The whole fix turns on telling those apart.
+FINDINGS_DOC = """# Findings
+
+## How to file one
+
+### F-000 · the template example, which sits above '## Open' and must never be parsed
+
+## Open
+
+### F-901 · an agent ran `agent done` on this one — status is a recorded fact
+
+Body.
+
+### F-902 · nobody ever closed this: no done_at, so the status came from the sync's inference
+
+Body.
+
+## Resolved
+
+### F-900 · something genuinely fixed — **fixed**
+
+Body.
+"""
+
+FINDINGS_STATE = """{
+  "version": 1,
+  "tasks": {
+    "9.9": {"title": "an ordinary task", "tier": "T1", "est": "1",
+            "status": "todo", "milestone": "M1"},
+    "F-901": {"title": "closed by an agent", "tier": "F", "est": "\u2014",
+              "milestone": "Findings", "status": "done",
+              "done_at": "2026-08-18T14:09:11+00:00", "done_by": "lp"},
+    "F-902": {"title": "closed by the sync rule", "tier": "F", "est": "\u2014",
+              "milestone": "Findings", "status": "done"}
+  },
+  "in_flight": {},
+  "claims": {},
+  "recent": {}
+}
+"""
+
+
+def _findings_repo(harness):
+    """A repo whose FINDINGS.md and state.json disagree in both of F-131's two ways."""
+    d = build_repo(harness)
+    os.makedirs(os.path.join(d, "docs"), exist_ok=True)
+    with open(os.path.join(d, "docs", "FINDINGS.md"), "w") as f:
+        f.write(FINDINGS_DOC)
+    with open(os.path.join(d, ".agent", "state.json"), "w") as f:
+        f.write(FINDINGS_STATE)
+    return d
+
+
+def _status(d, fid):
+    with open(os.path.join(d, ".agent", "state.json")) as f:
+        return json.load(f)["tasks"][fid].get("status")
+
+
+@case("a finding the sync rule closed by inference reopens when the doc says it is open (F-131)")
+def _(harness):
+    d = _findings_repo(harness)
+    run([".agent/bin/agent", "board"], d, check=True)   # any sync point will do
+    assert _status(d, "F-902") == "todo", (
+        "a finding marked done with no done_at — closed by nobody, only inferred — stayed done "
+        "while sitting under '## Open'. That is how F-112 spent days in the board's Done row after "
+        "an unrelated commit clobbered its heading for five minutes; `brief` offered it and `board` "
+        "hid it, so no director could ever dispatch it. Status is now: %s" % _status(d, "F-902"))
+    assert _status(d, "F-901") == "done", (
+        "a finding an agent really closed (it has a done_at) was silently reopened. Only the "
+        "inference is safe to undo automatically — undoing a recorded close-out needs a human, "
+        "which is what `agent reopen` is for")
+
+
+@case("`agent reopen` corrects a recorded close-out, and refuses when there is nothing to correct (F-131)")
+def _(harness):
+    d = _findings_repo(harness)
+    r = run([".agent/bin/agent", "reopen", "F-901", "the done meant 'my session ended', not 'fixed'"],
+            d, check=True)
+    assert _status(d, "F-901") == "todo", "reopen did not clear the status: %s" % brief(r.stdout)
+    with open(os.path.join(d, ".agent", "state.json")) as f:
+        t = json.load(f)["tasks"]["F-901"]
+    assert "done_at" not in t and "done_by" not in t, (
+        "reopen left the close-out stamps behind, so the next sync's evidence test still reads it "
+        "as closed-by-an-agent: %s" % t)
+    journal = open(os.path.join(d, ".agent", "JOURNAL.md")).read()
+    assert "REOPEN" in journal and "my session ended" in journal, (
+        "reopen left no journal entry — the whole reason it exists rather than hand-editing "
+        "state.json is that the correction is attributable")
+    # Reopening something that is not done is a mistake, not a no-op: it would clear a status the
+    # caller has misread.
+    r = run([".agent/bin/agent", "reopen", "9.9", "already open"], d)
+    assert r.returncode != 0 and "already" in (r.stdout + r.stderr), (
+        "reopen accepted a task that was not done: %s" % brief(r.stdout + r.stderr))
+    return "F-901 reopened and journalled; reopen on a todo task refused"
 
 
 def main():

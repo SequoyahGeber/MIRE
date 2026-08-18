@@ -232,9 +232,9 @@
   "recent": {
     ".agent/bin/agent": {
       "agent": "yarrow21",
-      "at": "2026-08-18T20:43:28+00:00",
-      "hash": "77f4c0296a7a6ce299f28b1ffa0077faa6135278e4dcf3822a5ee0cd77bb0c39",
-      "task": "F-120"
+      "at": "2026-08-18T20:50:46+00:00",
+      "hash": "83a69b9c364d164976aa30c29585ba7ccf286da5cb412ad9d0fec7e6c825be7d",
+      "task": "F-131"
     },
     ".agent/bin/lane": {
       "agent": "bram1",
@@ -248,9 +248,9 @@
     },
     "AGENTS.md": {
       "agent": "yarrow21",
-      "at": "2026-08-18T20:43:28+00:00",
-      "hash": "0f0b10ff4871e4364703c26f29babca6ee250c62c2c83b824dbd3a7deea7c20d",
-      "task": "F-120"
+      "at": "2026-08-18T20:50:46+00:00",
+      "hash": "266331b0f49ecf565db77c17ed3f2921fe8efd2dc307cdcf36c1586caa536c6e",
+      "task": "F-131"
     },
     "CLAUDE.md": {
       "agent": "flint5",
@@ -1985,9 +1985,9 @@
     },
     "tools/harness_check.py": {
       "agent": "yarrow21",
-      "at": "2026-08-18T20:43:28+00:00",
-      "hash": "ff6c4fbd268fb654c45728d0b0eb26e8301acc79c27b9ac3ae2260260fe25324",
-      "task": "F-120"
+      "at": "2026-08-18T20:50:46+00:00",
+      "hash": "966d88e72e4c44660b4b64431d2e3fa1d56d064c64b6709cee56824c91a7198a",
+      "task": "F-131"
     },
     "tools/harvest_batch_check.gd": {
       "agent": "vane19",
@@ -3672,11 +3672,9 @@
       "title": "Inventory icons are capped at 26 px because a `CenterContainer` sizes children to their minimum"
     },
     "F-036": {
-      "done_at": "2026-08-18T14:09:11+00:00",
-      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
       "title": "Task 2.9's gate cannot be met in its roadmap position \u2014 the enemy it tunes against lands in 2.10"
     },
@@ -4342,7 +4340,7 @@
     "F-112": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
       "title": "`world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check \u2014 F-076's third system, not lifted"
     },
@@ -4490,6 +4488,22 @@
       "status": "done",
       "tier": "F",
       "title": "Players spawn on top of each other: the spawn slot is a live child count, not a held claim"
+    },
+    "F-130": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Three console commands never migrated to CommandService \u2014 they register via console.call(\"register\", ...), which 3.13's sweep could not see"
+    },
+    "F-131": {
+      "done_at": "2026-08-18T20:50:46+00:00",
+      "done_by": "yarrow21",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "A finding auto-closed by the F-049 sync rule can never reopen, so a transient FINDINGS.md error permanently hides real work \u2014 F-112 and F-036 are both invisible to the board right now"
     }
   },
   "version": 1
