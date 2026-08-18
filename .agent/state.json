@@ -2861,9 +2861,11 @@
       "title": "Held items are invisible in first person, so there is no swing to read"
     },
     "F-042": {
+      "done_at": "2026-08-18T18:22:34+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one"
     },

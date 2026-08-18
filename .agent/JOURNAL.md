@@ -2920,3 +2920,16 @@ Notes along the way:
 Files: `tools/enemy_check.gd`, `systems/enemies/enemy.gd`
 
 Commit at time of writing: `01dd7f7`
+
+---
+
+### DONE · F-042 · lp · 2026-08-18T18:22:34+00:00
+
+**Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one**
+
+Fix (habit in ASSET_TRACKER.md + tools/png_pixels_equal.py) shipped by F-079; this task added the missing docs/SPECS.md block, pointed the verification contract at the tool by name, and moved FINDINGS.md to Resolved. Verified live: re-ran render_item_icons.py unchanged under Blender 5.2 LTS (26 icons), git status flagged all 26 exports + the sheet, png_pixels_equal.py confirmed 26/26 identical to HEAD (0 real changes), working tree restored. python3 tools/png_pixels_equal_check.py -> ok. agent godot --script tools/findings_numbering_check.gd -> open=14 resolved=107 failures=0 (no F-number collision).
+
+Notes along the way:
+- Fix already existed (F-079's tools/png_pixels_equal.py + ASSET_TRACKER.md habit). This task: missing SPECS.md block, pointed the contract at the tool by name instead of manual IDAT decompression, and reproduced the original false alarm live against Blender 5.2 LTS (26 icons, 26/26 pixel-identical, sheet hash-identical, exports restored).
+
+Commit at time of writing: `da614d7`
