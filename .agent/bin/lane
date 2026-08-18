@@ -89,6 +89,22 @@ DEFAULT_LANES = {
         "areas": ["ui/", "tools/", "world/"], "tier": "T1", "role": "review",
         "sandbox": "danger-full-access",
     },
+    # The Max account the DIRECTOR itself runs on. Adding it as a lane is what lets the director
+    # route work to it, instead of a human opening a chat by hand and telling it to pick something.
+    # It needs its OWN auth home and its own `lane login LM`, exactly like LP. Pointing it at
+    # ~/.claude was tried and rejected with "Not logged in · Please run /login": a headless
+    # `claude -p` run does not inherit the desktop app's interactive session, and a separate home
+    # keeps a dispatched run from disturbing the chat the director is talking through anyway.
+    #
+    # It is the one lane sharing a quota window with the director's own chat, so it carries a reserve
+    # the others do not need. Spend the last of that window on dispatched work and the director can
+    # no longer route, verify, or close anything out until the window rolls.
+    "LM": {
+        "account": "Claude Max 5x (shared with the director)", "cli": "claude",
+        "home": "~/.mire/lanes/claude-max", "model": "sonnet", "effort": "medium",
+        "areas": ["core/", "autoload/", "systems/", "entities/"], "tier": "T2",
+        "role": "code", "permissions": "bypass", "reserve_pct": 90,
+    },
     "LP": {
         "account": "Claude Pro", "cli": "claude",
         "home": "~/.mire/lanes/claude-pro", "model": "sonnet", "effort": "medium",
@@ -536,11 +552,13 @@ def cmd_run(args):
     # A dry run exists to show what WOULD happen without spending anything, so it must survive a
     # lane that is not set up yet — that is exactly when you want to inspect the command.
     binary = lane_binary(lane)
-    unready = []
+    unready, misconfigured = [], False
     if not binary:
         unready.append("%s CLI is not installed" % lane["cli"])
+        misconfigured = True
     elif not is_logged_in(lane):
         unready.append("not logged in (%s)" % lane["home"])
+        misconfigured = True
     blocked = quota_block(lane)
     if blocked:
         unready.append(blocked)
@@ -556,7 +574,10 @@ def cmd_run(args):
         if busy_block(lane):
             print("%s\u2717 %s%s" % (C["r"], msg, C["x"]), file=sys.stderr)
             return EX_BUSY
-        die("%s — run .agent/bin/setup-lanes" % msg)
+        # Only tell someone to run setup-lanes when setup is actually the problem. A quota park or a
+        # reserve stop is a healthy lane doing its job, and pointing at the installer there sends the
+        # reader off to fix something that is not broken.
+        die(("%s — run .agent/bin/setup-lanes" % msg) if misconfigured else msg)
 
     os.makedirs(LOGS, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
@@ -909,6 +930,24 @@ def quota_block(lane):
     busy = busy_block(lane)
     if busy:
         return busy
+    # A lane sharing the director's own window must leave it enough to keep working. This is a
+    # reserve to fund a clean close-out, not a savings account: it holds back the last slice so
+    # routing, verification and handoffs survive a lane that would otherwise drain the window the
+    # director is directing from.
+    reserve = lane.get("reserve_pct")
+    if reserve:
+        window = (lane.get("quota_windows") or {}).get("five_hour") or {}
+        used = window.get("used_pct")
+        resets = window.get("resets_at")
+        # `used_pct` is the last figure a run REPORTED, not a live reading, so it long outlives the
+        # window it described. Without this the reserve latches: LM stops at 91%, the window rolls an
+        # hour later, and the stale 91% keeps refusing dispatch forever — a guard that starts as
+        # "protect the director" and quietly becomes "this lane never runs again".
+        rolled = until_passed(resets) if resets else False
+        if isinstance(used, (int, float)) and used >= reserve and rolled is not True:
+            return ("at %d%% of a window it shares with the director — holding the last %d%% back "
+                    "so routing and close-out survive (resets %s)"
+                    % (used, 100 - reserve, resets or "?"))
     if lane.get("status") == "exhausted":
         until = lane.get("exhausted_until")
         if not until:

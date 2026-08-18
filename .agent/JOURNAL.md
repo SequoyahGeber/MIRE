@@ -2881,3 +2881,15 @@ Notes along the way:
 Files: `tools/multimesh_readback_check.gd`
 
 Commit at time of writing: `818da6f`
+
+---
+
+### DONE · F-044 · bram1 · 2026-08-18T18:13:25+00:00
+
+**Concurrent headless Godot runs share one import cache, which is the likely cause of F-038**
+
+Two fixes to D-065's reserve, found by watching it fire for real. (1) It latched: used_pct is the last figure a run REPORTED, not a live reading, so once LM stopped at 91% the stale value would have refused every dispatch forever, including after the window rolled — it now ignores a used_pct whose window has already reset, proven by simulating a rolled window and restoring. (2) The refusal appended 'run setup-lanes', sending the reader to fix a lane that is working correctly; that advice is now only attached when setup is genuinely the problem. lane selftest 23/23. The import-cache question F-044 names remains open.
+
+Files: `.agent/bin/lane`
+
+Commit at time of writing: `4737442`

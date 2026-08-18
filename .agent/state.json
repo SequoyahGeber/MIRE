@@ -5,6 +5,21 @@
       "at": "2026-08-18T18:08:26+00:00",
       "task": "F-118"
     },
+    "systems/enemies/enemy.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T18:12:27+00:00",
+      "task": "F-111"
+    },
+    "tools/enemy_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T18:12:27+00:00",
+      "task": "F-111"
+    },
+    "tools/environment_vfx_hollowmere_check.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T18:12:58+00:00",
+      "task": "F-118"
+    },
     "world/environment/asset_vfx_library.gd": {
       "agent": "vane19",
       "at": "2026-08-18T18:08:26+00:00",
@@ -17,12 +32,22 @@
     }
   },
   "in_flight": {
+    "F-111": {
+      "agent": "lp",
+      "files": [
+        "tools/enemy_check.gd",
+        "systems/enemies/enemy.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T18:12:27+00:00"
+    },
     "F-118": {
       "agent": "vane19",
       "files": [
         "world/environment/asset_vfx_library.gd",
         "autoload/environment_vfx.gd",
-        "world/environment/particle_billboard.gdshader"
+        "world/environment/particle_billboard.gdshader",
+        "tools/environment_vfx_hollowmere_check.gd"
       ],
       "notes": [],
       "started": "2026-08-18T18:08:26+00:00"
@@ -35,9 +60,9 @@
       "task": "F-093"
     },
     ".agent/bin/lane": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T13:13:28+00:00",
-      "task": "F-081"
+      "agent": "bram1",
+      "at": "2026-08-18T18:13:25+00:00",
+      "task": "F-044"
     },
     ".agent/bin/lane-revive": {
       "agent": "ivy8",
@@ -2897,9 +2922,11 @@
       "title": "The iron sword ships complete and nothing puts it in a player's hand"
     },
     "F-044": {
+      "done_at": "2026-08-18T18:13:25+00:00",
+      "done_by": "bram1",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Concurrent headless Godot runs share one import cache, which is the likely cause of F-038"
     },
@@ -3482,7 +3509,7 @@
     "F-111": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "`enemy_check.gd`'s telegraph/swing assertions fail at HEAD, unrelated to F-075"
     },
