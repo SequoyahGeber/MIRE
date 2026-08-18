@@ -344,9 +344,9 @@
       "task": "F-074"
     },
     "autoload/powerup_service.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:27:04+00:00",
-      "task": "3.3"
+      "agent": "lp",
+      "at": "2026-08-18T05:35:30+00:00",
+      "task": "F-089"
     },
     "autoload/registry.gd": {
       "agent": "lp",
@@ -1094,9 +1094,9 @@
       "task": "3.3"
     },
     "tools/powerup_review_check.gd": {
-      "agent": "lc1",
-      "at": "2026-08-18T05:07:21+00:00",
-      "task": "3.3-review"
+      "agent": "lp",
+      "at": "2026-08-18T05:35:30+00:00",
+      "task": "F-089"
     },
     "tools/run_identity_check.gd": {
       "agent": "dusk3",
@@ -2918,9 +2918,11 @@
       "title": "A review order inherits the reviewed task's claim set, so it is refused exactly when that task is being worked on"
     },
     "F-089": {
+      "done_at": "2026-08-18T05:35:30+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Powerup lifecycle never removes obsolete family counts from clients, leaving ghost Resonances after reconnect or expiry"
     },

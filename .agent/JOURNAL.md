@@ -2266,3 +2266,18 @@ Renumbered the three collided entries (F-058 mire_art.mat cache -> F-092, F-059 
 Files: `docs/FINDINGS.md`, `tools/findings_numbering_check.gd`
 
 Commit at time of writing: `44284af`
+
+---
+
+### DONE · F-089 · lp · 2026-08-18T05:35:30+00:00
+
+**Powerup lifecycle never removes obsolete family counts from clients, leaving ghost Resonances after reconnect or expiry**
+
+Fix: autoload/powerup_service.gd _on_run_player_rebound/_on_run_player_expired now call a shared _retire_broadcast(peer_id, before) that emits the downward resonance_changed transition and broadcasts an empty net_powerup_counts before the host discards the old/expired peer id's family-count entry. Verified: agent godot --script tools/powerup_review_check.gd -> POWERUP_REVIEW_CHECK failures=0 (was 2), all 6 assertions PASS including the two new ones, zero ERROR: lines. Reran tools/powerup_check.gd (offline, failures=0) and tools/powerup_net_check.gd (2 real ENet processes, failures=0) for no regression. Wrote the missing docs/SPECS.md F-089 block after 3.3. Moved docs/FINDINGS.md F-089 to Resolved. Added docs/DELEGATION.md Current state note for the next task touching the rebound/expiry lifecycle.
+
+Notes along the way:
+- Fix: shared _retire_broadcast(peer_id, before) called from _on_run_player_rebound (old id, before family_counts moves to new) and _on_run_player_expired (expiring id); emits downward resonance_changed then broadcasts net_powerup_counts.rpc(peer_id, {}) before host erases its own entry. Verified powerup_review_check.gd failures=0 (was 2), plus powerup_check.gd and powerup_net_check.gd clean. Wrote missing SPECS.md block after 3.3 (no spec existed for F-089). Moved FINDINGS.md entry to Resolved, added DELEGATION.md Current state note.
+
+Files: `autoload/powerup_service.gd`, `tools/powerup_review_check.gd`
+
+Commit at time of writing: `977cede`

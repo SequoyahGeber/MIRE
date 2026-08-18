@@ -339,7 +339,11 @@ func _on_run_player_rebound(old_peer_id: int, new_peer_id: int) -> void:
 	_stacks[new_peer_id] = _stacks[old_peer_id]
 	_stacks.erase(old_peer_id)
 	if _family_counts.has(old_peer_id):
+		# Move the counts to the new id BEFORE discarding the old one, so _commit(new_peer_id)
+		# below diffs against the pre-rebind counts and does not re-fire resonance_changed for
+		# thresholds the player already crossed under the old id.
 		_family_counts[new_peer_id] = _family_counts[old_peer_id]
+		_retire_broadcast(old_peer_id, _family_counts[old_peer_id])
 		_family_counts.erase(old_peer_id)
 	_commit(new_peer_id)
 
@@ -347,8 +351,26 @@ func _on_run_player_rebound(old_peer_id: int, new_peer_id: int) -> void:
 func _on_run_player_expired(peer_id: int) -> void:
 	if not _owns_mutation():
 		return
+	if _family_counts.has(peer_id):
+		_retire_broadcast(peer_id, _family_counts[peer_id])
 	_stacks.erase(peer_id)
 	_family_counts.erase(peer_id)
+
+
+## F-089: the shared tail of rebound (old id) and expiry. `net_powerup_counts` has no deletion path
+## of its own, so an id that is about to be discarded from `_family_counts` must be broadcast as
+## empty first — otherwise every teammate keeps the last nonzero count they heard for an id that no
+## longer exists (a ghost Resonance that survives reconnect or expiry forever). `before` is the
+## about-to-be-discarded id's own counts, not the target of a rebind, so the downward transition is
+## attributed to the id that is actually going away.
+func _retire_broadcast(peer_id: int, before: Dictionary) -> void:
+	for family: StringName in before:
+		var was: int = _tier_for_count(int(before[family]))
+		if was != Resonance.NONE:
+			resonance_changed.emit(peer_id, family, Resonance.NONE)
+			MireLog.info(LOG_CHANNEL, "peer %d %s resonance %d -> %d" % [peer_id, family, was, Resonance.NONE])
+	if bool(_transport().call("is_active")):
+		net_powerup_counts.rpc(peer_id, {})
 
 
 func _on_disconnected() -> void:
