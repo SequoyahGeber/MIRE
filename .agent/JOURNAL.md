@@ -3071,3 +3071,27 @@ Notes along the way:
 Files: `tools/blender/audit_all_sides.py`, `tools/blender/audit_all_sides_check.py`
 
 Commit at time of writing: `5fc2a3f`
+
+---
+
+### DONE · F-123 · pike14 · 2026-08-18T19:39:51+00:00
+
+**Friends list offers no Join Game: the lobby is never advertised via the 'connect' rich presence key**
+
+SteamLobby advertises the lobby via the connect rich presence key on create and join, clears on leave; tools/rich_presence_check.gd guards it headlessly.
+
+Files: `autoload/steam_lobby.gd`, `tools/rich_presence_check.gd`
+
+Commit at time of writing: `a306057`
+
+---
+
+### DONE · F-124 · pike14 · 2026-08-18T19:39:51+00:00
+
+**macOS builds cannot show the Steam overlay: hardened runtime without the dyld entitlement blocks injection**
+
+macOS preset gains allow_dyld_environment_variables so Steam can inject the overlay; verified present in the signed bundle.
+
+Files: `export_presets.cfg`
+
+Commit at time of writing: `a306057`

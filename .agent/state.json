@@ -15,10 +15,10 @@
       "at": "2026-08-18T19:32:45+00:00",
       "task": "3.13"
     },
-    "autoload/steam_lobby.gd": {
-      "agent": "pike14",
-      "at": "2026-08-18T19:34:26+00:00",
-      "task": "F-123"
+    "content/powerups/adrenal_bloom.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:38:49+00:00",
+      "task": "3.4"
     },
     "content/powerups/ashen_temper.tres": {
       "agent": "wick20",
@@ -50,6 +50,11 @@
       "at": "2026-08-18T19:35:40+00:00",
       "task": "3.4"
     },
+    "content/powerups/iron_tongue.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:38:49+00:00",
+      "task": "3.4"
+    },
     "content/powerups/night_pyre.tres": {
       "agent": "wick20",
       "at": "2026-08-18T19:35:40+00:00",
@@ -58,6 +63,41 @@
     "content/powerups/open_flame.tres": {
       "agent": "wick20",
       "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/pact_cut.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:38:49+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/red_quench.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:38:49+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/scab_feast.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:38:49+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/sealed_veins.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:38:49+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/steady_hands.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:38:49+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/stubborn_heart.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:38:49+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/thick_hide.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:38:49+00:00",
       "task": "3.4"
     },
     "content/powerups/tinder_snap.tres": {
@@ -70,6 +110,11 @@
       "at": "2026-08-18T19:35:40+00:00",
       "task": "3.4"
     },
+    "content/powerups/whetted_thirst.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:38:49+00:00",
+      "task": "3.4"
+    },
     "core/dev/dev_loadout.gd": {
       "agent": "lp",
       "at": "2026-08-18T19:27:08+00:00",
@@ -80,10 +125,10 @@
       "at": "2026-08-18T19:27:08+00:00",
       "task": "3.13"
     },
-    "export_presets.cfg": {
-      "agent": "pike14",
-      "at": "2026-08-18T19:34:26+00:00",
-      "task": "F-124"
+    "tools/bench_chunk_gpu.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:39:43+00:00",
+      "task": "4.0a"
     },
     "tools/command_check.gd": {
       "agent": "lp",
@@ -99,11 +144,6 @@
       "agent": "lp",
       "at": "2026-08-18T19:27:08+00:00",
       "task": "3.13"
-    },
-    "tools/rich_presence_check.gd": {
-      "agent": "pike14",
-      "at": "2026-08-18T19:35:44+00:00",
-      "task": "F-123"
     }
   },
   "in_flight": {
@@ -140,27 +180,28 @@
         "content/powerups/night_pyre.tres",
         "content/powerups/warm_marrow.tres",
         "content/powerups/cinder_tithe.tres",
-        "content/powerups/open_flame.tres"
+        "content/powerups/open_flame.tres",
+        "content/powerups/thick_hide.tres",
+        "content/powerups/red_quench.tres",
+        "content/powerups/adrenal_bloom.tres",
+        "content/powerups/pact_cut.tres",
+        "content/powerups/sealed_veins.tres",
+        "content/powerups/steady_hands.tres",
+        "content/powerups/stubborn_heart.tres",
+        "content/powerups/scab_feast.tres",
+        "content/powerups/iron_tongue.tres",
+        "content/powerups/whetted_thirst.tres"
       ],
       "notes": [],
       "started": "2026-08-18T19:35:40+00:00"
     },
-    "F-123": {
-      "agent": "pike14",
+    "4.0a": {
+      "agent": "lm",
       "files": [
-        "autoload/steam_lobby.gd",
-        "tools/rich_presence_check.gd"
+        "tools/bench_chunk_gpu.gd"
       ],
       "notes": [],
-      "started": "2026-08-18T19:34:26+00:00"
-    },
-    "F-124": {
-      "agent": "pike14",
-      "files": [
-        "export_presets.cfg"
-      ],
-      "notes": [],
-      "started": "2026-08-18T19:34:26+00:00"
+      "started": "2026-08-18T19:39:43+00:00"
     }
   },
   "recent": {
@@ -573,6 +614,12 @@
       "at": "2026-08-18T19:20:30+00:00",
       "hash": "3bc84742ff5c6ef682ba551cafcb91f7c6283db271f910d8e40ea4f095a7ae91",
       "task": "F-121"
+    },
+    "autoload/steam_lobby.gd": {
+      "agent": "pike14",
+      "at": "2026-08-18T19:39:51+00:00",
+      "hash": "55e9a917e43e582350f15b5bd5959eb5e3e33c03251edd1e9c9ca095a49974f5",
+      "task": "F-123"
     },
     "content/attunements/forager.tres": {
       "agent": "lm",
@@ -1033,9 +1080,9 @@
     },
     "export_presets.cfg": {
       "agent": "pike14",
-      "at": "2026-08-18T19:20:30+00:00",
-      "hash": "19a77fa22cf2e597dd95a45921f5f5bbd2f3ac2765eec4ffdc169884925d90f6",
-      "task": "F-121"
+      "at": "2026-08-18T19:39:51+00:00",
+      "hash": "9d4104e9ea756fc3b877ca257647b16b3ade50c611fba60dbfb8c972df143493",
+      "task": "F-124"
     },
     "levels/greybox_test.tscn": {
       "agent": "moss11",
@@ -1661,6 +1708,12 @@
       "agent": "lp",
       "at": "2026-08-18T05:35:30+00:00",
       "task": "F-089"
+    },
+    "tools/rich_presence_check.gd": {
+      "agent": "pike14",
+      "at": "2026-08-18T19:39:51+00:00",
+      "hash": "41fd1f2a3c09651027bc34dc3458cb9751c545273ba1ff7ed5bfc9783437444a",
+      "task": "F-123"
     },
     "tools/session_lifecycle_check.gd": {
       "agent": "flint5",
@@ -2466,7 +2519,7 @@
     "4.0a": {
       "est": "1.5",
       "milestone": "M4",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "Spike R2b \u2014 `ConcavePolygonShape3D` cooking + GPU mesh upload cost per chunk, on a real renderer (`FINDINGS.md` F-005)"
     },
@@ -3878,16 +3931,20 @@
       "title": "`tools/flora_check.gd:126` measures rotated flora through the same inflated `Transform3D * AABB` ruler as F-108"
     },
     "F-123": {
+      "done_at": "2026-08-18T19:39:51+00:00",
+      "done_by": "pike14",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Friends list offers no Join Game: the lobby is never advertised via the 'connect' rich presence key"
     },
     "F-124": {
+      "done_at": "2026-08-18T19:39:51+00:00",
+      "done_by": "pike14",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "macOS builds cannot show the Steam overlay: hardened runtime without the dyld entitlement blocks injection"
     }
