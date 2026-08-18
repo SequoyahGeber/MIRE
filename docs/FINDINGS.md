@@ -556,7 +556,10 @@ the failure mode is silent and confidently wrong.
 
 ---
 
-### F-121 · Exported builds load zero content: .tres scan misses Godot's .remap suffix
+
+## Resolved
+
+### F-121 · Exported builds load zero content: .tres scan misses Godot's .remap suffix — **fixed**
 
 **Area:** content · **Severity:** high · **Found:** 2026-08-18 by pike14
 
@@ -585,9 +588,31 @@ exported run must both be checked from now on; a source-only check cannot see th
 has the same latent bug. These two were the only content scans at the time of filing, but the
 pattern is the thing to grep for before shipping.
 
----
 
-## Resolved
+**Resolved 2026-08-18 by pike14** (`1a11541`, half in `8ab5e38`). Both scans now strip a trailing
+`.remap` before the extension test and hand `load()` the original `.tres` path:
+
+- `autoload/enemy_world.gd` `_load_defs()`
+- `autoload/registry.gd` `_tres_files_in()` — this one additionally de-duplicates, so a directory
+  that somehow held both `x.tres` and `x.tres.remap` cannot yield the same def twice.
+
+**How it was verified — a source run cannot see this defect, so both halves were checked.** The two
+fixes were landed separately and the export re-run between them, which isolated the cause rather
+than assuming it: with only `enemy_world.gd` patched, a re-exported macOS build went from
+`loaded 0 enemy definition(s)` to `loaded 1` while items stayed at `0`, confirming the `.remap`
+mechanism and pinning the remainder to `registry.gd`. After both, all three platforms were
+re-exported and smoke-run **on their native OS** — macOS on the host, Windows on `192.168.50.47`,
+Linux on `192.168.50.124` — and each reported the identical
+`23 item(s), 13 recipe(s), 2 station(s), 9 weapon(s), 1 loot table(s), 5 powerup(s), 2 buildable(s),
+1 haulable(s), 4 attunement(s)` and `1 enemy definition(s)` that a source run reports. The Windows
+build's `Harvestable references unknown yield item` error spam disappeared with it. `verify_setup`
+stayed green throughout, which is precisely the point: it was green while the bug shipped.
+
+**Standing consequence.** Green headless checks are not evidence that the shipped artifact works.
+Any change to content loading, or to any runtime `DirAccess` scan filtering on `.tres`/`.tscn`/`.gd`/
+`.res`, needs one exported-build smoke run as well as a source run.
+
+---
 
 ### F-119 · `agent godot`'s own `--import` pre-pass logs two UNDECLARED `ERROR:` lines on every single invocation — **fixed**
 

@@ -75,6 +75,48 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Shippable builds exist for all three platforms, and the export pipeline is now a real check (pike14)
+
+**`export_presets.cfg` is committed and has all three presets.** It previously held exactly one
+(macOS), so the Windows and Linux builds had never been produced — there was nothing lost to find.
+Windows Desktop and Linux are both x86_64 debug presets. Build any of them headlessly, never from
+the editor:
+
+```bash
+.agent/bin/agent godot --headless --export-debug "Windows Desktop" export/windows/MIRE.exe
+.agent/bin/agent godot --headless --export-debug "Linux" export/linux/MIRE.x86_64
+.agent/bin/agent godot --headless --export-debug "macOS" export/macos/MIRE.app
+```
+
+**All three outputs go to `export/`, which is gitignored and carries a `.gdignore`.** Both halves
+matter. Gitignored keeps ~165 MB per platform out of history. The `.gdignore` keeps Godot's
+filesystem scanner out of that directory, which is load-bearing because `export_filter` is
+`all_resources`: without it, each build is packed into the next one. The previous macOS output sat
+loose in the project root (`test.app` + `test.command`) where exactly that would have happened, and
+where `git add -A` would have committed the bundle.
+
+**An exported build is now part of what "verified" means.** F-121 shipped three empty builds behind
+a fully green `verify_setup` — the content loaders' `.tres` filter missed Godot's `.tres.remap`
+packing, so every platform booted with zero content and no error. A source-only check is structurally
+blind to that class of defect. Any change to content loading, or to a runtime `DirAccess` scan, needs
+one exported-build smoke run alongside the source run:
+
+```bash
+./export/macos/MIRE.app/Contents/MacOS/MIRE --headless --quit-after 90 2>&1 | grep 'content: loaded'
+```
+
+The expected line matches the source run exactly; anything reporting `0 item(s)` is F-121 again.
+
+**Both VMs are git-synced and hold current builds.** Windows `C:\MIRE-current` is now a real clone
+of `origin/main` (it was an rsync copy with no `.git`), so refreshing it is `git pull` over SSH.
+Linux `~/mire-current` has no git and no passwordless sudo, so it syncs by `git archive origin/main`
+piped through `rsync --delete`, excluding `addons/godotsteam/`, `.godot/`, and the machine-local
+`.agent/` state — the exclusions are not optional, they are what stops `--delete` from wiping the
+95 MB gitignored addon and the import cache. **`*.import` is gitignored, so any sync must be
+followed by `--import` on that machine** or every asset reference dangles; that bit us once already
+this session. Runnable builds are at `~/mire-build` (Linux) and `C:\MIRE-build` (Windows).
+
+
 ### 2026-08-18 — Task 3.9: Attunements ship as a thin selection layer over 3.3's PowerupService — framework and all four DESIGN §4.5 roles, both shipped (lm)
 
 **What shipped, verified:** `systems/attunement/attunement_def.gd` (content schema: id, display_name,
