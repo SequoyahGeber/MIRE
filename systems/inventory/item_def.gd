@@ -20,6 +20,13 @@ enum Category { RESOURCE, TOOL, WEAPON, CONSUMABLE }
 ## items that are only ever crafting intermediates may not need one yet.
 @export var world_model: PackedScene
 
+@export_group("Consumable")
+## Hunger restored when this item is eaten through PlayerHealth.request_consume_item() (task 3.8).
+## Only meaningful on category == CONSUMABLE; zero is a valid "doesn't fill you up" value, not a bug.
+@export_range(0.0, 100.0, 1.0) var hunger_restore: float = 0.0
+## Hp restored in the same request, clamped to max_hp. Zero is a valid "food that doesn't heal."
+@export_range(0, 500, 1) var hp_restore: int = 0
+
 @export_group("First person")
 ## Shown in the player's hand while this item is the selected hotbar slot (F-041). A-004 exports a
 ## `*_viewmodel.glb` beside every `*_world.glb` for exactly this. Null means an empty hand, which is

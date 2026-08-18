@@ -1689,3 +1689,18 @@ DO NOT use git stash in this repo: it sweeps concurrent sessions' uncommitted wo
 Files: `tools/blender/build_loot_set.py`, `assets/loot`, `assets/source/loot_set.blend`, `tools/blender/build_ward_set.py`, `assets/wards`, `assets/source/ward_set.blend`, `tools/blender/build_wellspring_set.py`, `assets/wellsprings`, `assets/source/wellspring_set.blend`, `tools/blender/build_enemy_crawler.py`, `assets/enemies`, `assets/source/enemy_crawler.blend`, `tools/blender/build_adapted_nature_set.py`, `assets/environment_additions`, `assets/source/adapted_nature_set.blend`, `project.godot`, `levels/playtest_map.tscn`, `world/gen/test_map_props.gd`, `tools/playtest_map_check.gd`, `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `world/gen/playtest_hollow.gd`, `tools/playtest_hollow_check.gd`, `docs/ASSET_TRACKER.md`, `docs/FINDINGS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `11ed6d1`
+
+---
+
+### DONE · 3.8 · lp · 2026-08-18T00:55:40+00:00
+
+**Hunger/health/stamina, food items, consumables**
+
+Hunger/stamina/food shipped, extending PlayerHealth per spec. Verified headless: agent godot --script tools/player_vitals_check.gd (30/30 offline: hunger drain+starvation-down, consume accept/reject paths, stamina drain/regen/hysteresis, real player_controller.gd sprint+jump gating) and agent godot --script tools/player_vitals_net_check.gd (12/12 over real ENet: hunger rides net_health_snapshot, consume round-trips and actually moves host inventory/hp/hunger, stamina reaches host's advisory copy). Re-ran tools/player_health_check.gd, player_health_net_check.gd, handshake_check.gd, crafting_check.gd, dev_loadout_check.gd and a full agent godot --quit-after 120 boot: all 0 failures, 0 ERROR: lines. Protocol version bumped 8->9, handshake_check.gd updated. ui/hud/vitals_hud.gd is a new registered autoload (VitalsHud); eat key is raw KEY_G, not a new InputMap action, since project.godot's [input] section is out of reach (held by 2.1j). No real food ItemDef authored (task 3.2's job) — checks inject a synthetic one into Registry.items.
+
+Notes along the way:
+- Extended PlayerHealth (not a new service): hunger+hp are HOST, stamina is CLIENT-LOCAL with sprint-lockout hysteresis (bare stamina>0 flickers at the boundary). Food = ItemDef.hunger_restore/hp_restore, consumed via request_consume_item -> InventoryService.host_transaction. Protocol version 8->9 (net_health_snapshot gained hunger fields; +3 RPCs). Found+fixed a real bug: _tick_hunger now prorates starvation against the delta actually spent at zero hunger, not the whole tick (an oversized delta was applying years of damage in one frame). Found+fixed a second real bug: rpc_id() to a peer mid-D-035-grace-window throws 'unknown peer ID' — added _peer_connected() guard to every targeted RPC in this file. Filed F-059 for InventoryService's identical unguarded rpc_id. VitalsHud (new autoload, code-built like InventoryUI/CraftingUI) renders hp/hunger/stamina + eat hint, eat bound to raw KEY_G (project.godot held by 2.1j).
+
+Files: `systems/health/player_health.gd`, `systems/health/downed_state.gd`, `systems/inventory/item_def.gd`, `entities/player/player_controller.gd`, `ui/hud/vitals_hud.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `core/util/mire_log.gd`, `tools/player_health_check.gd`, `tools/player_vitals_check.gd`, `tools/player_vitals_net_check.gd`
+
+Commit at time of writing: `d8ee65e`

@@ -56,6 +56,17 @@ func apply_damage(amount: int, bleed_out_seconds: float) -> int:
 	return Transition.WENT_DOWN
 
 
+## A consumable or other host-trusted source restores hp (task 3.8). Only an ALIVE player can be
+## healed — a downed player needs a revive, not a snack, and a dead player has nothing to heal yet.
+## Clamps to max_hp; never raises Transition, since nothing downstream needs to react to a heal the
+## way it reacts to damage or a state change.
+func heal(amount: int) -> bool:
+	if state != State.ALIVE or amount <= 0:
+		return false
+	hp = clampi(hp + amount, 0, max_hp)
+	return true
+
+
 ## A teammate finished the revive hold. False (no-op) unless still DOWNED — the window between a
 ## revive starting and finishing is exactly when the bleed-out timer could beat it there.
 func revive(hp_fraction: float) -> bool:

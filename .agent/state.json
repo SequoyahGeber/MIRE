@@ -1,79 +1,37 @@
 {
   "claims": {
-    "core/net/net_version.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:24:30+00:00",
-      "task": "3.8"
+    "assets/maps": {
+      "agent": "tine18",
+      "at": "2026-08-18T00:43:30+00:00",
+      "task": "2.1j"
     },
-    "core/util/mire_log.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:24:30+00:00",
-      "task": "3.8"
+    "assets/source/playtest_hollow.blend": {
+      "agent": "tine18",
+      "at": "2026-08-18T00:43:30+00:00",
+      "task": "2.1j"
     },
-    "entities/player/player_controller.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:24:30+00:00",
-      "task": "3.8"
+    "tools/mapgen/hollow_layout.py": {
+      "agent": "tine18",
+      "at": "2026-08-18T00:43:30+00:00",
+      "task": "2.1j"
     },
-    "systems/health/downed_state.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:24:30+00:00",
-      "task": "3.8"
-    },
-    "systems/health/player_health.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:24:30+00:00",
-      "task": "3.8"
-    },
-    "systems/inventory/item_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:24:30+00:00",
-      "task": "3.8"
-    },
-    "tools/handshake_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:24:30+00:00",
-      "task": "3.8"
-    },
-    "tools/player_health_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:24:30+00:00",
-      "task": "3.8"
-    },
-    "tools/player_vitals_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:24:30+00:00",
-      "task": "3.8"
-    },
-    "tools/player_vitals_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:24:30+00:00",
-      "task": "3.8"
-    },
-    "ui/hud/vitals_hud.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:24:30+00:00",
-      "task": "3.8"
+    "world/gen/layouts/playtest_hollow.json": {
+      "agent": "tine18",
+      "at": "2026-08-18T00:43:30+00:00",
+      "task": "2.1j"
     }
   },
   "in_flight": {
-    "3.8": {
-      "agent": "lp",
+    "2.1j": {
+      "agent": "tine18",
       "files": [
-        "systems/health/player_health.gd",
-        "systems/health/downed_state.gd",
-        "systems/inventory/item_def.gd",
-        "entities/player/player_controller.gd",
-        "ui/hud/vitals_hud.gd",
-        "core/net/net_version.gd",
-        "tools/handshake_check.gd",
-        "core/util/mire_log.gd",
-        "tools/player_health_check.gd",
-        "tools/player_vitals_check.gd",
-        "tools/player_vitals_net_check.gd"
+        "tools/mapgen/hollow_layout.py",
+        "world/gen/layouts/playtest_hollow.json",
+        "assets/maps",
+        "assets/source/playtest_hollow.blend"
       ],
       "notes": [],
-      "started": "2026-08-18T00:24:30+00:00"
+      "started": "2026-08-18T00:43:30+00:00"
     }
   },
   "recent": {
@@ -1342,16 +1300,6 @@
       "at": "2026-08-17T15:58:44+00:00",
       "task": "2.10"
     },
-    "autoload/environment_vfx.gd": {
-      "agent": "wick",
-      "at": "2026-08-17T00:47:21+00:00",
-      "task": "2.1g"
-    },
-    "autoload/environment_vfx.gd.uid": {
-      "agent": "wick",
-      "at": "2026-08-17T00:47:21+00:00",
-      "task": "2.1g"
-    },
     "autoload/harvest_world.gd": {
       "agent": "nettle",
       "at": "2026-08-17T01:24:51+00:00",
@@ -1574,8 +1522,8 @@
     },
     "core/net/net_version.gd": {
       "agent": "lp",
-      "at": "2026-08-18T00:13:02+00:00",
-      "task": "2.11"
+      "at": "2026-08-18T00:55:40+00:00",
+      "task": "3.8"
     },
     "core/net/run_identity.gd": {
       "agent": "dusk3",
@@ -1588,9 +1536,9 @@
       "task": "F-032"
     },
     "core/util/mire_log.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
+      "agent": "lp",
+      "at": "2026-08-18T00:55:40+00:00",
+      "task": "3.8"
     },
     "docs/AI-WORKFLOW.md": {
       "agent": "flint5",
@@ -1654,8 +1602,8 @@
     },
     "entities/player/player_controller.gd": {
       "agent": "lp",
-      "at": "2026-08-17T23:58:38+00:00",
-      "task": "2.13"
+      "at": "2026-08-18T00:55:40+00:00",
+      "task": "3.8"
     },
     "entities/player/viewmodel.gd": {
       "agent": "flint5",
@@ -1734,13 +1682,13 @@
     },
     "systems/health/downed_state.gd": {
       "agent": "lp",
-      "at": "2026-08-17T23:58:38+00:00",
-      "task": "2.13"
+      "at": "2026-08-18T00:55:40+00:00",
+      "task": "3.8"
     },
     "systems/health/player_health.gd": {
       "agent": "lp",
-      "at": "2026-08-17T23:58:38+00:00",
-      "task": "2.13"
+      "at": "2026-08-18T00:55:40+00:00",
+      "task": "3.8"
     },
     "systems/inventory/inventory_store.gd": {
       "agent": "dusk3",
@@ -1753,9 +1701,9 @@
       "task": "2.4"
     },
     "systems/inventory/item_def.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:52:06+00:00",
-      "task": "F-041"
+      "agent": "lp",
+      "at": "2026-08-18T00:55:40+00:00",
+      "task": "3.8"
     },
     "systems/spawning/wave_spawner.gd": {
       "agent": "lc1",
@@ -1972,20 +1920,10 @@
       "at": "2026-08-17T15:58:44+00:00",
       "task": "2.10"
     },
-    "tools/environment_vfx_check.gd": {
-      "agent": "wick",
-      "at": "2026-08-17T00:47:21+00:00",
-      "task": "2.1g"
-    },
-    "tools/environment_vfx_check.gd.uid": {
-      "agent": "wick",
-      "at": "2026-08-17T00:47:21+00:00",
-      "task": "2.1g"
-    },
     "tools/handshake_check.gd": {
       "agent": "lp",
-      "at": "2026-08-18T00:13:02+00:00",
-      "task": "2.11"
+      "at": "2026-08-18T00:55:40+00:00",
+      "task": "3.8"
     },
     "tools/harvest_world_check.gd": {
       "agent": "flint5",
@@ -2089,13 +2027,23 @@
     },
     "tools/player_health_check.gd": {
       "agent": "lp",
-      "at": "2026-08-17T23:58:38+00:00",
-      "task": "2.13"
+      "at": "2026-08-18T00:55:40+00:00",
+      "task": "3.8"
     },
     "tools/player_health_net_check.gd": {
       "agent": "lp",
       "at": "2026-08-17T23:58:38+00:00",
       "task": "2.13"
+    },
+    "tools/player_vitals_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T00:55:40+00:00",
+      "task": "3.8"
+    },
+    "tools/player_vitals_net_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T00:55:40+00:00",
+      "task": "3.8"
     },
     "tools/playtest_hollow_check.gd": {
       "agent": "tine18",
@@ -2222,6 +2170,11 @@
       "at": "2026-08-17T04:01:51+00:00",
       "task": "2.7"
     },
+    "ui/hud/vitals_hud.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T00:55:40+00:00",
+      "task": "3.8"
+    },
     "ui/inventory/inventory_ui.gd": {
       "agent": "kiln9",
       "at": "2026-08-17T04:39:09+00:00",
@@ -2231,26 +2184,6 @@
       "agent": "dusk3",
       "at": "2026-08-17T02:30:40+00:00",
       "task": "2.5"
-    },
-    "world/environment/foliage_wind.gdshader": {
-      "agent": "wick",
-      "at": "2026-08-17T00:47:21+00:00",
-      "task": "2.1g"
-    },
-    "world/environment/foliage_wind.gdshader.uid": {
-      "agent": "wick",
-      "at": "2026-08-17T00:47:21+00:00",
-      "task": "2.1g"
-    },
-    "world/environment/particle_billboard.gdshader": {
-      "agent": "wick",
-      "at": "2026-08-17T00:47:21+00:00",
-      "task": "2.1g"
-    },
-    "world/environment/particle_billboard.gdshader.uid": {
-      "agent": "wick",
-      "at": "2026-08-17T00:47:21+00:00",
-      "task": "2.1g"
     },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "tine18",
@@ -2624,7 +2557,7 @@
     "2.1j": {
       "est": "8",
       "milestone": "M2",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle"
     },
@@ -2769,9 +2702,11 @@
       "title": "Buildable pieces (walls/floors/ramps/doors) + Ward structures"
     },
     "3.8": {
+      "done_at": "2026-08-18T00:55:40+00:00",
+      "done_by": "lp",
       "est": "3",
       "milestone": "M3",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T1",
       "title": "Hunger/health/stamina, food items, consumables"
     },
@@ -3608,6 +3543,13 @@
       "status": "todo",
       "tier": "F",
       "title": "The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join"
+    },
+    "F-057": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds"
     }
   },
   "version": 1

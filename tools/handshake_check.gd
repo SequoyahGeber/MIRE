@@ -53,11 +53,12 @@ func _initialize() -> void:
 	_check("PROTOCOL_VERSION is a positive int",
 		NetVersion.PROTOCOL_VERSION > 0, str(NetVersion.PROTOCOL_VERSION))
 	# Task 2.13 bumped 6 -> 7 for the health RPCs (net_request_revive, net_health_snapshot,
-	# net_downed_flag, net_force_respawn); task 2.11 bumped 7 -> 8 for day_night.gd's net_push_time.
-	# A hard-coded expectation here is deliberate: this check's whole point is to fail loudly the day
-	# someone adds a wire-shape change and forgets the bump.
-	_check("PROTOCOL_VERSION reflects task 2.11's day/night broadcast",
-		NetVersion.PROTOCOL_VERSION == 8, str(NetVersion.PROTOCOL_VERSION))
+	# net_downed_flag, net_force_respawn); task 2.11 bumped 7 -> 8 for day_night.gd's net_push_time;
+	# task 3.8 bumped 8 -> 9 for net_health_snapshot's two new arguments (hunger, hunger_max) plus the
+	# consume-item and stamina-reconciliation RPCs. A hard-coded expectation here is deliberate: this
+	# check's whole point is to fail loudly the day someone adds a wire-shape change and forgets the bump.
+	_check("PROTOCOL_VERSION reflects task 3.8's hunger/stamina/consume wire changes",
+		NetVersion.PROTOCOL_VERSION == 9, str(NetVersion.PROTOCOL_VERSION))
 
 	call_deferred(&"_run_wire_checks")
 

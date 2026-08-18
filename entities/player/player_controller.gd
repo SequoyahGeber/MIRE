@@ -194,13 +194,20 @@ func host_apply_damage(amount: int, instigator_peer_id: int) -> bool:
 ## bare by tools/verify_setup.gd through the PlayerController class, so an autoload referenced here
 ## must never be a bare identifier).
 func _is_downed() -> bool:
-	var health: Node = get_node_or_null(^"/root/PlayerHealth")
+	var health: Node = _health_node()
 	return health != null and bool(health.call(&"local_is_downed"))
 
 
 func _is_dead() -> bool:
-	var health: Node = get_node_or_null(^"/root/PlayerHealth")
+	var health: Node = _health_node()
 	return health != null and bool(health.call(&"local_is_dead"))
+
+
+## Shared resolver for the same F-011-guarded lookup every PlayerHealth call in this file needs —
+## stamina gating (task 3.8) added enough call sites that repeating get_node_or_null everywhere
+## started to be the noisier option.
+func _health_node() -> Node:
+	return get_node_or_null(^"/root/PlayerHealth")
 
 
 ## A player spawned by PlayerNet is NAMED for the peer that owns it, and that name is in place on
@@ -336,7 +343,15 @@ func _apply_horizontal_movement(delta: float) -> void:
 	var wish_dir: Vector3 = (transform.basis * Vector3(input_2d.x, 0.0, input_2d.y)).normalized()
 
 	var downed: bool = _is_downed()
-	var sprinting: bool = not downed and Input.is_action_pressed(&"sprint") and wish_dir != Vector3.ZERO
+	var wants_sprint: bool = not downed and Input.is_action_pressed(&"sprint") and wish_dir != Vector3.ZERO
+	# Stamina is CLIENT-LOCAL (§2.2 row 1, task 3.8) — the owning body is the only thing that ticks
+	# or gates its own bar, every physics frame, for zero-latency feedback. A harness with no
+	# PlayerHealth (bare SceneTree, no autoloads) sprints freely rather than silently losing the verb.
+	var health: Node = _health_node()
+	var has_stamina: bool = health == null or bool(health.call(&"local_can_sprint"))
+	var sprinting: bool = wants_sprint and has_stamina
+	if health != null:
+		health.call(&"local_tick_stamina", delta, sprinting)
 	var move_speed: float = crawl_speed if downed else walk_speed
 	var target: Vector3 = wish_dir * (sprint_speed if sprinting else move_speed)
 
@@ -361,6 +376,14 @@ func _try_jump() -> void:
 	var buffered: bool = _time_since_jump_pressed <= jump_buffer_time
 	var grounded_recently: bool = _time_since_grounded <= coyote_time
 	if not (buffered and grounded_recently):
+		return
+	# Stamina gates jump (task 3.8, same client-local row as sprint) — a harness with no PlayerHealth
+	# jumps freely rather than losing the verb. The buffered press is NOT consumed on rejection, so a
+	# player who regens enough stamina before jump_buffer_time expires still gets the jump they asked for.
+	var health: Node = _health_node()
+	if health != null and not bool(
+		health.call(&"local_try_spend_stamina", health.call(&"local_jump_stamina_cost"))
+	):
 		return
 
 	velocity.y = sqrt(2.0 * _gravity * gravity_scale * jump_height)

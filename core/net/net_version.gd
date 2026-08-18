@@ -32,7 +32,10 @@ extends RefCounted
 ## net_health_snapshot, net_downed_flag — and net_force_respawn.
 ## 8 (task 2.11): systems/environment/day_night.gd added net_push_time, the host -> client
 ## time-of-day broadcast.
-const PROTOCOL_VERSION: int = 8
+## 9 (task 3.8): systems/health/player_health.gd's net_health_snapshot gained two arguments
+## (hunger, hunger_max), and it added two new RPCs — net_request_consume_item/net_consume_confirmed
+## (food) and net_report_local_stamina (advisory client -> host stamina reconciliation).
+const PROTOCOL_VERSION: int = 9
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).

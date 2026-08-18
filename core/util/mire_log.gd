@@ -15,6 +15,7 @@ enum Level { DEBUG, INFO, WARN, ERROR }
 ## Channels are just StringNames — declare new ones here so they show up in the console and overlay.
 const CHANNELS: Array[StringName] = [
 	&"net", &"world", &"mire", &"combat", &"harvest", &"inventory", &"ai", &"perf", &"gen", &"ui", &"content",
+	&"health",
 ]
 
 ## Lines kept in memory for the console to display on open.
