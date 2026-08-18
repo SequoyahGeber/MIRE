@@ -1071,6 +1071,38 @@ kit sidesteps it by baking every asset's transform to identity before export, wh
 
 ---
 
+### F-067 · The pre-commit hook blocks project.godot even when agent autoload wrote it
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by reed16
+
+F-051 created `agent autoload` precisely so that registering an autoload never requires claiming
+`project.godot` — holding that file for a whole task would serialise every autoload-producing task
+against every other one, and five upcoming specs each need to register one. CLAUDE.md states the rule
+flatly: "**`project.godot`**: never claimed; register autoloads via `agent autoload <Name> <script>`".
+
+The pre-commit hook does not know about that path. Committing the one appended line that
+`agent autoload` itself wrote fails with:
+
+    ✗ project.godot — Godot file requires an exact-file claim and a closed editor (D-031)
+    Commit blocked. Use --no-verify only if you are certain.
+
+So the sanctioned workflow ends in a blocked commit, and the only way through is `--no-verify`, which
+disables *every* other check in the hook at the same time — including the editor-open check that D-031
+actually cares about. A rule that can only be satisfied by turning off the rules trains everyone to
+reach for `--no-verify` on this file, which is the opposite of what D-031 wants.
+
+Hit while committing `609a471` (DevFrameCap for F-066). Worked around by verifying by hand that no
+Godot process was running and that the staged diff was exactly the one autoload line, then
+`--no-verify`.
+
+The fix is for the hook to recognise the autoload-registration shape rather than the filename: if the
+staged diff to `project.godot` consists only of added lines in the `[autoload]` section, and no Godot
+process is running, it is the F-051 path and should pass. Anything else about the file — a changed
+rendering setting, a reordered line, a deletion — should still demand the exact-file claim, since
+D-019 makes autoload registration append-only and any other edit is genuinely a claimed change.
+
+---
+
 ## Resolved
 
 ### F-055 · `core/util/mire_log.gd`'s `CHANNELS` list has no `health` channel — **fixed**
