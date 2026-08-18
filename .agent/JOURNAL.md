@@ -2774,3 +2774,20 @@ First authorable slice shipped: 7 items (branch, flint, coal, fibre_bundle, berr
 Files: `content/items/branch.tres`, `content/items/flint.tres`, `content/items/coal.tres`, `content/items/fibre_bundle.tres`, `content/items/berry.tres`, `content/items/mushroom.tres`, `content/items/raw_meat.tres`, `content/recipes/charcoal.tres`, `content/recipes/wooden_axe.tres`, `content/recipes/wooden_pickaxe.tres`, `content/recipes/stone_pickaxe.tres`, `content/recipes/arrow.tres`, `content/recipes/short_bow.tres`, `content/recipes/cleaver.tres`, `content/recipes/skewer.tres`, `content/recipes/iron_pickaxe.tres`, `content/recipes/iron_sword.tres`, `content/recipes/repair_hammer.tres`, `tools/crafting_check.gd`
 
 Commit at time of writing: `1c888a1`
+
+---
+
+### DONE · F-094 · lp · 2026-08-18T18:02:23+00:00
+
+**`mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float**
+
+Verified F-094's pre-existing fix (c0cced0, vertex-through-matrix_world in world_bounds) still matches HEAD exactly (git diff clean). Wrote tools/blender/world_bounds_check.py: 6 assertions, regression-proved by reverting to bound_box-corners measurement (4/6 FAIL, incl. ground_and_centre floating a composed-rotation object 101mm). docs/SPECS.md F-094 block written and docs/FINDINGS.md moved to Resolved in the working tree, but NOT YET COMMITTED -- lm holds an exact claim on both docs files for F-093, started same session. Verify: /Applications/Blender.app/Contents/MacOS/Blender --background --python tools/blender/world_bounds_check.py -> WORLD_BOUNDS_CHECK PASS.
+
+Notes along the way:
+- Code fix already committed (c0cced0, flora kit build) -- vertex-through-matrix_world measurement, matches mire_art.py at HEAD exactly (git diff clean). Task was verify + write missing check + SPECS.md block + move FINDINGS.md to Resolved, F-092-shaped.
+- Wrote tools/blender/world_bounds_check.py. Regression-proved by reverting world_bounds() to the old bound_box-corners measurement: 4/6 assertions FAIL (rotated-cone inflation, exact-vertex-match x2, ground_and_centre floats a composed-rotation object 101mm above z=0). Restored fix, reran clean PASS.
+- Could NOT reproduce the finding's bound_box-stale-after-join claim on Blender 5.2.0 (this repo's pinned version) -- bound_box already reads merged geometry correctly immediately after bpy.ops.object.join(), no update call needed. Documented in the check's comments rather than silently dropping that assertion; kept it as a direct ground-truth check since it costs nothing.
+
+Files: `tools/blender/mire_art.py`, `tools/blender/world_bounds_check.py`
+
+Commit at time of writing: `75fcb6c`

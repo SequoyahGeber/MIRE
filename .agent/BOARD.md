@@ -8,16 +8,17 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
+| **6.10** Main menu, lobby UI, settings, seed entry | moss11 | 2026-08-18 18:01 | `ui/lobby/lobby_menu.gd`, `tools/lobby_menu_check.gd` |
 | **7.1** Audio pass: SFX for every action, ambience per biome, mix, buses | tine18 | 2026-08-18 17:53 | `tools/audio/render_sfx.py`, `assets/audio/sfx` |
 | **7.2** Music: 4–6 tracks (act themes, boss, menu). CC0/licensed or commissioned. | tine18 | 2026-08-18 17:53 | `tools/audio/mire_audio.py`, `tools/audio/render_music.py`, `tools/audio/audio_check.py`, `tools/audio_import_check.gd`, `assets/audio/music` |
-| **F-094** `mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float | lp | 2026-08-18 17:54 | `tools/blender/mire_art.py`, `tools/blender/world_bounds_check.py` |
-| **F-115** Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map | vane19 | 2026-08-18 17:57 | `world/environment/playtest_atmosphere.gd`, `world/environment/ground_fog.gd`, `world/environment/ground_fog.gdshader`, `levels/hollowmere.tscn` |
+| **F-093** A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build | lm | 2026-08-18 18:00 | `.agent/bin/agent`, `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md` |
+| **F-115** Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map | vane19 | 2026-08-18 17:57 | `world/environment/playtest_atmosphere.gd`, `world/environment/ground_fog.gd`, `world/environment/ground_fog.gdshader`, `levels/hollowmere.tscn`, `tools/ground_fog_check.gd`, `tools/atmosphere_look_shot.gd` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `████████░░` 91/109 | 18 |
+| Findings | `████████░░` 92/109 | 17 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -60,8 +61,7 @@
 | ⬜ | **F-042** Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one | todo |
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-057** A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds | todo |
-| ⬜ | **F-093** A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build | todo |
-| 🔵 | **F-094** `mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float | in_flight |
+| 🔵 | **F-093** A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build | in_flight |
 | ⬜ | **F-103** MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin | todo |
 | ⬜ | **F-108** A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized | todo |
 | ⬜ | **F-109** The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them | todo |
@@ -72,4 +72,4 @@
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.5` `3.6` `3.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-104` `F-105` `F-106` `F-107` `F-113` `F-114` `F-116`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.5` `3.6` `3.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-104` `F-105` `F-106` `F-107` `F-113` `F-114` `F-116`
