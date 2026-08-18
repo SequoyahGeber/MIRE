@@ -69,7 +69,48 @@ do is worth as much as the record of what we did.
 
 ## Open
 
-### F-112 · `world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check — F-076's third system, not lifted
+### F-117 · F-072's docs-file claim enforcement blocks the second lane's commit, but the first lane's `ship` still sweeps the second lane's uncommitted edits into its own commit
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by lp while closing F-094
+
+F-072 made `agent check` enforce an exact claim on a `docs/` path once one exists (`agent claim` had
+always accepted the claim; enforcement was the part that was missing). It does fix what it says it
+fixes — a lane without the claim is correctly refused at commit time rather than waved through
+silently. It does not fix the collision it looks like it fixes, because the two docs files every
+finding-closing task needs — `docs/FINDINGS.md` and `docs/SPECS.md` — are the ones a task most often
+claims explicitly (to get F-072's protection while it writes them), and this repo runs every lane in
+**one shared working directory** (F-102), not separate worktrees.
+
+Sequence observed: F-093 (`lm`) claimed `docs/FINDINGS.md` and `docs/SPECS.md` as part of its file
+set. While that claim was held, F-094 (`lp`, this task) edited both files in the same working tree —
+legal, since docs edits need no claim to *write*, only to *commit* (F-006/F-072) — and then could not
+commit them: `agent check` correctly refused, naming `lm`'s claim. Waiting the ~100 seconds for `lm`'s
+claim to release (foreground poll, not backgrounded) and then re-checking found the F-094 content
+already on `origin/main` — inside `lm`'s own F-093 commit (`e9c232b`). `agent ship F-093` staged the
+files *that task's claim named*, which is exactly what `ship` is documented to do, and at the moment
+it ran the working tree's copy of both files held F-094's uncommitted prose alongside F-093's. `ship`
+has no way to know a hunk in a file it legitimately claimed was authored by a different lane's
+different task; it isn't `git add -A` and did nothing the harness tells it not to do.
+
+The content itself survived intact and correctly placed (verified: exactly one `### F-094` heading,
+`tools/findings_numbering_check.gd` reports `failures=0` against the merged result) — this is a
+misattribution risk, not a data-loss one, and less severe than F-102's finding, where the alternative
+was uncommitted work staying invisible. But it means an explicit claim on `docs/FINDINGS.md` or
+`docs/SPECS.md` buys the claiming task nothing against *this* failure mode, only against a lane with no
+claim at all — the two lanes most likely to collide (both closing out a finding at the same time) are
+exactly the two an explicit claim cannot separate, because both legitimately need to write the same two
+files and only one of them can hold the claim.
+
+**What to do about it — not yet decided:** F-102's sketch (one file per finding, `docs/FINDINGS.md`
+generated) would fix this the same way it fixes F-102, since a generated file's source directory
+entries are ordinarily-claimable and don't collide. Short of that migration, a cheaper partial
+mitigation: `ship` could diff the claimed file against the base revision the claiming task's `claim`
+call recorded, and warn (not block) when the working-tree copy contains hunks outside line ranges the
+claiming lane is known to have touched — heuristic, not proof, but "unexpected 165-line diff on a
+lane's own two-line finding" is a shape worth flagging before it ships silently correct-but-mislabeled
+instead of after.
+
+
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-18 by lp during F-076
 
