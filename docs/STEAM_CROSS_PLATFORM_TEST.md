@@ -5,8 +5,11 @@ friends-only Steam lobby using App ID 480. It exercises the real `SteamMultiplay
 the lobby callback path, version admission, player spawning, and remote-player replication.
 
 Run it only when all three machines and three distinct Steam accounts are available at the same time.
-Use the same committed revision on every machine. This is a debug-build test; it does not need an
-export preset or port forwarding.
+Use the same committed revision on every machine. This is a debug-build test; it does not need port
+forwarding, and it does not require an export — though **an exported debug build is a valid and much
+cheaper substitute for a checkout on the client machines**; see *Running it from exported builds*
+below for the launch commands and the two pass criteria that change. If either client is a VM, read
+*Testing on VMs* before you record a single timing number.
 
 ## Before the call
 
@@ -112,6 +115,101 @@ Before the session, confirm the mechanism itself still passes on the machine you
 ```bash
 godot --headless --path . --script tools/connect_retry_check.gd
 ```
+
+## Running it from exported builds instead of three checkouts
+
+The procedure above assumes a source checkout, stock Godot and the gitignored addon on every machine.
+**An exported build is a valid substitute** and is far cheaper to stage — one directory copy per
+machine, no engine install, no addon install, no import scan. Everything 1.12 tests
+(`SteamMultiplayerPeer`, the lobby callback path, version admission, spawning, replication) runs
+identically. What changes is the launch command, the preflight, and how version parity is evidenced.
+
+**The debug-only launch arguments still work, and that is what makes this route possible at all.**
+`core/dev/dev_launch.gd:70` gates them on `OS.is_debug_build()`, which an export built from the
+**debug** templates satisfies. Confirm it per machine by looking at the GodotSteam library shipped
+beside the binary — `libgodotsteam.<platform>.template_debug.*` is the debug template. A
+`template_release` export ignores `--steam-host` / `--steam-join` entirely, and there is no other way
+to drive the lobby from a command line; use the in-game lobby UI (**M**) or re-export as debug.
+Arguments work with or without a bare `--` separator: `_parse_launch()` reads
+`OS.get_cmdline_user_args()` and falls back to `OS.get_cmdline_args()`.
+
+| | host | client |
+|---|---|---|
+| macOS | `./MIRE.app/Contents/MacOS/MIRE --steam-host` | `./MIRE.app/Contents/MacOS/MIRE --steam-join=<lobby_id>` |
+| Windows | `.\MIRE.console.exe --steam-host` | `.\MIRE.console.exe --steam-join=<lobby_id>` |
+| Linux | `./MIRE.sh --steam-host` | `./MIRE.sh --steam-join=<lobby_id>` |
+
+Use `MIRE.console.exe` on Windows, never `MIRE.exe`: the plain executable is a GUI-subsystem binary
+that writes nothing to the terminal, and the launch log is required evidence.
+
+**Preflight, in place of `tools/steam_check.gd`.** That harness is a `--script` tool and needs a
+checkout, so a machine holding only an exported build cannot run it. What stands in for it:
+
+- The Steam client is running and signed into a **distinct** account on each machine, and all three
+  accounts are mutual friends. Not optional — the lobby is friends-only.
+- `steam_appid.txt` is **not** shipped beside the binaries and does not need to be:
+  `autoload/steam_lobby.gd:129` passes `NetConfig.STEAM_APP_ID` (480) to `steamInitEx()` explicitly,
+  rather than the app-id-0 path that reads the file. If Steamworks nevertheless fails to initialise
+  on a machine, dropping a one-line `steam_appid.txt` containing `480` next to the executable is the
+  first thing to try.
+- The game's own startup log replaces the harness output: the Steam identity line from
+  `steam_lobby.gd:141` (persona name, SteamID, app id 480) is the proof Steamworks came up.
+
+**Version parity is stronger on this route, and cheaper to evidence.** Step 2's "record `git
+rev-parse HEAD` on every machine" exists to prove the three builds agree; three copies of one export
+prove it outright. Hash the pack instead — one command per machine, and identical output is the whole
+proof:
+
+```bash
+shasum -a 256 MIRE.pck
+```
+
+On macOS the pack is at `MIRE.app/Contents/Resources/MIRE.pck`. Record the three hashes with the
+logs. This covers something `rev-parse` never did: an uncommitted working-tree difference between
+machines, which is exactly how `PROTOCOL_VERSION` drift produced a false failure in the 2026-08-17
+run below.
+
+**One thing this route cannot skip.** A build exported before F-121's fix loads *zero* content —
+no items, recipes, stations, weapons, loot, powerups, buildables, haulables or enemies — and does so
+silently, because the runtime `.tres` scan misses Godot's `.remap` suffix. Boot one copy and read the
+content line before staging the others:
+
+```
+[info] content: loaded 23 item(s), 13 recipe(s), 2 station(s), 9 weapon(s), 1 loot table(s), …
+```
+
+A `loaded 0 item(s)` there means the export predates the fix, and every downstream observation in the
+session is worthless. Verified on the 2026-08-18 12:16 export set: macOS ran headless and reported 23
+items, 13 recipes, 2 stations, 9 weapons, 1 loot table, 5 powerups, 2 buildables, 1 haulable, 4
+attunements and 1 enemy definition, and all three packs hashed identically
+(`92cc6f3bb8c83132e64905904b72af57f287f58a7cdafa3428e7f750a8a3927e`).
+
+## Testing on VMs: read F-025 before you trust any timing number
+
+Both client machines in this project's setup are VMs, and F-025 is specifically about what that does
+to a Steam run. `SteamLobby._process()` pumps `run_callbacks()` **once per rendered frame**, so every
+Steam callback — lobby entry, the P2P rendezvous, connection state — is serviced at whatever rate the
+machine happens to be *rendering*. A VM without GPU passthrough software-rasterizes: the Windows VM
+in the 2026-08-16 session ran at **2–3 FPS** against the macOS host's 113, which is roughly 20
+callback pumps inside a 10 s connect window instead of ~1,130. That is the leading hypothesis for
+F-023's intermittent first-join timeout, and it means a VM run can manufacture a failure that looks
+like a network defect and is not.
+
+What follows from it, for this run:
+
+- **Enable 3D/GPU acceleration in both VMs if the hypervisor offers it.** Everything below is
+  mitigation; this is the actual fix.
+- **A retried first join is expected on a software-rendered client, and is still not a PASS.** D-029
+  retries twice on its own (0.5 s, 2.0 s) inside a 20 s Steam budget, so the run will likely survive
+  — but the criteria above require no connection failure, and a join the retry rescued is one.
+- **Record the F3 frame rate beside every `connected … in N.NNs` line.** A latency measured on a
+  2 FPS client measures the renderer, not the network. F-023 must not be closed from a
+  software-rendered machine; that number has to come from the physical Windows PC.
+- **Consider a LAN warm-up first.** `--lan-host` / `--lan-join=<ip>` exercises admission, the version
+  handshake, spawning and replication over real sockets with **no dependence on frame rate** (F-054,
+  and `dev_launch.gd`'s own header says as much). A failure there is a real defect, while the same
+  failure over Steam may only be the pump. It does not close 1.12 — that is specifically the Steam
+  transport — but it separates the two causes before you spend the three-account session.
 
 ## Three-platform LAN run — 2026-08-17 · PASS (ENet, not Steam)
 
