@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""Start a lane's queue the moment it becomes usable, rather than the moment a human is free.
+
+A lane that needs a login is blocked on a person, and the orders sit queued until that person comes
+back, tells the director, and the director runs `saturate`. That is two round trips of dead window
+on an account whose quota expires unspent. This closes the gap: arm it before asking for the login,
+and the queue starts the instant the login lands.
+
+Double-fork + setsid, the same shape as `agent saturate --detach` and `lane-revive`, so it outlives
+the session that armed it. macOS has no setsid(1), which is why this is not a shell one-liner.
+
+    .agent/bin/lane-arm LM              # wait for login, then drain LM's queue
+    .agent/bin/lane-arm LM --hours 6    # give up after 6h instead of the default 2
+"""
+import os
+import subprocess
+import sys
+import time
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+AGENT = os.path.join(ROOT, ".agent", "bin", "agent")
+LANE = os.path.join(ROOT, ".agent", "bin", "lane")
+POLL_SECONDS = 20
+
+
+def ready(lane):
+    """True once the lane's own CLI says it is signed in. `lane doctor` is the authority here —
+    guessing from files on disk is exactly what it exists to replace."""
+    try:
+        out = subprocess.run([LANE, "doctor"], cwd=ROOT, capture_output=True,
+                             text=True, timeout=60).stdout
+    except (OSError, subprocess.SubprocessError):
+        return False
+    for line in out.splitlines():
+        if lane in line:
+            return "ready" in line and "not logged in" not in line
+    return False
+
+
+def main():
+    if not sys.argv[1:]:
+        sys.exit("usage: lane-arm <LANE> [--hours N]")
+    lane = sys.argv[1].upper()
+    hours = 2.0
+    if "--hours" in sys.argv:
+        hours = float(sys.argv[sys.argv.index("--hours") + 1])
+
+    log = os.path.join(ROOT, ".agent", "logs", "arm-%s.log" % lane.lower())
+    os.makedirs(os.path.dirname(log), exist_ok=True)
+
+    if os.fork() > 0:
+        print("· %s armed — its queue starts the moment it is logged in" % lane)
+        print("  tail -f %s" % os.path.relpath(log, ROOT))
+        sys.stdout.flush()          # os._exit skips the flush, and a pipe is block-buffered
+        os._exit(0)
+    os.setsid()
+    if os.fork() > 0:
+        os._exit(0)
+    fd = os.open(log, os.O_WRONLY | os.O_CREAT | os.O_APPEND)
+    os.dup2(fd, 1)
+    os.dup2(fd, 2)
+    os.dup2(os.open(os.devnull, os.O_RDONLY), 0)
+
+    deadline = time.time() + hours * 3600
+    while time.time() < deadline:
+        if ready(lane):
+            print("[%s] %s is logged in — draining its queue" % (time.strftime("%FT%TZ",
+                                                                               time.gmtime()), lane),
+                  flush=True)
+            subprocess.call([LANE, "reset", lane], cwd=ROOT)
+            subprocess.call([AGENT, "saturate", lane, "--watch", "--detach"], cwd=ROOT)
+            return
+        time.sleep(POLL_SECONDS)
+    print("[%s] gave up waiting for %s to be logged in" % (time.strftime("%FT%TZ", time.gmtime()),
+                                                           lane), flush=True)
+
+
+if __name__ == "__main__":
+    main()
