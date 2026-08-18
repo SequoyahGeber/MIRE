@@ -67,10 +67,10 @@ Re-run the gate on the current build. `agent godot --script tools/combat_self_hi
   lanes claim, verify through the shared `agent godot` lock (F-044), and ship under the same
   protocol as everyone else. `docs/ORCHESTRATION.md` is the manual.
 
-**Twenty-three autoloads live**, `verify_setup` scans the `[autoload]` section and asserts a floor rather than a list, so adding one cannot red it (and dropping one still can). Boot log:
+**Twenty-five autoloads live**, `verify_setup` scans the `[autoload]` section and asserts a floor rather than a list, so adding one cannot red it (and dropping one still can). Boot log:
 `content: loaded 14 item(s), 1 recipe(s), 9 weapon(s)` + `1 enemy definition(s)` +
 `net: NetTransport ready (offline)`. `NetConfig` is a `class_name`, **not** an autoload; don't add it.
-Protocol version lives in `core/net/net_version.gd` (**currently 11** — 3.3's two powerup RPCs were
+Protocol version lives in `core/net/net_version.gd` (**currently 12** — 3.6's three build RPCs were
 the last bump); any new RPC bumps it and extends `tools/handshake_check.gd`.
 
 Godot 4.7.1-stable `a13da4feb`, pinned (D-001) — also the determinism baseline (§6a), so upgrading

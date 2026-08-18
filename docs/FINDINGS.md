@@ -1504,7 +1504,7 @@ and no dawn cleanup at all. The task was staged behind 2.11's gate and then neve
 2.11 registered `DayNight`.
 
 Fixed with `agent autoload WaveSpawner res://systems/waves/wave_spawner.gd` — it appends, so it lands
-after `DayNight` and the dependency order `_ready()` needs is satisfied. Twenty-two autoloads now;
+after `DayNight` and the dependency order `_ready()` needs is satisfied. Twenty-three autoloads at that point (25 now, after 3.3 and 3.6);
 `verify_setup` scans the `[autoload]` section rather than a hard-coded list and only asserts a floor,
 so it stayed green without editing.
 
