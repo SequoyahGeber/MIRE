@@ -50,6 +50,7 @@ func _run() -> void:
 	# un-awaited call to a coroutine only runs synchronously up to its first await point and then
 	# the rest silently never resumes once _run() itself calls finish()/quit().
 	await _run_offline_solo_flow(health, max_hp, bleed_out_seconds, respawn_seconds)
+	await _run_offline_spawn_capture(health, max_hp, bleed_out_seconds, respawn_seconds)
 	_run_revive_state_checks(health, max_hp)
 	await _run_revive_range_and_success(health, max_hp, revive_hp_fraction, revive_radius_m)
 	await _run_public_request_revive(health, max_hp, revive_hp_fraction)
@@ -117,6 +118,71 @@ func _run_offline_solo_flow(
 
 	# Left in the tree, alive, at the spawn point — _run_public_request_revive reuses it as peer 1's
 	# real body, since request_revive() offline always resolves the caller as the local peer.
+
+
+# ── F-063: the same flow with NOBODY faking PlayerNet.player_spawned ──────────────────────────────
+
+
+## The scenario above seeds _spawn_transforms by calling _on_player_spawned by hand — which is what
+## PlayerNet does, but ONLY inside a session. Offline (Play from the editor, every --script harness,
+## the exact configuration task 2.9's gate is played in) PlayerNet leaves the level's hand-placed
+## Player alone and never emits that signal, so nothing filled the dictionary and every respawn fell
+## through to Vector3.ZERO — the world origin, which is not a spawn point, just wherever the level
+## author put 0,0,0. Simulating the signal is what hid this for a whole task.
+##
+## So this scenario deliberately does NOT call _on_player_spawned. It resets the capture latch, puts
+## a body down at a known "level spawn", and lets PlayerHealth notice it on its own.
+func _run_offline_spawn_capture(
+	health: Node, max_hp: int, bleed_out_seconds: float, respawn_seconds: float
+) -> void:
+	var level_spawn := Vector3(12.0, 1.0, -8.0)
+
+	for node: Node in root.get_tree().get_nodes_in_group(&"players"):
+		node.queue_free()
+	await process_frame
+	await process_frame
+
+	var player: Node3D = PLAYER_SCENE.instantiate() as Node3D
+	player.name = "1"
+	player.position = level_spawn
+	root.add_child(player)
+	await process_frame
+	await process_frame
+
+	# Rewind to the state a freshly booted offline game is in — no spawn recorded, latch unarmed —
+	# and then run the rest of this scenario with NO `await` in it. The engine ticks PlayerHealth
+	# itself on every awaited frame (which is the real fix working, and did capture the body above),
+	# so awaiting between the reset and the assertion would be racing our own subject.
+	health.set("_local_spawn_captured", false)
+	(health.get("_spawn_transforms") as Dictionary).erase(1)
+	check(not (health.get("_spawn_transforms") as Dictionary).has(1),
+		"nothing has faked player_spawned — the offline game's real starting condition")
+
+	# One ordinary tick is all PlayerHealth gets to notice the body.
+	health.call(&"_physics_process", 0.016)
+	check((health.get("_spawn_transforms") as Dictionary).has(1),
+		"PlayerHealth captures the spawn off the body itself when player_spawned never fires (F-063)")
+
+	player.position = Vector3(40.0, 0.0, -40.0)
+	check(bool(player.call(&"host_apply_damage", 1000, 0)), "a lethal hit lands away from spawn")
+	health.call(&"_physics_process", bleed_out_seconds + 0.1)
+	health.call(&"_physics_process", respawn_seconds + 0.1)
+	check(bool(health.call("local_is_alive")), "the offline player respawns")
+	check(int(health.call("local_hp")) == max_hp, "at full health")
+	check(player.position.distance_to(level_spawn) < 0.01,
+		"and at the level's spawn, NOT the world origin (%v -> %v)" % [level_spawn, player.position])
+	check(player.position.length() > 0.01,
+		"the old Vector3.ZERO fallback would have failed this check")
+
+	player.queue_free()
+	await process_frame
+	await process_frame
+
+	# Put _run_public_request_revive's expected body back: a live peer 1 at a known spot.
+	var restored: Node3D = PLAYER_SCENE.instantiate() as Node3D
+	restored.name = "1"
+	root.add_child(restored)
+	await process_frame
 
 
 # ── Revive: rules that are decided before PlayerHealth ever looks for a body ──────────────────────

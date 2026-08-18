@@ -13,11 +13,35 @@ M1 closed at 13/14 (1.12 deferred, D-030). M0 closed 11/11 plus 0.12 (orchestrat
 **The game runs, and the loop is visible.** Press Play: you spawn in Playtest Hollow with a stocked
 hotbar, **the held item renders and swings** (F-041), and four crawlers hunt out of the East Mire
 nest. Walk, sprint, jump, harvest, craft at the workbench, fight, kill. Crawlers telegraph 0.4 s,
-outrun a walk (4.4 m/s), lose to a sprint, react to hits, and their corpses sink away. **What
-crawler hits do NOT yet do is hurt you — player health is task 2.13**, so the current build is
-shadow-boxing with real swords. **F3** overlay · **`~`** console · **Esc** releases the mouse.
+outrun a walk (4.4 m/s), lose to a sprint, react to hits, and their corpses sink away. **Crawler hits
+now hurt you (2.13): hp hits 0 -> downed (crawl, no jump/sprint/attack) -> a teammate holds `interact`
+in range to revive, or bleed-out expires and you respawn at full health after a short delay.** The
+current build is no longer shadow-boxing — 2.9's playtest below is now judging danger, not just feel.
+**F3** overlay · **`~`** console · **Esc** releases the mouse.
 
-**2026-08-17 was three sessions in one day:**
+**2.9's first playtest attempt found three defects, all now fixed (F-062/063/064).** Do not read the
+first attempt's impressions as a verdict on combat feel — the build was not swinging at the crawlers.
+
+- **Every axe swing was hitting you, not the enemy** (F-062). 2.13 put the player body into the
+  `&"damageable"` group so crawler hits could land; `CombatService` never excluded the swinger, and
+  the attacker's own origin beat any target past 1.5 m *and* bypassed the arc test. That is the whole
+  of "attacking the enemies doesn't seem to work anymore" and most of the damage taken.
+- **Downed, bleeding out and dead drew nothing on screen** (F-064). Sequoyah died and respawned twice
+  in one session without knowing it — the log said so, the screen did not. There is now a centre
+  banner with live countdowns, plus a teammate-down prompt.
+- **Solo respawn teleported to world origin instead of the level's spawn** (F-063), because the
+  signal that records a spawn point only fires inside a session.
+
+Re-run the gate on the current build. `agent godot --script tools/combat_self_hit_check.gd`,
+`tools/vitals_hud_check.gd` and `tools/player_health_check.gd` are all green.
+**Known and not fixed: the night sky still reads as daytime** — white clouds, no stars (F-065).
+
+**2026-08-17 was four sessions in one day:**
+
+- **2.13 shipped** (lp): `PlayerHealth` autoload, host-authoritative, subscribes to the
+  `enemy_attack_landed` event 2.10 built with no runtime consumer until now. Downed/revive is
+  host-validated; presentation (crawl, blocked input) is client-local. Protocol version is 7.
+  `docs/DELEGATION.md` has the full seam.
 
 - **2.10 + 2.9's code shipped** (dusk3): host-authoritative Enemy v1, the combat-feel instrument
   (`agent godot --script tools/combat_feel_check.gd`), hit reactions, corpse fade. F-036 resolved by
@@ -37,7 +61,7 @@ shadow-boxing with real swords. **F3** overlay · **`~`** console · **Esc** rel
 **Nineteen autoloads live**, `verify_setup` asserts every one. Boot log:
 `content: loaded 14 item(s), 1 recipe(s), 9 weapon(s)` + `1 enemy definition(s)` +
 `net: NetTransport ready (offline)`. `NetConfig` is a `class_name`, **not** an autoload; don't add it.
-Protocol version lives in `core/net/net_version.gd` (currently 6); any new RPC bumps it.
+Protocol version lives in `core/net/net_version.gd` (currently 7); any new RPC bumps it.
 
 Godot 4.7.1-stable `a13da4feb`, pinned (D-001) — also the determinism baseline (§6a), so upgrading
 invalidates R6. Blender is pinned the same way now (D-038); the next asset batch records the version.
@@ -59,10 +83,10 @@ Protocol: [AGENTS.md](../AGENTS.md) · specs: [SPECS.md](SPECS.md) · dispatch: 
 
 | # | What | Who | State |
 |---|---|---|---|
-| 2.9 | **Play the combat gate** — SPECS.md has the run-sheet: ten crawler kills, judge tell/arc/hitstop/kill-length, tune in the inspector only, then pass or fail it out loud. Know that enemy hits cost nothing until 2.13 — judge feel, not danger. Passing closes F-036. | **You** | open |
+| 2.9 | **Play the combat gate — RE-RUN IT, the first attempt was judging a broken build.** SPECS.md has the run-sheet: ten crawler kills, judge tell/arc/hitstop/kill-length, tune in the inspector only, then pass or fail it out loud. Passing closes F-036. | **You** | open, unblocked |
 | 2.11 | Day/night — host-authoritative clock, sky client-local. Order exists; **the trap is in the spec**: never flip `cycle_enabled`. | lane | order ready |
 | 2.12 | Night waves over `EnemyWorld` seams; needs 2.11's signals. | lane | order ready |
-| 2.13 | Death & respawn — player health, downed→bleed-out→revive, the `enemy_attack_landed` subscriber that makes crawlers matter. Decides F-043 (iron sword reachability) in passing. | T2 agent | spec ready |
+| 2.13 | Death & respawn — player health, downed→bleed-out→revive, the `enemy_attack_landed` subscriber that makes crawlers matter. | lp | **done** |
 | 2.14 | **Playtest with friends** — protocol in SPECS.md: verbatim quotes, one full night, then re-read DESIGN §8 before anything in M3. | You + friends | after the above |
 | 2.1d | A-009 extraction ship (15 models) — the asset queue's NEXT; tracker governs. | asset agent | ready |
 

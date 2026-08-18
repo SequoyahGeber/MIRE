@@ -1791,3 +1791,39 @@ Commit at time of writing: `d541056`
 First real quota wall, and it was caught by the primary detector rather than the regex fallback: the stream went allowed_warning at 0.98 utilization, allowed_warning at 0.99, then rejected, and the lane parked at the API's own resetsAt (04:10Z = 9:10pm local, matching the CLI's message exactly). Claims released, task back to todo, --watch sleeping to resume. Two improvements from what the event exposed: rate_limit_event carries a utilization figure, so the ledger now records real per-window percentages instead of inferring them from cache-dominated token counts or reading a web page; and _release no longer warns when there was nothing to release, since a wall can land before the agent ever claims.
 
 Commit at time of writing: `6838f55`
+
+---
+
+### DONE · F-062 · nettle12 · 2026-08-18T01:38:26+00:00
+
+**Every melee swing hits the attacker's own body first**
+
+CombatService._best_target() now skips the attacker's own node. The player body joined &"damageable" in 2.13, and at zero horizontal offset it took the on-axis branch that skips the arc test, beating any target past 1.5 m — so every swing self-hit for 3 hp and most of the axe's reach was dead. tools/combat_self_hit_check.gd is the anchor; it uses the real player.tscn because combat_check.gd's bare-Node3D attacker could never catch this.
+
+Files: `autoload/combat_service.gd`, `tools/combat_self_hit_check.gd`
+
+Commit at time of writing: `1281970`
+
+---
+
+### DONE · F-063 · nettle12 · 2026-08-18T01:38:32+00:00
+
+**Offline respawn teleports the player to world origin**
+
+PlayerHealth._capture_local_spawn_transform() latches the local body's transform on the first physics tick it exists, so offline play (where PlayerNet.player_spawned never fires) has a real spawn to respawn to instead of falling through to Vector3.ZERO. A missing entry now warns and respawns in place. player_health_check.gd gained a scenario that does NOT fake player_spawned — faking it is what hid this.
+
+Files: `systems/health/player_health.gd`, `tools/player_health_check.gd`
+
+Commit at time of writing: `1281970`
+
+---
+
+### DONE · F-064 · nettle12 · 2026-08-18T01:38:32+00:00
+
+**Downed, bleeding out and dead are invisible to the player**
+
+vitals_hud.gd draws a centre state banner: DOWNED with a live bleed-out countdown and the revive line, YOU DIED with the respawn countdown, TEAMMATE DOWN with the bound interact key off the broadcast downed flag. Client-local presentation only, protocol still 7; the countdown re-seeds from each ~1 Hz host snapshot and ticks locally between them. tools/vitals_hud_check.gd drives it through the real PlayerHealth host path.
+
+Files: `ui/hud/vitals_hud.gd`, `tools/vitals_hud_check.gd`
+
+Commit at time of writing: `1281970`

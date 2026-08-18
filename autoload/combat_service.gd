@@ -238,6 +238,15 @@ func _best_target(player: Node3D, weapon: WeaponDef) -> Node:
 	var best_distance: float = INF
 
 	for node: Node in get_tree().get_nodes_in_group(DAMAGEABLE_GROUP):
+		# F-062: the attacker is itself damageable (task 2.13 put the player body in this group so
+		# crawler hits could land), and it wins this contest outright unless excluded — it sits
+		# EYE_HEIGHT_M below the eye, which is inside every weapon's vertical band and reach, at zero
+		# horizontal offset, so it takes the "directly on the axis" branch below and skips the arc
+		# test entirely. Left in, every swing chops the swinger and nothing past 1.5 m is ever
+		# reachable. Excluded by identity rather than by a minimum distance, because an enemy pressed
+		# right up against you must still be hittable.
+		if node == player:
+			continue
 		var target := node as Node3D
 		if target == null or not target.has_method("host_apply_damage"):
 			continue

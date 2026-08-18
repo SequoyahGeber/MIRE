@@ -828,6 +828,104 @@ render_item_icons.py's SOURCES, rerun it, and set coins.tres's `icon` field, fol
 
 ---
 
+### F-062 · Every melee swing hits the attacker's own body first
+
+**Area:** combat · **Severity:** high · **Found:** 2026-08-18 by nettle12
+
+`CombatService._best_target()` (autoload/combat_service.gd:227) iterates the whole `&"damageable"`
+group and never excludes the swinging player. Task 2.13 put the player body into that group
+(entities/player/player_controller.gd:111) so crawler hits could land — which silently turned every
+player swing into a self-hit.
+
+The geometry makes the attacker win the target contest almost every time:
+
+- `eye = player.global_position + UP * 1.5`, so for the attacker itself `to_target = (0, -1.5, 0)`.
+- `|y| = 1.5` is inside `vertical_reach_m` (2.4 default) — passes the vertical band.
+- `distance = 1.5` is inside `range_m + tolerance` (2.6 + 0.75 = 3.35) — passes reach.
+- `to_flat` is exactly zero, so the `to_flat.length_squared() < 0.000001` early branch assigns
+  `best = self` and **skips the arc test entirely** — direction is irrelevant.
+- `best_distance` is then 1.5 m, so any crawler further than 1.5 m loses the nearest-target contest.
+
+Net effect in play: the stone axe chops the player for `damage` (3) on every swing, and crawlers in
+the 1.5–3.35 m band — most of the axe's actual reach — can never be hit. Observed live in
+Sequoyah's 2.9 playtest: `PlayerHealth: peer 1 downed (instigator 1)` in the session log, i.e. the
+player downed himself, and "attacking the enemies doesn't seem to work anymore".
+
+Fix: skip the attacker's own node in the loop. The zero-horizontal-offset branch is still wanted for
+an enemy standing exactly on your axis, so exclude by identity, not by distance.
+
+---
+
+### F-063 · Offline respawn teleports the player to world origin
+
+**Area:** health · **Severity:** medium · **Found:** 2026-08-18 by nettle12
+
+`PlayerHealth._teleport_to_spawn()` reads `_spawn_transforms[peer_id]` and falls back to
+`Vector3.ZERO` when the peer has no entry. That dictionary is only ever written by
+`_on_player_spawned()`, which is driven by `PlayerNet.player_spawned` — and PlayerNet only spawns
+bodies inside a session (`autoload/player_net.gd:78`, `_claim_spawn_point()`'s own note: "Offline
+this is never called and the node is left alone").
+
+So in a solo Play-from-editor run — the exact configuration task 2.9's gate is played in — the
+dictionary is empty and every respawn slams the player to `(0, 0, 0)` instead of the level's spawn
+point. In `levels/playtest_hollow.tscn` the hand-placed Player sits at `(0, 0.2, 7.4)`, so you
+respawn 7.4 m away and 0.2 m below where the level says players belong.
+
+Confirmed live: Sequoyah's 2.9 session log shows two complete `downed -> bled out -> respawning`
+cycles that he did not recognise as deaths at all.
+
+Fix: fall back to the level's spawn point rather than to the origin — PlayerNet already reads that
+transform off the hand-placed Player, and offline the placeholder is still in the tree to read.
+Leaving the body where it stands is strictly better than the origin if neither is available.
+
+---
+
+### F-064 · Downed, bleeding out and dead are invisible to the player
+
+**Area:** ui · **Severity:** medium · **Found:** 2026-08-18 by nettle12
+
+`ui/hud/vitals_hud.gd._on_health_changed(hp, max_hp, _state, _bleed_out_remaining)` discards both the
+state and the bleed-out timer — the underscore prefixes are the whole story. The HUD draws an hp bar
+and nothing else, so the entire 2.13 state machine is invisible from the player's chair.
+
+What a player actually experiences when hp reaches 0: the bar empties, movement drops to
+`crawl_speed`, the axe stops responding, and nothing on screen says why or that a 30-second clock is
+running. Sequoyah's report from the 2.9 playtest, verbatim: "now it's at zero, and I have not died
+... I'm really slow with my health at zero, and then also attacking the enemies doesn't seem to work
+anymore." He had in fact died and respawned twice by then; the session log proves it and the screen
+did not.
+
+This blocks 2.9's gate on its own terms — the spec asks for a verdict on whether combat is
+dangerous, and danger that the player cannot perceive cannot be judged.
+
+Needed: a downed banner with the bleed-out countdown, a distinct dead/respawning state, and the
+revive prompt teammates need (the broadcast `downed_flag_changed` already carries who needs help).
+
+---
+
+### F-065 · Night sky still reads as daytime — white clouds, no stars
+
+**Area:** environment · **Severity:** low · **Found:** 2026-08-18 by nettle12
+
+Observed by Sequoyah during the 2.9 playtest, verbatim: "it's night time now, but the clouds are
+still bright white, and there's no stars."
+
+Task 2.11 shipped the day/night CLOCK — the host advances `time_of_day`, replicates it, and fires
+`night_started`/`day_started` — and `world/environment/playtest_atmosphere.gd` receives the value.
+What did not ship with it is the night half of the SKY MATERIAL: cloud lighting still uses the
+daytime albedo regardless of sun elevation, and there is no star layer at all, so a full night looks
+like an overcast noon that someone turned the brightness down on.
+
+This is presentation only and client-local (ARCHITECTURE.md §2.2, "VFX, audio, camera, UI" row) — the
+clock underneath it is correct and host-authoritative, so nothing here touches replication or the
+protocol version. It is a material/environment job on the atmosphere node, not a systems job.
+
+Wanted: clouds that darken and lose saturation as the sun drops, and a star field that fades in
+across dusk. Worth pairing with 2.12's night waves — night is about to become the dangerous half of
+the cycle, and it needs to read as night before it can read as dangerous.
+
+---
+
 ## Resolved
 
 ### F-055 · `core/util/mire_log.gd`'s `CHANNELS` list has no `health` channel — **fixed**

@@ -29,6 +29,13 @@ const COLOUR_TRACK := Color(0.06, 0.08, 0.07, 0.85)
 const COLOUR_BORDER := Color(0.345, 0.475, 0.390, 0.9)
 const COLOUR_TEXT := Color(0.91, 0.94, 0.89, 1.0)
 const COLOUR_HINT := Color(0.80, 0.86, 0.80, 0.92)
+const COLOUR_DOWNED := Color(0.90, 0.32, 0.28, 1.0)
+const COLOUR_DEAD := Color(0.72, 0.72, 0.74, 1.0)
+const COLOUR_TEAMMATE := Color(0.96, 0.78, 0.30, 1.0)
+
+## Where the state banner sits, as a fraction of viewport height. Above centre on purpose: dead
+## centre is where the crosshair and whatever is trying to kill you both are.
+const BANNER_HEIGHT_FRACTION: float = 0.32
 
 var _column: VBoxContainer
 var _hp_fill: ColorRect
@@ -37,9 +44,28 @@ var _stamina_fill: ColorRect
 var _hp_label: Label
 var _hint_label: Label
 
+var _banner: VBoxContainer
+var _banner_title: Label
+var _banner_detail: Label
+
 var _max_hp: int = 1
 var _max_hunger: float = 1.0
 var _max_stamina: float = 1.0
+
+## F-064. Presentation-only mirrors of the state the owner-only snapshot carries. The snapshot lands
+## about once a second (PlayerHealth.HUNGER_SNAPSHOT_INTERVAL_SEC throttles it), which is the right
+## rate for a reliable RPC and the wrong rate for a countdown a player is watching — so the banner
+## re-seeds from every snapshot and counts down locally in between. Nothing here decides anything:
+## the host owns when you actually die, this only owns whether you can SEE it coming.
+var _state: int = DownedState.State.ALIVE
+var _bleed_out_remaining: float = 0.0
+## The dead state has no wire field to mirror — respawn_remaining never leaves the host — so this is
+## seeded from PlayerHealth's own exported respawn_seconds the moment the state turns DEAD.
+var _respawn_remaining: float = 0.0
+var _teammates_down: int = 0
+## Downed peers other than this one, from the broadcast flag. A set, not a count, because the flag
+## arrives per peer and can repeat.
+var _downed_peers: Dictionary[int, bool] = {}
 
 
 func _ready() -> void:
@@ -50,10 +76,14 @@ func _ready() -> void:
 	PlayerHealth.local_health_changed.connect(_on_health_changed)
 	PlayerHealth.local_hunger_changed.connect(_on_hunger_changed)
 	PlayerHealth.local_stamina_changed.connect(_on_stamina_changed)
+	PlayerHealth.downed_flag_changed.connect(_on_downed_flag_changed)
 	InventoryService.local_inventory_changed.connect(_on_inventory_changed)
 	get_viewport().size_changed.connect(_apply_layout)
 
-	_on_health_changed(PlayerHealth.local_hp(), PlayerHealth.local_max_hp(), 0, 0.0)
+	_on_health_changed(
+		PlayerHealth.local_hp(), PlayerHealth.local_max_hp(),
+		DownedState.State.ALIVE, 0.0
+	)
 	_on_hunger_changed(PlayerHealth.local_hunger(), PlayerHealth.local_max_hunger())
 	_on_stamina_changed(PlayerHealth.local_stamina(), PlayerHealth.local_max_stamina())
 	_refresh_hint()
@@ -67,6 +97,8 @@ func _exit_tree() -> void:
 		PlayerHealth.local_hunger_changed.disconnect(_on_hunger_changed)
 	if PlayerHealth.local_stamina_changed.is_connected(_on_stamina_changed):
 		PlayerHealth.local_stamina_changed.disconnect(_on_stamina_changed)
+	if PlayerHealth.downed_flag_changed.is_connected(_on_downed_flag_changed):
+		PlayerHealth.downed_flag_changed.disconnect(_on_downed_flag_changed)
 	if InventoryService.local_inventory_changed.is_connected(_on_inventory_changed):
 		InventoryService.local_inventory_changed.disconnect(_on_inventory_changed)
 
@@ -93,8 +125,9 @@ func _input(event: InputEvent) -> void:
 ## Polled rather than signalled: InventoryUI has no "selection changed" signal (its own hotbar
 ## select is a raw-key handler too), and this is cheap enough to run every frame. Re-applies layout
 ## too, since the hint label toggling visible changes the column's height.
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	_refresh_hint()
+	_tick_banner_countdown(delta)
 	_apply_layout()
 
 
@@ -138,6 +171,35 @@ func _build_ui() -> void:
 	_hint_label.visible = false
 	_column.add_child(_hint_label)
 
+	_build_banner(root)
+
+
+## F-064: the downed/dead state used to be readable only as "the hp bar is empty and the controls
+## feel wrong". This is the part of the 2.13 state machine the player is actually allowed to see.
+func _build_banner(root: Control) -> void:
+	_banner = VBoxContainer.new()
+	_banner.name = "StateBanner"
+	_banner.alignment = BoxContainer.ALIGNMENT_CENTER
+	_banner.add_theme_constant_override("separation", int(ROW_GAP))
+	_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner.visible = false
+	root.add_child(_banner)
+
+	_banner_title = Label.new()
+	_banner_title.name = "Title"
+	_banner_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner_title.add_theme_font_size_override("font_size", 34)
+	_banner_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner.add_child(_banner_title)
+
+	_banner_detail = Label.new()
+	_banner_detail.name = "Detail"
+	_banner_detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner_detail.add_theme_color_override("font_color", COLOUR_TEXT)
+	_banner_detail.add_theme_font_size_override("font_size", 16)
+	_banner_detail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner.add_child(_banner_detail)
+
 
 ## Bottom-left anchored by explicit position, not an anchor preset — a preset's anchor point is the
 ## control's own top-left corner, so a bottom-anchored Control would grow DOWN off-screen instead of
@@ -148,6 +210,12 @@ func _apply_layout() -> void:
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
 	var column_height: float = _column.get_combined_minimum_size().y
 	_column.position = Vector2(MARGIN.x, viewport_size.y - MARGIN.y - column_height)
+
+	# The banner spans the full width and centres its own labels, so horizontal centring costs no
+	# measurement — only the vertical placement is computed.
+	if _banner != null:
+		_banner.size.x = viewport_size.x
+		_banner.position = Vector2(0.0, viewport_size.y * BANNER_HEIGHT_FRACTION)
 
 
 ## The track half of one bar row — an empty panel sized BAR_SIZE with the shared border style.
@@ -188,11 +256,101 @@ func _apply_fill(fill: ColorRect, fraction: float) -> void:
 # ── Signal handlers ────────────────────────────────────────────────────────────────────────────────
 
 
-func _on_health_changed(hp: int, max_hp: int, _state: int, _bleed_out_remaining: float) -> void:
+func _on_health_changed(hp: int, max_hp: int, state: int, bleed_out_remaining: float) -> void:
 	_max_hp = maxi(max_hp, 1)
 	_apply_fill(_hp_fill, float(hp) / float(_max_hp))
 	if _hp_label != null:
 		_hp_label.text = "%d / %d" % [hp, _max_hp]
+
+	var previous_state: int = _state
+	_state = state
+	if state == DownedState.State.DOWNED:
+		# Re-seed rather than accumulate: the host's number is the truth every time it arrives, and
+		# _process only fills the gap between arrivals.
+		_bleed_out_remaining = bleed_out_remaining
+	elif state == DownedState.State.DEAD and previous_state != DownedState.State.DEAD:
+		_respawn_remaining = PlayerHealth.respawn_seconds
+	_refresh_banner()
+
+
+## Every peer's downed flag is broadcast to everyone (PlayerHealth's own note: teammates have to see
+## who needs help). Counting them is enough for the prompt — the controller already finds the nearest
+## one by itself when the hold starts.
+func _on_downed_flag_changed(peer_id: int, downed: bool) -> void:
+	if peer_id == _local_peer_id():
+		return
+	var was_down: bool = _downed_peers.has(peer_id)
+	if downed:
+		_downed_peers[peer_id] = true
+	else:
+		_downed_peers.erase(peer_id)
+	if was_down != downed:
+		_teammates_down = _downed_peers.size()
+		_refresh_banner()
+
+
+func _local_peer_id() -> int:
+	var peer_id: int = NetTransport.local_peer_id()
+	return peer_id if peer_id > 0 else NetConfig.HOST_PEER_ID
+
+
+# ── State banner (F-064) ───────────────────────────────────────────────────────────────────────────
+
+
+## Counts the two timers down between snapshots so the numbers move every frame instead of jumping
+## once a second. Never crosses a threshold on its own — clamped at zero, and the host's next
+## snapshot is what actually changes _state.
+func _tick_banner_countdown(delta: float) -> void:
+	if _banner == null or not _banner.visible:
+		return
+	match _state:
+		DownedState.State.DOWNED:
+			_bleed_out_remaining = maxf(_bleed_out_remaining - delta, 0.0)
+		DownedState.State.DEAD:
+			_respawn_remaining = maxf(_respawn_remaining - delta, 0.0)
+		_:
+			return
+	_refresh_banner_text()
+
+
+func _refresh_banner() -> void:
+	if _banner == null:
+		return
+	var showing: bool = _state != DownedState.State.ALIVE or _teammates_down > 0
+	_banner.visible = showing
+	if not showing:
+		return
+	_refresh_banner_text()
+
+
+func _refresh_banner_text() -> void:
+	match _state:
+		DownedState.State.DOWNED:
+			_banner_title.add_theme_color_override("font_color", COLOUR_DOWNED)
+			_banner_title.text = "DOWNED"
+			_banner_detail.text = "Bleeding out — %ds    ·    a teammate can revive you" % (
+				int(ceil(_bleed_out_remaining))
+			)
+		DownedState.State.DEAD:
+			_banner_title.add_theme_color_override("font_color", COLOUR_DEAD)
+			_banner_title.text = "YOU DIED"
+			_banner_detail.text = "Respawning in %ds" % int(ceil(_respawn_remaining))
+		_:
+			_banner_title.add_theme_color_override("font_color", COLOUR_TEAMMATE)
+			_banner_title.text = "TEAMMATE DOWN" if _teammates_down == 1 else (
+				"%d TEAMMATES DOWN" % _teammates_down
+			)
+			_banner_detail.text = "Hold %s next to them to revive" % _interact_key_label()
+
+
+## The bound key rather than a hard-coded letter — the prompt should not start lying the first time
+## anyone rebinds interact.
+func _interact_key_label() -> String:
+	for event: InputEvent in InputMap.action_get_events(&"interact"):
+		var key := event as InputEventKey
+		if key != null:
+			return key.as_text_physical_keycode().to_upper()
+	return "INTERACT"
 
 
 func _on_hunger_changed(hunger: float, max_hunger: float) -> void:

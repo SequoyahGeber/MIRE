@@ -1237,9 +1237,9 @@
       "task": "2.1i"
     },
     "autoload/combat_service.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:52:06+00:00",
-      "task": "F-041"
+      "agent": "nettle12",
+      "at": "2026-08-18T01:38:26+00:00",
+      "task": "F-062"
     },
     "autoload/combat_service.gd.uid": {
       "agent": "dusk3",
@@ -1265,16 +1265,6 @@
       "agent": "dusk3",
       "at": "2026-08-17T15:58:44+00:00",
       "task": "2.10"
-    },
-    "autoload/harvest_world.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
-    },
-    "autoload/harvest_world.gd.uid": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
     },
     "autoload/inventory_service.gd": {
       "agent": "dusk3",
@@ -1315,21 +1305,6 @@
       "agent": "dusk3",
       "at": "2026-08-17T16:31:36+00:00",
       "task": "F-039"
-    },
-    "content/harvestables/iron_node.tres": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
-    },
-    "content/harvestables/stone_node.tres": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
-    },
-    "content/harvestables/tree.tres": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
     },
     "content/items/arrow.tres": {
       "agent": "dusk3",
@@ -1637,9 +1612,9 @@
       "task": "3.8"
     },
     "systems/health/player_health.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:55:40+00:00",
-      "task": "3.8"
+      "agent": "nettle12",
+      "at": "2026-08-18T01:38:32+00:00",
+      "task": "F-063"
     },
     "systems/inventory/inventory_store.gd": {
       "agent": "dusk3",
@@ -1801,6 +1776,11 @@
       "at": "2026-08-17T04:31:24+00:00",
       "task": "2.8"
     },
+    "tools/combat_self_hit_check.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-18T01:38:26+00:00",
+      "task": "F-062"
+    },
     "tools/connect_retry_check.gd": {
       "agent": "flint5",
       "at": "2026-08-17T23:13:44+00:00",
@@ -1906,16 +1886,6 @@
       "at": "2026-08-17T18:49:19+00:00",
       "task": "F-047"
     },
-    "tools/harvest_world_check.gd.uid": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
-    },
-    "tools/harvest_world_net_check.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
-    },
     "tools/harvestable_check.gd": {
       "agent": "nettle",
       "at": "2026-08-17T01:48:54+00:00",
@@ -1982,9 +1952,9 @@
       "task": "F-021"
     },
     "tools/player_health_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:55:40+00:00",
-      "task": "3.8"
+      "agent": "nettle12",
+      "at": "2026-08-18T01:38:32+00:00",
+      "task": "F-063"
     },
     "tools/player_health_net_check.gd": {
       "agent": "lp",
@@ -2061,11 +2031,6 @@
       "at": "2026-08-17T18:49:21+00:00",
       "task": "F-048"
     },
-    "tools/setup_harvest_content.gd.uid": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:24:51+00:00",
-      "task": "F-029"
-    },
     "tools/setup_project.gd": {
       "agent": "flint5",
       "at": "2026-08-17T18:49:21+00:00",
@@ -2101,6 +2066,11 @@
       "at": "2026-08-17T16:52:06+00:00",
       "task": "F-041"
     },
+    "tools/vitals_hud_check.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-18T01:38:32+00:00",
+      "task": "F-064"
+    },
     "tools/wave_spawner_check.gd": {
       "agent": "lc1",
       "at": "2026-08-17T23:24:25+00:00",
@@ -2117,9 +2087,9 @@
       "task": "2.7"
     },
     "ui/hud/vitals_hud.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:55:40+00:00",
-      "task": "3.8"
+      "agent": "nettle12",
+      "at": "2026-08-18T01:38:32+00:00",
+      "task": "F-064"
     },
     "ui/inventory/inventory_ui.gd": {
       "agent": "kiln9",
@@ -3531,6 +3501,33 @@
       "status": "todo",
       "tier": "F",
       "title": "content/items/coins.tres has no icon \u2014 the render_item_icons.py pipeline needs a SOURCES entry"
+    },
+    "F-062": {
+      "done_at": "2026-08-18T01:38:26+00:00",
+      "done_by": "nettle12",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Every melee swing hits the attacker's own body first"
+    },
+    "F-063": {
+      "done_at": "2026-08-18T01:38:32+00:00",
+      "done_by": "nettle12",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Offline respawn teleports the player to world origin"
+    },
+    "F-064": {
+      "done_at": "2026-08-18T01:38:32+00:00",
+      "done_by": "nettle12",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Downed, bleeding out and dead are invisible to the player"
     }
   },
   "version": 1

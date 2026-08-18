@@ -78,6 +78,44 @@ silently — see the constant's own doc comment for the exact list (replicated p
 > Execution specs for every remaining roadmap task live in **`docs/SPECS.md`** — this section holds
 > the *shipped* seams those specs build on.
 
+### 2026-08-17, from Sequoyah's 2.9 playtest — three things 2.13 broke or left dark (F-062/063/064)
+
+The gate could not be judged as shipped. What he actually reported — hp at zero, no death, slow
+movement, "attacking the enemies doesn't seem to work anymore" — decomposed into three separate
+defects, all fixed and all now covered headless.
+
+- **F-062 · every swing hit the attacker.** `CombatService._best_target()` iterated `&"damageable"`
+  without excluding the swinger. Task 2.13 had put the player body into that group so crawler hits
+  could land, and that alone turned every axe swing into a self-hit: the attacker's own origin sits
+  `EYE_HEIGHT_M` (1.5 m) below the eye at *zero horizontal offset*, which takes the "directly on the
+  axis" early branch and **skips the arc test entirely**, then wins the nearest-target contest
+  against anything past 1.5 m. Most of the axe's 2.6 m reach was unusable and every swing cost 3 hp.
+  **The lesson worth keeping: putting an entity into `&"damageable"` is not a local change.** Any
+  future task that adds a body to that group must ask what now targets it.
+  `tools/combat_self_hit_check.gd` is the regression anchor, and it exists separately from
+  `tools/combat_check.gd` because *that* check's attacker is a bare `Node3D` in `&"players"` only —
+  structurally incapable of catching this. New combat checks use the real `player.tscn`.
+
+- **F-063 · offline respawn teleported to world origin.** `_spawn_transforms` was only ever written
+  from `PlayerNet.player_spawned`, which fires *inside a session only* — offline PlayerNet leaves the
+  level's hand-placed Player alone. So solo play, the configuration 2.9 is played in, always fell
+  through to `Vector3.ZERO`. `PlayerHealth._capture_local_spawn_transform()` now latches the local
+  body's transform on the first physics tick it exists, and a missing entry warns and respawns in
+  place rather than silently slamming to the origin.
+  **The lesson: `tools/player_health_check.gd` called `_on_player_spawned` by hand.** A check that
+  simulates a signal the shipped configuration never emits proves the handler, not the wiring — it
+  hid this for a whole task. That check now also runs the flow with nothing faking the signal.
+
+- **F-064 · downed/dead were invisible.** `ui/hud/vitals_hud.gd` discarded the `state` and
+  `bleed_out_remaining` its own snapshot handler received. It now draws a centre banner: **DOWNED**
+  with a live bleed-out countdown and the revive line, **YOU DIED** with the respawn countdown, and
+  **TEAMMATE DOWN** (with the bound interact key) for a living player, off the broadcast
+  `downed_flag_changed` flag. All client-local presentation — no wire change, protocol still 7. The
+  countdown re-seeds from every host snapshot and ticks locally in between, because the snapshot is
+  throttled to ~1 Hz and a countdown a player watches cannot move at 1 Hz.
+  `tools/vitals_hud_check.gd` drives it through the real PlayerHealth host path, not by emitting the
+  HUD's own signals.
+
 **Work can now be dispatched to three paid accounts in parallel, and you may be one of them.** If you
 are `lc1`, `lc2` or `lp`, you were started by `agent dispatch` and your whole spec is the work order
 piped into you — no one is going to answer a question, so decide and keep going. `docs/ORCHESTRATION.md`

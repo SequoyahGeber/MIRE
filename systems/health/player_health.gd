@@ -124,6 +124,10 @@ var _downed_flags: Dictionary[int, bool] = {}
 ## The transform PlayerNet spawned each peer at, captured off PlayerNet.player_spawned. Respawn
 ## returns a player here rather than to wherever they happened to die.
 var _spawn_transforms: Dictionary[int, Dictionary] = {}
+## F-063: player_spawned only ever fires inside a session, so offline this dictionary would stay
+## empty forever. Latched the first tick a local body exists so the offline capture below can never
+## run twice and record a walked-to position as if it were the spawn.
+var _local_spawn_captured: bool = false
 
 var _local_hp: int = 0
 var _local_max_hp: int = 0
@@ -179,6 +183,7 @@ func _exit_tree() -> void:
 func _physics_process(delta: float) -> void:
 	if not _owns_mutation() or _states.is_empty():
 		return
+	_capture_local_spawn_transform()
 	_hunger_snapshot_elapsed += delta
 	var publish_hunger: bool = _hunger_snapshot_elapsed >= HUNGER_SNAPSHOT_INTERVAL_SEC
 	if publish_hunger:
@@ -514,7 +519,17 @@ func host_stamina(peer_id: int) -> float:
 ## position, so it tells that peer's own client to place itself, the same way it is the only thing
 ## allowed to move its own body at all.
 func _teleport_to_spawn(peer_id: int) -> void:
-	var spawn: Dictionary = _spawn_transforms.get(peer_id, {})
+	# F-063: this used to fall back to Vector3.ZERO, which is not a spawn point — it is wherever the
+	# level author happened to put the world origin. In playtest_hollow that is 7.4 m from the real
+	# spawn and 0.2 m underground. Standing a respawned player up where they fell is also wrong, but
+	# it is recoverable, and it is loud in the log instead of silent.
+	if not _spawn_transforms.has(peer_id):
+		MireLog.warn(
+			LOG_CHANNEL,
+			"PlayerHealth: peer %d has no spawn transform — respawning in place" % peer_id
+		)
+		return
+	var spawn: Dictionary = _spawn_transforms[peer_id]
 	var position: Vector3 = spawn.get("position", Vector3.ZERO)
 	var yaw: float = float(spawn.get("yaw", 0.0))
 	if peer_id == _local_peer_id():
@@ -535,6 +550,30 @@ func _apply_respawn_transform(position: Vector3, yaw: float) -> void:
 	body.position = position
 	body.rotation.y = yaw
 	body.velocity = Vector3.ZERO
+
+
+## F-063. PlayerNet only spawns bodies inside a session — offline it leaves the level's hand-placed
+## Player exactly where it is (see its own _claim_spawn_point note), so player_spawned never fires
+## and nothing else ever writes _spawn_transforms. That is the configuration task 2.9's gate is
+## played in, and it is why the check for this file never caught it: the check calls
+## _on_player_spawned by hand, simulating a signal the real offline game does not emit.
+##
+## Capture it here instead, on the first physics tick a local body exists. That tick is the frame the
+## level's own Player was ready on, before the player has walked anywhere, so it is the same
+## transform PlayerNet would have read off that node had a session been open. Latched, so a body that
+## appears later (a respawn teleport, a level reload) can never overwrite a real spawn with a
+## walked-to position. In a session this is a no-op: player_spawned has already filled the entry.
+func _capture_local_spawn_transform() -> void:
+	if _local_spawn_captured:
+		return
+	var body: Node3D = _local_player_body()
+	if body == null:
+		return
+	_local_spawn_captured = true
+	var peer_id: int = _local_peer_id()
+	if _spawn_transforms.has(peer_id):
+		return
+	_spawn_transforms[peer_id] = {"position": body.position, "yaw": body.rotation.y}
 
 
 func _connect_player_net() -> void:
@@ -637,6 +676,9 @@ func _on_session_opened() -> void:
 	if _session_open:
 		return
 	_session_open = true
+	# F-063: a session replaces every body in the level, so the offline capture has to be re-armed —
+	# PlayerNet.player_spawned will normally beat it to the punch now, which is exactly the intent.
+	_local_spawn_captured = false
 	_states.clear()
 	_revisions.clear()
 	_downed_flags.clear()
@@ -699,6 +741,7 @@ func _on_run_player_expired(peer_id: int) -> void:
 
 func _on_disconnected() -> void:
 	_session_open = false
+	_local_spawn_captured = false
 	_states.clear()
 	_revisions.clear()
 	_downed_flags.clear()
