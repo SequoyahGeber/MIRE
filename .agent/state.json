@@ -1,164 +1,19 @@
 {
   "claims": {
-    "assets/audit/a009/geometry_report.json": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:54+00:00",
-      "task": "2.1d"
-    },
-    "assets/audit/a009/geometry_report.jsonl": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:54+00:00",
-      "task": "2.1d"
-    },
     "assets/maps": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
-    },
-    "assets/ships": {
-      "agent": "ivy8",
-      "at": "2026-08-18T13:01:13+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/README.md": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/catalog.json": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_anchor.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_boarding_ramp.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_cargo_hatch.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_debris_cluster.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_departure_bell.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_donation_crate.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_hull_repair_1.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_hull_repair_2.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_hull_repaired.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_hull_wrecked.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_mast.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_mast_broken.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_rudder.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_sail_furled.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_sail_raised.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/preview/ship_preview.png": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/preview/ship_rig_preview.png": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/preview/ship_scale_preview.png": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/preview/ship_states_preview.png": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:16:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/source/extraction_ship_set.blend": {
-      "agent": "ivy8",
-      "at": "2026-08-18T13:01:13+00:00",
-      "task": "2.1d"
     },
     "assets/source/playtest_hollow.blend": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
-    "docs/ASSET_TRACKER.md": {
-      "agent": "ivy8",
-      "at": "2026-08-18T13:01:13+00:00",
-      "task": "2.1d"
-    },
-    "tools/blender/build_extraction_ship_set.py": {
-      "agent": "ivy8",
-      "at": "2026-08-18T13:01:13+00:00",
-      "task": "2.1d"
-    },
-    "tools/blender/mire_art.py": {
-      "agent": "ivy8",
-      "at": "2026-08-18T13:03:53+00:00",
-      "task": "2.1d"
-    },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
-    },
-    "tools/ship_check.gd": {
-      "agent": "ivy8",
-      "at": "2026-08-18T13:03:53+00:00",
-      "task": "2.1d"
     },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "tine18",
@@ -167,48 +22,6 @@
     }
   },
   "in_flight": {
-    "2.1d": {
-      "agent": "ivy8",
-      "files": [
-        "docs/ASSET_TRACKER.md",
-        "tools/blender/build_extraction_ship_set.py",
-        "assets/source/extraction_ship_set.blend",
-        "assets/ships",
-        "tools/ship_check.gd",
-        "tools/blender/mire_art.py",
-        "assets/ships/exports/ship_anchor.glb",
-        "assets/ships/exports/ship_boarding_ramp.glb",
-        "assets/ships/exports/ship_cargo_hatch.glb",
-        "assets/ships/exports/ship_debris_cluster.glb",
-        "assets/ships/exports/ship_departure_bell.glb",
-        "assets/ships/exports/ship_donation_crate.glb",
-        "assets/ships/exports/ship_hull_repair_1.glb",
-        "assets/ships/exports/ship_hull_repair_2.glb",
-        "assets/ships/exports/ship_hull_repaired.glb",
-        "assets/ships/exports/ship_hull_wrecked.glb",
-        "assets/ships/exports/ship_mast.glb",
-        "assets/ships/exports/ship_mast_broken.glb",
-        "assets/ships/exports/ship_rudder.glb",
-        "assets/ships/exports/ship_sail_furled.glb",
-        "assets/ships/exports/ship_sail_raised.glb",
-        "assets/ships/catalog.json",
-        "assets/ships/README.md",
-        "assets/ships/preview/ship_preview.png",
-        "assets/ships/preview/ship_rig_preview.png",
-        "assets/ships/preview/ship_scale_preview.png",
-        "assets/ships/preview/ship_states_preview.png",
-        "assets/audit/a009/geometry_report.json",
-        "assets/audit/a009/geometry_report.jsonl"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-18T13:03:53+00:00",
-          "by": "ivy8",
-          "text": "A-009 extraction ship set (15 models) taken. Blender 5.2.0 LTS, unchanged since A-000V, so no re-verification of an existing family is owed (D-038)."
-        }
-      ],
-      "started": "2026-08-18T13:01:13+00:00"
-    },
     "2.1j": {
       "agent": "tine18",
       "files": [
@@ -256,6 +69,16 @@
       "agent": "flint5",
       "at": "2026-08-17T23:15:28+00:00",
       "task": "F-053"
+    },
+    "assets/audit/a009/geometry_report.json": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/audit/a009/geometry_report.jsonl": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
     },
     "assets/crafting_stations": {
       "agent": "tine18",
@@ -352,6 +175,116 @@
       "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
+    "assets/ships": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/README.md": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/catalog.json": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_anchor.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_boarding_ramp.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_cargo_hatch.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_debris_cluster.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_departure_bell.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_donation_crate.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_hull_repair_1.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_hull_repair_2.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_hull_repaired.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_hull_wrecked.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_mast.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_mast_broken.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_rudder.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_sail_furled.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_sail_raised.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/preview/ship_preview.png": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/preview/ship_rig_preview.png": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/preview/ship_scale_preview.png": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/preview/ship_states_preview.png": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
     "assets/source/adapted_nature_set.blend": {
       "agent": "tine18",
       "at": "2026-08-18T00:39:51+00:00",
@@ -366,6 +299,11 @@
       "agent": "tine18",
       "at": "2026-08-18T00:39:51+00:00",
       "task": "2.1j"
+    },
+    "assets/source/extraction_ship_set.blend": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
     },
     "assets/source/flora_set.blend": {
       "agent": "moss11",
@@ -753,8 +691,8 @@
       "task": "F-053"
     },
     "docs/ASSET_TRACKER.md": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
       "task": "2.1d"
     },
     "docs/AUDIT-2026-08-17.md": {
@@ -977,6 +915,11 @@
       "at": "2026-08-18T00:39:51+00:00",
       "task": "2.1j"
     },
+    "tools/blender/build_extraction_ship_set.py": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
     "tools/blender/build_flora_set.py": {
       "agent": "moss11",
       "at": "2026-08-18T02:21:14+00:00",
@@ -1033,8 +976,8 @@
       "task": "2.1j"
     },
     "tools/blender/mire_art.py": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
       "task": "2.1d"
     },
     "tools/blender/render_item_icons.py": {
@@ -1391,6 +1334,11 @@
       "agent": "dusk3",
       "at": "2026-08-17T16:22:54+00:00",
       "task": "2.14"
+    },
+    "tools/ship_check.gd": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
     },
     "tools/spawn_ground_probe.gd": {
       "agent": "flint5",
@@ -1819,7 +1767,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },

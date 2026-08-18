@@ -8,11 +8,7 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | ivy8 | 2026-08-18 13:01 | `docs/ASSET_TRACKER.md`, `tools/blender/build_extraction_ship_set.py`, `assets/source/extraction_ship_set.blend`, `assets/ships`, `tools/ship_check.gd`, `tools/blender/mire_art.py`, `assets/ships/exports/ship_anchor.glb`, `assets/ships/exports/ship_boarding_ramp.glb`, `assets/ships/exports/ship_cargo_hatch.glb`, `assets/ships/exports/ship_debris_cluster.glb`, `assets/ships/exports/ship_departure_bell.glb`, `assets/ships/exports/ship_donation_crate.glb`, `assets/ships/exports/ship_hull_repair_1.glb`, `assets/ships/exports/ship_hull_repair_2.glb`, `assets/ships/exports/ship_hull_repaired.glb`, `assets/ships/exports/ship_hull_wrecked.glb`, `assets/ships/exports/ship_mast.glb`, `assets/ships/exports/ship_mast_broken.glb`, `assets/ships/exports/ship_rudder.glb`, `assets/ships/exports/ship_sail_furled.glb`, `assets/ships/exports/ship_sail_raised.glb`, `assets/ships/catalog.json`, `assets/ships/README.md`, `assets/ships/preview/ship_preview.png`, `assets/ships/preview/ship_rig_preview.png`, `assets/ships/preview/ship_scale_preview.png`, `assets/ships/preview/ship_states_preview.png`, `assets/audit/a009/geometry_report.json`, `assets/audit/a009/geometry_report.jsonl` |
 | **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-18 00:43 | `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `assets/maps`, `assets/source/playtest_hollow.blend` |
-
-**2.1d notes:**
-- A-009 extraction ship set (15 models) taken. Blender 5.2.0 LTS, unchanged since A-000V, so no re-verification of an existing family is owed (D-038).
 
 ## Milestones
 

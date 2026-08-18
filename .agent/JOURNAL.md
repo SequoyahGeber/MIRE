@@ -2604,3 +2604,25 @@ agent godot now kills the F-104 hang itself: a script error followed by 45s of s
 Files: `.agent/bin/agent`, `docs/FINDINGS.md`
 
 Commit at time of writing: `0ca4591`
+
+---
+
+### HANDOFF · 2.1d · ivy8 · 2026-08-18T14:17:26+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-009 extraction ship set DONE and verified; A-010 promoted to NEXT. Fifteen exports in assets/ships/ (10,456 tris), generator tools/blender/build_extraction_ship_set.py, Blender 5.2.0 LTS unchanged so no D-038 re-verification was owed. assets/ships/README.md and DELEGATION.md 'Current state' carry the placement contract.
+
+THE ONE THING THE NEXT AGENT MUST KNOW: eleven of the fifteen are NOT ground-centred. Mast, both sails, rudder, boarding ramp and cargo hatch are authored in the hull's coordinate frame and export with the hull's origin, so the whole ship assembles by adding every part at Transform3D.IDENTITY — nothing is left for a human to position (D-039). A ship-framed export therefore sits above the ground plane on purpose (the raised sail starts 1.8 m up); do not 'fix' it and do not run a blanket ground-contact assertion over this family. Only anchor, donation crate, departure bell and debris cluster are ground-centred.
+
+Verified: build contract 15/15 (scale table, tri/material budgets, per-family origin rule, and a winding proof that every emitted sheet faces the way it was asked to); two clean rebuilds byte-identical 15/15 GLBs + catalog, four previews pixel-identical behind differing file bytes (F-042); all-sides audit 0 degenerate faces / 0 loose verts / 0 unapplied transforms; tools/ship_check.gd PASS — engine vertex measurements match the catalog, state drift 0.0000 mm across the four hull states, and the assembly is asserted (mast stepped inside the hull, rudder aft of the transom, ramp reaching ground and deck, hatch on the deck, sails meeting the mast above deck level).
+
+Six defects were caught by the instruments, not by luck: inverted transom on all four states (winding decided from a degenerate quad), two inverted ramp edges, ribs standing proud of the planking, hatch lid floating beside its hinge, boom set below the bulwark, moss painting nothing. Filed F-108 (Transform3D*AABB inflates through rotation — flora_check.gd still has this), F-109 (the audit's inside-out metric cannot judge open sheets; use the generator's winding proof instead), F-110 (audit_all_sides resumes silently, so re-run against a clean --outdir after any rebuild).
+
+Left for Sequoyah's eyes only, in the tracker's review column: the sail's sage canvas on the largest single-colour surface in the game, whether the repaired hull's sixteen fresh patch boards should be toned down, whether the permanent cradle needs an afloat variant, and deck/bulwark/gangway dimensions against first-person sightlines. No collision, interaction volumes or repair-progress authority exist yet — that is the extraction system's, not this batch's.
+
+2.1d is handed back, not closed, per the tracker's contract: A-010 (practical construction: doors, gates, ladders, bridges, docks, palisades) is the single NEXT batch.
+
+Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_extraction_ship_set.py`, `assets/source/extraction_ship_set.blend`, `assets/ships`, `tools/ship_check.gd`, `tools/blender/mire_art.py`, `assets/ships/exports/ship_anchor.glb`, `assets/ships/exports/ship_boarding_ramp.glb`, `assets/ships/exports/ship_cargo_hatch.glb`, `assets/ships/exports/ship_debris_cluster.glb`, `assets/ships/exports/ship_departure_bell.glb`, `assets/ships/exports/ship_donation_crate.glb`, `assets/ships/exports/ship_hull_repair_1.glb`, `assets/ships/exports/ship_hull_repair_2.glb`, `assets/ships/exports/ship_hull_repaired.glb`, `assets/ships/exports/ship_hull_wrecked.glb`, `assets/ships/exports/ship_mast.glb`, `assets/ships/exports/ship_mast_broken.glb`, `assets/ships/exports/ship_rudder.glb`, `assets/ships/exports/ship_sail_furled.glb`, `assets/ships/exports/ship_sail_raised.glb`, `assets/ships/catalog.json`, `assets/ships/README.md`, `assets/ships/preview/ship_preview.png`, `assets/ships/preview/ship_rig_preview.png`, `assets/ships/preview/ship_scale_preview.png`, `assets/ships/preview/ship_states_preview.png`, `assets/audit/a009/geometry_report.json`, `assets/audit/a009/geometry_report.jsonl`
+
+Commit at time of writing: `cec336a`

@@ -290,6 +290,27 @@ SCALE: dict[str, float] = {
     "ward_healthy": 2.10,
     "wellspring_monolith": 7.25,
     "enemy_crawler": 1.10,
+    # extraction ship (A-009). The hull is the game's largest single object, so
+    # these are the entries most worth enforcing: a landmark that is 20% wrong
+    # reads as wrong from across the map, where a 20% wrong berry does not.
+    # Several figures are a span rather than a height, because that is what the
+    # longest axis honestly is — the standing mast measures 10.35 m across its
+    # fore- and backstay, not 7.7 m up.
+    "ship_hull_wrecked": 10.55,
+    "ship_hull_repair_1": 10.55,
+    "ship_hull_repair_2": 10.55,
+    "ship_hull_repaired": 10.55,      # 10.4 m hull, 3.5 m to the stem head
+    "ship_mast": 10.35,               # stay span; the spar itself is 7.7 m
+    "ship_mast_broken": 5.30,         # stump plus the top length down on deck
+    "ship_sail_furled": 4.75,         # along the boom
+    "ship_sail_raised": 6.05,         # sheet on the deck up to the halyard
+    "ship_rudder": 2.36,
+    "ship_boarding_ramp": 3.00,       # athwartships run, ground to gangway
+    "ship_cargo_hatch": 2.03,         # coaming plus the propped lid
+    "ship_anchor": 1.70,
+    "ship_donation_crate": 1.05,
+    "ship_departure_bell": 2.02,
+    "ship_debris_cluster": 2.60,
 }
 
 
