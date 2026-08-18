@@ -612,8 +612,8 @@
     },
     "content/harvestables/bush.tres": {
       "agent": "vane19",
-      "at": "2026-08-18T17:55:20+00:00",
-      "task": "F-114"
+      "at": "2026-08-18T17:56:19+00:00",
+      "task": "F-116"
     },
     "content/harvestables/fallen_log.tres": {
       "agent": "vane19",
@@ -632,8 +632,8 @@
     },
     "content/harvestables/sapling.tres": {
       "agent": "vane19",
-      "at": "2026-08-18T17:55:20+00:00",
-      "task": "F-114"
+      "at": "2026-08-18T17:56:19+00:00",
+      "task": "F-116"
     },
     "content/harvestables/stone_node.tres": {
       "agent": "vane19",
@@ -702,8 +702,8 @@
     },
     "content/items/stick.tres": {
       "agent": "vane19",
-      "at": "2026-08-18T17:55:20+00:00",
-      "task": "F-114"
+      "at": "2026-08-18T17:56:19+00:00",
+      "task": "F-116"
     },
     "content/items/stone_axe.tres": {
       "agent": "flint5",
@@ -3487,6 +3487,15 @@
       "status": "todo",
       "tier": "F",
       "title": "Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map"
+    },
+    "F-116": {
+      "done_at": "2026-08-18T17:56:19+00:00",
+      "done_by": "vane19",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Two items now own the same branch art: harvesting ships 'stick' while ITEMS.md and task 3.2 plan 'branch'"
     }
   },
   "version": 1

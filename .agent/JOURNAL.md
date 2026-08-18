@@ -2750,3 +2750,15 @@ Harvestability moved from the layout to the asset via systems/harvesting/harvest
 Files: `systems/harvesting/harvest_library.gd`, `world/gen/authored_world.gd`, `content/harvestables/wild_tree.tres`, `content/harvestables/boulder.tres`, `content/harvestables/rock_cluster.tres`, `content/harvestables/bush.tres`, `content/harvestables/sapling.tres`, `content/harvestables/fallen_log.tres`, `content/harvestables/stump.tres`, `content/items/stick.tres`, `tools/harvest_world_check.gd`, `tools/harvest_tool_ladder_check.gd`, `tools/harvest_batch_check.gd`
 
 Commit at time of writing: `ceee5c4`
+
+---
+
+### DONE · F-116 · vane19 · 2026-08-18T17:56:19+00:00
+
+**Two items now own the same branch art: harvesting ships 'stick' while ITEMS.md and task 3.2 plan 'branch'**
+
+Converged on 'branch': 3.2's item landed with six recipes using it, so stick.tres was deleted and bush/sapling now yield branch. Bushes feed real crafting.
+
+Files: `content/harvestables/bush.tres`, `content/harvestables/sapling.tres`, `content/items/stick.tres`
+
+Commit at time of writing: `3c591bd`
