@@ -90,8 +90,12 @@ func _run() -> void:
 
 	# ── the telegraph, and what it is for ─────────────────────────────────────────────────────────
 	player.global_position = enemy.global_position + Vector3(0.0, 0.0, 1.0)
-	_step(enemy, 0.05)
-	check(int(enemy.get("state")) == 2, "a player in reach makes it telegraph")
+	# The scan that just dropped the far-away target (line 87-88) reset _rescan_wait to
+	# RESCAN_INTERVAL_SEC (F-099's throttle: an untargeted enemy rescans at most once per 0.2 s, by
+	# design). A single 0.05 s step lands inside that cooldown and never looks at the player standing
+	# right next to it, so step until the cooldown clears and the state actually changes — the same
+	# pattern already used a few lines down for the second telegraph (F-111).
+	check(_step_until_state(enemy, 2, 0.05, 20), "a player in reach makes it telegraph")
 	attacks.clear()
 	# Stepped to either side of the 0.4 s boundary, never onto it: _phase_remaining is a float
 	# subtraction, so "exactly 0.4 s of steps" can land a rounding error above zero.

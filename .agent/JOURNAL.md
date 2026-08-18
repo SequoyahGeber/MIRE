@@ -2905,3 +2905,18 @@ Emitter.LEAF_FALL bound to canopy assets, 12 live, no light or shadow. Fixed two
 Files: `world/environment/asset_vfx_library.gd`, `autoload/environment_vfx.gd`, `world/environment/particle_billboard.gdshader`, `tools/environment_vfx_hollowmere_check.gd`
 
 Commit at time of writing: `db49ec6`
+
+---
+
+### DONE · F-111 · lp · 2026-08-18T18:16:36+00:00
+
+**`enemy_check.gd`'s telegraph/swing assertions fail at HEAD, unrelated to F-075**
+
+Fixed: tools/enemy_check.gd's telegraph scenario was racing enemy.gd's own RESCAN_INTERVAL_SEC throttle, not a state-machine bug. Root cause and fix in docs/SPECS.md F-111 block and docs/FINDINGS.md Resolved. Verified: agent godot --script tools/enemy_check.gd -> ENEMY_CHECK attacks=0 failures=0, all 44 assertions PASS. systems/enemies/enemy.gd untouched, claim dropped.
+
+Notes along the way:
+- Root cause: test harness only. enemy_check.gd's telegraph scenario stepped once after a scan reset _rescan_wait=0.2s (F-099 throttle), so the enemy never re-scanned within that single 0.05s step. Fixed by using _step_until_state() like the second telegraph does. enemy.gd untouched.
+
+Files: `tools/enemy_check.gd`, `systems/enemies/enemy.gd`
+
+Commit at time of writing: `01dd7f7`
