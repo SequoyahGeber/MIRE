@@ -926,7 +926,7 @@ the cycle, and it needs to read as night before it can read as dangerous.
 
 ---
 
-### F-066 · Play-from-editor costs ~2.2 CPU cores and ~90% GPU, none of it the game's rendering
+### F-066 · Play-from-editor costs ~2.2 CPU cores and ~90% GPU, none of it the game's rendering — **partly fixed**
 
 **Area:** tooling/performance · **Severity:** medium · **Found:** 2026-08-18 by reed16
 
@@ -972,8 +972,26 @@ flipped runs between those two states and produced results that inverted between
 a quiet machine with the window verifiably foregrounded, and should use the reported fps as a
 validity check — a run well above the display refresh was never really rendering.
 
-Next step when the machine is free: re-run the three-way split, then decide between disabling
-`game_embed_mode`, capping fps for dev, and adding a real video-settings surface for the shipped game.
+**Partly fixed 2026-08-17 by claude: the frame cap.** `core/dev/dev_frame_cap.gd` (autoload
+`DevFrameCap`) caps editor and debug runs to 60 fps; `tools/frame_cap_check.gd` covers it, 11 checks.
+Measured before and after on a foregrounded window, 7/7 samples valid: **120 fps at 104.5% CPU became
+60 fps at 59.5% CPU**, a 43% cut in the game process alone. The editor's share should fall with it,
+because it composites the embedded game at the game's frame rate — halving the frames halves the
+compositing — though that half was not measured, since triggering a real Play needs the GUI.
+
+Capping frames rather than turning down renderer settings is the deliberate call: the ladder above
+shows the settings are worth 0.08 ms combined, so there was nothing to win there. Retail is
+untouched — the cap is behind `OS.has_feature("editor")`, and an explicit `--max-fps` or
+`application/run/max_fps` wins over it, so the flag keeps working for anyone testing high-frame-rate
+behaviour. `fps_cap [n]` in the debug console changes it live.
+
+**Still open.** Two things this did not settle. `run/window_placement/game_embed_mode` is still 0
+(auto-embed), so the editor still composites the game on top of its own UI; the enum's values could
+not be read out of the stripped binary, and writing a guessed number into a personal editor config
+risks setting *Enabled* rather than *Disabled*, so it is a one-click change for Sequoyah rather than
+a blind edit. And the shipped game still has no vsync or frame-rate control of any kind — no
+`application/run/max_fps`, no `display/window/vsync/vsync_mode` — which for a co-op game aimed at
+laptops on Steam wants a real video-settings surface, and that is a product decision, not a fix.
 
 ---
 

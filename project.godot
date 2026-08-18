@@ -38,6 +38,7 @@ DevLoadout="*res://core/dev/dev_loadout.gd"
 PlayerHealth="*res://systems/health/player_health.gd"
 DayNight="*res://systems/environment/day_night.gd"
 VitalsHud="*res://ui/hud/vitals_hud.gd"
+DevFrameCap="*res://core/dev/dev_frame_cap.gd"
 
 [display]
 
