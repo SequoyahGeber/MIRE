@@ -1268,6 +1268,27 @@ separate from whatever a check treats as ground truth.
 
 ---
 
+### D-063 · 2026-08-18 · Chest jackpots are a feature: balance loot by rarity, never by capping the high end
+
+Sequoyah's directive while the item/loot catalog (`docs/ITEMS.md`) was planned, verbatim in intent:
+*"I really like there to be an item system where you could get something crazy good from a chest,
+even if it kind of makes the game too easy sometimes — it just is really fun."* This is DNA rule D4
+("stacking powerups that break the game — the reason you replay") extended to loot: the Gleam pool
+(ITEMS.md §4.9) and the Gilded Chest exist to produce run-warping pulls on purpose. A run trivialized
+by a lucky pull is an acceptable outcome, not a balance bug — the analogue is Risk of Rain 2's
+legendary tier, where every entry defines a run and rarity does all the balancing.
+
+Concretely: tuning may adjust **how often** the Gleam pool appears (gilded spawn count, key drop
+rates, table weights), and must not sand down **how strong its entries feel** until they are just
+better commons. A Gleam entry too weak to change how the group plays gets replaced, not nerfed.
+
+**Would change my mind:** playtests showing jackpot pulls repeatedly making *other* players
+miserable or checked-out (not just the run easier) — the fix is still frequency and co-op-flavoured
+jackpots (Second Sunrise over Eggshell Warlord), with per-entry potency nerfs strictly the last
+resort.
+
+---
+
 ### D-0NN · YYYY-MM-DD · <one-line decision>
 <why, in 2–4 sentences>
 **Would change my mind:** <the specific evidence that should make you revisit this>

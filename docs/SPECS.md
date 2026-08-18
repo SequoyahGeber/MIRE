@@ -345,6 +345,10 @@ authored by Sequoyah in the inspector (D-006); agents ship the framework plus ON
 
 ## 3.2 · Author item/recipe content (T0)
 
+**The authoring catalog is `docs/ITEMS.md`** — the same relationship 3.4 has to `POWERUPS.md`. Its
+§4 tables are the menu (~136 items with sources, recipes and jobs), §8's wave plan says which ~45
+are authorable the day 3.1 lands versus gated on later systems, and §2's rules (2-step refinement
+cap, no armor items, no durability, stack conventions) are the calls not to relitigate mid-batch.
 Inspector work against 3.1's schema. Icons via `tools/blender/render_item_icons.py` (append to
 `SOURCES`, re-render, compare **decoded pixels not file hashes** — F-042). Keep ids snake_case,
 stack sizes 99 for resources / 1 for tools. `Registry` prints the count; `item_icons_check` and
@@ -417,12 +421,20 @@ That is expected, not a bug to chase.
 
 ## 3.5 · Coins, chests, opening flow (T1)
 
-**Claim:** `systems/loot/chest.gd`, `systems/loot/loot_table_def.gd`, `ui/loot/chest_ui.gd`,
-`autoload/registry.gd`, checks. Chests are placed props (A-005 loot assets exist) with tiers;
-opening is a host-validated interact (harvest pattern: request → host rolls seeded RNG per-chest →
-`InventoryService.host_add` grants → broadcast). Coins are an item (stack 999), not a parallel
-currency system. Loot rolls host-side from a per-run seeded `RandomNumberGenerator` — never
-`randi()`. UI joins the D-032 group.
+**Claim:** `systems/loot/chest.gd`, `systems/loot/loot_entry.gd`, `systems/loot/loot_table_def.gd`,
+`ui/loot/chest_ui.gd`, `autoload/registry.gd`, `content/loot/`, checks. Chests are placed props
+(A-005 loot assets exist) with tiers; opening is a host-validated interact (harvest pattern:
+request → host rolls seeded RNG per-chest → `InventoryService.host_add` grants → broadcast). Coins
+are an item (stack 999), not a parallel currency system. Loot rolls host-side from a per-run seeded
+`RandomNumberGenerator` — never `randi()`. UI joins the D-032 group.
+
+**The content design is `docs/ITEMS.md` §5–6** (chest tier set + the four mechanics it asks of this
+task — each a noticed decision, F-078 style, not a surprise field):
+`LootEntry.kind: ITEM | POWERUP` (DESIGN §4.4 says powerups drop from chests; POWERUP entries grant
+through PowerupService's host seam) · `LootEntry.rarity: int` (the consumer the shipped `loot_luck`
+stat is waiting for) · chest `cost_coins` (routed through the `chest_price` stat) + `locked_by:
+StringName` key check · a placement budget for the `gilded` tier (≈1–2 per island). **D-063 governs
+the Gilded/Gleam tier:** jackpots are content, rarity is the only balance lever.
 
 ## F-105 · Per-frame costs found by the F-099 review in files claimed by F-086/F-097
 

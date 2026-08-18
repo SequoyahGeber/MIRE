@@ -129,6 +129,15 @@ headless scenario runner the check suite gets to reuse. 3.13 gates the rest and 
 the M3 gate** (recorded call, ROADMAP M3 note — it encodes no design answers and would actively
 help run 2.14 and D-030's cross-play test). Dispatchable to lanes as written.
 
+**2026-08-18 — the item/loot/chest economy is planned (`docs/ITEMS.md`).** Sequoyah asked for the
+full loot plan — resources, crafting components, chest rewards, the assets they need — with a lot of
+items and real jackpots: *something crazy good from a chest, even if it makes the game too easy
+sometimes* (now D-063). ITEMS.md is the catalog 3.2/3.5/3.8 author against, the way 3.4 reads
+POWERUPS.md: ~136 items + the existing 60-powerup sketch, chest tiers from free reed caches up to
+the Gilded Chest's Gleam pool, and five new gated asset batches (A-043–A-047). ~45 items are
+authorable the day 3.1 lands; everything else waits on its named gate. Inspiration researched
+(Muck, RoR2, Valheim, Lethal Company — patterns only, provenance table in the doc §1).
+
 ---
 
 ## M0 debts — booked as M4 gates, don't lose them

@@ -424,6 +424,8 @@ by saying so in its row, the way A-006 records its waiver.
 | A-018 | `QUEUED` | Small settlement shell: cottage frame/roof/chimney, shed, storehouse, market stall, awning, shutters, wooden door, hanging-sign bracket, firewood stack, lumber stack, hay bale, water trough | 14 | A-010 |
 | A-019 | `QUEUED` | Landmark kit I: abandoned lumber camp, quarry, hunter camp, fisher camp, ruined cottage, ruined watchtower, stone circle, grave cluster; built from reusable sub-pieces rather than monolithic dioramas | 8 assemblies | A-013, A-018 |
 | A-020 | `QUEUED` | Landmark kit II: giant hollow tree, crystal grove centerpiece, mushroom grove centerpiece, corrupted crater, Mire nest, flooded cellar entrance, broken dam, hilltop beacon | 8 assemblies | A-015, A-017 |
+| A-043 | `QUEUED` | Wetland gatherables II (`ITEMS.md` §4.1): cattail bundle pickup + reed-bed node, sphagnum moss clump, glowcap mushroom, poison berry bush, fish-shoal shallow-water node, raw fish pickup | 7 | A-011 |
+| A-044 | `QUEUED` | Refined material & component pickups (`ITEMS.md` §4.3, §4.8): tar, rope, cloth, cured leather, fired flask, mechanism, mithril ore, mithril ingot, wellglass shard, heavy mithril chunk (3.10's two-player haul object — size it to read as *heavy*) | 10 | A-002 |
 
 ## P2 — combat breadth and run variety
 
@@ -443,6 +445,9 @@ Do not start this phase until the one-enemy/one-weapon combat gate in `docs/ROAD
 | A-030 | `QUEUED` | Physical powerups — Kinetic and Fire: boot, spring, weight, coal, crown, fire bottle | 6 | A-029 |
 | A-031 | `QUEUED` | Physical powerups — Cold and Void: ice shard, frozen eye, ice bell, Void eye, Void cube, Void compass | 6 | A-030 |
 | A-032 | `QUEUED` | Ward variants: crystal, fungal, fire, cold, blood, kinetic, Void, cleansing brazier, Tinker bolt turret, Tinker stone thrower | 10 | Ward gameplay proves variants useful |
+| A-045 | `QUEUED` | Creature-drop pickups (`ITEMS.md` §4.2): feather, small pelt, sinew, bone, frog legs, chitin plate, spore sac, fang, heartwood, crystal shard, burlap scrap, mud core, thorn quill, eye jelly, husk plate, digger claw, blight residue, corrupted heart. Each drop ships **no earlier than its creature** — split the batch by roster wave if A-023/A-024 land far apart | 18 | A-023 |
+| A-046 | `QUEUED` | Throwables & held lights (`ITEMS.md` §4.6–4.7): tar bomb, spore bomb, fire flask, frost flask, bee jar, smoke pot, glow flare, decoy duck, the brick, held torch + storm lantern (both with viewmodel pairs — they live in the hand) | 11 | The 5.3 throw verb ships |
+| A-047 | `QUEUED` | Gleam uniques & jackpot containers (`ITEMS.md` §4.9/§5, D-063): Gutterking, The Longest Skewer, Thumper, Widow's Whisper, The Bog Unit — world+viewmodel pairs, hero-prop polygon budgets like A-021S; gilded chest closed/open + sunken cache closed/open (A-005 anchor rules apply); rusted key, gilded key; World's Okayest Axe (stone axe geometry, gold material — a recolour that IS the joke, so it counts as an asset this once) | 10 designs / 16 exports | 3.5 ships chests |
 
 ## P3 — atmosphere, polish, and personality
 

@@ -75,6 +75,26 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — `docs/ITEMS.md` is the item/loot/chest catalog; 3.2, 3.5 and 3.8 author against it (ivy8)
+
+The full item economy is planned: ~136 items across gathered raws, creature drops, refined
+components, food, tonics, throwables, tools/weapons, keys and the **Gleam jackpot pool**, plus the
+chest-tier table set (reed cache → bog chest → strongbox → wellspring → **gilded** → sunken → boss).
+It is a menu in the POWERUPS.md sense — hand-authored `.tres` later, never bulk-generated (D-006).
+What matters for the next tasks:
+
+- **3.5 gained four named mechanics** (spec block updated): `LootEntry.kind ITEM|POWERUP`,
+  `LootEntry.rarity` (the consumer `loot_luck` has been waiting for), chest `cost_coins` +
+  `locked_by` key check, and a gilded-tier placement budget. **D-063**: jackpots are balanced by
+  rarity only — never neutered.
+- **Gleam powerups are stats-only with NO tags** — `PowerupDef`'s validator already allows exactly
+  that, so the jackpot tier never grows `KNOWN_FAMILIES` or fakes a Resonance.
+- The 2-step refinement cap, no-armor and no-durability calls are ITEMS.md §2 rules with
+  reopen conditions in §10 — read before adding an item family.
+- Asset queue grew A-043–A-047 (gatherables II, component pickups, creature drops, throwables +
+  held lights, Gleam uniques + gilded/sunken chests), all gated; A-010 stays `NEXT`, A-011/A-012
+  unchanged as the first content wave's art.
+
 ### 2026-08-18 — F-105: `BuildGhost.update_aim()` takes an optional `delta`, and skips `evaluate()` on an unchanged aim
 
 `systems/building/build_ghost.gd`'s `update_aim(from, direction, builder_position, delta: float =
