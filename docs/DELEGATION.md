@@ -124,6 +124,18 @@ needs writing by whoever owns that file next.
 > Execution specs for every remaining roadmap task live in **`docs/SPECS.md`** — this section holds
 > the *shipped* seams those specs build on.
 
+### 2026-08-18 — a source-text regression guard for two `tools/*_net_check.gd` authoring traps (F-060)
+
+`agent godot --script tools/net_check_pattern_check.gd` now runs alongside every other check suite and
+fails if a new (or copied-from-old) `tools/*_check.gd`/`tools/*_net_check.gd` reintroduces either shape
+F-060 named: a client ready-gate built from `local_peer_id() > HOST_PEER_ID` with no `is_active()`
+check nearby (can read true while the connection is still CONNECTING), or a strictly-typed `Dictionary`
+property mutated straight off a `some_autoload.get("prop")` reflection read with no `.set()`-back
+(silently does not reach the original). It is a source scan, not a runtime one, on purpose — same
+reasoning as `tools/interp_coverage_check.gd` (D-043): both bugs manifest as code that silently does
+nothing, so there is nothing at runtime for a check to catch it failing against. Nobody needs to run it
+by hand when writing a new net check — it walks the whole `tools/` tree itself.
+
 ### 2026-08-18 — `_peer_connected(peer_id)` is now a two-file pattern, and there's a gap it exposed (F-059/F-074)
 
 `autoload/inventory_service.gd` gained the same `_peer_connected(peer_id)` guard

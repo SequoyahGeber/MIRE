@@ -534,41 +534,6 @@ on either during a renumbering pass.
 
 ---
 
----
-
-### F-060 · Two-process net check authors: `local_peer_id() > HOST_PEER_ID` is not proof of a live connection, and mutating what `Node.get()` returns on a typed Dictionary property may not stick
-
-**Area:** tooling/testing · **Severity:** low · **Found:** 2026-08-17 by lp during 3.8, writing
-`tools/player_vitals_net_check.gd`
-
-Two traps that cost real debugging time, worth naming so the next `tools/*_net_check.gd` author does
-not re-find them the hard way:
-
-**1. A "ready" gate built from `local_peer_id() > HOST_PEER_ID and local_revision >= 0` (the exact
-shape `tools/player_health_net_check.gd`'s own `_client_health_ready()` uses) can resolve TRUE before
-the connection is actually established.** `autoload/net_transport.gd`'s `join()` sets `_local_id =
-multiplayer.get_unique_id()` the instant `create_client()` succeeds — ENet hands a client its own
-unique id locally, before the handshake with the host completes — and `PlayerHealth`'s own OFFLINE
-bootstrap already sets `local_revision` to 0 at process boot, before `join()` is ever called. Both
-halves of that gate can be true while `NetTransport.is_active()` is still false (status CONNECTING,
-not CONNECTED). `player_health_net_check.gd` never noticed because everything after its own ready-gate
-is ALSO gated on real cross-peer events that inherently require a live connection to ever become true.
-This check's own stamina-reporting ticker started a `while is_active(): ...` loop directly off that
-gate, evaluated `is_active()` as false on its first and only check, and exited with zero iterations,
-silently. Fix: gate on `is_active()` directly (now added to this file's own `_client_health_ready()`),
-not on side effects that happen to usually-but-not-always imply it.
-
-**2. Reading a strictly-typed `Dictionary[K, V]` script property through the generic `Object.get()`
-reflection API and mutating what it returns does not reliably mutate the original.** Both
-`tools/player_vitals_check.gd` and `tools/player_vitals_net_check.gd` inject a synthetic `ItemDef`
-into `Registry.items` for a test-only CONSUMABLE (AGENTS.md: real food content is task 3.2's job, not
-this one's) via `var items: Dictionary = registry.get("items"); items[id] = item` — and
-`InventoryService.host_add()` kept rejecting it as unknown until an explicit `registry.set("items",
-items)` was added after the mutation. Dictionaries are reference types in GDScript, so this is not
-true of an ordinary untyped Dictionary property; something about the typed-Dictionary boundary crossed
-by generic property reflection converts rather than aliases. Always `.set()` back explicitly after
-mutating a typed Dictionary/Array property read through `.get()` from outside its own script.
-
 ### F-061 · content/items/coins.tres has no icon — the render_item_icons.py pipeline needs a SOURCES entry
 
 **Area:** content · **Severity:** low · **Found:** 2026-08-18 by lp
@@ -749,6 +714,79 @@ overwrite anyway.
 ---
 
 ## Resolved
+
+### F-060 · Two-process net check authors: `local_peer_id() > HOST_PEER_ID` is not proof of a live connection, and mutating what `Node.get()` returns on a typed Dictionary property may not stick — **fixed**
+
+**Resolved 2026-08-18 by lp.** Both traps were already fixed in the one file each was found in
+(`tools/player_vitals_net_check.gd`, `tools/player_vitals_check.gd`) before this finding was filed;
+closing it meant sweeping every OTHER `tools/*_check.gd`/`tools/*_net_check.gd` that shared the same
+unfixed shape, and adding a check that keeps it swept.
+
+**Trap 1 (ready-gate missing `is_active()`), fixed in seven files:**
+`tools/player_health_net_check.gd` (the file the finding names as the shape's origin),
+`tools/combat_net_check.gd`, `tools/crafting_net_check.gd`, `tools/inventory_net_check.gd`,
+`tools/harvest_world_net_check.gd`, `tools/enemy_net_check.gd`, `tools/harvestable_net_check.gd`. Each
+now requires `bool(transport.call("is_active"))` alongside the `local_peer_id() > HOST_PEER_ID`
+comparison, matching `tools/player_vitals_net_check.gd`'s and `tools/chest_net_check.gd`'s own already-
+fixed shape (the latter had independently applied and cited this same finding while authoring task
+3.5, before it was resolved here).
+
+**Trap 2 (`.get()` mutated without `.set()`-ing back), fixed in three files:**
+`tools/harvestable_net_check.gd` and `tools/harvestable_check.gd` (the injection itself was silently
+not reaching `Registry.items`) and `tools/chest_check.gd` (its cleanup `erase()` calls, chained
+straight off `.get()`, were silently not reaching the registry either — cosmetic since each check runs
+in its own process, but the same discarded-mutation bug the finding describes). `player_vitals_check.gd`
+and `player_vitals_net_check.gd` already had the fix.
+
+**New regression guard: `tools/net_check_pattern_check.gd`.** A source-text check, same style as
+`tools/interp_coverage_check.gd` (D-043) — the bug is that broken code runs zero iterations or silently
+no-ops, so there is nothing for a runtime check to fail against. It walks every `.gd` file and fails on
+(1) a `local_peer_id() > HOST_PEER_ID` comparison with no `is_active()` check within 8 lines above it,
+and (2) a `.get("prop")` reflection read chained directly into `[...]=` or `.erase()` with no
+intervening `Dictionary` local and `.set()`-back. Verified it actually catches both: injected a
+throwaway file with one of each defect, ran clean, saw exactly the expected `FAIL:` lines and count
+(`gate_reads` +1 unguarded, `mutate_hits` 2), removed the file, reran — 0 failures.
+
+**Verified the real edits didn't just satisfy the lint.** Every two-process check whose ready-gate or
+injection changed was re-run for real over ENet, not just re-linted:
+`agent godot --script tools/player_health_net_check.gd`, `combat_net_check.gd`, `crafting_net_check.gd`,
+`inventory_net_check.gd`, `harvest_world_net_check.gd`, `enemy_net_check.gd`,
+`harvestable_net_check.gd`, plus the offline `harvestable_check.gd` and `chest_check.gd` — all
+`failures=0`. Then `agent godot --script tools/net_check_pattern_check.gd` clean across the whole repo
+(131 scripts, 8 gate reads all guarded, 0 mutate hits).
+
+**Area:** tooling/testing · **Severity:** low · **Found:** 2026-08-17 by lp during 3.8, writing
+`tools/player_vitals_net_check.gd`
+
+Two traps that cost real debugging time, worth naming so the next `tools/*_net_check.gd` author does
+not re-find them the hard way:
+
+**1. A "ready" gate built from `local_peer_id() > HOST_PEER_ID and local_revision >= 0` (the exact
+shape `tools/player_health_net_check.gd`'s own `_client_health_ready()` uses) can resolve TRUE before
+the connection is actually established.** `autoload/net_transport.gd`'s `join()` sets `_local_id =
+multiplayer.get_unique_id()` the instant `create_client()` succeeds — ENet hands a client its own
+unique id locally, before the handshake with the host completes — and `PlayerHealth`'s own OFFLINE
+bootstrap already sets `local_revision` to 0 at process boot, before `join()` is ever called. Both
+halves of that gate can be true while `NetTransport.is_active()` is still false (status CONNECTING,
+not CONNECTED). `player_health_net_check.gd` never noticed because everything after its own ready-gate
+is ALSO gated on real cross-peer events that inherently require a live connection to ever become true.
+This check's own stamina-reporting ticker started a `while is_active(): ...` loop directly off that
+gate, evaluated `is_active()` as false on its first and only check, and exited with zero iterations,
+silently. Fix: gate on `is_active()` directly (now added to this file's own `_client_health_ready()`),
+not on side effects that happen to usually-but-not-always imply it.
+
+**2. Reading a strictly-typed `Dictionary[K, V]` script property through the generic `Object.get()`
+reflection API and mutating what it returns does not reliably mutate the original.** Both
+`tools/player_vitals_check.gd` and `tools/player_vitals_net_check.gd` inject a synthetic `ItemDef`
+into `Registry.items` for a test-only CONSUMABLE (AGENTS.md: real food content is task 3.2's job, not
+this one's) via `var items: Dictionary = registry.get("items"); items[id] = item` — and
+`InventoryService.host_add()` kept rejecting it as unknown until an explicit `registry.set("items",
+items)` was added after the mutation. Dictionaries are reference types in GDScript, so this is not
+true of an ordinary untyped Dictionary property; something about the typed-Dictionary boundary crossed
+by generic property reflection converts rather than aliases. Always `.set()` back explicitly after
+mutating a typed Dictionary/Array property read through `.get()` from outside its own script.
+
+---
 
 ### F-059 · `InventoryService._publish_snapshot`'s `net_inventory_snapshot.rpc_id()` is unguarded against a departed peer, same shape as the bug task 3.8 fixed in `player_health.gd` — **fixed**
 

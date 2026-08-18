@@ -235,6 +235,25 @@ need no guard, they always target `NetConfig.HOST_PEER_ID`, which is never parke
 to exercise the exact path — the public `host_add`/`host_transaction` API cannot reach it today
 (F-074, open).
 
+## F-060 · Two `tools/*_net_check.gd` authoring traps: a false-positive ready gate, and a `.get()` mutation that doesn't stick
+
+Two shapes worth knowing before writing the next two-process check. **(1)** `local_peer_id() >
+HOST_PEER_ID` (optionally `and local_revision >= 0`) can read true before the connection is actually
+established — ENet hands a client its own unique id locally the instant `create_client()` succeeds,
+before the host<->client handshake completes. Always gate on `bool(transport.call("is_active"))` too.
+**(2)** mutating what `some_autoload.get("prop")` returns for a strictly-typed `Dictionary` property
+(`registry.get("items")[id] = x`, or `.erase(x)` chained straight off it) does not reliably reach the
+original — capture it to a `Dictionary` local and `.set()` it back explicitly afterward.
+**Claim:** none — already fixed everywhere it existed (`tools/player_health_net_check.gd`,
+`tools/combat_net_check.gd`, `tools/crafting_net_check.gd`, `tools/inventory_net_check.gd`,
+`tools/harvest_world_net_check.gd`, `tools/enemy_net_check.gd`, `tools/harvestable_net_check.gd`,
+`tools/harvestable_check.gd`, `tools/chest_check.gd`; `tools/player_vitals_net_check.gd`,
+`tools/player_vitals_check.gd` and `tools/chest_net_check.gd` were already correct).
+**Shipped 2026-08-18** (`docs/FINDINGS.md` Resolved has the full verification). `agent godot --script
+tools/net_check_pattern_check.gd` is a standing regression guard — it source-scans every `.gd` file for
+both shapes and fails if either reappears, so a new `tools/*_net_check.gd` copied from an old file
+before this fix cannot silently reintroduce either trap.
+
 ---
 
 # M3 — systems depth (start only after 2.14's re-read of DESIGN §8)
