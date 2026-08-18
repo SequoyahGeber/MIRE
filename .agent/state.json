@@ -1445,10 +1445,10 @@
       "task": "3.2"
     },
     "docs/FINDINGS.md": {
-      "agent": "slate17",
-      "at": "2026-08-18T21:26:59+00:00",
-      "hash": "52b3b0c9f93e548ff3cd127f5f259d212a1c2e286bec080508835f84b23c5b10",
-      "task": "3.2"
+      "agent": "lm",
+      "at": "2026-08-18T21:40:25+00:00",
+      "hash": "64cb934390fe54b4c222b946435583235db3f6fe97949204f26855f2f07336f1",
+      "task": "F-122"
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -1479,9 +1479,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lm",
-      "at": "2026-08-18T19:32:23+00:00",
-      "hash": "7f4048c81da2830daad550a9d62b7d7f3a6b6de4667b95d52e0a65c2017433cb",
-      "task": "F-109"
+      "at": "2026-08-18T21:40:25+00:00",
+      "hash": "cfdf65d0f32e1fcd303d774308db10585bce484d3c9f3dc3bb21eefbe91c2bad",
+      "task": "F-122"
     },
     "docs/STEAM_CROSS_PLATFORM_TEST.md": {
       "agent": "flint5",
@@ -2027,9 +2027,10 @@
       "task": "F-058"
     },
     "tools/flora_check.gd": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
-      "task": "2.1d"
+      "agent": "lm",
+      "at": "2026-08-18T21:40:25+00:00",
+      "hash": "35c05db43290598337c9c45ebc4b3a85d82c2c619f6dd930cfdfae204f8bdc4e",
+      "task": "F-122"
     },
     "tools/frame_cap_check.gd": {
       "agent": "reed16",
@@ -4634,9 +4635,11 @@
       "title": "Exported builds load zero content: .tres scan misses Godot's .remap suffix \u2014 **fixed**"
     },
     "F-122": {
+      "done_at": "2026-08-18T21:40:25+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`tools/flora_check.gd:126` measures rotated flora through the same inflated `Transform3D * AABB` ruler as F-108"
     },
@@ -4776,6 +4779,20 @@
       "status": "todo",
       "tier": "F",
       "title": "`ChunkStreamer`/`ResourceScatterField` still have no real caller \u2014 the live game still ships the authored Hollowmere map, not the procedural pipeline"
+    },
+    "F-140": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Task 3.5 closed without the four chest changes `ITEMS.md` \u00a76 assigned to it, so two shipped stats had no consumer"
+    },
+    "F-141": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`Wellspring.net_request_toggle_channel` has no two-process net check \u2014 only the host-side logic it calls into is proven"
     }
   },
   "version": 1

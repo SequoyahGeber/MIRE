@@ -953,6 +953,44 @@ compares height alone, where the error happens to stay under that. It belongs to
 Filed as **F-122** — port the vertex measurement across using `ship_check.gd`'s `_check_asset()` as
 the worked example, and expect the flora kit's reported heights to move slightly when it lands.
 
+---
+
+## F-122 · `tools/flora_check.gd`'s dimension check used the same inflated `Transform3D * AABB` ruler as F-108
+
+**Claim:** `tools/flora_check.gd` only. No autoload, no `project.godot`, no `.tscn`/`.tres`.
+
+**What was wrong:** same construction as F-108, in the sibling check for a different asset family.
+`_check_asset()` measured each flora export's height as `instance.get_aabb()` pushed through
+`instance.transform` and merged across mesh instances — an AABB is axis-aligned in the mesh's own
+local space, so a rotated instance's box is the box around the rotated box, not the rotated geometry.
+It read as passing only because the flora kit's tolerance is 20 mm and the check compares height
+alone; F-108 already established this is not evidence the ruler is correct, only that the kit's
+current rotations aren't steep enough to trip that threshold.
+
+**Fix:** ported `ship_check.gd`'s `_check_asset()` vertex-measurement technique verbatim — added
+`_transform_to_root()` (accumulates a `Node3D` chain's transform from a mesh instance up to the
+imported scene's root, since `global_transform` is unavailable on a scene never added to the tree),
+then replaced the AABB-transform with a per-surface walk of `Mesh.ARRAY_VERTEX`: each vertex is
+carried to the scene root via `_transform_to_root()` and folded into a running min/max, which bounds
+the real geometry directly instead of a local box.
+
+**Verified 2026-08-18 (lm):** `agent godot --script tools/flora_check.gd` → `FLORA_IMPORT checked=84
+triangles=30984`, `FLORA_CHECK_GODOT PASS` — all 84 flora exports agree with `catalog.json` to within
+the 20 mm tolerance, measured against the corrected vertex-based numbers rather than assumed.
+Regression-proved the change is real: temporarily reverted `_check_asset()` to the naive
+`instance.transform * instance.get_aabb()` construction and reran — still `FLORA_CHECK_GODOT PASS`,
+confirming the finding's own claim that this kit's rotations are currently mild enough that neither
+ruler trips the tolerance. The vertex-based measurement is still the correct fix on principle (F-108's
+rotated-cone case shows the naive construction inflates by tens of millimetres once a rotation is
+steep enough, and nothing stops a future flora asset from being that steep) — this kit just hasn't
+authored one yet. `git checkout -- tools/flora_check.gd` after the temporary revert, then re-ran to
+confirm the restored fix is byte-identical to what's committed and still `PASS`.
+
+No new regression guard was written here: `tools/dimension_check.gd` (added by F-108) already asserts
+the vertex-vs-naive divergence on a synthetic rotated cone, independent of which check consumes the
+technique — it is a guard on the *measurement method*, not on `ship_check.gd` specifically, so it
+already covers a future regression in `flora_check.gd`'s copy of the same code shape.
+
 ## F-109 · The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them
 
 **Claim:** `tools/blender/audit_all_sides.py` (the fix), `tools/blender/audit_all_sides_check.py`

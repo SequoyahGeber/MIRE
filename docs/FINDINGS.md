@@ -563,32 +563,6 @@ docstring so the next family chooses deliberately instead of inheriting it.
 
 ---
 
-### F-122 · `tools/flora_check.gd:126` measures rotated flora through the same inflated `Transform3D * AABB` ruler as F-108
-
-**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by lm, while closing F-108
-
-F-108 fixed `tools/ship_check.gd`'s dimension check, which built a mesh's world-space bound as
-`instance.transform * instance.get_aabb()` — an AABB is axis-aligned in the mesh's own local space, so
-pushing one through a rotation returns the box around the rotated box, strictly larger than the true
-extent. `tools/flora_check.gd:126` has the identical construction (`box = instance.transform * box`)
-and measures the flora kit with the same wrong ruler. It has stayed green only because its tolerance
-is 20 mm and it compares height alone (`_check_asset()`, line ~144), where the inflation happens to
-stay under that threshold — it is not proof the measurement is correct, only that this kit's rotations
-haven't yet been large enough to trip it.
-
-**Fix, not done here:** it belongs to A-000V's file set, which this task had no claim on. Port
-`ship_check.gd`'s `_check_asset()` vertex-measurement — walk `Mesh.ARRAY_VERTEX` per surface,
-transform each vertex to the scene root, bound the points directly instead of the mesh's local
-`get_aabb()` — into `flora_check.gd`'s `_check_asset()`. Expect the flora kit's reported heights to
-move slightly (tighter, matching F-108's cone finding) when it lands, and confirm the 20 mm tolerance
-still holds against the corrected numbers rather than assuming it does.
-
----
-
-
-
-
-
 ### F-126 · CommandService's `peer` argument type has no display-name resolution — peer ids only
 
 **Area:** netcode · **Severity:** low · **Found:** 2026-08-18 by lp during 3.13
@@ -698,6 +672,49 @@ picks this up.
 ---
 
 ## Resolved
+
+### F-122 · `tools/flora_check.gd:126` measures rotated flora through the same inflated `Transform3D * AABB` ruler as F-108 — **fixed**
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by lm, while closing F-108
+
+F-108 fixed `tools/ship_check.gd`'s dimension check, which built a mesh's world-space bound as
+`instance.transform * instance.get_aabb()` — an AABB is axis-aligned in the mesh's own local space, so
+pushing one through a rotation returns the box around the rotated box, strictly larger than the true
+extent. `tools/flora_check.gd:126` has the identical construction (`box = instance.transform * box`)
+and measures the flora kit with the same wrong ruler. It has stayed green only because its tolerance
+is 20 mm and it compares height alone (`_check_asset()`, line ~144), where the inflation happens to
+stay under that threshold — it is not proof the measurement is correct, only that this kit's rotations
+haven't yet been large enough to trip it.
+
+**Fix, not done here:** it belongs to A-000V's file set, which this task had no claim on. Port
+`ship_check.gd`'s `_check_asset()` vertex-measurement — walk `Mesh.ARRAY_VERTEX` per surface,
+transform each vertex to the scene root, bound the points directly instead of the mesh's local
+`get_aabb()` — into `flora_check.gd`'s `_check_asset()`. Expect the flora kit's reported heights to
+move slightly (tighter, matching F-108's cone finding) when it lands, and confirm the 20 mm tolerance
+still holds against the corrected numbers rather than assuming it does.
+
+---
+
+**Resolved 2026-08-18 by lm.** Ported ship_check.gd's vertex-measurement into flora_check.gd's `_check_asset()`: added
+`_transform_to_root()` (identical to ship_check.gd's), replaced `box = instance.transform *
+instance.get_aabb()` with a per-surface walk of `Mesh.ARRAY_VERTEX`, transforming each vertex to the
+scene root and accumulating a min/max bound directly, instead of pushing the mesh's local AABB through
+a rotation.
+
+Verified 2026-08-18 (lm): `agent godot --script tools/flora_check.gd` -> `FLORA_IMPORT checked=84
+triangles=30984`, `FLORA_CHECK_GODOT PASS` (all 84 flora exports, height within the 20 mm tolerance
+against the corrected vertex-based numbers, not assumed).
+
+Regression-proved the fix is a real change, not a no-op: temporarily reverted `_check_asset()` to the
+naive `instance.transform * instance.get_aabb()` construction and reran -> also `FLORA_CHECK_GODOT
+PASS`, confirming the finding's own claim that this kit's current rotations are not large enough to
+trip the 20 mm tolerance either way. The vertex-based ruler is still the correct fix (F-108's cone
+case shows the naive construction inflates by tens of mm once a rotation is steep enough); this kit
+just hasn't authored one yet. Reverted the temporary edit and reran to confirm `git diff
+tools/flora_check.gd` matches only the intended fix (`FLORA_CHECK_GODOT PASS` again).
+
+Wrote the missing docs/SPECS.md block for F-122 (none existed), following F-108's shape as the
+neighbouring precedent.
 
 ### F-036 · Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10 — **resolved**
 

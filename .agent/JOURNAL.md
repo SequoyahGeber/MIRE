@@ -3397,3 +3397,15 @@ Notes along the way:
 Files: `systems/wellspring/wellspring.gd`, `autoload/wellspring_service.gd`, `ui/hud/wellspring_hud.gd`, `systems/waves/wave_spawner.gd`, `tools/wave_spawner_check.gd`, `core/events/event_bus.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/wellspring_check.gd`
 
 Commit at time of writing: `d6452ac`
+
+---
+
+### DONE · F-122 · lm · 2026-08-18T21:40:25+00:00
+
+**`tools/flora_check.gd:126` measures rotated flora through the same inflated `Transform3D * AABB` ruler as F-108**
+
+Ported ship_check.gd's vertex-measurement into flora_check.gd's _check_asset(): added _transform_to_root(), replaced the naive transform*get_aabb() with a per-vertex min/max walk of Mesh.ARRAY_VERTEX. Verified: agent godot --script tools/flora_check.gd -> FLORA_IMPORT checked=84 triangles=30984, FLORA_CHECK_GODOT PASS. Regression-proved the change is real by temporarily reverting to the naive construction and rerunning (also PASS, confirming this kit's rotations don't currently trip either ruler — the fix still matters for future assets). Wrote the missing docs/SPECS.md block, resolved the finding, and refreshed the stale flora_check.gd pointer in DELEGATION.md.
+
+Files: `tools/flora_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `f7f4d91`

@@ -117,23 +117,31 @@ func _check_asset(name: String, entry: Dictionary) -> int:
 		return 0
 
 	var triangles: int = 0
-	var aabb := AABB()
-	var first := true
+	var low := Vector3.INF
+	var high := -Vector3.INF
 	for instance in meshes:
 		var mesh := instance.mesh
 		if mesh == null:
 			failures.append("%s: %s has no mesh" % [name, instance.name])
 			continue
+		var to_root := _transform_to_root(instance, root)
 		for surface in mesh.get_surface_count():
 			if mesh.surface_get_material(surface) == null:
 				failures.append("%s: surface %d has no embedded material" % [name, surface])
 			var arrays: Array = mesh.surface_get_arrays(surface)
 			var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
 			triangles += indices.size() / 3
-		var box := instance.get_aabb()
-		box = instance.transform * box
-		aabb = box if first else aabb.merge(box)
-		first = false
+			# Measure VERTICES, never `transform * get_aabb()`. An AABB is
+			# axis-aligned in the mesh's own space, so pushing it through a
+			# rotation returns the box around the rotated box — strictly larger
+			# than the geometry inside it. Ported from ship_check.gd's
+			# _check_asset() (F-108/F-122).
+			var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			for vertex in vertices:
+				var point := to_root * vertex
+				low = low.min(point)
+				high = high.max(point)
+	var aabb := AABB(low, high - low)
 
 	# Ground contact and size are contracts the map relies on: a prop is placed by
 	# its origin, so an asset whose origin is not at its base sinks or floats the
@@ -152,6 +160,22 @@ func _check_asset(name: String, entry: Dictionary) -> int:
 		)
 	root.free()
 	return triangles
+
+
+## Accumulated transform from an instance up to the imported scene's root. The
+## GLB importer nests the meshes under a root node, so an instance's own
+## `transform` is only part of the story and `global_transform` is unavailable
+## on a scene that was never added to the tree.
+func _transform_to_root(instance: Node3D, root_node: Node) -> Transform3D:
+	var combined := Transform3D.IDENTITY
+	var walker: Node = instance
+	while walker != null and walker != root_node:
+		if walker is Node3D:
+			combined = (walker as Node3D).transform * combined
+		walker = walker.get_parent()
+	if root_node is Node3D:
+		combined = (root_node as Node3D).transform * combined
+	return combined
 
 
 func _collect(node: Node, out: Array[MeshInstance3D]) -> void:
