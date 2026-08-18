@@ -49,6 +49,7 @@ SOURCES: list[tuple[str, str]] = [
     ("raw_meat", "pickups/exports/pickup_raw_meat.glb"),
     ("coin", "pickups/exports/pickup_coin.glb"),
     ("coin_stack", "pickups/exports/pickup_coin_stack.glb"),
+    ("coins", "loot/exports/loot_coin_pouch.glb"),
     ("wooden_axe", "tools_weapons/exports/wooden_axe_world.glb"),
     ("stone_axe", "tools_weapons/exports/stone_axe_world.glb"),
     ("wooden_pickaxe", "tools_weapons/exports/wooden_pickaxe_world.glb"),

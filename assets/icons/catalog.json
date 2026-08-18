@@ -140,6 +140,16 @@
     "source_polygons": 880
   },
   {
+    "id": "coins",
+    "source": "assets/loot/exports/loot_coin_pouch.glb",
+    "size_px": 256,
+    "azimuth_deg": 35.0,
+    "elevation_deg": 21.0,
+    "roll_deg": 0.0,
+    "ortho_scale_m": 0.4048,
+    "source_polygons": 296
+  },
+  {
     "id": "wooden_axe",
     "source": "assets/tools_weapons/exports/wooden_axe_world.glb",
     "size_px": 256,

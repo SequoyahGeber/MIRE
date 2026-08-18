@@ -2577,3 +2577,18 @@ Optimization sweep applied across 20 runtime files: single-slot inventory access
 Files: `systems/enemies/enemy.gd`, `systems/health/player_health.gd`, `systems/harvesting/harvestable.gd`, `systems/environment/day_night.gd`, `ui/hud/vitals_hud.gd`, `ui/crafting/crafting_ui.gd`, `ui/loot/chest_ui.gd`, `entities/player/viewmodel.gd`, `autoload/inventory_service.gd`, `autoload/harvest_world.gd`, `autoload/enemy_world.gd`, `autoload/powerup_service.gd`, `autoload/build_service.gd`, `autoload/crafting_service.gd`, `autoload/net_transport.gd`, `autoload/player_net.gd`, `autoload/debug_overlay.gd`, `autoload/registry.gd`, `core/net/net_session.gd`, `autoload/combat_service.gd`
 
 Commit at time of writing: `8128a73`
+
+---
+
+### DONE · F-061 · lp · 2026-08-18T14:15:06+00:00
+
+**content/items/coins.tres has no icon — the render_item_icons.py pipeline needs a SOURCES entry**
+
+coins.tres now has an icon: appended 'coins'->loot/exports/loot_coin_pouch.glb to render_item_icons.py SOURCES, reran via Blender, wired coins.tres.icon to icon_coins.png. Verified: agent godot --script tools/item_icons_check.gd -> PASS, run twice. FINDINGS.md F-061 moved to Resolved, SPECS.md F-061 block added, DELEGATION.md Current state icon count updated 25->26 / 14->16 items.
+
+Notes along the way:
+- Added coins to render_item_icons.py SOURCES (id 'coins', distinct from pickup 'coin'/'coin_stack'), reran via Blender, wired coins.tres.icon. Reverted 25 pixel-identical re-renders (F-042 metadata churn) via png_pixels_equal.py + git checkout, keeping only the new icon_coins.png/contact sheet/catalog diff. item_icons_check.gd PASS x2 (first run after new-asset flagged F-093-shaped 2 failures, cleared on rerun).
+
+Files: `tools/blender/render_item_icons.py`, `assets/icons/catalog.json`, `content/items/coins.tres`, `assets/icons/README.md`, `assets/icons/exports`, `assets/icons/preview`
+
+Commit at time of writing: `e2b94fd`
