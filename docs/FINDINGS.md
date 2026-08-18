@@ -114,6 +114,27 @@ not a screenshot.
 drops `--headless`, which is a few lines in `.agent/bin/agent` and makes every render check usable.
 It was left alone here because that file belongs to the whole protocol and this was a map task.
 
+**Correction, 2026-08-17 by flint5 during F-073 — no tool change is needed, this already works.**
+`cmd_godot` builds `[binary, "--headless", "--path", ROOT] + args`, and because your arguments are
+**appended**, a later flag wins. Appending `--display-driver macos` overrides the injected
+`--headless` while keeping the lock and the wrapper:
+
+```bash
+.agent/bin/agent godot --display-driver macos --resolution 64x64 --position 2400,1400 \
+  --script tools/hollowmere_render_check.gd
+```
+
+`--resolution 64x64 --position 2400,1400` shrinks the OS window and parks it offscreen; a
+`SubViewport` still renders at its own full size, so the capture is unaffected. Verified against the
+*unmodified* `tools/viewmodel_check.gd`, which goes from `capture skipped` to four real 1280x720 PNGs
+of the running game — that is how both the F-073 bug and its fix were confirmed. Two cautions: a
+script that errors inside `_initialize()` before its `call_deferred` hangs forever with no main loop
+to quit it, so keep `--quit-after` or an external kill guard; and this opens a real window, so it is
+for a deliberate render run, not for every check.
+
+So this can be closed without touching `.agent/bin/agent`. Left in Open rather than moved because it
+is 2.1k's finding and `hollowmere_render_check.gd` is ivy8's file to re-run.
+
 ### F-005 · R2's chunk benchmark excludes GPU upload cost
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-15 by terrain during 0.7
@@ -677,56 +698,6 @@ kit sidesteps it by baking every asset's transform to identity before export, wh
 
 ---
 
-### F-070 · Generated review orders cannot use their mandated review task id
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by lc1 during the 2.12 review
-
-The review template at `.agent/bin/agent:1620-1621` mandates `agent done <id>-review` followed by
-`agent ship <id>-review`, but ordering/dispatch never adds that synthetic id to `state.json`'s task
-registry. `_require_task()` at `.agent/bin/agent:287-300` therefore rejects the generated commands;
-in this review both `agent brief 2.12-review` and `agent claim 2.12-review` failed with `unknown task
-2.12-review`.
-
-There is a second closeout break after registration: the template correctly says a reviewer claims
-nothing, while `cmd_ship()` stages only the task's released claims plus `.agent/` coordination files
-(`.agent/bin/agent:859-870`). Consequently a review that appends `docs/FINDINGS.md` still cannot ship
-that report through the mandated command. Review dispatch must register a synthetic review task and
-give its ship path explicit ownership of the review's findings artifact (or provide a dedicated
-review closeout command).
-
----
-
-### F-073 · Every tool shares one grip rotation authored for a sword, so the axe is held edge-on and every weapon swings the same chop
-
-**Area:** gameplay/presentation · **Severity:** high · **Found:** 2026-08-17 by flint5 from Sequoyah's playtest
-
-Sequoyah: *"the side of the axe is facing the player for some reason also the swing animation sucks,
-the spear should have a thrust animation instead of a swing"*.
-
-Three separate problems, one root each.
-
-1. **One grip for eleven designs.** `tools/setup_tool_content.gd:90-92` writes
-   `grip_rotation_degrees = Vector3(-6, 158, 10)` for every design it generates, and the two
-   hand-authored items (`stone_axe`, `iron_sword`) carry the same numbers. 158° of yaw is ~180°,
-   which leaves a head whose bit-to-poll axis runs along the export's local X pointing across the
-   screen — so an axe presents its cheek to the camera instead of its edge. The value was tuned for
-   the sword, whose broad side *is* the readable face, and copied outward.
-2. **One swing for every weapon.** `entities/player/viewmodel.gd` has a single
-   `WINDUP`/`COMMIT` constant pair, so a skewer, a bow and a sledge-weight repair hammer all perform
-   the same diagonal chop. A thrust weapon that swings sideways reads as the wrong weapon.
-3. **The chop itself is thin.** Position and rotation lerp linearly between two poses with no
-   follow-through, no lateral arc and no roll, so the commit reads as a slide rather than an
-   acceleration through a contact point.
-
-Also: `assets/icons/exports/icon_wooden_axe.png` and `icon_stone_axe.png` are the only two tool icons
-`render_item_icons.py` frames upright — every other tool lands on the 45° roll — so the axes read as
-facing the opposite way from the rest of the hotbar.
-
-Fixing it means per-design grip data derived from each export's real geometry, a per-weapon attack
-style on `WeaponDef`, a swing with an actual arc, and an authored roll for the two axe icons.
-
----
-
 ### F-074 · InventoryService._valid_host_peer's connectivity check silently drops a host grant for a peer mid-D-035-grace-window, instead of parking it
 
 **Area:** netcode · **Severity:** low · **Found:** 2026-08-18 by lp
@@ -786,37 +757,229 @@ which is already going to touch every collider the world creates.
 
 ---
 
-### F-078 · PowerupDef validates shape but not vocabulary — a typo'd stat name or tag loads clean and is dead forever
+### F-079 · The obvious way to "compare decoded pixels" silently reports every RGB-only change as identical
 
-**Area:** content pipeline · **Severity:** medium · **Found:** 2026-08-18 by reed16
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by flint5 during F-073
+
+F-042 correctly says renders must be compared by decoded pixels rather than by file hash, because
+Blender stamps wall-clock into PNG `tEXt`. The natural way to do that in Python is
+`ImageChops.difference(a, b).getbbox()` — and for an **RGBA** image `Image.getbbox()` defaults to
+`alpha_only=True` (Pillow >= 9.2). The difference image's alpha channel is zero wherever both inputs
+are equally opaque, so the call returns `None` and reports "identical" for any change that moved only
+colour.
+
+Not hypothetical: it bit this task twice in a row. `assets/icons/preview/item_icons_sheet.png` is
+fully opaque, so a rebuild that visibly re-rendered both axe cells inside it was classified as
+byte-only churn and reverted — the second time *after* a direct `.convert("RGB")` comparison of the
+same two files had already printed a difference bbox of `(531, 530, 1005, 749)`.
+
+Compare per channel, or pass `alpha_only=False`:
+
+```python
+for ca, cb in zip(a.split(), b.split()):
+    if ImageChops.difference(ca, cb).getbbox():
+        ...
+```
+
+Anything that re-runs a Blender generator and then decides which outputs to keep is exposed to this.
+
+---
+
+### F-080 · `git stash` in this repo stashes every other lane's uncommitted work too
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-17 by flint5 during F-073
+
+AGENTS.md warns against `git add -A` because several agents share one working directory. `git stash`
+is the same hazard and a worse one: it is repo-wide by default, so it rips out every other lane's
+uncommitted files at once. I used it to establish that an `item_icons_check` failure pre-dated my
+change, and in doing so briefly stashed an in-flight `autoload/registry.gd` plus five files belonging
+to task 2.1k. The pop succeeded and nothing was lost — but that was luck. A concurrent write inside
+that window, or another agent reading its own file mid-stash, and it would not have been.
+
+The safe way to ask "did this already fail at HEAD?" is a throwaway worktree, which touches nobody:
+
+```bash
+git worktree add /tmp/mire_head HEAD
+```
+
+`agent` could offer that as a subcommand, since "is this failure mine?" is a question every lane
+eventually asks. Failing that, the rule belongs beside the `git add -A` rule in AGENTS.md, because the
+same reasoning produces it.
+
+---
+
+## Resolved
+
+### F-070 · Generated review orders cannot use their mandated review task id — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by lc1 during the 2.12 review ·
+**Fixed:** 2026-08-18 by ivy8 (director)
+
+Both halves are fixed, and a third failure the finding did not reach was found while fixing it.
+
+**Registration.** `cmd_order`'s `--review` branch invents the id `<tid>-review`, so it now registers
+it there — the one place that knows the id exists — as a real task carrying `review_of: <tid>`.
+`brief`, `claim`, `done` and `ship` all resolve it, and the review lands on the board and in the
+journal like any other work.
+
+**Ship path.** `cmd_ship` gives a task with `review_of` set explicit ownership of `docs/FINDINGS.md`
+and nothing else, so the one artifact a reviewer produces can ship through the mandated command
+while the no-blanket-add rule (F-014) stays intact.
+
+**The third break: an unregistered review order is immortal.** Nothing retires an order file; the
+queue skips an order only when its task reads `done`. A review id that was never registered can
+therefore never read `done`, so `agent saturate` re-runs it on every pass, forever. LC1's 2.12
+review cost ~530k tokens and was already queued to run a second time — registration is what retires
+it. That review is now recorded as done, with its verdict in the journal where it belongs.
+
+A fourth, adjacent: `cmd_order` refused any task already marked `done`, which is the normal state of
+a commit worth reviewing — so no finished work could be reviewed at all. `--review` is now exempt.
+
+**Verified:** `agent order 3.6 --lane LC1 --review --sha dc86116` writes the order, registers
+`3.6-review`, and LC1 picked it up and is running it. `agent report` no longer lists the completed
+`2.12-review` under *Orders waiting*. Both files compile (`python3 -m py_compile`).
+
+---
+
+### F-078 · PowerupDef validates shape but not vocabulary — a typo'd stat name or tag loads clean and is dead forever — **fixed**
+
+**Area:** content pipeline · **Severity:** medium · **Found:** 2026-08-18 by reed16 · **Fixed:** same session
 
 Surfaced by the pre-3.4 design pass (docs/POWERUPS.md): a 60-powerup sketch against the shipped
 schema found **no powerup that needs a new field** — but ~a third of them route through stat names
-and tags that nothing checks. `validation_errors()` rejects an empty id, an empty stat KEY, an
-empty tag — every structural mistake — and accepts any well-formed name whatsoever.
-
-Three silent failure classes for a task that hand-types 40–60 `.tres` files in the inspector:
+and tags that nothing checked. `validation_errors()` rejected an empty id, an empty stat KEY, an
+empty tag — every structural mistake — and accepted any well-formed name whatsoever. Three silent
+failure classes for a task that hand-types 40–60 `.tres` files in the inspector:
 
 1. **Stat-name typos and synonym drift.** `move_sped`, or `max_health` where the wired name will be
-   `max_hp`. No system consumes any stat yet (3.4's spec says so explicitly), so nothing can catch
-   it at author time, and at wire time the system's task has no list of what content already named.
+   `max_hp`. No system consumes any stat yet (3.4's spec says so explicitly), so nothing could catch
+   it at author time, and at wire time the system's task had no list of what content already named.
    The powerup loads, validates, displays — and does nothing, forever.
 2. **Tag typos mint phantom families.** `&"fire"` ≠ `&"Fire"`. `_recompute_families` counts them
    separately, so the powerup shows its icon and feeds a family that can never resonate — exactly
    the failure D-044 killed `resonance_family` to prevent, resurrected one typo at a time.
 3. **The linear-stacking zero-crossing.** D-044 stacks multipliers linearly: `(1 + mult·N)`. A
    reduction authored as a negative multiplier inverts the stat where `mult·max_stacks ≤ −1` —
-   `hunger_drain` at `−0.15` × 7 stacks = −5% drain, i.e. hunger that refills itself. No current
-   content hits it; the 60-file batch will author dozens of negative multipliers.
+   `hunger_drain` at `−0.15` × 7 stacks = −5% drain, i.e. hunger that refills itself. No content
+   hit it yet; the 60-file batch will author dozens of negative multipliers.
 
-Fix (this finding, claimed with it): `KNOWN_FAMILIES` (§4.4's six) and `KNOWN_STATS` (the catalog
-docs/POWERUPS.md defines) as consts on `PowerupDef`; `validation_errors()` rejects unknown names,
-zero-crossing multipliers, and `Vector2.ZERO` no-op entries. Boot already skip-and-names anything
-that fails validation, so every one of these becomes a loud named error instead of dead content.
+**Fixed:** `KNOWN_FAMILIES` (§4.4's six) and `KNOWN_STATS` (docs/POWERUPS.md §2's catalog, the two
+kept in step by that doc's rule) as consts on `PowerupDef`; `validation_errors()` now rejects
+unknown stat names, unknown tags, `Vector2.ZERO` no-op entries, and multipliers that cross zero at
+`max_stacks` — each with a message naming the fix. Boot already skip-and-names anything failing
+validation, so all of these are loud named errors instead of dead content. Tag-only Resonance
+feeders (tags, no modifiers) stay deliberately legal.
+
+**Verified:** `agent godot --script tools/powerup_check.gd` — 42 assertions, `failures=0`, zero
+engine-error lines. Seven new F-078 assertions: catalog names + in-bounds reduction accepted,
+typo'd stat rejected, lowercase `fire` tag rejected, `−0.15 × 7` crossing rejected while `−0.15 × 5`
+is accepted, `Vector2.ZERO` rejected, tag-only feeder accepted. The shipped worked example
+(`swift_stride.tres`) still loads and validates clean through the real registry.
 
 ---
 
-## Resolved
+### F-073 · Every tool shares one grip rotation authored for a sword, so the axe is held edge-on and every weapon swings the same chop — **fixed**
+
+**Area:** gameplay/presentation · **Severity:** high · **Found:** 2026-08-17 by flint5 from Sequoyah's playtest
+
+Sequoyah: *"the side of the axe is facing the player for some reason also the swing animation sucks,
+the spear should have a thrust animation instead of a swing"*.
+
+Three separate problems, one root each.
+
+1. **One grip for eleven designs.** `tools/setup_tool_content.gd:90-92` writes
+   `grip_rotation_degrees = Vector3(-6, 158, 10)` for every design it generates, and the two
+   hand-authored items (`stone_axe`, `iron_sword`) carry the same numbers. 158° of yaw is ~180°,
+   which leaves a head whose bit-to-poll axis runs along the export's local X pointing across the
+   screen — so an axe presents its cheek to the camera instead of its edge. The value was tuned for
+   the sword, whose broad side *is* the readable face, and copied outward.
+2. **One swing for every weapon.** `entities/player/viewmodel.gd` has a single
+   `WINDUP`/`COMMIT` constant pair, so a skewer, a bow and a sledge-weight repair hammer all perform
+   the same diagonal chop. A thrust weapon that swings sideways reads as the wrong weapon.
+3. **The chop itself is thin.** Position and rotation lerp linearly between two poses with no
+   follow-through, no lateral arc and no roll, so the commit reads as a slide rather than an
+   acceleration through a contact point.
+
+Also: `assets/icons/exports/icon_wooden_axe.png` and `icon_stone_axe.png` are the only two tool icons
+`render_item_icons.py` frames upright — every other tool lands on the 45° roll — so the axes read as
+facing the opposite way from the rest of the hotbar.
+
+Fixing it means per-design grip data derived from each export's real geometry, a per-weapon attack
+style on `WeaponDef`, a swing with an actual arc, and an authored roll for the two axe icons.
+
+---
+
+**Resolved:** 2026-08-17 by flint5 · fixed
+
+**The grips are solved from each export's own geometry now, not guessed.** Parsing the eleven
+`*_viewmodel.glb` files shows every A-004 head runs bit-to-poll along its own local **+X** with the
+flat cheeks on local **±Z** — `wooden_axe`'s bright `MIRE_WoodCut` bit sits at X +0.29 against a head
+spanning −0.16…+0.47, and the sword's two `MIRE_IronLight` edges sit at X ∓0.04 either side of the
+blade. A yaw of 158° therefore left every axe, pickaxe, cleaver and hammer presenting its cheek to
+the camera. Measured as |cheek · view|, the old grip scored **0.92 on all seven** — 23° off dead
+square. The replacement grips score **0.45–0.67**, and `viewmodel_check.gd` now fails above 0.80.
+
+Each grip is derived by naming where the haft and the working end should point in camera space, then
+decomposing that basis into Godot's YXZ Euler order, and by placing the *hand* at a fixed screen
+position instead of dropping the model's ground-level origin at a fixed offset.
+`tools/setup_tool_content.gd` carries the solved table as `GRIPS`, so regenerating content reproduces
+these values rather than reverting to the sword's.
+
+**`ItemDef.attack_style` gives each family its own arc** — CHOP (axes, cleaver), SMASH (pickaxes,
+repair hammer), SLASH (sword), THRUST (skewer), NONE (bow, arrow). It lives on `ItemDef` and not on
+`WeaponDef` because coverage decides it: `short_bow` and `arrow` ship a `view_model` and have no
+`WeaponDef` at all, and `CombatService`'s `unarmed` fallback is built in code and never inserted into
+`Registry.weapons` — on `WeaponDef` all three would silently fall back to a chop, which is the bug
+this enum exists to fix. See D-050.
+
+**Two things about the old arc were simply wrong, and both are worth remembering.**
+
+1. **It struck a phase late.** `CombatService` resolves the hit at `elapsed >= wind_up_seconds`
+   (`combat_service.gd:197`) — the WIND_UP→COMMIT boundary. The old table drove the weapon *down*
+   during COMMIT, so damage, hitstop and shake all fired while the weapon was still cocked at the top
+   of its wind-up, and the visible strike happened a whole phase late. Every arc now reaches its
+   contact pose at the **end of the wind-up**: it cocks for the first 55% (ease-out, so it hangs —
+   that hang is the telegraph) and drives for the last 45% (ease-in, fastest at contact).
+2. **The X-rotation sign was inverted, and the comment agreed with the table rather than with the
+   engine.** The file asserted "a positive X rotation is always swing down". It is not — this node
+   sits above the swing pivot, so a positive X rotation *raises* the weapon. The old constants cocked
+   at −32 and struck at +38: they dipped, then threw the weapon up and out of frame on contact.
+
+**The swing turns about a shoulder now, not about the eye.** The node sits at the camera's own
+origin, so rotating it alone orbits the whole weapon around the player's eyeball — 30° of pitch drags
+a tool half a metre away clean off the screen, which is why the original angles had to be too small
+to read as a swing. `SWING_PIVOT` moves the centre of rotation down and back, expressed as
+`position = pivot − R·pivot`, which is all a `Node3D` can say. On top of that the strike follows a
+quadratic Bezier rather than a chord, rotation leads translation (that lag is most of what reads as
+weight), COMMIT is a decelerating follow-through *past* contact, RECOVERY overshoots rest and settles,
+and the idle sway ramps in over 0.18 s instead of snapping on the frame the swing clock is zeroed.
+
+**The two axe icons were a separate cause with the same symptom.** `render_item_icons.py` keeps
+whichever of upright / rolled-45 packs the silhouette smaller, and the axes won upright by under 1.1%
+— the only two tools not on the diagonal. Measured over all eleven tool icons, the silhouette's
+principal axis sat at 33–45° for every other design and at 67–68° for these two. `ROLL_OVERRIDE_DEG`
+forces them to 45°; they now measure 22–23° and the hotbar reads as one family. An override rather
+than a tuned tie-break because `iron_pickaxe` prefers the roll by only 0.54% — any threshold wide
+enough to catch the axes flips the pickaxe too. Mirroring was tried and rejected: it returns the long
+axis to ~67° *and* hides the cutting bevel, so the axe reads as a wooden mallet.
+
+**Verified.** `tools/viewmodel_check.gd` gained eight assertions and passes **18/18, 0 failures**: the
+raw `STYLE_*` ints still equal `ItemDef.AttackStyle`; every held item animates with its own declared
+style (6 items across the hotbar); no bladed tool presents its cheek; every bladed tool points its
+edge downrange; and the wind-up actually moves the weapon. Every one of those fails against the old
+build, which is the test of an assertion. The whole swing was additionally walked in camera space for
+all five styles to prove the head stays in frame on every frame of the arc — the contact frame is the
+one the hit is read from, so it must not end up behind the hotbar.
+
+**The renders are real in-game frames, not a mock-up.** Appending `--display-driver macos` to
+`agent godot` overrides the `--headless` it injects, so the check writes four real 1280×720 frames of
+the running game; the exact command is in DELEGATION.md *Current state*, and it also answers F-077.
+Both the bug and the fix were confirmed that way.
+
+*Left open and not caused by this work:* `tools/item_icons_check.gd` still reports one failure,
+`coins.tres has an inventory icon`. That is **F-061**, and it fails identically at HEAD.
+
+---
 
 ### F-060 · Two-process net check authors: `local_peer_id() > HOST_PEER_ID` is not proof of a live connection, and mutating what `Node.get()` returns on a typed Dictionary property may not stick — **fixed**
 

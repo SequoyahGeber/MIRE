@@ -2128,3 +2128,15 @@ Pre-3.4 design check + fix. docs/POWERUPS.md: 60-powerup sketch spanning all six
 Files: `systems/powerups/powerup_def.gd`, `tools/powerup_check.gd`
 
 Commit at time of writing: `d9df9cd`
+
+---
+
+### DONE · F-070 · ivy8 · 2026-08-18T04:54:23+00:00
+
+**Generated review orders cannot use their mandated review task id**
+
+Registered the synthetic review id at order time, gave a review task ownership of docs/FINDINGS.md at ship time, and exempted --review from the already-done guard. Also found the third break the finding did not reach: an unregistered review order is never retired, so saturate re-runs it forever — LC1's 2.12 review was queued to cost another ~530k tokens. Verified by ordering 3.6-review, which LC1 picked up and is running.
+
+Files: `docs/FINDINGS.md`
+
+Commit at time of writing: `882993d`

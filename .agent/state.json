@@ -160,11 +160,6 @@
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
     },
-    "docs/FINDINGS.md": {
-      "agent": "ivy8",
-      "at": "2026-08-18T04:53:28+00:00",
-      "task": "F-070"
-    },
     "entities/player/viewmodel.gd": {
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
@@ -289,14 +284,6 @@
       "files": [],
       "notes": [],
       "started": "2026-08-18T04:52:43+00:00"
-    },
-    "F-070": {
-      "agent": "ivy8",
-      "files": [
-        "docs/FINDINGS.md"
-      ],
-      "notes": [],
-      "started": "2026-08-18T04:53:28+00:00"
     },
     "F-073": {
       "agent": "flint5",
@@ -815,9 +802,9 @@
       "task": "2.1d"
     },
     "docs/FINDINGS.md": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
-      "task": "2.1d"
+      "agent": "ivy8",
+      "at": "2026-08-18T04:54:23+00:00",
+      "task": "F-070"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -2926,9 +2913,11 @@
       "title": "`wave_spawner_check` signals a shadow DayNight node that WaveSpawner never subscribes to"
     },
     "F-070": {
+      "done_at": "2026-08-18T04:54:23+00:00",
+      "done_by": "ivy8",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Generated review orders cannot use their mandated review task id"
     },
