@@ -8,13 +8,20 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **F-127** Steam overlay's Join Game does nothing: only the lobby-invite callback is connected, not the rich-presence one | pike14 | 2026-08-18 20:19 | `autoload/steam_lobby.gd`, `tools/rich_presence_check.gd` |
+| **3.14** Gamerules — `RuleDef` content family + host-replicated `RuleService`, `rule`/`rules` commands, first-wave knob migration with export fallback (`COMMANDS.md` §4) | hollow7 | 2026-08-18 20:37 | `systems/rules/rule_def.gd`, `autoload/rule_service.gd`, `content/rules`, `autoload/command_service.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `systems/environment/day_night.gd`, `autoload/enemy_world.gd`, `systems/waves/wave_spawner.gd`, `systems/health/player_health.gd`, `core/dev/dev_loadout.gd`, `tools/rule_check.gd`, `tools/rule_net_check.gd` |
+| **4.4** Resource scatter via `MultiMeshInstance3D`, per-biome tables | lm | 2026-08-18 20:34 | `world/gen/scatter_entry.gd`, `world/gen/scatter_def.gd`, `world/gen/resource_scatter.gd`, `world/gen/resource_scatter_field.gd`, `autoload/registry.gd`, `content/scatter/forest_undergrowth.tres`, `tools/resource_scatter_check.gd` |
+| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | slate17 | 2026-08-18 20:32 | `docs/ASSET_TRACKER.md`, `tools/blender/build_construction_set.py`, `tools/construction_check.gd`, `tools/blender/mire_art.py`, `assets/construction` |
+| **F-120** AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed | yarrow21 | 2026-08-18 20:35 | `.agent/bin/agent`, `AGENTS.md`, `tools/harness_check.py` |
+| **F-128** Task 4.3's chunk streamer has no LOD-boundary stitching — adjacent chunks at different LOD tiers crack | wick20 | 2026-08-18 20:32 | `world/chunk/chunk_mesher.gd`, `tools/chunk_stream_check.gd`, `tools/bench_chunk_gpu.gd`, `tools/bench_chunks.gd`, `world/chunk/chunk_streamer.gd` |
+
+**2.1d notes:**
+- A-010 (practical construction, 14 assets / 18 exports) marked IN PROGRESS by slate17
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 108/120 | 12 |
+| Findings | `█████████░` 110/122 | 12 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -55,12 +62,12 @@
 | ⬜ | **F-025** Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake | todo |
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-057** A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds | todo |
-| ⬜ | **F-120** AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed | todo |
+| 🔵 | **F-120** AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed | in_flight |
 | ⬜ | **F-122** `tools/flora_check.gd:126` measures rotated flora through the same inflated `Transform3D * AABB` ruler as F-108 | todo |
 | ⬜ | **F-125** Thin Step authors dodge_iframe_seconds, but D-072 left no i-frame timer for it to extend | todo |
 | ⬜ | **F-126** CommandService's `peer` argument type has no display-name resolution — peer ids only | todo |
-| 🔵 | **F-127** Steam overlay's Join Game does nothing: only the lobby-invite callback is connected, not the rich-presence one | in_flight |
+| 🔵 | **F-128** Task 4.3's chunk streamer has no LOD-boundary stitching — adjacent chunks at different LOD tiers crack | in_flight |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.4` `3.5` `3.6` `3.8` `3.9` `3.10` `3.13` `4.1` `4.2` `4.3` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `3.8b` `4.0a` `4.0b` `F-002` `F-004` `F-005` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-042` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-103` `F-104` `F-105` `F-106` `F-107` `F-108` `F-109` `F-110` `F-111` `F-112` `F-113` `F-114` `F-115` `F-116` `F-117` `F-118` `F-119` `F-121` `F-123` `F-124`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.4` `3.5` `3.6` `3.8` `3.9` `3.10` `3.13` `4.1` `4.2` `4.3` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `3.8b` `4.0a` `4.0b` `F-002` `F-004` `F-005` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-042` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-103` `F-104` `F-105` `F-106` `F-107` `F-108` `F-109` `F-110` `F-111` `F-112` `F-113` `F-114` `F-115` `F-116` `F-117` `F-118` `F-119` `F-121` `F-123` `F-124` `F-127` `F-129`

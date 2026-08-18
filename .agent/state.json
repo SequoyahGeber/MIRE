@@ -1,25 +1,245 @@
 {
   "claims": {
-    "autoload/steam_lobby.gd": {
-      "agent": "pike14",
-      "at": "2026-08-18T20:19:39+00:00",
-      "task": "F-127"
+    ".agent/bin/agent": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T20:35:01+00:00",
+      "task": "F-120"
     },
-    "tools/rich_presence_check.gd": {
-      "agent": "pike14",
-      "at": "2026-08-18T20:19:39+00:00",
-      "task": "F-127"
+    "AGENTS.md": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T20:35:01+00:00",
+      "task": "F-120"
+    },
+    "assets/construction": {
+      "agent": "slate17",
+      "at": "2026-08-18T20:36:00+00:00",
+      "task": "2.1d"
+    },
+    "autoload/command_service.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:37:43+00:00",
+      "task": "3.14"
+    },
+    "autoload/enemy_world.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:37:43+00:00",
+      "task": "3.14"
+    },
+    "autoload/registry.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:34:39+00:00",
+      "task": "4.4"
+    },
+    "autoload/rule_service.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:37:43+00:00",
+      "task": "3.14"
+    },
+    "content/rules": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:37:43+00:00",
+      "task": "3.14"
+    },
+    "content/scatter/forest_undergrowth.tres": {
+      "agent": "lm",
+      "at": "2026-08-18T20:34:39+00:00",
+      "task": "4.4"
+    },
+    "core/dev/dev_loadout.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:37:43+00:00",
+      "task": "3.14"
+    },
+    "core/net/net_version.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:37:43+00:00",
+      "task": "3.14"
+    },
+    "docs/ASSET_TRACKER.md": {
+      "agent": "slate17",
+      "at": "2026-08-18T20:32:24+00:00",
+      "task": "2.1d"
+    },
+    "systems/environment/day_night.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:37:43+00:00",
+      "task": "3.14"
+    },
+    "systems/health/player_health.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:37:43+00:00",
+      "task": "3.14"
+    },
+    "systems/rules/rule_def.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:37:43+00:00",
+      "task": "3.14"
+    },
+    "systems/waves/wave_spawner.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:37:43+00:00",
+      "task": "3.14"
+    },
+    "tools/bench_chunk_gpu.gd": {
+      "agent": "wick20",
+      "at": "2026-08-18T20:36:14+00:00",
+      "task": "F-128"
+    },
+    "tools/bench_chunks.gd": {
+      "agent": "wick20",
+      "at": "2026-08-18T20:36:14+00:00",
+      "task": "F-128"
+    },
+    "tools/blender/build_construction_set.py": {
+      "agent": "slate17",
+      "at": "2026-08-18T20:32:24+00:00",
+      "task": "2.1d"
+    },
+    "tools/blender/mire_art.py": {
+      "agent": "slate17",
+      "at": "2026-08-18T20:36:00+00:00",
+      "task": "2.1d"
+    },
+    "tools/chunk_stream_check.gd": {
+      "agent": "wick20",
+      "at": "2026-08-18T20:32:06+00:00",
+      "task": "F-128"
+    },
+    "tools/construction_check.gd": {
+      "agent": "slate17",
+      "at": "2026-08-18T20:32:24+00:00",
+      "task": "2.1d"
+    },
+    "tools/handshake_check.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:37:43+00:00",
+      "task": "3.14"
+    },
+    "tools/harness_check.py": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T20:38:50+00:00",
+      "task": "F-120"
+    },
+    "tools/resource_scatter_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:34:39+00:00",
+      "task": "4.4"
+    },
+    "tools/rule_check.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:37:43+00:00",
+      "task": "3.14"
+    },
+    "tools/rule_net_check.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:37:43+00:00",
+      "task": "3.14"
+    },
+    "world/chunk/chunk_mesher.gd": {
+      "agent": "wick20",
+      "at": "2026-08-18T20:32:06+00:00",
+      "task": "F-128"
+    },
+    "world/chunk/chunk_streamer.gd": {
+      "agent": "wick20",
+      "at": "2026-08-18T20:36:14+00:00",
+      "task": "F-128"
+    },
+    "world/gen/resource_scatter.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:34:39+00:00",
+      "task": "4.4"
+    },
+    "world/gen/resource_scatter_field.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:34:39+00:00",
+      "task": "4.4"
+    },
+    "world/gen/scatter_def.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:34:39+00:00",
+      "task": "4.4"
+    },
+    "world/gen/scatter_entry.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:34:39+00:00",
+      "task": "4.4"
     }
   },
   "in_flight": {
-    "F-127": {
-      "agent": "pike14",
+    "2.1d": {
+      "agent": "slate17",
       "files": [
-        "autoload/steam_lobby.gd",
-        "tools/rich_presence_check.gd"
+        "docs/ASSET_TRACKER.md",
+        "tools/blender/build_construction_set.py",
+        "tools/construction_check.gd",
+        "tools/blender/mire_art.py",
+        "assets/construction"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-18T20:36:00+00:00",
+          "by": "slate17",
+          "text": "A-010 (practical construction, 14 assets / 18 exports) marked IN PROGRESS by slate17"
+        }
+      ],
+      "started": "2026-08-18T20:32:24+00:00"
+    },
+    "3.14": {
+      "agent": "hollow7",
+      "files": [
+        "systems/rules/rule_def.gd",
+        "autoload/rule_service.gd",
+        "content/rules",
+        "autoload/command_service.gd",
+        "core/net/net_version.gd",
+        "tools/handshake_check.gd",
+        "systems/environment/day_night.gd",
+        "autoload/enemy_world.gd",
+        "systems/waves/wave_spawner.gd",
+        "systems/health/player_health.gd",
+        "core/dev/dev_loadout.gd",
+        "tools/rule_check.gd",
+        "tools/rule_net_check.gd"
       ],
       "notes": [],
-      "started": "2026-08-18T20:19:39+00:00"
+      "started": "2026-08-18T20:37:43+00:00"
+    },
+    "4.4": {
+      "agent": "lm",
+      "files": [
+        "world/gen/scatter_entry.gd",
+        "world/gen/scatter_def.gd",
+        "world/gen/resource_scatter.gd",
+        "world/gen/resource_scatter_field.gd",
+        "autoload/registry.gd",
+        "content/scatter/forest_undergrowth.tres",
+        "tools/resource_scatter_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T20:34:39+00:00"
+    },
+    "F-120": {
+      "agent": "yarrow21",
+      "files": [
+        ".agent/bin/agent",
+        "AGENTS.md",
+        "tools/harness_check.py"
+      ],
+      "notes": [],
+      "started": "2026-08-18T20:35:01+00:00"
+    },
+    "F-128": {
+      "agent": "wick20",
+      "files": [
+        "world/chunk/chunk_mesher.gd",
+        "tools/chunk_stream_check.gd",
+        "tools/bench_chunk_gpu.gd",
+        "tools/bench_chunks.gd",
+        "world/chunk/chunk_streamer.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T20:32:06+00:00"
     }
   },
   "recent": {
@@ -430,9 +650,10 @@
       "task": "F-099"
     },
     "autoload/player_net.gd": {
-      "agent": "kiln9",
-      "at": "2026-08-18T14:10:44+00:00",
-      "task": "F-099"
+      "agent": "pike14",
+      "at": "2026-08-18T20:38:46+00:00",
+      "hash": "6e43a465f379908f30411f2336907055862e9b4053951cd75e720aac54fc320a",
+      "task": "F-129"
     },
     "autoload/powerup_service.gd": {
       "agent": "kiln9",
@@ -447,9 +668,9 @@
     },
     "autoload/steam_lobby.gd": {
       "agent": "pike14",
-      "at": "2026-08-18T19:39:51+00:00",
-      "hash": "55e9a917e43e582350f15b5bd5959eb5e3e33c03251edd1e9c9ca095a49974f5",
-      "task": "F-123"
+      "at": "2026-08-18T20:38:46+00:00",
+      "hash": "ec0fed34438e2dc82ddf45e0dcd3e12399b37274760a9fe20f1fef62d2c5574c",
+      "task": "F-127"
     },
     "content/attunements/forager.tres": {
       "agent": "lm",
@@ -1950,9 +2171,9 @@
     },
     "tools/rich_presence_check.gd": {
       "agent": "pike14",
-      "at": "2026-08-18T19:39:51+00:00",
-      "hash": "41fd1f2a3c09651027bc34dc3458cb9751c545273ba1ff7ed5bfc9783437444a",
-      "task": "F-123"
+      "at": "2026-08-18T20:38:46+00:00",
+      "hash": "4721ae3b0838565cad056314059d2f441c3efba255e21b89890759330a2df12d",
+      "task": "F-127"
     },
     "tools/session_lifecycle_check.gd": {
       "agent": "flint5",
@@ -1996,6 +2217,12 @@
       "agent": "flint5",
       "at": "2026-08-18T01:20:10+00:00",
       "task": "F-056"
+    },
+    "tools/spawn_slot_check.gd": {
+      "agent": "pike14",
+      "at": "2026-08-18T20:38:46+00:00",
+      "hash": "10da7456685e283a2a31f98d611f66936a6b5439ad89a88050f7e40c1f0668df",
+      "task": "F-129"
     },
     "tools/terrain_check.gd": {
       "agent": "lm",
@@ -2486,7 +2713,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
@@ -2665,7 +2892,7 @@
     "3.14": {
       "est": "2.5",
       "milestone": "M3",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "Gamerules \u2014 `RuleDef` content family + host-replicated `RuleService`, `rule`/`rules` commands, first-wave knob migration with export fallback (`COMMANDS.md` \u00a74)"
     },
@@ -2864,7 +3091,7 @@
     "4.4": {
       "est": "4",
       "milestone": "M4",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "Resource scatter via `MultiMeshInstance3D`, per-biome tables"
     },
@@ -4197,7 +4424,7 @@
     "F-120": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed"
     },
@@ -4250,11 +4477,29 @@
       "title": "CommandService's `peer` argument type has no display-name resolution \u2014 peer ids only"
     },
     "F-127": {
+      "done_at": "2026-08-18T20:38:46+00:00",
+      "done_by": "pike14",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Steam overlay's Join Game does nothing: only the lobby-invite callback is connected, not the rich-presence one"
+    },
+    "F-128": {
       "est": "\u2014",
       "milestone": "Findings",
       "status": "in_flight",
       "tier": "F",
-      "title": "Steam overlay's Join Game does nothing: only the lobby-invite callback is connected, not the rich-presence one"
+      "title": "Task 4.3's chunk streamer has no LOD-boundary stitching \u2014 adjacent chunks at different LOD tiers crack"
+    },
+    "F-129": {
+      "done_at": "2026-08-18T20:38:46+00:00",
+      "done_by": "pike14",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Players spawn on top of each other: the spawn slot is a live child count, not a held claim"
     }
   },
   "version": 1

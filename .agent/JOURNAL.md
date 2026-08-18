@@ -3184,3 +3184,27 @@ Notes along the way:
 Files: `world/chunk/chunk_mesher.gd`, `world/chunk/chunk_streamer.gd`, `tools/chunk_stream_check.gd`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `5fff88d`
+
+---
+
+### DONE · F-127 · pike14 · 2026-08-18T20:38:46+00:00
+
+**Steam overlay's Join Game does nothing: only the lobby-invite callback is connected, not the rich-presence one**
+
+join_game_requested connected; both join paths share _accept_invite; round-trip guarded by tools/rich_presence_check.gd
+
+Files: `autoload/steam_lobby.gd`, `tools/rich_presence_check.gd`
+
+Commit at time of writing: `8d6cf49`
+
+---
+
+### DONE · F-129 · pike14 · 2026-08-18T20:38:46+00:00
+
+**Players spawn on top of each other: the spawn slot is a live child count, not a held claim**
+
+Spawn slots are a per-peer claim, released on despawn; tools/spawn_slot_check.gd reproduces the leave/rejoin collision and was confirmed to fail against the old code.
+
+Files: `autoload/player_net.gd`, `tools/spawn_slot_check.gd`
+
+Commit at time of writing: `8d6cf49`
