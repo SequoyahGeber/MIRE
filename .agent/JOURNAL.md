@@ -3011,3 +3011,18 @@ Notes along the way:
 Files: `entities/player/player_controller.gd`, `systems/health/player_health.gd`, `project.godot`, `tools/dodge_check.gd`, `tools/dodge_net_check.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`
 
 Commit at time of writing: `8ab5e38`
+
+---
+
+### DONE · F-121 · pike14 · 2026-08-18T19:20:30+00:00
+
+**Exported builds load zero content: .tres scan misses Godot's .remap suffix**
+
+Windows and Linux export presets created (only macOS existed); all three platforms exported, smoke-run on their native OS, and both VMs git-synced. Found and fixed F-121 along the way: every exported build loaded zero content because the .tres scans missed Godot's .remap packing.
+
+Notes along the way:
+- Half-fixed and empirically confirmed. autoload/enemy_world.gd _load_defs() now strips a trailing .remap before the .tres test; a re-exported macOS build goes from 'loaded 0 enemy definition(s)' to 'loaded 1', while items stay at 0 — which isolates the remaining half to autoload/registry.gd _tres_files_in(), held by lane lm under task 3.9 and therefore not editable here. Source runs stay green (23 items, 1 enemy, all checks passed), so the change is safe in both directions. Whoever frees registry.gd applies the identical two-line change there and F-121 closes.
+
+Files: `autoload/enemy_world.gd`, `export_presets.cfg`, `autoload/registry.gd`
+
+Commit at time of writing: `0c3ffbf`

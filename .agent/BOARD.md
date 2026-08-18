@@ -6,18 +6,13 @@
 
 ## In flight
 
-| Task | Agent | Started | Files claimed |
-|---|---|---|---|
-| **F-121** Exported builds load zero content: .tres scan misses Godot's .remap suffix | pike14 | 2026-08-18 19:13 | `autoload/enemy_world.gd`, `export_presets.cfg`, `autoload/registry.gd` |
-
-**F-121 notes:**
-- Half-fixed and empirically confirmed. autoload/enemy_world.gd _load_defs() now strips a trailing .remap before the .tres test; a re-exported macOS build goes from 'loaded 0 enemy definition(s)' to 'loaded 1', while items stay at 0 — which isolates the remaining half to autoload/registry.gd _tres_files_in(), held by lane lm under task 3.9 and therefore not editable here. Source runs stay green (23 items, 1 enemy, all checks passed), so the change is safe in both directions. Whoever frees registry.gd applies the identical two-line change there and F-121 closes.
+_Nothing in flight._
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 101/114 | 13 |
+| Findings | `█████████░` 102/114 | 12 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -63,8 +58,7 @@
 | ⬜ | **F-109** The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them | todo |
 | ⬜ | **F-110** `audit_all_sides.py` silently resumes, so a re-run after fixing an asset re-reports the old defect | todo |
 | ⬜ | **F-120** AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed | todo |
-| 🔵 | **F-121** Exported builds load zero content: .tres scan misses Godot's .remap suffix | in_flight |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.5` `3.6` `3.8` `3.9` `3.10` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `3.8b` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-042` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-103` `F-104` `F-105` `F-106` `F-107` `F-111` `F-112` `F-113` `F-114` `F-115` `F-116` `F-117` `F-118` `F-119`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.5` `3.6` `3.8` `3.9` `3.10` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `3.8b` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-042` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-103` `F-104` `F-105` `F-106` `F-107` `F-111` `F-112` `F-113` `F-114` `F-115` `F-116` `F-117` `F-118` `F-119` `F-121`
