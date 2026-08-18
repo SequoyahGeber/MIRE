@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"damp_stride"
+display_name = "Damp Stride"
+description = "In the wet ground where everyone else is wading, you are walking. Step onto dry land and it gives you nothing at all."
+tags = Array[StringName]([&"Fungal"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"move_speed_in_mire": Vector2(0, 0.06)
+})

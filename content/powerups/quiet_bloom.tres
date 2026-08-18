@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"quiet_bloom"
+display_name = "Quiet Bloom"
+description = "No yield, no speed, no protection. Something is growing in you on its own schedule, and the deep Fungal pacts are counting how much of it there is."
+tags = Array[StringName]([&"Fungal"])
+max_stacks = 9

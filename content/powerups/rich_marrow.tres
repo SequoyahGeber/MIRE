@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"rich_marrow"
+display_name = "Rich Marrow"
+description = "Food goes further in you than it has any business going — the Fungal read on the same trick Iron Tongue works from the blood side, and the better of the two if you can afford the tag."
+tags = Array[StringName]([&"Fungal", &"Blood"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"food_value": Vector2(0, 0.12)
+})

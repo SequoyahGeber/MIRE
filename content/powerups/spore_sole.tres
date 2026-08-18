@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"spore_sole"
+display_name = "Spore Sole"
+description = "The Mire recognises its own and takes longer to start on you. Not immunity. A courtesy, and a revocable one."
+tags = Array[StringName]([&"Fungal"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"blight_rate": Vector2(0, -0.08)
+})

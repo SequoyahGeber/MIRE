@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"moss_shroud"
+display_name = "Moss Shroud"
+description = "You stop reading as a thing worth crossing a clearing for. They still find you — later, and closer, and by then you have chosen the ground."
+tags = Array[StringName]([&"Fungal", &"Void"])
+max_stacks = 3
+modifiers = Dictionary[StringName, Vector2]({
+&"aggro_radius_m": Vector2(0, -0.05)
+})

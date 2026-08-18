@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"rot_chew"
+display_name = "Rot Chew"
+description = "Wood and stone come apart under the tool faster than they should, as though something had already been working on them from the inside."
+tags = Array[StringName]([&"Fungal"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"harvest_damage": Vector2(0, 0.1)
+})

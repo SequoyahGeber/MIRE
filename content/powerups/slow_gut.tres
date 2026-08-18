@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"slow_gut"
+display_name = "Slow Gut"
+description = "You burn through a meal at the pace of something that expects to wait a long while for the next one."
+tags = Array[StringName]([&"Fungal"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"hunger_drain": Vector2(0, -0.08)
+})

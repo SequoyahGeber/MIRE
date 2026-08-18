@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"wide_cap"
+display_name = "Wide Cap"
+description = "Whatever you take, you take more of. The node does not last any longer for it — you are simply not leaving as much behind in the dirt."
+tags = Array[StringName]([&"Fungal"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"harvest_yield": Vector2(0, 0.08)
+})
