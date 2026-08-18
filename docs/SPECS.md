@@ -507,6 +507,43 @@ reads as no hit. **Shipped 2026-08-18.** Verify with `agent godot --script tools
 (66 assertions, `failures=0`) and `tools/build_net_check.gd` (13 assertions, `failures=0`, confirms
 the host's real placement path — same validator, same rule — is unaffected).
 
+## F-075 · World statics and props shared collision layer 1, so a placement overlap query could not tell ground from obstruction
+
+`PlacementValidator._overlaps()` (`systems/building/placement_validator.gd`) and terrain both queried
+collision layer 1, so the ground a piece rested on registered as the very obstruction the overlap
+check was refusing — every sloped placement read "something is in the way" until the query box was
+lifted by a clearance derived from the piece's steepest permitted slope, a workaround that made any
+real obstruction below that clearance (up to 0.58 m for a 2 m wall permitting 30°) invisible to the
+check. **Claim:** `systems/building/placement_validator.gd`, `systems/building/build_ghost.gd`,
+`world/gen/authored_world.gd`, `tools/build_check.gd`, `entities/player/player.tscn`,
+`systems/enemies/enemy.gd`, `project.godot`. **Fix:** a dedicated ground layer,
+`PlacementValidator.TERRAIN_LAYER = 2` (named in `project.godot`'s new `[layer_names]` as
+`3d_physics/layer_2="terrain"`; layer 1 renamed `"solid"`). `authored_world.gd`'s terrain
+`StaticBody3D` is the only body that layer 2 — every other collider this task touched (props,
+harvestables, placed buildable pieces, players, enemies) stays on the engine-default layer 1.
+`_probe_support()` now ORs `TERRAIN_LAYER` into whatever mask the caller passes, so ground is always
+found for support regardless of the caller's own "solid" mask; `_overlaps()` never adds it, so the
+overlap query no longer sees the ground a piece is resting on and its clearance collapses to the flat
+`MIN_GROUND_CLEARANCE_M` floor — the blind band is gone for anything built on this generator.
+`build_ghost.gd`'s own aim ray (finding *where* the player is pointing, independent of
+`evaluate()`) needed the same OR, or it could no longer find bare ground to aim at. Both
+`entities/player/player.tscn`'s `CharacterBody3D` and `systems/enemies/enemy.gd`'s
+`_build_body()` needed an explicit `collision_mask = 3` — the engine default (`1`) would otherwise
+have both walking straight through Hollowmere's terrain the moment it moved off layer 1; this was the
+"whatever masks the player and enemies use" cost the finding named as project-wide. Deliberately
+**not** migrated: `world/gen/playtest_hollow.gd` — deprecated (superseded by Hollowmere), locked by
+another lane's claim at the time, and confirmed by grep to have no `PlacementValidator` caller, so its
+terrain staying on layer 1 costs nothing today. Any future generator that emits terrain must put it on
+`PlacementValidator.TERRAIN_LAYER` or inherit the same blind band this task removed.
+**Shipped 2026-08-18.** Verify with `agent godot --script tools/build_check.gd` (0 failures, includes
+the F-075 layer split in its own fixtures — ground fixtures default to `TERRAIN_LAYER`, the one true
+obstruction is pinned to `WORLD_LAYER`), `agent godot --script tools/hollowmere_check.gd` (terrain,
+grounding and nav probes all clean against the real map), `agent godot --script tools/enemy_check.gd`
+/ `tools/combat_check.gd` / `tools/enemy_net_check.gd` / `tools/harvest_world_check.gd` (no new
+failures — `enemy_check.gd`'s 5 telegraph failures reproduce identically via `agent baseline` at HEAD,
+confirmed pre-existing and unrelated, filed separately as F-111), and
+`agent godot --quit-after 120` (Hollowmere boots, navmesh bakes 9,486 polygons, no errors).
+
 ## F-085 · Buildables joined `damageable` without implementing its required damage method
 
 `BuildService._net_spawn_piece()` (`autoload/build_service.gd`) added every spawned piece to

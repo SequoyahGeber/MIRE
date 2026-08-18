@@ -1206,6 +1206,44 @@ than the only mechanism.
 
 ---
 
+### D-061 · 2026-08-18 · Physics layer 2 is `terrain`, and only terrain; every other collider stays on layer 1 (`solid`)
+
+F-075's fix needed a named collision-layer convention that did not exist anywhere in the project.
+Decided: **layer 1 (`solid`) is the shared default — props, harvestables, placed buildable pieces,
+players, enemies, everything that is not ground. Layer 2 (`terrain`) is ground and nothing else.**
+Named in `project.godot`'s `[layer_names]` (`3d_physics/layer_1="solid"`,
+`3d_physics/layer_2="terrain"`) and in code as `PlacementValidator.TERRAIN_LAYER`, the single source
+of truth every consumer preloads rather than re-declaring the constant.
+
+**Why terrain moves and nothing else does:** moving props/pieces instead would have meant every
+future prop-emitting path (there are several: `authored_world.gd`, `playtest_hollow.gd`, harvestables,
+placed buildables) needs the new layer to avoid becoming invisible to whatever still expects layer 1,
+where moving only terrain means exactly one thing changes — one `StaticBody3D` per world generator —
+and everything that already defaults to layer 1 keeps working unless it specifically needs to see the
+ground (support probes, movement).
+
+**The corollary this decision creates, and why it is worth stating separately:** anything that
+*moves around* on terrain — `CharacterBody3D`s (players, enemies) — has an engine-default
+`collision_mask` of `1`, which would silently stop detecting the ground the instant that ground left
+layer 1. F-075 fixed the two that exist today (`entities/player/player.tscn`,
+`systems/enemies/enemy.gd`, both now `collision_mask = 3`). **Any future `CharacterBody3D`,
+`RigidBody3D`, or physics query that needs to stand on or otherwise detect terrain must OR in
+`PlacementValidator.TERRAIN_LAYER`, or leave its mask at the engine default (all layers) — never
+narrow it to a bare `1` and assume that still means "everything solid."**
+
+**Left deliberately un-migrated:** `world/gen/playtest_hollow.gd`'s terrain stays on layer 1.
+It is deprecated (superseded by Hollowmere), was locked by another lane's claim when this was
+decided, and — confirmed by grep — has no `PlacementValidator` caller today, so leaving it costs
+nothing. Migrate it in the same pass that finally retires or rebuilds that map, not before.
+
+**Would change my mind:** a second "thing you can query separately" appears (interactables? water
+volumes?) — at that point a bitmask big enough for one more named layer is cheaper than teaching every
+consumer a third special case, and it should be added the same way this one was: one constant, one
+`project.godot` name, and an explicit audit of every `collision_mask` default that would otherwise go
+blind to it.
+
+---
+
 ### D-0NN · YYYY-MM-DD · <one-line decision>
 <why, in 2–4 sentences>
 **Would change my mind:** <the specific evidence that should make you revisit this>

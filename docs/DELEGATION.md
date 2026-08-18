@@ -75,6 +75,51 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — a named collision-layer convention exists now (F-075/D-061): layer 2 is terrain, and ONLY terrain
+
+Ground and everything else used to share collision layer 1, which is why `PlacementValidator`'s
+overlap query could not tell "the ground I'm resting on" from "an obstruction" and had to work around
+it with a self-tuning clearance lift. That workaround is gone. The convention, and what it means for
+the next system that touches colliders:
+
+- **`PlacementValidator.TERRAIN_LAYER: int = 2`** (`systems/building/placement_validator.gd`) is the
+  one source of truth — preload the file for the constant rather than hardcoding `2` anywhere.
+  `project.godot`'s `[layer_names]` names both layers for the editor:
+  `3d_physics/layer_1="solid"`, `3d_physics/layer_2="terrain"`.
+- **Layer 1 (`solid`) is still the default for everything that is not ground** — props, harvestables,
+  placed buildable pieces, players, enemies. Nothing about them changed; a `StaticBody3D`/
+  `CharacterBody3D` you create today with no explicit `collision_layer` is still on layer 1, same as
+  before this task.
+- **Layer 2 (`terrain`) belongs to world generators, and only to the one `StaticBody3D` per map that
+  carries the ground.** `world/gen/authored_world.gd`'s `TerrainCollision` body is the only thing on
+  it today. A future world generator (4.x chunk streaming is the named pairing in the original
+  finding) must do the same: `body.collision_layer = PlacementValidator.TERRAIN_LAYER` on its ground
+  body, nothing else moved.
+- **Anything that queries physics with a narrowed mask has to decide, explicitly, whether it wants
+  terrain.** `PlacementValidator._probe_support()` ORs `TERRAIN_LAYER` into whatever mask the caller
+  passes, so support/ground-finding works regardless of the caller's own mask; `_overlaps()`
+  deliberately does not, so a piece resting on the ground never reads the ground as the obstruction.
+  `build_ghost.gd`'s own aim ray needed the same OR by hand — it is a second, independent query
+  outside `PlacementValidator`, finding *where* the player is pointing before `evaluate()` ever runs.
+- **Anything that MOVES on terrain needs `TERRAIN_LAYER` in its `collision_mask`, or it falls through
+  the ground the instant that ground leaves layer 1.** `CharacterBody3D`'s engine default
+  (`collision_mask = 1`) is exactly wrong for this. Both existing movers were fixed:
+  `entities/player/player.tscn`'s `Player` node and `systems/enemies/enemy.gd`'s `_build_body()`
+  both now set `collision_mask = 3` (`1 | TERRAIN_LAYER`). **Any new `CharacterBody3D` or
+  `RigidBody3D` that stands on the ground needs the same** — either `3`, or leave the mask at the
+  engine's true default (all layers) and never narrow it to a bare `1`.
+- **Not migrated, on purpose:** `world/gen/playtest_hollow.gd` (deprecated, superseded by Hollowmere)
+  keeps its terrain on layer 1. Confirmed via grep to have no `PlacementValidator` caller anywhere,
+  so nothing regresses; migrate it only if that map is ever un-deprecated rather than retired.
+- **Nav baking is unaffected** — `EnemyWorld.bake_navigation()` never set
+  `NavigationMesh.geometry_collision_mask`, whose engine default is all layers, so it already parsed
+  terrain regardless of which layer it sat on. Same is true of `harvest_world.gd`'s and
+  `undergrowth.gd`'s ray queries — neither sets an explicit `collision_mask`, so both already see
+  every layer and needed no change.
+
+Verify with `agent godot --script tools/build_check.gd` (the layer split lives in its own fixtures
+now — read the file's header before adding a new one) and `tools/hollowmere_check.gd`.
+
 ### 2026-08-18 — the extraction ship exists (A-009), and it introduces the "ship frame" placement pattern
 
 Fifteen exports in `assets/ships/exports/`, catalogued in `assets/ships/catalog.json`, built by

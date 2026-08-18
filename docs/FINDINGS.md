@@ -559,34 +559,6 @@ kit sidesteps it by baking every asset's transform to identity before export, wh
 
 ---
 
-### F-075 · World statics and props share collision layer 1, so a placement overlap query cannot tell ground from obstruction
-
-**Area:** physics · **Severity:** low · **Found:** 2026-08-18 by gale6
-
-Task 3.6's `PlacementValidator` asks two different questions of the physics world: "is there ground
-under this piece" (support) and "is something already occupying this space" (overlap). They want
-different answers from different geometry, and the project gives them the same layer to ask about —
-terrain, props, harvestables and buildables are all on collision layer 1, with no named layer
-convention in `project.godot` at all.
-
-The consequence is that the ground IS the overlap. On flat ground the piece's base face is flush
-with the surface, and on any slope the uphill side of the footprint rises into the query box, so
-every sloped placement reports "something is in the way". The validator works around it by lifting
-the query box by a clearance derived from the steepest slope the piece permits
-(`half_footprint * tan(max_ground_slope)`), which is principled and self-tuning — a piece that
-allows steeper ground lifts further — but it is a workaround for missing layer separation, and it
-costs real detection: an obstruction lying entirely below that clearance is invisible to the check.
-For a 2 m wall permitting 30 degrees that blind band is the bottom 0.58 m.
-
-The clean fix is a dedicated terrain layer so the overlap query simply does not look at the ground,
-at which point the clearance drops to a hair and the blind band goes away. That is a project-wide
-change — every StaticBody3D the world generator emits, plus the harvestable and prop paths, plus
-whatever masks the player and enemies use — so it is not 3.6's to make unilaterally, and it wants
-doing once with named layer constants rather than piecemeal. Worth pairing with 4.x chunk streaming,
-which is already going to touch every collider the world creates.
-
----
-
 ### F-103 · MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin
 
 **Area:** tooling/rendering · **Severity:** high · **Found:** 2026-08-18 by larch10 during F-097
@@ -708,7 +680,63 @@ the failure mode is silent and confidently wrong.
 
 ---
 
+### F-111 · `enemy_check.gd`'s telegraph/swing assertions fail at HEAD, unrelated to F-075
+
+**Area:** combat/enemies · **Severity:** medium · **Found:** 2026-08-18 by lp during F-075
+
+`tools/enemy_check.gd` fails 5 assertions from "a player in reach makes it telegraph" onward (state
+never reaches `2`/telegraph in the scenario at `enemy_check.gd:92-106`, so the swing, its damage, its
+target and the commit-to-swing state all fail downstream of that one miss). Confirmed **not** caused
+by this task: `agent baseline --script tools/enemy_check.gd` against HEAD (`e028365`, before any
+F-075 edit) reproduces the identical 5 failures. `combat_check.gd`, `enemy_net_check.gd` and `hollowmere_check.gd` are all green, so this is scoped to
+the standalone state-machine harness (`_step()` driving `enemy.gd`'s `_physics_process` directly with
+no floor in the scene), not enemy combat generally. Root cause not investigated — out of scope for
+F-075, and AGENTS.md's rule is to file it and keep moving, not chase it.
+
+---
+
 ## Resolved
+
+### F-075 · World statics and props shared collision layer 1, so a placement overlap query could not tell ground from obstruction — **fixed**
+
+**Area:** physics · **Severity:** low · **Found:** 2026-08-18 by gale6
+
+Task 3.6's `PlacementValidator` asked two different questions of the physics world — "is there
+ground under this piece" (support) and "is something already occupying this space" (overlap) — of
+the same collision layer. Terrain, props, harvestables and buildables all shared layer 1, so the
+ground itself registered as the overlap: on any slope the uphill side of the footprint rose into the
+query box, and the validator worked around it by lifting the box by a clearance derived from the
+piece's steepest permitted slope. That workaround cost real detection — an obstruction lying
+entirely below the clearance (up to 0.58 m for a 2 m wall permitting 30°) was invisible to the check.
+
+**Fixed 2026-08-18 by lp.** Gave terrain a dedicated layer, `PlacementValidator.TERRAIN_LAYER = 2`
+(`project.godot` now names both: `3d_physics/layer_1="solid"`, `3d_physics/layer_2="terrain"`).
+`world/gen/authored_world.gd`'s terrain `StaticBody3D` is the only thing on layer 2 — props,
+harvestables, placed buildable pieces, players and enemies all stay on the shared layer 1.
+`_probe_support()` ORs `TERRAIN_LAYER` into the caller's mask so ground is always found for support
+regardless of what "solid" mask the caller passed; `_overlaps()` never adds it, so the ground a
+piece rests on no longer reads as an obstruction and its clearance collapsed from the slope-derived
+formula to the flat `MIN_GROUND_CLEARANCE_M` floor — the blind band is gone. Two more masks needed
+the same terrain bit or they would have silently broken: `build_ghost.gd`'s own aim ray (a second,
+independent query from `evaluate()`'s internal one — it finds *where* the player is pointing before
+`evaluate()` ever runs) and, less obviously, `entities/player/player.tscn` and
+`systems/enemies/enemy.gd`'s `CharacterBody3D.collision_mask`, which defaults to `1` and would have
+had both walking straight through Hollowmere's terrain the instant it moved off layer 1 — the
+"whatever masks the player and enemies use" cost the original finding named. `world/gen/playtest_hollow.gd`
+was deliberately left on layer 1 (deprecated, locked by another lane's claim, and confirmed by grep
+to have no `PlacementValidator` caller at all — nothing regresses).
+
+**Verified:** `agent godot --script tools/build_check.gd` (0 failures — its own fixtures now model
+the layer split: ground goes on the new `TERRAIN_LAYER` default, the one true obstruction stays on
+`WORLD_LAYER`), `agent godot --script tools/hollowmere_check.gd` (terrain/grounding/nav probes clean
+against the real 356 m map, navmesh bakes 9,486 polygons unaffected — `NavigationMesh`'s
+`geometry_collision_mask` defaults to all layers, so parsing was never layer-restricted),
+`agent godot --script tools/enemy_check.gd` / `tools/combat_check.gd` / `tools/enemy_net_check.gd` /
+`tools/harvest_world_check.gd` (no new failures anywhere; `enemy_check.gd`'s 5 pre-existing telegraph
+failures reproduce identically via `agent baseline` at HEAD before this task — filed separately as
+F-111, not this task's to chase), and `agent godot --quit-after 120` (Hollowmere boots clean over the
+full window). Missing `docs/SPECS.md` block written as part of this task — see `## F-075` there,
+placed after F-082 in the 3.6 cluster.
 
 ### F-107 · chest_net_check's two host-side grant assertions fail at HEAD; client side is green — **fixed**
 
