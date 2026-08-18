@@ -130,12 +130,18 @@ gap below is a "does it work" question, only a "does the shipped game load it" o
    the editor is open, and it still was at close-out. `git status` shows it as the one untracked file
    this task left behind; `git add content/haulables/heavy_ore_crate.tres && git commit` once the
    editor is closed is the whole fix, no claim needed beyond that exact path.
-2. `HaulService` is not in `project.godot`. `agent autoload HaulService
-   res://autoload/haul_service.gd` is the whole fix — no code changes, no re-verification beyond
-   re-running the two checks above once against the real registration if you want the
-   belt-and-braces run. Register it after `EnemyWorld` and `BuildService` (both already registered)
-   so world-gen callers can assume it exists; order relative to `CommandService` etc. does not matter
-   yet since nothing consumes it besides this task.
+2. `HaulService="*res://autoload/haul_service.gd"` **is now in `project.godot` on disk** — a later
+   `agent autoload HaulService res://autoload/haul_service.gd` this same session returned "already
+   registered" once the editor had closed (something/someone else ran it, or closed the editor long
+   enough for a retry to land; either way the line is there). **`project.godot` itself is still
+   uncommitted, and NOT by this task** — `git diff project.godot` shows the `HaulService` line
+   alongside unrelated pre-existing edits (a `[layer_names]` reorder and a
+   `textures/vram_compression/import_etc2_astc` line) that were already dirty before this task
+   started (see the `M project.godot` at session start). Committing it now would attribute someone
+   else's edits to this task (F-014/F-117's exact hazard) — leave it for whichever task legitimately
+   claims `project.godot` next, or for Sequoyah directly. Nothing further to DO here: the
+   registration line itself is correct and append-only per D-019, just riding in an otherwise-dirty
+   file this task did not make dirty.
 
 **Design calls made and why (also in DECISIONS.md D-068/D-069):** (1) The object's position update is
 `move_toward` at a capped speed in EVERY carrier-count branch, never a direct assignment — "full
