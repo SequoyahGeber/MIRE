@@ -16,6 +16,10 @@ extends SceneTree
 ##   3. A client is not an authority: running the host's own decision function ON the client places
 ##      nothing. That is the assertion that matters most here — the whole point of routing builds
 ##      through the host is that a wall a client can conjure is one it can conjure for free.
+##   4. F-084: destroying a real piece by name over the real RPC is refused when the requesting
+##      peer's OWN host-known body is far from it, and accepted (with a refund) when it isn't — the
+##      offline check calls `request_destroy` from the host's own peer id and never exercises the
+##      range rule against a genuinely remote requester's position at all.
 
 const PORT: int = 47473
 const RESULT_PATH: String = "user://build_net_client.json"
@@ -130,6 +134,49 @@ func _run_driver() -> void:
 	check(bool(_read_result().get("last_accepted", false)),
 		"and the client was told its build was accepted")
 
+	# F-084: the missing path — a real client asking the host to destroy a piece by name. A far
+	# piece proves the host does not just trust `_placed.has(name)`; the near one proves a real
+	# in-range destroy still works and still refunds.
+	var near_name: StringName = StringName(
+		(get_nodes_in_group(&"buildable_piece")[0] as Node).name)
+	var far_piece: Node3D = service.call(
+		&"_spawn_piece", &"wall_wood", Transform3D(Basis(), builder + Vector3(0.0, 0.0, 100.0)))
+	check(far_piece != null,
+		"driver plants a second piece 100 m from the client — one built elsewhere on the map")
+	var far_name: StringName = StringName(far_piece.name)
+	# `_placed` is host-private bookkeeping; this is how the driver gives the far piece a
+	# destroy-able identity without a second real player body to place it with in range. F-060:
+	# mutating what `.get()` returns off a strictly-typed Dictionary property does not reliably
+	# reach the original — capture it to a local, then `.set()` it back explicitly.
+	var placed_state: Dictionary = service.get(&"_placed")
+	placed_state[far_name] = {"def": &"wall_wood", "owner": NetConfig.HOST_PEER_ID}
+	service.set(&"_placed", placed_state)
+	var far_replicated: bool = await _until(
+		func() -> bool: return int(_read_result().get("pieces_seen", 0)) >= 2, TIMEOUT_SEC
+	)
+	check(far_replicated, "the far piece replicates down to the client too")
+
+	_write_driver_signal(_destroy_phase("destroy_far", far_name, spot, forge_spot))
+	var refused_far: bool = await _until(
+		func() -> bool: return String(_read_result().get("last_reason", "")) == "too far away",
+		TIMEOUT_SEC
+	)
+	check(refused_far, "destroying a piece 100 m away is refused by name alone (F-084)")
+	check(int(service.call(&"placed_count")) == 2, "and it is neither freed nor refunded")
+	var log_before_near_destroy: int = int(inventory.call(&"host_count", client_peer, &"log"))
+
+	_write_driver_signal(_destroy_phase("destroy_near", near_name, spot, forge_spot))
+	var destroyed_near: bool = await _until(
+		func() -> bool: return int(service.call(&"placed_count")) == 1, TIMEOUT_SEC
+	)
+	check(destroyed_near, "destroying the piece the client actually built and stands beside works")
+	check(int(inventory.call(&"host_count", client_peer, &"log")) == log_before_near_destroy + 2,
+		"and refunds floor(4 * 0.5) = 2 log")
+	var far_only: bool = await _until(
+		func() -> bool: return int(_read_result().get("pieces_seen", 0)) == 1, TIMEOUT_SEC
+	)
+	check(far_only, "the destruction replicates: the client is left seeing only the far piece")
+
 	# Authority: the client running the host's own decision path must place nothing.
 	_write_driver_signal(_phase("forge", spot, forge_spot))
 	await _until(func() -> bool: return bool(_read_result().get("forge_done", false)), TIMEOUT_SEC)
@@ -169,6 +216,12 @@ func _phase(name: String, spot: Vector3, forge_spot: Vector3) -> Dictionary:
 	}
 
 
+func _destroy_phase(name: String, target: StringName, spot: Vector3, forge_spot: Vector3) -> Dictionary:
+	var phase: Dictionary = _phase(name, spot, forge_spot)
+	phase["target"] = String(target)
+	return phase
+
+
 func _run_client() -> void:
 	var error: Error = transport.call("join", NetConfig.Mode.LOCAL, "", PORT)
 	if error != OK:
@@ -194,6 +247,9 @@ func _run_client() -> void:
 				"request", "request_again":
 					service.call(&"request_place", &"wall_wood",
 						Transform3D(Basis(), _vec(signal_data.get("spot", []))))
+				"destroy_far", "destroy_near":
+					service.call(&"request_destroy",
+						StringName(String(signal_data.get("target", ""))))
 				"forge":
 					# The host's own decision function, run on a client. _owns_mutation() is false
 					# here, so it must return immediately without spawning anything.

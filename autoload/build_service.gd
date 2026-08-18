@@ -9,7 +9,11 @@ extends Node
 ##
 ##   · `net_request_place`   client -> host, piece id + transform. Reliable: a dropped build request
 ##                           is a player pressing the button and nothing happening.
-##   · `net_request_destroy` client -> host, the piece's node name.
+##   · `net_request_destroy` client -> host, the piece's node name. The host resolves the
+##                           requester's own body and re-enforces the piece def's
+##                           `max_build_range_m`, the same rule placement trusts nobody about — a
+##                           piece's node name is never itself proof of the right to destroy it
+##                           (F-084). Ownership is not checked; any peer in range may clear it.
 ##   · `net_build_result`    host -> the one requester, accepted/reason for its request id.
 ##
 ## THE HOST REVALIDATES FROM SCRATCH. `PlacementValidator.evaluate()` runs again here, against the
@@ -177,6 +181,21 @@ func _process_destroy(peer_id: int, piece_name: StringName, request_id: int) -> 
 
 	var def_id: StringName = record["def"]
 	var def: Resource = _definition(def_id)
+
+	# F-084: destruction mirrors placement (docs/SPECS.md 3.6) — the host resolves the requesting
+	# player's OWN body and enforces the same range rule `_process_place` already trusts nobody
+	# about, rather than treating `_placed.has(piece_name)` alone as authority. Node names are
+	# sequential ("Piece1", "Piece2", ...), so without this any peer could enumerate every piece on
+	# the map and free/refund it from wherever they stood. Ownership is deliberately NOT checked
+	# here — the refund-to-whoever-tears-it-down comment below is an existing, intentional design
+	# choice that any teammate may clear a misplaced piece; only the range that already gates
+	# placement gates its reversal.
+	if def != null:
+		var range_m: float = float(def.get(&"max_build_range_m"))
+		if _builder_position(peer_id).distance_to((piece as Node3D).global_position) > range_m:
+			_answer(peer_id, request_id, false, VALIDATOR.reason_text(VALIDATOR.Reason.OUT_OF_RANGE))
+			return
+
 	# Refund goes to whoever tears it down, not to whoever built it — otherwise clearing a
 	# teammate's misplaced wall costs you and pays them.
 	if def != null:

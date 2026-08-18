@@ -10,11 +10,6 @@
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
-    "autoload/build_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T05:10:43+00:00",
-      "task": "F-084"
-    },
     "core/dev/dev_frame_cap.gd": {
       "agent": "coil23",
       "at": "2026-08-18T05:07:52+00:00",
@@ -29,11 +24,6 @@
       "agent": "coil23",
       "at": "2026-08-18T05:07:52+00:00",
       "task": "F-090"
-    },
-    "tools/build_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T05:10:43+00:00",
-      "task": "F-084"
     },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
@@ -72,15 +62,6 @@
       ],
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
-    },
-    "F-084": {
-      "agent": "lp",
-      "files": [
-        "autoload/build_service.gd",
-        "tools/build_net_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T05:10:43+00:00"
     },
     "F-090": {
       "agent": "coil23",
@@ -328,9 +309,9 @@
       "task": "2.1j"
     },
     "autoload/build_service.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:42:03+00:00",
-      "task": "3.6"
+      "agent": "lp",
+      "at": "2026-08-18T05:19:32+00:00",
+      "task": "F-084"
     },
     "autoload/combat_service.gd": {
       "agent": "nettle12",
@@ -873,9 +854,9 @@
       "task": "3.6"
     },
     "tools/build_net_check.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:42:03+00:00",
-      "task": "3.6"
+      "agent": "lp",
+      "at": "2026-08-18T05:19:32+00:00",
+      "task": "F-084"
     },
     "tools/chest_check.gd": {
       "agent": "lp",
@@ -2891,9 +2872,11 @@
       "title": "Snapping the aim hit's Y coordinate rejects or floats pieces on ordinary terrain heights"
     },
     "F-084": {
+      "done_at": "2026-08-18T05:19:32+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Any client can destroy any buildable by its guessable node name from any distance"
     },

@@ -2238,3 +2238,19 @@ Added .agent/bin/lane-revive (double-fork daemon; macOS has no setsid) to bring 
 Files: `.agent/bin/agent`, `.agent/bin/lane-revive`, `docs/FINDINGS.md`
 
 Commit at time of writing: `fa2eed0`
+
+---
+
+### DONE · F-084 · lp · 2026-08-18T05:19:32+00:00
+
+**Any client can destroy any buildable by its guessable node name from any distance**
+
+_process_destroy now resolves _builder_position(peer_id) and refuses OUT_OF_RANGE before any refund/free, using the same max_build_range_m rule placement already enforces. Ownership deliberately left unchecked (3.6's existing refund-to-whoever-tears-it-down design). Wrote docs/SPECS.md's missing 3.6-area F-084 spec block. Verified: agent godot --script tools/build_net_check.gd (19/19 PASS, 0 ERROR: lines, added the missing destroy path over real ENet: a piece planted 100m away is refused 'too far away' with no refund, the client's own nearby piece still destroys+refunds 2 log correctly); tools/build_check.gd offline unaffected (59/59 PASS); tools/net_check_pattern_check.gd clean against the new _placed reflection mutation (F-060-safe: capture-local + explicit .set()-back). No RPC/protocol change.
+
+Notes along the way:
+- Fix: _process_destroy resolves _builder_position(peer_id) and refuses OUT_OF_RANGE before any refund/free, mirroring placement's max_build_range_m. Ownership left unchecked on purpose (3.6's existing design: refund goes to whoever tears it down).
+- Wrote missing docs/SPECS.md 3.6-area block for F-084 (per SPECS.md preamble: fixing a missing spec belongs to the task that discovers it). Moved FINDINGS.md F-084 to Resolved with fix+verification. Added DELEGATION.md Current state entry, including the _spawn_piece + _placed reflection worked example (F-060-safe) for the next net check needing a piece far from its one real client.
+
+Files: `autoload/build_service.gd`, `tools/build_net_check.gd`
+
+Commit at time of writing: `253e6dc`
