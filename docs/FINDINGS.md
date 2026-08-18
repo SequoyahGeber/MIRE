@@ -506,37 +506,11 @@ still holds against the corrected numbers rather than assuming it does.
 ---
 
 
-### F-123 · Friends list offers no Join Game: the lobby is never advertised via the 'connect' rich presence key
 
-**Area:** net · **Severity:** high · **Found:** 2026-08-18 by pike14
 
-A friend running MIRE shows as **In Game** in the Steam friends list, but right-clicking them
-offers only *Invite to Watch* — there is no **Join Game**. Observed 2026-08-18 on the Windows VM
-with a live host lobby, screenshotted by Sequoyah.
+## Resolved
 
-**Cause.** Steam decides a friend is joinable purely from the `connect` rich presence key. If it is
-unset, Steam knows the player is in the game but has no way to put anyone else into their session,
-so it hides Join Game and degrades the menu to Invite to Watch. `grep` across the project for
-`setRichPresence` returns nothing: the key is never set, in any code path.
-
-The asymmetry is what makes this easy to miss. The *receiving* half is fully built —
-`core/net/net_config.gd` defines `STEAM_CONNECT_LOBBY_ARG = "+connect_lobby"` and
-`autoload/steam_lobby.gd` `_check_launch_invite()` parses it off the command line for a cold start,
-with `_on_join_requested()` handling the running-game case. So the game correctly *accepts* a join
-it never *advertises*. Every invite path that works today (`open_invite_overlay`, `invite_user`)
-works because it names the lobby explicitly; only the friends-list path depends on rich presence.
-
-**Fix.** Set `connect` to `+connect_lobby <lobby_id>` whenever `_lobby_id` becomes non-zero — in
-both `_on_lobby_created()` and `_on_lobby_joined()`, so a joiner is joinable too and a third player
-can come in through either of the first two — and clear it in `_leave_lobby()` so a friend who has
-quit does not advertise a dead lobby.
-
-**Note for the Steam test.** This is a prerequisite for the friends-list half of task 1.12. It does
-not affect the invite-overlay path, which is why the earlier LAN and lobby runs passed without it.
-
----
-
-### F-124 · macOS builds cannot show the Steam overlay: hardened runtime without the dyld entitlement blocks injection
+### F-124 · macOS builds cannot show the Steam overlay: hardened runtime without the dyld entitlement blocks injection — **fixed**
 
 **Area:** build · **Severity:** high · **Found:** 2026-08-18 by pike14
 
@@ -566,9 +540,77 @@ must be present before any overlay behaviour is worth testing.
 macOS currently has no working invite path at all. Any macOS result in a Steam test taken before this
 fix should be treated as untested rather than passing.
 
+
+**Resolved 2026-08-18 by pike14** (`1754bd1`). The macOS preset now sets
+`codesign/entitlements/allow_dyld_environment_variables=true` and
+`codesign/entitlements/disable_library_validation=true`.
+
+**Verified** on the rebuilt bundle: `codesign -d --entitlements - export/macos/MIRE.app` now lists
+both `com.apple.security.cs.allow-dyld-environment-variables` and
+`com.apple.security.cs.disable-library-validation`, where before it listed only the latter. Signing
+flags are unchanged at `0x10002(adhoc,runtime)` — the hardened runtime is still on, which is correct;
+the entitlement is what makes `DYLD_INSERT_LIBRARIES` survive it rather than turning the protection
+off.
+
+**What this does not prove.** The entitlement makes injection *possible*; that the overlay actually
+draws still needs one human launch through Steam, because a headless run has no renderer for it to
+draw into. The diagnosis is nonetheless certain rather than probable: with `DYLD_*` stripped, the
+overlay library was never loaded into the process, which is exactly why re-binding the hotkey (to
+Shift+Q, in the report) produced no effect at all — a missing overlay and a broken keybind look
+identical from the outside, and only the former ignores every possible binding.
+
 ---
 
-## Resolved
+### F-123 · Friends list offers no Join Game: the lobby is never advertised via the 'connect' rich presence key — **fixed**
+
+**Area:** net · **Severity:** high · **Found:** 2026-08-18 by pike14
+
+A friend running MIRE shows as **In Game** in the Steam friends list, but right-clicking them
+offers only *Invite to Watch* — there is no **Join Game**. Observed 2026-08-18 on the Windows VM
+with a live host lobby, screenshotted by Sequoyah.
+
+**Cause.** Steam decides a friend is joinable purely from the `connect` rich presence key. If it is
+unset, Steam knows the player is in the game but has no way to put anyone else into their session,
+so it hides Join Game and degrades the menu to Invite to Watch. `grep` across the project for
+`setRichPresence` returns nothing: the key is never set, in any code path.
+
+The asymmetry is what makes this easy to miss. The *receiving* half is fully built —
+`core/net/net_config.gd` defines `STEAM_CONNECT_LOBBY_ARG = "+connect_lobby"` and
+`autoload/steam_lobby.gd` `_check_launch_invite()` parses it off the command line for a cold start,
+with `_on_join_requested()` handling the running-game case. So the game correctly *accepts* a join
+it never *advertises*. Every invite path that works today (`open_invite_overlay`, `invite_user`)
+works because it names the lobby explicitly; only the friends-list path depends on rich presence.
+
+**Fix.** Set `connect` to `+connect_lobby <lobby_id>` whenever `_lobby_id` becomes non-zero — in
+both `_on_lobby_created()` and `_on_lobby_joined()`, so a joiner is joinable too and a third player
+can come in through either of the first two — and clear it in `_leave_lobby()` so a friend who has
+quit does not advertise a dead lobby.
+
+**Note for the Steam test.** This is a prerequisite for the friends-list half of task 1.12. It does
+not affect the invite-overlay path, which is why the earlier LAN and lobby runs passed without it.
+
+
+**Resolved 2026-08-18 by pike14** (`1754bd1`). `SteamLobby._advertise_joinable()` sets `connect` to
+`+connect_lobby <lobby_id>` in both `_on_lobby_created()` and `_on_lobby_joined()`, and
+`_clear_joinable()` clears it in `_leave_lobby()`. Advertising on join as well as create is
+deliberate: it makes a joiner joinable too, so a third player can arrive through either of the first
+two rather than only through the original host.
+
+**Verified** by `tools/rich_presence_check.gd`, added with the fix. It asserts the things that
+otherwise only fail in a live session with a friend watching: that GodotSteam still exposes
+`setRichPresence` under exactly that name, that the advertise/clear/parse trio all exist, and that
+the advertised argument still matches `NetConfig.STEAM_CONNECT_LOBBY_ARG` — the two halves must not
+drift, or an accepted invite cold-starts the game with an argument it does not recognise. All six
+assertions pass.
+
+**Method note worth keeping.** The check asserts against the *live* `SteamLobby` autoload, not the
+script object. `load("res://autoload/steam_lobby.gd").get_script_method_list()` reports only
+`_ready`, and `has_method()` on a bare `.new()` instance returns false even for long-standing
+methods such as `_check_launch_invite`. A reflection-based assertion therefore fails identically
+whether the code is present or absent — it looks like a working check and proves nothing. The first
+draft of this check did exactly that and reported three false failures.
+
+---
 
 ### F-109 · The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them — **fixed**
 

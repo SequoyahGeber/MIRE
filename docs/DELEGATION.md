@@ -75,6 +75,31 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Steam's social layer now actually works from a build: joinable presence and a loadable macOS overlay (pike14)
+
+Two defects that only a real Steam session could surface, both fixed and both prerequisites for
+task 1.12's friends-list half.
+
+**A lobby now advertises itself.** `SteamLobby` sets the `connect` rich presence key to
+`+connect_lobby <lobby_id>` on lobby create *and* on lobby join, clearing it on leave. That single
+key is the whole of what Steam uses to decide a friend is joinable — without it the friends-list
+entry shows *In Game* with no **Join Game**, degraded to *Invite to Watch*, which is what a live test
+showed (F-123). Note the receiving half was always built, so nothing else needed changing: the value
+is the same command line `_check_launch_invite()` already parses on a cold start. If you touch either
+side, run `tools/rich_presence_check.gd` — the advertised argument and the parsed argument must not
+drift.
+
+**macOS builds can load the overlay.** The preset now carries
+`allow_dyld_environment_variables` alongside `disable_library_validation`. Steam injects its overlay
+via `DYLD_INSERT_LIBRARIES`, and a hardened-runtime binary drops `DYLD_*` without that entitlement,
+so the overlay was never in the process and no hotkey could summon it (F-124). Any macOS overlay or
+invite result recorded before `1754bd1` is untested, not passing — `SteamLobby.open_invite_overlay()`
+is the project's only invite UI, so macOS had no working invite path at all.
+
+**Still owed by a human.** That the overlay *draws* needs one launch through Steam on macOS; a
+headless run has no renderer for it to draw into. Everything upstream of the draw is verified.
+
+
 ### 2026-08-18 — Shippable builds exist for all three platforms, and the export pipeline is now a real check (pike14)
 
 **`export_presets.cfg` is committed and has all three presets.** It previously held exactly one
