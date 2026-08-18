@@ -314,6 +314,12 @@ func peer_ids() -> PackedInt32Array:
 	return _peers.duplicate()
 
 
+## Membership without the copy peer_ids() makes — for the F-059 "is this peer still here" guards
+## that every service runs before an rpc_id() send (F-099).
+func has_peer(peer_id: int) -> bool:
+	return _peers.has(peer_id)
+
+
 ## The mode of the current session, or of the attempt in flight. OFFLINE when there is neither.
 func current_mode() -> NetConfig.Mode:
 	return _mode

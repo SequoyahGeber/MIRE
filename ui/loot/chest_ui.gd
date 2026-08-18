@@ -84,6 +84,11 @@ func _process(delta: float) -> void:
 	if _poll_accumulator < RANGE_POLL_SEC:
 		return
 	_poll_accumulator = 0.0
+	# The chest scan is pointless while this panel or another blocking UI owns the screen — but the
+	# prompt still needs its cheap refresh so it hides the moment a panel opens (F-099).
+	if _open or _other_blocking_ui():
+		_refresh_prompt()
+		return
 	_refresh_nearest()
 
 
@@ -282,6 +287,11 @@ func _refresh_nearest() -> void:
 		for node: Node in get_tree().get_nodes_in_group(CHEST_GROUP):
 			var chest := node as Node3D
 			if chest == null or not is_instance_valid(chest):
+				continue
+			# Skip opened chests HERE, not just on the winner: an opened chest that is closer than
+			# an unopened one otherwise wins the scan, the prompt hides, and [E] refuses even though
+			# a perfectly valid chest is also in range (review F-099).
+			if bool(chest.get("opened")):
 				continue
 			var range_m: float = float(chest.get("request_range_m"))
 			var distance_sq: float = player.global_position.distance_squared_to(chest.global_position)

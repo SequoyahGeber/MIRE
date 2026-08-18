@@ -29,6 +29,11 @@ const POWERUP_DEF := preload("res://systems/powerups/powerup_def.gd")
 const BUILDABLE_DEF := preload("res://systems/building/buildable_def.gd")
 ## Same F-016 reasoning again: StationDef is new in task 3.1.
 const STATION_DEF := preload("res://systems/crafting/station_def.gd")
+## Preloaded like the four above so the one generic loader can use script equality uniformly —
+## it is the F-016-safe type check for every def, established or new (F-099).
+const ITEM_DEF := preload("res://systems/inventory/item_def.gd")
+const RECIPE_DEF := preload("res://systems/crafting/recipe_def.gd")
+const WEAPON_DEF := preload("res://systems/combat/weapon_def.gd")
 
 var items: Dictionary[StringName, ItemDef] = {}
 var recipes: Dictionary[StringName, RecipeDef] = {}
@@ -52,13 +57,13 @@ var buildables: Dictionary[StringName, Resource] = {}
 
 
 func _ready() -> void:
-	_load_items()
-	_load_recipes()
-	_load_stations()
-	_load_weapons()
-	_load_loot_tables()
-	_load_powerups()
-	_load_buildables()
+	_load_dir(ITEMS_PATH, "ItemDef", ITEM_DEF, &"id", "item id", items)
+	_load_dir(RECIPES_PATH, "RecipeDef", RECIPE_DEF, &"id", "recipe id", recipes)
+	_load_dir(STATIONS_PATH, "StationDef", STATION_DEF, &"id", "station id", stations)
+	_load_dir(WEAPONS_PATH, "WeaponDef", WEAPON_DEF, &"item_id", "weapon for item", weapons)
+	_load_dir(LOOT_PATH, "LootTableDef", LOOT_TABLE_DEF, &"id", "loot table id", loot_tables)
+	_load_dir(POWERUPS_PATH, "PowerupDef", POWERUP_DEF, &"id", "powerup id", powerups)
+	_load_dir(BUILDABLES_PATH, "BuildableDef", BUILDABLE_DEF, &"id", "buildable id", buildables)
 	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d loot table(s), %d powerup(s), %d buildable(s)" % [
 		items.size(), recipes.size(), stations.size(), weapons.size(), loot_tables.size(),
 		powerups.size(), buildables.size()
@@ -105,132 +110,12 @@ func has_loot_table(id: StringName) -> bool:
 	return loot_tables.has(id)
 
 
-func _load_items() -> void:
-	for file_path: String in _tres_files_in(ITEMS_PATH):
-		var res: Resource = load(file_path)
-		if not (res is ItemDef):
-			MireLog.error(&"content", "%s does not contain an ItemDef, skipped" % file_path)
-			continue
-		var item: ItemDef = res
-		if item.id == &"":
-			MireLog.error(&"content", "%s has no id set, skipped" % file_path)
-			continue
-		if items.has(item.id):
-			MireLog.error(&"content", "duplicate item id '%s' at %s, keeping first" % [item.id, file_path])
-			continue
-		items[item.id] = item
-
-
-func _load_recipes() -> void:
-	for file_path: String in _tres_files_in(RECIPES_PATH):
-		var res: Resource = load(file_path)
-		if not (res is RecipeDef):
-			MireLog.error(&"content", "%s does not contain a RecipeDef, skipped" % file_path)
-			continue
-		var recipe: RecipeDef = res
-		if recipe.id == &"":
-			MireLog.error(&"content", "%s has no id set, skipped" % file_path)
-			continue
-		if recipes.has(recipe.id):
-			MireLog.error(&"content", "duplicate recipe id '%s' at %s, keeping first" % [recipe.id, file_path])
-			continue
-		recipes[recipe.id] = recipe
-
-
-func _load_stations() -> void:
-	for file_path: String in _tres_files_in(STATIONS_PATH):
-		var res: Resource = load(file_path)
-		if res == null or res.get_script() != STATION_DEF:
-			MireLog.error(&"content", "%s does not contain a StationDef, skipped" % file_path)
-			continue
-		var station_id := StringName(String(res.get("id")))
-		if station_id == &"":
-			MireLog.error(&"content", "%s has no id set, skipped" % file_path)
-			continue
-		if stations.has(station_id):
-			MireLog.error(&"content", "duplicate station id '%s' at %s, keeping first" % [
-				station_id, file_path
-			])
-			continue
-		var errors: PackedStringArray = res.call("validation_errors")
-		if not errors.is_empty():
-			MireLog.error(&"content", "%s is invalid (%s), skipped" % [file_path, "; ".join(errors)])
-			continue
-		stations[station_id] = res
-
-
-func _load_weapons() -> void:
-	for file_path: String in _tres_files_in(WEAPONS_PATH):
-		var res: Resource = load(file_path)
-		if not (res is WeaponDef):
-			MireLog.error(&"content", "%s does not contain a WeaponDef, skipped" % file_path)
-			continue
-		var weapon: WeaponDef = res
-		if weapon.item_id == &"":
-			MireLog.error(&"content", "%s has no item_id set, skipped" % file_path)
-			continue
-		var errors: PackedStringArray = weapon.validation_errors()
-		if not errors.is_empty():
-			MireLog.error(&"content", "%s is invalid (%s), skipped" % [file_path, "; ".join(errors)])
-			continue
-		if weapons.has(weapon.item_id):
-			MireLog.error(&"content", "duplicate weapon for item '%s' at %s, keeping first" % [
-				weapon.item_id, file_path
-			])
-			continue
-		weapons[weapon.item_id] = weapon
-
-
-func _load_loot_tables() -> void:
-	for file_path: String in _tres_files_in(LOOT_PATH):
-		var res: Resource = load(file_path)
-		if res == null or res.get_script() != LOOT_TABLE_DEF:
-			MireLog.error(&"content", "%s does not contain a LootTableDef, skipped" % file_path)
-			continue
-		var table_id := StringName(String(res.get("id")))
-		if table_id == &"":
-			MireLog.error(&"content", "%s has no id set, skipped" % file_path)
-			continue
-		if loot_tables.has(table_id):
-			MireLog.error(&"content", "duplicate loot table id '%s' at %s, keeping first" % [
-				table_id, file_path
-			])
-			continue
-		var errors: PackedStringArray = res.call("validation_errors")
-		if not errors.is_empty():
-			MireLog.error(&"content", "%s is invalid (%s), skipped" % [file_path, "; ".join(errors)])
-			continue
-		loot_tables[table_id] = res
-
-
 func get_powerup(id: StringName) -> Resource:
 	return powerups.get(id)
 
 
 func has_powerup(id: StringName) -> bool:
 	return powerups.has(id)
-
-
-func _load_powerups() -> void:
-	for file_path: String in _tres_files_in(POWERUPS_PATH):
-		var res: Resource = load(file_path)
-		if res == null or res.get_script() != POWERUP_DEF:
-			MireLog.error(&"content", "%s does not contain a PowerupDef, skipped" % file_path)
-			continue
-		var powerup_id := StringName(String(res.get("id")))
-		if powerup_id == &"":
-			MireLog.error(&"content", "%s has no id set, skipped" % file_path)
-			continue
-		if powerups.has(powerup_id):
-			MireLog.error(&"content", "duplicate powerup id '%s' at %s, keeping first" % [
-				powerup_id, file_path
-			])
-			continue
-		var errors: PackedStringArray = res.call("validation_errors")
-		if not errors.is_empty():
-			MireLog.error(&"content", "%s is invalid (%s), skipped" % [file_path, "; ".join(errors)])
-			continue
-		powerups[powerup_id] = res
 
 
 func get_buildable(id: StringName) -> Resource:
@@ -241,26 +126,39 @@ func has_buildable(id: StringName) -> bool:
 	return buildables.has(id)
 
 
-func _load_buildables() -> void:
-	for file_path: String in _tres_files_in(BUILDABLES_PATH):
+## The one loader behind every content directory (F-099 — this replaced seven near-identical
+## functions, and an eighth content type is now one _ready() line, not another copy). Script
+## equality is the F-016-safe type check for every def. Defs that implement validation_errors()
+## are validated exactly as the per-type loaders did; ItemDef/RecipeDef, which do not, load as
+## before. Boot-time only.
+func _load_dir(
+	dir_path: String,
+	type_name: String,
+	def_script: Script,
+	id_property: StringName,
+	duplicate_label: String,
+	target: Dictionary
+) -> void:
+	for file_path: String in _tres_files_in(dir_path):
 		var res: Resource = load(file_path)
-		if res == null or res.get_script() != BUILDABLE_DEF:
-			MireLog.error(&"content", "%s does not contain a BuildableDef, skipped" % file_path)
+		if res == null or res.get_script() != def_script:
+			MireLog.error(&"content", "%s does not contain a %s, skipped" % [file_path, type_name])
 			continue
-		var buildable_id := StringName(String(res.get("id")))
-		if buildable_id == &"":
-			MireLog.error(&"content", "%s has no id set, skipped" % file_path)
+		var def_id := StringName(String(res.get(id_property)))
+		if def_id == &"":
+			MireLog.error(&"content", "%s has no %s set, skipped" % [file_path, id_property])
 			continue
-		if buildables.has(buildable_id):
-			MireLog.error(&"content", "duplicate buildable id '%s' at %s, keeping first" % [
-				buildable_id, file_path
+		if target.has(def_id):
+			MireLog.error(&"content", "duplicate %s '%s' at %s, keeping first" % [
+				duplicate_label, def_id, file_path
 			])
 			continue
-		var errors: PackedStringArray = res.call("validation_errors")
-		if not errors.is_empty():
-			MireLog.error(&"content", "%s is invalid (%s), skipped" % [file_path, "; ".join(errors)])
-			continue
-		buildables[buildable_id] = res
+		if res.has_method(&"validation_errors"):
+			var errors: PackedStringArray = res.call("validation_errors")
+			if not errors.is_empty():
+				MireLog.error(&"content", "%s is invalid (%s), skipped" % [file_path, "; ".join(errors)])
+				continue
+		target[def_id] = res
 
 
 func _tres_files_in(dir_path: String) -> Array[String]:

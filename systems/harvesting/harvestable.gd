@@ -28,9 +28,7 @@ signal respawned
 @export_node_path("CollisionObject3D") var collision_body_path: NodePath
 
 ## Replicated state. Setters keep presentation correct when a network delta arrives on a client.
-var health: int = 0:
-	set(value):
-		health = value
+var health: int = 0
 
 var visual_state: int = 0:
 	set(value):
@@ -46,6 +44,9 @@ var active: bool = true:
 		active = value
 		_refresh_collision()
 		_schedule_visual_refresh()
+		# The physics tick exists only to run the respawn clock, which only moves while depleted —
+		# so hundreds of standing props tick zero times instead of 60/s each (F-099).
+		set_physics_process(not active and _owns_world_mutation() and _configuration_valid)
 
 var _configuration_valid: bool = false
 var _collision_body: CollisionObject3D
@@ -73,7 +74,9 @@ func _ready() -> void:
 	_build_synchronizer()
 	_refresh_collision()
 	_refresh_visual()
-	set_physics_process(_owns_world_mutation() and _configuration_valid)
+	# Off until depleted — the `active` setter turns the respawn clock on and off (F-099). Set here
+	# explicitly too, because `active = true` above matches the default and skips its setter.
+	set_physics_process(false)
 
 
 ## Convenience path for an interact/raycast hit. A client sends no parameters, so it cannot choose

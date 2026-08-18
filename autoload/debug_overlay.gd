@@ -136,7 +136,7 @@ func _refresh() -> void:
 	lines.append(_net_line())
 
 	for group: StringName in _tracked_groups:
-		lines.append("%s: %d" % [group, get_tree().get_nodes_in_group(group).size()])
+		lines.append("%s: %d" % [group, get_tree().get_node_count_in_group(group)])
 
 	for key: StringName in _watches:
 		var provider: Callable = _watches[key]

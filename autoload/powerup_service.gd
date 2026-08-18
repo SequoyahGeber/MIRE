@@ -58,6 +58,12 @@ var _family_counts: Dictionary[int, Dictionary] = {}
 ## filed for: this project's bar is zero failures AND zero error lines.
 var _local_stacks: Dictionary = {}
 
+## stat() is documented as a per-physics-frame query (movement asks it every tick), so its chain is
+## kept allocation- and lookup-free (F-099): the transport node is cached once found, and resolved
+## powerup definitions are memoized — content is loaded once at boot and never changes mid-run.
+var _transport_node: Node
+var _definition_cache: Dictionary[StringName, Resource] = {}
+
 ## Fires on the owning peer when its own stacks change — HUD, viewmodel, anything client-local.
 signal local_powerups_changed(stacks: Dictionary)
 ## Fires wherever the count is known (host for anyone, every peer for the broadcast families) when a
@@ -381,10 +387,16 @@ func _on_disconnected() -> void:
 
 
 func _definition(powerup_id: StringName) -> Resource:
+	var cached: Resource = _definition_cache.get(powerup_id)
+	if cached != null:
+		return cached
 	var registry: Node = get_node_or_null(^"/root/Registry")
 	if registry == null:
 		return null
-	return registry.call(&"get_powerup", powerup_id)
+	var definition: Resource = registry.call(&"get_powerup", powerup_id)
+	if definition != null:
+		_definition_cache[powerup_id] = definition
+	return definition
 
 
 func _owns_mutation() -> bool:
@@ -395,8 +407,7 @@ func _owns_mutation() -> bool:
 
 
 func _peer_connected(peer_id: int) -> bool:
-	var peers: PackedInt32Array = _transport().call("peer_ids")
-	return peers.has(peer_id)
+	return bool(_transport().call("has_peer", peer_id))
 
 
 func _local_peer_id() -> int:
@@ -404,5 +415,8 @@ func _local_peer_id() -> int:
 	return peer_id if peer_id > 0 else NetConfig.HOST_PEER_ID
 
 
+## Path-resolved (F-011 — harnesses install the transport at /root), cached once found (F-099).
 func _transport() -> Node:
-	return get_node(^"/root/NetTransport")
+	if _transport_node == null or not is_instance_valid(_transport_node):
+		_transport_node = get_node(^"/root/NetTransport")
+	return _transport_node

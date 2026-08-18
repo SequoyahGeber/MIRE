@@ -64,21 +64,26 @@ var _next_request_id: int = 1
 var _placed: Dictionary[StringName, Dictionary] = {}
 var _nav_rebake_pending: bool = false
 var _nav_rebake_elapsed: float = 0.0
+## Cached transport ref (F-099). Path-resolved (F-011 — harnesses install theirs at /root).
+var _transport_node: Node
 
 
 func _ready() -> void:
 	_build_spawner()
-	set_physics_process(true)
+	# The tick exists only to time a pending nav rebake; _request_nav_rebake() turns it on (F-099).
+	set_physics_process(false)
 
 
 func _physics_process(delta: float) -> void:
 	if not _nav_rebake_pending:
+		set_physics_process(false)
 		return
 	_nav_rebake_elapsed += delta
 	if _nav_rebake_elapsed < NAV_REBAKE_INTERVAL_SEC:
 		return
 	_nav_rebake_pending = false
 	_nav_rebake_elapsed = 0.0
+	set_physics_process(false)
 	var enemy_world: Node = get_node_or_null(^"/root/EnemyWorld")
 	if enemy_world != null and enemy_world.has_method(&"bake_navigation"):
 		enemy_world.call(&"bake_navigation")
@@ -134,7 +139,7 @@ func _process_place(
 		def, placement.origin, placement.basis.get_euler().y)
 
 	var reason: int = VALIDATOR.evaluate(
-		_space_state(), def, snapped, _builder_position(peer_id), QUERY_MASK)
+		_space_state(), def, snapped, _builder_position(peer_id, snapped.origin), QUERY_MASK)
 	if reason != VALIDATOR.Reason.OK:
 		_answer(peer_id, request_id, false, VALIDATOR.reason_text(reason))
 		return
@@ -195,7 +200,8 @@ func _process_destroy(peer_id: int, piece_name: StringName, request_id: int) -> 
 	# placement gates its reversal.
 	if def != null:
 		var range_m: float = float(def.get(&"max_build_range_m"))
-		if _builder_position(peer_id).distance_to((piece as Node3D).global_position) > range_m:
+		var piece_position: Vector3 = (piece as Node3D).global_position
+		if _builder_position(peer_id, piece_position).distance_to(piece_position) > range_m:
 			_answer(peer_id, request_id, false, VALIDATOR.reason_text(VALIDATOR.Reason.OUT_OF_RANGE))
 			return
 
@@ -239,8 +245,9 @@ func _refund_for(def: Resource) -> Dictionary:
 	var refund: Dictionary = {}
 	if fraction <= 0.0:
 		return refund
-	for item_id: StringName in (def.get(&"cost") as Dictionary):
-		var amount: int = int(floorf(float((def.get(&"cost") as Dictionary)[item_id]) * fraction))
+	var cost: Dictionary = def.get(&"cost") as Dictionary
+	for item_id: StringName in cost:
+		var amount: int = int(floorf(float(cost[item_id]) * fraction))
 		if amount > 0:
 			refund[item_id] = amount
 	return refund
@@ -248,6 +255,7 @@ func _refund_for(def: Resource) -> Dictionary:
 
 func _request_nav_rebake() -> void:
 	_nav_rebake_pending = true
+	set_physics_process(true)
 
 
 func placed_count() -> int:
@@ -383,10 +391,12 @@ func _answer(peer_id: int, request_id: int, accepted: bool, reason: String) -> v
 		net_build_result.rpc_id(peer_id, request_id, accepted, reason)
 
 
-## Where the requesting player is standing, for the range rule. Falls back to the placement's own
-## position only when the body cannot be found, which would otherwise reject every build in a
-## harness that has no player bodies at all.
-func _builder_position(peer_id: int) -> Vector3:
+## Where the requesting player is standing, for the range rule. Falls back to the caller-supplied
+## position (the placement or piece itself) only when the body cannot be found, which would
+## otherwise reject every build in a harness that has no player bodies at all. (The old code
+## documented that fallback but returned Vector3.ZERO, so with no bodies present the range rule
+## measured from the world origin and rejected everything placed away from it — review F-099.)
+func _builder_position(peer_id: int, fallback: Vector3) -> Vector3:
 	var player_net: Node = get_node_or_null(^"/root/PlayerNet")
 	if player_net != null and player_net.has_method(&"players_root"):
 		var players: Node = player_net.call(&"players_root") as Node
@@ -394,7 +404,7 @@ func _builder_position(peer_id: int) -> Vector3:
 			var body := players.get_node_or_null(NodePath(str(peer_id))) as Node3D
 			if body != null:
 				return body.global_position
-	return Vector3.ZERO
+	return fallback
 
 
 func _space_state() -> PhysicsDirectSpaceState3D:
@@ -432,8 +442,7 @@ func _owns_mutation() -> bool:
 
 
 func _peer_connected(peer_id: int) -> bool:
-	var peers: PackedInt32Array = _transport().call("peer_ids")
-	return peers.has(peer_id)
+	return bool(_transport().call("has_peer", peer_id))
 
 
 func _local_peer_id() -> int:
@@ -442,4 +451,6 @@ func _local_peer_id() -> int:
 
 
 func _transport() -> Node:
-	return get_node(^"/root/NetTransport")
+	if _transport_node == null or not is_instance_valid(_transport_node):
+		_transport_node = get_node(^"/root/NetTransport")
+	return _transport_node

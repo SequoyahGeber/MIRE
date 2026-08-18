@@ -320,7 +320,13 @@ func _publish_observers() -> void:
 		var body: Node3D = child as Node3D
 		if body == null:
 			continue
-		NetInterest.set_observer(String(body.name).to_int(), body.global_position)
+		# A body's peer id never changes, so it is parsed from the name once and cached as meta
+		# instead of allocating and parsing a String per player per tick (F-099).
+		var peer_id: int = int(body.get_meta(&"observer_peer_id", 0))
+		if peer_id == 0:
+			peer_id = String(body.name).to_int()
+			body.set_meta(&"observer_peer_id", peer_id)
+		NetInterest.set_observer(peer_id, body.global_position)
 
 
 # ── Host speed sanity check (§2.2 row 1) ──────────────────────────────────────────────────────────

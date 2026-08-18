@@ -170,6 +170,10 @@ func _ready() -> void:
 	# exactly where "the host quit" tends to be noticed.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
+	# The physics tick only runs the host's identity sweep; it stays off until a hosted session
+	# opens (F-099). _sweep_identities keeps its own guard as belt and braces.
+	set_physics_process(false)
+
 	NetTransport.server_started.connect(_on_session_opened)
 	NetTransport.connected_to_host.connect(_on_session_opened)
 	NetTransport.disconnected.connect(_on_disconnected)
@@ -413,6 +417,7 @@ func _on_session_opened() -> void:
 	_was_host = NetTransport.is_host()
 	_host_closing = false
 	_refusal = ""
+	set_physics_process(_was_host)
 
 	# Whichever loop got us here has done its job and must not keep running.
 	_connect_retrying = false
@@ -438,6 +443,7 @@ func _on_disconnected() -> void:
 	if not _open:
 		return
 	_open = false
+	set_physics_process(false)
 
 	# A run's identities do not outlive its session: the host forgets everyone, and a client forgets
 	# the token it was issued so a later join to a DIFFERENT host starts clean. The rejoin path below

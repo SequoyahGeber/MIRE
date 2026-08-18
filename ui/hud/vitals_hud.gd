@@ -66,6 +66,10 @@ var _teammates_down: int = 0
 ## Downed peers other than this one, from the broadcast flag. A set, not a count, because the flag
 ## arrives per peer and can repeat.
 var _downed_peers: Dictionary[int, bool] = {}
+## The hotbar index the hint was last built for, and the whole second the banner last showed —
+## change detectors so _process rebuilds strings only when what they show moves (F-099).
+var _hint_slot: int = -1
+var _banner_seconds_shown: int = -1
 
 
 func _ready() -> void:
@@ -123,12 +127,15 @@ func _input(event: InputEvent) -> void:
 
 
 ## Polled rather than signalled: InventoryUI has no "selection changed" signal (its own hotbar
-## select is a raw-key handler too), and this is cheap enough to run every frame. Re-applies layout
-## too, since the hint label toggling visible changes the column's height.
+## select is a raw-key handler too). Only the selected index is read every frame — the hint rebuild
+## (slot read, Registry lookup, string format) runs when it moves, or when the inventory signals.
+## Layout is applied on resize and on hint visibility flips, the two things that change it (F-099).
 func _process(delta: float) -> void:
-	_refresh_hint()
+	var selected: int = InventoryUI.selected_hotbar_slot()
+	if selected != _hint_slot:
+		_hint_slot = selected
+		_refresh_hint()
 	_tick_banner_countdown(delta)
-	_apply_layout()
 
 
 # ── Build ──────────────────────────────────────────────────────────────────────────────────────────
@@ -303,14 +310,20 @@ func _local_peer_id() -> int:
 func _tick_banner_countdown(delta: float) -> void:
 	if _banner == null or not _banner.visible:
 		return
+	var remaining: float
 	match _state:
 		DownedState.State.DOWNED:
 			_bleed_out_remaining = maxf(_bleed_out_remaining - delta, 0.0)
+			remaining = _bleed_out_remaining
 		DownedState.State.DEAD:
 			_respawn_remaining = maxf(_respawn_remaining - delta, 0.0)
+			remaining = _respawn_remaining
 		_:
 			return
-	_refresh_banner_text()
+	# The detail line shows whole seconds, so its strings need rebuilding once per second, not once
+	# per frame (F-099). State/teammate changes bypass this via _refresh_banner.
+	if int(ceil(remaining)) != _banner_seconds_shown:
+		_refresh_banner_text()
 
 
 func _refresh_banner() -> void:
@@ -326,16 +339,19 @@ func _refresh_banner() -> void:
 func _refresh_banner_text() -> void:
 	match _state:
 		DownedState.State.DOWNED:
+			_banner_seconds_shown = int(ceil(_bleed_out_remaining))
 			_banner_title.add_theme_color_override("font_color", COLOUR_DOWNED)
 			_banner_title.text = "DOWNED"
 			_banner_detail.text = "Bleeding out — %ds    ·    a teammate can revive you" % (
-				int(ceil(_bleed_out_remaining))
+				_banner_seconds_shown
 			)
 		DownedState.State.DEAD:
+			_banner_seconds_shown = int(ceil(_respawn_remaining))
 			_banner_title.add_theme_color_override("font_color", COLOUR_DEAD)
 			_banner_title.text = "YOU DIED"
-			_banner_detail.text = "Respawning in %ds" % int(ceil(_respawn_remaining))
+			_banner_detail.text = "Respawning in %ds" % _banner_seconds_shown
 		_:
+			_banner_seconds_shown = -1
 			_banner_title.add_theme_color_override("font_color", COLOUR_TEAMMATE)
 			_banner_title.text = "TEAMMATE DOWN" if _teammates_down == 1 else (
 				"%d TEAMMATES DOWN" % _teammates_down
@@ -374,9 +390,13 @@ func _refresh_hint() -> void:
 	if _hint_label == null:
 		return
 	var item: ItemDef = _selected_consumable_item()
-	_hint_label.visible = item != null
-	if item != null:
+	var showing: bool = item != null
+	if showing:
 		_hint_label.text = "[G] Eat %s" % (item.display_name if not item.display_name.is_empty() else String(item.id))
+	if _hint_label.visible != showing:
+		_hint_label.visible = showing
+		# The hint toggling is the one non-resize thing that changes the column's height.
+		_apply_layout()
 
 
 func _selected_consumable_id() -> StringName:
@@ -385,13 +405,10 @@ func _selected_consumable_id() -> StringName:
 
 
 func _selected_consumable_item() -> ItemDef:
+	# One slot read, not a whole-array snapshot (F-099); &"" already covers empty/exhausted slots.
 	var slot_index: int = InventoryService.hotbar_start_index() + InventoryUI.selected_hotbar_slot()
-	var slots: Array[Dictionary] = InventoryService.local_slots()
-	if slot_index < 0 or slot_index >= slots.size():
-		return null
-	var slot: Dictionary = slots[slot_index]
-	var item_id := StringName(String(slot.get("item_id", "")))
-	if item_id == &"" or int(slot.get("amount", 0)) <= 0:
+	var item_id: StringName = InventoryService.local_item_id(slot_index)
+	if item_id == &"":
 		return null
 	var item: ItemDef = Registry.get_item(item_id)
 	if item == null or item.category != ItemDef.Category.CONSUMABLE:

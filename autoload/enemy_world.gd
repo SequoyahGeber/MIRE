@@ -56,13 +56,17 @@ var _ambient_accumulator: float = 0.0
 var _ambient_rng := RandomNumberGenerator.new()
 var _bootstrapped: bool = false
 var _bootstrap_elapsed: float = 0.0
+## Cached transport ref (F-099) — _owns_spawning() runs every physics tick on every peer, and was
+## re-resolving /root/NetTransport by path each time. Path-based on purpose (F-011 — harnesses
+## install their transport at /root), cached once found.
+var _transport_node: Node
 
 
 func _ready() -> void:
 	_ambient_rng.seed = 0x4352414d  # "CRAM"
 	_load_defs()
 	_build_replication_nodes()
-	var transport: Node = get_node_or_null(^"/root/NetTransport")
+	var transport: Node = _transport()
 	if transport != null:
 		transport.get("server_started").connect(_on_session_opened)
 		transport.get("connected_to_host").connect(_on_session_opened)
@@ -122,7 +126,8 @@ func _cmd_enemies(_args: PackedStringArray) -> String:
 ## timer rather than tracking individual deaths, so a crawler killed at any moment is replaced within
 ## `ambient_respawn_seconds` and nothing has to be unsubscribed.
 func _physics_process(delta: float) -> void:
-	if not ambient_enabled or not _owns_spawning() or defs.is_empty():
+	# Cheap constant checks first; the authority check dispatches into the transport (F-099).
+	if not ambient_enabled or defs.is_empty() or not _owns_spawning():
 		return
 
 	# Pressing Play opens no session, so nothing calls _on_session_opened and neither the bake nor
@@ -385,8 +390,14 @@ func _take_index() -> int:
 	return result
 
 
+func _transport() -> Node:
+	if _transport_node == null or not is_instance_valid(_transport_node):
+		_transport_node = get_node_or_null(^"/root/NetTransport")
+	return _transport_node
+
+
 func _owns_spawning() -> bool:
-	var transport: Node = get_node_or_null(^"/root/NetTransport")
+	var transport: Node = _transport()
 	if transport == null:
 		return true
 	if bool(transport.call("is_host")):

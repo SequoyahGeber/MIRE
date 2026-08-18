@@ -39,6 +39,13 @@ const HIT_FLASH_ALPHA: float = 0.75
 ## before anything moves.
 const DISSOLVE_HOLD_FRACTION: float = 0.35
 
+## How stale a chased target's pathed-to position may get, and how often an idle enemy rescans for
+## someone to chase (F-099). Both trade at most a fifth of a second of reaction for not hammering
+## the navigation server and the group system every tick; the attack itself always measures live
+## positions, so neither affects whether a hit lands.
+const REPATH_DISTANCE_M: float = 1.0
+const RESCAN_INTERVAL_SEC: float = 0.2
+
 enum State { IDLE, CHASE, TELL, ATTACK, RECOVER, DEAD }
 
 ## Host-only. Cosmetic consumers on every peer should watch `state` through the synchronizer instead.
@@ -52,6 +59,9 @@ var state: int = State.IDLE:
 		if state == value:
 			return
 		state = value
+		if value == State.DEAD:
+			# The dissolve runs in _process, which idles off until something animates (F-099).
+			set_process(true)
 		_play_state_animation()
 
 var health: int = 0
@@ -67,6 +77,13 @@ var hit_counter: int = 0:
 			_react_to_hit()
 
 var _target_peer: int = 0
+## The held target's node, validated by reference each tick instead of re-found by a group scan
+## (F-099). Reacquisition scans for a NEW target run at RESCAN_INTERVAL_SEC, not every tick.
+var _target_node: Node3D
+var _rescan_wait: float = 0.0
+## Where the nav agent was last asked to path to. Re-pathing only when the goal has moved more than
+## REPATH_DISTANCE_M keeps a moving target from forcing a repath every physics tick (F-099).
+var _path_goal: Vector3 = Vector3(INF, INF, INF)
 var _phase_remaining: float = 0.0
 var _corpse_remaining: float = 0.0
 var _agent: NavigationAgent3D
@@ -80,6 +97,9 @@ var _nav_ready: bool = false
 ## never networked beyond the two replicated values that trigger it — §2.2's last row.
 var _flash_remaining: float = 0.0
 var _flash_material: StandardMaterial3D
+## The visual's mesh list, walked once at build time — not re-found per overlay frame (F-099).
+var _overlay_meshes: Array[MeshInstance3D] = []
+var _overlay_active: bool = false
 var _dissolve_elapsed: float = 0.0
 var _visual_rest_y: float = 0.0
 ## Restored if this body is ever revived or reused; death zeroes it (F-040).
@@ -88,9 +108,9 @@ var _alive_collision_layer: int = 1
 
 func _ready() -> void:
 	set_multiplayer_authority(NetConfig.HOST_PEER_ID)
-	# Feedback is presentation, so it runs everywhere — a client that only saw the host's physics
-	# would see a crawler die with no reaction at all.
-	set_process(true)
+	# Feedback is presentation and runs on every peer — but only while something is animating.
+	# Hits and death switch _process on; the end of a flash switches it back off (F-099).
+	set_process(false)
 	add_to_group(ENEMY_GROUP)
 	add_to_group(DAMAGEABLE_GROUP)
 	_gravity = float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
@@ -152,6 +172,7 @@ func target_peer() -> int:
 func _physics_process(delta: float) -> void:
 	if definition == null:
 		return
+	_rescan_wait = maxf(_rescan_wait - delta, 0.0)
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
 	else:
@@ -245,6 +266,7 @@ func _enter_tell() -> void:
 func _enter_death(instigator_peer_id: int) -> void:
 	state = State.DEAD
 	_target_peer = 0
+	_target_node = null
 	velocity = Vector3.ZERO
 	_corpse_remaining = definition.corpse_seconds + _clip_length(ANIM_DEATH)
 	# F-040: zero the LAYER, never disable the shapes. A corpse still needs its collision_mask to
@@ -264,12 +286,21 @@ func _aggro_on(peer_id: int) -> void:
 ## Nearest player inside aggro range, with hysteresis: an acquired target is kept until it leaves the
 ## larger deaggro radius, so an enemy on the boundary does not flicker every tick.
 func _resolve_target() -> Node3D:
-	var held: Node3D = _player_for(_target_peer)
-	if held != null:
-		var held_distance: float = global_position.distance_to(held.global_position)
-		if held_distance <= definition.deaggro_radius_m:
-			return held
+	# Held target: validated by cached reference, re-looked-up only when the cache is stale (F-099).
+	if _target_peer > 0:
+		if _target_node == null or not is_instance_valid(_target_node):
+			_target_node = _player_for(_target_peer)
+		if _target_node != null and is_instance_valid(_target_node):
+			if global_position.distance_to(_target_node.global_position) <= definition.deaggro_radius_m:
+				return _target_node
 	_target_peer = 0
+	_target_node = null
+
+	# Acquisition: at most once per RESCAN_INTERVAL_SEC — an untargeted enemy has no reason to walk
+	# the players group every tick. The first scan after losing a target is immediate.
+	if _rescan_wait > 0.0:
+		return null
+	_rescan_wait = RESCAN_INTERVAL_SEC
 
 	var best: Node3D = null
 	var best_distance: float = definition.aggro_radius_m
@@ -284,6 +315,7 @@ func _resolve_target() -> Node3D:
 		best_distance = distance
 	if best != null:
 		_target_peer = _peer_of(best)
+		_target_node = best
 	return best
 
 
@@ -297,7 +329,11 @@ func _steer_toward(destination: Vector3) -> Vector3:
 	if _agent == null or not _nav_ready:
 		return direct.normalized()
 
-	_agent.target_position = destination
+	# Setting target_position dirties the path; against a continuously moving player that meant a
+	# repath every physics tick. The goal is allowed to go REPATH_DISTANCE_M stale instead (F-099).
+	if destination.distance_squared_to(_path_goal) > REPATH_DISTANCE_M * REPATH_DISTANCE_M:
+		_path_goal = destination
+		_agent.target_position = destination
 	if _agent.is_navigation_finished():
 		return Vector3.ZERO
 	var next: Vector3 = _agent.get_next_path_position() - global_position
@@ -342,9 +378,14 @@ func _build_visual() -> void:
 	_visual.rotation.y = deg_to_rad(definition.model_yaw_offset_degrees)
 	_visual_rest_y = _visual.position.y
 	add_child(_visual)
+	for node: Node in _visual.find_children("*", "MeshInstance3D", true, false):
+		_overlay_meshes.append(node as MeshInstance3D)
 	var players: Array[Node] = _visual.find_children("*", "AnimationPlayer", true, false)
 	if not players.is_empty():
 		_anim = players[0] as AnimationPlayer
+		# The one-shot hit clip otherwise ends frozen on its last pose: nothing replays the state
+		# clip until the next state CHANGE, so a chased-and-hit enemy walked with a locked pose.
+		_anim.animation_finished.connect(_on_animation_finished)
 
 
 func _build_agent() -> void:
@@ -403,9 +444,15 @@ func _process(delta: float) -> void:
 ## committed attack.
 func _react_to_hit() -> void:
 	_flash_remaining = HIT_FLASH_SEC
+	set_process(true)
 	if _anim != null and state != State.DEAD and _anim.has_animation(String(ANIM_HIT)):
 		if state != State.TELL and state != State.ATTACK:
 			_anim.play(String(ANIM_HIT))
+
+
+func _on_animation_finished(anim_name: StringName) -> void:
+	if anim_name == ANIM_HIT:
+		_play_state_animation()
 
 
 func _tick_flash(delta: float) -> void:
@@ -416,8 +463,12 @@ func _tick_flash(delta: float) -> void:
 	_flash_remaining = maxf(_flash_remaining - delta, 0.0)
 	var strength: float = _flash_remaining / HIT_FLASH_SEC
 	_apply_overlay(Color(1.0, 1.0, 1.0, strength * HIT_FLASH_ALPHA))
-	if _flash_remaining <= 0.0 and _dissolve_elapsed <= 0.0:
-		_clear_overlay()
+	if _flash_remaining <= 0.0:
+		if _dissolve_elapsed <= 0.0:
+			_clear_overlay()
+		if state != State.DEAD:
+			# Nothing left to animate; _process idles off until the next hit or death (F-099).
+			set_process(false)
 
 
 ## Stands in for a ragdoll. The corpse sinks and fades over its remaining time instead of blinking
@@ -436,21 +487,27 @@ func _tick_dissolve(delta: float) -> void:
 	_apply_overlay(Color(0.05, 0.06, 0.05, sink * 0.85))
 
 
+## Per-frame calls only tint the shared material; the overlay itself is assigned to the cached mesh
+## list once per flash/dissolve and released once, never re-walked per frame (F-099).
 func _apply_overlay(colour: Color) -> void:
 	if _flash_material == null:
 		_flash_material = StandardMaterial3D.new()
 		_flash_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		_flash_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_flash_material.albedo_color = colour
-	for node: Node in _visual.find_children("*", "MeshInstance3D", true, false):
-		(node as MeshInstance3D).material_overlay = _flash_material
+	if _overlay_active:
+		return
+	_overlay_active = true
+	for mesh: MeshInstance3D in _overlay_meshes:
+		mesh.material_overlay = _flash_material
 
 
 func _clear_overlay() -> void:
-	if _visual == null:
+	if not _overlay_active:
 		return
-	for node: Node in _visual.find_children("*", "MeshInstance3D", true, false):
-		(node as MeshInstance3D).material_overlay = null
+	_overlay_active = false
+	for mesh: MeshInstance3D in _overlay_meshes:
+		mesh.material_overlay = null
 
 
 # ── Presentation (client-local, every peer) ───────────────────────────────────────────────────────

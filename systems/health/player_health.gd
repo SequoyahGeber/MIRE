@@ -98,7 +98,7 @@ signal local_hunger_changed(hunger: float, max_hunger: float)
 signal local_stamina_changed(stamina: float, max_stamina: float)
 ## Host-side observer hook, mirrors InventoryService.host_inventory_changed — checks and any future
 ## host-only HUD read this instead of reaching into the private state dictionary.
-signal host_health_changed(peer_id: int, hp: int, max_hp: int, state: int)
+signal host_health_changed(peer_id: int, hp: int, max_hp: int, state: int, revision: int)
 ## Host-side observer hook for the periodic, advisory stamina report — see the class doc.
 signal host_stamina_reported(peer_id: int, stamina: float)
 ## Broadcast to every peer, including the downed peer itself: teammates must see who needs help.
@@ -142,6 +142,8 @@ var _sprint_locked_out: bool = false
 var _local_revision: int = -1
 var _next_request_id: int = 1
 var _session_open: bool = false
+## Cached transport ref (F-099) — _owns_mutation() runs every physics tick. Path-resolved (F-011).
+var _transport_node: Node
 var _hunger_snapshot_elapsed: float = 0.0
 var _stamina_reconcile_elapsed: float = 0.0
 
@@ -188,7 +190,9 @@ func _physics_process(delta: float) -> void:
 	var publish_hunger: bool = _hunger_snapshot_elapsed >= HUNGER_SNAPSHOT_INTERVAL_SEC
 	if publish_hunger:
 		_hunger_snapshot_elapsed = 0.0
-	for peer_id: int in _states.keys():
+	# Iterated directly — nothing in the loop erases from _states, and .keys() allocates a fresh
+	# Array every physics tick (F-099).
+	for peer_id: int in _states:
 		var downed_state: DOWNED_STATE = _states[peer_id]
 		var starved: bool = _tick_hunger(peer_id, downed_state, delta)
 		var transition: int = downed_state.tick(delta, respawn_seconds)
@@ -681,7 +685,7 @@ func _on_session_opened() -> void:
 	_local_spawn_captured = false
 	_states.clear()
 	_revisions.clear()
-	_downed_flags.clear()
+	_clear_downed_flags()
 	_hunger.clear()
 	_starvation_accum.clear()
 	_host_stamina_reports.clear()
@@ -698,6 +702,12 @@ func _on_peer_joined(peer_id: int) -> void:
 		return
 	_ensure_host_state(peer_id)
 	_publish_snapshot(peer_id)
+	# Flags only travel when they CHANGE now (see _broadcast_downed_flag), so the joiner is told who
+	# is already down once, here, instead of waiting on the next change (F-099).
+	if bool(_transport().call("is_active")) and _peer_connected(peer_id):
+		for known_peer: int in _downed_flags:
+			if known_peer != peer_id and _downed_flags[known_peer]:
+				net_downed_flag.rpc_id(peer_id, known_peer, true)
 
 
 ## Deliberately a no-op (D-035, F-032). Between a drop and a rejoin the player is still a player;
@@ -732,6 +742,10 @@ func _on_run_player_expired(peer_id: int) -> void:
 		return
 	_states.erase(peer_id)
 	_revisions.erase(peer_id)
+	# An expired peer that left while downed would otherwise stay "TEAMMATE DOWN" on every client
+	# forever — nothing republished its flag after the state was erased. Announce the clear.
+	if bool(_downed_flags.get(peer_id, false)):
+		_broadcast_downed_flag(peer_id, false)
 	_downed_flags.erase(peer_id)
 	_spawn_transforms.erase(peer_id)
 	_hunger.erase(peer_id)
@@ -744,7 +758,7 @@ func _on_disconnected() -> void:
 	_local_spawn_captured = false
 	_states.clear()
 	_revisions.clear()
-	_downed_flags.clear()
+	_clear_downed_flags()
 	_hunger.clear()
 	_starvation_accum.clear()
 	_host_stamina_reports.clear()
@@ -797,15 +811,33 @@ func _publish_snapshot(peer_id: int) -> void:
 	_broadcast_downed_flag(peer_id, not downed_state.is_alive())
 
 
+## Only a CHANGED flag is broadcast (F-099): every _publish_snapshot lands here, so the 1 Hz hunger
+## publish used to re-send an unchanged flag as a reliable rpc to every peer, every second, per peer.
+## A late joiner still learns the current flags — _on_peer_joined sends them once, explicitly.
 func _broadcast_downed_flag(peer_id: int, downed: bool) -> void:
+	if bool(_downed_flags.get(peer_id, false)) == downed:
+		return
 	_apply_downed_flag(peer_id, downed)
 	if bool(_transport().call("is_active")):
 		net_downed_flag.rpc(peer_id, downed)
 
 
 func _apply_downed_flag(peer_id: int, downed: bool) -> void:
+	if bool(_downed_flags.get(peer_id, false)) == downed:
+		return
 	_downed_flags[peer_id] = downed
 	downed_flag_changed.emit(peer_id, downed)
+
+
+## Flags travel only on change now (see _broadcast_downed_flag), so a silent .clear() would leave
+## every subscriber showing peers that are no longer down. Announce each clear locally; the wire
+## side needs nothing — each peer clears its own flags on its own session transition.
+func _clear_downed_flags() -> void:
+	for peer_id: int in _downed_flags.keys():
+		if _downed_flags[peer_id]:
+			_downed_flags[peer_id] = false
+			downed_flag_changed.emit(peer_id, false)
+	_downed_flags.clear()
 
 
 func _accept_local_snapshot(
@@ -895,8 +927,9 @@ func _owns_mutation() -> bool:
 ## window in any session that runs long enough. Sending rpc_id() to a peer id the transport no longer
 ## recognises is a Godot-level error ("Attempt to call RPC with unknown peer ID"), not a silent no-op.
 func _peer_connected(peer_id: int) -> bool:
-	var peers: PackedInt32Array = _transport().call("peer_ids")
-	return peers.has(peer_id)
+	# has_peer checks membership without the whole-array copy peer_ids() makes — this guard runs on
+	# the 1 Hz hunger publish for every tracked peer (F-099).
+	return bool(_transport().call("has_peer", peer_id))
 
 
 func _take_request_id() -> int:
@@ -913,4 +946,6 @@ func _local_peer_id() -> int:
 
 
 func _transport() -> Node:
-	return get_node(^"/root/NetTransport")
+	if _transport_node == null or not is_instance_valid(_transport_node):
+		_transport_node = get_node(^"/root/NetTransport")
+	return _transport_node

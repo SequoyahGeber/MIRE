@@ -15,6 +15,9 @@ const HOTBAR_SLOT_COUNT: int = 8
 const HOTBAR_START_INDEX: int = INVENTORY_SLOT_COUNT
 const SLOT_COUNT: int = INVENTORY_SLOT_COUNT + HOTBAR_SLOT_COUNT
 
+## The array carried by local_inventory_changed is the service's own snapshot — read it, don't
+## mutate it, and duplicate it if you keep it past the handler (F-099). Every subscriber gets the
+## same instance, so a mutation would corrupt what the others (and this service) see.
 signal local_inventory_changed(slots: Array[Dictionary], revision: int)
 signal host_inventory_changed(peer_id: int, slots: Array[Dictionary], revision: int)
 signal operation_confirmed(request_id: int, accepted: bool, detail: String)
@@ -25,6 +28,8 @@ var _local_slots: Array[Dictionary] = []
 var _local_revision: int = -1
 var _next_request_id: int = 1
 var _session_open: bool = false
+## Cached transport ref (F-099). Path-resolved (F-011 — harnesses install theirs at /root).
+var _transport_node: Node
 
 
 func _ready() -> void:
@@ -56,6 +61,24 @@ func _exit_tree() -> void:
 
 func local_slots() -> Array[Dictionary]:
 	return _duplicate_slots(_local_slots)
+
+
+## One confirmed local slot, copied, without duplicating the whole array. {} when out of range.
+func local_slot(index: int) -> Dictionary:
+	if index < 0 or index >= _local_slots.size():
+		return {}
+	return _local_slots[index].duplicate()
+
+
+## Allocation-light read of one local slot's item id, for per-frame callers (F-099).
+## &"" for an out-of-range, empty, or exhausted slot — same answer held-item logic wants.
+func local_item_id(index: int) -> StringName:
+	if index < 0 or index >= _local_slots.size():
+		return &""
+	var slot: Dictionary = _local_slots[index]
+	if int(slot.get("amount", 0)) <= 0:
+		return &""
+	return StringName(String(slot.get("item_id", "")))
 
 
 func slot_count() -> int:
@@ -363,8 +386,7 @@ func _owns_mutation() -> bool:
 ## engine error ("Attempt to call RPC with unknown peer ID"), not a silent no-op. Same fix as
 ## systems/health/player_health.gd's own _peer_connected — see its class doc for the fuller shape.
 func _peer_connected(peer_id: int) -> bool:
-	var peers: PackedInt32Array = _transport().call("peer_ids")
-	return peers.has(peer_id)
+	return bool(_transport().call("has_peer", peer_id))
 
 
 func _ensure_host_store(peer_id: int) -> void:
@@ -398,9 +420,11 @@ func _publish_snapshot(peer_id: int) -> void:
 
 
 func _accept_local_snapshot(slots: Array[Dictionary], revision: int) -> void:
-	_local_slots = _duplicate_slots(slots)
+	# Both callers hand over a freshly built array (slots_snapshot()/normalize_snapshot), so it is
+	# owned here without another copy, and the emit shares it read-only — see the signal doc (F-099).
+	_local_slots = slots
 	_local_revision = revision
-	local_inventory_changed.emit(local_slots(), revision)
+	local_inventory_changed.emit(_local_slots, revision)
 
 
 func _reset_local_cache() -> void:
@@ -424,7 +448,9 @@ func _local_peer_id() -> int:
 
 
 func _transport() -> Node:
-	return get_node(^"/root/NetTransport")
+	if _transport_node == null or not is_instance_valid(_transport_node):
+		_transport_node = get_node(^"/root/NetTransport")
+	return _transport_node
 
 
 func _registry() -> Node:

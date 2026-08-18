@@ -42,6 +42,18 @@ var _local_pending_crafts: Dictionary[int, Dictionary] = {}
 ## both be mid-flight on "request 1" at once.
 var _host_pending_crafts: Dictionary[int, Dictionary] = {}
 
+## Station instances never move once a map is built, so their positions are cached per asset and the
+## two group scans run once per scene instead of on every range query (F-099). The census (a cheap
+## O(1) count per group) re-triggers the scan if a harness or a later system adds or removes one.
+var _station_positions: Dictionary[StringName, Array] = {}
+var _station_scene_id: int = 0
+var _station_census: int = -1
+
+
+func _ready() -> void:
+	# _process only drains the host's timed-craft queue; it idles off while that is empty (F-099).
+	set_process(false)
+
 
 func recipes_for_station(station: StringName) -> Array[RecipeDef]:
 	var ids: Array[StringName] = []
@@ -85,8 +97,9 @@ func local_recipe_status(recipe_id: StringName) -> Dictionary:
 		}
 
 	var missing: Dictionary = {}
-	for item_id: StringName in data.get("removals", {}):
-		var required: int = int((data.get("removals", {}) as Dictionary).get(item_id, 0))
+	var removals: Dictionary = data.get("removals", {}) as Dictionary
+	for item_id: StringName in removals:
+		var required: int = int(removals.get(item_id, 0))
 		var available: int = InventoryService.local_count(item_id)
 		if available < required:
 			missing[item_id] = required - available
@@ -151,7 +164,10 @@ func net_craft_confirmed(request_id: int, accepted: bool, detail: String) -> voi
 
 func _process(delta: float) -> void:
 	if _host_pending_crafts.is_empty():
+		set_process(false)
 		return
+	# .keys() copies are load-bearing here — both levels erase inside their loop. The write-backs
+	# the old code did after mutating `entry`/`by_request` were not: Dictionaries are references.
 	for peer_id: int in _host_pending_crafts.keys():
 		var by_request: Dictionary = _host_pending_crafts[peer_id] as Dictionary
 		for request_id: int in by_request.keys():
@@ -159,14 +175,11 @@ func _process(delta: float) -> void:
 			var remaining: float = float(entry.get("remaining_sec", 0.0)) - delta
 			if remaining > 0.0:
 				entry["remaining_sec"] = remaining
-				by_request[request_id] = entry
 				continue
 			by_request.erase(request_id)
 			_finish_craft(peer_id, request_id, entry.get("data", {}) as Dictionary)
 		if by_request.is_empty():
 			_host_pending_crafts.erase(peer_id)
-		else:
-			_host_pending_crafts[peer_id] = by_request
 
 
 func _process_craft(peer_id: int, recipe_id: StringName, request_id: int) -> void:
@@ -204,6 +217,7 @@ func _start_timed_craft(peer_id: int, request_id: int, data: Dictionary, craft_t
 	var by_request: Dictionary = _host_pending_crafts.get(peer_id, {}) as Dictionary
 	by_request[request_id] = {"data": data, "remaining_sec": craft_time_sec}
 	_host_pending_crafts[peer_id] = by_request
+	set_process(true)
 
 
 func _finish_craft(peer_id: int, request_id: int, data: Dictionary) -> void:
@@ -267,27 +281,48 @@ func _station_in_range(player: Node3D, station: StringName) -> bool:
 	if asset == &"":
 		return false
 	var max_distance_squared: float = MAX_STATION_DISTANCE_M * MAX_STATION_DISTANCE_M
-
-	for node: Node in get_tree().get_nodes_in_group(LEGACY_STATION_GROUP):
-		var station_node := node as Node3D
-		if station_node == null:
-			continue
-		if StringName(String(station_node.get_meta(&"asset", ""))) != asset:
-			continue
-		if player.global_position.distance_squared_to(station_node.global_position) <= max_distance_squared:
+	for position: Vector3 in _station_positions_for(asset):
+		if player.global_position.distance_squared_to(position) <= max_distance_squared:
 			return true
-
-	var marker_name: String = MARKER_NAME_PREFIX + String(asset)
-	for node: Node in get_tree().get_nodes_in_group(MARKER_GROUP):
-		var marker := node as Node3D
-		if marker == null or marker.name != marker_name:
-			continue
-		if String(marker.get_meta(&"kind", "")) != "station":
-			continue
-		if player.global_position.distance_squared_to(marker.global_position) <= max_distance_squared:
-			return true
-
 	return false
+
+
+## Cached station positions for one asset — see _station_positions' comment for the invalidation
+## rule. Filtering matches the old per-query scans exactly: a legacy prop carries meta `asset`; a
+## Hollowmere marker is kind == "station" named "Station_<asset>".
+func _station_positions_for(asset: StringName) -> Array:
+	var scene: Node = get_tree().current_scene
+	var scene_id: int = scene.get_instance_id() if is_instance_valid(scene) else 0
+	var census: int = (
+		get_tree().get_node_count_in_group(LEGACY_STATION_GROUP)
+		+ get_tree().get_node_count_in_group(MARKER_GROUP)
+	)
+	if scene_id != _station_scene_id or census != _station_census:
+		_station_scene_id = scene_id
+		_station_census = census
+		_station_positions.clear()
+		for node: Node in get_tree().get_nodes_in_group(LEGACY_STATION_GROUP):
+			var station_node := node as Node3D
+			if station_node == null:
+				continue
+			var node_asset := StringName(String(station_node.get_meta(&"asset", "")))
+			if node_asset == &"":
+				continue
+			(_station_positions.get_or_add(node_asset, [] as Array) as Array).append(
+				station_node.global_position
+			)
+		for node: Node in get_tree().get_nodes_in_group(MARKER_GROUP):
+			var marker := node as Node3D
+			if marker == null or String(marker.get_meta(&"kind", "")) != "station":
+				continue
+			var marker_name := String(marker.name)
+			if not marker_name.begins_with(MARKER_NAME_PREFIX):
+				continue
+			var marker_asset := StringName(marker_name.substr(MARKER_NAME_PREFIX.length()))
+			(_station_positions.get_or_add(marker_asset, [] as Array) as Array).append(
+				marker.global_position
+			)
+	return _station_positions.get(asset, [] as Array)
 
 
 func _host_player(peer_id: int) -> Node3D:

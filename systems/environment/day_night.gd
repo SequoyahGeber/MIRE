@@ -39,6 +39,12 @@ signal night_started()
 signal day_started()
 
 var _replicate_elapsed: float = 0.0
+## Per-tick node lookups cached (F-099): the level's Atmosphere is re-resolved only when the current
+## scene changes (or the node is freed), and the transport autoload once it exists. Both were being
+## re-found by path every physics tick.
+var _atmosphere: Node
+var _atmosphere_scene: Node
+var _transport_node: Node
 # Client-side interpolation source: the last two host snapshots, and how long ago the second one
 # arrived. Nothing here ever advances on its own — see _advance_client().
 var _client_prev_time: float = 0.0
@@ -100,16 +106,25 @@ func host_advance(delta: float) -> void:
 
 
 func _resolve_day_length() -> float:
-	var scene: Node = get_tree().current_scene
-	if scene != null:
-		var atmosphere: Node = scene.get_node_or_null(^"Atmosphere")
-		if atmosphere != null:
-			var raw: Variant = atmosphere.get(&"day_length_seconds")
-			if typeof(raw) == TYPE_FLOAT or typeof(raw) == TYPE_INT:
-				var level_value: float = float(raw)
-				if level_value > 0.0:
-					day_length_seconds = level_value
+	_level_atmosphere()  # refreshes day_length_seconds whenever the level's Atmosphere is re-found
 	return day_length_seconds
+
+
+## The cached Atmosphere for the current scene, or null. Re-resolves on scene change or a freed
+## node; a scene with no Atmosphere is remembered as null so it costs nothing per tick (F-099).
+func _level_atmosphere() -> Node:
+	var scene: Node = get_tree().current_scene
+	if scene == null:
+		return null
+	if scene != _atmosphere_scene or (_atmosphere != null and not is_instance_valid(_atmosphere)):
+		_atmosphere_scene = scene
+		var found: Node = scene.get_node_or_null(^"Atmosphere")
+		_atmosphere = found if found != null and found.has_method(&"set_time_of_day") else null
+		if _atmosphere != null:
+			var raw: Variant = _atmosphere.get(&"day_length_seconds")
+			if (typeof(raw) == TYPE_FLOAT or typeof(raw) == TYPE_INT) and float(raw) > 0.0:
+				day_length_seconds = float(raw)
+	return _atmosphere
 
 
 func _check_thresholds(previous: float, current: float) -> void:
@@ -140,17 +155,14 @@ func _lerp_wrapped_unit(from: float, to: float, weight: float) -> float:
 ## no-op, never an error. Atmosphere's own time_of_day is 0..24 hours; DayNight's is a 0..1 fraction
 ## of the day, so this is the one conversion point between the two.
 func _apply_to_level(fraction_of_day: float) -> void:
-	var scene: Node = get_tree().current_scene
-	if scene == null:
-		return
-	var atmosphere: Node = scene.get_node_or_null(^"Atmosphere")
-	if atmosphere == null or not atmosphere.has_method(&"set_time_of_day"):
+	var atmosphere: Node = _level_atmosphere()
+	if atmosphere == null:
 		return
 	atmosphere.call(&"set_time_of_day", fraction_of_day * 24.0)
 
 
 func _owns_mutation() -> bool:
-	var transport: Node = get_node_or_null(^"/root/NetTransport")
+	var transport: Node = _transport()
 	if transport == null:
 		return true
 	if bool(transport.call("is_host")):
@@ -158,8 +170,15 @@ func _owns_mutation() -> bool:
 	return not bool(transport.call("is_active")) and not bool(transport.call("is_connecting"))
 
 
+## Path-resolved (F-011 — harnesses install the transport at /root themselves), cached once found.
+func _transport() -> Node:
+	if _transport_node == null or not is_instance_valid(_transport_node):
+		_transport_node = get_node_or_null(^"/root/NetTransport")
+	return _transport_node
+
+
 func _transport_call(method: StringName) -> Variant:
-	var transport: Node = get_node_or_null(^"/root/NetTransport")
+	var transport: Node = _transport()
 	if transport == null:
 		return false
 	return transport.call(method)

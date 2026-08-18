@@ -118,8 +118,16 @@ func wired_harvestables() -> Array[Node3D]:
 	return result
 
 
-func _on_node_added(_node: Node) -> void:
-	_schedule_refresh()
+## Only a holder entering the tree warrants a rescan. Both map generators add a holder to its group
+## BEFORE add_child (and packed scenes instantiate with their groups set), so membership is already
+## visible here. Without this filter, every node the game ever adds — audio one-shots, enemies,
+## build pieces — scheduled a full multi-group scene rescan, which under steady spawn churn meant
+## one per frame for the life of the game (F-099).
+func _on_node_added(node: Node) -> void:
+	for group: StringName in HOLDER_GROUPS:
+		if node.is_in_group(group):
+			_schedule_refresh()
+			return
 
 
 func _schedule_refresh() -> void:

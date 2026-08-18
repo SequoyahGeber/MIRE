@@ -71,11 +71,6 @@ const SWING_PIVOT := Vector3(0.22, -0.40, 0.10)
 ##   hit    — the contact pose, reached exactly as the hit resolves
 ##   follow — follow-through past contact, reached at the end of COMMIT
 ##   arc    — mid-strike control point; a straight lerp is a chord, this makes it a curve
-## One entry per AttackStyle, indexed by the raw ints above.
-##   cock   — top of the wind-up, the anticipation
-##   hit    — the contact pose, reached exactly as the hit resolves
-##   follow — follow-through past contact, reached at the end of COMMIT
-##   arc    — mid-strike control point; a straight lerp is a chord, this makes it a curve
 ##
 ## SIGN, because the previous table had it backwards and the comment above it agreed with the table
 ## rather than with the engine: this node is ABOVE `SWING_PIVOT`, so a POSITIVE X rotation raises the
@@ -153,6 +148,7 @@ var _sway_blend: float = 1.0
 var _combat: Node
 var _inventory: Node
 var _registry: Node
+var _hotbar_ui: Node
 
 
 func _ready() -> void:
@@ -162,6 +158,7 @@ func _ready() -> void:
 	_combat = get_node_or_null(^"/root/CombatService")
 	_inventory = get_node_or_null(^"/root/InventoryService")
 	_registry = get_node_or_null(^"/root/Registry")
+	_hotbar_ui = get_node_or_null(^"/root/InventoryUI")
 	_refresh_item()
 	if _inventory != null:
 		_inventory.connect(&"local_inventory_changed", _on_inventory_changed)
@@ -187,15 +184,10 @@ func held_item_id() -> StringName:
 			return swinging
 	if _inventory == null:
 		return &""
-	var index: int = _selected_hotbar_index()
-	var slots: Array = _inventory.call(&"local_slots")
-	var slot_index: int = HOTBAR_START_INDEX + index
-	if slot_index < 0 or slot_index >= slots.size():
-		return &""
-	var slot: Dictionary = slots[slot_index]
-	if int(slot.get("amount", 0)) <= 0:
-		return &""
-	return StringName(String(slot.get("item_id", "")))
+	# One slot read, no whole-array snapshot: this runs every rendered frame (F-099). The accessor
+	# already answers &"" for an empty, exhausted, or out-of-range slot.
+	var slot_index: int = HOTBAR_START_INDEX + _selected_hotbar_index()
+	return StringName(_inventory.call(&"local_item_id", slot_index))
 
 
 ## The node actually on screen, or null for an empty hand. Public so a check can assert on it.
@@ -243,6 +235,12 @@ func _refresh_item() -> void:
 	_grip_scale = item.grip_scale
 	_attack_style = clampi(int(item.attack_style), 0, STYLE_POSES.size() - 1)
 	add_child(_instance)
+	# The grip is constant for the item's lifetime — applied once here, not per frame (F-099).
+	_instance.position = _grip_offset
+	_instance.rotation = Vector3(
+		deg_to_rad(_grip_rotation.x), deg_to_rad(_grip_rotation.y), deg_to_rad(_grip_rotation.z)
+	)
+	_instance.scale = Vector3.ONE * _grip_scale
 
 
 ## Pose = the item's own grip, plus wherever the swing has got to. Lerped in local space rather than
@@ -277,12 +275,7 @@ func _apply_pose(delta: float) -> void:
 	# and because the arc reaches `hit` exactly when the hit resolves, what it freezes on is the
 	# contact frame itself.
 	transform = swing_transform(position_offset, rotation_offset)
-	# ...grip on the child, in the item's own axes. Neither has to know about the other.
-	_instance.position = _grip_offset
-	_instance.rotation = Vector3(
-		deg_to_rad(_grip_rotation.x), deg_to_rad(_grip_rotation.y), deg_to_rad(_grip_rotation.z)
-	)
-	_instance.scale = Vector3.ONE * _grip_scale
+	# ...the grip on the child was applied once in _refresh_item, in the item's own axes.
 
 
 ## Where one style's arc has got to at `progress` through `phase`, as `[position, rotation_degrees]`.
@@ -357,7 +350,6 @@ func _on_inventory_changed(_slots: Array[Dictionary], _revision: int) -> void:
 
 
 func _selected_hotbar_index() -> int:
-	var ui: Node = get_node_or_null(^"/root/InventoryUI")
-	if ui == null or not ui.has_method("selected_hotbar_slot"):
+	if _hotbar_ui == null or not _hotbar_ui.has_method("selected_hotbar_slot"):
 		return 0
-	return int(ui.call("selected_hotbar_slot"))
+	return int(_hotbar_ui.call("selected_hotbar_slot"))

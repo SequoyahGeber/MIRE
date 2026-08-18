@@ -179,6 +179,9 @@ var _rows: Array[RecipeRow] = []
 var _open: bool = false
 var _in_range: bool = false
 var _current_station_id: StringName = &""
+## What the prompt label was last built for — the Registry lookup + format only reruns when the
+## station actually changes, not on every 0.15 s poll (F-099).
+var _prompt_station_id: StringName = &"￿"
 var _poll_accumulator: float = 0.0
 var _pending_request_id: int = -1
 var _request_in_flight: bool = false
@@ -217,11 +220,13 @@ func _process(delta: float) -> void:
 ## reject that craft anyway; leaving the window open would present a lie.
 func poll_station() -> void:
 	var was_in_range: bool = _in_range
-	var previous_station_name: String = _station_display_name(_current_station_id)
+	# Only the id is captured up front; the display name (Registry lookup + string ops) is resolved
+	# solely in the stepped-away branch that actually shows it (F-099).
+	var previous_station_id: StringName = _current_station_id
 	var station_changed: bool = _refresh_station()
 	if _open and not _in_range:
 		set_open(false)
-		_show_status("You stepped away from the %s." % previous_station_name, true)
+		_show_status("You stepped away from the %s." % _station_display_name(previous_station_id), true)
 		return
 	if _open or was_in_range != _in_range or station_changed:
 		_refresh_rows()
@@ -499,7 +504,8 @@ func _station_display_name(station_id: StringName) -> String:
 
 func _refresh_prompt() -> void:
 	_prompt_center.visible = _in_range and not _open and not _other_blocking_ui()
-	if _in_range:
+	if _in_range and _prompt_station_id != _current_station_id:
+		_prompt_station_id = _current_station_id
 		_prompt_label.text = "E   USE %s" % _station_display_name(_current_station_id).to_upper()
 
 
@@ -535,6 +541,8 @@ func _other_blocking_ui() -> bool:
 
 
 func _on_inventory_changed(_slots: Array[Dictionary], _revision: int) -> void:
+	# Deliberately NOT gated on _open: row state is a public read (is_recipe_craftable and friends),
+	# and crafting_net_check asserts it stays truthful after a craft with the panel still closed.
 	_refresh_rows()
 
 

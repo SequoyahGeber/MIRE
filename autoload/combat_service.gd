@@ -89,8 +89,12 @@ func request_attack() -> int:
 func weapon_for_hotbar_index(hotbar_index: int) -> WeaponDef:
 	if hotbar_index < 0 or hotbar_index >= HOTBAR_SLOT_COUNT:
 		return unarmed
-	var slots: Array[Dictionary] = InventoryService.local_slots()
-	return _weapon_from_slots(slots, hotbar_index)
+	# One slot read, not a full snapshot copy — this sits on per-frame presentation paths (F-099).
+	var item_id: StringName = InventoryService.local_item_id(HOTBAR_START_INDEX + hotbar_index)
+	if item_id == &"":
+		return unarmed
+	var weapon: WeaponDef = Registry.get_weapon(item_id)
+	return weapon if weapon != null else unarmed
 
 
 func local_phase() -> Phase:

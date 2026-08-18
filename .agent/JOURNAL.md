@@ -2565,3 +2565,15 @@ Notes along the way:
 Files: `autoload/environment_vfx.gd`, `world/environment/foliage_wind.gdshader`, `world/environment/particle_billboard.gdshader`, `world/gen/authored_world.gd`, `world/gen/undergrowth.gd`, `tools/environment_vfx_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `tools/vfx_site_probe.gd`, `tools/multimesh_readback_check.gd`
 
 Commit at time of writing: `af8c193`
+
+---
+
+### DONE · F-099 · kiln9 · 2026-08-18T14:10:44+00:00
+
+**Optimization sweep: per-frame costs and dead weight across runtime scripts**
+
+Optimization sweep applied across 20 runtime files: single-slot inventory accessors kill the per-frame 32-dict duplication in viewmodel/vitals_hud/combat, enemy overlay/AI caching (mesh list, held target, 1m repath threshold), idle-off processing for enemy feedback, harvestable respawn, nav-rebake, timed crafts and the identity sweep, node-added filtering in harvest_world, cached transport/atmosphere/definition lookups, NetTransport.has_peer for F-059 guards, registry loader collapse (~130 lines), plus 4 bug fixes (signal arity, builder-position fallback, opened-chest scan shadowing, frozen hit clip) and change-only downed-flag broadcasts with late-join sync and expiry clear. Full single+two-process check suite green; chest_net_check's 2 reds are pre-existing at HEAD (F-107). Declined ON_CHANGE enemy replication (D-025 interest risk, recorded in F-099 resolution).
+
+Files: `systems/enemies/enemy.gd`, `systems/health/player_health.gd`, `systems/harvesting/harvestable.gd`, `systems/environment/day_night.gd`, `ui/hud/vitals_hud.gd`, `ui/crafting/crafting_ui.gd`, `ui/loot/chest_ui.gd`, `entities/player/viewmodel.gd`, `autoload/inventory_service.gd`, `autoload/harvest_world.gd`, `autoload/enemy_world.gd`, `autoload/powerup_service.gd`, `autoload/build_service.gd`, `autoload/crafting_service.gd`, `autoload/net_transport.gd`, `autoload/player_net.gd`, `autoload/debug_overlay.gd`, `autoload/registry.gd`, `core/net/net_session.gd`, `autoload/combat_service.gd`
+
+Commit at time of writing: `8128a73`
