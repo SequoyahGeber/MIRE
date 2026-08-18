@@ -75,6 +75,66 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-17 — first-person grips, per-weapon attack arcs, and how to get a real in-game screenshot (F-073)
+
+**`agent godot` CAN render. This is the important one, and it answers F-077.** `cmd_godot` builds
+`[binary, "--headless", "--path", ROOT] + your_args`, so an appended flag overrides an injected one:
+
+```bash
+.agent/bin/agent godot --display-driver macos --resolution 64x64 --position 2400,1400 \
+  --script tools/viewmodel_check.gd
+```
+
+That keeps the import-cache lock (F-044) and still produces real 1280×720 frames of the running game
+— `tools/viewmodel_check.gd` writes `/tmp/mire_viewmodel_{idle,windup,commit,recovery}.png`.
+`--resolution 64x64 --position 2400,1400` shrinks the OS window and parks it offscreen; a
+`SubViewport` renders at its own size regardless. Two cautions: it opens a real window, so use it for
+a deliberate render run and not for every check; and a script that errors inside `_initialize()`
+before its `call_deferred` hangs with no main loop to quit it, so keep `--quit-after` or a kill guard.
+Every `tools/*_render_check.gd` in the repo becomes usable this way without any change to `agent`.
+
+**`ItemDef` gained `attack_style`** (`enum AttackStyle { NONE, CHOP, SMASH, SLASH, THRUST }`,
+`systems/inventory/item_def.gd`). It is presentation only — reach, arc width and damage stay on
+`WeaponDef`, which is what the host reads. It is on `ItemDef` and not `WeaponDef` because `short_bow`,
+`arrow` and the code-built `unarmed` fallback have no `WeaponDef` to carry it (D-050). A new tool or
+weapon **must set it**; unset means CHOP, which is right for an axe and wrong for a spear.
+
+**`entities/player/viewmodel.gd` is now table-driven.** `STYLE_POSES` holds one entry per style —
+`cock` / `hit` / `follow` / `arc` — and `_apply_pose` reads the cached `_attack_style`. Adding a style
+is one array entry plus one enum value; changing how a family swings is four vectors. Three
+invariants that are not obvious and cost real time to rediscover:
+
+- **The hit resolves at the WIND_UP→COMMIT boundary** (`combat_service.gd:197`,
+  `elapsed >= wind_up_seconds`), not inside COMMIT. An arc must reach its contact pose at the *end of
+  the wind-up* or the visible strike lands a phase after the damage.
+- **A positive X rotation RAISES the weapon.** The node sits above `SWING_PIVOT`. The file used to
+  claim the opposite and the old constants were signed accordingly.
+- **The swing turns about `SWING_PIVOT`, not this node's origin**, via `position = pivot − R·pivot`.
+  Rotating about the node origin orbits the weapon around the camera, so 30° of pitch throws a tool
+  off the screen.
+
+`PlayerViewmodel.current_attack_style() -> int` is public so a check can assert the dispatch happened.
+
+**Grips are solved, not nudged.** All eleven are in `tools/setup_tool_content.gd`'s `GRIPS`, so
+regenerating content reproduces them. Every A-004 head runs bit-to-poll along local **+X** with the
+flat cheeks on local **±Z**, and the origin is at ground level with the grip some way up the haft —
+those three facts are what the solve needs. If a design's mesh is rebuilt, re-solve; hand-editing one
+number here is what D-050 exists to prevent.
+
+**`tools/viewmodel_check.gd` now asserts orientation and dispatch**, 18 assertions, and all of them
+hold under a plain `--headless` run. The load-bearing one is `|cheek · view| <= 0.80` per bladed item:
+the grip it replaced measured 0.92 on all seven, the solved grips measure 0.45–0.67. Extend this
+check rather than writing a new harness.
+
+**`tools/blender/render_item_icons.py` gained `ROLL_OVERRIDE_DEG`** for icons whose measured framing
+picks the wrong roll. A rebuild rewrites all 25 PNGs plus the catalog and the contact sheet, but only
+the genuinely changed ones should be committed — compare **per channel**, because
+`ImageChops.difference(a, b).getbbox()` on RGBA defaults to `alpha_only=True` and calls every
+RGB-only change identical (F-079).
+
+---
+
+
 ### Hollowmere is the map now (2026-08-17, re-authored 2026-08-18 by 2.1k)
 
 `res://levels/hollowmere.tscn` is `project.godot`'s main scene. It is **192 m across against Playtest
@@ -229,6 +289,30 @@ assertion that a client running the host's own placement path forges nothing).
 fans peers out from the spawn point, so a fixed spot lands on somebody's body and the host correctly
 refuses it as OVERLAPS — the cost path is never reached and you measure the wrong refusal.
 `build_net_check` derives the spot from the client's actual body position; copy that.
+
+### 2026-08-18 — the 3.4 design check is done: the schema holds, and docs/POWERUPS.md is now the authoring spec (reed16)
+
+The question that had to be answered before 3.4 hand-authors 40–60 `.tres` files: can the whole
+design space live in `tags` + `max_stacks` + `(stat → Vector2)`, or is a field missing that would
+force re-authoring everything? **docs/POWERUPS.md is the answer: a 60-powerup sketch spanning all
+six families and every archetype (always-on, conditional, on-event, proc, capability, tradeoff,
+tag-only feeder) — zero need a new field.** Conditions, triggers and capabilities are stat-name
+conventions consumed at the owning system, not schema; D-050 records why that beats fields, and §5
+of the doc records what evidence would reopen the question.
+
+**For 3.4:** author against POWERUPS.md §2 (the stat catalog — names, signs, consumers) and §4
+(the sketch, as a menu not a shipping list). The vocabulary is now enforced (F-078):
+`PowerupDef.KNOWN_STATS`/`KNOWN_FAMILIES` back `validation_errors()`, so a typo'd stat name, a
+lowercase `&"fire"` tag, a `Vector2.ZERO` no-op, or a negative multiplier that inverts its stat at
+`max_stacks` (D-044 linear stacking crosses zero at `mult·N ≤ −1`) is a named boot error, never
+silently dead content. Inventing a stat the catalog lacks = one row in POWERUPS.md §2 + one line in
+`KNOWN_STATS`, on purpose. `tools/powerup_check.gd` carries seven F-078 assertions (42 total, 0
+failures, clean error-line bar).
+
+**For every system task that wires a stat** (movement, health, combat, stamina, Mire...): the name
+your system must route through `PowerupService.stat()` is already settled in POWERUPS.md §2 —
+content authored before your task exists depends on you using exactly that name. Condition-suffixed
+stats (`melee_damage_low_hp`) chain onto your unconditional pass per the worked snippet in §2.
 
 ### 2026-08-18 — the powerup framework is in (3.3). This is what 3.4 and every effect task build on
 

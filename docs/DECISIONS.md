@@ -798,6 +798,42 @@ covers it and the check will say so. Or evidence that an `ON_CHANGE` visual swap
 range to want a crossfade, which is a presentation problem for a shader to solve, not a job for the
 network interpolator.
 
+### D-050 · 2026-08-17 · Attack style is presentation and lives on `ItemDef`; grips are solved from geometry, never hand-nudged
+
+Two calls from F-073, which found every tool holding one grip rotation authored for the sword and
+every weapon playing one chop.
+
+**`attack_style` is an `ItemDef` field, not a `WeaponDef` one.** `WeaponDef` looks like the natural
+home — it is the resource that describes a swing — but it does not cover the set. `short_bow` and
+`arrow` ship a `view_model` and have no `WeaponDef` at all, and `CombatService` builds its `unarmed`
+fallback in code without ever inserting it into `Registry.weapons`, so `Registry.get_weapon()` is
+null for it. Putting the style there leaves three holdable things unable to declare an arc, silently
+falling back to the default — which is precisely the bug. It also keeps the authority story clean:
+`WeaponDef` is what the **host** reads to resolve damage, reach and arc width, while the animation is
+client-local presentation that tells nobody anything (`ARCHITECTURE.md` §2.2, last row). Reach and
+damage stay on `WeaponDef`; only the shape of the visible arc moved.
+
+**Grips are computed from each export's geometry, not tuned by eye in the inspector.** A-004's
+exports are horizontally centred with ground-level origins and their heads run bit-to-poll along
+local +X with the cheeks on local ±Z. That makes "which way should this be turned" a measurable
+question, not a matter of taste: name where the haft and the working end should point in camera
+space, build that basis, decompose it into Godot's YXZ Euler order, and place the *hand* — not the
+model's origin — at a chosen screen position. The eleven solved grips live in
+`tools/setup_tool_content.gd`'s `GRIPS`, so a regeneration reproduces them. The rule this replaces —
+one rotation for everything, scale derived from length — is how a value correct for one design
+(the sword, whose broad flat genuinely is its readable face) silently became wrong for ten others.
+
+The same principle already governs the icons: `assets/icons/README.md` says "framing is measured, not
+hand-tuned". F-073 was what happened where that principle had not reached.
+
+**Would change my mind:** on the first, a weapon whose *arc* must differ between two items sharing one
+`ItemDef` — there is no such thing today, since an item is a weapon. On the second, a design where
+the viewmodel is an authored animation clip on a rigged arm (A-037) rather than a transform on a
+static mesh; then the grip is baked into the pose and this solver retires with it. Nudging a solved
+number by hand is not a counter-argument — re-solve, or the next regeneration erases it.
+
+---
+
 ### D-044 · 2026-08-18 · Tags ARE the Resonance families, and stacks scale linearly, additive before multiplicative
 
 Two calls task 3.3 had to make, both of which 3.4's 40–60 authored powerups depend on and neither of
@@ -913,6 +949,37 @@ individually, and give those props a node.** Batching is for scenery.
 
 **Would change my mind:** a per-instance visibility or material mechanism for MultiMesh that a
 gameplay system can drive — then the swap happens in the buffer and the holders go away.
+
+---
+
+### D-050 · 2026-08-18 · The powerup stat vocabulary is a governed catalog, and conditions, triggers and capabilities are stat names consumed at the owning system — not schema fields
+
+The pre-3.4 design check (docs/POWERUPS.md) sketched 60 powerups across the whole §4.4 design space
+against the shipped `PowerupDef`. Result: **zero need a field the schema doesn't have**, so the
+schema ships as-is and 3.4 authors against it. Three conventions make that true, and they are the
+part that must not be relitigated per-powerup:
+
+1. **A stat is named for the exact quantity the consuming system computes**, so D-044's
+   `(base + add·N)·(1 + mult·N)` reads literally. Reductions are negative values on the consumed
+   quantity (`damage_taken: (0, -0.04)` is armor); there are no inverted "resist" stats. The
+   vocabulary lives twice, deliberately: `PowerupDef.KNOWN_STATS` (validated at boot, F-078) and
+   `docs/POWERUPS.md` §2 (meanings, signs, consumers). A new stat is one line in each.
+2. **Conditional powerups are suffixed stat names** (`melee_damage_low_hp`), chained by the
+   consumer that owns the condition onto its unconditional pass. The alternative — a condition
+   field filtered inside `PowerupService` — would require pushing every peer's hp/position/phase
+   INTO the service, inverting the one seam ("systems ask, the service never reaches in") and
+   putting condition state on the wire. The suffix set is closed (`_low_hp`, `_in_mire`,
+   `_at_night`) and each costs its consumer one `if`.
+3. **Event scalars and capabilities are stats too**: `on_kill_heal_hp` is consumed once at the
+   kill-attribution site, `ignite_chance` at the hit site (the status itself ships with the
+   Fire-Resonance task), `extra_jumps` is a flat count the controller reads. Bespoke qualitative
+   behavior stays Resonance territory per D-044; the escape hatch for a one-off signature powerup
+   is code keyed to `stacks_of(peer, id)` — no field either way.
+
+**Would change my mind:** a designer actually asking for two different thresholds of the same
+condition (breaks the closed-suffix convention → an exported condition pair, service-filtered);
+or more than ~3 timed-surge powerups wanted (→ a surge mechanic task plus two catalog names —
+still not a field).
 
 ---
 

@@ -312,11 +312,14 @@ Registration via `agent autoload` (preamble rule, F-051).
 
 ## 3.4 · Author 40–60 powerups (T0) — inspector, against 3.3's worked example. Never agent-generated.
 
-3.3 shipped 2026-08-18. Before authoring anything, read **D-044** (tags ARE the Resonance families —
-there is no `resonance_family` field; and the stacking maths) and `docs/DELEGATION.md` *Current
-state*, which carries the authoring shape and the replication split. Copy
-**`content/powerups/swift_stride.tres`**; it is the one worked example and it loads through the real
-registry. `PowerupDef.validation_errors()` runs at boot, so a malformed `.tres` is a named error and
+3.3 shipped 2026-08-18. **The authoring spec is `docs/POWERUPS.md`** (the pre-3.4 design check,
+reed16): §2 is the stat catalog — the ONLY names `modifiers` may use, enforced at boot by
+`PowerupDef.KNOWN_STATS`/`KNOWN_FAMILIES` (F-078) — and §4 is a 60-powerup sketch spanning the
+design space to pick from or replace. Also read **D-044** (tags ARE the Resonance families — there
+is no `resonance_family` field; and the stacking maths), **D-050** (conditions/triggers/capabilities
+are stat-name conventions, not fields), and `docs/DELEGATION.md` *Current state* for the replication
+split. Copy **`content/powerups/swift_stride.tres`**; it is the one worked example and it loads
+through the real registry. `PowerupDef.validation_errors()` runs at boot, so a malformed `.tres` is a named error and
 a skip in the boot log, never a silent omission — check that log after a batch. `modifiers` maps a
 stat name to `Vector2(additive, multiplicative)` **per stack**: `Vector2(0, 0.08)` is +8% per stack,
 `Vector2(2, 0)` is +2 flat per stack.
