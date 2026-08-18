@@ -75,6 +75,97 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 3.13: CommandService is in — the front door 3.14–3.17 register specs against (lp)
+
+**What shipped, verified:** `autoload/command_service.gd` (new autoload, registered right after
+`DebugConsole` in `project.godot` — see the note at the end of this entry on why that ordering took
+a hand edit). Every existing console command is migrated: `debug_console.gd`'s builtins
+(`help`/`clear`/`channels`/`log`/`overlay`/`quit`), `dev_loadout.gd`'s `give`/`loadout`/`items`,
+`enemy_world.gd`'s `spawn`/`killall`/`enemies`. `DebugConsole.register()` still works — it is now a
+deprecation-warning shim over `CommandService.register_spec()` (docs/COMMANDS.md §2.4) — so
+`graphics_quality.gd`'s `gfx` and `dev_frame_cap.gd`'s `fps_cap`/`vsync` needed no changes.
+
+**The API the next task registers against**, all cross-autoload calls the established
+`get_node_or_null(^"/root/CommandService")` + `.call()` way (never bare — see the file's own header
+for why, given it loads earlier than almost everything else):
+
+```gdscript
+# Registration — call in your own _ready(), same as every DebugConsole.register() call site before:
+command_service.call("register_spec", &"my_command", {
+    "scope": &"local",   # or &"host"
+    "args": [
+        {"name": "target", "type": &"item_id", "optional": true, "default": &"foo", "min": 1, "max": 999},
+        # ...
+    ],
+    "handler": _cmd_my_command,   # func(ctx: Dictionary, args: Dictionary) -> Dictionary|String
+    "help": "my_command [target] — one-line usage, doubles as the auto usage-on-parse-failure text",
+})
+```
+
+- **CommandCtx** is a plain `Dictionary` (deliberately, not a class — see the header on why crossing
+  autoload boundaries never carries a custom RefCounted here): `{peer_id: int, source: StringName,
+  position: Vector3, facing: Vector3}`. `source` is `&"console" | &"runner" | &"function" | &"hook" |
+  &"rpc"` — only `console`/`rpc` exist today; `runner`/`function`/`hook` are reserved for 3.17.
+  `position`/`facing` are the issuer's own replicated player body (`PlayerNet.player_for`), zero/
+  forward if none exists (an offline harness, or a peer with no body yet).
+- **CommandResult** is a plain `Dictionary`: `{ok: bool, message: String, data: Dictionary}`. A
+  handler may also just return a bare `String` (compat with the old `register()` shape) — normalized
+  to `{ok: true, message: <string>, data: {}}`.
+- **Argument types registered today**: `string`, `int`, `float` (both support `min`/`max` — CLAMPED,
+  not rejected), `bool` (`on/true/1/yes` vs `off/false/0/no`), `enum` (closed `values: Array[String]`
+  set), `item_id`/`enemy_id` (Registry/EnemyWorld lookup, fails parse with the exact `no such … — try
+  '…'` wording `give`/`spawn` always used), `peer` (positive int only — no display-name resolution,
+  filed F-126; does NOT require the peer to currently be connected, on purpose, so `op` survives a
+  D-035 reconnect gap). **3.14/3.15 add their own** (`vec3`, `selector`, `rule_id`, …) by adding one
+  entry to `_register_type_parsers()`'s `_type_parsers` dict — nothing else in the file changes shape
+  for a new type.
+- **A parse failure never reaches a handler.** Missing a required arg → the spec's `help` text as
+  `"usage: <help>"`. An arg present but invalid (bad int, unknown item, …) → the type parser's own
+  message, verbatim — this distinction is load-bearing (`_parse_args`'s `kind: "missing"|"value"`),
+  don't collapse it back to one generic usage string.
+- **Op set**: `CommandService._ops: Dictionary[int, bool]`, host-side, peer-id keyed (not literally
+  the D-035 token — `core/net/net_session.gd`'s token lookup is private and was outside this task's
+  claim; peer-id + following `run_player_rebound`/`run_player_expired` is the same mechanism every
+  other host service here already uses, see D-076's neighbor reasoning in the file). Host is always
+  op. `op`/`deop` are HOST-scope AND separately require `ctx.peer_id == NetConfig.HOST_PEER_ID` inside
+  their own handlers — an opped non-host peer cannot op anyone.
+- **`commands` / `commands --json`** (LOCAL, meta) is the introspection contract 3.16's coverage check
+  reads: `data.commands` is `Array[Dictionary]` of `{name, scope, help, arg_count}`.
+- **Calling from OUTSIDE an autoload that can't safely `await` through `.call()`** (i.e. everyone —
+  see the file header): `var handle: int = command_service.call("submit", line, ctx)`, then listen for
+  `command_service.command_result(handle, result)` once, filtered by handle — `debug_console.gd`'s
+  `_run()`/`_on_command_result()` is the worked example. A script that instead holds a
+  **typed/preloaded** reference (`const S = preload("res://autoload/command_service.gd")`, then `node
+  as S`) can `await s.execute(line, ctx)` directly — `tools/command_check.gd` is that worked example,
+  and it's how every check should talk to it.
+
+**Protocol bump 15 → 16**: `net_submit_command(request_id: int, line: String)` (client → host,
+`any_peer`/reliable) and `net_command_result(request_id: int, result: Dictionary)` (host → the one
+requester, `authority`/reliable). `tools/handshake_check.gd` extended.
+
+**D-076, the one real surprise**: a client's HOST-scope submission with the console open (tree
+paused) never got its RPC reply — measured, not assumed, by `tools/command_net_check.gd`.
+`debug_console.gd._run()` now unpauses for exactly as long as one of its own requests is in flight
+and re-pauses once they've all resolved. Any future caller that goes through `submit()` inherits this
+for free; a caller that calls `execute()` directly from outside a paused tree needs nothing extra.
+
+**`project.godot` ordering**: `agent autoload` only appends; this task hand-moved the
+`CommandService=` line to right after `DebugConsole=` (editor confirmed closed first) because the
+whole design depends on every autoload after it being able to `register_spec()` synchronously from
+its own `_ready()`. If a future task adds another autoload that must ALSO register specs and gets
+appended at the end of the list, it is safe (append order doesn't matter for anything registering
+INTO CommandService, only for CommandService's own position relative to what calls it) — this note
+is only for anyone tempted to "clean up" the list back into pure append order.
+
+**Verified:** `agent godot --script tools/command_check.gd` (offline: parse/usage errors, scope
+routing, op refusal/grant, `commands --json`, give/spawn exact strings) and `agent godot --script
+tools/command_net_check.gd` (two real ENet processes: non-op refusal over the wire with nothing
+granted, host op grants over the SAME front door, the paused round trip, cumulative inventory count
+exactly matches both grants) both `failures=0`, 0 `ERROR:` lines. `tools/handshake_check.gd`,
+`tools/dev_loadout_check.gd`, `tools/enemy_check.gd`, `tools/enemy_net_check.gd`,
+`tools/wave_spawner_check.gd` all still green after the migration. Full boot (`agent godot
+--quit-after 15`): 0 `ERROR:` lines.
+
 ### 2026-08-18 — Task 4.1: seeded island heightmap — pure `IslandHeightmap.height()`, cross-platform-safe by construction (lm)
 
 **What shipped, verified:** `world/gen/island_heightmap.gd` — `class_name IslandHeightmap`, a

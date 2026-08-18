@@ -55,6 +55,7 @@ Decide this once. Every new system must declare which row it's in.
 | Mire grid | **Host** | Tick delta broadcast (see §5) | — |
 | Day/night, wave director, Cycle state, active modifiers | **Host** | Replicated properties | — |
 | Attunement selection (task 3.9) | **Host** | RPC request → host validates one-time lock → grants a PowerupService modifier → broadcast to all | A double-pick or a desynced roster is worse than a slow one; every peer needs to see every player's role to self-organize (DESIGN §4.5) |
+| Command execution (task 3.13) | **Host** for mutating commands; client submits, host validates op status and executes; results return to the issuer. Parsing/UI/read-only commands are client-local. | New reliable `net_submit_command`/`net_command_result` pair; host re-parses the raw line from scratch, never the client's parse | One brain for every mutation, same as the systems the commands drive |
 | VFX, audio, camera, UI | **Client-local** | Never networked | Never pay bandwidth for cosmetics |
 
 > **The rule of thumb:** if two clients disagreeing about it would cause a bug, the host owns it.

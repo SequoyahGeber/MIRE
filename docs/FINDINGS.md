@@ -514,6 +514,27 @@ Nothing is broken today: the stat is inert until something reads it, exactly lik
 pending table. Thin Step's description ("untouchable for the whole of the trip rather than most of
 it") is written for option 2 and should be re-read if option 1 is chosen.
 
+### F-126 · CommandService's `peer` argument type has no display-name resolution — peer ids only
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-18 by lp during 3.13
+
+`docs/COMMANDS.md` §2.2 specifies the `peer` argument type as "peer id int or player display name —
+resolves against connected peers." `autoload/command_service.gd`'s `_parse_peer()` only implements
+the first half: it validates the token is a positive int and accepts it outright (see D-078's
+neighbor decision in `_parse_peer`'s own doc comment for why it does not even require the id to
+currently be connected — that part is deliberate, not part of this gap). There is no per-player
+display-name registry anywhere in the project yet for the second half to resolve against — `op
+<name>` and any future `peer`-typed command that would want to accept a friendly name instead of a
+raw id cannot.
+
+Nothing is broken today: `op <peer_id>` and every other `peer`-typed command work fine with the raw
+integer id, which is what `NetDebugPanel`/`net_debug_panel.gd` and the lobby roster already surface
+to a player who needs to look one up. This is scheduling information for whichever task first wants
+`give bob 5` to work rather than `give 988921899 5` — most naturally task 3.16 (the catalog sweep,
+which owns the rest of §2.2's argument-type completeness) or whatever eventually adds player display
+names to the project for other reasons (a lobby roster label, a kill-feed name) — `_parse_peer`
+should grow a name lookup against that same registry rather than inventing its own.
+
 ---
 
 ## Resolved

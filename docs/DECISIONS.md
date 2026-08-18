@@ -1636,3 +1636,62 @@ above — that would mean the two-layer/salt/falloff arithmetic itself introduce
 though every primitive it's built from is individually safe, which D-017/D-028 didn't test for
 directly. Also: 4.2 or later needing `TYPE_CELLULAR`/domain warp noise, which D-017 already flagged
 as untested and out of the safe set as measured.
+
+### D-076 · 2026-08-18 · A console open (tree paused) unpauses itself for an in-flight HOST-command RPC round trip
+
+Task 3.13's own spec end-note flagged this as the one thing to *measure*, not assume: "`SceneTree`
+polls multiplayer outside the pause gate in 4.7, so this should already work — but prove it in
+`tools/command_net_check.gd`... and if it doesn't, the console unpauses for the round trip." It
+doesn't. `tools/command_net_check.gd`'s first version proved it directly: a client submitted a
+HOST-scope command with `DebugConsole` genuinely open (`get_tree().paused = true`), and
+`net_command_result` never reached the client's own `_rpc_result_received` signal inside a 15 s
+window — even though the HOST had already executed the command and sent the reply (visible from the
+host's own `InventoryService` state, and confirmed with temporary instrumentation before this was
+understood as a pause issue rather than a check bug). Unpausing the client's tree immediately after
+`submit()` and re-pausing once every request it caused resolves (`debug_console.gd`'s
+`_unpaused_for_handles`) fixed it outright — the same net check, unmodified in structure, now passes
+in well under a second.
+
+**Scope of the fix:** `DebugConsole._run()` unpauses for exactly as long as at least one request IT
+submitted is in flight, and only if the tree is currently paused *because of* this console
+(`pause_while_open`). A LOCAL command never touches this path — it resolves inside `submit()` before
+the unpause check even runs, since nothing left this process. Any later system that submits a
+command from a paused context inherits this by going through `DebugConsole`/`CommandService`'s
+existing `submit()`; nothing else in the engine needed to change.
+
+**Would change my mind:** a Godot engine version where `SceneTree.paused` genuinely does not gate
+`SceneMultiplayer`'s RPC delivery (contrary to what was measured here on 4.7.1) — then this becomes
+dead code, not wrong code, and can be deleted once re-verified.
+
+### D-077 · 2026-08-18 · CommandService is one front door; every command is a thin wrapper over an existing host seam; scope is LOCAL or HOST; ops gate every HOST command; commands ship in release builds
+
+Filed verbatim from `docs/COMMANDS.md` §9 item 1, the plan this task executes against. A command
+handler never grows its own mutation path — if a verb needs something no existing service exposes,
+the fix is a new seam on the OWNING service (`InventoryService`, `EnemyWorld`, …), never a
+special-cased branch inside a command handler. `give`/`spawn`/`killall` (this task's migrated set)
+already follow this: they call `InventoryService.host_add`/`EnemyWorld.host_spawn`/
+`host_despawn_all`, the same seams the pre-3.13 hand-rolled commands called. Scope is exactly two
+values (`LOCAL`, `HOST`) — no third "hybrid" scope — and every HOST command is refused with the same
+uniform wording (`CommandService.NOT_OP_MESSAGE`) unless the issuing peer is the host itself or has
+been opped. Commands are not gated out of release builds: D-002/D-030's reasoning (cheating is
+irrelevant among friends; cross-play testing wants a console) already covers this, and op-gating is
+strictly more control than the pre-3.13 console had (every command was local-only and host-typed
+before this task; now a client can reach `give`, but only once opped).
+
+**Would change my mind:** a mutation that genuinely cannot route through an existing seam without
+duplicating validation the owning service already does — that means the owning service is missing a
+seam, and the fix belongs there, never in a command handler working around it.
+
+### D-078 · 2026-08-18 · The host re-parses a client-submitted command's raw line from scratch — a client's own parse is never trusted, only the line it typed
+
+Filed verbatim from `docs/COMMANDS.md` §9 item 2. `net_submit_command(request_id, line: String)`
+carries exactly one piece of client-authored data across the wire: the raw text. The host does not
+receive, and therefore cannot be handed, any pre-parsed argument structure — `CommandService.execute()`
+on the host side runs the identical `_parse_args()`/type-parser pipeline a locally-typed command
+would, against the host's own `Registry`/`EnemyWorld`/`NetSession` state, not anything the client
+computed. This is the same trust stance `BuildService` already takes re-snapping the ghost's
+transform rather than trusting a client-reported placement (D-034's neighbor). The cost is
+re-parsing a short string per command, at up to 6 peers, on commands typed at human speed — not a
+budget concern now or foreseeably.
+
+**Would change my mind:** parse cost ever mattering at 6 peers (it won't).
