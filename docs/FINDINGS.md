@@ -1112,39 +1112,6 @@ needed — `.git/hooks/pre-commit` only execs `agent check`, so every lane picks
 
 ---
 
-### F-068 · The night wave spawner shipped without being registered, so no waves run
-
-**Area:** gameplay · **Severity:** high · **Found:** 2026-08-17 by lc1 during the 2.12 review
-
-Task 2.12's contract requires `WaveSpawner` to be registered after `DayNight`, but commit `915c881`
-did not change `project.godot`, and the current autoload list still ends with `DayNight` at
-`project.godot:39`. Nothing instantiates `systems/waves/wave_spawner.gd`, so its `_ready()` at line 22
-never subscribes to the dusk/dawn signals and the shipped game has no night waves or dawn cleanup.
-
-The task landed before its 2.11 gate and was described as staged behind that gate, but it was closed
-and never completed after 2.11 registered `DayNight`. Fix with the spec's required
-`agent autoload WaveSpawner res://systems/waves/wave_spawner.gd`, then verify a clean boot and the
-wave harness.
-
----
-
-### F-069 · `wave_spawner_check` signals a shadow DayNight node that WaveSpawner never subscribes to
-
-**Area:** testing · **Severity:** medium · **Found:** 2026-08-17 by lc1 during the 2.12 review
-
-With task 2.11 shipped, `/root/DayNight` already exists. `tools/wave_spawner_check.gd:45-53` adds a
-second node named `DayNight`, then instantiates the production script; production resolves the
-existing autoload at `systems/waves/wave_spawner.gd:24`, while the check emits signals on its newly
-added fake at lines 58, 64, 76, 84 and 86. Those signals therefore never reach the spawner.
-
-The mandated command `.agent/bin/agent godot --script tools/wave_spawner_check.gd` exits 1 with
-`WAVE_SPAWNER_CHECK failures=4` and four `ERROR: FAIL:` lines: both population formulas, ambient
-disable, and repeated-night idempotence fail. The harness must exercise the registered `DayNight` /
-`WaveSpawner` pair, or otherwise avoid the root-name collision, so it stays green in the integrated
-project its gate requires.
-
----
-
 ### F-070 · Generated review orders cannot use their mandated review task id
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by lc1 during the 2.12 review
@@ -1165,6 +1132,62 @@ review closeout command).
 ---
 
 ## Resolved
+
+### F-068 · The night wave spawner shipped without being registered, so no waves run — **fixed**
+
+**Area:** gameplay · **Severity:** high · **Found:** 2026-08-17 by lc1 during the 2.12 review · **Fixed:** 2026-08-18 by gale6
+
+Task 2.12's code was complete, correct, and never ran. Commit `915c881` shipped
+`systems/waves/wave_spawner.gd` but did not register it, so nothing ever instantiated it, its
+`_ready()` never subscribed to `night_started`/`day_started`, and the shipped game had no night waves
+and no dawn cleanup at all. The task was staged behind 2.11's gate and then never finished after
+2.11 registered `DayNight`.
+
+Fixed with `agent autoload WaveSpawner res://systems/waves/wave_spawner.gd` — it appends, so it lands
+after `DayNight` and the dependency order `_ready()` needs is satisfied. Twenty-two autoloads now;
+`verify_setup` scans the `[autoload]` section rather than a hard-coded list and only asserts a floor,
+so it stayed green without editing.
+
+**The lesson is not "somebody forgot".** It is that `wave_spawner_check` passed the whole time, because
+it built its own private WaveSpawner — a harness that instantiates the thing it is testing cannot tell
+you whether the *project* has it. That is F-069, and the two findings are really one bug seen from two
+ends. `wave_spawner_check.gd` now resolves `/root/WaveSpawner` and fails on its first assertion if the
+autoload is absent, which is the regression anchor this needed and did not have.
+
+**Verified.** `agent godot --script tools/wave_spawner_check.gd` — 18/18, 0 failures, including the
+two new assertions that WaveSpawner is actually connected to the real DayNight's dusk and dawn.
+Clean boot with `agent godot --quit-after 5` (no errors). `verify_setup` (all checks passed),
+`day_night_check` (0), `day_night_net_check` (0, two real processes), `enemy_check` (0),
+`enemy_crawler_check` (PASSED) and `combat_check` (0) all unchanged and green — a new autoload
+is a global change, so this is the blast radius, checked rather than assumed.
+
+---
+
+### F-069 · `wave_spawner_check` signals a shadow DayNight node that WaveSpawner never subscribes to — **fixed**
+
+**Area:** testing · **Severity:** medium · **Found:** 2026-08-17 by lc1 during the 2.12 review · **Fixed:** 2026-08-18 by gale6
+
+The check added its own `FakeDayNight` named `DayNight` to the root. Once 2.11 registered the real
+autoload, Godot made the second name unique, so the production script resolved `/root/DayNight` (the
+autoload) while the check emitted on its fake — four assertions reading a signal nobody had
+subscribed to, and `WAVE_SPAWNER_CHECK failures=4`.
+
+Rewritten to drive the **registered** pair: it resolves `/root/DayNight` and `/root/WaveSpawner`,
+freezes the real clock with `set_physics_process(false)` so no stray crossing spawns a wave mid-
+assertion, and crosses each threshold by advancing that clock with `host_advance()` rather than by
+emitting a signal — "the host's own clock reaches 0.75 and something happens" being the actual claim
+under test. The `FakeDayNight` class is gone; there is nothing left in the file to shadow anything.
+
+**The general shape, worth not repeating:** a harness that constructs its own copy of the system
+under test proves the *script* works and says nothing about whether the *project* runs it. Where a
+system is an autoload, the check should reach for the autoload. Both of `tools/day_night_check.gd`'s
+deliberate exceptions (it must pass *before* registration, by 2.11's own ordering) are documented in
+its header — that is the bar for building a private instance instead.
+
+**Verified.** `agent godot --script tools/wave_spawner_check.gd` — 18/18, 0 failures, 0 engine-error
+lines, up from 4 failures before the rewrite.
+
+---
 
 ### F-065 · Night sky still reads as daytime — white clouds, no stars — **fixed**
 
