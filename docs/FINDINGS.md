@@ -696,7 +696,10 @@ preset, which turns volumetric fog off.
 
 ---
 
-### F-116 · Two items now own the same branch art: harvesting ships 'stick' while ITEMS.md and task 3.2 plan 'branch'
+
+## Resolved
+
+### F-116 · Two items now own the same branch art: harvesting ships 'stick' while ITEMS.md and task 3.2 plan 'branch' — **fixed**
 
 **Area:** content · **Severity:** low · **Found:** 2026-08-18 by vane19
 
@@ -723,9 +726,21 @@ until another lane's task lands. Shipping a working `stick` and converging later
 Nothing else references `stick`; there is no save data and no recipe using it yet, so there is no
 migration either way. Whoever gets there second should just check `Registry` for both ids.
 
----
+**Fixed 2026-08-18 by vane19, within the hour, the `branch` way.** 3.2 landed
+`content/items/branch.tres` and six recipes that consume it — arrow, short bow, skewer, repair
+hammer, wooden axe, wooden pickaxe — while this finding was still open. So `content/items/stick.tres`
+was deleted and `content/harvestables/bush.tres` and `sapling.tres` now set
+`yield_item_id = &"branch"`. Nothing else referenced `stick`; no migration was needed, exactly as the
+finding predicted.
 
-## Resolved
+The effect is the one that matters: the 794 bushes and saplings F-114 made harvestable now feed
+real recipes rather than a dead-end resource.
+
+**Verified:** `agent godot --script tools/harvest_tool_ladder_check.gd` →
+`PASS: res://content/harvestables/bush.tres yields a registered item 'branch'` (and the same for
+`sapling.tres`), `HARVEST_TOOL_LADDER failures=0`.
+
+---
 
 ### F-113 · One axe swing depletes a whole tree: the harvest raycast and the combat swing both damage it, and neither knows what tool you are holding — **fixed**
 
@@ -834,8 +849,10 @@ asset.
   alone and only hides it on depletion, through a `set_visual_hook()` Callable. That is what lets
   ONE definition cover 62 wild trees or 794 bushes instead of demanding a three-state Blender
   export per species.
-- **Bushes and saplings yield sticks** (`content/items/stick.tres`, using the existing
-  `pickup_branch`/`icon_branch` art) — see F-116 on converging that id with ITEMS.md's `branch`.
+- **Bushes and saplings yield `branch`** — the item 3.2 authored, which six recipes (arrow, short
+  bow, skewer, repair hammer, wooden axe, wooden pickaxe) already consume. It shipped for an hour as
+  a duplicate `stick` item because `branch.tres` did not exist yet; F-116 records that and its
+  convergence.
 - **Density did not cost frame time.** `HarvestLibrary.Represent` splits the families: `NODE` gets
   its own holder and mesh (trees, ore, boulders — **387** of them, up from 83), `BATCH` stays
   inside the chunk's `MultiMesh` and gets a logic-only holder (**794** bushes and saplings, **zero**
