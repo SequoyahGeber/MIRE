@@ -1361,3 +1361,23 @@ are OGG; and the two music `.ogg.import` sidecars are force-committed as gitigno
 **Would change my mind:** his ears rejecting the synthesized sound outright, or trailer/store-page
 quality demands exceeding what the toolkit can reach — then commission music (7.2's original plan)
 and keep the synthesized SFX/ambience underneath.
+
+### D-067 · 2026-08-18 · F-117's docs-file misattribution risk gets a done()-time content hash, not claim-time hunk-range diffing
+F-117 left two options open: migrate to F-102's one-file-per-finding shape (removes the collision
+outright), or a cheaper `ship`-side heuristic. Took the cheaper one now, since the migration is a
+bigger claim than one task should make unilaterally. `_release()` (fires on `done`/`handoff`/`drop`)
+now snapshots a sha256 of each released file's bytes into `recent[f]["hash"]`; `ship` recomputes it
+for every file it is about to stage and warns — names the file(s), does not block — if the working
+tree no longer matches. Chose the **done-time** snapshot over the finding's own sketch of a
+**claim-time** snapshot plus line-range hunk attribution: everything a task writes between its own
+`claim` and its own `done` is legitimately its edit and must never warn, so diffing from claim-time
+would need to reconstruct which hunks were "mine" before comparing — exactly the hard part the
+finding flagged as unsolved. Diffing from done-time needs no attribution at all: in the documented
+workflow (`done` immediately followed by `ship`) the file should be byte-identical between the two,
+so ANY difference is by definition somebody else's edit landing in the gap, with no false positives
+from the task's own legitimate work. Verified: `python3 tools/harness_check.py` — new case fails
+against `--rev HEAD` (pre-fix) and passes against the working tree (post-fix); a second case proves
+a matching hash stays quiet.
+**Would change my mind:** a real case where the working tree legitimately changes between a task's
+own `done()` and its own `ship()` (nothing in the documented workflow does this today) — that would
+make the heuristic noisy enough to train people to ignore it, same failure mode F-072 was fixing.
