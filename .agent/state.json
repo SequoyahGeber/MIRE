@@ -797,9 +797,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lp",
-      "at": "2026-08-18T18:30:33+00:00",
-      "hash": "5c007edae8a3079953f04d47c2d2dfc44df7bf0bd9c3bfd4b5733883485506a0",
-      "task": "F-117"
+      "at": "2026-08-18T18:36:06+00:00",
+      "hash": "2eb590def733627491b5d41fbdcc50c8f9961923275a3dc8f2be5a9c44894f47",
+      "task": "F-119"
     },
     "docs/STEAM_CROSS_PLATFORM_TEST.md": {
       "agent": "flint5",
@@ -1190,6 +1190,12 @@
       "agent": "reed16",
       "at": "2026-08-18T02:29:39+00:00",
       "task": "F-066"
+    },
+    "tools/godot_prepass_check.py": {
+      "agent": "lp",
+      "at": "2026-08-18T18:36:06+00:00",
+      "hash": "92854931e4789131065525de5df552dfd09344d5bbc59c0d6f3a578506273dbc",
+      "task": "F-119"
     },
     "tools/ground_fog_check.gd": {
       "agent": "vane19",
@@ -3535,9 +3541,11 @@
       "title": "The forest has no ambient life: nothing falls, drifts or settles, so a still frame of the map is a still frame"
     },
     "F-119": {
+      "done_at": "2026-08-18T18:36:06+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`agent godot`'s own `--import` pre-pass logs two UNDECLARED `ERROR:` lines on every single invocation"
     }

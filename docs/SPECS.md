@@ -1436,6 +1436,54 @@ overwritten by an earlier hand-edit that filed this finding — see the F-117 Re
 
 ---
 
+## F-119 · `agent godot`'s own `--import` pre-pass logs two UNDECLARED `ERROR:` lines on every single invocation
+
+**Claim:** `tools/godot_prepass_check.py`. No production/runtime file — this is coordination tooling,
+not a networked system, so it declares no `ARCHITECTURE.md` §2.2 authority row.
+
+**Root cause:** not repo state — the shared per-user editor settings
+(`~/Library/Application Support/Godot/editor_settings-4.7.tres` on macOS, outside the repo and outside
+`.godot/`) had `text_editor/external/use_external_editor = true` with an empty
+`text_editor/external/exec_path`. F-093's `--import` pre-pass boots the editor headlessly, which
+reaches `loading_editor_layout`'s "Reopening scenes..." step and tries to reopen every script the last
+real editor session had open through the configured external editor; an empty `exec_path` fails that
+open every time, twice (two scripts were in the last saved layout), and Godot falls back to the
+internal editor rather than failing the boot — hence exit 0 with two undeclared `ERROR:` lines.
+SPECS.md's own standing rule 4 (F-021, "grep every check run for `ERROR:`") was going unenforced
+against exactly this section, because an agent's own check greps its own `--script` output, printed
+after the pre-pass already ran.
+
+**Fix:** flip `text_editor/external/use_external_editor` to `false` in that `.tres`. Nothing on this
+machine had `exec_path` configured, so the external-editor path was dead weight already, not a live
+feature being removed. **This fix is per-user/per-machine, not per-repo** — it does not travel with
+`git clone` (the file lives outside the repo entirely) and a differently-configured machine could
+reintroduce the same two lines; `tools/godot_prepass_check.py` exists to catch that on whichever
+machine runs it, not to prove it fixed everywhere.
+
+**Build:** `tools/godot_prepass_check.py` — plain Python, run directly (`python3
+tools/godot_prepass_check.py`), not through `agent godot --script` (there is nothing for a `.gd`
+script to observe: the bug fires in the pre-pass boot, before any `--script` file is even loaded, so
+only a wrapper around the `agent godot` *invocation itself* can see it). It shells out to
+`.agent/bin/agent godot --import` for real — `--import` already in argv means `cmd_godot` does not
+double it into two passes (F-093) — and fails if any `ERROR:` line appears anywhere in the combined
+stdout/stderr. No `fake-godot` double (unlike `tools/harness_check.py`'s F-093 cases): the bug lives
+in real per-user global state a double can't reproduce, so this runs the real engine through the real
+wrapper.
+
+**Verified 2026-08-18:**
+
+```
+python3 tools/godot_prepass_check.py
+GODOT_PREPASS_CHECK ok (0 ERROR: lines from `agent godot --import`)
+```
+
+Confirmed the check is a real regression guard, not a vacuous pass: flipped
+`use_external_editor` back to `true` by hand and reran — `GODOT_PREPASS_CHECK FAIL (2 undeclared
+ERROR: line(s))`, both lines exactly the ones this finding describes — then flipped it back to
+`false` and confirmed green again.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

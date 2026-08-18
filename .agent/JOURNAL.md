@@ -2948,3 +2948,18 @@ Notes along the way:
 Files: `.agent/bin/agent`, `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `d113e5b`
+
+---
+
+### DONE · F-119 · lp · 2026-08-18T18:36:06+00:00
+
+**`agent godot`'s own `--import` pre-pass logs two UNDECLARED `ERROR:` lines on every single invocation**
+
+Fixed: flipped text_editor/external/use_external_editor to false in ~/Library/Application Support/Godot/editor_settings-4.7.tres (per-user, outside repo — not a repo file). Root cause was that setting =true with an empty exec_path, which fails the loading_editor_layout script-reopen step and falls back, emitting 2 undeclared ERROR: lines on every agent godot pre-pass. New tools/godot_prepass_check.py runs 'agent godot --import' for real and fails on any ERROR: line; verified both directions (FAIL with the bug reintroduced, ok with the fix). Also ran tools/findings_numbering_check.gd clean (open=13 resolved=109 failures=0) to confirm the FINDINGS.md edit didn't break numbering.
+
+Notes along the way:
+- Root cause: ~/Library/Application Support/Godot/editor_settings-4.7.tres (per-user, outside repo) had text_editor/external/use_external_editor=true with empty exec_path. loading_editor_layout's script-reopen step fails to launch the external editor, falls back, emits the ERROR twice. Fixed by flipping the setting to false. Machine-local fix, not repo state.
+
+Files: `tools/godot_prepass_check.py`, `docs/SPECS.md`
+
+Commit at time of writing: `b424996`
