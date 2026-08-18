@@ -483,24 +483,6 @@ docstring so the next family chooses deliberately instead of inheriting it.
 
 ---
 
-### F-110 · `audit_all_sides.py` silently resumes, so a re-run after fixing an asset re-reports the old defect
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
-
-The audit's resume ledger (AGENTS.md's killability rule, and the right design) means a second run
-with the same `--outdir` skips every asset already recorded and rebuilds the tidy `.json` from the
-old lines. During A-009 that produced a full contact-sheet report describing geometry that had been
-fixed and re-exported minutes earlier — including an inverted transom that the rebuild had already
-corrected. Nothing warned; the run simply finished fast.
-
-The trap is that the ledger keys on the asset, not on the GLB's content, so "already done" and "still
-current" are not the same claim. Two ways out, either fine: `rm -rf <outdir>` before every audit of a
-family you have just rebuilt (what this batch did), or teach the ledger to record the GLB's mtime or
-hash and re-render when it moves. The second is worth doing — the first depends on remembering, and
-the failure mode is silent and confidently wrong.
-
----
-
 ### F-122 · `tools/flora_check.gd:126` measures rotated flora through the same inflated `Transform3D * AABB` ruler as F-108
 
 **Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by lm, while closing F-108
@@ -523,6 +505,68 @@ still holds against the corrected numbers rather than assuming it does.
 
 ---
 
+
+### F-123 · Friends list offers no Join Game: the lobby is never advertised via the 'connect' rich presence key
+
+**Area:** net · **Severity:** high · **Found:** 2026-08-18 by pike14
+
+A friend running MIRE shows as **In Game** in the Steam friends list, but right-clicking them
+offers only *Invite to Watch* — there is no **Join Game**. Observed 2026-08-18 on the Windows VM
+with a live host lobby, screenshotted by Sequoyah.
+
+**Cause.** Steam decides a friend is joinable purely from the `connect` rich presence key. If it is
+unset, Steam knows the player is in the game but has no way to put anyone else into their session,
+so it hides Join Game and degrades the menu to Invite to Watch. `grep` across the project for
+`setRichPresence` returns nothing: the key is never set, in any code path.
+
+The asymmetry is what makes this easy to miss. The *receiving* half is fully built —
+`core/net/net_config.gd` defines `STEAM_CONNECT_LOBBY_ARG = "+connect_lobby"` and
+`autoload/steam_lobby.gd` `_check_launch_invite()` parses it off the command line for a cold start,
+with `_on_join_requested()` handling the running-game case. So the game correctly *accepts* a join
+it never *advertises*. Every invite path that works today (`open_invite_overlay`, `invite_user`)
+works because it names the lobby explicitly; only the friends-list path depends on rich presence.
+
+**Fix.** Set `connect` to `+connect_lobby <lobby_id>` whenever `_lobby_id` becomes non-zero — in
+both `_on_lobby_created()` and `_on_lobby_joined()`, so a joiner is joinable too and a third player
+can come in through either of the first two — and clear it in `_leave_lobby()` so a friend who has
+quit does not advertise a dead lobby.
+
+**Note for the Steam test.** This is a prerequisite for the friends-list half of task 1.12. It does
+not affect the invite-overlay path, which is why the earlier LAN and lobby runs passed without it.
+
+---
+
+### F-124 · macOS builds cannot show the Steam overlay: hardened runtime without the dyld entitlement blocks injection
+
+**Area:** build · **Severity:** high · **Found:** 2026-08-18 by pike14
+
+The Steam overlay never appears in a macOS build, however the game is launched from Steam, and
+re-binding the overlay hotkey changes nothing. Reported 2026-08-18 by Sequoyah, who had tried
+Shift+Q as an alternative binding.
+
+**Cause.** Steam's macOS overlay works by injecting `gameoverlayrenderer.dylib` through
+`DYLD_INSERT_LIBRARIES`. macOS strips all `DYLD_*` variables from the environment of a binary signed
+with the hardened runtime unless it carries
+`com.apple.security.cs.allow-dyld-environment-variables`. Our build is signed exactly that way —
+`codesign -dv` reports `flags=0x10002(adhoc,runtime)` — and `codesign -d --entitlements` shows only
+`com.apple.security.cs.disable-library-validation`, which Godot adds by itself for ad-hoc signing.
+
+So the overlay library is never loaded into the process at all. No hotkey can open a thing that was
+never injected, which is why re-binding produced no result and why the failure looks like a broken
+keybind rather than a signing problem.
+
+**Fix.** In the macOS export preset set both
+`codesign/entitlements/allow_dyld_environment_variables=true` and
+`codesign/entitlements/disable_library_validation=true` (the latter explicitly rather than relying on
+Godot's automatic fixup). Verify with `codesign -d --entitlements - export/macos/MIRE.app`: both keys
+must be present before any overlay behaviour is worth testing.
+
+**Wider consequence.** Anything routed through the overlay is dead on macOS until this lands —
+`SteamLobby.open_invite_overlay()` is the invite UI the project deliberately chose not to rebuild, so
+macOS currently has no working invite path at all. Any macOS result in a Steam test taken before this
+fix should be treated as untested rather than passing.
+
+---
 
 ## Resolved
 
@@ -561,6 +605,39 @@ Re-ran the real instrument against the shipped A-009 batch (`--only ships/export
 is 0 across all fifteen exports, down from 96 on `ship_hull_repaired` alone; the 504 sheet-back/rim/
 underside faces the old test misread now land in `open_surface_objects`. Full detail and the exact
 numbers: `docs/SPECS.md`'s F-109 block.
+
+### F-110 · `audit_all_sides.py` silently resumes, so a re-run after fixing an asset re-reports the old defect — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
+
+The audit's resume ledger (`geometry_report.jsonl`) keyed on the asset's repo-relative path, so a
+second run with the same `--outdir` skipped every asset already recorded regardless of whether the
+GLB at that path still matched what was recorded. During A-009 that produced a full contact-sheet
+report describing geometry that had been fixed and re-exported minutes earlier — including an
+inverted transom that the rebuild had already corrected. Nothing warned; the run simply finished
+fast, because from the ledger's point of view every asset was already done.
+
+**Fixed** by teaching the ledger to record the GLB's mtime, not just its path. Every entry now carries
+`_source_mtime` (the GLB's `os.stat().st_mtime` at render time), and the new `pending_glbs()` — pulled
+out of `main()` so it's directly testable — treats an asset as pending again whenever its current
+mtime disagrees with the mtime its ledger entry was recorded under, same as one never audited. A
+re-export into the same path now gets re-rendered on the very next run, and the run prints which
+paths it's re-rendering and why. mtime, not a content hash, per the finding's own two suggested fixes
+— every asset in this pipeline is a fresh Blender export whose mtime always moves on a real
+re-export, so a hash would only earn its cost against a rewrite that happened to be byte-identical,
+which nothing here does.
+
+**Verified 2026-08-18 (lm):** `/Applications/Blender.app/Contents/MacOS/Blender --background --python
+tools/blender/audit_all_sides_check.py` → `AUDIT_ALL_SIDES_CHECK PASS`, F-109's six assertions plus
+seven new ones built against real temp files (mtime needs a real filesystem): an unrecorded asset is
+pending, a recorded-and-unchanged one is skipped, a recorded asset whose mtime moved is pending again
+and is the one flagged as a stale re-render, and a re-recorded entry round-trips its mtime exactly
+through JSON. Real end-to-end proof against a shipped asset with a scratch `--outdir`: run 1 renders
+`ship_departure_bell.glb`; run 2 resumes and re-renders nothing; `touch`ing the GLB (mtime only — `git
+status --porcelain` stayed clean, confirming no content change) and running a third time re-renders
+exactly that one asset and prints `1 asset(s) changed since their last audit; re-rendering:
+ships/exports/ship_departure_bell.glb` — the finding's exact failure mode, now caught instead of
+silent. Full detail: `docs/SPECS.md`'s F-110 block.
 
 ### F-121 · Exported builds load zero content: .tres scan misses Godot's .remap suffix — **fixed**
 

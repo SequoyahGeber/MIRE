@@ -1002,6 +1002,51 @@ a future sheet-built family should copy, per the finding and per `docs/ASSET_TRA
   sheet-back/rim/underside faces the old test misread now land in `open_surface_objects` instead. No
   asset needed a rebuild; this is a tooling-only fix.
 
+## F-110 · `audit_all_sides.py` silently resumes, so a re-run after fixing an asset re-reports the old defect
+
+**Claim:** `tools/blender/audit_all_sides.py` (the fix), `tools/blender/audit_all_sides_check.py`
+(extended — F-109's guard already lived here; this task adds the mtime-staleness assertions,
+no second focused-check file needed), `docs/FINDINGS.md`, `docs/SPECS.md` (this block).
+
+**What was wrong:** the resume ledger (`geometry_report.jsonl`) is keyed on the asset's repo-relative
+path, and a second run with the same `--outdir` skipped every path already present regardless of
+whether the GLB at that path still matched what was recorded. AGENTS.md's own killability rule is the
+right design — checkpoint per item, skip what's already done on resume — but "already in the ledger"
+and "still current" are different claims, and the ledger conflated them. During A-009 this produced a
+full contact-sheet report describing geometry that had already been fixed and re-exported minutes
+earlier, including an inverted transom the rebuild had already corrected. Nothing warned; the run
+just finished fast, because from the ledger's point of view every asset was already done.
+
+**Fix:** every ledger entry now carries `_source_mtime`, the GLB's `os.stat().st_mtime` at the moment
+it was rendered. `pending_glbs(glbs, assets_root, report)` — pulled out of `main()` into its own
+function so it's directly testable without rendering anything — compares each on-disk GLB's *current*
+mtime against the mtime its ledger entry (if any) was recorded under; a mismatch (no entry, or an
+entry recorded under a different mtime) puts the asset back in the pending list. A re-export into the
+same path therefore gets re-rendered on the very next run instead of being silently reused, and the
+run prints which paths it's re-rendering and why (`"N asset(s) changed since their last audit;
+re-rendering: ..."`) so the behaviour is visible, not just correct. mtime, not a content hash, per the
+finding's own two options — cheap, no dependency added, and every asset in this pipeline is a fresh
+Blender export whose mtime always moves on a real re-export; a hash would only earn its cost if some
+future path rewrote a GLB byte-identically, which nothing here does.
+
+**Build:** `pending_glbs()` takes plain `Path` objects and a `report` dict — no `bpy` in its own logic
+— so the check exercises it against real temp files (mtime comparison needs a real filesystem, not a
+mock) rather than real GLBs, keeping the regression guard fast and independent of the asset tree.
+
+**Verified 2026-08-18 (lm):**
+- `/Applications/Blender.app/Contents/MacOS/Blender --background --python
+  tools/blender/audit_all_sides_check.py` → `AUDIT_ALL_SIDES_CHECK PASS`, F-109's six assertions plus
+  seven new ones: an unrecorded asset is pending; an asset recorded with a matching mtime is skipped;
+  an asset whose mtime moved since it was recorded is pending again and is the one reported as a
+  stale re-render (not the unrecorded or unchanged ones); and a re-recorded entry round-trips its
+  mtime exactly through JSON.
+- Real end-to-end run against a shipped asset, scratch `--outdir`, `--only ship_departure_bell`:
+  run 1 renders it; run 2 prints `resuming: 1 assets already done` / `nothing to do; every asset is
+  already in the ledger and unchanged` and re-renders nothing; `touch`ing the GLB (mtime only, no
+  content change — confirmed via `git status --porcelain` staying clean) and running again prints
+  `1 asset(s) changed since their last audit; re-rendering: ships/exports/ship_departure_bell.glb`
+  and re-renders exactly that one asset. Matches the finding's exact failure mode in reverse.
+
 ## F-093 · A headless `--script` run never re-imports changed assets, so a check can validate the previous build
 
 *Renumbered from F-059 on 2026-08-18 (F-087) — that number collided with the original F-059
