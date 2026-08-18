@@ -1,10 +1,11 @@
 extends SceneTree
 
-## Headless proof for the F-066 frame cap. The point of DevFrameCap is that it caps editor and debug
-## runs and leaves a release export alone, so this asserts both halves of that condition rather than
-## just "the autoload loaded" — a cap that silently shipped to players would be the actual failure.
+## Headless proof for DevFrameCap (F-066). The knob defaults to UNCAPPED — matching the engine and a
+## retail build, because un-embedding the game window was the real fix and a 60 fps default was
+## over-correction. So this asserts the default does NOT cap, that the knob still works, and that an
+## explicitly set cap is never stomped. A cap silently applied by default is the actual failure here.
 
-const EXPECTED_DEV_CAP: int = 60
+const EXPECTED_DEFAULT: int = 0
 
 var failures: int = 0
 
@@ -23,8 +24,8 @@ func _run() -> void:
 	# This check runs on the editor binary, so has_feature("editor") is true here exactly as it is
 	# during Play. If that ever stops holding, every assertion below is meaningless, so assert it.
 	check(OS.has_feature("editor"), "this run reports the 'editor' feature, as a Play run does")
-	check(Engine.max_fps == EXPECTED_DEV_CAP,
-		"an editor run is capped to %d fps (got %d)" % [EXPECTED_DEV_CAP, Engine.max_fps])
+	check(Engine.max_fps == EXPECTED_DEFAULT,
+		"an editor run is left uncapped by default, vsync decides (got %d)" % Engine.max_fps)
 
 	# The cap must be adjustable at runtime, or the console command is decoration.
 	cap_node.call("set_cap", 30)
@@ -34,7 +35,7 @@ func _run() -> void:
 	check(Engine.max_fps == 0, "set_cap(0) uncaps (got %d)" % Engine.max_fps)
 	cap_node.call("set_cap", -5)
 	check(Engine.max_fps == 0, "a negative cap clamps to uncapped rather than going negative")
-	cap_node.call("set_cap", EXPECTED_DEV_CAP)
+	cap_node.call("set_cap", EXPECTED_DEFAULT)
 
 	# An explicit --max-fps (or a project setting) must win over the dev default, or the flag looks
 	# broken to whoever reaches for it. Re-runs _ready with a value already in place.
@@ -43,8 +44,8 @@ func _run() -> void:
 	check(Engine.max_fps == 144, "an explicitly set cap is left alone (got %d)" % Engine.max_fps)
 	Engine.max_fps = 0
 	cap_node.call("_ready")
-	check(Engine.max_fps == EXPECTED_DEV_CAP,
-		"with nothing set, the dev default applies (got %d)" % Engine.max_fps)
+	check(Engine.max_fps == EXPECTED_DEFAULT,
+		"with nothing set, it stays uncapped rather than imposing one (got %d)" % Engine.max_fps)
 
 	var console: Node = root.get_node_or_null(^"DebugConsole")
 	check(console != null, "DebugConsole autoload exists for the fps_cap command to register against")

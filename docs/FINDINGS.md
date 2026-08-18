@@ -985,13 +985,29 @@ untouched — the cap is behind `OS.has_feature("editor")`, and an explicit `--m
 `application/run/max_fps` wins over it, so the flag keeps working for anyone testing high-frame-rate
 behaviour. `fps_cap [n]` in the debug console changes it live.
 
-**Still open.** Two things this did not settle. `run/window_placement/game_embed_mode` is still 0
-(auto-embed), so the editor still composites the game on top of its own UI; the enum's values could
-not be read out of the stripped binary, and writing a guessed number into a personal editor config
-risks setting *Enabled* rather than *Disabled*, so it is a one-click change for Sequoyah rather than
-a blind edit. And the shipped game still has no vsync or frame-rate control of any kind — no
-`application/run/max_fps`, no `display/window/vsync/vsync_mode` — which for a co-op game aimed at
-laptops on Steam wants a real video-settings surface, and that is a product decision, not a fix.
+**Un-embedded 2026-08-17 by Sequoyah, and it was the larger half.** `game_embed_mode` is now
+`-1` — worth recording, because **Disabled is -1, not 2**, and 2 was the value a reasonable guess
+would have landed on. Guessing it would have written *Enabled*. The editor no longer composites the
+game over its own UI and falls back to its ~6.5% idle, removing roughly half of the original 2.2
+cores on its own.
+
+**That made the 60 fps default the wrong call, and it has been reverted.** DevFrameCap now defaults
+to uncapped and lets vsync decide, exactly as a retail build does; `fps_cap 60` remains as a
+one-command knob for when the machine runs hot. Halving the frame rate of a first-person game to
+save a load the un-embedding had already dealt with was over-correction — a game using about one
+core is not pathological. The measured trade on a 120 Hz panel is uncapped 120 fps at ~104% CPU
+versus 60 fps at ~60%.
+
+**Un-embedding exposed two window settings nobody had looked at**, because the embedded panel had
+been supplying its own geometry: `window/size/resizable=false` meant the run window could not be
+resized at all, and no `viewport_width`/`viewport_height` were set, so it opened at Godot's 1152x648
+default on a 1512x982-point screen. Neither was a deliberate call — no decision covers window sizing
+and `verify_setup.gd` does not pin either — so the false was dropped and the default is now 1280x720.
+
+**Still open.** The shipped game has no vsync or frame-rate control of any kind, which for a co-op
+game aimed at laptops on Steam wants a real video-settings surface. That is roadmap task 7.5, not a
+fix to make here; Sequoyah has asked for it explicitly and wants it comprehensive rather than a
+partial menu.
 
 ---
 
