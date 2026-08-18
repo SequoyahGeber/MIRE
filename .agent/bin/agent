@@ -2043,13 +2043,15 @@ def cmd_report(args):
 
     print("\n%sMIRE — orchestration report%s   %s%s%s"
           % (C["b"], C["x"], C["dim"], now()[:16].replace("T", " "), C["x"]))
-    print("%s%d/%d tasks done · %d open findings · %s tokens this window · $%.2f%s"
+    print("%s%d/%d tasks done · %d open findings · %s tokens this window · ~$%.2f api-equiv%s"
           % (C["dim"], done, len(roadmap), open_findings,
              f"{total_in + total_out:,}", total_cost, C["x"]))
+    print("%ssubscription lanes — nothing is billed; api-equiv is a proxy for window consumed%s"
+          % (C["dim"], C["x"]))
 
     print("\n%sLanes%s" % (C["b"], C["x"]))
     print("  %s%-5s %-18s %-9s %11s %9s %s%s"
-          % (C["dim"], "lane", "account", "status", "tokens", "cost", "runs/fail", C["x"]))
+          % (C["dim"], "lane", "account", "status", "tokens", "api-equiv", "runs/fail", C["x"]))
     for name in LANE_NAMES:
         lane = lanes.get(name)
         if not lane:

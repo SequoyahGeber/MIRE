@@ -1621,3 +1621,13 @@ Commit at time of writing: `c67eca7`
 allowed_warning no longer parks a lane. Claude reports approaching-the-limit as 'allowed_warning' while still serving requests; treating any non-'allowed' status as a wall would have parked LP for fifteen hours over a warning and thrown away the 24 percent of the weekly window it was telling us we still had. Only a status that actually denies work counts now, verified across allowed/allowed_warning/rejected/limit_exceeded/blocked/exhausted.
 
 Commit at time of writing: `ae22d31`
+
+---
+
+### DONE · 0.12 · quill15 · 2026-08-18T00:16:53+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+Relabel cost as api-equiv. Every lane authenticates with a subscription (apiKeySource none, subscriptionType pro), so total_cost_usd is what the tokens would have cost at API rates and nobody is billed it — showing a bare dollar sign read as a bill. Kept because it tracks window consumption better than raw token counts, which are dominated by cache re-reads. Codex reports no equivalent, so its lanes read zero: missing data, not free work.
+
+Commit at time of writing: `314c59a`

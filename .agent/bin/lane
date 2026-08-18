@@ -96,6 +96,12 @@ DEFAULT_LANES = {
     },
 }
 
+# NOTE ON "cost": every lane here authenticates with a SUBSCRIPTION (Claude Pro, ChatGPT Plus), not
+# an API key — `apiKeySource: none`. Claude Code still reports `total_cost_usd`, which is what the
+# tokens WOULD have cost at API rates. Nobody is billed it. We keep it only because it tracks how
+# much of a window a task consumed far better than raw token counts, which are dominated by cache
+# re-reads. Codex reports nothing equivalent, so its lanes read $0.00 — that is missing data, not
+# free work.
 LEDGER_DEFAULTS = {
     "status": "idle",       # idle | running | exhausted | error
     "task": None, "pid": None, "started": None,
@@ -671,7 +677,7 @@ def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, e
         ok("%s finished %s in %ds  %s(%s fresh in%s / %s out%s)%s"
            % (name, task, elapsed, C["dim"], f"{fresh:,}",
               " + %s cached" % f"{cached:,}" if cached else "", f"{tout:,}",
-              ", $%.2f" % cost if cost else "", C["x"]))
+              ", ~$%.2f api-equiv" % cost if cost else "", C["x"]))
         if lane.get("quota_resets_at"):
             tone = C["y"] if _warns(lane.get("quota_status")) else C["dim"]
             print("  %squota: %s, %s window resets %s%s"
