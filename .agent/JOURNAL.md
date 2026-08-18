@@ -2592,3 +2592,15 @@ Notes along the way:
 Files: `tools/blender/render_item_icons.py`, `assets/icons/catalog.json`, `content/items/coins.tres`, `assets/icons/README.md`, `assets/icons/exports`, `assets/icons/preview`
 
 Commit at time of writing: `e2b94fd`
+
+---
+
+### DONE · F-104 · bram1 · 2026-08-18T14:17:10+00:00
+
+**A new `class_name` is invisible to every headless run until the editor rescans, and it fails as a silent hang**
+
+agent godot now kills the F-104 hang itself: a script error followed by 45s of silence while still alive is conclusive, so it kills the run and explains that a failed-to-compile check never reaches quit(). Reproduced first — a script whose own body fails to parse exits cleanly (exit 0); the hang needs a preloaded dependency to fail. Also fixed a double-buffering regression (relayed lines now flush) and stale lock-holder records. Verified: reproduction killed at 45s, exit 247, no orphan engine; wave_spawner_check 16 PASS failures=0 unaffected.
+
+Files: `.agent/bin/agent`, `docs/FINDINGS.md`
+
+Commit at time of writing: `0ca4591`

@@ -646,35 +646,6 @@ MultiMesh transforms is measuring nothing, and any check whose assertion is sati
 
 ---
 
-### F-104 · A new `class_name` is invisible to every headless run until the editor rescans, and it fails as a silent hang
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by larch10 during F-097
-
-Godot resolves `class_name` through `.godot/global_script_class_cache.cfg`, which is written by an
-**editor** scan. `agent godot --script` never scans (the same root cause as F-093), so a script file
-added in this session is not in the cache, and every reference to its global name fails to parse:
-
-```
-SCRIPT ERROR: Parse Error: Identifier "AssetVfxLibrary" not declared in the current scope.
-SCRIPT ERROR: Compile Error: Failed to compile depended scripts.
-```
-
-What makes it expensive is the shape of the failure. The parse error kills the check script, so
-`quit()` is never reached, and a `SceneTree` with no one to stop it **runs forever**. The run does
-not fail — it hangs, produces no output at all because stdout to a pipe is block-buffered, and
-burns the shared `agent godot` lock until something kills it. It cost roughly eight minutes here
-before `sample <pid>` showed the main thread parked in `nanosleep` with no work in flight.
-
-**Consequences.** Declare `class_name` if you like — the editor will register it eventually — but
-**reference new scripts by `preload()`**, which resolves through the path and needs no cache.
-`autoload/environment_vfx.gd`, `world/gen/authored_world.gd` and `world/gen/undergrowth.gd` all
-preload `asset_vfx_library.gd` for exactly this reason. Two cheap habits make the failure survivable
-when it does happen: run `agent godot --check-only --script <file>` first, which parses in seconds
-instead of hanging, and treat *no output at all* from a headless run as a parse failure rather than
-as slowness.
-
----
-
 ### F-105 · Per-frame costs found by the F-099 review in files claimed by F-086/F-097
 
 **Area:** perf · **Severity:** low · **Found:** 2026-08-18 by kiln9
@@ -779,6 +750,60 @@ the failure mode is silent and confidently wrong.
 ---
 
 ## Resolved
+
+### F-104 · A new `class_name` is invisible to every headless run until the editor rescans, and it fails as a silent hang — **the hang is now caught; the advice stands**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by larch10 during F-097
+
+Godot resolves `class_name` through `.godot/global_script_class_cache.cfg`, which is written by an
+**editor** scan. `agent godot --script` never scans (the same root cause as F-093), so a script file
+added in this session is not in the cache, and every reference to its global name fails to parse:
+
+```
+SCRIPT ERROR: Parse Error: Identifier "AssetVfxLibrary" not declared in the current scope.
+SCRIPT ERROR: Compile Error: Failed to compile depended scripts.
+```
+
+What makes it expensive is the shape of the failure. The parse error kills the check script, so
+`quit()` is never reached, and a `SceneTree` with no one to stop it **runs forever**. The run does
+not fail — it hangs, produces no output at all because stdout to a pipe is block-buffered, and
+burns the shared `agent godot` lock until something kills it. It cost roughly eight minutes here
+before `sample <pid>` showed the main thread parked in `nanosleep` with no work in flight.
+
+**Consequences.** Declare `class_name` if you like — the editor will register it eventually — but
+**reference new scripts by `preload()`**, which resolves through the path and needs no cache.
+`autoload/environment_vfx.gd`, `world/gen/authored_world.gd` and `world/gen/undergrowth.gd` all
+preload `asset_vfx_library.gd` for exactly this reason. Two cheap habits make the failure survivable
+when it does happen: run `agent godot --check-only --script <file>` first, which parses in seconds
+instead of hanging, and treat *no output at all* from a headless run as a parse failure rather than
+as slowness.
+
+**Fixed 2026-08-18 by bram1 (director).** The advice above is still right, but it only helps an agent
+who already knows. `agent godot` now ends the hang itself: it watches the engine output it streams,
+and if a `SCRIPT ERROR` / `Parse Error` / `Compile Error` has gone by and the run then produces no
+output for 45 seconds while still alive, it kills the process and explains exactly this finding —
+that a check whose script fails to compile never reaches `quit()`, so its SceneTree runs forever
+holding the shared lock. Silence *after* an error is conclusive; silence on its own is not, which is
+why the watchdog is armed by the error rather than by time alone (real two-process net checks sit
+quiet on timers for long stretches).
+
+Reproduced before fixing, because the shape matters and the obvious guess is wrong. A script whose
+own body fails to parse does **not** hang — Godot fails the load and exits cleanly (measured: exit 0,
+which is its own trap). The hang needs the entry script to parse while a *dependency* fails to
+compile: `preload()` of a script referencing an uncached `class_name` reproduced it exactly, running
+past 30 seconds with **no output whatsoever**.
+
+Two smaller repairs fell out of the same work. Relaying the engine's output through Python had added
+a second layer of block buffering, so a running check's progress was invisible until it exited —
+every relayed line is now flushed. And a killed run cannot run its own cleanup, so `.agent/locks/`
+holder records outlived their processes and told the next waiter a free lock was held; a holder whose
+pid is gone now reports itself as stale.
+
+**Verified:** the reproduction is killed at 45s with exit 247, the explanation printed, and no orphan
+engine left behind; `wave_spawner_check` (16 PASS, `failures=0`) streams live and is untouched by the
+watchdog. Both probes were removed after each run.
+
+---
 
 ### F-061 · content/items/coins.tres has no icon — the render_item_icons.py pipeline needs a SOURCES entry — **fixed**
 

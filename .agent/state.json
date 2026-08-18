@@ -1,5 +1,15 @@
 {
   "claims": {
+    "assets/audit/a009/geometry_report.json": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:54+00:00",
+      "task": "2.1d"
+    },
+    "assets/audit/a009/geometry_report.jsonl": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:54+00:00",
+      "task": "2.1d"
+    },
     "assets/maps": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
@@ -8,6 +18,111 @@
     "assets/ships": {
       "agent": "ivy8",
       "at": "2026-08-18T13:01:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/README.md": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/catalog.json": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_anchor.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_boarding_ramp.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_cargo_hatch.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_debris_cluster.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_departure_bell.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_donation_crate.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_hull_repair_1.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_hull_repair_2.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_hull_repaired.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_hull_wrecked.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_mast.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_mast_broken.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_rudder.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_sail_furled.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/exports/ship_sail_raised.glb": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/preview/ship_preview.png": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/preview/ship_rig_preview.png": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/preview/ship_scale_preview.png": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
+      "task": "2.1d"
+    },
+    "assets/ships/preview/ship_states_preview.png": {
+      "agent": "ivy8",
+      "at": "2026-08-18T14:16:29+00:00",
       "task": "2.1d"
     },
     "assets/source/extraction_ship_set.blend": {
@@ -60,7 +175,30 @@
         "assets/source/extraction_ship_set.blend",
         "assets/ships",
         "tools/ship_check.gd",
-        "tools/blender/mire_art.py"
+        "tools/blender/mire_art.py",
+        "assets/ships/exports/ship_anchor.glb",
+        "assets/ships/exports/ship_boarding_ramp.glb",
+        "assets/ships/exports/ship_cargo_hatch.glb",
+        "assets/ships/exports/ship_debris_cluster.glb",
+        "assets/ships/exports/ship_departure_bell.glb",
+        "assets/ships/exports/ship_donation_crate.glb",
+        "assets/ships/exports/ship_hull_repair_1.glb",
+        "assets/ships/exports/ship_hull_repair_2.glb",
+        "assets/ships/exports/ship_hull_repaired.glb",
+        "assets/ships/exports/ship_hull_wrecked.glb",
+        "assets/ships/exports/ship_mast.glb",
+        "assets/ships/exports/ship_mast_broken.glb",
+        "assets/ships/exports/ship_rudder.glb",
+        "assets/ships/exports/ship_sail_furled.glb",
+        "assets/ships/exports/ship_sail_raised.glb",
+        "assets/ships/catalog.json",
+        "assets/ships/README.md",
+        "assets/ships/preview/ship_preview.png",
+        "assets/ships/preview/ship_rig_preview.png",
+        "assets/ships/preview/ship_scale_preview.png",
+        "assets/ships/preview/ship_states_preview.png",
+        "assets/audit/a009/geometry_report.json",
+        "assets/audit/a009/geometry_report.jsonl"
       ],
       "notes": [
         {
@@ -86,8 +224,8 @@
   "recent": {
     ".agent/bin/agent": {
       "agent": "bram1",
-      "at": "2026-08-18T14:08:27+00:00",
-      "task": "F-106"
+      "at": "2026-08-18T14:17:10+00:00",
+      "task": "F-104"
     },
     ".agent/bin/lane": {
       "agent": "yarrow21",
@@ -636,8 +774,8 @@
     },
     "docs/FINDINGS.md": {
       "agent": "bram1",
-      "at": "2026-08-18T14:08:27+00:00",
-      "task": "F-106"
+      "at": "2026-08-18T14:17:10+00:00",
+      "task": "F-104"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -3214,9 +3352,11 @@
       "title": "MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin"
     },
     "F-104": {
+      "done_at": "2026-08-18T14:17:10+00:00",
+      "done_by": "bram1",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "A new `class_name` is invisible to every headless run until the editor rescans, and it fails as a silent hang"
     },
@@ -3242,6 +3382,27 @@
       "status": "todo",
       "tier": "F",
       "title": "chest_net_check's two host-side grant assertions fail at HEAD; client side is green"
+    },
+    "F-108": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized"
+    },
+    "F-109": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them"
+    },
+    "F-110": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`audit_all_sides.py` silently resumes, so a re-run after fixing an asset re-reports the old defect"
     }
   },
   "version": 1

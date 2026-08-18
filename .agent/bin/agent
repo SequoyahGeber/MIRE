@@ -16,6 +16,7 @@ import io
 import json
 import os
 import re
+import select
 import shutil
 import subprocess
 import sys
@@ -35,6 +36,7 @@ ROADMAP = os.path.join(ROOT, "docs", "ROADMAP.md")
 # concurrent lanes from colliding on the two things they genuinely share.
 ORDERS = os.path.join(AGENT_DIR, "orders")
 LOCKS = os.path.join(AGENT_DIR, "locks")
+SILENT_HANG_SECONDS = 45        # silence this long AFTER a script error is F-104, not slowness
 LANE_BIN = os.path.join(AGENT_DIR, "bin", "lane")
 
 EX_LANE_BUSY = 75               # lane run's "already running" — see .agent/bin/lane
@@ -1448,6 +1450,11 @@ def _lock_holder(path):
             d = json.load(f)
     except (IOError, ValueError):
         return "holder unknown"
+    try:
+        os.kill(int(d.get("pid")), 0)
+    except (OSError, TypeError, ValueError):
+        # Killed runs cannot clean up after themselves; flock already freed the lock itself.
+        return "a stale holder record (pid %s is gone) — the lock itself is free" % d.get("pid", "?")
     since = ""
     try:
         held_for = age_hours(d.get("at", "")) * 3600.0
@@ -2348,17 +2355,52 @@ def cmd_godot(args):
         # about not being able to see.
         print("%s· %s%s" % (C["dim"], " ".join(argv[1:]), C["x"]))
         proc = subprocess.Popen(argv, cwd=ROOT, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, text=True, bufsize=1)
-        blamed, seen = set(), []
-        for line in proc.stdout:            # stream it through unchanged; just watch as it passes
-            sys.stdout.write(line)
-            if "SCRIPT ERROR" in line or "Parse Error" in line:
-                seen.append(line)
-            m = re.search(r"res://(\S+?\.gd)", line)
-            if m and seen:
-                blamed.add(m.group(1))
+                                stderr=subprocess.STDOUT, bufsize=0)
+        fd = proc.stdout.fileno()
+        blamed, buf, errored, hung = set(), b"", False, False
+        spoke = time.time()
+        while True:
+            ready = select.select([fd], [], [], 5.0)[0]
+            if ready:
+                chunk = os.read(fd, 65536)
+                if not chunk:
+                    break
+                buf += chunk
+                parts = buf.split(b"\n")
+                buf = parts.pop()
+                for raw in parts:
+                    line = raw.decode("utf-8", "replace")
+                    # Relay it AND flush. Python block-buffers its own stdout whenever it is a pipe
+                    # or a file, so relaying without this hides a running check's progress entirely
+                    # and makes a hang look identical to a slow start — the very confusion F-104 is
+                    # about.
+                    print(line, flush=True)
+                    if "SCRIPT ERROR" in line or "Parse Error" in line or "Compile Error" in line:
+                        errored = True
+                    m = re.search(r"res://(\S+?\.gd)", line)
+                    if m and errored:
+                        blamed.add(m.group(1))
+                spoke = time.time()
+            elif errored and proc.poll() is None and time.time() - spoke > SILENT_HANG_SECONDS:
+                # F-104: a script that fails to compile never reaches quit(), so its SceneTree runs
+                # forever — no output, no failure, holding the shared lock until a human notices. It
+                # cost eight minutes the day it was found. Silence AFTER an error is conclusive.
+                hung = True
+                proc.kill()
+                break
+        if buf:
+            print(buf.decode("utf-8", "replace"), flush=True)
         proc.stdout.close()
         code = proc.wait()
+        if hung:
+            print("\n%s✗ killed after %ds of silence following a script error — this run was never "
+                  "going to finish%s" % (C["r"], SILENT_HANG_SECONDS, C["x"]))
+            print("  %sA check whose script fails to compile never reaches quit(), so its SceneTree "
+                  "runs forever and holds this lock (F-104).%s" % (C["dim"], C["x"]))
+            print("  %sFix the parse error above. Reference new scripts with preload() rather than "
+                  "a bare class_name — a class_name is invisible until the editor rescans.%s"
+                  % (C["dim"], C["x"]))
+            code = code or 1
         # NOT gated on the exit code: Godot exits 0 even when a script fails to load outright with a
         # parse error, which is precisely the failure this warns about. Measured — the same reason
         # every check in tools/ prints its own `failures=N` instead of trusting $?.
