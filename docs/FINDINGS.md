@@ -606,6 +606,17 @@ handles bare-String returns from old handlers).
 then delete the shim path if nothing else uses it. Needs a claim on `core/dev/dev_frame_cap.gd`,
 `autoload/graphics_quality.gd`, and whatever guard file the regression check lands in.
 
+**Partial fix 2026-08-18 by lp (task 3.16).** `fps_cap` and `vsync` are migrated —
+`core/dev/dev_frame_cap.gd` now registers both through `register_spec()`, and neither warns on a
+headless run anymore. `gfx` is still on the shim: `autoload/graphics_quality.gd` was held under
+another task's claim (F-144) for this task's entire run, so the one remaining line is a one-`register_spec`-call
+fix for whoever next holds that file — same shape as `fps_cap` above it. Still **Open** for that
+reason; not moving to Resolved on two thirds of a fix. The source-text regression guard this finding
+proposed was not built — `tools/command_catalog_check.gd` (3.16) catches the same class of leftover
+differently, by refusing to count a shim-registered verb as coverage, but that only fires for names
+§7 already lists, so a *new* verb someone forgets to migrate would still slip past silently as F-130
+originally warned.
+
 ---
 
 ### F-132 · A remote client's scattered harvestable proxy may have no host counterpart to reach, because `ChunkStreamer` streams per-peer independently
@@ -838,6 +849,38 @@ of assuming their own `agent ship`/hand-commit silently failed.
 ---
 
 ## Resolved
+
+### F-153 · COMMANDS.md §7 lists 'clear' under both Inventory and Meta — one name, two systems — **fixed**
+
+**Area:** docs · **Severity:** low · **Found:** 2026-08-18 by hollow7
+
+`docs/COMMANDS.md` §7's catalog table gives the name `clear` to two different rows:
+
+| Inventory | `give`, `clear [target]`, `inv <peer>` |
+| Meta      | `help`, `commands [--json]`, `function <name>`, `op/deop`, `clear`(console), `quit` |
+
+`CommandService.register_spec()` replaces a name silently (deliberately — content reload and test
+setup both want that), so implementing §7 literally means whichever autoload registers second wins
+and nothing says so. Task 3.16 resolved the conflict in code — the console keeps `clear`, the
+inventory wipe became `inv clear [peer]` — and recorded that as **D-093**.
+
+**What is left:** the spec table still says `clear [target]` under Inventory, so the next person to
+read §7 as a checklist will look for a verb that does not exist, or re-add it and silently break the
+console's. `tools/command_catalog_check.gd` now pins the shipped truth (it asserts `inv` is HOST and
+`clear` is LOCAL/console), so the code cannot drift back — but the doc and the check now disagree.
+
+Fix: edit the §7 Inventory row to read `inv <peer> [clear]` (or `inv list|clear`), leaving the Meta
+row's `clear`(console) alone. Doc-only change; the check already encodes the intended end state.
+
+**Resolved 2026-08-18 by hollow7.** Fixed in the same task that found it (3.16). `docs/COMMANDS.md` §7's Inventory row now reads
+`inv [list|clear] [peer]` instead of `clear [target]`, and the paragraph under the table records
+why the console keeps the bare `clear` (D-093), plus the two other things building the coverage
+check turned up.
+
+Verified by `tools/command_catalog_check.gd`, which pins the shipped truth from both directions:
+`inv` must be HOST scope and `clear` must be LOCAL (listed as "Meta (console)"), so the code cannot
+drift back to the collision and the doc no longer describes a verb that does not exist. Run:
+`.agent/bin/agent godot --script tools/command_catalog_check.gd` — 41 assertions, failures=0.
 
 ### F-141 · `Wellspring.net_request_toggle_channel` has no two-process net check — only the host-side logic it calls into is proven — **fixed**
 
