@@ -2933,3 +2933,18 @@ Notes along the way:
 - Fix already existed (F-079's tools/png_pixels_equal.py + ASSET_TRACKER.md habit). This task: missing SPECS.md block, pointed the contract at the tool by name instead of manual IDAT decompression, and reproduced the original false alarm live against Blender 5.2 LTS (26 icons, 26/26 pixel-identical, sheet hash-identical, exports restored).
 
 Commit at time of writing: `da614d7`
+
+---
+
+### DONE · F-117 · lp · 2026-08-18T18:30:33+00:00
+
+**F-072's docs-file claim enforcement blocks the second lane's commit, but the first lane's `ship` still sweeps the second lane's uncommitted edits into its own commit**
+
+ship now warns (non-blocking) when a claimed docs file drifted between a task's done() and its ship(), via a done()-time sha256 snapshot in st.recent[f]['hash']; D-067 records the design call. Verified: python3 tools/harness_check.py 14/14 (2 new F-117 cases), and --rev HEAD reproduces the pre-fix failure on exactly the new case (13/14). Also fixed FINDINGS.md's orphaned ### F-112 heading (collateral damage from the commit that filed F-117) and ran tools/findings_numbering_check.gd clean (open=14 resolved=108 failures=0) via agent godot.
+
+Notes along the way:
+- Fix: _release() snapshots a sha256 hash per released file into st.recent[f]['hash']; ship warns (non-blocking) if a to-stage file's hash no longer matches its done()-time snapshot. Decision recorded as D-067 (done-time hash over claim-time hunk-range diffing). Also found + fixed: docs/FINDINGS.md's ### F-112 heading had been overwritten by the commit that originally filed F-117 (89fea39), orphaning F-112's body with no heading; restored it, F-112 itself still open/unrelated.
+
+Files: `.agent/bin/agent`, `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `d113e5b`

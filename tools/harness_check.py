@@ -14,6 +14,7 @@ fixed script passes all five.
 """
 
 import argparse
+import hashlib
 import os
 import shutil
 import subprocess
@@ -187,6 +188,39 @@ def _(harness):
     for f in (".agent/bin/agent", ".agent/bin/lane"):
         assert f in files, "a claimed harness file did not ship: %s not in %s" % (f, sorted(files))
     return "shipped: %s" % sorted(files)
+
+
+@case("ship warns when a claimed file drifted after done() (F-117)")
+def _(harness):
+    # A hash that matches nothing on disk, standing in for the snapshot _release() would have
+    # taken at done()-time if the file had looked different then — i.e. a second lane edited
+    # world/thing.gd (docs/FINDINGS.md and docs/SPECS.md in the real F-117 incident; an ordinary
+    # claimed file here, since the drift check itself doesn't care which path it is) in the gap
+    # between 9.9 finishing with the file and this ship() call.
+    recent = ('{"world/thing.gd": {"task": "9.9", "agent": "alpha", '
+              '"at": "2026-08-18T12:00:00+00:00", "hash": "%s"}}' % ("0" * 64))
+    d = build_repo(harness, recent=recent)
+    r = run([".agent/bin/agent", "ship", "9.9", "9.9: an ordinary change"], d, check=True)
+    assert "F-117" in r.stdout, "no drift warning printed: %s" % brief(r.stdout)
+    assert "world/thing.gd" in r.stdout.split("F-117", 1)[1], (
+        "drift warning didn't name the file: %s" % brief(r.stdout))
+    files = committed_files(d)
+    assert "world/thing.gd" in files, "a warned-about file must still ship — warn, not block: %s" % files
+    return r.stdout.strip()
+
+
+@case("ship stays quiet when a claimed file's hash matches its done()-time snapshot")
+def _(harness):
+    # The real done()-time content, hashed the same way _file_hash() does — this is the ordinary
+    # case (nobody else touched the file) and must not warn.
+    content = "extends Node\n# the shipping task's own work\n"
+    good_hash = hashlib.sha256(content.encode()).hexdigest()
+    recent = ('{"world/thing.gd": {"task": "9.9", "agent": "alpha", '
+              '"at": "2026-08-18T12:00:00+00:00", "hash": "%s"}}' % good_hash)
+    d = build_repo(harness, recent=recent)
+    r = run([".agent/bin/agent", "ship", "9.9", "9.9: an ordinary change"], d, check=True)
+    assert "F-117" not in r.stdout, "false-positive drift warning: %s" % brief(r.stdout)
+    return r.stdout.strip()
 
 
 @case("check blocks a commit of harness source another agent holds")

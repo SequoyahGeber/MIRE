@@ -12,6 +12,7 @@ import binascii
 import contextlib
 import fcntl
 import glob
+import hashlib
 import io
 import json
 import os
@@ -779,6 +780,18 @@ def cmd_note(args):
 
 # ---------------------------------------------------------------- finishing
 
+def _file_hash(rel):
+    """sha256 of a repo-relative file's current bytes, or None if it doesn't exist / can't be read.
+
+    Used to notice a claimed file changing under a task between its done() and its ship() —
+    see the F-117 warning in cmd_ship."""
+    try:
+        with open(os.path.join(ROOT, rel), "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except OSError:
+        return None
+
+
 def _release(st, tid):
     """Release a task's claims, but remember them briefly.
 
@@ -791,7 +804,15 @@ def _release(st, tid):
         for f in entry.get("files", []):
             if st["claims"].get(f, {}).get("task") == tid:
                 del st["claims"][f]
-            recent[f] = {"task": tid, "agent": entry["agent"], "at": now()}
+            # F-117: docs/ files need no claim to WRITE, only to commit (F-006/F-072), so a second
+            # lane can and does edit a file in the window between this task finishing with it and
+            # actually shipping it — ship has no way to attribute a hunk in a file it legitimately
+            # holds to a different task. Snapshotting the content right now, at the moment this task
+            # is done with the file, gives ship something cheap to compare against later: if the
+            # working tree no longer matches this snapshot when ship runs, somebody else touched the
+            # file in between and ship should say so instead of silently sweeping it into this
+            # task's commit under this task's name.
+            recent[f] = {"task": tid, "agent": entry["agent"], "at": now(), "hash": _file_hash(f)}
     return entry
 
 
@@ -1030,6 +1051,26 @@ def cmd_ship(args):
     to_stage = list(dict.fromkeys(to_stage))
 
     others = [f for f in changed if f not in to_stage]
+
+    # F-117: `mine` says this task is the last one to have released a claim on the file, but on an
+    # exempt-from-claim path (docs/, mainly — F-006) that is not the same thing as "nobody else has
+    # touched it since." Compare each file's current bytes to the snapshot _release() took when this
+    # task finished with it; a mismatch means another lane edited the same file in the gap between
+    # this task's `done()` and this `ship()`, and it is about to be swept into this commit under
+    # this task's name. Heuristic, not proof (see F-117) — warn, don't block: the content is usually
+    # fine, just misattributed, and blocking would strand a lane on a false positive.
+    recent = st.get("recent", {})
+    drifted = [f for f in to_stage
+               if recent.get(f, {}).get("task") == tid
+               and recent[f].get("hash") is not None
+               and _file_hash(f) != recent[f]["hash"]]
+    if drifted:
+        print("\n%s⚠ %d file(s) changed since %s finished with them — this commit may carry another "
+              "lane's edits too (F-117):%s" % (C["y"], len(drifted), tid, C["x"]))
+        for f in drifted:
+            print("      %s· %s%s" % (C["dim"], f, C["x"]))
+        print("  %sCheck before trusting the attribution: git diff -- %s%s"
+              % (C["dim"], " ".join(drifted), C["x"]))
 
     # `add` first: a pathspec commit cannot name a file git has never seen.
     r = _git("add", "--", *to_stage)

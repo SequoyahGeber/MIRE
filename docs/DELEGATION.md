@@ -75,6 +75,30 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — F-117: `ship` now warns when a claimed file drifted after `done()` — a lane closing a finding is not off the hook for checking (lp)
+
+**What changed:** `st["recent"][f]` (written by `_release()`, read by `ship`'s staging logic) gained
+a `"hash"` field — a sha256 of the file's bytes at the moment the task released its claim on it. `ship`
+recomputes the hash for every file it's about to stage; if the file's most recent releasing task is
+this one but its current bytes don't match the snapshot, it prints a **non-blocking** warning naming
+the file and pointing at `git diff` — it still ships the file, because the content is usually fine,
+just possibly misattributed.
+
+**Why you'll see this:** `docs/FINDINGS.md` and `docs/SPECS.md` need no claim to *write*, only to
+*commit* (F-006/F-072), and this repo runs every lane in one shared working directory (F-102) — so
+two lanes closing different findings in the same window routinely both edit both files. If you
+`agent done` a task, see this warning on your next `agent ship`, and did NOT expect anyone else to
+have touched that file since: `git diff -- <file>` before pushing, and if another lane's prose is in
+there, that's fine — it landed correctly, just under your commit's name instead of theirs (D-067).
+**This is a heuristic, not a lock** — it fires only on the exact `done()`-to-`ship()` gap; it does not
+catch drift that happened *before* your `done()` (that's your own edit, expected) or attribute which
+lines came from whom.
+
+**Verify a harness change against this:** `python3 tools/harness_check.py` now has two F-117 cases
+(`ship warns when a claimed file drifted after done()`, `ship stays quiet when the hash matches`) —
+extend those, don't write a third check file, if you touch `_release()` or the staging logic in
+`cmd_ship` again.
+
 ### 2026-08-18 — F-118: `Emitter.LEAF_FALL`, and two traps in `EnvironmentVfx` registration (vane19)
 
 **Adding an emitter class is four edits and no new machinery:** a value on `AssetVfx.Emitter`, a row

@@ -3,9 +3,10 @@
   "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
-      "agent": "lm",
-      "at": "2026-08-18T18:05:56+00:00",
-      "task": "F-093"
+      "agent": "lp",
+      "at": "2026-08-18T18:30:33+00:00",
+      "hash": "cca54f16e7bd8bf2de0d0089df1b09fc5d5a6694fcb19e96d3b9b5e8ee1eb1b8",
+      "task": "F-117"
     },
     ".agent/bin/lane": {
       "agent": "bram1",
@@ -768,14 +769,16 @@
       "task": "F-044"
     },
     "docs/DELEGATION.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T13:30:42+00:00",
-      "task": "F-077"
+      "agent": "lp",
+      "at": "2026-08-18T18:30:33+00:00",
+      "hash": "441f6eac9b77844e420d4ae6bf678bf8be4e39be8960b09e43e8d8d97afd492b",
+      "task": "F-117"
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-18T18:05:56+00:00",
-      "task": "F-093"
+      "agent": "lp",
+      "at": "2026-08-18T18:30:33+00:00",
+      "hash": "7c1e8b157cbbaf8d945ed3a3213310072c8b76d3800e398a670416d026993479",
+      "task": "F-117"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -793,9 +796,10 @@
       "task": "F-036"
     },
     "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-18T18:05:56+00:00",
-      "task": "F-093"
+      "agent": "lp",
+      "at": "2026-08-18T18:30:33+00:00",
+      "hash": "5c007edae8a3079953f04d47c2d2dfc44df7bf0bd9c3bfd4b5733883485506a0",
+      "task": "F-117"
     },
     "docs/STEAM_CROSS_PLATFORM_TEST.md": {
       "agent": "flint5",
@@ -1203,9 +1207,10 @@
       "task": "3.6"
     },
     "tools/harness_check.py": {
-      "agent": "lm",
-      "at": "2026-08-18T18:05:56+00:00",
-      "task": "F-093"
+      "agent": "lp",
+      "at": "2026-08-18T18:30:33+00:00",
+      "hash": "e6fc8739477cc507ef9ac5e7699841c35f21eaec3d815f8a3cea8c4ee12d8875",
+      "task": "F-117"
     },
     "tools/harvest_batch_check.gd": {
       "agent": "vane19",
@@ -3512,9 +3517,11 @@
       "title": "Two items now own the same branch art: harvesting ships 'stick' while ITEMS.md and task 3.2 plan 'branch'"
     },
     "F-117": {
+      "done_at": "2026-08-18T18:30:33+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "F-072's docs-file claim enforcement blocks the second lane's commit, but the first lane's `ship` still sweeps the second lane's uncommitted edits into its own commit"
     },

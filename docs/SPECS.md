@@ -1405,6 +1405,37 @@ review, and the mandatory Coming-Soon clock — human, sequenced, checklisted in
 
 ---
 
+## F-117 · F-072's docs-file claim enforcement blocks the second lane's commit, but the first lane's `ship` still sweeps the second lane's uncommitted edits into its own commit
+
+**Claim:** `.agent/bin/agent`, `tools/harness_check.py`. No production/runtime file — this is
+coordination tooling, not a networked system, so it declares no `ARCHITECTURE.md` §2.2 authority row.
+
+**Root cause:** F-072 enforces an exact claim on a `docs/` path once one exists, but `docs/FINDINGS.md`
+and `docs/SPECS.md` are exempt from needing a claim to *write* (F-006) — only to *commit*. Two lanes
+closing out different findings in the same shared working directory (F-102: one working tree, not
+worktrees per lane) routinely both edit both files in the same window. `ship` stages the files a
+task's claim named by reading their **current working-tree bytes**, not a per-task diff, so if lane A
+finishes with `docs/FINDINGS.md` (`done()`) and lane B edits the same file before lane A calls
+`ship()`, lane A's `ship` silently carries lane B's prose into lane A's commit. Not data loss — the
+content lands intact — but misattribution: the commit claims authorship it doesn't have.
+
+**Fix:** `_release()` (fires on `done`/`handoff`/`drop`) now snapshots a sha256 of each released
+file's bytes into `st["recent"][f]["hash"]`. `cmd_ship` recomputes that hash for every file about to
+be staged and, when the file's most recent releasing task is this one but its current bytes no longer
+match the snapshot, prints a **non-blocking** warning naming the file(s) and suggesting `git diff --
+<files>` before trusting the commit. Chose a done-time content hash over the finding's own
+claim-time/hunk-range sketch — see **D-067** for why. Full mitigation (F-102's generated
+`docs/FINDINGS.md`) remains future work; this is the cheap partial one the finding asked for.
+
+**Verified 2026-08-18:** `python3 tools/harness_check.py` — 14/14, including two new cases (`ship
+warns when a claimed file drifted after done() (F-117)`, `ship stays quiet when a claimed file's hash
+matches its done()-time snapshot`). `python3 tools/harness_check.py --rev HEAD` (pre-fix harness)
+fails exactly the new drift-warning case, 13/14 — confirms the test is a real regression guard, not a
+vacuous pass. No Godot involved. Also restored `docs/FINDINGS.md`'s orphaned `### F-112` heading,
+overwritten by an earlier hand-edit that filed this finding — see the F-117 Resolved entry.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |
