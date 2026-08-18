@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"cinder_tithe"
+display_name = "Cinder Tithe"
+description = "Whatever you burn, something downstream counts the ash and pays out. Nobody has explained the arrangement and nobody has refused it either."
+tags = Array[StringName]([&"Fire", &"Void"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"coin_gain": Vector2(0, 0.08)
+})

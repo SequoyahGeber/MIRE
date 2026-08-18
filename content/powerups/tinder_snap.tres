@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"tinder_snap"
+display_name = "Tinder Snap"
+description = "The pause between one swing and the next gets shorter, the way dry kindling goes from cold to caught with nothing in between."
+tags = Array[StringName]([&"Fire"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"attack_seconds": Vector2(0, -0.05)
+})

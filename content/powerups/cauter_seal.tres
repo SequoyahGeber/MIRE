@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"cauter_seal"
+display_name = "Cauter Seal"
+description = "Kill something close enough and the heat comes back through the weapon to close what it opened in you. It is not gentle and it is not optional."
+tags = Array[StringName]([&"Fire", &"Blood"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"on_kill_heal_hp": Vector2(1, 0)
+})

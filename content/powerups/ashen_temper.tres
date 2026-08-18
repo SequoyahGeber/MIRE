@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"ashen_temper"
+display_name = "Ashen Temper"
+description = "Some of your hits take. You will not know which one until it is already burning."
+tags = Array[StringName]([&"Fire"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"ignite_chance": Vector2(0.08, 0)
+})

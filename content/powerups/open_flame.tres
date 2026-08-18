@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"open_flame"
+display_name = "Open Flame"
+description = "It sharpens nothing and it speeds nothing. It is just fire, kept, and fire that is only kept is still a direction you have chosen to go."
+tags = Array[StringName]([&"Fire"])
+max_stacks = 9
