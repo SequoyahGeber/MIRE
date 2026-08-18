@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="MIRE"
-run/main_scene="res://levels/playtest_hollow.tscn"
+run/main_scene="res://levels/hollowmere.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -42,7 +42,8 @@ DevFrameCap="*res://core/dev/dev_frame_cap.gd"
 
 [display]
 
-window/size/resizable=false
+window/size/viewport_width=1280
+window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 

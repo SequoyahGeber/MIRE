@@ -1,5 +1,18 @@
 extends Node3D
 
+## ⚠ DEPRECATED — superseded by Hollowmere (2026-08-17).
+##
+## `res://levels/hollowmere.tscn` is the main scene now: 356 m across against this
+## map's 88 m, built at runtime by `world/gen/authored_world.gd` from
+## `world/gen/layouts/hollowmere.json`.
+##
+## This map is **kept, not deleted**, on purpose. Nine headless checks still boot it
+## (`playtest_hollow_check`, `harvest_world_check`, `combat_check`, the net checks
+## and more), it is the reference every existing system was tuned against, and it
+## is small enough to load in a second — which makes it the right fixture for a
+## test even once it is the wrong thing to ship. Do not build new content against
+## it; do not delete it either until those checks have somewhere else to run.
+
 ## Builds collision, lights, and gameplay markers from the same frozen layout used by Blender.
 ## Visual placement is exported in assets/maps/playtest_hollow.glb; this script never scatters.
 

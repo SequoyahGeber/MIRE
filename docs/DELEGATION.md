@@ -75,6 +75,52 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### Hollowmere is the map now (2026-08-17)
+
+`res://levels/hollowmere.tscn` is `project.godot`'s main scene. It is **356 m across against Playtest
+Hollow's 88 m**, and it is built differently on purpose.
+
+| | Playtest Hollow | Hollowmere |
+|---|---|---|
+| Source of truth | `tools/mapgen/hollow_layout.py` → JSON | `tools/mapgen/hollowmere_layout.py` → JSON |
+| Visuals | baked in Blender to `assets/maps/*.glb` | built at load by `world/gen/authored_world.gd` |
+| Collision | `world/gen/playtest_hollow.gd`, a **second** consumer | the same script, same loop |
+| Props | placed as scene nodes | `MultiMeshInstance3D` per (chunk, asset) |
+
+The Hollow's two-consumers-one-file rule exists to stop visuals and collision drifting apart.
+Hollowmere has **one** consumer, so they cannot drift even in principle. Baking was also simply the
+wrong call at this size: one mesh 356 m across cannot be culled.
+
+**The seams, for whatever builds on this next:**
+
+- `AuthoredWorld.height_at(x, z) -> float` — the authored ground height anywhere, without a raycast.
+  Use it for placement; use a ray when you need to know what is actually *on* the ground.
+- Groups: `authored_world_prop` (a prop's `StaticBody3D`, carrying `asset`/`kit` metadata),
+  `authored_world_marker`, `authored_world_terrain`.
+- Markers carry `kind` metadata and the map ships: `spawn` ×1, `extraction` ×1, `objective` ×1
+  (the Wellspring), `enemy_nest` ×4, `landmark` ×5, `station` ×7, `loot` ×6, `bridge` ×2.
+  **Nothing consumes them yet** — spawning, objectives and wave spawning still use their own paths.
+  Wiring those up is the natural next task and it is host-authoritative work.
+- `Undergrowth` (`world/gen/undergrowth.gd`) is map-agnostic: point `layout_path` at any layout with
+  `zones`, `props`, `roads` and `bound`, set `prop_group`, and it scatters the flora kit by zone. It
+  is client-local and deterministic from the layout seed, so peers agree without replication.
+- **Neither node has network authority and neither may gain any.** They are presentation. Anything
+  that needs to change during a run — a broken bridge, a flooded zone — is host state.
+
+Measured on this machine, Forward+, 1280×720: terrain 40,328 triangles in one mesh, 1,420 props
+through 803 multimeshes, 17,349 scattered plants through 150, and **122 FPS**. Ground probes at 686
+points found no holes and collision within 0.32 m of the authored height.
+
+**Playtest Hollow is deprecated, not deleted.** Nine headless checks still boot it, it is what every
+existing system was tuned against, and it loads in a second — which makes it the right fixture for a
+test long after it is the wrong thing to ship. Do not build new content against it; do not delete it
+until those checks have somewhere else to run. `world/gen/playtest_hollow.gd` says so at the top.
+
+**Not yet recorded as a decision.** `docs/DECISIONS.md` had uncommitted edits from another session
+while this landed, so the D-number for "large maps are built at runtime, small ones are baked" still
+needs writing by whoever owns that file next.
+
+
 > Execution specs for every remaining roadmap task live in **`docs/SPECS.md`** — this section holds
 > the *shipped* seams those specs build on.
 

@@ -1,0 +1,101 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="PackedScene" path="res://entities/player/player.tscn" id="1_player"]
+[ext_resource type="Script" path="res://world/gen/authored_world.gd" id="2_world"]
+[ext_resource type="Script" path="res://world/environment/playtest_atmosphere.gd" id="3_atmosphere"]
+[ext_resource type="Script" path="res://world/environment/low_poly_clouds.gd" id="4_clouds"]
+[ext_resource type="Script" path="res://world/gen/undergrowth.gd" id="5_undergrowth"]
+
+[sub_resource type="PhysicalSkyMaterial" id="SkyMaterial"]
+rayleigh_coefficient = 3.4
+rayleigh_color = Color(0.2, 0.4, 0.9, 1)
+mie_coefficient = 0.0048
+mie_eccentricity = 0.74
+mie_color = Color(0.94, 0.7, 0.48, 1)
+turbidity = 6.0
+sun_disk_scale = 3.2
+ground_color = Color(0.06, 0.085, 0.07, 1)
+energy_multiplier = 0.92
+
+[sub_resource type="Sky" id="Sky"]
+sky_material = SubResource("SkyMaterial")
+
+[sub_resource type="Environment" id="Environment"]
+background_mode = 2
+sky = SubResource("Sky")
+ambient_light_source = 3
+ambient_light_sky_contribution = 0.74
+ambient_light_energy = 0.55
+reflected_light_source = 2
+tonemap_mode = 2
+tonemap_exposure = 1.06
+glow_enabled = true
+glow_normalized = true
+glow_intensity = 0.8
+glow_bloom = 0.08
+fog_enabled = true
+fog_light_color = Color(0.6, 0.66, 0.72, 1)
+fog_light_energy = 0.7
+fog_sun_scatter = 0.42
+fog_density = 0.0016
+fog_aerial_perspective = 0.45
+fog_sky_affect = 0.22
+fog_height = 6.0
+fog_height_density = 0.06
+fog_depth_curve = 1.3
+fog_depth_begin = 40.0
+fog_depth_end = 260.0
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.00035
+volumetric_fog_albedo = Color(0.74, 0.79, 0.85, 1)
+volumetric_fog_emission = Color(0.016, 0.02, 0.032, 1)
+volumetric_fog_emission_energy = 0.16
+volumetric_fog_anisotropy = 0.8
+volumetric_fog_length = 180.0
+volumetric_fog_detail_spread = 2.0
+volumetric_fog_ambient_inject = 0.6
+volumetric_fog_sky_affect = 0.26
+volumetric_fog_temporal_reprojection_enabled = true
+volumetric_fog_temporal_reprojection_amount = 0.9
+
+[node name="Hollowmere" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-48, -42, 0)
+light_color = Color(1, 0.9, 0.77, 1)
+light_energy = 1.25
+light_volumetric_fog_energy = 1.3
+light_angular_distance = 0.7
+shadow_enabled = true
+shadow_bias = 0.045
+shadow_normal_bias = 1.3
+shadow_blur = 1.1
+directional_shadow_mode = 2
+directional_shadow_blend_splits = true
+directional_shadow_fade_start = 0.88
+directional_shadow_max_distance = 140.0
+
+[node name="Atmosphere" type="Node" parent="."]
+script = ExtResource("3_atmosphere")
+
+[node name="CloudDeck" type="Node3D" parent="."]
+script = ExtResource("4_clouds")
+wrap_extent = 320.0
+altitude_offset = 66.0
+spread_scale = 1.9
+
+[node name="World" type="Node3D" parent="."]
+script = ExtResource("2_world")
+layout_path = "res://world/gen/layouts/hollowmere.json"
+
+[node name="Undergrowth" type="Node3D" parent="."]
+script = ExtResource("5_undergrowth")
+density = 26000
+layout_path = "res://world/gen/layouts/hollowmere.json"
+prop_group = &"authored_world_prop"
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector3(-34.0, 4.572, 24.0)

@@ -7,6 +7,15 @@
 
 ## Status
 
+> **2026-08-17 — the map changed.** `levels/hollowmere.tscn` is the main scene: a 356 m valley with a
+> river, a gorge, a lake, a plateau you climb by two ramps, a ruined village, a quarry, a stone
+> circle, a watchtower, a wellspring and an extraction yard. 1,420 authored props and 17,349
+> scattered plants from the new **flora kit** (84 assets, batch A-000V). Playtest Hollow is
+> deprecated but kept as a test fixture — the headless checks still boot it. `docs/DELEGATION.md`
+> has the seams; `tools/hollowmere_check.gd` verifies it; `tools/hollowmere_render_check.gd`
+> screenshots it (run that one **windowed**, not through `agent godot` — see F-059's neighbour note
+> in that file: `agent godot` is always `--headless`, which has no framebuffer).
+
 **Milestone:** M2 · Vertical slice — 16/22, and everything left is either yours or dispatched.
 M1 closed at 13/14 (1.12 deferred, D-030). M0 closed 11/11 plus 0.12 (orchestration).
 

@@ -80,6 +80,55 @@ const ZONE_PALETTES: Dictionary = {
 		"grass_short": 26, "grass_dry": 16, "flowers_meadow": 10, "grass_tussock": 8,
 		"clover_patch": 8, "leaf_litter": 6, "bush_round": 4, "sapling": 2,
 	},
+	# -- Hollowmere ---------------------------------------------------------
+	"SpawnHold": {
+		"grass_short": 30, "clover_patch": 16, "flowers_meadow": 12, "flowers_creeping": 8,
+		"grass_tussock": 8, "plant_creeper": 6, "moss_patch": 4, "bush_round": 4,
+	},
+	"WestWood": {
+		"leaf_litter": 22, "bracken": 18, "moss_patch": 12, "grass_short": 12,
+		"plant_broadleaf": 8, "nettle": 6, "bush_round": 5, "sapling": 5, "plant_creeper": 4,
+	},
+	"DeepForest": {
+		"leaf_litter": 26, "bracken": 20, "moss_patch": 14, "grass_short": 10,
+		"plant_broadleaf": 8, "nettle": 6, "plant_creeper": 6, "bush_round": 4, "sapling": 3,
+	},
+	"Plateau": {
+		"grass_dry": 30, "grass_tussock": 20, "moss_patch": 14, "grass_short": 12,
+		"bush_thorn": 8, "plant_dock": 6, "clover_patch": 5, "flowers_meadow": 5,
+	},
+	"Quarry": {
+		"grass_dry": 30, "moss_patch": 22, "grass_short": 16, "nettle": 10,
+		"bush_thorn": 8, "plant_dock": 8, "leaf_litter": 6,
+	},
+	"Gorge": {
+		"moss_patch": 30, "sedge": 18, "bracken": 14, "grass_short": 12,
+		"leaf_litter": 10, "nettle": 8, "plant_creeper": 8,
+	},
+	"BoneFields": {
+		"grass_dry": 34, "leaf_litter": 18, "bush_dead": 12, "grass_tussock": 10,
+		"plant_dock": 8, "moss_patch": 8, "bush_thorn": 6, "nettle": 4,
+	},
+	"StoneMoor": {
+		"grass_tussock": 26, "grass_dry": 24, "grass_short": 14, "moss_patch": 12,
+		"flowers_meadow": 10, "bush_thorn": 8, "clover_patch": 6,
+	},
+	"EastReach": {
+		"grass_short": 24, "nettle": 16, "flowers_tall": 12, "clover_patch": 12,
+		"plant_creeper": 10, "moss_patch": 10, "grass_dry": 8, "bush_round": 4,
+	},
+	"MereShore": {
+		"marsh_grass": 24, "sedge": 20, "lily_pad": 12, "flowers_bog": 12,
+		"moss_patch": 10, "grass_short": 10, "leaf_litter": 6, "bush_dead": 4,
+	},
+	"SouthMarsh": {
+		"sedge": 26, "marsh_grass": 22, "flowers_bog": 14, "moss_patch": 12,
+		"lily_pad": 10, "grass_dry": 8, "bush_dead": 4, "nettle": 4,
+	},
+	"LumberEdge": {
+		"leaf_litter": 26, "bracken": 18, "grass_short": 14, "sapling": 12,
+		"moss_patch": 12, "nettle": 8, "plant_broadleaf": 6, "bush_round": 4,
+	},
 }
 
 ## Anything taller than this stays out of a road corridor. The layout already says
@@ -173,6 +222,17 @@ func _scatter(layout: Dictionary) -> void:
 ## Zone extents come from the props the layout already places there, so this file
 ## never states where the West Forest is — it asks the map.
 func _collect_zone_centres(layout: Dictionary) -> void:
+	# A layout that states its own zones is believed; the Hollow does not, so its
+	# zones are still inferred from where its props ended up.
+	for zone_value: Variant in layout.get("zones", []):
+		if zone_value is Dictionary:
+			var zone := zone_value as Dictionary
+			var name := String(zone.get("name", ""))
+			var centre: Array = zone.get("centre", [0.0, 0.0]) as Array
+			if ZONE_PALETTES.has(name):
+				_zone_centres[name] = Vector2(float(centre[0]), float(centre[1]))
+	if not _zone_centres.is_empty():
+		return
 	var sums: Dictionary = {}
 	var counts: Dictionary = {}
 	for prop_value: Variant in layout.get("props", []):

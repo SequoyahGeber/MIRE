@@ -6,7 +6,14 @@ extends Node3D
 
 @export var movement_enabled: bool = true
 @export var wind_velocity := Vector2(0.42, 0.1)
-@export_range(100.0, 240.0, 1.0) var wrap_extent: float = 150.0
+@export_range(100.0, 400.0, 1.0) var wrap_extent: float = 150.0
+## Lifts the whole deck. The authored cloud heights suit an 88 m map whose highest
+## ground is 3 m; on Hollowmere the boundary ridge crests near 59 m and the deck
+## would sit *inside* the hills. Kept as an offset rather than an edit to the
+## constants so the Hollow's sky is untouched.
+@export var altitude_offset: float = 0.0
+## Spreads the deck out for a larger map, so a dozen clusters still cover the sky.
+@export var spread_scale: float = 1.0
 
 const CLOUD_SEED: int = 20260817
 const CLOUD_CENTERS: Array[Vector3] = [
@@ -73,7 +80,10 @@ func rebuild_clouds() -> void:
 	for cluster_index: int in CLOUD_CENTERS.size():
 		var cluster := Node3D.new()
 		cluster.name = "CloudCluster_%02d" % cluster_index
-		cluster.position = CLOUD_CENTERS[cluster_index]
+		var centre := CLOUD_CENTERS[cluster_index]
+		cluster.position = Vector3(
+			centre.x * spread_scale, centre.y + altitude_offset, centre.z * spread_scale
+		)
 		cluster.rotation_degrees.y = random.randf_range(-18.0, 18.0)
 		cluster.add_to_group(&"low_poly_cloud")
 		add_child(cluster)
