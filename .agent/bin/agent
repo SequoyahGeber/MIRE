@@ -42,6 +42,12 @@ STALE_HOURS = 12
 # Godot-authored files require an exact claim and a closed editor (D-031).
 EDITOR_GUARDED_SUFFIXES = (".tscn", ".tres", ".import", ".godot")
 EDITOR_GUARDED_PATHS = ("project.godot", "export_presets.cfg")
+# F-051/F-067: registering an autoload is the ONE edit to project.godot that needs no claim, because
+# `agent autoload` writes it append-only (D-019) and claiming the file would serialise every
+# autoload-producing task against every other one. The hook has to recognise that exact shape, or the
+# sanctioned path dead-ends in a blocked commit and everyone learns to reach for --no-verify — which
+# also switches off the closed-editor check D-031 actually cares about.
+AUTOLOAD_LINE_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*="\*?res://[^"]+"$')
 # Always safe for anyone to edit.
 FREE_PREFIXES = ("docs/", ".agent/", "CLAUDE.md", "AGENTS.md", "README.md", ".gitignore")
 # Engine-generated sidecars. Godot writes .uid files next to every script; they are not authored
@@ -966,6 +972,57 @@ def cmd_ship(args):
 
 # ---------------------------------------------------------------- check
 
+def _autoload_section_lines(text):
+    """Every non-blank line inside project.godot's [autoload] section, stripped."""
+    lines, in_section = set(), False
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("["):
+            in_section = stripped == "[autoload]"
+            continue
+        if in_section and stripped:
+            lines.add(stripped)
+    return lines
+
+
+def _autoload_only_project_change(staged):
+    """True when the only change to project.godot is appended autoload registrations (F-051).
+
+    Deliberately strict, because everything else about this file genuinely does want a claim: a
+    changed rendering setting, a reordered line, a deletion. Requires the diff to be pure additions,
+    every added line to have the shape `Name="*res://path"`, and every one of those lines to actually
+    land inside [autoload] — a registration-looking line appended to [rendering] is not this path."""
+    rel = "project.godot"
+    try:
+        diff_cmd = ["git", "diff", "-U0"] + (["--cached"] if staged else []) + ["--", rel]
+        d = subprocess.run(diff_cmd, cwd=ROOT, capture_output=True, text=True)
+        if d.returncode != 0 or not d.stdout.strip():
+            return False
+        added = []
+        for line in d.stdout.splitlines():
+            if line.startswith(("+++", "---", "@@", "diff ", "index ")):
+                continue
+            if line.startswith("-"):
+                return False  # A deletion is never an append-only registration.
+            if line.startswith("+"):
+                added.append(line[1:].strip())
+        added = [a for a in added if a]
+        if not added or not all(AUTOLOAD_LINE_RE.match(a) for a in added):
+            return False
+        if staged:
+            shown = subprocess.run(["git", "show", ":" + rel], cwd=ROOT,
+                                   capture_output=True, text=True)
+            if shown.returncode != 0:
+                return False
+            content = shown.stdout
+        else:
+            with open(PROJECT_GODOT) as fh:
+                content = fh.read()
+        return set(added) <= _autoload_section_lines(content)
+    except Exception:
+        return False  # Never fail open: an unreadable diff falls back to demanding the claim.
+
+
 def cmd_check(args):
     """Verify uncommitted changes respect claims and the closed-editor rule.
     Run by the pre-commit hook."""
@@ -1026,6 +1083,16 @@ def cmd_check(args):
         c = st["claims"].get(f)
         is_editor_guarded = f.endswith(EDITOR_GUARDED_SUFFIXES) or f in EDITOR_GUARDED_PATHS
         if is_editor_guarded and not human:
+            # F-051's carve-out, checked before the claim rule: an autoload registration is
+            # claim-free by design. The closed-editor half of D-031 still applies — that is the half
+            # protecting against the editor overwriting the file, and it is not about claims at all.
+            if f == "project.godot" and _autoload_only_project_change(staged_only):
+                if godot_is_running():
+                    errors.append("%s — Godot is running; close it before committing an autoload "
+                                  "registration (D-031)" % f)
+                else:
+                    warnings.append("%s — autoload registration only, no claim needed (F-051)" % f)
+                continue
             # D-031: agents may edit Godot-authored files under an exact claim, but
             # never while the editor is running because it may overwrite them.
             if (c and c["agent"] == me) or in_grace(f):

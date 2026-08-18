@@ -1071,7 +1071,7 @@ kit sidesteps it by baking every asset's transform to identity before export, wh
 
 ---
 
-### F-067 · The pre-commit hook blocks project.godot even when agent autoload wrote it
+### F-067 · The pre-commit hook blocks project.godot even when agent autoload wrote it — **fixed**
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by reed16
 
@@ -1100,6 +1100,22 @@ staged diff to `project.godot` consists only of added lines in the `[autoload]` 
 process is running, it is the F-051 path and should pass. Anything else about the file — a changed
 rendering setting, a reordered line, a deletion — should still demand the exact-file claim, since
 D-019 makes autoload registration append-only and any other edit is genuinely a claimed change.
+
+**Fixed 2026-08-17 by claude**, as described. `_autoload_only_project_change()` in `.agent/bin/agent`
+gates the carve-out on three conditions, all of which must hold: the diff is pure additions with no
+deletion, every added line matches `Name="*res://path"`, and every one of those lines actually lands
+inside `[autoload]` in the resulting file — a registration-shaped line appended to `[rendering]` is
+not this path. It reads the staged blob under a hook and the working tree otherwise, and any
+exception falls back to demanding the claim, so it never fails open.
+
+The closed-editor half of D-031 is deliberately kept for this path. That half is what protects against
+the editor overwriting the file and has nothing to do with claims, so an autoload registration with
+Godot running is still an error — just a clearer one than before.
+
+Verified against four cases through the real `agent check` code path with `GIT_INDEX_FILE` set, as
+git invokes it: an appended autoload line is allowed; a changed rendering setting, an autoload-shaped
+line outside `[autoload]`, and a deleted autoload line are each still blocked. No re-install is
+needed — `.git/hooks/pre-commit` only execs `agent check`, so every lane picks this up on pull.
 
 ---
 
