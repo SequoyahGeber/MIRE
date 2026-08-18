@@ -2626,3 +2626,18 @@ Left for Sequoyah's eyes only, in the tracker's review column: the sail's sage c
 Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_extraction_ship_set.py`, `assets/source/extraction_ship_set.blend`, `assets/ships`, `tools/ship_check.gd`, `tools/blender/mire_art.py`, `assets/ships/exports/ship_anchor.glb`, `assets/ships/exports/ship_boarding_ramp.glb`, `assets/ships/exports/ship_cargo_hatch.glb`, `assets/ships/exports/ship_debris_cluster.glb`, `assets/ships/exports/ship_departure_bell.glb`, `assets/ships/exports/ship_donation_crate.glb`, `assets/ships/exports/ship_hull_repair_1.glb`, `assets/ships/exports/ship_hull_repair_2.glb`, `assets/ships/exports/ship_hull_repaired.glb`, `assets/ships/exports/ship_hull_wrecked.glb`, `assets/ships/exports/ship_mast.glb`, `assets/ships/exports/ship_mast_broken.glb`, `assets/ships/exports/ship_rudder.glb`, `assets/ships/exports/ship_sail_furled.glb`, `assets/ships/exports/ship_sail_raised.glb`, `assets/ships/catalog.json`, `assets/ships/README.md`, `assets/ships/preview/ship_preview.png`, `assets/ships/preview/ship_rig_preview.png`, `assets/ships/preview/ship_scale_preview.png`, `assets/ships/preview/ship_states_preview.png`, `assets/audit/a009/geometry_report.json`, `assets/audit/a009/geometry_report.jsonl`
 
 Commit at time of writing: `cec336a`
+
+---
+
+### DONE · F-058 · lp · 2026-08-18T14:20:20+00:00
+
+**`docs/FINDINGS.md` carried two F-055s and two F-056s at once — concurrent lanes both used `agent brief`'s "next number"**
+
+Verified F-087/D-053 already fixed the routing risk this finding named (renumbered the later Open-side collision to F-092-094; the F-055/F-056 pairs it was actually filed about are Resolved/Resolved, which both agent's _duplicate_findings() and tools/findings_numbering_check.gd deliberately leave unflagged per D-053 — renumbering them has real cross-reference risk for zero routing benefit). Ran the one thing left undone (agent sync/brief ambiguity audit): agent brief F-055 reports 'already done' with no wrong-finding text, confirming no live routing failure exists for a Resolved-only pair. Wrote the missing docs/SPECS.md F-058 block. Verified: agent godot --script tools/findings_numbering_check.gd -> FINDINGS_NUMBERING_CHECK open=21 resolved=92 failures=0; agent board shows no duplicate-open-finding warning. Moved F-058 to Resolved in docs/FINDINGS.md.
+
+Notes along the way:
+- F-058's routing half was already fixed by F-087/D-053 (renumbered the later Open-side collision to F-092-094; explicitly decided a Resolved/Resolved pair like F-055/F-056 has no routing risk and is left as historical record). Closed here: wrote the missing docs/SPECS.md F-058 block, ran the agent brief F-055 ambiguity audit F-058's text asked for (clean — reports 'already done', no wrong-finding text), reran tools/findings_numbering_check.gd (failures=0), moved F-058 to Resolved.
+
+Files: `tools/findings_numbering_check.gd`
+
+Commit at time of writing: `a939947`

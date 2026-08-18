@@ -1107,8 +1107,8 @@
     },
     "tools/findings_numbering_check.gd": {
       "agent": "lp",
-      "at": "2026-08-18T05:30:56+00:00",
-      "task": "F-087"
+      "at": "2026-08-18T14:20:20+00:00",
+      "task": "F-058"
     },
     "tools/flora_check.gd": {
       "agent": "moss11",
@@ -2908,9 +2908,11 @@
       "title": "A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds"
     },
     "F-058": {
+      "done_at": "2026-08-18T14:20:20+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`docs/FINDINGS.md` carried two F-055s and two F-056s at once \u2014 concurrent lanes both used `agent brief`'s \"next number\""
     },
