@@ -1,14 +1,99 @@
 {
   "claims": {
+    "autoload/build_service.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T22:08:38+00:00",
+      "task": "3.16"
+    },
+    "autoload/command_service.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T22:08:38+00:00",
+      "task": "3.16"
+    },
+    "autoload/crafting_service.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T22:08:38+00:00",
+      "task": "3.16"
+    },
+    "autoload/enemy_world.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T22:08:38+00:00",
+      "task": "3.16"
+    },
     "autoload/graphics_quality.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
     },
+    "autoload/harvest_world.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T22:08:38+00:00",
+      "task": "3.16"
+    },
+    "autoload/inventory_service.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T22:08:38+00:00",
+      "task": "3.16"
+    },
+    "autoload/powerup_service.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T22:08:38+00:00",
+      "task": "3.16"
+    },
+    "autoload/steam_lobby.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T22:08:38+00:00",
+      "task": "3.16"
+    },
+    "core/dev/dev_frame_cap.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T22:08:38+00:00",
+      "task": "3.16"
+    },
+    "core/render/mesh_merge.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-18T22:08:56+00:00",
+      "task": "F-144"
+    },
+    "systems/building/build_ghost.gd": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:10:01+00:00",
+      "task": "3.7"
+    },
+    "systems/building/buildable_def.gd": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:10:01+00:00",
+      "task": "3.7"
+    },
+    "systems/environment/day_night.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T22:08:38+00:00",
+      "task": "3.16"
+    },
+    "systems/harvesting/harvestable.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-18T22:08:56+00:00",
+      "task": "F-144"
+    },
+    "systems/health/player_health.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T22:08:38+00:00",
+      "task": "3.16"
+    },
+    "systems/waves/wave_spawner.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T22:08:38+00:00",
+      "task": "3.16"
+    },
     "tools/_probe_lods.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:54:18+00:00",
       "task": "F-144"
+    },
+    "tools/command_catalog_check.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T22:08:38+00:00",
+      "task": "3.16"
     },
     "tools/environment_vfx_hollowmere_check.gd": {
       "agent": "nettle12",
@@ -42,6 +127,35 @@
     }
   },
   "in_flight": {
+    "3.16": {
+      "agent": "hollow7",
+      "files": [
+        "autoload/inventory_service.gd",
+        "autoload/enemy_world.gd",
+        "systems/health/player_health.gd",
+        "systems/environment/day_night.gd",
+        "systems/waves/wave_spawner.gd",
+        "autoload/powerup_service.gd",
+        "autoload/crafting_service.gd",
+        "autoload/build_service.gd",
+        "autoload/harvest_world.gd",
+        "autoload/steam_lobby.gd",
+        "autoload/command_service.gd",
+        "core/dev/dev_frame_cap.gd",
+        "tools/command_catalog_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T22:08:38+00:00"
+    },
+    "3.7": {
+      "agent": "slate17",
+      "files": [
+        "systems/building/buildable_def.gd",
+        "systems/building/build_ghost.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T22:08:40+00:00"
+    },
     "F-144": {
       "agent": "nettle12",
       "files": [
@@ -52,7 +166,9 @@
         "tools/_probe_lods.gd",
         "world/environment/draw_policy.gd",
         "tools/harvest_batch_check.gd",
-        "tools/environment_vfx_hollowmere_check.gd"
+        "tools/environment_vfx_hollowmere_check.gd",
+        "core/render/mesh_merge.gd",
+        "systems/harvesting/harvestable.gd"
       ],
       "notes": [],
       "started": "2026-08-18T21:51:43+00:00"
@@ -1738,9 +1854,9 @@
     },
     "systems/wellspring/wellspring.gd": {
       "agent": "lm",
-      "at": "2026-08-18T21:36:44+00:00",
+      "at": "2026-08-18T22:12:21+00:00",
       "hash": "484dc3680cf7e899731c5f7cb90b998fc44aaed4c605d02ad7a7294f66418006",
-      "task": "4.8"
+      "task": "F-141"
     },
     "tools/atmosphere_look_shot.gd": {
       "agent": "vane19",
@@ -2426,6 +2542,12 @@
       "at": "2026-08-18T21:36:44+00:00",
       "hash": "06229b2e9a2465f8313be9e51606939f20d1c38f6edb4dfebd085558ba90b036",
       "task": "4.8"
+    },
+    "tools/wellspring_net_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T22:12:21+00:00",
+      "hash": "95b69b7999ee54af1388ee258e3e945ea9e28548675b25b6ad59e0bb471e257b",
+      "task": "F-141"
     },
     "tools/world_contract_check.gd": {
       "agent": "lp",
@@ -3118,7 +3240,7 @@
     "3.16": {
       "est": "2",
       "milestone": "M3",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T1",
       "title": "Command catalog sweep \u2014 every system verb in `COMMANDS.md` \u00a77 incl. D-030's `lobby host/join/invite`, plus the coverage check"
     },
@@ -3203,7 +3325,7 @@
     "3.7": {
       "est": "4",
       "milestone": "M3",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Buildable pieces (walls/floors/ramps/doors) + Ward structures"
     },
@@ -4864,9 +4986,11 @@
       "title": "Task 3.5 closed without the four chest changes `ITEMS.md` \u00a76 assigned to it, so two shipped stats had no consumer"
     },
     "F-141": {
+      "done_at": "2026-08-18T22:12:21+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`Wellspring.net_request_toggle_channel` has no two-process net check \u2014 only the host-side logic it calls into is proven"
     },
@@ -4903,6 +5027,27 @@
       "status": "done",
       "tier": "F",
       "title": "Auto-name collisions defeat the claim guard: the exhaustion fallback ignores the taken set, so concurrent sessions share one identity"
+    },
+    "F-146": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Nothing in the game places a chest, so the gilded tier's 1-2/island budget has no owner"
+    },
+    "F-147": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "F-145's fix protects new sessions only \u2014 already-collided identities stay live for up to SESSION_KEEP_DAYS"
+    },
+    "F-148": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "construction_check.gd's door-swing solids AABB goes negative-size on thin per-triangle bounds, throwing an UNDECLARED engine error on every run"
     }
   },
   "version": 1

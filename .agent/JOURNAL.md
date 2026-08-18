@@ -3485,3 +3485,18 @@ Notes along the way:
 - Fix + check both already shipped in 63cc37c (task 2.1d); this task was verify-only. Checked palisade_logs() too — not exposed, its mating plane is a single full-width rail box, not a gapped field. Filed unrelated AABB-negative-size door-check bug as F-148, out of scope.
 
 Commit at time of writing: `667879a`
+
+---
+
+### DONE · F-141 · lm · 2026-08-18T22:12:21+00:00
+
+**`Wellspring.net_request_toggle_channel` has no two-process net check — only the host-side logic it calls into is proven**
+
+tools/wellspring_net_check.gd: real two-process ENet proof that a remote client's net_request_toggle_channel.rpc_id() reaches Wellspring._process_toggle(get_remote_sender_id()) on the host, and that the client only observes channeling start/cancel through replication. Verified: agent godot --script tools/wellspring_net_check.gd, twice back to back, WELLSPRING_NET_CHECK failures=0 both times, all 12 assertions PASS.
+
+Notes along the way:
+- tools/wellspring_net_check.gd written, mirrors chest_net_check.gd. Own instance of the F-107 lambda-by-value trap: my first draft assigned client_player inside the _until() poll lambda, which only ever wrote the closure's own copy — outer client_player stayed null even after the poll reported success, so the driver crashed with a Nil access on client_player.global_position. Fixed by polling a boolean only and re-fetching player_net.call('player_for', client_peer) in the outer scope, same fix F-107 already applied to client_peer. Two consecutive agent godot --script tools/wellspring_net_check.gd runs: failures=0 both times, all 12 assertions PASS.
+
+Files: `tools/wellspring_net_check.gd`, `systems/wellspring/wellspring.gd`
+
+Commit at time of writing: `786dacd`
