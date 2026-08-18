@@ -556,6 +556,37 @@ the failure mode is silent and confidently wrong.
 
 ---
 
+### F-121 · Exported builds load zero content: .tres scan misses Godot's .remap suffix
+
+**Area:** content · **Severity:** high · **Found:** 2026-08-18 by pike14
+
+Every exported build — macOS, Windows and Linux — boots with **no content at all**: zero items,
+recipes, stations, weapons, loot tables, powerups, buildables, haulables and enemies. Source runs of
+the same commit load 23 items, 13 recipes and 1 enemy, so `verify_setup` and every headless check
+pass while the shipped artifact is empty. This was found on 2026-08-18 by exporting all three
+platforms from `764a8e1` and smoke-running each on its native OS.
+
+**Cause.** Godot converts text resources to binary during export. `res://content/items/arrow.tres`
+is packed as `arrow.tres.remap` (a stub pointing at the binary payload); the literal `arrow.tres`
+entry is gone. Both runtime directory scans filter on the raw extension:
+
+- `autoload/registry.gd` `_tres_files_in()` — `file_name.ends_with(".tres")`
+- `autoload/enemy_world.gd` `_load_defs()` — `file_name.ends_with(".tres")`
+
+`DirAccess.open()` succeeds and `list_dir` returns the packed names, so nothing errors — the filter
+simply matches zero files and the loaders report a clean "loaded 0". The absence of any error is why
+this survived: the failure looks exactly like an empty content directory.
+
+**Fix.** Strip a trailing `.remap` from each listed name before the extension test, and pass the
+de-remapped `.tres` path to `load()`, which resolves the remap itself. One source run and one
+exported run must both be checked from now on; a source-only check cannot see this class of defect.
+
+**Wider risk.** Any other runtime `DirAccess` scan that filters on `.tres`, `.tscn`, `.gd` or `.res`
+has the same latent bug. These two were the only content scans at the time of filing, but the
+pattern is the thing to grep for before shipping.
+
+---
+
 ## Resolved
 
 ### F-119 · `agent godot`'s own `--import` pre-pass logs two UNDECLARED `ERROR:` lines on every single invocation — **fixed**

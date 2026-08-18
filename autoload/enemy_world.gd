@@ -335,8 +335,12 @@ func _load_defs() -> void:
 	dir.list_dir_begin()
 	var file_name: String = dir.get_next()
 	while file_name != "":
-		if file_name.ends_with(".tres"):
-			var res: Resource = load("%s/%s" % [DEFS_PATH, file_name])
+		# Exported builds pack "<name>.tres" as "<name>.tres.remap", so a raw .tres filter matches
+		# nothing there and the game ships with no enemies at all (F-121). load() wants the original
+		# .tres path and resolves the remap itself.
+		var res_name: String = file_name.trim_suffix(".remap")
+		if res_name.ends_with(".tres"):
+			var res: Resource = load("%s/%s" % [DEFS_PATH, res_name])
 			if res is ENEMY_DEF and StringName(res.get("id")) != &"":
 				var errors: PackedStringArray = res.call("validation_errors")
 				if errors.is_empty():
