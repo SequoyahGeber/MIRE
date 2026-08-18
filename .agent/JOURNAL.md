@@ -2104,3 +2104,27 @@ Notes along the way:
 Files: `tools/mapgen/hollowmere_layout.py`, `world/gen/layouts/hollowmere.json`, `levels/hollowmere.tscn`, `world/gen/undergrowth.gd`, `world/gen/authored_world.gd`, `tools/hollowmere_check.gd`, `docs/ROADMAP.md`, `autoload/enemy_world.gd`, `autoload/harvest_world.gd`, `tools/hollowmere_render_check.gd`, `tools/mapgen/hollowmere_plan.py`
 
 Commit at time of writing: `57375d8`
+
+---
+
+### DONE · 2.12-review · lc1 · 2026-08-18T04:50:59+00:00
+
+**Review 2.12 @ 915c881 — WaveSpawner**
+
+LC1 reviewed 2.12 (WaveSpawner) at commit 915c881 and passed the current tree. Its two real defects — WaveSpawner never registered, so no waves ran, and the check shadowing the real DayNight, which masked the integration failure — were already filed as F-068/F-069 and already fixed, so no duplicate finding was filed. Re-verified on the tree as it stands: wave_spawner_check 16 PASS, failures=0, exit 0, no ERROR lines; authority, determinism, typed GDScript and the standing rules all clean. 2.12 is safe to move on from.
+
+Closed out by the director, not by the lane: this review ran before F-070 was fixed, so its mandated `agent done 2.12-review` / `ship` both failed against an unregistered id and the verdict existed only in .agent/logs/LC1-2.12-review-20260818-044249.last.txt. Registering it retires the order — an unregistered review order is re-run on every drain, and this one costs ~530k tokens a pass.
+
+Commit at time of writing: `d9df9cd`
+
+---
+
+### DONE · F-078 · reed16 · 2026-08-18T04:53:36+00:00
+
+**PowerupDef validates shape but not vocabulary — a typo'd stat name or tag loads clean and is dead forever**
+
+Pre-3.4 design check + fix. docs/POWERUPS.md: 60-powerup sketch spanning all six families and every archetype — ZERO need a new PowerupDef field, schema ships as-is; the risk was the ungoverned name vocabulary. KNOWN_STATS/KNOWN_FAMILIES now back validation_errors(): typo'd stats, phantom-family tags, Vector2.ZERO no-ops and zero-crossing negative multipliers are named boot errors. powerup_check 42 assertions, failures=0, clean error-line bar. D-050 records the conventions; DELEGATION/SPECS point 3.4 at the catalog.
+
+Files: `systems/powerups/powerup_def.gd`, `tools/powerup_check.gd`
+
+Commit at time of writing: `d9df9cd`

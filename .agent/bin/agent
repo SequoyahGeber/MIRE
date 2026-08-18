@@ -34,6 +34,10 @@ ROADMAP = os.path.join(ROOT, "docs", "ROADMAP.md")
 ORDERS = os.path.join(AGENT_DIR, "orders")
 LOCKS = os.path.join(AGENT_DIR, "locks")
 LANE_BIN = os.path.join(AGENT_DIR, "bin", "lane")
+
+EX_LANE_BUSY = 75               # lane run's "already running" — see .agent/bin/lane
+BUSY_WAIT_LIMIT = 2 * 3600      # a lane run is capped at an hour; wait past that and it is wedged
+MAX_BUSY_WAITS = 3              # per task, so a wedged lane cannot spin the queue forever
 LANES_FILE = os.path.join(AGENT_DIR, "lanes.json")
 PROJECT_GODOT = os.path.join(ROOT, "project.godot")
 
@@ -988,6 +992,11 @@ def cmd_ship(args):
     to_stage = [f for f in mine if f in changed]
     to_stage += expanded
     to_stage += [f for f in changed if f.startswith(".agent/")]
+    # F-070: a reviewer claims nothing by design, so `mine` is empty and the mandated ship staged
+    # coordination state and nothing else — stranding the findings it had just been told to write.
+    # A review task owns exactly one artifact; give it that, and only that.
+    if st["tasks"][tid].get("review_of"):
+        to_stage += [f for f in changed if f == "docs/FINDINGS.md"]
     # Godot writes a .uid sidecar beside every script and regenerates it when the script
     # changes. Nobody authors one and nobody claims one, so it never appeared in any task's
     # file list — which is precisely how F-010 left a trail of untracked .uid files behind
@@ -1775,8 +1784,13 @@ def cmd_order(args):
                 break
             files.append(_rel(a))
 
-    if t["status"] == "done":
-        die("%s is already done — check the journal before re-ordering it" % tid)
+    # A review reads a commit that already exists, so "already done" is its normal precondition —
+    # blocking it there left the review lanes with nothing they could legally be pointed at, which
+    # is how both ChatGPT accounts came to sit idle over a queue of finished, unreviewed work.
+    if t["status"] == "done" and not review:
+        die("%s is already done — check the journal before re-ordering it.\n"
+            "  Reviewing it after the fact is fine:  agent order %s --lane <L> --review --sha <sha>"
+            % (tid, tid))
 
     # Effort matters more than the model (AI-WORKFLOW.md §2a): reserve the expensive settings for
     # work that is expensive to get wrong, and let everything else run cheap. Tier already encodes
@@ -1861,6 +1875,22 @@ def cmd_order(args):
     if review:
         # A reviewer claims nothing: it reads a commit and writes findings. Claiming source would
         # block the lane that has to act on the review.
+        #
+        # F-070: the template mandates `agent done <id>-review` and `agent ship <id>-review`, but
+        # nothing ever put that synthetic id in the registry, so every generated review ended with
+        # two failing commands, no board entry, and no journal line — the verdict lived only in the
+        # lane's log. Register it here, at the one place that invents the id. It also gives the
+        # queue its retirement condition: an order whose task is done is skipped, where an
+        # unregistered one is re-run on every drain for as long as the file exists.
+        rid = "%s-review" % tid
+        st_reg = load()
+        if rid not in st_reg["tasks"]:
+            st_reg["tasks"][rid] = {
+                "title": "Review %s @ %s — judge the commit, file findings, no edits" % (tid, sha),
+                "tier": "T1", "est": "0.5", "status": "todo",
+                "milestone": t.get("milestone", ""), "review_of": tid,
+            }
+            save(st_reg)
         body = REVIEW_TEMPLATE % {
             "lane": lane, "account": account, "agent": lane.lower(), "tid": tid, "sha": sha,
             "model": model or lanes.get(lane, {}).get("model", "default"), "effort": effort,
@@ -1951,6 +1981,7 @@ def cmd_saturate(args):
     detach = "--detach" in args
     wanted = [a for a in args[1:] if not a.startswith("--")]
     orders = _open_orders()
+    drain = not wanted                    # no ids means "drain this lane", including later arrivals
     if not wanted:
         wanted = [t for t, m in sorted(orders.items()) if m["lane"] == lane]
     if not wanted:
@@ -1965,25 +1996,72 @@ def cmd_saturate(args):
     # and the lane sat idle through a window it was supposed to be draining. A lock cannot match its
     # own name.
     with file_lock("saturate-%s" % lane.lower(), timeout=8 * 3600):
-        return _saturate_locked(lane, wanted, watch)
+        return _saturate_locked(lane, wanted, watch, drain)
 
 
-def _saturate_locked(lane, wanted, watch):
+def _wait_for_lane_free(lane, limit=BUSY_WAIT_LIMIT):
+    """Block until the lane's own process exits; False if it outlives the limit.
+
+    Trust the pid over the status field, for the same reason `lane.busy_block` does: a status left
+    'running' by a killed process must not park the queue forever."""
+    deadline = time.time() + limit
+    announced = False
+    while time.time() < deadline:
+        st = _lane_state().get(lane, {})
+        pid = st.get("pid")
+        if not pid:
+            return True
+        try:
+            os.kill(pid, 0)
+        except (OSError, TypeError):
+            return True
+        if not announced:
+            print("  %s· %s is mid-task (%s, pid %s) — waiting, not dropping the queue%s"
+                  % (C["dim"], lane, st.get("task", "?"), pid, C["x"]))
+            announced = True
+        time.sleep(20)
+    return False
+
+
+def _saturate_locked(lane, wanted, watch, drain=False):
+    """Run the lane's queue to the end. Two things this has to get right, both learned expensively.
+
+    **A busy lane is not a failed lane.** `lane run` refuses to put a second agent on one account,
+    and a chain that read that refusal as a failure stopped dead and left every remaining order
+    queued — while the lane worked on, finished, and sat idle waiting for a human who was not there.
+    Busy is temporary: wait it out and carry on.
+
+    **The queue is re-read as it goes, not snapshotted.** Orders written after a chain started used
+    to wait for that chain to end, which is exactly the moment the lane goes idle."""
     done_ok, stopped = [], None
-    for tid in wanted:
+    seen, queue, busy_waits = [], list(wanted), {}
+    while queue:
+        tid = queue.pop(0)
+        if tid not in seen:
+            seen.append(tid)
         st = load()
         if st["tasks"].get(tid, {}).get("status") == "done":
             print("  %s· %s already done, skipping%s" % (C["dim"], tid, C["x"]))
-            continue
-        if not os.path.exists(_order_path(tid)):
+        elif not os.path.exists(_order_path(tid)):
             print("  %s· no order for %s, skipping%s" % (C["dim"], tid, C["x"]))
-            continue
-        code = _run_with_resume(lane, tid, watch)
-        if code == 0:
-            done_ok.append(tid)
-            continue
-        stopped = tid
-        break
+        else:
+            code = _run_with_resume(lane, tid, watch)
+            if code == EX_LANE_BUSY:
+                busy_waits[tid] = busy_waits.get(tid, 0) + 1
+                if busy_waits[tid] <= MAX_BUSY_WAITS and _wait_for_lane_free(lane):
+                    queue.insert(0, tid)   # re-judge it — it may have just been finished for us
+                    continue
+                stopped = tid
+                break
+            if code == 0:
+                done_ok.append(tid)
+            else:
+                stopped = tid
+                break
+        if drain:
+            for t, m in sorted(_open_orders().items()):
+                if m["lane"] == lane and t not in seen and t not in queue:
+                    queue.append(t)
 
     print()
     if done_ok:
@@ -2018,6 +2096,10 @@ def _daemonise(lane):
         print("%s· %s queue detached — it now survives this session. Follow it with:%s"
               % (C["dim"], lane, C["x"]))
         print("  tail -f %s" % os.path.relpath(out, ROOT))
+        # os._exit skips the flush that a normal exit does, and stdout is block-buffered whenever it
+        # is a pipe rather than a terminal — so piping `agent saturate --detach` anywhere printed
+        # absolutely nothing and read exactly like a chain that had failed to start.
+        sys.stdout.flush()
         os._exit(0)
     os.setsid()
     if os.fork() > 0:

@@ -40,6 +40,7 @@ LOGS = os.path.join(AGENT_DIR, "logs")
 AGENT = os.path.join(AGENT_DIR, "bin", "agent")
 
 DEFAULT_TIMEOUT = 3600          # a hung lane must not block the board forever
+EX_BUSY = 75                    # lane is working: temporary, not broken — callers wait on this
 SOFT_STOP_PCT = 0.85            # stop before the wall, so the lane can still write its handoff
 
 C = {
@@ -518,7 +519,15 @@ def cmd_run(args):
     if advice:
         print("%s· %s: %s%s" % (C["y"], name, advice, C["x"]))
     if unready and not dry:
-        die("%s: %s — run .agent/bin/setup-lanes" % (name, "; ".join(unready)))
+        msg = "%s: %s" % (name, "; ".join(unready))
+        # "Busy" clears itself; every other unready reason needs a human. A caller that cannot tell
+        # them apart reads a working lane as a broken one — which is how a saturate chain came to
+        # abandon its whole queue while the lane it was feeding worked on, finished, and went idle
+        # with orders still waiting. Give busy its own code so a chain can wait instead (F-075).
+        if busy_block(lane):
+            print("%s\u2717 %s%s" % (C["r"], msg, C["x"]), file=sys.stderr)
+            return EX_BUSY
+        die("%s — run .agent/bin/setup-lanes" % msg)
 
     os.makedirs(LOGS, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")

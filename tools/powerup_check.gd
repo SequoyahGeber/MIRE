@@ -39,6 +39,7 @@ func _run() -> void:
 	_install_test_definitions()
 
 	_check_authored_example()
+	_check_vocabulary_is_validated()
 	_check_stacking_and_caps()
 	_check_stat_seam()
 	_check_resonance_thresholds()
@@ -86,6 +87,50 @@ func _check_authored_example() -> void:
 	var errors: PackedStringArray = broken.call(&"validation_errors")
 	check(not errors.is_empty(),
 		"an empty PowerupDef is rejected rather than silently indexed (%s)" % ", ".join(errors))
+
+
+## F-078: 3.4 hand-types 40–60 files against a vocabulary nothing consumed yet, so a typo'd stat
+## name or tag used to load clean and be dead forever. The validator now holds the line: names come
+## from PowerupDef.KNOWN_STATS / KNOWN_FAMILIES (docs/POWERUPS.md §2), and D-044's linear stacking
+## means a negative multiplier must keep (1 + mult·max_stacks) above zero or the stat inverts.
+func _check_vocabulary_is_validated() -> void:
+	print("\n== F-078: the authoring vocabulary is validated, not just the shape ==")
+
+	var valid: Resource = _build(&"vocab_ok", [&"Fungal", &"Cold"], 5,
+		{&"hunger_drain": Vector2(0.0, -0.08), &"max_hp": Vector2(6.0, 0.0)})
+	var errors: PackedStringArray = valid.call(&"validation_errors")
+	check(errors.is_empty(),
+		"catalog names, a real family and an in-bounds reduction validate clean (%s)" %
+			", ".join(errors))
+
+	var typo_stat: Resource = _build(&"vocab_typo", [&"Kinetic"], 5,
+		{&"move_sped": Vector2(0.0, 0.08)})
+	check(not (typo_stat.call(&"validation_errors") as PackedStringArray).is_empty(),
+		"a stat name outside the catalog is rejected, not silently dead")
+
+	var typo_tag: Resource = _build(&"vocab_family", [&"fire"], 5,
+		{&"melee_damage": Vector2(0.0, 0.06)})
+	check(not (typo_tag.call(&"validation_errors") as PackedStringArray).is_empty(),
+		"a lowercase 'fire' tag is rejected rather than minting a phantom family")
+
+	var inverted: Resource = _build(&"vocab_crossing", [&"Fungal"], 7,
+		{&"hunger_drain": Vector2(0.0, -0.15)})
+	check(not (inverted.call(&"validation_errors") as PackedStringArray).is_empty(),
+		"a negative multiplier that crosses zero at max_stacks is rejected (-0.15 x 7)")
+
+	var bounded: Resource = _build(&"vocab_bounded", [&"Fungal"], 5,
+		{&"hunger_drain": Vector2(0.0, -0.15)})
+	check((bounded.call(&"validation_errors") as PackedStringArray).is_empty(),
+		"the same multiplier under a cap that stays positive is accepted (-0.15 x 5)")
+
+	var noop: Resource = _build(&"vocab_noop", [&"Void"], 5,
+		{&"coin_gain": Vector2.ZERO})
+	check(not (noop.call(&"validation_errors") as PackedStringArray).is_empty(),
+		"a Vector2.ZERO modifier entry is rejected as a no-op")
+
+	var feeder: Resource = _build(&"vocab_feeder", [&"Void"], 9, {})
+	check((feeder.call(&"validation_errors") as PackedStringArray).is_empty(),
+		"a tag-only Resonance feeder with no modifiers stays legal (POWERUPS.md §3)")
 
 
 func _check_stacking_and_caps() -> void:
@@ -248,6 +293,10 @@ func _install_test_definitions() -> void:
 
 
 func _define(id: StringName, tags: Array, max_stacks: int, modifiers: Dictionary) -> void:
+	(registry.get(&"powerups") as Dictionary)[id] = _build(id, tags, max_stacks, modifiers)
+
+
+func _build(id: StringName, tags: Array, max_stacks: int, modifiers: Dictionary) -> Resource:
 	var definition: Resource = POWERUP_DEF.new()
 	definition.set(&"id", id)
 	definition.set(&"display_name", String(id))
@@ -260,7 +309,7 @@ func _define(id: StringName, tags: Array, max_stacks: int, modifiers: Dictionary
 	for stat_name: Variant in modifiers:
 		typed_modifiers[stat_name as StringName] = modifiers[stat_name] as Vector2
 	definition.set(&"modifiers", typed_modifiers)
-	(registry.get(&"powerups") as Dictionary)[id] = definition
+	return definition
 
 
 func check(condition: bool, description: String) -> void:

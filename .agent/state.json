@@ -30,6 +30,16 @@
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
+    "autoload/crafting_service.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T04:50:01+00:00",
+      "task": "3.1"
+    },
+    "autoload/registry.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T04:50:01+00:00",
+      "task": "3.1"
+    },
     "content/items/arrow.tres": {
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
@@ -39,6 +49,11 @@
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
+    },
+    "content/items/iron_ingot.tres": {
+      "agent": "lp",
+      "at": "2026-08-18T04:50:01+00:00",
+      "task": "3.1"
     },
     "content/items/iron_pickaxe.tres": {
       "agent": "flint5",
@@ -85,6 +100,21 @@
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
     },
+    "content/recipes/iron_ingot.tres": {
+      "agent": "lp",
+      "at": "2026-08-18T04:50:01+00:00",
+      "task": "3.1"
+    },
+    "content/stations/furnace.tres": {
+      "agent": "lp",
+      "at": "2026-08-18T04:50:01+00:00",
+      "task": "3.1"
+    },
+    "content/stations/workbench.tres": {
+      "agent": "lp",
+      "at": "2026-08-18T04:50:01+00:00",
+      "task": "3.1"
+    },
     "content/weapons/cleaver.tres": {
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
@@ -130,6 +160,11 @@
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
     },
+    "docs/FINDINGS.md": {
+      "agent": "ivy8",
+      "at": "2026-08-18T04:53:28+00:00",
+      "task": "F-070"
+    },
     "entities/player/viewmodel.gd": {
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
@@ -140,30 +175,55 @@
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
     },
+    "systems/crafting/recipe_def.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T04:50:01+00:00",
+      "task": "3.1"
+    },
+    "systems/crafting/station_def.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T04:50:01+00:00",
+      "task": "3.1"
+    },
     "systems/inventory/item_def.gd": {
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
-    },
-    "systems/powerups/powerup_def.gd": {
-      "agent": "reed16",
-      "at": "2026-08-18T04:45:55+00:00",
-      "task": "F-076"
     },
     "tools/blender/render_item_icons.py": {
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
     },
+    "tools/crafting_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T04:50:01+00:00",
+      "task": "3.1"
+    },
+    "tools/crafting_net_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T04:50:01+00:00",
+      "task": "3.1"
+    },
+    "tools/crafting_ui_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T04:50:01+00:00",
+      "task": "3.1"
+    },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
-    "tools/powerup_check.gd": {
-      "agent": "reed16",
-      "at": "2026-08-18T04:45:55+00:00",
-      "task": "F-076"
+    "tools/setup_crafting_content.gd": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:52:48+00:00",
+      "task": "F-073"
+    },
+    "tools/setup_station_content.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T04:50:01+00:00",
+      "task": "3.1"
     },
     "tools/setup_tool_content.gd": {
       "agent": "flint5",
@@ -174,6 +234,11 @@
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
+    },
+    "ui/crafting/crafting_ui.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T04:50:01+00:00",
+      "task": "3.1"
     },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "tine18",
@@ -192,6 +257,46 @@
       ],
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
+    },
+    "3.1": {
+      "agent": "lp",
+      "files": [
+        "systems/crafting/station_def.gd",
+        "systems/crafting/recipe_def.gd",
+        "autoload/crafting_service.gd",
+        "autoload/registry.gd",
+        "ui/crafting/crafting_ui.gd",
+        "tools/crafting_check.gd",
+        "tools/crafting_net_check.gd",
+        "tools/crafting_ui_check.gd",
+        "tools/setup_station_content.gd",
+        "content/stations/workbench.tres",
+        "content/stations/furnace.tres",
+        "content/items/iron_ingot.tres",
+        "content/recipes/iron_ingot.tres"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-18T04:50:04+00:00",
+          "by": "lp",
+          "text": "Extended claim beyond the order's list: content/stations/furnace.tres, content/items/iron_ingot.tres, content/recipes/iron_ingot.tres (the worked example needs them), tools/crafting_ui_check.gd (my UI changes affect it and the task's own verify list runs it), tools/setup_station_content.gd (new deterministic content-authoring helper, matching setup_crafting_content.gd's pattern)."
+        }
+      ],
+      "started": "2026-08-18T04:50:01+00:00"
+    },
+    "3.6-review": {
+      "agent": "lc1",
+      "files": [],
+      "notes": [],
+      "started": "2026-08-18T04:52:43+00:00"
+    },
+    "F-070": {
+      "agent": "ivy8",
+      "files": [
+        "docs/FINDINGS.md"
+      ],
+      "notes": [],
+      "started": "2026-08-18T04:53:28+00:00"
     },
     "F-073": {
       "agent": "flint5",
@@ -225,19 +330,17 @@
         "content/weapons/iron_sword.tres",
         "assets/icons/exports/icon_wooden_axe.png",
         "assets/icons/exports/icon_stone_axe.png",
-        "assets/icons/preview/item_icons_sheet.png"
+        "assets/icons/preview/item_icons_sheet.png",
+        "tools/setup_crafting_content.gd"
       ],
-      "notes": [],
+      "notes": [
+        {
+          "at": "2026-08-18T04:50:53+00:00",
+          "by": "flint5",
+          "text": "Work complete and verified; commit blocked only because the Godot editor is open (D-031). viewmodel_check 18/18 failures=0, verify_setup/combat_feel/dev_loadout/combat_check all failures=0, generator GRIPS table byte-matches all 11 .tres (44/44 fields). Ship with: agent ship F-073 once the editor is closed."
+        }
+      ],
       "started": "2026-08-18T04:15:15+00:00"
-    },
-    "F-076": {
-      "agent": "reed16",
-      "files": [
-        "systems/powerups/powerup_def.gd",
-        "tools/powerup_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T04:45:55+00:00"
     }
   },
   "recent": {
@@ -486,21 +589,6 @@
       "at": "2026-08-18T04:23:58+00:00",
       "task": "F-059"
     },
-    "autoload/net_interp.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:46:47+00:00",
-      "task": "F-018"
-    },
-    "autoload/net_transport.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:46:47+00:00",
-      "task": "F-025"
-    },
-    "autoload/player_net.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:46:47+00:00",
-      "task": "F-018"
-    },
     "autoload/powerup_service.gd": {
       "agent": "gale6",
       "at": "2026-08-18T04:27:04+00:00",
@@ -510,11 +598,6 @@
       "agent": "gale6",
       "at": "2026-08-18T04:35:30+00:00",
       "task": "3.6"
-    },
-    "autoload/steam_lobby.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:46:47+00:00",
-      "task": "F-025"
     },
     "content/buildables/wall.tres": {
       "agent": "gale6",
@@ -761,11 +844,6 @@
       "at": "2026-08-18T00:27:27+00:00",
       "task": "1.12"
     },
-    "entities/player/player_camera.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:46:46+00:00",
-      "task": "F-002"
-    },
     "entities/player/player_controller.gd": {
       "agent": "lp",
       "at": "2026-08-18T00:55:40+00:00",
@@ -877,9 +955,9 @@
       "task": "3.5"
     },
     "systems/powerups/powerup_def.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:27:04+00:00",
-      "task": "3.3"
+      "agent": "reed16",
+      "at": "2026-08-18T04:53:36+00:00",
+      "task": "F-078"
     },
     "systems/spawning/wave_spawner.gd": {
       "agent": "lc1",
@@ -1171,11 +1249,6 @@
       "at": "2026-08-18T04:33:16+00:00",
       "task": "F-060"
     },
-    "tools/net_debug_panel_check.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:46:47+00:00",
-      "task": "F-021"
-    },
     "tools/player_health_check.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T01:38:32+00:00",
@@ -1207,9 +1280,9 @@
       "task": "2.1j"
     },
     "tools/powerup_check.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:27:04+00:00",
-      "task": "3.3"
+      "agent": "reed16",
+      "at": "2026-08-18T04:53:36+00:00",
+      "task": "F-078"
     },
     "tools/powerup_net_check.gd": {
       "agent": "gale6",
@@ -1626,6 +1699,16 @@
       "tier": "T1",
       "title": "Night wave spawner: N enemies at night, despawn at dawn, scales with player count"
     },
+    "2.12-review": {
+      "done_at": "2026-08-18T04:44:22+00:00",
+      "done_by": "lc1",
+      "est": "0.5",
+      "milestone": "M2",
+      "review_of": "2.12",
+      "status": "done",
+      "tier": "T1",
+      "title": "Review 2.12 @ 915c881 \u2014 judge the commit, file findings, no edits"
+    },
     "2.13": {
       "done_at": "2026-08-17T23:58:38+00:00",
       "done_by": "lp",
@@ -1801,7 +1884,7 @@
     "3.1": {
       "est": "4",
       "milestone": "M3",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "Full tier/fork crafting tree, stations (workbench \u2192 furnace \u2192 anvil) (`DESIGN.md` \u00a74.3)"
     },
@@ -1866,6 +1949,14 @@
       "status": "done",
       "tier": "T2",
       "title": "Building system: placement ghost, snapping, rotate, validate, destroy"
+    },
+    "3.6-review": {
+      "est": "0.5",
+      "milestone": "M3",
+      "review_of": "3.6",
+      "status": "in_flight",
+      "tier": "T1",
+      "title": "Review 3.6 @ dc86116 \u2014 judge the commit, file findings, no edits"
     },
     "3.7": {
       "est": "4",
@@ -2837,7 +2928,7 @@
     "F-070": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Generated review orders cannot use their mandated review task id"
     },
@@ -2883,7 +2974,7 @@
     "F-076": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "F",
       "title": "A new map inherits none of the systems keyed to the old map's group names"
     },
@@ -2893,6 +2984,29 @@
       "status": "todo",
       "tier": "F",
       "title": "`agent godot` is always headless, so no in-engine screenshot can ever be captured"
+    },
+    "F-078": {
+      "done_at": "2026-08-18T04:53:36+00:00",
+      "done_by": "reed16",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "PowerupDef validates shape but not vocabulary \u2014 a typo'd stat name or tag loads clean and is dead forever"
+    },
+    "F-079": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The obvious way to \"compare decoded pixels\" silently reports every RGB-only change as identical"
+    },
+    "F-080": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`git stash` in this repo stashes every other lane's uncommitted work too"
     }
   },
   "version": 1
