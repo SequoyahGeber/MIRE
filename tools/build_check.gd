@@ -22,6 +22,7 @@ var level: Node3D
 var space: PhysicsDirectSpaceState3D
 var wall: Resource
 var service: Node
+var inventory: Node
 var _confirmations: Array[Dictionary] = []
 
 
@@ -46,6 +47,7 @@ func _run() -> void:
 	_check_placement_rules()
 	_check_support_probe_requirements()
 	await _check_host_placement()
+	await _check_damage_destroys_piece()
 	await _check_ghost()
 
 	print("\nBUILD_CHECK failures=%d" % failures)
@@ -256,7 +258,7 @@ func _check_host_placement() -> void:
 		return
 	service.connect(&"build_confirmed", _on_build_confirmed)
 
-	var inventory: Node = root.get_node_or_null(^"InventoryService")
+	inventory = root.get_node_or_null(^"InventoryService")
 	check(inventory != null, "InventoryService exists to charge the cost against")
 	if inventory == null:
 		return
@@ -284,8 +286,16 @@ func _check_host_placement() -> void:
 
 	var pieces: Array = get_nodes_in_group(&"buildable_piece")
 	check(pieces.size() == 1, "the piece joined the buildable_piece group")
-	check(get_nodes_in_group(&"damageable").size() >= 1,
-		"and &\"damageable\", so it can be attacked like anything else in the world")
+	check(get_nodes_in_group(&"damageable").size() >= 1, "and joined &\"damageable\" too")
+	# F-085: the tag alone used to be treated as proof the piece could be attacked. It cannot be —
+	# CombatService._best_target() skips any &"damageable" member without host_apply_damage(), so
+	# the group's actual contract is that method, and only calling it proves anything.
+	var piece: Node = pieces[0] as Node
+	check(piece.has_method(&"host_apply_damage"),
+		"and it actually implements the group's contract, not just the tag")
+	check(bool(piece.call(&"host_apply_damage", 1, 1)),
+		"a small hit is accepted (host_apply_damage returns true)")
+	check(int(service.call(&"placed_count")) == 1, "and a nonlethal hit leaves it standing")
 	check(bool(service.get(&"_nav_rebake_pending")),
 		"a placement queues a navmesh rebake rather than baking inline")
 	check(is_equal_approx(float(service.get(&"NAV_REBAKE_INTERVAL_SEC")), 1.0),
@@ -319,6 +329,38 @@ func _check_host_placement() -> void:
 		"destroying something that does not exist is refused, not a crash")
 
 	service.disconnect(&"build_confirmed", _on_build_confirmed)
+
+
+## F-085: a lethal hit destroys the piece the same way a teardown request does — minus the refund.
+## Exercises the full path from CombatService's seam (host_apply_damage) through
+## BuildService.host_piece_destroyed_by_damage(), not just the method call in isolation.
+func _check_damage_destroys_piece() -> void:
+	print("\n== a lethal hit destroys the piece, same as a teardown, minus the refund (F-085) ==")
+	var clear_spot := Transform3D(Basis(), Vector3(2.0, 0.0, 0.0))
+	var log_before: int = int(inventory.call(&"host_count", 1, &"log"))
+
+	service.connect(&"build_confirmed", _on_build_confirmed)
+	_confirmations.clear()
+	service.call(&"request_place", &"wall_wood", clear_spot)
+	await process_frame
+	check(_confirmations.size() == 1 and bool(_confirmations[0]["accepted"]),
+		"a fresh piece is placed for the lethal-damage test")
+	service.disconnect(&"build_confirmed", _on_build_confirmed)
+	if int(service.call(&"placed_count")) != 1:
+		return
+	check(int(inventory.call(&"host_count", 1, &"log")) == log_before - 4,
+		"placing it spent the cost as usual")
+
+	var piece: Node = get_nodes_in_group(&"buildable_piece")[0] as Node
+	check(bool(piece.call(&"host_apply_damage", 9999, 1)), "a lethal hit is accepted")
+	await process_frame
+	check(int(service.call(&"placed_count")) == 0,
+		"and BuildService forgets the piece once its hp reaches zero")
+	check(not is_instance_valid(piece) or bool(piece.call(&"is_queued_for_deletion")),
+		"the node itself is gone, or queued to go")
+	check(int(inventory.call(&"host_count", 1, &"log")) == log_before - 4,
+		"destroying it by damage refunds nothing, unlike request_destroy")
+	check(bool(service.get(&"_nav_rebake_pending")), "and it queued a nav rebake too")
 
 
 ## Increment C: the ghost. It is presentation, so what is asserted is that it PREDICTS with the same

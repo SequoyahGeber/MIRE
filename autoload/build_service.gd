@@ -29,6 +29,9 @@ extends Node
 ## error.
 
 const VALIDATOR := preload("res://systems/building/placement_validator.gd")
+## F-085: the `&"damageable"` group's damage implementation. Attached to whichever piece root
+## doesn't already bring its own — see `_net_spawn_piece()` and the script's own doc comment.
+const BUILDABLE_PIECE := preload("res://systems/building/buildable_piece.gd")
 
 const LOG_CHANNEL: StringName = &"world"
 const CONTAINER_NODE: StringName = &"Buildings"
@@ -212,6 +215,24 @@ func _process_destroy(peer_id: int, piece_name: StringName, request_id: int) -> 
 	_answer(peer_id, request_id, true, "")
 
 
+## F-085: called by `systems/building/buildable_piece.gd` once its host-side hp reaches zero. Not a
+## teardown request, so unlike `_process_destroy` there is neither a range check (whoever landed the
+## killing blow already had to pass the weapon's own range/arc test in `CombatService`) nor a refund
+## (a piece that was fought and lost is not one its owner meant to reclaim — the same as a
+## Harvestable or an Enemy never paying out on death).
+func host_piece_destroyed_by_damage(piece_name: StringName, instigator_peer_id: int) -> void:
+	if not _owns_mutation() or not _placed.has(piece_name):
+		return
+	var record: Dictionary = _placed[piece_name]
+	var piece: Node = _container.get_node_or_null(NodePath(String(piece_name)))
+	_placed.erase(piece_name)
+	if piece != null:
+		piece.queue_free()
+	_request_nav_rebake()
+	piece_destroyed.emit(StringName(String(record.get("def", ""))), int(record.get("owner", 0)))
+	MireLog.info(LOG_CHANNEL, "peer %d destroyed %s by damage" % [instigator_peer_id, piece_name])
+
+
 ## floor(cost * refund_fraction) per item, never more than was paid and never a fractional log.
 func _refund_for(def: Resource) -> Dictionary:
 	var fraction: float = float(def.get(&"refund_fraction"))
@@ -291,6 +312,14 @@ func _net_spawn_piece(data: Variant) -> Node:
 	piece.add_to_group(PIECE_GROUP)
 	piece.add_to_group(DAMAGEABLE_GROUP)
 	piece.set_meta(&"buildable_id", String(payload.get("def", "")))
+
+	# F-085: `&"damageable"`'s contract is `host_apply_damage()`, not the tag alone. A generated
+	# piece never has one; a future authored scene root might bring its own richer one (staged
+	# damage states) — only fall back to the shared implementation when nothing is there already,
+	# so this never clobbers a root that already knows how to take a hit.
+	if not piece.has_method(&"host_apply_damage"):
+		piece.set_script(BUILDABLE_PIECE)
+		piece.set(&"hp", int(def.get(&"max_hp")))
 	return piece
 
 

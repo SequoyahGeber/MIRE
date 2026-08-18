@@ -50,6 +50,13 @@ extends Resource
 ## Fraction of the cost returned on destruction. 1.0 is a full refund, 0.0 none.
 @export_range(0.0, 1.0, 0.05) var refund_fraction: float = 0.5
 
+@export_group("Combat")
+## Hit points before combat destroys the piece. Read by `BuildService._net_spawn_piece()` and owned
+## host-side by `systems/building/buildable_piece.gd` — see F-085. Unreplicated on purpose (that
+## script's own doc comment says why); only the definition's number needs to agree across peers, and
+## definitions are already identical everywhere.
+@export_range(1, 500, 1) var max_hp: int = 25
+
 @export_group("Ward")
 ## Non-zero makes this a Ward structure. The FIELD ships here in 3.6; the Mire reads it in 4.11 —
 ## nothing in this task acts on it, deliberately, so 4.11 does not have to migrate content that was
@@ -78,6 +85,8 @@ func validation_errors() -> PackedStringArray:
 		errors.append("size must be positive on every axis (got %s)" % size)
 	if max_build_range_m <= 0.0:
 		errors.append("max_build_range_m must be positive")
+	if max_hp <= 0:
+		errors.append("max_hp must be positive")
 	for item_id: StringName in cost:
 		if item_id == &"":
 			errors.append("cost contains an empty item id")

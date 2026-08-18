@@ -2296,3 +2296,19 @@ Notes along the way:
 Files: `systems/building/placement_validator.gd`, `tools/build_check.gd`
 
 Commit at time of writing: `1dc36e3`
+
+---
+
+### DONE · F-085 · lp · 2026-08-18T05:53:36+00:00
+
+**Buildables join `damageable` without implementing its required damage method**
+
+Buildable pieces now implement the damageable contract: new systems/building/buildable_piece.gd (host_apply_damage, attached by BuildService only if the root doesn't already have one), BuildableDef.max_hp, BuildService.host_piece_destroyed_by_damage (no range check, no refund - D-054). tools/build_check.gd now calls host_apply_damage directly and adds a lethal-destroy path check. Verified: agent godot --script tools/build_check.gd -> failures=0 (multiple clean reruns, no ERROR lines); tools/combat_check.gd -> failures=0, unaffected. FINDINGS.md moved to Resolved, SPECS.md F-085 block written, DELEGATION.md Current state updated, D-054 recorded.
+
+Notes along the way:
+- Added systems/building/buildable_piece.gd, attached only when a piece root lacks host_apply_damage of its own; BuildableDef gained max_hp (default 25, no .tres edits needed). New BuildService.host_piece_destroyed_by_damage skips range check and refund (D-054).
+- Verified: agent godot --script tools/build_check.gd failures=0 (2 reruns, no ERROR lines); tools/combat_check.gd failures=0, unaffected.
+
+Files: `autoload/build_service.gd`, `tools/build_check.gd`, `systems/building/buildable_def.gd`, `systems/building/buildable_piece.gd`
+
+Commit at time of writing: `9003c75`
