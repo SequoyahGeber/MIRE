@@ -798,6 +798,34 @@ covers it and the check will say so. Or evidence that an `ON_CHANGE` visual swap
 range to want a crossfade, which is a presentation problem for a shader to solve, not a job for the
 network interpolator.
 
+### D-044 · 2026-08-18 · Tags ARE the Resonance families, and stacks scale linearly, additive before multiplicative
+
+Two calls task 3.3 had to make, both of which 3.4's 40–60 authored powerups depend on and neither of
+which should be relitigated per-powerup.
+
+**Tags are the families.** `docs/SPECS.md`'s 3.3 block lists `tags: Array[StringName]` *and* a
+separate `resonance_family`, but `DESIGN.md` §4.4 keys its thresholds off the tags themselves —
+"each powerup has 1–2 tags", "holding 3+ of a tag triggers a Resonance". Two fields would be two
+names for one concept, and the failure mode is not hypothetical: an author sets `Fire` in `tags` and
+leaves `resonance_family` empty, the powerup shows a Fire icon and contributes to no Resonance, and
+nothing errors. `PowerupDef` therefore has `tags` only. A powerup belonging to two families feeds
+both, which §4.4 already assumes when it says 1–2 tags.
+
+**Stacking is `(base + additive * N) * (1.0 + multiplicative * N)`**, per stat, summed across every
+powerup the player holds that names it. Additive resolves first so a flat `+2 max_hp` is amplified
+by a later `+10% max_hp` rather than lost under it, which is the order players expect. Both terms
+scale **linearly** with the stack count rather than compounding: five stacks of +8% is +40%, not
+×1.08⁵ (+47%). Compounding is the standard way a stacking system becomes unbalanceable — the
+designer tunes the third stack and the ninth quietly doubles — and §4.4 deliberately puts the
+qualitative power in Resonances, not in stat curves. Stats are the boring, predictable half on
+purpose.
+
+**Would change my mind:** on the first, a design that wants a powerup to display under one banner
+while counting toward another — then `resonance_family` returns as an explicit override, defaulting
+to `tags`, rather than as a parallel required field. On the second, a specific powerup that is
+uninteresting until it compounds; that is an argument for a per-stat curve field on `PowerupDef`,
+not for changing the default everything else is tuned against.
+
 ---
 
 ## Template

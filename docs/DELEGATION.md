@@ -142,6 +142,53 @@ accruing for a parked player exactly as D-035 intends. Whoever takes F-074 shoul
 `_valid_host_peer` match that shape — treat a live `_host_stores` entry as valid regardless of current
 connectivity — now that the `rpc_id` sends downstream of it are guarded and safe to reach.
 
+### 2026-08-18 — the powerup framework is in (3.3). This is what 3.4 and every effect task build on
+
+`PowerupService` is autoload #23, HOST-authoritative (§2.2 "active modifiers"). Protocol is **11**.
+
+**The one seam. Systems ASK the service; it never reaches into systems.**
+
+```gdscript
+speed = PowerupService.stat(peer_id, &"move_speed", BASE_SPEED)   # or local_stat() for yourself
+```
+
+That direction is the entire point. A powerup that pushed values into `PlayerController` would make
+every new powerup a code change in the system it touches — the opposite of §4.4's "mostly data, not
+code". **No system needs editing to support a new stat powerup**; it needs editing once, to route its
+base value through `stat()`, and then never again. Movement, damage and health are the obvious first
+three and none of them are wired yet — that is deliberate, it is each system's own task and a
+one-line change when it comes.
+
+**Authoring (task 3.4).** `content/powerups/swift_stride.tres` is the worked example; copy it.
+`id`, `display_name`, `icon`, `tags`, `max_stacks`, `modifiers`. `modifiers` maps a stat name to
+`Vector2(additive, multiplicative)` **per stack** — `Vector2(0, 0.08)` is +8% per stack,
+`Vector2(2, 0)` is +2 flat. D-044 fixes the maths and fixes that **tags ARE the Resonance families**;
+there is no separate `resonance_family` field, so do not look for one. `validation_errors()` runs at
+boot and a malformed .tres is a named error and a skip, never a crash downstream.
+
+**Resonance is a flag, not an effect.** `resonance_active(peer, &"Fire")` and
+`greater_resonance_active(...)` at §4.4's 3+ and 6+. This service does not know what Blood resonance
+*means* — the task that ships "kills heal you" asks the flag and implements itself, and the
+`resonance_changed(peer_id, family, tier)` signal fires on crossings in both directions so an effect
+can switch off as well as on.
+
+**The replication split, which is the part to not accidentally undo.** The owner gets its full
+`id -> stacks` map by `rpc_id`; *everyone* gets per-peer per-family **counts** by broadcast. So a
+teammate can see you are three-deep in Fire — §4.4 makes that a decision at every chest — and cannot
+name one powerup you hold. `tools/powerup_net_check.gd` asserts exactly that over two real ENet
+processes, including the negative half, because broadcasting the snapshot by mistake is a change no
+offline check can catch.
+
+**D-035 is honoured**: `peer_left` drops nothing, `run_player_rebound` moves the stacks, only
+`run_player_expired` deletes them. Losing a run's powerups to a reconnect would be worse than the
+inventory bug that motivated D-035, because unlike an inventory they cannot be re-gathered.
+
+**Verify:** `agent godot --script tools/powerup_check.gd` (28 assertions, offline) and
+`tools/powerup_net_check.gd` (13, two processes). Writing the second one is what surfaced a real
+gap — a mid-run joiner learned nothing until somebody happened to open a chest, because publishing
+on mutation is only correct if every peer was present for every mutation. `_on_peer_joined` now
+sends the board.
+
 ### 2026-08-18 — night waves actually run now, and the reason they did not is worth keeping
 
 `WaveSpawner` is registered (autoload #22, after `DayNight`, which its `_ready()` depends on). Dusk
