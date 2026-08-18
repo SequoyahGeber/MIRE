@@ -69,6 +69,31 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-120 · AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed
+
+**Area:** tooling/protocol · **Severity:** high · **Found:** 2026-08-18 by lp during 3.10
+
+AGENTS.md's "Godot-authored files require a closed editor" section gives the by-hand check as
+`pgrep -fl 'Godot.app.*--editor'` (mirrored in this task's own work order). During 3.10 that command
+printed nothing — read as "editor not running" — while the editor was in fact open, launched as
+`Godot --path <proj> -e res://levels/hollowmere.tscn`. Godot's `-e` is the short flag for `--editor`;
+the process command line never contains the literal substring `--editor` when launched that way, so
+the documented pgrep misses it. `agent autoload` caught this correctly (it refused, citing D-021) —
+its own check must match on something other than the `--editor` substring — but the manual command
+AGENTS.md tells an agent to run by hand does not, and a `.tscn`/`.tres`/`project.godot` edit made
+after trusting that false negative is exactly the corruption D-031 exists to prevent (F-045 already
+named the inverse trap — a raw `pgrep -fl Godot` overmatching the agent's own tooling — this is the
+same root cause pointing the other way: pattern-matching a command line instead of asking the engine).
+
+**Not fixed here:** no claim on AGENTS.md this task, and the safe subset (`agent godot`, `agent
+autoload`, `agent claim` on Godot-authored files) already goes through the harness's own — apparently
+correct — detection, so nothing shipped was at risk. What's open is the *documented by-hand fallback*
+for an agent working without the harness's own gate, or double-checking it by eye. Fix is either a
+better pattern (matching `-e |--editor` at minimum, though a positional scene argument after `-e`
+could still slip past a naive grep) or, better, a small `agent editor-running` subcommand that reuses
+whatever check `agent autoload`/the pre-commit hook already trusts, so there is exactly one
+implementation instead of one correct one and one documented-wrong one.
+
 ### F-112 · `world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check — F-076's third system, not lifted
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-18 by lp during F-076

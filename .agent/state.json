@@ -18,16 +18,6 @@
       "at": "2026-08-18T05:14:05+00:00",
       "task": "F-091"
     },
-    ".agent/bin/setup-lanes": {
-      "agent": "yarrow21",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "0.12"
-    },
-    ".gitignore": {
-      "agent": "yarrow21",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "0.12"
-    },
     "AGENTS.md": {
       "agent": "yarrow21",
       "at": "2026-08-18T14:02:22+00:00",
@@ -393,6 +383,12 @@
       "at": "2026-08-18T17:55:11+00:00",
       "task": "F-113"
     },
+    "autoload/haul_service.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "c92a4d7cc51c6f0714c9627b4861f3abd46af2e459efe5db4e40654c26dc7fd2",
+      "task": "3.10"
+    },
     "autoload/inventory_service.gd": {
       "agent": "kiln9",
       "at": "2026-08-18T14:10:44+00:00",
@@ -414,9 +410,10 @@
       "task": "F-099"
     },
     "autoload/registry.gd": {
-      "agent": "kiln9",
-      "at": "2026-08-18T14:10:44+00:00",
-      "task": "F-099"
+      "agent": "lp",
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "85a64f2056ba167dfa35f48bd0b73b435e5620b235a99235239c42a14dea941c",
+      "task": "3.10"
     },
     "content/buildables/wall.tres": {
       "agent": "gale6",
@@ -477,6 +474,12 @@
       "agent": "vane19",
       "at": "2026-08-18T17:55:20+00:00",
       "task": "F-114"
+    },
+    "content/haulables/heavy_ore_crate.tres": {
+      "agent": "lp",
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "3dffd35d3e10b4a2aa17cfa3c9f67dd4cce603ce94df0cfa42393abfc5ad57ee",
+      "task": "3.10"
     },
     "content/items/arrow.tres": {
       "agent": "flint5",
@@ -739,9 +742,10 @@
       "task": "F-099"
     },
     "core/net/net_version.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:42:03+00:00",
-      "task": "3.6"
+      "agent": "lp",
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "b5b726d659b111e6628d2e48793120dc7aa647b81f29fc9593c063917aff1703",
+      "task": "3.10"
     },
     "core/util/mire_log.gd": {
       "agent": "gale6",
@@ -752,6 +756,12 @@
       "agent": "yarrow21",
       "at": "2026-08-18T14:02:22+00:00",
       "task": "F-053"
+    },
+    "docs/ARCHITECTURE.md": {
+      "agent": "lp",
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "91eaabafdc3d77b3cc69fa74ef9a5e7fd61d19edce33726f82162bc2e5481b83",
+      "task": "3.10"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "ivy8",
@@ -764,21 +774,22 @@
       "task": "F-050"
     },
     "docs/DECISIONS.md": {
-      "agent": "bram1",
-      "at": "2026-08-18T18:04:25+00:00",
-      "task": "F-044"
+      "agent": "lp",
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "5715afa6291e58cf3019b5e4f51e895f7df857eebff730e605dcc8dda2aa7115",
+      "task": "3.10"
     },
     "docs/DELEGATION.md": {
       "agent": "lp",
-      "at": "2026-08-18T18:30:33+00:00",
-      "hash": "441f6eac9b77844e420d4ae6bf678bf8be4e39be8960b09e43e8d8d97afd492b",
-      "task": "F-117"
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "8b8af313d4d84c82b37ded750b573f812302068ec77ea3bc7d4922cc6445a9a7",
+      "task": "3.10"
     },
     "docs/FINDINGS.md": {
       "agent": "lp",
-      "at": "2026-08-18T18:30:33+00:00",
-      "hash": "7c1e8b157cbbaf8d945ed3a3213310072c8b76d3800e398a670416d026993479",
-      "task": "F-117"
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "fa803f433b3881831fdcc9cc6bb4b03058ca6746c33a11b1da90a5071fe0431d",
+      "task": "3.10"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -843,8 +854,9 @@
     },
     "project.godot": {
       "agent": "lp",
-      "at": "2026-08-18T14:37:19+00:00",
-      "task": "F-075"
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "82f9a7e2b59ce5515e5282d1fed4722d8c7893b7dfa9be903aa8341b80212267",
+      "task": "3.10"
     },
     "systems/building/build_ghost.gd": {
       "agent": "lp",
@@ -906,6 +918,24 @@
       "at": "2026-08-18T17:55:11+00:00",
       "task": "F-113"
     },
+    "systems/hauling/haul_math.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "efc7df5a7098533a1a51f165880bf6eba2439ee82513418d46cb783ddd35c696",
+      "task": "3.10"
+    },
+    "systems/hauling/haulable.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "e7521bfc8f41a99630dd5a58e713144c19024752868e0f9a23ba7bfa00d23eb2",
+      "task": "3.10"
+    },
+    "systems/hauling/haulable_def.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "b9e79a14c5b18194f90cb81a87dc86c70699fbb9cdb2a46843395620a8034528",
+      "task": "3.10"
+    },
     "systems/health/downed_state.gd": {
       "agent": "lp",
       "at": "2026-08-18T00:55:40+00:00",
@@ -940,11 +970,6 @@
       "agent": "reed16",
       "at": "2026-08-18T04:53:36+00:00",
       "task": "F-078"
-    },
-    "systems/spawning/wave_spawner.gd": {
-      "agent": "lc1",
-      "at": "2026-08-17T18:38:17+00:00",
-      "task": "2.12"
     },
     "systems/waves/wave_spawner.gd": {
       "agent": "gale6",
@@ -1208,9 +1233,10 @@
       "task": "F-115"
     },
     "tools/handshake_check.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:42:03+00:00",
-      "task": "3.6"
+      "agent": "lp",
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "7807a3d51cd90700471fd254acc22ed2e5e0cf64f6a11f3037b9149f216a6788",
+      "task": "3.10"
     },
     "tools/harness_check.py": {
       "agent": "lp",
@@ -1248,6 +1274,18 @@
       "at": "2026-08-18T04:33:16+00:00",
       "task": "F-060"
     },
+    "tools/haul_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "7d40762a4a220d483ba97d8841f20f9e23fb5ec5b8db9fb81f67fdd5308fd40a",
+      "task": "3.10"
+    },
+    "tools/haul_net_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "15c687f705d60eb9d4e1ea673fc9e7e05942b7c89dc66a9eabd0e235ba33260f",
+      "task": "3.10"
+    },
     "tools/hollowmere_check.gd": {
       "agent": "ivy8",
       "at": "2026-08-18T04:46:24+00:00",
@@ -1264,9 +1302,10 @@
       "task": "2.1k"
     },
     "tools/interp_coverage_check.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:07:51+00:00",
-      "task": "F-004"
+      "agent": "lp",
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "c1c523dd5fdcfe62512862548fd2e18f052f28387a97ec1241433ffb0296257e",
+      "task": "3.10"
     },
     "tools/inventory_net_check.gd": {
       "agent": "lp",
@@ -1383,15 +1422,11 @@
       "at": "2026-08-18T04:58:38+00:00",
       "task": "F-073"
     },
-    "tools/setup_harvest_content.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:49:21+00:00",
-      "task": "F-048"
-    },
-    "tools/setup_project.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:49:21+00:00",
-      "task": "F-048"
+    "tools/setup_haul_content.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T18:59:24+00:00",
+      "hash": "4a73035d613f2e88eb7562f8fda804262200845855e79923787f53a5ab18d91c",
+      "task": "3.10"
     },
     "tools/setup_station_content.gd": {
       "agent": "lp",
@@ -1412,11 +1447,6 @@
       "agent": "flint5",
       "at": "2026-08-18T01:20:10+00:00",
       "task": "F-056"
-    },
-    "tools/verify_setup.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:48:57+00:00",
-      "task": "F-046"
     },
     "tools/vfx_site_probe.gd": {
       "agent": "larch10",
@@ -2010,9 +2040,11 @@
       "title": "Full tier/fork crafting tree, stations (workbench \u2192 furnace \u2192 anvil) (`DESIGN.md` \u00a74.3)"
     },
     "3.10": {
+      "done_at": "2026-08-18T18:59:24+00:00",
+      "done_by": "lp",
       "est": "2",
       "milestone": "M3",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Heavy hauling (2-player carry; solo fallback = slow one-player drag, `DESIGN.md` \u00a75 solo rule)"
     },

@@ -17,6 +17,7 @@ const WEAPONS_PATH: String = "res://content/weapons"
 const LOOT_PATH: String = "res://content/loot"
 const POWERUPS_PATH: String = "res://content/powerups"
 const BUILDABLES_PATH: String = "res://content/buildables"
+const HAULABLES_PATH: String = "res://content/haulables"
 
 ## F-016: LootTableDef is a brand-new class_name (task 3.5) and this autoload boots in every
 ## headless run, so a bare reference here would break every check in the project the moment the
@@ -29,6 +30,8 @@ const POWERUP_DEF := preload("res://systems/powerups/powerup_def.gd")
 const BUILDABLE_DEF := preload("res://systems/building/buildable_def.gd")
 ## Same F-016 reasoning again: StationDef is new in task 3.1.
 const STATION_DEF := preload("res://systems/crafting/station_def.gd")
+## Same F-016 reasoning again: HaulableDef is new in task 3.10.
+const HAULABLE_DEF := preload("res://systems/hauling/haulable_def.gd")
 ## Preloaded like the four above so the one generic loader can use script equality uniformly —
 ## it is the F-016-safe type check for every def, established or new (F-099).
 const ITEM_DEF := preload("res://systems/inventory/item_def.gd")
@@ -55,6 +58,10 @@ var powerups: Dictionary[StringName, Resource] = {}
 ## Keyed by buildable id (task 3.6). Shared content; task 3.7 authors the real set.
 var buildables: Dictionary[StringName, Resource] = {}
 
+## Keyed by haulable id (task 3.10). Shared content, same shape as `buildables` — one worked
+## example, the rest is Sequoyah's (AGENTS.md: never bulk-generate content data).
+var haulables: Dictionary[StringName, Resource] = {}
+
 
 func _ready() -> void:
 	_load_dir(ITEMS_PATH, "ItemDef", ITEM_DEF, &"id", "item id", items)
@@ -64,9 +71,10 @@ func _ready() -> void:
 	_load_dir(LOOT_PATH, "LootTableDef", LOOT_TABLE_DEF, &"id", "loot table id", loot_tables)
 	_load_dir(POWERUPS_PATH, "PowerupDef", POWERUP_DEF, &"id", "powerup id", powerups)
 	_load_dir(BUILDABLES_PATH, "BuildableDef", BUILDABLE_DEF, &"id", "buildable id", buildables)
-	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d loot table(s), %d powerup(s), %d buildable(s)" % [
+	_load_dir(HAULABLES_PATH, "HaulableDef", HAULABLE_DEF, &"id", "haulable id", haulables)
+	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d loot table(s), %d powerup(s), %d buildable(s), %d haulable(s)" % [
 		items.size(), recipes.size(), stations.size(), weapons.size(), loot_tables.size(),
-		powerups.size(), buildables.size()
+		powerups.size(), buildables.size(), haulables.size()
 	])
 
 
@@ -124,6 +132,14 @@ func get_buildable(id: StringName) -> Resource:
 
 func has_buildable(id: StringName) -> bool:
 	return buildables.has(id)
+
+
+func get_haulable(id: StringName) -> Resource:
+	return haulables.get(id)
+
+
+func has_haulable(id: StringName) -> bool:
+	return haulables.has(id)
 
 
 ## The one loader behind every content directory (F-099 — this replaced seven near-identical

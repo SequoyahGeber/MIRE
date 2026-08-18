@@ -44,7 +44,11 @@ extends RefCounted
 ## 12 (task 3.6): autoload/build_service.gd added net_request_place and net_request_destroy
 ## (client -> host build requests) and net_build_result (host -> the one requester). All reliable:
 ## a dropped build request is a player pressing the button and nothing happening.
-const PROTOCOL_VERSION: int = 12
+## 13 (task 3.10): systems/hauling/haulable.gd added net_request_pickup/net_pickup_result and
+## net_request_drop/net_drop_result (client -> host carry requests, host -> requester grants), plus
+## its own SceneReplicationConfig (position ALWAYS, carriers ON_CHANGE) — the first wire shape a
+## carryable object ever put on the network.
+const PROTOCOL_VERSION: int = 13
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).

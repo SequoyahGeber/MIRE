@@ -75,6 +75,74 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 3.10: heavy hauling ships as a system, but `HaulService` is NOT yet a registered autoload — one command finishes it (lp)
+
+**What shipped, verified:** `systems/hauling/haulable_def.gd` (content schema),
+`systems/hauling/haul_math.gd` (pure carry-speed math — no node, no session), `systems/hauling/
+haulable.gd` (the object: request_pickup/request_drop, host-validated, spawner-attached),
+`autoload/haul_service.gd` (the spawner + D-035 rebind/expire fan-out), `Registry.get_haulable`/
+`has_haulable` (new `haulables` family, `content/haulables/`), one worked example
+(`content/haulables/heavy_ore_crate.tres`, via `tools/setup_haul_content.gd` — DESIGN §4.5's "high-tier
+ore" case). `PROTOCOL_VERSION` 12 → 13 (`core/net/net_version.gd`, `tools/handshake_check.gd`
+extended). `tools/interp_coverage_check.gd`'s `SMOOTHED` table gained `haulable.gd` (D-043 — it
+replicates `position`, so it must be smoothed; it self-attaches `NetInterp` exactly like `enemy.gd`).
+New ARCHITECTURE.md §2.2 row: "Carryable objects (heavy hauling)", HOST.
+
+**Verified:**
+- `agent godot --script tools/haul_check.gd` — offline, host-of-one: HaulMath's solo/duo math (pure,
+  no PlayerNet needed), `HaulableDef.validation_errors()`, spawn/pickup/drop/2-carrier-cap/
+  "already carrying something else"/D-035 rebind+expire, all against a synthetic def injected the
+  way `chest_check.gd` does it. **34 checks, 0 unexpected failures**
+  (`EXPECTED_ERROR_PATTERNS="unknown haulable id"` covers the one deliberately-provoked
+  `HaulService.host_spawn()` rejection, same convention as `connect_retry_check.gd`).
+- `agent godot --script tools/haul_net_check.gd` — real two-process ENet: a real client's pickup/drop
+  round-trips through the host and back (RPC, not a call from the host's own peer id); **the spec's
+  own required proof** — a client writes its own player's `global_position` 990 m away in one
+  instruction (the exact primitive a speed hack already has, since own-player movement is
+  client-authoritative, §2.2 row 1) and the host's crate is asserted to have moved at most its
+  bounded solo-drag speed × elapsed wall-clock time, nowhere near the jump, while still measurably
+  creeping toward the new target (rules out "frozen" passing by accident). **13 checks, 0 failures.**
+- Full boot: `agent godot --quit-after 60` — 0 ERROR, registry logs `1 haulable(s)`.
+
+**API for the next task (world-gen, a POI, an ore vein):**
+```gdscript
+HaulService.host_spawn(def_id: StringName, pos: Vector3) -> Node3D   # host-only, mirrors EnemyWorld.host_spawn
+HaulService.live_count() / live_haulables() -> Array[Node]
+HaulService.is_peer_hauling(peer_id: int, exclude: Node = null) -> bool   # D-069: one carry per peer
+Haulable.request_pickup() / request_drop() -> int   # request id; answer via pickup_confirmed/drop_confirmed
+Haulable.carriers -> PackedInt32Array   # replicated, ON_CHANGE, 0/1/2 peer ids
+Haulable.carrier_count() / is_carrying(peer_id) -> bool/int
+```
+
+**NOT done — the one remaining step, and why it's not done here:** `HaulService` is not in
+`project.godot`. `agent autoload HaulService res://autoload/haul_service.gd` refused for the whole
+of this task — the editor was open (see F-120: it was launched as `-e res://levels/hollowmere.tscn`,
+which the *documented* by-hand `pgrep` check misses, though `agent autoload`'s own check correctly
+caught it and refused). Every check above proves the system works by instantiating
+`HAUL_SERVICE_SCRIPT.new()` under `/root` and naming it `HaulService` by hand — the same technique
+`tools/day_night_check.gd` uses ahead of `agent autoload DayNight` per that task's own spec ordering
+(write the check, prove it, then register) — so this is not a "does it work" gap, only a "does the
+shipped game load it" one. **Next agent touching this area, or Sequoyah directly: once the editor is
+closed, run `agent autoload HaulService res://autoload/haul_service.gd` and nothing else — no code
+changes, no re-verification beyond re-running the two checks above once against the real
+registration if you want the belt-and-braces run.** Register it after `EnemyWorld` and `BuildService`
+(both already registered) so world-gen callers can assume it exists; order relative to `CommandService`
+etc. does not matter yet since nothing consumes it besides this task.
+
+**Design calls made and why (also in DECISIONS.md D-068/D-069):** (1) The object's position update is
+`move_toward` at a capped speed in EVERY carrier-count branch, never a direct assignment — "full
+speed" (duo) and "slow drag" (solo) are the same bounded mechanism at two different speeds, not two
+different mechanisms, because own-player movement is client-authoritative and the object must never
+be able to inherit a carrier's teleport (D-068). (2) One peer can carry at most one haulable at a
+time — DESIGN §4.5 reads as one pair of hands, not one slot per object (D-069). (3) Reused
+`NetInterest.Class.ENEMY` (15 Hz, distance-filtered) for the haulable's synchronizer rather than
+adding a new interest class — "host-simulated, moving, filtered" already describes it exactly, and
+`NetConfig`/`net_interest.gd` gain no new surface. (4) The generated art-less placeholder is an
+`AnimatableBody3D`, not the `StaticBody3D` `BuildService`'s own placeholder uses — this body's
+transform is rewritten by script every host physics tick, and Godot's own guidance is that a
+script-moved body should be Animatable so it still pushes what it touches rather than being treated
+as truly static.
+
 ### 2026-08-18 — F-117: `ship` now warns when a claimed file drifted after `done()` — a lane closing a finding is not off the hook for checking (lp)
 
 **What changed:** `st["recent"][f]` (written by `_release()`, read by `ship`'s staging logic) gained

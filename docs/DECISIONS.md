@@ -1381,3 +1381,42 @@ a matching hash stays quiet.
 **Would change my mind:** a real case where the working tree legitimately changes between a task's
 own `done()` and its own `ship()` (nothing in the documented workflow does this today) — that would
 make the heuristic noisy enough to train people to ignore it, same failure mode F-072 was fixing.
+
+### D-068 · 2026-08-18 · A carried object always creeps toward its target at a host-bounded speed — "full speed" is a cap, never an assignment
+
+Task 3.10 (heavy hauling). The spec's shorthand — duo carries "at full speed", solo is "a slow drag"
+— reads like duo should just track the midpoint exactly (`position = target`) while only solo gets a
+`move_toward` cap. That would be wrong: own-player movement is client-authoritative (§2.2 row 1), so
+a carrier's replicated position is not something the host can distrust the *value* of, only bound the
+*rate* the object is allowed to chase it at. If duo assignment-tracked instead of capping, a
+carrier's client teleporting its own body (a lag spike, a bug, or a genuine speed hack) would teleport
+the object with it on the very next tick duo held — the one case task 3.10's own acceptance check
+exists to rule out.
+
+So `systems/hauling/haul_math.gd`'s `step()` is `move_toward(current, target, speed * delta)` in
+**every** carrier-count branch; "full speed" (duo) and "slow drag" (solo) differ only in which speed
+feeds that same capped call — `carry_track_speed_mps` vs. `carry_track_speed_mps *
+solo_drag_multiplier`. Neither branch ever assigns the target directly. `tools/haul_net_check.gd`
+proves exactly this: a real client teleports its own body 990 m in one write, and the object measurably
+creeps toward the new target (proving the mechanism is live, not frozen) while staying within the
+bounded-speed envelope for the whole watch window — never within an order of magnitude of the jump.
+
+**Would change my mind:** a design change that makes duo genuinely instantaneous (e.g. the object
+becomes a true kinematic child of the midpoint rather than something separately simulated) — at that
+point "assignment" and "bounded speed" stop being different mechanisms because there is no longer a
+tick-by-tick target to chase at all.
+
+### D-069 · 2026-08-18 · One peer carries at most one haulable object at a time
+
+Task 3.10. DESIGN.md §4.5 says "high-tier ore requires 2 players to carry" but never says whether a
+player can also carry ANOTHER object at the same time — reads as one pair of hands, not one slot per
+object, and nothing about the mechanic (a player still walks, still fights, still has both hands
+occupied by whatever they're hauling) suggests otherwise. `HaulService.is_peer_hauling(peer_id,
+exclude)` scans every live haulable's `carriers` and `Haulable._accept_pickup()` refuses a second
+pickup with `"already carrying something else"` before the range check runs. Cheap: haulables are
+expected to number in the dozens on a map, not thousands, and this only runs once per pickup request,
+never per tick.
+
+**Would change my mind:** a design call that a player can stack multiple simultaneous carries (no
+gameplay reason has come up for it) — the check is one `is_peer_hauling` call to remove, not a
+redesign.

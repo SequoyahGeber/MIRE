@@ -37,6 +37,9 @@ const SMOOTHED: Dictionary = {
 		"NetInterp attaches centrally, off PlayerNet.player_spawned (autoload/net_interp.gd)",
 	"res://systems/enemies/enemy.gd":
 		"attaches itself in _ready() when it does not own simulation (enemy.gd:112)",
+	"res://systems/hauling/haulable.gd":
+		"attaches itself in _ready() when it does not own simulation, same shape as enemy.gd "
+		+ "(task 3.10)",
 }
 
 ## Transform-replicating scripts that deliberately go unsmoothed, and why. An entry here is a claim

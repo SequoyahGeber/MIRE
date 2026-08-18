@@ -57,11 +57,12 @@ func _initialize() -> void:
 	# task 3.8 bumped 8 -> 9 for net_health_snapshot's two new arguments (hunger, hunger_max) plus the
 	# consume-item and stamina-reconciliation RPCs; task 3.5 bumped 9 -> 10 for chest.gd's
 	# request/grant pair; task 3.3 bumped 10 -> 11 for powerup_service.gd's snapshot/counts pair;
-	# task 3.6 bumped 11 -> 12 for build_service.gd's place/destroy/result trio.
-	# net_request_open/net_open_result pair. A hard-coded expectation here is deliberate: this check's
-	# whole point is to fail loudly the day someone adds a wire-shape change and forgets the bump.
-	_check("PROTOCOL_VERSION reflects task 3.6's build request/result RPCs",
-		NetVersion.PROTOCOL_VERSION == 12, str(NetVersion.PROTOCOL_VERSION))
+	# task 3.6 bumped 11 -> 12 for build_service.gd's place/destroy/result trio; task 3.10 bumped
+	# 12 -> 13 for haulable.gd's pickup/drop request/result pairs plus its own SceneReplicationConfig.
+	# A hard-coded expectation here is deliberate: this check's whole point is to fail loudly the day
+	# someone adds a wire-shape change and forgets the bump.
+	_check("PROTOCOL_VERSION reflects task 3.10's haul pickup/drop RPCs",
+		NetVersion.PROTOCOL_VERSION == 13, str(NetVersion.PROTOCOL_VERSION))
 
 	call_deferred(&"_run_wire_checks")
 

@@ -2963,3 +2963,20 @@ Notes along the way:
 Files: `tools/godot_prepass_check.py`, `docs/SPECS.md`
 
 Commit at time of writing: `b424996`
+
+---
+
+### DONE · 3.10 · lp · 2026-08-18T18:59:24+00:00
+
+**Heavy hauling (2-player carry; solo fallback = slow one-player drag, `DESIGN.md` §5 solo rule)**
+
+Heavy hauling framework shipped and verified: HaulableDef/HaulMath/Haulable/HaulService, one worked example (heavy_ore_crate.tres), PROTOCOL_VERSION 12->13. tools/haul_check.gd (offline, host-of-one): solo/duo math pure, pickup/drop host-validation, 2-carrier cap, one-carry-per-peer, D-035 rebind/expire — 0 unexpected failures (EXPECTED_ERROR_PATTERNS='unknown haulable id'). tools/haul_net_check.gd (real 2-process ENet): real pickup/drop RPC round trip, and the spec's required proof — a client teleports its own player 990m in one write and the host's crate is bound to its solo-drag speed the whole watch window, never near the jump — 0 failures. Full boot (agent godot --quit-after 60): 0 ERROR. NOT done: HaulService is not yet in project.godot — agent autoload refused all session because the editor was open (launched as '-e <scene>', which AGENTS.md's own documented pgrep check misses; filed F-120). Every check above proves the system by hand-instantiating HaulService under /root, same technique day_night_check.gd uses ahead of its own registration step. DELEGATION.md has the exact one-line command to finish once the editor is closed. D-068/D-069 record the two design calls (bounded-speed-always, one-carry-per-peer).
+
+Notes along the way:
+- HaulMath.step() move_toward-caps every carrier-count branch (never assigns target directly) — that's the whole teleport-proofing; D-068 records why.
+- HaulService autoload registration blocked all session: editor open as '-e <scene>', which the documented pgrep check in AGENTS.md misses (filed F-120). Checks instantiate HaulService by hand under /root, same technique day_night_check.gd uses ahead of its own agent autoload step.
+- content/haulables/heavy_ore_crate.tres authored via tools/setup_haul_content.gd once the editor briefly closed mid-session — same pattern as setup_station_content.gd.
+
+Files: `systems/hauling/haulable_def.gd`, `systems/hauling/haulable.gd`, `systems/hauling/haul_math.gd`, `autoload/haul_service.gd`, `autoload/registry.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/interp_coverage_check.gd`, `tools/haul_check.gd`, `tools/haul_net_check.gd`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`, `content/haulables/heavy_ore_crate.tres`, `tools/setup_haul_content.gd`, `project.godot`
+
+Commit at time of writing: `ab5034d`
