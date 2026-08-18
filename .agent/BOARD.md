@@ -8,7 +8,7 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **2.11** Day/night cycle: sun rotation, `WorldEnvironment` transitions, replicated time-of-day | lp | 2026-08-18 00:01 | `systems/environment/day_night.gd`, `tools/day_night_check.gd`, `tools/day_night_net_check.gd` |
+| **2.11** Day/night cycle: sun rotation, `WorldEnvironment` transitions, replicated time-of-day | lp | 2026-08-18 00:01 | `systems/environment/day_night.gd`, `tools/day_night_check.gd`, `tools/day_night_net_check.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd` |
 | **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-17 23:36 | `tools/blender/build_loot_set.py`, `assets/loot`, `assets/source/loot_set.blend`, `tools/blender/build_ward_set.py`, `assets/wards`, `assets/source/ward_set.blend`, `tools/blender/build_wellspring_set.py`, `assets/wellsprings`, `assets/source/wellspring_set.blend`, `tools/blender/build_enemy_crawler.py`, `assets/enemies`, `assets/source/enemy_crawler.blend`, `tools/blender/build_adapted_nature_set.py`, `assets/environment_additions`, `assets/source/adapted_nature_set.blend`, `project.godot`, `levels/playtest_map.tscn`, `world/gen/test_map_props.gd`, `tools/playtest_map_check.gd`, `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `world/gen/playtest_hollow.gd`, `tools/playtest_hollow_check.gd` |
 
 ## Milestones

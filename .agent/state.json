@@ -50,6 +50,11 @@
       "at": "2026-08-17T23:37:51+00:00",
       "task": "2.1j"
     },
+    "core/net/net_version.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T00:07:19+00:00",
+      "task": "2.11"
+    },
     "levels/playtest_map.tscn": {
       "agent": "tine18",
       "at": "2026-08-17T23:48:24+00:00",
@@ -100,6 +105,11 @@
       "at": "2026-08-18T00:01:35+00:00",
       "task": "2.11"
     },
+    "tools/handshake_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T00:07:19+00:00",
+      "task": "2.11"
+    },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
       "at": "2026-08-17T23:50:28+00:00",
@@ -137,7 +147,9 @@
       "files": [
         "systems/environment/day_night.gd",
         "tools/day_night_check.gd",
-        "tools/day_night_net_check.gd"
+        "tools/day_night_net_check.gd",
+        "core/net/net_version.gd",
+        "tools/handshake_check.gd"
       ],
       "notes": [],
       "started": "2026-08-18T00:01:35+00:00"
@@ -2339,7 +2351,7 @@
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.12": {
-      "done_at": "2026-08-18T00:02:22+00:00",
+      "done_at": "2026-08-18T00:09:57+00:00",
       "done_by": "quill15",
       "est": "1.5",
       "milestone": "M0",

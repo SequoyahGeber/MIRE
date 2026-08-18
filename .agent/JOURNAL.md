@@ -1584,3 +1584,13 @@ Commit at time of writing: `384a296`
 Corrected the quota model: unused window quota is lost at reset, so the budget guard must never withhold work. It is now advisory (send a smaller task, not no task) and only a hard wall refuses a dispatch; the 15 percent reserve exists solely to fund a clean close-out. Also split cache reads out of the input figure — 2.13 reported 31.3M input, which was 141 turns of cache re-reads rather than new context and made a normal run look catastrophic.
 
 Commit at time of writing: `40065ef`
+
+---
+
+### DONE · 0.12 · quill15 · 2026-08-18T00:09:57+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+Added 'agent saturate' to run a lane's queued orders back to back, because idle time is the real quota waste; a busy-lane guard so a second dispatch cannot put two agents on one account; cross-lane-only collision checks (same-lane orders run sequentially, so overlap there is not a conflict and was needlessly blocking the queue); and a 2-word minimum on the check heuristic, which was matching item_icons_check to 'food items' and would have sent a lane to verify against the wrong proof.
+
+Commit at time of writing: `c187ede`

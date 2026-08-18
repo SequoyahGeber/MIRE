@@ -1312,7 +1312,10 @@ def _suggest_check(tid, title):
         parts = [p for p in stem.split("_") if p != "check"]
         hits = sum(1 for w in words
                    if any(p.startswith(w[:5]) or w.startswith(p[:5]) for p in parts))
-        if hits:
+        if hits >= 2:
+            # One shared word is noise, not a match: "food items" picks item_icons_check, and
+            # pointing a lane at the wrong proof is worse than admitting there isn't one — it will
+            # run a green check and believe its work is verified.
             scored.append((-hits, "tools/%s.gd" % stem))
     scored.sort()
     return [p for _, p in scored[:3]]
@@ -1611,8 +1614,14 @@ def cmd_order(args):
         print("%s✗ %s is claimed by %s for %s%s" % (C["r"], f, c["agent"], c["task"], C["x"]))
     if conflicts:
         die("that claim set overlaps live work — order a different task")
+    st_now = load()
     for other, meta in _open_orders().items():
-        if other == tid:
+        if other == tid or meta["lane"] == lane:
+            # Same lane means sequential execution (`agent saturate`), so an overlapping claim set is
+            # not a conflict — it is just the same lane touching the same file twice, in order.
+            # Only cross-lane overlap can put two agents in one file at once.
+            continue
+        if st_now["tasks"].get(other.replace("-review", ""), {}).get("status") == "done":
             continue
         overlap = set(files) & set(meta["files"])
         if overlap:
@@ -1726,6 +1735,60 @@ def cmd_dispatch(args):
 
     argv = [LANE_BIN, "run", lane, tid] + [a for a in args[1:] if a.startswith("--")]
     return subprocess.call(argv, cwd=ROOT)
+
+
+def cmd_saturate(args):
+    """Run a lane's queued orders back to back until they run out or it hits a wall.
+
+    The point is idle time, not throughput. A subscription window's unused tokens are gone at reset,
+    so a lane sitting idle for two hours because nobody was watching has burned two hours of quota
+    that cannot be recovered. This keeps the queue feeding it without a human in the loop.
+
+    It stops on a hard wall (the lane parks itself and the remaining orders stay queued for the next
+    window) and on a task that fails for any other reason, because chaining more work onto a broken
+    lane just multiplies the mess."""
+    if not args:
+        die("usage: agent saturate <LANE> [task-id ...]\n"
+            "  with no ids, runs every open order assigned to that lane")
+    lane = args[0].upper()
+    if lane not in LANE_NAMES:
+        die("unknown lane '%s' — known: %s" % (lane, ", ".join(LANE_NAMES)))
+
+    wanted = [a for a in args[1:] if not a.startswith("--")]
+    orders = _open_orders()
+    if not wanted:
+        wanted = [t for t, m in sorted(orders.items()) if m["lane"] == lane]
+    if not wanted:
+        die("no open orders for %s — write some with:  agent order <id> --lane %s" % (lane, lane))
+
+    print("%s%s queue: %s%s" % (C["b"], lane, " → ".join(wanted), C["x"]))
+    done_ok, stopped = [], None
+    for tid in wanted:
+        st = load()
+        if st["tasks"].get(tid, {}).get("status") == "done":
+            print("  %s· %s already done, skipping%s" % (C["dim"], tid, C["x"]))
+            continue
+        if not os.path.exists(_order_path(tid)):
+            print("  %s· no order for %s, skipping%s" % (C["dim"], tid, C["x"]))
+            continue
+        code = subprocess.call([LANE_BIN, "run", lane, tid], cwd=ROOT)
+        if code == 0:
+            done_ok.append(tid)
+            continue
+        stopped = tid
+        break
+
+    print()
+    if done_ok:
+        ok("%s completed: %s" % (lane, ", ".join(done_ok)))
+    if stopped:
+        print("%s· stopped at %s — the rest stay queued for the next window%s"
+              % (C["y"], stopped, C["x"]))
+        print("  %sagent collect%s to see why, then %sagent saturate %s%s to resume"
+              % (C["c"], C["x"], C["c"], lane, C["x"]))
+    elif not done_ok:
+        print("  %snothing ran%s" % (C["dim"], C["x"]))
+    return 0
 
 
 def cmd_lanes(args):
@@ -2055,6 +2118,7 @@ COMMANDS = {
     # Orchestration (D-036)
     "order": cmd_order, "dispatch": cmd_dispatch, "lanes": cmd_lanes,
     "collect": cmd_collect, "report": cmd_report, "reap": cmd_reap, "godot": cmd_godot,
+    "saturate": cmd_saturate,
     "autoload": cmd_autoload,
 }
 
@@ -2082,6 +2146,7 @@ Directing three worker accounts (docs/ORCHESTRATION.md):
   agent order <id> --lane LC1 --files ...   write a self-contained work order
   agent order <id> --lane LC1 --review     review order: judge a commit, file findings, no edits
   agent dispatch <LANE> [id] [--dry-run]    run that order on its account, headless
+  agent saturate <LANE> [ids...]           run its queued orders back to back — no idle window
   agent lanes [--doctor]                    lane health; --doctor checks CLI + login
   agent report                              who's doing what, what it cost, what's stuck
   agent collect [--hours N]                 what shipped, what stopped, what needs you

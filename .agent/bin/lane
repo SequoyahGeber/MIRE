@@ -702,8 +702,28 @@ def roll_window(lane):
         lane.update({"window_started": now(), "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0})
 
 
+def busy_block(lane):
+    """One account cannot run two agents at once.
+
+    Nothing stopped a second dispatch onto a lane that was already working: two processes on one
+    subscription, burning the window twice as fast and racing each other for the same file claims.
+    Trust the pid over the status field — a status left 'running' by a killed process must not
+    strand the lane forever."""
+    pid = lane.get("pid")
+    if not pid:
+        return None
+    try:
+        os.kill(pid, 0)
+    except (OSError, TypeError):
+        return None
+    return "already running %s (pid %s) — one account, one agent" % (lane.get("task", "?"), pid)
+
+
 def quota_block(lane):
     """Why this lane must not be dispatched right now, or None."""
+    busy = busy_block(lane)
+    if busy:
+        return busy
     if lane.get("status") == "exhausted":
         until = lane.get("exhausted_until")
         if not until:
