@@ -1714,3 +1714,13 @@ Commit at time of writing: `d8ee65e`
 Fix F-058: added 'agent finding' so the F-number is allocated and the entry appended in one locked operation. docs/ is unclaimed by design (F-006) so lanes never block on it, which also let two lanes read the same next-number from agent brief — F-012, F-052, F-055 and F-056 each exist twice, and a duplicate id is worse than a missing one because agent brief then briefs the wrong bug. Proved with three concurrent filings getting three distinct numbers. The four existing duplicate pairs still need renumbering by hand; not done here because other docs reference them.
 
 Commit at time of writing: `6acd7c1`
+
+---
+
+### DONE · 0.12 · quill15 · 2026-08-18T01:08:57+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+A wrapper-written handoff was just an exit code and a log path, which is true but useless to whoever picks the task up. It now reconstructs the agent's own account from its streamed log — every file it had written, its last narration, its last six actions — all read locally after the agent is dead, so it costs nothing and works precisely when the agent cannot speak for itself. Verified against 3.8's 200-call log: it recovers all twelve edited files and the agent's own summary.
+
+Commit at time of writing: `36b8208`

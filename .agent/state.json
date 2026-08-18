@@ -20,6 +20,26 @@
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
+    "autoload/registry.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T01:06:48+00:00",
+      "task": "3.5"
+    },
+    "content/items/coins.tres": {
+      "agent": "lp",
+      "at": "2026-08-18T01:06:48+00:00",
+      "task": "3.5"
+    },
+    "content/loot/small.tres": {
+      "agent": "lp",
+      "at": "2026-08-18T01:06:48+00:00",
+      "task": "3.5"
+    },
+    "core/net/net_version.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T01:06:48+00:00",
+      "task": "3.5"
+    },
     "docs/ASSET_TRACKER.md": {
       "agent": "moss11",
       "at": "2026-08-18T00:57:48+00:00",
@@ -29,6 +49,21 @@
       "agent": "moss11",
       "at": "2026-08-18T00:57:48+00:00",
       "task": "2.1d"
+    },
+    "systems/loot/chest.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T01:06:48+00:00",
+      "task": "3.5"
+    },
+    "systems/loot/loot_entry.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T01:06:48+00:00",
+      "task": "3.5"
+    },
+    "systems/loot/loot_table_def.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T01:06:48+00:00",
+      "task": "3.5"
     },
     "tools/blender/build_flora_set.py": {
       "agent": "moss11",
@@ -40,15 +75,35 @@
       "at": "2026-08-18T00:57:48+00:00",
       "task": "2.1d"
     },
+    "tools/chest_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T01:06:48+00:00",
+      "task": "3.5"
+    },
+    "tools/chest_net_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T01:06:48+00:00",
+      "task": "3.5"
+    },
     "tools/flora_check.gd": {
       "agent": "moss11",
       "at": "2026-08-18T00:57:48+00:00",
       "task": "2.1d"
     },
+    "tools/handshake_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T01:06:48+00:00",
+      "task": "3.5"
+    },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
+    },
+    "ui/loot/chest_ui.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T01:06:48+00:00",
+      "task": "3.5"
     },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "tine18",
@@ -93,6 +148,24 @@
       ],
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
+    },
+    "3.5": {
+      "agent": "lp",
+      "files": [
+        "systems/loot/chest.gd",
+        "systems/loot/loot_table_def.gd",
+        "systems/loot/loot_entry.gd",
+        "ui/loot/chest_ui.gd",
+        "autoload/registry.gd",
+        "core/net/net_version.gd",
+        "tools/handshake_check.gd",
+        "content/items/coins.tres",
+        "content/loot/small.tres",
+        "tools/chest_check.gd",
+        "tools/chest_net_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T01:06:48+00:00"
     }
   },
   "recent": {
@@ -2291,7 +2364,7 @@
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.12": {
-      "done_at": "2026-08-18T01:01:45+00:00",
+      "done_at": "2026-08-18T01:08:57+00:00",
       "done_by": "quill15",
       "est": "1.5",
       "milestone": "M0",
@@ -2744,7 +2817,7 @@
     "3.5": {
       "est": "3",
       "milestone": "M3",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T1",
       "title": "Coins, chest tiers, chest-opening UI and flow"
     },

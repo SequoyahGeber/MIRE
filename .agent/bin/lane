@@ -622,11 +622,14 @@ def _finish(name, task, code, acc, tail, logpath, elapsed):
         _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, elapsed,
                       exhausted)
     if code != 0:
-        reason = ("%s stopped on %s at %s (exit %d, %s). Tokens this run: %s in / %s out. "
-                  "Working diff is untouched — read the log at %s, then continue or drop. "
-                  "Tail of the failure:\n%s"
+        cli = (_lane_cli(name) or "claude")
+        context = _context_from_log(logpath, cli)
+        reason = ("%s stopped on %s at %s (exit %d, %s). Tokens this run: %s in / %s out.\n"
+                  "The working diff is UNTOUCHED — its partial edits are still on disk, so read them "
+                  "before redoing anything. Full log: %s\n\n%s\n\nTail of the failure:\n%s"
                   % (name, task, now(), code, "quota wall" if exhausted else "error",
-                     f"{tin:,}", f"{tout:,}", os.path.relpath(logpath, ROOT), tail[-400:].strip()))
+                     f"{tin:,}", f"{tout:,}", os.path.relpath(logpath, ROOT),
+                     context or "(no narration recovered from the log)", tail[-300:].strip()))
         _release(name, task, reason)
     return 0 if code == 0 else 1
 
@@ -703,6 +706,65 @@ def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, e
         print("  %slog: %s%s" % (C["dim"], os.path.relpath(logpath, ROOT), C["x"]))
 
 
+
+
+def _lane_cli(name):
+    try:
+        return load_lanes().get(name, {}).get("cli")
+    except Exception:
+        return None
+
+
+def _context_from_log(logpath, cli):
+    """Reconstruct what the agent was actually doing, from its own streamed output.
+
+    A wrapper-written handoff is otherwise just "exit 1, quota wall" — true, but useless to whoever
+    picks the task up, and AGENTS.md is explicit that a handoff must say what works, what doesn't,
+    and what is next. The agent narrates as it goes and names every file it touches, so the last few
+    messages and edits are a far better account of where it stopped than an exit code. Costs nothing:
+    this is reading a local file after the agent is already dead."""
+    says, acts, wrote = [], [], []
+    try:
+        with open(logpath) as f:
+            for line in f:
+                line = line.strip()
+                if not line.startswith("{"):
+                    continue
+                try:
+                    d = json.loads(line)
+                except ValueError:
+                    continue
+                if cli == "codex":
+                    item = d.get("item") or {}
+                    if d.get("type") == "item.completed":
+                        if item.get("type") == "agent_message" and item.get("text"):
+                            says.append(item["text"].strip())
+                        elif item.get("command"):
+                            acts.append(str(item["command"])[:90])
+                    continue
+                if d.get("type") != "assistant":
+                    continue
+                for c in (d.get("message") or {}).get("content", []):
+                    if c.get("type") == "text" and c.get("text", "").strip():
+                        says.append(c["text"].strip())
+                    elif c.get("type") == "tool_use":
+                        inp = c.get("input") or {}
+                        target = str(inp.get("file_path") or inp.get("command") or "")[:80]
+                        acts.append("%s %s" % (c.get("name"), target))
+                        if c.get("name") in ("Write", "Edit", "NotebookEdit") and inp.get("file_path"):
+                            wrote.append(str(inp["file_path"]).split("/MIRE/")[-1])
+    except (IOError, OSError):
+        return ""
+
+    parts = []
+    if wrote:
+        seen = list(dict.fromkeys(wrote))
+        parts.append("Files it had already written or edited: %s." % ", ".join(seen[:12]))
+    if says:
+        parts.append("Its last words: \"%s\"" % says[-1].replace("\n", " ")[:400])
+    if acts:
+        parts.append("Its last actions:\n%s" % "\n".join("  - %s" % a for a in acts[-6:]))
+    return "\n".join(parts)
 
 
 def _release(name, task, reason):

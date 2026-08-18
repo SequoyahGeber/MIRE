@@ -8,6 +8,7 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
+| **3.5** Coins, chest tiers, chest-opening UI and flow | lp | 2026-08-18 01:06 | `systems/loot/chest.gd`, `systems/loot/loot_table_def.gd`, `systems/loot/loot_entry.gd`, `ui/loot/chest_ui.gd`, `autoload/registry.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `content/items/coins.tres`, `content/loot/small.tres`, `tools/chest_check.gd`, `tools/chest_net_check.gd` |
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | moss11 | 2026-08-18 00:57 | `docs/ASSET_TRACKER.md`, `tools/blender/build_flora_set.py`, `tools/blender/mire_art.py`, `assets/flora`, `assets/source/flora_set.blend`, `world/gen/undergrowth.gd`, `tools/flora_check.gd`, `levels/playtest_hollow.tscn` |
 | **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-18 00:43 | `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `assets/maps`, `assets/source/playtest_hollow.blend` |
 
