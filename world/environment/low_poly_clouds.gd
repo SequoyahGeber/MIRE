@@ -15,6 +15,13 @@ extends Node3D
 ## Spreads the deck out for a larger map, so a dozen clusters still cover the sky.
 @export var spread_scale: float = 1.0
 
+## Sky tint, multiplied into every puff's vertex colour by the unshaded material. The day value is
+## pure white on purpose: at noon the deck renders exactly as it did before F-065 touched it, so the
+## fix can only ever change how night and dusk look.
+const CLOUD_DAY_TINT := Color(1.0, 1.0, 1.0)
+const CLOUD_NIGHT_TINT := Color(0.13, 0.16, 0.26)
+const CLOUD_SUNSET_TINT := Color(1.0, 0.55, 0.32)
+
 const CLOUD_SEED: int = 20260817
 const CLOUD_CENTERS: Array[Vector3] = [
 	Vector3(-92.0, 34.0, -82.0),
@@ -40,6 +47,8 @@ const ICOSAHEDRON_FACES: Array[Vector3i] = [
 	Vector3i(8, 6, 7), Vector3i(9, 8, 1),
 ]
 
+var _daylight: float = 1.0
+var _golden: float = 0.0
 var _clusters: Array[Node3D] = []
 var _cloud_mesh: ArrayMesh
 var _cloud_material: StandardMaterial3D
@@ -74,6 +83,7 @@ func rebuild_clouds() -> void:
 	_cloud_material.metallic = 0.0
 	_cloud_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_cloud_mesh = _build_cloud_mesh()
+	_apply_sky_light()
 
 	var random := RandomNumberGenerator.new()
 	random.seed = CLOUD_SEED
@@ -129,6 +139,27 @@ func rebuild_clouds() -> void:
 			puff.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			puff.add_to_group(&"low_poly_cloud_puff")
 			cluster.add_child(puff)
+
+
+## Called by world/environment/playtest_atmosphere.gd every time it applies the atmosphere.
+## `daylight` is 0 at full night and 1 with the sun up. `golden` peaks at 1 with the sun exactly on
+## the horizon and falls to 0 either side of it — the deck is the highest thing in the level, so it
+## is what the last of the sun actually hits. Presentation only; the clock behind both is
+## host-authoritative.
+##
+## This is what F-065 was: the material is SHADING_MODE_UNSHADED, so no amount of dropping the sun's
+## energy could ever darken a cloud. The tint has to be driven explicitly, and nothing was driving it.
+func set_sky_light(daylight: float, golden: float) -> void:
+	_daylight = clampf(daylight, 0.0, 1.0)
+	_golden = clampf(golden, 0.0, 1.0)
+	_apply_sky_light()
+
+
+func _apply_sky_light() -> void:
+	if _cloud_material == null:
+		return
+	var tint := CLOUD_NIGHT_TINT.lerp(CLOUD_DAY_TINT, _daylight)
+	_cloud_material.albedo_color = tint.lerp(CLOUD_SUNSET_TINT, _golden * 0.8)
 
 
 func _build_cloud_mesh() -> ArrayMesh:

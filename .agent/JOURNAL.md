@@ -1863,3 +1863,15 @@ Partly fixed. Un-embedding the game window was the real fix (editor 105% -> 6.5%
 Files: `project.godot`, `core/dev/dev_frame_cap.gd`, `tools/frame_cap_check.gd`
 
 Commit at time of writing: `27546a1`
+
+---
+
+### DONE · F-065 · gale6 · 2026-08-18T02:48:51+00:00
+
+**Night sky still reads as daytime — white clouds, no stars**
+
+Night reads as night. Cloud deck is UNSHADED so no light could ever darken it — set_sky_light(daylight, golden) drives its albedo from white, through a warm sunset, to dark blue-grey. New world/environment/star_field.gd: a deterministic 380 m dome of 520 soft points, built at runtime by Atmosphere so no level scene needed editing, riding the camera, fading in across -1..-16 deg of sun elevation and wheeling on the same clock the sun turns on (D-042 records why geometry, not a sky texture). The sky material's night colours moved off the daylight curve, which is still ~0.3 at the horizon and was washing sunset to grey. Day is provably untouched: every day-end value is read off the authored resource, and the check asserts full daylight restores them byte-for-byte. tools/atmosphere_night_check.gd 33/33; verify_setup, day_night_check, hollowmere_check green; tools/hollowmere_night_render.gd rendered four times of day windowed under the godot lock, mean luminance 0.43 -> 0.13 -> 0.054 -> 0.052.
+
+Files: `world/environment/playtest_atmosphere.gd`, `world/environment/low_poly_clouds.gd`, `world/environment/star_field.gd`, `tools/atmosphere_night_check.gd`, `tools/hollowmere_night_render.gd`
+
+Commit at time of writing: `eeaba43`

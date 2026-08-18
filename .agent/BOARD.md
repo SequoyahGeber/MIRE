@@ -15,7 +15,7 @@
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `██████░░░░` 38/60 | 22 |
+| Findings | `██████░░░░` 39/60 | 21 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 18/23 | 5 |
@@ -69,9 +69,8 @@
 | ⬜ | **F-059** A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build | todo |
 | ⬜ | **F-060** `mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float | todo |
 | ⬜ | **F-061** content/items/coins.tres has no icon — the render_item_icons.py pipeline needs a SOURCES entry | todo |
-| ⬜ | **F-065** Night sky still reads as daytime — white clouds, no stars | todo |
 | ⬜ | **F-067** The pre-commit hook blocks project.godot even when agent autoload wrote it — **fixed** | todo |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.13` `3.5` `3.8` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `4.0b` `F-002` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-043` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-054` `F-056` `F-062` `F-063` `F-064` `F-066`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.13` `3.5` `3.8` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `4.0b` `F-002` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-043` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-054` `F-056` `F-062` `F-063` `F-064` `F-065` `F-066`
