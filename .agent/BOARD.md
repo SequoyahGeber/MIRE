@@ -9,7 +9,6 @@
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
 | **3.8** Hunger/health/stamina, food items, consumables | lp | 2026-08-18 00:24 | `systems/health/player_health.gd`, `systems/health/downed_state.gd`, `systems/inventory/item_def.gd`, `entities/player/player_controller.gd`, `ui/hud/vitals_hud.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `core/util/mire_log.gd`, `tools/player_health_check.gd`, `tools/player_vitals_check.gd`, `tools/player_vitals_net_check.gd` |
-| **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-17 23:36 | `tools/blender/build_loot_set.py`, `assets/loot`, `assets/source/loot_set.blend`, `tools/blender/build_ward_set.py`, `assets/wards`, `assets/source/ward_set.blend`, `tools/blender/build_wellspring_set.py`, `assets/wellsprings`, `assets/source/wellspring_set.blend`, `tools/blender/build_enemy_crawler.py`, `assets/enemies`, `assets/source/enemy_crawler.blend`, `tools/blender/build_adapted_nature_set.py`, `assets/environment_additions`, `assets/source/adapted_nature_set.blend`, `project.godot`, `levels/playtest_map.tscn`, `world/gen/test_map_props.gd`, `tools/playtest_map_check.gd`, `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `world/gen/playtest_hollow.gd`, `tools/playtest_hollow_check.gd` |
 
 ## Milestones
 
@@ -64,7 +63,7 @@
 | ⬜ | **F-045** `pgrep -fl Godot` is too blunt to be the closed-editor guard | todo |
 | ⬜ | **F-053** Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why | todo |
 | ⬜ | **F-055** Committed HEAD boots with a failed autoload — `c187ede` deleted a script but left it registered | todo |
-| ⬜ | **F-056** `docs/SPECS.md`'s 2.11 block omitted `net_version.gd`/`handshake_check.gd` despite adding a new RPC | todo |
+| ⬜ | **F-056** The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join | todo |
 
 ## Done
 
