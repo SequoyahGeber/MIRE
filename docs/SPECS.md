@@ -953,6 +953,55 @@ compares height alone, where the error happens to stay under that. It belongs to
 Filed as **F-122** — port the vertex measurement across using `ship_check.gd`'s `_check_asset()` as
 the worked example, and expect the flora kit's reported heights to move slightly when it lands.
 
+## F-109 · The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them
+
+**Claim:** `tools/blender/audit_all_sides.py` (the fix), `tools/blender/audit_all_sides_check.py`
+(new — no focused check existed for the inside-out metric before this task), `docs/FINDINGS.md`,
+`docs/ASSET_TRACKER.md`.
+
+**What was wrong:** `geometry_report()` detects inverted normals by the divergence theorem — sum
+`(n . c) * area` over an object, positive when a *closed* shell faces outward. It ran every object
+through this test with no guard on whether the object actually was a closed shell. A-009 is the first
+batch built mostly of open surfaces — a hull is a planked shell, a sail a thin panel, a cap rail a
+ribbon — and for those the sum has no enclosed volume to measure; it is dominated by where the sheet
+sits relative to the world origin instead. A bottom-strake patch board with a correct downward normal
+and a positive z centre scored negative and read as a defect; a genuinely inverted sheet on the far
+side of the origin would score positive and read as fine. On the finished, verified A-009 set this
+misread 96 correct `panel()`/`ribbon()` back, rim and underside faces on `ship_hull_repaired` alone
+(94 on an earlier snapshot, per the finding) as "inside out" — a number that reads as a defect count
+but is not one.
+
+**Fix:** `is_closed_shell(bm)` welds vertices by position (the same rounding key the duplicate-vertex
+count already used — these meshes are unwelded face soup, so bmesh's own `edge.is_manifold` reads
+every edge as non-manifold regardless of whether the surface is a closed shell or a flat sheet) and
+counts how many faces border each welded edge. A closed shell's every edge borders exactly two faces;
+an open sheet has at least one boundary edge that borders only one. `geometry_report()` now runs the
+signed-volume test only when `is_closed_shell()` is true, and files everything else under a new
+`open_surface_objects` list instead of `inside_out_objects` — so the count a human reads as "defects"
+no longer includes objects the test was never able to judge. An open sheet's actual winding is still
+judged, just not by this audit: `WINDING_LOG` in `build_extraction_ship_set.py` is the worked example
+a future sheet-built family should copy, per the finding and per `docs/ASSET_TRACKER.md`'s existing
+"Sheet-built assets need their own winding proof" note.
+
+**Verified 2026-08-18 (lm):**
+- `/Applications/Blender.app/Contents/MacOS/Blender --background --python
+  tools/blender/audit_all_sides_check.py` → `AUDIT_ALL_SIDES_CHECK PASS`. Six assertions: (1) a
+  single downward-facing quad placed at z=+2 — the exact false-positive shape the finding
+  describes — scores negative under the pre-fix naive sum (reimplemented inline, proving the old
+  test really would have flagged it) but the fixed `geometry_report()` reports it as an
+  `open_surface_object` and does NOT put it in `inside_out_objects`; (2) a correctly-wound closed
+  cube is recognised by `is_closed_shell()` and is flagged neither way; (3) the same cube with every
+  face reversed is still caught in `inside_out_objects` and NOT reported as an open surface — the fix
+  changes what happens to open sheets, not the audit's ability to catch a real inversion.
+  Regression-proved by reverting `tools/blender/audit_all_sides.py` to HEAD (`git stash`) and
+  rerunning: the check fails on import (`is_closed_shell` does not exist pre-fix), confirming the
+  guard is load-bearing; restored via `git stash pop`.
+- Re-ran the real instrument against the shipped A-009 batch: `Blender --background --python
+  tools/blender/audit_all_sides.py -- --only ships/exports --outdir <scratch>`. `inside_out_objects`
+  is **0 across all fifteen exports** (down from 96 on `ship_hull_repaired` alone), and the 504
+  sheet-back/rim/underside faces the old test misread now land in `open_surface_objects` instead. No
+  asset needed a rebuild; this is a tooling-only fix.
+
 ## F-093 · A headless `--script` run never re-imports changed assets, so a check can validate the previous build
 
 *Renumbered from F-059 on 2026-08-18 (F-087) — that number collided with the original F-059

@@ -483,32 +483,6 @@ docstring so the next family chooses deliberately instead of inheriting it.
 
 ---
 
-### F-109 · The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them
-
-**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by ivy8
-
-`tools/blender/audit_all_sides.py` detects inverted normals by the divergence theorem: sum
-`(n · c) * area` over an object, positive when a closed shell faces outward. The tracker records this
-as the check that works, and for a closed low-poly solid it does.
-
-A-009 is the first batch whose assets are largely **open** surfaces — a hull is a planked shell, a
-sail is a thin panel, a cap rail is a ribbon. For those, that sum is dominated by where the sheet
-sits relative to the world origin rather than by which way it faces. A bottom-strake patch board with
-a correct downward normal and a positive z centre scores negative and reads as a defect; a genuinely
-inverted sheet on the far side of the origin scores positive and reads as fine. On the finished,
-verified A-009 set the metric still reports 94 "inside out" objects on the repaired hull, every one
-of them a `panel()`/`ribbon()` back, rim or underside face that is correct.
-
-So the number is not a pass/fail gate for sheet-built families, and reading it as one will either
-waste a session or hide a real inversion. The generator now carries the check that does work
-(`WINDING_LOG` in `build_extraction_ship_set.py`): the builder knows the intended outward direction
-for every sheet it emits, compares it against the area-weighted normal actually produced, and fails
-the build on disagreement. That caught two genuinely inverted ramp edges and, before it, an inverted
-transom on all four hull states. Any future sheet-built family should copy that pattern rather than
-lean on the audit.
-
----
-
 ### F-110 · `audit_all_sides.py` silently resumes, so a re-run after fixing an asset re-reports the old defect
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
@@ -551,6 +525,42 @@ still holds against the corrected numbers rather than assuming it does.
 
 
 ## Resolved
+
+### F-109 · The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them — **fixed**
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by ivy8
+
+`tools/blender/audit_all_sides.py` detected inverted normals by the divergence theorem: sum
+`(n · c) * area` over an object, positive when a closed shell faces outward. For a closed low-poly
+solid that works. A-009 is the first batch whose assets are largely **open** surfaces — a hull is a
+planked shell, a sail is a thin panel, a cap rail is a ribbon — and for those the sum has no enclosed
+volume to measure; it is dominated by where the sheet sits relative to the world origin instead. A
+bottom-strake patch board with a correct downward normal and a positive z centre scored negative and
+read as a defect; a genuinely inverted sheet on the far side of the origin would score positive and
+read as fine. On the finished, verified A-009 set the metric reported 96 correct `panel()`/`ribbon()`
+back, rim and underside faces on `ship_hull_repaired` alone as "inside out" (94 on an earlier
+snapshot, per the original finding).
+
+**Fixed** by teaching the audit to recognize which of its own objects it can actually judge, rather
+than leaving that job to the generator alone. `is_closed_shell(bm)` welds vertices by position (the
+same rounding key the duplicate-vertex count already used — every mesh here is unwelded face soup,
+which defeats bmesh's own `edge.is_manifold` regardless of whether the surface is a closed shell or a
+flat sheet) and checks that every welded edge borders exactly two faces. `geometry_report()` now runs
+the signed-volume test only on objects that pass that check, and reports everything else under a new
+`open_surface_objects` key instead of `inside_out_objects` — so the number a human reads as a defect
+count no longer includes objects the test was never able to judge. The generator-side proof
+(`WINDING_LOG` in `build_extraction_ship_set.py`) is still what actually judges an open sheet's
+winding and is unchanged; this fix stops the audit from contradicting it.
+
+**Verified 2026-08-18 (lm):** `/Applications/Blender.app/Contents/MacOS/Blender --background --python
+tools/blender/audit_all_sides_check.py` → `AUDIT_ALL_SIDES_CHECK PASS`, six assertions covering the
+exact false-positive shape from the finding (a downward-facing plank at positive z), a correctly-wound
+closed cube (unflagged either way), and a genuinely inverted closed cube (still caught) — reverting
+`audit_all_sides.py` to HEAD makes the check fail on import, confirming it actually exercises the fix.
+Re-ran the real instrument against the shipped A-009 batch (`--only ships/exports`): `inside_out_objects`
+is 0 across all fifteen exports, down from 96 on `ship_hull_repaired` alone; the 504 sheet-back/rim/
+underside faces the old test misread now land in `open_surface_objects`. Full detail and the exact
+numbers: `docs/SPECS.md`'s F-109 block.
 
 ### F-121 · Exported builds load zero content: .tres scan misses Godot's .remap suffix — **fixed**
 

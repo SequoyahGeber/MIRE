@@ -109,6 +109,31 @@ def imported_meshes() -> list[bpy.types.Object]:
     return [o for o in bpy.context.scene.objects if o.type == "MESH"]
 
 
+def vertex_key(co: Vector) -> tuple[int, int, int]:
+    return (round(co.x * 1e5), round(co.y * 1e5), round(co.z * 1e5))
+
+
+def is_closed_shell(bm: bmesh.types.BMesh) -> bool:
+    """True when every welded edge borders exactly two faces (F-109).
+
+    These meshes are unwelded face soup, so bmesh's own ``edge.is_manifold``
+    is useless here — it reads every edge as non-manifold whether the surface
+    is a closed shell or a flat sheet. Welding vertices by position first (the
+    same key ``geometry_report`` uses for its duplicate-vertex count) recovers
+    the real topology: a closed shell's every edge then borders exactly two
+    faces, while an open sheet — a hull plank, a sail, a cap rail — has at
+    least one edge that borders only one, its boundary.
+    """
+    edge_face_counts: dict[tuple, int] = {}
+    for f in bm.faces:
+        keys = [vertex_key(v.co) for v in f.verts]
+        for i in range(len(keys)):
+            a, b = keys[i], keys[(i + 1) % len(keys)]
+            edge = (a, b) if a < b else (b, a)
+            edge_face_counts[edge] = edge_face_counts.get(edge, 0) + 1
+    return bool(edge_face_counts) and all(count == 2 for count in edge_face_counts.values())
+
+
 def bounds(objs: list[bpy.types.Object]) -> tuple[Vector, Vector]:
     lo = Vector((1e9, 1e9, 1e9))
     hi = Vector((-1e9, -1e9, -1e9))
@@ -143,6 +168,7 @@ def geometry_report(objs: list[bpy.types.Object], lo: Vector, hi: Vector) -> dic
     tris = 0
     polys = 0
     inverted_objects: list[str] = []
+    open_surface_objects: list[str] = []
     duplicate_verts = 0
     total_verts = 0
     non_manifold = 0
@@ -185,17 +211,30 @@ def geometry_report(objs: list[bpy.types.Object], lo: Vector, hi: Vector) -> dic
         # surface to reason about — it reports nonsense. The divergence theorem
         # does not care about welding: sum (n . c) * area over a closed shell is
         # positive when the shell faces outward, negative when it is inside out.
-        vol = 0.0
-        for f in bm.faces:
-            vol += f.normal.dot(f.calc_center_median()) * f.calc_area()
-        if vol < 0:
-            inverted_objects.append(o.name)
+        #
+        # That sum only means "inside out" for a CLOSED shell (F-109). For an
+        # open sheet — a hull plank, a sail, a cap rail — it is dominated by
+        # where the sheet sits relative to the world origin rather than by
+        # which way it faces, so it false-positives on correct back/rim/
+        # underside faces and can just as easily miss a real inversion on the
+        # far side of the origin. `is_closed_shell` decides which test applies;
+        # an open sheet's winding is judged by its generator instead
+        # (`WINDING_LOG` in `build_extraction_ship_set.py` is the worked
+        # example), never by this audit.
+        if is_closed_shell(bm):
+            vol = 0.0
+            for f in bm.faces:
+                vol += f.normal.dot(f.calc_center_median()) * f.calc_area()
+            if vol < 0:
+                inverted_objects.append(o.name)
+        else:
+            open_surface_objects.append(o.name)
 
         # Unwelded duplicates: how many vertices sit on top of another one.
         seen: set[tuple[int, int, int]] = set()
         dupes = 0
         for v in bm.verts:
-            k = (round(v.co.x * 1e5), round(v.co.y * 1e5), round(v.co.z * 1e5))
+            k = vertex_key(v.co)
             if k in seen:
                 dupes += 1
             seen.add(k)
@@ -208,6 +247,7 @@ def geometry_report(objs: list[bpy.types.Object], lo: Vector, hi: Vector) -> dic
         "triangles": tris,
         "polygons": polys,
         "inside_out_objects": inverted_objects,
+        "open_surface_objects": open_surface_objects,
         "duplicate_vertices": duplicate_verts,
         "vertices": total_verts,
         "non_manifold_edges": non_manifold,

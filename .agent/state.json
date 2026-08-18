@@ -1,6 +1,57 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "autoload/command_service.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T19:27:08+00:00",
+      "task": "3.13"
+    },
+    "autoload/debug_console.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T19:27:08+00:00",
+      "task": "3.13"
+    },
+    "core/dev/dev_loadout.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T19:27:08+00:00",
+      "task": "3.13"
+    },
+    "core/net/net_version.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T19:27:08+00:00",
+      "task": "3.13"
+    },
+    "tools/command_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T19:27:08+00:00",
+      "task": "3.13"
+    },
+    "tools/command_net_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T19:27:08+00:00",
+      "task": "3.13"
+    },
+    "tools/handshake_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T19:27:08+00:00",
+      "task": "3.13"
+    }
+  },
+  "in_flight": {
+    "3.13": {
+      "agent": "lp",
+      "files": [
+        "autoload/command_service.gd",
+        "autoload/debug_console.gd",
+        "core/dev/dev_loadout.gd",
+        "core/net/net_version.gd",
+        "tools/handshake_check.gd",
+        "tools/command_check.gd",
+        "tools/command_net_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T19:27:08+00:00"
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
       "agent": "lp",
@@ -86,11 +137,6 @@
     "assets/harvestables": {
       "agent": "tine18",
       "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
-    },
-    "assets/icons": {
-      "agent": "tine18",
-      "at": "2026-08-17T19:29:08+00:00",
       "task": "2.1j"
     },
     "assets/icons/README.md": {
@@ -296,11 +342,6 @@
     "assets/source/mire_map_kit.blend": {
       "agent": "tine18",
       "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
-    },
-    "assets/source/pickup_kit.blend": {
-      "agent": "tine18",
-      "at": "2026-08-17T19:29:08+00:00",
       "task": "2.1j"
     },
     "assets/source/playtest_hollow.blend": {
@@ -814,9 +855,10 @@
       "task": "3.10"
     },
     "docs/ASSET_TRACKER.md": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
+      "agent": "lm",
+      "at": "2026-08-18T19:32:23+00:00",
+      "hash": "885b36bc53bf89a1cfab6eab6a6b97fe59e5061184fde1530e54ac96040094c2",
+      "task": "F-109"
     },
     "docs/DECISIONS.md": {
       "agent": "lp",
@@ -831,10 +873,10 @@
       "task": "3.10"
     },
     "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-18T18:59:24+00:00",
-      "hash": "fa803f433b3881831fdcc9cc6bb4b03058ca6746c33a11b1da90a5071fe0431d",
-      "task": "3.10"
+      "agent": "lm",
+      "at": "2026-08-18T19:32:23+00:00",
+      "hash": "b11e61f098b232913ca0d1787d59c20e10198d3bc5a565408de07d04595b5653",
+      "task": "F-109"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -852,10 +894,10 @@
       "task": "F-036"
     },
     "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-18T18:36:06+00:00",
-      "hash": "2eb590def733627491b5d41fbdcc50c8f9961923275a3dc8f2be5a9c44894f47",
-      "task": "F-119"
+      "agent": "lm",
+      "at": "2026-08-18T19:32:23+00:00",
+      "hash": "7f4048c81da2830daad550a9d62b7d7f3a6b6de4667b95d52e0a65c2017433cb",
+      "task": "F-109"
     },
     "docs/STEAM_CROSS_PLATFORM_TEST.md": {
       "agent": "flint5",
@@ -1094,9 +1136,16 @@
       "task": "7.2"
     },
     "tools/blender/audit_all_sides.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
+      "agent": "lm",
+      "at": "2026-08-18T19:32:23+00:00",
+      "hash": "8b3616d9a1c313ba265ada867b4b83a345e9e5a64d8370185fb03bc12fa9acf8",
+      "task": "F-109"
+    },
+    "tools/blender/audit_all_sides_check.py": {
+      "agent": "lm",
+      "at": "2026-08-18T19:32:23+00:00",
+      "hash": "73142943bf3fbacdec7e3da00b2a0db49902bce2a8486c106ffc5bf66ea67934",
+      "task": "F-109"
     },
     "tools/blender/build_adapted_nature_set.py": {
       "agent": "tine18",
@@ -1252,11 +1301,6 @@
       "agent": "lp",
       "at": "2026-08-18T00:13:02+00:00",
       "task": "2.11"
-    },
-    "tools/dev_loadout_check.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T19:28:04+00:00",
-      "task": "F-052"
     },
     "tools/dimension_check.gd": {
       "agent": "lm",
@@ -2173,7 +2217,7 @@
     "3.13": {
       "est": "3",
       "milestone": "M3",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "Command core \u2014 `CommandService` front door: typed arg specs, LOCAL/HOST scopes, client\u2192host RPC + op permissions, migrate every existing console command (`docs/COMMANDS.md` \u00a71\u20132)"
     },
@@ -3603,9 +3647,11 @@
       "title": "A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized"
     },
     "F-109": {
+      "done_at": "2026-08-18T19:32:23+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them"
     },

@@ -3041,3 +3041,18 @@ Notes along the way:
 Files: `tools/ship_check.gd`, `tools/dimension_check.gd`
 
 Commit at time of writing: `ef35595`
+
+---
+
+### DONE · F-109 · lm · 2026-08-18T19:32:23+00:00
+
+**The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them**
+
+audit_all_sides.py's inside-out test no longer misjudges open sheets: is_closed_shell() welds vertices by position and only trusts the divergence-theorem sign on objects where every welded edge borders exactly two faces; open sheets file under new open_surface_objects instead of inside_out_objects. Verified: Blender --background --python tools/blender/audit_all_sides_check.py -> AUDIT_ALL_SIDES_CHECK PASS (6 assertions incl. the exact false-positive shape from the finding, a correct closed cube, and a genuinely inverted closed cube still caught); reverting the fix makes the check fail on import. Re-ran the real tool against the shipped A-009 ships batch: inside_out_objects is 0 across all 15 exports (down from 96 on ship_hull_repaired alone). SPECS.md F-109 block written, FINDINGS.md moved to Resolved, ASSET_TRACKER.md's existing A-009 note updated.
+
+Notes along the way:
+- Fixed: is_closed_shell() welds vertices by position and only runs the divergence-theorem sign test on closed shells; open sheets go to new open_surface_objects key. Verified via new tools/blender/audit_all_sides_check.py (6 assertions, PASS) and a real re-run against the shipped A-009 ships batch: inside_out_objects 0/15 exports, down from 96 false positives on ship_hull_repaired alone.
+
+Files: `tools/blender/audit_all_sides.py`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/ASSET_TRACKER.md`, `tools/blender/audit_all_sides_check.py`
+
+Commit at time of writing: `ec09f7a`

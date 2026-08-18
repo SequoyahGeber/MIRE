@@ -335,10 +335,16 @@ Every completed batch records evidence for all applicable checks:
 A-009 is the first batch whose assets are mostly **open surfaces** — a planked hull, a sail, a cap
 rail — rather than closed solids, and two of the standing instruments do not transfer:
 
-- **The audit's inside-out test cannot judge an open sheet** (F-109). Its divergence-theorem sum is
-  dominated by where the sheet sits relative to the world origin, not by which way it faces, so it
-  false-positives on every correct back/rim/underside face and would miss a real inversion on the far
-  side of the origin. It still reports 94 "inside out" objects on the fully verified repaired hull.
+- **The audit's inside-out test cannot judge an open sheet** (F-109, **fixed**). Its divergence-theorem
+  sum is dominated by where the sheet sits relative to the world origin, not by which way it faces, so
+  it false-positived on every correct back/rim/underside face and would have missed a real inversion on
+  the far side of the origin — it reported 96 "inside out" objects on the fully verified repaired hull
+  alone. `audit_all_sides.py` now recognizes which objects it can actually judge: `is_closed_shell()`
+  welds vertices by position and only trusts the volume-sign test when every welded edge borders
+  exactly two faces, filing anything else under a new `open_surface_objects` key instead of
+  `inside_out_objects`. That number is now 0 across the shipped A-009 batch. It still cannot tell you
+  whether an open sheet's winding is *correct* — only the generator that authored the sheet knows the
+  intended outward direction, which is what the next bullet is for.
 - **The generator is the only place that knows the intended outward direction**, so that is where the
   check belongs. `build_extraction_ship_set.py` logs every sheet it emits with the outward vector it
   was asked for and the area-weighted normal it produced, and fails the build when they disagree.
