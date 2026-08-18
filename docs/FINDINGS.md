@@ -926,6 +926,57 @@ the cycle, and it needs to read as night before it can read as dangerous.
 
 ---
 
+### F-066 · Play-from-editor costs ~2.2 CPU cores and ~90% GPU, none of it the game's rendering
+
+**Area:** tooling/performance · **Severity:** medium · **Found:** 2026-08-18 by reed16
+
+Sequoyah reported his MacBook getting very hot within seconds of pressing Play Scene, on hardware
+(M5 Pro, 16 GPU cores) that should idle through this project. It does not appear to be the game.
+
+**Measured on his live session, before anything else was launched** — the editor (pid 18279) and the
+embedded game (pid 18304) each sustained just over 100% CPU, i.e. a full core apiece, while
+`ioreg -c IOAccelerator` reported `Device Utilization % = 91`. That is ~2.2 cores and a nearly
+saturated GPU for a greybox level.
+
+**The scene's rendering is not the cause.** `tools/perf_probe.gd` (added by this investigation)
+renders the real `playtest_hollow.tscn` at a 4800x2700 backing store — four times the shipped
+1152x648-at-2x — and steps down a ladder of features. Every configuration held the 120 Hz vsync cap
+at 8.33 ms, including the shipped one. Turning off the per-frame atmosphere re-apply, volumetric fog,
+all three FogVolumes, glow, the 4-split PSSM sun shadows *and* the cloud deck gave back **0.08 ms per
+frame in total**. The renderer settings are not what is heating the machine, and the intuition that
+this should run on a potato is correct.
+
+**The editor is not expensive on its own either** — opening the project and sitting idle measured
+6.5% CPU, with `interface/editor/display/update_continuously = false`. The ~105% only appears while a
+game is running under it. The running game's command line shows `--remote-debug tcp://127.0.0.1:6007`
+and `--embedded --wid ...`; `run/window_placement/game_embed_mode = 0` (auto-embed) in his editor
+settings. So the editor is compositing the game's output at the game's frame rate on top of its own
+UI, at Retina resolution, and paying a debugger link on top.
+
+Two other candidates were checked and cleared: log volume (21 lines of stdout across a 12-second run,
+so nothing is being spammed over the debugger socket) and physics (323 static collision shapes).
+
+**Also worth naming: nothing in `project.godot` caps the frame rate.** There is no
+`application/run/max_fps` and no `display/window/vsync/vsync_mode` entry at all, so the game targets
+the 120 Hz ProMotion panel by default and the editor composites every one of those frames. For a
+co-op game that will ship to laptops on Steam this is a player-facing gap as much as a dev-machine
+one — there is currently no way for anyone to cap it.
+
+**What is NOT established, and why.** The split between the three plausible contributors — vsync
+frame pacing, the debugger attach, and the embedded-window compositing — could not be measured
+cleanly. On macOS an occluded or backgrounded Godot window stops really presenting: it free-runs at
+~145 fps and its CPU collapses to ~15%, versus ~120 fps and ~80% when genuinely on screen. Sequoyah
+was using the machine during the runs and clicking away from the windows I launched, which silently
+flipped runs between those two states and produced results that inverted between trials (at one point
+`--max-fps 60` appeared to cost more than uncapped). Any future perf run of this kind has to happen on
+a quiet machine with the window verifiably foregrounded, and should use the reported fps as a
+validity check — a run well above the display refresh was never really rendering.
+
+Next step when the machine is free: re-run the three-way split, then decide between disabling
+`game_embed_mode`, capping fps for dev, and adding a real video-settings surface for the shipped game.
+
+---
+
 ## Resolved
 
 ### F-055 · `core/util/mire_log.gd`'s `CHANNELS` list has no `health` channel — **fixed**
