@@ -16,8 +16,10 @@ import io
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from datetime import datetime, timezone
 
@@ -2225,19 +2227,122 @@ GODOT_CANDIDATES = (
 )
 
 
+def _godot_binary():
+    binary = os.environ.get("GODOT_BIN") or next(
+        (p for p in GODOT_CANDIDATES if os.path.exists(p)), None)
+    if not binary:
+        die("no Godot binary found. Set GODOT_BIN, or install Godot.app.")
+    return binary
+
+
+# Gitignored, and a checkout is not runnable without them: the GodotSteam binaries are ~95 MB kept
+# outside git (D-022), and `.godot` is the import cache that saves a from-scratch reimport. A
+# baseline worktree missing either does not measure HEAD — it measures a broken project, which is
+# worse than not asking. Both are cloned rather than symlinked: the cache is written during the run
+# and a symlink would point two Godot processes at one cache, which is F-044 exactly; and a symlink
+# named `godotsteam` does not match `.gitignore`'s `/addons/godotsteam/`, so it would show up as
+# untracked inside the checkout and mislead anything that reads git status there.
+BASELINE_GRAFTS = ("addons/godotsteam", ".godot")
+
+
 def cmd_godot(args):
     """Run Godot headless under a lock, so concurrent lanes cannot corrupt one import cache.
 
     Every headless verification in this project should go through here rather than calling Godot
     directly — see F-044. Usage mirrors the engine's: `agent godot --script tools/x_check.gd`."""
-    binary = os.environ.get("GODOT_BIN") or next(
-        (p for p in GODOT_CANDIDATES if os.path.exists(p)), None)
-    if not binary:
-        die("no Godot binary found. Set GODOT_BIN, or install Godot.app.")
-    argv = [binary, "--headless", "--path", ROOT] + list(args)
+    argv = [_godot_binary(), "--headless", "--path", ROOT] + list(args)
     with file_lock("godot", timeout=1800):
         print("%s· %s%s" % (C["dim"], " ".join(argv[3:]), C["x"]))
         return subprocess.call(argv, cwd=ROOT)
+
+
+def cmd_baseline(args):
+    """Run something against a pristine checkout of a revision, without touching the shared tree.
+
+    F-080. Every lane eventually asks "did this already fail before my change?", and the obvious way
+    to answer it — `git stash` — is repo-wide. Several agents share one working directory here, so a
+    stash rips out everyone's uncommitted work at once; on 2026-08-17 it took five files belonging to
+    task 2.1k plus an in-flight autoload, and the pop happening to succeed was luck, not safety. A
+    throwaway worktree touches nobody: git checks the revision out somewhere else and the shared tree
+    never changes.
+
+      agent baseline --script tools/foo_check.gd        # the check, at HEAD
+      agent baseline --rev 4aa5d43 --script tools/foo_check.gd
+      agent baseline python3 tools/harness_check.py     # anything else, cwd = the checkout
+
+    A leading `-` means engine arguments, same as `agent godot`; anything else is a command to run.
+    """
+    rest, rev, keep = list(args), "HEAD", False
+    while rest:
+        if rest[0] == "--rev" and len(rest) > 1:
+            rev, rest = rest[1], rest[2:]
+        elif rest[0] == "--keep":
+            keep, rest = True, rest[1:]
+        elif rest[0] == "--":
+            rest = rest[1:]
+            break
+        else:
+            break
+    if not rest:
+        die("usage: agent baseline [--rev <rev>] [--keep] "
+            "<--script tools/x_check.gd | command ...>")
+
+    r = _git("rev-parse", "--short", rev + "^{commit}")
+    if r.returncode != 0:
+        die("unknown revision '%s'" % rev)
+    sha = r.stdout.strip()
+
+    # The pid is in the name because two lanes asking "did this already fail?" about the same commit
+    # at the same time is not unusual, and the cleanup below is a `worktree remove --force`. Sharing
+    # a path would mean one lane deleting the other's checkout mid-run — the very thing F-080 is
+    # about, reintroduced by the tool meant to fix it.
+    wt = os.path.join(tempfile.gettempdir(), "mire-baseline-%s-%d" % (sha, os.getpid()))
+    _git("worktree", "remove", "--force", wt)
+    shutil.rmtree(wt, ignore_errors=True)
+    _git("worktree", "prune")
+    r = _git("worktree", "add", "--detach", "--quiet", wt, sha)
+    if r.returncode != 0:
+        die("could not check %s out into %s:\n%s" % (sha, wt, r.stderr.strip()))
+
+    for rel in BASELINE_GRAFTS:
+        src, dst = os.path.join(ROOT, rel), os.path.join(wt, rel)
+        if not os.path.isdir(src) or os.path.exists(dst):
+            continue
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        # -c is APFS's copy-on-write clone: ~190 MB grafted for no disk and no wait, and a real
+        # copy the moment either side writes — which is the property that keeps the caches apart.
+        if subprocess.run(["cp", "-Rc", src, dst], capture_output=True).returncode != 0:
+            shutil.copytree(src, dst, symlinks=True, dirs_exist_ok=True)
+
+    print("%s· %s at %s%s" % (C["dim"], wt, sha, C["x"]))
+    try:
+        if rest[0].startswith("-"):
+            argv = [_godot_binary(), "--headless", "--path", wt] + rest
+            # The worktree has its own import cache, so this cannot corrupt the shared one — but two
+            # headless Godots still thrash one machine, and every other engine run in this repo goes
+            # through the same lock (F-044). Keep it that way.
+            with file_lock("godot", timeout=1800):
+                code = subprocess.call(argv, cwd=wt)
+        else:
+            code = subprocess.call(rest, cwd=wt)
+    except FileNotFoundError as e:
+        _baseline_clean(wt, keep)
+        die("could not run %s: %s" % (rest[0], e))
+    except KeyboardInterrupt:
+        _baseline_clean(wt, keep)
+        raise
+    _baseline_clean(wt, keep)
+    return code
+
+
+def _baseline_clean(wt, keep):
+    if keep:
+        print("%s· kept: %s  (remove with: git worktree remove --force %s)%s"
+              % (C["dim"], wt, wt, C["x"]))
+        return
+    _git("worktree", "remove", "--force", wt)
+    shutil.rmtree(wt, ignore_errors=True)
+    _git("worktree", "prune")
 
 
 def cmd_autoload(args):
@@ -2572,6 +2677,7 @@ COMMANDS = {
     "order": cmd_order, "dispatch": cmd_dispatch, "lanes": cmd_lanes,
     "collect": cmd_collect, "report": cmd_report, "reap": cmd_reap, "godot": cmd_godot,
     "saturate": cmd_saturate, "finding": cmd_finding,
+    "baseline": cmd_baseline,
     "autoload": cmd_autoload,
 }
 
@@ -2592,6 +2698,8 @@ USAGE = """agent — multi-agent coordination for MIRE
 Verifying — always launch the engine through this, never bare (F-044):
 
   agent godot --script tools/x_check.gd     headless Godot, under a lock
+  agent baseline --script tools/x_check.gd  the same check at HEAD, in a throwaway worktree —
+                                            "did this already fail?" without `git stash` (F-080)
   agent autoload <Name> <res://path.gd>     register an autoload atomically — no claim needed
   agent finding "title" [--area] [--severity]  file a finding; body on stdin, number allocated safely
 

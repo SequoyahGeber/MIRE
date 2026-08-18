@@ -138,6 +138,21 @@ pushes to `origin`. It deliberately does not `git add -A`: several agents share 
 so a blanket add sweeps another agent's half-written files into your commit. Never hand-roll
 `git add -A && git commit` — use `ship`.
 
+**`git stash` is the same hazard and a larger one (F-080).** It is repo-wide by default, so it rips
+out every *other* lane's uncommitted files at once — it has already taken five files belonging to
+task 2.1k plus an in-flight autoload, and the pop happening to succeed was luck. The question people
+reach for it to answer is "did this already fail before my change?", and that has its own command:
+
+```bash
+.agent/bin/agent baseline --script tools/foo_check.gd
+.agent/bin/agent baseline python3 tools/harness_check.py
+```
+
+It checks the revision out somewhere else (`--rev` for one that isn't HEAD), grafts in the two
+gitignored directories a checkout needs before it will run — `addons/godotsteam` and the `.godot`
+import cache — runs your command there, and deletes it. About a second, and nobody's working tree is
+touched, including yours.
+
 Uncommitted work is invisible to everyone else. The pre-commit hook re-runs `agent check` against the
 staged set and blocks you if you've touched a file you don't hold.
 

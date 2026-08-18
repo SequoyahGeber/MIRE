@@ -35,12 +35,21 @@ STATE = """{
 """
 
 
+def brief(text, lines=3, chars=300):
+    """Enough of a failing command's output to identify it, not enough to bury the next case."""
+    head = "\n".join(text.strip().splitlines()[:lines])[:chars]
+    return head + (" …" if len(text.strip()) > len(head) else "")
+
+
 def run(cmd, cwd, agent="alpha", check=False):
     env = dict(os.environ, MIRE_AGENT=agent, NO_COLOR="1")
     env.pop("MIRE_SESSION", None)
     r = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True)
     if check and r.returncode != 0:
-        raise SystemExit("command failed: %s\n%s%s" % (" ".join(cmd), r.stdout, r.stderr))
+        # AssertionError, not SystemExit: a failed setup command is a failed case, and SystemExit
+        # would skip past the per-case handler in main() and abort the whole suite.
+        raise AssertionError("command failed: %s\n        %s"
+                             % (" ".join(cmd), brief(r.stdout + r.stderr)))
     return r
 
 
@@ -158,6 +167,31 @@ def _(harness):
                                % (r.stdout, r.stderr))
     assert "beta" in (r.stdout + r.stderr), "check did not name the holder: %s" % r.stdout
     return r.stdout.strip()
+
+
+@case("baseline runs at the revision, not the dirty working tree")
+def _(harness):
+    d = build_repo(harness)
+    r = run([".agent/bin/agent", "baseline", "cat", "world/thing.gd"], d)
+    assert r.returncode == 0, "baseline failed: %s" % brief(r.stdout + r.stderr)
+    assert "the shipping task's own work" not in r.stdout, (
+        "baseline read the dirty working tree, not the commit:\n%s" % r.stdout)
+    assert "extends Node" in r.stdout, "baseline read nothing: %r" % r.stdout
+    return r.stdout.strip()
+
+
+@case("baseline leaves every other lane's uncommitted work alone")
+def _(harness):
+    d = build_repo(harness)
+    before = run(["git", "status", "--porcelain", "-uall"], d, check=True).stdout
+    run([".agent/bin/agent", "baseline", "cat", "world/thing.gd"], d, check=True)
+    after = run(["git", "status", "--porcelain", "-uall"], d, check=True).stdout
+    assert before == after, ("the shared working tree changed under a baseline run — this is the "
+                            "`git stash` hazard F-080 exists to remove:\n%s\n%s" % (before, after))
+    # And it took its checkout with it rather than leaving a worktree registered behind.
+    trees = run(["git", "worktree", "list"], d, check=True).stdout
+    assert len([l for l in trees.splitlines() if l.strip()]) == 1, "worktree left behind:\n%s" % trees
+    return after or "(clean)"
 
 
 def main():

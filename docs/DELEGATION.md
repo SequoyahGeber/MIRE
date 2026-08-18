@@ -87,6 +87,14 @@ under `.agent/` — it stages the allowlist `COORDINATION_PATHS` (`BOARD.md`, `J
 the file before `agent done`,** or ship leaves the edit in the working tree; it now names any harness
 file it declined to carry, in the "left alone" block.
 
+`agent baseline` (F-080) is the other half: it answers "did this already fail before my change?"
+without `git stash`, which is repo-wide and takes every other lane's uncommitted files with it.
+`agent baseline --script tools/foo_check.gd` runs that check at HEAD in a throwaway worktree —
+`--rev` for another commit, a non-`-` first argument for any other command, `--keep` to leave the
+checkout behind. It grafts in `addons/godotsteam` and `.godot` (both gitignored, and a checkout will
+not run without them) as copy-on-write clones, so the round trip is about a second. **Never
+`git stash` in this repo.**
+
 ### 2026-08-18 — performance base (F-090): the probe, the presets, and the scatter pattern the generator must inherit
 
 **`tools/perf_probe.gd`** is the instrument: `.agent/bin/agent godot --display-driver macos --script

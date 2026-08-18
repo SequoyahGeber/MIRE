@@ -765,45 +765,6 @@ Anything that re-runs a Blender generator and then decides which outputs to keep
 
 ---
 
-### F-080 · `git stash` in this repo stashes every other lane's uncommitted work too
-
-**Area:** tooling · **Severity:** high · **Found:** 2026-08-17 by flint5 during F-073
-
-AGENTS.md warns against `git add -A` because several agents share one working directory. `git stash`
-is the same hazard and a worse one: it is repo-wide by default, so it rips out every other lane's
-uncommitted files at once. I used it to establish that an `item_icons_check` failure pre-dated my
-change, and in doing so briefly stashed an in-flight `autoload/registry.gd` plus five files belonging
-to task 2.1k. The pop succeeded and nothing was lost — but that was luck. A concurrent write inside
-that window, or another agent reading its own file mid-stash, and it would not have been.
-
-The safe way to ask "did this already fail at HEAD?" is a throwaway worktree, which touches nobody:
-
-```bash
-git worktree add /tmp/mire_head HEAD
-```
-
-`agent` could offer that as a subcommand, since "is this failure mine?" is a question every lane
-eventually asks. Failing that, the rule belongs beside the `git add -A` rule in AGENTS.md, because the
-same reasoning produces it.
-
----
-
-### F-086 · The building system has no gameplay caller, so no player can place, rotate, or destroy anything
-
-**Area:** gameplay · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.6 review
-
-`systems/building/build_ghost.gd:3` says to attach a `BuildGhost` to the player, but no production
-script or scene instantiates it. Likewise, no production caller selects a piece, calls
-`update_aim()`/`rotate_step()`/`confirm()`, or invokes `BuildService.request_destroy()`; those APIs
-are referenced only by the two checks. `BuildService` boots, but the shipped game exposes no input
-or UI path into it. Task 3.7 is specified as content authored over this definition, not as the
-missing player integration, so moving on leaves the entire 3.6 feature unreachable.
-
-Wire the local presentation/input path into the player (including piece selection and destroy), and
-add a check that exercises the production caller instead of constructing a private ghost.
-
----
-
 ### F-097 · Environmental VFX is keyed to node types the shipped map never produces, so wind and firelight are dead on Hollowmere
 
 **Area:** presentation · **Severity:** high · **Found:** 2026-08-18 by larch10 while starting visual work
@@ -843,14 +804,6 @@ or a node name a level author chose.
 
 ---
 
-### F-098 · Draw-call discipline: static chunk batching + dynamic resolution (DOOM/Roblox research)
-
-**Area:** perf · **Severity:** medium · **Found:** 2026-08-18 by coil23
-
-Research pass (Sequoyah asked why DOOM/Roblox get hundreds of fps): DOOM 2016 renders ~1,331 draw calls/frame with cached static shadow maps and heavy precomputation; Roblox collapses identical meshes into single draws and batches static geometry into clusters. MIRE's authored world is 2,869 props in 1,028 MultiMeshes — 2.8 props per draw, instancing overhead without instancing's payoff — and 5.4k total draws vs DOOM's 1.3k. Implementing: (1) static per-chunk material-bucketed mesh batching for authored props (SurfaceTool.append_from, disk-cached per chunk); (2) DOOM-style dynamic resolution in GraphicsQuality (hold target fps by stepping render scale, fps-based v1 since Metal's GPU timer reads 0 per F-090). Flora stays MultiMesh: 14+ instances/draw is where instancing pays.
-
----
-
 ### F-099 · Optimization sweep: per-frame costs and dead weight across runtime scripts
 
 **Area:** perf · **Severity:** medium · **Found:** 2026-08-18 by kiln9
@@ -859,7 +812,199 @@ Two-reviewer optimization sweep over runtime scripts (autoload/core/entities and
 
 ---
 
+### F-100 · Static chunk batching for authored props — designed, measured-in-principle, blocked on F-097
+
+**Area:** perf · **Severity:** medium · **Found:** 2026-08-18 by coil23
+
+BLOCKED until F-097 (larch10) releases world/gen/authored_world.gd — do not claim that file while their VFX wiring is in flight. The design, from F-098's research (DOOM ~1,331 draws/frame; Roblox merges identical/static geometry): authored props run 2,869 props in 1,028 MultiMeshes = 2.8 instances per draw, which is instancing overhead without instancing's payoff (~3.3k of our 5.4k total draws are its shadow-pass copies). Replace per-(chunk,asset) MultiMeshes with ONE merged ArrayMesh per chunk, one surface per material bucket: SurfaceTool.append_from(mesh, surface, placement) per prop (C++-speed transform bake), bucket key = material resource_name + albedo fingerprint (kit shares one palette so buckets merge across assets), disk-cache per chunk keyed by layout mtime (mesh_cache pattern from F-095). Keep harvestables as nodes (they swap when felled) and keep flora as MultiMesh (14+ instances/draw pays). VFX-compatible with F-097: wind sway keys off materials, and bucketing preserves material identity. Expected: prop draws 1,028 -> ~chunks x 1-3 buckets, same ratio in all four shadow cascades. Verify with tools/perf_probe.gd and tools/hollowmere_check.gd.
+
+---
+
+### F-101 · Build-mode "attack" (confirm/swing) and `harvest_world.gd`'s own independent listener are unmediated
+
+**Area:** gameplay · **Severity:** low · **Found:** 2026-08-18 by lp while closing F-086
+
+F-086 wired `entities/player/player_controller.gd`'s own "attack" handling to confirm a build
+placement instead of swinging while build mode is active, and calls
+`get_viewport().set_input_as_handled()` on that branch so nothing downstream reads the same click
+twice. But `autoload/harvest_world.gd:49` listens for `"attack"` independently, in its own
+`_unhandled_input`, and nothing in this codebase establishes (or tests) which of two nodes'
+`_unhandled_input` runs first for the same event — `set_input_as_handled()` only suppresses
+handlers that have not run yet by the time it is called, and this codebase has never had two
+listeners on the same action disagree about what it means before now (combat and harvest already
+both react to "attack" today, apparently by design, so precedent here is "let both fire," not "one
+wins"). Worst case: aiming at a harvestable while placing a piece also registers a harvest hit on
+the same click. Not fixed here because the only fix is inside `harvest_world.gd`, which this task's
+claim does not name.
+
+Would take: either an explicit input-priority contract (documented, and enforced by a check that
+constructs both nodes and asserts delivery order) or a shared "is anything else claiming this attack
+press" query `harvest_world.gd` checks before it acts — `PlayerController.is_build_mode_active()` is
+already public and would be the cheapest version of the second.
+
+---
+
+### F-102 · docs/FINDINGS.md is the one file every lane must write and no lane can hold, so every close-out commit carries other lanes' half-written findings
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by yarrow21
+
+Sibling of F-081, one level up. F-081 fixed `ship` carrying harness *source* it had no claim on; this
+is the same shape in a file where the carrying cannot be switched off, because the work genuinely
+belongs there.
+
+Observed 2026-08-18 while closing F-080. `git diff` on `docs/FINDINGS.md` at ship time held, besides
+my own resolution: LP's F-086 resolution, an F-098 rewrite, and three newly filed findings
+(F-099/F-100/F-101) from two other lanes. All of it uncommitted, none of it mine. The choices at that
+moment are both bad — ship the file and commit three other agents' in-progress writing under my name
+and message, or leave it and let my own resolution stay invisible to everyone (uncommitted work is
+invisible to Codex). I shipped it, because invisible is worse than misattributed.
+
+An exact claim does not help. Every lane must write this file to close anything out, so a claim on it
+either blocks every other lane or is ignored — and it is ignored: I held an exact claim on
+`docs/FINDINGS.md` for F-080 while three lanes wrote to it, because a claim blocks the *commit*
+(`agent check`), not the editor. F-058 is the same collision seen from the numbering side; the two
+findings share a cause.
+
+**Sketch of a fix, not yet decided:** one file per finding (`docs/findings/F-099.md`), with
+`docs/FINDINGS.md` generated from the directory the way `.agent/BOARD.md` is generated from
+`state.json`. Then a finding is an ordinary claimable file that exactly one task owns, filing is a
+create (no merge conflict, no number race — the filename *is* the number), and `agent finding`/`agent
+brief` read the directory. The cost is a generated 1,000-line file in git and a migration of ~100
+existing sections; both are one-time. An append-only convention alone does not fix it, because
+resolving a finding *moves* a section rather than appending one.
+
+---
+
 ## Resolved
+
+### F-080 · `git stash` in this repo stashed every other lane's uncommitted work too — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-17 by flint5 during F-073 · **Resolved
+2026-08-18 by yarrow21.**
+
+AGENTS.md warns against `git add -A` because several agents share one working directory. `git stash`
+is the same hazard and a worse one: it is repo-wide by default, so it rips out every other lane's
+uncommitted files at once. I used it to establish that an `item_icons_check` failure pre-dated my
+change, and in doing so briefly stashed an in-flight `autoload/registry.gd` plus five files belonging
+to task 2.1k. The pop succeeded and nothing was lost — but that was luck. A concurrent write inside
+that window, or another agent reading its own file mid-stash, and it would not have been.
+
+**Fixed** by building the safe path rather than only writing the rule down, because "remember not to
+use the obvious command" is a rule that survives exactly as long as nobody is in a hurry.
+`agent baseline` checks a revision out into a throwaway worktree, runs what you give it there, and
+removes it:
+
+```bash
+agent baseline --script tools/steam_check.gd        # the check, at HEAD
+agent baseline --rev 4aa5d43 --script tools/x.gd    # at some other commit
+agent baseline python3 tools/harness_check.py       # anything else; cwd is the checkout
+agent baseline --keep --script tools/x.gd           # leave it behind to poke at
+```
+
+A leading `-` means engine arguments (same shape as `agent godot`, same lock, exit code propagated);
+anything else is a command to run. The parts that are not obvious, and are the reason this is a
+command rather than the `git worktree add` line this finding originally suggested:
+
+- **A bare checkout of this repo does not run.** `addons/godotsteam` is ~95 MB of binaries kept out
+  of git (D-022) and `.godot` is the import cache; without them a baseline measures a broken project
+  and cheerfully reports that your change broke something. Both are grafted in with APFS
+  copy-on-write clones (`cp -Rc`), so ~190 MB costs no disk and no wait — the whole round trip,
+  checkout to cleanup, is under a second, and 1.4 s with a real headless engine run inside it.
+- **Cloned, not symlinked.** A symlinked `.godot` would point two Godot processes at one import
+  cache, which is F-044 exactly. A symlinked `addons/godotsteam` additionally fails to match
+  `.gitignore`'s `/addons/godotsteam/`, so it shows up as untracked inside the checkout and misleads
+  anything that reads git status there.
+- **The worktree path carries the pid**, not just the short sha. Two lanes asking the same question
+  about the same commit at the same time is ordinary, and cleanup is `worktree remove --force` — a
+  shared path would mean one lane deleting the other's checkout mid-run, which is F-080 again
+  wearing the uniform of its own fix.
+
+The rule now sits beside the `git add -A` rule in AGENTS.md, where the same reasoning produces it.
+
+**Verified** by two new cases in `tools/harness_check.py` (7/7): a baseline run reads the *committed*
+content of a file the working tree has modified, and the shared tree's `git status` is byte-identical
+before and after with no worktree left registered. Both fail against the pre-baseline harness. Also
+run for real here — `agent baseline --script tools/steam_check.gd` loaded the GodotSteam extension
+inside the throwaway checkout (`736 methods, 2003 constants`) and reached the same
+Steam-client-not-running failure the shared tree gives, in 1.4 s total. The graft is doing its job.
+
+**Not fixed, and not fixable from here:** git has no pre-stash hook, so nothing can *block*
+`git stash` in this repo. This is a better road, not a fence.
+
+---
+
+### F-086 · The building system has no gameplay caller, so no player can place, rotate, or destroy anything — **fixed**
+
+**Area:** gameplay · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.6 review ·
+**Resolved 2026-08-18 by lp.**
+
+`systems/building/build_ghost.gd:3` said to attach a `BuildGhost` to the player, but nothing did;
+`update_aim()`/`rotate_step()`/`confirm()`/`BuildService.request_destroy()` were reachable only from
+`tools/build_check.gd`'s own private ghost. Fixed by wiring the local presentation/input path
+straight into `entities/player/player_controller.gd`, the only production caller a player ever runs
+through:
+
+- **`BuildGhost` and a new `ui/building/build_bar.gd`** are built eagerly in `_ready()` for the local
+  player only (same reasoning as the viewmodel), both hidden until build mode is entered.
+  `BuildBar` is **not** an autoload like every other UI in this codebase (`CraftingUI`, `InventoryUI`,
+  `VitalsHud`) — `project.godot` was held by another lane's task (F-095) as this shipped, so it
+  follows `ui/hud/vitals_hud.gd`'s own EAT_KEY precedent instead: no new InputMap action, no
+  autoload registration, everything reachable through a direct child reference or the existing
+  `/root/BuildService` and `/root/Registry` singletons.
+- **Input**: the existing "build" action (3.6) toggles the mode — `is_build_mode_active()` reads
+  `BuildGhost.visible` directly rather than a second flag, so the two can never disagree. Rotate (R)
+  and destroy (right-click) are raw input, same EAT_KEY reasoning as above. Confirm reuses the
+  existing "attack" action: build mode is checked first, in the same function, before the existing
+  combat routing, so a click can never both swing and place regardless of node traversal order.
+  Selecting a piece from `BuildBar`'s own slot click reaches the ghost through one seam
+  (`PlayerController.set_selected_build_piece()`), the same one a bare toggle-on's auto-selected
+  default piece uses.
+- **Destroy targets independently of what's selected to place** — `BuildGhost.aim_destroy_target()`
+  is a second ray (new method, matches `BuildService.PIECE_GROUP` by a duplicated literal, same
+  reasoning `harvest_world.gd`'s own `HARVESTABLE_GROUP` duplicate uses) so a player can tear down an
+  existing piece while a different one (or none) is queued to place.
+- **F-101 filed, not fixed here**: build-mode confirm and `harvest_world.gd`'s own independent
+  "attack" listener are not mediated against each other; the only fix touches a file outside this
+  task's claim.
+
+Verified with a new `tools/build_check.gd` section, `_check_player_integration()`, that drives a
+**real** `entities/player/player.tscn` through the exact input events a player sends — the real
+`"build"` action, a real `BuildBar` slot click, a real `R` keypress, the real `"attack"` action, and a
+real right-click — rather than constructing a private ghost, closing the finding's own complaint.
+`agent godot --script tools/build_check.gd` — `failures=0`. `tools/build_net_check.gd` — `failures=0`,
+unaffected (its own scenarios drive `BuildService` directly, never through a player).
+
+---
+
+### F-098 · Draw-call discipline: what DOOM and Roblox actually do, dynamic resolution shipped, batching handed to F-100 — **fixed**
+
+**Area:** perf · **Severity:** medium · **Found:** 2026-08-18 by coil23 · **Resolved 2026-08-18 by
+coil23.**
+
+Sequoyah asked why DOOM 2016 and Roblox reach hundreds of fps. The research answer, condensed:
+**draw-call discipline plus precomputation plus resolution flexibility.** DOOM renders a typical
+frame in ~1,331 draw calls (clustered forward renderer), caches the static portion of every shadow
+map and composites only dynamic casters, precomputes aggressively, and dynamically scales render
+resolution to hold 60. Roblox collapses identical meshes into single draws, merges static geometry
+into clusters, and auto-degrades quality tiers on weak devices. MIRE at the time of asking: 5.4k
+draws — the gap is structural, not shader-deep.
+
+**Shipped here: dynamic resolution** (`GraphicsQuality.set_dynamic_scale()`, console
+`gfx auto [<fps>|off]`). Steps `scaling_3d_scale` between 0.59 and the active preset's own scale,
+every 0.5 s, down fast / up slow, steering by fps (Metal's GPU timer reads 0 in this build,
+F-090). Probe row "13 dynamic res @240": against an unreachable target the controller drove scale
+to its floor and held **204 fps / 4.98 ms** — vs 149 fps at native. Off by default; it is the
+worst-computer safety net, not the look.
+
+**Not shipped here: static chunk batching** — `world/gen/authored_world.gd` was claimed by
+larch10 (F-097, VFX wiring) mid-task; per protocol the full design moved to **F-100**, claimable
+the moment that file frees. Cross-checked against F-097: sway/fire VFX key off materials, and
+F-100's material-bucketed merge preserves material identity, so the two do not fight.
+
+Verified: probe fullscreen (14 rows), `flora_check` / `atmosphere_night_check` /
+`day_night_check` / `hollowmere_check` all pass.
+
+---
 
 ### F-081 · Every ship blanket-staged `.agent/`, so one agent's commit carried another's in-progress harness edits — **fixed**
 

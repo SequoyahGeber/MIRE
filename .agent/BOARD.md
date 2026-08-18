@@ -10,10 +10,8 @@
 |---|---|---|---|
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | ivy8 | 2026-08-18 13:01 | `docs/ASSET_TRACKER.md`, `tools/blender/build_extraction_ship_set.py`, `assets/source/extraction_ship_set.blend`, `assets/ships`, `tools/ship_check.gd`, `tools/blender/mire_art.py` |
 | **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-18 00:43 | `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `assets/maps`, `assets/source/playtest_hollow.blend` |
-| **F-080** `git stash` in this repo stashes every other lane's uncommitted work too | yarrow21 | 2026-08-18 13:14 | `.agent/bin/agent`, `AGENTS.md`, `docs/FINDINGS.md`, `tools/harness_check.py` |
-| **F-086** The building system has no gameplay caller, so no player can place, rotate, or destroy anything | lp | 2026-08-18 13:14 | `entities/player/player_controller.gd`, `systems/building/build_ghost.gd`, `ui/building/build_bar.gd`, `tools/build_check.gd` |
 | **F-097** Environmental VFX is keyed to node types the shipped map never produces, so wind and firelight are dead on Hollowmere | larch10 | 2026-08-18 13:09 | `autoload/environment_vfx.gd`, `world/environment/foliage_wind.gdshader`, `world/environment/particle_billboard.gdshader`, `world/gen/authored_world.gd`, `world/gen/undergrowth.gd`, `tools/environment_vfx_check.gd`, `tools/environment_vfx_hollowmere_check.gd` |
-| **F-099** Optimization sweep: per-frame costs and dead weight across runtime scripts | kiln9 | 2026-08-18 13:15 | `systems/enemies/enemy.gd`, `systems/health/player_health.gd`, `systems/harvesting/harvestable.gd`, `systems/environment/day_night.gd`, `ui/hud/vitals_hud.gd`, `ui/crafting/crafting_ui.gd`, `ui/loot/chest_ui.gd`, `entities/player/viewmodel.gd`, `autoload/inventory_service.gd`, `autoload/harvest_world.gd`, `autoload/enemy_world.gd`, `autoload/powerup_service.gd`, `autoload/build_service.gd`, `autoload/crafting_service.gd`, `autoload/net_transport.gd`, `autoload/player_net.gd`, `autoload/debug_overlay.gd`, `autoload/registry.gd`, `core/net/net_session.gd` |
+| **F-099** Optimization sweep: per-frame costs and dead weight across runtime scripts | kiln9 | 2026-08-18 13:15 | `systems/enemies/enemy.gd`, `systems/health/player_health.gd`, `systems/harvesting/harvestable.gd`, `systems/environment/day_night.gd`, `ui/hud/vitals_hud.gd`, `ui/crafting/crafting_ui.gd`, `ui/loot/chest_ui.gd`, `entities/player/viewmodel.gd`, `autoload/inventory_service.gd`, `autoload/harvest_world.gd`, `autoload/enemy_world.gd`, `autoload/powerup_service.gd`, `autoload/build_service.gd`, `autoload/crafting_service.gd`, `autoload/net_transport.gd`, `autoload/player_net.gd`, `autoload/debug_overlay.gd`, `autoload/registry.gd`, `core/net/net_session.gd`, `autoload/combat_service.gd` |
 
 **2.1d notes:**
 - A-009 extraction ship set (15 models) taken. Blender 5.2.0 LTS, unchanged since A-000V, so no re-verification of an existing family is owed (D-038).
@@ -25,7 +23,7 @@
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███████░░░` 66/92 | 26 |
+| Findings | `███████░░░` 68/95 | 27 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -78,14 +76,15 @@
 | ⬜ | **F-076** A new map inherits none of the systems keyed to the old map's group names | todo |
 | ⬜ | **F-077** `agent godot` is always headless, so no in-engine screenshot can ever be captured | todo |
 | ⬜ | **F-079** The obvious way to "compare decoded pixels" silently reports every RGB-only change as identical | todo |
-| 🔵 | **F-080** `git stash` in this repo stashes every other lane's uncommitted work too | in_flight |
-| 🔵 | **F-086** The building system has no gameplay caller, so no player can place, rotate, or destroy anything | in_flight |
 | ⬜ | **F-092** `mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call | todo |
 | ⬜ | **F-093** A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build | todo |
 | ⬜ | **F-094** `mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float | todo |
 | 🔵 | **F-097** Environmental VFX is keyed to node types the shipped map never produces, so wind and firelight are dead on Hollowmere | in_flight |
 | 🔵 | **F-099** Optimization sweep: per-frame costs and dead weight across runtime scripts | in_flight |
+| ⬜ | **F-100** Static chunk batching for authored props — designed, measured-in-principle, blocked on F-097 | todo |
+| ⬜ | **F-101** Build-mode "attack" (confirm/swing) and `harvest_world.gd`'s own independent listener are unmediated | todo |
+| ⬜ | **F-102** docs/FINDINGS.md is the one file every lane must write and no lane can hold, so every close-out commit carries other lanes' half-written findings | todo |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.5` `3.6` `3.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-054` `F-055` `F-056` `F-059` `F-060` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-078` `F-081` `F-082` `F-083` `F-084` `F-085` `F-087` `F-088` `F-089` `F-090` `F-091` `F-095` `F-096` `F-098`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.5` `3.6` `3.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-054` `F-055` `F-056` `F-059` `F-060` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-078` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-095` `F-096` `F-098`

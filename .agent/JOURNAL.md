@@ -2400,3 +2400,42 @@ Research (DOOM ~1,331 draws/frame + cached static shadows + dynamic res; Roblox 
 Files: `autoload/graphics_quality.gd`, `tools/perf_probe.gd`
 
 Commit at time of writing: `4aa5d43`
+
+---
+
+### HANDOFF · F-086 · lp · 2026-08-18T13:22:27+00:00
+
+**The building system has no gameplay caller, so no player can place, rotate, or destroy anything**
+
+LP stopped on F-086 at 2026-08-18T13:22:27+00:00 (exit 0, stopped mid-protocol without closing out — exited 0 but left the task in flight). Tokens this run: 20,281,032 in / 111,257 out.
+The working diff is UNTOUCHED — its partial edits are still on disk, so read them before redoing anything. Full log: .agent/logs/LP-F-086-20260818-130008.jsonl
+
+Files it had already written or edited: systems/building/build_ghost.gd, ui/building/build_bar.gd, entities/player/player_controller.gd, docs/FINDINGS.md, docs/DECISIONS.md, docs/SPECS.md, tools/build_check.gd.
+Its last words: "I've started the headless build check under the shared Godot lock and am waiting for it to finish (it's queued behind another lane's use of the lock). I'll pick back up as soon as it reports back."
+Its last actions:
+  - Bash .agent/bin/agent godot --script tools/build_check.gd 2>&1 | tail -150
+  - Bash sleep 30; tail -200 /private/tmp/claude-501/-Users-sequoyahgeber-Desktop-MIRE/b6
+  - Read /private/tmp/claude-501/-Users-sequoyahgeber-Desktop-MIRE/b6ff31b3-7935-4b4f-9be
+  - ToolSearch 
+  - Monitor until grep -qE "BUILD_CHECK failures=|SCRIPT ERROR|Parse Error" /private/tmp/cla
+  - Bash echo waiting
+
+Tail of the failure:
+eck.gd to finish under the shared Godot lock","uuid":"b881cf90-a19d-41d5-a73a-9c11d781d3e3","session_id":"b6ff31b3-7935-4b4f-9be8-af025477d10b"}
+{"type":"system","subtype":"task_summary","detail":null,"uuid":"5bbd546b-1879-449c-9baa-604ccceeaea9","session_id":"b6ff31b3-7935-4b4f-9be8-af025477d10b"}
+
+Files: `entities/player/player_controller.gd`, `systems/building/build_ghost.gd`, `ui/building/build_bar.gd`, `tools/build_check.gd`
+
+Commit at time of writing: `4cabfc0`
+
+---
+
+### DONE · F-080 · yarrow21 · 2026-08-18T13:22:55+00:00
+
+**`git stash` in this repo stashes every other lane's uncommitted work too**
+
+agent baseline: run any check or command against a throwaway worktree at a revision, grafting in the two gitignored dirs a checkout needs (addons/godotsteam, .godot) as APFS clones. Sub-second round trip, 1.4s with a real engine run. Rule now sits beside the git add -A rule in AGENTS.md. Verified: 7/7 in tools/harness_check.py incl. two new baseline cases, plus a real steam_check.gd run inside the worktree with the extension loaded.
+
+Files: `.agent/bin/agent`, `AGENTS.md`, `docs/FINDINGS.md`, `tools/harness_check.py`, `docs/DELEGATION.md`
+
+Commit at time of writing: `4cabfc0`
