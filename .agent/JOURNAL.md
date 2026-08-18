@@ -2549,3 +2549,19 @@ Notes along the way:
 Files: `docs/ROADMAP.md`
 
 Commit at time of writing: `8b5bd04`
+
+---
+
+### DONE · F-097 · larch10 · 2026-08-18T14:09:47+00:00
+
+**Environmental VFX is keyed to node types the shipped map never produces, so wind and firelight are dead on Hollowmere**
+
+Environmental VFX now binds to the asset, not the level (D-060). Was: EnvironmentVfx was never registered as an autoload, and it discovered work by walking for MeshInstance3D names while both generators emit MultiMeshInstance3D — so Hollowmere had zero wind and zero firelight across 13,026 instanced copies, green only because its check booted the deprecated Playtest Hollow. Now: asset_vfx_library maps asset id -> sway/emitter class with no scene knowledge; generators stamp 'asset' and 'placements' meta; sway materials go on the mesh resource (one swap per asset); emitters are served by a distance-ranked fixed pool. Hollowmere: 9,972 swaying copies, 269 emitter sites -> 23 effect nodes, all site counts match the layout file. Filed F-103 (headless MultiMesh readback is write-only and collapses sites onto the origin while checks still pass) and F-104 (a new class_name hangs headless runs forever). Not tuned by eye — headless cannot screenshot (F-077).
+
+Notes along the way:
+- Measured on hollowmere: foliage=0 fire=0 against 1740 MultiMeshInstance3D / 13026 copies. Root cause is node-type keying (MeshInstance3D only), not name matching. Fix binds VFX to asset id carried in node meta by both generators.
+- Asset-bound VFX shipped: library + rewritten autoload + MultiMesh-safe shader + generator meta contract. 269 emitter sites -> 23 effect nodes. EnvironmentVfx was also never registered as an autoload; fixed. Filed F-103 (headless MultiMesh readback is write-only) and F-104 (new class_name hangs headless runs).
+
+Files: `autoload/environment_vfx.gd`, `world/environment/foliage_wind.gdshader`, `world/environment/particle_billboard.gdshader`, `world/gen/authored_world.gd`, `world/gen/undergrowth.gd`, `tools/environment_vfx_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `tools/vfx_site_probe.gd`, `tools/multimesh_readback_check.gd`
+
+Commit at time of writing: `af8c193`

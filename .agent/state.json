@@ -45,11 +45,6 @@
       "at": "2026-08-18T13:15:19+00:00",
       "task": "F-099"
     },
-    "autoload/environment_vfx.gd": {
-      "agent": "larch10",
-      "at": "2026-08-18T13:09:00+00:00",
-      "task": "F-097"
-    },
     "autoload/harvest_world.gd": {
       "agent": "kiln9",
       "at": "2026-08-18T13:15:19+00:00",
@@ -125,35 +120,15 @@
       "at": "2026-08-18T13:03:53+00:00",
       "task": "2.1d"
     },
-    "tools/environment_vfx_check.gd": {
-      "agent": "larch10",
-      "at": "2026-08-18T13:09:00+00:00",
-      "task": "F-097"
-    },
-    "tools/environment_vfx_hollowmere_check.gd": {
-      "agent": "larch10",
-      "at": "2026-08-18T13:09:38+00:00",
-      "task": "F-097"
-    },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
-    "tools/multimesh_readback_check.gd": {
-      "agent": "larch10",
-      "at": "2026-08-18T14:07:12+00:00",
-      "task": "F-097"
-    },
     "tools/ship_check.gd": {
       "agent": "ivy8",
       "at": "2026-08-18T13:03:53+00:00",
       "task": "2.1d"
-    },
-    "tools/vfx_site_probe.gd": {
-      "agent": "larch10",
-      "at": "2026-08-18T13:32:45+00:00",
-      "task": "F-097"
     },
     "ui/crafting/crafting_ui.gd": {
       "agent": "kiln9",
@@ -170,30 +145,10 @@
       "at": "2026-08-18T13:15:19+00:00",
       "task": "F-099"
     },
-    "world/environment/foliage_wind.gdshader": {
-      "agent": "larch10",
-      "at": "2026-08-18T13:09:00+00:00",
-      "task": "F-097"
-    },
-    "world/environment/particle_billboard.gdshader": {
-      "agent": "larch10",
-      "at": "2026-08-18T13:09:00+00:00",
-      "task": "F-097"
-    },
-    "world/gen/authored_world.gd": {
-      "agent": "larch10",
-      "at": "2026-08-18T13:09:00+00:00",
-      "task": "F-097"
-    },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
-    },
-    "world/gen/undergrowth.gd": {
-      "agent": "larch10",
-      "at": "2026-08-18T13:09:00+00:00",
-      "task": "F-097"
     }
   },
   "in_flight": {
@@ -226,33 +181,6 @@
       ],
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
-    },
-    "F-097": {
-      "agent": "larch10",
-      "files": [
-        "autoload/environment_vfx.gd",
-        "world/environment/foliage_wind.gdshader",
-        "world/environment/particle_billboard.gdshader",
-        "world/gen/authored_world.gd",
-        "world/gen/undergrowth.gd",
-        "tools/environment_vfx_check.gd",
-        "tools/environment_vfx_hollowmere_check.gd",
-        "tools/vfx_site_probe.gd",
-        "tools/multimesh_readback_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-18T13:11:02+00:00",
-          "by": "larch10",
-          "text": "Measured on hollowmere: foliage=0 fire=0 against 1740 MultiMeshInstance3D / 13026 copies. Root cause is node-type keying (MeshInstance3D only), not name matching. Fix binds VFX to asset id carried in node meta by both generators."
-        },
-        {
-          "at": "2026-08-18T14:08:58+00:00",
-          "by": "larch10",
-          "text": "Asset-bound VFX shipped: library + rewritten autoload + MultiMesh-safe shader + generator meta contract. 269 emitter sites -> 23 effect nodes. EnvironmentVfx was also never registered as an autoload; fixed. Filed F-103 (headless MultiMesh readback is write-only) and F-104 (new class_name hangs headless runs)."
-        }
-      ],
-      "started": "2026-08-18T13:09:00+00:00"
     },
     "F-099": {
       "agent": "kiln9",
@@ -537,6 +465,11 @@
       "agent": "dusk3",
       "at": "2026-08-17T15:58:44+00:00",
       "task": "2.10"
+    },
+    "autoload/environment_vfx.gd": {
+      "agent": "larch10",
+      "at": "2026-08-18T14:09:47+00:00",
+      "task": "F-097"
     },
     "autoload/graphics_quality.gd": {
       "agent": "coil23",
@@ -1173,6 +1106,16 @@
       "at": "2026-08-17T15:58:44+00:00",
       "task": "2.10"
     },
+    "tools/environment_vfx_check.gd": {
+      "agent": "larch10",
+      "at": "2026-08-18T14:09:47+00:00",
+      "task": "F-097"
+    },
+    "tools/environment_vfx_hollowmere_check.gd": {
+      "agent": "larch10",
+      "at": "2026-08-18T14:09:47+00:00",
+      "task": "F-097"
+    },
     "tools/findings_numbering_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T05:30:56+00:00",
@@ -1267,6 +1210,11 @@
       "agent": "ivy8",
       "at": "2026-08-18T04:46:24+00:00",
       "task": "2.1k"
+    },
+    "tools/multimesh_readback_check.gd": {
+      "agent": "larch10",
+      "at": "2026-08-18T14:09:47+00:00",
+      "task": "F-097"
     },
     "tools/net_check_pattern_check.gd": {
       "agent": "lp",
@@ -1408,6 +1356,11 @@
       "at": "2026-08-17T18:48:57+00:00",
       "task": "F-046"
     },
+    "tools/vfx_site_probe.gd": {
+      "agent": "larch10",
+      "at": "2026-08-18T14:09:47+00:00",
+      "task": "F-097"
+    },
     "tools/viewmodel_check.gd": {
       "agent": "flint5",
       "at": "2026-08-18T04:58:38+00:00",
@@ -1448,10 +1401,20 @@
       "at": "2026-08-18T01:18:50+00:00",
       "task": "3.5"
     },
+    "world/environment/foliage_wind.gdshader": {
+      "agent": "larch10",
+      "at": "2026-08-18T14:09:47+00:00",
+      "task": "F-097"
+    },
     "world/environment/low_poly_clouds.gd": {
       "agent": "gale6",
       "at": "2026-08-18T02:48:51+00:00",
       "task": "F-065"
+    },
+    "world/environment/particle_billboard.gdshader": {
+      "agent": "larch10",
+      "at": "2026-08-18T14:09:47+00:00",
+      "task": "F-097"
     },
     "world/environment/playtest_atmosphere.gd": {
       "agent": "coil23",
@@ -1464,9 +1427,9 @@
       "task": "F-065"
     },
     "world/gen/authored_world.gd": {
-      "agent": "coil23",
-      "at": "2026-08-18T13:06:18+00:00",
-      "task": "F-095"
+      "agent": "larch10",
+      "at": "2026-08-18T14:09:47+00:00",
+      "task": "F-097"
     },
     "world/gen/layouts/hollowmere.json": {
       "agent": "ivy8",
@@ -1489,9 +1452,9 @@
       "task": "2.1j"
     },
     "world/gen/undergrowth.gd": {
-      "agent": "coil23",
-      "at": "2026-08-18T13:06:18+00:00",
-      "task": "F-095"
+      "agent": "larch10",
+      "at": "2026-08-18T14:09:47+00:00",
+      "task": "F-097"
     }
   },
   "tasks": {
@@ -3286,9 +3249,11 @@
       "title": "The quota parser only understands the word reset, so Codex's dated try-again message falls through to a blind five-hour default"
     },
     "F-097": {
+      "done_at": "2026-08-18T14:09:47+00:00",
+      "done_by": "larch10",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Environmental VFX is keyed to node types the shipped map never produces, so wind and firelight are dead on Hollowmere"
     },
@@ -3311,21 +3276,21 @@
     "F-100": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Static chunk batching for authored props \u2014 designed, measured-in-principle, blocked on F-097"
     },
     "F-101": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Build-mode \"attack\" (confirm/swing) and `harvest_world.gd`'s own independent listener are unmediated"
     },
     "F-102": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "docs/FINDINGS.md is the one file every lane must write and no lane can hold, so every close-out commit carries other lanes' half-written findings"
     },
@@ -3358,6 +3323,13 @@
       "status": "done",
       "tier": "F",
       "title": "A neighbour's half-finished refactor breaks every other agent's checks, and the failure looks like your own"
+    },
+    "F-107": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "chest_net_check's two host-side grant assertions fail at HEAD; client side is green"
     }
   },
   "version": 1

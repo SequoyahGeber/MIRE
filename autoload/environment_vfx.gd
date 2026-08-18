@@ -1,172 +1,546 @@
 extends Node
 
-## Client-local environmental presentation. Gameplay state never depends on this node.
+## EnvironmentVfx — client-local environmental presentation, bound to **assets**, never to levels.
+##
+## ## AUTHORITY: none
+##
+## `docs/ARCHITECTURE.md` §2.2, "VFX, audio, camera, UI" row. Every peer runs this independently
+## off the same asset ids; nothing here crosses the wire and no gameplay state reads it. Two peers
+## on different graphics presets see a different number of campfire lights and simulate identically.
+##
+## ## What it does
+##
+## Two effects, both keyed by asset id through `AssetVfxLibrary`:
+##
+## 1. **Sway** — foliage materials are swapped for `foliage_wind.gdshader`, tuned per asset. This is
+##    done once per unique mesh resource, so it costs one pass per *asset*, not per instance, and
+##    13,026 instanced plants cost the same as one.
+## 2. **Emitters** — fires, crystals and spore clouds. Sites are collected as bare transforms and
+##    served by a **fixed pool** of effect nodes, nearest-first. A world with four campfires and a
+##    world with four hundred cost the same to draw.
+##
+## ## Why asset-bound (F-097)
+##
+## The first version walked the level for `MeshInstance3D` nodes with "grass" in their name. On
+## Hollowmere that matched **nothing**: both generators emit `MultiMeshInstance3D` batches, so all
+## 1,740 of them and every copy inside them were invisible, and the map shipped with no wind and no
+## firelight at all. It looked green only because its check booted the deprecated Playtest Hollow.
+##
+## Release worlds are procedurally generated, so a level is not something to bind behaviour to. A
+## generator stamps `ASSET_META` on what it emits; this system reads that and nothing else about
+## the scene. A new generator inherits every effect here by stamping the same meta.
+##
+## Discovery falls back to node names when the meta is absent, which is what keeps hand-authored
+## scenes (Playtest Hollow, a test fixture someone builds in the editor) working. The fallback is
+## nearly free because `AssetVfxLibrary` matches asset-name *prefixes*: `grass_tuft_a_17` still
+## resolves to `grass_`.
 
+## The generator contract. `world/gen/authored_world.gd` already stamped this on its harvestable
+## holders before F-097; both generators now stamp it on every emitted node, so there is one
+## convention for "which asset is this" rather than a private one for presentation.
+const ASSET_META: StringName = &"asset"
+## Where every copy of an asset stands, in the coordinate space of the node that carries it. A
+## generator publishes this for any asset whose presentation is per-copy; without it an instanced
+## batch has no per-copy position that can be read anywhere but the GPU.
+const PLACEMENTS_META: StringName = &"placements"
+const VFX_META: StringName = &"mire_environment_vfx_applied"
+## Preloaded rather than referenced by its `class_name`. A brand-new `class_name` only enters
+## `.godot/global_script_class_cache.cfg` when the editor scans the project, and `agent godot` is
+## always a headless `--script` run that never does (the same family of trap as F-093). Referencing
+## it by name parses fine in the editor and fails everywhere an agent can actually verify, so the
+## path is spelled out here instead.
+const AssetVfx := preload("res://world/environment/asset_vfx_library.gd")
 const FOLIAGE_SHADER := preload("res://world/environment/foliage_wind.gdshader")
 const PARTICLE_SHADER := preload("res://world/environment/particle_billboard.gdshader")
-const VFX_META: StringName = &"mire_environment_vfx_applied"
-const FOLIAGE_WORDS: Array[String] = ["grass", "fern", "reed", "sedge"]
-const FIRE_WORDS: Array[String] = ["flame_outer", "furnace_fire"]
 
+## How often the nearest-first emitter assignment is recomputed. Sites number in the hundreds and
+## the player walks at 4.4 m/s, so four times a second is far below anything visible.
+const BUDGET_INTERVAL: float = 0.25
+## Sites closer together than this are treated as one — a defence against an asset that emits more
+## than one MultiMesh part, which would otherwise register the same campfire twice.
+const SITE_MERGE_DISTANCE: float = 0.35
+## Emitter counts are scaled by the graphics preset. Low-end machines pay for lights first.
+const BUDGET_BY_PRESET: PackedFloat32Array = [0.4, 0.7, 1.0]
+
+## Kept from the first version because the existing checks read them.
 var foliage_mesh_count: int = 0
 var fire_source_count: int = 0
-var _foliage_materials: Dictionary = {}
-var _fire_lights: Array[OmniLight3D] = []
+## Asset-level counters — the honest measure now that one material serves thousands of copies.
+var sway_asset_count: int = 0
+var emitter_site_count: int = 0
+
+var _sway_materials: Dictionary = {}
+var _dressed_meshes: Dictionary = {}
+var _sites: Dictionary = {}
+var _pools: Dictionary = {}
+var _effect_root: Node3D = null
 var _time: float = 0.0
+var _budget_timer: float = 0.0
+var _scene_id: int = 0
 
 
 func _ready() -> void:
-	# Imported GLBs can enter the tree after autoloads, so cover both the current scene and later nodes.
+	# Imported GLBs and generated worlds both enter the tree after autoloads, so cover the current
+	# scene and everything added later.
 	get_tree().node_added.connect(_on_node_added)
 	call_deferred("refresh_scene")
 
 
 func _process(delta: float) -> void:
 	_time += delta
-	for index: int in _fire_lights.size():
-		var light := _fire_lights[index]
-		if not is_instance_valid(light):
-			continue
-		var flutter := sin(_time * 10.7 + float(index) * 1.91) * 0.13
-		var pulse := sin(_time * 4.1 + float(index) * 0.73) * 0.1
-		light.light_energy = 2.25 + flutter + pulse
+	var scene: Node = get_tree().current_scene
+	var scene_id: int = 0 if scene == null else scene.get_instance_id()
+	if scene_id != _scene_id:
+		# A new level — the old sites belong to a freed tree and nothing may outlive it.
+		_reset()
+		refresh_scene()
+		return
+
+	_budget_timer += delta
+	if _budget_timer >= BUDGET_INTERVAL:
+		_budget_timer = 0.0
+		_assign_slots()
+	_animate_lights()
 
 
+## Walk the whole current scene. Safe to call again; every mesh and site is idempotent.
 func refresh_scene() -> void:
 	var scene := get_tree().current_scene
-	if scene != null:
-		_apply_recursive(scene)
+	if scene == null:
+		return
+	_scene_id = scene.get_instance_id()
+	_apply_recursive(scene)
+	_assign_slots()
+
+
+func _reset() -> void:
+	if is_instance_valid(_effect_root):
+		_effect_root.queue_free()
+	_effect_root = null
+	_sites.clear()
+	_pools.clear()
+	_dressed_meshes.clear()
+	fire_source_count = 0
+	emitter_site_count = 0
+	foliage_mesh_count = 0
+	sway_asset_count = 0
+	_scene_id = 0
 
 
 func _on_node_added(node: Node) -> void:
-	if node is MeshInstance3D:
-		call_deferred("_apply_mesh", node as MeshInstance3D)
+	if node is GeometryInstance3D:
+		call_deferred("_apply_node", node)
 
 
 func _apply_recursive(node: Node) -> void:
-	if node is MeshInstance3D:
-		_apply_mesh(node as MeshInstance3D)
+	if node is GeometryInstance3D:
+		_apply_node(node as GeometryInstance3D)
 	for child: Node in node.get_children():
 		_apply_recursive(child)
 
 
-func _apply_mesh(mesh_instance: MeshInstance3D) -> void:
-	if not is_instance_valid(mesh_instance) or mesh_instance.has_meta(VFX_META):
+func _apply_node(node: GeometryInstance3D) -> void:
+	if not is_instance_valid(node) or node.has_meta(VFX_META):
 		return
-	mesh_instance.set_meta(VFX_META, true)
-	var identity := _node_identity(mesh_instance)
-	if _contains_any(identity, FOLIAGE_WORDS):
-		_apply_foliage(mesh_instance)
-	if _is_fire_source(mesh_instance, identity):
-		_apply_fire(mesh_instance)
+	if node is GPUParticles3D:
+		return
+	var asset_id := _asset_id_for(node)
+	if asset_id.is_empty():
+		return
+	node.set_meta(VFX_META, true)
+
+	var sway := AssetVfx.sway_for(asset_id)
+	if sway != AssetVfx.Sway.NONE:
+		_apply_sway(node, sway)
+
+	var emitter := AssetVfx.emitter_for(asset_id)
+	if emitter != AssetVfx.Emitter.NONE:
+		_register_emitter(node, emitter)
 
 
-func _apply_foliage(mesh_instance: MeshInstance3D) -> void:
-	if mesh_instance.mesh == null:
+## Meta first — that is the generator contract. Node names are the fallback that keeps
+## hand-authored scenes alive; the search walks a few ancestors because a GLB's mesh nodes are
+## usually named for their material while the holder above them carries the asset name.
+func _asset_id_for(node: Node) -> String:
+	var cursor: Node = node
+	for _depth: int in 4:
+		if cursor == null:
+			break
+		if cursor.has_meta(ASSET_META):
+			return String(cursor.get_meta(ASSET_META))
+		cursor = cursor.get_parent()
+	cursor = node
+	for _depth: int in 4:
+		if cursor == null:
+			break
+		var name := String(cursor.name).to_lower()
+		if AssetVfx.is_animated(name):
+			return name
+		cursor = cursor.get_parent()
+	return ""
+
+
+# ---------------------------------------------------------------------------------------------
+# Sway
+# ---------------------------------------------------------------------------------------------
+
+## The mesh, not the node, is what gets dressed. Every copy of an asset shares one mesh resource,
+## so one pass here reaches every instance of that asset in the world at once — which is the whole
+## reason this is affordable on a map holding 13,026 instanced plants.
+func _apply_sway(node: GeometryInstance3D, sway: AssetVfx.Sway) -> void:
+	var mesh: Mesh = null
+	if node is MultiMeshInstance3D:
+		var multimesh := (node as MultiMeshInstance3D).multimesh
+		if multimesh != null:
+			mesh = multimesh.mesh
+	elif node is MeshInstance3D:
+		mesh = (node as MeshInstance3D).mesh
+	if mesh == null or mesh.get_surface_count() == 0:
 		return
-	var bounds := mesh_instance.get_aabb()
+
+	var mesh_key := mesh.get_instance_id()
+	if _dressed_meshes.has(mesh_key):
+		foliage_mesh_count += 1
+		return
+	# Mesh resources outlive the level that used them — ResourceLoader hands the same ArrayMesh
+	# back after a scene reload, and the authored-prop mesh cache is shared across chunks. Dressing
+	# one twice would read the wind material as if it were the asset's original and collapse the
+	# asset to the default green, so the shader itself is the durable "already done" mark.
+	var existing := mesh.surface_get_material(0)
+	if existing is ShaderMaterial and (existing as ShaderMaterial).shader == FOLIAGE_SHADER:
+		_dressed_meshes[mesh_key] = true
+		foliage_mesh_count += 1
+		return
+	_dressed_meshes[mesh_key] = true
+
+	var bounds := mesh.get_aabb()
 	if bounds.size.y <= 0.001:
 		return
-	for surface_index: int in mesh_instance.mesh.get_surface_count():
-		var original := mesh_instance.get_active_material(surface_index)
-		var shader_material := _foliage_material_for(original)
-		mesh_instance.set_surface_override_material(surface_index, shader_material)
-	mesh_instance.set_instance_shader_parameter(&"wind_root_y", bounds.position.y)
-	mesh_instance.set_instance_shader_parameter(&"wind_inv_height", 1.0 / bounds.size.y)
-	mesh_instance.set_instance_shader_parameter(
-		&"wind_phase", fposmod(mesh_instance.global_position.x * 0.37 + mesh_instance.global_position.z * 0.61, TAU)
-	)
+	var profile := AssetVfx.sway_profile(sway)
+	for surface_index: int in mesh.get_surface_count():
+		var original := mesh.surface_get_material(surface_index)
+		mesh.surface_set_material(
+			surface_index, _sway_material(original, profile, bounds))
 	foliage_mesh_count += 1
+	sway_asset_count += 1
 
 
-func _foliage_material_for(original: Material) -> ShaderMaterial:
+## Materials are cached across assets that agree on colour, roughness and sway numbers, so the
+## eighty-odd flora assets collapse to a handful of shaders rather than one each.
+func _sway_material(original: Material, profile: Dictionary, bounds: AABB) -> ShaderMaterial:
 	var color := Color(0.24, 0.42, 0.16)
 	var material_roughness: float = 0.9
+	var vertex_color: bool = false
 	if original is StandardMaterial3D:
 		var standard := original as StandardMaterial3D
 		color = standard.albedo_color
 		material_roughness = standard.roughness
-	var key := "%s:%.3f" % [color.to_html(), material_roughness]
-	if _foliage_materials.has(key):
-		return _foliage_materials[key] as ShaderMaterial
+		vertex_color = standard.vertex_color_use_as_albedo
+
+	var key := "%s:%.2f:%d:%.3f:%.3f:%.3f:%.2f:%.2f:%.3f" % [
+		color.to_html(), material_roughness, int(vertex_color),
+		float(profile.get("strength", 0.1)), float(profile.get("speed", 1.3)),
+		float(profile.get("bob", 0.0)), float(profile.get("mask_power", 1.0)),
+		float(profile.get("vertex_phase", 1.0)), bounds.size.y]
+	if _sway_materials.has(key):
+		return _sway_materials[key] as ShaderMaterial
+
 	var material := ShaderMaterial.new()
 	material.shader = FOLIAGE_SHADER
 	material.set_shader_parameter(&"albedo_color", color)
 	material.set_shader_parameter(&"roughness", material_roughness)
-	_foliage_materials[key] = material
+	material.set_shader_parameter(&"use_vertex_color", vertex_color)
+	material.set_shader_parameter(&"sway_strength", float(profile.get("strength", 0.1)))
+	material.set_shader_parameter(&"sway_speed", float(profile.get("speed", 1.3)))
+	material.set_shader_parameter(&"bob_strength", float(profile.get("bob", 0.0)))
+	material.set_shader_parameter(&"mask_power", float(profile.get("mask_power", 1.0)))
+	material.set_shader_parameter(&"vertex_phase", float(profile.get("vertex_phase", 1.0)))
+	material.set_shader_parameter(&"wind_root_y", bounds.position.y)
+	material.set_shader_parameter(&"wind_inv_height", 1.0 / bounds.size.y)
+	_sway_materials[key] = material
 	return material
 
 
-func _is_fire_source(mesh_instance: MeshInstance3D, identity: String) -> bool:
-	if _contains_any(identity, FIRE_WORDS):
-		return true
-	if mesh_instance.mesh == null:
-		return false
-	for surface_index: int in mesh_instance.mesh.get_surface_count():
-		var material := mesh_instance.get_active_material(surface_index)
-		if material != null and "station_fire_orange" in material.resource_name.to_lower():
-			return "outer" in identity or "furnace" in identity
-	return false
+# ---------------------------------------------------------------------------------------------
+# Emitters
+# ---------------------------------------------------------------------------------------------
 
-
-func _apply_fire(source: MeshInstance3D) -> void:
-	var parent := source.get_parent() as Node3D
-	if parent == null:
+## Record where an asset's emitters stand. Transforms only — no nodes are built here, because a
+## generated world may hold any number of these and the pool below is what bounds the cost.
+func _register_emitter(node: GeometryInstance3D, emitter: AssetVfx.Emitter) -> void:
+	var placements: Array[Vector3] = []
+	var published := _published_placements(node)
+	if not published.is_empty():
+		var base := node.global_transform
+		for origin: Vector3 in published:
+			placements.append(base * origin)
+	elif node is MultiMeshInstance3D:
+		# A batch with no published placements is a generator that has not honoured the contract.
+		# Reading the transforms back out of the MultiMesh is NOT an option: instance transforms
+		# live in the RenderingServer, and under `--headless` — which is every way an agent can
+		# verify anything (F-077) — the buffer is empty and every read returns identity. Silently
+		# collapsing a hundred crystals onto the world origin is exactly what that looked like.
+		push_warning("EnvironmentVfx: %s has an emitter but no `placements` meta; skipping"
+			% node.name)
 		return
-	var effect := Node3D.new()
-	effect.name = "ClientFireVfx"
-	effect.transform = source.transform
-	effect.set_meta(VFX_META, true)
-	parent.add_child(effect)
-	source.visible = false
+	else:
+		placements.append(node.global_position)
+		if emitter != AssetVfx.Emitter.GLOW:
+			# A named placeholder flame in a hand-authored scene is replaced, not decorated.
+			node.visible = false
 
-	var flames := _make_particles(30, 0.72, Vector2(0.18, 0.38), Color(1.0, 0.72, 0.08, 0.88), Color(1.0, 0.08, 0.01, 0.0), 0)
-	var flame_process := flames.process_material as ParticleProcessMaterial
-	flame_process.direction = Vector3.UP
-	flame_process.spread = 18.0
-	flame_process.initial_velocity_min = 0.55
-	flame_process.initial_velocity_max = 1.15
-	flame_process.gravity = Vector3(0.0, 0.45, 0.0)
-	flame_process.scale_min = 0.45
-	flame_process.scale_max = 1.15
-	effect.add_child(flames)
+	if emitter == AssetVfx.Emitter.GLOW:
+		return
 
-	var sparks := _make_particles(13, 1.15, Vector2(0.025, 0.025), Color(1.0, 0.78, 0.16, 1.0), Color(1.0, 0.12, 0.01, 0.0), 1)
-	var spark_process := sparks.process_material as ParticleProcessMaterial
-	spark_process.direction = Vector3.UP
-	spark_process.spread = 28.0
-	spark_process.initial_velocity_min = 0.85
-	spark_process.initial_velocity_max = 1.8
-	spark_process.gravity = Vector3(0.0, -0.35, 0.0)
-	spark_process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	spark_process.emission_sphere_radius = 0.16
-	effect.add_child(sparks)
+	var sites: Array = _sites.get_or_add(emitter, [] as Array) as Array
+	for position: Vector3 in placements:
+		var duplicate: bool = false
+		for existing: Vector3 in sites:
+			if existing.distance_squared_to(position) < SITE_MERGE_DISTANCE * SITE_MERGE_DISTANCE:
+				duplicate = true
+				break
+		if duplicate:
+			continue
+		sites.append(position)
+		emitter_site_count += 1
+		if emitter == AssetVfx.Emitter.CAMPFIRE \
+				or emitter == AssetVfx.Emitter.FORGE \
+				or emitter == AssetVfx.Emitter.EMBER:
+			fire_source_count += 1
+	_sites[emitter] = sites
 
-	var smoke := _make_particles(9, 2.4, Vector2(0.26, 0.26), Color(0.19, 0.17, 0.2, 0.2), Color(0.08, 0.07, 0.1, 0.0), 2)
-	var smoke_process := smoke.process_material as ParticleProcessMaterial
-	smoke_process.direction = Vector3.UP
-	smoke_process.spread = 14.0
-	smoke_process.initial_velocity_min = 0.35
-	smoke_process.initial_velocity_max = 0.62
-	smoke_process.gravity = Vector3(0.08, 0.04, 0.03)
-	smoke_process.scale_min = 0.55
-	smoke_process.scale_max = 1.4
-	smoke.position.y = 0.28
-	effect.add_child(smoke)
 
+## Where each copy of this asset stands, as published by the generator. World generation owns
+## these positions; the renderer is not a place to read them back from.
+func _published_placements(node: Node) -> PackedVector3Array:
+	var cursor: Node = node
+	for _depth: int in 4:
+		if cursor == null:
+			break
+		if cursor.has_meta(PLACEMENTS_META):
+			return cursor.get_meta(PLACEMENTS_META) as PackedVector3Array
+		cursor = cursor.get_parent()
+	return PackedVector3Array()
+
+
+func _budget_scale() -> float:
+	var quality: Node = get_node_or_null(^"/root/GraphicsQuality")
+	if quality == null:
+		return 1.0
+	var preset: int = int(quality.get("preset"))
+	if preset < 0 or preset >= BUDGET_BY_PRESET.size():
+		return 1.0
+	return BUDGET_BY_PRESET[preset]
+
+
+## Point the fixed pool at the nearest sites. This is the whole scalability story: the pool is
+## sized from the budget, never from the world, so a hundred mire crystals cost what eight do.
+func _assign_slots() -> void:
+	if _sites.is_empty():
+		return
+	var scene: Node = get_tree().current_scene
+	if scene == null:
+		return
+	if not is_instance_valid(_effect_root):
+		_effect_root = Node3D.new()
+		_effect_root.name = "EnvironmentVfxEffects"
+		scene.add_child(_effect_root)
+
+	var scale := _budget_scale()
+	var viewpoint := _viewpoint()
+	for emitter: AssetVfx.Emitter in _sites:
+		var sites: Array = _sites[emitter] as Array
+		var profile := AssetVfx.emitter_profile(emitter)
+		var live: int = mini(
+			maxi(1, int(round(float(profile.get("max_live", 4)) * scale))), sites.size())
+		var shadows: int = int(round(float(profile.get("shadow_live", 0)) * scale))
+
+		var ranked := sites.duplicate() as Array
+		ranked.sort_custom(func(a: Vector3, b: Vector3) -> bool:
+			return a.distance_squared_to(viewpoint) < b.distance_squared_to(viewpoint))
+
+		var pool: Array = _pools.get_or_add(emitter, [] as Array) as Array
+		while pool.size() < live:
+			pool.append(_make_effect(emitter))
+		for index: int in pool.size():
+			var slot: Dictionary = pool[index]
+			var node := slot["node"] as Node3D
+			if not is_instance_valid(node):
+				continue
+			if index >= live:
+				node.visible = false
+				continue
+			var target: Vector3 = ranked[index]
+			node.visible = true
+			if node.global_position.distance_squared_to(target) > 0.01:
+				node.global_position = target
+				_restart(node)
+			var light := slot["light"] as OmniLight3D
+			if light != null and is_instance_valid(light):
+				light.shadow_enabled = index < shadows
+		_pools[emitter] = pool
+
+
+## Where "nearest" is measured from. The camera in a running game; the origin when there is no
+## camera at all, which is every headless check — so the check still exercises a deterministic
+## set of live emitters rather than none.
+func _viewpoint() -> Vector3:
+	var viewport := get_viewport()
+	if viewport != null:
+		var camera := viewport.get_camera_3d()
+		if camera != null:
+			return camera.global_position
+	return Vector3.ZERO
+
+
+func _restart(node: Node3D) -> void:
+	for child: Node in node.get_children():
+		if child is GPUParticles3D:
+			(child as GPUParticles3D).restart()
+
+
+func _animate_lights() -> void:
+	for emitter: AssetVfx.Emitter in _pools:
+		var flickers: bool = emitter == AssetVfx.Emitter.CAMPFIRE \
+			or emitter == AssetVfx.Emitter.FORGE \
+			or emitter == AssetVfx.Emitter.EMBER
+		var pool: Array = _pools[emitter] as Array
+		for index: int in pool.size():
+			var slot: Dictionary = pool[index]
+			var light := slot["light"] as OmniLight3D
+			if light == null or not is_instance_valid(light) or not light.visible:
+				continue
+			var base := float(slot["energy"])
+			if flickers:
+				# Two detuned sines: a fast flutter for the flame and a slow pulse for the bed of
+				# coals under it. Detuned per slot so neighbouring fires never beat in unison.
+				var flutter := sin(_time * 10.7 + float(index) * 1.91) * 0.13
+				var pulse := sin(_time * 4.1 + float(index) * 0.73) * 0.1
+				light.light_energy = base + flutter + pulse
+			else:
+				light.light_energy = base + sin(_time * 1.3 + float(index) * 2.2) * 0.18
+
+
+# ---------------------------------------------------------------------------------------------
+# Effect construction
+# ---------------------------------------------------------------------------------------------
+
+## Build one pooled effect for an emitter class. Called at most `max_live` times per class for the
+## whole run, however large the world is — the pool is reassigned to new sites as the player moves
+## rather than grown.
+func _make_effect(emitter: AssetVfx.Emitter) -> Dictionary:
+	var profile := AssetVfx.emitter_profile(emitter)
+	var node := Node3D.new()
+	node.name = "Vfx%d" % int(emitter)
+	node.set_meta(VFX_META, true)
+	_effect_root.add_child(node)
+
+	var light: OmniLight3D = null
+	var energy: float = 0.0
+	match emitter:
+		AssetVfx.Emitter.CAMPFIRE:
+			node.add_child(_flame(30, 0.72, Vector2(0.18, 0.38), 0.55, 1.15, 1.15))
+			node.add_child(_sparks(13, 1.15, 0.16))
+			node.add_child(_smoke(9, 2.4, Vector2(0.26, 0.26), 0.28))
+			energy = 2.25
+			light = _light(Color(1.0, 0.42, 0.12), energy, float(profile.get("radius", 5.5)), 0.42)
+		AssetVfx.Emitter.FORGE:
+			# Contained in stone: a shorter, tighter flame and a heavier smoke column.
+			node.add_child(_flame(18, 0.6, Vector2(0.15, 0.3), 0.35, 0.75, 0.85))
+			node.add_child(_smoke(12, 2.8, Vector2(0.3, 0.3), 0.55))
+			energy = 1.9
+			light = _light(Color(1.0, 0.48, 0.16), energy, float(profile.get("radius", 4.5)), 0.5)
+		AssetVfx.Emitter.EMBER:
+			node.add_child(_flame(12, 0.55, Vector2(0.13, 0.24), 0.3, 0.6, 0.7))
+			node.add_child(_sparks(6, 0.9, 0.1))
+			energy = 1.4
+			light = _light(Color(1.0, 0.52, 0.2), energy, float(profile.get("radius", 3.4)), 0.3)
+		AssetVfx.Emitter.CRYSTAL:
+			node.add_child(_motes(10, 3.0, Color(0.55, 0.85, 1.0, 0.75), 0.34, 0.16))
+			energy = 1.2
+			light = _light(Color(0.42, 0.72, 1.0), energy, float(profile.get("radius", 4.0)), 0.6)
+		AssetVfx.Emitter.SPORE:
+			# Mire growth: no light at all, just something adrift that should not be there.
+			node.add_child(_motes(8, 4.0, Color(0.62, 0.78, 0.45, 0.5), 0.16, 0.5))
+	if light != null:
+		node.add_child(light)
+	return {"node": node, "light": light, "energy": energy}
+
+
+func _flame(amount: int, lifetime: float, size: Vector2, speed_min: float, speed_max: float,
+		scale_max: float) -> GPUParticles3D:
+	var particles := _make_particles(amount, lifetime, size,
+		Color(1.0, 0.72, 0.08, 0.88), Color(1.0, 0.08, 0.01, 0.0), 0)
+	var process := particles.process_material as ParticleProcessMaterial
+	process.direction = Vector3.UP
+	process.spread = 18.0
+	process.initial_velocity_min = speed_min
+	process.initial_velocity_max = speed_max
+	process.gravity = Vector3(0.0, 0.45, 0.0)
+	process.scale_min = 0.45
+	process.scale_max = scale_max
+	return particles
+
+
+func _sparks(amount: int, lifetime: float, radius: float) -> GPUParticles3D:
+	var particles := _make_particles(amount, lifetime, Vector2(0.025, 0.025),
+		Color(1.0, 0.78, 0.16, 1.0), Color(1.0, 0.12, 0.01, 0.0), 1)
+	var process := particles.process_material as ParticleProcessMaterial
+	process.direction = Vector3.UP
+	process.spread = 28.0
+	process.initial_velocity_min = 0.85
+	process.initial_velocity_max = 1.8
+	# Negative gravity is what makes a spark arc over and die rather than rise forever.
+	process.gravity = Vector3(0.0, -0.35, 0.0)
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	process.emission_sphere_radius = radius
+	return particles
+
+
+func _smoke(amount: int, lifetime: float, size: Vector2, height: float) -> GPUParticles3D:
+	var particles := _make_particles(amount, lifetime, size,
+		Color(0.19, 0.17, 0.2, 0.2), Color(0.08, 0.07, 0.1, 0.0), 2)
+	var process := particles.process_material as ParticleProcessMaterial
+	process.direction = Vector3.UP
+	process.spread = 14.0
+	process.initial_velocity_min = 0.35
+	process.initial_velocity_max = 0.62
+	# A slight lateral drift so the column leans instead of standing like a pillar.
+	process.gravity = Vector3(0.08, 0.04, 0.03)
+	process.scale_min = 0.55
+	process.scale_max = 1.4
+	particles.position.y = height
+	return particles
+
+
+func _motes(amount: int, lifetime: float, tint: Color, rise: float, radius: float) -> GPUParticles3D:
+	var faded := Color(tint.r, tint.g, tint.b, 0.0)
+	var particles := _make_particles(amount, lifetime, Vector2(0.045, 0.045), tint, faded, 1)
+	var process := particles.process_material as ParticleProcessMaterial
+	process.direction = Vector3.UP
+	process.spread = 42.0
+	process.initial_velocity_min = rise * 0.5
+	process.initial_velocity_max = rise
+	process.gravity = Vector3(0.02, rise * 0.2, 0.01)
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	process.emission_sphere_radius = maxf(radius, 0.05)
+	return particles
+
+
+func _light(tint: Color, energy: float, radius: float, height: float) -> OmniLight3D:
 	var light := OmniLight3D.new()
-	light.name = "FireLight"
-	light.light_color = Color(1.0, 0.42, 0.12)
-	light.light_energy = 2.25
-	light.omni_range = 5.5
-	light.shadow_enabled = true
-	light.position.y = 0.42
-	effect.add_child(light)
-	_fire_lights.append(light)
-	fire_source_count += 1
+	light.name = "VfxLight"
+	light.light_color = tint
+	light.light_energy = energy
+	light.omni_range = radius
+	# Shadows are switched on per slot by _assign_slots, for the nearest few only.
+	light.shadow_enabled = false
+	light.position.y = height
+	return light
 
 
-func _make_particles(amount: int, lifetime: float, size: Vector2, start_color: Color, end_color: Color, particle_shape: int) -> GPUParticles3D:
+func _make_particles(amount: int, lifetime: float, size: Vector2, start_color: Color,
+		end_color: Color, particle_shape: int) -> GPUParticles3D:
 	var particles := GPUParticles3D.new()
 	particles.amount = amount
 	particles.lifetime = lifetime
@@ -191,19 +565,33 @@ func _make_particles(amount: int, lifetime: float, size: Vector2, start_color: C
 	return particles
 
 
-func _node_identity(node: Node) -> String:
-	var parts: Array[String] = []
-	var cursor: Node = node
-	for _depth: int in 6:
-		if cursor == null:
-			break
-		parts.append(String(cursor.name).to_lower())
-		cursor = cursor.get_parent()
-	return "/".join(parts)
+# ---------------------------------------------------------------------------------------------
+# Introspection
+# ---------------------------------------------------------------------------------------------
+
+## How many emitter sites the world holds, per class. This is a property of the world.
+func site_counts() -> Dictionary:
+	var counts: Dictionary = {}
+	for emitter: AssetVfx.Emitter in _sites:
+		counts[emitter] = (_sites[emitter] as Array).size()
+	return counts
 
 
-func _contains_any(value: String, words: Array[String]) -> bool:
-	for word: String in words:
-		if word in value:
-			return true
-	return false
+## How many effect nodes actually exist, per class. This is a property of the BUDGET, and the two
+## numbers diverging is the whole point — 99 crystal sites must not mean 99 crystal effects.
+func pool_counts() -> Dictionary:
+	var counts: Dictionary = {}
+	for emitter: AssetVfx.Emitter in _pools:
+		counts[emitter] = (_pools[emitter] as Array).size()
+	return counts
+
+
+## How many effect nodes are switched on right now.
+func live_count() -> int:
+	var live: int = 0
+	for emitter: AssetVfx.Emitter in _pools:
+		for slot: Dictionary in _pools[emitter] as Array:
+			var node := slot["node"] as Node3D
+			if is_instance_valid(node) and node.visible:
+				live += 1
+	return live

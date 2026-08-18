@@ -35,6 +35,9 @@ extends Node3D
 ## coordinate of the Hollow.
 
 const FLORA_DIR: String = "res://assets/flora/exports"
+## Preloaded, not referenced by `class_name` — a new global class is invisible to a headless
+## `--script` run until the editor rescans the project.
+const AssetVfx := preload("res://world/environment/asset_vfx_library.gd")
 ## How far above and below the layout's own ground each probe ray runs. These used
 ## to be absolute world heights (24 m down to -12 m), which silently decided that
 ## nothing above 24 m gets undergrowth: the whole plateau, every ridge and the
@@ -525,6 +528,17 @@ func _emit(asset: String, cells: Dictionary) -> void:
 
 	var holder := Node3D.new()
 	holder.name = asset
+	# Presentation binds to the asset, never to the level (F-097). Stamping the id here is the
+	# whole reason wind reaches a scatter field that has no per-plant node to hang anything on.
+	holder.set_meta(&"asset", asset)
+	# Same per-copy placement contract as authored_world: nothing in the flora kit carries an
+	# emitter today, but a glowing mushroom scattered later must not silently land on the origin.
+	if AssetVfx.emitter_for(asset) != AssetVfx.Emitter.NONE:
+		var origins := PackedVector3Array()
+		for cell: Vector2i in cells:
+			for transform: Transform3D in cells[cell] as Array:
+				origins.append(transform.origin)
+		holder.set_meta(&"placements", origins)
 	add_child(holder)
 	for cell: Vector2i in cells:
 		var transforms: Array = cells[cell] as Array
@@ -546,6 +560,7 @@ func _emit(asset: String, cells: Dictionary) -> void:
 			var instance := MultiMeshInstance3D.new()
 			instance.name = "%s_%d_%d" % [parts[part_index].name, cell.x, cell.y]
 			instance.multimesh = multimesh
+			instance.set_meta(&"asset", asset)
 			instance.position = centre
 			instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if short_plant \
 				else GeometryInstance3D.SHADOW_CASTING_SETTING_ON

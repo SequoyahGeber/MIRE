@@ -142,6 +142,9 @@ func height_at(x: float, z: float) -> float:
 ## cost real main-thread time. Re-attempt only for worlds with genuinely blocking sightlines
 ## (interiors, canyon systems), and re-measure with tools/perf_probe.gd when you do.
 const MESH_CACHE_DIR: String = "user://mesh_cache"
+## Preloaded, not referenced by `class_name`: a new global class is invisible to a headless
+## `--script` run until the editor rescans the project.
+const AssetVfx := preload("res://world/environment/asset_vfx_library.gd")
 
 
 ## Terrain is emitted as one surface per ground material, so the valley floor
@@ -438,6 +441,21 @@ func _build_props() -> void:
 			prop_count += 1
 		var holder := Node3D.new()
 		holder.name = key.replace("|", "_")
+		# The asset id travels with the geometry so presentation can bind to it without knowing
+		# anything about this map (F-097). Same `asset` meta the harvestable holders already
+		# carry, so there is one contract rather than two: EnvironmentVfx reads exactly this and
+		# nothing else about the scene, and the world generator that replaces this file inherits
+		# every effect by stamping it too.
+		holder.set_meta(&"asset", asset)
+		# Where each copy stands. Only assets whose presentation is per-copy get this, so the
+		# other 2,800-odd props cost nothing. It exists because instance transforms inside a
+		# MultiMesh are unreadable outside the GPU — see EnvironmentVfx.PLACEMENTS_META. The
+		# holder sits at the origin, so these are already world positions.
+		if AssetVfx.emitter_for(asset) != AssetVfx.Emitter.NONE:
+			var origins := PackedVector3Array()
+			for placement: Transform3D in transforms:
+				origins.append(placement.origin)
+			holder.set_meta(&"placements", origins)
 		visuals.add_child(holder)
 		for entry_value: Variant in meshes:
 			var entry := entry_value as Dictionary
@@ -450,6 +468,7 @@ func _build_props() -> void:
 			var instance := MultiMeshInstance3D.new()
 			instance.name = String(entry["name"])
 			instance.multimesh = multimesh
+			instance.set_meta(&"asset", asset)
 			holder.add_child(instance)
 			multimesh_count += 1
 
