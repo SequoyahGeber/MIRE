@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="HarvestableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/harvesting/harvestable_def.gd" id="1_fldef"]
+
+[resource]
+script = ExtResource("1_fldef")
+id = &"fallen_log"
+max_health = 6
+required_tool = 1
+yield_item_id = &"log"
+yield_amount = 3
+respawn_seconds = 240.0

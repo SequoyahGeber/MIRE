@@ -145,6 +145,8 @@ const MESH_CACHE_DIR: String = "user://mesh_cache"
 ## Preloaded, not referenced by `class_name`: a new global class is invisible to a headless
 ## `--script` run until the editor rescans the project.
 const AssetVfx := preload("res://world/environment/asset_vfx_library.gd")
+## What is worth hitting, keyed by asset rather than by this map's layout flags (F-114).
+const HarvestLib := preload("res://systems/harvesting/harvest_library.gd")
 ## Same preload rule, for `TERRAIN_LAYER`: the ground body below carries it so
 ## `PlacementValidator`'s overlap query never mistakes the ground a piece is resting on for an
 ## obstruction (F-075). Every other collider this file emits — props, harvestable colliders — is
@@ -403,9 +405,17 @@ func _build_props() -> void:
 	var harvestable: Array[Dictionary] = []
 	for prop_value: Variant in _layout.get("props", []):
 		var prop := prop_value as Dictionary
-		if bool(prop.get("harvestable", false)):
-			harvestable.append(prop)
-			continue
+		# Harvestability is a property of the ASSET, not of this placement (F-114). The layout's own
+		# `harvestable` flag is still honoured so an older layout keeps working, but nothing new
+		# needs it — a generated world gets a choppable pine by stamping `tree_pine_c`, exactly the
+		# way it gets the pine's canopy sway.
+		var asset_id := StringName(String(prop.get("asset", "")))
+		if bool(prop.get("harvestable", false)) or HarvestLib.is_harvestable(asset_id):
+			# BATCH props stay in the MultiMesh below and pick up a logic-only holder once their
+			# instance index is known; only NODE props are promoted to a mesh of their own.
+			if HarvestLib.representation_for(asset_id) == HarvestLib.Represent.NODE:
+				harvestable.append(prop)
+				continue
 		var chunk: Array = prop.get("chunk", [0, 0]) as Array
 		var key := "%d_%d|%s|%s" % [int(chunk[0]), int(chunk[1]),
 			String(prop.get("kit", "")), String(prop.get("asset", ""))]
@@ -419,7 +429,10 @@ func _build_props() -> void:
 	add_child(bodies)
 
 	var cache: Dictionary = {}
-	_build_harvestables(harvestable, cache)
+	var harvest_root := Node3D.new()
+	harvest_root.name = "Harvestables"
+	add_child(harvest_root)
+	_build_harvestables(harvestable, cache, harvest_root)
 	for key: String in grouped:
 		var props: Array = grouped[key] as Array
 		var parts := key.split("|")
@@ -477,6 +490,7 @@ func _build_props() -> void:
 			instance.set_meta(&"asset", asset)
 			holder.add_child(instance)
 			multimesh_count += 1
+		_build_batch_harvestables(props, asset, holder, harvest_root, transforms, meshes)
 
 
 ## Collapse an asset to ONE mesh with one surface per material.
@@ -573,12 +587,9 @@ func _mesh_parts(kit: String, asset: String) -> Array:
 ## Harvestable, and it is why a hollowmere tree can now actually be chopped down —
 ## before this the map's trees and ore were inert scenery, because HarvestWorld
 ## only ever looked for `playtest_hollow_asset` holders that this map never built.
-func _build_harvestables(props: Array[Dictionary], cache: Dictionary) -> void:
+func _build_harvestables(props: Array[Dictionary], cache: Dictionary, root: Node3D) -> void:
 	if props.is_empty():
 		return
-	var root := Node3D.new()
-	root.name = "Harvestables"
-	add_child(root)
 	for index in props.size():
 		var prop: Dictionary = props[index]
 		var kit := String(prop.get("kit", ""))
@@ -619,6 +630,66 @@ func _build_harvestables(props: Array[Dictionary], cache: Dictionary) -> void:
 		holder.add_child(body)
 		_add_shapes(body, prop.get("cols", []) as Array)
 		prop_count += 1
+		harvestable_holders += 1
+
+
+## A logic-only holder for each harvestable that STAYS in the chunk's MultiMesh batch (F-114).
+##
+## The 794 bushes and saplings on this map are the reason this exists. Promoting each to its own
+## `MeshInstance3D`, the way a tree or an ore node is promoted, would have turned a handful of
+## batched draw calls into eight hundred — on a game whose target is the worst computer someone
+## might play it on. So the geometry stays exactly where it was and the holder carries only the
+## harvest logic, plus the coordinates of its own slot inside the batch: `autoload/harvest_world.gd`
+## turns those into the hook `Harvestable` calls to hide one bush, which it does by zeroing that
+## single instance's transform — the only way to hide one copy of a MultiMesh.
+##
+## No collider is synthesised, and that is deliberate: soft flora is walked through, and
+## `CombatService` picks its target out of the `&"damageable"` group by distance and arc rather
+## than by raycast, so a bush with no collision is still perfectly swingable.
+func _build_batch_harvestables(
+	props: Array, asset: String, batch_holder: Node3D, root: Node3D,
+	transforms: Array[Transform3D], meshes: Array
+) -> void:
+	var asset_id := StringName(asset)
+	if not HarvestLib.is_harvestable(asset_id):
+		return
+	if HarvestLib.representation_for(asset_id) != HarvestLib.Represent.BATCH:
+		return
+	var slots: Array[MultiMesh] = []
+	var offsets: Array[Transform3D] = []
+	for child: Node in batch_holder.get_children():
+		var instance := child as MultiMeshInstance3D
+		if instance == null or instance.multimesh == null:
+			continue
+		slots.append(instance.multimesh)
+		var part: int = offsets.size()
+		var entry: Dictionary = (meshes[part] if part < meshes.size() else {}) as Dictionary
+		offsets.append(entry.get("offset", Transform3D.IDENTITY) as Transform3D)
+	if slots.is_empty():
+		return
+
+	for index in props.size():
+		if index >= transforms.size():
+			break
+		var prop := props[index] as Dictionary
+		var holder := Node3D.new()
+		holder.name = "HarvestBatch_%s_%03d" % [asset, index]
+		holder.transform = transforms[index]
+		holder.set_meta(&"asset", asset)
+		holder.set_meta(&"kit", String(prop.get("kit", "")))
+		holder.set_meta(&"batch_meshes", slots)
+		holder.set_meta(&"batch_index", index)
+		# The exact transform each mesh part of this prop was written into the batch with, recorded
+		# by the only code that knows it for certain. Reading it back with
+		# `MultiMesh.get_instance_transform()` would be a RenderingServer round trip per prop at wire
+		# time — 794 of them here — and returns identity under the dummy renderer every headless
+		# check runs on, so a restore would quietly teleport every bush to the world origin.
+		var placements: Array[Transform3D] = []
+		for part: int in slots.size():
+			placements.append(transforms[index] * offsets[part])
+		holder.set_meta(&"batch_transforms", placements)
+		holder.add_to_group(HARVESTABLE_HOLDER_GROUP)
+		root.add_child(holder)
 		harvestable_holders += 1
 
 

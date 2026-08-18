@@ -2738,3 +2738,15 @@ One damage source per click (HarvestWorld stopped listening for attack), a tool 
 Files: `systems/combat/weapon_def.gd`, `systems/harvesting/harvestable_def.gd`, `systems/harvesting/harvestable.gd`, `autoload/combat_service.gd`, `autoload/harvest_world.gd`, `content/weapons/wooden_axe.tres`, `content/weapons/stone_axe.tres`, `content/weapons/wooden_pickaxe.tres`, `content/weapons/stone_pickaxe.tres`, `content/weapons/iron_pickaxe.tres`, `content/weapons/iron_sword.tres`, `content/weapons/cleaver.tres`, `content/weapons/skewer.tres`, `content/weapons/repair_hammer.tres`, `content/harvestables/tree.tres`, `content/harvestables/stone_node.tres`, `content/harvestables/iron_node.tres`
 
 Commit at time of writing: `e1240b2`
+
+---
+
+### DONE · F-114 · vane19 · 2026-08-18T17:55:20+00:00
+
+**Only 83 of Hollowmere's 2,869 props can be harvested: harvestability is authored per-placement in the layout instead of per-asset**
+
+Harvestability moved from the layout to the asset via systems/harvesting/harvest_library.gd. 83 -> 1,181 live harvestables on Hollowmere with no layout regenerated. NODE families get a mesh (387), BATCH families stay in the MultiMesh (794 bushes/saplings, zero extra draw calls). Seven new definitions, no new art.
+
+Files: `systems/harvesting/harvest_library.gd`, `world/gen/authored_world.gd`, `content/harvestables/wild_tree.tres`, `content/harvestables/boulder.tres`, `content/harvestables/rock_cluster.tres`, `content/harvestables/bush.tres`, `content/harvestables/sapling.tres`, `content/harvestables/fallen_log.tres`, `content/harvestables/stump.tres`, `content/items/stick.tres`, `tools/harvest_world_check.gd`, `tools/harvest_tool_ladder_check.gd`, `tools/harvest_batch_check.gd`
+
+Commit at time of writing: `ceee5c4`

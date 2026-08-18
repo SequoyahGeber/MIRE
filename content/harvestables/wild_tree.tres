@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="HarvestableDef" format=3]
+
+[ext_resource type="PackedScene" path="res://assets/harvestables/exports/harvest_tree_fresh_stump.glb" id="1_wtstump"]
+[ext_resource type="Script" path="res://systems/harvesting/harvestable_def.gd" id="2_wtdef"]
+
+[resource]
+script = ExtResource("2_wtdef")
+id = &"wild_tree"
+max_health = 6
+required_tool = 1
+yield_item_id = &"log"
+yield_amount = 2
+respawn_seconds = 150.0
+depleted_scene = ExtResource("1_wtstump")

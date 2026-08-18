@@ -43,29 +43,51 @@ func _run() -> void:
 		finish()
 		return
 
+	# F-114 made harvestability a property of the ASSET, so this map's pines, boulders and bushes
+	# are live too and the total is no longer a fixed 11. What is still exactly 11 — and is what
+	# this check was written to protect — is the multi-state A-001 set: those are the only props
+	# that swap geometry as they take damage, hand their collider to the Harvestable, and hide an
+	# authored duplicate. Every family added since keeps the world builder's own mesh instead.
 	var harvestables: Array = harvest_world.call("wired_harvestables")
-	check(harvestables.size() == 11, "all 11 intact A-001 props are live (%d)" % harvestables.size())
+	check(harvestables.size() >= 11,
+		"the A-001 props are still live among %d harvestables" % harvestables.size())
 	var counts: Dictionary[StringName, int] = {}
+	var state_scene_props: int = 0
 	for value: Variant in harvestables:
 		var harvestable := value as Node3D
 		var asset := StringName(String(harvestable.get_meta(&"asset", "")))
 		counts[asset] = counts.get(asset, 0) + 1
+		check(harvestable.get_node_or_null(^"HarvestSync") != null,
+			"%s has host replication" % harvestable.get_path())
+		var definition: Resource = harvestable.get("definition")
+		if definition == null or bool(definition.call("uses_authored_visual")):
+			# Drawn by the world builder: no instantiated state visual is the CORRECT answer, and a
+			# collider is optional because soft flora has none and is targeted by arc, not by ray.
+			check(harvestable.get_node_or_null(^"HarvestVisual") == null,
+				"%s draws the world's own mesh, not a state scene" % harvestable.get_path())
+			continue
+		state_scene_props += 1
 		check(harvestable.get_node_or_null(^"CollisionBody") != null,
 			"%s owns its existing collision" % harvestable.get_path())
 		check(harvestable.get_node_or_null(^"HarvestVisual") != null,
 			"%s has a live state visual" % harvestable.get_path())
-		check(harvestable.get_node_or_null(^"HarvestSync") != null,
-			"%s has host replication" % harvestable.get_path())
 	for asset_id: StringName in EXPECTED_ACTIVE:
 		check(counts.get(asset_id, 0) == EXPECTED_ACTIVE[asset_id],
 			"%s wired %d time(s)" % [asset_id, counts.get(asset_id, 0)])
+	check(state_scene_props == 11, "exactly 11 multi-state A-001 props are live (%d)" % state_scene_props)
 
 	var hidden_originals: int = 0
 	for candidate: Node in scene.find_children("*", "Node3D", true, false):
 		if candidate.has_meta(&"mire_harvestable_original_visual"):
 			hidden_originals += 1
 			check(not (candidate as Node3D).visible, "%s authored duplicate is hidden" % candidate.name)
-	check(hidden_originals == 11, "exactly 11 authored duplicates are hidden")
+	check(hidden_originals == state_scene_props,
+		"every authored duplicate hidden is a state-scene prop (%d)" % hidden_originals)
+
+	# The families F-114 added must actually be reachable on a real map, not just in principle.
+	var authored_visual_props: int = harvestables.size() - state_scene_props
+	check(authored_visual_props > 0,
+		"asset-keyed families wired on this map (%d)" % authored_visual_props)
 
 	var event_bus: GDScript = load("res://core/events/event_bus.gd") as GDScript
 	event_bus.subscribe_harvest_yielded(_on_yield)

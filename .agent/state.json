@@ -10,41 +10,6 @@
       "at": "2026-08-18T17:53:48+00:00",
       "task": "7.1"
     },
-    "content/harvestables/boulder.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:36:39+00:00",
-      "task": "F-114"
-    },
-    "content/harvestables/bush.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:36:39+00:00",
-      "task": "F-114"
-    },
-    "content/harvestables/fallen_log.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:36:39+00:00",
-      "task": "F-114"
-    },
-    "content/harvestables/rock_cluster.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:36:39+00:00",
-      "task": "F-114"
-    },
-    "content/harvestables/sapling.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:36:39+00:00",
-      "task": "F-114"
-    },
-    "content/harvestables/stump.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:36:39+00:00",
-      "task": "F-114"
-    },
-    "content/harvestables/wild_tree.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:36:39+00:00",
-      "task": "F-114"
-    },
     "content/items/berry.tres": {
       "agent": "ivy8",
       "at": "2026-08-18T17:51:47+00:00",
@@ -79,11 +44,6 @@
       "agent": "ivy8",
       "at": "2026-08-18T17:51:47+00:00",
       "task": "3.2"
-    },
-    "content/items/stick.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:36:39+00:00",
-      "task": "F-114"
     },
     "content/recipes/arrow.tres": {
       "agent": "ivy8",
@@ -140,11 +100,6 @@
       "at": "2026-08-18T17:51:47+00:00",
       "task": "3.2"
     },
-    "systems/harvesting/harvest_library.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:36:39+00:00",
-      "task": "F-114"
-    },
     "tools/audio/audio_check.py": {
       "agent": "tine18",
       "at": "2026-08-18T17:53:48+00:00",
@@ -184,26 +139,6 @@
       "agent": "ivy8",
       "at": "2026-08-18T17:54:33+00:00",
       "task": "3.2"
-    },
-    "tools/harvest_batch_check.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:45:06+00:00",
-      "task": "F-114"
-    },
-    "tools/harvest_tool_ladder_check.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:43:11+00:00",
-      "task": "F-114"
-    },
-    "tools/harvest_world_check.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:43:11+00:00",
-      "task": "F-114"
-    },
-    "world/gen/authored_world.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:36:39+00:00",
-      "task": "F-114"
     }
   },
   "in_flight": {
@@ -262,26 +197,6 @@
       ],
       "notes": [],
       "started": "2026-08-18T17:54:01+00:00"
-    },
-    "F-114": {
-      "agent": "vane19",
-      "files": [
-        "systems/harvesting/harvest_library.gd",
-        "world/gen/authored_world.gd",
-        "content/harvestables/wild_tree.tres",
-        "content/harvestables/boulder.tres",
-        "content/harvestables/rock_cluster.tres",
-        "content/harvestables/bush.tres",
-        "content/harvestables/sapling.tres",
-        "content/harvestables/fallen_log.tres",
-        "content/harvestables/stump.tres",
-        "content/items/stick.tres",
-        "tools/harvest_world_check.gd",
-        "tools/harvest_tool_ladder_check.gd",
-        "tools/harvest_batch_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T17:36:39+00:00"
     }
   },
   "recent": {
@@ -690,20 +605,55 @@
       "at": "2026-08-18T04:35:30+00:00",
       "task": "3.6"
     },
+    "content/harvestables/boulder.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:20+00:00",
+      "task": "F-114"
+    },
+    "content/harvestables/bush.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:20+00:00",
+      "task": "F-114"
+    },
+    "content/harvestables/fallen_log.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:20+00:00",
+      "task": "F-114"
+    },
     "content/harvestables/iron_node.tres": {
       "agent": "vane19",
       "at": "2026-08-18T17:55:11+00:00",
       "task": "F-113"
+    },
+    "content/harvestables/rock_cluster.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:20+00:00",
+      "task": "F-114"
+    },
+    "content/harvestables/sapling.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:20+00:00",
+      "task": "F-114"
     },
     "content/harvestables/stone_node.tres": {
       "agent": "vane19",
       "at": "2026-08-18T17:55:11+00:00",
       "task": "F-113"
     },
+    "content/harvestables/stump.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:20+00:00",
+      "task": "F-114"
+    },
     "content/harvestables/tree.tres": {
       "agent": "vane19",
       "at": "2026-08-18T17:55:11+00:00",
       "task": "F-113"
+    },
+    "content/harvestables/wild_tree.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:20+00:00",
+      "task": "F-114"
     },
     "content/items/arrow.tres": {
       "agent": "flint5",
@@ -749,6 +699,11 @@
       "agent": "flint5",
       "at": "2026-08-18T04:58:38+00:00",
       "task": "F-073"
+    },
+    "content/items/stick.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:20+00:00",
+      "task": "F-114"
     },
     "content/items/stone_axe.tres": {
       "agent": "flint5",
@@ -1020,6 +975,11 @@
       "at": "2026-08-18T14:10:44+00:00",
       "task": "F-099"
     },
+    "systems/harvesting/harvest_library.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:20+00:00",
+      "task": "F-114"
+    },
     "systems/harvesting/harvestable.gd": {
       "agent": "vane19",
       "at": "2026-08-18T17:55:11+00:00",
@@ -1280,10 +1240,20 @@
       "at": "2026-08-18T13:30:42+00:00",
       "task": "F-077"
     },
+    "tools/harvest_batch_check.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:20+00:00",
+      "task": "F-114"
+    },
+    "tools/harvest_tool_ladder_check.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:20+00:00",
+      "task": "F-114"
+    },
     "tools/harvest_world_check.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T18:49:19+00:00",
-      "task": "F-047"
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:20+00:00",
+      "task": "F-114"
     },
     "tools/harvest_world_net_check.gd": {
       "agent": "lp",
@@ -1536,9 +1506,9 @@
       "task": "F-065"
     },
     "world/gen/authored_world.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T14:37:19+00:00",
-      "task": "F-075"
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:20+00:00",
+      "task": "F-114"
     },
     "world/gen/layouts/hollowmere.json": {
       "agent": "ivy8",
@@ -3503,9 +3473,11 @@
       "title": "One axe swing depletes a whole tree: the harvest raycast and the combat swing both damage it, and neither knows what tool you are holding"
     },
     "F-114": {
+      "done_at": "2026-08-18T17:55:20+00:00",
+      "done_by": "vane19",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Only 83 of Hollowmere's 2,869 props can be harvested: harvestability is authored per-placement in the layout instead of per-asset"
     },

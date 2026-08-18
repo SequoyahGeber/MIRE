@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_stickd"]
+[ext_resource type="PackedScene" path="res://assets/pickups/exports/pickup_branch.glb" id="2_stickw"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_branch.png" id="3_sticki"]
+
+[resource]
+script = ExtResource("1_stickd")
+id = &"stick"
+display_name = "Stick"
+description = "A snapped branch. Every haft, shaft and kindling bundle starts here."
+icon = ExtResource("3_sticki")
+world_model = ExtResource("2_stickw")
