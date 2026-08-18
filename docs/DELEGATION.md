@@ -124,6 +124,30 @@ needs writing by whoever owns that file next.
 > Execution specs for every remaining roadmap task live in **`docs/SPECS.md`** — this section holds
 > the *shipped* seams those specs build on.
 
+### 2026-08-18 — night waves actually run now, and the reason they did not is worth keeping
+
+`WaveSpawner` is registered (autoload #22, after `DayNight`, which its `_ready()` depends on). Dusk
+disables `EnemyWorld.ambient_enabled`, spawns `base_count + per_player * live_players` at ambient
+spawn points, and dawn clears the field and restores the exact ambient setting found at dusk. All
+host-only; `EnemyWorld`'s existing `MultiplayerSpawner` replicates the bodies, so 2.12 added no RPC
+and the protocol version is untouched (still 7).
+
+**It shipped correct and did not run for a day, and the harness said it was fine.** `wave_spawner_check`
+built its own `WaveSpawner` and its own node named `DayNight`, so it proved the *script* worked and
+could say nothing about whether the *project* loaded it — and once 2.11 registered the real DayNight
+autoload, the fake was renamed out from under it and four assertions started reading a signal nobody
+had subscribed to. The generalisable rule, for anyone writing the next harness:
+
+> **If the system under test is an autoload, the check must resolve the autoload.** Constructing a
+> private instance is only defensible when the check has to pass *before* registration — which is
+> `tools/day_night_check.gd`'s documented case, and it says so in its header. Everywhere else, reach
+> for `/root/<Name>` and let a missing autoload fail the check on line one.
+
+`tools/wave_spawner_check.gd` now does exactly that, and crosses thresholds by advancing the real
+clock (`DayNight.host_advance()`, with `set_physics_process(false)` so nothing crosses behind your
+back) rather than by emitting the signal — the claim under test is that the host's own clock reaching
+0.75 causes a wave, not that a signal has a subscriber.
+
 ### 2026-08-18 — the sky has a night half now (F-065), and these are its seams
 
 `world/environment/playtest_atmosphere.gd` is still the one place time-of-day becomes pixels, and it

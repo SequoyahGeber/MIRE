@@ -16,7 +16,7 @@
 > screenshots it (run that one **windowed**, not through `agent godot` — see F-059's neighbour note
 > in that file: `agent godot` is always `--headless`, which has no framebuffer).
 
-**Milestone:** M2 · Vertical slice — 16/22, and everything left is either yours or dispatched.
+**Milestone:** M2 · Vertical slice — 17/22, and everything left is either yours or dispatched.
 M1 closed at 13/14 (1.12 deferred, D-030). M0 closed 11/11 plus 0.12 (orchestration).
 
 **The game runs, and the loop is visible.** Press Play: you spawn in Playtest Hollow with a stocked
@@ -67,7 +67,7 @@ Re-run the gate on the current build. `agent godot --script tools/combat_self_hi
   lanes claim, verify through the shared `agent godot` lock (F-044), and ship under the same
   protocol as everyone else. `docs/ORCHESTRATION.md` is the manual.
 
-**Nineteen autoloads live**, `verify_setup` asserts every one. Boot log:
+**Twenty-two autoloads live**, `verify_setup` scans the `[autoload]` section and asserts a floor rather than a list, so adding one cannot red it (and dropping one still can). Boot log:
 `content: loaded 14 item(s), 1 recipe(s), 9 weapon(s)` + `1 enemy definition(s)` +
 `net: NetTransport ready (offline)`. `NetConfig` is a `class_name`, **not** an autoload; don't add it.
 Protocol version lives in `core/net/net_version.gd` (currently 7); any new RPC bumps it.
@@ -93,8 +93,8 @@ Protocol: [AGENTS.md](../AGENTS.md) · specs: [SPECS.md](SPECS.md) · dispatch: 
 | # | What | Who | State |
 |---|---|---|---|
 | 2.9 | **Play the combat gate — RE-RUN IT, the first attempt was judging a broken build.** SPECS.md has the run-sheet: ten crawler kills, judge tell/arc/hitstop/kill-length, tune in the inspector only, then pass or fail it out loud. Passing closes F-036. | **You** | open, unblocked |
-| 2.11 | Day/night — host-authoritative clock, sky client-local. Order exists; **the trap is in the spec**: never flip `cycle_enabled`. | lane | order ready |
-| 2.12 | Night waves over `EnemyWorld` seams; needs 2.11's signals. | lane | order ready |
+| 2.11 | Day/night — host-authoritative clock, sky client-local. `cycle_enabled` stays false forever; DayNight pushes the time instead. | lane | **done** |
+| 2.12 | Night waves over `EnemyWorld` seams. Shipped in `915c881` and **never registered**, so it did not run for a day (F-068); the autoload and the harness are fixed. | lane + gale6 | **done** |
 | 2.13 | Death & respawn — player health, downed→bleed-out→revive, the `enemy_attack_landed` subscriber that makes crawlers matter. | lp | **done** |
 | 2.14 | **Playtest with friends** — protocol in SPECS.md: verbatim quotes, one full night, then re-read DESIGN §8 before anything in M3. | You + friends | after the above |
 | 2.1d | A-009 extraction ship (15 models) — the asset queue's NEXT; tracker governs. | asset agent | ready |
