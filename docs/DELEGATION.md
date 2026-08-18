@@ -154,6 +154,52 @@ accruing for a parked player exactly as D-035 intends. Whoever takes F-074 shoul
 `_valid_host_peer` match that shape — treat a live `_host_stores` entry as valid regardless of current
 connectivity — now that the `rpc_id` sends downstream of it are guarded and safe to reach.
 
+### 2026-08-18 — the building system is in (3.6). This is what 3.7 authors against
+
+`BuildService` is autoload #25, HOST-authoritative (§2.2 world mutation). Protocol is **12**. Three
+files: `systems/building/buildable_def.gd`, `placement_validator.gd`, `build_ghost.gd`.
+
+**The load-bearing idea is one validator, two callers.** The ghost calls
+`PlacementValidator.evaluate()` to colour itself green or red; the host calls the *same function*
+against its own space state to accept or reject. Sharing the code is not sharing the authority — the
+host re-snaps and re-evaluates and believes nothing from the wire but a piece id and a transform,
+both re-checked. What sharing buys is that a green ghost and an accepted placement cannot drift
+apart through two subtly different rule sets, which is the bug that makes a building system feel
+broken rather than strict. **Do not write placement rules anywhere else.**
+
+`snap_transform()` is pure — no world, no builder — so two players snap to the same world-space grid
+and their walls line up. `evaluate()` returns a `Reason`, and `reason_text()` gives the words, so the
+ghost and a host rejection say the same thing to the player.
+
+**Authoring (task 3.7).** Copy `content/buildables/wall.tres` (a plain piece) or `ward_post.tres` (a
+Ward — `ward_radius_m > 0`; the field ships now, **4.11** is the task that makes the Mire respect it).
+Fields: `size` is the footprint box in metres with the origin at its FLOOR centre, `snap_step` and
+`rotation_step_degrees` drive snapping, `requires_support` / `max_ground_slope_degrees` /
+`max_build_range_m` are the placement rules, `cost` is spent through `host_transaction` and
+`refund_fraction` comes back on destruction. `scene` may be left null: `BuildService` generates a
+box collider and mesh from `size` so a piece without art is still a real, colliding, navmesh-affecting
+object — art is 3.7's job, not a blocker for testing gameplay.
+
+**Two orderings inside the system that must not be swapped.** Support/slope is evaluated *before*
+overlap, because a piece on a slope steep enough to refuse is also geometrically buried in it, so
+overlap-first reports every steep placement as "something is in the way" — true and useless. And cost
+is charged *last*, after every geometric rule has passed, because it is the only check with a side
+effect: rejecting after a successful `host_transaction` silently eats the materials. If the spawn
+then fails, the cost is explicitly refunded.
+
+Navigation is rebaked after any placement or destruction, **debounced to one per second** in
+`_physics_process`, never inline — a player dragging out a ten-piece wall would otherwise trigger ten
+full-level rebakes (21,364 polygons on Hollowmere). Per-chunk baking is 4.5's problem.
+
+**Verify:** `agent godot --script tools/build_check.gd` (59 assertions offline, against a real physics
+world rather than a mock) and `tools/build_net_check.gd` (13, two real ENet processes, including the
+assertion that a client running the host's own placement path forges nothing).
+
+**A trap for the next networked harness in this area:** do not hard-code a build spot. `PlayerNet`
+fans peers out from the spawn point, so a fixed spot lands on somebody's body and the host correctly
+refuses it as OVERLAPS — the cost path is never reached and you measure the wrong refusal.
+`build_net_check` derives the spot from the client's actual body position; copy that.
+
 ### 2026-08-18 — the powerup framework is in (3.3). This is what 3.4 and every effect task build on
 
 `PowerupService` is autoload #23, HOST-authoritative (§2.2 "active modifiers"). Protocol is **11**.
