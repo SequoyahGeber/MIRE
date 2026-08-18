@@ -301,14 +301,19 @@ its own `rpc_id` sends should copy this from either file rather than reinvent it
 answer to D-035's grace window (a departed peer's state survives `peer_left` on purpose, so a peer id
 can sit in a host dictionary with no live connection behind it).
 
-**The gap the fix exposed, open as F-074:** `InventoryService._valid_host_peer(peer_id)` requires
-`peer_id` to be a *currently connected* peer, so `host_add`/`host_remove`/`host_move_stack`/
-`host_transaction` all silently refuse to mutate a parked (mid-grace-window) peer's store — a grant
-that lands for someone between a drop and a reconnect is lost, not queued. `player_health.gd` doesn't
-have this problem: `host_apply_damage` only checks `_states.has(peer_id)`, so damage/starvation keep
-accruing for a parked player exactly as D-035 intends. Whoever takes F-074 should make
-`_valid_host_peer` match that shape — treat a live `_host_stores` entry as valid regardless of current
-connectivity — now that the `rpc_id` sends downstream of it are guarded and safe to reach.
+**The gap the fix exposed, closed as F-074:** `InventoryService._valid_host_peer(peer_id)` used to
+require `peer_id` to be a *currently connected* peer, so `host_add`/`host_remove`/`host_move_stack`/
+`host_transaction` all silently refused to mutate a parked (mid-grace-window) peer's store — a grant
+that landed for someone between a drop and a reconnect was lost, not queued. Fixed to match
+`player_health.gd`'s `host_apply_damage` shape: **a live `_host_stores` entry is now valid regardless
+of current connectivity** — `_valid_host_peer` returns true immediately if `_host_stores.has(peer_id)`,
+before it ever asks the transport. A peer with no store yet still needs a live transport connection
+(or, offline, must be the host) before one is created for it, so an unseen/spoofed peer id is still
+rejected. Publishes immediately rather than waiting for rebind — safe because `_publish_snapshot`'s
+`rpc_id` send is already gated on `_peer_connected` (F-059), so a parked peer's snapshot just updates
+its host-side store, never an RPC to a peer id the transport doesn't recognise. Any new host-owned
+per-peer system with its own mutation gate should copy this shape too: check the state dict, not the
+transport, and let `_peer_connected` guard only the outbound `rpc_id` send.
 
 ### 2026-08-18 — the building system is in (3.6). This is what 3.7 authors against
 

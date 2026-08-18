@@ -698,37 +698,6 @@ kit sidesteps it by baking every asset's transform to identity before export, wh
 
 ---
 
-### F-074 · InventoryService._valid_host_peer's connectivity check silently drops a host grant for a peer mid-D-035-grace-window, instead of parking it
-
-**Area:** netcode · **Severity:** low · **Found:** 2026-08-18 by lp
-
-Found while fixing F-059's rpc_id guard. `_valid_host_peer(peer_id)` (`autoload/inventory_service.gd`)
-requires `peer_id` to appear in `_transport().call("peer_ids")` whenever the transport is active — a
-check written before D-035's grace window existed, back when `peer_left` still released a departed
-peer's store immediately, so "not currently connected" and "not a valid target" were the same fact.
-
-D-035 changed that: a departed peer's `_host_stores` entry now survives `peer_left` through
-`NetSession`'s grace window on purpose, so a reconnect under a new peer id can rebind it. But
-`_valid_host_peer` was never updated to match, so `host_add`/`host_remove`/`host_move_stack`/
-`host_transaction` all still reject a parked peer outright — a harvest yield landing for someone
-mid-grace-window (a laggy connection, a brief drop) is silently lost, logged only as `MireLog.warn`
-"could not collect ... (invalid or full)" by `_on_harvest_yielded`, not queued or retried.
-
-Verified directly: `tools/inventory_net_check.gd`'s driver calls `inventory.call("_commit",
-client_peer_id)` on a parked peer (bypassing the public API) specifically because the public API
-already can't reach it — `host_add(client_peer_id, ...)` for the same parked peer returns `false`.
-
-Not fixed here — out of scope for F-059, which was about the rpc_id guard, not this gate. The
-narrow fix: `_valid_host_peer` should treat "peer id has a live `_host_stores` entry" (i.e. still
-within the grace window) as valid for mutation, the same way `player_health.gd`'s `host_apply_damage`
-only checks `_states.has(peer_id)` and lets damage/starvation continue to accrue for a parked player.
-Whoever picks this up should decide whether a grant to a parked peer should publish immediately (now
-guarded, so it's safe) or wait for rebind — recommend immediate, since the store already carries
-state across the rebind and a lost grant is a worse outcome than a stale snapshot the reconnect will
-overwrite anyway.
-
----
-
 ### F-075 · World statics and props share collision layer 1, so a placement overlap query cannot tell ground from obstruction
 
 **Area:** physics · **Severity:** low · **Found:** 2026-08-18 by gale6
@@ -986,6 +955,38 @@ The level renders at ~100 fps on the M5 Pro where the scene complexity justifies
 ---
 
 ## Resolved
+
+### F-074 · InventoryService._valid_host_peer's connectivity check silently drops a host grant for a peer mid-D-035-grace-window, instead of parking it — **fixed**
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-18 by lp · **Resolved:** 2026-08-18 by lp
+
+`_valid_host_peer(peer_id)` (`autoload/inventory_service.gd`) required `peer_id` to appear in
+`_transport().call("peer_ids")` whenever the transport was active — written before D-035's grace
+window existed, so `host_add`/`host_remove`/`host_move_stack`/`host_transaction` all rejected a
+parked (mid-grace-window) peer outright. A harvest yield landing for someone between a drop and a
+reconnect was silently lost, logged only as `MireLog.warn` "could not collect ... (invalid or full)"
+by `_on_harvest_yielded`, not queued or retried.
+
+**Fixed:** `_valid_host_peer` now returns true immediately when `_host_stores.has(peer_id)` — a live
+store entry, whether the peer is currently connected or parked mid-grace-window, is the mutation
+target, matching `player_health.gd`'s `host_apply_damage` (`_states.has(peer_id)`, no connectivity
+check at all). A peer with no store yet still needs a live transport connection — or, offline, must
+be the host — before `_ensure_host_store` creates one, so an unseen/spoofed peer id is still rejected.
+Publishes immediately rather than waiting for rebind, per the finding's own recommendation: the store
+already carries state across the rebind, a lost grant is worse than a stale snapshot the reconnect
+overwrites, and `_publish_snapshot`'s `rpc_id` send is already gated on `_peer_connected` (F-059), so
+nothing unguarded reaches the transport for a parked peer.
+
+**Verified:** `tools/inventory_net_check.gd`'s driver used to call `inventory.call("_commit",
+client_peer_id)` directly on a parked peer specifically because the public API couldn't reach it.
+Rewrote that section to call the real public API instead — `host_add(client_peer_id, "log", 4)` on
+the same parked peer — and assert it now returns `true` and the store's count increases by exactly 4.
+`agent godot --script tools/inventory_net_check.gd`: 21/21 `PASS`, `failures=0`, zero `ERROR:` lines
+in the full run (three consecutive clean runs). `agent godot --script tools/inventory_check.gd` (pure
+mechanics, no transport, includes "offline authority rejects an unknown peer") stayed green at
+failures=0, confirming an unseen peer id is still refused.
+
+---
 
 ### F-088 · A review order inherits the reviewed task's claim set, so it is refused exactly when that task is being worked on — **fixed**
 
