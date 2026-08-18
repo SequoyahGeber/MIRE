@@ -50,16 +50,6 @@
       "at": "2026-08-18T18:01:51+00:00",
       "task": "F-115"
     },
-    "tools/lobby_menu_check.gd": {
-      "agent": "moss11",
-      "at": "2026-08-18T18:01:10+00:00",
-      "task": "6.10"
-    },
-    "ui/lobby/lobby_menu.gd": {
-      "agent": "moss11",
-      "at": "2026-08-18T18:01:10+00:00",
-      "task": "6.10"
-    },
     "world/environment/ground_fog.gd": {
       "agent": "vane19",
       "at": "2026-08-18T17:57:02+00:00",
@@ -77,15 +67,6 @@
     }
   },
   "in_flight": {
-    "6.10": {
-      "agent": "moss11",
-      "files": [
-        "ui/lobby/lobby_menu.gd",
-        "tools/lobby_menu_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T18:01:10+00:00"
-    },
     "7.1": {
       "agent": "tine18",
       "files": [
@@ -1317,6 +1298,11 @@
       "at": "2026-08-17T23:25:50+00:00",
       "task": "F-054"
     },
+    "tools/lobby_menu_check.gd": {
+      "agent": "moss11",
+      "at": "2026-08-18T18:06:11+00:00",
+      "task": "6.10"
+    },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
       "at": "2026-08-18T17:43:02+00:00",
@@ -1491,6 +1477,11 @@
       "agent": "kiln9",
       "at": "2026-08-18T14:10:44+00:00",
       "task": "F-099"
+    },
+    "ui/lobby/lobby_menu.gd": {
+      "agent": "moss11",
+      "at": "2026-08-18T18:06:11+00:00",
+      "task": "6.10"
     },
     "ui/loot/chest_ui.gd": {
       "agent": "kiln9",
@@ -1712,7 +1703,7 @@
       "milestone": "M1",
       "status": "todo",
       "tier": "T0",
-      "title": "DEFERRED to after 6.10 (D-030) \u2014 do not start. Cross-platform join test, Mac \u2194 Windows \u2194 Linux in one lobby over Steam. Transport is proven; only the evidence ceremony is left, and it waits for an in-game lobby join"
+      "title": "UNBLOCKED 2026-08-18 \u2014 D-030's wait is over: the in-game lobby join shipped (6.10's lobby-UI slice, press M). Cross-platform join test, Mac \u2194 Windows \u2194 Linux in one lobby over Steam. Transport is proven; only the evidence ceremony is left, and it now needs only the three machines"
     },
     "1.2": {
       "done_at": "2026-08-16T03:10:07+00:00",
@@ -2348,7 +2339,7 @@
     "6.10": {
       "est": "5",
       "milestone": "M6",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Main menu, lobby UI, settings, seed entry"
     },

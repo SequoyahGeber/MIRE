@@ -2818,3 +2818,15 @@ Notes along the way:
 Files: `.agent/bin/agent`, `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md`
 
 Commit at time of writing: `41a01f2`
+
+---
+
+### HANDOFF · 6.10 · moss11 · 2026-08-18T18:06:11+00:00
+
+**Main menu, lobby UI, settings, seed entry**
+
+The lobby-UI slice is DONE and verified: ui/lobby/lobby_menu.gd (autoload LobbyMenu, press M) hosts a Steam lobby, copies the lobby ID, joins a pasted ID, opens the invite overlay, lists members, leaves. tools/lobby_menu_check.gd is green (19 assertions) and a normal headless boot is clean; the happy path needs a live Steam client and is 1.12's run, now unblocked — ROADMAP/NEXT updated. STILL OPEN in 6.10: the main menu shell, settings, and seed entry feeding 4.6. Nothing in the shipped slice constrains those; the panel is a CanvasLayer autoload the future main menu can absorb or call into.
+
+Files: `ui/lobby/lobby_menu.gd`, `tools/lobby_menu_check.gd`
+
+Commit at time of writing: `baf789a`

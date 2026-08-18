@@ -8,7 +8,6 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **6.10** Main menu, lobby UI, settings, seed entry | moss11 | 2026-08-18 18:01 | `ui/lobby/lobby_menu.gd`, `tools/lobby_menu_check.gd` |
 | **7.1** Audio pass: SFX for every action, ambience per biome, mix, buses | tine18 | 2026-08-18 17:53 | `tools/audio/render_sfx.py`, `assets/audio/sfx` |
 | **7.2** Music: 4–6 tracks (act themes, boss, menu). CC0/licensed or commissioned. | tine18 | 2026-08-18 17:53 | `tools/audio/mire_audio.py`, `tools/audio/render_music.py`, `tools/audio/audio_check.py`, `tools/audio_import_check.gd`, `assets/audio/music` |
 | **F-115** Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map | vane19 | 2026-08-18 17:57 | `world/environment/playtest_atmosphere.gd`, `world/environment/ground_fog.gd`, `world/environment/ground_fog.gdshader`, `levels/hollowmere.tscn`, `tools/ground_fog_check.gd`, `tools/atmosphere_look_shot.gd` |
@@ -44,7 +43,7 @@
 | ✅ | **1.9** Spike R1 — 6 peers, 200 synced dummy entities, measure bandwidth and CPU | T2 | 1.5 | done |
 | ✅ | **1.10** Network debug panel: ping, bandwidth up/down, entity count, authority display | T1 | 1 | done |
 | ✅ | **1.11** Protocol/build version handshake — refuse mismatched builds with a clear message, not a desync | T2 | 1.5 | done |
-| ⬜ | **1.12** DEFERRED to after 6.10 (D-030) — do not start. Cross-platform join test, Mac ↔ Windows ↔ Linux in one lobby over Steam. Transport is proven; only the evidence ceremony is left, and it waits for an in-game lobby join | T0 | 1.5 | todo |
+| ⬜ | **1.12** UNBLOCKED 2026-08-18 — D-030's wait is over: the in-game lobby join shipped (6.10's lobby-UI slice, press M). Cross-platform join test, Mac ↔ Windows ↔ Linux in one lobby over Steam. Transport is proven; only the evidence ceremony is left, and it now needs only the three machines | T0 | 1.5 | todo |
 | ✅ | **1.0b** Register the `NetTransport` autoload in `project.godot` — 1.2 follow-up, shipped under the pre-D-021 prompt | T0 | 0.25 | done |
 
 ## Open findings — claim by F-number
