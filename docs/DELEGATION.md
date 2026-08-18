@@ -1444,14 +1444,16 @@ above the ground plane** — the raised sail's lowest vertex is 1.8 m up, becaus
 is — so do not "fix" it, and do not run a blanket ground-contact assertion over this family.
 `ship_check.gd` already enforces the right rule per family.
 
-**Dimension checks must measure vertices, never `transform * get_aabb()` (F-108).** An AABB is
-axis-aligned in a mesh's own local space, so any non-box mesh's box corners are not real geometry, and
-rotating that box inflates it — every `cone`/`tapered_between` primitive is affected.
-`ship_check.gd`'s `_check_asset()` is the worked example: walk `Mesh.ARRAY_VERTEX`, transform each
-vertex to the scene root, bound the points directly. `tools/dimension_check.gd` is a synthetic-cone
-regression guard for the technique itself (`agent godot --script tools/dimension_check.gd`) — copy its
-shape when porting the fix into another check. `tools/flora_check.gd:126` still has the old
-construction and needs this port; tracked as F-122.
+**Dimension checks must measure vertices, never `transform * get_aabb()` (F-108, ported to
+`flora_check.gd` by F-122).** An AABB is axis-aligned in a mesh's own local space, so any non-box
+mesh's box corners are not real geometry, and rotating that box inflates it — every
+`cone`/`tapered_between` primitive is affected. `ship_check.gd`'s `_check_asset()` is the worked
+example: walk `Mesh.ARRAY_VERTEX`, transform each vertex to the scene root via `_transform_to_root()`,
+bound the points directly. `tools/dimension_check.gd` is a synthetic-cone regression guard for the
+technique itself (`agent godot --script tools/dimension_check.gd`), independent of which check
+consumes it — it already covers a future regression in either `ship_check.gd`'s or
+`flora_check.gd`'s copy. Copy its shape (or `flora_check.gd`'s own `_transform_to_root()`) when
+porting the technique into a third check.
 
 Numbers a gameplay task will want, all in the ship frame (Godot axes): **+X is the bow**, z=0 is the
 ground under the cradle, the **deck is at y = 1.78**, the bulwark rail tops out 0.85 m above it, the
