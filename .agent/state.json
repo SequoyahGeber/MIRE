@@ -135,7 +135,13 @@
         "docs/FINDINGS.md",
         "docs/SPECS.md"
       ],
-      "notes": [],
+      "notes": [
+        {
+          "at": "2026-08-18T18:03:27+00:00",
+          "by": "lm",
+          "text": "Root cause: cmd_godot never ran an import pass before loading a --script/scene run, so a check after an asset rebuild reads .godot/imported/ from the previous build indefinitely (re-running does not help, per F-093's own measurement). Fix: cmd_godot now runs a synchronous '--headless --import' pass before any run that isn't itself '--import', inside the same file_lock so concurrent lanes still can't race the cache (F-044). Skips the pre-pass when the caller's own args already include --import, so 'agent godot --import' isn't doubled."
+        }
+      ],
       "started": "2026-08-18T18:00:25+00:00"
     },
     "F-115": {
@@ -894,9 +900,9 @@
       "task": "F-050"
     },
     "docs/DECISIONS.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T13:13:28+00:00",
-      "task": "F-081"
+      "agent": "bram1",
+      "at": "2026-08-18T18:04:25+00:00",
+      "task": "F-044"
     },
     "docs/DELEGATION.md": {
       "agent": "yarrow21",
@@ -2921,9 +2927,11 @@
       "title": "The iron sword ships complete and nothing puts it in a player's hand"
     },
     "F-044": {
+      "done_at": "2026-08-18T18:04:25+00:00",
+      "done_by": "bram1",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Concurrent headless Godot runs share one import cache, which is the likely cause of F-038"
     },

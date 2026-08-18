@@ -2791,3 +2791,15 @@ Notes along the way:
 Files: `tools/blender/mire_art.py`, `tools/blender/world_bounds_check.py`
 
 Commit at time of writing: `75fcb6c`
+
+---
+
+### DONE · F-044 · bram1 · 2026-08-18T18:04:25+00:00
+
+**Concurrent headless Godot runs share one import cache, which is the likely cause of F-038**
+
+Recorded D-065 (LM spends the Max account to 90% of its five-hour window, then stops) — Sequoyah's call, and the one place in this project where holding quota back is correct, because LM shares the director's own account. The import-cache question F-044 actually names is still deliberately open; see the note in its FINDINGS entry.
+
+Files: `docs/DECISIONS.md`
+
+Commit at time of writing: `0c887e8`

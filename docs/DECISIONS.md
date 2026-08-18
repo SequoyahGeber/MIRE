@@ -1334,3 +1334,17 @@ back into the layout.
 <why, in 2–4 sentences>
 **Would change my mind:** <the specific evidence that should make you revisit this>
 ```
+
+### D-065 · 2026-08-18 · The `LM` lane spends the Max account to 90% of its five-hour window and then stops
+`LM` dispatches headless work to the same Claude Max account the **director chat itself runs on**, so
+alone among the lanes it spends the director's own quota. Sequoyah's call: let it run to 90% and hold
+the rest. This looks like it contradicts the standing rule that unused subscription quota is wasted,
+and the exception is deliberate — a lane that drains the five-hour window leaves the director unable
+to route, verify or close anything out, while still being the thing responsible for noticing that
+work has stopped. The reserve funds a clean close-out; it is not a savings account, and this is the
+only place in the project where holding quota back is the right move. Implemented as `reserve_pct` on
+the lane and enforced in `lane.quota_block`, which is inert until LM has reported usage once, because
+`used_pct` does not exist before a first run.
+**Would change my mind:** evidence that the director's own turns are cheap enough to finish inside
+the last 10% anyway, or a director that no longer shares an account with a dispatchable lane — in
+either case the reserve is pure waste and should go to zero.
