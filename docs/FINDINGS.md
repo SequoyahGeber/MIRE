@@ -852,7 +852,48 @@ add a check that exercises the production caller instead of constructing a priva
 
 ---
 
+### F-095 · Post-F-090 frame/load seams: flora part merge, terrain occlusion, world-build time
+
+**Area:** perf · **Severity:** medium · **Found:** 2026-08-18 by coil23
+
+F-090 left three measured seams. (1) Undergrowth draws 2-4 calls per (asset,cell) because flora GLBs carry multiple mesh parts — authored_world already solved this ('one mesh, one surface per material', authored_world.gd:432); porting that merge to the scatter halves its draw calls with zero visual change. (2) The shadow+main pass still runs ~5.4k draws on a map with a central ridge system — Godot's raster occlusion culling with a conservative under-shell occluder built from the heightfield the world already owns would cull everything behind terrain, and the pattern transfers to generated worlds. (3) AUTHORED_WORLD builds in 8,899 ms on the M5 Pro — a potato multiplies that; needs a per-phase breakdown before it can be attacked. Also unmeasured: the night scenario (stars + moonlight + wave enemies) — the probe only ever ran at 8.35h.
+
+---
+
 ## Resolved
+
+### F-096 · The quota parser only understands the word reset, so Codex's dated try-again message falls through to a blind five-hour default — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by bram1
+
+`parse_reset` anchors `CLOCK_PAT` and `CLOCK24_PAT` on the literal word `reset`, and has no pattern
+for a calendar date at all. Codex does not use that word: it says *"or try again at Aug 19th, 2026
+8:57 PM."* Nothing matched, so `cmd_run` fell through to its blind fallback — `now + 5 hours` — and
+parked the lane for five hours over a wall that had **thirty-nine** hours left on it.
+
+Observed on LC1, 2026-08-18. Its weekly window was exhausted, and the account said so precisely in
+the failure body every single time. The harness recorded 10:08Z, then 12:07Z, then 17:08Z — three
+five-hour guesses in a row. Each expiry woke the chain, spent a dispatch discovering the wall was
+still there, and re-guessed. Left alone it would have burned `MAX_RESUMES` and exited, stranding a
+queued review that nothing would then restart. The one piece of information that would have prevented
+all of it was sitting in `last_error` the whole time.
+
+Worth noting the shape of the failure: a bare clock pattern is *more* dangerous than no pattern here,
+because "8:57 PM" also appears in the dated message. Had `CLOCK_PAT` matched it, `parse_reset`'s
+"next time that clock reads it" rule would have returned Aug 18th 8:57 PM — confidently, and a full
+day early.
+
+**Fixed:** the clock patterns now anchor on `(?:reset\w*|try again)`, and a new `DATE_PAT` handles the
+month-name form (`Aug 19th, 2026 8:57 PM`, `Sep 3, 2026`), tried *before* any clock-only pattern
+precisely because a stated date is the only wording that can be more than 24 hours out. A dated match
+with no time defaults to midnight local, which parks slightly long rather than slightly short.
+
+**Verified:** `lane selftest` is 23/23 with three new samples covering the dated form, a dateless
+`try again at 8:57 PM`, and a date with no clock. Against LC1's verbatim message, `parse_reset` now
+returns `2026-08-20T03:57:00+00:00` where it previously returned `None`. LC1 has been re-parked to
+that stamp and `lane-revive` re-armed for 04:02Z on the 20th.
+
+---
 
 ### F-090 · Frame budget audit: ~100 fps where hundreds are expected — **fixed**
 

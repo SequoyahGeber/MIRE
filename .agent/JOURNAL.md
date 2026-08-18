@@ -2337,3 +2337,15 @@ Commit at time of writing: `b991014`
 Both idle-lane paths fixed and verified earlier this session: lane-revive daemon re-arms a parked lane at its window reset (armed for LC1), and cmd_order now ignores the ordering lane's own live claims so a queue can be deepened. FINDINGS.md section was already moved to Resolved; this closes the state side.
 
 Commit at time of writing: `f01dded`
+
+---
+
+### DONE · F-096 · bram1 · 2026-08-18T12:56:53+00:00
+
+**The quota parser only understands the word reset, so Codex's dated try-again message falls through to a blind five-hour default**
+
+parse_reset now anchors on 'try again' as well as 'reset', and a new DATE_PAT handles the month-name form, tried before any clock-only pattern because a stated date is the only wording that can be more than 24h out. Against LC1's verbatim message it returns 2026-08-20T03:57:00+00:00 where it previously returned None and the caller guessed now+5h. lane selftest 23/23 with three new samples.
+
+Files: `.agent/bin/lane`, `docs/FINDINGS.md`
+
+Commit at time of writing: `fb32051`

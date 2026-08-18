@@ -359,8 +359,19 @@ QUOTA_PAT = re.compile(
     r")", re.I)
 
 ISO_PAT = re.compile(r"\b(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2})?(?:[+-]\d{2}:?\d{2}|Z)?)")
-CLOCK_PAT = re.compile(r"reset\w*(?:\s+\w+){0,3}?\s+(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?", re.I)
-CLOCK24_PAT = re.compile(r"reset\w*(?:\s+\w+){0,3}?\s+(\d{1,2}):(\d{2})", re.I)
+# Codex says "try again at ...", Claude says "will reset at ..." — anchor on both, or a message that
+# states its reset precisely falls through to the blind five-hour default (F-095).
+_WHEN = r"(?:reset\w*|try again)(?:\s+\w+){0,3}?\s+"
+CLOCK_PAT = re.compile(_WHEN + r"(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?", re.I)
+CLOCK24_PAT = re.compile(_WHEN + r"(\d{1,2}):(\d{2})", re.I)
+# "Aug 19th, 2026 8:57 PM" — a full calendar date, which a bare clock pattern silently truncates to
+# the next time that clock reads, landing up to a day early.
+DATE_PAT = re.compile(
+    _WHEN + r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+"
+    r"(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})"
+    r"(?:,?\s+(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*([ap])\.?m\.?)?", re.I)
+_MONTHS = {m: i + 1 for i, m in enumerate(
+    ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"])}
 RELATIVE_PAT = re.compile(r"in\s+(\d+)\s*(second|minute|hour|day)s?", re.I)
 
 
@@ -382,6 +393,24 @@ def parse_reset(text):
         try:
             dt = datetime.fromisoformat(m.group(1).replace("Z", "+00:00").replace(" ", "T"))
             return _as_utc(dt)
+        except ValueError:
+            pass
+
+    # Before any clock-only pattern: a stated calendar date is the only wording that can be more
+    # than 24h out, and it is exactly the one a bare clock match would quietly discard.
+    m = DATE_PAT.search(text)
+    if m:
+        hour, minute = 0, 0
+        if m.group(4):
+            hour, minute = int(m.group(4)), int(m.group(5) or 0)
+            half = (m.group(6) or "").lower()
+            if half == "p" and hour < 12:
+                hour += 12
+            elif half == "a" and hour == 12:
+                hour = 0
+        try:
+            return _as_utc(datetime(int(m.group(3)), _MONTHS[m.group(1).lower()[:3]],
+                                    int(m.group(2)), hour, minute))
         except ValueError:
             pass
 
@@ -1025,7 +1054,10 @@ def cmd_selftest(args):
                  "resets at 3:30 PM",
                  "limit will reset at 14:00",
                  "try again in 5 hours",
-                 "Rate limit exceeded. Resets 2026-08-19T07:00:00Z"):
+                 "Rate limit exceeded. Resets 2026-08-19T07:00:00Z",
+                 "or try again at Aug 19th, 2026 8:57 PM.",
+                 "try again at Sep 3, 2026",
+                 "try again at 8:57 PM"):
         got = parse_reset(text)
         if until_passed(got) is None:
             print("%s✗ unusable reset stamp:%s %r -> %r" % (C["r"], C["x"], text, got))
