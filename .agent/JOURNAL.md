@@ -1724,3 +1724,38 @@ Commit at time of writing: `6acd7c1`
 A wrapper-written handoff was just an exit code and a log path, which is true but useless to whoever picks the task up. It now reconstructs the agent's own account from its streamed log — every file it had written, its last narration, its last six actions — all read locally after the agent is dead, so it costs nothing and works precisely when the agent cannot speak for itself. Verified against 3.8's 200-call log: it recovers all twelve edited files and the agent's own summary.
 
 Commit at time of writing: `36b8208`
+
+---
+
+### HANDOFF · 3.5 · lp · 2026-08-18T01:18:50+00:00
+
+**Coins, chest tiers, chest-opening UI and flow**
+
+LP stopped mid-protocol on 3.5 without closing out: it exited 0 (subtype success, stop_reason end_turn) after saying it would 'pause here and wait for the monitor's notification once the shared Godot lock frees up'. Headless runs have no next turn, so it simply stopped, holding all eleven claims. The Godot lock is now FREE.
+
+The work is REAL and ON DISK, untracked — do not start over. Present: systems/loot/, ui/loot/, content/loot/, content/items/coins.tres, tools/chest_check.gd, tools/chest_net_check.gd.
+What is left: run the two checks through `agent godot`, then close out and ship.
+
+Files it had already written or edited: systems/loot/loot_entry.gd, systems/loot/loot_table_def.gd, systems/loot/chest.gd, autoload/registry.gd, ui/loot/chest_ui.gd, core/net/net_version.gd, tools/handshake_check.gd, content/items/coins.tres, content/loot/small.tres, tools/chest_check.gd, tools/chest_net_check.gd, docs/DECISIONS.md.
+Its last words: "I'll pause here and wait for the monitor's notification once the shared Godot lock frees up."
+Its last actions:
+  - Bash wc -l /private/tmp/claude-501/-Users-sequoyahgeber-Desktop-MIRE/ad3dfdcc-cc20-4b
+  - Read /Users/sequoyahgeber/Desktop/MIRE/docs/NEXT.md
+  - Bash wc -l /private/tmp/claude-501/-Users-sequoyahgeber-Desktop-MIRE/ad3dfdcc-cc20-4b
+  - Bash ls -la /Users/sequoyahgeber/Desktop/MIRE/tools/_hf_check.gd 2>&1; echo "---"; he
+  - Bash wc -l /private/tmp/claude-501/-Users-sequoyahgeber-Desktop-MIRE/ad3dfdcc-cc20-4b
+  - Bash wc -l /private/tmp/claude-501/-Users-sequoyahgeber-Desktop-MIRE/ad3dfdcc-cc20-4b
+
+Files: `systems/loot/chest.gd`, `systems/loot/loot_table_def.gd`, `systems/loot/loot_entry.gd`, `ui/loot/chest_ui.gd`, `autoload/registry.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `content/items/coins.tres`, `content/loot/small.tres`, `tools/chest_check.gd`, `tools/chest_net_check.gd`
+
+Commit at time of writing: `040064a`
+
+---
+
+### DONE · 0.12 · quill15 · 2026-08-18T01:19:02+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+Real failure caught in production, and it was not a quota wall. Task 3.5 hit the shared Godot lock, said 'I will pause here and wait for the monitor's notification', and ended its turn — headless runs have no next turn, so it stopped mid-task holding eleven claims with the whole loot system uncommitted, while reporting subtype success, stop_reason end_turn, is_error false, exit 0. Two fixes: completion is now judged by the board rather than the exit code (a task still in flight under this lane after its process exits gets the same handoff and claim release as a crash, and counts toward the consecutive-failure guard), and the work order now tells lanes explicitly that they are headless, that blocking commands should be allowed to block, and that going quiet is worse than failing.
+
+Commit at time of writing: `040064a`

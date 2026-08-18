@@ -8,9 +8,9 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **3.5** Coins, chest tiers, chest-opening UI and flow | lp | 2026-08-18 01:06 | `systems/loot/chest.gd`, `systems/loot/loot_table_def.gd`, `systems/loot/loot_entry.gd`, `ui/loot/chest_ui.gd`, `autoload/registry.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `content/items/coins.tres`, `content/loot/small.tres`, `tools/chest_check.gd`, `tools/chest_net_check.gd` |
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | moss11 | 2026-08-18 00:57 | `docs/ASSET_TRACKER.md`, `tools/blender/build_flora_set.py`, `tools/blender/mire_art.py`, `assets/flora`, `assets/source/flora_set.blend`, `world/gen/undergrowth.gd`, `tools/flora_check.gd`, `levels/playtest_hollow.tscn` |
 | **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-18 00:43 | `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `assets/maps`, `assets/source/playtest_hollow.blend` |
+| **F-056** The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join | flint5 | 2026-08-18 01:15 | `world/gen/playtest_hollow.gd` |
 
 **2.1d notes:**
 - Batch A-000V (vegetation expansion) taken OUT OF QUEUE ORDER at Sequoyah's direct request — 'make a whole bunch of vegetation assets... little plants, bushes, more grass, maybe more trees'. A-009 stays NEXT and unstarted, same precedent as A-004R and A-021S.
@@ -68,7 +68,7 @@
 | ⬜ | **F-045** `pgrep -fl Godot` is too blunt to be the closed-editor guard | todo |
 | ⬜ | **F-053** Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why | todo |
 | ⬜ | **F-055** Committed HEAD boots with a failed autoload — `c187ede` deleted a script but left it registered | todo |
-| ⬜ | **F-056** The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join | todo |
+| 🔵 | **F-056** The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join | in_flight |
 | ⬜ | **F-057** A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds | todo |
 | ⬜ | **F-058** `docs/FINDINGS.md` carried two F-055s and two F-056s at once — concurrent lanes both used `agent brief`'s "next number" | todo |
 | ⬜ | **F-059** `InventoryService._publish_snapshot`'s `net_inventory_snapshot.rpc_id()` is unguarded against a departed peer, same shape as the bug task 3.8 fixed in `player_health.gd` | todo |

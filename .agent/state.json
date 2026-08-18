@@ -20,26 +20,6 @@
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
-    "autoload/registry.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T01:06:48+00:00",
-      "task": "3.5"
-    },
-    "content/items/coins.tres": {
-      "agent": "lp",
-      "at": "2026-08-18T01:06:48+00:00",
-      "task": "3.5"
-    },
-    "content/loot/small.tres": {
-      "agent": "lp",
-      "at": "2026-08-18T01:06:48+00:00",
-      "task": "3.5"
-    },
-    "core/net/net_version.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T01:06:48+00:00",
-      "task": "3.5"
-    },
     "docs/ASSET_TRACKER.md": {
       "agent": "moss11",
       "at": "2026-08-18T00:57:48+00:00",
@@ -49,21 +29,6 @@
       "agent": "moss11",
       "at": "2026-08-18T00:57:48+00:00",
       "task": "2.1d"
-    },
-    "systems/loot/chest.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T01:06:48+00:00",
-      "task": "3.5"
-    },
-    "systems/loot/loot_entry.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T01:06:48+00:00",
-      "task": "3.5"
-    },
-    "systems/loot/loot_table_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T01:06:48+00:00",
-      "task": "3.5"
     },
     "tools/blender/build_flora_set.py": {
       "agent": "moss11",
@@ -75,40 +40,25 @@
       "at": "2026-08-18T00:57:48+00:00",
       "task": "2.1d"
     },
-    "tools/chest_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T01:06:48+00:00",
-      "task": "3.5"
-    },
-    "tools/chest_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T01:06:48+00:00",
-      "task": "3.5"
-    },
     "tools/flora_check.gd": {
       "agent": "moss11",
       "at": "2026-08-18T00:57:48+00:00",
       "task": "2.1d"
-    },
-    "tools/handshake_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T01:06:48+00:00",
-      "task": "3.5"
     },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
-    "ui/loot/chest_ui.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T01:06:48+00:00",
-      "task": "3.5"
-    },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
+    },
+    "world/gen/playtest_hollow.gd": {
+      "agent": "flint5",
+      "at": "2026-08-18T01:15:55+00:00",
+      "task": "F-056"
     },
     "world/gen/undergrowth.gd": {
       "agent": "moss11",
@@ -149,23 +99,13 @@
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
     },
-    "3.5": {
-      "agent": "lp",
+    "F-056": {
+      "agent": "flint5",
       "files": [
-        "systems/loot/chest.gd",
-        "systems/loot/loot_table_def.gd",
-        "systems/loot/loot_entry.gd",
-        "ui/loot/chest_ui.gd",
-        "autoload/registry.gd",
-        "core/net/net_version.gd",
-        "tools/handshake_check.gd",
-        "content/items/coins.tres",
-        "content/loot/small.tres",
-        "tools/chest_check.gd",
-        "tools/chest_net_check.gd"
+        "world/gen/playtest_hollow.gd"
       ],
       "notes": [],
-      "started": "2026-08-18T01:06:48+00:00"
+      "started": "2026-08-18T01:15:55+00:00"
     }
   },
   "recent": {
@@ -924,40 +864,20 @@
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
     },
-    "assets/environment_additions/exports/mire_broadleaf_tree.glb.import": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
-    },
     "assets/environment_additions/exports/mire_mossy_boulder.glb": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
-    },
-    "assets/environment_additions/exports/mire_mossy_boulder.glb.import": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
     },
     "assets/environment_additions/preview/adapted_nature_preview.png": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
     },
-    "assets/environment_additions/preview/adapted_nature_preview.png.import": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
-    },
     "assets/environment_additions/preview/adapted_nature_scale_preview.png": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
-    },
-    "assets/environment_additions/preview/adapted_nature_scale_preview.png.import": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
     },
     "assets/harvestables": {
       "agent": "tine18",
@@ -1134,21 +1054,6 @@
       "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
-    "assets/source/reference_imports": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/source/reference_imports/low_poly_rock_asset.glb": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
-    },
-    "assets/source/reference_imports/low_poly_tree_asset.glb": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
-    },
     "assets/source/tool_weapon_set.blend": {
       "agent": "tine18",
       "at": "2026-08-17T23:34:54+00:00",
@@ -1224,100 +1129,50 @@
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
     },
-    "assets/wards/exports/ward_activation_crystal.glb.import": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
-    },
     "assets/wards/exports/ward_boundary_post.glb": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
-    },
-    "assets/wards/exports/ward_boundary_post.glb.import": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
     },
     "assets/wards/exports/ward_critical.glb": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
     },
-    "assets/wards/exports/ward_critical.glb.import": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
-    },
     "assets/wards/exports/ward_damaged.glb": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
-    },
-    "assets/wards/exports/ward_damaged.glb.import": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
     },
     "assets/wards/exports/ward_destroyed.glb": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
     },
-    "assets/wards/exports/ward_destroyed.glb.import": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
-    },
     "assets/wards/exports/ward_foundation.glb": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
-    },
-    "assets/wards/exports/ward_foundation.glb.import": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
     },
     "assets/wards/exports/ward_healthy.glb": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
     },
-    "assets/wards/exports/ward_healthy.glb.import": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
-    },
     "assets/wards/exports/ward_repair_scaffolding.glb": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
-    },
-    "assets/wards/exports/ward_repair_scaffolding.glb.import": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
     },
     "assets/wards/preview/ward_preview.png": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
     },
-    "assets/wards/preview/ward_preview.png.import": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
-    },
     "assets/wards/preview/ward_scale_preview.png": {
       "agent": "pike14",
       "at": "2026-08-17T02:10:02+00:00",
       "task": "2.1i"
-    },
-    "assets/wards/preview/ward_scale_preview.png.import": {
-      "agent": "ember",
-      "at": "2026-08-17T01:15:29+00:00",
-      "task": "2.1d"
     },
     "assets/wellsprings": {
       "agent": "tine18",
@@ -1470,9 +1325,9 @@
       "task": "F-018"
     },
     "autoload/registry.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:31:24+00:00",
-      "task": "2.8"
+      "agent": "lp",
+      "at": "2026-08-18T01:18:50+00:00",
+      "task": "3.5"
     },
     "autoload/steam_lobby.gd": {
       "agent": "dusk3",
@@ -1508,6 +1363,11 @@
       "agent": "dusk3",
       "at": "2026-08-17T16:52:06+00:00",
       "task": "F-041"
+    },
+    "content/items/coins.tres": {
+      "agent": "lp",
+      "at": "2026-08-18T01:18:50+00:00",
+      "task": "3.5"
     },
     "content/items/iron_ore.tres": {
       "agent": "kiln9",
@@ -1568,6 +1428,11 @@
       "agent": "dusk3",
       "at": "2026-08-17T16:52:06+00:00",
       "task": "F-041"
+    },
+    "content/loot/small.tres": {
+      "agent": "lp",
+      "at": "2026-08-18T01:18:50+00:00",
+      "task": "3.5"
     },
     "content/recipes/stone_axe.tres": {
       "agent": "flint5",
@@ -1639,16 +1504,6 @@
       "at": "2026-08-17T15:58:44+00:00",
       "task": "2.10"
     },
-    "core/events/event_bus.gd.uid": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:11:22+00:00",
-      "task": "2.3"
-    },
-    "core/net/net_interest.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:11:22+00:00",
-      "task": "2.3"
-    },
     "core/net/net_session.gd": {
       "agent": "dusk3",
       "at": "2026-08-17T15:43:36+00:00",
@@ -1656,8 +1511,8 @@
     },
     "core/net/net_version.gd": {
       "agent": "lp",
-      "at": "2026-08-18T00:55:40+00:00",
-      "task": "3.8"
+      "at": "2026-08-18T01:18:50+00:00",
+      "task": "3.5"
     },
     "core/net/run_identity.gd": {
       "agent": "dusk3",
@@ -1799,21 +1654,6 @@
       "at": "2026-08-17T04:31:24+00:00",
       "task": "2.8"
     },
-    "systems/harvesting/harvestable.gd.uid": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:11:22+00:00",
-      "task": "2.3"
-    },
-    "systems/harvesting/harvestable_def.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:11:22+00:00",
-      "task": "2.3"
-    },
-    "systems/harvesting/harvestable_def.gd.uid": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:11:22+00:00",
-      "task": "2.3"
-    },
     "systems/health/downed_state.gd": {
       "agent": "lp",
       "at": "2026-08-18T00:55:40+00:00",
@@ -1838,6 +1678,21 @@
       "agent": "lp",
       "at": "2026-08-18T00:55:40+00:00",
       "task": "3.8"
+    },
+    "systems/loot/chest.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T01:18:50+00:00",
+      "task": "3.5"
+    },
+    "systems/loot/loot_entry.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T01:18:50+00:00",
+      "task": "3.5"
+    },
+    "systems/loot/loot_table_def.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T01:18:50+00:00",
+      "task": "3.5"
     },
     "systems/spawning/wave_spawner.gd": {
       "agent": "lc1",
@@ -1928,6 +1783,16 @@
       "agent": "reed16",
       "at": "2026-08-17T17:01:21+00:00",
       "task": "2.1d"
+    },
+    "tools/chest_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T01:18:50+00:00",
+      "task": "3.5"
+    },
+    "tools/chest_net_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T01:18:50+00:00",
+      "task": "3.5"
     },
     "tools/combat_check.gd": {
       "agent": "dusk3",
@@ -2056,8 +1921,8 @@
     },
     "tools/handshake_check.gd": {
       "agent": "lp",
-      "at": "2026-08-18T00:55:40+00:00",
-      "task": "3.8"
+      "at": "2026-08-18T01:18:50+00:00",
+      "task": "3.5"
     },
     "tools/harvest_world_check.gd": {
       "agent": "flint5",
@@ -2078,26 +1943,6 @@
       "agent": "nettle",
       "at": "2026-08-17T01:48:54+00:00",
       "task": "2.4"
-    },
-    "tools/harvestable_check.gd.uid": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:11:22+00:00",
-      "task": "2.3"
-    },
-    "tools/harvestable_net_check.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:11:22+00:00",
-      "task": "2.3"
-    },
-    "tools/harvestable_net_check.gd.uid": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:11:22+00:00",
-      "task": "2.3"
-    },
-    "tools/interest_check.gd": {
-      "agent": "nettle",
-      "at": "2026-08-17T01:11:22+00:00",
-      "task": "2.3"
     },
     "tools/inventory_check.gd": {
       "agent": "dusk3",
@@ -2319,6 +2164,11 @@
       "at": "2026-08-17T02:30:40+00:00",
       "task": "2.5"
     },
+    "ui/loot/chest_ui.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T01:18:50+00:00",
+      "task": "3.5"
+    },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "tine18",
       "at": "2026-08-18T00:39:51+00:00",
@@ -2364,7 +2214,7 @@
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.12": {
-      "done_at": "2026-08-18T01:08:57+00:00",
+      "done_at": "2026-08-18T01:19:02+00:00",
       "done_by": "quill15",
       "est": "1.5",
       "milestone": "M0",
@@ -2817,7 +2667,7 @@
     "3.5": {
       "est": "3",
       "milestone": "M3",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T1",
       "title": "Coins, chest tiers, chest-opening UI and flow"
     },
@@ -3674,7 +3524,7 @@
     "F-056": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join"
     },

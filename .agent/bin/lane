@@ -616,25 +616,33 @@ def _finish(name, task, code, acc, tail, logpath, elapsed):
     """
     tin, tout, cost = totals(acc)
     exhausted = code != 0 and looks_exhausted(tail)
+    # An agent that stops mid-protocol must not be recorded as a success just because it exited 0.
+    incomplete = code == 0 and _task_still_open(task, name)
+    if incomplete:
+        print("%s✗ %s exited cleanly but never closed out %s — it is still in flight and holding "
+              "claims%s" % (C["y"], name, task, C["x"]))
 
     with lanes_locked() as live:
         lane = live[name]
         _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, elapsed,
-                      exhausted)
-    if code != 0:
+                      exhausted, incomplete)
+    if code != 0 or incomplete:
         cli = (_lane_cli(name) or "claude")
         context = _context_from_log(logpath, cli)
+        why = ("stopped mid-protocol without closing out — exited 0 but left the task in flight"
+               if incomplete else ("quota wall" if exhausted else "error"))
         reason = ("%s stopped on %s at %s (exit %d, %s). Tokens this run: %s in / %s out.\n"
                   "The working diff is UNTOUCHED — its partial edits are still on disk, so read them "
                   "before redoing anything. Full log: %s\n\n%s\n\nTail of the failure:\n%s"
-                  % (name, task, now(), code, "quota wall" if exhausted else "error",
+                  % (name, task, now(), code, why,
                      f"{tin:,}", f"{tout:,}", os.path.relpath(logpath, ROOT),
                      context or "(no narration recovered from the log)", tail[-300:].strip()))
         _release(name, task, reason)
     return 0 if code == 0 else 1
 
 
-def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, elapsed, exhausted):
+def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, elapsed, exhausted,
+                  incomplete=False):
     # Authoritative quota, when the CLI gave us any.
     windows = acc.get("rate_limits") or {}
     if windows:
@@ -671,7 +679,14 @@ def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, e
     lane["task"] = None
     lane["last_finished"] = now()
 
-    if code == 0:
+    if code == 0 and incomplete:
+        # Not a wall and not a crash — it simply stopped. Stay idle so the queue keeps moving, but
+        # count it so three in a row still trips the guard.
+        lane["status"] = "idle"
+        lane["failures"] += 1
+        lane["consecutive_failures"] += 1
+        lane["last_error"] = "exited 0 without closing out %s" % task
+    elif code == 0:
         lane["status"] = "idle"
         lane["consecutive_failures"] = 0
         lane["last_error"] = None
@@ -706,6 +721,29 @@ def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, e
         print("  %slog: %s%s" % (C["dim"], os.path.relpath(logpath, ROOT), C["x"]))
 
 
+
+
+STATE = os.path.join(AGENT_DIR, "state.json")
+
+
+def _task_still_open(task, name):
+    """True if the task is still in flight under this lane after its process exited.
+
+    Exit 0 is NOT proof the protocol completed. Observed on 3.5: the agent hit the shared Godot lock,
+    said "I'll pause here and wait for the monitor's notification", and ended its turn — headless, so
+    there is no next turn. Claude Code reported subtype 'success', stop_reason 'end_turn', is_error
+    false, and the wrapper believed it. The task stayed in_flight holding eleven claims, blocking
+    every other lane that needed those files, with real work sitting uncommitted on disk.
+
+    So the completion test is the board, not the exit code: if the lane still holds the task, it did
+    not close out, whatever the process claimed."""
+    try:
+        with open(STATE) as f:
+            st = json.load(f)
+    except (IOError, ValueError):
+        return False
+    entry = st.get("in_flight", {}).get(task)
+    return bool(entry and entry.get("agent") == name.lower())
 
 
 def _lane_cli(name):

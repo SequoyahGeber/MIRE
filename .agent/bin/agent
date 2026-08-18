@@ -1430,6 +1430,17 @@ Work autonomously and finish. **Do not stop to ask questions.** If the spec is a
 the way `ARCHITECTURE.md` and `DECISIONS.md` point, record the call, and keep going — a
 wrong-but-documented decision is cheap to reverse, and a stalled lane is not.
 
+**You are headless. There is no next turn, and nobody will send you a notification.** If you end your
+turn to "wait" for anything — a lock, a file, another agent — you do not resume; you simply stop,
+mid-task, still holding your claims, and block every lane that needs those files. This has already
+happened once (task 3.5 ended itself waiting on the Godot lock). So:
+
+- **Blocking commands are fine — let them block.** `agent godot` waits for the shared engine lock and
+  returns when it is free. That is normal; wait for it in-process rather than ending your turn.
+- If something is genuinely unavailable and you cannot proceed, **do not go quiet** — run
+  `.agent/bin/agent handoff %(tid)s "..."` so your claims are released and the next agent knows where
+  you stopped. Stopping silently is the one outcome worse than failing.
+
 %(spec)s
 ## 1. Claim before your first edit
 
