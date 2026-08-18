@@ -75,6 +75,31 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — F-105: `BuildGhost.update_aim()` takes an optional `delta`, and skips `evaluate()` on an unchanged aim
+
+`systems/building/build_ghost.gd`'s `update_aim(from, direction, builder_position, delta: float =
+0.0)` gained a 4th, optional parameter — anything already calling it with 3 args still compiles and
+still works, it just doesn't get the timer's proactive re-check (see below). `PlacementValidator.
+evaluate()` (5 raycasts + a shape cast) now only runs when the snapped placement or the builder
+position actually changed since the last call, or `REEVALUATE_INTERVAL_S` (0.2s) has elapsed —
+whichever a caller cares about should pass a real `delta` (`player_controller.gd`'s
+`_tick_build_ghost()` does). **`set_piece()` invalidates the cache** — a same-spot swap to a
+different piece must re-evaluate, since the def (size/mass/rules) is part of what `evaluate()`
+answers, not just the transform. `evaluate_count()` is a new getter (backed by `_evaluate_count`)
+that exists purely so a check can assert the skip is actually happening; not gameplay-facing.
+
+`entities/player/player_controller.gd`'s `_apply_horizontal_movement()`, `_try_jump()` and
+`_tick_build_ghost()` all gained parameters too — `_physics_process()` now resolves
+`gameplay_input_allowed()`/`_is_downed()`/`_is_dead()` exactly once per tick and threads them through
+as `(input_allowed: bool, downed: bool, dead: bool)`, in that order, rather than each function
+re-deriving its own copy. **Any direct `.call()` into these from a check bypasses `_physics_process()`
+and must now pass all three** — `tools/player_vitals_check.gd` is the existing example
+(`player.call(&"_try_jump", true, false, false)` for a standing, alive, unblocked player).
+`_health_node()` now caches the resolved `/root/PlayerHealth` node in a `_health` member var instead
+of re-walking `/root` every call.
+
+Full reasoning, the exact per-item fix, and everything verified: `docs/SPECS.md`'s F-105 block.
+
 ### 2026-08-18 — a map now gets a group-name-mismatch check for free (F-076/D-062): `tools/world_contract_check.gd`
 
 Hollowmere shipped as the main scene while `EnemyWorld`/`HarvestWorld` still recognized only Playtest

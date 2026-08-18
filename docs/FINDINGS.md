@@ -588,20 +588,6 @@ MultiMesh transforms is measuring nothing, and any check whose assertion is sati
 
 ---
 
-### F-105 · Per-frame costs found by the F-099 review in files claimed by F-086/F-097
-
-**Area:** perf · **Severity:** low · **Found:** 2026-08-18 by kiln9
-
-The F-099 review sweep found per-frame costs in three files that were claimed mid-sweep by other in-flight tasks, so they were reviewed but not fixed. Apply after F-086/F-097 land, if the rewrites have not already removed the code:
-
-1. systems/building/build_ghost.gd:95 — update_aim() runs the full placement validator (5 support raycasts + 1 shape cast + fresh query/shape allocations, see placement_validator.gd:164) every frame even when the snapped transform is unchanged since last frame. Cache the previous placement and skip evaluate() when identical, with a short timer to catch world changes under a stationary ghost. [F-086/lp holds the file]
-
-2. entities/player/player_controller.gd:293 — one local-player physics tick performs ~6-8 get_node_or_null(/root/PlayerHealth) path lookups plus stringly .call() dispatches across _apply_horizontal_movement/_try_jump/_tick_revive_hold, and gameplay_input_allowed() (a group scan) is evaluated up to 3x per tick. Cache the node ref and resolve downed/dead/input-allowed once per tick. [F-086/lp holds the file]
-
-3. autoload/environment_vfx.gd:27 — _fire_lights is append-only (freed lights skipped but never pruned, so the per-frame loop grows across scene changes), _process runs even with zero fires, and every fire light has shadow_enabled = true, which GraphicsQuality presets never scale — per-light shadow passes are among the costliest items on the weak GPUs D-055 targets. [F-097/larch10 holds the file and is rewriting discovery]
-
----
-
 ### F-108 · A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
@@ -691,6 +677,48 @@ F-075, and AGENTS.md's rule is to file it and keep moving, not chase it.
 ---
 
 ## Resolved
+
+### F-105 · Per-frame costs found by the F-099 review in files claimed by F-086/F-097 — **fixed**
+
+**Area:** perf · **Severity:** low · **Found:** 2026-08-18 by kiln9
+
+Three items, one per file, found mid-sweep while `build_ghost.gd`/`player_controller.gd` (F-086) and
+`environment_vfx.gd` (F-097) were held by other in-flight tasks. All three had landed by the time this
+was picked up, so all three were claimed and checked fresh rather than reused from the finding's own
+description.
+
+1. **`build_ghost.gd:update_aim()`** ran `PlacementValidator.evaluate()` (5 support raycasts + a shape
+   cast, fresh allocations) every physics tick even with a stationary ghost. **Fixed:** cache the last
+   evaluated placement + builder position; skip `evaluate()` unless either changed, or
+   `REEVALUATE_INTERVAL_S` (0.2s) has passed — the timer catches a world change under a ghost that
+   never moves. `set_piece()` invalidates the cache, since `evaluate()` also depends on the piece def,
+   not just the transform. A new `evaluate_count()` getter lets a check prove the skip is real.
+
+2. **`player_controller.gd`'s physics tick** re-derived `gameplay_input_allowed()` (group scan) and
+   `_is_downed()`/`_is_dead()` (`get_node_or_null(/root/PlayerHealth)` + `.call()`) up to 3x each,
+   independently, across `_apply_horizontal_movement`/`_try_jump`/`_tick_revive_hold`. **Fixed:**
+   `_physics_process()` resolves all three exactly once and threads them through as parameters;
+   `_health_node()` caches the resolved autoload in a member var instead of re-walking `/root`.
+
+3. **`environment_vfx.gd`**'s finding text described `_fire_lights` as an append-only array with
+   unscaled shadows — **that code no longer exists.** F-097 (landed the same day, ahead of this task)
+   replaced fire-light discovery with the `_sites`/`_pools` budget system: pools are capped by
+   `profile.max_live * preset_scale` and reused in place, `_reset()` clears them on every scene
+   change, and `shadow_enabled` is already gated by `shadow_live * preset_scale` — confirmed against
+   `AssetVfx.EMITTER_PROFILES`. The one part still true — `_process()` did its scene-change check
+   every frame regardless of fire count — now short-circuits before the budget timer and light-flicker
+   pass when both `_sites` and `_pools` are empty.
+
+**Fixed 2026-08-18 by lp.** Claim deviated from the work order's suggested `autoload/build_service.gd`
+(no per-frame cost exists there — it's a full re-derivation of the actual files the finding's own body
+names, see `docs/SPECS.md`'s F-105 block for the reasoning and the exact call-site changes two test
+files needed). **Verified:** `agent godot --script tools/build_check.gd` (failures=0, four new F-105
+assertions added), `tools/player_vitals_check.gd`, `tools/environment_vfx_check.gd`,
+`tools/environment_vfx_hollowmere_check.gd`, `tools/verify_setup.gd`, `tools/combat_self_hit_check.gd`,
+`tools/build_net_check.gd`, `tools/player_health_net_check.gd`, `tools/player_vitals_net_check.gd` —
+all 0 failures, covering every function whose signature changed end to end (offline and networked).
+
+---
 
 ### F-076 · A new map inherits none of the systems keyed to the old map's group names — **fixed for EnemyWorld/HarvestWorld; Undergrowth follows in F-112**
 

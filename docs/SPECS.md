@@ -424,6 +424,64 @@ opening is a host-validated interact (harvest pattern: request → host rolls se
 currency system. Loot rolls host-side from a per-run seeded `RandomNumberGenerator` — never
 `randi()`. UI joins the D-032 group.
 
+## F-105 · Per-frame costs found by the F-099 review in files claimed by F-086/F-097
+
+**Claim:** the finding's own work order named `autoload/build_service.gd` — wrong file, kept as an
+F-105 note rather than corrected there. `build_service.gd` has no per-frame cost (it only runs off
+host RPCs); the three items are in `systems/building/build_ghost.gd`,
+`entities/player/player_controller.gd`, `autoload/environment_vfx.gd`, so those are what got claimed
+and fixed, plus `tools/build_check.gd` and `tools/player_vitals_check.gd` for the call-site/assertion
+changes below.
+
+**Item 1 — `build_ghost.gd:update_aim()` ran the full validator every physics tick.**
+`PlacementValidator.evaluate()` (5 support raycasts + a shape cast, fresh query/shape allocations)
+now only runs when the snapped `_placement` or the `builder_position` range input actually differ
+from the last evaluated call, OR `REEVALUATE_INTERVAL_S` (0.2 s) has passed since the last real
+answer — the timer is what still catches a world change (someone else builds where you're aiming)
+under a ghost that never moves. `set_piece()` resets the cache (`_has_evaluated = false`): a same-spot
+piece swap must not read the OLD piece's verdict, since `evaluate()` also depends on the def (size,
+mass, rules), not just the transform. `update_aim()` gained a 4th optional `delta: float = 0.0`
+param to pace the timer; every existing 3-arg caller (`tools/build_check.gd`) still compiles and still
+gets correct (if less proactively refreshed) behaviour, since each of its calls already varies the aim
+or the piece between assertions. `player_controller.gd`'s `_tick_build_ghost()` now takes and forwards
+its own `delta`. A new `evaluate_count()` getter (backed by `_evaluate_count`, incremented only on a
+real `evaluate()` call) exists so a check can prove the skip is real instead of trusting the comment.
+
+**Item 2 — `player_controller.gd`'s physics tick re-derived downed/dead/input-allowed 3x each.**
+`_apply_horizontal_movement()`/`_try_jump()`/`_tick_revive_hold()` each independently called
+`gameplay_input_allowed()` (a group scan) and `_is_downed()`/`_is_dead()` (a `get_node_or_null(/root/
+PlayerHealth)` plus a `.call()`), none of which can change mid-tick. `_physics_process()` now resolves
+all three exactly once and threads them through as parameters; the three functions' signatures gained
+`input_allowed: bool, downed: bool, dead: bool` (in that call order) instead of re-deriving them.
+Separately, `_health_node()` now caches the resolved `/root/PlayerHealth` node in a `_health` member
+var (autoloads outlive the whole session once resolved) rather than walking `/root` on every call —
+this is what `_tick_revive_hold()`'s own direct `get_node_or_null` call was doing outside the shared
+helper; it now goes through `_health_node()` like everything else. **Two test call sites needed
+updating** (`tools/player_vitals_check.gd` calls `_try_jump()`/`_apply_horizontal_movement()`
+directly, bypassing `_physics_process()`): both now pass `true, false, false` explicitly — a standing,
+undowned, alive, unblocked player, the same values `_physics_process()` would have computed.
+
+**Item 3 — `autoload/environment_vfx.gd`'s `_fire_lights`/unscaled-shadow description no longer
+matches the file.** F-097 (landed same day, before this task) fully replaced fire-light discovery
+with the `_sites`/`_pools` budget system: pools are capped at `profile.max_live * preset_scale` and
+reused in place (`_assign_slots()`), never appended past that cap, and `_reset()` clears them on every
+scene change — the append-only growth the finding described does not exist in the current file.
+`shadow_enabled` is already `index < shadow_live * preset_scale` (`_assign_slots()`), not
+unconditionally true — `GraphicsQuality` presets already scale it, confirmed against
+`AssetVfx.EMITTER_PROFILES`' `shadow_live` values (2/6 campfires, 1/4 forges, 1/4 embers, 0 for
+crystal/spore). The one genuinely still-true part — `_process()` runs its scene-change check every
+frame regardless of fire count — now short-circuits before the budget timer and light-flicker pass
+when `_sites` and `_pools` are both empty, since neither loop can do anything in that state.
+
+**Verified 2026-08-18:** `agent godot --script tools/build_check.gd` (failures=0, including four new
+F-105 assertions: an unchanged aim ray does not re-evaluate, a moved one does, moving back does, and
+the re-evaluate timer alone trips it under an unmoved ray); `tools/player_vitals_check.gd` (0
+failures); `tools/environment_vfx_check.gd` / `tools/environment_vfx_hollowmere_check.gd` (failures=0,
+pools stay within budget on both maps); `tools/verify_setup.gd` (all checks passed);
+`tools/combat_self_hit_check.gd`, `tools/build_net_check.gd`, `tools/player_health_net_check.gd`,
+`tools/player_vitals_net_check.gd` (all 0 failures) — full-path coverage of every function this task
+changed the signature of.
+
 ## F-107 · `chest_net_check`'s two host-side grant assertions fail at HEAD; client side is green
 
 **Claim:** `tools/chest_net_check.gd`. No production file — `systems/loot/chest.gd` and
