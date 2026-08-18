@@ -622,7 +622,10 @@ render_item_icons.py's SOURCES, rerun it, and set coins.tres's `icon` field, fol
 
 ---
 
-### F-058 · `mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call
+### F-092 · `mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call
+
+*Renumbered from F-058 on 2026-08-18 by lp (F-087) — that number collided with the original F-058, the
+meta-finding about duplicate F-numbers above. See F-087 for the full renumbering.*
 
 **Area:** art pipeline · **Found:** 2026-08-17 by moss11 while building the flora kit — **fixed**
 
@@ -643,7 +646,11 @@ than crashing. No existing kit changes, because none of them ever hit the cache 
 
 ---
 
-### F-059 · A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build
+### F-093 · A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build
+
+*Renumbered from F-059 on 2026-08-18 by lp (F-087) — that number collided with the original F-059
+(`InventoryService._publish_snapshot`'s unguarded `rpc_id`, Resolved below, cited by `983da6c`). See
+F-087 for the full renumbering.*
 
 **Area:** verification · **Found:** 2026-08-17 by moss11 — **fixed for this kit, and the remedy generalises**
 
@@ -669,7 +676,11 @@ happily against art that no longer exists. Any future asset check should cross t
 
 ---
 
-### F-060 · `mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float
+### F-094 · `mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float
+
+*Renumbered from F-060 on 2026-08-18 by lp (F-087) — that number collided with the original F-060
+(two-process net-check authoring traps, Resolved below, cited by `adfaa78`, `abcf9bd`). See F-087 for
+the full renumbering.*
 
 **Area:** art pipeline · **Found:** 2026-08-17 by moss11 — **fixed**
 
@@ -875,43 +886,6 @@ add a check that exercises the production caller instead of constructing a priva
 
 ---
 
-### F-087 · Three open findings share their F-number with a different finding, so brief routes to the wrong one and start reports two of them as already closed
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
-
-This is F-058's failure mode recurring, and it is now costing routing decisions rather than tidiness.
-Concurrent lanes each read `agent brief`'s "next number" before either had written, so three numbers
-name two different findings apiece. Enumerated 2026-08-18 by ivy8:
-
-| Number | Keeps it (original, already cited by commits) | Collided, needs renumbering |
-|---|---|---|
-| F-058 | L578 · Open · the meta-finding about duplicate F-numbers | **L625 · Open** · `mire_art.mat()`'s cache never hits |
-| F-059 | L1195 · Resolved · `InventoryService._publish_snapshot`'s unguarded `rpc_id` (cited by `983da6c`) | **L646 · Open** · a headless `--script` run never re-imports changed assets |
-| F-060 | L1122 · Resolved · two-process net-check authoring traps (cited by `adfaa78`, `abcf9bd`) | **L672 · Open** · `mire_art.world_bounds` measures rotated objects through their local box |
-
-Two distinct harms, both already observed:
-
-1. **`agent brief F-059` picks one arbitrarily** and may hand a lane the wrong finding — `agent start`
-   says so in its own warning, which is not a fix.
-2. **`agent start` reports F-059 and F-060 as "closed but still under '## Open'"**, because it matches
-   by number and finds the resolved twin. Both open findings therefore read as finished work, and
-   the natural response — move them to Resolved — would bury two live bugs. The asset-reimport one
-   (L646) is a correctness trap for every headless check in the repo.
-
-**Fix:** renumber only the three collided entries, which are the *later* arrivals in each pair, to
-fresh numbers above the current high-water mark. Do not touch the originals: their numbers are cited
-by shipped commit messages, and renumbering those rewrites history that git already carries. Then
-`grep -rn` the renumbered ids across `docs/` and `.agent/` and repoint every reference that meant the
-collided finding, leaving references that meant the original alone — read the surrounding sentence,
-since the number alone cannot tell you which was meant.
-
-Separately, and cosmetic: `F-052` appears twice under Resolved (L2016 and L2018) as a literal
-double-paste of one finding, and `F-055`/`F-056` each name two and three resolved findings
-respectively. These carry no routing risk — nothing routes to a resolved finding — so dedupe the
-F-052 paste and leave the rest as historical record.
-
----
-
 ### F-089 · Powerup lifecycle never removes obsolete family counts from clients, leaving ghost Resonances after reconnect or expiry
 
 **Area:** netcode · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.3 review
@@ -938,6 +912,94 @@ The level renders at ~100 fps on the M5 Pro where the scene complexity justifies
 ---
 
 ## Resolved
+
+### F-087 · Three open findings share their F-number with a different finding, so brief routes to the wrong one and start reports two of them as already closed — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8 · **Resolved 2026-08-18 by lp.**
+
+This is F-058's failure mode recurring, and it was costing routing decisions rather than tidiness.
+Concurrent lanes each read `agent brief`'s "next number" before either had written, so three numbers
+named two different findings apiece:
+
+| Number | Kept (original, already cited by commits) | Renumbered (was colliding) |
+|---|---|---|
+| F-058 | the meta-finding about duplicate F-numbers, above | → **F-092** · `mire_art.mat()`'s cache never hits |
+| F-059 | `InventoryService._publish_snapshot`'s unguarded `rpc_id` (cited by `983da6c`), below | → **F-093** · a headless `--script` run never re-imports changed assets |
+| F-060 | two-process net-check authoring traps (cited by `adfaa78`, `abcf9bd`), below | → **F-094** · `mire_art.world_bounds` measures rotated objects through their local box |
+
+Two distinct harms, both observed before the fix:
+
+1. `agent brief F-059` picked one arbitrarily and could hand a lane the wrong finding.
+2. `agent start` reported F-059 and F-060 as "closed but still under '## Open'", because it matched by
+   number and found the resolved twin — reading both open findings as finished work, which would have
+   buried two live bugs (the asset-reimport trap is a correctness gotcha for every headless check in
+   the repo) had anyone acted on the warning by moving them to Resolved.
+
+**Fix:** renumbered only the three collided entries (the *later* arrivals in each pair) to F-092/F-093/
+F-094, fresh numbers above the prior high-water mark (F-091). The originals — F-058, F-059, F-060 —
+are untouched: their numbers are cited by shipped commit messages, and renumbering those would rewrite
+history git already carries. Each renumbered entry carries a one-line provenance note (the pattern
+F-036 already established) naming its old number and why it moved.
+
+Repointed every reference in `docs/` and `.agent/` that meant a collided finding:
+
+- `docs/ASSET_TRACKER.md`'s A-000V row ("Filed F-058, F-059, F-060") → F-092, F-093, F-094 (it names the
+  flora-kit trio, i.e. the collided findings).
+- `.agent/state.json`'s `F-059`/`F-060` task titles had been overwritten by the collided findings' text
+  (a symptom of the same dict-key collision — `_sync_findings()` mirrors whichever entry it reads under
+  `## Open`, and the *last* one read wins). Corrected both titles back to the originals; their
+  `status: done` / `done_at` / `done_by` were already correct, since that recorded the real work
+  (`agent done F-059`/`F-060`) against the right commits — only the display title had drifted.
+  `F-058`, `F-092`, `F-093`, `F-094` need no manual state.json edit: `_sync_findings()` (run via
+  `agent board`) adds/refreshes them correctly on its own now that each number maps to exactly one
+  open entry.
+- **Left alone, on purpose:** `docs/SPECS.md`'s `## F-059` and `## F-060` blocks (about the original
+  findings — correct as written); `docs/DELEGATION.md`'s F-059/F-060 mentions (same); `tools/*.gd` and
+  `tools/blender/*.py` code comments citing F-058/F-059/F-060 (out of scope per this finding's own fix
+  note — `docs/` and `.agent/` only — and F-071's resolution already recorded why: those files are a
+  cross-cutting pass of their own, with real collision risk against whoever holds them); `.agent/
+  JOURNAL.md` and `.agent/logs/*.jsonl` (append-only history, same principle as not touching numbers
+  cited by commits). `docs/FINDINGS.md`'s own F-071 entry still cites "F-058, F-059, F-060" as the
+  historical example of the collision — left as written, since it's Resolved and describes what was
+  true when gale6 wrote it.
+- `F-058` was **not** renumbered and is **not** resolved by this fix — its own text is a different,
+  still-open concern (the F-055/F-056 Resolved-section duplicates), which this finding's "cosmetic"
+  clause explicitly leaves as historical record.
+
+Also fixed, cosmetic: deduped the literal double-paste of F-052 under Resolved (was two identical
+back-to-back headers). Left F-055/F-056's multiple Resolved entries alone, as instructed — no routing
+risk.
+
+**Verified:** `.agent/bin/agent board` before the fix showed `⚠ 1 F-number(s) used by more than one
+open finding: F-058` and `⚠ 2 finding(s) closed but still under '## Open': F-059  F-060`. After the
+fix, both warnings are gone — `_duplicate_findings()` finds no F-number shared by two open entries, and
+`_findings_drift()` finds no closed-but-open finding, because the two collided numbers no longer have
+an Open entry to disagree with their Resolved twin. `agent brief F-058`/`F-059`/`F-060` now each print
+exactly one finding (the original, correctly labelled Open/Resolved as FINDINGS.md says); `agent brief
+F-092`/`F-093`/`F-094` print the renumbered ones. `grep -c 'F-058\|F-059\|F-060' docs/FINDINGS.md`
+still finds them — as the originals, and as provenance notes on the renumbered entries — never as a
+second live heading.
+
+Wrote `tools/findings_numbering_check.gd` as the standing regression guard (source-text scan of
+`docs/FINDINGS.md`, `net_check_pattern_check.gd`-style): fails if any F-number heads two entries under
+`## Open`, or heads an entry under both `## Open` and `## Resolved`. Self-tested against both injected
+defects (duplicated an Open heading's number onto another Open entry; gave an Open heading a
+Resolved entry's number) — each correctly failed with the colliding id named, then a clean revert
+passed again. `agent godot --script tools/findings_numbering_check.gd` → `open=30 resolved=67
+failures=0`. Deliberately does not flag same-number entries where both are Resolved (F-052, F-055,
+F-056) — no routing risk, and the "cosmetic" clause above leaves those as historical record on
+purpose, so the check would otherwise fail forever against a decision already made.
+
+Wrote `docs/SPECS.md`'s missing F-087 block (this finding had none — SPECS.md's own preamble says
+fixing a missing spec belongs to the task that discovers it). Recorded the "renumber only in a
+dedicated pass, not ad hoc" policy as **D-053** in `docs/DECISIONS.md`, since two prior findings
+(F-058, F-071) had already independently deferred this same renumbering for the same reason and a
+third deferral would have been the real bug.
+
+`agent godot --quit-after 120` boots clean — this task touched only `docs/`, `.agent/state.json` and
+one new standalone `tools/` script, no gameplay code.
+
+---
 
 ### F-084 · Any client can destroy any buildable by its guessable node name from any distance — **fixed**
 
@@ -2172,7 +2234,8 @@ it for deliberate testing.
 
 ### F-052 · The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it — **fixed**
 
-### F-052 · The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it — **fixed**
+*Deduplicated 2026-08-18 by lp (F-087) — this entry was pasted twice, back to back, with identical
+content. No routing risk (resolved findings aren't claimable), so this is just tidiness.*
 
 **Area:** tests/netcode · **Severity:** high — every lane order tells lanes to run these checks ·
 **Found:** 2026-08-17 by flint5, from the audit's baseline run of the multi-process suite

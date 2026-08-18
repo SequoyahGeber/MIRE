@@ -589,9 +589,9 @@
       "task": "2.1d"
     },
     "docs/FINDINGS.md": {
-      "agent": "ivy8",
-      "at": "2026-08-18T05:14:05+00:00",
-      "task": "F-091"
+      "agent": "lp",
+      "at": "2026-08-18T05:30:56+00:00",
+      "task": "F-087"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -957,6 +957,11 @@
       "agent": "dusk3",
       "at": "2026-08-17T15:58:44+00:00",
       "task": "2.10"
+    },
+    "tools/findings_numbering_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T05:30:56+00:00",
+      "task": "F-087"
     },
     "tools/flora_check.gd": {
       "agent": "moss11",
@@ -2662,7 +2667,7 @@
       "milestone": "Findings",
       "status": "todo",
       "tier": "F",
-      "title": "`mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call"
+      "title": "`docs/FINDINGS.md` carried two F-055s and two F-056s at once \u2014 concurrent lanes both used `agent brief`'s \"next number\""
     },
     "F-059": {
       "done_at": "2026-08-18T04:23:58+00:00",
@@ -2671,7 +2676,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build"
+      "title": "`InventoryService._publish_snapshot`'s `net_inventory_snapshot.rpc_id()` is unguarded against a departed peer, same shape as the bug task 3.8 fixed in `player_health.gd`"
     },
     "F-060": {
       "done_at": "2026-08-18T04:33:16+00:00",
@@ -2680,7 +2685,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float"
+      "title": "Two-process net check authors: `local_peer_id() > HOST_PEER_ID` is not proof of a live connection, and mutating what `Node.get()` returns on a typed Dictionary property may not stick"
     },
     "F-061": {
       "est": "\u2014",
@@ -2895,9 +2900,11 @@
       "title": "The building system has no gameplay caller, so no player can place, rotate, or destroy anything"
     },
     "F-087": {
+      "done_at": "2026-08-18T05:30:56+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Three open findings share their F-number with a different finding, so brief routes to the wrong one and start reports two of them as already closed"
     },
@@ -2932,6 +2939,27 @@
       "status": "done",
       "tier": "F",
       "title": "Two ways the harness lets a fed lane sit idle: a parked lane is never restarted, and a lane's own claim blocks deepening its queue"
+    },
+    "F-092": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call"
+    },
+    "F-093": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build"
+    },
+    "F-094": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float"
     }
   },
   "version": 1

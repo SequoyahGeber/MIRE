@@ -15,7 +15,7 @@
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███████░░░` 56/84 | 28 |
+| Findings | `███████░░░` 57/87 | 30 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -62,7 +62,7 @@
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-053** Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why | todo |
 | ⬜ | **F-057** A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds | todo |
-| ⬜ | **F-058** `mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call | todo |
+| ⬜ | **F-058** `docs/FINDINGS.md` carried two F-055s and two F-056s at once — concurrent lanes both used `agent brief`'s "next number" | todo |
 | ⬜ | **F-061** content/items/coins.tres has no icon — the render_item_icons.py pipeline needs a SOURCES entry | todo |
 | ⬜ | **F-075** World statics and props share collision layer 1, so a placement overlap query cannot tell ground from obstruction | todo |
 | ⬜ | **F-076** A new map inherits none of the systems keyed to the old map's group names | todo |
@@ -74,10 +74,12 @@
 | ⬜ | **F-083** Snapping the aim hit's Y coordinate rejects or floats pieces on ordinary terrain heights | todo |
 | ⬜ | **F-085** Buildables join `damageable` without implementing its required damage method | todo |
 | ⬜ | **F-086** The building system has no gameplay caller, so no player can place, rotate, or destroy anything | todo |
-| ⬜ | **F-087** Three open findings share their F-number with a different finding, so brief routes to the wrong one and start reports two of them as already closed | todo |
 | ⬜ | **F-089** Powerup lifecycle never removes obsolete family counts from clients, leaving ghost Resonances after reconnect or expiry | todo |
 | 🔵 | **F-090** Frame budget audit: ~100 fps where hundreds are expected | in_flight |
+| ⬜ | **F-092** `mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call | todo |
+| ⬜ | **F-093** A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build | todo |
+| ⬜ | **F-094** `mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float | todo |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.5` `3.6` `3.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-054` `F-055` `F-056` `F-059` `F-060` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-078` `F-084` `F-088` `F-091`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.5` `3.6` `3.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-054` `F-055` `F-056` `F-059` `F-060` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-078` `F-084` `F-087` `F-088` `F-091`

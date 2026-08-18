@@ -2254,3 +2254,15 @@ Notes along the way:
 Files: `autoload/build_service.gd`, `tools/build_net_check.gd`
 
 Commit at time of writing: `253e6dc`
+
+---
+
+### DONE · F-087 · lp · 2026-08-18T05:30:56+00:00
+
+**Three open findings share their F-number with a different finding, so brief routes to the wrong one and start reports two of them as already closed**
+
+Renumbered the three collided entries (F-058 mire_art.mat cache -> F-092, F-059 headless-reimport -> F-093, F-060 mire_art.world_bounds -> F-094), left the three originals untouched, repointed docs/ASSET_TRACKER.md and .agent/state.json's stale F-059/F-060 titles, and moved F-087 to Resolved. Wrote tools/findings_numbering_check.gd as the standing regression guard (self-tested against both injected defects, then clean: open=30 resolved=67 failures=0). docs/SPECS.md F-087 block written, D-053 recorded, DELEGATION.md Current state updated. Verify: agent board / agent brief F-058|F-059|F-060|F-092|F-093|F-094 all route correctly with no duplicate/drift warnings; agent godot --script tools/findings_numbering_check.gd failures=0; agent godot --quit-after 120 boots clean.
+
+Files: `docs/FINDINGS.md`, `tools/findings_numbering_check.gd`
+
+Commit at time of writing: `44284af`
