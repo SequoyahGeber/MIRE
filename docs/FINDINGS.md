@@ -537,38 +537,6 @@ should grow a name lookup against that same registry rather than inventing its o
 
 ---
 
-### F-127 · Steam overlay's Join Game does nothing: only the lobby-invite callback is connected, not the rich-presence one
-
-**Area:** net · **Severity:** high · **Found:** 2026-08-18 by pike14
-
-Clicking **Join Game** in the Steam overlay does nothing at all — no log line, no join attempt.
-Pasting the lobby id into the join field works, and the two clients then connect normally, so the
-transport and the lobby are fine. Reported 2026-08-18 by Sequoyah from a live three-machine session,
-immediately after F-123 made the friends-list entry appear in the first place.
-
-**Cause.** GodotSteam exposes two different join callbacks and they are not interchangeable:
-
-- `join_requested(lobby_id: int, steam_id: int)` — Steam's `GameLobbyJoinRequested_t`, raised for a
-  direct **lobby invite**.
-- `join_game_requested(user: int, connect: String)` — Steam's `GameRichPresenceJoinRequested_t`,
-  raised when a friend is joinable via the **`connect` rich presence key**, carrying that key's raw
-  string rather than a lobby id.
-
-`_connect_steam_signals()` connected only the first. F-123 made the game publish `connect`, which is
-what put a Join Game entry in the friends list — but clicking it raises the *second* callback, which
-nothing listened to. So the feature became visible and non-functional in the same change. The two
-signal names are similar enough that this reads as correct code, and it cannot fail in any headless
-check because neither callback ever fires without a live friend clicking.
-
-**Fix.** Connect `join_game_requested`, parse `+connect_lobby <id>` out of the connect string, and
-route it into the same acceptance path as a lobby invite so the "never yank someone out of a running
-game" rule cannot drift between the two entry points. Refuse an unparseable string rather than
-guessing at a lobby id — a wrong id fails far more confusingly than no join.
-
-**Check the round trip, not the parse.** The value published by `_advertise_joinable()` and the value
-accepted by `_lobby_id_from_connect()` must agree; asserting them separately would let them drift.
-
----
 
 ### F-128 · Task 4.3's chunk streamer has no LOD-boundary stitching — adjacent chunks at different LOD tiers crack
 
@@ -600,7 +568,10 @@ require reworking the ring/LOD design in `chunk_streamer.gd`.
 
 ---
 
-### F-129 · Players spawn on top of each other: the spawn slot is a live child count, not a held claim
+
+## Resolved
+
+### F-129 · Players spawn on top of each other: the spawn slot is a live child count, not a held claim — **fixed**
 
 **Area:** net · **Severity:** high · **Found:** 2026-08-18 by pike14
 
@@ -637,9 +608,76 @@ two plausible rendering explanations fit the evidence (a software D3D12 rasteriz
 face plate). Both were wrong. What identified it was Sequoyah's observation that the fault followed
 join order rather than hardware — the Windows VM was blamed only because it was usually second.
 
+
+**Resolved 2026-08-18 by pike14** (`48d6909`). `_claim_slot(peer_id)` hands out the lowest
+SPAWN_OFFSETS index nobody currently holds and records it in `_slots`; `_despawn()` releases it.
+Lowest-free rather than next-highest keeps a churning session reusing the tight cluster near the
+level's spawn point instead of drifting outward, and makes the result depend only on who is present
+— never on arrival order or on how many players have come and gone.
+
+**Verified** by `tools/spawn_slot_check.gd`, which walks the exact sequence that broke it: join,
+join, join, leave, rejoin. **The check was confirmed to fail against the old algorithm before it was
+trusted to pass against the new one** — temporarily restoring the count-based expression produced
+`FAIL a rejoining player does not land on a peer who stayed — rejoined into slot 2, but host=0 and
+b=2 are still occupied`. A check that passes against both the bug and the fix proves nothing, and
+this session had already produced one of those (see F-123's method note).
+
+**Diagnostic lesson, which is the durable part.** This looked like a graphics bug and stayed looking
+like one through two plausible and completely wrong explanations: the Windows VM runs on
+`Microsoft Basic Render Driver` (software D3D12, confirmed in its log), and `DebugAvatarFace` really
+is a dark plate. Both fit the evidence. Neither was the cause. The thing that identified it was a
+behavioural observation — the fault followed **join order**, and reproduced on leave-and-rejoin —
+rather than anything about the rendering. When a visual symptom correlates with a *sequence* instead
+of with hardware, stop investigating the renderer.
+
 ---
 
-## Resolved
+### F-127 · Steam overlay's Join Game does nothing: only the lobby-invite callback is connected, not the rich-presence one — **fixed**
+
+**Area:** net · **Severity:** high · **Found:** 2026-08-18 by pike14
+
+Clicking **Join Game** in the Steam overlay does nothing at all — no log line, no join attempt.
+Pasting the lobby id into the join field works, and the two clients then connect normally, so the
+transport and the lobby are fine. Reported 2026-08-18 by Sequoyah from a live three-machine session,
+immediately after F-123 made the friends-list entry appear in the first place.
+
+**Cause.** GodotSteam exposes two different join callbacks and they are not interchangeable:
+
+- `join_requested(lobby_id: int, steam_id: int)` — Steam's `GameLobbyJoinRequested_t`, raised for a
+  direct **lobby invite**.
+- `join_game_requested(user: int, connect: String)` — Steam's `GameRichPresenceJoinRequested_t`,
+  raised when a friend is joinable via the **`connect` rich presence key**, carrying that key's raw
+  string rather than a lobby id.
+
+`_connect_steam_signals()` connected only the first. F-123 made the game publish `connect`, which is
+what put a Join Game entry in the friends list — but clicking it raises the *second* callback, which
+nothing listened to. So the feature became visible and non-functional in the same change. The two
+signal names are similar enough that this reads as correct code, and it cannot fail in any headless
+check because neither callback ever fires without a live friend clicking.
+
+**Fix.** Connect `join_game_requested`, parse `+connect_lobby <id>` out of the connect string, and
+route it into the same acceptance path as a lobby invite so the "never yank someone out of a running
+game" rule cannot drift between the two entry points. Refuse an unparseable string rather than
+guessing at a lobby id — a wrong id fails far more confusingly than no join.
+
+**Check the round trip, not the parse.** The value published by `_advertise_joinable()` and the value
+accepted by `_lobby_id_from_connect()` must agree; asserting them separately would let them drift.
+
+
+**Resolved 2026-08-18 by pike14** (`48d6909`). `_connect_steam_signals()` now connects
+`join_game_requested` alongside `join_requested`; `_on_join_game_requested()` parses the connect
+string and hands off to `_accept_invite()`, which both join paths share so the "never yank someone
+out of a running game" rule has exactly one home. `_lobby_id_from_connect()` returns 0 for anything
+that is not `+connect_lobby <id>` rather than guessing.
+
+**Verified** by `tools/rich_presence_check.gd`, which now asserts the **round trip** rather than the
+halves: it feeds the parser exactly the string the advertiser publishes. Checking that
+`_advertise_joinable()` emits the right format and that `_lobby_id_from_connect()` accepts the right
+format, separately, is precisely the assertion shape that would let the two drift apart and
+reintroduce this. It also asserts Steam still exposes *both* callbacks, since the two names differ by
+one word and picking the wrong one is what caused this.
+
+---
 
 ### F-005 · R2's chunk benchmark excludes GPU upload cost — **fixed**
 
