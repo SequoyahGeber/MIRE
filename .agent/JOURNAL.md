@@ -2893,3 +2893,15 @@ Two fixes to D-065's reserve, found by watching it fire for real. (1) It latched
 Files: `.agent/bin/lane`
 
 Commit at time of writing: `4737442`
+
+---
+
+### DONE · F-118 · vane19 · 2026-08-18T18:15:00+00:00
+
+**The forest has no ambient life: nothing falls, drifts or settles, so a still frame of the map is a still frame**
+
+Emitter.LEAF_FALL bound to canopy assets, 12 live, no light or shadow. Fixed two registration traps it uncovered: EnvironmentVfx hid any non-batched emitter host (would have deleted 94 trees), and registered one site per GLB mesh part (1,925 sites for 94 trees; now 94, total sites 2,194 -> 363).
+
+Files: `world/environment/asset_vfx_library.gd`, `autoload/environment_vfx.gd`, `world/environment/particle_billboard.gdshader`, `tools/environment_vfx_hollowmere_check.gd`
+
+Commit at time of writing: `db49ec6`

@@ -55,6 +55,7 @@ enum Emitter {
 	CRYSTAL,   ## Mire crystal: cold light and slow rising motes.
 	SPORE,     ## Mire tendril: drifting motes, no light at all.
 	GLOW,      ## Emissive material only — no light, no particles, no per-instance node.
+	LEAF_FALL, ## A living canopy shedding leaves. No light, no shadows — the cheapest emitter here.
 }
 
 ## `strength` is metres of lateral travel at the top of the asset; `speed` is radians/second of the
@@ -98,7 +99,18 @@ const EMITTER_PROFILES: Dictionary = {
 	Emitter.CRYSTAL:  {"max_live": 8, "shadow_live": 0, "radius": 4.0},
 	Emitter.SPORE:    {"max_live": 10, "shadow_live": 0, "radius": 0.0},
 	Emitter.GLOW:     {"max_live": 0, "shadow_live": 0, "radius": 0.0},
+	## The most numerous emitter by an order of magnitude — Hollowmere has 113 trees and a
+	## generated forest could have thousands — so the budget is what makes it affordable, not the
+	## per-emitter cost. Twelve at a time, nearest first, no light and no shadow: at that point one
+	## slot is a single small GPUParticles3D and the whole class costs less than two campfires.
+	Emitter.LEAF_FALL: {"max_live": 12, "shadow_live": 0, "radius": 0.0},
 }
+
+## Assets whose own mesh is a PLACEHOLDER that the effect replaces, rather than something the
+## effect decorates. Hand-authored scenes name a stand-in mesh where a fire should go and expect it
+## to disappear; a tree very much does not (F-118 — without this list, giving canopies an emitter
+## made `EnvironmentVfx` hide every tree on the map that was not instanced through a MultiMesh).
+const PLACEHOLDER_ASSETS: PackedStringArray = ["flame_outer", "furnace_fire"]
 
 ## Ordered longest-prefix-first, because `marsh_grass_a` must not be caught by `grass_`.
 ## First match wins; anything unmatched is rigid, which is the correct default for a kit that is
@@ -136,6 +148,17 @@ const EMITTER_RULES: Array = [
 	["mire_crystal", Emitter.CRYSTAL],
 	["mire_tendril", Emitter.SPORE],
 	["mushroom_cluster", Emitter.GLOW],
+	## Canopies shed; dead timber, bare winter trunks, stumps and felled logs do not. The NONE rules
+	## come first because matching is longest-prefix-first-wins, and `tree_snag_a` would otherwise
+	## be caught by `tree_`.
+	["tree_snag", Emitter.NONE],
+	["tree_bare", Emitter.NONE],
+	["tree_", Emitter.LEAF_FALL],
+	["mire_broadleaf_tree", Emitter.LEAF_FALL],
+	["harvest_tree_depleted_stump", Emitter.NONE],
+	["harvest_tree_fresh_stump", Emitter.NONE],
+	["harvest_tree_felled_trunk", Emitter.NONE],
+	["harvest_tree_", Emitter.LEAF_FALL],
 	## Hand-authored scenes name the placeholder mesh rather than the asset. Playtest Hollow
 	## builds its fires this way, and any fixture someone assembles in the editor may too.
 	["flame_outer", Emitter.CAMPFIRE],
@@ -167,6 +190,16 @@ static func sway_profile(sway: Sway) -> Dictionary:
 
 static func emitter_profile(emitter: Emitter) -> Dictionary:
 	return EMITTER_PROFILES.get(emitter, {}) as Dictionary
+
+
+## True when this asset's own mesh is a stand-in the effect takes the place of. See
+## `PLACEHOLDER_ASSETS`.
+static func replaces_host_mesh(asset_id: String) -> bool:
+	var id := asset_id.to_lower()
+	for placeholder: String in PLACEHOLDER_ASSETS:
+		if id.begins_with(placeholder):
+			return true
+	return false
 
 
 ## True if the asset has any presentation at all, so a caller can skip the expensive parts early.

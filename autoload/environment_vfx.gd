@@ -52,6 +52,9 @@ const VFX_META: StringName = &"mire_environment_vfx_applied"
 const AssetVfx := preload("res://world/environment/asset_vfx_library.gd")
 const FOLIAGE_SHADER := preload("res://world/environment/foliage_wind.gdshader")
 const PARTICLE_SHADER := preload("res://world/environment/particle_billboard.gdshader")
+## Marks the prop an emitter site was already taken from, so its other forty mesh parts do not each
+## register one of their own. See `_emitter_host`.
+const EMITTER_HOST_META: StringName = &"mire_vfx_emitter_host"
 
 ## How often the nearest-first emitter assignment is recomputed. Sites number in the hundreds and
 ## the player walks at 4.4 m/s, so four times a second is far below anything visible.
@@ -164,7 +167,7 @@ func _apply_node(node: GeometryInstance3D) -> void:
 
 	var emitter := AssetVfx.emitter_for(asset_id)
 	if emitter != AssetVfx.Emitter.NONE:
-		_register_emitter(node, emitter)
+		_register_emitter(node, emitter, asset_id)
 
 
 ## Meta first — that is the generator contract. Node names are the fallback that keeps
@@ -276,7 +279,9 @@ func _sway_material(original: Material, profile: Dictionary, bounds: AABB) -> Sh
 
 ## Record where an asset's emitters stand. Transforms only — no nodes are built here, because a
 ## generated world may hold any number of these and the pool below is what bounds the cost.
-func _register_emitter(node: GeometryInstance3D, emitter: AssetVfx.Emitter) -> void:
+func _register_emitter(
+	node: GeometryInstance3D, emitter: AssetVfx.Emitter, asset_id: String
+) -> void:
 	var placements: Array[Vector3] = []
 	var published := _published_placements(node)
 	if not published.is_empty():
@@ -293,9 +298,23 @@ func _register_emitter(node: GeometryInstance3D, emitter: AssetVfx.Emitter) -> v
 			% node.name)
 		return
 	else:
-		placements.append(node.global_position)
-		if emitter != AssetVfx.Emitter.GLOW:
-			# A named placeholder flame in a hand-authored scene is replaced, not decorated.
+		# ONE site per prop, not one per mesh part. A GLB tree arrives as around forty separate
+		# MeshInstance3D nodes, each of which resolves the same asset id from the holder above it
+		# and each of which sits far enough from its siblings to survive the merge test below — so
+		# 44 harvestable trees registered 1,925 leaf sites, and the O(n²) merge loop then compared
+		# 1.8 million pairs at load. The prop is whichever ancestor carries the asset id.
+		var host := _emitter_host(node)
+		if host.has_meta(EMITTER_HOST_META):
+			return
+		host.set_meta(EMITTER_HOST_META, true)
+		var host_3d := host as Node3D
+		placements.append(host_3d.global_position if host_3d != null else node.global_position)
+		# A named placeholder flame in a hand-authored scene is replaced, not decorated — but that
+		# is true of exactly two assets, and asking the library rather than assuming is what stops
+		# this from hiding real geometry. F-118 gave canopies an emitter, and every tree that is a
+		# node of its own rather than a MultiMesh slot — which, since F-114, is every harvestable
+		# tree on the map — vanished the moment it was registered.
+		if AssetVfx.replaces_host_mesh(asset_id):
 			node.visible = false
 
 	if emitter == AssetVfx.Emitter.GLOW:
@@ -317,6 +336,19 @@ func _register_emitter(node: GeometryInstance3D, emitter: AssetVfx.Emitter) -> v
 				or emitter == AssetVfx.Emitter.EMBER:
 			fire_source_count += 1
 	_sites[emitter] = sites
+
+
+## The node that IS this prop: the nearest ancestor carrying the asset id, or the node itself when
+## nothing above it does — which is the hand-authored case, where a placeholder mesh is its own prop.
+func _emitter_host(node: Node) -> Node:
+	var cursor: Node = node
+	for _depth: int in 4:
+		if cursor == null:
+			break
+		if cursor.has_meta(ASSET_META):
+			return cursor
+		cursor = cursor.get_parent()
+	return node
 
 
 ## Where each copy of this asset stands, as published by the generator. World generation owns
@@ -471,6 +503,10 @@ func _make_effect(emitter: AssetVfx.Emitter) -> Dictionary:
 		AssetVfx.Emitter.SPORE:
 			# Mire growth: no light at all, just something adrift that should not be there.
 			node.add_child(_motes(8, 4.0, Color(0.62, 0.78, 0.45, 0.5), 0.16, 0.5))
+		AssetVfx.Emitter.LEAF_FALL:
+			# The one effect whose job is to be barely noticed: a handful of leaves letting go of a
+			# crown and taking six seconds to reach the ground. No light, no shadow, no smoke.
+			node.add_child(_leaf_fall(12, 7.0, 4.8))
 	if light != null:
 		node.add_child(light)
 	return {"node": node, "light": light, "energy": energy}
@@ -533,6 +569,43 @@ func _motes(amount: int, lifetime: float, tint: Color, rise: float, radius: floa
 	process.gravity = Vector3(0.02, rise * 0.2, 0.01)
 	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
 	process.emission_sphere_radius = maxf(radius, 0.05)
+	return particles
+
+
+## Leaves letting go of a canopy (F-118). Emitted from a slab the width of a crown and dropped
+## slowly, with sideways gravity so they slip rather than plummet — a leaf that falls straight down
+## reads as a rock. `height` is where the crown starts; one number for every species is a
+## compromise, and a forgiving one, because a leaf that starts a metre inside the foliage simply
+## appears from behind it.
+##
+## The visibility AABB is set explicitly and generously: the default in `_make_particles` is 5 m
+## tall, and particles that travel outside their own AABB are culled as a group the moment the
+## emitter's box leaves the frustum — which for something falling 6 m and drifting 4 m sideways
+## means leaves winking out while you are looking straight at them.
+func _leaf_fall(amount: int, lifetime: float, height: float) -> GPUParticles3D:
+	var particles := _make_particles(amount, lifetime, Vector2(0.15, 0.21),
+		Color(0.78, 0.63, 0.22, 0.95), Color(0.45, 0.37, 0.15, 0.0), 3)
+	var process := particles.process_material as ParticleProcessMaterial
+	process.direction = Vector3.DOWN
+	process.spread = 30.0
+	process.initial_velocity_min = 0.08
+	process.initial_velocity_max = 0.3
+	# Barely more than a tenth of real gravity, plus a lateral component: this is the difference
+	# between drifting and dropping.
+	process.gravity = Vector3(0.22, -0.85, 0.13)
+	# A slow tumble. Leaves are the only thing here that reads wrong without one.
+	process.angular_velocity_min = -55.0
+	process.angular_velocity_max = 55.0
+	process.angle_min = -180.0
+	process.angle_max = 180.0
+	process.scale_min = 0.7
+	process.scale_max = 1.25
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	process.emission_box_extents = Vector3(2.6, 0.7, 2.6)
+	particles.position.y = height
+	particles.visibility_aabb = AABB(
+		Vector3(-5.0, -height - 2.0, -5.0), Vector3(10.0, height + 4.0, 10.0)
+	)
 	return particles
 
 

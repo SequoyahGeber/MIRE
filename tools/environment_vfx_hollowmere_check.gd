@@ -90,6 +90,13 @@ func _run() -> void:
 	check(swaying_copies > 1000, "wind reaches the scatter field, not a handful of props")
 	check(int(controller.get("fire_source_count")) >= 3, "the map's fires are found")
 	check(sites.has(AssetVfx.Emitter.CRYSTAL), "mire crystals register as emitters")
+	# F-118. The number matters as much as the presence: one site per TREE, not one per mesh part
+	# of a tree — a GLB canopy arrives as around forty MeshInstance3D nodes and the first version of
+	# this registered 1,925 sites for 94 trees.
+	var leaf_sites: int = int(sites.get(AssetVfx.Emitter.LEAF_FALL, 0))
+	check(leaf_sites > 40, "the map's canopies shed leaves (%d sites)" % leaf_sites)
+	check(leaf_sites < 200,
+		"one leaf site per tree, not one per mesh part of a tree (%d)" % leaf_sites)
 
 	# Scalability: the world holds hundreds of emitter sites and must not build hundreds of nodes.
 	var total_sites: int = 0
@@ -101,7 +108,19 @@ func _run() -> void:
 	print("BUDGET sites=%d effect_nodes=%d live=%d"
 		% [total_sites, total_pool, int(controller.call(&"live_count"))])
 	check(total_sites > 100, "the map really does hold hundreds of emitter sites")
-	check(total_pool <= 32, "effect nodes are bounded by the budget, not by the world")
+	# Derived, not a magic number. The bound IS the sum of every class's own cap, so adding an
+	# emitter class raises it by exactly that class's budget and nothing else — a hardcoded 32 went
+	# red the moment F-118 added leaf fall, which is a check failing at the arithmetic rather than
+	# at the property it exists to protect.
+	var budget_ceiling: int = 0
+	for emitter: int in AssetVfx.EMITTER_PROFILES:
+		budget_ceiling += int((AssetVfx.EMITTER_PROFILES[emitter] as Dictionary).get("max_live", 0))
+	check(total_pool <= budget_ceiling,
+		"effect nodes are bounded by the budget, not by the world (%d <= %d)"
+		% [total_pool, budget_ceiling])
+	check(total_pool < total_sites / 4,
+		"the pool is far smaller than the world it covers (%d nodes for %d sites)"
+		% [total_pool, total_sites])
 
 	print("ENVIRONMENT_VFX_HOLLOWMERE_CHECK failures=%d" % failures)
 	finish()
@@ -118,7 +137,9 @@ func _uses_wind(mesh: Mesh) -> bool:
 
 
 func _emitter_name(emitter: int) -> String:
-	var names: PackedStringArray = ["NONE", "CAMPFIRE", "FORGE", "EMBER", "CRYSTAL", "SPORE", "GLOW"]
+	var names: PackedStringArray = [
+		"NONE", "CAMPFIRE", "FORGE", "EMBER", "CRYSTAL", "SPORE", "GLOW", "LEAF_FALL"
+	]
 	return names[emitter] if emitter < names.size() else str(emitter)
 
 
