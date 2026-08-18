@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"long_bound"
+display_name = "Long Bound"
+description = "The ground gives you back a little more than you put in. Ledges you used to route around become ledges you go over."
+tags = Array[StringName]([&"Kinetic"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"jump_height": Vector2(0, 0.07)
+})

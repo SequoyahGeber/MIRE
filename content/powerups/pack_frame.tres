@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"pack_frame"
+display_name = "Pack Frame"
+description = "A frame across the shoulders that puts the weight where your legs can argue with it. The crate is exactly as heavy; you are simply no longer the slow part of moving it."
+tags = Array[StringName]([&"Kinetic", &"Fungal"])
+max_stacks = 3
+modifiers = Dictionary[StringName, Vector2]({
+&"haul_speed": Vector2(0, 0.1)
+})

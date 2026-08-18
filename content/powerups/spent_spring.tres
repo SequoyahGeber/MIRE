@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"spent_spring"
+display_name = "Spent Spring"
+description = "Every effort costs a little less than the last one taught you to expect. Sprint, dodge, swing — all of it drawn from a shallower well."
+tags = Array[StringName]([&"Kinetic"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"stamina_cost": Vector2(0, -0.06)
+})

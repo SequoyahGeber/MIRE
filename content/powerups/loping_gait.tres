@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"loping_gait"
+display_name = "Loping Gait"
+description = "Not a runner's stride. A long, ugly, ground-eating lope that you could hold to the far side of the map if nothing interrupted you."
+tags = Array[StringName]([&"Kinetic"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"sprint_speed": Vector2(0, 0.05)
+})

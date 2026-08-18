@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"bellows_lung"
+display_name = "Bellows Lung"
+description = "A bigger chest and a slower burn in it. You do not get faster — you get to stay fast for longer, which is usually the argument that matters."
+tags = Array[StringName]([&"Kinetic"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"max_stamina": Vector2(0, 0.08)
+})

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"skip_step"
+display_name = "Skip Step"
+description = "There is a second step available up there, off nothing at all. You will not find where it comes from and after the first hour you will stop looking. It only ever offers you the one."
+tags = Array[StringName]([&"Kinetic", &"Void"])
+max_stacks = 1
+modifiers = Dictionary[StringName, Vector2]({
+&"extra_jumps": Vector2(1, 0)
+})

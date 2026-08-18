@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"second_wind"
+display_name = "Second Wind"
+description = "The gap between spent and ready gets shorter every time. Sprint, breathe, sprint again, and the breathing stops feeling like a decision."
+tags = Array[StringName]([&"Kinetic"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"stamina_regen": Vector2(0, 0.1)
+})

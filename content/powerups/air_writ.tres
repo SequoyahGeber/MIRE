@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"air_writ"
+display_name = "Air Writ"
+description = "Once you have left the ground you retain a say in where you land. Small, but the difference between a gap cleared and a gap attempted."
+tags = Array[StringName]([&"Kinetic"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"air_control": Vector2(0, 0.12)
+})
