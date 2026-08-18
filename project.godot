@@ -43,6 +43,7 @@ WaveSpawner="*res://systems/waves/wave_spawner.gd"
 PowerupService="*res://autoload/powerup_service.gd"
 BuildService="*res://autoload/build_service.gd"
 GraphicsQuality="*res://autoload/graphics_quality.gd"
+EnvironmentVfx="*res://autoload/environment_vfx.gd"
 
 [display]
 
