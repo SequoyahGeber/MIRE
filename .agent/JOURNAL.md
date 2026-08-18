@@ -2376,3 +2376,15 @@ World build 9,145ms -> 2,865ms cold (get_or_add eager-default bug: merge ran 1,0
 Files: `world/gen/undergrowth.gd`, `world/gen/authored_world.gd`, `tools/perf_probe.gd`, `project.godot`
 
 Commit at time of writing: `b0d7d57`
+
+---
+
+### DONE · F-081 · yarrow21 · 2026-08-18T13:13:28+00:00
+
+**Every ship blanket-stages .agent/, so one agent's commit silently carries another's in-progress harness edits**
+
+ship stages an allowlist of the three generated coordination files instead of a .agent/ glob; .agent/bin/ is now claim-required source, and ship names any harness file it left behind. Verified by the new tools/harness_check.py — 5/5 fixed, 3/5 against b0d7d57, where cases 1-2 reproduce F-081 exactly.
+
+Files: `.agent/bin/agent`, `.agent/bin/lane`, `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `AGENTS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `5976ca5`

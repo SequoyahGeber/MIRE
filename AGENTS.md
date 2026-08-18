@@ -148,6 +148,14 @@ directory every agent writes to and nobody locks, so a wildcard there is *more* 
 someone else's work than one anywhere else — it has already folded another agent's new roadmap row
 into an unrelated findings commit. Name the files: `git add docs/FINDINGS.md docs/DECISIONS.md`.
 
+**The harness under `.agent/bin/` is source, not coordination state (F-081/D-057).** `ship` carries
+`BOARD.md`, `JOURNAL.md` and `state.json` for you because nobody owns them; it deliberately does
+*not* carry `.agent/bin/agent` or `.agent/bin/lane`, because a director is often halfway through
+editing one and those edits are not yours to commit. If your task *is* the one fixing the harness,
+claim the file — `.agent/bin/agent claim <id> .agent/bin/agent` — and claim it before `agent done`,
+or ship will leave your own fix behind. After any harness edit, run `python3 tools/harness_check.py`;
+it needs no Godot and takes about a second.
+
 ### 6. Tell Sequoyah only what is genuinely his
 
 By now everything another *agent* needs is in the repo (step 3). What is left is the short list only a

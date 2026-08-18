@@ -1,15 +1,5 @@
 {
   "claims": {
-    ".agent/bin/agent": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T13:05:36+00:00",
-      "task": "F-081"
-    },
-    ".agent/bin/lane": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T13:05:36+00:00",
-      "task": "F-081"
-    },
     "assets/maps": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
@@ -30,6 +20,16 @@
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
+    "autoload/environment_vfx.gd": {
+      "agent": "larch10",
+      "at": "2026-08-18T13:09:00+00:00",
+      "task": "F-097"
+    },
+    "autoload/graphics_quality.gd": {
+      "agent": "coil23",
+      "at": "2026-08-18T13:12:07+00:00",
+      "task": "F-098"
+    },
     "docs/ASSET_TRACKER.md": {
       "agent": "ivy8",
       "at": "2026-08-18T13:01:13+00:00",
@@ -45,20 +45,55 @@
       "at": "2026-08-18T13:03:53+00:00",
       "task": "2.1d"
     },
+    "tools/environment_vfx_check.gd": {
+      "agent": "larch10",
+      "at": "2026-08-18T13:09:00+00:00",
+      "task": "F-097"
+    },
+    "tools/environment_vfx_hollowmere_check.gd": {
+      "agent": "larch10",
+      "at": "2026-08-18T13:09:38+00:00",
+      "task": "F-097"
+    },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
+    },
+    "tools/perf_probe.gd": {
+      "agent": "coil23",
+      "at": "2026-08-18T13:12:07+00:00",
+      "task": "F-098"
     },
     "tools/ship_check.gd": {
       "agent": "ivy8",
       "at": "2026-08-18T13:03:53+00:00",
       "task": "2.1d"
     },
+    "world/environment/foliage_wind.gdshader": {
+      "agent": "larch10",
+      "at": "2026-08-18T13:09:00+00:00",
+      "task": "F-097"
+    },
+    "world/environment/particle_billboard.gdshader": {
+      "agent": "larch10",
+      "at": "2026-08-18T13:09:00+00:00",
+      "task": "F-097"
+    },
+    "world/gen/authored_world.gd": {
+      "agent": "larch10",
+      "at": "2026-08-18T13:09:00+00:00",
+      "task": "F-097"
+    },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
+    },
+    "world/gen/undergrowth.gd": {
+      "agent": "larch10",
+      "at": "2026-08-18T13:09:00+00:00",
+      "task": "F-097"
     }
   },
   "in_flight": {
@@ -92,26 +127,46 @@
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
     },
-    "F-081": {
-      "agent": "yarrow21",
+    "F-097": {
+      "agent": "larch10",
       "files": [
-        ".agent/bin/agent",
-        ".agent/bin/lane"
+        "autoload/environment_vfx.gd",
+        "world/environment/foliage_wind.gdshader",
+        "world/environment/particle_billboard.gdshader",
+        "world/gen/authored_world.gd",
+        "world/gen/undergrowth.gd",
+        "tools/environment_vfx_check.gd",
+        "tools/environment_vfx_hollowmere_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-18T13:11:02+00:00",
+          "by": "larch10",
+          "text": "Measured on hollowmere: foliage=0 fire=0 against 1740 MultiMeshInstance3D / 13026 copies. Root cause is node-type keying (MeshInstance3D only), not name matching. Fix binds VFX to asset id carried in node meta by both generators."
+        }
+      ],
+      "started": "2026-08-18T13:09:00+00:00"
+    },
+    "F-098": {
+      "agent": "coil23",
+      "files": [
+        "autoload/graphics_quality.gd",
+        "tools/perf_probe.gd"
       ],
       "notes": [],
-      "started": "2026-08-18T13:05:36+00:00"
+      "started": "2026-08-18T13:12:07+00:00"
     }
   },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "ivy8",
-      "at": "2026-08-18T05:14:05+00:00",
-      "task": "F-091"
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:13:28+00:00",
+      "task": "F-081"
     },
     ".agent/bin/lane": {
-      "agent": "bram1",
-      "at": "2026-08-18T12:56:53+00:00",
-      "task": "F-096"
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:13:28+00:00",
+      "task": "F-081"
     },
     ".agent/bin/lane-revive": {
       "agent": "ivy8",
@@ -129,9 +184,9 @@
       "task": "0.12"
     },
     "AGENTS.md": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:13:28+00:00",
+      "task": "F-081"
     },
     "CLAUDE.md": {
       "agent": "flint5",
@@ -609,19 +664,19 @@
       "task": "F-050"
     },
     "docs/DECISIONS.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T23:15:28+00:00",
-      "task": "F-053"
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:13:28+00:00",
+      "task": "F-081"
     },
     "docs/DELEGATION.md": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
-      "task": "2.1d"
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:13:28+00:00",
+      "task": "F-081"
     },
     "docs/FINDINGS.md": {
-      "agent": "bram1",
-      "at": "2026-08-18T12:56:53+00:00",
-      "task": "F-096"
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:13:28+00:00",
+      "task": "F-081"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -1012,6 +1067,11 @@
       "agent": "gale6",
       "at": "2026-08-18T04:42:03+00:00",
       "task": "3.6"
+    },
+    "tools/harness_check.py": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:13:28+00:00",
+      "task": "F-081"
     },
     "tools/harvest_world_check.gd": {
       "agent": "flint5",
@@ -2931,9 +2991,11 @@
       "title": "`git stash` in this repo stashes every other lane's uncommitted work too"
     },
     "F-081": {
+      "done_at": "2026-08-18T13:13:28+00:00",
+      "done_by": "yarrow21",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Every ship blanket-stages .agent/, so one agent's commit silently carries another's in-progress harness edits"
     },
@@ -3063,6 +3125,20 @@
       "status": "done",
       "tier": "F",
       "title": "The quota parser only understands the word reset, so Codex's dated try-again message falls through to a blind five-hour default"
+    },
+    "F-097": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Environmental VFX is keyed to node types the shipped map never produces, so wind and firelight are dead on Hollowmere"
+    },
+    "F-098": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Draw-call discipline: static chunk batching + dynamic resolution (DOOM/Roblox research)"
     }
   },
   "version": 1

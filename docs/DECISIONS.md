@@ -1089,6 +1089,27 @@ grid-rounding back to Y.
 
 ---
 
+### D-057 · 2026-08-18 · `.agent/` is claim-free coordination state; `.agent/bin/` is source and follows the source rules
+
+F-081: one prefix covered two different kinds of file. `BOARD.md`, `JOURNAL.md` and `state.json` are
+generated, every task updates them, and nobody claims them — so `ship` carries them for whichever
+task commits next, which is the only workable rule for files with no owner. `.agent/bin/` sits under
+the same prefix and is the opposite kind of thing: hand-authored Python that every lane, every hook
+and every check shells out to, edited by one director at a time. Treating them alike is how an
+unrelated content task's commit came to contain a half-finished harness fix, under the wrong name
+and the wrong message. The line is now drawn at the directory: coordination state is an explicit
+allowlist of the three generated files, and harness source is claimed, shipped and reviewed exactly
+like `world/gen/undergrowth.gd` is. In practice that means a director fixing the harness claims
+`.agent/bin/agent` under the task doing the fixing, and claims it before `agent done` — `ship` reads
+its file list from `recent`, which `done` is what populates.
+
+**Would change my mind:** a generated file that legitimately has to ship with every task and does not
+fit the three-file list — the allowlist would then be the wrong shape, and a `.agent/bin/` exclusion
+the right one. A hand-authored file appearing under `.agent/` *outside* `bin/` is the same signal
+read from the other direction.
+
+---
+
 ## Template
 
 ```

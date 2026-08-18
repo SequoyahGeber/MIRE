@@ -75,6 +75,18 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — the harness has a test suite now, and `.agent/bin/` ships under a claim (F-081)
+
+`python3 tools/harness_check.py` is the first automated check of `.agent/bin/agent`. It builds a
+throwaway git repo, copies a real `agent` into it and drives real `ship`/`check` runs, so it needs no
+Godot and takes about a second. **Run it after any harness edit**, and add a case to it rather than
+testing a staging rule by hand; `--rev <sha>` runs the same cases against a past revision, which is
+how a harness regression gets bisected. The behaviour it locks in: `ship` no longer stages everything
+under `.agent/` — it stages the allowlist `COORDINATION_PATHS` (`BOARD.md`, `JOURNAL.md`,
+`state.json`) and treats `.agent/bin/` as ordinary source. **If your task edits the harness, claim
+the file before `agent done`,** or ship leaves the edit in the working tree; it now names any harness
+file it declined to carry, in the "left alone" block.
+
 ### 2026-08-18 — performance base (F-090): the probe, the presets, and the scatter pattern the generator must inherit
 
 **`tools/perf_probe.gd`** is the instrument: `.agent/bin/agent godot --display-driver macos --script

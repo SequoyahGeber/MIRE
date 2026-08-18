@@ -788,9 +788,83 @@ same reasoning produces it.
 
 ---
 
-### F-081 · Every ship blanket-stages .agent/, so one agent's commit silently carries another's in-progress harness edits
+### F-086 · The building system has no gameplay caller, so no player can place, rotate, or destroy anything
 
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
+**Area:** gameplay · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.6 review
+
+`systems/building/build_ghost.gd:3` says to attach a `BuildGhost` to the player, but no production
+script or scene instantiates it. Likewise, no production caller selects a piece, calls
+`update_aim()`/`rotate_step()`/`confirm()`, or invokes `BuildService.request_destroy()`; those APIs
+are referenced only by the two checks. `BuildService` boots, but the shipped game exposes no input
+or UI path into it. Task 3.7 is specified as content authored over this definition, not as the
+missing player integration, so moving on leaves the entire 3.6 feature unreachable.
+
+Wire the local presentation/input path into the player (including piece selection and destroy), and
+add a check that exercises the production caller instead of constructing a private ghost.
+
+---
+
+### F-097 · Environmental VFX is keyed to node types the shipped map never produces, so wind and firelight are dead on Hollowmere
+
+**Area:** presentation · **Severity:** high · **Found:** 2026-08-18 by larch10 while starting visual work
+
+`autoload/environment_vfx.gd` discovers what to animate by walking the tree for **`MeshInstance3D`**
+(`_on_node_added` line 42, `_apply_recursive` line 47). Both world generators emit
+**`MultiMeshInstance3D`** instead — `world/gen/authored_world.gd:450` for the 2,869 authored props and
+`world/gen/undergrowth.gd:546` for the ~10,240 scattered plants (both batched per chunk/cell by F-090).
+`MultiMeshInstance3D` does not extend `MeshInstance3D`, so the walk matches none of them.
+
+The result on `levels/hollowmere.tscn` — which is `project.godot:14`'s `main_scene`, the map people
+actually play — is that no grass sways, and no campfire, forge or furnace gets its flame, spark, smoke
+or flickering light. `systems/crafting/station_def.gd:19` and `autoload/crafting_service.gd:19` already
+record that stations are baked into MultiMesh batches "with no per-instance node of their own", which is
+the same root cause seen from the crafting side.
+
+**Measured** on `hollowmere` (`agent godot --script tools/environment_vfx_hollowmere_check.gd`):
+
+```
+CENSUS mesh_instance3d=2808 multimesh_instance3d=1740 multimesh_copies=13026
+VFX    foliage_mesh_count=0  fire_source_count=0
+```
+
+Every one of the 13,026 instanced copies — the props and the whole undergrowth field — is invisible to
+the system, and the 2,808 loose `MeshInstance3D` nodes that do exist are terrain, water and
+harvestables, none of which match a foliage or fire name. Both counters are **zero**, not low.
+
+It reads as green because `tools/environment_vfx_check.gd:3` boots
+`res://levels/playtest_hollow.tscn` — the map deprecated by 2.1k — where props were still individual
+`MeshInstance3D` nodes. This is F-076's exact shape a second time: a system keyed to the old map's
+representation silently does nothing on the new one, and the check that should have caught it is
+pinned to the old map too.
+
+Fixing it must not re-key the system to Hollowmere either. Release worlds are procedurally generated,
+so the binding has to be to **the asset** — its kind, travelling with the asset — not to a scene, a map,
+or a node name a level author chose.
+
+---
+
+### F-098 · Draw-call discipline: static chunk batching + dynamic resolution (DOOM/Roblox research)
+
+**Area:** perf · **Severity:** medium · **Found:** 2026-08-18 by coil23
+
+Research pass (Sequoyah asked why DOOM/Roblox get hundreds of fps): DOOM 2016 renders ~1,331 draw calls/frame with cached static shadow maps and heavy precomputation; Roblox collapses identical meshes into single draws and batches static geometry into clusters. MIRE's authored world is 2,869 props in 1,028 MultiMeshes — 2.8 props per draw, instancing overhead without instancing's payoff — and 5.4k total draws vs DOOM's 1.3k. Implementing: (1) static per-chunk material-bucketed mesh batching for authored props (SurfaceTool.append_from, disk-cached per chunk); (2) DOOM-style dynamic resolution in GraphicsQuality (hold target fps by stepping render scale, fps-based v1 since Metal's GPU timer reads 0 per F-090). Flora stays MultiMesh: 14+ instances/draw is where instancing pays.
+
+---
+
+### F-099 · Optimization sweep: per-frame costs and dead weight across runtime scripts
+
+**Area:** perf · **Severity:** medium · **Found:** 2026-08-18 by kiln9
+
+Two-reviewer optimization sweep over runtime scripts (autoload/core/entities and systems/ui/world) found per-frame allocation and polling hotspots: enemy overlay find_children per frame, per-tick NavigationAgent repaths, always-on HUD rebuilding hint/layout per frame with a full inventory duplicate, unchanged downed-flag rebroadcasts, per-tick node re-resolution in day_night, always-on physics polling in harvestable, plus a host_health_changed signal declared with 4 args but emitted with 5. Fixes applied under this finding by kiln9; per-file details in the session review ledgers.
+
+---
+
+## Resolved
+
+### F-081 · Every ship blanket-staged `.agent/`, so one agent's commit carried another's in-progress harness edits — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8 · **Resolved 2026-08-18 by
+yarrow21.**
 
 `cmd_ship` stages `[f for f in changed if f.startswith(".agent/")]` for **every** task, not just the
 ones that touched the harness. The intent is coordination state — `BOARD.md`, `JOURNAL.md`,
@@ -811,30 +885,46 @@ checks whether the shipping task has any business with these files. It got lucky
 happened to be in a compiling state at that instant. A ship landing 90 seconds earlier would have
 committed an `agent` with a `NameError` at import, which every lane and every hook shells out to.
 
-**Fix:** exempt `.agent/bin/` from the blanket. Coordination state is the three generated files
-(`BOARD.md`, `JOURNAL.md`, `state.json`) plus the journal's siblings; harness *source* should ship
-like any other source — under an explicit claim, by the task that edited it. Narrowing the glob to
-those generated paths, or excluding `.agent/bin/`, both close it.
+**Fixed** by replacing the glob with an allowlist and giving harness source the same rule as any
+other source. Three changes, all in `.agent/bin/agent`:
+
+- `COORDINATION_PATHS` names the generated files explicitly — `.agent/BOARD.md`, `.agent/JOURNAL.md`,
+  `.agent/state.json` — and `cmd_ship` stages `f in COORDINATION_PATHS` instead of
+  `f.startswith(".agent/")`. An allowlist rather than a `.agent/bin/` exclusion, because the failure
+  here was a glob reaching further than its author meant it to, and an exclusion list has the same
+  shape as the thing that broke. The cost is bounded and visible: a future generated file nobody adds
+  to the list shows up in ship's "left alone" block instead of being carried silently.
+- `UNFREE_PREFIXES = (".agent/bin/",)` carves the harness back out of `FREE_PREFIXES`, so `agent
+  check` stops treating it as claim-free. An unclaimed harness edit now warns, and committing a
+  harness file another agent holds is blocked outright.
+- Ship's "left alone" block now names any harness file it declined to carry, and states the rule.
+  That is not decoration — the fix opens a new way to lose work. A director who edits the harness
+  without claiming it used to have it committed by *someone else*; now it is committed by *nobody*,
+  and ship's output is the moment they would notice. Claim harness source under the task that edits
+  it, and claim it before `agent done`: `ship` reads its file list from `recent`, which only `done`
+  populates.
+
+**Verified** by `tools/harness_check.py`, new with this fix — the harness had no automated test of
+any kind before it, despite being the file every lane, every hook and every check shells out to. It
+builds a throwaway git repo, copies a real `agent` into it (so `ROOT` resolves there, not here), and
+drives real `ship`/`check` runs against a reconstruction of the 2026-08-18 scenario: task 9.9 ships
+one ordinary file while another agent has uncommitted edits to `.agent/bin/agent` and
+`.agent/bin/lane`. Five cases — the stowaways stay out of the commit; they stay in the *working
+tree* (a scoped reset would lose them just as thoroughly as a commit); coordination state still
+ships; harness source *does* ship for a task that claimed it; and `check` blocks a harness file
+another agent holds.
+
+```bash
+python3 tools/harness_check.py              # 5/5 on the fixed harness
+python3 tools/harness_check.py --rev HEAD   # 3/5 on the harness as of b0d7d57
+```
+
+The `--rev` form is the red half, and it is why the check is worth keeping rather than deleting
+after the fix: against b0d7d57 the first two cases fail with `ship carried harness source it had no
+claim on: ['.agent/bin/agent', '.agent/bin/lane']`, which is F-081 reproduced from a cold start. The
+three cases that pass at *both* revisions are the guard against over-correcting.
 
 ---
-
-### F-086 · The building system has no gameplay caller, so no player can place, rotate, or destroy anything
-
-**Area:** gameplay · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.6 review
-
-`systems/building/build_ghost.gd:3` says to attach a `BuildGhost` to the player, but no production
-script or scene instantiates it. Likewise, no production caller selects a piece, calls
-`update_aim()`/`rotate_step()`/`confirm()`, or invokes `BuildService.request_destroy()`; those APIs
-are referenced only by the two checks. `BuildService` boots, but the shipped game exposes no input
-or UI path into it. Task 3.7 is specified as content authored over this definition, not as the
-missing player integration, so moving on leaves the entire 3.6 feature unreachable.
-
-Wire the local presentation/input path into the player (including piece selection and destroy), and
-add a check that exercises the production caller instead of constructing a private ghost.
-
----
-
-## Resolved
 
 ### F-095 · Post-F-090 frame/load seams: world build was 9 s of duplicate work; two frame ideas measured and rejected — **fixed**
 

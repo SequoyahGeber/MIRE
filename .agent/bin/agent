@@ -54,6 +54,18 @@ EDITOR_GUARDED_PATHS = ("project.godot", "export_presets.cfg")
 AUTOLOAD_LINE_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*="\*?res://[^"]+"$')
 # Always safe for anyone to edit.
 FREE_PREFIXES = ("docs/", ".agent/", "CLAUDE.md", "AGENTS.md", "README.md", ".gitignore")
+# — except these. F-081: `.agent/` is claim-free because it is coordination state nobody authors by
+# hand, but `.agent/bin/` sits under the same prefix and is the harness itself: the code every lane,
+# every hook and every check shells out to. It is source, and it follows the rule every other source
+# follows — an exact claim, held by the task that edits it.
+UNFREE_PREFIXES = (".agent/bin/",)
+# The harness-generated coordination files. Every task legitimately updates them and nobody claims
+# them, so `ship` carries them for whichever task commits next. F-081: this is an allowlist and not
+# a `.agent/` glob, because the glob also matched `.agent/bin/` — on 2026-08-18 an unrelated
+# content task's ship (882993d) committed the director's half-finished harness edits under its own
+# name and message. A newly generated file has to be named here to be carried; one that is not
+# shows up in ship's "left alone" list, which is a visible miss rather than a silent theft.
+COORDINATION_PATHS = (".agent/BOARD.md", ".agent/JOURNAL.md", ".agent/state.json")
 # Engine-generated sidecars. Godot writes .uid files next to every script; they are not authored
 # by anyone and claiming them would be noise.
 GENERATED_SUFFIXES = (".uid",)
@@ -991,7 +1003,7 @@ def cmd_ship(args):
 
     to_stage = [f for f in mine if f in changed]
     to_stage += expanded
-    to_stage += [f for f in changed if f.startswith(".agent/")]
+    to_stage += [f for f in changed if f in COORDINATION_PATHS]  # F-081, not a .agent/ glob
     # F-070: a reviewer claims nothing by design, so `mine` is empty and the mandated ship staged
     # coordination state and nothing else — stranding the findings it had just been told to write.
     # A review task owns exactly one artifact; give it that, and only that.
@@ -1045,6 +1057,15 @@ def cmd_ship(args):
         if len(others) > 8:
             print("      %s… and %d more — run 'git status' to see them all%s"
                   % (C["dim"], len(others) - 8, C["x"]))
+        # F-081: harness source used to ride along on every ship. It no longer does, which means a
+        # director who edited it without claiming it now watches their own fix stay behind. Say so
+        # here, at the moment it happens and by name, instead of leaving it to be noticed later.
+        harness = [f for f in others if f.startswith(UNFREE_PREFIXES)]
+        if harness:
+            print("      %s↳ %s — harness source, not coordination state: it ships under a claim%s"
+                  % (C["dim"], ", ".join(harness), C["x"]))
+            print("        %sheld by the task that edited it, claimed before that task closes "
+                  "out (F-081)%s" % (C["dim"], C["x"]))
 
     if not _git("remote").stdout.strip():
         print("\n%s⚠ No git remote configured — committed locally, nothing pushed.%s"
@@ -1190,7 +1211,9 @@ def cmd_check(args):
         return bool(r) and r["agent"] == me and age_hours(r["at"]) < RECENT_GRACE_HOURS
 
     for f in changed:
-        if any(f.startswith(p) for p in FREE_PREFIXES) or f.endswith(GENERATED_SUFFIXES):
+        if ((any(f.startswith(p) for p in FREE_PREFIXES)
+             and not f.startswith(UNFREE_PREFIXES))  # F-081: harness source is source
+                or f.endswith(GENERATED_SUFFIXES)):
             # F-072: free means "free unless somebody actually claimed it". F-006 exempts docs/ so
             # that no lane ever blocks on a doc NOBODY claimed — that is the property worth keeping,
             # and an unclaimed doc stays free below. But `agent claim` accepts a docs/ path, records
