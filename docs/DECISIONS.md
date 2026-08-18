@@ -1853,3 +1853,39 @@ alarm; wrong in the other costs a corrupted scene.
 the run flags. Add it to `GODOT_RUN_FLAGS` and to `GODOT_LAUNCH_SHAPES` in `tools/harness_check.py`
 in the same edit — that table is the spec, and it is asserted, so a new shape is one row plus a
 passing test rather than an argument.
+
+### D-082 · 2026-08-18 · A finding's status may be undone automatically only where no one recorded a decision — `done_at` is the line
+
+`_sync_findings()` infers status from `docs/FINDINGS.md`: F-049 made "this finding left '## Open', so
+somebody must have fixed it" mark it done. The inference is right often enough to be worth having,
+and it was **one-way** — nothing could undo it. That turned a transient error in a markdown file into
+a permanent state change. F-112's heading was overwritten by an unrelated commit (`89fea39`); the next
+sync closed it; a later task restored the heading; the status never came back. It sat in the board's
+Done row while `brief` still advertised it, so the real work it names could never be dispatched.
+
+F-071 had looked at this class of drift and deliberately declined to auto-correct it: only someone who
+knows what was actually fixed can write the resolution note that makes the move meaningful. That
+reasoning is still right — but it assumed the drift always means *fixed, doc lagging*. Both live cases
+were the opposite: the doc was right and state was wrong.
+
+**The rule: automatic correction is allowed exactly where no human or agent recorded anything.**
+`done_at` is the discriminator, because every real `agent done` stamps it and the inference rule never
+does. So:
+
+- **`done`, no `done_at`, and under `## Open`** — closed by inference, contradicted by the source of
+  truth that same inference defers to. `_sync_findings()` restores it to `todo` silently. It can
+  never resurrect work an agent actually closed, because that always carries the stamp.
+- **`done` with a `done_at`, still under `## Open`** — a real close-out that disagrees with the doc.
+  A tool cannot tell which record is wrong, so it still only prints the disagreement (F-071's call,
+  unchanged) — but it now names both fixes instead of assuming the doc is the stale one.
+
+**`agent reopen <id> "why"`** is the second half, and exists because `agent done` is overloaded: it is
+the only close-out verb, so it gets used for "my session ended" as well as "this is resolved." F-036
+is the worked example — lp ran `done` and wrote *in the same journal entry* that the finding stays
+open pending Sequoyah's playtest. `reopen` clears the status and the stamps and writes a `REOPEN`
+journal entry, so the correction is attributable instead of being a silent hand-edit of `state.json`.
+
+**What would change my mind:** evidence that the silent restore surprises someone — a finding that
+really was fixed, closed by the inference rule alone, and reopened here into wasted duplicate work.
+The stamp test is meant to make that impossible, since a fix an agent performed carries a `done_at`.
+If it happens anyway, make the restore print a line rather than reverting to one-way.

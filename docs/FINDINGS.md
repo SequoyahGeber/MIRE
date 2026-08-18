@@ -591,6 +591,86 @@ then delete the shim path if nothing else uses it. Needs a claim on `core/dev/de
 
 ## Resolved
 
+### F-131 · A finding auto-closed by the F-049 sync rule can never reopen, so a transient FINDINGS.md error permanently hides real work — F-112 and F-036 are both invisible to the board right now — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-18 by yarrow21
+
+`agent start` has been printing "2 finding(s) closed but still under '## Open'" for a while, naming
+**F-036** and **F-112**, and telling the reader to move each section to `## Resolved`. That advice is
+wrong for both, because in both cases **the doc is right and `state.json` is wrong** — the opposite
+of the drift direction F-071 was written for.
+
+**F-112 — auto-closed by a rule, with no human or agent in the loop at all.** Its state entry is
+`"status": "done"` with **no `done_at` and no `done_by`**: nobody ever ran `agent done F-112`. What
+happened is in the journal (2026-08-18, `.agent/JOURNAL.md`): the commit that filed F-117 (`89fea39`)
+accidentally overwrote F-112's `### F-112 ...` heading, orphaning its body. With the heading gone,
+`_open_findings()` stopped seeing it, and the next `_sync_findings()` applied F-049's rule — "a
+finding that has LEFT '## Open' while still marked todo gets marked done" — and closed it. A later
+task restored the heading, so the doc has been correct ever since. The status has not, because
+**`_sync_findings()` never downgrades a status**: the rule is one-way by design, so a transient
+five-minute error in a markdown file became a permanent, silent state change with no way back.
+
+**F-036 — `agent done` recorded a session, not a closure.** It has `done_at`/`done_by: lp`, but lp's
+own journal entry for it says: *"F-036 intentionally stays Open in FINDINGS.md — closing it needs
+Sequoyah's playtest verdict (D-039's canonical hand-off case), which no agent can substitute."* lp
+did real work (wrote the missing `SPECS.md` block) and closed out the way the protocol tells you to;
+there is no other verb for "I finished my session on this finding but it is not resolved" except
+`agent handoff`, and the finding was not being handed off mid-work either.
+
+**What it costs.** `board` lists findings from state, so both are in the Done row; `brief` lists them
+from the doc, so both still read as claimable. A director routing work off the board — which
+`ORCHESTRATION.md` says is how lanes get fed — will never dispatch either one. F-112 is a real
+missing check (F-076's third system, never lifted). F-036 is the 2.9 combat-feel gate, which is one
+of the few genuine Sequoyah hand-offs in the repo. Both are effectively deleted from the queue while
+looking, on the board, like completed work.
+
+**Fix, in two halves that match the two causes:**
+
+1. **`_sync_findings()` heals the no-evidence case.** A finding under `## Open` whose state says
+   `done` **but carries no `done_at`** was closed by inference, not by anyone — and the inference is
+   now contradicted by the source of truth the same function already defers to. Restore it to
+   `todo`. This can never resurrect a finding an agent actually closed, because a real `agent done`
+   always stamps `done_at`. F-112 heals on the next sync with no human action.
+2. **An explicit verb for the deliberate case.** `agent reopen <F-NNN> "why"` — journalled, so
+   "this was marked done but is not resolved" is a recorded act rather than a hand-edit of
+   `state.json`. F-036 needs this, and so does any future finding whose `agent done` meant "my
+   session ended", not "this is fixed".
+
+Then `_findings_drift()`'s warning should offer both actions instead of only "move it to Resolved",
+since that is the wrong action in both cases it is currently firing on.
+
+---
+
+**Resolved 2026-08-18 by yarrow21.** Both halves shipped, and both live cases are cleared.
+
+- `_sync_findings()` restores a finding to `todo` when it is under `## Open`, marked `done`, and
+  carries **no `done_at`** — closed by the inference rule rather than by anyone. **F-112 healed on
+  the very next sync with no human action**, verified before/after against the real `state.json`:
+  `done` → `todo`, while `F-036` (which has a real `done_at`) was correctly left alone by the same
+  pass.
+- `agent reopen <id> "why"` for the case a tool cannot judge. **F-036 is reopened**, with lp's own
+  journal quote as the reason, its `done_at`/`done_by` cleared and a `REOPEN` entry written.
+- `_findings_drift()`'s warning now offers both actions instead of only "move it to Resolved" —
+  which was the wrong advice on both findings it was firing on.
+
+`agent start` no longer prints the drift warning at all, and **F-036 is back in the claimable list**
+where a director can route it. D-082 records the rule and where its line sits.
+
+**Verified:** `python3 tools/harness_check.py` → **18/18**, with two new cases; `--rev HEAD`
+reproduces the pre-fix state at **16/18** — and the sync case fails there on its behavioural
+assertion (the finding stays `done`), not merely on a missing subcommand.
+
+**Two crashes found while testing, fixed in passing.** A task lacking `milestone` raised `KeyError`
+in `_roadmap_progress()`, and one lacking `est`/`tier`/`title` raised it in `render_board()`. Both
+run inside `save()`, so a single malformed task took down every command that writes state — `start`,
+`board`, `claim`, `done`, `ship`. Both now read with `.get()` and sane defaults: a thin row gets
+drawn instead of the harness falling over.
+
+**Deliberately not changed:** F-071's decision that a `done_at`-stamped finding still open in the doc
+is *printed*, not auto-resolved. A tool cannot tell which of the two records is wrong there, and
+guessing would either resurrect finished work or bury a real hand-off.
+
+
 ### F-120 · AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed — **fixed**
 
 **Area:** tooling/protocol · **Severity:** high · **Found:** 2026-08-18 by lp during 3.10
