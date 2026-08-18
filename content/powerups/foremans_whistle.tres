@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"foremans_whistle"
+display_name = "Foreman's Whistle"
+description = "One blast and the tree simply gives up. The quarry has stopped arguing entirely."
+tags = Array[StringName]([])
+max_stacks = 1
+modifiers = Dictionary[StringName, Vector2]({
+&"harvest_yield": Vector2(0, 1.0),
+&"harvest_damage": Vector2(0, 0.5)
+})

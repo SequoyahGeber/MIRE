@@ -1,0 +1,107 @@
+[gd_resource type="Resource" script_class="LootTableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/loot/loot_table_def.gd" id="1_loottable"]
+[ext_resource type="Script" path="res://systems/loot/loot_entry.gd" id="2_lootentry"]
+
+[sub_resource type="Resource" id="Resource_0"]
+script = ExtResource("2_lootentry")
+kind = 1
+item_id = &"wellspring_heart"
+min_amount = 1
+max_amount = 1
+rarity = 3
+weight = 10.0
+
+[sub_resource type="Resource" id="Resource_1"]
+script = ExtResource("2_lootentry")
+kind = 1
+item_id = &"seven_league_waders"
+min_amount = 1
+max_amount = 1
+rarity = 3
+weight = 10.0
+
+[sub_resource type="Resource" id="Resource_2"]
+script = ExtResource("2_lootentry")
+kind = 1
+item_id = &"foremans_whistle"
+min_amount = 1
+max_amount = 1
+rarity = 3
+weight = 10.0
+
+[sub_resource type="Resource" id="Resource_3"]
+script = ExtResource("2_lootentry")
+kind = 1
+item_id = &"coin_worm"
+min_amount = 1
+max_amount = 1
+rarity = 3
+weight = 10.0
+
+[sub_resource type="Resource" id="Resource_4"]
+script = ExtResource("2_lootentry")
+kind = 1
+item_id = &"eggshell_warlord"
+min_amount = 1
+max_amount = 1
+rarity = 3
+weight = 10.0
+
+[sub_resource type="Resource" id="Resource_5"]
+script = ExtResource("2_lootentry")
+kind = 1
+item_id = &"bottomless_quiver"
+min_amount = 1
+max_amount = 1
+rarity = 3
+weight = 10.0
+
+[sub_resource type="Resource" id="Resource_6"]
+script = ExtResource("2_lootentry")
+kind = 1
+item_id = &"second_sunrise"
+min_amount = 1
+max_amount = 1
+rarity = 3
+weight = 10.0
+
+[sub_resource type="Resource" id="Resource_7"]
+script = ExtResource("2_lootentry")
+kind = 1
+item_id = &"the_landlord"
+min_amount = 1
+max_amount = 1
+rarity = 3
+weight = 10.0
+
+[sub_resource type="Resource" id="Resource_8"]
+script = ExtResource("2_lootentry")
+item_id = &"coins"
+min_amount = 400
+max_amount = 800
+rarity = 3
+weight = 8.0
+
+[sub_resource type="Resource" id="Resource_9"]
+script = ExtResource("2_lootentry")
+item_id = &"iron_ingot"
+min_amount = 6
+max_amount = 6
+rarity = 2
+weight = 6.0
+
+[sub_resource type="Resource" id="Resource_10"]
+script = ExtResource("2_lootentry")
+item_id = &"stone_axe"
+min_amount = 1
+max_amount = 1
+weight = 1.0
+
+[resource]
+script = ExtResource("1_loottable")
+id = &"gilded"
+coin_min = 0
+coin_max = 0
+roll_count = 1
+entries = Array[ExtResource("2_lootentry")]([SubResource("Resource_0"), SubResource("Resource_1"), SubResource("Resource_2"), SubResource("Resource_3"), SubResource("Resource_4"), SubResource("Resource_5"), SubResource("Resource_6"), SubResource("Resource_7"), SubResource("Resource_8"), SubResource("Resource_9"), SubResource("Resource_10")])

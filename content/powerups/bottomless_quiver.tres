@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"bottomless_quiver"
+display_name = "Bottomless Quiver"
+description = "You keep reaching in. There keeps being an arrow. This has stopped being surprising."
+tags = Array[StringName]([])
+max_stacks = 1
+modifiers = Dictionary[StringName, Vector2]({
+&"arrow_save_chance": Vector2(0.9, 0)
+})

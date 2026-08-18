@@ -1203,6 +1203,32 @@ finding the pivot by hand, which is precisely the hand-off D-039 forbids.
 hung on the face of its jamb clears completely at 90° and starts to catch the jamb corner past it,
 the same reason a real door gets a stop or a bevelled edge. The opening is fully clear at 90°.
 
+### D-091 · 2026-08-18 · A percentage-authored powerup stat is read against a base of 1.0, and the chest economy's stand-ins are named in the table
+
+**Read multiplicative stats on 1.0, never on 0.0.** `PowerupService.stat(peer, name, base)` computes
+`(base + flat * N) * (1 + mult * N)`. Almost every powerup in `content/powerups/` authors its effect
+as the multiplicative half, so a consumer that asks for a stat on a base of `0.0` gets `0.0` back
+forever, however many stacks the player holds — which is how `loot_luck` sat unread since 3.4
+(F-140). A consumer of a stat that has no natural base asks on `1.0` and takes the surplus:
+`maxf(0.0, stat(peer, &"loot_luck", 1.0) - 1.0)`. Both authoring shapes then work — a +6% stack
+reads as 0.06, a flat +0.5 reads as 0.5 — and no content has to be rewritten to suit the reader.
+`Chest._luck_for()` is the worked example; `coin_gain`, `harvest_yield` and `craft_seconds` all face
+the same choice when their systems arrive.
+
+**Rarity is the only thing luck may touch.** A `LootEntry`'s `rarity` (0–3) multiplies its weight by
+`(1 + luck * rarity)` and never changes what the line grants. That keeps D-063 intact: a jackpot gets
+*likelier*, never weaker, and the tuning dial for a pull that is too strong stays its frequency.
+
+**A table may stand in for content that is not authored yet, but it says so.** `docs/ITEMS.md` §5
+lists Mechanism, mithril materials and tonics in the Strongbox, and Wellglass in the Wellspring
+chest; none are authored. The tables ship with those weights redistributed across lines that exist
+rather than pointing entries at ids that do not — an entry naming a missing id validates fine, opens
+fine, and silently grants nothing, which reads to a player as a stingy tier rather than as a bug.
+`tools/loot_content_check.gd` resolves every id in every table against the real Registry so a
+stand-in stays a decision and never becomes a typo. World's Okayest Axe is `stone_axe` at weight 1
+in the Gilded pool until A-047 gives it its gold skin; King's Purse is a 400–800 coin line, which
+needs no new mechanism at all.
+
 ## Template
 
 ```

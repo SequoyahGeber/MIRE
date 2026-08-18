@@ -12,7 +12,7 @@ _Nothing in flight._
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 122/138 | 16 |
+| Findings | `█████████░` 122/139 | 17 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -62,6 +62,7 @@ _Nothing in flight._
 | ⬜ | **F-136** The player controller has no step-up, so any lip in a walkable surface is a wall | todo |
 | ⬜ | **F-137** The build module lives in one `.tres` and nothing else knows it | todo |
 | ⬜ | **F-138** Rotating an AABB's corners is still the wrong ruler when the thing you are rotating is a moving part | todo |
+| ⬜ | **F-139** `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline | todo |
 
 ## Done
 

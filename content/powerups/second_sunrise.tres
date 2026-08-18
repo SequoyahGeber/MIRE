@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"second_sunrise"
+display_name = "Second Sunrise"
+description = "Getting your friends back off the floor is now the fastest thing you do all run."
+tags = Array[StringName]([])
+max_stacks = 1
+modifiers = Dictionary[StringName, Vector2]({
+&"revive_seconds": Vector2(0, -0.6),
+&"revive_radius_m": Vector2(0, 1.0),
+&"bleed_out_seconds": Vector2(0, 1.0)
+})

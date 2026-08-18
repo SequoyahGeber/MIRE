@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"seven_league_waders"
+display_name = "Seven-League Waders"
+description = "Thigh-high, mud-proof, and somehow always a bit ahead of you."
+tags = Array[StringName]([])
+max_stacks = 1
+modifiers = Dictionary[StringName, Vector2]({
+&"move_speed": Vector2(0, 0.35)
+})

@@ -34,6 +34,14 @@ signal open_confirmed(request_id: int, accepted: bool, granted: Dictionary, deta
 @export var closed_scene: PackedScene
 @export var open_scene: PackedScene
 @export_range(0.5, 20.0, 0.1, "or_greater") var request_range_m: float = 3.0
+## Coins the opener pays, before their `chest_price` stat is applied. 0 is a free scatter-cache —
+## Muck's proven loop, kept: free caches seed coins, priced chests spend them (`docs/ITEMS.md` §5).
+## The price is charged in the SAME host transaction as the key, so a failed payment grants nothing
+## and leaves the chest closed and re-openable.
+@export_range(0, 999, 1) var cost_coins: int = 0
+## Item id of the key this chest needs, or empty for none. Consumed on a successful open — a key is
+## spent, not carried. Host-side validation like any other, exactly `docs/ITEMS.md` §6.3.
+@export var locked_by: StringName = &""
 
 ## Replicated. Setter keeps presentation correct when a network delta arrives on a client.
 var opened: bool = false:
@@ -116,12 +124,30 @@ func _accept_open_request(peer_id: int, request_id: int) -> void:
 		_confirm_peer(peer_id, request_id, false, {}, "chest has no loot table")
 		return
 
-	var roll: Dictionary = loot_table.call("roll", _rng)
-	var granted: Dictionary = {}
 	var inventory: Node = get_node_or_null(^"/root/InventoryService")
 	if inventory == null:
 		_confirm_peer(peer_id, request_id, false, {}, "chest cannot reach the inventory")
 		return
+
+	# Price and key are charged FIRST, in one transaction, and a failure leaves the chest closed.
+	# The order matters: rolling first and charging after would hand out a jackpot the opener could
+	# not afford, and charging in two steps could take the key and leave the coins (or the reverse).
+	var price: int = _price_for(peer_id)
+	var removals: Dictionary = {}
+	if price > 0:
+		removals[COIN_ITEM_ID] = price
+	if locked_by != &"":
+		removals[locked_by] = 1
+	if not removals.is_empty():
+		if not bool(inventory.call("host_transaction", peer_id, removals, {})):
+			var reason: String = "you need %d coins" % price
+			if locked_by != &"" and int(inventory.call("host_count", peer_id, locked_by)) <= 0:
+				reason = "locked — you need a %s" % _display_name_for(locked_by)
+			_confirm_peer(peer_id, request_id, false, {}, reason)
+			return
+
+	var roll: Dictionary = loot_table.call("roll", _rng, _luck_for(peer_id))
+	var granted: Dictionary = {}
 
 	var coin_amount: int = int(roll.get("coins", 0))
 	if coin_amount > 0 and bool(inventory.call("host_add", peer_id, COIN_ITEM_ID, coin_amount)):
@@ -131,12 +157,63 @@ func _accept_open_request(peer_id: int, request_id: int) -> void:
 		var amount: int = int(items[item_id])
 		if amount > 0 and bool(inventory.call("host_add", peer_id, item_id, amount)):
 			granted[item_id] = int(granted.get(item_id, 0)) + amount
+	# Powerups do not go through the inventory at all — they are held state on PowerupService, which
+	# owns its own replication. Same open, same host, different seam.
+	var powerups: Dictionary = roll.get("powerups", {})
+	if not powerups.is_empty():
+		var powerup_service: Node = get_node_or_null(^"/root/PowerupService")
+		for powerup_id: StringName in powerups:
+			var count: int = int(powerups[powerup_id])
+			if count <= 0:
+				continue
+			if powerup_service == null:
+				push_warning("Chest %s rolled powerup '%s' with no PowerupService" % [name, powerup_id])
+				continue
+			var given: int = int(powerup_service.call("host_grant", peer_id, powerup_id, count))
+			if given > 0:
+				granted[powerup_id] = int(granted.get(powerup_id, 0)) + given
 
 	# Opens even when every individual grant above was rejected (e.g. a full inventory) — a chest
 	# that silently stays closed and re-rollable is worse than an empty-handed open. The requester's
 	# detail reflects exactly what they walked away with, empty Dictionary included.
 	opened = true
 	_confirm_peer(peer_id, request_id, true, granted, "chest opened")
+
+
+## The opener's own price, after `chest_price` — a stat three shipped powerups already grant and
+## nothing read until now (F-140). Never below zero, and never below 1 while the chest costs
+## anything at all: a discount that reaches "free" would make a priced tier unpriced.
+func _price_for(peer_id: int) -> int:
+	if cost_coins <= 0:
+		return 0
+	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	if powerups == null:
+		return cost_coins
+	return maxi(1, int(roundf(float(powerups.call("stat", peer_id, &"chest_price", float(cost_coins))))))
+
+
+## Read against a base of 1.0, not 0.0. Every authored `loot_luck` modifier is multiplicative
+## (`second_glance` and `fruiting_call` are Vector2(0, 0.06); The Landlord is Vector2(0, -0.5)'s
+## sibling at +0.3), and PowerupService computes `(base + flat * N) * (1 + mult * N)` — so asking
+## for it on a base of zero returns zero however many stacks you hold, which is exactly the shape
+## of bug F-140 was about. Asking on 1.0 and taking the surplus makes both authoring shapes work:
+## a +6% stack reads as 0.06, a flat +0.5 reads as 0.5.
+func _luck_for(peer_id: int) -> float:
+	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	if powerups == null:
+		return 0.0
+	return maxf(0.0, float(powerups.call("stat", peer_id, &"loot_luck", 1.0)) - 1.0)
+
+
+func _display_name_for(item_id: StringName) -> String:
+	var registry: Node = get_node_or_null(^"/root/Registry")
+	if registry == null or not registry.has_method("get_item"):
+		return String(item_id)
+	var item: Resource = registry.call("get_item", item_id) as Resource
+	if item == null:
+		return String(item_id)
+	var display: String = String(item.get("display_name"))
+	return display if not display.is_empty() else String(item_id)
 
 
 func _requester_in_range(peer_id: int) -> bool:

@@ -3358,3 +3358,27 @@ A-010 (practical construction kit) is DONE and the queue is now GATE-HELD, not e
 Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_construction_set.py`, `tools/construction_check.gd`, `tools/blender/mire_art.py`, `assets/construction`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `assets/source/construction_set.blend`, `tools/construction_check.gd.uid`, `assets/audit/geometry_report.json`, `assets/audit/geometry_report.jsonl`
 
 Commit at time of writing: `ab3cb28`
+
+---
+
+### HANDOFF · 3.2 · slate17 · 2026-08-18T21:26:42+00:00
+
+**Author all item/recipe `.tres` content**
+
+First half of 3.2 shipped: the ART-FREE content, which is all that is authorable today. Done: all six remaining docs/ITEMS.md §5 loot tables (bog, strongbox, wellspring, gilded, sunken, boss) and all eight Gleam powerups from §4.9, plus the schema they needed — LootEntry.kind/rarity, LootTableDef.roll(rng, luck) with a powerups bucket, Chest.cost_coins/locked_by charged in one transaction before the roll, powerups granted via PowerupService.host_grant, and chest_ui naming rewards from either registry. Verified by 'agent godot --script tools/loot_content_check.gd' (7 tables, 94 entries, every id resolved against the real Registry, a live chest that refuses when broke, refuses when locked, consumes the key and grants a powerup; loot_luck measurably shifts the Gilded pool 50/4000 -> 9/4000). chest_check and powerup_check still 0 failures. WHAT IS LEFT AND WHY: the rest of ITEMS.md W1 (§4.1 raws, §4.3 refined, food basics) is blocked on A-011/A-012 art, because item_icons_check requires every ItemDef to carry a real icon and those batches are themselves gate-held behind task 2.14's playtest — see the note under '## P1' in docs/ASSET_TRACKER.md. Same reason the Rusted and Gilded keys are not authored: they are items and need icons. TRAP FOR WHOEVER CONTINUES: a percentage-authored powerup stat read on a base of 0.0 returns 0.0 forever (D-091, F-140) — read on 1.0 and take the surplus. Still open from ITEMS.md §6: a placement budget for the gilded tier, which belongs to whatever places chests in the world.
+
+Files: `systems/loot/loot_entry.gd`, `systems/loot/loot_table_def.gd`, `systems/loot/chest.gd`, `tools/chest_check.gd`, `ui/loot/chest_ui.gd`, `content/loot`, `content/powerups`, `tools/loot_content_check.gd`, `docs/FINDINGS.md`, `docs/ITEMS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `63cc37c`
+
+---
+
+### HANDOFF · 3.2 · slate17 · 2026-08-18T21:26:59+00:00
+
+**Author all item/recipe `.tres` content**
+
+See the previous handoff note on this task — same content, re-claimed with exact per-file claims so D-031's ship check passes.
+
+Files: `content/powerups/bottomless_quiver.tres`, `content/powerups/coin_worm.tres`, `content/powerups/eggshell_warlord.tres`, `content/powerups/foremans_whistle.tres`, `content/powerups/second_sunrise.tres`, `content/powerups/seven_league_waders.tres`, `content/powerups/the_landlord.tres`, `content/powerups/wellspring_heart.tres`, `content/loot/bog.tres`, `content/loot/boss.tres`, `content/loot/gilded.tres`, `content/loot/strongbox.tres`, `content/loot/sunken.tres`, `content/loot/wellspring.tres`, `systems/loot/loot_entry.gd`, `systems/loot/loot_table_def.gd`, `systems/loot/chest.gd`, `ui/loot/chest_ui.gd`, `tools/loot_content_check.gd`, `tools/loot_content_check.gd.uid`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/ITEMS.md`
+
+Commit at time of writing: `63cc37c`

@@ -299,6 +299,12 @@ One `LootTableDef` per row below (`content/loot/`), rolled by the shipped `Chest
 authority already documented in `chest.gd`. Coin ranges/weights are tuning guesses; **shape** is the
 contract. Muck's proven loop stays: free caches seed coins, priced chests spend them.
 
+> **All seven rows are authored as of 2026-08-18** (`content/loot/`), verified by
+> `.agent/bin/agent godot --script tools/loot_content_check.gd`, which resolves all 94 entry ids
+> against the real Registry. Prices and locks are per-placed-chest (`cost_coins`, `locked_by` on the
+> `Chest` node), not on the table — the same tier can be a free scatter-cache in one place and a
+> 60-coin box in another, which is what "getting in" in the column below actually means.
+
 | Tier (id) | Getting in | Rolls | Pool shape |
 |---|---|---|---|
 | Reed Cache (`small`, exists) | free, world-scattered | 2 | coins 5–15 + basic mats. Already shipped; display name "Reed Cache" |
@@ -355,7 +361,7 @@ and A-012 (food) are unchanged and remain the first wave's art.
 | Wave | With | Content |
 |---|---|---|
 | W1 | 3.1/3.2 (now) | §4.1 T0–T2 raws, §4.3 refined set, food basics, Branch Club, Reed Machete, torch — the crafting tree's flesh, on A-002/A-011/A-012 art. **First slice shipped 2026-08-18 (`9caef22`):** 7 items (branch, flint, coal, fibre_bundle, berry, mushroom, raw_meat) + 11 recipes making every existing tool/weapon craftable; the rest of W1 waits on A-011/A-012 art because `item_icons_check` requires every ItemDef to carry a real icon |
-| W2 | 3.5 | §5 tables, keys, coins flow, **the first Gleam set** — every Gleam *powerup* and one-shot is art-free and ships day one; unique weapons follow A-047 |
+| W2 | 3.5 | §5 tables, keys, coins flow, **the first Gleam set** — every Gleam *powerup* and one-shot is art-free and ships day one; unique weapons follow A-047. **Shipped 2026-08-18 (3.2, slate17):** all six remaining §5 tables (`bog` `strongbox` `wellspring` `gilded` `sunken` `boss`) and all **eight Gleam powerups** (untagged, `max_stacks 1`), plus the schema they needed — `LootEntry.kind`/`rarity`, `Chest.cost_coins`/`locked_by`, powerups granted through PowerupService (F-140: 3.5 closed without any of it). King's Purse ships as a 400–800 coin line and World's Okayest Axe as `stone_axe` at weight 1 until A-047 (D-091). Still open in W2: Rusted/Gilded **keys** as items (they need A-044 art), the unique weapons, and a placement budget for `gilded` |
 | W3 | 3.8 (+stamina) | tonics, cooked-food breadth |
 | W4 | M4 Mire | Wellglass, Blight Residue, Pale Draught, Glowcap placement, Sunken Caches |
 | W5 | M5 per-enemy | each creature's drops ship *with the creature*; throwables with 5.3 |

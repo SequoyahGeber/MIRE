@@ -48,49 +48,73 @@ func validation_errors() -> PackedStringArray:
 			errors.append("entries[%d] max_amount is below min_amount" % index)
 		if float(entry.get("weight")) <= 0.0:
 			errors.append("entries[%d] weight must be positive" % index)
+		var rarity: int = int(entry.get("rarity"))
+		if rarity < 0 or rarity > 3:
+			errors.append("entries[%d] rarity %d is outside 0..3" % [index, rarity])
+		var kind: int = int(entry.get("kind"))
+		if kind != LOOT_ENTRY.Kind.ITEM and kind != LOOT_ENTRY.Kind.POWERUP:
+			errors.append("entries[%d] has unknown kind %d" % [index, kind])
 	return errors
 
 
 ## Host-only. [param rng] is the caller's own RandomNumberGenerator — never randi() — so how it was
 ## seeded is entirely the caller's business; this table just consumes whatever stream it is handed.
-## Returns {"coins": int, "items": Dictionary[StringName, int]}.
-func roll(rng: RandomNumberGenerator) -> Dictionary:
-	var result: Dictionary = {"coins": 0, "items": {}}
+##
+## [param luck] is the opener's `loot_luck` stat, 0.0 for nobody special. It multiplies each entry's
+## weight by (1 + luck * rarity), so a rarity-0 filler line is untouched and a rarity-3 jackpot line
+## leans hardest — luck changes the ODDS and never the contents (D-063: tune frequency, not potency).
+##
+## Returns {"coins": int, "items": Dictionary[StringName, int],
+##          "powerups": Dictionary[StringName, int]}.
+func roll(rng: RandomNumberGenerator, luck: float = 0.0) -> Dictionary:
+	var result: Dictionary = {"coins": 0, "items": {}, "powerups": {}}
 	if coin_max > 0:
 		result["coins"] = rng.randi_range(coin_min, coin_max)
 	if entries.is_empty():
 		return result
 
+	var weights := PackedFloat32Array()
 	var total_weight: float = 0.0
 	for entry: Resource in entries:
-		if entry != null and float(entry.get("weight")) > 0.0:
-			total_weight += float(entry.get("weight"))
+		var weight: float = 0.0
+		if entry != null:
+			weight = float(entry.get("weight"))
+			if weight > 0.0:
+				weight *= 1.0 + maxf(0.0, luck) * float(entry.get("rarity"))
+			else:
+				weight = 0.0
+		weights.append(weight)
+		total_weight += weight
 	if total_weight <= 0.0:
 		return result
 
 	var items: Dictionary = result["items"]
+	var powerups: Dictionary = result["powerups"]
 	for _draw: int in roll_count:
-		var pick: Resource = _weighted_pick(rng, total_weight)
+		var pick: Resource = _weighted_pick(rng, weights, total_weight)
 		if pick == null:
 			continue
-		var item_id := StringName(String(pick.get("item_id")))
+		var granted_id := StringName(String(pick.get("item_id")))
 		var amount: int = rng.randi_range(int(pick.get("min_amount")), int(pick.get("max_amount")))
-		items[item_id] = int(items.get(item_id, 0)) + amount
+		var bucket: Dictionary = powerups if int(pick.get("kind")) == LOOT_ENTRY.Kind.POWERUP else items
+		bucket[granted_id] = int(bucket.get(granted_id, 0)) + amount
 	result["items"] = items
+	result["powerups"] = powerups
 	return result
 
 
-func _weighted_pick(rng: RandomNumberGenerator, total_weight: float) -> Resource:
+func _weighted_pick(rng: RandomNumberGenerator, weights: PackedFloat32Array, total_weight: float) -> Resource:
 	var target: float = rng.randf_range(0.0, total_weight)
 	var cursor: float = 0.0
 	var last_valid: Resource = null
-	for entry: Resource in entries:
-		if entry == null or float(entry.get("weight")) <= 0.0:
+	for index: int in entries.size():
+		var weight: float = weights[index]
+		if weight <= 0.0:
 			continue
-		last_valid = entry
-		cursor += float(entry.get("weight"))
+		last_valid = entries[index]
+		cursor += weight
 		if target <= cursor:
-			return entry
+			return entries[index]
 	# Float rounding can leave target a hair above the accumulated sum; the last positive-weight
 	# entry is the correct fallback rather than null.
 	return last_valid

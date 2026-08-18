@@ -346,10 +346,16 @@ func _populate_rewards(granted: Dictionary) -> void:
 		ids.append(item_id)
 	ids.sort()
 	for item_id: StringName in ids:
+		# A reward row names either namespace: chests grant items AND powerups through the same
+		# `granted` dictionary, because from the opener's side they are both "what I got".
 		var display_name: String = String(item_id)
 		var item: ItemDef = Registry.get_item(item_id)
 		if item != null and not item.display_name.is_empty():
 			display_name = item.display_name
+		else:
+			var powerup: Resource = Registry.get_powerup(item_id)
+			if powerup != null and not String(powerup.get("display_name")).is_empty():
+				display_name = String(powerup.get("display_name"))
 		var row := RewardRow.new()
 		row.setup(display_name, int(granted[item_id]))
 		_reward_box.add_child(row)

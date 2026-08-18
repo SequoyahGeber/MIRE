@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"the_landlord"
+display_name = "The Landlord"
+description = "Chests charge you less and give you more. Somewhere, an economy is quietly crying."
+tags = Array[StringName]([])
+max_stacks = 1
+modifiers = Dictionary[StringName, Vector2]({
+&"chest_price": Vector2(0, -0.5),
+&"loot_luck": Vector2(0, 0.3)
+})

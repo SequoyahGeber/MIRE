@@ -69,6 +69,45 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-140 · Task 3.5 closed without the four chest changes `ITEMS.md` §6 assigned to it, so two shipped stats had no consumer
+
+**Area:** loot · **Severity:** medium · **Found:** 2026-08-18 by slate17 during 3.2
+
+`docs/ITEMS.md` §6 names four small things as 3.5's, "so they're noticed decisions (F-078 rule)":
+`LootEntry.kind: ITEM | POWERUP`, `LootEntry.rarity`, `Chest.cost_coins` + `locked_by`, and a
+placement budget for the gilded tier. 3.5 shipped and closed with none of them. The consequences
+were not cosmetic:
+
+- **Chests could not grant powerups at all**, though `DESIGN.md` §4.4 has always said they do. Every
+  tier in §5 is mostly powerups — "common powerups 55%" is most of what a Bog Chest is — so the
+  authored chest economy could not be written.
+- **`loot_luck` and `chest_price` were shipped stats with no reader.** `second_glance`,
+  `fruiting_call` and `hollow_bargain` were authored against them, so three of the sixty-four
+  powerups in the game promised better loot and cheaper chests and did **nothing at all**. A powerup
+  that lies is worse than a missing one: the player pays a chest slot for it.
+- Every chest was free and unlocked, so the coin economy had a source and no sink.
+
+**Fixed here, inside 3.2**, because the content this task exists to author cannot be expressed
+without it: `kind` and `rarity` on `LootEntry`; `LootTableDef.roll(rng, luck)` returning a third
+`powerups` bucket and weighting each line by `(1 + luck * rarity)`; `Chest.cost_coins` and
+`locked_by`, charged in one `host_transaction` **before** the roll so a failed payment grants nothing
+and leaves the chest re-openable; powerups granted through `PowerupService.host_grant`. Proof is
+`tools/loot_content_check.gd`. The fourth item — a placement budget for `gilded` — is still open and
+belongs to whatever places chests in the world.
+
+**The trap inside the trap, worth more than the fix:** `loot_luck` read on a base of `0.0` is always
+`0.0`. `PowerupService.stat()` computes `(base + flat * N) * (1 + mult * N)`, and every authored
+`loot_luck` modifier is multiplicative, so the first working version of this code still read zero
+luck from a powerup that grants +30%. Percentage-authored stats must be read against a base of
+`1.0` and the surplus taken (D-091). Any future consumer of `coin_gain`, `harvest_yield`,
+`craft_seconds` or the other multiplicative stats has exactly this decision to make, and getting it
+wrong looks like the stat working.
+
+**Also noticed, not fixed:** `tools/chest_check.gd` emits one undeclared engine ERROR line from its
+deliberate unknown-tier case, which `docs/AUDIT-2026-08-17.md`'s "0 engine-error lines" claim says
+should not exist. It needs either an `EXPECTED_ERROR_PATTERNS` declaration or an assertion that
+swallows it.
+
 ### F-139 · `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline
 
 **Area:** worldgen / netcode · **Severity:** low · **Found:** 2026-08-18 by lm during 4.6

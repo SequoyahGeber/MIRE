@@ -75,6 +75,45 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 3.2 (first half): the chest economy is real — prices, keys, powerup rewards, and the Gleam pool (slate17)
+
+**What shipped, verified:** the six remaining `docs/ITEMS.md` §5 loot tables and the eight Gleam
+powerups, plus the schema they could not be written without — which `ITEMS.md` §6 had assigned to
+3.5 and 3.5 closed without (F-140). `.agent/bin/agent godot --script tools/loot_content_check.gd` is
+the proof: 7 tables, 94 entries, every id resolved against the real Registry, and a live chest that
+charges, refuses, consumes a key and grants a powerup.
+
+**`LootEntry` gained two fields.** `kind` (`ITEM` default, `POWERUP`) switches which namespace
+`item_id` names — one id field, not two. `rarity` (0–3) is what `loot_luck` biases toward.
+
+**`LootTableDef.roll()` takes luck and returns a third bucket:**
+
+```gdscript
+table.roll(rng, luck)  # -> {"coins": int, "items": {id: n}, "powerups": {id: n}}
+```
+
+Each line's weight is multiplied by `(1 + luck * rarity)`, so luck changes the odds and never the
+contents (D-063). Existing callers that read `coins`/`items` are unaffected.
+
+**`Chest` gained `cost_coins` and `locked_by`, both per placed instance.** The price runs through
+the opener's `chest_price` stat and the key is an ordinary item id; both are charged in ONE
+`InventoryService.host_transaction()` **before** the roll, so a refused open grants nothing, charges
+nothing and leaves the chest re-openable. Powerup lines are granted with
+`PowerupService.host_grant()` and appear in the `open_confirmed` `granted` dictionary alongside
+items — `ui/loot/chest_ui.gd` now resolves a display name from either registry.
+
+**Read percentage stats on a base of 1.0** (D-091). `stat(peer, &"loot_luck", 0.0)` returns zero
+forever no matter how many stacks are held, because every authored modifier is the multiplicative
+half of `(base + flat * N) * (1 + mult * N)`. `Chest._luck_for()` is the worked example, and
+`coin_gain`, `harvest_yield` and `craft_seconds` all face the same call when their systems land.
+
+**What the next task should know.** Whatever places chests owes `gilded` a spawn budget (≈1–2 per
+island, `ITEMS.md` §6.4) — it is the last of §6's four items still open. The Rusted and Gilded keys
+are not authored yet: they need A-044 art before an ItemDef can carry an icon, so `locked_by` is
+proven against an existing item id in the check rather than against a real key. W1's remaining item
+authoring stays blocked on A-011/A-012 for the same icon reason.
+
+
 ### 2026-08-18 — Asset batch A-010: the practical construction kit — the art task 3.7's buildable set and world-gen's river crossings both need (slate17)
 
 **What shipped, verified:** 18 GLBs covering 14 assets in `assets/construction/exports/`

@@ -687,15 +687,58 @@
       "at": "2026-08-18T04:58:38+00:00",
       "task": "F-073"
     },
+    "content/loot": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:42+00:00",
+      "hash": null,
+      "task": "3.2"
+    },
+    "content/loot/bog.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "63ab6f8717c688857ee23c1ce107d1ddcdddbb52d5bb28474f09462d892f7af1",
+      "task": "3.2"
+    },
+    "content/loot/boss.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "7e82ed6494b6813abcf5f518f26f323a34b77088dd3c97330e0cf9c0ef3a9aac",
+      "task": "3.2"
+    },
+    "content/loot/gilded.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "a835c8350585c08eea9932aef41e2cd90dca6bf183e700892d211d0b7f43284c",
+      "task": "3.2"
+    },
     "content/loot/small.tres": {
       "agent": "reed16",
       "at": "2026-08-18T02:29:39+00:00",
       "task": "3.5"
     },
+    "content/loot/strongbox.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "8906dbeead688b1370bb5459d13af968b9fbd245b54d6938cb8e6a1189fa2ec6",
+      "task": "3.2"
+    },
+    "content/loot/sunken.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "92bb31e78de91a2a29a1a5340934b9e3223c96442128af2b1d3b97313175f8ce",
+      "task": "3.2"
+    },
+    "content/loot/wellspring.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "f5cea6d082ca68cd6dde5bd1a4ab1786279197ef6b78840e532958ec45f00cd9",
+      "task": "3.2"
+    },
     "content/powerups": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:27:04+00:00",
-      "task": "3.3"
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:42+00:00",
+      "hash": null,
+      "task": "3.2"
     },
     "content/powerups/adrenal_bloom.tres": {
       "agent": "wick20",
@@ -745,6 +788,12 @@
       "hash": "6ebe4122351a0275e0f4a489223b592439c9ee09e37d56527e60c32d6adaa235",
       "task": "3.4"
     },
+    "content/powerups/bottomless_quiver.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "7a0a95ad82ff335c02b0ce05bf451a4656debb76b78406ce54f3f89b13f632a9",
+      "task": "3.2"
+    },
     "content/powerups/cat_fall.tres": {
       "agent": "wick20",
       "at": "2026-08-18T19:45:41+00:00",
@@ -775,6 +824,12 @@
       "hash": "53c4a2e21b3436c12e65125ec66727a7b3274c84323e87ca650a2d7b448a73b1",
       "task": "3.4"
     },
+    "content/powerups/coin_worm.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "71083d5f8b9a2eefa9bd95bcfee452c59d14d09ca44e3a746aaf99cebc7b7fe6",
+      "task": "3.2"
+    },
     "content/powerups/damp_stride.tres": {
       "agent": "wick20",
       "at": "2026-08-18T19:45:41+00:00",
@@ -792,6 +847,12 @@
       "at": "2026-08-18T19:45:41+00:00",
       "hash": "82dc7473bbaf435a91cac2e573476b4eddc1fae686ef39e154f5f6cdb647400e",
       "task": "3.4"
+    },
+    "content/powerups/eggshell_warlord.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "64e25b0e0099ee360e0039790324d365378727856809a41fe1b3ca8ce56d164f",
+      "task": "3.2"
     },
     "content/powerups/ember_knuckle.tres": {
       "agent": "wick20",
@@ -822,6 +883,12 @@
       "at": "2026-08-18T19:45:41+00:00",
       "hash": "cd75657bb955df0afad96583d97369f9820cdd80ee712a2d97f9e3f99b6516de",
       "task": "3.4"
+    },
+    "content/powerups/foremans_whistle.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "af7f7fb8df1dfba56001da04fbc72fc121da4f07bb5c603a6178161a026a86d8",
+      "task": "3.2"
     },
     "content/powerups/forge_blood.tres": {
       "agent": "wick20",
@@ -979,11 +1046,23 @@
       "hash": "43553d3d10dcc55a4291fd617efd8e558791fd7d80e4f3b333585e0c550c0d74",
       "task": "3.4"
     },
+    "content/powerups/second_sunrise.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "a22c92148b025affc948228089794957985e134de0125a6ee46a6c87c9dacbff",
+      "task": "3.2"
+    },
     "content/powerups/second_wind.tres": {
       "agent": "wick20",
       "at": "2026-08-18T19:45:41+00:00",
       "hash": "9050bfef5f3bf01a8be225eefe70a028680b4d5b58b1fa66b8568d44bbaa97f2",
       "task": "3.4"
+    },
+    "content/powerups/seven_league_waders.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "2f668ec4f1dbe332820ceddef837dd27c0d45ec1c47230f85d7a7dce08053adb",
+      "task": "3.2"
     },
     "content/powerups/skip_step.tres": {
       "agent": "wick20",
@@ -1032,6 +1111,12 @@
       "at": "2026-08-18T04:27:04+00:00",
       "task": "3.3"
     },
+    "content/powerups/the_landlord.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "1f31718567e58be4b7430a68fe5b15506eefc60955e8f97b9269d29ba4e39599",
+      "task": "3.2"
+    },
     "content/powerups/thick_hide.tres": {
       "agent": "wick20",
       "at": "2026-08-18T19:45:41+00:00",
@@ -1061,6 +1146,12 @@
       "at": "2026-08-18T19:45:41+00:00",
       "hash": "e62f1f1cc2ffb78100a90ff15a91ef250d353cf0903b6070aa34d8b0d9d711b2",
       "task": "3.4"
+    },
+    "content/powerups/wellspring_heart.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "40cdf56483c0291a8d3bcdd74c62e5434315ac163d4a49ff5dc0b2cbe86620ec",
+      "task": "3.2"
     },
     "content/powerups/whetted_thirst.tres": {
       "agent": "wick20",
@@ -1331,21 +1422,27 @@
     },
     "docs/DECISIONS.md": {
       "agent": "slate17",
-      "at": "2026-08-18T21:16:01+00:00",
-      "hash": "8af8d6a2b03aee17f8e9ab0d62dd569ecaaf61e15f1c231d0df6b2d53ea42a32",
-      "task": "2.1d"
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "57b00b041a893ebb41bb944b8d94625293b65c033e4380b9f09bdbd94762caca",
+      "task": "3.2"
     },
     "docs/DELEGATION.md": {
       "agent": "slate17",
-      "at": "2026-08-18T21:16:01+00:00",
-      "hash": "0d84296e65044c951259972f25962a0557f9e7c4a243367fcbe3349eb1a2c9c3",
-      "task": "2.1d"
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "51a63bafa110fe23c75686c45e47015467474fc90b9558b201ea962c8daa683b",
+      "task": "3.2"
     },
     "docs/FINDINGS.md": {
       "agent": "slate17",
-      "at": "2026-08-18T21:16:01+00:00",
-      "hash": "06e924cdadccd0e6d692f3a577dc2acfdf86e44badc869e196a8e98ba7d1c551",
-      "task": "2.1d"
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "52b3b0c9f93e548ff3cd127f5f259d212a1c2e286bec080508835f84b23c5b10",
+      "task": "3.2"
+    },
+    "docs/ITEMS.md": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "4afda3ae7b80644df85797defdd0ba84e393fcab1dee5e8dc98c3f79e7bc712b",
+      "task": "3.2"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -1529,19 +1626,22 @@
       "task": "F-073"
     },
     "systems/loot/chest.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T14:23:28+00:00",
-      "task": "F-107"
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "0ddf46c326fdc70a7cd8995616d50df2fa3ac79ed86e0e8a3971873f485407de",
+      "task": "3.2"
     },
     "systems/loot/loot_entry.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T01:18:50+00:00",
-      "task": "3.5"
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "27f7e1eede97d7c83d43f0bef8b747a3ea110c8f528edadb22c2392be09f8aca",
+      "task": "3.2"
     },
     "systems/loot/loot_table_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T01:18:50+00:00",
-      "task": "3.5"
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "23577ad0f25b2e6853c1b90a2c86c7acda7948b497d867db6c29dd7e4c41dec4",
+      "task": "3.2"
     },
     "systems/powerups/powerup_def.gd": {
       "agent": "reed16",
@@ -1767,9 +1867,10 @@
       "task": "4.1"
     },
     "tools/chest_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:33:16+00:00",
-      "task": "F-060"
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:42+00:00",
+      "hash": "ebd59d09703e0fb81967d76dc67f0bd54981c95e38860e712b26b2319b9b57db",
+      "task": "3.2"
     },
     "tools/chest_net_check.gd": {
       "agent": "lp",
@@ -2023,6 +2124,18 @@
       "at": "2026-08-18T18:06:11+00:00",
       "task": "6.10"
     },
+    "tools/loot_content_check.gd": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "bd115c0b4a1f62956a439c778d273ecd411f8a8f80955704eac7770d60c20c42",
+      "task": "3.2"
+    },
+    "tools/loot_content_check.gd.uid": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "20dc907ca050867a070a115cffdc39bbc2011108b345f75d0c2d5be432c06b5a",
+      "task": "3.2"
+    },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
       "at": "2026-08-18T17:43:02+00:00",
@@ -2250,9 +2363,10 @@
       "task": "6.10"
     },
     "ui/loot/chest_ui.gd": {
-      "agent": "kiln9",
-      "at": "2026-08-18T14:10:44+00:00",
-      "task": "F-099"
+      "agent": "slate17",
+      "at": "2026-08-18T21:26:59+00:00",
+      "hash": "6b4406b283778fafd4d8b98c23fd73fa17ec85bab8ebdb82c0092e31f00dbc00",
+      "task": "3.2"
     },
     "world/chunk/chunk_mesher.gd": {
       "agent": "wick20",
@@ -4622,6 +4736,13 @@
       "status": "todo",
       "tier": "F",
       "title": "Rotating an AABB's corners is still the wrong ruler when the thing you are rotating is a moving part"
+    },
+    "F-139": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`ChunkStreamer`/`ResourceScatterField` still have no real caller \u2014 the live game still ships the authored Hollowmere map, not the procedural pipeline"
     }
   },
   "version": 1
