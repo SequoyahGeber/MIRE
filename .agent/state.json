@@ -1,5 +1,20 @@
 {
   "claims": {
+    "assets/icons/catalog.json": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "assets/icons/exports/icon_stone_axe.png": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "assets/icons/exports/icon_wooden_axe.png": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
     "assets/maps": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
@@ -10,20 +25,160 @@
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
+    "autoload/enemy_world.gd": {
+      "agent": "ivy8",
+      "at": "2026-08-18T04:15:50+00:00",
+      "task": "2.1k"
+    },
+    "autoload/harvest_world.gd": {
+      "agent": "ivy8",
+      "at": "2026-08-18T04:16:02+00:00",
+      "task": "2.1k"
+    },
+    "autoload/inventory_service.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T04:14:58+00:00",
+      "task": "F-059"
+    },
+    "content/items/arrow.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/items/cleaver.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/items/iron_pickaxe.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/items/iron_sword.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/items/repair_hammer.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/items/short_bow.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/items/skewer.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/items/stone_axe.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/items/stone_pickaxe.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/items/wooden_axe.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/items/wooden_pickaxe.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/weapons/cleaver.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/weapons/iron_pickaxe.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/weapons/iron_sword.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/weapons/repair_hammer.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/weapons/skewer.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/weapons/stone_axe.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/weapons/stone_pickaxe.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/weapons/wooden_axe.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "content/weapons/wooden_pickaxe.tres": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
     "docs/ROADMAP.md": {
       "agent": "ivy8",
       "at": "2026-08-18T04:10:30+00:00",
       "task": "2.1k"
+    },
+    "entities/player/viewmodel.gd": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
     },
     "levels/hollowmere.tscn": {
       "agent": "ivy8",
       "at": "2026-08-18T04:10:30+00:00",
       "task": "2.1k"
     },
+    "systems/combat/weapon_def.gd": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "systems/inventory/item_def.gd": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "tools/blender/render_item_icons.py": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
     "tools/hollowmere_check.gd": {
       "agent": "ivy8",
       "at": "2026-08-18T04:10:30+00:00",
       "task": "2.1k"
+    },
+    "tools/inventory_net_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T04:14:58+00:00",
+      "task": "F-059"
     },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
@@ -34,6 +189,16 @@
       "agent": "ivy8",
       "at": "2026-08-18T04:10:30+00:00",
       "task": "2.1k"
+    },
+    "tools/setup_tool_content.gd": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
+    },
+    "tools/viewmodel_check.gd": {
+      "agent": "flint5",
+      "at": "2026-08-18T04:15:15+00:00",
+      "task": "F-073"
     },
     "world/gen/authored_world.gd": {
       "agent": "ivy8",
@@ -77,23 +242,75 @@
         "world/gen/undergrowth.gd",
         "world/gen/authored_world.gd",
         "tools/hollowmere_check.gd",
-        "docs/ROADMAP.md"
+        "docs/ROADMAP.md",
+        "autoload/enemy_world.gd",
+        "autoload/harvest_world.gd"
       ],
       "notes": [
         {
           "at": "2026-08-18T04:10:37+00:00",
           "by": "ivy8",
           "text": "Took over the three hollowmere files from moss11's 2.1d claim: that chat stopped at 19:26 PDT after writing hollowmere and never closed out; its work is committed. Released with 'drop' under its name, re-claimed here under 2.1k (new roadmap row for this revision)."
+        },
+        {
+          "at": "2026-08-18T04:16:55+00:00",
+          "by": "ivy8",
+          "text": "Three systems are keyed to playtest_hollow's group names and therefore do nothing on hollowmere, which is the main scene: enemy_world.ambient_spawn_points() reads only playtest_hollow_marker/enemy_spawn (so the map's 4 nests spawn zero crawlers), harvest_world.HOLDER_GROUP is playtest_hollow_asset (so every tree/ore node is inert scenery), and undergrowth._ground_at tests the collider's PARENT for the prop group while authored_world puts it on the StaticBody itself (so grass grows on top of trees and rocks). Also: yaw is computed atan2(dz,dx) but Basis(UP,yaw) maps +X to (cos,-sin), so every directional prop is mirrored \u2014 that is the bridge railings."
         }
       ],
       "started": "2026-08-18T04:10:30+00:00"
+    },
+    "F-059": {
+      "agent": "lp",
+      "files": [
+        "autoload/inventory_service.gd",
+        "tools/inventory_net_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T04:14:58+00:00"
+    },
+    "F-073": {
+      "agent": "flint5",
+      "files": [
+        "entities/player/viewmodel.gd",
+        "systems/inventory/item_def.gd",
+        "systems/combat/weapon_def.gd",
+        "tools/setup_tool_content.gd",
+        "tools/viewmodel_check.gd",
+        "tools/blender/render_item_icons.py",
+        "assets/icons/catalog.json",
+        "content/items/wooden_axe.tres",
+        "content/items/stone_axe.tres",
+        "content/items/wooden_pickaxe.tres",
+        "content/items/stone_pickaxe.tres",
+        "content/items/iron_pickaxe.tres",
+        "content/items/cleaver.tres",
+        "content/items/skewer.tres",
+        "content/items/short_bow.tres",
+        "content/items/arrow.tres",
+        "content/items/repair_hammer.tres",
+        "content/items/iron_sword.tres",
+        "content/weapons/wooden_axe.tres",
+        "content/weapons/stone_axe.tres",
+        "content/weapons/wooden_pickaxe.tres",
+        "content/weapons/stone_pickaxe.tres",
+        "content/weapons/iron_pickaxe.tres",
+        "content/weapons/cleaver.tres",
+        "content/weapons/skewer.tres",
+        "content/weapons/repair_hammer.tres",
+        "content/weapons/iron_sword.tres",
+        "assets/icons/exports/icon_wooden_axe.png",
+        "assets/icons/exports/icon_stone_axe.png"
+      ],
+      "notes": [],
+      "started": "2026-08-18T04:15:15+00:00"
     }
   },
   "recent": {
     ".agent/bin/agent": {
       "agent": "gale6",
-      "at": "2026-08-18T04:11:21+00:00",
-      "task": "F-045"
+      "at": "2026-08-18T04:17:06+00:00",
+      "task": "F-072"
     },
     ".agent/bin/lane": {
       "agent": "yarrow21",
@@ -2543,7 +2760,7 @@
     "F-059": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build"
     },
@@ -2648,6 +2865,22 @@
       "status": "done",
       "tier": "F",
       "title": "Eight closed findings were still listed under '## Open', so a quarter of the board's work queue was finished work"
+    },
+    "F-072": {
+      "done_at": "2026-08-18T04:17:06+00:00",
+      "done_by": "gale6",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "A claim on a docs/ file is accepted, shown on the board, and enforced by nothing"
+    },
+    "F-073": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Every tool shares one grip rotation authored for a sword, so the axe is held edge-on and every weapon swings the same chop"
     }
   },
   "version": 1

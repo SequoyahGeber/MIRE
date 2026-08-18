@@ -1955,3 +1955,15 @@ Tool half was already done (_godot_running matches the real editor binary and ex
 Files: `.agent/bin/agent`
 
 Commit at time of writing: `1c16417`
+
+---
+
+### DONE · F-072 · gale6 · 2026-08-18T04:17:06+00:00
+
+**A claim on a docs/ file is accepted, shown on the board, and enforced by nothing**
+
+agent check now enforces an exact claim on a free-prefix path when one exists, and only then. F-006's property (nobody blocks on a doc nobody claimed) is untouched. Verified by staging docs/ROADMAP.md, which ivy8 holds for 2.1k: the hook refuses with the holder named, where minutes earlier it waved the same file through. Also repaired FINDINGS.md itself — a body line beginning with a heading prefix was truncating the Open section for every reader, which is why F-072 was unclaimable when filed.
+
+Files: `.agent/bin/agent`
+
+Commit at time of writing: `d3c3e2f`

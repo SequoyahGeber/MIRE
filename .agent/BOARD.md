@@ -9,16 +9,19 @@
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
 | **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-18 00:43 | `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `assets/maps`, `assets/source/playtest_hollow.blend` |
-| **2.1k** Revise `hollowmere`: shrink the valley to a walkable size, re-author the layout and placement with intent, ground everything, fix grass-through-props, bridge railings and the water, raise tree/harvestable density, use every kit asset, and give the crawlers a corrupt zone to spawn from | ivy8 | 2026-08-18 04:10 | `tools/mapgen/hollowmere_layout.py`, `world/gen/layouts/hollowmere.json`, `levels/hollowmere.tscn`, `world/gen/undergrowth.gd`, `world/gen/authored_world.gd`, `tools/hollowmere_check.gd`, `docs/ROADMAP.md` |
+| **2.1k** Revise `hollowmere`: shrink the valley to a walkable size, re-author the layout and placement with intent, ground everything, fix grass-through-props, bridge railings and the water, raise tree/harvestable density, use every kit asset, and give the crawlers a corrupt zone to spawn from | ivy8 | 2026-08-18 04:10 | `tools/mapgen/hollowmere_layout.py`, `world/gen/layouts/hollowmere.json`, `levels/hollowmere.tscn`, `world/gen/undergrowth.gd`, `world/gen/authored_world.gd`, `tools/hollowmere_check.gd`, `docs/ROADMAP.md`, `autoload/enemy_world.gd`, `autoload/harvest_world.gd` |
+| **F-059** A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build | lp | 2026-08-18 04:14 | `autoload/inventory_service.gd`, `tools/inventory_net_check.gd` |
+| **F-073** Every tool shares one grip rotation authored for a sword, so the axe is held edge-on and every weapon swings the same chop | flint5 | 2026-08-18 04:15 | `entities/player/viewmodel.gd`, `systems/inventory/item_def.gd`, `systems/combat/weapon_def.gd`, `tools/setup_tool_content.gd`, `tools/viewmodel_check.gd`, `tools/blender/render_item_icons.py`, `assets/icons/catalog.json`, `content/items/wooden_axe.tres`, `content/items/stone_axe.tres`, `content/items/wooden_pickaxe.tres`, `content/items/stone_pickaxe.tres`, `content/items/iron_pickaxe.tres`, `content/items/cleaver.tres`, `content/items/skewer.tres`, `content/items/short_bow.tres`, `content/items/arrow.tres`, `content/items/repair_hammer.tres`, `content/items/iron_sword.tres`, `content/weapons/wooden_axe.tres`, `content/weapons/stone_axe.tres`, `content/weapons/wooden_pickaxe.tres`, `content/weapons/stone_pickaxe.tres`, `content/weapons/iron_pickaxe.tres`, `content/weapons/cleaver.tres`, `content/weapons/skewer.tres`, `content/weapons/repair_hammer.tres`, `content/weapons/iron_sword.tres`, `assets/icons/exports/icon_wooden_axe.png`, `assets/icons/exports/icon_stone_axe.png` |
 
 **2.1k notes:**
 - Took over the three hollowmere files from moss11's 2.1d claim: that chat stopped at 19:26 PDT after writing hollowmere and never closed out; its work is committed. Released with 'drop' under its name, re-claimed here under 2.1k (new roadmap row for this revision).
+- Three systems are keyed to playtest_hollow's group names and therefore do nothing on hollowmere, which is the main scene: enemy_world.ambient_spawn_points() reads only playtest_hollow_marker/enemy_spawn (so the map's 4 nests spawn zero crawlers), harvest_world.HOLDER_GROUP is playtest_hollow_asset (so every tree/ore node is inert scenery), and undergrowth._ground_at tests the collider's PARENT for the prop group while authored_world puts it on the StaticBody itself (so grass grows on top of trees and rocks). Also: yaw is computed atan2(dz,dx) but Basis(UP,yaw) maps +X to (cos,-sin), so every directional prop is mirrored — that is the bridge railings.
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███████░░░` 46/64 | 18 |
+| Findings | `███████░░░` 47/66 | 19 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 19/24 | 5 |
@@ -66,11 +69,12 @@
 | ⬜ | **F-053** Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why | todo |
 | ⬜ | **F-057** A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds | todo |
 | ⬜ | **F-058** `mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call | todo |
-| ⬜ | **F-059** A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build | todo |
+| 🔵 | **F-059** A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build | in_flight |
 | ⬜ | **F-060** `mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float | todo |
 | ⬜ | **F-061** content/items/coins.tres has no icon — the render_item_icons.py pipeline needs a SOURCES entry | todo |
 | ⬜ | **F-070** Generated review orders cannot use their mandated review task id | todo |
+| 🔵 | **F-073** Every tool shares one grip rotation authored for a sword, so the axe is held edge-on and every weapon swings the same chop | in_flight |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.5` `3.8` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-054` `F-055` `F-056` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-071`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.5` `3.8` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-054` `F-055` `F-056` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-071` `F-072`

@@ -1177,6 +1177,17 @@ def cmd_check(args):
 
     for f in changed:
         if any(f.startswith(p) for p in FREE_PREFIXES) or f.endswith(GENERATED_SUFFIXES):
+            # F-072: free means "free unless somebody actually claimed it". F-006 exempts docs/ so
+            # that no lane ever blocks on a doc NOBODY claimed — that is the property worth keeping,
+            # and an unclaimed doc stays free below. But `agent claim` accepts a docs/ path, records
+            # it, and prints it on the board under an agent's name, where it reads exactly like
+            # every other claim. It was enforced nowhere: task 2.1k held docs/ROADMAP.md and another
+            # session committed that file with the hook waving it through, because the hook saw a
+            # docs/ prefix and stopped asking. An explicit claim now means what it looks like.
+            held = st["claims"].get(f)
+            if held and held["agent"] != me and not in_grace(f) and not human:
+                errors.append("%s — %s holds an exact claim on it for %s. docs/ is free only while "
+                              "nobody has claimed it (F-006/F-072)" % (f, held["agent"], held["task"]))
             continue
         c = st["claims"].get(f)
         is_editor_guarded = f.endswith(EDITOR_GUARDED_SUFFIXES) or f in EDITOR_GUARDED_PATHS
