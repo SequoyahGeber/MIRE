@@ -114,20 +114,28 @@ Haulable.carriers -> PackedInt32Array   # replicated, ON_CHANGE, 0/1/2 peer ids
 Haulable.carrier_count() / is_carrying(peer_id) -> bool/int
 ```
 
-**NOT done — the one remaining step, and why it's not done here:** `HaulService` is not in
-`project.godot`. `agent autoload HaulService res://autoload/haul_service.gd` refused for the whole
-of this task — the editor was open (see F-120: it was launched as `-e res://levels/hollowmere.tscn`,
-which the *documented* by-hand `pgrep` check misses, though `agent autoload`'s own check correctly
-caught it and refused). Every check above proves the system works by instantiating
-`HAUL_SERVICE_SCRIPT.new()` under `/root` and naming it `HaulService` by hand — the same technique
-`tools/day_night_check.gd` uses ahead of `agent autoload DayNight` per that task's own spec ordering
-(write the check, prove it, then register) — so this is not a "does it work" gap, only a "does the
-shipped game load it" one. **Next agent touching this area, or Sequoyah directly: once the editor is
-closed, run `agent autoload HaulService res://autoload/haul_service.gd` and nothing else — no code
-changes, no re-verification beyond re-running the two checks above once against the real
-registration if you want the belt-and-braces run.** Register it after `EnemyWorld` and `BuildService`
-(both already registered) so world-gen callers can assume it exists; order relative to `CommandService`
-etc. does not matter yet since nothing consumes it besides this task.
+**NOT done — two remaining steps, both editor-closed-only, and why they're not done here:** the
+editor was open (launched as `-e res://levels/hollowmere.tscn`) for the whole of this task except one
+brief window, which was enough to author the worked-example content but not enough for either step
+below — see F-120: `-e` is the short form of `--editor`, and the *documented* by-hand `pgrep -fl
+'Godot.app.*--editor'` check misses it (though `agent autoload`'s own check correctly caught it and
+refused every retry). Every check proves the system works regardless — `tools/haul_check.gd` and
+`tools/haul_net_check.gd` both instantiate `HAUL_SERVICE_SCRIPT.new()` under `/root` and name it
+`HaulService` by hand, the same technique `tools/day_night_check.gd` uses ahead of `agent autoload
+DayNight` per that task's own spec ordering (write the check, prove it, then register) — so neither
+gap below is a "does it work" question, only a "does the shipped game load it" one.
+
+1. `content/haulables/heavy_ore_crate.tres` is on disk (authored via `tools/setup_haul_content.gd`,
+   registry logs `1 haulable(s)`) but **not committed** — D-031 blocks committing any `.tres` while
+   the editor is open, and it still was at close-out. `git status` shows it as the one untracked file
+   this task left behind; `git add content/haulables/heavy_ore_crate.tres && git commit` once the
+   editor is closed is the whole fix, no claim needed beyond that exact path.
+2. `HaulService` is not in `project.godot`. `agent autoload HaulService
+   res://autoload/haul_service.gd` is the whole fix — no code changes, no re-verification beyond
+   re-running the two checks above once against the real registration if you want the
+   belt-and-braces run. Register it after `EnemyWorld` and `BuildService` (both already registered)
+   so world-gen callers can assume it exists; order relative to `CommandService` etc. does not matter
+   yet since nothing consumes it besides this task.
 
 **Design calls made and why (also in DECISIONS.md D-068/D-069):** (1) The object's position update is
 `move_toward` at a capped speed in EVERY carrier-count branch, never a direct assignment — "full
