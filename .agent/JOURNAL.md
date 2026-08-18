@@ -2180,3 +2180,19 @@ cmd_order now empties the claim set for --review before the conflict checks, so 
 Files: `.agent/bin/agent`, `docs/FINDINGS.md`
 
 Commit at time of writing: `c14abb4`
+
+---
+
+### DONE · 3.1 · lp · 2026-08-18T05:04:45+00:00
+
+**Full tier/fork crafting tree, stations (workbench → furnace → anvil) (`DESIGN.md` §4.3)**
+
+Crafting stations shipped: StationDef (id/display_name/world_scene/tier), Registry loads content/stations/*.tres, CraftingService resolves recipe.station through Registry (the tier check) and generalizes station proximity to both Playtest Hollow's legacy group and Hollowmere's marker group. Timed crafts (RecipeDef.craft_time_sec) ship via a host-side per-request timer with client-side craft_progress() estimation — no new RPC, no protocol bump. Worked example: workbench StationDef (existing stone_axe recipe untouched) + furnace StationDef + iron_ingot item/recipe (iron_ore x2, 2s). CraftingUI now detects whichever station is nearby (nearby_station_id/current_station_id), rebuilds rows per station, and shows live 'Crafting… NN%' progress. Verified: agent godot --script tools/crafting_check.gd (48 assertions incl. tier-rejection + full timed-craft lifecycle), tools/crafting_ui_check.gd (station-switch + progress), tools/crafting_net_check.gd (real two-process proof of both the original stone_axe flow and a genuinely remote furnace timed craft) — all green, plus tools/verify_setup.gd (full project boot on Hollowmere) unaffected.
+
+Notes along the way:
+- Extended claim beyond the order's list: content/stations/furnace.tres, content/items/iron_ingot.tres, content/recipes/iron_ingot.tres (the worked example needs them), tools/crafting_ui_check.gd (my UI changes affect it and the task's own verify list runs it), tools/setup_station_content.gd (new deterministic content-authoring helper, matching setup_crafting_content.gd's pattern).
+- Design calls made and why: (1) StationDef.world_scene is StringName naming the baked world asset/marker, not a PackedScene — stations are baked map art (D-051). (2) host_validate's 'station-tier check' = resolving recipe.station through Registry.get_station() instead of a bare string compare; unresolved station rejects before the range check. (3) Added RecipeDef.craft_time_sec (0=instant) since neither RecipeDef's nor StationDef's spec'd fields carried a duration. (4) craft_progress() is a client-side estimate from the identical RecipeDef every peer already has, not a host push — no new RPC, no protocol bump (D-052), proven remote in crafting_net_check.gd. (5) Generalized CraftingService._station_in_range to also read Hollowmere's authored_world_marker group (name 'Station_<asset>'), not just the legacy playtest_hollow_asset group — the same F-057-shaped trap HarvestWorld had before its fix; both group shapes checked so old fixtures still pass. Verified tools/crafting_ui_render_check.gd separately (not in my claim, not in the required verify list): fails with a null-texture error under a bare headless dummy-driver invocation, same as documented for every *_render_check.gd (needs 'agent godot --display-driver ... --resolution ...'); confirmed this is pre-existing invocation behavior, not a regression, by reading DELEGATION.md's F-077 note before running it.
+
+Files: `systems/crafting/station_def.gd`, `systems/crafting/recipe_def.gd`, `autoload/crafting_service.gd`, `autoload/registry.gd`, `ui/crafting/crafting_ui.gd`, `tools/crafting_check.gd`, `tools/crafting_net_check.gd`, `tools/crafting_ui_check.gd`, `tools/setup_station_content.gd`, `content/stations/workbench.tres`, `content/stations/furnace.tres`, `content/items/iron_ingot.tres`, `content/recipes/iron_ingot.tres`
+
+Commit at time of writing: `adacc18`

@@ -17,3 +17,8 @@ extends Resource
 @export var inputs: Array[RecipeIngredient] = []
 @export var output_item: ItemDef
 @export var output_count: int = 1
+
+## 0 (default) crafts instantly, exactly like every recipe before task 3.1 — the shipped stone_axe
+## recipe needs no edit to keep working. Above 0, CraftingService runs a host-side timer of this many
+## seconds before committing the transaction; the furnace's iron_ingot recipe is the worked example.
+@export_range(0.0, 120.0, 0.5) var craft_time_sec: float = 0.0

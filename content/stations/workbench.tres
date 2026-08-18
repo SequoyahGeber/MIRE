@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="StationDef" format=3]
+
+[ext_resource type="Script" path="res://systems/crafting/station_def.gd" id="1_rmekp"]
+
+[resource]
+script = ExtResource("1_rmekp")
+id = &"workbench"
+display_name = "Workbench"
+world_scene = &"station_workbench_primitive"

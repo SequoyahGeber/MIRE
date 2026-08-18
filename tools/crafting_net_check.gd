@@ -58,6 +58,14 @@ func _run_driver() -> void:
 	workbench.set_meta(&"asset", "station_workbench_primitive")
 	workbench.add_to_group(&"playtest_hollow_asset")
 	root.add_child(workbench)
+	# Task 3.1: co-located with the workbench so a single client player position is in range of
+	# both; request_craft() targets a specific recipe id, so which station is "nearest" for UI
+	# purposes never enters into this proof.
+	var furnace := Node3D.new()
+	furnace.name = "NetworkCheckFurnace"
+	furnace.set_meta(&"asset", "station_stone_furnace")
+	furnace.add_to_group(&"playtest_hollow_asset")
+	root.add_child(furnace)
 
 	var error: Error = transport.call("host", NetConfig.Mode.LOCAL, PORT)
 	check(error == OK, "host starts on port %d" % PORT)
@@ -120,6 +128,27 @@ func _run_driver() -> void:
 		"client panel disables the spent recipe")
 	check(String(result.get("ui_rejected_status", "")).contains("missing ingredients"),
 		"client panel shows the host's rejection verbatim")
+
+	# --- Task 3.1: the furnace's timed craft, resolved by the HOST's own timer and confirmed to a
+	# genuinely remote peer through the same net_craft_confirmed RPC as the instant path. ---
+	check(bool(inventory.call("host_add", peer_id, &"iron_ore", 2)), "host grants client iron ore")
+	var furnace_granted: bool = await _until(
+		func() -> bool: return bool(_read_result().get("furnace_granted", false)), TIMEOUT_SEC
+	)
+	check(furnace_granted, "client receives its authoritative iron ore")
+	var furnace_complete: bool = await _until(
+		func() -> bool: return bool(_read_result().get("furnace_complete", false)), TIMEOUT_SEC
+	)
+	check(furnace_complete, "client's timed furnace craft resolves")
+	var furnace_result: Dictionary = _read_result()
+	check(bool(furnace_result.get("furnace_accepted", false)), "remote timed craft is accepted")
+	check(bool(furnace_result.get("furnace_progress_seen", false)),
+		"remote client observes craft_progress rising before its confirmation arrives")
+	check(int(furnace_result.get("ingot_count", -1)) == 1, "client snapshot contains one iron ingot")
+	check(int(inventory.call("host_count", peer_id, &"iron_ingot")) == 1,
+		"host owns the crafted iron ingot")
+	check(int(inventory.call("host_count", NetConfig.HOST_PEER_ID, &"iron_ingot")) == 0,
+		"remote furnace craft does not leak output to host inventory")
 
 	var child_exited: bool = await _until(
 		func() -> bool: return child_pid <= 0 or not OS.is_process_running(child_pid), TIMEOUT_SEC
@@ -254,6 +283,39 @@ func _client_drive() -> void:
 		"ui_confirmed_status": ui_confirmed_status,
 		"ui_rejected_status": String(crafting_ui.call("status_text")),
 	})
+
+	# --- Task 3.1: the furnace's timed craft over a genuinely remote connection, run AFTER the axe
+	# phase's result is already on disk — the driver's "complete" wait above must resolve on the axe
+	# fields alone, since it is what unblocks the driver into granting furnace ore in the first place.
+	var ore_seen: bool = await _until(
+		func() -> bool: return int(inventory.call("local_count", &"iron_ore")) == 2, TIMEOUT_SEC
+	)
+	var furnace_progress_seen: bool = false
+	var furnace_accepted: bool = false
+	var furnace_complete: bool = false
+	if ore_seen:
+		var furnace_id: int = int(crafting.call("request_craft", &"iron_ingot"))
+		furnace_progress_seen = await _until(
+			func() -> bool: return float(crafting.call("craft_progress", furnace_id)) > 0.0, TIMEOUT_SEC
+		)
+		var furnace_confirmed: bool = await _until(
+			func() -> bool: return confirmations.has(furnace_id), TIMEOUT_SEC
+		)
+		furnace_accepted = (
+			furnace_confirmed
+			and bool((confirmations.get(furnace_id, {}) as Dictionary).get("accepted", false))
+		)
+		furnace_complete = await _until(
+			func() -> bool: return int(inventory.call("local_count", &"iron_ingot")) == 1, TIMEOUT_SEC
+		)
+	_write_result({
+		"furnace_granted": ore_seen,
+		"furnace_complete": furnace_complete,
+		"furnace_accepted": furnace_accepted,
+		"furnace_progress_seen": furnace_progress_seen,
+		"ingot_count": int(inventory.call("local_count", &"iron_ingot")),
+	})
+
 	await create_timer(1.0).timeout
 	finish()
 

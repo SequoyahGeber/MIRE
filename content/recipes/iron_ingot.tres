@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="RecipeDef" format=3]
+
+[ext_resource type="Script" path="res://systems/crafting/recipe_ingredient.gd" id="1_v1f0v"]
+[ext_resource type="Resource" path="res://content/items/iron_ore.tres" id="2_itvul"]
+[ext_resource type="Resource" path="res://content/items/iron_ingot.tres" id="3_b5x2j"]
+[ext_resource type="Script" path="res://systems/crafting/recipe_def.gd" id="4_4dkn8"]
+
+[sub_resource type="Resource" id="Resource_i1xwf"]
+script = ExtResource("1_v1f0v")
+item = ExtResource("2_itvul")
+count = 2
+
+[resource]
+script = ExtResource("4_4dkn8")
+id = &"iron_ingot"
+display_name = "Iron Ingot"
+station = &"furnace"
+inputs = Array[ExtResource("1_v1f0v")]([SubResource("Resource_i1xwf")])
+output_item = ExtResource("3_b5x2j")
+craft_time_sec = 2.0

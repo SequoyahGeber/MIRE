@@ -26,8 +26,8 @@ func _run() -> void:
 		return
 	crafting.get("craft_confirmed").connect(_on_craft_confirmed)
 
-	check(int(ui.call("recipe_row_count")) == 1, "workbench renders the one registered recipe")
-	check(ui.call("displayed_recipe_id", 0) == &"stone_axe", "row is keyed by the registered recipe id")
+	check(int(ui.call("recipe_row_count")) == 0, "no rows are built for a station nobody is near yet")
+	check(ui.call("current_station_id") == &"", "no station is identified at boot")
 	check(not bool(ui.call("is_open")), "crafting panel starts closed")
 	check(not bool(ui.call("is_station_in_range")), "no station is in range at boot")
 	check(not bool(ui.call("is_prompt_visible")), "interact prompt is hidden away from a workbench")
@@ -47,6 +47,9 @@ func _run() -> void:
 
 	ui.call("poll_station")
 	check(bool(ui.call("is_station_in_range")), "range poll finds the mapped workbench")
+	check(ui.call("current_station_id") == &"workbench", "range poll identifies it as the workbench")
+	check(int(ui.call("recipe_row_count")) == 1, "workbench renders the one registered recipe")
+	check(ui.call("displayed_recipe_id", 0) == &"stone_axe", "row is keyed by the registered recipe id")
 	check(bool(ui.call("is_prompt_visible")), "interact prompt appears in range")
 	check(ui.call("recipe_requirement_text", 0) == "0/2 Log  ·  0/3 Stone",
 		"requirements render have-over-need from the authoritative snapshot")
@@ -122,6 +125,40 @@ func _run() -> void:
 	await process_frame
 	var panel := ui.get_node(^"CraftingUIRoot/CraftingCenter/CraftingPanel") as Control
 	check(panel.size.x <= 375.0, "phone-width workbench panel stays on screen")
+	ui.call("set_open", false)
+
+	# --- Task 3.1: switching stations rebuilds rows, and a timed craft shows live progress ---
+	var furnace := Node3D.new()
+	furnace.name = "CraftingUICheckFurnace"
+	furnace.position = Vector3(40.0, 0.0, 0.0)
+	furnace.set_meta(&"asset", "station_stone_furnace")
+	furnace.add_to_group(&"playtest_hollow_asset")
+	root.add_child(furnace)
+
+	player.position = Vector3(40.0, 0.0, 0.0)
+	ui.call("poll_station")
+	check(ui.call("current_station_id") == &"furnace",
+		"walking up to the furnace switches the identified station")
+	check(int(ui.call("recipe_row_count")) == 1, "furnace panel renders its own one recipe")
+	check(ui.call("displayed_recipe_id", 0) == &"iron_ingot", "furnace row is keyed by the furnace recipe")
+
+	check(bool(inventory.call("host_add", 1, &"iron_ore", 2)), "host grants iron ore for the furnace")
+	ui.call("poll_station")
+	check(bool(ui.call("is_recipe_craftable", 0)), "furnace recipe becomes craftable with ore in hand")
+	check(bool(ui.call("try_open_station")), "interact opens the panel at the furnace")
+
+	var timed_request_id: int = int(ui.call("request_craft_at", 0))
+	check(timed_request_id > 0, "timed craft button returns a request id")
+	await create_timer(0.3).timeout
+	check(String(ui.call("status_text")).contains("Crafting"), "panel shows live progress for a timed craft")
+	check(_confirmation(timed_request_id).is_empty(),
+		"timed craft has not confirmed yet at 0.3s of a 2s timer")
+
+	await create_timer(2.3).timeout
+	check(not _confirmation(timed_request_id).is_empty(), "timed craft confirms once its timer elapses")
+	check(bool(_confirmation(timed_request_id).get("accepted", false)), "timed craft is accepted")
+	check(String(ui.call("status_text")).contains("crafted"), "panel shows the completed craft")
+	check(int(inventory.call("local_count", &"iron_ingot")) == 1, "furnace craft grants one iron ingot")
 	ui.call("set_open", false)
 
 	print("CRAFTING_UI_CHECK confirmations=%d failures=%d" % [confirmations.size(), failures])

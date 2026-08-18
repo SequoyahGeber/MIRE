@@ -1,17 +1,46 @@
 extends Node
 
-## Host-authoritative crafting for the vertical slice. Clients submit only a recipe id; the host
-## derives the requesting peer, validates its authoritative player against a real mapped station,
-## and commits ingredients plus output through InventoryService's atomic transaction seam.
+## Host-authoritative crafting for every station. Clients submit only a recipe id; the host derives
+## the requesting peer, resolves the recipe's station to a registered StationDef (task 3.1's
+## "station-tier check" — a recipe whose station id does not resolve is rejected before the range
+## check ever runs), validates its authoritative player against a real mapped station instance, and
+## commits ingredients plus output through InventoryService's atomic transaction seam. A recipe with
+## craft_time_sec > 0 (the furnace's worked example) delays that commit behind a host-side timer
+## instead of applying it inline — see _start_timed_craft/_process.
+##
+## Wire shape is unchanged from task 2.6: a request still carries only a recipe id and a local
+## request id, and completion still arrives solely through craft_confirmed. Per-station and timed
+## crafting are both provable with that same pair, so this task does not bump the protocol.
 
-const STATION_GROUP: StringName = &"playtest_hollow_asset"
-const WORKBENCH_STATION: StringName = &"workbench"
-const WORKBENCH_ASSET: StringName = &"station_workbench_primitive"
+## Legacy Playtest Hollow prop group: a station is a StaticBody3D/Node3D holding meta `asset`.
+const LEGACY_STATION_GROUP: StringName = &"playtest_hollow_asset"
+## Hollowmere marker group (world/gen/authored_world.gd): a station is a Marker3D with meta
+## `kind == "station"`, named "Station_<asset>" (tools/mapgen/hollowmere_layout.py). Hollowmere's
+## station props are baked into MultiMeshInstance3D batches with no per-instance node of their own,
+## so the marker is the only per-instance position this map exposes (F-057-shaped trap: matching only
+## LEGACY_STATION_GROUP would leave every Hollowmere station inert, the same bug HarvestWorld had
+## before it learned to read authored_world_prop/marker groups).
+const MARKER_GROUP: StringName = &"authored_world_marker"
+const MARKER_NAME_PREFIX: String = "Station_"
 const MAX_STATION_DISTANCE_M: float = 3.25
 
 signal craft_confirmed(request_id: int, accepted: bool, detail: String)
 
 var _next_request_id: int = 1
+
+## Requester-side (host-as-requester or a remote client) progress estimate for a timed craft this
+## peer itself asked for, keyed by request_id: {"duration_sec": float, "started_msec": int}. Purely a
+## presentation seam — every peer already has the identical RecipeDef from Registry, so a client
+## computes its own countdown the moment it sends the request rather than waiting on a round trip.
+## Cleared the moment craft_confirmed fires. Never consulted for authority; the host's own pending
+## queue below is what actually delays the transaction.
+var _local_pending_crafts: Dictionary[int, Dictionary] = {}
+
+## HOST-only authoritative queue for in-progress timed crafts: peer_id -> (request_id -> {"data":
+## Dictionary, "remaining_sec": float}). Keyed two levels deep because request ids are chosen locally
+## by each requester (including the host's own local player), so two different peers can legitimately
+## both be mid-flight on "request 1" at once.
+var _host_pending_crafts: Dictionary[int, Dictionary] = {}
 
 
 func recipes_for_station(station: StringName) -> Array[RecipeDef]:
@@ -25,6 +54,21 @@ func recipes_for_station(station: StringName) -> Array[RecipeDef]:
 		if recipe != null and recipe.station == station:
 			result.append(recipe)
 	return result
+
+
+## The registered station id the local player is currently in range of, or &"" if none. Ties break by
+## registry iteration order (deterministic — Dictionary preserves insertion order — but not
+## meaningfully orderable beyond that); two stations placed within range of each other is not a
+## shape the vertical slice needs to disambiguate further. Presentation-only, same caveat as every
+## other local_*/nearby_* helper here: the host repeats this check independently.
+func nearby_station_id() -> StringName:
+	var player: Node3D = _local_player()
+	if player == null:
+		return &""
+	for station_id: StringName in Registry.stations:
+		if _station_in_range(player, station_id):
+			return station_id
+	return &""
 
 
 ## Presentation-only preview for task 2.7. The host repeats every check when a request arrives.
@@ -62,8 +106,28 @@ func local_station_in_range(station: StringName) -> bool:
 	return player != null and _station_in_range(player, station)
 
 
+## Fraction complete (0..1) of a timed craft this peer itself requested, or -1.0 if request_id is not
+## a pending timed craft (either it was never timed, or it has already resolved through
+## craft_confirmed). Purely a client-side estimate — see _local_pending_crafts above.
+func craft_progress(request_id: int) -> float:
+	if not _local_pending_crafts.has(request_id):
+		return -1.0
+	var entry: Dictionary = _local_pending_crafts[request_id]
+	var duration: float = float(entry.get("duration_sec", 0.0))
+	if duration <= 0.0:
+		return 1.0
+	var elapsed_sec: float = float(Time.get_ticks_msec() - int(entry.get("started_msec", 0))) / 1000.0
+	return clampf(elapsed_sec / duration, 0.0, 1.0)
+
+
 func request_craft(recipe_id: StringName) -> int:
 	var request_id: int = _take_request_id()
+	var recipe: RecipeDef = Registry.get_recipe(recipe_id)
+	if recipe != null and recipe.craft_time_sec > 0.0:
+		_local_pending_crafts[request_id] = {
+			"duration_sec": recipe.craft_time_sec,
+			"started_msec": Time.get_ticks_msec(),
+		}
 	if _owns_mutation():
 		_process_craft(_local_peer_id(), recipe_id, request_id)
 	elif NetTransport.is_active():
@@ -85,6 +149,26 @@ func net_craft_confirmed(request_id: int, accepted: bool, detail: String) -> voi
 	_emit_confirmation(request_id, accepted, detail)
 
 
+func _process(delta: float) -> void:
+	if _host_pending_crafts.is_empty():
+		return
+	for peer_id: int in _host_pending_crafts.keys():
+		var by_request: Dictionary = _host_pending_crafts[peer_id] as Dictionary
+		for request_id: int in by_request.keys():
+			var entry: Dictionary = by_request[request_id] as Dictionary
+			var remaining: float = float(entry.get("remaining_sec", 0.0)) - delta
+			if remaining > 0.0:
+				entry["remaining_sec"] = remaining
+				by_request[request_id] = entry
+				continue
+			by_request.erase(request_id)
+			_finish_craft(peer_id, request_id, entry.get("data", {}) as Dictionary)
+		if by_request.is_empty():
+			_host_pending_crafts.erase(peer_id)
+		else:
+			_host_pending_crafts[peer_id] = by_request
+
+
 func _process_craft(peer_id: int, recipe_id: StringName, request_id: int) -> void:
 	var data: Dictionary = _definition_data(recipe_id)
 	if not bool(data.get("valid", false)):
@@ -97,9 +181,32 @@ func _process_craft(peer_id: int, recipe_id: StringName, request_id: int) -> voi
 		return
 	var station := StringName(data.get("station", &""))
 	if not _station_in_range(player, station):
-		_confirm_peer(peer_id, request_id, false, "craft rejected: workbench out of range")
+		_confirm_peer(peer_id, request_id, false, "craft rejected: station out of range")
 		return
 
+	var craft_time_sec: float = float(data.get("craft_time_sec", 0.0))
+	if craft_time_sec <= 0.0:
+		_finish_craft(peer_id, request_id, data)
+		return
+	_start_timed_craft(peer_id, request_id, data, craft_time_sec)
+
+
+## Timed path (furnace worked example): reject fast if the ingredients are already missing, otherwise
+## park the request for _process() to complete. Ingredients are NOT removed here — the atomic
+## host_transaction at completion is what actually spends them, so a request that outlives its own
+## ingredients (traded away mid-smelt) is rejected then, exactly like the instant path already was.
+func _start_timed_craft(peer_id: int, request_id: int, data: Dictionary, craft_time_sec: float) -> void:
+	var removals: Dictionary = data.get("removals", {}) as Dictionary
+	for item_id: StringName in removals:
+		if not InventoryService.host_can_remove(peer_id, item_id, int(removals[item_id])):
+			_confirm_peer(peer_id, request_id, false, "craft rejected: missing ingredients or inventory full")
+			return
+	var by_request: Dictionary = _host_pending_crafts.get(peer_id, {}) as Dictionary
+	by_request[request_id] = {"data": data, "remaining_sec": craft_time_sec}
+	_host_pending_crafts[peer_id] = by_request
+
+
+func _finish_craft(peer_id: int, request_id: int, data: Dictionary) -> void:
 	var accepted: bool = InventoryService.host_transaction(
 		peer_id,
 		data.get("removals", {}) as Dictionary,
@@ -107,7 +214,7 @@ func _process_craft(peer_id: int, recipe_id: StringName, request_id: int) -> voi
 	)
 	var detail: String
 	if accepted:
-		detail = "crafted %s" % String(data.get("output_name", recipe_id))
+		detail = "crafted %s" % String(data.get("output_name", ""))
 	else:
 		detail = "craft rejected: missing ingredients or inventory full"
 	_confirm_peer(peer_id, request_id, accepted, detail)
@@ -117,7 +224,9 @@ func _definition_data(recipe_id: StringName) -> Dictionary:
 	if recipe_id == &"" or not Registry.has_recipe(recipe_id):
 		return {"valid": false, "detail": "craft rejected: unknown recipe"}
 	var recipe: RecipeDef = Registry.get_recipe(recipe_id)
-	if recipe == null or recipe.station != WORKBENCH_STATION:
+	if recipe == null:
+		return {"valid": false, "detail": "craft rejected: unknown recipe"}
+	if not Registry.has_station(recipe.station):
 		return {"valid": false, "detail": "craft rejected: unsupported station"}
 	if recipe.output_item == null or recipe.output_count <= 0:
 		return {"valid": false, "detail": "craft rejected: invalid output"}
@@ -142,22 +251,42 @@ func _definition_data(recipe_id: StringName) -> Dictionary:
 		"removals": removals,
 		"additions": {output_id: recipe.output_count},
 		"output_name": recipe.output_item.display_name,
+		"craft_time_sec": maxf(recipe.craft_time_sec, 0.0),
 	}
 
 
+## Nearest live instance of `station` within range, checked against both a legacy Playtest Hollow
+## prop (individually queryable node, meta `asset`) and a Hollowmere marker (meta kind == "station",
+## named "Station_<asset>" — see MARKER_GROUP above). `station` not resolving to a registered
+## StationDef means no world_scene to match against, so it is always out of range.
 func _station_in_range(player: Node3D, station: StringName) -> bool:
-	if station != WORKBENCH_STATION:
+	var station_def: Resource = Registry.get_station(station)
+	if station_def == null:
+		return false
+	var asset := StringName(String(station_def.get("world_scene")))
+	if asset == &"":
 		return false
 	var max_distance_squared: float = MAX_STATION_DISTANCE_M * MAX_STATION_DISTANCE_M
-	for node: Node in get_tree().get_nodes_in_group(STATION_GROUP):
+
+	for node: Node in get_tree().get_nodes_in_group(LEGACY_STATION_GROUP):
 		var station_node := node as Node3D
 		if station_node == null:
 			continue
-		var asset_name := StringName(String(station_node.get_meta(&"asset", "")))
-		if asset_name != WORKBENCH_ASSET:
+		if StringName(String(station_node.get_meta(&"asset", ""))) != asset:
 			continue
 		if player.global_position.distance_squared_to(station_node.global_position) <= max_distance_squared:
 			return true
+
+	var marker_name: String = MARKER_NAME_PREFIX + String(asset)
+	for node: Node in get_tree().get_nodes_in_group(MARKER_GROUP):
+		var marker := node as Node3D
+		if marker == null or marker.name != marker_name:
+			continue
+		if String(marker.get_meta(&"kind", "")) != "station":
+			continue
+		if player.global_position.distance_squared_to(marker.global_position) <= max_distance_squared:
+			return true
+
 	return false
 
 
@@ -185,6 +314,7 @@ func _confirm_peer(peer_id: int, request_id: int, accepted: bool, detail: String
 
 
 func _emit_confirmation(request_id: int, accepted: bool, detail: String) -> void:
+	_local_pending_crafts.erase(request_id)
 	craft_confirmed.emit(request_id, accepted, detail)
 
 

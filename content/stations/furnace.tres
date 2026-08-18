@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="StationDef" format=3]
+
+[ext_resource type="Script" path="res://systems/crafting/station_def.gd" id="1_royfg"]
+
+[resource]
+script = ExtResource("1_royfg")
+id = &"furnace"
+display_name = "Furnace"
+world_scene = &"station_stone_furnace"
+tier = 2

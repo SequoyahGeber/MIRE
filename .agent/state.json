@@ -10,75 +10,15 @@
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
-    "autoload/crafting_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:50:01+00:00",
-      "task": "3.1"
-    },
-    "autoload/registry.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:50:01+00:00",
-      "task": "3.1"
-    },
-    "content/items/iron_ingot.tres": {
-      "agent": "lp",
-      "at": "2026-08-18T04:50:01+00:00",
-      "task": "3.1"
-    },
-    "content/recipes/iron_ingot.tres": {
-      "agent": "lp",
-      "at": "2026-08-18T04:50:01+00:00",
-      "task": "3.1"
-    },
-    "content/stations/furnace.tres": {
-      "agent": "lp",
-      "at": "2026-08-18T04:50:01+00:00",
-      "task": "3.1"
-    },
-    "content/stations/workbench.tres": {
-      "agent": "lp",
-      "at": "2026-08-18T04:50:01+00:00",
-      "task": "3.1"
-    },
-    "systems/crafting/recipe_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:50:01+00:00",
-      "task": "3.1"
-    },
-    "systems/crafting/station_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:50:01+00:00",
-      "task": "3.1"
-    },
-    "tools/crafting_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:50:01+00:00",
-      "task": "3.1"
-    },
-    "tools/crafting_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:50:01+00:00",
-      "task": "3.1"
-    },
-    "tools/crafting_ui_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:50:01+00:00",
-      "task": "3.1"
-    },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
-    "tools/setup_station_content.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:50:01+00:00",
-      "task": "3.1"
-    },
-    "ui/crafting/crafting_ui.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:50:01+00:00",
-      "task": "3.1"
+    "tools/powerup_review_check.gd": {
+      "agent": "lc1",
+      "at": "2026-08-18T05:02:49+00:00",
+      "task": "3.3-review"
     },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "tine18",
@@ -98,31 +38,13 @@
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
     },
-    "3.1": {
-      "agent": "lp",
+    "3.3-review": {
+      "agent": "lc1",
       "files": [
-        "systems/crafting/station_def.gd",
-        "systems/crafting/recipe_def.gd",
-        "autoload/crafting_service.gd",
-        "autoload/registry.gd",
-        "ui/crafting/crafting_ui.gd",
-        "tools/crafting_check.gd",
-        "tools/crafting_net_check.gd",
-        "tools/crafting_ui_check.gd",
-        "tools/setup_station_content.gd",
-        "content/stations/workbench.tres",
-        "content/stations/furnace.tres",
-        "content/items/iron_ingot.tres",
-        "content/recipes/iron_ingot.tres"
+        "tools/powerup_review_check.gd"
       ],
-      "notes": [
-        {
-          "at": "2026-08-18T04:50:04+00:00",
-          "by": "lp",
-          "text": "Extended claim beyond the order's list: content/stations/furnace.tres, content/items/iron_ingot.tres, content/recipes/iron_ingot.tres (the worked example needs them), tools/crafting_ui_check.gd (my UI changes affect it and the task's own verify list runs it), tools/setup_station_content.gd (new deterministic content-authoring helper, matching setup_crafting_content.gd's pattern)."
-        }
-      ],
-      "started": "2026-08-18T04:50:01+00:00"
+      "notes": [],
+      "started": "2026-08-18T05:02:49+00:00"
     }
   },
   "recent": {
@@ -361,6 +283,11 @@
       "at": "2026-08-18T01:38:26+00:00",
       "task": "F-062"
     },
+    "autoload/crafting_service.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T05:04:45+00:00",
+      "task": "3.1"
+    },
     "autoload/enemy_world.gd": {
       "agent": "ivy8",
       "at": "2026-08-18T04:46:24+00:00",
@@ -387,9 +314,9 @@
       "task": "3.3"
     },
     "autoload/registry.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:35:30+00:00",
-      "task": "3.6"
+      "agent": "lp",
+      "at": "2026-08-18T05:04:45+00:00",
+      "task": "3.1"
     },
     "content/buildables/wall.tres": {
       "agent": "gale6",
@@ -420,6 +347,11 @@
       "agent": "reed16",
       "at": "2026-08-18T02:29:39+00:00",
       "task": "3.5"
+    },
+    "content/items/iron_ingot.tres": {
+      "agent": "lp",
+      "at": "2026-08-18T05:04:45+00:00",
+      "task": "3.1"
     },
     "content/items/iron_pickaxe.tres": {
       "agent": "flint5",
@@ -481,10 +413,25 @@
       "at": "2026-08-18T04:27:04+00:00",
       "task": "3.3"
     },
+    "content/recipes/iron_ingot.tres": {
+      "agent": "lp",
+      "at": "2026-08-18T05:04:45+00:00",
+      "task": "3.1"
+    },
     "content/recipes/stone_axe.tres": {
       "agent": "flint5",
       "at": "2026-08-17T19:02:17+00:00",
       "task": "F-050"
+    },
+    "content/stations/furnace.tres": {
+      "agent": "lp",
+      "at": "2026-08-18T05:04:45+00:00",
+      "task": "3.1"
+    },
+    "content/stations/workbench.tres": {
+      "agent": "lp",
+      "at": "2026-08-18T05:04:45+00:00",
+      "task": "3.1"
     },
     "content/weapons/cleaver.tres": {
       "agent": "flint5",
@@ -696,6 +643,16 @@
       "at": "2026-08-18T04:58:38+00:00",
       "task": "F-073"
     },
+    "systems/crafting/recipe_def.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T05:04:45+00:00",
+      "task": "3.1"
+    },
+    "systems/crafting/station_def.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T05:04:45+00:00",
+      "task": "3.1"
+    },
     "systems/enemies/enemy.gd": {
       "agent": "dusk3",
       "at": "2026-08-17T16:31:36+00:00",
@@ -901,10 +858,20 @@
       "at": "2026-08-17T23:13:44+00:00",
       "task": "F-052"
     },
+    "tools/crafting_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T05:04:45+00:00",
+      "task": "3.1"
+    },
     "tools/crafting_net_check.gd": {
       "agent": "lp",
-      "at": "2026-08-18T04:33:16+00:00",
-      "task": "F-060"
+      "at": "2026-08-18T05:04:45+00:00",
+      "task": "3.1"
+    },
+    "tools/crafting_ui_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T05:04:45+00:00",
+      "task": "3.1"
     },
     "tools/day_night_check.gd": {
       "agent": "lp",
@@ -1131,6 +1098,11 @@
       "at": "2026-08-17T18:49:21+00:00",
       "task": "F-048"
     },
+    "tools/setup_station_content.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T05:04:45+00:00",
+      "task": "3.1"
+    },
     "tools/setup_tool_content.gd": {
       "agent": "flint5",
       "at": "2026-08-18T04:58:38+00:00",
@@ -1170,6 +1142,11 @@
       "agent": "gale6",
       "at": "2026-08-18T02:53:04+00:00",
       "task": "F-068"
+    },
+    "ui/crafting/crafting_ui.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T05:04:45+00:00",
+      "task": "3.1"
     },
     "ui/hud/vitals_hud.gd": {
       "agent": "nettle12",
@@ -1679,9 +1656,11 @@
       "title": "Tune combat feel until one enemy with one weapon feels great. Do not proceed otherwise. *(Order swapped with 2.10 \u2014 F-036 option 1. Code, content and the `combat_feel_check` instrument shipped; only the human verdict is open.)*"
     },
     "3.1": {
+      "done_at": "2026-08-18T05:04:45+00:00",
+      "done_by": "lp",
       "est": "4",
       "milestone": "M3",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T2",
       "title": "Full tier/fork crafting tree, stations (workbench \u2192 furnace \u2192 anvil) (`DESIGN.md` \u00a74.3)"
     },
@@ -1726,7 +1705,7 @@
       "est": "0.5",
       "milestone": "M3",
       "review_of": "3.3",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T1",
       "title": "Review 3.3 @ 17e26f8 \u2014 judge the commit, file findings, no edits"
     },

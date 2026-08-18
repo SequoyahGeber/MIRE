@@ -4,8 +4,14 @@ extends CanvasLayer
 ## CraftingService's presentation helpers over immutable InventoryService snapshots, and every craft
 ## leaves as a `request_craft()` that carries nothing but a recipe id. Nothing here predicts an
 ## inventory change, and a row that looks craftable is a hint — the host repeats every check.
+##
+## Task 3.1: no station is hardcoded any more. `CraftingService.nearby_station_id()` says which
+## registered station the player is next to (derived host-independently on this client, exactly as
+## `local_station_in_range()` already was — the host repeats it), rows rebuild for whichever station
+## that is, and a timed recipe (the furnace worked example) shows a live percentage instead of a bare
+## "Waiting for the host…" — CraftingService.craft_progress() is a client-side estimate from the
+## identical RecipeDef every peer already has, not something the host pushed.
 
-const STATION: StringName = &"workbench"
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
 const RANGE_POLL_SEC: float = 0.15
 const NARROW_BREAKPOINT_PX: float = 700.0
@@ -163,13 +169,16 @@ var _root: Control
 var _shade: ColorRect
 var _panel_center: CenterContainer
 var _panel: PanelContainer
+var _title_label: Label
 var _row_box: VBoxContainer
+var _empty_label: Label
 var _status_label: Label
 var _prompt_center: CenterContainer
 var _prompt_label: Label
 var _rows: Array[RecipeRow] = []
 var _open: bool = false
 var _in_range: bool = false
+var _current_station_id: StringName = &""
 var _poll_accumulator: float = 0.0
 var _pending_request_id: int = -1
 var _request_in_flight: bool = false
@@ -182,8 +191,7 @@ func _ready() -> void:
 	_build_ui()
 	InventoryService.local_inventory_changed.connect(_on_inventory_changed)
 	CraftingService.craft_confirmed.connect(_on_craft_confirmed)
-	_refresh_range()
-	_refresh_rows()
+	_refresh_station()
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_apply_responsive_layout()
 
@@ -196,6 +204,8 @@ func _exit_tree() -> void:
 
 
 func _process(delta: float) -> void:
+	if _request_in_flight:
+		_update_progress_status()
 	_poll_accumulator += delta
 	if _poll_accumulator < RANGE_POLL_SEC:
 		return
@@ -207,13 +217,24 @@ func _process(delta: float) -> void:
 ## reject that craft anyway; leaving the window open would present a lie.
 func poll_station() -> void:
 	var was_in_range: bool = _in_range
-	_refresh_range()
+	var previous_station_name: String = _station_display_name(_current_station_id)
+	var station_changed: bool = _refresh_station()
 	if _open and not _in_range:
 		set_open(false)
-		_show_status("You stepped away from the workbench.", true)
+		_show_status("You stepped away from the %s." % previous_station_name, true)
 		return
-	if _open or was_in_range != _in_range:
+	if _open or was_in_range != _in_range or station_changed:
 		_refresh_rows()
+
+
+## Shows a live percentage for an in-flight timed craft (the furnace worked example). Recipes with no
+## craft_time_sec resolve fast enough that "Waiting for the host…" (set when the request was sent)
+## rarely has a chance to be seen, let alone need a progress readout.
+func _update_progress_status() -> void:
+	var progress: float = CraftingService.craft_progress(_pending_request_id)
+	if progress < 0.0:
+		return
+	_show_status("Crafting… %d%%" % int(round(progress * 100.0)), false)
 
 
 func _input(event: InputEvent) -> void:
@@ -237,11 +258,16 @@ func _input(event: InputEvent) -> void:
 ## The interact path. Returns whether the workbench panel actually opened, so the caller knows
 ## whether the input was consumed.
 func try_open_station() -> bool:
-	_refresh_range()
+	_refresh_station()
 	if not _in_range or _other_blocking_ui():
 		return false
 	set_open(true)
 	return true
+
+
+## The registered station id the panel is currently built for, or &"" if none is in range.
+func current_station_id() -> StringName:
+	return _current_station_id
 
 
 func set_open(open: bool) -> void:
@@ -347,12 +373,13 @@ func _build_ui() -> void:
 	stack.add_theme_constant_override("separation", 10)
 	panel_margin.add_child(stack)
 
-	var title := Label.new()
-	title.text = "WORKBENCH"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 22)
-	title.add_theme_color_override("font_color", COLOUR_TEXT)
-	stack.add_child(title)
+	_title_label = Label.new()
+	_title_label.name = "StationTitle"
+	_title_label.text = "CRAFTING"
+	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_title_label.add_theme_font_size_override("font_size", 22)
+	_title_label.add_theme_color_override("font_color", COLOUR_TEXT)
+	stack.add_child(_title_label)
 
 	var subtitle := Label.new()
 	subtitle.text = "THE HOST VALIDATES AND GRANTS EVERY CRAFT"
@@ -366,23 +393,9 @@ func _build_ui() -> void:
 	_row_box.add_theme_constant_override("separation", 6)
 	stack.add_child(_row_box)
 
-	for recipe: RecipeDef in CraftingService.recipes_for_station(STATION):
-		var row := RecipeRow.new()
-		row.setup(recipe, _on_craft_requested)
-		_rows.append(row)
-		_row_box.add_child(row)
-
-	if _rows.is_empty():
-		var empty := Label.new()
-		empty.name = "NoRecipes"
-		empty.text = "No workbench recipes are registered."
-		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		empty.add_theme_color_override("font_color", COLOUR_MUTED)
-		_row_box.add_child(empty)
-
 	_status_label = Label.new()
 	_status_label.name = "Status"
-	_status_label.text = "Craft from the workbench. The host confirms every craft."
+	_status_label.text = "Craft from the station. The host confirms every craft."
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.add_theme_font_size_override("font_size", 12)
 	_status_label.add_theme_color_override("font_color", COLOUR_MUTED)
@@ -418,7 +431,7 @@ func _build_ui() -> void:
 	prompt_panel.add_child(prompt_margin)
 
 	_prompt_label = Label.new()
-	_prompt_label.text = "E   USE WORKBENCH"
+	_prompt_label.text = "E   USE STATION"
 	_prompt_label.add_theme_font_size_override("font_size", 14)
 	_prompt_label.add_theme_color_override("font_color", COLOUR_READY)
 	prompt_margin.add_child(_prompt_label)
@@ -433,13 +446,61 @@ func _panel_style() -> StyleBoxFlat:
 	return style
 
 
-func _refresh_range() -> void:
-	_in_range = CraftingService.local_station_in_range(STATION)
+## Re-derives which registered station (if any) the player is next to and rebuilds the row list when
+## that identity changes. Returns whether it changed, so poll_station() knows to re-present rows even
+## when _in_range itself didn't flip (walking from one station straight into another's range).
+func _refresh_station() -> bool:
+	var station_id: StringName = CraftingService.nearby_station_id()
+	_in_range = station_id != &""
+	var changed: bool = station_id != _current_station_id
+	if changed:
+		_current_station_id = station_id
+		_rebuild_rows(station_id)
 	_refresh_prompt()
+	return changed
+
+
+## Tears down the previous station's rows and builds fresh ones for `station_id` (&"" clears them).
+## RecipeRow instances are never reused across stations — each is bound to one RecipeDef at setup().
+func _rebuild_rows(station_id: StringName) -> void:
+	for row: RecipeRow in _rows:
+		row.queue_free()
+	_rows.clear()
+	if _empty_label != null:
+		_empty_label.queue_free()
+		_empty_label = null
+
+	_title_label.text = _station_display_name(station_id).to_upper() if station_id != &"" else "CRAFTING"
+	if station_id != &"":
+		for recipe: RecipeDef in CraftingService.recipes_for_station(station_id):
+			var row := RecipeRow.new()
+			row.setup(recipe, _on_craft_requested)
+			_rows.append(row)
+			_row_box.add_child(row)
+
+	if station_id != &"" and _rows.is_empty():
+		_empty_label = Label.new()
+		_empty_label.name = "NoRecipes"
+		_empty_label.text = "No recipes are registered here."
+		_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_empty_label.add_theme_color_override("font_color", COLOUR_MUTED)
+		_row_box.add_child(_empty_label)
+
+	_apply_responsive_layout()
+
+
+func _station_display_name(station_id: StringName) -> String:
+	if station_id == &"":
+		return "station"
+	var station: Resource = Registry.get_station(station_id)
+	var display_name: String = String(station.get("display_name")) if station != null else ""
+	return display_name if not display_name.is_empty() else String(station_id).capitalize()
 
 
 func _refresh_prompt() -> void:
 	_prompt_center.visible = _in_range and not _open and not _other_blocking_ui()
+	if _in_range:
+		_prompt_label.text = "E   USE %s" % _station_display_name(_current_station_id).to_upper()
 
 
 func _refresh_rows() -> void:

@@ -12,6 +12,7 @@ extends Node
 
 const ITEMS_PATH: String = "res://content/items"
 const RECIPES_PATH: String = "res://content/recipes"
+const STATIONS_PATH: String = "res://content/stations"
 const WEAPONS_PATH: String = "res://content/weapons"
 const LOOT_PATH: String = "res://content/loot"
 const POWERUPS_PATH: String = "res://content/powerups"
@@ -26,9 +27,14 @@ const LOOT_TABLE_DEF := preload("res://systems/loot/loot_table_def.gd")
 const POWERUP_DEF := preload("res://systems/powerups/powerup_def.gd")
 ## Same F-016 reasoning again: BuildableDef is new in task 3.6.
 const BUILDABLE_DEF := preload("res://systems/building/buildable_def.gd")
+## Same F-016 reasoning again: StationDef is new in task 3.1.
+const STATION_DEF := preload("res://systems/crafting/station_def.gd")
 
 var items: Dictionary[StringName, ItemDef] = {}
 var recipes: Dictionary[StringName, RecipeDef] = {}
+## Keyed by station id (task 3.1). Shared content, same shape as `recipes`. Untyped Resource for the
+## same F-016 reason as the preload above.
+var stations: Dictionary[StringName, Resource] = {}
 ## Keyed by the ItemDef id the weapon belongs to, not by an id of its own — a WeaponDef describes
 ## how an existing item swings (task 2.8).
 var weapons: Dictionary[StringName, WeaponDef] = {}
@@ -48,13 +54,14 @@ var buildables: Dictionary[StringName, Resource] = {}
 func _ready() -> void:
 	_load_items()
 	_load_recipes()
+	_load_stations()
 	_load_weapons()
 	_load_loot_tables()
 	_load_powerups()
 	_load_buildables()
-	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d weapon(s), %d loot table(s), %d powerup(s), %d buildable(s)" % [
-		items.size(), recipes.size(), weapons.size(), loot_tables.size(), powerups.size(),
-		buildables.size()
+	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d loot table(s), %d powerup(s), %d buildable(s)" % [
+		items.size(), recipes.size(), stations.size(), weapons.size(), loot_tables.size(),
+		powerups.size(), buildables.size()
 	])
 
 
@@ -72,6 +79,14 @@ func get_recipe(id: StringName) -> RecipeDef:
 
 func has_recipe(id: StringName) -> bool:
 	return recipes.has(id)
+
+
+func get_station(id: StringName) -> Resource:
+	return stations.get(id)
+
+
+func has_station(id: StringName) -> bool:
+	return stations.has(id)
 
 
 func get_weapon(item_id: StringName) -> WeaponDef:
@@ -120,6 +135,28 @@ func _load_recipes() -> void:
 			MireLog.error(&"content", "duplicate recipe id '%s' at %s, keeping first" % [recipe.id, file_path])
 			continue
 		recipes[recipe.id] = recipe
+
+
+func _load_stations() -> void:
+	for file_path: String in _tres_files_in(STATIONS_PATH):
+		var res: Resource = load(file_path)
+		if res == null or res.get_script() != STATION_DEF:
+			MireLog.error(&"content", "%s does not contain a StationDef, skipped" % file_path)
+			continue
+		var station_id := StringName(String(res.get("id")))
+		if station_id == &"":
+			MireLog.error(&"content", "%s has no id set, skipped" % file_path)
+			continue
+		if stations.has(station_id):
+			MireLog.error(&"content", "duplicate station id '%s' at %s, keeping first" % [
+				station_id, file_path
+			])
+			continue
+		var errors: PackedStringArray = res.call("validation_errors")
+		if not errors.is_empty():
+			MireLog.error(&"content", "%s is invalid (%s), skipped" % [file_path, "; ".join(errors)])
+			continue
+		stations[station_id] = res
 
 
 func _load_weapons() -> void:

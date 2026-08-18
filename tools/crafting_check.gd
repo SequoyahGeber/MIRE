@@ -91,6 +91,74 @@ func _run() -> void:
 	check(String(_confirmation(request_id).get("detail", "")).contains("unknown recipe"),
 		"unknown recipe rejection is readable")
 
+	# --- Task 3.1: station registration, the tier check, and the furnace's timed craft ---
+	check(bool(registry.call("has_station", &"workbench")), "workbench station is registered")
+	check(bool(registry.call("has_station", &"furnace")), "furnace station is registered")
+	check(bool(registry.call("has_item", &"iron_ingot")), "iron ingot item is registered")
+	check(bool(registry.call("has_recipe", &"iron_ingot")), "iron ingot recipe is registered")
+	var furnace_recipes: Array = crafting.call("recipes_for_station", &"furnace")
+	check(furnace_recipes.size() == 1, "furnace exposes the one worked-example recipe")
+
+	# host_validate's station-tier check: a recipe whose station id does not resolve to a
+	# registered StationDef is rejected before the range check ever runs — proven with a recipe
+	# injected straight into the registry, since every authored recipe already resolves.
+	var registry_recipes: Dictionary = registry.get("recipes")
+	var bogus_ingredient := RecipeIngredient.new()
+	bogus_ingredient.item = registry.call("get_item", &"iron_ore")
+	bogus_ingredient.count = 1
+	var bogus_recipe := RecipeDef.new()
+	bogus_recipe.id = &"bogus_unsupported_station"
+	bogus_recipe.station = &"no_such_station"
+	bogus_recipe.output_item = registry.call("get_item", &"iron_ingot")
+	bogus_recipe.output_count = 1
+	bogus_recipe.inputs = [bogus_ingredient]
+	registry_recipes[bogus_recipe.id] = bogus_recipe
+	request_id = int(crafting.call("request_craft", &"bogus_unsupported_station"))
+	check(not bool(_confirmation(request_id).get("accepted", true)),
+		"a recipe whose station does not resolve to a registered StationDef is rejected")
+	check(String(_confirmation(request_id).get("detail", "")).contains("unsupported station"),
+		"unsupported-station rejection is readable")
+	registry_recipes.erase(bogus_recipe.id)
+
+	player.position = Vector3(30.0, 0.0, 0.0)
+	var furnace := Node3D.new()
+	furnace.name = "CraftingCheckFurnace"
+	furnace.position = Vector3(30.0, 0.0, 0.0)
+	furnace.set_meta(&"asset", "station_stone_furnace")
+	furnace.add_to_group(&"playtest_hollow_asset")
+	root.add_child(furnace)
+	check(StringName(crafting.call("nearby_station_id")) == &"furnace",
+		"nearby_station_id resolves the placed furnace instance")
+
+	status = crafting.call("local_recipe_status", &"iron_ingot")
+	check(not bool(status.get("has_ingredients", true)), "furnace recipe reports missing ore")
+	request_id = int(crafting.call("request_craft", &"iron_ingot"))
+	check(not bool(_confirmation(request_id).get("accepted", true)),
+		"timed craft rejects immediately when ingredients are already missing (no timer started)")
+
+	check(bool(inventory.call("host_add", 1, &"iron_ore", 2)), "host grants iron ore")
+	status = crafting.call("local_recipe_status", &"iron_ingot")
+	check(bool(status.get("can_request", false)), "iron ingot recipe becomes requestable at the furnace")
+
+	revision_before = int(inventory.call("local_revision"))
+	request_id = int(crafting.call("request_craft", &"iron_ingot"))
+	check(request_id > 0, "timed craft request returns a request id")
+	var progress_before: float = float(crafting.call("craft_progress", request_id))
+	check(progress_before >= 0.0 and progress_before < 1.0,
+		"craft_progress reports in-progress before the timer resolves")
+	check(_confirmation(request_id).is_empty(), "timed craft does not confirm inline")
+	check(int(inventory.call("local_revision")) == revision_before,
+		"timed craft has not touched inventory before its timer elapses")
+
+	await create_timer(2.5).timeout
+	check(not _confirmation(request_id).is_empty(), "timed craft eventually confirms")
+	check(bool(_confirmation(request_id).get("accepted", false)),
+		"timed craft is accepted once its timer elapses with materials still present")
+	check(int(inventory.call("local_count", &"iron_ingot")) == 1, "timed craft grants one iron ingot")
+	check(int(inventory.call("local_count", &"iron_ore")) == 0, "timed craft spends its ore")
+	check(float(crafting.call("craft_progress", request_id)) < 0.0,
+		"craft_progress forgets a request once it resolves")
+
 	print("CRAFTING_CHECK confirmations=%d failures=%d" % [confirmations.size(), failures])
 	finish()
 
