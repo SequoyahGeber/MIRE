@@ -12,6 +12,7 @@ extends RefCounted
 
 static var _harvest_yielded_subscribers: Array[Callable] = []
 static var _enemy_attack_landed_subscribers: Array[Callable] = []
+static var _wellspring_capped_subscribers: Array[Callable] = []
 
 
 ## Listener signature:
@@ -74,6 +75,33 @@ static func emit_enemy_attack_landed(
 static func enemy_attack_landed_subscriber_count() -> int:
 	_prune_invalid(_enemy_attack_landed_subscribers)
 	return _enemy_attack_landed_subscribers.size()
+
+
+## Listener signature: (wellspring_name: StringName, world_position: Vector3) -> void
+##
+## Emitted by the HOST only, the instant a Wellspring's ritual timer completes (task 4.8). No
+## reward, chest, Mire hook or Attunement grant lives here — D-092 defers those to whichever future
+## task actually has something to hook them to (4.9-4.11's Mire, a reward system not yet built);
+## this event is that seam.
+static func subscribe_wellspring_capped(listener: Callable) -> void:
+	_prune_invalid(_wellspring_capped_subscribers)
+	if listener.is_valid() and not _wellspring_capped_subscribers.has(listener):
+		_wellspring_capped_subscribers.append(listener)
+
+
+static func unsubscribe_wellspring_capped(listener: Callable) -> void:
+	_wellspring_capped_subscribers.erase(listener)
+
+
+static func emit_wellspring_capped(wellspring_name: StringName, world_position: Vector3) -> void:
+	_prune_invalid(_wellspring_capped_subscribers)
+	for listener: Callable in _wellspring_capped_subscribers.duplicate():
+		listener.call(wellspring_name, world_position)
+
+
+static func wellspring_capped_subscriber_count() -> int:
+	_prune_invalid(_wellspring_capped_subscribers)
+	return _wellspring_capped_subscribers.size()
 
 
 static func _prune_invalid(subscribers: Array[Callable]) -> void:

@@ -71,7 +71,12 @@ extends RefCounted
 ## a dropped snapshot is a late joiner starting from a world that silently disagrees with everyone
 ## else's, and a dropped live delta is the exact same disagreement arriving more slowly, the next
 ## time that peer's chunk happens to reload.
-const PROTOCOL_VERSION: int = 18
+## 19 (task 4.8): systems/wellspring/wellspring.gd added net_request_toggle_channel (client -> host,
+## start/cancel the capture ritual) and its own SceneReplicationConfig (capped/channeling/
+## progress_sec/duration_sec/required_players, all ON_CHANGE). Reliable: a dropped toggle either
+## strands a channel nobody can see running, or cancels one and leaves a client's HUD showing the
+## progress bar of a channel the host already dropped.
+const PROTOCOL_VERSION: int = 19
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).

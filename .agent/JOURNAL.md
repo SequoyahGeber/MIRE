@@ -3382,3 +3382,18 @@ See the previous handoff note on this task — same content, re-claimed with exa
 Files: `content/powerups/bottomless_quiver.tres`, `content/powerups/coin_worm.tres`, `content/powerups/eggshell_warlord.tres`, `content/powerups/foremans_whistle.tres`, `content/powerups/second_sunrise.tres`, `content/powerups/seven_league_waders.tres`, `content/powerups/the_landlord.tres`, `content/powerups/wellspring_heart.tres`, `content/loot/bog.tres`, `content/loot/boss.tres`, `content/loot/gilded.tres`, `content/loot/strongbox.tres`, `content/loot/sunken.tres`, `content/loot/wellspring.tres`, `systems/loot/loot_entry.gd`, `systems/loot/loot_table_def.gd`, `systems/loot/chest.gd`, `ui/loot/chest_ui.gd`, `tools/loot_content_check.gd`, `tools/loot_content_check.gd.uid`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/ITEMS.md`
 
 Commit at time of writing: `63cc37c`
+
+---
+
+### DONE · 4.8 · lm · 2026-08-18T21:36:44+00:00
+
+**Wellspring scene, capture ritual, 2-player requirement, defense wave (solo fallback: 1-player ritual with a longer timer, `DESIGN.md` §5 solo rule)**
+
+Wellspring capture ritual ships: host-owned FSM (systems/wellspring/wellspring.gd), marker-driven spawner (autoload/wellspring_service.gd, registered), HUD prompt (ui/hud/wellspring_hud.gd), WaveSpawner.host_spawn_wave_at position-override seam. 2-player requirement with 1-player/150s solo fallback (DESIGN §4.2/§4.5). Protocol bumped 18->19. Verified: agent godot --script tools/wellspring_check.gd (0 failures, wiring+marker-consumption+full FSM incl. presence-gated pause and solo/coop sizing) and tools/wave_spawner_check.gd (0 failures, no regression). Confirmed against real hollowmere.tscn: its one objective marker builds exactly one Wellspring at (4.0,-0.604,64.0), no engine ERROR lines. D-092 records the reward-scope call (no chest/Mire/Attunement grant yet — EventBus.emit_wellspring_capped is the seam); F-141 is the one open gap (no two-process net check for the toggle RPC).
+
+Notes along the way:
+- Objective marker already existed in Hollowmere (world/gen/authored_world.gd, kind=objective) from POI placement's Hollowmere authoring — consumed it via a marker-in/live-node-out split (WellspringService), same pattern harvest_world.gd uses. No .tscn edits needed.
+
+Files: `systems/wellspring/wellspring.gd`, `autoload/wellspring_service.gd`, `ui/hud/wellspring_hud.gd`, `systems/waves/wave_spawner.gd`, `tools/wave_spawner_check.gd`, `core/events/event_bus.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/wellspring_check.gd`
+
+Commit at time of writing: `d6452ac`

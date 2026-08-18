@@ -74,14 +74,40 @@ func _on_night_started() -> void:
 	if points.is_empty():
 		return
 	var spawn_count: int = base_count + per_player * _live_player_count()
-	for index: int in spawn_count:
+	for _index: int in spawn_count:
 		var origin: Vector3 = points[_rng.randi_range(0, points.size() - 1)] as Vector3
-		var offset := Vector3(
-			_rng.randf_range(-scatter_m, scatter_m),
-			0.0,
-			_rng.randf_range(-scatter_m, scatter_m)
-		)
-		world.call("host_spawn", enemy_id, origin + offset)
+		_spawn_one(world, origin, scatter_m)
+
+
+## Spawns `count` enemies scattered around a single fixed `position`, independent of night/day
+## state or the ambient population — task 4.8's Wellspring ritual defense wave is the first caller,
+## giving its own position override rather than one of EnemyWorld's ambient_spawn_points(). Host-only
+## (`_owns_wave_director()`, same guard every other mutation here uses); returns the number actually
+## spawned. Does not touch `ambient_enabled` — an ambient population and a ritual wave are
+## independent one-shot populations that may coexist.
+func host_spawn_wave_at(
+	position: Vector3, count: int, wave_enemy_id: StringName = enemy_id,
+	wave_scatter_m: float = scatter_m
+) -> int:
+	if not _owns_wave_director() or count <= 0:
+		return 0
+	var world: Node = get_node_or_null(^"/root/EnemyWorld")
+	if world == null:
+		return 0
+	for _index: int in count:
+		_spawn_one(world, position, wave_scatter_m, wave_enemy_id)
+	return count
+
+
+func _spawn_one(
+	world: Node, origin: Vector3, spawn_scatter_m: float, spawn_enemy_id: StringName = enemy_id
+) -> void:
+	var offset := Vector3(
+		_rng.randf_range(-spawn_scatter_m, spawn_scatter_m),
+		0.0,
+		_rng.randf_range(-spawn_scatter_m, spawn_scatter_m)
+	)
+	world.call("host_spawn", spawn_enemy_id, origin + offset)
 
 
 ## Clears the one-shot night population, restores the exact ambient setting found at dusk, and

@@ -87,6 +87,19 @@ func _run() -> void:
 	check(not bool(world.get("ambient_enabled")),
 		"dawn preserves an intentionally disabled daytime field")
 
+	print("\n== position-override wave (task 4.8's Wellspring seam) ==")
+	world.call("host_despawn_all")
+	await process_frame
+	var ambient_before: bool = bool(world.get("ambient_enabled"))
+	var override_position := Vector3(50.0, 0.0, -30.0)
+	var spawned: int = int(wave.call(&"host_spawn_wave_at", override_position, 4, &"crawler", 0.5))
+	check(spawned == 4, "host_spawn_wave_at reports the count it spawned")
+	check(int(world.call("live_count")) == 4, "host_spawn_wave_at actually populates EnemyWorld")
+	check(bool(world.get("ambient_enabled")) == ambient_before,
+		"host_spawn_wave_at leaves ambient_enabled untouched")
+	world.call("host_despawn_all")
+	await process_frame
+
 	print("\nWAVE_SPAWNER_CHECK failures=%d" % failures)
 	finish()
 

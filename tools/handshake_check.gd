@@ -63,11 +63,12 @@ func _initialize() -> void:
 	# bumped 14 -> 15 for player_controller.gd's new `dodging` property on the player synchronizer;
 	# task 3.13 bumped 15 -> 16 for command_service.gd's net_submit_command/net_command_result pair;
 	# task 3.14 bumped 16 -> 17 for rule_service.gd's net_rule_snapshot/net_rule_changed pair; task
-	# 4.6 bumped 17 -> 18 for world_delta_log.gd's net_world_snapshot/net_delta_applied pair.
+	# 4.6 bumped 17 -> 18 for world_delta_log.gd's net_world_snapshot/net_delta_applied pair; task 4.8
+	# bumped 18 -> 19 for wellspring.gd's net_request_toggle_channel plus its own SceneReplicationConfig.
 	# A hard-coded expectation here is deliberate: this check's whole point is to fail loudly the day
 	# someone adds a wire-shape change and forgets the bump.
-	_check("PROTOCOL_VERSION reflects task 4.6's world-delta RPC pair",
-		NetVersion.PROTOCOL_VERSION == 18, str(NetVersion.PROTOCOL_VERSION))
+	_check("PROTOCOL_VERSION reflects task 4.8's Wellspring channel RPC",
+		NetVersion.PROTOCOL_VERSION == 19, str(NetVersion.PROTOCOL_VERSION))
 
 	call_deferred(&"_run_wire_checks")
 

@@ -468,6 +468,12 @@
       "hash": "ec0fed34438e2dc82ddf45e0dcd3e12399b37274760a9fe20f1fef62d2c5574c",
       "task": "F-127"
     },
+    "autoload/wellspring_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T21:36:44+00:00",
+      "hash": "eeb7ec96bc55e3410a021329a48a66a3ad8705470dc325959f22e23698ce851e",
+      "task": "4.8"
+    },
     "autoload/world_delta_log.gd": {
       "agent": "lm",
       "at": "2026-08-18T21:13:43+00:00",
@@ -1374,6 +1380,12 @@
       "hash": "ecf0664f3a14a627ec5b7cf4330f95dcf91106a6d0e750f6ac5e93aa977a3426",
       "task": "3.14"
     },
+    "core/events/event_bus.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T21:36:44+00:00",
+      "hash": "95e6b255da6bbb1f78d472e60e0b21a0fba3ee5a56ec265d53cf131b7d43b703",
+      "task": "4.8"
+    },
     "core/game_state.gd": {
       "agent": "lm",
       "at": "2026-08-18T21:13:43+00:00",
@@ -1388,9 +1400,9 @@
     },
     "core/net/net_version.gd": {
       "agent": "lm",
-      "at": "2026-08-18T21:13:43+00:00",
-      "hash": "a59ef9b8e232095290df921f0848c21f23c7ceaa49fe2fb02a3588dc6f504b2f",
-      "task": "4.6"
+      "at": "2026-08-18T21:36:44+00:00",
+      "hash": "4d5d2f672c13a0b2da22d2e60a2d6313f8d5fbff5ad6a41505bd682b7a1d11dd",
+      "task": "4.8"
     },
     "core/util/mire_log.gd": {
       "agent": "gale6",
@@ -1655,10 +1667,16 @@
       "task": "3.14"
     },
     "systems/waves/wave_spawner.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T21:00:45+00:00",
-      "hash": "392d6b49da006b54688819b503136d10ade9c56a556a101b1498053719ef6edb",
-      "task": "3.14"
+      "agent": "lm",
+      "at": "2026-08-18T21:36:44+00:00",
+      "hash": "56bfc2971f27fdf232eba2a44c5828d29dc6eb788779c718aaa8dbc1335a2425",
+      "task": "4.8"
+    },
+    "systems/wellspring/wellspring.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T21:36:44+00:00",
+      "hash": "484dc3680cf7e899731c5f7cb90b998fc44aaed4c605d02ad7a7294f66418006",
+      "task": "4.8"
     },
     "tools/atmosphere_look_shot.gd": {
       "agent": "vane19",
@@ -2036,9 +2054,9 @@
     },
     "tools/handshake_check.gd": {
       "agent": "lm",
-      "at": "2026-08-18T21:13:43+00:00",
-      "hash": "92a5a87c6bf53a1519c3827011600ba4dafa893befe09cf88b09c45b8d9a9001",
-      "task": "4.6"
+      "at": "2026-08-18T21:36:44+00:00",
+      "hash": "b7f42ab345d44809a165ab68887163345a5fe030bd13230b2b487cdd63408ad4",
+      "task": "4.8"
     },
     "tools/harness_check.py": {
       "agent": "yarrow21",
@@ -2327,9 +2345,16 @@
       "task": "F-064"
     },
     "tools/wave_spawner_check.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T02:53:04+00:00",
-      "task": "F-068"
+      "agent": "lm",
+      "at": "2026-08-18T21:36:44+00:00",
+      "hash": "ae266ae40af7627842c854b372822a0a12ad785a636b0b42bf096a7ef53c20d2",
+      "task": "4.8"
+    },
+    "tools/wellspring_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T21:36:44+00:00",
+      "hash": "06229b2e9a2465f8313be9e51606939f20d1c38f6edb4dfebd085558ba90b036",
+      "task": "4.8"
     },
     "tools/world_contract_check.gd": {
       "agent": "lp",
@@ -2356,6 +2381,12 @@
       "agent": "kiln9",
       "at": "2026-08-18T14:10:44+00:00",
       "task": "F-099"
+    },
+    "ui/hud/wellspring_hud.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T21:36:44+00:00",
+      "hash": "473e007f65ee7b308278a8a27bc2cc0c18c77c2a7d446b59f1c8ae81f7ec9a6c",
+      "task": "4.8"
     },
     "ui/lobby/lobby_menu.gd": {
       "agent": "moss11",
@@ -3231,9 +3262,11 @@
       "title": "POI placement: seeded Poisson-disc, Wellsprings + landmarks"
     },
     "4.8": {
+      "done_at": "2026-08-18T21:36:44+00:00",
+      "done_by": "lm",
       "est": "3",
       "milestone": "M4",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Wellspring scene, capture ritual, 2-player requirement, defense wave (solo fallback: 1-player ritual with a longer timer, `DESIGN.md` \u00a75 solo rule)"
     },
