@@ -144,7 +144,10 @@ func _run() -> void:
 	var cleanup_loot_tables: Dictionary = registry.get("loot_tables")
 	cleanup_loot_tables.erase(TEST_TIER)
 	registry.set("loot_tables", cleanup_loot_tables)
-	print("CHEST_CHECK failures=%d" % failures)
+	# The unknown-tier chest above deliberately provokes Chest's own rejection log once, on
+	# purpose, to prove an unresolvable tier is refused. Standing rule 4 (docs/SPECS.md): declare
+	# it by pattern rather than "fixing" it by silencing the production log call.
+	print("CHEST_CHECK failures=%d · EXPECTED_ERROR_PATTERNS=\"references unknown loot tier\"" % failures)
 	finish()
 
 
