@@ -141,6 +141,13 @@ so a blanket add sweeps another agent's half-written files into your commit. Nev
 Uncommitted work is invisible to everyone else. The pre-commit hook re-runs `agent check` against the
 staged set and blocks you if you've touched a file you don't hold.
 
+**`ship` will not stage your `docs/` edits**, because you never claimed them (F-006) — it lists them
+under "Left alone" and you hand-commit them afterwards. That second commit is where `git add -A`
+sneaks back in wearing a disguise: **`git add docs/` is a blanket add too.** `docs/` is the one
+directory every agent writes to and nobody locks, so a wildcard there is *more* likely to sweep up
+someone else's work than one anywhere else — it has already folded another agent's new roadmap row
+into an unrelated findings commit. Name the files: `git add docs/FINDINGS.md docs/DECISIONS.md`.
+
 ### 6. Tell Sequoyah only what is genuinely his
 
 By now everything another *agent* needs is in the repo (step 3). What is left is the short list only a
