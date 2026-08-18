@@ -10,7 +10,6 @@
 |---|---|---|---|
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | ivy8 | 2026-08-18 13:01 | `docs/ASSET_TRACKER.md`, `tools/blender/build_extraction_ship_set.py`, `assets/source/extraction_ship_set.blend`, `assets/ships`, `tools/ship_check.gd`, `tools/blender/mire_art.py` |
 | **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-18 00:43 | `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `assets/maps`, `assets/source/playtest_hollow.blend` |
-| **F-036** Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10 | lp | 2026-08-18 14:07 | `docs/ROADMAP.md` |
 | **F-097** Environmental VFX is keyed to node types the shipped map never produces, so wind and firelight are dead on Hollowmere | larch10 | 2026-08-18 13:09 | `autoload/environment_vfx.gd`, `world/environment/foliage_wind.gdshader`, `world/environment/particle_billboard.gdshader`, `world/gen/authored_world.gd`, `world/gen/undergrowth.gd`, `tools/environment_vfx_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `tools/vfx_site_probe.gd`, `tools/multimesh_readback_check.gd` |
 | **F-099** Optimization sweep: per-frame costs and dead weight across runtime scripts | kiln9 | 2026-08-18 13:15 | `systems/enemies/enemy.gd`, `systems/health/player_health.gd`, `systems/harvesting/harvestable.gd`, `systems/environment/day_night.gd`, `ui/hud/vitals_hud.gd`, `ui/crafting/crafting_ui.gd`, `ui/loot/chest_ui.gd`, `entities/player/viewmodel.gd`, `autoload/inventory_service.gd`, `autoload/harvest_world.gd`, `autoload/enemy_world.gd`, `autoload/powerup_service.gd`, `autoload/build_service.gd`, `autoload/crafting_service.gd`, `autoload/net_transport.gd`, `autoload/player_net.gd`, `autoload/debug_overlay.gd`, `autoload/registry.gd`, `core/net/net_session.gd`, `autoload/combat_service.gd` |
 
@@ -19,12 +18,13 @@
 
 **F-097 notes:**
 - Measured on hollowmere: foliage=0 fire=0 against 1740 MultiMeshInstance3D / 13026 copies. Root cause is node-type keying (MeshInstance3D only), not name matching. Fix binds VFX to asset id carried in node meta by both generators.
+- Asset-bound VFX shipped: library + rewritten autoload + MultiMesh-safe shader + generator meta contract. 269 emitter sites -> 23 effect nodes. EnvironmentVfx was also never registered as an autoload; fixed. Filed F-103 (headless MultiMesh readback is write-only) and F-104 (new class_name hangs headless runs).
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███████░░░` 74/99 | 25 |
+| Findings | `████████░░` 75/99 | 24 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -64,7 +64,6 @@
 | ⬜ | **F-023** Windows Steam first join intermittently exceeds the hard 10-second connection timeout | todo |
 | ⬜ | **F-024** A shipped LAN first join has no retry — only the debug launcher does | todo |
 | ⬜ | **F-025** Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake | todo |
-| 🔵 | **F-036** Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10 | in_flight |
 | ⬜ | **F-042** Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one | todo |
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-057** A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds | todo |
@@ -86,4 +85,4 @@
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.5` `3.6` `3.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-037` `F-038` `F-039` `F-040` `F-041` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-059` `F-060` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-095` `F-096` `F-098` `F-106`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.5` `3.6` `3.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-059` `F-060` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-095` `F-096` `F-098` `F-106`

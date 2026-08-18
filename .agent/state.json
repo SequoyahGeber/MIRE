@@ -90,11 +90,6 @@
       "at": "2026-08-18T13:01:13+00:00",
       "task": "2.1d"
     },
-    "docs/ROADMAP.md": {
-      "agent": "lp",
-      "at": "2026-08-18T14:07:07+00:00",
-      "task": "F-036"
-    },
     "entities/player/viewmodel.gd": {
       "agent": "kiln9",
       "at": "2026-08-18T13:15:19+00:00",
@@ -232,14 +227,6 @@
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
     },
-    "F-036": {
-      "agent": "lp",
-      "files": [
-        "docs/ROADMAP.md"
-      ],
-      "notes": [],
-      "started": "2026-08-18T14:07:07+00:00"
-    },
     "F-097": {
       "agent": "larch10",
       "files": [
@@ -258,6 +245,11 @@
           "at": "2026-08-18T13:11:02+00:00",
           "by": "larch10",
           "text": "Measured on hollowmere: foliage=0 fire=0 against 1740 MultiMeshInstance3D / 13026 copies. Root cause is node-type keying (MeshInstance3D only), not name matching. Fix binds VFX to asset id carried in node meta by both generators."
+        },
+        {
+          "at": "2026-08-18T14:08:58+00:00",
+          "by": "larch10",
+          "text": "Asset-bound VFX shipped: library + rewritten autoload + MultiMesh-safe shader + generator meta contract. 269 emitter sites -> 23 effect nodes. EnvironmentVfx was also never registered as an autoload; fixed. Filed F-103 (headless MultiMesh readback is write-only) and F-104 (new class_name hangs headless runs)."
         }
       ],
       "started": "2026-08-18T13:09:00+00:00"
@@ -822,9 +814,9 @@
       "task": "0.12"
     },
     "docs/ROADMAP.md": {
-      "agent": "ivy8",
-      "at": "2026-08-18T04:46:24+00:00",
-      "task": "2.1k"
+      "agent": "lp",
+      "at": "2026-08-18T14:09:11+00:00",
+      "task": "F-036"
     },
     "docs/SPECS.md": {
       "agent": "flint5",
@@ -2771,9 +2763,11 @@
       "title": "Inventory icons are capped at 26 px because a `CenterContainer` sizes children to their minimum"
     },
     "F-036": {
+      "done_at": "2026-08-18T14:09:11+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Task 2.9's gate cannot be met in its roadmap position \u2014 the enemy it tunes against lands in 2.10"
     },

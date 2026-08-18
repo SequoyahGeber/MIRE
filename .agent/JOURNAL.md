@@ -2534,3 +2534,18 @@ agent godot now names the owner when a SCRIPT ERROR/Parse Error hits a .gd the c
 Files: `.agent/bin/agent`, `docs/FINDINGS.md`
 
 Commit at time of writing: `aa3f764`
+
+---
+
+### DONE · F-036 · lp · 2026-08-18T14:09:11+00:00
+
+**Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10**
+
+Wrote the missing docs/SPECS.md '## F-036' block (agent brief F-036 previously found nothing) -- it documents that the roadmap-order half is already fixed on disk (ROADMAP.md 2.9/2.10 swapped) and points at 2.9's existing run-sheet as the one way to close F-036, rather than duplicating it. Verified: agent godot --script tools/combat_feel_check.gd -> failures=0, all 9 PASS, output still correctly says 'these are relationships, not verdicts.' No production file changed; no new check needed since combat_feel_check.gd already is 2.9/F-036's instrument. F-036 intentionally stays Open in FINDINGS.md -- closing it needs Sequoyah's playtest verdict (D-039's canonical hand-off case), which no agent can substitute.
+
+Notes along the way:
+- Ordering half already fixed on disk (ROADMAP.md 2.9/2.10 swapped, dusk3). Wrote missing SPECS.md '## F-036' block (agent brief F-036 was landing on nothing) pointing at 2.9's existing run-sheet rather than duplicating it. Verified combat_feel_check.gd: failures=0, all 9 relationship checks PASS. No production file touched, no new check needed -- 2.9's instrument already covers this. F-036 stays Open: closing it requires Sequoyah's playtest verdict (D-039 canonical hand-off), not code.
+
+Files: `docs/ROADMAP.md`
+
+Commit at time of writing: `8b5bd04`
