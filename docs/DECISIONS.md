@@ -1068,6 +1068,27 @@ all exist, at which point the seam grows a streaming policy rather than each bio
 
 ---
 
+### D-056 · 2026-08-18 · Placement snapping rounds X/Z to the grid; Y is never rounded, only preserved from the aim hit
+
+F-083: `snap_transform()` used to round Y to the same metre grid as X/Z, which is wrong on principle —
+X/Z snapping exists so two players' walls line up on a shared grid, but Y has no equivalent reason to
+round, because Hollowmere's terrain is not built on whole-metre elevations. Rounding it either buried
+a piece in the ground (0.4 -> 0.0) or floated it above the surface (0.6 -> 1.0). The fix is to leave
+Y exactly as given: `BuildGhost.update_aim()` already passes the real physics-ray hit position into
+`snap_transform()`, so preserving it places the piece flush with whatever the ray actually hit —
+terrain, a slope, or another piece's real top surface. That last case is why no separate "stacking
+anchor" rule is needed: a ray against an already-placed piece reports that piece's own exact top, so
+flush stacking falls out of the same raycast for free. Content authors relying on the old "floors
+snap to a clean Y" behavior (see `wall.tres`'s own doc comment about lining up a run of walls) get
+that guarantee on X/Z as before; Y lines up only when the ground itself does.
+
+**Would change my mind:** a future piece type that must sit at an exact authored height regardless of
+what's under it (e.g. a multi-tile floor grid meant to read as perfectly level across uneven terrain)
+would need an explicit anchor/leveling rule on top of this — that is new scope, not a reason to bring
+grid-rounding back to Y.
+
+---
+
 ## Template
 
 ```

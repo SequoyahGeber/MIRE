@@ -468,6 +468,32 @@ Verify: `agent godot --script tools/build_check.gd` (`failures=0`) — new asser
 `agent godot --script tools/combat_check.gd` (`failures=0`) confirms combat's own harvestable/enemy
 scenarios are unaffected.
 
+### 2026-08-18 — placement Y is no longer snapped to the grid, only X/Z (F-083)
+
+`PlacementValidator.snap_transform()` used to round Y onto the same `snap_step` grid as X and Z. On
+Hollowmere's non-integer terrain that either buried a piece in the ground or floated it above the
+surface — see F-083 in `docs/FINDINGS.md` Resolved for the exact failure and D-056 for the call.
+**Now: `snap_transform()` snaps X/Z only; `origin.y` passes through untouched.** This is a contract
+change anything calling `snap_transform()` or reading a placed piece's Y should know:
+
+- The Y a piece ends up at is whatever the caller's own aim ray hit — terrain, a slope, or another
+  piece's real top surface. There is no `BuildableDef` field or separate function for "anchor to a
+  grid Y"; if a future piece type needs to ignore uneven ground and sit at an exact authored height,
+  that is new scope (D-056's "would change my mind" line), not something this fix already covers.
+- Flush stacking (a piece placed directly on top of another) needs no special-casing: a raycast
+  against an existing piece already reports that piece's exact top, so the new piece's floor lands
+  there with zero gap, the same way it lands flush on terrain.
+- `content/buildables/wall.tres`'s own doc comment ("Snaps to the metre grid so a run of them
+  actually lines up") is still true for X/Z. It is not true for Y across uneven ground — a run of
+  walls built along a slope will follow the slope, not share one Y, same as it would in reality.
+
+Verify: `agent godot --script tools/build_check.gd` — `_check_ground_height_is_preserved()` is the
+new function, built against two isolated flat pads at non-integer heights (top surfaces y=0.4 and
+y=0.6, the review's own `GROUND_0_4`/`GROUND_0_6` probes); `_check_ghost()` gained an end-to-end
+case aiming `BuildGhost` straight down at the y=0.4 pad to prove the whole `update_aim() ->
+snap_transform()` chain the finding named, not just the pure function. `failures=0`.
+`tools/build_net_check.gd` `failures=0`, unaffected.
+
 ### 2026-08-18 — the 3.4 design check is done: the schema holds, and docs/POWERUPS.md is now the authoring spec (reed16)
 
 The question that had to be answered before 3.4 hand-authors 40–60 `.tres` files: can the whole

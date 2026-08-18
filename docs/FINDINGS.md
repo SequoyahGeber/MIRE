@@ -818,24 +818,6 @@ those generated paths, or excluding `.agent/bin/`, both close it.
 
 ---
 
-### F-083 · Snapping the aim hit's Y coordinate rejects or floats pieces on ordinary terrain heights
-
-**Area:** building · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.6 review
-
-`BuildGhost.update_aim()` feeds the surface hit directly to `snap_transform()`
-(`systems/building/build_ghost.gd:100`), and `snap_transform()` rounds Y to the same metre grid as X
-and Z (`systems/building/placement_validator.gd:56`). The support ray begins only 0.15 m above that
-rounded origin. On flat ground at Y=0.4, the placement rounds down to Y=0, the ray begins inside the
-terrain, and the validator returns `NO_SUPPORT`; on ground at Y=0.6, it rounds up to Y=1 and accepts
-a wall floating 0.4 m above the surface. Hollowmere is not restricted to integer-metre elevations,
-so this breaks placement across the shipped map rather than at an exotic edge case.
-
-The review's real-physics probe printed `GROUND_0_4 snapped_y=0.0 reason=nothing underneath it` and
-`GROUND_0_6 snapped_y=1.0 gap=0.4 reason=ok`. Ground placement needs to preserve/derive surface Y;
-vertical snapping for stacked pieces needs an explicit anchor or separate rule.
-
----
-
 ### F-086 · The building system has no gameplay caller, so no player can place, rotate, or destroy anything
 
 **Area:** gameplay · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.6 review
@@ -861,6 +843,36 @@ F-090 left three measured seams. (1) Undergrowth draws 2-4 calls per (asset,cell
 ---
 
 ## Resolved
+
+### F-083 · Snapping the aim hit's Y coordinate rejects or floats pieces on ordinary terrain heights — **fixed**
+
+**Area:** building · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.6 review ·
+**Resolved 2026-08-18 by lp.**
+
+`BuildGhost.update_aim()` fed the surface hit directly to `snap_transform()`
+(`systems/building/build_ghost.gd:100`), and `snap_transform()` rounded Y to the same metre grid as X
+and Z (`systems/building/placement_validator.gd:56`). The support ray began only 0.15 m above that
+rounded origin. On flat ground at Y=0.4, the placement rounded down to Y=0, the ray began inside the
+terrain, and the validator returned `NO_SUPPORT`; on ground at Y=0.6, it rounded up to Y=1 and
+accepted a wall floating 0.4 m above the surface. Hollowmere is not restricted to integer-metre
+elevations, so this broke placement across the shipped map rather than at an exotic edge case.
+
+**Fixed:** `snap_transform()` now snaps X and Z to `snap_step` as before but leaves Y exactly as
+given (D-056). `origin.y` is never an arbitrary value that needs rounding — it is wherever the
+caller's physics ray actually hit, so preserving it places the piece flush with the real surface,
+terrain or another piece's top. That last part means flush stacking needs no separate anchor rule:
+a ray against an already-placed piece reports that piece's own exact top surface, satisfying the
+finding's "vertical snapping for stacked pieces needs an explicit anchor" concern for free — see
+D-056 for what would change that call.
+
+**Verified:** `agent godot --script tools/build_check.gd` — new `_check_ground_height_is_preserved()`
+reproduces the review's exact probes (isolated flat pads with top surfaces at y=0.4 and y=0.6) and
+asserts both evaluate to `OK` with the height unchanged, plus an end-to-end assertion that
+`BuildGhost.update_aim()` aiming straight down at the y=0.4 pad keeps the ghost at 0.4 rather than
+snapping to 0. `failures=0` (reran twice). `tools/build_net_check.gd` (13 assertions, two real ENet
+processes) also `failures=0`, unaffected — it never places on non-integer ground.
+
+---
 
 ### F-096 · The quota parser only understands the word reset, so Codex's dated try-again message falls through to a blind five-hour default — **fixed**
 
