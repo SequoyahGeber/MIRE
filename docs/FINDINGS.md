@@ -960,6 +960,31 @@ F-052 paste and leave the rest as historical record.
 
 ---
 
+### F-089 · Powerup lifecycle never removes obsolete family counts from clients, leaving ghost Resonances after reconnect or expiry
+
+**Area:** netcode · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.3 review
+
+`autoload/powerup_service.gd:336-351` updates only the host's old peer-id entries. Rebound erases the
+old id locally and publishes the new id through `_commit(new_peer_id)`; expiry erases locally and
+publishes nothing. `net_powerup_counts()` has no other deletion path, so teammates retain the last
+family counts for every obsolete peer id and disagree with the host after either lifecycle event.
+
+`tools/powerup_review_check.gd` reproduced both failures over two real ENet processes: peer 701's
+Kinetic count reached the client as 3; after rebound, peer 702 also reached 3 but 701 stayed 3; after
+expiry, 702 stayed 3 as well. The check ended `POWERUP_REVIEW_CHECK failures=2`, with one concrete
+failure for rebound and one for expiry. Broadcast an empty/removal count for the old or expired id
+(including the downward `resonance_changed` transition) before discarding it on the host.
+
+---
+
+### F-090 · Frame budget audit: ~100 fps where hundreds are expected
+
+**Area:** perf · **Severity:** high · **Found:** 2026-08-18 by coil23
+
+The level renders at ~100 fps on the M5 Pro where the scene complexity justifies several hundred. Suspects identified by reading: (1) vsync default ON caps everything at the 120 Hz panel regardless; (2) DayNight drives Atmosphere.apply_atmosphere() every physics tick, rewriting PhysicalSkyMaterial colors + sun rotation 60x/s, forcing continuous sky radiance regeneration; (3) undergrowth is ~18k shadow-casting instances in map-wide MultiMeshes — one AABB per asset, so no frustum culling, and all of it renders into all 4 PSSM splits; (4) volumetric fog + glow at a retina backing store. Measuring with tools/perf_probe.gd (windowed, per-suspect toggles), then fixing what the numbers convict.
+
+---
+
 ## Resolved
 
 ### F-088 · A review order inherits the reviewed task's claim set, so it is refused exactly when that task is being worked on — **fixed**

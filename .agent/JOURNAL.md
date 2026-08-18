@@ -2196,3 +2196,18 @@ Notes along the way:
 Files: `systems/crafting/station_def.gd`, `systems/crafting/recipe_def.gd`, `autoload/crafting_service.gd`, `autoload/registry.gd`, `ui/crafting/crafting_ui.gd`, `tools/crafting_check.gd`, `tools/crafting_net_check.gd`, `tools/crafting_ui_check.gd`, `tools/setup_station_content.gd`, `content/stations/workbench.tres`, `content/stations/furnace.tres`, `content/items/iron_ingot.tres`, `content/recipes/iron_ingot.tres`
 
 Commit at time of writing: `adacc18`
+
+---
+
+### DONE · 3.3-review · lc1 · 2026-08-18T05:07:21+00:00
+
+**Review 3.3 @ 17e26f8 — judge the commit, file findings, no edits**
+
+Changes requested — F-089. Full boot: exit 0, 0 ERROR. powerup_check: 42/42, 0 ERROR. powerup_net_check: 13/13, 0 ERROR. handshake_check and net_check_pattern_check: 0 failures. New two-process powerup_review_check: exit 1, POWERUP_REVIEW_CHECK failures=2; rebound did not clear old peer family counts and expiry did not clear departed peer family counts on the teammate.
+
+Notes along the way:
+- F-089: two-process lifecycle probe shows clients retain old family counts after both run_player_rebound and run_player_expired; host updates locally but never broadcasts removal, so ghost Resonances desync teammates.
+
+Files: `tools/powerup_review_check.gd`
+
+Commit at time of writing: `7f6c225`
