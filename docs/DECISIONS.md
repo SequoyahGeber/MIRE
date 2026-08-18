@@ -1013,6 +1013,18 @@ gates `host_transaction`, never the client's estimate.
 station where multiple players must see the exact same countdown, say) — that needs a real
 `net_craft_started(request_id, remaining_sec)` push and the protocol bump that comes with it.
 
+### D-053 · 2026-08-18 · A colliding F-number is renumbered only in a dedicated cross-cutting pass, never as a side effect of an unrelated task
+`_duplicate_findings()`'s own docstring in `.agent/bin/agent` already called this out, and two findings
+(F-058, then F-071) independently arrived at the same deferral: code comments and queued work orders
+can cite *either* member of a colliding pair, so fixing the number requires reading every reference's
+surrounding sentence to know which finding it meant — real work, and real collision risk against
+whatever agent holds those files mid-edit. An agent who stumbles on a collision while doing something
+else should file (or update) the meta-finding and move on, the way F-058 and F-071 both did, rather
+than renumbering inline. F-087 is that dedicated pass, and its own fix note scoped even *it* to
+`docs/` and `.agent/` — code-comment references stayed deliberately untouched, for the same reason.
+**Would change my mind:** a collision that is actively causing wrong production behavior (not just
+misrouted `agent brief`/`board` output) — that would be worth an inline fix regardless of scope.
+
 ---
 
 ## Template

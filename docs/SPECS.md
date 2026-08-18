@@ -376,6 +376,28 @@ inventing a new rule class for destroy alone would stop it mirroring placement.
 piece planted 100 m from the client is refused by name alone, and the piece the client actually
 built and stands beside still destroys and refunds correctly.
 
+## F-087 · Three open findings shared their F-number with a different finding
+
+`docs/` is deliberately unclaimed (F-006), so concurrent lanes filing a finding in the same window can
+both read `agent brief`'s "next number" and both append as it — F-058's failure mode, recurring: F-058,
+F-059 and F-060 each named two unrelated findings, one Resolved (cited by shipped commits) and one
+still Open. `agent brief`/`claim` picked one arbitrarily, and `agent start`/`board` reported the Open
+one as "closed but still under '## Open'" because it matched the Resolved twin by number — the natural
+fix (move it to Resolved) would have buried a live bug. **Claim:** `docs/FINDINGS.md` (the only file
+this needed). **Fix:** renumbered the three *later*-arriving, still-Open entries to fresh numbers above
+the prior high-water mark — F-058→**F-092**, F-059→**F-093**, F-060→**F-094** — leaving the three
+original, commit-cited entries untouched. Repointed every `docs/`/`.agent/` reference that meant a
+renumbered entry (`docs/ASSET_TRACKER.md`, `.agent/state.json`'s stale task titles); left references
+that meant an original alone, including `docs/SPECS.md`'s own `## F-059`/`## F-060` blocks above and
+`docs/DELEGATION.md`'s F-059/F-060 notes — both are about the originals and needed no change.
+Code-comment references (`tools/*.gd`, `tools/blender/mire_art.py`) are deliberately out of scope, per
+F-071's prior finding that renumbering there is its own cross-cutting pass. Policy for any future
+collision recorded in **D-053**.
+**Shipped 2026-08-18** (`docs/FINDINGS.md` Resolved has the full verification). Re-verify with
+`agent board`: no more "F-number(s) used by more than one open finding" or "closed but still under
+'## Open'" warnings. `agent godot --script tools/findings_numbering_check.gd` is the standing
+regression guard — source-scans `docs/FINDINGS.md` and fails if either shape reappears.
+
 ## 3.8 · Hunger/health/stamina (T1) — **GATE: 2.13 shipped (PlayerHealth exists).**
 
 Extends `PlayerHealth` rather than a new service: hunger drains on host tick, empty hunger drains

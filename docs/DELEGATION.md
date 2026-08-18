@@ -1524,6 +1524,27 @@ PASS/FAIL/BLOCKED criteria are in `docs/STEAM_CROSS_PLATFORM_TEST.md`.
 M0 is closed. The 0.7 and 0.8 spike prompts that used to live here shipped in `9a1bc19` / `9ebe47b` —
 their results are D-015 and D-016 in `DECISIONS.md`. The unmeasured half of R2 is now task `4.0a`.
 
+### 2026-08-18 — F-058/F-059/F-060 renumbered to F-092/F-093/F-094 (F-087); the originals are unchanged
+
+If you're reading an old note (or a commit message) that cites **F-059** or **F-060** for something
+art-pipeline-shaped — `mire_art.mat()`'s cache, or a headless `--script` run not re-importing changed
+assets, or `mire_art.world_bounds` — that finding is now **F-093** and **F-094** respectively
+(`mire_art.mat()`'s cache is **F-092**, was F-058). Nothing about **the originals** changed: F-059 is
+still `InventoryService._publish_snapshot`'s unguarded `rpc_id` (cited by `983da6c`), F-060 is still
+the two-process net-check authoring traps (cited by `adfaa78`, `abcf9bd`) — every mention of F-059/
+F-060 elsewhere in this file is about those and needed no edit.
+
+Three lanes had each read `agent brief`'s "next number" before another had written, so those three
+numbers each named two unrelated findings — one Resolved and cited by a shipped commit, one still
+Open. `agent brief`/`claim` picked one arbitrarily and `agent start`/`board` reported the Open one as
+already closed. Full writeup and verification: `docs/FINDINGS.md` F-087 (Resolved).
+
+New standing check: `agent godot --script tools/findings_numbering_check.gd` source-scans
+`docs/FINDINGS.md` and fails if any F-number heads two different `## Open` entries, or heads an
+`## Open` entry and a different `## Resolved` entry — the two collision shapes this finding fixed.
+It does not flag same-number entries that are both Resolved (no routing risk, left as historical
+record on purpose per F-087/F-052).
+
 ---
 
 > **Historical documents — every task prompt from here down.** They predate D-021 (agents register
