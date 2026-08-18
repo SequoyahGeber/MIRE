@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AttunementDef" format=3]
+
+[ext_resource type="Script" path="res://systems/attunement/attunement_def.gd" id="1_l5g5h"]
+
+[resource]
+script = ExtResource("1_l5g5h")
+id = &"forager"
+display_name = "Forager"
+description = "One of DESIGN.md §4.5's four run-scoped roles."
+better_at = "gather yield & speed, food, sees resources through terrain"
+worse_at = "melee damage"
+granted_powerup_id = &"attunement_forager"

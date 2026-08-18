@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_i6q5b"]
+
+[resource]
+script = ExtResource("1_i6q5b")
+id = &"attunement_reaver"
+display_name = "Reaver Attunement"
+description = "Better at: melee/ranged damage, coin drops. Worse at: takes Blight faster, can't build Wards."
+max_stacks = 1
+modifiers = Dictionary[StringName, Vector2]({
+&"blight_rate": Vector2(0, 0.2),
+&"bow_damage": Vector2(0, 0.15),
+&"coin_gain": Vector2(0, 0.15),
+&"melee_damage": Vector2(0, 0.15)
+})
