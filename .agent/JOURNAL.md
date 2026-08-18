@@ -1933,3 +1933,25 @@ Closed the prop half. There are exactly four SceneReplicationConfigs in the ship
 Files: `tools/interp_coverage_check.gd`
 
 Commit at time of writing: `6d0c6eb`
+
+---
+
+### DONE · F-067 · gale6 · 2026-08-18T04:11:21+00:00
+
+**The pre-commit hook blocks project.godot even when agent autoload wrote it — **fixed****
+
+Verified live rather than read: registering WaveSpawner and committing the resulting one-line project.godot change went through the hook printing the autoload exemption, no --no-verify. The entry had said 'fixed' in its own heading while sitting in ## Open, which is why agent board/start now detect that case.
+
+Commit at time of writing: `1c16417`
+
+---
+
+### DONE · F-045 · gale6 · 2026-08-18T04:11:21+00:00
+
+**`pgrep -fl Godot` is too blunt to be the closed-editor guard**
+
+Tool half was already done (_godot_running matches the real editor binary and excludes --headless). Fixed the docs half this entry names: AI-WORKFLOW.md told agents to run bare 'pgrep -fl Godot' — rewritten to the precise check, to point at the tool that already asks correctly, and to state why the rule exists. DELEGATION.md's archive disclaimer was correct but sat below three historical prompts making the stale 'human-only, hook-enforced' claim; moved above the first of them. Verified by re-grepping every .md for pgrep.
+
+Files: `.agent/bin/agent`
+
+Commit at time of writing: `1c16417`

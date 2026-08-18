@@ -10,10 +10,20 @@
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
+    "docs/ROADMAP.md": {
+      "agent": "ivy8",
+      "at": "2026-08-18T04:10:30+00:00",
+      "task": "2.1k"
+    },
     "levels/hollowmere.tscn": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:25:06+00:00",
-      "task": "2.1d"
+      "agent": "ivy8",
+      "at": "2026-08-18T04:10:30+00:00",
+      "task": "2.1k"
+    },
+    "tools/hollowmere_check.gd": {
+      "agent": "ivy8",
+      "at": "2026-08-18T04:10:30+00:00",
+      "task": "2.1k"
     },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
@@ -21,32 +31,32 @@
       "task": "2.1j"
     },
     "tools/mapgen/hollowmere_layout.py": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:25:06+00:00",
-      "task": "2.1d"
+      "agent": "ivy8",
+      "at": "2026-08-18T04:10:30+00:00",
+      "task": "2.1k"
+    },
+    "world/gen/authored_world.gd": {
+      "agent": "ivy8",
+      "at": "2026-08-18T04:10:30+00:00",
+      "task": "2.1k"
     },
     "world/gen/layouts/hollowmere.json": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:25:06+00:00",
-      "task": "2.1d"
+      "agent": "ivy8",
+      "at": "2026-08-18T04:10:30+00:00",
+      "task": "2.1k"
     },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
+    },
+    "world/gen/undergrowth.gd": {
+      "agent": "ivy8",
+      "at": "2026-08-18T04:10:30+00:00",
+      "task": "2.1k"
     }
   },
   "in_flight": {
-    "2.1d": {
-      "agent": "moss11",
-      "files": [
-        "tools/mapgen/hollowmere_layout.py",
-        "world/gen/layouts/hollowmere.json",
-        "levels/hollowmere.tscn"
-      ],
-      "notes": [],
-      "started": "2026-08-18T02:25:06+00:00"
-    },
     "2.1j": {
       "agent": "tine18",
       "files": [
@@ -57,13 +67,33 @@
       ],
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
+    },
+    "2.1k": {
+      "agent": "ivy8",
+      "files": [
+        "tools/mapgen/hollowmere_layout.py",
+        "world/gen/layouts/hollowmere.json",
+        "levels/hollowmere.tscn",
+        "world/gen/undergrowth.gd",
+        "world/gen/authored_world.gd",
+        "tools/hollowmere_check.gd",
+        "docs/ROADMAP.md"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-18T04:10:37+00:00",
+          "by": "ivy8",
+          "text": "Took over the three hollowmere files from moss11's 2.1d claim: that chat stopped at 19:26 PDT after writing hollowmere and never closed out; its work is committed. Released with 'drop' under its name, re-claimed here under 2.1k (new roadmap row for this revision)."
+        }
+      ],
+      "started": "2026-08-18T04:10:30+00:00"
     }
   },
   "recent": {
     ".agent/bin/agent": {
       "agent": "gale6",
-      "at": "2026-08-18T04:04:04+00:00",
-      "task": "F-071"
+      "at": "2026-08-18T04:11:21+00:00",
+      "task": "F-045"
     },
     ".agent/bin/lane": {
       "agent": "yarrow21",
@@ -592,7 +622,7 @@
     },
     "levels/hollowmere.tscn": {
       "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
+      "at": "2026-08-18T04:10:30+00:00",
       "task": "2.1d"
     },
     "levels/playtest_hollow.tscn": {
@@ -947,7 +977,7 @@
     },
     "tools/mapgen/hollowmere_layout.py": {
       "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
+      "at": "2026-08-18T04:10:30+00:00",
       "task": "2.1d"
     },
     "tools/net_debug_panel_check.gd": {
@@ -1112,7 +1142,7 @@
     },
     "world/gen/layouts/hollowmere.json": {
       "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
+      "at": "2026-08-18T04:10:30+00:00",
       "task": "2.1d"
     },
     "world/gen/layouts/playtest_hollow.json": {
@@ -1442,7 +1472,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
@@ -1497,6 +1527,13 @@
       "status": "in_flight",
       "tier": "T0",
       "title": "Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle"
+    },
+    "2.1k": {
+      "est": "6",
+      "milestone": "M2",
+      "status": "in_flight",
+      "tier": "T0",
+      "title": "Revise `hollowmere`: shrink the valley to a walkable size, re-author the layout and placement with intent, ground everything, fix grass-through-props, bridge railings and the water, raise tree/harvestable density, use every kit asset, and give the crawlers a corrupt zone to spawn from"
     },
     "2.2": {
       "done_at": "2026-08-16T02:59:39+00:00",
@@ -2386,9 +2423,11 @@
       "title": "Concurrent headless Godot runs share one import cache, which is the likely cause of F-038"
     },
     "F-045": {
+      "done_at": "2026-08-18T04:11:21+00:00",
+      "done_by": "gale6",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`pgrep -fl Godot` is too blunt to be the closed-editor guard"
     },
@@ -2568,9 +2607,11 @@
       "title": "Play-from-editor costs ~2.2 CPU cores and ~90% GPU, none of it the game's rendering \u2014 **partly fixed**"
     },
     "F-067": {
+      "done_at": "2026-08-18T04:11:21+00:00",
+      "done_by": "gale6",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The pre-commit hook blocks project.godot even when agent autoload wrote it \u2014 **fixed**"
     },

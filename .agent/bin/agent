@@ -441,7 +441,48 @@ def _duplicate_findings():
     return sorted(dupes)
 
 
+def _self_resolved_findings():
+    """Findings under '## Open' whose own text says they are resolved.
+
+    A third way the queue rots, and the one neither `_findings_drift()` nor `_sync_findings()` can
+    see: an agent fixes something, writes the resolution INTO the entry — a `— **fixed**` suffix on
+    the heading, or a `**Resolved ...**` line in the body — and never moves the section or runs
+    `agent done`. Both records then agree the finding is open, so nothing disagrees and no drift is
+    detectable; only the prose knows. F-067 sat that way with `— **fixed**` in its own heading while
+    `brief` offered it as work.
+
+    This is a text scan rather than a status comparison for exactly that reason. It is the entry
+    itself, not the bookkeeping, that is being believed."""
+    import re as _re
+    path = os.path.join(ROOT, "docs", "FINDINGS.md")
+    if not os.path.exists(path):
+        return []
+    text = open(path).read()
+    if "## Open" not in text or "## Resolved" not in text:
+        return []
+    section = text[text.index("## Open"):text.index("## Resolved")]
+    blocks = _re.split(r"(?m)^(### F-\d+ · .+)$", section)
+    out = []
+    for i in range(1, len(blocks), 2):
+        head, body = blocks[i], blocks[i + 1]
+        fid = head[4:].partition("·")[0].strip()
+        settled = _re.search(r"—\s*\*\*(fixed|partly fixed|decided|won't[^*]*)[^*]*\*\*\s*$",
+                             head.strip())
+        noted = _re.search(r"(?m)^\*\*(Resolved|Fixed)\b", body)
+        if settled or noted:
+            out.append(fid)
+    return sorted(set(out))
+
+
 def _print_findings_drift(st):
+    settled = _self_resolved_findings()
+    if settled:
+        print("  %s⚠ %d finding(s) under '## Open' whose own text says they are resolved: %s%s"
+              % (C["y"], len(settled), "  ".join(settled), C["x"]))
+        print("    %sneither the doc nor state.json disagrees here, so only the prose knows —"
+              % C["dim"])
+        print("    run `agent done <id>` and move the section to '## Resolved'.%s" % C["x"])
+        print()
     dupes = _duplicate_findings()
     if dupes:
         print("  %s⚠ %d F-number(s) used by more than one open finding: %s%s"
