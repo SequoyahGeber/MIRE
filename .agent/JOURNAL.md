@@ -1827,3 +1827,39 @@ vitals_hud.gd draws a centre state banner: DOWNED with a live bleed-out countdow
 Files: `ui/hud/vitals_hud.gd`, `tools/vitals_hud_check.gd`
 
 Commit at time of writing: `1281970`
+
+---
+
+### HANDOFF · 2.1d · moss11 · 2026-08-18T02:21:14+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-000V (84 flora assets) shipped in c0cced0 and marked DONE; A-009 remains NEXT and unstarted. Hollowmere shipped in 554f751 and is now project.godot's main scene; Playtest Hollow deprecated-not-deleted (still the fixture for nine headless checks). Open follow-ups, none blocking: (1) DECISIONS.md needs a D-number for 'large maps build at runtime, small ones bake' — it had uncommitted edits from another session so I left it alone; (2) Hollowmere's 27 gameplay markers have no consumer yet — spawn/objective/nest wiring is host-authoritative work; (3) F-060's world_bounds fix means every kit built with rotated primitives will settle a few tens of mm lower next rebuild, so diff catalogs and expect small height reductions rather than zero.
+
+Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_flora_set.py`, `tools/blender/mire_art.py`, `assets/flora`, `assets/source/flora_set.blend`, `world/gen/undergrowth.gd`, `tools/flora_check.gd`, `levels/playtest_hollow.tscn`, `docs/FINDINGS.md`, `tools/mapgen/hollowmere_layout.py`, `world/gen/layouts/hollowmere.json`, `world/gen/authored_world.gd`, `levels/hollowmere.tscn`, `tools/hollowmere_check.gd`, `tools/hollowmere_render_check.gd`, `world/environment/low_poly_clouds.gd`, `world/gen/playtest_hollow.gd`, `levels/greybox_test.tscn`, `docs/DELEGATION.md`, `docs/NEXT.md`, `assets/maps/preview`
+
+Commit at time of writing: `554f751`
+
+---
+
+### DONE · 3.5 · reed16 · 2026-08-18T02:29:39+00:00
+
+**Coins, chest tiers, chest-opening UI and flow**
+
+Task was already complete in the working tree but never committed. Verified with the editor closed (clean headless boot, chest_check 25/25) and committed as 27546a1 with its content files under claim.
+
+Files: `content/items/coins.tres`, `content/loot/small.tres`
+
+Commit at time of writing: `27546a1`
+
+---
+
+### DONE · F-066 · reed16 · 2026-08-18T02:29:39+00:00
+
+**Play-from-editor costs ~2.2 CPU cores and ~90% GPU, none of it the game's rendering — **partly fixed****
+
+Partly fixed. Un-embedding the game window was the real fix (editor 105% -> 6.5% idle); the 60fps cap I added was over-correction and was reverted to uncapped with fps_cap as the knob. Window resizable + 1280x720. Shipped-game video settings remain open as roadmap 7.5.
+
+Files: `project.godot`, `core/dev/dev_frame_cap.gd`, `tools/frame_cap_check.gd`
+
+Commit at time of writing: `27546a1`
