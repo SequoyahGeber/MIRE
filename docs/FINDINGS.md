@@ -566,20 +566,6 @@ complaint).
 
 ---
 
-### F-055 · `core/util/mire_log.gd`'s `CHANNELS` list has no `health` channel
-
-**Area:** tooling · **Severity:** low · **Found:** 2026-08-17 by lp during 2.13
-
-`MireLog.write()` silently drops `INFO`/`DEBUG` lines for any channel not in `CHANNELS` — `_enabled`
-is only pre-seeded for the listed channels, so an unlisted one reads as permanently off rather than
-"default on in a debug build" like every other channel. `systems/health/player_health.gd` logs under
-`&"combat"` instead of a `health` channel of its own because `mire_log.gd` was not in 2.13's claim set
-(`WARN`/`ERROR` always get through regardless, so nothing is silently lost — this is a visibility gap,
-not a correctness one). Next agent claiming `mire_log.gd`: add `&"health"` to `CHANNELS`, then switch
-`player_health.gd`'s `LOG_CHANNEL` constant over to it.
-
----
-
 ### F-056 · `docs/SPECS.md`'s 2.11 block omitted `net_version.gd`/`handshake_check.gd` despite adding a new RPC
 
 **Area:** docs/tooling · **Severity:** low · **Found:** 2026-08-17 by lp during 2.11
@@ -704,8 +690,107 @@ set did (byte-stable, but squares off deliberate chamfers and changes polygon co
 drift and weaken the contract for this one family. `mire_art.box()` now carries the warning in its
 docstring so the next family chooses deliberately instead of inheriting it.
 
+---
+
+### F-058 · `docs/FINDINGS.md` carried two F-055s and two F-056s at once — concurrent lanes both used `agent brief`'s "next number"
+
+**Area:** process/tooling · **Severity:** low · **Found:** 2026-08-17 by lp during 3.8
+
+`docs/` is deliberately unclaimed (F-006/AGENTS.md) so no lane blocks on it — but that also means two
+lanes filing a finding in the same window can both read the same "highest number so far" and both
+append as the same next id. Concretely: lp filed F-055 (mire_log's missing `health` channel) and
+F-056 (a SPECS.md omission) during 2.11/2.13; flint5 separately filed an UNRELATED F-055 (a dead
+`TestMapProps` autoload registration — since fixed, its own entry says so) and F-056 (the spawn-under-
+heightfield bug) during the three-platform LAN run. Both pairs landed in the doc; nothing merged badly
+at the git level (plain text, no structural conflict), so this was silent until someone read the
+numbers in order.
+
+Not filing this to relitigate either finding — both are independently sound and now correctly
+resolved/open on their own merits (this task resolves its own F-055 below; the `agent` tool's F-number
+sync reads `docs/FINDINGS.md` fresh each time, so a human or agent grepping for a SPECIFIC number
+should read the SURROUNDING TEXT, not trust the number alone, until this is renumbered). Whoever next
+does a documentation pass: renumber the second-filed pair (flint5's) to the next free numbers in
+sequence and fix any cross-references, or accept that `F-0NN` is a filing-order label, not a stable
+key, and say so once in `AGENTS.md` so nobody is surprised again. `agent sync`/`agent brief` were not
+audited for how they behave when a number is ambiguous — that is itself worth checking before relying
+on either during a renumbering pass.
+
+---
+
+### F-059 · `InventoryService._publish_snapshot`'s `net_inventory_snapshot.rpc_id()` is unguarded against a departed peer, same shape as the bug task 3.8 fixed in `player_health.gd`
+
+**Area:** netcode · **Severity:** low (today) · **Found:** 2026-08-17 by lp during 3.8
+
+D-035 keeps a departed peer's state alive through NetSession's grace window rather than releasing it
+on `peer_left` — deliberately, so a reconnect under a new peer id can rebind instead of resetting. But
+that means a peer id can sit in a host-owned dictionary with no live transport connection behind it,
+and `autoload/inventory_service.gd`'s `_publish_snapshot` sends `net_inventory_snapshot.rpc_id(peer_id,
+...)` to whatever peer id owns the store being published, gated only on `_transport().is_active()` —
+never on whether THAT SPECIFIC peer id is still connected. Any code path that calls `_commit(peer_id)`
+for a peer mid-grace-window (a harvest yield landing for them, a crafting response, anything routed
+through `host_add`/`host_transaction`) sends an RPC to an unknown peer id, which Godot logs as
+`ERROR: Attempt to call RPC with unknown peer ID`.
+
+Not fixed here — `inventory_service.gd` was not in 3.8's claim set. `systems/health/player_health.gd`
+had the exact same shape (`net_health_snapshot`, `net_force_respawn`, `net_revive_confirmed`,
+`net_consume_confirmed`, all `rpc_id(peer_id, ...)` with no connectivity check) and now has a
+`_peer_connected(peer_id)` guard before every one of them — copy that fix: check
+`_transport().call("peer_ids").has(peer_id)` before an `rpc_id` send to a specific peer, everywhere
+one exists. Lower severity than task 3.8's own instance because InventoryService's RPCs fire on
+discrete gameplay events, not an ambient per-tick timer — the window to hit is much narrower, but the
+failure mode is identical once hit.
+
+---
+
+### F-060 · Two-process net check authors: `local_peer_id() > HOST_PEER_ID` is not proof of a live connection, and mutating what `Node.get()` returns on a typed Dictionary property may not stick
+
+**Area:** tooling/testing · **Severity:** low · **Found:** 2026-08-17 by lp during 3.8, writing
+`tools/player_vitals_net_check.gd`
+
+Two traps that cost real debugging time, worth naming so the next `tools/*_net_check.gd` author does
+not re-find them the hard way:
+
+**1. A "ready" gate built from `local_peer_id() > HOST_PEER_ID and local_revision >= 0` (the exact
+shape `tools/player_health_net_check.gd`'s own `_client_health_ready()` uses) can resolve TRUE before
+the connection is actually established.** `autoload/net_transport.gd`'s `join()` sets `_local_id =
+multiplayer.get_unique_id()` the instant `create_client()` succeeds — ENet hands a client its own
+unique id locally, before the handshake with the host completes — and `PlayerHealth`'s own OFFLINE
+bootstrap already sets `local_revision` to 0 at process boot, before `join()` is ever called. Both
+halves of that gate can be true while `NetTransport.is_active()` is still false (status CONNECTING,
+not CONNECTED). `player_health_net_check.gd` never noticed because everything after its own ready-gate
+is ALSO gated on real cross-peer events that inherently require a live connection to ever become true.
+This check's own stamina-reporting ticker started a `while is_active(): ...` loop directly off that
+gate, evaluated `is_active()` as false on its first and only check, and exited with zero iterations,
+silently. Fix: gate on `is_active()` directly (now added to this file's own `_client_health_ready()`),
+not on side effects that happen to usually-but-not-always imply it.
+
+**2. Reading a strictly-typed `Dictionary[K, V]` script property through the generic `Object.get()`
+reflection API and mutating what it returns does not reliably mutate the original.** Both
+`tools/player_vitals_check.gd` and `tools/player_vitals_net_check.gd` inject a synthetic `ItemDef`
+into `Registry.items` for a test-only CONSUMABLE (AGENTS.md: real food content is task 3.2's job, not
+this one's) via `var items: Dictionary = registry.get("items"); items[id] = item` — and
+`InventoryService.host_add()` kept rejecting it as unknown until an explicit `registry.set("items",
+items)` was added after the mutation. Dictionaries are reference types in GDScript, so this is not
+true of an ordinary untyped Dictionary property; something about the typed-Dictionary boundary crossed
+by generic property reflection converts rather than aliases. Always `.set()` back explicitly after
+mutating a typed Dictionary/Array property read through `.get()` from outside its own script.
 
 ## Resolved
+
+### F-055 · `core/util/mire_log.gd`'s `CHANNELS` list has no `health` channel — **fixed**
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-17 by lp during 2.13 · **Fixed:** 2026-08-17 by lp during 3.8
+
+`MireLog.write()` silently dropped `INFO`/`DEBUG` lines for any channel not in `CHANNELS` —
+`_enabled` is only pre-seeded for the listed channels, so an unlisted one read as permanently off
+rather than "default on in a debug build" like every other channel. `systems/health/player_health.gd`
+logged under `&"combat"` instead of a `health` channel of its own because `mire_log.gd` was not in
+2.13's claim set (`WARN`/`ERROR` always got through regardless, so nothing was silently lost — a
+visibility gap, not a correctness one).
+
+**Fixed by adding `&"health"` to `CHANNELS`** and switching `player_health.gd`'s `LOG_CHANNEL`
+constant over to it, both as part of 3.8 (which was already deep in `player_health.gd` for hunger/
+stamina and needed `mire_log.gd` in its own claim set anyway).
 
 ### F-043 · The iron sword ships complete and nothing puts it in a player's hand — **decided, won't add**
 

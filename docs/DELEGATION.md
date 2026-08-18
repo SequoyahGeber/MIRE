@@ -103,6 +103,85 @@ exhaustion is detected only from a *failed* run's error text, and the pattern de
 this project's ordinary `rate_limit`/`429` vocabulary — `lane selftest` holds that line at 14 cases,
 so run it if you touch the classifier.
 
+**Task 3.8 ships hunger/stamina/food — extending `PlayerHealth` rather than a new service.**
+Three authority rows in one file, each documented in its own section of `player_health.gd`'s class
+doc: hp and hunger are HOST (hunger drains every host tick, empty hunger drains hp through
+`DownedState.apply_damage()` — the exact path a melee hit uses, so starving can down a player like
+anything else); stamina is CLIENT-LOCAL (§2.2 row 1, "own player movement") because it gates
+sprint/jump/dodge and gating a client's own movement from the host would reintroduce input lag.
+
+**Hunger**: `_hunger`/`_starvation_accum` are host-owned `Dictionary[int, float]`, ticked in
+`_physics_process` alongside the existing downed-state loop. `_tick_hunger(peer_id, downed_state,
+delta)` prorates against the PREVIOUS hunger value, not the whole delta — a tick spanning both
+"still had hunger" and "ran out partway through" (an oversized single step, whether a real engine
+hitch or a check fast-forwarding many seconds) must only charge starvation for the fraction actually
+spent at zero, or a big-enough delta applies years of accumulated damage in one frame. Found by
+`tools/player_vitals_check.gd`'s own fast-forwarding, not by inspection — worth remembering next
+time a `_physics_process`-driven accumulator takes an unbounded delta.
+
+Hunger piggybacks `net_health_snapshot` (now `revision, hp, hp_max, state, bleed_out_remaining,
+hunger, hunger_max` — **protocol version 9**, was 8) rather than a second RPC channel: published
+immediately on a discrete event (damage, revive, consume) and otherwise throttled to
+`HUNGER_SNAPSHOT_INTERVAL_SEC` (1 Hz) so a continuous per-tick drain never turns into a 60 Hz reliable
+RPC — the same reasoning `day_night.gd`'s `REPLICATE_INTERVAL_SEC` exists for. Read API:
+`local_hunger()`/`local_max_hunger()` (owner-only, via `local_hunger_changed`), `host_hunger(peer_id)`.
+
+**Stamina** lives entirely outside `_states`/`_hunger` — no host dictionary, no RPC gate. The owning
+client calls `local_tick_stamina(delta, draining)` every physics tick (drains at
+`stamina_drain_per_sec` while `draining`, else regenerates at `stamina_regen_per_sec`) and
+`local_try_spend_stamina(amount)` for a discrete cost (jump today; 3.8b's dodge is the next caller).
+**Hysteresis, not a bare `stamina > 0` gate**: `local_can_sprint()` also checks a `_sprint_locked_out`
+flag that `local_tick_stamina()` sets the instant stamina hits exactly zero and only clears once
+stamina regenerates back above `sprint_resume_fraction` (15% by default) of max. Without it, a player
+sitting at the boundary while still holding sprint flickers on and off every single physics frame —
+one frame of regen reads as "> 0" and re-enables sprint, which immediately drains it back to zero.
+Found the same way as the hunger prorating bug: by writing `tools/player_vitals_check.gd`'s own
+`_apply_horizontal_movement` integration test, which failed until this existed.
+
+The host keeps a **best-effort, advisory-only** copy via `host_stamina(peer_id)`, refreshed by
+`net_report_local_stamina` (`any_peer`, unreliable) every `stamina_reconcile_interval_sec` (2s
+default) from `local_tick_stamina()` itself. The host never derives gating from this — it exists so
+3.8b's server-validated dodge i-frames (or a future teammate HUD) have something recent to read.
+Losing a report changes nothing; the next one supersedes it.
+
+**Food**: `ItemDef` gained a `Consumable` export group — `hunger_restore: float` and `hp_restore:
+int`, both zero by default (a food item that doesn't heal, or doesn't fill you up, is valid). No real
+food `.tres` is authored here — that is task 3.2's job (hand-authored content), not this task's
+framework. `request_consume_item(item_id)` mirrors `request_revive()`'s exact shape: a local request
+id immediately, completion via `consume_confirmed(request_id, accepted, detail)`. The host validates
+alive + registered + `category == CONSUMABLE`, removes exactly one via
+`InventoryService.host_transaction()` (reusing the crafting seam, not reinventing it — a rejected
+transaction pays out nothing), then applies `hp_restore`/`hunger_restore` directly.
+
+**A latent class of bug, found and fixed while adding hunger's periodic publish, not introduced by
+it**: every `rpc_id(peer_id, ...)` send in this file (`net_health_snapshot`, `net_force_respawn`,
+`net_revive_confirmed`, `net_consume_confirmed`) now goes through a new `_peer_connected(peer_id)`
+guard before sending. D-035 deliberately keeps a departed peer's state alive through NetSession's
+grace window rather than releasing it on `peer_left`, which means a peer id can sit in
+`_states`/`_hunger` with no live transport connection behind it at all. The pre-existing RPCs here
+only fired on a discrete gameplay event, rare enough that this raced silently; hunger's own ambient
+1 Hz publish fires for every tracked peer regardless of any gameplay event, so it hit the grace window
+within seconds in `tools/player_vitals_net_check.gd`'s own run (`Attempt to call RPC with unknown peer
+ID`). **`autoload/inventory_service.gd`'s `_publish_snapshot` has the identical unguarded
+`net_inventory_snapshot.rpc_id(peer_id, ...)` call and is presumed to share the bug** — not fixed here
+(out of this task's claim), see F-057.
+
+Checks: `Godot --headless --path . --script tools/player_vitals_check.gd` (offline — stamina hysteresis
+and jump/sprint gating proven against a real `player.tscn`, hunger drain and prorated starvation
+proven by stepping `_physics_process` directly, consume proven end to end against a synthetic
+CONSUMABLE `ItemDef` injected into `Registry.items`) and
+`agent godot --script tools/player_vitals_net_check.gd` (two real ENet peers — hunger rides the real
+wire alongside hp, a client eats over the real RPC and the host's own inventory/hp/hunger all move,
+and the client's stamina reaches the host's advisory copy).
+
+**What is left for the playtest**: `ui/hud/vitals_hud.gd` (new autoload, `VitalsHud`, registered
+last) renders three bars bottom-left and an `[G] Eat <item>` hint when the selected hotbar slot holds
+a consumable — built in code like `InventoryUI`/`CraftingUI`, no `.tscn`. Eating is bound to the raw
+`KEY_G` rather than a new InputMap action, the same choice `InventoryUI` already made for hotbar
+slots 1-8, because `project.godot` was held by another lane's task (2.1j) when this shipped. Whether
+the numbers (20-minute hunger bar, 4s of sprint, a 15% resume threshold) feel right is 3.11's job, not
+this one's.
+
 **Task 2.11 ships the day/night cycle — HOST-authoritative time, replicated at 1 Hz, applied
 client-local.** `DayNight` (`systems/environment/day_night.gd`) is an autoload registered last (after
 `PlayerHealth`). §2.2's "day/night, wave director, Cycle state, active modifiers" row: HOST. The host

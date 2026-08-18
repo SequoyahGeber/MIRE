@@ -705,6 +705,28 @@ it), not an ownership rule: a dispatched agent takes a T0 task like any other.
 a commit boundary didn't contain — argues for review-first on `.tscn` specifically, never for
 bringing back hand-offs.
 
+### D-040 · 2026-08-17 · Stamina's host-side copy is advisory only; the host never gates on it
+
+Task 3.8 put stamina under §2.2's "own player movement" row (CLIENT), not the hp/hunger row (HOST),
+because it gates sprint/jump/dodge and a host-gated stamina check would reintroduce exactly the input
+lag every other client-authoritative system in this codebase exists to avoid. But an all-client value
+has no story for anti-cheat or for a future teammate HUD, so the owning client periodically reports
+its stamina to the host (`net_report_local_stamina`, unreliable, ~2s interval) purely so
+`PlayerHealth.host_stamina(peer_id)` has something recent — never as a source of truth the host
+enforces anything against. Losing a report changes nothing; the next one supersedes it.
+
+This matters most for **3.8b's dodge i-frames**, the next task built directly on this file: it must
+NOT assume `host_stamina()` is authoritative enough to reject a dodge for insufficient stamina — a
+report can be up to the reconcile interval stale, and a host-side rejection on stale data would deny
+a legitimate dodge the client's own (correct, fresher) stamina already paid for. 3.8b's spec already
+frames the host's job as the i-frame *decision* (whether the `dodging` flag blocks a landed hit), not
+a stamina *re-check* — this decision is what that framing rests on.
+
+**Would change my mind:** evidence that players can trivially fake `net_report_local_stamina` to grant
+themselves free dodges in a way that matters for a co-op game among friends (D-039's "cheating is
+irrelevant among friends" already covers movement speed on the same row) — or a design change that
+moves dodge off the client-authoritative movement row entirely.
+
 ---
 
 ## Template
