@@ -44,6 +44,28 @@ const RAY_ABOVE_GROUND: float = 12.0
 const RAY_BELOW_GROUND: float = 6.0
 const MAX_GROUND_SLOPE_DEG: float = 34.0
 
+## F-090: one map-wide MultiMesh per asset gave the renderer a single huge AABB — nothing could
+## ever be frustum- or distance-culled, so all ~10k plants rendered into the main view AND all
+## four shadow cascades every frame. Measured at 4.1 ms of a 9.3 ms frame on the M5 Pro
+## (tools/perf_probe.gd). Placements are now bucketed into square cells; each (asset, cell)
+## MultiMesh sits at its cell's centre, so distance culling has a real origin to measure from
+## and the far side of the map stops costing anything.
+## 48 m balances two costs the probe exposed: smaller cells cull tighter but multiply draw
+## calls (40 m cells pushed total draws from ~5.1k to ~6.0k); larger cells draw more of the
+## map per call. 48 m landed lowest on frame time of the sizes tried.
+const CELL_SIZE: float = 48.0
+## A cell's plants can stand up to half a diagonal from its centre; ranges get this as slack so
+## nothing vanishes while still close to the camera edge-on.
+const CELL_SLACK: float = CELL_SIZE * 0.75
+## Assets whose merged mesh AABB stands shorter than this are ground cover: no shadow caster
+## (a moss patch's four-cascade shadow is invisible at this art scale — the shadow pass was
+## 2.4 ms of the 4.1) and a shorter draw distance. Taller flora keeps shadows and reaches
+## further before fading.
+const SHORT_PLANT_MAX_HEIGHT: float = 0.75
+const GROUND_COVER_RANGE: float = 60.0
+const TALL_RANGE: float = 110.0
+const RANGE_FADE_MARGIN: float = 8.0
+
 ## Total plants attempted across the whole map. Roughly a third are rejected for
 ## landing on a prop, a slope or outside the ring, so the visible count is lower.
 @export var density: int = 4200
@@ -186,6 +208,27 @@ func _ready() -> void:
 	_scatter(layout)
 
 
+## Rebuild the scatter in place — same seed, same sequence, so a change of density budget adds
+## or removes a suffix of the same field rather than reshuffling it. GraphicsQuality calls this
+## when the preset changes mid-level; the ground colliders already exist by then, so none of
+## _ready's physics-frame waiting is needed.
+func rescatter() -> void:
+	if not enabled:
+		return
+	var layout := _read_layout()
+	if layout.is_empty():
+		return
+	for child: Node in get_children():
+		child.queue_free()
+	placed_count = 0
+	multimesh_count = 0
+	_placements.clear()
+	_zone_centres.clear()
+	_zone_pull.clear()
+	_variants.clear()
+	_scatter(layout)
+
+
 func _read_layout() -> Dictionary:
 	var text := FileAccess.get_file_as_string(layout_path)
 	if text.is_empty():
@@ -210,7 +253,14 @@ func _scatter(layout: Dictionary) -> void:
 	_collect_variants()
 
 	var space := get_world_3d().direct_space_state
-	for attempt in density:
+	# The preset scales the attempt budget, not the placements: the RNG sequence is untouched,
+	# so a reduced budget places a strict prefix of the full field. Presentation-only, so peers
+	# on different presets legitimately see different amounts of the same plants.
+	var budget := density
+	var quality: Node = get_node_or_null(^"/root/GraphicsQuality")
+	if quality != null:
+		budget = maxi(0, roundi(float(density) * float(quality.get(&"undergrowth_density_scale"))))
+	for attempt in budget:
 		var point := Vector2(
 			_rng.randf_range(-_bound, _bound), _rng.randf_range(-_bound, _bound)
 		)
@@ -228,17 +278,19 @@ func _scatter(layout: Dictionary) -> void:
 		var asset := _pick_variant(family)
 		if asset.is_empty():
 			continue
-		_placements.get_or_add(asset, [] as Array).append(
+		var cell := Vector2i(floori(point.x / CELL_SIZE), floori(point.y / CELL_SIZE))
+		(_placements.get_or_add(asset, {}) as Dictionary).get_or_add(cell, [] as Array).append(
 			Transform3D(Basis(Vector3.UP, _rng.randf_range(0.0, TAU)), hit["position"] as Vector3)
 			.scaled_local(Vector3.ONE * _rng.randf_range(0.86, 1.18))
 		)
 		placed_count += 1
 
 	for asset: String in _placements:
-		_emit(asset, _placements[asset] as Array)
+		_emit(asset, _placements[asset] as Dictionary)
 	print(
-		"UNDERGROWTH placed=%d assets=%d multimeshes=%d" % [
-			placed_count, _placements.size(), multimesh_count
+		"UNDERGROWTH placed=%d assets=%d multimeshes=%d cell=%.0fm ranges=%.0f/%.0fm" % [
+			placed_count, _placements.size(), multimesh_count,
+			CELL_SIZE, GROUND_COVER_RANGE, TALL_RANGE
 		]
 	)
 
@@ -409,9 +461,6 @@ func _ground_at(space: PhysicsDirectSpaceState3D, point: Vector2) -> Dictionary:
 	return hit
 
 
-## One MultiMeshInstance3D per mesh part per asset. A flora GLB is two to four
-## parts (one per material), so a family placed 300 times costs three draw calls,
-## not 300 nodes.
 ## Is this collider a placed prop, rather than the terrain?
 func _is_prop(collider: Node) -> bool:
 	var cursor: Node = collider
@@ -443,7 +492,13 @@ func _layout_height(point: Vector2) -> float:
 	return h00 + (h11 - h01) * tx + (h01 - h00) * tz
 
 
-func _emit(asset: String, transforms: Array) -> void:
+## One MultiMeshInstance3D per mesh part per (asset, cell). A flora GLB is two to four parts
+## (one per material), so draw calls now scale with how many cells sit inside the draw range,
+## not with how many plants exist on the map. Each instance is positioned at its cell's centre
+## — including the cell's mean ground height — with the plant transforms rebased onto it,
+## because visibility_range measures camera distance to the node's ORIGIN: an instance left at
+## the world origin would cull the plateau's plants by the height of the plateau.
+func _emit(asset: String, cells: Dictionary) -> void:
 	var packed: PackedScene = load("%s/%s.glb" % [FLORA_DIR, asset]) as PackedScene
 	if packed == null:
 		push_error("Undergrowth could not load flora asset %s" % asset)
@@ -451,23 +506,48 @@ func _emit(asset: String, transforms: Array) -> void:
 	var sample := packed.instantiate()
 	var parts: Array[MeshInstance3D] = []
 	_collect_meshes(sample, parts)
+
+	var merged := AABB()
+	var part_locals: Array[Transform3D] = []
+	for part in parts:
+		var local := _global_offset(part, sample)
+		part_locals.append(local)
+		var box := local * part.mesh.get_aabb()
+		merged = box if merged.size == Vector3.ZERO else merged.merge(box)
+	var short_plant := merged.size.y <= SHORT_PLANT_MAX_HEIGHT
+	var range_end := (GROUND_COVER_RANGE if short_plant else TALL_RANGE) + CELL_SLACK
+
 	var holder := Node3D.new()
 	holder.name = asset
 	add_child(holder)
-	for part in parts:
-		var local := _global_offset(part, sample)
-		var multimesh := MultiMesh.new()
-		multimesh.transform_format = MultiMesh.TRANSFORM_3D
-		multimesh.mesh = part.mesh
-		multimesh.instance_count = transforms.size()
-		for index in transforms.size():
-			multimesh.set_instance_transform(index, (transforms[index] as Transform3D) * local)
-		var instance := MultiMeshInstance3D.new()
-		instance.name = part.name
-		instance.multimesh = multimesh
-		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-		holder.add_child(instance)
-		multimesh_count += 1
+	for cell: Vector2i in cells:
+		var transforms: Array = cells[cell] as Array
+		var mean_height: float = 0.0
+		for transform: Transform3D in transforms:
+			mean_height += transform.origin.y
+		mean_height /= transforms.size()
+		var centre_2d := (Vector2(cell) + Vector2(0.5, 0.5)) * CELL_SIZE
+		var centre := Vector3(centre_2d.x, mean_height, centre_2d.y)
+		var rebase := Transform3D(Basis.IDENTITY, -centre)
+		for part_index: int in parts.size():
+			var multimesh := MultiMesh.new()
+			multimesh.transform_format = MultiMesh.TRANSFORM_3D
+			multimesh.mesh = parts[part_index].mesh
+			multimesh.instance_count = transforms.size()
+			for index: int in transforms.size():
+				multimesh.set_instance_transform(
+					index, rebase * (transforms[index] as Transform3D) * part_locals[part_index])
+			var instance := MultiMeshInstance3D.new()
+			instance.name = "%s_%d_%d" % [parts[part_index].name, cell.x, cell.y]
+			instance.multimesh = multimesh
+			instance.position = centre
+			instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF if short_plant \
+				else GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+			instance.visibility_range_end = range_end
+			instance.visibility_range_end_margin = RANGE_FADE_MARGIN
+			instance.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+			holder.add_child(instance)
+			multimesh_count += 1
 	sample.free()
 
 

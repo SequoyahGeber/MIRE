@@ -35,6 +35,11 @@ const SKY_NIGHT_FULL_ELEVATION: float = -14.0
 const SKY_NIGHT_START_ELEVATION: float = -1.0
 ## Half-width, in degrees of elevation, of the golden hour either side of the horizon.
 const GOLDEN_HALF_WIDTH: float = 18.0
+## F-090: DayNight advances time every physics tick, and a sun transform that dirties every
+## tick keeps the PhysicalSky radiance perpetually regenerating for ~0.001° of motion no eye
+## can see. The applied hour is stepped instead: at the default 900 s day this moves the sun
+## about five times a second in ~0.1° increments — under the sun's own 1.1 shadow blur.
+const SUN_STEP_HOURS: float = 0.005
 ## Night ends of the sky-material lerps. Their day ends are read off the authored resource in
 ## _ready() rather than written here, so noon renders exactly as the scene author tuned it and this
 ## fix can only change how dusk and night look.
@@ -68,6 +73,17 @@ var _day_rayleigh_color := Color(0.2, 0.4, 0.9)
 var _day_mie_color := Color(0.94, 0.7, 0.48)
 var _day_ground_color := Color(0.06, 0.085, 0.07)
 var _day_ambient_color := Color(1.0, 1.0, 1.0)
+# The driver values the last full apply ran with — empty forces the first apply through. F-090:
+# DayNight re-applies ~60x/s, and outside dawn/dusk every driver below is a saturated constant,
+# so the sky/environment/fog writes were identical rewrites that still dirtied the sky's
+# radiance. Comparing the drivers is the cheap way to skip them; any input change (time,
+# haze_strength, god_ray_strength) lands in the vector, so explicit setters need no special
+# invalidation.
+var _applied_drivers := PackedFloat64Array()
+# The stepped hour the sun/star transforms were last written at. NAN so the first apply always
+# writes. Rewriting an identical rotation still dirties the Node3D and the light behind it,
+# which is exactly the per-tick radiance invalidation this file is trying to stop.
+var _applied_sun_hour: float = NAN
 
 
 func _ready() -> void:
@@ -143,7 +159,8 @@ func set_cycle_enabled(value: bool) -> void:
 func apply_atmosphere() -> void:
 	if _environment == null or sun == null:
 		return
-	var solar_phase := (time_of_day - 6.0) / 24.0 * TAU
+	var hour := snappedf(time_of_day, SUN_STEP_HOURS)
+	var solar_phase := (hour - 6.0) / 24.0 * TAU
 	var elevation := sin(solar_phase) * 90.0
 	var daylight := smoothstep(-7.0, 12.0, elevation)
 	var warm_horizon := 1.0 - smoothstep(10.0, 42.0, elevation)
@@ -152,9 +169,25 @@ func apply_atmosphere() -> void:
 		SKY_NIGHT_FULL_ELEVATION, SKY_NIGHT_START_ELEVATION, elevation
 	)
 	var golden := 1.0 - smoothstep(0.0, GOLDEN_HALF_WIDTH, absf(elevation))
-	var azimuth := -118.0 + (time_of_day / 24.0) * 236.0
+	var azimuth := -118.0 + (hour / 24.0) * 236.0
 
-	sun.rotation_degrees = Vector3(-elevation, azimuth, 0.0)
+	# The sun's angle and the wheeling star dome move on the stepped hour — once per step, never
+	# a rewrite of the same value (see _applied_sun_hour).
+	if hour != _applied_sun_hour:
+		_applied_sun_hour = hour
+		sun.rotation_degrees = Vector3(-elevation, azimuth, 0.0)
+		if _star_field != null and starlight > 0.001:
+			_star_field.call(&"set_sky_rotation", hour / 24.0 * TAU)
+
+	# Everything below only responds to these drivers, so while they hold — which is every tick
+	# outside the dawn/dusk windows — the writes are identical and skipping them is invisible.
+	var drivers := PackedFloat64Array([
+		daylight, warm_horizon, starlight, sky_night, golden, haze_strength, god_ray_strength
+	])
+	if drivers == _applied_drivers:
+		return
+	_applied_drivers = drivers
+
 	var daylight_color := Color(1.0, 0.955, 0.86)
 	var sunrise_color := Color(1.0, 0.58, 0.3)
 	var horizon_mix := sunrise_color.lerp(daylight_color, 1.0 - warm_horizon * 0.72)
@@ -188,6 +221,5 @@ func apply_atmosphere() -> void:
 	if _cloud_deck != null:
 		_cloud_deck.call(&"set_sky_light", daylight, golden)
 	if _star_field != null:
+		# The wheel itself (set_sky_rotation) turns above the gate, every tick of the night.
 		_star_field.call(&"set_night_amount", starlight)
-		# The field wheels on the same clock the sun turns on, so a long night visibly passes.
-		_star_field.call(&"set_sky_rotation", time_of_day / 24.0 * TAU)

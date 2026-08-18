@@ -76,7 +76,7 @@ shadow_blur = 1.1
 directional_shadow_mode = 2
 directional_shadow_blend_splits = true
 directional_shadow_fade_start = 0.88
-directional_shadow_max_distance = 105.0
+directional_shadow_max_distance = 85.0
 
 [node name="Atmosphere" type="Node" parent="."]
 script = ExtResource("3_atmosphere")

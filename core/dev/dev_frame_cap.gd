@@ -60,6 +60,24 @@ func _register_commands() -> void:
 		return
 	console.call("register", &"fps_cap", _cmd_fps_cap,
 		"fps_cap [n] — show or set the frame cap; 0 uncaps (dev runs only)")
+	console.call("register", &"vsync", _cmd_vsync,
+		"vsync [on|off] — off lets the fps counter exceed the panel's refresh rate (F-090)")
+
+
+## Vsync stays ON by default — retail-correct, tear-free, and F-090 measured its cost at zero
+## while the frame is slower than the panel. The knob exists because once the frame IS faster
+## than the panel, vsync is what pins the fps counter to the refresh rate, and every future
+## "why is it exactly 120" investigation should be one console command, not a project edit.
+func _cmd_vsync(args: PackedStringArray) -> String:
+	if not args.is_empty():
+		if args[0] != "on" and args[0] != "off":
+			return "usage: vsync [on|off]"
+		DisplayServer.window_set_vsync_mode(
+			DisplayServer.VSYNC_ENABLED if args[0] == "on" else DisplayServer.VSYNC_DISABLED)
+	if DisplayServer.window_get_vsync_mode() == DisplayServer.VSYNC_DISABLED:
+		return "vsync is off — frame rate is uncapped (fps_cap still applies if set)"
+	return "vsync is on — frame rate tops out at the panel's %.0f Hz" % \
+		DisplayServer.screen_get_refresh_rate()
 
 
 func _cmd_fps_cap(args: PackedStringArray) -> String:

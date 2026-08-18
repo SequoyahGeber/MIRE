@@ -2312,3 +2312,18 @@ Notes along the way:
 Files: `autoload/build_service.gd`, `tools/build_check.gd`, `systems/building/buildable_def.gd`, `systems/building/buildable_piece.gd`
 
 Commit at time of writing: `9003c75`
+
+---
+
+### DONE · F-090 · coil23 · 2026-08-18T09:06:54+00:00
+
+**Frame budget audit: ~100 fps where hundreds are expected**
+
+Audit + fix. Shipped default now pins 120 (vsync), uncapped 149 fps / 6.77 ms at 3024x1898, gfx medium 190, gfx low 283 (draws 5399->3324). Undergrowth: 48m cell MultiMeshes, origin at cell centre incl. mean height, <0.75m assets shadowless/60m range, tall 110m; atmosphere: 0.005h sun step + driver-gated writes; hollowmere Sun shadow distance 105->85 (flagged for eyes); DevFrameCap vsync cmd; GraphicsQuality autoload registered (D-055). Verified: perf_probe fullscreen runs, flora/atmosphere_night/day_night checks 0 failures, --quit-after 5 loads clean.
+
+Notes along the way:
+- Probe overturned the read-based ranking: undergrowth 4.1ms (map-wide MultiMeshes = zero culling), shadows 3.1ms, volumetric innocent at 0.2ms. Fixed by cell-chunked scatter + tiered shadows/ranges + stepped sun hour + GraphicsQuality presets. 107 -> 149 uncapped, low preset 283.
+
+Files: `tools/perf_probe.gd`, `world/environment/playtest_atmosphere.gd`, `world/gen/undergrowth.gd`, `systems/environment/day_night.gd`, `core/dev/dev_frame_cap.gd`, `levels/hollowmere.tscn`, `autoload/graphics_quality.gd`
+
+Commit at time of writing: `b991014`
