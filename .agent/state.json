@@ -1,14 +1,49 @@
 {
   "claims": {
+    "assets/flora": {
+      "agent": "moss11",
+      "at": "2026-08-18T00:57:48+00:00",
+      "task": "2.1d"
+    },
     "assets/maps": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
+    "assets/source/flora_set.blend": {
+      "agent": "moss11",
+      "at": "2026-08-18T00:57:48+00:00",
+      "task": "2.1d"
+    },
     "assets/source/playtest_hollow.blend": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
+    },
+    "docs/ASSET_TRACKER.md": {
+      "agent": "moss11",
+      "at": "2026-08-18T00:57:48+00:00",
+      "task": "2.1d"
+    },
+    "levels/playtest_hollow.tscn": {
+      "agent": "moss11",
+      "at": "2026-08-18T00:57:48+00:00",
+      "task": "2.1d"
+    },
+    "tools/blender/build_flora_set.py": {
+      "agent": "moss11",
+      "at": "2026-08-18T00:57:48+00:00",
+      "task": "2.1d"
+    },
+    "tools/blender/mire_art.py": {
+      "agent": "moss11",
+      "at": "2026-08-18T00:57:48+00:00",
+      "task": "2.1d"
+    },
+    "tools/flora_check.gd": {
+      "agent": "moss11",
+      "at": "2026-08-18T00:57:48+00:00",
+      "task": "2.1d"
     },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
@@ -19,9 +54,35 @@
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
+    },
+    "world/gen/undergrowth.gd": {
+      "agent": "moss11",
+      "at": "2026-08-18T00:57:48+00:00",
+      "task": "2.1d"
     }
   },
   "in_flight": {
+    "2.1d": {
+      "agent": "moss11",
+      "files": [
+        "docs/ASSET_TRACKER.md",
+        "tools/blender/build_flora_set.py",
+        "tools/blender/mire_art.py",
+        "assets/flora",
+        "assets/source/flora_set.blend",
+        "world/gen/undergrowth.gd",
+        "tools/flora_check.gd",
+        "levels/playtest_hollow.tscn"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-18T00:57:52+00:00",
+          "by": "moss11",
+          "text": "Batch A-000V (vegetation expansion) taken OUT OF QUEUE ORDER at Sequoyah's direct request \u2014 'make a whole bunch of vegetation assets... little plants, bushes, more grass, maybe more trees'. A-009 stays NEXT and unstarted, same precedent as A-004R and A-021S."
+        }
+      ],
+      "started": "2026-08-18T00:57:48+00:00"
+    },
     "2.1j": {
       "agent": "tine18",
       "files": [
@@ -2230,7 +2291,7 @@
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.12": {
-      "done_at": "2026-08-18T00:18:12+00:00",
+      "done_at": "2026-08-18T01:01:45+00:00",
       "done_by": "quill15",
       "est": "1.5",
       "milestone": "M0",
@@ -2505,7 +2566,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
@@ -3550,6 +3611,27 @@
       "status": "todo",
       "tier": "F",
       "title": "A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds"
+    },
+    "F-058": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`docs/FINDINGS.md` carried two F-055s and two F-056s at once \u2014 concurrent lanes both used `agent brief`'s \"next number\""
+    },
+    "F-059": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`InventoryService._publish_snapshot`'s `net_inventory_snapshot.rpc_id()` is unguarded against a departed peer, same shape as the bug task 3.8 fixed in `player_health.gd`"
+    },
+    "F-060": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Two-process net check authors: `local_peer_id() > HOST_PEER_ID` is not proof of a live connection, and mutating what `Node.get()` returns on a typed Dictionary property may not stick"
     }
   },
   "version": 1

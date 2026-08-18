@@ -1954,6 +1954,57 @@ def cmd_autoload(args):
     return 0
 
 
+FINDINGS = os.path.join(ROOT, "docs", "FINDINGS.md")
+
+
+def cmd_finding(args):
+    """Allocate the next F-number and append the entry, atomically.
+
+    `docs/` is deliberately unclaimed (F-006) so no lane ever blocks on it — but that also means two
+    lanes filing at the same moment both read the same "next number" from `agent brief` and both use
+    it. It has already happened four times: F-012, F-052, F-055 and F-056 each exist twice, and a
+    duplicate id is worse than a missing one because `agent brief F-055` then briefs the wrong bug.
+
+    Reading the number and writing the entry has to be one operation under one lock. Body comes from
+    stdin so it can be as long as it needs to be without fighting the shell."""
+    if not args:
+        die('usage: agent finding "Short statement of the problem" '
+            '[--area netcode] [--severity medium]\n'
+            '  the body is read from stdin:  agent finding "..." <<\'EOF\' ... EOF')
+    title = args[0]
+    area = args[args.index("--area") + 1] if "--area" in args else "?"
+    severity = args[args.index("--severity") + 1] if "--severity" in args else "medium"
+    if severity not in ("high", "medium", "low"):
+        die("severity must be high, medium or low (see the table in docs/FINDINGS.md)")
+    body = "" if sys.stdin.isatty() else sys.stdin.read().strip()
+    if not body:
+        die("no body on stdin. Be specific or don't file — name a file and a concrete failure.")
+
+    me = whoami()
+    with file_lock("findings", timeout=300):
+        with open(FINDINGS) as f:
+            text = f.read()
+        used = {int(n) for n in re.findall(r"^### F-(\d{3})", text, re.M)}
+        nxt = max(used) + 1 if used else 1
+        fid = "F-%03d" % nxt
+
+        entry = ("### %s · %s\n\n**Area:** %s · **Severity:** %s · **Found:** %s by %s\n\n%s\n\n---\n\n"
+                 % (fid, title, area, severity, now()[:10], me, body))
+        marker = "\n## Resolved\n"
+        if marker in text:
+            text = text.replace(marker, "\n" + entry + "## Resolved\n", 1)
+        else:
+            text = text.rstrip() + "\n\n" + entry
+        tmp = FINDINGS + ".tmp"
+        with open(tmp, "w") as f:
+            f.write(text)
+        os.replace(tmp, FINDINGS)
+
+    ok("filed %s — %s" % (fid, title[:70]))
+    print("  %sdocs/FINDINGS.md · claim it later with:  agent brief %s%s" % (C["dim"], fid, C["x"]))
+    return 0
+
+
 def cmd_reap(args):
     """Release claims held by a lane whose process is gone.
 
@@ -2162,7 +2213,7 @@ COMMANDS = {
     # Orchestration (D-036)
     "order": cmd_order, "dispatch": cmd_dispatch, "lanes": cmd_lanes,
     "collect": cmd_collect, "report": cmd_report, "reap": cmd_reap, "godot": cmd_godot,
-    "saturate": cmd_saturate,
+    "saturate": cmd_saturate, "finding": cmd_finding,
     "autoload": cmd_autoload,
 }
 
@@ -2184,6 +2235,7 @@ Verifying — always launch the engine through this, never bare (F-044):
 
   agent godot --script tools/x_check.gd     headless Godot, under a lock
   agent autoload <Name> <res://path.gd>     register an autoload atomically — no claim needed
+  agent finding "title" [--area] [--severity]  file a finding; body on stdin, number allocated safely
 
 Directing three worker accounts (docs/ORCHESTRATION.md):
 

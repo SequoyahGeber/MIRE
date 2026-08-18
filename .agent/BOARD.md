@@ -8,13 +8,17 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
+| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | moss11 | 2026-08-18 00:57 | `docs/ASSET_TRACKER.md`, `tools/blender/build_flora_set.py`, `tools/blender/mire_art.py`, `assets/flora`, `assets/source/flora_set.blend`, `world/gen/undergrowth.gd`, `tools/flora_check.gd`, `levels/playtest_hollow.tscn` |
 | **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-18 00:43 | `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `assets/maps`, `assets/source/playtest_hollow.blend` |
+
+**2.1d notes:**
+- Batch A-000V (vegetation expansion) taken OUT OF QUEUE ORDER at Sequoyah's direct request — 'make a whole bunch of vegetation assets... little plants, bushes, more grass, maybe more trees'. A-009 stays NEXT and unstarted, same precedent as A-004R and A-021S.
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███████░░░` 33/50 | 17 |
+| Findings | `██████░░░░` 33/53 | 20 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 18/23 | 5 |
@@ -65,6 +69,9 @@
 | ⬜ | **F-055** Committed HEAD boots with a failed autoload — `c187ede` deleted a script but left it registered | todo |
 | ⬜ | **F-056** The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join | todo |
 | ⬜ | **F-057** A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds | todo |
+| ⬜ | **F-058** `docs/FINDINGS.md` carried two F-055s and two F-056s at once — concurrent lanes both used `agent brief`'s "next number" | todo |
+| ⬜ | **F-059** `InventoryService._publish_snapshot`'s `net_inventory_snapshot.rpc_id()` is unguarded against a departed peer, same shape as the bug task 3.8 fixed in `player_health.gd` | todo |
+| ⬜ | **F-060** Two-process net check authors: `local_peer_id() > HOST_PEER_ID` is not proof of a live connection, and mutating what `Node.get()` returns on a typed Dictionary property may not stick | todo |
 
 ## Done
 

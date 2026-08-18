@@ -1704,3 +1704,13 @@ Notes along the way:
 Files: `systems/health/player_health.gd`, `systems/health/downed_state.gd`, `systems/inventory/item_def.gd`, `entities/player/player_controller.gd`, `ui/hud/vitals_hud.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `core/util/mire_log.gd`, `tools/player_health_check.gd`, `tools/player_vitals_check.gd`, `tools/player_vitals_net_check.gd`
 
 Commit at time of writing: `d8ee65e`
+
+---
+
+### DONE · 0.12 · quill15 · 2026-08-18T01:01:45+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+Fix F-058: added 'agent finding' so the F-number is allocated and the entry appended in one locked operation. docs/ is unclaimed by design (F-006) so lanes never block on it, which also let two lanes read the same next-number from agent brief — F-012, F-052, F-055 and F-056 each exist twice, and a duplicate id is worse than a missing one because agent brief then briefs the wrong bug. Proved with three concurrent filings getting three distinct numbers. The four existing duplicate pairs still need renumbering by hand; not done here because other docs reference them.
+
+Commit at time of writing: `6acd7c1`
