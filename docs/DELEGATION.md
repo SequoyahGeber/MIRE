@@ -361,6 +361,28 @@ fans peers out from the spawn point, so a fixed spot lands on somebody's body an
 refuses it as OVERLAPS — the cost path is never reached and you measure the wrong refusal.
 `build_net_check` derives the spot from the client's actual body position; copy that.
 
+### 2026-08-18 — destruction now actually mirrors placement (F-084)
+
+`_process_destroy` (`autoload/build_service.gd`) checked only `_placed.has(piece_name)` — sequential
+node names (`Piece1`, `Piece2`, ...) meant any peer could free and refund any structure from anywhere
+by guessing them. It now calls the exact same `_builder_position(peer_id)` placement already trusts
+nobody about, and refuses (`VALIDATOR.Reason.OUT_OF_RANGE`, "too far away") before any refund or
+`queue_free()` if that body is farther than the piece def's own `max_build_range_m`. **Ownership is
+still not checked, on purpose** — "refund goes to whoever tears it down, not to whoever built it" was
+already 3.6's design, so any teammate clearing a misplaced piece must keep working; the fix adds only
+the range gate 3.6's own "Destruction mirrors it" line always implied. Whoever wires the gameplay
+caller (F-086) or gives buildables a real damage method (F-085) should assume destroy is range-gated
+identically to placement — there is no separate "destroy range" field, it reads `max_build_range_m`.
+
+**For the next `tools/*_net_check.gd` that needs a piece of world state far from its one real
+client:** you don't need a second player body. `service.call(&"_spawn_piece", id, transform)` spawns
+a real, replicated piece anywhere (it skips `_process_place`'s validation, which is the point — you
+are placing world state to test against, not re-testing placement); giving it a destroy-able identity
+means writing to `BuildService._placed` yourself, and F-060 applies: capture `service.get(&"_placed")`
+to a `Dictionary` local, mutate that, then `service.set(&"_placed", ...)` it back explicitly, or the
+regression guard (`tools/net_check_pattern_check.gd`) has nothing to say about it but the mutation may
+not stick anyway. `tools/build_net_check.gd`'s new destroy-range assertions are the worked example.
+
 ### 2026-08-18 — the 3.4 design check is done: the schema holds, and docs/POWERUPS.md is now the authoring spec (reed16)
 
 The question that had to be answered before 3.4 hand-authors 40–60 `.tres` files: can the whole

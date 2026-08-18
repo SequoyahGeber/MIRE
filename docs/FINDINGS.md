@@ -842,23 +842,6 @@ vertical snapping for stacked pieces needs an explicit anchor or separate rule.
 
 ---
 
-### F-084 · Any client can destroy any buildable by its guessable node name from any distance
-
-**Area:** netcode · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.6 review
-
-`net_request_destroy()` correctly routes the request to the host, but `_process_destroy()` only
-checks that `_placed` contains the supplied name (`autoload/build_service.gd:165`). It never checks
-the requesting player's position, range, ownership, line of sight, or any other destruction rule
-before freeing shared state and refunding the requester. Names are sequential (`Piece1`, `Piece2`,
-...) at `autoload/build_service.gd:269`, so a guest can remotely delete every structure on the map
-and collect each refund by enumerating names. This violates 3.6's "Destruction mirrors it" contract:
-host execution alone is not host validation.
-
-Resolve the requesting host-side player body and enforce the intended destruction range/policy
-before refunding or freeing the piece. Add the missing path to the two-process check.
-
----
-
 ### F-085 · Buildables join `damageable` without implementing its required damage method
 
 **Area:** building · **Severity:** medium · **Found:** 2026-08-18 by lc1 during the 3.6 review
@@ -955,6 +938,47 @@ The level renders at ~100 fps on the M5 Pro where the scene complexity justifies
 ---
 
 ## Resolved
+
+### F-084 · Any client can destroy any buildable by its guessable node name from any distance — **fixed**
+
+**Area:** netcode · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.6 review ·
+**Resolved 2026-08-18 by lp.**
+
+`net_request_destroy()` correctly routed the request to the host, but `_process_destroy()` only
+checked that `_placed` contained the supplied name (`autoload/build_service.gd:165`). It never
+checked the requesting player's position, range, ownership, line of sight, or any other destruction
+rule before freeing shared state and refunding the requester. Names are sequential (`Piece1`,
+`Piece2`, ...) at `autoload/build_service.gd:269`, so a guest could remotely delete every structure
+on the map and collect each refund by enumerating names. This violated 3.6's "Destruction mirrors
+it" contract: host execution alone is not host validation.
+
+**Fix:** `_process_destroy` now resolves the requester's own host-known body through
+`_builder_position(peer_id)` — the exact function `_process_place` already trusts nobody about —
+and, before any refund or `queue_free()`, refuses with `Reason.OUT_OF_RANGE` ("too far away") if
+that body is farther from the piece than the piece def's own `max_build_range_m`. This is scoped
+deliberately to range only: **ownership is not checked**, because 3.6 already made "refund goes to
+whoever tears it down, not to whoever built it" an intentional design choice (comment left in place
+in `build_service.gd`) — any teammate clearing a misplaced piece is meant to work. Line of sight is
+out of scope for the same reason placement itself doesn't check it. Decision recorded in
+`docs/SPECS.md`'s new F-084 block rather than a `D-0NN`, since it only narrows this one finding's
+fix and doesn't bind a future task.
+
+**Verified** with `agent godot --script tools/build_net_check.gd` — the "missing path" the finding
+asked for. The driver plants a second piece 100 m from the real client (bypassing `_process_place`'s
+own range check via a direct `_spawn_piece` call, since faithfully placing it that far would require
+a second player body) and gives it a `_placed` entry; the real client then sends two genuine
+`net_request_destroy` RPCs over ENet: the far piece is refused (`"too far away"`, `placed_count`
+unchanged, no refund), and the piece the client actually built and is standing beside is destroyed
+and refunded `floor(4 * 0.5) = 2 log` as before. 19/19 PASS, `failures=0`, `BUILD_NET_CHECK
+failures=0`, zero `ERROR:` lines. The pre-existing offline `tools/build_check.gd` (59 assertions) is
+unaffected and stays green — its host peer's body-less fallback position (`Vector3.ZERO`) sits
+within `wall_wood`'s 6 m range of every spot it destroys. `tools/net_check_pattern_check.gd` (F-060's
+regression guard) stayed clean against the new code: the `_placed` reflection mutation captures to a
+`Dictionary` local and `.set()`s it back explicitly rather than chaining off `.get()`.
+
+No RPC was added or changed and no replicated shape moved, so `PROTOCOL_VERSION` did not bump.
+
+---
 
 ### F-091 · Two ways the harness lets a fed lane sit idle: a parked lane is never restarted, and a lane's own claim blocks deepening its queue — **fixed**
 

@@ -356,6 +356,26 @@ Registration via `agent autoload` (preamble rule, F-051).
 
 ## 3.7 · Buildable pieces + Wards (T0) — content over 3.6's def, A-013/A-007 assets.
 
+## F-084 · `net_request_destroy` freed and refunded any piece by name alone, with no range check
+
+3.6's spec line above already says "Destruction mirrors it" (placement's host-revalidates-from-
+scratch contract) but the shipped `_process_destroy` only checked `_placed.has(piece_name)` —
+`autoload/build_service.gd:165` at the time of the 3.6 review. Piece names are sequential
+(`Piece1`, `Piece2`, ...), so any connected peer could free and refund every structure on the map
+by enumerating names, from anywhere. **Claim:** `autoload/build_service.gd`,
+`tools/build_net_check.gd`. **Fix:** resolve the requester's own host-known body via the same
+`_builder_position(peer_id)` placement already uses, and refuse (`Reason.OUT_OF_RANGE`, "too far
+away") before any refund or `queue_free()` if it is farther than the piece def's own
+`max_build_range_m`. **Ownership is deliberately not checked** — 3.6 already made "refund goes to
+whoever tears it down, not to whoever built it" an intentional design choice (any teammate may
+clear a misplaced piece), so the fix adds only the range gate, not an owner gate. Line of sight is
+out of scope too: nothing else in the building system checks it (placement doesn't either), and
+inventing a new rule class for destroy alone would stop it mirroring placement.
+**Shipped 2026-08-18** (`docs/FINDINGS.md` Resolved has the full verification). Re-verify with
+`agent godot --script tools/build_net_check.gd`, which now proves both directions over real ENet: a
+piece planted 100 m from the client is refused by name alone, and the piece the client actually
+built and stands beside still destroys and refunds correctly.
+
 ## 3.8 · Hunger/health/stamina (T1) — **GATE: 2.13 shipped (PlayerHealth exists).**
 
 Extends `PlayerHealth` rather than a new service: hunger drains on host tick, empty hunger drains
