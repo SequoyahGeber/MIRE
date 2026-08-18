@@ -75,6 +75,48 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — `dodging` now means "invulnerable", not "dashing" (F-125/D-087) — read this before touching the dodge or the powerup that extends it (yarrow21)
+
+`entities/player/player_controller.gd` has **two** dodge windows now, and which one you read decides
+whether your change is correct:
+
+```gdscript
+_dodge_time_remaining   # the dash MOVEMENT window == dodge_duration_sec.
+                        # _apply_horizontal_movement()'s dash branch keys off THIS.
+_iframe_time_remaining  # the I-FRAME window == dodge_duration_sec + PowerupService.local_stat(
+                        #   &"dodge_iframe_seconds", 0.0), floored at dodge_duration_sec.
+dodging                 # the replicated bool. Cleared with the I-FRAME window, so it is true for
+                        # the LATER of the two. It is what the host reads.
+```
+
+**The trap, stated plainly:** `dodging` is no longer "a dash is in progress" — D-072 said it was, and
+F-125/D-087 deliberately relaxed that. Anything that wants "is the player mid-dash" must read
+`_dodge_time_remaining`, not the flag. Reading the flag for movement is precisely the bug F-125
+fixed: it turns the i-frame powerup into a longer dash, moving where the player ends up.
+
+**The host side is unchanged and needs no change.** `systems/health/player_health.gd`'s
+`_is_dodging(peer_id)` still reads `body.get(&"dodging")`, and that is correct — it exists to answer
+"should this hit be ignored", which is exactly what the flag now means. Same property, same
+`REPLICATION_MODE_ALWAYS` slot, **no protocol bump**.
+
+**Renaming `dodging` to `invulnerable` is wanted and unclaimed.** It is a pure rename with no
+wire-format change (the property name is already the wire name); it was not done here only because
+`player_health.gd` was held by task 3.14 all session. Whoever holds both files at once should do it —
+touch `player_controller.gd`, `player_health.gd`, `tools/dodge_check.gd`, `tools/dodge_net_check.gd`,
+and `core/net/net_version.gd`'s comment.
+
+**`dodge_iframe_seconds` is live**, so `docs/POWERUPS.md` lists it under wired stats rather than
+Pending. Its floor rule is not tidiness: the window may grow but never shrink below
+`dodge_duration_sec`, because D-072's replication guarantee rests on the true-window comfortably
+exceeding one `NetConfig.PLAYER_SYNC_INTERVAL_SEC`. A negative modifier that undercut it would
+produce intermittently *missing* i-frames, not shorter ones.
+
+**Check:** `agent godot --script tools/dodge_check.gd` — its last section grants 3 real stacks of
+`content/powerups/thin_step.tres` and asserts, at one instant, that `dodging` is still true past
+`dodge_duration_sec` while `_dodge_time_remaining == 0` and speed is below `dodge_impulse`. That
+pair is the regression guard; assert both or the wrong fix passes.
+
+
 ### 2026-08-18 — Task 3.14: gamerules ship — `RuleDef` content family, host-replicated `RuleService`, `rule`/`rules`, eight knobs migrated with defaults unchanged (hollow7)
 
 **What shipped, verified:** `systems/rules/rule_def.gd` (`class_name RuleDef`, a `Resource` — the
