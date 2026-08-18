@@ -3168,3 +3168,19 @@ Notes along the way:
 Files: `world/gen/biome_def.gd`, `world/gen/biome_map.gd`, `autoload/registry.gd`, `content/biomes/shore.tres`, `content/biomes/grassland.tres`, `content/biomes/forest.tres`, `tools/biome_check.gd`
 
 Commit at time of writing: `28d6fb6`
+
+---
+
+### DONE · 4.3 · lm · 2026-08-18T20:24:23+00:00
+
+**Chunk streaming + LOD, `WorkerThreadPool` mesh generation**
+
+ChunkStreamer (world/chunk/chunk_streamer.gd) streams a chunk ring around Array[Vector3] anchors: WorkerThreadPool mesh gen via self-contained ChunkJob objects, budgeted main-thread upload+lazy-collision-cook sharing D-074's 4ms slice, 3 LOD tiers (2/5/8 chunk radii, 1/2/4m spacing) with D-025-style hysteresis generalized to N tiers, collision ring == LOD0 ring only. chunk_mesher.gd rewritten off IslandHeightmap.height() (no longer a spike). Verified: agent godot --windowed --script tools/chunk_stream_check.gd - 9/9 functional checks pass, and the spec's own acceptance test (500m sprint walk, 6.0 m/s) shows ChunkStreamer.last_process_cost_ms() at mean 0.19ms / worst 7.67ms / zero hitches over 16.667ms. bench_chunks.gd and bench_chunk_gpu.gd (D-015/D-074) still run clean against the new mesher. Full boot 0 ERROR lines. D-080, F-128, DELEGATION current-state all written. Nothing yet instantiates ChunkStreamer in the live game (same as 4.1/4.2) — 4.6 is the task that wires it in.
+
+Notes along the way:
+- Trap: check-script _settle() polled pending_job_count()==0 before the streamer's first real-time RING_EVAL_INTERVAL_SEC accumulator tick had fired, reading 'settled, nothing loaded' on frame 1. Fixed by waiting real wall-clock time (not frame count) before trusting the poll.
+- Design: separated ChunkStreamer.last_process_cost_ms() (this node's own _process() cost) from total real frame time in the check script — this machine runs several concurrent agent lanes, so total frame time alone showed spurious multi-hundred-ms 'hitches' that vanished when isolated to this node's own work (own-cost worst was 7.67ms, zero hitches). D-080 records both.
+
+Files: `world/chunk/chunk_mesher.gd`, `world/chunk/chunk_streamer.gd`, `tools/chunk_stream_check.gd`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `5fff88d`

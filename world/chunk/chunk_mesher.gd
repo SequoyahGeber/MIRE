@@ -1,68 +1,87 @@
 class_name ChunkMesher
 extends RefCounted
 
-## SPIKE R2 — throwaway. Answers "how fast can GDScript build a terrain chunk mesh?"
-## This is NOT the real terrain system: no LOD, no materials, no collision, no biomes.
-## Delete or rewrite once the measurement is recorded in docs/DECISIONS.md (D-015).
+## Task 4.3 — the real terrain chunk mesher. Heights come from `IslandHeightmap.height()` (task
+## 4.1, D-075), the deterministic cross-platform-safe field: no more R2's own placeholder
+## FastNoiseLite. Footprint and LOD0 vertex/tri counts are unchanged from the R2/R2b spikes
+## (D-015/D-074), so `tools/bench_chunks.gd` and `tools/bench_chunk_gpu.gd` still run unmodified —
+## they now build real terrain instead of placeholder noise, which does not affect either spike's
+## already-recorded timing verdict (both measured shape/cost, never a specific height value).
 ##
-## Determinism: every height comes from a seeded FastNoiseLite. No global randi()/randf(),
-## no time, no engine state. Same (chunk_x, chunk_z, noise_seed) → identical mesh on every
-## machine, which is what docs/ARCHITECTURE.md §4 requires for seed-shared world gen.
+## Network authority (docs/ARCHITECTURE.md §2.2): none of its own — a pure function, safe to call
+## from any thread (WorkerThreadPool included) or any peer. Every peer that calls it with the same
+## (chunk_x, chunk_z, world_seed, lod) gets the identical mesh, because `IslandHeightmap.height()`
+## is itself pure and cross-platform-safe (D-017/D-075) and this file adds no RNG, no `sin`/`cos`/
+## `pow`/`exp`/`log`, and no shared mutable state.
 
-## Chunk footprint in metres.
+const Heightmap := preload("res://world/gen/island_heightmap.gd")
+
+## Chunk footprint in metres. Fixed across every LOD — only vertex density changes.
 const CHUNK_SIZE: int = 32
-## Vertices per side at 1 m spacing.
-const VERTS_PER_SIDE: int = CHUNK_SIZE + 1
-## Height samples per side including a 1-vertex apron, so edge normals match the neighbour chunk.
-const APRON_PER_SIDE: int = VERTS_PER_SIDE + 2
+
+## Metres between vertices at each LOD tier, index 0 = nearest/full detail, ascending toward
+## coarser/farther (`docs/ARCHITECTURE.md` §4 step 3: "2-3 LOD levels"; task 4.3 uses 3). Every
+## entry must divide CHUNK_SIZE evenly so a chunk always tiles to a whole number of quads.
+const LOD_STEPS: PackedInt32Array = [1, 2, 4]
+const LOD_COUNT: int = 3
+
+## LOD0 numbers, kept as top-level consts because `tools/bench_chunks.gd` and
+## `tools/bench_chunk_gpu.gd` (D-015/D-074) already read them by these exact names.
+const VERTS_PER_SIDE: int = CHUNK_SIZE / 1 + 1
 const VERT_COUNT: int = VERTS_PER_SIDE * VERTS_PER_SIDE
-const TRI_COUNT: int = CHUNK_SIZE * CHUNK_SIZE * 2
+const TRI_COUNT: int = (VERTS_PER_SIDE - 1) * (VERTS_PER_SIDE - 1) * 2
 const INDEX_COUNT: int = TRI_COUNT * 3
 
-const NOISE_FREQUENCY: float = 0.008
-const NOISE_OCTAVES: int = 4
-const HEIGHT_SCALE: float = 30.0
+
+static func verts_per_side(lod: int) -> int:
+	return CHUNK_SIZE / LOD_STEPS[lod] + 1
 
 
-## Deterministic noise source. One per call — FastNoiseLite.new() is cheap and a shared
-## instance would not be safe to sample from several WorkerThreadPool tasks at once.
-static func make_noise(noise_seed: int) -> FastNoiseLite:
-	var noise := FastNoiseLite.new()
-	noise.seed = noise_seed
-	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	noise.frequency = NOISE_FREQUENCY
-	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	noise.fractal_octaves = NOISE_OCTAVES
-	return noise
+static func vert_count(lod: int) -> int:
+	var side: int = verts_per_side(lod)
+	return side * side
 
 
-## Height field with a 1-vertex border on every side (APRON_PER_SIDE²), in chunk-local
-## sample space: apron index 0 is local vertex -1.
-static func _sample_heights(chunk_x: int, chunk_z: int, noise: FastNoiseLite) -> PackedFloat32Array:
+static func tri_count(lod: int) -> int:
+	var quads_per_side: int = verts_per_side(lod) - 1
+	return quads_per_side * quads_per_side * 2
+
+
+## Height field with a 1-sample border on every side, at [param lod]'s step spacing, sampled at
+## WORLD coordinates. Sampling in world space (not chunk-local) is what makes two neighbouring
+## chunks — or two neighbouring LOD tiers — agree exactly wherever they sample the same point,
+## because `IslandHeightmap.height()` is a pure function of world x/z (D-075). No shared state:
+## every sample calls the heightmap fresh, so this is safe from any WorkerThreadPool task.
+static func _sample_heights(
+	chunk_x: int, chunk_z: int, world_seed: int, lod: int
+) -> PackedFloat32Array:
+	var step: int = LOD_STEPS[lod]
+	var side: int = verts_per_side(lod)
+	var apron_side: int = side + 2
 	var heights := PackedFloat32Array()
-	heights.resize(APRON_PER_SIDE * APRON_PER_SIDE)
+	heights.resize(apron_side * apron_side)
 	var origin_x: float = float(chunk_x * CHUNK_SIZE)
 	var origin_z: float = float(chunk_z * CHUNK_SIZE)
-	for az: int in APRON_PER_SIDE:
-		var world_z: float = origin_z + float(az - 1)
-		var row: int = az * APRON_PER_SIDE
-		for ax: int in APRON_PER_SIDE:
-			var world_x: float = origin_x + float(ax - 1)
-			heights[row + ax] = noise.get_noise_2d(world_x, world_z) * HEIGHT_SCALE
+	for az: int in apron_side:
+		var world_z: float = origin_z + float((az - 1) * step)
+		var row: int = az * apron_side
+		for ax: int in apron_side:
+			var world_x: float = origin_x + float((ax - 1) * step)
+			heights[row + ax] = Heightmap.height(world_x, world_z, world_seed)
 	return heights
 
 
-## Shared index buffer — identical for every chunk, but rebuilt per call so the benchmark
-## measures the honest cost of a cold chunk build.
-static func _build_indices() -> PackedInt32Array:
+static func _build_indices(lod: int) -> PackedInt32Array:
+	var side: int = verts_per_side(lod)
+	var quads_per_side: int = side - 1
 	var indices := PackedInt32Array()
-	indices.resize(INDEX_COUNT)
+	indices.resize(quads_per_side * quads_per_side * 6)
 	var i: int = 0
-	for z: int in CHUNK_SIZE:
-		for x: int in CHUNK_SIZE:
-			var a: int = z * VERTS_PER_SIDE + x
+	for z: int in quads_per_side:
+		for x: int in quads_per_side:
+			var a: int = z * side + x
 			var b: int = a + 1
-			var c: int = a + VERTS_PER_SIDE
+			var c: int = a + side
 			var d: int = c + 1
 			indices[i] = a
 			indices[i + 1] = c
@@ -74,33 +93,48 @@ static func _build_indices() -> PackedInt32Array:
 	return indices
 
 
-## Build one 32 m × 32 m chunk. Vertices are chunk-local (0..32 on X/Z); the caller places
-## the MeshInstance3D at the chunk origin.
-static func build_mesh(chunk_x: int, chunk_z: int, noise_seed: int) -> ArrayMesh:
-	var noise := make_noise(noise_seed)
-	var heights: PackedFloat32Array = _sample_heights(chunk_x, chunk_z, noise)
+## Build one chunk at [param lod] (0 = nearest/full detail, [constant LOD_COUNT] - 1 = farthest/
+## coarsest). Vertices are chunk-local (0..CHUNK_SIZE on X/Z regardless of LOD spacing); the caller
+## places the MeshInstance3D at the chunk origin. Deterministic and thread-safe — every input is
+## explicit, nothing is read from engine or instance state.
+##
+## KNOWN LIMITATION (not fixed here — see FINDINGS.md): a LOD0 chunk sharing an edge with a LOD1
+## or LOD2 neighbour has more vertices along that edge than the neighbour does, so the two meshes
+## do not stitch (a T-junction crack). This does not affect 4.3's acceptance test, which measures
+## per-frame streaming COST, not the seam's visual continuity — skirts or edge stitching are a
+## follow-up, not a blocker.
+static func build_mesh(chunk_x: int, chunk_z: int, world_seed: int, lod: int = 0) -> ArrayMesh:
+	var step: int = LOD_STEPS[lod]
+	var side: int = verts_per_side(lod)
+	var apron_side: int = side + 2
+	var heights: PackedFloat32Array = _sample_heights(chunk_x, chunk_z, world_seed, lod)
 
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var uvs := PackedVector2Array()
-	vertices.resize(VERT_COUNT)
-	normals.resize(VERT_COUNT)
-	uvs.resize(VERT_COUNT)
+	var count: int = side * side
+	vertices.resize(count)
+	normals.resize(count)
+	uvs.resize(count)
 
 	var inv_size: float = 1.0 / float(CHUNK_SIZE)
+	# Central-difference slope per metre. The apron samples are `step` metres apart, so the raw
+	# difference must be halved AND divided by `step` to stay a per-metre slope regardless of LOD —
+	# at step=1 this reduces to the original R2 formula (`diff * 0.5`).
+	var slope_scale: float = 0.5 / float(step)
 	var v: int = 0
-	for z: int in VERTS_PER_SIDE:
-		var arow: int = (z + 1) * APRON_PER_SIDE
-		for x: int in VERTS_PER_SIDE:
+	for z: int in side:
+		var arow: int = (z + 1) * apron_side
+		for x: int in side:
 			var ai: int = arow + x + 1
 			var h: float = heights[ai]
-			vertices[v] = Vector3(float(x), h, float(z))
-			# Central differences over the apron — seamless with the neighbouring chunk
-			# because both sample the same world-space noise.
-			var dx: float = (heights[ai + 1] - heights[ai - 1]) * 0.5
-			var dz: float = (heights[ai + APRON_PER_SIDE] - heights[ai - APRON_PER_SIDE]) * 0.5
+			var local_x: float = float(x * step)
+			var local_z: float = float(z * step)
+			vertices[v] = Vector3(local_x, h, local_z)
+			var dx: float = (heights[ai + 1] - heights[ai - 1]) * slope_scale
+			var dz: float = (heights[ai + apron_side] - heights[ai - apron_side]) * slope_scale
 			normals[v] = Vector3(-dx, 1.0, -dz).normalized()
-			uvs[v] = Vector2(float(x) * inv_size, float(z) * inv_size)
+			uvs[v] = Vector2(local_x * inv_size, local_z * inv_size)
 			v += 1
 
 	var arrays: Array = []
@@ -108,28 +142,27 @@ static func build_mesh(chunk_x: int, chunk_z: int, noise_seed: int) -> ArrayMesh
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_TEX_UV] = uvs
-	arrays[Mesh.ARRAY_INDEX] = _build_indices()
+	arrays[Mesh.ARRAY_INDEX] = _build_indices(lod)
 
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	return mesh
 
 
-## Same chunk via SurfaceTool, kept only so the benchmark can justify which path build_mesh
-## uses. Not called by build_mesh.
-static func build_mesh_surface_tool(chunk_x: int, chunk_z: int, noise_seed: int) -> ArrayMesh:
-	var noise := make_noise(noise_seed)
-	var heights: PackedFloat32Array = _sample_heights(chunk_x, chunk_z, noise)
+## Same chunk via SurfaceTool, LOD0 only — kept only so `tools/bench_chunks.gd` (D-015) still runs
+## unmodified; not called by build_mesh or by the real streamer.
+static func build_mesh_surface_tool(chunk_x: int, chunk_z: int, world_seed: int) -> ArrayMesh:
+	var heights: PackedFloat32Array = _sample_heights(chunk_x, chunk_z, world_seed, 0)
 
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var inv_size: float = 1.0 / float(CHUNK_SIZE)
 	for z: int in VERTS_PER_SIDE:
-		var arow: int = (z + 1) * APRON_PER_SIDE
+		var arow: int = (z + 1) * (VERTS_PER_SIDE + 2)
 		for x: int in VERTS_PER_SIDE:
 			var ai: int = arow + x + 1
 			var dx: float = (heights[ai + 1] - heights[ai - 1]) * 0.5
-			var dz: float = (heights[ai + APRON_PER_SIDE] - heights[ai - APRON_PER_SIDE]) * 0.5
+			var dz: float = (heights[ai + VERTS_PER_SIDE + 2] - heights[ai - VERTS_PER_SIDE - 2]) * 0.5
 			st.set_normal(Vector3(-dx, 1.0, -dz).normalized())
 			st.set_uv(Vector2(float(x) * inv_size, float(z) * inv_size))
 			st.add_vertex(Vector3(float(x), heights[ai], float(z)))

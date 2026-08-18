@@ -537,6 +537,69 @@ should grow a name lookup against that same registry rather than inventing its o
 
 ---
 
+### F-127 · Steam overlay's Join Game does nothing: only the lobby-invite callback is connected, not the rich-presence one
+
+**Area:** net · **Severity:** high · **Found:** 2026-08-18 by pike14
+
+Clicking **Join Game** in the Steam overlay does nothing at all — no log line, no join attempt.
+Pasting the lobby id into the join field works, and the two clients then connect normally, so the
+transport and the lobby are fine. Reported 2026-08-18 by Sequoyah from a live three-machine session,
+immediately after F-123 made the friends-list entry appear in the first place.
+
+**Cause.** GodotSteam exposes two different join callbacks and they are not interchangeable:
+
+- `join_requested(lobby_id: int, steam_id: int)` — Steam's `GameLobbyJoinRequested_t`, raised for a
+  direct **lobby invite**.
+- `join_game_requested(user: int, connect: String)` — Steam's `GameRichPresenceJoinRequested_t`,
+  raised when a friend is joinable via the **`connect` rich presence key**, carrying that key's raw
+  string rather than a lobby id.
+
+`_connect_steam_signals()` connected only the first. F-123 made the game publish `connect`, which is
+what put a Join Game entry in the friends list — but clicking it raises the *second* callback, which
+nothing listened to. So the feature became visible and non-functional in the same change. The two
+signal names are similar enough that this reads as correct code, and it cannot fail in any headless
+check because neither callback ever fires without a live friend clicking.
+
+**Fix.** Connect `join_game_requested`, parse `+connect_lobby <id>` out of the connect string, and
+route it into the same acceptance path as a lobby invite so the "never yank someone out of a running
+game" rule cannot drift between the two entry points. Refuse an unparseable string rather than
+guessing at a lobby id — a wrong id fails far more confusingly than no join.
+
+**Check the round trip, not the parse.** The value published by `_advertise_joinable()` and the value
+accepted by `_lobby_id_from_connect()` must agree; asserting them separately would let them drift.
+
+---
+
+### F-128 · Task 4.3's chunk streamer has no LOD-boundary stitching — adjacent chunks at different LOD tiers crack
+
+**Area:** world-gen · **Severity:** low · **Found:** 2026-08-18 by lm during 4.3
+
+`world/chunk/chunk_mesher.gd` samples `IslandHeightmap.height()` at world coordinates, so two
+neighbouring chunks at the **same** LOD tile seamlessly — both sample the identical world-space
+point at their shared edge, byte-for-byte. Two neighbouring chunks at **different** LOD tiers do
+not: `ChunkStreamer`'s ring design puts a different LOD on every tier boundary by construction
+(D-080), and a chunk's outer edge has `verts_per_side(lod)` vertices along it — 33 at LOD0, 17 at
+LOD1, 9 at LOD2. The coarser chunk's edge samples a subset of the finer chunk's edge samples in
+world space, but the two meshes connect those samples with different triangle counts, so wherever
+the terrain isn't flat along that edge the two surfaces diverge — a classic T-junction crack.
+
+**Not fixed as part of 4.3.** The task's acceptance test (`docs/SPECS.md`'s 4.3 block) is
+specifically about per-frame streaming *cost* — "walk 500 m ... zero hitches over 16 ms" — not
+visual continuity, and nothing yet instantiates a `ChunkStreamer` in the shipped game to look at
+(4.6, seed replication + client regen, is the task that will). `agent godot` runs headless for
+everything except the collision-cook measurement itself, so there was no way to visually confirm
+or deny this by eye during the task either way — it follows directly from the vertex-count
+mismatch, not from a render.
+
+**Likely fix, when it matters:** vertical skirts — extend each chunk's outer border ring of
+vertices down by a fixed depth, forming a thin wall that hides the gap without solving the vertex
+mismatch itself (the standard cheap mitigation for this exact problem). Proper stitching
+(welding/re-triangulating the coarser edge to match the finer one) is the alternative if skirts
+read as visibly wrong at a real camera angle; either is additive to `chunk_mesher.gd` and does not
+require reworking the ring/LOD design in `chunk_streamer.gd`.
+
+---
+
 ## Resolved
 
 ### F-005 · R2's chunk benchmark excludes GPU upload cost — **fixed**

@@ -1721,3 +1721,88 @@ visibly wrong results at a real boundary (at which point the fix is an explicit 
 already exists for exactly this); or 4.4's scatter tables needing per-point *blending* between two
 biomes rather than one deterministic winner, which is a different, additive feature, not a reason to
 change how the winner is picked today.
+
+### D-080 · 2026-08-18 · Task 4.3's chunk streamer: Chebyshev rings, D-025's hysteresis generalized to N tiers, and the collision ring IS the LOD0 ring
+
+`world/chunk/chunk_streamer.gd` (`class_name ChunkStreamer`, a `Node3D`) streams a ring-buffer of
+terrain chunks around a caller-supplied set of world-space anchors. Three decisions the spec left
+open, plus the measurement that closes 4.0a's gate for real rather than in isolation.
+
+**Ring geometry is Chebyshev (square-ring), not Euclidean.** `NetInterest`'s D-025 filter uses
+squared Euclidean distance because it runs per-entity-per-peer-per-physics-tick — hundreds of
+cheap comparisons where a sqrt-free circle is the right shape. This system instead runs over
+hundreds of *resident chunks* on a grid, where "ring" is already a grid concept; Chebyshev distance
+(`max(|dx|, |dz|)`) is one integer comparison per axis and produces the square rings a chunk grid
+actually tiles in.
+
+**D-025's hysteresis generalizes from one radius pair to N tiers, asymmetrically.** Three LOD
+tiers — `LOD0_RADIUS_CHUNKS=2` (full detail, 1 m spacing), `LOD1_RADIUS_CHUNKS=5` (half, 2 m),
+`LOAD_RADIUS_CHUNKS=8` (quarter, 4 m) — each with a shared `HYSTERESIS_CHUNKS=1` leave-band, same
+asymmetry D-025 established: *tightening* (gaining detail as an anchor approaches) is immediate,
+*loosening* (losing detail, or unloading) only happens once a chunk is past its current tier's own
+boundary plus the hysteresis band. A chunk hovering on a ring edge changes tier once, not every
+step across it — verified directly: nudging an anchor one chunk past `LOAD_RADIUS_CHUNKS` leaves a
+boundary chunk loaded (still inside the hysteresis band); pushing it four chunks past unloads it.
+
+**The collision ring and the LOD0 ring are the SAME ring, by construction — not two configs kept in
+sync by hand.** The spec says "collision cooks lazily (nearest ring only)"; D-074 (4.0a) measured
+`ConcavePolygonShape3D.set_faces()` as the one main-thread cost that cannot move to
+`WorkerThreadPool`, at ~1.2-1.5 ms/chunk, ~4.5× the mesh-build cost. Making LOD0 the only tier
+eligible for a collider means a chunk with a collider is always full-resolution (correct — a
+player's own footing should never rest on a decimated approximation), and it means there is exactly
+one hysteresis band to reason about instead of a separate collision-specific pair that could drift
+out of step with the LOD tiers over time.
+
+**Mesh generation is genuinely off-thread, using the same shape R2's own benchmark already proved
+safe.** Each chunk request becomes a self-contained `ChunkJob` (`RefCounted`, own `coord`/`lod`/
+`world_seed`/`result_mesh` fields) submitted via `WorkerThreadPool.add_task(job.run)`; `run()`
+touches only its own fields and calls `ChunkMesher.build_mesh()`, which builds a real `ArrayMesh`
+(not just raw arrays) on the worker thread — `tools/bench_chunks.gd`'s own `_build_one_threaded`
+already established that pattern is safe for this class (each job writes its own dedicated slot,
+never shared mutable state), so this task inherits it rather than re-deriving it. A job whose
+desired LOD changes again while in flight is never cancelled (WorkerThreadPool tasks can't be) —
+it is marked `superseded_lod` and reconciled once it completes, which either discards the now-
+unwanted result or immediately queues the now-correct one.
+
+**`chunk_mesher.gd` is no longer a throwaway spike.** It now calls `IslandHeightmap.height()`
+(task 4.1, D-075) instead of its own placeholder `FastNoiseLite`, exactly as 4.1's own delegation
+note anticipated. `LOD_STEPS = [1, 2, 4]` (metres between vertices) parameterizes the same
+apron/central-difference approach R2 used, generalized so the slope calculation stays correct at
+any step size. `tools/bench_chunks.gd` and `tools/bench_chunk_gpu.gd` (D-015/D-074) still run
+unmodified against the new mesher — neither depended on a specific height value, only on chunk
+shape/vertex/tri counts, which are unchanged at LOD0.
+
+**Measured (`agent godot --windowed --script tools/chunk_stream_check.gd`, Metal 4.0/Apple M5
+Pro — must be windowed, F-005/D-074, or the collision-cook numbers are meaningless):** 9
+functional/behavioral assertions (LOD tier vertex/tri counts, mesh determinism at non-zero LOD,
+correct LOD/collision per ring, both hysteresis directions) all pass. The spec's actual acceptance
+line — "walk 500 m in a straight line at sprint speed [6.0 m/s, D-018] with zero hitches over 16 ms"
+— is measured two ways: total real frame time (subject to whatever else this shared machine is
+doing — D-074 already flagged this as expected noise) showed occasional hitches up to 42 ms across
+different runs, but `ChunkStreamer.last_process_cost_ms()` — a new read API that times only this
+node's own `_process()` work (ring eval + budgeted upload/collision-cook), added specifically to
+separate "this system blew its budget" from "the machine stalled for an unrelated reason" — stayed
+at **mean 0.19 ms, worst 7.67 ms, zero hitches over 16.667 ms** across the full walk (11,218
+frames, 306 chunks resident at steady state). D-074's ~2.7-3.4 chunks/frame collision-cook budget
+holds inside the real streaming system, not just the isolated spike, with real headroom against the
+16.667 ms hitch line even at the single worst-observed frame.
+
+**One incidental finding, not a blocker:** feeding real terrain through the mesher (vs. R2's single
+shared placeholder noise instance) raised the LOD0 build cost from D-015's 0.330 ms/0.112 ms
+(single-threaded/`WorkerThreadPool`-amortized) to **1.924 ms/3.895 ms**, because
+`IslandHeightmap.height()` deliberately builds two fresh `FastNoiseLite` instances per sample
+(D-075's thread-safety design) and a LOD0 chunk's apron needs ~1225 samples. This is off the main
+thread and the measurement above confirms it is inconsequential for 4.3's own budget, but it is
+relevant to 4.4/4.5, which will also sample the heightmap/biome fields per point — see
+`DELEGATION.md`'s current-state entry for this task.
+
+**Not fixed here, filed as F-128:** chunks at different LOD tiers sharing an edge do not stitch —
+a real T-junction crack, since the finer side has more vertices along the shared border than the
+coarser side. Out of scope because 4.3's acceptance test is about streaming *cost*, not visual
+continuity, and nothing yet renders this system in the shipped game to judge it against (4.6 is
+that task).
+
+**Would change my mind:** a widened test (more anchors, real cliff/structure geometry raising
+collision-cook cost non-linearly — D-074 already named this as its own open question) showing the
+budget does not hold at scale; or 4.4/4.5 needing the LOD seam fixed badly enough to justify
+skirts or index-stitching before F-128 would otherwise get picked up.

@@ -75,6 +75,93 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 4.3: chunk streaming + LOD ships — `ChunkStreamer` is the seam 4.4/4.5 build on (lm)
+
+**What shipped, verified:** `world/chunk/chunk_streamer.gd` (`class_name ChunkStreamer`, a
+`Node3D`) and a rewritten `world/chunk/chunk_mesher.gd` (no longer a throwaway spike — it now
+samples `IslandHeightmap.height()`, task 4.1). Full design rationale, the ring/LOD/hysteresis
+choices, and the measured numbers are `DECISIONS.md` D-080; the LOD-boundary crack this task
+deliberately did not fix is `FINDINGS.md` F-128.
+
+**`ChunkStreamer` API for 4.4 (resource scatter) and 4.5 (nav baking):**
+
+```gdscript
+var streamer := ChunkStreamer.new()
+streamer.world_seed = the_shared_run_seed   # int, caller-supplied — see the note below
+add_child(streamer)                          # anywhere; it is a plain Node3D, not an autoload
+
+streamer.set_anchors([local_player.global_position])   # call every frame (or however often you
+                                                          # refresh it) — Array[Vector3], plural on
+                                                          # purpose even though today's only caller
+                                                          # has one anchor (the local player)
+
+streamer.chunk_mesh_ready.connect(_on_chunk_mesh_ready)  # (coord: Vector2i, lod: int) -> void
+streamer.chunk_unloaded.connect(_on_chunk_unloaded)       # (coord: Vector2i) -> void
+
+streamer.is_chunk_loaded(coord) -> bool
+streamer.chunk_lod(coord) -> int             # -1 if not loaded
+streamer.chunk_has_collision(coord) -> bool  # true only for LOD0 chunks — see below
+streamer.loaded_chunk_count() -> int
+streamer.pending_job_count() -> int
+streamer.last_process_cost_ms() -> float     # this node's OWN per-frame issuing cost, not total
+                                              # frame time — see D-080 on why the distinction
+                                              # matters on a machine running several agent lanes
+```
+
+- **`chunk_mesh_ready` fires on EVERY upload, including an LOD change on an already-resident
+  chunk** — it is not a one-time "first time this coord appeared" event. A subscriber that cares
+  whether a chunk is *newly* full-resolution (4.5's nav-baking trigger, most likely) must check
+  `lod == 0` on each firing rather than assuming a coord seen once at LOD0 stays there; the same
+  event with a non-zero `lod` for a coord you previously saw at `lod == 0` is your retire-nav-
+  region signal, there is no separate "downgraded from LOD0" signal today.
+- **Collision only ever exists for LOD0 chunks** (`chunk_has_collision()`), cooked lazily after the
+  mesh uploads — a subscriber that spawns something needing to stand on the ground (4.4's
+  proxy-materialization pattern) should not assume a collider is present the instant
+  `chunk_mesh_ready` fires; poll `chunk_has_collision()` or wait a frame.
+- **A chunk's world footprint** is `Vector3(coord.x * ChunkMesher.CHUNK_SIZE, 0.0, coord.y *
+  ChunkMesher.CHUNK_SIZE)` to `+CHUNK_SIZE` on both axes (`CHUNK_SIZE = 32`) — matches
+  `ChunkStreamer`'s own placement of the `MeshInstance3D`.
+- **`world_seed` has no default.** No `GameState.run_seed` or equivalent exists yet (D-041 already
+  flagged this gap for `Chest`; it is still open) — whoever wires this into the live game supplies
+  the shared run seed explicitly, most likely 4.6's job.
+- **Nothing in the shipped game instantiates a `ChunkStreamer` yet**, same as 4.1/4.2's
+  `IslandHeightmap`/`BiomeMap` before it — this is a pure, tested system waiting on 4.6 (seed
+  replication + client regen) to actually be added to a running level.
+
+**`ChunkMesher` API** (`world/chunk/chunk_mesher.gd`), for anything that wants raw chunk geometry
+without the streamer's ring/LOD policy:
+
+```gdscript
+ChunkMesher.build_mesh(chunk_x: int, chunk_z: int, world_seed: int, lod: int = 0) -> ArrayMesh
+ChunkMesher.verts_per_side(lod) / vert_count(lod) / tri_count(lod) -> int
+ChunkMesher.CHUNK_SIZE = 32   ·   LOD_STEPS = [1, 2, 4]  (metres/vertex)   ·   LOD_COUNT = 3
+```
+
+Safe to call from any thread — no shared state, same guarantee `IslandHeightmap.height()` gives
+(D-075), which is what makes it safe from `WorkerThreadPool` at all.
+
+**Heads-up for 4.4/4.5's own per-point sampling:** `IslandHeightmap.height()` deliberately builds
+two fresh `FastNoiseLite` instances per call for thread safety (D-075). That cost D-080 measured
+directly: a LOD0 chunk's ~1225 apron samples raised `ChunkMesher.build_mesh()` from R2's original
+placeholder-noise 0.330 ms/chunk to **1.924 ms/chunk single-threaded (3.895 ms/chunk
+`WorkerThreadPool`-amortized)** — fine off-thread at chunk-streaming's sampling density (confirmed
+by the walk measurement below), but worth knowing before assuming per-vertex/per-scatter-point
+heightmap or biome sampling is free at whatever density 4.4's scatter tables or 4.5's nav bake
+resolution end up using.
+
+**Verified:** `agent godot --windowed --script tools/chunk_stream_check.gd` (must be windowed, not
+headless — F-005/D-074: the collision-cook numbers this whole system is budgeted around are
+meaningless under the dummy renderer) — 9/9 functional assertions pass (LOD vertex/tri counts,
+mesh determinism at non-zero LOD, correct LOD/collision per ring, both hysteresis directions), plus
+the spec's own acceptance test: a full 500 m sprint-speed (6.0 m/s, D-018) walk with
+`ChunkStreamer.last_process_cost_ms()` — this node's own per-frame issuing cost, isolated from
+whatever else this shared machine is doing — never exceeding 7.67 ms against the 16.667 ms hitch
+line (mean 0.19 ms, zero hitches, 11,218 frames, 306 chunks resident at steady state). Full numbers
+in D-080. `agent godot --script tools/bench_chunks.gd` and `agent godot --windowed --script
+tools/bench_chunk_gpu.gd` (D-015/D-074's own spikes) both still run clean against the rewritten
+mesher, confirming no regression to the numbers those decisions already recorded. Full boot
+(`agent godot --quit-after 60`): 0 `ERROR:` lines.
+
 ### 2026-08-18 — Task 4.2: biome assignment ships — `BiomeMap.biome_at()` is the seam 4.3/4.4 call (lm)
 
 **What shipped, verified:** `world/gen/biome_def.gd` (`class_name BiomeDef`, a `Resource` — the

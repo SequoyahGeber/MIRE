@@ -1,6 +1,27 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "autoload/steam_lobby.gd": {
+      "agent": "pike14",
+      "at": "2026-08-18T20:19:39+00:00",
+      "task": "F-127"
+    },
+    "tools/rich_presence_check.gd": {
+      "agent": "pike14",
+      "at": "2026-08-18T20:19:39+00:00",
+      "task": "F-127"
+    }
+  },
+  "in_flight": {
+    "F-127": {
+      "agent": "pike14",
+      "files": [
+        "autoload/steam_lobby.gd",
+        "tools/rich_presence_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T20:19:39+00:00"
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
       "agent": "lp",
@@ -1189,10 +1210,10 @@
       "task": "F-053"
     },
     "docs/ARCHITECTURE.md": {
-      "agent": "lp",
-      "at": "2026-08-18T18:59:24+00:00",
-      "hash": "91eaabafdc3d77b3cc69fa74ef9a5e7fd61d19edce33726f82162bc2e5481b83",
-      "task": "3.10"
+      "agent": "lm",
+      "at": "2026-08-18T20:24:23+00:00",
+      "hash": "3ca39a409c59b5f1153839695ae73bf857e931a047e7b81dd9b5624c4dfc7a73",
+      "task": "4.3"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "lm",
@@ -1201,22 +1222,22 @@
       "task": "F-109"
     },
     "docs/DECISIONS.md": {
-      "agent": "lp",
-      "at": "2026-08-18T18:59:24+00:00",
-      "hash": "5715afa6291e58cf3019b5e4f51e895f7df857eebff730e605dcc8dda2aa7115",
-      "task": "3.10"
+      "agent": "lm",
+      "at": "2026-08-18T20:24:23+00:00",
+      "hash": "3e0477ad9a8085c15c6fda7277aa14e7f660a8f98def69efb00f31241eeefa9c",
+      "task": "4.3"
     },
     "docs/DELEGATION.md": {
-      "agent": "lp",
-      "at": "2026-08-18T18:59:24+00:00",
-      "hash": "8b8af313d4d84c82b37ded750b573f812302068ec77ea3bc7d4922cc6445a9a7",
-      "task": "3.10"
+      "agent": "lm",
+      "at": "2026-08-18T20:24:23+00:00",
+      "hash": "4de1a5652b1171e5bd8efd4dcc7a1b574f2d9e82220c15fe278da07d4a72677c",
+      "task": "4.3"
     },
     "docs/FINDINGS.md": {
       "agent": "lm",
-      "at": "2026-08-18T19:32:23+00:00",
-      "hash": "b11e61f098b232913ca0d1787d59c20e10198d3bc5a565408de07d04595b5653",
-      "task": "F-109"
+      "at": "2026-08-18T20:24:23+00:00",
+      "hash": "bf6cf43b590820f31189ba0f51479a077a2939d997e40ffaef801483fcb15129",
+      "task": "4.3"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -1619,6 +1640,12 @@
       "agent": "lp",
       "at": "2026-08-18T14:23:28+00:00",
       "task": "F-107"
+    },
+    "tools/chunk_stream_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:24:23+00:00",
+      "hash": "859a77c01cbfcf7f25f9c5bf5ec790bb90aa9d013918f1511926c8a58e847e84",
+      "task": "4.3"
     },
     "tools/combat_net_check.gd": {
       "agent": "lp",
@@ -2031,6 +2058,18 @@
       "agent": "kiln9",
       "at": "2026-08-18T14:10:44+00:00",
       "task": "F-099"
+    },
+    "world/chunk/chunk_mesher.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:24:23+00:00",
+      "hash": "6a38fee31d68fd9fd9d5d4a3ec0567e9222b5aef11769388464645e69e1fe14b",
+      "task": "4.3"
+    },
+    "world/chunk/chunk_streamer.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:24:23+00:00",
+      "hash": "fb22224003e842b1bb2bde7ff986aeb5f1194939b86167b597dc4b55e57114a3",
+      "task": "4.3"
     },
     "world/environment/asset_vfx_library.gd": {
       "agent": "vane19",
@@ -2814,9 +2853,11 @@
       "title": "Biome assignment (height \u00d7 moisture), biome `.tres` definitions"
     },
     "4.3": {
+      "done_at": "2026-08-18T20:24:23+00:00",
+      "done_by": "lm",
       "est": "6",
       "milestone": "M4",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Chunk streaming + LOD, `WorkerThreadPool` mesh generation"
     },
@@ -4207,6 +4248,13 @@
       "status": "todo",
       "tier": "F",
       "title": "CommandService's `peer` argument type has no display-name resolution \u2014 peer ids only"
+    },
+    "F-127": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Steam overlay's Join Game does nothing: only the lobby-invite callback is connected, not the rich-presence one"
     }
   },
   "version": 1
