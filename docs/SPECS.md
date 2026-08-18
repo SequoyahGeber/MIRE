@@ -903,6 +903,56 @@ vertices costs nothing extra and defends against a future Blender version regres
 file needed a change; this block, `world_bounds_check.py`, and the `docs/FINDINGS.md` move to
 `## Resolved` are the whole task.
 
+## F-108 · A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized
+
+**Claim:** `tools/ship_check.gd` (verify only — the fix was already committed, in the same pass that
+added the A-009 export batch; nothing here needed a code change), `tools/dimension_check.gd` (new —
+no focused check existed for the vertex-vs-AABB measurement technique itself before this task).
+
+**What was wrong:** `ship_check.gd` measured each export's size as `instance.transform *
+instance.get_aabb()`, merged over the scene's mesh instances. `get_aabb()` returns a mesh's AABB in
+its own local space; for any non-box mesh the corners of that box are not real geometry, and pushing
+them through a rotation returns the box around the rotated box — strictly larger than the true
+extent, and by more the more the part is turned. Every `cone`/`tapered_between` primitive in the
+A-009 kit is built this way, so the inflated ruler reported seven of the fifteen exports as oversized:
+all four hull states 50 mm long, the broken mast 72 mm, the debris cluster 38 mm, and the broken
+mast's origin 23 mm low. This is F-094 (`mire_art.world_bounds` in Blender) on the engine side of the
+fence, worth stating separately because the Blender fix does not travel — the two codebases learn it
+independently.
+
+**Already fixed, before this task existed:** committed alongside the A-009 export batch (`3beb6b0`).
+`_check_asset()` now walks every mesh instance's `Mesh.ARRAY_VERTEX` array, transforms each vertex to
+the scene root via `_transform_to_root()`, and bounds those points directly — vertices are exact and
+never inflate under rotation. Confirmed `git diff tools/ship_check.gd` against HEAD is clean; no asset
+needed a rebuild for this task.
+
+**What this task closes:** the fix had no regression guard and no `docs/SPECS.md` block. Wrote
+`tools/dimension_check.gd` — runs under `.agent/bin/agent godot --script tools/dimension_check.gd`. It
+builds a synthetic cone (`CylinderMesh`, top radius 0, bottom radius 0.5, height 2) rotated 45° about
+Z — its apex is a single point, so two of its local AABB's eight corners are empty space, the same
+shape as the batch's cone primitives — and asserts (1) the naive `transform * get_aabb()` construction
+this check exists to catch measures a hand-computed x-extent of ~2.1213, (2) the vertex-transform
+method measures ~1.7678, and (3) the two must diverge by more than 100 mm, so a future edit that
+reintroduces the naive construction in either method fails here before it ever misreads a real asset.
+
+**Verified 2026-08-18 (lm):** `agent godot --script tools/dimension_check.gd` → `DIMENSION_CHECK
+naive_x=2.1213 vertex_x=1.7678`, `DIMENSION_CHECK_GODOT PASS` — both figures land within 0.001 of the
+hand-computed values, confirming the fixture itself is correct, not just internally consistent.
+`agent godot --script tools/ship_check.gd` → `SHIP_CHECK_GODOT PASS`, all fifteen A-009 exports agree
+with the catalog to the millimetre. Regression-proved the check's fix directly: temporarily reverted
+`_check_asset()`'s vertex loop to `instance.transform * instance.get_aabb()` (no `to_root`, no
+per-vertex walk) and reran — `SHIP_CHECK_GODOT FAIL (8)`, reporting the exact failure shape the
+finding describes (`ship_debris_cluster` 35 mm long and off-centre, all three drift-linked hull states
++50 mm, `ship_mast` +34 mm across, `ship_mast_broken` +72 mm long and its origin 23 mm low) — then
+`git checkout -- tools/ship_check.gd` restored the committed fix (`git diff` clean) and the PASS rerun
+above confirmed it.
+
+**Follow-up, not in this task's claim:** `tools/flora_check.gd:126` (`box = instance.transform * box`)
+has the identical construction and is currently green only because its tolerance is 20 mm and it
+compares height alone, where the error happens to stay under that. It belongs to A-000V's file set.
+Filed as **F-122** — port the vertex measurement across using `ship_check.gd`'s `_check_asset()` as
+the worked example, and expect the flora kit's reported heights to move slightly when it lands.
+
 ## F-093 · A headless `--script` run never re-imports changed assets, so a check can validate the previous build
 
 *Renumbered from F-059 on 2026-08-18 (F-087) — that number collided with the original F-059

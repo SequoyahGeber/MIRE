@@ -483,35 +483,6 @@ docstring so the next family chooses deliberately instead of inheriting it.
 
 ---
 
-### F-108 · A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
-
-`tools/ship_check.gd` cross-checks each export's measured size against the catalog. Built the obvious
-way — `instance.transform * instance.get_aabb()`, merged over the mesh instances — it reported seven
-of the fifteen A-009 exports as larger than the generator said: all four hull states 50 mm long, the
-broken mast 72 mm, the debris cluster 38 mm, and the broken mast's origin 23 mm low.
-
-Nothing was wrong with the assets. An `AABB` is axis-aligned in the mesh's own space, so pushing one
-through a rotation returns the box around the rotated box, which is strictly larger than the geometry
-inside it and larger the more the part is turned. Every `cone`/`tapered_between` primitive is a
-rotated object, so a kit built out of them measures wide by exactly the amount the check is wrong.
-This is F-094 — `mire_art.world_bounds` measuring `obj.bound_box` in Blender — on the engine side of
-the fence, and it is worth stating separately because the Blender fix does not travel: the two
-codebases have to learn it independently.
-
-The fix in ship_check.gd is to measure `Mesh.ARRAY_VERTEX` transformed to the scene root, which now
-agrees with the generator to the millimetre on all fifteen.
-
-**`tools/flora_check.gd:126` has the same construction** (`box = instance.transform * box`) and is
-therefore measuring the flora kit with the same inflated ruler. It is currently green only because
-its tolerance is 20 mm and it compares height alone, where the error happens to stay under that. It
-was left alone here because it belongs to A-000V's file set and this batch had no claim on it — but
-the next agent in that file should port the vertex measurement across, and should expect the numbers
-to move slightly when they do.
-
----
-
 ### F-109 · The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them
 
 **Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by ivy8
@@ -553,6 +524,28 @@ current" are not the same claim. Two ways out, either fine: `rm -rf <outdir>` be
 family you have just rebuilt (what this batch did), or teach the ledger to record the GLB's mtime or
 hash and re-render when it moves. The second is worth doing — the first depends on remembering, and
 the failure mode is silent and confidently wrong.
+
+---
+
+### F-122 · `tools/flora_check.gd:126` measures rotated flora through the same inflated `Transform3D * AABB` ruler as F-108
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by lm, while closing F-108
+
+F-108 fixed `tools/ship_check.gd`'s dimension check, which built a mesh's world-space bound as
+`instance.transform * instance.get_aabb()` — an AABB is axis-aligned in the mesh's own local space, so
+pushing one through a rotation returns the box around the rotated box, strictly larger than the true
+extent. `tools/flora_check.gd:126` has the identical construction (`box = instance.transform * box`)
+and measures the flora kit with the same wrong ruler. It has stayed green only because its tolerance
+is 20 mm and it compares height alone (`_check_asset()`, line ~144), where the inflation happens to
+stay under that threshold — it is not proof the measurement is correct, only that this kit's rotations
+haven't yet been large enough to trip it.
+
+**Fix, not done here:** it belongs to A-000V's file set, which this task had no claim on. Port
+`ship_check.gd`'s `_check_asset()` vertex-measurement — walk `Mesh.ARRAY_VERTEX` per surface,
+transform each vertex to the scene root, bound the points directly instead of the mesh's local
+`get_aabb()` — into `flora_check.gd`'s `_check_asset()`. Expect the flora kit's reported heights to
+move slightly (tighter, matching F-108's cone finding) when it lands, and confirm the 20 mm tolerance
+still holds against the corrected numbers rather than assuming it does.
 
 ---
 
@@ -5054,3 +5047,50 @@ so anything that transforms it by a rotated node transform inherits the identica
 kit sidesteps it by baking every asset's transform to identity before export, which is worth copying —
 and is exactly the over-measurement F-108 caught independently on the Godot side (`tools/ship_check.gd`,
 `tools/flora_check.gd:126`), because the Blender-side fix here does not travel across the fence.
+
+---
+
+### F-108 · A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized — **fixed**
+
+**Resolved 2026-08-18 by lm.** The code fix was already committed before this task existed —
+`3beb6b0`, the same pass that added the A-009 export batch — so this task was verify + regression
+guard + spec, the same shape as F-094 on the Blender side of this exact bug.
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
+
+`tools/ship_check.gd` cross-checks each export's measured size against the catalog. Built the obvious
+way — `instance.transform * instance.get_aabb()`, merged over the mesh instances — it would report
+seven of the fifteen A-009 exports as larger than the generator said: all four hull states 50 mm long,
+the broken mast 72 mm, the debris cluster 38 mm, and the broken mast's origin 23 mm low.
+
+Nothing was wrong with the assets. An `AABB` is axis-aligned in the mesh's own space, so pushing one
+through a rotation returns the box around the rotated box, which is strictly larger than the geometry
+inside it and larger the more the part is turned. Every `cone`/`tapered_between` primitive is a
+rotated object, so a kit built out of them measures wide by exactly the amount the check is wrong.
+This is F-094 — `mire_art.world_bounds` measuring `obj.bound_box` in Blender — on the engine side of
+the fence, and it is worth stating separately because the Blender fix does not travel: the two
+codebases have to learn it independently.
+
+**Fixed by measuring vertices.** `_check_asset()` walks every mesh instance's `Mesh.ARRAY_VERTEX`
+array, transforms each vertex to the scene root via `_transform_to_root()`, and bounds those points
+directly — vertices are exact and never inflate under rotation.
+
+**Verified 2026-08-18 (lm):** `agent godot --script tools/ship_check.gd` → `SHIP_CHECK_GODOT PASS`,
+all fifteen A-009 exports agree with the catalog to the millimetre. Wrote
+`tools/dimension_check.gd` — a synthetic-cone regression guard that hand-computes the expected
+divergence between the naive `transform * get_aabb()` construction (~2.1213 m on the test fixture) and
+the vertex-transform fix (~1.7678 m) and asserts both, so a future edit reintroducing the naive
+construction fails before it ever misreads a real asset. `agent godot --script
+tools/dimension_check.gd` → `DIMENSION_CHECK naive_x=2.1213 vertex_x=1.7678`,
+`DIMENSION_CHECK_GODOT PASS` — both within 0.001 of the hand-computed values.
+
+Regression-proved the check itself: temporarily reverted `_check_asset()`'s vertex loop back to
+`instance.transform * instance.get_aabb()` and reran — `SHIP_CHECK_GODOT FAIL (8)`, reproducing the
+exact failure shape from the finding (all three drift-linked hull states +50 mm, the mast +34 mm
+across, the broken mast +72 mm long and its origin 23 mm low, the debris cluster 35 mm long and
+off-centre) — then `git checkout -- tools/ship_check.gd` restored the committed fix (`git diff` clean)
+and the PASS rerun above confirmed it. Full spec: `docs/SPECS.md` F-108.
+
+**`tools/flora_check.gd:126` has the identical construction** and is currently green only because its
+20 mm tolerance and height-only comparison happen to absorb the error. It belongs to A-000V's file
+set, outside this task's claim — filed separately as **F-122**.
