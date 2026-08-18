@@ -2076,3 +2076,15 @@ ALSO OPEN, not blocking: F-075 — world statics, props and pieces all share col
 Files: `autoload/build_service.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/build_net_check.gd`, `systems/building/build_ghost.gd`
 
 Commit at time of writing: `3342fd9`
+
+---
+
+### DONE · 3.6 · gale6 · 2026-08-18T04:45:01+00:00
+
+**Building system: placement ghost, snapping, rotate, validate, destroy**
+
+Building system ships and runs, all three parts. BuildableDef + PlacementValidator + BuildGhost + BuildService (autoload #25, host-authoritative), protocol 11 -> 12, two worked examples (wall, Ward post), registry loading. The design that matters: ONE validator, two callers — the ghost calls it for the green/red hint, the host calls the same function for the verdict, so a green ghost and an accepted placement cannot drift apart, while the host still revalidates from scratch and believes nothing from the wire. Two orderings are load-bearing and documented: support/slope before overlap (a steep placement is also a buried one, and 'something is in the way' is true but useless), and cost last (it is the only check with a side effect; rejecting after a successful host_transaction eats the materials). Nav rebake is debounced to one per second. Verified: build_check 59 assertions 0 failures against a real physics world, build_net_check 13/13 across two real ENet processes including the assertion that a client running the host's placement path forges nothing, handshake/powerup/powerup_net/verify_setup green, clean boot, 0 engine-error lines anywhere. Filed F-075 (world statics and props share collision layer 1, so the overlap query cannot tell ground from obstruction; the validator lifts its box by half_footprint * tan(max_slope) to work around it, leaving a blind band at the base — a terrain layer is the clean fix and is project-wide). Art is 3.7's: a piece with a null scene still gets a generated collider and mesh, so it is a real object for testing.
+
+Files: `systems/building/build_ghost.gd`, `tools/build_check.gd`
+
+Commit at time of writing: `8e5bf89`

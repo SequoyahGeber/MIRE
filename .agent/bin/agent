@@ -1948,12 +1948,16 @@ def cmd_saturate(args):
         die("unknown lane '%s' — known: %s" % (lane, ", ".join(LANE_NAMES)))
 
     watch = "--watch" in args
+    detach = "--detach" in args
     wanted = [a for a in args[1:] if not a.startswith("--")]
     orders = _open_orders()
     if not wanted:
         wanted = [t for t, m in sorted(orders.items()) if m["lane"] == lane]
     if not wanted:
         die("no open orders for %s — write some with:  agent order <id> --lane %s" % (lane, lane))
+
+    if detach:
+        _daemonise(lane)
 
     # Serialise chains on a lock rather than by polling for one another. The polling version
     # deadlocked: a wrapper shell whose script text contains "agent saturate LP" is itself matched by
@@ -1996,6 +2000,33 @@ def _saturate_locked(lane, wanted, watch):
 
 MAX_RESUMES = 4
 MAX_WAIT_HOURS = 8
+
+
+def _daemonise(lane):
+    """Detach from the session that launched us, so the queue outlives it.
+
+    Chains started from a chat are children of that chat's process. When the session is killed — a
+    crash, a hard stop, quitting the app — the whole process group goes with it, taking a running
+    lane and its queue. That happened: a hard stop of the director killed the lanes mid-flight, which
+    is the one failure the wrapper exists to be immune to.
+
+    Double-fork + setsid so we reparent to init and survive anything that happens upstream. Output
+    goes to a file, because after this there is no terminal to write to."""
+    os.makedirs(os.path.join(AGENT_DIR, "logs"), exist_ok=True)
+    out = os.path.join(AGENT_DIR, "logs", "saturate-%s.log" % lane.lower())
+    if os.fork() > 0:
+        print("%s· %s queue detached — it now survives this session. Follow it with:%s"
+              % (C["dim"], lane, C["x"]))
+        print("  tail -f %s" % os.path.relpath(out, ROOT))
+        os._exit(0)
+    os.setsid()
+    if os.fork() > 0:
+        os._exit(0)
+    fd = os.open(out, os.O_WRONLY | os.O_CREAT | os.O_APPEND)
+    os.dup2(fd, 1)
+    os.dup2(fd, 2)
+    devnull = os.open(os.devnull, os.O_RDONLY)
+    os.dup2(devnull, 0)
 
 
 def _run_with_resume(lane, tid, watch):
@@ -2451,7 +2482,8 @@ Directing three worker accounts (docs/ORCHESTRATION.md):
   agent order <id> --lane LC1 --review     review order: judge a commit, file findings, no edits
   agent dispatch <LANE> [id] [--dry-run]    run that order on its account, headless
   agent saturate <LANE> [ids...] [--watch] run its queued orders back to back — no idle window
-                                           --watch also sleeps out a short quota wall and resumes
+                                           --watch sleeps out a short quota wall and resumes
+                                           --detach survives this session being killed
   agent lanes [--doctor]                    lane health; --doctor checks CLI + login
   agent report                              who's doing what, what it cost, what's stuck
   agent collect [--hours N]                 what shipped, what stopped, what needs you

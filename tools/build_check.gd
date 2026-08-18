@@ -45,6 +45,7 @@ func _run() -> void:
 	await _build_world()
 	_check_placement_rules()
 	await _check_host_placement()
+	await _check_ghost()
 
 	print("\nBUILD_CHECK failures=%d" % failures)
 	finish()
@@ -259,6 +260,54 @@ func _check_host_placement() -> void:
 		"destroying something that does not exist is refused, not a crash")
 
 	service.disconnect(&"build_confirmed", _on_build_confirmed)
+
+
+## Increment C: the ghost. It is presentation, so what is asserted is that it PREDICTS with the same
+## function the host decides with, and that it never decides anything itself.
+func _check_ghost() -> void:
+	print("\n== the ghost predicts, and never decides ==")
+	var ghost: Node3D = preload("res://systems/building/build_ghost.gd").new()
+	level.add_child(ghost)
+	check(not ghost.visible, "a ghost with no piece selected draws nothing")
+	check(not bool(ghost.call(&"set_piece", &"no_such_piece")),
+		"selecting an unknown piece fails cleanly rather than showing a phantom")
+
+	check(bool(ghost.call(&"set_piece", &"wall_wood")), "selecting a real piece succeeds")
+	check(ghost.visible, "and the ghost becomes visible")
+	check(StringName(ghost.call(&"current_piece_id")) == &"wall_wood", "it knows what it is showing")
+
+	# Aim at clear flat ground well away from the obstruction at (0, *, 4).
+	var reason: int = ghost.call(&"update_aim", Vector3(-6.0, 2.0, 0.0),
+		Vector3(1.0, -1.0, 0.0).normalized(), Vector3(-6.0, 0.0, 0.0))
+	check(reason == VALIDATOR.Reason.OK, "aimed at clear ground it reads valid (%s)" %
+		VALIDATOR.reason_text(reason))
+	check(bool(ghost.call(&"is_valid")), "is_valid() agrees")
+	var placement: Transform3D = ghost.call(&"placement")
+	check(is_equal_approx(placement.origin.x, snappedf(placement.origin.x, 1.0)),
+		"the ghost snaps to the same world grid the host will re-snap to (%s)" % placement.origin)
+	check(ghost.global_position.is_equal_approx(placement.origin),
+		"and the node actually sits where it says it does")
+
+	# Aim into the obstruction at (0, *, 4): the same validator the host uses must call it invalid.
+	reason = ghost.call(&"update_aim", Vector3(0.0, 1.5, 0.0), Vector3(0.0, 0.0, 1.0),
+		Vector3(0.0, 0.0, 0.0))
+	check(reason != VALIDATOR.Reason.OK, "aimed into an obstruction it reads invalid (%s)" %
+		VALIDATOR.reason_text(reason))
+	check(not bool(ghost.call(&"is_valid")), "is_valid() agrees")
+	check(not String(ghost.call(&"last_reason_text")).is_empty(),
+		"and it has words for the player: '%s'" % String(ghost.call(&"last_reason_text")))
+
+	var before_yaw: float = (ghost.call(&"placement") as Transform3D).basis.get_euler().y
+	ghost.call(&"rotate_step", 1)
+	ghost.call(&"update_aim", Vector3(-6.0, 2.0, 0.0), Vector3(1.0, -1.0, 0.0).normalized(),
+		Vector3(-6.0, 0.0, 0.0))
+	var after_yaw: float = (ghost.call(&"placement") as Transform3D).basis.get_euler().y
+	check(not is_equal_approx(before_yaw, after_yaw), "rotate_step turns it")
+	check(is_equal_approx(snappedf(rad_to_deg(after_yaw), 1.0),
+			snappedf(snappedf(rad_to_deg(after_yaw), 90.0), 1.0)),
+		"and it stays on the authored 90 degree step (%.1f)" % rad_to_deg(after_yaw))
+
+	ghost.queue_free()
 
 
 func _on_build_confirmed(request_id: int, accepted: bool, reason: String) -> void:

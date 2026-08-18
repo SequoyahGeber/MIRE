@@ -868,7 +868,7 @@
     },
     "systems/building/build_ghost.gd": {
       "agent": "gale6",
-      "at": "2026-08-18T04:42:03+00:00",
+      "at": "2026-08-18T04:45:01+00:00",
       "task": "3.6"
     },
     "systems/building/buildable_def.gd": {
@@ -1043,7 +1043,7 @@
     },
     "tools/build_check.gd": {
       "agent": "gale6",
-      "at": "2026-08-18T04:35:30+00:00",
+      "at": "2026-08-18T04:45:01+00:00",
       "task": "3.6"
     },
     "tools/build_net_check.gd": {
@@ -1912,9 +1912,11 @@
       "title": "Coins, chest tiers, chest-opening UI and flow"
     },
     "3.6": {
+      "done_at": "2026-08-18T04:45:01+00:00",
+      "done_by": "gale6",
       "est": "5",
       "milestone": "M3",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Building system: placement ghost, snapping, rotate, validate, destroy"
     },
