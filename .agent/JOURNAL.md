@@ -2699,3 +2699,18 @@ Notes along the way:
 Files: `systems/building/build_ghost.gd`, `entities/player/player_controller.gd`, `autoload/environment_vfx.gd`, `tools/player_vitals_check.gd`, `tools/build_check.gd`
 
 Commit at time of writing: `2d717e8`
+
+---
+
+### DONE · F-092 · lp · 2026-08-18T15:00:10+00:00
+
+**`mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call**
+
+Cache fix was already committed (c0cced0); nothing in mire_art.py needed changing. Wrote tools/blender/mat_cache_check.py (Blender --background --python tools/blender/mat_cache_check.py) -> MAT_CACHE_CHECK PASS. Regression-proved: reverted the guard to the pre-fix 'key in bpy.data.materials' line, reran -> FAIL (20), restored (git diff clean), reran -> PASS. Wrote missing docs/SPECS.md F-092 block, moved docs/FINDINGS.md F-092 to Resolved with verification, docs/DELEGATION.md Current-state note. tools/findings_numbering_check.gd still failures=0.
+
+Notes along the way:
+- Code fix was already committed (c0cced0, the flora kit build) — datablock-identity test with ReferenceError guard, exactly as the finding text describes. Task is F-058-shaped: verify + write missing SPECS.md block + move FINDINGS.md to Resolved. Wrote tools/blender/mat_cache_check.py (Blender --background --python), regression-proved it: reverted the fix locally, check FAILed (all 22 loop calls minted a distinct material, 4 other assertions failed too), restored, reran, PASS.
+
+Files: `tools/blender/mire_art.py`, `tools/blender/mat_cache_check.py`
+
+Commit at time of writing: `190481b`

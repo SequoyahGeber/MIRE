@@ -980,10 +980,15 @@
       "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
+    "tools/blender/mat_cache_check.py": {
+      "agent": "lp",
+      "at": "2026-08-18T15:00:10+00:00",
+      "task": "F-092"
+    },
     "tools/blender/mire_art.py": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
+      "agent": "lp",
+      "at": "2026-08-18T15:00:10+00:00",
+      "task": "F-092"
     },
     "tools/blender/render_item_icons.py": {
       "agent": "lp",
@@ -3222,9 +3227,11 @@
       "title": "Two ways the harness lets a fed lane sit idle: a parked lane is never restarted, and a lane's own claim blocks deepening its queue"
     },
     "F-092": {
+      "done_at": "2026-08-18T15:00:10+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call"
     },
