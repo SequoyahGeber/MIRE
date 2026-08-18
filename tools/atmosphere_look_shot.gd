@@ -35,6 +35,9 @@ const SHOTS: Array = [
 	## carved, since a shaft is a shadow cut through the fog and needs something to cast it.
 	["forest_sunward", 6.7, Vector3(-26.0, 3.4, 22.0), Vector3.ZERO],
 	["forest_evening_sunward", 17.35, Vector3(-26.0, 3.4, 22.0), Vector3.ZERO],
+	## Close on a stand of trees, where falling leaves are large enough on screen to judge.
+	["canopy_leaves", 9.5, Vector3(-14.0, 4.0, 30.0), Vector3(-26.0, 4.5, 22.0)],
+	["canopy_leaves_golden", 6.8, Vector3(-14.0, 4.0, 30.0), Vector3(-26.0, 4.5, 22.0)],
 ]
 
 
