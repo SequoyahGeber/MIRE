@@ -8,13 +8,19 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **3.13** Command core — `CommandService` front door: typed arg specs, LOCAL/HOST scopes, client→host RPC + op permissions, migrate every existing console command (`docs/COMMANDS.md` §1–2) | lp | 2026-08-18 19:27 | `autoload/command_service.gd`, `autoload/debug_console.gd`, `core/dev/dev_loadout.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/command_check.gd`, `tools/command_net_check.gd` |
+| **3.4** Author 40–60 powerup `.tres` files | wick20 | 2026-08-18 19:35 | `content/powerups/ember_knuckle.tres`, `content/powerups/tinder_snap.tres`, `content/powerups/ashen_temper.tres`, `content/powerups/flashover.tres`, `content/powerups/cauter_seal.tres`, `content/powerups/forge_blood.tres`, `content/powerups/night_pyre.tres`, `content/powerups/warm_marrow.tres`, `content/powerups/cinder_tithe.tres`, `content/powerups/open_flame.tres` |
+| **3.13** Command core — `CommandService` front door: typed arg specs, LOCAL/HOST scopes, client→host RPC + op permissions, migrate every existing console command (`docs/COMMANDS.md` §1–2) | lp | 2026-08-18 19:27 | `autoload/command_service.gd`, `autoload/debug_console.gd`, `core/dev/dev_loadout.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/command_check.gd`, `tools/command_net_check.gd`, `autoload/enemy_world.gd` |
+| **F-123** Friends list offers no Join Game: the lobby is never advertised via the 'connect' rich presence key | pike14 | 2026-08-18 19:34 | `autoload/steam_lobby.gd`, `tools/rich_presence_check.gd` |
+| **F-124** macOS builds cannot show the Steam overlay: hardened runtime without the dyld entitlement blocks injection | pike14 | 2026-08-18 19:34 | `export_presets.cfg` |
+
+**3.13 notes:**
+- agent autoload only appends; moved CommandService= right after DebugConsole= by hand (editor confirmed closed) since this task's own spec requires it there so every later autoload can register specs synchronously in _ready(). No other line touched/reordered.
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 104/115 | 11 |
+| Findings | `█████████░` 105/117 | 12 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -56,10 +62,11 @@
 | ⬜ | **F-025** Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake | todo |
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-057** A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds | todo |
-| ⬜ | **F-110** `audit_all_sides.py` silently resumes, so a re-run after fixing an asset re-reports the old defect | todo |
 | ⬜ | **F-120** AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed | todo |
 | ⬜ | **F-122** `tools/flora_check.gd:126` measures rotated flora through the same inflated `Transform3D * AABB` ruler as F-108 | todo |
+| 🔵 | **F-123** Friends list offers no Join Game: the lobby is never advertised via the 'connect' rich presence key | in_flight |
+| 🔵 | **F-124** macOS builds cannot show the Steam overlay: hardened runtime without the dyld entitlement blocks injection | in_flight |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.5` `3.6` `3.8` `3.9` `3.10` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `3.8b` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-042` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-103` `F-104` `F-105` `F-106` `F-107` `F-108` `F-109` `F-111` `F-112` `F-113` `F-114` `F-115` `F-116` `F-117` `F-118` `F-119` `F-121`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.5` `3.6` `3.8` `3.9` `3.10` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `3.8b` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-042` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-103` `F-104` `F-105` `F-106` `F-107` `F-108` `F-109` `F-110` `F-111` `F-112` `F-113` `F-114` `F-115` `F-116` `F-117` `F-118` `F-119` `F-121`

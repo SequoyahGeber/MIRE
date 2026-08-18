@@ -3056,3 +3056,18 @@ Notes along the way:
 Files: `tools/blender/audit_all_sides.py`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/ASSET_TRACKER.md`, `tools/blender/audit_all_sides_check.py`
 
 Commit at time of writing: `ec09f7a`
+
+---
+
+### DONE · F-110 · lm · 2026-08-18T19:36:32+00:00
+
+**`audit_all_sides.py` silently resumes, so a re-run after fixing an asset re-reports the old defect**
+
+Ledger now keys staleness on the GLB's mtime (_source_mtime per entry), not just its path — a re-export into the same path is re-rendered on the next run instead of silently reused. pending_glbs() extracted for testability. Verified: Blender --background --python tools/blender/audit_all_sides_check.py -> AUDIT_ALL_SIDES_CHECK PASS (13 assertions, F-109's 6 plus 7 new). Real-world: touched a shipped GLB's mtime, reran against scratch --outdir, exactly that asset re-rendered with '1 asset(s) changed since their last audit; re-rendering: ...' printed; git status confirmed touch left content untouched. docs/SPECS.md F-110 block added, docs/FINDINGS.md moved to Resolved.
+
+Notes along the way:
+- Fixed by keying pending-ness on a GLB's mtime, not just its path: new pending_glbs() (pulled out of main() so it's testable without rendering) compares each ledger entry's stored _source_mtime against the file's current mtime. Extended audit_all_sides_check.py with 7 new assertions (temp files + os.utime, no bpy needed for this part) and did a real end-to-end proof: touch a shipped GLB, rerun with scratch --outdir, confirm exactly that asset re-renders and is reported as stale.
+
+Files: `tools/blender/audit_all_sides.py`, `tools/blender/audit_all_sides_check.py`
+
+Commit at time of writing: `5fc2a3f`

@@ -264,6 +264,22 @@ def geometry_report(objs: list[bpy.types.Object], lo: Vector, hi: Vector) -> dic
     }
 
 
+def pending_glbs(glbs: list[Path], assets_root: Path, report: dict[str, dict]) -> tuple[list[Path], list[Path]]:
+    """Which GLBs need (re)rendering, and which of those are stale re-renders (F-110).
+
+    The ledger keys on the asset's path, but "already in the ledger" and "still
+    matches what's on disk" are not the same claim. An asset is pending if it
+    has never been recorded, or if its current mtime disagrees with the mtime
+    its ledger entry was recorded under -- a re-export into the same path (a
+    fix, most often) must be re-rendered, not silently skipped and reported as
+    if the old geometry were still current.
+    """
+    mtimes = {g: g.stat().st_mtime for g in glbs}
+    pending = [g for g in glbs if report.get(g.relative_to(assets_root).as_posix(), {}).get("_source_mtime") != mtimes[g]]
+    stale = [g for g in pending if g.relative_to(assets_root).as_posix() in report]
+    return pending, stale
+
+
 def main() -> None:
     root = Path(__file__).resolve().parents[2] if (Path(__file__).resolve().parents[2] / "assets").exists() \
         else Path("/Users/sequoyahgeber/Desktop/MIRE")
@@ -295,13 +311,18 @@ def main() -> None:
             report.update(row)
         print(f"resuming: {len(report)} assets already done")
 
-    pending = [g for g in glbs if g.relative_to(root / "assets").as_posix() not in report]
+    pending, stale = pending_glbs(glbs, root / "assets", report)
+    mtimes = {g: g.stat().st_mtime for g in glbs}
+    if stale:
+        print(f"{len(stale)} asset(s) changed since their last audit; re-rendering: "
+              + ", ".join(g.relative_to(root / "assets").as_posix() for g in stale))
     if not pending:
-        print("nothing to do; every asset is already in the ledger")
+        print("nothing to do; every asset is already in the ledger and unchanged")
     clear_scene()
     cam, key = build_rig(size)
 
-    def record(key: str, value: dict) -> None:
+    def record(key: str, value: dict, mtime: float) -> None:
+        value["_source_mtime"] = mtime
         report[key] = value
         with ledger.open("a") as handle:
             handle.write(json.dumps({key: value}) + "\n")
@@ -309,18 +330,19 @@ def main() -> None:
 
     for index, glb in enumerate(pending, 1):
         rel = glb.relative_to(root / "assets").as_posix()
+        mtime = mtimes[glb]
         for o in list(bpy.context.scene.objects):
             if o.type not in {"CAMERA", "LIGHT"}:
                 bpy.data.objects.remove(o, do_unlink=True)
         try:
             bpy.ops.import_scene.gltf(filepath=str(glb))
         except Exception as exc:  # noqa: BLE001 - a broken export is a finding
-            record(rel, {"error": f"import failed: {exc}"})
+            record(rel, {"error": f"import failed: {exc}"}, mtime)
             continue
 
         objs = imported_meshes()
         if not objs:
-            record(rel, {"error": "no mesh objects in export"})
+            record(rel, {"error": "no mesh objects in export"}, mtime)
             continue
 
         lo, hi = bounds(objs)
@@ -358,7 +380,7 @@ def main() -> None:
 
         entry = geometry_report(objs, lo, hi)
         entry["sheet"] = f"sheets/{name}.png"
-        record(rel, entry)
+        record(rel, entry, mtime)
         print(f"[{index}/{len(pending)}] {rel}", flush=True)
 
     # The JSON is a convenience view of the ledger, rewritten from it each run.

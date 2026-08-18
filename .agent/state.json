@@ -10,6 +10,66 @@
       "at": "2026-08-18T19:27:08+00:00",
       "task": "3.13"
     },
+    "autoload/enemy_world.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T19:32:45+00:00",
+      "task": "3.13"
+    },
+    "autoload/steam_lobby.gd": {
+      "agent": "pike14",
+      "at": "2026-08-18T19:34:26+00:00",
+      "task": "F-123"
+    },
+    "content/powerups/ashen_temper.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/cauter_seal.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/cinder_tithe.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/ember_knuckle.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/flashover.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/forge_blood.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/night_pyre.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/open_flame.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/tinder_snap.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/warm_marrow.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
     "core/dev/dev_loadout.gd": {
       "agent": "lp",
       "at": "2026-08-18T19:27:08+00:00",
@@ -19,6 +79,11 @@
       "agent": "lp",
       "at": "2026-08-18T19:27:08+00:00",
       "task": "3.13"
+    },
+    "export_presets.cfg": {
+      "agent": "pike14",
+      "at": "2026-08-18T19:34:26+00:00",
+      "task": "F-124"
     },
     "tools/command_check.gd": {
       "agent": "lp",
@@ -34,6 +99,11 @@
       "agent": "lp",
       "at": "2026-08-18T19:27:08+00:00",
       "task": "3.13"
+    },
+    "tools/rich_presence_check.gd": {
+      "agent": "pike14",
+      "at": "2026-08-18T19:35:44+00:00",
+      "task": "F-123"
     }
   },
   "in_flight": {
@@ -46,10 +116,51 @@
         "core/net/net_version.gd",
         "tools/handshake_check.gd",
         "tools/command_check.gd",
-        "tools/command_net_check.gd"
+        "tools/command_net_check.gd",
+        "autoload/enemy_world.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-18T19:34:33+00:00",
+          "by": "lp",
+          "text": "agent autoload only appends; moved CommandService= right after DebugConsole= by hand (editor confirmed closed) since this task's own spec requires it there so every later autoload can register specs synchronously in _ready(). No other line touched/reordered."
+        }
+      ],
+      "started": "2026-08-18T19:27:08+00:00"
+    },
+    "3.4": {
+      "agent": "wick20",
+      "files": [
+        "content/powerups/ember_knuckle.tres",
+        "content/powerups/tinder_snap.tres",
+        "content/powerups/ashen_temper.tres",
+        "content/powerups/flashover.tres",
+        "content/powerups/cauter_seal.tres",
+        "content/powerups/forge_blood.tres",
+        "content/powerups/night_pyre.tres",
+        "content/powerups/warm_marrow.tres",
+        "content/powerups/cinder_tithe.tres",
+        "content/powerups/open_flame.tres"
       ],
       "notes": [],
-      "started": "2026-08-18T19:27:08+00:00"
+      "started": "2026-08-18T19:35:40+00:00"
+    },
+    "F-123": {
+      "agent": "pike14",
+      "files": [
+        "autoload/steam_lobby.gd",
+        "tools/rich_presence_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T19:34:26+00:00"
+    },
+    "F-124": {
+      "agent": "pike14",
+      "files": [
+        "export_presets.cfg"
+      ],
+      "notes": [],
+      "started": "2026-08-18T19:34:26+00:00"
     }
   },
   "recent": {
@@ -1137,15 +1248,15 @@
     },
     "tools/blender/audit_all_sides.py": {
       "agent": "lm",
-      "at": "2026-08-18T19:32:23+00:00",
-      "hash": "8b3616d9a1c313ba265ada867b4b83a345e9e5a64d8370185fb03bc12fa9acf8",
-      "task": "F-109"
+      "at": "2026-08-18T19:36:32+00:00",
+      "hash": "c27068bf74a16b5a7e353d987c82a9752f04abcacdd8b0eacee3fb00a31a0479",
+      "task": "F-110"
     },
     "tools/blender/audit_all_sides_check.py": {
       "agent": "lm",
-      "at": "2026-08-18T19:32:23+00:00",
-      "hash": "73142943bf3fbacdec7e3da00b2a0db49902bce2a8486c106ffc5bf66ea67934",
-      "task": "F-109"
+      "at": "2026-08-18T19:36:32+00:00",
+      "hash": "35a60d1d3126d79407ade53380ae06c1cd16a05f177d9870456e60da9dbc1804",
+      "task": "F-110"
     },
     "tools/blender/build_adapted_nature_set.py": {
       "agent": "tine18",
@@ -2278,7 +2389,7 @@
     "3.4": {
       "est": "10",
       "milestone": "M3",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Author 40\u201360 powerup `.tres` files"
     },
@@ -3656,9 +3767,11 @@
       "title": "The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them"
     },
     "F-110": {
+      "done_at": "2026-08-18T19:36:32+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`audit_all_sides.py` silently resumes, so a re-run after fixing an asset re-reports the old defect"
     },
@@ -3763,6 +3876,20 @@
       "status": "todo",
       "tier": "F",
       "title": "`tools/flora_check.gd:126` measures rotated flora through the same inflated `Transform3D * AABB` ruler as F-108"
+    },
+    "F-123": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Friends list offers no Join Game: the lobby is never advertised via the 'connect' rich presence key"
+    },
+    "F-124": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "macOS builds cannot show the Steam overlay: hardened runtime without the dyld entitlement blocks injection"
     }
   },
   "version": 1
