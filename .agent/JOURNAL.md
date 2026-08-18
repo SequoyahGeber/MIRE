@@ -2980,3 +2980,34 @@ Notes along the way:
 Files: `systems/hauling/haulable_def.gd`, `systems/hauling/haulable.gd`, `systems/hauling/haul_math.gd`, `autoload/haul_service.gd`, `autoload/registry.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/interp_coverage_check.gd`, `tools/haul_check.gd`, `tools/haul_net_check.gd`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`, `content/haulables/heavy_ore_crate.tres`, `tools/setup_haul_content.gd`, `project.godot`
 
 Commit at time of writing: `ab5034d`
+
+---
+
+### DONE · 3.9 · lm · 2026-08-18T19:15:45+00:00
+
+**Attunement system + selection UI (`DESIGN.md` §4.5)**
+
+Attunement system + UI shipped: AttunementDef/AttunementService/AttunementUI, all 4 DESIGN §4.5 roles as thin PowerupService grants, host-authoritative selection with D-035 rebind/expire. Verified: attunement_check.gd (30/30), attunement_net_check.gd (12/12 real ENet), attunement_ui_check.gd (8/8), handshake_check.gd (protocol 14), full boot 0 ERROR with 4 attunement(s) registered.
+
+Notes along the way:
+- player_controller.gd is mid-edit-broken (missing _execute_dodge) under lp's 3.8b claim — confirmed pre-existing via the setup script's own boot log, not touched by 3.9, not chased.
+
+Files: `systems/attunement/attunement_def.gd`, `autoload/attunement_service.gd`, `autoload/registry.gd`, `ui/attunement/attunement_ui.gd`, `content/attunements/warden.tres`, `content/attunements/forager.tres`, `content/attunements/tinker.tres`, `content/attunements/reaver.tres`, `content/powerups/attunement_warden.tres`, `content/powerups/attunement_forager.tres`, `content/powerups/attunement_tinker.tres`, `content/powerups/attunement_reaver.tres`, `tools/setup_attunement_content.gd`, `tools/attunement_check.gd`, `tools/attunement_net_check.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/attunement_ui_check.gd`
+
+Commit at time of writing: `764a8e1`
+
+---
+
+### DONE · 3.8b · lp · 2026-08-18T19:16:34+00:00
+
+**Dodge: stamina-gated dash, client-auth own movement. `DESIGN.md` §6 says stamina gates *dodging*, and Void Resonance's "dodge blinks" (§4.4) needs the verb to hook**
+
+Stamina-costed dodge (client-auth, §2.2 row 1): _execute_dodge()/_tick_dodge() on player_controller.gd, exports dodge_stamina_cost/dodge_impulse/dodge_duration_sec/dodge_cooldown_sec, new InputMap action 'dodge'. Host i-frame decision: PlayerHealth._on_enemy_attack_landed() reads the replicated 'dodging' flag (4th ALWAYS property on the player synchronizer) via _is_dodging(), scoped to enemy melee only (host_apply_damage() itself untouched). PROTOCOL_VERSION 14->15. Verified: agent godot --script tools/dodge_check.gd (offline, 0 failures), agent godot --script tools/dodge_net_check.gd (2 real ENet peers, 0 failures — dodging flag genuinely replicates host<-client and gates a host-fired enemy_attack_landed), agent godot --script tools/handshake_check.gd and tools/verify_setup.gd both green. D-072 records the i-frame-window-equals-dash-duration call and the sync-interval floor reasoning; DELEGATION.md 'Current state' has the full API.
+
+Notes along the way:
+- core/net/net_version.gd and tools/handshake_check.gd are held by lm/3.9 (claimed 19:06:09, same session) — both needed to bump PROTOCOL_VERSION for the new 'dodging' replicated property on PlayerController's synchronizer (net_version.gd's own docstring: any SceneReplicationConfig change needs a bump). Proceeding with everything else; will retry claiming those two at close-out and either finish the bump myself or leave a precise handoff note.
+- core/net/net_version.gd + tools/handshake_check.gd freed by lm/3.9 and claimed; bumped PROTOCOL_VERSION 14->15 for the dodging replicated property, handshake_check.gd updated to match. All four checks (dodge_check, dodge_net_check, handshake_check, verify_setup) green, 0 engine ERROR lines.
+
+Files: `entities/player/player_controller.gd`, `systems/health/player_health.gd`, `project.godot`, `tools/dodge_check.gd`, `tools/dodge_net_check.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`
+
+Commit at time of writing: `8ab5e38`

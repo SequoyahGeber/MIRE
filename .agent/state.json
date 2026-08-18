@@ -1,6 +1,39 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "autoload/enemy_world.gd": {
+      "agent": "pike14",
+      "at": "2026-08-18T19:13:48+00:00",
+      "task": "F-121"
+    },
+    "autoload/registry.gd": {
+      "agent": "pike14",
+      "at": "2026-08-18T19:16:06+00:00",
+      "task": "F-121"
+    },
+    "export_presets.cfg": {
+      "agent": "pike14",
+      "at": "2026-08-18T19:15:47+00:00",
+      "task": "F-121"
+    }
+  },
+  "in_flight": {
+    "F-121": {
+      "agent": "pike14",
+      "files": [
+        "autoload/enemy_world.gd",
+        "export_presets.cfg",
+        "autoload/registry.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-18T19:15:47+00:00",
+          "by": "pike14",
+          "text": "Half-fixed and empirically confirmed. autoload/enemy_world.gd _load_defs() now strips a trailing .remap before the .tres test; a re-exported macOS build goes from 'loaded 0 enemy definition(s)' to 'loaded 1', while items stay at 0 \u2014 which isolates the remaining half to autoload/registry.gd _tres_files_in(), held by lane lm under task 3.9 and therefore not editable here. Source runs stay green (23 items, 1 enemy, all checks passed), so the change is safe in both directions. Whoever frees registry.gd applies the identical two-line change there and F-121 closes."
+        }
+      ],
+      "started": "2026-08-18T19:13:48+00:00"
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
       "agent": "lp",
@@ -343,6 +376,12 @@
       "at": "2026-08-18T00:39:51+00:00",
       "task": "2.1j"
     },
+    "autoload/attunement_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "1821465ef11d0a9b55d0b1d2b498039345fe08ec2c7a01726507a4e9f49348a8",
+      "task": "3.9"
+    },
     "autoload/build_service.gd": {
       "agent": "kiln9",
       "at": "2026-08-18T14:10:44+00:00",
@@ -410,10 +449,34 @@
       "task": "F-099"
     },
     "autoload/registry.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T18:59:24+00:00",
-      "hash": "85a64f2056ba167dfa35f48bd0b73b435e5620b235a99235239c42a14dea941c",
-      "task": "3.10"
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "08bdee9368ca5fbc9945c9c583fa26d80c509d96ccdb2000b93f6ab60e15c8f4",
+      "task": "3.9"
+    },
+    "content/attunements/forager.tres": {
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "c7e63351e057a23780344b2a5759b8358147c7b5ab4100c7f675f1e05e367e62",
+      "task": "3.9"
+    },
+    "content/attunements/reaver.tres": {
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "d7ce63cf2c880ba870e02e7803b350bbe8ff02aac0cad34f35d8c48238a42d03",
+      "task": "3.9"
+    },
+    "content/attunements/tinker.tres": {
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "2a64087e6066627cf3d26e13d3486a161d97b90dff3648bd37c5474be7a35785",
+      "task": "3.9"
+    },
+    "content/attunements/warden.tres": {
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "36797aed40854eda32745be953a72ec23d0b1b85baa381722ff042db3d72998d",
+      "task": "3.9"
     },
     "content/buildables/wall.tres": {
       "agent": "gale6",
@@ -596,6 +659,30 @@
       "at": "2026-08-18T04:27:04+00:00",
       "task": "3.3"
     },
+    "content/powerups/attunement_forager.tres": {
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "15672ce033afd7da2f2734b7f01b6f702d9a05eb5573a7ab5453c3603d0bde68",
+      "task": "3.9"
+    },
+    "content/powerups/attunement_reaver.tres": {
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "b30befc8e6577d4327a0b7807e36b31480980a8ef8a33e81bc75a66d6fe00463",
+      "task": "3.9"
+    },
+    "content/powerups/attunement_tinker.tres": {
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "6805aacd57c9a05e88f9b21445c2fc1ce85555444974357dc35fbca3c39839f5",
+      "task": "3.9"
+    },
+    "content/powerups/attunement_warden.tres": {
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "3dcb8bf4ceb845025d93e99d1cc8d26e094d13077be948141d48c8b523d48baa",
+      "task": "3.9"
+    },
     "content/powerups/swift_stride.tres": {
       "agent": "gale6",
       "at": "2026-08-18T04:27:04+00:00",
@@ -645,11 +732,6 @@
       "agent": "ivy8",
       "at": "2026-08-18T17:57:51+00:00",
       "task": "3.2"
-    },
-    "content/recipes/stone_axe.tres": {
-      "agent": "flint5",
-      "at": "2026-08-17T19:02:17+00:00",
-      "task": "F-050"
     },
     "content/recipes/stone_pickaxe.tres": {
       "agent": "ivy8",
@@ -743,9 +825,9 @@
     },
     "core/net/net_version.gd": {
       "agent": "lp",
-      "at": "2026-08-18T18:59:24+00:00",
-      "hash": "b5b726d659b111e6628d2e48793120dc7aa647b81f29fc9593c063917aff1703",
-      "task": "3.10"
+      "at": "2026-08-18T19:16:34+00:00",
+      "hash": "b32e81d704725a5b8f054f3d3afda460adb5b7e785784a98418e0040caa19d0f",
+      "task": "3.8b"
     },
     "core/util/mire_log.gd": {
       "agent": "gale6",
@@ -767,11 +849,6 @@
       "agent": "ivy8",
       "at": "2026-08-18T14:17:26+00:00",
       "task": "2.1d"
-    },
-    "docs/AUDIT-2026-08-17.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T19:02:17+00:00",
-      "task": "F-050"
     },
     "docs/DECISIONS.md": {
       "agent": "lp",
@@ -824,8 +901,9 @@
     },
     "entities/player/player_controller.gd": {
       "agent": "lp",
-      "at": "2026-08-18T14:55:48+00:00",
-      "task": "F-105"
+      "at": "2026-08-18T19:16:34+00:00",
+      "hash": "57ae531ac02185310928ecadf6f44cf5169e00611c474cfc19f84655dfa03ea7",
+      "task": "3.8b"
     },
     "entities/player/viewmodel.gd": {
       "agent": "kiln9",
@@ -854,9 +932,15 @@
     },
     "project.godot": {
       "agent": "lp",
-      "at": "2026-08-18T18:59:24+00:00",
-      "hash": "82f9a7e2b59ce5515e5282d1fed4722d8c7893b7dfa9be903aa8341b80212267",
-      "task": "3.10"
+      "at": "2026-08-18T19:16:34+00:00",
+      "hash": "5c56c16c24b271a7dc07ce0ee075d8ac1f0a04dd978cf8cd9cbd8e06962d9a4b",
+      "task": "3.8b"
+    },
+    "systems/attunement/attunement_def.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "664df1ba0225e29dbe59041a15e2e7d6e6063be5a6f288c365aec695e8a878d4",
+      "task": "3.9"
     },
     "systems/building/build_ghost.gd": {
       "agent": "lp",
@@ -942,9 +1026,10 @@
       "task": "3.8"
     },
     "systems/health/player_health.gd": {
-      "agent": "kiln9",
-      "at": "2026-08-18T14:10:44+00:00",
-      "task": "F-099"
+      "agent": "lp",
+      "at": "2026-08-18T19:16:34+00:00",
+      "hash": "06e9d8feadce31576e64a1a4903b8928c789bdcfef1189245c7ee5057e8b5fd8",
+      "task": "3.8b"
     },
     "systems/inventory/item_def.gd": {
       "agent": "flint5",
@@ -990,6 +1075,24 @@
       "agent": "gale6",
       "at": "2026-08-18T02:48:51+00:00",
       "task": "F-065"
+    },
+    "tools/attunement_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "f739527758db2597ff3a34c0a296821a154738559e4bb99db4c972f68c2b3242",
+      "task": "3.9"
+    },
+    "tools/attunement_net_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "6b4571a6d9f1fb37f4ef65d3e3d13c244ae9f63e6e0f61e0da6c3b01a9a3d613",
+      "task": "3.9"
+    },
+    "tools/attunement_ui_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "bae3b00293c9a423bc1c7e6db61c98aa728b811ee28045f1616aff7122e44de6",
+      "task": "3.9"
     },
     "tools/audio/audio_check.py": {
       "agent": "tine18",
@@ -1181,6 +1284,18 @@
       "at": "2026-08-17T19:28:04+00:00",
       "task": "F-052"
     },
+    "tools/dodge_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T19:16:34+00:00",
+      "hash": "f5893b55c7f1a1490e954b6610ac6bb77f047c1dec650fb2d483f0342a739bfe",
+      "task": "3.8b"
+    },
+    "tools/dodge_net_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T19:16:34+00:00",
+      "hash": "8ed924f802fc0889e89807cf5c4bde66e60f0d3f12ea806a2d238421ca6a8f8a",
+      "task": "3.8b"
+    },
     "tools/enemy_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T18:16:36+00:00",
@@ -1234,9 +1349,9 @@
     },
     "tools/handshake_check.gd": {
       "agent": "lp",
-      "at": "2026-08-18T18:59:24+00:00",
-      "hash": "7807a3d51cd90700471fd254acc22ed2e5e0cf64f6a11f3037b9149f216a6788",
-      "task": "3.10"
+      "at": "2026-08-18T19:16:34+00:00",
+      "hash": "bf6e0331d0b983f71b31570dd04bc4294d581b1a19f23269888d480d8f171335",
+      "task": "3.8b"
     },
     "tools/harness_check.py": {
       "agent": "lp",
@@ -1417,6 +1532,12 @@
       "at": "2026-08-17T23:13:44+00:00",
       "task": "F-052"
     },
+    "tools/setup_attunement_content.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "e6ad2ad688b5e52974351563239d1aa77782fa23465bd592cc371b15325bcb06",
+      "task": "3.9"
+    },
     "tools/setup_crafting_content.gd": {
       "agent": "flint5",
       "at": "2026-08-18T04:58:38+00:00",
@@ -1472,6 +1593,12 @@
       "agent": "lp",
       "at": "2026-08-18T14:44:41+00:00",
       "task": "F-076"
+    },
+    "ui/attunement/attunement_ui.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:15:45+00:00",
+      "hash": "daebea624b0b9adcd239e6f1f51228c62e9212d0c1b5c4c650604a1063c38023",
+      "task": "3.9"
     },
     "ui/building/build_bar.gd": {
       "agent": "lp",
@@ -2183,16 +2310,20 @@
       "title": "Hunger/health/stamina, food items, consumables"
     },
     "3.8b": {
+      "done_at": "2026-08-18T19:16:34+00:00",
+      "done_by": "lp",
       "est": "2",
       "milestone": "M3",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Dodge: stamina-gated dash, client-auth own movement. `DESIGN.md` \u00a76 says stamina gates *dodging*, and Void Resonance's \"dodge blinks\" (\u00a74.4) needs the verb to hook"
     },
     "3.9": {
+      "done_at": "2026-08-18T19:15:45+00:00",
+      "done_by": "lm",
       "est": "3",
       "milestone": "M3",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Attunement system + selection UI (`DESIGN.md` \u00a74.5)"
     },
@@ -3587,6 +3718,13 @@
       "status": "todo",
       "tier": "F",
       "title": "AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed"
+    },
+    "F-121": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Exported builds load zero content: .tres scan misses Godot's .remap suffix"
     }
   },
   "version": 1

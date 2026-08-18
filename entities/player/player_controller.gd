@@ -1,7 +1,7 @@
 class_name PlayerController
 extends CharacterBody3D
 
-## First-person ground movement: walk, sprint, jump, coyote time, jump buffering.
+## First-person ground movement: walk, sprint, jump, coyote time, jump buffering, dodge (task 3.8b).
 ##
 ## Network authority: OWN PLAYER MOVEMENT — CLIENT (ARCHITECTURE.md §2.2, row 1).
 ## The peer that owns this node simulates it locally and its transform is replicated outward by a
@@ -16,6 +16,9 @@ extends CharacterBody3D
 signal jumped
 ## Emitted on landing, with the downward speed at the moment of impact (positive, m/s).
 signal landed(impact_speed: float)
+## Emitted the instant a dodge is accepted (stamina spent, dash committed). Client-local — audio/VFX
+## only; nothing about damage is decided here. See _execute_dodge()'s own note.
+signal dodged
 
 ## Temporary network-test colours. The real third-person character belongs to the player-art task;
 ## these code-built proxies make movement and facing observable before that asset exists, without
@@ -85,6 +88,30 @@ const BUILD_ROTATE_KEY: Key = KEY_R
 ## gameplay_input_allowed()'s callers below).
 @export_range(0.1, 5.0, 0.05) var crawl_speed: float = 1.0
 
+@export_group("Dodge")
+## Discrete stamina cost of one dodge (task 3.8b), spent through the same PlayerHealth seam jump uses.
+## DESIGN.md §6: stamina gates dodging, not attacking.
+@export_range(0.0, 200.0, 1.0) var dodge_stamina_cost: float = 30.0
+## Dash speed, metres per second, held constant for dodge_duration_sec — a committed impulse, not an
+## accelerated target like walk/sprint (DESIGN.md §6's "you can't cancel a swing" chunkiness applies
+## here too: once thrown, a dodge finishes on its own terms).
+@export_range(1.0, 40.0, 0.5) var dodge_impulse: float = 10.0
+## How long the dash lasts AND how long i-frames hold (see `dodging`'s own doc — the two are
+## deliberately the same window, not a separate timer). Floor is well above
+## NetConfig.PLAYER_SYNC_INTERVAL_SEC (30 Hz, ~0.033 s): `dodging` rides the player's existing
+## REPLICATION_MODE_ALWAYS synchronizer (task 3.8b's spec names this seam explicitly), so a duration
+## anywhere near one sync tick risks the host never observing the flag before it flips back to false.
+@export_range(0.1, 1.0, 0.01) var dodge_duration_sec: float = 0.25
+## Minimum time between dodges, counted from the moment one is accepted.
+@export_range(0.1, 10.0, 0.1) var dodge_cooldown_sec: float = 1.2
+
+## True for exactly the dash window (dodge_duration_sec), set by _execute_dodge() and cleared by
+## _tick_dodge(). Replicated ALWAYS on the same synchronizer as position/rotation (see
+## _build_synchronizer()) so the HOST can read it before applying an enemy_attack_landed hit —
+## systems/health/player_health.gd's _on_enemy_attack_landed() is the reader; the i-frame DECISION is
+## the host's, this flag is only the client's own (trusted, same as position) presentation of intent.
+var dodging: bool = false
+
 ## Set false on remote copies of this player so they are driven by replication only.
 var is_local_authority: bool = true
 
@@ -105,6 +132,13 @@ var _was_on_floor: bool = true
 var _revive_target_peer: int = 0
 var _revive_hold_elapsed: float = 0.0
 var _revive_request_sent: bool = false
+
+## Dodge (task 3.8b) — see `dodging`'s own doc for the replication story. Direction is locked in at
+## the moment the dash is accepted, not re-read from input each tick: a committed dash, same
+## "wind-up -> commit -> recovery, can't cancel" philosophy DESIGN.md §6 states for melee.
+var _dodge_velocity: Vector3 = Vector3.ZERO
+var _dodge_time_remaining: float = 0.0
+var _dodge_cooldown_remaining: float = 0.0
 
 ## F-105: PlayerHealth is an autoload, so this reference outlives the whole session once resolved —
 ## caching it kills the ~6-8 `get_node_or_null(/root/PlayerHealth)` path lookups a single physics tick
@@ -274,12 +308,21 @@ func _adopt_spawn_authority() -> void:
 ## CONFIGURATION differs, in who holds authority. A synchronizer built on one side only fails as
 ## silence, which is the expensive kind of bug.
 ##
-## Replicates position, body yaw and camera pitch, and nothing else. Yaw is on the body and pitch is
-## on the pivot (see player_camera.gd), so a remote player needs both to face the right way.
-## Velocity is deliberately absent: if 1.6 needs it for interpolation, 1.6 adds it and pays for it.
+## Replicates position, body yaw, camera pitch, and (task 3.8b) the `dodging` i-frame flag, and
+## nothing else. Yaw is on the body and pitch is on the pivot (see player_camera.gd), so a remote
+## player needs both to face the right way. Velocity is deliberately absent: if 1.6 needs it for
+## interpolation, 1.6 adds it and pays for it.
+##
+## `dodging` is ALWAYS mode, not ON_CHANGE, on purpose: ON_CHANGE only sends when the value differs
+## from the last value SENT, so a flag that flips true then false again between two checks (a dash
+## shorter than the sync interval) can be missed entirely. ALWAYS resends the current value on every
+## tick regardless, so as long as dodge_duration_sec comfortably exceeds one sync interval (see that
+## export's own note), at least one send lands inside the window.
 func _build_synchronizer() -> void:
 	var config: SceneReplicationConfig = SceneReplicationConfig.new()
-	for property: NodePath in [^".:position", ^".:rotation:y", ^"CameraPivot:rotation:x"]:
+	for property: NodePath in [
+		^".:position", ^".:rotation:y", ^"CameraPivot:rotation:x", ^".:dodging"
+	]:
 		config.add_property(property)
 		config.property_set_replication_mode(
 			property, SceneReplicationConfig.REPLICATION_MODE_ALWAYS
@@ -334,6 +377,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
+	# Dodge (task 3.8b): a discrete press, not a held/buffered action like jump — the dash either
+	# commits now or it doesn't, so there is nothing to buffer. gameplay_input_allowed() gates it the
+	# same as attack/build; downed/dead block it the same way jump and sprint already are (crawl_speed
+	# leaves no dash to spend, and a dead player is mid-respawn with no body to move at all).
+	if event.is_action_pressed(&"dodge") and gameplay_input_allowed() \
+			and not _is_downed() and not _is_dead():
+		_execute_dodge()
+		get_viewport().set_input_as_handled()
+		return
+
 	# The swing starts locally on the press (own-action prediction) and the host resolves the hit —
 	# see autoload/combat_service.gd. Nothing about damage is decided here.
 	#
@@ -382,6 +435,7 @@ func _physics_process(delta: float) -> void:
 	var dead: bool = _is_dead()
 
 	_tick_timers(delta)
+	_tick_dodge(delta)
 	_apply_gravity(delta)
 	_apply_horizontal_movement(delta, input_allowed, downed, dead)
 	_try_jump(input_allowed, downed, dead)
@@ -423,6 +477,19 @@ func _apply_gravity(delta: float) -> void:
 
 func _apply_horizontal_movement(
 		delta: float, input_allowed: bool, downed: bool, dead: bool) -> void:
+	# Dodge overrides normal locomotion outright for its whole window: a committed dash at a constant
+	# speed, not an accelerated target move_toward chases (same reasoning as jump's velocity.y — set
+	# once, not steered). Stamina still ticks (never sprinting mid-dash) so the bar keeps regenerating
+	# through the dash instead of freezing for its short duration.
+	if dodging:
+		var health: Node = _health_node()
+		if health != null:
+			health.call(&"local_tick_stamina", delta, false)
+		velocity.x = _dodge_velocity.x
+		velocity.z = _dodge_velocity.z
+		camera.set_sprinting(false)
+		return
+
 	# Cursor-owning UI suppresses gameplay input without pausing the simulation, and a dead player
 	# (mid-respawn) gets no input at all — downed still allows the crawl. Pausing a multiplayer
 	# client would stall networking and is not a valid UI boundary.
@@ -484,6 +551,63 @@ func _try_jump(input_allowed: bool, downed: bool, dead: bool) -> void:
 	_time_since_grounded = INF
 
 	jumped.emit()
+
+
+# ── Dodge (task 3.8b) ─────────────────────────────────────────────────────────────────────────────
+# Client-auth own movement (ARCHITECTURE.md §2.2 row 1): the dash itself is decided and simulated
+# entirely here, same as walk/sprint/jump. The i-frame CONSEQUENCE is the host's call — see
+# systems/health/player_health.gd's _on_enemy_attack_landed(), which reads the `dodging` flag this
+# replicates before ever applying an enemy hit.
+
+
+## The dodge verb itself, deliberately a standalone function and not inlined into the input handler —
+## DESIGN.md §4.4 (Void Resonance's "dodge blinks") wraps or replaces this exact call later; keeping
+## it a function with no input-event dependency is what makes that a wrap instead of a rewrite. Its
+## own downed/dead/cooldown/stamina guards are repeated here rather than trusted to whatever calls it
+## (_unhandled_input already checks downed/dead too, redundantly) — a future caller that is not the
+## input handler (a powerup, a command) must not be able to skip them by calling this directly.
+## Returns false and changes nothing on cooldown or without enough stamina — same "the action just
+## does not happen" contract as _try_jump()'s local_try_spend_stamina() check.
+func _execute_dodge() -> bool:
+	if dodging or _dodge_cooldown_remaining > 0.0 or _is_downed() or _is_dead():
+		return false
+	var health: Node = _health_node()
+	if health != null and not bool(
+		health.call(&"local_try_spend_stamina", dodge_stamina_cost)
+	):
+		return false
+
+	var input_2d: Vector2 = Input.get_vector(
+		&"move_left", &"move_right", &"move_forward", &"move_back"
+	)
+	var dash_dir: Vector3 = transform.basis * Vector3(input_2d.x, 0.0, input_2d.y)
+	if dash_dir.length_squared() < 0.0001:
+		# No movement input held: dodge in the direction the player is facing rather than refusing —
+		# a "dodge in place" that does nothing would be a wasted stamina cost with no feedback.
+		dash_dir = -transform.basis.z
+	dash_dir = dash_dir.normalized()
+
+	_dodge_velocity = dash_dir * dodge_impulse
+	_dodge_time_remaining = dodge_duration_sec
+	_dodge_cooldown_remaining = dodge_cooldown_sec
+	dodging = true
+	dodged.emit()
+	return true
+
+
+## Counts the cooldown down unconditionally and, while dodging, counts the dash window down —
+## clearing `dodging` the instant it expires. Runs every physics tick regardless of input/downed/dead
+## state so a dash started the instant before a stun/UI-block still finishes and releases control
+## normally rather than latching `dodging` true forever.
+func _tick_dodge(delta: float) -> void:
+	if _dodge_cooldown_remaining > 0.0:
+		_dodge_cooldown_remaining = maxf(_dodge_cooldown_remaining - delta, 0.0)
+	if not dodging:
+		return
+	_dodge_time_remaining -= delta
+	if _dodge_time_remaining <= 0.0:
+		dodging = false
+		_dodge_time_remaining = 0.0
 
 
 func _detect_landing(fall_speed: float) -> void:

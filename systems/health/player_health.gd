@@ -31,6 +31,10 @@ extends Node
 ##   · EventBus.enemy_attack_landed — 2.10's enemies emit it on a landed hit; this file is the
 ##     subscriber that seam was built for (see systems/enemies/enemy.gd's own note on the event).
 ##     enemy_attack_landed_subscriber_count() proves that wiring exists rather than trusting it.
+##     Task 3.8b's dodge i-frames gate exactly this path — _on_enemy_attack_landed() checks the
+##     dodging peer's replicated flag (_is_dodging()) before ever reaching host_apply_damage(), so a
+##     dodge answers enemy melee only, never starvation or a future hazard routed through the shared
+##     host_apply_damage() entry point directly.
 ##
 ## Replication mirrors autoload/inventory_service.gd (D-035-safe): an owner-only reliable snapshot
 ## carries the full hp/state/hunger, and a broadcast bool carries just "is this peer downed" to
@@ -272,9 +276,26 @@ func _on_enemy_attack_landed(
 ) -> void:
 	if not _owns_mutation() or peer_id <= 0:
 		return
+	# Task 3.8b's i-frames: enemy melee ONLY (this event), never a check inside host_apply_damage
+	# itself — that seam is shared with starvation, future hazards, and anything else that might land
+	# on a player, and DESIGN.md/SPECS.md's dodge only ever promised to answer an enemy's hit.
+	if _is_dodging(peer_id):
+		MireLog.info(LOG_CHANNEL, "PlayerHealth: peer %d dodged an enemy hit" % peer_id)
+		return
 	# instigator 0: no player threw this hit. host_apply_damage's instigator arg is only ever used
 	# for logging today; 0 is never a valid peer id so it reads unambiguously as "an enemy."
 	host_apply_damage(peer_id, damage, 0)
+
+
+## The i-frame DECISION (host-side, per task 3.8b's spec) reading the i-frame STATE (client-side,
+## replicated). `dodging` lives on entities/player/player_controller.gd, replicated ALWAYS on the same
+## synchronizer as position — see that file's own note on why ALWAYS and not ON_CHANGE. Trusted the
+## same way position already is (§2.2 row 1: own movement is client authority); D-039's "cheating is
+## irrelevant among friends" already covers a player lying about their own dodge state exactly the way
+## it covers speed-hacking their own position.
+func _is_dodging(peer_id: int) -> bool:
+	var body: Node3D = _player_body(peer_id)
+	return body != null and bool(body.get(&"dodging"))
 
 
 # ── Consume item — food, task 3.8 ─────────────────────────────────────────────────────────────────

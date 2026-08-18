@@ -48,7 +48,15 @@ extends RefCounted
 ## net_request_drop/net_drop_result (client -> host carry requests, host -> requester grants), plus
 ## its own SceneReplicationConfig (position ALWAYS, carriers ON_CHANGE) — the first wire shape a
 ## carryable object ever put on the network.
-const PROTOCOL_VERSION: int = 13
+## 14 (task 3.9): autoload/attunement_service.gd added net_request_attunement (client -> host),
+## net_attunement_confirmed (host -> the requester only), and net_attunement_selected (host -> a
+## full broadcast of one peer's pick, or &"" to retire it). All reliable: a dropped message must
+## never leave a role pick unmade or a stale role visible after a reconnect/expiry.
+## 15 (task 3.8b): entities/player/player_controller.gd added a fourth REPLICATION_MODE_ALWAYS
+## property, `dodging`, to the player's existing position/rotation SceneReplicationConfig — the
+## host's dodge i-frame decision (systems/health/player_health.gd's _on_enemy_attack_landed()) reads
+## it off that synchronizer, not a new RPC.
+const PROTOCOL_VERSION: int = 15
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).
