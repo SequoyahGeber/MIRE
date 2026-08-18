@@ -12,7 +12,7 @@ _Nothing in flight._
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 101/112 | 11 |
+| Findings | `█████████░` 101/113 | 12 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -57,6 +57,7 @@ _Nothing in flight._
 | ⬜ | **F-108** A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized | todo |
 | ⬜ | **F-109** The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them | todo |
 | ⬜ | **F-110** `audit_all_sides.py` silently resumes, so a re-run after fixing an asset re-reports the old defect | todo |
+| ⬜ | **F-120** AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed | todo |
 
 ## Done
 

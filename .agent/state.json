@@ -3580,6 +3580,13 @@
       "status": "done",
       "tier": "F",
       "title": "`agent godot`'s own `--import` pre-pass logs two UNDECLARED `ERROR:` lines on every single invocation"
+    },
+    "F-120": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed"
     }
   },
   "version": 1
