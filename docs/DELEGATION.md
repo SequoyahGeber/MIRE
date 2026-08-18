@@ -75,6 +75,63 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-17 — stations and timed crafts (3.1): the crafting tree now has a framework, not just one workbench recipe
+
+`StationDef` (`systems/crafting/station_def.gd`: `id`, `display_name`, `world_scene`, `tier`) joins
+`RecipeDef` as a registered content family — `content/stations/*.tres`, loaded by
+`Registry._load_stations()` into `stations: Dictionary[StringName, Resource]` (untyped, F-016 —
+`STATION_DEF` is a brand-new class_name this task, same reasoning as `LOOT_TABLE_DEF`/`POWERUP_DEF`/
+`BUILDABLE_DEF` above it). `RecipeDef.station` already existed (default `&"workbench"`) and now
+resolves through `Registry.get_station()` instead of a bare string compare — this **is** the "station-
+tier check" 3.1's spec asked for: a recipe whose station id doesn't resolve to a registered `StationDef`
+is rejected before the range check ever runs. `StationDef.world_scene` is **not** a `PackedScene` —
+every crafting station shipped so far is baked map art (`assets/crafting_stations/catalog.json`), not
+an instantiated scene, so it's the identifier `CraftingService._station_in_range` matches against a
+physical station instance's name (D-051).
+
+**`CraftingService` now finds stations on Hollowmere, not just Playtest Hollow.** The old
+`_station_in_range` only ever checked `playtest_hollow_asset`-group nodes — exactly the trap
+`world/gen/authored_world.gd:508` already documents for `HarvestWorld` ("only ever looked for
+`playtest_hollow_asset` holders that this map never built"). It now also checks
+`authored_world_marker` nodes named `"Station_<world_scene>"` (`tools/mapgen/hollowmere_layout.py`'s
+`_marker(f"Station_{asset}", "station", ...)` — Hollowmere's station props are baked into a
+`MultiMeshInstance3D`, so the marker is the only per-instance position that map exposes). Both group
+shapes are checked so every existing offline/net check (built against the legacy group) still passes
+unmodified.
+
+**Timed crafts (the furnace worked example, `iron_ore ×2 → iron_ingot`, 2s) needed a field neither
+`RecipeDef`'s nor `StationDef`'s spec'd fields had — added `RecipeDef.craft_time_sec: float = 0.0`**
+(0 = instant, every pre-3.1 recipe including stone_axe is unaffected). `CraftingService` keeps a
+HOST-only `_host_pending_crafts: peer_id -> (request_id -> {data, remaining_sec})`, ticked in
+`_process(delta)`; a timed request pre-checks ingredients with `InventoryService.host_can_remove` (so
+an already-doomed request rejects immediately instead of occupying a timer slot) but does not remove
+them until the timer elapses and `host_transaction` runs — a craft that outlives its own ingredients
+(spent elsewhere mid-smelt) is rejected then, same as the instant path already was.
+
+**`CraftingService.craft_progress(request_id) -> float`** (0..1, or -1.0 if not a pending timed craft
+this peer itself requested) is a **client-side estimate only** — every peer already has the identical
+`RecipeDef` from `Registry`, so `request_craft()` starts the requester's own countdown the moment it
+sends the request rather than waiting on a round trip (D-052). This is why 3.1 needed **no new RPC and
+no protocol bump**: the wire shape is exactly what 2.6 shipped — a request carries a recipe id and a
+local request id, and `craft_confirmed(request_id, accepted, detail)` is still the only completion
+signal, timed or not. Proven over real ENet (not just same-process) in
+`tools/crafting_net_check.gd` — the host's `_process()` timer completing and RPC-confirming a
+genuinely remote peer specifically was previously untested by anything.
+
+**`CraftingUI` no longer hardcodes `&"workbench"`.** `CraftingService.nearby_station_id()` (nearest
+registered station the local player is in range of, or `&""`) drives `current_station_id()`; rows
+rebuild (`_rebuild_rows`) whenever that identity changes, and the panel title/interact prompt read the
+station's `display_name`. `craft_progress()` >= 0 while a request is in flight replaces "Waiting for
+the host…" with a live "Crafting… NN%" line.
+
+Checks: `Godot --headless --path . --script tools/crafting_check.gd` (offline, station registration +
+tier-rejection + full timed-craft lifecycle), `tools/crafting_ui_check.gd` (station-switch + progress
+readout), `agent godot --script tools/crafting_net_check.gd` (real two-process proof, both the
+original stone_axe flow and the new remote furnace one). `tools/setup_station_content.gd` is the
+deterministic authoring script for the two `StationDef`s plus the `iron_ingot` item/recipe — same
+re-run caveat as `setup_crafting_content.gd`: it overwrites those four files, so don't re-run once
+their values are being tuned in the inspector. 3.2 authors the rest of the tree against this schema.
+
 ### 2026-08-17 — first-person grips, per-weapon attack arcs, and how to get a real in-game screenshot (F-073)
 
 **`agent godot` CAN render. This is the important one, and it answers F-077.** `cmd_godot` builds

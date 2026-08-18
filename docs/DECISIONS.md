@@ -983,6 +983,38 @@ still not a field).
 
 ---
 
+### D-051 · 2026-08-17 · `StationDef.world_scene` names a baked world asset, not a `PackedScene`
+Task 3.1's spec literally says `world_scene`, which reads like `BuildableDef.scene` (a
+`PackedScene` `BuildService` instantiates). But every crafting station shipped so far
+(`assets/crafting_stations/`) is baked map art placed by `world/gen/authored_world.gd` /
+`tools/mapgen/hollowmere_layout.py` — there is no station `.tscn` to reference, and nothing in
+this task spawns one. `world_scene` is typed `StringName` and holds the asset name
+(`assets/crafting_stations/catalog.json`'s `name`, e.g. `&"station_stone_furnace"`), which
+`CraftingService._station_in_range` matches against a physical instance: a legacy Playtest Hollow
+prop's `asset` meta, or a Hollowmere marker named `"Station_<world_scene>"`. Keeping the spec's
+field name (rather than renaming to `world_asset`) trades a slightly misleading name for staying
+grep-consistent with the roadmap text; the doc comment on the field says so.
+**Would change my mind:** a task that actually gives crafting stations their own instantiated scene
+(a build-and-place-a-workbench feature, say) — at that point this field should either become a
+real `PackedScene` or a second field should carry it, and every `_station_in_range` caller updates.
+
+### D-052 · 2026-08-17 · A timed craft's progress bar is a client-side estimate, not a host push
+3.1's furnace worked example (`craft_progress(request_id)` "poll seam for the UI") could have been
+built as a new host→client RPC announcing a start time and duration. It wasn't: every peer already
+loads the identical `RecipeDef` (including the new `craft_time_sec`) from `Registry` at boot, so
+`CraftingService.request_craft()` starts the requester's own countdown the instant it sends the
+request, with no round trip. The wire shape stays exactly what 2.6 shipped — a recipe id and a
+local request id out, `craft_confirmed(request_id, accepted, detail)` back — so 3.1 needed no new
+RPC and no `NetVersion.PROTOCOL_VERSION` bump. The tradeoff: a client's progress bar can drift by
+up to one round trip from the host's real completion time before `craft_confirmed` corrects it.
+Acceptable because the bar is cosmetic — the host's own `_process()`-ticked timer is what actually
+gates `host_transaction`, never the client's estimate.
+**Would change my mind:** a design that needs the progress bar itself to be authoritative (a shared
+station where multiple players must see the exact same countdown, say) — that needs a real
+`net_craft_started(request_id, remaining_sec)` push and the protocol bump that comes with it.
+
+---
+
 ## Template
 
 ```
