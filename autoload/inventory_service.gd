@@ -319,9 +319,23 @@ func _on_disconnected() -> void:
 	_publish_snapshot(NetConfig.HOST_PEER_ID)
 
 
+## F-074: a peer with a live `_host_stores` entry is a valid mutation target even while parked
+## mid-D-035-grace-window with no live transport connection behind it — the same way
+## player_health.gd's host_apply_damage only checks `_states.has(peer_id)` and lets
+## damage/starvation keep accruing for a parked player. Before D-035 this connectivity check and
+## "valid target" were the same fact, because peer_left released the store immediately; now the
+## store outlives peer_left on purpose, so requiring transport.peer_ids() here silently dropped
+## every grant/removal/move for someone mid-drop or laggy. `_publish_snapshot` already gates its
+## `rpc_id` send on `_peer_connected` (F-059), so publishing to a parked peer's store immediately
+## is safe — it just updates host-side state that either rebinds to the reconnect or expires with
+## the grace window, and a lost grant is worse than a stale snapshot the reconnect overwrites.
+## A peer with no store yet (never joined, or a spoofed id) still needs a live transport
+## connection — or, offline, must be the host — before one is created for it.
 func _valid_host_peer(peer_id: int) -> bool:
 	if not _owns_mutation() or peer_id <= 0:
 		return false
+	if _host_stores.has(peer_id):
+		return true
 	if bool(_transport().call("is_active")):
 		var peers: PackedInt32Array = _transport().call("peer_ids")
 		if not peers.has(peer_id):

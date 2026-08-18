@@ -2211,3 +2211,18 @@ Notes along the way:
 Files: `tools/powerup_review_check.gd`
 
 Commit at time of writing: `7f6c225`
+
+---
+
+### DONE · F-074 · lp · 2026-08-18T05:09:10+00:00
+
+**InventoryService._valid_host_peer's connectivity check silently drops a host grant for a peer mid-D-035-grace-window, instead of parking it**
+
+Fixed InventoryService._valid_host_peer to treat a live _host_stores entry (parked mid-D-035-grace-window or connected) as a valid mutation target, matching player_health.gd's host_apply_damage shape -- host_add/host_remove/host_move_stack/host_transaction now reach a parked peer's store instead of silently dropping the grant. Publishes immediately, guarded safely by the existing _peer_connected gate on the rpc_id send (F-059). Verified: rewrote tools/inventory_net_check.gd's parked-peer assertion to call host_add() through the real public API instead of bypassing via _commit(); 'agent godot --script tools/inventory_net_check.gd' -> 21/21 PASS, failures=0, zero ERROR: lines, reproduced clean on 2 consecutive runs; 'agent godot --script tools/inventory_check.gd' stayed green (failures=0), confirming an unseen/spoofed peer id is still rejected. FINDINGS.md F-074 moved to Resolved with fix+verification; DELEGATION.md Current state note updated from open-gap to closed.
+
+Notes along the way:
+- Fixed _valid_host_peer to treat a live _host_stores entry as valid regardless of transport connectivity (matches player_health.gd's host_apply_damage shape). Rewrote inventory_net_check.gd's parked-peer assertion to go through the real public API (host_add) instead of bypassing via _commit. Verified 21/21 PASS, failures=0, zero ERROR: lines, 2 clean reruns; inventory_check.gd stayed green confirming unseen peers still rejected.
+
+Files: `autoload/inventory_service.gd`, `tools/inventory_net_check.gd`
+
+Commit at time of writing: `c0d19a3`

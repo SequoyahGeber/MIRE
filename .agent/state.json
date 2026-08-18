@@ -10,25 +10,45 @@
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
-    "autoload/inventory_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T05:05:40+00:00",
-      "task": "F-074"
+    "core/dev/dev_frame_cap.gd": {
+      "agent": "coil23",
+      "at": "2026-08-18T05:07:52+00:00",
+      "task": "F-090"
     },
-    "tools/inventory_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T05:05:40+00:00",
-      "task": "F-074"
+    "levels/hollowmere.tscn": {
+      "agent": "coil23",
+      "at": "2026-08-18T05:07:52+00:00",
+      "task": "F-090"
+    },
+    "systems/environment/day_night.gd": {
+      "agent": "coil23",
+      "at": "2026-08-18T05:07:52+00:00",
+      "task": "F-090"
     },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
+    "tools/perf_probe.gd": {
+      "agent": "coil23",
+      "at": "2026-08-18T05:07:52+00:00",
+      "task": "F-090"
+    },
+    "world/environment/playtest_atmosphere.gd": {
+      "agent": "coil23",
+      "at": "2026-08-18T05:07:52+00:00",
+      "task": "F-090"
+    },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
+    },
+    "world/gen/undergrowth.gd": {
+      "agent": "coil23",
+      "at": "2026-08-18T05:07:52+00:00",
+      "task": "F-090"
     }
   },
   "in_flight": {
@@ -43,14 +63,18 @@
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
     },
-    "F-074": {
-      "agent": "lp",
+    "F-090": {
+      "agent": "coil23",
       "files": [
-        "autoload/inventory_service.gd",
-        "tools/inventory_net_check.gd"
+        "tools/perf_probe.gd",
+        "world/environment/playtest_atmosphere.gd",
+        "world/gen/undergrowth.gd",
+        "systems/environment/day_night.gd",
+        "core/dev/dev_frame_cap.gd",
+        "levels/hollowmere.tscn"
       ],
       "notes": [],
-      "started": "2026-08-18T05:05:40+00:00"
+      "started": "2026-08-18T05:07:52+00:00"
     }
   },
   "recent": {
@@ -311,8 +335,8 @@
     },
     "autoload/inventory_service.gd": {
       "agent": "lp",
-      "at": "2026-08-18T04:23:58+00:00",
-      "task": "F-059"
+      "at": "2026-08-18T05:09:10+00:00",
+      "task": "F-074"
     },
     "autoload/powerup_service.gd": {
       "agent": "gale6",
@@ -986,8 +1010,8 @@
     },
     "tools/inventory_net_check.gd": {
       "agent": "lp",
-      "at": "2026-08-18T04:33:16+00:00",
-      "task": "F-060"
+      "at": "2026-08-18T05:09:10+00:00",
+      "task": "F-074"
     },
     "tools/item_icons_check.gd": {
       "agent": "reed16",
@@ -2769,9 +2793,11 @@
       "title": "Every tool shares one grip rotation authored for a sword, so the axe is held edge-on and every weapon swings the same chop"
     },
     "F-074": {
+      "done_at": "2026-08-18T05:09:10+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "InventoryService._valid_host_peer's connectivity check silently drops a host grant for a peer mid-D-035-grace-window, instead of parking it"
     },
@@ -2876,6 +2902,20 @@
       "status": "done",
       "tier": "F",
       "title": "A review order inherits the reviewed task's claim set, so it is refused exactly when that task is being worked on"
+    },
+    "F-089": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Powerup lifecycle never removes obsolete family counts from clients, leaving ghost Resonances after reconnect or expiry"
+    },
+    "F-090": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Frame budget audit: ~100 fps where hundreds are expected"
     }
   },
   "version": 1

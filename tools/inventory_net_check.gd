@@ -111,22 +111,23 @@ func _run_driver() -> void:
 	)
 	check(parked, "host parks a departed peer's inventory for the D-035 grace window")
 
-	# F-059: _commit(peer_id) -> _publish_snapshot() used to send net_inventory_snapshot.rpc_id(peer_id,
-	# ...) with no live transport connection behind that peer id — a Godot-level "Attempt to call RPC
-	# with unknown peer ID" engine error, not a silent no-op. Call _commit() directly rather than through
-	# host_add()/host_transaction(): _valid_host_peer() already refuses to mutate a disconnected peer's
-	# store on its own (a separate side effect filed as F-073, not this fix), so the public API cannot
-	# reach _commit() for a departed peer today — but nothing stops a future caller from doing exactly
-	# that, and this proves the rpc_id send itself is now guarded regardless. No assertion here can catch
-	# the engine error (push_error does not raise); per SPECS.md rule 4 the caller must grep this run's
-	# own output for `ERROR:` — this only proves the call completes and the parked store is untouched.
-	var pre_commit_count: int = int(inventory.call("host_count", client_peer_id, &"log"))
-	inventory.call("_commit", client_peer_id)
-	await process_frame
+	# F-074: _valid_host_peer() used to require peer_id in transport.peer_ids() even for a peer with
+	# a live parked _host_stores entry, so host_add()/host_remove()/host_move_stack()/
+	# host_transaction() all rejected a mid-grace-window mutation outright — a harvest yield landing
+	# for a laggy or briefly dropped peer was silently lost, logged only as "could not collect ...
+	# (invalid or full)" by _on_harvest_yielded. Call the real public API, not _commit() directly, to
+	# prove it now reaches a parked peer's store.
+	var pre_grant_count: int = int(inventory.call("host_count", client_peer_id, &"log"))
+	var granted_while_parked: bool = bool(inventory.call("host_add", client_peer_id, &"log", 4))
+	check(granted_while_parked, "host_add() reaches a peer parked mid-D-035-grace-window")
 	check(
-		int(inventory.call("host_count", client_peer_id, &"log")) == pre_commit_count,
-		"_commit() on a parked (mid-grace-window) peer completes without disturbing its store"
+		int(inventory.call("host_count", client_peer_id, &"log")) == pre_grant_count + 4,
+		"the grant lands on the parked peer's store"
 	)
+	# _publish_snapshot() gates its rpc_id send on _peer_connected() (F-059) — the parked peer has no
+	# live transport connection, so the commit above must complete without an engine "unknown peer
+	# ID" error. No assertion here can catch that (push_error does not raise); per SPECS.md rule 4
+	# the caller must grep this run's own output for `ERROR:`.
 	transport.call("leave")
 	print("INVENTORY_NET_CHECK peer=%d final_logs=%d failures=%d result=%s" % [
 		client_peer_id, int(result.get("log_count", -1)), failures, result
