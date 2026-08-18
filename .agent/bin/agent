@@ -2183,6 +2183,12 @@ def cmd_report(args):
                   % (C["c"], lane["task"], (lane.get("started") or "")[11:16], C["x"]))
         if lane.get("exhausted_until"):
             print("        %s◐ parked until %s%s" % (C["y"], lane["exhausted_until"], C["x"]))
+        for wname, w in sorted((lane.get("quota_windows") or {}).items()):
+            if w.get("used_pct") is not None:
+                bar = "█" * (w["used_pct"] // 10) + "░" * (10 - w["used_pct"] // 10)
+                print("        %s%-10s %s %3d%%  resets %s%s"
+                      % (C["dim"], wname, bar, w["used_pct"],
+                         (w.get("resets_at") or "?")[11:16], C["x"]))
         budget = lane.get("budget_tokens")
         if budget:
             print("        %s%d%% of window budget%s" % (C["dim"], 100 * used // budget, C["x"]))

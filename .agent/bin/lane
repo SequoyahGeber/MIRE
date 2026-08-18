@@ -648,6 +648,11 @@ def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, e
     if windows:
         lane["quota_windows"] = {
             k: {"status": v.get("status"),
+                # The API reports utilization directly (0.0–1.0). This is the number that actually
+                # says how much of a window is gone — better than inferring it from token counts,
+                # which are dominated by cache re-reads, and better than reading it off a web page.
+                "used_pct": (round(v["utilization"] * 100)
+                             if isinstance(v.get("utilization"), (int, float)) else None),
                 "resets_at": (datetime.fromtimestamp(v["resetsAt"], timezone.utc)
                               .isoformat(timespec="seconds")
                               if isinstance(v.get("resetsAt"), (int, float)) else None)}
@@ -817,6 +822,10 @@ def _release(name, task, reason):
                 return
         except (OSError, subprocess.SubprocessError):
             pass
+    if not _task_still_open(task, name):
+        print("  %s· nothing to release — %s held no claims when it stopped%s"
+              % (C["dim"], name, C["x"]))
+        return
     print("  %s⚠ could not release %s's claims automatically — run: agent drop %s%s"
           % (C["y"], name, task, C["x"]))
 
