@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="BuildableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
+[ext_resource type="PackedScene" path="res://scenes/buildables/gate.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_buildabledef")
+id = &"gate"
+display_name = "Double Gate"
+description = "Two and a half metres of opening. Wide enough for four people running the same direction."
+scene = ExtResource("2_scene")
+size = Vector3(4.0, 3.0, 0.4)
+snap_step = 1.0
+rotation_step_degrees = 90.0
+requires_support = true
+max_ground_slope_degrees = 30.0
+max_build_range_m = 6.0
+cost = Dictionary[StringName, int]({
+&"log": 12,
+&"iron_ingot": 3
+})
+refund_fraction = 0.5
+max_hp = 90
+ward_radius_m = 0.0

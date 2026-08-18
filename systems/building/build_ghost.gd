@@ -50,6 +50,8 @@ const REEVALUATE_INTERVAL_S: float = 0.2
 var _def: Resource
 var _mesh_instance: MeshInstance3D
 var _material: StandardMaterial3D
+## The piece's own art, ghosted. Freed and rebuilt whenever the selected piece changes.
+var _art: Node3D
 var _yaw: float = 0.0
 var _last_reason: int = VALIDATOR.Reason.UNKNOWN_PIECE
 var _placement: Transform3D = Transform3D()
@@ -90,6 +92,7 @@ func set_piece(piece_id: StringName) -> bool:
 	_has_evaluated = false
 	if piece_id == &"":
 		_def = null
+		_clear_art()
 		visible = false
 		return false
 	var registry: Node = get_node_or_null(^"/root/Registry")
@@ -97,14 +100,51 @@ func set_piece(piece_id: StringName) -> bool:
 	if _def == null:
 		visible = false
 		return false
-	var box := BoxMesh.new()
-	box.size = _def.get(&"size")
-	_mesh_instance.mesh = box
-	# The placement origin is the piece's FLOOR centre; the box is drawn from there upward, matching
-	# how BuildService builds the real collider.
-	_mesh_instance.position = Vector3(0.0, (_def.get(&"size") as Vector3).y * 0.5, 0.0)
+	_clear_art()
+	# Show the piece's real art when it has some (task 3.7 authored one scene per piece), and fall
+	# back to the footprint box for anything that does not yet — which is how every piece looked
+	# before, so nothing regresses to worse than it was.
+	var scene: PackedScene = _def.get(&"scene")
+	if scene != null:
+		_art = scene.instantiate() as Node3D
+	if _art != null:
+		_ghost_art(_art)
+		add_child(_art)
+		_mesh_instance.mesh = null
+	else:
+		var box := BoxMesh.new()
+		box.size = _def.get(&"size")
+		_mesh_instance.mesh = box
+		# The placement origin is the piece's FLOOR centre; the box is drawn from there upward,
+		# matching how BuildService builds the real collider.
+		_mesh_instance.position = Vector3(0.0, (_def.get(&"size") as Vector3).y * 0.5, 0.0)
 	visible = true
 	return true
+
+
+## A preview must not be part of the world it is previewing against. The piece scene is a
+## StaticBody3D on the same layer `PlacementValidator` queries, so an un-neutered ghost would be hit
+## by its own placement test and every position would read as blocked — by itself.
+func _ghost_art(node: Node) -> void:
+	if node is CollisionObject3D:
+		var body := node as CollisionObject3D
+		body.collision_layer = 0
+		body.collision_mask = 0
+		body.process_mode = Node.PROCESS_MODE_DISABLED
+	if node is MeshInstance3D:
+		var instance := node as MeshInstance3D
+		instance.material_override = _material
+		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for child in node.get_children():
+		_ghost_art(child)
+
+
+func _clear_art() -> void:
+	if _art == null:
+		return
+	remove_child(_art)
+	_art.queue_free()
+	_art = null
 
 
 func current_piece_id() -> StringName:

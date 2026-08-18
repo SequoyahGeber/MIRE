@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="BuildableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
+[ext_resource type="PackedScene" path="res://scenes/buildables/palisade_gate.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_buildabledef")
+id = &"palisade_gate"
+display_name = "Palisade Gate"
+description = "The hole you leave in your own wall on purpose. Barred, so you can see what is waiting."
+scene = ExtResource("2_scene")
+size = Vector3(2.0, 3.0, 0.34)
+snap_step = 1.0
+rotation_step_degrees = 90.0
+requires_support = true
+max_ground_slope_degrees = 30.0
+max_build_range_m = 6.0
+cost = Dictionary[StringName, int]({
+&"log": 8,
+&"iron_ingot": 2
+})
+refund_fraction = 0.5
+max_hp = 70
+ward_radius_m = 0.0

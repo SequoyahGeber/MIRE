@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/construction/exports/bridge_straight.glb" id="1_art"]
+
+[sub_resource type="BoxShape3D" id="Shape_0"]
+size = Vector3(2.0, 0.12, 2.0)
+
+[sub_resource type="BoxShape3D" id="Shape_1"]
+size = Vector3(2.0, 0.95, 0.08)
+
+[sub_resource type="BoxShape3D" id="Shape_2"]
+size = Vector3(2.0, 0.95, 0.08)
+
+[node name="Bridge" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 0
+
+[node name="Art0" parent="." instance=ExtResource("1_art")]
+
+[node name="Deck" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.94, 0)
+shape = SubResource("Shape_0")
+
+[node name="RailA" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.475, 0.94)
+shape = SubResource("Shape_1")
+
+[node name="RailB" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.475, -0.94)
+shape = SubResource("Shape_2")

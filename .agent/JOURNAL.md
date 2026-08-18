@@ -3500,3 +3500,15 @@ Notes along the way:
 Files: `tools/wellspring_net_check.gd`, `systems/wellspring/wellspring.gd`
 
 Commit at time of writing: `786dacd`
+
+---
+
+### HANDOFF · 3.7 · slate17 · 2026-08-18T22:17:53+00:00
+
+**Buildable pieces (walls/floors/ramps/doors) + Ward structures**
+
+Most of 3.7 shipped: every buildable piece now has real art and a real collider, and the build ghost previews the piece instead of a grey box. Twelve definitions in content/buildables/ (palisade, palisade_gate, door, gate, ladder, ramp, barricade, barricade_spike, dock, bridge, ward, ward_post) over twelve piece scenes in scenes/buildables/, on A-010's construction kit and A-007's Wards. No change to autoload/build_service.gd was needed or made — it is claimed by 3.16, and the schema's existing BuildableDef.scene seam already does the job. Verified: 'agent godot --script tools/buildable_content_check.gd' (13 defs, 12 with art, every cost id resolved, every piece's art measured against its declared footprint, ramp rays landing at 21/506/990 mm and 26.3 degrees) plus build_check and build_net_check both still 0 failures. WHAT IS LEFT: (1) the door, gate and palisade_gate are placed CLOSED as static art — the leaves are separate hinge-origin exports with a verified 90-degree arc, so opening them is a host-authoritative 'open' bool with its own synchronizer plus an interact, no art work at all; (2) damaged-state art, which buildable_piece.gd's own doc comment assigns to 3.7 and which needs a replicated damage tier because hp is deliberately host-only; (3) wall_wood is still art-free because no plain-wall asset exists until A-013/A-018; (4) the ladder is placeable but nothing in the controller climbs. TRAP: a .tscn's Transform3D floats are the basis ROWS, so a rotated collider authored by the obvious reading comes out transposed — the ramp descended into the ground and looked perfect in every still. Verify an authored collider with a physics query, never by reading the transform (F-150).
+
+Files: `systems/building/buildable_def.gd`, `systems/building/build_ghost.gd`, `tools/buildable_content_check.gd`, `docs/FINDINGS.md`, `docs/DELEGATION.md`, `content/buildables/barricade.tres`, `content/buildables/barricade_spike.tres`, `content/buildables/bridge.tres`, `content/buildables/dock.tres`, `content/buildables/door.tres`, `content/buildables/gate.tres`, `content/buildables/ladder.tres`, `content/buildables/palisade.tres`, `content/buildables/palisade_gate.tres`, `content/buildables/ramp.tres`, `content/buildables/wall.tres`, `content/buildables/ward.tres`, `content/buildables/ward_post.tres`, `scenes/buildables/barricade.tscn`, `scenes/buildables/barricade_spike.tscn`, `scenes/buildables/bridge.tscn`, `scenes/buildables/dock.tscn`, `scenes/buildables/door.tscn`, `scenes/buildables/gate.tscn`, `scenes/buildables/ladder.tscn`, `scenes/buildables/palisade.tscn`, `scenes/buildables/palisade_gate.tscn`, `scenes/buildables/ramp.tscn`, `scenes/buildables/ward.tscn`, `scenes/buildables/ward_post.tscn`, `tools/buildable_content_check.gd.uid`
+
+Commit at time of writing: `3dbd2ba`

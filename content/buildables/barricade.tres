@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="BuildableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
+[ext_resource type="PackedScene" path="res://scenes/buildables/barricade.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_buildabledef")
+id = &"barricade"
+display_name = "Barricade"
+description = "Chest-high and nailed together out of whatever was to hand. Crouch behind it and feel clever."
+scene = ExtResource("2_scene")
+size = Vector3(2.0, 1.13, 0.62)
+snap_step = 1.0
+rotation_step_degrees = 90.0
+requires_support = true
+max_ground_slope_degrees = 35.0
+max_build_range_m = 6.0
+cost = Dictionary[StringName, int]({
+&"log": 3,
+&"branch": 2
+})
+refund_fraction = 0.5
+max_hp = 25
+ward_radius_m = 0.0

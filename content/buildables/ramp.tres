@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="BuildableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
+[ext_resource type="PackedScene" path="res://scenes/buildables/ramp.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_buildabledef")
+id = &"ramp"
+display_name = "Ramp"
+description = "Rises exactly one deck over one module, at an angle your legs agree with."
+scene = ExtResource("2_scene")
+size = Vector3(2.0, 1.1, 2.0)
+snap_step = 1.0
+rotation_step_degrees = 90.0
+requires_support = true
+max_ground_slope_degrees = 40.0
+max_build_range_m = 6.0
+cost = Dictionary[StringName, int]({
+&"log": 5
+})
+refund_fraction = 0.5
+max_hp = 30
+ward_radius_m = 0.0

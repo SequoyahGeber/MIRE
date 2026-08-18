@@ -1,23 +1,25 @@
 [gd_resource type="Resource" script_class="BuildableDef" format=3]
 
 [ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
-[ext_resource type="PackedScene" path="res://scenes/buildables/ward_post.tscn" id="2_scene"]
+[ext_resource type="PackedScene" path="res://scenes/buildables/ward.tscn" id="2_scene"]
 
 [resource]
 script = ExtResource("1_buildabledef")
-id = &"ward_post"
-display_name = "Ward Post"
-description = "Holds the Mire back for twelve metres. The radius is authored here; 4.11 is the task that makes the Mire respect it."
+id = &"ward"
+display_name = "Ward"
+description = "Teal answers purple. Holds the Mire back for eighteen metres and looks smug about it."
 scene = ExtResource("2_scene")
-size = Vector3(0.7, 2.0, 0.7)
+size = Vector3(2.4, 2.1, 2.4)
 snap_step = 1.0
 rotation_step_degrees = 90.0
 requires_support = true
-max_ground_slope_degrees = 25.0
+max_ground_slope_degrees = 30.0
 max_build_range_m = 5.0
 cost = Dictionary[StringName, int]({
-&"log": 8,
-&"stone": 4
+&"log": 10,
+&"stone": 8,
+&"iron_ingot": 2
 })
 refund_fraction = 0.5
-ward_radius_m = 12.0
+max_hp = 120
+ward_radius_m = 18.0

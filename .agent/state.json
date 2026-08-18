@@ -55,16 +55,6 @@
       "at": "2026-08-18T22:08:56+00:00",
       "task": "F-144"
     },
-    "systems/building/build_ghost.gd": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:10:01+00:00",
-      "task": "3.7"
-    },
-    "systems/building/buildable_def.gd": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:10:01+00:00",
-      "task": "3.7"
-    },
     "systems/environment/day_night.gd": {
       "agent": "hollow7",
       "at": "2026-08-18T22:08:38+00:00",
@@ -88,6 +78,11 @@
     "tools/_probe_lods.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:54:18+00:00",
+      "task": "F-144"
+    },
+    "tools/_probe_merge.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-18T22:14:11+00:00",
       "task": "F-144"
     },
     "tools/command_catalog_check.gd": {
@@ -147,15 +142,6 @@
       "notes": [],
       "started": "2026-08-18T22:08:38+00:00"
     },
-    "3.7": {
-      "agent": "slate17",
-      "files": [
-        "systems/building/buildable_def.gd",
-        "systems/building/build_ghost.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T22:08:40+00:00"
-    },
     "F-144": {
       "agent": "nettle12",
       "files": [
@@ -168,7 +154,8 @@
         "tools/harvest_batch_check.gd",
         "tools/environment_vfx_hollowmere_check.gd",
         "core/render/mesh_merge.gd",
-        "systems/harvesting/harvestable.gd"
+        "systems/harvesting/harvestable.gd",
+        "tools/_probe_merge.gd"
       ],
       "notes": [],
       "started": "2026-08-18T21:51:43+00:00"
@@ -702,15 +689,83 @@
       "hash": "52ea133e6a32be19fc7af33c647e7a0051569af7d04f7ce079197b35be114277",
       "task": "4.2"
     },
+    "content/buildables/barricade.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "646b6bc57a44e10dd2591cd76571a6fe9aaed9250a520008855a81acc7f7e953",
+      "task": "3.7"
+    },
+    "content/buildables/barricade_spike.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "c182fd9927b456ed7009809bc3aa7a1b9e1c498d0a5d63123390b91f2db579d1",
+      "task": "3.7"
+    },
+    "content/buildables/bridge.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "dd23bf5204124f46203e1b2c1feded78929095e26bf9ddf47b6454ed2e1d83a4",
+      "task": "3.7"
+    },
+    "content/buildables/dock.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "d5d039ba923d97896257af24ef435ee82b4833ffe70923752370a07883172e35",
+      "task": "3.7"
+    },
+    "content/buildables/door.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "7f41cb4b0ba2072d1cd56349dc576a751875aca167c9ab04b38c2ccf1b00cc9a",
+      "task": "3.7"
+    },
+    "content/buildables/gate.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "79e15cf21c4a5ac62d32706f3bbe98fc841eb588e0668f9cdc0a157c1fa48919",
+      "task": "3.7"
+    },
+    "content/buildables/ladder.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "37e5f0332434ca4a47d5cbf964cdcae460cb96923a57f47e1f9c4a197937b445",
+      "task": "3.7"
+    },
+    "content/buildables/palisade.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "59de5e845c27664c143767348ab569bf1471cf1e7b421e1244b35bd475d75a9c",
+      "task": "3.7"
+    },
+    "content/buildables/palisade_gate.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "577e521119be731d7a63590b016663be91bd770264072cedb6918c03a58d76af",
+      "task": "3.7"
+    },
+    "content/buildables/ramp.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "fe36c963f1c06476c981ae20a206ffa9233a8681afcc827723a0edb5fdcbd82e",
+      "task": "3.7"
+    },
     "content/buildables/wall.tres": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:35:30+00:00",
-      "task": "3.6"
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "c3147f73e7cc465b64f2381a76a53ce7c02b3a391e84c0ec10f40564e0408325",
+      "task": "3.7"
+    },
+    "content/buildables/ward.tres": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "beb15f7f6091acfeaa17fddd04e925cac1e6f6c66a327768e21170bd1b48b224",
+      "task": "3.7"
     },
     "content/buildables/ward_post.tres": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:35:30+00:00",
-      "task": "3.6"
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "cbf7a1c989133cf33c377c0f1110f1dc424d022c1d7b2e3f4a6726d6596beaf6",
+      "task": "3.7"
     },
     "content/harvestables/boulder.tres": {
       "agent": "vane19",
@@ -1619,16 +1674,16 @@
       "task": "3.2"
     },
     "docs/DELEGATION.md": {
-      "agent": "lm",
-      "at": "2026-08-18T21:57:34+00:00",
-      "hash": "c2ee9e6f68979939fd3fa1591f219fca73fe54cd7a88440abae03f0fd2324124",
-      "task": "F-136"
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "fc57576a7cc5796332d58075ac4d6a11f5c5f42c9a8318d8bb2bfdc54dd28a55",
+      "task": "3.7"
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-18T21:57:34+00:00",
-      "hash": "53a1e556562a6912e563d882ae606179f5cd4ddc9a8cdd41b23eb23deee4c19f",
-      "task": "F-136"
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "c98cd574b16c9713ca121a2b9465110df2ea5c27f659455b8be7075e272f6dcc",
+      "task": "3.7"
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -1716,6 +1771,78 @@
       "hash": "c7b51d98a21d1592f3c72c7743cf042a45e3a74fb777f6b281d305c88253cf49",
       "task": "3.15"
     },
+    "scenes/buildables/barricade.tscn": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "2804fac40c8014ba62d0f05d2b41427bbcd8074023ecb4d5dcf21899531e2c00",
+      "task": "3.7"
+    },
+    "scenes/buildables/barricade_spike.tscn": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "03467e9f5e9ce9a8fae7bd553ee596c841c3302cde2f10ced590329a87ad456a",
+      "task": "3.7"
+    },
+    "scenes/buildables/bridge.tscn": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "39d854376446178b9119295ae894947758966e256e8d11ec0cab0655ae41453b",
+      "task": "3.7"
+    },
+    "scenes/buildables/dock.tscn": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "f87c8a220b6488156c3b591c08b24830a2d89aa62232801beedaefcfe004d7ed",
+      "task": "3.7"
+    },
+    "scenes/buildables/door.tscn": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "7f745ee8d40abac9b95782ee391e82379e18389cc624cf3fbd3fbbb2bd95280e",
+      "task": "3.7"
+    },
+    "scenes/buildables/gate.tscn": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "b6205ed03fdd3f777b05bc064bd1daa381a483034a91acd2c10f98e127dbdb1e",
+      "task": "3.7"
+    },
+    "scenes/buildables/ladder.tscn": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "d29c35aa2c0028033144f278267ea5f4be05846a1f21a17823fc42576fc975cf",
+      "task": "3.7"
+    },
+    "scenes/buildables/palisade.tscn": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "cac0836dae71bcb280a9a4c13c8948ba11e9feceec7c86ad1b21e01b4fdce53f",
+      "task": "3.7"
+    },
+    "scenes/buildables/palisade_gate.tscn": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "963398460d8f1df3262715b54d4969e9791163bc3d211c091bd6abd9188249fa",
+      "task": "3.7"
+    },
+    "scenes/buildables/ramp.tscn": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "b77718f1bc24dda0fe04eff107da135e10b9bddb8bcbe8a5be2a0172e1c1499a",
+      "task": "3.7"
+    },
+    "scenes/buildables/ward.tscn": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "02488c2753fa4de68fe2eff153f713cf47e52bc0f89a002d4a904a017c7eb4f4",
+      "task": "3.7"
+    },
+    "scenes/buildables/ward_post.tscn": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "9a9652dad84abf1d4ae362f93ffa90b90f62b1e40427bdb445827f4c3e1e567f",
+      "task": "3.7"
+    },
     "systems/attunement/attunement_def.gd": {
       "agent": "lm",
       "at": "2026-08-18T19:15:45+00:00",
@@ -1723,14 +1850,16 @@
       "task": "3.9"
     },
     "systems/building/build_ghost.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T14:55:48+00:00",
-      "task": "F-105"
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "c7cd027bfcdffe47eee54b5b7780aab1b4f837a3e6810b231e0ba561e50db72e",
+      "task": "3.7"
     },
     "systems/building/buildable_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T05:53:36+00:00",
-      "task": "F-085"
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "0b8e0945661eafc9782a07d8341feab2291d74a19d45c5c189840dc612189775",
+      "task": "3.7"
     },
     "systems/building/buildable_piece.gd": {
       "agent": "lp",
@@ -2057,6 +2186,18 @@
       "agent": "lp",
       "at": "2026-08-18T05:19:32+00:00",
       "task": "F-084"
+    },
+    "tools/buildable_content_check.gd": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "f58166a80e999accdd6545fc6e1d8f8a86b8ca54c5e7fcb63251d31aeac56201",
+      "task": "3.7"
+    },
+    "tools/buildable_content_check.gd.uid": {
+      "agent": "slate17",
+      "at": "2026-08-18T22:17:53+00:00",
+      "hash": "0e628aeb876e19d5941fccccd0fbac700fb21f31439a1cbfbf218366a90a727a",
+      "task": "3.7"
     },
     "tools/check_determinism.gd": {
       "agent": "lm",
@@ -3325,7 +3466,7 @@
     "3.7": {
       "est": "4",
       "milestone": "M3",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Buildable pieces (walls/floors/ramps/doors) + Ward structures"
     },
@@ -5048,6 +5189,13 @@
       "status": "todo",
       "tier": "F",
       "title": "construction_check.gd's door-swing solids AABB goes negative-size on thin per-triangle bounds, throwing an UNDECLARED engine error on every run"
+    },
+    "F-149": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "F-141's docs edits got committed under F-144's message \u2014 a concurrent agent's plain 'git commit' absorbs another lane's staged-but-uncommitted files"
     }
   },
   "version": 1

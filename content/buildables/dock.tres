@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="BuildableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
+[ext_resource type="PackedScene" path="res://scenes/buildables/dock.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_buildabledef")
+id = &"dock"
+display_name = "Dock Section"
+description = "A metre of deck over the water, on four piles. Weed already growing at the waterline."
+scene = ExtResource("2_scene")
+size = Vector3(2.0, 1.46, 2.0)
+snap_step = 1.0
+rotation_step_degrees = 90.0
+requires_support = false
+max_ground_slope_degrees = 89.0
+max_build_range_m = 6.0
+cost = Dictionary[StringName, int]({
+&"log": 6,
+&"stone": 2
+})
+refund_fraction = 0.5
+max_hp = 40
+ward_radius_m = 0.0

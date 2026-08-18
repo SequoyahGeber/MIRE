@@ -8,15 +8,14 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **3.7** Buildable pieces (walls/floors/ramps/doors) + Ward structures | slate17 | 2026-08-18 22:08 | `systems/building/buildable_def.gd`, `systems/building/build_ghost.gd` |
 | **3.16** Command catalog sweep — every system verb in `COMMANDS.md` §7 incl. D-030's `lobby host/join/invite`, plus the coverage check | hollow7 | 2026-08-18 22:08 | `autoload/inventory_service.gd`, `autoload/enemy_world.gd`, `systems/health/player_health.gd`, `systems/environment/day_night.gd`, `systems/waves/wave_spawner.gd`, `autoload/powerup_service.gd`, `autoload/crafting_service.gd`, `autoload/build_service.gd`, `autoload/harvest_world.gd`, `autoload/steam_lobby.gd`, `autoload/command_service.gd`, `core/dev/dev_frame_cap.gd`, `tools/command_catalog_check.gd` |
-| **F-144** Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance | nettle12 | 2026-08-18 21:51 | `tools/render_census.gd`, `world/gen/authored_world.gd`, `world/gen/undergrowth.gd`, `autoload/graphics_quality.gd`, `tools/_probe_lods.gd`, `world/environment/draw_policy.gd`, `tools/harvest_batch_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `core/render/mesh_merge.gd`, `systems/harvesting/harvestable.gd` |
+| **F-144** Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance | nettle12 | 2026-08-18 21:51 | `tools/render_census.gd`, `world/gen/authored_world.gd`, `world/gen/undergrowth.gd`, `autoload/graphics_quality.gd`, `tools/_probe_lods.gd`, `world/environment/draw_policy.gd`, `tools/harvest_batch_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `core/render/mesh_merge.gd`, `systems/harvesting/harvestable.gd`, `tools/_probe_merge.gd` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 130/148 | 18 |
+| Findings | `█████████░` 130/149 | 19 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -68,6 +67,7 @@
 | ⬜ | **F-146** Nothing in the game places a chest, so the gilded tier's 1-2/island budget has no owner | todo |
 | ⬜ | **F-147** F-145's fix protects new sessions only — already-collided identities stay live for up to SESSION_KEEP_DAYS | todo |
 | ⬜ | **F-148** construction_check.gd's door-swing solids AABB goes negative-size on thin per-triangle bounds, throwing an UNDECLARED engine error on every run | todo |
+| ⬜ | **F-149** F-141's docs edits got committed under F-144's message — a concurrent agent's plain 'git commit' absorbs another lane's staged-but-uncommitted files | todo |
 
 ## Done
 

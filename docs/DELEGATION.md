@@ -75,6 +75,43 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 3.7 (most of it): every buildable piece now has real art and a real collider, and the ghost previews it (slate17)
+
+**What shipped, verified:** twelve `content/buildables/*.tres` definitions, twelve piece scenes in
+`scenes/buildables/`, and `systems/building/build_ghost.gd` previewing the piece's own art instead of
+a grey box. `.agent/bin/agent godot --script tools/buildable_content_check.gd` is the proof (13
+defs, 12 with art, ramp rays at 21/506/990 mm, 0 failures); `build_check` and `build_net_check` are
+both still 0 failures.
+
+**The set:** `palisade` `palisade_gate` `door` `gate` `ladder` `ramp` `barricade` `barricade_spike`
+`dock` `bridge` `ward` `ward_post`, on A-010's construction kit and A-007's Wards. `wall_wood` is
+deliberately still art-free — no plain-wall asset exists until A-013/A-018, and the check reports it
+rather than failing on it.
+
+**No change to `autoload/build_service.gd` was needed** (it was claimed by 3.16 anyway): the schema's
+existing `BuildableDef.scene` seam already instantiates an authored root and only falls back to the
+generated box when there is none. Each piece scene is a `StaticBody3D` on collision layer 1 with the
+GLB instanced as art and hand-authored collision shapes — **not** one box per piece:
+
+- `ramp` collides as a *slope*, seated on the art's own deck plane, because a box would be a wall
+  (F-136, F-150).
+- `dock` and `bridge` collide as a *deck slab* whose top face is A-010's 1.00 m `DECK_Z`, so a run of
+  them is one walkable surface and you can still walk underneath. `bridge` adds two rail colliders.
+- Both have `requires_support = false`: a piece that spans a gap is the point of them.
+
+Pieces carry no script, so `BuildService` still attaches `buildable_piece.gd` for the damage contract
+(F-085) exactly as before.
+
+**What is left of 3.7, for whoever takes it next.** (1) **The door does not open** — the leaf is
+placed closed as static art. A-010 ships it as a separate hinge-origin export with `hinge_offset_m`
+and a verified 90° arc, so the remaining work is a host-authoritative `open` bool with its own
+synchronizer plus an interact, not any art. Same for `gate` (two leaves) and `palisade_gate`.
+(2) **Damaged-state art** — `buildable_piece.gd`'s doc comment assigns it here; `hp` is host-only and
+unreplicated, so a visible damage state needs a replicated tier, and A-007 already has
+healthy/damaged/critical/destroyed for the Ward. (3) `wall_wood`'s art. (4) The ladder is placeable
+but not climbable — nothing in the controller climbs.
+
+
 ### 2026-08-18 — F-141: `tools/wellspring_net_check.gd` — real two-process proof of `net_request_toggle_channel` (lm)
 
 New check only; `systems/wellspring/wellspring.gd` is unchanged. Closes the gap `tools/
