@@ -1695,3 +1695,29 @@ re-parsing a short string per command, at up to 6 peers, on commands typed at hu
 budget concern now or foreseeably.
 
 **Would change my mind:** parse cost ever mattering at 6 peers (it won't).
+
+### D-079 · 2026-08-18 · Task 4.2's biome resolution: `priority` (lower wins) + id tie-break, with a guaranteed fallback so every point gets a biome
+
+`world/gen/biome_map.gd`'s `BiomeMap.assign(height, moisture, biome_defs)` needed a rule for two
+cases the spec's "biome = f(height, moisture-noise)" wording doesn't settle by itself: what happens
+when more than one `BiomeDef`'s range contains the same point, and what happens when none does (a
+near-certainty once Sequoyah is authoring biomes one at a time per D-073, rather than all of them
+landing with full coverage in one pass).
+
+**Decided:** every `BiomeDef` gets an authored `priority: int` (default 10); among every def whose
+range contains the point, the lowest priority wins, and a tie breaks on `id` compared as a plain
+`String` — arbitrary but identical on every peer regardless of `Dictionary` iteration order, which
+is the only property that matters for a value that must never desync. A point matching **no** def at
+all falls back to the single lowest-priority def in the whole registry (same tie-break) rather than
+returning an empty `StringName` — a hole in authored coverage reads as "the closest thing we've
+got," never a blank patch of terrain with no biome at all. The three worked examples use this
+directly: `shore` is `priority=0` specifically so it wins sea level even against a future biome
+whose range carelessly reaches down to low elevation, and `grassland`/`forest` share `priority=10`
+with an exact-matching moisture boundary (0.5), so the tie-break — not a gap — is what decides that
+one point.
+
+**Would change my mind:** a biome family wide enough that alphabetical tie-breaking produces
+visibly wrong results at a real boundary (at which point the fix is an explicit `priority`, which
+already exists for exactly this); or 4.4's scatter tables needing per-point *blending* between two
+biomes rather than one deterministic winner, which is a different, additive feature, not a reason to
+change how the winner is picked today.

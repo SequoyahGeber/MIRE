@@ -75,6 +75,53 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 4.2: biome assignment ships — `BiomeMap.biome_at()` is the seam 4.3/4.4 call (lm)
+
+**What shipped, verified:** `world/gen/biome_def.gd` (`class_name BiomeDef`, a `Resource` — the
+`.tres` schema) and `world/gen/biome_map.gd` (`class_name BiomeMap`, a `RefCounted` — pure
+functions, same discipline as 4.1's `IslandHeightmap`: no nodes, no shared state, safe off-thread,
+every op inside the D-017 safe set). `registry.gd` gained the loader:
+`Registry.biomes: Dictionary[StringName, Resource]`, `get_biome(id)`/`has_biome(id)`, boot log now
+prints the count. **Both live under `world/gen/`, not `systems/<domain>/`** — unlike every other
+content family, `ARCHITECTURE.md` §3's project structure already names `world/gen/` as "island
+generation, biome placement, POI scatter," so that's the fitting home rather than a new
+`systems/world/` domain nothing else uses.
+
+**API for 4.3 (chunk streaming) and 4.4 (resource scatter):**
+
+```gdscript
+BiomeMap.moisture(x: float, z: float, world_seed: int) -> float          # 0..1, own noise field
+BiomeMap.assign(height: float, moisture: float, biome_defs: Array) -> StringName
+BiomeMap.biome_at(x: float, z: float, world_seed: int, biome_defs: Array) -> StringName  # height+moisture+assign in one call
+```
+
+Pass `Registry.biomes.values()` as `biome_defs`. **4.3 already has `height` per-vertex from
+`IslandHeightmap.height()` — call `assign()` directly with it instead of `biome_at()`, which
+recomputes the height internally and would cost it twice.**
+
+**Resolution rule, so a future biome addition doesn't silently reorder existing ones:** among every
+`BiomeDef` whose `[height_min, height_max] × [moisture_min, moisture_max]` range contains the point,
+the LOWEST `priority` wins; a tie breaks on `id` alphabetically — deterministic on every peer
+regardless of `Dictionary` iteration order. **A point matching no def at all falls back to the
+single lowest-priority def in the whole registry** (same tie-break), so `assign()`/`biome_at()`
+never return `&""` for a real call as long as at least one `BiomeDef` is registered — coverage has
+no holes, even before Sequoyah has authored a biome for every height/moisture combination.
+
+**Three worked examples in `content/biomes/`** (D-073: authored, not templated — each is a real
+design decision): `shore` (height ≤4m, any moisture, `priority=0` so it wins sea level regardless of
+what a sloppier grassland/forest range might also claim there), `grassland` (height 4–100m, moisture
+0.0–0.5), `forest` (height 4–100m, moisture 0.5–1.0 — the shared 0.5 boundary is a deliberate
+adjacency, not a gap, and resolves to forest on the exact tie by the alphabetical rule above).
+Heights beyond ±100m (nothing authored reaches that yet — `IslandHeightmap.HEIGHT_SCALE` is 60m)
+fall back to `shore` under the same rule. **Sequoyah authors the rest** — no other biome content is
+scheduled as agent work.
+
+**Verified:** `agent godot --script tools/biome_check.gd` (new check — wiring, content pins,
+`moisture()` purity/determinism/seed-sensitivity/bounds, `assign()`'s priority/tie/fallback/empty
+cases, `biome_at()` determinism and full-coverage sweep — 0 failures), `agent godot --script
+tools/verify_setup.gd` (no regression from the `registry.gd` edit), `agent godot --quit-after 60`
+(clean boot, 0 `ERROR:` lines, boot log reads `..., 3 biome(s)`).
+
 ### 2026-08-18 — Task 3.13: CommandService is in — the front door 3.14–3.17 register specs against (lp)
 
 **What shipped, verified:** `autoload/command_service.gd` (new autoload, registered right after
