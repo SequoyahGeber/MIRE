@@ -424,31 +424,6 @@ concurrently (a resolved F-033, and kiln9's F-034 and F-035). `NEXT.md` and the 
 
 ---
 
-### F-042 · Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one
-
-**Area:** asset pipeline · **Severity:** low · **Found:** 2026-08-17 by reed16 during 2.1d (A-021S)
-
-Blender writes non-deterministic metadata into every PNG it renders: `RenderTime` and `Date` `tEXt`
-chunks from EEVEE, `cycles.ViewLayer.total_time` from Cycles. The pixels are reproducible; the files
-are not, and never can be.
-
-The concrete failure is a false alarm that costs a session. A-021S added one icon to
-`render_item_icons.py`, which re-renders all of them, and `git status` came back with all 24
-pre-existing icons modified — against A-042a's recorded evidence that "two rebuilds [were]
-pixel-identical on every channel". Decompressing the `IDAT` chunks showed 24/24 pixel-identical and
-zero changed. An agent reading only the file hashes concludes the icon pipeline lost determinism and
-goes looking for a bug that is not there, or commits 24 meaningless binary diffs.
-
-The fix is a habit, not code: compare the decompressed `IDAT` stream, not the file. It is now written
-into the verification contract in `docs/ASSET_TRACKER.md`. A tool worth having, if this recurs: a
-small `tools/png_pixels_equal.py` that any batch can run.
-
-Second-order, and separate: EEVEE also jitters anti-aliasing on thin diagonal silhouettes between
-runs — the same instability that moved the icons to Cycles in A-042a. A-021S's viewmodel preview
-differed by 9 bytes in 4,992,780 with a maximum delta of 3/255, which is the noise floor rather than
-a rebuild that changed. The world and scale previews were exactly pixel-identical, so this only bites
-frames full of near-diagonal edges.
-
 ### F-044 · Concurrent headless Godot runs share one import cache, which is the likely cause of F-038
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by yarrow21 during 0.12
@@ -628,6 +603,45 @@ zero-undeclared-error bar the rest of the harness enforces.
 ---
 
 ## Resolved
+
+### F-042 · Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one — **fixed**
+
+**Area:** asset pipeline · **Severity:** low · **Found:** 2026-08-17 by reed16 during 2.1d (A-021S) ·
+**Resolved:** 2026-08-18 by lp.
+
+Blender writes non-deterministic metadata into every PNG it renders: `RenderTime` and `Date` `tEXt`
+chunks from EEVEE, `cycles.ViewLayer.total_time` from Cycles. The pixels are reproducible; the files
+are not, and never can be.
+
+The concrete failure is a false alarm that costs a session. A-021S added one icon to
+`render_item_icons.py`, which re-renders all of them, and `git status` came back with all 24
+pre-existing icons modified — against A-042a's recorded evidence that "two rebuilds [were]
+pixel-identical on every channel". Decompressing the `IDAT` chunks showed 24/24 pixel-identical and
+zero changed. An agent reading only the file hashes concludes the icon pipeline lost determinism and
+goes looking for a bug that is not there, or commits 24 meaningless binary diffs.
+
+Second-order, and separate: EEVEE also jitters anti-aliasing on thin diagonal silhouettes between
+runs — the same instability that moved the icons to Cycles in A-042a. A-021S's viewmodel preview
+differed by 9 bytes in 4,992,780 with a maximum delta of 3/255, which is the noise floor rather than
+a rebuild that changed. The world and scale previews were exactly pixel-identical, so this only bites
+frames full of near-diagonal edges. Left as documented, accepted behaviour — not a fix target.
+
+**Fixed 2026-08-18 by lp.** Both halves of the finding's recommended fix already existed before this
+task: the habit (compare rendered PNGs by decoded pixels, never file hash) was already written into
+`docs/ASSET_TRACKER.md`'s verification contract, and the tool the finding asked for if this recurred,
+`tools/png_pixels_equal.py`, was already built by **F-079** — this task's own contribution is the
+missing `docs/SPECS.md` block, pointing the contract at the tool by name instead of describing manual
+`IDAT` decompression, and closing this section.
+
+**Verified 2026-08-18:** reproduced the exact original scenario against the live pipeline, not just
+F-079's synthetic unit test — re-ran `Blender --background --python tools/blender/render_item_icons.py`
+unchanged (26 icons at the current `SOURCES` count, grown from 24 since this finding was filed).
+`item_icons_sheet.png` hashed identical; all 26 individual `assets/icons/exports/*.png` came back
+file-modified per `git status`. `tools/png_pixels_equal.py` against each file's HEAD copy: 26/26
+`identical`, 0 real pixel changes — the false alarm this finding describes, confirmed still false.
+Working tree restored (`git checkout -- assets/icons/exports/`) rather than committing the churn.
+`python3 tools/png_pixels_equal_check.py` → `PNG_PIXELS_EQUAL_CHECK ok`. Full spec: `docs/SPECS.md`
+F-042.
 
 ### F-118 · The forest has no ambient life: nothing falls, drifts or settles, so a still frame of the map is a still frame — **fixed**
 

@@ -286,12 +286,18 @@ Every completed batch records evidence for all applicable checks:
 - **Compare rendered PNGs by pixels, never by file hash.** Blender stamps its own render wall-clock
   and the current date into `tEXt` chunks — `RenderTime`/`Date` from EEVEE, `cycles.ViewLayer.total_time`
   from Cycles — so a preview or an icon can never be byte-identical across two runs, and the whole
-  set turns up "modified" in `git status` after a rebuild that changed nothing. Decompress the `IDAT`
-  chunks and compare those. A-021S re-ran the icon pipeline unchanged and found 24/24 pixel-identical
-  behind 24 dirty files; restore them rather than committing the churn. EEVEE additionally jitters
+  set turns up "modified" in `git status` after a rebuild that changed nothing. Use
+  `tools/png_pixels_equal.py` (F-079) — `images_pixel_equal(a, b)` or the CLI
+  (`python3 tools/png_pixels_equal.py a.png b.png`) — rather than decompressing `IDAT` by hand; it
+  diffs decoded pixel bands directly and doesn't fall into `ImageChops.difference().getbbox()`'s
+  `alpha_only` trap on opaque RGBA images (F-079). A-021S re-ran the icon pipeline unchanged and found
+  24/24 pixel-identical behind 24 dirty files (reconfirmed 2026-08-18 against the current 26-icon set,
+  F-042); restore the dirty files rather than committing the churn. EEVEE additionally jitters
   anti-aliasing on thin diagonal silhouettes (A-042a moved the icons to Cycles for this): A-021S's
   viewmodel preview differed by 9 bytes in 4,992,780, max delta 3/255, which is the noise floor, not
-  a broken rebuild.
+  a broken rebuild — `png_pixels_equal.py` does exact comparison with no tolerance, so a preview still
+  rendered in EEVEE can report a real diff for this reason alone; treat a few-bytes/low-delta report
+  on a near-diagonal silhouette as this known noise floor, not a regression.
 - GLB 2.0 validation: every expected export exists, has meshes, positive dimensions, applied scale,
   embedded materials, and a sane polygon count.
 - Catalog matches the exports exactly: no missing, duplicate, or orphan records.

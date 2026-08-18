@@ -1070,6 +1070,41 @@ repro shape), `failures=0` and 0 undeclared `ERROR:` lines every check, every pa
 baseline that reproduced a miss within 2–6 runs pre-fix. `inventory_net_check` alone: 3 consecutive
 runs, `failures=0`.
 
+## F-042 · Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one
+
+**Claim:** none — closed by habit + a tool. No production file; this is asset-pipeline tooling, not a
+runtime system, so it declares no `ARCHITECTURE.md` §2.2 authority row.
+
+Blender stamps non-deterministic metadata into every PNG it renders — `RenderTime`/`Date` `tEXt`
+chunks from EEVEE, `cycles.ViewLayer.total_time` from Cycles — so two renders of unchanged geometry
+are never byte-identical even when every pixel matches. A-021S hit this for real: adding one icon to
+`render_item_icons.py` re-rendered all 24 existing ones, `git status` reported 24 modified, and
+decompressing `IDAT` showed 0 pixels changed — a false alarm that costs a whole session chasing a bug
+that doesn't exist, or worse, gets committed as 24 meaningless binary diffs.
+
+**Fix:** two parts, both already in the repo before this task started.
+1. **Habit**, in `docs/ASSET_TRACKER.md`'s verification contract: compare rendered PNGs by decoded
+   pixels, never file hash or raw `git status`.
+2. **Tool**, `tools/png_pixels_equal.py` — built by F-079 (which, along the way, fixed a real trap in
+   the naive `ImageChops.difference().getbbox()` one-liner on opaque RGBA images). `images_pixel_equal(a,
+   b)` / the CLI is the concrete thing to run instead of decompressing `IDAT` by hand.
+
+**Verified 2026-08-18 by lp**, against the live pipeline rather than only F-079's synthetic unit test:
+re-ran `Blender --background --python tools/blender/render_item_icons.py` unchanged (26 icons at the
+current `SOURCES` count — grew from 24 since this finding was filed). `item_icons_sheet.png` hashed
+identical; all 26 individual `assets/icons/exports/*.png` came back file-modified per `git status`,
+reproducing the exact original false alarm. `tools/png_pixels_equal.py` against each file's HEAD copy:
+26/26 `identical`, 0 real changes. Working tree restored (`git checkout -- assets/icons/exports/`)
+rather than committing the churn, per the contract. `python3 tools/png_pixels_equal_check.py` still
+green. `docs/ASSET_TRACKER.md`'s contract now names the tool directly instead of describing manual
+`IDAT` decompression.
+
+The second-order EEVEE anti-aliasing jitter on thin diagonal silhouettes (A-021S's viewmodel preview:
+9 bytes different in 4,992,780, max delta 3/255) stays as documented, accepted noise floor — Cycles
+(used for shipped icons) doesn't have it, and `png_pixels_equal.py` does exact comparison with no
+tolerance, so a preview still rendered in EEVEE can flag this as a real diff. Nothing to fix: it's a
+known false-positive shape now written into the contract, not a determinism bug.
+
 ## F-079 · The obvious way to "compare decoded pixels" silently reports every RGB-only change as identical
 
 **Claim:** `tools/png_pixels_equal.py`, `tools/png_pixels_equal_check.py`. No production file — this
@@ -1381,7 +1416,6 @@ review, and the mandatory Coming-Soon clock — human, sequenced, checklisted in
 | F-023 | Measure Steam first-join latency on the physical PC, then set `STEAM_CONNECT_TIMEOUT_SEC` from evidence (currently 20 s by judgment). |
 | F-024 | Move dev_launch's bounded LAN retry into `NetSession` as policy (D-029 already did it for STEAM; mirror for ENet first joins). |
 | F-025 | Pump Steam callbacks from a timer, not `_process`, so a slow frame can't slow the handshake; verify no reentrancy on the lobby callbacks. |
-| F-042 | Habit recorded in the tracker; optional tool `tools/png_pixels_equal.py` if it bites again. |
 | F-043 | Decision spec'd under M2 above. |
 | F-049 | Two named fixes in `.agent/bin/agent` (`_sync_findings` closes departed findings; start/board call it); ship with a before/after board diff. |
 
