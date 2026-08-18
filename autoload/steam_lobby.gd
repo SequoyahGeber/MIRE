@@ -280,6 +280,8 @@ func _on_lobby_created(result: int, lobby_id: int) -> void:
 	_steam.setLobbyData(lobby_id, NetConfig.STEAM_LOBBY_KEY_HOST, str(local_steam_id()))
 	_refresh_members()
 
+	_advertise_joinable(lobby_id)
+
 	MireLog.info(NetConfig.LOG_CHANNEL, "lobby %d created — invite with SteamLobby.open_invite_overlay()" % lobby_id)
 	lobby_created.emit(lobby_id)
 
@@ -314,6 +316,8 @@ func _on_lobby_joined(lobby_id: int, _permissions: int, _locked: bool, response:
 		_leave_lobby()
 		_abandon("lobby %d is not a MIRE lobby (game='%s') — App ID 480 is shared with every developer testing on Steam" % [lobby_id, game])
 		return
+
+	_advertise_joinable(lobby_id)
 
 	MireLog.info(NetConfig.LOG_CHANNEL, "in lobby %d with %d member(s), connecting to the host" % [
 		lobby_id, _members.size()
@@ -408,6 +412,7 @@ func _leave_lobby() -> void:
 	_lobby_id = 0
 	_members.clear()
 	if _initialised:
+		_clear_joinable()
 		_steam.leaveLobby(left)
 	MireLog.info(NetConfig.LOG_CHANNEL, "left lobby %d" % left)
 	members_changed.emit(_members.duplicate())
@@ -455,3 +460,23 @@ func _state_verb() -> String:
 			return "in"
 		_:
 			return "idle in"
+
+
+## Steam decides whether a friend shows a **Join Game** entry purely from the `connect` rich presence
+## key: unset means "in game, unreachable", and the friends-list menu degrades to Invite to Watch
+## (F-123). The value is the same `+connect_lobby <id>` command line that `_check_launch_invite()`
+## already parses on a cold start, so this closes a round trip whose receiving half was always built.
+## Set on both create and join, so a joiner is joinable too and a third player can arrive through
+## either of the first two.
+func _advertise_joinable(lobby_id: int) -> void:
+	if not _initialised or lobby_id == 0:
+		return
+	_steam.setRichPresence("connect", "%s %d" % [NetConfig.STEAM_CONNECT_LOBBY_ARG, lobby_id])
+
+
+## Clearing matters as much as setting: a stale `connect` key advertises a lobby we have already left,
+## so friends get a Join Game button that drops them into nothing (F-123).
+func _clear_joinable() -> void:
+	if not _initialised:
+		return
+	_steam.setRichPresence("connect", "")
