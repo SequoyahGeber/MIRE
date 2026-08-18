@@ -1921,3 +1921,15 @@ Moved eight closed-but-still-Open findings to Resolved, each with a note naming 
 Files: `.agent/bin/agent`
 
 Commit at time of writing: `318d8ce`
+
+---
+
+### DONE · F-004 · gale6 · 2026-08-18T04:07:51+00:00
+
+**Interpolation is only planned for remote players, not enemies or props**
+
+Closed the prop half. There are exactly four SceneReplicationConfigs in the shipped game; Harvestable (health/visual_state/active) and Chest (opened) put no transform on the wire at all, so RemoteInterp would have nothing to act on, and blending toward a discrete ON_CHANGE mesh swap would be an artefact rather than a fix. D-043 records the rule that falls out of it — interpolate iff the entity replicates a transform, which is about the wire contract, not whether something is called a prop. tools/interp_coverage_check.gd enforces it: 11/11, moving=3 still=2. It flagged core/net/dummy_replicant.gd on its first run, which is R1's spike fixture watched by no player and is now an explicit EXEMPT entry with its reasoning, not a silent omission.
+
+Files: `tools/interp_coverage_check.gd`
+
+Commit at time of writing: `6d0c6eb`

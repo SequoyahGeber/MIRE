@@ -920,6 +920,11 @@
       "at": "2026-08-18T02:21:14+00:00",
       "task": "2.1d"
     },
+    "tools/interp_coverage_check.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:07:51+00:00",
+      "task": "F-004"
+    },
     "tools/inventory_net_check.gd": {
       "agent": "flint5",
       "at": "2026-08-17T19:28:04+00:00",
@@ -2083,9 +2088,11 @@
       "title": "Sprint-FOV lerp uses the framerate-dependent smoothing form"
     },
     "F-004": {
+      "done_at": "2026-08-18T04:07:51+00:00",
+      "done_by": "gale6",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Interpolation is only planned for remote players, not enemies or props"
     },
