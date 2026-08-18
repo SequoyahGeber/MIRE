@@ -258,6 +258,32 @@ this file) — that is yours.
   LP hands that to Claude and the API returns 404. `lane run` now ignores a cross-lane model.
 - **`api-equiv` dollars are not a bill.** Every lane is a subscription (`apiKeySource: none`).
 - **Fable is for specs, never code** — see `AI-WORKFLOW.md` §2a. Three problems justify it.
+- **Detaching a chain costs you the notification.** `saturate --watch --detach` is right — the queue
+  survives the chat closing — but a daemon reparented to init cannot wake you when a lane lands. Arm
+  a `Monitor` alongside it, on lane landings, lane errors, sustained idle and chain death, or the
+  collect-verify-requeue half of your job silently stops until Sequoyah pokes you.
+- **A red check is not a regression until you have diagnosed it.** Twice in one day the product was
+  fine and the verification was not: F-086 was a false green (a finding marked `**fixed**` in the doc
+  before its check ran, which `_sync_findings` then turned into a `done` board entry), and F-107 was a
+  false red (a GDScript closure captured the peer id by value, so the *check* was wrong while
+  `chest.gd` was correct all along). `agent baseline` proves a failure is not somebody's uncommitted
+  work; it cannot tell you the check itself is lying. Do not report "regression in shipped code" off a
+  red alone — that call was made here and was wrong.
+- **Claim pressure, not quota, is often what stops routing.** At one point five peer chats held ~40
+  files — six autoloads, the world gen and the whole art pipeline — and half the open findings were
+  unroutable to a lane with quota to burn. When `order` refuses, that is the system working; route
+  around it and re-check later, because claims clear in bulk when peers finish.
+- **Size the queue to burn rate, not to your estimate of duration.** A queue sized for "this big task
+  will eat the window" ran dry in fifteen minutes when the big task stalled early and the rest were
+  quick. With one live lane, keep four to six orders parked; the cost of a too-deep queue is zero and
+  the cost of a dry one is the window.
+- **Read the quota message before believing the park time.** A lane's own failure body states its real
+  reset ("try again at Aug 19th, 2026 8:57 PM"); the harness used to ignore that and guess five hours,
+  parking a 39-hour wall three times in a row. `parse_reset` reads it now (F-096), but when a lane
+  parks oddly, check `last_error` in `.agent/lanes.json` rather than trusting the countdown.
+- **A lane parked past the 8h sleep ceiling never restarts itself.** `saturate --watch` stops cleanly
+  and leaves the orders queued, which is correct and also permanent. Arm
+  `.agent/bin/lane-revive <LANE> <iso-utc>` so the returning window is spent instead of watched.
 
 ## 8. When it goes wrong
 
@@ -271,3 +297,8 @@ this file) — that is yours.
 | A lane's work looks wrong | `agent collect`, read its handoff and `.agent/logs/<LANE>-*.jsonl` |
 | Everything feels stuck | `agent report` — it names the blocked lanes and why |
 | A window resets soon and a lane is idle | Dispatch something. Anything unspent is lost at reset |
+| A lane parks for 5h but you think it is dry for days | Read `last_error` in `.agent/lanes.json` — the CLI states its real reset. Re-park with `lane park`, then `lane-revive` |
+| A lane is parked past `--watch`'s 8h ceiling | `.agent/bin/lane-revive <LANE> <iso-utc>` — nothing else will restart it |
+| A check fails at HEAD | Diagnose before reporting a regression. `agent baseline` rules out a neighbour's working tree, not a wrong check (F-107) |
+| A task is `done` but you never saw a close-out | `agent report` flags it. Its work may be unverified on disk — verify it yourself, then close it honestly or reopen it (F-086) |
+| A headless run goes silent after a script error | `agent godot` kills it at 45s now (F-104). If you see that, fix the parse error — a `class_name` is invisible until the editor rescans; use `preload()` |

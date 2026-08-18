@@ -721,9 +721,9 @@
       "task": "2.1d"
     },
     "docs/ORCHESTRATION.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-17T18:43:41+00:00",
-      "task": "0.12"
+      "agent": "bram1",
+      "at": "2026-08-18T15:01:15+00:00",
+      "task": "F-044"
     },
     "docs/ROADMAP.md": {
       "agent": "lp",
@@ -2803,9 +2803,11 @@
       "title": "The iron sword ships complete and nothing puts it in a player's hand"
     },
     "F-044": {
+      "done_at": "2026-08-18T15:01:15+00:00",
+      "done_by": "bram1",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Concurrent headless Godot runs share one import cache, which is the likely cause of F-038"
     },

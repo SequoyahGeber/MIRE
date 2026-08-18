@@ -2714,3 +2714,15 @@ Notes along the way:
 Files: `tools/blender/mire_art.py`, `tools/blender/mat_cache_check.py`
 
 Commit at time of writing: `190481b`
+
+---
+
+### DONE · F-044 · bram1 · 2026-08-18T15:01:15+00:00
+
+**Concurrent headless Godot runs share one import cache, which is the likely cause of F-038**
+
+Not the import-cache fix itself — that decision still wants measurements. What shipped is the contention made legible (file_lock names its holder, heartbeats every 30s, reports the wait; F-104's silent hang is killed at 45s; a foreign broken file is blamed on its owner) plus ORCHESTRATION §7/§8 carrying the director lessons this session paid for: detaching costs you notifications, a red check is not a regression until diagnosed, claim pressure blocks routing more than quota does, size the queue to burn rate, and read last_error before believing a park time.
+
+Files: `docs/ORCHESTRATION.md`
+
+Commit at time of writing: `8b3c719`
