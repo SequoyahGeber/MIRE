@@ -947,14 +947,13 @@ def _generate_missing_uids(to_stage, changed):
     if not orphans:
         return changed
 
-    try:
-        editor_up = subprocess.run(["pgrep", "-fl", "Godot"],
-                                   capture_output=True, text=True).returncode == 0
-    except FileNotFoundError:
-        editor_up = True  # Never fail open on the safety check.
-    if editor_up:
-        print("  %s⚠ %d script(s) have no .uid, and Godot is running — skipping import (D-031).%s"
-              % (C["y"], len(orphans), C["x"]))
+    # F-120: also a bare `pgrep -fl Godot` until now, so any concurrent headless check run made
+    # `ship` skip the import pass and every .gd in that commit went out without its .uid sidecar —
+    # exactly the F-017 failure the message below warns about, triggered by a process that was
+    # never a risk to anything.
+    if _godot_running():
+        print("  %s⚠ %d script(s) have no .uid, and the Godot editor is open — skipping import "
+              "(D-031).%s" % (C["y"], len(orphans), C["x"]))
         print("  %sClose the editor and re-run ship, or the sidecars ship late (F-017).%s"
               % (C["dim"], C["x"]))
         return changed
@@ -1241,14 +1240,13 @@ def cmd_check(args):
     editor_running = None
 
     def godot_is_running():
+        # F-120: this was its own bare `pgrep -fl Godot`, which matched any headless check run. The
+        # hook then refused commits that were never unsafe, and the only way past a blocked commit
+        # is --no-verify — which also switches off the closed-editor rule this line enforces. One
+        # implementation now, shared with `agent autoload`, `agent order` and `agent editor-running`.
         nonlocal editor_running
         if editor_running is None:
-            try:
-                editor_running = subprocess.run(
-                    ["pgrep", "-fl", "Godot"], capture_output=True, text=True
-                ).returncode == 0
-            except FileNotFoundError:
-                editor_running = True  # Never fail open when the safety check is unavailable.
+            editor_running = _godot_running()
         return editor_running
 
     def in_grace(path):
@@ -1810,7 +1808,9 @@ If you run out of quota or hit a wall, stop cleanly instead of thrashing:
 ## 4. Hard rules
 
 - **Never edit `.tscn`/`.tres`/`.import`/`project.godot` unless this order's claim set names it**, and
-  never while Godot is open (`pgrep -fl Godot`). D-021, D-031.
+  never while the Godot editor is open — ask with `.agent/bin/agent editor-running`, never a pgrep of
+  your own: both pgreps people have written for this miss a real editor launch shape (F-045, F-120).
+  D-021, D-031.
 - **Never explore speculatively.** Read the four docs below, then the files this task touches. If you
   need one more file, name your best guess and read that one — do not grep the repo.
 - **Never bulk-generate content data.** `.tres` items/recipes/powerups are hand-authored. Build the
@@ -2301,30 +2301,118 @@ def cmd_lanes(args):
     return subprocess.call([LANE_BIN, "status"], cwd=ROOT)
 
 
-def _godot_running():
-    """True only if the Godot *editor* is open.
+# The editor check, and the ONLY one (F-120). There used to be three: this function, plus a bare
+# `pgrep -fl Godot` inside `cmd_check` (the pre-commit hook's own guard) and another inside
+# `_stage_uid_sidecars`. The two blunt ones matched every headless check run, so the hook blocked
+# commits that were never unsafe — and the way round a blocked commit is `--no-verify`, which also
+# switches off the closed-editor rule the guard exists to enforce (JOURNAL, 2026-08-18: "I had to
+# use --no-verify twice"). A safety check that cries wolf is a safety check people turn off.
 
-    The protocol's `pgrep -fl Godot` is too blunt for a machine running three lanes: on this repo it
-    matches nine processes when one real engine is running, because every shell whose command line
-    mentions Godot counts — including the loop that runs the headless checks. Worse, it cannot tell
-    the editor from a headless run, and only the editor matters: the editor rewrites .tscn/.tres on
-    save and will silently discard an agent's edit. A `--headless --script` check never does.
+# Positively the editor. `-e` is the short form of `--editor`, and it is the shape F-120 was filed
+# about: `Godot --path <proj> -e res://levels/hollowmere.tscn` never contains the substring
+# "--editor", so the pgrep AGENTS.md documented read a running editor as closed.
+GODOT_EDITOR_FLAGS = ("--editor", "-e")
+# Positively NOT the editor. The editor never takes any of these; `agent godot` always passes one of
+# --headless or --script, so its own checks stop reading as an open editor.
+GODOT_RUN_FLAGS = ("--headless", "--script", "--import", "--doctool", "--export-release",
+                   "--export-debug", "--export-pack", "--validate-extension-api")
 
-    So: match the actual binary, then exclude headless invocations. See F-045."""
+
+def _godot_process_kind(line):
+    """Classify one `ps` line: "editor", "run", or None when it is not a Godot engine at all.
+
+    Pure and line-at-a-time so tools/harness_check.py can drive every launch shape past it without
+    a real engine — the reason the old version had no test is that it shelled out to `ps` itself.
+
+    The order is deliberate and conservative:
+
+    1. **An editor flag wins outright.** F-120's `-e res://scene.tscn` case.
+    2. **A run flag, or a `--path` project run with no editor flag, is not the editor.** This is
+       what keeps `agent godot`'s own checks out of it — including `--windowed` runs, which by
+       design carry no `--headless` for the old check to match on (F-077), so every render check
+       used to make `agent autoload` and `agent order` refuse while it ran.
+    3. **Anything else that is the engine binary — most importantly a bare, argument-free launch —
+       is the editor.** Double-clicking Godot.app and opening a project from the Project Manager
+       leaves argv completely empty: observed 2026-08-18, pid 89993, no arguments, MIRE open and
+       writing `.godot/editor/` five minutes after launch, and invisible to BOTH documented pgreps.
+       So "no flags I recognise" cannot mean "safe". Wrong in this direction costs a false alarm;
+       wrong in the other costs a corrupted .tscn, which is what D-031 exists to prevent.
+    """
+    if "Godot.app/Contents/MacOS/Godot" not in line and "/godot" not in line:
+        return None
+    if "grep" in line or "ps -Ao" in line:
+        return None           # our own probe, or somebody searching for the engine
+    tokens = line.split()
+    if any(f in tokens for f in GODOT_EDITOR_FLAGS):
+        return "editor"
+    if any(f in tokens for f in GODOT_RUN_FLAGS):
+        return "run"
+    if "--path" in tokens:
+        return "run"          # `Godot --path <proj>` with no editor flag runs the game
+    return "editor"
+
+
+def _godot_processes(lines=None):
+    """[(pid, kind, command)] for every Godot engine process on this machine.
+
+    `lines is None` after `_ps_lines()` failed means the check could not see. That is reported as a
+    synthetic editor entry rather than as "nothing found": a safety check that cannot look must not
+    answer "all clear". The old `_godot_running()` returned False there — it failed OPEN, while the
+    two blunt inline checks it is replacing both failed closed.
+    """
+    if lines is None:
+        lines = _ps_lines()
+    if lines is None:
+        return [("?", "editor", "<ps could not be run — assuming the editor is open>")]
+    found = []
+    for line in lines:
+        kind = _godot_process_kind(line)
+        if kind is None:
+            continue
+        parts = line.split(None, 1)
+        found.append((parts[0] if parts else "?", kind, line.strip()))
+    return found
+
+
+def _ps_lines():
+    """Every process line on this machine, or None if `ps` itself could not be run."""
     try:
-        out = subprocess.run(["ps", "-Ao", "pid,command"], capture_output=True,
-                             text=True, timeout=10).stdout
+        return subprocess.run(["ps", "-Ao", "pid,command"], capture_output=True,
+                              text=True, timeout=10).stdout.splitlines()
     except (OSError, subprocess.SubprocessError):
-        return False
-    for line in out.splitlines():
-        if "Godot.app/Contents/MacOS/Godot" not in line and "/godot" not in line:
-            continue
-        if "grep" in line or "ps -Ao" in line:
-            continue
-        if "--headless" in line:
-            continue          # a check run, not the editor — harmless
-        return True
-    return False
+        return None
+
+
+def _godot_running():
+    """True if the Godot *editor* is open. See `_godot_process_kind` for how that is decided."""
+    return any(kind == "editor" for _pid, kind, _line in _godot_processes())
+
+
+def cmd_editor_running(args):
+    """Answer the question D-031 turns on, out of the same code every guard uses (F-120).
+
+    Exit 0 when the editor is open, 1 when it is closed — the predicate convention, so
+    `agent editor-running && echo unsafe` reads correctly. The printed verdict states which, so
+    nobody has to remember the convention, and it lists the Godot processes it decided were NOT the
+    editor, because "trust me" is what the old pgrep offered and it was wrong.
+    """
+    procs = _godot_processes()
+    editors = [p for p in procs if p[1] == "editor"]
+    others = [p for p in procs if p[1] != "editor"]
+    if editors:
+        print("%s✗ the Godot editor is OPEN%s" % (C["r"], C["x"]))
+        for pid, _kind, line in editors:
+            print("    pid %s  %s" % (pid, line))
+        print("  Do not edit .tscn / .tres / .import / project.godot while it is open — the editor")
+        print("  rewrites them on save and will silently discard your edit (D-031, D-021).")
+    else:
+        ok("the Godot editor is closed")
+        print("  %sGodot-authored files are safe to edit under an exact claim (D-031).%s"
+              % (C["dim"], C["x"]))
+    for pid, _kind, line in others:
+        print("  %s· pid %s is a check or game run, not the editor: %s%s"
+              % (C["dim"], pid, line, C["x"]))
+    return 0 if editors else 1
 
 
 GODOT_CANDIDATES = (
@@ -2983,6 +3071,7 @@ COMMANDS = {
     "saturate": cmd_saturate, "finding": cmd_finding,
     "baseline": cmd_baseline,
     "autoload": cmd_autoload,
+    "editor-running": cmd_editor_running,
 }
 
 USAGE = """agent — multi-agent coordination for MIRE
@@ -3007,6 +3096,10 @@ Verifying — always launch the engine through this, never bare (F-044):
   agent baseline --script tools/x_check.gd  the same check at HEAD, in a throwaway worktree —
                                             "did this already fail?" without `git stash` (F-080)
   agent autoload <Name> <res://path.gd>     register an autoload atomically — no claim needed
+  agent editor-running                      is the Godot editor open? the one check every guard
+                                            uses (F-120) — exit 0 open, 1 closed. Never hand-roll
+                                            a pgrep for this; both shapes people wrote miss a real
+                                            editor launch
   agent finding "title" [--area] [--severity]  file a finding; body on stdin, number allocated safely
 
 Directing three worker accounts (docs/ORCHESTRATION.md):

@@ -3208,3 +3208,15 @@ Spawn slots are a per-peer claim, released on despawn; tools/spawn_slot_check.gd
 Files: `autoload/player_net.gd`, `tools/spawn_slot_check.gd`
 
 Commit at time of writing: `8d6cf49`
+
+---
+
+### DONE · F-120 · yarrow21 · 2026-08-18T20:43:28+00:00
+
+**AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed**
+
+One editor check for the whole repo. The finding named the by-hand pgrep; the audit found four implementations disagreeing in both directions — the documented 'Godot.app.*--editor' pgrep missed 2 of 2 real editor launches (a -e <scene> editor, and a Finder-launched Godot.app whose argv is EMPTY, observed live today as pid 89993 with MIRE open), while the bare 'pgrep -fl Godot' inside agent check (the pre-commit hook itself) and _stage_uid_sidecars fired on 2 of 2 headless check runs. _godot_running() also had an unnoticed false positive: agent godot --windowed carries no --headless by design (F-077), so every render check made autoload/order refuse while it ran. Now one classifier + one predicate + 'agent editor-running' so the documented check IS the enforced one. D-081 records the rule and the classification; AGENTS.md, AI-WORKFLOW.md and the order template point at the command. Verified: harness_check 16/16 with two new cases, --rev HEAD reproduces the pre-fix 14/16.
+
+Files: `.agent/bin/agent`, `AGENTS.md`, `tools/harness_check.py`
+
+Commit at time of writing: `d0ad1c8`

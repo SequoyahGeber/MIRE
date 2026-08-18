@@ -233,11 +233,17 @@ every item already recorded there. Your final message should summarise, not carr
 
 Agents may edit `.tscn`, `.tres`, `.import`, and `export_presets.cfg` when both conditions hold:
 
-1. **Check the editor is closed first.** The agent tool does this correctly — `agent order` refuses
-   dispatch and the pre-commit hook refuses the commit while the editor runs, matching the real
-   editor process rather than any command line containing "Godot" (F-045 — a raw `pgrep -fl Godot`
-   also matches your own check loop and the `agent` command itself). Checking by hand:
-   `pgrep -fl 'Godot.app.*--editor'`. If the editor is running, stop and say so.
+1. **Check the editor is closed first — with `.agent/bin/agent editor-running`.** It prints the
+   verdict, names the process, and exits 0 when the editor is open. It is the same check `agent
+   order`, `agent autoload` and the pre-commit hook use, and that is the point: there is exactly one
+   implementation, so the tool and the docs cannot disagree (F-120). If the editor is running, stop
+   and say so.
+   **Never hand-roll a pgrep for this.** Both that anyone has written for it are wrong in opposite
+   directions, and both were in these docs: `pgrep -fl 'Godot.app.*--editor'` missed **2 of 2** real
+   editor launches — `-e <scene>` is the short flag, and a Godot.app opened from Finder has *no
+   arguments at all* — which is the false negative that corrupts a `.tscn`. A bare `pgrep -fl Godot`
+   fired on **2 of 2** headless check runs (F-045), and a guard that cries wolf is one people switch
+   off with `--no-verify`, which turns off this rule too.
 2. **Claim every file by its exact path before editing it.** Directory or implied ownership is not
    enough for these files.
 

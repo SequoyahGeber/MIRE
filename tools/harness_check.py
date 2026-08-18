@@ -332,6 +332,103 @@ def _(harness):
     return r.stdout.strip()
 
 
+# Every launch shape that has actually been seen on this machine, plus the ones the two documented
+# pgreps were written against. Each line is a real `ps -Ao pid,command` line, and the comment is why
+# getting it wrong costs something. F-120.
+GODOT_LAUNCH_SHAPES = [
+    # Observed 2026-08-18, pid 89993: Godot.app double-clicked from Finder (hence the
+    # AppTranslocation path), project opened from the Project Manager. argv is EMPTY, and MIRE was
+    # open in the editor — .godot/editor/filesystem_cache10 was rewritten five minutes after this
+    # process started. BOTH documented pgreps read this as "editor closed".
+    ("89993 /private/var/folders/nx/bz287r9n1xg6sygxh5q4hlf40000gn/T/AppTranslocation/"
+     "0994BA62-7DC4-49F8-AA8B-BA31536DC38C/d/Godot.app/Contents/MacOS/Godot", "editor"),
+    # F-120's own case, from 3.10: `-e` is the short form of `--editor`, so the command line never
+    # contains the substring the documented pgrep matched on.
+    ("40311 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/s/MIRE "
+     "-e res://levels/hollowmere.tscn", "editor"),
+    ("40311 /Applications/Godot.app/Contents/MacOS/Godot --editor --path /Users/s/MIRE", "editor"),
+    # `agent godot --script` — the shape F-045 already excluded correctly.
+    ("40311 /Applications/Godot.app/Contents/MacOS/Godot --headless --path /Users/s/MIRE "
+     "--script tools/biome_check.gd", "run"),
+    # `agent godot --windowed --script` — F-077 drops --headless on purpose, so the pre-F-120 check
+    # read every render check as an open editor and made `agent order`/`agent autoload` refuse
+    # while one ran.
+    ("40311 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/s/MIRE --resolution 64x64 "
+     "--position 2400,1400 --script tools/hollowmere_night_render.gd", "run"),
+    # `agent godot --windowed --quit-after 60` — a real boot check, no --script to match on either.
+    ("40311 /Applications/Godot.app/Contents/MacOS/Godot --path /Users/s/MIRE --resolution 64x64 "
+     "--position 2400,1400 --quit-after 60", "run"),
+    ("40312 /usr/local/bin/godot --headless --path /Users/s/MIRE --import", "run"),
+    # Not the engine at all. The middle two are this check's own probes — F-045's over-match.
+    ("1234 -zsh", None),
+    ("1235 grep -rn Godot.app/Contents/MacOS/Godot /Users/s/MIRE", None),
+    ("1236 ps -Ao pid,command", None),
+    ("1237 /Users/s/MIRE/.agent/bin/agent editor-running", None),
+]
+
+
+def _load_harness(harness_src):
+    """Import the harness as a module so its pure helpers can be called directly.
+
+    Safe because everything at module scope in `.agent/bin/agent` is a constant or a def — the
+    entry point is behind `if __name__ == "__main__"`.
+    """
+    import importlib.util
+    from importlib.machinery import SourceFileLoader
+    spec = importlib.util.spec_from_loader("mire_agent_harness",
+                                           SourceFileLoader("mire_agent_harness", harness_src))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+@case("the editor check classifies every real Godot launch shape correctly (F-120)")
+def _(harness):
+    mod = _load_harness(harness)
+    wrong = []
+    for line, expected in GODOT_LAUNCH_SHAPES:
+        got = mod._godot_process_kind(line)
+        if got != expected:
+            wrong.append("expected %r, got %r for: %s" % (expected, got, line[:110]))
+    assert not wrong, "the editor check misreads a real launch shape:\n        " + \
+        "\n        ".join(wrong)
+
+    # And the composition on top of it: a machine running only checks is not an open editor, while
+    # one bare launch among them is.
+    runs = [line for line, kind in GODOT_LAUNCH_SHAPES if kind != "editor"]
+    editors = [line for line, kind in GODOT_LAUNCH_SHAPES if kind == "editor"]
+    assert not any(k == "editor" for _p, k, _l in mod._godot_processes(runs)), (
+        "headless and windowed check runs read as an open editor — that is the false positive that "
+        "makes the pre-commit hook block safe commits, and --no-verify is the way round it")
+    assert any(k == "editor" for _p, k, _l in mod._godot_processes(runs + editors[:1])), (
+        "a real editor hid behind concurrent check runs")
+
+    # A check that cannot see must not answer "all clear".
+    mod._ps_lines = lambda: None
+    assert mod._godot_running(), (
+        "with `ps` unavailable the editor check failed OPEN — it must assume the editor is up, "
+        "because the cost of guessing wrong that way is a false alarm and the other way is a "
+        "corrupted .tscn (D-031)")
+    return "%d launch shapes classified" % len(GODOT_LAUNCH_SHAPES)
+
+
+@case("`agent editor-running` reports a verdict and an exit code that agree (F-120)")
+def _(harness):
+    d = build_repo(harness)
+    r = run([".agent/bin/agent", "editor-running"], d)
+    open_verdict = "the Godot editor is OPEN" in r.stdout
+    closed_verdict = "the Godot editor is closed" in r.stdout
+    assert open_verdict != closed_verdict, (
+        "expected exactly one verdict, got:\n        %s" % brief(r.stdout + r.stderr))
+    # Predicate convention, and the reason it is worth asserting: a lane that reads the exit code
+    # instead of the text must get the same answer the text gives.
+    expected_code = 0 if open_verdict else 1
+    assert r.returncode == expected_code, (
+        "verdict says %s but exit code is %d (expected %d)"
+        % ("open" if open_verdict else "closed", r.returncode, expected_code))
+    return "verdict: %s" % ("open" if open_verdict else "closed")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rev", help="test the harness as of this git revision instead of the working tree")
