@@ -564,6 +564,33 @@ repro shape), `failures=0` and 0 undeclared `ERROR:` lines every check, every pa
 baseline that reproduced a miss within 2–6 runs pre-fix. `inventory_net_check` alone: 3 consecutive
 runs, `failures=0`.
 
+## F-079 · The obvious way to "compare decoded pixels" silently reports every RGB-only change as identical
+
+**Claim:** `tools/png_pixels_equal.py`, `tools/png_pixels_equal_check.py`. No production file — this
+is asset-pipeline tooling, not a runtime system, so it declares no `ARCHITECTURE.md` §2.2 authority
+row (nothing here runs in-game or over the network).
+
+`ImageChops.difference(a, b).getbbox()`, the obvious way to compare two decoded PNGs, is wrong for
+RGBA input: Pillow >= 9.2 defaults `Image.getbbox()` to `alpha_only=True`, so a difference image's
+alpha channel — zero wherever both inputs are equally opaque — is all the bbox is computed from. A
+change that moves only colour on an opaque image (`item_icons_sheet.png`'s shape) reads as
+"identical." It cost F-073's task a re-render of both axe cells, reverted as byte-only churn, twice.
+
+**Fix:** `tools/png_pixels_equal.py` — `pixel_diff_bbox(a, b)` diffs each `Image.split()` band on its
+own and unions the boxes (a single-band image has no alpha to default to, so the trap has nothing to
+key off); `images_pixel_equal(a, b)` wraps it as a bool. Also runnable directly as a CLI
+(`python3 tools/png_pixels_equal.py a.png b.png`) for ad hoc use outside a batch script. Handles
+differing canvas size (reports a full-canvas box rather than raising) and RGB-vs-RGBA of the same
+colour (normalizes mode before `split()` rather than raising on a band-count mismatch).
+
+**Verified:** `python3 tools/png_pixels_equal_check.py` → `PNG_PIXELS_EQUAL_CHECK ok`. Reproduces the
+exact regression — one RGB-only pixel changed on an otherwise-opaque RGBA image — and asserts the
+tool reports the correct 1×1 bbox; also covers an alpha-only change (already worked, must keep
+working), identical pixels under different `tEXt` metadata (F-042's case — must read identical), a
+self-compare, a size mismatch, and RGB-vs-RGBA of the same colour. No Godot involved: this is a
+pure-Python tool bug, so — same precedent as `tools/harness_check.py` (F-081) and `agent baseline`
+(F-080) — the check is plain Python run directly, not a `tools/*_check.gd` through `agent godot`.
+
 ## 3.8 · Hunger/health/stamina (T1) — **GATE: 2.13 shipped (PlayerHealth exists).**
 
 Extends `PlayerHealth` rather than a new service: hunger drains on host tick, empty hunger drains

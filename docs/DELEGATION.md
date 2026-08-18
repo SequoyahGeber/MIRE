@@ -75,6 +75,18 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — pixel-exact PNG comparison, without the alpha_only trap (F-079)
+
+**`tools/png_pixels_equal.py`** — `pixel_diff_bbox(path_a, path_b) -> (l, t, r, b) | None` and
+`images_pixel_equal(path_a, path_b) -> bool`, plus a CLI (`python3 tools/png_pixels_equal.py a.png
+b.png`). Any batch that reruns a Blender generator and has to decide "did the pixels actually
+change" should call this rather than reaching for `ImageChops.difference(a, b).getbbox()` directly —
+that one-liner silently reports every RGB-only change as identical on an opaque RGBA image (Pillow's
+`Image.getbbox()` defaults `alpha_only=True`, and a same-opacity diff image's alpha channel is all
+zero). `pixel_diff_bbox` diffs each `Image.split()` band separately instead, so there's no combined
+alpha channel for the default to key off. Verified: `python3 tools/png_pixels_equal_check.py` (pure
+Python, no Godot — full detail in `docs/FINDINGS.md` F-079 and `docs/SPECS.md` F-079).
+
 ### 2026-08-18 — the harness has a test suite now, and `.agent/bin/` ships under a claim (F-081)
 
 `python3 tools/harness_check.py` is the first automated check of `.agent/bin/agent`. It builds a
