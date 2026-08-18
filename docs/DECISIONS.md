@@ -1578,3 +1578,61 @@ showing collision cooking cost scaling worse than linearly with triangle count, 
 budget down further; or 4.3 finding a way to cook collision off-thread (a custom Jolt binding, or
 building the shape from a coarser decimated mesh than the render mesh), which would remove the
 gating cost this decision is built around entirely.
+
+### D-075 · 2026-08-18 · Task 4.1's island heightmap is two layered FastNoiseLite fields (continental + detail) masked by a cubic radial falloff, all inside the D-017 safe set
+
+`world/gen/island_heightmap.gd` — `IslandHeightmap.height(x: float, z: float, world_seed: int) ->
+float`, a pure static function: no nodes, no shared instance state, a fresh `FastNoiseLite` built
+per call (same thread-safety reasoning `world/chunk/chunk_mesher.gd`'s R2 spike already documents —
+a shared noise instance is not safe to sample from several `WorkerThreadPool` tasks at once, which
+4.3 will do). "Layered simplex" is two independent FBM noise fields — a low-frequency 5-octave
+continental layer and a higher-frequency 2-octave detail layer at 8% weight — summed, not one
+fractal call alone; ARCHITECTURE.md §4 step 1 names "layered noise" as its own pipeline stage
+distinct from the falloff mask that follows it, so two fields reads truer to the spec than relying
+on `FastNoiseLite`'s own octave parameter to be "the layering."
+
+**Every operation stays inside the D-017/§7 safe set** — `FastNoiseLite`, `+ − × ÷`, and
+`Vector2.length()` for the radial distance. The island falloff is `1.0 - t*t*t` (cubic, `t` the
+normalized distance past `FALLOFF_START_FRACTION`), not `1.0 - pow(t, 3.0)` — same substitution
+D-017 already made for the general falloff shape, applied here to the real one. No RNG: a
+continuous height field needs none. The per-subsystem seed convention `world/gen/undergrowth.gd`
+established (XOR the shared world seed with a subsystem-specific salt constant) is reused for the
+two noise layers' seeds even though this subsystem has no RNG, so POI placement and resource
+scatter (still to come) have a worked example to extend rather than inventing their own scheme.
+
+**Island radius is 512m** — chosen to match `ARCHITECTURE.md` §5's Mire grid coverage (256×256
+cells × ~4m ≈ 1024m across, so radius 512m from origin), so the corruption sim and the terrain it
+tints cover the same ground rather than one clipping the other at the edge. `HEIGHT_SCALE = 60.0`m
+peak amplitude is placeholder-tuned, same as every other early M4 magnitude — nothing to look at
+until 4.2's biomes exist.
+
+**Verified:**
+- `agent godot --script tools/terrain_check.gd` — 6 assertions, 0 failures: same `(x, z, seed)`
+  returns the bit-identical float twice; a different seed changes the height at a fixed point; a
+  neighbouring point differs (not a flat plane); a point well beyond `ISLAND_RADIUS` and a point
+  exactly at it are both flat `0.0`; interior heights stay within `HEIGHT_SCALE` bounds.
+- `agent godot --script tools/check_determinism.gd` — extended with a fifth `terrain_hash`
+  alongside the existing `rng_sequence`/`noise_simplex`/`noise_perlin`/`float_math` probes, same
+  SHA-256-over-a-fixed-grid pattern, sampling `IslandHeightmap.height()` on a 64×64 grid at 24m
+  spacing centered on the origin (so the grid crosses the 512m falloff edge, not just flat interior
+  noise) at the same `SEED = 20260815` the other probes use. **macOS arm64, Godot
+  4.7.1-stable-a13da4feb: `terrain_hash bea0483c1ad5bb4b`**, reproduced identically across two
+  separate runs. The other four hashes matched D-017/D-028's already-recorded macOS values exactly
+  (`rng_sequence 0077d6b42cd6f78f`, `noise_simplex 181e558b7b4841cf`, `noise_perlin
+  6c7a944516e3e64f`, `float_math 063eec62c34fa4ee`), confirming this is the same reference machine/
+  engine build those decisions measured on.
+- Full boot: `agent godot --quit-after 60` — 0 `ERROR:` lines.
+
+**Not measured here — inherited risk, not new risk.** `terrain_hash` is built entirely from
+primitives D-017/D-028 already proved bit-identical across macOS arm64, Windows x86_64, and Linux
+x86_64 (`FastNoiseLite`, `+ − × ÷`, `sqrt`/`Vector2.length()`). No new operation class is
+introduced, so a fresh three-platform run is not required to trust this — but the next agent
+touching a Windows or Linux box should still run `check_determinism.gd` there and confirm
+`terrain_hash` matches `bea0483c1ad5bb4b` before anything ships against this heightmap over the
+network, the same way D-028 closed the Windows column for the original four.
+
+**Would change my mind:** a Windows or Linux `terrain_hash` run disagreeing with the macOS value
+above — that would mean the two-layer/salt/falloff arithmetic itself introduces platform drift even
+though every primitive it's built from is individually safe, which D-017/D-028 didn't test for
+directly. Also: 4.2 or later needing `TYPE_CELLULAR`/domain warp noise, which D-017 already flagged
+as untested and out of the safe set as measured.

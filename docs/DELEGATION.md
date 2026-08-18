@@ -75,6 +75,41 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 4.1: seeded island heightmap — pure `IslandHeightmap.height()`, cross-platform-safe by construction (lm)
+
+**What shipped, verified:** `world/gen/island_heightmap.gd` — `class_name IslandHeightmap`, a
+`RefCounted` with one static entry point:
+
+```gdscript
+IslandHeightmap.height(x: float, z: float, world_seed: int) -> float
+```
+
+Pure and deterministic: no nodes, no shared state, safe to call from any thread (a fresh
+`FastNoiseLite` is built per call, same reasoning `chunk_mesher.gd`'s R2 spike already used). Two
+layered FBM noise fields (continental 5-octave low-freq + detail 2-octave high-freq at 8% weight,
+seeds XOR'd with per-layer salts off the shared `world_seed` — the seed-derivation convention for
+every future noise/RNG subsystem to reuse) masked by a cubic radial island falloff, `ISLAND_RADIUS
+= 512.0`m (matches the Mire grid's own 1024m coverage, `ARCHITECTURE.md` §5) with `1.0 - t*t*t`,
+never `pow()`. Every operation is inside the D-017 world-gen safe set — see D-075 for the full
+design rationale and measured `terrain_hash`.
+
+**API for the next task (4.2, biome assignment):** call `IslandHeightmap.height(x, z, world_seed)`
+per sample point; it returns metres of elevation, `0.0` at and beyond `ISLAND_RADIUS`, otherwise
+roughly bounded by `HEIGHT_SCALE` (60.0, placeholder-tuned — expect to retune once there's biome
+color/geometry to look at). A brand-new `class_name` this session is not yet in
+`global_script_class_cache.cfg`, so any `--script` harness referencing it needs
+`preload("res://world/gen/island_heightmap.gd")` rather than the bare name (F-016) until the editor
+does a filesystem scan — `4.2`'s own check script will hit this the same way
+`tools/check_determinism.gd` and `tools/terrain_check.gd` did here.
+
+**Verified:** `agent godot --script tools/terrain_check.gd` (6/6 assertions — determinism, seed
+sensitivity, island shape/falloff bounds), `agent godot --script tools/check_determinism.gd`
+(extended with a fifth `terrain_hash` probe, reproduced identically across two runs, full values in
+D-075), `agent godot --quit-after 60` (0 `ERROR:` lines). Not yet wired into anything that renders
+— `chunk_mesher.gd`'s own placeholder noise is untouched, explicitly out of scope for this task and
+still marked as R2 throwaway pending 4.3's real streamer, which is the natural place to swap it for
+`IslandHeightmap.height()`.
+
 ### 2026-08-18 — Task 3.4: the powerup roster is complete, 60 defs across all six families (wick20)
 
 **`content/powerups/` now holds the full POWERUPS.md §4 roster**, so any system that wants to test
