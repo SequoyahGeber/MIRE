@@ -478,6 +478,44 @@ still holds against the corrected numbers rather than assuming it does.
 
 
 
+### F-125 · Thin Step authors dodge_iframe_seconds, but D-072 left no i-frame timer for it to extend
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-18 by wick20
+
+Task 3.4 authored `content/powerups/thin_step.tres` (Void, `dodge_iframe_seconds` (0.04, 0),
+max_stacks 3) because `dodge_iframe_seconds` is in `PowerupDef.KNOWN_STATS` and in POWERUPS.md §2's
+pending table. The data is correct and validates. The problem is that there is nothing for it to
+modify, and the reason is a decision made the same day.
+
+**D-072 (task 3.8b) collapsed the i-frame window into the dash duration.** Its words: "The i-frame
+window IS `dodge_duration_sec`, not a separate `dodge_iframe_sec` ... there is no state where the
+flag is true without the dash also being in progress or vice versa." The replicated `dodging` bool
+on the player's SceneReplicationConfig is the whole mechanism, and the host reads it in
+`systems/health/player_health.gd` `_on_enemy_attack_landed()`.
+
+So whoever routes `dodge_iframe_seconds` through `PowerupService.stat()` faces a choice that is a
+design decision, not a wiring detail, and should not be made silently in a hurry:
+
+1. **Feed it into `dodge_duration_sec`.** Cheapest, and keeps D-072's invariant exactly. But the
+   stat then lengthens the dash *movement* too — at 3 stacks Thin Step adds 0.12s of travel, which
+   changes where the player ends up, not only whether they were hit. That is a different powerup
+   from the one the description promises.
+2. **Decouple the two.** D-072 explicitly left room for this: "`_execute_dodge()` was kept a
+   wrappable function precisely so that kind of change has somewhere to live." Costs a second
+   timer and breaks the "flag true implies dash in progress" invariant, so the ALWAYS-replication
+   reasoning in D-072 §2 has to be re-checked against the longer window (it gets safer, not
+   riskier — a longer true-window is more likely to be observed, not less).
+
+**Why this is filed rather than fixed:** 3.4 authors content, and POWERUPS.md is explicit that a
+`pending` stat is correct data that waits for its system's own task. This is a note for that task,
+so the choice above is made deliberately with D-072 in front of whoever makes it.
+
+Nothing is broken today: the stat is inert until something reads it, exactly like the rest of the
+pending table. Thin Step's description ("untouchable for the whole of the trip rather than most of
+it") is written for option 2 and should be re-read if option 1 is chosen.
+
+---
+
 ## Resolved
 
 ### F-005 · R2's chunk benchmark excludes GPU upload cost — **fixed**

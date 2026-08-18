@@ -75,6 +75,47 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 3.4: the powerup roster is complete, 60 defs across all six families (wick20)
+
+**`content/powerups/` now holds the full POWERUPS.md §4 roster**, so any system that wants to test
+against real content has it. Registry loads **64 powerup defs**: 59 authored under 3.4, plus
+`swift_stride` (the schema's original worked example) and the four `attunement_*` grants, which are
+PowerupDefs by D-070 and are indexed in the same dictionary. Ten per family — Fire, Blood, Fungal,
+Cold, Void — and nine for Kinetic, where `swift_stride` already held the `move_speed` slot.
+
+Nothing about the schema changed: `PowerupDef` is untouched, and every def validates against the
+existing `KNOWN_FAMILIES` / `KNOWN_STATS` catalogs. No new stat names were invented, so
+`POWERUPS.md` §2 and `powerup_def.gd` are still in step (F-078).
+
+What a consuming task should know:
+
+- **Most of these are inert until your system routes its base through `PowerupService.stat()`** —
+  that is the expected state per 3.4's spec, not a bug. The roster is authored across the whole
+  catalog, including the `pending` half, so the content is already waiting when your task arrives.
+- **Duplicate effects across families are intentional.** `on_kill_heal_hp` appears on Cauter Seal
+  (Fire/Blood) and Scab Feast (Blood/Fungal); `coin_gain` on Cinder Tithe (Fire/Void) and Deep
+  Pocket (Void); `loot_luck` on Fruiting Call (Fungal) and Second Glance (Void); `damage_taken` on
+  Sealed Veins (Blood) and Rime Shell (Cold). Do not "deduplicate" them — the point is that two
+  differently-committed players reach the same effect without abandoning their family.
+- **Two entries carry negative components you should not treat as bugs.** Pact Cut is
+  `melee_damage` (0, +0.10) with `max_hp` (-4, 0) — additive, so the validator's zero-crossing
+  bound does not apply; checked by hand against `player_health.gd`'s base `max_hp` of 100, so five
+  stacks is 80 HP for +50% melee. Gaunt Frame is `move_speed` (0, +0.04) with `damage_taken`
+  (0, +0.02).
+- **`dodge_iframe_seconds` has no timer to extend — see F-125 before wiring it.** Thin Step authors
+  the stat, but D-072 collapsed the i-frame window into `dodge_duration_sec`, so routing it is a
+  design choice (lengthen the dash, or decouple via the wrappable `_execute_dodge()`), not a
+  one-line hook.
+- **Icons are deliberately empty** on all 59, per POWERUPS.md — the F-061 pipeline batches them and
+  art must not block authoring.
+
+Verify with `.agent/bin/agent godot --script tools/powerup_check.gd`: the registry boot line should
+read `64 powerup(s)` with no validation error, and the service check reports `failures=0`.
+
+**Authoring convention, now settled as D-073:** content is authored by agents, one asset at a time
+with a design decision behind each — not swept out forty at a time. The former reading of AGENTS.md
+("he builds the content") was wrong and has been reworded. 3.2 and 3.7 are open on the same basis.
+
 ### 2026-08-18 — Task 4.0a: Spike R2b measured, and 4.3's per-frame chunk budget is ~2–3, gated by collision cooking not GPU upload (lm)
 
 **M4's gate is clear — 4.1 can start.** `tools/bench_chunk_gpu.gd` (new, throwaway spike script,
