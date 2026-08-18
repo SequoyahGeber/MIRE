@@ -15,6 +15,7 @@ const RECIPES_PATH: String = "res://content/recipes"
 const WEAPONS_PATH: String = "res://content/weapons"
 const LOOT_PATH: String = "res://content/loot"
 const POWERUPS_PATH: String = "res://content/powerups"
+const BUILDABLES_PATH: String = "res://content/buildables"
 
 ## F-016: LootTableDef is a brand-new class_name (task 3.5) and this autoload boots in every
 ## headless run, so a bare reference here would break every check in the project the moment the
@@ -23,6 +24,8 @@ const LOOT_TABLE_DEF := preload("res://systems/loot/loot_table_def.gd")
 ## Same F-016 reasoning as LOOT_TABLE_DEF above: PowerupDef is a brand-new class_name (task
 ## 3.3) and this autoload boots in every headless run.
 const POWERUP_DEF := preload("res://systems/powerups/powerup_def.gd")
+## Same F-016 reasoning again: BuildableDef is new in task 3.6.
+const BUILDABLE_DEF := preload("res://systems/building/buildable_def.gd")
 
 var items: Dictionary[StringName, ItemDef] = {}
 var recipes: Dictionary[StringName, RecipeDef] = {}
@@ -38,6 +41,9 @@ var loot_tables: Dictionary[StringName, Resource] = {}
 ## for the same F-016 reason as the preload above.
 var powerups: Dictionary[StringName, Resource] = {}
 
+## Keyed by buildable id (task 3.6). Shared content; task 3.7 authors the real set.
+var buildables: Dictionary[StringName, Resource] = {}
+
 
 func _ready() -> void:
 	_load_items()
@@ -45,8 +51,10 @@ func _ready() -> void:
 	_load_weapons()
 	_load_loot_tables()
 	_load_powerups()
-	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d weapon(s), %d loot table(s), %d powerup(s)" % [
-		items.size(), recipes.size(), weapons.size(), loot_tables.size(), powerups.size()
+	_load_buildables()
+	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d weapon(s), %d loot table(s), %d powerup(s), %d buildable(s)" % [
+		items.size(), recipes.size(), weapons.size(), loot_tables.size(), powerups.size(),
+		buildables.size()
 	])
 
 
@@ -186,6 +194,36 @@ func _load_powerups() -> void:
 			MireLog.error(&"content", "%s is invalid (%s), skipped" % [file_path, "; ".join(errors)])
 			continue
 		powerups[powerup_id] = res
+
+
+func get_buildable(id: StringName) -> Resource:
+	return buildables.get(id)
+
+
+func has_buildable(id: StringName) -> bool:
+	return buildables.has(id)
+
+
+func _load_buildables() -> void:
+	for file_path: String in _tres_files_in(BUILDABLES_PATH):
+		var res: Resource = load(file_path)
+		if res == null or res.get_script() != BUILDABLE_DEF:
+			MireLog.error(&"content", "%s does not contain a BuildableDef, skipped" % file_path)
+			continue
+		var buildable_id := StringName(String(res.get("id")))
+		if buildable_id == &"":
+			MireLog.error(&"content", "%s has no id set, skipped" % file_path)
+			continue
+		if buildables.has(buildable_id):
+			MireLog.error(&"content", "duplicate buildable id '%s' at %s, keeping first" % [
+				buildable_id, file_path
+			])
+			continue
+		var errors: PackedStringArray = res.call("validation_errors")
+		if not errors.is_empty():
+			MireLog.error(&"content", "%s is invalid (%s), skipped" % [file_path, "; ".join(errors)])
+			continue
+		buildables[buildable_id] = res
 
 
 func _tres_files_in(dir_path: String) -> Array[String]:

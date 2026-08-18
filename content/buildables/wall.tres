@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="BuildableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
+
+[resource]
+script = ExtResource("1_buildabledef")
+id = &"wall_wood"
+display_name = "Wooden Wall"
+description = "Two metres of plank between you and whatever is out there. Snaps to the metre grid so a run of them actually lines up."
+size = Vector3(2, 3, 0.25)
+snap_step = 1.0
+rotation_step_degrees = 90.0
+requires_support = true
+max_ground_slope_degrees = 30.0
+max_build_range_m = 6.0
+cost = Dictionary[StringName, int]({
+&"log": 4
+})
+refund_fraction = 0.5
+ward_radius_m = 0.0

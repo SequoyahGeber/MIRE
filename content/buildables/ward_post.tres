@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="BuildableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/building/buildable_def.gd" id="1_buildabledef"]
+
+[resource]
+script = ExtResource("1_buildabledef")
+id = &"ward_post"
+display_name = "Ward Post"
+description = "Holds the Mire back for twelve metres. The radius is authored here; 4.11 is the task that makes the Mire respect it."
+size = Vector3(0.6, 2.2, 0.6)
+snap_step = 1.0
+rotation_step_degrees = 90.0
+requires_support = true
+max_ground_slope_degrees = 25.0
+max_build_range_m = 5.0
+cost = Dictionary[StringName, int]({
+&"log": 8,
+&"stone": 4
+})
+refund_fraction = 0.5
+ward_radius_m = 12.0

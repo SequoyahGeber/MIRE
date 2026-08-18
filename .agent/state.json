@@ -30,11 +30,6 @@
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
-    "autoload/build_service.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:28:23+00:00",
-      "task": "3.6"
-    },
     "autoload/enemy_world.gd": {
       "agent": "ivy8",
       "at": "2026-08-18T04:15:50+00:00",
@@ -44,21 +39,6 @@
       "agent": "ivy8",
       "at": "2026-08-18T04:16:02+00:00",
       "task": "2.1k"
-    },
-    "autoload/registry.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:30:40+00:00",
-      "task": "3.6"
-    },
-    "content/buildables/wall.tres": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:30:40+00:00",
-      "task": "3.6"
-    },
-    "content/buildables/ward_post.tres": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:30:40+00:00",
-      "task": "3.6"
     },
     "content/items/arrow.tres": {
       "agent": "flint5",
@@ -175,21 +155,6 @@
       "at": "2026-08-18T04:10:30+00:00",
       "task": "2.1k"
     },
-    "systems/building/build_ghost.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:28:23+00:00",
-      "task": "3.6"
-    },
-    "systems/building/buildable_def.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:28:23+00:00",
-      "task": "3.6"
-    },
-    "systems/building/placement_validator.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:28:23+00:00",
-      "task": "3.6"
-    },
     "systems/combat/weapon_def.gd": {
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
@@ -204,11 +169,6 @@
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
-    },
-    "tools/build_check.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:30:40+00:00",
-      "task": "3.6"
     },
     "tools/hollowmere_check.gd": {
       "agent": "ivy8",
@@ -294,21 +254,6 @@
         }
       ],
       "started": "2026-08-18T04:10:30+00:00"
-    },
-    "3.6": {
-      "agent": "gale6",
-      "files": [
-        "systems/building/buildable_def.gd",
-        "systems/building/build_ghost.gd",
-        "systems/building/placement_validator.gd",
-        "autoload/build_service.gd",
-        "tools/build_check.gd",
-        "content/buildables/wall.tres",
-        "content/buildables/ward_post.tres",
-        "autoload/registry.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T04:28:23+00:00"
     },
     "F-073": {
       "agent": "flint5",
@@ -564,6 +509,11 @@
       "at": "2026-08-18T00:39:51+00:00",
       "task": "2.1j"
     },
+    "autoload/build_service.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:35:30+00:00",
+      "task": "3.6"
+    },
     "autoload/combat_service.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T01:38:26+00:00",
@@ -606,13 +556,23 @@
     },
     "autoload/registry.gd": {
       "agent": "gale6",
-      "at": "2026-08-18T04:27:04+00:00",
-      "task": "3.3"
+      "at": "2026-08-18T04:35:30+00:00",
+      "task": "3.6"
     },
     "autoload/steam_lobby.gd": {
       "agent": "dusk3",
       "at": "2026-08-17T04:46:47+00:00",
       "task": "F-025"
+    },
+    "content/buildables/wall.tres": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:35:30+00:00",
+      "task": "3.6"
+    },
+    "content/buildables/ward_post.tres": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:35:30+00:00",
+      "task": "3.6"
     },
     "content/enemies/crawler.tres": {
       "agent": "dusk3",
@@ -894,6 +854,21 @@
       "at": "2026-08-18T02:29:39+00:00",
       "task": "F-066"
     },
+    "systems/building/build_ghost.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:35:30+00:00",
+      "task": "3.6"
+    },
+    "systems/building/buildable_def.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:35:30+00:00",
+      "task": "3.6"
+    },
+    "systems/building/placement_validator.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:35:30+00:00",
+      "task": "3.6"
+    },
     "systems/enemies/enemy.gd": {
       "agent": "dusk3",
       "at": "2026-08-17T16:31:36+00:00",
@@ -1053,6 +1028,11 @@
       "agent": "reed16",
       "at": "2026-08-17T17:01:21+00:00",
       "task": "2.1d"
+    },
+    "tools/build_check.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:35:30+00:00",
+      "task": "3.6"
     },
     "tools/chest_check.gd": {
       "agent": "lp",
@@ -1922,7 +1902,7 @@
     "3.6": {
       "est": "5",
       "milestone": "M3",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T2",
       "title": "Building system: placement ghost, snapping, rotate, validate, destroy"
     },
@@ -2931,6 +2911,13 @@
       "status": "todo",
       "tier": "F",
       "title": "InventoryService._valid_host_peer's connectivity check silently drops a host grant for a peer mid-D-035-grace-window, instead of parking it"
+    },
+    "F-075": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "World statics and props share collision layer 1, so a placement overlap query cannot tell ground from obstruction"
     }
   },
   "version": 1

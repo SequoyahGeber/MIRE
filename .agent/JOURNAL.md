@@ -2010,3 +2010,25 @@ Notes along the way:
 Files: `tools/player_health_net_check.gd`, `tools/combat_net_check.gd`, `tools/crafting_net_check.gd`, `tools/inventory_net_check.gd`, `tools/harvest_world_net_check.gd`, `tools/enemy_net_check.gd`, `tools/harvestable_net_check.gd`, `tools/chest_check.gd`, `tools/harvestable_check.gd`, `tools/net_check_pattern_check.gd`
 
 Commit at time of writing: `de9a6ad`
+
+---
+
+### HANDOFF · 3.6 · gale6 · 2026-08-18T04:35:30+00:00
+
+**Building system: placement ghost, snapping, rotate, validate, destroy**
+
+INCREMENT A OF THREE IS DONE AND GREEN. Shipped: systems/building/buildable_def.gd (id/display_name/icon/scene/size/snap_step/rotation_step_degrees/requires_support/max_ground_slope_degrees/max_build_range_m/cost/refund_fraction/ward_radius_m, plus validation_errors and is_ward), systems/building/placement_validator.gd, content/buildables/wall.tres + ward_post.tres, registry loading (get_buildable/has_buildable), tools/build_check.gd — 26 assertions, 0 failures, 0 engine-error lines, real physics world not a mock.
+
+THE VALIDATOR IS THE LOAD-BEARING DESIGN AND IT IS FINISHED. One implementation, two callers: the ghost calls it for the green/red hint, the host calls the SAME function for the verdict. Sharing the code is not sharing the authority — the host still revalidates from scratch against its own space state and believes nothing but the piece id and transform. What it buys is that a green ghost and an accepted placement cannot drift apart through two subtly different rule sets, which is the bug that makes building feel broken. snap_transform() is pure (no world, no builder) so two players snap to the same world-space grid; evaluate() takes a space state and returns a Reason.
+
+TWO NON-OBVIOUS THINGS THE CHECK FORCED OUT, do not undo either: (1) support/slope is evaluated BEFORE overlap, because a piece on a slope steep enough to refuse is also geometrically buried in that slope, so overlap-first reports every steep placement as 'something is in the way' — true and useless; the player needs to hear about the slope. (2) The overlap box is lifted by a clearance derived as half_footprint * tan(max_ground_slope), not a magic number, because world statics and props share collision layer 1 and the GROUND therefore registers as an overlap — flush on flat ground, and rising into the box on any slope. That is F-075; the clean fix is a terrain layer and it is project-wide, not this task's.
+
+NEXT — INCREMENT B, autoload/build_service.gd (already claimed, file not written yet): host-authoritative placement. request_place(piece_id, transform) client-side -> net_request_place rpc_id to host -> host runs PlacementValidator.evaluate against its OWN space state, then charges cost via InventoryService.host_transaction(peer, removals, {}) (signature confirmed), then spawns through a code-built MultiplayerSpawner mirroring autoload/enemy_world.gd:264-290 (spawn_function + spawn_path to a container child), and the placed piece joins &"damageable". Destruction mirrors it and refunds cost * refund_fraction. After ANY placement or destruction call EnemyWorld.bake_navigation() DEBOUNCED at one rebake per second max — full-level rebake is the M2-scale answer, per-chunk is 4.5's problem. Protocol needs 11 -> 12 for the new RPCs, and tools/handshake_check.gd pins the number (it asserts == 11 today, at the line mentioning task 3.3). Note ivy8 holds autoload/enemy_world.gd — you only CALL bake_navigation, never edit it.
+
+THEN INCREMENT C: systems/building/build_ghost.gd, client-local presentation only, grid snap + rotate + red/green from the same validator. Nothing in it may be authoritative.
+
+Model increment B's net check on tools/powerup_net_check.gd, which I wrote today — same driver/child-process shape, and writing that one is what surfaced a real mid-run-join bug in 3.3, so it is worth the effort rather than trusting the offline check.
+
+Files: `systems/building/buildable_def.gd`, `systems/building/build_ghost.gd`, `systems/building/placement_validator.gd`, `autoload/build_service.gd`, `tools/build_check.gd`, `content/buildables/wall.tres`, `content/buildables/ward_post.tres`, `autoload/registry.gd`
+
+Commit at time of writing: `abf9dcb`

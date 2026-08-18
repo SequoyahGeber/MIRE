@@ -8,7 +8,6 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **3.6** Building system: placement ghost, snapping, rotate, validate, destroy | gale6 | 2026-08-18 04:28 | `systems/building/buildable_def.gd`, `systems/building/build_ghost.gd`, `systems/building/placement_validator.gd`, `autoload/build_service.gd`, `tools/build_check.gd`, `content/buildables/wall.tres`, `content/buildables/ward_post.tres`, `autoload/registry.gd` |
 | **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-18 00:43 | `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `assets/maps`, `assets/source/playtest_hollow.blend` |
 | **2.1k** Revise `hollowmere`: shrink the valley to a walkable size, re-author the layout and placement with intent, ground everything, fix grass-through-props, bridge railings and the water, raise tree/harvestable density, use every kit asset, and give the crawlers a corrupt zone to spawn from | ivy8 | 2026-08-18 04:10 | `tools/mapgen/hollowmere_layout.py`, `world/gen/layouts/hollowmere.json`, `levels/hollowmere.tscn`, `world/gen/undergrowth.gd`, `world/gen/authored_world.gd`, `tools/hollowmere_check.gd`, `docs/ROADMAP.md`, `autoload/enemy_world.gd`, `autoload/harvest_world.gd` |
 | **F-073** Every tool shares one grip rotation authored for a sword, so the axe is held edge-on and every weapon swings the same chop | flint5 | 2026-08-18 04:15 | `entities/player/viewmodel.gd`, `systems/inventory/item_def.gd`, `systems/combat/weapon_def.gd`, `tools/setup_tool_content.gd`, `tools/viewmodel_check.gd`, `tools/blender/render_item_icons.py`, `assets/icons/catalog.json`, `content/items/wooden_axe.tres`, `content/items/stone_axe.tres`, `content/items/wooden_pickaxe.tres`, `content/items/stone_pickaxe.tres`, `content/items/iron_pickaxe.tres`, `content/items/cleaver.tres`, `content/items/skewer.tres`, `content/items/short_bow.tres`, `content/items/arrow.tres`, `content/items/repair_hammer.tres`, `content/items/iron_sword.tres`, `content/weapons/wooden_axe.tres`, `content/weapons/stone_axe.tres`, `content/weapons/wooden_pickaxe.tres`, `content/weapons/stone_pickaxe.tres`, `content/weapons/iron_pickaxe.tres`, `content/weapons/cleaver.tres`, `content/weapons/skewer.tres`, `content/weapons/repair_hammer.tres`, `content/weapons/iron_sword.tres`, `assets/icons/exports/icon_wooden_axe.png`, `assets/icons/exports/icon_stone_axe.png`, `assets/icons/preview/item_icons_sheet.png` |
@@ -21,7 +20,7 @@
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███████░░░` 49/67 | 18 |
+| Findings | `███████░░░` 49/68 | 19 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 19/24 | 5 |
@@ -73,6 +72,7 @@
 | ⬜ | **F-070** Generated review orders cannot use their mandated review task id | todo |
 | 🔵 | **F-073** Every tool shares one grip rotation authored for a sword, so the axe is held edge-on and every weapon swings the same chop | in_flight |
 | ⬜ | **F-074** InventoryService._valid_host_peer's connectivity check silently drops a host grant for a peer mid-D-035-grace-window, instead of parking it | todo |
+| ⬜ | **F-075** World statics and props share collision layer 1, so a placement overlap query cannot tell ground from obstruction | todo |
 
 ## Done
 
