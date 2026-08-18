@@ -83,7 +83,7 @@ func _run() -> void:
 	for i: int in WARMUP_CHUNKS:
 		var wmesh: ArrayMesh = Mesher.build_mesh(-1 - i, -1, BENCH_SEED)
 		var wshape := ConcavePolygonShape3D.new()
-		wshape.set_faces(wmesh.get_faces())
+		wshape.set_faces(Mesher.collision_faces(wmesh, 0))
 		var wmi := MeshInstance3D.new()
 		wmi.mesh = wmesh
 		wmi.material_override = shared_material
@@ -113,7 +113,9 @@ func _run() -> void:
 		# server (Jolt), which builds its acceleration structure synchronously on this call.
 		var t0: int = Time.get_ticks_usec()
 		var shape := ConcavePolygonShape3D.new()
-		shape.set_faces(mesh.get_faces())
+		# Terrain faces only, matching what ChunkStreamer actually cooks — the mesh also
+		# carries F-128's skirt, which is deliberately not collidable (D-084).
+		shape.set_faces(Mesher.collision_faces(mesh, 0))
 		collision_ms[i] = float(Time.get_ticks_usec() - t0) / 1000.0
 
 		# 2. Mesh upload — assigning the mesh and adding the instance to a live tree is what

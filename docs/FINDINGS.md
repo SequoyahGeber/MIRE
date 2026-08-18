@@ -513,7 +513,7 @@ should grow a name lookup against that same registry rather than inventing its o
 ---
 
 
-### F-128 · Task 4.3's chunk streamer has no LOD-boundary stitching — adjacent chunks at different LOD tiers crack
+### F-128 · Task 4.3's chunk streamer has no LOD-boundary stitching — adjacent chunks at different LOD tiers crack — **fixed**
 
 **Area:** world-gen · **Severity:** low · **Found:** 2026-08-18 by lm during 4.3
 
@@ -540,6 +540,54 @@ mismatch itself (the standard cheap mitigation for this exact problem). Proper s
 (welding/re-triangulating the coarser edge to match the finer one) is the alternative if skirts
 read as visibly wrong at a real camera angle; either is additive to `chunk_mesher.gd` and does not
 require reworking the ring/LOD design in `chunk_streamer.gd`.
+
+**Resolved 2026-08-18 by wick20.** Vertical skirts, per this finding's own suggested fix and now
+recorded as **D-084** — a wall hanging `SKIRT_DEPTH` metres below every chunk's outer border, on
+both sides of every boundary, so the gap is covered whichever surface sits higher along the seam.
+Stitching was rejected deliberately: it would take the neighbours' tiers as a fifth input to
+`build_mesh()` and force a re-mesh of the finer chunk whenever a neighbour changed tier, cascading
+work through the very frame budget task 4.3 exists to protect. The skirt needs no neighbour
+knowledge at all, so the function stays pure in `(chunk_x, chunk_z, world_seed, lod)`.
+
+**Depth is 10% of `IslandHeightmap.HEIGHT_SCALE`, not a metre count**, because 4.1 calls that scale
+a placeholder. Measured worst-case divergence over the whole island across four seeds: **0.52 m**
+at a LOD0/LOD1 boundary, **1.78 m** at LOD1/LOD2 — against a 6.00 m skirt, a 3.4x margin that
+survives the terrain being retuned.
+
+**The skirt never reaches the physics server.** New `ChunkMesher.collision_faces()` slices the
+terrain triangles off the front of the index buffer; `ChunkStreamer._cook_collision()` and
+`tools/bench_chunk_gpu.gd` both use it in place of `ArrayMesh.get_faces()`. A skirt is a vertical
+wall standing exactly on the seam a player walks across — free snagging, plus ~12% more faces
+(LOD0) to cook against D-074's gating main-thread cost.
+
+**Verified** by `tools/chunk_stream_check.gd` (windowed) — **21 assertions, 0 failures**, including
+the pre-existing 4.3 acceptance test, which now reports **zero hitches in total frame time**, not
+just in the streamer's own cost. New assertions: skirt counts/layout at every LOD; `collision_faces()`
+returning exactly `tri_count(lod) * 3` faces with its minimum y exactly `SKIRT_DEPTH` above the
+mesh's; every skirt triangle facing outward; an island-wide re-sweep of the divergence asserting
+the skirt still clears it (so retuning the heightmap fails here rather than silently reopening the
+crack); and the precondition the sizing rests on — that neighbouring chunks never differ by more
+than one LOD tier — checked on the settled ring and again after the 500 m walk.
+
+**Verified by eye as well, which is what this finding asked for** ("if skirts read as visibly wrong
+at a real camera angle"). New `tools/chunk_seam_shot.gd` renders a LOD0/LOD1 seam twice from an
+identical camera — once with the skirt, once with the index buffer truncated back to the terrain
+triangles, which is exactly the pre-fix geometry — and diffs the two. **541 of 921,600 pixels
+changed (0.059%)**, and they trace the crack line and nothing else: no solid band along the
+boundary, which is the flange failure mode skirts are warned about. The tool locates its own seam
+(roughest west edge that is also above water), so it does not rot when the heightmap changes.
+
+**API note for 4.4 / 4.6, since `docs/DELEGATION.md` was held by another lane when this landed.**
+`ChunkMesher.build_mesh()` now returns terrain **plus** a skirt in one surface, terrain first:
+vertices `0 ..< vert_count(lod)` and triangles `0 ..< tri_count(lod)` are the terrain grid exactly
+as before, with `skirt_vert_count(lod)` / `skirt_tri_count(lod)` appended after. Anything cooking
+collision from a chunk must call **`ChunkMesher.collision_faces(mesh, lod)`**, never
+`ArrayMesh.get_faces()`. `ChunkStreamer`'s own colliders already do.
+
+**This is what surfaced F-133.** The first render came back as skirts standing in a lattice with
+sky where the ground should be: the 4.3 mesher had every terrain triangle wound inside-out. The
+seam fix could not be judged visually until that was fixed too.
+
 
 ---
 
@@ -625,6 +673,10 @@ player is elsewhere.
 
 **Claim:** none yet — no file to fix until the task that wires `ChunkStreamer` into a live session
 picks this up.
+
+---
+
+## Resolved
 
 ### F-131 · A finding auto-closed by the F-049 sync rule can never reopen, so a transient FINDINGS.md error permanently hides real work — F-112 and F-036 are both invisible to the board right now — **fixed**
 
@@ -5624,7 +5676,7 @@ and the PASS rerun above confirmed it. Full spec: `docs/SPECS.md` F-108.
 20 mm tolerance and height-only comparison happen to absorb the error. It belongs to A-000V's file
 set, outside this task's claim — filed separately as **F-122**.
 
-### F-133 · Task 4.3's chunk mesher winds every terrain triangle inside-out — the ground renders and collides only from below
+### F-133 · Task 4.3's chunk mesher winds every terrain triangle inside-out — the ground renders and collides only from below — **fixed**
 
 **Area:** world-gen · **Severity:** high · **Found:** 2026-08-18 by wick20
 
@@ -5660,6 +5712,30 @@ looking at a render instead of stopping at the numbers.
 **The general lesson worth keeping:** a mesh's authored normals are not evidence about its winding.
 Any future check of geometry we generate should derive facing from the index buffer through the
 engine, never from `ARRAY_NORMAL`.
+
+**Resolved 2026-08-18 by wick20.** Winding flipped to `a, b, c` / `b, d, c` in `_build_indices()`,
+in the skirt quads added for F-128, and in the legacy `build_mesh_surface_tool()` path, which
+carried the same inversion.
+
+**Verified** three independent ways, in `tools/chunk_stream_check.gd` (windowed, 21 assertions, 0
+failures):
+
+- **Facing, asked of the engine.** `SurfaceTool.generate_normals()` over a terrain-only index slice
+  applies Godot's own front-face convention. Before: **0 of 1089** LOD0 vertices faced up (0/289 at
+  LOD1, 0/81 at LOD2). After: **1089/1089, 289/289, 81/81**. The check now asserts this at every
+  LOD, deriving facing from the index buffer via the engine and never from `ARRAY_NORMAL` — the
+  authored normals were correct the whole time and are precisely what hid the bug.
+- **Collision.** A ray straight down onto the centre chunk's cooked `ConcavePolygonShape3D` now
+  hits. That is the assertion that makes this a gameplay failure rather than a cosmetic one: trimesh
+  faces are one-sided, so the pre-fix terrain was a floor players fall through.
+- **Rendering.** `tools/chunk_seam_shot.gd` renders solid, continuous ground where the same camera
+  previously showed only the chunk-boundary skirt lattice against sky.
+
+**The durable lesson** is in the finding above: a mesh's authored normals are not evidence about its
+winding, and no check that measured counts, determinism, ring membership or frame budget could ever
+have caught this — every one of those passes perfectly on an inside-out mesh. What caught it was
+taking F-128's fix as far as actually looking at a render.
+
 
 ---
 

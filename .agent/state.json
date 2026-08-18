@@ -15,10 +15,20 @@
       "at": "2026-08-18T20:37:43+00:00",
       "task": "3.14"
     },
+    "autoload/registry.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:56:14+00:00",
+      "task": "3.14"
+    },
     "autoload/rule_service.gd": {
       "agent": "hollow7",
       "at": "2026-08-18T20:37:43+00:00",
       "task": "3.14"
+    },
+    "autoload/world_delta_log.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:58:57+00:00",
+      "task": "4.6"
     },
     "content/rules": {
       "agent": "hollow7",
@@ -30,15 +40,45 @@
       "at": "2026-08-18T20:37:43+00:00",
       "task": "3.14"
     },
+    "core/game_state.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:58:57+00:00",
+      "task": "4.6"
+    },
+    "core/net/net_session.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:58:57+00:00",
+      "task": "4.6"
+    },
     "core/net/net_version.gd": {
       "agent": "hollow7",
       "at": "2026-08-18T20:37:43+00:00",
+      "task": "3.14"
+    },
+    "docs/ARCHITECTURE.md": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:54:37+00:00",
       "task": "3.14"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "slate17",
       "at": "2026-08-18T20:32:24+00:00",
       "task": "2.1d"
+    },
+    "docs/COMMANDS.md": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:54:37+00:00",
+      "task": "3.14"
+    },
+    "docs/DECISIONS.md": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:54:37+00:00",
+      "task": "3.14"
+    },
+    "docs/DELEGATION.md": {
+      "agent": "hollow7",
+      "at": "2026-08-18T20:54:37+00:00",
+      "task": "3.14"
     },
     "entities/player/player_controller.gd": {
       "agent": "yarrow21",
@@ -65,16 +105,6 @@
       "at": "2026-08-18T20:37:43+00:00",
       "task": "3.14"
     },
-    "tools/bench_chunk_gpu.gd": {
-      "agent": "wick20",
-      "at": "2026-08-18T20:36:14+00:00",
-      "task": "F-128"
-    },
-    "tools/bench_chunks.gd": {
-      "agent": "wick20",
-      "at": "2026-08-18T20:36:14+00:00",
-      "task": "F-128"
-    },
     "tools/blender/build_construction_set.py": {
       "agent": "slate17",
       "at": "2026-08-18T20:32:24+00:00",
@@ -84,16 +114,6 @@
       "agent": "slate17",
       "at": "2026-08-18T20:36:00+00:00",
       "task": "2.1d"
-    },
-    "tools/chunk_seam_shot.gd": {
-      "agent": "wick20",
-      "at": "2026-08-18T20:41:49+00:00",
-      "task": "F-128"
-    },
-    "tools/chunk_stream_check.gd": {
-      "agent": "wick20",
-      "at": "2026-08-18T20:32:06+00:00",
-      "task": "F-128"
     },
     "tools/construction_check.gd": {
       "agent": "slate17",
@@ -120,15 +140,15 @@
       "at": "2026-08-18T20:37:43+00:00",
       "task": "3.14"
     },
-    "world/chunk/chunk_mesher.gd": {
-      "agent": "wick20",
-      "at": "2026-08-18T20:54:21+00:00",
-      "task": "F-133"
+    "tools/seed_sync_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:58:57+00:00",
+      "task": "4.6"
     },
-    "world/chunk/chunk_streamer.gd": {
-      "agent": "wick20",
-      "at": "2026-08-18T20:36:14+00:00",
-      "task": "F-128"
+    "world/gen/resource_scatter_field.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:58:57+00:00",
+      "task": "4.6"
     }
   },
   "in_flight": {
@@ -165,10 +185,27 @@
         "systems/health/player_health.gd",
         "core/dev/dev_loadout.gd",
         "tools/rule_check.gd",
-        "tools/rule_net_check.gd"
+        "tools/rule_net_check.gd",
+        "docs/DECISIONS.md",
+        "docs/DELEGATION.md",
+        "docs/ARCHITECTURE.md",
+        "docs/COMMANDS.md",
+        "autoload/registry.gd"
       ],
       "notes": [],
       "started": "2026-08-18T20:37:43+00:00"
+    },
+    "4.6": {
+      "agent": "lm",
+      "files": [
+        "core/game_state.gd",
+        "core/net/net_session.gd",
+        "autoload/world_delta_log.gd",
+        "world/gen/resource_scatter_field.gd",
+        "tools/seed_sync_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T20:58:57+00:00"
     },
     "F-125": {
       "agent": "yarrow21",
@@ -178,27 +215,6 @@
       ],
       "notes": [],
       "started": "2026-08-18T20:51:52+00:00"
-    },
-    "F-128": {
-      "agent": "wick20",
-      "files": [
-        "world/chunk/chunk_mesher.gd",
-        "tools/chunk_stream_check.gd",
-        "tools/bench_chunk_gpu.gd",
-        "tools/bench_chunks.gd",
-        "world/chunk/chunk_streamer.gd",
-        "tools/chunk_seam_shot.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T20:32:06+00:00"
-    },
-    "F-133": {
-      "agent": "wick20",
-      "files": [
-        "world/chunk/chunk_mesher.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T20:54:21+00:00"
     }
   },
   "recent": {
@@ -1427,10 +1443,10 @@
       "task": "4.3"
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-18T20:24:23+00:00",
-      "hash": "bf6cf43b590820f31189ba0f51479a077a2939d997e40ffaef801483fcb15129",
-      "task": "4.3"
+      "agent": "wick20",
+      "at": "2026-08-18T20:59:26+00:00",
+      "hash": "45a69ec8619601491255df36ea9f46f377fe40f2dc37c288247a5747dfd852a2",
+      "task": "F-128"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -1690,10 +1706,16 @@
       "task": "7.2"
     },
     "tools/bench_chunk_gpu.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T19:43:31+00:00",
-      "hash": "e4ee27669da12572fc58820001b7e079ee324935b3d0d51e747c40057dd801e1",
-      "task": "4.0a"
+      "agent": "wick20",
+      "at": "2026-08-18T20:59:26+00:00",
+      "hash": "9ebf390d18ad478e46ee761f29618cebac17042c72e913a51eb0d1cde37ec391",
+      "task": "F-128"
+    },
+    "tools/bench_chunks.gd": {
+      "agent": "wick20",
+      "at": "2026-08-18T20:59:26+00:00",
+      "hash": "5aa08f963311c6a16ed164219bfb5d7237a4abd4aae9a01d4c67768457af7390",
+      "task": "F-128"
     },
     "tools/biome_check.gd": {
       "agent": "lm",
@@ -1834,11 +1856,17 @@
       "at": "2026-08-18T14:23:28+00:00",
       "task": "F-107"
     },
+    "tools/chunk_seam_shot.gd": {
+      "agent": "wick20",
+      "at": "2026-08-18T20:59:26+00:00",
+      "hash": "bbd4c379247801abb58d48121312eafb93fe699070271649adcf39cc0d5b54da",
+      "task": "F-128"
+    },
     "tools/chunk_stream_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T20:24:23+00:00",
-      "hash": "859a77c01cbfcf7f25f9c5bf5ec790bb90aa9d013918f1511926c8a58e847e84",
-      "task": "4.3"
+      "agent": "wick20",
+      "at": "2026-08-18T20:59:26+00:00",
+      "hash": "7875f5f9c0a293dc5d4bdeadf2f4f5766359960490de84db720f06d752176a5b",
+      "task": "F-128"
     },
     "tools/combat_net_check.gd": {
       "agent": "lp",
@@ -2265,16 +2293,16 @@
       "task": "F-099"
     },
     "world/chunk/chunk_mesher.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T20:24:23+00:00",
-      "hash": "6a38fee31d68fd9fd9d5d4a3ec0567e9222b5aef11769388464645e69e1fe14b",
-      "task": "4.3"
+      "agent": "wick20",
+      "at": "2026-08-18T20:59:26+00:00",
+      "hash": "868ed1242648aa3df9b214a8ea2737a9967d6e432e374d31e06ee098bd2fea87",
+      "task": "F-133"
     },
     "world/chunk/chunk_streamer.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T20:24:23+00:00",
-      "hash": "fb22224003e842b1bb2bde7ff986aeb5f1194939b86167b597dc4b55e57114a3",
-      "task": "4.3"
+      "agent": "wick20",
+      "at": "2026-08-18T20:59:26+00:00",
+      "hash": "1a75ddc1b59bc0964535ad45b77f875411542a858d3000e3929cd4beb3ee6830",
+      "task": "F-128"
     },
     "world/environment/asset_vfx_library.gd": {
       "agent": "vane19",
@@ -3109,7 +3137,7 @@
     "4.6": {
       "est": "4",
       "milestone": "M4",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "Seed replication + client-side regeneration; mutable-state delta sync (`ARCHITECTURE.md` \u00a74)"
     },
@@ -3452,7 +3480,7 @@
     "F-001": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Pre-commit hook scans the working tree instead of the staged set \u2014 **fixed**"
     },
@@ -3468,7 +3496,7 @@
     "F-003": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "\u00a75a project settings not applied \u2014 **fixed**"
     },
@@ -3484,7 +3512,7 @@
     "F-005": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "R2's chunk benchmark excludes GPU upload cost \u2014 **fixed**"
     },
@@ -3507,7 +3535,7 @@
     "F-008": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "CLAUDE.md's close-out order makes the hook warn on your own files \u2014 **won't fix, not a defect**"
     },
@@ -3523,7 +3551,7 @@
     "F-010": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Two `.uid` files were left untracked when 1.4 shipped \u2014 **fixed**"
     },
@@ -3548,14 +3576,14 @@
     "F-013": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Spawned replication nodes were not in group `&\"synced\"` \u2014 **fixed**"
     },
     "F-014": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Parallel agents share one git index, so `agent ship` can be blocked by \u2014 and then unstage \u2014 another agent's staged work \u2014 **fixed**"
     },
@@ -3662,7 +3690,7 @@
     "F-027": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`NetInterest.configure()` did not keep its returned filter alive \u2014 **fixed**"
     },
@@ -3687,7 +3715,7 @@
     "F-030": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Replicated harvest state could briefly create a doomed VFX target \u2014 **fixed**"
     },
@@ -3800,7 +3828,7 @@
     "F-043": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The iron sword ships complete and nothing puts it in a player's hand \u2014 **decided, won't add**"
     },
@@ -3904,7 +3932,7 @@
     "F-055": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`core/util/mire_log.gd`'s `CHANNELS` list has no `health` channel \u2014 **fixed**"
     },
@@ -4179,7 +4207,7 @@
     "F-086": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The building system has no gameplay caller, so no player can place, rotate, or destroy anything \u2014 **fixed**"
     },
@@ -4303,21 +4331,21 @@
     "F-100": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Static chunk batching for authored props \u2014 designed, measured-in-principle, blocked on F-097"
     },
     "F-101": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Build-mode \"attack\" (confirm/swing) and `harvest_world.gd`'s own independent listener are unmediated"
     },
     "F-102": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "docs/FINDINGS.md is the one file every lane must write and no lane can hold, so every close-out commit carries other lanes' half-written findings"
     },
@@ -4539,11 +4567,13 @@
       "title": "Steam overlay's Join Game does nothing: only the lobby-invite callback is connected, not the rich-presence one \u2014 **fixed**"
     },
     "F-128": {
+      "done_at": "2026-08-18T20:59:26+00:00",
+      "done_by": "wick20",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
-      "title": "Task 4.3's chunk streamer has no LOD-boundary stitching \u2014 adjacent chunks at different LOD tiers crack"
+      "title": "Task 4.3's chunk streamer has no LOD-boundary stitching \u2014 adjacent chunks at different LOD tiers crack \u2014 **fixed**"
     },
     "F-129": {
       "done_at": "2026-08-18T20:38:46+00:00",
@@ -4578,9 +4608,11 @@
       "title": "A remote client's scattered harvestable proxy may have no host counterpart to reach, because `ChunkStreamer` streams per-peer independently"
     },
     "F-133": {
+      "done_at": "2026-08-18T20:59:26+00:00",
+      "done_by": "wick20",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Task 4.3's chunk mesher winds every terrain triangle inside-out \u2014 the ground renders and collides only from below"
     }

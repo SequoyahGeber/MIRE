@@ -138,8 +138,12 @@ func _bench_memory() -> void:
 	var after: int = OS.get_static_memory_usage()
 	var delta: int = after - before
 
-	# 3 floats position + 3 normal + 2 uv = 32 B/vert, plus 4 B/index.
-	var theoretical: int = CHUNK_COUNT * (Mesher.VERT_COUNT * 32 + Mesher.INDEX_COUNT * 4)
+	# 3 floats position + 3 normal + 2 uv = 32 B/vert, plus 4 B/index. The consts above are the
+	# terrain grid alone, so F-128's skirt is added explicitly rather than folded into them —
+	# `VERT_COUNT`/`INDEX_COUNT` still mean exactly what D-015 recorded them meaning.
+	var verts_per_chunk: int = Mesher.VERT_COUNT + Mesher.skirt_vert_count(0)
+	var indices_per_chunk: int = Mesher.INDEX_COUNT + Mesher.skirt_tri_count(0) * 3
+	var theoretical: int = CHUNK_COUNT * (verts_per_chunk * 32 + indices_per_chunk * 4)
 	print("[memory] %d chunks live: static delta %.2f MB (%.1f KB/chunk)" % [
 		CHUNK_COUNT, float(delta) / 1048576.0, float(delta) / float(CHUNK_COUNT) / 1024.0,
 	])

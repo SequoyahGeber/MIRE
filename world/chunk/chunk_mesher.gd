@@ -32,6 +32,15 @@ const VERT_COUNT: int = VERTS_PER_SIDE * VERTS_PER_SIDE
 const TRI_COUNT: int = (VERTS_PER_SIDE - 1) * (VERTS_PER_SIDE - 1) * 2
 const INDEX_COUNT: int = TRI_COUNT * 3
 
+## Skirt depth as a fraction of the heightmap's own peak amplitude rather than a bare metre count,
+## so the margin survives `IslandHeightmap.HEIGHT_SCALE` being retuned — 4.1 explicitly calls that
+## value a placeholder awaiting a real pass. See F-128/D-084: the worst LOD-boundary divergence
+## measured over the whole island across four seeds is 1.78 m (LOD1 against LOD2) at the current
+## HEIGHT_SCALE of 60, so 10% of amplitude is a ~3.4x margin. `tools/chunk_stream_check.gd`
+## re-measures the divergence and fails if that margin is ever lost.
+const SKIRT_DEPTH_FRACTION: float = 0.10
+const SKIRT_DEPTH: float = Heightmap.HEIGHT_SCALE * SKIRT_DEPTH_FRACTION
+
 
 static func verts_per_side(lod: int) -> int:
 	return CHUNK_SIZE / LOD_STEPS[lod] + 1
@@ -45,6 +54,64 @@ static func vert_count(lod: int) -> int:
 static func tri_count(lod: int) -> int:
 	var quads_per_side: int = verts_per_side(lod) - 1
 	return quads_per_side * quads_per_side * 2
+
+
+## Extra vertices the skirt contributes: one dropped copy per border vertex. The border's own
+## terrain vertices are reused as the skirt's top ring, so only the bottom ring is new.
+static func skirt_vert_count(lod: int) -> int:
+	return 4 * (verts_per_side(lod) - 1)
+
+
+## Two triangles per border segment. The border is a closed loop, so it has exactly as many
+## segments as vertices.
+static func skirt_tri_count(lod: int) -> int:
+	return skirt_vert_count(lod) * 2
+
+
+## Terrain vertex indices walked once around the chunk border: south (x ascending), east
+## (z ascending), north (x descending), west (z descending), closing back onto the first. That
+## traversal order is load-bearing — it is what lets every skirt quad use one uniform winding and
+## still come out facing OUTWARD on all four sides, instead of needing a per-edge special case.
+## Which uniform winding is the right one is the same question `_build_indices` answers — see the
+## note there, and F-133.
+static func _perimeter_indices(lod: int) -> PackedInt32Array:
+	var side: int = verts_per_side(lod)
+	var last: int = side - 1
+	var ring := PackedInt32Array()
+	ring.resize(4 * last)
+	var i: int = 0
+	for x: int in last:
+		ring[i] = x
+		i += 1
+	for z: int in last:
+		ring[i] = z * side + last
+		i += 1
+	for k: int in last:
+		ring[i] = last * side + (last - k)
+		i += 1
+	for k: int in last:
+		ring[i] = (last - k) * side
+		i += 1
+	return ring
+
+
+## The chunk's TERRAIN triangles alone, flattened for `ConcavePolygonShape3D.set_faces()`.
+## Deliberately not `ArrayMesh.get_faces()`, which would hand the physics server the skirt as well:
+## a skirt is a vertical wall standing exactly on the seam a player walks across, so colliding with
+## it is free snagging on a surface that exists only to be looked at — and it is ~12% more faces
+## (LOD0) to cook, against the one main-thread cost this whole system is budgeted around (D-074).
+## `build_mesh` appends the skirt after the terrain, so the terrain is always the first
+## `tri_count(lod)` triangles: this is a slice, not a search.
+static func collision_faces(mesh: ArrayMesh, lod: int) -> PackedVector3Array:
+	var arrays: Array = mesh.surface_get_arrays(0)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+	var n: int = tri_count(lod) * 3
+	var faces := PackedVector3Array()
+	faces.resize(n)
+	for i: int in n:
+		faces[i] = verts[indices[i]]
+	return faces
 
 
 ## Height field with a 1-sample border on every side, at [param lod]'s step spacing, sampled at
@@ -71,6 +138,12 @@ static func _sample_heights(
 	return heights
 
 
+## Winding note (F-133): Godot's front face is the one whose vertices run CLOCKWISE as seen from
+## the front, which is the opposite of the (v1-v0) x (v2-v0) right-hand rule it is easy to reach
+## for. `a, b, c` / `b, d, c` below is what makes this surface face UP; the mirror of it renders
+## and collides as a floor you can only see and stand on from underneath.
+## `tools/chunk_stream_check.gd` pins this down with `SurfaceTool.generate_normals()`, which
+## applies the engine's own convention rather than anyone's recollection of it.
 static func _build_indices(lod: int) -> PackedInt32Array:
 	var side: int = verts_per_side(lod)
 	var quads_per_side: int = side - 1
@@ -84,11 +157,11 @@ static func _build_indices(lod: int) -> PackedInt32Array:
 			var c: int = a + side
 			var d: int = c + 1
 			indices[i] = a
-			indices[i + 1] = c
-			indices[i + 2] = b
+			indices[i + 1] = b
+			indices[i + 2] = c
 			indices[i + 3] = b
-			indices[i + 4] = c
-			indices[i + 5] = d
+			indices[i + 4] = d
+			indices[i + 5] = c
 			i += 6
 	return indices
 
@@ -98,11 +171,14 @@ static func _build_indices(lod: int) -> PackedInt32Array:
 ## places the MeshInstance3D at the chunk origin. Deterministic and thread-safe — every input is
 ## explicit, nothing is read from engine or instance state.
 ##
-## KNOWN LIMITATION (not fixed here — see FINDINGS.md): a LOD0 chunk sharing an edge with a LOD1
-## or LOD2 neighbour has more vertices along that edge than the neighbour does, so the two meshes
-## do not stitch (a T-junction crack). This does not affect 4.3's acceptance test, which measures
-## per-frame streaming COST, not the seam's visual continuity — skirts or edge stitching are a
-## follow-up, not a blocker.
+## The mesh carries a vertical SKIRT below its outer border (F-128/D-084). Two neighbours at the
+## same LOD tile exactly — both sample the identical world-space points along their shared edge —
+## but two neighbours at DIFFERENT tiers connect the same edge with different triangle counts, so
+## the surfaces diverge and a T-junction crack opens. The skirt hides that gap without needing to
+## know anything about the neighbour, which is what keeps this function pure in
+## (chunk_x, chunk_z, world_seed, lod): real stitching would take the neighbours' tiers as a fifth
+## input and force a re-mesh of the finer chunk every time a neighbour changed tier, cascading work
+## through exactly the frame budget task 4.3 exists to protect.
 static func build_mesh(chunk_x: int, chunk_z: int, world_seed: int, lod: int = 0) -> ArrayMesh:
 	var step: int = LOD_STEPS[lod]
 	var side: int = verts_per_side(lod)
@@ -137,12 +213,55 @@ static func build_mesh(chunk_x: int, chunk_z: int, world_seed: int, lod: int = 0
 			uvs[v] = Vector2(local_x * inv_size, local_z * inv_size)
 			v += 1
 
+	var indices: PackedInt32Array = _build_indices(lod)
+
+	# Skirt: a thin wall hanging SKIRT_DEPTH metres straight down from the chunk's outer border,
+	# appended AFTER the terrain so `collision_faces()` can slice the terrain off the front. Both
+	# sides of a tier boundary grow one, which is what makes the gap covered whichever surface
+	# happens to sit higher at a given point along the seam.
+	#
+	# One surface, not two: a second surface would be a second draw call on every one of the ~289
+	# resident chunks, and this ships to the worst machine we target, not the best.
+	var ring: PackedInt32Array = _perimeter_indices(lod)
+	var ring_len: int = ring.size()
+	var skirt_base: int = count
+	vertices.resize(count + ring_len)
+	normals.resize(count + ring_len)
+	uvs.resize(count + ring_len)
+	for i: int in ring_len:
+		var top: int = ring[i]
+		var above: Vector3 = vertices[top]
+		vertices[skirt_base + i] = Vector3(above.x, above.y - SKIRT_DEPTH, above.z)
+		# The wall inherits the normal and UV of the terrain vertex it hangs from, rather than a
+		# true outward-facing normal. That is deliberate: lit as if it were more terrain, the wall
+		# reads as a continuation of the surface at the seam instead of a dark flange under it —
+		# which is the entire point, since it is only ever seen through a crack a few centimetres
+		# tall. The UV streaks downward for the same reason.
+		normals[skirt_base + i] = normals[top]
+		uvs[skirt_base + i] = uvs[top]
+
+	var si: int = indices.size()
+	indices.resize(si + ring_len * 6)
+	for i: int in ring_len:
+		var next: int = (i + 1) % ring_len
+		var t0: int = ring[i]
+		var t1: int = ring[next]
+		var b0: int = skirt_base + i
+		var b1: int = skirt_base + next
+		indices[si] = t0
+		indices[si + 1] = b0
+		indices[si + 2] = t1
+		indices[si + 3] = t1
+		indices[si + 4] = b0
+		indices[si + 5] = b1
+		si += 6
+
 	var arrays: Array = []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices
 	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_TEX_UV] = uvs
-	arrays[Mesh.ARRAY_INDEX] = _build_indices(lod)
+	arrays[Mesh.ARRAY_INDEX] = indices
 
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
@@ -150,7 +269,8 @@ static func build_mesh(chunk_x: int, chunk_z: int, world_seed: int, lod: int = 0
 
 
 ## Same chunk via SurfaceTool, LOD0 only — kept only so `tools/bench_chunks.gd` (D-015) still runs
-## unmodified; not called by build_mesh or by the real streamer.
+## unmodified; not called by build_mesh or by the real streamer. No skirt: it exists to time
+## SurfaceTool against the array path on identical work, and nothing renders what it returns.
 static func build_mesh_surface_tool(chunk_x: int, chunk_z: int, world_seed: int) -> ArrayMesh:
 	var heights: PackedFloat32Array = _sample_heights(chunk_x, chunk_z, world_seed, 0)
 
@@ -174,10 +294,10 @@ static func build_mesh_surface_tool(chunk_x: int, chunk_z: int, world_seed: int)
 			var c: int = a + VERTS_PER_SIDE
 			var d: int = c + 1
 			st.add_index(a)
-			st.add_index(c)
-			st.add_index(b)
 			st.add_index(b)
 			st.add_index(c)
+			st.add_index(b)
 			st.add_index(d)
+			st.add_index(c)
 
 	return st.commit()

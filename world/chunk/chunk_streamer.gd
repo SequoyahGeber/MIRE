@@ -371,9 +371,11 @@ func _cook_lazy_collision(deadline_usec: int) -> void:
 		_cook_collision(entry)
 
 
+## Terrain triangles only, never `mesh.get_faces()` — the mesh also carries F-128's visual skirt,
+## and a skirt is a vertical wall standing on the exact seam a player walks across (D-084).
 func _cook_collision(entry: ChunkEntry) -> void:
 	var shape := ConcavePolygonShape3D.new()
-	shape.set_faces(entry.mesh_instance.mesh.get_faces())
+	shape.set_faces(Mesher.collision_faces(entry.mesh_instance.mesh, entry.lod))
 
 	var body := StaticBody3D.new()
 	body.collision_layer = PlacementValidator.TERRAIN_LAYER
