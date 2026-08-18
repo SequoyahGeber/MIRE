@@ -388,33 +388,6 @@ concurrently (a resolved F-033, and kiln9's F-034 and F-035). `NEXT.md` and the 
 
 ---
 
-### F-037 · `net_debug_panel_check` fakes its second peer in-process, so host and client share one tree
-
-**Area:** tests/netcode · **Severity:** low · **Found:** 2026-08-16 by dusk3 while fixing F-021
-
-F-021 is fixed and the uninitialized-root errors are gone, but the harness still emits two:
-
-```
-ERROR: Condition "parent->has_node(name)" is true. Returning: ERR_INVALID_DATA
-```
-
-Cause: the "client" is a second `MultiplayerAPI` in the *same process*, and F-021's fix correctly
-points its `root_path` at `/root` so autoload-addressed RPCs resolve. But that is the host's tree too,
-so when `PlayerNet` spawns a body for the fake peer, the `MultiplayerSpawner` also replicates it back
-into the same container and the name is already taken.
-
-Harmless — the panel numbers this harness checks (RTT, bandwidth, peer list) are all correct, and it
-exits 0 with 0 assertion failures. Filed because it is the last thing standing between this harness
-and a clean error-free run, and because "two expected errors" is exactly the kind of allowance that
-later hides a third.
-
-Fix: use a real second process, the way `session_lifecycle_check`, `inventory_net_check`,
-`crafting_net_check` and `combat_net_check` all do. That pattern is well established here — driver
-spawns `OS.create_process` with a `--` probe argument and they talk through a `user://` JSON file — so
-this is a rewrite of one function, not new machinery.
-
----
-
 ### F-042 · Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one
 
 **Area:** asset pipeline · **Severity:** low · **Found:** 2026-08-17 by reed16 during 2.1d (A-021S)
@@ -771,6 +744,83 @@ resolving a finding *moves* a section rather than appending one.
 
 ---
 
+### F-103 · MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin
+
+**Area:** tooling/rendering · **Severity:** high · **Found:** 2026-08-18 by larch10 during F-097
+
+`MultiMesh` instance transforms live in the RenderingServer, not in the resource. Under
+`--headless` — which is *every* way an agent can verify anything (F-077) — the dummy driver stores
+nothing, so `multimesh.buffer` is empty and `get_instance_transform(i)` returns `Transform3D()` for
+every `i`, however many were written. There is no error and no warning.
+
+Minimal reproduction, via `agent godot --script`:
+
+```
+multimesh.transform_format = MultiMesh.TRANSFORM_3D
+multimesh.mesh = BoxMesh.new()
+multimesh.instance_count = 3
+set_instance_transform(i, Transform3D(Basis.IDENTITY, Vector3(i * 10, 0, 0)))
+->  READBACK 0/1/2 all (0.0, 0.0, 0.0);  buffer size = 0
+```
+
+The failure mode is nastier than a crash. F-097's first implementation read emitter positions back
+out of the prop batches to place firelight; every one of Hollowmere's 99 mire crystals, 163 tendrils
+and 5 fires collapsed onto a single point at the world origin, and the check *passed* — one site per
+class is still ≥ 1. A count-based assertion cannot see this. It was only caught by asserting the
+number of sites against what the layout file actually holds.
+
+**Consequences.** Never read placement back from a MultiMesh. The system that wrote the transforms
+already has them, so it should publish them: `world/gen/authored_world.gd` and
+`world/gen/undergrowth.gd` now stamp a `placements` PackedVector3Array on the holder for any asset
+whose presentation is per-copy, and `EnvironmentVfx` reads that instead. Any check that walks
+MultiMesh transforms is measuring nothing, and any check whose assertion is satisfied by the number
+1 cannot distinguish "found everything" from "found one".
+
+---
+
+### F-104 · A new `class_name` is invisible to every headless run until the editor rescans, and it fails as a silent hang
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by larch10 during F-097
+
+Godot resolves `class_name` through `.godot/global_script_class_cache.cfg`, which is written by an
+**editor** scan. `agent godot --script` never scans (the same root cause as F-093), so a script file
+added in this session is not in the cache, and every reference to its global name fails to parse:
+
+```
+SCRIPT ERROR: Parse Error: Identifier "AssetVfxLibrary" not declared in the current scope.
+SCRIPT ERROR: Compile Error: Failed to compile depended scripts.
+```
+
+What makes it expensive is the shape of the failure. The parse error kills the check script, so
+`quit()` is never reached, and a `SceneTree` with no one to stop it **runs forever**. The run does
+not fail — it hangs, produces no output at all because stdout to a pipe is block-buffered, and
+burns the shared `agent godot` lock until something kills it. It cost roughly eight minutes here
+before `sample <pid>` showed the main thread parked in `nanosleep` with no work in flight.
+
+**Consequences.** Declare `class_name` if you like — the editor will register it eventually — but
+**reference new scripts by `preload()`**, which resolves through the path and needs no cache.
+`autoload/environment_vfx.gd`, `world/gen/authored_world.gd` and `world/gen/undergrowth.gd` all
+preload `asset_vfx_library.gd` for exactly this reason. Two cheap habits make the failure survivable
+when it does happen: run `agent godot --check-only --script <file>` first, which parses in seconds
+instead of hanging, and treat *no output at all* from a headless run as a parse failure rather than
+as slowness.
+
+---
+
+### F-105 · Per-frame costs found by the F-099 review in files claimed by F-086/F-097
+
+**Area:** perf · **Severity:** low · **Found:** 2026-08-18 by kiln9
+
+The F-099 review sweep found per-frame costs in three files that were claimed mid-sweep by other in-flight tasks, so they were reviewed but not fixed. Apply after F-086/F-097 land, if the rewrites have not already removed the code:
+
+1. systems/building/build_ghost.gd:95 — update_aim() runs the full placement validator (5 support raycasts + 1 shape cast + fresh query/shape allocations, see placement_validator.gd:164) every frame even when the snapped transform is unchanged since last frame. Cache the previous placement and skip evaluate() when identical, with a short timer to catch world changes under a stationary ghost. [F-086/lp holds the file]
+
+2. entities/player/player_controller.gd:293 — one local-player physics tick performs ~6-8 get_node_or_null(/root/PlayerHealth) path lookups plus stringly .call() dispatches across _apply_horizontal_movement/_try_jump/_tick_revive_hold, and gameplay_input_allowed() (a group scan) is evaluated up to 3x per tick. Cache the node ref and resolve downed/dead/input-allowed once per tick. [F-086/lp holds the file]
+
+3. autoload/environment_vfx.gd:27 — _fire_lights is append-only (freed lights skipped but never pruned, so the per-frame loop grows across scene changes), _process runs even with zero fires, and every fire light has shadow_enabled = true, which GraphicsQuality presets never scale — per-light shadow passes are among the costliest items on the weak GPUs D-055 targets. [F-097/larch10 holds the file and is rewriting discovery]
+
+---
+
 ## Resolved
 
 ### F-053 · Agents still told Sequoyah they can't edit scene files; the docs' hand-off-by-default tone was why — **fixed**
@@ -814,6 +864,41 @@ task that touched a scene.
 `AGENTS.md`, `docs/AI-WORKFLOW.md` or `docs/ASSET_TRACKER.md` assigns editor work to Sequoyah by
 default. `CLAUDE.md` already carried the rule as non-negotiable #2 and needed no change — the gap
 was in the shared protocol that Codex and the dispatched lanes read.
+
+---
+
+### F-037 · `net_debug_panel_check` fakes its second peer in-process, so host and client share one tree — **fixed**
+
+**Area:** tests/netcode · **Severity:** low · **Found:** 2026-08-16 by dusk3 while fixing F-021 ·
+**Resolved:** 2026-08-18 by lp.
+
+F-021 fixed the uninitialized-root errors, but the harness still emitted two:
+
+```
+ERROR: Condition "parent->has_node(name)" is true. Returning: ERR_INVALID_DATA
+```
+
+Cause: the "client" was a second `MultiplayerAPI` in the *same process*, and F-021's fix correctly
+pointed its `root_path` at `/root` so autoload-addressed RPCs resolve — but that is the host's tree
+too, so when `PlayerNet` spawned a body for the fake peer, the `MultiplayerSpawner` also replicated it
+back into the same container and the name was already taken. Harmless (the panel numbers the harness
+checks — RTT, bandwidth, peer list — were all correct), but it was the last thing standing between
+this harness and a clean error-free run.
+
+**Fix:** rewrote `_check_real_session()` as a real second process, copying `inventory_net_check.gd`'s
+shape exactly (docs/SPECS.md's "Two-process checks" seam) — the driver hosts via `NetTransport`,
+spawns itself again with `OS.create_process` and a `-- panel-probe` argument, and the two talk through
+`user://net_debug_panel_client.json`. Each side reads its own `NetDebugPanel` instance's
+`_session_line()`/`_rtt_line()`/`_bandwidth_line()` off its own real ENet connection — no shared tree,
+no fake peer, so `MultiplayerSpawner` never sees two claims on one name. The probe's readiness gate
+(`is_active()` and `local_peer_id() > HOST_PEER_ID`, same line) follows F-060's rule rather than
+reintroducing its trap.
+
+**Verified:** `agent godot --script tools/net_debug_panel_check.gd`, twice back to back —
+`0 failure(s)`, `0` lines matching `ERROR:` in either run's output (no declared-error allowance
+needed, unlike `session_lifecycle_check`). `agent godot --script tools/net_check_pattern_check.gd`
+stays clean — `net_debug_panel_check.gd`'s new ready-gate is correctly flagged as gated
+(`gate_reads=9`, `failures=0`), confirming the rewrite didn't reintroduce F-060's trap.
 
 ---
 

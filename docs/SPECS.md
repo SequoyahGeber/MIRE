@@ -533,6 +533,39 @@ action, a real `BuildBar` slot click, a real `R` keypress, the real "attack" act
 right-click), proving the wiring rather than constructing a private ghost. `failures=0`.
 `tools/build_net_check.gd` `failures=0`, unaffected.
 
+## F-037 · `net_debug_panel_check` fakes its second peer in-process, so host and client share one tree
+
+**Claim:** `tools/net_debug_panel_check.gd`. No production file — the bug was entirely in the check's
+own scaffolding (`ui/debug/net_debug_panel.gd` is unchanged and correct).
+
+The old `_check_real_session()` built a second `MultiplayerAPI` in the same process, `root_path`
+pointed at `/root` per F-021's fix so autoload-addressed RPCs would resolve — but `/root` is the
+host's tree too, so when `PlayerNet` spawned a body for the fake peer, `MultiplayerSpawner` replicated
+it right back into the same container under a name already taken:
+`ERROR: Condition "parent->has_node(name)" is true.` Harmless (the panel's RTT/bandwidth/peer-list
+numbers were all correct) but it was the one thing between this harness and a genuinely clean run.
+
+**Fix:** real second process, the shape every other `tools/*_net_check.gd` uses (docs/SPECS.md's
+"Two-process checks" seam, `tools/inventory_net_check.gd` copied almost verbatim). No args ⇒ driver:
+hosts via `NetTransport`, spawns itself again with `OS.create_process` and a trailing `-- panel-probe`
+argument, waits for the peer to join, then reads its own `NetDebugPanel` instance's readouts off the
+real connection. `panel-probe` arg ⇒ the child: joins, waits on a ready gate, writes its own readouts
+to `user://net_debug_panel_client.json`, and the driver asserts both sides independently. Each process
+gets its own real tree, so there is no shared-name collision to trigger the error in the first place.
+The boot/registration/offline-readouts/event-log-ring-buffer sections above it are unchanged — they
+never touched networking.
+
+Ready gate follows F-060's rule rather than reintroducing its trap: `is_active() and
+local_peer_id() > NetConfig.HOST_PEER_ID`, `is_active()` on the same line as the `local_peer_id()`
+read, not a separate check somewhere else that could be dropped later.
+
+**Verified 2026-08-18:** `agent godot --script tools/net_debug_panel_check.gd`, twice back to back —
+`0 failure(s)` both runs, `0` lines matching `ERROR:` in either (no `EXPECTED_ERROR_PATTERNS`
+allowance needed — the whole point was getting to zero, not declaring an allowance). `agent godot
+--script tools/net_check_pattern_check.gd` stays clean with the new file included in its scan
+(`gate_reads=9`, `failures=0`) — confirms the ready gate is recognised as correctly guarded, not
+missed by the scanner.
+
 ## F-038 · `inventory_net_check`'s grant timeout, and `combat_net_check`'s sibling flake, both wait-ordering races in the harness
 
 **Claim:** `tools/inventory_net_check.gd`, `tools/combat_net_check.gd`. No production file — both
@@ -875,7 +908,6 @@ review, and the mandatory Coming-Soon clock — human, sequenced, checklisted in
 | F-023 | Measure Steam first-join latency on the physical PC, then set `STEAM_CONNECT_TIMEOUT_SEC` from evidence (currently 20 s by judgment). |
 | F-024 | Move dev_launch's bounded LAN retry into `NetSession` as policy (D-029 already did it for STEAM; mirror for ENet first joins). |
 | F-025 | Pump Steam callbacks from a timer, not `_process`, so a slow frame can't slow the handshake; verify no reentrancy on the lobby callbacks. |
-| F-037 | Rewrite `net_debug_panel_check`'s fake second peer as a real process (copy `inventory_net_check`'s scaffold); acceptance = 0 expected errors. |
 | F-042 | Habit recorded in the tracker; optional tool `tools/png_pixels_equal.py` if it bites again. |
 | F-043 | Decision spec'd under M2 above. |
 | F-049 | Two named fixes in `.agent/bin/agent` (`_sync_findings` closes departed findings; start/board call it); ship with a before/after board diff. |
