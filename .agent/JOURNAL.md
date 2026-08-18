@@ -2155,3 +2155,16 @@ Notes along the way:
 Files: `entities/player/viewmodel.gd`, `systems/inventory/item_def.gd`, `systems/combat/weapon_def.gd`, `tools/setup_tool_content.gd`, `tools/viewmodel_check.gd`, `tools/blender/render_item_icons.py`, `assets/icons/catalog.json`, `content/items/wooden_axe.tres`, `content/items/stone_axe.tres`, `content/items/wooden_pickaxe.tres`, `content/items/stone_pickaxe.tres`, `content/items/iron_pickaxe.tres`, `content/items/cleaver.tres`, `content/items/skewer.tres`, `content/items/short_bow.tres`, `content/items/arrow.tres`, `content/items/repair_hammer.tres`, `content/items/iron_sword.tres`, `content/weapons/wooden_axe.tres`, `content/weapons/stone_axe.tres`, `content/weapons/wooden_pickaxe.tres`, `content/weapons/stone_pickaxe.tres`, `content/weapons/iron_pickaxe.tres`, `content/weapons/cleaver.tres`, `content/weapons/skewer.tres`, `content/weapons/repair_hammer.tres`, `content/weapons/iron_sword.tres`, `assets/icons/exports/icon_wooden_axe.png`, `assets/icons/exports/icon_stone_axe.png`, `assets/icons/preview/item_icons_sheet.png`, `tools/setup_crafting_content.gd`
 
 Commit at time of writing: `fa6958f`
+
+---
+
+### DONE · 3.6-review · lc1 · 2026-08-18T04:59:10+00:00
+
+**Review 3.6 @ dc86116 — judge the commit, file findings, no edits**
+
+CHANGES REQUESTED: filed F-082..F-086 (partial support accepted; Y snap rejects/floats pieces on non-integer terrain; remote destroy has no range/policy validation; damageable pieces lack host_apply_damage; no production caller makes building reachable). Clean isolated dc86116: full boot exit 0 with 0 ERROR lines; build_check 26/26, failures=0, 0 ERROR lines. Completed 6bed3c1: build_check 59/59 and build_net_check 13/13, both failures=0 and 0 ERROR lines. Real-physics review probe: PARTIAL_SUPPORT reason=ok; ground Y=0.4 snapped to 0 and NO_SUPPORT; ground Y=0.6 snapped to 1 with 0.4 m gap and OK. Shared-tree boot also ran but had unrelated parse errors in lp's claimed in-flight crafting_ui.gd.
+
+Notes along the way:
+- Clean isolated evidence: dc86116 full boot 0 ERROR and build_check 26/26; completed 6bed3c1 build_check 59/59 and build_net_check 13/13, both 0 ERROR. Review probes exposed partial-support acceptance and Y-snap failures; code review exposed unvalidated remote destruction, inert damageable group membership, and no gameplay caller for BuildGhost/BuildService.
+
+Commit at time of writing: `67c81d4`

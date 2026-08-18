@@ -123,18 +123,6 @@
         }
       ],
       "started": "2026-08-18T04:50:01+00:00"
-    },
-    "3.6-review": {
-      "agent": "lc1",
-      "files": [],
-      "notes": [
-        {
-          "at": "2026-08-18T04:58:10+00:00",
-          "by": "lc1",
-          "text": "Clean isolated evidence: dc86116 full boot 0 ERROR and build_check 26/26; completed 6bed3c1 build_check 59/59 and build_net_check 13/13, both 0 ERROR. Review probes exposed partial-support acceptance and Y-snap failures; code review exposed unvalidated remote destruction, inert damageable group membership, and no gameplay caller for BuildGhost/BuildService."
-        }
-      ],
-      "started": "2026-08-18T04:52:43+00:00"
     }
   },
   "recent": {
@@ -1734,6 +1722,14 @@
       "tier": "T2",
       "title": "Powerup framework: effect hooks, stacking, tags, Resonance thresholds (`DESIGN.md` \u00a74.4)"
     },
+    "3.3-review": {
+      "est": "0.5",
+      "milestone": "M3",
+      "review_of": "3.3",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 3.3 @ 17e26f8 \u2014 judge the commit, file findings, no edits"
+    },
     "3.4": {
       "est": "10",
       "milestone": "M3",
@@ -1750,6 +1746,14 @@
       "tier": "T1",
       "title": "Coins, chest tiers, chest-opening UI and flow"
     },
+    "3.5-review": {
+      "est": "0.5",
+      "milestone": "M3",
+      "review_of": "3.5",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 3.5 @ 27546a1 \u2014 judge the commit, file findings, no edits"
+    },
     "3.6": {
       "done_at": "2026-08-18T04:45:01+00:00",
       "done_by": "gale6",
@@ -1760,10 +1764,12 @@
       "title": "Building system: placement ghost, snapping, rotate, validate, destroy"
     },
     "3.6-review": {
+      "done_at": "2026-08-18T04:59:10+00:00",
+      "done_by": "lc1",
       "est": "0.5",
       "milestone": "M3",
       "review_of": "3.6",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T1",
       "title": "Review 3.6 @ dc86116 \u2014 judge the commit, file findings, no edits"
     },
@@ -2827,6 +2833,48 @@
       "status": "todo",
       "tier": "F",
       "title": "Every ship blanket-stages .agent/, so one agent's commit silently carries another's in-progress harness edits"
+    },
+    "F-082": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Placement support succeeds when only one of five footprint probes hits"
+    },
+    "F-083": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Snapping the aim hit's Y coordinate rejects or floats pieces on ordinary terrain heights"
+    },
+    "F-084": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Any client can destroy any buildable by its guessable node name from any distance"
+    },
+    "F-085": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Buildables join `damageable` without implementing its required damage method"
+    },
+    "F-086": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The building system has no gameplay caller, so no player can place, rotate, or destroy anything"
+    },
+    "F-087": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Three open findings share their F-number with a different finding, so brief routes to the wrong one and start reports two of them as already closed"
     }
   },
   "version": 1
