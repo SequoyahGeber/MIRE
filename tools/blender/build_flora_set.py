@@ -1,0 +1,1337 @@
+"""Build MIRE's flora kit — the undergrowth the environment kit never had.
+
+Run with:
+  /Applications/Blender.app/Contents/MacOS/Blender --background --python tools/blender/build_flora_set.py
+
+Why a separate kit
+------------------
+`build_mire_map_kit.py` ships 128 assets and exactly **one** shape of ground
+cover: bladed grass, in four sizes. It has no bush, no shrub, no flower, no
+broadleaf plant, no sapling, no leaf litter, no moss — so every square metre of
+the Hollow is bare ground, bladed grass, or a full-grown tree, and the eye reads
+that as one repeated texture however many grass variants get scattered. This kit
+fills the middle of that range: knee-to-shoulder plants, ankle-height detail, and
+the young and dying trees that break up a treeline.
+
+`docs/ASSET_TRACKER.md` says to prefer a new small generator per coherent family
+over growing the map kit further, so this is its own family, catalog and export
+directory. Both map consumers resolve an asset as
+``assets/<kit>/exports/<name>.glb``, so a prop with ``"kit": "flora"`` works with
+no change to either of them.
+
+What was learned from a hand-authored reference, and what was not taken
+----------------------------------------------------------------------
+Sequoyah supplied a CC0 low-poly nature pack (Quaternius) as a reference. **No
+geometry from it is used, imported, traced or shipped** — the instruction was to
+learn the technique and build our own. Three measurements from it changed how
+this kit is built, and all three are about restraint:
+
+* **One mass, not a heap of ellipsoids.** Its bush is a single 364-triangle mesh
+  with one material. MIRE's nearest equivalent was three meshes, five materials
+  and 641 triangles for a shape that read as less. Hence `mire_art.hull()`.
+* **Twelve blades, not thirty-six.** Its grass tuft is a dozen wide blades. The
+  first draft of this kit used up to 46 thin ones per patch: more cost, and less
+  legible, because at any real viewing distance thin blades merge into fuzz.
+* **Detail that costs no geometry.** Its mossy rock is the *same* 36-face rock
+  with some faces assigned a second material. Hence `mire_art.paint_faces()`.
+
+Where the reference and MIRE disagree, MIRE wins: its palette is much darker and
+more olive than ours, and ours was deliberately re-anchored bright after being
+authored too dark once already (`docs/ASSET_TRACKER.md`, "Pick palette values
+from base colour"). We are not undoing that to match somebody else's world.
+
+Construction rules
+------------------
+* Sizes are **guaranteed, not hoped for**: every asset is scaled to a target
+  drawn from its family's band before export, so the kit cannot drift against a
+  1.80 m player the way the pickup kit did.
+* Placement is angular (`radial`/`around`), never hand-written coordinates — the
+  2.1j lesson about detail landing only on the side the author was looking at.
+* Repeated small shapes are accumulated per material and emitted as one mesh per
+  material, so a bracken bed exports two mesh parts rather than forty.
+* No bevel modifier anywhere; F-057 traced non-deterministic rebuilds to it.
+"""
+
+from __future__ import annotations
+
+import json
+import math
+import random
+import sys
+from pathlib import Path
+from typing import Callable
+
+import bpy
+from mathutils import Vector
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from mire_art import (  # noqa: E402
+    around,
+    cone,
+    fork,
+    ground_and_centre,
+    hull,
+    look_at,
+    mat,
+    mesh_object,
+    paint_faces,
+    radial,
+    reset_materials,
+    tapered_between,
+    world_bounds,
+)
+
+
+ROOT = Path(__file__).resolve().parents[2]
+ASSET_DIR = ROOT / "assets" / "flora"
+EXPORT_DIR = ASSET_DIR / "exports"
+PREVIEW_DIR = ASSET_DIR / "preview"
+SOURCE_DIR = ROOT / "assets" / "source"
+SOURCE_PATH = SOURCE_DIR / "flora_set.blend"
+
+FAMILY_ORDER = ["shrubs", "small_trees", "leafy_plants", "flowers", "grasses", "ground_cover"]
+FAMILY_PREVIEWS = {name: f"{name}_preview.png" for name in FAMILY_ORDER}
+
+#: Authored size band per group, in metres, plus which axis the band governs.
+#:
+#: `mire_art.SCALE` is the wrong instrument here: it holds one exact dimension and
+#: fails outside 12%, which suits a coin or an axe but not a seeded family where
+#: `bush_round_a` and `bush_round_d` are *supposed* to differ. The contract a
+#: randomized family can keep is a band — and it is kept by construction, because
+#: `create_asset` scales each finished asset to a target drawn from the band. A
+#: mat has no meaningful height, so its band governs spread instead.
+#:
+#: The fourth field is a hard footprint ceiling, and it exists because scaling to
+#: a height band is not enough on its own. A rosette plant is naturally much wider
+#: than it is tall, so multiplying it up until its *height* lands in band multiplies
+#: its reach by the same factor: `bracken_c` came out a correct 0.95 m tall and
+#: **4.34 m across**. Nothing in the build noticed — the all-sides audit did. Height
+#: and footprint have to be stated separately or one of them runs away.
+#: ``None`` means the band already governs spread directly.
+#:
+#: Set against a 1.80 m player: shin 0.2, knee 0.5, waist 1.0, chest 1.4.
+SIZE_BAND: dict[str, tuple[float, float, str, float | None]] = {
+    "bush_round": (0.90, 1.55, "height", 2.0),
+    "bush_broadleaf": (1.35, 2.10, "height", 2.4),
+    "bush_thorn": (0.80, 1.40, "height", 1.8),
+    "bush_dead": (0.85, 1.55, "height", 1.8),
+    "sapling": (1.30, 2.55, "height", 1.9),
+    "tree_willow": (4.20, 6.20, "height", 4.2),
+    "tree_snag": (3.10, 5.20, "height", 3.0),
+    "plant_broadleaf": (0.42, 0.90, "height", 1.7),
+    "plant_dock": (0.60, 1.10, "height", 1.7),
+    "plant_creeper": (0.85, 1.60, "spread", None),
+    "bracken": (0.60, 1.15, "height", 2.2),
+    "nettle": (0.50, 0.95, "height", 1.4),
+    "flowers_meadow": (0.28, 0.58, "height", 1.6),
+    "flowers_tall": (0.75, 1.35, "height", 1.4),
+    "flowers_bog": (0.34, 0.72, "height", 1.1),
+    "flowers_creeping": (0.70, 1.25, "spread", None),
+    "grass_tussock": (0.55, 1.10, "height", 1.3),
+    "grass_dry": (0.40, 0.82, "height", 1.6),
+    "grass_short": (0.12, 0.28, "height", 1.6),
+    "sedge": (0.65, 1.25, "height", 1.0),
+    "marsh_grass": (0.80, 1.45, "height", 1.5),
+    "lily_pad": (0.75, 1.40, "spread", None),
+    "moss_patch": (0.55, 1.20, "spread", None),
+    "clover_patch": (0.60, 1.15, "spread", None),
+    "leaf_litter": (0.70, 1.40, "spread", None),
+}
+
+#: Triangle ceiling per family. Deliberately generous where the silhouette is the
+#: whole point (a willow is read at 30 m) and tight where the asset is ground
+#: texture the player walks over.
+TRIANGLE_BUDGET = {
+    "shrubs": 900, "small_trees": 2400, "leafy_plants": 700,
+    "flowers": 650, "grasses": 520, "ground_cover": 620,
+}
+
+#: Preview grid. Ground cover packed at 1.6 m would be lost at tree spacing, and a
+#: willow at 1.6 m spacing would overlap its neighbour, so spacing is per family
+#: and the camera derives its framing from it rather than from a hand-tuned number
+#: that silently stops matching when a family gains an asset.
+COLUMNS = 7
+FAMILY_SPACING = {"shrubs": 3.0, "small_trees": 3.8, "leafy_plants": 1.7,
+                  "flowers": 1.7, "grasses": 1.7, "ground_cover": 1.7}
+
+#: Colours per asset. The first draft of this kit averaged five per asset and
+#: several carried twenty-two (that was F-058, not intent), which is how a
+#: low-poly scene turns to noise. The reference pack holds one or two — but it is
+#: not the standard here, because MIRE's palette is deliberately built from
+#: three-stop ramps so a flat-shaded form reads as one substance catching light at
+#: three angles. A woody plant therefore legitimately spends four: two bark tones
+#: and a two-stop leaf ramp. Ground cover with no wood in it gets three.
+MAX_MATERIALS = {
+    "shrubs": 4, "small_trees": 4, "leafy_plants": 4,
+    "flowers": 3, "grasses": 3, "ground_cover": 4,
+}
+
+
+def family_of(name: str) -> str:
+    return name.rsplit("_", 1)[0]
+
+
+def seed_for(name: str) -> int:
+    return sum((index + 1) * ord(char) for index, char in enumerate(name))
+
+
+# ---------------------------------------------------------------------------
+# Batched geometry
+# ---------------------------------------------------------------------------
+
+
+class Batch:
+    """Accumulate many small shapes and emit one mesh per material.
+
+    A bracken bed is forty leaflets. Forty Blender objects export as forty glTF
+    nodes with forty primitives, which costs far more at runtime than the
+    triangles do. Everything repetitive goes through here instead.
+    """
+
+    def __init__(self) -> None:
+        self._groups: dict[str, tuple[list, list]] = {}
+
+    def add(self, token: str, vertices: list, faces: list) -> None:
+        vert_list, face_list = self._groups.setdefault(token, ([], []))
+        offset = len(vert_list)
+        vert_list.extend(tuple(float(c) for c in v) for v in vertices)
+        face_list.extend(tuple(index + offset for index in face) for face in faces)
+
+    def blob(self, token: str, centre, radius, rng: random.Random) -> None:
+        """An 8-triangle irregular octahedron — the cheapest thing that still
+        reads as a mass. For anything bigger than a flower head, use `hull`."""
+        cx, cy, cz = centre
+        rx, ry, rz = (radius, radius, radius) if isinstance(radius, (int, float)) else radius
+
+        def wobble(value: float) -> float:
+            return value * rng.uniform(0.74, 1.26)
+
+        vertices = [
+            (cx + wobble(rx), cy, cz), (cx - wobble(rx), cy, cz),
+            (cx, cy + wobble(ry), cz), (cx, cy - wobble(ry), cz),
+            (cx, cy, cz + wobble(rz)), (cx, cy, cz - wobble(rz)),
+        ]
+        self.add(token, vertices, [
+            (0, 2, 4), (2, 1, 4), (1, 3, 4), (3, 0, 4),
+            (2, 0, 5), (1, 2, 5), (3, 1, 5), (0, 3, 5),
+        ])
+
+    def ribbon(self, token: str, spine: list[Vector], half_widths: list[float], fold: list[float]) -> None:
+        """A solid, folded strip along ``spine``: one leaf, one blade, one frond.
+
+        Cross-section is a triangle — left edge, right edge, raised centre — so
+        the strip has a top crease and a flat underside and is visible from every
+        direction. A one-sided leaf card is an invisible leaf, because Godot
+        imports glTF with back-face culling on; the crease is also what catches
+        light differently along its length, which is most of why a flat-shaded
+        leaf reads as a leaf.
+        """
+        if len(spine) < 2:
+            return
+        vertices: list[tuple[float, float, float]] = []
+        faces: list[tuple[int, ...]] = []
+        for index, point in enumerate(spine):
+            nxt = spine[min(index + 1, len(spine) - 1)]
+            prv = spine[max(index - 1, 0)]
+            tangent = Vector((nxt.x - prv.x, nxt.y - prv.y, 0.0))
+            if tangent.length < 1e-6:
+                tangent = Vector((1.0, 0.0, 0.0))
+            tangent.normalize()
+            side = Vector((-tangent.y, tangent.x, 0.0)) * half_widths[index]
+            vertices.extend([
+                (point.x - side.x, point.y - side.y, point.z),
+                (point.x + side.x, point.y + side.y, point.z),
+                (point.x, point.y, point.z + fold[index]),
+            ])
+        for index in range(len(spine) - 1):
+            a, b = index * 3, (index + 1) * 3
+            faces.extend([
+                (a + 0, b + 0, b + 2, a + 2),
+                (a + 2, b + 2, b + 1, a + 1),
+                (a + 1, b + 1, b + 0, a + 0),
+            ])
+        last = (len(spine) - 1) * 3
+        faces.extend([(0, 2, 1), (last + 1, last + 2, last + 0)])
+        self.add(token, vertices, faces)
+
+    def emit(self, prefix: str) -> None:
+        for token, (vertices, faces) in sorted(self._groups.items()):
+            if vertices:
+                mesh_object(f"{prefix}_{token}", vertices, faces, mat(token), recalculate=False)
+
+
+# ---------------------------------------------------------------------------
+# Shape recipes
+# ---------------------------------------------------------------------------
+
+
+def arc_spine(origin: Vector, angle: float, length: float, rise: float, droop: float,
+              segments: int = 4) -> list[Vector]:
+    """Points along a stem that leaves ``origin`` at ``angle``, lifts by ``rise``
+    and falls away by ``droop`` — the arc a leaf or a frond actually makes."""
+    return [
+        Vector((
+            origin.x + math.cos(angle) * length * t,
+            origin.y + math.sin(angle) * length * t,
+            origin.z + rise * math.sin(t * math.pi * 0.62) - droop * t * t,
+        ))
+        for t in (step / segments for step in range(segments + 1))
+    ]
+
+
+def leaf(batch: Batch, token: str, origin: Vector, angle: float, length: float, width: float,
+         rise: float, droop: float, fold: float, segments: int = 4) -> None:
+    """One broad leaf: widest a third of the way out, tapering to a point.
+
+    ``segments=2`` is the cheap version (14 triangles) for leaflets and litter;
+    4 is the one to use when the leaf is big enough to see the curve.
+    """
+    spine = arc_spine(origin, angle, length, rise, droop, segments=segments)
+    profile = {1: [0.72, 0.05], 2: [0.30, 1.00, 0.05], 3: [0.20, 0.95, 0.80, 0.05],
+               4: [0.10, 0.62, 1.00, 0.74, 0.04]}[segments]
+    folds = {1: [1.0, 0.1], 2: [0.5, 1.0, 0.1], 3: [0.35, 1.0, 0.7, 0.1],
+             4: [0.2, 0.9, 1.0, 0.7, 0.1]}[segments]
+    batch.ribbon(token, spine, [width * 0.5 * v for v in profile], [fold * v for v in folds])
+
+
+def blade(batch: Batch, token: str, origin: Vector, angle: float, height: float, width: float,
+          lean: float, curve: float) -> None:
+    """One grass blade: rises, bends over, tapers to nothing.
+
+    Wide and few beats thin and many. Thin blades stop resolving as blades a few
+    metres out and turn the patch into fuzz, while costing exactly as much.
+    """
+    spine = [
+        Vector((
+            origin.x + math.cos(angle) * lean * height * (t ** 1.7),
+            origin.y + math.sin(angle) * lean * height * (t ** 1.7),
+            origin.z + height * t - curve * height * (t ** 2.4),
+        ))
+        for t in (0.0, 0.34, 0.68, 1.0)
+    ]
+    batch.ribbon(token, spine, [width * 0.5, width * 0.44, width * 0.27, 0.004],
+                 [width * 0.34, width * 0.28, width * 0.17, 0.002])
+
+
+def blade_cluster(batch: Batch, rng: random.Random, count: int, radius: float,
+                  height_range: tuple[float, float], width_range: tuple[float, float],
+                  tokens: list[str], lean_range: tuple[float, float],
+                  curve_range: tuple[float, float], seed: int) -> None:
+    for index, (angle, rad) in enumerate(radial(count, radius, seed=seed, jitter=0.55, radius_jitter=0.55)):
+        distance = abs(rad) * (rng.random() ** 0.45)
+        origin = Vector((math.cos(angle) * distance, math.sin(angle) * distance, 0.012))
+        blade(batch, tokens[index % len(tokens)], origin, angle + rng.uniform(-0.9, 0.9),
+              rng.uniform(*height_range), rng.uniform(*width_range),
+              rng.uniform(*lean_range), rng.uniform(*curve_range))
+
+
+def spread_pick(items: list, count: int) -> list:
+    """Take ``count`` items spaced across ``items``, never the first ``count``.
+
+    `fork()` returns its tips in depth-first order, so a prefix of that list is
+    every tip of the *first* branch and nothing from the others. Hanging foliage
+    on `tips[:5]` therefore puts all of it on one side of the plant — the exact
+    defect task 2.1j exists to stop, reintroduced by a slice that looks harmless.
+    """
+    if count >= len(items):
+        return list(items)
+    step = len(items) / count
+    return [items[int(index * step)] for index in range(count)]
+
+
+def notched_disc(name: str, centre: tuple[float, float, float], radius: float, token: str,
+                 seed: int, segments: int = 10, notch: float = 0.9,
+                 thickness: float = 0.014) -> bpy.types.Object:
+    """A flat leaf pad with a wedge cut out of it — a lily pad, in other words.
+
+    Built as a thin *solid* slab rather than a single fan. A one-sided fan is
+    cheaper and looks identical in Blender, but Godot imports glTF with back-face
+    culling on, so the pad would simply not exist when seen from below the water
+    line — and the all-sides audit flagged exactly that, reporting two of the
+    three pads as inside out because a zero-volume surface has no inside to be on
+    the wrong side of. Twelve extra triangles buys a pad with a real underside.
+    """
+    rng = random.Random(seed)
+    span = math.tau - notch
+    rim: list[tuple[float, float, float]] = []
+    for step in range(segments + 1):
+        angle = notch * 0.5 + span * step / segments
+        r = radius * rng.uniform(0.88, 1.06)
+        rim.append((centre[0] + math.cos(angle) * r, centre[1] + math.sin(angle) * r,
+                    centre[2] + rng.uniform(-0.004, 0.010)))
+    top = [centre] + rim
+    bottom = [(x, y, z - thickness) for x, y, z in top]
+    offset = len(top)
+    vertices = top + bottom
+    faces: list[tuple[int, ...]] = []
+    for i in range(1, segments + 1):
+        faces.append((0, i, i + 1))
+        faces.append((offset, offset + i + 1, offset + i))
+        faces.append((i, offset + i, offset + i + 1, i + 1))
+    # Close the notch: the two radial cuts are open edges otherwise.
+    faces.append((0, offset, offset + 1, 1))
+    faces.append((0, segments + 1, offset + segments + 1, offset))
+    return mesh_object(name, vertices, faces, mat(token), recalculate=True)
+
+
+# ---------------------------------------------------------------------------
+# Builders — shrubs
+# ---------------------------------------------------------------------------
+
+
+def build_bush_round(seed: int) -> None:
+    """A dense rounded bush: three overlapping lobes, lit crowns painted on.
+
+    Two earlier drafts got this wrong in opposite directions. Eighteen small
+    ellipsoids read as a bag of peas; one big displaced sphere read as an egg —
+    and adding `droop` to the egg just gave it feet, because hanging lobes are
+    what a *crown* does when it is held up in the air, not what a bush does when
+    it is sitting on the ground. What actually makes a bush is a small number of
+    masses of comparable size overlapping at slightly different heights, so the
+    silhouette has shoulders. Three is enough, and three is 240 triangles.
+    """
+    rng = random.Random(seed)
+    tokens = ["leaf", "leaf_deep", "leaf"]
+    lit = ["leaf_light", "leaf", "leaf_light"]
+    for index, (angle, rad) in enumerate(radial(3, 0.20, seed=seed + 5, jitter=0.5, radius_jitter=0.35)):
+        size = rng.uniform(0.38, 0.54)
+        centre = around((0.0, 0.0, rng.uniform(0.38, 0.72)), angle, rad)
+        lobe = hull(
+            f"Lobe_{index + 1}", centre,
+            (size, size * rng.uniform(0.86, 1.14), size * rng.uniform(0.80, 1.05)),
+            mat(tokens[index]), seed + index * 31,
+            subdivisions=1, lumps=3, lump=0.52, sharpness=2.0,
+            taper=rng.uniform(0.10, 0.26), flat_base=0.88,
+        )
+        paint_faces(lobe, mat(lit[index]), min_normal_z=0.34, min_height=0.50,
+                    coverage=0.75, seed=seed + index)
+
+
+def build_bush_broadleaf(seed: int) -> None:
+    """Taller and open: real branch structure carrying separate leaf masses, so
+    it breaks a treeline instead of adding another green ball."""
+    rng = random.Random(seed)
+    tips = fork("Stem", (0.0, 0.0, 0.0), (0.0, 0.0, 1.0), 0.62, 0.055, mat("wood_bark"), seed + 17,
+                depth=3, splits=(2, 3), spread=0.62, shrink=0.66, curve=0.26, vertices=5)
+    for index, tip in enumerate(spread_pick(tips, rng.randint(4, 6))):
+        size = rng.uniform(0.26, 0.40)
+        mass = hull(f"Leaves_{index + 1}", tuple(tip), (size, size * rng.uniform(0.82, 1.1), size * 0.72),
+                    mat("leaf" if index % 2 else "leaf_deep"), seed + index * 29,
+                    subdivisions=1, lumps=3, lump=0.48, sharpness=2.0, droop=0.22, droop_lobes=2,
+                    droop_sharpness=3.2)
+        paint_faces(mass, mat("leaf_light"), min_normal_z=0.36, min_height=0.5, coverage=0.55,
+                    seed=seed + index)
+
+
+def build_bush_thorn(seed: int) -> None:
+    """Twiggy and half-bare: silhouette rather than mass. Recursive branching is
+    what makes the tangle read; a two-level fan of sticks does not."""
+    rng = random.Random(seed)
+    batch = Batch()
+    tips = fork("Thorn", (0.0, 0.0, 0.0), (0.0, 0.0, 1.0), 0.46, 0.038, mat("wood_dead"), seed + 19,
+                depth=4, splits=(2, 3), spread=0.70, shrink=0.70, curve=0.34, vertices=4)
+    for index, tip in enumerate(tips):
+        if rng.random() < 0.55:
+            size = rng.uniform(0.055, 0.10)
+            batch.blob("leaf_deep" if index % 2 else "leaf_dry", tuple(tip), (size, size * 0.8, size * 0.6), rng)
+    batch.emit("Thorn")
+
+
+def build_bush_dead(seed: int) -> None:
+    """Grey deadwood, one colour, nothing else. Next to the living ones that is
+    the entire job."""
+    fork("Dead", (0.0, 0.0, 0.0), (0.0, 0.0, 1.0), 0.50, 0.045, mat("wood_dead"), seed + 23,
+         depth=4, splits=(2, 3), spread=0.62, shrink=0.68, curve=0.30, vertices=4,
+         tip_material=mat("wood_dead_cut"))
+
+
+# ---------------------------------------------------------------------------
+# Builders — small trees
+# ---------------------------------------------------------------------------
+
+
+def build_sapling(seed: int) -> None:
+    """A young tree. Between ankle-height grass and a 6 m pine the kit had
+    nothing, which is why the forest edge reads as placed rather than grown."""
+    rng = random.Random(seed)
+    height = 1.9
+    lean = Vector((rng.uniform(-0.14, 0.14), rng.uniform(-0.14, 0.14), 0.0))
+    mid = lean * 0.4 + Vector((0.0, 0.0, height * 0.46))
+    top = lean + Vector((0.0, 0.0, height * 0.84))
+    tapered_between("Trunk_Lower", (0.0, 0.0, 0.0), tuple(mid), 0.055, 0.038, mat("wood_bark"), 6)
+    tapered_between("Trunk_Upper", tuple(mid), tuple(top), 0.038, 0.016, mat("wood_bark"), 6)
+    conifer = seed % 2 == 0
+    if conifer:
+        for tier in range(3):
+            t = tier / 2.0
+            z = height * (0.34 + t * 0.46)
+            radius = (0.42 - t * 0.20) * rng.uniform(0.9, 1.1)
+            cone(f"Tier_{tier + 1}", radius, radius * 0.16, height * 0.30,
+                 tuple(lean * (z / height) + Vector((0.0, 0.0, z))),
+                 mat(("pine_dark", "pine", "pine_light")[tier]), 7)
+        cone("Leader", 0.10, 0.008, height * 0.20, tuple(top + Vector((0.0, 0.0, 0.02))), mat("pine_light"), 6)
+        return
+    branch_tips = fork("Branch", tuple(lean * 0.28 + Vector((0.0, 0.0, height * 0.34))),
+                       tuple((top - mid).normalized()), 0.46, 0.032,
+                       mat("wood_bark"), seed + 31, depth=3, splits=(2, 3), spread=0.66,
+                       shrink=0.66, curve=0.26, vertices=4)
+    for index, tip in enumerate(spread_pick(branch_tips, rng.randint(5, 7))):
+        size = rng.uniform(0.20, 0.30)
+        mass = hull(f"Crown_{index + 1}", tuple(tip), (size, size * 0.94, size * 0.68),
+                    mat("leaf" if index % 2 else "leaf_deep"), seed + index * 37,
+                    subdivisions=1, lumps=3, lump=0.46, sharpness=2.0, droop=0.20, droop_lobes=2,
+                    droop_sharpness=3.2)
+        paint_faces(mass, mat("leaf_light"), min_normal_z=0.36, min_height=0.48, coverage=0.6,
+                    seed=seed + index)
+
+
+def build_tree_willow(seed: int) -> None:
+    """A wet-ground tree whose branches fall instead of reaching.
+
+    Three drafts to get this right, and the lesson is worth keeping: **you cannot
+    make a hanging curtain by drooping a sphere.** Pulling lobes out of a round
+    canopy gives it notches, and hanging separate round masses off the rim gives
+    it ears. A curtain has to be *built* tall and narrow — an elongated mass whose
+    long axis is vertical, tapering to its lowest point, overlapping its
+    neighbours so the gaps read as grooves rather than as gaps. `droop` is for
+    softening the underside of a canopy that is already the right shape.
+
+    The result is the fountain silhouette, and it is the opposite of every other
+    tree in either kit, which is the entire reason this asset exists.
+    """
+    rng = random.Random(seed)
+    height = 5.0
+    lean = Vector((rng.uniform(-0.26, 0.26), rng.uniform(-0.22, 0.22), 0.0))
+    crotch = lean + Vector((0.0, 0.0, height * 0.56))
+    mid = lean * 0.45 + Vector((0.0, 0.0, height * 0.28))
+    tapered_between("Trunk_Lower", (0.0, 0.0, 0.0), tuple(mid), 0.30, 0.23, mat("wood_bark"), 8)
+    tapered_between("Trunk_Upper", tuple(mid), tuple(crotch), 0.23, 0.15, mat("wood_bark"), 7)
+    for index, (angle, rad) in enumerate(radial(4, 0.68, seed=seed + 41, jitter=0.30)):
+        tapered_between(f"Root_{index + 1}", (0.0, 0.0, 0.15), around((0.0, 0.0, 0.03), angle, rad),
+                        0.12, 0.032, mat("wood_bark"), 5)
+
+    curtains = rng.randint(5, 6)
+    for index, (angle, rad) in enumerate(radial(curtains, 1.02, seed=seed + 43, jitter=0.26,
+                                                radius_jitter=0.22)):
+        arch = Vector(around((crotch.x, crotch.y, crotch.z + rng.uniform(0.42, 0.78)), angle, rad))
+        tapered_between(f"Bough_{index + 1}", tuple(crotch), tuple(arch), 0.085, 0.038,
+                        mat("wood_bark"), 5)
+        fall = rng.uniform(1.5, 2.35)
+        width = rng.uniform(0.26, 0.36)
+        hull(
+            f"Curtain_{index + 1}", (arch.x, arch.y, arch.z - fall * 0.42),
+            (width, width * rng.uniform(0.84, 1.12), fall * 0.52),
+            mat("leaf_deep" if index % 2 else "leaf"), seed + index * 59,
+            subdivisions=1, lumps=4, lump=0.30, sharpness=2.2, taper=-0.55,
+        )
+    canopy = hull("Canopy", (lean.x, lean.y, crotch.z + 0.86), (1.02, 0.96, 0.44), mat("leaf"),
+                  seed + 47, subdivisions=2, lumps=6, lump=0.26, taper=0.34,
+                  droop=0.55, droop_lobes=5, droop_sharpness=3.0)
+    paint_faces(canopy, mat("leaf_light"), min_normal_z=0.30, min_height=0.46, coverage=0.7,
+                seed=seed + 2)
+
+
+def build_tree_snag(seed: int) -> None:
+    """A dead trunk snapped off partway up: history, at almost no cost, because
+    there is no crown to build."""
+    rng = random.Random(seed)
+    height = 3.4
+    lean = Vector((rng.uniform(-0.22, 0.22), rng.uniform(-0.18, 0.18), 0.0))
+    mid = lean * 0.5 + Vector((0.0, 0.0, height * 0.55))
+    top = lean + Vector((0.0, 0.0, height))
+    tapered_between("Trunk_Lower", (0.0, 0.0, 0.0), tuple(mid), 0.34, 0.26, mat("wood_dead"), 8)
+    tapered_between("Trunk_Upper", tuple(mid), tuple(top), 0.26, 0.17, mat("wood_dead"), 7)
+    for index, (angle, rad) in enumerate(radial(rng.randint(4, 5), 0.15, seed=seed + 61, jitter=0.42)):
+        base = around((top.x, top.y, top.z - 0.04), angle, rad)
+        tapered_between(f"Splinter_{index + 1}", base,
+                        (base[0], base[1], base[2] + rng.uniform(0.14, 0.46)),
+                        0.050, 0.010, mat("wood_dead_cut"), 4)
+    for index, (angle, rad) in enumerate(radial(rng.randint(3, 4), 0.26, seed=seed + 67, jitter=0.48)):
+        anchor = around((0.0, 0.0, rng.uniform(height * 0.40, height * 0.88)), angle, rad * 0.6)
+        fork(f"Stub_{index + 1}", anchor, (math.cos(angle), math.sin(angle), rng.uniform(0.10, 0.55)),
+             0.46, 0.062, mat("wood_dead"), seed + index * 71, depth=3, splits=(2, 2), spread=0.55,
+             shrink=0.62, curve=0.26, vertices=4)
+    for index, (angle, rad) in enumerate(radial(rng.randint(4, 5), 0.70, seed=seed + 73, jitter=0.30)):
+        tapered_between(f"Root_{index + 1}", (0.0, 0.0, 0.18), around((0.0, 0.0, 0.03), angle, rad),
+                        0.12, 0.030, mat("wood_dead"), 5)
+    skirt = hull("Moss_Skirt", (0.0, 0.0, 0.10), (0.62, 0.58, 0.13), mat("moss_dark"), seed + 79,
+                 subdivisions=1, lumps=6, lump=0.42, flat_base=0.55)
+    paint_faces(skirt, mat("moss"), min_normal_z=0.30, min_height=0.42, coverage=0.7, seed=seed + 4)
+
+
+# ---------------------------------------------------------------------------
+# Builders — leafy plants
+# ---------------------------------------------------------------------------
+
+
+def build_plant_broadleaf(seed: int) -> None:
+    """A rosette of wide leaves — the ground plant that is not a blade of grass."""
+    rng = random.Random(seed)
+    batch = Batch()
+    tokens = ["leaf_deep", "leaf", "leaf_light"]
+    for index, (angle, rad) in enumerate(radial(rng.randint(5, 7), 0.05, seed=seed + 83, jitter=0.5)):
+        origin = Vector(around((0.0, 0.0, 0.03), angle, rad))
+        length = rng.uniform(0.34, 0.46)
+        leaf(batch, tokens[index % 3], origin, angle, length, length * rng.uniform(0.46, 0.64),
+             rng.uniform(0.34, 0.50), rng.uniform(0.05, 0.12), rng.uniform(0.035, 0.065))
+    batch.emit("Rosette")
+
+
+def build_plant_dock(seed: int) -> None:
+    """Dock: big ragged basal leaves and a rust seed spike. Wet, unlovely, and
+    exactly this world's weed."""
+    rng = random.Random(seed)
+    batch = Batch()
+    for index, (angle, rad) in enumerate(radial(rng.randint(4, 6), 0.06, seed=seed + 89, jitter=0.5)):
+        origin = Vector(around((0.0, 0.0, 0.03), angle, rad))
+        length = rng.uniform(0.34, 0.48)
+        leaf(batch, ["leaf_deep", "leaf", "leaf", "leaf_dry"][index % 4], origin, angle, length,
+             length * rng.uniform(0.38, 0.52), rng.uniform(0.30, 0.46), rng.uniform(0.06, 0.14),
+             rng.uniform(0.032, 0.058))
+    for index, (angle, rad) in enumerate(radial(rng.randint(1, 2), 0.09, seed=seed + 97, jitter=0.6)):
+        base = around((0.0, 0.0, 0.04), angle, rad)
+        top = (base[0] + math.cos(angle) * 0.07, base[1] + math.sin(angle) * 0.07, 0.72)
+        tapered_between(f"Spike_{index + 1}", base, top, 0.014, 0.007, mat("leaf_dry"), 4)
+        for step in range(5):
+            t = 0.44 + step * 0.13
+            point = tuple(base[i] + (top[i] - base[i]) * t for i in range(3))
+            size = 0.036 * (1.3 - t)
+            batch.blob("flower_rust", point, (size, size, size * 1.6), rng)
+    batch.emit("Dock")
+
+
+def build_plant_creeper(seed: int) -> None:
+    """Ground ivy: runners crossing the soil with leaves along them. Almost flat,
+    so it dresses ground the eye passes over without adding height."""
+    rng = random.Random(seed)
+    batch = Batch()
+    for index, (angle, rad) in enumerate(radial(rng.randint(3, 4), 0.58, seed=seed + 101, jitter=0.5)):
+        length = abs(rad) * rng.uniform(1.1, 1.6)
+        points = [
+            Vector((math.cos(angle + math.sin(t * 3.0) * 0.45) * length * t,
+                    math.sin(angle + math.sin(t * 3.0) * 0.45) * length * t,
+                    0.02 + math.sin(t * math.pi) * 0.025))
+            for t in (0.0, 0.5, 1.0)
+        ]
+        for step in range(2):
+            tapered_between(f"Runner_{index + 1}_{step + 1}", tuple(points[step]), tuple(points[step + 1]),
+                            0.011, 0.009, mat("leaf_deep"), 4)
+        for step in (1, 2):
+            for side in (-1.0, 1.0):
+                leaf(batch, ["leaf", "leaf_light"][(index + step) % 2],
+                     points[step] + Vector((0.0, 0.0, 0.006)), angle + side * rng.uniform(0.9, 1.5),
+                     rng.uniform(0.13, 0.20), rng.uniform(0.11, 0.17),
+                     rng.uniform(0.03, 0.07), 0.006, rng.uniform(0.014, 0.026), segments=3)
+    batch.emit("Creeper")
+
+
+def build_bracken(seed: int) -> None:
+    """A proper frond: a rachis carrying pinnae dense enough to touch.
+
+    The kit's existing fern is three ellipsoids on a stick. The first cut of this
+    one was worse in a more instructive way — the pinnae were correct but there
+    were only three per side on a metre of rachis, so it read as a bare antenna
+    with specks on it. **A fern is not its stem, it is the continuous blade the
+    pinnae make**, so they have to be long enough and close enough to overlap.
+    Getting there inside the triangle budget meant an 8-triangle leaflet and a
+    rachis drawn as three cylinders while the pinnae are sampled from a finer
+    twelve-point arc — the stem is the cheapest thing on the plant to fake and
+    the leaflets are the thing worth paying for.
+    """
+    rng = random.Random(seed)
+    batch = Batch()
+    for index, (angle, rad) in enumerate(radial(4, 0.07, seed=seed + 103, jitter=0.45)):
+        origin = Vector(around((0.0, 0.0, 0.03), angle, rad))
+        length = rng.uniform(0.52, 0.66)
+        arc = arc_spine(origin, angle, length, rng.uniform(0.62, 0.86), rng.uniform(0.14, 0.26),
+                        segments=12)
+        for step in range(3):
+            tapered_between(f"Rachis_{index + 1}_{step + 1}", tuple(arc[step * 4]), tuple(arc[step * 4 + 4]),
+                            0.013 - step * 0.003, 0.011 - step * 0.003, mat("bracken"), 4)
+        token = "bracken" if index % 2 else "leaf_deep"
+        for step in range(7):
+            t = 0.16 + step * 0.14
+            node = arc[min(len(arc) - 1, int(t * 12))]
+            pinna = 0.30 * (1.0 - 0.48 * t) * rng.uniform(0.88, 1.12)
+            for side in (-1.0, 1.0):
+                leaf(batch, token, node, angle + side * rng.uniform(0.92, 1.18),
+                     pinna, pinna * 0.46, -0.012, pinna * 0.26, pinna * 0.16, segments=1)
+    for index, (angle, rad) in enumerate(radial(2, 0.10, seed=seed + 419, jitter=0.6)):
+        base = around((0.0, 0.0, 0.03), angle, rad)
+        top = (base[0], base[1], base[2] + rng.uniform(0.20, 0.34))
+        tapered_between(f"Crozier_{index + 1}", base, top, 0.012, 0.009, mat("bracken"), 4)
+        batch.blob("bracken", top, (0.036, 0.026, 0.036), rng)
+    batch.emit("Bracken")
+
+
+def build_nettle(seed: int) -> None:
+    """Paired opposite leaves up a stem — a silhouette that is neither rosette
+    nor blade, which is the only reason it earns a slot."""
+    rng = random.Random(seed)
+    batch = Batch()
+    for index, (angle, rad) in enumerate(radial(rng.randint(3, 4), 0.15, seed=seed + 107, jitter=0.55)):
+        height = rng.uniform(0.55, 0.80)
+        base = around((0.0, 0.0, 0.02), angle, rad)
+        top = (base[0] + math.cos(angle) * 0.05, base[1] + math.sin(angle) * 0.05, height)
+        tapered_between(f"Stem_{index + 1}", base, top, 0.014, 0.008, mat("grass_dark"), 4)
+        for pair in range(3):
+            t = 0.32 + pair * 0.22
+            node = Vector(tuple(base[i] + (top[i] - base[i]) * t for i in range(3)))
+            size = (0.20 - 0.07 * t) * rng.uniform(0.88, 1.15)
+            for side in (0.0, math.pi):
+                leaf(batch, "leaf_deep" if pair % 2 else "leaf", node,
+                     angle + pair * 1.31 + side, size, size * 0.58, size * 0.24, size * 0.30,
+                     size * 0.14, segments=3)
+    batch.emit("Nettle")
+
+
+# ---------------------------------------------------------------------------
+# Builders — flowers
+# ---------------------------------------------------------------------------
+
+
+def build_flowers_meadow(seed: int) -> None:
+    """Low grass with blooms through it. Blossom stays a few percent of the
+    silhouette: fire and brass are this world's warm accents and a field of
+    solid colour would fight them."""
+    rng = random.Random(seed)
+    batch = Batch()
+    blade_cluster(batch, rng, 11, 0.42, (0.16, 0.34), (0.045, 0.080),
+                  ["grass_dark", "grass"], (0.06, 0.24), (0.08, 0.24), seed + 109)
+    head = ["flower_white", "flower_cream", "flower_yellow", "flower_pink"][seed % 4]
+    for index, (angle, rad) in enumerate(radial(rng.randint(5, 7), 0.36, seed=seed + 113, jitter=0.6)):
+        height = rng.uniform(0.26, 0.44)
+        base = around((0.0, 0.0, 0.02), angle, rad)
+        top = (base[0] + math.cos(angle) * height * 0.14, base[1] + math.sin(angle) * height * 0.14, height)
+        tapered_between(f"Stalk_{index + 1}", base, top, 0.009, 0.006, mat("grass_dark"), 4)
+        for petal_angle, petal_rad in radial(4, 0.032, seed=seed + index * 13, jitter=0.4):
+            batch.blob(head, around(top, petal_angle, petal_rad), (0.022, 0.022, 0.011), rng)
+    batch.emit("Meadow")
+
+
+def build_flowers_tall(seed: int) -> None:
+    """Waist-high flowering spires. Vertical accents read at a distance where a
+    ground rosette does not."""
+    rng = random.Random(seed)
+    batch = Batch()
+    head = ["flower_pink", "flower_white", "flower_cream"][seed % 3]
+    for index, (angle, rad) in enumerate(radial(rng.randint(3, 4), 0.20, seed=seed + 127, jitter=0.55)):
+        height = rng.uniform(0.85, 1.15)
+        base = around((0.0, 0.0, 0.02), angle, rad)
+        top = (base[0] + math.cos(angle) * 0.10, base[1] + math.sin(angle) * 0.10, height)
+        tapered_between(f"Stalk_{index + 1}", base, top, 0.015, 0.007, mat("grass_dark"), 5)
+        for pair in range(2):
+            t = 0.20 + pair * 0.20
+            node = Vector(tuple(base[i] + (top[i] - base[i]) * t for i in range(3)))
+            for side in (0.0, math.pi):
+                leaf(batch, "grass_dark", node, angle + side + rng.uniform(-0.3, 0.3),
+                     rng.uniform(0.13, 0.20), rng.uniform(0.045, 0.070), 0.02, 0.05, 0.014, segments=2)
+        for step in range(5):
+            t = 0.52 + (step / 5.0) * 0.46
+            node = tuple(base[i] + (top[i] - base[i]) * t for i in range(3))
+            for bloom_angle, bloom_rad in radial(2, 0.034 * (1.35 - t), seed=seed + index * 19 + step,
+                                                 jitter=0.5):
+                size = 0.026 * (1.35 - t)
+                batch.blob(head, around(node, bloom_angle, bloom_rad), (size, size, size * 0.8), rng)
+    batch.emit("TallFlowers")
+
+
+def build_flowers_bog(seed: int) -> None:
+    """Bog cotton: white tufts on bare stalks over wet ground. The only thing in
+    the kit brighter than the sky, and deliberately tiny."""
+    rng = random.Random(seed)
+    batch = Batch()
+    blade_cluster(batch, rng, 8, 0.32, (0.18, 0.34), (0.030, 0.055),
+                  ["sedge", "grass_dry"], (0.05, 0.18), (0.06, 0.20), seed + 131)
+    for index, (angle, rad) in enumerate(radial(rng.randint(5, 7), 0.30, seed=seed + 137, jitter=0.6)):
+        height = rng.uniform(0.34, 0.56)
+        base = around((0.0, 0.0, 0.02), angle, rad)
+        top = (base[0] + math.cos(angle) * 0.03, base[1] + math.sin(angle) * 0.03, height)
+        tapered_between(f"Stalk_{index + 1}", base, top, 0.008, 0.005, mat("grass_dry"), 4)
+        for tuft_angle, tuft_rad in radial(3, 0.024, seed=seed + index * 23, jitter=0.5):
+            batch.blob("flower_white", around(top, tuft_angle, tuft_rad), (0.024, 0.024, 0.019), rng)
+    batch.emit("BogCotton")
+
+
+def build_flowers_creeping(seed: int) -> None:
+    """A flat mat of tiny blooms — ankle detail for paths and clearings."""
+    rng = random.Random(seed)
+    batch = Batch()
+    blade_cluster(batch, rng, 10, 0.40, (0.06, 0.14), (0.026, 0.048),
+                  ["grass_dark", "grass"], (0.12, 0.34), (0.12, 0.32), seed + 139)
+    head = ["flower_white", "flower_yellow"][seed % 2]
+    for index, (angle, rad) in enumerate(radial(rng.randint(7, 10), 0.40, seed=seed + 149, jitter=0.65)):
+        point = around((0.0, 0.0, rng.uniform(0.04, 0.10)), angle, rad)
+        for petal_angle, petal_rad in radial(2, 0.020, seed=seed + index * 29, jitter=0.5):
+            batch.blob(head, around(point, petal_angle, petal_rad), (0.016, 0.016, 0.009), rng)
+    batch.emit("Creeping")
+
+
+# ---------------------------------------------------------------------------
+# Builders — grasses
+# ---------------------------------------------------------------------------
+
+
+def build_grass_tussock(seed: int) -> None:
+    """One dense tall clump rather than a spread patch, so it reads as an object
+    and not as ground texture."""
+    rng = random.Random(seed)
+    batch = Batch()
+    blade_cluster(batch, rng, 14, 0.16, (0.58, 0.98), (0.055, 0.100),
+                  ["grass_dark", "grass", "grass_light"], (0.14, 0.34), (0.14, 0.30), seed + 151)
+    batch.emit("Tussock")
+
+
+def build_grass_dry(seed: int) -> None:
+    """Straw. Dead cover next to living cover is most of what makes a field read
+    as varied at all."""
+    rng = random.Random(seed)
+    batch = Batch()
+    blade_cluster(batch, rng, 11, 0.40, (0.32, 0.62), (0.045, 0.085),
+                  ["grass_dry", "grass_seed"], (0.22, 0.54), (0.24, 0.50), seed + 157)
+    for index, (angle, rad) in enumerate(radial(3, 0.34, seed=seed + 163, jitter=0.6)):
+        height = rng.uniform(0.50, 0.72)
+        base = around((0.0, 0.0, 0.02), angle, rad)
+        top = (base[0] + math.cos(angle) * 0.11, base[1] + math.sin(angle) * 0.11, height)
+        tapered_between(f"Stalk_{index + 1}", base, top, 0.009, 0.005, mat("grass_dry"), 4)
+        cone(f"Head_{index + 1}", 0.030, 0.006, rng.uniform(0.11, 0.17),
+             (top[0], top[1], top[2] + 0.06), mat("grass_seed"), 5)
+    batch.emit("DryGrass")
+
+
+def build_grass_short(seed: int) -> None:
+    """Ankle turf. Cheap enough to carpet with, and it stops bare ground showing
+    between the bigger pieces."""
+    rng = random.Random(seed)
+    batch = Batch()
+    blade_cluster(batch, rng, 13, 0.46, (0.10, 0.22), (0.038, 0.070),
+                  ["grass_dark", "grass", "grass_light"], (0.14, 0.42), (0.16, 0.40), seed + 167)
+    batch.emit("ShortGrass")
+
+
+def build_sedge(seed: int) -> None:
+    """Stiff upright blades in a tight fan: wet-ground grass does not bend the
+    way meadow grass does, and that difference is the whole asset."""
+    rng = random.Random(seed)
+    batch = Batch()
+    blade_cluster(batch, rng, 13, 0.14, (0.62, 1.00), (0.038, 0.065),
+                  ["sedge", "reed"], (0.05, 0.18), (0.03, 0.14), seed + 173)
+    batch.emit("Sedge")
+
+
+def build_marsh_grass(seed: int) -> None:
+    """Tall, sparse, arching blades for basin edges and standing water."""
+    rng = random.Random(seed)
+    batch = Batch()
+    blade_cluster(batch, rng, 9, 0.34, (0.72, 1.15), (0.042, 0.075),
+                  ["sedge", "reed"], (0.18, 0.42), (0.22, 0.46), seed + 179)
+    for index, (angle, rad) in enumerate(radial(2, 0.26, seed=seed + 181, jitter=0.6)):
+        height = rng.uniform(0.95, 1.20)
+        base = around((0.0, 0.0, 0.02), angle, rad)
+        top = (base[0] + math.cos(angle) * 0.09, base[1] + math.sin(angle) * 0.09, height)
+        tapered_between(f"Culm_{index + 1}", base, top, 0.013, 0.008, mat("reed"), 5)
+        cone(f"Plume_{index + 1}", 0.032, 0.004, rng.uniform(0.15, 0.22),
+             (top[0], top[1], top[2] + 0.09), mat("grass_seed"), 5)
+    batch.emit("MarshGrass")
+
+
+# ---------------------------------------------------------------------------
+# Builders — ground cover
+# ---------------------------------------------------------------------------
+
+
+def build_lily_pad(seed: int) -> None:
+    """Floating pads for the Mire basin — the one place in the Hollow that is
+    water and currently has nothing growing on it."""
+    rng = random.Random(seed)
+    for index, (angle, rad) in enumerate(radial(rng.randint(4, 6), 0.44, seed=seed + 191, jitter=0.6,
+                                                radius_jitter=0.5)):
+        centre = around((0.0, 0.0, 0.012 + rng.uniform(0.0, 0.010)), angle, rad)
+        notched_disc(f"Pad_{index + 1}", centre, rng.uniform(0.13, 0.24),
+                     "leaf" if index % 2 else "leaf_deep", seed + index * 17,
+                     segments=8, notch=rng.uniform(0.7, 1.1))
+    if seed % 2 == 0:
+        bloom = hull("Bloom", (rng.uniform(-0.2, 0.2), rng.uniform(-0.2, 0.2), 0.055), 0.055,
+                     mat("flower_white"), seed + 193, subdivisions=0, lumps=4, lump=0.5)
+        paint_faces(bloom, mat("flower_pink"), min_normal_z=0.2, min_height=0.4, coverage=0.6, seed=seed)
+
+
+def build_moss_patch(seed: int) -> None:
+    """Lumpy ground moss: one displaced mass with its lit crowns painted on,
+    rather than a dozen separate blobs pretending to be one."""
+    rng = random.Random(seed)
+    main = hull("Moss_Bed", (0.0, 0.0, 0.030), (0.48, 0.44, 0.042), mat("moss_dark"), seed + 197,
+                subdivisions=1, lumps=7, lump=0.40, sharpness=1.8, flat_base=0.45)
+    paint_faces(main, mat("moss"), min_normal_z=0.35, min_height=0.52, coverage=0.55, seed=seed + 6)
+    for index, (angle, rad) in enumerate(radial(rng.randint(3, 5), 0.40, seed=seed + 199, jitter=0.65,
+                                                radius_jitter=0.4)):
+        size = rng.uniform(0.11, 0.19)
+        cushion = hull(f"Cushion_{index + 1}", around((0.0, 0.0, 0.026), angle, rad),
+                       (size, size * rng.uniform(0.75, 1.3), size * 0.26), mat("moss"),
+                       seed + index * 23, subdivisions=0, lumps=4, lump=0.40, flat_base=0.45)
+        paint_faces(cushion, mat("moss_light"), min_normal_z=0.40, min_height=0.50,
+                    coverage=0.6, seed=seed + index)
+
+
+def build_clover_patch(seed: int) -> None:
+    """Three-lobed leaves on short stalks: a ground texture that is recognisably
+    not grass at the distance a player actually looks at their feet."""
+    rng = random.Random(seed)
+    batch = Batch()
+    for index, (angle, rad) in enumerate(radial(rng.randint(12, 15), 0.42, seed=seed + 211, jitter=0.7,
+                                                radius_jitter=0.5)):
+        height = rng.uniform(0.07, 0.17)
+        base = around((0.0, 0.0, 0.01), angle, rad)
+        top = Vector((base[0], base[1], height))
+        tapered_between(f"Stalk_{index + 1}", base, tuple(top), 0.007, 0.006, mat("grass_dark"), 4)
+        token = ["leaf", "leaf_light"][index % 2]
+        for lobe in range(3):
+            leaf(batch, token, top, angle + lobe * math.tau / 3.0 + rng.uniform(-0.2, 0.2),
+                 rng.uniform(0.062, 0.092), rng.uniform(0.052, 0.078), 0.006, 0.002, 0.010, segments=1)
+        # A bloom belongs on the stalk it grew from. Scattering them at free
+        # points is how three of these shipped with flowers hovering in mid-air.
+        if index % 3 == 1:
+            batch.blob("flower_white", (top.x, top.y, top.z + 0.014), (0.024, 0.024, 0.022), rng)
+    batch.emit("Clover")
+
+
+def build_leaf_litter(seed: int) -> None:
+    """Fallen leaves lying flat. Under the trees, the ground is not green — and
+    nothing else in either kit says so."""
+    rng = random.Random(seed)
+    batch = Batch()
+    tokens = ["leaf_litter", "leaf_dry"]
+    for index, (angle, rad) in enumerate(radial(rng.randint(11, 14), 0.50, seed=seed + 227, jitter=0.7,
+                                                radius_jitter=0.5)):
+        origin = Vector(around((0.0, 0.0, 0.012 + rng.uniform(0.0, 0.018)), angle, rad))
+        leaf(batch, tokens[index % 2], origin, rng.uniform(0.0, math.tau),
+             rng.uniform(0.13, 0.22), rng.uniform(0.09, 0.16),
+             rng.uniform(0.004, 0.020), rng.uniform(0.0, 0.010), rng.uniform(0.008, 0.020), segments=3)
+    for index, (angle, rad) in enumerate(radial(2, 0.44, seed=seed + 229, jitter=0.65)):
+        start = Vector(around((0.0, 0.0, 0.018), angle, rad))
+        end = start + Vector((math.cos(angle + 1.4) * rng.uniform(0.12, 0.26),
+                              math.sin(angle + 1.4) * rng.uniform(0.12, 0.26),
+                              rng.uniform(-0.004, 0.014)))
+        tapered_between(f"Twig_{index + 1}", tuple(start), tuple(end), 0.011, 0.007, mat("wood_dead"), 4)
+    batch.emit("Litter")
+
+
+# ---------------------------------------------------------------------------
+# Catalog assembly
+# ---------------------------------------------------------------------------
+
+SPECS: list[tuple[str, str, Callable[[int], None]]] = []
+
+
+def register(stem: str, letters: str, family: str, builder: Callable[[int], None]) -> None:
+    for letter in letters:
+        SPECS.append((f"{stem}_{letter}", family, builder))
+
+
+register("bush_round", "abcd", "shrubs", build_bush_round)
+register("bush_broadleaf", "abc", "shrubs", build_bush_broadleaf)
+register("bush_thorn", "abc", "shrubs", build_bush_thorn)
+register("bush_dead", "abc", "shrubs", build_bush_dead)
+
+register("sapling", "abcd", "small_trees", build_sapling)
+register("tree_willow", "abc", "small_trees", build_tree_willow)
+register("tree_snag", "abc", "small_trees", build_tree_snag)
+
+register("plant_broadleaf", "abc", "leafy_plants", build_plant_broadleaf)
+register("plant_dock", "abc", "leafy_plants", build_plant_dock)
+register("plant_creeper", "abc", "leafy_plants", build_plant_creeper)
+register("bracken", "abcd", "leafy_plants", build_bracken)
+register("nettle", "abc", "leafy_plants", build_nettle)
+
+register("flowers_meadow", "abcd", "flowers", build_flowers_meadow)
+register("flowers_tall", "abc", "flowers", build_flowers_tall)
+register("flowers_bog", "abc", "flowers", build_flowers_bog)
+register("flowers_creeping", "abc", "flowers", build_flowers_creeping)
+
+register("grass_tussock", "abcd", "grasses", build_grass_tussock)
+register("grass_dry", "abcd", "grasses", build_grass_dry)
+register("grass_short", "abcd", "grasses", build_grass_short)
+register("sedge", "abc", "grasses", build_sedge)
+register("marsh_grass", "abc", "grasses", build_marsh_grass)
+
+register("lily_pad", "abc", "ground_cover", build_lily_pad)
+register("moss_patch", "abcd", "ground_cover", build_moss_patch)
+register("clover_patch", "abc", "ground_cover", build_clover_patch)
+register("leaf_litter", "abcd", "ground_cover", build_leaf_litter)
+
+
+def _join_into_one(name: str, made: list) -> bpy.types.Object:
+    """Collapse an asset to a single mesh carrying one material slot per colour.
+
+    Every `tapered_between` call is its own Blender object, so a clover patch
+    exported as **sixteen** mesh parts — thirteen stalks and three batched leaf
+    meshes. Scattered through `MultiMeshInstance3D`, each part becomes its own
+    node and its own draw call: the first scatter of this kit built 757 of them
+    across 78 assets. Joining first takes that to one node per asset and as many
+    draw calls as the asset has colours, which is three or four.
+
+    Joining after the build rather than batching everything by hand keeps the
+    builders readable — they get to say `tapered_between(...)` and mean it.
+    """
+    meshes = [obj for obj in made if obj.type == "MESH"]
+    if not meshes:
+        raise RuntimeError(f"{name} produced no mesh objects")
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in meshes:
+        obj.select_set(True)
+    target = meshes[0]
+    bpy.context.view_layer.objects.active = target
+    if len(meshes) > 1:
+        bpy.ops.object.join()
+    # Bake the transform away. The join keeps whichever rotation the first
+    # component happened to carry — every `tapered_between` cone has one — and
+    # that rotation then rides out on the glTF node. Godot's `get_aabb()` is
+    # local, so anything measuring the imported asset has to rotate an
+    # axis-aligned box and gets a conservative, too-large answer: the same
+    # over-measurement that was leaving assets floating in Blender, reappearing
+    # on the far side of the export. An identity node transform removes the
+    # question entirely, and makes the scatter's instance maths trivial.
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    bpy.ops.object.select_all(action="DESELECT")
+    target.name = name.title().replace("_", "")
+    for polygon in target.data.polygons:
+        polygon.use_smooth = False
+    return target
+
+
+def floating_islands(objects: list, tolerance: float = 0.02) -> list[str]:
+    """Names of mesh islands that neither touch the ground nor touch anything else.
+
+    `tools/mapgen/hollow_layout.py` validates that no *prop* floats above the
+    terrain, but nothing has ever checked inside an asset — a blade whose base
+    got lifted, or a leaf hung off a branch that later moved, exports happily and
+    is only ever caught by somebody squinting at a preview. Islands are found
+    through the edge graph and judged by axis-aligned bounds: an island is
+    supported if it reaches the ground plane or its bounds overlap another
+    island's. Bounds overlap is deliberately permissive — this is here to catch
+    geometry adrift in open air, not to adjudicate near-misses.
+    """
+    islands: list[tuple[str, Vector, Vector]] = []
+    for obj in objects:
+        if obj.type != "MESH":
+            continue
+        mesh = obj.data
+        parent = list(range(len(mesh.vertices)))
+
+        def find(i: int) -> int:
+            while parent[i] != i:
+                parent[i] = parent[parent[i]]
+                i = parent[i]
+            return i
+
+        for edge in mesh.edges:
+            a, b = find(edge.vertices[0]), find(edge.vertices[1])
+            if a != b:
+                parent[a] = b
+        groups: dict[int, list[int]] = {}
+        for index in range(len(mesh.vertices)):
+            groups.setdefault(find(index), []).append(index)
+        for key, members in groups.items():
+            points = [obj.matrix_world @ mesh.vertices[i].co for i in members]
+            lo = Vector((min(p[i] for p in points) for i in range(3)))
+            hi = Vector((max(p[i] for p in points) for i in range(3)))
+            islands.append((f"{obj.name}#{key}", lo, hi))
+
+    adrift: list[str] = []
+    for index, (label, lo, hi) in enumerate(islands):
+        if lo.z <= 0.05:
+            continue
+        supported = False
+        for other, other_lo, other_hi in islands:
+            if other == label:
+                continue
+            if all(lo[a] - tolerance <= other_hi[a] and hi[a] + tolerance >= other_lo[a] for a in range(3)):
+                supported = True
+                break
+        if not supported:
+            adrift.append(f"{label} at z={lo.z:.3f}")
+    return adrift
+
+
+def create_asset(name: str, family: str, build_fn: Callable[[], None], display_location) -> dict:
+    collection = bpy.data.collections.new(name)
+    bpy.context.scene.collection.children.link(collection)
+    root = bpy.data.objects.new(name, None)
+    root.empty_display_type = "PLAIN_AXES"
+    collection.objects.link(root)
+    before = {obj.name for obj in bpy.data.objects}
+    build_fn()
+    made = sorted((obj for obj in bpy.data.objects if obj.name not in before), key=lambda obj: obj.name)
+
+    # Ground, then size, then ground again. Sizing is deterministic per asset and
+    # drawn from the family band, so scale is a guarantee rather than something a
+    # later audit discovers — the pickup kit shipped a 0.71 m berry precisely
+    # because every asset was only ever compared against its own preview frame.
+    ground_and_centre(made)
+    low, high, axis = SIZE_BAND[family_of(name)][:3]
+    target = low + (high - low) * random.Random(seed_for(name) + 977).random()
+    lo, hi = world_bounds(made)
+    current = (hi.z - lo.z) if axis == "height" else max(hi.x - lo.x, hi.y - lo.y)
+    if current > 1e-6:
+        factor = target / current
+        for obj in made:
+            if obj.parent is None:
+                obj.scale = obj.scale * factor
+                obj.location = obj.location * factor
+        bpy.context.view_layer.update()
+        for obj in made:
+            bpy.context.view_layer.objects.active = obj
+            obj.select_set(True)
+        bpy.ops.object.transform_apply(location=True, rotation=False, scale=True)
+        bpy.ops.object.select_all(action="DESELECT")
+    ground_and_centre(made)
+    # Join LAST. Joining before this point measures the asset through the stale
+    # bounding box of whichever part happened to be alphabetically first, so the
+    # scale-to-band step divides by the size of a single twig and the whole plant
+    # comes out several times too big. The join is an export optimisation and it
+    # belongs after everything that measures.
+    made = [_join_into_one(name, made)]
+
+    for obj in made:
+        for old in list(obj.users_collection):
+            old.objects.unlink(obj)
+        collection.objects.link(obj)
+        obj.parent = root
+    bpy.context.view_layer.update()
+
+    adrift = floating_islands(made)
+    # Measure from vertices, not `obj.bound_box`. Blender does not refresh a
+    # cached bounding box after `bpy.ops.object.join()`, even through a depsgraph
+    # update, so a joined asset measures as whatever its first component was —
+    # which put a willow at 6.97 m tall and 800 mm underground before anything
+    # noticed. Vertices are never stale.
+    corners = [
+        obj.matrix_world @ vertex.co
+        for obj in made if obj.type == "MESH" for vertex in obj.data.vertices
+    ]
+    minimum = Vector((min(v.x for v in corners), min(v.y for v in corners), min(v.z for v in corners)))
+    maximum = Vector((max(v.x for v in corners), max(v.y for v in corners), max(v.z for v in corners)))
+    dimensions = maximum - minimum
+    polygons = sum(len(obj.data.polygons) for obj in made if obj.type == "MESH")
+    triangles = sum(
+        sum(max(0, len(polygon.vertices) - 2) for polygon in obj.data.polygons)
+        for obj in made if obj.type == "MESH"
+    )
+    materials = sorted({m.name for obj in made if obj.type == "MESH" for m in obj.data.materials if m})
+
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in collection.objects:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = root
+    bpy.ops.export_scene.gltf(
+        filepath=str(EXPORT_DIR / f"{name}.glb"), export_format="GLB",
+        use_selection=True, export_apply=True, export_yup=True,
+    )
+    root.location = display_location
+    return {
+        "name": name, "family": family, "root": root,
+        "width": dimensions.x, "depth": dimensions.y, "height": dimensions.z,
+        "ground_offset": minimum.z, "target": target, "axis": axis, "adrift": adrift,
+        "parts": sum(1 for obj in made if obj.type == "MESH"),
+        "polygons": polygons, "triangles": triangles, "materials": materials,
+    }
+
+
+def check(records: list[dict]) -> list[str]:
+    """Everything a machine can judge about this batch, judged."""
+    problems: list[str] = []
+    for record in records:
+        name, family = record["name"], record["family"]
+        low, high, axis, max_spread = SIZE_BAND[family_of(name)]
+        measured = record["height"] if axis == "height" else max(record["width"], record["depth"])
+        if not low - 0.02 <= measured <= high + 0.02:
+            problems.append(f"{name}: {axis} {measured:.3f} m outside band {low}-{high} m")
+        if record["adrift"]:
+            problems.append(f"{name}: {len(record['adrift'])} floating island(s): {record['adrift'][:3]}")
+        spread = max(record["width"], record["depth"])
+        if max_spread is not None and spread > max_spread:
+            problems.append(f"{name}: {spread:.2f} m across, {family_of(name)} footprint cap is {max_spread} m")
+        if abs(record["ground_offset"]) > 0.005:
+            problems.append(f"{name}: sits {record['ground_offset'] * 1000:.1f} mm off the ground plane")
+        if record["parts"] == 0 or record["polygons"] == 0:
+            problems.append(f"{name}: exported no geometry")
+        if record["triangles"] > TRIANGLE_BUDGET[family]:
+            problems.append(
+                f"{name}: {record['triangles']} triangles over the {family} budget "
+                f"of {TRIANGLE_BUDGET[family]}"
+            )
+        if len(record["materials"]) > MAX_MATERIALS[family]:
+            problems.append(
+                f"{name}: {len(record['materials'])} materials, {family} cap is {MAX_MATERIALS[family]}"
+            )
+        if not record["materials"]:
+            problems.append(f"{name}: no embedded materials")
+        if not (EXPORT_DIR / f"{name}.glb").exists():
+            problems.append(f"{name}: no GLB written")
+    return problems
+
+
+def main() -> None:
+    EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+    PREVIEW_DIR.mkdir(parents=True, exist_ok=True)
+    SOURCE_DIR.mkdir(parents=True, exist_ok=True)
+    reset_materials()
+    bpy.context.preferences.filepaths.save_version = 0
+    bpy.ops.object.select_all(action="SELECT")
+    bpy.ops.object.delete(use_global=False)
+    for datablocks in (bpy.data.materials, bpy.data.curves, bpy.data.cameras, bpy.data.lights):
+        for block in list(datablocks):
+            datablocks.remove(block)
+
+    if len({name for name, _, _ in SPECS}) != len(SPECS):
+        raise RuntimeError("flora asset names must be unique")
+    for name, _, _ in SPECS:
+        if family_of(name) not in SIZE_BAND:
+            raise RuntimeError(f"{name} has no SIZE_BAND entry")
+
+    counters = {family: 0 for family in FAMILY_ORDER}
+    totals = {family: sum(1 for _, f, _ in SPECS if f == family) for family in FAMILY_ORDER}
+    records: list[dict] = []
+    for name, family, builder in SPECS:
+        index = counters[family]
+        counters[family] += 1
+        spacing = FAMILY_SPACING[family]
+        rows = math.ceil(totals[family] / COLUMNS)
+        column, row = index % COLUMNS, index // COLUMNS
+        family_y = FAMILY_ORDER.index(family) * 26.0
+        location = ((column - (COLUMNS - 1) * 0.5) * spacing,
+                    family_y + (row - (rows - 1) * 0.5) * spacing * 1.15, 0.0)
+        records.append(create_asset(name, family, lambda n=name, fn=builder: fn(seed_for(n)), location))
+        print(f"  built {name}", flush=True)
+
+    problems = check(records)
+    catalog = [
+        {
+            "name": r["name"], "family": r["family"],
+            "width_m": round(r["width"], 3), "depth_m": round(r["depth"], 3), "height_m": round(r["height"], 3),
+            "mesh_parts": r["parts"], "polygons": r["polygons"], "triangles": r["triangles"],
+            "materials": r["materials"],
+        }
+        for r in records
+    ]
+    with (ASSET_DIR / "catalog.json").open("w", encoding="utf-8") as handle:
+        json.dump(catalog, handle, indent=2)
+        handle.write("\n")
+
+    # -- previews -----------------------------------------------------------
+    preview_collection = bpy.data.collections.new("PREVIEW_ONLY")
+    bpy.context.scene.collection.children.link(preview_collection)
+    bpy.ops.mesh.primitive_plane_add(size=220, location=(0, 70, -0.03))
+    plane = bpy.context.object
+    plane.name = "Preview_Ground"
+    plane.data.materials.append(mat("preview_ground"))
+    for old in list(plane.users_collection):
+        old.objects.unlink(plane)
+    preview_collection.objects.link(plane)
+
+    bpy.ops.object.light_add(type="SUN", location=(0, 0, 60))
+    sun = bpy.context.object
+    sun.name = "Preview_Sun"
+    sun.rotation_euler = (math.radians(38), math.radians(-20), math.radians(-30))
+    sun.data.energy = 2.6
+    sun.data.angle = math.radians(16)
+
+    bpy.ops.object.camera_add(location=(16, -20, 14))
+    camera = bpy.context.object
+    camera.name = "Preview_Camera"
+    camera.data.type = "ORTHO"
+    scene = bpy.context.scene
+    scene.camera = camera
+    scene.render.engine = "BLENDER_EEVEE"
+    scene.render.resolution_x = 1800
+    scene.render.resolution_y = 1000
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.film_transparent = False
+    scene.world.color = (0.016, 0.021, 0.028)
+    scene.view_settings.look = "AgX - Medium High Contrast"
+
+    def set_visible(record: dict, visible: bool) -> None:
+        record["root"].hide_render = not visible
+        for child in record["root"].children_recursive:
+            child.hide_render = not visible
+
+    # A 1.80 m reference stands in every family sheet. A plant kit whose sizes are
+    # only ever compared against each other is exactly how the pickup kit ended up
+    # with a 0.71 m berry.
+    bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0.9))
+    figure = bpy.context.object
+    figure.name = "Scale_Reference"
+    figure.scale = (0.20, 0.13, 0.90)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    figure.data.materials.append(mat("reference_blue"))
+    for old in list(figure.users_collection):
+        old.objects.unlink(figure)
+    preview_collection.objects.link(figure)
+
+    def rows_in(family: str) -> int:
+        return math.ceil(sum(1 for r in records if r["family"] == family) / COLUMNS)
+
+    for family in FAMILY_ORDER:
+        family_y = FAMILY_ORDER.index(family) * 26.0
+        for record in records:
+            set_visible(record, record["family"] == family)
+        spacing = FAMILY_SPACING[family]
+        half = (COLUMNS * spacing) * 0.5
+        figure.location = (-half - 1.1, family_y, 0.9)
+        width = (half + 1.4) * 2.0
+        tallest = max([r["height"] for r in records if r["family"] == family] + [1.85])
+        content = tallest * 0.90 + (rows_in(family) - 1) * spacing * 1.15 * 0.47 + 0.9
+        camera.data.ortho_scale = width
+        scene.render.resolution_y = int(min(1400, max(560, 1800 * content * 1.22 / width)))
+        camera.location = (0.0, family_y - 18.0, 9.5)
+        look_at(camera, (0.0, family_y, content * 0.34))
+        scene.render.filepath = str(PREVIEW_DIR / FAMILY_PREVIEWS[family])
+        bpy.ops.render.render(write_still=True)
+
+    hero = ["tree_willow_a", "tree_snag_b", "sapling_c", "sapling_a", "bush_round_b",
+            "bush_broadleaf_a", "bush_thorn_a", "bush_dead_b", "bracken_b", "plant_dock_a",
+            "flowers_tall_b", "flowers_meadow_c", "grass_tussock_a", "moss_patch_b",
+            "clover_patch_a", "leaf_litter_a", "lily_pad_a", "sedge_b"]
+    hero_spots = {name: ((index % 9) * 2.5 - 10.0, -3.6 + (index // 9) * 3.4, 0.0)
+                  for index, name in enumerate(hero)}
+    saved = {}
+    for record in records:
+        set_visible(record, record["name"] in hero_spots)
+        if record["name"] in hero_spots:
+            saved[record["name"]] = record["root"].location.copy()
+            record["root"].location = hero_spots[record["name"]]
+    figure.location = (-12.4, -1.2, 0.9)
+    scene.render.resolution_y = 1000
+    camera.data.type = "PERSP"
+    camera.data.lens = 50.0
+    camera.location = (8.0, -15.5, 5.6)
+    look_at(camera, (-1.0, -0.6, 1.1))
+    scene.render.filepath = str(PREVIEW_DIR / "flora_set_preview.png")
+    bpy.ops.render.render(write_still=True)
+    for record in records:
+        if record["name"] in saved:
+            record["root"].location = saved[record["name"]]
+        set_visible(record, True)
+
+    bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE_PATH))
+
+    print(f"\nFLORA_BUILD assets={len(records)} triangles={sum(r['triangles'] for r in records)}")
+    for family in FAMILY_ORDER:
+        rows = [r for r in records if r["family"] == family]
+        print(
+            "  %-14s %2d assets  %5d tris  max %3d tris  max %d materials  %s %.2f-%.2f m"
+            % (family, len(rows), sum(r["triangles"] for r in rows), max(r["triangles"] for r in rows),
+               max(len(r["materials"]) for r in rows), rows[0]["axis"],
+               min(r["height"] if r["axis"] == "height" else max(r["width"], r["depth"]) for r in rows),
+               max(r["height"] if r["axis"] == "height" else max(r["width"], r["depth"]) for r in rows))
+        )
+    if problems:
+        print(f"\nFLORA_CHECK FAIL ({len(problems)})")
+        for problem in problems:
+            print(f"  {problem}")
+        raise SystemExit(1)
+    print("FLORA_CHECK PASS")
+
+
+if __name__ == "__main__":
+    main()

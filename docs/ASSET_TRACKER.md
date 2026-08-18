@@ -115,7 +115,8 @@ Blender --background --python tools/blender/audit_all_sides.py -- --only <substr
 
 It renders every matching GLB from eight azimuths plus top and bottom into one contact sheet under
 `assets/audit/sheets/`, with the key light following the camera so no side is hidden by shadow, and
-writes numeric checks to `assets/audit/geometry_report.json`. `tools/blender/detail_distribution.py`
+writes numeric checks to `assets/audit/geometry_report.json`. That output is **regenerable and not
+committed** — it is 35 MB per full run. `tools/blender/detail_distribution.py`
 ranks assets by how tightly their protruding detail clusters on one side.
 
 Two things learned the hard way while building it, so nobody re-learns them:
@@ -216,6 +217,44 @@ up onto it when `create_asset` grounds it.
 Godot caches glTF imports, and a check run immediately after a rebuild can report
 the *previous* import. A hollow visual count that jumps with no change in GLB bytes
 or per-asset part counts is that cache, not your geometry — re-run to confirm.
+
+### Massing primitives, and how to use a reference pack (A-000V)
+
+`mire_art` now carries three primitives that exist because MIRE's art was being *assembled* where a
+person would have *sculpted*. A crown was nine ellipsoids; a mossy boulder was a boulder with a moss
+ellipsoid stuck on one flank.
+
+| Primitive | What it replaces | Also good for |
+|---|---|---|
+| `hull()` | a heap of ellipsoids standing in for one mass | boulders, bushes, crowns, mushroom caps, bread, clouds |
+| `paint_faces()` | a separate blob stuck on to mean "mossy" | moss, snow, lichen, rust, scorching, pooled blood |
+| `fork()` | "six branches, each with two twigs" | dead trees, roots, cracks, lightning, antlers |
+
+`paint_faces()` is the one worth reaching for first: it assigns a second material to faces by
+orientation and height, so the detail costs **zero geometry**. `build_mire_map_kit.py`'s
+`build_boulder` should use it instead of `ico("Moss", ...)` — the current moss is both more triangles
+and more obviously a sticker, and it only exists on the side its author was looking at.
+
+Three traps, all paid for once already:
+
+- **You cannot make a hanging curtain by drooping a sphere.** Pulling lobes out of a round canopy
+  gives it notches; hanging round masses off the rim gives it ears. A curtain has to be *built* tall
+  and narrow. `droop` is for softening the underside of a canopy that is already the right shape.
+- **`fork()` returns its tips depth-first**, so `tips[:5]` is every tip of the first branch and
+  nothing from the others — the 2.1j one-sidedness defect, reintroduced by a slice that looks
+  harmless. Sample across the list.
+- **A bush is three overlapping masses, not one and not eighteen.** One reads as an egg; eighteen
+  reads as a bag of peas. Three gives the silhouette shoulders, and costs 240 triangles.
+
+**Using a supplied reference pack.** Sequoyah's instruction, verbatim in intent: *use it for
+inspiration, don't assume that is how everything has to be, and don't copy it — it's somebody else's
+work, we want our own.* That holds **even when the licence permits copying**; the pack that prompted
+these primitives is CC0 and the rule still applied. Measure how a reference is built — element counts,
+materials per asset, where detail is spent — then write our own generator that uses the same *method*.
+Never import, trace, retopologise or ship the reference geometry. Where its choices conflict with a
+decision this project made on purpose, the project wins: that pack's palette is much darker and more
+olive than ours, and ours was deliberately re-anchored bright after being authored too dark once
+already. Record in the batch row which techniques were adopted, so provenance is never ambiguous.
 
 ### One palette, one set of primitives
 
@@ -329,6 +368,7 @@ extraction. Make these before broad biome decoration.
 | A-007 | `DONE` | Basic Ward set: foundation, healthy Ward, damaged Ward, critical Ward, destroyed remains, repair scaffolding, boundary post, activation crystal. Task 2.1i added the pronged socket, state-aware inlays, satellite shards, and damaged crystal tip. Made 8 in `assets/wards/`; 2,460 polygons. Byte-identical GLBs/catalog across two Blender 5.2 rebuilds and shared-foundation drift 0.00 mm passed | 8 | A-003 |
 | A-008 | `DONE` | Wellspring set: distant monolith, base, crystal, basin, roots, uncapped state, capped state, re-corrupting state, corrupted state, ritual pedestal, boundary stones, guardian platform. Task 2.1i added complete/broken ritual crowns, condition-aware inlays, satellite spires, and a stronger monolith silhouette. Made 12 in `assets/wellsprings/`; 4,097 polygons. Byte-identical GLBs/catalog across two Blender 5.2 rebuilds and shared 4.6 m foundation drift 0.00 mm passed | 12 | A-007 |
 | A-021S | `DONE` | **Iron sword, at Sequoyah's direct request, out of queue order**, split out of A-021. Made 2 exports + 1 icon: `iron_sword_world.glb`, `iron_sword_viewmodel.glb` in `assets/tools_weapons/`, `assets/icons/exports/icon_iron_sword.png`, plus `content/items/iron_sword.tres` and `content/weapons/iron_sword.tres`. 421 polygons / 1,000 triangles, 0.510 × 0.114 × 1.724 m — the set's hero, against 114–348 polygons for A-004R's ten. Diamond-section blade with a fuller, bright ground edges butted onto the core, upswept crossguard with brass quillon caps, brass écusson, leather grip with cord risers, faceted wheel pommel. Needed a new primitive: `lofted()` builds a solid through explicit cross-sections, because `ground_profile()` insets toward the profile centroid and on a blade a metre long that pull is almost entirely *downward* near the point, leaving a square wall where the edge should be. Verified: two clean rebuilds gave byte-identical GLBs (22/22) and catalog; GLB 2.0 validation 22/22 with catalog exact, no orphans/duplicates, ground origin, horizontally centred, embedded materials, no skins/animation; six-azimuth orbit inspection plus a blade-section close-up; three-preview visual inspection; fresh Godot 4.7.1 import; `tools/item_icons_check.gd` PASS; and the sword granted, held and swung through all four phases in the **running game** at 1280×720 with zero failures | 2 exports + 1 icon | A-004 |
+| A-000V | `DONE` | **Vegetation expansion, at Sequoyah's direct request and out of queue order** — A-009 stays `NEXT` and unstarted, the same precedent as A-004R and A-021S. The environment kit had exactly one shape of ground cover (bladed grass, four sizes) and nothing between ankle-height grass and a full-grown tree, so a map read as one repeated texture however many grass variants were scattered. Made 84 in a new `flora` kit (`assets/flora/`, `tools/blender/build_flora_set.py`): 13 shrubs, 10 small trees, 16 leafy plants, 13 flowers, 18 grasses, 14 ground cover; 30,984 triangles, 12–1,012 per asset, at most four materials each. Sizes are **guaranteed by construction** — each asset is scaled to a target drawn from its group's band, with a separate footprint cap because scaling a rosette to a height band inflates its reach (`bracken_c` was a correct 0.95 m tall and 4.34 m across). Verified: build-time contract (size band, footprint cap, colour cap, ground contact, no floating mesh islands) **fails** rather than warns and passes 84/84; all-sides audit of every asset from eight azimuths plus top and bottom with **0 numeric defects**; and `tools/flora_check.gd` cross-checks the **engine's** measurements against the catalog and instantiates the real level, where `world/gen/undergrowth.gd` places **2,932 plants through 78 MultiMeshInstance3D nodes**. Filed F-058, F-059, F-060 — all three found by this batch and all three fixed. Partially anticipates A-011 and A-015; both keep their rows, since neither's gameplay-bearing assets (harvestable berry bushes, state sets) are made here | 84 | A-000 |
 | A-009 | `NEXT` | Extraction ship set: wrecked hull, two repair stages, repaired hull, mast, broken mast, furled sail, raised sail, rudder, anchor, boarding ramp, cargo hatch, donation crate, departure bell, debris cluster | 15 | A-004 |
 | A-010 | `QUEUED` | Missing practical construction: working wood door, double gate, ladder, ramp, bridge straight, bridge broken, rope bridge, dock straight, dock corner, palisade straight/corner/gate, barricade, spike barricade | 14 | A-000 |
 

@@ -147,6 +147,23 @@ PALETTE: dict[str, Swatch] = {
     "moss": Swatch("#61A055", 0.96),
     "reed": Swatch("#A6BF61", 0.94),
     "grass_seed": Swatch("#99864D", 0.94, note="seed heads and dry stalk tips"),
+    # Flora family (A-000V). Added, never edited — existing tokens are untouched so
+    # nothing downstream needed a rebuild. Authored as base colours in the same
+    # brightness band as the foliage above, not eyeballed off a tone-mapped render.
+    "leaf_pale": Swatch("#B7CE8E", 0.92, note="leaf undersides and new growth"),
+    "leaf_dry": Swatch("#A88E52", 0.93, note="leaves partway to dead, still on the plant"),
+    "leaf_litter": Swatch("#7C5A34", 0.95, note="fallen leaves on the ground"),
+    "moss_dark": Swatch("#46753E", 0.96, note="shadowed moss, patch edges"),
+    "moss_light": Swatch("#86B96A", 0.95, note="lit moss crowns"),
+    "bracken": Swatch("#86A24E", 0.94, note="bracken and other yellow-green fronds"),
+    "sedge": Swatch("#7E9A55", 0.94, note="sedge and marsh blades; darker and duller than reed"),
+    # Blossom is the one bright thing on the ground, so it stays small in area and
+    # cool-to-neutral: warm accents belong to fire and brass, purple to the Mire.
+    "flower_white": Swatch("#E8E6D4", 0.90, note="small white blooms and bog cotton"),
+    "flower_cream": Swatch("#EFD9A0", 0.90, note="cream umbels"),
+    "flower_yellow": Swatch("#E0C24A", 0.90, note="yellow blooms; use in small heads only"),
+    "flower_rust": Swatch("#C1663F", 0.91, note="rust seed spikes and burrs"),
+    "flower_pink": Swatch("#D2879C", 0.90, note="dusty pink blooms; never saturated toward the Mire"),
     # Fungus is the one place a non-corruption pink/blue is allowed. Kept muted so
     # it never competes with the reserved Mire purple or Ward teal.
     "fungus_cap": Swatch("#A8437F", 0.88, note="pink toadstool cap"),
@@ -307,8 +324,20 @@ def mat(token: str, suffix: str = "") -> bpy.types.Material:
         raise KeyError(f"unknown palette token {token!r}; add it to mire_art.PALETTE rather than inlining a colour")
     key = f"{token}{suffix}"
     cached = _MATERIAL_CACHE.get(key)
-    if cached is not None and key in bpy.data.materials:
-        return cached
+    if cached is not None:
+        # Test the datablock itself, not the cache key. This line used to read
+        # `key in bpy.data.materials`, and the key is a palette token while the
+        # datablock is named "MIRE_WoodBark" — so the test was always False, the
+        # cache never hit, and every call minted another material. It went unseen
+        # because all four fully migrated generators happen to hoist their `mat()`
+        # calls into a dict once per build; call it inside a loop, as any
+        # generator naturally would, and a single asset exports twenty-two
+        # near-identical materials. F-058.
+        try:
+            if bpy.data.materials.get(cached.name) is cached:
+                return cached
+        except ReferenceError:
+            pass
 
     sw = PALETTE[token]
     name = "MIRE_" + "".join(part.capitalize() for part in key.split("_"))
@@ -571,14 +600,28 @@ def world_bounds(objects: list[bpy.types.Object]) -> tuple[Vector, Vector]:
     # the asset still exports, just mis-measured and mis-grounded. It cost the
     # woodcutting block 0.31 m of height (its splitting wedge was measured at
     # the origin) and the catalog diff was the only thing that noticed.
+    #
+    # Measure vertices, not `obj.bound_box`. The bound box is axis-aligned in the
+    # object's LOCAL space, so once an object is rotated — which is every single
+    # cone `cylinder_between` and `tapered_between` produce — transforming its
+    # eight corners gives a box strictly larger than the geometry inside it. The
+    # error is invisible per-object and cumulative per-asset: it grounds the
+    # conservative box on z=0 and leaves the real mesh hanging above it. Measured
+    # on the flora kit, that was up to **76 mm of air** under every willow and
+    # snag, and it would have shipped as "assets sit on the ground" because the
+    # only check was made with the same wrong ruler.
+    #
+    # `bound_box` is also stale immediately after `bpy.ops.object.join()`, even
+    # through a depsgraph update. Vertices are never stale.
     bpy.context.view_layer.update()
     lo = Vector((1e9, 1e9, 1e9))
     hi = Vector((-1e9, -1e9, -1e9))
     for obj in objects:
         if obj.type != "MESH":
             continue
-        for corner in obj.bound_box:
-            world = obj.matrix_world @ Vector(corner)
+        matrix = obj.matrix_world
+        for vertex in obj.data.vertices:
+            world = matrix @ vertex.co
             lo = Vector((min(lo[i], world[i]) for i in range(3)))
             hi = Vector((max(hi[i], world[i]) for i in range(3)))
     return lo, hi
@@ -604,3 +647,253 @@ def eevee_engine() -> str:
         if candidate in items:
             return candidate
     return items[0]
+
+
+# ---------------------------------------------------------------------------
+# Massing primitives
+# ---------------------------------------------------------------------------
+#
+# Everything above builds an asset by *assembling* primitives: a crown is nine
+# ellipsoids, a mossy boulder is a boulder plus a moss ellipsoid stuck to it.
+# That is one way to make low-poly art and it is not the way a person does it.
+#
+# Studying a hand-authored low-poly nature pack (Quaternius, CC0) next to MIRE's
+# own kit made the difference measurable rather than a matter of taste. Its bush
+# is ONE mesh of 364 triangles carrying ONE material; the closest MIRE asset was
+# three meshes, five materials and 641 triangles for a shape that reads as less.
+# Its grass tuft is twelve wide blades, not thirty-six thin ones. Its mossy rock
+# is the *same 36-face rock* with some faces assigned a second material — the
+# moss costs zero geometry.
+#
+# None of that pack's geometry is used here and none of it was traced. What is
+# taken is the method, expressed as three primitives a generator can call:
+#
+#   hull()         one displaced solid instead of a heap of ellipsoids
+#   paint_faces()  a second material by face orientation, at no geometric cost
+#   fork()         recursive branching, so a bare tree is structure not sticks
+#
+# They are deliberately general. A hull is a boulder, a bush, a tree crown, a
+# mushroom cap, a bread loaf or a cloud; paint_faces() is moss, snow, lichen,
+# rust, scorching or blood; fork() is a dead tree, a root system, a crack or an
+# antler. Vegetation is only the first caller.
+
+
+def icosphere(subdivisions: int = 1) -> tuple[list[Vector], list[tuple[int, int, int]]]:
+    """Unit icosphere as plain data: 80 faces at 1, 320 at 2.
+
+    Written out rather than taken from ``bpy.ops`` so the vertex order is fixed
+    by this function and not by an operator, which is what lets a hull built
+    from it rebuild byte-identically (F-057).
+    """
+    ratio = (1.0 + 5.0 ** 0.5) / 2.0
+    vertices = [
+        Vector(v).normalized() for v in (
+            (-1, ratio, 0), (1, ratio, 0), (-1, -ratio, 0), (1, -ratio, 0),
+            (0, -1, ratio), (0, 1, ratio), (0, -1, -ratio), (0, 1, -ratio),
+            (ratio, 0, -1), (ratio, 0, 1), (-ratio, 0, -1), (-ratio, 0, 1),
+        )
+    ]
+    faces = [
+        (0, 11, 5), (0, 5, 1), (0, 1, 7), (0, 7, 10), (0, 10, 11),
+        (1, 5, 9), (5, 11, 4), (11, 10, 2), (10, 7, 6), (7, 1, 8),
+        (3, 9, 4), (3, 4, 2), (3, 2, 6), (3, 6, 8), (3, 8, 9),
+        (4, 9, 5), (2, 4, 11), (6, 2, 10), (8, 6, 7), (9, 8, 1),
+    ]
+    for _ in range(subdivisions):
+        midpoints: dict[tuple[int, int], int] = {}
+
+        def midpoint(a: int, b: int) -> int:
+            key = (min(a, b), max(a, b))
+            if key not in midpoints:
+                vertices.append(((vertices[a] + vertices[b]) * 0.5).normalized())
+                midpoints[key] = len(vertices) - 1
+            return midpoints[key]
+
+        split: list[tuple[int, int, int]] = []
+        for a, b, c in faces:
+            ab, bc, ca = midpoint(a, b), midpoint(b, c), midpoint(c, a)
+            split.extend([(a, ab, ca), (b, bc, ab), (c, ca, bc), (ab, bc, ca)])
+        faces = split
+    return vertices, faces
+
+
+def hull(
+    name: str,
+    centre: tuple[float, float, float],
+    radius: tuple[float, float, float] | float,
+    material: bpy.types.Material,
+    seed: int,
+    subdivisions: int = 1,
+    lumps: int = 6,
+    lump: float = 0.30,
+    sharpness: float = 2.4,
+    taper: float = 0.0,
+    droop: float = 0.0,
+    droop_lobes: int = 0,
+    droop_sharpness: float = 6.0,
+    flat_base: float | None = None,
+    jitter: float = 0.0,
+) -> bpy.types.Object:
+    """One irregular solid: the shape a person sculpts, not a pile of spheres.
+
+    The lumps are a sum of smooth directional bumps rather than per-vertex noise.
+    Per-vertex noise on a 42-vertex sphere gives a spiky golf ball, because every
+    vertex moves independently; a handful of broad bumps moves whole regions
+    together, which is what produces the big readable facets that make flat
+    shading look intentional.
+
+    ``droop`` pulls lobes down out of the lower half — the hanging tongues that
+    give a broadleaf crown its silhouette instead of leaving it a green ball.
+    ``taper`` narrows the top, ``flat_base`` clips the underside flat at that
+    fraction of the radius so a bush sits on the ground rather than floating on
+    its own curvature. Every random draw comes from ``seed``.
+    """
+    if isinstance(radius, (int, float)):
+        radius = (float(radius), float(radius), float(radius))
+    rng = random.Random(seed)
+    directions, faces = icosphere(subdivisions)
+
+    bumps = [
+        (
+            Vector((rng.uniform(-1, 1), rng.uniform(-1, 1), rng.uniform(-1, 1))).normalized(),
+            rng.uniform(-lump * 0.45, lump),
+        )
+        for _ in range(lumps)
+    ]
+    lobes = [
+        (Vector((math.cos(angle), math.sin(angle), 0.0)), rng.uniform(0.55, 1.0))
+        for angle, _ in radial(droop_lobes, 1.0, seed=seed + 7, jitter=0.5)
+    ] if droop_lobes > 0 else []
+
+    points: list[tuple[float, float, float]] = []
+    for direction in directions:
+        scale = 1.0
+        for axis, amplitude in bumps:
+            dot = direction.dot(axis)
+            if dot > 0.0:
+                scale += amplitude * (dot ** sharpness)
+        scale = max(0.25, scale + rng.uniform(-jitter, jitter))
+        point = Vector((direction.x * radius[0], direction.y * radius[1], direction.z * radius[2])) * scale
+        if taper:
+            narrow = 1.0 - taper * (direction.z * 0.5 + 0.5)
+            point.x *= narrow
+            point.y *= narrow
+        dropped = 0.0
+        if lobes and direction.z < 0.30:
+            flat = Vector((direction.x, direction.y, 0.0))
+            if flat.length > 1e-6:
+                flat.normalize()
+                depth = 0.0
+                for axis, weight in lobes:
+                    dot = flat.dot(axis)
+                    if dot > 0.0:
+                        depth = max(depth, weight * (dot ** droop_sharpness))
+                dropped = droop * depth * min(1.0, (0.30 - direction.z) / 0.9)
+                point.z -= dropped
+        if flat_base is not None:
+            # The floor has to yield to the lobes, or it erases them. Clipping
+            # first made every drooping bush come out a smooth egg — the lobes
+            # were built and then flattened straight back off in the same pass.
+            point.z = max(point.z, -radius[2] * flat_base - dropped)
+        points.append((centre[0] + point.x, centre[1] + point.y, centre[2] + point.z))
+    return mesh_object(name, points, faces, material, recalculate=False)
+
+
+def paint_faces(
+    obj: bpy.types.Object,
+    material: bpy.types.Material,
+    min_normal_z: float = 0.30,
+    min_height: float = 0.42,
+    coverage: float = 1.0,
+    seed: int = 0,
+) -> int:
+    """Give some of ``obj``'s faces a second material. Costs no geometry at all.
+
+    This is how a mossy boulder should be made: the same rock, with its upward
+    faces above the waterline assigned moss. MIRE currently sticks a separate
+    flattened ellipsoid on one flank instead, which is both more triangles and
+    more obviously fake — it reads as a sticker, and it only exists on the side
+    the author was looking at.
+
+    Also: snow on a roof, lichen on a ruin, scorch on the up-faces of a burnt
+    beam, rust in the crevices (invert ``min_normal_z``), blood pooling on flat
+    surfaces. ``coverage`` below 1.0 drops faces at random for a patchy edge, so
+    the boundary is not a clean contour line.
+    """
+    index = len(obj.data.materials)
+    obj.data.materials.append(material)
+    zs = [vertex.co.z for vertex in obj.data.vertices]
+    low, high = min(zs), max(zs)
+    span = max(1e-6, high - low)
+    rng = random.Random(seed)
+    painted = 0
+    for polygon in obj.data.polygons:
+        if polygon.normal.z < min_normal_z:
+            continue
+        if (polygon.center.z - low) / span < min_height:
+            continue
+        if coverage < 1.0 and rng.random() > coverage:
+            continue
+        polygon.material_index = index
+        painted += 1
+    return painted
+
+
+def fork(
+    prefix: str,
+    start: tuple[float, float, float],
+    direction: tuple[float, float, float],
+    length: float,
+    radius: float,
+    material: bpy.types.Material,
+    seed: int,
+    depth: int = 3,
+    splits: tuple[int, int] = (2, 3),
+    spread: float = 0.55,
+    shrink: float = 0.70,
+    curve: float = 0.22,
+    vertices: int = 5,
+    tip_material: bpy.types.Material | None = None,
+) -> list[Vector]:
+    """Recursive branching. Returns the tip points so the caller can hang things.
+
+    A bare tree drawn as "six branches off a trunk, each with two twigs" is a
+    fixed two-level shape and looks like one. Real branch structure is the same
+    rule applied at every scale, and it is three lines of recursion — the reason
+    hand-authored dead trees read so much better than MIRE's is structure, not
+    triangle count. Also serves root systems, cracks, lightning and antlers.
+    """
+    rng = random.Random(seed)
+    tips: list[Vector] = []
+    origin = Vector(start)
+    heading = Vector(direction).normalized()
+
+    def basis(vector: Vector) -> tuple[Vector, Vector]:
+        reference = Vector((0.0, 0.0, 1.0))
+        if abs(vector.dot(reference)) > 0.94:
+            reference = Vector((1.0, 0.0, 0.0))
+        side = vector.cross(reference).normalized()
+        return side, vector.cross(side).normalized()
+
+    def grow(point: Vector, heading: Vector, length: float, radius: float, level: int, tag: str) -> None:
+        side, other = basis(heading)
+        bend = (side * rng.uniform(-curve, curve) + other * rng.uniform(-curve, curve))
+        end = point + (heading + bend).normalized() * length
+        tapered_between(
+            f"{prefix}_{tag}", tuple(point), tuple(end), radius, radius * shrink,
+            tip_material if (tip_material is not None and level <= 1) else material, vertices,
+        )
+        if level <= 1 or radius * shrink < 0.006:
+            tips.append(end)
+            return
+        heading = (end - point).normalized()
+        count = rng.randint(*splits)
+        for index in range(count):
+            roll = index * math.tau / count + rng.uniform(-0.5, 0.5)
+            tilt = spread * rng.uniform(0.6, 1.35)
+            side, other = basis(heading)
+            child = (heading + (side * math.cos(roll) + other * math.sin(roll)) * math.tan(tilt)).normalized()
+            grow(end, child, length * rng.uniform(0.58, 0.80), radius * shrink, level - 1, f"{tag}{index + 1}")
+
+    grow(origin, heading, length, radius, depth, "0")
+    return tips

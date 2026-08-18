@@ -977,6 +977,82 @@ Next step when the machine is free: re-run the three-way split, then decide betw
 
 ---
 
+### F-058 · `mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call
+
+**Area:** art pipeline · **Found:** 2026-08-17 by moss11 while building the flora kit — **fixed**
+
+The guard read `if cached is not None and key in bpy.data.materials`. `key` is a palette token such as
+`wood_bark`; the datablock it created is named `MIRE_WoodBark`. The membership test was therefore
+**always false**, the cache never returned anything, and every `mat()` call created another material.
+
+It hid for as long as it did because of how the four fully migrated generators happen to be written:
+each hoists its `mat()` calls into a `mats = {...}` dictionary once per build and then reuses the
+dictionary, so each token is asked for exactly once and a broken cache costs nothing. Write the
+natural thing instead — `mat("leaf")` inside the loop that builds leaves — and it compounds:
+`bracken_a` exported **twenty-two** near-identical `MIRE_Bracken.0NN` materials, and the flora kit
+averaged five materials per asset before the fix and two after.
+
+Fixed by testing the datablock rather than the key: `bpy.data.materials.get(cached.name) is cached`,
+wrapped against `ReferenceError` so a cache entry left dangling by a scene wipe is re-created rather
+than crashing. No existing kit changes, because none of them ever hit the cache path.
+
+---
+
+### F-059 · A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build
+
+**Area:** verification · **Found:** 2026-08-17 by moss11 — **fixed for this kit, and the remedy generalises**
+
+`docs/ASSET_TRACKER.md` already warned that "a check run immediately after a rebuild can report the
+previous import" and said to re-run to confirm. **Re-running does not help.** Measured: after
+rebuilding all 84 flora GLBs, `agent godot --script tools/flora_check.gd` reported the same stale
+triangle counts and heights on three consecutive runs, and would have kept doing so indefinitely —
+`--script` loads whatever `.godot/imported/` holds and never runs an import pass.
+
+The remedy is one command, and it is not "open the editor":
+
+```
+.agent/bin/agent godot --import      # then run the check
+```
+
+Deleting the `.glb.import` sidecars forces a full re-import, but the run that regenerates them cannot
+also load them, so that path always needs two passes.
+
+The reason this was caught rather than shipped is worth keeping: `tools/flora_check.gd` compares the
+**engine's** measurements against the generator's catalog instead of just asserting that files load.
+A check that only asks "did it import?" cannot detect staleness by construction — it will pass
+happily against art that no longer exists. Any future asset check should cross the fence the same way.
+
+---
+
+### F-060 · `mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float
+
+**Area:** art pipeline · **Found:** 2026-08-17 by moss11 — **fixed**
+
+`world_bounds` transformed the eight corners of each object's `bound_box`. That box is axis-aligned in
+the object's **local** space, so for any rotated object the transformed corners enclose a volume
+strictly larger than the geometry — and every cone `cylinder_between` and `tapered_between` produce is
+rotated. `ground_and_centre` then sat that inflated box on z=0 and left the real mesh hanging above it.
+
+Measured on the flora kit before the fix: up to **76 mm of air** under every willow and every snag.
+It would have shipped describing itself as grounded, because the only check available was made with
+the same wrong ruler. `bound_box` is also **stale immediately after `bpy.ops.object.join()`**, even
+through a depsgraph update — that variant put a willow at 6.97 m tall and 800 mm underground.
+
+Fixed by measuring vertices through `matrix_world`. Vertices are exact and never stale.
+
+**This is shared, so it has a blast radius.** Every kit built with rotated primitives — the map kit's
+128 assets, harvestables, tools, the crawler — is currently sitting a few tens of millimetres high,
+and will settle onto the ground the next time its generator is rebuilt. That is a move toward
+correctness and the shift is well under a centimetre for most assets, but it *is* a geometry change,
+so a rebuild of any of those families should diff its catalog and expect small `height_m` reductions
+rather than the usual zero.
+
+The same over-measurement exists on the Godot side of the fence: `MeshInstance3D.get_aabb()` is local,
+so anything that transforms it by a rotated node transform inherits the identical error. The flora
+kit sidesteps it by baking every asset's transform to identity before export, which is worth copying.
+
+---
+
 ## Resolved
 
 ### F-055 · `core/util/mire_log.gd`'s `CHANNELS` list has no `health` channel — **fixed**

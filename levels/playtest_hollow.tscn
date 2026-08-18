@@ -1,10 +1,11 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="PackedScene" path="res://entities/player/player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://assets/maps/playtest_hollow.glb" id="2_map"]
 [ext_resource type="Script" path="res://world/gen/playtest_hollow.gd" id="3_builder"]
 [ext_resource type="Script" path="res://world/environment/playtest_atmosphere.gd" id="4_atmosphere"]
 [ext_resource type="Script" path="res://world/environment/low_poly_clouds.gd" id="5_clouds"]
+[ext_resource type="Script" path="res://world/gen/undergrowth.gd" id="6_undergrowth"]
 
 [sub_resource type="PhysicalSkyMaterial" id="SkyMaterial"]
 rayleigh_coefficient = 3.0
@@ -123,6 +124,9 @@ script = ExtResource("5_clouds")
 
 [node name="LayoutRuntime" type="Node3D" parent="."]
 script = ExtResource("3_builder")
+
+[node name="Undergrowth" type="Node3D" parent="."]
+script = ExtResource("6_undergrowth")
 
 [node name="Player" parent="." instance=ExtResource("1_player")]
 position = Vector3(0, 0.2, 7.4)
