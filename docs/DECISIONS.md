@@ -1806,3 +1806,50 @@ that task).
 collision-cook cost non-linearly — D-074 already named this as its own open question) showing the
 budget does not hold at scale; or 4.4/4.5 needing the LOD seam fixed badly enough to justify
 skirts or index-stitching before F-128 would otherwise get picked up.
+
+### D-081 · 2026-08-18 · One editor check, `agent editor-running` — never a hand-rolled pgrep (F-120)
+
+"Is the Godot editor open?" is the question D-031 and D-021 both turn on, and the repo had **four**
+answers to it: `_godot_running()` in the harness, a bare `pgrep -fl Godot` inside `agent check` (the
+pre-commit hook's own guard), another inside `_stage_uid_sidecars`, and a `pgrep -fl
+'Godot.app.*--editor'` that `AGENTS.md` and `AI-WORKFLOW.md` told agents to run by hand. They
+disagreed, and they disagreed in both directions.
+
+Measured against the four launch shapes actually seen on this machine — a Godot.app opened from
+Finder with the project loaded from the Project Manager, `Godot --path <proj> -e res://<scene>`,
+`agent godot --script`, and `agent godot --windowed --script`:
+
+| check | missed a real editor | false alarm on a check run |
+|---|---|---|
+| documented `pgrep -fl 'Godot.app.*--editor'` | **2 of 2** | 0 |
+| `pgrep -fl Godot` (hook + ship) | 0 | **2 of 2** |
+| `_godot_running()` before this | 0 | 1 (the `--windowed` shape) |
+| after this decision | 0 | 0 |
+
+Both failures cost something real. The documented one is a **false negative**, and an agent that
+trusts it edits a `.tscn` under a live editor — the exact corruption D-031 exists to prevent. The
+blunt one is a **false positive** that fires on any concurrent headless check, and the way past a
+blocked commit is `--no-verify`, which switches off the closed-editor rule *and* every claim check
+with it; the journal already records an agent doing exactly that, twice, on 2026-08-18. Its copy in
+`_stage_uid_sidecars` had a quieter cost: another lane's check run made `ship` skip the import pass,
+so `.gd` files shipped without their `.uid` sidecars (F-017).
+
+**The rule.** There is one implementation, `_godot_process_kind()`/`_godot_running()`, and every
+guard calls it: `agent check`, `agent ship`, `agent autoload`, `agent order`, and the new
+`agent editor-running`, which exists so the *documented by-hand check is the same code as the
+enforced one* — a doc cannot drift from the tool if it has nothing of its own to say. Never write
+a pgrep for this; if the check is wrong, fix the one function.
+
+**How it classifies, and why it is conservative.** An explicit `--editor`/`-e` is the editor. A run
+flag (`--headless`, `--script`, `--import`, `--export-*`, `--doctool`) or a `--path` project run
+with no editor flag is not. **Anything else that is the engine binary — most importantly a bare,
+argument-free launch — is treated as the editor**, because that is what a Godot.app opened from
+Finder looks like: observed 2026-08-18 as pid 89993, zero arguments, MIRE open and rewriting
+`.godot/editor/` five minutes after launch. "No flags I recognise" cannot mean "safe" when the
+commonest way a human opens the editor produces exactly that. Wrong in this direction costs a false
+alarm; wrong in the other costs a corrupted scene.
+
+**What would change my mind:** a launch shape that is genuinely not an editor and carries none of
+the run flags. Add it to `GODOT_RUN_FLAGS` and to `GODOT_LAUNCH_SHAPES` in `tools/harness_check.py`
+in the same edit — that table is the spec, and it is asserted, so a new shape is one row plus a
+passing test rather than an argument.

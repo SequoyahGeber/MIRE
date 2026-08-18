@@ -127,14 +127,17 @@ produce conflicts that are painful at best and silently corrupt the scene at wor
 The protection is exact file ownership plus a closed editor (D-031):
 
 - Agents may edit `.tscn`, `.tres`, and `.import` files only under an explicit exact-file claim.
-- Before touching any Godot-authored file, check whether the **editor** is running — not merely
-  whether some Godot process is (F-045). `pgrep -fl Godot` also matches your own headless check
-  loop, another lane's, and the `agent` command itself: measured mid-audit, nine matches and one
-  actual editor. An agent following it literally refuses a legitimate edit. The tool already asks
-  the right question — `agent order` refuses to dispatch and the pre-commit hook refuses the commit
-  while the editor is up. By hand it is `pgrep -fl 'Godot.app.*--editor'`. The rule exists because
-  *the editor* rewrites these files on save and silently discards an agent's edit; a
-  `--headless --script` run does not, so blocking on one costs you the edit and buys nothing.
+- Before touching any Godot-authored file, ask `.agent/bin/agent editor-running`. It is the only
+  check for this in the repo (F-120) — `agent order`, `agent autoload`, `agent ship` and the
+  pre-commit hook all call the same function, so the by-hand answer and the enforced answer are the
+  same answer. It exits 0 when the editor is open and prints why.
+  The rule exists because *the editor* rewrites these files on save and silently discards an agent's
+  edit; a `--headless --script` run does not, so blocking on one costs you the edit and buys nothing.
+  Do not substitute a pgrep. `pgrep -fl 'Godot.app.*--editor'` — which this file used to
+  recommend — reads a real editor as closed in **2 of 2** launch shapes seen on this machine, because
+  `-e` is the short form of `--editor` and a Godot.app launched from Finder carries no arguments at
+  all. Bare `pgrep -fl Godot` has the opposite fault (F-045): nine matches and one actual editor when
+  it was measured mid-audit.
 - Two agents may work in parallel only on disjoint claimed files. Never overlap a scene or resource.
 - Prefer a Godot tool script for complex scene/resource generation so Godot serializes its own format.
 - Visual layout, tuning, and playtesting remain good Tier 0 editor work, but they are no longer a

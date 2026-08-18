@@ -69,31 +69,6 @@ do is worth as much as the record of what we did.
 
 ## Open
 
-### F-120 · AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed
-
-**Area:** tooling/protocol · **Severity:** high · **Found:** 2026-08-18 by lp during 3.10
-
-AGENTS.md's "Godot-authored files require a closed editor" section gives the by-hand check as
-`pgrep -fl 'Godot.app.*--editor'` (mirrored in this task's own work order). During 3.10 that command
-printed nothing — read as "editor not running" — while the editor was in fact open, launched as
-`Godot --path <proj> -e res://levels/hollowmere.tscn`. Godot's `-e` is the short flag for `--editor`;
-the process command line never contains the literal substring `--editor` when launched that way, so
-the documented pgrep misses it. `agent autoload` caught this correctly (it refused, citing D-021) —
-its own check must match on something other than the `--editor` substring — but the manual command
-AGENTS.md tells an agent to run by hand does not, and a `.tscn`/`.tres`/`project.godot` edit made
-after trusting that false negative is exactly the corruption D-031 exists to prevent (F-045 already
-named the inverse trap — a raw `pgrep -fl Godot` overmatching the agent's own tooling — this is the
-same root cause pointing the other way: pattern-matching a command line instead of asking the engine).
-
-**Not fixed here:** no claim on AGENTS.md this task, and the safe subset (`agent godot`, `agent
-autoload`, `agent claim` on Godot-authored files) already goes through the harness's own — apparently
-correct — detection, so nothing shipped was at risk. What's open is the *documented by-hand fallback*
-for an agent working without the harness's own gate, or double-checking it by eye. Fix is either a
-better pattern (matching `-e |--editor` at minimum, though a positional scene argument after `-e`
-could still slip past a naive grep) or, better, a small `agent editor-running` subcommand that reuses
-whatever check `agent autoload`/the pre-commit hook already trusts, so there is exactly one
-implementation instead of one correct one and one documented-wrong one.
-
 ### F-112 · `world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check — F-076's third system, not lifted
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-18 by lp during F-076
@@ -569,7 +544,104 @@ require reworking the ring/LOD design in `chunk_streamer.gd`.
 ---
 
 
+### F-130 · Three console commands never migrated to CommandService — they register via console.call("register", ...), which 3.13's sweep could not see
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by yarrow21
+
+`f9cb6f7` ("CommandService front door: ... **migrate every console command**") left three behind, and
+every headless run since prints their deprecation warnings:
+
+```
+[WARN] dev: DebugConsole.register('fps_cap') uses the deprecated shim — migrate to
+       CommandService.register_spec() (docs/COMMANDS.md §2.1)
+[WARN] dev: DebugConsole.register('vsync')  ... same
+[WARN] dev: DebugConsole.register('gfx')    ... same
+```
+
+- `core/dev/dev_frame_cap.gd:61,63` — `fps_cap`, `vsync`
+- `autoload/graphics_quality.gd:181` — `gfx`
+
+**Why the sweep missed them, which is the part worth keeping.** Every migrated caller referenced the
+autoload directly, so `grep -rn 'DebugConsole.register('` found it. These three do not: they resolve
+the node at runtime and invoke it by name —
+
+```gdscript
+var console: Node = get_node_or_null(^"/root/DebugConsole")
+if console == null or not console.has_method("register"):
+    return
+console.call("register", &"gfx", _cmd_gfx, "gfx [low|medium|high] | ...")
+```
+
+so the command name never appears next to the method name in the source text and no grep for the
+call site can match. The same shape will hide the next migration too. A source-text regression guard
+in the style of the one F-060 already established for `tools/*_net_check.gd` would catch it: assert
+that no `.gd` outside `autoload/debug_console.gd` contains `call("register"` / `call(&"register"`.
+
+**Cost today:** three WARN lines on every single headless check run — against a repo whose audit
+standard is 0 error lines and whose checks are read by eye. It is noise that trains agents to skim
+warnings. The commands themselves work; the shim still forwards them (`command_service.gd:210`
+handles bare-String returns from old handlers).
+
+**Fix:** port the three to `CommandService.register_spec()` with typed specs and a declared scope
+(`gfx`, `fps_cap` and `vsync` are all LOCAL — they change this peer's rendering, nothing else's),
+then delete the shim path if nothing else uses it. Needs a claim on `core/dev/dev_frame_cap.gd`,
+`autoload/graphics_quality.gd`, and whatever guard file the regression check lands in.
+
+---
+
 ## Resolved
+
+### F-120 · AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed — **fixed**
+
+**Area:** tooling/protocol · **Severity:** high · **Found:** 2026-08-18 by lp during 3.10
+
+AGENTS.md's "Godot-authored files require a closed editor" section gives the by-hand check as
+`pgrep -fl 'Godot.app.*--editor'` (mirrored in this task's own work order). During 3.10 that command
+printed nothing — read as "editor not running" — while the editor was in fact open, launched as
+`Godot --path <proj> -e res://levels/hollowmere.tscn`. Godot's `-e` is the short flag for `--editor`;
+the process command line never contains the literal substring `--editor` when launched that way, so
+the documented pgrep misses it. `agent autoload` caught this correctly (it refused, citing D-021) —
+its own check must match on something other than the `--editor` substring — but the manual command
+AGENTS.md tells an agent to run by hand does not, and a `.tscn`/`.tres`/`project.godot` edit made
+after trusting that false negative is exactly the corruption D-031 exists to prevent (F-045 already
+named the inverse trap — a raw `pgrep -fl Godot` overmatching the agent's own tooling — this is the
+same root cause pointing the other way: pattern-matching a command line instead of asking the engine).
+
+**Not fixed here:** no claim on AGENTS.md this task, and the safe subset (`agent godot`, `agent
+autoload`, `agent claim` on Godot-authored files) already goes through the harness's own — apparently
+correct — detection, so nothing shipped was at risk. What's open is the *documented by-hand fallback*
+for an agent working without the harness's own gate, or double-checking it by eye. Fix is either a
+better pattern (matching `-e |--editor` at minimum, though a positional scene argument after `-e`
+could still slip past a naive grep) or, better, a small `agent editor-running` subcommand that reuses
+whatever check `agent autoload`/the pre-commit hook already trusts, so there is exactly one
+implementation instead of one correct one and one documented-wrong one.
+
+**Resolved 2026-08-18 by yarrow21.** The finding proposed either a better pattern or "a small `agent
+editor-running` subcommand that reuses whatever check `agent autoload`/the pre-commit hook already
+trusts". It is the second, and the audit on the way there found the problem was wider than the
+by-hand check: there were **four** implementations, not two, and `agent check` — the pre-commit
+hook's own guard — was one of the blunt `pgrep -fl Godot` ones, as was `_stage_uid_sidecars`.
+`_godot_running()` also had a false positive of its own that nobody had noticed: an
+`agent godot --windowed` render check carries no `--headless` by design (F-077), so every render
+check made `agent autoload` and `agent order` refuse while it ran.
+
+Now: one classifier (`_godot_process_kind`), one predicate (`_godot_running`), and `agent
+editor-running` so the documented check *is* the enforced one. `AGENTS.md` and `docs/AI-WORKFLOW.md`
+name the command instead of a pgrep, and the order template `agent order` writes for the lanes does
+too. Rationale and the classification rule are D-081.
+
+**Verified:** `python3 tools/harness_check.py` → **16/16**, including two new cases; `--rev HEAD`
+reproduces the pre-fix state at **14/16** (the old harness has no `_godot_process_kind` and no
+`editor-running` command). The classifier is asserted against all four launch shapes plus four
+non-engine lines, and against `ps` itself failing (it must answer "editor open", not "all clear" —
+the old `_godot_running()` failed *open* there). Measured misreads, old vs new, are the table in
+D-081: 2-of-2 missed editors for the documented pgrep, 2-of-2 false alarms for the blunt one, 0 for
+the replacement.
+
+**One thing this deliberately does not do:** the two `pgrep -fl Godot` mentions left in
+`docs/DELEGATION.md` (lines ~2967, ~3414) are inside archived work-order prompts, under that file's
+own archive disclaimer. They are history, not instructions.
+
 
 ### F-129 · Players spawn on top of each other: the spawn slot is a live child count, not a held claim — **fixed**
 
