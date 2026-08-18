@@ -713,6 +713,34 @@ overwrite anyway.
 
 ---
 
+### F-075 · World statics and props share collision layer 1, so a placement overlap query cannot tell ground from obstruction
+
+**Area:** physics · **Severity:** low · **Found:** 2026-08-18 by gale6
+
+Task 3.6's `PlacementValidator` asks two different questions of the physics world: "is there ground
+under this piece" (support) and "is something already occupying this space" (overlap). They want
+different answers from different geometry, and the project gives them the same layer to ask about —
+terrain, props, harvestables and buildables are all on collision layer 1, with no named layer
+convention in `project.godot` at all.
+
+The consequence is that the ground IS the overlap. On flat ground the piece's base face is flush
+with the surface, and on any slope the uphill side of the footprint rises into the query box, so
+every sloped placement reports "something is in the way". The validator works around it by lifting
+the query box by a clearance derived from the steepest slope the piece permits
+(`half_footprint * tan(max_ground_slope)`), which is principled and self-tuning — a piece that
+allows steeper ground lifts further — but it is a workaround for missing layer separation, and it
+costs real detection: an obstruction lying entirely below that clearance is invisible to the check.
+For a 2 m wall permitting 30 degrees that blind band is the bottom 0.58 m.
+
+The clean fix is a dedicated terrain layer so the overlap query simply does not look at the ground,
+at which point the clearance drops to a hair and the blind band goes away. That is a project-wide
+change — every StaticBody3D the world generator emits, plus the harvestable and prop paths, plus
+whatever masks the player and enemies use — so it is not 3.6's to make unilaterally, and it wants
+doing once with named layer constants rather than piecemeal. Worth pairing with 4.x chunk streaming,
+which is already going to touch every collider the world creates.
+
+---
+
 ## Resolved
 
 ### F-060 · Two-process net check authors: `local_peer_id() > HOST_PEER_ID` is not proof of a live connection, and mutating what `Node.get()` returns on a typed Dictionary property may not stick — **fixed**

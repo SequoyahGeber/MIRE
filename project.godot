@@ -41,6 +41,7 @@ VitalsHud="*res://ui/hud/vitals_hud.gd"
 DevFrameCap="*res://core/dev/dev_frame_cap.gd"
 WaveSpawner="*res://systems/waves/wave_spawner.gd"
 PowerupService="*res://autoload/powerup_service.gd"
+BuildService="*res://autoload/build_service.gd"
 
 [display]
 
