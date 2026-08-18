@@ -101,15 +101,25 @@ func _run_driver() -> void:
 	child_pid = _spawn_client()
 	check(child_pid > 0, "client process launches")
 
+	# F-107: a GDScript lambda captures an outer local BY VALUE, not by reference — assigning
+	# client_peer inside the _until closure below updated only the closure's own copy, so the
+	# outer client_peer stayed at its -1 sentinel even after got_peer reported success. That fed
+	# host_count() a peer_id <= 0, which _valid_host_peer() rejects, reading back 0 unconditionally
+	# regardless of what the host actually granted. Re-scan peer_ids() directly in the outer scope
+	# once _until confirms a peer is present, instead of writing into the closure's copy.
 	var client_peer: int = -1
 	var got_peer: bool = await _until(func() -> bool:
 		for peer_id: int in transport.call("peer_ids") as PackedInt32Array:
 			if peer_id != NetConfig.HOST_PEER_ID:
-				client_peer = peer_id
 				return true
 		return false
 	, TIMEOUT_SEC)
 	check(got_peer, "host observes the client's peer id")
+	if got_peer:
+		for peer_id: int in transport.call("peer_ids") as PackedInt32Array:
+			if peer_id != NetConfig.HOST_PEER_ID:
+				client_peer = peer_id
+				break
 
 	var opened: bool = await _until(func() -> bool: return bool(chest.get("opened")), TIMEOUT_SEC)
 	check(opened, "host's own chest opens from the client's request")

@@ -862,8 +862,8 @@
     },
     "systems/loot/chest.gd": {
       "agent": "lp",
-      "at": "2026-08-18T01:18:50+00:00",
-      "task": "3.5"
+      "at": "2026-08-18T14:23:28+00:00",
+      "task": "F-107"
     },
     "systems/loot/loot_entry.gd": {
       "agent": "lp",
@@ -1002,8 +1002,8 @@
     },
     "tools/chest_net_check.gd": {
       "agent": "lp",
-      "at": "2026-08-18T01:18:50+00:00",
-      "task": "3.5"
+      "at": "2026-08-18T14:23:28+00:00",
+      "task": "F-107"
     },
     "tools/combat_feel_check.gd": {
       "agent": "dusk3",
@@ -3327,9 +3327,11 @@
       "title": "A neighbour's half-finished refactor breaks every other agent's checks, and the failure looks like your own"
     },
     "F-107": {
+      "done_at": "2026-08-18T14:23:28+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "chest_net_check's two host-side grant assertions fail at HEAD; client side is green"
     },

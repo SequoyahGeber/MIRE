@@ -2641,3 +2641,18 @@ Notes along the way:
 Files: `tools/findings_numbering_check.gd`
 
 Commit at time of writing: `a939947`
+
+---
+
+### DONE · F-107 · lp · 2026-08-18T14:23:28+00:00
+
+**chest_net_check's two host-side grant assertions fail at HEAD; client side is green**
+
+Fixed tools/chest_net_check.gd: client_peer was assigned inside a GDScript closure (captures by value, not reference) so it never escaped, stayed -1, and host_count(-1,...) read 0 via _valid_host_peer's peer_id<=0 guard -- misread as a grant race. chest.gd/InventoryService were already correct (unchanged). Verified: agent godot --script tools/chest_net_check.gd, 2 consecutive runs, failures=0 both times, all 12 assertions PASS. Wrote missing docs/SPECS.md '## F-107' block after 3.5, moved FINDINGS.md section to Resolved.
+
+Notes along the way:
+- Root cause: GDScript closure captures outer locals by value, not reference -- client_peer assigned inside _until()'s lambda never escaped it, stayed -1, made host_count() read 0 via the peer_id<=0 guard. Fixed by re-scanning peer_ids() in outer scope. chest.gd/InventoryService untouched -- both already correct.
+
+Files: `tools/chest_net_check.gd`, `systems/loot/chest.gd`
+
+Commit at time of writing: `f43da7e`
