@@ -75,6 +75,42 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 4.0a: Spike R2b measured, and 4.3's per-frame chunk budget is ~2–3, gated by collision cooking not GPU upload (lm)
+
+**M4's gate is clear — 4.1 can start.** `tools/bench_chunk_gpu.gd` (new, throwaway spike script,
+same convention as `bench_chunks.gd`/`bench_navbake.gd`) measures the two costs D-015 left open on
+R2's GREEN verdict, on a real renderer: `.agent/bin/agent godot --windowed --script
+tools/bench_chunk_gpu.gd`. Full numbers, methodology, and the "would change my mind" conditions are
+`DECISIONS.md` D-074; the finding is closed in `FINDINGS.md` F-005.
+
+**The one number 4.3 needs:** steady-state main-thread cost per streamed-in chunk is **1.17–1.50 ms**
+across two runs (collision cook 1.15–1.48 + mesh upload 0.013–0.020 + material bind ~0.001), at R2's
+own 32 m/1 m-spacing/2048-tri chunk. Against a 4 ms streaming slice of the 16.667 ms frame, that's
+**2.7–3.4 chunks/frame** — use 2–3 as the working budget, not R2's original 0.330 ms mesh-only
+figure.
+
+**What 4.3 needs to know before writing the streamer:**
+- **Collision cooking is the gating cost, not mesh gen or GPU upload** — it is 4.5× R2's mesh-build
+  number and dominates the budget completely (upload + material bind together are under 3% of it).
+  4.3's own spec line ("collision cooks lazily, nearest ring only") is exactly the right shape;
+  this measurement is why it has to be that shape rather than optional polish.
+- **`ConcavePolygonShape3D.set_faces()` is a synchronous PhysicsServer/Jolt call and cannot move to
+  `WorkerThreadPool`** the way mesh vertex generation can (same class of constraint R3 hit with
+  `NavigationServer3D` sync — D-016). Whatever schedules "how many chunks load this frame" has to
+  gate on this call specifically, not on total chunk count or mesh-build time.
+- **Variance matters for a streaming system**: collision cook ranged 0.819–3.903 ms across 60
+  chunks (2.6× worst-to-mean) — a fixed "3 chunks per frame" quota can still occasionally cost more
+  than the slice if an unlucky chunk lands. Budget with headroom, or measure actual elapsed time
+  per chunk and stop early rather than trusting a fixed count.
+- **Mesh upload and material bind need no special handling** — 0.020 ms and 0.002 ms/chunk are
+  noise next to the collision number. A shared `StandardMaterial3D` per terrain type (the pattern
+  F-097/D-060 already established for sway materials) is confirmed cheap at this frequency.
+
+**Not measured, and worth knowing before trusting the number at scale:** all 60 chunks were flat
+noise-height terrain, same triangle count, on an Apple M5 Pro (Metal 4.0) — not the eventual
+minimum-spec GPU, and not chunks near cliffs/structures where geometry (and so `ConcavePolygonShape3D`
+cost) could differ. D-074 names both as what would move the budget.
+
 ### 2026-08-18 — Steam's social layer now actually works from a build: joinable presence and a loadable macOS overlay (pike14)
 
 Two defects that only a real Steam session could surface, both fixed and both prerequisites for

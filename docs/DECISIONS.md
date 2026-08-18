@@ -1528,3 +1528,53 @@ powerup definition, stop") is the stale side of this correction.
 original reading is still plainly right is anything resting on visual or playfeel judgment, where
 D-039's hand-off criterion applies for its own reasons. Nothing about this decision overrides
 D-031's editor-closed per-file claim on `.tres`, which is corruption protection.
+
+### D-074 · 2026-08-18 · R2b (task 4.0a) is measured — collision cooking, not GPU upload, is the real cost, and 4.3's per-frame budget is ~2–3 chunks
+
+D-015 left two costs open as the caveat on R2's GREEN verdict: `ConcavePolygonShape3D` cooking and
+GPU mesh upload, both excluded because R2 ran under the headless dummy renderer. `tools/bench_chunk_gpu.gd`
+measures both on a real renderer (`agent godot --windowed --script tools/bench_chunk_gpu.gd`, Metal
+4.0 / Apple M5 Pro), building the exact same chunk R2 did — 32 m, 1 m vertex spacing, 2048 tris (see
+the script header: the work order's "1.5 m voxel scale" matches nothing on record anywhere in R2,
+D-015, or `chunk_mesher.gd`, so this measures R2's actual, on-record parameters instead of inventing
+an unbudgeted new scale). 60 chunks, 4 untimed warmup chunks first so first-ever-shape/first-ever-material
+costs don't land on chunk 0.
+
+**The result inverts the risk D-015 was worried about.** GPU upload and material bind are both
+cheap: mesh upload (`MeshInstance3D.mesh = ...; add_child()`) is **0.020 ms/chunk**, material bind
+(a shared `StandardMaterial3D`, `material_override =`) is **0.002 ms/chunk** — together under 3% of
+the budget. **Collision cooking dominates completely: 1.482 ms/chunk mean** (min 0.819, max 3.903 —
+worth noting for a streaming system, since a single unlucky chunk can cost 2.6× the mean), almost
+4.5× R2's own 0.330 ms/chunk mesh-build cost. A separate, one-time **first-frame GPU sync cost**
+(shader/pipeline compilation plus any deferred buffer upload not captured by the immediate
+RenderingServer call) adds **0.297 ms/chunk amortized** the first time a batch of chunks is drawn —
+real, but a one-time-per-chunk cost distinct from the steady-state per-load budget below.
+
+**Steady-state main-thread cost per streamed-in chunk: 1.17–1.50 ms** across two runs (cook
+1.15–1.48 + upload 0.013–0.020 + material ~0.001) — this machine runs several concurrent agent
+lanes, so some spread run-to-run is expected; the *ratio* between collision cook and everything
+else held steady both times (cook is ~90–100× upload, ~4–4.5× R2's own mesh-build cost). Against
+the 4 ms streaming slice 4.3's spec block reserves out of the 16.667 ms frame (the same "budget a
+slice, not the whole frame" pattern nav baking used in D-016), that is **2.7–3.4 chunks/frame** at
+this chunk size; a full frame with nothing else running would fit ~11–14.
+
+**This is 4.3's design input, going forward:**
+- **Collision cooking is the thing to budget around, not mesh gen or upload.** 4.3's spec already
+  says "collision cooks lazily (nearest ring only)" — this measurement is why: cooking every
+  streamed chunk's `ConcavePolygonShape3D` synchronously on the main thread is the actual
+  bottleneck, at ~4.5× the mesh-build cost R2 measured. Mesh upload and material bind can ride
+  along on every chunk essentially for free.
+- **`ConcavePolygonShape3D.set_faces()` cannot move to `WorkerThreadPool` the way mesh generation
+  can** — it calls into PhysicsServer/Jolt synchronously and must run on the main thread (same
+  constraint R3 hit with NavigationServer sync, D-016). 4.3 should budget collision cooking as the
+  gating cost for "how many chunks load this frame," with mesh build and GPU upload effectively
+  free by comparison.
+- **Use 2–3 chunks/frame as the working budget for a 4 ms streaming slice**, not the R2-only
+  0.330 ms figure D-015 published — that number never included the cost that turned out to matter.
+
+**Would change my mind:** a widened test — more chunks, chunks with real (non-flat-noise)
+complexity nearer a cliff or structure, or the target minimum-spec GPU rather than an Apple M5 Pro —
+showing collision cooking cost scaling worse than linearly with triangle count, which would push the
+budget down further; or 4.3 finding a way to cook collision off-thread (a custom Jolt binding, or
+building the shape from a coarser decimated mesh than the render mesh), which would remove the
+gating cost this decision is built around entirely.

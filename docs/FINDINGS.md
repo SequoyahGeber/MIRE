@@ -116,36 +116,6 @@ needs `Undergrowth` itself to expose something like `sample_ground_gaps() -> Arr
 rather than reimplementing its raycast. Needs a claim on `world/gen/undergrowth.gd` and
 `tools/world_contract_check.gd`.
 
-### F-005 · R2's chunk benchmark excludes GPU upload cost
-
-**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-15 by terrain during 0.7
-
-Spike R2 came back green at 0.330 ms/chunk, but ran under the headless dummy renderer — no GPU upload,
-no material, no collision shape, no LOD. Its own writeup flags this.
-
-The risk is that the green result gets treated as "chunk streaming is solved" when the measurement
-excludes a cost that could dominate. Mesh upload and collision-shape creation are both real
-main-thread work in Godot.
-
-0.8 (R3) covers collision/nav baking. **GPU upload remains unmeasured by any planned spike** — worth
-re-running the bench with a real renderer before 4.3 commits to a streaming budget.
-
-**Correction, 2026-08-15 by nav after 0.8 landed:** 0.8 did **not** cover collision baking. R3 spiked
-*navigation* baking only — `world/chunk/nav_bake_probe.gd` feeds triangles straight to Recast via
-`NavigationMeshSourceGeometryData3D.add_faces()` and never creates a `CollisionShape3D`. Physics shape
-cooking (`ConcavePolygonShape3D` from a chunk mesh) is a different code path and is still unmeasured
-by anything. So this entry now covers **two** unmeasured main-thread costs, not one, and neither is on
-the roadmap. Recorded in `DECISIONS.md` D-015 as the standing caveat on the R2 green result.
-
-**Now tracked, 2026-08-16 by claude/planner:** both costs are task **`4.0a`** (Spike R2b), a gate at
-the top of M4 that must clear before 4.1 starts — `ROADMAP.md` M4, prompt in `DELEGATION.md`. The nav
-correction above was right that neither was on the roadmap; that was the actual defect here, since a
-finding with no task ID is a finding that gets rediscovered too late. This entry stays open until
-4.0a reports numbers, and 4.0a is explicitly required to run windowed rather than headless — running
-headless is the specific mistake that produced this finding.
-
----
-
 ### F-006 · Three roadmap tasks assume a Windows or Linux machine we don't have
 
 **Area:** process · **Severity:** high · **Found:** 2026-08-15 by claude
@@ -509,6 +479,50 @@ still holds against the corrected numbers rather than assuming it does.
 
 
 ## Resolved
+
+### F-005 · R2's chunk benchmark excludes GPU upload cost — **fixed**
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-15 by terrain during 0.7
+
+Spike R2 came back green at 0.330 ms/chunk, but ran under the headless dummy renderer — no GPU upload,
+no material, no collision shape, no LOD. Its own writeup flags this.
+
+The risk is that the green result gets treated as "chunk streaming is solved" when the measurement
+excludes a cost that could dominate. Mesh upload and collision-shape creation are both real
+main-thread work in Godot.
+
+0.8 (R3) covers collision/nav baking. **GPU upload remains unmeasured by any planned spike** — worth
+re-running the bench with a real renderer before 4.3 commits to a streaming budget.
+
+**Correction, 2026-08-15 by nav after 0.8 landed:** 0.8 did **not** cover collision baking. R3 spiked
+*navigation* baking only — `world/chunk/nav_bake_probe.gd` feeds triangles straight to Recast via
+`NavigationMeshSourceGeometryData3D.add_faces()` and never creates a `CollisionShape3D`. Physics shape
+cooking (`ConcavePolygonShape3D` from a chunk mesh) is a different code path and is still unmeasured
+by anything. So this entry now covers **two** unmeasured main-thread costs, not one, and neither is on
+the roadmap. Recorded in `DECISIONS.md` D-015 as the standing caveat on the R2 green result.
+
+**Now tracked, 2026-08-16 by claude/planner:** both costs are task **`4.0a`** (Spike R2b), a gate at
+the top of M4 that must clear before 4.1 starts — `ROADMAP.md` M4, prompt in `DELEGATION.md`. The nav
+correction above was right that neither was on the roadmap; that was the actual defect here, since a
+finding with no task ID is a finding that gets rediscovered too late. This entry stays open until
+4.0a reports numbers, and 4.0a is explicitly required to run windowed rather than headless — running
+headless is the specific mistake that produced this finding.
+
+**Resolved 2026-08-18 by lm (4.0a).** `tools/bench_chunk_gpu.gd` measures both costs on a real
+renderer — the exact same 32 m/1 m-spacing/2048-tri chunk R2 built, this time with
+`ConcavePolygonShape3D.set_faces()`, a real `MeshInstance3D` upload, and a shared-material bind
+all timed on the main thread, plus a separate first-frame GPU-sync measurement for anything the
+immediate calls don't capture (shader/pipeline compilation, deferred buffer upload).
+
+**Verified:** `.agent/bin/agent godot --windowed --script tools/bench_chunk_gpu.gd` (Metal 4.0,
+Apple M5 Pro), run twice — 60 chunks, 0 `ERROR:` lines both times. Result **inverts** the risk
+this finding was filed for: GPU upload (0.013–0.020 ms/chunk) and material bind (~0.001 ms/chunk)
+are both cheap. **Collision cooking is the real cost, at 1.15–1.48 ms/chunk mean** across the two
+runs (worst single chunk 3.9 ms) — ~4–4.5× R2's own mesh-build number. Steady-state main-thread
+cost per streamed-in chunk: **1.17–1.50 ms**. Full numbers, the per-frame chunk budget
+(2.7–3.4 chunks in a 4 ms streaming slice), and what it means for 4.3 are in `DECISIONS.md` D-074.
+
+---
 
 ### F-124 · macOS builds cannot show the Steam overlay: hardened runtime without the dyld entitlement blocks injection — **fixed**
 
