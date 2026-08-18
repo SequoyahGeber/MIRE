@@ -709,28 +709,79 @@ review closeout command).
 
 ---
 
-## Resolved`
-in `docs/FINDINGS.md`. It only *warns* you to. Eight entries had been closed without that move:
-F-054 (LAN launch), F-055 (the dead `TestMapProps` registration), all three F-056s, F-062, F-063,
-F-064 and F-066.
+### F-073 · Every tool shares one grip rotation authored for a sword, so the axe is held edge-on and every weapon swings the same chop
 
-The board's "Open findings" list is synced from that section, so it was advertising eight finished
-jobs as available work — a quarter of the 33 it listed. This is not hypothetical: I claimed F-054,
-read it, opened `core/dev/dev_launch.gd` to write the fix, and found the fix already there, shipped
-by flint5 in `fcdd87d`/`019ac7a` the previous evening. `agent claim` refused with "F-054 is already
-done" only because `state.json` disagreed with the doc; had the claim succeeded I would have spent
-the session re-implementing it.
+**Area:** gameplay/presentation · **Severity:** high · **Found:** 2026-08-17 by flint5 from Sequoyah's playtest
 
-The doc and `state.json` are two records of the same fact and they had drifted apart. `agent done`
-can detect the drift — it already knows the F-number and already greps the file to warn — so the
-cheap fix is for it to also *check* at `board`/`start` time and print the disagreement, the way it
-already prints stale claims. Renumbering the duplicate F-numbers is a separate, larger job that
-F-058 describes and that two agents have now deferred because other docs and code comments cite both
-members of each pair.
+Sequoyah: *"the side of the axe is facing the player for some reason also the swing animation sucks,
+the spear should have a thrust animation instead of a swing"*.
+
+Three separate problems, one root each.
+
+1. **One grip for eleven designs.** `tools/setup_tool_content.gd:90-92` writes
+   `grip_rotation_degrees = Vector3(-6, 158, 10)` for every design it generates, and the two
+   hand-authored items (`stone_axe`, `iron_sword`) carry the same numbers. 158° of yaw is ~180°,
+   which leaves a head whose bit-to-poll axis runs along the export's local X pointing across the
+   screen — so an axe presents its cheek to the camera instead of its edge. The value was tuned for
+   the sword, whose broad side *is* the readable face, and copied outward.
+2. **One swing for every weapon.** `entities/player/viewmodel.gd` has a single
+   `WINDUP`/`COMMIT` constant pair, so a skewer, a bow and a sledge-weight repair hammer all perform
+   the same diagonal chop. A thrust weapon that swings sideways reads as the wrong weapon.
+3. **The chop itself is thin.** Position and rotation lerp linearly between two poses with no
+   follow-through, no lateral arc and no roll, so the commit reads as a slide rather than an
+   acceleration through a contact point.
+
+Also: `assets/icons/exports/icon_wooden_axe.png` and `icon_stone_axe.png` are the only two tool icons
+`render_item_icons.py` frames upright — every other tool lands on the 45° roll — so the axes read as
+facing the opposite way from the rest of the hotbar.
+
+Fixing it means per-design grip data derived from each export's real geometry, a per-weapon attack
+style on `WeaponDef`, a swing with an actual arc, and an authored roll for the two axe icons.
 
 ---
 
 ## Resolved
+
+### F-072 · A claim on a docs/ file is accepted, shown on the board, and enforced by nothing — **fixed**
+
+**Resolved 2026-08-18 by gale6.** `agent check` now enforces an exact claim on a free-prefix path
+when one exists, and only then. F-006's actual property — *nobody blocks on a doc nobody claimed* —
+is untouched: an unclaimed docs path is as free as it ever was, so two lanes appending to this file
+still never collide. What changed is that claiming one now means something.
+
+**Verified** by staging `docs/ROADMAP.md`, which task 2.1k (`ivy8`) holds, and running `agent check`:
+it refuses with the holder and their task named, where minutes earlier it had waved the same file
+through. The message explains why docs are normally free, so nobody reads the refusal as the rule
+having changed.
+
+**Found while fixing it:** this file was itself truncating. A body line began with the four
+characters that open a heading, because a move script indexed on the substring `##` + `Resolved`
+rather than on the line, and split a backticked mention of it mid-line. Every reader that scans for
+a heading prefix stopped counting the Open section 46 lines early — which is why F-072 was
+unclaimable the moment it was filed. Repaired, and the sentence rejoined.
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by gale6
+
+`FREE_PREFIXES` (`.agent/bin/agent:52`) exempts `docs/`, `.agent/`, `CLAUDE.md`, `AGENTS.md`,
+`README.md` and `.gitignore` from the claim check, so no lane ever blocks on a doc (F-006). But
+`agent claim` still *accepts* a `docs/` path, records it in `state.json`, and prints it on the board
+under that agent's name — where it reads exactly like every other claim, i.e. like protection.
+
+It is not protection. Task 2.1k (`ivy8`) claims `docs/ROADMAP.md`. I committed that file anyway, in
+`d948abf`, and the pre-commit hook passed without a murmur — it saw a `docs/` path and stopped
+asking. The immediate cause was my own blanket `git add docs/` (now written up in AGENTS.md), but the
+hook is what turned a careless add into a silent one: with any other claimed file it would have
+refused the commit and I would have noticed in a second.
+
+The fix keeps F-006 intact rather than trading it away. F-006's property is that **nobody blocks on a
+doc nobody claimed** — not that docs are unprotectable. So: leave every unclaimed `docs/` path free,
+and enforce only the exact paths some agent has actually claimed. An explicit claim then means what
+it looks like it means, and the common case (two lanes appending to FINDINGS.md, which nobody claims)
+is untouched.
+
+`agent claim` should also say which of it is advisory, if any survives that change.
+
+---
 
 ### F-045 · `pgrep -fl Godot` is too blunt to be the closed-editor guard — **fixed**
 
@@ -942,7 +993,24 @@ the file in order.
 **Area:** process · **Severity:** medium · **Found:** 2026-08-18 by gale6
 
 `agent done <F-number>` releases the claim, writes the journal and marks the task done in
-`.agent/state.json` — but it does **not** move the finding's section from `## Open` to `
+`.agent/state.json` — but it does **not** move the finding's section from `## Open` to `## Resolved`
+in `docs/FINDINGS.md`. It only *warns* you to. Eight entries had been closed without that move:
+F-054 (LAN launch), F-055 (the dead `TestMapProps` registration), all three F-056s, F-062, F-063,
+F-064 and F-066.
+
+The board's "Open findings" list is synced from that section, so it was advertising eight finished
+jobs as available work — a quarter of the 33 it listed. This is not hypothetical: I claimed F-054,
+read it, opened `core/dev/dev_launch.gd` to write the fix, and found the fix already there, shipped
+by flint5 in `fcdd87d`/`019ac7a` the previous evening. `agent claim` refused with "F-054 is already
+done" only because `state.json` disagreed with the doc; had the claim succeeded I would have spent
+the session re-implementing it.
+
+The doc and `state.json` are two records of the same fact and they had drifted apart. `agent done`
+can detect the drift — it already knows the F-number and already greps the file to warn — so the
+cheap fix is for it to also *check* at `board`/`start` time and print the disagreement, the way it
+already prints stale claims. Renumbering the duplicate F-numbers is a separate, larger job that
+F-058 describes and that two agents have now deferred because other docs and code comments cite both
+members of each pair.
 
 ---
 
