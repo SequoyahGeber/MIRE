@@ -2762,3 +2762,15 @@ Converged on 'branch': 3.2's item landed with six recipes using it, so stick.tre
 Files: `content/harvestables/bush.tres`, `content/harvestables/sapling.tres`, `content/items/stick.tres`
 
 Commit at time of writing: `3c591bd`
+
+---
+
+### HANDOFF · 3.2 · ivy8 · 2026-08-18T17:57:51+00:00
+
+**Author all item/recipe `.tres` content**
+
+First authorable slice shipped: 7 items (branch, flint, coal, fibre_bundle, berry, mushroom, raw_meat — all with existing A-002 art/icons; berry/mushroom/raw_meat are CONSUMABLE with hunger values 3.8 will consume) and 11 recipes (charcoal 3 log -> 2 coal @furnace timed 3s; wooden_axe, wooden_pickaxe, stone_pickaxe, arrow x4, short_bow, cleaver, skewer, iron_pickaxe, iron_sword, repair_hammer). Every existing tool/weapon is now craftable; recipe costs are untuned starting guesses scaled off stone_axe. Verified: item_icons_check PASS, crafting_check 0 failures (its exact-census asserts fixed, see note), verify_setup all-pass with 23 items / 13 recipes, harvest_batch_check + harvest_tool_ladder_check 0 failures (F-116: bush/sapling yield the branch this slice ships). REMAINING in 3.2: everything in ITEMS.md gated on art or systems — the icon check requires every ItemDef to carry a real icon, so the next authorable wave arrives with A-011/A-012 pickup art (cattail, moss, clay, peat, resin, cooked foods, tonics) or with new SOURCES entries in render_item_icons.py. Gleam powerups (ITEMS.md 4.9) are art-free and authorable under 3.4 whenever Sequoyah says go.
+
+Files: `content/items/branch.tres`, `content/items/flint.tres`, `content/items/coal.tres`, `content/items/fibre_bundle.tres`, `content/items/berry.tres`, `content/items/mushroom.tres`, `content/items/raw_meat.tres`, `content/recipes/charcoal.tres`, `content/recipes/wooden_axe.tres`, `content/recipes/wooden_pickaxe.tres`, `content/recipes/stone_pickaxe.tres`, `content/recipes/arrow.tres`, `content/recipes/short_bow.tres`, `content/recipes/cleaver.tres`, `content/recipes/skewer.tres`, `content/recipes/iron_pickaxe.tres`, `content/recipes/iron_sword.tres`, `content/recipes/repair_hammer.tres`, `tools/crafting_check.gd`
+
+Commit at time of writing: `1c888a1`

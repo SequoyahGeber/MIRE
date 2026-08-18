@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_itemdef"]
+[ext_resource type="PackedScene" path="res://assets/pickups/exports/pickup_berry.glb" id="2_model"]
+[ext_resource type="Texture2D" path="res://assets/icons/exports/icon_berry.png" id="3_icon"]
+
+[resource]
+script = ExtResource("1_itemdef")
+id = &"berry"
+display_name = "Berry"
+description = "Sweet, plentiful, gone in a bite."
+icon = ExtResource("3_icon")
+category = 3
+stack_size = 20
+hunger_restore = 8.0
+world_model = ExtResource("2_model")

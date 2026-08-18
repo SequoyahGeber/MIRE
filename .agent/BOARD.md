@@ -8,10 +8,10 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **3.2** Author all item/recipe `.tres` content | ivy8 | 2026-08-18 17:51 | `content/items/branch.tres`, `content/items/flint.tres`, `content/items/coal.tres`, `content/items/fibre_bundle.tres`, `content/items/berry.tres`, `content/items/mushroom.tres`, `content/items/raw_meat.tres`, `content/recipes/charcoal.tres`, `content/recipes/wooden_axe.tres`, `content/recipes/wooden_pickaxe.tres`, `content/recipes/stone_pickaxe.tres`, `content/recipes/arrow.tres`, `content/recipes/short_bow.tres`, `content/recipes/cleaver.tres`, `content/recipes/skewer.tres`, `content/recipes/iron_pickaxe.tres`, `content/recipes/iron_sword.tres`, `content/recipes/repair_hammer.tres`, `tools/crafting_check.gd` |
 | **7.1** Audio pass: SFX for every action, ambience per biome, mix, buses | tine18 | 2026-08-18 17:53 | `tools/audio/render_sfx.py`, `assets/audio/sfx` |
 | **7.2** Music: 4–6 tracks (act themes, boss, menu). CC0/licensed or commissioned. | tine18 | 2026-08-18 17:53 | `tools/audio/mire_audio.py`, `tools/audio/render_music.py`, `tools/audio/audio_check.py`, `tools/audio_import_check.gd`, `assets/audio/music` |
 | **F-094** `mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float | lp | 2026-08-18 17:54 | `tools/blender/mire_art.py`, `tools/blender/world_bounds_check.py` |
+| **F-115** Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map | vane19 | 2026-08-18 17:57 | `world/environment/playtest_atmosphere.gd`, `world/environment/ground_fog.gd`, `world/environment/ground_fog.gdshader`, `levels/hollowmere.tscn` |
 
 ## Milestones
 
@@ -68,7 +68,7 @@
 | ⬜ | **F-110** `audit_all_sides.py` silently resumes, so a re-run after fixing an asset re-reports the old defect | todo |
 | ⬜ | **F-111** `enemy_check.gd`'s telegraph/swing assertions fail at HEAD, unrelated to F-075 | todo |
 | ⬜ | **F-112** `world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check — F-076's third system, not lifted | todo |
-| ⬜ | **F-115** Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map | todo |
+| 🔵 | **F-115** Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map | in_flight |
 
 ## Done
 

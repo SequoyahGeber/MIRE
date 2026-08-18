@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="RecipeDef" format=3]
+
+[ext_resource type="Script" path="res://systems/crafting/recipe_ingredient.gd" id="1_ing"]
+[ext_resource type="Resource" path="res://content/items/branch.tres" id="2_branch"]
+[ext_resource type="Resource" path="res://content/items/iron_ingot.tres" id="3_ingot"]
+[ext_resource type="Resource" path="res://content/items/repair_hammer.tres" id="4_out"]
+[ext_resource type="Script" path="res://systems/crafting/recipe_def.gd" id="5_recipe"]
+
+[sub_resource type="Resource" id="Resource_branch"]
+script = ExtResource("1_ing")
+item = ExtResource("2_branch")
+count = 2
+
+[sub_resource type="Resource" id="Resource_ingot"]
+script = ExtResource("1_ing")
+item = ExtResource("3_ingot")
+count = 1
+
+[resource]
+script = ExtResource("5_recipe")
+id = &"repair_hammer"
+display_name = "Repair Hammer"
+inputs = Array[ExtResource("1_ing")]([SubResource("Resource_branch"), SubResource("Resource_ingot")])
+output_item = ExtResource("4_out")

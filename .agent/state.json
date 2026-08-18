@@ -10,95 +10,10 @@
       "at": "2026-08-18T17:53:48+00:00",
       "task": "7.1"
     },
-    "content/items/berry.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/items/branch.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/items/coal.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/items/fibre_bundle.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/items/flint.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/items/mushroom.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/items/raw_meat.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/arrow.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/charcoal.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/cleaver.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/iron_pickaxe.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/iron_sword.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/repair_hammer.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/short_bow.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/skewer.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/stone_pickaxe.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/wooden_axe.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/wooden_pickaxe.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:51:47+00:00",
-      "task": "3.2"
+    "levels/hollowmere.tscn": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:57:02+00:00",
+      "task": "F-115"
     },
     "tools/audio/audio_check.py": {
       "agent": "tine18",
@@ -135,39 +50,23 @@
       "at": "2026-08-18T17:54:01+00:00",
       "task": "F-094"
     },
-    "tools/crafting_check.gd": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:54:33+00:00",
-      "task": "3.2"
+    "world/environment/ground_fog.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:57:02+00:00",
+      "task": "F-115"
+    },
+    "world/environment/ground_fog.gdshader": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:57:02+00:00",
+      "task": "F-115"
+    },
+    "world/environment/playtest_atmosphere.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:57:02+00:00",
+      "task": "F-115"
     }
   },
   "in_flight": {
-    "3.2": {
-      "agent": "ivy8",
-      "files": [
-        "content/items/branch.tres",
-        "content/items/flint.tres",
-        "content/items/coal.tres",
-        "content/items/fibre_bundle.tres",
-        "content/items/berry.tres",
-        "content/items/mushroom.tres",
-        "content/items/raw_meat.tres",
-        "content/recipes/charcoal.tres",
-        "content/recipes/wooden_axe.tres",
-        "content/recipes/wooden_pickaxe.tres",
-        "content/recipes/stone_pickaxe.tres",
-        "content/recipes/arrow.tres",
-        "content/recipes/short_bow.tres",
-        "content/recipes/cleaver.tres",
-        "content/recipes/skewer.tres",
-        "content/recipes/iron_pickaxe.tres",
-        "content/recipes/iron_sword.tres",
-        "content/recipes/repair_hammer.tres",
-        "tools/crafting_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T17:51:47+00:00"
-    },
     "7.1": {
       "agent": "tine18",
       "files": [
@@ -197,6 +96,17 @@
       ],
       "notes": [],
       "started": "2026-08-18T17:54:01+00:00"
+    },
+    "F-115": {
+      "agent": "vane19",
+      "files": [
+        "world/environment/playtest_atmosphere.gd",
+        "world/environment/ground_fog.gd",
+        "world/environment/ground_fog.gdshader",
+        "levels/hollowmere.tscn"
+      ],
+      "notes": [],
+      "started": "2026-08-18T17:57:02+00:00"
     }
   },
   "recent": {
@@ -660,15 +570,40 @@
       "at": "2026-08-18T04:58:38+00:00",
       "task": "F-073"
     },
+    "content/items/berry.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
+    },
+    "content/items/branch.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
+    },
     "content/items/cleaver.tres": {
       "agent": "flint5",
       "at": "2026-08-18T04:58:38+00:00",
       "task": "F-073"
     },
+    "content/items/coal.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
+    },
     "content/items/coins.tres": {
       "agent": "lp",
       "at": "2026-08-18T14:15:06+00:00",
       "task": "F-061"
+    },
+    "content/items/fibre_bundle.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
+    },
+    "content/items/flint.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
     },
     "content/items/iron_ingot.tres": {
       "agent": "lp",
@@ -684,6 +619,16 @@
       "agent": "flint5",
       "at": "2026-08-18T04:58:38+00:00",
       "task": "F-073"
+    },
+    "content/items/mushroom.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
+    },
+    "content/items/raw_meat.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
     },
     "content/items/repair_hammer.tres": {
       "agent": "flint5",
@@ -740,15 +685,70 @@
       "at": "2026-08-18T04:27:04+00:00",
       "task": "3.3"
     },
+    "content/recipes/arrow.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/charcoal.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/cleaver.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
+    },
     "content/recipes/iron_ingot.tres": {
       "agent": "lp",
       "at": "2026-08-18T05:04:45+00:00",
       "task": "3.1"
     },
+    "content/recipes/iron_pickaxe.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/iron_sword.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/repair_hammer.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/short_bow.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/skewer.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
+    },
     "content/recipes/stone_axe.tres": {
       "agent": "flint5",
       "at": "2026-08-17T19:02:17+00:00",
       "task": "F-050"
+    },
+    "content/recipes/stone_pickaxe.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/wooden_axe.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/wooden_pickaxe.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
     },
     "content/stations/furnace.tres": {
       "agent": "lp",
@@ -1171,9 +1171,9 @@
       "task": "F-052"
     },
     "tools/crafting_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T05:04:45+00:00",
-      "task": "3.1"
+      "agent": "ivy8",
+      "at": "2026-08-18T17:57:51+00:00",
+      "task": "3.2"
     },
     "tools/crafting_net_check.gd": {
       "agent": "lp",
@@ -2055,7 +2055,7 @@
     "3.2": {
       "est": "8",
       "milestone": "M3",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Author all item/recipe `.tres` content"
     },
@@ -3484,7 +3484,7 @@
     "F-115": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map"
     },

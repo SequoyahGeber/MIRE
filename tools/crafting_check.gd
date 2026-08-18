@@ -26,10 +26,14 @@ func _run() -> void:
 
 	check(bool(registry.call("has_item", &"stone_axe")), "stone axe item is registered")
 	check(bool(registry.call("has_recipe", &"stone_axe")), "stone axe recipe is registered")
+	# A floor and a membership test, never an exact census: 3.2's whole job is adding recipes, and
+	# `size() == 1` reds this check at the one thing it must allow — the same lesson
+	# item_icons_check.gd recorded when its literal 24 went red on the 25th icon.
 	var recipes: Array = crafting.call("recipes_for_station", &"workbench")
-	check(recipes.size() == 1, "workbench exposes the one vertical-slice recipe")
-	var recipe: Resource = recipes[0] as Resource
-	check(recipe != null and StringName(recipe.get("id")) == &"stone_axe",
+	check(recipes.size() >= 1, "workbench exposes at least one recipe")
+	check(_station_ids(recipes).has(&"stone_axe"),
+		"the vertical-slice recipe is discoverable at the workbench")
+	check(_station_ids(crafting.call("recipes_for_station", &"workbench")) == _station_ids(recipes),
 		"recipe discovery is deterministic")
 
 	var player := Node3D.new()
@@ -97,7 +101,8 @@ func _run() -> void:
 	check(bool(registry.call("has_item", &"iron_ingot")), "iron ingot item is registered")
 	check(bool(registry.call("has_recipe", &"iron_ingot")), "iron ingot recipe is registered")
 	var furnace_recipes: Array = crafting.call("recipes_for_station", &"furnace")
-	check(furnace_recipes.size() == 1, "furnace exposes the one worked-example recipe")
+	check(_station_ids(furnace_recipes).has(&"iron_ingot"),
+		"the worked-example timed recipe is discoverable at the furnace")
 
 	# host_validate's station-tier check: a recipe whose station id does not resolve to a
 	# registered StationDef is rejected before the range check ever runs — proven with a recipe
@@ -161,6 +166,14 @@ func _run() -> void:
 
 	print("CRAFTING_CHECK confirmations=%d failures=%d" % [confirmations.size(), failures])
 	finish()
+
+
+func _station_ids(recipes: Array) -> Array[StringName]:
+	var ids: Array[StringName] = []
+	for entry: Resource in recipes:
+		if entry != null:
+			ids.append(StringName(entry.get("id")))
+	return ids
 
 
 func _on_craft_confirmed(request_id: int, accepted: bool, detail: String) -> void:
