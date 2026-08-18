@@ -478,26 +478,6 @@ differed by 9 bytes in 4,992,780 with a maximum delta of 3/255, which is the noi
 a rebuild that changed. The world and scale previews were exactly pixel-identical, so this only bites
 frames full of near-diagonal edges.
 
-### F-043 · The iron sword ships complete and nothing puts it in a player's hand
-
-**Area:** content/playability · **Severity:** medium · **Found:** 2026-08-17 by reed16 during 2.1d (A-021S)
-
-A-021S delivered `iron_sword` end to end: both GLBs, the icon, `content/items/iron_sword.tres` with
-a tuned grip, and `content/weapons/iron_sword.tres`. `Registry` loads all of it, and granting one by
-hand puts it in the hand and swings it. But the starting loadout in `core/dev/dev_loadout.gd` lists
-the six A-004 tools and not the sword, so in an actual session nobody ever holds it — the hero weapon
-of the vertical slice is reachable only through the `give iron_sword` console command.
-
-One line in that array fixes it. It was left alone deliberately: `core/dev/dev_loadout.gd` belongs to
-task 2.14, an asset batch has no business editing another task's gameplay content, and *what a run
-starts with* is a design question that 2.9 and 3.x own — the loadout's own comment says as much.
-
-Worth deciding at the same time: the sword is meant to be better than the cleaver, so handing it to
-every player at spawn beside five tools makes the first weapon choice trivial. "Add it to the dev
-loadout so it can be played with" and "give it to players at spawn" are different calls.
-
----
-
 ### F-044 · Concurrent headless Godot runs share one import cache, which is the likely cause of F-038
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by yarrow21 during 0.12
@@ -586,7 +566,103 @@ complaint).
 
 ---
 
+### F-055 · `core/util/mire_log.gd`'s `CHANNELS` list has no `health` channel
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-17 by lp during 2.13
+
+`MireLog.write()` silently drops `INFO`/`DEBUG` lines for any channel not in `CHANNELS` — `_enabled`
+is only pre-seeded for the listed channels, so an unlisted one reads as permanently off rather than
+"default on in a debug build" like every other channel. `systems/health/player_health.gd` logs under
+`&"combat"` instead of a `health` channel of its own because `mire_log.gd` was not in 2.13's claim set
+(`WARN`/`ERROR` always get through regardless, so nothing is silently lost — this is a visibility gap,
+not a correctness one). Next agent claiming `mire_log.gd`: add `&"health"` to `CHANNELS`, then switch
+`player_health.gd`'s `LOG_CHANNEL` constant over to it.
+
+---
+
+### F-056 · `docs/SPECS.md`'s 2.11 block omitted `net_version.gd`/`handshake_check.gd` despite adding a new RPC
+
+**Area:** docs/tooling · **Severity:** low · **Found:** 2026-08-17 by lp during 2.11
+
+2.11's spec (`docs/SPECS.md`) listed only `systems/environment/day_night.gd`,
+`tools/day_night_check.gd` and `tools/day_night_net_check.gd` as its claim set, and named "code-built
+synchronizer per D-023, or an unreliable RPC push" as the replication mechanism with no mention of a
+protocol bump either way. Both options add a new item to the wire contract (a new RPC, or a new
+`SceneReplicationConfig` entry), and the SPECS preamble's own standing rule 5 is unconditional: "New
+RPCs ⇒ bump `PROTOCOL_VERSION`... extend `tools/handshake_check.gd`." Following the preamble rule over
+the task's own claim list, `net_version.gd` and `handshake_check.gd` were added to the 2.11 claim
+directly (no other lane held them) and the bump happened in the same task — 7 → 8 for `net_push_time`.
+Not blocking, since the fix was cheap and immediate, but the pattern is worth naming: **a task's own
+`docs/SPECS.md` claim list can omit a file a standing preamble rule requires**, and an agent should
+default to the standing rule, extending its claim on the spot, rather than skipping the bump because
+the block didn't list the file. Whoever next edits the 2.11 spec block should add `core/net/
+net_version.gd` to its claim list so the next reader doesn't have to rediscover this.
+
+---
+
+### F-055 · Committed HEAD boots with a failed autoload — `c187ede` deleted a script but left it registered
+
+**Area:** build/boot · **Severity:** high — every fresh clone of HEAD is affected, on every platform
+· **Found:** 2026-08-17 by flint5, during the three-platform LAN run
+
+`c187ede` ("Map: one map, and the Hollow's ground is a real heightfield") deleted
+`world/gen/test_map_props.gd` but left `TestMapProps="*res://world/gen/test_map_props.gd"` in
+`project.godot`. Booting HEAD therefore emits, on macOS, Linux and Windows identically:
+
+```
+ERROR: Attempt to open script 'res://world/gen/test_map_props.gd' resulted in error 'File not found'.
+ERROR: Failed loading resource: res://world/gen/test_map_props.gd.
+ERROR: Failed to instantiate an autoload, can't load from path: res://world/gen/test_map_props.gd.
+```
+
+The game still runs — the old greybox prop scatterer is obsolete under the one-map consolidation —
+so this reads as harmless noise, which is exactly why it needs closing: it is three permanent
+`ERROR:` lines in every run, and standing rule 4 grades undeclared error lines. Left alone it
+re-creates the F-021 condition where a real error hides inside an allowance everyone has learned to
+ignore.
+
+Caught by `verify_setup`'s all-autoloads check added in F-046; the previous version checked 2 of 19
+registrations and would have shipped straight past it. This is the exact inverse of D-021's rule —
+a task that *removes* a script must deregister it in the same task, just as one that adds an autoload
+registers it.
+
+**Not fixed here, deliberately.** The fix already exists uncommitted in the working tree, but that
+same `project.godot` diff also carries 2.11's `DayNight` and 2.13's `PlayerHealth` registrations from
+lanes still in flight, so committing it would ship other agents' half-finished work. Whoever lands
+2.11 should include the `TestMapProps` removal; if 2.11 is dropped, this needs its own one-line
+commit.
+
+---
+
 ## Resolved
+
+### F-043 · The iron sword ships complete and nothing puts it in a player's hand — **decided, won't add**
+
+**Area:** content/playability · **Severity:** medium · **Found:** 2026-08-17 by reed16 during 2.1d
+(A-021S) · **Decided:** 2026-08-17 by lp during 2.13
+
+A-021S delivered `iron_sword` end to end, but the starting loadout in `core/dev/dev_loadout.gd` never
+listed it, so the hero weapon of the vertical slice was reachable only through `give iron_sword`.
+`docs/SPECS.md`'s F-043 block named the decision for this task: (a) add it to the dev loadout, (b)
+leave it console-only until 3.x loot places it in the world, or (c) seed it into 3.5's chest loot.
+
+**Decided (b), console-only, for two independent reasons — either alone would have been enough:**
+
+1. `DevLoadout.loadout`'s `hotbar: true` entries already fill 8/8 hotbar slots
+   (`HOTBAR_SLOT_COUNT`). Adding the sword `hotbar: true` would silently land in the backpack instead
+   per `_move_to_hotbar`'s own documented behaviour — not "in someone's hand," which was the entire
+   point of the finding.
+2. `content/weapons/iron_sword.tres`'s numbers are still 2.9's unpassed placeholders (F-036).
+   Defaulting every player into the strongest melee option would bias 2.14's playtest signal on the
+   weapons that are actually tuned, in the same session crawlers become lethal (2.13).
+
+`core/dev/dev_loadout.gd` carries a comment recording this at the `loadout` array itself, so the next
+reader sees the decision at the point they'd naturally add the line. `give iron_sword` still reaches
+it for deliberate testing.
+
+---
+
+### F-052 · The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it — **fixed**
 
 ### F-052 · The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it — **fixed**
 

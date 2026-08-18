@@ -1641,3 +1641,15 @@ Commit at time of writing: `314c59a`
 Corrected the window model: the 5-hour session is the rate limiter that actually stops a lane (two tasks took it 15 to 43 percent while the weekly moved only 73 to 76), and the weekly is the budget that expires unspent. Spending the weekly therefore requires working during each session window, so 'agent saturate --watch' now sleeps out a short quota park and resumes automatically, capped at 4 resumes and 8 hours, and only for quota parks rather than real failures.
 
 Commit at time of writing: `d3a290f`
+
+---
+
+### HANDOFF · 1.12 · flint5 · 2026-08-18T00:27:27+00:00
+
+**DEFERRED to after 6.10 (D-030) — do not start. Cross-platform join test, Mac ↔ Windows ↔ Linux in one lobby over Steam. Transport is proven; only the evidence ceremony is left, and it waits for an in-game lobby join**
+
+NOT closed — this was a LAN/ENet run, and 1.12 is specifically the Steam transport. Three-platform PASS over ENet at c67eca7/protocol 7: macOS host + Linux (0.20s connect) + Windows (0.28s), all three agreeing on peers [1, 255386784, 1840122116], each client smoothing the OTHER platform's player plus 4 host-auth crawlers, 60s stable with 0 disconnects, clean ordered exit with despawns logged. 0 undeclared errors on both clients. Full write-up in docs/STEAM_CROSS_PLATFORM_TEST.md. WHAT 1.12 STILL OWES: Steam transport, lobby create/join, steam_check on all three, 60s OBSERVED movement, 3 screenshots. WHAT IS NOW CHEAP: both VMs are provisioned and SSH-reachable (details + 3 traps in the doc), Steam already running on Windows, git installed there. Blocker for a Steam run is only that Steam is not running on the Ubuntu desktop and needs launching in-session.
+
+Files: `docs/STEAM_CROSS_PLATFORM_TEST.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `312f756`

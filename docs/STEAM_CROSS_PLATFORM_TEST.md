@@ -113,6 +113,74 @@ Before the session, confirm the mechanism itself still passes on the machine you
 godot --headless --path . --script tools/connect_retry_check.gd
 ```
 
+## Three-platform LAN run — 2026-08-17 · PASS (ENet, not Steam)
+
+**This is not a 1.12 pass, and the distinction is the whole point of reading this section.** 1.12
+tests `SteamMultiplayerPeer`: the lobby, the callback path, and Steam's rendezvous. This run used
+**ENet over the LAN** and therefore proves everything 1.12 is about *except the Steam transport
+itself*. It is recorded here because it retires most of 1.12's risk at a fraction of the cost, and
+because it establishes the machine setup the eventual Steam run needs.
+
+Driven headlessly over SSH from the macOS host by `flint5`; all three machines on commit `c67eca7`,
+`PROTOCOL_VERSION = 7`, stock Godot `4.7.1.stable.official.a13da4feb`.
+
+| | macOS (host) | Linux VM `192.168.50.124` | Windows VM `192.168.50.47` |
+|---|---|---|---|
+| Role | `--lan-host` on `*:27515` | `--lan-join=192.168.50.176` | `--lan-join=192.168.50.176` |
+| Peer id | 1 | 255386784 | 1840122116 |
+| Connect latency | — | **0.20 s** | **0.28 s** |
+| Final peer list | `[1, 255386784, 1840122116]` | identical | identical |
+| Undeclared engine errors | 3 (all one known defect, below) | **0** | **0** |
+
+What it establishes, criterion by criterion against the PASS list above:
+
+- **Three-peer session, three spawned players** — host spawned peers 1, 255386784 and 1840122116 at
+  three distinct spawn points; all three machines independently reported the same peer list.
+- **Cross-platform replication in both directions** — Windows smoothed remote player `255386784`
+  (Linux) and Linux smoothed `1840122116` (Windows), so this is not merely host↔client: each client
+  received the other platform's player through the host. All four host-authoritative crawlers
+  replicated to both clients, with `NetInterp` smoothing every one (F-004's enemy half, in the wild).
+- **60 s stability** — peer list identical at T+0 and T+60, zero disconnects, zero timeouts.
+- **Clean ordered exit** — Linux left first (host logged `peer 255386784 left — peers now
+  [1, 1840122116]` then `despawned player 255386784`), then Windows (`peers now [1]`, despawn
+  logged). No duplicate players, no version refusals, no unexpected drops at any point.
+
+**Not covered, and still owed by a real 1.12 run:** the Steam transport, lobby creation/join,
+`steam_check` on all three, 60 s of *observed* movement, and the three screenshots. Headless clients
+have no renderer, so "movement is visible and smooth" cannot be judged this way — the closest
+equivalent captured here is that replication and interpolation ran continuously for 60 s with no
+error.
+
+### The machine setup this run leaves behind (the expensive half of 1.12)
+
+Both VMs are now provisioned and reachable, which is most of what made 1.12 costly to schedule:
+
+- **Linux** `ubuntu@192.168.50.124` — Godot 4.7.1 at `~/Godot_v4.7.1-stable_linux.x86_64`, project at
+  `~/mire-current`, GodotSteam addon installed at `addons/godotsteam/`, `verify_setup` green.
+  Steam is **not** running; no git installed, so refresh by piping `git archive` over SSH.
+- **Windows** `windows@192.168.50.47` (key `~/.ssh/mire_windows_vm`) — Godot at
+  `C:\tools\godot\`, project at `C:\MIRE-current`, addon installed, Steam **running**, git now
+  installed via winget so it can clone/pull directly (the repo is public).
+
+Three traps this run paid for, all of which will bite the Steam run too:
+
+1. **Admin accounts on Windows read `C:\ProgramData\ssh\administrators_authorized_keys`**, not
+   `~/.ssh/authorized_keys`, and sshd *resets the connection* rather than denying it if that file's
+   ACLs are loose. A blank-password account is additionally refused for any network logon by default
+   policy — the account must have a password set for key auth to work at all.
+2. **`start /b` over SSH silently spawns nothing on Windows.** Hold the SSH session open and let the
+   process run under it instead; a detached launch produced no process and no log file.
+3. **Protocol drift between provisioning and testing is the likeliest false failure.** During this
+   session `PROTOCOL_VERSION` moved 6 → 7 → 8 (8 uncommitted, task 2.11 in flight). Re-check it on
+   all three machines immediately before launching, or the version gate will correctly refuse a join
+   and look like a network fault.
+
+**One real defect surfaced, unrelated to networking:** commit `c187ede` deleted
+`world/gen/test_map_props.gd` but left `TestMapProps` registered in `project.godot`, so committed
+HEAD boots with a failed autoload on every platform — the 3 host errors above, reproduced identically
+on all three machines. The fix exists uncommitted in the working tree, entangled with 2.11's
+`DayNight` and 2.13's `PlayerHealth` registrations. Filed as F-055.
+
 ## Partial rerun — 2026-08-16
 
 A two-platform cleanup run used macOS as host and a fresh `origin/main` archive at `C:\MIRE-main`
