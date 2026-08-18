@@ -75,6 +75,50 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — the extraction ship exists (A-009), and it introduces the "ship frame" placement pattern
+
+Fifteen exports in `assets/ships/exports/`, catalogued in `assets/ships/catalog.json`, built by
+`tools/blender/build_extraction_ship_set.py`, verified by
+`.agent/bin/agent godot --script tools/ship_check.gd` (green: 15 imported, 10,456 triangles,
+state drift 0.0000 mm, assembly asserted). `assets/ships/README.md` is the full contract.
+
+**The one thing to know before you place any of it.** Eleven of the fifteen are **not**
+ground-centred. The mast, both sails, the rudder, the boarding ramp and the cargo hatch are authored
+in the hull's own coordinate frame and exported with the hull's origin, so the whole ship assembles
+with no offsets to discover:
+
+```gdscript
+for part in ["ship_hull_repaired", "ship_mast", "ship_sail_raised",
+             "ship_rudder", "ship_boarding_ramp", "ship_cargo_hatch"]:
+    add_child(load("res://assets/ships/exports/%s.glb" % part).instantiate())
+```
+
+Only `ship_anchor`, `ship_donation_crate`, `ship_departure_bell` and `ship_debris_cluster` use the
+usual ground-centred origin and are placed independently. **A ship-framed export legitimately sits
+above the ground plane** — the raised sail's lowest vertex is 1.8 m up, because that is where a sail
+is — so do not "fix" it, and do not run a blanket ground-contact assertion over this family.
+`ship_check.gd` already enforces the right rule per family.
+
+Numbers a gameplay task will want, all in the ship frame (Godot axes): **+X is the bow**, z=0 is the
+ground under the cradle, the **deck is at y = 1.78**, the bulwark rail tops out 0.85 m above it, the
+mast steps at **x = +1.15**, and the **gangway and boarding ramp are on the +Z (port) side**, 1.73 m
+wide between framed posts. The hull is 10.4 m long, 3.4 m in beam, 3.8 m to the stem head.
+
+**Repair states.** `ship_hull_wrecked` → `ship_hull_repair_1` → `ship_hull_repair_2` →
+`ship_hull_repaired` swap in place; drift is 0.0000 mm, so collision authored against one fits all
+four. Pair `ship_mast_broken` with the first two, `ship_mast` + `ship_sail_furled` from the third,
+`ship_sail_raised` when she is ready to leave.
+
+**What is deliberately absent:** collision, interaction volumes, and any repair-progress authority.
+The extraction system owns which state is shown and when. The donation crate, the departure bell and
+the boarding ramp are the three that will want interaction volumes first.
+
+**If you build another sheet-based family** (anything made of open surfaces rather than closed
+solids), copy the generator's `WINDING_LOG` proof — the all-sides audit's inside-out metric cannot
+judge open sheets (F-109) and will both false-positive and miss real inversions. And measure
+vertices, never `Transform3D * AABB`, on the engine side (F-108).
+
+
 ### 2026-08-18 — environmental VFX is asset-bound now (F-097, D-060). This is the seam every world generator inherits
 
 **The rule, from Sequoyah:** animation and VFX bind to the **asset**, never to a scene or a map,
