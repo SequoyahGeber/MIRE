@@ -110,6 +110,23 @@ func _run_driver() -> void:
 		TIMEOUT_SEC
 	)
 	check(parked, "host parks a departed peer's inventory for the D-035 grace window")
+
+	# F-059: _commit(peer_id) -> _publish_snapshot() used to send net_inventory_snapshot.rpc_id(peer_id,
+	# ...) with no live transport connection behind that peer id — a Godot-level "Attempt to call RPC
+	# with unknown peer ID" engine error, not a silent no-op. Call _commit() directly rather than through
+	# host_add()/host_transaction(): _valid_host_peer() already refuses to mutate a disconnected peer's
+	# store on its own (a separate side effect filed as F-073, not this fix), so the public API cannot
+	# reach _commit() for a departed peer today — but nothing stops a future caller from doing exactly
+	# that, and this proves the rpc_id send itself is now guarded regardless. No assertion here can catch
+	# the engine error (push_error does not raise); per SPECS.md rule 4 the caller must grep this run's
+	# own output for `ERROR:` — this only proves the call completes and the parked store is untouched.
+	var pre_commit_count: int = int(inventory.call("host_count", client_peer_id, &"log"))
+	inventory.call("_commit", client_peer_id)
+	await process_frame
+	check(
+		int(inventory.call("host_count", client_peer_id, &"log")) == pre_commit_count,
+		"_commit() on a parked (mid-grace-window) peer completes without disturbing its store"
+	)
 	transport.call("leave")
 	print("INVENTORY_NET_CHECK peer=%d final_logs=%d failures=%d result=%s" % [
 		client_peer_id, int(result.get("log_count", -1)), failures, result

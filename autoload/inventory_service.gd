@@ -230,7 +230,7 @@ func _process_move_request(
 func _confirm_peer(peer_id: int, request_id: int, accepted: bool, detail: String) -> void:
 	if peer_id == _local_peer_id():
 		_emit_confirmation(request_id, accepted, detail)
-	elif bool(_transport().call("is_active")):
+	elif bool(_transport().call("is_active")) and _peer_connected(peer_id):
 		net_operation_confirmed.rpc_id(peer_id, request_id, accepted, detail)
 
 
@@ -340,6 +340,19 @@ func _owns_mutation() -> bool:
 	return not bool(transport.call("is_active")) and not bool(transport.call("is_connecting"))
 
 
+## Guards every rpc_id(peer_id, ...) send in this file (F-059). D-035 keeps a departed peer's store
+## alive through NetSession's grace window (rebind or expire) rather than releasing it on peer_left,
+## so a peer id can sit in _host_stores/_revisions with no live transport connection behind it. Any
+## _commit(peer_id) reached while that peer is mid-grace-window — a harvest yield landing, a crafting
+## response, anything routed through host_add()/host_transaction() — would otherwise send
+## net_inventory_snapshot to a peer id the transport no longer recognises, which Godot logs as an
+## engine error ("Attempt to call RPC with unknown peer ID"), not a silent no-op. Same fix as
+## systems/health/player_health.gd's own _peer_connected — see its class doc for the fuller shape.
+func _peer_connected(peer_id: int) -> bool:
+	var peers: PackedInt32Array = _transport().call("peer_ids")
+	return peers.has(peer_id)
+
+
 func _ensure_host_store(peer_id: int) -> void:
 	if _host_stores.has(peer_id):
 		return
@@ -366,7 +379,7 @@ func _publish_snapshot(peer_id: int) -> void:
 	host_inventory_changed.emit(peer_id, _duplicate_slots(slots), revision)
 	if peer_id == _local_peer_id():
 		_accept_local_snapshot(slots, revision)
-	elif bool(_transport().call("is_active")):
+	elif bool(_transport().call("is_active")) and _peer_connected(peer_id):
 		net_inventory_snapshot.rpc_id(peer_id, peer_id, revision, slots)
 
 

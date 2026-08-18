@@ -1967,3 +1967,18 @@ agent check now enforces an exact claim on a free-prefix path when one exists, a
 Files: `.agent/bin/agent`
 
 Commit at time of writing: `d3c3e2f`
+
+---
+
+### DONE · F-059 · lp · 2026-08-18T04:23:58+00:00
+
+**A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build**
+
+Guarded InventoryService's two specific-peer rpc_id sends (net_inventory_snapshot, net_operation_confirmed) with a _peer_connected(peer_id) check mirroring player_health.gd. Verified: stashed the fix, ran agent godot --script tools/inventory_net_check.gd, reproduced 'ERROR: Attempt to call RPC with unknown peer ID' at _publish_snapshot<-_commit exactly as the finding describes; restored the fix, reran 3x -- 0 ERROR lines, all PASS (one run hit the pre-existing F-038 grant-timeout flake, unrelated, clean rerun confirmed). tools/inventory_check.gd (no transport) stayed green. Filed F-074 for a related gap found along the way: _valid_host_peer already blocks host_add/host_transaction for a parked peer, so the public API can't reach _commit for a departed peer today -- separate fix, not done here. Moved F-059 to Resolved in FINDINGS.md, wrote its SPECS.md block, noted the shared _peer_connected pattern + F-074 gap in DELEGATION.md.
+
+Notes along the way:
+- Fixed: _peer_connected(peer_id) guard added, mirrors player_health.gd, gates net_inventory_snapshot.rpc_id and net_operation_confirmed.rpc_id. Reproduced the exact ERROR (unknown peer ID at _publish_snapshot<-_commit) with the fix stashed, confirmed gone with it restored, 3x clean reruns. Found F-074: _valid_host_peer already blocks host_add/etc for a parked peer, so the public API can't reach _commit for a departed peer today -- filed separately, not fixed here.
+
+Files: `autoload/inventory_service.gd`, `tools/inventory_net_check.gd`
+
+Commit at time of writing: `7025a22`
