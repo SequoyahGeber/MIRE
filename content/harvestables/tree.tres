@@ -9,6 +9,8 @@
 [resource]
 script = ExtResource("5_f51r6")
 id = &"tree"
+required_tool = 1
+max_health = 6
 yield_item_id = &"log"
 yield_amount = 3
 respawn_seconds = 120.0

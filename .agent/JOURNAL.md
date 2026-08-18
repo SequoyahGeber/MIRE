@@ -2726,3 +2726,15 @@ Not the import-cache fix itself — that decision still wants measurements. What
 Files: `docs/ORCHESTRATION.md`
 
 Commit at time of writing: `8b3c719`
+
+---
+
+### DONE · F-113 · vane19 · 2026-08-18T17:55:11+00:00
+
+**One axe swing depletes a whole tree: the harvest raycast and the combat swing both damage it, and neither knows what tool you are holding**
+
+One damage source per click (HarvestWorld stopped listening for attack), a tool axis on WeaponDef/HarvestableDef, and health authored in tool swings. Stone axe fells a tree in 3, wooden in 6, iron pickaxe in 6, bare hands never. New tools/harvest_tool_ladder_check.gd asserts 17 pairs against the shipped .tres.
+
+Files: `systems/combat/weapon_def.gd`, `systems/harvesting/harvestable_def.gd`, `systems/harvesting/harvestable.gd`, `autoload/combat_service.gd`, `autoload/harvest_world.gd`, `content/weapons/wooden_axe.tres`, `content/weapons/stone_axe.tres`, `content/weapons/wooden_pickaxe.tres`, `content/weapons/stone_pickaxe.tres`, `content/weapons/iron_pickaxe.tres`, `content/weapons/iron_sword.tres`, `content/weapons/cleaver.tres`, `content/weapons/skewer.tres`, `content/weapons/repair_hammer.tres`, `content/harvestables/tree.tres`, `content/harvestables/stone_node.tres`, `content/harvestables/iron_node.tres`
+
+Commit at time of writing: `e1240b2`

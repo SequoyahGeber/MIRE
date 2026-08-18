@@ -14,3 +14,5 @@ arc_degrees = 104.0
 hitstop_seconds = 0.055
 shake_magnitude = 0.085
 shake_duration = 0.17
+tool_class = 0
+harvest_power = 1

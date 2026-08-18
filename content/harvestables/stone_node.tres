@@ -8,6 +8,8 @@
 [resource]
 script = ExtResource("4_cwdwb")
 id = &"stone_node"
+required_tool = 2
+max_health = 6
 yield_item_id = &"stone"
 yield_amount = 3
 respawn_seconds = 90.0

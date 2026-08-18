@@ -8,7 +8,8 @@
 [resource]
 script = ExtResource("4_lwjyu")
 id = &"iron_node"
-max_health = 4
+required_tool = 2
+max_health = 9
 yield_item_id = &"iron_ore"
 yield_amount = 2
 respawn_seconds = 180.0

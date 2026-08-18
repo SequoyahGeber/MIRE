@@ -10,3 +10,5 @@ wind_up_seconds = 0.24
 recovery_seconds = 0.32
 hitstop_seconds = 0.075
 shake_magnitude = 0.12
+tool_class = 1
+harvest_power = 2

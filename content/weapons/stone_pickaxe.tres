@@ -13,3 +13,5 @@ arc_degrees = 92.0
 damage = 5
 hitstop_seconds = 0.08
 shake_magnitude = 0.13
+tool_class = 2
+harvest_power = 2

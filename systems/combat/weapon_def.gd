@@ -35,6 +35,19 @@ extends Resource
 @export_range(0.5, 8.0, 0.1) var vertical_reach_m: float = 2.4
 @export_range(1, 999, 1) var damage: int = 3
 
+@export_group("Harvesting")
+## Which class of world material this tool actually bites (F-113). Stored as the integer from
+## `HarvestLibrary.Tool` — never reorder that enum. `Any` means "not a harvesting tool": it still
+## clears bushes and saplings, which ask for no particular tool, and floors to nothing against a
+## pine. This is a SEPARATE axis from `damage` on purpose — an iron pickaxe is the strongest melee
+## weapon here and should still be a poor way to fell a tree.
+@export_enum("Any:0", "Chop:1", "Mine:2") var tool_class: int = 0
+## Damage one swing lands on a harvestable of the matching class. Harvestable health is authored in
+## these units, so the whole tool ladder is legible in one line: **wooden 1, stone 2, iron 3**, and
+## a 6-health tree is three swings of a stone axe. A non-tool leaves this at 1 and simply takes
+## longer at anything that will accept any tool at all.
+@export_range(0, 999, 1) var harvest_power: int = 1
+
 @export_group("Feel — client-local, never networked")
 ## Freeze applied to the attacker's own swing clock and camera on a connect. This is NOT
 ## `Engine.time_scale` (D-033): slowing a client's frame rate slows its network pump.
@@ -65,4 +78,8 @@ func validation_errors() -> PackedStringArray:
 		errors.append("arc_degrees must be within (0, 180]")
 	if damage <= 0:
 		errors.append("damage must be positive")
+	if tool_class < 0 or tool_class > 2:
+		errors.append("tool_class must be a HarvestLibrary.Tool")
+	if harvest_power < 0:
+		errors.append("harvest_power cannot be negative")
 	return errors

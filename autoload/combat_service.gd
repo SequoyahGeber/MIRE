@@ -219,10 +219,24 @@ func _resolve_hit(peer_id: int, weapon: WeaponDef) -> void:
 		return
 
 	var target_position: Vector3 = (target as Node3D).global_position
-	if not bool(target.call("host_apply_damage", weapon.damage, peer_id)):
+	# Two seams, chosen by the target (F-113). An enemy takes the weapon's combat `damage`; a
+	# harvestable takes the tool's `harvest_power` scaled by whether the tool class matches, which
+	# is what makes an axe fell a tree in three swings and a pickaxe bounce off it. Preferring the
+	# tool seam by feature test rather than by type keeps `&"damageable"` the single contract:
+	# a target that has never heard of tools is unaffected, exactly as before.
+	var applied: int = weapon.damage
+	var connected: bool
+	if target.has_method("host_apply_tool_damage"):
+		applied = int(target.call("harvest_damage_for", weapon.tool_class, weapon.harvest_power))
+		connected = bool(
+			target.call("host_apply_tool_damage", weapon.tool_class, weapon.harvest_power, peer_id)
+		)
+	else:
+		connected = bool(target.call("host_apply_damage", weapon.damage, peer_id))
+	if not connected:
 		_broadcast(peer_id, false, Vector3.ZERO, 0, &"")
 		return
-	_broadcast(peer_id, true, target_position, weapon.damage, StringName(String(target.name)))
+	_broadcast(peer_id, true, target_position, applied, StringName(String(target.name)))
 
 
 ## Nearest damageable inside the swing's reach and horizontal arc. The arc is measured on the
@@ -450,6 +464,10 @@ func _build_unarmed() -> WeaponDef:
 	weapon.arc_degrees = 80.0
 	weapon.vertical_reach_m = 2.0
 	weapon.damage = 1
+	# Bare hands are `Tool.NONE` with power 1: they pull sticks off a bush, which asks for no tool,
+	# and floor to zero against anything that wants an axe or a pickaxe (F-113).
+	weapon.tool_class = 0
+	weapon.harvest_power = 1
 	weapon.hitstop_seconds = 0.035
 	weapon.shake_magnitude = 0.05
 	weapon.shake_duration = 0.14

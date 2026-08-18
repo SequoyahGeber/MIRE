@@ -16,3 +16,5 @@ damage = 6
 hitstop_seconds = 0.075
 shake_magnitude = 0.105
 shake_duration = 0.2
+tool_class = 0
+harvest_power = 1

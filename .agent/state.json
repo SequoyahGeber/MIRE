@@ -1,37 +1,287 @@
 {
   "claims": {
-    "assets/maps": {
+    "assets/audio/music": {
       "agent": "tine18",
-      "at": "2026-08-18T00:43:30+00:00",
-      "task": "2.1j"
+      "at": "2026-08-18T17:53:48+00:00",
+      "task": "7.2"
     },
-    "assets/source/playtest_hollow.blend": {
+    "assets/audio/sfx": {
       "agent": "tine18",
-      "at": "2026-08-18T00:43:30+00:00",
-      "task": "2.1j"
+      "at": "2026-08-18T17:53:48+00:00",
+      "task": "7.1"
     },
-    "tools/mapgen/hollow_layout.py": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:43:30+00:00",
-      "task": "2.1j"
+    "content/harvestables/boulder.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:36:39+00:00",
+      "task": "F-114"
     },
-    "world/gen/layouts/playtest_hollow.json": {
+    "content/harvestables/bush.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:36:39+00:00",
+      "task": "F-114"
+    },
+    "content/harvestables/fallen_log.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:36:39+00:00",
+      "task": "F-114"
+    },
+    "content/harvestables/rock_cluster.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:36:39+00:00",
+      "task": "F-114"
+    },
+    "content/harvestables/sapling.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:36:39+00:00",
+      "task": "F-114"
+    },
+    "content/harvestables/stump.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:36:39+00:00",
+      "task": "F-114"
+    },
+    "content/harvestables/wild_tree.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:36:39+00:00",
+      "task": "F-114"
+    },
+    "content/items/berry.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/items/branch.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/items/coal.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/items/fibre_bundle.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/items/flint.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/items/mushroom.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/items/raw_meat.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/items/stick.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:36:39+00:00",
+      "task": "F-114"
+    },
+    "content/recipes/arrow.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/charcoal.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/cleaver.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/iron_pickaxe.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/iron_sword.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/repair_hammer.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/short_bow.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/skewer.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/stone_pickaxe.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/wooden_axe.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "content/recipes/wooden_pickaxe.tres": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:51:47+00:00",
+      "task": "3.2"
+    },
+    "systems/harvesting/harvest_library.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:36:39+00:00",
+      "task": "F-114"
+    },
+    "tools/audio/audio_check.py": {
       "agent": "tine18",
-      "at": "2026-08-18T00:43:30+00:00",
-      "task": "2.1j"
+      "at": "2026-08-18T17:53:48+00:00",
+      "task": "7.2"
+    },
+    "tools/audio/mire_audio.py": {
+      "agent": "tine18",
+      "at": "2026-08-18T17:53:48+00:00",
+      "task": "7.2"
+    },
+    "tools/audio/render_music.py": {
+      "agent": "tine18",
+      "at": "2026-08-18T17:53:48+00:00",
+      "task": "7.2"
+    },
+    "tools/audio/render_sfx.py": {
+      "agent": "tine18",
+      "at": "2026-08-18T17:53:48+00:00",
+      "task": "7.1"
+    },
+    "tools/audio_import_check.gd": {
+      "agent": "tine18",
+      "at": "2026-08-18T17:53:48+00:00",
+      "task": "7.2"
+    },
+    "tools/blender/mire_art.py": {
+      "agent": "lp",
+      "at": "2026-08-18T17:54:01+00:00",
+      "task": "F-094"
+    },
+    "tools/blender/world_bounds_check.py": {
+      "agent": "lp",
+      "at": "2026-08-18T17:54:01+00:00",
+      "task": "F-094"
+    },
+    "tools/crafting_check.gd": {
+      "agent": "ivy8",
+      "at": "2026-08-18T17:54:33+00:00",
+      "task": "3.2"
+    },
+    "tools/harvest_batch_check.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:45:06+00:00",
+      "task": "F-114"
+    },
+    "tools/harvest_tool_ladder_check.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:43:11+00:00",
+      "task": "F-114"
+    },
+    "tools/harvest_world_check.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:43:11+00:00",
+      "task": "F-114"
+    },
+    "world/gen/authored_world.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:36:39+00:00",
+      "task": "F-114"
     }
   },
   "in_flight": {
-    "2.1j": {
-      "agent": "tine18",
+    "3.2": {
+      "agent": "ivy8",
       "files": [
-        "tools/mapgen/hollow_layout.py",
-        "world/gen/layouts/playtest_hollow.json",
-        "assets/maps",
-        "assets/source/playtest_hollow.blend"
+        "content/items/branch.tres",
+        "content/items/flint.tres",
+        "content/items/coal.tres",
+        "content/items/fibre_bundle.tres",
+        "content/items/berry.tres",
+        "content/items/mushroom.tres",
+        "content/items/raw_meat.tres",
+        "content/recipes/charcoal.tres",
+        "content/recipes/wooden_axe.tres",
+        "content/recipes/wooden_pickaxe.tres",
+        "content/recipes/stone_pickaxe.tres",
+        "content/recipes/arrow.tres",
+        "content/recipes/short_bow.tres",
+        "content/recipes/cleaver.tres",
+        "content/recipes/skewer.tres",
+        "content/recipes/iron_pickaxe.tres",
+        "content/recipes/iron_sword.tres",
+        "content/recipes/repair_hammer.tres",
+        "tools/crafting_check.gd"
       ],
       "notes": [],
-      "started": "2026-08-18T00:43:30+00:00"
+      "started": "2026-08-18T17:51:47+00:00"
+    },
+    "7.1": {
+      "agent": "tine18",
+      "files": [
+        "tools/audio/render_sfx.py",
+        "assets/audio/sfx"
+      ],
+      "notes": [],
+      "started": "2026-08-18T17:53:48+00:00"
+    },
+    "7.2": {
+      "agent": "tine18",
+      "files": [
+        "tools/audio/mire_audio.py",
+        "tools/audio/render_music.py",
+        "tools/audio/audio_check.py",
+        "tools/audio_import_check.gd",
+        "assets/audio/music"
+      ],
+      "notes": [],
+      "started": "2026-08-18T17:53:48+00:00"
+    },
+    "F-094": {
+      "agent": "lp",
+      "files": [
+        "tools/blender/mire_art.py",
+        "tools/blender/world_bounds_check.py"
+      ],
+      "notes": [],
+      "started": "2026-08-18T17:54:01+00:00"
+    },
+    "F-114": {
+      "agent": "vane19",
+      "files": [
+        "systems/harvesting/harvest_library.gd",
+        "world/gen/authored_world.gd",
+        "content/harvestables/wild_tree.tres",
+        "content/harvestables/boulder.tres",
+        "content/harvestables/rock_cluster.tres",
+        "content/harvestables/bush.tres",
+        "content/harvestables/sapling.tres",
+        "content/harvestables/fallen_log.tres",
+        "content/harvestables/stump.tres",
+        "content/items/stick.tres",
+        "tools/harvest_world_check.gd",
+        "tools/harvest_tool_ladder_check.gd",
+        "tools/harvest_batch_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T17:36:39+00:00"
     }
   },
   "recent": {
@@ -130,11 +380,6 @@
       "at": "2026-08-18T14:15:06+00:00",
       "task": "F-061"
     },
-    "assets/icons/exports/icon_iron_sword.png": {
-      "agent": "reed16",
-      "at": "2026-08-17T17:01:21+00:00",
-      "task": "2.1d"
-    },
     "assets/icons/exports/icon_stone_axe.png": {
       "agent": "flint5",
       "at": "2026-08-18T04:58:38+00:00",
@@ -162,7 +407,7 @@
     },
     "assets/maps": {
       "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
+      "at": "2026-08-18T17:43:02+00:00",
       "task": "2.1j"
     },
     "assets/maps/preview": {
@@ -332,7 +577,7 @@
     },
     "assets/source/playtest_hollow.blend": {
       "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
+      "at": "2026-08-18T17:43:02+00:00",
       "task": "2.1j"
     },
     "assets/source/playtest_map.blend": {
@@ -360,41 +605,6 @@
       "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
-    "assets/tools_weapons/README.md": {
-      "agent": "reed16",
-      "at": "2026-08-17T17:01:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/tools_weapons/catalog.json": {
-      "agent": "reed16",
-      "at": "2026-08-17T17:01:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/tools_weapons/exports/iron_sword_viewmodel.glb": {
-      "agent": "reed16",
-      "at": "2026-08-17T17:01:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/tools_weapons/exports/iron_sword_world.glb": {
-      "agent": "reed16",
-      "at": "2026-08-17T17:01:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/tools_weapons/preview/tools_weapons_scale_preview.png": {
-      "agent": "reed16",
-      "at": "2026-08-17T17:01:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/tools_weapons/preview/tools_weapons_viewmodel_preview.png": {
-      "agent": "reed16",
-      "at": "2026-08-17T17:01:21+00:00",
-      "task": "2.1d"
-    },
-    "assets/tools_weapons/preview/tools_weapons_world_preview.png": {
-      "agent": "reed16",
-      "at": "2026-08-17T17:01:21+00:00",
-      "task": "2.1d"
-    },
     "assets/wards": {
       "agent": "tine18",
       "at": "2026-08-18T00:39:51+00:00",
@@ -411,9 +621,9 @@
       "task": "F-099"
     },
     "autoload/combat_service.gd": {
-      "agent": "kiln9",
-      "at": "2026-08-18T14:10:44+00:00",
-      "task": "F-099"
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
     },
     "autoload/crafting_service.gd": {
       "agent": "kiln9",
@@ -430,11 +640,6 @@
       "at": "2026-08-18T14:44:41+00:00",
       "task": "F-076"
     },
-    "autoload/enemy_world.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T15:58:44+00:00",
-      "task": "2.10"
-    },
     "autoload/environment_vfx.gd": {
       "agent": "lp",
       "at": "2026-08-18T14:55:48+00:00",
@@ -446,9 +651,9 @@
       "task": "F-098"
     },
     "autoload/harvest_world.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T14:44:41+00:00",
-      "task": "F-076"
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
     },
     "autoload/inventory_service.gd": {
       "agent": "kiln9",
@@ -485,10 +690,20 @@
       "at": "2026-08-18T04:35:30+00:00",
       "task": "3.6"
     },
-    "content/enemies/crawler.tres": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:31:36+00:00",
-      "task": "F-039"
+    "content/harvestables/iron_node.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
+    },
+    "content/harvestables/stone_node.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
+    },
+    "content/harvestables/tree.tres": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
     },
     "content/items/arrow.tres": {
       "agent": "flint5",
@@ -591,49 +806,49 @@
       "task": "3.1"
     },
     "content/weapons/cleaver.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
     },
     "content/weapons/iron_pickaxe.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
     },
     "content/weapons/iron_sword.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
     },
     "content/weapons/repair_hammer.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
     },
     "content/weapons/skewer.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
     },
     "content/weapons/stone_axe.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
     },
     "content/weapons/stone_pickaxe.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
     },
     "content/weapons/wooden_axe.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
     },
     "content/weapons/wooden_pickaxe.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
     },
     "core/dev/dev_frame_cap.gd": {
       "agent": "coil23",
@@ -650,16 +865,6 @@
       "at": "2026-08-17T23:58:38+00:00",
       "task": "2.13"
     },
-    "core/dev/dev_loadout.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:22:54+00:00",
-      "task": "2.14"
-    },
-    "core/events/event_bus.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T15:58:44+00:00",
-      "task": "2.10"
-    },
     "core/net/net_session.gd": {
       "agent": "kiln9",
       "at": "2026-08-18T14:10:44+00:00",
@@ -669,16 +874,6 @@
       "agent": "gale6",
       "at": "2026-08-18T04:42:03+00:00",
       "task": "3.6"
-    },
-    "core/net/run_identity.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T15:43:36+00:00",
-      "task": "F-032"
-    },
-    "core/net/run_identity.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T15:43:36+00:00",
-      "task": "F-032"
     },
     "core/util/mire_log.gd": {
       "agent": "gale6",
@@ -755,11 +950,6 @@
       "at": "2026-08-18T14:10:44+00:00",
       "task": "F-099"
     },
-    "entities/player/viewmodel.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:52:06+00:00",
-      "task": "F-041"
-    },
     "levels/greybox_test.tscn": {
       "agent": "moss11",
       "at": "2026-08-18T02:21:14+00:00",
@@ -806,9 +996,9 @@
       "task": "F-075"
     },
     "systems/combat/weapon_def.gd": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
     },
     "systems/crafting/recipe_def.gd": {
       "agent": "lp",
@@ -825,30 +1015,20 @@
       "at": "2026-08-18T14:37:19+00:00",
       "task": "F-075"
     },
-    "systems/enemies/enemy.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T15:58:44+00:00",
-      "task": "2.10"
-    },
-    "systems/enemies/enemy_def.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:31:36+00:00",
-      "task": "F-039"
-    },
-    "systems/enemies/enemy_def.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T15:58:44+00:00",
-      "task": "2.10"
-    },
     "systems/environment/day_night.gd": {
       "agent": "kiln9",
       "at": "2026-08-18T14:10:44+00:00",
       "task": "F-099"
     },
     "systems/harvesting/harvestable.gd": {
-      "agent": "kiln9",
-      "at": "2026-08-18T14:10:44+00:00",
-      "task": "F-099"
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
+    },
+    "systems/harvesting/harvestable_def.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T17:55:11+00:00",
+      "task": "F-113"
     },
     "systems/health/downed_state.gd": {
       "agent": "lp",
@@ -1015,16 +1195,6 @@
       "at": "2026-08-18T14:23:28+00:00",
       "task": "F-107"
     },
-    "tools/combat_feel_check.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:04:25+00:00",
-      "task": "2.9"
-    },
-    "tools/combat_feel_check.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:04:25+00:00",
-      "task": "2.9"
-    },
     "tools/combat_net_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T13:48:01+00:00",
@@ -1070,40 +1240,10 @@
       "at": "2026-08-17T19:28:04+00:00",
       "task": "F-052"
     },
-    "tools/dev_loadout_check.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:22:54+00:00",
-      "task": "2.14"
-    },
-    "tools/enemy_check.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T15:58:44+00:00",
-      "task": "2.10"
-    },
-    "tools/enemy_check.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T15:58:44+00:00",
-      "task": "2.10"
-    },
-    "tools/enemy_facing_check.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:31:36+00:00",
-      "task": "F-039"
-    },
-    "tools/enemy_facing_check.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:31:36+00:00",
-      "task": "F-039"
-    },
     "tools/enemy_net_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T04:33:16+00:00",
       "task": "F-060"
-    },
-    "tools/enemy_net_check.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T15:58:44+00:00",
-      "task": "2.10"
     },
     "tools/environment_vfx_check.gd": {
       "agent": "larch10",
@@ -1185,11 +1325,6 @@
       "at": "2026-08-18T13:48:01+00:00",
       "task": "F-038"
     },
-    "tools/item_icons_check.gd": {
-      "agent": "reed16",
-      "at": "2026-08-17T17:01:21+00:00",
-      "task": "2.1d"
-    },
     "tools/lan_launch_check.gd": {
       "agent": "flint5",
       "at": "2026-08-17T23:25:50+00:00",
@@ -1197,7 +1332,7 @@
     },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
+      "at": "2026-08-18T17:43:02+00:00",
       "task": "2.1j"
     },
     "tools/mapgen/hollowmere_layout.py": {
@@ -1285,40 +1420,15 @@
       "at": "2026-08-18T05:35:30+00:00",
       "task": "F-089"
     },
-    "tools/run_identity_check.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T15:43:36+00:00",
-      "task": "F-032"
-    },
-    "tools/run_identity_check.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T15:43:36+00:00",
-      "task": "F-032"
-    },
     "tools/session_lifecycle_check.gd": {
       "agent": "flint5",
       "at": "2026-08-17T23:13:44+00:00",
       "task": "F-052"
     },
-    "tools/setup_combat_content.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:04:25+00:00",
-      "task": "2.9"
-    },
     "tools/setup_crafting_content.gd": {
       "agent": "flint5",
       "at": "2026-08-18T04:58:38+00:00",
       "task": "F-073"
-    },
-    "tools/setup_enemy_content.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:31:36+00:00",
-      "task": "F-039"
-    },
-    "tools/setup_enemy_content.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T15:58:44+00:00",
-      "task": "2.10"
     },
     "tools/setup_harvest_content.gd": {
       "agent": "flint5",
@@ -1339,11 +1449,6 @@
       "agent": "flint5",
       "at": "2026-08-18T04:58:38+00:00",
       "task": "F-073"
-    },
-    "tools/setup_tool_content.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:22:54+00:00",
-      "task": "2.14"
     },
     "tools/ship_check.gd": {
       "agent": "ivy8",
@@ -1369,11 +1474,6 @@
       "agent": "flint5",
       "at": "2026-08-18T04:58:38+00:00",
       "task": "F-073"
-    },
-    "tools/viewmodel_check.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T16:52:06+00:00",
-      "task": "F-041"
     },
     "tools/vitals_hud_check.gd": {
       "agent": "nettle12",
@@ -1447,7 +1547,7 @@
     },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
+      "at": "2026-08-18T17:43:02+00:00",
       "task": "2.1j"
     },
     "world/gen/playtest_hollow.gd": {
@@ -1834,7 +1934,7 @@
     "2.1j": {
       "est": "8",
       "milestone": "M2",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle"
     },
@@ -1985,7 +2085,7 @@
     "3.2": {
       "est": "8",
       "milestone": "M3",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Author all item/recipe `.tres` content"
     },
@@ -2331,7 +2431,7 @@
     "7.1": {
       "est": "10",
       "milestone": "M7",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Audio pass: SFX for every action, ambience per biome, mix, buses"
     },
@@ -2359,7 +2459,7 @@
     "7.2": {
       "est": "4",
       "milestone": "M7",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Music: 4\u20136 tracks (act themes, boss, menu). CC0/licensed or commissioned."
     },
@@ -3245,7 +3345,7 @@
     "F-094": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "`mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float"
     },
@@ -3392,6 +3492,29 @@
       "status": "todo",
       "tier": "F",
       "title": "`world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check \u2014 F-076's third system, not lifted"
+    },
+    "F-113": {
+      "done_at": "2026-08-18T17:55:11+00:00",
+      "done_by": "vane19",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "One axe swing depletes a whole tree: the harvest raycast and the combat swing both damage it, and neither knows what tool you are holding"
+    },
+    "F-114": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Only 83 of Hollowmere's 2,869 props can be harvested: harvestability is authored per-placement in the layout instead of per-asset"
+    },
+    "F-115": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map"
     }
   },
   "version": 1

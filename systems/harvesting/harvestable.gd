@@ -26,6 +26,10 @@ signal respawned
 
 @export var definition: HARVESTABLE_DEFINITION
 @export_node_path("CollisionObject3D") var collision_body_path: NodePath
+## The world builder's own mesh for this prop, used when the definition ships no state scenes of its
+## own (`HarvestableDef.active_state_scenes` empty). Left unset by every caller that instead installs
+## a hook through `set_visual_hook()` — see that method for why a hook and not just a node.
+@export_node_path("Node3D") var authored_visual_path: NodePath
 
 ## Replicated state. Setters keep presentation correct when a network delta arrives on a client.
 var health: int = 0
@@ -49,6 +53,12 @@ var active: bool = true:
 		set_physics_process(not active and _owns_world_mutation() and _configuration_valid)
 
 var _configuration_valid: bool = false
+## Shows or hides whatever already draws this prop, when the definition has no state scenes.
+## A Callable rather than a Node3D because a generated world may not draw the prop as a node at
+## all: `world/gen/authored_world.gd` keeps dense flora inside a chunk's MultiMesh batch, and one
+## instance of a MultiMesh has no `visible` to set — it is hidden by zeroing its transform. One
+## seam covers both representations, so neither this file nor HarvestableDef knows which is in use.
+var _visual_hook: Callable = Callable()
 var _collision_body: CollisionObject3D
 var _collision_layer: int = 0
 var _collision_mask: int = 0
@@ -64,6 +74,7 @@ func _ready() -> void:
 	add_to_group(HARVESTABLE_GROUP)
 	add_to_group(DAMAGEABLE_GROUP)
 	_resolve_collision_body()
+	_resolve_authored_visual()
 	_configuration_valid = _validate_configuration()
 
 	if definition != null:
@@ -88,6 +99,36 @@ func request_hit() -> void:
 		_accept_hit_request(_local_peer_id())
 	else:
 		net_request_hit.rpc_id(NetConfig.HOST_PEER_ID)
+
+
+## Installed by whoever built this prop, BEFORE `add_child()`. See `_visual_hook`.
+func set_visual_hook(hook: Callable) -> void:
+	_visual_hook = hook
+	if is_inside_tree():
+		_schedule_visual_refresh()
+
+
+## The tool-aware host seam (F-113). `CombatService` calls this in preference to `host_apply_damage`
+## so the weapon that swung decides how much of a bite it takes: an axe fells a tree in three, a
+## pickaxe barely scratches it, bare hands never will. Returns true when the swing CONNECTED, which
+## deliberately includes a connect that did zero damage — the thunk of a pickaxe bouncing off a pine
+## is the feedback that tells you to switch tools, and reporting it as a miss would delete that.
+## What one swing of this tool WOULD take off, without taking it. Combat reports this number to
+## every peer as the damage that landed, so a pickaxe bouncing off a pine reads as the 0 it is.
+func harvest_damage_for(tool_class: int, harvest_power: int) -> int:
+	if definition == null:
+		return 0
+	return definition.damage_from_tool(tool_class, harvest_power)
+
+
+func host_apply_tool_damage(tool_class: int, harvest_power: int, instigator_peer_id: int) -> bool:
+	if not _owns_world_mutation() or not _configuration_valid or not active:
+		return false
+	var amount: int = definition.damage_from_tool(tool_class, harvest_power)
+	if amount <= 0:
+		hit_accepted.emit(instigator_peer_id, 0, health)
+		return true
+	return host_apply_damage(amount, instigator_peer_id)
 
 
 ## Trusted host seam for task 2.8's hitbox. Combat owns attack validation and damage calculation;
@@ -189,10 +230,15 @@ func _physics_process(delta: float) -> void:
 		host_respawn()
 
 
+## Which authored presentation matches this health. A definition with no state scenes has exactly
+## one presentation — the world builder's own mesh — so it stays at 0 and `active` alone decides
+## whether it is drawn; without this guard the fraction below divides by an empty array.
 func _state_for_health(value: int) -> int:
-	if value <= 0:
-		return definition.active_state_scenes.size()
 	var state_count: int = definition.active_state_scenes.size()
+	if state_count == 0:
+		return 0
+	if value <= 0:
+		return state_count
 	var damage_fraction: float = 1.0 - float(value) / float(definition.max_health)
 	return clampi(floori(damage_fraction * float(state_count)), 0, state_count - 1)
 
@@ -228,6 +274,19 @@ func _resolve_collision_body() -> void:
 		_collision_mask = _collision_body.collision_mask
 
 
+## An authored scene may point at its own mesh by path instead of installing a hook. Wrapping it in
+## the same Callable keeps `_refresh_visual` with exactly one way to show or hide a prop.
+func _resolve_authored_visual() -> void:
+	if _visual_hook.is_valid() or authored_visual_path.is_empty():
+		return
+	var node := get_node_or_null(authored_visual_path) as Node3D
+	if node == null:
+		return
+	_visual_hook = func(shown: bool) -> void:
+		if is_instance_valid(node):
+			node.visible = shown
+
+
 func _refresh_collision() -> void:
 	if _collision_body == null:
 		return
@@ -240,11 +299,20 @@ func _refresh_collision() -> void:
 func _refresh_visual() -> void:
 	if not is_inside_tree() or definition == null:
 		return
+	# The prop draws itself: nothing to instantiate, and the only thing depletion changes is whether
+	# the world builder's existing geometry is shown. An authored depleted_scene still works — a
+	# stump under a felled wild tree — and is simply added on top of the hidden original.
+	if definition.uses_authored_visual() and _visual_hook.is_valid():
+		_visual_hook.call(active)
+
 	var scene: PackedScene
 	if active:
-		if visual_state < 0 or visual_state >= definition.active_state_scenes.size():
+		if definition.uses_authored_visual():
+			scene = null
+		elif visual_state < 0 or visual_state >= definition.active_state_scenes.size():
 			return
-		scene = definition.active_state_scenes[visual_state]
+		else:
+			scene = definition.active_state_scenes[visual_state]
 	else:
 		scene = definition.depleted_scene
 
