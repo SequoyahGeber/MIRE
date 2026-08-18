@@ -472,31 +472,6 @@ docstring so the next family chooses deliberately instead of inheriting it.
 
 ---
 
-### F-058 · `docs/FINDINGS.md` carried two F-055s and two F-056s at once — concurrent lanes both used `agent brief`'s "next number"
-
-**Area:** process/tooling · **Severity:** low · **Found:** 2026-08-17 by lp during 3.8
-
-`docs/` is deliberately unclaimed (F-006/AGENTS.md) so no lane blocks on it — but that also means two
-lanes filing a finding in the same window can both read the same "highest number so far" and both
-append as the same next id. Concretely: lp filed F-055 (mire_log's missing `health` channel) and
-F-056 (a SPECS.md omission) during 2.11/2.13; flint5 separately filed an UNRELATED F-055 (a dead
-`TestMapProps` autoload registration — since fixed, its own entry says so) and F-056 (the spawn-under-
-heightfield bug) during the three-platform LAN run. Both pairs landed in the doc; nothing merged badly
-at the git level (plain text, no structural conflict), so this was silent until someone read the
-numbers in order.
-
-Not filing this to relitigate either finding — both are independently sound and now correctly
-resolved/open on their own merits (this task resolves its own F-055 below; the `agent` tool's F-number
-sync reads `docs/FINDINGS.md` fresh each time, so a human or agent grepping for a SPECIFIC number
-should read the SURROUNDING TEXT, not trust the number alone, until this is renumbered). Whoever next
-does a documentation pass: renumber the second-filed pair (flint5's) to the next free numbers in
-sequence and fix any cross-references, or accept that `F-0NN` is a filing-order label, not a stable
-key, and say so once in `AGENTS.md` so nobody is surprised again. `agent sync`/`agent brief` were not
-audited for how they behave when a number is ambiguous — that is itself worth checking before relying
-on either during a renumbering pass.
-
----
-
 ### F-092 · `mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call
 
 *Renumbered from F-058 on 2026-08-18 by lp (F-087) — that number collided with the original F-058, the
@@ -4266,3 +4241,60 @@ identical pixels under different `tEXt` metadata (the F-042 case, must still rea
 self-compare, a size mismatch, and RGB-vs-RGBA of the same colour. No Godot involved — this is a
 pure-Python tool bug, so the check is pure Python too rather than a `tools/*_check.gd` run through
 `agent godot`. Full spec: `docs/SPECS.md` F-079.
+
+---
+
+### F-058 · `docs/FINDINGS.md` carried two F-055s and two F-056s at once — concurrent lanes both used `agent brief`'s "next number" — **fixed**
+
+**Resolved 2026-08-18 by lp.** The routing half of this finding was fixed by **F-087**, a later,
+same-root-cause collision (F-058/F-059/F-060 each headed two unrelated findings) that F-087 renumbered
+to F-092/F-093/F-094 and recorded the general policy as **D-053**: a colliding F-number is renumbered
+only in a dedicated cross-cutting pass, never inline, because doing it correctly means reading every
+citing file's surrounding sentence — real work, real collision risk, for a payoff that only exists
+when a live routing decision (`agent brief`/`board`) could pick the wrong one.
+
+That payoff does not exist for the pair this finding actually names: every entry under **both** F-055
+and F-056 is already `## Resolved`, so `_duplicate_findings()` (the check `agent board`/`start` run)
+and `tools/findings_numbering_check.gd` (the standing regression guard, shipped by F-087) both leave
+them alone on purpose — a Resolved/Resolved pair cannot make `agent brief` hand a lane the wrong *live*
+task, which is the only failure mode either check exists to catch. F-087's own fix note says this
+explicitly for this exact pair, and `findings_numbering_check.gd`'s docstring documents the same
+exclusion in code, under "Deliberately NOT checked." Renumbering it anyway would still need the
+cross-reference sweep D-053 describes (`tools/spawn_ground_probe.gd:3`, `world/gen/playtest_hollow.gd:248`,
+`docs/DELEGATION.md:1019`, `docs/STEAM_CROSS_PLATFORM_TEST.md:182`, `systems/health/player_health.gd:45`,
+and every historical `.agent/JOURNAL.md` line cite one member or the other) for zero routing benefit —
+so this task made the same call D-053 already generalized, rather than relitigating it.
+
+**What this task actually closed:** the one open thread F-087 didn't — this finding's own text asked
+whether `agent sync`/`agent brief` had been audited under an ambiguous number, and nobody had run that
+check. Ran it: `agent brief F-055` reports `already done` off `state.json`'s single merged entry with
+no finding text shown at all (state doesn't carry two bodies per key), so there is no wrong-finding
+routing failure to find — confirms D-053's reasoning rather than surfacing a new gap. Also wrote the
+missing `docs/SPECS.md` **## F-058** block (`agent brief F-058` was landing on nothing), and deduped
+the doc-only decision trail so a future reader hits the reasoning once instead of re-deriving it.
+
+**Verified:** `agent godot --script tools/findings_numbering_check.gd` (unmodified — F-087 shipped it
+already correct) → `FINDINGS_NUMBERING_CHECK open=22 resolved=91 failures=0`, both traps PASS. `agent
+board` shows no "F-number(s) used by more than one open finding" warning. No production or tool file
+needed a change. Full spec: `docs/SPECS.md` F-058.
+
+**Area:** process/tooling · **Severity:** low · **Found:** 2026-08-17 by lp during 3.8
+
+`docs/` is deliberately unclaimed (F-006/AGENTS.md) so no lane blocks on it — but that also means two
+lanes filing a finding in the same window can both read the same "highest number so far" and both
+append as the same next id. Concretely: lp filed F-055 (mire_log's missing `health` channel) and
+F-056 (a SPECS.md omission) during 2.11/2.13; flint5 separately filed an UNRELATED F-055 (a dead
+`TestMapProps` autoload registration — since fixed, its own entry says so) and F-056 (the spawn-under-
+heightfield bug) during the three-platform LAN run. Both pairs landed in the doc; nothing merged badly
+at the git level (plain text, no structural conflict), so this was silent until someone read the
+numbers in order.
+
+Not filing this to relitigate either finding — both are independently sound and now correctly
+resolved/open on their own merits (this task resolves its own F-055 below; the `agent` tool's F-number
+sync reads `docs/FINDINGS.md` fresh each time, so a human or agent grepping for a SPECIFIC number
+should read the SURROUNDING TEXT, not trust the number alone, until this is renumbered). Whoever next
+does a documentation pass: renumber the second-filed pair (flint5's) to the next free numbers in
+sequence and fix any cross-references, or accept that `F-0NN` is a filing-order label, not a stable
+key, and say so once in `AGENTS.md` so nobody is surprised again. `agent sync`/`agent brief` were not
+audited for how they behave when a number is ambiguous — that is itself worth checking before relying
+on either during a renumbering pass.

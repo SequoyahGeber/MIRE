@@ -538,6 +538,47 @@ collision recorded in **D-053**.
 '## Open'" warnings. `agent godot --script tools/findings_numbering_check.gd` is the standing
 regression guard — source-scans `docs/FINDINGS.md` and fails if either shape reappears.
 
+## F-058 · `docs/FINDINGS.md` carried two F-055s and two F-056s at once — concurrent lanes both used `agent brief`'s "next number"
+
+**Claim:** `tools/findings_numbering_check.gd` (verify only — F-087 already wrote and shipped it;
+nothing here needed a change).
+
+**What was wrong:** `docs/` is deliberately unclaimed (F-006) so no lane blocks on it, which also
+means two lanes filing in the same window can both read the same "highest number so far" off `agent
+brief` and both append as the next id. lp filed F-055/F-056 during 2.11/2.13; flint5 separately filed
+an unrelated F-055/F-056 during the three-platform LAN run. Both pairs landed in the doc with no git
+conflict (plain text), so it was silent until someone read the numbers in order.
+
+**Already fixed, by a later pass — read the surrounding text, not the number, to see why this one is
+different from F-092/F-093/F-094:** this finding's own text is what named the risk, and the *routing*
+half of it was fixed by **F-087**, which renumbered the *Open*-side collisions this same failure mode
+produced next (F-058/F-059/F-060 each headed two unrelated findings, one Open, one Resolved) to
+F-092/F-093/F-094. The F-055/F-056 pairs this finding was actually filed about are a different shape:
+**every entry under both numbers is already `## Resolved`.** `_duplicate_findings()` (the live check
+`agent board`/`start` run) and `tools/findings_numbering_check.gd` (the standing regression guard,
+same rule) only flag a number shared by two **Open** entries, or an Open/Resolved split that could
+make `board` hide a live bug as done — neither applies here, since nothing routes *to* a resolved
+finding. **D-053** records the policy this generalizes to: a colliding number is renumbered only in a
+dedicated cross-cutting pass, never inline, because doing it right means reading every citing file's
+surrounding sentence to know which finding it meant (real collision risk against whoever holds those
+files) — and a Resolved-only pair has no routing payoff to justify that cost. F-087's fix note says
+so explicitly for this exact pair, and `findings_numbering_check.gd`'s docstring (Trap comments,
+"Deliberately NOT checked") documents the same exclusion in code. Cosmetic dedup only: F-087 also
+removed one literal double-paste of F-052 under Resolved.
+
+**What this task closes:** the one piece F-087 didn't — F-058's own section was never moved, and its
+text called for an audit of `agent sync`/`agent brief` under an ambiguous number that nobody had
+actually run. Ran it: `agent brief F-055` (two Resolved entries share the number) reports `already
+done` off `state.json`'s single merged entry and shows no finding text at all, let alone the wrong
+one — there is no live-routing failure mode for a Resolved/Resolved pair to audit, confirming D-053's
+reasoning rather than finding a new gap.
+
+**Verified 2026-08-18 (lp):** `agent godot --script tools/findings_numbering_check.gd` →
+`FINDINGS_NUMBERING_CHECK open=22 resolved=91 failures=0`, both traps PASS. `agent board` prints no
+"F-number(s) used by more than one open finding" warning (only the unrelated F-036 human-gate
+warning, tracked on its own). `agent brief F-055` behaves as described above. No production or tool
+file needed a change; this block and the `docs/FINDINGS.md` move to `## Resolved` are the whole task.
+
 ## F-083 · Snapping the aim hit's Y coordinate rejects or floats pieces on ordinary terrain heights
 
 `BuildGhost.update_aim()` (`systems/building/build_ghost.gd`) fed the surface hit from its aim ray
