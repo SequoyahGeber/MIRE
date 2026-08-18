@@ -1967,6 +1967,21 @@ New standing check: `agent godot --script tools/findings_numbering_check.gd` sou
 It does not flag same-number entries that are both Resolved (no routing risk, left as historical
 record on purpose per F-087/F-052).
 
+### 2026-08-18 — `mire_art.mat()`'s cache guard has a regression check now (F-092)
+
+New standing check: `/Applications/Blender.app/Contents/MacOS/Blender --background --python
+tools/blender/mat_cache_check.py` — the first focused check for `tools/blender/mire_art.py`. It is a
+Blender background script, not a Godot one; `mire_art` is never Godot-reachable, so `agent godot`
+does not apply and there is no shared lock to take (Blender's own process is the whole run). Exercises
+`mat(token)` called repeatedly from inside a loop rather than hoisted into a `mats = {...}` dict once
+per build — the shape that hid F-092 in the four originally migrated kits and the shape any new
+generator will naturally reach for — and asserts one material minted per token no matter how many
+times it's asked for, a `suffix` variant is an independent cache entry, and a datablock removed out
+from under `_MATERIAL_CACHE` (e.g. a scene wipe that didn't call `reset_materials()`) is rebuilt
+rather than returned dangling or raised. Any new `build_*.py` generator that calls `mat()` inside a
+loop can lean on this instead of writing its own cache-hit assertion. Full writeup and verification:
+`docs/FINDINGS.md` F-092 (Resolved), `docs/SPECS.md` F-092.
+
 ---
 
 > **Historical documents — every task prompt from here down.** They predate D-021 (agents register

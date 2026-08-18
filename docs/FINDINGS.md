@@ -467,30 +467,6 @@ docstring so the next family chooses deliberately instead of inheriting it.
 
 ---
 
-### F-092 · `mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call
-
-*Renumbered from F-058 on 2026-08-18 by lp (F-087) — that number collided with the original F-058, the
-meta-finding about duplicate F-numbers above. See F-087 for the full renumbering.*
-
-**Area:** art pipeline · **Found:** 2026-08-17 by moss11 while building the flora kit — **fixed**
-
-The guard read `if cached is not None and key in bpy.data.materials`. `key` is a palette token such as
-`wood_bark`; the datablock it created is named `MIRE_WoodBark`. The membership test was therefore
-**always false**, the cache never returned anything, and every `mat()` call created another material.
-
-It hid for as long as it did because of how the four fully migrated generators happen to be written:
-each hoists its `mat()` calls into a `mats = {...}` dictionary once per build and then reuses the
-dictionary, so each token is asked for exactly once and a broken cache costs nothing. Write the
-natural thing instead — `mat("leaf")` inside the loop that builds leaves — and it compounds:
-`bracken_a` exported **twenty-two** near-identical `MIRE_Bracken.0NN` materials, and the flora kit
-averaged five materials per asset before the fix and two after.
-
-Fixed by testing the datablock rather than the key: `bpy.data.materials.get(cached.name) is cached`,
-wrapped against `ReferenceError` so a cache entry left dangling by a scene wipe is re-created rather
-than crashing. No existing kit changes, because none of them ever hit the cache path.
-
----
-
 ### F-093 · A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build
 
 *Renumbered from F-059 on 2026-08-18 by lp (F-087) — that number collided with the original F-059
@@ -4400,6 +4376,49 @@ F-056 (a SPECS.md omission) during 2.11/2.13; flint5 separately filed an UNRELAT
 heightfield bug) during the three-platform LAN run. Both pairs landed in the doc; nothing merged badly
 at the git level (plain text, no structural conflict), so this was silent until someone read the
 numbers in order.
+
+---
+
+### F-092 · `mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call — **fixed**
+
+*Renumbered from F-058 on 2026-08-18 by lp (F-087) — that number collided with the original F-058, the
+meta-finding about duplicate F-numbers above. See F-087 for the full renumbering.*
+
+**Resolved 2026-08-18 by lp.** The code fix was already committed before this task existed — `c0cced0`,
+the same commit that migrated the flora kit and is what surfaced the bug. This task closed the two
+things that were still missing: a `docs/SPECS.md` block (there wasn't one — `agent brief F-092` was
+landing on nothing) and a regression guard, since nothing had ever verified the fix. Wrote
+`tools/blender/mat_cache_check.py`: exercises the bug's exact repro shape (the same palette token
+requested 22 times from inside a loop, not hoisted into a `mats = {...}` dict once per build the way
+the four originally-migrated kits happen to) and asserts one material minted, every call returns the
+identical datablock, a second token mints its own material, a `suffix` variant is an independent
+itself-cached entry, and a cache entry orphaned by removing its datablock out from under
+`_MATERIAL_CACHE` is rebuilt rather than returned dangling or raised.
+
+**Verified 2026-08-18 (lp):** `/Applications/Blender.app/Contents/MacOS/Blender --background --python
+tools/blender/mat_cache_check.py` → `MAT_CACHE_CHECK PASS`, no failures, against HEAD. Regression-
+proved the check itself: temporarily reverted `mat()`'s guard to the pre-fix `key in
+bpy.data.materials` line and reran — `MAT_CACHE_CHECK FAIL (20)`, all 22 loop calls minted a distinct
+material plus three other assertions failed with it — then restored `mire_art.py` to its committed
+state (`git diff` clean) and reran clean. No production file needed a change; the new check and this
+doc move are the whole task. Full spec: `docs/SPECS.md` F-092.
+
+**Area:** art pipeline · **Found:** 2026-08-17 by moss11 while building the flora kit
+
+The guard read `if cached is not None and key in bpy.data.materials`. `key` is a palette token such as
+`wood_bark`; the datablock it created is named `MIRE_WoodBark`. The membership test was therefore
+**always false**, the cache never returned anything, and every `mat()` call created another material.
+
+It hid for as long as it did because of how the four fully migrated generators happen to be written:
+each hoists its `mat()` calls into a `mats = {...}` dictionary once per build and then reuses the
+dictionary, so each token is asked for exactly once and a broken cache costs nothing. Write the
+natural thing instead — `mat("leaf")` inside the loop that builds leaves — and it compounds:
+`bracken_a` exported **twenty-two** near-identical `MIRE_Bracken.0NN` materials, and the flora kit
+averaged five materials per asset before the fix and two after.
+
+Fixed by testing the datablock rather than the key: `bpy.data.materials.get(cached.name) is cached`,
+wrapped against `ReferenceError` so a cache entry left dangling by a scene wipe is re-created rather
+than crashing. No existing kit changes, because none of them ever hit the cache path.
 
 Not filing this to relitigate either finding — both are independently sound and now correctly
 resolved/open on their own merits (this task resolves its own F-055 below; the `agent` tool's F-number

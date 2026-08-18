@@ -726,6 +726,51 @@ reasoning rather than finding a new gap.
 warning, tracked on its own). `agent brief F-055` behaves as described above. No production or tool
 file needed a change; this block and the `docs/FINDINGS.md` move to `## Resolved` are the whole task.
 
+## F-092 · `mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call
+
+*Renumbered from F-058 (a different F-058 than the one immediately above — see F-087) on 2026-08-18.*
+
+**Claim:** `tools/blender/mire_art.py` (verify only — the fix was already committed, in the same pass
+that migrated the flora kit; nothing here needed a code change), `tools/blender/mat_cache_check.py`
+(new — no focused check existed for this module before this task).
+
+**What was wrong:** `mat()`'s cache guard read `if cached is not None and key in bpy.data.materials`.
+`key` is a palette token (`"wood_bark"`); the datablock `mat()` creates is named `"MIRE_WoodBark"`.
+Membership-testing the token string against `bpy.data.materials` — which is keyed by datablock name —
+was therefore always False, so the cache dict populated but was never read back: every `mat()` call
+minted another material. It hid behind how the four originally migrated generators happen to be
+written — each hoists its `mat()` calls into a `mats = {...}` dict once per build, so each token is
+only ever asked for once and a cache that never hits costs nothing observable. `mat("leaf")` called
+from *inside* the loop that builds leaves — the natural way to write a generator, and the shape the
+flora kit's `bracken_a` used — is what surfaced it: 22 near-identical `MIRE_Bracken.0NN` materials for
+one token.
+
+**Already fixed, before this task existed:** committed as part of `c0cced0` (the flora-kit build that
+found it). The guard now tests the datablock itself, not the key —
+`bpy.data.materials.get(cached.name) is cached`, wrapped in `try/except ReferenceError` so a cache
+entry left dangling by a scene wipe (something removed the datablock without going through
+`reset_materials()`) is silently rebuilt instead of crashing. `tools/blender/mire_art.py`'s own
+`mat()` docstring/comment already narrates this; no kit needed a rebuild because none of the four
+fully migrated kits ever exercised the broken cache path.
+
+**What this task closes:** the fix had no regression guard and no `docs/SPECS.md` block. Wrote
+`tools/blender/mat_cache_check.py` — runs under
+`/Applications/Blender.app/Contents/MacOS/Blender --background --python
+tools/blender/mat_cache_check.py` (this module isn't Godot-reachable, so `agent godot` does not apply;
+Blender background scripts are their own single-process run with no shared lock to race, unlike
+`agent godot`'s import cache). It exercises the bug's exact repro shape — the same token requested 22
+times from inside a loop, not hoisted into a dict — and asserts: one material minted, every call
+returns the identical datablock; a second token mints its own material; a `suffix` variant is an
+independent, itself-cached, entry; and a cache entry orphaned by removing its datablock out from under
+`_MATERIAL_CACHE` is rebuilt rather than returned dangling or raised.
+
+**Verified 2026-08-18 (lp):** `MAT_CACHE_CHECK PASS`, no failures, against HEAD. Regression-proved the
+check itself by temporarily reverting `mat()`'s guard to the pre-fix `key in bpy.data.materials` line
+and rerunning: `MAT_CACHE_CHECK FAIL (20)` — all 22 loop calls minted a distinct material and three
+other assertions failed with it — then restored `mire_art.py` to its committed state (`git diff` clean)
+and reran clean. No production file needed a change; this block, `mat_cache_check.py`, and the
+`docs/FINDINGS.md` move to `## Resolved` are the whole task.
+
 ## F-083 · Snapping the aim hit's Y coordinate rejects or floats pieces on ordinary terrain heights
 
 `BuildGhost.update_aim()` (`systems/building/build_ghost.gd`) fed the surface hit from its aim ray
