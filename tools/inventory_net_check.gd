@@ -58,6 +58,21 @@ func _run_driver() -> void:
 		return
 	var client_peer_id: int = int(_read_result().get("peer_id", 0))
 	check(client_peer_id > NetConfig.HOST_PEER_ID, "client reports a real peer id")
+
+	# F-038: the client reports "connected" as soon as ITS OWN inventory has a revision, which can
+	# precede the HOST's InventoryService creating this peer's store (_on_peer_joined queued behind
+	# other work under machine load) — the same race class combat_net_check's host-player wait was
+	# fixed for. host_count() == 0 reads identically for "no store yet" and "store exists and is
+	# empty", so asserting it once here proved nothing; poll host_slots() (size 0 vs. 32) for the
+	# real precondition instead of granting on a false-comfort assertion.
+	var host_store_ready: bool = await _until(
+		func() -> bool: return (inventory.call("host_slots", client_peer_id) as Array).size() == 32,
+		TIMEOUT_SEC
+	)
+	check(host_store_ready, "host creates the client's inventory store before granting")
+	if not host_store_ready:
+		finish()
+		return
 	check(int(inventory.call("host_count", client_peer_id, &"log")) == 0,
 		"host creates the client inventory empty")
 	check(int(inventory.call("host_count", NetConfig.HOST_PEER_ID, &"log")) == 0,

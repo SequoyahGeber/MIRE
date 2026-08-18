@@ -1,5 +1,10 @@
 {
   "claims": {
+    "AGENTS.md": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:31:12+00:00",
+      "task": "F-053"
+    },
     "assets/maps": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
@@ -85,10 +90,20 @@
       "at": "2026-08-18T13:15:19+00:00",
       "task": "F-099"
     },
+    "docs/AI-WORKFLOW.md": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:31:12+00:00",
+      "task": "F-053"
+    },
     "docs/ASSET_TRACKER.md": {
       "agent": "ivy8",
       "at": "2026-08-18T13:01:13+00:00",
       "task": "2.1d"
+    },
+    "docs/FINDINGS.md": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:31:12+00:00",
+      "task": "F-053"
     },
     "entities/player/viewmodel.gd": {
       "agent": "kiln9",
@@ -125,11 +140,6 @@
       "at": "2026-08-18T13:03:53+00:00",
       "task": "2.1d"
     },
-    "tools/combat_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T13:26:55+00:00",
-      "task": "F-038"
-    },
     "tools/environment_vfx_check.gd": {
       "agent": "larch10",
       "at": "2026-08-18T13:09:00+00:00",
@@ -140,11 +150,6 @@
       "at": "2026-08-18T13:09:38+00:00",
       "task": "F-097"
     },
-    "tools/inventory_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T13:26:55+00:00",
-      "task": "F-038"
-    },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
@@ -154,6 +159,11 @@
       "agent": "ivy8",
       "at": "2026-08-18T13:03:53+00:00",
       "task": "2.1d"
+    },
+    "tools/vfx_site_probe.gd": {
+      "agent": "larch10",
+      "at": "2026-08-18T13:32:45+00:00",
+      "task": "F-097"
     },
     "ui/crafting/crafting_ui.gd": {
       "agent": "kiln9",
@@ -227,14 +237,15 @@
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
     },
-    "F-038": {
-      "agent": "lp",
+    "F-053": {
+      "agent": "yarrow21",
       "files": [
-        "tools/inventory_net_check.gd",
-        "tools/combat_net_check.gd"
+        "docs/AI-WORKFLOW.md",
+        "AGENTS.md",
+        "docs/FINDINGS.md"
       ],
       "notes": [],
-      "started": "2026-08-18T13:26:55+00:00"
+      "started": "2026-08-18T13:31:12+00:00"
     },
     "F-097": {
       "agent": "larch10",
@@ -245,7 +256,8 @@
         "world/gen/authored_world.gd",
         "world/gen/undergrowth.gd",
         "tools/environment_vfx_check.gd",
-        "tools/environment_vfx_hollowmere_check.gd"
+        "tools/environment_vfx_hollowmere_check.gd",
+        "tools/vfx_site_probe.gd"
       ],
       "notes": [
         {
@@ -1097,8 +1109,8 @@
     },
     "tools/combat_net_check.gd": {
       "agent": "lp",
-      "at": "2026-08-18T04:33:16+00:00",
-      "task": "F-060"
+      "at": "2026-08-18T13:48:01+00:00",
+      "task": "F-038"
     },
     "tools/combat_self_hit_check.gd": {
       "agent": "nettle12",
@@ -1242,8 +1254,8 @@
     },
     "tools/inventory_net_check.gd": {
       "agent": "lp",
-      "at": "2026-08-18T05:09:10+00:00",
-      "task": "F-074"
+      "at": "2026-08-18T13:48:01+00:00",
+      "task": "F-038"
     },
     "tools/item_icons_check.gd": {
       "agent": "reed16",
@@ -2764,9 +2776,11 @@
       "title": "`net_debug_panel_check` fakes its second peer in-process, so host and client share one tree"
     },
     "F-038": {
+      "done_at": "2026-08-18T13:48:01+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`inventory_net_check` intermittently fails its grant wait under machine load"
     },
@@ -2893,7 +2907,7 @@
     "F-053": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why"
     },

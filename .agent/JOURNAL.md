@@ -2465,3 +2465,18 @@ agent godot --windowed drops the injected --headless instead of overriding it, k
 Files: `.agent/bin/agent`, `AGENTS.md`, `docs/FINDINGS.md`, `tools/harness_check.py`, `docs/DELEGATION.md`
 
 Commit at time of writing: `fddb659`
+
+---
+
+### DONE · F-038 · lp · 2026-08-18T13:48:01+00:00
+
+**`inventory_net_check` intermittently fails its grant wait under machine load**
+
+Fixed both inventory_net_check's grant-timeout race and combat_net_check's sibling flake. Root cause 1 (both checks): driver granted as soon as the CLIENT self-reported connected, which can precede the HOST's InventoryService creating the peer's store; _publish_snapshot's rpc_id send is one-shot with no resend. Fix: poll host_slots(peer).size()==32 before granting, in both checks. Root cause 2 (combat_net_check only, found retesting both together per the finding's own request): TestTarget trails an unfloored free-falling player; by the 2nd swing its fall speed lets the one-frame-stale follow position clear vertical_reach_m, an intermittent miss. Fix: _build_ground() (build_net_check.gd's shape), both processes. Verified: agent godot --script tools/net_check_pattern_check.gd failures=0 (no F-060 trap reintroduced); two full back-to-back sequences of inventory_net_check/harvestable_net_check/crafting_net_check/combat_net_check, failures=0 and 0 undeclared ERROR lines every check both passes; combat_net_check alone 8 consecutive clean runs post-fix (missed_count:0 every time) vs a pre-fix baseline that reproduced within 2-6 runs; inventory_net_check alone 3 consecutive failures=0. docs/FINDINGS.md F-038 moved to Resolved, docs/DECISIONS.md D-059 records the general poll-the-real-precondition rule, docs/SPECS.md F-038 has the full spec, F-044 corrected (its import-cache hypothesis for F-038 was wrong).
+
+Notes along the way:
+- Fixed: poll host_slots().size()==32 before granting (both checks) instead of asserting host_count()==0 once, which reads 0 for 'no store yet' and 'empty store' alike. Found+fixed a second, unrelated flake in combat_net_check while retesting together: unfloored falling player let the 2nd swing's target drift outside vertical_reach_m — fixed with _build_ground() (build_net_check.gd's shape). D-059 + SPECS.md F-038 have full detail; FINDINGS.md F-038 moved to Resolved; corrected F-044's wrong hypothesis about F-038's cause.
+
+Files: `tools/inventory_net_check.gd`, `tools/combat_net_check.gd`
+
+Commit at time of writing: `40f48de`

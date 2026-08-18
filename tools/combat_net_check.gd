@@ -17,9 +17,11 @@ var transport: Node
 var player_net: Node
 var inventory: Node
 var combat: Node
+var level: Node3D
 var child_pid: int = 0
 var landed: Array[Dictionary] = []
 var rejections: Array[Dictionary] = []
+var missed: Array[int] = []
 var target: Node3D
 
 
@@ -28,9 +30,12 @@ class TestTarget extends Node3D:
 	var damage_taken: int = 0
 	var last_peer_id: int = -1
 	var hit_count: int = 0
-	## The host's copy of the attacker. This harness spawns players into an empty root with no floor,
-	## so they fall the whole time; pinning the target two metres along the player's forward keeps the
-	## test about the arc and the authority path rather than about gravity.
+	## The host's copy of the attacker, pinned two metres along its forward so the test is about the
+	## arc and the authority path. F-038: an unfloored player free-falls for the whole check, so by
+	## the second (later) swing its per-frame vertical drop can outrun this _process()'s one-frame-
+	## stale copy of `follow.global_position` far enough to clear a weapon's vertical_reach_m — an
+	## intermittent miss with nothing wrong in CombatService. `_build_ground()` below removes the
+	## unbounded fall instead of loosening this follow or any reach tolerance.
 	var follow: Node3D
 
 	func _ready() -> void:
@@ -65,11 +70,35 @@ func _start() -> void:
 		return
 	combat.get("attack_landed").connect(_on_landed)
 	combat.get("attack_rejected").connect(_on_rejected)
+	combat.get("attack_missed").connect(_on_missed)
+	_build_ground()
+	await physics_frame
+	await physics_frame
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	if not args.is_empty() and args[0] == "combat-probe":
 		_run_client()
 	else:
 		_run_driver()
+
+
+## F-038: both processes need the same ground, or a player that lands host-side but keeps falling
+## client-side (or vice versa) desyncs exactly the position this check's hit resolution depends on.
+## Same shape as tools/build_net_check.gd's `_build_ground()`. Also feeds PlayerNet's spawn-point
+## claim a `current_scene` (previously null here, logged as a harmless but noisy per-run WARNING).
+func _build_ground() -> void:
+	level = Node3D.new()
+	level.name = "CombatNetLevel"
+	root.add_child(level)
+	current_scene = level
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.position = Vector3(0.0, -0.5, 0.0)
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(40.0, 1.0, 40.0)
+	shape.shape = box
+	body.add_child(shape)
+	level.add_child(body)
 
 
 func _run_driver() -> void:
@@ -112,6 +141,20 @@ func _run_driver() -> void:
 	target.set("follow", host_player)
 	root.add_child(target)
 
+	# F-038: same race as the host-player wait just above, one system over — the client's own
+	# InventoryService can already report a revision (and thus "connected") before the HOST's
+	# InventoryService has created this peer's store, so a grant sent right now can lose its
+	# snapshot RPC (_publish_snapshot gates the send on the peer already being recognised) with
+	# nothing to resend it. Poll the real precondition instead of granting on the host-player wait
+	# alone; inventory_net_check.gd carries the same fix for its own grant.
+	var host_inventory_ready: bool = await _until(
+		func() -> bool: return (inventory.call("host_slots", peer_id) as Array).size() == 32,
+		TIMEOUT_SEC
+	)
+	check(host_inventory_ready, "host creates the client's inventory store before granting the axe")
+	if not host_inventory_ready:
+		finish()
+		return
 	check(bool(inventory.call("host_add", peer_id, &"stone_axe", 1)), "host grants the client an axe")
 	check(bool(inventory.call("host_move_stack", peer_id, 0, 24, 1)),
 		"host places the axe in the client's first hotbar slot")
@@ -160,8 +203,8 @@ func _run_driver() -> void:
 	if child_exited:
 		child_pid = 0
 	transport.call("leave")
-	print("COMBAT_NET_CHECK peer=%d damage=%d failures=%d result=%s" % [
-		peer_id, int(target.get("damage_taken")), failures, result
+	print("COMBAT_NET_CHECK peer=%d damage=%d failures=%d missed=%s rejections=%s result=%s" % [
+		peer_id, int(target.get("damage_taken")), failures, missed, rejections, result
 	])
 	finish()
 
@@ -240,6 +283,9 @@ func _client_drive() -> void:
 		"axe_target": String(first.get("target_name", "")),
 		"landed_peer": int(first.get("peer_id", 0)),
 		"unarmed_damage": int(second.get("damage", -1)),
+		"landed_count": landed.size(),
+		"missed_count": missed.size(),
+		"rejection_count": rejections.size(),
 		"hitstop_applied": hitstop_applied,
 		"local_predicted": local_predicted and suppressed_locally,
 		"spam_rejected": spam_rejected,
@@ -265,6 +311,12 @@ func _on_landed(peer_id: int, position: Vector3, damage: int, target_name: Strin
 
 func _on_rejected(request_id: int, detail: String) -> void:
 	rejections.append({"request_id": request_id, "detail": detail})
+
+
+## F-038 diagnostic: distinguishes a resolved-but-missed swing (host found no target in reach/arc)
+## from a swing that never began — both look identical from the outside as "landed.size() short".
+func _on_missed(peer_id: int) -> void:
+	missed.append(peer_id)
 
 
 ## F-060: gate on is_active() directly. local_peer_id() > HOST_PEER_ID and local_revision >= 0 can
