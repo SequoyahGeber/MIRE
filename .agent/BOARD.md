@@ -11,19 +11,18 @@
 | **3.1** Full tier/fork crafting tree, stations (workbench → furnace → anvil) (`DESIGN.md` §4.3) | lp | 2026-08-18 04:50 | `systems/crafting/station_def.gd`, `systems/crafting/recipe_def.gd`, `autoload/crafting_service.gd`, `autoload/registry.gd`, `ui/crafting/crafting_ui.gd`, `tools/crafting_check.gd`, `tools/crafting_net_check.gd`, `tools/crafting_ui_check.gd`, `tools/setup_station_content.gd`, `content/stations/workbench.tres`, `content/stations/furnace.tres`, `content/items/iron_ingot.tres`, `content/recipes/iron_ingot.tres` |
 | **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-18 00:43 | `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `assets/maps`, `assets/source/playtest_hollow.blend` |
 | **3.6-review** Review 3.6 @ dc86116 — judge the commit, file findings, no edits | lc1 | 2026-08-18 04:52 | — |
-| **F-073** Every tool shares one grip rotation authored for a sword, so the axe is held edge-on and every weapon swings the same chop | flint5 | 2026-08-18 04:15 | `entities/player/viewmodel.gd`, `systems/inventory/item_def.gd`, `systems/combat/weapon_def.gd`, `tools/setup_tool_content.gd`, `tools/viewmodel_check.gd`, `tools/blender/render_item_icons.py`, `assets/icons/catalog.json`, `content/items/wooden_axe.tres`, `content/items/stone_axe.tres`, `content/items/wooden_pickaxe.tres`, `content/items/stone_pickaxe.tres`, `content/items/iron_pickaxe.tres`, `content/items/cleaver.tres`, `content/items/skewer.tres`, `content/items/short_bow.tres`, `content/items/arrow.tres`, `content/items/repair_hammer.tres`, `content/items/iron_sword.tres`, `content/weapons/wooden_axe.tres`, `content/weapons/stone_axe.tres`, `content/weapons/wooden_pickaxe.tres`, `content/weapons/stone_pickaxe.tres`, `content/weapons/iron_pickaxe.tres`, `content/weapons/cleaver.tres`, `content/weapons/skewer.tres`, `content/weapons/repair_hammer.tres`, `content/weapons/iron_sword.tres`, `assets/icons/exports/icon_wooden_axe.png`, `assets/icons/exports/icon_stone_axe.png`, `assets/icons/preview/item_icons_sheet.png`, `tools/setup_crafting_content.gd` |
 
 **3.1 notes:**
 - Extended claim beyond the order's list: content/stations/furnace.tres, content/items/iron_ingot.tres, content/recipes/iron_ingot.tres (the worked example needs them), tools/crafting_ui_check.gd (my UI changes affect it and the task's own verify list runs it), tools/setup_station_content.gd (new deterministic content-authoring helper, matching setup_crafting_content.gd's pattern).
 
-**F-073 notes:**
-- Work complete and verified; commit blocked only because the Godot editor is open (D-031). viewmodel_check 18/18 failures=0, verify_setup/combat_feel/dev_loadout/combat_check all failures=0, generator GRIPS table byte-matches all 11 .tres (44/44 fields). Ship with: agent ship F-073 once the editor is closed.
+**3.6-review notes:**
+- Clean isolated evidence: dc86116 full boot 0 ERROR and build_check 26/26; completed 6bed3c1 build_check 59/59 and build_net_check 13/13, both 0 ERROR. Review probes exposed partial-support acceptance and Y-snap failures; code review exposed unvalidated remote destruction, inert damageable group membership, and no gameplay caller for BuildGhost/BuildService.
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███████░░░` 51/73 | 22 |
+| Findings | `███████░░░` 52/74 | 22 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -72,14 +71,14 @@
 | ⬜ | **F-057** A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds | todo |
 | ⬜ | **F-058** `mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call | todo |
 | ⬜ | **F-061** content/items/coins.tres has no icon — the render_item_icons.py pipeline needs a SOURCES entry | todo |
-| 🔵 | **F-073** Every tool shares one grip rotation authored for a sword, so the axe is held edge-on and every weapon swings the same chop | in_flight |
 | ⬜ | **F-074** InventoryService._valid_host_peer's connectivity check silently drops a host grant for a peer mid-D-035-grace-window, instead of parking it | todo |
 | ⬜ | **F-075** World statics and props share collision layer 1, so a placement overlap query cannot tell ground from obstruction | todo |
 | ⬜ | **F-076** A new map inherits none of the systems keyed to the old map's group names | todo |
 | ⬜ | **F-077** `agent godot` is always headless, so no in-engine screenshot can ever be captured | todo |
 | ⬜ | **F-079** The obvious way to "compare decoded pixels" silently reports every RGB-only change as identical | todo |
 | ⬜ | **F-080** `git stash` in this repo stashes every other lane's uncommitted work too | todo |
+| ⬜ | **F-081** Every ship blanket-stages .agent/, so one agent's commit silently carries another's in-progress harness edits | todo |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.3` `3.5` `3.6` `3.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-054` `F-055` `F-056` `F-059` `F-060` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-078`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.3` `3.5` `3.6` `3.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-054` `F-055` `F-056` `F-059` `F-060` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-078`

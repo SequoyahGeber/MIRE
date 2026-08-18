@@ -9,6 +9,26 @@ extends Resource
 
 enum Category { RESOURCE, TOOL, WEAPON, CONSUMABLE }
 
+## How this item is swung in first person. PRESENTATION ONLY — it changes the viewmodel's arc and
+## nothing else; reach, arc width and damage stay on `WeaponDef`, which the host reads (F-073).
+##
+## It lives here rather than on `WeaponDef` because coverage decides it: `short_bow` and `arrow` ship
+## a `view_model` and have no `WeaponDef` at all, and `CombatService` builds its `unarmed` fallback in
+## code without ever inserting it into `Registry.weapons`. On `WeaponDef` those three would be
+## unreachable and would silently fall back to a chop — which is the bug this enum exists to fix.
+enum AttackStyle {
+	## No attack arc of its own: a small nudge so clicking is not dead. Bows, arrows, carried things.
+	NONE,
+	## Diagonal, edge-leading, down and across to the left. Axes and the cleaver.
+	CHOP,
+	## Straight overhead and straight down, no lateral. Pickaxes and the repair hammer.
+	SMASH,
+	## Horizontal arc, right to left, edge leading. Swords.
+	SLASH,
+	## Pull back, drive straight down the view axis. Spears and skewers.
+	THRUST,
+}
+
 ## Unique key. Must match across all peers — it's what goes over the network, never the resource path.
 @export var id: StringName = &""
 @export var display_name: String = ""
@@ -39,3 +59,7 @@ enum Category { RESOURCE, TOOL, WEAPON, CONSUMABLE }
 @export var grip_offset: Vector3 = Vector3(0.24, -0.26, -0.42)
 @export var grip_rotation_degrees: Vector3 = Vector3(-8.0, 168.0, 6.0)
 @export_range(0.05, 3.0, 0.01) var grip_scale: float = 0.55
+## Which arc `entities/player/viewmodel.gd` plays when this item swings. CHOP is the default because
+## it is what every item did before this field existed, so an unset item cannot silently lose its
+## animation — it keeps the old one.
+@export var attack_style: AttackStyle = AttackStyle.CHOP

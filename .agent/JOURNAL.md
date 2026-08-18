@@ -2140,3 +2140,18 @@ Registered the synthetic review id at order time, gave a review task ownership o
 Files: `docs/FINDINGS.md`
 
 Commit at time of writing: `882993d`
+
+---
+
+### DONE · F-073 · flint5 · 2026-08-18T04:58:38+00:00
+
+**Every tool shares one grip rotation authored for a sword, so the axe is held edge-on and every weapon swings the same chop**
+
+Grips solved per design from each export's geometry (bit +X, cheeks ±Z); ItemDef.attack_style gives axes/cleaver CHOP, pickaxes/hammer SMASH, sword SLASH, skewer THRUST, bow/arrow NONE. Swing now reaches its contact pose at the wind-up/commit boundary where the hit actually resolves, turns about a shoulder pivot, arcs on a Bezier with rotation leading, follows through and overshoots home. Fixed an inverted X-rotation sign the old comment asserted. Both axe icons forced to the 45deg roll. Second generator (setup_crafting_content.gd) now reads the one GRIPS table instead of carrying a stale copy. viewmodel_check: 21 assertions, 0 failures, each negative-tested.
+
+Notes along the way:
+- Work complete and verified; commit blocked only because the Godot editor is open (D-031). viewmodel_check 18/18 failures=0, verify_setup/combat_feel/dev_loadout/combat_check all failures=0, generator GRIPS table byte-matches all 11 .tres (44/44 fields). Ship with: agent ship F-073 once the editor is closed.
+
+Files: `entities/player/viewmodel.gd`, `systems/inventory/item_def.gd`, `systems/combat/weapon_def.gd`, `tools/setup_tool_content.gd`, `tools/viewmodel_check.gd`, `tools/blender/render_item_icons.py`, `assets/icons/catalog.json`, `content/items/wooden_axe.tres`, `content/items/stone_axe.tres`, `content/items/wooden_pickaxe.tres`, `content/items/stone_pickaxe.tres`, `content/items/iron_pickaxe.tres`, `content/items/cleaver.tres`, `content/items/skewer.tres`, `content/items/short_bow.tres`, `content/items/arrow.tres`, `content/items/repair_hammer.tres`, `content/items/iron_sword.tres`, `content/weapons/wooden_axe.tres`, `content/weapons/stone_axe.tres`, `content/weapons/wooden_pickaxe.tres`, `content/weapons/stone_pickaxe.tres`, `content/weapons/iron_pickaxe.tres`, `content/weapons/cleaver.tres`, `content/weapons/skewer.tres`, `content/weapons/repair_hammer.tres`, `content/weapons/iron_sword.tres`, `assets/icons/exports/icon_wooden_axe.png`, `assets/icons/exports/icon_stone_axe.png`, `assets/icons/preview/item_icons_sheet.png`, `tools/setup_crafting_content.gd`
+
+Commit at time of writing: `fa6958f`

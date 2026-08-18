@@ -33,24 +33,120 @@ const PHASE_RECOVERY: int = 3
 ## Here the node rotates in the CAMERA's axes — +X right, +Y up, -Z forward — so a positive X
 ## rotation is always "swing down", whatever the weapon's own grip happens to be.
 const REST_POSITION := Vector3.ZERO
-## Up and slightly back over the shoulder, tipping the head backwards.
-const WINDUP_POSITION := Vector3(0.02, 0.10, 0.06)
-const WINDUP_ROTATION_DEG := Vector3(-32.0, 10.0, -12.0)
-## Down and across to the left, driving through where the hit resolves.
-## Stops short of driving the head off the bottom of the screen: the contact frame is the one the
-## player reads the hit from, so the weapon has to still be in it.
-const COMMIT_POSITION := Vector3(-0.08, -0.085, -0.10)
-const COMMIT_ROTATION_DEG := Vector3(38.0, -14.0, 16.0)
+
+## `ItemDef.AttackStyle`, mirrored as raw ints for the same reason `PHASE_*` above is (F-011, F-046),
+## and kept honest by `viewmodel_check.gd`, which asserts these agree with the enum rather than
+## trusting the comment.
+const STYLE_NONE: int = 0
+const STYLE_CHOP: int = 1
+const STYLE_SMASH: int = 2
+const STYLE_SLASH: int = 3
+const STYLE_THRUST: int = 4
+const DEFAULT_STYLE: int = STYLE_CHOP
+
+## WHERE THE HIT LANDS, AND WHY THE OLD ARC READ AS A SLIDE (F-073). `CombatService` resolves the
+## hit at `elapsed >= wind_up_seconds` (`combat_service.gd:197`) — the WIND_UP→COMMIT boundary, not
+## somewhere inside COMMIT. The previous pose table drove the weapon *down* during COMMIT, so damage,
+## hitstop and shake all fired while the weapon was still cocked at the top of its wind-up, and the
+## visible strike happened a whole phase late. Every arc below therefore reaches its `hit` key at the
+## END of the wind-up, so the contact frame is the frame the player is already being told about.
+##
+## Inside the wind-up the weapon first cocks (ease-out, hangs — the telegraph) and then drives
+## (ease-in, accelerating). COCK_FRACTION is where one becomes the other.
+const COCK_FRACTION: float = 0.55
+## Rotation leads translation through the strike; that lag is most of what reads as weight.
+const ROTATION_LEAD: float = 0.78
+## Recovery overshoots rest slightly and settles, instead of easing monotonically home.
+const RECOVERY_OVERSHOOT: float = 0.14
+
+## THE SWING TURNS ABOUT A SHOULDER, NOT ABOUT THE EYE. This node sits at the camera's own origin, so
+## rotating it alone orbits the whole weapon around the player's eyeball: 30° of pitch drags a tool
+## half a metre away right off the screen, which is why the first version had to use angles too small
+## to read as a swing. Rotating about a point down and back instead — roughly where a shoulder is —
+## lets the head sweep a real arc while the grip stays near the hand. Camera axes, metres.
+const SWING_PIVOT := Vector3(0.22, -0.40, 0.10)
+
+## One entry per AttackStyle, indexed by the raw ints above.
+##   cock   — top of the wind-up, the anticipation
+##   hit    — the contact pose, reached exactly as the hit resolves
+##   follow — follow-through past contact, reached at the end of COMMIT
+##   arc    — mid-strike control point; a straight lerp is a chord, this makes it a curve
+## One entry per AttackStyle, indexed by the raw ints above.
+##   cock   — top of the wind-up, the anticipation
+##   hit    — the contact pose, reached exactly as the hit resolves
+##   follow — follow-through past contact, reached at the end of COMMIT
+##   arc    — mid-strike control point; a straight lerp is a chord, this makes it a curve
+##
+## SIGN, because the previous table had it backwards and the comment above it agreed with the table
+## rather than with the engine: this node is ABOVE `SWING_PIVOT`, so a POSITIVE X rotation raises the
+## weapon and a NEGATIVE one drives it down. The old constants cocked at -32 and struck at +38, i.e.
+## they dipped and then threw the weapon up and out of frame on the contact frame.
+##
+## Magnitudes are bounded by a real constraint, not by taste: every design's EXTREME point — the axe's
+## bit corner, the sword's tip 1.72 m up — must stay inside the frame for every frame of the swing,
+## since the contact frame is the one the player reads the hit from. Measured at the extremes rather
+## than at a centroid, which is what hid a sword tip sitting 75% past the right edge at full cock.
+## `viewmodel_check.gd` additionally asserts nothing crosses the camera near plane.
+const STYLE_POSES: Array[Dictionary] = [
+	{   # NONE — a bow or a carried thing. Enough motion that a click is not dead.
+		"cock_pos": Vector3(0.008, 0.020, 0.020), "cock_rot": Vector3(6.0, -3.0, 3.0),
+		"hit_pos": Vector3(-0.012, -0.012, -0.030), "hit_rot": Vector3(-6.0, 4.0, -4.0),
+		"follow_pos": Vector3(-0.018, -0.018, -0.012), "follow_rot": Vector3(-8.0, 5.0, -5.0),
+		"arc": Vector3(0.004, 0.006, -0.010),
+	},
+	{   # CHOP — axes and the cleaver. Up over the shoulder, then down and across to the left with the
+		# edge leading, because these are the designs whose bit points downrange.
+		"cock_pos": Vector3(0.015, 0.030, 0.030), "cock_rot": Vector3(13.5, -7.0, 8.0),
+		"hit_pos": Vector3(-0.020, -0.015, -0.045), "hit_rot": Vector3(-13.0, 9.0, -10.0),
+		"follow_pos": Vector3(-0.040, -0.025, -0.020), "follow_rot": Vector3(-19.0, 14.0, -15.0),
+		"arc": Vector3(0.008, 0.014, -0.022),
+	},
+	{   # SMASH — pickaxes and the repair hammer. Straight up, straight down. The yaw and roll are
+		# almost nil on purpose: weight reads as a lack of flourish.
+		"cock_pos": Vector3(0.000, 0.045, 0.030), "cock_rot": Vector3(19.0, -2.0, 3.0),
+		"hit_pos": Vector3(-0.010, -0.020, -0.050), "hit_rot": Vector3(-11.0, 2.0, -3.0),
+		"follow_pos": Vector3(-0.020, -0.030, -0.020), "follow_rot": Vector3(-15.0, 4.0, -5.0),
+		"arc": Vector3(0.000, 0.018, -0.026),
+	},
+	{   # SLASH — the sword. Mostly yaw: a horizontal arc across the view, not a chop. Its cock is the
+		# shallowest of any style because the sword is the longest blade in the set and its framing is
+		# measured at the TIP, 1.72 m up: a cock big enough to look right on the axes threw the point
+		# clean off the right edge of the frame.
+		"cock_pos": Vector3(0.020, 0.015, 0.025), "cock_rot": Vector3(5.0, -3.0, 4.0),
+		"hit_pos": Vector3(-0.050, -0.010, -0.050), "hit_rot": Vector3(-7.0, 18.0, -10.0),
+		"follow_pos": Vector3(-0.055, -0.020, -0.020), "follow_rot": Vector3(-10.0, 27.0, -14.0),
+		"arc": Vector3(0.000, 0.020, -0.030),
+	},
+	{   # THRUST — the skewer. Pull back, drive down the view axis, and deliberately DO NOT arc: a
+		# spear that swings sideways reads as the wrong weapon, which is the complaint that opened
+		# F-073. Almost all of the motion is translation in Z.
+		#
+		# The pull-back is SMALL and the drive carries the read instead. A skewer's hand sits 0.72 up
+		# a 1.97 m shaft, which leaves its butt cap only ~12 cm in front of the camera at rest, so a
+		# 0.11 m pull-back put the butt behind the 0.05 m near plane and clipped it every wind-up.
+		"cock_pos": Vector3(0.020, -0.010, 0.020), "cock_rot": Vector3(5.0, -4.0, 2.0),
+		"hit_pos": Vector3(-0.010, 0.005, -0.240), "hit_rot": Vector3(-3.0, 3.0, -2.0),
+		"follow_pos": Vector3(-0.005, 0.000, -0.190), "follow_rot": Vector3(-4.0, 4.0, -2.0),
+		"arc": Vector3(0.000, 0.000, 0.000),
+	},
+]
+
 ## Idle sway, so a held item does not look pasted onto the screen.
 const SWAY_AMPLITUDE_M: float = 0.006
 const SWAY_SPEED: float = 1.7
+## The swing clock stops dead at the end of RECOVERY rather than reaching rest (`combat_service.gd`
+## zeroes it the frame `elapsed >= swing_seconds()`), so the pose would snap from its recovery
+## residual straight to the sway offset. Ramping the sway back in over this long absorbs that.
+const SWAY_BLEND_SECONDS: float = 0.18
 
 var _item_id: StringName = &""
 var _instance: Node3D
 var _grip_offset: Vector3 = Vector3.ZERO
 var _grip_rotation: Vector3 = Vector3.ZERO
 var _grip_scale: float = 1.0
+var _attack_style: int = DEFAULT_STYLE
 var _sway_time: float = 0.0
+var _sway_blend: float = 1.0
 
 ## Resolved by path, never bare (F-011, F-046). Fetched once in _ready: this node only exists inside
 ## a running scene, where the autoloads are already up.
@@ -107,6 +203,13 @@ func current_instance() -> Node3D:
 	return _instance
 
 
+## The arc the held item is currently animating with, as an `ItemDef.AttackStyle` int. Public so
+## `viewmodel_check.gd` can assert the dispatch actually happened — a style that never reaches the
+## animator is exactly the failure F-073 was, and it is invisible from the outside otherwise.
+func current_attack_style() -> int:
+	return _attack_style
+
+
 func _refresh_item() -> void:
 	var wanted: StringName = held_item_id()
 	if wanted == _item_id:
@@ -119,6 +222,7 @@ func _refresh_item() -> void:
 	_grip_offset = Vector3.ZERO
 	_grip_rotation = Vector3.ZERO
 	_grip_scale = 1.0
+	_attack_style = DEFAULT_STYLE
 	if _item_id == &"":
 		return
 
@@ -137,6 +241,7 @@ func _refresh_item() -> void:
 	_grip_offset = item.grip_offset
 	_grip_rotation = item.grip_rotation_degrees
 	_grip_scale = item.grip_scale
+	_attack_style = clampi(int(item.attack_style), 0, STYLE_POSES.size() - 1)
 	add_child(_instance)
 
 
@@ -151,44 +256,99 @@ func _apply_pose(delta: float) -> void:
 	var position_offset := Vector3.ZERO
 	var rotation_offset := Vector3.ZERO
 
-	match phase:
-		PHASE_WIND_UP:
-			# Ease out: the weapon reaches the top of the wind-up early and hangs there, which is
-			# what makes a telegraph readable rather than a blur.
-			var eased: float = 1.0 - pow(1.0 - progress, 2.0)
-			position_offset = WINDUP_POSITION * eased
-			rotation_offset = WINDUP_ROTATION_DEG * eased
-		PHASE_COMMIT:
-			# Ease in: slow off the top, fastest through the contact point.
-			var eased: float = progress * progress
-			position_offset = WINDUP_POSITION.lerp(COMMIT_POSITION, eased)
-			rotation_offset = Vector3(WINDUP_ROTATION_DEG).lerp(COMMIT_ROTATION_DEG, eased)
-		PHASE_RECOVERY:
-			var eased: float = 1.0 - pow(1.0 - progress, 3.0)
-			position_offset = COMMIT_POSITION.lerp(REST_POSITION, eased)
-			rotation_offset = Vector3(COMMIT_ROTATION_DEG).lerp(Vector3.ZERO, eased)
-		_:
-			_sway_time += delta
-			position_offset = Vector3(
-				sin(_sway_time * SWAY_SPEED) * SWAY_AMPLITUDE_M,
-				sin(_sway_time * SWAY_SPEED * 1.6) * SWAY_AMPLITUDE_M * 0.7,
-				0.0
-			)
+	if phase == PHASE_WIND_UP or phase == PHASE_COMMIT or phase == PHASE_RECOVERY:
+		_sway_blend = 0.0
+		var keyed: Array = swing_pose(_attack_style, phase, progress)
+		position_offset = keyed[0]
+		rotation_offset = keyed[1]
+	else:
+		# Idle. The swing clock is zeroed the frame it completes, so the pose would otherwise snap
+		# from its recovery residual to the sway offset; ramp the sway in instead.
+		_sway_time += delta
+		_sway_blend = minf(_sway_blend + delta / SWAY_BLEND_SECONDS, 1.0)
+		position_offset = Vector3(
+			sin(_sway_time * SWAY_SPEED) * SWAY_AMPLITUDE_M,
+			sin(_sway_time * SWAY_SPEED * 1.6) * SWAY_AMPLITUDE_M * 0.7,
+			0.0
+		) * _sway_blend
 
 	# Hitstop freezes the swing clock, so the pose freezes with it and the impact reads as a stop
-	# rather than as a stutter. Nothing extra to do — local_phase_progress() simply stops advancing.
-	#
-	# Swing on this node, in camera axes...
-	position = position_offset
-	rotation = Vector3(
-		deg_to_rad(rotation_offset.x), deg_to_rad(rotation_offset.y), deg_to_rad(rotation_offset.z)
-	)
-	# ...grip on the child, in the item's own. Neither has to know about the other.
+	# rather than as a stutter. Nothing extra to do — local_phase_progress() simply stops advancing,
+	# and because the arc reaches `hit` exactly when the hit resolves, what it freezes on is the
+	# contact frame itself.
+	transform = swing_transform(position_offset, rotation_offset)
+	# ...grip on the child, in the item's own axes. Neither has to know about the other.
 	_instance.position = _grip_offset
 	_instance.rotation = Vector3(
 		deg_to_rad(_grip_rotation.x), deg_to_rad(_grip_rotation.y), deg_to_rad(_grip_rotation.z)
 	)
 	_instance.scale = Vector3.ONE * _grip_scale
+
+
+## Where one style's arc has got to at `progress` through `phase`, as `[position, rotation_degrees]`.
+##
+## Public and pure so `viewmodel_check.gd` can walk a whole swing without needing that weapon in the
+## hotbar. That matters more than it looks: the dev loadout carries six of the eleven holdable items,
+## so assertions written against "whatever is selected" silently never exercise SLASH at all.
+func swing_pose(style: int, phase: int, progress: float) -> Array:
+	var pose: Dictionary = STYLE_POSES[clampi(style, 0, STYLE_POSES.size() - 1)]
+	match phase:
+		PHASE_WIND_UP:
+			if progress <= COCK_FRACTION:
+				# Cock. Ease out, so the weapon arrives at the top early and hangs there — that hang
+				# is the telegraph, and it is the only part of the swing the player has time to read.
+				var t: float = 1.0 - pow(1.0 - progress / maxf(COCK_FRACTION, 0.001), 2.0)
+				return [REST_POSITION.lerp(pose["cock_pos"], t), Vector3.ZERO.lerp(pose["cock_rot"], t)]
+			# Drive. Ease in, fastest at the contact frame, which is the END of this phase.
+			var t: float = (progress - COCK_FRACTION) / maxf(1.0 - COCK_FRACTION, 0.001)
+			var eased: float = t * t
+			return [
+				_arc(pose["cock_pos"], pose["hit_pos"], pose["arc"], eased),
+				(pose["cock_rot"] as Vector3).lerp(pose["hit_rot"], _lead(eased)),
+			]
+		PHASE_COMMIT:
+			# Past the contact frame. Decelerating follow-through — the weapon carries its own weight
+			# through the target rather than stopping dead on it.
+			var eased: float = 1.0 - pow(1.0 - progress, 2.0)
+			return [
+				(pose["hit_pos"] as Vector3).lerp(pose["follow_pos"], eased),
+				(pose["hit_rot"] as Vector3).lerp(pose["follow_rot"], _lead(eased)),
+			]
+		PHASE_RECOVERY:
+			# Home, overshooting rest and settling back rather than easing monotonically into it.
+			var eased: float = 1.0 - pow(1.0 - progress, 3.0)
+			var overshoot: float = eased + RECOVERY_OVERSHOOT * sin(progress * PI) * (1.0 - progress)
+			return [
+				(pose["follow_pos"] as Vector3).lerp(REST_POSITION, overshoot),
+				(pose["follow_rot"] as Vector3).lerp(Vector3.ZERO, overshoot),
+			]
+	return [Vector3.ZERO, Vector3.ZERO]
+
+
+## The node transform for one keyed pose, turning about `SWING_PIVOT` rather than this node's own
+## origin: `R * (p - pivot) + pivot` is the same as rotating normally and then translating by
+## `pivot - R * pivot`, which is all a Node3D can express. Public for the same reason as `swing_pose`.
+func swing_transform(position_offset: Vector3, rotation_degrees_offset: Vector3) -> Transform3D:
+	var swing := Basis.from_euler(Vector3(
+		deg_to_rad(rotation_degrees_offset.x),
+		deg_to_rad(rotation_degrees_offset.y),
+		deg_to_rad(rotation_degrees_offset.z)
+	))
+	return Transform3D(swing, SWING_PIVOT - swing * SWING_PIVOT + position_offset)
+
+
+## Quadratic Bezier from `from` to `to`, bulged by `arc` at the midpoint. A straight lerp between two
+## keys is a chord; a weapon that travels a chord looks like it is being slid, not swung.
+func _arc(from: Vector3, to: Vector3, arc: Vector3, t: float) -> Vector3:
+	var control: Vector3 = (from + to) * 0.5 + arc
+	var inv: float = 1.0 - t
+	return from * (inv * inv) + control * (2.0 * inv * t) + to * (t * t)
+
+
+## Rotation runs ahead of translation. The weapon has turned into the blow before it has finished
+## travelling, which is what separates a swing from a slide.
+func _lead(t: float) -> float:
+	return clampf(pow(t, ROTATION_LEAD), 0.0, 1.0)
 
 
 func _on_inventory_changed(_slots: Array[Dictionary], _revision: int) -> void:

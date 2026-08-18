@@ -18,6 +18,45 @@ extends SceneTree
 const ITEM_DEF_SCRIPT := preload("res://systems/inventory/item_def.gd")
 const WEAPON_DEF_SCRIPT := preload("res://systems/combat/weapon_def.gd")
 
+## Per-design first-person grip and arc, SOLVED FROM EACH EXPORT'S OWN GEOMETRY, not guessed (F-073).
+##
+## The previous version derived one grip from a design's length and gave every one of them
+## `Vector3(-6, 158, 10)` — a rotation tuned for the sword, whose broad flat IS its readable face.
+## Every A-004 head instead runs bit-to-poll along local +X with its cheeks facing local ±Z, so ~158°
+## of yaw turned each axe, pickaxe, cleaver and hammer edge-on to the screen and presented its flat
+## side to the player. That is the bug Sequoyah reported.
+##
+## These come from `solve_basis()` in the scratch solver recorded in F-073: given where a design's
+## haft and working end actually point in its GLB, they place the hand at a fixed screen position and
+## turn the business end downrange. Re-deriving them needs the geometry, not this table — so if a
+## design's mesh is rebuilt, re-solve rather than nudging numbers here.
+##
+## `style` is `ItemDef.AttackStyle`: 0 NONE, 1 CHOP, 2 SMASH, 3 SLASH, 4 THRUST.
+const GRIPS: Dictionary[StringName, Dictionary] = {
+	&"wooden_axe": {"pos": Vector3(0.1586, -0.3706, -0.5043), "rot": Vector3(0.5, 132.1, 26.0),
+		"scale": 0.3, "style": 1},
+	&"stone_axe": {"pos": Vector3(0.16, -0.3669, -0.5028), "rot": Vector3(0.5, 132.1, 26.0),
+		"scale": 0.29, "style": 1},
+	&"wooden_pickaxe": {"pos": Vector3(0.1716, -0.3616, -0.4884), "rot": Vector3(1.9, 130.3, 21.5),
+		"scale": 0.26, "style": 2},
+	&"stone_pickaxe": {"pos": Vector3(0.1738, -0.3537, -0.4862), "rot": Vector3(1.9, 130.3, 21.5),
+		"scale": 0.24, "style": 2},
+	&"iron_pickaxe": {"pos": Vector3(0.176, -0.3459, -0.484), "rot": Vector3(1.9, 130.3, 21.5),
+		"scale": 0.22, "style": 2},
+	&"cleaver": {"pos": Vector3(0.1513, -0.2961, -0.5199), "rot": Vector3(3.6, 125.8, 25.8),
+		"scale": 0.24, "style": 1},
+	&"skewer": {"pos": Vector3(0.3268, -0.3268, -0.1195), "rot": Vector3(57.4, 138.1, -55.9),
+		"scale": 0.4, "style": 4},
+	&"short_bow": {"pos": Vector3(0.211, -0.3892, -0.5568), "rot": Vector3(0.5, 109.3, 16.2),
+		"scale": 0.3, "style": 0},
+	&"arrow": {"pos": Vector3(0.283, -0.283, -0.191), "rot": Vector3(57.4, 138.1, -55.9),
+		"scale": 0.38, "style": 0},
+	&"repair_hammer": {"pos": Vector3(0.1597, -0.3941, -0.5003), "rot": Vector3(6.9, 117.2, 20.5),
+		"scale": 0.31, "style": 2},
+	&"iron_sword": {"pos": Vector3(0.1839, -0.3656, -0.4897), "rot": Vector3(23.4, 22.5, -11.9),
+		"scale": 0.28, "style": 3},
+}
+
 ## category: 1 = TOOL, 2 = WEAPON (ItemDef.Category).
 ## weight drives the derived swing: 0.0 is a paring knife, 1.0 is a sledgehammer.
 const DESIGNS: Array[Dictionary] = [
@@ -81,15 +120,16 @@ func _save_item(id: StringName, design: Dictionary) -> void:
 	item.set("view_model", _load_if_present(
 		"res://assets/tools_weapons/exports/%s_viewmodel.glb" % id
 	))
-	# Ground-origin exports, so the grip sits some way up the handle and taller designs hang lower.
-	# Starting values only — they are @export'd so a weapon that sits wrong is an inspector fix.
-	# A viewmodel sits ~0.55 m from the near plane, so a 1.38 m axe at scale 1.0 fills the screen.
-	# Scale is derived from the design's own length to keep every tool about the same on-screen size,
-	# then the grip drops taller designs slightly so the head stays in frame.
-	var length: float = float(design.get("length_m", 1.1))
-	item.set("grip_offset", Vector3(0.17, -0.26 - length * 0.03, -0.55))
-	item.set("grip_rotation_degrees", Vector3(-6.0, 158.0, 10.0))
-	item.set("grip_scale", snappedf(clampf(0.30 / maxf(length, 0.2), 0.12, 0.45), 0.01))
+	# Per-design, from GRIPS above. A design with no entry keeps ItemDef's own defaults rather than
+	# inheriting another family's rotation — that inheritance is exactly what F-073 was.
+	if GRIPS.has(id):
+		var grip: Dictionary = GRIPS[id]
+		item.set("grip_offset", grip["pos"])
+		item.set("grip_rotation_degrees", grip["rot"])
+		item.set("grip_scale", grip["scale"])
+		item.set("attack_style", grip["style"])
+	else:
+		push_warning("no grip solved for %s — it will use ItemDef's defaults" % id)
 	if _save(item, "res://content/items/%s.tres" % id):
 		made_items += 1
 

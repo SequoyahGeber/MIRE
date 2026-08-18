@@ -9,6 +9,7 @@ extends SceneTree
 ## survives. Do not re-run once tuning has started. Note the split ownership: this file writes the
 ## stone_axe ITEM, setup_combat_content.gd writes the stone_axe WEAPON.
 
+const TOOL_CONTENT := preload("res://tools/setup_tool_content.gd")
 const ITEM_DEF_SCRIPT := preload("res://systems/inventory/item_def.gd")
 const RECIPE_DEF_SCRIPT := preload("res://systems/crafting/recipe_def.gd")
 const INGREDIENT_SCRIPT := preload("res://systems/crafting/recipe_ingredient.gd")
@@ -36,14 +37,19 @@ func _run() -> void:
 	axe.set("world_model", load(
 		"res://assets/tools_weapons/exports/stone_axe_world.glb"
 	) as PackedScene)
-	# F-041: the first-person presentation. Grip values match what setup_tool_content derives for a
-	# 1.32 m design; both are starting points for the inspector.
+	# F-041: the first-person presentation. F-073: these are READ FROM setup_tool_content.gd's GRIPS
+	# rather than repeated here. Two generators own `stone_axe.tres` — this one authors it and that
+	# one holds the solved grips — and when the numbers were written out twice, this copy silently
+	# re-authored the item with the pre-F-073 sword grip and no `attack_style` the next time anyone
+	# ran it. That is the same clobber class the header already warns about for the icon (F-048).
 	axe.set("view_model", load(
 		"res://assets/tools_weapons/exports/stone_axe_viewmodel.glb"
 	) as PackedScene)
-	axe.set("grip_offset", Vector3(0.17, -0.30, -0.55))
-	axe.set("grip_rotation_degrees", Vector3(-6.0, 158.0, 10.0))
-	axe.set("grip_scale", 0.22)
+	var grip: Dictionary = TOOL_CONTENT.GRIPS[&"stone_axe"]
+	axe.set("grip_offset", grip["pos"])
+	axe.set("grip_rotation_degrees", grip["rot"])
+	axe.set("grip_scale", grip["scale"])
+	axe.set("attack_style", grip["style"])
 	_save(axe, "res://content/items/stone_axe.tres")
 	var saved_axe := load("res://content/items/stone_axe.tres") as ItemDef
 

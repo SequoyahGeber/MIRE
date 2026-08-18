@@ -83,6 +83,27 @@ AZIMUTH: dict[str, float] = {
 DEFAULT_AZIMUTH = 35.0
 ELEVATION = 21.0
 
+#: Camera roll in degrees, authored for icons whose measured framing picks the wrong one (F-073).
+#:
+#: `frame_icon` normally tries upright and rolled-45 and keeps whichever packs the silhouette into
+#: the smaller square. That is right for 23 of the 25 icons and wrong for the two axes, which win
+#: upright by under 1.1% (wooden 1.3622 m vs 1.3738 m; stone 1.3762 vs 1.3914) and so are the only
+#: tools rendered on the vertical. Measured over all eleven tool icons, the silhouette's principal
+#: axis sits at 33-45 degrees for every other design and at 67-68 degrees for these two — which, at
+#: hotbar size, is what Sequoyah read as the axe facing the other way from everything else.
+#:
+#: An override rather than a tuned tie-break, because iron_pickaxe prefers the roll by only 0.54%:
+#: any threshold wide enough to catch the axes flips the pickaxe too. Forcing the roll costs the axes
+#: about 1% of their framing (~2 px in a 256 px slot) and rotates the image only — camera roll cannot
+#: change which side of the model is being viewed, so the bit's bright bevel is untouched.
+#:
+#: NOT a mirror. Rendering the axes from behind (azimuth 20 -> 200) puts the long axis back at ~67
+#: degrees AND hides the cutting bevel, so the axe reads as a wooden mallet. The roll is the whole fix.
+ROLL_OVERRIDE_DEG: dict[str, float] = {
+    "wooden_axe": 45.0,
+    "stone_axe": 45.0,
+}
+
 
 def clear_scene() -> None:
     bpy.ops.object.select_all(action="SELECT")
@@ -178,8 +199,13 @@ def projected_bounds(points: list[Vector], basis: Matrix, roll: float) -> tuple[
     return min(xs), max(xs), min(ys), max(ys)
 
 
-def frame_icon(camera: bpy.types.Object, points: list[Vector]) -> tuple[float, float]:
-    """Point the camera at the asset and choose upright or rolled 45 degrees."""
+def frame_icon(
+    camera: bpy.types.Object, points: list[Vector], forced_roll: float | None = None
+) -> tuple[float, float]:
+    """Point the camera at the asset and choose upright or rolled 45 degrees.
+
+    `forced_roll` (radians) skips the contest and uses that roll, for the icons in
+    ROLL_OVERRIDE_DEG whose measured winner is not the readable one."""
     direction = Vector(
         (
             0.0,
@@ -195,8 +221,9 @@ def frame_icon(camera: bpy.types.Object, points: list[Vector]) -> tuple[float, f
     bpy.context.view_layer.update()
     basis = camera.matrix_world.to_3x3()
 
+    candidates = (forced_roll,) if forced_roll is not None else (0.0, math.radians(45.0))
     best: tuple[float, float, tuple[float, float, float, float]] | None = None
-    for roll in (0.0, math.radians(45.0)):
+    for roll in candidates:
         minimum_x, maximum_x, minimum_y, maximum_y = projected_bounds(points, basis, roll)
         extent = max(maximum_x - minimum_x, maximum_y - minimum_y)
         if best is None or extent < best[1]:
@@ -231,7 +258,10 @@ def render_icon(scene: bpy.types.Scene, camera: bpy.types.Object, icon_id: str, 
     points = mesh_points(objects)
     if not points:
         raise RuntimeError(f"{source} imported with no mesh geometry")
-    roll, ortho_scale = frame_icon(camera, points)
+    override = ROLL_OVERRIDE_DEG.get(icon_id)
+    roll, ortho_scale = frame_icon(
+        camera, points, math.radians(override) if override is not None else None
+    )
     scene.render.filepath = str(EXPORT_DIR / f"icon_{icon_id}.png")
     bpy.ops.render.render(write_still=True)
     polygons = sum(len(obj.data.polygons) for obj in objects if obj.type == "MESH")
