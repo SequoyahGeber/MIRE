@@ -544,6 +544,38 @@ failures — `enemy_check.gd`'s 5 telegraph failures reproduce identically via `
 confirmed pre-existing and unrelated, filed separately as F-111), and
 `agent godot --quit-after 120` (Hollowmere boots, navmesh bakes 9,486 polygons, no errors).
 
+## F-076 · A new map inherits none of the systems keyed to the old map's group names
+
+`autoload/enemy_world.gd` and `autoload/harvest_world.gd` each keep a hand-maintained list of legacy
+group names to recognize a map's content (`NEST_SOURCES`, `HOLDER_GROUPS`) — necessary for backward
+compatibility, but a check built by re-reading the same lists inherits the exact blind spot it exists
+to catch: Hollowmere shipped with zero crawlers and 77 dead trees because both lists only knew
+Playtest Hollow's names, and nothing errored. **Claim:** `autoload/enemy_world.gd`,
+`autoload/harvest_world.gd`, `tools/world_contract_check.gd` (new). **Fix:** two new pure functions —
+`EnemyWorld.expected_nest_count(layout: Dictionary) -> int` and
+`HarvestWorld.expected_harvestable_count(layout: Dictionary) -> int` — read ground truth straight off
+a map's raw layout JSON (`markers[].kind == EnemyWorld.CANONICAL_NEST_KIND` i.e. `&"enemy_nest"`,
+`props[].harvestable == true`) rather than through any group, so they cannot go blind to the same
+group name their own consumer does. `tools/world_contract_check.gd` boots whatever
+`project.godot`'s `main_scene` is, finds the layout the way `Undergrowth` already does generically (a
+`World` node exporting `layout_path`), and fails if `expected_nest_count() > 0` but
+`ambient_spawn_points()` comes back empty or no crawler ever spawns, or if
+`expected_harvestable_count() > 0` but `wired_harvestables()` comes back empty. A map not built on
+the `AuthoredWorld` layout convention has nothing to compare against and the layout-shaped checks are
+skipped, not failed — this is deliberately not a hard requirement on every future world generator.
+`enemy_nest` is now the one canonical marker kind a new generator should publish (D-062);
+`NEST_SOURCES` keeps its legacy `enemy_spawn` synonym for Playtest Hollow but ground truth
+deliberately does not read through it. **Not attempted:** `world/gen/undergrowth.gd`'s prop-avoidance
+rule (the third system the original finding named) — it has no clean ground-truth field in a layout
+the way markers/harvestable-props do, and generalizing it needs a claim outside this task's files;
+filed as **F-112**. **Shipped 2026-08-18.** Verify with `agent godot --script
+tools/world_contract_check.gd` (`WORLD_CONTRACT_CHECK PASS`, `layout_nests=4 spawn_points=4 live=4`,
+`layout_props=83 wired=83`) — regression-proved by temporarily commenting out
+`NEST_SOURCES`' Hollowmere entry and confirming the same run fails with `spawn_points=0` and the
+expected message, then reverting — plus `agent godot --script tools/hollowmere_check.gd` /
+`tools/harvest_world_check.gd` (no change, still green) and `tools/enemy_check.gd` (`failures=5`,
+identical to the pre-existing F-111 telegraph failures, confirmed unrelated).
+
 ## F-085 · Buildables joined `damageable` without implementing its required damage method
 
 `BuildService._net_spawn_piece()` (`autoload/build_service.gd`) added every spawned piece to

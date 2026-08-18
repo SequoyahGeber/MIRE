@@ -1242,6 +1242,30 @@ consumer a third special case, and it should be added the same way this one was:
 `project.godot` name, and an explicit audit of every `collision_mask` default that would otherwise go
 blind to it.
 
+### D-062 · 2026-08-18 · A world marker's `kind` names converge on one canonical spelling per concept; a system's ground-truth check reads that spelling, not its own group-recognition list
+
+F-076: Hollowmere shipped with zero enemies because `EnemyWorld` only recognized Playtest Hollow's
+`enemy_spawn` marker kind, and Hollowmere's generator had independently chosen `enemy_nest` for the
+same concept. Two names for one idea is what let the mismatch happen silently — nothing was wrong
+with either name alone.
+
+Decided: **`enemy_nest` is the one marker `kind` any map's generator should publish for its enemy
+nests from here on** (`EnemyWorld.CANONICAL_NEST_KIND`). `EnemyWorld.NEST_SOURCES` keeps reading
+Playtest Hollow's legacy `enemy_spawn` too, for backward compatibility with a map that still exists —
+but that list is explicitly *not* the vocabulary a ground-truth check should trust, because it is
+exactly the thing that goes stale one map generator at a time. `EnemyWorld.expected_nest_count()`
+(F-076) reads the canonical spelling directly off a layout's raw JSON, independent of `NEST_SOURCES`
+entirely, so `tools/world_contract_check.gd` measures a map against the convention rather than against
+whatever this file happens to already recognize.
+
+The same reasoning applies the next time a second synonym appears for any marker/group concept:
+pick one canonical spelling, document it next to the constant, and keep any legacy synonym list
+separate from whatever a check treats as ground truth.
+
+**Would change my mind:** a real need for the SAME concept to mean different things on different maps
+(not just a naming accident) — at that point per-kind semantics belong in the layout schema itself
+(a `nest_radius` field, say), not a second name for the same thing.
+
 ---
 
 ### D-0NN · YYYY-MM-DD · <one-line decision>

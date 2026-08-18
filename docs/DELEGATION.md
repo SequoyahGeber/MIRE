@@ -75,6 +75,42 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — a map now gets a group-name-mismatch check for free (F-076/D-062): `tools/world_contract_check.gd`
+
+Hollowmere shipped as the main scene while `EnemyWorld`/`HarvestWorld` still recognized only Playtest
+Hollow's group names — zero enemies, 77 dead trees, and nothing errored, because a group matching no
+node reads identically to a level that genuinely has none of that thing. `tools/hollowmere_check.gd`
+caught it for that one map by hand; this is the version a THIRD map needs no new code to get.
+
+**Run it with `agent godot --script tools/world_contract_check.gd`.** It reads `main_scene` from
+`project.godot`, so — like `environment_vfx_hollowmere_check.gd` (F-097) — it always follows whatever
+map is actually shipped rather than one hardcoded scene path.
+
+**The API it's built on, for anything that needs the same "does the map actually have X" shape:**
+
+- **`EnemyWorld.expected_nest_count(layout: Dictionary) -> int`** and
+  **`HarvestWorld.expected_harvestable_count(layout: Dictionary) -> int`** are pure functions that
+  read a map's raw layout JSON directly (`markers[].kind`, `props[].harvestable`) — **never** through
+  a Godot group. That's what makes the comparison catch anything: the group-name blind spot that can
+  break `ambient_spawn_points()`/`wired_harvestables()` cannot also hide the number they're being
+  checked against, because that number never went through a group.
+- **`EnemyWorld.CANONICAL_NEST_KIND = &"enemy_nest"`** (D-062) is the one marker `kind` a NEW map's
+  generator should publish for its nests. `NEST_SOURCES` still separately recognizes Playtest
+  Hollow's legacy `enemy_spawn` for the map that still exists, but `expected_nest_count()`
+  deliberately measures against the canonical spelling only — a check reading through the same
+  synonym list it's meant to audit proves nothing.
+- **Where the layout comes from:** a scene's `World` node exporting `layout_path` — the same
+  convention `Undergrowth` already reads generically (`docs/DELEGATION.md`'s Hollowmere section
+  below). A map not built that way has nothing to compare against; the layout-shaped checks are
+  skipped, not failed, so this never blocks a genuinely different kind of world generator.
+
+**Not covered — filed as F-112:** `world/gen/undergrowth.gd`'s "don't grow on top of a prop" rule,
+the third system the original F-076 named. It has no equivalent ground-truth field sitting in a
+layout the way markers/`harvestable` props do — "which collider is solid" is a fact about which node
+the generator tagged, not something the JSON states directly — so generalizing it needs `Undergrowth`
+to expose something like `sample_ground_gaps()` first. `tools/hollowmere_check.gd`'s
+`_check_undergrowth_stays_off_props` is still the only check for it, and it is Hollowmere-specific.
+
 ### 2026-08-18 — a named collision-layer convention exists now (F-075/D-061): layer 2 is terrain, and ONLY terrain
 
 Ground and everything else used to share collision layer 1, which is why `PlacementValidator`'s

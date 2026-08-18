@@ -69,32 +69,27 @@ do is worth as much as the record of what we did.
 
 ## Open
 
-### F-076 · A new map inherits none of the systems keyed to the old map's group names
+### F-112 · `world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check — F-076's third system, not lifted
 
-**Area:** worldgen · **Severity:** high · **Found:** 2026-08-18 by ivy8 during 2.1k
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-18 by lp during F-076
 
-`levels/hollowmere.tscn` became the main scene while **three** systems still looked exclusively for
-Playtest Hollow's node groups. All three were fixed in 2.1k; the finding is open because the *class*
-of bug is not, and the next map will hit it again.
+F-076 generalized two of the three systems Hollowmere's launch exposed (`EnemyWorld`, `HarvestWorld`)
+into `tools/world_contract_check.gd`, which runs against whatever map is `project.godot`'s main scene
+with no per-map code. The third — `Undergrowth`'s "don't grow on top of a prop" rule
+(`world/gen/undergrowth.gd:_is_prop`) — was not: it wasn't in this task's claim
+(`autoload/enemy_world.gd`, `autoload/harvest_world.gd` only), and unlike the other two it has no
+clean ground-truth field to read straight from a layout — "which props are solid" isn't in the JSON,
+only in which collider the generator happens to tag with `prop_group`. The only check for it today is
+still `tools/hollowmere_check.gd::_check_undergrowth_stays_off_props`, which is Hollowmere-specific
+(reads `world.height_at()` and hardcodes the "Undergrowth"/"World" node names of that one scene).
 
-* `autoload/enemy_world.gd` read only `playtest_hollow_marker` / kind `enemy_spawn`. Hollowmere
-  publishes `authored_world_marker` / kind `enemy_nest`, so the shipped main scene had four crawler
-  nests modelled into it and **zero enemies in the game**.
-* `autoload/harvest_world.gd` read only `playtest_hollow_asset`, so every tree and ore node on the
-  map was inert scenery — the whole gathering loop was absent on the map you actually spawn into.
-* `world/gen/undergrowth.gd` tested the *parent* of the collider it hit for the prop group.
-  Hollowmere puts that group on the StaticBody the ray hits, so every prop read as open ground and
-  **grass grew on top of the trees and rocks.**
-
-None of them errored, logged, or failed a check. A group name that matches nothing is indistinguishable
-from a level that has none of that thing, and every one of these systems is written to treat "none"
-as legitimate — correctly, since a map may genuinely have no nests.
-
-**What to do about it:** the durable fix is a check that asserts each *map* satisfies each *system*,
-which `tools/hollowmere_check.gd` now does for this map (`_check_crawlers_actually_spawn`,
-`_check_harvestables_are_live`, `_check_undergrowth_stays_off_props` — each asks the system itself
-rather than counting markers). That pattern should be lifted into something a new map gets for free,
-and the group names themselves should probably converge on one map-agnostic set.
+**What to do about it:** the shape that generalized the other two should transfer — sample a handful
+of each MultiMesh's instance transforms, ray down onto the SAME collider the placer used, and assert
+the landing collider is never in `prop_group` — but doing that without a specific map's coordinates
+needs `Undergrowth` itself to expose something like `sample_ground_gaps() -> Array[float]` the way
+`EnemyWorld`/`HarvestWorld` now expose `expected_*_count()`, so a generic tool can ask the system
+rather than reimplementing its raycast. Needs a claim on `world/gen/undergrowth.gd` and
+`tools/world_contract_check.gd`.
 
 ### F-005 · R2's chunk benchmark excludes GPU upload cost
 
@@ -696,6 +691,58 @@ F-075, and AGENTS.md's rule is to file it and keep moving, not chase it.
 ---
 
 ## Resolved
+
+### F-076 · A new map inherits none of the systems keyed to the old map's group names — **fixed for EnemyWorld/HarvestWorld; Undergrowth follows in F-112**
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-18 by ivy8 during 2.1k
+
+`levels/hollowmere.tscn` became the main scene while **three** systems still looked exclusively for
+Playtest Hollow's node groups. All three were fixed by hand in 2.1k; the finding stayed open because
+the *class* of bug — a group name matching nothing is indistinguishable from a level that has none of
+that thing, so nothing ever errored — was not, and the next map would have hit it again with no check
+to catch it before it shipped.
+
+**Fixed 2026-08-18 by lp**, for two of the three systems (the third is `F-112`, filed above — it
+needed a claim outside this task's files). The durable fix asked for was "a check that asserts each
+map satisfies each system... lifted into something a new map gets for free" — that is
+`tools/world_contract_check.gd`, and it needed no map-specific code because it never trusts a group
+name for ground truth:
+
+* **`EnemyWorld.expected_nest_count(layout: Dictionary) -> int`** and
+  **`HarvestWorld.expected_harvestable_count(layout: Dictionary) -> int`** are new pure functions that
+  read a map's raw layout JSON directly — `markers[].kind` and `props[].harvestable` — never through
+  a Godot group. That is what makes the comparison meaningful: the *same* group-name blind spot that
+  broke `ambient_spawn_points()`/`wired_harvestables()` on Hollowmere cannot also hide the ground
+  truth they're compared against, because the ground truth doesn't go through a group at all.
+* **`tools/world_contract_check.gd`** boots whatever `project.godot` names as `main_scene`, finds the
+  layout the same way `Undergrowth` already does generically (a `World` node exporting
+  `layout_path`), and fails loudly if `expected_nest_count() > 0` but `ambient_spawn_points()` is
+  empty or no crawler ever actually spawns, or if `expected_harvestable_count() > 0` but
+  `wired_harvestables()` is empty. A map not built on the `AuthoredWorld` layout convention has
+  nothing to compare against and the layout-shaped checks are skipped, not failed.
+* **`EnemyWorld.CANONICAL_NEST_KIND = &"enemy_nest"`** is now the one marker `kind` a new map's
+  generator should publish — see **D-062**. `NEST_SOURCES` still separately reads Playtest Hollow's
+  legacy `enemy_spawn` for backward compatibility; ground truth deliberately does not, so it measures
+  against the convention going forward rather than every historical spelling.
+* Deliberately **not** attempted: renaming `authored_world_marker`/`authored_world_harvestable`
+  themselves, or migrating Playtest Hollow's groups. Both are read by other files outside this task's
+  claim (`autoload/crafting_service.gd`, `world/gen/authored_world.gd`) and the deprecated Hollow path
+  is confirmed dead code (F-075's note) — a rename there is pure churn with no bug behind it.
+
+**Verified:**
+`agent godot --script tools/world_contract_check.gd` → `WORLD_CONTRACT_ENEMY layout_nests=4
+spawn_points=4`, `live=4`, `WORLD_CONTRACT_HARVEST layout_props=83 wired=83`,
+`WORLD_CONTRACT_CHECK PASS`. Regression-proved the check actually catches the F-076 bug shape: with
+`EnemyWorld.NEST_SOURCES`'s Hollowmere entry temporarily commented out (simulating a system not yet
+taught a new map's marker group), the same run reported `spawn_points=0` and failed with `layout
+declares 4 enemy_nest marker(s) but EnemyWorld.ambient_spawn_points() found none`; reverted
+immediately after (confirmed via `git diff --stat` showing only the intended 23-line addition).
+No regressions: `agent godot --script tools/hollowmere_check.gd` (`HOLLOWMERE_CHECK PASS`, unchanged
+numbers), `agent godot --script tools/harvest_world_check.gd` (`failures=0`), `agent godot --script
+tools/enemy_check.gd` (`failures=5`, the same pre-existing telegraph failures F-111 already
+attributes to the check itself, not this task).
+
+Missing `docs/SPECS.md` block written as part of this task — see `## F-076` there.
 
 ### F-075 · World statics and props shared collision layer 1, so a placement overlap query could not tell ground from obstruction — **fixed**
 
