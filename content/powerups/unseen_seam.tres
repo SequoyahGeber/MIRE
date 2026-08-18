@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"unseen_seam"
+display_name = "Unseen Seam"
+description = "There is a seam in the attention of things and you have learned to stand in it. Move badly and you fall straight out."
+tags = Array[StringName]([&"Void"])
+max_stacks = 3
+modifiers = Dictionary[StringName, Vector2]({
+&"aggro_radius_m": Vector2(0, -0.06)
+})

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"pale_guard"
+display_name = "Pale Guard"
+description = "Bloodless, and harder for it. Less of you to hurt and more of you to hurt through."
+tags = Array[StringName]([&"Cold"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"max_hp": Vector2(6, 0)
+})

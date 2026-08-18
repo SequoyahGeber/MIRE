@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"gaunt_frame"
+display_name = "Gaunt Frame"
+description = "Less of you to carry and less of you to hide behind. You arrive everywhere sooner and you arrive there thin."
+tags = Array[StringName]([&"Void", &"Kinetic"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"damage_taken": Vector2(0, 0.02),
+&"move_speed": Vector2(0, 0.04)
+})

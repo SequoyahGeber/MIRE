@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"thin_step"
+display_name = "Thin Step"
+description = "The dodge takes you somewhere fractionally else, and you are untouchable for the whole of the trip rather than most of it."
+tags = Array[StringName]([&"Void"])
+max_stacks = 3
+modifiers = Dictionary[StringName, Vector2]({
+&"dodge_iframe_seconds": Vector2(0.04, 0)
+})

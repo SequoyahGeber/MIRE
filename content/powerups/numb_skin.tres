@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"numb_skin"
+display_name = "Numb Skin"
+description = "You stop feeling the rot start. That is not the same as it not starting, but it does take longer to get anywhere."
+tags = Array[StringName]([&"Cold"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"blight_rate": Vector2(0, -0.06)
+})

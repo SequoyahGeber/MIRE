@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"grave_due"
+display_name = "Grave Due"
+description = "You can call someone back from further away than should be possible. It has never once been explained why the distance is negotiable and the death is not."
+tags = Array[StringName]([&"Void", &"Blood"])
+max_stacks = 3
+modifiers = Dictionary[StringName, Vector2]({
+&"revive_radius_m": Vector2(0, 0.08)
+})

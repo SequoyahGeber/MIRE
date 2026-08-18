@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"cellar_cache"
+display_name = "Cellar Cache"
+description = "What you are carrying keeps. Hunger arrives on the slow schedule of a cold room rather than a warm one."
+tags = Array[StringName]([&"Cold", &"Fungal"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"hunger_drain": Vector2(0, -0.06)
+})

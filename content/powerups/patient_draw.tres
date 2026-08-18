@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"patient_draw"
+display_name = "Patient Draw"
+description = "You hold the string that half-second longer than the shot seems to need. It goes where you were looking, and it goes through."
+tags = Array[StringName]([&"Cold"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"bow_damage": Vector2(0, 0.08)
+})

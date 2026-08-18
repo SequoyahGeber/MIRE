@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"second_glance"
+display_name = "Second Glance"
+description = "Look again and there is more there than there was. Fruiting Call gets the same result by making things grow; this gets it by making them have always been there."
+tags = Array[StringName]([&"Void"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"loot_luck": Vector2(0, 0.06)
+})

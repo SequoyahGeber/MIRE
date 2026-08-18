@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"deep_pocket"
+display_name = "Deep Pocket"
+description = "Coin finds you. Cinder Tithe extracts the same favour by burning for it; this one simply has the pocket, and asks nothing."
+tags = Array[StringName]([&"Void"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"coin_gain": Vector2(0, 0.08)
+})

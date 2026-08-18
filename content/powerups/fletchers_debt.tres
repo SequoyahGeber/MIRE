@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"fletchers_debt"
+display_name = "Fletcher's Debt"
+description = "Arrows you were sure you had spent turn up back in the quiver. Someone, somewhere, is short exactly that many and has not worked out why."
+tags = Array[StringName]([&"Void"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"arrow_save_chance": Vector2(0.08, 0)
+})
