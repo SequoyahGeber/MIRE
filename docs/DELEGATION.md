@@ -75,6 +75,102 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 3.17: functions, hooks, autoexec and the headless command-file runner ship — COMMANDS.md §5–6 is complete (lp)
+
+**What shipped, verified:** the whole of `COMMANDS.md` §5–6, gated on 3.13 as specced.
+
+**Functions (§5.1).** `content/functions/*.mcmd` — plain text, `#` whole-line comments, blank lines
+ignored — are scanned into `CommandService._functions` at boot (`FunctionRunner.scan_directory()`,
+`systems/commands/function_runner.gd` — a pure, node-free helper, same discipline as
+`core/commands/entity_selector.gd`: text parsing and scope arithmetic only, no coroutines, so it is
+testable without a live CommandService). `function <name>` runs every line of the named file through
+`CommandService.execute()` itself — never a second execution path — stopping at the first failing
+line. **Effective scope is the max of its lines' scopes** (`FunctionRunner.effective_scope()`,
+D-086's dynamic-`scope: Callable` mechanism): a function with only LOCAL lines runs for anyone, one
+with any HOST line demands op, computed by inspecting the NAMED function's own content rather than
+the invocation's tokens (contrast `rule`/`time`, which only look at how many tokens were typed).
+Recursion cap 4, threaded through `ctx["_fn_depth"]` (an internal-only CommandCtx field, documented at
+the top of `command_service.gd`) rather than a member counter — a member counter would be shared
+across concurrent invocations that interleave at `await` points, corrupting depth for unrelated
+callers.
+
+**The API the next task builds against:**
+```gdscript
+command_service.has_function(&"night_siege")            # -> bool
+command_service.function_names()                        # -> Array[StringName], sorted
+command_service.register_function(&"my_fn", PackedStringArray(["give branch 1"]))  # runtime authoring,
+    # same "content reload and test setup both want that" reasoning as register_spec() — the worked
+    # caller is tools/function_check.gd, proving the recursion cap and D-086 routing without ever
+    # writing a throwaway content/functions/*.mcmd fixture.
+command_service.is_op(peer_id)                           # -> bool, read-only mirror of _is_op()
+```
+
+**Hooks (§5.2).** `systems/rules/hook_def.gd` (`HookDef`: id, event, function, host_only, enabled) is
+a content family like any other, loaded by `Registry._load_dir()` from `content/hooks/*.tres` exactly
+like `RuleDef` (`Registry.hook_defs()/get_hook()/has_hook()`, same naming convention as `rule_defs()`
+— the AUTHORED bindings, not whether one is wired). `CommandService._wire_hooks()` (deferred from
+`_ready()` — Registry and every event source register LATER than CommandService in
+`project.godot`, same `call_deferred` trick `debug_console.gd`'s own `_register_builtins()` already
+uses) connects every ENABLED HookDef's named event to its real signal via `_HOOK_EVENTS`, a fixed
+table mapping event name -> `{path, signal, handler}`:
+```gdscript
+const _HOOK_EVENTS: Dictionary[StringName, Dictionary] = {
+    &"night_started": {"path": ^"/root/DayNight", "signal": &"night_started", "handler": &"_on_hook_signal_0"},
+    &"day_started":   {"path": ^"/root/DayNight", "signal": &"day_started",   "handler": &"_on_hook_signal_0"},
+    &"enemy_died":    {"path": ^"/root/EnemyWorld", "signal": &"enemy_died",  "handler": &"_on_hook_signal_enemy_died"},
+}
+```
+Adding an event a future task ships a real signal for is one row here (F-154 names the two
+illustrative events — `run_started`, `player_downed` — with no signal to bind to yet; naming either
+in a HookDef today fails loudly at wire time, not silently). `CommandService.wire_hook(hook: Resource)`
+is public on purpose: a check (or a future in-game tool) can wire a synthetic HookDef directly, no
+Registry/content round trip needed — `has_wired_hook(id)` is the introspection half.
+`content/hooks/night_siege.tres` + `content/functions/night_siege.mcmd` is the one worked example
+(dusk -> `wave start 10`), shipped **disabled** — D-094 is why, and F-154 is what it deferred.
+
+**Autoexec (§5.3).** Host/offline only (`_owns_execution()`), deferred alongside hook wiring.
+`content/functions/autoexec.mcmd` — if present — is already in `_functions` like any other scanned
+file, so it runs through the exact same `_cmd_function()` path as `function autoexec` typed by hand
+(one code path, not two). `user://autoexec.mcmd` (per-install, gitignored, never content) is read and
+run directly since it was never scanned into `_functions`. Project baseline runs first, personal
+overrides second. Neither ships by default — not shipped content, per COMMANDS.md §5.3.
+
+**The headless runner (§6).** `tools/run_commands.gd` —
+`agent godot --script tools/run_commands.gd -- --file <path> [--json]` — boots the real project
+offline and executes any `.mcmd`-shaped file (any path, not only `content/functions/`) line-by-line
+through the real `CommandService.execute()`. `# expect-fail` on its own line inverts the pass/fail
+grading of the ONE command line immediately after it — this directive is run_commands.gd's own, kept
+deliberately separate from `FunctionRunner.parse_lines()` (which has no notion of "expected" results,
+only real command lines vs. comments). Exit code is non-zero the instant any line's actual result
+(post-inversion) disagrees with what was expected. `content/functions/dev_scenario.mcmd` is the
+worked example — `give branch 5` / `spawn crawler 2` / `enemies`, porting `tools/command_check.gd`'s
+own hand-coded give/spawn setup into a command file (verified: `agent godot --script
+tools/run_commands.gd -- --file content/functions/dev_scenario.mcmd --json` → `failures=0`).
+Migrating `command_check.gd` itself to consume it is deliberately NOT done here (SPECS.md 3.17: "do
+not port the suite — that is opportunistic, later, per-check").
+
+**`tools/command_catalog_check.gd`** (claimed for this task since its own header names 3.17 as the
+task that finishes it): the `DEFERRED_TO_3_17`/`_check_deferred()` pair is gone; `function` is a real
+`CATALOG` row now (`host_args: "night_siege"`, matching the `time`/`rule` dynamic-scope pattern —
+`function`'s bare form is LOCAL, since routing depends on the NAMED function's content, so probing it
+bare would assert the opposite of what D-086 promises, same reasoning already on record for `time`
+and `rule`).
+
+**Verified:** `agent godot --script tools/function_check.gd` (worked example loads off disk; a
+function runs end-to-end through the real front door and a bad line fails the whole thing with the
+real underlying error; D-086 dynamic scope — a LOCAL-only function runs for a non-op, one with any
+HOST line is refused with the uniform wording; recursion cap refuses a self-recursive function
+without hanging, a 4-deep chain under the cap still succeeds; a synthetic HookDef actually fires its
+function on a REAL `DayNight.host_advance()` dusk crossing — driving the real clock, not the signal,
+same discipline as `day_night_check`/`wave_spawner_check` — observed via `op 4242`, chosen because
+nothing else touches that peer's op status, unlike enemy count which the real WaveSpawner ALSO moves
+on every dusk crossing regardless of this hook) — `failures=0`. `tools/command_catalog_check.gd`
+(42 commands now, `function` covered) — `failures=0`. `tools/command_check.gd`, `tools/day_night_check.gd`,
+`tools/wave_spawner_check.gd`, `tools/rule_check.gd`, `tools/handshake_check.gd`, `tools/verify_setup.gd`
+all still `failures=0` / all checks passed after the migration. Full boot (`agent godot --quit-after
+15`): 0 `ERROR:` lines. No new RPC, no protocol bump — functions/hooks/autoexec/runner all execute
+through CommandService's existing `execute()`, never a second mutation path.
+
 ### 2026-08-18 — Task 3.16: the command catalog is complete — every §7 verb ships, and a check now enforces that (hollow7)
 
 **What shipped, verified:** the whole of `COMMANDS.md` §7. `commands --json` now reports **41**

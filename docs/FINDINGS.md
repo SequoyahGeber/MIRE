@@ -848,6 +848,33 @@ of assuming their own `agent ship`/hand-commit silently failed.
 
 ---
 
+### F-154 · Two events in COMMANDS.md §5.2's own illustrative hook vocabulary — `run_started`,
+`player_downed` — have no shipped signal to bind to
+
+**Area:** commands · **Severity:** low · **Found:** 2026-08-18 by lp during 3.17
+
+COMMANDS.md §5.2 names the starting event vocabulary as "`run_started`, `night_started`,
+`day_started`, `player_downed`, `enemy_died`". Three of those are real, existing signals
+(`DayNight.night_started`/`day_started`, `EnemyWorld.enemy_died`) and `CommandService._HOOK_EVENTS`
+(task 3.17) binds all three. The other two do not exist anywhere in the codebase today: nothing emits
+a `run_started` signal (there is no run-lifecycle system yet), and `PlayerHealth` has
+`downed_flag_changed(peer_id, downed)` — fired on both down AND revive — but no one-shot
+"just went down" signal a hook could bind to without also firing on every revive.
+
+Neither `player_health.gd` nor a run-lifecycle owner was in 3.17's claim, so no new signal was added
+to reach the illustrative list — that would have meant editing files outside this task's claim set to
+manufacture a signal for a mechanism that ships disabled by default anyway (D-094). Naming either
+event in a HookDef today is not silent, though: `CommandService.wire_hook()` logs a MireLog error at
+boot ("unknown event '...' has no signal binding") instead of quietly never firing, so authoring one
+by mistake is loud, not a mystery.
+
+**What would close this:** whichever task adds a real run-lifecycle owner (a "run started" moment
+beyond just "the level loaded") or a player-health "downed" edge signal (not the existing level-
+triggered `downed_flag_changed`) should add one row each to `CommandService._HOOK_EVENTS` — the table
+`wire_hook()` already reads is the whole cost of a new event once the real signal exists.
+
+---
+
 ## Resolved
 
 ### F-153 · COMMANDS.md §7 lists 'clear' under both Inventory and Meta — one name, two systems — **fixed**

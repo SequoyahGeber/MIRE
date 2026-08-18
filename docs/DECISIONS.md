@@ -2282,3 +2282,28 @@ to promise a verb that does not exist.
 
 **Would change my mind:** nothing. If an inventory wipe ever wants a shorter spelling, it is a new
 name, not this one.
+
+### D-094 · 2026-08-18 · Hooks ship disabled-by-default; gameplay-by-hook waits for M6 Cycle Modifiers to own it
+
+Filed verbatim per `COMMANDS.md` §9 item 5. Task 3.17 ships the whole mechanism — `HookDef`
+(`systems/rules/hook_def.gd`), `Registry` loading `content/hooks/*.tres`, and
+`CommandService._wire_hooks()`/`wire_hook()` subscribing a HookDef's named event to its function —
+but the one worked example, `content/hooks/night_siege.tres`, ships with `enabled = false`, and
+`_wire_hooks()` skips every disabled HookDef entirely at boot (not connected, not even looked up).
+
+**Why:** binding real game events to data-authored functions is the first slice of "gameplay
+controlled by data, not code" — genuinely the seed of M6's Cycle Modifiers. Turning it on for real
+content now would be deciding, inside a T1 infrastructure task, what the first piece of hook-driven
+gameplay actually IS — a design call M6 should make deliberately, with the rest of the Cycle Modifier
+picture in view, not one this task should back into by shipping a themed wave live.
+
+**Also filed here:** the event vocabulary is deliberately open text (`CommandService._HOOK_EVENTS`
+maps a name to a real signal), not a closed enum — COMMANDS.md §5.2 calls it a list that "starts with
+what exists." Two of the five events the design doc names illustratively (`run_started`,
+`player_downed`) have no shipped signal yet; naming either in a HookDef fails loudly at wire time
+(a MireLog error) rather than silently never firing. Filed as **F-154** so whichever task adds a real
+run-lifecycle or player-downed-edge signal knows where to add the one binding row that finishes it.
+
+**Would change my mind:** a playtest (2.14/3.11 or later) wanting scripted variety sooner than M6 —
+same trigger COMMANDS.md §9 item 5 already named. Flipping `night_siege.tres` to `enabled = true` is
+the entire cost of trying it; nothing about the mechanism itself would need to change.

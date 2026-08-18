@@ -285,6 +285,11 @@ dev convenience for rules and loadout preferences, per D-010 the sanctioned way 
 rules. Not shipped content; `content/functions/autoexec.mcmd` is read too if present, for the
 project-level equivalent.
 
+*Shipped (3.17):* `systems/rules/hook_def.gd`, `content/hooks/night_siege.tres` +
+`content/functions/night_siege.mcmd` (disabled by default, D-094), function loading/execution and
+hook wiring inside `autoload/command_service.gd`, `systems/commands/function_runner.gd` (pure
+parsing/scope helper). `docs/DELEGATION.md`'s *Current state* has the full API.
+
 ---
 
 ## 6. The headless runner — how this pays the harness back
@@ -302,6 +307,10 @@ its scenario. After 3.17, scenario setup is a command file — `give iron_sword`
 shorter, and the command surface itself gets exercised by every check that uses it. The two-process
 pattern (`tools/*_net_check.gd`) composes: the client submits over the real RPC and the check
 asserts the host executed and the result returned.
+
+*Shipped (3.17):* `tools/run_commands.gd`. `content/functions/dev_scenario.mcmd` is the worked
+example — `tools/command_check.gd`'s own give/spawn setup, ported to a command file (its check is
+NOT migrated to consume it — deliberately deferred, "do not port the suite").
 
 ---
 
@@ -385,7 +394,10 @@ with reasoning, so the tasks file them verbatim rather than relitigating:
    one of those paths already ends in `add_to_group()`, so scanning the groups asks the tree what is
    actually alive instead of maintaining a second list that can drift from it.
 5. **(3.17)** Hooks ship disabled-by-default; gameplay-by-data waits for M6 Cycle Modifiers to
-   own it. *Would change:* 2.14/3.11 playtests wanting scripted variety sooner.
+   own it. *Would change:* 2.14/3.11 playtests wanting scripted variety sooner. **Filed as shipped**
+   (D-094), plus **F-154**: two of this section's own illustrative events (`run_started`,
+   `player_downed`) have no shipped signal to bind to yet — naming either in a HookDef fails loudly
+   at wire time instead of silently never firing.
 
 ---
 
