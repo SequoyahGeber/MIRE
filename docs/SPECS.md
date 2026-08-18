@@ -1721,6 +1721,52 @@ passed`.
 
 ---
 
+## F-135 · A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface
+
+**Claim:** none — verification-only task, no code needed editing (see below).
+
+**What was wrong:** `build_construction_set.py`'s `deck_field()` laid each deck plank centred in its
+slot and shrank it by the plank gap, leaving half a gap of nothing at both ends of every field. Every
+affected piece still measured exactly 2.000 m wide overall — the beams, kerbs and bearers reach the
+module edge — so the Blender build contract, which checks the piece's overall run span, passed 18/18
+with a 12 mm stripe of daylight at every joint in a run. Nothing that looks at one asset can see it;
+it only showed up once `tools/construction_check.gd` assembled multiple modules in the engine and
+measured the gap between consecutive **deck** bounds rather than piece bounds. **The general rule:**
+when a kit's contract is "these tile", measure the surface that does the tiling (deck planks, rail
+run, wall face), never the asset's bounding box — the box is decided by whatever sticks out furthest,
+which is exactly the geometry a player never touches.
+
+**Fix (already landed, this task only verified it):** `deck_field()` runs its outer planks to the
+field edge and puts gaps only between planks — `index > 0` / `index < count - 1` guard the two ends,
+so the first and last plank's outer edge lands exactly on the field's edge. It shipped in the same
+commit (`63cc37c`, task 2.1d/A-010) the finding itself was filed from, so by the time this task
+picked it up the fix was already in the tree; what was missing was the closing verification and this
+spec block. Checked every other candidate seam in the kit for the same bug class: `palisade_logs()`'s
+mating plane is its rail boxes (`Rail_0`/`Rail_1`), which are each a single box already spanning the
+full `MODULE` width rather than a gapped field, so palisade runs were never exposed to this.
+
+**Verify:** `agent godot --script tools/construction_check.gd`. No new script — the file already IS
+the focused check this bug needs: `_check_walkway()` assembles a five-module run (ramp, two docks, a
+straight bridge, a broken bridge) and diffs consecutive `_deck_box()` results; `_check_dock_corner()`
+and `_check_palisade_corner()` do the same across a 90-degree turn. All three measure the tiling
+surface (`_deck_box`/`_rail_box` filter parts by name prefix, e.g. `"Deck"`/`"Rail"`), never the
+piece AABB — exactly the general rule this finding states. A prior work order for this task assumed
+no such check existed; it does, from the same 2.1d commit, so writing a second one would only
+duplicate it.
+
+**Done means:** `CONSTRUCTION_WALKWAY`/`CONSTRUCTION_DOCK_CORNER`/`CONSTRUCTION_PALISADE_CORNER`
+each report their worst joint at 0.0000 mm.
+
+**Verified 2026-08-18 (lm):** `agent godot --script tools/construction_check.gd` →
+`CONSTRUCTION_WALKWAY modules=5 worst_joint=0.0000 mm deck=1.000 m`,
+`CONSTRUCTION_DOCK_CORNER arms=0.0000 mm / 0.0000 mm`,
+`CONSTRUCTION_PALISADE_CORNER arms=0.0000 mm / 0.0000 mm`, `CONSTRUCTION_CHECK PASS`. Note: that same
+run logs an unrelated UNDECLARED `ERROR: AABB size is negative` from `_check_doors()` — filed as
+F-148, out of scope here (it never touches deck/gap measurement; the three joint numbers above are
+unaffected by it).
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

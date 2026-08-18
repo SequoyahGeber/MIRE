@@ -117,27 +117,6 @@ gets a `ChunkStreamer` + `ResourceScatterField` pair wired against `GameState.ru
 the exact API both `DELEGATION.md` entries already document. Until then, Hollowmere is the map, and
 that is a decision this finding is recording, not a bug anyone introduced.
 
-### F-135 · A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface
-
-**Area:** art-pipeline · **Severity:** medium · **Found:** 2026-08-18 by slate17 during 2.1d (A-010)
-
-`build_construction_set.py`'s `deck_field()` laid each deck plank centred in its slot and shrank it
-by the plank gap, which left **half a gap of nothing at both ends of every field**. Every affected
-piece still measured exactly 2.000 m wide — the beams, kerbs and bearers reach the module edge — so
-the Blender build contract, which checks the piece's overall run span, passed 18/18 with a **12 mm
-stripe of daylight at every joint in a run** and 6 mm where a ramp met a dock.
-
-Nothing that looks at one asset can see this. It showed up the first time `tools/construction_check.gd`
-assembled five modules in the engine and measured the gap between consecutive **deck** bounds rather
-than between piece bounds.
-
-**The general rule:** when a kit's contract is "these tile", measure the surface that does the
-tiling — the deck planks, the rail run, the wall face — not the asset's bounding box. The bounding
-box is decided by whatever sticks out furthest, which is exactly the geometry a player never touches.
-Fixed by having `deck_field()` run its outer planks to the field edge and put the gaps only between
-them; the engine check now reports worst joint **0.0000 mm** across a five-module walkway, a
-boardwalk corner and a fence corner.
-
 ### F-137 · The build module lives in one `.tres` and nothing else knows it
 
 **Area:** process · **Severity:** low · **Found:** 2026-08-18 by slate17 during 2.1d (A-010)
@@ -721,7 +700,87 @@ Until then: if two agents may share a name, do not trust a claim's `agent` field
 
 ---
 
+### F-148 · construction_check.gd's door-swing solids AABB goes negative-size on thin per-triangle bounds, throwing an UNDECLARED engine error on every run
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by lm
+
+`tools/construction_check.gd::_check_doors()` builds each frame collision solid from one triangle's
+three vertices — `AABB(low, high - low)` — then calls `.grow(-0.004)` to shave 4 mm off every face so
+a near-touch doesn't misreport. A triangle is planar, so its per-axis extent is routinely near zero
+on at least one axis (any triangle lying flat against an axis-aligned face has exactly zero extent
+there); shrinking that already-thin box by 4 mm on both sides drives that axis negative.
+`AABB.has_point()` refuses a negative-size box outright — `ERROR: AABB size is negative, this is not
+supported. Use AABB.abs() to get an AABB with a positive size.` — logged once per vertex-vs-solid
+comparison that hits a degenerate solid, ten-plus times per `agent godot --script
+tools/construction_check.gd` run today.
+
+This is an UNDECLARED error under SPECS.md's standing rule #4 (grep every run for `ERROR:`, treat any
+undeclared line as failure regardless of exit code), so `CONSTRUCTION_CHECK PASS` is not a trustworthy
+verdict as written — the harness's own convention says this run should read as a failure. Found while
+verifying F-135 (unrelated: F-135 is deck_field's mating-plane fix, confirmed working via the
+CONSTRUCTION_WALKWAY/DOCK_CORNER/PALISADE_CORNER 0.0000 mm lines in the same run); this bug lives
+entirely inside `_check_doors()`'s collision-solid construction and never touches deck geometry.
+
+**Not the same bug as F-138.** F-138 was rotating each part's AABB *corners* instead of its vertices,
+which inflated the box; today's code already does the vertex/per-triangle rewrite F-138 describes, so
+that fix is in place. This is a new defect the rewrite's own `.grow(-0.004)` introduced: a per-triangle
+box is degenerate in a way a per-part box mostly wasn't, and shrinking a degenerate box goes negative
+instead of just staying thin.
+
+**Likely fix:** call `.abs()` on the triangle AABB before `.grow(-0.004)`, or clamp the grow so no
+axis can cross zero — either keeps the 4 mm tolerance intent without asking `has_point()` to evaluate
+an invalid box. Whatever the fix, re-run `agent godot --script tools/construction_check.gd` and grep
+for `ERROR:` to confirm zero UNDECLARED lines, not just that `CONSTRUCTION_DOORS swung=4` prints.
+
+---
+
 ## Resolved
+
+### F-135 · A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface — **fixed**
+
+**Area:** art-pipeline · **Severity:** medium · **Found:** 2026-08-18 by slate17 during 2.1d (A-010)
+
+`build_construction_set.py`'s `deck_field()` laid each deck plank centred in its slot and shrank it
+by the plank gap, which left **half a gap of nothing at both ends of every field**. Every affected
+piece still measured exactly 2.000 m wide — the beams, kerbs and bearers reach the module edge — so
+the Blender build contract, which checks the piece's overall run span, passed 18/18 with a **12 mm
+stripe of daylight at every joint in a run** and 6 mm where a ramp met a dock.
+
+Nothing that looks at one asset can see this. It showed up the first time `tools/construction_check.gd`
+assembled five modules in the engine and measured the gap between consecutive **deck** bounds rather
+than between piece bounds.
+
+**The general rule:** when a kit's contract is "these tile", measure the surface that does the
+tiling — the deck planks, the rail run, the wall face — not the asset's bounding box. The bounding
+box is decided by whatever sticks out furthest, which is exactly the geometry a player never touches.
+Fixed by having `deck_field()` run its outer planks to the field edge and put the gaps only between
+them; the engine check now reports worst joint **0.0000 mm** across a five-module walkway, a
+boardwalk corner and a fence corner.
+
+**Resolved 2026-08-18 by lm.** Verified, not re-fixed: `build_construction_set.py::deck_field()` already runs its outer planks to
+the field edge (only inner gaps are subtracted, `index > 0`/`index < count - 1` guard the two ends) —
+this landed in the same 63cc37c commit the finding's own "Fixed by..." sentence describes, from task
+2.1d. Confirmed against every other candidate seam in the kit: `palisade_logs()`'s mating plane is
+its rail boxes, which already span the full MODULE width as a single box rather than a gapped field,
+so it was never exposed to this bug class.
+
+Verified with `agent godot --script tools/construction_check.gd`:
+CONSTRUCTION_WALKWAY modules=5 worst_joint=0.0000 mm deck=1.000 m
+CONSTRUCTION_DOCK_CORNER arms=0.0000 mm / 0.0000 mm
+CONSTRUCTION_PALISADE_CORNER arms=0.0000 mm / 0.0000 mm
+— a five-module walkway (ramp, two docks, straight bridge, broken bridge), a dock corner and a
+palisade corner all close to 0.0000 mm, matching the finding's own closing numbers exactly.
+
+Added the missing docs/SPECS.md block (§ "F-135") so the next agent doesn't have to re-derive this
+from the finding text alone. Did not write a new focused check: `tools/construction_check.gd`
+already IS that check — `_check_walkway`/`_check_dock_corner`/`_check_palisade_corner` measure deck
+and rail bounds specifically, never piece bounding boxes — so a second script would only duplicate
+it. The work order's "no focused check exists yet" was stale against the same 2.1d commit.
+
+Unrelated defect surfaced during this verification run, filed separately as F-148 (not fixed here,
+out of scope): `_check_doors()` throws an UNDECLARED `AABB size is negative` error ~10x per run from
+a `.grow(-0.004)` on a degenerate per-triangle box. It does not touch deck/gap measurement and the
+walkway/corner numbers above are unaffected by it.
 
 ### F-140 · Task 3.5 closed without the four chest changes `ITEMS.md` §6 assigned to it, so two shipped stats had no consumer — **fixed**
 
