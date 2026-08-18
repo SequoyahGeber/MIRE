@@ -13,10 +13,24 @@ extends SceneTree
 ##   /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script tools/net_debug_panel_check.gd
 ##
 ## Exits non-zero on failure.
+##
+## F-037: the real host+client RTT/bandwidth section used to fake its second peer as a second
+## MultiplayerAPI in THIS process, pointed at this process's own /root (F-021's fix for autoload-
+## addressed RPCs). That makes it the host's tree too, so when PlayerNet spawns a body for the fake
+## peer, MultiplayerSpawner replicates it right back into the same container under a name that's
+## already taken — "parent->has_node(name)" errors, harmless but undeclared. Fixed the way every
+## other tools/*_net_check.gd does it (docs/SPECS.md's "Two-process checks" seam): a real second
+## process, talking back through a user:// JSON file, exactly like tools/inventory_net_check.gd.
+
+const PORT: int = 47435
+const RESULT_PATH: String = "user://net_debug_panel_client.json"
+const TIMEOUT_SEC: float = 15.0
 
 var _panel_script: GDScript
 var _failures: int = 0
 var _panel: Node
+var _transport: Node
+var _child_pid: int = 0
 
 
 func _check(label: String, condition: bool, detail: String = "") -> void:
@@ -28,13 +42,29 @@ func _check(label: String, condition: bool, detail: String = "") -> void:
 
 
 func _initialize() -> void:
+	_start.call_deferred()
+
+
+func _start() -> void:
+	await process_frame
+	_transport = root.get_node_or_null(^"NetTransport")
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	if not args.is_empty() and args[0] == "panel-probe":
+		_run_probe()
+	else:
+		_run_driver()
+
+
+# ── Driver: boot / registration / offline readouts, then a real two-process session ────────────────
+
+
+func _run_driver() -> void:
 	print("\n-- boot --")
 	# Relative to root, not "/root/..." — an absolute path is refused this early (root itself is not
 	# yet considered "the active scene tree"), same finding tools/steam_lobby_check.gd already made.
 	var overlay: Node = root.get_node_or_null(^"DebugOverlay")
 	_check("DebugOverlay autoload present", overlay != null)
-	var transport: Node = root.get_node_or_null(^"NetTransport")
-	_check("NetTransport autoload present", transport != null)
+	_check("NetTransport autoload present", _transport != null)
 
 	print("\n-- registration --")
 	_panel_script = load("res://ui/debug/net_debug_panel.gd")
@@ -74,7 +104,7 @@ func _after_ready() -> void:
 		"got %d lines: %s" % [line_count, log_text])
 	_check("oldest events fell off the front", not log_text.contains("joined  peer 2"), log_text)
 
-	print("\n-- offline handshake, then real ENet host+client RTT/bandwidth --")
+	print("\n-- real second process, host+client RTT/bandwidth (F-037) --")
 	await _check_real_session()
 
 	print("\n%d failure(s)\n" % _failures)
@@ -82,57 +112,132 @@ func _after_ready() -> void:
 
 
 func _check_real_session() -> void:
-	var host_transport: Node = root.get_node_or_null(^"NetTransport")
-	var err: Error = host_transport.host(NetConfig.Mode.LOCAL, 47399)
+	if FileAccess.file_exists(RESULT_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(RESULT_PATH))
+
+	var err: Error = _transport.host(NetConfig.Mode.LOCAL, PORT)
 	_check("host() started", err == OK, error_string(err))
+	if err != OK:
+		return
 	await create_timer(0.3).timeout
 
-	# A second in-process peer to actually populate peer_ids()/get_peer() with something real.
-	var client_peer := ENetMultiplayerPeer.new()
-	var cerr: Error = client_peer.create_client("127.0.0.1", 47399)
-	_check("client create_client() ok", cerr == OK, error_string(cerr))
-	var client_mp := MultiplayerAPI.create_default_interface()
-	# F-021: a SceneMultiplayer with no root_path polls happily and emits
-	# "Multiplayer root was not initialized" from _process_packet() on every packet — 19 green
-	# assertions sitting on top of a stream of engine errors. Give it a real node to resolve against
-	# BEFORE the peer is attached, so no packet is ever processed without one.
-	# It has to be `/root`, not a private node: the host addresses its RPCs at autoload paths like
-	# `/root/InventoryService`, so a fake peer rooted anywhere else answers every one of them with
-	# "Node not found" — the same class of hidden error, just a different message.
-	client_mp.root_path = root.get_path()
-	_check("client multiplayer has a root path", not client_mp.root_path.is_empty(),
-		str(client_mp.root_path))
-	client_mp.multiplayer_peer = client_peer
+	_child_pid = _spawn_probe()
+	_check("client process launched", _child_pid > 0, "pid %d" % _child_pid)
 
-	# connected_to_server is racy to catch from outside — it can fire between two of our poll()
-	# calls before the signal connection below even runs. The peer's own connection status is the
-	# same information without the race.
-	var deadline: int = Time.get_ticks_msec() + 3000
-	while client_peer.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED \
-			and Time.get_ticks_msec() < deadline:
-		client_mp.poll()
-		await create_timer(0.05).timeout
-	_check("second peer connected",
-		client_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED)
+	var joined: bool = await _until(
+		func() -> bool: return (_transport.peer_ids() as PackedInt32Array).size() >= 1, TIMEOUT_SEC)
+	_check("host saw the client join", joined, "peers now %s" % str(_transport.peer_ids()))
 
-	# Let a few packets round-trip so ENet has a real RTT sample, not a fresh-connection zero.
-	for i: int in range(10):
-		host_transport.multiplayer.poll()
-		client_mp.poll()
-		await create_timer(0.05).timeout
+	# Let a few real packets round-trip so ENet has a real RTT sample, not a fresh-connection zero.
+	await create_timer(1.0).timeout
 
 	print(_panel._session_line())
 	_check("session line shows LOCAL host", _panel._session_line().begins_with("LOCAL  host"),
 		_panel._session_line())
 
 	var rtt_line: String = _panel._rtt_line()
-	print("rtt: %s" % rtt_line)
-	_check("rtt line names the remote peer, not n/a", rtt_line.contains("2:") or rtt_line.contains(
-		str(client_mp.get_unique_id()) + ":"), rtt_line)
+	print("host rtt: %s" % rtt_line)
+	_check("host rtt line names the remote peer, not n/a", not rtt_line.begins_with("n/a"), rtt_line)
 
 	var bw_line: String = _panel._bandwidth_line()
-	print("bandwidth: %s" % bw_line)
-	_check("bandwidth line is a real reading, not n/a", not bw_line.begins_with("n/a"), bw_line)
+	print("host bandwidth: %s" % bw_line)
+	_check("host bandwidth line is a real reading, not n/a", not bw_line.begins_with("n/a"), bw_line)
 
-	client_peer.close()
-	host_transport.leave()
+	var reported: bool = await _until(
+		func() -> bool: return bool(_read_result().get("done", false)), TIMEOUT_SEC)
+	_check("client probe reported its own readouts", reported)
+	var result: Dictionary = _read_result()
+	_check("client session line shows LOCAL client",
+		String(result.get("session_line", "")).begins_with("LOCAL  client"), str(result))
+	_check("client rtt line names the host, not n/a",
+		not String(result.get("rtt_line", "")).begins_with("n/a"), str(result))
+	_check("client bandwidth line is a real reading, not n/a",
+		not String(result.get("bandwidth_line", "")).begins_with("n/a"), str(result))
+
+	var child_exited: bool = await _until(
+		func() -> bool: return _child_pid <= 0 or not OS.is_process_running(_child_pid), TIMEOUT_SEC)
+	_check("client exited cleanly", child_exited)
+	if child_exited:
+		_child_pid = 0
+
+	_transport.leave()
+
+
+func _spawn_probe() -> int:
+	var project_dir: String = ProjectSettings.globalize_path("res://")
+	var args := PackedStringArray([
+		"--headless", "--path", project_dir, "--script", "tools/net_debug_panel_check.gd",
+		"--", "panel-probe",
+	])
+	return OS.create_process(OS.get_executable_path(), args)
+
+
+# ── Probe: the second process, reporting what it saw ────────────────────────────────────────────────
+
+
+func _run_probe() -> void:
+	_panel_script = load("res://ui/debug/net_debug_panel.gd")
+	_panel = _panel_script.new()
+	root.add_child(_panel)
+	await process_frame
+
+	var err: Error = _transport.join(NetConfig.Mode.LOCAL, NetConfig.LOOPBACK_ADDRESS, PORT)
+	if err != OK:
+		_write_result({"error": error_string(err), "done": true})
+		quit(1)
+		return
+
+	var ready: bool = await _until(_probe_ready, TIMEOUT_SEC)
+	if not ready:
+		_write_result({"error": "connect timeout", "done": true})
+		quit(1)
+		return
+
+	# Let a few real packets round-trip so ENet has a real RTT sample, not a fresh-connection zero.
+	await create_timer(1.0).timeout
+	_write_result({
+		"session_line": _panel._session_line(),
+		"rtt_line": _panel._rtt_line(),
+		"bandwidth_line": _panel._bandwidth_line(),
+		"done": true,
+	})
+	# Stay alive a moment so the driver can read the result before this process exits.
+	await create_timer(0.5).timeout
+	_transport.leave()
+	quit(0)
+
+
+## F-060 trap 1: local_peer_id() reads a real value from the instant create_client() succeeds, before
+## the host<->client handshake completes — is_active() is what's actually false until CONNECTED.
+func _probe_ready() -> bool:
+	return (
+		bool(_transport.call("is_active"))
+		and int(_transport.call("local_peer_id")) > NetConfig.HOST_PEER_ID
+	)
+
+
+# ── Shared helpers ───────────────────────────────────────────────────────────────────────────────────
+
+
+func _until(condition: Callable, timeout_sec: float) -> bool:
+	var deadline: int = Time.get_ticks_msec() + int(timeout_sec * 1000.0)
+	while Time.get_ticks_msec() < deadline:
+		if bool(condition.call()):
+			return true
+		await create_timer(0.05).timeout
+	return bool(condition.call())
+
+
+func _write_result(result: Dictionary) -> void:
+	var file: FileAccess = FileAccess.open(RESULT_PATH, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_string(JSON.stringify(result))
+	file.close()
+
+
+func _read_result() -> Dictionary:
+	if not FileAccess.file_exists(RESULT_PATH):
+		return {}
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(RESULT_PATH))
+	return parsed if parsed is Dictionary else {}

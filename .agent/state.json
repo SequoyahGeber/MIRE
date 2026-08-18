@@ -1262,6 +1262,11 @@
       "at": "2026-08-18T04:33:16+00:00",
       "task": "F-060"
     },
+    "tools/net_debug_panel_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T14:06:30+00:00",
+      "task": "F-037"
+    },
     "tools/perf_probe.gd": {
       "agent": "coil23",
       "at": "2026-08-18T13:15:50+00:00",
@@ -2754,9 +2759,11 @@
       "title": "Task 2.9's gate cannot be met in its roadmap position \u2014 the enemy it tunes against lands in 2.10"
     },
     "F-037": {
+      "done_at": "2026-08-18T14:06:30+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`net_debug_panel_check` fakes its second peer in-process, so host and client share one tree"
     },
@@ -3308,6 +3315,20 @@
       "status": "todo",
       "tier": "F",
       "title": "docs/FINDINGS.md is the one file every lane must write and no lane can hold, so every close-out commit carries other lanes' half-written findings"
+    },
+    "F-103": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin"
+    },
+    "F-104": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A new `class_name` is invisible to every headless run until the editor rescans, and it fails as a silent hang"
     }
   },
   "version": 1

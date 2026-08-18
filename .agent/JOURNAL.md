@@ -2507,3 +2507,18 @@ AGENTS.md's opening role sentence — the one blocked behind 2.1j's claim when t
 Files: `docs/AI-WORKFLOW.md`, `AGENTS.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `804b6f3`
+
+---
+
+### DONE · F-037 · lp · 2026-08-18T14:06:30+00:00
+
+**`net_debug_panel_check` fakes its second peer in-process, so host and client share one tree**
+
+Rewrote _check_real_session() as a real 2-process check (host + self-spawned 'panel-probe' child), copying inventory_net_check.gd's shape -- no more in-process fake MultiplayerAPI sharing the host's /root tree. Verified: agent godot --script tools/net_debug_panel_check.gd, 2x back-to-back, 0 failure(s) and 0 ERROR: lines both runs (the parent->has_node(name) error is gone, no allowance needed). agent godot --script tools/net_check_pattern_check.gd stays clean with the new file's ready-gate correctly recognized as guarded. docs/FINDINGS.md F-037 moved to Resolved; docs/SPECS.md got F-037's own block (removed the stale one-line row from the dispatch table).
+
+Notes along the way:
+- Rewrote net_debug_panel_check as a real 2-process check (host + panel-probe child), copying inventory_net_check's shape. Verified 2x: 0 failures, 0 ERROR: lines, and net_check_pattern_check.gd confirms the new client-ready gate is correctly guarded (is_active() on the same line).
+
+Files: `tools/net_debug_panel_check.gd`
+
+Commit at time of writing: `1a9efa7`
