@@ -103,6 +103,13 @@ scene change while a non-default preset is active. `undergrowth_density_scale` i
 [on|off]` and `fps_cap [n]` (DevFrameCap). 7.5's settings menu should call
 `GraphicsQuality.apply()` and grow UI from there.
 
+**Dynamic resolution (F-098):** `GraphicsQuality.set_dynamic_scale(enabled, target_fps)` /
+console `gfx auto [<fps>|off]` (0 = panel refresh). Steps the 3D scale between 0.59 and the
+active preset's ceiling, 0.5 s cadence, down fast/up slow, fps-steered. Off by default. The
+worst-computer safety net; 7.5's settings menu should expose it as one toggle. Static chunk
+batching for authored props is designed and parked in **F-100** (blocked on F-097's claim) —
+read it before touching authored-world draw counts.
+
 **World-build time (F-095):** `AUTHORED_WORLD` prints `phase_ms=[...]` — keep it honest when
 adding phases. The kit-asset merge is disk-cached at `user://mesh_cache/<kit>_<asset>_<mtime>.res`;
 warm loads build the world in ~117 ms (was 9,145 ms). First-ever load still pays ~2.9 s — the
