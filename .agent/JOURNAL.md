@@ -3095,3 +3095,18 @@ macOS preset gains allow_dyld_environment_variables so Steam can inject the over
 Files: `export_presets.cfg`
 
 Commit at time of writing: `a306057`
+
+---
+
+### DONE · 4.0a · lm · 2026-08-18T19:43:31+00:00
+
+**Spike R2b — `ConcavePolygonShape3D` cooking + GPU mesh upload cost per chunk, on a real renderer (`FINDINGS.md` F-005)**
+
+Spike R2b measured on a real renderer (agent godot --windowed --script tools/bench_chunk_gpu.gd, Metal 4.0/Apple M5 Pro, 60 chunks, run twice, 0 ERROR: lines). Steady-state main-thread cost per streamed-in chunk: 1.17-1.50 ms (collision cook 1.15-1.48 dominates, mesh upload 0.013-0.020, material bind ~0.001). Per-frame chunk budget: 2-3 chunks fit a 4ms streaming slice. Full numbers and 4.3 design guidance in DECISIONS.md D-074; F-005 moved to Resolved; DELEGATION.md Current state has the API/numbers for 4.3.
+
+Notes along the way:
+- Spec text says 'at the 1.5 m voxel scale R2 used' but no 1.5m figure exists anywhere in R2/D-015/chunk_mesher.gd — R2 is a 32m heightmap chunk mesher, not a voxel system. Decided: measure at R2's actual on-record parameters (32m chunk, 1m spacing, 2048 tris) rather than invent a new scale nothing else in M4 is budgeted against. Recording as D-072.
+
+Files: `tools/bench_chunk_gpu.gd`
+
+Commit at time of writing: `e98f6c4`

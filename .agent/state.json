@@ -20,9 +20,24 @@
       "at": "2026-08-18T19:38:49+00:00",
       "task": "3.4"
     },
+    "content/powerups/air_writ.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:40:07+00:00",
+      "task": "3.4"
+    },
     "content/powerups/ashen_temper.tres": {
       "agent": "wick20",
       "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/bellows_lung.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:40:07+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/cat_fall.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:40:07+00:00",
       "task": "3.4"
     },
     "content/powerups/cauter_seal.tres": {
@@ -30,9 +45,34 @@
       "at": "2026-08-18T19:35:40+00:00",
       "task": "3.4"
     },
+    "content/powerups/cellar_cache.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:02+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/chill_edge.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:02+00:00",
+      "task": "3.4"
+    },
     "content/powerups/cinder_tithe.tres": {
       "agent": "wick20",
       "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/damp_stride.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:41:23+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/deep_frost.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:02+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/deep_pocket.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:47+00:00",
       "task": "3.4"
     },
     "content/powerups/ember_knuckle.tres": {
@@ -40,9 +80,24 @@
       "at": "2026-08-18T19:35:40+00:00",
       "task": "3.4"
     },
+    "content/powerups/empty_vessel.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:47+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/far_grasp.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:47+00:00",
+      "task": "3.4"
+    },
     "content/powerups/flashover.tres": {
       "agent": "wick20",
       "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/fletchers_debt.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:47+00:00",
       "task": "3.4"
     },
     "content/powerups/forge_blood.tres": {
@@ -50,9 +105,44 @@
       "at": "2026-08-18T19:35:40+00:00",
       "task": "3.4"
     },
+    "content/powerups/fruiting_call.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:41:23+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/gaunt_frame.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:47+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/grave_due.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:47+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/hollow_bargain.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:47+00:00",
+      "task": "3.4"
+    },
     "content/powerups/iron_tongue.tres": {
       "agent": "wick20",
       "at": "2026-08-18T19:38:49+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/long_bound.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:40:07+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/loping_gait.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:40:07+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/moss_shroud.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:41:23+00:00",
       "task": "3.4"
     },
     "content/powerups/night_pyre.tres": {
@@ -60,9 +150,19 @@
       "at": "2026-08-18T19:35:40+00:00",
       "task": "3.4"
     },
+    "content/powerups/numb_skin.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:02+00:00",
+      "task": "3.4"
+    },
     "content/powerups/open_flame.tres": {
       "agent": "wick20",
       "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/pack_frame.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:40:07+00:00",
       "task": "3.4"
     },
     "content/powerups/pact_cut.tres": {
@@ -70,9 +170,49 @@
       "at": "2026-08-18T19:38:49+00:00",
       "task": "3.4"
     },
+    "content/powerups/pale_guard.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:02+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/patient_draw.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:02+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/quiet_bloom.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:41:23+00:00",
+      "task": "3.4"
+    },
     "content/powerups/red_quench.tres": {
       "agent": "wick20",
       "at": "2026-08-18T19:38:49+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/rich_marrow.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:41:23+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/rime_shell.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:02+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/root_hold.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:41:23+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/rot_chew.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:41:23+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/sanctum_frost.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:02+00:00",
       "task": "3.4"
     },
     "content/powerups/scab_feast.tres": {
@@ -85,9 +225,44 @@
       "at": "2026-08-18T19:38:49+00:00",
       "task": "3.4"
     },
+    "content/powerups/second_glance.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:47+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/second_wind.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:40:07+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/skip_step.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:40:07+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/slow_gut.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:41:23+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/spent_spring.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:40:07+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/spore_sole.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:41:23+00:00",
+      "task": "3.4"
+    },
     "content/powerups/steady_hands.tres": {
       "agent": "wick20",
       "at": "2026-08-18T19:38:49+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/still_breath.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:02+00:00",
       "task": "3.4"
     },
     "content/powerups/stubborn_heart.tres": {
@@ -100,9 +275,19 @@
       "at": "2026-08-18T19:38:49+00:00",
       "task": "3.4"
     },
+    "content/powerups/thin_step.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:47+00:00",
+      "task": "3.4"
+    },
     "content/powerups/tinder_snap.tres": {
       "agent": "wick20",
       "at": "2026-08-18T19:35:40+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/unseen_seam.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:47+00:00",
       "task": "3.4"
     },
     "content/powerups/warm_marrow.tres": {
@@ -115,6 +300,16 @@
       "at": "2026-08-18T19:38:49+00:00",
       "task": "3.4"
     },
+    "content/powerups/white_quiet.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:42:02+00:00",
+      "task": "3.4"
+    },
+    "content/powerups/wide_cap.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:41:23+00:00",
+      "task": "3.4"
+    },
     "core/dev/dev_loadout.gd": {
       "agent": "lp",
       "at": "2026-08-18T19:27:08+00:00",
@@ -124,11 +319,6 @@
       "agent": "lp",
       "at": "2026-08-18T19:27:08+00:00",
       "task": "3.13"
-    },
-    "tools/bench_chunk_gpu.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T19:39:43+00:00",
-      "task": "4.0a"
     },
     "tools/command_check.gd": {
       "agent": "lp",
@@ -190,18 +380,49 @@
         "content/powerups/stubborn_heart.tres",
         "content/powerups/scab_feast.tres",
         "content/powerups/iron_tongue.tres",
-        "content/powerups/whetted_thirst.tres"
+        "content/powerups/whetted_thirst.tres",
+        "content/powerups/long_bound.tres",
+        "content/powerups/bellows_lung.tres",
+        "content/powerups/second_wind.tres",
+        "content/powerups/loping_gait.tres",
+        "content/powerups/skip_step.tres",
+        "content/powerups/cat_fall.tres",
+        "content/powerups/pack_frame.tres",
+        "content/powerups/air_writ.tres",
+        "content/powerups/spent_spring.tres",
+        "content/powerups/wide_cap.tres",
+        "content/powerups/rot_chew.tres",
+        "content/powerups/slow_gut.tres",
+        "content/powerups/spore_sole.tres",
+        "content/powerups/damp_stride.tres",
+        "content/powerups/rich_marrow.tres",
+        "content/powerups/moss_shroud.tres",
+        "content/powerups/fruiting_call.tres",
+        "content/powerups/root_hold.tres",
+        "content/powerups/quiet_bloom.tres",
+        "content/powerups/rime_shell.tres",
+        "content/powerups/chill_edge.tres",
+        "content/powerups/deep_frost.tres",
+        "content/powerups/still_breath.tres",
+        "content/powerups/cellar_cache.tres",
+        "content/powerups/pale_guard.tres",
+        "content/powerups/patient_draw.tres",
+        "content/powerups/sanctum_frost.tres",
+        "content/powerups/numb_skin.tres",
+        "content/powerups/white_quiet.tres",
+        "content/powerups/far_grasp.tres",
+        "content/powerups/deep_pocket.tres",
+        "content/powerups/hollow_bargain.tres",
+        "content/powerups/thin_step.tres",
+        "content/powerups/unseen_seam.tres",
+        "content/powerups/fletchers_debt.tres",
+        "content/powerups/gaunt_frame.tres",
+        "content/powerups/grave_due.tres",
+        "content/powerups/second_glance.tres",
+        "content/powerups/empty_vessel.tres"
       ],
       "notes": [],
       "started": "2026-08-18T19:35:40+00:00"
-    },
-    "4.0a": {
-      "agent": "lm",
-      "files": [
-        "tools/bench_chunk_gpu.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T19:39:43+00:00"
     }
   },
   "recent": {
@@ -1292,6 +1513,12 @@
       "agent": "tine18",
       "at": "2026-08-18T18:10:49+00:00",
       "task": "7.2"
+    },
+    "tools/bench_chunk_gpu.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:43:31+00:00",
+      "hash": "e4ee27669da12572fc58820001b7e079ee324935b3d0d51e747c40057dd801e1",
+      "task": "4.0a"
     },
     "tools/blender/audit_all_sides.py": {
       "agent": "lm",
@@ -2517,9 +2744,11 @@
       "title": "Attunement system + selection UI (`DESIGN.md` \u00a74.5)"
     },
     "4.0a": {
+      "done_at": "2026-08-18T19:43:31+00:00",
+      "done_by": "lm",
       "est": "1.5",
       "milestone": "M4",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T2",
       "title": "Spike R2b \u2014 `ConcavePolygonShape3D` cooking + GPU mesh upload cost per chunk, on a real renderer (`FINDINGS.md` F-005)"
     },
@@ -2952,7 +3181,7 @@
     "F-005": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "R2's chunk benchmark excludes GPU upload cost"
     },
