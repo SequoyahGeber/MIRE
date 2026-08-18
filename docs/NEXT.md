@@ -43,7 +43,7 @@ first attempt's impressions as a verdict on combat feel — the build was not sw
 
 Re-run the gate on the current build. `agent godot --script tools/combat_self_hit_check.gd`,
 `tools/vitals_hud_check.gd` and `tools/player_health_check.gd` are all green.
-**Known and not fixed: the night sky still reads as daytime** — white clouds, no stars (F-065).
+**The night sky reads as night now** (F-065): the cloud deck darkens and catches a warm sunset, a star field fades in across dusk and wheels overhead, and the sky material turns to its night colours only once the sun is actually below the horizon. Daylight is provably unchanged. `agent godot --script tools/atmosphere_night_check.gd`; pictures via `tools/hollowmere_night_render.gd`, which needs a window — see its header.
 
 **2026-08-17 was four sessions in one day:**
 

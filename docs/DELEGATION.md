@@ -124,6 +124,42 @@ needs writing by whoever owns that file next.
 > Execution specs for every remaining roadmap task live in **`docs/SPECS.md`** — this section holds
 > the *shipped* seams those specs build on.
 
+### 2026-08-18 — the sky has a night half now (F-065), and these are its seams
+
+`world/environment/playtest_atmosphere.gd` is still the one place time-of-day becomes pixels, and it
+is still purely client-local. It now drives two things it did not before. **If you are writing 2.12's
+night waves, or anything that wants to know how dark it is, read the clock (`DayNight.time_of_day`),
+not these — they are presentation, and a client may legitimately render them differently.**
+
+- **`CloudDeck.set_sky_light(daylight: float, golden: float)`** — the cloud deck is
+  `SHADING_MODE_UNSHADED`, so *no light in the scene can affect it*. Anything that wants the clouds
+  to change colour has to drive `albedo_color` explicitly; this is that seam. `daylight` is 0 at
+  night and 1 with the sun up; `golden` peaks at 1 with the sun exactly on the horizon. Resolved by
+  method, not node name, so a level can call its deck whatever it likes.
+- **`Atmosphere/StarField`** (`world/environment/star_field.gd`) — built at runtime by Atmosphere's
+  `_ready()`, so **no level scene needs editing to get a night sky**, and a level with an Atmosphere
+  node already has one. `set_night_amount(0..1)` fades it, `set_sky_rotation(radians)` wheels it. It
+  is `top_level` and copies the active camera's position every frame while visible, and hides itself
+  and stops processing entirely at `night_amount <= 0.001`.
+
+Three curves now come off sun elevation in `apply_atmosphere()`, and they are deliberately *not* the
+same curve — this was the bug, not a refinement. `daylight` (−7°..12°) is the ground-lighting curve
+and reaches ~0.3 while the sun is still exactly on the horizon; driving sky colour off it made sunset
+grey. `sky_night` (−1°..−14°) turns the sky material to its night colours only once the sun is
+actually down. `starlight` (−1°..−16°) brings the stars in. Elevation moves ~24° per game hour at the
+horizon, so a narrow window reads as a switch rather than a fade — `atmosphere_night_check.gd`
+asserts the fade holds intermediate values, and it caught exactly that on the first attempt.
+
+**Day is provably untouched.** Every day-end sky value is read off the authored resource in `_ready()`
+rather than written into the script, and the check asserts full daylight restores
+`rayleigh_color`/`mie_color`/`ground_color` byte-for-byte. Re-tune the sky in the `.tscn` and the
+script follows.
+
+**Two harnesses:** `agent godot --script tools/atmosphere_night_check.gd` is the headless one (33
+assertions, no framebuffer needed). `tools/hollowmere_night_render.gd` is the one that produces
+pictures, and it must run **windowed** — its header carries the five-line snippet that takes the same
+`godot` lock `agent godot` takes, which is how any future windowed check should be run (F-044).
+
 ### 2026-08-17, from Sequoyah's 2.9 playtest — three things 2.13 broke or left dark (F-062/063/064)
 
 The gate could not be judged as shipped. What he actually reported — hp at zero, no death, slow

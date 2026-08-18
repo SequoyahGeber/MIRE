@@ -749,6 +749,26 @@ most likely — 4.x Cycle work is the probable place), `Chest` should switch to 
 want reproducible loot. `Chest.host_seed_rng(seed_value)` already exists as the seam that switch would
 call into — it does not need new API, only a new caller.
 
+### D-042 · 2026-08-17 · The night sky is geometry, not `PhysicalSkyMaterial.night_sky`
+
+F-065's star field could have been a panorama texture handed to `PhysicalSkyMaterial.night_sky`, which
+is the engine's own designed path and costs no draw call. It is geometry instead
+(`world/environment/star_field.gd`: a 380 m dome of soft hexagonal points that rides the camera),
+for three reasons in increasing order of weight. It matches the language `low_poly_clouds.gd` already
+set for this sky. A texture sits behind the engine's scattering term, where the dusk fade cannot be
+tuned independently of the sky's own brightness. And decisively on a project whose rule is *verify it
+yourself, headless* — a texture's appearance can only be judged with a framebuffer, whereas every
+claim about geometry (vertex count, per-star alpha, fade monotonicity, determinism across two peers)
+is readable from a headless run, which is what `tools/atmosphere_night_check.gd` does.
+
+The cost is real and accepted: one extra transparent draw call and ~9,400 vertices while the field is
+visible, and nothing at all during daylight (the dome is hidden and stops processing at
+`night_amount <= 0.001`).
+
+**Would change my mind:** a measured frame cost that matters on the minimum spec, or a night sky that
+wants real detail — a Milky Way band, nebulae, anything with structure a few hundred quads cannot
+carry. Both point at a texture, and `set_night_amount()` is the seam that would keep its fade.
+
 ---
 
 ## Template

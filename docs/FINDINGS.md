@@ -903,29 +903,6 @@ revive prompt teammates need (the broadcast `downed_flag_changed` already carrie
 
 ---
 
-### F-065 · Night sky still reads as daytime — white clouds, no stars
-
-**Area:** environment · **Severity:** low · **Found:** 2026-08-18 by nettle12
-
-Observed by Sequoyah during the 2.9 playtest, verbatim: "it's night time now, but the clouds are
-still bright white, and there's no stars."
-
-Task 2.11 shipped the day/night CLOCK — the host advances `time_of_day`, replicates it, and fires
-`night_started`/`day_started` — and `world/environment/playtest_atmosphere.gd` receives the value.
-What did not ship with it is the night half of the SKY MATERIAL: cloud lighting still uses the
-daytime albedo regardless of sun elevation, and there is no star layer at all, so a full night looks
-like an overcast noon that someone turned the brightness down on.
-
-This is presentation only and client-local (ARCHITECTURE.md §2.2, "VFX, audio, camera, UI" row) — the
-clock underneath it is correct and host-authoritative, so nothing here touches replication or the
-protocol version. It is a material/environment job on the atmosphere node, not a systems job.
-
-Wanted: clouds that darken and lose saturation as the sun drops, and a star field that fades in
-across dusk. Worth pairing with 2.12's night waves — night is about to become the dangerous half of
-the cycle, and it needs to read as night before it can read as dangerous.
-
----
-
 ### F-066 · Play-from-editor costs ~2.2 CPU cores and ~90% GPU, none of it the game's rendering — **partly fixed**
 
 **Area:** tooling/performance · **Severity:** medium · **Found:** 2026-08-18 by reed16
@@ -1135,7 +1112,106 @@ needed — `.git/hooks/pre-commit` only execs `agent check`, so every lane picks
 
 ---
 
+### F-068 · The night wave spawner shipped without being registered, so no waves run
+
+**Area:** gameplay · **Severity:** high · **Found:** 2026-08-17 by lc1 during the 2.12 review
+
+Task 2.12's contract requires `WaveSpawner` to be registered after `DayNight`, but commit `915c881`
+did not change `project.godot`, and the current autoload list still ends with `DayNight` at
+`project.godot:39`. Nothing instantiates `systems/waves/wave_spawner.gd`, so its `_ready()` at line 22
+never subscribes to the dusk/dawn signals and the shipped game has no night waves or dawn cleanup.
+
+The task landed before its 2.11 gate and was described as staged behind that gate, but it was closed
+and never completed after 2.11 registered `DayNight`. Fix with the spec's required
+`agent autoload WaveSpawner res://systems/waves/wave_spawner.gd`, then verify a clean boot and the
+wave harness.
+
+---
+
+### F-069 · `wave_spawner_check` signals a shadow DayNight node that WaveSpawner never subscribes to
+
+**Area:** testing · **Severity:** medium · **Found:** 2026-08-17 by lc1 during the 2.12 review
+
+With task 2.11 shipped, `/root/DayNight` already exists. `tools/wave_spawner_check.gd:45-53` adds a
+second node named `DayNight`, then instantiates the production script; production resolves the
+existing autoload at `systems/waves/wave_spawner.gd:24`, while the check emits signals on its newly
+added fake at lines 58, 64, 76, 84 and 86. Those signals therefore never reach the spawner.
+
+The mandated command `.agent/bin/agent godot --script tools/wave_spawner_check.gd` exits 1 with
+`WAVE_SPAWNER_CHECK failures=4` and four `ERROR: FAIL:` lines: both population formulas, ambient
+disable, and repeated-night idempotence fail. The harness must exercise the registered `DayNight` /
+`WaveSpawner` pair, or otherwise avoid the root-name collision, so it stays green in the integrated
+project its gate requires.
+
+---
+
+### F-070 · Generated review orders cannot use their mandated review task id
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by lc1 during the 2.12 review
+
+The review template at `.agent/bin/agent:1620-1621` mandates `agent done <id>-review` followed by
+`agent ship <id>-review`, but ordering/dispatch never adds that synthetic id to `state.json`'s task
+registry. `_require_task()` at `.agent/bin/agent:287-300` therefore rejects the generated commands;
+in this review both `agent brief 2.12-review` and `agent claim 2.12-review` failed with `unknown task
+2.12-review`.
+
+There is a second closeout break after registration: the template correctly says a reviewer claims
+nothing, while `cmd_ship()` stages only the task's released claims plus `.agent/` coordination files
+(`.agent/bin/agent:859-870`). Consequently a review that appends `docs/FINDINGS.md` still cannot ship
+that report through the mandated command. Review dispatch must register a synthetic review task and
+give its ship path explicit ownership of the review's findings artifact (or provide a dedicated
+review closeout command).
+
+---
+
 ## Resolved
+
+### F-065 · Night sky still reads as daytime — white clouds, no stars — **fixed**
+
+**Area:** environment · **Severity:** low · **Found:** 2026-08-18 by nettle12 · **Fixed:** 2026-08-18 by gale6
+
+Observed by Sequoyah during the 2.9 playtest, verbatim: "it's night time now, but the clouds are
+still bright white, and there's no stars."
+
+Task 2.11's clock was correct and host-authoritative all along; nothing downstream of it made night
+look like night. Three separate causes, all client-local presentation, none touching replication or
+the protocol version (still 7):
+
+1. **The cloud deck is `SHADING_MODE_UNSHADED`**, so dropping the sun's `light_energy` could never
+   darken it — no light reaches an unshaded material by definition. `low_poly_clouds.gd` gained
+   `set_sky_light(daylight, golden)`, which drives `albedo_color` (multiplied into each puff's vertex
+   colour) from white at noon, through a warm sunset at the horizon, to a dark blue-grey at night.
+2. **There was no star layer at all.** `world/environment/star_field.gd` is new: a deterministic
+   380 m dome of 520 soft points that rides the camera (so a 356 m valley produces no parallax),
+   fades in across a sun-elevation window of −1° to −16°, and wheels on the same clock the sun turns
+   on. Geometry rather than `PhysicalSkyMaterial.night_sky`, for the reasons in **D-042**.
+   `playtest_atmosphere.gd` creates it, so no level scene had to be edited to get a night sky.
+3. **The sky material's own night colours were driven off `daylight`**, which is already ~0.3 with
+   the sun exactly on the horizon — so sunset was washed to grey at the moment it should have been
+   warmest. `rayleigh_color`/`mie_color`/`ground_color`/`energy_multiplier` now follow a later
+   `sky_night` curve (−1° to −14°), leaving `PhysicalSkyMaterial` to do its own dimming while the sun
+   is still up. Their **day** ends are read off the authored resource in `_ready()` rather than
+   written into the script, so full daylight restores the scene author's sky exactly.
+
+Ambient was also given a cool floor (`NIGHT_AMBIENT_COLOR`, night `ambient_light_energy` 0.16 → 0.22)
+because the now-genuinely-dark sky supplies 74% of ambient in both levels: night should be dangerous,
+not unreadable. 2.12's waves land on this.
+
+**Verified.** `agent godot --script tools/atmosphere_night_check.gd` — 33 assertions, 0 failures, 0
+engine-error lines; it covers the fade being monotonic and gradual, determinism across two peers, the
+dome tracking the camera, a level with no cloud deck being a silent no-op, and (the load-bearing one)
+full daylight restoring the authored sky byte-for-byte. `verify_setup`, `day_night_check` and
+`hollowmere_check` are unchanged and green. Looked at as well as measured:
+`tools/hollowmere_night_render.gd` renders Hollowmere at noon / 18:00 / 18:42 / 23:00 from two
+vantages — mean frame luminance 0.43 → 0.13 → 0.054 → 0.052. That tool needs a real framebuffer, so
+it does **not** go through `agent godot` (always `--headless`, F-044); its header carries the
+five-line snippet that takes the same lock by hand.
+
+Two things deliberately left out, either would be its own task: a **moon** (the strongest remaining
+night cue, and the honest fix for the sun light still pointing *up* from below the horizon at 0.04
+energy), and **twinkle**, which wants a shader rather than more geometry.
+
+---
 
 ### F-055 · `core/util/mire_log.gd`'s `CHANNELS` list has no `health` channel — **fixed**
 
