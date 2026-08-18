@@ -562,7 +562,9 @@ picks this up.
 
 ---
 
-### F-134 · Hand-moving a finding to '## Resolved' eats the heading when it is the last entry under '## Open' — twice now, and the second time made all 121 resolved findings parse as open
+## Resolved
+
+### F-134 · Hand-moving a finding to '## Resolved' eats the heading when it is the last entry under '## Open' — twice now, and the second time made all 121 resolved findings parse as open — **fixed**
 
 **Area:** tooling · **Severity:** high · **Found:** 2026-08-18 by yarrow21
 
@@ -607,9 +609,31 @@ Then `AGENTS.md`'s close-out rule ("closing one means the fix **and** moving its
 `tools/findings_numbering_check.gd` already exists and is the acceptance test — it catches both
 incidents — but it only runs when somebody thinks to run it, which neither offending commit did.
 
----
+**Resolved 2026-08-18 by yarrow21.** `agent resolve <F-NNN>` now exists — the mirror of `agent finding`, with the resolution note on
+stdin. It marks the title `**fixed**`, appends the note, and splices the section in under
+`## Resolved`. **This entry was moved by the command itself**, and F-134 was the last entry under
+`## Open` at the time — the exact case that broke both previous times.
 
-## Resolved
+The bug was never in `agent finding`, which inserts correctly. It was in the move, which had no
+command, so every agent hand-rolled the slice. The fix is one line of intent: bound the extraction at
+`min(next '### F-' heading, index of '## Resolved')`, never at the heading alone, and treat `find()`
+returning -1 as "no later finding" rather than as an offset — a negative index silently slices from
+the end, which is how a refusal becomes a write.
+
+Everything else here is a refusal rather than a write: a finding already under `## Resolved`, an id
+that is not in the file, a roadmap task id, an empty note, and — the important one — a file whose
+`## Resolved` heading is *already* missing. That last case appends blindly under the old approach and
+hides the damage; it now names the structure check and stops.
+
+`AGENTS.md`'s close-out rule names the command instead of describing an edit.
+
+**Verified:** `python3 tools/harness_check.py` → **20/20**, with two new cases — one moving the last
+open entry and asserting both section headings survive (counting *headings*, not substrings: the
+real file quotes "'## Open'" in prose, and a substring count reads that as a second heading), one
+driving all five refusals and asserting the file is byte-identical afterwards. `--rev HEAD`
+reproduces the pre-fix state at **18/20**. A third assertion catches the one defect this did ship on its first run — a doubled `---` where the moved entry's own separator met the previous entry's — found by reading the result on the real file, fixed, and now asserted. And on the real `docs/FINDINGS.md`:
+`agent godot --script tools/findings_numbering_check.gd` → `open=13 resolved=124 failures=0` after
+this move, against `open=14 resolved=123` before it.
 
 ### F-125 · Thin Step authors dodge_iframe_seconds, but D-072 left no i-frame timer for it to extend — **fixed**
 

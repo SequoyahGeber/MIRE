@@ -43,14 +43,17 @@ def brief(text, lines=3, chars=300):
     return head + (" …" if len(text.strip()) > len(head) else "")
 
 
-def run(cmd, cwd, agent="alpha", check=False, godot_bin=None):
+def run(cmd, cwd, agent="alpha", check=False, godot_bin=None, stdin=None):
+    """`stdin` is a string for the commands that read a body that way (`finding`, `resolve`).
+    Passing "" is meaningful and not the same as omitting it — it is how the empty-body refusal gets
+    tested, since a pipe is never a tty either way."""
     env = dict(os.environ, MIRE_AGENT=agent, NO_COLOR="1")
     if godot_bin:
         # Stand in for the engine so the argv the wrapper builds is observable, and so a test never
         # launches a real Godot against a throwaway project.
         env["GODOT_BIN"] = godot_bin
     env.pop("MIRE_SESSION", None)
-    r = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True)
+    r = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, input=stdin)
     if check and r.returncode != 0:
         # AssertionError, not SystemExit: a failed setup command is a failed case, and SystemExit
         # would skip past the per-case handler in main() and abort the whole suite.
@@ -527,6 +530,66 @@ def _(harness):
     assert r.returncode != 0 and "already" in (r.stdout + r.stderr), (
         "reopen accepted a task that was not done: %s" % brief(r.stdout + r.stderr))
     return "F-901 reopened and journalled; reopen on a todo task refused"
+
+
+@case("`agent resolve` moves the LAST open finding without eating the '## Resolved' heading (F-134)")
+def _(harness):
+    d = _findings_repo(harness)
+    doc = os.path.join(d, "docs", "FINDINGS.md")
+
+    # F-902 is the last entry under '## Open' in FINDINGS_DOC — the one case the hand-rolled
+    # "slice to the next '### F-' heading" gets wrong, because the next one is inside '## Resolved'.
+    r = run([".agent/bin/agent", "resolve", "F-902"], d,
+            stdin="Fixed by doing the thing. Verified with the check.")
+    assert r.returncode == 0, "resolve failed: %s" % brief(r.stdout + r.stderr)
+    text = open(doc).read()
+
+    # Count HEADINGS, not substrings: the fixture's template entry quotes "'## Open'" in its prose,
+    # and so does the real docs/FINDINGS.md. A substring count reads that as a second heading.
+    headings = [ln for ln in text.splitlines() if ln.startswith("## ")]
+    assert headings.count("## Resolved") == 1, (
+        "the '## Resolved' heading was eaten — this is the exact corruption 9505cfd shipped, which "
+        "made all 121 resolved findings parse as open. Headings now: %s" % headings)
+    assert headings.count("## Open") == 1, "the '## Open' heading was damaged: %s" % headings
+
+    open_part, _, resolved_part = text.partition("## Resolved")
+    assert "### F-902" in resolved_part and "### F-902" not in open_part, (
+        "F-902 did not end up under '## Resolved'")
+    assert "### F-901" in open_part, "F-901 was dragged across with it"
+    assert "### F-900" in resolved_part, "the finding already under '## Resolved' was lost"
+    assert "**fixed**" in resolved_part.split("### F-902")[1].split("\n")[0], (
+        "the moved title line was not marked **fixed**")
+    assert "Verified with the check." in resolved_part, "the resolution note did not make it in"
+    assert "---\n\n---" not in text and "---\n---" not in text, (
+        "the move left a doubled '---' separator behind — the entry carries its own, and the text "
+        "before it already ends with the previous entry's:\n%s" % brief(open_part[-200:], lines=8))
+    return "moved without damaging either section heading"
+
+
+@case("`agent resolve` refuses rather than writing when the file or the id is wrong (F-134)")
+def _(harness):
+    d = _findings_repo(harness)
+    doc = os.path.join(d, "docs", "FINDINGS.md")
+
+    # Already resolved, unknown, and no note at all: each must refuse and change nothing.
+    before = open(doc).read()
+    for argv, why in [(["resolve", "F-900"], "a finding already under '## Resolved'"),
+                      (["resolve", "F-899"], "an id that is not in the file"),
+                      (["resolve", "9.9"], "a roadmap task id")]:
+        r = run([".agent/bin/agent"] + argv, d, stdin="a note")
+        assert r.returncode != 0, "resolve accepted %s: %s" % (why, brief(r.stdout + r.stderr))
+    r = run([".agent/bin/agent", "resolve", "F-902"], d, stdin="")
+    assert r.returncode != 0, "resolve accepted an empty resolution note"
+    assert open(doc).read() == before, "a refused resolve still wrote to the file"
+
+    # A file whose '## Resolved' heading is already missing is damaged; appending would hide that.
+    with open(doc, "w") as f:
+        f.write(before.replace("## Resolved", "## Not The Heading"))
+    r = run([".agent/bin/agent", "resolve", "F-902"], d, stdin="a note")
+    assert r.returncode != 0 and "damaged" in (r.stdout + r.stderr), (
+        "resolve wrote into a file with no '## Resolved' heading instead of refusing: %s"
+        % brief(r.stdout + r.stderr))
+    return "4 bad ids/notes and a damaged file all refused, nothing written"
 
 
 def main():

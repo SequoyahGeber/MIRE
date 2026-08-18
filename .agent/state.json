@@ -5,10 +5,25 @@
       "at": "2026-08-18T20:36:00+00:00",
       "task": "2.1d"
     },
+    "autoload/command_service.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:03:18+00:00",
+      "task": "3.15"
+    },
+    "autoload/entity_directory.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:03:18+00:00",
+      "task": "3.15"
+    },
     "autoload/world_delta_log.gd": {
       "agent": "lm",
       "at": "2026-08-18T20:58:57+00:00",
       "task": "4.6"
+    },
+    "core/commands/entity_selector.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:03:18+00:00",
+      "task": "3.15"
     },
     "core/game_state.gd": {
       "agent": "lm",
@@ -25,6 +40,11 @@
       "at": "2026-08-18T20:32:24+00:00",
       "task": "2.1d"
     },
+    "systems/health/player_health.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:03:18+00:00",
+      "task": "3.15"
+    },
     "tools/blender/build_construction_set.py": {
       "agent": "slate17",
       "at": "2026-08-18T20:32:24+00:00",
@@ -39,6 +59,16 @@
       "agent": "slate17",
       "at": "2026-08-18T20:32:24+00:00",
       "task": "2.1d"
+    },
+    "tools/entity_check.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:03:18+00:00",
+      "task": "3.15"
+    },
+    "tools/entity_net_check.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:03:18+00:00",
+      "task": "3.15"
     },
     "tools/seed_sync_check.gd": {
       "agent": "lm",
@@ -70,6 +100,19 @@
       ],
       "started": "2026-08-18T20:32:24+00:00"
     },
+    "3.15": {
+      "agent": "hollow7",
+      "files": [
+        "autoload/entity_directory.gd",
+        "core/commands/entity_selector.gd",
+        "autoload/command_service.gd",
+        "systems/health/player_health.gd",
+        "tools/entity_check.gd",
+        "tools/entity_net_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T21:03:18+00:00"
+    },
     "4.6": {
       "agent": "lm",
       "files": [
@@ -86,9 +129,9 @@
   "recent": {
     ".agent/bin/agent": {
       "agent": "yarrow21",
-      "at": "2026-08-18T20:50:46+00:00",
-      "hash": "83a69b9c364d164976aa30c29585ba7ccf286da5cb412ad9d0fec7e6c825be7d",
-      "task": "F-131"
+      "at": "2026-08-18T21:05:35+00:00",
+      "hash": "809acf93a70747eb39af269d15e68bc5095dfa34c34bed5038ec1d974652a07e",
+      "task": "F-134"
     },
     ".agent/bin/lane": {
       "agent": "bram1",
@@ -102,9 +145,9 @@
     },
     "AGENTS.md": {
       "agent": "yarrow21",
-      "at": "2026-08-18T20:50:46+00:00",
-      "hash": "266331b0f49ecf565db77c17ed3f2921fe8efd2dc307cdcf36c1586caa536c6e",
-      "task": "F-131"
+      "at": "2026-08-18T21:05:35+00:00",
+      "hash": "8eb00e18839701c96414c83c67c6aaaf60586a0d912b6679e1ae063aff527ea6",
+      "task": "F-134"
     },
     "CLAUDE.md": {
       "agent": "flint5",
@@ -1376,9 +1419,9 @@
     },
     "docs/FINDINGS.md": {
       "agent": "yarrow21",
-      "at": "2026-08-18T21:01:16+00:00",
-      "hash": "d1cc20016c3abda6545cd45935219efb059ac28faefecc88610cebf240b4132b",
-      "task": "F-125"
+      "at": "2026-08-18T21:05:35+00:00",
+      "hash": "f4754a68d2fcf1c25503f17699c8fd555316b735c029b2f68af4a03f8398c0a0",
+      "task": "F-134"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -1943,9 +1986,9 @@
     },
     "tools/harness_check.py": {
       "agent": "yarrow21",
-      "at": "2026-08-18T20:50:46+00:00",
-      "hash": "966d88e72e4c44660b4b64431d2e3fa1d56d064c64b6709cee56824c91a7198a",
-      "task": "F-131"
+      "at": "2026-08-18T21:05:35+00:00",
+      "hash": "89346f12be42c7b669e06bfbaec11983c279064b6b4b0c9a918d47693f10e3ec",
+      "task": "F-134"
     },
     "tools/harvest_batch_check.gd": {
       "agent": "vane19",
@@ -2889,7 +2932,7 @@
     "3.15": {
       "est": "3",
       "milestone": "M3",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "EntityDirectory + selectors (`@a @p @e[...]`) + entity verbs `tp`/`kill`/`tag`/`entities`, authority-respecting player moves (`COMMANDS.md` \u00a73)"
     },
@@ -4579,9 +4622,11 @@
       "title": "Task 4.3's chunk mesher winds every terrain triangle inside-out \u2014 the ground renders and collides only from below"
     },
     "F-134": {
+      "done_at": "2026-08-18T21:05:35+00:00",
+      "done_by": "yarrow21",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Hand-moving a finding to '## Resolved' eats the heading when it is the last entry under '## Open' \u2014 twice now, and the second time made all 121 resolved findings parse as open"
     }

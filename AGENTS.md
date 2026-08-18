@@ -78,6 +78,22 @@ section; they are deliberately kept out of the milestone progress count, so fili
 the roadmap number. Closing one means the fix **and** moving its section to `## Resolved` with what
 you did and how you verified it — `agent done` warns you if you forget.
 
+**Move it with `agent resolve`, never by hand:**
+
+```bash
+.agent/bin/agent resolve F-013 <<'EOF'
+What fixed it, and the command whose output proves it.
+EOF
+```
+
+It marks the title `**fixed**`, appends your note, and splices the section under `## Resolved`. This
+is not a convenience — hand-rolling that move has eaten a section heading **twice** (F-134). The
+natural slice, "from this heading to the next `### F-` heading", swallows the `## Resolved` heading
+itself whenever the finding you are moving is the *last* one under `## Open`, because the next
+`### F-` is then the first entry inside `## Resolved`. The second time, every one of 121 resolved
+findings silently parsed as open. If you ever do edit the file directly,
+`agent godot --script tools/findings_numbering_check.gd` is what catches it.
+
 ---
 
 ## The protocol

@@ -2900,6 +2900,94 @@ def cmd_finding(args):
         os.replace(tmp, FINDINGS)
 
     ok("filed %s — %s" % (fid, title[:70]))
+
+
+def cmd_resolve(args):
+    """Move a finding from '## Open' to '## Resolved', with the resolution note read from stdin.
+
+    The mirror of `agent finding`, and it exists because the move is the half of a finding's life
+    that had no command — so every agent hand-rolled the slice, and the natural way to write it is
+    wrong in exactly one case (F-134). "From this heading to the next '### F-' heading" swallows the
+    '## Resolved' heading itself whenever the finding being moved is the LAST entry under '## Open',
+    because the next '### F-' is then the first entry inside '## Resolved'. Writing the remainder
+    back deletes the section boundary, and every resolved finding in the file silently becomes open.
+
+    It has happened twice: `89fea39` ate F-112's heading (which is the whole of F-131), and
+    `9505cfd` ate '## Resolved' itself, flipping 121 resolved findings to open in one commit.
+
+    So the bound here is `min(next '### F-' heading, index of '## Resolved')`, never the heading
+    alone — and the failure modes are refusals rather than writes.
+    """
+    if not args:
+        die('usage: agent resolve <F-NNN>\n'
+            "  the resolution note is read from stdin:  agent resolve F-013 <<'EOF' ... EOF\n"
+            "  Say what you did AND how you verified it — the note is the whole point of the move.")
+    fid = _norm_id(args[0])
+    if not _is_finding(fid):
+        die("%s is not a finding id — this moves a section of docs/FINDINGS.md, nothing else." % fid)
+    note = "" if sys.stdin.isatty() else sys.stdin.read().strip()
+    if not note:
+        die("no resolution note on stdin. A finding moved with no account of what fixed it and how\n"
+            "  it was verified is worse than one left open — the next agent cannot tell either way.")
+
+    me = whoami()
+    with file_lock("findings", timeout=300):
+        with open(FINDINGS) as f:
+            text = f.read()
+
+        marker = "\n## Resolved\n"
+        if marker not in text:
+            die("docs/FINDINGS.md has no '## Resolved' heading — the file is already damaged, and\n"
+                "  appending to it would hide that. Restore the heading first, then re-run\n"
+                "  (`agent godot --script tools/findings_numbering_check.gd` will confirm). F-134.")
+        resolved_at = text.index(marker)
+
+        head = "### %s · " % fid
+        start = text.find(head)
+        if start < 0:
+            die("%s is not in docs/FINDINGS.md at all." % fid)
+        if start > resolved_at:
+            die("%s is already under '## Resolved'. Nothing to move." % fid)
+
+        # THE bound. `find` returns -1 when there is no later finding heading at all, and -1 would
+        # slice from the end — so a missing heading has to fall through to the section boundary
+        # rather than being used as an offset. This is the line F-134 is about.
+        nxt = text.find("\n### F-", start + len(head))
+        end = resolved_at if (nxt < 0 or nxt > resolved_at) else nxt
+        was_last_open = end == resolved_at
+
+        body = text[start:end].rstrip("\n")
+        if was_last_open:
+            # It was the last entry under '## Open'. Every entry is written as
+            # "### F-NNN ...\n\n<body>\n\n---\n\n", so the '---' this one carried goes with it —
+            # and the text before it already ends with the PREVIOUS entry's separator, which is what
+            # divides the section from the heading. Adding another would double it.
+            body = body.rstrip("\n")
+            if body.endswith("---"):
+                body = body[:-3].rstrip("\n")
+            text = text[:start].rstrip("\n") + "\n\n" + text[end:].lstrip("\n")
+        else:
+            text = text[:start] + text[end:].lstrip("\n")
+        resolved_at = text.index(marker)   # the splice above moved it
+
+        title_line, _, remainder = body.partition("\n")
+        if not title_line.rstrip().endswith("**fixed**"):
+            title_line = title_line.rstrip() + " — **fixed**"
+        entry = "%s\n%s\n\n**Resolved %s by %s.** %s\n" % (
+            title_line, remainder.rstrip("\n"), now()[:10], me, note)
+
+        i = text.index(marker) + len(marker)
+        text = text[:i] + "\n" + entry + text[i:]
+
+        tmp = FINDINGS + ".tmp"
+        with open(tmp, "w") as f:
+            f.write(text)
+        os.replace(tmp, FINDINGS)
+
+    ok("%s moved to '## Resolved'" % fid)
+    print("  %sRun the structure check before you commit — it is what caught both times this went"
+          % C["dim"])
+    print("  wrong:  agent godot --script tools/findings_numbering_check.gd%s" % C["x"])
     print("  %sdocs/FINDINGS.md · claim it later with:  agent brief %s%s" % (C["dim"], fid, C["x"]))
     return 0
 
@@ -3149,6 +3237,7 @@ COMMANDS = {
     "autoload": cmd_autoload,
     "editor-running": cmd_editor_running,
     "reopen": cmd_reopen,
+    "resolve": cmd_resolve,
 }
 
 USAGE = """agent — multi-agent coordination for MIRE
@@ -3180,6 +3269,9 @@ Verifying — always launch the engine through this, never bare (F-044):
                                             a pgrep for this; both shapes people wrote miss a real
                                             editor launch
   agent finding "title" [--area] [--severity]  file a finding; body on stdin, number allocated safely
+  agent resolve <F-NNN>                     move it to '## Resolved'; note on stdin. Use this
+                                            rather than editing the file — the hand-rolled slice
+                                            has eaten the section heading twice (F-134)
 
 Directing three worker accounts (docs/ORCHESTRATION.md):
 

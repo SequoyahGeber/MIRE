@@ -3307,3 +3307,15 @@ Decoupled dodge i-frames from the dash — option 2, and the authored content se
 Files: `entities/player/player_controller.gd`, `tools/dodge_check.gd`, `docs/FINDINGS.md`, `docs/POWERUPS.md`
 
 Commit at time of writing: `c374bb0`
+
+---
+
+### DONE · F-134 · yarrow21 · 2026-08-18T21:05:35+00:00
+
+**Hand-moving a finding to '## Resolved' eats the heading when it is the last entry under '## Open' — twice now, and the second time made all 121 resolved findings parse as open**
+
+agent resolve <F-NNN> now exists — the mirror of agent finding, note on stdin. The bug was never in agent finding (its insert preserves the heading); it was in the MOVE, which had no command, so every agent hand-rolled the slice and the natural bound — 'to the next ### F- heading' — swallows the ## Resolved heading whenever the finding being moved is the last one under ## Open. Two incidents: 89fea39 ate F-112's heading (the whole of F-131), 9505cfd ate ## Resolved itself and flipped 121 resolved findings to open. Fix bounds the extraction at min(next heading, index of '## Resolved') and treats find()==-1 as 'no later finding' rather than an offset, since a negative index slices from the end. Five refusal paths instead of writes, including a file whose ## Resolved heading is already missing — that one used to append blindly and hide the damage. Dogfooded: F-134 was itself the last entry under ## Open, and this entry was moved by the command. Verified: harness_check 20/20 with two new cases, --rev HEAD reproduces 18/20; real file went open=14 resolved=123 -> open=13 resolved=124 failures=0. One defect shipped on the first real run — a doubled --- separator — caught by reading the output, fixed, and now asserted. AGENTS.md's close-out rule names the command instead of describing an edit.
+
+Files: `.agent/bin/agent`, `tools/harness_check.py`, `AGENTS.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `2857059`
