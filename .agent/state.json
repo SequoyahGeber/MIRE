@@ -10,8 +10,9 @@
     },
     ".agent/bin/lane": {
       "agent": "bram1",
-      "at": "2026-08-18T18:13:25+00:00",
-      "task": "F-044"
+      "at": "2026-08-18T21:41:43+00:00",
+      "hash": "c0c2c7623fbc3ab6335732619acb07f81b73e9013b2c45f9eb320971496fdee5",
+      "task": "F-142"
     },
     ".agent/bin/lane-revive": {
       "agent": "ivy8",
@@ -1445,10 +1446,10 @@
       "task": "3.2"
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-18T21:40:25+00:00",
-      "hash": "64cb934390fe54b4c222b946435583235db3f6fe97949204f26855f2f07336f1",
-      "task": "F-122"
+      "agent": "bram1",
+      "at": "2026-08-18T21:41:43+00:00",
+      "hash": "027af458aa15d09c0618996b33117036b032482797eec41663da826bdb18a947",
+      "task": "F-142"
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -4793,6 +4794,15 @@
       "status": "todo",
       "tier": "F",
       "title": "`Wellspring.net_request_toggle_channel` has no two-process net check \u2014 only the host-side logic it calls into is proven"
+    },
+    "F-142": {
+      "done_at": "2026-08-18T21:41:43+00:00",
+      "done_by": "bram1",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "A quota park is counted as a lane failure, so three ordinary window resets in a row mark a healthy lane blocked"
     }
   },
   "version": 1

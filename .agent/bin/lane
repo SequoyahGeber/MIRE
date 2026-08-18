@@ -779,10 +779,13 @@ def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, e
                 print("  %s· approaching the wall but still serving — keep dispatching, and prefer "
                       "smaller tasks so a stop lands cleanly%s" % (C["dim"], C["x"]))
     else:
-        lane["failures"] += 1
-        lane["consecutive_failures"] += 1
         lane["last_error"] = tail[-600:].strip()
         if exhausted:
+            # A quota park is NOT a failure. The lane is healthy, it did the work asked of it, and it
+            # will work again when its window rolls. Counting it as one both misreports the ledger
+            # (LP read 40 runs / 5 fails when nothing had actually failed) and, at three parks in a
+            # row, trips the consecutive-failure guard that marks a lane blocked — which would stop
+            # routing to a lane whose only problem was that it was waiting for a reset.
             lane["status"] = "exhausted"
             reset = lane.get("quota_resets_at") or parse_reset(tail)
             lane["exhausted_until"] = reset or (
@@ -790,6 +793,8 @@ def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, e
             print("%s✗ %s hit its quota wall on %s — parked until %s%s"
                   % (C["y"], name, task, lane["exhausted_until"], C["x"]))
         else:
+            lane["failures"] += 1
+            lane["consecutive_failures"] += 1
             lane["status"] = "error"
             print("%s✗ %s failed %s (exit %d)%s" % (C["r"], name, task, code, C["x"]))
         print("  %slog: %s%s" % (C["dim"], os.path.relpath(logpath, ROOT), C["x"]))

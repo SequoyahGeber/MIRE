@@ -673,6 +673,32 @@ picks this up.
 
 ## Resolved
 
+### F-142 · A quota park is counted as a lane failure, so three ordinary window resets in a row mark a healthy lane blocked — **fixed**
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by bram1
+
+`_apply_finish` incremented `failures` and `consecutive_failures` for every non-zero exit, including
+the one that is not a failure at all: hitting a quota wall. The lane did the work asked of it, stopped
+cleanly, released nothing, and will run again when its window rolls — that is the system working.
+
+Two costs, one cosmetic and one not. The ledger misreports: LP read **40 runs / 5 fails** at a point
+where nothing had actually failed, so the only honest signal of lane health was noise. And
+`cmd_report` marks a lane blocked at `consecutive_failures >= 3` — so a lane that simply parked three
+windows in a row, which is normal for a heavily-used subscription, would be reported as broken and
+routed around. The failure mode is quiet and expensive: the director stops dispatching to a lane whose
+only problem was that it was waiting.
+
+**Fixed:** the two counters now increment only on a genuine error exit. A quota park sets `status`,
+`exhausted_until` and `last_error` as before — the forensic record is unchanged — but does not count
+against the lane. The `incomplete` case (exit 0 without closing out) still counts, because that one
+really is a failure and three in a row really should trip the guard.
+
+**Verified:** `lane selftest` 23/23; `agent lanes` renders both live lanes correctly; the existing
+park record on LP is left as-is rather than rewritten, since the counter is a running tally and not a
+claim about the current window.
+
+---
+
 ### F-122 · `tools/flora_check.gd:126` measures rotated flora through the same inflated `Transform3D * AABB` ruler as F-108 — **fixed**
 
 **Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by lm, while closing F-108

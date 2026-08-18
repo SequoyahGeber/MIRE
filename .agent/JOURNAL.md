@@ -3409,3 +3409,15 @@ Ported ship_check.gd's vertex-measurement into flora_check.gd's _check_asset(): 
 Files: `tools/flora_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `f7f4d91`
+
+---
+
+### DONE · F-142 · bram1 · 2026-08-18T21:41:43+00:00
+
+**A quota park is counted as a lane failure, so three ordinary window resets in a row mark a healthy lane blocked**
+
+failures/consecutive_failures now increment only on a genuine error exit; a quota park records status/exhausted_until/last_error as before but does not count against the lane. Stops three ordinary window resets from tripping cmd_report's blocked-at-3 guard and having the director route around a healthy lane. lane selftest 23/23, agent lanes renders both live lanes.
+
+Files: `.agent/bin/lane`, `docs/FINDINGS.md`
+
+Commit at time of writing: `8d9804f`
