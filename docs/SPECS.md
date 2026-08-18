@@ -505,6 +505,65 @@ end-to-end case — `BuildGhost.update_aim()` aimed straight down at a y=0.4 pad
 isolation). `failures=0`, reran twice. `tools/build_net_check.gd` (13 assertions, two real ENet
 processes) also `failures=0`, unaffected — its scenarios never place on non-integer ground.
 
+## F-086 · The building system has no gameplay caller, so no player can place, rotate, or destroy anything
+
+3.6 shipped `BuildGhost`/`BuildService`/`PlacementValidator` with no production caller — every API
+(`update_aim()`, `rotate_step()`, `confirm()`, `BuildService.request_destroy()`) was reachable only
+from `tools/build_check.gd`'s own private ghost, so the entire feature was unreachable in a real
+session. **Claim:** `entities/player/player_controller.gd`, `systems/building/build_ghost.gd`,
+`ui/building/build_bar.gd` (new), `tools/build_check.gd`. **Fix:** both `BuildGhost` and a new
+`BuildBar` (a piece-picker + status bar, same visual family as `CraftingUI`/`InventoryUI`) are built
+directly by `player_controller.gd` in `_ready()` for the local player only — **not** autoloads,
+because `project.godot` was held by another lane's task (F-095) when this shipped and because both
+are strictly per-local-player presentation regardless (**D-058**). The existing "build" InputMap
+action (3.6) toggles the mode; `is_build_mode_active()` reads `BuildGhost.visible` directly rather
+than a second flag. Piece rotate (`R`) and destroy (right-click) are raw input, not new InputMap
+actions — `ui/hud/vitals_hud.gd`'s EAT_KEY precedent, for the same "project.godot is locked" reason.
+Confirm reuses the existing "attack" action, checked for build mode FIRST, in the same function,
+before the existing combat routing, so a click can never both swing and place regardless of node
+traversal order. `BuildGhost` gained `aim_destroy_target()`, a SECOND ray independent of whichever
+piece is selected to place, so destroy targets whatever is aimed at regardless of the current
+placement selection. **F-101 filed, not fixed here:** build-mode confirm and
+`autoload/harvest_world.gd`'s own independent "attack" listener are not mediated against each
+other — the fix touches a file outside this task's claim.
+**Shipped 2026-08-18** (`docs/FINDINGS.md` Resolved has the full verification). Re-verify with
+`agent godot --script tools/build_check.gd` — `_check_player_integration()` drives a real
+`entities/player/player.tscn` through the exact input events a player sends (the real "build"
+action, a real `BuildBar` slot click, a real `R` keypress, the real "attack" action, a real
+right-click), proving the wiring rather than constructing a private ghost. `failures=0`.
+`tools/build_net_check.gd` `failures=0`, unaffected.
+
+## F-038 · `inventory_net_check`'s grant timeout, and `combat_net_check`'s sibling flake, both wait-ordering races in the harness
+
+**Claim:** `tools/inventory_net_check.gd`, `tools/combat_net_check.gd`. No production file — both
+roots live entirely in the checks (**D-059** has the full mechanism for each).
+
+**(1) The grant race, both checks.** The driver granted (`EVENT_BUS.emit_harvest_yielded` /
+`inventory.host_add`) as soon as the CLIENT self-reported "connected," which can precede the HOST's
+`InventoryService` creating that peer's store — `_publish_snapshot()`'s `rpc_id` send is one-shot and
+gated on `_peer_connected()`, so a grant landing in that window never reaches the client and the wait
+times out at `TIMEOUT_SEC`. **Fix:** poll `(inventory.call("host_slots", peer_id) as Array).size() ==
+32` before granting, in both checks — `host_slots()` reads `[]` before the store exists, a real
+32-entry array after, so this is a poll of the actual precondition rather than `host_count() == 0`,
+which reads identically for "no store yet" and "store exists and is empty" and proved nothing.
+
+**(2) `combat_net_check`'s own flake, found retesting both checks together per the finding's own
+request.** Unrelated to (1) — reproduces with (1)'s fix already applied. `TestTarget` trails an
+unfloored, permanently-falling player two metres along its forward; by the check's *second* swing the
+player's fall speed has grown enough that `TestTarget._process()`'s one-frame-stale copy of
+`follow.global_position` can clear the swung weapon's `vertical_reach_m` — an intermittent miss with
+nothing wrong in `CombatService`. **Fix:** `_build_ground()`, same shape as
+`tools/build_net_check.gd`'s, built in both processes (a floor only one side has is its own desync)
+before the driver/client branch. Removes the unbounded fall instead of loosening any reach tolerance.
+
+**Verified 2026-08-18:** `agent godot --script tools/net_check_pattern_check.gd` clean (no F-060
+trap reintroduced). Two full back-to-back sequences of
+`inventory_net_check`/`harvestable_net_check`/`crafting_net_check`/`combat_net_check` (the original
+repro shape), `failures=0` and 0 undeclared `ERROR:` lines every check, every pass.
+`combat_net_check` alone: 8 consecutive runs post-fix, `missed_count: 0` every time, against a
+baseline that reproduced a miss within 2–6 runs pre-fix. `inventory_net_check` alone: 3 consecutive
+runs, `failures=0`.
+
 ## 3.8 · Hunger/health/stamina (T1) — **GATE: 2.13 shipped (PlayerHealth exists).**
 
 Extends `PlayerHealth` rather than a new service: hunger drains on host tick, empty hunger drains
@@ -790,7 +849,6 @@ review, and the mandatory Coming-Soon clock — human, sequenced, checklisted in
 | F-024 | Move dev_launch's bounded LAN retry into `NetSession` as policy (D-029 already did it for STEAM; mirror for ENet first joins). |
 | F-025 | Pump Steam callbacks from a timer, not `_process`, so a slow frame can't slow the handshake; verify no reentrancy on the lobby callbacks. |
 | F-037 | Rewrite `net_debug_panel_check`'s fake second peer as a real process (copy `inventory_net_check`'s scaffold); acceptance = 0 expected errors. |
-| F-038 | Re-run the four two-process checks 10× back-to-back **under `agent godot`'s lock** (F-044 landed after this was filed); if it still fires, fix the subscribe-before-grant ordering, never the timeout. |
 | F-042 | Habit recorded in the tracker; optional tool `tools/png_pixels_equal.py` if it bites again. |
 | F-043 | Decision spec'd under M2 above. |
 | F-049 | Two named fixes in `.agent/bin/agent` (`_sync_findings` closes departed findings; start/board call it); ship with a before/after board diff. |

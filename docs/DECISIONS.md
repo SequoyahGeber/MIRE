@@ -1110,6 +1110,66 @@ read from the other direction.
 
 ---
 
+### D-058 · 2026-08-18 · Build-mode presentation is built by the player, not registered as an autoload; "build mode active" has no state of its own
+
+F-086 needed a piece-picker UI (`ui/building/build_bar.gd`) the same shape as `CraftingUI`/
+`InventoryUI`/`VitalsHud` — but every one of those is an autoload, and `project.godot` was held by
+another lane's task (F-095) for the whole session this shipped in. `ui/hud/vitals_hud.gd` had
+already answered a smaller version of the same problem (EAT_KEY, a raw key instead of a new InputMap
+action) — this generalises it one step further: **`BuildBar` and `BuildGhost` are both built directly
+by `entities/player/player_controller.gd` in `_ready()`, the same way it already builds its
+Viewmodel and debug avatar, and registered nowhere.** This is not only a workaround for a locked
+file. Both are strictly per-local-player client-local presentation (§2.2 last row) — nobody needs to
+see another player's piece picker or ghost — so a singleton was never the right shape for them
+regardless of who held `project.godot`; the existing UI autoloads are singletons because there is
+exactly one local player per client process, not because presentation generally wants to be global.
+
+**"Build mode active" is not a second flag.** `PlayerController.is_build_mode_active()` reads
+`BuildGhost.visible` directly — `BuildGhost.set_piece()` already flips it the moment a piece is
+selected or cleared — rather than maintaining a `_build_mode_active: bool` that the ghost's own state
+could drift out of sync with. One source of truth, not two kept equal by convention.
+
+**Would change my mind:** a design that wants co-op players to see each other's build ghost/picker
+(collaborative structure planning) — that would need the ghost's placement replicated and the bar
+promoted to something shared, a real scope change, not a bug in this call. On the autoload half
+specifically: once `project.godot` is free, there is no reason to migrate `BuildBar` to one — the
+per-player-instance shape is the correct one on its own merits, not just the available one.
+
+---
+
+### D-059 · 2026-08-18 · A two-process check's driver must poll the real host-side precondition before mutating host state for a peer — never assert a value that reads identically whether or not that precondition holds
+
+F-038: `inventory_net_check`'s driver treated the CLIENT's self-reported "connected" (its own
+`is_active()` + `local_peer_id() > HOST_PEER_ID` + `local_revision() >= 0`) as proof the HOST was
+ready to receive a grant for that peer, then asserted `host_count(peer, item) == 0` once as if that
+proved it. It doesn't: `host_count()` returns `0` identically for "no store exists yet for this peer"
+and "store exists and is empty," so the assertion passed either way and the driver could call
+`EVENT_BUS.emit_harvest_yielded()` before the host's `InventoryService` had created that peer's store
+— `_publish_snapshot()`'s `rpc_id` send is a one-shot, gated on `_peer_connected()`, with nothing to
+resend it, so a grant landing in that window is lost for the rest of the run. `combat_net_check` had
+already fixed the identical shape once (`player_net.call("player_for", peer_id) != null`, polled, for
+the host-side player-spawn precondition) — this generalises that fix: **poll the host's own state for
+the thing about to be true, not a same-shaped read that can't tell "not yet" from "already, and
+empty."** `(inventory.call("host_slots", peer_id) as Array).size() == 32` is the concrete poll —
+`host_slots()` returns `[]` before the store exists and a real 32-entry array after — used identically
+in both checks before their respective grants.
+
+The same investigation found a second, unrelated flake living in the same file: `combat_net_check`'s
+`TestTarget` trails an unfloored, permanently-falling player, and by the check's *second* swing the
+player's per-frame fall speed had grown enough that `TestTarget`'s one-frame-stale copy of
+`follow.global_position` could clear the swung weapon's `vertical_reach_m` — an intermittent miss with
+nothing wrong in `CombatService`. Fixed by giving the check a floor (`_build_ground()`, the same
+shape `build_net_check.gd` already used, built in both processes since a floor only one side has is
+its own desync), not by loosening the follow or any reach tolerance — same principle, one level over:
+remove what makes the assertion's timing matter, don't widen the assertion to tolerate bad timing.
+
+**Would change my mind:** a check where the host-side precondition genuinely has no cheap poll (no
+existing read distinguishes "not yet" from "already") — then the fix is exposing one, not falling
+back to a longer timeout, which the original finding already rejected as hiding the race rather than
+removing it.
+
+---
+
 ## Template
 
 ```
