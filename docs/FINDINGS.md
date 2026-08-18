@@ -69,6 +69,118 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-139 · `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline
+
+**Area:** worldgen / netcode · **Severity:** low · **Found:** 2026-08-18 by lm during 4.6
+
+Tasks 4.3 and 4.4 both shipped pure, tested, unreachable systems and said so explicitly in their own
+`DELEGATION.md` entries: "nothing in the shipped game instantiates a `ChunkStreamer` yet... waiting
+on 4.6." Task 4.6 shipped the piece those notes were waiting on — seed replication
+(`core/game_state.gd`) and the chunk-keyed mutation log (`autoload/world_delta_log.gd`) — and proved
+both mechanisms work with a real two-process ENet check (`tools/seed_sync_check.gd`). **It did NOT
+put a `ChunkStreamer`/`ResourceScatterField` pair into the actual playable level.** The shipped game
+still boots into the hand-authored Hollowmere map (`world/gen/authored_world.gd`); the procedural
+pipeline remains exactly as reachable as it was after 4.4 — by a check script that builds its own
+throwaway scene, not by anything a player's session ever runs.
+
+**Why not closed here:** swapping Hollowmere for procedural generation is not a mechanism task, it is
+a full map cutover — every system F-076 generalized against Hollowmere's launch (`EnemyWorld`,
+`HarvestWorld`, and F-112's still-open `Undergrowth` gap), every POI/nest marker, and 4.7's
+POI-placement task (not yet built) would all need to agree on the new map before a player could
+stand on it safely. Guessing at that scope inside a T2 "seed replication + delta sync" task would
+have been exactly the kind of scope creep `AGENTS.md` warns against.
+
+**What to do about it:** whichever task actually intends the island to be procedural (most likely
+after 4.7 POI placement, possibly not until M4's playtest gate in 4.12) is where a real level scene
+gets a `ChunkStreamer` + `ResourceScatterField` pair wired against `GameState.run_seed`, following
+the exact API both `DELEGATION.md` entries already document. Until then, Hollowmere is the map, and
+that is a decision this finding is recording, not a bug anyone introduced.
+
+### F-135 · A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface
+
+**Area:** art-pipeline · **Severity:** medium · **Found:** 2026-08-18 by slate17 during 2.1d (A-010)
+
+`build_construction_set.py`'s `deck_field()` laid each deck plank centred in its slot and shrank it
+by the plank gap, which left **half a gap of nothing at both ends of every field**. Every affected
+piece still measured exactly 2.000 m wide — the beams, kerbs and bearers reach the module edge — so
+the Blender build contract, which checks the piece's overall run span, passed 18/18 with a **12 mm
+stripe of daylight at every joint in a run** and 6 mm where a ramp met a dock.
+
+Nothing that looks at one asset can see this. It showed up the first time `tools/construction_check.gd`
+assembled five modules in the engine and measured the gap between consecutive **deck** bounds rather
+than between piece bounds.
+
+**The general rule:** when a kit's contract is "these tile", measure the surface that does the
+tiling — the deck planks, the rail run, the wall face — not the asset's bounding box. The bounding
+box is decided by whatever sticks out furthest, which is exactly the geometry a player never touches.
+Fixed by having `deck_field()` run its outer planks to the field edge and put the gaps only between
+them; the engine check now reports worst joint **0.0000 mm** across a five-module walkway, a
+boardwalk corner and a fence corner.
+
+### F-136 · The player controller has no step-up, so any lip in a walkable surface is a wall
+
+**Area:** movement · **Severity:** medium · **Found:** 2026-08-18 by slate17 during 2.1d (A-010)
+
+`entities/player/player.tscn` sets `floor_max_angle` to 46° and `floor_snap_length` to 0.3, and
+`entities/player/player_controller.gd` implements **no step-up logic at all** — there is no
+`test_move` and re-place, no ledge probe, nothing. Godot's `CharacterBody3D` does not provide one
+either. A capsule will scuff over a very small lip because its bottom is round, but nothing in the
+project guarantees a height, and no test covers it.
+
+This is an authoring constraint on every asset and every level, and it is invisible until someone
+walks into it: a 60 mm door threshold, a dock deck edge, a kerb across a path, or a bridge module
+sitting a centimetre proud of its neighbour is a **wall**, not a step. A-010 hit it twice — the wood
+door was authored with a 60 mm sill across its opening (removed; a doorway is a hole), and the whole
+reason its ramp exists at 26.57° with a 12 mm feathered toe rather than a square end is this.
+
+**What to do about it:** either author to it — ramps under 46°, no thresholds, mating planes to the
+millimetre, which is what A-010 now does and what `tools/construction_check.gd` enforces — or give
+the controller a real step-up (probe forward at knee height, snap up if the surface above is
+walkable) and pick a documented maximum. The second is a movement-feel change and belongs to whoever
+owns the controller, not to an asset batch. Until then, **assume a lip stops the player.**
+
+### F-137 · The build module lives in one `.tres` and nothing else knows it
+
+**Area:** process · **Severity:** low · **Found:** 2026-08-18 by slate17 during 2.1d (A-010)
+
+`content/buildables/wall.tres` is the only place that states MIRE's build module: `size = Vector3(2, 3, 0.25)`
+with `snap_step = 1.0` and `rotation_step_degrees = 90`. Nothing in the art pipeline referenced it —
+A-010 had to read that resource by hand and re-declare 2.00 m / 3.00 m as constants in
+`tools/blender/build_construction_set.py`, and `mire_art.SCALE` now carries eighteen entries derived
+from them.
+
+Two copies of a number that must agree, in two languages, with no check between them. The next
+buildable authored at 2.5 m, or the next art batch that assumes 2 m after someone changes the wall,
+silently produces a kit that does not tile — and the failure appears as art that looks fine in
+isolation (F-129's shape again).
+
+**What to do about it:** either have the art generators read the module out of `content/buildables/`
+at build time, or add a check that asserts the two agree — `tools/construction_check.gd` already
+loads both the catalog and the engine's resources, so asserting `wall.tres`'s `size.x` equals the
+catalog's `run_span_m` is a few lines in a place that already runs. Not done here because it needs a
+claim on `content/buildables/` and task 3.7 is the owner.
+
+### F-138 · Rotating an AABB's corners is still the wrong ruler when the thing you are rotating is a moving part
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by slate17 during 2.1d (A-010)
+
+F-094 established that measuring a rotated object through `Transform3D * AABB` inflates it, and
+`tools/ship_check.gd` and `mire_art.world_bounds` both measure vertices for that reason. The first
+draft of `tools/construction_check.gd` reintroduced the same error in a **third** form: not to
+measure a static asset, but to *move* one — the door-swing test rotated each part's eight AABB
+corners and took the AABB of the result, at ten angles.
+
+The box around a rotated box is bigger the more the part is turned, so the test reported four
+innocent leaves colliding with their own frames at 60–90°, and the frames' diagonal knee braces —
+themselves rotated boxes — were inflated obstacles on the other side of the same comparison. It read
+exactly like a real art defect, and the tempting fix was to move the art.
+
+**The general rule:** a checker that *moves* geometry has to move the geometry. The fix was to expand
+each mesh through its index buffer into a triangle soup once, then rotate leaf **vertices** and test
+them against frame **per-triangle** bounds — after which all four leaves swing their full documented
+arc with zero contact, and the two defects that were real (a threshold the leaf was buried in, knee
+braces standing in the gateway) stayed reported.
+
 ### F-112 · `world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check — F-076's third system, not lifted
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-18 by lp during F-076
@@ -316,43 +428,6 @@ the latency, and only then set `STEAM_CONNECT_TIMEOUT_SEC` from evidence.
 
 ---
 
-### F-036 · Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10
-
-**Area:** roadmap · **Severity:** medium — it gates a "never cut" item · **Found:** 2026-08-16 by dusk3
-during 2.8
-
-`ROADMAP.md` orders 2.8 (melee combat) → **2.9 "tune combat feel until one enemy with one weapon
-feels great; do not proceed otherwise"** → 2.10 (Enemy v1). 2.9 is one of the four things `ROADMAP.md`
-§"Never cut" names, and `DESIGN.md` §6 states its rule of thumb in the same terms: *if hitting one
-enemy with one weapon doesn't feel great, do not build the second weapon.*
-
-But after 2.8 there is no enemy. The only things in the `&"damageable"` group are harvestables, and a
-tree does not exercise what 2.9 is actually gating: an enemy's 0.4 s telegraph, backpedal pressure,
-whether the hit reads as a *kill* rather than a resource tick, or death feedback. Tuning against a
-tree and declaring the gate passed is the failure mode the gate exists to prevent — and it would be
-easy to do accidentally, because the swing, hitstop, shake and impact sound all *work* against a
-tree.
-
-Two ways out, and this is Sequoyah's call because it changes roadmap order:
-
-1. **Swap 2.9 and 2.10.** Build Enemy v1, then tune. This is what the gate's own wording assumes.
-2. **Keep the order but split 2.9**: tune the weapon-side feel (swing weights, hitstop, shake, sound)
-   against a tree now, and re-run the real gate immediately after 2.10 before anything else starts.
-
-Not fixed here: 2.8 owns combat code, not the roadmap. Filed rather than silently tuning against a
-tree, which would have looked like the gate passing.
-
-**2026-08-17, dusk3 — resolved by taking option 1.** 2.10 shipped before 2.9, so the enemy the gate
-is about now exists and 2.9 was tuned against a crawler rather than a tree. The ordering concern is
-spent; what remains is that **2.9's gate is still open**, because passing it requires a human
-playtest and `tools/combat_feel_check.gd` deliberately measures relationships rather than declaring
-anything fun. This entry stays open only until Sequoyah plays it and says yes or no.
-
-*Filed as F-033, then F-035, and finally renumbered to F-036 on 2026-08-16: both earlier numbers were taken by entries that landed
-concurrently (a resolved F-033, and kiln9's F-034 and F-035). `NEXT.md` and the 2.8 journal note refer to it by the new number.*
-
----
-
 ### F-044 · Concurrent headless Godot runs share one import cache, which is the likely cause of F-038
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by yarrow21 during 0.12
@@ -563,6 +638,43 @@ picks this up.
 ---
 
 ## Resolved
+
+### F-036 · Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10 — **resolved**
+
+**Area:** roadmap · **Severity:** medium — it gates a "never cut" item · **Found:** 2026-08-16 by dusk3
+during 2.8
+
+`ROADMAP.md` orders 2.8 (melee combat) → **2.9 "tune combat feel until one enemy with one weapon
+feels great; do not proceed otherwise"** → 2.10 (Enemy v1). 2.9 is one of the four things `ROADMAP.md`
+§"Never cut" names, and `DESIGN.md` §6 states its rule of thumb in the same terms: *if hitting one
+enemy with one weapon doesn't feel great, do not build the second weapon.*
+
+But after 2.8 there is no enemy. The only things in the `&"damageable"` group are harvestables, and a
+tree does not exercise what 2.9 is actually gating: an enemy's 0.4 s telegraph, backpedal pressure,
+whether the hit reads as a *kill* rather than a resource tick, or death feedback. Tuning against a
+tree and declaring the gate passed is the failure mode the gate exists to prevent — and it would be
+easy to do accidentally, because the swing, hitstop, shake and impact sound all *work* against a
+tree.
+
+Two ways out, and this is Sequoyah's call because it changes roadmap order:
+
+1. **Swap 2.9 and 2.10.** Build Enemy v1, then tune. This is what the gate's own wording assumes.
+2. **Keep the order but split 2.9**: tune the weapon-side feel (swing weights, hitstop, shake, sound)
+   against a tree now, and re-run the real gate immediately after 2.10 before anything else starts.
+
+Not fixed here: 2.8 owns combat code, not the roadmap. Filed rather than silently tuning against a
+tree, which would have looked like the gate passing.
+
+**2026-08-17, dusk3 — resolved by taking option 1.** 2.10 shipped before 2.9, so the enemy the gate
+is about now exists and 2.9 was tuned against a crawler rather than a tree. The ordering concern is
+spent; what remains is that **2.9's gate is still open**, because passing it requires a human
+playtest and `tools/combat_feel_check.gd` deliberately measures relationships rather than declaring
+anything fun. This entry stays open only until Sequoyah plays it and says yes or no.
+
+*Filed as F-033, then F-035, and finally renumbered to F-036 on 2026-08-16: both earlier numbers were taken by entries that landed
+concurrently (a resolved F-033, and kiln9's F-034 and F-035). `NEXT.md` and the 2.8 journal note refer to it by the new number.*
+
+---
 
 ### F-134 · Hand-moving a finding to '## Resolved' eats the heading when it is the last entry under '## Open' — twice now, and the second time made all 121 resolved findings parse as open — **fixed**
 

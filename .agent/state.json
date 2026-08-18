@@ -1,57 +1,6 @@
 {
-  "claims": {
-    "assets/construction": {
-      "agent": "slate17",
-      "at": "2026-08-18T20:36:00+00:00",
-      "task": "2.1d"
-    },
-    "docs/ASSET_TRACKER.md": {
-      "agent": "slate17",
-      "at": "2026-08-18T20:32:24+00:00",
-      "task": "2.1d"
-    },
-    "docs/FINDINGS.md": {
-      "agent": "slate17",
-      "at": "2026-08-18T21:11:20+00:00",
-      "task": "2.1d"
-    },
-    "tools/blender/build_construction_set.py": {
-      "agent": "slate17",
-      "at": "2026-08-18T20:32:24+00:00",
-      "task": "2.1d"
-    },
-    "tools/blender/mire_art.py": {
-      "agent": "slate17",
-      "at": "2026-08-18T20:36:00+00:00",
-      "task": "2.1d"
-    },
-    "tools/construction_check.gd": {
-      "agent": "slate17",
-      "at": "2026-08-18T20:32:24+00:00",
-      "task": "2.1d"
-    }
-  },
-  "in_flight": {
-    "2.1d": {
-      "agent": "slate17",
-      "files": [
-        "docs/ASSET_TRACKER.md",
-        "tools/blender/build_construction_set.py",
-        "tools/construction_check.gd",
-        "tools/blender/mire_art.py",
-        "assets/construction",
-        "docs/FINDINGS.md"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-18T20:36:00+00:00",
-          "by": "slate17",
-          "text": "A-010 (practical construction, 14 assets / 18 exports) marked IN PROGRESS by slate17"
-        }
-      ],
-      "started": "2026-08-18T20:32:24+00:00"
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
       "agent": "yarrow21",
@@ -108,6 +57,24 @@
     "assets/audit/a009/geometry_report.jsonl": {
       "agent": "ivy8",
       "at": "2026-08-18T14:17:26+00:00",
+      "task": "2.1d"
+    },
+    "assets/audit/geometry_report.json": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:16:01+00:00",
+      "hash": "78b1f08115dfc19a576baf0bda6a641c1e063ae1260816eb4483b4933b19ef5c",
+      "task": "2.1d"
+    },
+    "assets/audit/geometry_report.jsonl": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:16:01+00:00",
+      "hash": "e594bffa8ee896c5388f068e4cbb9134f1823003d735c625c091805a6c8b0906",
+      "task": "2.1d"
+    },
+    "assets/construction": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:16:01+00:00",
+      "hash": null,
       "task": "2.1d"
     },
     "assets/crafting_stations": {
@@ -309,6 +276,12 @@
       "agent": "tine18",
       "at": "2026-08-18T00:39:51+00:00",
       "task": "2.1j"
+    },
+    "assets/source/construction_set.blend": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:16:01+00:00",
+      "hash": "6844164f9458da5dc0d31a5ee047d9c88248c7794997df993bbe1621f181202d",
+      "task": "2.1d"
     },
     "assets/source/crafting_stations.blend": {
       "agent": "tine18",
@@ -1345,10 +1318,10 @@
       "task": "3.15"
     },
     "docs/ASSET_TRACKER.md": {
-      "agent": "lm",
-      "at": "2026-08-18T19:32:23+00:00",
-      "hash": "885b36bc53bf89a1cfab6eab6a6b97fe59e5061184fde1530e54ac96040094c2",
-      "task": "F-109"
+      "agent": "slate17",
+      "at": "2026-08-18T21:16:01+00:00",
+      "hash": "2c8a64c33d4249fddd211f65c8245f9ae0437d88051138e3e6ffe881414b3ff1",
+      "task": "2.1d"
     },
     "docs/COMMANDS.md": {
       "agent": "hollow7",
@@ -1357,22 +1330,22 @@
       "task": "3.15"
     },
     "docs/DECISIONS.md": {
-      "agent": "hollow7",
-      "at": "2026-08-18T21:12:09+00:00",
-      "hash": "1b70388a8760b1191d366d81266d65c9b7d23a14d20360abe5cb37df223e0481",
-      "task": "3.15"
+      "agent": "slate17",
+      "at": "2026-08-18T21:16:01+00:00",
+      "hash": "8af8d6a2b03aee17f8e9ab0d62dd569ecaaf61e15f1c231d0df6b2d53ea42a32",
+      "task": "2.1d"
     },
     "docs/DELEGATION.md": {
-      "agent": "hollow7",
-      "at": "2026-08-18T21:12:09+00:00",
-      "hash": "6b358d332201ebacfe239e5d5efeddf00c19c7d6674943e8892572b94233b52c",
-      "task": "3.15"
+      "agent": "slate17",
+      "at": "2026-08-18T21:16:01+00:00",
+      "hash": "0d84296e65044c951259972f25962a0557f9e7c4a243367fcbe3349eb1a2c9c3",
+      "task": "2.1d"
     },
     "docs/FINDINGS.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T21:05:35+00:00",
-      "hash": "f4754a68d2fcf1c25503f17699c8fd555316b735c029b2f68af4a03f8398c0a0",
-      "task": "F-134"
+      "agent": "slate17",
+      "at": "2026-08-18T21:16:01+00:00",
+      "hash": "06e924cdadccd0e6d692f3a577dc2acfdf86e44badc869e196a8e98ba7d1c551",
+      "task": "2.1d"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -1680,6 +1653,12 @@
       "at": "2026-08-18T00:39:51+00:00",
       "task": "2.1j"
     },
+    "tools/blender/build_construction_set.py": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:16:01+00:00",
+      "hash": "8aa2bf01cc0b21e0f4ef560a3dfe5f64206ce01751e8152f47003cc3e5d7386f",
+      "task": "2.1d"
+    },
     "tools/blender/build_crafting_stations.py": {
       "agent": "tine18",
       "at": "2026-08-17T23:34:54+00:00",
@@ -1756,9 +1735,10 @@
       "task": "F-092"
     },
     "tools/blender/mire_art.py": {
-      "agent": "lp",
-      "at": "2026-08-18T18:02:23+00:00",
-      "task": "F-094"
+      "agent": "slate17",
+      "at": "2026-08-18T21:16:01+00:00",
+      "hash": "415d9f379fdc988eef144b0549fc555106c768d8e6e7b945fd4a94807098b41f",
+      "task": "2.1d"
     },
     "tools/blender/render_item_icons.py": {
       "agent": "lp",
@@ -1834,6 +1814,18 @@
       "agent": "flint5",
       "at": "2026-08-17T23:13:44+00:00",
       "task": "F-052"
+    },
+    "tools/construction_check.gd": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:16:01+00:00",
+      "hash": "01ce25615c44a4e9a4a0ee597c070707516e3af1d5e9c357cee27758eab80f1b",
+      "task": "2.1d"
+    },
+    "tools/construction_check.gd.uid": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:16:01+00:00",
+      "hash": "350a5f7ec8a8e621134776e21b9cdba82612fa8d05831bff5fd882341f133fc0",
+      "task": "2.1d"
     },
     "tools/crafting_check.gd": {
       "agent": "ivy8",
@@ -2713,7 +2705,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
@@ -4602,6 +4594,34 @@
       "status": "done",
       "tier": "F",
       "title": "`ChunkStreamer`/`ResourceScatterField` still have no real caller \u2014 the live game still ships the authored Hollowmere map, not the procedural pipeline"
+    },
+    "F-135": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface"
+    },
+    "F-136": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The player controller has no step-up, so any lip in a walkable surface is a wall"
+    },
+    "F-137": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The build module lives in one `.tres` and nothing else knows it"
+    },
+    "F-138": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Rotating an AABB's corners is still the wrong ruler when the thing you are rotating is a moving part"
     }
   },
   "version": 1

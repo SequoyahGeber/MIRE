@@ -3346,3 +3346,15 @@ Notes along the way:
 Files: `core/game_state.gd`, `core/net/net_session.gd`, `autoload/world_delta_log.gd`, `world/gen/resource_scatter_field.gd`, `tools/seed_sync_check.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`
 
 Commit at time of writing: `c8bd1d6`
+
+---
+
+### HANDOFF · 2.1d · slate17 · 2026-08-18T21:16:01+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-010 (practical construction kit) is DONE and the queue is now GATE-HELD, not empty — read the note under '## P1' in docs/ASSET_TRACKER.md before picking 2.1d up again. A-010 closed the last P0 batch; every remaining batch sits behind a gate a human clears (P1 waits on task 2.14's playtest feedback, P2 on the combat gate, P3's rows each name an open dependency), so A-011 is marked BLOCKED and there is deliberately no NEXT row. An asset agent should say so and stop rather than promote a gated batch — or Sequoyah waives one batch in its row, the way A-006 records its waiver. Shipped: 18 GLBs / 14 assets in assets/construction/, tools/blender/build_construction_set.py, tools/construction_check.gd, assets/construction/README.md (the placement contract), D-090, F-135..F-138, plus 18 new mire_art.SCALE entries. Two things worth knowing for the next kit: (1) a piece can measure its module exactly and still leave a 12 mm seam at every joint, because the bounding box is not the walking surface — measure the surface that tiles (F-135); (2) the player controller has no step-up at all, so any lip in a walkable path is a wall (F-136). Both were found by tools/construction_check.gd assembling the kit in the engine, which is the pattern to copy: per-asset numbers cannot see a kit-level defect. Also cleaned up while here: F-036's section was sitting under '## Open' with its own resolution note attached and is now under '## Resolved'; F-112 is genuinely still open (world_contract_check.gd line 24 still says the undergrowth prop-group rule is not covered) and should stay open.
+
+Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_construction_set.py`, `tools/construction_check.gd`, `tools/blender/mire_art.py`, `assets/construction`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `assets/source/construction_set.blend`, `tools/construction_check.gd.uid`, `assets/audit/geometry_report.json`, `assets/audit/geometry_report.jsonl`
+
+Commit at time of writing: `ab3cb28`

@@ -311,6 +311,28 @@ SCALE: dict[str, float] = {
     "ship_donation_crate": 1.05,
     "ship_departure_bell": 2.02,
     "ship_debris_cluster": 2.60,
+    # practical construction (A-010). These are the kit whose numbers all come
+    # from one module contract — 2.00 m run, 3.00 m wall, 1.00 m deck — so most
+    # of them are whole modules on purpose. A drift here is a drift in the
+    # contract, which is why they are enforced rather than eyeballed.
+    "door_wood_frame": 3.00,
+    "door_wood_leaf": 2.11,
+    "gate_double_frame": 4.00,
+    "gate_double_leaf_left": 2.58,
+    "gate_double_leaf_right": 2.58,
+    "ladder": 3.00,                   # exactly a wall: it tops out level with one
+    "ramp": 2.00,                     # one module of run for one deck of rise
+    "bridge_straight": 2.00,
+    "bridge_broken": 2.00,
+    "bridge_rope": 4.00,              # two modules, because a slung span needs the length
+    "dock_straight": 2.00,
+    "dock_corner": 2.00,
+    "palisade_straight": 3.00,
+    "palisade_corner": 3.14,          # the corner post stands a little proud
+    "palisade_gate_frame": 3.00,
+    "palisade_gate_leaf": 2.50,
+    "barricade": 2.00,
+    "barricade_spike": 2.00,
 }
 
 

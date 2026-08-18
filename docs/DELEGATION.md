@@ -75,6 +75,116 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Asset batch A-010: the practical construction kit — the art task 3.7's buildable set and world-gen's river crossings both need (slate17)
+
+**What shipped, verified:** 18 GLBs covering 14 assets in `assets/construction/exports/`
+(`tools/blender/build_construction_set.py`, `assets/source/construction_set.blend`), a catalog, four
+previews, `assets/construction/README.md` (the placement contract — read it before placing anything)
+and `tools/construction_check.gd`. Nothing else in the repo changed except `mire_art.SCALE`, which
+gained the 18 size entries the build asserts against. No scenes, no `content/`, no collision: these
+are presentation meshes and the task that wires one into `content/buildables/` adds its collision
+under a D-031 exact claim.
+
+**The module contract (D-090) is the API.** Everything mates on it:
+
+| | | |
+|---|---|---|
+| `MODULE` | 2.00 m | run pitch and piece width — `content/buildables/wall.tres` `size.x`, on its 1 m snap grid |
+| `WALL_H` | 3.00 m | that wall's height; palisade, both gate frames, door frame and ladder all reach it |
+| `DECK_Z` | 1.00 m | every bridge and dock walking surface |
+| ramp | 1.00 m rise over 2.00 m | 26.57°, exactly one deck; three stack to `WALL_H` |
+
+Godot axes: run axis **+X**, deck at **y = 1.00**, a wall's inner face at **−Z**. Verified in the
+engine, not asserted: a five-module walkway, a boardwalk corner and a fence corner all close at
+**worst joint 0.0000 mm**.
+
+**Hanging a door or a gate is two lines, because the leaves are centred on their hinge axis:**
+
+```gdscript
+var frame := load("res://assets/construction/exports/door_wood_frame.glb").instantiate()
+var leaf := load("res://assets/construction/exports/door_wood_leaf.glb").instantiate()
+add_child(frame); add_child(leaf)
+leaf.position = Vector3(-0.55, 0.0, 0.02)   # catalog hinge.hinge_offset_m, Blender (x,y,z) -> (x,z,-y)
+leaf.rotate_y(deg_to_rad(90.0))             # catalog hinge.swing_deg — 90 is a real limit, see D-090
+```
+
+`gate_double_frame` takes two leaves (`_left` at −1.25, `_right` at +1.25, opening −x);
+`palisade_gate_frame` takes `palisade_gate_leaf` at −0.68. `palisade_corner` is the one piece whose
+origin is its corner post rather than its centre: its neighbours go at `[-2, 0, 0]` and, turned 90°,
+at Godot `[0, 0, -2]`. Every one of those numbers is in `catalog.json`, so read it rather than
+retyping it.
+
+**What the next task should know.** `bridge_straight` and `bridge_broken` are a state pair with
+**0.0000 mm** drift, swappable in place. The kit deliberately has no `BuildableDef` yet — task 3.7
+owns `content/buildables/`, and the pieces that obviously want rows there are the door, the double
+gate, the palisade straight/corner/gate, the barricades and the ramp. F-137 records the one loose
+end: the 2 m module now exists as a constant in two languages with no check tying them together, and
+`tools/construction_check.gd` is the natural place to add one.
+
+
+### 2026-08-18 — Task 4.6: seed replication + `WorldDeltaLog` ship — the chunk-keyed delta mechanism 4.9's Mire and any future proxy system build on (lm)
+
+**What shipped, verified:** `core/game_state.gd` (new autoload — `run_seed: int`, the seed-only
+slice of the "act, day, seed, run status" home `ARCHITECTURE.md` §3 reserves; task 6.1 extends this
+file rather than replacing it), `autoload/world_delta_log.gd` (new autoload — the chunk-keyed
+mutation log `ARCHITECTURE.md` §4 names), a new `NetSession.peer_admitted(peer_id: int)` signal, and
+`world/gen/resource_scatter_field.gd`'s depletion memory now sourcing from the log instead of being
+purely peer-local best-effort. `core/net/net_version.gd` bumped 17 → 18 (world-delta RPC pair);
+`tools/handshake_check.gd` updated to match. D-089 records the three design calls (GameState scope,
+latest-value-wins, buildings excluded); `docs/FINDINGS.md` F-132 is unaffected and stays open — this
+task closes the *state-sync* half of what it named, not the *host chunk-residency* half.
+
+**`GameState` API — host-authoritative, one value:**
+
+```gdscript
+GameState.run_seed: int                  # 0 until drawn
+GameState.host_generate_seed() -> int    # host-only; also self-fires on NetTransport.server_started
+GameState.set_replicated_seed(value: int) -> void   # client-side adoption; WorldDeltaLog calls this
+GameState.is_seed_ready() -> bool
+GameState.ensure_seed() -> int           # lazy self-generate for offline/host-of-one, never null
+```
+
+**`WorldDeltaLog` API for anything that mutates ephemeral, chunk-scoped world state — 4.9's Mire
+grid is the next intended caller, same shape, a different `kind`:**
+
+```gdscript
+WorldDeltaLog.host_record(chunk: Vector2i, kind: StringName, key: String, value: Variant) -> void
+# host-only (no-ops on a real client, same gate Harvestable.host_apply_damage uses); applies locally
+# AND broadcasts to every connected peer immediately when a real session is running.
+
+WorldDeltaLog.latest(chunk: Vector2i, kind: StringName, key: String, default: Variant = null) -> Variant
+WorldDeltaLog.entries_for_chunk(chunk: Vector2i, kind: StringName) -> Dictionary   # key -> value
+WorldDeltaLog.entry_count() -> int   # for logs/checks
+```
+
+A newly admitted peer (host or client, first join or rebind) gets the run seed and the WHOLE
+accumulated log in one reliable RPC, fired by `NetSession.peer_admitted` — no replay of individual
+mutations needed. Every value recorded after that is also pushed live to every already-connected
+peer. **Buildings do not use this log** — `BuildService`'s placed pieces already replicate to a late
+joiner through their own `MultiplayerSpawner` (task 1.5's own mechanism); see D-089 for why adding a
+second path for them would be redundant, not defense-in-depth.
+
+**`ResourceScatterField` change for 4.4's own consumers:** `is_point_depleted(point_id)` keeps its
+exact signature — reads `WorldDeltaLog.latest()` first (deriving the chunk from `point_id`'s own
+`"%d:%d:..."` prefix, never a new parameter) and only falls back to the file's peer-local `_depleted`
+memory when the log has no opinion yet. Every holder this file builds now wires its live
+`Harvestable.depleted`/`respawned` signals into `WorldDeltaLog.host_record()` the moment the
+Harvestable exists, not only at chunk-teardown — a mutation is visible to other peers immediately,
+not only after this peer's own chunk happens to unload. `tools/resource_scatter_check.gd`'s full
+29-assertion suite still passes unmodified against this change.
+
+**Verified:** `agent godot --script tools/seed_sync_check.gd` (new two-process check, real ENet over
+LOCAL, day_night_net_check.gd's driver/child-process pattern) — 12/12 assertions pass: host draws a
+seed the instant it starts hosting; a mutation recorded before the client even exists still reaches
+it via the admit-time snapshot; the client's independently-regenerated `terrain_hash` (same probe
+`tools/check_determinism.gd` uses) matches the host's exactly, proving the SEED crossed the wire, not
+just that the math agrees; a second mutation recorded after the client is already connected reaches
+it live. `agent godot --script tools/resource_scatter_check.gd` (0 failures, no regression).
+`agent godot --script tools/handshake_check.gd` and `tools/net_check_pattern_check.gd` (0 failures).
+`agent godot --script tools/terrain_check.gd`, `tools/verify_setup.gd`,
+`tools/session_lifecycle_check.gd` (0 failures/regressions). `agent godot --quit-after 15` (clean
+boot, 0 `ERROR:` lines).
+
 ### 2026-08-18 — Task 3.15: entity addressing ships — selector grammar, `EntityDirectory`, and `entities`/`tag`/`tp`/`kill` (hollow7)
 
 **What shipped, verified:** `core/commands/entity_selector.gd` (`class_name EntitySelector`, a pure

@@ -6,18 +6,13 @@
 
 ## In flight
 
-| Task | Agent | Started | Files claimed |
-|---|---|---|---|
-| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | slate17 | 2026-08-18 20:32 | `docs/ASSET_TRACKER.md`, `tools/blender/build_construction_set.py`, `tools/construction_check.gd`, `tools/blender/mire_art.py`, `assets/construction`, `docs/FINDINGS.md` |
-
-**2.1d notes:**
-- A-010 (practical construction, 14 assets / 18 exports) marked IN PROGRESS by slate17
+_Nothing in flight._
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 122/134 | 12 |
+| Findings | `█████████░` 122/138 | 16 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -63,6 +58,10 @@
 | ⬜ | **F-126** CommandService's `peer` argument type has no display-name resolution — peer ids only | todo |
 | ⬜ | **F-130** Three console commands never migrated to CommandService — they register via console.call("register", ...), which 3.13's sweep could not see | todo |
 | ⬜ | **F-132** A remote client's scattered harvestable proxy may have no host counterpart to reach, because `ChunkStreamer` streams per-peer independently | todo |
+| ⬜ | **F-135** A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface | todo |
+| ⬜ | **F-136** The player controller has no step-up, so any lip in a walkable surface is a wall | todo |
+| ⬜ | **F-137** The build module lives in one `.tres` and nothing else knows it | todo |
+| ⬜ | **F-138** Rotating an AABB's corners is still the wrong ruler when the thing you are rotating is a moving part | todo |
 
 ## Done
 

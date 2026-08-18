@@ -1170,6 +1170,39 @@ removing it.
 
 ---
 
+### D-090 · 2026-08-18 · The construction kit is authored to one module contract, and its origins mean something
+
+A-010 ships fourteen assets a player walks through, climbs, crosses or hides behind. Two calls, both
+made once here so no later batch or buildable has to re-derive them.
+
+**Every dimension in the kit comes from four numbers, and they come from `content/buildables/wall.tres`
+rather than from taste.** `MODULE` 2.00 m is that wall's `size.x` and sits on its 1 m `snap_step`;
+`WALL_H` 3.00 m is its `size.y`, and the palisade, both gate frames, the door frame and the ladder
+all reach exactly it; `DECK_Z` 1.00 m is every bridge and dock walking surface; and the ramp rises
+exactly one deck over exactly one module, **26.57°**. Three ramps stack to a wall. The alternative —
+sizing each piece to look right on its own — is what produces a bridge with a seam every 2 m and a
+ladder that stops 40 cm short of the parapet, and neither is visible until the pieces are placed
+together. The consequence to accept is that a piece may be a *worse object* to make a *better kit*:
+the bridge trestle's legs stand upright rather than splayed because a tilted post ends in a tilted
+cap that dips under the ground plane, and correcting that lifts the whole module off `DECK_Z`.
+
+**Slope and clearance numbers are the player's, not the artist's.** `entities/player/player.tscn`
+sets `floor_max_angle` to 46° and the controller implements no step-up at all (F-136), so every
+walkable surface in the kit is checked against the engine's own limit, the ramp's toe feathers to
+12 mm instead of starting with a lip, and the wood door has no threshold across its opening.
+
+**Three origin rules, chosen so nothing is left for a human to place by eye (D-039).** Fourteen
+exports are ground-centred, the usual portable rule. `palisade_corner` is centred on **its corner
+post**, so both arms end exactly on the cell edges a straight section butts to. The four door and
+gate leaves are centred on **their hinge axis** — the leaf's outer back corner — so a scene hangs one
+at the catalog's `hinge_offset_m` and swings it with `rotate_y()`, and that is the whole API. A leaf
+centred on its own bounds would have been a correct-looking export that nobody could hang without
+finding the pivot by hand, which is precisely the hand-off D-039 forbids.
+
+**90° is the documented swing and it is a real limit,** not a round number: a square-edged plank leaf
+hung on the face of its jamb clears completely at 90° and starts to catch the jamb corner past it,
+the same reason a real door gets a stop or a bevelled edge. The opening is fully clear at 90°.
+
 ## Template
 
 ```

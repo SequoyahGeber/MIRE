@@ -1,4 +1,626 @@
 {
+  "construction/exports/barricade.glb": {
+    "_source_mtime": 1787087263.1222496,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.0218,
+      0.8049,
+      1.13
+    ],
+    "duplicate_vertices": 276,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_IronDark",
+      "MIRE_WoodDead",
+      "MIRE_WoodDeadCut",
+      "MIRE_WoodTimber"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 414,
+    "objects": 17,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0109,
+      -0.0125,
+      0.0
+    ],
+    "polygons": 208,
+    "sheet": "sheets/construction__exports__barricade.png",
+    "smooth_shaded_faces": 2,
+    "triangles": 208,
+    "unapplied_transforms": [],
+    "vertices": 414
+  },
+  "construction/exports/barricade_spike.glb": {
+    "_source_mtime": 1787087263.3986452,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.0,
+      1.8349,
+      1.4364
+    ],
+    "duplicate_vertices": 524,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Rope",
+      "MIRE_WoodBark",
+      "MIRE_WoodBarkDark",
+      "MIRE_WoodCut"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 786,
+    "objects": 19,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      -0.0052,
+      -0.0
+    ],
+    "polygons": 448,
+    "sheet": "sheets/construction__exports__barricade_spike.png",
+    "smooth_shaded_faces": 30,
+    "triangles": 448,
+    "unapplied_transforms": [],
+    "vertices": 786
+  },
+  "construction/exports/bridge_broken.glb": {
+    "_source_mtime": 1787087261.143617,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.0,
+      2.0,
+      1.95
+    ],
+    "duplicate_vertices": 712,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Moss",
+      "MIRE_Rope.001",
+      "MIRE_WoodBark.001",
+      "MIRE_WoodCut.001",
+      "MIRE_WoodDead.001",
+      "MIRE_WoodTimber.001"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1068,
+    "objects": 33,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 580,
+    "sheet": "sheets/construction__exports__bridge_broken.png",
+    "smooth_shaded_faces": 4,
+    "triangles": 580,
+    "unapplied_transforms": [],
+    "vertices": 1068
+  },
+  "construction/exports/bridge_rope.glb": {
+    "_source_mtime": 1787087261.6507084,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      4.0142,
+      1.57,
+      2.02
+    ],
+    "duplicate_vertices": 1696,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Rope.002",
+      "MIRE_WoodBark.002",
+      "MIRE_WoodCut.002",
+      "MIRE_WoodDead.002",
+      "MIRE_WoodTimber.002"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 2544,
+    "objects": 85,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 1356,
+    "sheet": "sheets/construction__exports__bridge_rope.png",
+    "smooth_shaded_faces": 0,
+    "triangles": 1356,
+    "unapplied_transforms": [],
+    "vertices": 2544
+  },
+  "construction/exports/bridge_straight.glb": {
+    "_source_mtime": 1787087260.9848466,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.0,
+      2.0,
+      1.95
+    ],
+    "duplicate_vertices": 656,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Rope.003",
+      "MIRE_WoodBark.003",
+      "MIRE_WoodTimber.003",
+      "MIRE_WoodTimberLight"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 984,
+    "objects": 31,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 532,
+    "sheet": "sheets/construction__exports__bridge_straight.png",
+    "smooth_shaded_faces": 0,
+    "triangles": 532,
+    "unapplied_transforms": [],
+    "vertices": 984
+  },
+  "construction/exports/dock_corner.glb": {
+    "_source_mtime": 1787087262.0645864,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.0,
+      2.0,
+      1.52
+    ],
+    "duplicate_vertices": 556,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_MossDark",
+      "MIRE_Rope.004",
+      "MIRE_WoodBark.004",
+      "MIRE_WoodDead.003",
+      "MIRE_WoodTimber.004",
+      "MIRE_WoodTimberLight.001"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 834,
+    "objects": 25,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 456,
+    "sheet": "sheets/construction__exports__dock_corner.png",
+    "smooth_shaded_faces": 4,
+    "triangles": 456,
+    "unapplied_transforms": [],
+    "vertices": 834
+  },
+  "construction/exports/dock_straight.glb": {
+    "_source_mtime": 1787087261.8425543,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.0,
+      2.0,
+      1.46
+    ],
+    "duplicate_vertices": 524,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_MossDark.001",
+      "MIRE_Rope.005",
+      "MIRE_WoodBark.005",
+      "MIRE_WoodDead.004",
+      "MIRE_WoodTimber.005",
+      "MIRE_WoodTimberLight.002"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 786,
+    "objects": 23,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 432,
+    "sheet": "sheets/construction__exports__dock_straight.png",
+    "smooth_shaded_faces": 4,
+    "triangles": 432,
+    "unapplied_transforms": [],
+    "vertices": 786
+  },
+  "construction/exports/door_wood_frame.glb": {
+    "_source_mtime": 1787087260.54833,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.0,
+      0.29,
+      3.0
+    ],
+    "duplicate_vertices": 320,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Iron",
+      "MIRE_IronDark.001",
+      "MIRE_WoodTimber.006",
+      "MIRE_WoodTimberLight.003"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 480,
+    "objects": 20,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 240,
+    "sheet": "sheets/construction__exports__door_wood_frame.png",
+    "smooth_shaded_faces": 0,
+    "triangles": 240,
+    "unapplied_transforms": [],
+    "vertices": 480
+  },
+  "construction/exports/door_wood_leaf.glb": {
+    "_source_mtime": 1787087260.5793068,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.076,
+      0.1255,
+      2.08
+    ],
+    "duplicate_vertices": 352,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Iron.001",
+      "MIRE_IronDark.002",
+      "MIRE_WoodTimber.007",
+      "MIRE_WoodTimberLight.004"
+    ],
+    "min_z_m": 0.03,
+    "ngons": 0,
+    "non_manifold_edges": 528,
+    "objects": 21,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.538,
+      -0.0628,
+      0.03
+    ],
+    "polygons": 268,
+    "sheet": "sheets/construction__exports__door_wood_leaf.png",
+    "smooth_shaded_faces": 0,
+    "triangles": 268,
+    "unapplied_transforms": [],
+    "vertices": 528
+  },
+  "construction/exports/gate_double_frame.glb": {
+    "_source_mtime": 1787087260.6354077,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      4.0,
+      0.464,
+      3.0
+    ],
+    "duplicate_vertices": 560,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Iron.002",
+      "MIRE_WoodBark.006",
+      "MIRE_WoodBarkDark.001",
+      "MIRE_WoodCut.003",
+      "MIRE_WoodTimber.008",
+      "MIRE_WoodTimberLight.005"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 840,
+    "objects": 29,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 444,
+    "sheet": "sheets/construction__exports__gate_double_frame.png",
+    "smooth_shaded_faces": 4,
+    "triangles": 444,
+    "unapplied_transforms": [],
+    "vertices": 840
+  },
+  "construction/exports/gate_double_leaf_left.glb": {
+    "_source_mtime": 1787087260.6810627,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.215,
+      0.155,
+      2.55
+    ],
+    "duplicate_vertices": 312,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Iron.003",
+      "MIRE_IronDark.003",
+      "MIRE_WoodTimber.009",
+      "MIRE_WoodTimberLight.006"
+    ],
+    "min_z_m": 0.03,
+    "ngons": 0,
+    "non_manifold_edges": 468,
+    "objects": 18,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.6075,
+      -0.0775,
+      0.03
+    ],
+    "polygons": 240,
+    "sheet": "sheets/construction__exports__gate_double_leaf_left.png",
+    "smooth_shaded_faces": 0,
+    "triangles": 240,
+    "unapplied_transforms": [],
+    "vertices": 468
+  },
+  "construction/exports/gate_double_leaf_right.glb": {
+    "_source_mtime": 1787087260.733937,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.215,
+      0.155,
+      2.55
+    ],
+    "duplicate_vertices": 312,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Iron.004",
+      "MIRE_IronDark.004",
+      "MIRE_WoodTimber.010",
+      "MIRE_WoodTimberLight.007"
+    ],
+    "min_z_m": 0.03,
+    "ngons": 0,
+    "non_manifold_edges": 468,
+    "objects": 18,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      -0.6075,
+      -0.0775,
+      0.03
+    ],
+    "polygons": 240,
+    "sheet": "sheets/construction__exports__gate_double_leaf_right.png",
+    "smooth_shaded_faces": 0,
+    "triangles": 240,
+    "unapplied_transforms": [],
+    "vertices": 468
+  },
+  "construction/exports/ladder.glb": {
+    "_source_mtime": 1787087260.7965252,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.594,
+      0.124,
+      3.0
+    ],
+    "duplicate_vertices": 496,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Rope.006",
+      "MIRE_WoodBark.007",
+      "MIRE_WoodCut.004",
+      "MIRE_WoodTimber.011"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 744,
+    "objects": 19,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 420,
+    "sheet": "sheets/construction__exports__ladder.png",
+    "smooth_shaded_faces": 72,
+    "triangles": 420,
+    "unapplied_transforms": [],
+    "vertices": 744
+  },
+  "construction/exports/palisade_corner.glb": {
+    "_source_mtime": 1787087262.491582,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.3557,
+      1.2,
+      3.14
+    ],
+    "duplicate_vertices": 536,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Rope.007",
+      "MIRE_WoodBark.008",
+      "MIRE_WoodBarkDark.002",
+      "MIRE_WoodCut.005"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 804,
+    "objects": 21,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      -0.3222,
+      0.4,
+      0.0
+    ],
+    "polygons": 452,
+    "sheet": "sheets/construction__exports__palisade_corner.png",
+    "smooth_shaded_faces": 32,
+    "triangles": 452,
+    "unapplied_transforms": [],
+    "vertices": 804
+  },
+  "construction/exports/palisade_gate_frame.glb": {
+    "_source_mtime": 1787087262.650741,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.0,
+      0.575,
+      3.0
+    ],
+    "duplicate_vertices": 288,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Iron.005",
+      "MIRE_Rope.008",
+      "MIRE_WoodBark.009",
+      "MIRE_WoodBarkDark.003",
+      "MIRE_WoodCut.006",
+      "MIRE_WoodTimber.012"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 432,
+    "objects": 13,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 236,
+    "sheet": "sheets/construction__exports__palisade_gate_frame.png",
+    "smooth_shaded_faces": 10,
+    "triangles": 236,
+    "unapplied_transforms": [],
+    "vertices": 432
+  },
+  "construction/exports/palisade_gate_leaf.glb": {
+    "_source_mtime": 1787087262.8937864,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.32,
+      0.225,
+      2.45
+    ],
+    "duplicate_vertices": 440,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Iron.006",
+      "MIRE_Rope.009",
+      "MIRE_WoodBark.010",
+      "MIRE_WoodBarkDark.004",
+      "MIRE_WoodTimber.013"
+    ],
+    "min_z_m": 0.05,
+    "ngons": 0,
+    "non_manifold_edges": 660,
+    "objects": 20,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.66,
+      -0.1125,
+      0.05
+    ],
+    "polygons": 360,
+    "sheet": "sheets/construction__exports__palisade_gate_leaf.png",
+    "smooth_shaded_faces": 0,
+    "triangles": 360,
+    "unapplied_transforms": [],
+    "vertices": 660
+  },
+  "construction/exports/palisade_straight.glb": {
+    "_source_mtime": 1787087262.276297,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.0,
+      0.505,
+      3.0
+    ],
+    "duplicate_vertices": 584,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Rope.010",
+      "MIRE_WoodBark.011",
+      "MIRE_WoodBarkDark.005",
+      "MIRE_WoodCut.007"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 876,
+    "objects": 22,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 496,
+    "sheet": "sheets/construction__exports__palisade_straight.png",
+    "smooth_shaded_faces": 66,
+    "triangles": 496,
+    "unapplied_transforms": [],
+    "vertices": 876
+  },
+  "construction/exports/ramp.glb": {
+    "_source_mtime": 1787087260.8430557,
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.0,
+      2.0,
+      1.1
+    ],
+    "duplicate_vertices": 208,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_WoodBark.012",
+      "MIRE_WoodTimber.014"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 312,
+    "objects": 12,
+    "open_surface_objects": [],
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 160,
+    "sheet": "sheets/construction__exports__ramp.png",
+    "smooth_shaded_faces": 0,
+    "triangles": 160,
+    "unapplied_transforms": [],
+    "vertices": 312
+  },
   "flora/exports/bracken_a.glb": {
     "degenerate_faces": 0,
     "dimensions_m": [
