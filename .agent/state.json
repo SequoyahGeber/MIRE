@@ -149,11 +149,6 @@
       "hash": "8eb00e18839701c96414c83c67c6aaaf60586a0d912b6679e1ae063aff527ea6",
       "task": "F-134"
     },
-    "CLAUDE.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T23:15:28+00:00",
-      "task": "F-053"
-    },
     "assets/audio/music": {
       "agent": "tine18",
       "at": "2026-08-18T18:10:49+00:00",
@@ -502,9 +497,9 @@
     },
     "autoload/command_service.gd": {
       "agent": "lp",
-      "at": "2026-08-18T22:57:40+00:00",
-      "hash": "4bcc6f04834b6270eb1e9d35d9f5cc955208be20d7e37980615c1f2dabcb522d",
-      "task": "3.16"
+      "at": "2026-08-18T23:19:22+00:00",
+      "hash": "23bd1793b9ae7c300afe071e8c593562c6dd21f7c0fd14f8f52eaecd8f75e0c8",
+      "task": "3.17"
     },
     "autoload/crafting_service.gd": {
       "agent": "lp",
@@ -581,10 +576,10 @@
       "task": "3.16"
     },
     "autoload/registry.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T21:00:45+00:00",
-      "hash": "dece79609a72f35de89fb31769bf2e28a399c1f56ea4bf41e7043db7201fe4e8",
-      "task": "3.14"
+      "agent": "lp",
+      "at": "2026-08-18T23:19:22+00:00",
+      "hash": "f1b753d4669089ca05e7c5531bdfd85b1ed767b761ea7e7ec7b5a1b141098183",
+      "task": "3.17"
     },
     "autoload/rule_service.gd": {
       "agent": "hollow7",
@@ -730,6 +725,12 @@
       "hash": "cbf7a1c989133cf33c377c0f1110f1dc424d022c1d7b2e3f4a6726d6596beaf6",
       "task": "3.7"
     },
+    "content/functions": {
+      "agent": "lp",
+      "at": "2026-08-18T23:19:22+00:00",
+      "hash": null,
+      "task": "3.17"
+    },
     "content/harvestables/boulder.tres": {
       "agent": "vane19",
       "at": "2026-08-18T17:55:20+00:00",
@@ -785,6 +786,18 @@
       "at": "2026-08-18T18:59:24+00:00",
       "hash": "3dffd35d3e10b4a2aa17cfa3c9f67dd4cce603ce94df0cfa42393abfc5ad57ee",
       "task": "3.10"
+    },
+    "content/hooks": {
+      "agent": "lp",
+      "at": "2026-08-18T23:19:22+00:00",
+      "hash": null,
+      "task": "3.17"
+    },
+    "content/hooks/night_siege.tres": {
+      "agent": "lp",
+      "at": "2026-08-18T23:19:22+00:00",
+      "hash": "254f90e035eb91c65353c542a747169a68c2f173c62aa1680f9ee34b7510f850",
+      "task": "3.17"
     },
     "content/items/arrow.tres": {
       "agent": "flint5",
@@ -1840,6 +1853,12 @@
       "at": "2026-08-18T17:55:11+00:00",
       "task": "F-113"
     },
+    "systems/commands/function_runner.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T23:19:22+00:00",
+      "hash": "d1bf6fecda7f7d970f281844b28eb6243f8655e809e714f5a79700780695fb07",
+      "task": "3.17"
+    },
     "systems/crafting/recipe_def.gd": {
       "agent": "lp",
       "at": "2026-08-18T05:04:45+00:00",
@@ -1932,6 +1951,12 @@
       "agent": "reed16",
       "at": "2026-08-18T04:53:36+00:00",
       "task": "F-078"
+    },
+    "systems/rules/hook_def.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T23:19:22+00:00",
+      "hash": "ec6a078ac678830c712f857eb4e449e330825f0339d635ac57f4ff98cf4df1fa",
+      "task": "3.17"
     },
     "systems/rules/rule_def.gd": {
       "agent": "hollow7",
@@ -2204,9 +2229,9 @@
     },
     "tools/command_catalog_check.gd": {
       "agent": "lp",
-      "at": "2026-08-18T22:57:40+00:00",
-      "hash": "61b8d4e24e5e6f424eac9303b2b865a4e5b5240d724b69a0f414e1cc66a52f17",
-      "task": "3.16"
+      "at": "2026-08-18T23:19:22+00:00",
+      "hash": "45e41f161594cd536490e72689fb7380513900b40aeab5e7e71941f4608e02df",
+      "task": "3.17"
     },
     "tools/command_check.gd": {
       "agent": "lp",
@@ -2219,11 +2244,6 @@
       "at": "2026-08-18T19:52:51+00:00",
       "hash": "b96ed137463c04c3c42dc48559ccc9199197812f4ceb71b3a1ef046491a2505a",
       "task": "3.13"
-    },
-    "tools/connect_retry_check.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T23:13:44+00:00",
-      "task": "F-052"
     },
     "tools/construction_check.gd": {
       "agent": "slate17",
@@ -2327,6 +2347,12 @@
       "agent": "reed16",
       "at": "2026-08-18T02:29:39+00:00",
       "task": "F-066"
+    },
+    "tools/function_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T23:19:22+00:00",
+      "hash": "8c237cd57c31f14bee5c9a8ea8f4f56b755a9d3debc3d1f66022008a1cf78c01",
+      "task": "3.17"
     },
     "tools/godot_prepass_check.py": {
       "agent": "lp",
@@ -2560,16 +2586,17 @@
       "hash": "0653b479730a65b55c359f187ac1329b8f14212b9a141d77bbffc6f4edbe26cc",
       "task": "3.14"
     },
+    "tools/run_commands.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T23:19:22+00:00",
+      "hash": "84c7c952c94e1f2d1e42f30889b7ff0cb0aec949f1b4f03f1ee9692ab61eb559",
+      "task": "3.17"
+    },
     "tools/seed_sync_check.gd": {
       "agent": "lm",
       "at": "2026-08-18T21:13:43+00:00",
       "hash": "fefc8985eaf0ebee0b227dcbc8bb95a095d27ed49ed06ba77f6261621f107952",
       "task": "4.6"
-    },
-    "tools/session_lifecycle_check.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T23:13:44+00:00",
-      "task": "F-052"
     },
     "tools/setup_attunement_content.gd": {
       "agent": "lm",
@@ -3358,9 +3385,11 @@
       "title": "Command catalog sweep \u2014 every system verb in `COMMANDS.md` \u00a77 incl. D-030's `lobby host/join/invite`, plus the coverage check"
     },
     "3.17": {
+      "done_at": "2026-08-18T23:19:22+00:00",
+      "done_by": "lp",
       "est": "2",
       "milestone": "M3",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Functions + hooks + autoexec + headless `tools/run_commands.gd` scenario runner (`COMMANDS.md` \u00a75\u20136)"
     },

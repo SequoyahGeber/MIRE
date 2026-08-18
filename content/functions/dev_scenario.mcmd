@@ -1,0 +1,9 @@
+# dev_scenario — 3.17's worked example for tools/run_commands.gd (COMMANDS.md §6): the give/spawn
+# setup tools/command_check.gd currently hand-codes through direct execute() calls in GDScript,
+# authored here as a command file instead. Proves the runner can replace a check's fixture setup;
+# migrating command_check.gd itself to consume it is deferred on purpose ("do not port the suite" —
+# docs/SPECS.md 3.17), so this file is not wired into that check. Also loadable as an ordinary
+# function (`function dev_scenario`) since it lives in content/functions/ like any other.
+give branch 5
+spawn crawler 2
+enemies

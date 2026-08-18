@@ -59,12 +59,11 @@ const CATALOG: Array[Dictionary] = [
 	{"name": &"quit", "scope": "local", "system": "Meta"},
 	{"name": &"fps_cap", "scope": "local", "system": "Meta"},
 	{"name": &"vsync", "scope": "local", "system": "Meta"},
+	# `function` is dynamic-scope (D-086), same as `time`/`rule` above — its bare form (no function
+	# named) fails to parse before scope ever matters, so it needs `host_args` naming a REAL function
+	# whose own content is HOST-scope. night_siege's one line (`wave start 10`) qualifies.
+	{"name": &"function", "scope": "host", "system": "Meta", "host_args": "night_siege"},
 ]
-
-## The one §7 row this task does not deliver, stated rather than quietly omitted: `function <name>`
-## is task 3.17's, along with the whole functions/hooks/autoexec surface. Asserted ABSENT so that
-## when 3.17 ships it fails here and its author moves the row up into CATALOG.
-const DEFERRED_TO_3_17: Array[StringName] = [&"function"]
 
 var failures: int = 0
 var command_service: CommandServiceScript
@@ -91,7 +90,6 @@ func _run() -> void:
 	_check_coverage(dump)
 	_check_no_shim_registrations(dump)
 	await _check_host_commands_refuse_non_op(dump)
-	_check_deferred()
 
 	print("\nCOMMAND_CATALOG_CHECK failures=%d" % failures)
 	finish()
@@ -185,13 +183,6 @@ func _check_host_commands_refuse_non_op(dump: Dictionary) -> void:
 	check(leaked.is_empty(),
 		"all HOST verbs gate on op" if leaked.is_empty()
 			else "NOT gated: %s" % ", ".join(leaked))
-
-
-func _check_deferred() -> void:
-	print("\n== the §7 rows this task does not deliver are named, not silently missing ==")
-	for name: StringName in DEFERRED_TO_3_17:
-		check(not command_service.has_spec(name),
-			"`%s` is still task 3.17's — when it lands, move its row into CATALOG" % name)
 
 
 func _ctx(peer_id: int) -> Dictionary:

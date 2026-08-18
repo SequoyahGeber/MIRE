@@ -3539,3 +3539,15 @@ Notes along the way:
 Files: `autoload/command_service.gd`, `autoload/steam_lobby.gd`, `autoload/build_service.gd`, `autoload/crafting_service.gd`, `autoload/enemy_world.gd`, `autoload/harvest_world.gd`, `autoload/inventory_service.gd`, `autoload/powerup_service.gd`, `core/dev/dev_frame_cap.gd`, `systems/environment/day_night.gd`, `systems/health/player_health.gd`, `systems/waves/wave_spawner.gd`, `docs/COMMANDS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `tools/command_catalog_check.gd`
 
 Commit at time of writing: `76d48bc`
+
+---
+
+### DONE · 3.17 · lp · 2026-08-18T23:19:22+00:00
+
+**Functions + hooks + autoexec + headless `tools/run_commands.gd` scenario runner (`COMMANDS.md` §5–6)**
+
+COMMANDS.md §5–6 shipped: functions (.mcmd, content/functions/, recursion cap 4, D-086 dynamic scope via FunctionRunner.effective_scope), hooks (HookDef family, content/hooks/night_siege.tres disabled by default per D-094, CommandService._wire_hooks/wire_hook against a fixed _HOOK_EVENTS table), autoexec (content/functions/autoexec.mcmd + user://autoexec.mcmd, host/offline only), and tools/run_commands.gd (--file/--json/# expect-fail, non-zero exit on failure). Worked examples: night_siege (function+hook) and dev_scenario.mcmd (ports command_check.gd's give/spawn setup). tools/command_catalog_check.gd updated: function is now a real CATALOG row. Verified: agent godot --script tools/function_check.gd (new, failures=0 — function end-to-end, D-086 routing, recursion cap, a synthetic hook firing on a REAL DayNight.host_advance() dusk crossing observed via op-status since WaveSpawner also touches enemy count on dusk); tools/command_catalog_check.gd failures=0 (42 commands); tools/command_check.gd, tools/day_night_check.gd, tools/wave_spawner_check.gd, tools/rule_check.gd, tools/handshake_check.gd, tools/verify_setup.gd all still failures=0/passed; tools/run_commands.gd manually verified against content/functions/dev_scenario.mcmd and scratch expect-fail/failure files (exit 0/0/1 as expected). Full boot (agent godot --quit-after 15): 0 ERROR: lines. No new RPC, no protocol bump. F-154 filed (run_started/player_downed have no signal to bind to); D-094 filed (hooks disabled-by-default rationale).
+
+Files: `systems/rules/hook_def.gd`, `autoload/command_service.gd`, `systems/commands/function_runner.gd`, `content/functions`, `content/hooks`, `autoload/registry.gd`, `tools/run_commands.gd`, `tools/function_check.gd`, `tools/command_catalog_check.gd`, `content/hooks/night_siege.tres`
+
+Commit at time of writing: `08f90c7`

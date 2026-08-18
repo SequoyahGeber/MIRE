@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="HookDef" format=3]
+
+[ext_resource type="Script" path="res://systems/rules/hook_def.gd" id="1_night_siege"]
+
+[resource]
+script = ExtResource("1_night_siege")
+id = &"night_siege"
+event = &"night_started"
+function = &"night_siege"
+host_only = true
+enabled = false
+description = "Worked example (COMMANDS.md §5.2): dusk starts a themed wave via `wave start`. Ships disabled — flip `enabled` to try it. Gameplay-by-hook stays M6 Cycle Modifiers' call (D-094)."

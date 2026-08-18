@@ -1,0 +1,10 @@
+# night_siege — 3.17's worked function+hook example (docs/COMMANDS.md §5.1/§5.2).
+# Bound to DayNight's night_started signal by content/hooks/night_siege.tres, which ships
+# disabled (enabled = false) — flip that .tres to try it, or run `function night_siege` by hand
+# any time regardless of the hook's own enabled flag.
+#
+# "Announce" reuses the surface commands already have for it: a CommandResult's own message is
+# what reaches whoever's watching (the console, run_commands.gd's --json output, a future admin
+# UI) — COMMANDS.md §8 keeps chat out of scope on purpose, so there is no separate broadcast verb
+# to call here. `wave start`'s own success line ("wave started: N enemies") IS the announcement.
+wave start 10

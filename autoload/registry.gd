@@ -22,6 +22,7 @@ const ATTUNEMENTS_PATH: String = "res://content/attunements"
 const BIOMES_PATH: String = "res://content/biomes"
 const SCATTER_PATH: String = "res://content/scatter"
 const RULES_PATH: String = "res://content/rules"
+const HOOKS_PATH: String = "res://content/hooks"
 
 ## F-016: LootTableDef is a brand-new class_name (task 3.5) and this autoload boots in every
 ## headless run, so a bare reference here would break every check in the project the moment the
@@ -50,6 +51,11 @@ const RULE_DEF := preload("res://systems/rules/rule_def.gd")
 ## Same F-016 reasoning again: ScatterDef is new in task 4.4. Lives under world/gen/ for the same
 ## reason BiomeDef does — §3's project structure already names it "POI scatter" territory.
 const SCATTER_DEF := preload("res://world/gen/scatter_def.gd")
+## Same F-016 reasoning again: HookDef is new in task 3.17. It is a content family like any other —
+## the AUTHORED binding of a game event to a function (id, event, function, enabled). Whether one is
+## actually WIRED to its real signal is not content and does not live here; autoload/command_service.gd
+## owns that (docs/COMMANDS.md §5.2).
+const HOOK_DEF := preload("res://systems/rules/hook_def.gd")
 ## Preloaded like the four above so the one generic loader can use script equality uniformly —
 ## it is the F-016-safe type check for every def, established or new (F-099).
 const ITEM_DEF := preload("res://systems/inventory/item_def.gd")
@@ -102,6 +108,11 @@ var scatter_tables: Dictionary[StringName, Resource] = {}
 ## owning system, which is the whole point of the family.
 var rules: Dictionary[StringName, Resource] = {}
 
+## Keyed by hook id (task 3.17). Shared content, same shape as `rules`. One worked example ships
+## with this task (`night_siege`, disabled by default); Sequoyah authors the rest (D-073 — one at a
+## time, not a bulk sweep).
+var hooks: Dictionary[StringName, Resource] = {}
+
 
 func _ready() -> void:
 	_load_dir(ITEMS_PATH, "ItemDef", ITEM_DEF, &"id", "item id", items)
@@ -116,10 +127,11 @@ func _ready() -> void:
 	_load_dir(BIOMES_PATH, "BiomeDef", BIOME_DEF, &"id", "biome id", biomes)
 	_load_dir(SCATTER_PATH, "ScatterDef", SCATTER_DEF, &"id", "scatter table id", scatter_tables)
 	_load_dir(RULES_PATH, "RuleDef", RULE_DEF, &"id", "rule id", rules)
-	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d loot table(s), %d powerup(s), %d buildable(s), %d haulable(s), %d attunement(s), %d biome(s), %d scatter table(s), %d rule(s)" % [
+	_load_dir(HOOKS_PATH, "HookDef", HOOK_DEF, &"id", "hook id", hooks)
+	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d loot table(s), %d powerup(s), %d buildable(s), %d haulable(s), %d attunement(s), %d biome(s), %d scatter table(s), %d rule(s), %d hook(s)" % [
 		items.size(), recipes.size(), stations.size(), weapons.size(), loot_tables.size(),
 		powerups.size(), buildables.size(), haulables.size(), attunements.size(), biomes.size(),
-		scatter_tables.size(), rules.size()
+		scatter_tables.size(), rules.size(), hooks.size()
 	])
 
 
@@ -224,6 +236,20 @@ func get_scatter_table(id: StringName) -> Resource:
 
 func has_scatter_table(id: StringName) -> bool:
 	return scatter_tables.has(id)
+
+
+## The accessor CommandService looks for by name at boot (`_wire_hooks()`), same naming reasoning as
+## `rule_defs()` — the AUTHORED bindings, not whether one is currently wired to a real signal.
+func hook_defs() -> Dictionary:
+	return hooks
+
+
+func get_hook(id: StringName) -> Resource:
+	return hooks.get(id)
+
+
+func has_hook(id: StringName) -> bool:
+	return hooks.has(id)
 
 
 ## The one loader behind every content directory (F-099 — this replaced seven near-identical

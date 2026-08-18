@@ -33,6 +33,12 @@ extends Node
 ##   position: Vector3     — issuer's replicated position, for `~` relative coords (3.15)
 ##   facing: Vector3       — issuer's replicated forward vector (-basis.z); Vector3.FORWARD if there
 ##                            is no body to read (offline harness, or a peer with none spawned yet)
+##   _fn_depth: int         — INTERNAL, task 3.17 only. How many `function` calls deep the CURRENT
+##                            line is nested. Threaded through ctx rather than a member counter
+##                            because a member would be shared across concurrent invocations (two
+##                            peers' commands can interleave across `await` points) — see
+##                            `_cmd_function()`. Absent (defaults to 0) for every caller outside the
+##                            function machinery; nobody else needs to read or set it.
 ##
 ## CommandResult shape (built by `_result()`): {ok: bool, message: String, data: Dictionary}
 
@@ -40,6 +46,30 @@ const NOT_OP_MESSAGE: String = "not op — ask the host to `op <peer>` you first
 const HOST_COMMAND_TIMEOUT_SEC: float = 5.0
 const _TRUE_WORDS: PackedStringArray = ["on", "true", "1", "yes"]
 const _FALSE_WORDS: PackedStringArray = ["off", "false", "0", "no"]
+
+## F-016: FunctionRunner is a script new this session. Preloaded rather than referenced bare, one-
+## directional only — FunctionRunner itself never preloads this file back, so there is no cycle.
+const FUNCTION_RUNNER := preload("res://systems/commands/function_runner.gd")
+
+## docs/COMMANDS.md §5.1/§5.3. content/functions/autoexec.mcmd, if present, is scanned in like any
+## other function and also auto-run at boot (host/offline only) — see `_run_autoexec()`.
+const FUNCTIONS_DIR: String = "res://content/functions"
+
+## docs/COMMANDS.md §5.2's event vocabulary "starts with what exists" — every entry here names a
+## REAL signal a prior task already shipped. `run_started`/`player_downed` are named in the design
+## doc's own illustrative list but have no shipped signal to bind to yet (filed F-154); a HookDef
+## naming either fails loudly at wire time (MireLog error) below instead of silently never firing.
+## `handler` is one of this file's own methods, shaped to match the named signal's exact arity —
+## Callable.bind() appends the hook's (function, host_only) pair AFTER whatever the signal itself
+## supplies, so the handler's own parameter list has to match the signal, not guess at it.
+const _HOOK_EVENTS: Dictionary[StringName, Dictionary] = {
+	&"night_started": {
+		"path": ^"/root/DayNight", "signal": &"night_started", "handler": &"_on_hook_signal_0"},
+	&"day_started": {
+		"path": ^"/root/DayNight", "signal": &"day_started", "handler": &"_on_hook_signal_0"},
+	&"enemy_died": {
+		"path": ^"/root/EnemyWorld", "signal": &"enemy_died", "handler": &"_on_hook_signal_enemy_died"},
+}
 
 ## Fires once per `submit()` handle, with that call's CommandResult. The dynamic-dispatch-safe way to
 ## get a result back — connect once, filter by the handle `submit()` returned.
@@ -59,17 +89,33 @@ var _next_id: int = 1
 var _resolved_requests: Dictionary[int, bool] = {}
 var _type_parsers: Dictionary[StringName, Callable] = {}
 var _transport_node: Node
+## content/functions/*.mcmd, scanned at boot (docs/COMMANDS.md §5.1). Also grown at runtime by
+## `register_function()` — content reload and test setup both want that, same reasoning
+## `register_spec()`'s own docstring gives.
+var _functions: Dictionary[StringName, PackedStringArray] = {}
+## Hook ids this process has actually connected a signal for — `has_wired_hook()` is what
+## tools/function_check.gd asserts against rather than reaching into a private Dictionary.
+var _wired_hooks: Dictionary[StringName, bool] = {}
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_register_type_parsers()
 	_register_meta_commands()
+	_functions = FUNCTION_RUNNER.scan_directory(FUNCTIONS_DIR)
+	_register_function_command()
 
 	var session: Node = get_node_or_null(^"/root/NetSession")
 	if session != null and session.has_signal(&"run_player_rebound"):
 		session.connect(&"run_player_rebound", _on_run_player_rebound)
 		session.connect(&"run_player_expired", _on_run_player_expired)
+
+	# Deferred (same trick debug_console.gd's own _register_builtins() uses): Registry (this task's
+	# own HookDef family) and every event source (DayNight, EnemyWorld) register LATER than this
+	# autoload in project.godot, so neither exists yet during this _ready(). call_deferred runs at
+	# the end of THIS frame, after every autoload's own _ready() has already completed.
+	_wire_hooks.call_deferred()
+	_run_autoexec.call_deferred()
 
 
 # ── Registration ─────────────────────────────────────────────────────────────────────────────────
@@ -361,6 +407,170 @@ func _cmd_deop(ctx: Dictionary, args: Dictionary) -> Dictionary:
 	return _result(true, "deopped peer %d" % target, {"peer": target})
 
 
+# ── Functions (COMMANDS.md §5.1) ────────────────────────────────────────────────────────────────────
+
+
+func _register_function_command() -> void:
+	register_spec(&"function", {
+		# Dynamic scope (D-086): a function's own lines decide whether running it mutates host
+		# state. `_function_scope` inspects the NAMED function's content, not the invocation's
+		# tokens (contrast `rule`/`time`, which only look at how many tokens were typed) — see
+		# FunctionRunner.effective_scope().
+		"scope": _function_scope,
+		"args": [{"name": "name", "type": &"function_id"}],
+		"handler": _cmd_function,
+		"help": "function <name> — run a content/functions/<name>.mcmd file (COMMANDS.md §5.1)",
+	})
+
+
+func _function_scope(raw_args: PackedStringArray) -> StringName:
+	if raw_args.is_empty():
+		return &"local"  # missing arg -> a usage error, not a mutation attempt
+	return FUNCTION_RUNNER.effective_scope(StringName(raw_args[0]), _functions, scope_of)
+
+
+## Runs every line of `name` through THIS SAME execute() (never a second execution path), in order,
+## stopping at the first line that fails. Depth is threaded through `ctx["_fn_depth"]` rather than a
+## member counter — see the CommandCtx docstring at the top of this file for why a shared counter
+## would be unsafe across concurrent invocations.
+func _cmd_function(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var name: StringName = args.get("name", &"")
+	var depth: int = int(ctx.get("_fn_depth", 0))
+	if depth >= FUNCTION_RUNNER.RECURSION_CAP:
+		return _result(false,
+			"function recursion cap (%d) exceeded calling '%s'" % [FUNCTION_RUNNER.RECURSION_CAP, name], {})
+	if not _functions.has(name):
+		# Reachable directly (e.g. a hook's HookDef.function typo) even though `_parse_function_id`
+		# already guards the console/RPC path — belt and suspenders, cheap either way.
+		return _result(false, "no such function '%s' — check content/functions/" % name, {})
+
+	var child_ctx: Dictionary = ctx.duplicate()
+	child_ctx["_fn_depth"] = depth + 1
+	var executed: int = 0
+	for line: String in (_functions[name] as PackedStringArray):
+		var result: Dictionary = await execute(line, child_ctx)
+		executed += 1
+		if not bool(result.get("ok", false)):
+			return _result(false, "function '%s' line %d ('%s') failed: %s" % [
+				name, executed, line, result.get("message", "")], {})
+	return _result(true, "function '%s' ran %d command(s)" % [name, executed], {"executed": executed})
+
+
+func has_function(name: StringName) -> bool:
+	return _functions.has(name)
+
+
+func function_names() -> Array[StringName]:
+	var names: Array[StringName] = []
+	names.assign(_functions.keys())
+	names.sort()
+	return names
+
+
+## Registers (or replaces) a function's lines directly, bypassing content/functions/ entirely — the
+## runtime-authoring counterpart to `register_spec()`'s "content reload and test setup both want
+## that" (same file, same reasoning). tools/function_check.gd is the worked caller: proving the
+## recursion cap or D-086 routing needs a throwaway function that never has to become a permanent
+## content/functions/*.mcmd fixture.
+func register_function(name: StringName, lines: PackedStringArray) -> void:
+	_functions[name] = lines
+
+
+## Read-only mirror of `_is_op()` for a caller outside this file (tools/function_check.gd's hook
+## test asserts on it rather than driving observable game state that another system — WaveSpawner,
+## on night_started — would ALSO touch and make ambiguous).
+func is_op(peer_id: int) -> bool:
+	return _is_op(peer_id)
+
+
+## docs/COMMANDS.md §5.3. content/functions/autoexec.mcmd runs through the exact same `function`
+## handler as `function autoexec` typed by hand (it was already scanned into `_functions` above like
+## any other file in the directory) — one code path, not two. user://autoexec.mcmd is the per-
+## install, gitignored dev file and is never content, so it is read directly instead. Host/offline
+## only, and only once every autoload has settled (see the call_deferred in `_ready()`).
+func _run_autoexec() -> void:
+	if not _owns_execution():
+		return
+	var ctx: Dictionary = _build_ctx(NetConfig.HOST_PEER_ID, &"function")
+
+	if _functions.has(&"autoexec"):
+		var project_result: Dictionary = await _cmd_function(ctx, {"name": &"autoexec"})
+		if not bool(project_result.get("ok", false)):
+			MireLog.error(&"dev", "content/functions/autoexec.mcmd: %s" % project_result.get("message", ""))
+
+	if FileAccess.file_exists("user://autoexec.mcmd"):
+		var lines: PackedStringArray = FUNCTION_RUNNER.parse_lines(
+			FileAccess.get_file_as_string("user://autoexec.mcmd"))
+		for line: String in lines:
+			var result: Dictionary = await execute(line, ctx)
+			if not bool(result.get("ok", false)):
+				MireLog.error(&"dev", "user://autoexec.mcmd: '%s' failed: %s" % [line, result.get("message", "")])
+
+
+# ── Hooks (COMMANDS.md §5.2) ─────────────────────────────────────────────────────────────────────────
+
+
+## Every ENABLED HookDef Registry loaded gets wired to its real signal. Disabled ones (the shipped
+## default, per §5.2) are skipped entirely — not connected, not even looked up, so an author has to
+## deliberately flip `enabled` to find out whether the event binding even exists.
+func _wire_hooks() -> void:
+	var registry: Node = get_node_or_null(^"/root/Registry")
+	if registry == null:
+		return
+	var defs: Dictionary = registry.call("hook_defs")
+	for hook_id: StringName in defs.keys():
+		var hook: Resource = defs[hook_id]
+		if not bool(hook.get("enabled")):
+			continue
+		wire_hook(hook)
+
+
+## Public so a check can wire a synthetic HookDef straight in — no content/hooks/*.tres, no Registry
+## round trip needed (tools/function_check.gd's worked proof). Real hooks only ever arrive here
+## through `_wire_hooks()` above.
+func wire_hook(hook: Resource) -> void:
+	var hook_id: StringName = hook.get("id")
+	var event: StringName = hook.get("event")
+	var binding: Dictionary = _HOOK_EVENTS.get(event, {})
+	if binding.is_empty():
+		MireLog.error(&"dev", "hook '%s': unknown event '%s' has no signal binding" % [hook_id, event])
+		return
+	var target: Node = get_node_or_null(binding["path"])
+	if target == null or not target.has_signal(binding["signal"]):
+		MireLog.error(&"dev", "hook '%s': %s has no signal '%s'" % [hook_id, binding["path"], binding["signal"]])
+		return
+	var callback := Callable(self, binding["handler"] as StringName)
+	target.connect(binding["signal"], callback.bind(hook.get("function"), bool(hook.get("host_only"))))
+	_wired_hooks[hook_id] = true
+
+
+func has_wired_hook(hook_id: StringName) -> bool:
+	return _wired_hooks.get(hook_id, false)
+
+
+func _on_hook_signal_0(function_name: StringName, host_only: bool) -> void:
+	_fire_hook(function_name, host_only)
+
+
+func _on_hook_signal_enemy_died(
+	_enemy_id: StringName, _peer_id: int, _position: Vector3, function_name: StringName, host_only: bool
+) -> void:
+	_fire_hook(function_name, host_only)
+
+
+## Runs the bound function through the exact same `function` front door `function <name>` uses
+## (COMMANDS.md's own repeated principle: never a second mutation path). `host_only` re-checked here
+## rather than only at connect time because a signal's OWNING autoload deciding when to emit is a
+## separate question from whether THIS hook should react on this particular peer.
+func _fire_hook(function_name: StringName, host_only: bool) -> void:
+	if host_only and not _owns_execution():
+		return
+	var ctx: Dictionary = _build_ctx(NetConfig.HOST_PEER_ID, &"hook")
+	var result: Dictionary = await execute("function %s" % function_name, ctx)
+	if not bool(result.get("ok", false)):
+		MireLog.error(&"dev", "hook -> function '%s' failed: %s" % [function_name, result.get("message", "")])
+
+
 # ── Argument parsing (COMMANDS.md §2.2) ─────────────────────────────────────────────────────────────
 
 
@@ -376,6 +586,7 @@ func _register_type_parsers() -> void:
 	_type_parsers[&"rule_id"] = _parse_rule_id
 	_type_parsers[&"selector"] = _parse_selector
 	_type_parsers[&"vec3"] = _parse_vec3
+	_type_parsers[&"function_id"] = _parse_function_id
 	# The remaining COMMANDS.md §2.2 content types, all four the same shape: a Registry lookup with
 	# the family's own "try `<listing verb>`" hint. Registered through one helper rather than four
 	# near-identical functions (F-099's lesson from registry.gd's own loader).
@@ -563,6 +774,13 @@ func _parse_rule_id(raw: String, _spec: Dictionary) -> Dictionary:
 	var id := StringName(raw)
 	if rule_service == null or not bool(rule_service.call("has_rule", id)):
 		return {"ok": false, "error": "no such rule '%s' — try 'rules'" % raw}
+	return {"ok": true, "value": id}
+
+
+func _parse_function_id(raw: String, _spec: Dictionary) -> Dictionary:
+	var id := StringName(raw)
+	if not _functions.has(id):
+		return {"ok": false, "error": "no such function '%s' — check content/functions/" % raw}
 	return {"ok": true, "value": id}
 
 
