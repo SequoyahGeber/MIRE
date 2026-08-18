@@ -30,11 +30,6 @@
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
-    "autoload/build_service.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:35:48+00:00",
-      "task": "3.6"
-    },
     "autoload/enemy_world.gd": {
       "agent": "ivy8",
       "at": "2026-08-18T04:15:50+00:00",
@@ -145,11 +140,6 @@
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
     },
-    "core/net/net_version.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:35:48+00:00",
-      "task": "3.6"
-    },
     "docs/ROADMAP.md": {
       "agent": "ivy8",
       "at": "2026-08-18T04:10:30+00:00",
@@ -165,11 +155,6 @@
       "at": "2026-08-18T04:10:30+00:00",
       "task": "2.1k"
     },
-    "systems/building/build_ghost.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:35:48+00:00",
-      "task": "3.6"
-    },
     "systems/combat/weapon_def.gd": {
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
@@ -184,16 +169,6 @@
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
-    },
-    "tools/build_net_check.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:35:48+00:00",
-      "task": "3.6"
-    },
-    "tools/handshake_check.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:35:48+00:00",
-      "task": "3.6"
     },
     "tools/hollowmere_check.gd": {
       "agent": "ivy8",
@@ -291,18 +266,6 @@
         }
       ],
       "started": "2026-08-18T04:10:30+00:00"
-    },
-    "3.6": {
-      "agent": "gale6",
-      "files": [
-        "autoload/build_service.gd",
-        "core/net/net_version.gd",
-        "tools/handshake_check.gd",
-        "tools/build_net_check.gd",
-        "systems/building/build_ghost.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T04:35:48+00:00"
     },
     "F-073": {
       "agent": "flint5",
@@ -560,7 +523,7 @@
     },
     "autoload/build_service.gd": {
       "agent": "gale6",
-      "at": "2026-08-18T04:35:30+00:00",
+      "at": "2026-08-18T04:42:03+00:00",
       "task": "3.6"
     },
     "autoload/combat_service.gd": {
@@ -785,8 +748,8 @@
     },
     "core/net/net_version.gd": {
       "agent": "gale6",
-      "at": "2026-08-18T04:27:04+00:00",
-      "task": "3.3"
+      "at": "2026-08-18T04:42:03+00:00",
+      "task": "3.6"
     },
     "core/net/run_identity.gd": {
       "agent": "dusk3",
@@ -905,7 +868,7 @@
     },
     "systems/building/build_ghost.gd": {
       "agent": "gale6",
-      "at": "2026-08-18T04:35:30+00:00",
+      "at": "2026-08-18T04:42:03+00:00",
       "task": "3.6"
     },
     "systems/building/buildable_def.gd": {
@@ -1083,6 +1046,11 @@
       "at": "2026-08-18T04:35:30+00:00",
       "task": "3.6"
     },
+    "tools/build_net_check.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:42:03+00:00",
+      "task": "3.6"
+    },
     "tools/chest_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T04:33:16+00:00",
@@ -1185,8 +1153,8 @@
     },
     "tools/handshake_check.gd": {
       "agent": "gale6",
-      "at": "2026-08-18T04:27:04+00:00",
-      "task": "3.3"
+      "at": "2026-08-18T04:42:03+00:00",
+      "task": "3.6"
     },
     "tools/harvest_world_check.gd": {
       "agent": "flint5",
@@ -1946,7 +1914,7 @@
     "3.6": {
       "est": "5",
       "milestone": "M3",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T2",
       "title": "Building system: placement ghost, snapping, rotate, validate, destroy"
     },

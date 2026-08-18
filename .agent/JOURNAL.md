@@ -2052,3 +2052,27 @@ Commit at time of writing: `9e350bf`
 lane reset no longer discards last_error; it moves it to previous_error. Clearing it destroyed the only forensic record while diagnosing LP's 404, and the per-run log happened to survive — that should not be luck. The 404 itself is confirmed from that log: Claude Code initialised with model gpt-5.6-sol and reported 'There is an issue with the selected model', because the 2.12-review order was written for LC1 and its model travelled cross-lane.
 
 Commit at time of writing: `662dbde`
+
+---
+
+### HANDOFF · 3.6 · gale6 · 2026-08-18T04:42:03+00:00
+
+**Building system: placement ghost, snapping, rotate, validate, destroy**
+
+INCREMENTS A AND B DONE AND GREEN; ONLY C (the ghost) IS LEFT.
+
+B shipped: autoload/build_service.gd (BuildService, autoload #24, HOST-authoritative), protocol 11 -> 12 for net_request_place / net_request_destroy / net_build_result, tools/build_net_check.gd. Verified: build_check 0 failures (now covers the host decision path too), build_net_check 13/13 across two real ENet processes, handshake/powerup/powerup_net/verify_setup all green, clean boot, 0 engine-error lines anywhere.
+
+WHAT B DOES: request_place(piece_id, transform) returns a request id immediately and the answer arrives on build_confirmed, same round-trip shape as InventoryService.request_remove and Chest.request_open. The host re-snaps the transform (snapping is pure, so an honest client already computed the same one), re-runs PlacementValidator against its OWN space state, charges via InventoryService.host_transaction, then spawns through a code-built MultiplayerSpawner (D-023) mirroring enemy_world.gd. Pieces join &"buildable_piece" and &"damageable". Destroy refunds floor(cost * refund_fraction) to whoever tears it down, not to whoever built it. Nav rebake is queued and debounced to one per second in _physics_process, never inline.
+
+ORDER OF CHECKS IS DELIBERATE AND COST IS LAST, because cost is the only check with a side effect — rejecting after a successful host_transaction would silently eat the materials. If the spawn then fails, the cost is refunded explicitly. Do not reorder these.
+
+NEXT — INCREMENT C: systems/building/build_ghost.gd (claimed, not written). Client-local presentation ONLY, last row of ARCHITECTURE 2.2, nothing in it may be authoritative. It should: follow the player's aim to a point, call PlacementValidator.snap_transform for grid+rotation snap, call PlacementValidator.evaluate against the LOCAL space state purely to colour itself green/red, and call BuildService.request_place on confirm. The validator is already shared and finished — do not write a second copy of the rules in the ghost, that divergence is exactly the bug the shared validator exists to prevent. Rotation input steps by def.rotation_step_degrees. PlacementValidator.reason_text() gives player-facing words for the refusal so the ghost and a host rejection say the same thing.
+
+A TRAP FOR WHOEVER WRITES THE GHOST'S CHECK: hard-coding a build spot in a networked harness does not work. PlayerNet fans peers out from the spawn point, so a fixed spot lands on somebody's body and the host correctly refuses it as OVERLAPS — the cost path is never reached and you measure the wrong refusal. build_net_check derives the spot from the client's actual body position via PlayerNet.players_root; copy that.
+
+ALSO OPEN, not blocking: F-075 — world statics, props and pieces all share collision layer 1, so the overlap query cannot tell ground from obstruction. The validator works around it by lifting the query box by half_footprint * tan(max_ground_slope), which is self-tuning but leaves a blind band (bottom 0.58 m for a 2 m wall at 30 degrees) where an obstruction is invisible. A terrain layer is the clean fix and is project-wide.
+
+Files: `autoload/build_service.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/build_net_check.gd`, `systems/building/build_ghost.gd`
+
+Commit at time of writing: `3342fd9`

@@ -21,6 +21,8 @@ var registry: Node
 var level: Node3D
 var space: PhysicsDirectSpaceState3D
 var wall: Resource
+var service: Node
+var _confirmations: Array[Dictionary] = []
 
 
 func _initialize() -> void:
@@ -42,6 +44,7 @@ func _run() -> void:
 	_check_snapping_is_pure()
 	await _build_world()
 	_check_placement_rules()
+	await _check_host_placement()
 
 	print("\nBUILD_CHECK failures=%d" % failures)
 	finish()
@@ -178,6 +181,88 @@ func _check_placement_rules() -> void:
 	check(VALIDATOR.is_placeable(VALIDATOR.Reason.OK) and
 		not VALIDATOR.is_placeable(VALIDATOR.Reason.OVERLAPS),
 		"is_placeable() agrees with the enum")
+
+
+## Increment B: the host's own decision path, offline, where this process is host-of-one and every
+## host branch below is the real one.
+func _check_host_placement() -> void:
+	print("\n== the host decides, charges, and can be told no ==")
+	service = root.get_node_or_null(^"BuildService")
+	# F-068's lesson: a check whose subject is an autoload resolves the autoload, so an unregistered
+	# service fails here rather than passing against a private copy.
+	check(service != null,
+		"BuildService is registered as an autoload — without it nothing can ever be built")
+	if service == null:
+		return
+	service.connect(&"build_confirmed", _on_build_confirmed)
+
+	var inventory: Node = root.get_node_or_null(^"InventoryService")
+	check(inventory != null, "InventoryService exists to charge the cost against")
+	if inventory == null:
+		return
+
+	# A wall costs 4 log and this peer has none.
+	_confirmations.clear()
+	var clear_spot := Transform3D(Basis(), Vector3(2.0, 0.0, 0.0))
+	service.call(&"request_place", &"wall_wood", clear_spot)
+	await process_frame
+	check(_confirmations.size() == 1 and not bool(_confirmations[0]["accepted"]),
+		"with an empty inventory the placement is refused")
+	if not _confirmations.is_empty():
+		check(String(_confirmations[0]["reason"]) == "not enough materials",
+			"and the reason names the cost (%s)" % String(_confirmations[0]["reason"]))
+	check(int(service.call(&"placed_count")) == 0, "nothing was spawned for a refused build")
+
+	# Pay for it.
+	inventory.call(&"host_transaction", 1, {} as Dictionary, {&"log": 10} as Dictionary)
+	_confirmations.clear()
+	service.call(&"request_place", &"wall_wood", clear_spot)
+	await process_frame
+	check(_confirmations.size() == 1 and bool(_confirmations[0]["accepted"]),
+		"with materials the placement is accepted")
+	check(int(service.call(&"placed_count")) == 1, "and exactly one piece exists")
+
+	var pieces: Array = get_nodes_in_group(&"buildable_piece")
+	check(pieces.size() == 1, "the piece joined the buildable_piece group")
+	check(get_nodes_in_group(&"damageable").size() >= 1,
+		"and &\"damageable\", so it can be attacked like anything else in the world")
+	check(bool(service.get(&"_nav_rebake_pending")),
+		"a placement queues a navmesh rebake rather than baking inline")
+	check(is_equal_approx(float(service.get(&"NAV_REBAKE_INTERVAL_SEC")), 1.0),
+		"and the rebake is debounced to at most one per second (SPECS 3.6)")
+
+	# The host re-runs the validator: a second wall in the same place must be refused even though
+	# the client "asked nicely" with a transform that was valid a moment ago.
+	_confirmations.clear()
+	service.call(&"request_place", &"wall_wood", clear_spot)
+	await process_frame
+	check(_confirmations.size() == 1 and not bool(_confirmations[0]["accepted"]),
+		"a second piece in the same spot is refused — the host revalidates from scratch")
+	check(int(service.call(&"placed_count")) == 1, "and still exactly one piece exists")
+
+	# Destroy it and get materials back.
+	var piece_name := StringName((pieces[0] as Node).name)
+	var record: Dictionary = service.call(&"placed_record", piece_name)
+	check(StringName(String(record.get("def", ""))) == &"wall_wood",
+		"the host knows which def each placed piece came from")
+	_confirmations.clear()
+	service.call(&"request_destroy", piece_name)
+	await process_frame
+	check(_confirmations.size() == 1 and bool(_confirmations[0]["accepted"]),
+		"destroying an existing piece is accepted")
+	check(int(service.call(&"placed_count")) == 0, "and the host forgets it")
+
+	_confirmations.clear()
+	service.call(&"request_destroy", &"NoSuchPiece")
+	await process_frame
+	check(_confirmations.size() == 1 and not bool(_confirmations[0]["accepted"]),
+		"destroying something that does not exist is refused, not a crash")
+
+	service.disconnect(&"build_confirmed", _on_build_confirmed)
+
+
+func _on_build_confirmed(request_id: int, accepted: bool, reason: String) -> void:
+	_confirmations.append({"id": request_id, "accepted": accepted, "reason": reason})
 
 
 func check(condition: bool, description: String) -> void:

@@ -41,7 +41,10 @@ extends RefCounted
 ## its own full powerup id -> stacks map) and net_powerup_counts (host -> everyone, per-peer
 ## per-family counts only). Both reliable: a dropped grant is a powerup the player paid for and
 ## does not have.
-const PROTOCOL_VERSION: int = 11
+## 12 (task 3.6): autoload/build_service.gd added net_request_place and net_request_destroy
+## (client -> host build requests) and net_build_result (host -> the one requester). All reliable:
+## a dropped build request is a player pressing the button and nothing happening.
+const PROTOCOL_VERSION: int = 12
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).
