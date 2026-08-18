@@ -108,6 +108,28 @@ this instead of watching three terminals.
 windows reset without carryover, so tokens left unspent when a weekly window rolls are simply gone.
 Conserving them is not thrift — it is the most common way to lose them.
 
+### The two windows do different jobs
+
+Claude plans run a **5-hour session** and a **weekly** limit at once, and confusing them leads to the
+wrong schedule:
+
+| Window | What it is | Behaviour |
+|---|---|---|
+| 5-hour session | The **rate limiter** | Fills fast — two tasks took it 15% → 43%. This is what actually stops a lane. Resets every 5h |
+| Weekly | The **real budget** | Moved only 73% → 76% over the same work. This is what expires unspent |
+
+The consequence: **to spend the weekly budget you have to be working during each session window.**
+Sleeping through a 5-hour park does not save anything — it forfeits a window's worth of weekly quota
+that expires anyway. So:
+
+```bash
+agent saturate LP --watch
+```
+
+`--watch` sleeps out a short wall and resumes on its own, up to 4 times and never for more than 8
+hours. It resumes **only** on a quota park; a task that failed for any other reason is left alone,
+because retrying a broken task on a loop just burns the window it waited for.
+
 So: **never hold a lane back to "save" quota.** If a window resets in six hours, the correct move is
 to keep that account working until it does. The only genuine waste is a task that dies unfinished and
 loses its work, and the fix for that is to *size the task to the remaining headroom* — smaller tasks,

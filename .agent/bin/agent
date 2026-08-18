@@ -1754,6 +1754,7 @@ def cmd_saturate(args):
     if lane not in LANE_NAMES:
         die("unknown lane '%s' — known: %s" % (lane, ", ".join(LANE_NAMES)))
 
+    watch = "--watch" in args
     wanted = [a for a in args[1:] if not a.startswith("--")]
     orders = _open_orders()
     if not wanted:
@@ -1771,7 +1772,7 @@ def cmd_saturate(args):
         if not os.path.exists(_order_path(tid)):
             print("  %s· no order for %s, skipping%s" % (C["dim"], tid, C["x"]))
             continue
-        code = subprocess.call([LANE_BIN, "run", lane, tid], cwd=ROOT)
+        code = _run_with_resume(lane, tid, watch)
         if code == 0:
             done_ok.append(tid)
             continue
@@ -1789,6 +1790,47 @@ def cmd_saturate(args):
     elif not done_ok:
         print("  %snothing ran%s" % (C["dim"], C["x"]))
     return 0
+
+
+MAX_RESUMES = 4
+MAX_WAIT_HOURS = 8
+
+
+def _run_with_resume(lane, tid, watch):
+    """Run one task, and with --watch, sleep out a short quota wall and pick it straight back up.
+
+    The two windows do different jobs. The 5-hour session is the rate limiter — it fills fast and is
+    what actually stops a lane. The weekly is the real budget, and it is the one that expires unspent.
+    So sleeping through a 5-hour park is not patience, it is throwing away a window's worth of the
+    weekly budget that cannot be recovered: to spend the weekly you have to be working during each
+    session window.
+
+    Only quota parks are resumed. A task that failed for any other reason is left alone, because
+    retrying a broken task on a loop just burns the window it was waiting for."""
+    for attempt in range(MAX_RESUMES + 1):
+        code = subprocess.call([LANE_BIN, "run", lane, tid], cwd=ROOT)
+        if code == 0 or not watch or attempt == MAX_RESUMES:
+            return code
+
+        state = _lane_state().get(lane, {})
+        if state.get("status") != "exhausted":
+            return code                       # a real failure, not a wall
+        until = state.get("exhausted_until")
+        try:
+            resets = datetime.fromisoformat(until)
+        except (TypeError, ValueError):
+            return code
+        if resets.tzinfo is None:
+            resets = resets.replace(tzinfo=timezone.utc)
+        wait = (resets - datetime.now(timezone.utc)).total_seconds()
+        if wait <= 0 or wait > MAX_WAIT_HOURS * 3600:
+            return code                       # already past, or too far out to sit on
+
+        print("%s· %s parked until %s — sleeping %.1fh, then resuming %s%s"
+              % (C["y"], lane, until, wait / 3600.0, tid, C["x"]))
+        time.sleep(wait + 60)                 # a minute past the reset, so it is definitely open
+        subprocess.call([LANE_BIN, "reset", lane], cwd=ROOT)
+    return 1
 
 
 def cmd_lanes(args):
@@ -2148,7 +2190,8 @@ Directing three worker accounts (docs/ORCHESTRATION.md):
   agent order <id> --lane LC1 --files ...   write a self-contained work order
   agent order <id> --lane LC1 --review     review order: judge a commit, file findings, no edits
   agent dispatch <LANE> [id] [--dry-run]    run that order on its account, headless
-  agent saturate <LANE> [ids...]           run its queued orders back to back — no idle window
+  agent saturate <LANE> [ids...] [--watch] run its queued orders back to back — no idle window
+                                           --watch also sleeps out a short quota wall and resumes
   agent lanes [--doctor]                    lane health; --doctor checks CLI + login
   agent report                              who's doing what, what it cost, what's stuck
   agent collect [--hours N]                 what shipped, what stopped, what needs you

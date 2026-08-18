@@ -1631,3 +1631,13 @@ Commit at time of writing: `ae22d31`
 Relabel cost as api-equiv. Every lane authenticates with a subscription (apiKeySource none, subscriptionType pro), so total_cost_usd is what the tokens would have cost at API rates and nobody is billed it — showing a bare dollar sign read as a bill. Kept because it tracks window consumption better than raw token counts, which are dominated by cache re-reads. Codex reports no equivalent, so its lanes read zero: missing data, not free work.
 
 Commit at time of writing: `314c59a`
+
+---
+
+### DONE · 0.12 · quill15 · 2026-08-18T00:18:12+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+Corrected the window model: the 5-hour session is the rate limiter that actually stops a lane (two tasks took it 15 to 43 percent while the weekly moved only 73 to 76), and the weekly is the budget that expires unspent. Spending the weekly therefore requires working during each session window, so 'agent saturate --watch' now sleeps out a short quota park and resumes automatically, capped at 4 resumes and 8 hours, and only for quota parks rather than real failures.
+
+Commit at time of writing: `d3a290f`
