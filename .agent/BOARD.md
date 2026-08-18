@@ -10,7 +10,6 @@
 |---|---|---|---|
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | moss11 | 2026-08-18 00:57 | `docs/ASSET_TRACKER.md`, `tools/blender/build_flora_set.py`, `tools/blender/mire_art.py`, `assets/flora`, `assets/source/flora_set.blend`, `world/gen/undergrowth.gd`, `tools/flora_check.gd`, `levels/playtest_hollow.tscn` |
 | **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-18 00:43 | `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `assets/maps`, `assets/source/playtest_hollow.blend` |
-| **F-056** The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join | flint5 | 2026-08-18 01:15 | `world/gen/playtest_hollow.gd` |
 
 **2.1d notes:**
 - Batch A-000V (vegetation expansion) taken OUT OF QUEUE ORDER at Sequoyah's direct request — 'make a whole bunch of vegetation assets... little plants, bushes, more grass, maybe more trees'. A-009 stays NEXT and unstarted, same precedent as A-004R and A-021S.
@@ -19,7 +18,7 @@
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `██████░░░░` 33/53 | 20 |
+| Findings | `██████░░░░` 34/53 | 19 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 18/23 | 5 |
@@ -68,7 +67,6 @@
 | ⬜ | **F-045** `pgrep -fl Godot` is too blunt to be the closed-editor guard | todo |
 | ⬜ | **F-053** Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why | todo |
 | ⬜ | **F-055** Committed HEAD boots with a failed autoload — `c187ede` deleted a script but left it registered | todo |
-| 🔵 | **F-056** The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join | in_flight |
 | ⬜ | **F-057** A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds | todo |
 | ⬜ | **F-058** `docs/FINDINGS.md` carried two F-055s and two F-056s at once — concurrent lanes both used `agent brief`'s "next number" | todo |
 | ⬜ | **F-059** `InventoryService._publish_snapshot`'s `net_inventory_snapshot.rpc_id()` is unguarded against a departed peer, same shape as the bug task 3.8 fixed in `player_health.gd` | todo |
@@ -76,4 +74,4 @@
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.13` `3.8` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `4.0b` `F-002` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-043` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-054`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.13` `3.8` `1.0b` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `4.0b` `F-002` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-039` `F-040` `F-041` `F-043` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-054` `F-056`

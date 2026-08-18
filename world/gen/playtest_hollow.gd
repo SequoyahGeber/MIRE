@@ -230,12 +230,17 @@ func _add_heightfield_body(parent: Node3D, hf: Dictionary) -> void:
 				faces.append_array([a, c, b, b, c, d])
 
 	var shape := ConcavePolygonShape3D.new()
-	shape.set_faces(faces)
+	# Jolt treats a concave mesh as one-sided and does not agree with Godot Physics on which side
+	# that is, so a correctly-wound (normals up) heightfield can still be fall-through from above.
+	# Two-sided costs nothing for static ground and removes the winding question entirely (F-056).
+	shape.backface_collision = true
 	var body := StaticBody3D.new()
 	body.name = "GroundHeightfield"
 	var collider := CollisionShape3D.new()
+	collider.name = "GroundCollision"
 	collider.shape = shape
 	body.add_child(collider)
+	shape.set_faces(faces)
 	body.add_to_group(TERRAIN_GROUP)
 	parent.add_child(body)
 	terrain_body_count += 1

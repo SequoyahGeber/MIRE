@@ -55,11 +55,6 @@
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
-    "world/gen/playtest_hollow.gd": {
-      "agent": "flint5",
-      "at": "2026-08-18T01:15:55+00:00",
-      "task": "F-056"
-    },
     "world/gen/undergrowth.gd": {
       "agent": "moss11",
       "at": "2026-08-18T00:57:48+00:00",
@@ -98,14 +93,6 @@
       ],
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
-    },
-    "F-056": {
-      "agent": "flint5",
-      "files": [
-        "world/gen/playtest_hollow.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T01:15:55+00:00"
     }
   },
   "recent": {
@@ -1555,9 +1542,9 @@
       "task": "2.1j"
     },
     "docs/FINDINGS.md": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
+      "agent": "flint5",
+      "at": "2026-08-18T01:20:10+00:00",
+      "task": "F-056"
     },
     "docs/NEXT.md": {
       "agent": "flint5",
@@ -2116,7 +2103,7 @@
     },
     "tools/spawn_ground_probe.gd": {
       "agent": "flint5",
-      "at": "2026-08-18T00:33:04+00:00",
+      "at": "2026-08-18T01:20:10+00:00",
       "task": "F-056"
     },
     "tools/verify_setup.gd": {
@@ -2175,9 +2162,9 @@
       "task": "2.1j"
     },
     "world/gen/playtest_hollow.gd": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
+      "agent": "flint5",
+      "at": "2026-08-18T01:20:10+00:00",
+      "task": "F-056"
     },
     "world/gen/test_map_props.gd": {
       "agent": "tine18",
@@ -3522,9 +3509,11 @@
       "title": "Committed HEAD boots with a failed autoload \u2014 `c187ede` deleted a script but left it registered"
     },
     "F-056": {
+      "done_at": "2026-08-18T01:20:10+00:00",
+      "done_by": "flint5",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join"
     },

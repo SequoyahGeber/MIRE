@@ -620,6 +620,37 @@ commit.
 
 ---
 
+### F-056 · Jolt treats the heightfield as one-sided, so you fall through the map on join — **fixed**
+
+**Resolved 2026-08-17 by flint5.** The title above was my first hypothesis and it was **wrong** —
+the spawn placement was correct all along. Corrected diagnosis, then the fix:
+
+`world/gen/playtest_hollow.gd` builds the ground as a `ConcavePolygonShape3D`. Everything about it
+was right: 1814 correctly-wound faces (1922 up-facing, 0 down-facing, verified against the layout
+data), `StaticBody3D` on layer 1 at `y=0.000`, shape enabled, and the physics **server** confirmed
+holding all 1814 faces with an identity transform in a valid space. It still collided with nothing.
+The cause is the **Jolt** backend: it treats a concave mesh as one-sided and does not agree with
+Godot Physics on which side that is, so a correctly-wound heightfield is invisible from above. Its
+box-shaped sibling terrain bodies (`Mire_BasinFloor` et al.) collided normally throughout, which is
+what made this look like a spawn bug rather than a shape bug.
+
+Fix is one line — `shape.backface_collision = true`. Two-sided costs nothing for static ground and
+removes the winding question permanently. Verified: the player now settles at `y=0.001` with
+`on_floor=true` and stays there, and all five `SPAWN_OFFSETS` peer slots report ground on
+`GroundHeightfield`. `playtest_hollow_check`, `verify_setup`, `harvest_world_check` and
+`dev_loadout_check` all pass with 0 failures and 0 engine errors.
+
+**The blind spot is the durable lesson, and it now has a guard.** `verify_setup`'s "player rests at
+ground level" runs against a flat *fixture* level, never the real map; `playtest_hollow_check`
+validates 323 colliders, grid sanity and facet angles but never asks whether a player can stand
+anywhere. Both were green while the map was unplayable. `tools/spawn_ground_probe.gd` now drops the
+real player into the real main scene, asserts it reaches the floor, and asserts every peer slot has
+ground beneath it — the one question that decides playability.
+
+*Original (incorrect) diagnosis retained below, because the measurements are still useful and the
+wrong turn is instructive: two of my probe readings were artifacts — it first measured the Player's
+own capsule as "ground", then read the Player's position after it had already fallen.*
+
 ### F-056 · The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join
 
 **Area:** level/gameplay · **Severity:** critical — the game is unplayable; it blocks 2.9 and 2.14 ·
@@ -774,6 +805,28 @@ items)` was added after the mutation. Dictionaries are reference types in GDScri
 true of an ordinary untyped Dictionary property; something about the typed-Dictionary boundary crossed
 by generic property reflection converts rather than aliases. Always `.set()` back explicitly after
 mutating a typed Dictionary/Array property read through `.get()` from outside its own script.
+
+### F-061 · content/items/coins.tres has no icon — the render_item_icons.py pipeline needs a SOURCES entry
+
+**Area:** content · **Severity:** low · **Found:** 2026-08-18 by lp
+
+Task 3.5 added `content/items/coins.tres` (stack_size 999, world_model =
+assets/loot/exports/loot_coin_pouch.glb) so Chest has a real item to grant coins as. Every other
+item in content/items/ carries an icon rendered by `tools/blender/render_item_icons.py` (D-033: icons
+are renders of the shipped GLBs, never drawn) — DELEGATION's "Current state" says "All 14 item .tres
+files carry their icon." coins.tres is the 15th and does not; `ItemDef.icon` is left null.
+
+Not fixed here: appending to that script's SOURCES list, re-rendering, and comparing decoded pixels
+(F-042 — PNGs are never byte-identical rebuild to rebuild) is an art-pipeline task, not this one's
+framework claim (systems/loot/, ui/loot/, autoload/registry.gd). InventoryUI and ChestUI both already
+render a null icon gracefully (existing items without a world_model/icon exercise the same path), so
+nothing is broken — coins just show without an icon until this is picked up.
+
+Fix: add `"coins": "res://assets/loot/exports/loot_coin_pouch.glb"` (or equivalent) to
+render_item_icons.py's SOURCES, rerun it, and set coins.tres's `icon` field, following A-004R's
+"appending to SOURCES, not starting a second pipeline" note in DELEGATION.
+
+---
 
 ## Resolved
 

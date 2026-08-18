@@ -1759,3 +1759,15 @@ Commit at time of writing: `040064a`
 Real failure caught in production, and it was not a quota wall. Task 3.5 hit the shared Godot lock, said 'I will pause here and wait for the monitor's notification', and ended its turn — headless runs have no next turn, so it stopped mid-task holding eleven claims with the whole loot system uncommitted, while reporting subtype success, stop_reason end_turn, is_error false, exit 0. Two fixes: completion is now judged by the board rather than the exit code (a task still in flight under this lane after its process exits gets the same handoff and claim release as a crash, and counts toward the consecutive-failure guard), and the work order now tells lanes explicitly that they are headless, that blocking commands should be allowed to block, and that going quiet is worse than failing.
 
 Commit at time of writing: `040064a`
+
+---
+
+### DONE · F-056 · flint5 · 2026-08-18T01:20:10+00:00
+
+**The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join**
+
+Root cause was NOT the spawn placement — that was correct. Jolt treats ConcavePolygonShape3D as one-sided and disagrees with Godot Physics on which side, so the correctly-wound heightfield (1814 faces, verified present in the physics server with identity transform on layer 1) was invisible from above while its box-shaped sibling terrain collided fine. Fix: shape.backface_collision = true in world/gen/playtest_hollow.gd. Verified: player settles at y=0.001 on_floor=true; all 5 SPAWN_OFFSETS peer slots report ground on GroundHeightfield; playtest_hollow_check, verify_setup, harvest_world_check, dev_loadout_check all 0 failures 0 errors. tools/spawn_ground_probe.gd rewritten as a standing regression check — it drops the real player into the real main scene and asserts it lands, which no existing check did (verify_setup uses a flat fixture level; playtest_hollow_check never asks if a player can stand).
+
+Files: `world/gen/playtest_hollow.gd`, `tools/spawn_ground_probe.gd`, `docs/FINDINGS.md`
+
+Commit at time of writing: `a882db9`
