@@ -37,7 +37,11 @@ extends RefCounted
 ## (food) and net_report_local_stamina (advisory client -> host stamina reconciliation).
 ## 10 (task 3.5): systems/loot/chest.gd added net_request_open and net_open_result, the chest-opening
 ## request/grant pair.
-const PROTOCOL_VERSION: int = 10
+## 11 (task 3.3): autoload/powerup_service.gd added net_powerup_snapshot (host -> the owning peer,
+## its own full powerup id -> stacks map) and net_powerup_counts (host -> everyone, per-peer
+## per-family counts only). Both reliable: a dropped grant is a powerup the player paid for and
+## does not have.
+const PROTOCOL_VERSION: int = 11
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).

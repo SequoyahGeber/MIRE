@@ -1982,3 +1982,15 @@ Notes along the way:
 Files: `autoload/inventory_service.gd`, `tools/inventory_net_check.gd`
 
 Commit at time of writing: `7025a22`
+
+---
+
+### DONE · 3.3 · gale6 · 2026-08-18T04:27:04+00:00
+
+**Powerup framework: effect hooks, stacking, tags, Resonance thresholds (`DESIGN.md` §4.4)**
+
+Powerup framework ships and runs. PowerupDef (id/display_name/icon/tags/max_stacks/modifiers, with validation_errors so a malformed .tres is a named boot error), PowerupService autoload #23 host-authoritative, Registry loads content/powerups, protocol 10 -> 11 for two new RPCs, and a powerup log channel added to mire_log (F-055's lesson). The one seam is stat(peer, name, base) — systems ask, the service never reaches into systems, so a new stat powerup needs no system edited. Resonance is data only: resonance_active/greater_resonance_active at DESIGN 4.4's 3+ and 6+, with resonance_changed firing on crossings in both directions; effects hook the flag in their own tasks. Replication is split: owner gets its full map by rpc_id, everyone gets per-family counts by broadcast. D-035 honoured — peer_left drops nothing, rebind moves, only expire deletes. D-044 records the two design calls (tags ARE the families, no separate resonance_family; stacks scale linearly, additive before multiplicative). Writing the net check surfaced a real gap: a mid-run joiner learned nothing until someone opened a chest, because publishing on mutation assumes every peer saw every mutation — _on_peer_joined now sends the board. Verified: powerup_check 28/28 offline, powerup_net_check 13/13 over two real ENet processes including the negative assertion that a teammate cannot name a powerup you hold, handshake_check 0, verify_setup all passed, wave_spawner/atmosphere_night/interp_coverage still green, clean boot, 0 engine-error lines anywhere. One worked example authored (swift_stride); the other 40-60 are 3.4's inspector work and deliberately not agent-generated.
+
+Files: `systems/powerups/powerup_def.gd`, `autoload/powerup_service.gd`, `autoload/registry.gd`, `tools/powerup_check.gd`, `content/powerups`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `core/util/mire_log.gd`, `content/powerups/swift_stride.tres`, `tools/powerup_net_check.gd`
+
+Commit at time of writing: `d844e82`

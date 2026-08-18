@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"swift_stride"
+display_name = "Swift Stride"
+description = "You move a little faster, and you feel it in your legs. Three of anything Kinetic and the momentum starts to mean something."
+tags = Array[StringName]([&"Kinetic"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"move_speed": Vector2(0, 0.08)
+})

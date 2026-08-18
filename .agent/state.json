@@ -35,16 +35,6 @@
       "at": "2026-08-18T04:16:02+00:00",
       "task": "2.1k"
     },
-    "autoload/powerup_service.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:18:06+00:00",
-      "task": "3.3"
-    },
-    "autoload/registry.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:18:06+00:00",
-      "task": "3.3"
-    },
     "content/items/arrow.tres": {
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
@@ -100,16 +90,6 @@
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
     },
-    "content/powerups": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:18:06+00:00",
-      "task": "3.3"
-    },
-    "content/powerups/swift_stride.tres": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:21:46+00:00",
-      "task": "3.3"
-    },
     "content/weapons/cleaver.tres": {
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
@@ -155,16 +135,6 @@
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
     },
-    "core/net/net_version.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:19:18+00:00",
-      "task": "3.3"
-    },
-    "core/util/mire_log.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:19:18+00:00",
-      "task": "3.3"
-    },
     "docs/ROADMAP.md": {
       "agent": "ivy8",
       "at": "2026-08-18T04:10:30+00:00",
@@ -190,20 +160,10 @@
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
     },
-    "systems/powerups/powerup_def.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:18:06+00:00",
-      "task": "3.3"
-    },
     "tools/blender/render_item_icons.py": {
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
-    },
-    "tools/handshake_check.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:19:18+00:00",
-      "task": "3.3"
     },
     "tools/hollowmere_check.gd": {
       "agent": "ivy8",
@@ -219,11 +179,6 @@
       "agent": "ivy8",
       "at": "2026-08-18T04:10:30+00:00",
       "task": "2.1k"
-    },
-    "tools/powerup_check.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:18:06+00:00",
-      "task": "3.3"
     },
     "tools/setup_tool_content.gd": {
       "agent": "flint5",
@@ -294,22 +249,6 @@
         }
       ],
       "started": "2026-08-18T04:10:30+00:00"
-    },
-    "3.3": {
-      "agent": "gale6",
-      "files": [
-        "systems/powerups/powerup_def.gd",
-        "autoload/powerup_service.gd",
-        "autoload/registry.gd",
-        "tools/powerup_check.gd",
-        "content/powerups",
-        "core/net/net_version.gd",
-        "tools/handshake_check.gd",
-        "core/util/mire_log.gd",
-        "content/powerups/swift_stride.tres"
-      ],
-      "notes": [],
-      "started": "2026-08-18T04:18:06+00:00"
     },
     "F-073": {
       "agent": "flint5",
@@ -604,10 +543,15 @@
       "at": "2026-08-17T04:46:47+00:00",
       "task": "F-018"
     },
+    "autoload/powerup_service.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:27:04+00:00",
+      "task": "3.3"
+    },
     "autoload/registry.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T01:18:50+00:00",
-      "task": "3.5"
+      "agent": "gale6",
+      "at": "2026-08-18T04:27:04+00:00",
+      "task": "3.3"
     },
     "autoload/steam_lobby.gd": {
       "agent": "dusk3",
@@ -699,6 +643,16 @@
       "at": "2026-08-18T02:29:39+00:00",
       "task": "3.5"
     },
+    "content/powerups": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:27:04+00:00",
+      "task": "3.3"
+    },
+    "content/powerups/swift_stride.tres": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:27:04+00:00",
+      "task": "3.3"
+    },
     "content/recipes/stone_axe.tres": {
       "agent": "flint5",
       "at": "2026-08-17T19:02:17+00:00",
@@ -780,9 +734,9 @@
       "task": "F-032"
     },
     "core/net/net_version.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T01:18:50+00:00",
-      "task": "3.5"
+      "agent": "gale6",
+      "at": "2026-08-18T04:27:04+00:00",
+      "task": "3.3"
     },
     "core/net/run_identity.gd": {
       "agent": "dusk3",
@@ -795,9 +749,9 @@
       "task": "F-032"
     },
     "core/util/mire_log.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:55:40+00:00",
-      "task": "3.8"
+      "agent": "gale6",
+      "at": "2026-08-18T04:27:04+00:00",
+      "task": "3.3"
     },
     "docs/AI-WORKFLOW.md": {
       "agent": "flint5",
@@ -968,6 +922,11 @@
       "agent": "lp",
       "at": "2026-08-18T01:18:50+00:00",
       "task": "3.5"
+    },
+    "systems/powerups/powerup_def.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:27:04+00:00",
+      "task": "3.3"
     },
     "systems/spawning/wave_spawner.gd": {
       "agent": "lc1",
@@ -1185,9 +1144,9 @@
       "task": "F-066"
     },
     "tools/handshake_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T01:18:50+00:00",
-      "task": "3.5"
+      "agent": "gale6",
+      "at": "2026-08-18T04:27:04+00:00",
+      "task": "3.3"
     },
     "tools/harvest_world_check.gd": {
       "agent": "flint5",
@@ -1273,6 +1232,16 @@
       "agent": "tine18",
       "at": "2026-08-18T00:39:51+00:00",
       "task": "2.1j"
+    },
+    "tools/powerup_check.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:27:04+00:00",
+      "task": "3.3"
+    },
+    "tools/powerup_net_check.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:27:04+00:00",
+      "task": "3.3"
     },
     "tools/run_identity_check.gd": {
       "agent": "dusk3",
@@ -1900,9 +1869,11 @@
       "title": "Author all item/recipe `.tres` content"
     },
     "3.3": {
+      "done_at": "2026-08-18T04:27:04+00:00",
+      "done_by": "gale6",
       "est": "5",
       "milestone": "M3",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T2",
       "title": "Powerup framework: effect hooks, stacking, tags, Resonance thresholds (`DESIGN.md` \u00a74.4)"
     },
@@ -2925,6 +2896,13 @@
       "status": "in_flight",
       "tier": "F",
       "title": "Every tool shares one grip rotation authored for a sword, so the axe is held edge-on and every weapon swings the same chop"
+    },
+    "F-074": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "InventoryService._valid_host_peer's connectivity check silently drops a host grant for a peer mid-D-035-grace-window, instead of parking it"
     }
   },
   "version": 1

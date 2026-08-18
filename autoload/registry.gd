@@ -14,11 +14,15 @@ const ITEMS_PATH: String = "res://content/items"
 const RECIPES_PATH: String = "res://content/recipes"
 const WEAPONS_PATH: String = "res://content/weapons"
 const LOOT_PATH: String = "res://content/loot"
+const POWERUPS_PATH: String = "res://content/powerups"
 
 ## F-016: LootTableDef is a brand-new class_name (task 3.5) and this autoload boots in every
 ## headless run, so a bare reference here would break every check in the project the moment the
 ## class cache is stale, not just this task's own. Preload it and compare scripts instead of `is`.
 const LOOT_TABLE_DEF := preload("res://systems/loot/loot_table_def.gd")
+## Same F-016 reasoning as LOOT_TABLE_DEF above: PowerupDef is a brand-new class_name (task
+## 3.3) and this autoload boots in every headless run.
+const POWERUP_DEF := preload("res://systems/powerups/powerup_def.gd")
 
 var items: Dictionary[StringName, ItemDef] = {}
 var recipes: Dictionary[StringName, RecipeDef] = {}
@@ -30,14 +34,19 @@ var weapons: Dictionary[StringName, WeaponDef] = {}
 ## Resource rather than LootTableDef for the same F-016 reason as the preload above.
 var loot_tables: Dictionary[StringName, Resource] = {}
 
+## Keyed by powerup id (task 3.3). Shared content, same shape as `recipes`. Untyped Resource
+## for the same F-016 reason as the preload above.
+var powerups: Dictionary[StringName, Resource] = {}
+
 
 func _ready() -> void:
 	_load_items()
 	_load_recipes()
 	_load_weapons()
 	_load_loot_tables()
-	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d weapon(s), %d loot table(s)" % [
-		items.size(), recipes.size(), weapons.size(), loot_tables.size()
+	_load_powerups()
+	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d weapon(s), %d loot table(s), %d powerup(s)" % [
+		items.size(), recipes.size(), weapons.size(), loot_tables.size(), powerups.size()
 	])
 
 
@@ -147,6 +156,36 @@ func _load_loot_tables() -> void:
 			MireLog.error(&"content", "%s is invalid (%s), skipped" % [file_path, "; ".join(errors)])
 			continue
 		loot_tables[table_id] = res
+
+
+func get_powerup(id: StringName) -> Resource:
+	return powerups.get(id)
+
+
+func has_powerup(id: StringName) -> bool:
+	return powerups.has(id)
+
+
+func _load_powerups() -> void:
+	for file_path: String in _tres_files_in(POWERUPS_PATH):
+		var res: Resource = load(file_path)
+		if res == null or res.get_script() != POWERUP_DEF:
+			MireLog.error(&"content", "%s does not contain a PowerupDef, skipped" % file_path)
+			continue
+		var powerup_id := StringName(String(res.get("id")))
+		if powerup_id == &"":
+			MireLog.error(&"content", "%s has no id set, skipped" % file_path)
+			continue
+		if powerups.has(powerup_id):
+			MireLog.error(&"content", "duplicate powerup id '%s' at %s, keeping first" % [
+				powerup_id, file_path
+			])
+			continue
+		var errors: PackedStringArray = res.call("validation_errors")
+		if not errors.is_empty():
+			MireLog.error(&"content", "%s is invalid (%s), skipped" % [file_path, "; ".join(errors)])
+			continue
+		powerups[powerup_id] = res
 
 
 func _tres_files_in(dir_path: String) -> Array[String]:
