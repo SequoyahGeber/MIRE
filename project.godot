@@ -44,6 +44,7 @@ PowerupService="*res://autoload/powerup_service.gd"
 BuildService="*res://autoload/build_service.gd"
 GraphicsQuality="*res://autoload/graphics_quality.gd"
 EnvironmentVfx="*res://autoload/environment_vfx.gd"
+LobbyMenu="*res://ui/lobby/lobby_menu.gd"
 
 [display]
 

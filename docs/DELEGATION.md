@@ -75,6 +75,35 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — F-115: ground mist is a fog SHADER built from code, and the look is judged from rendered PNGs (vane19)
+
+**`world/environment/ground_fog.gd` + `.gdshader`.** `PlaytestAtmosphere._resolve_ground_fog()`
+creates one for any level with an `Atmosphere` node — same reasoning as the star field, and the same
+bug it fixes: the controller used to drive three `FogVolume` siblings by name and the shipped map
+had none of them. **Do not add a GroundFog to a level scene**; if one is authored as a child named
+`GroundFog` it is reused, otherwise it is built.
+
+- Density is a function of `WORLD_POSITION`, so the volume is only an evaluation window. It follows
+  the camera **in XZ only** — following in Y makes a plateau as foggy as a valley.
+- `base_height` is measured off the terrain AABB (group `authored_world_terrain`), a quarter of the
+  way up, **on the first frame that group is non-empty** — not in `_ready()`, where `Atmosphere` runs
+  before `World` and the group is still empty. `NAN` means "not measured yet", never "y = 0".
+- `apply_look(scale, albedo, emission, emission_energy)` is the only thing the atmosphere calls.
+  Colour is passed in rather than derived in the fog so the mist, the sky and the shafts cannot
+  disagree about the hour.
+- `Environment.volumetric_fog_density` is now 0.00006 and must stay near there: it exists only so a
+  sunbeam has a medium to be visible in. Raising it back is how the flat haze returns.
+- **Anything on the `low` graphics preset is free** — it disables volumetric fog on the Environment
+  and every FogVolume goes inert.
+
+**Judging a look change: `tools/atmosphere_look_shot.gd`, run `--windowed`.** It renders the shipped
+map at eight times of day plus sunward and forest-interior framings to `user://atmosphere_look/*.png`.
+Two traps it already paid for: **pose the clock through `DayNight`** (`time_of_day` in 0..1), because
+DayNight re-applies the hour every physics tick and overwrites `Atmosphere.set_time_of_day()` before
+the frame is drawn; and the sun's elevation is `sin((hour - 6) / 24 * TAU) * 90`, so **hour 18 is
+exactly sunset and 18.6 is already full night** — golden hour is only ~1.2 game-hours wide. It
+renders through its own `SubViewport` because `agent godot --windowed` forces a 64×64 window (F-077).
+
 ### 2026-08-18 — `agent godot` imports before every run, so a check can no longer read a stale build (F-093, lm)
 
 **Nothing to build against — this is a behaviour change in the shared harness itself.** Every

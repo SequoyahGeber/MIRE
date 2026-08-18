@@ -605,7 +605,11 @@ F-075, and AGENTS.md's rule is to file it and keep moving, not chase it.
 
 ---
 
-### F-115 · Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map
+
+
+## Resolved
+
+### F-115 · Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map — **fixed**
 
 **Area:** environment · **Severity:** medium · **Found:** 2026-08-18 by vane19
 
@@ -631,10 +635,59 @@ keyed to world position so it pools in low ground and near water. Asset/position
 scene-keyed, so a generated world inherits it (F-097). Must no-op cleanly on the `low` graphics
 preset, which turns volumetric fog off.
 
+**Fixed 2026-08-18 by vane19,** and the lighting pass Sequoyah asked for in the same breath came
+with it.
+
+**The fog is now a function of world position, not a single number.**
+`world/environment/ground_fog.gdshader` is a `shader_type fog` shader whose density is built from
+three terms: a squared falloff with height above a base level so it hugs the ground, a gentler
+falloff *below* it so hollows and water fill instead of clipping, and two scrolling fbm layers at
+different rates so banks are patchy, have real clearings between them, and drift and shear rather
+than sliding as one sheet. `world/environment/ground_fog.gd` is the `FogVolume` it runs in — a
+260 m box that follows the camera **in XZ only**. Because density is evaluated in world space the
+mist does not move with the box; following in Y is what would make a plateau as foggy as the mere,
+which is the "covers everything" complaint in a different costume.
+
+**Nobody has to place it.** `PlaytestAtmosphere` builds one for any level with an `Atmosphere` node,
+exactly as it already does for the star field, and measures where the mist sits off the level's own
+terrain — a quarter of the way up the terrain AABB, which on Hollowmere is **y = 4.33**: over the
+mere (-3.2), the fen (-1.2) and the valley floor (median 4.5), with the plateau (23 m) standing
+clear above it. A generated world gets the same relationship to its own terrain with no tuning.
+**The measurement is taken on the first frame terrain exists, not in `_ready()`** — `Atmosphere` is
+an earlier sibling than `World`, so the first version measured an empty group and silently sat the
+mist at y=0.
+
+**The uniform blanket is down from 0.00045 to 0.00006** — an eighth — and `volumetric_fog_ambient_inject`
+now *falls* with daylight (0.34 → 0.16) instead of rising to 0.62, because ambient injection is what
+washes a volumetric medium out into milk. It is not zero, deliberately: it is the thin medium a
+sunbeam needs in order to be visible at all.
+
+**Density is on a clock.** Thickest at dawn and dusk (×1.75), still present at noon (×0.55), heavy
+at night (×1.35) — which is also when the sun is low enough to rake through it, so the mist and the
+shafts pay for each other.
+
+**Lighting (the Valheim ask).** `light_volumetric_fog_energy` is driven by a `god_ray_strength` of
+2.4 (was 1.35) with a further **+60% at golden hour**, since a sun overhead has nothing to rake
+through. Warmer daylight (1.0, 0.94, 0.815), the sunrise tint held further up the sky, sun energy
+1.22 → 1.45, ACES tonemapping at 1.14 exposure, saturation ×1.14, glow bloom 0.08 → 0.14 with an
+HDR threshold of 0.92, and `volumetric_fog_anisotropy` 0.8 → 0.92 so scattering is forward-biased
+and shafts read as beams instead of a wash. The day-end ambient floor went 0.5 → 0.62 after the
+first render pass: at 0.5, with ACES and a contrast lift, a hillside facing away from a low sun
+crushed to pure black and read as a hole in the map.
+
+**Degrades for free on the `low` preset**, which disables volumetric fog on the Environment and
+makes every FogVolume inert without this file knowing.
+
+**Verified:** `agent godot --script tools/ground_fog_check.gd` — new, 20 assertions, `failures=0`,
+including that the mist sits in the low half of the terrain (4.33 < 16.45), follows the viewer
+horizontally but **not** vertically, is thicker at dawn than noon (1.36 vs 0.55), and that the
+uniform haze is gone (0.00006). `tools/atmosphere_night_check.gd` still `failures=0`.
+`tools/atmosphere_look_shot.gd` — also new, **run `--windowed`** — renders the map at eight times of
+day plus sunward and forest-interior views to PNGs, which is how the look above was judged rather
+than guessed; it drives **DayNight**, not the atmosphere directly, because DayNight re-applies the
+hour every physics tick and overwrites anything set on the controller.
+
 ---
-
-
-## Resolved
 
 ### F-093 · A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build — **fixed**
 

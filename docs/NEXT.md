@@ -114,12 +114,11 @@ Protocol: [AGENTS.md](../AGENTS.md) · specs: [SPECS.md](SPECS.md) · dispatch: 
 | 2.14 | **Playtest with friends** — protocol in SPECS.md: verbatim quotes, one full night, then re-read DESIGN §8 before anything in M3. | You + friends | after the above |
 | 2.1d | A-009 extraction ship (15 models) — the asset queue's NEXT; tracker governs. | asset agent | ready |
 
-**Do not start 1.12** (D-030 — it waits for 6.10's in-game lobby join; everything needed to resume is
-in `STEAM_CROSS_PLATFORM_TEST.md`). **Do not start M3** before 2.14's DESIGN §8 re-read.
-
-If cross-play testing feels overdue before M6: two debug console commands over the existing
-`SteamLobby` API (`host_session()`, `join_by_id()`, `open_invite_overlay()`) deliver the whole
-testing benefit at a fraction of 6.10 — see D-030.
+**1.12 is unblocked (2026-08-18):** the in-game lobby join D-030 was waiting for now exists —
+press **M** in game for the multiplayer panel (host / copy the lobby ID / paste-and-join / Steam
+invite overlay; 6.10's lobby-UI slice, `ui/lobby/lobby_menu.gd`, seams in DELEGATION.md). The
+evidence run still needs the three machines; everything to resume is in
+`STEAM_CROSS_PLATFORM_TEST.md`. **Do not start M3** before 2.14's DESIGN §8 re-read.
 
 **2026-08-18 — the command track is planned and queued (3.13–3.17).** Sequoyah asked for the game
 to be data-driven the way Minecraft's commands reach every system. `docs/COMMANDS.md` is the full
