@@ -10,10 +10,15 @@
       "at": "2026-08-18T21:54:18+00:00",
       "task": "F-144"
     },
-    "tools/chest_check.gd": {
-      "agent": "reed16",
-      "at": "2026-08-18T21:51:09+00:00",
-      "task": "F-140"
+    "tools/environment_vfx_hollowmere_check.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-18T22:04:06+00:00",
+      "task": "F-144"
+    },
+    "tools/harvest_batch_check.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-18T22:01:43+00:00",
+      "task": "F-144"
     },
     "tools/render_census.gd": {
       "agent": "nettle12",
@@ -37,26 +42,6 @@
     }
   },
   "in_flight": {
-    "F-135": {
-      "agent": "lm",
-      "files": [],
-      "notes": [],
-      "started": "2026-08-18T22:00:02+00:00"
-    },
-    "F-140": {
-      "agent": "reed16",
-      "files": [
-        "tools/chest_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-18T21:57:56+00:00",
-          "by": "reed16",
-          "text": "Code half done and pushed (eb23dc1): chest_check.gd now declares EXPECTED_ERROR_PATTERNS=\"references unknown loot tier\" on its existing verdict line, so the deliberately-provoked unknown-tier error is declared rather than undeclared. Verified: CHEST_CHECK failures=0, and grep 'ERROR:' | grep -vE 'references unknown loot tier' | wc -l -> 0, so AUDIT-2026-08-17's '0 engine-error lines' claim now holds for this check. Docs half still OWED and blocked: docs/FINDINGS.md is claimed by lm for F-136. Two things left, both needing that file: (1) resolve F-140 - its core claims verified true in code (LootEntry kind/rarity, LootTableDef.roll powerups bucket, Chest.cost_coins + locked_by all present in systems/loot/chest.gd); (2) do NOT resolve it silently - the gilded placement budget, the fourth ITEMS.md 6 item, is still genuinely open and must be filed as its own finding first, since nothing in world/ places chests at all. Resolving F-140 without filing that drops it on the floor."
-        }
-      ],
-      "started": "2026-08-18T21:51:09+00:00"
-    },
     "F-144": {
       "agent": "nettle12",
       "files": [
@@ -65,7 +50,9 @@
         "world/gen/undergrowth.gd",
         "autoload/graphics_quality.gd",
         "tools/_probe_lods.gd",
-        "world/environment/draw_policy.gd"
+        "world/environment/draw_policy.gd",
+        "tools/harvest_batch_check.gd",
+        "tools/environment_vfx_hollowmere_check.gd"
       ],
       "notes": [],
       "started": "2026-08-18T21:51:43+00:00"
@@ -1962,10 +1949,10 @@
       "task": "4.1"
     },
     "tools/chest_check.gd": {
-      "agent": "slate17",
-      "at": "2026-08-18T21:26:42+00:00",
-      "hash": "ebd59d09703e0fb81967d76dc67f0bd54981c95e38860e712b26b2319b9b57db",
-      "task": "3.2"
+      "agent": "reed16",
+      "at": "2026-08-18T22:00:56+00:00",
+      "hash": "d6573d6fa156a1e39bcc3f14cc781ea225cb0ebc2713b725960c6fb27a1427ec",
+      "task": "F-140"
     },
     "tools/chest_net_check.gd": {
       "agent": "lp",
@@ -4829,9 +4816,11 @@
       "title": "`ChunkStreamer`/`ResourceScatterField` still have no real caller \u2014 the live game still ships the authored Hollowmere map, not the procedural pipeline"
     },
     "F-135": {
+      "done_at": "2026-08-18T22:04:48+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface"
     },
@@ -4866,9 +4855,11 @@
       "title": "`ChunkStreamer`/`ResourceScatterField` still have no real caller \u2014 the live game still ships the authored Hollowmere map, not the procedural pipeline"
     },
     "F-140": {
+      "done_at": "2026-08-18T22:00:56+00:00",
+      "done_by": "reed16",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Task 3.5 closed without the four chest changes `ITEMS.md` \u00a76 assigned to it, so two shipped stats had no consumer"
     },

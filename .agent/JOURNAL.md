@@ -3457,3 +3457,31 @@ PlayerController gains step-up (_apply_step_up, grounded, before move_and_slide)
 Files: `entities/player/player_controller.gd`, `tools/step_up_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `6b10b0b`
+
+---
+
+### DONE · F-140 · reed16 · 2026-08-18T22:00:56+00:00
+
+**Task 3.5 closed without the four chest changes `ITEMS.md` §6 assigned to it, so two shipped stats had no consumer**
+
+Both halves closed. Code half (eb23dc1): chest_check.gd declares EXPECTED_ERROR_PATTERNS='references unknown loot tier' on its existing verdict line, so its deliberate unknown-tier refusal is a declared error rather than an undeclared one, and AUDIT-2026-08-17's '0 engine-error lines' claim now holds for this check. Verified CHEST_CHECK failures=0 with 0 undeclared ERROR lines under the spec's grep grading rule. Docs half (667879a): F-140 moved to Resolved after re-verifying its 3.2 fixes in code; the fourth ITEMS.md 6 item was NOT swept in with it but filed as F-146, because nothing in the game places a chest at all so the gilded 1-2/island budget still has no owner. Watch out for two things: chest_check.gd already had a verdict line, so amend it in place rather than adding a second print in finish(); and run tools/findings_numbering_check.gd after any resolve.
+
+Notes along the way:
+- Code half done and pushed (eb23dc1): chest_check.gd now declares EXPECTED_ERROR_PATTERNS="references unknown loot tier" on its existing verdict line, so the deliberately-provoked unknown-tier error is declared rather than undeclared. Verified: CHEST_CHECK failures=0, and grep 'ERROR:' | grep -vE 'references unknown loot tier' | wc -l -> 0, so AUDIT-2026-08-17's '0 engine-error lines' claim now holds for this check. Docs half still OWED and blocked: docs/FINDINGS.md is claimed by lm for F-136. Two things left, both needing that file: (1) resolve F-140 - its core claims verified true in code (LootEntry kind/rarity, LootTableDef.roll powerups bucket, Chest.cost_coins + locked_by all present in systems/loot/chest.gd); (2) do NOT resolve it silently - the gilded placement budget, the fourth ITEMS.md 6 item, is still genuinely open and must be filed as its own finding first, since nothing in world/ places chests at all. Resolving F-140 without filing that drops it on the floor.
+
+Files: `tools/chest_check.gd`
+
+Commit at time of writing: `667879a`
+
+---
+
+### DONE · F-135 · lm · 2026-08-18T22:04:48+00:00
+
+**A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface**
+
+Verified deck_field()'s edge-to-edge fix already in tree (worst_joint 0.0000mm across walkway/dock-corner/palisade-corner via agent godot --script tools/construction_check.gd). No new check needed -- construction_check.gd already is the focused check. Added the missing docs/SPECS.md block. Filed F-148 for an unrelated door-check AABB bug found during verification.
+
+Notes along the way:
+- Fix + check both already shipped in 63cc37c (task 2.1d); this task was verify-only. Checked palisade_logs() too — not exposed, its mating plane is a single full-width rail box, not a gapped field. Filed unrelated AABB-negative-size door-check bug as F-148, out of scope.
+
+Commit at time of writing: `667879a`
