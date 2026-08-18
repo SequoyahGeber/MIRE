@@ -75,6 +75,51 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 4.8: the Wellspring capture ritual ships — host-owned state machine, defense wave, `EventBus.emit_wellspring_capped` is the reward seam (lm)
+
+`systems/wellspring/wellspring.gd` (`class_name Wellspring`) is a host-authoritative Node3D built at
+runtime, never in a `.tscn`. `autoload/wellspring_service.gd` finds every `authored_world_marker`
+whose `kind == "objective"` (Hollowmere ships exactly one, at (4.0, -0.604, 64.0)) and adds a
+`Wellspring` as that marker's child, identically on every peer — the same
+marker-in/live-node-out split `autoload/harvest_world.gd` uses for harvestable holders, so no map
+layout needs a gameplay-specific edit.
+
+**API for whoever builds 4.9-4.11's Mire or a reward system:**
+
+```
+Wellspring.capped: bool                     # replicated, ON_CHANGE — swaps the state mesh
+Wellspring.channeling/progress_sec/duration_sec/required_players: replicated presentation
+Wellspring.request_toggle_channel()         # client-facing: press interact to start/cancel
+Wellspring.is_local_player_in_range()       # presentation-only proximity check for a HUD prompt
+EventBus.subscribe_wellspring_capped(listener)   # (wellspring_name: StringName, world_position: Vector3)
+WaveSpawner.host_spawn_wave_at(position, count, enemy_id, scatter_m) -> int   # position-override spawn
+```
+
+**D-092 records the scope call in full** — the short version: capping does NOT clear Mire corruption,
+reduce spread rate, grant a chest, or select an Attunement. None of those systems exist yet in a form
+this task could wire against (Mire is 4.9-4.11; Attunement already fires at run start per D-071; a
+Wellspring-tier loot chest has no `.tscn`/loot-table content authored). `EventBus.emit_wellspring_capped`
+is the one seam every one of those hooks into later — `Wellspring` itself should not need to change
+when they do.
+
+**Ritual shape:** interact starts it (required 2 live players this session, or 1 with a 150s timer
+instead of 60s if the session has exactly one — snapshotted once at start, `_session_player_total()`).
+Progress advances only while at least `required_players` are within 4.5m
+(`Wellspring.PRESENCE_RANGE_M`) — dropping below pauses it without resetting; a second interact press
+cancels and resets to 0. A defense wave (`base(3) + per_player(1) x session total`, `crawler`s) spawns
+once at channel start via `WaveSpawner.host_spawn_wave_at`, independent of day/night and not required
+to be cleared for the ritual to finish.
+
+`ui/hud/wellspring_hud.gd` is a small self-built CanvasLayer autoload (no `.tscn`, same pattern as
+`vitals_hud.gd`) showing the interact prompt and a progress bar; it does not join
+`&"blocks_gameplay_input"` since gameplay continues around a channel.
+
+**Protocol bumped 18 -> 19** for `net_request_toggle_channel` plus Wellspring's own
+`SceneReplicationConfig`. Verify: `agent godot --script tools/wellspring_check.gd` (wiring + marker
+consumption + full FSM, 0 failures) and `agent godot --script tools/wave_spawner_check.gd` (the new
+`host_spawn_wave_at` seam, 0 failures, no regression on the existing dusk/dawn assertions).
+**F-141**: the toggle RPC itself has no two-process net check yet, only the host-side logic it calls.
+
 ### 2026-08-18 — Task 3.2 (first half): the chest economy is real — prices, keys, powerup rewards, and the Gleam pool (slate17)
 
 **What shipped, verified:** the six remaining `docs/ITEMS.md` §5 loot tables and the eight Gleam

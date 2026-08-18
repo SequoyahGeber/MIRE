@@ -69,6 +69,27 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-141 · `Wellspring.net_request_toggle_channel` has no two-process net check — only the host-side logic it calls into is proven
+
+**Area:** worldgen / netcode · **Severity:** low · **Found:** 2026-08-18 by lm during 4.8
+
+`tools/wellspring_check.gd` proves the ritual state machine directly — `wellspring.call(&
+"request_toggle_channel")` and `host_tick()` in a single process, exactly the offline/host-of-one
+path. It does not prove the RPC itself: that a REMOTE client's `net_request_toggle_channel.rpc_id()`
+actually reaches `_process_toggle(multiplayer.get_remote_sender_id())` on a real second ENet
+process, the way `tools/chest_check.gd`'s sibling `chest_net_check.gd` (and
+`attunement_service.gd`'s, `haulable.gd`'s) two-process checks prove their own request/grant RPCs.
+
+Left this way because `net_request_toggle_channel` is a two-line pass-through into
+`_process_toggle`, which the single-process check exercises exhaustively (start, cancel,
+out-of-range rejection, solo vs co-op sizing, presence-gated pausing, completion) — the marginal risk
+is in the RPC annotation itself (`@rpc("any_peer", "call_remote", "reliable")`) and the
+`multiplayer.get_remote_sender_id()` call, not in logic a second process would exercise
+differently. Still a real gap: a two-process `wellspring_net_check.gd` in `chest_net_check.gd`'s
+shape (driver process + `--` probe arg, talk through a `user://` JSON file, per `docs/SPECS.md`'s
+"Two-process checks" seam) is the way to close it, and should claim `tools/wellspring_net_check.gd`
+plus `systems/wellspring/wellspring.gd` when someone picks it up.
+
 ### F-140 · Task 3.5 closed without the four chest changes `ITEMS.md` §6 assigned to it, so two shipped stats had no consumer
 
 **Area:** loot · **Severity:** medium · **Found:** 2026-08-18 by slate17 during 3.2

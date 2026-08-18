@@ -2209,3 +2209,53 @@ is already connected reaches it live via `net_delta_applied`. 0 failures.
 **Would change my mind:** a consumer that genuinely needs a mutation's history, not just its current
 value — nothing in 4.9's own spec (a per-cell corruption LEVEL, not a log of changes) suggests one
 exists.
+
+### D-092 · 2026-08-18 · Task 4.8's Wellspring: cap does not grant a chest/Mire/Attunement reward, cancelling forfeits progress, and required-player count is a session-start snapshot
+
+DESIGN.md §4.2 says capping "grants: local corruption cleared, global spread rate reduced, a
+powerup chest, and (first cap only) Attunement selection." None of that is wired by this task, on
+purpose:
+
+- **Mire (4.9-4.11) does not exist yet** — there is no corruption grid to clear and no spread rate
+  to reduce. Inventing a stand-in field on `Wellspring` now would mean 4.9 either adopts a shape it
+  had no say in or throws it away.
+- **Attunement already fires at run start** (D-071), not at first Wellspring cap — re-wiring it here
+  would relitigate a decision this task has no new information to challenge.
+- **No chest can be spawned yet.** `systems/loot/chest.gd` is a hand-placed scene prop (task 3.5's
+  own claim note), not something with a `.tscn`/spawn API; building one would mean authoring a new
+  loot tier and a chest prefab under a claim `chest.gd`'s own task (3.2) held for most of this
+  session. Manufacturing a placeholder reward (coins via `InventoryService`) would be inventing
+  content this task was never asked to author.
+
+Instead, `Wellspring._finish_cap()` sets `capped = true` (replicated, swaps the state mesh per
+`assets/wellsprings/README.md`'s contract) and calls `EventBus.emit_wellspring_capped(name,
+world_position)`. That is the seam every one of the above hooks into once it exists — no rework of
+`Wellspring` itself should be needed, only a new subscriber.
+
+**Cancelling the channel (a second interact press while channeling) resets `progress_sec` to 0,
+distinct from the presence-gate pause below (which does not reset it).** DESIGN.md says nothing
+about either case. Reset-on-cancel was chosen because it is the simpler rule to hold in your head —
+"stepping away" and "choosing to stop" are different player intents, and only one of them should
+cost you the attempt.
+
+**`required_players` and `duration_sec` are snapshotted once, when the channel starts** — 1 player
+and the 150s solo timer if the whole session has exactly one live player at that instant, 2 and the
+60s co-op timer otherwise (`_session_player_total()`, same read-once-at-the-threshold rule
+`systems/waves/wave_spawner.gd`'s `base_count`/`per_player` already follow). A player joining or
+leaving mid-ritual does not retroactively change what an already-running attempt needs; only the
+NEXT channel attempt sees the new session size. The defense wave (`base(3) + per_player(1) x
+session total`, via `WaveSpawner.host_spawn_wave_at()`) spawns once at channel start and is not
+required to be cleared for the ritual to complete — DESIGN's "spawns a defense wave" reads as an
+obstacle the ritual creates, not a win condition it checks.
+
+Verify: `agent godot --script tools/wellspring_check.gd` — WellspringService is a registered
+autoload, an `objective` marker gets exactly one live Wellspring child (and a marker of any other
+`kind` gets none), toggle start/cancel, an out-of-range requester is rejected, a solo attempt gets
+the longer timer and completes with the right-sized wave, and a co-op attempt's progress pauses
+(not resets) below the 2-player presence requirement and resumes once both are present. 0 failures.
+Confirmed separately against the real `res://levels/hollowmere.tscn`: its one `objective` marker
+(4.0, -0.604, 64.0) builds exactly one Wellspring, uncapped, with no engine ERROR lines.
+
+**Would change my mind:** 4.9 landing with a corruption-grid API simple enough that wiring it here
+would have cost nothing extra — in that case the two tasks should probably have shipped together
+instead of through the event seam.
