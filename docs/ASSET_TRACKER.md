@@ -164,23 +164,23 @@ rather than in a lit preview.
 
 ### Migration status (2.1j)
 
-Five of twelve generators are on the shared palette. The order below is by how much
-of the screen each family occupies during the M2 playtest.
+**All ten art generators are on the shared palette.** No `build_*.py` defines a colour any more —
+every one of the original 233 private material definitions is gone, and a raw RGB tuple in a
+generator is now a bug rather than the norm.
 
-| Generator | State | Notes |
+| Generator | Migration | Notes |
 |---|---|---|
 | `build_pickup_kit.py` | **full** | palette + primitives + true scale + all-round detail |
-| `build_tool_weapon_set.py` | **full** | palette + primitives; 185 helper lines deleted, zero dimension change |
-| `build_crafting_stations.py` | palette | primitives left local |
+| `build_tool_weapon_set.py` | **full** | 185 helper lines deleted, zero dimension change |
+| `build_loot_set.py` | **full** | 116 helper lines deleted; chest state pairs still share anchors |
+| `build_ward_set.py` | **full** | keeps a bevel-free `box()` override on purpose (F-057) |
+| `build_crafting_stations.py` | palette | primitives local |
 | `build_mire_map_kit.py` | palette | + fallen logs rebuilt all-round |
 | `build_harvestable_resources.py` | palette | |
-| `build_loot_set.py` | not started | |
-| `build_ward_set.py` | not started | teal is reserved for these |
-| `build_wellspring_set.py` | not started | |
-| `build_enemy_crawler.py` | not started | rigged; check deform after any change |
-| `build_adapted_nature_set.py` | not started | |
-| `build_playtest_map.py` | n/a | imports shipped GLBs; just rebuild it |
-| `build_playtest_hollow.py` | n/a | imports shipped GLBs; just rebuild it |
+| `build_wellspring_set.py` | palette | its `cone` defaults to 10 vertices |
+| `build_enemy_crawler.py` | palette | its `cone` defaults to 6; rigged, re-run the deform check |
+| `build_adapted_nature_set.py` | palette | |
+| `build_playtest_hollow.py` | n/a | imports shipped GLBs; rebuild it after any art change |
 
 **Only swap the geometry primitives when the local ones match.** `mire_art`'s
 `cylinder_between` uses 8 vertices and a 0.94 end taper. `build_mire_map_kit.py`
@@ -209,10 +209,9 @@ up onto it when `create_asset` grounds it.
 
 1. Rebuild every migrated generator.
 2. `render_item_icons.py` — icons are rendered from the shipped GLBs and go stale.
-3. `build_playtest_map.py` and `build_playtest_hollow.py` — both import the
-   shipped GLBs at build time, so the authored maps keep the old art until rebuilt.
-4. `agent godot --script tools/item_icons_check.gd`, `playtest_hollow_check.gd`,
-   `playtest_map_check.gd`.
+3. `build_playtest_hollow.py` — it imports the shipped GLBs at build time, so the
+   authored map keeps the old art until rebuilt.
+4. `agent godot --script tools/item_icons_check.gd` and `playtest_hollow_check.gd`.
 
 Godot caches glTF imports, and a check run immediately after a rebuild can report
 the *previous* import. A hollow visual count that jumps with no change in GLB bytes
@@ -307,11 +306,11 @@ The baseline is presentation-ready but not editor-wired: it has no collision, ha
 gameplay scenes. Do not count those missing behaviors as missing meshes unless a batch below names a
 visual state for them.
 
-The compact playtest layout is now a separate authored asset rather than runtime scatter:
-`assets/source/playtest_map.blend` exports `assets/maps/playtest_map.glb` and its preview. It directly
-uses A-000 environment pieces, A-001 harvestables, and A-003 crafting stations across six named
-zones. `tools/blender/build_playtest_map.py` is its deterministic rebuild path; gameplay collision
-and authority remain outside the Blender source.
+The Hollow is the only map. `playtest_map` was removed in 2.1j at Sequoyah's request, along with its
+generator, source, GLB, scene, check and the `TestMapProps` autoload that loaded it. The Hollow's
+open ground is a heightfield rather than flat slabs: `tools/mapgen/hollow_layout.py` emits the grid,
+`build_playtest_hollow.py` meshes it flat-shaded, and `world/gen/playtest_hollow.gd` builds a
+collider from the same triangles, so the visual and the collision cannot drift apart.
 
 ## P0 — first complete playable loop
 

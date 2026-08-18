@@ -103,6 +103,115 @@ exhaustion is detected only from a *failed* run's error text, and the pattern de
 this project's ordinary `rate_limit`/`429` vocabulary — `lane selftest` holds that line at 14 cases,
 so run it if you touch the classifier.
 
+**Task 2.11 ships the day/night cycle — HOST-authoritative time, replicated at 1 Hz, applied
+client-local.** `DayNight` (`systems/environment/day_night.gd`) is an autoload registered last (after
+`PlayerHealth`). §2.2's "day/night, wave director, Cycle state, active modifiers" row: HOST. The host
+advances `time_of_day` (a **0..1 fraction of a day** — 0 midnight, 0.25 dawn, 0.5 noon, 0.75 dusk;
+deliberately NOT the same scale as `playtest_atmosphere.gd`'s own 0..24 hour export) every physics
+tick by `delta / day_length_seconds`, and pushes it to clients over an unreliable `@rpc("authority")`,
+`net_push_time`, at ~1 Hz (`REPLICATE_INTERVAL_SEC`). **Clients never advance the clock themselves** —
+`_advance_client()` only lerps between the last two host snapshots (shortest path across the 1.0->0.0
+wrap, `_lerp_wrapped_unit()`, the fractional-day equivalent of `lerp_angle()`) and holds flat at the
+last snapshot once `REPLICATE_INTERVAL_SEC` has passed with nothing new — proven by
+`day_night_net_check.gd` pausing the HOST's own `set_physics_process` (not disconnecting: a dropped
+peer correctly self-promotes to host-of-one via `_owns_mutation()`, which would make "does it free-run"
+untestable that way). Offline (no session) is host-of-one through the same `_owns_mutation()` gate
+every other autoload in this codebase uses.
+
+**Every peer, host included, applies the value the same way:** `get_tree().current_scene` ->
+`get_node_or_null(^"Atmosphere")` -> `call(&"set_time_of_day", time_of_day * 24.0)` — the `* 24.0` is
+the one conversion point between DayNight's 0..1 and Atmosphere's 0..24h. No Atmosphere node (a
+harness, a menu, a level without one) is a silent no-op, asserted directly in `day_night_check.gd`.
+**`day_length_seconds` is read from the level's own `Atmosphere.day_length_seconds` export the moment
+one is found** (`_resolve_day_length()`), overwriting DayNight's own matching default (900s) rather
+than duplicating it as a second source of truth that could drift from the level's tuned value.
+
+**THE TRAP THIS TASK EXISTS TO AVOID, and it is still avoided:** `playtest_atmosphere.gd`'s
+`cycle_enabled` free-runs a local clock per peer from its own boot time with no error if left on. It
+is untouched here and stays `false` — DayNight drives the sky by calling `set_time_of_day()` every
+tick instead, which is the only path this task adds.
+
+**Thresholds for 2.12 (already shipped and already wired against this exact contract):**
+`night_started` at `night_started_at` (0.75) and `day_started` at `day_started_at` (0.25), both
+exported/tunable, both **HOST-ONLY by construction** — they fire only from `_advance_host()`, which a
+client never calls while connected, so "client never emits a threshold signal" is structural, not a
+guard that could be forgotten. Crossing detection (`_crossed()`) is wrap-safe and half-open on the
+entry side, so sitting exactly on a threshold across many ticks fires once, not every tick.
+`systems/waves/wave_spawner.gd` already subscribes by path (`/root/DayNight`, night_started/
+day_started, no args) exactly as built here — no change needed on that side.
+
+**Test-only seam worth knowing about:** `host_advance(delta: float)` is the exact math of the host
+branch of `_physics_process`, exposed as a public method so a harness can drive many in-game days in a
+fraction of a real second. It is genuinely general-purpose (a future "skip to night" console command
+could use it too), not test scaffolding bolted on.
+
+**Protocol version is now 8** (was 7) — the new host->client push, `net_push_time`
+(`@rpc("authority", "call_remote", "unreliable")`), needed the bump per the standing rule even though
+this task's own `docs/SPECS.md` block didn't list `core/net/net_version.gd` /
+`tools/handshake_check.gd` in its claim set (added to the claim directly — see F-056 below).
+`tools/handshake_check.gd` asserts the literal value.
+
+Checks: `agent godot --script tools/day_night_check.gd` (offline, manually instantiates the script the
+same way `tools/wave_spawner_check.gd` proves `WaveSpawner` before either is an autoload — so this
+passes BEFORE registration, matching the task's own required order — 9/9, 0 `ERROR:`) and
+`agent godot --script tools/day_night_net_check.gd` (two real ENet processes, run AFTER
+`agent autoload DayNight ...` since real replication needs the real autoload on both processes —
+13/13, 0 `ERROR:`).
+
+**Task 2.13 ships death & respawn, and crawlers are now lethal.** `PlayerHealth`
+(`systems/health/player_health.gd`) is an autoload registered last, after `EnemyWorld` and
+`DevLoadout`. Same shape as `InventoryService`: a host-keyed `Dictionary[peer_id, DownedState]`
+(`systems/health/downed_state.gd`, a pure `ALIVE -> DOWNED -> DEAD -> ALIVE` state machine with no
+node and no peer id, exactly the split `InventoryStore` has from `InventoryService`), an owner-only
+reliable snapshot (hp/state/bleed-out), and a broadcast bool everyone receives — teammates have to
+see who needs help, not just the downed player's own client. D-035 applies in full: state moves on
+`NetSession.run_player_rebound(old, new)` and releases only on `run_player_expired(peer)`;
+`_on_peer_left` is the same deliberate no-op `InventoryService` uses, comment included.
+
+**Damage comes IN two ways, both host-only, both landing on `host_apply_damage(peer_id, amount,
+instigator_peer_id) -> bool`:** `entities/player/player_controller.gd` now joins `&"damageable"`
+(same seam `Harvestable` and `Enemy` already use) and forwards CombatService's call here keyed by
+`get_multiplayer_authority()`; and `PlayerHealth` is the subscriber `EventBus.enemy_attack_landed`
+was built for in 2.10 — `EventBus.enemy_attack_landed_subscriber_count()` is how the wiring proves
+itself rather than being trusted. Returns false while downed or dead (no corpse-kicking in M2) or for
+an unknown peer, so `CombatService` reads it as a miss, never a phantom hit.
+
+**Downed presentation is client-local, read off two query methods:** `local_is_downed()` and
+`local_is_dead()` gate `player_controller.gd`'s own input — crawl speed instead of walk/sprint, jump
+and attack blocked outright while downed, ALL movement input blocked while dead (mid-respawn). A
+teammate holds `interact` near a downed player; the hold itself is client-side prediction exactly
+like D-034 splits combat's wind-up from its hit — `player_controller.gd` tracks the hold locally and
+fires exactly one `PlayerHealth.request_revive(target_peer)` the instant its timer reaches
+`PlayerHealth.revive_seconds`, and the HOST is what actually decides: `net_request_revive` re-checks
+both peers' states and re-measures the distance itself, never trusting the client's hold duration or
+a client-supplied position. A downed player respawns at the transform `PlayerNet.player_spawned`
+handed `PlayerHealth` when they first joined (own player movement is CLIENT authority per §2.2, so
+the host cannot just write another peer's position — `net_force_respawn` tells that peer's own client
+to place itself, the same as it is the only thing ever allowed to move its own body).
+
+**Protocol version is now 7** (was 6) — the hello gained no new argument this time, but three new
+RPCs did: `net_request_revive`, `net_health_snapshot`, `net_downed_flag`, plus `net_force_respawn`.
+`tools/handshake_check.gd` asserts the literal value now, on purpose, so the next wire-shape change
+that forgets the bump fails loudly instead of quietly.
+
+**F-043 decided: the iron sword stays OUT of `DevLoadout.loadout`** — see FINDINGS.md's Resolved
+section for why (the hotbar is already full at 8/8, and its `WeaponDef` numbers are still 2.9's
+unpassed placeholders). `give iron_sword` still reaches it.
+
+Checks: `Godot --headless --path . --script tools/player_health_check.gd` (offline — a real
+`player.tscn` instance proves the `&"damageable"` wiring end to end, then bare host-state peers drive
+the downed/bleed-out/death/respawn state machine and every revive rejection rule) and
+`agent godot --script tools/player_health_net_check.gd` (two real ENet peers — the host downs
+*itself* so the interesting proof is a DIFFERENT peer learning about it over the broadcast; a
+self-targeted revive is rejected; an out-of-range revive is rejected using the host's own copy of
+both positions; a non-lethal hit survives a live disconnect+reconnect under a new peer id, proving
+D-035's rebind rather than a reset).
+
+**What is left for the playtest:** no HUD reads any of this yet — `local_health_changed` and
+`downed_flag_changed` are ready for 6.x's HUD to consume, but today the only feedback a downed player
+gets is the crawl and the blocked input. The revive hold has no progress indicator either. Both are
+presentation gaps, not authority gaps — the host-side contract above does not change under them.
+
 **Items now have icons, and `ItemDef.icon` is populated.** `assets/icons/exports/icon_<id>.png` holds
 25 transparent 256×256 icons — every A-002 pickup, every A-004 tool/weapon, and A-021S's iron sword —
 where `<id>` matches `ItemDef.id`. **All 14 item `.tres` files carry their icon**; a new item wires
@@ -477,15 +586,16 @@ skeleton, the skin, all six clip names and exactly which two loop.
 `.30600000000000005` aborts background Blender in libc++ with `stoi: out of range`. Use integer
 indices in procedural names.
 
-**The playtest map is an authored asset as of 2.1e.** Its editable source is
-`assets/source/playtest_map.blend`, exported as the single `assets/maps/playtest_map.glb`; Godot no
-longer chooses visible prop positions at runtime. The GLB contains named camp, forest, ruins, Mire,
-ridge, routes, and terrain hierarchies, plus the A-001 harvestables and A-003 crafting stations. The
-current export produces 1,732 visible mesh nodes in Godot. `TestMapProps` loads that one map and adds
-178 collision placement markers / 120 simplified shapes; static collision remains client-local,
-while future harvesting, construction, damage, or map mutation stays host-authoritative. Rebuild
-with Blender 5.2 using `tools/blender/build_playtest_map.py`; verify with `Godot --headless --path .
---script tools/playtest_map_check.gd`.
+**The Hollow is the only map, as of 2.1j.** `playtest_map` was removed at Sequoyah's request —
+generator, source, GLB, preview, scene, check, and the `TestMapProps` autoload that loaded it.
+`levels/playtest_hollow.tscn` is `main_scene`. Its editable source is
+`assets/source/playtest_hollow.blend`, exported as `assets/maps/playtest_hollow.glb`, and both it and
+the Godot collision are generated from one frozen layout at
+`world/gen/layouts/playtest_hollow.json`. The open ground is a heightfield in that layout:
+`build_playtest_hollow.py` meshes it flat-shaded, `world/gen/playtest_hollow.gd` builds a collider
+from the same triangles. Rebuild with Blender 5.2 via
+`tools/blender/build_playtest_hollow.py`; verify with
+`.agent/bin/agent godot --script tools/playtest_hollow_check.gd`.
 
 **`playtest_hollow` is the playtest level, and it is now the project's main scene.** Its **88 × 88 m**
 layout — **783 prop placements and 33 terrain records**, of which 20 collide — lives in the single

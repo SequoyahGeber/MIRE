@@ -680,6 +680,31 @@ this can never regress silently again.
 
 ---
 
+### F-057 · A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds
+
+**Area:** art pipeline · **Severity:** low · **Found:** 2026-08-17 by tine18 during the 2.1j palette migration
+
+`assets/crafting_stations/exports/station_stone_furnace.glb` and `station_workbench_upgraded.glb`
+change content — same byte length, different bytes — when `tools/blender/build_crafting_stations.py`
+runs twice with no source change. Both were already dirty in `git status` at the start of the 2.1j
+session, so this predates that task; the migration only surfaced it, because diffing catalogs across
+rebuilds became routine.
+
+The cause is almost certainly the bevel modifier. `build_ward_set.py` overrides `box()` with a
+bevel-free version and says why: Blender's bevel modifier changed four float bytes between otherwise
+identical background exports on Apple Silicon. The station kit has 23 `bevel=` call sites, does not
+override `box()`, and the two affected stations are the bevel-heavy ones — worktops, drawers, handles.
+
+This matters because the verification contract requires a deterministic clean rebuild and A-003 is
+recorded as having passed it. Either that check never compared two rebuilds of this family, or it
+compared sizes rather than bytes.
+
+Left open deliberately: both fixes are art-owner calls. Drop bevels from the station kit as the Ward
+set did (byte-stable, but squares off deliberate chamfers and changes polygon counts), or accept the
+drift and weaken the contract for this one family. `mire_art.box()` now carries the warning in its
+docstring so the next family chooses deliberately instead of inheriting it.
+
+
 ## Resolved
 
 ### F-043 · The iron sword ships complete and nothing puts it in a player's hand — **decided, won't add**
