@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"adrenal_bloom"
+display_name = "Adrenal Bloom"
+description = "Badly hurt, your legs stop asking permission. Whether that carries you out or further in is not something the Bloom has an opinion about."
+tags = Array[StringName]([&"Blood", &"Kinetic"])
+max_stacks = 3
+modifiers = Dictionary[StringName, Vector2]({
+&"move_speed_low_hp": Vector2(0, 0.08)
+})

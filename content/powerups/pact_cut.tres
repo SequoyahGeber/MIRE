@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"pact_cut"
+display_name = "Pact Cut"
+description = "One shallow cut, kept open. You hit considerably harder and you have considerably less to lose — stack it deep and you are betting the whole run that the fight ends early."
+tags = Array[StringName]([&"Blood"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"max_hp": Vector2(-4, 0),
+&"melee_damage": Vector2(0, 0.1)
+})

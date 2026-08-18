@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"steady_hands"
+display_name = "Steady Hands"
+description = "You get someone up faster because you have stopped shaking while you do it. Nothing in this one helps you. That is rather the point."
+tags = Array[StringName]([&"Blood", &"Cold"])
+max_stacks = 3
+modifiers = Dictionary[StringName, Vector2]({
+&"revive_seconds": Vector2(0, -0.1)
+})

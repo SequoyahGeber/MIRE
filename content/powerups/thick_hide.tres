@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"thick_hide"
+display_name = "Thick Hide"
+description = "Skin thickens where the Mire keeps testing it. Ugly, and worth more than most of what you are carrying."
+tags = Array[StringName]([&"Blood"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"max_hp": Vector2(8, 0)
+})

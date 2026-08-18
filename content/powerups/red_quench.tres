@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="PowerupDef" format=3]
+
+[ext_resource type="Script" path="res://systems/powerups/powerup_def.gd" id="1_powerupdef"]
+
+[resource]
+script = ExtResource("1_powerupdef")
+id = &"red_quench"
+display_name = "Red Quench"
+description = "A little of what you open comes back up the haft. Not enough to fight on. Enough to keep fighting."
+tags = Array[StringName]([&"Blood"])
+max_stacks = 5
+modifiers = Dictionary[StringName, Vector2]({
+&"on_hit_lifesteal": Vector2(0.02, 0)
+})
