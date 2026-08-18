@@ -75,7 +75,29 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
-### 2026-08-17 — stations and timed crafts (3.1): the crafting tree now has a framework, not just one workbench recipe
+### 2026-08-18 — performance base (F-090): the probe, the presets, and the scatter pattern the generator must inherit
+
+**`tools/perf_probe.gd`** is the instrument: `.agent/bin/agent godot --display-driver macos --script
+tools/perf_probe.gd` runs the real level fullscreen for ~50 s and prints fps / median / p95 /
+draws / prims per suspect toggle plus the `gfx` presets (the trailing `--display-driver` wins over
+the wrapper's `--headless`; the lock still holds; Metal's GPU timer reads 0 in this build so judge
+by frame deltas). Baseline history lives in F-090.
+
+**`GraphicsQuality` autoload (D-055)** — `apply(Preset)` / console `gfx low|medium|high`; `high`
+restores per-node captured authored values, so levels need no registration. It re-applies itself on
+scene change while a non-default preset is active. `undergrowth_density_scale` is read by
+`world/gen/undergrowth.gd` at scatter; `Undergrowth.rescatter()` rebuilds mid-level
+(deterministic — lower budgets are a prefix of the same RNG sequence). Console also has `vsync
+[on|off]` and `fps_cap [n]` (DevFrameCap). 7.5's settings menu should call
+`GraphicsQuality.apply()` and grow UI from there.
+
+**The scatter pattern (reference: `world/gen/undergrowth.gd`, for the world generator):** bucket
+placements into `CELL_SIZE` (48 m) cells; one MultiMeshInstance3D per (asset, cell) **positioned at
+the cell centre including mean ground height** — visibility ranges measure to the node origin, and
+an origin at y=0 culls a plateau's plants standing next to the player; short assets (merged AABB
+< 0.75 m) get `cast_shadow = OFF` and a 60 m range, tall ones keep shadows and reach 110 m; ranges
+get `+CELL_SLACK` and an 8 m `FADE_SELF` margin. Map-wide MultiMeshes are the disease this cures:
+one huge AABB defeats all culling and feeds every PSSM cascade (measured 4.1 ms of a 9.3 ms frame).
 
 `StationDef` (`systems/crafting/station_def.gd`: `id`, `display_name`, `world_scene`, `tier`) joins
 `RecipeDef` as a registered content family — `content/stations/*.tres`, loaded by

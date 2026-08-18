@@ -1046,6 +1046,28 @@ the way `Harvestable.depleted` already works, not a repurposed build refund.
 
 ---
 
+### D-055 · 2026-08-18 · Hardware scaling is three presets behind one autoload, and `high` restores captured authored values rather than hardcoding them
+
+MIRE must run well on the worst computers (Sequoyah, F-090), and release worlds are randomly
+generated, so per-map tuning has a shelf life. `GraphicsQuality` (autoload, authority: none) is the
+single seam: `gfx low|medium|high` sets render scale, cascade count, shadow distance/atlas, glow,
+volumetric fog, and the undergrowth density budget together — measured on the M5 Pro at 283/190/149
+uncapped fps respectively, with `low`'s margin growing on weak GPUs since it halves draw calls.
+`high` means "exactly what the level authored": values are captured per node on first touch and
+restored, never copied into the preset table, so generated levels keep their own numbers. Presets
+scale the undergrowth *attempt budget*, not the placements — the RNG sequence is untouched, so lower
+density is a strict prefix of the same field. Vsync stays ON by default (retail-correct; measured
+free while the frame is slower than the panel; `vsync off` in the console when measuring). Scatter
+systems — present and future generator alike — follow undergrowth.gd's pattern: per-cell MultiMeshes
+with the cell's true centre as origin, height-tiered shadow casting, tiered visibility ranges.
+
+**Would change my mind:** task 7.5's settings menu wanting per-knob rows (the presets stay as the
+three buttons, knobs graduate out of the table); an FSR2-vs-bilinear evaluation showing FSR2 wins on
+the low preset's hardware class; or a generated-world scatter whose cells need to stream rather than
+all exist, at which point the seam grows a streaming policy rather than each biome inventing one.
+
+---
+
 ## Template
 
 ```

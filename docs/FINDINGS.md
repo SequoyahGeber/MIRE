@@ -852,15 +852,55 @@ add a check that exercises the production caller instead of constructing a priva
 
 ---
 
-### F-090 · Frame budget audit: ~100 fps where hundreds are expected
+## Resolved
 
-**Area:** perf · **Severity:** high · **Found:** 2026-08-18 by coil23
+### F-090 · Frame budget audit: ~100 fps where hundreds are expected — **fixed**
 
-The level renders at ~100 fps on the M5 Pro where the scene complexity justifies several hundred. Suspects identified by reading: (1) vsync default ON caps everything at the 120 Hz panel regardless; (2) DayNight drives Atmosphere.apply_atmosphere() every physics tick, rewriting PhysicalSkyMaterial colors + sun rotation 60x/s, forcing continuous sky radiance regeneration; (3) undergrowth is ~18k shadow-casting instances in map-wide MultiMeshes — one AABB per asset, so no frustum culling, and all of it renders into all 4 PSSM splits; (4) volumetric fog + glow at a retina backing store. Measuring with tools/perf_probe.gd (windowed, per-suspect toggles), then fixing what the numbers convict.
+**Area:** perf · **Severity:** high · **Found:** 2026-08-18 by coil23 · **Resolved 2026-08-18 by
+coil23.**
+
+Hollowmere rendered at ~107 fps (9.3 ms median) fullscreen on the M5 Pro (3024×1898 retina backing
+store) — and vsync was **not** the cap: disabling it changed nothing, the frame was genuinely that
+slow. `tools/perf_probe.gd` (new) launches the real level fullscreen and toggles one suspect per
+config; reading the code had ranked the suspects wrong, which is why the probe exists:
+
+- **Undergrowth: −4.1 ms of 9.3** — ~10,240 plants in 78 *map-wide* MultiMeshes. One map-sized AABB
+  per asset means frustum/distance culling can never discard anything, and every plant fed the main
+  view plus all four PSSM cascades (its shadow share alone was −2.4 ms).
+- **Sun shadow pass: −3.1 ms** — 5,069 total draw calls, ~3,700 of them shadow-pass.
+- **Per-tick sun/sky writes: −0.3 ms** — DayNight re-applies atmosphere every physics tick;
+  identical-value rewrites of PhysicalSkyMaterial plus a sun transform that moved ~0.001°/tick kept
+  the sky radiance perpetually regenerating.
+- **Volumetric fog — suspected from reading, measured innocent: −0.2 ms.** Glow −0.65 ms.
+  Render resolution (50% scale) −2.2 ms, recorded as the biggest preset lever.
+
+**Fixes** (all verified by re-probing): undergrowth scatter now buckets into 48 m cells — one
+MultiMesh per (asset, cell), each positioned at its cell centre *including mean ground height*
+(visibility ranges measure to the node origin; an origin at y=0 would cull a plateau's plants
+standing next to you), ground cover (merged AABB < 0.75 m) casts no shadows and fades by 60 m,
+taller flora keeps shadows to 110 m; `playtest_atmosphere.gd` steps the applied sun hour at 0.005 h
+(~0.1° / ~5 Hz at the 900 s day, under the sun's own 1.1 shadow blur) and skips all material/
+environment writes while its drivers hold (every tick outside dawn/dusk); hollowmere's Sun
+`directional_shadow_max_distance` 105 → 85 (flag for Sequoyah's eyes at next playtest; casters past
+85 m read as nothing at this art scale); `vsync` console command in DevFrameCap (default stays ON —
+measured free below refresh, and it is what pins the counter to 120 once the frame is faster than
+the panel); **GraphicsQuality autoload** (see D-055) with `gfx low|medium|high`.
+
+**After** (same probe, same machine): shipped default 120 fps vsync-pinned (was 107); uncapped
+**149 fps / 6.77 ms**; preset medium **190 fps**; preset low **283 fps / 3.54 ms** with draws
+5,399 → 3,324 — and low's relative win grows on the weak-iGPU machines it exists for. Regression
+checks `flora_check`, `atmosphere_night_check`, `day_night_check`: 0 failures; rescatter returns to
+an identical full field (±2 plants when a wandering enemy body intercepts a probe ray —
+presentation-only).
+
+**Still open for the worst-computer target** (release worlds are generated; the *patterns* are the
+deliverable — undergrowth.gd is the reference): the world generator must inherit chunk + height-tier
++ range for everything it scatters; ~2,144 main-view draws remain (authored kit merges at
+`_mesh_parts`, already chunked); Metal reports 0 through `viewport_get_measured_render_time_gpu` in
+this Godot build, so the probe infers GPU cost from frame deltas; FSR2 vs bilinear at reduced scale
+is 7.5's evaluation to run.
 
 ---
-
-## Resolved
 
 ### F-085 · Buildables join `damageable` without implementing its required damage method — **fixed**
 
