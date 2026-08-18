@@ -1765,6 +1765,47 @@ run logs an unrelated UNDECLARED `ERROR: AABB size is negative` from `_check_doo
 F-148, out of scope here (it never touches deck/gap measurement; the three joint numbers above are
 unaffected by it).
 
+## F-141 · `Wellspring.net_request_toggle_channel` had no two-process net check — only the host-side logic it calls into was proven
+
+**Claim:** `tools/wellspring_net_check.gd` (new), `systems/wellspring/wellspring.gd` (read only, no
+change needed).
+
+**What was missing:** `tools/wellspring_check.gd` proves the ritual state machine directly —
+`wellspring.call(&"request_toggle_channel")` and `host_tick()` in a single process, exactly the
+offline/host-of-one path. It never proved the RPC itself: that a REMOTE client's
+`net_request_toggle_channel.rpc_id()` actually reaches `_process_toggle(multiplayer.
+get_remote_sender_id())` on a real second ENet process. `chest_net_check.gd` is the sibling shape
+for exactly this gap on `Chest.net_request_open`.
+
+**Fix:** `tools/wellspring_net_check.gd`, the "Two-process checks" seam (driver + `--
+wellspring-probe` probe arg, talk through `user://wellspring_net_client.json`, per this file's
+preamble table). Both processes build the same bare `Wellspring` at `WellspringNetWorld/Wellspring`
+before branching, identical to how `chest_net_check.gd` builds its `Chest`. The client calls
+`request_toggle_channel()` twice (start, then cancel); the driver asserts the HOST's own `Wellspring`
+flips `channeling` true then false from the remote RPC alone, that `required_players`/`duration_sec`
+land on the co-op values (host + client both spawn a real `PlayerNet` body this session, so the count
+is deterministic at exactly 2), and separately asserts — via the client's own written result file —
+that the client only ever learns either state through replication, never a direct reply (this RPC has
+none, unlike Chest's `net_open_result`). `PRESENCE_RANGE_M` is a fixed constant on `Wellspring` the
+check cannot override, so the driver snaps the HOST's `Wellspring.global_position` onto the client's
+*actual* `PlayerNet`-spawned position (read off the host's own tree once `player_net.call
+("player_for", client_peer)` is non-null) rather than assuming a `SPAWN_OFFSETS` value, so this stays
+correct if that table ever changes.
+
+**Trap paid for again:** hit F-107's exact lambda-by-value bug on a second variable in the same file
+its fix already documents — a first draft assigned `client_player` inside the `_until()` poll's
+lambda (`client_player = player_net.call(...); return client_player != null`), which only ever wrote
+the closure's own copy. The outer `client_player` stayed null even after the poll's `spawned` came
+back true, and the driver crashed on `client_player.global_position` against Nil. Fixed the same way
+F-107 fixed `client_peer`: poll a boolean only, re-fetch the real value from the outer scope once the
+poll succeeds.
+
+**Done means:** two consecutive clean runs, `failures=0`, all 12 assertions PASS.
+
+**Verified 2026-08-18 (lm):** `agent godot --script tools/wellspring_net_check.gd`, twice back to
+back — `WELLSPRING_NET_CHECK failures=0` both times, every PASS line present including the RPC-start,
+RPC-cancel, and both replication-observed-not-direct-reply assertions.
+
 ---
 
 # Open findings worth dispatching as tasks (claim by F-number)

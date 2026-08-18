@@ -75,6 +75,19 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — F-141: `tools/wellspring_net_check.gd` — real two-process proof of `net_request_toggle_channel` (lm)
+
+New check only; `systems/wellspring/wellspring.gd` is unchanged. Closes the gap `tools/
+wellspring_check.gd` left: that check proves the ritual FSM in one process (offline/host-of-one
+path), never the RPC itself. `wellspring_net_check.gd` is the `chest_net_check.gd` shape — driver +
+`-- wellspring-probe` probe arg, `user://wellspring_net_client.json` — and is the reference for any
+future two-process check on a system whose in-range gate reads a *fixed* constant (`PRESENCE_RANGE_M`
+here) rather than a per-instance export like `Chest.request_range_m`: since the check cannot widen
+the gate, the driver instead reads the client's real `PlayerNet`-spawned position off the HOST's own
+tree (`player_net.call("player_for", client_peer)`, once non-null) and snaps the tested node's
+`global_position` onto it, so the check never depends on `PlayerNet.SPAWN_OFFSETS`' actual values.
+`agent godot --script tools/wellspring_net_check.gd` — two consecutive runs, `failures=0` both times.
+
 ### 2026-08-18 — F-136: `PlayerController` gains step-up — a short lip or threshold no longer reads as a wall (lm)
 
 `entities/player/player_controller.gd` gained `_apply_step_up(delta)`, called every physics tick

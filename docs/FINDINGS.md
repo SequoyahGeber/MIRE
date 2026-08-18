@@ -69,27 +69,6 @@ do is worth as much as the record of what we did.
 
 ## Open
 
-### F-141 · `Wellspring.net_request_toggle_channel` has no two-process net check — only the host-side logic it calls into is proven
-
-**Area:** worldgen / netcode · **Severity:** low · **Found:** 2026-08-18 by lm during 4.8
-
-`tools/wellspring_check.gd` proves the ritual state machine directly — `wellspring.call(&
-"request_toggle_channel")` and `host_tick()` in a single process, exactly the offline/host-of-one
-path. It does not prove the RPC itself: that a REMOTE client's `net_request_toggle_channel.rpc_id()`
-actually reaches `_process_toggle(multiplayer.get_remote_sender_id())` on a real second ENet
-process, the way `tools/chest_check.gd`'s sibling `chest_net_check.gd` (and
-`attunement_service.gd`'s, `haulable.gd`'s) two-process checks prove their own request/grant RPCs.
-
-Left this way because `net_request_toggle_channel` is a two-line pass-through into
-`_process_toggle`, which the single-process check exercises exhaustively (start, cancel,
-out-of-range rejection, solo vs co-op sizing, presence-gated pausing, completion) — the marginal risk
-is in the RPC annotation itself (`@rpc("any_peer", "call_remote", "reliable")`) and the
-`multiplayer.get_remote_sender_id()` call, not in logic a second process would exercise
-differently. Still a real gap: a two-process `wellspring_net_check.gd` in `chest_net_check.gd`'s
-shape (driver process + `--` probe arg, talk through a `user://` JSON file, per `docs/SPECS.md`'s
-"Two-process checks" seam) is the way to close it, and should claim `tools/wellspring_net_check.gd`
-plus `systems/wellspring/wellspring.gd` when someone picks it up.
-
 ### F-139 · `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline
 
 **Area:** worldgen / netcode · **Severity:** low · **Found:** 2026-08-18 by lm during 4.6
@@ -735,6 +714,44 @@ for `ERROR:` to confirm zero UNDECLARED lines, not just that `CONSTRUCTION_DOORS
 ---
 
 ## Resolved
+
+### F-141 · `Wellspring.net_request_toggle_channel` has no two-process net check — only the host-side logic it calls into is proven — **fixed**
+
+**Area:** worldgen / netcode · **Severity:** low · **Found:** 2026-08-18 by lm during 4.8
+
+`tools/wellspring_check.gd` proves the ritual state machine directly — `wellspring.call(&
+"request_toggle_channel")` and `host_tick()` in a single process, exactly the offline/host-of-one
+path. It does not prove the RPC itself: that a REMOTE client's `net_request_toggle_channel.rpc_id()`
+actually reaches `_process_toggle(multiplayer.get_remote_sender_id())` on a real second ENet
+process, the way `tools/chest_check.gd`'s sibling `chest_net_check.gd` (and
+`attunement_service.gd`'s, `haulable.gd`'s) two-process checks prove their own request/grant RPCs.
+
+Left this way because `net_request_toggle_channel` is a two-line pass-through into
+`_process_toggle`, which the single-process check exercises exhaustively (start, cancel,
+out-of-range rejection, solo vs co-op sizing, presence-gated pausing, completion) — the marginal risk
+is in the RPC annotation itself (`@rpc("any_peer", "call_remote", "reliable")`) and the
+`multiplayer.get_remote_sender_id()` call, not in logic a second process would exercise
+differently. Still a real gap: a two-process `wellspring_net_check.gd` in `chest_net_check.gd`'s
+shape (driver process + `--` probe arg, talk through a `user://` JSON file, per `docs/SPECS.md`'s
+"Two-process checks" seam) is the way to close it, and should claim `tools/wellspring_net_check.gd`
+plus `systems/wellspring/wellspring.gd` when someone picks it up.
+
+**Resolved 2026-08-18 by lm.** Fixed: `tools/wellspring_net_check.gd`, a real two-process ENet check in `chest_net_check.gd`'s shape
+(driver + `-- wellspring-probe` probe arg, `user://wellspring_net_client.json`). Both processes build
+the same bare `Wellspring` at the same node path before branching. The client's own
+`request_toggle_channel()` toggle-start and toggle-cancel each go out as a real `net_request_toggle_channel.rpc_id()`
+over loopback ENet; the driver asserts the HOST's `Wellspring` flips `channeling` true then false from
+that remote RPC alone (never a local call), that `required_players`/`duration_sec` land on the co-op
+values now that a real second peer is connected, and — via the client's own result file — that the
+client only ever learns either state through replication, never a direct reply. `PRESENCE_RANGE_M` is
+a fixed constant the check cannot override, so the driver snaps the host's `Wellspring.global_position`
+onto the client's actual `PlayerNet`-spawned position rather than assuming a spawn-offset value.
+
+Verified 2026-08-18: `agent godot --script tools/wellspring_net_check.gd`, twice back to back —
+`WELLSPRING_NET_CHECK failures=0` both runs, all 12 assertions PASS. Full spec in docs/SPECS.md
+under F-141 (includes the trap paid for: hit F-107's exact lambda-by-value bug a second time, on
+`client_player` this run instead of `client_peer` — fixed the same way, polling a boolean and
+re-fetching outside the closure).
 
 ### F-135 · A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface — **fixed**
 
