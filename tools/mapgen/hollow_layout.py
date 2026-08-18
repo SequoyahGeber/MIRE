@@ -120,11 +120,16 @@ TRAILS = [
 # The noise only has the run of the open ground, which is exactly where the
 # flatness was visible.
 
-HF_CELL = 1.6
-HF_AMPLITUDE = 2.05
-#: Regions held flat, as (x0, z0, x1, z1, falloff). Falloff is the distance over
-#: which the terrain eases back up to full amplitude outside the rectangle.
+HF_CELL = 2.8
+HF_AMPLITUDE = 3.00
+#: Rectangles held flat, as (x0, z0, x1, z1, falloff). Falloff is the distance
+#: over which terrain eases back to full amplitude outside the rectangle.
 HF_FLAT: list[tuple[float, float, float, float, float]] = []
+#: Corridors held flat, as (x0, z0, x1, z1, half_width, falloff) — distance is
+#: measured to the SEGMENT, not to its bounding box. A diagonal trail masked by
+#: its bounding box flattens a huge square of ground it never touches, which is
+#: how the first pass left the middle of the map 84% flat.
+HF_FLAT_SEGMENTS: list[tuple[float, float, float, float, float, float]] = []
 
 
 def _hash01(ix: int, iz: int, salt: int) -> float:
@@ -151,14 +156,28 @@ def _value_noise(x: float, z: float, wavelength: float, salt: int) -> float:
     return (top + (bot - top) * tz) * 2.0 - 1.0
 
 
+def _segment_distance(x: float, z: float, x0: float, z0: float, x1: float, z1: float) -> float:
+    dx, dz = x1 - x0, z1 - z0
+    length2 = dx * dx + dz * dz
+    if length2 <= 1e-9:
+        return math.hypot(x - x0, z - z0)
+    t = max(0.0, min(1.0, ((x - x0) * dx + (z - z0) * dz) / length2))
+    return math.hypot(x - (x0 + t * dx), z - (z0 + t * dz))
+
+
 def _flatten_factor(x: float, z: float) -> float:
-    """0 inside a protected rectangle, easing to 1 outside it."""
+    """0 inside a protected region, easing to 1 outside it."""
     factor = 1.0
     for x0, z0, x1, z1, fade in HF_FLAT:
         dx = max(x0 - x, 0.0, x - x1)
         dz = max(z0 - z, 0.0, z - z1)
         d = math.hypot(dx, dz)
         factor = min(factor, _smooth(min(d / fade, 1.0)) if fade > 0.0 else (1.0 if d > 0 else 0.0))
+        if factor <= 0.0:
+            return 0.0
+    for x0, z0, x1, z1, half, fade in HF_FLAT_SEGMENTS:
+        d = max(_segment_distance(x, z, x0, z0, x1, z1) - half, 0.0)
+        factor = min(factor, _smooth(min(d / fade, 1.0)))
         if factor <= 0.0:
             return 0.0
     return factor
@@ -174,10 +193,17 @@ def ground_height(x: float, z: float) -> float:
     # facets share almost the same normal and the surface reads as a smooth
     # sheet — rolling, but not *low poly*. This is what makes each triangle
     # catch the light differently, which is the whole look.
-    h = (_value_noise(x, z, 34.0, 1) * 0.55
-         + _value_noise(x, z, 17.0, 2) * 0.24
-         + _value_noise(x, z, 8.5, 3) * 0.13
-         + _value_noise(x, z, 3.6, 4) * 0.08)
+    # Amplitude and wavelength are scaled together. Doubling amplitude alone
+    # just makes the same bumps steeper; stretching the wavelengths with it buys
+    # real landform — hills you walk over — at the same gradient.
+    # Chosen by sweeping amplitude x wavelength x cell against the walkable-slope
+    # budget, not by eye. A 2.8 m cell beats 1.6 m on every axis at once: more
+    # relief (3.9 m vs 3.2 m), a gentler worst slope, chunkier facets that read
+    # as low poly rather than as a smooth sheet, and a third of the vertices.
+    h = (_value_noise(x, z, 44.0, 1) * 0.589
+         + _value_noise(x, z, 22.0, 2) * 0.238
+         + _value_noise(x, z, 11.0, 3) * 0.124
+         + _value_noise(x, z, 4.4, 4) * 0.050)
     # Fade to zero at the wall ring so the boundary never shows a gap under it.
     edge = min(BOUND - abs(x), BOUND - abs(z))
     factor *= _smooth(max(min(edge / 4.5, 1.0), 0.0))
@@ -558,17 +584,21 @@ def build_terrain(L: Layout) -> None:
     # regions so surface_at still resolves; the mesh and its collider come from
     # heightfield_block(). Everything authored against flat ground is masked out
     # of the noise below, so decks, ramps and banks meet it exactly as before.
+    # Masks are kept TIGHT. The first pass padded each region generously and
+    # masked every trail by its bounding box, which left the central 40 m of the
+    # map 84% flat and the camp core 100% flat — i.e. flattened exactly the
+    # ground a player spends the whole session looking at. Only the footprints
+    # that something is actually built on are held level now.
     HF_FLAT.extend([
-        (CAMP_X0 - 2.0, CAMP_Z0 - 2.0, CAMP_X1 + 2.0, CAMP_Z1 + 2.0, 7.0),   # camp and its decks
-        (BASIN_X0 - 5.0, BASIN_Z0 - 5.0, BASIN_X1 + 5.0, BASIN_Z1 + 5.0, 6.0),  # basin and banks
-        (-21.0, 20.0, 23.0, B, 6.5),                                          # ridge terraces + ramps
-        (-10.0, -35.0, 12.0, -23.0, 6.0),                                     # ruins court + forge ramp
+        (CAMP_X0, CAMP_Z0, CAMP_X1, CAMP_Z1, 3.0),                              # camp decks and fences
+        (BASIN_X0 - 4.2, BASIN_Z0 - 4.2, BASIN_X1 + 4.2, BASIN_Z1 + 4.2, 3.0),  # basin floor and banks
+        (-21.0, 20.5, 23.0, B, 3.5),                                            # ridge terraces + ramps
+        (-9.5, -34.5, 11.5, -23.5, 3.5),                                        # ruins court + forge ramp
     ])
     for _n, rx0, rz0, rx1, rz1 in ROADS:
-        HF_FLAT.append((rx0 - 1.0, rz0 - 1.0, rx1 + 1.0, rz1 + 1.0, 5.5))
+        HF_FLAT.append((rx0, rz0, rx1, rz1, 3.0))
     for _n, (sx, sz), (ex, ez), width in TRAILS:
-        HF_FLAT.append((min(sx, ex) - width * 0.5, min(sz, ez) - width * 0.5,
-                        max(sx, ex) + width * 0.5, max(sz, ez) + width * 0.5, 5.0))
+        HF_FLAT_SEGMENTS.append((sx, sz, ex, ez, width * 0.5, 3.0))
     L.platform(-B, -B, BASIN_X0, B, 0.0)
     L.platform(BASIN_X0, -B, B, BASIN_Z0, 0.0)
     L.platform(BASIN_X0, BASIN_Z1, B, B, 0.0)
