@@ -75,6 +75,88 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — environmental VFX is asset-bound now (F-097, D-060). This is the seam every world generator inherits
+
+**The rule, from Sequoyah:** animation and VFX bind to the **asset**, never to a scene or a map,
+because release worlds are procedurally generated. D-060 records it; F-097 is what it cost to learn.
+
+**What was actually wrong.** `EnvironmentVfx` was never registered as an autoload — the script had
+existed since 2.1g and nothing loaded it. On top of that it discovered work by walking for
+`MeshInstance3D` nodes with "grass" in the name, while both generators emit `MultiMeshInstance3D`
+batches: 1,740 of them holding 13,026 copies, none of them matched. Hollowmere had no wind and no
+firelight at all, and its check was green because it booted the map 2.1k deprecated.
+
+**The contract, in one paragraph.** A generator stamps `asset` meta (the bare export name —
+`grass_tuft_a`, `station_campfire`) on every node it emits. For assets whose presentation is
+per-copy it also stamps `placements`, a `PackedVector3Array` of where each copy stands in that
+node's space. `EnvironmentVfx` reads those two metas and **nothing else about the scene**. Stamp
+them and every effect below works on a generated world with no further wiring.
+
+```gdscript
+holder.set_meta(&"asset", asset)                       # always
+if AssetVfx.emitter_for(asset) != AssetVfx.Emitter.NONE:
+    holder.set_meta(&"placements", origins)            # only when presentation is per-copy
+```
+
+**Why `placements` and not the batch's own transforms:** MultiMesh instance transforms live in the
+RenderingServer and are **write-only under `--headless`** — the buffer is empty and every read is
+identity (F-103, guarded by `tools/multimesh_readback_check.gd`). Reading them back put all 269 of
+Hollowmere's emitters on the world origin *and passed the check*.
+
+**Files and what each owns:**
+
+| File | Owns |
+|---|---|
+| `world/environment/asset_vfx_library.gd` | Asset id -> `Sway` + `Emitter` class, and the tuning numbers. Pure classification; knows nothing about scenes. Add an asset family by adding one prefix rule. |
+| `autoload/environment_vfx.gd` | Discovery, material swapping, the pooled emitter budget. Registered autoload (27 now). |
+| `world/environment/foliage_wind.gdshader` | The sway itself, driven entirely by uniforms from the library. |
+
+**Two properties worth not breaking.** Sway materials are applied to the **mesh resource**, once per
+asset — so wind on 13,026 instanced plants costs one material swap, not 13,026. Emitters are served
+by a **fixed pool** ranked by camera distance every 0.25 s: Hollowmere's **269 emitter sites cost 23
+effect nodes**, and a generated world with ten times as many crystals costs the same. Budgets live in
+`EMITTER_PROFILES.max_live` / `shadow_live` and are scaled by the `GraphicsQuality` preset
+(low 0.4 / medium 0.7 / high 1.0), read through `/root/GraphicsQuality` — that file is **not**
+modified here, so F-098's work on it does not conflict.
+
+**For F-098 specifically (static chunk batching):** merging instances into one static mesh destroys
+per-instance `MODEL_MATRIX`, which is where sway phase comes from. The shader already has the escape
+hatch — `vertex_phase = 1` takes phase from world-space vertex position instead, and every small
+asset (grass, reeds, ferns, flowers) is already set that way, so batching them keeps a per-plant
+ripple. Trees are `vertex_phase = 0` and **cannot** be batched without their crowns shearing; batch
+them only if you bake a per-instance phase into a vertex attribute.
+
+**Verify with:** `agent godot --script tools/environment_vfx_hollowmere_check.gd` (reads `main_scene`
+from `project.godot`, so it follows the shipped map), plus `tools/environment_vfx_check.gd` for the
+hand-authored fallback path and `tools/multimesh_readback_check.gd` for the F-103 assumption.
+
+**Untuned on purpose:** headless cannot screenshot (F-077), so the numbers prove the effects reach
+the geometry, not that they look right. Sway rates, light colours and budgets are all inspector-free
+constants in `SWAY_PROFILES` / `EMITTER_PROFILES` for Sequoyah to judge.
+
+---
+
+
+### 2026-08-18 — cheap read seams from the F-099 optimization sweep
+
+Three accessors exist so per-frame code stops copying whole structures; use them in anything that
+polls:
+
+- **`InventoryService.local_slot(index) -> Dictionary`** — one confirmed local slot, copied. And
+  **`local_item_id(index) -> StringName`** — allocation-light; answers `&""` for an out-of-range,
+  empty, **or exhausted** (amount ≤ 0) slot, which is the answer held-item/consumable logic wants.
+  `local_slots()` still exists for callers that genuinely need the whole array — but the array
+  carried by `local_inventory_changed` is now the service's own snapshot: **read-only, duplicate it
+  if you keep it past the handler.**
+- **`NetTransport.has_peer(peer_id) -> bool`** — membership without the whole-array copy
+  `peer_ids()` makes. Every F-059 `_peer_connected` guard now calls this.
+- **`PlayerHealth.host_health_changed`** now declares its 5th arg (`revision`) — it was emitted all
+  along, so 4-arg subscribers would have errored; there were none in-repo.
+- **Downed flags travel only on change** (`PlayerHealth._broadcast_downed_flag` dedups). Late
+  joiners get a one-shot flag sync in `_on_peer_joined`; run-player expiry broadcasts the flag
+  clear (the ghost-"TEAMMATE DOWN" analogue of F-089). If you add a flag-shaped broadcast, copy
+  this shape.
+
 ### 2026-08-18 — pixel-exact PNG comparison, without the alpha_only trap (F-079)
 
 **`tools/png_pixels_equal.py`** — `pixel_diff_bbox(path_a, path_b) -> (l, t, r, b) | None` and

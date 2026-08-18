@@ -1173,6 +1173,39 @@ removing it.
 ## Template
 
 ```
+### D-060 · 2026-08-18 · Environmental presentation binds to the asset, never to a level, a map, or a node name
+
+Sequoyah's instruction, and the rule F-097 exists to enforce: *"animations are gonna need to be
+linked to each asset. They can't be linked to a scene or a map since the game will be procedurally
+generated."*
+
+Release worlds are generated. `levels/hollowmere.tscn` is an interim playtest fixture, so any
+presentation attached to a specific scene tree — a node placed in the level, a group name that map's
+author happened to use, an `AnimationPlayer` parented under a level-specific node — is dead code the
+moment the generator builds a world instead of loading that map. This has already cost us twice:
+F-076 keyed `EnemyWorld` and `HarvestWorld` to Playtest Hollow's group names, so Hollowmere shipped
+with no crawlers and no harvestables; F-097 keyed environmental VFX to the node *type* and *name* the
+old map produced, so Hollowmere shipped with no wind and no firelight, on 13,026 instanced copies.
+
+**The binding is a stable asset id, carried by the asset.** `world/environment/asset_vfx_library.gd`
+maps an asset id — `station_campfire`, `grass_tuft_a` — to what that asset does, and references no
+scene, map, layout or node. Generators stamp the id in an `asset` meta on everything they emit; a new
+generator inherits every effect by stamping the same meta and changing nothing else. Because an
+instanced batch has no per-copy node, a generator also publishes a `placements` array for any asset
+whose presentation is per-copy — the renderer is not somewhere those positions can be read back from
+(F-103).
+
+**The cost this rule imposes, accepted deliberately:** an effect that genuinely belongs to one place
+rather than one asset — a scripted set-piece — has no home in this system and needs its own. That is
+the right trade while every shipping world is generated.
+
+**Would change my mind:** if MIRE ever ships hand-authored story levels as the primary content, a
+level-owned presentation layer would become worth building *alongside* this one. It would not replace
+it — the generated worlds still need asset-bound effects — so this would become the default rather
+than the only mechanism.
+
+---
+
 ### D-0NN · YYYY-MM-DD · <one-line decision>
 <why, in 2–4 sentences>
 **Would change my mind:** <the specific evidence that should make you revisit this>

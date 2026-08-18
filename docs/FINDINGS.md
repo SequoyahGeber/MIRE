@@ -634,116 +634,6 @@ which is already going to touch every collider the world creates.
 
 ---
 
-### F-097 · Environmental VFX is keyed to node types the shipped map never produces, so wind and firelight are dead on Hollowmere
-
-**Area:** presentation · **Severity:** high · **Found:** 2026-08-18 by larch10 while starting visual work
-
-`autoload/environment_vfx.gd` discovers what to animate by walking the tree for **`MeshInstance3D`**
-(`_on_node_added` line 42, `_apply_recursive` line 47). Both world generators emit
-**`MultiMeshInstance3D`** instead — `world/gen/authored_world.gd:450` for the 2,869 authored props and
-`world/gen/undergrowth.gd:546` for the ~10,240 scattered plants (both batched per chunk/cell by F-090).
-`MultiMeshInstance3D` does not extend `MeshInstance3D`, so the walk matches none of them.
-
-The result on `levels/hollowmere.tscn` — which is `project.godot:14`'s `main_scene`, the map people
-actually play — is that no grass sways, and no campfire, forge or furnace gets its flame, spark, smoke
-or flickering light. `systems/crafting/station_def.gd:19` and `autoload/crafting_service.gd:19` already
-record that stations are baked into MultiMesh batches "with no per-instance node of their own", which is
-the same root cause seen from the crafting side.
-
-**Measured** on `hollowmere` (`agent godot --script tools/environment_vfx_hollowmere_check.gd`):
-
-```
-CENSUS mesh_instance3d=2808 multimesh_instance3d=1740 multimesh_copies=13026
-VFX    foliage_mesh_count=0  fire_source_count=0
-```
-
-Every one of the 13,026 instanced copies — the props and the whole undergrowth field — is invisible to
-the system, and the 2,808 loose `MeshInstance3D` nodes that do exist are terrain, water and
-harvestables, none of which match a foliage or fire name. Both counters are **zero**, not low.
-
-It reads as green because `tools/environment_vfx_check.gd:3` boots
-`res://levels/playtest_hollow.tscn` — the map deprecated by 2.1k — where props were still individual
-`MeshInstance3D` nodes. This is F-076's exact shape a second time: a system keyed to the old map's
-representation silently does nothing on the new one, and the check that should have caught it is
-pinned to the old map too.
-
-Fixing it must not re-key the system to Hollowmere either. Release worlds are procedurally generated,
-so the binding has to be to **the asset** — its kind, travelling with the asset — not to a scene, a map,
-or a node name a level author chose.
-
----
-
-### F-099 · Optimization sweep: per-frame costs and dead weight across runtime scripts
-
-**Area:** perf · **Severity:** medium · **Found:** 2026-08-18 by kiln9
-
-Two-reviewer optimization sweep over runtime scripts (autoload/core/entities and systems/ui/world) found per-frame allocation and polling hotspots: enemy overlay find_children per frame, per-tick NavigationAgent repaths, always-on HUD rebuilding hint/layout per frame with a full inventory duplicate, unchanged downed-flag rebroadcasts, per-tick node re-resolution in day_night, always-on physics polling in harvestable, plus a host_health_changed signal declared with 4 args but emitted with 5. Fixes applied under this finding by kiln9; per-file details in the session review ledgers.
-
----
-
-### F-100 · Static chunk batching for authored props — designed, measured-in-principle, blocked on F-097
-
-**Area:** perf · **Severity:** medium · **Found:** 2026-08-18 by coil23
-
-BLOCKED until F-097 (larch10) releases world/gen/authored_world.gd — do not claim that file while their VFX wiring is in flight. The design, from F-098's research (DOOM ~1,331 draws/frame; Roblox merges identical/static geometry): authored props run 2,869 props in 1,028 MultiMeshes = 2.8 instances per draw, which is instancing overhead without instancing's payoff (~3.3k of our 5.4k total draws are its shadow-pass copies). Replace per-(chunk,asset) MultiMeshes with ONE merged ArrayMesh per chunk, one surface per material bucket: SurfaceTool.append_from(mesh, surface, placement) per prop (C++-speed transform bake), bucket key = material resource_name + albedo fingerprint (kit shares one palette so buckets merge across assets), disk-cache per chunk keyed by layout mtime (mesh_cache pattern from F-095). Keep harvestables as nodes (they swap when felled) and keep flora as MultiMesh (14+ instances/draw pays). VFX-compatible with F-097: wind sway keys off materials, and bucketing preserves material identity. Expected: prop draws 1,028 -> ~chunks x 1-3 buckets, same ratio in all four shadow cascades. Verify with tools/perf_probe.gd and tools/hollowmere_check.gd.
-
----
-
-### F-101 · Build-mode "attack" (confirm/swing) and `harvest_world.gd`'s own independent listener are unmediated
-
-**Area:** gameplay · **Severity:** low · **Found:** 2026-08-18 by lp while closing F-086
-
-F-086 wired `entities/player/player_controller.gd`'s own "attack" handling to confirm a build
-placement instead of swinging while build mode is active, and calls
-`get_viewport().set_input_as_handled()` on that branch so nothing downstream reads the same click
-twice. But `autoload/harvest_world.gd:49` listens for `"attack"` independently, in its own
-`_unhandled_input`, and nothing in this codebase establishes (or tests) which of two nodes'
-`_unhandled_input` runs first for the same event — `set_input_as_handled()` only suppresses
-handlers that have not run yet by the time it is called, and this codebase has never had two
-listeners on the same action disagree about what it means before now (combat and harvest already
-both react to "attack" today, apparently by design, so precedent here is "let both fire," not "one
-wins"). Worst case: aiming at a harvestable while placing a piece also registers a harvest hit on
-the same click. Not fixed here because the only fix is inside `harvest_world.gd`, which this task's
-claim does not name.
-
-Would take: either an explicit input-priority contract (documented, and enforced by a check that
-constructs both nodes and asserts delivery order) or a shared "is anything else claiming this attack
-press" query `harvest_world.gd` checks before it acts — `PlayerController.is_build_mode_active()` is
-already public and would be the cheapest version of the second.
-
----
-
-### F-102 · docs/FINDINGS.md is the one file every lane must write and no lane can hold, so every close-out commit carries other lanes' half-written findings
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by yarrow21
-
-Sibling of F-081, one level up. F-081 fixed `ship` carrying harness *source* it had no claim on; this
-is the same shape in a file where the carrying cannot be switched off, because the work genuinely
-belongs there.
-
-Observed 2026-08-18 while closing F-080. `git diff` on `docs/FINDINGS.md` at ship time held, besides
-my own resolution: LP's F-086 resolution, an F-098 rewrite, and three newly filed findings
-(F-099/F-100/F-101) from two other lanes. All of it uncommitted, none of it mine. The choices at that
-moment are both bad — ship the file and commit three other agents' in-progress writing under my name
-and message, or leave it and let my own resolution stay invisible to everyone (uncommitted work is
-invisible to Codex). I shipped it, because invisible is worse than misattributed.
-
-An exact claim does not help. Every lane must write this file to close anything out, so a claim on it
-either blocks every other lane or is ignored — and it is ignored: I held an exact claim on
-`docs/FINDINGS.md` for F-080 while three lanes wrote to it, because a claim blocks the *commit*
-(`agent check`), not the editor. F-058 is the same collision seen from the numbering side; the two
-findings share a cause.
-
-**Sketch of a fix, not yet decided:** one file per finding (`docs/findings/F-099.md`), with
-`docs/FINDINGS.md` generated from the directory the way `.agent/BOARD.md` is generated from
-`state.json`. Then a finding is an ordinary claimable file that exactly one task owns, filing is a
-create (no merge conflict, no number race — the filename *is* the number), and `agent finding`/`agent
-brief` read the directory. The cost is a generated 1,000-line file in git and a migration of ~100
-existing sections; both are one-time. An append-only convention alone does not fix it, because
-resolving a finding *moves* a section rather than appending one.
-
----
-
 ### F-103 · MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin
 
 **Area:** tooling/rendering · **Severity:** high · **Found:** 2026-08-18 by larch10 during F-097
@@ -821,7 +711,232 @@ The F-099 review sweep found per-frame costs in three files that were claimed mi
 
 ---
 
+### F-107 · chest_net_check's two host-side grant assertions fail at HEAD; client side is green
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-18 by kiln9
+
+tools/chest_net_check.gd fails 2 of its 12 assertions, deterministically, at committed HEAD — observed 2026-08-18 while verifying the unrelated F-099 sweep, and confirmed pre-existing with 'agent baseline --script tools/chest_net_check.gd' at aa3f764 (identical failures=2).
+
+The two reds are the HOST-side grant observations at tools/chest_net_check.gd:117-124:
+- "host's InventoryService grants coins to the requesting peer, not the host" (host_count(client_peer, coins) != 7)
+- "host's InventoryService grants the rolled item to the requesting peer" (host_count(client_peer, TEST_ITEM_ID) != 4)
+
+Everything around them is green, including the contradictory-looking client half: the client's grant reply carries exactly the expected 7 coins and 4 items, 'opened' replicates, a second open is rejected, and "the host's own inventory receives nothing" also passes. So the grant is made and delivered, but the host-side count for the requesting peer does not read as expected at the moment the check reads it — the read happens synchronously the instant chest.get("opened") flips, with no _until wait (unlike the peer-id wait above it). Either the grant now lands after the opened flip (a race the synchronous read loses), or the peer's store holds a different total than the bare roll (e.g. something else granting to that store first, which would also survive a wait).
+
+Whoever picks this up: reproduce with 'agent godot --script tools/chest_net_check.gd', then log host_count in the failing check to see the actual value — 0 means ordering race, >7 means another grant is polluting the store.
+
+---
+
 ## Resolved
+
+### F-099 · Optimization sweep: per-frame costs and dead weight across runtime scripts — **fixed**
+
+**Area:** perf · **Severity:** medium · **Found:** 2026-08-18 by kiln9 · **Resolved:** 2026-08-18 by kiln9
+
+Two read-only reviewers swept every runtime script (autoload/, core/, entities/, systems/, ui/,
+world/ — minus files claimed by in-flight tasks); 54 findings, fixes applied in 20 files under this
+claim. By weight:
+
+- **Per-frame allocations.** viewmodel and vitals_hud each duplicated all 32 inventory slot
+  Dictionaries every rendered frame through `local_slots()`; both (and combat_service's
+  `weapon_for_hotbar_index`) now use the new `InventoryService.local_slot()/local_item_id()`
+  single-slot accessors. Enemy `_apply_overlay` re-ran `find_children` per frame per enemy during
+  flashes and corpse dissolves — mesh list cached at build, overlay assigned once, per-frame work is
+  one colour write. The inventory commit path made up to 3 full-array copies; now 1.
+- **Polling → state-driven.** Enemy `_process` idles off until a hit or death; harvestable's
+  respawn tick is off while the prop stands (hundreds of props × 60 Hz → zero); build_service's
+  nav-rebake tick and crafting_service's timed-craft `_process` toggle with their queues;
+  net_session's identity sweep runs only on a hosting peer. vitals_hud rebuilds its hint only when
+  selection/inventory change, layout only on resize/visibility flips, banner strings once per
+  displayed second.
+- **Per-tick lookups cached.** `harvest_world._on_node_added` scheduled a full multi-group scene
+  rescan for EVERY node the game ever added — now filtered to holder-group members (both generators
+  group before add_child, so membership is visible at node_added time). day_night's Atmosphere and
+  transport lookups cached per scene / once. Transport refs cached across player_health and the
+  inventory/build/powerup/enemy_world services; powerup definitions memoized (`stat()` is
+  per-physics-tick); station positions cached per scene behind a group-census guard; player_net
+  reads each body's peer id from meta instead of String-parsing per player per tick. New
+  `NetTransport.has_peer()` replaces the `peer_ids()` array copy in every F-059 guard. Enemy AI:
+  held target cached by reference, acquisition rescans at 0.2 s, nav repath only when the goal
+  moves >1 m — the attack itself still measures live positions.
+- **Bugs.** `host_health_changed` declared 4 args but emitted 5 (no subscribers existed).
+  `_builder_position` documented a placement fallback but returned `Vector3.ZERO`, so with no
+  player bodies the range rule measured from the world origin. chest_ui's nearest-chest scan let an
+  opened chest shadow an unopened one in range. The enemy hit clip ended frozen until the next
+  state change. Downed flags travel only on change now — with a one-shot sync to late joiners and a
+  flag-clear broadcast on run-player expiry, which also fixes the F-089-shaped ghost
+  "TEAMMATE DOWN" an expired downed peer left on every client.
+- **Bloat.** registry.gd's seven copy-pasted loaders → one spec-driven `_load_dir()` (~130 lines);
+  duplicated viewmodel comment block; redundant crafting write-backs; harvestable's no-op setter.
+
+Deliberately NOT done: enemy state/health/hit_counter replication stays ALWAYS — under D-025's
+interest hysteresis a peer whose visibility is off during a change could miss an ON_CHANGE delta
+permanently. crafting_ui's `_on_inventory_changed` stays ungated — crafting_net_check asserts
+closed-panel row state is a public contract. world/chunk's expired R2/R3 spikes stay until 4.0a
+re-measures on a real renderer (F-005). Per-frame items in files other tasks held are F-105.
+
+Verified, all green: verify_setup, combat_self_hit, combat_feel, player_health, vitals_hud,
+viewmodel, powerup, inventory, build, hollowmere (4 crawlers, 9,486 navmesh polys), and two-process:
+session_lifecycle 8/8, player_health_net, player_vitals_net, inventory_net, crafting_net,
+powerup_net, build_net, day_night_net, harvest_world_net, harvestable_net, combat_net, interest.
+chest_net_check's 2 host-side failures reproduce identically at HEAD baseline aa3f764 —
+pre-existing, filed as F-107.
+
+---
+
+### F-097 · Environmental VFX was keyed to node types the shipped map never produces, so wind and firelight were dead on Hollowmere — **fixed**
+
+**Area:** presentation · **Severity:** high · **Found:** 2026-08-18 by larch10 while starting visual work
+
+`autoload/environment_vfx.gd` discovers what to animate by walking the tree for **`MeshInstance3D`**
+(`_on_node_added` line 42, `_apply_recursive` line 47). Both world generators emit
+**`MultiMeshInstance3D`** instead — `world/gen/authored_world.gd:450` for the 2,869 authored props and
+`world/gen/undergrowth.gd:546` for the ~10,240 scattered plants (both batched per chunk/cell by F-090).
+`MultiMeshInstance3D` does not extend `MeshInstance3D`, so the walk matches none of them.
+
+The result on `levels/hollowmere.tscn` — which is `project.godot:14`'s `main_scene`, the map people
+actually play — is that no grass sways, and no campfire, forge or furnace gets its flame, spark, smoke
+or flickering light. `systems/crafting/station_def.gd:19` and `autoload/crafting_service.gd:19` already
+record that stations are baked into MultiMesh batches "with no per-instance node of their own", which is
+the same root cause seen from the crafting side.
+
+**Measured** on `hollowmere` (`agent godot --script tools/environment_vfx_hollowmere_check.gd`):
+
+```
+CENSUS mesh_instance3d=2808 multimesh_instance3d=1740 multimesh_copies=13026
+VFX    foliage_mesh_count=0  fire_source_count=0
+```
+
+Every one of the 13,026 instanced copies — the props and the whole undergrowth field — is invisible to
+the system, and the 2,808 loose `MeshInstance3D` nodes that do exist are terrain, water and
+harvestables, none of which match a foliage or fire name. Both counters are **zero**, not low.
+
+It reads as green because `tools/environment_vfx_check.gd:3` boots
+`res://levels/playtest_hollow.tscn` — the map deprecated by 2.1k — where props were still individual
+`MeshInstance3D` nodes. This is F-076's exact shape a second time: a system keyed to the old map's
+representation silently does nothing on the new one, and the check that should have caught it is
+pinned to the old map too.
+
+Fixing it must not re-key the system to Hollowmere either. Release worlds are procedurally generated,
+so the binding has to be to **the asset** — its kind, travelling with the asset — not to a scene, a map,
+or a node name a level author chose.
+
+---
+
+### F-100 · Static chunk batching for authored props — designed, measured-in-principle, blocked on F-097
+
+**Area:** perf · **Severity:** medium · **Found:** 2026-08-18 by coil23
+
+BLOCKED until F-097 (larch10) releases world/gen/authored_world.gd — do not claim that file while their VFX wiring is in flight. The design, from F-098's research (DOOM ~1,331 draws/frame; Roblox merges identical/static geometry): authored props run 2,869 props in 1,028 MultiMeshes = 2.8 instances per draw, which is instancing overhead without instancing's payoff (~3.3k of our 5.4k total draws are its shadow-pass copies). Replace per-(chunk,asset) MultiMeshes with ONE merged ArrayMesh per chunk, one surface per material bucket: SurfaceTool.append_from(mesh, surface, placement) per prop (C++-speed transform bake), bucket key = material resource_name + albedo fingerprint (kit shares one palette so buckets merge across assets), disk-cache per chunk keyed by layout mtime (mesh_cache pattern from F-095). Keep harvestables as nodes (they swap when felled) and keep flora as MultiMesh (14+ instances/draw pays). VFX-compatible with F-097: wind sway keys off materials, and bucketing preserves material identity. Expected: prop draws 1,028 -> ~chunks x 1-3 buckets, same ratio in all four shadow cascades. Verify with tools/perf_probe.gd and tools/hollowmere_check.gd.
+
+---
+
+### F-101 · Build-mode "attack" (confirm/swing) and `harvest_world.gd`'s own independent listener are unmediated
+
+**Area:** gameplay · **Severity:** low · **Found:** 2026-08-18 by lp while closing F-086
+
+F-086 wired `entities/player/player_controller.gd`'s own "attack" handling to confirm a build
+placement instead of swinging while build mode is active, and calls
+`get_viewport().set_input_as_handled()` on that branch so nothing downstream reads the same click
+twice. But `autoload/harvest_world.gd:49` listens for `"attack"` independently, in its own
+`_unhandled_input`, and nothing in this codebase establishes (or tests) which of two nodes'
+`_unhandled_input` runs first for the same event — `set_input_as_handled()` only suppresses
+handlers that have not run yet by the time it is called, and this codebase has never had two
+listeners on the same action disagree about what it means before now (combat and harvest already
+both react to "attack" today, apparently by design, so precedent here is "let both fire," not "one
+wins"). Worst case: aiming at a harvestable while placing a piece also registers a harvest hit on
+the same click. Not fixed here because the only fix is inside `harvest_world.gd`, which this task's
+claim does not name.
+
+Would take: either an explicit input-priority contract (documented, and enforced by a check that
+constructs both nodes and asserts delivery order) or a shared "is anything else claiming this attack
+press" query `harvest_world.gd` checks before it acts — `PlayerController.is_build_mode_active()` is
+already public and would be the cheapest version of the second.
+
+---
+
+### F-102 · docs/FINDINGS.md is the one file every lane must write and no lane can hold, so every close-out commit carries other lanes' half-written findings
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by yarrow21
+
+Sibling of F-081, one level up. F-081 fixed `ship` carrying harness *source* it had no claim on; this
+is the same shape in a file where the carrying cannot be switched off, because the work genuinely
+belongs there.
+
+Observed 2026-08-18 while closing F-080. `git diff` on `docs/FINDINGS.md` at ship time held, besides
+my own resolution: LP's F-086 resolution, an F-098 rewrite, and three newly filed findings
+(F-099/F-100/F-101) from two other lanes. All of it uncommitted, none of it mine. The choices at that
+moment are both bad — ship the file and commit three other agents' in-progress writing under my name
+and message, or leave it and let my own resolution stay invisible to everyone (uncommitted work is
+invisible to Codex). I shipped it, because invisible is worse than misattributed.
+
+An exact claim does not help. Every lane must write this file to close anything out, so a claim on it
+either blocks every other lane or is ignored — and it is ignored: I held an exact claim on
+`docs/FINDINGS.md` for F-080 while three lanes wrote to it, because a claim blocks the *commit*
+(`agent check`), not the editor. F-058 is the same collision seen from the numbering side; the two
+findings share a cause.
+
+**Sketch of a fix, not yet decided:** one file per finding (`docs/findings/F-099.md`), with
+`docs/FINDINGS.md` generated from the directory the way `.agent/BOARD.md` is generated from
+`state.json`. Then a finding is an ordinary claimable file that exactly one task owns, filing is a
+create (no merge conflict, no number race — the filename *is* the number), and `agent finding`/`agent
+brief` read the directory. The cost is a generated 1,000-line file in git and a migration of ~100
+existing sections; both are one-time. An append-only convention alone does not fix it, because
+resolving a finding *moves* a section rather than appending one.
+
+---
+
+**A third defect, found while fixing this:** `EnvironmentVfx` was **never registered as an
+autoload**. The script had existed since 2.1g and nothing loaded it, so even on Playtest Hollow the
+effects only ever appeared in a check that constructed the controller by hand. That is F-051's rule
+and F-068's failure again — a script nothing loads is not shipped. Registered via
+`agent autoload EnvironmentVfx autoload/environment_vfx.gd`; there are 27 autoloads now.
+
+**Fixed** by binding presentation to the asset instead of to the level (D-060):
+
+- `world/environment/asset_vfx_library.gd` — new. Asset id -> sway class + emitter class, with no
+  reference to any scene, map, layout or node. Ten sway profiles and six emitter classes.
+- `autoload/environment_vfx.gd` — rewritten. Handles `MultiMeshInstance3D` as well as
+  `MeshInstance3D`; dresses the **mesh resource** once per asset rather than per node, so 13,026
+  instanced copies cost one material swap; serves emitters from a **fixed pool** ranked by distance,
+  so the cost is bounded by the budget and not by the world. Falls back to node names when the meta
+  is absent, which is what keeps hand-authored scenes working.
+- `world/environment/foliage_wind.gdshader` — the per-instance `instance uniform`s are gone; they
+  never reached MultiMesh copies. Phase now comes from the copy's own transform, the wind direction
+  is rotated into model space so each prop's yaw stops making it lean its own way, and
+  `vertex_phase` lets small assets take phase from world position so the field keeps rippling
+  per-plant if F-098 later merges the batches into static chunk meshes.
+- `world/gen/authored_world.gd`, `world/gen/undergrowth.gd` — both stamp the `asset` meta on what
+  they emit, reusing the meta the harvestable holders already carried, and publish a `placements`
+  array for assets whose presentation is per-copy (F-103).
+
+**Verified** — `agent godot --script tools/environment_vfx_hollowmere_check.gd`, which reads
+`main_scene` out of `project.godot` so it can never again be pinned to a map nobody plays:
+
+```
+CENSUS   mesh_instance3d=2809 multimesh_instance3d=1740 multimesh_copies=13026
+WIND     multimesh_nodes=1183 mesh_nodes=2508 swaying_copies=9972 assets=197
+EMITTER  CAMPFIRE sites=2  EMBER sites=2  FORGE sites=1  CRYSTAL sites=101  SPORE sites=163
+BUDGET   sites=269 effect_nodes=23 live=23
+failures=0
+```
+
+Every site count matches what `world/gen/layouts/hollowmere.json` actually holds (2 campfires, 2
+cooking spits, 1 stone furnace, 99 mire crystals + the wellspring and ward crystals, 163 tendrils),
+which is the assertion that catches F-103's collapse-to-origin failure — a count-based check cannot.
+**269 emitter sites cost 23 effect nodes**, which is the scalability property a generated world
+needs. Also green at 0 failures and 0 engine-error lines:
+`tools/environment_vfx_check.gd` (Playtest Hollow, 8,378 wind meshes through the name-fallback path),
+`tools/multimesh_readback_check.gd` (new, guards F-103), `tools/verify_setup.gd`, and a clean
+`agent godot --quit-after 5` boot of the real main scene.
+
+**Not done here, deliberately:** nobody has *looked* at it. Headless cannot screenshot (F-077), so
+the numbers prove wind and firelight reach the geometry, not that the sway rates and light colours
+read well. That judgement is Sequoyah's and the tuning knobs are all in `SWAY_PROFILES` and
+`EMITTER_PROFILES`.
+
+---
+
 
 ### F-106 · A neighbour's half-finished refactor breaks every other agent's checks, and the failure looks like your own — **fixed**
 
