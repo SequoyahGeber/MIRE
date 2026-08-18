@@ -2388,3 +2388,15 @@ ship stages an allowlist of the three generated coordination files instead of a 
 Files: `.agent/bin/agent`, `.agent/bin/lane`, `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `AGENTS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `5976ca5`
+
+---
+
+### DONE · F-098 · coil23 · 2026-08-18T13:15:50+00:00
+
+**Draw-call discipline: static chunk batching + dynamic resolution (DOOM/Roblox research)**
+
+Research (DOOM ~1,331 draws/frame + cached static shadows + dynamic res; Roblox merge-identical + static clusters) answered Sequoyah's 'why are they faster'. Shipped the transferable half that wasn't claim-blocked: dynamic resolution in GraphicsQuality (gfx auto [<fps>|off], 0.59..preset ceiling, fps-steered v1). Probe row 13: 204fps/4.98ms at floor vs 149 native. Static chunk batching designed + parked in F-100 (authored_world.gd is larch10's under F-097; design is VFX-compatible with their material-keyed sway). Verified: probe 14 rows, flora/atmosphere_night/day_night/hollowmere checks all pass.
+
+Files: `autoload/graphics_quality.gd`, `tools/perf_probe.gd`
+
+Commit at time of writing: `4aa5d43`

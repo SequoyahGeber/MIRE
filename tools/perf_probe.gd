@@ -73,7 +73,9 @@ func _run() -> void:
 	var results: Array[Dictionary] = []
 	for config: Dictionary in _configs():
 		(config["apply"] as Callable).call()
-		await _sleep(SETTLE_SECONDS)
+		# A config may ask for a longer settle — the dynamic-resolution row needs its
+		# controller (one step per half second) to converge before sampling.
+		await _sleep(float(config.get("settle", SETTLE_SECONDS)))
 		var row := await _measure(config["name"] as String)
 		results.append(row)
 		(config["undo"] as Callable).call()
@@ -133,7 +135,20 @@ func _configs() -> Array[Dictionary]:
 		{"name": "12 night 02:00 + waves",
 			"apply": func() -> void: day_night.set(&"time_of_day", 2.0 / 24.0),
 			"undo": func() -> void: day_night.set(&"time_of_day", 8.35 / 24.0)},
+		# Target far above what full scale can reach, so the controller must drive the render
+		# scale to its floor — the row proves the loop steers and shows the fps it buys.
+		{"name": "13 dynamic res @240", "settle": 4.0,
+			"apply": func() -> void: _set_dynamic_scale(true, 240.0),
+			"undo": func() -> void: _set_dynamic_scale(false, 0.0)},
 	]
+
+
+func _set_dynamic_scale(enabled: bool, target_fps: float) -> void:
+	var quality: Node = root.get_node_or_null(^"/root/GraphicsQuality")
+	if quality == null:
+		push_warning("GraphicsQuality autoload missing — dynamic-res config measures nothing")
+		return
+	quality.call(&"set_dynamic_scale", enabled, target_fps)
 
 
 ## Presets are GraphicsQuality.Preset values: 0 low, 1 medium, 2 high (the authored default).

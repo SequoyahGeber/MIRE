@@ -59,19 +59,76 @@ var _authored_lights: Dictionary = {}
 var _authored_environments: Dictionary = {}
 var _applied_scene_id: int = 0
 
+## ── Dynamic resolution (F-098) ────────────────────────────────────────────────────────────────
+## DOOM-style: hold a target frame rate by stepping the 3D render scale between
+## DYNAMIC_SCALE_MIN and the active preset's own scale — the safety net that keeps a weak
+## machine playable through its worst moments instead of tuning for its average ones. v1 steers
+## by measured fps because Metal's viewport GPU timer reads 0 in this build (F-090). With vsync
+## on, fps can never exceed the panel rate, so "comfortably at target" is the up signal: the
+## controller probes upward in small steps and backs off in bigger ones — asymmetry keeps the
+## worst case short.
+const DYNAMIC_SCALE_MIN: float = 0.59
+const DYNAMIC_STEP_UP: float = 0.03
+const DYNAMIC_STEP_DOWN: float = 0.07
+const DYNAMIC_INTERVAL_SEC: float = 0.5
+
+var dynamic_scale_enabled: bool = false
+## 0 = follow the panel's refresh rate.
+var dynamic_scale_target_fps: float = 0.0
+var _dynamic_elapsed: float = 0.0
+
 
 func _ready() -> void:
 	_register_commands()
-	set_process(false)
+	_update_processing()
 
 
-## Only runs while a non-default preset is active: when the level changes out from under it,
-## the fresh level arrives authored-high and needs the preset re-applied.
-func _process(_delta: float) -> void:
-	var scene: Node = get_tree().current_scene
-	var scene_id: int = 0 if scene == null else scene.get_instance_id()
-	if scene_id != _applied_scene_id:
-		apply(preset)
+## Runs while a non-default preset is active (a level change arrives authored-high and needs
+## the preset re-applied) or while dynamic resolution is steering.
+func _process(delta: float) -> void:
+	if preset != Preset.HIGH:
+		var scene: Node = get_tree().current_scene
+		var scene_id: int = 0 if scene == null else scene.get_instance_id()
+		if scene_id != _applied_scene_id:
+			apply(preset)
+	if dynamic_scale_enabled:
+		_dynamic_step(delta)
+
+
+func set_dynamic_scale(enabled: bool, target_fps: float = 0.0) -> void:
+	dynamic_scale_enabled = enabled
+	dynamic_scale_target_fps = maxf(0.0, target_fps)
+	_dynamic_elapsed = 0.0
+	if not enabled:
+		get_viewport().scaling_3d_scale = _preset_render_scale()
+	_update_processing()
+
+
+func _dynamic_step(delta: float) -> void:
+	_dynamic_elapsed += delta
+	if _dynamic_elapsed < DYNAMIC_INTERVAL_SEC:
+		return
+	_dynamic_elapsed = 0.0
+	var target := dynamic_scale_target_fps
+	if target <= 0.0:
+		target = DisplayServer.screen_get_refresh_rate()
+		if target <= 0.0:
+			target = 60.0
+	var fps := Engine.get_frames_per_second()
+	var scale := get_viewport().scaling_3d_scale
+	if fps < target * 0.97:
+		scale -= DYNAMIC_STEP_DOWN
+	elif fps >= target * 0.99:
+		scale += DYNAMIC_STEP_UP
+	get_viewport().scaling_3d_scale = clampf(scale, DYNAMIC_SCALE_MIN, _preset_render_scale())
+
+
+func _preset_render_scale() -> float:
+	return float((PRESETS[preset] as Dictionary).get("render_scale", 1.0))
+
+
+func _update_processing() -> void:
+	set_process(preset != Preset.HIGH or dynamic_scale_enabled)
 
 
 func apply(new_preset: Preset) -> void:
@@ -79,7 +136,7 @@ func apply(new_preset: Preset) -> void:
 	var spec: Dictionary = PRESETS[preset] as Dictionary
 	var scene: Node = get_tree().current_scene
 	_applied_scene_id = 0 if scene == null else scene.get_instance_id()
-	set_process(preset != Preset.HIGH)
+	_update_processing()
 
 	get_viewport().scaling_3d_scale = float(spec.get("render_scale", 1.0))
 	RenderingServer.directional_shadow_atlas_set_size(
@@ -122,16 +179,31 @@ func _register_commands() -> void:
 	if console == null or not console.has_method("register"):
 		return
 	console.call("register", &"gfx", _cmd_gfx,
-		"gfx [low|medium|high] — hardware preset (F-090); no argument shows the current one")
+		"gfx [low|medium|high] | gfx auto [<fps>|off] — hardware preset / dynamic resolution")
 
 
 func _cmd_gfx(args: PackedStringArray) -> String:
 	if args.is_empty():
-		return "gfx preset is %s (render scale %.0f%%)" % [
-			PRESET_NAMES[preset], get_viewport().scaling_3d_scale * 100.0]
+		var auto_state := "off"
+		if dynamic_scale_enabled:
+			auto_state = "on (target %s)" % ("panel refresh" if dynamic_scale_target_fps <= 0.0 \
+				else "%.0f fps" % dynamic_scale_target_fps)
+		return "gfx preset is %s (render scale %.0f%%, auto %s)" % [
+			PRESET_NAMES[preset], get_viewport().scaling_3d_scale * 100.0, auto_state]
+	if args[0] == "auto":
+		if args.size() >= 2 and args[1] == "off":
+			set_dynamic_scale(false)
+			return "dynamic resolution off — render scale back to %.0f%%" % \
+				(get_viewport().scaling_3d_scale * 100.0)
+		var target: float = 0.0
+		if args.size() >= 2 and args[1].is_valid_float():
+			target = args[1].to_float()
+		set_dynamic_scale(true, target)
+		return "dynamic resolution on — holding %s" % \
+			("the panel's refresh rate" if target <= 0.0 else "%.0f fps" % target)
 	var index: int = PRESET_NAMES.find(args[0])
 	if index < 0:
-		return "usage: gfx [low|medium|high]"
+		return "usage: gfx [low|medium|high] | gfx auto [<fps>|off]"
 	apply(index as Preset)
 	return "gfx preset now %s (render scale %.0f%%)" % [
 		args[0], get_viewport().scaling_3d_scale * 100.0]

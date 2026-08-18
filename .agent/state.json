@@ -1,5 +1,15 @@
 {
   "claims": {
+    ".agent/bin/agent": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:14:14+00:00",
+      "task": "F-080"
+    },
+    "AGENTS.md": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:14:14+00:00",
+      "task": "F-080"
+    },
     "assets/maps": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
@@ -20,20 +30,110 @@
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
+    "autoload/build_service.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
+    "autoload/crafting_service.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
+    "autoload/debug_overlay.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
+    "autoload/enemy_world.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
     "autoload/environment_vfx.gd": {
       "agent": "larch10",
       "at": "2026-08-18T13:09:00+00:00",
       "task": "F-097"
     },
-    "autoload/graphics_quality.gd": {
-      "agent": "coil23",
-      "at": "2026-08-18T13:12:07+00:00",
-      "task": "F-098"
+    "autoload/harvest_world.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
+    "autoload/inventory_service.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
+    "autoload/net_transport.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
+    "autoload/player_net.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
+    "autoload/powerup_service.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
+    "autoload/registry.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
+    "core/net/net_session.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "ivy8",
       "at": "2026-08-18T13:01:13+00:00",
       "task": "2.1d"
+    },
+    "docs/FINDINGS.md": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:14:14+00:00",
+      "task": "F-080"
+    },
+    "entities/player/player_controller.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T13:14:34+00:00",
+      "task": "F-086"
+    },
+    "entities/player/viewmodel.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
+    "systems/building/build_ghost.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T13:14:34+00:00",
+      "task": "F-086"
+    },
+    "systems/enemies/enemy.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
+    "systems/environment/day_night.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
+    "systems/harvesting/harvestable.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
+    "systems/health/player_health.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
     },
     "tools/blender/build_extraction_ship_set.py": {
       "agent": "ivy8",
@@ -45,6 +145,11 @@
       "at": "2026-08-18T13:03:53+00:00",
       "task": "2.1d"
     },
+    "tools/build_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T13:14:34+00:00",
+      "task": "F-086"
+    },
     "tools/environment_vfx_check.gd": {
       "agent": "larch10",
       "at": "2026-08-18T13:09:00+00:00",
@@ -55,20 +160,40 @@
       "at": "2026-08-18T13:09:38+00:00",
       "task": "F-097"
     },
+    "tools/harness_check.py": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:14:14+00:00",
+      "task": "F-080"
+    },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
-    "tools/perf_probe.gd": {
-      "agent": "coil23",
-      "at": "2026-08-18T13:12:07+00:00",
-      "task": "F-098"
-    },
     "tools/ship_check.gd": {
       "agent": "ivy8",
       "at": "2026-08-18T13:03:53+00:00",
       "task": "2.1d"
+    },
+    "ui/building/build_bar.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T13:14:34+00:00",
+      "task": "F-086"
+    },
+    "ui/crafting/crafting_ui.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
+    "ui/hud/vitals_hud.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
+    },
+    "ui/loot/chest_ui.gd": {
+      "agent": "kiln9",
+      "at": "2026-08-18T13:15:19+00:00",
+      "task": "F-099"
     },
     "world/environment/foliage_wind.gdshader": {
       "agent": "larch10",
@@ -127,6 +252,28 @@
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
     },
+    "F-080": {
+      "agent": "yarrow21",
+      "files": [
+        ".agent/bin/agent",
+        "AGENTS.md",
+        "docs/FINDINGS.md",
+        "tools/harness_check.py"
+      ],
+      "notes": [],
+      "started": "2026-08-18T13:14:14+00:00"
+    },
+    "F-086": {
+      "agent": "lp",
+      "files": [
+        "entities/player/player_controller.gd",
+        "systems/building/build_ghost.gd",
+        "ui/building/build_bar.gd",
+        "tools/build_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T13:14:34+00:00"
+    },
     "F-097": {
       "agent": "larch10",
       "files": [
@@ -147,14 +294,31 @@
       ],
       "started": "2026-08-18T13:09:00+00:00"
     },
-    "F-098": {
-      "agent": "coil23",
+    "F-099": {
+      "agent": "kiln9",
       "files": [
-        "autoload/graphics_quality.gd",
-        "tools/perf_probe.gd"
+        "systems/enemies/enemy.gd",
+        "systems/health/player_health.gd",
+        "systems/harvesting/harvestable.gd",
+        "systems/environment/day_night.gd",
+        "ui/hud/vitals_hud.gd",
+        "ui/crafting/crafting_ui.gd",
+        "ui/loot/chest_ui.gd",
+        "entities/player/viewmodel.gd",
+        "autoload/inventory_service.gd",
+        "autoload/harvest_world.gd",
+        "autoload/enemy_world.gd",
+        "autoload/powerup_service.gd",
+        "autoload/build_service.gd",
+        "autoload/crafting_service.gd",
+        "autoload/net_transport.gd",
+        "autoload/player_net.gd",
+        "autoload/debug_overlay.gd",
+        "autoload/registry.gd",
+        "core/net/net_session.gd"
       ],
       "notes": [],
-      "started": "2026-08-18T13:12:07+00:00"
+      "started": "2026-08-18T13:15:19+00:00"
     }
   },
   "recent": {
@@ -415,8 +579,8 @@
     },
     "autoload/graphics_quality.gd": {
       "agent": "coil23",
-      "at": "2026-08-18T09:06:54+00:00",
-      "task": "F-090"
+      "at": "2026-08-18T13:15:50+00:00",
+      "task": "F-098"
     },
     "autoload/harvest_world.gd": {
       "agent": "ivy8",
@@ -1150,8 +1314,8 @@
     },
     "tools/perf_probe.gd": {
       "agent": "coil23",
-      "at": "2026-08-18T13:06:18+00:00",
-      "task": "F-095"
+      "at": "2026-08-18T13:15:50+00:00",
+      "task": "F-098"
     },
     "tools/player_health_check.gd": {
       "agent": "nettle12",
@@ -2986,7 +3150,7 @@
     "F-080": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "`git stash` in this repo stashes every other lane's uncommitted work too"
     },
@@ -3038,7 +3202,7 @@
     "F-086": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "The building system has no gameplay caller, so no player can place, rotate, or destroy anything"
     },
@@ -3134,11 +3298,20 @@
       "title": "Environmental VFX is keyed to node types the shipped map never produces, so wind and firelight are dead on Hollowmere"
     },
     "F-098": {
+      "done_at": "2026-08-18T13:15:50+00:00",
+      "done_by": "coil23",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Draw-call discipline: static chunk batching + dynamic resolution (DOOM/Roblox research)"
+    },
+    "F-099": {
       "est": "\u2014",
       "milestone": "Findings",
       "status": "in_flight",
       "tier": "F",
-      "title": "Draw-call discipline: static chunk batching + dynamic resolution (DOOM/Roblox research)"
+      "title": "Optimization sweep: per-frame costs and dead weight across runtime scripts"
     }
   },
   "version": 1
