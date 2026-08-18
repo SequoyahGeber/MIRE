@@ -614,37 +614,6 @@ F-075, and AGENTS.md's rule is to file it and keep moving, not chase it.
 
 
 
-### F-118 · The forest has no ambient life: nothing falls, drifts or settles, so a still frame of the map is a still frame
-
-**Area:** environment · **Severity:** low · **Found:** 2026-08-18 by vane19
-
-Playtest, 2026-08-18 (Sequoyah): "ambient particles would be nice too kind of simulate leaves coming
-off the trees".
-
-`world/environment/asset_vfx_library.gd` already animates every plant on the map — `Sway.CANOPY`
-drifts the crowns, `GROUND_COVER` rustles the grass — and `EnvironmentVfx` already runs a budgeted,
-distance-sorted emitter pool for campfires, forges, crystals and spore motes. What none of it does is
-put anything **in the air between** those things. Stand still in the Hollowmere woods and the only
-motion is the sway shader; there is nothing falling, nothing catching the light, nothing to make a
-held frame read as a living place rather than a diorama.
-
-The seam for it already exists and is the right one: `AssetVfx.Emitter` + `EMITTER_PROFILES`
-(`max_live`, `shadow_live`, `radius`, scaled by the graphics preset) + `EnvironmentVfx._make_effect()`,
-keyed by asset id so a generated world inherits it (F-097). A canopy asset should carry a leaf-fall
-emitter the same way a campfire carries firelight — bound to the asset, never to a scene or a map,
-because release worlds are procedurally generated and there is no level author to place an emitter.
-
-Constraints this has to respect:
-
-- **Budgeted like every other emitter.** Hollowmere holds 62 wild trees, 44 harvest trees and 7
-  broadleaf trees; that is not a number of particle systems you can run at once on the machine this
-  game targets. Nearest-N only, scaled down by the `low` preset like the rest.
-- **No lights and no shadows.** Falling leaves are the cheapest kind of emitter there is; adding
-  either would put this in the same cost class as a campfire for none of the payoff.
-- The existing `Emitter.SPORE` (mire tendrils, drifting motes, no light) is the closest worked
-  example to copy.
-
----
 
 ### F-119 · `agent godot`'s own `--import` pre-pass logs two UNDECLARED `ERROR:` lines on every single invocation
 
@@ -674,6 +643,82 @@ zero-undeclared-error bar the rest of the harness enforces.
 ---
 
 ## Resolved
+
+### F-118 · The forest has no ambient life: nothing falls, drifts or settles, so a still frame of the map is a still frame — **fixed**
+
+**Area:** environment · **Severity:** low · **Found:** 2026-08-18 by vane19
+
+Playtest, 2026-08-18 (Sequoyah): "ambient particles would be nice too kind of simulate leaves coming
+off the trees".
+
+`world/environment/asset_vfx_library.gd` already animates every plant on the map — `Sway.CANOPY`
+drifts the crowns, `GROUND_COVER` rustles the grass — and `EnvironmentVfx` already runs a budgeted,
+distance-sorted emitter pool for campfires, forges, crystals and spore motes. What none of it does is
+put anything **in the air between** those things. Stand still in the Hollowmere woods and the only
+motion is the sway shader; there is nothing falling, nothing catching the light, nothing to make a
+held frame read as a living place rather than a diorama.
+
+The seam for it already exists and is the right one: `AssetVfx.Emitter` + `EMITTER_PROFILES`
+(`max_live`, `shadow_live`, `radius`, scaled by the graphics preset) + `EnvironmentVfx._make_effect()`,
+keyed by asset id so a generated world inherits it (F-097). A canopy asset should carry a leaf-fall
+emitter the same way a campfire carries firelight — bound to the asset, never to a scene or a map,
+because release worlds are procedurally generated and there is no level author to place an emitter.
+
+Constraints this has to respect:
+
+- **Budgeted like every other emitter.** Hollowmere holds 62 wild trees, 44 harvest trees and 7
+  broadleaf trees; that is not a number of particle systems you can run at once on the machine this
+  game targets. Nearest-N only, scaled down by the `low` preset like the rest.
+- **No lights and no shadows.** Falling leaves are the cheapest kind of emitter there is; adding
+  either would put this in the same cost class as a campfire for none of the payoff.
+- The existing `Emitter.SPORE` (mire tendrils, drifting motes, no light) is the closest worked
+  example to copy.
+
+**Fixed 2026-08-18 by vane19.** `AssetVfx.Emitter.LEAF_FALL`, bound to canopy assets and budgeted
+like every other emitter class.
+
+- **`EMITTER_RULES` gained six rows, three of which are `Emitter.NONE`.** `tree_snag` and
+  `tree_bare` (dead and winter timber), and `harvest_tree_`'s stumps and felled trunk, shed nothing
+  — and because matching is longest-prefix-first-wins, those exclusions have to come *before*
+  `tree_` or a dead snag drops leaves.
+- **`_leaf_fall()`**: twelve leaves per crown, seven-second lifetime, gravity of `(0.22, -0.85, 0.13)`
+  so they slip sideways rather than plummet, and a slow tumble — the one thing leaves read wrong
+  without. Shape 3 in `particle_billboard.gdshader` is a new pointed ellipse with a darker midrib,
+  and it is the first shape there with **no emission**: a self-lit leaf is a firefly.
+- **Twelve live at a time**, nearest first, no light and no shadow. Hollowmere holds 94 canopies and
+  a generated forest could hold thousands; the budget is what makes the class affordable, not the
+  per-emitter cost.
+
+**Two bugs this uncovered in the existing VFX registration, both fixed here:**
+
+1. **`EnvironmentVfx` hid every tree it registered.** `_register_emitter`'s non-batched branch set
+   `node.visible = false` for any emitter that was not `GLOW`, on the assumption that a
+   non-instanced emitter is a hand-authored placeholder mesh to be replaced. That is true of exactly
+   two assets, so `AssetVfxLibrary.replaces_host_mesh()` now names them (`flame_outer`,
+   `furnace_fire`) and everything else is decorated rather than replaced. Since F-114 made every
+   harvestable tree a node of its own rather than a MultiMesh slot, the old assumption would have
+   deleted 94 trees the moment they registered.
+2. **One emitter site per MESH PART, not per prop.** A GLB canopy arrives as around forty separate
+   `MeshInstance3D` nodes; each resolved the same asset id from the holder above it, and each sat
+   far enough from its siblings to survive the site-merge test — **1,925 leaf sites for 94 trees**,
+   after which the O(n²) merge loop compared 1.8 million pairs at load. `_emitter_host()` now walks
+   up to the ancestor carrying the asset id and takes one site from it. Total emitter sites on
+   Hollowmere fell from 2,194 to **363**, which speeds up the crystal and spore classes too.
+
+**Follow-up, deliberately not done here:** `particle_billboard.gdshader` is `render_mode unshaded`,
+so a leaf is as bright at midnight as at noon. It is muted enough not to read as a bug, and fixing
+it properly means a second shader or a tint driven from the atmosphere — worth doing when something
+else needs a lit particle.
+
+**Verified:** `agent godot --script tools/environment_vfx_hollowmere_check.gd` → `failures=0`, with
+two new assertions that pin the site count to trees rather than to mesh parts (`leaf_sites > 40` and
+`< 200`; actual **94**), and its budget ceiling now derived from `EMITTER_PROFILES` instead of a
+hardcoded 32 that adding a class was always going to break. `environment_vfx_check`,
+`ground_fog_check`, `atmosphere_night_check` all `failures=0`.
+`tools/atmosphere_look_shot.gd --windowed` renders two close canopy framings; the leaves are visible
+and deliberately sparse.
+
+---
 
 ### F-103 · MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin — **fixed**
 

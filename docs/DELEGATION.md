@@ -75,6 +75,29 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — F-118: `Emitter.LEAF_FALL`, and two traps in `EnvironmentVfx` registration (vane19)
+
+**Adding an emitter class is four edits and no new machinery:** a value on `AssetVfx.Emitter`, a row
+in `EMITTER_PROFILES` (`max_live`/`shadow_live`/`radius`), rows in `EMITTER_RULES`, and a branch in
+`EnvironmentVfx._make_effect()`. `LEAF_FALL` is the worked example — no light, no shadow, 12 live.
+
+**`EMITTER_RULES` is longest-prefix-first, first match wins, so exclusions come FIRST.** `tree_snag`
+and `tree_bare` map to `Emitter.NONE` explicitly, above `tree_`; without that a dead snag sheds
+leaves. Same shape for `harvest_tree_`'s stumps and felled trunk.
+
+**Two things a new emitter class must know, both paid for by F-118:**
+
+1. **`EnvironmentVfx` only hides a host mesh when `AssetVfx.replaces_host_mesh()` says so** —
+   `flame_outer` and `furnace_fire`, the hand-authored placeholders. It used to hide *any*
+   non-batched, non-GLOW emitter host, which since F-114 (harvestable trees are their own nodes)
+   would have made 94 trees invisible.
+2. **One site per PROP, via `_emitter_host()`** — the nearest ancestor carrying `ASSET_META`, marked
+   with `EMITTER_HOST_META` so the prop's other ~40 GLB mesh parts do not each register their own.
+   Total emitter sites on Hollowmere: 2,194 → 363.
+
+`tools/environment_vfx_hollowmere_check.gd`'s budget ceiling is now **derived from
+`EMITTER_PROFILES`**, so adding a class raises it automatically instead of turning the check red.
+
 ### 2026-08-18 — 7.1/7.2 v1: game audio is synthesized from committed recipes — toolkit, 2 ambient loops, 19 SFX (tine18)
 
 **`tools/audio/mire_audio.py` is the instrument rack** — additive pads, Karplus-Strong plucks, FM
