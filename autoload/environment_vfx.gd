@@ -96,6 +96,15 @@ func _process(delta: float) -> void:
 		refresh_scene()
 		return
 
+	# F-105: a world with no fire/crystal/spore sites at all (or before refresh_scene() has found
+	# any) has nothing for the budget timer or the light-flicker pass to do — skip both rather than
+	# pay the dictionary-empty checks inside them every frame regardless. `_sites`/`_pools` are the
+	# whole state either loop reads, so both empty is the exact condition under which neither can do
+	# anything; `_time` simply resumes counting once something registers, which nothing but the
+	# flicker phase (itself just a sine offset, not a clock anyone reads) depends on.
+	if _sites.is_empty() and _pools.is_empty():
+		return
+
 	_budget_timer += delta
 	if _budget_timer >= BUDGET_INTERVAL:
 		_budget_timer = 0.0

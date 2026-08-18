@@ -39,12 +39,27 @@ const INVALID_COLOR := Color(0.95, 0.3, 0.28, 0.42)
 ## How far ahead of the camera to look for a surface to place on.
 @export_range(1.0, 32.0, 0.5) var aim_distance_m: float = 6.0
 
+## F-105: update_aim() is a physics-tick call, and VALIDATOR.evaluate() is 5 support raycasts plus a
+## shape cast with fresh query/shape allocations (placement_validator.gd) — real cost for a ghost that
+## is usually just sitting still in front of an unchanged surface. Re-running it only happens when the
+## snapped transform actually moved, or this long since the last time it ran, whichever comes first —
+## the timer is what still catches a world change (someone else builds where you're aiming) under a
+## ghost that hasn't moved at all.
+const REEVALUATE_INTERVAL_S: float = 0.2
+
 var _def: Resource
 var _mesh_instance: MeshInstance3D
 var _material: StandardMaterial3D
 var _yaw: float = 0.0
 var _last_reason: int = VALIDATOR.Reason.UNKNOWN_PIECE
 var _placement: Transform3D = Transform3D()
+var _evaluated_placement: Transform3D = Transform3D()
+var _evaluated_builder_position: Vector3 = Vector3.ZERO
+var _has_evaluated: bool = false
+var _time_since_evaluate: float = 0.0
+## How many times VALIDATOR.evaluate() has actually run — exists so a check can prove the skip
+## above is real rather than trusting the comment. Not read by anything gameplay-facing.
+var _evaluate_count: int = 0
 
 
 func _ready() -> void:
@@ -70,6 +85,9 @@ func _ready() -> void:
 ## than taking a def keeps the caller (a hotbar, a build menu) working in ids, which is what it will
 ## have and what goes over the wire anyway.
 func set_piece(piece_id: StringName) -> bool:
+	# A cached evaluate() belongs to the OLD piece's def (size, mass, rules) as much as to a
+	# transform — a same-spot swap between two pieces must not read the previous piece's verdict.
+	_has_evaluated = false
 	if piece_id == &"":
 		_def = null
 		visible = false
@@ -103,9 +121,13 @@ func rotate_step(steps: int = 1) -> void:
 
 
 ## Call every frame from whatever owns the camera. `from`/`direction` are the aim ray;
-## `builder_position` is the player, for the range rule. Returns the current Reason so a caller can
-## show `PlacementValidator.reason_text()` next to the crosshair.
-func update_aim(from: Vector3, direction: Vector3, builder_position: Vector3) -> int:
+## `builder_position` is the player, for the range rule. `delta` is the caller's own frame delta —
+## optional, and only used to pace the F-105 re-evaluate timer below; a caller that omits it (every
+## `tools/build_check.gd` case) just never gets the timer's own proactive refresh, which those cases
+## never depend on since each one already moves the aim or the piece between assertions. Returns the
+## current Reason so a caller can show `PlacementValidator.reason_text()` next to the crosshair.
+func update_aim(
+		from: Vector3, direction: Vector3, builder_position: Vector3, delta: float = 0.0) -> int:
 	if _def == null:
 		_last_reason = VALIDATOR.Reason.UNKNOWN_PIECE
 		return _last_reason
@@ -123,10 +145,33 @@ func update_aim(from: Vector3, direction: Vector3, builder_position: Vector3) ->
 
 	_placement = VALIDATOR.snap_transform(_def, target, _yaw)
 	global_transform = _placement
-	_last_reason = VALIDATOR.evaluate(
-		space, _def, _placement, builder_position, QUERY_MASK)
-	_material.albedo_color = VALID_COLOR if VALIDATOR.is_placeable(_last_reason) else INVALID_COLOR
+
+	# F-105: evaluate() is the expensive part (5 support raycasts + a shape cast, fresh query/shape
+	# allocations each call — placement_validator.gd:164). A ghost sitting still in front of an
+	# unchanged surface asks the same question every physics tick and gets the same answer; skip it
+	# unless the snapped transform or the builder's range-check position actually moved, or
+	# REEVALUATE_INTERVAL_S has passed since the last real answer — the timer is what still notices a
+	# world change (someone else built where you're aiming) under a ghost that never moves at all.
+	_time_since_evaluate += delta
+	var stale: bool = not _has_evaluated \
+		or not _placement.is_equal_approx(_evaluated_placement) \
+		or not builder_position.is_equal_approx(_evaluated_builder_position) \
+		or _time_since_evaluate >= REEVALUATE_INTERVAL_S
+	if stale:
+		_last_reason = VALIDATOR.evaluate(
+			space, _def, _placement, builder_position, QUERY_MASK)
+		_evaluate_count += 1
+		_material.albedo_color = VALID_COLOR if VALIDATOR.is_placeable(_last_reason) else INVALID_COLOR
+		_evaluated_placement = _placement
+		_evaluated_builder_position = builder_position
+		_has_evaluated = true
+		_time_since_evaluate = 0.0
 	return _last_reason
+
+
+## F-105 instrumentation — see `_evaluate_count`'s own comment.
+func evaluate_count() -> int:
+	return _evaluate_count
 
 
 func placement() -> Transform3D:

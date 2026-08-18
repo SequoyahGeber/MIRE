@@ -2684,3 +2684,18 @@ Notes along the way:
 Files: `autoload/enemy_world.gd`, `autoload/harvest_world.gd`, `tools/world_contract_check.gd`
 
 Commit at time of writing: `664e3b7`
+
+---
+
+### DONE · F-105 · lp · 2026-08-18T14:55:48+00:00
+
+**Per-frame costs found by the F-099 review in files claimed by F-086/F-097**
+
+Fixed all 3 per-frame costs: build_ghost.gd update_aim() now caches placement+builder_position and skips evaluate() unless changed or REEVALUATE_INTERVAL_S(0.2s) elapsed, set_piece() invalidates cache; player_controller.gd resolves gameplay_input_allowed/_is_downed/_is_dead once per physics tick and threads them through instead of re-deriving in each sub-function, _health_node() caches the PlayerHealth autoload ref; environment_vfx.gd's _fire_lights/unscaled-shadow description was already obsoleted by F-097's _sites/_pools budget rewrite (verified: pools bounded, shadows scaled by preset), added a cheap _process() short-circuit for the zero-fire case that remained literally true. Verified: agent godot --script tools/build_check.gd (failures=0, 4 new F-105 assertions using new evaluate_count()), tools/player_vitals_check.gd, tools/environment_vfx_check.gd, tools/environment_vfx_hollowmere_check.gd, tools/verify_setup.gd, tools/combat_self_hit_check.gd, tools/build_net_check.gd, tools/player_health_net_check.gd, tools/player_vitals_net_check.gd -- all 0 failures. docs/SPECS.md F-105 block written, moved to Resolved in FINDINGS.md, DELEGATION.md Current state entry added.
+
+Notes along the way:
+- Work order suggested autoload/build_service.gd but finding item 1 is in systems/building/build_ghost.gd (build_service.gd has no per-frame validator call, only RPC-triggered). Claimed the files the finding actually names: build_ghost.gd, player_controller.gd, environment_vfx.gd — both build_ghost.gd and player_controller.gd were free (not held by F-086, despite the finding text's stale '[F-086/lp holds the file]' annotation).
+
+Files: `systems/building/build_ghost.gd`, `entities/player/player_controller.gd`, `autoload/environment_vfx.gd`, `tools/player_vitals_check.gd`, `tools/build_check.gd`
+
+Commit at time of writing: `2d717e8`

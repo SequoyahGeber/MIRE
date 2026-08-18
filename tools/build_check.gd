@@ -468,6 +468,33 @@ func _check_ghost() -> void:
 			snappedf(snappedf(rad_to_deg(after_yaw), 90.0), 1.0)),
 		"and it stays on the authored 90 degree step (%.1f)" % rad_to_deg(after_yaw))
 
+	# F-105: a stationary ghost must not re-run the validator (5 raycasts + a shape cast) every
+	# frame. A fresh aim (distinct from whatever the block above left cached) evaluates once; then
+	# the SAME ray, repeated, must not evaluate again.
+	var stationary_from := Vector3(-6.0, 2.5, 0.0)
+	var stationary_dir := Vector3(1.0, -1.0, 0.0).normalized()
+	var stationary_builder := Vector3(-6.0, 0.0, 0.0)
+	ghost.call(&"update_aim", stationary_from, stationary_dir, stationary_builder, 0.01)
+	var count_after_first: int = int(ghost.call(&"evaluate_count"))
+	for _i: int in 5:
+		ghost.call(&"update_aim", stationary_from, stationary_dir, stationary_builder, 0.01)
+	check(int(ghost.call(&"evaluate_count")) == count_after_first,
+		"F-105: an unchanged aim ray does not re-run evaluate() (count stayed %d)" % count_after_first)
+
+	# Moving the aim invalidates the cache...
+	ghost.call(&"update_aim", Vector3(-6.0, 2.0, 1.0), stationary_dir, stationary_builder, 0.01)
+	check(int(ghost.call(&"evaluate_count")) == count_after_first + 1,
+		"F-105: a moved aim ray DOES re-run evaluate()")
+	# ...and back to the original spot, which is itself a move relative to the cached one above.
+	ghost.call(&"update_aim", stationary_from, stationary_dir, stationary_builder, 0.01)
+	var count_settled: int = int(ghost.call(&"evaluate_count"))
+	check(count_settled == count_after_first + 2, "F-105: moving back also re-runs evaluate()")
+	# Same spot again, no move at all — but with a large delta, so the re-evaluate timer alone
+	# should still trip it. This is what catches a world change under a ghost that never moves.
+	ghost.call(&"update_aim", stationary_from, stationary_dir, stationary_builder, 5.0)
+	check(int(ghost.call(&"evaluate_count")) == count_settled + 1,
+		"F-105: the re-evaluate timer still catches a world change under a ghost that never moved")
+
 	ghost.queue_free()
 
 

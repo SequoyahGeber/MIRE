@@ -106,6 +106,13 @@ var _revive_target_peer: int = 0
 var _revive_hold_elapsed: float = 0.0
 var _revive_request_sent: bool = false
 
+## F-105: PlayerHealth is an autoload, so this reference outlives the whole session once resolved —
+## caching it kills the ~6-8 `get_node_or_null(/root/PlayerHealth)` path lookups a single physics tick
+## was otherwise making across _apply_horizontal_movement/_try_jump/_tick_revive_hold. Left null (not
+## resolved once and trusted forever) so a harness that builds this node before PlayerHealth exists
+## still finds it the moment it does.
+var _health: Node = null
+
 ## F-086: client-local building presentation, built only for the local player (see
 ## _build_building_presentation()). Neither ever decides anything — BuildService is the only
 ## authority (§2.2 world mutation row). "Build mode active" has no separate flag: it IS
@@ -239,9 +246,12 @@ func _is_dead() -> bool:
 
 ## Shared resolver for the same F-011-guarded lookup every PlayerHealth call in this file needs —
 ## stamina gating (task 3.8) added enough call sites that repeating get_node_or_null everywhere
-## started to be the noisier option.
+## started to be the noisier option. F-105: cached in `_health` once resolved rather than re-walking
+## `/root` on every call — see that var's own comment.
 func _health_node() -> Node:
-	return get_node_or_null(^"/root/PlayerHealth")
+	if not is_instance_valid(_health):
+		_health = get_node_or_null(^"/root/PlayerHealth")
+	return _health
 
 
 ## A player spawned by PlayerNet is NAMED for the peer that owns it, and that name is in place on
@@ -362,12 +372,21 @@ func gameplay_input_allowed() -> bool:
 
 
 func _physics_process(delta: float) -> void:
+	# F-105: downed/dead/input-allowed do not change mid-tick — _apply_horizontal_movement,
+	# _try_jump and _tick_revive_hold were each re-deriving all three independently, which meant a
+	# group scan (gameplay_input_allowed) up to 3x and a PlayerHealth round trip (_is_downed/_is_dead)
+	# up to 3x, every physics frame, for an answer that cannot have changed since the first call.
+	# Resolved once here and threaded through instead.
+	var input_allowed: bool = gameplay_input_allowed()
+	var downed: bool = _is_downed()
+	var dead: bool = _is_dead()
+
 	_tick_timers(delta)
 	_apply_gravity(delta)
-	_apply_horizontal_movement(delta)
-	_try_jump()
-	_tick_revive_hold(delta)
-	_tick_build_ghost()
+	_apply_horizontal_movement(delta, input_allowed, downed, dead)
+	_try_jump(input_allowed, downed, dead)
+	_tick_revive_hold(delta, input_allowed, downed, dead)
+	_tick_build_ghost(delta, downed, dead)
 
 	# move_and_slide() zeroes vertical velocity on contact, so read the fall speed before it runs.
 	var fall_speed: float = maxf(-velocity.y, 0.0)
@@ -402,19 +421,19 @@ func _apply_gravity(delta: float) -> void:
 	velocity.y = maxf(velocity.y, -terminal_velocity)
 
 
-func _apply_horizontal_movement(delta: float) -> void:
+func _apply_horizontal_movement(
+		delta: float, input_allowed: bool, downed: bool, dead: bool) -> void:
 	# Cursor-owning UI suppresses gameplay input without pausing the simulation, and a dead player
 	# (mid-respawn) gets no input at all — downed still allows the crawl. Pausing a multiplayer
 	# client would stall networking and is not a valid UI boundary.
 	var input_2d: Vector2 = Vector2.ZERO
-	if gameplay_input_allowed() and not _is_dead():
+	if input_allowed and not dead:
 		input_2d = Input.get_vector(
 			&"move_left", &"move_right", &"move_forward", &"move_back"
 		)
 	# Body yaw defines the movement basis; the camera only pitches (see player_camera.gd).
 	var wish_dir: Vector3 = (transform.basis * Vector3(input_2d.x, 0.0, input_2d.y)).normalized()
 
-	var downed: bool = _is_downed()
 	var wants_sprint: bool = not downed and Input.is_action_pressed(&"sprint") and wish_dir != Vector3.ZERO
 	# Stamina is CLIENT-LOCAL (§2.2 row 1, task 3.8) — the owning body is the only thing that ticks
 	# or gates its own bar, every physics frame, for zero-latency feedback. A harness with no
@@ -442,8 +461,8 @@ func _apply_horizontal_movement(delta: float) -> void:
 	camera.set_sprinting(sprinting and is_on_floor())
 
 
-func _try_jump() -> void:
-	if not gameplay_input_allowed() or _is_downed() or _is_dead():
+func _try_jump(input_allowed: bool, downed: bool, dead: bool) -> void:
+	if not input_allowed or downed or dead:
 		return
 	var buffered: bool = _time_since_jump_pressed <= jump_buffer_time
 	var grounded_recently: bool = _time_since_grounded <= coyote_time
@@ -536,10 +555,10 @@ func _on_build_piece_selected(piece_id: StringName) -> void:
 ## rule) and pushes the resulting verdict into BuildBar. Also the downed/dead exit — a player who goes
 ## down mid-build should not keep previewing a piece they cannot currently place (jump/sprint are
 ## gated the same way elsewhere in this file).
-func _tick_build_ghost() -> void:
+func _tick_build_ghost(delta: float, downed: bool, dead: bool) -> void:
 	if _build_ghost == null:
 		return
-	if is_build_mode_active() and (_is_downed() or _is_dead()):
+	if is_build_mode_active() and (downed or dead):
 		toggle_build_mode()
 		return
 	if not is_build_mode_active():
@@ -547,8 +566,8 @@ func _tick_build_ghost() -> void:
 	var camera_3d: Camera3D = camera.get_node_or_null(^"Camera3D") as Camera3D
 	if camera_3d == null:
 		return
-	_build_ghost.call(
-		&"update_aim", camera_3d.global_position, -camera_3d.global_basis.z, global_position)
+	_build_ghost.call(&"update_aim",
+		camera_3d.global_position, -camera_3d.global_basis.z, global_position, delta)
 	if _build_bar != null:
 		_build_bar.call(&"set_ghost_status",
 			bool(_build_ghost.call(&"is_valid")), String(_build_ghost.call(&"last_reason_text")))
@@ -579,12 +598,12 @@ func _request_build_destroy() -> void:
 ## Holding interact near a downed teammate revives them. The hold itself is client-local prediction —
 ## exactly one net_request_revive is sent, the instant the local timer reaches PlayerHealth's
 ## revive_seconds — and the host is what actually decides whether it counts (range, both states).
-func _tick_revive_hold(delta: float) -> void:
-	var health: Node = get_node_or_null(^"/root/PlayerHealth")
-	if health == null or _is_downed() or _is_dead():
+func _tick_revive_hold(delta: float, input_allowed: bool, downed: bool, dead: bool) -> void:
+	var health: Node = _health_node()
+	if health == null or downed or dead:
 		_reset_revive_hold()
 		return
-	if not gameplay_input_allowed() or not Input.is_action_pressed(&"interact"):
+	if not input_allowed or not Input.is_action_pressed(&"interact"):
 		_reset_revive_hold()
 		return
 

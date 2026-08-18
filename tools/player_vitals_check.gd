@@ -245,7 +245,11 @@ func _run_controller_integration(health: Node) -> void:
 	player.set(&"_time_since_jump_pressed", 0.0)
 	player.set(&"_time_since_grounded", 0.0)
 	var velocity_before: Vector3 = player.velocity
-	player.call(&"_try_jump")
+	# F-105: _try_jump()/_apply_horizontal_movement() now take input_allowed/downed/dead as
+	# arguments (the caller resolves them once per tick instead of each callee re-deriving its own) —
+	# this harness is a standing, undowned, alive, unblocked player, so pass the same true/false/false
+	# _physics_process() would have computed for it.
+	player.call(&"_try_jump", true, false, false)
 	check(player.velocity.y == velocity_before.y,
 		"jump is blocked outright when stamina is under jump_stamina_cost")
 
@@ -254,7 +258,7 @@ func _run_controller_integration(health: Node) -> void:
 
 	player.set(&"_time_since_jump_pressed", 0.0)
 	player.set(&"_time_since_grounded", 0.0)
-	player.call(&"_try_jump")
+	player.call(&"_try_jump", true, false, false)
 	check(player.velocity.y > 0.0, "and with a full bar, the exact same jump now succeeds")
 	check(is_equal_approx(float(health.call(&"local_stamina")), max_stamina - jump_cost),
 		"jump spent exactly jump_stamina_cost")
@@ -267,7 +271,7 @@ func _run_controller_integration(health: Node) -> void:
 	Input.action_press(&"sprint")
 	Input.action_press(&"move_forward")
 	for _i: int in range(30):
-		player.call(&"_apply_horizontal_movement", 1.0 / 60.0)
+		player.call(&"_apply_horizontal_movement", 1.0 / 60.0, true, false, false)
 	var walk_speed: float = float(player.get("walk_speed"))
 	var sprint_speed: float = float(player.get("sprint_speed"))
 	var horizontal_speed: float = Vector2(player.velocity.x, player.velocity.z).length()
