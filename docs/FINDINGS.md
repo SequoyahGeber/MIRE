@@ -531,15 +531,15 @@ the failure mode is silent and confidently wrong.
 
 ---
 
+## Resolved
 
+### F-119 · `agent godot`'s own `--import` pre-pass logs two UNDECLARED `ERROR:` lines on every single invocation — **fixed**
 
-
-### F-119 · `agent godot`'s own `--import` pre-pass logs two UNDECLARED `ERROR:` lines on every single invocation
-
-**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by lp during F-103
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by lp during F-103 ·
+**Resolved:** 2026-08-18 by lp.
 
 F-093's fix made every `agent godot <...>` call run a `--headless --import` pass before the caller's
-own run. That pre-pass itself now emits, every time, on this machine:
+own run. That pre-pass itself emitted, every time, on this machine:
 
 ```
 ERROR: Couldn't open external text editor, falling back to the internal editor. Review your `text_editor/external/` editor settings.
@@ -548,20 +548,40 @@ ERROR: Couldn't open external text editor, falling back to the internal editor. 
 
 twice, during `loading_editor_layout` — before the caller's own `--script`/`--quit-after` section
 starts. SPECS.md's standing rule 4 (F-021) says to grep every check run for `ERROR:` and treat any
-undeclared line as failure; taken literally, this makes every check on this machine fail that rule,
-because the line is emitted by the shared pre-pass rather than by the check's own script and nobody
-has been grepping that section. Spotted while verifying F-103's check — its own `--script` section
-was clean, only the pre-pass emitted the lines, which is presumably why this has gone unnoticed: an
+undeclared line as failure; taken literally, this made every check on this machine fail that rule,
+because the line was emitted by the shared pre-pass rather than by the check's own script and nobody
+had been grepping that section. Spotted while verifying F-103's check — its own `--script` section
+was clean, only the pre-pass emitted the lines, which is presumably why this had gone unnoticed: an
 agent greps the run after the point it prints its own `PASS`/`FAIL` lines, not the boot before it.
 
-Not fixed here — out of scope for F-103's file claim, and it points at a local editor setting
-(`text_editor/external/*` in the shared `.godot`/editor config) rather than at test-owned code. Worth
-a look because it means `agent godot`'s own import pre-pass is not currently held to the same
-zero-undeclared-error bar the rest of the harness enforces.
+**Root cause:** not repo state at all — the shared per-user editor settings,
+`~/Library/Application Support/Godot/editor_settings-4.7.tres`, had
+`text_editor/external/use_external_editor = true` with an empty `text_editor/external/exec_path`.
+`loading_editor_layout`'s "Reopening scenes..." step tries to reopen every script the last real
+editor session had open, through the external editor if one is configured; an empty `exec_path`
+means that open always fails, twice (two scripts were open in the last saved layout), and it falls
+back to the internal editor rather than actually failing the boot — hence no non-zero exit, only the
+two `ERROR:` lines.
 
----
+**Fixed 2026-08-18 by lp.** Flipped `text_editor/external/use_external_editor` to `false` in that
+`.tres`. No `exec_path` was ever configured, so the external-editor path was dead weight, not a
+feature in use — nothing on this machine relies on it. This is a per-user global file, outside the
+repo entirely (not under `.godot/`, which is project-local and per-clone); the fix does not travel
+with `git clone` and is scoped to this machine only, same as the pre-pass boot it silences.
 
-## Resolved
+**Verified 2026-08-18:** `tools/godot_prepass_check.py` (new — plain Python, no fake-godot double,
+since the bug lives in real per-user state a double can't reproduce) runs
+`.agent/bin/agent godot --import` for real and fails on any `ERROR:` line in its output:
+
+```
+python3 tools/godot_prepass_check.py
+GODOT_PREPASS_CHECK ok (0 ERROR: lines from `agent godot --import`)
+```
+
+Confirmed the check is a real regression guard, not a vacuous pass: flipped
+`use_external_editor` back to `true` and reran — `GODOT_PREPASS_CHECK FAIL (2 undeclared ERROR:
+line(s))`, both lines the exact ones this finding describes — then flipped it back to `false` and
+confirmed green again. Full spec: `docs/SPECS.md` F-119.
 
 ### F-117 · F-072's docs-file claim enforcement blocks the second lane's commit, but the first lane's `ship` still sweeps the second lane's uncommitted edits into its own commit — **fixed**
 
