@@ -75,6 +75,90 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 4.4: resource scatter ships — per-biome tables, MultiMesh visuals, and harvest proxies that reuse the existing wiring unmodified (lm)
+
+**What shipped, verified:** `world/gen/scatter_entry.gd` (`class_name ScatterEntry`, a `Resource` —
+one asset in a table: `asset`, `kit`, `weight`, `min_scale`/`max_scale`), `world/gen/scatter_def.gd`
+(`class_name ScatterDef` — a per-biome scatter table: `id`, `biome_id`, `cell_size_m`,
+`jitter_fraction`, `coverage`, `entries`), `world/gen/resource_scatter.gd` (`class_name
+ResourceScatter`, a `RefCounted` — the pure deterministic placement generator, same discipline as
+4.1/4.2: no nodes, no shared state), and `world/gen/resource_scatter_field.gd` (`class_name
+ResourceScatterField`, a `Node3D` — the chunk-driven visual + harvest-proxy wiring layer).
+`registry.gd` gained the loader: `Registry.scatter_tables: Dictionary[StringName, Resource]`,
+`get_scatter_table(id)`/`has_scatter_table(id)`, boot log now prints the count. Two worked examples
+in `content/scatter/`: `forest_canopy` (`tree_willow_a`, sparse, 10 m cells) and
+`forest_undergrowth` (`bush_round_a`, dense, 4 m cells) — split into two tables rather than one
+because canopy and understory want genuinely different densities, not one compromise number.
+**Like `IslandHeightmap`/`BiomeMap`/`ChunkStreamer` before it, nothing in the shipped game
+instantiates a `ResourceScatterField` yet** — it is pure and tested, waiting on 4.6 to put a real
+`ChunkStreamer` (and a real world seed) into a running level. D-083 records the three real design
+calls (jittered grid over Poisson-disc, the proxy boundary, depletion-memory scope); F-132 records
+the one gap this task could not close (a remote client's proxy may have no host counterpart to
+reach, since `ChunkStreamer` streams per-peer independently by design).
+
+**`ResourceScatter` API for anything that wants raw placements without the field's node/proxy
+policy:**
+
+```gdscript
+ResourceScatter.placements_for_chunk(
+    chunk_x: int, chunk_z: int, world_seed: int, scatter_defs: Array, biome_defs: Array
+) -> Array[Dictionary]
+# each: {point_id: String, def_id: StringName, asset: StringName, kit: String,
+#        position: Vector3, rotation_y: float, scale: float}
+```
+
+Pass `Registry.scatter_tables.values()` and `Registry.biomes.values()` — same convention
+`BiomeMap.biome_at()` callers already follow. Pure and deterministic: same inputs, same output, on
+every peer and platform (integer multiply/xor seed mixing only, never Godot's `hash()` — see the
+file's own header). `point_id` is derived from the point's own coordinates, never from array
+position, so it is stable across peers regardless of incidental `Dictionary`/directory-scan order.
+
+**`ResourceScatterField` API for 4.6 (whoever wires a real `ChunkStreamer` into a live level):**
+
+```gdscript
+var field := ResourceScatterField.new()
+field.world_seed = the_shared_run_seed          # same value the ChunkStreamer got
+field.scatter_defs = Registry.scatter_tables.values()
+field.biome_defs = Registry.biomes.values()
+add_child(field)
+field.attach_to_streamer(streamer)               # streamer: your real ChunkStreamer
+
+field.chunk_count() -> int        # chunks currently holding scatter
+field.pending_count() -> int      # chunks waiting on chunk_has_collision() to go true
+field.is_point_depleted(point_id: String) -> bool   # this peer's own best-effort memory
+```
+
+- **Scatter (visuals AND harvest proxies together) builds only for a chunk once
+  `chunk_has_collision(coord)` reports true** — the existing LOD0/collision ring from 4.3 (D-080),
+  not a second bespoke radius. Tears down the instant the chunk leaves that ring (unload, or an LOD
+  upgrade past 0) — see D-083 for why this boundary was reused rather than inventing a new one.
+- **A `NODE`-represented harvestable (a tree) gets its own `MeshInstance3D` + `StaticBody3D`
+  holder; a `BATCH`-represented one (a bush) gets a logic-only holder pointing at a slot in the
+  chunk's shared `MultiMesh`** — `systems/harvesting/harvest_library.gd`'s own split, and the exact
+  holder shape `world/gen/authored_world.gd` already builds for the hand-authored maps (same
+  `authored_world_harvestable` group, same `asset`/`kit`/`batch_meshes`/`batch_index`/
+  `batch_transforms` metas). **`autoload/harvest_world.gd` needed no change** — its existing
+  `node_added`-driven wiring picks up a scattered holder exactly like an authored one, so no harvest
+  logic was duplicated for procedural generation.
+- **Depletion memory is peer-local, best-effort, and lives only as long as the process does** — see
+  D-083's third call and F-132's gap. A point this peer previously saw depleted comes back depleted
+  when its chunk reloads, via a replayed `host_apply_damage()` (never a direct `active` poke — D-083
+  explains the bug that shipped from trying that first). A point neither this peer's host status nor
+  memory can vouch for shows intact until the real sync (the `Harvestable`'s own code-built
+  synchronizer) says otherwise.
+
+**Verified:** `agent godot --script tools/resource_scatter_check.gd` (new check, fully headless —
+the wiring half drives `ResourceScatterField` against a small fake streamer double instead of a real
+`ChunkStreamer`, so it needs neither `--windowed` for collision timing (F-005/D-074) nor real
+`MultiMesh` readback (F-103) to prove the state machine) — determinism, unique point ids, every
+placement staying inside both its own chunk footprint and its table's own biome, the pending→built→
+torn-down→remembered→rebuilt lifecycle, and a real `HarvestWorld`-wired `Harvestable` for both the
+NODE and BATCH proxy shapes: 0 failures. `agent godot --script tools/verify_setup.gd` (no
+regression from the `registry.gd` edit). `agent godot --script tools/harvest_world_check.gd` (0
+failures — the shared `HarvestWorld` autoload still wires the hand-authored maps correctly).
+`agent godot --quit-after 60` (clean boot, 0 `ERROR:` lines, boot log reads `..., 2 scatter
+table(s)`).
+
 ### 2026-08-18 — Task 4.3: chunk streaming + LOD ships — `ChunkStreamer` is the seam 4.4/4.5 build on (lm)
 
 **What shipped, verified:** `world/chunk/chunk_streamer.gd` (`class_name ChunkStreamer`, a

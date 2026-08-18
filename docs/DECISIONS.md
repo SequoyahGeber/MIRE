@@ -1889,3 +1889,84 @@ journal entry, so the correction is attributable instead of being a silent hand-
 really was fixed, closed by the inference rule alone, and reopened here into wasted duplicate work.
 The stamp test is meant to make that impossible, since a fix an agent performed carries a `done_at`.
 If it happens anyway, make the restore print a line rather than reverting to one-way.
+
+### D-083 · 2026-08-18 · Task 4.4's resource scatter: jittered grid over Poisson-disc, the LOD0/collision ring IS the proxy boundary, and depletion memory is best-effort peer-local until 4.6
+
+Three calls in one task, all downstream of the same constraint the spec named directly: "a full
+`Harvestable` node per tree at island scale will not survive."
+
+**Jittered grid, not Poisson-disc**, for `world/gen/resource_scatter.gd`'s per-chunk placement.
+Every point's RNG stream is independent (seeded from `world_seed ^ chunk ^ def.id ^ (gx, gz)`
+alone via integer multiply/xor, never Godot's `hash()` — same cross-platform caution D-017 already
+applies to floats), so it needs no shared dart-throwing state across a chunk or its neighbours and
+parallelizes per-point exactly like `IslandHeightmap.height()`. True Poisson-disc's minimum-distance
+guarantee is nicer, but costs either a shared RNG stream walked in a fixed cross-chunk order or a
+rejection pass against already-placed points — real complexity for a visual difference
+`jitter_fraction` already buys most of. **Would change my mind:** a playtest finding the grid's
+residual regularity reads as planted rows at ground level.
+
+**The harvestable proxy boundary is `ChunkStreamer.chunk_has_collision()` — the existing LOD0 ring
+from D-080 — not a second bespoke radius.** 4.3 already draws exactly one "the player is near
+enough to stand on this" line; `world/gen/resource_scatter_field.gd` builds scatter (visuals AND
+proxies together) only once a chunk crosses into that ring, and tears down the moment it leaves.
+Both visuals and proxies come and go together, at chunk granularity, rather than proxies alone
+getting a second finer radius — the D-080 ring is already sized for "near enough to physically
+interact with," which is exactly what a harvest proxy needs. A `NODE`-represented harvestable (a
+tree — HarvestLibrary's own split) gets its own `MeshInstance3D`+`StaticBody3D` holder; a
+`BATCH`-represented one (a bush) gets a logic-only holder pointing at a slot in the chunk's shared
+`MultiMesh`, mirroring `world/gen/authored_world.gd`'s own two shapes exactly — so
+`autoload/harvest_world.gd`'s existing wiring (`authored_world_harvestable` group + `asset`/
+`batch_*` metas) turns either into a live, host-authoritative `Harvestable` unmodified. No harvest
+logic was duplicated for procedural scatter. **Would change my mind:** a playtest finding trees pop
+in/out too aggressively at the LOD0 boundary — the fix then is widening D-080's own ring, not
+inventing a second one here.
+
+**Depletion memory is peer-local and best-effort, restored by replaying a real `host_apply_damage()`
+hit — never by poking `active` directly.** There is no chunk-keyed mutation/delta system yet (that
+is task 4.6's own job per `ARCHITECTURE.md` §4); until it exists, `ResourceScatterField` keeps its
+own `_depleted: Dictionary[String, bool]` of what it last observed for a point right before freeing
+its holder, and on rebuild replays a full lethal hit through `Harvestable.host_apply_damage()`
+rather than setting the `active` property by hand. This was not the original design — the first
+version poked `active` directly on the theory that "a peer restoring what it itself last saw is not
+a new authority claim," and it shipped a real bug this task's own check caught: `active` alone is
+only half of depletion's state (`_deplete()` also arms the respawn clock via `_respawn_remaining`),
+so the direct poke left the clock at its just-constructed `0.0` and the very next physics tick
+auto-respawned the point straight back. Replaying `host_apply_damage()` restores the *whole* state
+through the one path that already knows how, and inherits that method's own host/offline-only gate
+for free — a real client's call quietly no-ops, so it never unilaterally decides a point is
+depleted, only remembers what it last saw and waits for the `Harvestable`'s own synchronizer to
+confirm or correct it. The gap this does NOT close is filed as F-132: `ChunkStreamer` streams
+per-peer independently by design (§2.2), so a host whose own player is far from a remote client's
+position may have no holder loaded at that point at all for the client's `request_hit()` to reach.
+**Would change my mind:** 4.6 landing the real chunk-keyed delta system, which supersedes this
+memory outright rather than needing it patched further.
+
+### D-084 · 2026-08-18 · LOD seams are hidden with skirts, not stitched — and the skirt never reaches collision
+
+`ChunkMesher.build_mesh()` is a pure function of `(chunk_x, chunk_z, world_seed, lod)`. That purity
+is what makes it safe on a `WorkerThreadPool` task and what makes every peer regenerate identical
+terrain from the shared seed (D-075, `ARCHITECTURE.md` §4). Closing F-128's LOD-boundary crack by
+real stitching — welding the coarser edge to the finer one — would take the neighbours' tiers as a
+fifth input and force a re-mesh of the finer chunk every time a neighbour changed tier, cascading
+work straight through the frame budget task 4.3 exists to protect. **So: skirts.** A vertical wall
+hangs `SKIRT_DEPTH` metres below every chunk's outer border, on both sides of every boundary, and
+covers the gap whichever surface happens to sit higher along the seam. The mesher still needs to
+know nothing about its neighbours.
+
+**Depth is a fraction of the heightmap's amplitude, not a metre count.** `SKIRT_DEPTH_FRACTION`
+is 10% of `IslandHeightmap.HEIGHT_SCALE`, which 4.1 explicitly calls a placeholder. The worst
+divergence measured over the whole island across four seeds is 1.78 m against the current scale of
+60 m, so this is a ~3.4x margin that survives the terrain being retuned.
+`tools/chunk_stream_check.gd` re-measures the divergence island-wide on every run and fails if the
+margin is ever lost, so the number cannot quietly go stale.
+
+**The skirt is never handed to the physics server.** `ChunkMesher.collision_faces()` slices the
+terrain triangles off the front of the index buffer, and `ChunkStreamer._cook_collision()` and
+`tools/bench_chunk_gpu.gd` both use it instead of `ArrayMesh.get_faces()`. A skirt is a vertical
+wall standing exactly on the seam a player walks across; colliding with it is free snagging on
+geometry that exists only to be looked at, and it is ~12% more faces (LOD0) to cook against the one
+main-thread cost this whole system is budgeted around (D-074). The bench uses the same call so it
+keeps measuring what the game actually does.
+
+**One surface, not two.** Putting the skirt in its own surface would read more cleanly and cost a
+second draw call on each of ~289 resident chunks. This ships to the worst machine we target.

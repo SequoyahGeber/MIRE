@@ -589,7 +589,42 @@ then delete the shim path if nothing else uses it. Needs a claim on `core/dev/de
 
 ---
 
-## Resolved
+### F-132 · A remote client's scattered harvestable proxy may have no host counterpart to reach, because `ChunkStreamer` streams per-peer independently
+
+**Area:** world-gen / netcode · **Severity:** medium · **Found:** 2026-08-18 by lm during 4.4
+
+`ARCHITECTURE.md` §2.2 deliberately makes chunk streaming client-local, independently per peer: "a
+host and a client streaming different chunk sets around their own local players is correct, not a
+desync" (D-080's own reasoning for task 4.3). Task 4.4's `ResourceScatterField` builds its
+harvestable proxies exactly on top of that same per-peer ring (`chunk_has_collision()`, D-083), and
+the proxy's depletion is real, host-authoritative `Harvestable` state living on whichever holder
+node happens to exist at that world position — same as any other harvestable.
+
+That composition has a gap the terrain-only case never had: a client's own `Harvestable` node for a
+point near ITS player sends `net_request_hit.rpc_id(NetConfig.HOST_PEER_ID)` targeting a specific
+NodePath. If the HOST's own player is far enough away that the host's `ChunkStreamer` never loaded
+that chunk, the host has no node at that path to receive the call at all — nothing types-checks or
+crashes today because nothing yet instantiates `ChunkStreamer`/`ResourceScatterField` in the live
+game (4.6 is the task that does), so this has not been reachable in practice, but it will be the
+moment 4.6 wires both into a running multiplayer session.
+
+**Why not fixed inside 4.4:** the honest fix is either (a) the host maintaining chunk-load state for
+the union of every connected player's position, not just its own local player's ring, or (b) a real
+chunk-keyed request/response that does not depend on a live node existing at a specific path on the
+receiving peer. Both are genuine multiplayer-interest-management design decisions that belong with
+whichever task first puts these systems in a real session — almost certainly 4.6 (seed replication +
+client regen + delta sync), whose whole job is "every mutation... replicates as deltas keyed by
+chunk" (`ARCHITECTURE.md` §4). Solving it inside 4.4 would mean guessing at 4.6's own wire format.
+
+**What fixing it will look like, most likely:** the host's own `ChunkStreamer`/`ResourceScatterField`
+pair gets anchored not just to the host's local player but to every connected peer's last-known
+position (a host-side "union of interest," the same shape `NetInterest` already applies per-entity
+for replication filtering, generalized to chunk residency) — so any point a REMOTE client can reach
+is guaranteed to have a host-side holder loaded to receive its request, even when the host's own
+player is elsewhere.
+
+**Claim:** none yet — no file to fix until the task that wires `ChunkStreamer` into a live session
+picks this up.
 
 ### F-131 · A finding auto-closed by the F-049 sync rule can never reopen, so a transient FINDINGS.md error permanently hides real work — F-112 and F-036 are both invisible to the board right now — **fixed**
 
@@ -5588,3 +5623,43 @@ and the PASS rerun above confirmed it. Full spec: `docs/SPECS.md` F-108.
 **`tools/flora_check.gd:126` has the identical construction** and is currently green only because its
 20 mm tolerance and height-only comparison happen to absorb the error. It belongs to A-000V's file
 set, outside this task's claim — filed separately as **F-122**.
+
+### F-133 · Task 4.3's chunk mesher winds every terrain triangle inside-out — the ground renders and collides only from below
+
+**Area:** world-gen · **Severity:** high · **Found:** 2026-08-18 by wick20
+
+`world/chunk/chunk_mesher.gd`'s `_build_indices()` emitted each quad as `a, c, b` / `b, c, d`.
+That is the winding whose right-hand-rule cross product points up — but Godot's front face is the
+one whose vertices run CLOCKWISE as seen from the front, so the engine read the whole terrain
+surface as facing DOWN. Asked directly, via a terrain-only surface run through
+`SurfaceTool.generate_normals()` (which applies the engine's own convention rather than anyone's
+recollection of it), **1089 of 1089 LOD0 vertices came back facing down**, and the same at LOD1 and
+LOD2. The legacy `build_mesh_surface_tool()` path carried the identical inversion.
+
+The authored `ARRAY_NORMAL` values were correct throughout — `(-dx, 1, -dz).normalized()`, pointing
+up. That is exactly what hid this: the shading data said "up" while the triangles said "down", and
+only the triangles decide what renders and what a trimesh collider presents to Jolt.
+
+**Two consequences, both severe:**
+
+1. **Rendering.** With `StandardMaterial3D`'s default `CULL_BACK`, the ground is invisible from
+   above and solid from below. Rendered, a 7x7 chunk grid showed only the F-128 skirts standing at
+   the chunk boundaries, in a lattice, with sky where the terrain should have been.
+2. **Collision.** `ConcavePolygonShape3D` faces are one-sided (`backface_collision` defaults off),
+   so this is not cosmetic — it is a floor players fall through. Confirmed by the inverse: after
+   the fix a ray straight down onto the centre chunk's cooked collider hits, and that assertion is
+   now part of `tools/chunk_stream_check.gd`.
+
+**Why 4.3 shipped green anyway.** Nothing instantiates a `ChunkStreamer` in the game yet (4.6 is
+the task that will), `tools/bench_chunks.gd` and `tools/bench_chunk_gpu.gd` measure cost rather
+than appearance, and `tools/chunk_stream_check.gd` asserted counts, determinism, ring membership
+and frame budget — every one of which an inside-out mesh satisfies perfectly. No check anywhere
+asked which way the surface faced. Found only because F-128's fix was taken as far as actually
+looking at a render instead of stopping at the numbers.
+
+**The general lesson worth keeping:** a mesh's authored normals are not evidence about its winding.
+Any future check of geometry we generate should derive facing from the index buffer through the
+engine, never from `ARRAY_NORMAL`.
+
+---
+
