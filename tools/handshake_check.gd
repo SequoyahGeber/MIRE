@@ -53,10 +53,11 @@ func _initialize() -> void:
 	_check("PROTOCOL_VERSION is a positive int",
 		NetVersion.PROTOCOL_VERSION > 0, str(NetVersion.PROTOCOL_VERSION))
 	# Task 2.13 bumped 6 -> 7 for the health RPCs (net_request_revive, net_health_snapshot,
-	# net_downed_flag, net_force_respawn). A hard-coded expectation here is deliberate: this check's
-	# whole point is to fail loudly the day someone adds a wire-shape change and forgets the bump.
-	_check("PROTOCOL_VERSION reflects task 2.13's health RPCs",
-		NetVersion.PROTOCOL_VERSION == 7, str(NetVersion.PROTOCOL_VERSION))
+	# net_downed_flag, net_force_respawn); task 2.11 bumped 7 -> 8 for day_night.gd's net_push_time.
+	# A hard-coded expectation here is deliberate: this check's whole point is to fail loudly the day
+	# someone adds a wire-shape change and forgets the bump.
+	_check("PROTOCOL_VERSION reflects task 2.11's day/night broadcast",
+		NetVersion.PROTOCOL_VERSION == 8, str(NetVersion.PROTOCOL_VERSION))
 
 	call_deferred(&"_run_wire_checks")
 
@@ -149,8 +150,8 @@ func _teardown(peers: Array[Dictionary]) -> void:
 
 func _check_matching_versions() -> void:
 	print("\nmatching versions:")
-	var host: Dictionary = _make_peer(0, true, 7)
-	var client: Dictionary = _make_peer(1, false, 7)
+	var host: Dictionary = _make_peer(0, true, 8)
+	var client: Dictionary = _make_peer(1, false, 8)
 	var peers: Array[Dictionary] = [host, client]
 
 	var deadline: int = Time.get_ticks_msec() + int(_TIMEOUT_SEC * 1000.0)
@@ -176,7 +177,7 @@ func _check_matching_versions() -> void:
 
 func _check_mismatched_versions() -> void:
 	print("\nmismatched versions:")
-	var host: Dictionary = _make_peer(2, true, 7)
+	var host: Dictionary = _make_peer(2, true, 8)
 	var client: Dictionary = _make_peer(3, false, 4)
 	var peers: Array[Dictionary] = [host, client]
 
@@ -197,7 +198,7 @@ func _check_mismatched_versions() -> void:
 		await create_timer(0.02).timeout
 	print("  reason: %s" % probe.rejected_reason)
 	_check("client received a reason naming both versions",
-		probe.rejected_reason.contains("7") and probe.rejected_reason.contains("4"),
+		probe.rejected_reason.contains("8") and probe.rejected_reason.contains("4"),
 		probe.rejected_reason)
 
 	var disconnect_deadline: int = Time.get_ticks_msec() + int(_TIMEOUT_SEC * 1000.0)

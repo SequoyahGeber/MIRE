@@ -30,7 +30,9 @@ extends RefCounted
 ##
 ## 7 (task 2.13): systems/health/player_health.gd added three RPCs — net_request_revive,
 ## net_health_snapshot, net_downed_flag — and net_force_respawn.
-const PROTOCOL_VERSION: int = 7
+## 8 (task 2.11): systems/environment/day_night.gd added net_push_time, the host -> client
+## time-of-day broadcast.
+const PROTOCOL_VERSION: int = 8
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).

@@ -1594,3 +1594,20 @@ Commit at time of writing: `40065ef`
 Added 'agent saturate' to run a lane's queued orders back to back, because idle time is the real quota waste; a busy-lane guard so a second dispatch cannot put two agents on one account; cross-lane-only collision checks (same-lane orders run sequentially, so overlap there is not a conflict and was needlessly blocking the queue); and a 2-word minimum on the check heuristic, which was matching item_icons_check to 'food items' and would have sent a lane to verify against the wrong proof.
 
 Commit at time of writing: `c187ede`
+
+---
+
+### DONE · 2.11 · lp · 2026-08-18T00:13:02+00:00
+
+**Day/night cycle: sun rotation, `WorldEnvironment` transitions, replicated time-of-day**
+
+DayNight autoload (systems/environment/day_night.gd) ships: host advances time_of_day (0..1 fraction of day) on the physics tick, pushes to clients at ~1Hz via unreliable RPC net_push_time, clients only lerp between snapshots and never advance on their own. Applies to every peer's level via current_scene/Atmosphere.set_time_of_day(t*24.0). night_started(0.75)/day_started(0.25) fire host-only, wave_spawner.gd's existing /root/DayNight subscription works unmodified. playtest_atmosphere.gd's cycle_enabled stays untouched/false. Registered as autoload (after PlayerHealth). Protocol bumped 7->8 for net_push_time (net_version.gd + handshake_check.gd extended into the claim, F-056 filed). Verified: agent godot --script tools/day_night_check.gd (9/9, 0 ERROR, offline, manual instantiation before registration per spec order), agent godot --script tools/day_night_net_check.gd (13/13, 0 ERROR, two real ENet processes: client follows host within one interval, pausing host's set_physics_process freezes client instead of free-running, client never emits threshold signals), agent godot --script tools/handshake_check.gd (0 failures). Boot via agent godot --quit-after 5 clean, 0 ERROR.
+
+Notes along the way:
+- DayNight's time_of_day is 0..1 (day fraction), NOT the same scale as playtest_atmosphere.gd's own 0..24h export — _apply_to_level() multiplies by 24.0 at the one point they meet. Spec text's call(&"set_time_of_day", t) read as unconverted; decided conversion was required since Atmosphere's fposmod is mod 24.0, not mod 1.0.
+- New RPC net_push_time needed a protocol bump per preamble rule 5, but SPECS.md's 2.11 claim list didn't include net_version.gd/handshake_check.gd. Extended the claim to those two files (F-056 filed), bumped PROTOCOL_VERSION 7->8, updated handshake_check.gd's hard-coded expectations.
+- day_night_net_check's 'kill the flow of updates' test pauses the HOST's own set_physics_process rather than disconnecting the client — a real disconnect correctly self-promotes the client to host-of-one via _owns_mutation(), which would make it start advancing its own clock (correct behavior for a departed player, not a bug), so it can't test the freeze-while-connected case.
+
+Files: `systems/environment/day_night.gd`, `tools/day_night_check.gd`, `tools/day_night_net_check.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`
+
+Commit at time of writing: `c67eca7`
