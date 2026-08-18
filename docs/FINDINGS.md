@@ -534,29 +534,6 @@ on either during a renumbering pass.
 
 ---
 
-### F-059 · `InventoryService._publish_snapshot`'s `net_inventory_snapshot.rpc_id()` is unguarded against a departed peer, same shape as the bug task 3.8 fixed in `player_health.gd`
-
-**Area:** netcode · **Severity:** low (today) · **Found:** 2026-08-17 by lp during 3.8
-
-D-035 keeps a departed peer's state alive through NetSession's grace window rather than releasing it
-on `peer_left` — deliberately, so a reconnect under a new peer id can rebind instead of resetting. But
-that means a peer id can sit in a host-owned dictionary with no live transport connection behind it,
-and `autoload/inventory_service.gd`'s `_publish_snapshot` sends `net_inventory_snapshot.rpc_id(peer_id,
-...)` to whatever peer id owns the store being published, gated only on `_transport().is_active()` —
-never on whether THAT SPECIFIC peer id is still connected. Any code path that calls `_commit(peer_id)`
-for a peer mid-grace-window (a harvest yield landing for them, a crafting response, anything routed
-through `host_add`/`host_transaction`) sends an RPC to an unknown peer id, which Godot logs as
-`ERROR: Attempt to call RPC with unknown peer ID`.
-
-Not fixed here — `inventory_service.gd` was not in 3.8's claim set. `systems/health/player_health.gd`
-had the exact same shape (`net_health_snapshot`, `net_force_respawn`, `net_revive_confirmed`,
-`net_consume_confirmed`, all `rpc_id(peer_id, ...)` with no connectivity check) and now has a
-`_peer_connected(peer_id)` guard before every one of them — copy that fix: check
-`_transport().call("peer_ids").has(peer_id)` before an `rpc_id` send to a specific peer, everywhere
-one exists. Lower severity than task 3.8's own instance because InventoryService's RPCs fire on
-discrete gameplay events, not an ambient per-tick timer — the window to hit is much narrower, but the
-failure mode is identical once hit.
-
 ---
 
 ### F-060 · Two-process net check authors: `local_peer_id() > HOST_PEER_ID` is not proof of a live connection, and mutating what `Node.get()` returns on a typed Dictionary property may not stick
@@ -740,7 +717,90 @@ style on `WeaponDef`, a swing with an actual arc, and an authored roll for the t
 
 ---
 
+### F-074 · InventoryService._valid_host_peer's connectivity check silently drops a host grant for a peer mid-D-035-grace-window, instead of parking it
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-18 by lp
+
+Found while fixing F-059's rpc_id guard. `_valid_host_peer(peer_id)` (`autoload/inventory_service.gd`)
+requires `peer_id` to appear in `_transport().call("peer_ids")` whenever the transport is active — a
+check written before D-035's grace window existed, back when `peer_left` still released a departed
+peer's store immediately, so "not currently connected" and "not a valid target" were the same fact.
+
+D-035 changed that: a departed peer's `_host_stores` entry now survives `peer_left` through
+`NetSession`'s grace window on purpose, so a reconnect under a new peer id can rebind it. But
+`_valid_host_peer` was never updated to match, so `host_add`/`host_remove`/`host_move_stack`/
+`host_transaction` all still reject a parked peer outright — a harvest yield landing for someone
+mid-grace-window (a laggy connection, a brief drop) is silently lost, logged only as `MireLog.warn`
+"could not collect ... (invalid or full)" by `_on_harvest_yielded`, not queued or retried.
+
+Verified directly: `tools/inventory_net_check.gd`'s driver calls `inventory.call("_commit",
+client_peer_id)` on a parked peer (bypassing the public API) specifically because the public API
+already can't reach it — `host_add(client_peer_id, ...)` for the same parked peer returns `false`.
+
+Not fixed here — out of scope for F-059, which was about the rpc_id guard, not this gate. The
+narrow fix: `_valid_host_peer` should treat "peer id has a live `_host_stores` entry" (i.e. still
+within the grace window) as valid for mutation, the same way `player_health.gd`'s `host_apply_damage`
+only checks `_states.has(peer_id)` and lets damage/starvation continue to accrue for a parked player.
+Whoever picks this up should decide whether a grant to a parked peer should publish immediately (now
+guarded, so it's safe) or wait for rebind — recommend immediate, since the store already carries
+state across the rebind and a lost grant is a worse outcome than a stale snapshot the reconnect will
+overwrite anyway.
+
+---
+
 ## Resolved
+
+### F-059 · `InventoryService._publish_snapshot`'s `net_inventory_snapshot.rpc_id()` is unguarded against a departed peer, same shape as the bug task 3.8 fixed in `player_health.gd` — **fixed**
+
+**Resolved 2026-08-18 by lp.** Copied `player_health.gd`'s fix exactly: added a `_peer_connected(peer_id)`
+helper (`_transport().call("peer_ids").has(peer_id)`) and gated both unguarded `rpc_id(peer_id, ...)`
+sends on it — `_publish_snapshot`'s `net_inventory_snapshot.rpc_id()` and `_confirm_peer`'s
+`net_operation_confirmed.rpc_id()`. Those were the only two specific-peer `rpc_id` calls in the file;
+`net_request_remove`/`net_request_move_stack` always target `NetConfig.HOST_PEER_ID`, which is never
+parked, so they needed no guard.
+
+**Verified by reproducing the bug, then proving the fix kills it.** Extended
+`tools/inventory_net_check.gd` to call `inventory.call("_commit", client_peer_id)` directly on a
+parked (post-`peer_left`, mid-grace-window) peer — the exact call this finding names. Stashed the fix,
+ran `agent godot --script tools/inventory_net_check.gd`: reproduced
+`ERROR: Attempt to call RPC with unknown peer ID: <id>` at `_publish_snapshot
+(inventory_service.gd:370) <- _commit (inventory_service.gd:358)`, verbatim the failure this finding
+describes. Restored the fix, ran it three more times: 0 `ERROR:` lines, all assertions green
+(one flaked on the pre-existing F-038 grant-timeout race, unrelated to this file — a clean re-run
+confirmed it). `tools/inventory_check.gd` (pure mechanics, no transport) also stayed green throughout.
+
+**Found while fixing it, not fixed here — filed as F-074:** the public host-mutation API
+(`host_add`/`host_remove`/`host_move_stack`/`host_transaction`) cannot actually reach `_commit()` for
+a parked peer today — `_valid_host_peer()` already refuses to mutate a disconnected peer's store, a
+check written before D-035's grace window existed and never updated to match it. That makes this
+finding's specific crash unreachable through the public API right now, but the guard added here is
+still correct and necessary: it protects the exact `rpc_id` sends named above regardless of how they
+get reached, and F-074's fix (letting a parked peer's grants land during the grace window, the way
+`player_health.gd` already lets damage/starvation accrue for one) will make them reachable again the
+moment it ships.
+
+**Area:** netcode · **Severity:** low (today) · **Found:** 2026-08-17 by lp during 3.8
+
+D-035 keeps a departed peer's state alive through NetSession's grace window rather than releasing it
+on `peer_left` — deliberately, so a reconnect under a new peer id can rebind instead of resetting. But
+that means a peer id can sit in a host-owned dictionary with no live transport connection behind it,
+and `autoload/inventory_service.gd`'s `_publish_snapshot` sends `net_inventory_snapshot.rpc_id(peer_id,
+...)` to whatever peer id owns the store being published, gated only on `_transport().is_active()` —
+never on whether THAT SPECIFIC peer id is still connected. Any code path that calls `_commit(peer_id)`
+for a peer mid-grace-window (a harvest yield landing for them, a crafting response, anything routed
+through `host_add`/`host_transaction`) sends an RPC to an unknown peer id, which Godot logs as
+`ERROR: Attempt to call RPC with unknown peer ID`.
+
+Not fixed here — `inventory_service.gd` was not in 3.8's claim set. `systems/health/player_health.gd`
+had the exact same shape (`net_health_snapshot`, `net_force_respawn`, `net_revive_confirmed`,
+`net_consume_confirmed`, all `rpc_id(peer_id, ...)` with no connectivity check) and now has a
+`_peer_connected(peer_id)` guard before every one of them — copy that fix: check
+`_transport().call("peer_ids").has(peer_id)` before an `rpc_id` send to a specific peer, everywhere
+one exists. Lower severity than task 3.8's own instance because InventoryService's RPCs fire on
+discrete gameplay events, not an ambient per-tick timer — the window to hit is much narrower, but the
+failure mode is identical once hit.
+
+---
 
 ### F-072 · A claim on a docs/ file is accepted, shown on the board, and enforced by nothing — **fixed**
 

@@ -219,6 +219,22 @@ trivialised first weapon choice; (b) it stays console-only until 3.x loot places
 (the design-pure answer); (c) it seeds chest loot in 3.5. One line in `core/dev/dev_loadout.gd`
 either way; the decision is the deliverable, not the line.
 
+## F-059 · InventoryService's specific-peer `rpc_id` sends were unguarded against a departed peer
+
+Same shape as task 3.8's `player_health.gd` fix. `_publish_snapshot`'s `net_inventory_snapshot.rpc_id()`
+and `_confirm_peer`'s `net_operation_confirmed.rpc_id()` each sent to whatever peer id owned the store
+or request, gated only on `_transport().call("is_active")` — never on whether that specific peer id was
+still connected. Reachable whenever `_commit(peer_id)` fires for a peer D-035's grace window is still
+parking (a harvest yield landing, a crafting response). **Claim:** `autoload/inventory_service.gd`,
+`tools/inventory_net_check.gd`. **Fix:** a `_peer_connected(peer_id)` helper
+(`_transport().call("peer_ids").has(peer_id)`) gating both sends — mirror `player_health.gd`'s own
+guard (`_peer_connected`) rather than reinventing it; `net_request_remove`/`net_request_move_stack`
+need no guard, they always target `NetConfig.HOST_PEER_ID`, which is never parked.
+**Shipped 2026-08-18** (`docs/FINDINGS.md` Resolved has the full verification). Re-verify with
+`agent godot --script tools/inventory_net_check.gd`, which calls `_commit()` directly on a parked peer
+to exercise the exact path — the public `host_add`/`host_transaction` API cannot reach it today
+(F-074, open).
+
 ---
 
 # M3 — systems depth (start only after 2.14's re-read of DESIGN §8)

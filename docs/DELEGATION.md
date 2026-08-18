@@ -124,6 +124,24 @@ needs writing by whoever owns that file next.
 > Execution specs for every remaining roadmap task live in **`docs/SPECS.md`** — this section holds
 > the *shipped* seams those specs build on.
 
+### 2026-08-18 — `_peer_connected(peer_id)` is now a two-file pattern, and there's a gap it exposed (F-059/F-074)
+
+`autoload/inventory_service.gd` gained the same `_peer_connected(peer_id)` guard
+`systems/health/player_health.gd` already had: `_transport().call("peer_ids").has(peer_id)`, checked
+before every `rpc_id(peer_id, ...)` send to a specific peer. **Any new host-owned per-peer system with
+its own `rpc_id` sends should copy this from either file rather than reinvent it** — it's the standard
+answer to D-035's grace window (a departed peer's state survives `peer_left` on purpose, so a peer id
+can sit in a host dictionary with no live connection behind it).
+
+**The gap the fix exposed, open as F-074:** `InventoryService._valid_host_peer(peer_id)` requires
+`peer_id` to be a *currently connected* peer, so `host_add`/`host_remove`/`host_move_stack`/
+`host_transaction` all silently refuse to mutate a parked (mid-grace-window) peer's store — a grant
+that lands for someone between a drop and a reconnect is lost, not queued. `player_health.gd` doesn't
+have this problem: `host_apply_damage` only checks `_states.has(peer_id)`, so damage/starvation keep
+accruing for a parked player exactly as D-035 intends. Whoever takes F-074 should make
+`_valid_host_peer` match that shape — treat a live `_host_stores` entry as valid regardless of current
+connectivity — now that the `rpc_id` sends downstream of it are guarded and safe to reach.
+
 ### 2026-08-18 — night waves actually run now, and the reason they did not is worth keeping
 
 `WaveSpawner` is registered (autoload #22, after `DayNight`, which its `_ready()` depends on). Dusk
