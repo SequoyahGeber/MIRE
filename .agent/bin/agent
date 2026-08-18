@@ -528,7 +528,11 @@ def _journal_entries():
             parts = [p.strip() for p in line[4:].strip().split("·")]
             cur = None
             if len(parts) >= 4:
-                cur = {"kind": parts[0], "task": parts[1], "agent": parts[2], "body": []}
+                # Keep the timestamp. Without it every time-windowed reader (collect) sees an empty
+                # "at", treats the entry as infinitely old, and silently reports nothing finished —
+                # which is worse than no report, because it reads as "the lanes did nothing".
+                cur = {"kind": parts[0].lower(), "task": parts[1], "agent": parts[2],
+                       "at": parts[3], "body": []}
                 entries.append(cur)
             continue
         if cur is not None and line.strip():
@@ -656,14 +660,15 @@ def cmd_brief(args):
     if mine_hist:
         print("\n%sThis task has history — read it before starting over%s" % (C["y"], C["x"]))
         for e in mine_hist:
-            print("  %s%s by %s%s" % (C["b"], e["kind"], e["agent"], C["x"]))
+            print("  %s%s by %s%s" % (C["b"], e["kind"].upper(), e["agent"], C["x"]))
             for line in e["body"][1:6]:
                 print("      %s%s%s" % (C["dim"], line[:100], C["x"]))
 
     if siblings:
         print("\n%sRecent work in %s — what it left you%s" % (C["b"], milestone, C["x"]))
         for e in siblings:
-            print("  %s%s · %s · %s%s" % (C["b"], e["kind"], e["task"], e["agent"], C["x"]))
+            print("  %s%s · %s · %s%s"
+                  % (C["b"], e["kind"].upper(), e["task"], e["agent"], C["x"]))
             notes = [l for l in e["body"] if l.startswith("- ")]
             for n in notes[:4]:
                 for line in _wrap(n[2:]):

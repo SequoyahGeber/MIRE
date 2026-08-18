@@ -27,7 +27,12 @@ func _run() -> void:
 
 	var item: Resource = ITEM_DEF_SCRIPT.new()
 	item.set("id", TEST_ITEM_ID)
-	registry.get("items")[TEST_ITEM_ID] = item
+	# F-060: .set() back explicitly. Registry.items is a strictly-typed Dictionary; reading it through
+	# the generic Object.get() property API can hand back a converted copy rather than the live
+	# reference, so mutating what .get() returns does not reliably reach the original.
+	var items: Dictionary = registry.get("items")
+	items[TEST_ITEM_ID] = item
+	registry.set("items", items)
 
 	var definition: Resource = HARVESTABLE_DEF_SCRIPT.new()
 	definition.set("id", &"check_tree")
@@ -115,7 +120,10 @@ func _run() -> void:
 		EVENT_BUS.harvest_yielded_subscriber_count() == subscriber_baseline,
 		"EventBus listener unsubscribes without disturbing persistent systems"
 	)
-	registry.get("items").erase(TEST_ITEM_ID)
+	# F-060: same .get()/.set() rule applies to erase() as to assignment — reassign explicitly.
+	var cleanup_items: Dictionary = registry.get("items")
+	cleanup_items.erase(TEST_ITEM_ID)
+	registry.set("items", cleanup_items)
 	prop.queue_free()
 	print("HARVESTABLE_CHECK events=%d failures=%d" % [yield_events.size(), failures])
 	finish()

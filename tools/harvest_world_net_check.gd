@@ -133,8 +133,14 @@ func _run_client() -> void:
 
 
 func _client_drive() -> void:
+	# F-060: is_active() is load-bearing here, not local_peer_id() alone — ENet hands a client its own
+	# unique id locally before the host<->client handshake completes, so local_peer_id() >
+	# HOST_PEER_ID can read true while the connection is still CONNECTING.
 	var connected: bool = await _until(
-		func() -> bool: return int(transport.call("local_peer_id")) > NetConfig.HOST_PEER_ID,
+		func() -> bool: return (
+			bool(transport.call("is_active"))
+			and int(transport.call("local_peer_id")) > NetConfig.HOST_PEER_ID
+		),
 		TIMEOUT_SEC
 	)
 	if not connected:

@@ -137,8 +137,13 @@ func _run() -> void:
 	far_chest.queue_free()
 
 	chest.queue_free()
-	registry.get("items").erase(TEST_ITEM_ID)
-	registry.get("loot_tables").erase(TEST_TIER)
+	# F-060: same .get()/.set() rule applies to erase() as to assignment — reassign explicitly.
+	var cleanup_items: Dictionary = registry.get("items")
+	cleanup_items.erase(TEST_ITEM_ID)
+	registry.set("items", cleanup_items)
+	var cleanup_loot_tables: Dictionary = registry.get("loot_tables")
+	cleanup_loot_tables.erase(TEST_TIER)
+	registry.set("loot_tables", cleanup_loot_tables)
 	print("CHEST_CHECK failures=%d" % failures)
 	finish()
 

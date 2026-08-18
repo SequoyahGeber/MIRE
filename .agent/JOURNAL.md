@@ -1994,3 +1994,19 @@ Powerup framework ships and runs. PowerupDef (id/display_name/icon/tags/max_stac
 Files: `systems/powerups/powerup_def.gd`, `autoload/powerup_service.gd`, `autoload/registry.gd`, `tools/powerup_check.gd`, `content/powerups`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `core/util/mire_log.gd`, `content/powerups/swift_stride.tres`, `tools/powerup_net_check.gd`
 
 Commit at time of writing: `d844e82`
+
+---
+
+### DONE · F-060 · lp · 2026-08-18T04:33:16+00:00
+
+**`mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float**
+
+Both traps fixed everywhere they existed: 7 tools/*_net_check.gd got the missing is_active() ready-gate, 3 files got the missing .set()-back on a mutated .get() read. New tools/net_check_pattern_check.gd source-scans the whole repo and fails on either shape reappearing (self-tested against injected defects, then clean: 131 scripts, 8 gate reads, 0 mutate hits). Every touched two-process check re-run for real over ENet, all failures=0; agent godot --quit-after 120 boots clean. docs/FINDINGS.md F-060 moved to Resolved, docs/SPECS.md and docs/DELEGATION.md updated.
+
+Notes along the way:
+- F-060 is a duplicate number (also used by the unrelated mire_art.world_bounds finding) — brief/claim surface that one's title, but the spec I'm working is the net-check ready-gate + typed-Dictionary .get()/.set() one from the LP work order. Per _duplicate_findings()'s own comment in .agent/bin/agent, renumbering is deliberately deferred (cross-cutting), so leaving the collision as-is and disambiguating by full title in FINDINGS.md instead.
+- Fixed trap 1 (missing is_active() ready-gate) in 7 files and trap 2 (.get() mutation not .set() back) in 3 files across tools/. Wrote tools/net_check_pattern_check.gd as the standing regression guard (source-text scan, D-043-style), self-tested it catches both injected defects then confirmed clean. Re-ran every touched two-process check for real over ENet: all failures=0. docs/FINDINGS.md moved to Resolved with full verification; docs/SPECS.md F-060 block written; docs/DELEGATION.md Current state notes the new check.
+
+Files: `tools/player_health_net_check.gd`, `tools/combat_net_check.gd`, `tools/crafting_net_check.gd`, `tools/inventory_net_check.gd`, `tools/harvest_world_net_check.gd`, `tools/enemy_net_check.gd`, `tools/harvestable_net_check.gd`, `tools/chest_check.gd`, `tools/harvestable_check.gd`, `tools/net_check_pattern_check.gd`
+
+Commit at time of writing: `de9a6ad`

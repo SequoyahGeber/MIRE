@@ -277,9 +277,15 @@ func _client_drive() -> void:
 	finish()
 
 
+## F-060: is_active() is the load-bearing check here, not the other two. ENet hands a client its
+## own unique id locally the instant create_client() succeeds (net_transport.gd's join(), before the
+## host<->client handshake completes), and PlayerHealth's own OFFLINE bootstrap already sets
+## local_revision to 0 at boot, before join() is ever called — so local_peer_id() > HOST_PEER_ID and
+## local_revision >= 0 can BOTH already be true while the connection is still CONNECTING.
 func _client_health_ready() -> bool:
 	return (
-		int(transport.call("local_peer_id")) > NetConfig.HOST_PEER_ID
+		bool(transport.call("is_active"))
+		and int(transport.call("local_peer_id")) > NetConfig.HOST_PEER_ID
 		and int(health.call("local_revision")) >= 0
 	)
 

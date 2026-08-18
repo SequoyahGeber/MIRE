@@ -221,9 +221,13 @@ func _on_operation_confirmed(request_id: int, accepted: bool, _detail: String) -
 	confirmations[request_id] = accepted
 
 
+## F-060: gate on is_active() directly. local_peer_id() > HOST_PEER_ID and local_revision >= 0 can
+## both already read true while the connection is still CONNECTING, not CONNECTED — ENet hands a
+## client its own unique id locally before the host<->client handshake completes.
 func _client_inventory_ready() -> bool:
 	return (
-		int(transport.call("local_peer_id")) > NetConfig.HOST_PEER_ID
+		bool(transport.call("is_active"))
+		and int(transport.call("local_peer_id")) > NetConfig.HOST_PEER_ID
 		and int(inventory.call("local_revision")) >= 0
 	)
 

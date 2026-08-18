@@ -46,7 +46,12 @@ func _build_prop() -> void:
 	var registry: Node = root.get_node_or_null(^"Registry")
 	var item: Resource = ITEM_DEF_SCRIPT.new()
 	item.set("id", TEST_ITEM_ID)
-	registry.get("items")[TEST_ITEM_ID] = item
+	# F-060: .set() back explicitly. Registry.items is a strictly-typed Dictionary; reading it through
+	# the generic Object.get() property API can hand back a converted copy rather than the live
+	# reference, so mutating what .get() returns does not reliably reach the original.
+	var items: Dictionary = registry.get("items")
+	items[TEST_ITEM_ID] = item
+	registry.set("items", items)
 
 	var definition: Resource = HARVESTABLE_DEF_SCRIPT.new()
 	definition.set("id", &"net_check_tree")
@@ -134,8 +139,13 @@ func _run_client() -> void:
 
 
 func _client_drive() -> void:
+	# F-060: is_active() is load-bearing here, not local_peer_id() alone — ENet hands a client its own
+	# unique id locally before the host<->client handshake completes.
 	var connected: bool = await _until(func() -> bool:
-		return int(transport.call("local_peer_id")) > NetConfig.HOST_PEER_ID, TIMEOUT_SEC)
+		return (
+			bool(transport.call("is_active"))
+			and int(transport.call("local_peer_id")) > NetConfig.HOST_PEER_ID
+		), TIMEOUT_SEC)
 	if not connected:
 		_write_result({"error": "connect timeout", "yield_count": yield_count})
 		finish()
