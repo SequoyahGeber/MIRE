@@ -550,6 +550,36 @@ PASS: published placements survive where MultiMesh transforms do not
 MULTIMESH_READBACK_CHECK failures=0
 ```
 
+## F-111 · `enemy_check.gd`'s telegraph/swing assertions fail at HEAD, unrelated to F-075
+
+**Claim:** `tools/enemy_check.gd`. No production file — `systems/enemies/enemy.gd` was read and is
+correct as committed.
+
+**Root cause: the check, not the AI.** The telegraph scenario (`enemy_check.gd:79-89`) first pins the
+enemy at the origin, holds a target between the aggro/deaggro radii, then moves the player to 400 m
+and steps once — the target is dropped and `_resolve_target()` falls through to an immediate rescan,
+which finds nobody and, on the way out, sets `_rescan_wait = RESCAN_INTERVAL_SEC` (0.2 s; F-099's
+throttle — an untargeted enemy scans the `players` group at most once per interval, by design, not a
+bug). The very next lines teleport the player to 1 m away and took a **single** 0.05 s step expecting
+`state == TELL` immediately. That step lands inside the freshly-reset 0.2 s cooldown, so
+`_resolve_target()` returns null without ever looking at the group, the enemy stays `IDLE`, and every
+downstream assertion (swing, damage, target, commit-to-swing) fails as a chain reaction from that one
+miss — exactly `enemy_check.gd:92-106` per the finding. `_step_until_state()` a few lines further down
+(the *second* telegraph, line ~112) already steps until the state actually changes rather than
+assuming one tick suffices, and that one was always green — confirming the throttle, not the state
+machine, was the mismatch.
+
+**Fix:** the first telegraph assertion now uses the same `_step_until_state(enemy, 2, 0.05, 20)`
+pattern as the second one, instead of one bare `_step(enemy, 0.05)`. 20 steps at 0.05 s is 1 s of
+margin over the 4 steps (0.2 s) the cooldown actually needs — generous on purpose since
+`_rescan_wait` is a float subtraction and the exact step count it clears on is not worth pinning.
+
+**Verified 2026-08-18:** `agent godot --script tools/enemy_check.gd` against the pre-fix tree
+reproduces the finding's exact 5 failures (`ENEMY_CHECK attacks=0 failures=5`) — same set the
+original F-075 baseline against `e028365` reported, confirming HEAD hadn't drifted from the repro.
+After the fix (`tools/enemy_check.gd` only): all 44 assertions PASS, `ENEMY_CHECK attacks=0
+failures=0`. `systems/enemies/enemy.gd` untouched.
+
 ## 3.6 · Building system (T2)
 
 **Claim:** `systems/building/` (ghost, placement validator, buildable_def) and its checks.

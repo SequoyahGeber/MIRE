@@ -597,21 +597,6 @@ the failure mode is silent and confidently wrong.
 
 ---
 
-### F-111 · `enemy_check.gd`'s telegraph/swing assertions fail at HEAD, unrelated to F-075
-
-**Area:** combat/enemies · **Severity:** medium · **Found:** 2026-08-18 by lp during F-075
-
-`tools/enemy_check.gd` fails 5 assertions from "a player in reach makes it telegraph" onward (state
-never reaches `2`/telegraph in the scenario at `enemy_check.gd:92-106`, so the swing, its damage, its
-target and the commit-to-swing state all fail downstream of that one miss). Confirmed **not** caused
-by this task: `agent baseline --script tools/enemy_check.gd` against HEAD (`e028365`, before any
-F-075 edit) reproduces the identical 5 failures. `combat_check.gd`, `enemy_net_check.gd` and `hollowmere_check.gd` are all green, so this is scoped to
-the standalone state-machine harness (`_step()` driving `enemy.gd`'s `_physics_process` directly with
-no floor in the scene), not enemy combat generally. Root cause not investigated — out of scope for
-F-075, and AGENTS.md's rule is to file it and keep moving, not chase it.
-
----
-
 
 
 
@@ -1203,6 +1188,42 @@ failures reproduce identically via `agent baseline` at HEAD before this task —
 F-111, not this task's to chase), and `agent godot --quit-after 120` (Hollowmere boots clean over the
 full window). Missing `docs/SPECS.md` block written as part of this task — see `## F-075` there,
 placed after F-082 in the 3.6 cluster.
+
+### F-111 · `enemy_check.gd`'s telegraph/swing assertions fail at HEAD, unrelated to F-075 — **fixed**
+
+**Area:** combat/enemies · **Severity:** medium · **Found:** 2026-08-18 by lp during F-075
+
+`tools/enemy_check.gd` failed 5 assertions from "a player in reach makes it telegraph" onward: state
+never reached `2`/telegraph in the scenario at `enemy_check.gd:92-106`, so the swing, its damage, its
+target and the commit-to-swing state all failed downstream of that one miss. Confirmed at the time
+**not** caused by F-075: `agent baseline --script tools/enemy_check.gd` against HEAD (`e028365`,
+before any F-075 edit) reproduced the identical 5 failures.
+
+**Root cause was in the check, not in `enemy.gd`.** The telegraph scenario pins the enemy at the
+origin, holds a target between the aggro/deaggro radii, then moves the player to 400 m and steps
+once — the target is dropped and `_resolve_target()` falls through to an immediate rescan, which
+finds nobody and, on the way out, sets `_rescan_wait = RESCAN_INTERVAL_SEC` (0.2 s; F-099's
+throttle — an untargeted enemy scans the `players` group at most once per interval, by design). The
+next lines teleport the player to 1 m away and took a **single** 0.05 s step expecting
+`state == TELL` immediately — landing inside that freshly-reset 0.2 s cooldown, so
+`_resolve_target()` returned null without ever looking at the group, the enemy stayed `IDLE`, and
+every downstream assertion failed as a chain reaction from that one miss. `combat_check.gd`,
+`enemy_net_check.gd` and `hollowmere_check.gd` were all green throughout, confirming this was scoped
+to the standalone harness, never to enemy combat generally — matching the original finding's guess.
+The second telegraph a few lines further down (`_step_until_state(enemy, 2, 0.05, 200)`) was always
+green because it already steps until the state actually changes rather than assuming one tick
+suffices.
+
+**Fixed 2026-08-18 by lp.** `tools/enemy_check.gd`: the first telegraph assertion now uses the same
+`_step_until_state(enemy, 2, 0.05, 20)` pattern as the second one, instead of one bare
+`_step(enemy, 0.05)`. No production file touched — `systems/enemies/enemy.gd` was read and is correct
+as committed.
+
+**Verified:** `agent godot --script tools/enemy_check.gd` on the pre-fix tree reproduced the exact 5
+failures (`ENEMY_CHECK attacks=0 failures=5`); after the fix, all 44 assertions PASS,
+`ENEMY_CHECK attacks=0 failures=0`.
+
+Missing `docs/SPECS.md` block written as part of this task — see `## F-111` there, placed after F-103.
 
 ### F-107 · chest_net_check's two host-side grant assertions fail at HEAD; client side is green — **fixed**
 
