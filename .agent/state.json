@@ -1,49 +1,34 @@
 {
   "claims": {
-    "assets/audio/music": {
-      "agent": "tine18",
-      "at": "2026-08-18T17:53:48+00:00",
-      "task": "7.2"
-    },
-    "assets/audio/music/ambient_day.ogg.import": {
-      "agent": "tine18",
-      "at": "2026-08-18T18:06:38+00:00",
-      "task": "7.2"
-    },
-    "assets/audio/music/ambient_night.ogg.import": {
-      "agent": "tine18",
-      "at": "2026-08-18T18:06:38+00:00",
-      "task": "7.2"
-    },
     "assets/audio/sfx": {
       "agent": "tine18",
       "at": "2026-08-18T17:53:48+00:00",
       "task": "7.1"
     },
-    "tools/audio/audio_check.py": {
-      "agent": "tine18",
-      "at": "2026-08-18T17:53:48+00:00",
-      "task": "7.2"
-    },
-    "tools/audio/mire_audio.py": {
-      "agent": "tine18",
-      "at": "2026-08-18T17:53:48+00:00",
-      "task": "7.2"
-    },
-    "tools/audio/render_music.py": {
-      "agent": "tine18",
-      "at": "2026-08-18T17:53:48+00:00",
-      "task": "7.2"
+    "autoload/environment_vfx.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T18:08:26+00:00",
+      "task": "F-118"
     },
     "tools/audio/render_sfx.py": {
       "agent": "tine18",
       "at": "2026-08-18T17:53:48+00:00",
       "task": "7.1"
     },
-    "tools/audio_import_check.gd": {
-      "agent": "tine18",
-      "at": "2026-08-18T17:53:48+00:00",
-      "task": "7.2"
+    "tools/multimesh_readback_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T18:09:37+00:00",
+      "task": "F-103"
+    },
+    "world/environment/asset_vfx_library.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T18:08:26+00:00",
+      "task": "F-118"
+    },
+    "world/environment/particle_billboard.gdshader": {
+      "agent": "vane19",
+      "at": "2026-08-18T18:10:12+00:00",
+      "task": "F-118"
     }
   },
   "in_flight": {
@@ -53,22 +38,32 @@
         "tools/audio/render_sfx.py",
         "assets/audio/sfx"
       ],
-      "notes": [],
+      "notes": [
+        {
+          "at": "2026-08-18T18:10:02+00:00",
+          "by": "tine18",
+          "text": "19 mono SFX shipped+verified (audio_check, audio_import_check both failures=0). Preview reel delivered in chat. Wiring deliberately left: weapon_def/harvestable files under F-113/F-114 claims."
+        }
+      ],
       "started": "2026-08-18T17:53:48+00:00"
     },
-    "7.2": {
-      "agent": "tine18",
+    "F-103": {
+      "agent": "lp",
       "files": [
-        "tools/audio/mire_audio.py",
-        "tools/audio/render_music.py",
-        "tools/audio/audio_check.py",
-        "tools/audio_import_check.gd",
-        "assets/audio/music",
-        "assets/audio/music/ambient_day.ogg.import",
-        "assets/audio/music/ambient_night.ogg.import"
+        "tools/multimesh_readback_check.gd"
       ],
       "notes": [],
-      "started": "2026-08-18T17:53:48+00:00"
+      "started": "2026-08-18T18:09:37+00:00"
+    },
+    "F-118": {
+      "agent": "vane19",
+      "files": [
+        "world/environment/asset_vfx_library.gd",
+        "autoload/environment_vfx.gd",
+        "world/environment/particle_billboard.gdshader"
+      ],
+      "notes": [],
+      "started": "2026-08-18T18:08:26+00:00"
     }
   },
   "recent": {
@@ -106,6 +101,21 @@
       "agent": "flint5",
       "at": "2026-08-17T23:15:28+00:00",
       "task": "F-053"
+    },
+    "assets/audio/music": {
+      "agent": "tine18",
+      "at": "2026-08-18T18:10:49+00:00",
+      "task": "7.2"
+    },
+    "assets/audio/music/ambient_day.ogg.import": {
+      "agent": "tine18",
+      "at": "2026-08-18T18:10:49+00:00",
+      "task": "7.2"
+    },
+    "assets/audio/music/ambient_night.ogg.import": {
+      "agent": "tine18",
+      "at": "2026-08-18T18:10:49+00:00",
+      "task": "7.2"
     },
     "assets/audit/a009/geometry_report.json": {
       "agent": "ivy8",
@@ -428,9 +438,9 @@
       "task": "F-076"
     },
     "autoload/environment_vfx.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T14:55:48+00:00",
-      "task": "F-105"
+      "agent": "vane19",
+      "at": "2026-08-18T18:08:22+00:00",
+      "task": "F-117"
     },
     "autoload/graphics_quality.gd": {
       "agent": "coil23",
@@ -1012,6 +1022,26 @@
       "at": "2026-08-18T02:48:51+00:00",
       "task": "F-065"
     },
+    "tools/audio/audio_check.py": {
+      "agent": "tine18",
+      "at": "2026-08-18T18:10:49+00:00",
+      "task": "7.2"
+    },
+    "tools/audio/mire_audio.py": {
+      "agent": "tine18",
+      "at": "2026-08-18T18:10:49+00:00",
+      "task": "7.2"
+    },
+    "tools/audio/render_music.py": {
+      "agent": "tine18",
+      "at": "2026-08-18T18:10:49+00:00",
+      "task": "7.2"
+    },
+    "tools/audio_import_check.gd": {
+      "agent": "tine18",
+      "at": "2026-08-18T18:10:49+00:00",
+      "task": "7.2"
+    },
     "tools/blender/audit_all_sides.py": {
       "agent": "tine18",
       "at": "2026-08-17T23:34:54+00:00",
@@ -1476,6 +1506,11 @@
       "agent": "kiln9",
       "at": "2026-08-18T14:10:44+00:00",
       "task": "F-099"
+    },
+    "world/environment/asset_vfx_library.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T18:08:22+00:00",
+      "task": "F-117"
     },
     "world/environment/foliage_wind.gdshader": {
       "agent": "larch10",
@@ -2446,7 +2481,7 @@
     "7.2": {
       "est": "4",
       "milestone": "M7",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Music: 4\u20136 tracks (act themes, boss, menu). CC0/licensed or commissioned."
     },
@@ -3409,7 +3444,7 @@
     "F-103": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin"
     },
@@ -3480,7 +3515,7 @@
     "F-112": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check \u2014 F-076's third system, not lifted"
     },
@@ -3519,6 +3554,20 @@
       "status": "done",
       "tier": "F",
       "title": "Two items now own the same branch art: harvesting ships 'stick' while ITEMS.md and task 3.2 plan 'branch'"
+    },
+    "F-117": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "F-072's docs-file claim enforcement blocks the second lane's commit, but the first lane's `ship` still sweeps the second lane's uncommitted edits into its own commit"
+    },
+    "F-118": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "The forest has no ambient life: nothing falls, drifts or settles, so a still frame of the map is a still frame"
     }
   },
   "version": 1

@@ -9,13 +9,17 @@
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
 | **7.1** Audio pass: SFX for every action, ambience per biome, mix, buses | tine18 | 2026-08-18 17:53 | `tools/audio/render_sfx.py`, `assets/audio/sfx` |
-| **7.2** Music: 4–6 tracks (act themes, boss, menu). CC0/licensed or commissioned. | tine18 | 2026-08-18 17:53 | `tools/audio/mire_audio.py`, `tools/audio/render_music.py`, `tools/audio/audio_check.py`, `tools/audio_import_check.gd`, `assets/audio/music`, `assets/audio/music/ambient_day.ogg.import`, `assets/audio/music/ambient_night.ogg.import` |
+| **F-103** MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin | lp | 2026-08-18 18:09 | `tools/multimesh_readback_check.gd` |
+| **F-118** The forest has no ambient life: nothing falls, drifts or settles, so a still frame of the map is a still frame | vane19 | 2026-08-18 18:08 | `world/environment/asset_vfx_library.gd`, `autoload/environment_vfx.gd`, `world/environment/particle_billboard.gdshader` |
+
+**7.1 notes:**
+- 19 mono SFX shipped+verified (audio_check, audio_import_check both failures=0). Preview reel delivered in chat. Wiring deliberately left: weapon_def/harvestable files under F-113/F-114 claims.
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 94/109 | 15 |
+| Findings | `█████████░` 95/111 | 16 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -58,13 +62,14 @@
 | ⬜ | **F-042** Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one | todo |
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-057** A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds | todo |
-| ⬜ | **F-103** MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin | todo |
+| 🔵 | **F-103** MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin | in_flight |
 | ⬜ | **F-108** A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized | todo |
 | ⬜ | **F-109** The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them | todo |
 | ⬜ | **F-110** `audit_all_sides.py` silently resumes, so a re-run after fixing an asset re-reports the old defect | todo |
 | ⬜ | **F-111** `enemy_check.gd`'s telegraph/swing assertions fail at HEAD, unrelated to F-075 | todo |
-| ⬜ | **F-112** `world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check — F-076's third system, not lifted | todo |
+| ⬜ | **F-117** F-072's docs-file claim enforcement blocks the second lane's commit, but the first lane's `ship` still sweeps the second lane's uncommitted edits into its own commit | todo |
+| 🔵 | **F-118** The forest has no ambient life: nothing falls, drifts or settles, so a still frame of the map is a still frame | in_flight |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.5` `3.6` `3.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-104` `F-105` `F-106` `F-107` `F-113` `F-114` `F-115` `F-116`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.5` `3.6` `3.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `4.0b` `F-002` `F-004` `F-007` `F-009` `F-011` `F-012` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-104` `F-105` `F-106` `F-107` `F-112` `F-113` `F-114` `F-115` `F-116`

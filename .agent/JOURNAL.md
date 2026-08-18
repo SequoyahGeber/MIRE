@@ -2842,3 +2842,15 @@ Ground mist is a fog shader in a camera-following FogVolume, built from code for
 Files: `world/environment/playtest_atmosphere.gd`, `world/environment/ground_fog.gd`, `world/environment/ground_fog.gdshader`, `levels/hollowmere.tscn`, `tools/ground_fog_check.gd`, `tools/atmosphere_look_shot.gd`, `tools/ground_fog_check.gd.uid`, `tools/atmosphere_look_shot.gd.uid`, `world/environment/ground_fog.gd.uid`, `world/environment/ground_fog.gdshader.uid`
 
 Commit at time of writing: `97d6f51`
+
+---
+
+### HANDOFF · 7.2 · tine18 · 2026-08-18T18:10:49+00:00
+
+**Music: 4–6 tracks (act themes, boss, menu). CC0/licensed or commissioned.**
+
+v1 of the music is shipped and verified: ambient_day.ogg + ambient_night.ogg (3:44 seamless loops, D Dorian / A Aeolian, one shared palette), rendered deterministically by tools/audio/render_music.py from score data. audio_check.py failures=0, audio_import_check.gd failures=0 (in-engine, loop=true via force-committed .ogg.import sidecars). Sequoyah has MP3s in chat — his ears are the pending gate; recipes make revisions cheap (edit score data, re-render, seeds keep everything else identical). REMAINS for 7.2: menu theme, combat-intensity stems, boss music (5.5). Read docs/AUDIO.md first — palette rules and loudness contract are there. A MusicDirector autoload (crossfade on DayNight day_started/night_started) is specced there too, unclaimed.
+
+Files: `tools/audio/mire_audio.py`, `tools/audio/render_music.py`, `tools/audio/audio_check.py`, `tools/audio_import_check.gd`, `assets/audio/music`, `assets/audio/music/ambient_day.ogg.import`, `assets/audio/music/ambient_night.ogg.import`
+
+Commit at time of writing: `89fea39`
