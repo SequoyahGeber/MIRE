@@ -15,11 +15,6 @@
       "at": "2026-08-18T20:37:43+00:00",
       "task": "3.14"
     },
-    "autoload/registry.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T20:34:39+00:00",
-      "task": "4.4"
-    },
     "autoload/rule_service.gd": {
       "agent": "hollow7",
       "at": "2026-08-18T20:37:43+00:00",
@@ -29,16 +24,6 @@
       "agent": "hollow7",
       "at": "2026-08-18T20:37:43+00:00",
       "task": "3.14"
-    },
-    "content/scatter/forest_canopy.tres": {
-      "agent": "lm",
-      "at": "2026-08-18T20:40:13+00:00",
-      "task": "4.4"
-    },
-    "content/scatter/forest_undergrowth.tres": {
-      "agent": "lm",
-      "at": "2026-08-18T20:34:39+00:00",
-      "task": "4.4"
     },
     "core/dev/dev_loadout.gd": {
       "agent": "hollow7",
@@ -54,6 +39,11 @@
       "agent": "slate17",
       "at": "2026-08-18T20:32:24+00:00",
       "task": "2.1d"
+    },
+    "entities/player/player_controller.gd": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T20:51:52+00:00",
+      "task": "F-125"
     },
     "systems/environment/day_night.gd": {
       "agent": "hollow7",
@@ -110,15 +100,15 @@
       "at": "2026-08-18T20:32:24+00:00",
       "task": "2.1d"
     },
+    "tools/dodge_check.gd": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T20:51:52+00:00",
+      "task": "F-125"
+    },
     "tools/handshake_check.gd": {
       "agent": "hollow7",
       "at": "2026-08-18T20:37:43+00:00",
       "task": "3.14"
-    },
-    "tools/resource_scatter_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T20:34:39+00:00",
-      "task": "4.4"
     },
     "tools/rule_check.gd": {
       "agent": "hollow7",
@@ -132,33 +122,13 @@
     },
     "world/chunk/chunk_mesher.gd": {
       "agent": "wick20",
-      "at": "2026-08-18T20:32:06+00:00",
-      "task": "F-128"
+      "at": "2026-08-18T20:54:21+00:00",
+      "task": "F-133"
     },
     "world/chunk/chunk_streamer.gd": {
       "agent": "wick20",
       "at": "2026-08-18T20:36:14+00:00",
       "task": "F-128"
-    },
-    "world/gen/resource_scatter.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T20:34:39+00:00",
-      "task": "4.4"
-    },
-    "world/gen/resource_scatter_field.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T20:34:39+00:00",
-      "task": "4.4"
-    },
-    "world/gen/scatter_def.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T20:34:39+00:00",
-      "task": "4.4"
-    },
-    "world/gen/scatter_entry.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T20:34:39+00:00",
-      "task": "4.4"
     }
   },
   "in_flight": {
@@ -200,20 +170,14 @@
       "notes": [],
       "started": "2026-08-18T20:37:43+00:00"
     },
-    "4.4": {
-      "agent": "lm",
+    "F-125": {
+      "agent": "yarrow21",
       "files": [
-        "world/gen/scatter_entry.gd",
-        "world/gen/scatter_def.gd",
-        "world/gen/resource_scatter.gd",
-        "world/gen/resource_scatter_field.gd",
-        "autoload/registry.gd",
-        "content/scatter/forest_undergrowth.tres",
-        "tools/resource_scatter_check.gd",
-        "content/scatter/forest_canopy.tres"
+        "entities/player/player_controller.gd",
+        "tools/dodge_check.gd"
       ],
       "notes": [],
-      "started": "2026-08-18T20:34:39+00:00"
+      "started": "2026-08-18T20:51:52+00:00"
     },
     "F-128": {
       "agent": "wick20",
@@ -227,6 +191,14 @@
       ],
       "notes": [],
       "started": "2026-08-18T20:32:06+00:00"
+    },
+    "F-133": {
+      "agent": "wick20",
+      "files": [
+        "world/chunk/chunk_mesher.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T20:54:21+00:00"
     }
   },
   "recent": {
@@ -650,9 +622,9 @@
     },
     "autoload/registry.gd": {
       "agent": "lm",
-      "at": "2026-08-18T19:57:12+00:00",
-      "hash": "8dab0b6d63b5120bdfdcbce42d05cf0fc8131ac01a37b910858029ca8355ba4f",
-      "task": "4.2"
+      "at": "2026-08-18T20:54:23+00:00",
+      "hash": "9e841b96b9e6214f5950ff6b3e1f97834733c9ee42a748f3c0ec21944b898c00",
+      "task": "4.4"
     },
     "autoload/steam_lobby.gd": {
       "agent": "pike14",
@@ -1325,6 +1297,18 @@
       "agent": "ivy8",
       "at": "2026-08-18T17:57:51+00:00",
       "task": "3.2"
+    },
+    "content/scatter/forest_canopy.tres": {
+      "agent": "lm",
+      "at": "2026-08-18T20:54:23+00:00",
+      "hash": "a123be00cb77abb36f43789d14d3788ffee9a5a33e84ed235e544b0556fe7ff2",
+      "task": "4.4"
+    },
+    "content/scatter/forest_undergrowth.tres": {
+      "agent": "lm",
+      "at": "2026-08-18T20:54:23+00:00",
+      "hash": "07f0d5ac667748bbcd5555f74e7ea4ebe3b084e426b65bed8f2bb35387e7af4b",
+      "task": "4.4"
     },
     "content/stations/furnace.tres": {
       "agent": "lp",
@@ -2157,6 +2141,12 @@
       "at": "2026-08-18T05:35:30+00:00",
       "task": "F-089"
     },
+    "tools/resource_scatter_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:54:23+00:00",
+      "hash": "7d4e27ec72c632754af3977839f8fb4875d7d4cac0607846797a301937c76cfc",
+      "task": "4.4"
+    },
     "tools/rich_presence_check.gd": {
       "agent": "pike14",
       "at": "2026-08-18T20:38:46+00:00",
@@ -2373,6 +2363,30 @@
       "agent": "moss11",
       "at": "2026-08-18T02:21:14+00:00",
       "task": "2.1d"
+    },
+    "world/gen/resource_scatter.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:54:23+00:00",
+      "hash": "9c3e08a255b316bf73ecd6a7b4085fa0971cf1e06edd8ef72d2424ab4058ed56",
+      "task": "4.4"
+    },
+    "world/gen/resource_scatter_field.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:54:23+00:00",
+      "hash": "8c9b284d7bf3a0a15b0807f3ce6aef58c391ef23c0d173e76684a19b3ca6aed1",
+      "task": "4.4"
+    },
+    "world/gen/scatter_def.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:54:23+00:00",
+      "hash": "c5bfa0a41aa3420ee9fe869ff3e0da1157744489528f942c2748ee2ba6b99e12",
+      "task": "4.4"
+    },
+    "world/gen/scatter_entry.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T20:54:23+00:00",
+      "hash": "a3d44c428c6c5cf87f048162bca54c5580432eaac660c248b3ebf718c1f8c595",
+      "task": "4.4"
     },
     "world/gen/test_map_props.gd": {
       "agent": "tine18",
@@ -3077,9 +3091,11 @@
       "title": "Chunk streaming + LOD, `WorkerThreadPool` mesh generation"
     },
     "4.4": {
+      "done_at": "2026-08-18T20:54:23+00:00",
+      "done_by": "lm",
       "est": "4",
       "milestone": "M4",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T2",
       "title": "Resource scatter via `MultiMeshInstance3D`, per-biome tables"
     },
@@ -3433,6 +3449,13 @@
       "tier": "T0",
       "title": "Build review submission, fix findings, release"
     },
+    "F-001": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Pre-commit hook scans the working tree instead of the staged set \u2014 **fixed**"
+    },
     "F-002": {
       "done_at": "2026-08-17T04:46:46+00:00",
       "done_by": "dusk3",
@@ -3440,7 +3463,14 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Sprint-FOV lerp uses the framerate-dependent smoothing form"
+      "title": "Sprint-FOV lerp uses the framerate-dependent smoothing form \u2014 **fixed**"
+    },
+    "F-003": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "\u00a75a project settings not applied \u2014 **fixed**"
     },
     "F-004": {
       "done_at": "2026-08-18T04:07:51+00:00",
@@ -3449,14 +3479,14 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Interpolation is only planned for remote players, not enemies or props"
+      "title": "Interpolation is only planned for remote players, not enemies or props \u2014 **fixed**"
     },
     "F-005": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
-      "title": "R2's chunk benchmark excludes GPU upload cost"
+      "title": "R2's chunk benchmark excludes GPU upload cost \u2014 **fixed**"
     },
     "F-006": {
       "est": "\u2014",
@@ -3472,7 +3502,14 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Forgetting `MIRE_AGENT` makes you silently impersonate the last agent to run `agent start`"
+      "title": "Forgetting `MIRE_AGENT` made you silently impersonate another agent \u2014 **fixed**"
+    },
+    "F-008": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "CLAUDE.md's close-out order makes the hook warn on your own files \u2014 **won't fix, not a defect**"
     },
     "F-009": {
       "done_at": "2026-08-16T19:34:30+00:00",
@@ -3481,7 +3518,14 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A GDExtension only loads if gitignored `.godot/extension_list.cfg` lists it"
+      "title": "A GDExtension only loads if gitignored `.godot/extension_list.cfg` lists it \u2014 **fixed**"
+    },
+    "F-010": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Two `.uid` files were left untracked when 1.4 shipped \u2014 **fixed**"
     },
     "F-011": {
       "done_at": "2026-08-17T04:46:46+00:00",
@@ -3490,7 +3534,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Autoloads are not compile-time identifiers in a `--script` main loop"
+      "title": "Autoloads are not compile-time identifiers in a `--script` main loop \u2014 **fixed**"
     },
     "F-012": {
       "done_at": "2026-08-17T04:46:47+00:00",
@@ -3499,7 +3543,21 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A `MultiplayerSynchronizer`'s authority must be set BEFORE `add_child()`"
+      "title": "A `MultiplayerSynchronizer`'s authority must be set BEFORE `add_child()` \u2014 **fixed**"
+    },
+    "F-013": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Spawned replication nodes were not in group `&\"synced\"` \u2014 **fixed**"
+    },
+    "F-014": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Parallel agents share one git index, so `agent ship` can be blocked by \u2014 and then unstage \u2014 another agent's staged work \u2014 **fixed**"
     },
     "F-015": {
       "done_at": "2026-08-16T16:50:24+00:00",
@@ -3508,7 +3566,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A finding cannot be claimed, so fixing one always edits unclaimed files"
+      "title": "A finding could not be claimed, so fixing one always edited unclaimed files \u2014 **fixed**"
     },
     "F-016": {
       "done_at": "2026-08-17T04:46:47+00:00",
@@ -3517,7 +3575,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A brand-new `class_name` is not resolvable by bare identifier in a `--script` main loop"
+      "title": "A brand-new `class_name` is not resolvable by bare identifier in a `--script` main loop \u2014 **fixed**"
     },
     "F-017": {
       "done_at": "2026-08-17T04:51:38+00:00",
@@ -3526,7 +3584,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A brand-new script still ships without its `.uid`, because the sidecar does not exist yet"
+      "title": "A brand-new script still ships without its `.uid`, because the sidecar does not exist yet \u2014 **fixed**"
     },
     "F-018": {
       "done_at": "2026-08-17T04:46:47+00:00",
@@ -3535,7 +3593,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`PlayerNet` has no way to be told when a player spawns, so observers reach into its children"
+      "title": "`PlayerNet` has no way to be told when a player spawns, so observers reach into its children \u2014 **fixed**"
     },
     "F-019": {
       "done_at": "2026-08-16T19:12:29+00:00",
@@ -3544,7 +3602,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Generated asset import sidecars flood every clean-tree audit"
+      "title": "Generated asset import sidecars flood every clean-tree audit \u2014 **fixed**"
     },
     "F-020": {
       "est": "\u2014",
@@ -3560,7 +3618,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "The net debug panel harness passes while Godot reports an uninitialized multiplayer root"
+      "title": "The net debug panel harness passes while Godot reports an uninitialized multiplayer root \u2014 **fixed**"
     },
     "F-022": {
       "done_at": "2026-08-16T19:27:42+00:00",
@@ -3569,7 +3627,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Project metadata retained the superseded \"Muck but better\" name"
+      "title": "Project metadata retained the superseded \"Muck but better\" name \u2014 **fixed**"
     },
     "F-023": {
       "est": "\u2014",
@@ -3599,14 +3657,14 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A deferred task pins the board's active milestone forever, hiding all remaining work"
+      "title": "A deferred task pins the board's active milestone forever, hiding all remaining work \u2014 **fixed**"
     },
     "F-027": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
-      "title": "`NetInterest.configure()` does not keep its returned filter alive"
+      "title": "`NetInterest.configure()` did not keep its returned filter alive \u2014 **fixed**"
     },
     "F-028": {
       "done_at": "2026-08-17T04:46:47+00:00",
@@ -3615,7 +3673,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`verify_setup.gd` hard-codes the superseded greybox main scene"
+      "title": "`verify_setup.gd` hard-codes the superseded greybox main scene \u2014 **fixed**"
     },
     "F-029": {
       "done_at": "2026-08-17T01:24:51+00:00",
@@ -3624,7 +3682,14 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Task 2.3's harvest lifecycle is not wired into the playable map"
+      "title": "Task 2.3's harvest lifecycle was not wired into the playable map \u2014 **fixed**"
+    },
+    "F-030": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Replicated harvest state could briefly create a doomed VFX target \u2014 **fixed**"
     },
     "F-031": {
       "done_at": "2026-08-17T04:46:47+00:00",
@@ -3633,7 +3698,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`DELEGATION.md` still describes the pre-polish Playtest Hollow layout"
+      "title": "`DELEGATION.md` still describes the pre-polish Playtest Hollow layout \u2014 **fixed**"
     },
     "F-032": {
       "done_at": "2026-08-17T15:43:36+00:00",
@@ -3642,7 +3707,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Auto-rejoin assigns a new peer id, so peer-keyed gameplay state cannot follow it"
+      "title": "Auto-rejoin assigns a new peer id, so peer-keyed gameplay state cannot follow it \u2014 **fixed**"
     },
     "F-033": {
       "done_at": "2026-08-17T02:41:22+00:00",
@@ -3651,7 +3716,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Inventory hotbar aliases eight backpack slots instead of adding eight separate slots"
+      "title": "Inventory hotbar aliases eight backpack slots instead of adding eight separate slots \u2014 **fixed**"
     },
     "F-034": {
       "done_at": "2026-08-17T04:51:38+00:00",
@@ -3660,7 +3725,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`agent ship` silently drops directory claims and appends stray argv to the commit message"
+      "title": "`agent ship` silently drops directory claims and appends stray argv to the commit message \u2014 **fixed**"
     },
     "F-035": {
       "done_at": "2026-08-17T04:39:09+00:00",
@@ -3669,7 +3734,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Inventory icons are capped at 26 px because a `CenterContainer` sizes children to their minimum"
+      "title": "Inventory icons are capped at 26 px because a `CenterContainer` sizes children to their minimum \u2014 **fixed**"
     },
     "F-036": {
       "est": "\u2014",
@@ -3685,7 +3750,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`net_debug_panel_check` fakes its second peer in-process, so host and client share one tree"
+      "title": "`net_debug_panel_check` fakes its second peer in-process, so host and client share one tree \u2014 **fixed**"
     },
     "F-038": {
       "done_at": "2026-08-18T13:48:01+00:00",
@@ -3694,7 +3759,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`inventory_net_check` intermittently fails its grant wait under machine load"
+      "title": "`inventory_net_check` intermittently fails its grant wait under machine load, and `combat_net_check`'s sibling flake \u2014 **fixed**"
     },
     "F-039": {
       "done_at": "2026-08-17T16:31:36+00:00",
@@ -3703,7 +3768,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A-006's crawler faces +Z, but its generator, catalog and docs all say -Z"
+      "title": "A-006's crawler faces +Z, but its generator, catalog and docs all say -Z \u2014 **fixed**"
     },
     "F-040": {
       "done_at": "2026-08-17T16:31:36+00:00",
@@ -3712,7 +3777,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A dead enemy falls through the world"
+      "title": "A dead enemy falls through the world \u2014 **fixed**"
     },
     "F-041": {
       "done_at": "2026-08-17T16:52:06+00:00",
@@ -3721,7 +3786,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Held items are invisible in first person, so there is no swing to read"
+      "title": "Held items are invisible in first person, so there is no swing to read \u2014 **fixed**"
     },
     "F-042": {
       "done_at": "2026-08-18T18:22:34+00:00",
@@ -3730,14 +3795,14 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one"
+      "title": "Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one \u2014 **fixed**"
     },
     "F-043": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
-      "title": "The iron sword ships complete and nothing puts it in a player's hand"
+      "title": "The iron sword ships complete and nothing puts it in a player's hand \u2014 **decided, won't add**"
     },
     "F-044": {
       "est": "\u2014",
@@ -3753,7 +3818,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`pgrep -fl Godot` is too blunt to be the closed-editor guard"
+      "title": "`pgrep -fl Godot` is too blunt to be the closed-editor guard \u2014 **fixed**"
     },
     "F-046": {
       "done_at": "2026-08-17T18:48:57+00:00",
@@ -3762,7 +3827,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`viewmodel.gd` names autoloads bare, so any harness compiling `PlayerController` gets a viewmodel-less player"
+      "title": "`viewmodel.gd` named autoloads bare, so any harness compiling `PlayerController` got a viewmodel-less player \u2014 **fixed**"
     },
     "F-047": {
       "done_at": "2026-08-17T18:49:19+00:00",
@@ -3771,7 +3836,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`harvest_world_check` asserts an absolute log count that DevLoadout's starting grant breaks"
+      "title": "`harvest_world_check` asserted an absolute log count that DevLoadout's grant breaks \u2014 **fixed**"
     },
     "F-048": {
       "done_at": "2026-08-17T18:49:21+00:00",
@@ -3780,7 +3845,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Three content generators overwrite tuned or later-batch values silently; one strips icons today"
+      "title": "Three content generators overwrote tuned or later-batch values silently \u2014 **fixed**"
     },
     "F-049": {
       "done_at": "2026-08-17T19:12:34+00:00",
@@ -3789,7 +3854,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "The board never closes a finding resolved out-of-band, and never learns of new ones until a claim"
+      "title": "The board never closed a finding resolved out-of-band, and never learned of new ones until a claim \u2014 **fixed**"
     },
     "F-050": {
       "done_at": "2026-08-17T19:02:17+00:00",
@@ -3798,7 +3863,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Governing docs contradict D-031 in six places, an unclosed code fence hides eight decisions, and the budget table is 51 sessions stale"
+      "title": "Governing docs contradicted D-031 in six places; an unclosed fence hid eight decisions; the budget table was 51 sessions stale \u2014 **fixed**"
     },
     "F-051": {
       "done_at": "2026-08-17T19:05:38+00:00",
@@ -3807,7 +3872,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Five SPECS blocks claim `project.godot`, which would collapse three lanes back to one"
+      "title": "Five SPECS blocks claimed `project.godot`, which would collapse three lanes back to one \u2014 **fixed**"
     },
     "F-052": {
       "done_at": "2026-08-17T23:13:44+00:00",
@@ -3816,7 +3881,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it"
+      "title": "The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it \u2014 **fixed**"
     },
     "F-053": {
       "done_at": "2026-08-18T14:02:22+00:00",
@@ -3825,7 +3890,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why"
+      "title": "Agents still told Sequoyah they can't edit scene files; the docs' hand-off-by-default tone was why \u2014 **fixed**"
     },
     "F-054": {
       "done_at": "2026-08-17T23:43:56+00:00",
@@ -3834,14 +3899,14 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "There is no launch path into LAN mode, so a second physical machine cannot join at all"
+      "title": "There is no launch path into LAN mode, so a second physical machine cannot join at all \u2014 **fixed**"
     },
     "F-055": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
-      "title": "Committed HEAD boots with a failed autoload \u2014 `c187ede` deleted a script but left it registered"
+      "title": "`core/util/mire_log.gd`'s `CHANNELS` list has no `health` channel \u2014 **fixed**"
     },
     "F-056": {
       "done_at": "2026-08-18T01:20:10+00:00",
@@ -3850,7 +3915,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Jolt treats the heightfield as one-sided, so you fall through the map on join \u2014 **fixed**"
+      "title": "The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join \u2014 **fixed**"
     },
     "F-057": {
       "est": "\u2014",
@@ -3866,7 +3931,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`docs/FINDINGS.md` carried two F-055s and two F-056s at once \u2014 concurrent lanes both used `agent brief`'s \"next number\""
+      "title": "`docs/FINDINGS.md` carried two F-055s and two F-056s at once \u2014 concurrent lanes both used `agent brief`'s \"next number\" \u2014 **fixed**"
     },
     "F-059": {
       "done_at": "2026-08-18T04:23:58+00:00",
@@ -3875,7 +3940,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`InventoryService._publish_snapshot`'s `net_inventory_snapshot.rpc_id()` is unguarded against a departed peer, same shape as the bug task 3.8 fixed in `player_health.gd`"
+      "title": "`InventoryService._publish_snapshot`'s `net_inventory_snapshot.rpc_id()` is unguarded against a departed peer, same shape as the bug task 3.8 fixed in `player_health.gd` \u2014 **fixed**"
     },
     "F-060": {
       "done_at": "2026-08-18T04:33:16+00:00",
@@ -3884,7 +3949,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Two-process net check authors: `local_peer_id() > HOST_PEER_ID` is not proof of a live connection, and mutating what `Node.get()` returns on a typed Dictionary property may not stick"
+      "title": "Two-process net check authors: `local_peer_id() > HOST_PEER_ID` is not proof of a live connection, and mutating what `Node.get()` returns on a typed Dictionary property may not stick \u2014 **fixed**"
     },
     "F-061": {
       "done_at": "2026-08-18T14:15:06+00:00",
@@ -3893,7 +3958,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "content/items/coins.tres has no icon \u2014 the render_item_icons.py pipeline needs a SOURCES entry"
+      "title": "content/items/coins.tres has no icon \u2014 the render_item_icons.py pipeline needs a SOURCES entry \u2014 **fixed**"
     },
     "F-062": {
       "done_at": "2026-08-18T01:38:26+00:00",
@@ -3902,7 +3967,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Every melee swing hits the attacker's own body first"
+      "title": "Every melee swing hits the attacker's own body first \u2014 **fixed**"
     },
     "F-063": {
       "done_at": "2026-08-18T01:38:32+00:00",
@@ -3911,7 +3976,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Offline respawn teleports the player to world origin"
+      "title": "Offline respawn teleports the player to world origin \u2014 **fixed**"
     },
     "F-064": {
       "done_at": "2026-08-18T01:38:32+00:00",
@@ -3920,7 +3985,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Downed, bleeding out and dead are invisible to the player"
+      "title": "Downed, bleeding out and dead are invisible to the player \u2014 **fixed**"
     },
     "F-065": {
       "done_at": "2026-08-18T02:48:51+00:00",
@@ -3929,7 +3994,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Night sky still reads as daytime \u2014 white clouds, no stars"
+      "title": "Night sky still reads as daytime \u2014 white clouds, no stars \u2014 **fixed**"
     },
     "F-066": {
       "done_at": "2026-08-18T02:29:39+00:00",
@@ -3956,7 +4021,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "The night wave spawner shipped without being registered, so no waves run"
+      "title": "The night wave spawner shipped without being registered, so no waves run \u2014 **fixed**"
     },
     "F-069": {
       "done_at": "2026-08-18T02:53:04+00:00",
@@ -3965,7 +4030,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`wave_spawner_check` signals a shadow DayNight node that WaveSpawner never subscribes to"
+      "title": "`wave_spawner_check` signals a shadow DayNight node that WaveSpawner never subscribes to \u2014 **fixed**"
     },
     "F-070": {
       "done_at": "2026-08-18T04:54:23+00:00",
@@ -3974,7 +4039,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Generated review orders cannot use their mandated review task id"
+      "title": "Generated review orders cannot use their mandated review task id \u2014 **fixed**"
     },
     "F-071": {
       "done_at": "2026-08-18T04:04:04+00:00",
@@ -3983,7 +4048,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Eight closed findings were still listed under '## Open', so a quarter of the board's work queue was finished work"
+      "title": "Eight closed findings were still listed under '## Open', so a quarter of the board's work queue was finished work \u2014 **fixed**"
     },
     "F-072": {
       "done_at": "2026-08-18T04:17:06+00:00",
@@ -3992,7 +4057,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A claim on a docs/ file is accepted, shown on the board, and enforced by nothing"
+      "title": "A claim on a docs/ file is accepted, shown on the board, and enforced by nothing \u2014 **fixed**"
     },
     "F-073": {
       "done_at": "2026-08-18T04:58:38+00:00",
@@ -4001,7 +4066,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Every tool shares one grip rotation authored for a sword, so the axe is held edge-on and every weapon swings the same chop"
+      "title": "Every tool shares one grip rotation authored for a sword, so the axe is held edge-on and every weapon swings the same chop \u2014 **fixed**"
     },
     "F-074": {
       "done_at": "2026-08-18T05:09:10+00:00",
@@ -4010,7 +4075,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "InventoryService._valid_host_peer's connectivity check silently drops a host grant for a peer mid-D-035-grace-window, instead of parking it"
+      "title": "InventoryService._valid_host_peer's connectivity check silently drops a host grant for a peer mid-D-035-grace-window, instead of parking it \u2014 **fixed**"
     },
     "F-075": {
       "done_at": "2026-08-18T14:37:19+00:00",
@@ -4019,7 +4084,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "World statics and props share collision layer 1, so a placement overlap query cannot tell ground from obstruction"
+      "title": "World statics and props shared collision layer 1, so a placement overlap query could not tell ground from obstruction \u2014 **fixed**"
     },
     "F-076": {
       "done_at": "2026-08-18T14:44:41+00:00",
@@ -4028,7 +4093,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A new map inherits none of the systems keyed to the old map's group names"
+      "title": "A new map inherits none of the systems keyed to the old map's group names \u2014 **fixed for EnemyWorld/HarvestWorld; Undergrowth follows in F-112**"
     },
     "F-077": {
       "done_at": "2026-08-18T13:30:42+00:00",
@@ -4037,7 +4102,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`agent godot` is always headless, so no in-engine screenshot can ever be captured"
+      "title": "`agent godot` was always headless, so no in-engine screenshot could be captured \u2014 **fixed**"
     },
     "F-078": {
       "done_at": "2026-08-18T04:53:36+00:00",
@@ -4046,7 +4111,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "PowerupDef validates shape but not vocabulary \u2014 a typo'd stat name or tag loads clean and is dead forever"
+      "title": "PowerupDef validates shape but not vocabulary \u2014 a typo'd stat name or tag loads clean and is dead forever \u2014 **fixed**"
     },
     "F-079": {
       "done_at": "2026-08-18T13:55:00+00:00",
@@ -4055,7 +4120,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "The obvious way to \"compare decoded pixels\" silently reports every RGB-only change as identical"
+      "title": "The obvious way to \"compare decoded pixels\" silently reports every RGB-only change as identical \u2014 **fixed**"
     },
     "F-080": {
       "done_at": "2026-08-18T13:22:55+00:00",
@@ -4064,7 +4129,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`git stash` in this repo stashes every other lane's uncommitted work too"
+      "title": "`git stash` in this repo stashed every other lane's uncommitted work too \u2014 **fixed**"
     },
     "F-081": {
       "done_at": "2026-08-18T13:13:28+00:00",
@@ -4073,7 +4138,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Every ship blanket-stages .agent/, so one agent's commit silently carries another's in-progress harness edits"
+      "title": "Every ship blanket-staged `.agent/`, so one agent's commit carried another's in-progress harness edits \u2014 **fixed**"
     },
     "F-082": {
       "done_at": "2026-08-18T05:46:29+00:00",
@@ -4082,7 +4147,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Placement support succeeds when only one of five footprint probes hits"
+      "title": "Placement support succeeded when only one of five footprint probes hit \u2014 **fixed**"
     },
     "F-083": {
       "done_at": "2026-08-18T12:59:09+00:00",
@@ -4091,7 +4156,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Snapping the aim hit's Y coordinate rejects or floats pieces on ordinary terrain heights"
+      "title": "Snapping the aim hit's Y coordinate rejects or floats pieces on ordinary terrain heights \u2014 **fixed**"
     },
     "F-084": {
       "done_at": "2026-08-18T05:19:32+00:00",
@@ -4100,7 +4165,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Any client can destroy any buildable by its guessable node name from any distance"
+      "title": "Any client can destroy any buildable by its guessable node name from any distance \u2014 **fixed**"
     },
     "F-085": {
       "done_at": "2026-08-18T05:53:36+00:00",
@@ -4109,14 +4174,14 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Buildables join `damageable` without implementing its required damage method"
+      "title": "Buildables join `damageable` without implementing its required damage method \u2014 **fixed**"
     },
     "F-086": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
-      "title": "The building system has no gameplay caller, so no player can place, rotate, or destroy anything"
+      "title": "The building system has no gameplay caller, so no player can place, rotate, or destroy anything \u2014 **fixed**"
     },
     "F-087": {
       "done_at": "2026-08-18T05:30:56+00:00",
@@ -4125,7 +4190,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Three open findings share their F-number with a different finding, so brief routes to the wrong one and start reports two of them as already closed"
+      "title": "Three open findings share their F-number with a different finding, so brief routes to the wrong one and start reports two of them as already closed \u2014 **fixed**"
     },
     "F-088": {
       "done_at": "2026-08-18T05:01:01+00:00",
@@ -4134,7 +4199,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A review order inherits the reviewed task's claim set, so it is refused exactly when that task is being worked on"
+      "title": "A review order inherits the reviewed task's claim set, so it is refused exactly when that task is being worked on \u2014 **fixed**"
     },
     "F-089": {
       "done_at": "2026-08-18T05:35:30+00:00",
@@ -4143,7 +4208,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Powerup lifecycle never removes obsolete family counts from clients, leaving ghost Resonances after reconnect or expiry"
+      "title": "Powerup lifecycle never removed obsolete family counts from clients, leaving ghost Resonances after reconnect or expiry \u2014 **fixed**"
     },
     "F-090": {
       "done_at": "2026-08-18T09:06:54+00:00",
@@ -4152,7 +4217,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Frame budget audit: ~100 fps where hundreds are expected"
+      "title": "Frame budget audit: ~100 fps where hundreds are expected \u2014 **fixed**"
     },
     "F-091": {
       "done_at": "2026-08-18T12:54:22+00:00",
@@ -4161,7 +4226,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Two ways the harness lets a fed lane sit idle: a parked lane is never restarted, and a lane's own claim blocks deepening its queue"
+      "title": "Two ways the harness lets a fed lane sit idle: a parked lane is never restarted, and a lane's own claim blocks deepening its queue \u2014 **fixed**"
     },
     "F-092": {
       "done_at": "2026-08-18T15:00:10+00:00",
@@ -4170,7 +4235,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call"
+      "title": "`mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call \u2014 **fixed**"
     },
     "F-093": {
       "done_at": "2026-08-18T18:05:56+00:00",
@@ -4179,7 +4244,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build"
+      "title": "A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build \u2014 **fixed**"
     },
     "F-094": {
       "done_at": "2026-08-18T18:02:23+00:00",
@@ -4188,7 +4253,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float"
+      "title": "`mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float \u2014 **fixed**"
     },
     "F-095": {
       "done_at": "2026-08-18T13:06:18+00:00",
@@ -4197,7 +4262,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Post-F-090 frame/load seams: flora part merge, terrain occlusion, world-build time"
+      "title": "Post-F-090 frame/load seams: world build was 9 s of duplicate work; two frame ideas measured and rejected \u2014 **fixed**"
     },
     "F-096": {
       "done_at": "2026-08-18T12:56:53+00:00",
@@ -4206,7 +4271,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "The quota parser only understands the word reset, so Codex's dated try-again message falls through to a blind five-hour default"
+      "title": "The quota parser only understands the word reset, so Codex's dated try-again message falls through to a blind five-hour default \u2014 **fixed**"
     },
     "F-097": {
       "done_at": "2026-08-18T14:09:47+00:00",
@@ -4215,7 +4280,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Environmental VFX is keyed to node types the shipped map never produces, so wind and firelight are dead on Hollowmere"
+      "title": "Environmental VFX was keyed to node types the shipped map never produces, so wind and firelight were dead on Hollowmere \u2014 **fixed**"
     },
     "F-098": {
       "done_at": "2026-08-18T13:15:50+00:00",
@@ -4224,7 +4289,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Draw-call discipline: static chunk batching + dynamic resolution (DOOM/Roblox research)"
+      "title": "Draw-call discipline: what DOOM and Roblox actually do, dynamic resolution shipped, batching handed to F-100 \u2014 **fixed**"
     },
     "F-099": {
       "done_at": "2026-08-18T14:10:44+00:00",
@@ -4233,26 +4298,26 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Optimization sweep: per-frame costs and dead weight across runtime scripts"
+      "title": "Optimization sweep: per-frame costs and dead weight across runtime scripts \u2014 **fixed**"
     },
     "F-100": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
       "title": "Static chunk batching for authored props \u2014 designed, measured-in-principle, blocked on F-097"
     },
     "F-101": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
       "title": "Build-mode \"attack\" (confirm/swing) and `harvest_world.gd`'s own independent listener are unmediated"
     },
     "F-102": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
       "title": "docs/FINDINGS.md is the one file every lane must write and no lane can hold, so every close-out commit carries other lanes' half-written findings"
     },
@@ -4263,7 +4328,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin"
+      "title": "MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin \u2014 **fixed**"
     },
     "F-104": {
       "done_at": "2026-08-18T14:17:10+00:00",
@@ -4272,7 +4337,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A new `class_name` is invisible to every headless run until the editor rescans, and it fails as a silent hang"
+      "title": "A new `class_name` is invisible to every headless run until the editor rescans, and it fails as a silent hang \u2014 **the hang is now caught; the advice stands**"
     },
     "F-105": {
       "done_at": "2026-08-18T14:55:48+00:00",
@@ -4281,7 +4346,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Per-frame costs found by the F-099 review in files claimed by F-086/F-097"
+      "title": "Per-frame costs found by the F-099 review in files claimed by F-086/F-097 \u2014 **fixed**"
     },
     "F-106": {
       "done_at": "2026-08-18T14:08:27+00:00",
@@ -4290,7 +4355,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A neighbour's half-finished refactor breaks every other agent's checks, and the failure looks like your own"
+      "title": "A neighbour's half-finished refactor breaks every other agent's checks, and the failure looks like your own \u2014 **fixed**"
     },
     "F-107": {
       "done_at": "2026-08-18T14:23:28+00:00",
@@ -4299,7 +4364,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "chest_net_check's two host-side grant assertions fail at HEAD; client side is green"
+      "title": "chest_net_check's two host-side grant assertions fail at HEAD; client side is green \u2014 **fixed**"
     },
     "F-108": {
       "done_at": "2026-08-18T19:25:18+00:00",
@@ -4308,7 +4373,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized"
+      "title": "A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized \u2014 **fixed**"
     },
     "F-109": {
       "done_at": "2026-08-18T19:32:23+00:00",
@@ -4317,7 +4382,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them"
+      "title": "The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them \u2014 **fixed**"
     },
     "F-110": {
       "done_at": "2026-08-18T19:36:32+00:00",
@@ -4326,7 +4391,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`audit_all_sides.py` silently resumes, so a re-run after fixing an asset re-reports the old defect"
+      "title": "`audit_all_sides.py` silently resumes, so a re-run after fixing an asset re-reports the old defect \u2014 **fixed**"
     },
     "F-111": {
       "done_at": "2026-08-18T18:16:36+00:00",
@@ -4335,7 +4400,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`enemy_check.gd`'s telegraph/swing assertions fail at HEAD, unrelated to F-075"
+      "title": "`enemy_check.gd`'s telegraph/swing assertions fail at HEAD, unrelated to F-075 \u2014 **fixed**"
     },
     "F-112": {
       "est": "\u2014",
@@ -4351,7 +4416,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "One axe swing depletes a whole tree: the harvest raycast and the combat swing both damage it, and neither knows what tool you are holding"
+      "title": "One axe swing depletes a whole tree: the harvest raycast and the combat swing both damage it, and neither knows what tool you are holding \u2014 **fixed**"
     },
     "F-114": {
       "done_at": "2026-08-18T17:55:20+00:00",
@@ -4360,7 +4425,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Only 83 of Hollowmere's 2,869 props can be harvested: harvestability is authored per-placement in the layout instead of per-asset"
+      "title": "Only 83 of Hollowmere's 2,869 props can be harvested: harvestability is authored per-placement in the layout instead of per-asset \u2014 **fixed**"
     },
     "F-115": {
       "done_at": "2026-08-18T18:07:48+00:00",
@@ -4369,7 +4434,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map"
+      "title": "Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map \u2014 **fixed**"
     },
     "F-116": {
       "done_at": "2026-08-18T17:56:19+00:00",
@@ -4378,7 +4443,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Two items now own the same branch art: harvesting ships 'stick' while ITEMS.md and task 3.2 plan 'branch'"
+      "title": "Two items now own the same branch art: harvesting ships 'stick' while ITEMS.md and task 3.2 plan 'branch' \u2014 **fixed**"
     },
     "F-117": {
       "done_at": "2026-08-18T18:30:33+00:00",
@@ -4387,7 +4452,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "F-072's docs-file claim enforcement blocks the second lane's commit, but the first lane's `ship` still sweeps the second lane's uncommitted edits into its own commit"
+      "title": "F-072's docs-file claim enforcement blocks the second lane's commit, but the first lane's `ship` still sweeps the second lane's uncommitted edits into its own commit \u2014 **fixed**"
     },
     "F-118": {
       "done_at": "2026-08-18T18:15:00+00:00",
@@ -4396,7 +4461,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "The forest has no ambient life: nothing falls, drifts or settles, so a still frame of the map is a still frame"
+      "title": "The forest has no ambient life: nothing falls, drifts or settles, so a still frame of the map is a still frame \u2014 **fixed**"
     },
     "F-119": {
       "done_at": "2026-08-18T18:36:06+00:00",
@@ -4405,7 +4470,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "`agent godot`'s own `--import` pre-pass logs two UNDECLARED `ERROR:` lines on every single invocation"
+      "title": "`agent godot`'s own `--import` pre-pass logs two UNDECLARED `ERROR:` lines on every single invocation \u2014 **fixed**"
     },
     "F-120": {
       "done_at": "2026-08-18T20:43:28+00:00",
@@ -4414,7 +4479,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed"
+      "title": "AGENTS.md's own documented manual editor check misses a real launch shape (`-e <scene>`), reading a running editor as closed \u2014 **fixed**"
     },
     "F-121": {
       "done_at": "2026-08-18T19:20:30+00:00",
@@ -4423,7 +4488,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Exported builds load zero content: .tres scan misses Godot's .remap suffix"
+      "title": "Exported builds load zero content: .tres scan misses Godot's .remap suffix \u2014 **fixed**"
     },
     "F-122": {
       "est": "\u2014",
@@ -4439,7 +4504,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Friends list offers no Join Game: the lobby is never advertised via the 'connect' rich presence key"
+      "title": "Friends list offers no Join Game: the lobby is never advertised via the 'connect' rich presence key \u2014 **fixed**"
     },
     "F-124": {
       "done_at": "2026-08-18T19:39:51+00:00",
@@ -4448,12 +4513,12 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "macOS builds cannot show the Steam overlay: hardened runtime without the dyld entitlement blocks injection"
+      "title": "macOS builds cannot show the Steam overlay: hardened runtime without the dyld entitlement blocks injection \u2014 **fixed**"
     },
     "F-125": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Thin Step authors dodge_iframe_seconds, but D-072 left no i-frame timer for it to extend"
     },
@@ -4471,7 +4536,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Steam overlay's Join Game does nothing: only the lobby-invite callback is connected, not the rich-presence one"
+      "title": "Steam overlay's Join Game does nothing: only the lobby-invite callback is connected, not the rich-presence one \u2014 **fixed**"
     },
     "F-128": {
       "est": "\u2014",
@@ -4487,7 +4552,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Players spawn on top of each other: the spawn slot is a live child count, not a held claim"
+      "title": "Players spawn on top of each other: the spawn slot is a live child count, not a held claim \u2014 **fixed**"
     },
     "F-130": {
       "est": "\u2014",
@@ -4503,7 +4568,21 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A finding auto-closed by the F-049 sync rule can never reopen, so a transient FINDINGS.md error permanently hides real work \u2014 F-112 and F-036 are both invisible to the board right now"
+      "title": "A finding auto-closed by the F-049 sync rule can never reopen, so a transient FINDINGS.md error permanently hides real work \u2014 F-112 and F-036 are both invisible to the board right now \u2014 **fixed**"
+    },
+    "F-132": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A remote client's scattered harvestable proxy may have no host counterpart to reach, because `ChunkStreamer` streams per-peer independently"
+    },
+    "F-133": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Task 4.3's chunk mesher winds every terrain triangle inside-out \u2014 the ground renders and collides only from below"
     }
   },
   "version": 1

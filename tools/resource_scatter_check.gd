@@ -1,0 +1,327 @@
+extends SceneTree
+
+## Verifies task 4.4 — world/gen/resource_scatter.gd's pure placement generator, the
+## content/scatter/*.tres worked examples, and world/gen/resource_scatter_field.gd's chunk-driven
+## visual + harvest-proxy wiring.
+##
+## Runs fully headless. The pure generator needs no renderer at all. The wiring half drives
+## ResourceScatterField against a small fake streamer double (declared below) instead of a real
+## ChunkStreamer, so it needs neither `--windowed` (F-005/D-074's collision-cook timing caveat)
+## nor real `MultiMesh` readback (F-103) to prove the state machine — pending, built, torn down,
+## depletion remembered, rebuilt — is correct. It DOES exercise the real `Registry` and
+## `HarvestWorld` autoloads, so the proof that a scattered point becomes a live, host-authoritative
+## `Harvestable` is a proof about the shipped wiring, not a private copy of it (F-068/F-069
+## precedent, same reasoning tools/biome_check.gd's own header gives).
+##
+##   .agent/bin/agent godot --script tools/resource_scatter_check.gd
+
+const ResourceScatterLib := preload("res://world/gen/resource_scatter.gd")
+const ResourceScatterFieldScript := preload("res://world/gen/resource_scatter_field.gd")
+const IslandHeightmap := preload("res://world/gen/island_heightmap.gd")
+const BiomeMap := preload("res://world/gen/biome_map.gd")
+const HarvestLib := preload("res://systems/harvesting/harvest_library.gd")
+
+const SEED_A: int = 20260818
+const SEED_B: int = 4242
+
+var failures: int = 0
+var registry: Node
+
+
+## A minimal stand-in for `ChunkStreamer` — just the two signals and the one method
+## `ResourceScatterField.attach_to_streamer()` actually reads, with the collision timing under this
+## check's own control instead of a real physics cook's.
+class FakeStreamer:
+	extends Node
+	signal chunk_mesh_ready(coord: Vector2i, lod: int)
+	signal chunk_unloaded(coord: Vector2i)
+	var _collision: Dictionary[Vector2i, bool] = {}
+
+	func chunk_has_collision(coord: Vector2i) -> bool:
+		return _collision.get(coord, false)
+
+	func set_collision(coord: Vector2i, value: bool) -> void:
+		_collision[coord] = value
+
+
+func _initialize() -> void:
+	call_deferred("_run")
+
+
+func _run() -> void:
+	await process_frame
+	registry = root.get_node_or_null(^"Registry")
+	check(registry != null, "Registry is registered as an autoload")
+
+	_check_wiring()
+	_check_determinism()
+	_check_biome_gate()
+	_check_bounds()
+	await _check_field_lifecycle()
+
+	print("\nRESOURCE_SCATTER_CHECK failures=%d" % failures)
+	quit(0 if failures == 0 else 1)
+
+
+func _check_wiring() -> void:
+	print("== the shipped project actually loads scatter content ==")
+	if registry == null:
+		return
+	var tables: Dictionary = registry.get(&"scatter_tables")
+	check(tables.size() >= 2, "at least the 2 worked-example tables load (%d)" % tables.size())
+	for id: StringName in [&"forest_canopy", &"forest_undergrowth"]:
+		check(bool(registry.call(&"has_scatter_table", id)),
+			"content/scatter/%s.tres is indexed by its id" % id)
+		var def: Resource = registry.call(&"get_scatter_table", id)
+		if def != null:
+			var errors: PackedStringArray = def.call(&"validation_errors")
+			check(errors.is_empty(), "%s has no validation errors (%s)" % [id, errors])
+
+
+func _check_determinism() -> void:
+	print("\n== ResourceScatter.placements_for_chunk() is pure and deterministic ==")
+	var scatter_defs: Array = registry.get(&"scatter_tables").values()
+	var biome_defs: Array = registry.get(&"biomes").values()
+
+	var p1: Array[Dictionary] = ResourceScatterLib.placements_for_chunk(3, -2, SEED_A, scatter_defs, biome_defs)
+	var p2: Array[Dictionary] = ResourceScatterLib.placements_for_chunk(3, -2, SEED_A, scatter_defs, biome_defs)
+	check(_same_placements(p1, p2),
+		"same (chunk, seed) returns the identical placement list twice (%d vs %d points)" % [p1.size(), p2.size()])
+
+	var p3: Array[Dictionary] = ResourceScatterLib.placements_for_chunk(3, -2, SEED_B, scatter_defs, biome_defs)
+	check(not _same_placements(p1, p3), "a different world seed changes the field")
+
+	var ids: Dictionary = {}
+	var unique_ok := true
+	for placement: Dictionary in p1:
+		var point_id: String = placement["point_id"]
+		if ids.has(point_id):
+			unique_ok = false
+			break
+		ids[point_id] = true
+	check(unique_ok, "every placement in one chunk has a unique point_id")
+
+
+func _check_biome_gate() -> void:
+	print("\n== a table never places outside its own biome ==")
+	var scatter_defs: Array = registry.get(&"scatter_tables").values()
+	var biome_defs: Array = registry.get(&"biomes").values()
+
+	var checked_any := false
+	var all_in_biome := true
+	for cx in range(-6, 6):
+		for cz in range(-6, 6):
+			var placements: Array[Dictionary] = ResourceScatterLib.placements_for_chunk(
+				cx, cz, SEED_A, scatter_defs, biome_defs
+			)
+			for placement: Dictionary in placements:
+				checked_any = true
+				var def: Resource = registry.call(&"get_scatter_table", placement["def_id"])
+				var pos: Vector3 = placement["position"]
+				var height: float = IslandHeightmap.height(pos.x, pos.z, SEED_A)
+				var moisture: float = BiomeMap.moisture(pos.x, pos.z, SEED_A)
+				var biome: StringName = BiomeMap.assign(height, moisture, biome_defs)
+				if biome != def.get(&"biome_id"):
+					all_in_biome = false
+	check(checked_any, "at least one placement was produced across the sampled chunks")
+	check(all_in_biome, "every placed point's world position actually resolves to its table's biome")
+
+
+func _check_bounds() -> void:
+	print("\n== placements land within their own chunk's footprint ==")
+	var scatter_defs: Array = registry.get(&"scatter_tables").values()
+	var biome_defs: Array = registry.get(&"biomes").values()
+	var chunk_size: int = ResourceScatterLib.CHUNK_MESHER.CHUNK_SIZE
+	var found_any := false
+	var in_bounds := true
+	for cx in range(-6, 6):
+		for cz in range(-6, 6):
+			var placements: Array[Dictionary] = ResourceScatterLib.placements_for_chunk(
+				cx, cz, SEED_A, scatter_defs, biome_defs
+			)
+			var origin_x: float = float(cx * chunk_size)
+			var origin_z: float = float(cz * chunk_size)
+			for placement: Dictionary in placements:
+				found_any = true
+				var pos: Vector3 = placement["position"]
+				if pos.x < origin_x or pos.x >= origin_x + chunk_size \
+						or pos.z < origin_z or pos.z >= origin_z + chunk_size:
+					in_bounds = false
+	check(found_any, "at least one placement was produced to bounds-check")
+	check(in_bounds, "every placement's X/Z stays inside its own chunk's %dm footprint" % chunk_size)
+
+
+func _check_field_lifecycle() -> void:
+	print("\n== ResourceScatterField materializes/tears down proxies with the LOD0/collision ring ==")
+	var biome_defs: Array = registry.get(&"biomes").values()
+	var scatter_defs: Array = registry.get(&"scatter_tables").values()
+	var coord: Vector2i = _find_chunk_with_both_representations(SEED_A, scatter_defs, biome_defs)
+	check(coord != _NOT_FOUND,
+		"found a chunk near the origin producing both a NODE and a BATCH harvestable to test against (%s)" % coord)
+	if coord == _NOT_FOUND:
+		return
+
+	var scene := Node3D.new()
+	scene.name = "ScatterCheckScene"
+	root.add_child(scene)
+	current_scene = scene
+
+	var field := ResourceScatterFieldScript.new()
+	field.world_seed = SEED_A
+	field.scatter_defs = registry.get(&"scatter_tables").values()
+	field.biome_defs = biome_defs
+	scene.add_child(field)
+
+	var fake_streamer := FakeStreamer.new()
+	scene.add_child(fake_streamer)
+	field.attach_to_streamer(fake_streamer)
+
+	var harvest: Node = root.get_node_or_null(^"HarvestWorld")
+	check(harvest != null, "HarvestWorld autoload exists")
+
+	fake_streamer.chunk_mesh_ready.emit(coord, 0)
+	await process_frame
+	check(field.pending_count() == 1,
+		"a LOD0 chunk_mesh_ready with no collider yet waits, rather than building immediately")
+	check(field.chunk_count() == 0, "nothing is built while the chunk still has no collider")
+
+	fake_streamer.set_collision(coord, true)
+	await _wait_real_seconds(0.35)
+	check(field.chunk_count() == 1, "the chunk builds once chunk_has_collision() reports true")
+	check(field.pending_count() == 0, "the pending queue drains once built")
+
+	if harvest != null:
+		harvest.call("refresh_current_scene")
+	for _frame: int in 4:
+		await process_frame
+
+	var node_holders: Array[Node] = scene.find_children("Harvest_*", "", true, false)
+	var batch_holders: Array[Node] = scene.find_children("HarvestBatch_*", "", true, false)
+	check(not node_holders.is_empty(), "the forest canopy table produced at least one NODE proxy (%d)" % node_holders.size())
+	check(not batch_holders.is_empty(), "the forest undergrowth table produced at least one BATCH proxy (%d)" % batch_holders.size())
+
+	var wired_node: Node = null
+	if not node_holders.is_empty():
+		wired_node = (node_holders[0] as Node3D).get_node_or_null(^"Harvestable")
+	check(wired_node != null,
+		"HarvestWorld's existing wiring turned a scattered NODE holder into a live Harvestable, unmodified")
+
+	var wired_batch: Node = null
+	if not batch_holders.is_empty():
+		wired_batch = (batch_holders[0] as Node3D).get_node_or_null(^"Harvestable")
+	check(wired_batch != null,
+		"HarvestWorld's existing wiring turned a scattered BATCH holder into a live Harvestable, unmodified")
+
+	# Deplete the node proxy, unload its chunk, and rebuild — the whole point of the depletion
+	# memory is that this exact point comes back down, not fresh.
+	var point_id: String = ""
+	if wired_node != null:
+		var definition: Resource = wired_node.get(&"definition")
+		point_id = String((node_holders[0] as Node3D).get_meta(&"point_id", ""))
+		check(bool(wired_node.call("host_apply_damage", int(definition.get(&"max_health")), 1)),
+			"the proxy accepts a lethal host hit like any other Harvestable")
+		await _settle()
+		check(not bool(wired_node.get(&"active")), "the proxy depletes")
+
+	fake_streamer.chunk_unloaded.emit(coord)
+	check(field.chunk_count() == 0, "the chunk tears down on chunk_unloaded")
+	if not point_id.is_empty():
+		check(field.is_point_depleted(point_id),
+			"the field remembers this point was depleted before freeing its holder")
+
+	fake_streamer.chunk_mesh_ready.emit(coord, 0)
+	fake_streamer.set_collision(coord, true)
+	await _wait_real_seconds(0.35)
+	check(field.chunk_count() == 1, "the chunk rebuilds after coming back into range")
+	if harvest != null:
+		harvest.call("refresh_current_scene")
+	for _frame: int in WIRE_WAIT_FRAMES:
+		await process_frame
+
+	if not point_id.is_empty():
+		var rebuilt: Node3D = scene.find_child(
+			"Harvest_%s" % point_id.replace(":", "_"), true, false
+		)
+		var rebuilt_harvestable: Node = rebuilt.get_node_or_null(^"Harvestable") if rebuilt != null else null
+		check(rebuilt_harvestable != null, "the same point rebuilds a live Harvestable again")
+		if rebuilt_harvestable != null:
+			check(not bool(rebuilt_harvestable.get(&"active")),
+				"the rebuilt proxy remembers it was depleted, instead of coming back full-health")
+
+	# A chunk downgrading away from LOD0 (never unloading) tears down scatter too.
+	fake_streamer.chunk_mesh_ready.emit(coord, 1)
+	await process_frame
+	check(field.chunk_count() == 0, "a chunk that drops out of the LOD0 ring loses its scatter too")
+
+
+const WIRE_WAIT_FRAMES: int = 32
+const _NOT_FOUND := Vector2i(999999, 999999)
+
+
+## Scans outward from the origin for a chunk whose ACTUAL placement list (not just its biome)
+## contains at least one NODE-represented and one BATCH-represented harvestable — the two proxy
+## shapes this check needs to exercise together. Checking the biome alone was not enough: a chunk
+## can sit in the right biome and still roll zero trees at either table's own coverage chance.
+func _find_chunk_with_both_representations(seed_value: int, scatter_defs: Array, biome_defs: Array) -> Vector2i:
+	for radius: int in 16:
+		for cx: int in range(-radius, radius + 1):
+			for cz: int in range(-radius, radius + 1):
+				if maxi(absi(cx), absi(cz)) != radius:
+					continue
+				var placements: Array[Dictionary] = ResourceScatterLib.placements_for_chunk(
+					cx, cz, seed_value, scatter_defs, biome_defs
+				)
+				var has_node := false
+				var has_batch := false
+				for placement: Dictionary in placements:
+					var asset_id: StringName = placement["asset"]
+					if not HarvestLib.is_harvestable(asset_id):
+						continue
+					if HarvestLib.representation_for(asset_id) == HarvestLib.Represent.NODE:
+						has_node = true
+					else:
+						has_batch = true
+				if has_node and has_batch:
+					return Vector2i(cx, cz)
+	return _NOT_FOUND
+
+
+func _same_placements(a: Array, b: Array) -> bool:
+	if a.size() != b.size():
+		return false
+	for i: int in a.size():
+		var pa: Dictionary = a[i]
+		var pb: Dictionary = b[i]
+		if pa["point_id"] != pb["point_id"] or pa["asset"] != pb["asset"]:
+			return false
+		if not (pa["position"] as Vector3).is_equal_approx(pb["position"] as Vector3):
+			return false
+		if not is_equal_approx(float(pa["rotation_y"]), float(pb["rotation_y"])):
+			return false
+		if not is_equal_approx(float(pa["scale"]), float(pb["scale"])):
+			return false
+	return true
+
+
+## Physics interpolation and deferred wiring both need a beat to settle — same margin
+## tools/harvest_batch_check.gd already uses for the same reason.
+func _settle() -> void:
+	await physics_frame
+	await physics_frame
+	await process_frame
+
+
+## Real wall-clock time, not a frame count — ResourceScatterField's own poll accumulates real
+## `delta`, the same lesson task 4.3 already paid for (docs/DELEGATION.md's 4.3 entry).
+func _wait_real_seconds(seconds: float) -> void:
+	var deadline: int = Time.get_ticks_msec() + int(seconds * 1000.0)
+	while Time.get_ticks_msec() < deadline:
+		await process_frame
+
+
+func check(condition: bool, description: String) -> void:
+	if condition:
+		print("PASS: %s" % description)
+		return
+	failures += 1
+	push_error("FAIL: %s" % description)

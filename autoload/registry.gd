@@ -20,6 +20,7 @@ const BUILDABLES_PATH: String = "res://content/buildables"
 const HAULABLES_PATH: String = "res://content/haulables"
 const ATTUNEMENTS_PATH: String = "res://content/attunements"
 const BIOMES_PATH: String = "res://content/biomes"
+const SCATTER_PATH: String = "res://content/scatter"
 
 ## F-016: LootTableDef is a brand-new class_name (task 3.5) and this autoload boots in every
 ## headless run, so a bare reference here would break every check in the project the moment the
@@ -40,6 +41,9 @@ const ATTUNEMENT_DEF := preload("res://systems/attunement/attunement_def.gd")
 ## matching ARCHITECTURE.md §3's own project structure ("world/gen/ — island generation, biome
 ## placement, POI scatter") rather than the systems/<domain> convention every other Def above uses.
 const BIOME_DEF := preload("res://world/gen/biome_def.gd")
+## Same F-016 reasoning again: ScatterDef is new in task 4.4. Lives under world/gen/ for the same
+## reason BiomeDef does — §3's project structure already names it "POI scatter" territory.
+const SCATTER_DEF := preload("res://world/gen/scatter_def.gd")
 ## Preloaded like the four above so the one generic loader can use script equality uniformly —
 ## it is the F-016-safe type check for every def, established or new (F-099).
 const ITEM_DEF := preload("res://systems/inventory/item_def.gd")
@@ -81,6 +85,12 @@ var attunements: Dictionary[StringName, Resource] = {}
 ## rest (D-073 — one at a time, not a bulk sweep).
 var biomes: Dictionary[StringName, Resource] = {}
 
+## Keyed by scatter table id (task 4.4). Shared content, same shape as `recipes` — `biome_id` on
+## each table says which `BiomeDef` it dresses; `ResourceScatter` groups these by that field itself
+## rather than this dictionary being pre-grouped. One worked example ships with this task
+## (`forest`); Sequoyah authors the rest (D-073 — one at a time, not a bulk sweep).
+var scatter_tables: Dictionary[StringName, Resource] = {}
+
 
 func _ready() -> void:
 	_load_dir(ITEMS_PATH, "ItemDef", ITEM_DEF, &"id", "item id", items)
@@ -93,9 +103,11 @@ func _ready() -> void:
 	_load_dir(HAULABLES_PATH, "HaulableDef", HAULABLE_DEF, &"id", "haulable id", haulables)
 	_load_dir(ATTUNEMENTS_PATH, "AttunementDef", ATTUNEMENT_DEF, &"id", "attunement id", attunements)
 	_load_dir(BIOMES_PATH, "BiomeDef", BIOME_DEF, &"id", "biome id", biomes)
-	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d loot table(s), %d powerup(s), %d buildable(s), %d haulable(s), %d attunement(s), %d biome(s)" % [
+	_load_dir(SCATTER_PATH, "ScatterDef", SCATTER_DEF, &"id", "scatter table id", scatter_tables)
+	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d loot table(s), %d powerup(s), %d buildable(s), %d haulable(s), %d attunement(s), %d biome(s), %d scatter table(s)" % [
 		items.size(), recipes.size(), stations.size(), weapons.size(), loot_tables.size(),
-		powerups.size(), buildables.size(), haulables.size(), attunements.size(), biomes.size()
+		powerups.size(), buildables.size(), haulables.size(), attunements.size(), biomes.size(),
+		scatter_tables.size()
 	])
 
 
@@ -177,6 +189,14 @@ func get_biome(id: StringName) -> Resource:
 
 func has_biome(id: StringName) -> bool:
 	return biomes.has(id)
+
+
+func get_scatter_table(id: StringName) -> Resource:
+	return scatter_tables.get(id)
+
+
+func has_scatter_table(id: StringName) -> bool:
+	return scatter_tables.has(id)
 
 
 ## The one loader behind every content directory (F-099 — this replaced seven near-identical

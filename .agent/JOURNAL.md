@@ -3244,3 +3244,18 @@ Two findings were invisible to the board — F-112 and F-036 both sat in the Don
 Files: `.agent/bin/agent`, `tools/harness_check.py`, `AGENTS.md`
 
 Commit at time of writing: `9758dc4`
+
+---
+
+### DONE · 4.4 · lm · 2026-08-18T20:54:23+00:00
+
+**Resource scatter via `MultiMeshInstance3D`, per-biome tables**
+
+world/gen/{scatter_entry,scatter_def,resource_scatter,resource_scatter_field}.gd + registry.gd loader + 2 worked-example content/scatter/*.tres (forest_canopy NODE, forest_undergrowth BATCH). Harvest proxies reuse autoload/harvest_world.gd wiring unmodified via the same authored_world_harvestable group/metas. Proxy boundary is ChunkStreamer.chunk_has_collision() (D-080's LOD0 ring), not a new radius. Verified: agent godot --script tools/resource_scatter_check.gd (0 failures, headless via fake streamer double), verify_setup.gd and harvest_world_check.gd clean (no regression), full boot 0 ERROR lines, boot log '2 scatter table(s)'. Not yet wired into a running level (same as 4.1-4.3) - that's 4.6. D-083 + F-132 recorded.
+
+Notes along the way:
+- Trap: restoring depletion by poking Harvestable.active directly (skipping _respawn_remaining) let the very next physics tick auto-respawn it. Fixed by replaying host_apply_damage() instead - recorded as D-083.
+
+Files: `world/gen/scatter_entry.gd`, `world/gen/scatter_def.gd`, `world/gen/resource_scatter.gd`, `world/gen/resource_scatter_field.gd`, `autoload/registry.gd`, `content/scatter/forest_undergrowth.tres`, `tools/resource_scatter_check.gd`, `content/scatter/forest_canopy.tres`
+
+Commit at time of writing: `90b387f`
