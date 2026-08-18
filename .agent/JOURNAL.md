@@ -3295,3 +3295,15 @@ RuleDef content family + host-replicated RuleService shipped. 8 first-wave knobs
 Files: `systems/rules/rule_def.gd`, `autoload/rule_service.gd`, `content/rules`, `autoload/command_service.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `systems/environment/day_night.gd`, `autoload/enemy_world.gd`, `systems/waves/wave_spawner.gd`, `systems/health/player_health.gd`, `core/dev/dev_loadout.gd`, `tools/rule_check.gd`, `tools/rule_net_check.gd`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/ARCHITECTURE.md`, `docs/COMMANDS.md`, `autoload/registry.gd`, `content/rules/ambient_enemy_population.tres`, `content/rules/bleed_out_seconds.tres`, `content/rules/day_length_seconds.tres`, `content/rules/dev_loadout_enabled.tres`, `content/rules/hunger_drain_per_sec.tres`, `content/rules/revive_seconds.tres`, `content/rules/wave_base_count.tres`, `content/rules/wave_per_player.tres`
 
 Commit at time of writing: `c8e10b3`
+
+---
+
+### DONE · F-125 · yarrow21 · 2026-08-18T21:01:16+00:00
+
+**Thin Step authors dodge_iframe_seconds, but D-072 left no i-frame timer for it to extend**
+
+Decoupled dodge i-frames from the dash — option 2, and the authored content settled the choice: Thin Step's description promises 'untouchable for the whole of the trip rather than most of it', which is about invulnerability, not travel. _iframe_time_remaining is a second timer; _apply_horizontal_movement() now keys the dash branch off _dodge_time_remaining rather than the dodging flag (leaving it on the flag would have shipped option 1 while claiming option 2); dodging clears with the later window and therefore now means 'invulnerable'. Floored at dodge_duration_sec so a negative modifier cannot undercut D-072's replication guarantee and produce intermittently missing i-frames. Did NOT rename dodging to invulnerable: its host-side reader systems/health/player_health.gd was held by 3.14 all session; pure rename, no wire change, worth doing when both files are free. No protocol bump. Verified: dodge_check 0 failures with a new section granting 3 real stacks of thin_step (+0.120s) that asserts dodging is still true past dodge_duration_sec WHILE _dodge_time_remaining==0 and speed is below dodge_impulse — and proved it catches the bug by reintroducing the old branch (fails at 10.00 m/s), then reverting. dodge_net_check failures=0, powerup_check failures=0, player_health_check 0 failures. D-087 records the call; POWERUPS.md moves the stat from Pending to wired. Also restored docs/FINDINGS.md's '## Resolved' heading, deleted by 9505cfd — all 121 resolved findings were parsing as open; filed F-134 with the diagnosis and the agent resolve fix.
+
+Files: `entities/player/player_controller.gd`, `tools/dodge_check.gd`, `docs/FINDINGS.md`, `docs/POWERUPS.md`
+
+Commit at time of writing: `c374bb0`

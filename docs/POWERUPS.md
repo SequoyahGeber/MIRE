@@ -70,6 +70,7 @@ expected, not a bug (and now, not a typo either).
 | `coin_gain` | coins rolled per kill | | loot/kill reward path (host) |
 | `chest_price` | cost to open | negative = discount | `systems/loot/chest.gd` (host) |
 | `loot_luck` | weight bias toward higher-tier chest entries | | loot roll (host) |
+| `dodge_iframe_seconds` | how long past the dash the i-frame flag stays true | flat seconds; cannot shorten the window below `dodge_duration_sec` (D-087) | `player_controller.gd` `_execute_dodge()` (client-local; the host reads the resulting flag) |
 
 ### Pending systems (the stat waits for its system's task — listed so 3.4 can author toward them without inventing names)
 
@@ -79,7 +80,6 @@ expected, not a bug (and now, not a typo either).
 | `stamina_regen` | stamina per second | 3.8 |
 | `stamina_cost` | cost of sprint/jump/dodge actions (negative mult = cheaper) | 3.8 |
 | `fall_damage_taken` | landing damage (negative mult = softer) | 3.8-adjacent, if fall damage ships |
-| `dodge_iframe_seconds` | dodge invulnerability window (flat seconds) | the dodge task (§4.4 Void presumes one) |
 | `knockback_taken` | knockback applied to you (negative mult = stability) | enemy knockback |
 | `blight_rate` | Blight accumulation while in the Mire (negative mult = resist) | 4.x Mire |
 | `aggro_radius_m` | enemy detection radius vs this player (negative = stealth) | enemy AI consult |

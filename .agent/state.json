@@ -25,21 +25,6 @@
       "at": "2026-08-18T20:32:24+00:00",
       "task": "2.1d"
     },
-    "docs/FINDINGS.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T21:00:03+00:00",
-      "task": "F-125"
-    },
-    "docs/POWERUPS.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T21:00:03+00:00",
-      "task": "F-125"
-    },
-    "entities/player/player_controller.gd": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T20:51:52+00:00",
-      "task": "F-125"
-    },
     "tools/blender/build_construction_set.py": {
       "agent": "slate17",
       "at": "2026-08-18T20:32:24+00:00",
@@ -54,11 +39,6 @@
       "agent": "slate17",
       "at": "2026-08-18T20:32:24+00:00",
       "task": "2.1d"
-    },
-    "tools/dodge_check.gd": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T20:51:52+00:00",
-      "task": "F-125"
     },
     "tools/seed_sync_check.gd": {
       "agent": "lm",
@@ -101,17 +81,6 @@
       ],
       "notes": [],
       "started": "2026-08-18T20:58:57+00:00"
-    },
-    "F-125": {
-      "agent": "yarrow21",
-      "files": [
-        "entities/player/player_controller.gd",
-        "tools/dodge_check.gd",
-        "docs/FINDINGS.md",
-        "docs/POWERUPS.md"
-      ],
-      "notes": [],
-      "started": "2026-08-18T20:51:52+00:00"
     }
   },
   "recent": {
@@ -1406,10 +1375,10 @@
       "task": "3.14"
     },
     "docs/FINDINGS.md": {
-      "agent": "wick20",
-      "at": "2026-08-18T20:59:26+00:00",
-      "hash": "45a69ec8619601491255df36ea9f46f377fe40f2dc37c288247a5747dfd852a2",
-      "task": "F-128"
+      "agent": "yarrow21",
+      "at": "2026-08-18T21:01:16+00:00",
+      "hash": "d1cc20016c3abda6545cd45935219efb059ac28faefecc88610cebf240b4132b",
+      "task": "F-125"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -1420,6 +1389,12 @@
       "agent": "bram1",
       "at": "2026-08-18T15:01:15+00:00",
       "task": "F-044"
+    },
+    "docs/POWERUPS.md": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T21:01:16+00:00",
+      "hash": "9557c75980f129db3a5194974658f6be8108cca369cbf13f9d2dcd28b7288ec5",
+      "task": "F-125"
     },
     "docs/ROADMAP.md": {
       "agent": "lp",
@@ -1443,10 +1418,10 @@
       "task": "F-075"
     },
     "entities/player/player_controller.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T19:16:34+00:00",
-      "hash": "57ae531ac02185310928ecadf6f44cf5169e00611c474cfc19f84655dfa03ea7",
-      "task": "3.8b"
+      "agent": "yarrow21",
+      "at": "2026-08-18T21:01:16+00:00",
+      "hash": "ded1932ad0f1359600874d3e5740a72dedd7c73cdfc0a35ae2a9dcf561990e7c",
+      "task": "F-125"
     },
     "entities/player/viewmodel.gd": {
       "agent": "kiln9",
@@ -1898,10 +1873,10 @@
       "task": "F-108"
     },
     "tools/dodge_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T19:16:34+00:00",
-      "hash": "f5893b55c7f1a1490e954b6610ac6bb77f047c1dec650fb2d483f0342a739bfe",
-      "task": "3.8b"
+      "agent": "yarrow21",
+      "at": "2026-08-18T21:01:16+00:00",
+      "hash": "d8e76424e4a30f4ef9dc7f0336c6fc8e2066de142c8c7dbb6ce07fbcd70534df",
+      "task": "F-125"
     },
     "tools/dodge_net_check.gd": {
       "agent": "lp",
@@ -4529,9 +4504,11 @@
       "title": "macOS builds cannot show the Steam overlay: hardened runtime without the dyld entitlement blocks injection \u2014 **fixed**"
     },
     "F-125": {
+      "done_at": "2026-08-18T21:01:16+00:00",
+      "done_by": "yarrow21",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Thin Step authors dodge_iframe_seconds, but D-072 left no i-frame timer for it to extend"
     },

@@ -96,20 +96,35 @@ const BUILD_ROTATE_KEY: Key = KEY_R
 ## accelerated target like walk/sprint (DESIGN.md §6's "you can't cancel a swing" chunkiness applies
 ## here too: once thrown, a dodge finishes on its own terms).
 @export_range(1.0, 40.0, 0.5) var dodge_impulse: float = 10.0
-## How long the dash lasts AND how long i-frames hold (see `dodging`'s own doc — the two are
-## deliberately the same window, not a separate timer). Floor is well above
-## NetConfig.PLAYER_SYNC_INTERVAL_SEC (30 Hz, ~0.033 s): `dodging` rides the player's existing
-## REPLICATION_MODE_ALWAYS synchronizer (task 3.8b's spec names this seam explicitly), so a duration
-## anywhere near one sync tick risks the host never observing the flag before it flips back to false.
+## How long the dash MOVEMENT lasts. D-072 made this the i-frame window too; F-125/D-087 separated
+## them, because `dodge_iframe_seconds` (Thin Step) has to lengthen invulnerability without
+## lengthening the trip — its own description promises "untouchable for the whole of the trip rather
+## than most of it", and feeding the stat in here would move where the player ends up. This is now
+## the FLOOR of the i-frame window, never the whole of it: see `dodging`.
+## Floor is well above NetConfig.PLAYER_SYNC_INTERVAL_SEC (30 Hz, ~0.033 s): `dodging` rides the
+## player's existing REPLICATION_MODE_ALWAYS synchronizer (task 3.8b's spec names this seam
+## explicitly), so a duration anywhere near one sync tick risks the host never observing the flag
+## before it flips back to false.
 @export_range(0.1, 1.0, 0.01) var dodge_duration_sec: float = 0.25
 ## Minimum time between dodges, counted from the moment one is accepted.
 @export_range(0.1, 10.0, 0.1) var dodge_cooldown_sec: float = 1.2
 
-## True for exactly the dash window (dodge_duration_sec), set by _execute_dodge() and cleared by
-## _tick_dodge(). Replicated ALWAYS on the same synchronizer as position/rotation (see
-## _build_synchronizer()) so the HOST can read it before applying an enemy_attack_landed hit —
-## systems/health/player_health.gd's _on_enemy_attack_landed() is the reader; the i-frame DECISION is
-## the host's, this flag is only the client's own (trusted, same as position) presentation of intent.
+## True for the I-FRAME window, which is `dodge_duration_sec` plus whatever `dodge_iframe_seconds`
+## adds (Thin Step: +0.04 s a stack, +0.12 s at 3). Set by _execute_dodge(), cleared by _tick_dodge().
+## Replicated ALWAYS on the same synchronizer as position/rotation (see _build_synchronizer()) so the
+## HOST can read it before applying an enemy_attack_landed hit — systems/health/player_health.gd's
+## _on_enemy_attack_landed() is the reader; the i-frame DECISION is the host's, this flag is only the
+## client's own (trusted, same as position) presentation of intent.
+##
+## **It is no longer "a dash is in progress"** (D-072's original invariant, relaxed by F-125/D-087).
+## The dash's MOVEMENT is `_dodge_time_remaining`, and that is what _apply_horizontal_movement()
+## keys off; this flag outlives it by the powerup bonus. The name is kept because the host reads it
+## by name across the wire and `systems/health/player_health.gd` is another task's file — but what it
+## answers is "should a hit be ignored", which is what `_is_dodging()` was always really asking.
+##
+## The window can only ever GROW, never shrink below `dodge_duration_sec` (see _execute_dodge) —
+## D-072's whole replication-reliability argument rests on that floor comfortably exceeding one sync
+## tick, so a negative modifier must not be able to quietly undercut it.
 var dodging: bool = false
 
 ## Set false on remote copies of this player so they are driven by replication only.
@@ -137,7 +152,12 @@ var _revive_request_sent: bool = false
 ## the moment the dash is accepted, not re-read from input each tick: a committed dash, same
 ## "wind-up -> commit -> recovery, can't cancel" philosophy DESIGN.md §6 states for melee.
 var _dodge_velocity: Vector3 = Vector3.ZERO
+## The dash MOVEMENT window. Drives _apply_horizontal_movement()'s dash branch.
 var _dodge_time_remaining: float = 0.0
+## The I-FRAME window (F-125). Always >= _dodge_time_remaining at the moment of the dash; the two are
+## equal for a player holding no `dodge_iframe_seconds` powerup, which is the default and is why this
+## changes nothing about a base dodge.
+var _iframe_time_remaining: float = 0.0
 var _dodge_cooldown_remaining: float = 0.0
 
 ## F-105: PlayerHealth is an autoload, so this reference outlives the whole session once resolved —
@@ -146,6 +166,11 @@ var _dodge_cooldown_remaining: float = 0.0
 ## resolved once and trusted forever) so a harness that builds this node before PlayerHealth exists
 ## still finds it the moment it does.
 var _health: Node = null
+
+## Same story as `_health`, for the one call in _execute_dodge() that asks how long i-frames run
+## (F-125). Resolved lazily rather than in _ready() for the same reason: a check scene may build the
+## player before the autoload tree exists.
+var _powerups: Node = null
 
 ## F-086: client-local building presentation, built only for the local player (see
 ## _build_building_presentation()). Neither ever decides anything — BuildService is the only
@@ -286,6 +311,15 @@ func _health_node() -> Node:
 	if not is_instance_valid(_health):
 		_health = get_node_or_null(^"/root/PlayerHealth")
 	return _health
+
+
+## Same F-011-guarded, F-105-cached shape as _health_node(). PowerupService is an autoload, so the
+## reference outlives the session once resolved; null is a legitimate answer in a bare check scene
+## that boots the player without the full autoload tree, and every caller treats it as "no powerups".
+func _powerup_service() -> Node:
+	if not is_instance_valid(_powerups):
+		_powerups = get_node_or_null(^"/root/PowerupService")
+	return _powerups
 
 
 ## A player spawned by PlayerNet is NAMED for the peer that owns it, and that name is in place on
@@ -481,7 +515,11 @@ func _apply_horizontal_movement(
 	# speed, not an accelerated target move_toward chases (same reasoning as jump's velocity.y — set
 	# once, not steered). Stamina still ticks (never sprinting mid-dash) so the bar keeps regenerating
 	# through the dash instead of freezing for its short duration.
-	if dodging:
+	# `_dodge_time_remaining`, NOT `dodging` (F-125): the flag now outlives the dash by whatever
+	# `dodge_iframe_seconds` adds, and reading it here would keep applying the dash velocity through
+	# that tail — turning an i-frame powerup into a longer dash, which is the exact thing F-125 said
+	# makes it "a different powerup from the one the description promises".
+	if _dodge_time_remaining > 0.0:
 		var health: Node = _health_node()
 		if health != null:
 			health.call(&"local_tick_stamina", delta, false)
@@ -589,24 +627,40 @@ func _execute_dodge() -> bool:
 
 	_dodge_velocity = dash_dir * dodge_impulse
 	_dodge_time_remaining = dodge_duration_sec
+	# The i-frame window is the dash window extended by `dodge_iframe_seconds` (F-125/D-087), asked of
+	# PowerupService for THIS peer: dodging is client-authoritative movement (ARCHITECTURE §2.2
+	# row 1) and a client is only sent its own powerup map, so local_stat() is the honest seam — on
+	# a peer holding nothing it returns the base, i.e. exactly the old behaviour.
+	# maxf() with the dash window is not defensive tidiness: D-072's replication guarantee is that
+	# the flag is true for comfortably longer than one PLAYER_SYNC_INTERVAL_SEC, and a negative
+	# modifier that shortened this below `dodge_duration_sec` would silently undercut that floor
+	# rather than "balance" anything. A powerup that wants a SHORTER dodge changes the dash.
+	var iframe_bonus: float = 0.0
+	var powerups: Node = _powerup_service()
+	if powerups != null:
+		iframe_bonus = float(powerups.call(&"local_stat", &"dodge_iframe_seconds", 0.0))
+	_iframe_time_remaining = maxf(dodge_duration_sec + iframe_bonus, dodge_duration_sec)
 	_dodge_cooldown_remaining = dodge_cooldown_sec
 	dodging = true
 	dodged.emit()
 	return true
 
 
-## Counts the cooldown down unconditionally and, while dodging, counts the dash window down —
-## clearing `dodging` the instant it expires. Runs every physics tick regardless of input/downed/dead
-## state so a dash started the instant before a stun/UI-block still finishes and releases control
-## normally rather than latching `dodging` true forever.
+## Counts the cooldown down unconditionally and, while dodging, counts BOTH dodge windows down: the
+## dash's movement window and the i-frame window that outlasts it (F-125). `dodging` clears with the
+## i-frame window, which is the later of the two. Runs every physics tick regardless of
+## input/downed/dead state so a dash started the instant before a stun/UI-block still finishes and
+## releases control normally rather than latching `dodging` true forever.
 func _tick_dodge(delta: float) -> void:
 	if _dodge_cooldown_remaining > 0.0:
 		_dodge_cooldown_remaining = maxf(_dodge_cooldown_remaining - delta, 0.0)
 	if not dodging:
 		return
-	_dodge_time_remaining -= delta
-	if _dodge_time_remaining <= 0.0:
+	_dodge_time_remaining = maxf(_dodge_time_remaining - delta, 0.0)
+	_iframe_time_remaining -= delta
+	if _iframe_time_remaining <= 0.0:
 		dodging = false
+		_iframe_time_remaining = 0.0
 		_dodge_time_remaining = 0.0
 
 
