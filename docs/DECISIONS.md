@@ -1348,3 +1348,16 @@ the lane and enforced in `lane.quota_block`, which is inert until LM has reporte
 **Would change my mind:** evidence that the director's own turns are cheap enough to finish inside
 the last 10% anyway, or a director that no longer shares an account with a dispatchable lane — in
 either case the reserve is pure waste and should go to zero.
+
+### D-066 · 2026-08-18 · MIRE's audio is synthesized in-repo from committed recipes, not licensed or commissioned
+Sequoyah directed the first music/SFX pass to be made by us (Fable at max effort) rather than the
+CC0/licensed route the 7.1/7.2 roadmap rows assumed. `tools/audio/` renders every asset
+deterministically from numpy DSP recipes: the score/recipe is the source of truth, assets are
+reproducible build products, ownership is unambiguous for Steam, and per-instance variation
+(seeds, pitch scatter) is free — which suits procgen worlds. Two supporting calls ride along:
+listening copies for Sequoyah are MP3 (macOS can't preview OGG Vorbis) while committed game assets
+are OGG; and the two music `.ogg.import` sidecars are force-committed as gitignore exceptions
+(`icon.svg.import` precedent) because `loop=true` must survive a fresh clone.
+**Would change my mind:** his ears rejecting the synthesized sound outright, or trailer/store-page
+quality demands exceeding what the toolkit can reach — then commission music (7.2's original plan)
+and keep the synthesized SFX/ambience underneath.

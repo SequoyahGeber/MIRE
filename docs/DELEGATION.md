@@ -75,6 +75,25 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — 7.1/7.2 v1: game audio is synthesized from committed recipes — toolkit, 2 ambient loops, 19 SFX (tine18)
+
+**`tools/audio/mire_audio.py` is the instrument rack** — additive pads, Karplus-Strong plucks, FM
+bells/groans, filtered-noise beds, convolution reverb, circular loop rendering, all seeded and
+bit-reproducible. `render_music.py`/`render_sfx.py` hold the scores and recipes (edit the data
+tables, not the engine), `audio_check.py` is the objective gate (clipping/DC/RMS/loop seams),
+`tools/audio_import_check.gd` proves in-engine loading. **Read `docs/AUDIO.md` before adding any
+sound** — palette rules (rewards ring in D, no percussion in ambience, mono SFX) live there.
+
+- Assets: `assets/audio/music/ambient_{day,night}.ogg` — 3:44 seamless loops; `loop=true` lives in
+  the two **force-committed `.ogg.import` sidecars** (gitignore exception, `icon.svg.import`
+  precedent). `assets/audio/sfx/*.wav` — 19 mono effects, peak-normalised with mixer headroom.
+- **Wiring is NOT done.** Next: a client-local MusicDirector autoload crossfading on DayNight's
+  `day_started`/`night_started` (names proven in `tools/day_night_check.gd`), and sound fields on
+  `weapon_def.gd`/`harvestable_def.gd` — those files sit under F-113/F-114 claims, wire after they
+  clear. Audio is client-local presentation; no audio RPCs, ever (ARCHITECTURE §2.2).
+- Re-render deps: system python3 + numpy, `pip install --user soundfile` (brew ffmpeg lacks
+  libvorbis; ffmpeg only makes the MP3 listening copies Sequoyah auditions in chat).
+
 ### 2026-08-18 — F-115: ground mist is a fog SHADER built from code, and the look is judged from rendered PNGs (vane19)
 
 **`world/environment/ground_fog.gd` + `.gdshader`.** `PlaytestAtmosphere._resolve_ground_fog()`
