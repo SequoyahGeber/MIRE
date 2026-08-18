@@ -16,6 +16,7 @@ extends Node
 ## bumps the protocol version.
 
 const STAR_FIELD_SCRIPT := preload("res://world/environment/star_field.gd")
+const GROUND_FOG_SCRIPT := preload("res://world/environment/ground_fog.gd")
 
 ## Sun elevation, in degrees, across which the stars come out: fully out below the first, gone above
 ## the second. A window rather than a threshold, so dusk is a fade and not a light switch.
@@ -53,11 +54,31 @@ const NIGHT_AMBIENT_COLOR := Color(0.34, 0.42, 0.62)
 ## Cool cast on what little directional light survives the sun going down.
 const MOONLIGHT_COLOR := Color(0.55, 0.68, 1.0)
 
+## ── Ground mist (F-115) ───────────────────────────────────────────────────────────────────────
+## Mist is a dawn and dusk thing. It burns off through the morning, is thinnest at noon, and comes
+## back as the ground gives up its heat — which is also exactly when the low sun is raking through
+## it, so the two effects pay for each other. `daylight` is 0 at night and 1 at noon, so the curve
+## below is "thick at both ends, thin in the middle" rather than a straight lerp.
+const FOG_NIGHT_SCALE: float = 1.35
+const FOG_DAWN_SCALE: float = 1.75
+const FOG_NOON_SCALE: float = 0.55
+## What the mist is made of, at noon and at midnight. Warm grey by day so a sunbeam through it
+## reads as light rather than as smoke; cold and dim by night so it hides things.
+const FOG_DAY_ALBEDO := Color(0.80, 0.80, 0.76)
+const FOG_NIGHT_ALBEDO := Color(0.36, 0.42, 0.55)
+## A little self-lit warmth at golden hour, so mist in shadow still catches the hour's colour
+## instead of going flat grey the moment the sun is behind a ridge.
+const FOG_GOLDEN_EMISSION := Color(1.0, 0.62, 0.34)
+
 @export_range(0.0, 24.0, 0.05) var time_of_day: float = 8.35
 @export var cycle_enabled: bool = false
 @export_range(60.0, 3600.0, 1.0) var day_length_seconds: float = 900.0
 @export_range(0.25, 2.0, 0.01) var haze_strength: float = 1.0
-@export_range(0.0, 2.5, 0.01) var god_ray_strength: float = 1.35
+## How hard the sun writes into the volumetric medium. Raised well above 1 for F-115's second half:
+## with the uniform haze gone, the medium a shaft travels through is thin, and the shaft has to be
+## driven harder to read at all. This is the knob for "more Valheim", and it costs nothing —
+## `DirectionalLight3D.light_volumetric_fog_energy` is a multiply in a pass that already runs.
+@export_range(0.0, 6.0, 0.01) var god_ray_strength: float = 2.4
 
 @onready var world_environment := get_node(^"../WorldEnvironment") as WorldEnvironment
 @onready var sun := get_node(^"../Sun") as DirectionalLight3D
@@ -68,6 +89,7 @@ var _local_fog_materials: Array[FogMaterial] = []
 var _local_fog_densities: Array[float] = [0.24, 0.07, 0.09]
 var _cloud_deck: Node = null
 var _star_field: Node3D = null
+var _ground_fog: FogVolume = null
 # Authored day ends, captured once so the night lerps cannot drift the tuned daytime look.
 var _day_rayleigh_color := Color(0.2, 0.4, 0.9)
 var _day_mie_color := Color(0.94, 0.7, 0.48)
@@ -105,6 +127,7 @@ func _ready() -> void:
 			_local_fog_materials.append(fog_volume.material as FogMaterial)
 	_cloud_deck = _resolve_cloud_deck()
 	_star_field = _resolve_star_field()
+	_ground_fog = _resolve_ground_fog()
 	apply_atmosphere()
 	set_process(cycle_enabled)
 
@@ -130,6 +153,21 @@ func _resolve_star_field() -> Node3D:
 		return existing
 	var created: Node3D = STAR_FIELD_SCRIPT.new()
 	created.name = "StarField"
+	add_child(created)
+	return created
+
+
+## Same reasoning as the star field above, and the same fix for the same bug: every level with an
+## Atmosphere node should have ground mist without a level author remembering to place one, because
+## release worlds have no level author. This is what F-115 actually was — the controller drove three
+## FogVolumes by name and the shipped map contained none of them, so the only fog left was the
+## uniform `volumetric_fog_density` blanket. A level that authors its own `GroundFog` child keeps it.
+func _resolve_ground_fog() -> FogVolume:
+	var existing := get_node_or_null(^"GroundFog") as FogVolume
+	if existing != null:
+		return existing
+	var created: FogVolume = GROUND_FOG_SCRIPT.new()
+	created.name = "GroundFog"
 	add_child(created)
 	return created
 
@@ -188,28 +226,60 @@ func apply_atmosphere() -> void:
 		return
 	_applied_drivers = drivers
 
-	var daylight_color := Color(1.0, 0.955, 0.86)
-	var sunrise_color := Color(1.0, 0.58, 0.3)
-	var horizon_mix := sunrise_color.lerp(daylight_color, 1.0 - warm_horizon * 0.72)
+	# Warmer than neutral daylight even at noon, and holding the sunrise tint further up the sky
+	# (0.58 rather than 0.72 of it burned off) — the difference between "correctly lit" and the
+	# warm hour Sequoyah asked for. Colour is the cheapest half of that look; the other half is the
+	# shafts below.
+	var daylight_color := Color(1.0, 0.94, 0.815)
+	var sunrise_color := Color(1.0, 0.55, 0.27)
+	var horizon_mix := sunrise_color.lerp(daylight_color, 1.0 - warm_horizon * 0.58)
 	sun.light_color = horizon_mix.lerp(MOONLIGHT_COLOR, starlight)
-	sun.light_energy = lerpf(0.04, 1.22, daylight)
-	sun.light_volumetric_fog_energy = god_ray_strength * lerpf(0.2, 1.0, daylight)
+	sun.light_energy = lerpf(0.04, 1.45, daylight)
+	# Shafts peak at GOLDEN HOUR, not at noon. A sun overhead lights the mist from above and there
+	# is nothing to rake through; a sun on the horizon fires the length of the valley through every
+	# trunk in it, which is the shot this is for. `golden` is the extra 60% either side of dawn.
+	sun.light_volumetric_fog_energy = (
+		god_ray_strength * lerpf(0.25, 1.0, daylight) * (1.0 + golden * 0.6)
+	)
 	sun.shadow_opacity = lerpf(0.4, 0.88, daylight)
 
-	_environment.background_energy_multiplier = lerpf(0.12, 0.82, daylight)
-	_environment.ambient_light_energy = lerpf(0.22, 0.52, daylight)
+	_environment.background_energy_multiplier = lerpf(0.12, 0.9, daylight)
+	# The day end is the floor under everything the sun is NOT hitting. At 0.5 with ACES and a
+	# contrast lift, a hillside facing away from a low sun crushed to pure black and read as a hole
+	# in the map rather than as a shadow; 0.62 keeps the silhouette dark and still coloured.
+	_environment.ambient_light_energy = lerpf(0.22, 0.62, daylight)
 	_environment.ambient_light_color = NIGHT_AMBIENT_COLOR.lerp(_day_ambient_color, daylight)
-	_environment.tonemap_exposure = lerpf(0.82, 1.08, daylight)
+	_environment.tonemap_exposure = lerpf(0.85, 1.16, daylight)
 	_environment.fog_light_color = Color(0.19, 0.22, 0.3).lerp(
 		Color(0.62, 0.67, 0.72), daylight
 	)
 	# Keep the open routes clear. FogVolume nodes, not the global environment, define mist pockets.
 	_environment.fog_density = 0.0
-	_environment.volumetric_fog_density = 0.00045 * haze_strength
-	_environment.volumetric_fog_ambient_inject = lerpf(0.28, 0.62, daylight)
+	# F-115: this used to be the ONLY fog on the shipped map, at a density that greyed out
+	# everything evenly. It is now just the thin medium a sunbeam needs in order to be visible at
+	# all — an eighth of what it was — and `GroundFog` carries every bit of fog you actually look
+	# at. Turning it off entirely would take the god rays with it, which is the opposite mistake.
+	_environment.volumetric_fog_density = 0.00006 * haze_strength
+	# Ambient injection is what washes a volumetric medium out into milk. Low by day so shafts keep
+	# their contrast against the air around them; higher at night, where the alternative is fog you
+	# cannot see at all.
+	_environment.volumetric_fog_ambient_inject = lerpf(0.34, 0.16, daylight)
 	var local_density_scale := haze_strength * lerpf(1.18, 0.92, daylight)
 	for index: int in mini(_local_fog_materials.size(), _local_fog_densities.size()):
 		_local_fog_materials[index].density = _local_fog_densities[index] * local_density_scale
+	if _ground_fog != null:
+		# Thick at dawn and dusk, thinnest at noon — see the FOG_* constants. `golden` peaks either
+		# side of the horizon, which is the only time the mist is lit warmly enough to say so.
+		var noon_amount := smoothstep(0.0, 1.0, daylight)
+		var mist_scale := lerpf(FOG_NIGHT_SCALE, FOG_NOON_SCALE, noon_amount)
+		mist_scale = lerpf(mist_scale, FOG_DAWN_SCALE, golden * 0.85)
+		_ground_fog.call(
+			&"apply_look",
+			mist_scale * haze_strength,
+			FOG_NIGHT_ALBEDO.lerp(FOG_DAY_ALBEDO, daylight),
+			FOG_GOLDEN_EMISSION,
+			golden * 0.22 * daylight
+		)
 	if _sky_material != null:
 		# PhysicalSkyMaterial already dims itself as LIGHT0 drops, so let it do that work while the
 		# sun is up and only force the night colours once the sun is actually below the horizon.

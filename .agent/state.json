@@ -5,20 +5,20 @@
       "at": "2026-08-18T17:53:48+00:00",
       "task": "7.2"
     },
+    "assets/audio/music/ambient_day.ogg.import": {
+      "agent": "tine18",
+      "at": "2026-08-18T18:06:38+00:00",
+      "task": "7.2"
+    },
+    "assets/audio/music/ambient_night.ogg.import": {
+      "agent": "tine18",
+      "at": "2026-08-18T18:06:38+00:00",
+      "task": "7.2"
+    },
     "assets/audio/sfx": {
       "agent": "tine18",
       "at": "2026-08-18T17:53:48+00:00",
       "task": "7.1"
-    },
-    "levels/hollowmere.tscn": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:57:02+00:00",
-      "task": "F-115"
-    },
-    "tools/atmosphere_look_shot.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:01:51+00:00",
-      "task": "F-115"
     },
     "tools/audio/audio_check.py": {
       "agent": "tine18",
@@ -44,26 +44,6 @@
       "agent": "tine18",
       "at": "2026-08-18T17:53:48+00:00",
       "task": "7.2"
-    },
-    "tools/ground_fog_check.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:01:51+00:00",
-      "task": "F-115"
-    },
-    "world/environment/ground_fog.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:57:02+00:00",
-      "task": "F-115"
-    },
-    "world/environment/ground_fog.gdshader": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:57:02+00:00",
-      "task": "F-115"
-    },
-    "world/environment/playtest_atmosphere.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:57:02+00:00",
-      "task": "F-115"
     }
   },
   "in_flight": {
@@ -83,23 +63,12 @@
         "tools/audio/render_music.py",
         "tools/audio/audio_check.py",
         "tools/audio_import_check.gd",
-        "assets/audio/music"
+        "assets/audio/music",
+        "assets/audio/music/ambient_day.ogg.import",
+        "assets/audio/music/ambient_night.ogg.import"
       ],
       "notes": [],
       "started": "2026-08-18T17:53:48+00:00"
-    },
-    "F-115": {
-      "agent": "vane19",
-      "files": [
-        "world/environment/playtest_atmosphere.gd",
-        "world/environment/ground_fog.gd",
-        "world/environment/ground_fog.gdshader",
-        "levels/hollowmere.tscn",
-        "tools/ground_fog_check.gd",
-        "tools/atmosphere_look_shot.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T17:57:02+00:00"
     }
   },
   "recent": {
@@ -904,9 +873,9 @@
       "task": "2.1d"
     },
     "levels/hollowmere.tscn": {
-      "agent": "coil23",
-      "at": "2026-08-18T09:06:54+00:00",
-      "task": "F-090"
+      "agent": "vane19",
+      "at": "2026-08-18T18:07:48+00:00",
+      "task": "F-115"
     },
     "levels/playtest_hollow.tscn": {
       "agent": "moss11",
@@ -1027,6 +996,16 @@
       "agent": "gale6",
       "at": "2026-08-18T02:53:04+00:00",
       "task": "F-068"
+    },
+    "tools/atmosphere_look_shot.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T18:07:48+00:00",
+      "task": "F-115"
+    },
+    "tools/atmosphere_look_shot.gd.uid": {
+      "agent": "vane19",
+      "at": "2026-08-18T18:07:48+00:00",
+      "task": "F-115"
     },
     "tools/atmosphere_night_check.gd": {
       "agent": "gale6",
@@ -1227,6 +1206,16 @@
       "agent": "reed16",
       "at": "2026-08-18T02:29:39+00:00",
       "task": "F-066"
+    },
+    "tools/ground_fog_check.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T18:07:48+00:00",
+      "task": "F-115"
+    },
+    "tools/ground_fog_check.gd.uid": {
+      "agent": "vane19",
+      "at": "2026-08-18T18:07:48+00:00",
+      "task": "F-115"
     },
     "tools/handshake_check.gd": {
       "agent": "gale6",
@@ -1493,6 +1482,26 @@
       "at": "2026-08-18T14:09:47+00:00",
       "task": "F-097"
     },
+    "world/environment/ground_fog.gd": {
+      "agent": "vane19",
+      "at": "2026-08-18T18:07:48+00:00",
+      "task": "F-115"
+    },
+    "world/environment/ground_fog.gd.uid": {
+      "agent": "vane19",
+      "at": "2026-08-18T18:07:48+00:00",
+      "task": "F-115"
+    },
+    "world/environment/ground_fog.gdshader": {
+      "agent": "vane19",
+      "at": "2026-08-18T18:07:48+00:00",
+      "task": "F-115"
+    },
+    "world/environment/ground_fog.gdshader.uid": {
+      "agent": "vane19",
+      "at": "2026-08-18T18:07:48+00:00",
+      "task": "F-115"
+    },
     "world/environment/low_poly_clouds.gd": {
       "agent": "gale6",
       "at": "2026-08-18T02:48:51+00:00",
@@ -1504,9 +1513,9 @@
       "task": "F-097"
     },
     "world/environment/playtest_atmosphere.gd": {
-      "agent": "coil23",
-      "at": "2026-08-18T09:06:54+00:00",
-      "task": "F-090"
+      "agent": "vane19",
+      "at": "2026-08-18T18:07:48+00:00",
+      "task": "F-115"
     },
     "world/environment/star_field.gd": {
       "agent": "gale6",
@@ -3494,9 +3503,11 @@
       "title": "Only 83 of Hollowmere's 2,869 props can be harvested: harvestability is authored per-placement in the layout instead of per-asset"
     },
     "F-115": {
+      "done_at": "2026-08-18T18:07:48+00:00",
+      "done_by": "vane19",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map"
     },

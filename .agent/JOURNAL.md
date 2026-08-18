@@ -2830,3 +2830,15 @@ The lobby-UI slice is DONE and verified: ui/lobby/lobby_menu.gd (autoload LobbyM
 Files: `ui/lobby/lobby_menu.gd`, `tools/lobby_menu_check.gd`
 
 Commit at time of writing: `baf789a`
+
+---
+
+### DONE · F-115 · vane19 · 2026-08-18T18:07:48+00:00
+
+**Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map**
+
+Ground mist is a fog shader in a camera-following FogVolume, built from code for any level with an Atmosphere node; base height measured off the terrain. Uniform blanket cut to an eighth. Warmer sun, ACES, stronger golden-hour shafts. Verified with tools/ground_fog_check.gd (20 assertions) and judged from tools/atmosphere_look_shot.gd renders.
+
+Files: `world/environment/playtest_atmosphere.gd`, `world/environment/ground_fog.gd`, `world/environment/ground_fog.gdshader`, `levels/hollowmere.tscn`, `tools/ground_fog_check.gd`, `tools/atmosphere_look_shot.gd`, `tools/ground_fog_check.gd.uid`, `tools/atmosphere_look_shot.gd.uid`, `world/environment/ground_fog.gd.uid`, `world/environment/ground_fog.gdshader.uid`
+
+Commit at time of writing: `97d6f51`
