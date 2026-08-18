@@ -69,44 +69,6 @@ do is worth as much as the record of what we did.
 
 ## Open
 
-### F-004 · Interpolation is only planned for remote players, not enemies or props
-
-**Area:** rendering · **Severity:** medium · **Found:** 2026-08-15 by claude during the §5a doc update
-
-Task 1.6 covers remote-player interpolation. Nothing covers enemies (2.10, M5), physics props, or
-harvestables — all of which move under host authority at replication intervals well below the render
-rate, and will judder identically.
-
-If F-003's engine-level `physics_interpolation` is enabled it may cover all of these at once, making
-1.6's hand-rolled approach partly redundant. Worth resolving which mechanism owns this **before**
-building 1.6, so we don't write and then delete a system.
-
-**The mechanism question is answered, 2026-08-16 by ash during 1.6 — see D-026.** It does not cover
-them: engine interpolation smooths the physics grid to the render rate, network interpolation absorbs
-packet rate and jitter, and both are needed. Measured with `tools/interp_check.gd`, sampling the
-control through `get_global_transform_interpolated()` so the engine's smoothing counts: engine-only
-leaves 67% of frames motionless (CV 1.64), plus snapshot interpolation gives 1.5% (CV 0.21). They
-also fight — an interpolated node needs `physics_interpolation_mode = OFF` or the engine adds a tick
-of lag back on.
-
-**The rest of this entry stands, and is now cheap to close.** `RemoteInterpolator` is entity-agnostic
-and derives its delay from the observed arrival interval, so 15 Hz enemies and on-change props need
-no new numbers and no second component — one `NetInterp.attach_to(body)` per class. Only players use
-it today. **Stays open until enemies (2.10) and props actually attach it**; the work is one line each
-plus whatever their spawn path is, not a system.
-
-**2026-08-17, dusk3 — the enemy half is done; props are what is left.** Task 2.10's `Enemy` names its
-code-built synchronizer `NetConfig.PLAYER_SYNC_NODE` and calls `NetInterp.attach_to(self)` on every
-peer that is not simulating it, so a 15 Hz enemy is smoothed by the same entity-agnostic component
-players use — no new numbers and no second implementation, exactly as this entry predicted.
-`tools/enemy_net_check.gd` asserts it over real ENet (`the client's copy is smoothed by NetInterp`).
-**Harvestables and physics props still do not attach one.** They replicate on-change and are mostly
-still, so they judder only when they actually move — which today is a harvest state swap, not motion.
-Closing this needs someone to decide whether on-change props are worth interpolating at all; that is
-a smaller question than the one this entry opened with.
-
----
-
 ### F-005 · R2's chunk benchmark excludes GPU upload cost
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-15 by terrain during 0.7
@@ -838,6 +800,71 @@ members of each pair.
 ---
 
 ## Resolved
+
+### F-004 · Interpolation is only planned for remote players, not enemies or props — **fixed**
+
+**Resolved 2026-08-18 by gale6 — the prop half is a no-op by construction, and now has a tripwire.**
+
+The remaining question was whether on-change props were worth interpolating. They are not, because
+there is nothing to interpolate: the shipped game has exactly four `SceneReplicationConfig`s, and
+`Harvestable` (`health`, `visual_state`, `active`) and `Chest` (`opened`) put **no transform on the
+wire at all**. `Harvestable._physics_process` is a respawn countdown, not motion. `RemoteInterp`
+smooths a transform, so on those two it would have nothing to act on — and blending toward a discrete
+`ON_CHANGE` mesh swap would be an artefact, not a fix. D-043 records the call and the rule it implies:
+**interpolate iff the entity replicates a transform**, which is about the wire contract rather than
+whether something is called a prop, so the next moving object is covered without another debate.
+
+`tools/interp_coverage_check.gd` enforces it. It finds every `SceneReplicationConfig` in the project,
+sorts them by whether they replicate a transform, and fails if a transform-replicating entity is
+neither smoothed nor exempted with a stated reason. Deliberately a source-text check: the runtime
+proofs already exist and are better (`interp_check` measured 67% of frames motionless without
+smoothing versus 1.5% with, D-026; `enemy_net_check` asserts a real client's enemy is smoothed over
+real ENet), but no runtime check can catch an entity nobody wired up, because an unwired entity has
+no test to fail.
+
+**Verified.** `agent godot --script tools/interp_coverage_check.gd` — 11/11, 0 failures,
+`moving=3 still=2`. It earned itself on the first run by flagging `core/net/dummy_replicant.gd`,
+which does replicate a transform and is smoothed by nothing; that turned out to be R1's spike fixture,
+consumed only by two harnesses and watched by no player, so it is now an explicit EXEMPT entry with
+that reasoning attached rather than a silent omission.
+
+**Area:** rendering · **Severity:** medium · **Found:** 2026-08-15 by claude during the §5a doc update
+
+Task 1.6 covers remote-player interpolation. Nothing covers enemies (2.10, M5), physics props, or
+harvestables — all of which move under host authority at replication intervals well below the render
+rate, and will judder identically.
+
+If F-003's engine-level `physics_interpolation` is enabled it may cover all of these at once, making
+1.6's hand-rolled approach partly redundant. Worth resolving which mechanism owns this **before**
+building 1.6, so we don't write and then delete a system.
+
+**The mechanism question is answered, 2026-08-16 by ash during 1.6 — see D-026.** It does not cover
+them: engine interpolation smooths the physics grid to the render rate, network interpolation absorbs
+packet rate and jitter, and both are needed. Measured with `tools/interp_check.gd`, sampling the
+control through `get_global_transform_interpolated()` so the engine's smoothing counts: engine-only
+leaves 67% of frames motionless (CV 1.64), plus snapshot interpolation gives 1.5% (CV 0.21). They
+also fight — an interpolated node needs `physics_interpolation_mode = OFF` or the engine adds a tick
+of lag back on.
+
+**The rest of this entry stands, and is now cheap to close.** `RemoteInterpolator` is entity-agnostic
+and derives its delay from the observed arrival interval, so 15 Hz enemies and on-change props need
+no new numbers and no second component — one `NetInterp.attach_to(body)` per class. Only players use
+it today. **Stays open until enemies (2.10) and props actually attach it**; the work is one line each
+plus whatever their spawn path is, not a system.
+
+**2026-08-17, dusk3 — the enemy half is done; props are what is left.** Task 2.10's `Enemy` names its
+code-built synchronizer `NetConfig.PLAYER_SYNC_NODE` and calls `NetInterp.attach_to(self)` on every
+peer that is not simulating it, so a 15 Hz enemy is smoothed by the same entity-agnostic component
+players use — no new numbers and no second implementation, exactly as this entry predicted.
+`tools/enemy_net_check.gd` asserts it over real ENet (`the client's copy is smoothed by NetInterp`).
+**Harvestables and physics props still do not attach one.** They replicate on-change and are mostly
+still, so they judder only when they actually move — which today is a harvest state swap, not motion.
+Closing this needs someone to decide whether on-change props are worth interpolating at all; that is
+a smaller question than the one this entry opened with.
+
+---
+
+---
 
 ### F-071 · Eight closed findings were still listed under '## Open', so a quarter of the board's work queue was finished work — **fixed**
 

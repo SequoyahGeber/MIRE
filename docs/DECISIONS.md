@@ -769,6 +769,35 @@ visible, and nothing at all during daylight (the dome is hidden and stops proces
 wants real detail — a Milky Way band, nebulae, anything with structure a few hundred quads cannot
 carry. Both point at a texture, and `set_night_amount()` is the seam that would keep its fade.
 
+### D-043 · 2026-08-18 · An entity is interpolated if and only if it replicates a transform — "prop" is not the criterion
+
+F-004 asked, over three sessions, whether harvestables and physics props needed network interpolation
+alongside players and enemies. The answer is no, and it is structural rather than a matter of taste,
+so it should not be reopened as one. There are exactly four `SceneReplicationConfig`s in the shipped
+game. `PlayerController` and `Enemy` replicate `position`/`rotation` at `REPLICATION_MODE_ALWAYS` and
+both are smoothed (NetInterp attaches players centrally off `PlayerNet.player_spawned`; an `Enemy`
+attaches itself when it does not own simulation). `Harvestable` replicates `health`, `visual_state`
+and `active`; `Chest` replicates `opened` — both `ON_CHANGE`, and **neither puts a transform on the
+wire at all**. `RemoteInterp` smooths a transform, so on those two it would have nothing to act on.
+
+Worse than useless, in fact: those properties are discrete. `visual_state` selects one of a set of
+authored damage meshes, `opened` flips a lid. Blending toward a discrete swap is how you get a
+half-swapped tree, which is a worse artefact than the instantaneous swap it "fixed". State that
+changes on change wants to snap.
+
+So the rule is about the wire contract, not the category of thing: **if a client sees an entity's
+position or rotation arrive over the network, that entity must be smoothed.** A future physics barrel,
+cart or thrown item is covered by that sentence without anyone having to decide again whether it
+counts as a "prop". `tools/interp_coverage_check.gd` enforces it — it finds every
+`SceneReplicationConfig` in the project, sorts them by whether they replicate a transform, and fails
+if a transform-replicating entity is neither smoothed nor explicitly exempted with a reason. It found
+one on its first run (`core/net/dummy_replicant.gd`, R1's spike fixture, which nobody watches).
+
+**Would change my mind:** a prop that starts replicating a transform — at which point the rule already
+covers it and the check will say so. Or evidence that an `ON_CHANGE` visual swap reads badly enough at
+range to want a crossfade, which is a presentation problem for a shader to solve, not a job for the
+network interpolator.
+
 ---
 
 ## Template
