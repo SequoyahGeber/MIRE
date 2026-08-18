@@ -10,6 +10,7 @@ height = 1.8
 [node name="Player" type="CharacterBody3D" unique_id=619933638]
 floor_max_angle = 0.80285144
 floor_snap_length = 0.3
+collision_mask = 3
 script = ExtResource("1_abrql")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=223448851]

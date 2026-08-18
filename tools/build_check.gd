@@ -14,7 +14,12 @@ extends SceneTree
 
 const VALIDATOR := preload("res://systems/building/placement_validator.gd")
 
+## The shared "solid" layer: props, harvestables, placed buildable pieces, players, enemies. Every
+## fixture below that is meant to be an OBSTRUCTION goes here.
 const WORLD_LAYER: int = 1
+## Ground only (F-075). Every fixture below that a piece is meant to STAND ON goes here instead —
+## `_add_box`'s default — so the overlap checks in `_check_placement_rules` exercise the real split
+## `PlacementValidator.evaluate()` relies on rather than a same-layer stand-in for it.
 
 var failures: int = 0
 var registry: Node
@@ -111,7 +116,7 @@ func _build_world() -> void:
 	root.add_child(level)
 	current_scene = level
 
-	_add_box(Vector3(0.0, -0.5, 0.0), Vector3(40.0, 1.0, 40.0), 0.0)          # flat floor at y=0
+	_add_box(Vector3(0.0, -0.5, 0.0), Vector3(40.0, 1.0, 40.0), 0.0)          # flat floor at y=0, terrain
 	# A thin 55 degree bank whose FACE passes exactly through (32, -0.15, 0), the point under the
 	# wall placed at (32, 0, 0) rotated 90 degrees so its 2 m width runs ALONG the slope's contour
 	# (world Z, which this Z-axis tilt never touches) rather than across it. F-082 now requires
@@ -126,7 +131,9 @@ func _build_world() -> void:
 	# (same trap the single-point version of this comment used to warn about). Centre derived from
 	# the face normal, not guessed: cx = px + hy*sin(t), cy = py - hy*cos(t).
 	_add_box(Vector3(32.041, -0.179, 0.0), Vector3(12.0, 0.1, 12.0), 55.0)
-	_add_box(Vector3(0.0, 1.5, 4.0), Vector3(2.0, 3.0, 2.0), 0.0)             # an obstruction
+	# The one genuine OBSTRUCTION in this scene — everything else in _build_world() is ground the
+	# piece stands on, so it alone goes on WORLD_LAYER rather than the terrain default.
+	_add_box(Vector3(0.0, 1.5, 4.0), Vector3(2.0, 3.0, 2.0), 0.0, WORLD_LAYER)
 
 	# F-082 regression geometry, each isolated so a probe hits at most the one thing it is meant to.
 	# A wall (size 2 x 3 x 0.25, half-extents 1 / 1.5 / 0.125) placed at these origins with yaw 0 puts
@@ -152,9 +159,10 @@ func _build_world() -> void:
 	space = level.get_viewport().find_world_3d().direct_space_state
 
 
-func _add_box(centre: Vector3, size: Vector3, tilt_degrees: float) -> void:
+func _add_box(centre: Vector3, size: Vector3, tilt_degrees: float,
+		layer: int = VALIDATOR.TERRAIN_LAYER) -> void:
 	var body := StaticBody3D.new()
-	body.collision_layer = WORLD_LAYER
+	body.collision_layer = layer
 	body.position = centre
 	body.rotation_degrees = Vector3(0.0, 0.0, tilt_degrees)
 	var shape := CollisionShape3D.new()

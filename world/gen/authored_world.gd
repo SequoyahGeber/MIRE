@@ -145,6 +145,11 @@ const MESH_CACHE_DIR: String = "user://mesh_cache"
 ## Preloaded, not referenced by `class_name`: a new global class is invisible to a headless
 ## `--script` run until the editor rescans the project.
 const AssetVfx := preload("res://world/environment/asset_vfx_library.gd")
+## Same preload rule, for `TERRAIN_LAYER`: the ground body below carries it so
+## `PlacementValidator`'s overlap query never mistakes the ground a piece is resting on for an
+## obstruction (F-075). Every other collider this file emits — props, harvestable colliders — is
+## left on the engine default (layer 1), which is the shared "solid" layer that query watches.
+const PlacementValidator := preload("res://systems/building/placement_validator.gd")
 
 
 ## Terrain is emitted as one surface per ground material, so the valley floor
@@ -201,6 +206,7 @@ func _build_terrain() -> void:
 
 	var body := StaticBody3D.new()
 	body.name = "TerrainCollision"
+	body.collision_layer = PlacementValidator.TERRAIN_LAYER
 	body.add_to_group(TERRAIN_GROUP)
 	add_child(body)
 	var shape := ConcavePolygonShape3D.new()

@@ -42,6 +42,18 @@ const OVERLAP_SKIN_M: float = 0.02
 ## lifted clear of the surface it is resting on.
 const MIN_GROUND_CLEARANCE_M: float = 0.12
 
+## Dedicated ground layer (F-075). World generators put terrain here and NOTHING else — props,
+## harvestables, placed buildable pieces, players and enemies all stay on the shared "solid" layer
+## (1) that callers pass as `collision_mask`. `_probe_support` ALWAYS ORs this in regardless of the
+## caller's mask, because a piece needs ground to stand on whether or not the caller thought to ask
+## for it; `_overlaps` never adds it, because a piece resting flush on the ground must not read the
+## ground it is standing on as "something in the way". Before this layer existed, terrain and props
+## shared `collision_mask` and the overlap query worked around the ground being indistinguishable
+## from an obstruction by lifting its query box — see `_overlaps` for what that cost.
+## `world/gen/authored_world.gd` is the one generator that emits terrain today; anything new that
+## emits ground collision must put it here too, or its slopes will read every placement as blocked.
+const TERRAIN_LAYER: int = 2
+
 
 ## Grid- and rotation-snapped placement for a raw aim point. Pure: no physics, no world, so it is
 ## identical on every peer by construction and the check can assert it without a scene.
@@ -141,25 +153,18 @@ static func _overlaps(
 	collision_mask: int,
 	ignore_bodies: Array[RID]
 ) -> bool:
-	var half: Vector3 = def.call(&"half_extents")
 	var size: Vector3 = def.get(&"size")
 
-	# Lift the query box clear of the ground it is standing on. Without this the terrain IS the
-	# overlap: on flat ground the base face is flush, and on any slope the uphill side of the
-	# footprint rises into the box, so every sloped placement reads as obstructed. The clearance is
-	# derived rather than a magic number — it is exactly how high the ground can legitimately reach
-	# within this piece's own footprint at the steepest slope it permits, so a piece that allows
-	# steeper ground automatically lifts further. Capped at a third of the height so the box always
-	# still tests a real volume.
-	#
-	# A dedicated terrain collision layer would be the cleaner answer and would let the overlap query
-	# simply not look at the ground. The project puts world statics and props on layer 1 together
-	# today, so that is a project-wide change and not this task's to make — filed as F-075.
-	var footprint_reach: float = maxf(half.x, half.z)
-	var slope_rise: float = footprint_reach * tan(deg_to_rad(
-		clampf(float(def.get(&"max_ground_slope_degrees")), 0.0, 80.0)))
-	var clearance: float = clampf(
-		maxf(MIN_GROUND_CLEARANCE_M, slope_rise), MIN_GROUND_CLEARANCE_M, size.y / 3.0)
+	# Lift the query box a hair clear of the piece's own floor. This clearance used to be derived
+	# from the piece's steepest permitted slope (half_footprint * tan(max_ground_slope)) — up to
+	# 0.58 m for a 2 m wall permitting 30 degrees, and an obstruction sitting entirely below that
+	# band was invisible to this check. That was a workaround for terrain and props sharing
+	# `collision_mask`, so the ground itself registered as the overlap on any slope. F-075 gave
+	# terrain its own layer instead (TERRAIN_LAYER, above), which `collision_mask` here never
+	# includes, so the box no longer has to out-climb the slope it is resting on. What is left is a
+	# flat floor's worth of margin so two pieces stacked exactly flush (D-056) don't read their
+	# touching faces as a collision.
+	var clearance: float = MIN_GROUND_CLEARANCE_M
 
 	var shape := BoxShape3D.new()
 	shape.size = Vector3(
@@ -210,7 +215,9 @@ static func _probe_support(
 			point + Vector3.UP * SUPPORT_PROBE_LIFT_M,
 			point + Vector3.DOWN * SUPPORT_PROBE_DEPTH_M
 		)
-		query.collision_mask = collision_mask
+		# ORs TERRAIN_LAYER in regardless of what the caller asked for: a piece needs ground to
+		# stand on whether or not the caller's mask includes it (F-075).
+		query.collision_mask = collision_mask | TERRAIN_LAYER
 		query.exclude = ignore_bodies
 		var hit: Dictionary = space.intersect_ray(query)
 		if hit.is_empty():

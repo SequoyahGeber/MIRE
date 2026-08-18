@@ -17,6 +17,8 @@ extends CharacterBody3D
 
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const ENEMY_DEF := preload("res://systems/enemies/enemy_def.gd")
+## For TERRAIN_LAYER only (F-075) — see _build_body().
+const PlacementValidator := preload("res://systems/building/placement_validator.gd")
 
 const DAMAGEABLE_GROUP: StringName = &"damageable"
 const ENEMY_GROUP: StringName = &"enemies"
@@ -356,6 +358,9 @@ func _face(to_target: Vector3, delta: float) -> void:
 
 
 func _build_body() -> void:
+	# Ground moved off the shared solid layer onto its own (F-075) — the engine default
+	# collision_mask (1) alone would let an enemy fall straight through Hollowmere's terrain.
+	collision_mask = 1 | PlacementValidator.TERRAIN_LAYER
 	var shape := CapsuleShape3D.new()
 	shape.radius = definition.radius_m if definition != null else 0.45
 	shape.height = maxf((definition.height_m if definition != null else 0.6), shape.radius * 2.0)

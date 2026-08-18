@@ -123,3 +123,8 @@ common/physics_interpolation=true
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+
+[layer_names]
+
+3d_physics/layer_1="solid"
+3d_physics/layer_2="terrain"

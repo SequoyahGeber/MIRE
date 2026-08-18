@@ -2656,3 +2656,15 @@ Notes along the way:
 Files: `tools/chest_net_check.gd`, `systems/loot/chest.gd`
 
 Commit at time of writing: `f43da7e`
+
+---
+
+### DONE · F-075 · lp · 2026-08-18T14:37:19+00:00
+
+**World statics and props share collision layer 1, so a placement overlap query cannot tell ground from obstruction**
+
+Dedicated terrain collision layer (PlacementValidator.TERRAIN_LAYER=2) so the overlap query never sees the ground it rests on: authored_world.gd's TerrainCollision body is the only thing on layer 2, everything else stays on layer 1. _probe_support ORs the terrain bit in regardless of caller mask; _overlaps never does, so its clearance collapsed from the slope-derived workaround to the flat MIN_GROUND_CLEARANCE_M floor. Also fixed build_ghost.gd's independent aim ray, and gave player.tscn + enemy.gd explicit collision_mask=3 so they don't fall through terrain now that it left layer 1. project.godot got a [layer_names] block. Verified: agent godot --script tools/build_check.gd (0 failures, fixtures rewritten to model the split), tools/hollowmere_check.gd (clean on the real 356m map, nav bakes 9486 polys), tools/enemy_check.gd/combat_check.gd/enemy_net_check.gd/harvest_world_check.gd (no new failures; enemy_check's 5 pre-existing telegraph failures reproduced identically via agent baseline at HEAD, filed as F-111), agent godot --quit-after 120 (clean boot). SPECS.md F-075 block written; D-061 records the layer convention; DELEGATION.md Current state documents it for 4.x chunk streaming and any future mover/generator.
+
+Files: `systems/building/placement_validator.gd`, `world/gen/authored_world.gd`, `tools/build_check.gd`, `project.godot`, `systems/building/build_ghost.gd`, `entities/player/player.tscn`, `systems/enemies/enemy.gd`
+
+Commit at time of writing: `e028365`

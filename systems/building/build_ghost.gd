@@ -22,8 +22,9 @@ extends Node3D
 
 const VALIDATOR := preload("res://systems/building/placement_validator.gd")
 
-## Matches BuildService.QUERY_MASK. The ghost has to ask the same question of the same layers, or its
-## prediction is answering a different one. See F-075 for why this is a single shared layer.
+## Matches BuildService.QUERY_MASK — the "solid" layer (props, harvestables, placed pieces, players,
+## enemies). The ghost has to ask `PlacementValidator.evaluate()` the same question of the same
+## layers `BuildService` does, or its prediction is answering a different one.
 const QUERY_MASK: int = 1
 
 ## Matches BuildService.PIECE_GROUP — duplicated as a literal rather than resolved through the
@@ -113,7 +114,9 @@ func update_aim(from: Vector3, direction: Vector3, builder_position: Vector3) ->
 	var target: Vector3 = from + direction.normalized() * aim_distance_m
 	if space != null:
 		var query := PhysicsRayQueryParameters3D.create(from, target)
-		query.collision_mask = QUERY_MASK
+		# QUERY_MASK alone would never find bare ground now that terrain has its own layer (F-075) —
+		# this ray is "what is the player pointing at", ground or piece, so it has to see both.
+		query.collision_mask = QUERY_MASK | VALIDATOR.TERRAIN_LAYER
 		var hit: Dictionary = space.intersect_ray(query)
 		if not hit.is_empty():
 			target = hit["position"]
