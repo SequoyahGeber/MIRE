@@ -2168,3 +2168,15 @@ Notes along the way:
 - Clean isolated evidence: dc86116 full boot 0 ERROR and build_check 26/26; completed 6bed3c1 build_check 59/59 and build_net_check 13/13, both 0 ERROR. Review probes exposed partial-support acceptance and Y-snap failures; code review exposed unvalidated remote destruction, inert damageable group membership, and no gameplay caller for BuildGhost/BuildService.
 
 Commit at time of writing: `67c81d4`
+
+---
+
+### DONE · F-088 · ivy8 · 2026-08-18T05:01:01+00:00
+
+**A review order inherits the reviewed task's claim set, so it is refused exactly when that task is being worked on**
+
+cmd_order now empties the claim set for --review before the conflict checks, so a read-only review is no longer refused over files it never opens. Re-ran both refused orders: 3.3-review and 3.5-review are queued for LC1 while LP still holds autoload/registry.gd for 3.1.
+
+Files: `.agent/bin/agent`, `docs/FINDINGS.md`
+
+Commit at time of writing: `c14abb4`

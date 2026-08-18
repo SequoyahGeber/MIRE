@@ -1813,6 +1813,14 @@ def cmd_order(args):
     if autoload_only:
         files = [f for f in files if f != "project.godot"]
 
+    # A reviewer claims nothing — it reads a commit and writes findings, and the review template
+    # says exactly that. But the claim set here is derived from the *reviewed* task's spec, so a
+    # review was refused whenever some lane held those files — which is precisely when you want the
+    # review. The 3.3 and 3.5 reviews were both refused over autoload/registry.gd, held by LP for
+    # 3.1, leaving the review lane with nothing it was allowed to be given.
+    if review:
+        files = []
+
     # Never hand out two orders that fight. This is the single most important safety property once
     # three lanes run at once: the claim system catches a collision, but only after a lane has
     # already spent quota getting to its first edit.

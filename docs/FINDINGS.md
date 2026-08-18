@@ -838,7 +838,159 @@ those generated paths, or excluding `.agent/bin/`, both close it.
 
 ---
 
+### F-082 · Placement support succeeds when only one of five footprint probes hits
+
+**Area:** building · **Severity:** medium · **Found:** 2026-08-18 by lc1 during the 3.6 review
+
+`PlacementValidator._probe_support()` skips missing probes and returns the flattest hit it found
+(`systems/building/placement_validator.gd:197`). `evaluate()` therefore treats any non-empty result
+as supported (`systems/building/placement_validator.gd:101`). A 2 m wall resting on a 20 cm pillar
+under its centre returns `Reason.OK` even though all four corner rays miss; a cliff-edge piece is
+similarly accepted if only one corner remains over ground. This contradicts the function's stated
+reason for using five probes and the spec's support validation.
+
+The review's real-physics probe printed `PARTIAL_SUPPORT reason=ok`. Require the authored support
+criterion across the footprint (at minimum, all required probes must hit), and evaluate the worst
+support slope rather than selecting the flattest surviving hit.
+
+---
+
+### F-083 · Snapping the aim hit's Y coordinate rejects or floats pieces on ordinary terrain heights
+
+**Area:** building · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.6 review
+
+`BuildGhost.update_aim()` feeds the surface hit directly to `snap_transform()`
+(`systems/building/build_ghost.gd:100`), and `snap_transform()` rounds Y to the same metre grid as X
+and Z (`systems/building/placement_validator.gd:56`). The support ray begins only 0.15 m above that
+rounded origin. On flat ground at Y=0.4, the placement rounds down to Y=0, the ray begins inside the
+terrain, and the validator returns `NO_SUPPORT`; on ground at Y=0.6, it rounds up to Y=1 and accepts
+a wall floating 0.4 m above the surface. Hollowmere is not restricted to integer-metre elevations,
+so this breaks placement across the shipped map rather than at an exotic edge case.
+
+The review's real-physics probe printed `GROUND_0_4 snapped_y=0.0 reason=nothing underneath it` and
+`GROUND_0_6 snapped_y=1.0 gap=0.4 reason=ok`. Ground placement needs to preserve/derive surface Y;
+vertical snapping for stacked pieces needs an explicit anchor or separate rule.
+
+---
+
+### F-084 · Any client can destroy any buildable by its guessable node name from any distance
+
+**Area:** netcode · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.6 review
+
+`net_request_destroy()` correctly routes the request to the host, but `_process_destroy()` only
+checks that `_placed` contains the supplied name (`autoload/build_service.gd:165`). It never checks
+the requesting player's position, range, ownership, line of sight, or any other destruction rule
+before freeing shared state and refunding the requester. Names are sequential (`Piece1`, `Piece2`,
+...) at `autoload/build_service.gd:269`, so a guest can remotely delete every structure on the map
+and collect each refund by enumerating names. This violates 3.6's "Destruction mirrors it" contract:
+host execution alone is not host validation.
+
+Resolve the requesting host-side player body and enforce the intended destruction range/policy
+before refunding or freeing the piece. Add the missing path to the two-process check.
+
+---
+
+### F-085 · Buildables join `damageable` without implementing its required damage method
+
+**Area:** building · **Severity:** medium · **Found:** 2026-08-18 by lc1 during the 3.6 review
+
+`BuildService._net_spawn_piece()` adds every piece to `&"damageable"`
+(`autoload/build_service.gd:272`), but neither generated pieces nor authored-scene roots gain
+`host_apply_damage(amount, instigator_peer_id) -> bool`. That method is the group's documented
+contract, and `CombatService._best_target()` explicitly skips members without it
+(`autoload/combat_service.gd:251`). The shipped check asserts only group membership and claims that
+means the piece can be attacked (`tools/build_check.gd:226`), so it passes while weapons cannot
+target or destroy a buildable.
+
+Give buildable roots a host-owned damage implementation (or stop advertising them as damageable),
+and make the check call the contract rather than checking the tag alone.
+
+---
+
+### F-086 · The building system has no gameplay caller, so no player can place, rotate, or destroy anything
+
+**Area:** gameplay · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.6 review
+
+`systems/building/build_ghost.gd:3` says to attach a `BuildGhost` to the player, but no production
+script or scene instantiates it. Likewise, no production caller selects a piece, calls
+`update_aim()`/`rotate_step()`/`confirm()`, or invokes `BuildService.request_destroy()`; those APIs
+are referenced only by the two checks. `BuildService` boots, but the shipped game exposes no input
+or UI path into it. Task 3.7 is specified as content authored over this definition, not as the
+missing player integration, so moving on leaves the entire 3.6 feature unreachable.
+
+Wire the local presentation/input path into the player (including piece selection and destroy), and
+add a check that exercises the production caller instead of constructing a private ghost.
+
+---
+
+### F-087 · Three open findings share their F-number with a different finding, so brief routes to the wrong one and start reports two of them as already closed
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
+
+This is F-058's failure mode recurring, and it is now costing routing decisions rather than tidiness.
+Concurrent lanes each read `agent brief`'s "next number" before either had written, so three numbers
+name two different findings apiece. Enumerated 2026-08-18 by ivy8:
+
+| Number | Keeps it (original, already cited by commits) | Collided, needs renumbering |
+|---|---|---|
+| F-058 | L578 · Open · the meta-finding about duplicate F-numbers | **L625 · Open** · `mire_art.mat()`'s cache never hits |
+| F-059 | L1195 · Resolved · `InventoryService._publish_snapshot`'s unguarded `rpc_id` (cited by `983da6c`) | **L646 · Open** · a headless `--script` run never re-imports changed assets |
+| F-060 | L1122 · Resolved · two-process net-check authoring traps (cited by `adfaa78`, `abcf9bd`) | **L672 · Open** · `mire_art.world_bounds` measures rotated objects through their local box |
+
+Two distinct harms, both already observed:
+
+1. **`agent brief F-059` picks one arbitrarily** and may hand a lane the wrong finding — `agent start`
+   says so in its own warning, which is not a fix.
+2. **`agent start` reports F-059 and F-060 as "closed but still under '## Open'"**, because it matches
+   by number and finds the resolved twin. Both open findings therefore read as finished work, and
+   the natural response — move them to Resolved — would bury two live bugs. The asset-reimport one
+   (L646) is a correctness trap for every headless check in the repo.
+
+**Fix:** renumber only the three collided entries, which are the *later* arrivals in each pair, to
+fresh numbers above the current high-water mark. Do not touch the originals: their numbers are cited
+by shipped commit messages, and renumbering those rewrites history that git already carries. Then
+`grep -rn` the renumbered ids across `docs/` and `.agent/` and repoint every reference that meant the
+collided finding, leaving references that meant the original alone — read the surrounding sentence,
+since the number alone cannot tell you which was meant.
+
+Separately, and cosmetic: `F-052` appears twice under Resolved (L2016 and L2018) as a literal
+double-paste of one finding, and `F-055`/`F-056` each name two and three resolved findings
+respectively. These carry no routing risk — nothing routes to a resolved finding — so dedupe the
+F-052 paste and leave the rest as historical record.
+
+---
+
 ## Resolved
+
+### F-088 · A review order inherits the reviewed task's claim set, so it is refused exactly when that task is being worked on — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
+
+`cmd_order` derives `files` from the reviewed task's `docs/SPECS.md` claim block and then runs the
+cross-lane overlap checks against it — but a reviewer claims nothing. The review template says so in
+its own text, and the `--review` branch that writes it never passes `files` to anything.
+
+The result is backwards: a review is refused precisely when the task it reviews is live. Ordering
+`3.3 --review` and `3.5 --review` for LC1 both died on `autoload/registry.gd is claimed by lp for
+3.1` — three tasks that share a registry file in their specs, none of which a reviewer would open.
+With LC2 parked until 2026-08-23 and LC1 finishing its only queued review, this left the review lane
+with nothing it was permitted to be given, which is the one state the saturate machinery exists to
+prevent.
+
+**Fixed:** `cmd_order` empties the claim set when `--review` is passed, before the conflict checks
+run. Every downstream guard then falls through naturally on the empty set rather than needing its
+own exemption — including the Godot-open guard, which likewise has no business blocking a read-only
+review.
+
+**Verified:** re-ran both refused commands. `agent order 3.3 --lane LC1 --review --sha 17e26f8` and
+the 3.5 equivalent now write their orders while LP still holds `autoload/registry.gd` for 3.1, and
+`agent report` lists both under *Orders waiting* for LC1. `python3 -m py_compile .agent/bin/agent`
+is clean.
+
+Adjacent, same root, fixed in the same pass: `cmd_order` refused any task already marked `done`,
+which is the normal state of a commit worth reviewing. `--review` is now exempt from that guard too.
+
+---
 
 ### F-070 · Generated review orders cannot use their mandated review task id — **fixed**
 

@@ -127,9 +127,9 @@
   },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:17:06+00:00",
-      "task": "F-072"
+      "agent": "ivy8",
+      "at": "2026-08-18T05:01:01+00:00",
+      "task": "F-088"
     },
     ".agent/bin/lane": {
       "agent": "yarrow21",
@@ -608,8 +608,8 @@
     },
     "docs/FINDINGS.md": {
       "agent": "ivy8",
-      "at": "2026-08-18T04:54:23+00:00",
-      "task": "F-070"
+      "at": "2026-08-18T05:01:01+00:00",
+      "task": "F-088"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -2875,6 +2875,15 @@
       "status": "todo",
       "tier": "F",
       "title": "Three open findings share their F-number with a different finding, so brief routes to the wrong one and start reports two of them as already closed"
+    },
+    "F-088": {
+      "done_at": "2026-08-18T05:01:01+00:00",
+      "done_by": "ivy8",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "A review order inherits the reviewed task's claim set, so it is refused exactly when that task is being worked on"
     }
   },
   "version": 1
