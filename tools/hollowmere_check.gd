@@ -53,6 +53,7 @@ func _init() -> void:
 		if int(undergrowth.get("placed_count")) < 4000:
 			failures.append("undergrowth placed only %d plants" % int(undergrowth.get("placed_count")))
 
+	_check_spawn(level, layout)
 	_probe_ground(level, world, layout)
 	_check_markers(level, layout)
 	level.queue_free()
@@ -101,6 +102,44 @@ func _probe_ground(level: Node, world: Node, layout: Dictionary) -> void:
 		failures.append("%d of %d ground probes hit nothing — the map has holes" % [misses, samples])
 	if worst > 1.5:
 		failures.append("collision is %.2f m from the authored height somewhere" % worst)
+
+
+## The scene's Player node and the layout's spawn are two copies of one fact, and
+## the first time they disagreed the player started **inside a cabin, under a floor
+## that had no collision**, with no way out. The layout is the source of truth; this
+## makes the scene prove it still agrees.
+func _check_spawn(level: Node, layout: Dictionary) -> void:
+	var spawn: Array = layout.get("spawn", []) as Array
+	if spawn.size() < 3:
+		failures.append("layout has no spawn")
+		return
+	var authored := Vector3(float(spawn[0]), float(spawn[1]), float(spawn[2]))
+	var player := level.get_node_or_null("Player") as Node3D
+	if player == null:
+		failures.append("scene has no Player node")
+		return
+	var flat := Vector2(player.position.x - authored.x, player.position.z - authored.z).length()
+	if flat > 0.5:
+		failures.append(
+			"Player node is %.2f m from the layout spawn — the scene has drifted" % flat
+		)
+
+	# And prove the spawn is actually clear, in the engine, of anything solid.
+	var space := (level as Node3D).get_world_3d().direct_space_state
+	var shape := SphereShape3D.new()
+	shape.radius = 0.9
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = shape
+	query.transform = Transform3D(Basis(), authored + Vector3.UP * 1.0)
+	query.collide_with_areas = false
+	var blocked: Array = []
+	for hit_value: Variant in space.intersect_shape(query, 8):
+		var collider := (hit_value as Dictionary).get("collider") as Node
+		if collider != null and collider.is_in_group(&"authored_world_prop"):
+			blocked.append(String(collider.get_meta(&"asset", collider.name)))
+	if not blocked.is_empty():
+		failures.append("spawn is inside %s" % ", ".join(blocked))
+	print("HOLLOWMERE_SPAWN at %s clear=%s" % [authored, blocked.is_empty()])
 
 
 func _check_markers(level: Node, layout: Dictionary) -> void:

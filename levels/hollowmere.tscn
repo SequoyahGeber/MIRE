@@ -98,4 +98,4 @@ layout_path = "res://world/gen/layouts/hollowmere.json"
 prop_group = &"authored_world_prop"
 
 [node name="Player" parent="." instance=ExtResource("1_player")]
-position = Vector3(-34.0, 4.572, 24.0)
+position = Vector3(-28.059, 4.26, 22.578)

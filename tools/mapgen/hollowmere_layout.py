@@ -566,6 +566,50 @@ def footprint(kit: str, asset: str) -> tuple[float, float]:
     return max(width, depth) * 0.5, float(entry.get("height_m", 1.0))
 
 
+def dimensions(kit: str, asset: str) -> tuple[float, float, float]:
+    entry = CATALOGS.get(kit, {}).get(asset)
+    if entry is None:
+        raise KeyError(f"{kit}/{asset} is not in any catalog")
+    return (float(entry.get("width_m", 1.0)), float(entry.get("depth_m", 1.0)),
+            float(entry.get("height_m", 1.0)))
+
+
+#: Assets whose collision must be a BOX, not the default cylinder.
+#:
+#: A cylinder is a fine stand-in for a tree or a boulder and a disaster for a wall.
+#: A 4.2 m plank wall became a disc of radius 1.23 m: it does not cover the wall it
+#: represents, it bulges two metres out of both faces, and around a cabin the four
+#: discs meet in the middle and seal the building shut. That is what trapped the
+#: player inside the hold's shack.
+BOX_COLLIDERS = {
+    "wood_foundation", "wood_floor", "stone_foundation", "stone_floor",
+    "wood_wall_solid", "wood_wall_window", "stone_wall_solid", "stone_wall_window",
+    "wood_half_wall", "stone_half_wall", "wood_beam", "wood_post", "wood_railing",
+    "fence_straight", "fence_corner", "fence_post", "stone_pillar",
+    "wood_stairs", "stone_stairs",
+}
+#: Walls with a doorway. A single box would brick up the opening the model has, so
+#: these emit two jambs and leave the gap the art already drew.
+DOOR_WALLS = {"wood_wall_door", "stone_wall_door"}
+DOOR_WIDTH = 1.55
+#: Things you are meant to walk through. The gate leaves are modelled swung open.
+NO_COLLIDERS = {"fence_gate", "wood_roof_slope", "wood_roof_corner"}
+
+
+def box_collision(kit: str, asset: str, scale: float) -> list[dict] | None:
+    width, depth, height = (value * scale for value in dimensions(kit, asset))
+    if asset in DOOR_WALLS:
+        jamb = max(0.2, (width - DOOR_WIDTH) * 0.5)
+        return [
+            {"t": "box", "size": [round(jamb, 3), round(height, 3), round(depth, 3)],
+             "off": [round(-(width - jamb) * 0.5, 3), round(height * 0.5, 3), 0.0]},
+            {"t": "box", "size": [round(jamb, 3), round(height, 3), round(depth, 3)],
+             "off": [round((width - jamb) * 0.5, 3), round(height * 0.5, 3), 0.0]},
+        ]
+    return [{"t": "box", "size": [round(width, 3), round(height, 3), round(depth, 3)],
+             "off": [0.0, round(height * 0.5, 3), 0.0]}]
+
+
 def names(kit: str, prefix: str) -> list[str]:
     return sorted(n for n in CATALOGS.get(kit, {}) if n.startswith(prefix))
 
@@ -654,8 +698,12 @@ class Placer:
         }
         if note:
             record["note"] = note
-        if col is not None:
+        if asset in NO_COLLIDERS:
+            pass
+        elif col is not None:
             record["cols"] = col
+        elif asset in BOX_COLLIDERS or asset in DOOR_WALLS:
+            record["cols"] = box_collision(kit, asset, scale)
         elif solid:
             record["cols"] = [{
                 "t": "cyl",
@@ -886,9 +934,9 @@ def build_landmarks(placer: Placer, terrain: Terrain, markers: list[dict], light
     for offset_x, offset_z in ((-7.0, -5.0), (5.5, -6.5), (0.0, 7.0)):
         base = (hold[0] + offset_x, hold[1] + offset_z)
         placer.place("environment", "wood_foundation", "SpawnHold", base[0], base[1],
-                     solid=False, note="hold cabin", force=True)
+                     note="hold cabin", force=True)
         placer.place("environment", "wood_floor", "SpawnHold", base[0], base[1],
-                     solid=False, y_offset=0.40, note="hold cabin", force=True)
+                     y_offset=0.40, note="hold cabin", force=True)
         for side, (wall_x, wall_z, yaw) in enumerate((
             (0.0, -2.0, 0.0), (0.0, 2.0, math.pi), (-2.0, 0.0, math.pi * 0.5), (2.0, 0.0, -math.pi * 0.5)
         )):
@@ -896,7 +944,7 @@ def build_landmarks(placer: Placer, terrain: Terrain, markers: list[dict], light
             placer.place("environment", wall, "SpawnHold", base[0] + wall_x, base[1] + wall_z,
                          yaw=yaw, y_offset=0.64, note="hold cabin", force=True)
         placer.place("environment", "wood_roof_slope", "SpawnHold", base[0], base[1],
-                     y_offset=3.64, solid=False, note="hold cabin", force=True)
+                     y_offset=3.64, note="hold cabin", force=True)
     stations = [
         ("station_campfire", 0.0, 0.0), ("station_workbench_primitive", -3.4, 1.6),
         ("station_anvil", 3.2, 1.8), ("station_cooking_spit", 1.2, -2.6),
@@ -1004,7 +1052,7 @@ def build_landmarks(placer: Placer, terrain: Terrain, markers: list[dict], light
     for offset_x in (-2.0, 2.0):
         for offset_z in (-2.0, 2.0):
             placer.place("environment", "stone_floor", "MereShore", yard[0] + offset_x * 2.0,
-                         yard[1] + offset_z * 2.0, solid=False, note="extraction pad", force=True)
+                         yard[1] + offset_z * 2.0, note="extraction pad", force=True)
     placer.place("loot", "loot_chest_reinforced_closed", "MereShore", yard[0] + 3.0, yard[1] - 1.0,
                  y_offset=0.24, note="extraction cache", force=True)
     for x, z, angle in ring(yard, 9.0, 4, phase=0.8):
@@ -1052,15 +1100,16 @@ def build_landmarks(placer: Placer, terrain: Terrain, markers: list[dict], light
             if step % 2 == 0:
                 for side in (-BRIDGE_HALF_DEPTH, BRIDGE_HALF_DEPTH):
                     rx, rz = x + normal[0] * side, z + normal[1] * side
+                    if terrain.height_at(rx, rz) > deck + 0.45:
+                        continue
                     placer.place("environment", "wood_railing", "Gorge", rx, rz,
-                                 yaw=yaw, solid=False,
-                                 y_offset=deck - terrain.height_at(rx, rz) + 0.24,
+                                 yaw=yaw, y_offset=deck - terrain.height_at(rx, rz) + 0.24,
                                  note=name, force=True)
-        for side in (-1.0, 1.0):
-            px = cx + direction[0] * BRIDGE_HALF_WIDTH * side
-            pz = cz + direction[1] * BRIDGE_HALF_WIDTH * side
-            placer.place("environment", "wood_post", "Gorge", px, pz, yaw=yaw, solid=False,
-                         y_offset=deck - terrain.height_at(px, pz) - 2.6, note=name, force=True)
+        # Piers were here and are gone on purpose. `wood_post` is a fixed 3.0 m,
+        # and the gap between deck and riverbed varies from under a metre to well
+        # over five, so a post either floats or buries itself. A pier that only
+        # fits at one specific depth is not a pier, it is a coincidence — the
+        # honest options are a stretchable pier asset or none, and none is free.
         markers.append(_marker(name, "bridge", cx, deck, cz, "Gorge"))
 
     # -- loot worth walking to ----------------------------------------------
@@ -1207,6 +1256,36 @@ def reachable_from(terrain: Terrain, mask: list[bool], start: tuple[float, float
     return seen
 
 
+SPAWN_CLEARANCE = 2.4
+
+
+def find_spawn(placer: Placer, terrain: Terrain, hold: tuple[float, float]) -> tuple[float, float, float]:
+    """Search outward from the hold for open, level, dry ground.
+
+    The spawn used to be a coordinate typed next to the hold's centre, and one of
+    the three cabins later landed a metre away from it — so the player spawned
+    inside a shack, under a floor that had no collision, and could not get out.
+    A hand-written spawn is a bug waiting for the next prop to move, so this asks
+    the same spatial index everything else was placed through.
+    """
+    for step in range(4, 44):
+        radius = step * 0.75
+        count = max(10, int(radius * 2.5))
+        for index in range(count):
+            angle = index * math.tau / count + step * 0.31
+            x = hold[0] + math.cos(angle) * radius
+            z = hold[1] + math.sin(angle) * radius
+            if not placer.clear(x, z, SPAWN_CLEARANCE):
+                continue
+            if terrain.slope_deg_at(x, z) > 12.0 or terrain.depth_at(x, z) > 0.0:
+                continue
+            distance, half = road_distance(x, z)
+            if distance < half:
+                continue
+            return (round(x, 3), round(terrain.height_at(x, z) + 0.4, 3), round(z, 3))
+    raise RuntimeError("no clear spawn anywhere near the hold")
+
+
 def validate(terrain: Terrain, placer: Placer, markers: list[dict],
              spawn: tuple[float, float, float]) -> list[str]:
     problems: list[str] = []
@@ -1244,6 +1323,24 @@ def validate(terrain: Terrain, placer: Placer, markers: list[dict],
         distance, half = road_distance(x, z)
         if distance < half:
             problems.append(f"{prop['asset']} stands in a road corridor at ({x:.1f}, {z:.1f})")
+
+    # The spawn is the one point on the map a player is guaranteed to occupy, so
+    # it gets its own check rather than relying on the general placement rules.
+    nearest = 1e9
+    nearest_asset = ""
+    for prop in placer.props:
+        if not prop.get("cols"):
+            continue
+        distance = math.hypot(prop["pos"][0] - spawn[0], prop["pos"][2] - spawn[2])
+        if distance < nearest:
+            nearest, nearest_asset = distance, prop["asset"]
+    if nearest < SPAWN_CLEARANCE * 0.8:
+        problems.append(
+            f"spawn is {nearest:.2f} m from {nearest_asset} — the player starts inside it"
+        )
+    ground = terrain.height_at(spawn[0], spawn[2])
+    if abs(spawn[1] - ground - 0.4) > 0.05:
+        problems.append(f"spawn is {spawn[1] - ground:.2f} m off the ground")
 
     mask = walkable_mask(terrain)
     if not mask[int(round((spawn[2] - ORIGIN[1]) / CELL)) * NX
@@ -1301,7 +1398,7 @@ def main() -> None:
         placed = placer.scatter(name, centre, radius, table, target)
         print(f"  {name:12s} {placed:5d} placed of {target:5d} attempted")
 
-    spawn = (-34.0, terrain.height_at(-34.0, 24.0) + 0.4, 24.0)
+    spawn = find_spawn(placer, terrain, (-34.0, 18.0))
     markers.insert(0, _marker("PlayerSpawn", "spawn", spawn[0], spawn[1], spawn[2], "SpawnHold"))
 
     for prop in placer.props:
