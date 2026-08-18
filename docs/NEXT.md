@@ -67,10 +67,11 @@ Re-run the gate on the current build. `agent godot --script tools/combat_self_hi
   lanes claim, verify through the shared `agent godot` lock (F-044), and ship under the same
   protocol as everyone else. `docs/ORCHESTRATION.md` is the manual.
 
-**Twenty-two autoloads live**, `verify_setup` scans the `[autoload]` section and asserts a floor rather than a list, so adding one cannot red it (and dropping one still can). Boot log:
+**Twenty-three autoloads live**, `verify_setup` scans the `[autoload]` section and asserts a floor rather than a list, so adding one cannot red it (and dropping one still can). Boot log:
 `content: loaded 14 item(s), 1 recipe(s), 9 weapon(s)` + `1 enemy definition(s)` +
 `net: NetTransport ready (offline)`. `NetConfig` is a `class_name`, **not** an autoload; don't add it.
-Protocol version lives in `core/net/net_version.gd` (currently 7); any new RPC bumps it.
+Protocol version lives in `core/net/net_version.gd` (**currently 11** — 3.3's two powerup RPCs were
+the last bump); any new RPC bumps it and extends `tools/handshake_check.gd`.
 
 Godot 4.7.1-stable `a13da4feb`, pinned (D-001) — also the determinism baseline (§6a), so upgrading
 invalidates R6. Blender is pinned the same way now (D-038); the next asset batch records the version.
@@ -96,6 +97,7 @@ Protocol: [AGENTS.md](../AGENTS.md) · specs: [SPECS.md](SPECS.md) · dispatch: 
 | 2.11 | Day/night — host-authoritative clock, sky client-local. `cycle_enabled` stays false forever; DayNight pushes the time instead. | lane | **done** |
 | 2.12 | Night waves over `EnemyWorld` seams. Shipped in `915c881` and **never registered**, so it did not run for a day (F-068); the autoload and the harness are fixed. | lane + gale6 | **done** |
 | 2.13 | Death & respawn — player health, downed→bleed-out→revive, the `enemy_attack_landed` subscriber that makes crawlers matter. | lp | **done** |
+| 3.3 | Powerup framework — tags, stacks, Resonance thresholds, one `stat()` query seam. **Done**; D-044 fixes the authoring shape 3.4 uses. | gale6 | **done** |
 | 2.14 | **Playtest with friends** — protocol in SPECS.md: verbatim quotes, one full night, then re-read DESIGN §8 before anything in M3. | You + friends | after the above |
 | 2.1d | A-009 extraction ship (15 models) — the asset queue's NEXT; tracker governs. | asset agent | ready |
 
