@@ -426,9 +426,9 @@
       "task": "F-099"
     },
     "autoload/enemy_world.gd": {
-      "agent": "kiln9",
-      "at": "2026-08-18T14:10:44+00:00",
-      "task": "F-099"
+      "agent": "lp",
+      "at": "2026-08-18T14:44:41+00:00",
+      "task": "F-076"
     },
     "autoload/enemy_world.gd.uid": {
       "agent": "dusk3",
@@ -446,9 +446,9 @@
       "task": "F-098"
     },
     "autoload/harvest_world.gd": {
-      "agent": "kiln9",
-      "at": "2026-08-18T14:10:44+00:00",
-      "task": "F-099"
+      "agent": "lp",
+      "at": "2026-08-18T14:44:41+00:00",
+      "task": "F-076"
     },
     "autoload/inventory_service.gd": {
       "agent": "kiln9",
@@ -1379,6 +1379,11 @@
       "agent": "gale6",
       "at": "2026-08-18T02:53:04+00:00",
       "task": "F-068"
+    },
+    "tools/world_contract_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T14:44:41+00:00",
+      "task": "F-076"
     },
     "ui/building/build_bar.gd": {
       "agent": "lp",
@@ -3075,9 +3080,11 @@
       "title": "World statics and props share collision layer 1, so a placement overlap query cannot tell ground from obstruction"
     },
     "F-076": {
+      "done_at": "2026-08-18T14:44:41+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "A new map inherits none of the systems keyed to the old map's group names"
     },

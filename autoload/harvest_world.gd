@@ -118,6 +118,23 @@ func wired_harvestables() -> Array[Node3D]:
 	return result
 
 
+## F-076: ground truth for "does this map's layout actually have harvestable props" — read
+## straight from the raw layout JSON's `props` array, never through `HOLDER_GROUPS`. Unlike
+## EnemyWorld's nest kind, this needed no new convention: every generator already marks a prop
+## `"harvestable": true` in its own layout regardless of what it names the prop's holder group.
+## `wired_harvestables()` above is the other half — what this file actually wired — and keeping
+## the two independent is what lets `tools/world_contract_check.gd` catch a future map whose
+## holder group `HOLDER_GROUPS` does not yet list, the exact shape Hollowmere shipped in with 77
+## dead trees before this task's group was added.
+func expected_harvestable_count(layout: Dictionary) -> int:
+	var count: int = 0
+	for prop_value: Variant in (layout.get("props", []) as Array):
+		var prop := prop_value as Dictionary
+		if prop != null and bool(prop.get("harvestable", false)):
+			count += 1
+	return count
+
+
 ## Only a holder entering the tree warrants a rescan. Both map generators add a holder to its group
 ## BEFORE add_child (and packed scenes instantiate with their groups set), so membership is already
 ## visible here. Without this filter, every node the game ever adds — audio one-shots, enemies,

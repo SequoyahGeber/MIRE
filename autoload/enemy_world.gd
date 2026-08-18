@@ -206,6 +206,29 @@ func ambient_spawn_points() -> Array[Vector3]:
 	return points
 
 
+## F-076: the one marker `kind` a NEW map's generator should publish for its enemy nests. Every
+## map built from here on should use this and only this; `NEST_SOURCES` above keeps reading
+## Playtest Hollow's legacy `enemy_spawn` for backward compatibility, but nothing new should add
+## a third spelling. Read the group-name convergence note in `docs/DELEGATION.md` before adding one.
+const CANONICAL_NEST_KIND: StringName = &"enemy_nest"
+
+
+## Ground truth for "does this map's layout actually have nests" — read straight from the raw
+## layout JSON's `markers` array, never through a Godot group. `ambient_spawn_points()` above is
+## the other half of the comparison a check wants: what THIS FILE actually found. Keeping the two
+## independent is the whole point — Hollowmere shipped with four nests in its layout and zero
+## found by `ambient_spawn_points()`, and a check built by counting the same groups this file
+## reads would have been just as blind as this file was. `tools/world_contract_check.gd` is that
+## check, and it runs against whatever map is `project.godot`'s main scene, not just this one.
+func expected_nest_count(layout: Dictionary) -> int:
+	var count: int = 0
+	for marker_value: Variant in (layout.get("markers", []) as Array):
+		var marker := marker_value as Dictionary
+		if marker != null and String(marker.get("kind", "")) == String(CANONICAL_NEST_KIND):
+			count += 1
+	return count
+
+
 func get_def(id: StringName) -> Resource:
 	return defs.get(id)
 

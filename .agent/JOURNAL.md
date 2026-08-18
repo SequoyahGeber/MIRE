@@ -2668,3 +2668,19 @@ Dedicated terrain collision layer (PlacementValidator.TERRAIN_LAYER=2) so the ov
 Files: `systems/building/placement_validator.gd`, `world/gen/authored_world.gd`, `tools/build_check.gd`, `project.godot`, `systems/building/build_ghost.gd`, `entities/player/player.tscn`, `systems/enemies/enemy.gd`
 
 Commit at time of writing: `e028365`
+
+---
+
+### DONE · F-076 · lp · 2026-08-18T14:44:41+00:00
+
+**A new map inherits none of the systems keyed to the old map's group names**
+
+EnemyWorld.expected_nest_count()/HarvestWorld.expected_harvestable_count() read ground truth off raw layout JSON (never a group), compared by new tools/world_contract_check.gd against ambient_spawn_points()/live_count()/wired_harvestables() for whatever project.godot's main_scene is -- a 3rd map needs no new check code. Verified: agent godot --script tools/world_contract_check.gd -> WORLD_CONTRACT_CHECK PASS (layout_nests=4 spawn_points=4 live=4, layout_props=83 wired=83); regression-proved by blanking EnemyWorld.NEST_SOURCES' Hollowmere entry and confirming the check fails (spawn_points=0), then reverted clean (git diff confirmed). No regressions: hollowmere_check.gd PASS, harvest_world_check.gd failures=0, enemy_check.gd failures=5 (pre-existing F-111 telegraph failures, unrelated). Undergrowth's prop-avoidance (3rd system) not generalized -- filed as F-112. D-062 records the enemy_nest canonical-kind convention. docs/SPECS.md F-076 block written; docs/FINDINGS.md moved to Resolved.
+
+Notes along the way:
+- Added EnemyWorld.expected_nest_count()/HarvestWorld.expected_harvestable_count() reading raw layout JSON (never a group) as ground truth; tools/world_contract_check.gd compares that against ambient_spawn_points()/live_count()/wired_harvestables() for whatever main_scene is. Regression-proved by temporarily blanking NEST_SOURCES' Hollowmere entry -- check correctly failed, reverted clean.
+- Undergrowth's prop-avoidance (3rd system in the original finding) not generalized -- not in this task's claim and has no clean ground-truth field in the layout JSON. Filed as F-112.
+
+Files: `autoload/enemy_world.gd`, `autoload/harvest_world.gd`, `tools/world_contract_check.gd`
+
+Commit at time of writing: `664e3b7`
