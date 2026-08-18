@@ -669,9 +669,9 @@
       "task": "3.6"
     },
     "systems/building/placement_validator.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:35:30+00:00",
-      "task": "3.6"
+      "agent": "lp",
+      "at": "2026-08-18T05:46:29+00:00",
+      "task": "F-082"
     },
     "systems/combat/weapon_def.gd": {
       "agent": "flint5",
@@ -849,9 +849,9 @@
       "task": "F-073"
     },
     "tools/build_check.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:45:01+00:00",
-      "task": "3.6"
+      "agent": "lp",
+      "at": "2026-08-18T05:46:29+00:00",
+      "task": "F-082"
     },
     "tools/build_net_check.gd": {
       "agent": "lp",
@@ -2863,9 +2863,11 @@
       "title": "Every ship blanket-stages .agent/, so one agent's commit silently carries another's in-progress harness edits"
     },
     "F-082": {
+      "done_at": "2026-08-18T05:46:29+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Placement support succeeds when only one of five footprint probes hits"
     },

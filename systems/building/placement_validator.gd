@@ -102,8 +102,7 @@ static func evaluate(
 		var support: Dictionary = _probe_support(space, def, placement, collision_mask, ignore_bodies)
 		if support.is_empty():
 			return Reason.NO_SUPPORT
-		var normal: Vector3 = support["normal"]
-		var slope_degrees: float = rad_to_deg(acos(clampf(normal.dot(Vector3.UP), -1.0, 1.0)))
+		var slope_degrees: float = float(support["slope_degrees"])
 		if slope_degrees > float(def.get(&"max_ground_slope_degrees")):
 			return Reason.TOO_STEEP
 
@@ -178,9 +177,15 @@ static func _overlaps(
 	return not space.intersect_shape(query, 1).is_empty()
 
 
-## Looks for ground under the footprint's four bottom corners AND its centre, and reports the
-## flattest thing it finds. Five probes rather than one because a single centre ray happily reports
-## solid ground for a wall with three quarters of it hanging over a cliff.
+## Looks for ground under the footprint's four bottom corners AND its centre, and requires EVERY
+## probe to find something before the placement counts as supported at all. Used to skip missing
+## probes and report only the flattest hit among whatever survived (F-082): a 2 m wall resting on a
+## 20 cm pillar under its centre, or a piece with three of four corners hanging over a cliff, still
+## has one hit — the centre ray, or the one grounded corner — and that lone flat hit used to read as
+## fully supported. There is no authored field distinguishing "required" from "optional" probes, so
+## all five are required; a piece meant to bridge a gap sets `requires_support = false` instead.
+## Slope is then judged by the WORST (steepest) of the five hits, not the flattest survivor, so one
+## good corner can no longer hide three bad ones.
 static func _probe_support(
 	space: PhysicsDirectSpaceState3D,
 	def: Resource,
@@ -194,8 +199,7 @@ static func _probe_support(
 		Vector3(half.x, 0.0, half.z), Vector3(-half.x, 0.0, half.z),
 		Vector3(half.x, 0.0, -half.z), Vector3(-half.x, 0.0, -half.z),
 	]
-	var best: Dictionary = {}
-	var best_slope: float = 1000.0
+	var worst_slope: float = 0.0
 	for offset: Vector3 in offsets:
 		var point: Vector3 = placement.origin + placement.basis * offset
 		var query := PhysicsRayQueryParameters3D.create(
@@ -206,10 +210,10 @@ static func _probe_support(
 		query.exclude = ignore_bodies
 		var hit: Dictionary = space.intersect_ray(query)
 		if hit.is_empty():
-			continue
+			# One missed probe fails the whole footprint (F-082) — an empty Dictionary is the same
+			# "unsupported" sentinel evaluate() already checks for via is_empty().
+			return {}
 		var normal: Vector3 = hit["normal"]
 		var slope: float = rad_to_deg(acos(clampf(normal.dot(Vector3.UP), -1.0, 1.0)))
-		if slope < best_slope:
-			best_slope = slope
-			best = hit
-	return best
+		worst_slope = maxf(worst_slope, slope)
+	return {"slope_degrees": worst_slope}

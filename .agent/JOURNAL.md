@@ -2281,3 +2281,18 @@ Notes along the way:
 Files: `autoload/powerup_service.gd`, `tools/powerup_review_check.gd`
 
 Commit at time of writing: `977cede`
+
+---
+
+### DONE · F-082 · lp · 2026-08-18T05:46:29+00:00
+
+**Placement support succeeds when only one of five footprint probes hits**
+
+Fix: PlacementValidator._probe_support() now requires ALL five footprint probes to hit (was: skipped misses, used flattest survivor) and returns the worst/steepest slope among hits (was: flattest). A wall balanced on a pillar under its centre or hanging off a cliff now reads NO_SUPPORT instead of OK. Verified: agent godot --script tools/build_check.gd -> BUILD_CHECK failures=0 (66 assertions, 3 new ones for this fix, re-run twice for determinism); agent godot --script tools/build_net_check.gd -> BUILD_NET_CHECK failures=0 (13 assertions, confirms the host's real networked placement path is unaffected). Wrote missing docs/SPECS.md F-082 block, moved FINDINGS.md entry to Resolved, added DELEGATION.md Current state note on the new all-probes/worst-slope contract.
+
+Notes along the way:
+- Fix: _probe_support returns {} the moment ANY of the 5 probes miss (was: skip misses, use flattest survivor); returns worst/steepest slope among hits otherwise. No BuildableDef field distinguishes required/optional probes, so decided all 5 are required (requires_support=false is the existing escape hatch for bridging pieces). Old build_check.gd bank test broke: a wall run ACROSS a 55 deg slope genuinely can't have all 5 probes in a 0.6m reach (corners ~2.9m apart vertically) -> correctly NO_SUPPORT now, not TOO_STEEP. Fixed by turning the wall 90deg to run along the slope's contour + thinning the test bank 1m->0.1m (thick tilted box traps a ray 'inside solid' a few cm off the exact tuned point).
+
+Files: `systems/building/placement_validator.gd`, `tools/build_check.gd`
+
+Commit at time of writing: `1dc36e3`

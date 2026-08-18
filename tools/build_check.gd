@@ -44,6 +44,7 @@ func _run() -> void:
 	_check_snapping_is_pure()
 	await _build_world()
 	_check_placement_rules()
+	_check_support_probe_requirements()
 	await _check_host_placement()
 	await _check_ghost()
 
@@ -103,14 +104,33 @@ func _build_world() -> void:
 	current_scene = level
 
 	_add_box(Vector3(0.0, -0.5, 0.0), Vector3(40.0, 1.0, 40.0), 0.0)          # flat floor at y=0
-	# A 55 degree bank whose FACE passes exactly through (32, 0, 0), the point the wall is placed
-	# at. Two things had to be true and neither is obvious: it must be clear of the floor's x=+20
-	# edge, or the wall's corner probes find flat floor, take it as the flattest support and the
-	# slope rule never sees the bank; and the surface must be at the probe's height, because a
-	# support ray that starts INSIDE the solid returns no hit at all and the placement reads as
-	# unsupported rather than steep. Centre derived from the face normal, not guessed.
-	_add_box(Vector3(32.410, -0.287, 0.0), Vector3(12.0, 1.0, 12.0), 55.0)
+	# A thin 55 degree bank whose FACE passes exactly through (32, -0.15, 0), the point under the
+	# wall placed at (32, 0, 0) rotated 90 degrees so its 2 m width runs ALONG the slope's contour
+	# (world Z, which this Z-axis tilt never touches) rather than across it. F-082 now requires
+	# every one of the five footprint probes to hit, and a wall run across a 55 degree slope — width
+	# along X — puts its corners roughly 2.9 m apart vertically, far outside any probe's 0.6 m reach,
+	# which correctly reads NO_SUPPORT rather than TOO_STEEP: nothing that steep can honestly carry a
+	# flat piece laid across it. Turned along the contour, the corners are only 0.125 m apart in X, a
+	# ~0.18 m rise that fits inside the probe window with room either side. The box is thin (0.1 m,
+	# vs the old 1 m) on purpose — full thickness tilted 55 degrees is ~1.7 m of solid along a
+	# world-vertical line, so a probe that starts just clear of the face by design still starts
+	# INSIDE the solid a few centimetres either side of that exact point, and reads as no hit at all
+	# (same trap the single-point version of this comment used to warn about). Centre derived from
+	# the face normal, not guessed: cx = px + hy*sin(t), cy = py - hy*cos(t).
+	_add_box(Vector3(32.041, -0.179, 0.0), Vector3(12.0, 0.1, 12.0), 55.0)
 	_add_box(Vector3(0.0, 1.5, 4.0), Vector3(2.0, 3.0, 2.0), 0.0)             # an obstruction
+
+	# F-082 regression geometry, each isolated so a probe hits at most the one thing it is meant to.
+	# A wall (size 2 x 3 x 0.25, half-extents 1 / 1.5 / 0.125) placed at these origins with yaw 0 puts
+	# its five probe points at exact, known world positions — see _check_support_probe_requirements().
+	_add_box(Vector3(-40.0, -0.5, -40.0), Vector3(0.3, 1.0, 0.3), 0.0)
+	_add_box(Vector3(-49.0, -0.5, -39.875), Vector3(0.3, 1.0, 0.3), 0.0)
+	# A 50 degree panel whose face passes exactly through (11, 0.05, 15.125) — one corner of a wall
+	# placed at (10, 0, 15), which otherwise sits entirely on the flat floor above. 0.05 m above the
+	# floor's own surface so the probe there hits the panel, not the flat ground underneath it. Centre
+	# derived the same way as the bank above: cx = px + hy*sin(t), cy = py - hy*cos(t), for the box's
+	# own half-height hy.
+	_add_box(Vector3(11.383, -0.271, 15.125), Vector3(2.0, 1.0, 2.0), 50.0)
 
 	# Two physics frames: one for the bodies to enter the tree, one for the space to know them.
 	await physics_frame
@@ -158,11 +178,15 @@ func _check_placement_rules() -> void:
 		VALIDATOR.Reason.NO_SUPPORT,
 		"hanging in the air -> NO_SUPPORT")
 
-	var on_the_bank: Transform3D = VALIDATOR.snap_transform(wall, Vector3(32.0, 0.0, 0.0), 0.0)
+	# Rotated 90 degrees so the wall's 2 m width runs along the bank's contour rather than across
+	# its face — see the bank's own comment in _build_world() for why that is the only orientation
+	# that puts all five probes within reach of a 55 degree slope at once.
+	var on_the_bank: Transform3D = VALIDATOR.snap_transform(
+		wall, Vector3(32.0, 0.0, 0.0), deg_to_rad(90.0))
 	var bank_reason: int = VALIDATOR.evaluate(
 		space, wall, on_the_bank, Vector3(32.0, 0.0, 0.0), WORLD_LAYER)
 	check(bank_reason == VALIDATOR.Reason.TOO_STEEP,
-		"a 55 degree bank -> TOO_STEEP, the reason the player can act on (%s)" %
+		"a 55 degree bank, wall turned along its contour -> TOO_STEEP, every probe hits (%s)" %
 			VALIDATOR.reason_text(bank_reason))
 
 	# Two walls side by side share a face exactly. Without the overlap skin every second wall in a
@@ -182,6 +206,41 @@ func _check_placement_rules() -> void:
 	check(VALIDATOR.is_placeable(VALIDATOR.Reason.OK) and
 		not VALIDATOR.is_placeable(VALIDATOR.Reason.OVERLAPS),
 		"is_placeable() agrees with the enum")
+
+
+## F-082: every footprint probe must hit before a placement counts as supported, and the WORST
+## (steepest) of the hits decides the slope — not the flattest survivor. Before the fix a single
+## grounded probe was enough for `evaluate()` to call the whole footprint OK.
+func _check_support_probe_requirements() -> void:
+	print("\n== every footprint probe must hit, and the worst slope wins (F-082) ==")
+	check(space != null, "a real physics space is available to query")
+	if space == null:
+		return
+
+	# A 2 m wall balanced on a 20 cm pillar directly under its centre: the centre probe hits, all
+	# four corner probes hang over open air. Picking the flattest surviving hit used to read this as
+	# fully supported.
+	var on_pillar: Transform3D = VALIDATOR.snap_transform(wall, Vector3(-40.0, 0.0, -40.0), 0.0)
+	check(VALIDATOR.evaluate(space, wall, on_pillar, on_pillar.origin, WORLD_LAYER) ==
+		VALIDATOR.Reason.NO_SUPPORT,
+		"a wall balanced on a pillar under its centre -> NO_SUPPORT, not OK")
+
+	# Only one of the four corners still has ground under it — a cliff-edge piece with the centre and
+	# three corners hanging off, same failure the review's real-physics probe printed.
+	var one_corner: Transform3D = VALIDATOR.snap_transform(wall, Vector3(-50.0, 0.0, -40.0), 0.0)
+	check(VALIDATOR.evaluate(space, wall, one_corner, one_corner.origin, WORLD_LAYER) ==
+		VALIDATOR.Reason.NO_SUPPORT,
+		"only one corner still over ground -> NO_SUPPORT, not OK")
+
+	# All five probes hit here, but one corner's surface is a 50 degree panel while the rest is flat
+	# floor. The verdict has to come from the worst of the five, or the flat majority hides the one
+	# corner steep enough to refuse.
+	var mixed_slope: Transform3D = VALIDATOR.snap_transform(wall, Vector3(10.0, 0.0, 15.0), 0.0)
+	var mixed_reason: int = VALIDATOR.evaluate(
+		space, wall, mixed_slope, mixed_slope.origin, WORLD_LAYER)
+	check(mixed_reason == VALIDATOR.Reason.TOO_STEEP,
+		"four flat corners and one 50 degree corner -> TOO_STEEP, the worst of the five wins (%s)" %
+			VALIDATOR.reason_text(mixed_reason))
 
 
 ## Increment B: the host's own decision path, offline, where this process is host-of-one and every
