@@ -29,26 +29,32 @@ extends Node3D
 ## the collider is actually cooked (collision cooks lazily) — this file polls
 ## `chunk_has_collision()` rather than assuming it on the same frame.
 ##
-## ## Depletion memory is best-effort and peer-local, on purpose
+## ## Depletion memory: WorldDeltaLog first, peer-local best guess as the fallback
 ##
-## There is no chunk-keyed mutation/delta system yet — building one is task 4.6's job
-## (`docs/ARCHITECTURE.md` §4: "every mutation... replicates as deltas keyed by chunk"). Until it
-## exists, this file keeps its OWN `_depleted` memory of what it last observed for a point right
-## before freeing its holder, and reapplies that as a starting guess when the point's holder is
-## rebuilt — by replaying a full `host_apply_damage()` hit through the SAME host-gated seam a real
-## swing uses, never by poking `active` directly. That is not a stylistic choice: `active` alone is
-## only half of depletion's real state (`_deplete()` also arms the respawn clock), so a direct poke
-## left the respawn clock at its just-constructed 0.0 and the very next physics tick auto-respawned
-## the point straight back — caught by this task's own check. Going through `host_apply_damage()`
-## also means the restore inherits the method's own authority gate for free: on a real client (a
-## live `NetTransport`, not host) the call quietly no-ops, exactly as it should — a client does not
-## get to unilaterally decide a point is depleted, it only remembers what it itself last saw and
-## waits for the real sync (the `Harvestable`'s own code-built synchronizer, `active`
-## `property_set_spawn(true)`) to confirm or correct it. `docs/FINDINGS.md` has the one real gap
-## this does not close: today `ChunkStreamer` runs independently per peer (by design,
-## ARCHITECTURE.md §2.2), so a HOST whose own player is far from a REMOTE client's position may
-## have no holder loaded at that point at all — nothing exists there to receive the request the
-## client's own `Harvestable.request_hit()` would send.
+## Task 4.6 shipped `autoload/world_delta_log.gd`, the chunk-keyed mutation log
+## `docs/ARCHITECTURE.md` §4 describes ("every mutation... replicates as deltas keyed by chunk").
+## Every NODE/BATCH holder this file builds now wires its live `Harvestable`'s `depleted`/`respawned`
+## signals (host-side only — see the file's own gate) into `WorldDeltaLog.host_record()`, keyed by
+## the point's own chunk (parsed back out of `point_id`, never threaded as an extra parameter — see
+## `world/gen/resource_scatter.gd`'s header on why `point_id` already encodes it). `is_point_depleted()`
+## reads `WorldDeltaLog.latest()` first and only falls back to this file's OWN best-effort `_depleted`
+## memory when the log has no opinion yet — a fresh peer between connecting and its
+## `net_world_snapshot` RPC landing, or a harness that never registered `WorldDeltaLog` at all.
+##
+## The restore itself is still a full `host_apply_damage()` hit through the SAME host-gated seam a
+## real swing uses, never a direct poke at `active` — that is not a stylistic choice: `active` alone
+## is only half of depletion's real state (`_deplete()` also arms the respawn clock), so a direct
+## poke left the respawn clock at its just-constructed 0.0 and the very next physics tick
+## auto-respawned the point straight back, caught by this task's own check when the bug first
+## shipped (D-083). Going through `host_apply_damage()` also means the restore inherits the method's
+## own authority gate for free: on a real client the call quietly no-ops, exactly as it should.
+##
+## `docs/FINDINGS.md` F-132 is the one gap this does NOT close: `ChunkStreamer` runs independently
+## per peer (ARCHITECTURE.md §2.2), so a HOST whose own player is far from a REMOTE client's position
+## may have no holder loaded at that point at all — nothing exists there to receive the request the
+## client's own `Harvestable.request_hit()` would send, and nothing here writes to `WorldDeltaLog`
+## for a mutation that was never able to happen. Fixing that is a chunk-residency change on the HOST
+## side (F-132's own note on what it will look like), not a delta-log gap.
 
 const ResourceScatterLib := preload("res://world/gen/resource_scatter.gd")
 const HarvestLib := preload("res://systems/harvesting/harvest_library.gd")
@@ -62,6 +68,9 @@ const COLLISION_POLL_INTERVAL_SEC: float = 0.1
 ## timeout: in every context that wires a `ResourceScatterField` at all, `HarvestWorld` is already
 ## running and wires a holder within one or two deferred calls of it entering the tree.
 const WIRE_WAIT_ATTEMPTS: int = 30
+## `WorldDeltaLog`'s `kind` for this file's one mutation family — always recorded with a `bool`
+## value (depleted or not).
+const DEPLETION_KIND: StringName = &"harvest_depleted"
 
 @export var world_seed: int = 0
 ## `Registry.scatter_tables.values()`, assigned by whoever builds this field.
@@ -95,7 +104,15 @@ func pending_count() -> int:
 	return _pending_lod0.size()
 
 
+## `WorldDeltaLog` is the shared, cross-peer answer when it has one; this file's own peer-local
+## `_depleted` memory is only the fallback for the window before a fresh peer's snapshot lands (or a
+## harness that never registered `WorldDeltaLog` at all — see the header).
 func is_point_depleted(point_id: String) -> bool:
+	var log: Node = _delta_log()
+	if log != null:
+		var recorded: Variant = log.call("latest", _chunk_from_point_id(point_id), DEPLETION_KIND, point_id)
+		if recorded != null:
+			return bool(recorded)
 	return _depleted.get(point_id, false)
 
 
@@ -242,8 +259,7 @@ func _build_node_holder(
 	holder.add_child(body)
 
 	parent.add_child(holder)
-	if _depleted.get(point_id, false):
-		call_deferred("_apply_persisted_state", holder.get_path(), WIRE_WAIT_ATTEMPTS)
+	call_deferred("_wire_point_state", holder.get_path(), point_id, WIRE_WAIT_ATTEMPTS)
 
 
 ## Shape and metas exactly mirror `world/gen/authored_world.gd`'s own `_build_batch_harvestables()`
@@ -268,27 +284,36 @@ func _build_batch_holder(
 	holder.set_meta(&"batch_transforms", intact)
 	holder.add_to_group(HARVESTABLE_HOLDER_GROUP)
 	parent.add_child(holder)
-	if _depleted.get(point_id, false):
-		call_deferred("_apply_persisted_state", holder.get_path(), WIRE_WAIT_ATTEMPTS)
+	call_deferred("_wire_point_state", holder.get_path(), point_id, WIRE_WAIT_ATTEMPTS)
 
 
 ## Waits for `HarvestWorld`'s deferred wiring to give this holder a live `Harvestable` child, then
-## replays a full depletion hit through `host_apply_damage()` — the header explains why that, and
-## not a direct `active` poke, is the correct and safely-gated way to restore this peer's last
-## observed state.
-func _apply_persisted_state(holder_path: NodePath, attempts_left: int) -> void:
+## (a) if this point is already known depleted (`WorldDeltaLog`, falling back to this file's own
+## peer-local memory), replays a full depletion hit through `host_apply_damage()` — the header
+## explains why that, and not a direct `active` poke, is the correct and safely-gated way to restore
+## it, and (b) wires the Harvestable's own `depleted`/`respawned` signals so any FUTURE change to
+## this point is recorded live, not only remembered at teardown. Called unconditionally for every
+## holder this file builds, not just ones already believed depleted — a point that has never
+## mutated still needs its future watched.
+func _wire_point_state(holder_path: NodePath, point_id: String, attempts_left: int) -> void:
 	var holder := get_node_or_null(holder_path) as Node3D
 	if holder == null:
 		return
 	var harvestable := holder.get_node_or_null(^"Harvestable")
 	if harvestable == null:
 		if attempts_left > 0:
-			call_deferred("_apply_persisted_state", holder_path, attempts_left - 1)
+			call_deferred("_wire_point_state", holder_path, point_id, attempts_left - 1)
 		return
-	var definition: Resource = harvestable.get(&"definition")
-	if definition == null:
-		return
-	harvestable.call("host_apply_damage", int(definition.get(&"max_health")), NetConfig.HOST_PEER_ID)
+
+	if is_point_depleted(point_id):
+		var definition: Resource = harvestable.get(&"definition")
+		if definition != null:
+			harvestable.call("host_apply_damage", int(definition.get(&"max_health")), NetConfig.HOST_PEER_ID)
+
+	harvestable.connect(&"depleted", func(_peer_id: int, _item_id: StringName, _amount: int) -> void:
+		_record_point_state(point_id, true))
+	harvestable.connect(&"respawned", func() -> void:
+		_record_point_state(point_id, false))
 
 
 func _teardown_chunk(coord: Vector2i) -> void:
@@ -310,6 +335,28 @@ func _capture_depletion(holder: Node3D) -> void:
 		var harvestable := node.get_node_or_null(^"Harvestable")
 		if harvestable != null:
 			_depleted[point_id] = not bool(harvestable.get("active"))
+
+
+func _delta_log() -> Node:
+	return get_node_or_null(^"/root/WorldDeltaLog")
+
+
+## `point_id`'s own format (`world/gen/resource_scatter.gd`): `"%d:%d:%s:%d:%d" % [chunk_x, chunk_z,
+## def_id, gx, gz]` — the chunk coordinate is always its first two fields, so this file never needs
+## to thread a `coord` parameter down through the builder call chain just to key `WorldDeltaLog`.
+func _chunk_from_point_id(point_id: String) -> Vector2i:
+	var parts: PackedStringArray = point_id.split(":")
+	return Vector2i(int(parts[0]), int(parts[1]))
+
+
+## Updates both the peer-local fallback memory and, when this peer owns world mutation, the shared
+## log — `WorldDeltaLog.host_record()` is itself gated to no-op on a real client, so this is safe to
+## call unconditionally from a signal that (per the header) only ever actually fires host-side.
+func _record_point_state(point_id: String, depleted_now: bool) -> void:
+	_depleted[point_id] = depleted_now
+	var log: Node = _delta_log()
+	if log != null:
+		log.call("host_record", _chunk_from_point_id(point_id), DEPLETION_KIND, point_id, depleted_now)
 
 
 func _load_mesh_parts(kit: String, asset: String) -> Array:

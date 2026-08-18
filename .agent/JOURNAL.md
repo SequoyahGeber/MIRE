@@ -3331,3 +3331,18 @@ EntityDirectory + selector grammar + entities/tag/tp/kill shipped. Selector pars
 Files: `autoload/entity_directory.gd`, `core/commands/entity_selector.gd`, `autoload/command_service.gd`, `systems/health/player_health.gd`, `tools/entity_check.gd`, `tools/entity_net_check.gd`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/ARCHITECTURE.md`, `docs/COMMANDS.md`, `project.godot`
 
 Commit at time of writing: `48b61e0`
+
+---
+
+### DONE · 4.6 · lm · 2026-08-18T21:13:43+00:00
+
+**Seed replication + client-side regeneration; mutable-state delta sync (`ARCHITECTURE.md` §4)**
+
+Seed replication + client regen + delta sync ships. core/game_state.gd (run_seed, host-generated, replicated). autoload/world_delta_log.gd (chunk-keyed latest-value-wins mutation log, host->joiner snapshot + host->everyone live broadcast). NetSession.peer_admitted signal. ResourceScatterField's depletion memory now sources WorldDeltaLog first. PROTOCOL_VERSION 17->18. Verified: agent godot --script tools/seed_sync_check.gd (new two-process check, 12/12 pass - terrain_hash match proves seed crossed the wire, pre-join mutation reaches via snapshot, post-join mutation reaches live); resource_scatter_check.gd (29/29, no regression); handshake_check.gd, net_check_pattern_check.gd, terrain_check.gd, verify_setup.gd, session_lifecycle_check.gd all 0 failures; clean quiet boot, 0 ERROR lines. D-089 records the design calls. F-134 filed: ChunkStreamer/ResourceScatterField still have no caller in the live Hollowmere map - that's a full map-cutover decision left to a later task, not part of this one.
+
+Notes along the way:
+- net_version.gd/handshake_check.gd were held by 3.14 for most of the session; built everything else first, retried the claim once 3.14 shipped, bumped 17->18 at the end. D-089: GameState gets only run_seed (6.1 owns the rest of its reserved slot); WorldDeltaLog is latest-value-wins, not an event log; buildings don't route through it since MultiplayerSpawner already catches up late joiners. F-134: did not wire ChunkStreamer/ResourceScatterField into the live Hollowmere map — that's a full map-cutover decision outside this task's scope, not a gap in the mechanism.
+
+Files: `core/game_state.gd`, `core/net/net_session.gd`, `autoload/world_delta_log.gd`, `world/gen/resource_scatter_field.gd`, `tools/seed_sync_check.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`
+
+Commit at time of writing: `c8bd1d6`

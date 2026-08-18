@@ -85,6 +85,13 @@ signal run_player_rebound(old_peer_id: int, new_peer_id: int)
 ## must NOT release on `peer_left`: between a drop and a rejoin, a player is still a player.
 signal run_player_expired(peer_id: int)
 
+## Task 4.6. Host-only. Fired once a peer's version handshake AND identity claim both succeed — the
+## first moment it is safe to hand it session state that is not itself part of admission (the run
+## seed, `WorldDeltaLog`'s accumulated deltas). Distinct from [signal run_player_rebound]: this fires
+## for EVERY admitted peer, first-time joiners included, where that one fires only for a RETURNING
+## one.
+signal peer_admitted(peer_id: int)
+
 ## How long the refusal notice gets to reach the joiner before its connection is closed. The RPC is
 ## reliable, so this is flush time, not hope: a loopback round trip is under a millisecond and a bad
 ## home connection is well inside this.
@@ -343,6 +350,7 @@ func _admit_identity(peer_id: int, presented: String) -> void:
 	if token.is_empty():
 		return
 	net_run_identity.rpc_id(peer_id, token)
+	peer_admitted.emit(peer_id)
 
 	var previous: int = int(result.get("rebound_from", 0))
 	if previous <= 0 or previous == peer_id:

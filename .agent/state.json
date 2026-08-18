@@ -5,26 +5,6 @@
       "at": "2026-08-18T20:36:00+00:00",
       "task": "2.1d"
     },
-    "autoload/world_delta_log.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T20:58:57+00:00",
-      "task": "4.6"
-    },
-    "core/game_state.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T20:58:57+00:00",
-      "task": "4.6"
-    },
-    "core/net/net_session.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T20:58:57+00:00",
-      "task": "4.6"
-    },
-    "core/net/net_version.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T21:10:17+00:00",
-      "task": "4.6"
-    },
     "docs/ASSET_TRACKER.md": {
       "agent": "slate17",
       "at": "2026-08-18T20:32:24+00:00",
@@ -49,21 +29,6 @@
       "agent": "slate17",
       "at": "2026-08-18T20:32:24+00:00",
       "task": "2.1d"
-    },
-    "tools/handshake_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T21:10:17+00:00",
-      "task": "4.6"
-    },
-    "tools/seed_sync_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T20:58:57+00:00",
-      "task": "4.6"
-    },
-    "world/gen/resource_scatter_field.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T20:58:57+00:00",
-      "task": "4.6"
     }
   },
   "in_flight": {
@@ -85,20 +50,6 @@
         }
       ],
       "started": "2026-08-18T20:32:24+00:00"
-    },
-    "4.6": {
-      "agent": "lm",
-      "files": [
-        "core/game_state.gd",
-        "core/net/net_session.gd",
-        "autoload/world_delta_log.gd",
-        "world/gen/resource_scatter_field.gd",
-        "tools/seed_sync_check.gd",
-        "core/net/net_version.gd",
-        "tools/handshake_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T20:58:57+00:00"
     }
   },
   "recent": {
@@ -543,6 +494,12 @@
       "at": "2026-08-18T20:38:46+00:00",
       "hash": "ec0fed34438e2dc82ddf45e0dcd3e12399b37274760a9fe20f1fef62d2c5574c",
       "task": "F-127"
+    },
+    "autoload/world_delta_log.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T21:13:43+00:00",
+      "hash": "8127db187ac24d7e6d323b2b823d81887dbe3208b3965e9592caee67ea8b714b",
+      "task": "4.6"
     },
     "content/attunements/forager.tres": {
       "agent": "lm",
@@ -1353,16 +1310,23 @@
       "hash": "ecf0664f3a14a627ec5b7cf4330f95dcf91106a6d0e750f6ac5e93aa977a3426",
       "task": "3.14"
     },
+    "core/game_state.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T21:13:43+00:00",
+      "hash": "862544710c784a3bbc455b41f2887d78776e68dd12e4d61fde77fbea9a351bd3",
+      "task": "4.6"
+    },
     "core/net/net_session.gd": {
-      "agent": "kiln9",
-      "at": "2026-08-18T14:10:44+00:00",
-      "task": "F-099"
+      "agent": "lm",
+      "at": "2026-08-18T21:13:43+00:00",
+      "hash": "c8ae8a7bf188adf6ae45e6e8252c96351cfd5d89da178eb3cfbf4d2fc50b70a2",
+      "task": "4.6"
     },
     "core/net/net_version.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T21:00:45+00:00",
-      "hash": "5952f09d3913bd59311f6e3a7a2c33e85392494070585a5faf1ae78650ab29d1",
-      "task": "3.14"
+      "agent": "lm",
+      "at": "2026-08-18T21:13:43+00:00",
+      "hash": "a59ef9b8e232095290df921f0848c21f23c7ceaa49fe2fb02a3588dc6f504b2f",
+      "task": "4.6"
     },
     "core/util/mire_log.gd": {
       "agent": "gale6",
@@ -1978,10 +1942,10 @@
       "task": "F-115"
     },
     "tools/handshake_check.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T21:00:45+00:00",
-      "hash": "90d46a6c3a822d8bb415ea616e020701208e8a76224b9eacc824ba1bcf33badd",
-      "task": "3.14"
+      "agent": "lm",
+      "at": "2026-08-18T21:13:43+00:00",
+      "hash": "92a5a87c6bf53a1519c3827011600ba4dafa893befe09cf88b09c45b8d9a9001",
+      "task": "4.6"
     },
     "tools/harness_check.py": {
       "agent": "yarrow21",
@@ -2180,6 +2144,12 @@
       "at": "2026-08-18T21:00:45+00:00",
       "hash": "0653b479730a65b55c359f187ac1329b8f14212b9a141d77bbffc6f4edbe26cc",
       "task": "3.14"
+    },
+    "tools/seed_sync_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T21:13:43+00:00",
+      "hash": "fefc8985eaf0ebee0b227dcbc8bb95a095d27ed49ed06ba77f6261621f107952",
+      "task": "4.6"
     },
     "tools/session_lifecycle_check.gd": {
       "agent": "flint5",
@@ -2400,9 +2370,9 @@
     },
     "world/gen/resource_scatter_field.gd": {
       "agent": "lm",
-      "at": "2026-08-18T20:54:23+00:00",
-      "hash": "8c9b284d7bf3a0a15b0807f3ce6aef58c391ef23c0d173e76684a19b3ca6aed1",
-      "task": "4.4"
+      "at": "2026-08-18T21:13:43+00:00",
+      "hash": "7a5320a4773896aae17261bd3f6201facafece5057def38d3343b2fbec1b1a85",
+      "task": "4.6"
     },
     "world/gen/scatter_def.gd": {
       "agent": "lm",
@@ -3139,9 +3109,11 @@
       "title": "Runtime nav baking per chunk \u2014 or the R3 fallback decided in M0"
     },
     "4.6": {
+      "done_at": "2026-08-18T21:13:43+00:00",
+      "done_by": "lm",
       "est": "4",
       "milestone": "M4",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T2",
       "title": "Seed replication + client-side regeneration; mutable-state delta sync (`ARCHITECTURE.md` \u00a74)"
     },
@@ -3771,7 +3743,7 @@
     "F-036": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Task 2.9's gate cannot be met in its roadmap position \u2014 the enemy it tunes against lands in 2.10"
     },
@@ -4588,7 +4560,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Players spawn on top of each other: the spawn slot is a live child count, not a held claim \u2014 **fixed**"
+      "title": "A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface"
     },
     "F-130": {
       "est": "\u2014",
@@ -4604,7 +4576,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "A finding auto-closed by the F-049 sync rule can never reopen, so a transient FINDINGS.md error permanently hides real work \u2014 F-112 and F-036 are both invisible to the board right now \u2014 **fixed**"
+      "title": "The build module lives in one `.tres` and nothing else knows it"
     },
     "F-132": {
       "est": "\u2014",
@@ -4629,7 +4601,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "Hand-moving a finding to '## Resolved' eats the heading when it is the last entry under '## Open' \u2014 twice now, and the second time made all 121 resolved findings parse as open"
+      "title": "`ChunkStreamer`/`ResourceScatterField` still have no real caller \u2014 the live game still ships the authored Hollowmere map, not the procedural pipeline"
     }
   },
   "version": 1

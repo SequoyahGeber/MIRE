@@ -65,7 +65,13 @@ extends RefCounted
 ## Both reliable: a dropped rule change leaves two machines simulating different games, and it is the
 ## kind of disagreement nobody notices until the consequence lands (a night that falls on one screen
 ## and not the other).
-const PROTOCOL_VERSION: int = 17
+## 18 (task 4.6): autoload/world_delta_log.gd added net_world_snapshot (host -> one newly admitted
+## peer, the run seed plus the whole accumulated chunk-keyed mutation log, compressed) and
+## net_delta_applied (host -> everyone, one live mutation: chunk, kind, key, value). Both reliable —
+## a dropped snapshot is a late joiner starting from a world that silently disagrees with everyone
+## else's, and a dropped live delta is the exact same disagreement arriving more slowly, the next
+## time that peer's chunk happens to reload.
+const PROTOCOL_VERSION: int = 18
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).
