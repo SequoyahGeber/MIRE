@@ -8,12 +8,8 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **7.1** Audio pass: SFX for every action, ambience per biome, mix, buses | tine18 | 2026-08-18 17:53 | `tools/audio/render_sfx.py`, `assets/audio/sfx` |
 | **F-103** MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin | lp | 2026-08-18 18:09 | `tools/multimesh_readback_check.gd` |
 | **F-118** The forest has no ambient life: nothing falls, drifts or settles, so a still frame of the map is a still frame | vane19 | 2026-08-18 18:08 | `world/environment/asset_vfx_library.gd`, `autoload/environment_vfx.gd`, `world/environment/particle_billboard.gdshader` |
-
-**7.1 notes:**
-- 19 mono SFX shipped+verified (audio_check, audio_import_check both failures=0). Preview reel delivered in chat. Wiring deliberately left: weapon_def/harvestable files under F-113/F-114 claims.
 
 ## Milestones
 

@@ -2854,3 +2854,15 @@ v1 of the music is shipped and verified: ambient_day.ogg + ambient_night.ogg (3:
 Files: `tools/audio/mire_audio.py`, `tools/audio/render_music.py`, `tools/audio/audio_check.py`, `tools/audio_import_check.gd`, `assets/audio/music`, `assets/audio/music/ambient_day.ogg.import`, `assets/audio/music/ambient_night.ogg.import`
 
 Commit at time of writing: `89fea39`
+
+---
+
+### HANDOFF · 7.1 · tine18 · 2026-08-18T18:11:45+00:00
+
+**Audio pass: SFX for every action, ambience per biome, mix, buses**
+
+v1 SFX palette shipped and verified: 19 mono wavs in assets-audio-sfx (axe x3, pick x3, tree_break, stone_break, whoosh x2, melee_hit x2, mud footsteps x3, pickup, chest_open, ui_click, build_place), recipes in tools/audio/render_sfx.py, audio_check.py and audio_import_check.gd both failures=0. Preview reel is with Sequoyah in chat — pending his ears. REMAINS for 7.1: sounds for actions not yet covered (damage taken, eat, craft, door, enemy vocals...), Master-Music-SFX-UI buses, the mix pass, and wiring sound fields onto weapon_def and harvestable_def — those files are under F-113 and F-114 claims right now, wire after they clear. Play variants round-robin with plus-minus 4 percent pitch_scale. Read docs/AUDIO.md first.
+
+Files: `tools/audio/render_sfx.py`, `assets/audio/sfx`
+
+Commit at time of writing: `c23c72c`

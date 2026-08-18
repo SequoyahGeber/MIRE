@@ -1,19 +1,9 @@
 {
   "claims": {
-    "assets/audio/sfx": {
-      "agent": "tine18",
-      "at": "2026-08-18T17:53:48+00:00",
-      "task": "7.1"
-    },
     "autoload/environment_vfx.gd": {
       "agent": "vane19",
       "at": "2026-08-18T18:08:26+00:00",
       "task": "F-118"
-    },
-    "tools/audio/render_sfx.py": {
-      "agent": "tine18",
-      "at": "2026-08-18T17:53:48+00:00",
-      "task": "7.1"
     },
     "tools/multimesh_readback_check.gd": {
       "agent": "lp",
@@ -32,21 +22,6 @@
     }
   },
   "in_flight": {
-    "7.1": {
-      "agent": "tine18",
-      "files": [
-        "tools/audio/render_sfx.py",
-        "assets/audio/sfx"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-18T18:10:02+00:00",
-          "by": "tine18",
-          "text": "19 mono SFX shipped+verified (audio_check, audio_import_check both failures=0). Preview reel delivered in chat. Wiring deliberately left: weapon_def/harvestable files under F-113/F-114 claims."
-        }
-      ],
-      "started": "2026-08-18T17:53:48+00:00"
-    },
     "F-103": {
       "agent": "lp",
       "files": [
@@ -116,6 +91,11 @@
       "agent": "tine18",
       "at": "2026-08-18T18:10:49+00:00",
       "task": "7.2"
+    },
+    "assets/audio/sfx": {
+      "agent": "tine18",
+      "at": "2026-08-18T18:11:45+00:00",
+      "task": "7.1"
     },
     "assets/audit/a009/geometry_report.json": {
       "agent": "ivy8",
@@ -1036,6 +1016,11 @@
       "agent": "tine18",
       "at": "2026-08-18T18:10:49+00:00",
       "task": "7.2"
+    },
+    "tools/audio/render_sfx.py": {
+      "agent": "tine18",
+      "at": "2026-08-18T18:11:45+00:00",
+      "task": "7.1"
     },
     "tools/audio_import_check.gd": {
       "agent": "tine18",
@@ -2453,7 +2438,7 @@
     "7.1": {
       "est": "10",
       "milestone": "M7",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Audio pass: SFX for every action, ambience per biome, mix, buses"
     },
