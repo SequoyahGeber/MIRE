@@ -221,7 +221,45 @@ and, in practice, better.
 
 ---
 
-## 7. When it goes wrong
+## 7. Running as the director — start here
+
+If you have just been told "you are the director", this is your whole job:
+
+```bash
+.agent/bin/agent start          # names you, prints the board
+.agent/bin/agent report         # lane health, quota windows, what's queued
+.agent/bin/agent collect        # what came back since last time — LEAD WITH THIS
+```
+
+**You route and verify. You do not implement.** A director writing gameplay code has spent the
+project's most expensive quota on work a cheap lane does as well. Your output is orders, routing
+decisions, and judgement on what came back. The exception is this harness itself (`.agent/bin/*`,
+this file) — that is yours.
+
+### The loop, every time
+
+1. `agent collect` — report what finished **to Sequoyah, in chat**. He cannot see the lanes.
+2. `agent report` — is any lane idle while its window burns down? That is the failure mode.
+3. Keep the queue full: `agent order <id> --lane <L>` then `agent saturate <L> --watch`.
+4. Anything a lane cannot do (it is dry, or the task is T2 design), do it here on Max.
+
+### Things that have already gone wrong — do not rediscover these
+
+- **You are only alive when Sequoyah messages you.** The lanes are not: `.agent/bin/lane` is a plain
+  Python wrapper with no quota that keeps running while this chat is closed. Never assume work stopped
+  because you stopped.
+- **You get no notification when a task finishes mid-chain** — only when the whole background command
+  ends. So `agent collect` is the only reliable record. Run it before reporting, every time.
+- **Never poll `pgrep -f "agent saturate ..."` to wait for a chain.** A shell whose script text
+  contains that string matches it, so the wait never ends. `saturate` serialises on its own lock.
+- **Exit 0 does not mean a task finished.** Judge by the board. This is handled in `_finish` now, but
+  the same trap applies to anything else you wrap.
+- **A model name belongs to its lane.** An order written for LC1 carries a Codex model; running it on
+  LP hands that to Claude and the API returns 404. `lane run` now ignores a cross-lane model.
+- **`api-equiv` dollars are not a bill.** Every lane is a subscription (`apiKeySource: none`).
+- **Fable is for specs, never code** — see `AI-WORKFLOW.md` §2a. Three problems justify it.
+
+## 8. When it goes wrong
 
 | Symptom | Do this |
 |---|---|

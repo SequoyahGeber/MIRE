@@ -2032,3 +2032,13 @@ Model increment B's net check on tools/powerup_net_check.gd, which I wrote today
 Files: `systems/building/buildable_def.gd`, `systems/building/build_ghost.gd`, `systems/building/placement_validator.gd`, `autoload/build_service.gd`, `tools/build_check.gd`, `content/buildables/wall.tres`, `content/buildables/ward_post.tres`, `autoload/registry.gd`
 
 Commit at time of writing: `abf9dcb`
+
+---
+
+### DONE · 0.12 · quill15 · 2026-08-18T04:40:37+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+A per-task model override is only valid for the lane it was chosen for: 2.12-review was ordered for LC1 so its header carried gpt-5.6-sol, and running it on LP passed that to Claude, which answered 404 (terminal_reason api_error). lane run now ignores a cross-lane model and keeps the lane's own, while effort still travels. Also added ORCHESTRATION.md section 7, the director's own briefing, so a new chat can take the role from the repo rather than from a handover message.
+
+Commit at time of writing: `9e350bf`

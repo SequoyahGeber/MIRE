@@ -529,10 +529,20 @@ def cmd_run(args):
     # The order carries the model and effort the director chose for THIS task. A lane's own values
     # are only the fallback — tier, not account, should decide how hard a task is thought about.
     head = prompt.split("\n", 1)[0]
+    ordered_for = re.search(r"lane:(\S+)", head)
+    ordered_for = ordered_for.group(1).upper() if ordered_for else None
     for key in ("model", "effort"):
         m = re.search(r"%s:(\S+)" % key, head)
-        if m and m.group(1) not in ("?", "", "default", "lane"):
-            lane[key] = m.group(1)
+        if not m or m.group(1) in ("?", "", "default", "lane"):
+            continue
+        # A model name only means something to the CLI it was chosen for. 2.12-review was ordered for
+        # LC1, so its header said gpt-5.6-sol; running it on LP handed that to Claude and the API
+        # answered 404. Effort is a plain scalar and travels fine — the model does not.
+        if key == "model" and ordered_for and ordered_for != name:
+            print("%s· order was written for %s; keeping %s's own model (%s)%s"
+                  % (C["dim"], ordered_for, name, lane.get("model"), C["x"]))
+            continue
+        lane[key] = m.group(1)
 
     argv, env = build(lane, name, last_msg)
 

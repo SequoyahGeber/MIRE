@@ -30,6 +30,11 @@
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
+    "autoload/build_service.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:35:48+00:00",
+      "task": "3.6"
+    },
     "autoload/enemy_world.gd": {
       "agent": "ivy8",
       "at": "2026-08-18T04:15:50+00:00",
@@ -140,6 +145,11 @@
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
     },
+    "core/net/net_version.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:35:48+00:00",
+      "task": "3.6"
+    },
     "docs/ROADMAP.md": {
       "agent": "ivy8",
       "at": "2026-08-18T04:10:30+00:00",
@@ -154,6 +164,11 @@
       "agent": "ivy8",
       "at": "2026-08-18T04:10:30+00:00",
       "task": "2.1k"
+    },
+    "systems/building/build_ghost.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:35:48+00:00",
+      "task": "3.6"
     },
     "systems/combat/weapon_def.gd": {
       "agent": "flint5",
@@ -170,9 +185,24 @@
       "at": "2026-08-18T04:15:15+00:00",
       "task": "F-073"
     },
+    "tools/build_net_check.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:35:48+00:00",
+      "task": "3.6"
+    },
+    "tools/handshake_check.gd": {
+      "agent": "gale6",
+      "at": "2026-08-18T04:35:48+00:00",
+      "task": "3.6"
+    },
     "tools/hollowmere_check.gd": {
       "agent": "ivy8",
-      "at": "2026-08-18T04:10:30+00:00",
+      "at": "2026-08-18T04:37:01+00:00",
+      "task": "2.1k"
+    },
+    "tools/hollowmere_render_check.gd": {
+      "agent": "ivy8",
+      "at": "2026-08-18T04:39:01+00:00",
       "task": "2.1k"
     },
     "tools/mapgen/hollow_layout.py": {
@@ -239,7 +269,8 @@
         "tools/hollowmere_check.gd",
         "docs/ROADMAP.md",
         "autoload/enemy_world.gd",
-        "autoload/harvest_world.gd"
+        "autoload/harvest_world.gd",
+        "tools/hollowmere_render_check.gd"
       ],
       "notes": [
         {
@@ -254,6 +285,18 @@
         }
       ],
       "started": "2026-08-18T04:10:30+00:00"
+    },
+    "3.6": {
+      "agent": "gale6",
+      "files": [
+        "autoload/build_service.gd",
+        "core/net/net_version.gd",
+        "tools/handshake_check.gd",
+        "tools/build_net_check.gd",
+        "systems/building/build_ghost.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T04:35:48+00:00"
     },
     "F-073": {
       "agent": "flint5",
@@ -1344,11 +1387,6 @@
       "at": "2026-08-18T01:38:32+00:00",
       "task": "F-064"
     },
-    "ui/inventory/inventory_ui.gd": {
-      "agent": "kiln9",
-      "at": "2026-08-17T04:39:09+00:00",
-      "task": "F-035"
-    },
     "ui/loot/chest_ui.gd": {
       "agent": "lp",
       "at": "2026-08-18T01:18:50+00:00",
@@ -1429,7 +1467,7 @@
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.12": {
-      "done_at": "2026-08-18T01:23:23+00:00",
+      "done_at": "2026-08-18T04:40:37+00:00",
       "done_by": "quill15",
       "est": "1.5",
       "milestone": "M0",
@@ -1902,7 +1940,7 @@
     "3.6": {
       "est": "5",
       "milestone": "M3",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "Building system: placement ghost, snapping, rotate, validate, destroy"
     },
