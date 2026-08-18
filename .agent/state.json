@@ -419,10 +419,10 @@
       "task": "F-099"
     },
     "autoload/registry.gd": {
-      "agent": "pike14",
-      "at": "2026-08-18T19:20:30+00:00",
-      "hash": "3bc84742ff5c6ef682ba551cafcb91f7c6283db271f910d8e40ea4f095a7ae91",
-      "task": "F-121"
+      "agent": "lm",
+      "at": "2026-08-18T19:57:12+00:00",
+      "hash": "8dab0b6d63b5120bdfdcbce42d05cf0fc8131ac01a37b910858029ca8355ba4f",
+      "task": "4.2"
     },
     "autoload/steam_lobby.gd": {
       "agent": "pike14",
@@ -453,6 +453,24 @@
       "at": "2026-08-18T19:15:45+00:00",
       "hash": "36797aed40854eda32745be953a72ec23d0b1b85baa381722ff042db3d72998d",
       "task": "3.9"
+    },
+    "content/biomes/forest.tres": {
+      "agent": "lm",
+      "at": "2026-08-18T19:57:12+00:00",
+      "hash": "af89a5503c51114e3e8a9fd4a0d5abf591f344b30e81b0ca512f54ec4e53ef0d",
+      "task": "4.2"
+    },
+    "content/biomes/grassland.tres": {
+      "agent": "lm",
+      "at": "2026-08-18T19:57:12+00:00",
+      "hash": "b2e00b5b806422bbcdc5aaaaec13911174e3de94b097eb8daad06d015094303a",
+      "task": "4.2"
+    },
+    "content/biomes/shore.tres": {
+      "agent": "lm",
+      "at": "2026-08-18T19:57:12+00:00",
+      "hash": "52ea133e6a32be19fc7af33c647e7a0051569af7d04f7ce079197b35be114277",
+      "task": "4.2"
     },
     "content/buildables/wall.tres": {
       "agent": "gale6",
@@ -1463,6 +1481,12 @@
       "hash": "e4ee27669da12572fc58820001b7e079ee324935b3d0d51e747c40057dd801e1",
       "task": "4.0a"
     },
+    "tools/biome_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:57:12+00:00",
+      "hash": "63e3b1cbb7cea42cf416707e448183fb051fe274a3f84e5e530b3080e95ce766",
+      "task": "4.2"
+    },
     "tools/blender/audit_all_sides.py": {
       "agent": "lm",
       "at": "2026-08-18T19:36:32+00:00",
@@ -2062,6 +2086,18 @@
       "agent": "vane19",
       "at": "2026-08-18T17:55:20+00:00",
       "task": "F-114"
+    },
+    "world/gen/biome_def.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:57:12+00:00",
+      "hash": "70904260b6737a2f357be70c2361ad153b46065ec36b78dbc288b1e1b087e452",
+      "task": "4.2"
+    },
+    "world/gen/biome_map.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:57:12+00:00",
+      "hash": "ff641948c7171d3368d2dcefe85c98081dd8e23d5f7b2d89ed5ea649b2b631f9",
+      "task": "4.2"
     },
     "world/gen/island_heightmap.gd": {
       "agent": "lm",
@@ -2769,9 +2805,11 @@
       "title": "Playtest \u2014 is the Mire stressful-fun or just stressful? (Q1, Q2)"
     },
     "4.2": {
+      "done_at": "2026-08-18T19:57:12+00:00",
+      "done_by": "lm",
       "est": "3",
       "milestone": "M4",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Biome assignment (height \u00d7 moisture), biome `.tres` definitions"
     },
@@ -4162,6 +4200,13 @@
       "status": "todo",
       "tier": "F",
       "title": "Thin Step authors dodge_iframe_seconds, but D-072 left no i-frame timer for it to extend"
+    },
+    "F-126": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "CommandService's `peer` argument type has no display-name resolution \u2014 peer ids only"
     }
   },
   "version": 1

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BiomeDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/biome_def.gd" id="1_shore"]
+
+[resource]
+script = ExtResource("1_shore")
+id = &"shore"
+display_name = "Shore"
+height_min = -100.0
+height_max = 4.0
+moisture_min = 0.0
+moisture_max = 1.0
+priority = 0

@@ -3153,3 +3153,18 @@ Notes along the way:
 Files: `autoload/command_service.gd`, `autoload/debug_console.gd`, `core/dev/dev_loadout.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/command_check.gd`, `tools/command_net_check.gd`, `autoload/enemy_world.gd`
 
 Commit at time of writing: `26680fe`
+
+---
+
+### DONE · 4.2 · lm · 2026-08-18T19:57:12+00:00
+
+**Biome assignment (height × moisture), biome `.tres` definitions**
+
+BiomeDef (.tres schema, world/gen/biome_def.gd) + BiomeMap (pure moisture()/assign()/biome_at(), world/gen/biome_map.gd) + Registry loader (biomes dict, get_biome/has_biome, boot log). 3 worked-example biomes in content/biomes/ (shore/grassland/forest), priority+id-tiebreak resolution with guaranteed fallback (D-079). Verified: agent godot --script tools/biome_check.gd (0 failures), tools/verify_setup.gd (no regression), agent godot --quit-after 60 (clean boot, '3 biome(s)' in log).
+
+Notes along the way:
+- BiomeDef+BiomeMap live under world/gen/, not systems/<domain>/ — ARCHITECTURE.md §3's project structure already names world/gen/ as 'island generation, biome placement, POI scatter', so that's the fitting home rather than inventing a new systems/world/ domain. Resolution rule: BiomeDef.priority (lower wins) + id-alphabetical tiebreak, with a guaranteed fallback to the lowest-priority def so assign()/biome_at() never return an empty StringName for any point — full coverage, no holes. 3 worked examples: shore (height <=4, any moisture, priority 0), grassland (height 4..100, moisture 0..0.5), forest (height 4..100, moisture 0.5..1.0, wins the exact-0.5 tie alphabetically).
+
+Files: `world/gen/biome_def.gd`, `world/gen/biome_map.gd`, `autoload/registry.gd`, `content/biomes/shore.tres`, `content/biomes/grassland.tres`, `content/biomes/forest.tres`, `tools/biome_check.gd`
+
+Commit at time of writing: `28d6fb6`

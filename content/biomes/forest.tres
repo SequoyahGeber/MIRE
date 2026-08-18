@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="BiomeDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/biome_def.gd" id="1_forest"]
+
+[resource]
+script = ExtResource("1_forest")
+id = &"forest"
+display_name = "Forest"
+height_min = 4.0
+height_max = 100.0
+moisture_min = 0.5
+moisture_max = 1.0
+priority = 10
