@@ -2327,3 +2327,13 @@ Notes along the way:
 Files: `tools/perf_probe.gd`, `world/environment/playtest_atmosphere.gd`, `world/gen/undergrowth.gd`, `systems/environment/day_night.gd`, `core/dev/dev_frame_cap.gd`, `levels/hollowmere.tscn`, `autoload/graphics_quality.gd`
 
 Commit at time of writing: `b991014`
+
+---
+
+### DONE · F-091 · ivy8 · 2026-08-18T12:54:22+00:00
+
+**Two ways the harness lets a fed lane sit idle: a parked lane is never restarted, and a lane's own claim blocks deepening its queue**
+
+Both idle-lane paths fixed and verified earlier this session: lane-revive daemon re-arms a parked lane at its window reset (armed for LC1), and cmd_order now ignores the ordering lane's own live claims so a queue can be deepened. FINDINGS.md section was already moved to Resolved; this closes the state side.
+
+Commit at time of writing: `f01dded`
