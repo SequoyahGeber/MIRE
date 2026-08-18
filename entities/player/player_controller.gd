@@ -38,6 +38,15 @@ const DAMAGEABLE_GROUP: StringName = &"damageable"
 ## `--script` harness — and a player whose script failed to compile never joins the `players` group,
 ## which fails as "the level has no player" rather than as a missing viewmodel.
 const PLAYER_VIEWMODEL := preload("res://entities/player/viewmodel.gd")
+## F-086: 3.6 shipped these two with no production caller. Same F-016 preload reasoning as the
+## viewmodel above.
+const BUILD_GHOST := preload("res://systems/building/build_ghost.gd")
+const BUILD_BAR := preload("res://ui/building/build_bar.gd")
+## Piece rotate/destroy are raw input rather than new InputMap actions — ui/hud/vitals_hud.gd's
+## EAT_KEY sets the precedent, for the same reason it applies here: `project.godot` is held by
+## another lane's task (F-095) as this ships. "build" itself (mode toggle) is already a registered
+## action from 3.6 and is reused as-is.
+const BUILD_ROTATE_KEY: Key = KEY_R
 
 @export_group("Speed")
 ## Base ground speed, metres per second.
@@ -97,6 +106,14 @@ var _revive_target_peer: int = 0
 var _revive_hold_elapsed: float = 0.0
 var _revive_request_sent: bool = false
 
+## F-086: client-local building presentation, built only for the local player (see
+## _build_building_presentation()). Neither ever decides anything — BuildService is the only
+## authority (§2.2 world mutation row). "Build mode active" has no separate flag: it IS
+## `_build_ghost.visible`, which BuildGhost.set_piece() already toggles, so there is exactly one
+## place this can ever disagree with itself.
+var _build_ghost: Node3D
+var _build_bar: CanvasLayer
+
 
 func _ready() -> void:
 	_gravity = float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
@@ -117,6 +134,7 @@ func _ready() -> void:
 	# same reasoning as the synchronizer.
 	if is_local_authority:
 		_build_viewmodel()
+		_build_building_presentation()
 
 	camera.set_active(is_local_authority)
 	set_physics_process(is_local_authority)
@@ -135,6 +153,22 @@ func _build_viewmodel() -> void:
 	var viewmodel: Node3D = PLAYER_VIEWMODEL.new()
 	viewmodel.name = "Viewmodel"
 	camera_3d.add_child(viewmodel)
+
+
+## F-086: nothing before this attached a BuildGhost or gave a player any way to pick a piece.
+## Built eagerly (like the viewmodel) rather than on the first "build" press, so BuildBar's slots
+## exist the moment a check or a player looks for them; both start hidden until build mode is
+## entered. BuildBar is NOT an autoload (see its own doc comment) — connecting its signal here is
+## the whole wiring between "a slot was clicked" and "the ghost shows something new".
+func _build_building_presentation() -> void:
+	_build_ghost = BUILD_GHOST.new()
+	_build_ghost.name = "BuildGhost"
+	add_child(_build_ghost)
+
+	_build_bar = BUILD_BAR.new()
+	_build_bar.name = "BuildBar"
+	add_child(_build_bar)
+	_build_bar.connect(&"piece_selected", _on_build_piece_selected)
 
 
 ## Until a third-person character asset exists, remote players still need a visible body for the
@@ -264,6 +298,32 @@ func _unhandled_input(event: InputEvent) -> void:
 		camera.apply_look((event as InputEventMouseMotion).relative)
 		return
 
+	# F-086: the existing "build" action (3.6) toggles the mode; is_build_mode_active() reads
+	# _build_ghost.visible directly, so there is nothing else to keep in sync here.
+	if event.is_action_pressed(&"build") and gameplay_input_allowed() \
+			and not _is_downed() and not _is_dead():
+		toggle_build_mode()
+		get_viewport().set_input_as_handled()
+		return
+
+	# Rotate/destroy are raw input, not InputMap actions (see BUILD_ROTATE_KEY's own comment) and
+	# only ever mean anything while a piece is being previewed, so both branches fall through to the
+	# rest of this function on any other key/button rather than swallowing it.
+	if is_build_mode_active() and event is InputEventKey:
+		var key: InputEventKey = event
+		if key.pressed and not key.echo and key.keycode == BUILD_ROTATE_KEY \
+				and gameplay_input_allowed():
+			_build_ghost.call(&"rotate_step", 1)
+			get_viewport().set_input_as_handled()
+			return
+	if is_build_mode_active() and event is InputEventMouseButton:
+		var mouse_button: InputEventMouseButton = event
+		if mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_RIGHT \
+				and gameplay_input_allowed():
+			_request_build_destroy()
+			get_viewport().set_input_as_handled()
+			return
+
 	# The swing starts locally on the press (own-action prediction) and the host resolves the hit —
 	# see autoload/combat_service.gd. Nothing about damage is decided here.
 	#
@@ -271,11 +331,22 @@ func _unhandled_input(event: InputEvent) -> void:
 	# compiles the scripts it depends on in the same pass, before autoloads are registered — and
 	# `tools/verify_setup.gd` depends on this file through `PlayerController`. Naming the autoload
 	# here took the whole harness down with "Identifier not found: CombatService".
+	#
+	# F-086: while building, the SAME press confirms placement instead of swinging — checked first,
+	# in this one function, so the two can never both react to a single click regardless of node
+	# traversal order. set_input_as_handled() is new for this branch only, to also stop
+	# autoload/harvest_world.gd's own independent "attack" listener from reading a placement click as
+	# a harvest attempt; whether that actually reaches it before this handler runs is untested here —
+	# see F-101.
 	if event.is_action_pressed(&"attack") and gameplay_input_allowed() \
 			and not _is_downed() and not _is_dead():
-		var combat: Node = get_node_or_null(^"/root/CombatService")
-		if combat != null:
-			combat.call(&"request_attack")
+		if is_build_mode_active():
+			_build_ghost.call(&"confirm")
+			get_viewport().set_input_as_handled()
+		else:
+			var combat: Node = get_node_or_null(^"/root/CombatService")
+			if combat != null:
+				combat.call(&"request_attack")
 		return
 
 	# Temporary mouse release. Replaced by the pause menu in M7 — until then it is how you get your
@@ -296,6 +367,7 @@ func _physics_process(delta: float) -> void:
 	_apply_horizontal_movement(delta)
 	_try_jump()
 	_tick_revive_hold(delta)
+	_tick_build_ghost()
 
 	# move_and_slide() zeroes vertical velocity on contact, so read the fall speed before it runs.
 	var fall_speed: float = maxf(-velocity.y, 0.0)
@@ -404,6 +476,101 @@ func _detect_landing(fall_speed: float) -> void:
 
 func _capture_mouse(captured: bool) -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if captured else Input.MOUSE_MODE_VISIBLE
+
+
+# ── Building (F-086) ──────────────────────────────────────────────────────────────────────────────
+
+
+func is_build_mode_active() -> bool:
+	return _build_ghost != null and _build_ghost.visible
+
+
+## The "build" action's whole handler. A bare toggle-on with nothing already selected auto-picks the
+## first registered piece (Registry iteration order — deterministic but not meaningfully orderable
+## beyond that, same caveat CraftingService.nearby_station_id() documents for its own tie-break) so
+## the ghost is visible immediately; BuildBar is how a player then picks something else.
+func toggle_build_mode() -> void:
+	if _build_ghost == null:
+		return
+	if is_build_mode_active():
+		_build_ghost.call(&"set_piece", &"")
+		if _build_bar != null:
+			_build_bar.call(&"set_active", false)
+		return
+	var piece_id: StringName = StringName(_build_ghost.call(&"current_piece_id"))
+	if piece_id == &"":
+		piece_id = _first_registered_piece()
+	if piece_id != &"":
+		set_selected_build_piece(piece_id)
+
+
+## Called both by BuildBar's own slot click (via the piece_selected signal) and by toggle_build_mode()
+## entering the mode fresh — either path ends here, so the ghost and the bar can never show two
+## different pieces. Selecting successfully counts as entering build mode; it is the only way in
+## besides the raw toggle.
+func set_selected_build_piece(piece_id: StringName) -> bool:
+	if _build_ghost == null or not bool(_build_ghost.call(&"set_piece", piece_id)):
+		return false
+	if _build_bar != null:
+		_build_bar.call(&"set_active", true)
+		_build_bar.call(&"set_selected_piece", piece_id)
+	return true
+
+
+func _first_registered_piece() -> StringName:
+	var registry: Node = get_node_or_null(^"/root/Registry")
+	if registry == null:
+		return &""
+	var buildables: Dictionary = registry.get(&"buildables")
+	for id: StringName in buildables:
+		return id
+	return &""
+
+
+func _on_build_piece_selected(piece_id: StringName) -> void:
+	set_selected_build_piece(piece_id)
+
+
+## Every physics tick while building: re-aims the ghost from the real camera (mirrors update_aim()'s
+## own doc comment — from/direction is the aim ray, builder_position is this body, for the range
+## rule) and pushes the resulting verdict into BuildBar. Also the downed/dead exit — a player who goes
+## down mid-build should not keep previewing a piece they cannot currently place (jump/sprint are
+## gated the same way elsewhere in this file).
+func _tick_build_ghost() -> void:
+	if _build_ghost == null:
+		return
+	if is_build_mode_active() and (_is_downed() or _is_dead()):
+		toggle_build_mode()
+		return
+	if not is_build_mode_active():
+		return
+	var camera_3d: Camera3D = camera.get_node_or_null(^"Camera3D") as Camera3D
+	if camera_3d == null:
+		return
+	_build_ghost.call(
+		&"update_aim", camera_3d.global_position, -camera_3d.global_basis.z, global_position)
+	if _build_bar != null:
+		_build_bar.call(&"set_ghost_status",
+			bool(_build_ghost.call(&"is_valid")), String(_build_ghost.call(&"last_reason_text")))
+
+
+## Right-click while building: a SECOND ray, independent of whichever piece is selected to place —
+## see BuildGhost.aim_destroy_target()'s own comment for why placement preview and teardown targeting
+## cannot share one ray. request_destroy() is fire-and-forget from here; BuildService.build_confirmed
+## is how BuildBar learns whether it landed.
+func _request_build_destroy() -> void:
+	if _build_ghost == null:
+		return
+	var camera_3d: Camera3D = camera.get_node_or_null(^"Camera3D") as Camera3D
+	if camera_3d == null:
+		return
+	var piece_name: StringName = StringName(_build_ghost.call(
+		&"aim_destroy_target", camera_3d.global_position, -camera_3d.global_basis.z))
+	if piece_name == &"":
+		return
+	var service: Node = get_node_or_null(^"/root/BuildService")
+	if service != null:
+		service.call(&"request_destroy", piece_name)
 
 
 # ── Revive (task 2.13) ────────────────────────────────────────────────────────────────────────────

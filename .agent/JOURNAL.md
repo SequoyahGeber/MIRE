@@ -2439,3 +2439,17 @@ agent baseline: run any check or command against a throwaway worktree at a revis
 Files: `.agent/bin/agent`, `AGENTS.md`, `docs/FINDINGS.md`, `tools/harness_check.py`, `docs/DELEGATION.md`
 
 Commit at time of writing: `4cabfc0`
+
+---
+
+### DONE · F-086 · ivy8 · 2026-08-18T13:29:31+00:00
+
+**The building system has no gameplay caller, so no player can place, rotate, or destroy anything**
+
+The code is LP's; the verification is the director's. LP wrote the whole gameplay path and then stalled before proving it — it backgrounded `build_check` under the shared Godot lock, armed a monitor, and ended its turn waiting for a notification a headless run can never receive. Because it had already written its docs close-out (F-086 moved to '## Resolved', marked **fixed**) BEFORE running that check, the board derived `done` from the doc and the task became unreachable: `agent claim F-086` refuses a done task, so nothing could pick it up again.
+
+Verified here, on the working diff exactly as LP left it: `agent godot --script tools/build_check.gd` -> BUILD_CHECK failures=0, exit 0. The assertions are end-to-end through the real production path, not through the check's own scaffolding: the 'build' action enters build mode and the bar shows itself; a real BuildGhost and BuildBar are attached from `_ready()` rather than lazily on first toggle; a bar slot click reaches the ghost; R rotates through the real input path; left-click confirms a placement via PlayerController -> BuildService and the piece exists and joins the group the destroy ray targets; right-click destroys it through that same path; the action exits build mode and the bar hides. That is the finding's actual claim — that no production caller reached BuildService — closed.
+
+So the board's 'done' was correct, but only by luck: it was recorded on the strength of a doc edit nothing had tested, and would have read identically had the check failed. Two guards shipped with this commit so it cannot recur silently — `agent report` now flags any task marked done whose newest journal entry is a HANDOFF, and the work-order template bans backgrounding a verification and requires the check to pass before the docs are written.
+
+Commit at time of writing: `ac7d9cc`

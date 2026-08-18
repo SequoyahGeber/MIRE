@@ -1,6 +1,8 @@
 extends Node3D
 
-## BuildGhost — the translucent preview of a piece before it is placed. Attach one to the player.
+## BuildGhost — the translucent preview of a piece before it is placed. Attached to the player by
+## entities/player/player_controller.gd (F-086 — 3.6 shipped this with no production caller; only
+## tools/build_check.gd ever instantiated one before that fix).
 ##
 ## NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2, last row — "VFX, audio, camera, UI"): **NONE, and
 ## that is the entire contract.** Nothing here decides anything. It aims, snaps, colours itself, and
@@ -13,12 +15,22 @@ extends Node3D
 ## implementations of "can this go here" drift, and the symptom is a player lining up a wall that
 ## reads green and gets refused with no explanation — the exact bug that makes a building system
 ## feel broken rather than strict.
+##
+## `aim_destroy_target()` is a second, independent ray for teardown targeting — see its own comment.
+## It never decides anything either; it only names the piece for the caller's own
+## `BuildService.request_destroy()` call.
 
 const VALIDATOR := preload("res://systems/building/placement_validator.gd")
 
 ## Matches BuildService.QUERY_MASK. The ghost has to ask the same question of the same layers, or its
 ## prediction is answering a different one. See F-075 for why this is a single shared layer.
 const QUERY_MASK: int = 1
+
+## Matches BuildService.PIECE_GROUP — duplicated as a literal rather than resolved through the
+## autoload, same reasoning autoload/harvest_world.gd's own HARVESTABLE_GROUP duplicates
+## systems/harvesting/harvestable.gd's: the string costs nothing to keep in sync and this file has no
+## other reason to reach BuildService at all.
+const PIECE_GROUP: StringName = &"buildable_piece"
 
 const VALID_COLOR := Color(0.35, 0.95, 0.45, 0.42)
 const INVALID_COLOR := Color(0.95, 0.3, 0.28, 0.42)
@@ -148,3 +160,26 @@ func _space_state() -> PhysicsDirectSpaceState3D:
 		return null
 	var world: World3D = get_world_3d()
 	return null if world == null else world.direct_space_state
+
+
+## A SECOND ray, independent of update_aim()'s placement preview — a player must be able to target an
+## EXISTING piece for teardown even while a different piece (or none) is selected to place. Returns
+## the piece's node name, which is what BuildService._placed keys by and what request_destroy() takes,
+## or &"" if nothing in PIECE_GROUP is within aim_distance_m. Walks up from the collider rather than
+## trusting it directly, the same defensive shape harvest_world.gd's own collider walk uses — every
+## generated piece today IS its own collider, but a future authored scene (task 3.7) may wrap one in
+## a child CollisionShape holder.
+func aim_destroy_target(from: Vector3, direction: Vector3) -> StringName:
+	var space: PhysicsDirectSpaceState3D = _space_state()
+	if space == null:
+		return &""
+	var query := PhysicsRayQueryParameters3D.create(
+		from, from + direction.normalized() * aim_distance_m)
+	query.collision_mask = QUERY_MASK
+	var hit: Dictionary = space.intersect_ray(query)
+	var cursor: Node = hit.get("collider") as Node
+	while cursor != null:
+		if cursor.is_in_group(PIECE_GROUP):
+			return StringName(cursor.name)
+		cursor = cursor.get_parent()
+	return &""

@@ -10,6 +10,8 @@
 |---|---|---|---|
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | ivy8 | 2026-08-18 13:01 | `docs/ASSET_TRACKER.md`, `tools/blender/build_extraction_ship_set.py`, `assets/source/extraction_ship_set.blend`, `assets/ships`, `tools/ship_check.gd`, `tools/blender/mire_art.py` |
 | **2.1j** Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | tine18 | 2026-08-18 00:43 | `tools/mapgen/hollow_layout.py`, `world/gen/layouts/playtest_hollow.json`, `assets/maps`, `assets/source/playtest_hollow.blend` |
+| **F-038** `inventory_net_check` intermittently fails its grant wait under machine load | lp | 2026-08-18 13:26 | `tools/inventory_net_check.gd`, `tools/combat_net_check.gd` |
+| **F-077** `agent godot` is always headless, so no in-engine screenshot can ever be captured | yarrow21 | 2026-08-18 13:23 | `.agent/bin/agent`, `AGENTS.md`, `docs/FINDINGS.md` |
 | **F-097** Environmental VFX is keyed to node types the shipped map never produces, so wind and firelight are dead on Hollowmere | larch10 | 2026-08-18 13:09 | `autoload/environment_vfx.gd`, `world/environment/foliage_wind.gdshader`, `world/environment/particle_billboard.gdshader`, `world/gen/authored_world.gd`, `world/gen/undergrowth.gd`, `tools/environment_vfx_check.gd`, `tools/environment_vfx_hollowmere_check.gd` |
 | **F-099** Optimization sweep: per-frame costs and dead weight across runtime scripts | kiln9 | 2026-08-18 13:15 | `systems/enemies/enemy.gd`, `systems/health/player_health.gd`, `systems/harvesting/harvestable.gd`, `systems/environment/day_night.gd`, `ui/hud/vitals_hud.gd`, `ui/crafting/crafting_ui.gd`, `ui/loot/chest_ui.gd`, `entities/player/viewmodel.gd`, `autoload/inventory_service.gd`, `autoload/harvest_world.gd`, `autoload/enemy_world.gd`, `autoload/powerup_service.gd`, `autoload/build_service.gd`, `autoload/crafting_service.gd`, `autoload/net_transport.gd`, `autoload/player_net.gd`, `autoload/debug_overlay.gd`, `autoload/registry.gd`, `core/net/net_session.gd`, `autoload/combat_service.gd` |
 
@@ -65,7 +67,7 @@
 | ⬜ | **F-025** Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake | todo |
 | ⬜ | **F-036** Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10 | todo |
 | ⬜ | **F-037** `net_debug_panel_check` fakes its second peer in-process, so host and client share one tree | todo |
-| ⬜ | **F-038** `inventory_net_check` intermittently fails its grant wait under machine load | todo |
+| 🔵 | **F-038** `inventory_net_check` intermittently fails its grant wait under machine load | in_flight |
 | ⬜ | **F-042** Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one | todo |
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-053** Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why | todo |
@@ -74,7 +76,7 @@
 | ⬜ | **F-061** content/items/coins.tres has no icon — the render_item_icons.py pipeline needs a SOURCES entry | todo |
 | ⬜ | **F-075** World statics and props share collision layer 1, so a placement overlap query cannot tell ground from obstruction | todo |
 | ⬜ | **F-076** A new map inherits none of the systems keyed to the old map's group names | todo |
-| ⬜ | **F-077** `agent godot` is always headless, so no in-engine screenshot can ever be captured | todo |
+| 🔵 | **F-077** `agent godot` is always headless, so no in-engine screenshot can ever be captured | in_flight |
 | ⬜ | **F-079** The obvious way to "compare decoded pixels" silently reports every RGB-only change as identical | todo |
 | ⬜ | **F-092** `mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call | todo |
 | ⬜ | **F-093** A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build | todo |

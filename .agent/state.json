@@ -1,5 +1,15 @@
 {
   "claims": {
+    ".agent/bin/agent": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:23:57+00:00",
+      "task": "F-077"
+    },
+    "AGENTS.md": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:23:57+00:00",
+      "task": "F-077"
+    },
     "assets/maps": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
@@ -90,6 +100,11 @@
       "at": "2026-08-18T13:01:13+00:00",
       "task": "2.1d"
     },
+    "docs/FINDINGS.md": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:23:57+00:00",
+      "task": "F-077"
+    },
     "entities/player/viewmodel.gd": {
       "agent": "kiln9",
       "at": "2026-08-18T13:15:19+00:00",
@@ -125,6 +140,11 @@
       "at": "2026-08-18T13:03:53+00:00",
       "task": "2.1d"
     },
+    "tools/combat_net_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T13:26:55+00:00",
+      "task": "F-038"
+    },
     "tools/environment_vfx_check.gd": {
       "agent": "larch10",
       "at": "2026-08-18T13:09:00+00:00",
@@ -134,6 +154,11 @@
       "agent": "larch10",
       "at": "2026-08-18T13:09:38+00:00",
       "task": "F-097"
+    },
+    "tools/inventory_net_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T13:26:55+00:00",
+      "task": "F-038"
     },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
@@ -216,6 +241,25 @@
       ],
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
+    },
+    "F-038": {
+      "agent": "lp",
+      "files": [
+        "tools/inventory_net_check.gd",
+        "tools/combat_net_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T13:26:55+00:00"
+    },
+    "F-077": {
+      "agent": "yarrow21",
+      "files": [
+        ".agent/bin/agent",
+        "AGENTS.md",
+        "docs/FINDINGS.md"
+      ],
+      "notes": [],
+      "started": "2026-08-18T13:23:57+00:00"
     },
     "F-097": {
       "agent": "larch10",
@@ -2747,7 +2791,7 @@
     "F-038": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "`inventory_net_check` intermittently fails its grant wait under machine load"
     },
@@ -3076,7 +3120,7 @@
     "F-077": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "`agent godot` is always headless, so no in-engine screenshot can ever be captured"
     },

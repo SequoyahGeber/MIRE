@@ -50,6 +50,7 @@ func _run() -> void:
 	await _check_host_placement()
 	await _check_damage_destroys_piece()
 	await _check_ghost()
+	await _check_player_integration()
 
 	print("\nBUILD_CHECK failures=%d" % failures)
 	finish()
@@ -460,6 +461,146 @@ func _check_ghost() -> void:
 		"and it stays on the authored 90 degree step (%.1f)" % rad_to_deg(after_yaw))
 
 	ghost.queue_free()
+
+
+## F-086: 3.6 shipped update_aim()/rotate_step()/confirm()/request_destroy() with no production
+## caller — only THIS SCRIPT's own private ghost above ever called them. This drives the REAL
+## entities/player/player.tscn through the exact input events a player sends: the real "build"
+## action, a real BuildBar slot click, a real R keypress, the real "attack" action, and a real
+## right-click — proving player_controller.gd is the caller, not re-testing the pure functions
+## _check_ghost() already covers.
+func _check_player_integration() -> void:
+	print("\n== F-086: the player controller is the production caller, not a private ghost ==")
+	var player_net: Node = root.get_node_or_null(^"PlayerNet")
+	var players_root: Node = player_net.call(&"players_root") as Node if player_net != null else null
+	check(players_root != null, "PlayerNet's players_root exists for a real player to join")
+	if players_root == null:
+		return
+
+	var player: CharacterBody3D = \
+		preload("res://entities/player/player.tscn").instantiate() as CharacterBody3D
+	player.name = "1"
+	# Flat floor, clear of every fixture _build_world() placed for earlier sections (the nearest is
+	# the obstruction at (0,*,4); everything else sits far outside this range) — and this time
+	# _builder_position() resolves a REAL body under PlayerNet's own container, not the (0,0,0)
+	# fallback the offline-only sections above rely on, so the placement point below has to be within
+	# max_build_range_m of THIS position, not the origin.
+	player.position = Vector3(0.0, 0.0, -3.0)
+	players_root.add_child(player)
+	await process_frame
+	await process_frame
+
+	# A fresh wall's worth of materials against peer 1 — earlier sections already spent and refunded
+	# some, and this section should not depend on what they left behind.
+	inventory.call(&"host_transaction", 1, {} as Dictionary, {&"log": 10} as Dictionary)
+
+	check(player.has_method(&"is_build_mode_active"), "PlayerController exposes build-mode state")
+	if not player.has_method(&"is_build_mode_active"):
+		player.queue_free()
+		return
+	check(not bool(player.call(&"is_build_mode_active")), "starts out of build mode")
+
+	var ghost: Node = player.get_node_or_null(^"BuildGhost")
+	var bar: Node = player.get_node_or_null(^"BuildBar")
+	check(ghost != null, "a real BuildGhost is attached from _ready(), not lazily on first toggle")
+	check(bar != null, "and a real BuildBar")
+	if ghost == null or bar == null:
+		player.queue_free()
+		return
+	check(not bool(bar.call(&"is_active")), "the bar stays hidden before build mode is entered")
+
+	# Pitch the camera down at the floor. A negative local X rotation looks down for this pivot —
+	# entities/player/player_camera.gd's own basis, same convention D-050 documents for the viewmodel
+	# arm — well within pitch_limit_degrees (89, default).
+	var camera_pivot: Node3D = player.get(&"camera")
+	check(camera_pivot != null, "the real player has a camera pivot")
+	if camera_pivot == null:
+		player.queue_free()
+		return
+	camera_pivot.rotation.x = deg_to_rad(-40.0)
+
+	# The real "build" InputMap action, fed straight into the real _unhandled_input().
+	player.call(&"_unhandled_input", _key_event(KEY_B, true))
+	check(bool(player.call(&"is_build_mode_active")), "the 'build' action enters build mode")
+	check(bool(bar.call(&"is_active")), "and the bar shows itself the instant it does")
+	check(StringName(ghost.call(&"current_piece_id")) != &"",
+		"a piece is auto-selected on a bare toggle-on")
+
+	# Let the automatic engine physics tick run _tick_build_ghost() with the pitched camera, the same
+	# way it would for a real playing player — not a manual _physics_process() call.
+	await physics_frame
+	await physics_frame
+
+	# Pick the wall through the bar's own slot click — the real selection path, not a direct call.
+	var wall_index: int = -1
+	for i: int in int(bar.call(&"slot_count")):
+		if StringName(bar.call(&"slot_piece_id", i)) == &"wall_wood":
+			wall_index = i
+			break
+	check(wall_index >= 0, "the wall is one of the bar's real slots")
+	if wall_index >= 0:
+		bar.call(&"select_slot", wall_index)
+	check(StringName(ghost.call(&"current_piece_id")) == &"wall_wood",
+		"the bar's own slot click reaches the ghost")
+
+	# Rotate through the real key. rotate_step() only accumulates yaw; it lands in the placement
+	# transform on the next update_aim(), which the physics tick below drives through the real camera.
+	var yaw_before: float = (ghost.call(&"placement") as Transform3D).basis.get_euler().y
+	player.call(&"_unhandled_input", _key_event(KEY_R, true))
+	await physics_frame
+	await physics_frame
+	var yaw_after: float = (ghost.call(&"placement") as Transform3D).basis.get_euler().y
+	check(not is_equal_approx(yaw_before, yaw_after), "R rotates the ghost through the real input path")
+	check(bool(ghost.call(&"is_valid")),
+		"aimed at clear ground the real production path reads valid (%s)" %
+			String(ghost.call(&"last_reason_text")))
+
+	# Confirm through the real "attack" action.
+	_confirmations.clear()
+	service.connect(&"build_confirmed", _on_build_confirmed)
+	player.call(&"_unhandled_input", _mouse_button_event(MOUSE_BUTTON_LEFT, true))
+	await process_frame
+	check(_confirmations.size() == 1 and bool(_confirmations[0]["accepted"]),
+		"left-click while building confirms a real placement through PlayerController -> BuildService")
+	check(int(service.call(&"placed_count")) == 1, "and a piece actually exists")
+
+	# Two physics frames for the new piece to register with the space — same rule _build_world()'s
+	# own comment documents — before the destroy ray can see it.
+	await physics_frame
+	await physics_frame
+	var pieces: Array = get_nodes_in_group(&"buildable_piece")
+	check(pieces.size() == 1, "the placed piece joined the group the destroy ray targets")
+
+	# Destroy through the real right-click, aimed at the same spot (the camera never moved).
+	_confirmations.clear()
+	player.call(&"_unhandled_input", _mouse_button_event(MOUSE_BUTTON_RIGHT, true))
+	await process_frame
+	check(_confirmations.size() == 1 and bool(_confirmations[0]["accepted"]),
+		"right-click while building destroys the aimed-at piece through the same real path")
+	check(int(service.call(&"placed_count")) == 0, "and it is gone")
+	service.disconnect(&"build_confirmed", _on_build_confirmed)
+
+	# Leaving build mode the same way it was entered.
+	player.call(&"_unhandled_input", _key_event(KEY_B, true))
+	check(not bool(player.call(&"is_build_mode_active")), "the 'build' action exits build mode again")
+	check(not bool(bar.call(&"is_active")), "and the bar hides itself")
+
+	player.queue_free()
+
+
+func _key_event(keycode: Key, pressed: bool) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.physical_keycode = keycode
+	event.keycode = keycode
+	event.pressed = pressed
+	return event
+
+
+func _mouse_button_event(button_index: int, pressed: bool) -> InputEventMouseButton:
+	var event := InputEventMouseButton.new()
+	event.button_index = button_index
+	event.pressed = pressed
+	return event
 
 
 func _on_build_confirmed(request_id: int, accepted: bool, reason: String) -> void:
