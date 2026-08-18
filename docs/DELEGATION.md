@@ -91,6 +91,15 @@ scene change while a non-default preset is active. `undergrowth_density_scale` i
 [on|off]` and `fps_cap [n]` (DevFrameCap). 7.5's settings menu should call
 `GraphicsQuality.apply()` and grow UI from there.
 
+**World-build time (F-095):** `AUTHORED_WORLD` prints `phase_ms=[...]` — keep it honest when
+adding phases. The kit-asset merge is disk-cached at `user://mesh_cache/<kit>_<asset>_<mtime>.res`;
+warm loads build the world in ~117 ms (was 9,145 ms). First-ever load still pays ~2.9 s — the
+export-time bake is the art pipeline's seam. Repo-wide trap fixed twice there: `get_or_add`
+evaluates its default argument eagerly, so never pass an expensive call into it. Two rejected
+ideas are recorded in F-095 with numbers (flora part-merge, terrain occluder) — read it before
+re-proposing either. The probe's last row measures night+wave; night is currently no dearer than
+day.
+
 **The scatter pattern (reference: `world/gen/undergrowth.gd`, for the world generator):** bucket
 placements into `CELL_SIZE` (48 m) cells; one MultiMeshInstance3D per (asset, cell) **positioned at
 the cell centre including mean ground height** — visibility ranges measure to the node origin, and

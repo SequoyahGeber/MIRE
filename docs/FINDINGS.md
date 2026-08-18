@@ -834,15 +834,48 @@ add a check that exercises the production caller instead of constructing a priva
 
 ---
 
-### F-095 · Post-F-090 frame/load seams: flora part merge, terrain occlusion, world-build time
+## Resolved
 
-**Area:** perf · **Severity:** medium · **Found:** 2026-08-18 by coil23
+### F-095 · Post-F-090 frame/load seams: world build was 9 s of duplicate work; two frame ideas measured and rejected — **fixed**
 
-F-090 left three measured seams. (1) Undergrowth draws 2-4 calls per (asset,cell) because flora GLBs carry multiple mesh parts — authored_world already solved this ('one mesh, one surface per material', authored_world.gd:432); porting that merge to the scatter halves its draw calls with zero visual change. (2) The shadow+main pass still runs ~5.4k draws on a map with a central ridge system — Godot's raster occlusion culling with a conservative under-shell occluder built from the heightfield the world already owns would cull everything behind terrain, and the pattern transfers to generated worlds. (3) AUTHORED_WORLD builds in 8,899 ms on the M5 Pro — a potato multiplies that; needs a per-phase breakdown before it can be attacked. Also unmeasured: the night scenario (stars + moonlight + wave enemies) — the probe only ever ran at 8.35h.
+**Area:** perf · **Severity:** medium · **Found:** 2026-08-18 by coil23 · **Resolved 2026-08-18 by
+coil23.**
+
+Three hypotheses went in; the probe kept one and killed two. All three outcomes are the record.
+
+**The win — world build 9,145 ms → 117 ms warm.** New per-phase timing
+(`AUTHORED_WORLD ... phase_ms=[...]`) showed `props=9,055` of 9,145. Two causes, both fixed:
+
+1. **`cache.get_or_add(key, _mesh_parts(kit, asset))` evaluates its default argument EAGERLY** —
+   the merge ran once per (chunk, asset) *group* (1,028×, plus 83 harvestables) while the cache
+   sat there preventing nothing. Both call sites now test `has()` first. This trap is repo-wide:
+   never pass an expensive call as `get_or_add`'s default. Fix alone: 9,145 → 2,865 ms.
+2. The ~40 genuine merges are now **disk-cached to `user://mesh_cache/<kit>_<asset>_<mtime>.res`**
+   (`FLAG_BUNDLE_RESOURCES|FLAG_COMPRESS`; a stamp change orphans the entry, a torn file loads
+   null and rebuilds over itself). Warm loads: **117 ms**. A player's first-ever load still pays
+   ~2.9 s — baking merged meshes at *export* time is the durable fix and belongs to the art
+   pipeline (2.1j-adjacent), not to a runtime cache.
+
+**Rejected with numbers — do not re-attempt without new evidence:**
+
+- **Flora part-merge in the scatter.** The flora exports are already ONE mesh part each (the
+  pre-F-090 scatter's 78 assets cost exactly 78 multimeshes — the proof was on screen the whole
+  time), so the merge's de-indexing only threw away vertex reuse on smooth-shaded meshes:
+  primitives 1.6M → 3.6M, baseline 6.77 → 6.97 ms. Reverted; `undergrowth.gd` carries the
+  warning above `_emit`.
+- **Terrain under-shell occluder + raster occlusion culling.** Hollowmere is a bowl: from inside,
+  the ridge occludes only the outside. ~2 draws culled, real per-frame CPU raster paid. Reverted
+  (project setting included); worth retrying only for worlds with blocking sightlines —
+  interiors, canyons — and only probe-verified.
+
+**Also measured: night is not a cliff.** New probe row jumps to 02:00 (which fires
+`night_started` and spawns a live wave): **158 fps / 6.26 ms** — stars + moonlight + wave
+enemies cost about the same as day. No night-specific work needed at current enemy counts.
+
+Verified: probe ×2 (cold + warm), `--quit-after 30` warm load at 117 ms, `flora_check` /
+`atmosphere_night_check` / `day_night_check` all 0 failures.
 
 ---
-
-## Resolved
 
 ### F-083 · Snapping the aim hit's Y coordinate rejects or floats pieces on ordinary terrain heights — **fixed**
 
