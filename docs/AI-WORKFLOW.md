@@ -127,8 +127,14 @@ produce conflicts that are painful at best and silently corrupt the scene at wor
 The protection is exact file ownership plus a closed editor (D-031):
 
 - Agents may edit `.tscn`, `.tres`, and `.import` files only under an explicit exact-file claim.
-- Before touching any Godot-authored file, run `pgrep -fl Godot`. If Godot is open, stop; it can
-  overwrite an agent's work on save.
+- Before touching any Godot-authored file, check whether the **editor** is running — not merely
+  whether some Godot process is (F-045). `pgrep -fl Godot` also matches your own headless check
+  loop, another lane's, and the `agent` command itself: measured mid-audit, nine matches and one
+  actual editor. An agent following it literally refuses a legitimate edit. The tool already asks
+  the right question — `agent order` refuses to dispatch and the pre-commit hook refuses the commit
+  while the editor is up. By hand it is `pgrep -fl 'Godot.app.*--editor'`. The rule exists because
+  *the editor* rewrites these files on save and silently discards an agent's edit; a
+  `--headless --script` run does not, so blocking on one costs you the edit and buys nothing.
 - Two agents may work in parallel only on disjoint claimed files. Never overlap a scene or resource.
 - Prefer a Godot tool script for complex scene/resource generation so Godot serializes its own format.
 - Visual layout, tuning, and playtesting remain good Tier 0 editor work, but they are no longer a

@@ -1196,6 +1196,14 @@ their results are D-015 and D-016 in `DECISIONS.md`. The unmeasured half of R2 i
 
 ---
 
+> **Historical documents — every task prompt from here down.** They predate D-021 (agents register
+> their own autoloads), D-031 (agents may edit Godot-authored files under exact claim), D-039 (do it
+> yourself rather than handing it back) and the D-036 lane system. Where a prompt says
+> `.tscn`/`.tres`/`project.godot` are human-only or hook-blocked — and several do, in those words —
+> that was true when it ran and is **not policy now**. `AGENTS.md` Hard rules and `docs/SPECS.md`
+> are current. The disclaimer used to sit further down, below three prompts that make exactly that
+> stale claim (F-045/F-053).
+
 ## Task 1.5 — Networked player: spawner + synchronizer, client-auth movement ✅ **DONE**
 
 > **Model: Opus 5 · effort high** · agent name `spawn`
@@ -1570,11 +1578,6 @@ THEN, as your final chat message, tell me:
 ---
 
 ## Already shipped — kept for reference
-
-> **Historical documents.** Prompts below predate D-021 (agents register their own autoloads),
-> D-031 (agents may edit Godot-authored files under exact claim), and the D-036 lane system. Where
-> a prompt says `.tscn`/`.tres`/`project.godot` are human-only or hook-blocked, that was true when
-> it ran and is **not policy now** — `AGENTS.md` Hard rules and `docs/SPECS.md` are current.
 
 ## Task 1.3 — LOCAL mode: two windows, one keypress ✅ **DONE**
 

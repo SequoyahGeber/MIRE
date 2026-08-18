@@ -464,27 +464,6 @@ properly means either making the checks tolerate a shared cache or giving each l
 
 ---
 
-### F-045 · `pgrep -fl Godot` is too blunt to be the closed-editor guard
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by yarrow21 during 0.12
-
-`AGENTS.md` and `AI-WORKFLOW.md` both tell agents to run `pgrep -fl Godot` before touching a
-`.tscn`/`.tres`/`project.godot`, and to stop if it matches. It has two failure modes, and they point
-in opposite directions:
-
-- **False positives.** It matches any process whose command line contains "Godot" — including the
-  shell running a check loop, and the `agent` command itself. Measured on this repo mid-audit: nine
-  matches, one actual engine. An agent following the rule literally would refuse a legitimate edit.
-- **Wrong question.** The rule exists because *the editor* rewrites these files on save and silently
-  discards an agent's edit. A `--headless --script` check does not. So it blocks on runs that are
-  harmless while giving no signal about the one that isn't.
-
-`_godot_running()` in `.agent/bin/agent` now matches the real binary path and excludes `--headless`
-invocations, which is the question the rule was always trying to ask. The docs still say `pgrep`;
-they should say `agent order` refuses the dispatch for you, or point at the same check.
-
----
-
 ### F-053 · Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why
 
 **Area:** docs/process · **Severity:** medium — it costs Sequoyah a hand-off on tasks agents should
@@ -711,7 +690,106 @@ kit sidesteps it by baking every asset's transform to identity before export, wh
 
 ---
 
+### F-070 · Generated review orders cannot use their mandated review task id
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by lc1 during the 2.12 review
+
+The review template at `.agent/bin/agent:1620-1621` mandates `agent done <id>-review` followed by
+`agent ship <id>-review`, but ordering/dispatch never adds that synthetic id to `state.json`'s task
+registry. `_require_task()` at `.agent/bin/agent:287-300` therefore rejects the generated commands;
+in this review both `agent brief 2.12-review` and `agent claim 2.12-review` failed with `unknown task
+2.12-review`.
+
+There is a second closeout break after registration: the template correctly says a reviewer claims
+nothing, while `cmd_ship()` stages only the task's released claims plus `.agent/` coordination files
+(`.agent/bin/agent:859-870`). Consequently a review that appends `docs/FINDINGS.md` still cannot ship
+that report through the mandated command. Review dispatch must register a synthetic review task and
+give its ship path explicit ownership of the review's findings artifact (or provide a dedicated
+review closeout command).
+
+---
+
+## Resolved`
+in `docs/FINDINGS.md`. It only *warns* you to. Eight entries had been closed without that move:
+F-054 (LAN launch), F-055 (the dead `TestMapProps` registration), all three F-056s, F-062, F-063,
+F-064 and F-066.
+
+The board's "Open findings" list is synced from that section, so it was advertising eight finished
+jobs as available work — a quarter of the 33 it listed. This is not hypothetical: I claimed F-054,
+read it, opened `core/dev/dev_launch.gd` to write the fix, and found the fix already there, shipped
+by flint5 in `fcdd87d`/`019ac7a` the previous evening. `agent claim` refused with "F-054 is already
+done" only because `state.json` disagreed with the doc; had the claim succeeded I would have spent
+the session re-implementing it.
+
+The doc and `state.json` are two records of the same fact and they had drifted apart. `agent done`
+can detect the drift — it already knows the F-number and already greps the file to warn — so the
+cheap fix is for it to also *check* at `board`/`start` time and print the disagreement, the way it
+already prints stale claims. Renumbering the duplicate F-numbers is a separate, larger job that
+F-058 describes and that two agents have now deferred because other docs and code comments cite both
+members of each pair.
+
+---
+
+## Resolved
+
+### F-045 · `pgrep -fl Godot` is too blunt to be the closed-editor guard — **fixed**
+
+**Resolved 2026-08-18 — tool half earlier, docs half by gale6.**
+
+`_godot_running()` in `.agent/bin/agent` already matched the real editor binary and excluded
+`--headless` invocations. What this entry had left was its last sentence — "the docs still say
+`pgrep`" — and they did, in live guidance, not just archived prompts:
+
+- **`docs/AI-WORKFLOW.md`** told agents to run bare `pgrep -fl Godot` before touching any
+  Godot-authored file. Rewritten to name the precise check (`pgrep -fl 'Godot.app.*--editor'`), to
+  point at the tool that already asks correctly for you (`agent order` refuses the dispatch, the
+  pre-commit hook refuses the commit), and to state the *reason* the rule exists — the editor
+  rewrites these files on save, a `--headless --script` run does not — so blocking on a headless run
+  costs the edit and buys nothing.
+- **`docs/DELEGATION.md`'s archive disclaimer** ("prompts below predate D-031... not policy now")
+  was correct but sat *below* three historical prompts that make exactly the stale claim, including
+  one reading "NEVER create or edit `.tscn`/`.tres` — human-only, hook-enforced". Moved above the
+  first of them so it covers every archived prompt, and widened to name D-039 as well. That half is
+  shared with F-053, which stays open for the rest of its ground.
+
+**Verified** by re-grepping every `.md` for `pgrep`: the only remaining hits outside this file are
+`AGENTS.md` and `docs/ORCHESTRATION.md`, both of which already describe the precise check and cite
+F-045, plus the `.agent/JOURNAL.md` entries that recorded the problem historically.
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by yarrow21 during 0.12
+
+`AGENTS.md` and `AI-WORKFLOW.md` both tell agents to run `pgrep -fl Godot` before touching a
+`.tscn`/`.tres`/`project.godot`, and to stop if it matches. It has two failure modes, and they point
+in opposite directions:
+
+- **False positives.** It matches any process whose command line contains "Godot" — including the
+  shell running a check loop, and the `agent` command itself. Measured on this repo mid-audit: nine
+  matches, one actual engine. An agent following the rule literally would refuse a legitimate edit.
+- **Wrong question.** The rule exists because *the editor* rewrites these files on save and silently
+  discards an agent's edit. A `--headless --script` check does not. So it blocks on runs that are
+  harmless while giving no signal about the one that isn't.
+
+`_godot_running()` in `.agent/bin/agent` now matches the real binary path and excludes `--headless`
+invocations, which is the question the rule was always trying to ask. The docs still say `pgrep`;
+they should say `agent order` refuses the dispatch for you, or point at the same check.
+
+---
+
+---
+
 ### F-067 · The pre-commit hook blocks project.godot even when agent autoload wrote it — **fixed**
+
+**Verified resolved 2026-08-18 by gale6.** The entry already said fixed and had been sitting in
+`## Open` regardless, which is what motivated the new self-declared-resolved detector below. The fix
+is live and was exercised twice today rather than read: registering `WaveSpawner` (F-068) and
+committing the resulting one-line `project.godot` change printed
+`⚠ project.godot — autoload registration only, no claim needed (F-051)` and went through the hook
+without `--no-verify`.
+
+`agent board`/`agent start` now print any finding under `## Open` whose own text says it is resolved.
+This one was invisible to every other check: `_sync_findings()` mirrors the doc into `state.json` and
+`_findings_drift()` compares the two records, but here **both records agreed the finding was open** —
+only the prose knew otherwise. Hence a text scan rather than a status comparison.
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by reed16
 
@@ -759,47 +837,7 @@ needed — `.git/hooks/pre-commit` only execs `agent check`, so every lane picks
 
 ---
 
-### F-070 · Generated review orders cannot use their mandated review task id
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by lc1 during the 2.12 review
-
-The review template at `.agent/bin/agent:1620-1621` mandates `agent done <id>-review` followed by
-`agent ship <id>-review`, but ordering/dispatch never adds that synthetic id to `state.json`'s task
-registry. `_require_task()` at `.agent/bin/agent:287-300` therefore rejects the generated commands;
-in this review both `agent brief 2.12-review` and `agent claim 2.12-review` failed with `unknown task
-2.12-review`.
-
-There is a second closeout break after registration: the template correctly says a reviewer claims
-nothing, while `cmd_ship()` stages only the task's released claims plus `.agent/` coordination files
-(`.agent/bin/agent:859-870`). Consequently a review that appends `docs/FINDINGS.md` still cannot ship
-that report through the mandated command. Review dispatch must register a synthetic review task and
-give its ship path explicit ownership of the review's findings artifact (or provide a dedicated
-review closeout command).
-
 ---
-
-## Resolved`
-in `docs/FINDINGS.md`. It only *warns* you to. Eight entries had been closed without that move:
-F-054 (LAN launch), F-055 (the dead `TestMapProps` registration), all three F-056s, F-062, F-063,
-F-064 and F-066.
-
-The board's "Open findings" list is synced from that section, so it was advertising eight finished
-jobs as available work — a quarter of the 33 it listed. This is not hypothetical: I claimed F-054,
-read it, opened `core/dev/dev_launch.gd` to write the fix, and found the fix already there, shipped
-by flint5 in `fcdd87d`/`019ac7a` the previous evening. `agent claim` refused with "F-054 is already
-done" only because `state.json` disagreed with the doc; had the claim succeeded I would have spent
-the session re-implementing it.
-
-The doc and `state.json` are two records of the same fact and they had drifted apart. `agent done`
-can detect the drift — it already knows the F-number and already greps the file to warn — so the
-cheap fix is for it to also *check* at `board`/`start` time and print the disagreement, the way it
-already prints stale claims. Renumbering the duplicate F-numbers is a separate, larger job that
-F-058 describes and that two agents have now deferred because other docs and code comments cite both
-members of each pair.
-
----
-
-## Resolved
 
 ### F-004 · Interpolation is only planned for remote players, not enemies or props — **fixed**
 

@@ -120,6 +120,7 @@ one night. If this isn't fun, nothing built on top of it will be.
 | 2.1h | Polish `playtest_hollow`: open the spawn-camp gates, enlarge and better connect the zones, improve grass, and add complementary ground-cover variants | T0 | 6 |
 | 2.1i | Audit existing art and improve the highest-impact hero/environment assets without bypassing their gameplay-review gates | T0 | 6 |
 | 2.1j | Cross-family art overhaul: one shared palette/primitive library, an all-sides inspection harness, a canonical scale table, and rebuilds of the assets authored for a single camera angle | T0 | 8 |
+| 2.1k | Revise `hollowmere`: shrink the valley to a walkable size, re-author the layout and placement with intent, ground everything, fix grass-through-props, bridge railings and the water, raise tree/harvestable density, use every kit asset, and give the crawlers a corrupt zone to spawn from | T0 | 6 |
 | 2.2 | `Resource` scripts for `ItemDef`, `RecipeDef` + `registry.gd` boot loader | T2 | 2 |
 | 2.3 | Harvestable prop: hit → damage → yield → despawn → respawn. **Host-authoritative** (`ARCHITECTURE.md` §2.2). | T2 | 3 |
 | 2.4 | Inventory system: stacks, add/remove, host-validated. Data layer only. | T2 | 3 |
