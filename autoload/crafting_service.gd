@@ -53,6 +53,8 @@ var _station_census: int = -1
 func _ready() -> void:
 	# _process only drains the host's timed-craft queue; it idles off while that is empty (F-099).
 	set_process(false)
+	_register_commands()
+
 
 
 func recipes_for_station(station: StringName) -> Array[RecipeDef]:
@@ -371,3 +373,63 @@ func _owns_mutation() -> bool:
 		NetTransport.is_host()
 		or (not NetTransport.is_active() and not NetTransport.is_connecting())
 	)
+
+
+# ── Commands (docs/COMMANDS.md §7 — task 3.16) ───────────────────────────────────────────────────
+
+
+func _register_commands() -> void:
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
+		return
+	command_service.call("register_spec", &"craft", {
+		"scope": &"host",
+		"args": [{"name": "recipe", "type": &"recipe_id"}],
+		"handler": _cmd_craft,
+		"help": "craft <recipe_id> — craft through the normal request path, costs included",
+	})
+	command_service.call("register_spec", &"recipes", {
+		"scope": &"local",
+		"args": [{"name": "station", "type": &"string", "optional": true, "default": ""}],
+		"handler": _cmd_recipes,
+		"help": "recipes [station_id] — what can be crafted, optionally at one station",
+	})
+
+
+## Deliberately goes through `request_craft()` — the SAME path the crafting UI uses — rather than
+## reaching for a host_craft shortcut. COMMANDS.md §7 spells this one out ("goes through the normal
+## request path, not around it") because a command that skipped the ingredient check would make
+## `craft` useless for the thing you actually want it for: proving the ingredient check works.
+func _cmd_craft(_ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var recipe_id: StringName = args.get("recipe", &"")
+	var request_id: int = request_craft(recipe_id)
+	if request_id <= 0:
+		return {"ok": false,
+			"message": "craft refused — missing ingredients, no station in range, or no inventory",
+			"data": {"recipe": String(recipe_id)}}
+	# The confirmation is asynchronous (craft_confirmed), and a LOCAL-synchronous handler cannot
+	# await it — see command_service.gd's header. Reporting the accepted REQUEST is honest: the
+	# console prints the confirmation itself when it lands, exactly as it does for the UI path.
+	return {"ok": true, "message": "craft %s requested (#%d)" % [recipe_id, request_id],
+		"data": {"recipe": String(recipe_id), "request": request_id}}
+
+
+func _cmd_recipes(_ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var registry: Node = get_node_or_null(^"/root/Registry")
+	if registry == null:
+		return {"ok": false, "message": "Registry is not loaded", "data": {}}
+	var station := StringName(String(args.get("station", "")).strip_edges())
+	var listed: Array = recipes_for_station(station) if station != &"" \
+		else (registry.get(&"recipes") as Dictionary).values()
+	if listed.is_empty():
+		return {"ok": true,
+			"message": "no recipes%s" % (" at station '%s'" % station if station != &"" else ""),
+			"data": {"recipes": []}}
+	var ids: Array = []
+	var lines: PackedStringArray = ["%d recipe(s)%s:" % [
+		listed.size(), " at %s" % station if station != &"" else ""]]
+	for recipe: Resource in listed:
+		var id := StringName(String(recipe.get(&"id")))
+		ids.append(String(id))
+		lines.append("  %s" % id)
+	return {"ok": true, "message": "\n".join(lines), "data": {"recipes": ids}}

@@ -47,6 +47,8 @@ func _ready() -> void:
 	_load_definitions()
 	get_tree().node_added.connect(_on_node_added)
 	_schedule_refresh()
+	_register_commands()
+
 
 
 ## F-113/F-101: this file used to listen for `attack` itself. `PlayerController` handles the same
@@ -308,3 +310,58 @@ func _collision_ancestor(node: Node) -> CollisionObject3D:
 			return cursor as CollisionObject3D
 		cursor = cursor.get_parent()
 	return null
+
+
+# ── Commands (docs/COMMANDS.md §7 — task 3.16) ───────────────────────────────────────────────────
+
+
+func _register_commands() -> void:
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
+		return
+	command_service.call("register_spec", &"harvest", {
+		"scope": &"host",
+		"args": [
+			{"name": "op", "type": &"enum", "values": ["respawn", "status"]},
+			{"name": "target", "type": &"selector", "optional": true, "default": null},
+		],
+		"handler": _cmd_harvest,
+		"help": "harvest respawn [selector] | harvest status — refill depleted props",
+	})
+
+
+## No new seam needed: `Harvestable.host_respawn()` already exists, host-guarded, and clears the
+## respawn clock properly. This verb only decides WHICH props to call it on — a selector when one is
+## given, every wired harvestable otherwise.
+func _cmd_harvest(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var nodes: Array = _harvest_targets(ctx, args.get("target"))
+	if String(args.get("op", "status")) == "status":
+		var depleted: int = 0
+		for node: Node in nodes:
+			if not bool(node.get(&"active")):
+				depleted += 1
+		return {"ok": true, "message": "%d harvestable(s), %d depleted" % [nodes.size(), depleted],
+			"data": {"total": nodes.size(), "depleted": depleted}}
+
+	var respawned: int = 0
+	for node: Node in nodes:
+		if node.has_method(&"host_respawn") and bool(node.call("host_respawn")):
+			respawned += 1
+	return {"ok": true, "message": "respawned %d of %d harvestable(s)" % [respawned, nodes.size()],
+		"data": {"respawned": respawned, "total": nodes.size()}}
+
+
+## A null selector means "all of them" — `wired_harvestables()` is this service's own list and is
+## already the answer to "what harvestables exist", so the selector path is the narrowing case, not
+## the normal one.
+func _harvest_targets(ctx: Dictionary, selector: Variant) -> Array:
+	if selector == null or not (selector is Dictionary):
+		return wired_harvestables()
+	var directory: Node = get_node_or_null(^"/root/EntityDirectory")
+	if directory == null:
+		return wired_harvestables()
+	var nodes: Array = []
+	for entry: Dictionary in directory.call("resolve", selector as Dictionary, ctx):
+		if String(entry["kind"]) == "harvestable":
+			nodes.append(entry["node"])
+	return nodes

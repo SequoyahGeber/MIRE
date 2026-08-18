@@ -55,39 +55,59 @@ func cap() -> int:
 
 
 func _register_commands() -> void:
-	var console: Node = get_node_or_null(^"/root/DebugConsole")
-	if console == null or not console.has_method("register"):
+	# Migrated off DebugConsole.register()'s deprecation shim in task 3.16 — the catalog sweep's own
+	# `commands --json` coverage check is what makes a leftover shim registration visible, so leaving
+	# these two behind would have been the first thing it reported.
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
 		return
-	console.call("register", &"fps_cap", _cmd_fps_cap,
-		"fps_cap [n] — show or set the frame cap; 0 uncaps (dev runs only)")
-	console.call("register", &"vsync", _cmd_vsync,
-		"vsync [on|off] — off lets the fps counter exceed the panel's refresh rate (F-090)")
+	command_service.call("register_spec", &"fps_cap", {
+		# LOCAL: a frame cap is this machine's own rendering, not simulated state — nothing about it
+		# belongs to the host, and a client capping its own frames must not need op.
+		"scope": &"local",
+		"args": [{"name": "cap", "type": &"int", "optional": true, "default": -1, "min": 0, "max": 1000}],
+		"handler": _cmd_fps_cap,
+		"help": "fps_cap [n] — show or set the frame cap; 0 uncaps (dev runs only)",
+	})
+	command_service.call("register_spec", &"vsync", {
+		"scope": &"local",
+		"args": [{"name": "state", "type": &"string", "optional": true, "default": ""}],
+		"handler": _cmd_vsync,
+		"help": "vsync [on|off] — off lets the fps counter exceed the panel's refresh rate (F-090)",
+	})
 
 
 ## Vsync stays ON by default — retail-correct, tear-free, and F-090 measured its cost at zero
 ## while the frame is slower than the panel. The knob exists because once the frame IS faster
 ## than the panel, vsync is what pins the fps counter to the refresh rate, and every future
 ## "why is it exactly 120" investigation should be one console command, not a project edit.
-func _cmd_vsync(args: PackedStringArray) -> String:
-	if not args.is_empty():
-		if args[0] != "on" and args[0] != "off":
-			return "usage: vsync [on|off]"
+## CommandSpec handler shape since task 3.16: (ctx, args) -> CommandResult, with the arguments
+## already parsed and validated. The hand-rolled "usage:" string the shim version needed is gone —
+## a typed spec produces it (COMMANDS.md §2.2).
+func _cmd_vsync(_ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var state: String = String(args.get("state", "")).strip_edges().to_lower()
+	if not state.is_empty():
+		if state != "on" and state != "off":
+			return {"ok": false, "message": "usage: vsync [on|off]", "data": {}}
 		DisplayServer.window_set_vsync_mode(
-			DisplayServer.VSYNC_ENABLED if args[0] == "on" else DisplayServer.VSYNC_DISABLED)
-	if DisplayServer.window_get_vsync_mode() == DisplayServer.VSYNC_DISABLED:
-		return "vsync is off — frame rate is uncapped (fps_cap still applies if set)"
-	return "vsync is on — frame rate tops out at the panel's %.0f Hz" % \
-		DisplayServer.screen_get_refresh_rate()
+			DisplayServer.VSYNC_ENABLED if state == "on" else DisplayServer.VSYNC_DISABLED)
+	var enabled: bool = DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED
+	var message: String = "vsync is on — frame rate tops out at the panel's %.0f Hz" \
+		% DisplayServer.screen_get_refresh_rate() if enabled \
+		else "vsync is off — frame rate is uncapped (fps_cap still applies if set)"
+	return {"ok": true, "message": message, "data": {"vsync": enabled}}
 
 
-func _cmd_fps_cap(args: PackedStringArray) -> String:
-	if args.is_empty():
-		return "frame rate is %s (try `fps_cap %d` to halve GPU/CPU load)" % [
-			_describe(), SUGGESTED_COOL_FPS]
-	if not args[0].is_valid_int():
-		return "usage: fps_cap [n]  — n is a whole number of frames per second, 0 uncaps"
-	set_cap(int(args[0]))
-	return "frame rate is now %s" % _describe()
+## `cap` defaults to -1 rather than 0, because 0 is a MEANINGFUL value here (uncap) and the spec
+## needs a sentinel for "no argument given, just tell me the current cap".
+func _cmd_fps_cap(_ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var cap: int = int(args.get("cap", -1))
+	if cap < 0:
+		return {"ok": true, "message": "frame rate is %s (try `fps_cap %d` to halve GPU/CPU load)"
+			% [_describe(), SUGGESTED_COOL_FPS], "data": {"cap": Engine.max_fps}}
+	set_cap(cap)
+	return {"ok": true, "message": "frame rate is now %s" % _describe(),
+		"data": {"cap": Engine.max_fps}}
 
 
 func _describe() -> String:

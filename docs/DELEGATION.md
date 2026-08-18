@@ -75,6 +75,67 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 3.16: the command catalog is complete — every §7 verb ships, and a check now enforces that (hollow7)
+
+**What shipped, verified:** the whole of `COMMANDS.md` §7. `commands --json` now reports **41**
+registered commands, and `tools/command_catalog_check.gd` asserts every §7 row exists, at the scope
+its authority implies, with every HOST verb refusing a non-op.
+
+New verbs, each in its OWNING service and each wrapping a seam that already existed (§3.3):
+
+| System | Verbs | Where |
+|---|---|---|
+| Inventory | `inv [list\|clear] [peer]`, `loot roll <table> [peer]` | `inventory_service.gd` |
+| Health | `damage <selector> <n>`, `heal`, `down`, `revive`, `starve` | `player_health.gd` |
+| Time | `time set\|add\|query` | `day_night.gd` |
+| Waves | `wave start\|stop\|status` | `wave_spawner.gd` |
+| Powerups | `powerup give\|clear\|list`, `stat` | `powerup_service.gd` |
+| Crafting | `craft`, `recipes` | `crafting_service.gd` |
+| Building | `build <id> <x y z>`, `demolish <selector>` | `build_service.gd` |
+| Harvest | `harvest respawn\|status` | `harvest_world.gd` |
+| Session | `lobby host\|join\|invite\|leave\|status` | `steam_lobby.gd` — **D-030's cross-play test, delivered** |
+
+`spawn` gained the optional `[x y z]` §7 specified (bare `spawn crawler 3` is unchanged), and
+`fps_cap`/`vsync` were migrated off `DebugConsole.register()`'s deprecation shim — they were the last
+two catalog verbs still on it. **`gfx` is still on the shim**: `autoload/graphics_quality.gd` was held
+by another agent (F-144) for this whole task. One `register_spec` call, same shape as `fps_cap`.
+
+**Five new arg types**: `recipe_id`, `powerup_id`, `buildable_id`, `station_id`, `loot_table_id` —
+all five share one bound parser (`_registry_parser`) rather than five near-identical functions.
+
+**Small new host seams, all of them the kind §7 anticipated.** `PlayerHealth.host_heal(peer, amount)`
+(returns hit points restored, or -1 for no such player), `host_revive(peer)` (the *admin* revive — no
+reviver, no range, no hold, deliberately a separate entry point from `_process_revive_request`, which
+keeps every one of those validations), `host_set_hunger(peer, value)`. `DayNight.host_set_time(f)`
+crosses the day/night thresholds on the way so `time set dusk` actually starts the night rather than
+skipping the signal WaveSpawner waits on. `WaveSpawner.host_start_wave([count])`/`host_stop_wave()`
+are now the real implementations, with `_on_night_started`/`_on_day_started` as thin adapters over
+them — so `wave start` and dusk drive identical code.
+
+**What the coverage check is for, in practice.** It found two real defects on its first run. §7
+listed `clear` under both Inventory and Meta, and `register_spec` replaces silently, so one of them
+would have quietly won — resolved as D-093/F-153 (console keeps `clear`; the wipe is `inv clear`).
+And the check itself was wrong about dynamic-scope verbs: `time` and `rule` are LOCAL in their bare
+form, so probing them bare for the non-op refusal asserted the opposite of what D-086 promises —
+catalog rows carry an optional `host_args` for exactly that. It also refuses to count a verb still on
+the deprecation shim as coverage, since the shim produces an untyped LOCAL spec and a HOST mutation
+behind one would pass a name-only check unprotected.
+
+**Adding a verb after this** is: register it in its owning service, then add one row to
+`CATALOG` in `tools/command_catalog_check.gd`. If you skip the second step nothing fails — the check
+covers the spec, not the registry — so the row is the part to remember.
+
+**Still open in the command track:** 3.17 (functions, hooks, autoexec, `tools/run_commands.gd`).
+`function` is asserted ABSENT in the catalog check on purpose, so when 3.17 ships it fails there and
+its author moves the row up into `CATALOG`.
+
+**Checks:** `command_catalog_check` (41 assertions), plus `command_check`, `command_net_check`,
+`entity_check`, `entity_net_check`, `rule_check`, `rule_net_check`, `player_health_check`,
+`day_night_check`, `wave_spawner_check`, `crafting_check`, `build_check`, `inventory_check`,
+`powerup_check`, `enemy_check`, `findings_numbering_check`, `verify_setup` — all 0 failures, 0 engine
+ERROR lines.
+
+
 ### 2026-08-18 — Task 3.7 (most of it): every buildable piece now has real art and a real collider, and the ghost previews it (slate17)
 
 **What shipped, verified:** twelve `content/buildables/*.tres` definitions, twelve piece scenes in

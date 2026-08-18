@@ -53,6 +53,8 @@ func _ready() -> void:
 	else:
 		_ensure_host_store(NetConfig.HOST_PEER_ID)
 		_publish_snapshot(NetConfig.HOST_PEER_ID)
+	_register_commands()
+
 
 
 func _exit_tree() -> void:
@@ -462,3 +464,117 @@ func _duplicate_slots(slots: Array[Dictionary]) -> Array[Dictionary]:
 	for slot: Dictionary in slots:
 		result.append(slot.duplicate())
 	return result
+
+
+# ── Commands (docs/COMMANDS.md §7 — task 3.16) ───────────────────────────────────────────────────
+
+
+## Every verb here wraps a seam that already existed (§3.3). `give` is NOT registered here: it lives
+## in core/dev/dev_loadout.gd, which owned it before the command track and still owns the
+## grant-with-a-loadout-policy shape it applies.
+func _register_commands() -> void:
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
+		return
+	# COMMANDS.md §7 lists `clear` twice — once under Inventory ("clear [target]") and once under
+	# Meta ("clear (console)"). They cannot both own the name, and `register_spec` replaces silently,
+	# so shipping both would have quietly broken whichever registered second. The console's `clear`
+	# wins: it predates the command track, it is what every user of a console already expects that
+	# word to do, and an inventory wipe is the rarer of the two by a wide margin. The inventory verb
+	# becomes a subcommand of `inv`, which reads better anyway. Recorded as D-093, found by
+	# tools/command_catalog_check.gd rather than by reading the spec.
+	command_service.call("register_spec", &"inv", {
+		"scope": &"host",
+		"args": [
+			{"name": "op", "type": &"enum", "optional": true, "default": "list",
+				"values": ["list", "clear"]},
+			{"name": "target", "type": &"peer", "optional": true, "default": 0},
+		],
+		"handler": _cmd_inv,
+		"help": "inv [list|clear] [peer] — list or empty a player's inventory",
+	})
+	command_service.call("register_spec", &"loot", {
+		"scope": &"host",
+		"args": [
+			{"name": "op", "type": &"enum", "values": ["roll"]},
+			{"name": "table", "type": &"loot_table_id"},
+			{"name": "target", "type": &"peer", "optional": true, "default": 0},
+		],
+		"handler": _cmd_loot,
+		"help": "loot roll <table_id> [peer] — roll a loot table into an inventory",
+	})
+
+
+## `host_remove` per stack rather than a new `host_clear`: the removal path already publishes and
+## replicates correctly, and §3.3 is explicit that a command adds no second mutation path. An empty
+## inventory is a handful of removals, not a reason to grow one.
+func _cmd_inv(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	if String(args.get("op", "list")) == "clear":
+		return _clear_inventory(ctx, args)
+	return _list_inventory(ctx, args)
+
+
+func _clear_inventory(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var peer_id: int = _resolve_peer(ctx, args)
+	var removed: int = 0
+	for slot: Dictionary in host_slots(peer_id):
+		var item_id := StringName(String(slot.get("item", "")))
+		var amount: int = int(slot.get("count", 0))
+		if item_id != &"" and amount > 0 and host_remove(peer_id, item_id, amount):
+			removed += amount
+	return {"ok": true, "message": "cleared %d item(s) from peer %d" % [removed, peer_id],
+		"data": {"peer": peer_id, "removed": removed}}
+
+
+func _list_inventory(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var peer_id: int = _resolve_peer(ctx, args)
+	var lines: PackedStringArray = []
+	var total: int = 0
+	for slot: Dictionary in host_slots(peer_id):
+		var item_id := StringName(String(slot.get("item", "")))
+		var amount: int = int(slot.get("count", 0))
+		if item_id == &"" or amount <= 0:
+			continue
+		total += amount
+		lines.append("  %s x%d" % [item_id, amount])
+	if lines.is_empty():
+		return {"ok": true, "message": "peer %d is carrying nothing" % peer_id,
+			"data": {"peer": peer_id, "slots": []}}
+	lines.insert(0, "peer %d carries %d item(s):" % [peer_id, total])
+	return {"ok": true, "message": "\n".join(lines),
+		"data": {"peer": peer_id, "slots": host_slots(peer_id)}}
+
+
+## Registered here rather than in a loot service because there is no loot autoload — a LootTableDef
+## is content, `Chest` is the only thing that rolls one today, and the seam this verb actually needs
+## is `host_add`, which is this file's. If M6 ever grows a LootService, this moves there whole.
+func _cmd_loot(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var peer_id: int = _resolve_peer(ctx, args)
+	var table_id: StringName = args.get("table", &"")
+	var registry: Node = get_node_or_null(^"/root/Registry")
+	var table: Resource = registry.call("get_loot_table", table_id) if registry != null else null
+	if table == null:
+		return {"ok": false, "message": "no such loot table '%s' — try 'loot'" % table_id, "data": {}}
+	# Its own RNG, seeded from the OS: a debug roll must never advance a run's shared or world-gen
+	# streams, which is the same rule selectors follow (COMMANDS.md §3.2).
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var rolled: Dictionary = table.call("roll", rng, 0.0)
+	var granted: PackedStringArray = []
+	for key: Variant in rolled:
+		var item_id := StringName(String(key))
+		var amount: int = int(rolled[key])
+		if amount > 0 and host_add(peer_id, item_id, amount):
+			granted.append("%s x%d" % [item_id, amount])
+	if granted.is_empty():
+		return {"ok": true, "message": "%s rolled nothing" % table_id,
+			"data": {"table": String(table_id), "peer": peer_id, "granted": {}}}
+	return {"ok": true, "message": "%s -> peer %d: %s" % [table_id, peer_id, ", ".join(granted)],
+		"data": {"table": String(table_id), "peer": peer_id, "granted": rolled}}
+
+
+## `[peer]` defaults to the issuer, so `clear` and `inv` mean "mine" — the reading every one of these
+## verbs wants at a console, and the one COMMANDS.md §2.1's own `give` example encodes with `@s`.
+func _resolve_peer(ctx: Dictionary, args: Dictionary) -> int:
+	var requested: int = int(args.get("target", 0))
+	return requested if requested > 0 else int(ctx.get("peer_id", NetConfig.HOST_PEER_ID))

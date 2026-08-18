@@ -79,6 +79,8 @@ func _ready() -> void:
 	if _has_launch_invite():
 		MireLog.info(NetConfig.LOG_CHANNEL, "launched from a Steam invite — bringing Steam up")
 		initialise()
+	_register_commands()
+
 
 
 ## Resolve the Steam singleton and hook the transport. Called from _ready, and again from
@@ -513,3 +515,69 @@ func _clear_joinable() -> void:
 	if not _initialised:
 		return
 	_steam.setRichPresence("connect", "")
+
+
+# ── Commands (docs/COMMANDS.md §7 — task 3.16, and D-030's cross-play test delivered) ────────────
+
+
+## LOCAL scope, every one of them, and that is not an oversight. A lobby verb acts on THIS process's
+## own Steam session — hosting, joining or inviting is something this machine does, not something the
+## host does on its behalf. There is no host to route to before `lobby host` runs, which is rather
+## the point: these are the commands D-030 needs to set a cross-play test up from a cold start on
+## three machines, typed into each machine's own console.
+func _register_commands() -> void:
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
+		return
+	command_service.call("register_spec", &"lobby", {
+		"scope": &"local",
+		"args": [
+			{"name": "op", "type": &"enum", "values": ["host", "join", "invite", "leave", "status"]},
+			{"name": "id", "type": &"string", "optional": true, "default": ""},
+		],
+		"handler": _cmd_lobby,
+		"help": "lobby host | join <id> | invite | leave | status — Steam session control",
+	})
+
+
+func _cmd_lobby(_ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var operation: String = String(args.get("op", "status"))
+
+	if operation == "status":
+		if not in_lobby():
+			return {"ok": true, "message": "not in a lobby (Steam %s)" % (
+				"ready" if is_ready() else "unavailable"
+			), "data": {"in_lobby": false, "ready": is_ready()}}
+		var member_list: Array[Dictionary] = members()
+		return {"ok": true, "message": "lobby %d — %d member(s), owner %d" % [
+			current_lobby_id(), member_list.size(), lobby_owner_id()
+		], "data": {"in_lobby": true, "lobby": current_lobby_id(), "members": member_list.size()}}
+
+	if not is_ready():
+		# The single most likely thing to go wrong on the day of the cross-play test, so it gets a
+		# named answer rather than a generic failure — Steam not running is not a bug in the lobby.
+		return {"ok": false,
+			"message": "Steam is not available in this process — start the game through Steam",
+			"data": {"ready": false}}
+
+	match operation:
+		"host":
+			var error: Error = host_session()
+			return {"ok": error == OK, "message": "hosting a lobby" if error == OK
+				else "could not host: %s" % error_string(error), "data": {"error": error}}
+		"join":
+			var lobby_text: String = String(args.get("id", "")).strip_edges()
+			if lobby_text.is_empty():
+				return {"ok": false, "message": "usage: lobby join <lobby_id>", "data": {}}
+			var error: Error = join_by_id(lobby_text)
+			return {"ok": error == OK, "message": "joining lobby %s" % lobby_text if error == OK
+				else "could not join: %s" % error_string(error), "data": {"error": error}}
+		"invite":
+			if not in_lobby():
+				return {"ok": false, "message": "not in a lobby — `lobby host` first", "data": {}}
+			var opened: bool = open_invite_overlay()
+			return {"ok": opened, "message": "invite overlay opened" if opened
+				else "the Steam overlay is not available", "data": {"opened": opened}}
+		_:
+			leave()
+			return {"ok": true, "message": "left the lobby", "data": {}}

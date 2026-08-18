@@ -36,6 +36,8 @@ func _ready() -> void:
 		day_night.connect(&"night_started", _on_night_started)
 	if day_night.has_signal(&"day_started"):
 		day_night.connect(&"day_started", _on_day_started)
+	_register_commands()
+
 
 
 ## COMMANDS.md §4.3's export-fallback seam — this file asks, the service never reaches in. Both
@@ -60,23 +62,12 @@ func _on_rule_changed(id: StringName, new_value: float) -> void:
 
 ## Starts exactly one population for the night. A repeated threshold signal cannot add a second
 ## population, and deaths do not feed any replacement loop because ambient spawning stays disabled.
+##
+## A thin adapter over `host_start_wave()` since task 3.16, so `wave start` and dusk drive the same
+## code — two copies of this would be two things to keep in step, and the command is the one that
+## would quietly rot.
 func _on_night_started() -> void:
-	if _night_active or not _owns_wave_director():
-		return
-	var world: Node = get_node_or_null(^"/root/EnemyWorld")
-	if world == null:
-		return
-	_night_active = true
-	_ambient_was_enabled = bool(world.get("ambient_enabled"))
-	world.set("ambient_enabled", false)
-
-	var points: Array = world.call("ambient_spawn_points")
-	if points.is_empty():
-		return
-	var spawn_count: int = base_count + per_player * _live_player_count()
-	for _index: int in spawn_count:
-		var origin: Vector3 = points[_rng.randi_range(0, points.size() - 1)] as Vector3
-		_spawn_one(world, origin, scatter_m)
+	host_start_wave()
 
 
 ## Spawns `count` enemies scattered around a single fixed `position`, independent of night/day
@@ -112,16 +103,9 @@ func _spawn_one(
 
 ## Clears the one-shot night population, restores the exact ambient setting found at dusk, and
 ## refills only after queued enemy frees have left the tree so live_count() cannot suppress refill.
+## An adapter over `host_stop_wave()` for the same reason `_on_night_started` is one.
 func _on_day_started() -> void:
-	if not _night_active or not _owns_wave_director():
-		return
-	var world: Node = get_node_or_null(^"/root/EnemyWorld")
-	if world == null:
-		return
-	_night_active = false
-	world.call("host_despawn_all")
-	world.set("ambient_enabled", _ambient_was_enabled)
-	_refill_daytime.call_deferred(world)
+	host_stop_wave()
 
 
 func _refill_daytime(world: Node) -> void:
@@ -155,3 +139,84 @@ func _owns_wave_director() -> bool:
 	if bool(transport.call("is_host")):
 		return true
 	return not bool(transport.call("is_active")) and not bool(transport.call("is_connecting"))
+
+
+# ── Commands (docs/COMMANDS.md §7 — task 3.16) ───────────────────────────────────────────────────
+
+
+func _register_commands() -> void:
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
+		return
+	command_service.call("register_spec", &"wave", {
+		"scope": &"host",
+		"args": [
+			{"name": "op", "type": &"enum", "values": ["start", "stop", "status"]},
+			{"name": "count", "type": &"int", "optional": true, "default": 0, "min": 0, "max": 128},
+		],
+		"handler": _cmd_wave,
+		"help": "wave start [count] | wave stop | wave status — drive a night wave without waiting for dusk",
+	})
+
+
+func _cmd_wave(_ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var operation: String = String(args.get("op", "status"))
+	if operation == "status":
+		return {"ok": true, "message": "wave %s — base %d + %d per player" % [
+			"active" if _night_active else "idle", base_count, per_player
+		], "data": {"active": _night_active, "base": base_count, "per_player": per_player}}
+
+	if operation == "stop":
+		if not host_stop_wave():
+			return {"ok": true, "message": "no wave was running", "data": {"active": false}}
+		return {"ok": true, "message": "wave cleared, daytime field restored", "data": {"active": false}}
+
+	var requested: int = int(args.get("count", 0))
+	var spawned: int = host_start_wave(requested)
+	if spawned < 0:
+		return {"ok": false, "message": "a wave is already running — `wave stop` first", "data": {}}
+	if spawned == 0:
+		return {"ok": false,
+			"message": "nowhere to spawn — the level has no enemy_spawn markers", "data": {}}
+	return {"ok": true, "message": "wave started: %d enemies" % spawned,
+		"data": {"active": true, "spawned": spawned}}
+
+
+## The start/stop seams COMMANDS.md §7 marks as "formalized" for this task. `_on_night_started` and
+## `_on_day_started` are now thin signal adapters over them, so the command and the day cycle drive
+## the SAME code — a wave started by hand behaves identically to one dusk started, including the
+## ambient-field suppression and the dawn restore that goes with it.
+##
+## Returns how many spawned, 0 for "nowhere to put them", or -1 for "already running".
+func host_start_wave(override_count: int = 0) -> int:
+	if _night_active or not _owns_wave_director():
+		return -1
+	var world: Node = get_node_or_null(^"/root/EnemyWorld")
+	if world == null:
+		return -1
+	_night_active = true
+	_ambient_was_enabled = bool(world.get("ambient_enabled"))
+	world.set("ambient_enabled", false)
+
+	var points: Array = world.call("ambient_spawn_points")
+	if points.is_empty():
+		return 0
+	var spawn_count: int = override_count if override_count > 0 \
+		else base_count + per_player * _live_player_count()
+	for _index: int in spawn_count:
+		var origin: Vector3 = points[_rng.randi_range(0, points.size() - 1)] as Vector3
+		_spawn_one(world, origin, scatter_m)
+	return spawn_count
+
+
+func host_stop_wave() -> bool:
+	if not _night_active or not _owns_wave_director():
+		return false
+	var world: Node = get_node_or_null(^"/root/EnemyWorld")
+	if world == null:
+		return false
+	_night_active = false
+	world.call("host_despawn_all")
+	world.set("ambient_enabled", _ambient_was_enabled)
+	_refill_daytime.call_deferred(world)
+	return true

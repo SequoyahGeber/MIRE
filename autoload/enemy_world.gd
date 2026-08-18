@@ -120,9 +120,12 @@ func _register_commands() -> void:
 		"args": [
 			{"name": "enemy", "type": &"enemy_id", "optional": true, "default": &""},
 			{"name": "count", "type": &"int", "optional": true, "default": 1, "min": 1},
+			# Optional and LAST, so `spawn crawler 3` keeps working exactly as it did — the vec3
+			# branch in _parse_args only fires when all three coordinate tokens are present.
+			{"name": "at", "type": &"vec3", "optional": true, "default": null},
 		],
 		"handler": _cmd_spawn,
-		"help": "spawn [enemy_id] [count] — spawn near you",
+		"help": "spawn [enemy_id] [count] [x y z] — spawn near you, or at a point",
 	})
 	command_service.call("register_spec", &"killall", {
 		"scope": &"host", "args": [], "handler": _cmd_killall,
@@ -146,7 +149,11 @@ func _cmd_spawn(ctx: Dictionary, args: Dictionary) -> Dictionary:
 	# client's body read off the host's own copy for an RPC-submitted spawn. That generalizes what the
 	# old is_multiplayer_authority() search could only ever do for the host's own local body (it would
 	# silently fall back to the origin for anyone else, which an RPC-submitted spawn now is).
-	var origin: Vector3 = (ctx.get("position", Vector3.ZERO) as Vector3) \
+	# An explicit destination wins; otherwise 5 m in front of the issuer, which is what this command
+	# meant before task 3.16 gave it coordinates and is still the right default at a console.
+	var explicit: Variant = args.get("at")
+	var origin: Vector3 = explicit if explicit is Vector3 else \
+		(ctx.get("position", Vector3.ZERO) as Vector3) \
 		+ (ctx.get("facing", Vector3.FORWARD) as Vector3) * 5.0
 	var made: int = 0
 	for i: int in count:

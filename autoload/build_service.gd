@@ -72,6 +72,8 @@ func _ready() -> void:
 	_build_spawner()
 	# The tick exists only to time a pending nav rebake; _request_nav_rebake() turns it on (F-099).
 	set_physics_process(false)
+	_register_commands()
+
 
 
 func _physics_process(delta: float) -> void:
@@ -454,3 +456,54 @@ func _transport() -> Node:
 	if _transport_node == null or not is_instance_valid(_transport_node):
 		_transport_node = get_node(^"/root/NetTransport")
 	return _transport_node
+
+
+# ── Commands (docs/COMMANDS.md §7 — task 3.16) ───────────────────────────────────────────────────
+
+
+func _register_commands() -> void:
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
+		return
+	command_service.call("register_spec", &"build", {
+		"scope": &"host",
+		"args": [
+			{"name": "piece", "type": &"buildable_id"},
+			{"name": "at", "type": &"vec3"},
+		],
+		"handler": _cmd_build,
+		"help": "build <buildable_id> <x y z> — place a piece (~ is relative to you)",
+	})
+	command_service.call("register_spec", &"demolish", {
+		"scope": &"host",
+		"args": [{"name": "target", "type": &"selector"}],
+		"handler": _cmd_demolish,
+		"help": "demolish <selector> — destroy placed pieces",
+	})
+
+
+## Through `request_place()`, the same seam the placement ghost submits — so the command inherits
+## the host's own validation (overlap, support, ownership) rather than a second, laxer copy of it
+## (§3.3, and D-034's trust stance about never believing a client-supplied transform).
+func _cmd_build(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var piece_id: StringName = args.get("piece", &"")
+	var placement := Transform3D(Basis.IDENTITY, args.get("at", Vector3.ZERO) as Vector3)
+	var request_id: int = request_place(piece_id, placement)
+	if request_id <= 0:
+		return {"ok": false, "message": "build refused for '%s'" % piece_id, "data": {}}
+	return {"ok": true, "message": "build %s requested (#%d)" % [piece_id, request_id],
+		"data": {"piece": String(piece_id), "request": request_id}}
+
+
+func _cmd_demolish(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var directory: Node = get_node_or_null(^"/root/EntityDirectory")
+	if directory == null:
+		return {"ok": false, "message": "EntityDirectory is not loaded", "data": {}}
+	var requested: int = 0
+	for entry: Dictionary in directory.call("resolve", args.get("target", {}), ctx):
+		if String(entry["kind"]) != "buildable":
+			continue
+		if request_destroy(StringName((entry["node"] as Node).name)) > 0:
+			requested += 1
+	return {"ok": true,
+		"message": "demolish requested for %d piece(s)" % requested, "data": {"count": requested}}

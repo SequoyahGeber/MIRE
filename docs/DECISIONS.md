@@ -2259,3 +2259,26 @@ Confirmed separately against the real `res://levels/hollowmere.tscn`: its one `o
 **Would change my mind:** 4.9 landing with a corruption-grid API simple enough that wiring it here
 would have cost nothing extra — in that case the two tasks should probably have shipped together
 instead of through the event seam.
+
+### D-093 · 2026-08-18 · `clear` stays the console's; the inventory wipe becomes `inv clear`
+
+`COMMANDS.md` §7 lists `clear` twice — under **Inventory** as `clear [target]`, and under **Meta**
+as `clear` (console). One name, two systems. `CommandService.register_spec()` replaces a name
+silently, on purpose (content reload and test setup both want that), so shipping both would have
+meant whichever autoload registered second quietly won, with nothing anywhere saying so.
+
+**The console keeps the bare name.** It predates the whole command track, `clear` means "clear the
+screen" to anyone who has used a console, and clearing the screen is something a person does
+constantly while clearing an inventory is rare. The inventory verb becomes `inv clear [peer]`, a
+subcommand of the verb that already lists the same inventory — which reads better than the flat
+version did.
+
+Worth recording for how it was found: not by re-reading the spec, but by
+`tools/command_catalog_check.gd` reporting `Inventory · clear is host scope — but the registry says
+'local'` on its first run. That is exactly the job §7 gave the coverage check ("a new service that
+forgets its verbs fails a check instead of a code review"), and it caught a collision *in the spec
+itself* on the first try. Filed as **F-153** so the spec text gets corrected rather than continuing
+to promise a verb that does not exist.
+
+**Would change my mind:** nothing. If an inventory wipe ever wants a shorter spelling, it is a new
+name, not this one.

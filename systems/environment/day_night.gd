@@ -62,6 +62,8 @@ var _has_client_snapshot: bool = false
 func _ready() -> void:
 	set_physics_process(true)
 	_apply_to_level(time_of_day)
+	_register_commands()
+
 
 
 # ── Simulation (§5a: physics tick, delta-scaled, never a frame count) ────────────────────────────
@@ -213,3 +215,99 @@ func net_push_time(value: float) -> void:
 	_client_target_time = value
 	_client_since_update = 0.0
 	_has_client_snapshot = true
+
+
+# ── Commands (docs/COMMANDS.md §7 — task 3.16) ───────────────────────────────────────────────────
+
+
+func _register_commands() -> void:
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
+		return
+	command_service.call("register_spec", &"time", {
+		# Dynamic scope (D-086): `time query` reads this peer's own replicated clock and needs no
+		# round trip; `time set`/`time add` move the host's authoritative one.
+		"scope": _time_scope,
+		"args": [
+			{"name": "op", "type": &"enum", "values": ["set", "add", "query"]},
+			{"name": "value", "type": &"string", "optional": true, "default": ""},
+		],
+		"handler": _cmd_time,
+		"help": "time set <0..1|dawn|noon|dusk|midnight> | time add <seconds> | time query",
+	})
+
+
+func _time_scope(raw_args: PackedStringArray) -> StringName:
+	return &"local" if raw_args.is_empty() or raw_args[0].to_lower() == "query" else &"host"
+
+
+## The named times are the four this file already knows: `night_started_at`/`day_started_at` are
+## exports, and noon/midnight are the halfway points of the same 0..1 fraction. Reading dusk off the
+## export rather than hard-coding 0.75 means retuning the threshold retunes the command with it.
+func _named_time(word: String) -> float:
+	match word:
+		"dawn":
+			return day_started_at
+		"dusk":
+			return night_started_at
+		"noon":
+			return 0.5
+		"midnight":
+			return 0.0
+		_:
+			return NAN
+
+
+func _cmd_time(_ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var operation: String = String(args.get("op", "query"))
+	var raw: String = String(args.get("value", "")).strip_edges()
+
+	if operation == "query":
+		return {"ok": true, "message": "time %.4f (%s), day length %.0fs" % [
+			time_of_day, _phase_word(time_of_day), _resolve_day_length()
+		], "data": {"time_of_day": time_of_day, "day_length": _resolve_day_length()}}
+
+	if raw.is_empty():
+		return {"ok": false, "message": "usage: time %s <value>" % operation, "data": {}}
+
+	if operation == "add":
+		if not raw.is_valid_float() and not raw.is_valid_int():
+			return {"ok": false, "message": "'%s' is not a number of seconds" % raw, "data": {}}
+		# Through host_advance, which is the same path the real tick uses — its own doc comment
+		# predicted this caller. A command must not write time_of_day directly.
+		host_advance(raw.to_float())
+		return {"ok": true, "message": "time %.4f (%s)" % [time_of_day, _phase_word(time_of_day)],
+			"data": {"time_of_day": time_of_day}}
+
+	var target: float = _named_time(raw.to_lower())
+	if is_nan(target):
+		if not raw.is_valid_float() and not raw.is_valid_int():
+			return {"ok": false,
+				"message": "'%s' is not a time — use 0..1 or dawn/noon/dusk/midnight" % raw, "data": {}}
+		target = fposmod(raw.to_float(), 1.0)
+	if not host_set_time(target):
+		return {"ok": false, "message": "only the host can set the time", "data": {}}
+	return {"ok": true, "message": "time %.4f (%s)" % [time_of_day, _phase_word(time_of_day)],
+		"data": {"time_of_day": time_of_day}}
+
+
+## Jumps the clock, crossing the day/night thresholds on the way so a `time set dusk` actually starts
+## the night rather than silently skipping past the signal WaveSpawner is waiting on. That is the
+## whole reason this is a seam here and not `time_of_day = x` at the call site.
+func host_set_time(fraction: float) -> bool:
+	if not _owns_mutation():
+		return false
+	var previous: float = time_of_day
+	time_of_day = fposmod(fraction, 1.0)
+	_check_thresholds(previous, time_of_day)
+	_apply_to_level(time_of_day)
+	_replicate_elapsed = REPLICATE_INTERVAL_SEC  # push it to clients on the next tick, not in 1s
+	return true
+
+
+func _phase_word(fraction: float) -> String:
+	if fraction >= night_started_at or fraction < day_started_at:
+		return "night"
+	if fraction < 0.5:
+		return "morning"
+	return "afternoon"

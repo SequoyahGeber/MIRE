@@ -192,6 +192,8 @@ func _ready() -> void:
 	else:
 		_ensure_host_state(NetConfig.HOST_PEER_ID)
 		_publish_snapshot(NetConfig.HOST_PEER_ID)
+	_register_commands()
+
 
 
 func _exit_tree() -> void:
@@ -1040,3 +1042,163 @@ func _transport() -> Node:
 	if _transport_node == null or not is_instance_valid(_transport_node):
 		_transport_node = get_node(^"/root/NetTransport")
 	return _transport_node
+
+
+# ── Commands (docs/COMMANDS.md §7 — task 3.16) ───────────────────────────────────────────────────
+
+
+func _register_commands() -> void:
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
+		return
+	command_service.call("register_spec", &"damage", {
+		"scope": &"host",
+		"args": [
+			{"name": "target", "type": &"selector"},
+			{"name": "amount", "type": &"int", "min": 1},
+		],
+		"handler": _cmd_damage,
+		"help": "damage <selector> <n> — apply damage through the normal damage path",
+	})
+	command_service.call("register_spec", &"heal", {
+		"scope": &"host",
+		"args": [
+			{"name": "target", "type": &"peer", "optional": true, "default": 0},
+			{"name": "amount", "type": &"int", "optional": true, "default": 0, "min": 0},
+		],
+		"handler": _cmd_heal,
+		"help": "heal [peer] [n] — heal a player; no amount means full",
+	})
+	command_service.call("register_spec", &"down", {
+		"scope": &"host",
+		"args": [{"name": "target", "type": &"peer", "optional": true, "default": 0}],
+		"handler": _cmd_down,
+		"help": "down [peer] — put a player into the downed state",
+	})
+	command_service.call("register_spec", &"revive", {
+		"scope": &"host",
+		"args": [{"name": "target", "type": &"peer", "optional": true, "default": 0}],
+		"handler": _cmd_revive,
+		"help": "revive [peer] — stand a downed player back up, no hold required",
+	})
+	command_service.call("register_spec", &"starve", {
+		"scope": &"host",
+		"args": [
+			{"name": "target", "type": &"peer", "optional": true, "default": 0},
+			{"name": "hunger", "type": &"float", "optional": true, "default": 0.0, "min": 0.0},
+		],
+		"handler": _cmd_starve,
+		"help": "starve [peer] [hunger] — set a player's hunger; 0 means empty",
+	})
+
+
+## Selector-driven so it hits enemies too — `damage @e[type=enemy,r=10] 5` is the shape you actually
+## want when tuning a weapon. Each entity takes it through its OWN damage seam (§3.3), which is what
+## EntityDirectory's kill already established; this is the non-lethal sibling.
+func _cmd_damage(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var directory: Node = get_node_or_null(^"/root/EntityDirectory")
+	if directory == null:
+		return {"ok": false, "message": "EntityDirectory is not loaded", "data": {}}
+	var amount: int = int(args.get("amount", 1))
+	var issuer: int = int(ctx.get("peer_id", NetConfig.HOST_PEER_ID))
+	var hit: int = 0
+	for entry: Dictionary in directory.call("resolve", args.get("target", {}), ctx):
+		if String(entry["kind"]) == "player":
+			if host_apply_damage(int(entry["peer_id"]), amount, issuer):
+				hit += 1
+			continue
+		var node: Node = entry["node"]
+		if node.has_method(&"host_apply_damage") and bool(node.call("host_apply_damage", amount, issuer)):
+			hit += 1
+	return {"ok": true, "message": "damaged %d entit%s for %d" % [hit, "y" if hit == 1 else "ies", amount],
+		"data": {"count": hit, "amount": amount}}
+
+
+func _cmd_heal(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var peer_id: int = _command_peer(ctx, args)
+	var amount: int = int(args.get("amount", 0))
+	var healed: int = host_heal(peer_id, amount)
+	if healed < 0:
+		return {"ok": false, "message": "peer %d has no health state here" % peer_id, "data": {}}
+	return {"ok": true, "message": "peer %d healed %d, now %d/%d" % [
+		peer_id, healed, host_hp(peer_id), max_hp
+	], "data": {"peer": peer_id, "healed": healed, "hp": host_hp(peer_id)}}
+
+
+## Damage rather than a "set downed" flag: going down is a CONSEQUENCE in this system, and forcing
+## the flag would skip the bleed-out clock, the replication and the signals that hang off it.
+func _cmd_down(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var peer_id: int = _command_peer(ctx, args)
+	if host_is_downed(peer_id):
+		return {"ok": true, "message": "peer %d is already down" % peer_id, "data": {"peer": peer_id}}
+	host_apply_damage(peer_id, maxi(host_hp(peer_id), 1), int(ctx.get("peer_id", NetConfig.HOST_PEER_ID)))
+	return {"ok": host_is_downed(peer_id) or host_is_dead(peer_id),
+		"message": "peer %d is down" % peer_id, "data": {"peer": peer_id}}
+
+
+func _cmd_revive(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var peer_id: int = _command_peer(ctx, args)
+	if not host_revive(peer_id):
+		return {"ok": false, "message": "peer %d is not downed" % peer_id, "data": {"peer": peer_id}}
+	return {"ok": true, "message": "peer %d revived at %d hp" % [peer_id, host_hp(peer_id)],
+		"data": {"peer": peer_id, "hp": host_hp(peer_id)}}
+
+
+func _cmd_starve(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var peer_id: int = _command_peer(ctx, args)
+	var target: float = float(args.get("hunger", 0.0))
+	if not host_set_hunger(peer_id, target):
+		return {"ok": false, "message": "peer %d has no health state here" % peer_id, "data": {}}
+	return {"ok": true, "message": "peer %d hunger %.1f/%.1f" % [peer_id, host_hunger(peer_id), max_hunger],
+		"data": {"peer": peer_id, "hunger": host_hunger(peer_id)}}
+
+
+func _command_peer(ctx: Dictionary, args: Dictionary) -> int:
+	var requested: int = int(args.get("target", 0))
+	return requested if requested > 0 else int(ctx.get("peer_id", NetConfig.HOST_PEER_ID))
+
+
+# ── Small host seams the catalog needed (COMMANDS.md §7 marks these as expected) ─────────────────
+
+
+## Returns how many hit points were actually restored, or -1 when this peer has no state here — so a
+## caller can tell "already at full" (0) from "no such player" (-1). `amount <= 0` means full heal.
+## Goes through DownedState.heal() and _commit(), the same pair every other host mutation here uses,
+## so the replication and the signals are not something this seam has to remember.
+func host_heal(peer_id: int, amount: int = 0) -> int:
+	if not _owns_mutation() or not _states.has(peer_id):
+		return -1
+	var downed_state: DOWNED_STATE = _states[peer_id]
+	var current: int = int(downed_state.hp)
+	var restored: int = (max_hp - current) if amount <= 0 else mini(amount, max_hp - current)
+	if restored <= 0:
+		return 0
+	if not downed_state.heal(restored):
+		return 0
+	_commit(peer_id)
+	return restored
+
+
+## The admin revive `revive <peer>` needs: no reviver, no range check, no hold. Deliberately a
+## separate entry point from `_process_revive_request`, which is the GAMEPLAY path and must keep
+## every one of those validations — this is not a shortcut into it, it is a different caller with
+## different rights. Both end at the same `DownedState.revive()` + `_commit()`.
+func host_revive(peer_id: int) -> bool:
+	if not _owns_mutation() or not _states.has(peer_id):
+		return false
+	var downed_state: DOWNED_STATE = _states[peer_id]
+	if not downed_state.is_downed():
+		return false
+	if not downed_state.revive(revive_hp_fraction):
+		return false
+	_commit(peer_id)
+	MireLog.info(LOG_CHANNEL, "PlayerHealth: peer %d revived by command" % peer_id)
+	return true
+
+
+func host_set_hunger(peer_id: int, value: float) -> bool:
+	if not _owns_mutation() or not _hunger.has(peer_id):
+		return false
+	_hunger[peer_id] = clampf(value, 0.0, max_hunger)
+	_commit(peer_id)
+	return true

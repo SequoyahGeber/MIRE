@@ -312,7 +312,7 @@ listed are already shipped unless marked *(new seam)*.
 
 | System | Commands | Seam |
 |---|---|---|
-| Inventory | `give`, `clear [target]`, `inv <peer>` | `InventoryService.host_add/host_remove/host_slots` |
+| Inventory | `give`, `inv [list\|clear] [peer]` | `InventoryService.host_add/host_remove/host_slots` |
 | Enemies | `spawn <enemy_id> [count] [vec3]`, `kill <selector>`, `killall`, `enemies` | `EnemyWorld.host_spawn/host_despawn_all` |
 | Health | `damage <selector> <n>`, `heal <selector> [n]`, `down <peer>`, `revive <peer>`, `starve <peer>` | `PlayerHealth.host_apply_damage` + host state *(small new seams for heal/set)* |
 | Time | `time set <0..1|dawn|noon|dusk|midnight>`, `time add <sec>`, `time query` | `DayNight.host_advance` (its doc already predicted this caller) |
@@ -330,6 +330,17 @@ listed are already shipped unless marked *(new seam)*.
 The 3.16 check asserts every table row exists in `commands --json` and that every HOST-scope
 command refuses a non-op — coverage and permission tested mechanically, so a new service that
 forgets its verbs fails a check instead of a code review.
+
+*Shipped (3.16): `tools/command_catalog_check.gd`.* Three notes on what building it turned up.
+The Inventory row above **used to read `clear [target]`**, which collided with the Meta row's
+`clear`(console) — the check caught it on its first run, and D-093/F-153 record the resolution (the
+console keeps the bare name; the inventory wipe is `inv clear`). The check also refuses to accept a
+verb still registered through `DebugConsole.register()`'s deprecation shim as coverage, because the
+shim produces an untyped LOCAL spec and a HOST mutation hiding behind one would pass a name-only
+check unprotected — `fps_cap` and `vsync` were the last two, and 3.16 migrated them. And a
+dynamic-scope verb (D-086) is probed for the non-op refusal **with** the arguments that make it
+mutate: `time` and `rule` are LOCAL in their bare form, which is the feature, so probing them bare
+asserted the opposite of what they promise.
 
 ---
 

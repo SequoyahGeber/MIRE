@@ -82,6 +82,8 @@ func _ready() -> void:
 	if session != null and session.has_signal(&"run_player_rebound"):
 		session.connect(&"run_player_rebound", _on_run_player_rebound)
 		session.connect(&"run_player_expired", _on_run_player_expired)
+	_register_commands()
+
 
 
 # ── Host mutation ────────────────────────────────────────────────────────────────────────────────
@@ -420,3 +422,95 @@ func _transport() -> Node:
 	if _transport_node == null or not is_instance_valid(_transport_node):
 		_transport_node = get_node(^"/root/NetTransport")
 	return _transport_node
+
+
+# ── Commands (docs/COMMANDS.md §7 — task 3.16) ───────────────────────────────────────────────────
+
+
+func _register_commands() -> void:
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
+		return
+	command_service.call("register_spec", &"powerup", {
+		"scope": &"host",
+		"args": [
+			{"name": "op", "type": &"enum", "values": ["give", "clear", "list"]},
+			{"name": "target", "type": &"peer", "optional": true, "default": 0},
+			{"name": "powerup", "type": &"string", "optional": true, "default": ""},
+			{"name": "stacks", "type": &"int", "optional": true, "default": 1, "min": 1},
+		],
+		"handler": _cmd_powerup,
+		"help": "powerup give|clear|list [peer] [powerup_id] [stacks] — grant, wipe or list powerups",
+	})
+	command_service.call("register_spec", &"stat", {
+		"scope": &"host",
+		"args": [
+			{"name": "name", "type": &"string"},
+			{"name": "target", "type": &"peer", "optional": true, "default": 0},
+			{"name": "base", "type": &"float", "optional": true, "default": 1.0},
+		],
+		"handler": _cmd_stat,
+		"help": "stat <stat_name> [peer] [base] — what this peer's powerups do to a stat",
+	})
+
+
+## `powerup_id` is typed as a raw string, not the `powerup_id` arg type, for the same reason the
+## `rule` value is: it is optional and follows a subcommand, so `powerup clear 5` must not fail
+## parsing on a missing third token. Validation happens in the branch that actually needs an id —
+## and `host_grant` refuses an unknown one anyway, which is where the authoritative answer lives.
+func _cmd_powerup(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var operation: String = String(args.get("op", "list"))
+	var peer_id: int = int(args.get("target", 0))
+	if peer_id <= 0:
+		peer_id = int(ctx.get("peer_id", NetConfig.HOST_PEER_ID))
+
+	if operation == "clear":
+		var held: int = (stacks_for(peer_id) as Dictionary).size()
+		host_clear(peer_id)
+		return {"ok": true, "message": "cleared %d powerup(s) from peer %d" % [held, peer_id],
+			"data": {"peer": peer_id, "cleared": held}}
+
+	if operation == "list":
+		var held: Dictionary = stacks_for(peer_id)
+		if held.is_empty():
+			return {"ok": true, "message": "peer %d holds no powerups" % peer_id,
+				"data": {"peer": peer_id, "powerups": {}}}
+		var lines: PackedStringArray = ["peer %d holds %d powerup(s):" % [peer_id, held.size()]]
+		for id: Variant in held:
+			lines.append("  %s x%d" % [id, int(held[id])])
+		return {"ok": true, "message": "\n".join(lines),
+			"data": {"peer": peer_id, "powerups": held}}
+
+	var powerup_id := StringName(String(args.get("powerup", "")).strip_edges())
+	if powerup_id == &"":
+		return {"ok": false, "message": "usage: powerup give <peer> <powerup_id> [stacks]", "data": {}}
+	var granted: int = host_grant(peer_id, powerup_id, int(args.get("stacks", 1)))
+	if granted <= 0:
+		# host_grant returns 0 for both "no such powerup" and "already capped", and its own log line
+		# distinguishes them. Say both here rather than guessing which one the player hit.
+		return {"ok": false,
+			"message": "granted nothing — '%s' is unknown, or peer %d is already at max stacks"
+				% [powerup_id, peer_id], "data": {"peer": peer_id, "granted": 0}}
+	return {"ok": true, "message": "peer %d +%d %s" % [peer_id, granted, powerup_id],
+		"data": {"peer": peer_id, "powerup": String(powerup_id), "granted": granted}}
+
+
+## The read that makes the whole framework debuggable: what does this player's stack actually DO to
+## a number? `base` defaults to 1.0 so the answer reads as a plain multiplier when you do not care
+## about the real base value.
+func _cmd_stat(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var peer_id: int = int(args.get("target", 0))
+	if peer_id <= 0:
+		peer_id = int(ctx.get("peer_id", NetConfig.HOST_PEER_ID))
+	var stat_name := StringName(String(args.get("name", "")))
+	var base: float = float(args.get("base", 1.0))
+	var value: float = stat(peer_id, stat_name, base)
+	return {"ok": true, "message": "peer %d %s: %.4f (base %.4f)" % [peer_id, stat_name, value, base],
+		"data": {"peer": peer_id, "stat": String(stat_name), "value": value, "base": base}}
+
+
+## The host-side read `powerup list`/`clear` need. Public because a command is a legitimate caller of
+## host state, and returning a COPY because handing out the live dictionary would let any caller
+## mutate stacks without going through host_grant/host_revoke — the second mutation path §3.3 bans.
+func stacks_for(peer_id: int) -> Dictionary:
+	return (_stacks.get(peer_id, {} as Dictionary) as Dictionary).duplicate()

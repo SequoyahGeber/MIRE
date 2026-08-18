@@ -3524,3 +3524,18 @@ Follow-up to the buildable-set handoff: registered ChestUI as an autoload (F-151
 Files: `docs/FINDINGS.md`, `project.godot`
 
 Commit at time of writing: `2012b44`
+
+---
+
+### DONE · 3.16 · lp · 2026-08-18T22:57:40+00:00
+
+**Command catalog sweep — every system verb in `COMMANDS.md` §7 incl. D-030's `lobby host/join/invite`, plus the coverage check**
+
+Every COMMANDS.md §7 verb ships: commands --json reports 41 registered commands. tools/command_catalog_check.gd (new) asserts every §7 row exists at its authority-implied scope and every HOST verb refuses a non-op — 0 failures. lobby host/join/invite/leave/status wraps SteamLobby.host_session()/join_by_id()/open_invite_overlay() (D-030's cross-play test now exists, LOCAL scope, no host to route to before it runs). fps_cap/vsync migrated off DebugConsole's deprecation shim. Found+fixed a real spec collision (clear claimed by both Inventory and Meta) as D-093/F-153. Verified: agent godot --script tools/command_catalog_check.gd, command_check.gd, command_net_check.gd, plus player_health/day_night/wave_spawner/inventory/powerup/crafting/build/enemy_check.gd and verify_setup.gd — all green, 0 engine ERROR lines.
+
+Notes along the way:
+- Continued from an earlier part of this same session (auto-named hollow7 before MIRE_AGENT resolved to lp); found 3.16's implementation and docs already complete on disk but uncommitted. Re-verified every check myself before shipping rather than trusting the prior doc claims: command_catalog_check (41 assertions), command_check, command_net_check, player_health_check, day_night_check, wave_spawner_check, inventory_check, powerup_check, crafting_check, build_check, enemy_check, verify_setup — all 0 failures, 0 engine ERROR lines. Added a partial-fix note to F-130 (fps_cap/vsync migrated off the DebugConsole shim, gfx still on it pending F-144 releasing graphics_quality.gd).
+
+Files: `autoload/command_service.gd`, `autoload/steam_lobby.gd`, `autoload/build_service.gd`, `autoload/crafting_service.gd`, `autoload/enemy_world.gd`, `autoload/harvest_world.gd`, `autoload/inventory_service.gd`, `autoload/powerup_service.gd`, `core/dev/dev_frame_cap.gd`, `systems/environment/day_night.gd`, `systems/health/player_health.gd`, `systems/waves/wave_spawner.gd`, `docs/COMMANDS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `tools/command_catalog_check.gd`
+
+Commit at time of writing: `76d48bc`

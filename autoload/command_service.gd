@@ -376,8 +376,14 @@ func _register_type_parsers() -> void:
 	_type_parsers[&"rule_id"] = _parse_rule_id
 	_type_parsers[&"selector"] = _parse_selector
 	_type_parsers[&"vec3"] = _parse_vec3
-	# recipe_id/powerup_id/buildable_id/station_id/loot_table_id land with the tasks that need them
-	# (3.16) — one new entry here each time, per the file header's extensibility note.
+	# The remaining COMMANDS.md §2.2 content types, all four the same shape: a Registry lookup with
+	# the family's own "try `<listing verb>`" hint. Registered through one helper rather than four
+	# near-identical functions (F-099's lesson from registry.gd's own loader).
+	_type_parsers[&"recipe_id"] = _registry_parser.bind(&"has_recipe", "recipe", "recipes")
+	_type_parsers[&"powerup_id"] = _registry_parser.bind(&"has_powerup", "powerup", "powerups")
+	_type_parsers[&"buildable_id"] = _registry_parser.bind(&"has_buildable", "buildable", "build")
+	_type_parsers[&"station_id"] = _registry_parser.bind(&"has_station", "station", "recipes")
+	_type_parsers[&"loot_table_id"] = _registry_parser.bind(&"has_loot_table", "loot table", "loot")
 
 
 ## Returns {ok: bool, args: Dictionary} on success, {ok: false, error: String} on the first bad token.
@@ -536,6 +542,20 @@ func _parse_vec3_component(raw: String, origin_component: float) -> Dictionary:
 ## `_parse_string` if that interception is ever refactored away.
 func _parse_vec3(raw: String, _spec: Dictionary) -> Dictionary:
 	return {"ok": false, "error": "'%s': vec3 wants three coordinates (x y z)" % raw}
+
+
+## The shared body behind recipe_id/powerup_id/buildable_id/station_id/loot_table_id. Bound (not
+## captured) per type — `Callable.bind()` appends its arguments AFTER the parser's own two, which is
+## why the bound parameters trail `raw`/`spec` in the signature. Bound values, not a lambda closing
+## over loop variables: F-107 is the scar for what the other spelling does here.
+func _registry_parser(
+	raw: String, _spec: Dictionary, has_method_name: StringName, label: String, listing_verb: String
+) -> Dictionary:
+	var registry: Node = get_node_or_null(^"/root/Registry")
+	var id := StringName(raw)
+	if registry == null or not bool(registry.call(has_method_name, id)):
+		return {"ok": false, "error": "no such %s '%s' — try '%s'" % [label, raw, listing_verb]}
+	return {"ok": true, "value": id}
 
 
 func _parse_rule_id(raw: String, _spec: Dictionary) -> Dictionary:
