@@ -60,6 +60,11 @@
       "at": "2026-08-17T23:48:24+00:00",
       "task": "2.1j"
     },
+    "systems/environment/day_night.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T00:01:35+00:00",
+      "task": "2.11"
+    },
     "tools/blender/build_adapted_nature_set.py": {
       "agent": "tine18",
       "at": "2026-08-17T23:41:50+00:00",
@@ -84,6 +89,16 @@
       "agent": "tine18",
       "at": "2026-08-17T23:37:51+00:00",
       "task": "2.1j"
+    },
+    "tools/day_night_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T00:01:35+00:00",
+      "task": "2.11"
+    },
+    "tools/day_night_net_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-18T00:01:35+00:00",
+      "task": "2.11"
     },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
@@ -117,6 +132,16 @@
     }
   },
   "in_flight": {
+    "2.11": {
+      "agent": "lp",
+      "files": [
+        "systems/environment/day_night.gd",
+        "tools/day_night_check.gd",
+        "tools/day_night_net_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-18T00:01:35+00:00"
+    },
     "2.1j": {
       "agent": "tine18",
       "files": [
@@ -183,66 +208,6 @@
       "agent": "tine18",
       "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
-    },
-    "assets/enemies": {
-      "agent": "gale",
-      "at": "2026-08-16T23:59:35+00:00",
-      "task": "2.1d"
-    },
-    "assets/enemies/README.md": {
-      "agent": "gale",
-      "at": "2026-08-16T23:59:35+00:00",
-      "task": "2.1d"
-    },
-    "assets/enemies/catalog.json": {
-      "agent": "gale",
-      "at": "2026-08-16T23:59:35+00:00",
-      "task": "2.1d"
-    },
-    "assets/enemies/exports": {
-      "agent": "gale",
-      "at": "2026-08-16T23:59:35+00:00",
-      "task": "2.1d"
-    },
-    "assets/enemies/exports/enemy_crawler.glb": {
-      "agent": "gale",
-      "at": "2026-08-16T23:59:35+00:00",
-      "task": "2.1d"
-    },
-    "assets/enemies/exports/enemy_crawler_fragment_leg.glb": {
-      "agent": "gale",
-      "at": "2026-08-16T23:59:35+00:00",
-      "task": "2.1d"
-    },
-    "assets/enemies/exports/enemy_crawler_fragment_shell.glb": {
-      "agent": "gale",
-      "at": "2026-08-16T23:59:35+00:00",
-      "task": "2.1d"
-    },
-    "assets/enemies/exports/enemy_crawler_nest.glb": {
-      "agent": "gale",
-      "at": "2026-08-16T23:59:35+00:00",
-      "task": "2.1d"
-    },
-    "assets/enemies/preview": {
-      "agent": "gale",
-      "at": "2026-08-16T23:59:35+00:00",
-      "task": "2.1d"
-    },
-    "assets/enemies/preview/crawler_pose_sheet.png": {
-      "agent": "gale",
-      "at": "2026-08-16T23:59:35+00:00",
-      "task": "2.1d"
-    },
-    "assets/enemies/preview/enemies_preview.png": {
-      "agent": "gale",
-      "at": "2026-08-16T23:59:35+00:00",
-      "task": "2.1d"
-    },
-    "assets/enemies/preview/enemies_scale_preview.png": {
-      "agent": "gale",
-      "at": "2026-08-16T23:59:35+00:00",
-      "task": "2.1d"
     },
     "assets/environment": {
       "agent": "tine18",
@@ -1133,11 +1098,6 @@
       "agent": "tine18",
       "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
-    },
-    "assets/source/enemy_crawler.blend": {
-      "agent": "gale",
-      "at": "2026-08-16T23:59:35+00:00",
-      "task": "2.1d"
     },
     "assets/source/harvestable_resources.blend": {
       "agent": "tine18",
@@ -2049,11 +2009,6 @@
       "at": "2026-08-17T15:58:44+00:00",
       "task": "2.10"
     },
-    "tools/enemy_crawler_check.gd": {
-      "agent": "gale",
-      "at": "2026-08-16T23:59:35+00:00",
-      "task": "2.1d"
-    },
     "tools/enemy_facing_check.gd": {
       "agent": "dusk3",
       "at": "2026-08-17T16:31:36+00:00",
@@ -2384,7 +2339,7 @@
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.12": {
-      "done_at": "2026-08-17T23:40:23+00:00",
+      "done_at": "2026-08-18T00:02:22+00:00",
       "done_by": "quill15",
       "est": "1.5",
       "milestone": "M0",
@@ -2609,7 +2564,7 @@
     "2.11": {
       "est": "2",
       "milestone": "M2",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T1",
       "title": "Day/night cycle: sun rotation, `WorldEnvironment` transitions, replicated time-of-day"
     },
@@ -3583,7 +3538,7 @@
     "F-043": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The iron sword ships complete and nothing puts it in a player's hand"
     },
@@ -3679,6 +3634,13 @@
       "status": "done",
       "tier": "F",
       "title": "There is no launch path into LAN mode, so a second physical machine cannot join at all"
+    },
+    "F-055": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`core/util/mire_log.gd`'s `CHANNELS` list has no `health` channel"
     }
   },
   "version": 1

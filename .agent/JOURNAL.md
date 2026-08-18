@@ -1574,3 +1574,13 @@ Notes along the way:
 Files: `systems/health/player_health.gd`, `systems/health/downed_state.gd`, `entities/player/player_controller.gd`, `tools/player_health_check.gd`, `tools/player_health_net_check.gd`, `core/net/net_version.gd`, `core/dev/dev_loadout.gd`, `tools/handshake_check.gd`
 
 Commit at time of writing: `384a296`
+
+---
+
+### DONE · 0.12 · quill15 · 2026-08-18T00:02:22+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+Corrected the quota model: unused window quota is lost at reset, so the budget guard must never withhold work. It is now advisory (send a smaller task, not no task) and only a hard wall refuses a dispatch; the 15 percent reserve exists solely to fund a clean close-out. Also split cache reads out of the input figure — 2.13 reported 31.3M input, which was 141 turns of cache re-reads rather than new context and made a normal run look catastrophic.
+
+Commit at time of writing: `40065ef`

@@ -494,6 +494,9 @@ def cmd_run(args):
     blocked = quota_block(lane)
     if blocked:
         unready.append(blocked)
+    advice = quota_advice(lane)
+    if advice:
+        print("%s· %s: %s%s" % (C["y"], name, advice, C["x"]))
     if unready and not dry:
         die("%s: %s — run .agent/bin/setup-lanes" % (name, "; ".join(unready)))
 
@@ -645,9 +648,12 @@ def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, e
         lane["status"] = "idle"
         lane["consecutive_failures"] = 0
         lane["last_error"] = None
-        ok("%s finished %s in %ds  %s(+%s in / +%s out%s)%s"
-           % (name, task, elapsed, C["dim"], f"{tin:,}", f"{tout:,}",
-              ", $%.3f" % cost if cost else "", C["x"]))
+        cached = int(acc.get("cached", 0))
+        fresh = max(0, tin - cached)
+        ok("%s finished %s in %ds  %s(%s fresh in%s / %s out%s)%s"
+           % (name, task, elapsed, C["dim"], f"{fresh:,}",
+              " + %s cached" % f"{cached:,}" if cached else "", f"{tout:,}",
+              ", $%.2f" % cost if cost else "", C["x"]))
         if lane.get("quota_resets_at"):
             print("  %squota: %s, %s window resets %s%s"
                   % (C["dim"], lane.get("quota_status", "?"), lane.get("quota_window", "?"),
@@ -713,12 +719,22 @@ def quota_block(lane):
         return None
     if lane.get("consecutive_failures", 0) >= 3:
         return "3 consecutive failures — inspect .agent/logs before dispatching again"
+    return None
+
+
+def quota_advice(lane):
+    """Advisory only — never a reason to withhold work.
+
+    A window's unused tokens are gone at reset, so idling a lane to 'save' quota destroys the thing
+    it pretends to protect. The only real waste is a task that dies unfinished, and the fix for that
+    is a SMALLER task, not no task. So this returns a hint about task size, and dispatch ignores it."""
     budget = lane.get("budget_tokens")
-    if budget:
-        used = lane.get("tokens_in", 0) + lane.get("tokens_out", 0)
-        if used >= budget * SOFT_STOP_PCT:
-            return ("at %d%% of its %s-token window budget — held back so it keeps enough headroom "
-                    "to finish and hand off" % (100 * used // budget, f"{budget:,}"))
+    if not budget:
+        return None
+    used = lane.get("tokens_in", 0) + lane.get("tokens_out", 0)
+    if used >= budget * SOFT_STOP_PCT:
+        return ("at %d%% of its window budget — send something small and self-contained (a review, a "
+                "check, a doc pass) rather than nothing" % (100 * used // budget))
     return None
 
 

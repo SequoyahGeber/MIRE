@@ -102,14 +102,28 @@ this instead of watching three terminals.
 
 ---
 
-## 4. Quota: how a wall stops costing you work
+## 4. Quota: unused is wasted, so keep the lanes full
+
+**The counter-intuitive rule this whole section rests on: idle quota is burned quota.** Subscription
+windows reset without carryover, so tokens left unspent when a weekly window rolls are simply gone.
+Conserving them is not thrift — it is the most common way to lose them.
+
+So: **never hold a lane back to "save" quota.** If a window resets in six hours, the correct move is
+to keep that account working until it does. The only genuine waste is a task that dies unfinished and
+loses its work, and the fix for that is to *size the task to the remaining headroom* — smaller tasks,
+not fewer. A nearly-empty window is still worth a review, a check, a doc pass, or one small
+self-contained task.
+
+The budget reserve exists for exactly one purpose — leaving enough headroom for a clean close-out —
+and never as a savings account. `quota_advice()` therefore suggests a smaller task; it never blocks
+one. Only a hard wall (`quota_block()`) refuses a dispatch.
 
 Running out is expected, not exceptional. The design assumption is that a lane *will* die mid-task.
 
 1. **One task per dispatch.** A death loses one task, never a batch.
-2. **Stop at 85% of a window, not 100%.** Set `budget_tokens` on a lane in `.agent/lanes.json` once
-   you know its real cap; the director then holds it back early. A lane that dies mid-sentence cannot
-   write its own handoff — the headroom is what makes the handoff possible.
+2. **Keep ~15% for the close-out, and spend the rest.** Set `budget_tokens` once you know a lane's
+   real cap. Past 85% the director switches to *smaller* tasks — it does not stop. A lane that dies
+   mid-sentence cannot write its own handoff, and that reserve is the only reason the reserve exists.
 3. **Death files the handoff the lane couldn't.** On any non-zero exit, `lane run` runs
    `agent handoff` under the lane's own identity: claims released, working diff untouched, journal
    entry naming the log, the token count, and the failure tail. **This is the mechanism that matters.**
@@ -196,3 +210,4 @@ and, in practice, better.
 | Two lanes want one file | That's the system working. Split the task or serialise it |
 | A lane's work looks wrong | `agent collect`, read its handoff and `.agent/logs/<LANE>-*.jsonl` |
 | Everything feels stuck | `agent report` — it names the blocked lanes and why |
+| A window resets soon and a lane is idle | Dispatch something. Anything unspent is lost at reset |
