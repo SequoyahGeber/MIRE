@@ -26,15 +26,15 @@ re-sum; this table is derived, not authoritative.
 | M0 · Foundations & spikes | 14.5 | 42% | 28% | 30% |
 | M1 · Network spine | 23.5 | 13% | 4% | **83%** |
 | M2 · Vertical slice ⭐ | 80 | 68% | 12% | 20% |
-| M3 · Systems depth | 52 | 48% | 19% | 33% |
+| M3 · Systems depth | 64.5 | 39% | 22% | 40% |
 | M4 · World & the Mire | 47 | 14% | 13% | **73%** |
 | M5 · Combat, enemies, bosses | 55 | 69% | 5% | 25% |
 | M6 · Cycles, extraction & meta | 37 | 46% | 19% | 35% |
 | M7 · Polish & pre-ship | 55 | 75% | 13% | 13% |
 | M8 · Ship | 24.5 | 67% | 33% | 0% |
-| **Total** | **~388** | **~53%** | **~14%** | **~32%** |
+| **Total** | **~400.5** | **~51%** | **~15%** | **~33%** |
 
-**~1,165 hours total, of which ~375 need premium quota.** The premium spend is front-loaded into M1
+**~1,200 hours total, of which ~400 need premium quota.** The premium spend is front-loaded into M1
 and M4 — correct, because those are the decisions that are expensive to get wrong. The old
 "~1,000 h / ~215 premium" figures predate the art program and the D-036 lanes; with three worker
 lanes running in parallel, wall-clock shrinks but the quota split above is what still binds.
@@ -140,7 +140,7 @@ one night. If this isn't fun, nothing built on top of it will be.
 
 ---
 
-## M3 · Systems depth — 50 sessions
+## M3 · Systems depth — 64.5 sessions
 
 **Goal:** the systems that make it a *game* rather than a demo. Heavy on Tier 0 — this is where the
 "content is data" decision starts paying you back.
@@ -160,6 +160,17 @@ one night. If this isn't fun, nothing built on top of it will be.
 | 3.10 | Heavy hauling (2-player carry; solo fallback = slow one-player drag, `DESIGN.md` §5 solo rule) | T1 | 2 |
 | 3.11 | **Playtest — does the Attunement split create roles or resentment? (Q4)** | T0 | 1 |
 | 3.12 | Balance pass on everything above | T0 | 2 |
+| 3.13 | **Command core** — `CommandService` front door: typed arg specs, LOCAL/HOST scopes, client→host RPC + op permissions, migrate every existing console command (`docs/COMMANDS.md` §1–2) | T2 | 3 |
+| 3.14 | Gamerules — `RuleDef` content family + host-replicated `RuleService`, `rule`/`rules` commands, first-wave knob migration with export fallback (`COMMANDS.md` §4) | T2 | 2.5 |
+| 3.15 | EntityDirectory + selectors (`@a @p @e[...]`) + entity verbs `tp`/`kill`/`tag`/`entities`, authority-respecting player moves (`COMMANDS.md` §3) | T2 | 3 |
+| 3.16 | Command catalog sweep — every system verb in `COMMANDS.md` §7 incl. D-030's `lobby host/join/invite`, plus the coverage check | T1 | 2 |
+| 3.17 | Functions + hooks + autoexec + headless `tools/run_commands.gd` scenario runner (`COMMANDS.md` §5–6) | T1 | 2 |
+
+> **3.13–3.17 are the command track** (added 2026-08-18): runtime data control over every system,
+> Minecraft-style — the full spec is [`COMMANDS.md`](COMMANDS.md). Order: 3.13 first; 3.14/3.15
+> independent after it; 3.16 last. **Recorded call: this track is exempt from the "start M3 only
+> after 2.14's §8 re-read" gate** — it encodes no design answers (all defaults untouched) and
+> 3.13/3.17 directly help *run* 2.14 and D-030's cross-play test. Sequoyah overrides by note.
 
 ---
 

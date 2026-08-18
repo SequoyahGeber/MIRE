@@ -121,6 +121,14 @@ If cross-play testing feels overdue before M6: two debug console commands over t
 `SteamLobby` API (`host_session()`, `join_by_id()`, `open_invite_overlay()`) deliver the whole
 testing benefit at a fraction of 6.10 — see D-030.
 
+**2026-08-18 — the command track is planned and queued (3.13–3.17).** Sequoyah asked for the game
+to be data-driven the way Minecraft's commands reach every system. `docs/COMMANDS.md` is the full
+spec: one `CommandService` front door, typed args, host-routed mutations behind an op set,
+selectors over a new EntityDirectory, a replicated gamerule family, command files + hooks, and a
+headless scenario runner the check suite gets to reuse. 3.13 gates the rest and is **exempt from
+the M3 gate** (recorded call, ROADMAP M3 note — it encodes no design answers and would actively
+help run 2.14 and D-030's cross-play test). Dispatchable to lanes as written.
+
 ---
 
 ## M0 debts — booked as M4 gates, don't lose them

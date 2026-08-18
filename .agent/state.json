@@ -1733,6 +1733,41 @@
       "tier": "T0",
       "title": "Balance pass on everything above"
     },
+    "3.13": {
+      "est": "3",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Command core \u2014 `CommandService` front door: typed arg specs, LOCAL/HOST scopes, client\u2192host RPC + op permissions, migrate every existing console command (`docs/COMMANDS.md` \u00a71\u20132)"
+    },
+    "3.14": {
+      "est": "2.5",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Gamerules \u2014 `RuleDef` content family + host-replicated `RuleService`, `rule`/`rules` commands, first-wave knob migration with export fallback (`COMMANDS.md` \u00a74)"
+    },
+    "3.15": {
+      "est": "3",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T2",
+      "title": "EntityDirectory + selectors (`@a @p @e[...]`) + entity verbs `tp`/`kill`/`tag`/`entities`, authority-respecting player moves (`COMMANDS.md` \u00a73)"
+    },
+    "3.16": {
+      "est": "2",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Command catalog sweep \u2014 every system verb in `COMMANDS.md` \u00a77 incl. D-030's `lobby host/join/invite`, plus the coverage check"
+    },
+    "3.17": {
+      "est": "2",
+      "milestone": "M3",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Functions + hooks + autoexec + headless `tools/run_commands.gd` scenario runner (`COMMANDS.md` \u00a75\u20136)"
+    },
     "3.2": {
       "est": "8",
       "milestone": "M3",

@@ -476,6 +476,35 @@ collision recorded in **D-053**.
 '## Open'" warnings. `agent godot --script tools/findings_numbering_check.gd` is the standing
 regression guard — source-scans `docs/FINDINGS.md` and fails if either shape reappears.
 
+## F-083 · Snapping the aim hit's Y coordinate rejects or floats pieces on ordinary terrain heights
+
+`BuildGhost.update_aim()` (`systems/building/build_ghost.gd`) fed the surface hit from its aim ray
+straight into `PlacementValidator.snap_transform()`, and `snap_transform()`
+(`systems/building/placement_validator.gd`) rounded Y to the same metre grid as X/Z. The support
+probe then began only `SUPPORT_PROBE_LIFT_M` (0.15 m) above that rounded origin. On flat ground at
+Y=0.4 the rounded origin was Y=0, so the probe started inside the terrain and every ray read as a
+miss → `Reason.NO_SUPPORT`; on ground at Y=0.6 the rounded origin was Y=1, so the piece read `OK`
+floating 0.4 m above the real surface. Hollowmere's terrain is not restricted to whole-metre
+elevations, so this broke ordinary ground placement across the shipped map, not an edge case.
+**Claim:** `systems/building/placement_validator.gd`, `tools/build_check.gd`. **Fix:**
+`snap_transform()` now snaps X and Z to `snap_step` as before but leaves Y untouched (**D-056**).
+`origin.y` is never an arbitrary value needing rounding here — it is wherever the caller's physics
+ray actually hit, so preserving it seats the piece flush with the real surface it was aimed at,
+whether that surface is terrain or the top of an already-placed piece. That second case is why no
+separate "stacked piece anchor" rule was needed to close the finding fully: a ray against an
+existing piece already reports that piece's own exact top, so flush stacking falls out of the same
+raycast for free. **A trap for whoever authors more building content (3.7) or reads `wall.tres`'s
+doc comment about "a run of them actually lin[ing] up":** that guarantee is X/Z only now — a run of
+walls built across sloped or uneven ground will not share a Y any more than the ground itself does;
+see D-056 for what would change that (an explicit level/anchor rule is new scope, not a defect).
+**Shipped 2026-08-18.** Verify with `agent godot --script tools/build_check.gd`
+(`_check_ground_height_is_preserved` reproduces the review's exact `GROUND_0_4`/`GROUND_0_6` probes
+against isolated flat pads and asserts both read `OK` with Y unchanged; `_check_ghost` adds an
+end-to-end case — `BuildGhost.update_aim()` aimed straight down at a y=0.4 pad keeps the ghost at
+0.4, not 0 — since the finding named that exact call chain, not just `snap_transform()` in
+isolation). `failures=0`, reran twice. `tools/build_net_check.gd` (13 assertions, two real ENet
+processes) also `failures=0`, unaffected — its scenarios never place on non-integer ground.
+
 ## 3.8 · Hunger/health/stamina (T1) — **GATE: 2.13 shipped (PlayerHealth exists).**
 
 Extends `PlayerHealth` rather than a new service: hunger drains on host tick, empty hunger drains
@@ -512,6 +541,93 @@ anyone felt forced into an Attunement. Update DESIGN §8.
 
 ## 3.12 · Balance pass (T0) — inspector numbers only; re-run `combat_feel_check` and record the
 before/after table in the close-out.
+
+## 3.13 · Command core (T2) — **read `docs/COMMANDS.md` §1–2 first; it is the spec, this block is the claim sheet**
+
+**Exempt from the M3 gate** (recorded in ROADMAP's M3 note — encodes no design answers, helps run
+2.14 itself). **Claim:** `autoload/command_service.gd` (new), `autoload/debug_console.gd`,
+`core/dev/dev_loadout.gd`, `autoload/enemy_world.gd` (its console registrations — grep
+`register(` for any others and claim them too), `core/net/net_version.gd`,
+`tools/handshake_check.gd`, `tools/command_check.gd`, `tools/command_net_check.gd`.
+Registration via `agent autoload CommandService autoload/command_service.gd` — order it right
+after `DebugConsole` so every later autoload can register specs in `_ready()`.
+- `CommandSpec` (typed args per COMMANDS.md §2.2), `CommandResult {ok, message, data}`,
+  `CommandCtx {peer, source, position}`. `Scope.LOCAL` runs where typed; `Scope.HOST` executes on
+  the host — client submission via new reliable `net_submit_command(line)` /
+  `net_command_result(...)` pair, **host re-parses the raw line from scratch**. Protocol bump +
+  `handshake_check` literal, same commit.
+- Op set: host always op; `op`/`deop` restricted to the host peer; keyed by run-player token
+  (D-035) so ops survive the grace window. Non-op HOST submission → structured refusal.
+- Migrate every existing registration to specs (console builtins, DevLoadout's
+  give/loadout/items, EnemyWorld's spawn/killall/enemies); the old `register()` stays as a
+  deprecation-warning shim. `give` keeps its exact output strings where checks read them.
+- Add the §2.2 authority-table row to `ARCHITECTURE.md` (text in COMMANDS.md §1.2); file the
+  D-numbers for COMMANDS.md §9 items 1–2.
+- Checks: `tools/command_check.gd` offline (parse/validate/usage errors, scope routing, op
+  refusal, `commands --json` dump); `tools/command_net_check.gd` two real ENet processes (client
+  `give` lands via host and returns a result; non-op refused; **console open + tree paused while
+  the RPC round-trips** — the wrinkle at the end of COMMANDS.md §10).
+
+## 3.14 · Gamerules (T2) — COMMANDS.md §4. **GATE: 3.13.**
+
+**Claim:** `systems/rules/rule_def.gd` (new), `autoload/rule_service.gd` (new),
+`autoload/registry.gd`, `content/rules/` (worked examples for the §4.3 table only — the family is
+then Sequoyah's, D-006), `systems/environment/day_night.gd`, `autoload/enemy_world.gd`,
+`systems/waves/wave_spawner.gd`, `systems/health/player_health.gd`, `core/dev/dev_loadout.gd`,
+`core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/rules_check.gd`,
+`tools/rules_net_check.gd`. Registration via `agent autoload`.
+- `RuleDef` per §4.1; `Registry._load_rules()` with the same duplicate/validation/boot-count
+  discipline as the other families. `RuleService` HOST-authoritative: broadcast on change,
+  snapshot on peer join, `value()/value_bool()/value_int()` + `rule_changed` signal.
+- **Export-fallback pattern per knob** (§4.3): the `@export` stays as default; the system reads
+  the rule only when its RuleDef exists. Defaults byte-identical to today — this task changes no
+  tuning.
+- `rule <id> [value]` (HOST to set, clamped to min/max), `rules` (LOCAL list). File §9 item 3.
+- Checks: offline (defaults, clamp, fallback-when-no-def, each migrated system reads a changed
+  rule); net (client sets via command → both peers read the new value; joiner snapshot).
+
+## 3.15 · EntityDirectory + selectors (T2) — COMMANDS.md §3. **GATE: 3.13.**
+
+**Claim:** `core/entity/entity_directory.gd` (new), `autoload/command_service.gd` (selector arg
+type), `autoload/player_net.gd`, `autoload/enemy_world.gd`, `autoload/harvest_world.gd`,
+`autoload/build_service.gd`, `systems/loot/chest.gd`, `tools/entity_directory_check.gd`,
+`tools/selector_net_check.gd`, plus `systems/health/player_health.gd` if `tp` reuses its
+place-yourself RPC (bump + handshake if any new RPC). Registration via `agent autoload`.
+- Host-side registry, unreplicated (v1): `<kind>:<serial>` ids, NodePath, tags. Register at the
+  seams named in §3.1; unregister on despawn — the check asserts no leaks after kill/despawn.
+- Selector grammar per §3.2; a dedicated `RandomNumberGenerator` for `@r`/`sort=random`.
+- Verbs: `entities`, `tag <sel> add|remove|list`, `kill <sel>` (players via
+  `PlayerHealth.host_apply_damage`, enemies via their damage path — never a second mutation
+  path), `tp <sel> <vec3|sel>` (enemies directly; players only via their own client, §3.3).
+  File §9 item 4.
+
+## 3.16 · Command catalog sweep (T1) — COMMANDS.md §7. **GATE: 3.13 (+3.15 for selector verbs).**
+
+**Claim:** `autoload/command_service.gd` plus the owning service file per verb wired (derive the
+exact set from §7 at claim time), `autoload/steam_lobby.gd`, `tools/command_coverage_check.gd`.
+- Every §7 row lands as a spec wrapping the named existing seam; where a row says *(new seam)*,
+  add the host method to the owning service first, command second.
+- `lobby host/join/invite` over `SteamLobby.host_session()/join_by_id()/open_invite_overlay()` —
+  close the loop with D-030 by noting in FINDINGS/NEXT that the cheap cross-play test now exists.
+- `tools/command_coverage_check.gd`: asserts every §7 verb is present in `commands --json` and
+  every HOST-scope command refuses a non-op. A missing verb is a red check, not a review comment.
+
+## 3.17 · Functions, hooks, runner (T1) — COMMANDS.md §5–6. **GATE: 3.13.**
+
+**Claim:** `systems/rules/hook_def.gd` (new), function loading inside
+`autoload/command_service.gd` (or `systems/commands/function_runner.gd` if it wants its own
+file), `content/functions/` + `content/hooks/` (ONE worked example each: `night_siege`,
+disabled-by-default per §5.2), `autoload/registry.gd` (hook loading), `tools/run_commands.gd`,
+`tools/function_check.gd`.
+- `.mcmd` format per §5.1 (`#` comments, recursion cap 4, effective scope = max of lines).
+  `function <name>` command; `user://autoexec.mcmd` + `content/functions/autoexec.mcmd` at boot,
+  host/offline only.
+- `tools/run_commands.gd` per §6: `--file`, `--json`, `# expect-fail`, non-zero exit on failure;
+  F-016 preloads. Prove it by porting ONE existing check's setup to a command file as the worked
+  example (do not port the suite — that is opportunistic, later, per-check).
+- File §9 item 5. Checks: function parse/run/recursion-cap offline; a hook firing on a real
+  `DayNight.host_advance()` dusk crossing (the 2.12 pattern — drive the real clock, not the
+  signal).
 
 ---
 
