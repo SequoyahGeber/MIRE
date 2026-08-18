@@ -75,6 +75,118 @@ def terrain_box(data: dict, mat: bpy.types.Material, parent: bpy.types.Object) -
     return obj
 
 
+
+def heightfield_mesh(data: dict, mat: bpy.types.Material, parent: bpy.types.Object) -> bpy.types.Object:
+    """Faceted low-poly ground built from the shared grid.
+
+    Layout space is (x, y=up, z); Blender is (x, -z, y), the same swap
+    ``terrain_box`` does. Triangles are split on alternating diagonals so the
+    surface reads as hand-faceted rather than as a corduroy of parallel seams,
+    and every face is flat-shaded — the whole point is to SEE the facets.
+    """
+    hf = data["heightfield"]
+    nx, nz, cell = int(hf["nx"]), int(hf["nz"]), float(hf["cell"])
+    ox, oz = hf["origin"]
+    heights = hf["heights"]
+
+    verts = []
+    for iz in range(nz):
+        for ix in range(nx):
+            verts.append((ox + ix * cell, -(oz + iz * cell), heights[iz * nx + ix]))
+    holes = [tuple(h) for h in hf.get("holes", [])]
+
+    def in_hole(cx: float, cz: float) -> bool:
+        return any(x0 <= cx <= x1 and z0 <= cz <= z1 for x0, z0, x1, z1 in holes)
+
+    faces = []
+    for iz in range(nz - 1):
+        for ix in range(nx - 1):
+            a = iz * nx + ix
+            b = a + 1
+            c = a + nx
+            d = c + 1
+            if in_hole(ox + (ix + 0.5) * cell, oz + (iz + 0.5) * cell):
+                continue
+            if (ix + iz) % 2 == 0:
+                faces.append((a, c, d))
+                faces.append((a, d, b))
+            else:
+                faces.append((a, c, b))
+                faces.append((b, c, d))
+
+    mesh = bpy.data.meshes.new("GroundHeightfield_Mesh")
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new("GroundHeightfield", mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    obj.data.materials.append(mat)
+    for polygon in obj.data.polygons:
+        polygon.use_smooth = False
+    obj.parent = parent
+    obj["mire_zone"] = "RoutesAndBoundary"
+    obj["mire_collides"] = True
+    return obj
+
+
+
+def _sample_height(hf: dict, x: float, z: float) -> float:
+    """Bilinear sample of the shared grid, in layout space."""
+    nx, nz, cell = int(hf["nx"]), int(hf["nz"]), float(hf["cell"])
+    ox, oz = hf["origin"]
+    heights = hf["heights"]
+    fx = min(max((x - ox) / cell, 0.0), nx - 1.001)
+    fz = min(max((z - oz) / cell, 0.0), nz - 1.001)
+    ix, iz = int(fx), int(fz)
+    tx, tz = fx - ix, fz - iz
+    a = heights[iz * nx + ix]
+    b = heights[iz * nx + ix + 1]
+    c = heights[(iz + 1) * nx + ix]
+    d = heights[(iz + 1) * nx + ix + 1]
+    return (a + (b - a) * tx) * (1.0 - tz) + (c + (d - c) * tx) * tz
+
+
+def draped_paint(record: dict, hf: dict, mat: bpy.types.Material, parent: bpy.types.Object) -> bpy.types.Object:
+    """A ground skin that follows the terrain instead of cutting through it.
+
+    Paints are flat rectangles laid a few centimetres above y=0. On flat ground
+    that is fine; over a heightfield they submerge wherever the ground rises.
+    This re-meshes them on the same grid, lifted by their original offset.
+    """
+    cx, cy, cz = record["pos"]
+    sx, _sy, sz = record["size"]
+    lift = cy + record["size"][1] * 0.5
+    step = float(hf["cell"]) * 0.5
+    nx = max(int(round(sx / step)) + 1, 2)
+    nz = max(int(round(sz / step)) + 1, 2)
+    x0, z0 = cx - sx * 0.5, cz - sz * 0.5
+
+    verts = []
+    for iz in range(nz):
+        z = z0 + sz * (iz / (nz - 1))
+        for ix in range(nx):
+            x = x0 + sx * (ix / (nx - 1))
+            verts.append((x, -z, _sample_height(hf, x, z) + lift))
+    faces = []
+    for iz in range(nz - 1):
+        for ix in range(nx - 1):
+            a = iz * nx + ix
+            faces.append((a, a + nx, a + nx + 1))
+            faces.append((a, a + nx + 1, a + 1))
+
+    mesh = bpy.data.meshes.new(record["name"] + "_Mesh")
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(record["name"], mesh)
+    bpy.context.scene.collection.objects.link(obj)
+    obj.data.materials.append(mat)
+    for polygon in obj.data.polygons:
+        polygon.use_smooth = False
+    obj.parent = parent
+    obj["mire_zone"] = record["zone"]
+    obj["mire_collides"] = False
+    return obj
+
+
 class AssetLibrary:
     def __init__(self) -> None:
         self.templates: dict[tuple[str, str], list[bpy.types.Object]] = {}
@@ -180,8 +292,18 @@ def main() -> None:
     root["mire_seed"] = int(data["seed"])
     materials = {name: make_material(name, definition) for name, definition in data["materials"].items()}
     terrain_root = empty("AuthoredTerrain", root)
+    hf = data.get("heightfield")
+    if hf:
+        heightfield_mesh(data, materials[hf["mat"]], terrain_root)
     for record in data["terrain"]:
-        terrain_box(record, materials[record["mat"]], terrain_root)
+        # Axis-aligned ground skins are re-meshed onto the terrain. Rotated trail
+        # ribbons stay flat boxes; the layout already holds the ground flat under
+        # those, so they have nothing to sink into.
+        if (hf and not record.get("collide", False) and record["size"][1] <= 0.1
+                and abs(float(record.get("yaw", 0.0))) < 1e-6):
+            draped_paint(record, hf, materials[record["mat"]], terrain_root)
+        else:
+            terrain_box(record, materials[record["mat"]], terrain_root)
 
     zones = {name: empty(name, root) for name in data["zones"]}
     library = AssetLibrary()

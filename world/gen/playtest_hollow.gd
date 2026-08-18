@@ -48,6 +48,8 @@ func build_from_layout() -> void:
 	var terrain_root := Node3D.new()
 	terrain_root.name = "TerrainCollision"
 	add_child(terrain_root)
+	if layout.has("heightfield"):
+		_add_heightfield_body(terrain_root, layout["heightfield"] as Dictionary)
 	for terrain_value: Variant in layout.get("terrain", []):
 		var terrain := terrain_value as Dictionary
 		if not bool(terrain.get("collide", false)):
@@ -177,3 +179,63 @@ func _add_light(parent: Node3D, data: Dictionary) -> void:
 func _vector3(value: Variant) -> Vector3:
 	var values := value as Array
 	return Vector3(float(values[0]), float(values[1]), float(values[2]))
+
+
+## Ground collision built from the same grid Blender meshes, so what the player
+## walks on is exactly what they see. The open ground used to be four flat boxes;
+## replacing them with a heightfield means this is now the ONLY thing holding a
+## player up out there, which is why it is built before anything else.
+func _add_heightfield_body(parent: Node3D, hf: Dictionary) -> void:
+	var nx := int(hf.get("nx", 0))
+	var nz := int(hf.get("nz", 0))
+	var cell := float(hf.get("cell", 1.0))
+	if nx < 2 or nz < 2:
+		push_error("PlaytestHollow heightfield is degenerate: %dx%d" % [nx, nz])
+		return
+	var origin: Array = hf.get("origin", [0.0, 0.0])
+	var ox := float(origin[0])
+	var oz := float(origin[1])
+	var heights: Array = hf.get("heights", [])
+	if heights.size() != nx * nz:
+		push_error("PlaytestHollow heightfield size mismatch: %d values for %dx%d" % [heights.size(), nx, nz])
+		return
+
+	var holes: Array = hf.get("holes", [])
+	var faces := PackedVector3Array()
+	for iz in range(nz - 1):
+		for ix in range(nx - 1):
+			var cx := ox + (float(ix) + 0.5) * cell
+			var cz := oz + (float(iz) + 0.5) * cell
+			var skip := false
+			for hole_value: Variant in holes:
+				var hole := hole_value as Array
+				if cx >= float(hole[0]) and cx <= float(hole[2]) and cz >= float(hole[1]) and cz <= float(hole[3]):
+					skip = true
+					break
+			if skip:
+				continue
+			var x0 := ox + float(ix) * cell
+			var x1 := x0 + cell
+			var z0 := oz + float(iz) * cell
+			var z1 := z0 + cell
+			var a := Vector3(x0, float(heights[iz * nx + ix]), z0)
+			var b := Vector3(x1, float(heights[iz * nx + ix + 1]), z0)
+			var c := Vector3(x0, float(heights[(iz + 1) * nx + ix]), z1)
+			var d := Vector3(x1, float(heights[(iz + 1) * nx + ix + 1]), z1)
+			# Same alternating diagonal as the Blender mesh, so collision and
+			# visual agree triangle for triangle rather than just on average.
+			if (ix + iz) % 2 == 0:
+				faces.append_array([a, c, d, a, d, b])
+			else:
+				faces.append_array([a, c, b, b, c, d])
+
+	var shape := ConcavePolygonShape3D.new()
+	shape.set_faces(faces)
+	var body := StaticBody3D.new()
+	body.name = "GroundHeightfield"
+	var collider := CollisionShape3D.new()
+	collider.shape = shape
+	body.add_child(collider)
+	body.add_to_group(TERRAIN_GROUP)
+	parent.add_child(body)
+	terrain_body_count += 1

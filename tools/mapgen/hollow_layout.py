@@ -104,6 +104,101 @@ TRAILS = [
 # Asset catalogs — real measured footprints, so clearance is computed, not guessed.
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Ground heightfield
+# ---------------------------------------------------------------------------
+#
+# The Hollow used to be four flat slabs at y=0, which read as a green table with
+# props standing on it. This replaces them with a faceted low-poly surface that
+# both Blender and Godot build from the same grid, so what you see is what you
+# walk on.
+#
+# It is deliberately gentle and deliberately masked. Anything authored against
+# flat ground — the camp decks and their ramps, the road corridors, the ruins
+# court, the ridge terraces, the Mire basin and its banks — is flattened back to
+# zero underneath, with a smooth falloff so the mask never shows as a crease.
+# The noise only has the run of the open ground, which is exactly where the
+# flatness was visible.
+
+HF_CELL = 1.6
+HF_AMPLITUDE = 2.05
+#: Regions held flat, as (x0, z0, x1, z1, falloff). Falloff is the distance over
+#: which the terrain eases back up to full amplitude outside the rectangle.
+HF_FLAT: list[tuple[float, float, float, float, float]] = []
+
+
+def _hash01(ix: int, iz: int, salt: int) -> float:
+    h = (ix * 374761393 + iz * 668265263 + salt * 2147483647 + SEED) & 0xFFFFFFFF
+    h = (h ^ (h >> 13)) * 1274126177 & 0xFFFFFFFF
+    return ((h ^ (h >> 16)) & 0xFFFFFF) / float(0xFFFFFF)
+
+
+def _smooth(t: float) -> float:
+    return t * t * (3.0 - 2.0 * t)
+
+
+def _value_noise(x: float, z: float, wavelength: float, salt: int) -> float:
+    """One octave of value noise in [-1, 1]. No numpy: this runs in plain CPython."""
+    fx, fz = x / wavelength, z / wavelength
+    ix, iz = math.floor(fx), math.floor(fz)
+    tx, tz = _smooth(fx - ix), _smooth(fz - iz)
+    a = _hash01(ix, iz, salt)
+    b = _hash01(ix + 1, iz, salt)
+    c = _hash01(ix, iz + 1, salt)
+    d = _hash01(ix + 1, iz + 1, salt)
+    top = a + (b - a) * tx
+    bot = c + (d - c) * tx
+    return (top + (bot - top) * tz) * 2.0 - 1.0
+
+
+def _flatten_factor(x: float, z: float) -> float:
+    """0 inside a protected rectangle, easing to 1 outside it."""
+    factor = 1.0
+    for x0, z0, x1, z1, fade in HF_FLAT:
+        dx = max(x0 - x, 0.0, x - x1)
+        dz = max(z0 - z, 0.0, z - z1)
+        d = math.hypot(dx, dz)
+        factor = min(factor, _smooth(min(d / fade, 1.0)) if fade > 0.0 else (1.0 if d > 0 else 0.0))
+        if factor <= 0.0:
+            return 0.0
+    return factor
+
+
+def ground_height(x: float, z: float) -> float:
+    """Height of the open ground at a point. Zero under everything authored."""
+    factor = _flatten_factor(x, z)
+    if factor <= 0.0:
+        return 0.0
+    # Long wavelengths keep every slope walkable without needing a gradient clamp.
+    # The last octave is deliberately near the cell size. Without it adjacent
+    # facets share almost the same normal and the surface reads as a smooth
+    # sheet — rolling, but not *low poly*. This is what makes each triangle
+    # catch the light differently, which is the whole look.
+    h = (_value_noise(x, z, 34.0, 1) * 0.55
+         + _value_noise(x, z, 17.0, 2) * 0.24
+         + _value_noise(x, z, 8.5, 3) * 0.13
+         + _value_noise(x, z, 3.6, 4) * 0.08)
+    # Fade to zero at the wall ring so the boundary never shows a gap under it.
+    edge = min(BOUND - abs(x), BOUND - abs(z))
+    factor *= _smooth(max(min(edge / 4.5, 1.0), 0.0))
+    return round(h * HF_AMPLITUDE * factor, 4)
+
+
+def heightfield_block() -> dict:
+    """The grid Blender meshes and Godot collides against. One source, both halves."""
+    n = int(round((BOUND * 2.0) / HF_CELL)) + 1
+    origin = -BOUND
+    heights = []
+    for iz in range(n):
+        z = origin + iz * HF_CELL
+        heights.extend(ground_height(origin + ix * HF_CELL, z) for ix in range(n))
+    # The basin is its own authored floor and banks sitting below grade. Without
+    # a hole here the ground sheet would roof straight over the Mire and hide it.
+    holes = [[BASIN_X0, BASIN_Z0, BASIN_X1, BASIN_Z1]]
+    return {"origin": [origin, origin], "cell": HF_CELL, "nx": n, "nz": n,
+            "mat": "ground", "heights": heights, "holes": holes}
+
+
 def load_catalogs() -> dict[str, dict]:
     catalog: dict[str, dict] = {}
     for kit in (
@@ -404,7 +499,13 @@ class Layout:
         for x0, z0, x1, z1, y in self.supports:
             if x0 - 1e-6 <= x <= x1 + 1e-6 and z0 - 1e-6 <= z <= z1 + 1e-6:
                 top = y if top is None else max(top, y)
-        return 0.0 if top is None else top
+        if top is None:
+            return ground_height(x, z)
+        # Only the open ground undulates. A deck, terrace or basin floor keeps the
+        # exact height it was authored at, which is what its ramps were built for.
+        if abs(top) < 1e-6:
+            return round(ground_height(x, z), 3)
+        return top
 
     def blocked(self, x: float, z: float, radius: float) -> bool:
         for ox, oz, orad in self.occupied:
@@ -453,10 +554,25 @@ class Layout:
 def build_terrain(L: Layout) -> None:
     B = BOUND
     # Ground is tiled around the basin so the Mire can actually sit below grade.
-    L.slab("Ground_Main", "RoutesAndBoundary", "ground", -B, -B, BASIN_X0, B, top=0.0, thickness=1.2)
-    L.slab("Ground_MireNorth", "RoutesAndBoundary", "ground", BASIN_X0, -B, B, BASIN_Z0, top=0.0, thickness=1.2)
-    L.slab("Ground_MireSouth", "RoutesAndBoundary", "ground", BASIN_X0, BASIN_Z1, B, B, top=0.0, thickness=1.2)
-    L.slab("Ground_MireEast", "RoutesAndBoundary", "ground", BASIN_X1, BASIN_Z0, B, BASIN_Z1, top=0.0, thickness=1.2)
+    # The open ground is the heightfield, not four slabs. These register support
+    # regions so surface_at still resolves; the mesh and its collider come from
+    # heightfield_block(). Everything authored against flat ground is masked out
+    # of the noise below, so decks, ramps and banks meet it exactly as before.
+    HF_FLAT.extend([
+        (CAMP_X0 - 2.0, CAMP_Z0 - 2.0, CAMP_X1 + 2.0, CAMP_Z1 + 2.0, 7.0),   # camp and its decks
+        (BASIN_X0 - 5.0, BASIN_Z0 - 5.0, BASIN_X1 + 5.0, BASIN_Z1 + 5.0, 6.0),  # basin and banks
+        (-21.0, 20.0, 23.0, B, 6.5),                                          # ridge terraces + ramps
+        (-10.0, -35.0, 12.0, -23.0, 6.0),                                     # ruins court + forge ramp
+    ])
+    for _n, rx0, rz0, rx1, rz1 in ROADS:
+        HF_FLAT.append((rx0 - 1.0, rz0 - 1.0, rx1 + 1.0, rz1 + 1.0, 5.5))
+    for _n, (sx, sz), (ex, ez), width in TRAILS:
+        HF_FLAT.append((min(sx, ex) - width * 0.5, min(sz, ez) - width * 0.5,
+                        max(sx, ex) + width * 0.5, max(sz, ez) + width * 0.5, 5.0))
+    L.platform(-B, -B, BASIN_X0, B, 0.0)
+    L.platform(BASIN_X0, -B, B, BASIN_Z0, 0.0)
+    L.platform(BASIN_X0, BASIN_Z1, B, B, 0.0)
+    L.platform(BASIN_X1, BASIN_Z0, B, BASIN_Z1, 0.0)
 
     # Basin floor plus banks gentle enough to walk in and out of (CharacterBody3D cannot step up).
     L.slab("Mire_BasinFloor", "EastMire", "mud", BASIN_X0, BASIN_Z0, BASIN_X1, BASIN_Z1,
@@ -965,6 +1081,7 @@ def build() -> tuple[Layout, dict]:
         "zones": ZONES,
         "materials": MATERIALS,
         "spawn": {"pos": list(SPAWN_POS), "yaw": 0.0},
+        "heightfield": heightfield_block(),
         "terrain": L.terrain,
         "props": L.props,
         "lights": L.lights,

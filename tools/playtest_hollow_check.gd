@@ -57,6 +57,10 @@ func _run() -> void:
 		if bool((terrain_value as Dictionary).get("collide", false)):
 			expected_terrain += 1
 			expected_colliders += 1
+	# The open ground is one heightfield body rather than four flat slabs, so it
+	# is a terrain body without being a terrain record.
+	if layout.has("heightfield"):
+		expected_terrain += 1
 	for prop_value: Variant in layout_props:
 		expected_colliders += ((prop_value as Dictionary).get("cols", []) as Array).size()
 	if player != null:
@@ -106,7 +110,8 @@ func _check_layout_file(visual_root: Node, layout: Dictionary) -> void:
 	var props: Array = layout.get("props", []) as Array
 	var terrain: Array = layout.get("terrain", []) as Array
 	check(props.size() >= 700, "enlarged layout contains at least 700 props (%d)" % props.size())
-	check(terrain.size() >= 30, "layout contains transition terrain and trails (%d)" % terrain.size())
+	check(terrain.size() >= 25, "layout contains transition terrain and trails (%d)" % terrain.size())
+	_check_heightfield(layout)
 	_check_open_gates_and_grass(props)
 	var aligned_visuals: int = 0
 	var visual_alignment_examples: Array[String] = []
@@ -260,3 +265,36 @@ func check(condition: bool, description: String) -> void:
 
 func finish() -> void:
 	quit(0 if failures == 0 else 1)
+
+## The ground is a heightfield now, and it is the only thing holding a player up
+## on open terrain. Assert it exists, that it is not secretly flat, and that no
+## facet is steeper than a CharacterBody3D can climb.
+func _check_heightfield(layout: Dictionary) -> void:
+	if not layout.has("heightfield"):
+		check(false, "layout carries a ground heightfield")
+		return
+	var hf := layout["heightfield"] as Dictionary
+	var nx := int(hf.get("nx", 0))
+	var nz := int(hf.get("nz", 0))
+	var cell := float(hf.get("cell", 0.0))
+	var heights: Array = hf.get("heights", [])
+	check(nx >= 8 and nz >= 8 and cell > 0.0, "heightfield grid is sane (%dx%d @ %.2fm)" % [nx, nz, cell])
+	check(heights.size() == nx * nz, "heightfield sample count matches its grid (%d)" % heights.size())
+	if heights.size() != nx * nz:
+		return
+	var lo := INF
+	var hi := -INF
+	var steepest := 0.0
+	for iz in range(nz):
+		for ix in range(nx):
+			var h := float(heights[iz * nx + ix])
+			lo = minf(lo, h)
+			hi = maxf(hi, h)
+			if ix + 1 < nx:
+				steepest = maxf(steepest, absf(float(heights[iz * nx + ix + 1]) - h))
+			if iz + 1 < nz:
+				steepest = maxf(steepest, absf(float(heights[(iz + 1) * nx + ix]) - h))
+	var relief := hi - lo
+	var slope := rad_to_deg(atan2(steepest, cell))
+	check(relief >= 1.5, "ground actually undulates (%.2f m of relief)" % relief)
+	check(slope <= 40.0, "no ground facet exceeds 40 degrees (%.1f)" % slope)
