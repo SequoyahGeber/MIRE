@@ -354,7 +354,7 @@ and A-012 (food) are unchanged and remain the first wave's art.
 
 | Wave | With | Content |
 |---|---|---|
-| W1 | 3.1/3.2 (now) | §4.1 T0–T2 raws, §4.3 refined set, food basics, Branch Club, Reed Machete, torch — the crafting tree's flesh, on A-002/A-011/A-012 art |
+| W1 | 3.1/3.2 (now) | §4.1 T0–T2 raws, §4.3 refined set, food basics, Branch Club, Reed Machete, torch — the crafting tree's flesh, on A-002/A-011/A-012 art. **First slice shipped 2026-08-18 (`9caef22`):** 7 items (branch, flint, coal, fibre_bundle, berry, mushroom, raw_meat) + 11 recipes making every existing tool/weapon craftable; the rest of W1 waits on A-011/A-012 art because `item_icons_check` requires every ItemDef to carry a real icon |
 | W2 | 3.5 | §5 tables, keys, coins flow, **the first Gleam set** — every Gleam *powerup* and one-shot is art-free and ships day one; unique weapons follow A-047 |
 | W3 | 3.8 (+stamina) | tonics, cooked-food breadth |
 | W4 | M4 Mire | Wellglass, Blight Residue, Pale Draught, Glowcap placement, Sunken Caches |

@@ -143,6 +143,18 @@ What matters for the next tasks:
   held lights, Gleam uniques + gilded/sunken chests), all gated; A-010 stays `NEXT`, A-011/A-012
   unchanged as the first content wave's art.
 
+**Update, same day (`9caef22`):** the first authorable slice is SHIPPED at Sequoyah's direct
+request (a recorded D-006 override — see the 3.2 journal note): items `branch` / `flint` / `coal` /
+`fibre_bundle` / `berry` / `mushroom` / `raw_meat` (the last three CONSUMABLE with hunger values
+3.8 will consume), plus 11 recipes — every existing tool/weapon is now craftable, charcoal (3 log →
+2 coal) is the furnace's second timed recipe, and recipe costs are untuned guesses scaled off
+stone_axe. Boot: **23 items, 13 recipes**. Iron gear sits at the `workbench` until an anvil
+StationDef exists (one field per recipe to move). `tools/crafting_check.gd`'s exact-census asserts
+became floor+membership+determinism, so authoring more recipes can't red it. F-116's convergence
+holds: bushes/saplings yield `branch`. Next authorable wave needs A-011/A-012 art (icons are
+mandatory on every ItemDef) or new `render_item_icons.py` SOURCES; Gleam powerups (ITEMS.md §4.9)
+are art-free under 3.4 whenever Sequoyah green-lights authoring them.
+
 ### 2026-08-18 — F-105: `BuildGhost.update_aim()` takes an optional `delta`, and skips `evaluate()` on an unchanged aim
 
 `systems/building/build_ghost.gd`'s `update_aim(from, direction, builder_position, delta: float =
