@@ -3026,3 +3026,18 @@ Notes along the way:
 Files: `autoload/enemy_world.gd`, `export_presets.cfg`, `autoload/registry.gd`
 
 Commit at time of writing: `0c3ffbf`
+
+---
+
+### DONE · F-108 · lm · 2026-08-18T19:25:18+00:00
+
+**A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized**
+
+ship_check.gd's F-094-style dimension fix (vertex measurement, not transform*aabb) was already committed and verified PASS on all 15 A-009 exports. Wrote tools/dimension_check.gd, a synthetic-cone regression guard for the vertex-vs-AABB technique: agent godot --script tools/dimension_check.gd -> DIMENSION_CHECK_GODOT PASS. Regression-proved ship_check.gd's fix by temporarily reverting to the naive construction (FAIL 8, exact failure shape from the finding), then restored via git checkout -- clean diff, PASS again. Wrote docs/SPECS.md F-108 block, moved docs/FINDINGS.md F-108 to Resolved. Filed F-122 for tools/flora_check.gd's identical bug (out of this task's claim, A-000V's file set) and documented the vertex-measurement pattern in docs/DELEGATION.md Current state.
+
+Notes along the way:
+- ship_check.gd's vertex fix was already committed in 3beb6b0, before this task existed -- same shape as F-094. Wrote tools/dimension_check.gd as a synthetic-cone regression guard, verified ship_check.gd PASS on all 15 A-009 exports, regression-proved by temporarily reverting to instance.transform*get_aabb() (FAIL 8, matching the finding's exact numbers) then restoring via git checkout. Ported flora_check.gd's identical bug out as F-122 -- not in this task's claim (A-000V's file set).
+
+Files: `tools/ship_check.gd`, `tools/dimension_check.gd`
+
+Commit at time of writing: `ef35595`

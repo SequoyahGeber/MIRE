@@ -1258,6 +1258,12 @@
       "at": "2026-08-17T19:28:04+00:00",
       "task": "F-052"
     },
+    "tools/dimension_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:25:18+00:00",
+      "hash": "46bda7fc9e6b95402d8e6b86b309cd5da5538c615e7d48f0b2c5c00dc351d57f",
+      "task": "F-108"
+    },
     "tools/dodge_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T19:16:34+00:00",
@@ -1534,9 +1540,10 @@
       "task": "F-073"
     },
     "tools/ship_check.gd": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
+      "agent": "lm",
+      "at": "2026-08-18T19:25:18+00:00",
+      "hash": "a15092d0f13d7b9cc89379920e6af911aae27ddc1ec0cff318047d56e63c5547",
+      "task": "F-108"
     },
     "tools/spawn_ground_probe.gd": {
       "agent": "flint5",
@@ -3587,9 +3594,11 @@
       "title": "chest_net_check's two host-side grant assertions fail at HEAD; client side is green"
     },
     "F-108": {
+      "done_at": "2026-08-18T19:25:18+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized"
     },
@@ -3701,6 +3710,13 @@
       "status": "done",
       "tier": "F",
       "title": "Exported builds load zero content: .tres scan misses Godot's .remap suffix"
+    },
+    "F-122": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`tools/flora_check.gd:126` measures rotated flora through the same inflated `Transform3D * AABB` ruler as F-108"
     }
   },
   "version": 1
