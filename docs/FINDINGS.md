@@ -69,6 +69,58 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-151 · `ui/loot/chest_ui.gd` was never registered, so no chest in the game could be opened — **fixed**
+
+**Area:** ui · **Severity:** high · **Found:** 2026-08-18 by slate17 during 3.7
+
+Task 3.5 shipped `ui/loot/chest_ui.gd` — the client-local panel that finds the nearest chest, turns
+[E] into exactly one `request_open()`, and renders the result. Every other UI system in the project
+is an autoload (`InventoryUI`, `CraftingUI`, `AttunementUI`, `VitalsHud`, `LobbyMenu`). This one was
+not, and nothing else loaded it: no `[autoload]` line, no `.tscn` instancing it, no `preload` from
+any script. **There was no way to open a chest in the running game at all** — the whole loot path
+existed and was unreachable, which is precisely what CLAUDE.md means by "a script nothing loads
+isn't shipped" (F-051).
+
+It went unnoticed because every chest check drives `Chest` directly: `chest_check.gd` calls
+`request_open()` on a node it built itself, and `chest_net_check.gd` does the same across two
+processes. Both are correct tests of the authority path and neither can see that nothing in the game
+ever calls it.
+
+**Fixed here** with `agent autoload ChestUI ui/loot/chest_ui.gd`, verified by a clean boot and
+`tools/verify_setup.gd` (all checks passed). Worth a general habit: a UI script with no autoload
+line and no scene reference is dead code until proven otherwise, and `verify_setup`'s autoload
+assertion is the place a future orphan would be caught cheaply.
+
+### F-152 · `core/render/mesh_merge.gd` builds an invalid surface at boot, so merged undergrowth silently draws nothing
+
+**Area:** rendering · **Severity:** medium · **Found:** 2026-08-18 by slate17 during 3.7 · **Owner:** F-144 (nettle12)
+
+At HEAD (`e5f96b1`, F-144's mesh merging) a plain boot — `.agent/bin/agent godot --quit-after 5` —
+emits a repeating error triple from the same call site:
+
+```
+ERROR: Condition "array.size() != p_vertex_array_len" is true. Returning: ERR_INVALID_PARAMETER
+ERROR: Invalid array format for surface.       at: mesh_create_surface_data_from_arrays
+ERROR: Index p_idx = -1 is out of bounds (surfaces.size() = 0).
+  [0] _build (res://core/render/mesh_merge.gd:202)
+  [1] merged (res://core/render/mesh_merge.gd:37)
+  [2] _emit (res://world/gen/undergrowth.gd:517)
+  [3] _scatter (res://world/gen/undergrowth.gd:294)
+```
+
+The surface is rejected, so the merge produces a mesh with zero surfaces and the following
+`surface_get_material(-1)` is out of bounds. Every affected undergrowth batch therefore draws
+nothing — the failure is loud in the log and invisible on screen, which is the worst combination:
+it reads as "the grass is a bit sparse".
+
+Most likely one of the merged source arrays is missing a channel the others have (a mesh with no UV,
+no colour or no tangent among meshes that have them), so the concatenated arrays disagree with the
+declared format. A per-source format mask, intersected across the batch before concatenating, is the
+usual fix.
+
+**Not fixed here:** both files are claimed by F-144, which is still in flight. Filed rather than
+touched (AGENTS.md). Reproduce with the boot command above; grep for `mesh_merge.gd:202`.
+
 ### F-150 · An authored collider is unverifiable by eye, and a .tscn's Transform3D floats are basis ROWS
 
 **Area:** building · **Severity:** low · **Found:** 2026-08-18 by slate17 during 3.7

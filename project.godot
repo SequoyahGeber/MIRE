@@ -54,6 +54,7 @@ EntityDirectory="*res://autoload/entity_directory.gd"
 GameState="*res://core/game_state.gd"
 WorldDeltaLog="*res://autoload/world_delta_log.gd"
 WellspringService="*res://autoload/wellspring_service.gd"
+ChestUI="*res://ui/loot/chest_ui.gd"
 
 [display]
 

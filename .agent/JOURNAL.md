@@ -3512,3 +3512,15 @@ Most of 3.7 shipped: every buildable piece now has real art and a real collider,
 Files: `systems/building/buildable_def.gd`, `systems/building/build_ghost.gd`, `tools/buildable_content_check.gd`, `docs/FINDINGS.md`, `docs/DELEGATION.md`, `content/buildables/barricade.tres`, `content/buildables/barricade_spike.tres`, `content/buildables/bridge.tres`, `content/buildables/dock.tres`, `content/buildables/door.tres`, `content/buildables/gate.tres`, `content/buildables/ladder.tres`, `content/buildables/palisade.tres`, `content/buildables/palisade_gate.tres`, `content/buildables/ramp.tres`, `content/buildables/wall.tres`, `content/buildables/ward.tres`, `content/buildables/ward_post.tres`, `scenes/buildables/barricade.tscn`, `scenes/buildables/barricade_spike.tscn`, `scenes/buildables/bridge.tscn`, `scenes/buildables/dock.tscn`, `scenes/buildables/door.tscn`, `scenes/buildables/gate.tscn`, `scenes/buildables/ladder.tscn`, `scenes/buildables/palisade.tscn`, `scenes/buildables/palisade_gate.tscn`, `scenes/buildables/ramp.tscn`, `scenes/buildables/ward.tscn`, `scenes/buildables/ward_post.tscn`, `tools/buildable_content_check.gd.uid`
 
 Commit at time of writing: `3dbd2ba`
+
+---
+
+### HANDOFF · 3.7 · slate17 · 2026-08-18T22:22:14+00:00
+
+**Buildable pieces (walls/floors/ramps/doors) + Ward structures**
+
+Follow-up to the buildable-set handoff: registered ChestUI as an autoload (F-151 — ui/loot/chest_ui.gd shipped with 3.5 but nothing ever loaded it, so no chest in the running game could be opened; every chest check drives Chest directly and so could not see it). Also filed F-152: at HEAD, core/render/mesh_merge.gd:202 builds an invalid surface at boot and merged undergrowth batches draw nothing — files belong to F-144, which is still in flight, so it is filed rather than touched. Reproduce with 'agent godot --quit-after 5' and grep mesh_merge.gd:202.
+
+Files: `docs/FINDINGS.md`, `project.godot`
+
+Commit at time of writing: `2012b44`

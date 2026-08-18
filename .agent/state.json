@@ -1681,8 +1681,8 @@
     },
     "docs/FINDINGS.md": {
       "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "c98cd574b16c9713ca121a2b9465110df2ea5c27f659455b8be7075e272f6dcc",
+      "at": "2026-08-18T22:22:14+00:00",
+      "hash": "c3de32a2bbd6085ae34047e1076091e709e7fad6698ba26611f5fb82ecad8b36",
       "task": "3.7"
     },
     "docs/ITEMS.md": {
@@ -1766,10 +1766,10 @@
       "task": "2.1j"
     },
     "project.godot": {
-      "agent": "hollow7",
-      "at": "2026-08-18T21:12:09+00:00",
-      "hash": "c7b51d98a21d1592f3c72c7743cf042a45e3a74fb777f6b281d305c88253cf49",
-      "task": "3.15"
+      "agent": "slate17",
+      "at": "2026-08-18T22:22:14+00:00",
+      "hash": "008eecf547a8cec29ce9908b9c1f12893cba11344cc86bd8ef79f90b2d7fd8fb",
+      "task": "3.7"
     },
     "scenes/buildables/barricade.tscn": {
       "agent": "slate17",
