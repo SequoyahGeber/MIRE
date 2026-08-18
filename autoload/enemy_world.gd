@@ -75,46 +75,62 @@ func _ready() -> void:
 	MireLog.info(&"content", "loaded %d enemy definition(s)" % defs.size())
 
 
+## docs/COMMANDS.md §2.1 — migrated off DebugConsole.register() in task 3.13. `spawn`/`killall` are
+## HOST-scope (CommandService's op check replaces the old hand-rolled `_owns_spawning()` string), so
+## the host-only refusal these used to print by hand is gone; a non-op gets CommandService's uniform
+## refusal (COMMANDS.md §1.3) instead.
 func _register_commands() -> void:
-	var console: Node = get_node_or_null(^"/root/DebugConsole")
-	if console == null or not console.has_method("register"):
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
 		return
-	console.call("register", &"spawn", _cmd_spawn, "spawn [enemy_id] [count] — spawn near you")
-	console.call("register", &"killall", _cmd_killall, "killall — despawn every enemy")
-	console.call("register", &"enemies", _cmd_enemies, "enemies — how many are alive, and where")
+	command_service.call("register_spec", &"spawn", {
+		"scope": &"host",
+		"args": [
+			{"name": "enemy", "type": &"enemy_id", "optional": true, "default": &""},
+			{"name": "count", "type": &"int", "optional": true, "default": 1, "min": 1},
+		],
+		"handler": _cmd_spawn,
+		"help": "spawn [enemy_id] [count] — spawn near you",
+	})
+	command_service.call("register_spec", &"killall", {
+		"scope": &"host", "args": [], "handler": _cmd_killall,
+		"help": "killall — despawn every enemy",
+	})
+	command_service.call("register_spec", &"enemies", {
+		"scope": &"local", "args": [], "handler": _cmd_enemies,
+		"help": "enemies — how many are alive, and where",
+	})
 
 
-func _cmd_spawn(args: PackedStringArray) -> String:
-	if not _owns_spawning():
-		return "only the host can spawn enemies"
-	var id := StringName(args[0]) if not args.is_empty() else ambient_enemy
+func _cmd_spawn(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var id: StringName = args.get("enemy", &"")
+	if id == &"":
+		id = ambient_enemy
 	if not has_def(id):
-		return "no such enemy '%s' — have: %s" % [id, ", ".join(defs.keys())]
-	var count: int = maxi(int(args[1]) if args.size() > 1 else 1, 1)
-	# In front of the local player, not at the origin — a crawler spawned across the map is
-	# indistinguishable from one that did not spawn.
-	var origin: Vector3 = Vector3.ZERO
-	for node: Node in get_tree().get_nodes_in_group(&"players"):
-		var player := node as Node3D
-		if player != null and player.is_multiplayer_authority():
-			origin = player.global_position + player.global_transform.basis.z * -5.0
-			break
+		return {"ok": false,
+			"message": "no such enemy '%s' — have: %s" % [id, ", ".join(defs.keys())], "data": {}}
+	var count: int = maxi(int(args.get("count", 1)), 1)
+	# ctx.position/facing are the ISSUER's own replicated body — host typing locally, or an opped
+	# client's body read off the host's own copy for an RPC-submitted spawn. That generalizes what the
+	# old is_multiplayer_authority() search could only ever do for the host's own local body (it would
+	# silently fall back to the origin for anyone else, which an RPC-submitted spawn now is).
+	var origin: Vector3 = (ctx.get("position", Vector3.ZERO) as Vector3) \
+		+ (ctx.get("facing", Vector3.FORWARD) as Vector3) * 5.0
 	var made: int = 0
 	for i: int in count:
 		if host_spawn(id, origin + Vector3(float(i) * 1.5, 0.0, 0.0)) != null:
 			made += 1
-	return "spawned %d %s" % [made, id]
+	return {"ok": true, "message": "spawned %d %s" % [made, id],
+		"data": {"count": made, "enemy": String(id)}}
 
 
-func _cmd_killall(_args: PackedStringArray) -> String:
-	if not _owns_spawning():
-		return "only the host can despawn enemies"
+func _cmd_killall(_ctx: Dictionary, _args: Dictionary) -> Dictionary:
 	var count: int = live_count()
 	host_despawn_all()
-	return "despawned %d" % count
+	return {"ok": true, "message": "despawned %d" % count, "data": {"count": count}}
 
 
-func _cmd_enemies(_args: PackedStringArray) -> String:
+func _cmd_enemies(_ctx: Dictionary, _args: Dictionary) -> String:
 	var points: Array[Vector3] = ambient_spawn_points()
 	return "%d alive, ambient %s (population %d), %d spawn point(s), navmesh %d polygons" % [
 		live_count(), "on" if ambient_enabled else "off", ambient_population,

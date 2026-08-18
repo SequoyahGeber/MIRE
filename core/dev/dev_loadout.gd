@@ -164,43 +164,58 @@ func _item_exists(item_id: StringName) -> bool:
 	return registry != null and bool(registry.call("has_item", item_id))
 
 
-# ── Console ───────────────────────────────────────────────────────────────────────────────────────
+# ── Console (docs/COMMANDS.md §2.1 — migrated off DebugConsole.register() in task 3.13) ────────────
 
 
 func _register_commands() -> void:
-	var console: Node = get_node_or_null(^"/root/DebugConsole")
-	if console == null or not console.has_method("register"):
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
 		return
-	console.call("register", &"give", _cmd_give, "give <item_id> [count] — grant to yourself")
-	console.call("register", &"loadout", _cmd_loadout, "loadout — re-grant the starting loadout")
-	console.call("register", &"items", _cmd_items, "items — list every registered item id")
+	command_service.call("register_spec", &"give", {
+		"scope": &"host",
+		"args": [
+			{"name": "item", "type": &"item_id"},
+			{"name": "count", "type": &"int", "optional": true, "default": 1, "min": 1, "max": 999},
+		],
+		"handler": _cmd_give,
+		"help": "give <item_id> [count] — grant to yourself",
+	})
+	command_service.call("register_spec", &"loadout", {
+		"scope": &"host", "args": [], "handler": _cmd_loadout,
+		"help": "loadout — re-grant the starting loadout",
+	})
+	command_service.call("register_spec", &"items", {
+		"scope": &"local", "args": [], "handler": _cmd_items,
+		"help": "items — list every registered item id",
+	})
 
 
-func _cmd_give(args: PackedStringArray) -> String:
-	if args.is_empty():
-		return "usage: give <item_id> [count]"
-	if not _owns_grants():
-		return "only the host can grant items"
-	var item_id := StringName(args[0])
-	if not _item_exists(item_id):
-		return "no such item '%s' — try 'items'" % item_id
-	var count: int = int(args[1]) if args.size() > 1 else 1
+## CommandService has already validated `item` against Registry and clamped `count` to [1, 999] —
+## this handler only needs to move the item. `ctx.peer_id` is who ISSUED the command (host itself, or
+## an opped client via the RPC path); there is no `target` selector yet (that lands with 3.15's
+## EntityDirectory), so `give` always grants to the issuer, matching what it always did.
+func _cmd_give(ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var item_id: StringName = args.get("item", &"")
+	var count: int = int(args.get("count", 1))
 	var inventory: Node = get_node_or_null(^"/root/InventoryService")
-	var peer_id: int = _local_peer()
-	if inventory == null or not bool(inventory.call("host_add", peer_id, item_id, maxi(count, 1))):
-		return "could not grant %s (inventory full?)" % item_id
-	return "gave %d x %s" % [maxi(count, 1), item_id]
+	var peer_id: int = int(ctx.get("peer_id", _local_peer()))
+	if inventory == null or not bool(inventory.call("host_add", peer_id, item_id, count)):
+		return {"ok": false, "message": "could not grant %s (inventory full?)" % item_id, "data": {}}
+	# Exact text kept: whatever the next task's check greps for `give`'s success line should not have
+	# to change because 3.13 rehomed the plumbing underneath it.
+	return {"ok": true, "message": "gave %d x %s" % [count, item_id],
+		"data": {"item": String(item_id), "count": count}}
 
 
-func _cmd_loadout(_args: PackedStringArray) -> String:
-	if not _owns_grants():
-		return "only the host can grant items"
-	var peer_id: int = _local_peer()
+func _cmd_loadout(ctx: Dictionary, _args: Dictionary) -> Dictionary:
+	var peer_id: int = int(ctx.get("peer_id", _local_peer()))
 	_granted.erase(peer_id)
-	return "granted the starting loadout" if grant(peer_id) else "nothing granted"
+	var granted: bool = grant(peer_id)
+	return {"ok": granted, "message": "granted the starting loadout" if granted else "nothing granted",
+		"data": {}}
 
 
-func _cmd_items(_args: PackedStringArray) -> String:
+func _cmd_items(_ctx: Dictionary, _args: Dictionary) -> String:
 	var registry: Node = get_node_or_null(^"/root/Registry")
 	if registry == null:
 		return "no registry"

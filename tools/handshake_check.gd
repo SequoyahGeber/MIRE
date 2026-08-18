@@ -60,11 +60,12 @@ func _initialize() -> void:
 	# task 3.6 bumped 11 -> 12 for build_service.gd's place/destroy/result trio; task 3.10 bumped
 	# 12 -> 13 for haulable.gd's pickup/drop request/result pairs plus its own SceneReplicationConfig;
 	# task 3.9 bumped 13 -> 14 for attunement_service.gd's request/confirmed/selected trio; task 3.8b
-	# bumped 14 -> 15 for player_controller.gd's new `dodging` property on the player synchronizer.
+	# bumped 14 -> 15 for player_controller.gd's new `dodging` property on the player synchronizer;
+	# task 3.13 bumped 15 -> 16 for command_service.gd's net_submit_command/net_command_result pair.
 	# A hard-coded expectation here is deliberate: this check's whole point is to fail loudly the day
 	# someone adds a wire-shape change and forgets the bump.
-	_check("PROTOCOL_VERSION reflects task 3.8b's dodging replicated property",
-		NetVersion.PROTOCOL_VERSION == 15, str(NetVersion.PROTOCOL_VERSION))
+	_check("PROTOCOL_VERSION reflects task 3.13's command RPC pair",
+		NetVersion.PROTOCOL_VERSION == 16, str(NetVersion.PROTOCOL_VERSION))
 
 	call_deferred(&"_run_wire_checks")
 

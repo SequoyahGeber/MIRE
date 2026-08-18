@@ -2,14 +2,20 @@ extends CanvasLayer
 
 ## Drop-down developer console. `~` (backtick) toggles it.
 ##
-## Network authority: CLIENT-LOCAL. Commands run on the machine that typed them. A command that
-## needs to change authoritative state must go through the same RPC path as gameplay — never add a
-## command here that mutates host state directly, or the console becomes a desync generator.
+## Network authority: CLIENT-LOCAL presentation over CommandService's own authority row
+## (docs/ARCHITECTURE.md §2.2, "Command execution"). This file is a thin client since task 3.13:
+## it builds a CommandCtx, forwards the typed line to CommandService, and prints whatever
+## CommandResult comes back. It no longer decides what may mutate host state or how — that is
+## CommandService's job, uniformly, for every source (console, headless runner, functions, hooks).
 ##
-## Autoload — builds its own UI in code, so there is no scene to wire. Register commands from
-## anywhere, ideally in the owning system's _ready():
+## Autoload — builds its own UI in code, so there is no scene to wire. `register()` below is a
+## **deprecated compatibility shim** kept so nothing that already calls it breaks; new commands
+## should call `CommandService.register_spec()` directly (docs/COMMANDS.md §2.1/§2.4).
 ##
-##     DebugConsole.register(&"give", _cmd_give, "give <item_id> [count]")
+## LOAD ORDER: CommandService registers right after this autoload (project.godot), so it does not
+## exist yet during THIS file's own `_ready()`. `_register_builtins()` is deferred one idle frame
+## for exactly that reason — see its comment. Every autoload after CommandService in the list can
+## register into it synchronously in their own `_ready()`, same as before.
 
 const MAX_OUTPUT_LINES: int = 300
 const HISTORY_LIMIT: int = 50
@@ -21,21 +27,33 @@ const HISTORY_LIMIT: int = 50
 
 var is_open: bool = false
 
-var _commands: Dictionary[StringName, Callable] = {}
-var _help: Dictionary[StringName, String] = {}
 var _history: Array[String] = []
 var _history_index: int = -1
 var _root: Control
 var _output: RichTextLabel
 var _entry: LineEdit
 var _restore_mouse_captured: bool = false
+## Handles this console itself submitted, so `_on_command_result` only prints results for lines
+## someone actually typed here — nothing else listens to CommandService's `command_result` today, but
+## the guard costs nothing and stops that being an assumption.
+var _pending_handles: Dictionary[int, bool] = {}
+var _command_service_connected: bool = false
+## Handles this console unpaused the tree FOR — see the comment in `_run()`. Re-paused once this set
+## drains back to empty and the console is still open.
+var _unpaused_for_handles: Dictionary[int, bool] = {}
 
 
 func _ready() -> void:
 	layer = 101
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_ui()
-	_register_builtins()
+	# CommandService loads right after this autoload (project.godot order), so it does not exist yet
+	# during this _ready(). call_deferred runs at the end of THIS frame, after every autoload's own
+	# _ready() (including CommandService's) has already completed, so by the time it fires the
+	# service is there. Nothing else in this file depends on the builtins being registered
+	# synchronously — a command typed before the deferred call runs would just see "unknown command"
+	# for a single frame, which cannot happen: input is not processed until the tree is idle either.
+	_register_builtins.call_deferred()
 
 	MireLog.add_sink(_on_log_line)
 	for line: String in MireLog.history():
@@ -111,16 +129,32 @@ func set_open(open: bool) -> void:
 		get_tree().paused = open
 
 
-## Register a console command. The callable receives one argument: PackedStringArray of arguments,
-## already split, excluding the command name itself. Return a String to have it echoed.
+## DEPRECATED (docs/COMMANDS.md §2.4) — kept so every pre-3.13 call site keeps working. Wraps
+## [param callable] in a LOCAL-scope CommandSpec with one `rest` argument, so it keeps receiving its
+## PackedStringArray of already-split arguments exactly as before. New commands should call
+## `CommandService.register_spec()` directly instead.
 func register(command: StringName, callable: Callable, usage: String = "") -> void:
-	_commands[command] = callable
-	_help[command] = usage
+	MireLog.warn(&"dev", "DebugConsole.register('%s') uses the deprecated shim — " % command +
+		"migrate to CommandService.register_spec() (docs/COMMANDS.md §2.1)")
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
+		return
+	var wrapped := func(_ctx: Dictionary, args: Dictionary) -> String:
+		return String(callable.call(args.get("rest", PackedStringArray())))
+	command_service.call("register_spec", command, {
+		"scope": &"local",
+		"args": [{"name": "rest", "type": &"rest"}],
+		"handler": wrapped,
+		"help": usage if usage != "" else String(command),
+	})
 
 
+## DEPRECATED alongside `register()` — CommandService has no unregister today (nothing needed one;
+## specs are meant to be re-registered, not withdrawn). Kept as a no-op so an old call site does not
+## hard-error; logs so the gap is visible if something actually relied on it.
 func unregister(command: StringName) -> void:
-	_commands.erase(command)
-	_help.erase(command)
+	MireLog.warn(&"dev", "DebugConsole.unregister('%s') is a no-op — CommandService specs are not "
+		% command + "withdrawn once registered")
 
 
 func _on_submitted(text: String) -> void:
@@ -139,17 +173,53 @@ func _on_submitted(text: String) -> void:
 	_run(line)
 
 
+## Submits through CommandService and prints whatever CommandResult eventually comes back —
+## synchronously for a LOCAL command or a HOST command typed on the host, after a real RPC round trip
+## for a HOST command typed on a client. `submit()` + `command_result` rather than `await execute()`
+## directly: this file only ever holds CommandService through `get_node_or_null().call()`, and
+## awaiting a coroutine through that dynamic dispatch is not a pattern anything else in this codebase
+## relies on, so this does not either (see command_service.gd's file header).
 func _run(line: String) -> void:
-	var parts: PackedStringArray = line.split(" ", false)
-	var command := StringName(parts[0])
-	if not _commands.has(command):
-		_print_line("[color=#f77]unknown command: %s[/color]" % command)
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
+		_print_line("[color=#f77]CommandService unavailable[/color]")
 		return
+	if not _command_service_connected:
+		command_service.connect(&"command_result", _on_command_result)
+		_command_service_connected = true
 
-	var args: PackedStringArray = parts.slice(1)
-	var result: Variant = _commands[command].call(args)
-	if result != null and str(result) != "":
-		_print_line(str(result))
+	var ctx: Dictionary = command_service.call("build_local_ctx", &"console")
+	var handle: int = int(command_service.call("submit", line, ctx))
+	_pending_handles[handle] = true
+
+	# COMMANDS.md §10's wrinkle, MEASURED rather than assumed: tools/command_net_check.gd proved a
+	# client's HOST-scope submission never gets its `net_command_result` reply while this tree stays
+	# paused — the request reaches the host fine, the host executes it and sends the reply, but the
+	# reply never resumes this process's own awaiting coroutine until something unpauses it. So:
+	# unpause for exactly as long as a request from THIS console is in flight, and re-pause once
+	# every such request has resolved (see `_on_command_result`). A LOCAL command never leaves this
+	# process, so it resolves inside `submit()` above before this line even runs — nothing to unpause
+	# for. Filed as D-076 (docs/DECISIONS.md).
+	if pause_while_open and get_tree().paused:
+		get_tree().paused = false
+		_unpaused_for_handles[handle] = true
+
+
+func _on_command_result(handle: int, result: Dictionary) -> void:
+	if _unpaused_for_handles.erase(handle) and _unpaused_for_handles.is_empty() \
+			and is_open and pause_while_open:
+		get_tree().paused = true
+
+	if not _pending_handles.has(handle):
+		return
+	_pending_handles.erase(handle)
+	var message: String = String(result.get("message", ""))
+	if message.is_empty():
+		return
+	if bool(result.get("ok", true)):
+		_print_line(message)
+	else:
+		_print_line("[color=#f77]%s[/color]" % message)
 
 
 func _recall_history(direction: int) -> void:
@@ -182,32 +252,63 @@ func _print_line(line: String) -> void:
 		_output.remove_paragraph(0)
 
 
+## Real CommandSpecs, registered directly against CommandService — these are the "console builtins"
+## docs/COMMANDS.md §2.4 names as part of 3.13's migration. `commands`/`op`/`deop` live on
+## CommandService itself (COMMANDS.md §7's Meta row is split: the ones that need no console-specific
+## state are meta commands there; `help`/`clear`/`overlay`/`quit`/`log`/`channels` stay here because
+## they reach into this console's own UI or MireLog directly).
 func _register_builtins() -> void:
-	register(&"help", _cmd_help, "help — list commands")
-	register(&"clear", _cmd_clear, "clear — wipe the console output")
-	register(&"channels", _cmd_channels, "channels — show log channel states")
-	register(&"log", _cmd_log, "log <channel> <on|off> — toggle a log channel")
-	register(&"overlay", _cmd_overlay, "overlay — cycle the debug overlay")
-	register(&"quit", _cmd_quit, "quit — close the game")
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
+		MireLog.error(&"dev", "DebugConsole: CommandService never appeared — builtins not registered")
+		return
+
+	command_service.call("register_spec", &"help", {
+		"scope": &"local", "args": [], "handler": _cmd_help, "help": "help — list commands",
+	})
+	command_service.call("register_spec", &"clear", {
+		"scope": &"local", "args": [], "handler": _cmd_clear,
+		"help": "clear — wipe the console output",
+	})
+	command_service.call("register_spec", &"channels", {
+		"scope": &"local", "args": [], "handler": _cmd_channels,
+		"help": "channels — show log channel states",
+	})
+	command_service.call("register_spec", &"log", {
+		"scope": &"local",
+		"args": [
+			{"name": "channel", "type": &"string"},
+			{"name": "state", "type": &"bool"},
+		],
+		"handler": _cmd_log,
+		"help": "log <channel> <on|off> — toggle a log channel",
+	})
+	command_service.call("register_spec", &"overlay", {
+		"scope": &"local", "args": [], "handler": _cmd_overlay,
+		"help": "overlay — cycle the debug overlay",
+	})
+	command_service.call("register_spec", &"quit", {
+		"scope": &"local", "args": [], "handler": _cmd_quit, "help": "quit — close the game",
+	})
 
 
-func _cmd_help(_args: PackedStringArray) -> String:
-	var commands: Array[StringName] = []
-	commands.assign(_help.keys())
-	commands.sort()
-
+func _cmd_help(_ctx: Dictionary, _args: Dictionary) -> String:
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
+		return ""
+	var names: Array = command_service.call("spec_names")
 	var lines: Array[String] = []
-	for command: StringName in commands:
-		lines.append("  " + (_help[command] if _help[command] != "" else String(command)))
+	for command_name: Variant in names:
+		lines.append("  " + String(command_service.call("help_text", command_name)))
 	return "\n".join(lines)
 
 
-func _cmd_clear(_args: PackedStringArray) -> String:
+func _cmd_clear(_ctx: Dictionary, _args: Dictionary) -> String:
 	_output.clear()
 	return ""
 
 
-func _cmd_channels(_args: PackedStringArray) -> String:
+func _cmd_channels(_ctx: Dictionary, _args: Dictionary) -> String:
 	var lines: Array[String] = []
 	var states: Dictionary[StringName, bool] = MireLog.channel_states()
 	for channel: StringName in states:
@@ -215,20 +316,19 @@ func _cmd_channels(_args: PackedStringArray) -> String:
 	return "\n".join(lines)
 
 
-func _cmd_log(args: PackedStringArray) -> String:
-	if args.size() < 2:
-		return "usage: log <channel> <on|off>"
-	var enabled: bool = args[1].to_lower() in ["on", "true", "1"]
-	if not MireLog.set_enabled(StringName(args[0]), enabled):
-		return "no such channel: %s" % args[0]
-	return "%s -> %s" % [args[0], "on" if enabled else "off"]
+func _cmd_log(_ctx: Dictionary, args: Dictionary) -> String:
+	var channel: String = String(args.get("channel", ""))
+	var enabled: bool = bool(args.get("state", false))
+	if not MireLog.set_enabled(StringName(channel), enabled):
+		return "no such channel: %s" % channel
+	return "%s -> %s" % [channel, "on" if enabled else "off"]
 
 
-func _cmd_overlay(_args: PackedStringArray) -> String:
+func _cmd_overlay(_ctx: Dictionary, _args: Dictionary) -> String:
 	DebugOverlay.cycle_mode()
 	return ""
 
 
-func _cmd_quit(_args: PackedStringArray) -> String:
+func _cmd_quit(_ctx: Dictionary, _args: Dictionary) -> String:
 	get_tree().quit()
 	return ""

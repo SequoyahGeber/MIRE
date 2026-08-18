@@ -56,7 +56,11 @@ extends RefCounted
 ## property, `dodging`, to the player's existing position/rotation SceneReplicationConfig — the
 ## host's dodge i-frame decision (systems/health/player_health.gd's _on_enemy_attack_landed()) reads
 ## it off that synchronizer, not a new RPC.
-const PROTOCOL_VERSION: int = 15
+## 16 (task 3.13): autoload/command_service.gd added net_submit_command (client -> host, a raw
+## console line + a request id) and net_command_result (host -> the one requester, its CommandResult).
+## The command framework's whole trust model is the host re-parsing that raw line from scratch, so
+## the wire shape is deliberately just one String — no client-parsed structure ever crosses the RPC.
+const PROTOCOL_VERSION: int = 16
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).

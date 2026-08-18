@@ -3137,3 +3137,19 @@ Notes along the way:
 Files: `world/gen/island_heightmap.gd`, `tools/check_determinism.gd`, `tools/terrain_check.gd`
 
 Commit at time of writing: `8bb62bb`
+
+---
+
+### DONE · 3.13 · lp · 2026-08-18T19:52:51+00:00
+
+**Command core — `CommandService` front door: typed arg specs, LOCAL/HOST scopes, client→host RPC + op permissions, migrate every existing console command (`docs/COMMANDS.md` §1–2)**
+
+CommandService front door shipped: typed CommandSpec registry, LOCAL/HOST scope routing, client->host RPC (net_submit_command/net_command_result, protocol 15->16, handshake_check extended), op set with host-only op/deop restriction. Migrated every existing console command to specs: debug_console builtins, dev_loadout give/loadout/items, enemy_world spawn/killall/enemies; old DebugConsole.register() is now a deprecation-warning shim. ARCHITECTURE.md 2.2 gained the Command execution row. D-076/077/078 filed; F-126 filed (peer arg has no display-name half). Verified: agent godot --script tools/command_check.gd (offline, 0 failures) and tools/command_net_check.gd (two real ENet processes, 0 failures, proves non-op refusal, host op grant, and the console-paused RPC round trip) plus handshake_check/dev_loadout_check/enemy_check/enemy_net_check/wave_spawner_check all still green, full boot 0 ERROR lines.
+
+Notes along the way:
+- agent autoload only appends; moved CommandService= right after DebugConsole= by hand (editor confirmed closed) since this task's own spec requires it there so every later autoload can register specs synchronously in _ready(). No other line touched/reordered.
+- CommandService shipped: front door, LOCAL/HOST scopes, client->host RPC (net_submit_command/net_command_result, protocol 15->16), op set. Migrated console builtins + give/loadout/items + spawn/killall/enemies to specs; old register() is a deprecation shim. Real finding: console-paused RPC round trip never completed until DebugConsole started unpausing for in-flight requests (D-076) -- command_net_check.gd caught this empirically. F-107's lambda-captures-by-value trap bit my own net check too; fixed with member vars. D-077/D-078 file COMMANDS.md sec9 items 1-2 verbatim. F-126 filed for peer arg's missing display-name half.
+
+Files: `autoload/command_service.gd`, `autoload/debug_console.gd`, `core/dev/dev_loadout.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/command_check.gd`, `tools/command_net_check.gd`, `autoload/enemy_world.gd`
+
+Commit at time of writing: `26680fe`
