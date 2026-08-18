@@ -28,6 +28,10 @@ extends Node3D
 ## handful of draw calls.
 
 const PROP_GROUP: StringName = &"authored_world_prop"
+## Harvestable props get their own node instead of a MultiMesh slot, and their own
+## group, because `autoload/harvest_world.gd` has to hide one tree's visual when it
+## is felled — and one instance of a MultiMesh is not a thing you can hide.
+const HARVESTABLE_HOLDER_GROUP: StringName = &"authored_world_harvestable"
 const MARKER_GROUP: StringName = &"authored_world_marker"
 const TERRAIN_GROUP: StringName = &"authored_world_terrain"
 
@@ -40,6 +44,7 @@ var prop_count: int = 0
 var multimesh_count: int = 0
 var collider_count: int = 0
 var water_surfaces: int = 0
+var harvestable_holders: int = 0
 
 var _layout: Dictionary = {}
 var _origin := Vector2.ZERO
@@ -62,9 +67,9 @@ func _ready() -> void:
 	_build_lights()
 	_build_markers()
 	print(
-		"AUTHORED_WORLD id=%s terrain_tris=%d props=%d multimeshes=%d colliders=%d water=%d ms=%d" % [
+		"AUTHORED_WORLD id=%s terrain_tris=%d props=%d multimeshes=%d colliders=%d water=%d harvestable=%d ms=%d" % [
 			String(_layout.get("id", "?")), terrain_triangles, prop_count, multimesh_count,
-			collider_count, water_surfaces, Time.get_ticks_msec() - started
+			collider_count, water_surfaces, harvestable_holders, Time.get_ticks_msec() - started
 		]
 	)
 
@@ -96,6 +101,14 @@ func _read_heightfield() -> void:
 		push_error("AuthoredWorld heightfield is %d values for %dx%d" % [_heights.size(), _nx, _nz])
 
 
+## The height of the terrain SURFACE — the triangle, not a bilinear guess.
+##
+## `_build_terrain` meshes each quad as (a, b, c) and (a, c, d), so the ground a
+## player stands on is two flat triangles per cell. A bilinear sample of the same
+## four corners differs from that surface by up to a quarter of the cell's height
+## range, and every one of those centimetres is water clipped at the wrong place or
+## a prop hovering. `tools/mapgen/hollowmere_layout.py` samples it the same way, so
+## the file and the engine agree on where the ground is by construction.
 func height_at(x: float, z: float) -> float:
 	var fx := (x - _origin.x) / _cell
 	var fz := (z - _origin.y) / _cell
@@ -107,7 +120,9 @@ func height_at(x: float, z: float) -> float:
 	var h10 := _heights[iz * _nx + ix + 1]
 	var h01 := _heights[(iz + 1) * _nx + ix]
 	var h11 := _heights[(iz + 1) * _nx + ix + 1]
-	return lerpf(lerpf(h00, h10, tx), lerpf(h01, h11, tx), tz)
+	if tz <= tx:
+		return h00 + (h10 - h00) * tx + (h11 - h10) * tz
+	return h00 + (h11 - h01) * tx + (h01 - h00) * tz
 
 
 ## Terrain is emitted as one surface per ground material, so the valley floor
@@ -204,100 +219,112 @@ func _ground_material(spec: Dictionary) -> StandardMaterial3D:
 	return material
 
 
-## Water is clipped to the ground it actually covers: a quad is emitted only where
-## the terrain beneath it is lower than the surface. A lake drawn as a flat disc
-## would hang over the hillside it is supposed to be sitting in.
+## Water: every body unioned into ONE surface per material, clipped to the ground.
+##
+## The rule is **highest level wins, per grid vertex**. Two bodies whose areas
+## overlap therefore produce one sheet, not two — the mere and the fen used to
+## overlap across the whole lake at levels 1.8 m apart and were both drawn, so the
+## lake had a second transparent sheet hanging in the air above it. A union cannot
+## do that even if a future layout overlaps its bodies again.
+##
+## A quad is emitted when ANY of its corners is under water, with every corner at
+## the water level. Requiring all four submerged is the obvious rule and it is what
+## made the shoreline a 2 m staircase with a gap between the water and the beach:
+## the quads that straddle the shore are exactly the ones that draw the edge. The
+## overhang past the true waterline is at most one cell and is under the bank,
+## because the bank is above the water — that is what made the corner dry.
 func _build_water() -> void:
+	var bodies: Array = _layout.get("water", []) as Array
+	if bodies.is_empty() or _nx < 2 or _nz < 2:
+		return
 	var palette: Dictionary = _layout.get("water_materials", {}) as Dictionary
+	var count: int = _nx * _nz
+	var levels := PackedFloat32Array()
+	levels.resize(count)
+	var owners := PackedInt32Array()
+	owners.resize(count)
+	for iz in _nz:
+		for ix in _nx:
+			var index: int = iz * _nx + ix
+			var point := Vector2(_origin.x + ix * _cell, _origin.y + iz * _cell)
+			var best: float = 0.0
+			var best_body: int = -1
+			for body_index in bodies.size():
+				var level := _water_level(bodies[body_index] as Dictionary, point)
+				if is_nan(level):
+					continue
+				if best_body < 0 or level > best:
+					best = level
+					best_body = body_index
+			levels[index] = best
+			owners[index] = best_body
+
+	var surfaces: Dictionary = {}
+	for iz in _nz - 1:
+		for ix in _nx - 1:
+			var corners: Array[int] = [
+				iz * _nx + ix, iz * _nx + ix + 1, (iz + 1) * _nx + ix + 1, (iz + 1) * _nx + ix
+			]
+			var submerged: int = -1
+			var top: float = 0.0
+			for slot in 4:
+				var index: int = corners[slot]
+				if owners[index] < 0 or _heights[index] >= levels[index]:
+					continue
+				if submerged < 0 or levels[index] > top:
+					submerged = slot
+					top = levels[index]
+			if submerged < 0:
+				continue
+			var material_name := String((bodies[owners[corners[submerged]]] as Dictionary)
+				.get("material", "lake"))
+			var points: Array[Vector3] = []
+			for slot in 4:
+				var index: int = corners[slot]
+				# A dry corner takes the quad's own level: this quad exists because
+				# its neighbour is under water, and the sheet has to reach it.
+				var level: float = top if owners[index] < 0 else maxf(levels[index], top)
+				points.append(Vector3(
+					_origin.x + (ix + (1 if slot == 1 or slot == 2 else 0)) * _cell,
+					level,
+					_origin.y + (iz + (1 if slot >= 2 else 0)) * _cell
+				))
+			var vertices: PackedVector3Array = surfaces.get_or_add(
+				material_name, PackedVector3Array()
+			)
+			for triangle: Array in [[0, 1, 2], [0, 2, 3]]:
+				for slot: int in triangle:
+					vertices.append(points[slot])
+			surfaces[material_name] = vertices
+
 	var root := Node3D.new()
 	root.name = "Water"
 	add_child(root)
-	for body_value: Variant in _layout.get("water", []):
-		var body := body_value as Dictionary
-		var built := _water_surface(body)
-		if built == null:
+	for material_name: String in surfaces:
+		var vertices: PackedVector3Array = surfaces[material_name]
+		if vertices.is_empty():
 			continue
-		built.name = String(body.get("name", "Water"))
-		var material := _ground_material(palette.get(String(body.get("material", "lake")), {}) as Dictionary)
+		var normals := PackedVector3Array()
+		normals.resize(vertices.size())
+		normals.fill(Vector3.UP)
+		var arrays: Array = []
+		arrays.resize(Mesh.ARRAY_MAX)
+		arrays[Mesh.ARRAY_VERTEX] = vertices
+		arrays[Mesh.ARRAY_NORMAL] = normals
+		var mesh := ArrayMesh.new()
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		var material := _ground_material(palette.get(material_name, {}) as Dictionary)
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		material.cull_mode = BaseMaterial3D.CULL_DISABLED
-		(built.mesh as ArrayMesh).surface_set_material(0, material)
-		root.add_child(built)
+		mesh.surface_set_material(0, material)
+		var instance := MeshInstance3D.new()
+		instance.name = material_name.capitalize()
+		instance.mesh = mesh
+		root.add_child(instance)
 		water_surfaces += 1
 
 
-func _water_surface(body: Dictionary) -> MeshInstance3D:
-	var kind := String(body.get("kind", ""))
-	var vertices := PackedVector3Array()
-	var normals := PackedVector3Array()
-	var step := _cell
-	var min_x: float
-	var max_x: float
-	var min_z: float
-	var max_z: float
-	match kind:
-		"circle":
-			var centre: Array = body.get("centre", [0.0, 0.0]) as Array
-			var radius := float(body.get("radius", 1.0))
-			min_x = float(centre[0]) - radius
-			max_x = float(centre[0]) + radius
-			min_z = float(centre[1]) - radius
-			max_z = float(centre[1]) + radius
-		"rect":
-			var lo: Array = body.get("min", [0.0, 0.0]) as Array
-			var hi: Array = body.get("max", [0.0, 0.0]) as Array
-			min_x = float(lo[0]); max_x = float(hi[0])
-			min_z = float(lo[1]); max_z = float(hi[1])
-		"strip":
-			var a: Array = body.get("a", [0.0, 0.0]) as Array
-			var b: Array = body.get("b", [0.0, 0.0]) as Array
-			var half := float(body.get("half_width", 1.0))
-			min_x = minf(float(a[0]), float(b[0])) - half
-			max_x = maxf(float(a[0]), float(b[0])) + half
-			min_z = minf(float(a[1]), float(b[1])) - half
-			max_z = maxf(float(a[1]), float(b[1])) + half
-		_:
-			return null
-
-	var x := min_x
-	while x < max_x:
-		var z := min_z
-		while z < max_z:
-			var corners := [
-				Vector2(x, z), Vector2(x + step, z), Vector2(x + step, z + step), Vector2(x, z + step)
-			]
-			var levels: Array[float] = []
-			var covered := true
-			for corner: Vector2 in corners:
-				var level := _water_level(body, corner)
-				if is_nan(level) or height_at(corner.x, corner.y) >= level:
-					covered = false
-					break
-				levels.append(level)
-			if covered:
-				var p := []
-				for index in 4:
-					p.append(Vector3(corners[index].x, levels[index], corners[index].y))
-				for triangle in [[0, 1, 2], [0, 2, 3]]:
-					for index: int in triangle:
-						vertices.append(p[index])
-						normals.append(Vector3.UP)
-			z += step
-		x += step
-
-	if vertices.is_empty():
-		return null
-	var arrays: Array = []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = vertices
-	arrays[Mesh.ARRAY_NORMAL] = normals
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	var instance := MeshInstance3D.new()
-	instance.mesh = mesh
-	return instance
-
-
+## The surface level of one body at a point, or NAN where that body does not cover it.
 func _water_level(body: Dictionary, point: Vector2) -> float:
 	match String(body.get("kind", "")):
 		"circle":
@@ -306,18 +333,37 @@ func _water_level(body: Dictionary, point: Vector2) -> float:
 				return NAN
 			return float(body.get("level", 0.0))
 		"rect":
-			return float(body.get("level", 0.0))
-		"strip":
-			var a: Array = body.get("a", [0.0, 0.0]) as Array
-			var b: Array = body.get("b", [0.0, 0.0]) as Array
-			var start := Vector2(float(a[0]), float(a[1]))
-			var end := Vector2(float(b[0]), float(b[1]))
-			var span := end - start
-			var length_sq := span.length_squared()
-			var t := 0.0 if length_sq < 0.0001 else clampf((point - start).dot(span) / length_sq, 0.0, 1.0)
-			if start.lerp(end, t).distance_to(point) > float(body.get("half_width", 0.0)):
+			var lo: Array = body.get("min", [0.0, 0.0]) as Array
+			var hi: Array = body.get("max", [0.0, 0.0]) as Array
+			if point.x < float(lo[0]) or point.x > float(hi[0]) \
+					or point.y < float(lo[1]) or point.y > float(hi[1]):
 				return NAN
-			return lerpf(float(body.get("level_a", 0.0)), float(body.get("level_b", 0.0)), t)
+			return float(body.get("level", 0.0))
+		"polyline":
+			# One body for the whole river. It used to be one "strip" per segment,
+			# and consecutive strips overlap at every bend — two quads a few
+			# centimetres apart, z-fighting the length of the valley.
+			var points: Array = body.get("points", []) as Array
+			if points.size() < 2:
+				return NAN
+			var half := float(body.get("half_width", 1.0))
+			var best := INF
+			var best_level := 0.0
+			for index in points.size() - 1:
+				var a: Array = points[index] as Array
+				var b: Array = points[index + 1] as Array
+				var start := Vector2(float(a[0]), float(a[1]))
+				var end := Vector2(float(b[0]), float(b[1]))
+				var span := end - start
+				var length_sq := span.length_squared()
+				var t := 0.0 if length_sq < 0.0001 else clampf((point - start).dot(span) / length_sq, 0.0, 1.0)
+				var distance := start.lerp(end, t).distance_to(point)
+				if distance < best:
+					best = distance
+					best_level = lerpf(float(a[2]), float(b[2]), t)
+			if best > half:
+				return NAN
+			return best_level
 	return NAN
 
 
@@ -326,8 +372,12 @@ func _water_level(body: Dictionary, point: Vector2) -> float:
 ## one frustum test.
 func _build_props() -> void:
 	var grouped: Dictionary = {}
+	var harvestable: Array[Dictionary] = []
 	for prop_value: Variant in _layout.get("props", []):
 		var prop := prop_value as Dictionary
+		if bool(prop.get("harvestable", false)):
+			harvestable.append(prop)
+			continue
 		var chunk: Array = prop.get("chunk", [0, 0]) as Array
 		var key := "%d_%d|%s|%s" % [int(chunk[0]), int(chunk[1]),
 			String(prop.get("kit", "")), String(prop.get("asset", ""))]
@@ -341,6 +391,7 @@ func _build_props() -> void:
 	add_child(bodies)
 
 	var cache: Dictionary = {}
+	_build_harvestables(harvestable, cache)
 	for key: String in grouped:
 		var props: Array = grouped[key] as Array
 		var parts := key.split("|")
@@ -449,6 +500,57 @@ func _mesh_parts(kit: String, asset: String) -> Array:
 	return [{"mesh": combined, "offset": Transform3D.IDENTITY, "name": asset}]
 
 
+## One node per harvestable prop: a holder in `HARVESTABLE_HOLDER_GROUP` carrying
+## the asset name, with a `Visual` and a `CollisionBody` under it. That shape is
+## exactly what `HarvestWorld._wire_holder` needs to swap the tree for a live
+## Harvestable, and it is why a hollowmere tree can now actually be chopped down —
+## before this the map's trees and ore were inert scenery, because HarvestWorld
+## only ever looked for `playtest_hollow_asset` holders that this map never built.
+func _build_harvestables(props: Array[Dictionary], cache: Dictionary) -> void:
+	if props.is_empty():
+		return
+	var root := Node3D.new()
+	root.name = "Harvestables"
+	add_child(root)
+	for index in props.size():
+		var prop: Dictionary = props[index]
+		var kit := String(prop.get("kit", ""))
+		var asset := String(prop.get("asset", ""))
+		var meshes: Array = cache.get_or_add("%s|%s" % [kit, asset], _mesh_parts(kit, asset))
+		if meshes.is_empty():
+			continue
+		var pos: Array = prop.get("pos", [0.0, 0.0, 0.0]) as Array
+		var placement := Transform3D(
+			Basis(Vector3.UP, float(prop.get("yaw", 0.0))),
+			Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
+		).scaled_local(Vector3.ONE * float(prop.get("scale", 1.0)))
+
+		var holder := Node3D.new()
+		holder.name = "Harvest_%03d" % index
+		holder.transform = placement
+		holder.set_meta(&"asset", asset)
+		holder.set_meta(&"kit", kit)
+		holder.add_to_group(HARVESTABLE_HOLDER_GROUP)
+		root.add_child(holder)
+
+		var entry: Dictionary = meshes[0] as Dictionary
+		var visual := MeshInstance3D.new()
+		visual.name = "Visual"
+		visual.mesh = entry["mesh"]
+		visual.transform = entry["offset"] as Transform3D
+		holder.add_child(visual)
+
+		var body := StaticBody3D.new()
+		body.name = "CollisionBody"
+		body.set_meta(&"asset", asset)
+		body.set_meta(&"kit", kit)
+		body.add_to_group(PROP_GROUP)
+		holder.add_child(body)
+		_add_shapes(body, prop.get("cols", []) as Array)
+		prop_count += 1
+		harvestable_holders += 1
+
+
 func _collect_meshes(node: Node, out: Array[MeshInstance3D]) -> void:
 	if node is MeshInstance3D and (node as MeshInstance3D).mesh != null:
 		out.append(node as MeshInstance3D)
@@ -477,6 +579,10 @@ func _add_prop_collision(parent: Node3D, prop: Dictionary, placement: Transform3
 	body.set_meta(&"kit", String(prop.get("kit", "")))
 	body.add_to_group(PROP_GROUP)
 	parent.add_child(body)
+	_add_shapes(body, shapes)
+
+
+func _add_shapes(body: StaticBody3D, shapes: Array) -> void:
 	for shape_value: Variant in shapes:
 		var data := shape_value as Dictionary
 		var collider := CollisionShape3D.new()

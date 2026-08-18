@@ -14,7 +14,14 @@ extends Node
 ## range/cooldown and supplies damage/yield.
 
 const HARVESTABLE_SCRIPT := preload("res://systems/harvesting/harvestable.gd")
-const HOLDER_GROUP: StringName = &"playtest_hollow_asset"
+## Both maps' harvestable holders. Playtest Hollow groups every authored prop and this file
+## filters by the `asset` meta; Hollowmere instances its props through MultiMesh and so gives only
+## its harvestable props a node of their own, in a group of their own. Until this was a list,
+## Hollowmere — the main scene — had 77 trees and ore nodes that could not be harvested, because
+## the group this looked for was one no node on that map was ever in.
+const HOLDER_GROUPS: Array[StringName] = [
+	&"playtest_hollow_asset", &"authored_world_harvestable",
+]
 const HARVESTABLE_GROUP: StringName = &"harvestable"
 const WIRED_META: StringName = &"mire_harvestable_wired"
 const ORIGINAL_VISUAL_META: StringName = &"mire_harvestable_original_visual"
@@ -90,9 +97,10 @@ func refresh_current_scene() -> void:
 	var scene: Node = get_tree().current_scene
 	if scene == null:
 		return
-	for candidate: Node in get_tree().get_nodes_in_group(HOLDER_GROUP):
-		if scene == candidate or scene.is_ancestor_of(candidate):
-			_wire_holder(candidate as Node3D, scene)
+	for group: StringName in HOLDER_GROUPS:
+		for candidate: Node in get_tree().get_nodes_in_group(group):
+			if candidate is Node3D and (scene == candidate or scene.is_ancestor_of(candidate)):
+				_wire_holder(candidate as Node3D, scene)
 	var count: int = wired_harvestables().size()
 	if count != _last_reported_count:
 		_last_reported_count = count
@@ -138,17 +146,22 @@ func _wire_holder(holder: Node3D, scene: Node) -> void:
 	if not _definitions.has(asset_id):
 		return
 
-	var layout_index: int = _layout_index(holder.name)
-	if layout_index < 0:
-		MireLog.error(&"harvest", "cannot derive layout index from %s" % holder.name)
-		return
-	var visual_name := "Placed_%03d_%s" % [layout_index, asset_id]
-	var authored_root: Node = scene.get_node_or_null(^"AuthoredVisuals")
-	var original_visual: Node3D = (
-		authored_root.find_child(visual_name, true, false) as Node3D if authored_root != null else null
-	)
+	# The visual to hide, found two ways because the two maps store it two ways. A holder that
+	# carries its own `Visual` child answers directly; the Hollow keeps its visuals in a parallel
+	# `AuthoredVisuals` tree and is matched by index.
+	var original_visual: Node3D = holder.get_node_or_null(^"Visual") as Node3D
 	if original_visual == null:
-		MireLog.error(&"harvest", "cannot find authored visual %s" % visual_name)
+		var layout_index: int = _layout_index(holder.name)
+		if layout_index < 0:
+			MireLog.error(&"harvest", "cannot derive layout index from %s" % holder.name)
+			return
+		var visual_name := "Placed_%03d_%s" % [layout_index, asset_id]
+		var authored_root: Node = scene.get_node_or_null(^"AuthoredVisuals")
+		original_visual = (
+			authored_root.find_child(visual_name, true, false) as Node3D if authored_root != null else null
+		)
+	if original_visual == null:
+		MireLog.error(&"harvest", "cannot find authored visual for %s" % holder.name)
 		return
 
 	var collision_body: CollisionObject3D = holder.get_node_or_null(^"CollisionBody") as CollisionObject3D
@@ -159,7 +172,7 @@ func _wire_holder(holder: Node3D, scene: Node) -> void:
 	var harvestable: Node3D = HARVESTABLE_SCRIPT.new() as Node3D
 	harvestable.name = "Harvestable"
 	harvestable.set("definition", _definitions[asset_id])
-	harvestable.set_meta(&"layout_index", layout_index)
+	harvestable.set_meta(&"layout_index", _layout_index(holder.name))
 	harvestable.set_meta(&"asset", asset_id)
 
 	# Reparent while Harvestable is still outside the tree, so its _ready() discovers collision and

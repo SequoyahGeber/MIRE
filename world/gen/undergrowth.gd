@@ -35,8 +35,13 @@ extends Node3D
 ## coordinate of the Hollow.
 
 const FLORA_DIR: String = "res://assets/flora/exports"
-const RAY_START_HEIGHT: float = 24.0
-const RAY_END_HEIGHT: float = -12.0
+## How far above and below the layout's own ground each probe ray runs. These used
+## to be absolute world heights (24 m down to -12 m), which silently decided that
+## nothing above 24 m gets undergrowth: the whole plateau, every ridge and the
+## boundary ring started ABOVE the ray and grew nothing, while a ray beginning
+## inside a tall prop reported the prop's interior as ground.
+const RAY_ABOVE_GROUND: float = 12.0
+const RAY_BELOW_GROUND: float = 6.0
 const MAX_GROUND_SLOPE_DEG: float = 34.0
 
 ## Total plants attempted across the whole map. Roughly a third are rejected for
@@ -129,6 +134,18 @@ const ZONE_PALETTES: Dictionary = {
 		"leaf_litter": 26, "bracken": 18, "grass_short": 14, "sapling": 12,
 		"moss_patch": 12, "nettle": 8, "plant_broadleaf": 6, "bush_round": 4,
 	},
+	"RuinedVillage": {
+		"grass_dry": 24, "grass_short": 16, "nettle": 14, "moss_patch": 12,
+		"clover_patch": 10, "bush_thorn": 8, "plant_dock": 6, "flowers_tall": 6,
+		"bush_dead": 4,
+	},
+	# The Blight grows almost nothing, and what it does grow is the wrong colour
+	# for everywhere else on the map. A hostile region has to read as one from the
+	# ridge above it, and ground cover is most of what a region reads as.
+	"Blight": {
+		"grass_dry": 30, "bush_dead": 22, "leaf_litter": 16, "moss_patch": 10,
+		"nettle": 8, "plant_dock": 6, "tree_snag": 4, "bush_thorn": 4,
+	},
 }
 
 ## Anything taller than this stays out of a road corridor. The layout already says
@@ -146,6 +163,12 @@ var _rng := RandomNumberGenerator.new()
 var _zone_centres: Dictionary = {}
 var _roads: Array = []
 var _bound: float = 40.0
+var _zone_pull: Dictionary = {}
+var _heights: PackedFloat32Array = PackedFloat32Array()
+var _field_origin := Vector2.ZERO
+var _field_cell: float = 1.0
+var _nx: int = 0
+var _nz: int = 0
 var _variants: Dictionary = {}
 var _placements: Dictionary = {}
 
@@ -179,6 +202,7 @@ func _scatter(layout: Dictionary) -> void:
 	_rng.seed = int(layout.get("seed", 0)) ^ 0x5F10A
 	_bound = float(layout.get("bound", 40.0))
 	_roads = layout.get("roads", []) as Array
+	_read_heightfield(layout)
 	_collect_zone_centres(layout)
 	if _zone_centres.is_empty():
 		push_error("Undergrowth found no zones in the layout; nothing to scatter")
@@ -219,6 +243,22 @@ func _scatter(layout: Dictionary) -> void:
 	)
 
 
+func _read_heightfield(layout: Dictionary) -> void:
+	var field: Dictionary = layout.get("heightfield", {}) as Dictionary
+	var origin: Array = field.get("origin", [0.0, 0.0]) as Array
+	_field_origin = Vector2(float(origin[0]), float(origin[1]))
+	_field_cell = maxf(0.01, float(field.get("cell", 1.0)))
+	_nx = int(field.get("nx", 0))
+	_nz = int(field.get("nz", 0))
+	var raw: Array = field.get("heights", []) as Array
+	if raw.size() != _nx * _nz:
+		_heights = PackedFloat32Array()
+		return
+	_heights.resize(raw.size())
+	for index in raw.size():
+		_heights[index] = float(raw[index])
+
+
 ## Zone extents come from the props the layout already places there, so this file
 ## never states where the West Forest is — it asks the map.
 func _collect_zone_centres(layout: Dictionary) -> void:
@@ -231,6 +271,7 @@ func _collect_zone_centres(layout: Dictionary) -> void:
 			var centre: Array = zone.get("centre", [0.0, 0.0]) as Array
 			if ZONE_PALETTES.has(name):
 				_zone_centres[name] = Vector2(float(centre[0]), float(centre[1]))
+				_zone_pull[name] = float(zone.get("pull", 0.0))
 	if not _zone_centres.is_empty():
 		return
 	var sums: Dictionary = {}
@@ -263,13 +304,22 @@ func _collect_variants() -> void:
 		(_variants[family] as Array).sort()
 
 
+## Which zone owns this point.
+##
+## `pull` biases the distance, and matching the layout generator's rule exactly is
+## the whole point: the generator decides which props stand here with it, so if
+## this file used plain nearest-centre the flora on a patch of ground would come
+## from a different zone than the trees standing in it — moss under a dead wood,
+## bog flowers on a moor. A layout that omits `pull` gets nearest-centre, which is
+## what Playtest Hollow has always had.
 func _zone_for(point: Vector2) -> String:
 	var best := ""
-	var best_distance := INF
+	var best_score := INF
 	for zone: String in _zone_centres:
-		var distance := point.distance_squared_to(_zone_centres[zone] as Vector2)
-		if distance < best_distance:
-			best_distance = distance
+		var score := point.distance_to(_zone_centres[zone] as Vector2) \
+			- float(_zone_pull.get(zone, 0.0))
+		if score < best_score:
+			best_score = score
 			best = zone
 	return best
 
@@ -296,9 +346,26 @@ func _pick_variant(family: String) -> String:
 	return String(options[_rng.randi_range(0, options.size() - 1)])
 
 
+## Is this point in a road corridor?
+##
+## Two schemas, because two maps write two different ones. The Hollow writes axis
+## boxes (`x0`/`z0`/`x1`/`z1`); Hollowmere writes centreline polylines with a
+## half-width. This file only understood the first, so on Hollowmere it matched
+## nothing and every road grew bushes down the middle of it — the corridor rule was
+## running, it just had no roads to run against.
 func _on_road(point: Vector2) -> bool:
 	for road_value: Variant in _roads:
 		var road := road_value as Dictionary
+		var points: Array = road.get("points", []) as Array
+		if points.size() >= 2:
+			var half := float(road.get("half", 3.0)) + 0.6
+			for index in points.size() - 1:
+				var a: Array = points[index] as Array
+				var b: Array = points[index + 1] as Array
+				if _distance_to_segment(point, Vector2(float(a[0]), float(a[1])),
+						Vector2(float(b[0]), float(b[1]))) <= half:
+					return true
+			continue
 		var x0 := float(road.get("x0", 0.0))
 		var z0 := float(road.get("z0", 0.0))
 		var x1 := float(road.get("x1", 0.0))
@@ -309,21 +376,34 @@ func _on_road(point: Vector2) -> bool:
 	return false
 
 
+func _distance_to_segment(point: Vector2, a: Vector2, b: Vector2) -> float:
+	var span := b - a
+	var length_sq := span.length_squared()
+	if length_sq < 0.0001:
+		return point.distance_to(a)
+	return a.lerp(b, clampf((point - a).dot(span) / length_sq, 0.0, 1.0)).distance_to(point)
+
+
 func _ground_at(space: PhysicsDirectSpaceState3D, point: Vector2) -> Dictionary:
+	var ground := _layout_height(point)
 	var query := PhysicsRayQueryParameters3D.create(
-		Vector3(point.x, RAY_START_HEIGHT, point.y), Vector3(point.x, RAY_END_HEIGHT, point.y)
+		Vector3(point.x, ground + RAY_ABOVE_GROUND, point.y),
+		Vector3(point.x, ground - RAY_BELOW_GROUND, point.y)
 	)
 	query.collide_with_areas = false
 	var hit := space.intersect_ray(query)
 	if hit.is_empty():
 		return {}
-	# Landing on a boulder or a roof would be worse than not placing at all: props
-	# are grouped by the layout runtime, so the group is the test.
-	var collider := hit.get("collider") as Node
-	if collider != null:
-		var holder := collider.get_parent()
-		if holder != null and holder.is_in_group(prop_group):
-			return {}
+	# Landing on a boulder or a roof would be worse than not placing at all.
+	#
+	# The group is the test, and the node it has to be tested ON is the one the ray
+	# reported — plus its ancestors. Testing only `collider.get_parent()` was true
+	# for the Hollow, whose colliders hang under a grouped holder, and false for
+	# Hollowmere, which puts the group on the StaticBody the ray actually hits. So
+	# every prop on this map read as open ground and grass grew up through the
+	# trees and over the tops of the rocks.
+	if _is_prop(hit.get("collider") as Node):
+		return {}
 	if (hit["normal"] as Vector3).angle_to(Vector3.UP) > deg_to_rad(MAX_GROUND_SLOPE_DEG):
 		return {}
 	return hit
@@ -332,6 +412,37 @@ func _ground_at(space: PhysicsDirectSpaceState3D, point: Vector2) -> Dictionary:
 ## One MultiMeshInstance3D per mesh part per asset. A flora GLB is two to four
 ## parts (one per material), so a family placed 300 times costs three draw calls,
 ## not 300 nodes.
+## Is this collider a placed prop, rather than the terrain?
+func _is_prop(collider: Node) -> bool:
+	var cursor: Node = collider
+	while cursor != null:
+		if cursor.is_in_group(prop_group):
+			return true
+		cursor = cursor.get_parent()
+	return false
+
+
+## The layout's own ground height, used only to aim the probe ray. The ray still
+## decides where the plant sits — it lands on the collision a player walks on,
+## which may be a bridge deck or a camp floor rather than the heightfield.
+func _layout_height(point: Vector2) -> float:
+	if _heights.is_empty() or _nx < 2 or _nz < 2:
+		return 0.0
+	var fx := (point.x - _field_origin.x) / _field_cell
+	var fz := (point.y - _field_origin.y) / _field_cell
+	var ix := clampi(int(floor(fx)), 0, _nx - 2)
+	var iz := clampi(int(floor(fz)), 0, _nz - 2)
+	var tx := clampf(fx - ix, 0.0, 1.0)
+	var tz := clampf(fz - iz, 0.0, 1.0)
+	var h00 := _heights[iz * _nx + ix]
+	var h10 := _heights[iz * _nx + ix + 1]
+	var h01 := _heights[(iz + 1) * _nx + ix]
+	var h11 := _heights[(iz + 1) * _nx + ix + 1]
+	if tz <= tx:
+		return h00 + (h10 - h00) * tx + (h11 - h10) * tz
+	return h00 + (h11 - h01) * tx + (h01 - h00) * tz
+
+
 func _emit(asset: String, transforms: Array) -> void:
 	var packed: PackedScene = load("%s/%s.glb" % [FLORA_DIR, asset]) as PackedScene
 	if packed == null:

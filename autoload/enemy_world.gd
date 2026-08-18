@@ -173,18 +173,31 @@ func top_up_ambient() -> int:
 	return added
 
 
-## Every `enemy_spawn` marker the level published. `playtest_hollow.gd` puts them in
-## `playtest_hollow_marker` with a `kind` meta; an empty result means the level has no nest and
-## ambient spawning quietly does nothing rather than dropping crawlers at the origin.
+## Every nest marker the level published, from either map's marker group.
+##
+## `playtest_hollow.gd` publishes `playtest_hollow_marker` with kind `enemy_spawn`;
+## `authored_world.gd` publishes `authored_world_marker` with kind `enemy_nest` — the same idea
+## under two names, because the two maps were built a milestone apart. Reading only the first is
+## how Hollowmere shipped as the main scene with four crawler nests modelled into its Blight and
+## **zero crawlers in the game**: nothing was broken, nothing logged, the group simply never
+## matched. An empty result still means the level has no nest, and ambient spawning quietly does
+## nothing rather than dropping crawlers at the origin.
+const NEST_SOURCES: Array[Array] = [
+	[&"playtest_hollow_marker", "enemy_spawn"],
+	[&"authored_world_marker", "enemy_nest"],
+]
+
+
 func ambient_spawn_points() -> Array[Vector3]:
 	var points: Array[Vector3] = []
-	for node: Node in get_tree().get_nodes_in_group(&"playtest_hollow_marker"):
-		var marker := node as Node3D
-		if marker == null:
-			continue
-		if String(marker.get_meta(&"kind", "")) != "enemy_spawn":
-			continue
-		points.append(marker.global_position)
+	for source: Array in NEST_SOURCES:
+		for node: Node in get_tree().get_nodes_in_group(source[0] as StringName):
+			var marker := node as Node3D
+			if marker == null:
+				continue
+			if String(marker.get_meta(&"kind", "")) != String(source[1]):
+				continue
+			points.append(marker.global_position)
 	return points
 
 

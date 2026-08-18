@@ -2088,3 +2088,19 @@ Building system ships and runs, all three parts. BuildableDef + PlacementValidat
 Files: `systems/building/build_ghost.gd`, `tools/build_check.gd`
 
 Commit at time of writing: `8e5bf89`
+
+---
+
+### DONE · 2.1k · ivy8 · 2026-08-18T04:46:24+00:00
+
+**Revise `hollowmere`: shrink the valley to a walkable size, re-author the layout and placement with intent, ground everything, fix grass-through-props, bridge railings and the water, raise tree/harvestable density, use every kit asset, and give the crawlers a corrupt zone to spawn from**
+
+Hollowmere is 192 m across (was 356), re-authored around a road wheel with two river bridges, a plateau with two ramps, and the Blight in the north-east holding the four crawler nests. 2,869 authored props (was 1,415 on four times the area), 83 live harvestable trees/ore nodes (was 0 — HarvestWorld was keyed to playtest_hollow's group), 10,240 scattered plants, all 218 placeable kit assets used or the run fails. Fixed: grass on top of props (undergrowth tested the collider's parent, not the collider), bridge railings mirrored (yaw was atan2(dz,dx); Basis(UP,yaw) sends +X to (cos,-sin)), stacked water sheets and staircased shoreline (bodies now union by highest level, river is one polyline, quad emitted if ANY corner is submerged), floating props (placed at the LOWEST surface under their footprint, sampled through the runtime's own triangulation), and no crawlers at all (EnemyWorld read only playtest_hollow_marker). Verified: hollowmere_check PASS with 0 floating of 672, 0 perched plants of 3441, 0 stacked water of 1023, collision 0.000 m from authored height at 647 probes, 4 crawlers live and all inside the Blight, 83 harvestables wired; verify_setup, harvest_world_check, harvest_world_net_check, harvestable_check, playtest_hollow_check, enemy_crawler_check, wave_spawner_check, flora_check, combat_check, day_night_check all green.
+
+Notes along the way:
+- Took over the three hollowmere files from moss11's 2.1d claim: that chat stopped at 19:26 PDT after writing hollowmere and never closed out; its work is committed. Released with 'drop' under its name, re-claimed here under 2.1k (new roadmap row for this revision).
+- Three systems are keyed to playtest_hollow's group names and therefore do nothing on hollowmere, which is the main scene: enemy_world.ambient_spawn_points() reads only playtest_hollow_marker/enemy_spawn (so the map's 4 nests spawn zero crawlers), harvest_world.HOLDER_GROUP is playtest_hollow_asset (so every tree/ore node is inert scenery), and undergrowth._ground_at tests the collider's PARENT for the prop group while authored_world puts it on the StaticBody itself (so grass grows on top of trees and rocks). Also: yaw is computed atan2(dz,dx) but Basis(UP,yaw) maps +X to (cos,-sin), so every directional prop is mirrored — that is the bridge railings.
+
+Files: `tools/mapgen/hollowmere_layout.py`, `world/gen/layouts/hollowmere.json`, `levels/hollowmere.tscn`, `world/gen/undergrowth.gd`, `world/gen/authored_world.gd`, `tools/hollowmere_check.gd`, `docs/ROADMAP.md`, `autoload/enemy_world.gd`, `autoload/harvest_world.gd`, `tools/hollowmere_render_check.gd`, `tools/mapgen/hollowmere_plan.py`
+
+Commit at time of writing: `57375d8`

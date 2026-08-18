@@ -11,18 +11,23 @@ extends SceneTree
 ## not the same as good.
 
 const SCENE_PATH: String = "res://levels/hollowmere.tscn"
-const OUT_DIR: String = "res://assets/maps/preview"
+## `user://`, not `res://assets/maps/preview`: previews are output, not source, and
+## `assets/maps` belongs to whoever is rebuilding the art. The run prints the
+## absolute path it wrote to.
+const OUT_DIR: String = "user://hollowmere_preview"
 const WARMUP_FRAMES: int = 40
 const SAMPLE_FRAMES: int = 120
 const MINIMUM_FPS: float = 30.0
 
 ## Named viewpoints, chosen to show a different part of the valley each.
 const SHOTS: Array = [
-	{"name": "hold", "from": Vector3(-58.0, 22.0, 52.0), "at": Vector3(-34.0, 2.0, 18.0)},
-	{"name": "mere", "from": Vector3(4.0, 34.0, 132.0), "at": Vector3(52.0, -2.0, 78.0)},
-	{"name": "gorge", "from": Vector3(-62.0, 30.0, -34.0), "at": Vector3(-16.0, 4.0, -74.0)},
-	{"name": "plateau", "from": Vector3(-24.0, 44.0, -18.0), "at": Vector3(-96.0, 16.0, -84.0)},
-	{"name": "valley", "from": Vector3(-120.0, 96.0, 150.0), "at": Vector3(10.0, 0.0, -10.0)},
+	{"name": "hold", "from": Vector3(-30.0, 14.0, 38.0), "at": Vector3(-6.0, 2.0, 10.0)},
+	{"name": "mere", "from": Vector3(6.0, 20.0, 84.0), "at": Vector3(38.0, -2.0, 46.0)},
+	{"name": "bridge_east", "from": Vector3(-6.0, 8.0, 18.0), "at": Vector3(14.0, 1.0, 4.0)},
+	{"name": "gorge", "from": Vector3(-34.0, 18.0, -18.0), "at": Vector3(-14.0, 4.0, -44.0)},
+	{"name": "plateau", "from": Vector3(-14.0, 26.0, -10.0), "at": Vector3(-50.0, 12.0, -44.0)},
+	{"name": "blight", "from": Vector3(4.0, 22.0, -32.0), "at": Vector3(38.0, 4.0, -56.0)},
+	{"name": "valley", "from": Vector3(-64.0, 58.0, 82.0), "at": Vector3(6.0, 0.0, -6.0)},
 ]
 
 
