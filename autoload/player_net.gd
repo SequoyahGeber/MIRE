@@ -50,6 +50,12 @@ const SPAWN_OFFSETS: Array[Vector3] = [
 var _players: Node3D
 var _spawner: MultiplayerSpawner
 
+## Which SPAWN_OFFSETS index each peer holds, keyed by peer id. A *claim*, not a count: the slot is
+## reserved when a player spawns and released only when that player despawns. Deriving placement
+## from `_players.get_child_count()` instead is F-129 — a count stops being unique the moment
+## anyone leaves, so a rejoining player lands on top of whoever inherited their old index.
+var _slots: Dictionary[int, int] = {}
+
 ## Where the level says players belong. Read off the level's hand-placed Player before freeing it.
 var _spawn_point: Transform3D = Transform3D.IDENTITY
 var _session_open: bool = false
@@ -181,7 +187,7 @@ func _spawn_for(peer_id: int) -> void:
 	if player_for(peer_id) != null:
 		return
 
-	var slot: int = _players.get_child_count() % SPAWN_OFFSETS.size()
+	var slot: int = _claim_slot(peer_id)
 	var origin: Vector3 = _spawn_point.origin + _spawn_point.basis * SPAWN_OFFSETS[slot]
 
 	var spawned: Node = _spawner.spawn({
@@ -219,6 +225,27 @@ func _peer_id_of(child: Node) -> int:
 	return node_name.to_int() if node_name.is_valid_int() else 0
 
 
+## The lowest offset index nobody currently holds. Lowest-free rather than next-highest so a session
+## that churns players keeps reusing the tight cluster near the level's spawn point instead of
+## drifting outward, and so the result depends only on who is presently in the session — never on
+## the order they arrived or on how many have come and gone (F-129).
+func _claim_slot(peer_id: int) -> int:
+	if _slots.has(peer_id):
+		return _slots[peer_id]
+	var taken: Array = _slots.values()
+	for index: int in range(SPAWN_OFFSETS.size()):
+		if not taken.has(index):
+			_slots[peer_id] = index
+			return index
+	# More players than authored offsets. MAX_PLAYERS is 6 and so is SPAWN_OFFSETS, so this is
+	# unreachable today; it wraps rather than crashing if either number ever moves.
+	var fallback: int = _slots.size() % SPAWN_OFFSETS.size()
+	_slots[peer_id] = fallback
+	MireLog.warn(NetConfig.LOG_CHANNEL,
+		"PlayerNet: no free spawn offset for peer %d — reusing slot %d" % [peer_id, fallback])
+	return fallback
+
+
 func _despawn(peer_id: int) -> void:
 	var player: Node3D = player_for(peer_id)
 	if player == null:
@@ -227,6 +254,8 @@ func _despawn(peer_id: int) -> void:
 	# queued free runs.
 	_players.remove_child(player)
 	player.queue_free()
+	# Release the claim, or the offsets leak and later joiners are pushed into the fallback below.
+	_slots.erase(peer_id)
 	_last_sample.erase(peer_id)
 	_strikes.erase(peer_id)
 	NetInterest.clear_observer(peer_id)

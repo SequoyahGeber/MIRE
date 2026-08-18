@@ -600,6 +600,45 @@ require reworking the ring/LOD design in `chunk_streamer.gd`.
 
 ---
 
+### F-129 · Players spawn on top of each other: the spawn slot is a live child count, not a held claim
+
+**Area:** net · **Severity:** high · **Found:** 2026-08-18 by pike14
+
+Two players spawn at the identical point, putting the second one's first-person camera inside the
+first one's body. The victim sees a full-screen dark quad — `DebugAvatarFace`'s `#182331` plate seen
+from the inside — and reads it as "the renderer is broken". Reported 2026-08-18 by Sequoyah from a
+live three-machine session, who isolated the trigger precisely: it depends on **which peer joins
+first and which joins second**, and it reproduces on demand by having one client **leave the lobby
+and rejoin**.
+
+**Cause.** `autoload/player_net.gd:184`:
+
+```gdscript
+var slot: int = _players.get_child_count() % SPAWN_OFFSETS.size()
+```
+
+The slot is derived from how many players happen to be in the container *right now*. A child count
+is not an identity — it is only accidentally unique, and it stops being unique the moment anyone
+leaves. Walk it through: host takes slot 0, client A slot 1, client B slot 2. A leaves, so the count
+falls to 2. A rejoins and computes `2 % 6` = **slot 2 — which B is standing on**. The file's own
+comment above `SPAWN_OFFSETS` states the intent this defeats: "so six players do not spawn inside
+one another."
+
+There is a second, rarer path to the same collision: `_spawner.spawn()` adds the child, so two peers
+admitted close enough together can both read the pre-increment count and both take the same slot.
+That one is timing-dependent, which is why the bug looks intermittent and can appear "fixed" on a
+retry — the leave/rejoin path, by contrast, is deterministic.
+
+**Fix.** Hold the slot as a claim keyed by peer id: assign the lowest index not currently claimed,
+and release it in `_despawn()`. Never derive placement from a mutable count.
+
+**Diagnostic note worth keeping.** This presented as a *rendering* fault on the slowest machine, and
+two plausible rendering explanations fit the evidence (a software D3D12 rasterizer, and the debug
+face plate). Both were wrong. What identified it was Sequoyah's observation that the fault followed
+join order rather than hardware — the Windows VM was blamed only because it was usually second.
+
+---
+
 ## Resolved
 
 ### F-005 · R2's chunk benchmark excludes GPU upload cost — **fixed**

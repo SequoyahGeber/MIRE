@@ -65,6 +65,38 @@ func _run() -> void:
 		"SteamLobby advertises this and _check_launch_invite() parses it — they must not drift")
 
 	print("")
+	print("-- overlay Join Game (F-127) --")
+
+	if lobby != null:
+		# Steam raises a *different* callback for the friends-list Join Game than for a lobby invite,
+		# and connecting only the invite one made Join Game visible but inert (F-127).
+		_check("SteamLobby handles the rich-presence join", lobby.has_method("_on_join_game_requested"),
+			"overlay Join Game raises GameRichPresenceJoinRequested_t, not GameLobbyJoinRequested_t")
+		_check("both join paths share one acceptance rule", lobby.has_method("_accept_invite"),
+			"otherwise the 'never yank someone out of a running game' rule drifts between them")
+
+		# The round trip, not the halves: feed the parser exactly what the advertiser publishes.
+		# Asserting the two separately is what would let them drift apart unnoticed.
+		if lobby.has_method("_lobby_id_from_connect"):
+			var published: String = "%s %d" % [arg, 109775242382594016]
+			var parsed: int = int(lobby.call("_lobby_id_from_connect", published))
+			_check("published connect string parses back to its lobby id",
+				parsed == 109775242382594016,
+				"published '%s' but parsed %d" % [published, parsed])
+			_check("an unusable connect string is refused, not guessed at",
+				int(lobby.call("_lobby_id_from_connect", "garbage")) == 0,
+				"a wrong lobby id fails far more confusingly than no join")
+		else:
+			_check("SteamLobby parses the connect string", false, "_lobby_id_from_connect missing")
+
+	if Engine.has_singleton(STEAM_SINGLETON):
+		# Guards the specific mix-up behind F-127: the two callbacks differ by one word.
+		var steam2: Object = Engine.get_singleton(STEAM_SINGLETON)
+		_check("Steam still exposes both join callbacks",
+			steam2.has_signal("join_requested") and steam2.has_signal("join_game_requested"),
+			"lobby invite and rich-presence join are separate signals — connect both")
+
+	print("")
 	if _failures > 0:
 		print("%d check(s) failed" % _failures)
 		quit(1)

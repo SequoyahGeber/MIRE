@@ -258,8 +258,13 @@ func _connect_steam_signals() -> void:
 	_steam.lobby_created.connect(_on_lobby_created)
 	_steam.lobby_joined.connect(_on_lobby_joined)
 	_steam.lobby_chat_update.connect(_on_lobby_chat_update)
-	# Clicking "Join game" on a friend while we are already running.
+	# Two distinct Steam callbacks reach us here, and connecting only one is why the overlay's
+	# "Join Game" silently did nothing (F-125). `join_requested` is GameLobbyJoinRequested_t — a
+	# direct *lobby invite*. `join_game_requested` is GameRichPresenceJoinRequested_t, which is what
+	# Steam fires when a friend is joinable through the `connect` rich presence key we now publish,
+	# and it carries that key's raw string rather than a lobby id.
 	_steam.join_requested.connect(_on_join_requested)
+	_steam.join_game_requested.connect(_on_join_game_requested)
 
 
 func _on_lobby_created(result: int, lobby_id: int) -> void:
@@ -341,6 +346,11 @@ func _on_lobby_chat_update(lobby_id: int, changed_id: int, _making_change_id: in
 
 
 func _on_join_requested(lobby_id: int, friend_id: int) -> void:
+	_accept_invite(lobby_id, friend_id)
+
+
+## Shared by both join paths — the lobby invite and the rich-presence "Join Game".
+func _accept_invite(lobby_id: int, friend_id: int) -> void:
 	var idle: bool = _state == _State.IDLE and not NetTransport.is_active()
 	MireLog.info(NetConfig.LOG_CHANNEL, "%s invited us to lobby %d%s" % [
 		_persona(friend_id), lobby_id, "" if idle else " (already in a session — ignoring)"
@@ -350,6 +360,29 @@ func _on_join_requested(lobby_id: int, friend_id: int) -> void:
 	# signal is fired and the decision belongs to whatever UI is listening.
 	if idle:
 		join_by_id(str(lobby_id))
+
+
+## The rich-presence half of accepting a join. Steam hands back exactly the `connect` string we
+## published — `+connect_lobby <id>` — so this parses it and then behaves identically to a lobby
+## invite. Reuses `_accept_invite()` so the "never yank someone out of a running game" rule cannot
+## drift between the two entry points (F-125).
+func _on_join_game_requested(user: int, connect_string: String) -> void:
+	var lobby_id: int = _lobby_id_from_connect(connect_string)
+	if lobby_id == 0:
+		MireLog.warn(NetConfig.LOG_CHANNEL, "join request from %s carried an unusable connect string '%s'" % [
+			_persona(user), connect_string
+		])
+		return
+	_accept_invite(lobby_id, user)
+
+
+## `+connect_lobby <id>`, the one format we publish and the one Steam echoes back. Returns 0 for
+## anything else rather than guessing — a wrong lobby id fails far more confusingly than no join.
+func _lobby_id_from_connect(connect_string: String) -> int:
+	var parts: PackedStringArray = connect_string.strip_edges().split(" ", false)
+	if parts.size() < 2 or parts[0] != NetConfig.STEAM_CONNECT_LOBBY_ARG:
+		return 0
+	return parts[1].to_int()
 
 
 func _on_transport_disconnected() -> void:
