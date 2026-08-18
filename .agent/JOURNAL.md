@@ -2442,7 +2442,7 @@ Commit at time of writing: `4cabfc0`
 
 ---
 
-### DONE · F-086 · ivy8 · 2026-08-18T13:29:31+00:00
+### DONE · F-086 · bram1 · 2026-08-18T13:29:31+00:00
 
 **The building system has no gameplay caller, so no player can place, rotate, or destroy anything**
 
