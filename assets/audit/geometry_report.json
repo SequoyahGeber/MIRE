@@ -1,0 +1,2605 @@
+{
+  "flora/exports/bracken_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.8162,
+      1.9501,
+      1.0027
+    ],
+    "duplicate_vertices": 960,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bracken",
+      "MIRE_LeafDeep"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1392,
+    "objects": 16,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      -0.0
+    ],
+    "polygons": 632,
+    "sheet": "sheets/flora__exports__bracken_a.png",
+    "smooth_shaded_faces": 236,
+    "triangles": 632,
+    "unapplied_transforms": [],
+    "vertices": 1392
+  },
+  "flora/exports/bracken_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.4546,
+      1.469,
+      0.7025
+    ],
+    "duplicate_vertices": 960,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bracken.001",
+      "MIRE_LeafDeep.001"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1392,
+    "objects": 16,
+    "origin_offset_m": [
+      -0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 632,
+    "sheet": "sheets/flora__exports__bracken_b.png",
+    "smooth_shaded_faces": 231,
+    "triangles": 632,
+    "unapplied_transforms": [],
+    "vertices": 1392
+  },
+  "flora/exports/bracken_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.1075,
+      2.1395,
+      0.9538
+    ],
+    "duplicate_vertices": 960,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bracken.002",
+      "MIRE_LeafDeep.002"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1392,
+    "objects": 16,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 632,
+    "sheet": "sheets/flora__exports__bracken_c.png",
+    "smooth_shaded_faces": 244,
+    "triangles": 632,
+    "unapplied_transforms": [],
+    "vertices": 1392
+  },
+  "flora/exports/bracken_d.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.772,
+      1.7234,
+      0.7812
+    ],
+    "duplicate_vertices": 960,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Bracken.003",
+      "MIRE_LeafDeep.003"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1392,
+    "objects": 16,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 632,
+    "sheet": "sheets/flora__exports__bracken_d.png",
+    "smooth_shaded_faces": 238,
+    "triangles": 632,
+    "unapplied_transforms": [],
+    "vertices": 1392
+  },
+  "flora/exports/bush_broadleaf_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.1293,
+      1.4958,
+      1.6853
+    ],
+    "duplicate_vertices": 932,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf",
+      "MIRE_LeafDeep.004",
+      "MIRE_LeafLight",
+      "MIRE_WoodBark"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1170,
+    "objects": 11,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 432,
+    "sheet": "sheets/flora__exports__bush_broadleaf_a.png",
+    "smooth_shaded_faces": 8,
+    "triangles": 432,
+    "unapplied_transforms": [],
+    "vertices": 1170
+  },
+  "flora/exports/bush_broadleaf_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.5712,
+      2.0357,
+      1.8533
+    ],
+    "duplicate_vertices": 1150,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.001",
+      "MIRE_LeafDeep.005",
+      "MIRE_LeafLight.001",
+      "MIRE_WoodBark.001"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1440,
+    "objects": 13,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      -0.0
+    ],
+    "polygons": 528,
+    "sheet": "sheets/flora__exports__bush_broadleaf_b.png",
+    "smooth_shaded_faces": 25,
+    "triangles": 528,
+    "unapplied_transforms": [],
+    "vertices": 1440
+  },
+  "flora/exports/bush_broadleaf_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.4193,
+      2.0171,
+      1.9266
+    ],
+    "duplicate_vertices": 1170,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.002",
+      "MIRE_LeafDeep.006",
+      "MIRE_LeafLight.002",
+      "MIRE_WoodBark.002"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1470,
+    "objects": 14,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      -0.0
+    ],
+    "polygons": 544,
+    "sheet": "sheets/flora__exports__bush_broadleaf_c.png",
+    "smooth_shaded_faces": 19,
+    "triangles": 544,
+    "unapplied_transforms": [],
+    "vertices": 1470
+  },
+  "flora/exports/bush_dead_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.2235,
+      1.209,
+      1.361
+    ],
+    "duplicate_vertices": 480,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_WoodDead",
+      "MIRE_WoodDeadCut"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 720,
+    "objects": 30,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 360,
+    "sheet": "sheets/flora__exports__bush_dead_a.png",
+    "smooth_shaded_faces": 12,
+    "triangles": 360,
+    "unapplied_transforms": [],
+    "vertices": 720
+  },
+  "flora/exports/bush_dead_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.4121,
+      0.6406,
+      0.8641
+    ],
+    "duplicate_vertices": 464,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_WoodDead.001",
+      "MIRE_WoodDeadCut.001"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 696,
+    "objects": 29,
+    "origin_offset_m": [
+      -0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 348,
+    "sheet": "sheets/flora__exports__bush_dead_b.png",
+    "smooth_shaded_faces": 3,
+    "triangles": 348,
+    "unapplied_transforms": [],
+    "vertices": 696
+  },
+  "flora/exports/bush_dead_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7951,
+      1.2459,
+      1.4159
+    ],
+    "duplicate_vertices": 288,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_WoodDead.002",
+      "MIRE_WoodDeadCut.002"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 432,
+    "objects": 18,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 216,
+    "sheet": "sheets/flora__exports__bush_dead_c.png",
+    "smooth_shaded_faces": 4,
+    "triangles": 216,
+    "unapplied_transforms": [],
+    "vertices": 432
+  },
+  "flora/exports/bush_round_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.1232,
+      0.9194,
+      0.9241
+    ],
+    "duplicate_vertices": 588,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.003",
+      "MIRE_LeafDeep.007",
+      "MIRE_LeafLight.003"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 714,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 240,
+    "sheet": "sheets/flora__exports__bush_round_a.png",
+    "smooth_shaded_faces": 6,
+    "triangles": 240,
+    "unapplied_transforms": [],
+    "vertices": 714
+  },
+  "flora/exports/bush_round_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.3637,
+      1.5689,
+      1.3532
+    ],
+    "duplicate_vertices": 594,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.004",
+      "MIRE_LeafDeep.008",
+      "MIRE_LeafLight.004"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 720,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 240,
+    "sheet": "sheets/flora__exports__bush_round_b.png",
+    "smooth_shaded_faces": 12,
+    "triangles": 240,
+    "unapplied_transforms": [],
+    "vertices": 720
+  },
+  "flora/exports/bush_round_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.2124,
+      1.2052,
+      1.0795
+    ],
+    "duplicate_vertices": 594,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.005",
+      "MIRE_LeafDeep.009",
+      "MIRE_LeafLight.005"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 720,
+    "objects": 3,
+    "origin_offset_m": [
+      -0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 240,
+    "sheet": "sheets/flora__exports__bush_round_c.png",
+    "smooth_shaded_faces": 11,
+    "triangles": 240,
+    "unapplied_transforms": [],
+    "vertices": 720
+  },
+  "flora/exports/bush_round_d.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.3818,
+      1.0839,
+      1.0316
+    ],
+    "duplicate_vertices": 583,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.006",
+      "MIRE_LeafDeep.010",
+      "MIRE_LeafLight.006"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 708,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 240,
+    "sheet": "sheets/flora__exports__bush_round_d.png",
+    "smooth_shaded_faces": 13,
+    "triangles": 240,
+    "unapplied_transforms": [],
+    "vertices": 709
+  },
+  "flora/exports/bush_thorn_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.4066,
+      1.1654,
+      1.1618
+    ],
+    "duplicate_vertices": 612,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_LeafDeep.011",
+      "MIRE_LeafDry",
+      "MIRE_WoodDead.003"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 888,
+    "objects": 29,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 404,
+    "sheet": "sheets/flora__exports__bush_thorn_a.png",
+    "smooth_shaded_faces": 9,
+    "triangles": 404,
+    "unapplied_transforms": [],
+    "vertices": 888
+  },
+  "flora/exports/bush_thorn_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.5882,
+      0.7384,
+      0.8277
+    ],
+    "duplicate_vertices": 492,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_LeafDeep.012",
+      "MIRE_LeafDry.001",
+      "MIRE_WoodDead.004"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 720,
+    "objects": 26,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 336,
+    "sheet": "sheets/flora__exports__bush_thorn_b.png",
+    "smooth_shaded_faces": 5,
+    "triangles": 336,
+    "unapplied_transforms": [],
+    "vertices": 720
+  },
+  "flora/exports/bush_thorn_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.0342,
+      0.7422,
+      0.8715
+    ],
+    "duplicate_vertices": 698,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_LeafDeep.013",
+      "MIRE_LeafDry.002",
+      "MIRE_WoodDead.005"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1008,
+    "objects": 31,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 452,
+    "sheet": "sheets/flora__exports__bush_thorn_c.png",
+    "smooth_shaded_faces": 7,
+    "triangles": 452,
+    "unapplied_transforms": [],
+    "vertices": 1008
+  },
+  "flora/exports/clover_patch_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.8649,
+      0.7316,
+      0.1197
+    ],
+    "duplicate_vertices": 774,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerWhite",
+      "MIRE_GrassDark",
+      "MIRE_Leaf.007",
+      "MIRE_LeafLight.007"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1110,
+    "objects": 16,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 500,
+    "sheet": "sheets/flora__exports__clover_patch_a.png",
+    "smooth_shaded_faces": 176,
+    "triangles": 500,
+    "unapplied_transforms": [],
+    "vertices": 1110
+  },
+  "flora/exports/clover_patch_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.5225,
+      0.6242,
+      0.0868
+    ],
+    "duplicate_vertices": 846,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerWhite.001",
+      "MIRE_GrassDark.001",
+      "MIRE_Leaf.008",
+      "MIRE_LeafLight.008"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1212,
+    "objects": 17,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 544,
+    "sheet": "sheets/flora__exports__clover_patch_b.png",
+    "smooth_shaded_faces": 183,
+    "triangles": 544,
+    "unapplied_transforms": [],
+    "vertices": 1212
+  },
+  "flora/exports/clover_patch_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.6506,
+      0.7869,
+      0.1178
+    ],
+    "duplicate_vertices": 774,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerWhite.002",
+      "MIRE_GrassDark.002",
+      "MIRE_Leaf.009",
+      "MIRE_LeafLight.009"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1110,
+    "objects": 16,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 500,
+    "sheet": "sheets/flora__exports__clover_patch_c.png",
+    "smooth_shaded_faces": 163,
+    "triangles": 500,
+    "unapplied_transforms": [],
+    "vertices": 1110
+  },
+  "flora/exports/flowers_bog_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.863,
+      0.836,
+      0.6808
+    ],
+    "duplicate_vertices": 660,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerWhite.003",
+      "MIRE_GrassDry",
+      "MIRE_Sedge"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 912,
+    "objects": 9,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 376,
+    "sheet": "sheets/flora__exports__flowers_bog_a.png",
+    "smooth_shaded_faces": 93,
+    "triangles": 376,
+    "unapplied_transforms": [],
+    "vertices": 912
+  },
+  "flora/exports/flowers_bog_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.4967,
+      0.451,
+      0.3528
+    ],
+    "duplicate_vertices": 660,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerWhite.004",
+      "MIRE_GrassDry.001",
+      "MIRE_Sedge.001"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 912,
+    "objects": 9,
+    "origin_offset_m": [
+      -0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 376,
+    "sheet": "sheets/flora__exports__flowers_bog_b.png",
+    "smooth_shaded_faces": 79,
+    "triangles": 376,
+    "unapplied_transforms": [],
+    "vertices": 912
+  },
+  "flora/exports/flowers_bog_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7237,
+      0.6602,
+      0.4953
+    ],
+    "duplicate_vertices": 730,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerWhite.005",
+      "MIRE_GrassDry.002",
+      "MIRE_Sedge.002"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1008,
+    "objects": 10,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 412,
+    "sheet": "sheets/flora__exports__flowers_bog_c.png",
+    "smooth_shaded_faces": 107,
+    "triangles": 412,
+    "unapplied_transforms": [],
+    "vertices": 1008
+  },
+  "flora/exports/flowers_creeping_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.952,
+      0.7635,
+      0.1132
+    ],
+    "duplicate_vertices": 588,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerWhite.006",
+      "MIRE_Grass",
+      "MIRE_GrassDark.003"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 804,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 328,
+    "sheet": "sheets/flora__exports__flowers_creeping_a.png",
+    "smooth_shaded_faces": 131,
+    "triangles": 328,
+    "unapplied_transforms": [],
+    "vertices": 804
+  },
+  "flora/exports/flowers_creeping_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7622,
+      0.8043,
+      0.097
+    ],
+    "duplicate_vertices": 552,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerWhite.007",
+      "MIRE_Grass.001",
+      "MIRE_GrassDark.004"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 756,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 312,
+    "sheet": "sheets/flora__exports__flowers_creeping_b.png",
+    "smooth_shaded_faces": 123,
+    "triangles": 312,
+    "unapplied_transforms": [],
+    "vertices": 756
+  },
+  "flora/exports/flowers_creeping_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.9668,
+      1.0045,
+      0.1288
+    ],
+    "duplicate_vertices": 624,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerWhite.008",
+      "MIRE_Grass.002",
+      "MIRE_GrassDark.005"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 852,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 344,
+    "sheet": "sheets/flora__exports__flowers_creeping_c.png",
+    "smooth_shaded_faces": 138,
+    "triangles": 344,
+    "unapplied_transforms": [],
+    "vertices": 852
+  },
+  "flora/exports/flowers_meadow_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.2328,
+      1.5672,
+      0.5606
+    ],
+    "duplicate_vertices": 770,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerCream",
+      "MIRE_Grass.003",
+      "MIRE_GrassDark.006"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1062,
+    "objects": 8,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 440,
+    "sheet": "sheets/flora__exports__flowers_meadow_a.png",
+    "smooth_shaded_faces": 123,
+    "triangles": 440,
+    "unapplied_transforms": [],
+    "vertices": 1062
+  },
+  "flora/exports/flowers_meadow_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.6416,
+      0.7765,
+      0.2889
+    ],
+    "duplicate_vertices": 770,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerCream.001",
+      "MIRE_Grass.004",
+      "MIRE_GrassDark.007"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1062,
+    "objects": 8,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 440,
+    "sheet": "sheets/flora__exports__flowers_meadow_b.png",
+    "smooth_shaded_faces": 132,
+    "triangles": 440,
+    "unapplied_transforms": [],
+    "vertices": 1062
+  },
+  "flora/exports/flowers_meadow_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.9892,
+      0.7786,
+      0.4341
+    ],
+    "duplicate_vertices": 770,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerCream.002",
+      "MIRE_Grass.005",
+      "MIRE_GrassDark.008"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1062,
+    "objects": 8,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 440,
+    "sheet": "sheets/flora__exports__flowers_meadow_c.png",
+    "smooth_shaded_faces": 130,
+    "triangles": 440,
+    "unapplied_transforms": [],
+    "vertices": 1062
+  },
+  "flora/exports/flowers_meadow_d.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.9122,
+      0.9734,
+      0.4268
+    ],
+    "duplicate_vertices": 770,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerCream.003",
+      "MIRE_Grass.006",
+      "MIRE_GrassDark.009"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1062,
+    "objects": 8,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 440,
+    "sheet": "sheets/flora__exports__flowers_meadow_d.png",
+    "smooth_shaded_faces": 124,
+    "triangles": 440,
+    "unapplied_transforms": [],
+    "vertices": 1062
+  },
+  "flora/exports/flowers_tall_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7384,
+      0.8244,
+      1.0097
+    ],
+    "duplicate_vertices": 1144,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerWhite.009",
+      "MIRE_GrassDark.010"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1560,
+    "objects": 6,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 608,
+    "sheet": "sheets/flora__exports__flowers_tall_a.png",
+    "smooth_shaded_faces": 153,
+    "triangles": 608,
+    "unapplied_transforms": [],
+    "vertices": 1560
+  },
+  "flora/exports/flowers_tall_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.6355,
+      0.6669,
+      0.8607
+    ],
+    "duplicate_vertices": 1144,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerPink",
+      "MIRE_GrassDark.011"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1560,
+    "objects": 6,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 608,
+    "sheet": "sheets/flora__exports__flowers_tall_b.png",
+    "smooth_shaded_faces": 159,
+    "triangles": 608,
+    "unapplied_transforms": [],
+    "vertices": 1560
+  },
+  "flora/exports/flowers_tall_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7453,
+      0.692,
+      1.2066
+    ],
+    "duplicate_vertices": 858,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerCream.004",
+      "MIRE_GrassDark.012"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1170,
+    "objects": 5,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 456,
+    "sheet": "sheets/flora__exports__flowers_tall_c.png",
+    "smooth_shaded_faces": 125,
+    "triangles": 456,
+    "unapplied_transforms": [],
+    "vertices": 1170
+  },
+  "flora/exports/grass_dry_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.8836,
+      1.053,
+      0.661
+    ],
+    "duplicate_vertices": 438,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_GrassDry.003",
+      "MIRE_GrassSeed"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 624,
+    "objects": 8,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 304,
+    "sheet": "sheets/flora__exports__grass_dry_a.png",
+    "smooth_shaded_faces": 148,
+    "triangles": 304,
+    "unapplied_transforms": [],
+    "vertices": 624
+  },
+  "flora/exports/grass_dry_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.5594,
+      0.4976,
+      0.4897
+    ],
+    "duplicate_vertices": 438,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_GrassDry.004",
+      "MIRE_GrassSeed.001"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 624,
+    "objects": 8,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 304,
+    "sheet": "sheets/flora__exports__grass_dry_b.png",
+    "smooth_shaded_faces": 137,
+    "triangles": 304,
+    "unapplied_transforms": [],
+    "vertices": 624
+  },
+  "flora/exports/grass_dry_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.8043,
+      0.7196,
+      0.4644
+    ],
+    "duplicate_vertices": 438,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_GrassDry.005",
+      "MIRE_GrassSeed.002"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 624,
+    "objects": 8,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 304,
+    "sheet": "sheets/flora__exports__grass_dry_c.png",
+    "smooth_shaded_faces": 140,
+    "triangles": 304,
+    "unapplied_transforms": [],
+    "vertices": 624
+  },
+  "flora/exports/grass_dry_d.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.8989,
+      0.8208,
+      0.654
+    ],
+    "duplicate_vertices": 438,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_GrassDry.006",
+      "MIRE_GrassSeed.003"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 624,
+    "objects": 8,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 304,
+    "sheet": "sheets/flora__exports__grass_dry_d.png",
+    "smooth_shaded_faces": 139,
+    "triangles": 304,
+    "unapplied_transforms": [],
+    "vertices": 624
+  },
+  "flora/exports/grass_short_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.4523,
+      0.4988,
+      0.1203
+    ],
+    "duplicate_vertices": 390,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Grass.007",
+      "MIRE_GrassDark.013",
+      "MIRE_GrassLight"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 546,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 260,
+    "sheet": "sheets/flora__exports__grass_short_a.png",
+    "smooth_shaded_faces": 158,
+    "triangles": 260,
+    "unapplied_transforms": [],
+    "vertices": 546
+  },
+  "flora/exports/grass_short_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.8817,
+      1.1793,
+      0.1364
+    ],
+    "duplicate_vertices": 390,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Grass.008",
+      "MIRE_GrassDark.014",
+      "MIRE_GrassLight.001"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 546,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 260,
+    "sheet": "sheets/flora__exports__grass_short_b.png",
+    "smooth_shaded_faces": 160,
+    "triangles": 260,
+    "unapplied_transforms": [],
+    "vertices": 546
+  },
+  "flora/exports/grass_short_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.329,
+      1.3708,
+      0.2704
+    ],
+    "duplicate_vertices": 390,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Grass.009",
+      "MIRE_GrassDark.015",
+      "MIRE_GrassLight.002"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 546,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 260,
+    "sheet": "sheets/flora__exports__grass_short_c.png",
+    "smooth_shaded_faces": 156,
+    "triangles": 260,
+    "unapplied_transforms": [],
+    "vertices": 546
+  },
+  "flora/exports/grass_short_d.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.8689,
+      0.6262,
+      0.1477
+    ],
+    "duplicate_vertices": 390,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Grass.010",
+      "MIRE_GrassDark.016",
+      "MIRE_GrassLight.003"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 546,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 260,
+    "sheet": "sheets/flora__exports__grass_short_d.png",
+    "smooth_shaded_faces": 157,
+    "triangles": 260,
+    "unapplied_transforms": [],
+    "vertices": 546
+  },
+  "flora/exports/grass_tussock_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.0377,
+      0.8427,
+      1.0614
+    ],
+    "duplicate_vertices": 420,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Grass.011",
+      "MIRE_GrassDark.017",
+      "MIRE_GrassLight.004"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 588,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 280,
+    "sheet": "sheets/flora__exports__grass_tussock_a.png",
+    "smooth_shaded_faces": 173,
+    "triangles": 280,
+    "unapplied_transforms": [],
+    "vertices": 588
+  },
+  "flora/exports/grass_tussock_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.6735,
+      0.859,
+      0.8499
+    ],
+    "duplicate_vertices": 420,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Grass.012",
+      "MIRE_GrassDark.018",
+      "MIRE_GrassLight.005"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 588,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 280,
+    "sheet": "sheets/flora__exports__grass_tussock_b.png",
+    "smooth_shaded_faces": 176,
+    "triangles": 280,
+    "unapplied_transforms": [],
+    "vertices": 588
+  },
+  "flora/exports/grass_tussock_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.663,
+      0.6258,
+      0.7847
+    ],
+    "duplicate_vertices": 420,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Grass.013",
+      "MIRE_GrassDark.019",
+      "MIRE_GrassLight.006"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 588,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 280,
+    "sheet": "sheets/flora__exports__grass_tussock_c.png",
+    "smooth_shaded_faces": 170,
+    "triangles": 280,
+    "unapplied_transforms": [],
+    "vertices": 588
+  },
+  "flora/exports/grass_tussock_d.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.632,
+      0.6645,
+      0.736
+    ],
+    "duplicate_vertices": 420,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Grass.014",
+      "MIRE_GrassDark.020",
+      "MIRE_GrassLight.007"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 588,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 280,
+    "sheet": "sheets/flora__exports__grass_tussock_d.png",
+    "smooth_shaded_faces": 167,
+    "triangles": 280,
+    "unapplied_transforms": [],
+    "vertices": 588
+  },
+  "flora/exports/leaf_litter_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.9669,
+      0.9801,
+      0.0327
+    ],
+    "duplicate_vertices": 452,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_LeafDry.003",
+      "MIRE_LeafLitter",
+      "MIRE_WoodDead.006"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 636,
+    "objects": 4,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 304,
+    "sheet": "sheets/flora__exports__leaf_litter_a.png",
+    "smooth_shaded_faces": 173,
+    "triangles": 304,
+    "unapplied_transforms": [],
+    "vertices": 636
+  },
+  "flora/exports/leaf_litter_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7436,
+      0.8228,
+      0.0271
+    ],
+    "duplicate_vertices": 362,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_LeafDry.004",
+      "MIRE_LeafLitter.001",
+      "MIRE_WoodDead.007"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 510,
+    "objects": 4,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 244,
+    "sheet": "sheets/flora__exports__leaf_litter_b.png",
+    "smooth_shaded_faces": 134,
+    "triangles": 244,
+    "unapplied_transforms": [],
+    "vertices": 510
+  },
+  "flora/exports/leaf_litter_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.893,
+      0.9994,
+      0.0399
+    ],
+    "duplicate_vertices": 362,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_LeafDry.005",
+      "MIRE_LeafLitter.002",
+      "MIRE_WoodDead.008"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 510,
+    "objects": 4,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      -0.0
+    ],
+    "polygons": 244,
+    "sheet": "sheets/flora__exports__leaf_litter_c.png",
+    "smooth_shaded_faces": 134,
+    "triangles": 244,
+    "unapplied_transforms": [],
+    "vertices": 510
+  },
+  "flora/exports/leaf_litter_d.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.5217,
+      0.8244,
+      0.0233
+    ],
+    "duplicate_vertices": 362,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_LeafDry.006",
+      "MIRE_LeafLitter.003",
+      "MIRE_WoodDead.009"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 510,
+    "objects": 4,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 244,
+    "sheet": "sheets/flora__exports__leaf_litter_d.png",
+    "smooth_shaded_faces": 136,
+    "triangles": 244,
+    "unapplied_transforms": [],
+    "vertices": 510
+  },
+  "flora/exports/lily_pad_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7798,
+      0.769,
+      0.0214
+    ],
+    "duplicate_vertices": 340,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.010",
+      "MIRE_LeafDeep.014"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 440,
+    "objects": 5,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 180,
+    "sheet": "sheets/flora__exports__lily_pad_a.png",
+    "smooth_shaded_faces": 7,
+    "triangles": 180,
+    "unapplied_transforms": [],
+    "vertices": 440
+  },
+  "flora/exports/lily_pad_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7886,
+      0.8217,
+      0.0271
+    ],
+    "duplicate_vertices": 272,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.011",
+      "MIRE_LeafDeep.015"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 352,
+    "objects": 4,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 144,
+    "sheet": "sheets/flora__exports__lily_pad_b.png",
+    "smooth_shaded_faces": 4,
+    "triangles": 144,
+    "unapplied_transforms": [],
+    "vertices": 352
+  },
+  "flora/exports/lily_pad_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.3683,
+      1.0986,
+      0.0326
+    ],
+    "duplicate_vertices": 340,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.012",
+      "MIRE_LeafDeep.016"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 440,
+    "objects": 5,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 180,
+    "sheet": "sheets/flora__exports__lily_pad_c.png",
+    "smooth_shaded_faces": 7,
+    "triangles": 180,
+    "unapplied_transforms": [],
+    "vertices": 440
+  },
+  "flora/exports/marsh_grass_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7477,
+      1.0344,
+      0.9141
+    ],
+    "duplicate_vertices": 350,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_GrassSeed.004",
+      "MIRE_Reed",
+      "MIRE_Sedge.003"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 498,
+    "objects": 6,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 244,
+    "sheet": "sheets/flora__exports__marsh_grass_a.png",
+    "smooth_shaded_faces": 110,
+    "triangles": 244,
+    "unapplied_transforms": [],
+    "vertices": 498
+  },
+  "flora/exports/marsh_grass_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.9713,
+      1.2079,
+      1.0781
+    ],
+    "duplicate_vertices": 350,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_GrassSeed.005",
+      "MIRE_Reed.001",
+      "MIRE_Sedge.004"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 498,
+    "objects": 6,
+    "origin_offset_m": [
+      -0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 244,
+    "sheet": "sheets/flora__exports__marsh_grass_b.png",
+    "smooth_shaded_faces": 109,
+    "triangles": 244,
+    "unapplied_transforms": [],
+    "vertices": 498
+  },
+  "flora/exports/marsh_grass_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.6897,
+      0.7951,
+      0.9155
+    ],
+    "duplicate_vertices": 350,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_GrassSeed.006",
+      "MIRE_Reed.002",
+      "MIRE_Sedge.005"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 498,
+    "objects": 6,
+    "origin_offset_m": [
+      -0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 244,
+    "sheet": "sheets/flora__exports__marsh_grass_c.png",
+    "smooth_shaded_faces": 116,
+    "triangles": 244,
+    "unapplied_transforms": [],
+    "vertices": 498
+  },
+  "flora/exports/moss_patch_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7673,
+      0.6724,
+      0.0491
+    ],
+    "duplicate_vertices": 358,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Moss",
+      "MIRE_MossDark",
+      "MIRE_MossLight"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 446,
+    "objects": 5,
+    "origin_offset_m": [
+      -0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 160,
+    "sheet": "sheets/flora__exports__moss_patch_a.png",
+    "smooth_shaded_faces": 2,
+    "triangles": 160,
+    "unapplied_transforms": [],
+    "vertices": 448
+  },
+  "flora/exports/moss_patch_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.1012,
+      1.1362,
+      0.0735
+    ],
+    "duplicate_vertices": 358,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Moss.001",
+      "MIRE_MossDark.001",
+      "MIRE_MossLight.001"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 446,
+    "objects": 5,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 160,
+    "sheet": "sheets/flora__exports__moss_patch_b.png",
+    "smooth_shaded_faces": 6,
+    "triangles": 160,
+    "unapplied_transforms": [],
+    "vertices": 448
+  },
+  "flora/exports/moss_patch_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.1517,
+      1.1914,
+      0.0812
+    ],
+    "duplicate_vertices": 353,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Moss.002",
+      "MIRE_MossDark.002",
+      "MIRE_MossLight.002"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 440,
+    "objects": 5,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 160,
+    "sheet": "sheets/flora__exports__moss_patch_c.png",
+    "smooth_shaded_faces": 4,
+    "triangles": 160,
+    "unapplied_transforms": [],
+    "vertices": 443
+  },
+  "flora/exports/moss_patch_d.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7155,
+      0.6515,
+      0.0395
+    ],
+    "duplicate_vertices": 307,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Moss.003",
+      "MIRE_MossDark.003",
+      "MIRE_MossLight.003"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 382,
+    "objects": 4,
+    "origin_offset_m": [
+      -0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 140,
+    "sheet": "sheets/flora__exports__moss_patch_d.png",
+    "smooth_shaded_faces": 4,
+    "triangles": 140,
+    "unapplied_transforms": [],
+    "vertices": 385
+  },
+  "flora/exports/nettle_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7046,
+      0.6448,
+      0.8977
+    ],
+    "duplicate_vertices": 615,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_GrassDark.021",
+      "MIRE_Leaf.013",
+      "MIRE_LeafDeep.017"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 828,
+    "objects": 5,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      -0.0
+    ],
+    "polygons": 396,
+    "sheet": "sheets/flora__exports__nettle_a.png",
+    "smooth_shaded_faces": 218,
+    "triangles": 396,
+    "unapplied_transforms": [],
+    "vertices": 828
+  },
+  "flora/exports/nettle_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.482,
+      0.374,
+      0.6326
+    ],
+    "duplicate_vertices": 615,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_GrassDark.022",
+      "MIRE_Leaf.014",
+      "MIRE_LeafDeep.018"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 828,
+    "objects": 5,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      -0.0
+    ],
+    "polygons": 396,
+    "sheet": "sheets/flora__exports__nettle_b.png",
+    "smooth_shaded_faces": 220,
+    "triangles": 396,
+    "unapplied_transforms": [],
+    "vertices": 828
+  },
+  "flora/exports/nettle_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.6792,
+      0.7193,
+      0.7927
+    ],
+    "duplicate_vertices": 820,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_GrassDark.023",
+      "MIRE_Leaf.015",
+      "MIRE_LeafDeep.019"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1104,
+    "objects": 6,
+    "origin_offset_m": [
+      -0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 528,
+    "sheet": "sheets/flora__exports__nettle_c.png",
+    "smooth_shaded_faces": 296,
+    "triangles": 528,
+    "unapplied_transforms": [],
+    "vertices": 1104
+  },
+  "flora/exports/plant_broadleaf_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.0593,
+      1.0652,
+      0.6228
+    ],
+    "duplicate_vertices": 234,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.016",
+      "MIRE_LeafDeep.020",
+      "MIRE_LeafLight.010"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 324,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 156,
+    "sheet": "sheets/flora__exports__plant_broadleaf_a.png",
+    "smooth_shaded_faces": 99,
+    "triangles": 156,
+    "unapplied_transforms": [],
+    "vertices": 324
+  },
+  "flora/exports/plant_broadleaf_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.7896,
+      0.7951,
+      0.4309
+    ],
+    "duplicate_vertices": 273,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.017",
+      "MIRE_LeafDeep.021",
+      "MIRE_LeafLight.011"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 378,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 182,
+    "sheet": "sheets/flora__exports__plant_broadleaf_b.png",
+    "smooth_shaded_faces": 114,
+    "triangles": 182,
+    "unapplied_transforms": [],
+    "vertices": 378
+  },
+  "flora/exports/plant_broadleaf_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.3585,
+      1.5367,
+      0.8958
+    ],
+    "duplicate_vertices": 195,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.018",
+      "MIRE_LeafDeep.022",
+      "MIRE_LeafLight.012"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 270,
+    "objects": 3,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 130,
+    "sheet": "sheets/flora__exports__plant_broadleaf_c.png",
+    "smooth_shaded_faces": 87,
+    "triangles": 130,
+    "unapplied_transforms": [],
+    "vertices": 270
+  },
+  "flora/exports/plant_creeper_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.1866,
+      1.2419,
+      0.0979
+    ],
+    "duplicate_vertices": 608,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.019",
+      "MIRE_LeafDeep.023",
+      "MIRE_LeafLight.013"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 864,
+    "objects": 10,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 416,
+    "sheet": "sheets/flora__exports__plant_creeper_a.png",
+    "smooth_shaded_faces": 205,
+    "triangles": 416,
+    "unapplied_transforms": [],
+    "vertices": 864
+  },
+  "flora/exports/plant_creeper_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.0394,
+      1.1062,
+      0.062
+    ],
+    "duplicate_vertices": 608,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.020",
+      "MIRE_LeafDeep.024",
+      "MIRE_LeafLight.014"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 864,
+    "objects": 10,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 416,
+    "sheet": "sheets/flora__exports__plant_creeper_b.png",
+    "smooth_shaded_faces": 203,
+    "triangles": 416,
+    "unapplied_transforms": [],
+    "vertices": 864
+  },
+  "flora/exports/plant_creeper_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.4652,
+      1.3933,
+      0.0985
+    ],
+    "duplicate_vertices": 608,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.021",
+      "MIRE_LeafDeep.025",
+      "MIRE_LeafLight.015"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 864,
+    "objects": 10,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 416,
+    "sheet": "sheets/flora__exports__plant_creeper_c.png",
+    "smooth_shaded_faces": 197,
+    "triangles": 416,
+    "unapplied_transforms": [],
+    "vertices": 864
+  },
+  "flora/exports/plant_dock_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.3898,
+      1.3987,
+      1.0465
+    ],
+    "duplicate_vertices": 340,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerRust",
+      "MIRE_Leaf.022",
+      "MIRE_LeafDeep.026",
+      "MIRE_LeafDry.007"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 468,
+    "objects": 5,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 208,
+    "sheet": "sheets/flora__exports__plant_dock_a.png",
+    "smooth_shaded_faces": 99,
+    "triangles": 208,
+    "unapplied_transforms": [],
+    "vertices": 468
+  },
+  "flora/exports/plant_dock_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.9134,
+      0.7916,
+      0.6404
+    ],
+    "duplicate_vertices": 368,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerRust.001",
+      "MIRE_Leaf.023",
+      "MIRE_LeafDeep.027",
+      "MIRE_LeafDry.008"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 504,
+    "objects": 6,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 208,
+    "sheet": "sheets/flora__exports__plant_dock_b.png",
+    "smooth_shaded_faces": 70,
+    "triangles": 208,
+    "unapplied_transforms": [],
+    "vertices": 504
+  },
+  "flora/exports/plant_dock_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.3842,
+      1.3395,
+      1.0386
+    ],
+    "duplicate_vertices": 262,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_FlowerRust.002",
+      "MIRE_Leaf.024",
+      "MIRE_LeafDeep.028",
+      "MIRE_LeafDry.009"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 360,
+    "objects": 5,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 156,
+    "sheet": "sheets/flora__exports__plant_dock_c.png",
+    "smooth_shaded_faces": 66,
+    "triangles": 156,
+    "unapplied_transforms": [],
+    "vertices": 360
+  },
+  "flora/exports/sapling_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.6123,
+      0.5969,
+      1.4829
+    ],
+    "duplicate_vertices": 156,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Pine",
+      "MIRE_PineDark",
+      "MIRE_PineLight",
+      "MIRE_WoodBark.003"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 234,
+    "objects": 6,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 132,
+    "sheet": "sheets/flora__exports__sapling_a.png",
+    "smooth_shaded_faces": 1,
+    "triangles": 132,
+    "unapplied_transforms": [],
+    "vertices": 234
+  },
+  "flora/exports/sapling_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.6914,
+      0.8186,
+      1.3199
+    ],
+    "duplicate_vertices": 1428,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.025",
+      "MIRE_LeafDeep.029",
+      "MIRE_LeafLight.016",
+      "MIRE_WoodBark.004"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1800,
+    "objects": 20,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 664,
+    "sheet": "sheets/flora__exports__sapling_b.png",
+    "smooth_shaded_faces": 33,
+    "triangles": 664,
+    "unapplied_transforms": [],
+    "vertices": 1800
+  },
+  "flora/exports/sapling_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.0971,
+      1.0696,
+      2.4746
+    ],
+    "duplicate_vertices": 156,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Pine.001",
+      "MIRE_PineDark.001",
+      "MIRE_PineLight.001",
+      "MIRE_WoodBark.005"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 234,
+    "objects": 6,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 132,
+    "sheet": "sheets/flora__exports__sapling_c.png",
+    "smooth_shaded_faces": 7,
+    "triangles": 132,
+    "unapplied_transforms": [],
+    "vertices": 234
+  },
+  "flora/exports/sapling_d.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.7709,
+      1.5688,
+      2.4356
+    ],
+    "duplicate_vertices": 1412,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.026",
+      "MIRE_LeafDeep.030",
+      "MIRE_LeafLight.017",
+      "MIRE_WoodBark.006"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1776,
+    "objects": 19,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 652,
+    "sheet": "sheets/flora__exports__sapling_d.png",
+    "smooth_shaded_faces": 31,
+    "triangles": 652,
+    "unapplied_transforms": [],
+    "vertices": 1776
+  },
+  "flora/exports/sedge_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.3332,
+      0.3909,
+      0.7047
+    ],
+    "duplicate_vertices": 390,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Reed.003",
+      "MIRE_Sedge.006"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 546,
+    "objects": 2,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 260,
+    "sheet": "sheets/flora__exports__sedge_a.png",
+    "smooth_shaded_faces": 137,
+    "triangles": 260,
+    "unapplied_transforms": [],
+    "vertices": 546
+  },
+  "flora/exports/sedge_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.4177,
+      0.4449,
+      0.8697
+    ],
+    "duplicate_vertices": 390,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Reed.004",
+      "MIRE_Sedge.007"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 546,
+    "objects": 2,
+    "origin_offset_m": [
+      0.0,
+      -0.0,
+      -0.0
+    ],
+    "polygons": 260,
+    "sheet": "sheets/flora__exports__sedge_b.png",
+    "smooth_shaded_faces": 128,
+    "triangles": 260,
+    "unapplied_transforms": [],
+    "vertices": 546
+  },
+  "flora/exports/sedge_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      0.5012,
+      0.321,
+      0.8767
+    ],
+    "duplicate_vertices": 390,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Reed.005",
+      "MIRE_Sedge.008"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 546,
+    "objects": 2,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 260,
+    "sheet": "sheets/flora__exports__sedge_c.png",
+    "smooth_shaded_faces": 128,
+    "triangles": 260,
+    "unapplied_transforms": [],
+    "vertices": 546
+  },
+  "flora/exports/tree_snag_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.6677,
+      2.3837,
+      4.9136
+    ],
+    "duplicate_vertices": 859,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Moss.004",
+      "MIRE_MossDark.004",
+      "MIRE_WoodDead.010",
+      "MIRE_WoodDeadCut.003"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1236,
+    "objects": 40,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 596,
+    "sheet": "sheets/flora__exports__tree_snag_a.png",
+    "smooth_shaded_faces": 19,
+    "triangles": 596,
+    "unapplied_transforms": [],
+    "vertices": 1237
+  },
+  "flora/exports/tree_snag_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      1.8709,
+      2.03,
+      3.5535
+    ],
+    "duplicate_vertices": 828,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Moss.005",
+      "MIRE_MossDark.005",
+      "MIRE_WoodDead.011",
+      "MIRE_WoodDeadCut.004"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1194,
+    "objects": 39,
+    "origin_offset_m": [
+      -0.0,
+      -0.0,
+      0.0
+    ],
+    "polygons": 580,
+    "sheet": "sheets/flora__exports__tree_snag_b.png",
+    "smooth_shaded_faces": 10,
+    "triangles": 580,
+    "unapplied_transforms": [],
+    "vertices": 1196
+  },
+  "flora/exports/tree_snag_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.2887,
+      2.5593,
+      4.7474
+    ],
+    "duplicate_vertices": 721,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Moss.006",
+      "MIRE_MossDark.006",
+      "MIRE_WoodDead.012",
+      "MIRE_WoodDeadCut.005"
+    ],
+    "min_z_m": -0.0,
+    "ngons": 0,
+    "non_manifold_edges": 1032,
+    "objects": 32,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      -0.0
+    ],
+    "polygons": 496,
+    "sheet": "sheets/flora__exports__tree_snag_c.png",
+    "smooth_shaded_faces": 11,
+    "triangles": 496,
+    "unapplied_transforms": [],
+    "vertices": 1033
+  },
+  "flora/exports/tree_willow_a.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      3.7093,
+      3.7321,
+      5.7587
+    ],
+    "duplicate_vertices": 2028,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.027",
+      "MIRE_LeafDeep.031",
+      "MIRE_LeafLight.018",
+      "MIRE_WoodBark.007"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 2520,
+    "objects": 17,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 916,
+    "sheet": "sheets/flora__exports__tree_willow_a.png",
+    "smooth_shaded_faces": 46,
+    "triangles": 916,
+    "unapplied_transforms": [],
+    "vertices": 2520
+  },
+  "flora/exports/tree_willow_b.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      2.9263,
+      2.8586,
+      4.5223
+    ],
+    "duplicate_vertices": 2246,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.028",
+      "MIRE_LeafDeep.032",
+      "MIRE_LeafLight.019",
+      "MIRE_WoodBark.008"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 2790,
+    "objects": 19,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 1012,
+    "sheet": "sheets/flora__exports__tree_willow_b.png",
+    "smooth_shaded_faces": 33,
+    "triangles": 1012,
+    "unapplied_transforms": [],
+    "vertices": 2790
+  },
+  "flora/exports/tree_willow_c.glb": {
+    "degenerate_faces": 0,
+    "dimensions_m": [
+      3.4142,
+      3.5305,
+      5.6277
+    ],
+    "duplicate_vertices": 2028,
+    "inside_out_objects": [],
+    "loose_vertices": 0,
+    "materials": [
+      "MIRE_Leaf.029",
+      "MIRE_LeafDeep.033",
+      "MIRE_LeafLight.020",
+      "MIRE_WoodBark.009"
+    ],
+    "min_z_m": 0.0,
+    "ngons": 0,
+    "non_manifold_edges": 2520,
+    "objects": 17,
+    "origin_offset_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "polygons": 916,
+    "sheet": "sheets/flora__exports__tree_willow_c.png",
+    "smooth_shaded_faces": 40,
+    "triangles": 916,
+    "unapplied_transforms": [],
+    "vertices": 2520
+  }
+}
