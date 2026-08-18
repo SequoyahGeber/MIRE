@@ -18,6 +18,7 @@ const LOOT_PATH: String = "res://content/loot"
 const POWERUPS_PATH: String = "res://content/powerups"
 const BUILDABLES_PATH: String = "res://content/buildables"
 const HAULABLES_PATH: String = "res://content/haulables"
+const ATTUNEMENTS_PATH: String = "res://content/attunements"
 
 ## F-016: LootTableDef is a brand-new class_name (task 3.5) and this autoload boots in every
 ## headless run, so a bare reference here would break every check in the project the moment the
@@ -32,6 +33,8 @@ const BUILDABLE_DEF := preload("res://systems/building/buildable_def.gd")
 const STATION_DEF := preload("res://systems/crafting/station_def.gd")
 ## Same F-016 reasoning again: HaulableDef is new in task 3.10.
 const HAULABLE_DEF := preload("res://systems/hauling/haulable_def.gd")
+## Same F-016 reasoning again: AttunementDef is new in task 3.9.
+const ATTUNEMENT_DEF := preload("res://systems/attunement/attunement_def.gd")
 ## Preloaded like the four above so the one generic loader can use script equality uniformly —
 ## it is the F-016-safe type check for every def, established or new (F-099).
 const ITEM_DEF := preload("res://systems/inventory/item_def.gd")
@@ -62,6 +65,11 @@ var buildables: Dictionary[StringName, Resource] = {}
 ## example, the rest is Sequoyah's (AGENTS.md: never bulk-generate content data).
 var haulables: Dictionary[StringName, Resource] = {}
 
+## Keyed by Attunement id (task 3.9). Exactly four — DESIGN.md §4.5's fixed roster, not an open
+## content pool, so all four ship as the framework rather than one worked example plus Sequoyah's
+## authoring (D-070).
+var attunements: Dictionary[StringName, Resource] = {}
+
 
 func _ready() -> void:
 	_load_dir(ITEMS_PATH, "ItemDef", ITEM_DEF, &"id", "item id", items)
@@ -72,9 +80,10 @@ func _ready() -> void:
 	_load_dir(POWERUPS_PATH, "PowerupDef", POWERUP_DEF, &"id", "powerup id", powerups)
 	_load_dir(BUILDABLES_PATH, "BuildableDef", BUILDABLE_DEF, &"id", "buildable id", buildables)
 	_load_dir(HAULABLES_PATH, "HaulableDef", HAULABLE_DEF, &"id", "haulable id", haulables)
-	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d loot table(s), %d powerup(s), %d buildable(s), %d haulable(s)" % [
+	_load_dir(ATTUNEMENTS_PATH, "AttunementDef", ATTUNEMENT_DEF, &"id", "attunement id", attunements)
+	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d loot table(s), %d powerup(s), %d buildable(s), %d haulable(s), %d attunement(s)" % [
 		items.size(), recipes.size(), stations.size(), weapons.size(), loot_tables.size(),
-		powerups.size(), buildables.size(), haulables.size()
+		powerups.size(), buildables.size(), haulables.size(), attunements.size()
 	])
 
 
@@ -142,6 +151,14 @@ func has_haulable(id: StringName) -> bool:
 	return haulables.has(id)
 
 
+func get_attunement(id: StringName) -> Resource:
+	return attunements.get(id)
+
+
+func has_attunement(id: StringName) -> bool:
+	return attunements.has(id)
+
+
 ## The one loader behind every content directory (F-099 — this replaced seven near-identical
 ## functions, and an eighth content type is now one _ready() line, not another copy). Script
 ## equality is the F-016-safe type check for every def. Defs that implement validation_errors()
@@ -186,8 +203,15 @@ func _tres_files_in(dir_path: String) -> Array[String]:
 	dir.list_dir_begin()
 	var file_name: String = dir.get_next()
 	while file_name != "":
-		if not dir.current_is_dir() and file_name.ends_with(".tres"):
-			result.append(dir_path.path_join(file_name))
+		# Exported builds pack "<name>.tres" as "<name>.tres.remap", so a raw .tres filter matches
+		# nothing there and the game ships with no content at all (F-121). load() wants the original
+		# .tres path and resolves the remap itself.
+		if not dir.current_is_dir():
+			var res_name: String = file_name.trim_suffix(".remap")
+			if res_name.ends_with(".tres"):
+				var res_path: String = dir_path.path_join(res_name)
+				if not result.has(res_path):
+					result.append(res_path)
 		file_name = dir.get_next()
 	dir.list_dir_end()
 	return result
