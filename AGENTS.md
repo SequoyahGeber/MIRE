@@ -10,8 +10,13 @@ one of us pick up where another left off.
 
 Any agent — Claude Code chat, Codex, a second Claude session — can take any task. There's no fixed
 planner/coder identity; which agent picks up a task depends on which plan has usage quota available.
-Sequoyah (human) is the only fixed role: **Integrator** — all Godot editor work, asset import, tuning,
-playtesting, commits.
+Sequoyah (human) is the only fixed role: he decides what gets built, playtests it, and makes the
+looks-and-feels-right calls nothing else can make. He is **not** the person who does your editor
+work. **An agent never hands him something it could do itself, unless he would be significantly
+faster (D-039)** — not scene wiring, not an autoload, not a `.tres`, not a collision shape. The
+exact-file claim on `.tscn`/`.tres`/`.import` with the editor closed (D-031), and `agent autoload`
+for `project.godot` (F-051), are corruption protection, not permission gates. "You'll need to wire
+this up in the editor" is not a hand-off; it is the part of the task you have not finished.
 
 **Sequoyah starts tasks. He does not carry information between them.** If you find yourself writing
 "tell the next agent X" or "paste this into the 1.7 prompt", stop: that X belongs in the repo, and

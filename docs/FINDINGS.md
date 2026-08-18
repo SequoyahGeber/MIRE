@@ -415,33 +415,6 @@ this is a rewrite of one function, not new machinery.
 
 ---
 
-### F-038 · `inventory_net_check` intermittently fails its grant wait under machine load
-
-**Area:** tests/netcode · **Severity:** medium · **Found:** 2026-08-16 by dusk3 during the findings sweep
-
-Running the four two-process ENet checks back to back, `inventory_net_check` failed 10 assertions with
-the client reporting `"error": "grant timeout"` — it never saw the host's granted items inside the
-15 s `TIMEOUT_SEC`. An immediate re-run passed with 0 failures, and `harvestable_net`, `crafting_net`
-and `combat_net` all passed in the same sequence, including ones that grant inventory over the same
-wire.
-
-So this is a race in the harness, not in `InventoryService`. It matters because it makes the check set
-non-deterministic: a red run that goes green on retry trains everyone to re-run rather than
-investigate, which is how a real intermittent failure gets ignored.
-
-Two candidates, both cheap to test: the driver may grant before the client has finished subscribing
-(the same class of bug as `combat_net_check`'s host-player race, which was fixed by polling for the
-precondition instead of asserting it once), or 15 s is simply not enough when several Godot processes
-are competing for the machine. Prefer fixing the ordering over raising the timeout — a longer timeout
-hides the race rather than removing it.
-
-**2026-08-17, flint5 — `combat_net_check` shows the sibling flake.** After F-052's deterministic
-roots were fixed, three back-to-back runs under the `agent godot` lock went green, green, then
-5 failures — the client probe timing out waiting to "complete both swings and the spam rejection"
-(its stage marker read `?`). All three lanes were idle (exhausted), so this is not lane load. When
-this finding is taken, test both checks together: same wait-ordering class, roughly 1-in-3 on this
-machine for combat.
-
 ### F-042 · Rendered PNGs can never be byte-identical, so every rebuild reads as a broken one
 
 **Area:** asset pipeline · **Severity:** low · **Found:** 2026-08-17 by reed16 during 2.1d (A-021S)
@@ -489,24 +462,14 @@ mitigation only binds callers who use it — a bare `Godot --headless` still byp
 properly means either making the checks tolerate a shared cache or giving each lane its own
 `.godot/`, which costs a full reimport per lane. Re-test F-038 under the lock before doing either.
 
----
-
-### F-053 · Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why
-
-**Area:** docs/process · **Severity:** medium — it costs Sequoyah a hand-off on tasks agents should
-finish · **Found:** 2026-08-17, from Sequoyah directly: agents "keep telling me that they cant edit
-scene files and i want them to be able to edit whatever files they need to complete their task"
-
-D-031 already *permits* Godot-file edits under exact claim with the editor closed — but permission
-is not disposition, and several documents still carry the old default: `AI-WORKFLOW.md`'s Tier 0
-framing reads as "editor work belongs to the human" and calls agents "consistently bad" at UI
-layout; `ASSET_TRACKER.md` says "Sequoyah adds simple collision and scene wiring in the editor when
-needed" and "Godot scene hookup remains Sequoyah's work"; nothing anywhere states the rule Sequoyah
-actually wants: **an agent never hands him work it could do itself unless he is significantly
-faster.** Recorded as D-039; this finding is the doc alignment.
-
-Remaining when filed: `AGENTS.md` is claimed by 2.1j (tine18) — its Hard-rules and close-out
-sections get the same rewording when that claim releases.
+**2026-08-18, lp — the F-038 hypothesis here was wrong; this finding's general claim stands on its
+own.** F-038 is fixed (see Resolved) and its actual cause was a pure ordering race inside the two
+checks (grant sent before the host's own `InventoryService` had created the peer's store) —
+reproduced and fixed entirely under the `agent godot` lock, with no import-cache contention involved
+and no other lane running at the same time. So the import-cache race this finding describes is real
+and still open for whatever *does* trigger it, but it was never F-038's cause; the two just happened
+to share a "grant timeout under load" symptom. Retitling would break the F-number-in-title convention
+other entries link against, so left as-is with this correction instead.
 
 ---
 
@@ -698,34 +661,6 @@ which is already going to touch every collider the world creates.
 
 ---
 
-### F-079 · The obvious way to "compare decoded pixels" silently reports every RGB-only change as identical
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by flint5 during F-073
-
-F-042 correctly says renders must be compared by decoded pixels rather than by file hash, because
-Blender stamps wall-clock into PNG `tEXt`. The natural way to do that in Python is
-`ImageChops.difference(a, b).getbbox()` — and for an **RGBA** image `Image.getbbox()` defaults to
-`alpha_only=True` (Pillow >= 9.2). The difference image's alpha channel is zero wherever both inputs
-are equally opaque, so the call returns `None` and reports "identical" for any change that moved only
-colour.
-
-Not hypothetical: it bit this task twice in a row. `assets/icons/preview/item_icons_sheet.png` is
-fully opaque, so a rebuild that visibly re-rendered both axe cells inside it was classified as
-byte-only churn and reverted — the second time *after* a direct `.convert("RGB")` comparison of the
-same two files had already printed a difference bbox of `(531, 530, 1005, 749)`.
-
-Compare per channel, or pass `alpha_only=False`:
-
-```python
-for ca, cb in zip(a.split(), b.split()):
-    if ImageChops.difference(ca, cb).getbbox():
-        ...
-```
-
-Anything that re-runs a Blender generator and then decides which outputs to keep is exposed to this.
-
----
-
 ### F-097 · Environmental VFX is keyed to node types the shipped map never produces, so wind and firelight are dead on Hollowmere
 
 **Area:** presentation · **Severity:** high · **Found:** 2026-08-18 by larch10 while starting visual work
@@ -837,6 +772,97 @@ resolving a finding *moves* a section rather than appending one.
 ---
 
 ## Resolved
+
+### F-053 · Agents still told Sequoyah they can't edit scene files; the docs' hand-off-by-default tone was why — **fixed**
+
+**Area:** docs/process · **Severity:** medium · **Found:** 2026-08-17, from Sequoyah directly ·
+**Resolved 2026-08-18 by yarrow21.**
+
+D-031 already *permits* Godot-file edits under exact claim with the editor closed — but permission
+is not disposition, and several documents still carry the old default: `AI-WORKFLOW.md`'s Tier 0
+framing reads as "editor work belongs to the human" and calls agents "consistently bad" at UI
+layout; `ASSET_TRACKER.md` says "Sequoyah adds simple collision and scene wiring in the editor when
+needed" and "Godot scene hookup remains Sequoyah's work"; nothing anywhere states the rule Sequoyah
+actually wants: **an agent never hands him work it could do itself unless he is significantly
+faster.** Recorded as D-039; this finding is the doc alignment.
+
+**Fixed.** Two of the three documents had already been brought into line by the tasks that owned
+them, and were re-read to confirm it rather than taken on trust: `AI-WORKFLOW.md`'s Tier 0 heading
+now reads "a cost label, not an ownership rule (D-039)" and names the only two T0 items an agent
+genuinely cannot do (playtesting, and how something feels); `ASSET_TRACKER.md` now says scene hookup
+is done by whichever task needs it under D-031 claims, with visual tuning staying his.
+
+What was left was the sentence blocked behind 2.1j's claim when this was filed, and it was the worst
+one — the *first* thing AGENTS.md said about roles: "Sequoyah (human) is the only fixed role:
+**Integrator** — all Godot editor work, asset import, tuning, playtesting, commits." An agent that
+read only the top of the protocol came away believing editor work was not its to do, and it was
+right to, because that is what the document said. It now states D-039 positively and in the same
+breath as the mechanical rules, so the two cannot be confused for each other:
+
+> He is **not** the person who does your editor work. **An agent never hands him something it could
+> do itself, unless he would be significantly faster (D-039)** … The exact-file claim on
+> `.tscn`/`.tres`/`.import` with the editor closed (D-031), and `agent autoload` for
+> `project.godot` (F-051), are corruption protection, not permission gates. "You'll need to wire
+> this up in the editor" is not a hand-off; it is the part of the task you have not finished.
+
+That last distinction is the whole finding. D-031 and F-051 exist because Godot's editor overwrites
+files and `project.godot` does not merge — mechanical hazards with mechanical answers. Read as
+*permission* rules they became a standing excuse, and the excuse cost Sequoyah a hand-off on every
+task that touched a scene.
+
+**Verified** by reading, which is what a docs finding admits of: no remaining sentence in
+`AGENTS.md`, `docs/AI-WORKFLOW.md` or `docs/ASSET_TRACKER.md` assigns editor work to Sequoyah by
+default. `CLAUDE.md` already carried the rule as non-negotiable #2 and needed no change — the gap
+was in the shared protocol that Codex and the dispatched lanes read.
+
+---
+
+### F-038 · `inventory_net_check` intermittently fails its grant wait under machine load, and `combat_net_check`'s sibling flake — **fixed**
+
+**Area:** tests/netcode · **Severity:** medium · **Found:** 2026-08-16 by dusk3 during the findings
+sweep · **Resolved:** 2026-08-18 by lp.
+
+Running the four two-process ENet checks back to back, `inventory_net_check` failed 10 assertions with
+the client reporting `"error": "grant timeout"` — it never saw the host's granted items inside the
+15 s `TIMEOUT_SEC`. An immediate re-run passed with 0 failures, and `harvestable_net`, `crafting_net`
+and `combat_net` all passed in the same sequence. **2026-08-17, flint5:** `combat_net_check` showed a
+sibling flake — 5 failures on the third of three back-to-back runs, timing out waiting to "complete
+both swings and the spam rejection," roughly 1-in-3 on this machine.
+
+**Root cause 1, both checks — confirmed the harness diagnosis.** The driver granted
+(`EVENT_BUS.emit_harvest_yielded` / `inventory.host_add`) as soon as the CLIENT self-reported
+"connected" (its own `is_active()` + `local_peer_id() > HOST_PEER_ID` + `local_revision() >= 0`),
+which can precede the HOST's own `InventoryService` creating that peer's store.
+`_publish_snapshot()`'s `rpc_id` send is one-shot, gated on `_peer_connected()`, with nothing to
+resend it — a grant landing in that window is lost for the rest of the run. The driver's own
+`host_count(peer, item) == 0` assertion looked like a precondition check but wasn't one: it reads `0`
+identically whether the peer's store doesn't exist yet or exists and is empty, so it passed either
+way and proved nothing. Same class of bug `combat_net_check`'s host-player race was already fixed for
+(`player_net.call("player_for", peer_id) != null`, polled). **Fix, both checks:** poll
+`(inventory.call("host_slots", peer_id) as Array).size() == 32` before granting —
+`host_slots()` returns `[]` before the store exists and a real 32-entry array after, so this actually
+distinguishes the two states. D-059 records the general rule.
+
+**Root cause 2, `combat_net_check` only — a second, unrelated flake, found retesting both checks
+together per the finding's own instruction.** Reproduced with root cause 1's fix already applied:
+`missed_count: 1` on the *second* swing, `axe_damage: 3` (the first, armed swing landed correctly).
+`TestTarget` trails an unfloored, permanently-falling player two metres along its forward — the check
+predates 2.13's floor-having maps and never gave it one. By the second swing the player's fall speed
+has grown enough that `TestTarget._process()`'s one-frame-stale copy of `follow.global_position` can
+clear the swung weapon's `vertical_reach_m`, an intermittent miss with nothing wrong in
+`CombatService`. **Fix:** `_build_ground()`, the same shape `tools/build_net_check.gd` already uses,
+built in both processes (a floor only one side has is its own desync) before the driver/client
+branch — removes the unbounded fall instead of loosening the follow or any reach tolerance.
+
+**Verified:** `agent godot --script tools/net_check_pattern_check.gd` clean (0 failures, neither
+F-060 trap reintroduced). Two full back-to-back sequences of `inventory_net_check` /
+`harvestable_net_check` / `crafting_net_check` / `combat_net_check` (the original repro shape) —
+`failures=0` and 0 undeclared `ERROR:` lines, every check, both passes. `combat_net_check` alone: 8
+consecutive runs post-fix, `missed_count: 0` every time (a pre-fix baseline reproduced a miss within
+2–6 runs). `inventory_net_check` alone: 3 consecutive runs, `failures=0`. Full spec and file list:
+`docs/SPECS.md` F-038.
+
+---
 
 ### F-077 · `agent godot` was always headless, so no in-engine screenshot could be captured — **fixed**
 
@@ -3864,3 +3890,37 @@ Renamed the local workspace and GitHub repository to `MIRE`, updated `project.go
 `MIRE`, and removed the remaining working-title wording from the design document. A repository scan
 found no remaining "muck but better" references, and `tools/verify_setup.gd` passed headlessly on
 Godot 4.7.1.
+
+---
+
+### F-079 · The obvious way to "compare decoded pixels" silently reports every RGB-only change as identical — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-17 by flint5 during F-073 · **Resolved:**
+2026-08-18 by lp.
+
+F-042 correctly says renders must be compared by decoded pixels rather than by file hash, because
+Blender stamps wall-clock into PNG `tEXt`. The natural way to do that in Python is
+`ImageChops.difference(a, b).getbbox()` — and for an **RGBA** image `Image.getbbox()` defaults to
+`alpha_only=True` (Pillow >= 9.2). The difference image's alpha channel is zero wherever both inputs
+are equally opaque, so the call returns `None` and reports "identical" for any change that moved only
+colour. Not hypothetical: it bit F-073's task twice in a row — `item_icons_sheet.png` is fully opaque,
+so a rebuild that visibly re-rendered both axe cells inside it was classified as byte-only churn and
+reverted, the second time *after* a direct `.convert("RGB")` comparison of the same two files had
+already printed a difference bbox of `(531, 530, 1005, 749)`.
+
+**Fix:** `tools/png_pixels_equal.py`, the reusable tool F-042 asked for if this recurred. Its
+`pixel_diff_bbox(a, b)` diffs each `Image.split()` band on its own and unions the boxes — a
+single-band image has no alpha channel to default `getbbox()` to, so the trap has nothing to key off.
+`images_pixel_equal(a, b)` wraps it as a bool for callers that just need a keep/revert decision, and
+the module is also runnable directly (`python3 tools/png_pixels_equal.py a.png b.png`) for ad hoc use.
+Also handles the two neighbouring edge cases an ad hoc script tends to get wrong: differing canvas
+size reports a full-canvas box instead of raising, and RGB-vs-RGBA of the same visible colour compares
+equal instead of raising on a `split()` band-count mismatch.
+
+**Verified:** `python3 tools/png_pixels_equal_check.py` → `PNG_PIXELS_EQUAL_CHECK ok`. It reproduces
+the exact regression (a single RGB-only pixel changed on an otherwise-opaque RGBA image, alpha
+untouched) and asserts the tool catches it with the correct 1×1 bbox; also covers an alpha-only change,
+identical pixels under different `tEXt` metadata (the F-042 case, must still read identical), a
+self-compare, a size mismatch, and RGB-vs-RGBA of the same colour. No Godot involved — this is a
+pure-Python tool bug, so the check is pure Python too rather than a `tools/*_check.gd` run through
+`agent godot`. Full spec: `docs/SPECS.md` F-079.

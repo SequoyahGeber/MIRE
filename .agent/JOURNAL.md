@@ -2495,3 +2495,15 @@ Notes along the way:
 Files: `tools/png_pixels_equal.py`, `tools/png_pixels_equal_check.py`
 
 Commit at time of writing: `01a44d4`
+
+---
+
+### DONE · F-053 · yarrow21 · 2026-08-18T14:02:22+00:00
+
+**Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why**
+
+AGENTS.md's opening role sentence — the one blocked behind 2.1j's claim when this was filed — now states D-039 positively and separates it from the mechanical rules: D-031 claims and agent autoload are corruption protection, not permission gates. AI-WORKFLOW.md and ASSET_TRACKER.md were re-read and already aligned; CLAUDE.md already carried the rule.
+
+Files: `docs/AI-WORKFLOW.md`, `AGENTS.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `804b6f3`

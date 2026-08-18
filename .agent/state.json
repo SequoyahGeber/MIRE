@@ -1,10 +1,5 @@
 {
   "claims": {
-    "AGENTS.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T13:31:12+00:00",
-      "task": "F-053"
-    },
     "assets/maps": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
@@ -90,20 +85,10 @@
       "at": "2026-08-18T13:15:19+00:00",
       "task": "F-099"
     },
-    "docs/AI-WORKFLOW.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T13:31:12+00:00",
-      "task": "F-053"
-    },
     "docs/ASSET_TRACKER.md": {
       "agent": "ivy8",
       "at": "2026-08-18T13:01:13+00:00",
       "task": "2.1d"
-    },
-    "docs/FINDINGS.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T13:31:12+00:00",
-      "task": "F-053"
     },
     "entities/player/viewmodel.gd": {
       "agent": "kiln9",
@@ -237,16 +222,6 @@
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
     },
-    "F-053": {
-      "agent": "yarrow21",
-      "files": [
-        "docs/AI-WORKFLOW.md",
-        "AGENTS.md",
-        "docs/FINDINGS.md"
-      ],
-      "notes": [],
-      "started": "2026-08-18T13:31:12+00:00"
-    },
     "F-097": {
       "agent": "larch10",
       "files": [
@@ -324,8 +299,8 @@
     },
     "AGENTS.md": {
       "agent": "yarrow21",
-      "at": "2026-08-18T13:30:42+00:00",
-      "task": "F-077"
+      "at": "2026-08-18T14:02:22+00:00",
+      "task": "F-053"
     },
     "CLAUDE.md": {
       "agent": "flint5",
@@ -788,8 +763,8 @@
       "task": "3.3"
     },
     "docs/AI-WORKFLOW.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T23:15:28+00:00",
+      "agent": "yarrow21",
+      "at": "2026-08-18T14:02:22+00:00",
       "task": "F-053"
     },
     "docs/ASSET_TRACKER.md": {
@@ -814,8 +789,8 @@
     },
     "docs/FINDINGS.md": {
       "agent": "yarrow21",
-      "at": "2026-08-18T13:30:42+00:00",
-      "task": "F-077"
+      "at": "2026-08-18T14:02:22+00:00",
+      "task": "F-053"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -2915,9 +2890,11 @@
       "title": "The morning's DevLoadout and D-035 commits broke four net checks, and nobody ran the suite to see it"
     },
     "F-053": {
+      "done_at": "2026-08-18T14:02:22+00:00",
+      "done_by": "yarrow21",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why"
     },
