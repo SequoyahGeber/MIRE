@@ -1,5 +1,0 @@
-[gd_scene format=3 uid="uid://clh53q52euuhm"]
-
-[ext_resource type="PackedScene" uid="uid://b8bm23261ncmf" path="res://assets/maps/playtest_map.glb" id="1_kttk5"]
-
-[node name="playtest_map" unique_id=1201992912 instance=ExtResource("1_kttk5")]
