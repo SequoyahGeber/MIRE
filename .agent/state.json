@@ -90,6 +90,11 @@
       "at": "2026-08-18T13:01:13+00:00",
       "task": "2.1d"
     },
+    "docs/ROADMAP.md": {
+      "agent": "lp",
+      "at": "2026-08-18T14:07:07+00:00",
+      "task": "F-036"
+    },
     "entities/player/viewmodel.gd": {
       "agent": "kiln9",
       "at": "2026-08-18T13:15:19+00:00",
@@ -139,6 +144,11 @@
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
+    },
+    "tools/multimesh_readback_check.gd": {
+      "agent": "larch10",
+      "at": "2026-08-18T14:07:12+00:00",
+      "task": "F-097"
     },
     "tools/ship_check.gd": {
       "agent": "ivy8",
@@ -222,6 +232,14 @@
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
     },
+    "F-036": {
+      "agent": "lp",
+      "files": [
+        "docs/ROADMAP.md"
+      ],
+      "notes": [],
+      "started": "2026-08-18T14:07:07+00:00"
+    },
     "F-097": {
       "agent": "larch10",
       "files": [
@@ -232,7 +250,8 @@
         "world/gen/undergrowth.gd",
         "tools/environment_vfx_check.gd",
         "tools/environment_vfx_hollowmere_check.gd",
-        "tools/vfx_site_probe.gd"
+        "tools/vfx_site_probe.gd",
+        "tools/multimesh_readback_check.gd"
       ],
       "notes": [
         {
@@ -273,9 +292,9 @@
   },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T13:30:42+00:00",
-      "task": "F-077"
+      "agent": "bram1",
+      "at": "2026-08-18T14:08:27+00:00",
+      "task": "F-106"
     },
     ".agent/bin/lane": {
       "agent": "yarrow21",
@@ -788,9 +807,9 @@
       "task": "F-077"
     },
     "docs/FINDINGS.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T14:02:22+00:00",
-      "task": "F-053"
+      "agent": "bram1",
+      "at": "2026-08-18T14:08:27+00:00",
+      "task": "F-106"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -2754,7 +2773,7 @@
     "F-036": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Task 2.9's gate cannot be met in its roadmap position \u2014 the enemy it tunes against lands in 2.10"
     },
@@ -3329,6 +3348,22 @@
       "status": "todo",
       "tier": "F",
       "title": "A new `class_name` is invisible to every headless run until the editor rescans, and it fails as a silent hang"
+    },
+    "F-105": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Per-frame costs found by the F-099 review in files claimed by F-086/F-097"
+    },
+    "F-106": {
+      "done_at": "2026-08-18T14:08:27+00:00",
+      "done_by": "bram1",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "A neighbour's half-finished refactor breaks every other agent's checks, and the failure looks like your own"
     }
   },
   "version": 1

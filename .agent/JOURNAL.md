@@ -2522,3 +2522,15 @@ Notes along the way:
 Files: `tools/net_debug_panel_check.gd`
 
 Commit at time of writing: `1a9efa7`
+
+---
+
+### DONE · F-106 · bram1 · 2026-08-18T14:08:27+00:00
+
+**A neighbour's half-finished refactor breaks every other agent's checks, and the failure looks like your own**
+
+agent godot now names the owner when a SCRIPT ERROR/Parse Error hits a .gd the caller does not own, and points at agent baseline to confirm against a clean checkout. Not gated on the exit code — Godot exits 0 on a failed script load, which is why the first attempt silently did nothing. Also instrumented file_lock: waiters now see who holds the lock, a 30s heartbeat with elapsed time, and how long they waited, so a normal multi-minute wait cannot be misread as a hang (the mistake that lost F-086). Verified with a deliberately broken probe (fires, names it) and wave_spawner_check 16 PASS failures=0 (stays silent).
+
+Files: `.agent/bin/agent`, `docs/FINDINGS.md`
+
+Commit at time of writing: `aa3f764`

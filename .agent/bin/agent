@@ -1441,8 +1441,25 @@ LANE_NAMES = ("LC1", "LC2", "LP")
 TIER_EFFORT = {"T0": "low", "T1": "medium", "T2": "high"}
 
 
+def _lock_holder(path):
+    """Who holds a lock right now, phrased for someone staring at a stalled terminal."""
+    try:
+        with open(path) as f:
+            d = json.load(f)
+    except (IOError, ValueError):
+        return "holder unknown"
+    since = ""
+    try:
+        held_for = age_hours(d.get("at", "")) * 3600.0
+        since = " for %.0fs" % held_for if held_for >= 1 else ""
+    except (TypeError, ValueError):
+        pass
+    return "held by %s (pid %s) running %s%s" % (d.get("agent", "?"), d.get("pid", "?"),
+                                                 d.get("label", "?"), since)
+
+
 @contextlib.contextmanager
-def file_lock(name, timeout=600):
+def file_lock(name, timeout=600, label=None):
     """Serialise the two resources three concurrent lanes actually share.
 
     `godot` — one headless Godot at a time. Lanes share a single 42 MB import cache, and two engines
@@ -1451,24 +1468,52 @@ def file_lock(name, timeout=600):
     """
     os.makedirs(LOCKS, exist_ok=True)
     path = os.path.join(LOCKS, "%s.lock" % name)
+    held = os.path.join(LOCKS, "%s.holder" % name)
+    began = time.time()
     waited = False
     with open(path, "w") as fh:
         deadline = time.time() + timeout
+        heartbeat = 0.0
         while True:
             try:
                 fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 break
             except OSError:
+                # A single dim "waiting" line, then silence for minutes, is indistinguishable from a
+                # hang — and an agent that reads it as one stops mid-task. So: say who has it, and
+                # keep saying that time is passing. F-086 died waiting on this lock believing
+                # nothing was happening. Waiting is normal here; looking stalled is what is not.
+                tick = time.time()          # NOT `now` — that shadows the module's now()
                 if not waited:
-                    print("%s· waiting for the %s lock%s" % (C["dim"], name, C["x"]))
-                    waited = True
-                if time.time() > deadline:
-                    die("timed out after %ds waiting for the %s lock. If nothing is running, "
-                        "remove %s" % (timeout, name, os.path.relpath(path, ROOT)))
+                    print("%s· waiting for the %s lock — %s%s"
+                          % (C["dim"], name, _lock_holder(held), C["x"]))
+                    print("  %sthis is normal with several agents running; keep waiting, do not "
+                          "background this%s" % (C["dim"], C["x"]))
+                    waited, heartbeat = True, tick
+                elif tick - heartbeat >= 30:
+                    print("  %s· still waiting (%.0fs) — %s%s"
+                          % (C["dim"], tick - began, _lock_holder(held), C["x"]))
+                    heartbeat = tick
+                if tick > deadline:
+                    die("timed out after %ds waiting for the %s lock (%s). If nothing is running, "
+                        "remove %s" % (timeout, name, _lock_holder(held),
+                                       os.path.relpath(path, ROOT)))
                 time.sleep(0.4)
+        if waited:
+            print("%s· got the %s lock after %.0fs%s" % (C["dim"], name, time.time() - began, C["x"]))
+        try:
+            with open(held, "w") as h:
+                json.dump({"pid": os.getpid(), "agent": whoami(required=False, assign=False) or "?",
+                           "label": label or name, "at": now()}, h)
+        except (IOError, OSError):
+            pass
         try:
             yield
         finally:
+            try:
+                os.remove(held)
+            except OSError:
+                pass
             fcntl.flock(fh, fcntl.LOCK_UN)
 
 
@@ -2297,11 +2342,54 @@ def cmd_godot(args):
     directly — see F-044. Usage mirrors the engine's: `agent godot --script tools/x_check.gd`.
     Add `--windowed` when the check captures PNGs; see `_godot_argv` (F-077)."""
     argv = _godot_argv(ROOT, args)
-    with file_lock("godot", timeout=1800):
+    script = next((a for a in args if a.endswith(".gd")), "godot")
+    with file_lock("godot", timeout=1800, label=script):
         # Everything but the binary: whether --headless was injected is exactly what F-077 was
         # about not being able to see.
         print("%s· %s%s" % (C["dim"], " ".join(argv[1:]), C["x"]))
-        return subprocess.call(argv, cwd=ROOT)
+        proc = subprocess.Popen(argv, cwd=ROOT, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, text=True, bufsize=1)
+        blamed, seen = set(), []
+        for line in proc.stdout:            # stream it through unchanged; just watch as it passes
+            sys.stdout.write(line)
+            if "SCRIPT ERROR" in line or "Parse Error" in line:
+                seen.append(line)
+            m = re.search(r"res://(\S+?\.gd)", line)
+            if m and seen:
+                blamed.add(m.group(1))
+        proc.stdout.close()
+        code = proc.wait()
+        # NOT gated on the exit code: Godot exits 0 even when a script fails to load outright with a
+        # parse error, which is precisely the failure this warns about. Measured — the same reason
+        # every check in tools/ prints its own `failures=N` instead of trusting $?.
+        if blamed:
+            _blame_foreign_break(sorted(blamed))
+        return code
+
+
+def _blame_foreign_break(files):
+    """Name the neighbour whose uncommitted work just broke your check.
+
+    Every agent boots the project out of ONE shared working directory, so a script another agent is
+    halfway through refactoring is a parse error in everybody's run. The failure reads as your own —
+    it names a file, not a person — and the honest responses to it are both wrong: chase a bug you
+    did not write, or edit a file somebody else holds. Say whose it is instead."""
+    st = load()
+    me = whoami(required=False, assign=False)
+    for f in files:
+        claim = st.get("claims", {}).get(f)
+        if claim and claim["agent"] == me:
+            continue                      # your own claimed file — that break really is yours
+        dirty = _git("status", "--porcelain", "--", f).stdout.strip()
+        if not claim and not dirty:
+            continue                      # committed and unclaimed: a real repo break, not a neighbour
+        who = ("claimed by %s for %s" % (claim["agent"], claim["task"]) if claim
+               else "uncommitted, and claimed by nobody")
+        print("\n%s⚠ %s is broken in the shared working tree and it is not yours — %s%s"
+              % (C["y"], f, who, C["x"]))
+        print("  %sDo NOT edit it and do not chase this failure. Confirm it is theirs by running "
+              "your check against a clean checkout:%s" % (C["dim"], C["x"]))
+        print("  %sagent baseline --script <your check>%s" % (C["c"], C["x"]))
 
 
 def cmd_baseline(args):

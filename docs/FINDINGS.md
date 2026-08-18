@@ -823,6 +823,40 @@ The F-099 review sweep found per-frame costs in three files that were claimed mi
 
 ## Resolved
 
+### F-106 · A neighbour's half-finished refactor breaks every other agent's checks, and the failure looks like your own — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by bram1
+
+Six agents boot the project out of **one** shared working directory. A script somebody is halfway
+through refactoring is therefore a parse error in everybody's verification run, and the error names a
+file rather than a person — so it reads as your own regression. Both honest responses to that are
+wrong: chase a bug you did not write, or edit a file another agent holds.
+
+Observed directly, 2026-08-18. `agent godot --script tools/crafting_check.gd` died on
+`Parse Error: Function "_load_dir()" not found in base self` at `autoload/registry.gd:60`. The calls
+existed at lines 60-64, the definition did not, and `_load_dir` does not appear at HEAD at all —
+kiln9 was mid-refactor with that file under claim. Minutes later the same check passed 7/7 without
+anyone touching anything, because kiln9 had finished the function. Any agent whose check landed in
+that window would have had a failure with no owner on it. LP was mid-F-037 at the time, and that
+check boots the autoloads.
+
+**Fixed:** `agent godot` now watches the engine output it streams. When a `SCRIPT ERROR` / `Parse
+Error` names a `.gd` the caller does not own, it prints who does — the claim holder and their task,
+or "uncommitted, and claimed by nobody" — tells the caller not to edit it or chase it, and points at
+`agent baseline --script <check>` to confirm against a clean checkout. A file the caller itself
+claims is skipped: that break really is theirs.
+
+**The non-obvious part, and the reason a first attempt of this did nothing:** it must NOT be gated on
+the exit code. Measured — Godot exits **0** when a script fails to load outright with a parse error,
+which is exactly the failure being warned about. This is the same trap that makes every check in
+`tools/` print its own `failures=N` rather than trust `$?`.
+
+**Verified:** a deliberately broken probe script fires the warning and names it as uncommitted and
+unclaimed; `wave_spawner_check` (16 PASS, failures=0) stays silent, so a passing run gains no noise;
+`crafting_check` streams and passes unchanged. The probe was removed after each run.
+
+---
+
 ### F-053 · Agents still told Sequoyah they can't edit scene files; the docs' hand-off-by-default tone was why — **fixed**
 
 **Area:** docs/process · **Severity:** medium · **Found:** 2026-08-17, from Sequoyah directly ·
