@@ -498,6 +498,12 @@ func _layout_height(point: Vector2) -> float:
 ## — including the cell's mean ground height — with the plant transforms rebased onto it,
 ## because visibility_range measures camera distance to the node's ORIGIN: an instance left at
 ## the world origin would cull the plateau's plants by the height of the plateau.
+## F-095 tried collapsing each asset's parts into one merged ArrayMesh here, mirroring
+## authored_world._mesh_parts. Measured and reverted: the flora exports are ALREADY one part
+## each (78 assets scattered map-wide cost exactly 78 multimeshes before chunking), so the
+## merge's de-indexing only inflated per-frame primitives 1.6M -> 3.6M — smooth-shaded organic
+## meshes reuse vertices heavily, and a de-index throws that reuse away. Do not re-attempt
+## without a multi-part asset actually existing.
 func _emit(asset: String, cells: Dictionary) -> void:
 	var packed: PackedScene = load("%s/%s.glb" % [FLORA_DIR, asset]) as PackedScene
 	if packed == null:

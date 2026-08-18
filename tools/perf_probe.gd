@@ -127,6 +127,12 @@ func _configs() -> Array[Dictionary]:
 		{"name": "11 gfx preset low",
 			"apply": func() -> void: _apply_gfx_preset(0),
 			"undo": func() -> void: _apply_gfx_preset(2)},
+		# LAST on purpose: crossing 18:00 fires night_started and WaveSpawner spawns real
+		# enemies, which stay in the scene afterwards — night is when the game is actually
+		# played hard, so the row measures stars + moonlight + shadow-refresh + a live wave.
+		{"name": "12 night 02:00 + waves",
+			"apply": func() -> void: day_night.set(&"time_of_day", 2.0 / 24.0),
+			"undo": func() -> void: day_night.set(&"time_of_day", 8.35 / 24.0)},
 	]
 
 

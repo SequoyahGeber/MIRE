@@ -60,18 +60,29 @@ func _ready() -> void:
 	if _layout.is_empty():
 		return
 	_read_heightfield()
-	_build_terrain()
-	_build_water()
+	# Per-phase wall time rides along in the summary line (F-095): the whole build measured
+	# 8,899 ms on the M5 Pro, which a weak machine multiplies — whoever attacks it needs to know
+	# which phase to attack without re-instrumenting.
+	var timings := PackedStringArray()
+	_timed(timings, "terrain", _build_terrain)
+	_timed(timings, "water", _build_water)
 	if build_props:
-		_build_props()
-	_build_lights()
-	_build_markers()
+		_timed(timings, "props", _build_props)
+	_timed(timings, "lights", _build_lights)
+	_timed(timings, "markers", _build_markers)
 	print(
-		"AUTHORED_WORLD id=%s terrain_tris=%d props=%d multimeshes=%d colliders=%d water=%d harvestable=%d ms=%d" % [
+		"AUTHORED_WORLD id=%s terrain_tris=%d props=%d multimeshes=%d colliders=%d water=%d harvestable=%d ms=%d phase_ms=[%s]" % [
 			String(_layout.get("id", "?")), terrain_triangles, prop_count, multimesh_count,
-			collider_count, water_surfaces, harvestable_holders, Time.get_ticks_msec() - started
+			collider_count, water_surfaces, harvestable_holders, Time.get_ticks_msec() - started,
+			" ".join(timings)
 		]
 	)
+
+
+func _timed(into: PackedStringArray, label: String, phase: Callable) -> void:
+	var phase_started := Time.get_ticks_msec()
+	phase.call()
+	into.append("%s=%d" % [label, Time.get_ticks_msec() - phase_started])
 
 
 func _read_layout() -> Dictionary:
@@ -123,6 +134,14 @@ func height_at(x: float, z: float) -> float:
 	if tz <= tx:
 		return h00 + (h10 - h00) * tx + (h11 - h10) * tz
 	return h00 + (h11 - h01) * tx + (h01 - h00) * tz
+
+
+## F-095 briefly built a conservative terrain-under-shell occluder here for the engine's raster
+## occlusion culling. Measured and reverted: Hollowmere is a bowl, so from inside it the ridge
+## occludes only the world's outside — ~2 draws culled, while the per-frame occlusion raster
+## cost real main-thread time. Re-attempt only for worlds with genuinely blocking sightlines
+## (interiors, canyon systems), and re-measure with tools/perf_probe.gd when you do.
+const MESH_CACHE_DIR: String = "user://mesh_cache"
 
 
 ## Terrain is emitted as one surface per ground material, so the valley floor
@@ -397,7 +416,13 @@ func _build_props() -> void:
 		var parts := key.split("|")
 		var kit := parts[1]
 		var asset := parts[2]
-		var meshes: Array = cache.get_or_add(key.substr(key.find("|") + 1), _mesh_parts(kit, asset))
+		# get_or_add evaluates its default argument EAGERLY, so written that way _mesh_parts ran
+		# once per (chunk, asset) GROUP — 1,028 merges instead of ~40, which was 96% of the whole
+		# world build (F-095: phase_ms props=9,055 of 9,145).
+		var mesh_key := key.substr(key.find("|") + 1)
+		if not cache.has(mesh_key):
+			cache[mesh_key] = _mesh_parts(kit, asset)
+		var meshes: Array = cache[mesh_key] as Array
 		if meshes.is_empty():
 			continue
 		var transforms: Array[Transform3D] = []
@@ -444,6 +469,18 @@ func _build_props() -> void:
 ## rebuild that would collide with another agent's claim.
 func _mesh_parts(kit: String, asset: String) -> Array:
 	var path := "res://assets/%s/exports/%s.glb" % [kit, asset]
+	# F-095: the merge below is the expensive part of the world build, and its result depends
+	# only on the GLB — so it is saved to user:// keyed by the source's modified time. Editing a
+	# kit asset changes the stamp and orphans the old entry; a torn or unreadable cache file
+	# loads as null and falls through to a rebuild that overwrites it. A player's FIRST load
+	# still pays full price — the durable fix is baking merged meshes at export time, which
+	# belongs to the art pipeline (F-095 names the seam).
+	var cache_path := "%s/%s_%s_%d.res" % [
+		MESH_CACHE_DIR, kit, asset, FileAccess.get_modified_time(path)]
+	if ResourceLoader.exists(cache_path):
+		var cached := load(cache_path) as ArrayMesh
+		if cached != null:
+			return [{"mesh": cached, "offset": Transform3D.IDENTITY, "name": asset}]
 	var packed: PackedScene = load(path) as PackedScene
 	if packed == null:
 		push_error("AuthoredWorld could not load %s" % path)
@@ -497,6 +534,11 @@ func _mesh_parts(kit: String, asset: String) -> Array:
 		combined.surface_set_material(combined.get_surface_count() - 1, bucket["material"])
 	if combined.get_surface_count() == 0:
 		return []
+	DirAccess.make_dir_recursive_absolute(MESH_CACHE_DIR)
+	var save_error := ResourceSaver.save(combined, cache_path,
+		ResourceSaver.FLAG_BUNDLE_RESOURCES | ResourceSaver.FLAG_COMPRESS)
+	if save_error != OK:
+		push_warning("AuthoredWorld could not cache %s: %s" % [cache_path, error_string(save_error)])
 	return [{"mesh": combined, "offset": Transform3D.IDENTITY, "name": asset}]
 
 
@@ -516,7 +558,11 @@ func _build_harvestables(props: Array[Dictionary], cache: Dictionary) -> void:
 		var prop: Dictionary = props[index]
 		var kit := String(prop.get("kit", ""))
 		var asset := String(prop.get("asset", ""))
-		var meshes: Array = cache.get_or_add("%s|%s" % [kit, asset], _mesh_parts(kit, asset))
+		# Same eager-default trap as _build_props: never pass _mesh_parts() into get_or_add.
+		var mesh_key := "%s|%s" % [kit, asset]
+		if not cache.has(mesh_key):
+			cache[mesh_key] = _mesh_parts(kit, asset)
+		var meshes: Array = cache[mesh_key] as Array
 		if meshes.is_empty():
 			continue
 		var pos: Array = prop.get("pos", [0.0, 0.0, 0.0]) as Array

@@ -1,47 +1,86 @@
 {
   "claims": {
+    ".agent/bin/agent": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:05:36+00:00",
+      "task": "F-081"
+    },
+    ".agent/bin/lane": {
+      "agent": "yarrow21",
+      "at": "2026-08-18T13:05:36+00:00",
+      "task": "F-081"
+    },
     "assets/maps": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
+    },
+    "assets/ships": {
+      "agent": "ivy8",
+      "at": "2026-08-18T13:01:13+00:00",
+      "task": "2.1d"
+    },
+    "assets/source/extraction_ship_set.blend": {
+      "agent": "ivy8",
+      "at": "2026-08-18T13:01:13+00:00",
+      "task": "2.1d"
     },
     "assets/source/playtest_hollow.blend": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
-    "project.godot": {
-      "agent": "coil23",
-      "at": "2026-08-18T12:56:31+00:00",
-      "task": "F-095"
+    "docs/ASSET_TRACKER.md": {
+      "agent": "ivy8",
+      "at": "2026-08-18T13:01:13+00:00",
+      "task": "2.1d"
+    },
+    "tools/blender/build_extraction_ship_set.py": {
+      "agent": "ivy8",
+      "at": "2026-08-18T13:01:13+00:00",
+      "task": "2.1d"
+    },
+    "tools/blender/mire_art.py": {
+      "agent": "ivy8",
+      "at": "2026-08-18T13:03:53+00:00",
+      "task": "2.1d"
     },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
     },
-    "tools/perf_probe.gd": {
-      "agent": "coil23",
-      "at": "2026-08-18T12:56:31+00:00",
-      "task": "F-095"
-    },
-    "world/gen/authored_world.gd": {
-      "agent": "coil23",
-      "at": "2026-08-18T12:56:31+00:00",
-      "task": "F-095"
+    "tools/ship_check.gd": {
+      "agent": "ivy8",
+      "at": "2026-08-18T13:03:53+00:00",
+      "task": "2.1d"
     },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "tine18",
       "at": "2026-08-18T00:43:30+00:00",
       "task": "2.1j"
-    },
-    "world/gen/undergrowth.gd": {
-      "agent": "coil23",
-      "at": "2026-08-18T12:56:31+00:00",
-      "task": "F-095"
     }
   },
   "in_flight": {
+    "2.1d": {
+      "agent": "ivy8",
+      "files": [
+        "docs/ASSET_TRACKER.md",
+        "tools/blender/build_extraction_ship_set.py",
+        "assets/source/extraction_ship_set.blend",
+        "assets/ships",
+        "tools/ship_check.gd",
+        "tools/blender/mire_art.py"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-18T13:03:53+00:00",
+          "by": "ivy8",
+          "text": "A-009 extraction ship set (15 models) taken. Blender 5.2.0 LTS, unchanged since A-000V, so no re-verification of an existing family is owed (D-038)."
+        }
+      ],
+      "started": "2026-08-18T13:01:13+00:00"
+    },
     "2.1j": {
       "agent": "tine18",
       "files": [
@@ -53,16 +92,14 @@
       "notes": [],
       "started": "2026-08-18T00:43:30+00:00"
     },
-    "F-095": {
-      "agent": "coil23",
+    "F-081": {
+      "agent": "yarrow21",
       "files": [
-        "world/gen/undergrowth.gd",
-        "world/gen/authored_world.gd",
-        "tools/perf_probe.gd",
-        "project.godot"
+        ".agent/bin/agent",
+        ".agent/bin/lane"
       ],
       "notes": [],
-      "started": "2026-08-18T12:56:31+00:00"
+      "started": "2026-08-18T13:05:36+00:00"
     }
   },
   "recent": {
@@ -647,9 +684,9 @@
       "task": "2.1j"
     },
     "project.godot": {
-      "agent": "reed16",
-      "at": "2026-08-18T02:29:39+00:00",
-      "task": "F-066"
+      "agent": "coil23",
+      "at": "2026-08-18T13:06:18+00:00",
+      "task": "F-095"
     },
     "systems/building/build_ghost.gd": {
       "agent": "gale6",
@@ -1053,8 +1090,8 @@
     },
     "tools/perf_probe.gd": {
       "agent": "coil23",
-      "at": "2026-08-18T09:06:54+00:00",
-      "task": "F-090"
+      "at": "2026-08-18T13:06:18+00:00",
+      "task": "F-095"
     },
     "tools/player_health_check.gd": {
       "agent": "nettle12",
@@ -1222,9 +1259,9 @@
       "task": "F-065"
     },
     "world/gen/authored_world.gd": {
-      "agent": "ivy8",
-      "at": "2026-08-18T04:46:24+00:00",
-      "task": "2.1k"
+      "agent": "coil23",
+      "at": "2026-08-18T13:06:18+00:00",
+      "task": "F-095"
     },
     "world/gen/layouts/hollowmere.json": {
       "agent": "ivy8",
@@ -1248,8 +1285,8 @@
     },
     "world/gen/undergrowth.gd": {
       "agent": "coil23",
-      "at": "2026-08-18T09:06:54+00:00",
-      "task": "F-090"
+      "at": "2026-08-18T13:06:18+00:00",
+      "task": "F-095"
     }
   },
   "tasks": {
@@ -1568,7 +1605,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
@@ -2896,7 +2933,7 @@
     "F-081": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Every ship blanket-stages .agent/, so one agent's commit silently carries another's in-progress harness edits"
     },
@@ -3010,9 +3047,11 @@
       "title": "`mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float"
     },
     "F-095": {
+      "done_at": "2026-08-18T13:06:18+00:00",
+      "done_by": "coil23",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Post-F-090 frame/load seams: flora part merge, terrain occlusion, world-build time"
     },

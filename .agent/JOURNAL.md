@@ -2364,3 +2364,15 @@ Notes along the way:
 Files: `systems/building/placement_validator.gd`, `tools/build_check.gd`
 
 Commit at time of writing: `2108e0f`
+
+---
+
+### DONE · F-095 · coil23 · 2026-08-18T13:06:18+00:00
+
+**Post-F-090 frame/load seams: flora part merge, terrain occlusion, world-build time**
+
+World build 9,145ms -> 2,865ms cold (get_or_add eager-default bug: merge ran 1,028x instead of ~40x) -> 117ms warm (user://mesh_cache keyed by GLB mtime). Two hypotheses probe-rejected and reverted with numbers recorded: flora part-merge (already single-part; de-index inflated prims 1.6M->3.6M) and terrain occluder (bowl map, ~2 draws culled for real CPU cost). Night+wave row added to probe: 158fps, no night cliff. Frame baseline restored 149fps/6.63ms. Verified: probe cold+warm, --quit-after 30 at 117ms, flora/atmosphere_night/day_night checks 0 failures.
+
+Files: `world/gen/undergrowth.gd`, `world/gen/authored_world.gd`, `tools/perf_probe.gd`, `project.godot`
+
+Commit at time of writing: `b0d7d57`
