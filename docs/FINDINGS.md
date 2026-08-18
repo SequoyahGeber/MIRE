@@ -177,28 +177,6 @@ Fixed by having `deck_field()` run its outer planks to the field edge and put th
 them; the engine check now reports worst joint **0.0000 mm** across a five-module walkway, a
 boardwalk corner and a fence corner.
 
-### F-136 · The player controller has no step-up, so any lip in a walkable surface is a wall
-
-**Area:** movement · **Severity:** medium · **Found:** 2026-08-18 by slate17 during 2.1d (A-010)
-
-`entities/player/player.tscn` sets `floor_max_angle` to 46° and `floor_snap_length` to 0.3, and
-`entities/player/player_controller.gd` implements **no step-up logic at all** — there is no
-`test_move` and re-place, no ledge probe, nothing. Godot's `CharacterBody3D` does not provide one
-either. A capsule will scuff over a very small lip because its bottom is round, but nothing in the
-project guarantees a height, and no test covers it.
-
-This is an authoring constraint on every asset and every level, and it is invisible until someone
-walks into it: a 60 mm door threshold, a dock deck edge, a kerb across a path, or a bridge module
-sitting a centimetre proud of its neighbour is a **wall**, not a step. A-010 hit it twice — the wood
-door was authored with a 60 mm sill across its opening (removed; a doorway is a hole), and the whole
-reason its ramp exists at 26.57° with a 12 mm feathered toe rather than a square end is this.
-
-**What to do about it:** either author to it — ramps under 46°, no thresholds, mating planes to the
-millimetre, which is what A-010 now does and what `tools/construction_check.gd` enforces — or give
-the controller a real step-up (probe forward at knee height, snap up if the surface above is
-walkable) and pick a documented maximum. The second is a movement-feel change and belongs to whoever
-owns the controller, not to an asset batch. Until then, **assume a lip stops the player.**
-
 ### F-137 · The build module lives in one `.tres` and nothing else knows it
 
 **Area:** process · **Severity:** low · **Found:** 2026-08-18 by slate17 during 2.1d (A-010)
@@ -671,7 +649,209 @@ picks this up.
 
 ---
 
+### F-144 · Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance
+
+**Area:** perf · **Severity:** high · **Found:** 2026-08-18 by nettle12
+
+Two levers that the frame-budget work (F-090/F-098) named but never pulled, found while looking for
+what is left after dynamic resolution shipped.
+
+1. NO MESH LOD ANYWHERE. `visibility_range_begin/end` and `lod_bias` appear nowhere in the
+   codebase. The terrain has a real LOD ladder (ChunkMesher LOD0/1/2), but every prop, every
+   flora MultiMesh and every harvestable renders its full triangle count at any distance, and
+   again in each of the four shadow cascades. On a weak GPU this is the dominant cost.
+
+   The merged prop meshes make it worse than the default: `AuthoredWorld._mesh_parts` builds an
+   ArrayMesh at runtime with `add_surface_from_arrays`, and a runtime ArrayMesh carries no LOD
+   levels at all — so even the automatic LOD Godot generates for imported meshes is discarded by
+   the very merge that made the map shippable.
+
+2. F-100's per-chunk cross-asset batching never landed. state.json marks F-100 done; the
+   finding text still says BLOCKED on F-097, and F-097 resolved on 2026-08-18. `_build_props`
+   still groups by `(chunk, kit, asset)`, one MultiMesh per group.
+
+Measure before and after with tools/render_census.gd (added by this finding) and
+tools/perf_probe.gd.
+
+---
+
 ## Resolved
+
+### F-136 · The player controller has no step-up, so any lip in a walkable surface is a wall — **fixed**
+
+**Area:** movement · **Severity:** medium · **Found:** 2026-08-18 by slate17 during 2.1d (A-010)
+
+`entities/player/player.tscn` sets `floor_max_angle` to 46° and `floor_snap_length` to 0.3, and
+`entities/player/player_controller.gd` implements **no step-up logic at all** — there is no
+`test_move` and re-place, no ledge probe, nothing. Godot's `CharacterBody3D` does not provide one
+either. A capsule will scuff over a very small lip because its bottom is round, but nothing in the
+project guarantees a height, and no test covers it.
+
+This is an authoring constraint on every asset and every level, and it is invisible until someone
+walks into it: a 60 mm door threshold, a dock deck edge, a kerb across a path, or a bridge module
+sitting a centimetre proud of its neighbour is a **wall**, not a step. A-010 hit it twice — the wood
+door was authored with a 60 mm sill across its opening (removed; a doorway is a hole), and the whole
+reason its ramp exists at 26.57° with a 12 mm feathered toe rather than a square end is this.
+
+**What to do about it:** either author to it — ramps under 46°, no thresholds, mating planes to the
+millimetre, which is what A-010 now does and what `tools/construction_check.gd` enforces — or give
+the controller a real step-up (probe forward at knee height, snap up if the surface above is
+walkable) and pick a documented maximum. The second is a movement-feel change and belongs to whoever
+owns the controller, not to an asset batch. Until then, **assume a lip stops the player.**
+
+**Resolved 2026-08-18 by lm.** Fixed: `entities/player/player_controller.gd` gained `_apply_step_up(delta)`, called every physics
+tick right before `move_and_slide()`, grounded only. New `@export var step_height: float = 0.4`
+(Step group) is the documented maximum — comfortably above the 60 mm threshold/12 mm ramp-toe cases
+A-010 authors around (D-090), comfortably below `jump_height` (1.1 m) so a step never substitutes
+for a jump.
+
+Three `test_move()` probes: is flat forward motion blocked; is there room to rise `step_height` with
+nothing overhead; from the raised height, sweep `motion + Vector3(0,-step_height,0)` — forward AND
+down together, in ONE `test_move()` call — and take its first contact as the landing. That combined
+sweep (not a separate horizontal-advance-then-vertical-drop) is the load-bearing detail: a real
+per-tick `motion` (~0.067 m at 4 m/s / 60 Hz) is far smaller than the capsule's 0.4 m radius, so
+testing/advancing horizontally by only that much and then dropping separately leaves the capsule
+still straddling the lip's corner — move_and_slide() then fights that self-overlap back out every
+following tick, which reads as the player bouncing in place at the lip rather than climbing it
+(reproduced empirically while building the check below, before landing on the combined-sweep fix).
+
+Verified: `agent godot --script tools/step_up_check.gd` (new) -> 0 failure(s). Spawns a real
+player.tscn against code-built StaticBody3D geometry (tools/build_check.gd's technique) and hand-
+drives _apply_gravity/_apply_horizontal_movement/_apply_step_up/move_and_slide in that order (same
+technique tools/dodge_check.gd already uses for this controller) rather than real WASD input, because
+AttunementUI (autoload) opens a blocks_gameplay_input role picker ~0.5s after any node joins the
+`players` group and would otherwise starve a real-input-driven walk before it reaches the lip. Proves:
+a 0.15 m lip is climbed without a stall, landing at the lip's own height (not a flat step_height
+higher); a 0.6 m wall is refused (the walk stops at its face; ordinary capsule-corner "scuff" under
+move_and_slide() can still ride a short way up per the finding's own description, but never near-
+mounts it); and a step_height=0 control proves the same low lip now blocks, so the suite is a real
+regression guard.
+
+Also reran the two other checks that already exercise this controller's _physics_process() path to
+confirm no regression: `agent godot --script tools/dodge_check.gd` -> 0 failure(s),
+`agent godot --script tools/spawn_ground_probe.gd` -> failures=0 (real main-scene terrain spawn/
+settle, which now runs _apply_step_up() every grounded tick, unaffected on ordinary flat terrain),
+`agent godot --script tools/verify_setup.gd` -> all checks passed.
+
+New docs/SPECS.md block written (F-136 had none) per this task's own instruction that a missing spec
+is fixed by the task that discovers it.
+
+### F-145 · Auto-name collisions defeat the claim guard: the exhaustion fallback ignores the taken set, so concurrent sessions share one identity — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-18 by nettle12
+
+`_auto_name()` in `.agent/bin/agent` picks a name by walking `AUTO_NAMES` from a crc32 of the session
+token and returning the first candidate not in `taken`. That part is correct. The fallback when the
+whole pool is taken is not:
+
+    return "%s%d" % (AUTO_NAMES[start], start)
+
+It never consults `taken`. `start` has only `len(AUTO_NAMES)` = 24 possible values, so **every**
+session whose token lands on the same base name collapses onto one identical string, forever.
+
+**This is not hypothetical — the pool is already exhausted.** `.agent/sessions.json` holds 66
+registered sessions across 44 distinct names. Eleven auto-names are each shared by two to five
+different session tokens: `ivy8` ×5, `nettle12` ×4, `reed16` ×4, `pike14` ×3, `yarrow21` ×3, plus
+`moss11`, `tine18`, `wick20`, `flint5`, `dusk3`, `kiln9` ×2 each.
+
+**Why it matters more than cosmetics: identity is what the claim system compares.** Both guards test
+a bare name string —
+
+- `agent claim` (line ~765): `conflicts = [... if st["claims"][f]["agent"] != me]`
+- the pre-commit `agent check` (line ~1363): `if c and c["agent"] != me:`
+
+so when two *concurrent* sessions share a name, a peer's live claim is indistinguishable from your
+own. The conflict branch never runs. Concretely, the protection AGENTS.md calls non-negotiable
+silently fails open:
+
+- `agent claim` grants a file another live agent is holding — the die() on "two agents in one file
+  will conflict" cannot fire.
+- the pre-commit hook lets an agent commit a file another live agent holds.
+- journal and finding attribution merge two agents into one name.
+
+**Observed live, this session.** Session `40988e99…0f6f` (registered 21:48:04) and session
+`92a26246…c5bc` (registered 21:49:38, 94 seconds later) are both named `nettle12` and were both
+running. F-144 was filed by the second one and is stamped "Found: 2026-08-18 by nettle12" — the same
+attribution this session writes. Two agents, one identity, one working tree.
+
+Reproduced directly: crc32 of all four `nettle12` tokens returns `start = 12`, base `nettle`, and the
+fallback returns the constant `nettle12` for every one of them.
+
+**Fix must stay a pure function of the token.** The existing docstring is right that the name has to
+be derivable from the token alone, because a git hook is a separate process that must resolve the
+same name — so the fallback cannot be "search `taken` again", which would hand one chat a different
+name once `taken` grew. It needs a wider deterministic suffix instead of the 24-value pool index.
+
+**Resolved 2026-08-18 by nettle12.** Fixed in `.agent/bin/agent`. The pool-exhausted fallback in `_auto_name()` now suffixes the base name
+with 24 bits of the token's own crc32 instead of the pool index:
+
+    return "%s%06x" % (AUTO_NAMES[start], binascii.crc32(token.encode()) & 0xFFFFFF)
+
+The index had only `len(AUTO_NAMES)` = 24 possible values, so every chat landing on the same base
+collapsed onto one string. The suffix is still a pure function of the token and still deliberately
+ignores `taken`, which the original docstring is right to require: a git hook is a separate process
+that resolves the name later, when `taken` has grown, and re-searching there would hand one chat a
+different name than the one it registered.
+
+Verified by lifting `_auto_name` out of the script and exercising it directly:
+
+- The four real session tokens that had all become `nettle12` now return four distinct names
+  (`nettle303b44`, `nettle7ae874`, `nettle47b42c`, `nettleb8a1a4`).
+- Determinism holds: repeat calls, and a call with a `taken` set that has since grown, all return the
+  same name — the git-hook requirement.
+- No regression while the pool has room: with nothing taken the token still gets the plain `nettle`,
+  and with `nettle` held it still walks to `onyx`.
+- 5,000 synthetic session ids against an exhausted pool produced 5,000 distinct names, 0 duplicates.
+- `python3 -m py_compile` clean; `agent board` runs.
+
+Two things the next agent should know:
+
+1. **Existing sessions are not renamed and must not be.** `whoami()` resolves a registered token from
+   `sessions.json` before it ever calls `_auto_name`, so this changes new assignments only. The eleven
+   already-collided names (`ivy8` ×5, `nettle12` ×4, `reed16` ×4, …) stay as they are and age out via
+   `_prune_sessions` after SESSION_KEEP_DAYS. Renaming a live session would orphan its claims, which
+   are keyed by name.
+
+2. **Exhaustion is the steady state here, not an edge case.** `taken` is every unpruned session, and
+   this repo carries 66 of them against a 24-name pool. The fallback was therefore the common path,
+   not a rare one — which is why eleven names collided rather than one. If collisions reappear, the
+   real lever is a larger `AUTO_NAMES` pool or a shorter `SESSION_KEEP_DAYS`, not the fallback.
+
+### F-143 · Audit contact sheets escape .gitignore when written to a per-audit subdirectory — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by nettle12
+
+`.gitignore` ignores `assets/audit/sheets/` with an explicit rationale: rendered PNGs are never
+byte-identical between runs (F-042), so committing them would put a fresh multi-megabyte diff into
+permanent history on every re-run, while the small structured reports beside them stay committed.
+
+The rule is a literal path, so it only covers sheets written directly under `assets/audit/`. A-009
+wrote its sheets to `assets/audit/a009/sheets/` instead — a per-audit subdirectory — and that path
+matches nothing in `.gitignore`. 15 PNGs / 6.4 MB are currently untracked but stageable: any
+`git add -A`, or any agent that stages broadly rather than by claim, commits them.
+
+`agent ship` is not the exposure, because it stages only the claiming task's files. The exposure is
+every other path into the index, and the fact that the next audit writing to `a010/sheets/` inherits
+the same gap silently.
+
+Fixed by matching sheets at any depth under `assets/audit/` rather than at one fixed level.
+
+---
+
+**Resolved 2026-08-18 by nettle12.** Fixed in `.gitignore` by matching sheets at any depth under `assets/audit/` —
+`assets/audit/**/sheets/` — rather than the single literal `assets/audit/sheets/`. `**/` matches zero
+or more directories, so the one rule now covers both the original top-level shape and the per-audit
+subdirectories the audit tool actually writes.
+
+Verified with `git check-ignore`, both directions: `assets/audit/a009/sheets/…png`, the top-level
+`assets/audit/sheets/…png`, a hypothetical future `assets/audit/a010/sheets/…png` and a deeper nested
+case are all ignored; `assets/audit/a009/geometry_report.json`, `assets/audit/geometry_report.jsonl`
+and a hypothetical `a010/geometry_report.json` all stay tracked. `git ls-files -i -c` reports no
+tracked file newly caught by the rule. The 6.4 MB of A-009 PNGs left `git status` as a result.
+
+Note for whoever touches this next: three `*.import` files (`assets/audio/music/ambient_day.ogg.import`,
+`ambient_night.ogg.import`, `icon.svg.import`) are tracked *and* ignored by the older `*.import` rule.
+That predates this finding and is untouched here.
 
 ### F-142 · A quota park is counted as a lane failure, so three ordinary window resets in a row mark a healthy lane blocked — **fixed**
 

@@ -1,7 +1,8 @@
 class_name PlayerController
 extends CharacterBody3D
 
-## First-person ground movement: walk, sprint, jump, coyote time, jump buffering, dodge (task 3.8b).
+## First-person ground movement: walk, sprint, jump, coyote time, jump buffering, dodge (task 3.8b),
+## step-up over short lips and thresholds (F-136).
 ##
 ## Network authority: OWN PLAYER MOVEMENT — CLIENT (ARCHITECTURE.md §2.2, row 1).
 ## The peer that owns this node simulates it locally and its transform is replicated outward by a
@@ -81,6 +82,17 @@ const BUILD_ROTATE_KEY: Key = KEY_R
 @export_range(0.1, 5.0, 0.05) var gravity_scale: float = 2.0
 ## Downward speed cap, metres per second.
 @export_range(10.0, 200.0, 1.0) var terminal_velocity: float = 60.0
+
+@export_group("Step")
+## Maximum height of a lip, threshold or kerb the controller steps over automatically, metres
+## (F-136). CharacterBody3D has no built-in step-up, so a capsule's flat vertical face otherwise reads
+## any rise this tall or shorter as a wall. Chosen as roughly knee height on the 1.8 m capsule
+## (`entities/player/player.tscn`'s CapsuleShape3D) — comfortably above the 60 mm door threshold and
+## ~12 mm ramp-toe feather A-010 authors around this same limit (DECISIONS.md D-090), comfortably
+## below `jump_height` (1.1 m) so a step never substitutes for a deliberate jump. Anything taller is a
+## wall on purpose: `_apply_step_up()`'s forward probe from the raised height still collides with it,
+## so raising this number is the one documented way to change what counts as "a step" project-wide.
+@export_range(0.0, 1.0, 0.01) var step_height: float = 0.4
 
 @export_group("Downed")
 ## Ground speed while downed. Far below walk_speed on purpose — DESIGN.md §4.5's "downed, not dead"
@@ -475,6 +487,7 @@ func _physics_process(delta: float) -> void:
 	_try_jump(input_allowed, downed, dead)
 	_tick_revive_hold(delta, input_allowed, downed, dead)
 	_tick_build_ghost(delta, downed, dead)
+	_apply_step_up(delta)
 
 	# move_and_slide() zeroes vertical velocity on contact, so read the fall speed before it runs.
 	var fall_speed: float = maxf(-velocity.y, 0.0)
@@ -589,6 +602,57 @@ func _try_jump(input_allowed: bool, downed: bool, dead: bool) -> void:
 	_time_since_grounded = INF
 
 	jumped.emit()
+
+
+## Probes this tick's horizontal motion for a lip no taller than `step_height` and, if that is all
+## that is blocking it, teleports the body up and over it before move_and_slide() runs — the same
+## tick, so the rest of the frame (sliding, floor snap) proceeds as if the lip were never there.
+## Godot's CharacterBody3D has no step-up of its own (F-136).
+## Grounded-only on purpose: an airborne player clipping a ledge should bonk it, not auto-mantle.
+##
+## The forward-then-down settle is ONE combined diagonal `test_move()`, not two separate axis-aligned
+## ones. A real player's per-tick `motion` is small next to `radius` (a 4 m/s walk is ~0.067 m per
+## physics tick against a 0.4 m capsule radius), so a separate horizontal advance almost never clears
+## the capsule's own radius past the lip's corner — the landing probe then finds it still overlapping
+## the riser, and move_and_slide() spends the next tick fighting that self-intersection back out,
+## which reads as the player bouncing in place at the lip instead of climbing it (caught empirically
+## with tools/step_up_check.gd during F-136; a plain rise→forward→fall sequence stalled at the seam
+## on every low-lip case). Sweeping `motion + Vector3(0, -step_height, 0)` in a single test_move()
+## lets Godot's own shape sweep — which already accounts for the whole capsule, not its centre point —
+## find the true first contact, so `travel` can never leave the capsule embedded in the step.
+func _apply_step_up(delta: float) -> void:
+	if not is_on_floor():
+		return
+	var motion: Vector3 = Vector3(velocity.x, 0.0, velocity.z) * delta
+	if motion.length_squared() < 0.0001:
+		return
+
+	# 1. If flat forward motion is already clear, there is no lip to step over — leave move_and_slide
+	# to handle the frame exactly as it always has.
+	if not test_move(global_transform, motion):
+		return
+
+	# 2. Is there room to rise step_height with nothing overhead? A low doorway or ceiling must still
+	# refuse the player rather than have this probe shove them into it.
+	var raised: Transform3D = global_transform
+	if test_move(raised, Vector3(0.0, step_height, 0.0)):
+		return
+	raised.origin.y += step_height
+
+	# 3. From the raised height, sweep forward AND down together and take the point of first contact.
+	# An ordinary wall taller than step_height still blocks the forward component of this same sweep,
+	# so it is refused here exactly as step 2's plain rise would refuse a ceiling.
+	var landing: KinematicCollision3D = KinematicCollision3D.new()
+	var settle: Vector3 = motion + Vector3(0.0, -step_height, 0.0)
+	var travel: Vector3 = landing.get_travel() if test_move(raised, settle, landing) else settle
+
+	# The sweep found nothing within reach (fell the full probe depth without contact) — a step this
+	# tall would be a gap or an actual wall, not a lip, so leave move_and_slide to resolve the frame
+	# normally rather than depositing the player onto whatever is far below.
+	if travel.y <= -step_height + 0.02:
+		return
+
+	global_position = raised.origin + travel
 
 
 # ── Dodge (task 3.8b) ─────────────────────────────────────────────────────────────────────────────

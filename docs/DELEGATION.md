@@ -75,6 +75,40 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — F-136: `PlayerController` gains step-up — a short lip or threshold no longer reads as a wall (lm)
+
+`entities/player/player_controller.gd` gained `_apply_step_up(delta)`, called every physics tick
+right before `move_and_slide()`, grounded only — client-authoritative own-movement (ARCHITECTURE.md
+§2.2 row 1), same as the rest of the controller. New `@export var step_height: float = 0.4` (Step
+group) is the one number that decides what counts as "a step" project-wide: any lip, threshold or
+kerb up to this height is walked over automatically; anything taller is a wall on purpose. Chosen as
+roughly knee height on the 1.8 m capsule — comfortably above the 60 mm door threshold / ~12 mm
+ramp-toe feather A-010 authors around today (D-090), comfortably below `jump_height` (1.1 m).
+
+**For whoever authors levels or assets against this next:** D-090's "no thresholds, ramps under 46°,
+mating planes to the millimetre" workaround is no longer the only option — a lip up to `step_height`
+now just works. It does not relax `floor_max_angle` (46°, unchanged) or replace ramps for anything
+taller than 0.4 m; a raised platform, dock, or module seam still needs either a ramp/stair or to stay
+under `step_height`.
+
+**The landing probe is a single combined diagonal `test_move()`** (`motion + Vector3(0,
+-step_height, 0)`, forward and down together), not a separate horizontal-advance-then-vertical-drop —
+that two-step version was tried first and failed empirically: a real per-tick `motion` is far smaller
+than the capsule's 0.4 m radius, so advancing by only that much before testing the drop leaves the
+capsule straddling the lip's corner, and the next `move_and_slide()` fights that self-overlap back
+out every tick, reading as the player bouncing in place at the lip. Anyone touching this function
+should keep the two probes (rise, then combined forward+down) combined for that reason — re-splitting
+them reintroduces the bounce.
+
+`tools/step_up_check.gd` is the regression guard and the reference for testing this controller's
+movement without real WASD input: `AttunementUI` (autoload) opens a `blocks_gameplay_input` role
+picker ~0.5 s after any node joins the `players` group, so a check driving movement via real
+`Input.action_press` frames starves against it. The check instead hand-drives
+`_apply_gravity()` / `_apply_horizontal_movement()` / `_apply_step_up()` / `move_and_slide()` in that
+exact order — the same technique `tools/dodge_check.gd` already used for `_apply_horizontal_movement`
+and `_tick_dodge`, now established as the pattern for anything that needs a real physics walk in this
+controller.
+
 ### 2026-08-18 — Task 4.8: the Wellspring capture ritual ships — host-owned state machine, defense wave, `EventBus.emit_wellspring_capped` is the reward seam (lm)
 
 `systems/wellspring/wellspring.gd` (`class_name Wellspring`) is a host-authoritative Node3D built at

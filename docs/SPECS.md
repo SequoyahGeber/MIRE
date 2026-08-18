@@ -1666,6 +1666,61 @@ ERROR: line(s))`, both lines exactly the ones this finding describes — then fl
 
 ---
 
+## F-136 · The player controller has no step-up, so any lip in a walkable surface is a wall
+
+**Claim:** `entities/player/player_controller.gd`, `tools/step_up_check.gd` (new).
+
+**What was wrong:** `CharacterBody3D` has no built-in step-up. `player.tscn` sets `floor_max_angle`
+46° and `floor_snap_length` 0.3, but nothing tested forward for a short lip and lifted the body over
+it — a 60 mm door threshold, a dock deck edge, a kerb, or a bridge module sitting a centimetre proud
+of its neighbour all read as a flat wall, not a step. A-010 authored entirely around this absence
+(DECISIONS.md D-090) rather than fixing it, which is exactly the workaround this finding says not to
+keep leaning on forever.
+
+**Fix:** `_apply_step_up(delta)`, called every physics tick right before `move_and_slide()`, grounded
+only. Three `test_move()` probes: (1) is this tick's flat horizontal motion actually blocked — if not,
+there is no lip, do nothing; (2) is there room to rise `step_height` (new `@export`, default 0.4 m)
+with nothing overhead — a low doorway must still refuse the player; (3) from the raised height, sweep
+`motion + Vector3(0, -step_height, 0)` — forward AND down — in **one** `test_move()` call and take its
+first point of contact as the landing. That third probe is not the obvious two-step "advance then
+drop": a real per-tick `motion` (~0.067 m at 4 m/s / 60 Hz) is far smaller than the capsule's own 0.4 m
+radius, so advancing horizontally by only that much and then testing a separate vertical drop lands
+the capsule still straddling the lip's corner — the very next `move_and_slide()` then fights that
+self-overlap back out, which reads as the player bouncing in place at the lip rather than climbing it.
+A single combined diagonal sweep uses Godot's own shape-sweep (which already accounts for the whole
+capsule, not its centre point) to find the true first contact, so the result can never leave the body
+embedded in the step. If the sweep falls (almost) the full probe depth without contact, it is a wall
+or a gap, not a lip — bail and let `move_and_slide()` resolve the frame normally, which is also what
+naturally refuses a wall taller than `step_height` (the raised sweep still collides with it).
+
+**Verify:** `tools/step_up_check.gd` (new) — a real `player.tscn` instance against code-built
+`StaticBody3D` geometry, same technique as `tools/build_check.gd`'s boxes crossed with
+`tools/spawn_ground_probe.gd`'s real-gravity settle. Ground settle uses real `physics_frame` stepping;
+the walk itself hand-drives `_apply_gravity()` / `_apply_horizontal_movement()` /
+`_apply_step_up()` / `move_and_slide()` in that exact order instead of relying on real WASD input,
+because `AttunementUI` (autoload) polls for any node joining the `players` group and opens a
+`blocks_gameplay_input` role picker ~0.5 s after spawn — a check that waits real frames for real input
+starves against that picker before it ever reaches the lip. Same hand-drive technique
+`tools/dodge_check.gd` already established for this controller.
+
+**Done means:** a 0.15 m lip (`step_height` default 0.4 m) is climbed without a stall, landing at the
+lip's own height, not a flat `step_height` higher; a 0.6 m wall (above `step_height`) is refused —
+the walk stops at the wall's face, and while `CharacterBody3D`'s own rounded-capsule collision
+response can still ride a short way up any corner under ordinary `move_and_slide()` (the ordinary
+"scuff" the finding's own text names — independent of this fix), it must never come anywhere near
+mounting a wall taller than `step_height`; and a `step_height = 0` control proves the SAME low lip
+that the fix climbs now blocks, so the suite is a real regression guard, not a pass-by-construction.
+
+**Verified 2026-08-18 (lm):** `agent godot --script tools/step_up_check.gd` → `0 failure(s)` across
+all three cases. Regression-checked against the two existing controller suites that exercise the same
+`_physics_process()` path: `agent godot --script tools/dodge_check.gd` → `0 failure(s)` (dodge/i-frame
+behaviour unaffected), `agent godot --script tools/spawn_ground_probe.gd` → `failures=0` (the real
+main-scene terrain spawn/settle, which runs `_apply_step_up()` every tick once grounded, is
+unaffected on ordinary flat terrain), `agent godot --script tools/verify_setup.gd` → `all checks
+passed`.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |
