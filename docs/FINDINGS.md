@@ -713,6 +713,51 @@ for `ERROR:` to confirm zero UNDECLARED lines, not just that `CONSTRUCTION_DOORS
 
 ---
 
+### F-149 · F-141's docs edits got committed under F-144's message — a concurrent agent's plain 'git commit' absorbs another lane's staged-but-uncommitted files
+
+**Area:** coordination · **Severity:** low · **Found:** 2026-08-18 by lm
+
+This session (lm, F-141) staged exactly three named files — `git add docs/FINDINGS.md docs/SPECS.md
+docs/DELEGATION.md` — after `agent ship F-141` left them for hand-commit (docs/ is exempt from
+claims, F-006). The first `git commit` attempt was correctly BLOCKED by the pre-commit hook because
+other files were already sitting staged in the shared index — `autoload/graphics_quality.gd`,
+`core/render/mesh_merge.gd`, `systems/harvesting/harvestable.gd`, etc. — all claimed by a different
+concurrent lane (nettle12, F-144), not this session's. Those got unstaged with `git reset --
+<paths>` (non-destructive, working tree untouched) and the commit was retried with only the three
+named docs files staged.
+
+Before that retry ran, nettle12's own `agent ship`/`git commit` (their commit e5f96b1, "F-144: merge
+kit geometry everywhere it is stamped, and bound how far props draw") landed first — and its diff
+shows all three of F-141's staged docs edits inside it: the F-141 FINDINGS.md `**fixed**` +
+`## Resolved` move, the new F-141 SPECS.md block, and the F-141 DELEGATION.md `Current state` entry
+all appear in `e5f96b1`, none in a commit of this session's own.
+
+**Root cause:** `git commit` with no pathspec commits the WHOLE index, not just what the committing
+agent itself staged. AGENTS.md already documents the sibling hazard — a committing agent's OWN
+`git add docs/` (blanket) sweeping someone else's untracked docs edits into their commit — and its
+fix (name files exactly) is what this session followed. But naming files on `git add` only protects
+the ADDER's own blanket-add risk; it does nothing about a DIFFERENT concurrent agent's plain `git
+commit` scooping up files the first agent staged-but-not-yet-committed, because the git index itself
+has no per-agent partition and no lock of its own — only claimed *files* are protected (F-006 exempts
+docs/ from claims entirely), and the index is repo-wide shared state between every lane working in
+this one checkout.
+
+**Consequence here:** cosmetic only. The content is correct, complete, and already pushed to origin —
+verified by re-reading `e5f96b1`'s diff for all three files, which matches exactly what this session
+staged. Only the commit's authorship/message is wrong (credited to F-144's commit instead of a
+dedicated F-141 docs commit). Nothing was lost, corrupted, or silently dropped.
+
+**What would close this:** a narrow window exists between "docs files staged" and "docs files
+committed" during which any other lane's commit can absorb them. Options for whoever picks this up:
+(a) `agent ship`/a new `agent commit-docs <id> <files>` helper that commits immediately after
+staging, shrinking the window to effectively zero; (b) accept the risk as low-severity and cosmetic
+(current state) since content is never lost, only re-attributed, and file it under "known, harmless"
+in AGENTS.md's git-hazards section next to the blanket-add note it already carries. This finding
+exists so the next agent who sees a docs commit under a stranger's message understands why, instead
+of assuming their own `agent ship`/hand-commit silently failed.
+
+---
+
 ## Resolved
 
 ### F-141 · `Wellspring.net_request_toggle_channel` has no two-process net check — only the host-side logic it calls into is proven — **fixed**
