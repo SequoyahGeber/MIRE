@@ -960,8 +960,13 @@ def cmd_reset(args):
     name = args[0].upper()
     if name not in lanes:
         die("unknown lane '%s'" % name)
+    # Keep last_error. It is the only forensic record of why a lane failed, and clearing it while
+    # diagnosing destroys the evidence — which is exactly what happened investigating LP's 404.
+    prior = lanes[name].get("last_error")
     lanes[name].update({"status": "idle", "exhausted_until": None,
-                        "consecutive_failures": 0, "last_error": None, "pid": None, "task": None})
+                        "consecutive_failures": 0, "pid": None, "task": None})
+    if prior:
+        lanes[name]["previous_error"] = prior
     save_lanes(lanes)
     ok("%s reset to idle" % name)
 

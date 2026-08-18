@@ -215,6 +215,11 @@
       "at": "2026-08-18T04:10:30+00:00",
       "task": "2.1k"
     },
+    "tools/mapgen/hollowmere_plan.py": {
+      "agent": "ivy8",
+      "at": "2026-08-18T04:41:33+00:00",
+      "task": "2.1k"
+    },
     "tools/setup_tool_content.gd": {
       "agent": "flint5",
       "at": "2026-08-18T04:15:15+00:00",
@@ -270,7 +275,8 @@
         "docs/ROADMAP.md",
         "autoload/enemy_world.gd",
         "autoload/harvest_world.gd",
-        "tools/hollowmere_render_check.gd"
+        "tools/hollowmere_render_check.gd",
+        "tools/mapgen/hollowmere_plan.py"
       ],
       "notes": [
         {
@@ -1467,7 +1473,7 @@
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.12": {
-      "done_at": "2026-08-18T04:40:37+00:00",
+      "done_at": "2026-08-18T04:41:52+00:00",
       "done_by": "quill15",
       "est": "1.5",
       "milestone": "M0",
