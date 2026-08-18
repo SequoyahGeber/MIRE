@@ -993,13 +993,36 @@ than a tuned tie-break because `iron_pickaxe` prefers the roll by only 0.54% —
 enough to catch the axes flips the pickaxe too. Mirroring was tried and rejected: it returns the long
 axis to ~67° *and* hides the cutting bevel, so the axe reads as a wooden mallet.
 
-**Verified.** `tools/viewmodel_check.gd` gained eight assertions and passes **18/18, 0 failures**: the
-raw `STYLE_*` ints still equal `ItemDef.AttackStyle`; every held item animates with its own declared
-style (6 items across the hotbar); no bladed tool presents its cheek; every bladed tool points its
-edge downrange; and the wind-up actually moves the weapon. Every one of those fails against the old
-build, which is the test of an assertion. The whole swing was additionally walked in camera space for
-all five styles to prove the head stays in frame on every frame of the arc — the contact frame is the
-one the hit is read from, so it must not end up behind the hotbar.
+**A second generator also owned `stone_axe.tres`, and would have reverted it.**
+`tools/setup_crafting_content.gd` re-authors that item from scratch for the crafting recipe and
+carried its own copy of the old grip with no `attack_style` — the same clobber class as the F-041
+postscript, where regenerating the file silently dropped its icon. It now reads
+`setup_tool_content.gd`'s `GRIPS` rather than repeating the numbers, so the values cannot diverge
+again. `stone_axe` is hotbar slot 1, so this would have been the first thing to break.
+
+**Verified — 21 assertions, 0 failures.** The load-bearing ones, and each was confirmed by
+reintroducing the defect and watching it fail, because an assertion nobody has seen fail is not
+evidence:
+
+- **Every item with a viewmodel is measured (11 of 11).** The first version of these checks walked
+  the hotbar, and the dev loadout carries only six of the eleven holdable items — so it never
+  exercised SLASH at all and measured four of the seven bladed designs, while still printing PASS
+  with an empty failure list. They now walk the `Registry` and drive the pose functions directly.
+  `PlayerViewmodel.swing_pose()` and `swing_transform()` are public for exactly this.
+- **No bladed design's grip turns its cheek to the camera.** Tightening the threshold to 0.40 makes
+  it name all seven with real numbers (0.45–0.67), which is how it was proved live rather than vacuous.
+- **Nothing crosses the camera near plane during its swing**, over every mesh AABB corner of every
+  item across 24 samples of the arc. This caught a real defect: a skewer's hand sits 0.72 up a 1.97 m
+  shaft, leaving its butt cap ~12 cm from the camera, and the original 0.11 m thrust pull-back pushed
+  it to **z +0.015 against a 0.05 near plane** — sliced open on every wind-up. The first draft of this
+  assertion passed anyway, because `root` is a `Window` and not a `Node3D`, so the parent cast nulled
+  and the corner list came back empty. Watch for that shape.
+- **No tool or weapon silently inherits the default CHOP.**
+- Plus the style-dispatch, cheek, bit-downrange and wind-up-moves checks against the live scene.
+
+Framing is measured at each design's **extreme** point — the axe's bit corner, the sword's tip 1.72 m
+up — not at a centroid. Measuring the centroid is what hid a sword tip sitting 75% past the right
+edge of the frame at full cock. All eleven now stay inside the frame for every frame of the swing.
 
 **The renders are real in-game frames, not a mock-up.** Appending `--display-driver macos` to
 `agent godot` overrides the `--headless` it injects, so the check writes four real 1280×720 frames of

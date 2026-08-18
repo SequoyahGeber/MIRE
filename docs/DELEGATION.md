@@ -113,7 +113,16 @@ invariants that are not obvious and cost real time to rediscover:
   Rotating about the node origin orbits the weapon around the camera, so 30° of pitch throws a tool
   off the screen.
 
-`PlayerViewmodel.current_attack_style() -> int` is public so a check can assert the dispatch happened.
+`PlayerViewmodel.current_attack_style()`, `swing_pose(style, phase, progress)` and
+`swing_transform(position, rotation_degrees)` are all public so a check can drive any style's whole
+arc **without that weapon being in the hotbar**. That is not a nicety: the dev loadout grants six of
+the eleven holdable items, so assertions written against "whatever is selected" never exercise SLASH
+and silently pass with an empty failure list. Walk `Registry.items` instead.
+
+**Two generators author `content/items/stone_axe.tres`** — `setup_tool_content.gd` (the solved grips)
+and `setup_crafting_content.gd` (the recipe). The second now *reads* `GRIPS` from the first instead of
+repeating the numbers. If you add a third writer of any item, do the same; a second copy of these
+values is a revert with a delay on it.
 
 **Grips are solved, not nudged.** All eleven are in `tools/setup_tool_content.gd`'s `GRIPS`, so
 regenerating content reproduces them. Every A-004 head runs bit-to-poll along local **+X** with the
