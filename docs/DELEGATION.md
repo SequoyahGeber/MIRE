@@ -1037,9 +1037,10 @@ gets is the crawl and the blocked input. The revive hold has no progress indicat
 presentation gaps, not authority gaps — the host-side contract above does not change under them.
 
 **Items now have icons, and `ItemDef.icon` is populated.** `assets/icons/exports/icon_<id>.png` holds
-25 transparent 256×256 icons — every A-002 pickup, every A-004 tool/weapon, and A-021S's iron sword —
-where `<id>` matches `ItemDef.id`. **All 14 item `.tres` files carry their icon**; a new item wires
-its icon by setting `icon` on its `.tres`. Icons are renders of the shipped GLBs, not drawings (D-033), so a model
+26 transparent 256×256 icons — every A-002 pickup, every A-004 tool/weapon, A-021S's iron sword, and
+(F-061) the coin pouch backing `coins.tres` — where `<id>` matches `ItemDef.id`. **All 16 item `.tres`
+files carry their icon**; a new item wires its icon by setting `icon` on its `.tres`. Icons are
+renders of the shipped GLBs, not drawings (D-033), so a model
 change is followed by re-running `tools/blender/render_item_icons.py`, never by editing a PNG. Adding
 an icon for a new asset family means appending to `SOURCES` in that script, not starting a second
 pipeline. `assets/icons/catalog.json` records each icon's source GLB and framing;

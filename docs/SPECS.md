@@ -289,6 +289,35 @@ before this fix cannot silently reintroduce either trap.
 
 ---
 
+## F-061 · `content/items/coins.tres` has no icon — the `render_item_icons.py` pipeline needs a SOURCES entry
+
+**Claim:** `tools/blender/render_item_icons.py`, `assets/icons/catalog.json`,
+`content/items/coins.tres`, `assets/icons/exports/`, `assets/icons/preview/`, `assets/icons/README.md`.
+No `ARCHITECTURE.md` §2.2 authority row — presentation-only, same as the rest of A-042a; item
+*instances* stay host-authoritative under the existing Inventory/crafting row regardless of icon.
+
+3.5 added `coins.tres` with `icon` left null — 3.5's own claim set (`systems/loot/`, `ui/loot/`,
+`autoload/registry.gd`) didn't reach the art pipeline, and neither InventoryUI nor ChestUI breaks on a
+null icon, so nothing was broken, just unfinished.
+
+**Fix:** appended `("coins", "loot/exports/loot_coin_pouch.glb")` to `SOURCES` — keep the id plural,
+matching `coins.tres`'s own `id`, distinct from the pickup icons already named `coin`/`coin_stack`.
+Reran `/Applications/Blender.app/Contents/MacOS/Blender --background --python
+tools/blender/render_item_icons.py`; default azimuth/elevation framed the pouch without a new
+`AZIMUTH`/`ROLL_OVERRIDE_DEG` entry. Wired `coins.tres`'s `icon` to
+`res://assets/icons/exports/icon_coins.png`. The rerun re-stamps all 25 pre-existing PNGs with new
+Blender metadata (F-042) with zero pixel change — confirmed with `tools/png_pixels_equal.py` against
+each file's committed `HEAD` copy — so those 25 were reverted with `git checkout --` before
+committing; only the new PNG, the regenerated contact sheet, and the catalog/README updates are real
+diffs.
+
+**Shipped 2026-08-18.** Verified: `.agent/bin/agent godot --script tools/item_icons_check.gd` →
+`item_icons_check: PASS`, run twice consecutively. (The first run immediately after the new PNG
+appeared on disk reported 2 failures before any rerun — F-093's shape, a headless `--script` pass
+doesn't reimport an asset that appeared mid-session; not a regression, confirmed clean on rerun.)
+
+---
+
 # M3 — systems depth (start only after 2.14's re-read of DESIGN §8)
 
 **Milestone-wide rules.** Every new player-facing state keys by peer id under D-035 discipline.

@@ -497,28 +497,6 @@ on either during a renumbering pass.
 
 ---
 
-### F-061 · content/items/coins.tres has no icon — the render_item_icons.py pipeline needs a SOURCES entry
-
-**Area:** content · **Severity:** low · **Found:** 2026-08-18 by lp
-
-Task 3.5 added `content/items/coins.tres` (stack_size 999, world_model =
-assets/loot/exports/loot_coin_pouch.glb) so Chest has a real item to grant coins as. Every other
-item in content/items/ carries an icon rendered by `tools/blender/render_item_icons.py` (D-033: icons
-are renders of the shipped GLBs, never drawn) — DELEGATION's "Current state" says "All 14 item .tres
-files carry their icon." coins.tres is the 15th and does not; `ItemDef.icon` is left null.
-
-Not fixed here: appending to that script's SOURCES list, re-rendering, and comparing decoded pixels
-(F-042 — PNGs are never byte-identical rebuild to rebuild) is an art-pipeline task, not this one's
-framework claim (systems/loot/, ui/loot/, autoload/registry.gd). InventoryUI and ChestUI both already
-render a null icon gracefully (existing items without a world_model/icon exercise the same path), so
-nothing is broken — coins just show without an icon until this is picked up.
-
-Fix: add `"coins": "res://assets/loot/exports/loot_coin_pouch.glb"` (or equivalent) to
-render_item_icons.py's SOURCES, rerun it, and set coins.tres's `icon` field, following A-004R's
-"appending to SOURCES, not starting a second pipeline" note in DELEGATION.
-
----
-
 ### F-092 · `mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call
 
 *Renumbered from F-058 on 2026-08-18 by lp (F-087) — that number collided with the original F-058, the
@@ -727,7 +705,112 @@ Whoever picks this up: reproduce with 'agent godot --script tools/chest_net_chec
 
 ---
 
+### F-108 · A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
+
+`tools/ship_check.gd` cross-checks each export's measured size against the catalog. Built the obvious
+way — `instance.transform * instance.get_aabb()`, merged over the mesh instances — it reported seven
+of the fifteen A-009 exports as larger than the generator said: all four hull states 50 mm long, the
+broken mast 72 mm, the debris cluster 38 mm, and the broken mast's origin 23 mm low.
+
+Nothing was wrong with the assets. An `AABB` is axis-aligned in the mesh's own space, so pushing one
+through a rotation returns the box around the rotated box, which is strictly larger than the geometry
+inside it and larger the more the part is turned. Every `cone`/`tapered_between` primitive is a
+rotated object, so a kit built out of them measures wide by exactly the amount the check is wrong.
+This is F-094 — `mire_art.world_bounds` measuring `obj.bound_box` in Blender — on the engine side of
+the fence, and it is worth stating separately because the Blender fix does not travel: the two
+codebases have to learn it independently.
+
+The fix in ship_check.gd is to measure `Mesh.ARRAY_VERTEX` transformed to the scene root, which now
+agrees with the generator to the millimetre on all fifteen.
+
+**`tools/flora_check.gd:126` has the same construction** (`box = instance.transform * box`) and is
+therefore measuring the flora kit with the same inflated ruler. It is currently green only because
+its tolerance is 20 mm and it compares height alone, where the error happens to stay under that. It
+was left alone here because it belongs to A-000V's file set and this batch had no claim on it — but
+the next agent in that file should port the vertex measurement across, and should expect the numbers
+to move slightly when they do.
+
+---
+
+### F-109 · The all-sides audit's inside-out test cannot judge an open sheet, and this is the first batch made of them
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by ivy8
+
+`tools/blender/audit_all_sides.py` detects inverted normals by the divergence theorem: sum
+`(n · c) * area` over an object, positive when a closed shell faces outward. The tracker records this
+as the check that works, and for a closed low-poly solid it does.
+
+A-009 is the first batch whose assets are largely **open** surfaces — a hull is a planked shell, a
+sail is a thin panel, a cap rail is a ribbon. For those, that sum is dominated by where the sheet
+sits relative to the world origin rather than by which way it faces. A bottom-strake patch board with
+a correct downward normal and a positive z centre scores negative and reads as a defect; a genuinely
+inverted sheet on the far side of the origin scores positive and reads as fine. On the finished,
+verified A-009 set the metric still reports 94 "inside out" objects on the repaired hull, every one
+of them a `panel()`/`ribbon()` back, rim or underside face that is correct.
+
+So the number is not a pass/fail gate for sheet-built families, and reading it as one will either
+waste a session or hide a real inversion. The generator now carries the check that does work
+(`WINDING_LOG` in `build_extraction_ship_set.py`): the builder knows the intended outward direction
+for every sheet it emits, compares it against the area-weighted normal actually produced, and fails
+the build on disagreement. That caught two genuinely inverted ramp edges and, before it, an inverted
+transom on all four hull states. Any future sheet-built family should copy that pattern rather than
+lean on the audit.
+
+---
+
+### F-110 · `audit_all_sides.py` silently resumes, so a re-run after fixing an asset re-reports the old defect
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
+
+The audit's resume ledger (AGENTS.md's killability rule, and the right design) means a second run
+with the same `--outdir` skips every asset already recorded and rebuilds the tidy `.json` from the
+old lines. During A-009 that produced a full contact-sheet report describing geometry that had been
+fixed and re-exported minutes earlier — including an inverted transom that the rebuild had already
+corrected. Nothing warned; the run simply finished fast.
+
+The trap is that the ledger keys on the asset, not on the GLB's content, so "already done" and "still
+current" are not the same claim. Two ways out, either fine: `rm -rf <outdir>` before every audit of a
+family you have just rebuilt (what this batch did), or teach the ledger to record the GLB's mtime or
+hash and re-render when it moves. The second is worth doing — the first depends on remembering, and
+the failure mode is silent and confidently wrong.
+
+---
+
 ## Resolved
+
+### F-061 · content/items/coins.tres has no icon — the render_item_icons.py pipeline needs a SOURCES entry — **fixed**
+
+**Area:** content · **Severity:** low · **Found:** 2026-08-18 by lp · **Resolved:** 2026-08-18 by lp
+
+Task 3.5 added `content/items/coins.tres` (stack_size 999, world_model =
+assets/loot/exports/loot_coin_pouch.glb) with `icon` left null — every other item's icon comes from
+`tools/blender/render_item_icons.py` (D-033), and coins had no entry in its `SOURCES` list.
+
+**Fix:** added `("coins", "loot/exports/loot_coin_pouch.glb")` to `SOURCES` (kept the plural item id,
+matching `coins.tres`'s own `id`, distinct from the existing singular `coin`/`coin_stack` pickup
+icons already in the list) and reran
+`/Applications/Blender.app/Contents/MacOS/Blender --background --python tools/blender/render_item_icons.py`.
+Default azimuth/elevation framed the pouch cleanly with no `AZIMUTH`/`ROLL_OVERRIDE_DEG` entry needed
+— checked visually against `preview/item_icons_sheet.png`. Wired `content/items/coins.tres`'s `icon`
+to the new `res://assets/icons/exports/icon_coins.png`, same pattern as `log.tres`. Updated
+`assets/icons/README.md`'s icon count (25 → 26) and family table.
+
+The rerun touched all 25 pre-existing export PNGs on disk (Blender stamps wall-clock metadata into
+every render, F-042) but only added pixels for the new `icon_coins.png` — verified with
+`tools/png_pixels_equal.py`'s `pixel_diff_bbox` against each file's committed `HEAD` copy, all 25
+came back `None` (pixel-identical), so those 25 were reverted with `git checkout --` and only the
+catalog entry, the new PNG, and the regenerated contact sheet (which now includes the 26th cell) are
+part of this change.
+
+**Verified:** `.agent/bin/agent godot --script tools/item_icons_check.gd` → `item_icons_check: PASS`,
+run twice consecutively for stability. The very first run after adding the untracked `icon_coins.png`
+reported 2 failures before any check output was inspected — consistent with F-093 (a headless
+`--script` run doesn't reimport a brand-new asset on the same pass it appears); the immediate rerun,
+and a third run after that, both came back clean, so this is not a new flake.
+
+---
 
 ### F-099 · Optimization sweep: per-frame costs and dead weight across runtime scripts — **fixed**
 
@@ -2061,8 +2144,8 @@ edge of the frame at full cock. All eleven now stay inside the frame for every f
 the running game; the exact command is in DELEGATION.md *Current state*, and it also answers F-077.
 Both the bug and the fix were confirmed that way.
 
-*Left open and not caused by this work:* `tools/item_icons_check.gd` still reports one failure,
-`coins.tres has an inventory icon`. That is **F-061**, and it fails identically at HEAD.
+*Left open and not caused by this work at the time:* `tools/item_icons_check.gd` reported one failure,
+`coins.tres has an inventory icon` — filed as **F-061** and fixed 2026-08-18 (see `## Resolved`).
 
 ---
 
