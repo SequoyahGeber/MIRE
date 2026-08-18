@@ -808,6 +808,36 @@ same reasoning produces it.
 
 ---
 
+### F-081 · Every ship blanket-stages .agent/, so one agent's commit silently carries another's in-progress harness edits
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
+
+`cmd_ship` stages `[f for f in changed if f.startswith(".agent/")]` for **every** task, not just the
+ones that touched the harness. The intent is coordination state — `BOARD.md`, `JOURNAL.md`,
+`state.json` — which every task legitimately updates and nobody claims. But the glob does not stop
+there: `.agent/bin/agent` and `.agent/bin/lane` are source code that a director may be halfway
+through editing, and they sit under the same prefix.
+
+Observed directly, 2026-08-18. The director (ivy8) was editing `.agent/bin/agent` and
+`.agent/bin/lane` to fix F-070. Before it shipped, reed16 ran `agent ship F-078` for an unrelated
+content-validation task, and commit `882993d` — titled *"F-078: PowerupDef validates its
+vocabulary"* — carried both harness files with it. By the time the director shipped F-070, its own
+fixes were already committed under another agent's name and message, so `058aace` contains only the
+findings write-up and the change log for the code is in the wrong commit.
+
+This is the same hazard F-014 and F-034 were written for, and it dodged both: the no-blanket-add
+rule stages only what a task claimed, but `.agent/` is exempt from claims by design, so nothing
+checks whether the shipping task has any business with these files. It got lucky here — the harness
+happened to be in a compiling state at that instant. A ship landing 90 seconds earlier would have
+committed an `agent` with a `NameError` at import, which every lane and every hook shells out to.
+
+**Fix:** exempt `.agent/bin/` from the blanket. Coordination state is the three generated files
+(`BOARD.md`, `JOURNAL.md`, `state.json`) plus the journal's siblings; harness *source* should ship
+like any other source — under an explicit claim, by the task that edited it. Narrowing the glob to
+those generated paths, or excluding `.agent/bin/`, both close it.
+
+---
+
 ## Resolved
 
 ### F-070 · Generated review orders cannot use their mandated review task id — **fixed**
