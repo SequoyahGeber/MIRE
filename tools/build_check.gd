@@ -46,6 +46,7 @@ func _run() -> void:
 	await _build_world()
 	_check_placement_rules()
 	_check_support_probe_requirements()
+	_check_ground_height_is_preserved()
 	await _check_host_placement()
 	await _check_damage_destroys_piece()
 	await _check_ghost()
@@ -79,12 +80,16 @@ func _check_content_loads() -> void:
 func _check_snapping_is_pure() -> void:
 	print("\n== snapping is world-space and pure ==")
 	var snapped: Transform3D = VALIDATOR.snap_transform(wall, Vector3(3.4, 0.2, -7.8), 0.0)
-	check(snapped.origin.is_equal_approx(Vector3(3.0, 0.0, -8.0)),
-		"a 1 m grid snaps (3.4, 0.2, -7.8) to (3, 0, -8) — got %s" % snapped.origin)
+	check(snapped.origin.is_equal_approx(Vector3(3.0, 0.2, -8.0)),
+		"a 1 m grid snaps X/Z only: (3.4, 0.2, -7.8) to (3, 0.2, -8) — got %s" % snapped.origin)
 
-	# Y is snapped too: a floor at 2.5 and another at 2.51 is a seam you cannot see or walk over.
-	var stacked: Transform3D = VALIDATOR.snap_transform(wall, Vector3(0.0, 2.51, 0.0), 0.0)
-	check(is_equal_approx(stacked.origin.y, 3.0), "height snaps as well (%.2f)" % stacked.origin.y)
+	# Y is NOT snapped (F-083): it is wherever the aim ray actually hit, and Hollowmere is not
+	# restricted to whole metres. Rounding it used to bury pieces on ground like 0.4 (rounds to 0,
+	# support probe starts inside the terrain) or float them on ground like 0.6 (rounds to 1, a
+	# 0.4 m gap reads as OK). See _check_ground_height_is_preserved() for the full scenario.
+	var unsnapped: Transform3D = VALIDATOR.snap_transform(wall, Vector3(0.0, 2.51, 0.0), 0.0)
+	check(is_equal_approx(unsnapped.origin.y, 2.51),
+		"height is preserved, not rounded to the grid (%.2f)" % unsnapped.origin.y)
 
 	var rotated: Transform3D = VALIDATOR.snap_transform(wall, Vector3.ZERO, deg_to_rad(58.0))
 	var yaw_degrees: float = rad_to_deg(rotated.basis.get_euler().y)
@@ -133,6 +138,12 @@ func _build_world() -> void:
 	# derived the same way as the bank above: cx = px + hy*sin(t), cy = py - hy*cos(t), for the box's
 	# own half-height hy.
 	_add_box(Vector3(11.383, -0.271, 15.125), Vector3(2.0, 1.0, 2.0), 50.0)
+
+	# F-083 regression: two isolated flat pads whose TOP surface sits at an ordinary, non-integer
+	# elevation, the review's exact GROUND_0_4 / GROUND_0_6 probes. Wide enough (4x4) that a wall's
+	# full footprint (half-extents 1 x 0.125) sits well inside either pad.
+	_add_box(Vector3(60.0, 0.0, 0.0), Vector3(4.0, 0.8, 4.0), 0.0)                # top surface y=0.4
+	_add_box(Vector3(70.0, 0.2, 0.0), Vector3(4.0, 0.8, 4.0), 0.0)                # top surface y=0.6
 
 	# Two physics frames: one for the bodies to enter the tree, one for the space to know them.
 	await physics_frame
@@ -243,6 +254,33 @@ func _check_support_probe_requirements() -> void:
 	check(mixed_reason == VALIDATOR.Reason.TOO_STEEP,
 		"four flat corners and one 50 degree corner -> TOO_STEEP, the worst of the five wins (%s)" %
 			VALIDATOR.reason_text(mixed_reason))
+
+
+## F-083: the review's real-physics probe printed `GROUND_0_4 snapped_y=0.0 reason=nothing
+## underneath it` and `GROUND_0_6 snapped_y=1.0 gap=0.4 reason=ok` — snap_transform() was rounding
+## ordinary ground heights onto the metre grid before the support ray ever ran. Both must now read
+## OK, flush against the real surface, with the exact height the probe reported.
+func _check_ground_height_is_preserved() -> void:
+	print("\n== F-083: ground Y is preserved, not snapped to the metre grid ==")
+	check(space != null, "a real physics space is available to query")
+	if space == null:
+		return
+
+	var ground_0_4: Transform3D = VALIDATOR.snap_transform(wall, Vector3(60.0, 0.4, 0.0), 0.0)
+	check(is_equal_approx(ground_0_4.origin.y, 0.4),
+		"GROUND_0_4: a surface at y=0.4 keeps its own height (got %.2f)" % ground_0_4.origin.y)
+	var reason_0_4: int = VALIDATOR.evaluate(space, wall, ground_0_4, ground_0_4.origin, WORLD_LAYER)
+	check(reason_0_4 == VALIDATOR.Reason.OK,
+		"GROUND_0_4: flush on the surface -> OK, not NO_SUPPORT (%s)" %
+			VALIDATOR.reason_text(reason_0_4))
+
+	var ground_0_6: Transform3D = VALIDATOR.snap_transform(wall, Vector3(70.0, 0.6, 0.0), 0.0)
+	check(is_equal_approx(ground_0_6.origin.y, 0.6),
+		"GROUND_0_6: a surface at y=0.6 keeps its own height too (got %.2f)" % ground_0_6.origin.y)
+	var reason_0_6: int = VALIDATOR.evaluate(space, wall, ground_0_6, ground_0_6.origin, WORLD_LAYER)
+	check(reason_0_6 == VALIDATOR.Reason.OK,
+		"GROUND_0_6: flush on the surface -> OK, no 0.4 m floating gap (%s)" %
+			VALIDATOR.reason_text(reason_0_6))
 
 
 ## Increment B: the host's own decision path, offline, where this process is host-of-one and every
@@ -397,6 +435,19 @@ func _check_ghost() -> void:
 	check(not bool(ghost.call(&"is_valid")), "is_valid() agrees")
 	check(not String(ghost.call(&"last_reason_text")).is_empty(),
 		"and it has words for the player: '%s'" % String(ghost.call(&"last_reason_text")))
+
+	# F-083 end-to-end: the finding named this exact chain — update_aim() feeds its ray hit straight
+	# to snap_transform(). Aim straight down at the y=0.4 pad and confirm the ghost itself, not just
+	# snap_transform() in isolation, keeps the real surface height.
+	reason = ghost.call(&"update_aim", Vector3(60.0, 2.0, 0.0), Vector3(0.0, -1.0, 0.0),
+		Vector3(60.0, 0.0, 0.0))
+	var ground_placement: Transform3D = ghost.call(&"placement")
+	check(is_equal_approx(ground_placement.origin.y, 0.4),
+		"F-083: aiming down at a y=0.4 surface keeps the ghost at 0.4, not snapped to 0 (%.2f)" %
+			ground_placement.origin.y)
+	check(reason == VALIDATOR.Reason.OK,
+		"F-083: and the ghost reads it as placeable, not NO_SUPPORT (%s)" %
+			VALIDATOR.reason_text(reason))
 
 	var before_yaw: float = (ghost.call(&"placement") as Transform3D).basis.get_euler().y
 	ghost.call(&"rotate_step", 1)

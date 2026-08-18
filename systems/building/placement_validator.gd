@@ -54,11 +54,15 @@ static func snap_transform(def: Resource, origin: Vector3, yaw_radians: float) -
 	var step: float = float(def.get(&"snap_step"))
 	var snapped_origin: Vector3 = origin
 	if step > 0.0:
-		# Y is snapped too: a floor at 2.5 m and another at 2.51 m is a seam you cannot see and
-		# cannot walk over.
-		snapped_origin = Vector3(
-			snappedf(origin.x, step), snappedf(origin.y, step), snappedf(origin.z, step)
-		)
+		# X/Z only. Y used to snap to the same grid (F-083) on the theory that it kept stacked
+		# floors seamless, but `origin.y` here is never an arbitrary value to round — it is
+		# wherever the caller's aim ray actually hit, terrain or another piece's real top surface.
+		# Hollowmere's ground is not restricted to whole metres, so rounding it either buries the
+		# piece (0.4 -> 0.0, support probe starts inside the ground) or floats it (0.6 -> 1.0, a
+		# 0.4 m gap the validator waves through as OK). Preserving the raw hit height fixes both,
+		# and it still gives flush stacking for free: a ray against an already-placed piece reports
+		# that piece's exact top, so no separate anchor rule is needed (D-056).
+		snapped_origin = Vector3(snappedf(origin.x, step), origin.y, snappedf(origin.z, step))
 	var yaw: float = yaw_radians
 	var rotation_step: float = float(def.get(&"rotation_step_degrees"))
 	if rotation_step > 0.0:

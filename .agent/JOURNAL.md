@@ -2349,3 +2349,18 @@ parse_reset now anchors on 'try again' as well as 'reset', and a new DATE_PAT ha
 Files: `.agent/bin/lane`, `docs/FINDINGS.md`
 
 Commit at time of writing: `fb32051`
+
+---
+
+### DONE · F-083 · lp · 2026-08-18T12:59:09+00:00
+
+**Snapping the aim hit's Y coordinate rejects or floats pieces on ordinary terrain heights**
+
+Fixed: snap_transform() (systems/building/placement_validator.gd) no longer snaps Y, only X/Z. Y passes through unchanged from the caller's raycast hit, which is already the real surface (terrain or a stacked piece's top), so ground placement no longer buries/floats and stacking needs no separate anchor rule (D-056). Verified: agent godot --script tools/build_check.gd failures=0 (reran twice) -- new _check_ground_height_is_preserved() reproduces the review's exact GROUND_0_4/GROUND_0_6 probes, plus an end-to-end BuildGhost.update_aim() case. tools/build_net_check.gd failures=0, unaffected. Docs closed: F-083 moved to FINDINGS.md Resolved, D-056 recorded, SPECS.md F-083 block written (none existed), DELEGATION.md Current state note added.
+
+Notes along the way:
+- Fix: snap_transform() no longer snaps Y, only X/Z (D-056). Y is preserved from the raycast hit, which already IS the real surface (terrain or a stacked piece's top), so flush stacking needs no separate anchor rule. Verified with new _check_ground_height_is_preserved() in build_check.gd (GROUND_0_4/GROUND_0_6 repro) + an end-to-end ghost aim-ray case; failures=0, reran twice. build_net_check.gd failures=0 too.
+
+Files: `systems/building/placement_validator.gd`, `tools/build_check.gd`
+
+Commit at time of writing: `2108e0f`
