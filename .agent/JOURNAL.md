@@ -1875,3 +1875,27 @@ Night reads as night. Cloud deck is UNSHADED so no light could ever darken it �
 Files: `world/environment/playtest_atmosphere.gd`, `world/environment/low_poly_clouds.gd`, `world/environment/star_field.gd`, `tools/atmosphere_night_check.gd`, `tools/hollowmere_night_render.gd`
 
 Commit at time of writing: `eeaba43`
+
+---
+
+### DONE · F-069 · gale6 · 2026-08-18T02:53:04+00:00
+
+**`wave_spawner_check` signals a shadow DayNight node that WaveSpawner never subscribes to**
+
+wave_spawner_check now drives the registered /root/DayNight and /root/WaveSpawner instead of a FakeDayNight the production script never subscribed to. Thresholds are crossed by advancing the real clock with host_advance(), with the clock frozen so no stray crossing spawns a wave mid-assertion. 18/18, was 4 failures.
+
+Files: `tools/wave_spawner_check.gd`
+
+Commit at time of writing: `0a245d1`
+
+---
+
+### DONE · F-068 · gale6 · 2026-08-18T02:53:04+00:00
+
+**The night wave spawner shipped without being registered, so no waves run**
+
+WaveSpawner registered via agent autoload — it appends, so it lands after DayNight and gets the dependency order _ready() needs. 22 autoloads; verify_setup scans the section and asserts a floor, so it stayed green. The check now fails on its first assertion if the autoload is absent (that anchor is what was missing: the old harness built its own private WaveSpawner, so it passed the entire time the game had no night waves). wave_spawner_check 18/18; clean boot; verify_setup, day_night_check, day_night_net_check (two real processes), enemy_check, enemy_crawler_check and combat_check all green.
+
+Files: `tools/wave_spawner_check.gd`, `systems/waves/wave_spawner.gd`
+
+Commit at time of writing: `0a245d1`

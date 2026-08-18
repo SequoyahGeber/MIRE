@@ -285,16 +285,6 @@
       "at": "2026-08-17T04:31:24+00:00",
       "task": "2.8"
     },
-    "autoload/crafting_service.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T02:52:00+00:00",
-      "task": "2.6"
-    },
-    "autoload/crafting_service.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T02:52:00+00:00",
-      "task": "2.6"
-    },
     "autoload/enemy_world.gd": {
       "agent": "dusk3",
       "at": "2026-08-17T16:22:54+00:00",
@@ -696,9 +686,9 @@
       "task": "2.12"
     },
     "systems/waves/wave_spawner.gd": {
-      "agent": "lc1",
-      "at": "2026-08-17T23:24:25+00:00",
-      "task": "2.12"
+      "agent": "gale6",
+      "at": "2026-08-18T02:53:04+00:00",
+      "task": "F-068"
     },
     "tools/atmosphere_night_check.gd": {
       "agent": "gale6",
@@ -840,25 +830,10 @@
       "at": "2026-08-17T23:13:44+00:00",
       "task": "F-052"
     },
-    "tools/crafting_check.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T02:52:00+00:00",
-      "task": "2.6"
-    },
-    "tools/crafting_check.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T02:52:00+00:00",
-      "task": "2.6"
-    },
     "tools/crafting_net_check.gd": {
       "agent": "flint5",
       "at": "2026-08-17T19:28:04+00:00",
       "task": "F-052"
-    },
-    "tools/crafting_net_check.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T02:52:00+00:00",
-      "task": "2.6"
     },
     "tools/crafting_ui_check.gd": {
       "agent": "dusk3",
@@ -1055,11 +1030,6 @@
       "at": "2026-08-17T18:49:21+00:00",
       "task": "F-048"
     },
-    "tools/setup_crafting_content.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T02:52:00+00:00",
-      "task": "2.6"
-    },
     "tools/setup_enemy_content.gd": {
       "agent": "dusk3",
       "at": "2026-08-17T16:31:36+00:00",
@@ -1116,9 +1086,9 @@
       "task": "F-064"
     },
     "tools/wave_spawner_check.gd": {
-      "agent": "lc1",
-      "at": "2026-08-17T23:24:25+00:00",
-      "task": "2.12"
+      "agent": "gale6",
+      "at": "2026-08-18T02:53:04+00:00",
+      "task": "F-068"
     },
     "ui/crafting/crafting_ui.gd": {
       "agent": "dusk3",
@@ -2624,6 +2594,31 @@
       "status": "todo",
       "tier": "F",
       "title": "The pre-commit hook blocks project.godot even when agent autoload wrote it \u2014 **fixed**"
+    },
+    "F-068": {
+      "done_at": "2026-08-18T02:53:04+00:00",
+      "done_by": "gale6",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "The night wave spawner shipped without being registered, so no waves run"
+    },
+    "F-069": {
+      "done_at": "2026-08-18T02:53:04+00:00",
+      "done_by": "gale6",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "`wave_spawner_check` signals a shadow DayNight node that WaveSpawner never subscribes to"
+    },
+    "F-070": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Generated review orders cannot use their mandated review task id"
     }
   },
   "version": 1
