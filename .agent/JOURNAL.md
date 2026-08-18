@@ -1771,3 +1771,13 @@ Root cause was NOT the spawn placement — that was correct. Jolt treats Concave
 Files: `world/gen/playtest_hollow.gd`, `tools/spawn_ground_probe.gd`, `docs/FINDINGS.md`
 
 Commit at time of writing: `a882db9`
+
+---
+
+### DONE · 0.12 · quill15 · 2026-08-18T01:22:05+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+Fixed a deadlock I introduced in my own chaining. Two wrapper shells each polled 'pgrep -f agent saturate LP' to wait for the other, but a shell whose script text contains that string is matched by that pattern — so each waited forever on the other and on itself, and LP sat idle through a window it was meant to be draining, at 98 percent session usage. saturate now serialises on a file lock, which cannot match its own name, so no polling wrapper is needed at all.
+
+Commit at time of writing: `d541056`

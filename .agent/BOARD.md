@@ -18,7 +18,7 @@
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `██████░░░░` 34/53 | 19 |
+| Findings | `██████░░░░` 34/54 | 20 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 18/23 | 5 |
@@ -71,6 +71,7 @@
 | ⬜ | **F-058** `docs/FINDINGS.md` carried two F-055s and two F-056s at once — concurrent lanes both used `agent brief`'s "next number" | todo |
 | ⬜ | **F-059** `InventoryService._publish_snapshot`'s `net_inventory_snapshot.rpc_id()` is unguarded against a departed peer, same shape as the bug task 3.8 fixed in `player_health.gd` | todo |
 | ⬜ | **F-060** Two-process net check authors: `local_peer_id() > HOST_PEER_ID` is not proof of a live connection, and mutating what `Node.get()` returns on a typed Dictionary property may not stick | todo |
+| ⬜ | **F-061** content/items/coins.tres has no icon — the render_item_icons.py pipeline needs a SOURCES entry | todo |
 
 ## Done
 

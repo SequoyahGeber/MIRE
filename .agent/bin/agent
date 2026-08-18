@@ -1773,7 +1773,16 @@ def cmd_saturate(args):
     if not wanted:
         die("no open orders for %s — write some with:  agent order <id> --lane %s" % (lane, lane))
 
-    print("%s%s queue: %s%s" % (C["b"], lane, " → ".join(wanted), C["x"]))
+    # Serialise chains on a lock rather than by polling for one another. The polling version
+    # deadlocked: a wrapper shell whose script text contains "agent saturate LP" is itself matched by
+    # `pgrep -f "agent saturate LP"`, so two chains each waited forever for the other AND themselves,
+    # and the lane sat idle through a window it was supposed to be draining. A lock cannot match its
+    # own name.
+    with file_lock("saturate-%s" % lane.lower(), timeout=8 * 3600):
+        return _saturate_locked(lane, wanted, watch)
+
+
+def _saturate_locked(lane, wanted, watch):
     done_ok, stopped = [], None
     for tid in wanted:
         st = load()

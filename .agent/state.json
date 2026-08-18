@@ -981,16 +981,6 @@
       "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
-    "assets/maps/playtest_hollow.glb": {
-      "agent": "pike",
-      "at": "2026-08-17T01:22:00+00:00",
-      "task": "2.1h"
-    },
-    "assets/maps/preview/playtest_hollow_preview.png": {
-      "agent": "pike",
-      "at": "2026-08-17T01:22:00+00:00",
-      "task": "2.1h"
-    },
     "assets/pickups": {
       "agent": "tine18",
       "at": "2026-08-17T23:34:54+00:00",
@@ -2016,16 +2006,6 @@
       "at": "2026-08-18T00:39:51+00:00",
       "task": "2.1j"
     },
-    "tools/playtest_hollow_render_check.gd": {
-      "agent": "pike",
-      "at": "2026-08-17T01:22:00+00:00",
-      "task": "2.1h"
-    },
-    "tools/playtest_hollow_render_check.gd.uid": {
-      "agent": "pike",
-      "at": "2026-08-17T01:22:00+00:00",
-      "task": "2.1h"
-    },
     "tools/playtest_map_check.gd": {
       "agent": "tine18",
       "at": "2026-08-18T00:39:51+00:00",
@@ -2201,7 +2181,7 @@
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.12": {
-      "done_at": "2026-08-18T01:19:02+00:00",
+      "done_at": "2026-08-18T01:22:05+00:00",
       "done_by": "quill15",
       "est": "1.5",
       "milestone": "M0",
@@ -3544,6 +3524,13 @@
       "status": "todo",
       "tier": "F",
       "title": "Two-process net check authors: `local_peer_id() > HOST_PEER_ID` is not proof of a live connection, and mutating what `Node.get()` returns on a typed Dictionary property may not stick"
+    },
+    "F-061": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "content/items/coins.tres has no icon \u2014 the render_item_icons.py pipeline needs a SOURCES entry"
     }
   },
   "version": 1
