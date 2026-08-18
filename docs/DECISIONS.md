@@ -1420,3 +1420,80 @@ never per tick.
 **Would change my mind:** a design call that a player can stack multiple simultaneous carries (no
 gameplay reason has come up for it) — the check is one `is_peer_hauling` call to remove, not a
 redesign.
+
+### D-070 · 2026-08-18 · Attunements ship as a single granted PowerupDef per role; their qualitative table halves stay unbuilt, not faked
+
+Task 3.9's own spec line is load-bearing: "Effects are PowerupService modifiers granted at
+selection — attunement is *data over 3.3*, zero new stat plumbing." DESIGN.md §4.5's table gives
+each of the four roles two kinds of effect — a few that are plainly stats already in
+`PowerupDef.KNOWN_STATS` (Warden's ward radius, Forager's gather yield, Tinker's craft time,
+Reaver's melee/ranged damage and coin drops) and several that are new capability gates with no stat
+to attach to (Warden's taunts, Forager seeing resources through terrain, Tinker unlocking Ward
+turrets and higher station tiers, Reaver being unable to build Wards).
+
+Building the second half now would mean inventing new plumbing in `systems/building/`,
+`systems/harvesting/`, and wherever taunting ends up living — exactly what the spec line forbids.
+So each Attunement (`content/attunements/*.tres`) is a thin AttunementDef naming ONE backing
+PowerupDef (`content/powerups/attunement_*.tres`, `max_stacks = 1`, no §4.4 tags) that carries only
+the stat-shaped half of its row, at deliberately modest magnitudes (10–25% per stat) since these are
+placeholder-tuned like every other 3.x worked example, not a balance pass. The capability halves are
+not stubbed, flagged, or partially wired — they simply are not part of this task, and the table cell
+each one came from is named above so nobody has to re-derive which effects are still owed.
+
+**Would change my mind:** nothing about this decision itself — it is scope, not a technical bet. The
+thing that changes is which task closes the gap: Ward turrets are 3.6/3.7's territory once building
+supports a turret piece, terrain-sight is a rendering/harvesting question, and taunts and a
+build-lockout are new mechanics with no obvious home yet. Whoever picks one up should extend the
+existing Attunement, not invent a second field for it — `AttunementDef.granted_powerup_id` is a
+single id today only because nothing yet needs a second one.
+
+### D-071 · 2026-08-18 · Attunement selection triggers at run start, not DESIGN §4.5's "first Wellspring cap"
+
+DESIGN.md §4.5 reads "At your first Wellspring cap, each player picks one" — but Wellsprings are an
+M4+ Mire-grid mechanic (`docs/ARCHITECTURE.md`'s Mire grid row) that does not exist yet, and gating a
+now-buildable M3 feature on a not-yet-built M4 one would strand it unshippable. `docs/SPECS.md`'s own
+3.9 execution block, written after DESIGN.md as the deliberately execution-ready simplification for
+this milestone, already says "Selection at run start" instead — this decision just records that the
+divergence from DESIGN.md is intentional rather than a mistake the next reader has to puzzle over.
+
+"Run start" is implemented as: the local player's first `PlayerNet.player_spawned` this session, if
+`AttunementService.local_selection()` is still empty. A run is one sitting (D-010), so a player's
+first spawn IS their run start; a peer that joins mid-session gets the same treatment at ITS first
+spawn, which is that peer's own run start. `ui/attunement/attunement_ui.gd` opens automatically then
+and has no dismiss path — Escape does nothing, because there is nothing to escape to. Respec is
+already out of scope (task 3.9's own spec line), so there is no reopen path to design either.
+
+**Would change my mind:** task 4.x building a real Wellspring-cap event. At that point the natural
+move is for `AttunementUI` to listen for that event instead of `player_spawned` — the service's
+selection/lock/broadcast logic underneath does not change, only what triggers the UI's first open.
+
+### D-072 · 2026-08-18 · Dodge i-frames are exactly the dash window, riding the player's existing position/rotation synchronizer, not a second timer or a new RPC
+
+Task 3.8b's spec says the host checks a `dodging` flag "the player's synchronizer already carries" —
+read literally: `entities/player/player_controller.gd`'s `dodging: bool` is a fourth
+`REPLICATION_MODE_ALWAYS` property on the SAME `SceneReplicationConfig` as position/rotation, not a
+new RPC (`net_report_local_stamina`'s advisory-unreliable shape was considered and rejected — stamina
+can tolerate a stale/dropped report because the host never gates on it, D-040, but an i-frame flag
+that arrives late or not at all is a hit that should have missed landing anyway).
+
+Two consequences worth recording so nobody "simplifies" them later:
+
+1. **The i-frame window IS `dodge_duration_sec`, not a separate `dodge_iframe_sec`.** Simplest reading
+   of "a dash impulse with i-frames" — one number tunes both, and there is no state where the flag is
+   true without the dash also being in progress or vice versa.
+2. **`dodge_duration_sec`'s export floor (0.1s) is not arbitrary — it exists because of (1) and how
+   ALWAYS-mode replication actually works.** `dodging` is ALWAYS, not ON_CHANGE, specifically because
+   ON_CHANGE only sends when the current value differs from the last value SENT — a flag that flips
+   true then false again between two per-interval checks can be missed entirely, never observed as
+   true even once. ALWAYS resends the current value every tick regardless, so the flag is guaranteed
+   to be seen as long as the window it's true for comfortably exceeds one `NetConfig.
+   PLAYER_SYNC_INTERVAL_SEC` (~0.033s, 30Hz). A future balance pass that drops `dodge_duration_sec`
+   toward that floor is trading real i-frame reliability for a snappier dash, not a free tuning knob.
+
+**Would change my mind:** a measured case where 0.1s is still too close to the sync interval under
+real jitter/packet loss (the check only proves the LOCAL-loopback case) — the fix would be either
+raising the floor further or moving `dodging` to its own higher-frequency channel, not silently
+trusting a thinner margin. Also: DESIGN §4.4's Void Resonance "dodge blinks" changing the verb's shape
+enough that i-frames and the dash's physical motion genuinely need to decouple (a blink that teleports
+instantly but leaves i-frames active slightly longer, say) — `_execute_dodge()` was kept a wrappable
+function precisely so that kind of change has somewhere to live without touching this file's core.

@@ -75,6 +75,80 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 3.9: Attunements ship as a thin selection layer over 3.3's PowerupService — framework and all four DESIGN §4.5 roles, both shipped (lm)
+
+**What shipped, verified:** `systems/attunement/attunement_def.gd` (content schema: id, display_name,
+`better_at`/`worse_at` flavour text, `granted_powerup_id`), `autoload/attunement_service.gd`
+(HOST-authoritative selection: request/lock/broadcast), `ui/attunement/attunement_ui.gd` (the D-032
+picker, autoload `AttunementUI`), `Registry.get_attunement`/`has_attunement` (new `attunements`
+family, `content/attunements/`, loaded after `haulables`). Content: all FOUR DESIGN §4.5 roles —
+`content/attunements/{warden,forager,tinker,reaver}.tres`, each naming a backing
+`content/powerups/attunement_<role>.tres` (`max_stacks=1`, no §4.4 tags), authored via
+`tools/setup_attunement_content.gd` (deterministic, same pattern as `setup_haul_content.gd`/
+`setup_station_content.gd`). `PROTOCOL_VERSION` 13 → 14 (`core/net/net_version.gd`,
+`tools/handshake_check.gd` extended). New `ARCHITECTURE.md` §2.2 row: "Attunement selection", HOST.
+
+**Why all four roles shipped, not one worked example (D-070):** DESIGN §4.5's roster is fixed and
+named directly by design — "one of four roles" cannot be demonstrated, let alone selected from, with
+one worked example the way a 40–60 entry powerup pool can. This is content in the same sense
+3.1's two StationDefs were: the minimum needed for the mechanic to exist at all, not an open pool.
+Only the STAT-shaped half of each role's DESIGN table row is implemented (mapped onto existing
+`PowerupDef.KNOWN_STATS`, magnitudes placeholder-tuned like every other 3.x worked example); the
+qualitative halves (Warden's taunts, Tinker's Ward turrets, Forager's terrain sight, Reaver's Ward
+lockout) are out of scope per the task's own "zero new stat plumbing" line — D-070 names exactly
+which table cells are still owed and to whom.
+
+**Verified:**
+- `agent godot --script tools/attunement_check.gd` — offline, host-of-one: all four roles load
+  through the real registry with a resolvable backing powerup; picking grants through
+  `PowerupService.host_grant` and the modifier resolves through the real `PowerupService.stat()`;
+  a second pick is refused and does not double-grant; an unknown role id is refused; the broadcast
+  signal fires with the right peer/role; D-035 rebind moves the pick, expiry drops it. **30
+  assertions, 0 failures, 0 `ERROR:` lines.**
+- `agent godot --script tools/attunement_net_check.gd` — real two-process ENet: the host's
+  pre-existing pick reaches a joiner (mid-run join), the client's own request round-trips through
+  the host and is confirmed, the host's own record and the granted powerup are checked host-side
+  (not trusted from the client), and a second real request over the wire is refused. **12
+  assertions, 0 failures, 0 `ERROR:` lines.**
+- `agent godot --script tools/attunement_ui_check.gd` — offline: the picker stays closed with no
+  local player body, opens exactly once a local-authority body appears (polled off the `&"players"`
+  group, no dependency on `player_controller.gd` — see below), shows all four roles, and closes on
+  an accepted pick. **8 assertions, 0 failures, 0 `ERROR:` lines.**
+- `agent godot --script tools/handshake_check.gd` — protocol 14, real ENet mismatch/reject proven.
+- Full boot: `agent godot --quit-after 60` — 0 ERROR, registry logs `4 attunement(s)`.
+
+**API for the next task:**
+```gdscript
+AttunementService.request_select(attunement_id: StringName) -> void   # client-callable
+AttunementService.selection_of(peer_id: int) -> StringName            # &"" = not yet chosen
+AttunementService.has_selected(peer_id: int) -> bool
+AttunementService.local_selection() -> StringName
+AttunementService.all_selections() -> Dictionary                      # peer_id -> attunement_id, everyone
+AttunementService.selection_changed(peer_id, attunement_id)           # signal, every peer, incl. &"" = retired
+AttunementService.selection_confirmed(accepted, attunement_id, detail) # signal, requester only
+AttunementUI.is_open() / poll_now() / choose(attunement_id)           # test/debug seam
+```
+
+**Design calls made and why (also in DECISIONS.md D-070/D-071):** (1) An Attunement grants exactly
+one stack of an ordinary `PowerupDef` through `PowerupService.host_grant()` — no new stat plumbing,
+per the task's own spec line (D-070). (2) Selection is broadcast in FULL to every peer, unlike
+`PowerupService`'s owner-full/teammate-counts split — DESIGN §4.5's whole point is that the party
+sees who picked what and self-organizes around it, so there is nothing to hide. (3) The trigger is
+the local player's first spawn this session ("run start"), not DESIGN §4.5's unbuilt "first
+Wellspring cap" (D-071) — Wellsprings are M4+ and gating a buildable M3 feature on them would strand
+it. (4) `AttunementUI` polls `get_tree().get_nodes_in_group(&"players")` for a local-authority body
+every 0.5s rather than adding a new signal to `player_controller.gd` — that file was mid-edit-broken
+under lp's 3.8b claim for the whole of this task (missing `_execute_dodge()`, confirmed pre-existing
+via the content-setup script's own boot log, not touched here) and this task does not claim it
+either way; the group-membership contract (`add_to_group(&"players")` + `is_multiplayer_authority()`,
+both set identically offline and online) already existed and needed no change. (5) No Escape/dismiss
+path on the picker — task 3.9 already puts respec out of scope, so there is nothing to reopen TO.
+
+**NOT done — respec, and the qualitative table halves — both by design, not oversight:** see D-070
+for the exact list of what each role's row is still owed and which future task most naturally owns
+it (3.6/3.7 for Ward turrets, a rendering/harvesting task for terrain-sight, homeless mechanics for
+taunts and the Ward lockout).
+
 ### 2026-08-18 — Task 3.10: heavy hauling ships as a system, but `HaulService` is NOT yet a registered autoload — one command finishes it (lp)
 
 **What shipped, verified:** `systems/hauling/haulable_def.gd` (content schema),
@@ -1380,6 +1454,57 @@ a consumable — built in code like `InventoryUI`/`CraftingUI`, no `.tscn`. Eati
 slots 1-8, because `project.godot` was held by another lane's task (2.1j) when this shipped. Whether
 the numbers (20-minute hunger bar, 4s of sprint, a 15% resume threshold) feel right is 3.11's job, not
 this one's.
+
+**Task 3.8b ships dodge — CLIENT-authoritative dash (§2.2 row 1, same as the rest of movement), with a
+HOST-decided i-frame against enemy melee only.** `entities/player/player_controller.gd` gained a
+`@export_group("Dodge")` (`dodge_stamina_cost` 30, `dodge_impulse` 10 m/s, `dodge_duration_sec` 0.25,
+`dodge_cooldown_sec` 1.2) and the verb itself: `_execute_dodge() -> bool` (spends stamina through the
+same `PlayerHealth.local_try_spend_stamina()` jump already uses, locks in a dash direction from
+current movement input — or the player's facing if none is held — and returns false with no side
+effects on cooldown/insufficient stamina) and `_tick_dodge(delta)` (counts the cooldown down always,
+counts the dash window down only while `dodging`). Bound to a new InputMap action `"dodge"` (Left Ctrl
+/ gamepad button 1) via a genuine `project.godot` edit, not a raw key — unlike `EAT_KEY`/
+`BUILD_ROTATE_KEY` (D-058), `project.godot` was free this session, so there was no reason to take the
+raw-key shortcut for a first-tier movement verb. `_execute_dodge()` is deliberately a standalone
+function with no input-event dependency, called from `_unhandled_input` on `"dodge"` pressed — DESIGN
+§4.4's Void Resonance "dodge blinks" is expected to wrap or replace this exact call, not reinvent the
+verb.
+
+**The i-frame flag (`dodging: bool`) is client-local state, trusted like position (D-039's "cheating
+is irrelevant among friends" already covers a player lying about it, same as speed-hacking their own
+position), replicated on the SAME synchronizer as position/rotation** — `_build_synchronizer()` added
+`^".:dodging"` as a fourth `REPLICATION_MODE_ALWAYS` property, per the task spec's own wording ("the
+player's synchronizer already carries"), not a new RPC. ALWAYS, not ON_CHANGE: ON_CHANGE only sends
+when the value differs from the last value SENT, so a flag that flips true then false again between
+two per-interval checks can be missed entirely — ALWAYS resends the current value every tick
+regardless. This is why `dodge_duration_sec`'s export range floors at 0.1s: `NetConfig.
+PLAYER_SYNC_INTERVAL_SEC` is ~0.033s (30Hz), and a dash duration too close to one sync tick risks the
+host never observing `dodging == true` before it flips back — see that export's own comment for the
+full reasoning. **The i-frame window is deliberately the same span as the dash (no separate timer)** —
+simplest correct reading of "a dash impulse with i-frames," and it means tuning one number tunes both.
+
+**The i-frame DECISION is the host's, scoped to enemy melee only, not the shared damage seam.**
+`systems/health/player_health.gd`'s `_on_enemy_attack_landed()` — and ONLY that function, not
+`host_apply_damage()` itself — now calls a new `_is_dodging(peer_id)` (resolves the peer's
+`PlayerController` via the existing `_player_body()` helper and reads its replicated `dodging`
+property) before ever reaching `host_apply_damage()`. A direct `host_apply_damage()` call (starvation,
+melee via the shared `&"damageable"` seam, a future hazard) is untouched — task 3.8b's own spec says
+"i-frames against enemy melee only," and gating the shared entry point would have silently blocked
+those too.
+
+Checks: `agent godot --script tools/dodge_check.gd` (offline — dash impulse/direction/cost, cooldown
+rejection and recovery, i-frames blocking `EventBus.emit_enemy_attack_landed` while `dodging` and
+letting the identical hit land once it clears, and proof that `host_apply_damage()` called directly is
+NOT blocked by `dodging`) and `agent godot --script tools/dodge_net_check.gd` (two real ENet peers —
+the CLIENT calls its own `_execute_dodge()`, the HOST's copy of `dodging` observably flips true over
+the real synchronizer wire, and a `enemy_attack_landed` fired ON THE HOST for that remote peer is
+dodged while true and lands once false). Both 0 failures, 0 engine `ERROR:` lines.
+
+**`PROTOCOL_VERSION` bumped 14 -> 15** for the new `dodging` replicated property — `core/net/
+net_version.gd` and `tools/handshake_check.gd` were held by lane `lm`/task 3.9 (attunement selection
+RPCs) for most of this task's session (genuinely in flight, not stale — confirmed by re-attempting the
+claim twice before it freed up); claimed and finished once 3.9 released them. `agent godot --script
+tools/handshake_check.gd` is 0 failures, 0 engine errors, at 15.
 
 **Task 2.11 ships the day/night cycle — HOST-authoritative time, replicated at 1 Hz, applied
 client-local.** `DayNight` (`systems/environment/day_night.gd`) is an autoload registered last (after
