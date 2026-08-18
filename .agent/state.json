@@ -15,301 +15,6 @@
       "at": "2026-08-18T19:32:45+00:00",
       "task": "3.13"
     },
-    "content/powerups/adrenal_bloom.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:38:49+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/air_writ.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:40:07+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/ashen_temper.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:35:40+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/bellows_lung.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:40:07+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/cat_fall.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:40:07+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/cauter_seal.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:35:40+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/cellar_cache.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:02+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/chill_edge.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:02+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/cinder_tithe.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:35:40+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/damp_stride.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:41:23+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/deep_frost.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:02+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/deep_pocket.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:47+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/ember_knuckle.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:35:40+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/empty_vessel.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:47+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/far_grasp.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:47+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/flashover.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:35:40+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/fletchers_debt.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:47+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/forge_blood.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:35:40+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/fruiting_call.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:41:23+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/gaunt_frame.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:47+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/grave_due.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:47+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/hollow_bargain.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:47+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/iron_tongue.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:38:49+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/long_bound.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:40:07+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/loping_gait.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:40:07+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/moss_shroud.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:41:23+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/night_pyre.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:35:40+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/numb_skin.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:02+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/open_flame.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:35:40+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/pack_frame.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:40:07+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/pact_cut.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:38:49+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/pale_guard.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:02+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/patient_draw.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:02+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/quiet_bloom.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:41:23+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/red_quench.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:38:49+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/rich_marrow.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:41:23+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/rime_shell.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:02+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/root_hold.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:41:23+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/rot_chew.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:41:23+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/sanctum_frost.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:02+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/scab_feast.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:38:49+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/sealed_veins.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:38:49+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/second_glance.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:47+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/second_wind.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:40:07+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/skip_step.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:40:07+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/slow_gut.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:41:23+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/spent_spring.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:40:07+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/spore_sole.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:41:23+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/steady_hands.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:38:49+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/still_breath.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:02+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/stubborn_heart.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:38:49+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/thick_hide.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:38:49+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/thin_step.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:47+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/tinder_snap.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:35:40+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/unseen_seam.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:47+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/warm_marrow.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:35:40+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/whetted_thirst.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:38:49+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/white_quiet.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:42:02+00:00",
-      "task": "3.4"
-    },
-    "content/powerups/wide_cap.tres": {
-      "agent": "wick20",
-      "at": "2026-08-18T19:41:23+00:00",
-      "task": "3.4"
-    },
     "core/dev/dev_loadout.gd": {
       "agent": "lp",
       "at": "2026-08-18T19:27:08+00:00",
@@ -357,72 +62,6 @@
         }
       ],
       "started": "2026-08-18T19:27:08+00:00"
-    },
-    "3.4": {
-      "agent": "wick20",
-      "files": [
-        "content/powerups/ember_knuckle.tres",
-        "content/powerups/tinder_snap.tres",
-        "content/powerups/ashen_temper.tres",
-        "content/powerups/flashover.tres",
-        "content/powerups/cauter_seal.tres",
-        "content/powerups/forge_blood.tres",
-        "content/powerups/night_pyre.tres",
-        "content/powerups/warm_marrow.tres",
-        "content/powerups/cinder_tithe.tres",
-        "content/powerups/open_flame.tres",
-        "content/powerups/thick_hide.tres",
-        "content/powerups/red_quench.tres",
-        "content/powerups/adrenal_bloom.tres",
-        "content/powerups/pact_cut.tres",
-        "content/powerups/sealed_veins.tres",
-        "content/powerups/steady_hands.tres",
-        "content/powerups/stubborn_heart.tres",
-        "content/powerups/scab_feast.tres",
-        "content/powerups/iron_tongue.tres",
-        "content/powerups/whetted_thirst.tres",
-        "content/powerups/long_bound.tres",
-        "content/powerups/bellows_lung.tres",
-        "content/powerups/second_wind.tres",
-        "content/powerups/loping_gait.tres",
-        "content/powerups/skip_step.tres",
-        "content/powerups/cat_fall.tres",
-        "content/powerups/pack_frame.tres",
-        "content/powerups/air_writ.tres",
-        "content/powerups/spent_spring.tres",
-        "content/powerups/wide_cap.tres",
-        "content/powerups/rot_chew.tres",
-        "content/powerups/slow_gut.tres",
-        "content/powerups/spore_sole.tres",
-        "content/powerups/damp_stride.tres",
-        "content/powerups/rich_marrow.tres",
-        "content/powerups/moss_shroud.tres",
-        "content/powerups/fruiting_call.tres",
-        "content/powerups/root_hold.tres",
-        "content/powerups/quiet_bloom.tres",
-        "content/powerups/rime_shell.tres",
-        "content/powerups/chill_edge.tres",
-        "content/powerups/deep_frost.tres",
-        "content/powerups/still_breath.tres",
-        "content/powerups/cellar_cache.tres",
-        "content/powerups/pale_guard.tres",
-        "content/powerups/patient_draw.tres",
-        "content/powerups/sanctum_frost.tres",
-        "content/powerups/numb_skin.tres",
-        "content/powerups/white_quiet.tres",
-        "content/powerups/far_grasp.tres",
-        "content/powerups/deep_pocket.tres",
-        "content/powerups/hollow_bargain.tres",
-        "content/powerups/thin_step.tres",
-        "content/powerups/unseen_seam.tres",
-        "content/powerups/fletchers_debt.tres",
-        "content/powerups/gaunt_frame.tres",
-        "content/powerups/grave_due.tres",
-        "content/powerups/second_glance.tres",
-        "content/powerups/empty_vessel.tres"
-      ],
-      "notes": [],
-      "started": "2026-08-18T19:35:40+00:00"
     }
   },
   "recent": {
@@ -1047,6 +686,24 @@
       "at": "2026-08-18T04:27:04+00:00",
       "task": "3.3"
     },
+    "content/powerups/adrenal_bloom.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "d759addae20ed61b7a52d5033a6c76b3552e1cc4546635c585259c0069f195cc",
+      "task": "3.4"
+    },
+    "content/powerups/air_writ.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "c95bd6236b9361c1ab700a7c0ae5385f6c20130db7c554dcbd21fd28791f420d",
+      "task": "3.4"
+    },
+    "content/powerups/ashen_temper.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "fbae612f7f188f8a44c79ef12f3b00e8711577d5b15ca18030df56cfd8b6f774",
+      "task": "3.4"
+    },
     "content/powerups/attunement_forager.tres": {
       "agent": "lm",
       "at": "2026-08-18T19:15:45+00:00",
@@ -1071,10 +728,346 @@
       "hash": "3dcb8bf4ceb845025d93e99d1cc8d26e094d13077be948141d48c8b523d48baa",
       "task": "3.9"
     },
+    "content/powerups/bellows_lung.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "6ebe4122351a0275e0f4a489223b592439c9ee09e37d56527e60c32d6adaa235",
+      "task": "3.4"
+    },
+    "content/powerups/cat_fall.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "8f0a8e82cbae99689cbeff44bc90002d9fbb5113f893370b43ba7b1743454163",
+      "task": "3.4"
+    },
+    "content/powerups/cauter_seal.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "751cf0a72165313110871abd31d6a4dde832a236d6008b8b7e738aa2e4b3913f",
+      "task": "3.4"
+    },
+    "content/powerups/cellar_cache.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "62f7d75f9c1211a15317f803e4a77fc00c4cc6f972b26607889b59614d0ff4e4",
+      "task": "3.4"
+    },
+    "content/powerups/chill_edge.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "ff09e2ebe81d674ec46c8ab6bb715867b455a5f9ea50092b11ae8b45fc103034",
+      "task": "3.4"
+    },
+    "content/powerups/cinder_tithe.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "53c4a2e21b3436c12e65125ec66727a7b3274c84323e87ca650a2d7b448a73b1",
+      "task": "3.4"
+    },
+    "content/powerups/damp_stride.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "1ba9dd8f09748e1d76800477046935d57ecf8e3967ec11317206f3c6f83093cc",
+      "task": "3.4"
+    },
+    "content/powerups/deep_frost.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "886478517fb11017b88d5ff606b3eb6d3b33f2a9c7a2dec9d8b819c5dee03e0e",
+      "task": "3.4"
+    },
+    "content/powerups/deep_pocket.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "82dc7473bbaf435a91cac2e573476b4eddc1fae686ef39e154f5f6cdb647400e",
+      "task": "3.4"
+    },
+    "content/powerups/ember_knuckle.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "74e42df5819c0e930c9481961a704edffcfcd9bf520111afc42dfd33126148a5",
+      "task": "3.4"
+    },
+    "content/powerups/empty_vessel.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "4a1877df69b34367d70c7ab27b656e30bce2dddcfd6b813a8c47440402c28efb",
+      "task": "3.4"
+    },
+    "content/powerups/far_grasp.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "bb0236d75365a38191a47fcd12d097e290d9ae888b076d14cc095c1b1d3d1b80",
+      "task": "3.4"
+    },
+    "content/powerups/flashover.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "5577d2834b4696f3bf6ade486a09c7e0933030f6e3291f4541aa1e7cb70f0528",
+      "task": "3.4"
+    },
+    "content/powerups/fletchers_debt.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "cd75657bb955df0afad96583d97369f9820cdd80ee712a2d97f9e3f99b6516de",
+      "task": "3.4"
+    },
+    "content/powerups/forge_blood.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "f3cd4b264a06d8f4faecb1d625f89b4ced8b6df9189c13595ce41bafa333dadb",
+      "task": "3.4"
+    },
+    "content/powerups/fruiting_call.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "e90259e31e2d38e7a28dbc2b506d7efeb0675658d32c302ee2a89c40f5688c7d",
+      "task": "3.4"
+    },
+    "content/powerups/gaunt_frame.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "2e41966d79f138b6cf86dfa5bcaae7e4e90e3a7a0d30891a7fb8b3f77d8a4c8e",
+      "task": "3.4"
+    },
+    "content/powerups/grave_due.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "73863b55ea8fd919dce739c0fcefee495e5e33443cc2d22cf51dd77a78e5dbbe",
+      "task": "3.4"
+    },
+    "content/powerups/hollow_bargain.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "65809e0292e9a622ae78a44c5e8e7f5eff1df2748493a6b7c1bbc2927d64f7b9",
+      "task": "3.4"
+    },
+    "content/powerups/iron_tongue.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "24c12e7765aceb72d942ca70c9bdaaed017daaf4b4113cdfcbd883f0474ab946",
+      "task": "3.4"
+    },
+    "content/powerups/long_bound.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "d42e3580a85017579799bc4f034113cac991944ebd6307654420e30692141ab8",
+      "task": "3.4"
+    },
+    "content/powerups/loping_gait.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "63fc966b39183a1a4fcca2b705eaeb5c672e174f128dab340a6529478c584a39",
+      "task": "3.4"
+    },
+    "content/powerups/moss_shroud.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "76d3544d92054eabb1c4cb4f9299dca277cf72236cc28813a13acb58963928ff",
+      "task": "3.4"
+    },
+    "content/powerups/night_pyre.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "f367b8ec24e73fdc2f2cd289cc00e8d07a2229e1e1c9fb13088bc876b5593180",
+      "task": "3.4"
+    },
+    "content/powerups/numb_skin.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "5a17c3661752a66199fadf3f79523262cb640e88de364707b6d8d58bd00bebef",
+      "task": "3.4"
+    },
+    "content/powerups/open_flame.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "518b7dbc33d949fbed8df93d9e646783cc8cd1f1eab9c51982b0d979478562f4",
+      "task": "3.4"
+    },
+    "content/powerups/pack_frame.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "590ea581ca3f86bbe4f41658f3dfb20689a6e062106b09f6782c58e64fa798ad",
+      "task": "3.4"
+    },
+    "content/powerups/pact_cut.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "6627be6f50bedb5bf74b9c985629f8572190750bde418cc822329aff536345b1",
+      "task": "3.4"
+    },
+    "content/powerups/pale_guard.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "3b525d536486a55b3dfc0f258ecddf5f44ba8acab5048910e37334a42ca89cb7",
+      "task": "3.4"
+    },
+    "content/powerups/patient_draw.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "781b2cd4e5b8218246137d0ef425fd33cb004f6e7b0aa4870a8465185d73c6fb",
+      "task": "3.4"
+    },
+    "content/powerups/quiet_bloom.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "5b26529e00203921e8b9017b0882b1bf5157625ea4724bc51909347c7a847ba4",
+      "task": "3.4"
+    },
+    "content/powerups/red_quench.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "26a62e1d77e635fe21d4bb251c03039fa88ffca90f71326d2fff81e5199e83e2",
+      "task": "3.4"
+    },
+    "content/powerups/rich_marrow.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "faf7ccd1b9beb02d811a71f9f130102f58a7258e160c20e0a172f9a78e845f02",
+      "task": "3.4"
+    },
+    "content/powerups/rime_shell.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "49149c50509311c5c4c175f0e4f4f2062294adff9d971d2522b78f58e596d152",
+      "task": "3.4"
+    },
+    "content/powerups/root_hold.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "9dba507b411b0d042439e203aec15589d4f9d64454c693b1c7b707e08dd2f52a",
+      "task": "3.4"
+    },
+    "content/powerups/rot_chew.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "416c25c3caa1a21bdbf6131f3b77be3498de8878d504911872cce010a22dd9f8",
+      "task": "3.4"
+    },
+    "content/powerups/sanctum_frost.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "b5ac23fe3bf769900bc289bc2a7fc7529ebd43bb545904433ddee2936147621a",
+      "task": "3.4"
+    },
+    "content/powerups/scab_feast.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "06442f5331d2c7b44c55b3cec3769e4dd2de16eae0126301a1954da90a09eadd",
+      "task": "3.4"
+    },
+    "content/powerups/sealed_veins.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "6f8960dbf350b9e9b1634736f8110e7421d688c668e638c64aee81f8ad60fb43",
+      "task": "3.4"
+    },
+    "content/powerups/second_glance.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "43553d3d10dcc55a4291fd617efd8e558791fd7d80e4f3b333585e0c550c0d74",
+      "task": "3.4"
+    },
+    "content/powerups/second_wind.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "9050bfef5f3bf01a8be225eefe70a028680b4d5b58b1fa66b8568d44bbaa97f2",
+      "task": "3.4"
+    },
+    "content/powerups/skip_step.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "e51531f9653166ab72c5a9a0e1b2a0e575914d8adbb7923aef82e3366b0ba638",
+      "task": "3.4"
+    },
+    "content/powerups/slow_gut.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "b9d05f79d4c455bdce307e94dd150ee5c9586b446ba0cd978d79aeea07c2fede",
+      "task": "3.4"
+    },
+    "content/powerups/spent_spring.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "ceec1acf9070ed7bf85da8fee3443036161ca5513cce7ce88453e03572301af0",
+      "task": "3.4"
+    },
+    "content/powerups/spore_sole.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "0b5961404445f4c0cbcd6c700e9b648d80d323d46c1c486b26b413aaae394c6c",
+      "task": "3.4"
+    },
+    "content/powerups/steady_hands.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "50a670ffcc29e31e894922994c7c863b53c78adf2781b5c4aa75f2e37f4f735a",
+      "task": "3.4"
+    },
+    "content/powerups/still_breath.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "b7bf75e6c40f9582d8ff114bdfbea1eeef930b6cc8876c53e0300423ab2ce51b",
+      "task": "3.4"
+    },
+    "content/powerups/stubborn_heart.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "bd81c15a5980c402c6c03ef30af052b6c64532a2f813f76f2330b9e916a5fef1",
+      "task": "3.4"
+    },
     "content/powerups/swift_stride.tres": {
       "agent": "gale6",
       "at": "2026-08-18T04:27:04+00:00",
       "task": "3.3"
+    },
+    "content/powerups/thick_hide.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "db770d7abf0c723522c77cb33ab140f9bc0830e30f703f1ddf066c6c5a1562eb",
+      "task": "3.4"
+    },
+    "content/powerups/thin_step.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "60aec666af824e5f9851e5e3c0489a118cf30e64d9c120bdeadd4318b6ed96b3",
+      "task": "3.4"
+    },
+    "content/powerups/tinder_snap.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "11781222c72ff8c97ffacdf8ae3db0deacd40dd1883726162c5f71d5e6b7725b",
+      "task": "3.4"
+    },
+    "content/powerups/unseen_seam.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "e6669bbcacb1adbea5f93d70c405087a0305fc848e4690e030356b2c4d9c46ef",
+      "task": "3.4"
+    },
+    "content/powerups/warm_marrow.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "e62f1f1cc2ffb78100a90ff15a91ef250d353cf0903b6070aa34d8b0d9d711b2",
+      "task": "3.4"
+    },
+    "content/powerups/whetted_thirst.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "6db5cb306b528bd1d3937d0a20ee3aa58873c033a32bb82a418efc6066453e87",
+      "task": "3.4"
+    },
+    "content/powerups/white_quiet.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "bb13ce1b9d7de4bcfa1fbf1d6cd112e904c3a44b4ba6d7c2e7aae55d4c4b8931",
+      "task": "3.4"
+    },
+    "content/powerups/wide_cap.tres": {
+      "agent": "wick20",
+      "at": "2026-08-18T19:45:41+00:00",
+      "hash": "d98b0ecca250136f6b50fc5451a38ebb872d6b1c216ab1af6430a116cfb27775",
+      "task": "3.4"
     },
     "content/recipes/arrow.tres": {
       "agent": "ivy8",
@@ -2667,9 +2660,11 @@
       "title": "Review 3.3 @ 17e26f8 \u2014 judge the commit, file findings, no edits"
     },
     "3.4": {
+      "done_at": "2026-08-18T19:45:41+00:00",
+      "done_by": "wick20",
       "est": "10",
       "milestone": "M3",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T0",
       "title": "Author 40\u201360 powerup `.tres` files"
     },
@@ -4176,6 +4171,13 @@
       "status": "done",
       "tier": "F",
       "title": "macOS builds cannot show the Steam overlay: hardened runtime without the dyld entitlement blocks injection"
+    },
+    "F-125": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Thin Step authors dodge_iframe_seconds, but D-072 left no i-frame timer for it to extend"
     }
   },
   "version": 1

@@ -3110,3 +3110,15 @@ Notes along the way:
 Files: `tools/bench_chunk_gpu.gd`
 
 Commit at time of writing: `e98f6c4`
+
+---
+
+### DONE · 3.4 · wick20 · 2026-08-18T19:45:41+00:00
+
+**Author 40–60 powerup `.tres` files**
+
+Authored 59 powerup .tres files completing POWERUPS.md §4's 60-def roster (registry: 5 -> 64 defs). Ten per family for Fire, Blood, Fungal, Cold, Void; nine for Kinetic where swift_stride held move_speed. Zero schema changes, zero new stat names. Verified via tools/powerup_check.gd: no validation errors, failures=0. Filed F-125 (dodge_iframe_seconds has no timer to extend after D-072). Recorded D-073 after Sequoyah corrected the reading of AGENTS.md's never-bulk-generate rule: agents DO author content, one asset at a time; 3.2 and 3.7 are open on the same basis.
+
+Files: `content/powerups/ember_knuckle.tres`, `content/powerups/tinder_snap.tres`, `content/powerups/ashen_temper.tres`, `content/powerups/flashover.tres`, `content/powerups/cauter_seal.tres`, `content/powerups/forge_blood.tres`, `content/powerups/night_pyre.tres`, `content/powerups/warm_marrow.tres`, `content/powerups/cinder_tithe.tres`, `content/powerups/open_flame.tres`, `content/powerups/thick_hide.tres`, `content/powerups/red_quench.tres`, `content/powerups/adrenal_bloom.tres`, `content/powerups/pact_cut.tres`, `content/powerups/sealed_veins.tres`, `content/powerups/steady_hands.tres`, `content/powerups/stubborn_heart.tres`, `content/powerups/scab_feast.tres`, `content/powerups/iron_tongue.tres`, `content/powerups/whetted_thirst.tres`, `content/powerups/long_bound.tres`, `content/powerups/bellows_lung.tres`, `content/powerups/second_wind.tres`, `content/powerups/loping_gait.tres`, `content/powerups/skip_step.tres`, `content/powerups/cat_fall.tres`, `content/powerups/pack_frame.tres`, `content/powerups/air_writ.tres`, `content/powerups/spent_spring.tres`, `content/powerups/wide_cap.tres`, `content/powerups/rot_chew.tres`, `content/powerups/slow_gut.tres`, `content/powerups/spore_sole.tres`, `content/powerups/damp_stride.tres`, `content/powerups/rich_marrow.tres`, `content/powerups/moss_shroud.tres`, `content/powerups/fruiting_call.tres`, `content/powerups/root_hold.tres`, `content/powerups/quiet_bloom.tres`, `content/powerups/rime_shell.tres`, `content/powerups/chill_edge.tres`, `content/powerups/deep_frost.tres`, `content/powerups/still_breath.tres`, `content/powerups/cellar_cache.tres`, `content/powerups/pale_guard.tres`, `content/powerups/patient_draw.tres`, `content/powerups/sanctum_frost.tres`, `content/powerups/numb_skin.tres`, `content/powerups/white_quiet.tres`, `content/powerups/far_grasp.tres`, `content/powerups/deep_pocket.tres`, `content/powerups/hollow_bargain.tres`, `content/powerups/thin_step.tres`, `content/powerups/unseen_seam.tres`, `content/powerups/fletchers_debt.tres`, `content/powerups/gaunt_frame.tres`, `content/powerups/grave_due.tres`, `content/powerups/second_glance.tres`, `content/powerups/empty_vessel.tres`
+
+Commit at time of writing: `699b859`
