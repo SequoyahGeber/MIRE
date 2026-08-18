@@ -91,6 +91,39 @@ Everything is shipped; this is the verdict. **How to run the gate:**
 6. Known gap going in: the impact thud is 2.8's code-built placeholder; a real authored impact sound
    is the single biggest missing feel ingredient. Judge around it or source one first.
 
+## F-036 · Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10
+
+**Claim:** none. No file to edit — the ordering half is already resolved on disk, and the half that
+remains is a human verdict, not code.
+
+**What was wrong:** `ROADMAP.md` originally ordered 2.9 (tune combat feel against "one enemy, one
+weapon") before 2.10 (the enemy itself). Tuning the gate would have meant tuning against a
+harvestable tree — every symptom the gate exists to catch (telegraph read, backpedal pressure, a hit
+that reads as a *kill*) is invisible against something that doesn't fight back, and it would have
+been easy to pass the gate without noticing the tree wasn't exercising it.
+
+**Fix, already shipped (dusk3, 2026-08-17):** option 1 of the two the original filing offered — 2.10
+was built first. `ROADMAP.md`'s 2.9/2.10 rows both say so in-line, and `tools/combat_feel_check.gd`
+(2.9's own instrument) measures the swing against the crawler `2.10` shipped, not a tree. The
+ordering concern this finding was filed for is spent; nothing here needs code.
+
+**What is still open, and why this task cannot close it:** 2.9's gate is a human playtest verdict —
+`DECISIONS.md` D-039 names it the canonical example of work that stays with Sequoyah (genuine
+playfeel judgment, not a wiring task an agent is declining). `tools/combat_feel_check.gd` deliberately
+stops short of a verdict: it prints relationships ("a kill takes more than one swing," "the telegraph
+leaves a readable window") and refuses to call any of them fun. `docs/SPECS.md`'s own 2.9 block is
+the run-sheet: ten crawler kills, judge tell/arc/hitstop/kill-length, tune in the inspector only, then
+`agent done F-036 "<the values that passed>"` on a pass, or a new finding naming what cannot be tuned
+around on a fail. This block exists so `agent brief F-036` stops landing on nothing — it is not a
+second place to re-litigate 2.9's run-sheet, only a pointer to it.
+
+**Verified 2026-08-18 (lp):** `agent godot --script tools/combat_feel_check.gd` — `failures=0`, all
+nine relationship checks PASS, output still correctly labelled "these are relationships, not
+verdicts." `docs/ROADMAP.md` 2.9/2.10 rows read correctly (order swapped, F-036 cited in both). No
+production file needed a change. `docs/FINDINGS.md` F-036 stays **open** — closing it here would be
+exactly the F-086 failure mode (a doc claiming a human gate passed before it did); it closes only when
+Sequoyah runs 2.9's run-sheet and says pass or fail.
+
 ## 2.11 · Day/night cycle (T1) — HOST-authoritative time, client-local sky — ✅ shipped, see DELEGATION
 
 **Authority:** §2.2 row 7 (day/night: HOST). The sky rendering stays client-local.
