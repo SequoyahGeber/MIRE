@@ -783,6 +783,106 @@ other assertions failed with it — then restored `mire_art.py` to its committed
 and reran clean. No production file needed a change; this block, `mat_cache_check.py`, and the
 `docs/FINDINGS.md` move to `## Resolved` are the whole task.
 
+## F-094 · `mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float
+
+*Renumbered from F-060 on 2026-08-18 (F-087) — that number collided with the original F-060 (two-process
+net-check authoring traps, spec above). See F-087 for the full renumbering.*
+
+**Claim:** `tools/blender/mire_art.py` (verify only — the fix was already committed, in the same pass
+that migrated the flora kit and fixed F-092's material cache; nothing here needed a code change),
+`tools/blender/world_bounds_check.py` (new — no focused check existed for this module's grounding
+logic before this task).
+
+**What was wrong:** `world_bounds()` transformed the eight corners of each object's `bound_box` through
+`matrix_world`. `bound_box` is axis-aligned in the object's **local** space, so for any rotated object —
+every cone `cylinder_between()`/`tapered_between()` produce is one — the transformed corners enclose a
+volume strictly larger than the geometry inside it. `ground_and_centre()` then sat that inflated box on
+z=0 and left the real mesh floating above it: up to 76 mm on the flora kit, and it would have shipped
+calling itself grounded, because the only check available was made with the same wrong ruler. A cone
+rotated straight off the world origin can hide the effect on its z-axis specifically (`to_track_quat("Z",
+"Y")` keeps that cone's local X exactly horizontal, cancelling the corner-inflation on z alone) — the
+float only shows once a second rotation composes on top, which is exactly the shape `fork()`'s branch
+hierarchy has. The finding also reports `bound_box` staying stale immediately after
+`bpy.ops.object.join()`, even through a depsgraph update, on the Blender version that found it — that
+variant put a willow at 6.97 m tall and 800 mm underground.
+
+**Already fixed, before this task existed:** committed as part of `c0cced0` (the same flora-kit build
+that found and fixed F-092's material cache). `world_bounds()` now measures every mesh vertex through
+`obj.matrix_world` directly, never `bound_box` — vertices are exact and never stale. Confirmed
+`git diff tools/blender/mire_art.py` against HEAD is clean; no kit needed a rebuild for this task.
+
+**What this task closes:** the fix had no regression guard and no `docs/SPECS.md` block. Wrote
+`tools/blender/world_bounds_check.py` — runs under `/Applications/Blender.app/Contents/MacOS/Blender
+--background --python tools/blender/world_bounds_check.py` (this module isn't Godot-reachable, so
+`agent godot` does not apply; Blender's own background process is the whole run, same as F-092's
+`mat_cache_check.py`). It (1) builds a `tapered_between()` cone rotated diagonally off every axis and
+asserts the old bound_box-corners measurement, reconstructed inline in the check (never imported —
+`mire_art.py` no longer has it), gives a strictly larger box than vertex measurement; (2) asserts
+`world_bounds()` matches the true vertex extent exactly, not merely "smaller than the buggy box"; (3)
+composes a second rotation onto a `tapered_between()` object (reproducing the parented-branch shape that
+defeats the single-rotation z-axis cancellation) and asserts `ground_and_centre()` seats its real lowest
+vertex at z=0; (4) asserts `world_bounds()` reads a `bpy.ops.object.join()`-merged mesh's true extent
+immediately after the join.
+
+**Verified 2026-08-18 (lp):** `WORLD_BOUNDS_CHECK PASS`, no failures, against HEAD. Regression-proved by
+temporarily reverting `world_bounds()` to the pre-fix bound_box-corners measurement and rerunning:
+`WORLD_BOUNDS_CHECK FAIL (4)` — the rotated-cone comparison, both exact-vertex-match assertions, and
+`ground_and_centre()` (floated the composed-rotation object **101 mm** above z=0, the same scale as the
+finding's 76 mm) all failed — then restored `mire_art.py` to its committed state (`git diff` clean) and
+reran clean. **Note:** assertion (4)'s specific bound_box-after-join staleness could not be reproduced on
+Blender 5.2.0 (this repo's pinned version) even with the buggy measurement — `bound_box` already reads
+the merged geometry correctly immediately after `join()` here, no update call needed. Left in as a direct
+ground-truth check of the documented failure shape rather than dropped, since `world_bounds()` measuring
+vertices costs nothing extra and defends against a future Blender version regressing there. No production
+file needed a change; this block, `world_bounds_check.py`, and the `docs/FINDINGS.md` move to
+`## Resolved` are the whole task.
+
+## F-093 · A headless `--script` run never re-imports changed assets, so a check can validate the previous build
+
+*Renumbered from F-059 on 2026-08-18 (F-087) — that number collided with the original F-059
+(`InventoryService`'s unguarded `rpc_id`, spec above). See F-087 for the full renumbering.*
+
+**Claim:** `.agent/bin/agent` (the fix — `cmd_godot`'s import pre-pass), `tools/harness_check.py`
+(the regression guard — no focused check existed for `cmd_godot`'s import behaviour before this
+task, though the file already tested other `cmd_godot`/`ship`/`baseline` behaviours), `docs/FINDINGS.md`.
+
+**What was wrong:** `cmd_godot` builds an argv and hands it straight to the engine. `--script`
+(and any other non-`--import` invocation) loads whatever `.godot/imported/` already holds — Godot
+only re-imports on an explicit `--import` pass or an editor scan, neither of which a `--script` run
+performs. Measured on the flora kit: after rebuilding all 84 GLBs, three consecutive
+`agent godot --script tools/flora_check.gd` runs reported the same stale triangle counts and
+heights. `docs/ASSET_TRACKER.md`'s existing advice ("re-run to confirm") does not help — nothing on
+disk changes between runs, so a check that read stale once reads stale forever, silently validating
+art that no longer exists.
+
+**Fix:** `cmd_godot` now runs a synchronous `<godot> --headless --path <ROOT> --import` pass before
+the caller's own run, inside the same `file_lock("godot", ...)` acquisition — so the import and the
+run it protects are atomic against another lane racing the shared cache (F-044), not two separate
+lock windows. The pre-pass is skipped when the caller's own args already contain `--import` (an
+explicit `agent godot --import` doesn't need to import twice), and its output is always relayed
+(never swallowed) — both because a silent subprocess reads identically to a hung one (F-104) and
+because that relay is the only signal an engine test double has to prove the pre-pass ran. A failed
+pre-pass prints a warning and still runs the caller's command, rather than blocking it outright, since
+an import failure orthogonal to the check being verified (e.g. one unrelated broken asset) shouldn't
+make every other check unrunnable.
+
+**Verify:** `python3 tools/harness_check.py` — two new cases against the existing `fake-godot` test
+double (which echoes its own argv, the same mechanism the file already used for the `--windowed`
+cases): `agent godot --script tools/x_check.gd` must invoke the engine **twice**, first with
+`--import` and no `--script`, second with the caller's own `--script` args and no `--import`;
+`agent godot --import` must invoke it exactly **once** (no doubled import). Regression-proved:
+`python3 tools/harness_check.py --rev HEAD` (tests the new cases against the pre-fix committed
+`.agent/bin/agent`) fails the new case with a single-invocation argv list, exactly the bug; the
+working-tree run with the fix passes all 12 cases.
+
+**Done means:** `python3 tools/harness_check.py` green (12/12), plus one real end-to-end run —
+`agent godot --quit-after 5` — confirming the double invocation completes cleanly against the real
+engine and the project still boots (content load, world gen, harvest wiring all logged normally,
+exit 0). No focused `.gd` asset check was written for this task: the bug and the fix both live
+entirely in the harness (`agent godot` itself), not in any one asset pipeline, so `tools/harness_check.py`
+— the project's existing harness-regression file, same one F-081 used — is the correct and
+sufficient home for its guard, not a new `tools/*_check.gd`.
+
 ## F-083 · Snapping the aim hit's Y coordinate rejects or floats pieces on ordinary terrain heights
 
 `BuildGhost.update_aim()` (`systems/building/build_ghost.gd`) fed the surface hit from its aim ray

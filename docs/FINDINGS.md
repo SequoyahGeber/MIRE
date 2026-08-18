@@ -483,69 +483,6 @@ docstring so the next family chooses deliberately instead of inheriting it.
 
 ---
 
-### F-093 · A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build
-
-*Renumbered from F-059 on 2026-08-18 by lp (F-087) — that number collided with the original F-059
-(`InventoryService._publish_snapshot`'s unguarded `rpc_id`, Resolved below, cited by `983da6c`). See
-F-087 for the full renumbering.*
-
-**Area:** verification · **Found:** 2026-08-17 by moss11 — **fixed for this kit, and the remedy generalises**
-
-`docs/ASSET_TRACKER.md` already warned that "a check run immediately after a rebuild can report the
-previous import" and said to re-run to confirm. **Re-running does not help.** Measured: after
-rebuilding all 84 flora GLBs, `agent godot --script tools/flora_check.gd` reported the same stale
-triangle counts and heights on three consecutive runs, and would have kept doing so indefinitely —
-`--script` loads whatever `.godot/imported/` holds and never runs an import pass.
-
-The remedy is one command, and it is not "open the editor":
-
-```
-.agent/bin/agent godot --import      # then run the check
-```
-
-Deleting the `.glb.import` sidecars forces a full re-import, but the run that regenerates them cannot
-also load them, so that path always needs two passes.
-
-The reason this was caught rather than shipped is worth keeping: `tools/flora_check.gd` compares the
-**engine's** measurements against the generator's catalog instead of just asserting that files load.
-A check that only asks "did it import?" cannot detect staleness by construction — it will pass
-happily against art that no longer exists. Any future asset check should cross the fence the same way.
-
----
-
-### F-094 · `mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float
-
-*Renumbered from F-060 on 2026-08-18 by lp (F-087) — that number collided with the original F-060
-(two-process net-check authoring traps, Resolved below, cited by `adfaa78`, `abcf9bd`). See F-087 for
-the full renumbering.*
-
-**Area:** art pipeline · **Found:** 2026-08-17 by moss11 — **fixed**
-
-`world_bounds` transformed the eight corners of each object's `bound_box`. That box is axis-aligned in
-the object's **local** space, so for any rotated object the transformed corners enclose a volume
-strictly larger than the geometry — and every cone `cylinder_between` and `tapered_between` produce is
-rotated. `ground_and_centre` then sat that inflated box on z=0 and left the real mesh hanging above it.
-
-Measured on the flora kit before the fix: up to **76 mm of air** under every willow and every snag.
-It would have shipped describing itself as grounded, because the only check available was made with
-the same wrong ruler. `bound_box` is also **stale immediately after `bpy.ops.object.join()`**, even
-through a depsgraph update — that variant put a willow at 6.97 m tall and 800 mm underground.
-
-Fixed by measuring vertices through `matrix_world`. Vertices are exact and never stale.
-
-**This is shared, so it has a blast radius.** Every kit built with rotated primitives — the map kit's
-128 assets, harvestables, tools, the crawler — is currently sitting a few tens of millimetres high,
-and will settle onto the ground the next time its generator is rebuilt. That is a move toward
-correctness and the shift is well under a centimetre for most assets, but it *is* a geometry change,
-so a rebuild of any of those families should diff its catalog and expect small `height_m` reductions
-rather than the usual zero.
-
-The same over-measurement exists on the Godot side of the fence: `MeshInstance3D.get_aabb()` is local,
-so anything that transforms it by a rotated node transform inherits the identical error. The flora
-kit sidesteps it by baking every asset's transform to identity before export, which is worth copying.
-
----
-
 ### F-103 · MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin
 
 **Area:** tooling/rendering · **Severity:** high · **Found:** 2026-08-18 by larch10 during F-097
@@ -698,6 +635,48 @@ preset, which turns volumetric fog off.
 
 
 ## Resolved
+
+### F-093 · A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build — **fixed**
+
+*Renumbered from F-059 on 2026-08-18 by lp (F-087) — that number collided with the original F-059
+(`InventoryService._publish_snapshot`'s unguarded `rpc_id`, below, cited by `983da6c`). See F-087 for
+the full renumbering.*
+
+**Area:** verification · **Found:** 2026-08-17 by moss11 · **Fixed:** 2026-08-18 by lm
+
+`docs/ASSET_TRACKER.md` already warned that "a check run immediately after a rebuild can report the
+previous import" and said to re-run to confirm. **Re-running does not help.** Measured: after
+rebuilding all 84 flora GLBs, `agent godot --script tools/flora_check.gd` reported the same stale
+triangle counts and heights on three consecutive runs, and would have kept doing so indefinitely —
+`--script` loads whatever `.godot/imported/` holds and never runs an import pass. The manual two-step
+remedy (`agent godot --import`, then run the check) worked for that one kit but relied on every future
+agent remembering it, which is exactly the kind of trap that recurs — F-098's item-icon check hit the
+same root cause the very next day, and F-104's `class_name` cache staleness is the same shape again.
+
+**Fixed by generalising the remedy into the harness itself**, so no agent has to remember it:
+`cmd_godot` in `.agent/bin/agent` now runs a synchronous `<godot> --headless --path <ROOT> --import`
+pass before the caller's own run, inside the same `file_lock("godot", ...)` acquisition that already
+serialises lanes against the shared import cache (F-044) — so the import and the run it protects are
+one atomic unit, not two lock windows another lane could interleave with. The pre-pass is skipped only
+when the caller's own args already contain `--import` (so `agent godot --import` doesn't import twice),
+and its output is always relayed rather than swallowed, both so a silent subprocess doesn't read like a
+hang (F-104) and so a test double has a signal that it ran. A failed pre-pass warns and still runs the
+caller's command rather than blocking every check on one broken asset.
+
+**Verified:** `python3 tools/harness_check.py` → 12/12 passed, including two new cases exercising the
+existing `fake-godot` argv-echo test double: `agent godot --script tools/x_check.gd` invokes the engine
+twice (import-only, then the caller's own args, in that order and each free of the other's flag);
+`agent godot --import` invokes it once. Regression-proved: `python3 tools/harness_check.py --rev HEAD`
+(same new test file against the pre-fix committed `.agent/bin/agent`) fails the two-invocation
+assertion with a single-invocation argv, exactly the bug — then the working-tree run with the fix
+passes clean. Also ran a real end-to-end pass, `agent godot --quit-after 5`, twice: the import pass and
+the boot both complete, project loads normally (content, world gen, harvest wiring all logged), exit 0.
+
+No focused `tools/*_check.gd` was written — the bug and the fix are both in the harness (`agent godot`
+itself), not in any one asset pipeline, so the project's existing harness-regression file
+(`tools/harness_check.py`, the same one F-081 used) is the right and sufficient home for the guard.
+`docs/SPECS.md`'s `## F-093` block (placed next to `## F-094`, its renumbering sibling) has the full
+spec.
 
 ### F-116 · Two items now own the same branch art: harvesting ships 'stick' while ITEMS.md and task 3.2 plan 'branch' — **fixed**
 
@@ -4649,3 +4628,63 @@ sequence and fix any cross-references, or accept that `F-0NN` is a filing-order 
 key, and say so once in `AGENTS.md` so nobody is surprised again. `agent sync`/`agent brief` were not
 audited for how they behave when a number is ambiguous — that is itself worth checking before relying
 on either during a renumbering pass.
+
+---
+
+### F-094 · `mire_art.world_bounds` measured rotated objects through their local bounding box, so grounded assets float — **fixed**
+
+*Renumbered from F-060 on 2026-08-18 by lp (F-087) — that number collided with the original F-060
+(two-process net-check authoring traps, Resolved above, cited by `adfaa78`, `abcf9bd`). See F-087 for
+the full renumbering.*
+
+**Resolved 2026-08-18 by lp.** The code fix was already committed before this task existed — `c0cced0`,
+the same commit that migrated the flora kit and fixed F-092's material cache (both bugs surfaced in the
+same build). This task closed the two things still missing: a `docs/SPECS.md` block (there wasn't one)
+and a regression guard, since nothing had verified the fix. Wrote `tools/blender/world_bounds_check.py`:
+builds a `tapered_between()` cone rotated diagonally and asserts the old bound_box-corners measurement
+(reconstructed inline in the check, never imported — `mire_art.py` no longer has it) gives a strictly
+larger box than vertex measurement; asserts `world_bounds()` matches the true vertex extent exactly;
+composes a second rotation onto a cone (the shape that defeats `to_track_quat`'s single-rotation z-axis
+cancellation, reproducing `fork()`'s branch hierarchy) and asserts `ground_and_centre()` seats the real
+lowest vertex at z=0; and asserts `world_bounds()` reads a `bpy.ops.object.join()`-merged mesh's true
+extent immediately after the join.
+
+**Verified 2026-08-18 (lp):** `/Applications/Blender.app/Contents/MacOS/Blender --background --python
+tools/blender/world_bounds_check.py` → `WORLD_BOUNDS_CHECK PASS`, no failures, against HEAD.
+Regression-proved the check itself: temporarily reverted `world_bounds()` to the pre-fix
+bound_box-corners measurement and reran — `WORLD_BOUNDS_CHECK FAIL (4)`, the rotated-cone comparison,
+both exact-vertex-match assertions, and `ground_and_centre()` (floated the composed-rotation object
+**101 mm** above z=0, the same scale as the finding's 76 mm) all failed — then restored `mire_art.py`
+to its committed state (`git diff` clean) and reran clean. The join-staleness assertion could not be
+made to fail even with the buggy measurement: Blender 5.2.0 (this repo's pinned version) already reads
+`bound_box` correctly immediately after `join()`, unlike the version that found the bug. Left the
+assertion in as a direct ground-truth check rather than dropped — it costs nothing and defends against a
+future Blender version regressing there. No production file needed a change; the new check and this doc
+move are the whole task. Full spec: `docs/SPECS.md` F-094.
+
+**Area:** art pipeline · **Found:** 2026-08-17 by moss11 while building the flora kit
+
+`world_bounds` transformed the eight corners of each object's `bound_box`. That box is axis-aligned in
+the object's **local** space, so for any rotated object the transformed corners enclose a volume
+strictly larger than the geometry — and every cone `cylinder_between` and `tapered_between` produce is
+rotated. `ground_and_centre` then sat that inflated box on z=0 and left the real mesh hanging above it.
+
+Measured on the flora kit before the fix: up to **76 mm of air** under every willow and every snag.
+It would have shipped describing itself as grounded, because the only check available was made with
+the same wrong ruler. `bound_box` is also **stale immediately after `bpy.ops.object.join()`**, even
+through a depsgraph update — that variant put a willow at 6.97 m tall and 800 mm underground.
+
+Fixed by measuring vertices through `matrix_world`. Vertices are exact and never stale.
+
+**This is shared, so it has a blast radius.** Every kit built with rotated primitives — the map kit's
+128 assets, harvestables, tools, the crawler — is currently sitting a few tens of millimetres high,
+and will settle onto the ground the next time its generator is rebuilt. That is a move toward
+correctness and the shift is well under a centimetre for most assets, but it *is* a geometry change,
+so a rebuild of any of those families should diff its catalog and expect small `height_m` reductions
+rather than the usual zero.
+
+The same over-measurement exists on the Godot side of the fence: `MeshInstance3D.get_aabb()` is local,
+so anything that transforms it by a rotated node transform inherits the identical error. The flora
+kit sidesteps it by baking every asset's transform to identity before export, which is worth copying —
+and is exactly the over-measurement F-108 caught independently on the Godot side (`tools/ship_check.gd`,
+`tools/flora_check.gd:126`), because the Blender-side fix here does not travel across the fence.

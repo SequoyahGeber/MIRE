@@ -2803,3 +2803,18 @@ Recorded D-065 (LM spends the Max account to 90% of its five-hour window, then s
 Files: `docs/DECISIONS.md`
 
 Commit at time of writing: `0c887e8`
+
+---
+
+### DONE · F-093 · lm · 2026-08-18T18:05:56+00:00
+
+**A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build**
+
+Generalized the F-093 remedy into the harness: cmd_godot in .agent/bin/agent now runs a synchronous '--headless --import' pass before any run whose own args aren't already '--import', inside the same godot file_lock, so every 'agent godot --script ...' call sees the current build without a manual two-step. Verified: python3 tools/harness_check.py -> 12/12 (two new cases assert the double-invocation shape via the existing fake-godot test double); python3 tools/harness_check.py --rev HEAD reproduces the bug (single-invocation argv) against the pre-fix committed harness, confirming the new tests actually catch it. Real end-to-end: agent godot --quit-after 5 runs the import pass then boots the project cleanly, exit 0. docs/SPECS.md gained the missing F-093 block (next to its F-094 renumbering sibling); docs/FINDINGS.md moved to Resolved; docs/ASSET_TRACKER.md's stale 're-run to confirm' advice corrected; docs/DELEGATION.md Current state records the harness behaviour change.
+
+Notes along the way:
+- Root cause: cmd_godot never ran an import pass before loading a --script/scene run, so a check after an asset rebuild reads .godot/imported/ from the previous build indefinitely (re-running does not help, per F-093's own measurement). Fix: cmd_godot now runs a synchronous '--headless --import' pass before any run that isn't itself '--import', inside the same file_lock so concurrent lanes still can't race the cache (F-044). Skips the pre-pass when the caller's own args already include --import, so 'agent godot --import' isn't doubled.
+
+Files: `.agent/bin/agent`, `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md`
+
+Commit at time of writing: `41a01f2`

@@ -1,10 +1,5 @@
 {
   "claims": {
-    ".agent/bin/agent": {
-      "agent": "lm",
-      "at": "2026-08-18T18:00:25+00:00",
-      "task": "F-093"
-    },
     "assets/audio/music": {
       "agent": "tine18",
       "at": "2026-08-18T17:53:48+00:00",
@@ -14,16 +9,6 @@
       "agent": "tine18",
       "at": "2026-08-18T17:53:48+00:00",
       "task": "7.1"
-    },
-    "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-18T18:00:25+00:00",
-      "task": "F-093"
-    },
-    "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-18T18:00:25+00:00",
-      "task": "F-093"
     },
     "levels/hollowmere.tscn": {
       "agent": "vane19",
@@ -64,11 +49,6 @@
       "agent": "vane19",
       "at": "2026-08-18T18:01:51+00:00",
       "task": "F-115"
-    },
-    "tools/harness_check.py": {
-      "agent": "lm",
-      "at": "2026-08-18T18:00:25+00:00",
-      "task": "F-093"
     },
     "tools/lobby_menu_check.gd": {
       "agent": "moss11",
@@ -127,23 +107,6 @@
       "notes": [],
       "started": "2026-08-18T17:53:48+00:00"
     },
-    "F-093": {
-      "agent": "lm",
-      "files": [
-        ".agent/bin/agent",
-        "tools/harness_check.py",
-        "docs/FINDINGS.md",
-        "docs/SPECS.md"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-18T18:03:27+00:00",
-          "by": "lm",
-          "text": "Root cause: cmd_godot never ran an import pass before loading a --script/scene run, so a check after an asset rebuild reads .godot/imported/ from the previous build indefinitely (re-running does not help, per F-093's own measurement). Fix: cmd_godot now runs a synchronous '--headless --import' pass before any run that isn't itself '--import', inside the same file_lock so concurrent lanes still can't race the cache (F-044). Skips the pre-pass when the caller's own args already include --import, so 'agent godot --import' isn't doubled."
-        }
-      ],
-      "started": "2026-08-18T18:00:25+00:00"
-    },
     "F-115": {
       "agent": "vane19",
       "files": [
@@ -160,9 +123,9 @@
   },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "bram1",
-      "at": "2026-08-18T14:17:10+00:00",
-      "task": "F-104"
+      "agent": "lm",
+      "at": "2026-08-18T18:05:56+00:00",
+      "task": "F-093"
     },
     ".agent/bin/lane": {
       "agent": "yarrow21",
@@ -910,9 +873,9 @@
       "task": "F-077"
     },
     "docs/FINDINGS.md": {
-      "agent": "bram1",
-      "at": "2026-08-18T14:17:10+00:00",
-      "task": "F-104"
+      "agent": "lm",
+      "at": "2026-08-18T18:05:56+00:00",
+      "task": "F-093"
     },
     "docs/NEXT.md": {
       "agent": "moss11",
@@ -930,9 +893,9 @@
       "task": "F-036"
     },
     "docs/SPECS.md": {
-      "agent": "flint5",
-      "at": "2026-08-17T23:15:28+00:00",
-      "task": "F-053"
+      "agent": "lm",
+      "at": "2026-08-18T18:05:56+00:00",
+      "task": "F-093"
     },
     "docs/STEAM_CROSS_PLATFORM_TEST.md": {
       "agent": "flint5",
@@ -1290,9 +1253,9 @@
       "task": "3.6"
     },
     "tools/harness_check.py": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T13:30:42+00:00",
-      "task": "F-077"
+      "agent": "lm",
+      "at": "2026-08-18T18:05:56+00:00",
+      "task": "F-093"
     },
     "tools/harvest_batch_check.gd": {
       "agent": "vane19",
@@ -2927,11 +2890,9 @@
       "title": "The iron sword ships complete and nothing puts it in a player's hand"
     },
     "F-044": {
-      "done_at": "2026-08-18T18:04:25+00:00",
-      "done_by": "bram1",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
       "title": "Concurrent headless Godot runs share one import cache, which is the likely cause of F-038"
     },
@@ -3362,9 +3323,11 @@
       "title": "`mire_art.mat()`'s cache never hits, so a generator that calls it in a loop mints a material per call"
     },
     "F-093": {
+      "done_at": "2026-08-18T18:05:56+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "A headless `--script` run never re-imports changed assets, so a check can validate the *previous* build"
     },

@@ -120,12 +120,18 @@ def committed_files(d):
     return set(f for f in r.stdout.split() if f)
 
 
+def _argv_lines(stdout):
+    """Every argv the wrapper handed the engine, in call order, as reported by fake-godot."""
+    lines = [line.split()[1:] for line in stdout.splitlines() if line.startswith("ARGV:")]
+    if not lines:
+        raise AssertionError("the engine was never invoked:\n%s" % brief(stdout))
+    return lines
+
+
 def _argv_line(stdout):
-    """The argv the wrapper actually handed the engine, as reported by fake-godot."""
-    for line in stdout.splitlines():
-        if line.startswith("ARGV:"):
-            return line.split()[1:]
-    raise AssertionError("the engine was never invoked:\n%s" % brief(stdout))
+    """The argv for the caller's own command — the LAST engine call, since F-093's import
+    pre-pass (see cmd_godot) invokes the engine once more before it."""
+    return _argv_lines(stdout)[-1]
 
 
 CASES = []
@@ -245,6 +251,31 @@ def _(harness):
     assert argv.index("--script") > argv.index("--resolution"), (
         "caller arguments must follow the injected ones: %s" % argv)
     return " ".join(argv)
+
+
+@case("godot imports before running a script, so a check can't read a stale build (F-093)")
+def _(harness):
+    d = build_repo(harness)
+    r = run([".agent/bin/agent", "godot", "--script", "tools/x_check.gd"], d,
+            godot_bin=os.path.join(d, "fake-godot"), check=True)
+    argvs = _argv_lines(r.stdout)
+    assert len(argvs) == 2, "expected an import pre-pass plus the caller's own run: %s" % argvs
+    assert "--import" in argvs[0] and "--script" not in argvs[0], (
+        "the FIRST engine call must be the import-only pre-pass: %s" % argvs[0])
+    assert "--script" in argvs[1] and "--import" not in argvs[1], (
+        "the SECOND engine call must be the caller's own run, unmodified: %s" % argvs[1])
+    return " | ".join(" ".join(a) for a in argvs)
+
+
+@case("godot --import does not import twice")
+def _(harness):
+    d = build_repo(harness)
+    r = run([".agent/bin/agent", "godot", "--import"], d,
+            godot_bin=os.path.join(d, "fake-godot"), check=True)
+    argvs = _argv_lines(r.stdout)
+    assert len(argvs) == 1, (
+        "an explicit --import call should not also get a pre-pass import: %s" % argvs)
+    return " ".join(argvs[0])
 
 
 @case("baseline grafts the gitignored files a checkout cannot run without")

@@ -1436,7 +1436,7 @@ def render_board(st):
 # pinned to its own paid account, and watches their quota. The director does not implement; it
 # routes and verifies. See docs/ORCHESTRATION.md.
 
-LANE_NAMES = ("LC1", "LC2", "LP")
+LANE_NAMES = ("LC1", "LC2", "LM", "LP")
 
 # Tier → reasoning effort. T0 is mechanical, T1 is spec-following, T2 is the work where being wrong
 # costs a rewrite. M1/M4 T2 tasks step up again in cmd_order.
@@ -2342,6 +2342,31 @@ BASELINE_SIDECARS = ".import"
 BASELINE_WALK_SKIP = {".git", ".godot", "addons", "node_modules"}
 
 
+def _import_pass():
+    """Force a full import scan before the caller's own run loads anything (F-093).
+
+    `--script`/scene runs load whatever `.godot/imported/` already holds and never trigger an
+    import themselves, so a check run right after an asset rebuild reads the *previous* build —
+    and keeps doing so indefinitely, because re-running the same check changes nothing on disk.
+    Measured against 84 rebuilt flora GLBs: three consecutive `--script` runs, three identical
+    stale results. Only an import pass changes what's on disk, so every real run gets one first,
+    unless the caller's own invocation already is one (`--import` in `args`, handled by the
+    caller) — doubling up there would just cost a second engine boot for nothing.
+    """
+    import_argv = [_godot_binary(), "--headless", "--path", ROOT, "--import"]
+    print("%s· %s%s" % (C["dim"], " ".join(import_argv[1:]), C["x"]))
+    r = subprocess.run(import_argv, cwd=ROOT, capture_output=True, text=True)
+    out = (r.stdout + r.stderr).strip()
+    if out:
+        # Relayed rather than swallowed on purpose (F-104's lesson: a silent subprocess is
+        # indistinguishable from a hung one, and this is also the only signal a test double like
+        # fake-godot has to prove the pre-pass ran at all).
+        print(out)
+    if r.returncode != 0:
+        print("%s⚠ pre-run import failed (%d) — the run below may still see a stale build%s"
+              % (C["y"], r.returncode, C["x"]))
+
+
 def cmd_godot(args):
     """Run Godot headless under a lock, so concurrent lanes cannot corrupt one import cache.
 
@@ -2351,6 +2376,8 @@ def cmd_godot(args):
     argv = _godot_argv(ROOT, args)
     script = next((a for a in args if a.endswith(".gd")), "godot")
     with file_lock("godot", timeout=1800, label=script):
+        if "--import" not in args:
+            _import_pass()
         # Everything but the binary: whether --headless was injected is exactly what F-077 was
         # about not being able to see.
         print("%s· %s%s" % (C["dim"], " ".join(argv[1:]), C["x"]))
