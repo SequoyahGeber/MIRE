@@ -90,45 +90,6 @@ shape (driver process + `--` probe arg, talk through a `user://` JSON file, per 
 "Two-process checks" seam) is the way to close it, and should claim `tools/wellspring_net_check.gd`
 plus `systems/wellspring/wellspring.gd` when someone picks it up.
 
-### F-140 · Task 3.5 closed without the four chest changes `ITEMS.md` §6 assigned to it, so two shipped stats had no consumer
-
-**Area:** loot · **Severity:** medium · **Found:** 2026-08-18 by slate17 during 3.2
-
-`docs/ITEMS.md` §6 names four small things as 3.5's, "so they're noticed decisions (F-078 rule)":
-`LootEntry.kind: ITEM | POWERUP`, `LootEntry.rarity`, `Chest.cost_coins` + `locked_by`, and a
-placement budget for the gilded tier. 3.5 shipped and closed with none of them. The consequences
-were not cosmetic:
-
-- **Chests could not grant powerups at all**, though `DESIGN.md` §4.4 has always said they do. Every
-  tier in §5 is mostly powerups — "common powerups 55%" is most of what a Bog Chest is — so the
-  authored chest economy could not be written.
-- **`loot_luck` and `chest_price` were shipped stats with no reader.** `second_glance`,
-  `fruiting_call` and `hollow_bargain` were authored against them, so three of the sixty-four
-  powerups in the game promised better loot and cheaper chests and did **nothing at all**. A powerup
-  that lies is worse than a missing one: the player pays a chest slot for it.
-- Every chest was free and unlocked, so the coin economy had a source and no sink.
-
-**Fixed here, inside 3.2**, because the content this task exists to author cannot be expressed
-without it: `kind` and `rarity` on `LootEntry`; `LootTableDef.roll(rng, luck)` returning a third
-`powerups` bucket and weighting each line by `(1 + luck * rarity)`; `Chest.cost_coins` and
-`locked_by`, charged in one `host_transaction` **before** the roll so a failed payment grants nothing
-and leaves the chest re-openable; powerups granted through `PowerupService.host_grant`. Proof is
-`tools/loot_content_check.gd`. The fourth item — a placement budget for `gilded` — is still open and
-belongs to whatever places chests in the world.
-
-**The trap inside the trap, worth more than the fix:** `loot_luck` read on a base of `0.0` is always
-`0.0`. `PowerupService.stat()` computes `(base + flat * N) * (1 + mult * N)`, and every authored
-`loot_luck` modifier is multiplicative, so the first working version of this code still read zero
-luck from a powerup that grants +30%. Percentage-authored stats must be read against a base of
-`1.0` and the surplus taken (D-091). Any future consumer of `coin_gain`, `harvest_yield`,
-`craft_seconds` or the other multiplicative stats has exactly this decision to make, and getting it
-wrong looks like the stat working.
-
-**Also noticed, not fixed:** `tools/chest_check.gd` emits one undeclared engine ERROR line from its
-deliberate unknown-tier case, which `docs/AUDIT-2026-08-17.md`'s "0 engine-error lines" claim says
-should not exist. It needs either an `EXPECTED_ERROR_PATTERNS` declaration or an assertion that
-swallows it.
-
 ### F-139 · `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline
 
 **Area:** worldgen / netcode · **Severity:** low · **Found:** 2026-08-18 by lm during 4.6
@@ -675,7 +636,160 @@ tools/perf_probe.gd.
 
 ---
 
+### F-146 · Nothing in the game places a chest, so the gilded tier's 1-2/island budget has no owner
+
+**Area:** world-gen · **Severity:** medium · **Found:** 2026-08-18 by reed16
+
+`docs/ITEMS.md` §6 assigned four small things to task 3.5. Three of them — `LootEntry.kind`/`rarity`,
+`LootTableDef.roll`'s powerups bucket, and `Chest.cost_coins`/`locked_by` — were caught by F-140 and
+fixed inside 3.2. **The fourth was not**, and F-140 said so explicitly while resolving the rest:
+"a placement budget for `gilded` is still open and belongs to whatever places chests in the world."
+
+The reason it could not be fixed there is still true: **nothing places chests in the world at all.**
+`grep -rn chest --include='*.gd' world/` returns zero hits. `systems/loot/chest.gd` is a complete,
+net-authoritative, headlessly-proven chest that no world-generation code ever instantiates. All
+seven tiers are authored (`content/loot/{small,bog,strongbox,wellspring,gilded,sunken,boss}.tres`)
+and reachable through `Registry.get_loot_table`, so the content exists and the consumer does not.
+
+What the spec actually asks for, so it is not re-derived from scratch:
+
+- `ITEMS.md` §5 line 314 — **Gilded Chest** (`gilded`) is a "rare spawn (≈1–2/island) **or** a Gilded
+  Key", and is "unmistakable at distance". The count is a per-island budget, not a per-chunk
+  probability: a Poisson-disc or weighted-scatter pass that happens to average 1.5 per island is not
+  the same guarantee, and the "unmistakable at distance" clause means placement has to survive
+  whatever LOD/culling policy F-144 lands on.
+- `ITEMS.md` §6 item 4 — "A placement budget for `gilded` (≈1–2 per island) wherever chest placement
+  lands."
+- §5 also gives every other tier a spawn rule, so gilded is the *tightest* constraint but not the
+  only one this owner inherits.
+
+**Why this is not simply "part of 4.7".** Task 4.7 (POI placement: seeded Poisson-disc, Wellsprings +
+landmarks) is the obvious home, and probably is the home — but two things make it worth its own
+finding rather than a line inside that task. First, a per-island *count* budget is a different
+algorithm from Poisson-disc *spacing*, and 4.7's spec names spacing only. Second, F-139 records that
+`ChunkStreamer`/`ResourceScatterField` still have no real caller and the live game ships the authored
+Hollowmere map — so "per island" has no runtime meaning yet, and whoever takes this has to decide
+whether gilded chests are placed by the procedural pipeline (correct, but unreachable today) or hand-
+placed in the authored map as an interim (reachable, but throws the budget away at the D-092 switch).
+
+That decision is the finding. Filed rather than folded into F-140's resolution so it is not lost when
+F-140 moves to '## Resolved'.
+
+---
+
+### F-147 · F-145's fix protects new sessions only — already-collided identities stay live for up to SESSION_KEEP_DAYS
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by nettle12
+
+F-145 fixed the *generator*: a session assigned a name from now on gets a token-unique one. It
+deliberately did not rename anyone, because `whoami()` resolves a registered token from
+`sessions.json` before `_auto_name()` is reached, and claims are keyed by name — renaming a live
+session would orphan its claims mid-task.
+
+The consequence is a residual window. Every identity that already collided stays collided until
+`_prune_sessions()` drops it at `SESSION_KEEP_DAYS` = 14 days. At the time of writing that is eleven
+names covering 25 sessions (`ivy8` x5, `nettle12` x4, `reed16` x4, `pike14` x3, `yarrow21` x3, and
+`moss11`, `tine18`, `wick20`, `flint5`, `dusk3`, `kiln9` x2 each).
+
+**Live example, recorded so the risk is concrete rather than theoretical.** While F-145 was being
+fixed, two different chat sessions were both named `nettle12` and both running in this one working
+tree. The other one held five claims for F-144:
+
+    autoload/graphics_quality.gd      nettle12  F-144
+    tools/_probe_lods.gd              nettle12  F-144
+    tools/render_census.gd            nettle12  F-144
+    world/environment/draw_policy.gd  nettle12  F-144
+    world/gen/authored_world.gd       nettle12  F-144
+    world/gen/undergrowth.gd          nettle12  F-144
+
+To the session fixing F-145 those are indistinguishable from its own claims. `agent claim` on any of
+them would have been granted, and the pre-commit `agent check` would have let it commit them, because
+both compare a bare `c["agent"] != me`.
+
+**The durable fix is to compare the session token, not the name** — store the token beside `agent` in
+each claim and prefer it when both sides have one, falling back to the name for lane agents and for
+claims written before the schema change.
+
+**Deliberately not done in F-145,** and this is the part worth keeping: `.agent/bin/agent` is the hot
+path for every session and lane, and at that moment four agents were mid-task through it (LM on F-136,
+plus F-140, F-144, and the F-145 session itself). A claims-schema change is not additive the way the
+one-line `_auto_name` return was, and shipping it under those conditions risked breaking running work
+to close a window that is already shrinking on its own. Do it when the tree is quiet.
+
+Until then: if two agents may share a name, do not trust a claim's `agent` field alone — check
+`agent report`'s In-flight list for which *task* holds the file, since task ids do not collide.
+
+---
+
 ## Resolved
+
+### F-140 · Task 3.5 closed without the four chest changes `ITEMS.md` §6 assigned to it, so two shipped stats had no consumer — **fixed**
+
+**Area:** loot · **Severity:** medium · **Found:** 2026-08-18 by slate17 during 3.2
+
+`docs/ITEMS.md` §6 names four small things as 3.5's, "so they're noticed decisions (F-078 rule)":
+`LootEntry.kind: ITEM | POWERUP`, `LootEntry.rarity`, `Chest.cost_coins` + `locked_by`, and a
+placement budget for the gilded tier. 3.5 shipped and closed with none of them. The consequences
+were not cosmetic:
+
+- **Chests could not grant powerups at all**, though `DESIGN.md` §4.4 has always said they do. Every
+  tier in §5 is mostly powerups — "common powerups 55%" is most of what a Bog Chest is — so the
+  authored chest economy could not be written.
+- **`loot_luck` and `chest_price` were shipped stats with no reader.** `second_glance`,
+  `fruiting_call` and `hollow_bargain` were authored against them, so three of the sixty-four
+  powerups in the game promised better loot and cheaper chests and did **nothing at all**. A powerup
+  that lies is worse than a missing one: the player pays a chest slot for it.
+- Every chest was free and unlocked, so the coin economy had a source and no sink.
+
+**Fixed here, inside 3.2**, because the content this task exists to author cannot be expressed
+without it: `kind` and `rarity` on `LootEntry`; `LootTableDef.roll(rng, luck)` returning a third
+`powerups` bucket and weighting each line by `(1 + luck * rarity)`; `Chest.cost_coins` and
+`locked_by`, charged in one `host_transaction` **before** the roll so a failed payment grants nothing
+and leaves the chest re-openable; powerups granted through `PowerupService.host_grant`. Proof is
+`tools/loot_content_check.gd`. The fourth item — a placement budget for `gilded` — is still open and
+belongs to whatever places chests in the world.
+
+**The trap inside the trap, worth more than the fix:** `loot_luck` read on a base of `0.0` is always
+`0.0`. `PowerupService.stat()` computes `(base + flat * N) * (1 + mult * N)`, and every authored
+`loot_luck` modifier is multiplicative, so the first working version of this code still read zero
+luck from a powerup that grants +30%. Percentage-authored stats must be read against a base of
+`1.0` and the surplus taken (D-091). Any future consumer of `coin_gain`, `harvest_yield`,
+`craft_seconds` or the other multiplicative stats has exactly this decision to make, and getting it
+wrong looks like the stat working.
+
+**Also noticed, not fixed:** `tools/chest_check.gd` emits one undeclared engine ERROR line from its
+deliberate unknown-tier case, which `docs/AUDIT-2026-08-17.md`'s "0 engine-error lines" claim says
+should not exist. It needs either an `EXPECTED_ERROR_PATTERNS` declaration or an assertion that
+swallows it.
+
+**Resolved 2026-08-18 by reed16.** Resolved by reed16. F-140 had two halves and both are now closed out.
+
+**The substantive half was already fixed inside 3.2** and F-140's own text records it. Re-verified in
+code before resolving, rather than taken on the text's word: `LootEntry` carries `kind` and `rarity`;
+`LootTableDef.roll(rng, luck)` returns the third `powerups` bucket; `Chest.cost_coins` and
+`locked_by` are real exported properties on `systems/loot/chest.gd` (lines 41 and 44) and are charged
+before the roll. `tools/loot_content_check.gd` exercises all of it.
+
+**The half that was still open — the undeclared engine error — is fixed here** (commit eb23dc1).
+F-140 closed noting that `tools/chest_check.gd` emits one undeclared ERROR line from its deliberate
+unknown-tier case, which falsifies `docs/AUDIT-2026-08-17.md`'s "0 engine-error lines" claim for that
+check. The check builds a chest on an unresolvable tier on purpose, to prove the refusal happens;
+that fires `Chest._validate_configuration`'s own `push_error` at `systems/loot/chest.gd:270`.
+
+Declared by pattern on the existing verdict line — the placement `haul_check.gd` already uses — per
+standing rule 4 in `docs/SPECS.md`, rather than silencing the production log call:
+
+    print("CHEST_CHECK failures=%d · EXPECTED_ERROR_PATTERNS=\"references unknown loot tier\"" % failures)
+
+Verified with the grading rule the spec prescribes: `agent godot --script tools/chest_check.gd` gives
+`CHEST_CHECK failures=0`, and `grep 'ERROR:' | grep -vE 'references unknown loot tier' | wc -l` gives
+**0**. Note the file already had a verdict line — the fix amends it in place; adding a second print
+in `finish()` duplicates the line and is wrong.
+
+**The fourth `ITEMS.md` §6 item is NOT resolved here — it is now F-146.** The gilded placement budget
+(≈1–2 per island) still has no owner because nothing in the game places a chest at all; `grep -rn
+chest --include='*.gd' world/` is empty. F-140 flagged that as belonging to "whatever places chests
+in the world", and it is filed separately so resolving this one does not bury it.
 
 ### F-136 · The player controller has no step-up, so any lip in a walkable surface is a wall — **fixed**
 

@@ -8,8 +8,12 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
+| **F-135** A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface | lm | 2026-08-18 22:00 | — |
 | **F-140** Task 3.5 closed without the four chest changes `ITEMS.md` §6 assigned to it, so two shipped stats had no consumer | reed16 | 2026-08-18 21:51 | `tools/chest_check.gd` |
-| **F-144** Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance | nettle12 | 2026-08-18 21:51 | `tools/render_census.gd`, `world/gen/authored_world.gd`, `world/gen/undergrowth.gd`, `autoload/graphics_quality.gd`, `tools/_probe_lods.gd` |
+| **F-144** Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance | nettle12 | 2026-08-18 21:51 | `tools/render_census.gd`, `world/gen/authored_world.gd`, `world/gen/undergrowth.gd`, `autoload/graphics_quality.gd`, `tools/_probe_lods.gd`, `world/environment/draw_policy.gd` |
+
+**F-140 notes:**
+- Code half done and pushed (eb23dc1): chest_check.gd now declares EXPECTED_ERROR_PATTERNS="references unknown loot tier" on its existing verdict line, so the deliberately-provoked unknown-tier error is declared rather than undeclared. Verified: CHEST_CHECK failures=0, and grep 'ERROR:' | grep -vE 'references unknown loot tier' | wc -l -> 0, so AUDIT-2026-08-17's '0 engine-error lines' claim now holds for this check. Docs half still OWED and blocked: docs/FINDINGS.md is claimed by lm for F-136. Two things left, both needing that file: (1) resolve F-140 - its core claims verified true in code (LootEntry kind/rarity, LootTableDef.roll powerups bucket, Chest.cost_coins + locked_by all present in systems/loot/chest.gd); (2) do NOT resolve it silently - the gilded placement budget, the fourth ITEMS.md 6 item, is still genuinely open and must be filed as its own finding first, since nothing in world/ places chests at all. Resolving F-140 without filing that drops it on the floor.
 
 ## Milestones
 
@@ -60,7 +64,7 @@
 | ⬜ | **F-126** CommandService's `peer` argument type has no display-name resolution — peer ids only | todo |
 | ⬜ | **F-130** Three console commands never migrated to CommandService — they register via console.call("register", ...), which 3.13's sweep could not see | todo |
 | ⬜ | **F-132** A remote client's scattered harvestable proxy may have no host counterpart to reach, because `ChunkStreamer` streams per-peer independently | todo |
-| ⬜ | **F-135** A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface | todo |
+| 🔵 | **F-135** A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface | in_flight |
 | ⬜ | **F-137** The build module lives in one `.tres` and nothing else knows it | todo |
 | ⬜ | **F-138** Rotating an AABB's corners is still the wrong ruler when the thing you are rotating is a moving part | todo |
 | ⬜ | **F-139** `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline | todo |

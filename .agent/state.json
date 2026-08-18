@@ -20,6 +20,11 @@
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
     },
+    "world/environment/draw_policy.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-18T21:57:54+00:00",
+      "task": "F-144"
+    },
     "world/gen/authored_world.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
@@ -32,12 +37,24 @@
     }
   },
   "in_flight": {
+    "F-135": {
+      "agent": "lm",
+      "files": [],
+      "notes": [],
+      "started": "2026-08-18T22:00:02+00:00"
+    },
     "F-140": {
       "agent": "reed16",
       "files": [
         "tools/chest_check.gd"
       ],
-      "notes": [],
+      "notes": [
+        {
+          "at": "2026-08-18T21:57:56+00:00",
+          "by": "reed16",
+          "text": "Code half done and pushed (eb23dc1): chest_check.gd now declares EXPECTED_ERROR_PATTERNS=\"references unknown loot tier\" on its existing verdict line, so the deliberately-provoked unknown-tier error is declared rather than undeclared. Verified: CHEST_CHECK failures=0, and grep 'ERROR:' | grep -vE 'references unknown loot tier' | wc -l -> 0, so AUDIT-2026-08-17's '0 engine-error lines' claim now holds for this check. Docs half still OWED and blocked: docs/FINDINGS.md is claimed by lm for F-136. Two things left, both needing that file: (1) resolve F-140 - its core claims verified true in code (LootEntry kind/rarity, LootTableDef.roll powerups bucket, Chest.cost_coins + locked_by all present in systems/loot/chest.gd); (2) do NOT resolve it silently - the gilded placement budget, the fourth ITEMS.md 6 item, is still genuinely open and must be filed as its own finding first, since nothing in world/ places chests at all. Resolving F-140 without filing that drops it on the floor."
+        }
+      ],
       "started": "2026-08-18T21:51:09+00:00"
     },
     "F-144": {
@@ -47,7 +64,8 @@
         "world/gen/authored_world.gd",
         "world/gen/undergrowth.gd",
         "autoload/graphics_quality.gd",
-        "tools/_probe_lods.gd"
+        "tools/_probe_lods.gd",
+        "world/environment/draw_policy.gd"
       ],
       "notes": [],
       "started": "2026-08-18T21:51:43+00:00"
@@ -4813,7 +4831,7 @@
     "F-135": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "A modular piece can measure its module exactly and still leave a seam: the bounding box is not the walking surface"
     },
