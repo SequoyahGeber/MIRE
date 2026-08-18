@@ -75,6 +75,53 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — `agent godot` imports before every run, so a check can no longer read a stale build (F-093, lm)
+
+**Nothing to build against — this is a behaviour change in the shared harness itself.** Every
+`agent godot <...>` call (any args other than a bare `--import`) now runs a real
+`--headless --import` pass first, inside the same lock, before the caller's own run. The two-step
+manual dance the F-093 finding used to recommend (`agent godot --import`, then run the check) is no
+longer necessary — one `agent godot --script tools/x_check.gd` is enough, and always sees the current
+build. `docs/ASSET_TRACKER.md`'s old "re-run to confirm" advice is gone for the same reason; it never
+actually worked (F-093 measured three identical stale reruns), the import pass is what fixes it.
+
+- **Cost:** roughly one extra Godot boot per `agent godot` call. Cheap when nothing changed (Godot
+  only reimports what's dirty); the point of the fix is that the cost is now unconditional so no
+  agent has to remember when it's needed.
+- **`--import` alone still works** as its own command and is not doubled — `cmd_godot` skips the
+  pre-pass when the caller's own args already ask for one.
+- Test double for this lives in `tools/harness_check.py` (`fake-godot`, argv-echo pattern) — two
+  cases assert the double-invocation shape. Extend those, don't write a new test double, if this
+  needs more coverage later.
+
+### 2026-08-18 — the in-game Steam lobby menu exists (6.10's lobby-UI slice, pulled forward per D-030) (moss11)
+
+**Press M in game → the multiplayer panel.** `ui/lobby/lobby_menu.gd`, autoload `LobbyMenu`
+(CanvasLayer, layer 55). Host a friends-only Steam lobby, **COPY** the lobby ID to the clipboard,
+paste a friend's ID and **JOIN**, open the Steam **invite overlay**, see the member list, leave.
+This is what makes 1.12's evidence run cheap: the ID travels over any chat instead of between
+terminals. Sequoyah asked for it now, explicitly ahead of its roadmap slot.
+
+- **UI over live seams only** — every button is `SteamLobby.host_session()` / `join_by_id()` /
+  `open_invite_overlay()` / `leave()`, plus `NetTransport.leave()` for a non-Steam session. Network
+  authority: none (client-local, §2.2's last row). Member rows render `SteamLobby.members()` — lobby
+  membership, never authoritative.
+- **Toggle is the raw keycode `KEY_M`** (DebugConsole's backtick pattern), so the input action map
+  was not touched; A/B/D/E/S/W, Space, Tab, Shift were taken. Esc closes it, consumed in `_input`
+  before `player_controller.gd`'s `_unhandled_input` mouse-release toggle can see the press. Typing
+  into a focused LineEdit never toggles it.
+- **D-032 honoured:** joins `blocks_gameplay_input` while open, refuses to open while any other
+  node holds that group, frees the cursor and restores capture state on close.
+- **Status line carries every outcome verbatim** — `lobby_failed`, `NetSession.session_ended`
+  detail, connect retries/rejoins, and a mapped "Steam is not available" for `ERR_UNAVAILABLE`.
+  `invite_accepted` while already in a session opens the panel with the friend's lobby ID prefilled
+  rather than yanking the player out (SteamLobby's own rule).
+- **Check:** `agent godot --script tools/lobby_menu_check.gd` — 19 assertions, green at ship.
+  Headless has no Steam client, so it proves the panel, the group interlock and every refusal path;
+  the happy path is 1.12's live run. Driveable from a check via `set_open()`, `request_host()`,
+  `request_join()`, `set_join_field_text()`, `status_text()`, `member_row_count()`.
+- **Still open in 6.10:** main menu shell, settings, seed entry (feeds 4.6). The lobby slice is done.
+
 ### 2026-08-18 — F-113/F-114: harvesting is keyed to the ASSET, and health is authored in tool swings (vane19)
 
 **`systems/harvesting/harvest_library.gd` is the new source of truth for "is this worth hitting".**

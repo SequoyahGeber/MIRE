@@ -214,9 +214,9 @@ up onto it when `create_asset` grounds it.
    authored map keeps the old art until rebuilt.
 4. `agent godot --script tools/item_icons_check.gd` and `playtest_hollow_check.gd`.
 
-Godot caches glTF imports, and a check run immediately after a rebuild can report
-the *previous* import. A hollow visual count that jumps with no change in GLB bytes
-or per-asset part counts is that cache, not your geometry — re-run to confirm.
+Godot caches glTF imports. `agent godot` now runs its own import pass before every check (F-093,
+fixed) — re-running does *not* help on its own, that pass is what makes the check see the rebuild. A
+hollow visual count that still looks wrong after that pass is your geometry, not the cache.
 
 ### Massing primitives, and how to use a reference pack (A-000V)
 
