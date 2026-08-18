@@ -2866,3 +2866,18 @@ v1 SFX palette shipped and verified: 19 mono wavs in assets-audio-sfx (axe x3, p
 Files: `tools/audio/render_sfx.py`, `assets/audio/sfx`
 
 Commit at time of writing: `c23c72c`
+
+---
+
+### DONE · F-103 · lp · 2026-08-18T18:12:00+00:00
+
+**MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin**
+
+Fix was already shipped inside F-097 (4919d26): placements-meta publish + tools/multimesh_readback_check.gd. This task wrote the missing docs/SPECS.md F-103 block, re-verified the check, and moved FINDINGS.md's F-103 section to Resolved. Verified: agent godot --script tools/multimesh_readback_check.gd -> failures=0 (two runs); agent godot --script tools/findings_numbering_check.gd -> open=17 resolved=104 failures=0 (no F-number collision). Filed F-119 (out of scope): agent godot's own --import pre-pass logs 2 undeclared ERROR: lines every run.
+
+Notes along the way:
+- Fix already shipped in F-097 (4919d26); this task was the missing docs/SPECS.md block, the verify pass, and moving FINDINGS.md to Resolved. Also filed F-119: agent godot's own --import pre-pass emits 2 undeclared ERROR: lines (external text editor) on every invocation, out of scope here.
+
+Files: `tools/multimesh_readback_check.gd`
+
+Commit at time of writing: `818da6f`
