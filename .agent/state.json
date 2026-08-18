@@ -61,9 +61,9 @@
   },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "flint5",
-      "at": "2026-08-17T19:12:34+00:00",
-      "task": "F-049"
+      "agent": "gale6",
+      "at": "2026-08-18T04:04:04+00:00",
+      "task": "F-071"
     },
     ".agent/bin/lane": {
       "agent": "yarrow21",
@@ -835,26 +835,6 @@
       "at": "2026-08-17T19:28:04+00:00",
       "task": "F-052"
     },
-    "tools/crafting_ui_check.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:01:51+00:00",
-      "task": "2.7"
-    },
-    "tools/crafting_ui_check.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:01:51+00:00",
-      "task": "2.7"
-    },
-    "tools/crafting_ui_render_check.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:01:51+00:00",
-      "task": "2.7"
-    },
-    "tools/crafting_ui_render_check.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:01:51+00:00",
-      "task": "2.7"
-    },
     "tools/day_night_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T00:13:02+00:00",
@@ -1089,16 +1069,6 @@
       "agent": "gale6",
       "at": "2026-08-18T02:53:04+00:00",
       "task": "F-068"
-    },
-    "ui/crafting/crafting_ui.gd": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:01:51+00:00",
-      "task": "2.7"
-    },
-    "ui/crafting/crafting_ui.gd.uid": {
-      "agent": "dusk3",
-      "at": "2026-08-17T04:01:51+00:00",
-      "task": "2.7"
     },
     "ui/hud/vitals_hud.gd": {
       "agent": "nettle12",
@@ -1422,9 +1392,11 @@
       "title": "Day/night cycle: sun rotation, `WorldEnvironment` transitions, replicated time-of-day"
     },
     "2.12": {
+      "done_at": "2026-08-18T02:53:33+00:00",
+      "done_by": "gale6",
       "est": "2",
       "milestone": "M2",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Night wave spawner: N enemies at night, despawn at dawn, scales with player count"
     },
@@ -2495,7 +2467,7 @@
     "F-055": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Committed HEAD boots with a failed autoload \u2014 `c187ede` deleted a script but left it registered"
     },
@@ -2506,7 +2478,7 @@
       "milestone": "Findings",
       "status": "done",
       "tier": "F",
-      "title": "The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join"
+      "title": "Jolt treats the heightfield as one-sided, so you fall through the map on join \u2014 **fixed**"
     },
     "F-057": {
       "est": "\u2014",
@@ -2619,6 +2591,15 @@
       "status": "todo",
       "tier": "F",
       "title": "Generated review orders cannot use their mandated review task id"
+    },
+    "F-071": {
+      "done_at": "2026-08-18T04:04:04+00:00",
+      "done_by": "gale6",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Eight closed findings were still listed under '## Open', so a quarter of the board's work queue was finished work"
     }
   },
   "version": 1

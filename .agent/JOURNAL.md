@@ -1899,3 +1899,25 @@ WaveSpawner registered via agent autoload — it appends, so it lands after DayN
 Files: `tools/wave_spawner_check.gd`, `systems/waves/wave_spawner.gd`
 
 Commit at time of writing: `0a245d1`
+
+---
+
+### DONE · 2.12 · gale6 · 2026-08-18T02:53:33+00:00
+
+**Night wave spawner: N enemies at night, despawn at dawn, scales with player count**
+
+Night waves run. The code shipped in 915c881 (lane LP) and was correct; it was never registered, so nothing loaded it — F-068. Completed here: agent autoload WaveSpawner, plus the harness rewritten onto the registered DayNight/WaveSpawner pair so it can never again pass while the project has no wave director (F-069). Verified: wave_spawner_check 18/18, clean boot, day_night_net_check green across two real processes, and enemy/combat/verify_setup unaffected.
+
+Commit at time of writing: `1d79114`
+
+---
+
+### DONE · F-071 · gale6 · 2026-08-18T04:04:04+00:00
+
+**Eight closed findings were still listed under '## Open', so a quarter of the board's work queue was finished work**
+
+Moved eight closed-but-still-Open findings to Resolved, each with a note naming who fixed it and the proof re-run today (lan_launch_check, combat_self_hit_check, player_health_check, vitals_hud_check, frame_cap_check, verify_setup, hollowmere_check all green; TestMapProps absent from project.godot; SPECS 2.11 Claim line corrected). Then fixed the cause: board lists findings from state.json and brief lists them from docs/FINDINGS.md, and _sync_findings never downgrades a status, so a finding closed without moving its section is hidden by one reader and advertised as work by the other. _print_findings_drift now prints that disagreement in both start and board — it caught a ninth entry my own sweep had skipped. Also added _duplicate_findings, which surfaces F-058/F-059/F-060 sharing numbers; renumbering stays deferred because code comments and queued orders cite both members of each pair.
+
+Files: `.agent/bin/agent`
+
+Commit at time of writing: `318d8ce`

@@ -383,6 +383,7 @@ def cmd_start(args):
               " commits included. No MIRE_AGENT prefix needed.%s" % (C["dim"], C["x"]))
     _print_board(st, focus=name)
     _print_stale(st)
+    _print_findings_drift(st)
     _print_git()
     print("  %sGiven only a task id? That is enough:%s  agent brief <task-id>" % (C["dim"], C["x"]))
     print("  %sClaim before you edit:%s  agent claim <task-id> <files...>\n" % (C["dim"], C["x"]))
@@ -402,6 +403,62 @@ def _print_git():
     if out:
         n = len(out.splitlines())
         print("\n  %s⚠ %d uncommitted file(s) — someone stopped mid-task%s" % (C["y"], n, C["x"]))
+    print()
+
+
+def _findings_drift(st):
+    """F-071: `docs/FINDINGS.md` and `state.json` are two records of the same fact, and they drift.
+
+    `_sync_findings()` deliberately never downgrades a status, so a finding closed with `agent done`
+    but never moved out of '## Open' stays *done* in state and *open* in the doc. The two readers
+    then disagree in opposite directions: `board` lists findings from state, so it hides it; `brief`
+    lists them from the doc, so it advertises it as claimable work. Eight had drifted that way at
+    once — a quarter of what `brief` called the queue was already finished, and claiming one only
+    failed because state happened to disagree.
+
+    Neither reader is wrong on its own, so this does not pick a winner and does not silently rewrite
+    either record: the doc is the source of truth for what is open (F-049), but only a human or an
+    agent who knows what was actually fixed can write the resolution note that makes the move
+    meaningful. Printing the disagreement is the part a tool can do."""
+    done_ids = {fid for fid, t in st["tasks"].items()
+                if t.get("milestone") == FINDINGS_MILESTONE and t.get("status") == "done"}
+    return sorted({fid for fid, _ in _open_findings() if fid in done_ids})
+
+
+def _duplicate_findings():
+    """F-071/F-058: F-numbers are not unique. `docs/` is deliberately unclaimed so no lane blocks on
+    it, which also let two lanes read the same "next number" from `agent brief` and both append as
+    it. `agent finding` allocates under a lock now, so this cannot happen again — but the pairs
+    filed before that fix are still in the file, and `brief`/`claim` silently pick one of them.
+
+    Renumbering is the real fix and is deliberately not done here: code comments and queued work
+    orders cite BOTH members of most pairs, so it is a cross-cutting pass, not a doc edit. Until
+    someone does it, printing the collision is what stops it from being a trap you only find by
+    reading the file in order."""
+    seen, dupes = set(), set()
+    for fid, _ in _open_findings():
+        (dupes if fid in seen else seen).add(fid)
+    return sorted(dupes)
+
+
+def _print_findings_drift(st):
+    dupes = _duplicate_findings()
+    if dupes:
+        print("  %s⚠ %d F-number(s) used by more than one open finding: %s%s"
+              % (C["y"], len(dupes), "  ".join(dupes), C["x"]))
+        print("    %sbrief/claim will pick one of them, and it may not be the one you mean —"
+              % C["dim"])
+        print("    read the surrounding text, not the number alone (F-058).%s" % C["x"])
+        print()
+    drift = _findings_drift(st)
+    if not drift:
+        return
+    print("  %s⚠ %d finding(s) closed but still under '## Open' in docs/FINDINGS.md%s"
+          % (C["y"], len(drift), C["x"]))
+    print("    %s%s%s" % (C["dim"], "  ".join(drift), C["x"]))
+    print("    %s`agent brief` reads the doc, so it is still offering these as work. Move each"
+          % C["dim"])
+    print("    section to '## Resolved' with what you did and how you verified it.%s" % C["x"])
     print()
 
 
@@ -1201,6 +1258,7 @@ def cmd_board(args):
     print("\n%sMIRE%s  %d/%d tasks done\n" % (C["b"], C["x"], done, total))
     _print_board(st, focus=whoami(required=False))
     _print_stale(st)
+    _print_findings_drift(st)
 
 
 def render_board(st):
