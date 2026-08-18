@@ -398,6 +398,33 @@ inventing a new rule class for destroy alone would stop it mirroring placement.
 piece planted 100 m from the client is refused by name alone, and the piece the client actually
 built and stands beside still destroys and refunds correctly.
 
+## F-082 · Placement support succeeded when only one of five footprint probes hit
+
+`PlacementValidator._probe_support()` (`systems/building/placement_validator.gd`) probed all five
+footprint points (four corners + centre) but skipped any that missed and returned the flattest hit
+among whatever survived. `evaluate()` then treated any non-empty result as supported: a 2 m wall
+resting on a 20 cm pillar under its centre, with all four corner rays finding nothing, still read
+`Reason.OK`, because the lone centre hit was "the flattest thing found." A cliff-edge piece with
+three of four corners hanging off was accepted the same way. **Claim:**
+`systems/building/placement_validator.gd`, `tools/build_check.gd`. **Fix:** `_probe_support` now
+returns `{}` — the same "unsupported" sentinel `evaluate()` already checked via `is_empty()` — the
+moment any one of the five probes misses, and otherwise returns the WORST (steepest) slope among
+the five hits rather than the flattest, so one grounded corner can no longer hide three ungrounded
+ones. There is no authored field distinguishing "required" from "optional" probes on `BuildableDef`,
+so the decision (recorded, not a new `D-0NN` — it follows directly from the finding's own wording)
+is that all five are required; a piece meant to bridge a gap already has the escape hatch,
+`requires_support = false`. **A trap for the next geometry added to `tools/build_check.gd`:** the
+existing "on a slope" test used to rely on a single centre-only hit and broke under the stricter
+rule — a flat piece run *across* a steep slope's fall line genuinely cannot have all five probes in
+reach of the ground (its corners are metres apart vertically), so that placement now correctly reads
+`NO_SUPPORT`, not `TOO_STEEP`. The fixed test turns the piece 90° so its width runs *along* the
+slope's contour instead, and thins the test bank from 1 m to 0.1 m — a full-thickness box tilted 55
+degrees is ~1.7 m of solid through a world-vertical line, so a probe tuned to start just clear of the
+face still starts INSIDE the solid a few centimetres either side of that exact point and silently
+reads as no hit. **Shipped 2026-08-18.** Verify with `agent godot --script tools/build_check.gd`
+(66 assertions, `failures=0`) and `tools/build_net_check.gd` (13 assertions, `failures=0`, confirms
+the host's real placement path — same validator, same rule — is unaffected).
+
 ## F-087 · Three open findings shared their F-number with a different finding
 
 `docs/` is deliberately unclaimed (F-006), so concurrent lanes filing a finding in the same window can

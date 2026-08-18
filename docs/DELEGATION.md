@@ -383,6 +383,25 @@ to a `Dictionary` local, mutate that, then `service.set(&"_placed", ...)` it bac
 regression guard (`tools/net_check_pattern_check.gd`) has nothing to say about it but the mutation may
 not stick anyway. `tools/build_net_check.gd`'s new destroy-range assertions are the worked example.
 
+### 2026-08-18 — support now means ALL five probes, worst slope wins (F-082)
+
+`PlacementValidator._probe_support()` used to skip any of its five footprint probes that missed and
+return the flattest hit among whatever survived — `evaluate()` treated that as fully supported, so a
+wall balanced on a pillar under its centre, or hanging three-corners-off a cliff, read `Reason.OK`.
+**Contract now:** `_probe_support` returns `{}` (the same sentinel `evaluate()` already reads via
+`is_empty()`) the instant any one of the five probes misses, and otherwise returns
+`{"slope_degrees": <worst of the five>}` — the steepest, not the flattest. No `BuildableDef` field
+distinguishes "required" from "optional" probes, so all five are required; a piece meant to bridge a
+gap keeps using `requires_support = false`, unchanged. **Whoever authors more buildable content
+(3.7) or touches placement rules next should know:** a flat piece run *across* a steep slope's fall
+line can no longer be supported at all — its corners are metres apart vertically, well outside any
+probe's 0.6 m reach — only a piece run *along* the contour, or one small enough that its whole
+footprint sits within reach, can pass `requires_support` on genuinely steep ground. That is a real
+behavior change (correct per the finding), not a regression: `tools/build_check.gd`'s own slope test
+needed the same reorientation and is the worked example if you need another one — see its comment
+in `_build_world()` for the "thin the box or a probe starts inside the solid a few cm off the exact
+tuned point" trap when hand-placing tilted test geometry.
+
 ### 2026-08-18 — the 3.4 design check is done: the schema holds, and docs/POWERUPS.md is now the authoring spec (reed16)
 
 The question that had to be answered before 3.4 hand-authors 40–60 `.tres` files: can the whole

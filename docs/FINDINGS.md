@@ -818,23 +818,6 @@ those generated paths, or excluding `.agent/bin/`, both close it.
 
 ---
 
-### F-082 · Placement support succeeds when only one of five footprint probes hits
-
-**Area:** building · **Severity:** medium · **Found:** 2026-08-18 by lc1 during the 3.6 review
-
-`PlacementValidator._probe_support()` skips missing probes and returns the flattest hit it found
-(`systems/building/placement_validator.gd:197`). `evaluate()` therefore treats any non-empty result
-as supported (`systems/building/placement_validator.gd:101`). A 2 m wall resting on a 20 cm pillar
-under its centre returns `Reason.OK` even though all four corner rays miss; a cliff-edge piece is
-similarly accepted if only one corner remains over ground. This contradicts the function's stated
-reason for using five probes and the spec's support validation.
-
-The review's real-physics probe printed `PARTIAL_SUPPORT reason=ok`. Require the authored support
-criterion across the footprint (at minimum, all required probes must hit), and evaluate the worst
-support slope rather than selecting the flattest surviving hit.
-
----
-
 ### F-083 · Snapping the aim hit's Y coordinate rejects or floats pieces on ordinary terrain heights
 
 **Area:** building · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.6 review
@@ -895,6 +878,39 @@ The level renders at ~100 fps on the M5 Pro where the scene complexity justifies
 ---
 
 ## Resolved
+
+### F-082 · Placement support succeeded when only one of five footprint probes hit — **fixed**
+
+**Area:** building · **Severity:** medium · **Found:** 2026-08-18 by lc1 during the 3.6 review ·
+**Resolved 2026-08-18 by lp.**
+
+`PlacementValidator._probe_support()` skipped missing probes and returned the flattest hit it found
+(`systems/building/placement_validator.gd:197`). `evaluate()` therefore treated any non-empty result
+as supported (`systems/building/placement_validator.gd:101`). A 2 m wall resting on a 20 cm pillar
+under its centre returned `Reason.OK` even though all four corner rays missed; a cliff-edge piece was
+similarly accepted if only one corner remained over ground. This contradicted the function's stated
+reason for using five probes and the spec's support validation.
+
+The review's real-physics probe printed `PARTIAL_SUPPORT reason=ok`.
+
+**Fix:** `_probe_support` now returns `{}` — the same "unsupported" sentinel `evaluate()` already
+checked via `is_empty()` — the moment any one of the five probes misses, instead of skipping it and
+carrying on. When all five hit, it returns the WORST (steepest) slope among them, not the flattest
+survivor, so a single grounded corner can no longer hide three ungrounded ones. There is no authored
+field on `BuildableDef` distinguishing "required" from "optional" probes, so the decision (there's no
+call for a `D-0NN` here — it falls straight out of the finding's own wording) is that all five count
+as required; a piece meant to bridge a gap already has the escape hatch, `requires_support = false`.
+Full reasoning and the trap this exposed in the existing test geometry are in `docs/SPECS.md`'s
+F-082 block.
+
+**Verified:** `agent godot --script tools/build_check.gd` → `BUILD_CHECK failures=0`, 66 assertions
+PASS including three new ones for this fix (pillar-under-centre, one-corner-over-a-cliff, and mixed
+flat/steep footprint all correctly resolving to `NO_SUPPORT`/`TOO_STEEP` instead of `OK`), re-run
+twice for determinism. `agent godot --script tools/build_net_check.gd` → `BUILD_NET_CHECK
+failures=0`, 13 assertions, confirming the host's real placement path over ENet — same validator,
+same rule — is unaffected.
+
+---
 
 ### F-089 · Powerup lifecycle never removed obsolete family counts from clients, leaving ghost Resonances after reconnect or expiry — **fixed**
 
