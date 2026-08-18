@@ -542,161 +542,6 @@ sections get the same rewording when that claim releases.
 
 ---
 
-### F-054 · There is no launch path into LAN mode, so a second physical machine cannot join at all
-
-**Area:** netcode/tooling · **Severity:** medium — it blocks the cheapest cross-platform test we
-have · **Found:** 2026-08-17 by flint5, setting up a two-VM session for Sequoyah
-
-`NetConfig.Mode.LAN` exists, `NetTransport.host(Mode.LAN)` binds to `ANY_ADDRESS` and
-`join(Mode.LAN, "<ip>")` works — the transport half has been finished since 1.2. But `DevLaunch`
-parses only `--host`/`--client` (LOCAL, hard-coded loopback) and `--steam-host`/`--steam-join`.
-**Nothing in the shipped project can open or join a LAN session**, so testing against a real second
-machine requires either Steam (three accounts, a friends list, and F-025's frame-rate-bound callback
-pump on a 2–3 FPS VM) or hand-editing code at test time.
-
-That is backwards for the thing being tested. ENet over a routable address exercises the entire
-gameplay stack — admission, version handshake, spawning, replication, harvest/inventory/craft/combat
-— with no Steam prerequisites and no dependence on render frame rate, which is exactly what a
-correctness-only VM session wants. D-030 already argued the cheap-testing case for Steam console
-commands; this is the same argument one layer down, and cheaper still.
-
-Fix: `--lan-host`, `--lan-join=<address>`, and a shared `--port=<n>` in `DevLaunch`, reusing the
-existing retry path so a client started before its host still connects (which is also half of F-024's
-complaint).
-
----
-
-### F-056 · `docs/SPECS.md`'s 2.11 block omitted `net_version.gd`/`handshake_check.gd` despite adding a new RPC
-
-**Area:** docs/tooling · **Severity:** low · **Found:** 2026-08-17 by lp during 2.11
-
-2.11's spec (`docs/SPECS.md`) listed only `systems/environment/day_night.gd`,
-`tools/day_night_check.gd` and `tools/day_night_net_check.gd` as its claim set, and named "code-built
-synchronizer per D-023, or an unreliable RPC push" as the replication mechanism with no mention of a
-protocol bump either way. Both options add a new item to the wire contract (a new RPC, or a new
-`SceneReplicationConfig` entry), and the SPECS preamble's own standing rule 5 is unconditional: "New
-RPCs ⇒ bump `PROTOCOL_VERSION`... extend `tools/handshake_check.gd`." Following the preamble rule over
-the task's own claim list, `net_version.gd` and `handshake_check.gd` were added to the 2.11 claim
-directly (no other lane held them) and the bump happened in the same task — 7 → 8 for `net_push_time`.
-Not blocking, since the fix was cheap and immediate, but the pattern is worth naming: **a task's own
-`docs/SPECS.md` claim list can omit a file a standing preamble rule requires**, and an agent should
-default to the standing rule, extending its claim on the spot, rather than skipping the bump because
-the block didn't list the file. Whoever next edits the 2.11 spec block should add `core/net/
-net_version.gd` to its claim list so the next reader doesn't have to rediscover this.
-
----
-
-### F-055 · Committed HEAD boots with a failed autoload — `c187ede` deleted a script but left it registered
-
-**Area:** build/boot · **Severity:** high — every fresh clone of HEAD is affected, on every platform
-· **Found:** 2026-08-17 by flint5, during the three-platform LAN run
-
-`c187ede` ("Map: one map, and the Hollow's ground is a real heightfield") deleted
-`world/gen/test_map_props.gd` but left `TestMapProps="*res://world/gen/test_map_props.gd"` in
-`project.godot`. Booting HEAD therefore emits, on macOS, Linux and Windows identically:
-
-```
-ERROR: Attempt to open script 'res://world/gen/test_map_props.gd' resulted in error 'File not found'.
-ERROR: Failed loading resource: res://world/gen/test_map_props.gd.
-ERROR: Failed to instantiate an autoload, can't load from path: res://world/gen/test_map_props.gd.
-```
-
-The game still runs — the old greybox prop scatterer is obsolete under the one-map consolidation —
-so this reads as harmless noise, which is exactly why it needs closing: it is three permanent
-`ERROR:` lines in every run, and standing rule 4 grades undeclared error lines. Left alone it
-re-creates the F-021 condition where a real error hides inside an allowance everyone has learned to
-ignore.
-
-Caught by `verify_setup`'s all-autoloads check added in F-046; the previous version checked 2 of 19
-registrations and would have shipped straight past it. This is the exact inverse of D-021's rule —
-a task that *removes* a script must deregister it in the same task, just as one that adds an autoload
-registers it.
-
-**Not fixed here, deliberately.** The fix already exists uncommitted in the working tree, but that
-same `project.godot` diff also carries 2.11's `DayNight` and 2.13's `PlayerHealth` registrations from
-lanes still in flight, so committing it would ship other agents' half-finished work. Whoever lands
-2.11 should include the `TestMapProps` removal; if 2.11 is dropped, this needs its own one-line
-commit.
-
----
-
-### F-056 · Jolt treats the heightfield as one-sided, so you fall through the map on join — **fixed**
-
-**Resolved 2026-08-17 by flint5.** The title above was my first hypothesis and it was **wrong** —
-the spawn placement was correct all along. Corrected diagnosis, then the fix:
-
-`world/gen/playtest_hollow.gd` builds the ground as a `ConcavePolygonShape3D`. Everything about it
-was right: 1814 correctly-wound faces (1922 up-facing, 0 down-facing, verified against the layout
-data), `StaticBody3D` on layer 1 at `y=0.000`, shape enabled, and the physics **server** confirmed
-holding all 1814 faces with an identity transform in a valid space. It still collided with nothing.
-The cause is the **Jolt** backend: it treats a concave mesh as one-sided and does not agree with
-Godot Physics on which side that is, so a correctly-wound heightfield is invisible from above. Its
-box-shaped sibling terrain bodies (`Mire_BasinFloor` et al.) collided normally throughout, which is
-what made this look like a spawn bug rather than a shape bug.
-
-Fix is one line — `shape.backface_collision = true`. Two-sided costs nothing for static ground and
-removes the winding question permanently. Verified: the player now settles at `y=0.001` with
-`on_floor=true` and stays there, and all five `SPAWN_OFFSETS` peer slots report ground on
-`GroundHeightfield`. `playtest_hollow_check`, `verify_setup`, `harvest_world_check` and
-`dev_loadout_check` all pass with 0 failures and 0 engine errors.
-
-**The blind spot is the durable lesson, and it now has a guard.** `verify_setup`'s "player rests at
-ground level" runs against a flat *fixture* level, never the real map; `playtest_hollow_check`
-validates 323 colliders, grid sanity and facet angles but never asks whether a player can stand
-anywhere. Both were green while the map was unplayable. `tools/spawn_ground_probe.gd` now drops the
-real player into the real main scene, asserts it reaches the floor, and asserts every peer slot has
-ground beneath it — the one question that decides playability.
-
-*Original (incorrect) diagnosis retained below, because the measurements are still useful and the
-wrong turn is instructive: two of my probe readings were artifacts — it first measured the Player's
-own capsule as "ground", then read the Player's position after it had already fallen.*
-
-### F-056 · The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join
-
-**Area:** level/gameplay · **Severity:** critical — the game is unplayable; it blocks 2.9 and 2.14 ·
-**Found:** 2026-08-17 by flint5, from Sequoyah: *"i fall through the map immediately on join"*
-
-`PlayerNet._claim_spawn_point()` reads the level's hand-placed `Player` body and uses its transform
-as the spawn, fanning peers out by `SPAWN_OFFSETS`. Measured against the live tree with
-`tools/spawn_ground_probe.gd`:
-
-```
-spawn transform (PlayerNet reads this): (0.000, -1.867, 7.302)
-slot                  spawn y   ground y        gap   verdict
-x+0.0 z+0.0            -1.867     -0.066     -1.801   BURIED — falls through
-x+1.6 z+0.0            -1.867          -          -   NO GROUND ANYWHERE
-x-1.6 z+0.0            -1.867          -          -   NO GROUND ANYWHERE
-x+0.0 z+1.6            -1.867          -          -   NO GROUND ANYWHERE
-x+0.0 z-1.6            -1.867          -          -   NO GROUND ANYWHERE
-```
-
-A `CharacterBody3D` starting inside collision is pushed through it rather than resting on it, so the
-fall is immediate and total. The four peer slots are worse than the base: nothing under them at all,
-so in multiplayer every joining client falls too.
-
-**This is not `c187ede` by itself.** The three-platform LAN run earlier the same day logged
-`PlayerNet: spawn point taken from level at (0.000000, 0.194556, 7.400000)` and players landed fine
-(`verify_setup`: *player rests at ground level*). The spawn is now `(0.000, -1.867, 7.302)`, so it
-moved *after* that run — the uncommitted `world/gen/playtest_hollow.gd` +
-`world/gen/layouts/playtest_hollow.json` work in the tree. The heightfield gives the ground 2.67 m of
-relief, so any spawn Y authored against the old flat floor is now wrong by whatever the relief is at
-that XZ.
-
-**Why every existing check missed it, which is the more useful half of this finding.**
-`verify_setup`'s physics assertions ("player is on the floor", "rests at ground level") run against a
-**fixture level with a flat `Ground`**, never the real map — they passed while the real map was
-unplayable. `playtest_hollow_check` validates the level thoroughly (325 colliders, grid sanity,
-facet angles, 2.67 m relief) but never asks *whether a player can stand at the spawn*. So the one
-question that decides playability was owned by no check at all.
-
-Fix: re-place the level's `Player` node onto the heightfield surface (sample the layout's height at
-its XZ rather than hand-placing a Y), and confirm every `SPAWN_OFFSETS` slot has ground under it —
-the offsets fan sideways and can walk a peer off a shelf even when the base point is fine.
-`tools/spawn_ground_probe.gd` is the standing instrument; it belongs in `playtest_hollow_check` so
-this can never regress silently again.
-
----
-
 ### F-057 · A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds
 
 **Area:** art pipeline · **Severity:** low · **Found:** 2026-08-17 by tine18 during the 2.1j palette migration
@@ -825,166 +670,6 @@ nothing is broken — coins just show without an icon until this is picked up.
 Fix: add `"coins": "res://assets/loot/exports/loot_coin_pouch.glb"` (or equivalent) to
 render_item_icons.py's SOURCES, rerun it, and set coins.tres's `icon` field, following A-004R's
 "appending to SOURCES, not starting a second pipeline" note in DELEGATION.
-
----
-
-### F-062 · Every melee swing hits the attacker's own body first
-
-**Area:** combat · **Severity:** high · **Found:** 2026-08-18 by nettle12
-
-`CombatService._best_target()` (autoload/combat_service.gd:227) iterates the whole `&"damageable"`
-group and never excludes the swinging player. Task 2.13 put the player body into that group
-(entities/player/player_controller.gd:111) so crawler hits could land — which silently turned every
-player swing into a self-hit.
-
-The geometry makes the attacker win the target contest almost every time:
-
-- `eye = player.global_position + UP * 1.5`, so for the attacker itself `to_target = (0, -1.5, 0)`.
-- `|y| = 1.5` is inside `vertical_reach_m` (2.4 default) — passes the vertical band.
-- `distance = 1.5` is inside `range_m + tolerance` (2.6 + 0.75 = 3.35) — passes reach.
-- `to_flat` is exactly zero, so the `to_flat.length_squared() < 0.000001` early branch assigns
-  `best = self` and **skips the arc test entirely** — direction is irrelevant.
-- `best_distance` is then 1.5 m, so any crawler further than 1.5 m loses the nearest-target contest.
-
-Net effect in play: the stone axe chops the player for `damage` (3) on every swing, and crawlers in
-the 1.5–3.35 m band — most of the axe's actual reach — can never be hit. Observed live in
-Sequoyah's 2.9 playtest: `PlayerHealth: peer 1 downed (instigator 1)` in the session log, i.e. the
-player downed himself, and "attacking the enemies doesn't seem to work anymore".
-
-Fix: skip the attacker's own node in the loop. The zero-horizontal-offset branch is still wanted for
-an enemy standing exactly on your axis, so exclude by identity, not by distance.
-
----
-
-### F-063 · Offline respawn teleports the player to world origin
-
-**Area:** health · **Severity:** medium · **Found:** 2026-08-18 by nettle12
-
-`PlayerHealth._teleport_to_spawn()` reads `_spawn_transforms[peer_id]` and falls back to
-`Vector3.ZERO` when the peer has no entry. That dictionary is only ever written by
-`_on_player_spawned()`, which is driven by `PlayerNet.player_spawned` — and PlayerNet only spawns
-bodies inside a session (`autoload/player_net.gd:78`, `_claim_spawn_point()`'s own note: "Offline
-this is never called and the node is left alone").
-
-So in a solo Play-from-editor run — the exact configuration task 2.9's gate is played in — the
-dictionary is empty and every respawn slams the player to `(0, 0, 0)` instead of the level's spawn
-point. In `levels/playtest_hollow.tscn` the hand-placed Player sits at `(0, 0.2, 7.4)`, so you
-respawn 7.4 m away and 0.2 m below where the level says players belong.
-
-Confirmed live: Sequoyah's 2.9 session log shows two complete `downed -> bled out -> respawning`
-cycles that he did not recognise as deaths at all.
-
-Fix: fall back to the level's spawn point rather than to the origin — PlayerNet already reads that
-transform off the hand-placed Player, and offline the placeholder is still in the tree to read.
-Leaving the body where it stands is strictly better than the origin if neither is available.
-
----
-
-### F-064 · Downed, bleeding out and dead are invisible to the player
-
-**Area:** ui · **Severity:** medium · **Found:** 2026-08-18 by nettle12
-
-`ui/hud/vitals_hud.gd._on_health_changed(hp, max_hp, _state, _bleed_out_remaining)` discards both the
-state and the bleed-out timer — the underscore prefixes are the whole story. The HUD draws an hp bar
-and nothing else, so the entire 2.13 state machine is invisible from the player's chair.
-
-What a player actually experiences when hp reaches 0: the bar empties, movement drops to
-`crawl_speed`, the axe stops responding, and nothing on screen says why or that a 30-second clock is
-running. Sequoyah's report from the 2.9 playtest, verbatim: "now it's at zero, and I have not died
-... I'm really slow with my health at zero, and then also attacking the enemies doesn't seem to work
-anymore." He had in fact died and respawned twice by then; the session log proves it and the screen
-did not.
-
-This blocks 2.9's gate on its own terms — the spec asks for a verdict on whether combat is
-dangerous, and danger that the player cannot perceive cannot be judged.
-
-Needed: a downed banner with the bleed-out countdown, a distinct dead/respawning state, and the
-revive prompt teammates need (the broadcast `downed_flag_changed` already carries who needs help).
-
----
-
-### F-066 · Play-from-editor costs ~2.2 CPU cores and ~90% GPU, none of it the game's rendering — **partly fixed**
-
-**Area:** tooling/performance · **Severity:** medium · **Found:** 2026-08-18 by reed16
-
-Sequoyah reported his MacBook getting very hot within seconds of pressing Play Scene, on hardware
-(M5 Pro, 16 GPU cores) that should idle through this project. It does not appear to be the game.
-
-**Measured on his live session, before anything else was launched** — the editor (pid 18279) and the
-embedded game (pid 18304) each sustained just over 100% CPU, i.e. a full core apiece, while
-`ioreg -c IOAccelerator` reported `Device Utilization % = 91`. That is ~2.2 cores and a nearly
-saturated GPU for a greybox level.
-
-**The scene's rendering is not the cause.** `tools/perf_probe.gd` (added by this investigation)
-renders the real `playtest_hollow.tscn` at a 4800x2700 backing store — four times the shipped
-1152x648-at-2x — and steps down a ladder of features. Every configuration held the 120 Hz vsync cap
-at 8.33 ms, including the shipped one. Turning off the per-frame atmosphere re-apply, volumetric fog,
-all three FogVolumes, glow, the 4-split PSSM sun shadows *and* the cloud deck gave back **0.08 ms per
-frame in total**. The renderer settings are not what is heating the machine, and the intuition that
-this should run on a potato is correct.
-
-**The editor is not expensive on its own either** — opening the project and sitting idle measured
-6.5% CPU, with `interface/editor/display/update_continuously = false`. The ~105% only appears while a
-game is running under it. The running game's command line shows `--remote-debug tcp://127.0.0.1:6007`
-and `--embedded --wid ...`; `run/window_placement/game_embed_mode = 0` (auto-embed) in his editor
-settings. So the editor is compositing the game's output at the game's frame rate on top of its own
-UI, at Retina resolution, and paying a debugger link on top.
-
-Two other candidates were checked and cleared: log volume (21 lines of stdout across a 12-second run,
-so nothing is being spammed over the debugger socket) and physics (323 static collision shapes).
-
-**Also worth naming: nothing in `project.godot` caps the frame rate.** There is no
-`application/run/max_fps` and no `display/window/vsync/vsync_mode` entry at all, so the game targets
-the 120 Hz ProMotion panel by default and the editor composites every one of those frames. For a
-co-op game that will ship to laptops on Steam this is a player-facing gap as much as a dev-machine
-one — there is currently no way for anyone to cap it.
-
-**What is NOT established, and why.** The split between the three plausible contributors — vsync
-frame pacing, the debugger attach, and the embedded-window compositing — could not be measured
-cleanly. On macOS an occluded or backgrounded Godot window stops really presenting: it free-runs at
-~145 fps and its CPU collapses to ~15%, versus ~120 fps and ~80% when genuinely on screen. Sequoyah
-was using the machine during the runs and clicking away from the windows I launched, which silently
-flipped runs between those two states and produced results that inverted between trials (at one point
-`--max-fps 60` appeared to cost more than uncapped). Any future perf run of this kind has to happen on
-a quiet machine with the window verifiably foregrounded, and should use the reported fps as a
-validity check — a run well above the display refresh was never really rendering.
-
-**Partly fixed 2026-08-17 by claude: the frame cap.** `core/dev/dev_frame_cap.gd` (autoload
-`DevFrameCap`) caps editor and debug runs to 60 fps; `tools/frame_cap_check.gd` covers it, 11 checks.
-Measured before and after on a foregrounded window, 7/7 samples valid: **120 fps at 104.5% CPU became
-60 fps at 59.5% CPU**, a 43% cut in the game process alone. The editor's share should fall with it,
-because it composites the embedded game at the game's frame rate — halving the frames halves the
-compositing — though that half was not measured, since triggering a real Play needs the GUI.
-
-Capping frames rather than turning down renderer settings is the deliberate call: the ladder above
-shows the settings are worth 0.08 ms combined, so there was nothing to win there. Retail is
-untouched — the cap is behind `OS.has_feature("editor")`, and an explicit `--max-fps` or
-`application/run/max_fps` wins over it, so the flag keeps working for anyone testing high-frame-rate
-behaviour. `fps_cap [n]` in the debug console changes it live.
-
-**Un-embedded 2026-08-17 by Sequoyah, and it was the larger half.** `game_embed_mode` is now
-`-1` — worth recording, because **Disabled is -1, not 2**, and 2 was the value a reasonable guess
-would have landed on. Guessing it would have written *Enabled*. The editor no longer composites the
-game over its own UI and falls back to its ~6.5% idle, removing roughly half of the original 2.2
-cores on its own.
-
-**That made the 60 fps default the wrong call, and it has been reverted.** DevFrameCap now defaults
-to uncapped and lets vsync decide, exactly as a retail build does; `fps_cap 60` remains as a
-one-command knob for when the machine runs hot. Halving the frame rate of a first-person game to
-save a load the un-embedding had already dealt with was over-correction — a game using about one
-core is not pathological. The measured trade on a 120 Hz panel is uncapped 120 fps at ~104% CPU
-versus 60 fps at ~60%.
-
-**Un-embedding exposed two window settings nobody had looked at**, because the embedded panel had
-been supplying its own geometry: `window/size/resizable=false` meant the run window could not be
-resized at all, and no `viewport_width`/`viewport_height` were set, so it opened at Godot's 1152x648
-default on a 1512x982-point screen. Neither was a deliberate call — no decision covers window sizing
-and `verify_setup.gd` does not pin either — so the false was dropped and the default is now 1280x720.
-
-**Still open.** The shipped game has no vsync or frame-rate control of any kind, which for a co-op
-game aimed at laptops on Steam wants a real video-settings surface. That is roadmap task 7.5, not a
-fix to make here; Sequoyah has asked for it explicitly and wants it comprehensive rather than a
-partial menu.
 
 ---
 
@@ -1131,7 +816,423 @@ review closeout command).
 
 ---
 
+## Resolved`
+in `docs/FINDINGS.md`. It only *warns* you to. Eight entries had been closed without that move:
+F-054 (LAN launch), F-055 (the dead `TestMapProps` registration), all three F-056s, F-062, F-063,
+F-064 and F-066.
+
+The board's "Open findings" list is synced from that section, so it was advertising eight finished
+jobs as available work — a quarter of the 33 it listed. This is not hypothetical: I claimed F-054,
+read it, opened `core/dev/dev_launch.gd` to write the fix, and found the fix already there, shipped
+by flint5 in `fcdd87d`/`019ac7a` the previous evening. `agent claim` refused with "F-054 is already
+done" only because `state.json` disagreed with the doc; had the claim succeeded I would have spent
+the session re-implementing it.
+
+The doc and `state.json` are two records of the same fact and they had drifted apart. `agent done`
+can detect the drift — it already knows the F-number and already greps the file to warn — so the
+cheap fix is for it to also *check* at `board`/`start` time and print the disagreement, the way it
+already prints stale claims. Renumbering the duplicate F-numbers is a separate, larger job that
+F-058 describes and that two agents have now deferred because other docs and code comments cite both
+members of each pair.
+
+---
+
 ## Resolved
+
+### F-071 · Eight closed findings were still listed under '## Open', so a quarter of the board's work queue was finished work — **fixed**
+
+**Resolved 2026-08-18 by gale6.** Two parts, because the instance and the cause are different jobs.
+
+**The eight entries were moved**, each with a resolution note naming who fixed it, in which commit
+where one exists, and the proof re-run today rather than taken on trust: `lan_launch_check`
+(`address=192.168.50.176 failures=0`), `combat_self_hit_check`, `player_health_check` (0),
+`vitals_hud_check` (0), `frame_cap_check`, `verify_setup` and `hollowmere_check` all green, plus
+`grep -c TestMapProps project.godot` returning 0 and the 2.11 **Claim:** line in `docs/SPECS.md` now
+naming the two files it had omitted. Thirty-three open became twenty-five; nothing was lost (77 -> 78
+sections, the extra being this one).
+
+**The cause is that `board` and `brief` read different records.** `_sync_findings()` mirrors the doc
+into `state.json` and deliberately never downgrades a status (F-049 relies on that), so a finding
+closed with `agent done` but left under `## Open` ends up *done* in state and *open* in the doc —
+and then `board`, which lists from state, hides it, while `brief`, which lists from the doc, offers
+it as claimable work. `_findings_drift()` + `_print_findings_drift()` now print that disagreement
+wherever stale claims already print, in both `start` and `board`. It deliberately does not rewrite
+either record: only someone who knows what was actually fixed can write the resolution note that
+makes the move worth anything.
+
+It earned its keep immediately — the first run flagged a ninth entry this pass had skipped (the Jolt
+`F-056`, which already carried its own resolution note and so did not match the sweep), and it is
+quiet now.
+
+**Also surfaced, not fixed:** `_duplicate_findings()` prints the F-numbers used by more than one open
+finding — `F-058`, `F-059`, `F-060` today. `agent finding` allocates under a lock now so no new
+collision can occur, but `brief`/`claim` still silently pick one of an existing pair. Renumbering
+remains deferred for the third time, and for the same good reason: code comments
+(`tools/chest_check.gd`, `tools/chest_net_check.gd`, `systems/loot/chest.gd`,
+`world/gen/playtest_hollow.gd`, `tools/blender/mire_art.py`) and queued work orders cite *both*
+members of most pairs, so it is a cross-cutting pass with real collision risk against agents holding
+those files — not a doc edit. Printing it is what stops it being a trap you can only find by reading
+the file in order.
+
+**Area:** process · **Severity:** medium · **Found:** 2026-08-18 by gale6
+
+`agent done <F-number>` releases the claim, writes the journal and marks the task done in
+`.agent/state.json` — but it does **not** move the finding's section from `## Open` to `
+
+---
+
+### F-056 · Jolt treats the heightfield as one-sided, so you fall through the map on join — **fixed**
+
+**Resolved 2026-08-17 by flint5.** The title above was my first hypothesis and it was **wrong** —
+the spawn placement was correct all along. Corrected diagnosis, then the fix:
+
+`world/gen/playtest_hollow.gd` builds the ground as a `ConcavePolygonShape3D`. Everything about it
+was right: 1814 correctly-wound faces (1922 up-facing, 0 down-facing, verified against the layout
+data), `StaticBody3D` on layer 1 at `y=0.000`, shape enabled, and the physics **server** confirmed
+holding all 1814 faces with an identity transform in a valid space. It still collided with nothing.
+The cause is the **Jolt** backend: it treats a concave mesh as one-sided and does not agree with
+Godot Physics on which side that is, so a correctly-wound heightfield is invisible from above. Its
+box-shaped sibling terrain bodies (`Mire_BasinFloor` et al.) collided normally throughout, which is
+what made this look like a spawn bug rather than a shape bug.
+
+Fix is one line — `shape.backface_collision = true`. Two-sided costs nothing for static ground and
+removes the winding question permanently. Verified: the player now settles at `y=0.001` with
+`on_floor=true` and stays there, and all five `SPAWN_OFFSETS` peer slots report ground on
+`GroundHeightfield`. `playtest_hollow_check`, `verify_setup`, `harvest_world_check` and
+`dev_loadout_check` all pass with 0 failures and 0 engine errors.
+
+**The blind spot is the durable lesson, and it now has a guard.** `verify_setup`'s "player rests at
+ground level" runs against a flat *fixture* level, never the real map; `playtest_hollow_check`
+validates 323 colliders, grid sanity and facet angles but never asks whether a player can stand
+anywhere. Both were green while the map was unplayable. `tools/spawn_ground_probe.gd` now drops the
+real player into the real main scene, asserts it reaches the floor, and asserts every peer slot has
+ground beneath it — the one question that decides playability.
+
+*Original (incorrect) diagnosis retained below, because the measurements are still useful and the
+wrong turn is instructive: two of my probe readings were artifacts — it first measured the Player's
+own capsule as "ground", then read the Player's position after it had already fallen.*
+
+---
+
+### F-054 · There is no launch path into LAN mode, so a second physical machine cannot join at all — **fixed**
+
+**Resolved 2026-08-17 by flint5** in `fcdd87d` (`--lan-host`, `--lan-join=<address>`, `--port=<n>`
+in `DevLaunch`, reusing the existing retry path) and `019ac7a` (the log tag names the real mode,
+verified by a macOS-to-Linux two-machine run). Section moved out of `## Open` 2026-08-18 by gale6
+after re-running `agent godot --script tools/lan_launch_check.gd` — `LAN_LAUNCH_CHECK
+address=192.168.50.176 failures=0`.
+
+**Area:** netcode/tooling · **Severity:** medium — it blocks the cheapest cross-platform test we
+have · **Found:** 2026-08-17 by flint5, setting up a two-VM session for Sequoyah
+
+`NetConfig.Mode.LAN` exists, `NetTransport.host(Mode.LAN)` binds to `ANY_ADDRESS` and
+`join(Mode.LAN, "<ip>")` works — the transport half has been finished since 1.2. But `DevLaunch`
+parses only `--host`/`--client` (LOCAL, hard-coded loopback) and `--steam-host`/`--steam-join`.
+**Nothing in the shipped project can open or join a LAN session**, so testing against a real second
+machine requires either Steam (three accounts, a friends list, and F-025's frame-rate-bound callback
+pump on a 2–3 FPS VM) or hand-editing code at test time.
+
+That is backwards for the thing being tested. ENet over a routable address exercises the entire
+gameplay stack — admission, version handshake, spawning, replication, harvest/inventory/craft/combat
+— with no Steam prerequisites and no dependence on render frame rate, which is exactly what a
+correctness-only VM session wants. D-030 already argued the cheap-testing case for Steam console
+commands; this is the same argument one layer down, and cheaper still.
+
+Fix: `--lan-host`, `--lan-join=<address>`, and a shared `--port=<n>` in `DevLaunch`, reusing the
+existing retry path so a client started before its host still connects (which is also half of F-024's
+complaint).
+
+---
+
+### F-056 · `docs/SPECS.md`'s 2.11 block omitted `net_version.gd`/`handshake_check.gd` despite adding a new RPC — **fixed**
+
+**Resolved 2026-08-17 by lp.** `docs/SPECS.md`'s 2.11 **Claim:** line now names
+`core/net/net_version.gd` + `tools/handshake_check.gd` and states why. Section moved out of `##
+Open` 2026-08-18 by gale6, verified by reading that line.
+
+**Area:** docs/tooling · **Severity:** low · **Found:** 2026-08-17 by lp during 2.11
+
+2.11's spec (`docs/SPECS.md`) listed only `systems/environment/day_night.gd`,
+`tools/day_night_check.gd` and `tools/day_night_net_check.gd` as its claim set, and named "code-built
+synchronizer per D-023, or an unreliable RPC push" as the replication mechanism with no mention of a
+protocol bump either way. Both options add a new item to the wire contract (a new RPC, or a new
+`SceneReplicationConfig` entry), and the SPECS preamble's own standing rule 5 is unconditional: "New
+RPCs ⇒ bump `PROTOCOL_VERSION`... extend `tools/handshake_check.gd`." Following the preamble rule over
+the task's own claim list, `net_version.gd` and `handshake_check.gd` were added to the 2.11 claim
+directly (no other lane held them) and the bump happened in the same task — 7 → 8 for `net_push_time`.
+Not blocking, since the fix was cheap and immediate, but the pattern is worth naming: **a task's own
+`docs/SPECS.md` claim list can omit a file a standing preamble rule requires**, and an agent should
+default to the standing rule, extending its claim on the spot, rather than skipping the bump because
+the block didn't list the file. Whoever next edits the 2.11 spec block should add `core/net/
+net_version.gd` to its claim list so the next reader doesn't have to rediscover this.
+
+---
+
+### F-055 · Committed HEAD boots with a failed autoload — `c187ede` deleted a script but left it registered — **fixed**
+
+**Resolved 2026-08-17 by flint5.** `TestMapProps` is gone from `project.godot`'s `[autoload]`
+section. Section moved out of `## Open` 2026-08-18 by gale6, verified by `grep -c TestMapProps
+project.godot` returning 0 and a clean `agent godot --quit-after 5` boot with no error lines.
+
+**Area:** build/boot · **Severity:** high — every fresh clone of HEAD is affected, on every platform
+· **Found:** 2026-08-17 by flint5, during the three-platform LAN run
+
+`c187ede` ("Map: one map, and the Hollow's ground is a real heightfield") deleted
+`world/gen/test_map_props.gd` but left `TestMapProps="*res://world/gen/test_map_props.gd"` in
+`project.godot`. Booting HEAD therefore emits, on macOS, Linux and Windows identically:
+
+```
+ERROR: Attempt to open script 'res://world/gen/test_map_props.gd' resulted in error 'File not found'.
+ERROR: Failed loading resource: res://world/gen/test_map_props.gd.
+ERROR: Failed to instantiate an autoload, can't load from path: res://world/gen/test_map_props.gd.
+```
+
+The game still runs — the old greybox prop scatterer is obsolete under the one-map consolidation —
+so this reads as harmless noise, which is exactly why it needs closing: it is three permanent
+`ERROR:` lines in every run, and standing rule 4 grades undeclared error lines. Left alone it
+re-creates the F-021 condition where a real error hides inside an allowance everyone has learned to
+ignore.
+
+Caught by `verify_setup`'s all-autoloads check added in F-046; the previous version checked 2 of 19
+registrations and would have shipped straight past it. This is the exact inverse of D-021's rule —
+a task that *removes* a script must deregister it in the same task, just as one that adds an autoload
+registers it.
+
+**Not fixed here, deliberately.** The fix already exists uncommitted in the working tree, but that
+same `project.godot` diff also carries 2.11's `DayNight` and 2.13's `PlayerHealth` registrations from
+lanes still in flight, so committing it would ship other agents' half-finished work. Whoever lands
+2.11 should include the `TestMapProps` removal; if 2.11 is dropped, this needs its own one-line
+commit.
+
+---
+
+### F-056 · The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join — **fixed**
+
+**Resolved 2026-08-17 by flint5** — the real cause turned out to be the Jolt one-sided heightfield
+in the neighbouring F-056, not the spawn height; the spawn was correct all along. Section moved out
+of `## Open` 2026-08-18 by gale6, verified by `tools/verify_setup.gd` (player is on the floor, rests
+at ground level, is not still falling) and `tools/hollowmere_check.gd` (`HOLLOWMERE_SPAWN ...
+clear=true`).
+
+**Area:** level/gameplay · **Severity:** critical — the game is unplayable; it blocks 2.9 and 2.14 ·
+**Found:** 2026-08-17 by flint5, from Sequoyah: *"i fall through the map immediately on join"*
+
+`PlayerNet._claim_spawn_point()` reads the level's hand-placed `Player` body and uses its transform
+as the spawn, fanning peers out by `SPAWN_OFFSETS`. Measured against the live tree with
+`tools/spawn_ground_probe.gd`:
+
+```
+spawn transform (PlayerNet reads this): (0.000, -1.867, 7.302)
+slot                  spawn y   ground y        gap   verdict
+x+0.0 z+0.0            -1.867     -0.066     -1.801   BURIED — falls through
+x+1.6 z+0.0            -1.867          -          -   NO GROUND ANYWHERE
+x-1.6 z+0.0            -1.867          -          -   NO GROUND ANYWHERE
+x+0.0 z+1.6            -1.867          -          -   NO GROUND ANYWHERE
+x+0.0 z-1.6            -1.867          -          -   NO GROUND ANYWHERE
+```
+
+A `CharacterBody3D` starting inside collision is pushed through it rather than resting on it, so the
+fall is immediate and total. The four peer slots are worse than the base: nothing under them at all,
+so in multiplayer every joining client falls too.
+
+**This is not `c187ede` by itself.** The three-platform LAN run earlier the same day logged
+`PlayerNet: spawn point taken from level at (0.000000, 0.194556, 7.400000)` and players landed fine
+(`verify_setup`: *player rests at ground level*). The spawn is now `(0.000, -1.867, 7.302)`, so it
+moved *after* that run — the uncommitted `world/gen/playtest_hollow.gd` +
+`world/gen/layouts/playtest_hollow.json` work in the tree. The heightfield gives the ground 2.67 m of
+relief, so any spawn Y authored against the old flat floor is now wrong by whatever the relief is at
+that XZ.
+
+**Why every existing check missed it, which is the more useful half of this finding.**
+`verify_setup`'s physics assertions ("player is on the floor", "rests at ground level") run against a
+**fixture level with a flat `Ground`**, never the real map — they passed while the real map was
+unplayable. `playtest_hollow_check` validates the level thoroughly (325 colliders, grid sanity,
+facet angles, 2.67 m relief) but never asks *whether a player can stand at the spawn*. So the one
+question that decides playability was owned by no check at all.
+
+Fix: re-place the level's `Player` node onto the heightfield surface (sample the layout's height at
+its XZ rather than hand-placing a Y), and confirm every `SPAWN_OFFSETS` slot has ground under it —
+the offsets fan sideways and can walk a peer off a shelf even when the base point is fine.
+`tools/spawn_ground_probe.gd` is the standing instrument; it belongs in `playtest_hollow_check` so
+this can never regress silently again.
+
+---
+
+### F-062 · Every melee swing hits the attacker's own body first — **fixed**
+
+**Resolved 2026-08-17 by nettle12.** Section moved out of `## Open` 2026-08-18 by gale6, verified by
+re-running `agent godot --script tools/combat_self_hit_check.gd` — all PASS, including "a swing at
+empty air costs the attacker nothing (F-062)".
+
+**Area:** combat · **Severity:** high · **Found:** 2026-08-18 by nettle12
+
+`CombatService._best_target()` (autoload/combat_service.gd:227) iterates the whole `&"damageable"`
+group and never excludes the swinging player. Task 2.13 put the player body into that group
+(entities/player/player_controller.gd:111) so crawler hits could land — which silently turned every
+player swing into a self-hit.
+
+The geometry makes the attacker win the target contest almost every time:
+
+- `eye = player.global_position + UP * 1.5`, so for the attacker itself `to_target = (0, -1.5, 0)`.
+- `|y| = 1.5` is inside `vertical_reach_m` (2.4 default) — passes the vertical band.
+- `distance = 1.5` is inside `range_m + tolerance` (2.6 + 0.75 = 3.35) — passes reach.
+- `to_flat` is exactly zero, so the `to_flat.length_squared() < 0.000001` early branch assigns
+  `best = self` and **skips the arc test entirely** — direction is irrelevant.
+- `best_distance` is then 1.5 m, so any crawler further than 1.5 m loses the nearest-target contest.
+
+Net effect in play: the stone axe chops the player for `damage` (3) on every swing, and crawlers in
+the 1.5–3.35 m band — most of the axe's actual reach — can never be hit. Observed live in
+Sequoyah's 2.9 playtest: `PlayerHealth: peer 1 downed (instigator 1)` in the session log, i.e. the
+player downed himself, and "attacking the enemies doesn't seem to work anymore".
+
+Fix: skip the attacker's own node in the loop. The zero-horizontal-offset branch is still wanted for
+an enemy standing exactly on your axis, so exclude by identity, not by distance.
+
+---
+
+### F-063 · Offline respawn teleports the player to world origin — **fixed**
+
+**Resolved 2026-08-17 by nettle12.** Section moved out of `## Open` 2026-08-18 by gale6, verified by
+re-running `agent godot --script tools/player_health_check.gd` — 0 failure(s), including the
+scenario that deliberately does not fake `player_spawned`.
+
+**Area:** health · **Severity:** medium · **Found:** 2026-08-18 by nettle12
+
+`PlayerHealth._teleport_to_spawn()` reads `_spawn_transforms[peer_id]` and falls back to
+`Vector3.ZERO` when the peer has no entry. That dictionary is only ever written by
+`_on_player_spawned()`, which is driven by `PlayerNet.player_spawned` — and PlayerNet only spawns
+bodies inside a session (`autoload/player_net.gd:78`, `_claim_spawn_point()`'s own note: "Offline
+this is never called and the node is left alone").
+
+So in a solo Play-from-editor run — the exact configuration task 2.9's gate is played in — the
+dictionary is empty and every respawn slams the player to `(0, 0, 0)` instead of the level's spawn
+point. In `levels/playtest_hollow.tscn` the hand-placed Player sits at `(0, 0.2, 7.4)`, so you
+respawn 7.4 m away and 0.2 m below where the level says players belong.
+
+Confirmed live: Sequoyah's 2.9 session log shows two complete `downed -> bled out -> respawning`
+cycles that he did not recognise as deaths at all.
+
+Fix: fall back to the level's spawn point rather than to the origin — PlayerNet already reads that
+transform off the hand-placed Player, and offline the placeholder is still in the tree to read.
+Leaving the body where it stands is strictly better than the origin if neither is available.
+
+---
+
+### F-064 · Downed, bleeding out and dead are invisible to the player — **fixed**
+
+**Resolved 2026-08-17 by nettle12.** Section moved out of `## Open` 2026-08-18 by gale6, verified by
+re-running `agent godot --script tools/vitals_hud_check.gd` — 0 failure(s).
+
+**Area:** ui · **Severity:** medium · **Found:** 2026-08-18 by nettle12
+
+`ui/hud/vitals_hud.gd._on_health_changed(hp, max_hp, _state, _bleed_out_remaining)` discards both the
+state and the bleed-out timer — the underscore prefixes are the whole story. The HUD draws an hp bar
+and nothing else, so the entire 2.13 state machine is invisible from the player's chair.
+
+What a player actually experiences when hp reaches 0: the bar empties, movement drops to
+`crawl_speed`, the axe stops responding, and nothing on screen says why or that a 30-second clock is
+running. Sequoyah's report from the 2.9 playtest, verbatim: "now it's at zero, and I have not died
+... I'm really slow with my health at zero, and then also attacking the enemies doesn't seem to work
+anymore." He had in fact died and respawned twice by then; the session log proves it and the screen
+did not.
+
+This blocks 2.9's gate on its own terms — the spec asks for a verdict on whether combat is
+dangerous, and danger that the player cannot perceive cannot be judged.
+
+Needed: a downed banner with the bleed-out countdown, a distinct dead/respawning state, and the
+revive prompt teammates need (the broadcast `downed_flag_changed` already carries who needs help).
+
+---
+
+### F-066 · Play-from-editor costs ~2.2 CPU cores and ~90% GPU, none of it the game's rendering — **partly fixed**
+
+**Resolved 2026-08-17 by reed16, partly** — un-embedding the game window was the real fix; the frame
+cap it prompted was reverted and survives only as the `fps_cap` knob. Shipped-game video settings
+remain open as roadmap 7.5. Section moved out of `## Open` 2026-08-18 by gale6, verified by
+re-running `agent godot --script tools/frame_cap_check.gd` — all PASS.
+
+**Area:** tooling/performance · **Severity:** medium · **Found:** 2026-08-18 by reed16
+
+Sequoyah reported his MacBook getting very hot within seconds of pressing Play Scene, on hardware
+(M5 Pro, 16 GPU cores) that should idle through this project. It does not appear to be the game.
+
+**Measured on his live session, before anything else was launched** — the editor (pid 18279) and the
+embedded game (pid 18304) each sustained just over 100% CPU, i.e. a full core apiece, while
+`ioreg -c IOAccelerator` reported `Device Utilization % = 91`. That is ~2.2 cores and a nearly
+saturated GPU for a greybox level.
+
+**The scene's rendering is not the cause.** `tools/perf_probe.gd` (added by this investigation)
+renders the real `playtest_hollow.tscn` at a 4800x2700 backing store — four times the shipped
+1152x648-at-2x — and steps down a ladder of features. Every configuration held the 120 Hz vsync cap
+at 8.33 ms, including the shipped one. Turning off the per-frame atmosphere re-apply, volumetric fog,
+all three FogVolumes, glow, the 4-split PSSM sun shadows *and* the cloud deck gave back **0.08 ms per
+frame in total**. The renderer settings are not what is heating the machine, and the intuition that
+this should run on a potato is correct.
+
+**The editor is not expensive on its own either** — opening the project and sitting idle measured
+6.5% CPU, with `interface/editor/display/update_continuously = false`. The ~105% only appears while a
+game is running under it. The running game's command line shows `--remote-debug tcp://127.0.0.1:6007`
+and `--embedded --wid ...`; `run/window_placement/game_embed_mode = 0` (auto-embed) in his editor
+settings. So the editor is compositing the game's output at the game's frame rate on top of its own
+UI, at Retina resolution, and paying a debugger link on top.
+
+Two other candidates were checked and cleared: log volume (21 lines of stdout across a 12-second run,
+so nothing is being spammed over the debugger socket) and physics (323 static collision shapes).
+
+**Also worth naming: nothing in `project.godot` caps the frame rate.** There is no
+`application/run/max_fps` and no `display/window/vsync/vsync_mode` entry at all, so the game targets
+the 120 Hz ProMotion panel by default and the editor composites every one of those frames. For a
+co-op game that will ship to laptops on Steam this is a player-facing gap as much as a dev-machine
+one — there is currently no way for anyone to cap it.
+
+**What is NOT established, and why.** The split between the three plausible contributors — vsync
+frame pacing, the debugger attach, and the embedded-window compositing — could not be measured
+cleanly. On macOS an occluded or backgrounded Godot window stops really presenting: it free-runs at
+~145 fps and its CPU collapses to ~15%, versus ~120 fps and ~80% when genuinely on screen. Sequoyah
+was using the machine during the runs and clicking away from the windows I launched, which silently
+flipped runs between those two states and produced results that inverted between trials (at one point
+`--max-fps 60` appeared to cost more than uncapped). Any future perf run of this kind has to happen on
+a quiet machine with the window verifiably foregrounded, and should use the reported fps as a
+validity check — a run well above the display refresh was never really rendering.
+
+**Partly fixed 2026-08-17 by claude: the frame cap.** `core/dev/dev_frame_cap.gd` (autoload
+`DevFrameCap`) caps editor and debug runs to 60 fps; `tools/frame_cap_check.gd` covers it, 11 checks.
+Measured before and after on a foregrounded window, 7/7 samples valid: **120 fps at 104.5% CPU became
+60 fps at 59.5% CPU**, a 43% cut in the game process alone. The editor's share should fall with it,
+because it composites the embedded game at the game's frame rate — halving the frames halves the
+compositing — though that half was not measured, since triggering a real Play needs the GUI.
+
+Capping frames rather than turning down renderer settings is the deliberate call: the ladder above
+shows the settings are worth 0.08 ms combined, so there was nothing to win there. Retail is
+untouched — the cap is behind `OS.has_feature("editor")`, and an explicit `--max-fps` or
+`application/run/max_fps` wins over it, so the flag keeps working for anyone testing high-frame-rate
+behaviour. `fps_cap [n]` in the debug console changes it live.
+
+**Un-embedded 2026-08-17 by Sequoyah, and it was the larger half.** `game_embed_mode` is now
+`-1` — worth recording, because **Disabled is -1, not 2**, and 2 was the value a reasonable guess
+would have landed on. Guessing it would have written *Enabled*. The editor no longer composites the
+game over its own UI and falls back to its ~6.5% idle, removing roughly half of the original 2.2
+cores on its own.
+
+**That made the 60 fps default the wrong call, and it has been reverted.** DevFrameCap now defaults
+to uncapped and lets vsync decide, exactly as a retail build does; `fps_cap 60` remains as a
+one-command knob for when the machine runs hot. Halving the frame rate of a first-person game to
+save a load the un-embedding had already dealt with was over-correction — a game using about one
+core is not pathological. The measured trade on a 120 Hz panel is uncapped 120 fps at ~104% CPU
+versus 60 fps at ~60%.
+
+**Un-embedding exposed two window settings nobody had looked at**, because the embedded panel had
+been supplying its own geometry: `window/size/resizable=false` meant the run window could not be
+resized at all, and no `viewport_width`/`viewport_height` were set, so it opened at Godot's 1152x648
+default on a 1512x982-point screen. Neither was a deliberate call — no decision covers window sizing
+and `verify_setup.gd` does not pin either — so the false was dropped and the default is now 1280x720.
+
+**Still open.** The shipped game has no vsync or frame-rate control of any kind, which for a co-op
+game aimed at laptops on Steam wants a real video-settings surface. That is roadmap task 7.5, not a
+fix to make here; Sequoyah has asked for it explicitly and wants it comprehensive rather than a
+partial menu.
+
+---
 
 ### F-068 · The night wave spawner shipped without being registered, so no waves run — **fixed**
 
