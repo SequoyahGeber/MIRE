@@ -402,6 +402,50 @@ needed the same reorientation and is the worked example if you need another one 
 in `_build_world()` for the "thin the box or a probe starts inside the solid a few cm off the exact
 tuned point" trap when hand-placing tilted test geometry.
 
+### 2026-08-18 — buildable pieces can now actually be attacked (F-085)
+
+Joining `&"damageable"` used to be the whole story for a placed piece; now it also gets a
+`host_apply_damage(amount, instigator_peer_id) -> bool` that does something, which is what
+`CombatService._best_target()` actually requires via `has_method()` before it will ever pick a node
+as a target — before this, every buildable was silently unreachable.
+
+**`systems/building/buildable_piece.gd`** (new, `extends Node3D`, no `class_name` — it is attached
+dynamically) is the implementation. `BuildService._net_spawn_piece()` attaches it to a piece root
+**only if that root doesn't already have `host_apply_damage`** — today that's every piece (task 3.7's
+art carries no scripts yet), but an authored root that brings its own richer damage handling (staged
+break states, say) is left untouched rather than overwritten. `hp` is host-only and **deliberately
+unreplicated** — nothing shows chip damage yet, and a piece's existence already replicates through
+`MultiplayerSpawner`'s despawn the instant the host `queue_free()`s it (D-023), which is the only
+state a client needs today. The method mirrors `Harvestable`/`Enemy`'s shape exactly: it re-checks
+host authority itself (`_owns_world_mutation()`, same three-line pattern) rather than trusting that
+`CombatService` already gated it — "someone else already checked" is how a check quietly disappears
+later.
+
+**`BuildableDef` gained `max_hp: int = 25`** (new `@export_group("Combat")`, validated `> 0` like
+every other numeric field) — the source `_net_spawn_piece()` reads into a fresh piece's `hp` at spawn.
+Existing content (`wall.tres`, `ward_post.tres`) needed no edit; an unauthored export field just takes
+the script default, so both worked examples are HP 25 until someone tunes them in the inspector.
+
+**`BuildService.host_piece_destroyed_by_damage(piece_name, instigator_peer_id)`** is the new host-only
+entry point `BuildablePiece` calls on lethal damage. It does the same teardown `_process_destroy` does
+(erase from `_placed`, `queue_free()`, request a nav rebake, emit `piece_destroyed`) **minus the range
+check** (the attacker already had to pass the weapon's own reach/arc test in `CombatService`) **and
+minus the refund** (a piece fought and lost pays out nothing — same as `Harvestable`/`Enemy` on
+death; only a deliberate `request_destroy` teardown refunds, per the existing 3.6 design that refund
+goes to whoever tears a piece down).
+
+Whoever wires 3.7's real art (F-086) should know: dropping a script onto the scene root via
+`set_script()` only works because nothing under `content/buildables/*.tres` carries one yet. The first
+authored root that wants its own `host_apply_damage` (multi-stage break visuals, say) just needs to
+implement the method itself — `_net_spawn_piece()` already detects and defers to it.
+
+Verify: `agent godot --script tools/build_check.gd` (`failures=0`) — new assertions call
+`host_apply_damage` directly rather than trusting the `&"damageable"` tag, then a dedicated
+`_check_damage_destroys_piece()` places a second piece, kills it with a lethal hit, and confirms
+`BuildService` forgets it, the node frees, no refund lands, and a nav rebake queues.
+`agent godot --script tools/combat_check.gd` (`failures=0`) confirms combat's own harvestable/enemy
+scenarios are unaffected.
+
 ### 2026-08-18 — the 3.4 design check is done: the schema holds, and docs/POWERUPS.md is now the authoring spec (reed16)
 
 The question that had to be answered before 3.4 hand-authors 40–60 `.tres` files: can the whole

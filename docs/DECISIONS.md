@@ -1027,6 +1027,25 @@ misrouted `agent brief`/`board` output) — that would be worth an inline fix re
 
 ---
 
+### D-054 · 2026-08-18 · A buildable killed by combat damage refunds nothing; only a deliberate teardown request does
+
+F-085 gave buildable pieces a real `host_apply_damage()`, which meant deciding what happens to the
+piece's cost when a hit reduces its hp to zero — a case 3.6 never specified because it couldn't be
+hit at all until this fix. `BuildService._process_destroy()` already refunds `refund_fraction` of the
+cost to whoever *requests* teardown, on purpose (any teammate may clear a misplaced piece, and the
+payout goes to them, not the original builder). Damage-destruction does not reuse that path: it pays
+out nothing, matching `Harvestable` and `Enemy`, neither of which grants anything to the instigator on
+death. The two cases stay visibly different in the code — `host_piece_destroyed_by_damage()` never
+calls `_refund_for()` — rather than folding damage-destruction through the teardown function with a
+flag to suppress the refund, so a future reader doesn't have to trace a conditional to learn that
+combat kills never pay.
+
+**Would change my mind:** a design pass that wants "salvage" as a real mechanic — an enemy or a rival
+player's weapon leaving harvestable scrap behind — at which point it should be its own explicit yield,
+the way `Harvestable.depleted` already works, not a repurposed build refund.
+
+---
+
 ## Template
 
 ```

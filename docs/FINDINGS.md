@@ -836,23 +836,6 @@ vertical snapping for stacked pieces needs an explicit anchor or separate rule.
 
 ---
 
-### F-085 · Buildables join `damageable` without implementing its required damage method
-
-**Area:** building · **Severity:** medium · **Found:** 2026-08-18 by lc1 during the 3.6 review
-
-`BuildService._net_spawn_piece()` adds every piece to `&"damageable"`
-(`autoload/build_service.gd:272`), but neither generated pieces nor authored-scene roots gain
-`host_apply_damage(amount, instigator_peer_id) -> bool`. That method is the group's documented
-contract, and `CombatService._best_target()` explicitly skips members without it
-(`autoload/combat_service.gd:251`). The shipped check asserts only group membership and claims that
-means the piece can be attacked (`tools/build_check.gd:226`), so it passes while weapons cannot
-target or destroy a buildable.
-
-Give buildable roots a host-owned damage implementation (or stop advertising them as damageable),
-and make the check call the contract rather than checking the tag alone.
-
----
-
 ### F-086 · The building system has no gameplay caller, so no player can place, rotate, or destroy anything
 
 **Area:** gameplay · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.6 review
@@ -878,6 +861,46 @@ The level renders at ~100 fps on the M5 Pro where the scene complexity justifies
 ---
 
 ## Resolved
+
+### F-085 · Buildables join `damageable` without implementing its required damage method — **fixed**
+
+**Area:** building · **Severity:** medium · **Found:** 2026-08-18 by lc1 during the 3.6 review ·
+**Resolved 2026-08-18 by lp.**
+
+`BuildService._net_spawn_piece()` added every piece to `&"damageable"` but neither generated pieces
+nor authored-scene roots gained `host_apply_damage(amount, instigator_peer_id) -> bool` — the group's
+documented contract, which `CombatService._best_target()` explicitly requires
+(`autoload/combat_service.gd:251`). The shipped check asserted only group membership and claimed that
+proved the piece could be attacked, so it passed while weapons could not target or destroy a
+buildable.
+
+**Fix:** a new `systems/building/buildable_piece.gd` (`extends Node3D`, no `class_name` — it is
+attached dynamically, never instantiated directly) is the group's actual implementation:
+`host_apply_damage()` re-checks host authority itself (same `_owns_world_mutation()` shape as
+`Harvestable`/`Enemy`), decrements `hp`, and on lethal damage calls a new
+`BuildService.host_piece_destroyed_by_damage(piece_name, instigator_peer_id)`. `_net_spawn_piece()`
+attaches this script to whichever piece root doesn't already carry `host_apply_damage` of its own —
+today that is every piece, since task 3.7's art has no scripts yet, but an authored root that brings
+a richer implementation (staged damage states) is left alone rather than clobbered.
+`BuildableDef` gained `max_hp: int = 25` (new `Combat` export group, validated non-positive same as
+the other numeric fields) — host-only and deliberately unreplicated, same reasoning as `hp` itself:
+nothing shows chip damage yet (task 3.7), and a piece's existence already replicates through
+`MultiplayerSpawner`'s despawn the moment the host `queue_free()`s it (D-023). Destruction by damage
+refunds nothing, unlike a teardown request — a piece fought and lost is not one its owner meant to
+reclaim, matching `Harvestable`/`Enemy` never paying out on death either.
+
+`tools/build_check.gd` no longer treats group membership as proof: it asserts `has_method` directly,
+calls `host_apply_damage` for a nonlethal hit and confirms the piece still stands, then (new
+`_check_damage_destroys_piece`) places a second piece, kills it with a lethal hit, and confirms
+`BuildService` forgets it, the node frees, no refund lands, and a nav rebake was queued — the same
+shape `_check_host_placement`'s teardown test already used for `request_destroy`.
+
+**Verified:** `agent godot --script tools/build_check.gd` — `BUILD_CHECK failures=0`, two clean
+reruns, zero `ERROR:` lines. `agent godot --script tools/combat_check.gd` also still passes
+(`COMBAT_CHECK landed=1 missed=2 rejected=1 failures=0`) — buildable pieces becoming real targets
+changed nothing about combat's own harvestable/enemy-only scenarios.
+
+---
 
 ### F-082 · Placement support succeeded when only one of five footprint probes hit — **fixed**
 

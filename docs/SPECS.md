@@ -425,6 +425,35 @@ reads as no hit. **Shipped 2026-08-18.** Verify with `agent godot --script tools
 (66 assertions, `failures=0`) and `tools/build_net_check.gd` (13 assertions, `failures=0`, confirms
 the host's real placement path — same validator, same rule — is unaffected).
 
+## F-085 · Buildables joined `damageable` without implementing its required damage method
+
+`BuildService._net_spawn_piece()` (`autoload/build_service.gd`) added every spawned piece to
+`&"damageable"`, but neither the generated fallback box nor an authored scene root gained
+`host_apply_damage(amount: int, instigator_peer_id: int) -> bool` — the group's actual contract,
+which `CombatService._best_target()` requires via `has_method()` before it will ever consider a node
+a target (`autoload/combat_service.gd:251`). The shipped check asserted only group membership and
+called that proof the piece could be attacked, so it passed green while every buildable was
+invisible to combat. **Claim:** `autoload/build_service.gd`, `tools/build_check.gd`,
+`systems/building/buildable_def.gd`, `systems/building/buildable_piece.gd` (new). **Fix:** a new
+`systems/building/buildable_piece.gd` implements the contract — host-only (re-checks authority
+itself, same `_owns_world_mutation()` shape as `Harvestable`/`Enemy`, never trusts that
+`CombatService` already gated it), tracks `hp`, and on lethal damage calls a new
+`BuildService.host_piece_destroyed_by_damage(piece_name, instigator_peer_id)`, which removes the
+piece the same way `_process_destroy` does — minus the range check (the attacker already had to pass
+the weapon's own reach/arc test) and minus the refund (a piece fought and lost pays out nothing,
+matching `Harvestable`/`Enemy` on death). `_net_spawn_piece()` attaches this script only to a piece
+root that doesn't already bring its own `host_apply_damage`, so a future authored root with staged
+damage states (task 3.7) is never clobbered. `BuildableDef` gained `max_hp: int = 25` (new `Combat`
+export group, validated non-positive like every other numeric field) — host-only and deliberately
+unreplicated: nothing shows chip damage yet, and a piece's existence already replicates through
+`MultiplayerSpawner`'s despawn the instant the host `queue_free()`s it (D-023), which is the only
+state a client needs. **Shipped 2026-08-18.** Verify with `agent godot --script tools/build_check.gd`
+(`failures=0`) — asserts `has_method(&"host_apply_damage")` directly rather than trusting the tag,
+exercises a nonlethal hit (piece survives, still tracked), then a fresh piece taken to a lethal hit
+(`_check_damage_destroys_piece`: `BuildService` forgets it, the node frees, no refund lands, a nav
+rebake is queued) — and `agent godot --script tools/combat_check.gd` (`failures=0`, unaffected: its
+own scenarios never place a buildable).
+
 ## F-087 · Three open findings shared their F-number with a different finding
 
 `docs/` is deliberately unclaimed (F-006), so concurrent lanes filing a finding in the same window can
