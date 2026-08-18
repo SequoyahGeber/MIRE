@@ -524,40 +524,6 @@ docstring so the next family chooses deliberately instead of inheriting it.
 
 ---
 
-### F-103 · MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin
-
-**Area:** tooling/rendering · **Severity:** high · **Found:** 2026-08-18 by larch10 during F-097
-
-`MultiMesh` instance transforms live in the RenderingServer, not in the resource. Under
-`--headless` — which is *every* way an agent can verify anything (F-077) — the dummy driver stores
-nothing, so `multimesh.buffer` is empty and `get_instance_transform(i)` returns `Transform3D()` for
-every `i`, however many were written. There is no error and no warning.
-
-Minimal reproduction, via `agent godot --script`:
-
-```
-multimesh.transform_format = MultiMesh.TRANSFORM_3D
-multimesh.mesh = BoxMesh.new()
-multimesh.instance_count = 3
-set_instance_transform(i, Transform3D(Basis.IDENTITY, Vector3(i * 10, 0, 0)))
-->  READBACK 0/1/2 all (0.0, 0.0, 0.0);  buffer size = 0
-```
-
-The failure mode is nastier than a crash. F-097's first implementation read emitter positions back
-out of the prop batches to place firelight; every one of Hollowmere's 99 mire crystals, 163 tendrils
-and 5 fires collapsed onto a single point at the world origin, and the check *passed* — one site per
-class is still ≥ 1. A count-based assertion cannot see this. It was only caught by asserting the
-number of sites against what the layout file actually holds.
-
-**Consequences.** Never read placement back from a MultiMesh. The system that wrote the transforms
-already has them, so it should publish them: `world/gen/authored_world.gd` and
-`world/gen/undergrowth.gd` now stamp a `placements` PackedVector3Array on the holder for any asset
-whose presentation is per-copy, and `EnvironmentVfx` reads that instead. Any check that walks
-MultiMesh transforms is measuring nothing, and any check whose assertion is satisfied by the number
-1 cannot distinguish "found everything" from "found one".
-
----
-
 ### F-108 · A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
@@ -648,7 +614,118 @@ F-075, and AGENTS.md's rule is to file it and keep moving, not chase it.
 
 
 
+### F-118 · The forest has no ambient life: nothing falls, drifts or settles, so a still frame of the map is a still frame
+
+**Area:** environment · **Severity:** low · **Found:** 2026-08-18 by vane19
+
+Playtest, 2026-08-18 (Sequoyah): "ambient particles would be nice too kind of simulate leaves coming
+off the trees".
+
+`world/environment/asset_vfx_library.gd` already animates every plant on the map — `Sway.CANOPY`
+drifts the crowns, `GROUND_COVER` rustles the grass — and `EnvironmentVfx` already runs a budgeted,
+distance-sorted emitter pool for campfires, forges, crystals and spore motes. What none of it does is
+put anything **in the air between** those things. Stand still in the Hollowmere woods and the only
+motion is the sway shader; there is nothing falling, nothing catching the light, nothing to make a
+held frame read as a living place rather than a diorama.
+
+The seam for it already exists and is the right one: `AssetVfx.Emitter` + `EMITTER_PROFILES`
+(`max_live`, `shadow_live`, `radius`, scaled by the graphics preset) + `EnvironmentVfx._make_effect()`,
+keyed by asset id so a generated world inherits it (F-097). A canopy asset should carry a leaf-fall
+emitter the same way a campfire carries firelight — bound to the asset, never to a scene or a map,
+because release worlds are procedurally generated and there is no level author to place an emitter.
+
+Constraints this has to respect:
+
+- **Budgeted like every other emitter.** Hollowmere holds 62 wild trees, 44 harvest trees and 7
+  broadleaf trees; that is not a number of particle systems you can run at once on the machine this
+  game targets. Nearest-N only, scaled down by the `low` preset like the rest.
+- **No lights and no shadows.** Falling leaves are the cheapest kind of emitter there is; adding
+  either would put this in the same cost class as a campfire for none of the payoff.
+- The existing `Emitter.SPORE` (mire tendrils, drifting motes, no light) is the closest worked
+  example to copy.
+
+---
+
+### F-119 · `agent godot`'s own `--import` pre-pass logs two UNDECLARED `ERROR:` lines on every single invocation
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by lp during F-103
+
+F-093's fix made every `agent godot <...>` call run a `--headless --import` pass before the caller's
+own run. That pre-pass itself now emits, every time, on this machine:
+
+```
+ERROR: Couldn't open external text editor, falling back to the internal editor. Review your `text_editor/external/` editor settings.
+   at: edit (editor/script/script_editor_plugin.cpp:2229)
+```
+
+twice, during `loading_editor_layout` — before the caller's own `--script`/`--quit-after` section
+starts. SPECS.md's standing rule 4 (F-021) says to grep every check run for `ERROR:` and treat any
+undeclared line as failure; taken literally, this makes every check on this machine fail that rule,
+because the line is emitted by the shared pre-pass rather than by the check's own script and nobody
+has been grepping that section. Spotted while verifying F-103's check — its own `--script` section
+was clean, only the pre-pass emitted the lines, which is presumably why this has gone unnoticed: an
+agent greps the run after the point it prints its own `PASS`/`FAIL` lines, not the boot before it.
+
+Not fixed here — out of scope for F-103's file claim, and it points at a local editor setting
+(`text_editor/external/*` in the shared `.godot`/editor config) rather than at test-owned code. Worth
+a look because it means `agent godot`'s own import pre-pass is not currently held to the same
+zero-undeclared-error bar the rest of the harness enforces.
+
+---
+
 ## Resolved
+
+### F-103 · MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin — **fixed**
+
+**Area:** tooling/rendering · **Severity:** high · **Found:** 2026-08-18 by larch10 during F-097
+
+`MultiMesh` instance transforms live in the RenderingServer, not in the resource. Under
+`--headless` — which is *every* way an agent can verify anything (F-077) — the dummy driver stores
+nothing, so `multimesh.buffer` is empty and `get_instance_transform(i)` returns `Transform3D()` for
+every `i`, however many were written. There is no error and no warning.
+
+Minimal reproduction, via `agent godot --script`:
+
+```
+multimesh.transform_format = MultiMesh.TRANSFORM_3D
+multimesh.mesh = BoxMesh.new()
+multimesh.instance_count = 3
+set_instance_transform(i, Transform3D(Basis.IDENTITY, Vector3(i * 10, 0, 0)))
+->  READBACK 0/1/2 all (0.0, 0.0, 0.0);  buffer size = 0
+```
+
+The failure mode is nastier than a crash. F-097's first implementation read emitter positions back
+out of the prop batches to place firelight; every one of Hollowmere's 99 mire crystals, 163 tendrils
+and 5 fires collapsed onto a single point at the world origin, and the check *passed* — one site per
+class is still ≥ 1. A count-based assertion cannot see this. It was only caught by asserting the
+number of sites against what the layout file actually holds.
+
+**Consequences.** Never read placement back from a MultiMesh. The system that wrote the transforms
+already has them, so it should publish them: `world/gen/authored_world.gd` and
+`world/gen/undergrowth.gd` now stamp a `placements` PackedVector3Array on the holder for any asset
+whose presentation is per-copy, and `EnvironmentVfx` reads that instead. Any check that walks
+MultiMesh transforms is measuring nothing, and any check whose assertion is satisfied by the number
+1 cannot distinguish "found everything" from "found one".
+
+**Fixed 2026-08-18, already shipped inside F-097 (`4919d26`)** — the `placements`-meta publish
+described above, plus `tools/multimesh_readback_check.gd` as the regression guard. This task (lp) was
+the missing piece: no `docs/SPECS.md` block existed for F-103 and the finding itself was never moved
+here, so the board still listed it `todo` even though the code fix was on disk. Closed by writing the
+spec block (`docs/SPECS.md`, next to F-107) and re-running the check clean:
+
+```
+agent godot --script tools/multimesh_readback_check.gd
+MULTIMESH_READBACK distinct_origins=1 buffer=0
+PASS: headless MultiMesh readback is still write-only (F-103 assumption holds)
+PASS: published placements survive where MultiMesh transforms do not
+MULTIMESH_READBACK_CHECK failures=0
+```
+
+The check asserts the trap, not the fix, on purpose: if `distinct_origins` ever comes back > 1 it
+`push_warning`s that headless MultiMesh readback may no longer be write-only, which is the signal to
+revisit every `placements`-meta workaround built around this limitation rather than a silent free win.
+
+---
 
 ### F-115 · Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map — **fixed**
 

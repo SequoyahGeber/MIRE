@@ -514,6 +514,42 @@ adjacent "client's grant reply carries the rolled coins/item" PASSes already pro
 **Verified 2026-08-18:** `agent godot --script tools/chest_net_check.gd`, two consecutive runs,
 `failures=0` both times, all 12 assertions PASS including the two that were red at HEAD.
 
+## F-103 · MultiMesh instance transforms are write-only under `--headless`, so anything that reads them back silently gets the origin
+
+**Claim:** `tools/multimesh_readback_check.gd`. No production file — the fix already shipped inside
+F-097 (`4919d26`); this task is the missing spec, the verify pass, and closing the finding.
+
+**Root cause:** `MultiMesh` instance transforms live in the RenderingServer, not in the resource. The
+`--headless` dummy driver retains nothing, so `multimesh.buffer` comes back empty and
+`get_instance_transform(i)` returns `Transform3D()` identity for every `i` regardless of what was
+written — no error, no warning. F-097's first firelight pass read emitter positions back out of the
+prop batches and every one of Hollowmere's 99 mire crystals, 163 tendrils and 5 fires collapsed onto
+the world origin; a count-based assertion ("≥ 1 site per class") could not see it, only a check that
+compares the count against what the layout file actually holds can.
+
+**Fix (already shipped, F-097):** never read placement back from a `MultiMesh`. The generator that
+writes the transforms already has them, so it publishes them instead: `world/gen/authored_world.gd`
+and `world/gen/undergrowth.gd` stamp a `placements: PackedVector3Array` meta on the holder for any
+asset whose presentation is per-copy (`Represent.BATCH`), and `EnvironmentVfx` reads that meta
+instead of the batch. See `docs/DELEGATION.md` *Current state* (F-113/F-114 entry) for the
+`Represent.NODE`/`Represent.BATCH` split this sits on.
+
+**This task's file**, `tools/multimesh_readback_check.gd`, is the regression guard: it asserts the
+*trap itself* (headless readback is identity, buffer is empty) rather than the fix, on purpose — if a
+future Godot ever starts retaining instance data headlessly, this check fails and that is the signal
+to revisit every `placements`-meta workaround built around the limitation. It also asserts the
+replacement contract (a `placements` meta survives a holder round-trip where MultiMesh transforms do
+not).
+
+**Verified 2026-08-18:** `agent godot --script tools/multimesh_readback_check.gd`:
+
+```
+MULTIMESH_READBACK distinct_origins=1 buffer=0
+PASS: headless MultiMesh readback is still write-only (F-103 assumption holds)
+PASS: published placements survive where MultiMesh transforms do not
+MULTIMESH_READBACK_CHECK failures=0
+```
+
 ## 3.6 · Building system (T2)
 
 **Claim:** `systems/building/` (ghost, placement validator, buildable_def) and its checks.
