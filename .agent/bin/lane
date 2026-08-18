@@ -311,6 +311,20 @@ def harvest(obj, acc, cli):
             pass
 
 
+def _denies(status):
+    """True only for a status that refuses work. Anything 'allowed*' is still serving."""
+    if not status:
+        return False
+    s = str(status).lower()
+    if s.startswith("allowed") or s in ("ok", "active"):
+        return False
+    return any(w in s for w in ("reject", "exceed", "block", "denied", "limit", "exhaust", "over"))
+
+
+def _warns(status):
+    return bool(status) and "warning" in str(status).lower()
+
+
 def _int(v):
     return int(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else 0
 
@@ -623,7 +637,11 @@ def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, e
             for k, v in windows.items()}
         # Park on the FIRST window that is not allowing work, and use that window's own reset —
         # parking a weekly wall until the five-hour reset would just walk straight back into it.
-        blocked = [(k, v) for k, v in windows.items() if v.get("status") not in (None, "allowed")]
+        # "allowed_warning" means approaching the limit but STILL SERVING. Treating it as a wall
+        # would park the lane for the rest of the window over a warning — and since unused window
+        # quota is lost at reset, that throws away exactly the headroom the warning is telling us we
+        # still have. Only a status that actually denies work is a wall.
+        blocked = [(k, v) for k, v in windows.items() if _denies(v.get("status"))]
         chosen = (blocked or sorted(windows.items()))[0]
         info = chosen[1]
         lane["quota_status"] = info.get("status")
@@ -655,9 +673,13 @@ def _apply_finish(lane, name, task, code, tin, tout, cost, acc, tail, logpath, e
               " + %s cached" % f"{cached:,}" if cached else "", f"{tout:,}",
               ", $%.2f" % cost if cost else "", C["x"]))
         if lane.get("quota_resets_at"):
+            tone = C["y"] if _warns(lane.get("quota_status")) else C["dim"]
             print("  %squota: %s, %s window resets %s%s"
-                  % (C["dim"], lane.get("quota_status", "?"), lane.get("quota_window", "?"),
+                  % (tone, lane.get("quota_status", "?"), lane.get("quota_window", "?"),
                      lane["quota_resets_at"], C["x"]))
+            if _warns(lane.get("quota_status")):
+                print("  %s· approaching the wall but still serving — keep dispatching, and prefer "
+                      "smaller tasks so a stop lands cleanly%s" % (C["dim"], C["x"]))
     else:
         lane["failures"] += 1
         lane["consecutive_failures"] += 1

@@ -1611,3 +1611,13 @@ Notes along the way:
 Files: `systems/environment/day_night.gd`, `tools/day_night_check.gd`, `tools/day_night_net_check.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`
 
 Commit at time of writing: `c67eca7`
+
+---
+
+### DONE · 0.12 · quill15 · 2026-08-18T00:15:51+00:00
+
+**Orchestration harness — `agent order/dispatch/lanes/collect/report/reap` + `.agent/bin/lane`, so one director routes work to three headless subscription lanes and watches their quota (`ORCHESTRATION.md`, D-036/D-037)**
+
+allowed_warning no longer parks a lane. Claude reports approaching-the-limit as 'allowed_warning' while still serving requests; treating any non-'allowed' status as a wall would have parked LP for fifteen hours over a warning and thrown away the 24 percent of the weekly window it was telling us we still had. Only a status that actually denies work counts now, verified across allowed/allowed_warning/rejected/limit_exceeded/blocked/exhausted.
+
+Commit at time of writing: `ae22d31`

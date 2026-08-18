@@ -14,7 +14,7 @@
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `███████░░░` 33/48 | 15 |
+| Findings | `███████░░░` 33/49 | 16 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 18/23 | 5 |
@@ -63,6 +63,7 @@
 | ⬜ | **F-045** `pgrep -fl Godot` is too blunt to be the closed-editor guard | todo |
 | ⬜ | **F-053** Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why | todo |
 | ⬜ | **F-055** `core/util/mire_log.gd`'s `CHANNELS` list has no `health` channel | todo |
+| ⬜ | **F-056** `docs/SPECS.md`'s 2.11 block omitted `net_version.gd`/`handshake_check.gd` despite adding a new RPC | todo |
 
 ## Done
 

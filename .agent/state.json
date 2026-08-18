@@ -2329,7 +2329,7 @@
       "title": "Populate the greybox test level with procedural test props (crates, cover, pillars, platforms) so playtesting isn't just an empty box"
     },
     "0.12": {
-      "done_at": "2026-08-18T00:09:57+00:00",
+      "done_at": "2026-08-18T00:15:51+00:00",
       "done_by": "quill15",
       "est": "1.5",
       "milestone": "M0",
@@ -3633,6 +3633,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`core/util/mire_log.gd`'s `CHANNELS` list has no `health` channel"
+    },
+    "F-056": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`docs/SPECS.md`'s 2.11 block omitted `net_version.gd`/`handshake_check.gd` despite adding a new RPC"
     }
   },
   "version": 1
