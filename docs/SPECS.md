@@ -424,6 +424,26 @@ opening is a host-validated interact (harvest pattern: request → host rolls se
 currency system. Loot rolls host-side from a per-run seeded `RandomNumberGenerator` — never
 `randi()`. UI joins the D-032 group.
 
+## F-107 · `chest_net_check`'s two host-side grant assertions fail at HEAD; client side is green
+
+**Claim:** `tools/chest_net_check.gd`. No production file — `systems/loot/chest.gd` and
+`InventoryService.host_add()`/`host_count()` were all read and are correct as committed.
+
+**Root cause: the check, not the grant.** `_run_driver()` derived `client_peer` inside the `_until()`
+poll's lambda (`client_peer = peer_id; return true`) and read it in the outer scope afterward. A
+GDScript lambda captures an outer local **by value**, not by reference, so the assignment only ever
+updated the closure's own copy — the outer `client_peer` stayed at its `-1` sentinel even once
+`got_peer` reported success. `host_count(-1, ...)` then hit `_valid_host_peer()`'s `peer_id <= 0`
+guard and read back `0` unconditionally, regardless of what the host had actually granted — which the
+adjacent "client's grant reply carries the rolled coins/item" PASSes already proved was correct.
+
+**Fix:** keep the closure boolean-only (does a non-host peer exist yet), then re-scan
+`transport.call("peer_ids")` directly in the outer scope once `got_peer` is true, assigning
+`client_peer` there instead of inside the lambda.
+
+**Verified 2026-08-18:** `agent godot --script tools/chest_net_check.gd`, two consecutive runs,
+`failures=0` both times, all 12 assertions PASS including the two that were red at HEAD.
+
 ## 3.6 · Building system (T2)
 
 **Claim:** `systems/building/` (ghost, placement validator, buildable_def) and its checks.

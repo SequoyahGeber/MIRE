@@ -635,22 +635,6 @@ The F-099 review sweep found per-frame costs in three files that were claimed mi
 
 ---
 
-### F-107 · chest_net_check's two host-side grant assertions fail at HEAD; client side is green
-
-**Area:** netcode · **Severity:** medium · **Found:** 2026-08-18 by kiln9
-
-tools/chest_net_check.gd fails 2 of its 12 assertions, deterministically, at committed HEAD — observed 2026-08-18 while verifying the unrelated F-099 sweep, and confirmed pre-existing with 'agent baseline --script tools/chest_net_check.gd' at aa3f764 (identical failures=2).
-
-The two reds are the HOST-side grant observations at tools/chest_net_check.gd:117-124:
-- "host's InventoryService grants coins to the requesting peer, not the host" (host_count(client_peer, coins) != 7)
-- "host's InventoryService grants the rolled item to the requesting peer" (host_count(client_peer, TEST_ITEM_ID) != 4)
-
-Everything around them is green, including the contradictory-looking client half: the client's grant reply carries exactly the expected 7 coins and 4 items, 'opened' replicates, a second open is rejected, and "the host's own inventory receives nothing" also passes. So the grant is made and delivered, but the host-side count for the requesting peer does not read as expected at the moment the check reads it — the read happens synchronously the instant chest.get("opened") flips, with no _until wait (unlike the peer-id wait above it). Either the grant now lands after the opened flip (a race the synchronous read loses), or the peer's store holds a different total than the bare roll (e.g. something else granting to that store first, which would also survive a wait).
-
-Whoever picks this up: reproduce with 'agent godot --script tools/chest_net_check.gd', then log host_count in the failing check to see the actual value — 0 means ordering race, >7 means another grant is polluting the store.
-
----
-
 ### F-108 · A Godot-side dimension check built on `Transform3D * AABB` reports every rotated asset as oversized
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
@@ -725,6 +709,31 @@ the failure mode is silent and confidently wrong.
 ---
 
 ## Resolved
+
+### F-107 · chest_net_check's two host-side grant assertions fail at HEAD; client side is green — **fixed**
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-18 by kiln9
+
+Root cause was in the check, not in `chest.gd` or `InventoryService` — both were already correct.
+`_run_driver()` derived `client_peer` by assigning it inside the `_until()` poll's lambda
+(`client_peer = peer_id; return true`), then read `client_peer` in the outer scope afterward. A
+GDScript lambda captures an outer local **by value, not by reference**, so the assignment updated
+only the closure's private copy; the outer `client_peer` stayed at its `-1` sentinel even once
+`got_peer` reported success. `host_count(-1, ...)` then hit `_valid_host_peer()`'s `peer_id <= 0`
+guard and read back `0` unconditionally — which reads exactly like a grant race or a polluted store,
+but was neither. The adjacent PASSes ("client's grant reply carries the rolled coins/item") already
+proved the host had granted correctly; only the check's own read of it was broken.
+
+**Fixed 2026-08-18 by lp.** `tools/chest_net_check.gd`: the `_until()` closure now only reports
+whether a non-host peer exists; once it does, `client_peer` is assigned by a second scan of
+`transport.call("peer_ids")` run directly in the outer scope, not inside the closure.
+
+**Verified:** `agent godot --script tools/chest_net_check.gd`, two consecutive runs, `failures=0`
+both times, all 12 assertions PASS including the two that were red at HEAD (confirmed red first,
+with `host_count()` logged: `client_peer=-1`, all three host-side counts read `0`).
+
+Missing `docs/SPECS.md` block written as part of this task — see `## F-107` there, placed after
+3.5 (the task that authored `chest_net_check.gd`).
 
 ### F-104 · A new `class_name` is invisible to every headless run until the editor rescans, and it fails as a silent hang — **the hang is now caught; the advice stands**
 
