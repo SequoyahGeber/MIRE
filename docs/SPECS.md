@@ -294,8 +294,14 @@ stack sizes 99 for resources / 1 for tools. `Registry` prints the count; `item_i
 `autoload/registry.gd`, `tools/powerup_check.gd`, `content/powerups/` (one worked example).
 Registration via `agent autoload` (preamble rule, F-051).
 - `PowerupDef`: `id`, `display_name`, `icon`, `tags: Array[StringName]`, `max_stacks`,
-  `modifiers: Dictionary` (StringName stat → additive/multiplicative pair), plus `resonance_family`
-  for §4.4 thresholds.
+  `modifiers: Dictionary[StringName, Vector2]` (stat → per-stack `Vector2(additive, multiplicative)`).
+  **SHIPPED 2026-08-18 — there is NO `resonance_family` field, and 3.4 must not author one.** This
+  block originally asked for one "for §4.4 thresholds", but §4.4 keys its thresholds off the tags
+  themselves ("holding 3+ of a tag"), so a second field would be a second name for one concept — and
+  its failure mode is silent: set `tags`, leave `resonance_family` empty, and the powerup shows its
+  icon while contributing to no Resonance at all. **Tags ARE the families.** See D-044, which also
+  fixes the stacking maths as `(base + additive*N) * (1 + multiplicative*N)`, linear in N rather than
+  compounding.
 - HOST-auth: `PowerupService` holds per-run-player stacks (D-035 discipline), applies stat queries
   via one seam: `stat(peer_id, &"move_speed", base) -> float` — systems ASK the service, the service
   never reaches into systems. Owner gets full replication; teammates get counts only.
@@ -305,6 +311,22 @@ Registration via `agent autoload` (preamble rule, F-051).
   the check offline and in a 2-line extension to an existing net check for the replication.
 
 ## 3.4 · Author 40–60 powerups (T0) — inspector, against 3.3's worked example. Never agent-generated.
+
+3.3 shipped 2026-08-18. Before authoring anything, read **D-044** (tags ARE the Resonance families —
+there is no `resonance_family` field; and the stacking maths) and `docs/DELEGATION.md` *Current
+state*, which carries the authoring shape and the replication split. Copy
+**`content/powerups/swift_stride.tres`**; it is the one worked example and it loads through the real
+registry. `PowerupDef.validation_errors()` runs at boot, so a malformed `.tres` is a named error and
+a skip in the boot log, never a silent omission — check that log after a batch. `modifiers` maps a
+stat name to `Vector2(additive, multiplicative)` **per stack**: `Vector2(0, 0.08)` is +8% per stack,
+`Vector2(2, 0)` is +2 flat per stack.
+
+Two things worth knowing while balancing. `max_stacks` caps ONE powerup; a Resonance counts a whole
+**family across different powerups**, so three different Fire powerups resonate at one stack each —
+a family threshold is not reachable-only-by-stacking-one-thing. And no system reads a stat until its
+own task routes its base value through `PowerupService.stat()`; movement, damage and health are not
+wired yet, so a `move_speed` powerup authored today is correct data that nothing consumes until then.
+That is expected, not a bug to chase.
 
 ## 3.5 · Coins, chests, opening flow (T1)
 
