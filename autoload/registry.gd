@@ -13,20 +13,31 @@ extends Node
 const ITEMS_PATH: String = "res://content/items"
 const RECIPES_PATH: String = "res://content/recipes"
 const WEAPONS_PATH: String = "res://content/weapons"
+const LOOT_PATH: String = "res://content/loot"
+
+## F-016: LootTableDef is a brand-new class_name (task 3.5) and this autoload boots in every
+## headless run, so a bare reference here would break every check in the project the moment the
+## class cache is stale, not just this task's own. Preload it and compare scripts instead of `is`.
+const LOOT_TABLE_DEF := preload("res://systems/loot/loot_table_def.gd")
 
 var items: Dictionary[StringName, ItemDef] = {}
 var recipes: Dictionary[StringName, RecipeDef] = {}
 ## Keyed by the ItemDef id the weapon belongs to, not by an id of its own — a WeaponDef describes
 ## how an existing item swings (task 2.8).
 var weapons: Dictionary[StringName, WeaponDef] = {}
+## Keyed by tier id (task 3.5) — many placed Chests of the same tier share one table, same shared-
+## content shape as `recipes`, not the per-instance shape `content/harvestables/` uses. Untyped
+## Resource rather than LootTableDef for the same F-016 reason as the preload above.
+var loot_tables: Dictionary[StringName, Resource] = {}
 
 
 func _ready() -> void:
 	_load_items()
 	_load_recipes()
 	_load_weapons()
-	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d weapon(s)" % [
-		items.size(), recipes.size(), weapons.size()
+	_load_loot_tables()
+	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d weapon(s), %d loot table(s)" % [
+		items.size(), recipes.size(), weapons.size(), loot_tables.size()
 	])
 
 
@@ -52,6 +63,14 @@ func get_weapon(item_id: StringName) -> WeaponDef:
 
 func has_weapon(item_id: StringName) -> bool:
 	return weapons.has(item_id)
+
+
+func get_loot_table(id: StringName) -> Resource:
+	return loot_tables.get(id)
+
+
+func has_loot_table(id: StringName) -> bool:
+	return loot_tables.has(id)
 
 
 func _load_items() -> void:
@@ -106,6 +125,28 @@ func _load_weapons() -> void:
 			])
 			continue
 		weapons[weapon.item_id] = weapon
+
+
+func _load_loot_tables() -> void:
+	for file_path: String in _tres_files_in(LOOT_PATH):
+		var res: Resource = load(file_path)
+		if res == null or res.get_script() != LOOT_TABLE_DEF:
+			MireLog.error(&"content", "%s does not contain a LootTableDef, skipped" % file_path)
+			continue
+		var table_id := StringName(String(res.get("id")))
+		if table_id == &"":
+			MireLog.error(&"content", "%s has no id set, skipped" % file_path)
+			continue
+		if loot_tables.has(table_id):
+			MireLog.error(&"content", "duplicate loot table id '%s' at %s, keeping first" % [
+				table_id, file_path
+			])
+			continue
+		var errors: PackedStringArray = res.call("validation_errors")
+		if not errors.is_empty():
+			MireLog.error(&"content", "%s is invalid (%s), skipped" % [file_path, "; ".join(errors)])
+			continue
+		loot_tables[table_id] = res
 
 
 func _tres_files_in(dir_path: String) -> Array[String]:

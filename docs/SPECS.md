@@ -91,12 +91,14 @@ Everything is shipped; this is the verdict. **How to run the gate:**
 6. Known gap going in: the impact thud is 2.8's code-built placeholder; a real authored impact sound
    is the single biggest missing feel ingredient. Judge around it or source one first.
 
-## 2.11 · Day/night cycle (T1) — HOST-authoritative time, client-local sky
+## 2.11 · Day/night cycle (T1) — HOST-authoritative time, client-local sky — ✅ shipped, see DELEGATION
 
 **Authority:** §2.2 row 7 (day/night: HOST). The sky rendering stays client-local.
 **Claim:** `systems/environment/day_night.gd`, `tools/day_night_check.gd`,
-`tools/day_night_net_check.gd`. Registration via `agent autoload` (preamble rule, F-051) — never
-claim `project.godot`.
+`tools/day_night_net_check.gd`, and `core/net/net_version.gd` + `tools/handshake_check.gd` (F-056 —
+the replication mechanism this block asks for is necessarily a new wire item, so preamble rule 5's
+protocol bump applies; the original list omitted these two). Registration via `agent autoload`
+(preamble rule, F-051) — never claim `project.godot`.
 **THE TRAP THIS SPEC EXISTS FOR:** do **not** set `cycle_enabled = true` on
 `playtest_atmosphere.gd`. That flag free-runs a local clock per peer from its own boot time —
 divergent time-of-day with no error. It stays false forever; the host **pushes** time.

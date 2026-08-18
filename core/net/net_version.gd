@@ -35,7 +35,9 @@ extends RefCounted
 ## 9 (task 3.8): systems/health/player_health.gd's net_health_snapshot gained two arguments
 ## (hunger, hunger_max), and it added two new RPCs — net_request_consume_item/net_consume_confirmed
 ## (food) and net_report_local_stamina (advisory client -> host stamina reconciliation).
-const PROTOCOL_VERSION: int = 9
+## 10 (task 3.5): systems/loot/chest.gd added net_request_open and net_open_result, the chest-opening
+## request/grant pair.
+const PROTOCOL_VERSION: int = 10
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).

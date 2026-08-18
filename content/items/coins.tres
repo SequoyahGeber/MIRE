@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ItemDef" format=3]
+
+[ext_resource type="Script" path="res://systems/inventory/item_def.gd" id="1_coins"]
+[ext_resource type="PackedScene" path="res://assets/loot/exports/loot_coin_pouch.glb" id="2_coins"]
+
+[resource]
+script = ExtResource("1_coins")
+id = &"coins"
+display_name = "Coins"
+description = "The run's universal currency. Chests and rewards pay out in coins, not a separate wallet."
+world_model = ExtResource("2_coins")
+stack_size = 999

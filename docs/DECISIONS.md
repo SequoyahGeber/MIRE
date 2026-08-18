@@ -727,6 +727,28 @@ themselves free dodges in a way that matters for a co-op game among friends (D-0
 irrelevant among friends" already covers movement speed on the same row) — or a design change that
 moves dodge off the client-authoritative movement row entirely.
 
+### D-041 · 2026-08-17 · Chest loot rolls seed from boot-time entropy, not a fixed constant — provisional until a real per-run seed exists
+
+Task 3.5's work order says "a per-run seeded `RandomNumberGenerator`," but no `GameState.run_seed`
+(or any per-run seed authority) exists yet in this codebase — `enemy_world.gd`'s ambient scatter and
+`combat_service.gd`'s placeholder impact sound are the only precedents, and both seed from a **fixed**
+magic constant (`0x4352414d`, `0x4d495245`) because their reason for using `RandomNumberGenerator` at
+all is cross-peer determinism for a value every peer independently computes, not run-to-run variety.
+
+`Chest`'s roll is different: it happens exactly once, host-only, and is granted directly through
+`InventoryService.host_add()` — no other peer ever recomputes it, so nothing requires a fixed seed for
+agreement. What "per-run" is actually asking for is that two separate playthroughs get different loot,
+which a fixed constant would not provide. Each `Chest.host_seed_rng()`-eligible instance calls
+`RandomNumberGenerator.randomize()` once in `_ready()` (host-only) instead — real entropy, per chest,
+per boot — which satisfies "never `randi()`" (a dedicated instance, not the global function) and
+varies across runs, without inventing a `GameState.run_seed` this task has no claim to add.
+
+**Would change my mind:** the moment a real per-run seed authority exists (a `GameState` autoload,
+most likely — 4.x Cycle work is the probable place), `Chest` should switch to deriving its seed from
+`(run_seed, a stable per-chest id)` instead of `randomize()`, the same way a save-scummed run would
+want reproducible loot. `Chest.host_seed_rng(seed_value)` already exists as the seam that switch would
+call into — it does not need new API, only a new caller.
+
 ---
 
 ## Template
