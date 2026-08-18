@@ -69,6 +69,51 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-076 · A new map inherits none of the systems keyed to the old map's group names
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-18 by ivy8 during 2.1k
+
+`levels/hollowmere.tscn` became the main scene while **three** systems still looked exclusively for
+Playtest Hollow's node groups. All three were fixed in 2.1k; the finding is open because the *class*
+of bug is not, and the next map will hit it again.
+
+* `autoload/enemy_world.gd` read only `playtest_hollow_marker` / kind `enemy_spawn`. Hollowmere
+  publishes `authored_world_marker` / kind `enemy_nest`, so the shipped main scene had four crawler
+  nests modelled into it and **zero enemies in the game**.
+* `autoload/harvest_world.gd` read only `playtest_hollow_asset`, so every tree and ore node on the
+  map was inert scenery — the whole gathering loop was absent on the map you actually spawn into.
+* `world/gen/undergrowth.gd` tested the *parent* of the collider it hit for the prop group.
+  Hollowmere puts that group on the StaticBody the ray hits, so every prop read as open ground and
+  **grass grew on top of the trees and rocks.**
+
+None of them errored, logged, or failed a check. A group name that matches nothing is indistinguishable
+from a level that has none of that thing, and every one of these systems is written to treat "none"
+as legitimate — correctly, since a map may genuinely have no nests.
+
+**What to do about it:** the durable fix is a check that asserts each *map* satisfies each *system*,
+which `tools/hollowmere_check.gd` now does for this map (`_check_crawlers_actually_spawn`,
+`_check_harvestables_are_live`, `_check_undergrowth_stays_off_props` — each asks the system itself
+rather than counting markers). That pattern should be lifted into something a new map gets for free,
+and the group names themselves should probably converge on one map-agnostic set.
+
+### F-077 · `agent godot` is always headless, so no in-engine screenshot can ever be captured
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8 during 2.1k
+
+`tools/hollowmere_render_check.gd` exists to let the map be *looked at* without opening the editor,
+and it cannot: `agent godot` passes `--headless`, headless has no framebuffer, and the script
+correctly prints `capture skipped`. The only documented alternative is to run Godot bare, which is
+what `agent godot` exists to prevent (F-044 — the shared import cache).
+
+So between "the validator passed" and "a human opened the editor" there is nothing, on a project whose
+whole point is that agents verify their own work. 2.1k worked around it with
+`tools/mapgen/hollowmere_plan.py`, which draws the layout as a plan view in pure Python — useful, and
+not a screenshot.
+
+**What to do about it:** `agent godot` should take a `--windowed` passthrough that keeps the lock and
+drops `--headless`, which is a few lines in `.agent/bin/agent` and makes every render check usable.
+It was left alone here because that file belongs to the whole protocol and this was a map task.
+
 ### F-005 · R2's chunk benchmark excludes GPU upload cost
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-15 by terrain during 0.7
@@ -738,6 +783,36 @@ change — every StaticBody3D the world generator emits, plus the harvestable an
 whatever masks the player and enemies use — so it is not 3.6's to make unilaterally, and it wants
 doing once with named layer constants rather than piecemeal. Worth pairing with 4.x chunk streaming,
 which is already going to touch every collider the world creates.
+
+---
+
+### F-078 · PowerupDef validates shape but not vocabulary — a typo'd stat name or tag loads clean and is dead forever
+
+**Area:** content pipeline · **Severity:** medium · **Found:** 2026-08-18 by reed16
+
+Surfaced by the pre-3.4 design pass (docs/POWERUPS.md): a 60-powerup sketch against the shipped
+schema found **no powerup that needs a new field** — but ~a third of them route through stat names
+and tags that nothing checks. `validation_errors()` rejects an empty id, an empty stat KEY, an
+empty tag — every structural mistake — and accepts any well-formed name whatsoever.
+
+Three silent failure classes for a task that hand-types 40–60 `.tres` files in the inspector:
+
+1. **Stat-name typos and synonym drift.** `move_sped`, or `max_health` where the wired name will be
+   `max_hp`. No system consumes any stat yet (3.4's spec says so explicitly), so nothing can catch
+   it at author time, and at wire time the system's task has no list of what content already named.
+   The powerup loads, validates, displays — and does nothing, forever.
+2. **Tag typos mint phantom families.** `&"fire"` ≠ `&"Fire"`. `_recompute_families` counts them
+   separately, so the powerup shows its icon and feeds a family that can never resonate — exactly
+   the failure D-044 killed `resonance_family` to prevent, resurrected one typo at a time.
+3. **The linear-stacking zero-crossing.** D-044 stacks multipliers linearly: `(1 + mult·N)`. A
+   reduction authored as a negative multiplier inverts the stat where `mult·max_stacks ≤ −1` —
+   `hunger_drain` at `−0.15` × 7 stacks = −5% drain, i.e. hunger that refills itself. No current
+   content hits it; the 60-file batch will author dozens of negative multipliers.
+
+Fix (this finding, claimed with it): `KNOWN_FAMILIES` (§4.4's six) and `KNOWN_STATS` (the catalog
+docs/POWERUPS.md defines) as consts on `PowerupDef`; `validation_errors()` rejects unknown names,
+zero-crossing multipliers, and `Vector2.ZERO` no-op entries. Boot already skip-and-names anything
+that fails validation, so every one of these becomes a loud named error instead of dead content.
 
 ---
 

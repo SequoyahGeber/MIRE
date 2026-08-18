@@ -7,14 +7,27 @@
 
 ## Status
 
-> **2026-08-17 — the map changed.** `levels/hollowmere.tscn` is the main scene: a 356 m valley with a
-> river, a gorge, a lake, a plateau you climb by two ramps, a ruined village, a quarry, a stone
-> circle, a watchtower, a wellspring and an extraction yard. 1,420 authored props and 17,349
-> scattered plants from the new **flora kit** (84 assets, batch A-000V). Playtest Hollow is
-> deprecated but kept as a test fixture — the headless checks still boot it. `docs/DELEGATION.md`
-> has the seams; `tools/hollowmere_check.gd` verifies it; `tools/hollowmere_render_check.gd`
-> screenshots it (run that one **windowed**, not through `agent godot` — see F-059's neighbour note
-> in that file: `agent godot` is always `--headless`, which has no framebuffer).
+> **2026-08-18 — the map was re-authored (2.1k).** `levels/hollowmere.tscn` is the main scene and is
+> now **192 m across, not 356** (D-045): a river out of the northern rim through a gorge into the
+> mere, a plateau you climb by two ramps, a quarry at its foot, a ruined village, a lumber camp, a
+> hunters' camp, a stone circle, a watchtower, the Wellspring, an extraction yard — and the
+> **Blight** in the north-east, an ash-and-mire bowl holding the four crawler nests that every enemy
+> on this map now spawns from. **2,869 authored props** (against 1,415 on four times the area),
+> **83 live harvestable trees and ore nodes**, 10,240 scattered plants, and **every one of the 218
+> placeable kit assets appears somewhere** — the generator fails the run if one does not.
+>
+> Four things were wrong and are fixed, each with a check that would catch it again: grass grew on
+> top of trees and rocks, bridge railings were mirrored across their own decks, the mere and the fen
+> drew two stacked water sheets, and props sat on a bilinear guess at the ground rather than on it.
+> A fifth was worse and invisible: **the map had no crawlers and no harvestables at all**, because
+> `EnemyWorld` and `HarvestWorld` were keyed to Playtest Hollow's group names (F-076).
+>
+> `python3 tools/mapgen/hollowmere_plan.py` draws the layout as a labelled plan (SVG + PNG, pure
+> stdlib) — that is how to look at the map without the editor. `docs/DELEGATION.md` has the seams;
+> `agent godot --script tools/hollowmere_check.gd` verifies it and now asserts that crawlers really
+> spawn, harvestables really wire, nothing floats, no plant sits on a prop and no water stacks.
+> `tools/hollowmere_render_check.gd` still cannot screenshot: `agent godot` is always `--headless`
+> (F-077). Playtest Hollow is deprecated but kept as a test fixture — the headless checks boot it.
 
 **Milestone:** M2 · Vertical slice — 17/22, and everything left is either yours or dispatched.
 M1 closed at 13/14 (1.12 deferred, D-030). M0 closed 11/11 plus 0.12 (orchestration).

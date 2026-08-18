@@ -75,10 +75,10 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
-### Hollowmere is the map now (2026-08-17)
+### Hollowmere is the map now (2026-08-17, re-authored 2026-08-18 by 2.1k)
 
-`res://levels/hollowmere.tscn` is `project.godot`'s main scene. It is **356 m across against Playtest
-Hollow's 88 m**, and it is built differently on purpose.
+`res://levels/hollowmere.tscn` is `project.godot`'s main scene. It is **192 m across against Playtest
+Hollow's 88 m** — it was 356 m and that was too big (D-045) — and it is built differently on purpose.
 
 | | Playtest Hollow | Hollowmere |
 |---|---|---|
@@ -98,18 +98,48 @@ wrong call at this size: one mesh 356 m across cannot be culled.
 - Groups: `authored_world_prop` (a prop's `StaticBody3D`, carrying `asset`/`kit` metadata),
   `authored_world_marker`, `authored_world_terrain`.
 - Markers carry `kind` metadata and the map ships: `spawn` ×1, `extraction` ×1, `objective` ×1
-  (the Wellspring), `enemy_nest` ×4, `landmark` ×5, `station` ×7, `loot` ×6, `bridge` ×2.
-  **Nothing consumes them yet** — spawning, objectives and wave spawning still use their own paths.
-  Wiring those up is the natural next task and it is host-authoritative work.
+  (the Wellspring), `enemy_nest` ×4, `landmark` ×9, `station` ×8, `loot` ×8, `bridge` ×2.
+  **`enemy_nest` is now consumed**: `EnemyWorld.ambient_spawn_points()` reads
+  `authored_world_marker` / kind `enemy_nest` as well as the Hollow's group, so the four nests in the
+  Blight are where every crawler on this map comes from. `extraction` and `objective` are still
+  unconsumed and remain host-authoritative work for whoever wires them.
+- **Harvestables are live, and they are individual nodes** (D-049). A layout prop carrying
+  `"harvestable": true` is built as a holder in group `authored_world_harvestable` with `asset`/`kit`
+  metadata, a `Visual` child and a `CollisionBody` child — the shape `HarvestWorld._wire_holder`
+  needs. `HarvestWorld.HOLDER_GROUPS` now lists both maps' groups and finds the visual either by a
+  `Visual` child (Hollowmere) or by the `AuthoredVisuals` index (the Hollow). 83 wired on this map.
+- **`yaw_along(dx, dz) = atan2(-dz, dx)`** is the only way the generator turns a direction into a
+  yaw, with `tangent_yaw`/`radial_yaw` on top for rings (D-046). Get this wrong and every directional
+  prop mirrors; the symptom that finally exposed it was bridge railings crossing their own decks.
+- **Water is one unioned surface per material**, highest level wins per grid vertex, clipped to the
+  ground and emitted wherever *any* corner of a quad is submerged. Bodies may be `circle`, `rect` or
+  `polyline` (the river is one polyline body, not one strip per segment). Overlapping bodies can no
+  longer draw two stacked sheets, and the shoreline no longer staircases.
+- **Zones tile the map** by `distance - pull` (D-048). The layout's `zones` array carries `pull`, and
+  `undergrowth.gd` reads it, so flora and props on a patch of ground always come from the same zone.
 - `Undergrowth` (`world/gen/undergrowth.gd`) is map-agnostic: point `layout_path` at any layout with
-  `zones`, `props`, `roads` and `bound`, set `prop_group`, and it scatters the flora kit by zone. It
-  is client-local and deterministic from the layout seed, so peers agree without replication.
+  `zones`, `props`, `roads`, `heightfield` and `bound`, set `prop_group`, and it scatters the flora
+  kit by zone. It is client-local and deterministic from the layout seed, so peers agree without
+  replication. It owns every family named in its `ZONE_PALETTES` and the layout owns everything else
+  (D-047). Three of its rules were silently inert on this map until 2.1k: the prop test looked at the
+  collider's parent instead of the collider (grass grew on top of trees and rocks), the road test read
+  a schema this map does not write (bushes grew down the middle of every road), and the probe ray ran
+  between fixed world heights of 24 m and −12 m, so nothing above 24 m grew anything at all.
 - **Neither node has network authority and neither may gain any.** They are presentation. Anything
   that needs to change during a run — a broken bridge, a flooded zone — is host state.
 
-Measured on this machine, Forward+, 1280×720: terrain 40,328 triangles in one mesh, 1,420 props
-through 803 multimeshes, 17,349 scattered plants through 150, and **122 FPS**. Ground probes at 686
-points found no holes and collision within 0.32 m of the authored height.
+Measured 2026-08-18 by `agent godot --script tools/hollowmere_check.gd`: terrain 18,432 triangles in
+one mesh, **2,869 authored props** through 1,028 multimeshes, 501 colliders, 83 live harvestables,
+**10,240 scattered plants** through 78 multimeshes, 2 water surfaces, 9,486 navmesh polygons. Ground
+probes at 647 points found no holes and collision **0.000 m** from the authored height — the generator
+and `AuthoredWorld.height_at` now sample the same two triangles per cell rather than a bilinear
+approximation of them, which is what makes "nothing floats" hold to the centimetre. 672 sampled props
+float 0.00 m; 3,441 sampled plants sit on props 0 times; water samples stacked 0 times.
+
+**To look at the map without the editor:** `python3 tools/mapgen/hollowmere_plan.py [out.svg]` draws
+the layout as a labelled plan view — terrain, water, roads, every prop coloured by family, landmarks
+named — and writes an SVG and a PNG. Pure stdlib. `tools/hollowmere_render_check.gd` still takes the
+in-engine screenshots and still cannot, because `agent godot` is always headless (F-077).
 
 **Playtest Hollow is deprecated, not deleted.** Nine headless checks still boot it, it is what every
 existing system was tuned against, and it loads in a second — which makes it the right fixture for a

@@ -826,6 +826,94 @@ to `tags`, rather than as a parallel required field. On the second, a specific p
 uninteresting until it compounds; that is an argument for a per-stat curve field on `PowerupDef`,
 not for changing the default everything else is tuned against.
 
+### D-045 · 2026-08-18 · Hollowmere is 192 m across, and a map's size is set by how long its emptiest walk is
+
+The first cut was 356 m across. Nothing was wrong with it in the sense any check could express — it
+validated, it was reachable, its landmarks were spread evenly — and it was the wrong size, because
+the placement rules only sustained 1,415 props over 99,000 m² of playable ground. One prop per 70 m²
+is a walk of a minute and a half between anything worth stopping for, and no amount of prop-count
+tuning fixes that when the denominator is the problem.
+
+This cut is **192 m across (BOUND 86, RING_OUTER 96) with ~2,870 authored props and ~10,000
+scattered plants** — a quarter of the area carrying twice the content, so the same journey is thirty
+seconds of continuously interesting ground. The rule this settles for every map after it: **size the
+map by its longest boring stretch, not by how much geography you can think of.** Landmarks are cheap
+to add and area is not.
+
+**Would change my mind:** a movement change that makes traversal itself the content — mounts, a
+grapple, vehicles — at which point the boring stretch shortens and the map can grow to match. Or a
+playtest at 3–6 players where the hold feels crowded and groups cannot get away from each other.
+
+### D-046 · 2026-08-18 · Yaw from a direction is `atan2(-dz, dx)`, and exactly one helper computes it
+
+`Basis(Vector3.UP, yaw)` sends a model's local +X to `(cos yaw, 0, -sin yaw)`: a right-handed
+rotation about +Y turns +X toward **-Z**. So the yaw that lays an asset along a world direction
+`(dx, dz)` is `atan2(-dz, dx)`. The map generator used `atan2(dz, dx)`, which mirrors every
+directional prop across the axis it was supposed to follow. It is invisible on a square deck plank
+and unmissable on a bridge railing, which is where it was finally noticed — the railings ran
+diagonally across their own bridges.
+
+The fix is not "correct the sign at the call sites". It is `yaw_along(dx, dz)` in
+`tools/mapgen/hollowmere_layout.py`, plus `tangent_yaw` and `radial_yaw` built on it for ring
+placement, and **no other way in the file to turn a direction into a yaw**. A convention that has to
+be re-derived at each call site will be got wrong at the next one.
+
+**Would change my mind:** nothing about the maths. If Godot ever changes its rotation convention the
+helper is the single place to fix, which is the point.
+
+### D-047 · 2026-08-18 · The layout places what you navigate by; undergrowth places what you walk on
+
+Two systems were both scattering ground cover — `hollowmere_layout.py` authoring grass and moss into
+the layout file, and `undergrowth.gd` scattering 26,000 plants by raycast at load. The authored half
+lost every time: it is drawn at 2 m spacing by a placer that also has to fit trees, so it spent the
+scatter's whole budget on plants that were about to be covered by better ones, and crowded the trees
+out while doing it.
+
+The split is now by role, not by kit. **The layout owns anything whose position matters** — trees,
+rocks, logs, ruins, harvestables, anything with collision or a name. **Undergrowth owns anything
+whose position does not**, which is every family named in its `ZONE_PALETTES`. `UNDERGROWTH_FAMILIES`
+in the generator is that list, and the coverage validator skips exactly those, so neither side has to
+guess what the other is doing.
+
+**Would change my mind:** ground cover that starts mattering — trampling, hiding a crouched player,
+burning. That is host-authoritative state and it moves those families back into the authored layout
+where their positions can be replicated.
+
+### D-048 · 2026-08-18 · Zones tile the map by weighted nearest-centre, and both consumers use the same rule
+
+Zone discs overlap. When each zone scattered its own disc, the zone that ran first filled the shared
+ground and the zone that ran second found it full — DeepForest's disc covers most of the Quarry's,
+and the Quarry placed **zero** standing props into a hole no check could see. And `undergrowth.gd`
+independently assigned each plant to its nearest zone centre, so on overlapping ground the flora came
+from a different zone than the props standing in it.
+
+Every point now belongs to exactly one zone: the one minimising `distance - pull`, where `pull` is a
+per-zone bias in metres. It is an additively-weighted Voronoi, and the weight is what lets a forest
+own forest-sized ground while a quarry owns a pocket without shuffling centres around to fake it.
+The zone's `pull` ships in the layout's `zones` array and **`undergrowth.gd` reads the same three
+numbers**, so the two cannot disagree. A layout that omits `pull` gets plain nearest-centre, which is
+what Playtest Hollow has always had.
+
+**Would change my mind:** a map that wants genuinely blended borders rather than a partition — then
+the rule becomes a soft weight per zone and both readers sample it, which is the same contract with a
+different function in it.
+
+### D-049 · 2026-08-18 · Anything a system has to modify at runtime gets its own node, not a MultiMesh slot
+
+`authored_world.gd` instances props through `MultiMeshInstance3D` per chunk, which is what makes a map
+this size affordable. But `HarvestWorld` fells a tree by hiding its visual and swapping in a damaged
+state, and **one instance of a MultiMesh is not a thing you can hide** — so on this map every tree and
+ore node was inert scenery, and no check noticed because nothing was broken, only absent.
+
+Props carrying `"harvestable": true` in the layout are now built as individual nodes: a holder in
+`authored_world_harvestable` with the asset name in its metadata, a `Visual` child and a
+`CollisionBody` child. There are 83 of them against 2,869 props, so the instancing argument is
+untouched. The general rule: **decide per prop whether a system will ever have to address it
+individually, and give those props a node.** Batching is for scenery.
+
+**Would change my mind:** a per-instance visibility or material mechanism for MultiMesh that a
+gameplay system can drive — then the swap happens in the buffer and the holders go away.
+
 ---
 
 ## Template
