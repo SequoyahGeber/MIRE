@@ -454,6 +454,28 @@ gap — a mid-run joiner learned nothing until somebody happened to open a chest
 on mutation is only correct if every peer was present for every mutation. `_on_peer_joined` now
 sends the board.
 
+### 2026-08-18 — an obsolete peer id's family counts now actually leave the board (F-089)
+
+D-035's rebound/expiry lifecycle above was correct on the host but incomplete on the wire: neither
+`_on_run_player_rebound` nor `_on_run_player_expired` ever told teammates that an old/expired peer id
+was gone, so `_family_counts[old_id]` on every client was a ghost that outlived the id forever —
+`net_powerup_counts` is a broadcast with no deletion path of its own.
+
+**The fix, if your task touches either lifecycle hook again:** both now end by calling a shared
+`_retire_broadcast(peer_id, before)` on the id that is going away, BEFORE that id's `_family_counts`
+entry is erased from the host's own state. It emits the downward `resonance_changed(peer_id, family,
+Resonance.NONE)` transition for every family `before` was resonant in, then (guarded by
+`NetTransport.is_active`, same as `_publish()`) broadcasts `net_powerup_counts.rpc(peer_id, {})` so
+every client's entry for that id reads empty. **Call it with the retiring id's OWN `before` snapshot,
+not the rebind target's** — `_on_run_player_rebound` still copies `_family_counts[old]` onto
+`new_peer_id` first and calls `_retire_broadcast(old_peer_id, ...)` after, so `_commit(new_peer_id)`'s
+before/after diff is unchanged and does not re-fire `resonance_changed` for thresholds already crossed
+under the old id.
+
+**Verify:** `agent godot --script tools/powerup_review_check.gd` (6 assertions over two real ENet
+processes, both lifecycle events, `POWERUP_REVIEW_CHECK failures=0`) plus a clean rerun of
+`powerup_check.gd` and `powerup_net_check.gd` for no regression.
+
 ### 2026-08-18 — night waves actually run now, and the reason they did not is worth keeping
 
 `WaveSpawner` is registered (autoload #22, after `DayNight`, which its `_ready()` depends on). Dusk

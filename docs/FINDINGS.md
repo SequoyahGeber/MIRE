@@ -886,23 +886,6 @@ add a check that exercises the production caller instead of constructing a priva
 
 ---
 
-### F-089 · Powerup lifecycle never removes obsolete family counts from clients, leaving ghost Resonances after reconnect or expiry
-
-**Area:** netcode · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.3 review
-
-`autoload/powerup_service.gd:336-351` updates only the host's old peer-id entries. Rebound erases the
-old id locally and publishes the new id through `_commit(new_peer_id)`; expiry erases locally and
-publishes nothing. `net_powerup_counts()` has no other deletion path, so teammates retain the last
-family counts for every obsolete peer id and disagree with the host after either lifecycle event.
-
-`tools/powerup_review_check.gd` reproduced both failures over two real ENet processes: peer 701's
-Kinetic count reached the client as 3; after rebound, peer 702 also reached 3 but 701 stayed 3; after
-expiry, 702 stayed 3 as well. The check ended `POWERUP_REVIEW_CHECK failures=2`, with one concrete
-failure for rebound and one for expiry. Broadcast an empty/removal count for the old or expired id
-(including the downward `resonance_changed` transition) before discarding it on the host.
-
----
-
 ### F-090 · Frame budget audit: ~100 fps where hundreds are expected
 
 **Area:** perf · **Severity:** high · **Found:** 2026-08-18 by coil23
@@ -912,6 +895,42 @@ The level renders at ~100 fps on the M5 Pro where the scene complexity justifies
 ---
 
 ## Resolved
+
+### F-089 · Powerup lifecycle never removed obsolete family counts from clients, leaving ghost Resonances after reconnect or expiry — **fixed**
+
+**Area:** netcode · **Severity:** high · **Found:** 2026-08-18 by lc1 during the 3.3 review ·
+**Resolved 2026-08-18 by lp.**
+
+`autoload/powerup_service.gd:336-351` updated only the host's old peer-id entries. Rebound erased the
+old id locally and published the new id through `_commit(new_peer_id)`; expiry erased locally and
+published nothing. `net_powerup_counts()` had no other deletion path, so teammates retained the last
+family counts for every obsolete peer id and disagreed with the host after either lifecycle event.
+
+`tools/powerup_review_check.gd` reproduced both failures over two real ENet processes: peer 701's
+Kinetic count reached the client as 3; after rebound, peer 702 also reached 3 but 701 stayed 3; after
+expiry, 702 stayed 3 as well. The check ended `POWERUP_REVIEW_CHECK failures=2`, with one concrete
+failure for rebound and one for expiry.
+
+**Fix:** a new `_retire_broadcast(peer_id, before)` in `autoload/powerup_service.gd` is now the shared
+tail of both lifecycle events. Called for the *old* id in `_on_run_player_rebound` (before that id's
+`_family_counts` entry moves onto the new id) and for the expiring id in `_on_run_player_expired`, it
+emits the downward `resonance_changed(peer_id, family, Resonance.NONE)` transition for every family
+`peer_id` was resonant in, then — guarded the same way `_publish()` already guards, by
+`NetTransport.is_active` — broadcasts `net_powerup_counts.rpc(peer_id, {})` so every teammate's
+`_family_counts[peer_id]` reads empty before the host erases its own entry. The rebound path still
+moves the pre-rebind counts onto the new id *before* calling `_retire_broadcast`, so `_commit
+(new_peer_id)`'s before/after diff sees no change and does not spuriously re-fire `resonance_changed`
+for thresholds the player already crossed under the old id — confirmed in the offline
+`tools/powerup_check.gd` run, which logs the old id's downward transition and nothing extra for the
+new one.
+
+**Verified:** `agent godot --script tools/powerup_review_check.gd` → `POWERUP_REVIEW_CHECK
+failures=0`, all 6 assertions PASS including both new ones ("rebound clears the obsolete peer id on
+teammates", "expiry clears the departed player's family count on teammates"), zero unlisted `ERROR:`
+lines. Re-ran `tools/powerup_check.gd` (offline, 0 failures) and `tools/powerup_net_check.gd` (two
+real ENet processes, 0 failures) to confirm no regression to the framework or its replication split.
+
+---
 
 ### F-087 · Three open findings share their F-number with a different finding, so brief routes to the wrong one and start reports two of them as already closed — **fixed**
 

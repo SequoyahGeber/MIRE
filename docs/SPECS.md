@@ -310,6 +310,28 @@ Registration via `agent autoload` (preamble rule, F-051).
 - Worked example: one speed powerup + one Resonance family with a 3-stack threshold, exercised in
   the check offline and in a 2-line extension to an existing net check for the replication.
 
+## F-089 · Powerup lifecycle never removed obsolete family counts from clients
+
+`net_powerup_counts` is a broadcast, and the only way a client's `_family_counts[peer_id]` entry ever
+changes is another broadcast for that same `peer_id` — there was no deletion path. `_on_run_player_rebound`
+moved `_stacks`/`_family_counts` from the old peer id to the new one and erased the old key **locally
+on the host only**, then `_commit(new_peer_id)` published the new id; nothing ever told teammates the
+old id was gone. `_on_run_player_expired` erased locally and published nothing at all. Either way
+every teammate kept the last nonzero count they'd heard for an id that no longer existed — a ghost
+Resonance that outlived a reconnect or survived forever past an expiry. **Claim:**
+`autoload/powerup_service.gd`, `tools/powerup_review_check.gd`. **Fix:** a shared `_retire_broadcast(peer_id,
+before)` — called for the *old* id in `_on_run_player_rebound` (before the family-count key moves to
+the new id) and for the expiring id in `_on_run_player_expired` — that emits the downward
+`resonance_changed(peer_id, family, Resonance.NONE)` transition for every family that id was resonant
+in, then (guarded by `NetTransport.is_active`) broadcasts `net_powerup_counts.rpc(peer_id, {})` so
+`_family_counts[peer_id]` reads empty everywhere before the host erases its own entry. The rebound
+path still moves the pre-rebind counts onto the new id *before* calling `_retire_broadcast`, so
+`_commit(new_peer_id)`'s before/after diff sees no change and does not spuriously re-fire
+`resonance_changed` for thresholds the player already crossed under the old id.
+**Shipped 2026-08-18** (`docs/FINDINGS.md` Resolved has the full verification). Re-verify with
+`agent godot --script tools/powerup_review_check.gd` (both lifecycle events, over two real ENet
+processes) plus `tools/powerup_check.gd` and `tools/powerup_net_check.gd` for no regression.
+
 ## 3.4 · Author 40–60 powerups (T0) — inspector, against 3.3's worked example. Never agent-generated.
 
 3.3 shipped 2026-08-18. **The authoring spec is `docs/POWERUPS.md`** (the pre-3.4 design check,
