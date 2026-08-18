@@ -1322,6 +1322,16 @@
       "at": "2026-08-18T00:39:51+00:00",
       "task": "2.1j"
     },
+    "tools/png_pixels_equal.py": {
+      "agent": "lp",
+      "at": "2026-08-18T13:55:00+00:00",
+      "task": "F-079"
+    },
+    "tools/png_pixels_equal_check.py": {
+      "agent": "lp",
+      "at": "2026-08-18T13:55:00+00:00",
+      "task": "F-079"
+    },
     "tools/powerup_check.gd": {
       "agent": "reed16",
       "at": "2026-08-18T04:53:36+00:00",
@@ -3125,9 +3135,11 @@
       "title": "PowerupDef validates shape but not vocabulary \u2014 a typo'd stat name or tag loads clean and is dead forever"
     },
     "F-079": {
+      "done_at": "2026-08-18T13:55:00+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The obvious way to \"compare decoded pixels\" silently reports every RGB-only change as identical"
     },

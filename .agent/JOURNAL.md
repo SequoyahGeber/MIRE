@@ -2480,3 +2480,18 @@ Notes along the way:
 Files: `tools/inventory_net_check.gd`, `tools/combat_net_check.gd`
 
 Commit at time of writing: `40f48de`
+
+---
+
+### DONE · F-079 · lp · 2026-08-18T13:55:00+00:00
+
+**The obvious way to "compare decoded pixels" silently reports every RGB-only change as identical**
+
+tools/png_pixels_equal.py: pixel_diff_bbox()/images_pixel_equal() compare decoded PNG pixels per-channel, avoiding Pillow's alpha_only getbbox() default that silently reported RGB-only changes on opaque RGBA images as identical (the exact F-073 icon-sheet bug). CLI usable directly. Verified: python3 tools/png_pixels_equal_check.py -> PNG_PIXELS_EQUAL_CHECK ok, reproducing the regression (RGB-only change on opaque RGBA -> correctly caught, correct 1x1 bbox) plus alpha-only change, tEXt-metadata-only difference (F-042 case, must read identical), self-compare, size mismatch, RGB-vs-RGBA. No Godot involved -- pure Python tool bug. docs/FINDINGS.md F-079 moved to Resolved; docs/SPECS.md F-079 spec added (none existed); docs/DELEGATION.md Current state has the API.
+
+Notes along the way:
+- Fixed via new tools/png_pixels_equal.py (pixel_diff_bbox/images_pixel_equal, per-band diff avoids Pillow's alpha_only getbbox default). No production/gameplay file touched -- pure asset-pipeline tooling, so no ARCHITECTURE §2.2 authority row applies. Verified with a new pure-Python check tools/png_pixels_equal_check.py (no Godot needed -- same precedent as harness_check.py/F-081 and agent baseline/F-080), not a tools/*_check.gd, since the bug is in a Python tool, not a runtime system.
+
+Files: `tools/png_pixels_equal.py`, `tools/png_pixels_equal_check.py`
+
+Commit at time of writing: `01a44d4`
