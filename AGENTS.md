@@ -276,9 +276,17 @@ search.
 
 ### Never bulk-generate content data
 
-Items, powerups, recipes, enemy stats and Cycle Modifiers are `.tres` resources authored by hand in the
-Godot inspector — free. Build the *framework*; he builds the *content*. If you find yourself about to
-write the 40th powerup definition, stop.
+**Content is yours to author.** Items, powerups, recipes, enemy stats and Cycle Modifiers are `.tres`
+resources, and writing them is part of the work, not Sequoyah's backlog (D-073). What this rule
+forbids is the *bulk sweep* — emitting forty definitions in one pass, where each is a template fill
+and none of them got a design decision. That produces a whole family of uniformly mediocre content,
+which is worse than half as much content that is actually good.
+
+So: **one asset at a time.** Decide what this one is and why it is interesting, write it against the
+real schema, verify it, and only then start the next. "Author 40–60 powerups" is forty individual
+authoring jobs, not one bulk job, and finishing fewer of them at full quality is the intended
+outcome. If you find yourself pattern-filling the 40th definition without a thought behind it, stop
+— that, and not the authoring, is the thing being prohibited.
 
 ### Never build a system without deciding its network authority
 

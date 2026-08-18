@@ -1497,3 +1497,34 @@ trusting a thinner margin. Also: DESIGN §4.4's Void Resonance "dodge blinks" ch
 enough that i-frames and the dash's physical motion genuinely need to decouple (a blink that teleports
 instantly but leaves i-frames active slightly longer, say) — `_execute_dodge()` was kept a wrappable
 function precisely so that kind of change has somewhere to live without touching this file's core.
+
+### D-073 · 2026-08-18 · "Never bulk-generate content data" limits the pace of authoring, not who authors
+
+`AGENTS.md`'s rule of that name has been read — including by an agent on 2026-08-18 — as "content is
+Sequoyah's; an agent's job stops at the framework." **That reading is wrong, and he corrected it
+directly:**
+
+> "I think never bulk generate content is being misinterpreted. I want you to generate content, just
+> do it one thing at a time so that you put the proper amount of focus and attention to each asset
+> you create instead of trying to do all of it at once and then doing a bad job on everything."
+
+The constraint is **pace and attention, not authorship**. Agents author MIRE content — items,
+powerups, recipes, enemy stats, Cycle Modifiers. What the rule forbids is the bulk sweep: emitting
+forty definitions in one pass where each is a template fill and none received a design decision. The
+failure mode being prevented is a whole family of uniformly mediocre content, which is worse than
+half as much content that is genuinely considered.
+
+In practice: take one asset, decide what it is and why it is interesting, write it against the real
+schema, verify it, and only then start the next. "Author 40–60 powerups" is forty individual
+authoring jobs, not one bulk job, and finishing fewer of them at full quality is the intended
+outcome. This also unblocks the T0 authoring tasks (3.2, 3.4, 3.7), which had been parked on the
+mistaken belief that an agent must not touch them.
+
+`AGENTS.md` §"Never bulk-generate content data" was reworded in the same commit; its former text
+("Build the *framework*; he builds the *content*", "if you find yourself about to write the 40th
+powerup definition, stop") is the stale side of this correction.
+
+**Would change my mind:** Sequoyah saying a specific content type is his — the one place the
+original reading is still plainly right is anything resting on visual or playfeel judgment, where
+D-039's hand-off criterion applies for its own reasons. Nothing about this decision overrides
+D-031's editor-closed per-file claim on `.tres`, which is corruption protection.
