@@ -1289,6 +1289,47 @@ resort.
 
 ---
 
+### D-064 · 2026-08-18 · Whether a prop can be harvested is a property of the ASSET, and the world builder decides per family whether it earns a node or stays in the batch
+
+**Decision.** Harvestability is looked up from the asset id through
+`systems/harvesting/harvest_library.gd`, never authored per placement in a layout file. The same
+table answers a second question the world builder must ask — `Represent.NODE` (its own holder and
+mesh) or `Represent.BATCH` (stays in the chunk's `MultiMesh`, logic-only holder) — so density and
+harvestability are decided together, once, in the place that knows the asset.
+
+**Why.** Hollowmere shipped with 2,869 props of which **83** could be hit. The other 62 trees, 198
+rocks and 794 bushes were painted scenery, because `harvestable: true` was written per placement by
+`tools/mapgen/hollowmere_layout.py` and `HarvestWorld` carried a three-entry table of the three
+`assets/harvestables` exports. That is F-097's failure shape a second time: behaviour keyed to one
+map's authored data, silently absent on the next map. **Release worlds are procedurally generated**
+(D-045, and the whole reason `AssetVfxLibrary` exists), so a layout file is not a place to record
+what a pine *is*. Keying on the asset made 1,181 props live with no layout regenerated, no map
+edited, and nothing for a future generator to remember beyond the asset id it already stamps.
+
+The NODE/BATCH split is in the same table rather than in the builder because it is the same
+question. Promoting all 794 bushes to their own `MeshInstance3D` would have turned a handful of
+batched draw calls into eight hundred, on a game whose stated target is the worst machine someone
+might play it on; leaving trees and ore batched would have made them unhideable, since one instance
+of a MultiMesh is not a thing you can hide by visibility. Two representations, one decision point.
+
+**Consequences.**
+
+- `HarvestableDef.active_state_scenes` may be empty, meaning "this asset is its own intact visual".
+  Without that, every new family needs a three-state Blender export before it can be chopped, which
+  is what kept the table at three entries for as long as it was.
+- A harvestable may legally have **no collider**. `CombatService` targets `&"damageable"` by
+  distance and arc, not by raycast, so a walk-through bush is still swingable — and soft flora
+  *should* be walked through.
+- A BATCH prop's placement is recorded by the builder as a meta, never read back from the
+  `MultiMesh`. That read is a RenderingServer round trip and answers identity under the dummy
+  renderer, so a restore would teleport every bush to the world origin — and no headless check
+  would see it.
+
+**What would change my mind.** If a generated world ever wants the same asset harvestable in one
+biome and scenery in another, this table stops being sufficient and the answer becomes
+(asset, biome) rather than (asset). Add the second key to the library — do not move the decision
+back into the layout.
+
 ### D-0NN · YYYY-MM-DD · <one-line decision>
 <why, in 2–4 sentences>
 **Would change my mind:** <the specific evidence that should make you revisit this>

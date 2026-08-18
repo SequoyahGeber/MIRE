@@ -441,6 +441,22 @@ other entries link against, so left as-is with this correction instead.
 
 ---
 
+**2026-08-18, bram1 (director) — instrumented, still not decided.** The choice this finding names —
+make the checks tolerate a shared cache, or give each lane its own `.godot/` at the price of a full
+reimport each — is deliberately still open, because it should be made on measurements rather than on
+a guess. What shipped instead is everything needed to take that measurement, after the lock was
+observed serialising four concurrent runs and killing one lane outright:
+
+- `file_lock` names its holder, heartbeats every 30 s with elapsed time, and reports how long a
+  caller waited. A multi-minute wait is normal with six agents; before this it was one dim line and
+  then silence, which is what F-086 misread as a hang before it stopped mid-task.
+- A holder record whose pid is gone now reports itself stale rather than claiming a free lock is held.
+- `agent godot` kills the F-104 silent hang at 45 s instead of letting it hold the lock for eight
+  minutes (see F-104, Resolved).
+
+So the contention is now visible and bounded. **Decide the cache question against real hold times,
+not against this paragraph.**
+
 ### F-057 · A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds
 
 **Area:** art pipeline · **Severity:** low · **Found:** 2026-08-17 by tine18 during the 2.1j palette migration
@@ -652,7 +668,194 @@ F-075, and AGENTS.md's rule is to file it and keep moving, not chase it.
 
 ---
 
+### F-115 · Hollowmere's only fog is a uniform world-wide haze: the three FogVolumes the atmosphere controller drives do not exist on this map
+
+**Area:** environment · **Severity:** medium · **Found:** 2026-08-18 by vane19
+
+Playtest, 2026-08-18 (Sequoyah): "the fog that's currently on the map looks really bad. It's
+covering everything and like a flattening haze rather than being low to the ground and in specific
+areas".
+
+`world/environment/playtest_atmosphere.gd::_ready` looks for siblings `MireGroundFog`, `ForestMist`
+and `RuinsMist` and drives their `FogMaterial.density`. **`levels/hollowmere.tscn` contains none of
+those nodes** — they are Playtest Hollow's. So `_local_fog_materials` is empty on the shipped map and
+every localized pocket the controller was written to drive is missing.
+
+What is left is `Environment.volumetric_fog_density = 0.00035 * haze_strength` applied uniformly over
+`volumetric_fog_length = 120 m`, plus `ambient_inject` up to 0.62. Uniform density over the whole
+froxel volume is by definition a flat full-screen haze with no height falloff, no variation and no
+motion — exactly what was reported. The authored `fog_height`/`fog_height_density` on the Environment
+never take effect either: `apply_atmosphere()` writes `fog_density = 0.0` on every apply, which
+switches the non-volumetric depth fog off entirely.
+
+Fix shape: kill the uniform blanket, and put the fog in a `FogVolume` running a procedural `fog`
+shader — height falloff so it hugs the ground, scrolling fbm so it is patchy and drifts, density
+keyed to world position so it pools in low ground and near water. Asset/position-keyed, never
+scene-keyed, so a generated world inherits it (F-097). Must no-op cleanly on the `low` graphics
+preset, which turns volumetric fog off.
+
+---
+
+### F-116 · Two items now own the same branch art: harvesting ships 'stick' while ITEMS.md and task 3.2 plan 'branch'
+
+**Area:** content · **Severity:** low · **Found:** 2026-08-18 by vane19
+
+F-114 needed a stick item the moment 794 bushes and saplings started yielding one, and shipped
+`content/items/stick.tres` (id `stick`, display "Stick") using `assets/pickups/exports/pickup_branch.glb`
+and `assets/icons/exports/icon_branch.png`.
+
+`docs/ITEMS.md` plans the same concept as **`branch`** — it is the D1 bootstrap raw in §"Ground
+scavenge (hands)" and an input to Mushroom Skewer, Meat Skewer, Glow Flare, Branch Club, Reed
+Machete and Held Torch — and task 3.2 (ivy8) holds `content/items/branch.tres` right now.
+
+Deliberate, and recorded rather than resolved, because the alternative was worse: pointing
+`bush.tres`/`sapling.tres` at `&"branch"` before that file exists makes `Harvestable`'s
+`Registry.has_item()` validation fail on 794 props, i.e. the feature Sequoyah asked for is dead
+until another lane's task lands. Shipping a working `stick` and converging later costs three lines.
+
+**Converging is a one-file decision, whichever way it goes:**
+
+- Keep `branch` (matches ITEMS.md and every planned recipe): delete `content/items/stick.tres`, set
+  `yield_item_id = &"branch"` in `content/harvestables/bush.tres` and `sapling.tres`. Do this only
+  once `content/items/branch.tres` is committed.
+- Keep `stick`: 3.2 drops `branch.tres` and ITEMS.md's recipe table renames the ingredient.
+
+Nothing else references `stick`; there is no save data and no recipe using it yet, so there is no
+migration either way. Whoever gets there second should just check `Registry` for both ids.
+
+---
+
 ## Resolved
+
+### F-113 · One axe swing depletes a whole tree: the harvest raycast and the combat swing both damage it, and neither knows what tool you are holding — **fixed**
+
+**Area:** harvesting · **Severity:** high · **Found:** 2026-08-18 by vane19
+
+Playtest, 2026-08-18 (Sequoyah): "the axe and pickaxe both break trees and rocks in one hit when it
+should take three".
+
+Two independent causes, both required to explain it:
+
+1. **Two damage sources fire on one click.** `entities/player/player_controller.gd` handles
+   `attack` and calls `CombatService.request_attack()` WITHOUT `set_input_as_handled()` outside
+   build mode, so `autoload/harvest_world.gd::_unhandled_input` also sees the press and calls
+   `try_harvest_from_camera() -> Harvestable.request_hit()`. That applies
+   `HarvestableDef.damage_per_hit` on top of the weapon's own `WeaponDef.damage`. This is the
+   untested ordering F-101 flagged; it is real.
+
+2. **Health is authored in the wrong units.** `content/harvestables/tree.tres` and
+   `stone_node.tres` leave `max_health` at the resource default of 3 while every real tool does
+   4-6 damage, so ONE connect depletes them even without the double hit. Nothing in the content
+   expresses "a tree should take three swings of the tool it is meant for".
+
+3. **No tool matters.** `CombatService._resolve_hit` passes `weapon.damage` straight into
+   `host_apply_damage`. A pickaxe fells a tree exactly as fast as an axe, and bare hands do too.
+
+Fix shape: one damage source per click (combat owns it), a tool class + harvest power on
+`WeaponDef`, a required tool class on `HarvestableDef`, and harvestable health authored so the
+intended tool takes three swings.
+
+---
+
+**Fixed 2026-08-18 by vane19.** All three causes, because any one of them left alone still one-shots
+a tree:
+
+1. **`autoload/harvest_world.gd` no longer listens for `attack`.** Combat is the single damage
+   source: it is host-resolved, it already targets everything in `&"damageable"`, and it knows the
+   weapon. `try_harvest_from_camera()` stays as an API for checks and for a future interact verb.
+   This closes the untested half of F-101 as well.
+2. **A tool axis, separate from combat damage.** `WeaponDef` gained `tool_class`
+   (`Any`/`Chop`/`Mine`) and `harvest_power` — **wooden 1, stone 2, iron 3**. `HarvestableDef`
+   gained `required_tool` and `wrong_tool_scale` (default 0.34, floored), and its health is now
+   authored in tool power, so `max_health = 6` literally reads "three swings of a stone axe".
+   `CombatService._resolve_hit` prefers a new `Harvestable.host_apply_tool_damage()` by feature
+   test, so enemies and anything else in `&"damageable"` are untouched.
+3. **A wrong-tool connect still registers as a hit with 0 damage,** rather than as a miss — the
+   thunk of a pickaxe bouncing off a pine is the feedback that tells you to switch, and reporting
+   it as a miss would delete it.
+
+The ladder now: stone axe fells a tree in **3**, a wooden axe in 6, an iron pickaxe in 6, bare hands
+never. Stone pickaxe takes a stone node in 3, iron pickaxe an iron node in 3. Bare hands strip a
+bush in 3.
+
+**Verified:** `agent godot --script tools/harvest_tool_ladder_check.gd` — new, asserts 17
+weapon×harvestable swing counts against the SHIPPED `.tres` files plus a live prop taken down in
+exactly three (`HARVEST_TOOL_LADDER failures=0`). Regression: `harvestable_check`,
+`harvest_world_check`, `harvestable_net_check`, `harvest_world_net_check`, `combat_check` all
+`failures=0`.
+
+---
+
+### F-114 · Only 83 of Hollowmere's 2,869 props can be harvested: harvestability is authored per-placement in the layout instead of per-asset — **fixed**
+
+**Area:** world · **Severity:** high · **Found:** 2026-08-18 by vane19
+
+Playtest, 2026-08-18 (Sequoyah): "a lot of rocks are not harvestable ... a lot of trees are not
+harvestable", and "I would like bushes and little trees to give sticks".
+
+Ground truth from `world/gen/layouts/hollowmere.json`: 2,869 props, of which 44
+`harvest_tree_intact`, 29 `stone_node_intact` and 10 `iron_node_intact` carry `"harvestable": true`.
+Everything else is scenery, including 62 trees (`tree_pine_*`, `tree_birch_*`, `tree_crooked_*`,
+`tree_bare_*`, `tree_willow_*`, `mire_broadleaf_tree`), 198 rocks (`boulder_a..h`,
+`rock_cluster_a..f`, `mire_mossy_boulder`) and 794 bushes and saplings.
+
+Two structural causes:
+
+1. **`autoload/harvest_world.gd::DEFINITION_PATHS` has exactly three entries**, keyed to the three
+   `assets/harvestables` exports. Any other tree or rock is unreachable no matter how it is placed.
+
+2. **The decision lives in the layout, not the asset.** `tools/mapgen/hollowmere_layout.py` passes
+   `harvestable=True` per placement and `world/gen/authored_world.gd::_build_props` reads
+   `prop["harvestable"]`. That is the exact failure shape F-097 wrote `AssetVfxLibrary` to end:
+   behaviour keyed to one map's authored data is silently absent on the next one, and release worlds
+   are procedurally generated. A generated world would ship inert scenery again.
+
+3. **Bushes and saplings are placed `solid=False`**, so they have no collider at all and cannot be
+   raycast or swung at even in principle.
+
+Fix shape: an asset-keyed harvest library alongside `AssetVfxLibrary`, consumed by BOTH the world
+builder and `HarvestWorld`, so any world containing a pine gets a choppable pine by stamping the
+asset id — the same contract F-097 established.
+
+---
+
+**Fixed 2026-08-18 by vane19.** **83 → 1,181 live harvestables on Hollowmere**, and 11 → 178 on
+Playtest Hollow, with no layout regenerated and no map edited — because the decision moved to the
+asset.
+
+- **`systems/harvesting/harvest_library.gd`** is the new table, modelled on `AssetVfxLibrary` and
+  keyed the same way: asset id → definition path, longest-prefix-first. `world/gen/authored_world.gd`
+  and `autoload/harvest_world.gd` both read it, so there is one answer rather than two. A layout's
+  own `harvestable` flag is still honoured, but nothing new needs it: a generated world gets a
+  choppable pine by stamping `tree_pine_c`.
+- **Seven new definitions, no new art:** `wild_tree`, `boulder`, `rock_cluster`, `fallen_log`,
+  `stump`, `bush`, `sapling`. `HarvestableDef.active_state_scenes` may now be **empty**, meaning
+  "this asset is its own intact visual" — `Harvestable` then leaves the world builder's geometry
+  alone and only hides it on depletion, through a `set_visual_hook()` Callable. That is what lets
+  ONE definition cover 62 wild trees or 794 bushes instead of demanding a three-state Blender
+  export per species.
+- **Bushes and saplings yield sticks** (`content/items/stick.tres`, using the existing
+  `pickup_branch`/`icon_branch` art) — see F-116 on converging that id with ITEMS.md's `branch`.
+- **Density did not cost frame time.** `HarvestLibrary.Represent` splits the families: `NODE` gets
+  its own holder and mesh (trees, ore, boulders — **387** of them, up from 83), `BATCH` stays
+  inside the chunk's `MultiMesh` and gets a logic-only holder (**794** bushes and saplings, **zero**
+  extra draw calls). A batched prop is hidden by zeroing that one instance's transform, which is
+  the only handle a batched copy has. Promoting all of them would have traded a handful of batched
+  draws for eight hundred, on a game targeting the worst machine someone might play it on.
+- **No collider is synthesised for soft flora,** and none is needed: `CombatService` picks its
+  target out of `&"damageable"` by distance and arc, not by raycast, so a walk-through bush is
+  still swingable. `Harvestable` now treats a missing `CollisionBody` as legal for these families
+  and still errors for a definition that ships damage states.
+
+**Verified:** `agent godot --script tools/world_contract_check.gd` →
+`WORLD_CONTRACT_HARVEST layout_props=1181 wired=1181`, `PASS`. `tools/hollowmere_check.gd` →
+`HOLLOWMERE_HARVEST live=1181`, `PASS`. `tools/harvest_world_check.gd` reworked and `failures=0`
+(the 11 multi-state A-001 props are still asserted exactly). `tools/harvest_batch_check.gd` — new,
+**must run `--windowed`** — proves a batched bush's own instance collapses on depletion, its
+neighbour in the same batch does not, and respawn restores the exact placed transform
+(`batched=794 skipped=0 failures=0`).
+
+---
 
 ### F-105 · Per-frame costs found by the F-099 review in files claimed by F-086/F-097 — **fixed**
 

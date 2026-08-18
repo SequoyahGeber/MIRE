@@ -75,6 +75,54 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — F-113/F-114: harvesting is keyed to the ASSET, and health is authored in tool swings (vane19)
+
+**`systems/harvesting/harvest_library.gd` is the new source of truth for "is this worth hitting".**
+It is `AssetVfxLibrary`'s twin — asset id in, answer out, no reference to any scene, map or layout —
+and both `world/gen/authored_world.gd` and `autoload/harvest_world.gd` read it, so the world builder
+and the wirer can never disagree. **A generated world gets a choppable pine by stamping
+`tree_pine_c` on the node it emits; that is the entire contract.** Three static calls:
+`definition_path_for(asset)`, `is_harvestable(asset)`, `representation_for(asset)`.
+
+- **`Represent.NODE` vs `Represent.BATCH`** is how density stays affordable. NODE props get their
+  own holder and mesh (trees, ore, boulders — 387 on Hollowmere). BATCH props stay inside the
+  chunk's `MultiMesh` and get a logic-only holder (794 bushes and saplings, zero extra draw calls);
+  the builder records `batch_meshes` / `batch_index` / `batch_transforms` metas on that holder and
+  `HarvestWorld` turns them into the hook that hides one instance by zeroing its transform.
+  **Never read a placement back with `MultiMesh.get_instance_transform()`** — it is a
+  RenderingServer round trip that answers identity under the dummy renderer every headless check
+  runs on, which is why the builder records the transform instead.
+- **`HarvestableDef.active_state_scenes` may be empty**, meaning "this asset is its own intact
+  visual". `Harvestable` then shows/hides whatever already draws the prop through
+  `set_visual_hook(Callable)` — one seam that covers both a `Node3D` and a MultiMesh slot. This is
+  what lets one `wild_tree.tres` cover 62 species without a damage-state export each. A definition
+  in this mode may also have **no collider**, and that is legal.
+- **`CollisionBody` is still mandatory** for a definition that ships state scenes: the states swap
+  under it and something has to own the shape.
+
+**The tool axis is separate from combat damage, on purpose.** `WeaponDef.tool_class`
+(`Any`/`Chop`/`Mine`, stored as the int from `HarvestLibrary.Tool` — never reorder it) and
+`WeaponDef.harvest_power` (**wooden 1, stone 2, iron 3**). `HarvestableDef.required_tool` +
+`wrong_tool_scale` (0.34, floored, so an under-powered wrong tool reaches exactly 0 and can never
+chip a prop down). **Harvestable health is authored in tool power**, so `max_health = 6` reads
+"three swings of a stone axe" and stays that sentence when enemy damage is retuned.
+
+- `Harvestable.host_apply_tool_damage(tool_class, harvest_power, peer_id)` is the host seam combat
+  now prefers, chosen by **feature test** so `&"damageable"` stays one contract and enemies are
+  untouched. `harvest_damage_for()` previews the number for the broadcast.
+- A wrong-tool connect returns **true with 0 damage**, not a miss.
+- **`autoload/harvest_world.gd` no longer listens for `attack`.** Adding a second damage source on
+  one click is how F-113 happened; `try_harvest_from_camera()` remains as an API only.
+
+**New content:** `wild_tree`, `boulder`, `rock_cluster`, `fallen_log`, `stump`, `bush`, `sapling` in
+`content/harvestables/`, plus `content/items/stick.tres`. **3.2 (ivy8) — read F-116 before authoring
+`content/items/branch.tres`:** `stick` already ships the `pickup_branch` art and is what 794 bushes
+yield, so the two ids must converge rather than both exist.
+
+**New checks:** `tools/harvest_tool_ladder_check.gd` (17 weapon×harvestable swing counts against the
+shipped `.tres`) and `tools/harvest_batch_check.gd` (**run `--windowed`** — MultiMesh readback needs
+a real renderer, and `physics_interpolation` means a freshly written transform reads back part-way).
+
 ### 2026-08-18 — `docs/ITEMS.md` is the item/loot/chest catalog; 3.2, 3.5 and 3.8 author against it (ivy8)
 
 The full item economy is planned: ~136 items across gathered raws, creature drops, refined
