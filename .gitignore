@@ -33,4 +33,7 @@ tools/blender/__pycache__/
 # are never byte-identical between runs (F-042), so committing them would put a fresh ~35 MB diff into
 # permanent history every time the audit is re-run. The structured reports beside them are small and
 # genuinely diffable, so those ARE committed.
-assets/audit/sheets/
+# Depth-agnostic on purpose (F-143): the audit tool also writes per-audit subdirectories such as
+# `assets/audit/a009/sheets/`, and a fixed one-level path silently missed them — 6.4 MB sat
+# untracked-but-stageable. `**/` matches zero or more directories, so both shapes are covered.
+assets/audit/**/sheets/
