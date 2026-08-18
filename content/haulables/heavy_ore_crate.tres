@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="HaulableDef" format=3]
+
+[ext_resource type="Script" path="res://systems/hauling/haulable_def.gd" id="1_cs4bi"]
+
+[resource]
+script = ExtResource("1_cs4bi")
+id = &"heavy_ore_crate"
+display_name = "Heavy Ore Crate"
