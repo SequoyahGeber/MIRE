@@ -578,6 +578,31 @@ func _teleport_to_spawn(peer_id: int) -> void:
 		net_force_respawn.rpc_id(peer_id, position, yaw)
 
 
+## The public seam task 3.15's `tp` needs, and the reason it lives HERE rather than in
+## EntityDirectory: a player's own movement is client-authoritative (ARCHITECTURE.md §2.2 row 1), so
+## the host must never write a player transform — the next synchronizer tick would overwrite it and
+## the teleport would look like a flaky command instead of what it is, a violation of the authority
+## table. This service already had to solve that for respawn; `tp` reuses the identical mechanism
+## rather than growing a second one (COMMANDS.md §3.3: commands wrap existing host seams).
+##
+## Returns whether the request was actually dispatched — false for an unknown/absent peer, so a
+## caller can report "could not be moved" instead of claiming a move that never happened.
+func host_place_player(peer_id: int, position: Vector3, yaw: float = NAN) -> bool:
+	if not _owns_mutation() or peer_id <= 0:
+		return false
+	# NAN means "keep their current facing" — a teleport should not spin the player to face north.
+	# Reading the body's own yaw where one is visible from here; the remote path passes NAN through
+	# to `_apply_respawn_transform`, which leaves rotation alone for it.
+	var resolved_yaw: float = yaw
+	if peer_id == _local_peer_id():
+		_apply_respawn_transform(position, resolved_yaw)
+		return true
+	if not bool(_transport().call("is_active")) or not _peer_connected(peer_id):
+		return false
+	net_force_respawn.rpc_id(peer_id, position, resolved_yaw)
+	return true
+
+
 @rpc("authority", "call_remote", "reliable")
 func net_force_respawn(position: Vector3, yaw: float) -> void:
 	_apply_respawn_transform(position, yaw)
@@ -588,7 +613,10 @@ func _apply_respawn_transform(position: Vector3, yaw: float) -> void:
 	if body == null:
 		return
 	body.position = position
-	body.rotation.y = yaw
+	# NAN is host_place_player()'s "keep their current facing". Respawn always passes a real yaw, so
+	# its behaviour is unchanged; a `tp` should move a player without also spinning them.
+	if not is_nan(yaw):
+		body.rotation.y = yaw
 	body.velocity = Vector3.ZERO
 
 

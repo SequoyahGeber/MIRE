@@ -3319,3 +3319,15 @@ agent resolve <F-NNN> now exists — the mirror of agent finding, note on stdin.
 Files: `.agent/bin/agent`, `tools/harness_check.py`, `AGENTS.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `2857059`
+
+---
+
+### DONE · 3.15 · hollow7 · 2026-08-18T21:12:09+00:00
+
+**EntityDirectory + selectors (`@a @p @e[...]`) + entity verbs `tp`/`kill`/`tag`/`entities`, authority-respecting player moves (`COMMANDS.md` §3)**
+
+EntityDirectory + selector grammar + entities/tag/tp/kill shipped. Selector parsing (pure, core/commands/entity_selector.gd) is deliberately separate from resolution (EntityDirectory.resolve, on the executing side) so the host re-resolves a client's line against its own complete directory. D-088: discovery is by node group, not five spawn-signal subscriptions — every spawn path already ends in add_to_group(), so the tree IS the registry and despawn needs no handling; entity_check asserts each group name still matches its owner so the duplication cannot rot. PlayerHealth grew host_place_player(), reusing net_force_respawn so tp on a player never writes a transform the host does not own — proven by the client's own body moving in the client's process. No protocol bump: no new RPC. New CommandService arg types: selector and vec3 (three tokens, ~ relative to the issuer). entity_check 63 assertions + entity_net_check both 0 failures, 0 engine ERROR lines, plus 8 regressions green.
+
+Files: `autoload/entity_directory.gd`, `core/commands/entity_selector.gd`, `autoload/command_service.gd`, `systems/health/player_health.gd`, `tools/entity_check.gd`, `tools/entity_net_check.gd`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/ARCHITECTURE.md`, `docs/COMMANDS.md`, `project.godot`
+
+Commit at time of writing: `48b61e0`

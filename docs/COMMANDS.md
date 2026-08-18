@@ -369,7 +369,10 @@ with reasoning, so the tasks file them verbatim rather than relitigating:
    `rule` verb reads locally and sets on the host as §4.2 asks).
 4. **(3.15)** EntityDirectory is host-side and unreplicated; selectors resolve on the executing
    side. *Would change:* a client-side UI needing to browse entities it can't see — replicate a
-   filtered view then, not the registry.
+   filtered view then, not the registry. **Filed as shipped**, plus **D-088**: the directory
+   discovers by node group rather than subscribing to the five spawn seams §3.1 tabulates — every
+   one of those paths already ends in `add_to_group()`, so scanning the groups asks the tree what is
+   actually alive instead of maintaining a second list that can drift from it.
 5. **(3.17)** Hooks ship disabled-by-default; gameplay-by-data waits for M6 Cycle Modifiers to
    own it. *Would change:* 2.14/3.11 playtests wanting scripted variety sooner.
 

@@ -5,25 +5,10 @@
       "at": "2026-08-18T20:36:00+00:00",
       "task": "2.1d"
     },
-    "autoload/command_service.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T21:03:18+00:00",
-      "task": "3.15"
-    },
-    "autoload/entity_directory.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T21:03:18+00:00",
-      "task": "3.15"
-    },
     "autoload/world_delta_log.gd": {
       "agent": "lm",
       "at": "2026-08-18T20:58:57+00:00",
       "task": "4.6"
-    },
-    "core/commands/entity_selector.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T21:03:18+00:00",
-      "task": "3.15"
     },
     "core/game_state.gd": {
       "agent": "lm",
@@ -35,15 +20,20 @@
       "at": "2026-08-18T20:58:57+00:00",
       "task": "4.6"
     },
+    "core/net/net_version.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T21:10:17+00:00",
+      "task": "4.6"
+    },
     "docs/ASSET_TRACKER.md": {
       "agent": "slate17",
       "at": "2026-08-18T20:32:24+00:00",
       "task": "2.1d"
     },
-    "systems/health/player_health.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T21:03:18+00:00",
-      "task": "3.15"
+    "docs/FINDINGS.md": {
+      "agent": "slate17",
+      "at": "2026-08-18T21:11:20+00:00",
+      "task": "2.1d"
     },
     "tools/blender/build_construction_set.py": {
       "agent": "slate17",
@@ -60,15 +50,10 @@
       "at": "2026-08-18T20:32:24+00:00",
       "task": "2.1d"
     },
-    "tools/entity_check.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T21:03:18+00:00",
-      "task": "3.15"
-    },
-    "tools/entity_net_check.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T21:03:18+00:00",
-      "task": "3.15"
+    "tools/handshake_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T21:10:17+00:00",
+      "task": "4.6"
     },
     "tools/seed_sync_check.gd": {
       "agent": "lm",
@@ -89,7 +74,8 @@
         "tools/blender/build_construction_set.py",
         "tools/construction_check.gd",
         "tools/blender/mire_art.py",
-        "assets/construction"
+        "assets/construction",
+        "docs/FINDINGS.md"
       ],
       "notes": [
         {
@@ -100,19 +86,6 @@
       ],
       "started": "2026-08-18T20:32:24+00:00"
     },
-    "3.15": {
-      "agent": "hollow7",
-      "files": [
-        "autoload/entity_directory.gd",
-        "core/commands/entity_selector.gd",
-        "autoload/command_service.gd",
-        "systems/health/player_health.gd",
-        "tools/entity_check.gd",
-        "tools/entity_net_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T21:03:18+00:00"
-    },
     "4.6": {
       "agent": "lm",
       "files": [
@@ -120,7 +93,9 @@
         "core/net/net_session.gd",
         "autoload/world_delta_log.gd",
         "world/gen/resource_scatter_field.gd",
-        "tools/seed_sync_check.gd"
+        "tools/seed_sync_check.gd",
+        "core/net/net_version.gd",
+        "tools/handshake_check.gd"
       ],
       "notes": [],
       "started": "2026-08-18T20:58:57+00:00"
@@ -477,9 +452,9 @@
     },
     "autoload/command_service.gd": {
       "agent": "hollow7",
-      "at": "2026-08-18T21:00:45+00:00",
-      "hash": "2e66452709189c03c3c52aafa411d7aebe09158d4f60bc77aac8185d5de3046e",
-      "task": "3.14"
+      "at": "2026-08-18T21:12:09+00:00",
+      "hash": "21741ed0660c07617b7dd658a77ff065e0d9215ac08751e0cfeb77b7f7d1b2d8",
+      "task": "3.15"
     },
     "autoload/crafting_service.gd": {
       "agent": "kiln9",
@@ -502,6 +477,12 @@
       "at": "2026-08-18T21:00:45+00:00",
       "hash": "fc9c1e694f1a313709027fbe0e34fca4685ac23e49955ccc2213750f397af4f6",
       "task": "3.14"
+    },
+    "autoload/entity_directory.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:12:09+00:00",
+      "hash": "2468b77c88434a8ae56e29115582c252c6788954350ee8d294551d608c9e7cb2",
+      "task": "3.15"
     },
     "autoload/environment_vfx.gd": {
       "agent": "vane19",
@@ -1350,6 +1331,12 @@
       "at": "2026-08-18T17:55:11+00:00",
       "task": "F-113"
     },
+    "core/commands/entity_selector.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:12:09+00:00",
+      "hash": "0c3fea4e144dd43f305c363265b74800c9875bd56bfddcf7eb907e92eb735dc3",
+      "task": "3.15"
+    },
     "core/dev/dev_frame_cap.gd": {
       "agent": "coil23",
       "at": "2026-08-18T09:06:54+00:00",
@@ -1389,9 +1376,9 @@
     },
     "docs/ARCHITECTURE.md": {
       "agent": "hollow7",
-      "at": "2026-08-18T21:00:45+00:00",
-      "hash": "0df0722e168cb66894306b60d4ce7bcb8ab43df3bfea409533940cedfac36ce6",
-      "task": "3.14"
+      "at": "2026-08-18T21:12:09+00:00",
+      "hash": "50580febeb33c633cbcbbafdb7638fe04c1bc24e9bc4bbe95d31184439676ccd",
+      "task": "3.15"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "lm",
@@ -1401,21 +1388,21 @@
     },
     "docs/COMMANDS.md": {
       "agent": "hollow7",
-      "at": "2026-08-18T21:00:45+00:00",
-      "hash": "19f90c0fa4f522785a9e7ba3a3cbf7edb9e681bad407133eaf94fb36ae2cbd6e",
-      "task": "3.14"
+      "at": "2026-08-18T21:12:09+00:00",
+      "hash": "eb04f7a6d80a9f100818adfb6c8b4bb7bc2994efa67437740ca4e7a1d16c143f",
+      "task": "3.15"
     },
     "docs/DECISIONS.md": {
       "agent": "hollow7",
-      "at": "2026-08-18T21:00:45+00:00",
-      "hash": "ebd504fb0dd288dfbb57969464a7fdb7b3c0e6127ad1ce5acf2bfa767c52cc17",
-      "task": "3.14"
+      "at": "2026-08-18T21:12:09+00:00",
+      "hash": "1b70388a8760b1191d366d81266d65c9b7d23a14d20360abe5cb37df223e0481",
+      "task": "3.15"
     },
     "docs/DELEGATION.md": {
       "agent": "hollow7",
-      "at": "2026-08-18T21:00:45+00:00",
-      "hash": "93ea68b419be8dd79c248d7a6109981f90d8efcf1b9c0739157269b8d51033a5",
-      "task": "3.14"
+      "at": "2026-08-18T21:12:09+00:00",
+      "hash": "6b358d332201ebacfe239e5d5efeddf00c19c7d6674943e8892572b94233b52c",
+      "task": "3.15"
     },
     "docs/FINDINGS.md": {
       "agent": "yarrow21",
@@ -1498,10 +1485,10 @@
       "task": "2.1j"
     },
     "project.godot": {
-      "agent": "lp",
-      "at": "2026-08-18T19:16:34+00:00",
-      "hash": "5c56c16c24b271a7dc07ce0ee075d8ac1f0a04dd978cf8cd9cbd8e06962d9a4b",
-      "task": "3.8b"
+      "agent": "hollow7",
+      "at": "2026-08-18T21:12:09+00:00",
+      "hash": "c7b51d98a21d1592f3c72c7743cf042a45e3a74fb777f6b281d305c88253cf49",
+      "task": "3.15"
     },
     "systems/attunement/attunement_def.gd": {
       "agent": "lm",
@@ -1595,9 +1582,9 @@
     },
     "systems/health/player_health.gd": {
       "agent": "hollow7",
-      "at": "2026-08-18T21:00:45+00:00",
-      "hash": "0e5508ef201dece223a28d7ffb948369ea10b3cc8294b6a877aea73725f693a7",
-      "task": "3.14"
+      "at": "2026-08-18T21:12:09+00:00",
+      "hash": "47f57396c9f536be5c105af41a8a04cba087b2ef6673b8d5b93d3ac9868b4bc9",
+      "task": "3.15"
     },
     "systems/inventory/item_def.gd": {
       "agent": "flint5",
@@ -1936,6 +1923,18 @@
       "agent": "lp",
       "at": "2026-08-18T04:33:16+00:00",
       "task": "F-060"
+    },
+    "tools/entity_check.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:12:09+00:00",
+      "hash": "ac1808ad9d80f5a19406d968d52f91de2b951e86cd32c7f1304e118f807f6301",
+      "task": "3.15"
+    },
+    "tools/entity_net_check.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-18T21:12:09+00:00",
+      "hash": "e6de694e92dd167d267b1822720fe326be9eee2e39f49e6321584e63fc22347c",
+      "task": "3.15"
     },
     "tools/environment_vfx_check.gd": {
       "agent": "larch10",
@@ -2930,9 +2929,11 @@
       "title": "Gamerules \u2014 `RuleDef` content family + host-replicated `RuleService`, `rule`/`rules` commands, first-wave knob migration with export fallback (`COMMANDS.md` \u00a74)"
     },
     "3.15": {
+      "done_at": "2026-08-18T21:12:09+00:00",
+      "done_by": "hollow7",
       "est": "3",
       "milestone": "M3",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T2",
       "title": "EntityDirectory + selectors (`@a @p @e[...]`) + entity verbs `tp`/`kill`/`tag`/`entities`, authority-respecting player moves (`COMMANDS.md` \u00a73)"
     },

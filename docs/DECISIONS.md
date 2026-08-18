@@ -2068,3 +2068,85 @@ only how long it stays true changed. `core/net/net_version.gd` is untouched.
 instantaneous — then "the dash window" stops being a sensible floor for the i-frame window and the
 floor should become an explicit constant instead of `dodge_duration_sec`. D-072 already anticipated
 that case and kept `_execute_dodge()` wrappable for it.
+
+### D-088 · 2026-08-18 · EntityDirectory discovers by node group, not by subscribing to five spawn signals
+
+`COMMANDS.md` §3.1 lists a registration seam per entity kind — `PlayerNet.player_spawned`,
+`EnemyWorld`'s spawn/despawn, `HarvestWorld._wire_holder`, `BuildService` placement/destruction,
+`Chest._ready()`. Implementing that literally means five `connect()` calls, five matching
+*unregister* paths, and a directory that is only as correct as the weakest of the ten.
+
+Every one of those spawn paths already ends in the same statement: `add_to_group()`. `Enemy._ready`
+joins `enemies`, `Harvestable._ready` joins `harvestable`, `Chest._ready` joins `chest`,
+`BuildService` adds `buildable_piece` to each placed piece, `PlayerController._ready` joins
+`players`. **So the directory scans the groups.** `EntityDirectory.KIND_GROUPS` is one line per kind,
+`snapshot()` asks the tree what is alive right now, and despawn needs no handling at all — a freed
+node is simply not in the group any more.
+
+Three things this buys beyond brevity. It **cannot drift**: there is no second list of live entities
+to fall out of sync with the tree. It needs **no edits to five other services**, which on a repo with
+several agents in flight is the difference between one claim and six. And a **new entity kind is one
+line here**, not a sixth pair of signal handlers.
+
+Identity still has to survive, because a scan is stateless and ids and tags must not be:
+`_entries` is keyed by instance id, mints `<kind>:<serial>` the first time an entity is seen, and is
+pruned of anything the latest scan did not find. Tags hang on the entry, so they persist across
+scans and die with the entity.
+
+The one real cost is that `KIND_GROUPS` restates a constant each owning script also declares.
+Preloading five gameplay scripts into an autoload that boots in every headless run to read one
+`StringName` each is the F-016 family of pain, so the strings are duplicated — and
+`tools/entity_check.gd` asserts every one of them still equals its owner's constant, so the
+duplication cannot rot silently into "why does `entities` never list chests".
+
+**Would change my mind:** an entity kind that genuinely does not join a group, or one where the
+directory must know about an entity *before* it enters the tree. Neither exists today.
+
+### D-089 · 2026-08-18 · Task 4.6: `GameState` gets only the seed, `WorldDeltaLog` is latest-value-wins and buildings don't use it
+
+Three calls, all shaped by the same constraint: land the general mechanism `ARCHITECTURE.md` §4
+promises ("every mutation... replicates as deltas keyed by chunk") without guessing at scope that
+belongs to later tasks.
+
+**`core/game_state.gd` holds only `run_seed`, not the "act, day, seed, run status" `ARCHITECTURE.md`
+§3 reserves the path for.** Task 6.1 (Cycle state machine) owns the rest; building it now would be
+inventing 6.1's own design ahead of its own task. Claiming the reserved name for the seed-only slice
+means 6.1 extends one file instead of two autoloads merging later. Host draws `run_seed` from real
+entropy once per session (`RandomNumberGenerator.randomize()`), exactly D-041's reasoning for
+`Chest.host_seed_rng()`: nothing today needs a run to be reproducible across restarts, only that
+every peer IN the run agrees, which replication — not a fixed constant — already provides.
+
+**`autoload/world_delta_log.gd` stores latest-value-wins per `(chunk, kind, key)`, not an
+append-only event journal.** Every consumer this task has, and the one 4.9's Mire tick will add, only
+ever needs "what does this look like right now" — an event history has no reader. Latest-value-wins
+is also what makes the late-joiner snapshot cheap: `var_to_bytes(_state).compress()` of the whole
+current-state dictionary, decompressed and adopted whole by `net_world_snapshot`, instead of replaying
+however many mutations happened over however long the run has been going.
+
+**Buildings do NOT go through this log**, even though the spec text lists "building" alongside
+harvest depletion. A placed buildable (task 3.6) is a real node under `BuildService`'s own
+`MultiplayerSpawner`, which already replays every existing spawn to a newly connected peer on its
+own — `core/net/net_session.gd`'s own header has said so since task 1.5 ("THE MID-SESSION JOIN NEEDS
+NOTHING HERE"). `WorldDeltaLog` exists for the case a permanent node does NOT cover: 4.4's harvest
+proxies are created and freed as their chunk streams in and out of each peer's own independent ring
+(D-083's "depletion memory is best-effort... until 4.6"), so there may be no live node on some peer
+to replicate FROM at the moment another peer needs the answer. Routing buildings through the log too
+would be maintaining two mechanisms for a problem only one of them actually has.
+
+**`NetSession.peer_admitted(peer_id)` is a new signal, fired at the end of `_admit_identity()`,
+because that is the first moment a peer is a real member of the run** — after its version handshake
+AND its identity claim both succeed, before which handing it a world snapshot would be handing state
+to a peer the host might still refuse. `WorldDeltaLog` is the one subscriber today; it fires for
+EVERY admission, first joins and rebinds alike, because resending the current snapshot to a
+returning peer is idempotent and harmless, and a rebind case needing special-casing was not worth
+inventing before one actually needed it.
+
+Two-process check: `agent godot --script tools/seed_sync_check.gd` — client-regenerated
+`terrain_hash` equals the host's (proves the seed crossed the wire, not just that the math is
+platform-stable — that half is `check_determinism.gd`'s job), a mutation recorded BEFORE the client
+ever connects reaches it via the admit-time snapshot, and a second mutation recorded AFTER the client
+is already connected reaches it live via `net_delta_applied`. 0 failures.
+
+**Would change my mind:** a consumer that genuinely needs a mutation's history, not just its current
+value — nothing in 4.9's own spec (a per-cell corruption LEVEL, not a log of changes) suggests one
+exists.

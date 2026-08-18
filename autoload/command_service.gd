@@ -186,7 +186,7 @@ func _execute_locally(
 	if scope == &"host" and not _is_op(peer_id):
 		return _result(false, NOT_OP_MESSAGE, {})
 
-	var parsed: Dictionary = _parse_args(spec, raw_args)
+	var parsed: Dictionary = _parse_args(spec, raw_args, ctx)
 	if not bool(parsed.get("ok", false)):
 		# A MISSING required arg gets the generic usage line — nothing to say about it beyond "here
 		# is the shape". An INVALID one (wrong type, unknown item/enemy/peer id, out of an enum's
@@ -374,14 +374,16 @@ func _register_type_parsers() -> void:
 	_type_parsers[&"enemy_id"] = _parse_enemy_id
 	_type_parsers[&"peer"] = _parse_peer
 	_type_parsers[&"rule_id"] = _parse_rule_id
-	# vec3/selector/recipe_id/etc. land with the tasks that need them (3.15) — one new entry
-	# here each time, per the file header's extensibility note.
+	_type_parsers[&"selector"] = _parse_selector
+	_type_parsers[&"vec3"] = _parse_vec3
+	# recipe_id/powerup_id/buildable_id/station_id/loot_table_id land with the tasks that need them
+	# (3.16) — one new entry here each time, per the file header's extensibility note.
 
 
 ## Returns {ok: bool, args: Dictionary} on success, {ok: false, error: String} on the first bad token.
 ## A parse failure never reaches a handler — `_execute_locally` turns it into the spec's `help` text as
 ## the usage message, so handlers never write their own "usage:" strings (COMMANDS.md §2.2).
-func _parse_args(spec: Dictionary, raw_args: PackedStringArray) -> Dictionary:
+func _parse_args(spec: Dictionary, raw_args: PackedStringArray, ctx: Dictionary = {}) -> Dictionary:
 	var arg_specs: Array = spec.get("args", [])
 	var parsed: Dictionary = {}
 	var i: int = 0
@@ -394,6 +396,27 @@ func _parse_args(spec: Dictionary, raw_args: PackedStringArray) -> Dictionary:
 		if type_name == &"rest":
 			parsed[arg_name] = raw_args.slice(i)
 			i = raw_args.size()
+			continue
+
+		# vec3 is the one type that spans three tokens, and the only one whose meaning depends on the
+		# issuer (`~` means "my x"). Both facts live here rather than in the type table because the
+		# table hands a parser exactly one token and no context.
+		if type_name == &"vec3":
+			if i + 3 > raw_args.size():
+				if bool(arg_spec.get("optional", false)):
+					parsed[arg_name] = arg_spec.get("default", Vector3.ZERO)
+					continue
+				return {"ok": false, "kind": "missing", "error": "missing <%s> (x y z)" % arg_name}
+			var origin: Vector3 = ctx.get("position", Vector3.ZERO)
+			var components: Array[float] = []
+			for axis: int in 3:
+				var component: Dictionary = _parse_vec3_component(raw_args[i + axis], origin[axis])
+				if not bool(component.get("ok", false)):
+					return {"ok": false, "kind": "value",
+						"error": String(component.get("error", "bad <%s>" % arg_name))}
+				components.append(float(component.get("value", 0.0)))
+			parsed[arg_name] = Vector3(components[0], components[1], components[2])
+			i += 3
 			continue
 
 		if i >= raw_args.size():
@@ -478,6 +501,43 @@ func _parse_enemy_id(raw: String, _spec: Dictionary) -> Dictionary:
 ## AUTHORED, but a rule only exists as something you can read or set once the service has seeded a
 ## live value for it (COMMANDS.md §4.2). Asking the service is therefore the honest check, and it is
 ## also what makes a harness that hand-instantiates RuleService alone still able to parse `rule`.
+## Parsed here, RESOLVED later (COMMANDS.md §2.2: "resolves to an entity list at execution time, on
+## the executing side"). Keeping those apart is what lets the host re-parse a client's raw line and
+## resolve it against its OWN complete directory — a selector resolved on the client and shipped as a
+## node list would be both untrustworthy and stale by the time it landed. The grammar itself lives in
+## core/commands/entity_selector.gd, pure and node-free, so it is testable without a spawned entity.
+func _parse_selector(raw: String, _spec: Dictionary) -> Dictionary:
+	var parsed: Dictionary = EntitySelector.parse(raw)
+	if not bool(parsed.get("ok", false)):
+		return {"ok": false, "error": String(parsed.get("error", "bad selector"))}
+	return {"ok": true, "value": parsed.get("selector", {})}
+
+
+## COMMANDS.md §2.2's `vec3`: three floats, each optionally `~` (this coordinate, unchanged) or
+## `~<offset>` (relative to it). Consumes THREE tokens where every other type consumes one, so it is
+## handled ahead of the normal per-token loop in `_parse_args` rather than here — this function only
+## ever sees one component, and `_parse_args` calls it three times with the issuer's own coordinate.
+func _parse_vec3_component(raw: String, origin_component: float) -> Dictionary:
+	if raw == "~":
+		return {"ok": true, "value": origin_component}
+	if raw.begins_with("~"):
+		var offset: String = raw.substr(1)
+		if not offset.is_valid_float() and not offset.is_valid_int():
+			return {"ok": false, "error": "'%s' is not a relative offset" % raw}
+		return {"ok": true, "value": origin_component + offset.to_float()}
+	if not raw.is_valid_float() and not raw.is_valid_int():
+		return {"ok": false, "error": "'%s' is not a coordinate" % raw}
+	return {"ok": true, "value": raw.to_float()}
+
+
+## Never reached — `vec3` is intercepted in `_parse_args`, which is the only place that can see the
+## three tokens and the ctx a `~` needs. Registered anyway so the type table stays a complete
+## description of what `type:` accepts, and so a spec naming it cannot silently fall through to
+## `_parse_string` if that interception is ever refactored away.
+func _parse_vec3(raw: String, _spec: Dictionary) -> Dictionary:
+	return {"ok": false, "error": "'%s': vec3 wants three coordinates (x y z)" % raw}
+
+
 func _parse_rule_id(raw: String, _spec: Dictionary) -> Dictionary:
 	var rule_service: Node = get_node_or_null(^"/root/RuleService")
 	var id := StringName(raw)

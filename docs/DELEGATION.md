@@ -75,6 +75,69 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 3.15: entity addressing ships — selector grammar, `EntityDirectory`, and `entities`/`tag`/`tp`/`kill` (hollow7)
+
+**What shipped, verified:** `core/commands/entity_selector.gd` (`class_name EntitySelector`, a pure
+`RefCounted` — the whole `@s @p @a @r @e[...]` grammar, node-free and testable without a SceneTree),
+`autoload/entity_directory.gd` (the live directory plus the four verbs), and two new
+`CommandService` arg types: **`selector`** and **`vec3`**.
+
+**Resolution is deliberately separate from parsing.** `_parse_selector` turns a token into a parsed
+Dictionary and stops there; `EntityDirectory.resolve(selector, ctx)` turns that into actual nodes, on
+whichever side is executing. That split is what lets the host re-parse a client's raw line and
+resolve it against its OWN complete directory — a selector resolved on the client and shipped as a
+node list would be both untrustworthy and stale on arrival.
+
+```gdscript
+var parsed := EntitySelector.parse("@e[type=enemy,r=30,limit=5,sort=nearest]")
+# -> {ok: true, selector: {kind: &"entities", filters: {...}}}   (or {ok: false, error: "..."})
+EntityDirectory.resolve(parsed["selector"], ctx) -> Array[Dictionary]
+# each: {node: Node, id: String, kind: StringName, tags: Array, peer_id: int}
+EntityDirectory.snapshot() -> Array[Dictionary]        # everything alive, same entry shape
+EntityDirectory.add_tag(node, tag) / remove_tag / tags_of
+```
+
+Filters implemented in full: `type=` (kind, or a content id — `type=crawler` reads the id off the
+node's `definition` resource), `tag=`, `r=`, explicit `x=,y=,z=` origin, `limit=`,
+`sort=nearest|random`. Randomness uses the directory's own `RandomNumberGenerator`, never the global
+one (`Array.shuffle()` is avoided for exactly that reason).
+
+**`vec3` spans three tokens and is the one arg type that reads the ctx** — `~`, `~5` are relative to
+the issuer's position. It is intercepted in `_parse_args` ahead of the per-token loop, because the
+type table hands a parser one token and no context; `_parse_vec3` itself only exists to keep the
+table a complete description of what `type:` accepts.
+
+**Adding a new addressable entity kind is one line** — `EntityDirectory.KIND_GROUPS`, mapping the
+kind to the group its members already join in their own `_ready()` (D-088). No registration call, no
+despawn handling. `tools/entity_check.gd` asserts every group name still matches its owning script's
+constant, so the one duplicated string per kind cannot rot.
+
+**`PlayerHealth` grew one public seam: `host_place_player(peer_id, position, yaw := NAN)`.** `tp` on
+a player must not write the transform — own movement is client-authoritative — so it reuses the
+`net_force_respawn` path respawn already shipped, and the host asks that peer's client to place
+itself. `NAN` yaw means "keep their facing"; respawn still passes a real yaw, so its behaviour is
+unchanged. **No protocol bump** — this task added no RPC, it reused one.
+
+**`kill` never grows a second death path**: an enemy goes through `Enemy.host_apply_damage`, a
+player through `PlayerHealth.host_apply_damage`, and anything with no damage seam (a chest, a
+haulable) is refused rather than `queue_free`d behind its owner's back.
+
+**What 3.16 inherits.** `tp`/`kill`/`tag`/`entities` are done, including D-030's need for them in
+cross-play testing. The remaining §7 catalog verbs are still open, and the `selector` type is now
+available to any of them for free. `commands --json` already reports the new arg types, so the
+coverage check has its data source.
+
+**Checks:** `tools/entity_check.gd` (offline, 63 assertions — the grammar including nine malformed
+inputs, the group-constant guard, stable ids across rescans, pruning, every filter, tags surviving a
+rescan, `~` relative coords, and `kill` actually reaching `EnemyWorld.live_count() == 0`) and
+`tools/entity_net_check.gd` (two-process ENet — a non-op client refused while a LOCAL `entities`
+still answers, an opped client's `kill` resolving on the HOST's directory rather than its own partial
+view, and `tp @s` moving the CLIENT's own body in the CLIENT's process, which is the only place the
+authority-respecting chain can actually be proven). Both 0 failures, 0 engine ERROR lines, alongside
+`command_check`, `command_net_check`, `rule_check`, `rule_net_check`, `player_health_check`,
+`handshake_check`, `enemy_check`, `verify_setup`.
+
+
 ### 2026-08-18 — `dodging` now means "invulnerable", not "dashing" (F-125/D-087) — read this before touching the dodge or the powerup that extends it (yarrow21)
 
 `entities/player/player_controller.gd` has **two** dodge windows now, and which one you read decides
