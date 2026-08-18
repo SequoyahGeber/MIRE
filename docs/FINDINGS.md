@@ -956,6 +956,46 @@ The level renders at ~100 fps on the M5 Pro where the scene complexity justifies
 
 ## Resolved
 
+### F-091 · Two ways the harness lets a fed lane sit idle: a parked lane is never restarted, and a lane's own claim blocks deepening its queue — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by ivy8
+
+Both surfaced on 2026-08-18 while keeping LP and LC1 saturated, and both waste the one resource that
+cannot be recovered — a subscription window's unused tokens are gone at reset.
+
+**1. A lane parked past the sleep ceiling is never restarted.** `agent saturate --watch` sleeps out a
+quota wall only when the reset is within `MAX_WAIT_HOURS` (8). Beyond that it returns and the chain
+exits, correctly leaving its orders queued — but nothing then brings the lane back, so a weekly
+window that returns overnight is spent idle until a human notices. LC1 hit this: its five-hour wall
+was recorded as `2026-08-18T10:08:04+00:00`, but its **weekly** was the exhausted one, and a chain
+sleeping to the five-hour mark would have woken, run `lane reset` (clearing any park), retried
+against a dead window, and burned its four resumes for nothing.
+
+**Fixed:** `.agent/bin/lane-revive <LANE> <iso-utc>` — double-fork + setsid daemon (macOS has no
+`setsid(1)`, so this cannot be a shell one-liner) that sleeps until the window is due, clears the
+park, and relaunches the lane's detached chain. If the window has not actually returned, the first
+dispatch is refused cheaply and the lane re-parks itself with a real reset time, so an early estimate
+costs one refused probe while a late one costs a day of a fresh weekly window. Armed for LC1 at
+`2026-08-18T07:05:00+00:00`.
+
+**2. A lane's own live claim refuses the next order for that same lane.** `cmd_order`'s live-claims
+check rejected any file appearing in `state.json`'s claims, regardless of who held it. But one
+account runs one agent at a time, so a lane's queue is strictly sequential and the claim is released
+before the next order starts — the open-orders loop directly below already reasons exactly this way.
+The result was that a lane could not have its queue deepened on the subsystem it was actively
+working: ordering F-085 was refused over `autoload/build_service.gd`, held by LP for F-084, the task
+immediately ahead of it in the same queue.
+
+**Fixed:** the live-claims check now ignores claims whose holder is the ordering lane itself.
+Cross-lane overlap still dies exactly as before — that is the property the claim system exists for.
+
+**Verified:** `agent order F-085 --lane LP --files autoload/build_service.gd tools/build_check.gd`
+now writes the order while LP still holds that file for F-084, and `agent report` lists F-085 behind
+F-084 in LP's queue. A cross-lane overlap still refuses. `python3 -m py_compile .agent/bin/agent`
+clean; `.agent/bin/lane-revive` running detached under pid 1.
+
+---
+
 ### F-074 · InventoryService._valid_host_peer's connectivity check silently drops a host grant for a peer mid-D-035-grace-window, instead of parking it — **fixed**
 
 **Area:** netcode · **Severity:** low · **Found:** 2026-08-18 by lp · **Resolved:** 2026-08-18 by lp

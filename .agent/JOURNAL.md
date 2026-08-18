@@ -2226,3 +2226,15 @@ Notes along the way:
 Files: `autoload/inventory_service.gd`, `tools/inventory_net_check.gd`
 
 Commit at time of writing: `c0d19a3`
+
+---
+
+### DONE · F-091 · ivy8 · 2026-08-18T05:14:05+00:00
+
+**Two ways the harness lets a fed lane sit idle: a parked lane is never restarted, and a lane's own claim blocks deepening its queue**
+
+Added .agent/bin/lane-revive (double-fork daemon; macOS has no setsid) to bring a lane back when its window returns beyond saturate's 8h sleep ceiling, armed for LC1 at 07:05Z. Also stopped cmd_order's live-claims check from refusing an order over a claim the ordering lane itself holds — one account runs one agent, so its queue is sequential. Verified: F-085 now orders while LP holds build_service.gd for F-084; cross-lane overlap still refuses.
+
+Files: `.agent/bin/agent`, `.agent/bin/lane-revive`, `docs/FINDINGS.md`
+
+Commit at time of writing: `fa2eed0`

@@ -1824,7 +1824,13 @@ def cmd_order(args):
     # Never hand out two orders that fight. This is the single most important safety property once
     # three lanes run at once: the claim system catches a collision, but only after a lane has
     # already spent quota getting to its first edit.
-    conflicts = [(f, st["claims"][f]) for f in files if f in st["claims"]]
+    # A claim held by this same lane is not a conflict: one account runs one agent at a time, so its
+    # queue is strictly sequential and the claim will be released before the next order starts. The
+    # open-orders loop below already reasons this way; the live-claims check did not, so deepening a
+    # lane's queue on the subsystem it was working was refused by its own in-flight claim — F-085 was
+    # refused over autoload/build_service.gd, held by LP for F-084, the task immediately ahead of it.
+    conflicts = [(f, st["claims"][f]) for f in files
+                 if f in st["claims"] and st["claims"][f].get("agent") != lane.lower()]
     for f, c in conflicts:
         print("%s✗ %s is claimed by %s for %s%s" % (C["r"], f, c["agent"], c["task"], C["x"]))
     if conflicts:
