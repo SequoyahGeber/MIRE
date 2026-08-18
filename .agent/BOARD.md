@@ -63,7 +63,7 @@
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-045** `pgrep -fl Godot` is too blunt to be the closed-editor guard | todo |
 | ⬜ | **F-053** Agents still tell Sequoyah they can't edit scene files; the docs' hand-off-by-default tone is why | todo |
-| ⬜ | **F-055** `core/util/mire_log.gd`'s `CHANNELS` list has no `health` channel | todo |
+| ⬜ | **F-055** Committed HEAD boots with a failed autoload — `c187ede` deleted a script but left it registered | todo |
 | ⬜ | **F-056** `docs/SPECS.md`'s 2.11 block omitted `net_version.gd`/`handshake_check.gd` despite adding a new RPC | todo |
 
 ## Done

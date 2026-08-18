@@ -634,6 +634,52 @@ commit.
 
 ---
 
+### F-056 · The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join
+
+**Area:** level/gameplay · **Severity:** critical — the game is unplayable; it blocks 2.9 and 2.14 ·
+**Found:** 2026-08-17 by flint5, from Sequoyah: *"i fall through the map immediately on join"*
+
+`PlayerNet._claim_spawn_point()` reads the level's hand-placed `Player` body and uses its transform
+as the spawn, fanning peers out by `SPAWN_OFFSETS`. Measured against the live tree with
+`tools/spawn_ground_probe.gd`:
+
+```
+spawn transform (PlayerNet reads this): (0.000, -1.867, 7.302)
+slot                  spawn y   ground y        gap   verdict
+x+0.0 z+0.0            -1.867     -0.066     -1.801   BURIED — falls through
+x+1.6 z+0.0            -1.867          -          -   NO GROUND ANYWHERE
+x-1.6 z+0.0            -1.867          -          -   NO GROUND ANYWHERE
+x+0.0 z+1.6            -1.867          -          -   NO GROUND ANYWHERE
+x+0.0 z-1.6            -1.867          -          -   NO GROUND ANYWHERE
+```
+
+A `CharacterBody3D` starting inside collision is pushed through it rather than resting on it, so the
+fall is immediate and total. The four peer slots are worse than the base: nothing under them at all,
+so in multiplayer every joining client falls too.
+
+**This is not `c187ede` by itself.** The three-platform LAN run earlier the same day logged
+`PlayerNet: spawn point taken from level at (0.000000, 0.194556, 7.400000)` and players landed fine
+(`verify_setup`: *player rests at ground level*). The spawn is now `(0.000, -1.867, 7.302)`, so it
+moved *after* that run — the uncommitted `world/gen/playtest_hollow.gd` +
+`world/gen/layouts/playtest_hollow.json` work in the tree. The heightfield gives the ground 2.67 m of
+relief, so any spawn Y authored against the old flat floor is now wrong by whatever the relief is at
+that XZ.
+
+**Why every existing check missed it, which is the more useful half of this finding.**
+`verify_setup`'s physics assertions ("player is on the floor", "rests at ground level") run against a
+**fixture level with a flat `Ground`**, never the real map — they passed while the real map was
+unplayable. `playtest_hollow_check` validates the level thoroughly (325 colliders, grid sanity,
+facet angles, 2.67 m relief) but never asks *whether a player can stand at the spawn*. So the one
+question that decides playability was owned by no check at all.
+
+Fix: re-place the level's `Player` node onto the heightfield surface (sample the layout's height at
+its XZ rather than hand-placing a Y), and confirm every `SPAWN_OFFSETS` slot has ground under it —
+the offsets fan sideways and can walk a peer off a shelf even when the base point is fine.
+`tools/spawn_ground_probe.gd` is the standing instrument; it belongs in `playtest_hollow_check` so
+this can never regress silently again.
+
+---
+
 ## Resolved
 
 ### F-043 · The iron sword ships complete and nothing puts it in a player's hand — **decided, won't add**

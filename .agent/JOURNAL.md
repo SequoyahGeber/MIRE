@@ -1653,3 +1653,15 @@ NOT closed — this was a LAN/ENet run, and 1.12 is specifically the Steam trans
 Files: `docs/STEAM_CROSS_PLATFORM_TEST.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `312f756`
+
+---
+
+### HANDOFF · F-056 · flint5 · 2026-08-18T00:33:04+00:00
+
+**`docs/SPECS.md`'s 2.11 block omitted `net_version.gd`/`handshake_check.gd` despite adding a new RPC**
+
+DIAGNOSED, not fixed — the map files belong to tine18's 2.1j claim and I will not edit another agent's in-flight work. Measured: spawn transform is (0.000, -1.867, 7.302) while the heightfield surface there is y=-0.066, so the spawn is buried 1.80m; all four SPAWN_OFFSETS peer slots have NO ground at all. Caused by the uncommitted world/gen/playtest_hollow.gd + layouts/playtest_hollow.json work, NOT by c187ede — the LAN run hours earlier spawned fine at y=0.194556. Fix belongs to whoever holds those files: sample the layout height at the Player node's XZ instead of a hand-placed Y, and verify every offset slot. tools/spawn_ground_probe.gd is shipped as the instrument; fold it into playtest_hollow_check so this cannot regress silently — that check validates 325 colliders and facet angles but never asks whether a player can stand at the spawn, which is why nothing caught this.
+
+Files: `tools/spawn_ground_probe.gd`, `docs/FINDINGS.md`
+
+Commit at time of writing: `79b50bd`
