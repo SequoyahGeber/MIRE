@@ -1,5 +1,10 @@
 extends SceneTree
 
+## Preloaded rather than referenced by bare class_name: a script new to this session is not yet in
+## .godot/global_script_class_cache.cfg, so a --script run that names it bare fails "Identifier not
+## declared" (F-016, same fix tools/handshake_check.gd uses for NetVersion).
+const IslandHeightmap = preload("res://world/gen/island_heightmap.gd")
+
 ## Cross-platform determinism probe (risk R6).
 ##
 ##   /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script tools/check_determinism.gd
@@ -35,8 +40,9 @@ func _initialize() -> void:
 	print("noise_simplex  %s" % _hash_noise(FastNoiseLite.TYPE_SIMPLEX_SMOOTH))
 	print("noise_perlin   %s" % _hash_noise(FastNoiseLite.TYPE_PERLIN))
 	print("float_math     %s" % _hash_float_math())
+	print("terrain_hash   %s" % _hash_terrain())
 
-	print("\nAll four must match on macOS and Windows. Record in DECISIONS.md.")
+	print("\nAll five must match on macOS and Windows. Record in DECISIONS.md.")
 	quit()
 
 
@@ -96,4 +102,22 @@ func _hash_float_math() -> String:
 		# The island falloff from ARCHITECTURE.md §4, in the shape it will actually be used.
 		var d: float = Vector2(t - 17.0, t * 0.5 - 9.0).length() / 24.0
 		_feed(ctx, clampf(1.0 - pow(d, 3.0), 0.0, 1.0))
+	return _digest(ctx)
+
+
+## Task 4.1's island heightmap, exercised end to end: both noise layers plus the island falloff.
+## This is the real terrain pipeline, not a standalone probe of its parts — if this diverges across
+## platforms while the four probes above don't, the bug is in island_heightmap.gd's own arithmetic,
+## not in an engine primitive.
+func _hash_terrain() -> String:
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	for gz in GRID:
+		for gx in GRID:
+			# Spread samples across several hundred metres so the grid crosses the island falloff
+			# edge (radius 512m) as well as the interior — a grid that never leaves flat interior
+			# noise couldn't catch a falloff-math regression.
+			var x: float = (float(gx) - float(GRID) * 0.5) * 24.0
+			var z: float = (float(gz) - float(GRID) * 0.5) * 24.0
+			_feed(ctx, IslandHeightmap.height(x, z, SEED))
 	return _digest(ctx)

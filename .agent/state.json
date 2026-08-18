@@ -1630,6 +1630,12 @@
       "at": "2026-08-18T05:19:32+00:00",
       "task": "F-084"
     },
+    "tools/check_determinism.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:50:20+00:00",
+      "hash": "aef279f25a7f4a7999eb07aeac16285bb1c8e7058498791b620ce375a4971a81",
+      "task": "4.1"
+    },
     "tools/chest_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T04:33:16+00:00",
@@ -1978,6 +1984,12 @@
       "at": "2026-08-18T01:20:10+00:00",
       "task": "F-056"
     },
+    "tools/terrain_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:50:20+00:00",
+      "hash": "3afc355a9679c233640e616df0bf9d95cf4eeccf0d4e901e2d53f149c0d21343",
+      "task": "4.1"
+    },
     "tools/vfx_site_probe.gd": {
       "agent": "larch10",
       "at": "2026-08-18T14:09:47+00:00",
@@ -2088,6 +2100,12 @@
       "agent": "vane19",
       "at": "2026-08-18T17:55:20+00:00",
       "task": "F-114"
+    },
+    "world/gen/island_heightmap.gd": {
+      "agent": "lm",
+      "at": "2026-08-18T19:50:20+00:00",
+      "hash": "a58a0c1a379c5198bb694cec343d356f53dedfc7b52d4741e3cbf272354acd1f",
+      "task": "4.1"
     },
     "world/gen/layouts/hollowmere.json": {
       "agent": "ivy8",
@@ -2757,9 +2775,11 @@
       "title": "Finish Spike R6 \u2014 determinism probe on Windows x86_64, fill the third column in `ARCHITECTURE.md` \u00a76a"
     },
     "4.1": {
+      "done_at": "2026-08-18T19:50:20+00:00",
+      "done_by": "lm",
       "est": "4",
       "milestone": "M4",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Seeded island heightmap: layered noise + island falloff, deterministic RNG per subsystem"
     },

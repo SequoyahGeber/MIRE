@@ -3122,3 +3122,18 @@ Authored 59 powerup .tres files completing POWERUPS.md §4's 60-def roster (regi
 Files: `content/powerups/ember_knuckle.tres`, `content/powerups/tinder_snap.tres`, `content/powerups/ashen_temper.tres`, `content/powerups/flashover.tres`, `content/powerups/cauter_seal.tres`, `content/powerups/forge_blood.tres`, `content/powerups/night_pyre.tres`, `content/powerups/warm_marrow.tres`, `content/powerups/cinder_tithe.tres`, `content/powerups/open_flame.tres`, `content/powerups/thick_hide.tres`, `content/powerups/red_quench.tres`, `content/powerups/adrenal_bloom.tres`, `content/powerups/pact_cut.tres`, `content/powerups/sealed_veins.tres`, `content/powerups/steady_hands.tres`, `content/powerups/stubborn_heart.tres`, `content/powerups/scab_feast.tres`, `content/powerups/iron_tongue.tres`, `content/powerups/whetted_thirst.tres`, `content/powerups/long_bound.tres`, `content/powerups/bellows_lung.tres`, `content/powerups/second_wind.tres`, `content/powerups/loping_gait.tres`, `content/powerups/skip_step.tres`, `content/powerups/cat_fall.tres`, `content/powerups/pack_frame.tres`, `content/powerups/air_writ.tres`, `content/powerups/spent_spring.tres`, `content/powerups/wide_cap.tres`, `content/powerups/rot_chew.tres`, `content/powerups/slow_gut.tres`, `content/powerups/spore_sole.tres`, `content/powerups/damp_stride.tres`, `content/powerups/rich_marrow.tres`, `content/powerups/moss_shroud.tres`, `content/powerups/fruiting_call.tres`, `content/powerups/root_hold.tres`, `content/powerups/quiet_bloom.tres`, `content/powerups/rime_shell.tres`, `content/powerups/chill_edge.tres`, `content/powerups/deep_frost.tres`, `content/powerups/still_breath.tres`, `content/powerups/cellar_cache.tres`, `content/powerups/pale_guard.tres`, `content/powerups/patient_draw.tres`, `content/powerups/sanctum_frost.tres`, `content/powerups/numb_skin.tres`, `content/powerups/white_quiet.tres`, `content/powerups/far_grasp.tres`, `content/powerups/deep_pocket.tres`, `content/powerups/hollow_bargain.tres`, `content/powerups/thin_step.tres`, `content/powerups/unseen_seam.tres`, `content/powerups/fletchers_debt.tres`, `content/powerups/gaunt_frame.tres`, `content/powerups/grave_due.tres`, `content/powerups/second_glance.tres`, `content/powerups/empty_vessel.tres`
 
 Commit at time of writing: `699b859`
+
+---
+
+### DONE · 4.1 · lm · 2026-08-18T19:50:20+00:00
+
+**Seeded island heightmap: layered noise + island falloff, deterministic RNG per subsystem**
+
+world/gen/island_heightmap.gd: pure IslandHeightmap.height(x,z,world_seed)->float, layered simplex (continental+detail FastNoiseLite) masked by cubic island falloff, all D-017 safe-set ops, no nodes/RNG. Verified: agent godot --script tools/terrain_check.gd (6/6 assertions), agent godot --script tools/check_determinism.gd (new terrain_hash probe, reproduced bea0483c1ad5bb4b across 2 runs on macOS arm64, other 4 hashes match existing D-017/D-028 macOS values), agent godot --quit-after 60 (0 ERROR). Design + measurements in DECISIONS.md D-075; API in DELEGATION.md Current state for 4.2.
+
+Notes along the way:
+- island_heightmap.gd: two layered FastNoiseLite fields (continental+detail) + cubic radial falloff, all D-017 safe-set ops. terrain_hash extended onto check_determinism.gd; macOS bea0483c1ad5bb4b, recorded D-075. terrain_check.gd asserts behavior (6/6 pass).
+
+Files: `world/gen/island_heightmap.gd`, `tools/check_determinism.gd`, `tools/terrain_check.gd`
+
+Commit at time of writing: `8bb62bb`
