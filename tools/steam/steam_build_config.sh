@@ -7,7 +7,9 @@
 ## set to put here. Fill these in as part of 8.2, not before — a real App ID with no matching
 ## Steamworks depots configured just turns this file into a link to something that doesn't work
 ## yet. Depot IDs themselves get created in the Steamworks web dashboard once the App ID exists;
-## wiring the real ones in per-platform is task 8.11's job, not this file's.
+## task 8.11 built that runbook (tools/steam/DEPOT_SETUP.md) and a one-shot writer
+## (tools/steam/apply_ids.sh <app_id> <win> <mac> <linux>) so filling these four values in is a
+## single command once real IDs are in hand, not a hand-edit of this file.
 ##
 ## Everything here is public once the store page exists (an App ID is visible in the store URL) —
 ## nothing in this file is a secret. steamcmd's own login session (cached under ~/Steam/config/

@@ -6057,3 +6057,24 @@ content/unlocks row of F-236 fixed: 6 new UnlockDef rows (unlock_loping_gait, un
 Files: `content/unlocks/unlock_bottomless_quiver.tres`, `content/unlocks/unlock_cauter_seal.tres`, `content/unlocks/unlock_coin_worm.tres`, `content/unlocks/unlock_loping_gait.tres`, `content/unlocks/unlock_night_pyre.tres`, `content/unlocks/unlock_thin_step.tres`, `systems/unlocks/unlock_def.gd`, `tools/unlock_check.gd`
 
 Commit at time of writing: `4435e7c`
+
+---
+
+### HANDOFF · 8.11 · lp · 2026-08-19T19:05:14+00:00
+
+**Three depots wired to one app, per-platform launch options**
+
+Genuinely blocked, not abandoned: 8.11's deliverable (real Steamworks depots + real per-platform launch options) needs a real App ID, which needs 8.1 (Steamworks account/tax/banking/$100 fee -- Sequoyah's alone, D-039) then 8.2 (App ID swap). Both still todo in .agent/state.json as of this session -- confirmed before writing a line of code. D-132 predicted this split; this is it landing.
+
+What I built instead, as far as prep can go without an App ID:
+- tools/steam/DEPOT_SETUP.md -- the exact Steamworks dashboard runbook (create 3 depots, set OS/arch restriction per depot, set launch options per platform) with the per-platform executable table cross-checked against export_release.sh (task 8.4) and each depot_<platform>.vdf.template's ContentRoot.
+- tools/steam/apply_ids.sh <app_id> <win> <mac> <linux> -- writes real IDs into steam_build_config.sh in one shot, refusing wrong arg count / non-numeric input / either placeholder reappearing (480 or 0) / two colliding depot IDs.
+- tools/steam/depot_wiring_check.sh -- verifies all of the above against a scratch copy (never touches the real placeholder file). Ran clean: bash tools/steam/depot_wiring_check.sh -> ALL CHECKS PASSED. bash -n clean on all 5 tools/steam/*.sh scripts. agent godot --script tools/findings_numbering_check.gd -> open=16 resolved=234 failures=0 (confirms the new F-248 entry didn't corrupt FINDINGS.md's Open/Resolved split).
+
+Docs: docs/SPECS.md '## 8.11 ·' block written (none existed), docs/DECISIONS.md D-132 got a 2026-08-19 addendum, docs/DELEGATION.md Current state carries the summary + next-agent instructions, docs/STEAM.md's S4 checklist line now points at DEPOT_SETUP.md, docs/FINDINGS.md F-248 filed (the 8.1/8.2 -> rest-of-M8 dependency isn't encoded anywhere agent board/brief can render, so this exact blocker wasn't discoverable except by hand-reading D-132/SPECS.md -- likely affects 8.3/8.5/8.6/8.7/8.9 too, not individually confirmed).
+
+Next agent, only after 8.2 lands a real App ID: follow DEPOT_SETUP.md in the Steamworks dashboard, run apply_ids.sh with the 4 real IDs, re-run depot_wiring_check.sh, then a real steam_upload.sh internal-beta <username>. Don't redesign the runbook or script -- they're ready and verified.
+
+Files: `tools/steam/steam_build_config.sh`, `tools/steam/apply_ids.sh`, `tools/steam/depot_wiring_check.sh`, `tools/steam/DEPOT_SETUP.md`
+
+Commit at time of writing: `0cae54b`
