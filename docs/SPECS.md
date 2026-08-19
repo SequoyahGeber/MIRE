@@ -4526,6 +4526,81 @@ directions now agree with the printed result, where before the fix a real PASS r
 
 ---
 
+## F-057 · A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds
+
+**Claim:** `tools/blender/build_crafting_stations.py`, `tools/blender/crafting_stations_repro_check.py`,
+`assets/crafting_stations` (catalog, exports, previews), `assets/source/crafting_stations.blend`,
+`docs/ASSET_TRACKER.md`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DECISIONS.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Root cause, confirmed rather than assumed.** The finding's own hypothesis — Blender's bevel
+modifier changing a few float bytes between otherwise identical background exports on Apple Silicon,
+the mechanism `build_ward_set.py` first found — was real but unverified for this kit specifically. A
+baseline rebuild of the pre-fix script (`agent baseline`-style: two separate, real `Blender
+--background --python build_crafting_stations.py` process invocations, exactly how the script's own
+docstring says to run it) reproduced it directly: `station_stone_furnace.glb` differed byte-for-byte
+across two clean rebuilds on this machine, `catalog.json` staying identical both times (dimensions
+round to the same value; only the bevel geometry's raw floats drift). It does not reproduce on every
+run — three earlier rebuilds in this session came back byte-identical before one caught it — matching
+the finding's own "four float bytes" characterization of how small and how intermittent the drift is.
+
+Separately, and probably the bigger reason A-003's tracker row read as passing: the GLBs actually
+checked in at `HEAD` did not match a clean rebuild of the current script *at all* — different
+dimensions, a duplicate `MIRE_Ember`/`MIRE_Ember.001` material pair, a fully different polygon count.
+`git log --follow` on `station_campfire.glb` shows its last real change landed in `14ead00`, "Art:
+tools/weapons migrated; palette re-anchored to measured base colours" — a commit about a different
+asset family entirely, whose message never mentions crafting stations. This is the F-149/F-191 class
+of bug (a concurrent agent's commit sweeping up another lane's dirty files) reaching **generated
+asset files**, not just `docs/`, which is a new instance of that pattern — filed separately as F-197
+rather than folded in here, since fixing *this* finding does not fix the mechanism that produced it.
+
+**Fix:** `build_crafting_stations.py` now overrides `mire_art.box()` with a bevel-free version, the
+same pattern `build_ward_set.py`, `build_construction_set.py`, `build_flora_set.py` and
+`build_extraction_ship_set.py` already carry for exactly this reason — all four already cite F-057 in
+their own comments while this kit, the family that *found* the bug, had never applied its own fix.
+`bevel` stays an accepted-and-ignored parameter so the 23 existing call sites read unchanged. Cost:
+2,731 → 1,651 total polygons (a bevel's one-segment modifier roughly doubles a box's face count) and
+slightly squared-off chamfers on drawer fronts, the furnace mouth and the vise — visually confirmed
+against both preview renders, still reads correctly at the kit's scale. Then rebuilt clean and
+committed the correct exports/catalog/previews/`.blend` source, closing the F-195 staleness gap at
+the same time.
+
+**Verify:** new `tools/blender/crafting_stations_repro_check.py` — a plain-Python driver (no `bpy`
+needed) that shells out to two separate `Blender --background --python build_crafting_stations.py`
+processes, exactly the real invocation, and diffs every `exports/*.glb` plus `catalog.json` byte-for-
+byte between them. Deliberately does NOT call `build_crafting_stations.main()` twice inside one
+Blender process — that leaves the first run's mesh datablocks alive in `bpy.data` (Blender purges
+orphans on file reload, not on `object.delete()`), so the second in-process call collides with
+leftover names like `Leg_1_1_Mesh` and gets auto-suffixed `.001`, a real effect but one the actual
+pipeline never hits because it always launches a fresh process per rebuild. An earlier draft of this
+check made exactly that mistake and reported all 8 GLBs failing; the two-process version is what
+actually matches the contract being verified.
+
+**Verified 2026-08-19 (lm):** `python3 tools/blender/crafting_stations_repro_check.py` →
+`CRAFTING_STATIONS_REPRO_CHECK PASS`, all 8 GLBs plus `catalog.json` byte-identical across two
+real rebuilds, run twice more directly (six total rebuilds, all pairwise identical). Reproduced the
+pre-fix bug directly first: with the bevel-free override reverted (`git stash push -- <path>`, scoped
+to this one file), the same check failed — `station_stone_furnace.glb` differed across two rebuilds,
+everything else and the catalog matched — then restored the fix and re-confirmed `PASS`. Both preview
+renders visually inspected post-fix: all eight stations still read correctly with the slightly harder
+edges.
+
+Also ran a fresh Godot import — these GLBs are loaded by name (`content/stations/*.tres`'s
+`world_scene`, matched against `world/gen/authored_world.gd`'s Hollowmere markers), not just sitting
+unreferenced, so this is a real downstream consumer. First attempt hit **F-196** directly: repeated
+Blender rebuilds interleaved with `agent godot` checks during this session's own testing left all 8
+`.glb.import` files at `valid=false` (no `path=` line, so nothing to load), and the running game
+threw 16 `Failed loading resource`/`MeshMerge could not load` errors for `authored_world.gd`'s prop
+pass. A single explicit `agent godot --import` after deleting the stale `.import` files and their
+`.godot/imported/` cache entries cleared it, exactly F-196's own documented remedy. Re-ran `agent
+godot --quit-after 30`: zero `ERROR` lines, `AUTHORED_WORLD id=hollowmere ... props=2880` (up from
+2869 before the fix — the crafting stations now actually load into the prop pass instead of silently
+no-opping), clean boot.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

@@ -3446,3 +3446,35 @@ social framing this decision's direct-grant version only serves indirectly (thro
 `PowerupService`'s existing `net_powerup_counts` broadcast telling every teammate a stack count
 changed, not through anything visible in the world). A playtest showing the shared-roll split
 matters more than "everyone loots" would also revisit the second call.
+
+### D-124 · 2026-08-19 · Any Blender art family whose contract includes a byte-identical rebuild must not use `mire_art.box()`'s bevel modifier
+
+F-057 left this as "an art-owner call" between two options: drop bevels (byte-stable, but squares off
+deliberate chamfers and changes polygon counts) or accept the drift and weaken the contract for that
+one family. By the time F-057 actually got fixed, four generators had already independently made the
+same call the same way — `build_ward_set.py` first, then `build_flora_set.py`,
+`build_construction_set.py` and `build_extraction_ship_set.py`, all four citing F-057 in their own
+comments — while `build_crafting_stations.py`, the family that *found* the bug, was the one that had
+never applied its own fix. Four independent agents reaching the identical answer without being told
+to is what "art-owner call" looks like once it stops being ambiguous; recording it here is so the
+fifth, sixth and seventh generator don't have to re-derive it, and so a future PR review has one
+place to point at instead of five scattered code comments.
+
+The rule: **a family whose `docs/ASSET_TRACKER.md` row claims (or will claim) a byte-identical
+rebuild never passes `bevel=` through to `mire_art.box()`'s live modifier.** Either override `box()`
+locally with a bevel-free version (`build_ward_set.py`'s shape — keep the `bevel` parameter so call
+sites read unchanged, just ignore it), or don't call `box(..., bevel=...)` at all. `mire_art.box()`
+itself keeps the bevel-capable version and its warning docstring, because not every family carries a
+byte-identical contract (a hero asset that's hand-tuned once and never proven to rebuild identically
+has no reason to give up the chamfer) — this decision governs the ones that do.
+
+F-198 found three `DONE` batches (A-004, A-005, A-006 — `build_tool_weapon_set.py`,
+`build_loot_set.py`, `build_enemy_crawler.py`) that still call the live bevel modifier with no
+override, despite their own tracker rows already claiming a byte-identical rebuild passed. Not fixed
+under this decision — each needs its own rebuild-and-reverify task — but this is the rule that task
+should apply, and the reason it's a known, not a newly-discovered, shape of fix.
+
+**Would change my mind:** a future Blender version that makes the bevel modifier itself deterministic
+in background mode — this is pinned tooling (D-038), so that would have to be verified on the exact
+pinned build, not assumed from a changelog. Until then, the modifier costs a family byte-identical
+evidence it can't get back except by not using it.

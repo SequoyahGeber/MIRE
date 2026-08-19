@@ -110,28 +110,6 @@ material tint or a corruption-VFX attachment on `bog_crawler`'s instance would c
 rather than fixing here because 4.10 hasn't shipped yet and this task's own scope was the mechanic,
 not the skin.
 
-### F-151 · `ui/loot/chest_ui.gd` was never registered, so no chest in the game could be opened — **fixed**
-
-**Area:** ui · **Severity:** high · **Found:** 2026-08-18 by slate17 during 3.7
-
-Task 3.5 shipped `ui/loot/chest_ui.gd` — the client-local panel that finds the nearest chest, turns
-[E] into exactly one `request_open()`, and renders the result. Every other UI system in the project
-is an autoload (`InventoryUI`, `CraftingUI`, `AttunementUI`, `VitalsHud`, `LobbyMenu`). This one was
-not, and nothing else loaded it: no `[autoload]` line, no `.tscn` instancing it, no `preload` from
-any script. **There was no way to open a chest in the running game at all** — the whole loot path
-existed and was unreachable, which is precisely what CLAUDE.md means by "a script nothing loads
-isn't shipped" (F-051).
-
-It went unnoticed because every chest check drives `Chest` directly: `chest_check.gd` calls
-`request_open()` on a node it built itself, and `chest_net_check.gd` does the same across two
-processes. Both are correct tests of the authority path and neither can see that nothing in the game
-ever calls it.
-
-**Fixed here** with `agent autoload ChestUI ui/loot/chest_ui.gd`, verified by a clean boot and
-`tools/verify_setup.gd` (all checks passed). Worth a general habit: a UI script with no autoload
-line and no scene reference is dead code until proven otherwise, and `verify_setup`'s autoload
-assertion is the place a future orphan would be caught cheaply.
-
 ### F-139 · `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline
 
 **Area:** worldgen / netcode · **Severity:** low · **Found:** 2026-08-18 by lm during 4.6
@@ -372,106 +350,6 @@ observed serialising four concurrent runs and killing one lane outright:
 
 So the contention is now visible and bounded. **Decide the cache question against real hold times,
 not against this paragraph.**
-
-### F-057 · A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds
-
-**Area:** art pipeline · **Severity:** low · **Found:** 2026-08-17 by tine18 during the 2.1j palette migration
-
-`assets/crafting_stations/exports/station_stone_furnace.glb` and `station_workbench_upgraded.glb`
-change content — same byte length, different bytes — when `tools/blender/build_crafting_stations.py`
-runs twice with no source change. Both were already dirty in `git status` at the start of the 2.1j
-session, so this predates that task; the migration only surfaced it, because diffing catalogs across
-rebuilds became routine.
-
-The cause is almost certainly the bevel modifier. `build_ward_set.py` overrides `box()` with a
-bevel-free version and says why: Blender's bevel modifier changed four float bytes between otherwise
-identical background exports on Apple Silicon. The station kit has 23 `bevel=` call sites, does not
-override `box()`, and the two affected stations are the bevel-heavy ones — worktops, drawers, handles.
-
-This matters because the verification contract requires a deterministic clean rebuild and A-003 is
-recorded as having passed it. Either that check never compared two rebuilds of this family, or it
-compared sizes rather than bytes.
-
-Left open deliberately: both fixes are art-owner calls. Drop bevels from the station kit as the Ward
-set did (byte-stable, but squares off deliberate chamfers and changes polygon counts), or accept the
-drift and weaken the contract for this one family. `mire_art.box()` now carries the warning in its
-docstring so the next family chooses deliberately instead of inheriting it.
-
----
-
-### F-130 · Three console commands never migrated to CommandService — they register via console.call("register", ...), which 3.13's sweep could not see
-
-**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by yarrow21
-
-`f9cb6f7` ("CommandService front door: ... **migrate every console command**") left three behind, and
-every headless run since prints their deprecation warnings:
-
-```
-[WARN] dev: DebugConsole.register('fps_cap') uses the deprecated shim — migrate to
-       CommandService.register_spec() (docs/COMMANDS.md §2.1)
-[WARN] dev: DebugConsole.register('vsync')  ... same
-[WARN] dev: DebugConsole.register('gfx')    ... same
-```
-
-- `core/dev/dev_frame_cap.gd:61,63` — `fps_cap`, `vsync`
-- `autoload/graphics_quality.gd:181` — `gfx`
-
-**Why the sweep missed them, which is the part worth keeping.** Every migrated caller referenced the
-autoload directly, so `grep -rn 'DebugConsole.register('` found it. These three do not: they resolve
-the node at runtime and invoke it by name —
-
-```gdscript
-var console: Node = get_node_or_null(^"/root/DebugConsole")
-if console == null or not console.has_method("register"):
-    return
-console.call("register", &"gfx", _cmd_gfx, "gfx [low|medium|high] | ...")
-```
-
-so the command name never appears next to the method name in the source text and no grep for the
-call site can match. The same shape will hide the next migration too. A source-text regression guard
-in the style of the one F-060 already established for `tools/*_net_check.gd` would catch it: assert
-that no `.gd` outside `autoload/debug_console.gd` contains `call("register"` / `call(&"register"`.
-
-**Cost today:** three WARN lines on every single headless check run — against a repo whose audit
-standard is 0 error lines and whose checks are read by eye. It is noise that trains agents to skim
-warnings. The commands themselves work; the shim still forwards them (`command_service.gd:210`
-handles bare-String returns from old handlers).
-
-**Fix:** port the three to `CommandService.register_spec()` with typed specs and a declared scope
-(`gfx`, `fps_cap` and `vsync` are all LOCAL — they change this peer's rendering, nothing else's),
-then delete the shim path if nothing else uses it. Needs a claim on `core/dev/dev_frame_cap.gd`,
-`autoload/graphics_quality.gd`, and whatever guard file the regression check lands in.
-
-**Partial fix 2026-08-18 by lp (task 3.16).** `fps_cap` and `vsync` are migrated —
-`core/dev/dev_frame_cap.gd` now registers both through `register_spec()`, and neither warns on a
-headless run anymore. `gfx` is still on the shim: `autoload/graphics_quality.gd` was held under
-another task's claim (F-144) for this task's entire run, so the one remaining line is a one-`register_spec`-call
-fix for whoever next holds that file — same shape as `fps_cap` above it. Still **Open** for that
-reason; not moving to Resolved on two thirds of a fix. The source-text regression guard this finding
-proposed was not built — `tools/command_catalog_check.gd` (3.16) catches the same class of leftover
-differently, by refusing to count a shim-registered verb as coverage, but that only fires for names
-§7 already lists, so a *new* verb someone forgets to migrate would still slip past silently as F-130
-originally warned.
-
-**Second session 2026-08-18 (lp) — still blocked on the same file, guard built this time.**
-`agent claim F-130 autoload/graphics_quality.gd` still fails — held by `nettle12` for F-144,
-unchanged from the last session (confirmed via `agent brief F-130`'s "held by someone else" list).
-Per protocol did not force or work around it: `gfx` is untouched. Instead built the regression guard
-this finding proposed in its "why the sweep missed them" section — `tools/command_shim_check.gd`,
-a source-text check in the style of `tools/net_check_pattern_check.gd` (F-060), asserting no `.gd`
-outside `autoload/debug_console.gd` contains the reflection shape `.call("register", ` /
-`.call(&"register", `. Verified it actually catches the shape it's meant to: `agent godot --script
-tools/command_shim_check.gd` → `COMMAND_SHIM_CHECK scripts=228 hits=1 failures=2`, the one hit being
-`autoload/graphics_quality.gd:197` (`gfx`) — exactly the remaining case, and exactly what a check
-that fails until the fix lands is supposed to report. Re-ran the other three to confirm nothing
-regressed: `command_catalog_check` `failures=0`, `command_check` `failures=0`, `command_net_check`
-`failures=0`. `docs/SPECS.md` gained the `## F-130` block that was missing (§0 of this task's own
-work order) — see it for the exact remaining fix shape and the done-means checklist, including
-`tools/command_shim_check.gd failures=0` as the new closing condition. Still **Open**: the fix is
-now fully specified and has a check that will announce the moment it lands, but `gfx` itself still
-needs `autoload/graphics_quality.gd` free to claim.
-
----
 
 ### F-149 · F-141's docs edits got committed under F-144's message — a concurrent agent's plain 'git commit' absorbs another lane's staged-but-uncommitted files
 
@@ -902,7 +780,410 @@ changing the hook, rather than trusting this paragraph.
 
 ---
 
+### F-196 · An asset rebuild concurrent with agent godot's auto-import pass poisons the import cache — 8 station GLBs stayed unloadable across 40 minutes of checks until a forced --import
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by yarrow21
+
+Observed by the 2026-08-19 audit battery, an F-044 sibling with a sharper mechanism. An art session
+rebuilt all 8 `assets/crafting_stations/exports/*.glb` (working tree, 23:51) while the audit's
+check battery was cycling `agent godot` runs. From then on, every map-loading check logged
+`Failed loading resource: res://assets/crafting_stations/exports/station_*.glb` +
+`MeshMerge could not load ...` — 16 ERROR lines per run across `world_contract_check`,
+`hollowmere_check`, and `harvest_world_net_check` — for over half an hour of subsequent runs, even
+though each run starts with F-093's auto-import pass, and even though the GLBs on disk were valid
+(magic `glTF`, sane sizes, loadable after a manual pass).
+
+The poisoning shape: an import pass that runs DURING the writer's window records the new file
+stamps against partially-old content, so every later pass sees "already imported" and skips —
+the cache is wrong and self-healing never triggers. A single explicit `agent godot --import`
+cleared all of it (0 ERROR lines after).
+
+Two candidate fixes, either works:
+- `agent godot`'s import pass could hash-verify (not stamp-verify) assets that FAILED to load in
+  the previous run — needs a failure ledger, probably overkill.
+- Cheaper and honest: the art pipeline scripts (`tools/blender/*.py` writers) end by touching a
+  marker the harness reads, or simply by running `agent godot --import` themselves under the same
+  godot lock every other engine run already takes — the writer knows exactly when it finished;
+  the readers can only guess.
+
+Until one lands: if map checks suddenly log GLB load failures and the files look fine, run
+`agent godot --import` once before diagnosing anything.
+
+---
+
+### F-197 · A generated-asset commit swept up another lane's dirty crafting-station GLBs under an unrelated message — the F-149/F-191 sweep hazard reaching art files, not just docs/
+
+**Area:** coordination / art pipeline · **Severity:** low · **Found:** 2026-08-19 by lm during F-057
+
+While fixing F-057 (crafting stations' non-deterministic rebuild), the checked-in
+`assets/crafting_stations/exports/*.glb` at `HEAD` turned out not to match a clean rebuild of
+`tools/blender/build_crafting_stations.py` **at all** — different dimensions, an extra
+`MIRE_Ember.001` duplicate material, a different polygon count, not just a few drifted float bytes.
+`git log --follow -- assets/crafting_stations/exports/station_campfire.glb` shows its last real
+content change landed in `14ead00`, *"Art: tools/weapons migrated; palette re-anchored to measured
+base colours (2.1j)"* — a commit about a completely different asset family, whose message never
+mentions crafting stations at all.
+
+This is the same mechanism F-149 and F-191 already documented (a `git commit` with no pathspec, or a
+hand-rolled broad `git add`, sweeps whatever else is sitting dirty in the shared working tree into
+the committing agent's own commit) but landing on **generated asset files** rather than `docs/`. That
+matters because `docs/` is deliberately exempt from claims (F-006) so a sweep there is at least
+possible without a protocol violation — `assets/crafting_stations/exports/` is not docs, so whatever
+produced this either bypassed `agent claim`/`ship`'s per-task file staging with a hand-rolled `git add
+-A`, or the crafting-station files were, at that moment, genuinely part of that commit's own claim
+set by mistake. Either way the result is indistinguishable from F-057's original "bevel drift"
+symptom from the outside — both present as "the checked-in GLB doesn't match a clean rebuild" — which
+is almost certainly why F-057 pattern-matched the bevel modifier as the sole cause and never actually
+ran two back-to-back clean rebuilds to check.
+
+Not re-investigated further here — the F-057 fix already rebuilt and re-committed the correct output,
+which closes this specific instance. Left open because the mechanism (a stale/misattributed asset
+commit) is unfixed and will recur on the next kit unless `ship`'s per-task staging is what everyone
+actually uses. Matches F-191's own severity judgment: nothing was lost or corrupted, only
+attribution — but attribution is exactly what makes a tracker row's evidence trustworthy without
+re-deriving it by hand, which is the whole reason F-057 took longer than "apply the known fix."
+
+---
+
+### F-198 · Three DONE asset batches (A-004, A-005, A-006) still call `mire_art.box()`'s bevel-capable version with no override — the same F-057 exposure their own tracker rows already claim to have passed
+
+**Area:** art pipeline · **Severity:** low · **Found:** 2026-08-19 by lm during F-057's close-out sweep
+
+F-057's fix (bevel-free `box()` override, dropping Blender's bevel modifier because it changed float
+bytes between otherwise identical background exports on Apple Silicon) is not new invention —
+`build_ward_set.py` had already made this exact call, and `build_flora_set.py`,
+`build_construction_set.py` and `build_extraction_ship_set.py` all cite F-057 in their own comments
+for doing the same. `build_crafting_stations.py`, the family that originally *found* the bug, was the
+one family that had never applied its own fix — that gap is what F-057 closed.
+
+The sweep this close-out requires (`grep -rn "bevel=" tools/blender/*.py`, then check each hit for a
+local bevel-free `box()` override) found three more live gaps, none touched here — fixing any of them
+means rebuilding and re-verifying that batch's full contract, which is out of this task's scope:
+
+- `tools/blender/build_tool_weapon_set.py:580` — one site (`Cleaver_Bolster`, `bevel=0.022`). A-004's
+  `docs/ASSET_TRACKER.md` row claims "deterministic rebuild ... passed."
+- `tools/blender/build_loot_set.py` — thirteen sites across chest bodies, locks, cloth and bag parts
+  (lines 119-122, 143, 177, 188, 234, 245-246, 275, 299, 310). A-005's row claims "Byte-identical
+  deterministic rebuild ... passed."
+- `tools/blender/build_enemy_crawler.py` — five sites on the crawler's body/head/jaw (lines 300, 303,
+  306, 317, 324), and its own local `box()` override (line 101) copies `mire_art.box()`'s
+  bevel-applying body verbatim rather than stripping it — an override that looks like the ward-set
+  pattern at a glance but does not actually change behavior. A-006's row claims "Byte-identical
+  deterministic rebuild ... passed."
+
+`tools/blender/build_gatherable_plants.py` also has five `bevel=` sites with no override, but that
+batch is still in progress under task 2.1d (currently claimed) and not yet marked `DONE`, so it is
+not included in the claim above — worth the same fix before that task claims a deterministic-rebuild
+pass.
+
+Whether any of these three DONE batches' committed GLBs actually exhibit drift is unverified — F-057
+itself only reproduced on 1 of 6 clean rebuilds of one bevel-heavy asset, so the odds any single
+batch's evidence run happened to hit it are low but nonzero, and low-probability-but-nonzero is
+exactly what "the verification contract requires a deterministic clean rebuild" is supposed to rule
+out. The fix, when someone picks this up, is mechanical and known: copy `build_ward_set.py`'s
+bevel-free `box()` override (or `build_crafting_stations.py`'s, same shape) into each file, rebuild,
+diff two clean rebuilds' GLBs and catalog byte-for-byte (`tools/blender/crafting_stations_repro_check.py`
+is a reusable template — its two-separate-process pattern is what F-057 needed and an earlier
+in-process draft did not catch), and update the tracker row's evidence line.
+
+---
+
 ## Resolved
+
+### F-057 · A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds — **fixed**
+
+**Area:** art pipeline · **Severity:** low · **Found:** 2026-08-17 by tine18 during the 2.1j palette migration
+
+`assets/crafting_stations/exports/station_stone_furnace.glb` and `station_workbench_upgraded.glb`
+change content — same byte length, different bytes — when `tools/blender/build_crafting_stations.py`
+runs twice with no source change. Both were already dirty in `git status` at the start of the 2.1j
+session, so this predates that task; the migration only surfaced it, because diffing catalogs across
+rebuilds became routine.
+
+The cause is almost certainly the bevel modifier. `build_ward_set.py` overrides `box()` with a
+bevel-free version and says why: Blender's bevel modifier changed four float bytes between otherwise
+identical background exports on Apple Silicon. The station kit has 23 `bevel=` call sites, does not
+override `box()`, and the two affected stations are the bevel-heavy ones — worktops, drawers, handles.
+
+This matters because the verification contract requires a deterministic clean rebuild and A-003 is
+recorded as having passed it. Either that check never compared two rebuilds of this family, or it
+compared sizes rather than bytes.
+
+Left open deliberately: both fixes are art-owner calls. Drop bevels from the station kit as the Ward
+set did (byte-stable, but squares off deliberate chamfers and changes polygon counts), or accept the
+drift and weaken the contract for this one family. `mire_art.box()` now carries the warning in its
+docstring so the next family chooses deliberately instead of inheriting it.
+
+---
+
+**Resolved 2026-08-19 by lm.** Root cause confirmed (not just assumed): a baseline rebuild of the pre-fix script — two separate
+Blender process invocations, matching the script's own documented usage — reproduced the bevel
+modifier's byte drift directly on this machine (station_stone_furnace.glb differed across two clean
+rebuilds; catalog.json stayed identical). It's intermittent — 3 earlier rebuilds this session came
+back byte-identical before one caught it — matching the finding's "four float bytes" scale.
+
+Separately, and probably the bigger reason A-003's tracker row read as passing: the GLBs actually
+committed at HEAD didn't match a clean rebuild at all (different dimensions, a duplicate
+MIRE_Ember/MIRE_Ember.001 material, a different polygon count) — they were swept into an unrelated
+commit (14ead00, "tools/weapons migrated; palette re-anchored"). Filed separately as F-197, the
+F-149/F-191 sweep-hazard class reaching generated asset files, not just docs/.
+
+Fix: build_crafting_stations.py now overrides mire_art.box() with a bevel-free version, the same
+pattern build_ward_set.py, build_construction_set.py, build_flora_set.py and
+build_extraction_ship_set.py already carry for this exact reason (all four already cite F-057; this
+kit, the one that found the bug, had never applied its own fix). Codified as D-124 so the next
+generator doesn't re-derive it. Rebuilt clean and committed correct exports/catalog/previews/.blend
+source, closing the F-197 staleness gap too. Polygon count: 2,731 -> 1,651 (bevel's one-segment
+modifier roughly doubles a box's face count); both preview renders visually confirmed all eight
+stations still read correctly with the slightly harder edges.
+
+Verified: new tools/blender/crafting_stations_repro_check.py shells out to two SEPARATE Blender
+processes (not two in-process main() calls — that leaves stale mesh datablocks alive and produces a
+false failure via Blender's own .001 auto-rename, which an earlier draft of this check hit) and diffs
+every exports/*.glb plus catalog.json byte-for-byte.
+`python3 tools/blender/crafting_stations_repro_check.py` -> CRAFTING_STATIONS_REPRO_CHECK PASS, run
+three times total (six rebuilds, all pairwise identical). Reproduced the pre-fix bug directly first
+(git stash push -- <path>, scoped to one file): same check FAILED on station_stone_furnace.glb, then
+restored the fix and re-confirmed PASS. Fresh Godot import: agent godot --quit-after 30 now boots
+clean with zero ERROR lines and AUTHORED_WORLD props=2880 (up from 2869 pre-fix, when these 8 GLBs
+were silently failing to load into Hollowmere's prop pass) — hit F-196's import-cache-poisoning
+mechanism along the way (this session's own rapid rebuild-then-import cycles), cleared with the
+explicit `agent godot --import` F-196 documents.
+
+Sweep for the same bug elsewhere (per the close-out requirement): three DONE batches — A-004
+(build_tool_weapon_set.py, 1 site), A-005 (build_loot_set.py, 13 sites), A-006
+(build_enemy_crawler.py, 5 sites, including a box() override that LOOKS like the ward-set pattern but
+still applies the bevel) — still call the live bevel modifier with no override, despite their own
+ASSET_TRACKER rows already claiming a byte-identical rebuild passed. Not fixed here (each needs its
+own rebuild-and-reverify task, out of this task's scope) — filed as F-198 with the exact file/line
+list and the mechanical fix.
+
+### F-195 · levels/hollowmere.tscn's Player drifted 1.84 m off the layout spawn — an editor-session nudge, caught by hollowmere_check — **fixed**
+
+**Area:** worldgen · **Severity:** low · **Found:** 2026-08-19 by yarrow21
+
+Found by the 2026-08-19 audit battery: `hollowmere_check` FAIL (1) — "Player node is 1.84 m from
+the layout spawn — the scene has drifted". Scene had `position = Vector3(-6.818, 2.425, 3.451)`;
+`world/gen/layouts/hollowmere.json` says `"spawn": [-6.614, 2.423, 1.622]`. Nearly all of the
+drift is +1.83 m on Z with X/Y essentially unchanged — the signature of an accidental viewport drag
+during today's editor session on this scene (the editor was open on Hollowmere and saved on close),
+not a deliberate spawn move.
+
+The layout JSON is the ground truth by 2.1k's design; the check exists precisely because "the
+scene's Player node and the layout's spawn are two copies of one fact". Restored the scene to the
+layout value under an exact claim with the editor closed (D-031). If the spawn should actually
+move, the layout is where it moves — and then the generator re-stamps the scene.
+
+---
+
+**Resolved 2026-08-19 by yarrow21.** Scene restored to the layout value under an exact claim with the editor confirmed closed
+(`agent editor-running`). `hollowmere_check` PASS (was FAIL 1). If the spawn is ever meant to move,
+move it in `world/gen/layouts/hollowmere.json` and let the generator re-stamp the scene — the check
+exists because the two are copies of one fact.
+
+### F-194 · environment_vfx's deferred _apply_node crashes on nodes freed between signal and call — 136 engine errors in one harvest_world_net_check run — **fixed**
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-19 by yarrow21
+
+Found by the 2026-08-19 audit battery. `autoload/environment_vfx.gd:_on_node_added()` does
+`call_deferred("_apply_node", node)`, and `_apply_node` is typed `(node: GeometryInstance3D)`. A
+node freed between the `node_added` signal and the deferred call arrives as a freed Object, and the
+call dies at argument marshalling — "Error calling deferred method: ... Cannot convert argument 1
+from Object to Object" — **before** the `is_instance_valid(node)` guard on the function's first
+line can run. The guard is correct and unreachable for exactly the case it was written for.
+
+136 ERROR lines in a single `harvest_world_net_check` run (spawn/despawn churn across two
+processes), reproducible. Cosmetically huge in any netted check log; no gameplay effect (the VFX
+simply never applies to a node that no longer exists, which is also what the fix does — silently).
+
+Fix shape: defer to an untyped shim that validates and casts before calling the typed worker —
+the marshalling layer cannot reject an `Object`-typed parameter, so the validity check finally
+runs first.
+
+---
+
+**Resolved 2026-08-19 by yarrow21.** Fixed with an untyped `Variant` landing pad — `_apply_node_deferred` validates with
+`is_instance_valid` then casts and forwards to the typed `_apply_node`. The fix's first draft used
+an `Object`-typed parameter and produced the identical 136 errors: deferred marshalling rejects a
+freed instance against ANY object-typed parameter, so only an untyped one makes the guard
+reachable; the comment in the file records that measurement so nobody "cleans it up" back into the
+bug. Verified: `harvest_world_net_check` 0 ERROR lines (was 136) `failures=0`;
+`environment_vfx_check` `foliage=8103 failures=0`.
+
+### F-193 · Three checks print undeclared engine errors on clean runs — salvage_check's provoked corrupt-save pair, nav_bake_check's map-sync timing query, boss_check's exit leak — **fixed**
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-19 by yarrow21
+
+The 2026-08-19 audit swept all 120 runnable single/two-process checks for `ERROR:` lines and
+reconciled them against the F-182 convention (`EXPECTED_ERROR_PATTERNS="..."` in the summary line,
+established for unlock_check's provoked corrupt-save errors). Three checks are green-over-errors:
+
+- `tools/salvage_check.gd` — provokes the same corrupt-save pair unlock_check does ("Parse JSON
+  failed", "did not contain a JSON object", 2 lines) and declares nothing. It predates F-182.
+- `tools/nav_bake_check.gd` — 1 line: "NavigationServer navigation map query failed because it was
+  made before first map synchronization." Engine timing noise from querying the nav map on the same
+  frame it was created; either await one physics frame before the first query (fix) or declare it.
+- `tools/boss_check.gd` — exits with "ERROR: 2 resources still in use at exit" + "22 ObjectDB
+  instances were leaked". A real (mild) leak: the check frees its scene but something holds two
+  resources at quit. Not gameplay-affecting; worth a look at whether the check's own preloads or
+  the boss scene hold refs at exit before declaring it.
+
+Under DELEGATION standing rule 4 (grep every check for ERROR and treat non-zero as failure), an
+undeclared expected error trains readers to skim red lines — F-021's exact lesson. chest_check,
+unlock_check and connect_retry_check already declare theirs; these three should match.
+
+---
+
+**Resolved 2026-08-19 by yarrow21.** `salvage_check` and `nav_bake_check` now declare their provoked/inherent error lines by pattern
+(F-182's convention), both verified `failures=0` with the declaration printed. The third item —
+`boss_check`'s "2 resources still in use at exit" + 22 leaked ObjectDB instances — is deliberately
+left undeclared and open here: it is a genuine leak diagnostic, not a provoked fixture, and a
+declaration would bury it. Whoever next opens `boss_check` should chase whether the check's own
+preloads or the boss scene hold refs at quit; it does not affect gameplay or any assertion.
+
+### F-192 · tools/vitals_hud_check.gd still asserts 2.13's solo bleed-out->respawn arc, which 6.7 deliberately removed — the suite has contradicted itself since DefeatService shipped — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by yarrow21
+
+Found by the 2026-08-19 audit battery: `vitals_hud_check` fails 8 assertions on a clean tree, and
+has since 6.7 landed. It downs the solo local player and then asserts the pre-6.7 arc — bleed-out
+expires → "YOU DIED" → respawn → banner clears. But the moment the solo player goes down,
+`DefeatService._check_team_wipe()` (every present peer downed-or-dead) trips, `run_wiped` fires, and
+`PlayerHealth._run_over` freezes bleed-out/respawn/damage for the rest of the session — which
+`defeat_check:150` asserts on purpose: "a huge post-defeat delta does not auto-respawn a downed
+peer". The two checks encode opposite contracts; `defeat_check` encodes the shipped, deliberate one
+(DESIGN.md §5.3, PlayerHealth's own doc comments), so the fix belongs in `vitals_hud_check`.
+
+Cascade: because `defeated` latches, the check's later teammate-down sections also fail for the
+wrong reason (the local player is still downed and the run is over, so "TEAMMATE DOWN" never
+shows). The check needs a `DefeatService._reset()` + `PlayerHealth` revive between sections, the
+same way `defeat_check` already resets between scenarios.
+
+One real UX note that is NOT check staleness, for whoever owns the defeat presentation next: solo,
+the downed banner promises "Bleeding out — 30s · a teammate can revive you" in the same instant the
+run has already ended — both halves untrue solo. `defeat_hud` draws over it, so the cost is a
+one-frame lie today, but if the defeat HUD ever gains a delay or animation the stale promise shows.
+
+---
+
+**Resolved 2026-08-19 by yarrow21.** The check was the stale artifact, as filed: `defeat_check`, `PlayerHealth`'s doc comments and
+DESIGN §5.3 all agree the 6.7 freeze is deliberate. Rewritten — solo down asserts the wipe verdict
+and the frozen bleed-out instead of the removed respawn arc, with a DefeatService/`_run_over` reset
+plus `host_revive` between sections so the teammate assertions run in a live world. 0 failures on a
+clean tree (was 8); `defeat_check` unchanged and green. The solo UX note (downed banner promising a
+30 s revive in the same instant the run ends) stays recorded here for whoever next touches the
+defeat presentation — DefeatHud draws over it today, so it costs one frame.
+
+### F-130 · Three console commands never migrated to CommandService — they register via console.call("register", ...), which 3.13's sweep could not see — **fixed**
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by yarrow21
+
+`f9cb6f7` ("CommandService front door: ... **migrate every console command**") left three behind, and
+every headless run since prints their deprecation warnings:
+
+```
+[WARN] dev: DebugConsole.register('fps_cap') uses the deprecated shim — migrate to
+       CommandService.register_spec() (docs/COMMANDS.md §2.1)
+[WARN] dev: DebugConsole.register('vsync')  ... same
+[WARN] dev: DebugConsole.register('gfx')    ... same
+```
+
+- `core/dev/dev_frame_cap.gd:61,63` — `fps_cap`, `vsync`
+- `autoload/graphics_quality.gd:181` — `gfx`
+
+**Why the sweep missed them, which is the part worth keeping.** Every migrated caller referenced the
+autoload directly, so `grep -rn 'DebugConsole.register('` found it. These three do not: they resolve
+the node at runtime and invoke it by name —
+
+```gdscript
+var console: Node = get_node_or_null(^"/root/DebugConsole")
+if console == null or not console.has_method("register"):
+    return
+console.call("register", &"gfx", _cmd_gfx, "gfx [low|medium|high] | ...")
+```
+
+so the command name never appears next to the method name in the source text and no grep for the
+call site can match. The same shape will hide the next migration too. A source-text regression guard
+in the style of the one F-060 already established for `tools/*_net_check.gd` would catch it: assert
+that no `.gd` outside `autoload/debug_console.gd` contains `call("register"` / `call(&"register"`.
+
+**Cost today:** three WARN lines on every single headless check run — against a repo whose audit
+standard is 0 error lines and whose checks are read by eye. It is noise that trains agents to skim
+warnings. The commands themselves work; the shim still forwards them (`command_service.gd:210`
+handles bare-String returns from old handlers).
+
+**Fix:** port the three to `CommandService.register_spec()` with typed specs and a declared scope
+(`gfx`, `fps_cap` and `vsync` are all LOCAL — they change this peer's rendering, nothing else's),
+then delete the shim path if nothing else uses it. Needs a claim on `core/dev/dev_frame_cap.gd`,
+`autoload/graphics_quality.gd`, and whatever guard file the regression check lands in.
+
+**Partial fix 2026-08-18 by lp (task 3.16).** `fps_cap` and `vsync` are migrated —
+`core/dev/dev_frame_cap.gd` now registers both through `register_spec()`, and neither warns on a
+headless run anymore. `gfx` is still on the shim: `autoload/graphics_quality.gd` was held under
+another task's claim (F-144) for this task's entire run, so the one remaining line is a one-`register_spec`-call
+fix for whoever next holds that file — same shape as `fps_cap` above it. Still **Open** for that
+reason; not moving to Resolved on two thirds of a fix. The source-text regression guard this finding
+proposed was not built — `tools/command_catalog_check.gd` (3.16) catches the same class of leftover
+differently, by refusing to count a shim-registered verb as coverage, but that only fires for names
+§7 already lists, so a *new* verb someone forgets to migrate would still slip past silently as F-130
+originally warned.
+
+**Second session 2026-08-18 (lp) — still blocked on the same file, guard built this time.**
+`agent claim F-130 autoload/graphics_quality.gd` still fails — held by `nettle12` for F-144,
+unchanged from the last session (confirmed via `agent brief F-130`'s "held by someone else" list).
+Per protocol did not force or work around it: `gfx` is untouched. Instead built the regression guard
+this finding proposed in its "why the sweep missed them" section — `tools/command_shim_check.gd`,
+a source-text check in the style of `tools/net_check_pattern_check.gd` (F-060), asserting no `.gd`
+outside `autoload/debug_console.gd` contains the reflection shape `.call("register", ` /
+`.call(&"register", `. Verified it actually catches the shape it's meant to: `agent godot --script
+tools/command_shim_check.gd` → `COMMAND_SHIM_CHECK scripts=228 hits=1 failures=2`, the one hit being
+`autoload/graphics_quality.gd:197` (`gfx`) — exactly the remaining case, and exactly what a check
+that fails until the fix lands is supposed to report. Re-ran the other three to confirm nothing
+regressed: `command_catalog_check` `failures=0`, `command_check` `failures=0`, `command_net_check`
+`failures=0`. `docs/SPECS.md` gained the `## F-130` block that was missing (§0 of this task's own
+work order) — see it for the exact remaining fix shape and the done-means checklist, including
+`tools/command_shim_check.gd failures=0` as the new closing condition. Still **Open**: the fix is
+now fully specified and has a check that will announce the moment it lands, but `gfx` itself still
+needs `autoload/graphics_quality.gd` free to claim.
+
+---
+
+**Resolved 2026-08-19 by yarrow21.** All three commands migrated (`fps_cap`/`vsync` by task 3.16, `gfx` by the 2026-08-19 audit once
+F-144's claim on `graphics_quality.gd` released), and the finding's "then delete the shim path if
+nothing else uses it" clause is executed too: `DebugConsole.register()`/`unregister()` are deleted,
+`tools/command_shim_check.gd` (built by 3.16 for exactly this) enforces zero reflection callers at
+scripts=290, and `CommandService._normalize_result` now fails loudly on a non-`{ok, message, data}`
+handler return instead of coercing it — which surfaced and fixed 8 more String-returning handlers
+that were quietly leaning on the coercion. Verified: command_shim_check hits=0 failures=0,
+command_check/command_catalog_check/command_net_check/dev_loadout_check all 0 failures, and the
+three deprecation WARNs are gone from every boot.
+
+### F-151 · `ui/loot/chest_ui.gd` was never registered, so no chest in the game could be opened — **fixed**
+
+**Area:** ui · **Severity:** high · **Found:** 2026-08-18 by slate17 during 3.7
+
+Task 3.5 shipped `ui/loot/chest_ui.gd` — the client-local panel that finds the nearest chest, turns
+[E] into exactly one `request_open()`, and renders the result. Every other UI system in the project
+is an autoload (`InventoryUI`, `CraftingUI`, `AttunementUI`, `VitalsHud`, `LobbyMenu`). This one was
+not, and nothing else loaded it: no `[autoload]` line, no `.tscn` instancing it, no `preload` from
+any script. **There was no way to open a chest in the running game at all** — the whole loot path
+existed and was unreachable, which is precisely what CLAUDE.md means by "a script nothing loads
+isn't shipped" (F-051).
+
+It went unnoticed because every chest check drives `Chest` directly: `chest_check.gd` calls
+`request_open()` on a node it built itself, and `chest_net_check.gd` does the same across two
+processes. Both are correct tests of the authority path and neither can see that nothing in the game
+ever calls it.
+
+**Fixed here** with `agent autoload ChestUI ui/loot/chest_ui.gd`, verified by a clean boot and
+`tools/verify_setup.gd` (all checks passed). Worth a general habit: a UI script with no autoload
+line and no scene reference is dead code until proven otherwise, and `verify_setup`'s autoload
+assertion is the place a future orphan would be caught cheaply.
+
+**Resolved 2026-08-19 by yarrow21.** Status correction by the 2026-08-19 audit (yarrow21) — the fix is slate17's and is recorded in the
+entry above (`agent autoload ChestUI ui/loot/chest_ui.gd`, verified by a clean boot and
+verify_setup); the entry was written resolved-in-place under `## Open` and never moved, so `board`
+and `brief` disagreed about it. This move is bookkeeping, not new work.
 
 ### F-184 · `tools/audio/audio_check.py`'s exit code is inverted — it exits 0 when checks FAIL and 1 when they PASS — **fixed**
 
