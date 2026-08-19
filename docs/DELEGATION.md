@@ -75,6 +75,51 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 5.9: Wave director — Cycle-aware pacing, composition weighting on top of the player-count scaling and roster-unlock that already shipped (lp)
+
+No new §2.2 row, no new RPC — `systems/waves/wave_spawner.gd` already declared "Day/night, wave
+director, Cycle state, active modifiers: HOST" (task 2.12) and this task adds no new replicated
+state, only a host-side read of `CycleService.current_cycle()` via the existing
+`EventBus.subscribe_cycle_advanced` seam (the same one `CycleModifierService` already uses).
+**No SPECS.md block existed for this task — writing one was part of it (docs/SPECS.md §5.9).**
+
+**Public API `WaveSpawner` gained:**
+
+```gdscript
+WaveSpawner.current_cycle() -> int                       # cached from EventBus.cycle_advanced, defaults 1
+WaveSpawner.cycle_count_multiplier(cycle: int = current) -> float  # 1.0 + (cycle-1)*0.15, capped 2.5 at Cycle 11
+```
+
+`host_start_wave()`'s size formula is now
+`roundi((base_count + per_player * live_player_count) * cycle_count_multiplier())` — additive and
+capped, deliberately NOT compounding the way `CycleService.SPREAD_ESCALATION_PER_CYCLE` does
+(DESIGN.md §5.4: replayability comes from stacking Cycle Modifiers, not raw enemy volume; an
+uncapped multiplicative count in an endless run is also a real performance cliff, F-144's class of
+problem). At Cycle 1 the multiplier is exactly 1.0, so every pre-existing wave-size assertion in
+`tools/wave_spawner_check.gd` needed no change — verify this is still true before touching the
+formula again.
+
+`_roll_roster()` (the "which archetype spawns" roll, previously flat/even odds forever) is now
+weighted: `enemy_id` keeps weight 1, the Nth unlocked archetype (1-indexed, unlock order) gets weight
+`N + 1` — the most-recently-unlocked archetype is always the single most common pick. `roster_order`
+still ships with only `bog_crawler` (D-100 — 5.2 owns growing real content); this task only changed
+the ODDS across whatever `roster_order` already contains, no new `.tres`.
+
+`host_spawn_wave_at()` (4.8's Wellspring defense wave) is untouched — an explicit `count` and
+(optionally) explicit `wave_enemy_id` bypass both the Cycle multiplier and the roster roll entirely,
+same as before this task. Pass `wave_enemy_id = &""` explicitly to force a (now-weighted) roster
+roll instead of the default `enemy_id` — this is how `tools/wave_director_check.gd` samples
+composition without waiting for a real night.
+
+Verified: `agent godot --script tools/wave_director_check.gd` (new, 19 assertions) failures=0 —
+multiplier curve at Cycle 1/6/11(cap)/20(still capped), a real `host_start_wave()` at Cycle 1 matches
+the pre-task formula exactly, a real one at Cycle 6 scales by 1.75x and the field actually holds that
+many bodies, an explicit `override_count` still bypasses the multiplier, a 600-body weighted-roster
+sample lands bog_crawler's observed share (0.650) inside its expected 2:3 weight — deterministic
+under the fixed `DEFAULT_SEED`, not a flake-prone tolerance. No regressions: `wave_spawner_check.gd`,
+`cycle_check.gd`, `cycle_modifier_check.gd` all still failures=0 unmodified. 0 `ERROR:` on a full
+boot (`agent godot --quit-after 20`).
+
 ### 2026-08-19 — Task 7.8: Network robustness — audited every specific-peer `rpc_id()` in the repo against F-059's guard pattern, fixed the five that lacked it (lm)
 
 No new autoload, no new RPC, no new §2.2 row (D-112 explains why: this task added no new simulated

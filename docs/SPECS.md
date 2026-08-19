@@ -1659,6 +1659,82 @@ Done means: both new checks green, the five regression checks green, 0 `ERROR:` 
 public API, and the `_damageable_owner()` gotcha for whatever system next raycasts against
 `&"damageable"`.
 
+## 5.9 · Wave director: Cycle-aware pacing, composition, player-count scaling (T1)
+
+**No block existed for this task** — SPECS.md's own preamble ("fixing a missing spec belongs to the
+task that discovers it") makes writing this part of 5.9 itself. Written from the shipped
+`systems/waves/wave_spawner.gd` (2.12/3.16/4.8/4.11/6.1) rather than a stale ROADMAP line.
+
+**Authority:** §2.2 row "Day/night, wave director, Cycle state, active modifiers: HOST" — unchanged,
+already declared in `wave_spawner.gd`'s header. This task adds no new replicated state and no new
+RPC: everything below is derived host-side from `CycleService.current_cycle()` (read through the
+existing `EventBus.subscribe_cycle_advanced` seam 6.2 already proved) at the moment a wave starts, the
+same "read once, at dusk" rule `base_count`/`per_player` already follow.
+
+**Claim:** `systems/waves/wave_spawner.gd`, `tools/wave_director_check.gd` (+ its `.uid`).
+
+**What already shipped, before this task, under other tasks' names — read this before adding
+anything:**
+- **Player-count scaling** — `host_start_wave()` already sizes a wave at
+  `base_count + per_player * _live_player_count()` (task 2.12/3.14). Nothing to add.
+- **Composition (the roster growing)** — `CycleService.host_advance_cycle()` already calls
+  `WaveSpawner.host_unlock_next_enemy()` once per Cycle (task 6.1/D-100), appending the next
+  `roster_order` entry to `_unlocked_pool`. Nothing to add to the unlock mechanism itself.
+
+**What was actually missing, and what this task adds:**
+
+1. **Cycle-aware pacing (new).** Nothing before this task read `current_cycle()` for anything but the
+   roster unlock — a Cycle-9 wave and a Cycle-1 wave were sized identically. `WaveSpawner` now
+   subscribes `EventBus.subscribe_cycle_advanced` (mirroring `CycleModifierService`'s own `_ready()`
+   line) and caches the number into `_current_cycle`. `host_start_wave()`'s size formula becomes
+   `roundi((base_count + per_player * _live_player_count()) * cycle_count_multiplier())`, where
+   `cycle_count_multiplier(cycle) = min(1.0 + max(cycle - 1, 0) * CYCLE_COUNT_STEP_PER_CYCLE,
+   CYCLE_COUNT_CAP_MULTIPLIER)` — **additive and capped, deliberately not compounding like
+   `CycleService`'s own `SPREAD_ESCALATION_PER_CYCLE`.** DESIGN.md §5.4 is explicit that endless
+   replayability "comes from stacking modifiers... not from content volume" — an uncapped
+   multiplicative enemy count would both contradict that and be a real performance cliff in a run
+   with no upper Cycle bound (F-144's render-cost findings are exactly this class of problem). The
+   cap (2.5x at Cycle 11, placeholder-tuned like every other Cycle constant in this file — "nothing
+   tunes this until a real playtest measures the wall," same status `SPREAD_ESCALATION_PER_CYCLE`
+   carries) lands the count curve's own saturation right where DESIGN.md §5.3 already draws "the
+   wall": Cycle 8–12. At Cycle 1 the multiplier is exactly 1.0, so this changes no existing behavior
+   before a Cycle has ever advanced — `tools/wave_spawner_check.gd`'s assertions, which never fire
+   `cycle_advanced`, need no change.
+2. **Composition weighting (new).** `_roll_roster()` was flat odds across `enemy_id` plus every
+   unlocked archetype forever — a Cycle-9 roster with two archetypes unlocked still rolled them
+   50/50/50, so nothing about the MIX read as "the fight changes" the way DESIGN.md §5.1 claims for
+   the roster expanding. Weighted now: `enemy_id` keeps weight 1, and the Nth unlocked archetype (1
+   indexed, in unlock order) gets weight `N + 1` — the most-recently-unlocked archetype is always the
+   single most common pick, so composition keeps shifting for the life of the run instead of diluting
+   toward a flat average. No new content (`roster_order` still ships with only `bog_crawler`, per
+   D-100/AGENTS.md's ban on bulk-generated `.tres` content — 5.2 is still the task that grows it).
+3. **`current_cycle() -> int`** — new public getter, same naming convention as
+   `CycleService.current_cycle()`, so a future HUD/debug consumer (or `tools/*_check.gd`) can read
+   what pacing tier a wave spawned under without reaching into a private var.
+
+**What this task deliberately leaves alone:** night length/frequency (`DayNight.day_length_seconds`)
+already has a Cycle-facing lever — the *Long Night* Cycle Modifier (DESIGN.md §5.1 example table,
+6.2's framework) — and duplicating that here would be two systems reaching for the same knob.
+`host_spawn_wave_at()` (4.8's Wellspring defense wave) keeps taking an explicit count and bypasses
+both the size formula and the roster roll entirely, unchanged — an authored one-shot override, not a
+population this task's pacing curve should touch.
+
+Verify: `tools/wave_director_check.gd` — `cycle_count_multiplier()` at Cycle 1 (1.0, unchanged),
+mid-curve (Cycle 6), and past the cap (Cycle 20, clamped at 2.5); a real `host_start_wave()` at
+Cycle 1 matches the pre-existing formula exactly (regression anchor); a real one at a mid/high Cycle
+scales `live_count()` by the expected multiplier; `EventBus.emit_cycle_advanced()` actually reaches
+`current_cycle()` (not a private copy — the same F-068 lesson `wave_spawner_check.gd`'s own header
+already recorded, applied to this seam); a large weighted roll (`host_spawn_wave_at` with an explicit
+empty `wave_enemy_id` to force `_roll_roster()`, one archetype unlocked) lands the newer archetype's
+observed share inside a wide statistical tolerance of its 2:1 weight, deterministic under the fixed
+`DEFAULT_SEED` so the check never flakes. `tools/wave_spawner_check.gd` must stay `failures=0`
+unmodified — this task's real regression bar, since nothing before a Cycle ever advances should
+change. `tools/cycle_check.gd`, `tools/cycle_modifier_check.gd` must also stay `failures=0`.
+Done means: `wave_director_check.gd` plus the three regression checks all green, 0 `ERROR:` on a full
+boot (`agent godot --quit-after 20`), and `docs/DELEGATION.md`'s Current state carries
+`cycle_count_multiplier()`/`current_cycle()` for 5.10's balance pass (T0, "across the Cycle curve")
+to read and tune against.
+
 ---
 
 # M6 — cycles, extraction & meta
