@@ -817,6 +817,55 @@ a claim not being enforced at commit time for files a second lane also legitimat
 
 ---
 
+### F-266 · cmd_claim's load-check-save on state.json has no file lock, so two lanes can both pass the conflict check and both believe they hold the same claim
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by lm3
+
+Observed live during F-244 (this session, identity lm3). I ran `agent claim F-244
+autoload/build_service.gd` at 22:19:09 and got `✓ F-244 claimed by lm3`. I then wrote
+`_ground_command_placement()` in autoload/build_service.gd (a downward raycast grounding a
+command's raw y before `_process_place()`, 3m up / 20m down, same mask as the placement ghost).
+
+Partway through, the working file transiently contained a SECOND, independently-written
+implementation of the identical fix that I never wrote: a function `_grounded()` with its own
+constants `GROUND_PROBE_ABOVE_M`/`GROUND_PROBE_BELOW_M`, same shape, same doc-comment style. I
+deleted it as apparent orphaned dead code and moved on. Minutes later `agent board` showed F-244
+in flight under agent **`lm`** (not `lm3`) since the SAME timestamp, 22:19:09 -- identical start
+time to my own successful claim. At 22:28:29 identity `lm` ran `agent done F-244` describing and
+shipping (commit 039c5da) a fix that is byte-for-byte what I had independently built: same
+function name, same 3m/20m constants, same doc comment. My own later
+`agent claim F-244 docs/FINDINGS.md docs/SPECS.md` calls then failed with `F-244 is already done`.
+
+`MIRE_AGENT=lm3` was confirmed set in my shell throughout (`echo $MIRE_AGENT` -> `lm3`), so this was
+not my own whoami() drifting -- a second, genuinely distinct lane process also picked up and worked
+F-244 concurrently, in the same claim window.
+
+**Root cause, read from the source:** `.agent/bin/agent`'s `load()`/`save()` (~line 111-130) do a
+plain `json.load`/`json.dump` on `.agent/state.json` with no `flock`, no lockfile, no atomic
+compare-and-swap. `cmd_claim` (~line 958) is `load()` -> check `st["in_flight"]`/`st["claims"]` for
+conflicts -> mutate -> `save()`. Two lanes racing this window both `load()` a state where F-244 and
+autoload/build_service.gd are unclaimed, both pass the conflict check against that stale read, both
+mutate their own in-memory copy, and both print a `✓ claimed` success message -- neither one's write
+knows about the other's. Whichever `save()` lands last wins the stored `agent` field; the loser's
+process has no way to discover it lost until some LATER command (`claim`, `done`, `ship`) reads the
+now-overwritten state and gets a confusing "already claimed by X" / "already done" from someone it
+never saw claim anything.
+
+**Why this one didn't lose work:** both lanes' generated fixes converged almost exactly, so the
+shipped result is correct and nothing was lost -- but that was luck in the LLM's output converging
+on the same approach, not a property the locking (or lack of it) guarantees. A less mechanical fix,
+or two lanes solving the same finding two different ways, would have raced their `Edit` calls against
+the same file with no coordination at all, well inside a window both consider theirs.
+
+**Suggested direction, not implemented here (out of this task's scope, and D-152 said this class of
+change is deliberate, not live-flipped):** `save()` needs either a real file lock around the
+load-mutate-save cycle, or an atomic read-modify-write (e.g. flock on a sidecar `.lock` file for the
+duration of `load()`...`save()`, or a compare-and-swap using a version counter written into
+state.json and checked before `save()` commits). F-262's own claim-late change is landing in the same
+file/area and would be a natural place to add real locking alongside it.
+
+---
+
 ## Resolved
 
 ### F-257 · Real App ID must be written to two independent places; task 8.11's `apply_ids.sh` only reaches one of them — **fixed**
