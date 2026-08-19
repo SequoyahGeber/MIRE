@@ -720,60 +720,6 @@ in-process draft did not catch), and update the tracker row's evidence line.
 
 ---
 
-### F-201 · `tools/steam_lobby_check.gd` prints "all checks passed" (exit 0) but always emits one undeclared engine `ERROR:` line, violating this project's own SPECS.md standing rule 4
-
-**Area:** tooling/netcode · **Severity:** medium · **Found:** 2026-08-19 by lm while verifying F-170
-(unrelated to that fix — `tools/steam_lobby_check.gd` was untouched by it, confirmed by `agent
-baseline --script tools/steam_lobby_check.gd` reproducing the identical line against a clean HEAD
-checkout)
-
-Every run against a real, logged-in Steam client — `.agent/bin/agent godot --script
-tools/steam_lobby_check.gd`, twice, both exit 0 — prints every one of its own 17 `ok` assertions and
-"all checks passed", then, after the script's own logic is done and while the SceneTree is still
-draining deferred calls, this:
-
-    [info] net: NetSession: session open as client (peer 0)
-    ERROR: Trying to call an RPC while no multiplayer peer is active.
-       at: rpcp (modules/multiplayer/scene_rpc_interface.cpp:475)
-       GDScript backtrace (most recent call first):
-           [0] _on_session_opened (res://core/net/net_session.gd:445)
-           [1] _emit_server_started (res://autoload/net_transport.gd:898)
-    WARNING: [WARN] net: PlayerNet: no current scene — spawning at world origin
-
-`NetTransport.host()` completing routes through `_emit_server_started()`, itself reached via a
-deferred call — `autoload/steam_lobby.gd`'s own header already documents that "an autoload's _ready
-lands late under a --script main loop", and that ordering caveat looks like the mechanism here: the
-check connects its *own* `server_started` handler in `_initialize()` (line 77), which runs before
-`NetSession`'s autoload `_ready()` gets to connect its own `_on_session_opened` to the same signal.
-Connection order decides emission order, so the check's own handler fires first — and it calls
-`lobby.leave()` synchronously inside that handler ("-- leave --" section), tearing the multiplayer
-peer down. `NetSession._on_session_opened()` then runs second against the same `server_started`
-emission, sees `_was_host == false` (it reads `NetTransport.is_host()` fresh, which the just-completed
-`leave()` has already flipped), and tries `net_client_hello.rpc_id(...)` with no active peer — the
-observed RPC error. The "peer 0" and "session open as client" in the log line, on a script that only
-ever hosts, is itself a symptom of the same already-torn-down state.
-
-**Why this is worth a finding and not a silent pass:** `docs/SPECS.md`'s own preamble, standing rule
-4, says exactly this case must count as a failure — "treat any UNDECLARED error line as failure even
-when the exit code is 0" — and names the fix as either removing the cause or declaring the pattern
-via `EXPECTED_ERROR_PATTERNS`. `tools/steam_lobby_check.gd` does neither; its `_finish()` grades only
-its own 17 named `_check()` calls and never greps its own log. A director or lane trusting `exit
-0`/`"all checks passed"` alone — the natural reading of this check's own verdict — would call the
-Steam lobby path clean when it is not.
-
-**What closes this:** whoever next claims `tools/steam_lobby_check.gd` (and, if the ordering theory
-above needs confirming, `autoload/net_transport.gd`/`core/net/net_session.gd`) should either (a) make
-the check itself declare `EXPECTED_ERROR_PATTERNS="Trying to call an RPC while no multiplayer peer is
-active"` on its own verdict line, the same shape `session_lifecycle_check`/`connect_retry_check`
-already use per the standing rule, if the ordering is judged an artifact of the check's own
-teardown-inside-a-signal-handler shape rather than a real production bug; or (b) if a real host
-disconnecting mid-session can hit this same window during actual play (not just this check's
-synchronous `leave()`-inside-`server_started`-handler pattern), fix the underlying race instead —
-`NetSession._on_session_opened()` should not attempt an RPC without first confirming
-`NetTransport.is_active()`/a live peer exists.
-
----
-
 ### F-203 · AuthoredWorld's F-187 chunk merge excludes sway- and emitter-bearing props — a second attempt needs per-vertex height encoding or per-asset placement metadata inside a merged mesh
 
 **Area:** perf · **Severity:** medium · **Found:** 2026-08-19 by lm
@@ -858,6 +804,76 @@ loop (F-081/D-057) is a separate piece of work from the read-only check F-200 as
 ---
 
 ## Resolved
+
+### F-201 · `tools/steam_lobby_check.gd` prints "all checks passed" (exit 0) but always emits one undeclared engine `ERROR:` line, violating this project's own SPECS.md standing rule 4 — **fixed**
+
+**Area:** tooling/netcode · **Severity:** medium · **Found:** 2026-08-19 by lm while verifying F-170
+(unrelated to that fix — `tools/steam_lobby_check.gd` was untouched by it, confirmed by `agent
+baseline --script tools/steam_lobby_check.gd` reproducing the identical line against a clean HEAD
+checkout)
+
+Every run against a real, logged-in Steam client — `.agent/bin/agent godot --script
+tools/steam_lobby_check.gd`, twice, both exit 0 — prints every one of its own 17 `ok` assertions and
+"all checks passed", then, after the script's own logic is done and while the SceneTree is still
+draining deferred calls, this:
+
+    [info] net: NetSession: session open as client (peer 0)
+    ERROR: Trying to call an RPC while no multiplayer peer is active.
+       at: rpcp (modules/multiplayer/scene_rpc_interface.cpp:475)
+       GDScript backtrace (most recent call first):
+           [0] _on_session_opened (res://core/net/net_session.gd:445)
+           [1] _emit_server_started (res://autoload/net_transport.gd:898)
+    WARNING: [WARN] net: PlayerNet: no current scene — spawning at world origin
+
+`NetTransport.host()` completing routes through `_emit_server_started()`, itself reached via a
+deferred call — `autoload/steam_lobby.gd`'s own header already documents that "an autoload's _ready
+lands late under a --script main loop", and that ordering caveat looks like the mechanism here: the
+check connects its *own* `server_started` handler in `_initialize()` (line 77), which runs before
+`NetSession`'s autoload `_ready()` gets to connect its own `_on_session_opened` to the same signal.
+Connection order decides emission order, so the check's own handler fires first — and it calls
+`lobby.leave()` synchronously inside that handler ("-- leave --" section), tearing the multiplayer
+peer down. `NetSession._on_session_opened()` then runs second against the same `server_started`
+emission, sees `_was_host == false` (it reads `NetTransport.is_host()` fresh, which the just-completed
+`leave()` has already flipped), and tries `net_client_hello.rpc_id(...)` with no active peer — the
+observed RPC error. The "peer 0" and "session open as client" in the log line, on a script that only
+ever hosts, is itself a symptom of the same already-torn-down state.
+
+**Why this is worth a finding and not a silent pass:** `docs/SPECS.md`'s own preamble, standing rule
+4, says exactly this case must count as a failure — "treat any UNDECLARED error line as failure even
+when the exit code is 0" — and names the fix as either removing the cause or declaring the pattern
+via `EXPECTED_ERROR_PATTERNS`. `tools/steam_lobby_check.gd` does neither; its `_finish()` grades only
+its own 17 named `_check()` calls and never greps its own log. A director or lane trusting `exit
+0`/`"all checks passed"` alone — the natural reading of this check's own verdict — would call the
+Steam lobby path clean when it is not.
+
+**What closes this:** whoever next claims `tools/steam_lobby_check.gd` (and, if the ordering theory
+above needs confirming, `autoload/net_transport.gd`/`core/net/net_session.gd`) should either (a) make
+the check itself declare `EXPECTED_ERROR_PATTERNS="Trying to call an RPC while no multiplayer peer is
+active"` on its own verdict line, the same shape `session_lifecycle_check`/`connect_retry_check`
+already use per the standing rule, if the ordering is judged an artifact of the check's own
+teardown-inside-a-signal-handler shape rather than a real production bug; or (b) if a real host
+disconnecting mid-session can hit this same window during actual play (not just this check's
+synchronous `leave()`-inside-`server_started`-handler pattern), fix the underlying race instead —
+`NetSession._on_session_opened()` should not attempt an RPC without first confirming
+`NetTransport.is_active()`/a live peer exists.
+
+---
+
+**Resolved 2026-08-19 by lp.** Fixed: tools/steam_lobby_check.gd's _finish() now declares
+EXPECTED_ERROR_PATTERNS="Trying to call an RPC while no multiplayer peer is active" on its verdict
+line, per SPECS.md standing rule 4 — the finding's option (a). Confirmed option (b) does not apply:
+grepped every server_started connection site in the repo and none of them call leave()/any teardown
+synchronously from inside their handler the way this check's own harness does; the race is an
+artifact of a --script harness connecting its handler ahead of the autoloads' _ready(), not a real
+production path. Comment added at the "-- leave --" section explaining the mechanism so it isn't
+mistaken for a live bug later.
+
+Verified against a real, logged-in Steam client: `.agent/bin/agent godot --script
+tools/steam_lobby_check.gd`, twice, both exit 0, all 17 assertions pass, and
+`grep 'ERROR:' <log> | grep -vE 'Trying to call an RPC while no multiplayer peer is active' | wc -l`
+-> 0. Swept tools/*_check.gd for the same shape (leave()-inside-a-signal-handler racing an autoload's
+_ready()) — three other checks call leave() but only after await, well outside the race window; no
+sibling instance found. SPECS.md spec block written (F-201 had none).
 
 ### F-200 · No check verifies that project.godot's [autoload] targets are tracked at HEAD, so F-190's failure mode can recur — **fixed**
 

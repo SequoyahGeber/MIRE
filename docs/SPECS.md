@@ -5100,6 +5100,65 @@ it against a future JSON writer).
 
 ---
 
+## F-201 · `tools/steam_lobby_check.gd` prints "all checks passed" (exit 0) but always emits one undeclared engine `ERROR:` line, violating this project's own SPECS.md standing rule 4
+
+**Claim:** `tools/steam_lobby_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble. Its brief carried a staleness warning (`docs/SPECS.md` had commits since filing) — checked
+first per that warning: unrelated blocks added by other findings, nothing touching
+`tools/steam_lobby_check.gd` or the standing-rule-4 mechanism, so the finding was still live.
+Re-ran the check against a real, logged-in Steam client before touching anything, per its own "may
+already be fixed" note — it reproduced the identical undeclared line, so the fix was still needed.
+
+**Root cause, confirmed rather than re-derived:** the finding's own theory was right. This script
+connects its `_on_server_started` to `NetTransport.server_started` in `_initialize()` (line 77),
+which under a `--script` main loop runs *before* `NetSession`'s own autoload `_ready()` gets to
+connect its `_on_session_opened` to the same signal — so this script's handler fires first on that
+emission and calls `lobby.leave()` synchronously inside it, tearing the peer down. `NetSession.
+_on_session_opened()` then runs second against the same emission, reads `NetTransport.is_host()`
+as already false, and calls `net_client_hello.rpc_id(...)` with no active peer — the observed
+`ERROR: Trying to call an RPC while no multiplayer peer is active.`
+
+**Decided (a), not (b), from the finding's own two options:** grepped every `server_started`
+connection site in the repo (`ui/debug/net_debug_panel.gd`, `core/game_state.gd`,
+`core/dev/dev_launch.gd`, `autoload/enemy_world.gd`, `autoload/inventory_service.gd`,
+`autoload/defeat_service.gd`, `autoload/player_net.gd`, `systems/health/player_health.gd`,
+`core/net/net_session.gd`) — none of them call `leave()` (or any teardown) synchronously from
+inside their `server_started`/`session_opened` handler the way this check does. The race only
+exists because this `--script` harness's own handler registers ahead of the autoloads' `_ready()`;
+no real host-disconnect-mid-session path can hit this window during actual play. So: declared the
+error by pattern rather than restructuring the check's `leave()` to be deferred, which would stop
+testing what task 1.4 actually needs proven — that a real, synchronous `lobby.leave()` this soon
+after hosting starts leaves a clean lobby/session.
+
+**Fix:** `_finish()` now prints `EXPECTED_ERROR_PATTERNS="Trying to call an RPC while no
+multiplayer peer is active"` on its verdict line, the same shape `session_lifecycle_check.gd`/
+`connect_retry_check.gd` already use per standing rule 4. A comment on the `-- leave --` section
+explains the mechanism so nobody "fixes" it again by silencing `NetSession`'s production log call
+(rule 4's own explicit warning against that).
+
+**Verified 2026-08-19 (lp):** `.agent/bin/agent godot --script tools/steam_lobby_check.gd`, twice,
+against a real logged-in Steam client — both exit 0, all 17 `ok` assertions print, "all checks
+passed", then the one `ERROR:` line still appears (the harness-shape race is unchanged, as decided
+above) but is now declared. Graded exactly per standing rule 4:
+`grep 'ERROR:' <run.log> | grep -vE 'Trying to call an RPC while no multiplayer peer is active' | wc -l`
+→ `0`.
+
+**Swept for the same shape elsewhere:** grepped every `tools/*_check.gd` for `.leave()` and for
+`server_started`/`session_opened` connections. Three other checks call `.leave()`
+(`connect_retry_check.gd`, `net_robustness_check.gd`, `net_debug_panel_check.gd`) but each does so
+after an `await process_frame`/`await create_timer(...)`, well outside any signal-connection-order
+window, not synchronously inside a handler racing an autoload's own `_ready()`. `session_lifecycle_
+check.gd` connects to `NetSession.session_opened` (emitted only after `NetSession`'s own handler has
+already run), not `NetTransport.server_started` directly, so it cannot race the same way — and its
+own header already documents the adjacent "nothing may touch autoloads from `_initialize`" trap,
+deferred correctly. No sibling instance of this specific ordering bug found.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |
