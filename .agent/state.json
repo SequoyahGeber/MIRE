@@ -1,57 +1,6 @@
 {
-  "claims": {
-    "autoload/command_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T14:10:01+00:00",
-      "task": "F-223",
-      "token": null
-    },
-    "autoload/debug_console.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T14:10:01+00:00",
-      "task": "F-223",
-      "token": null
-    },
-    "docs/DELEGATION.md": {
-      "agent": "lm",
-      "at": "2026-08-19T14:10:01+00:00",
-      "task": "F-223",
-      "token": null
-    },
-    "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T14:10:01+00:00",
-      "task": "F-223",
-      "token": null
-    },
-    "tools/command_console_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T14:10:01+00:00",
-      "task": "F-223",
-      "token": null
-    }
-  },
-  "in_flight": {
-    "F-223": {
-      "agent": "lm",
-      "files": [
-        "autoload/debug_console.gd",
-        "autoload/command_service.gd",
-        "tools/command_console_check.gd",
-        "docs/SPECS.md",
-        "docs/DELEGATION.md"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-19T14:10:05+00:00",
-          "by": "lm",
-          "text": "docs/FINDINGS.md held by lp (3.15-review) at claim time \u2014 claimed everything else and proceeding with the fix; will retry FINDINGS.md at close-out rather than dropping the whole task over a transient review lock."
-        }
-      ],
-      "started": "2026-08-19T14:10:01+00:00",
-      "token": null
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".": {
       "agent": "lp",
@@ -723,10 +672,10 @@
       "task": "7.5"
     },
     "autoload/command_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T09:01:10+00:00",
-      "hash": "658e8350f64cf60279b1ecfd7f11729a3c074f5e3f0050cacbd7a30153fcd3a1",
-      "task": "F-154",
+      "agent": "lm",
+      "at": "2026-08-19T14:13:26+00:00",
+      "hash": "8d1113edc3889f2997958bc9c7cadd5ea9cf2bdb941df2b14a4ffa7aeb197c5f",
+      "task": "F-223",
       "token": null
     },
     "autoload/crafting_service.gd": {
@@ -736,11 +685,11 @@
       "task": "F-167"
     },
     "autoload/debug_console.gd": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T07:04:17+00:00",
-      "hash": "0439175bb96d3382129e525d3aa56104d156df2b017f37379af27df258621324",
-      "task": "F-130",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
+      "agent": "lm",
+      "at": "2026-08-19T14:13:26+00:00",
+      "hash": "b231d55fc31299af292fa956c2947d8d062a45f8ed4a01615895b38da5547dc8",
+      "task": "F-223",
+      "token": null
     },
     "autoload/defeat_service.gd": {
       "agent": "lm",
@@ -1922,16 +1871,16 @@
     },
     "docs/DELEGATION.md": {
       "agent": "lm",
-      "at": "2026-08-19T13:59:55+00:00",
-      "hash": "e81a6f2cdda23b35514d440deeb8bfbe02bcc5afba9ab16f51c3f7709302cd66",
-      "task": "F-208",
+      "at": "2026-08-19T14:13:26+00:00",
+      "hash": "594cc3c257dd1b4e4c60a70df4d8222eb69bad9ae6d09edb4531eac8484ab418",
+      "task": "F-223",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T14:11:00+00:00",
-      "hash": "e19f3b401914319a88ae19aba3bee5b87a7682146195eb1163a786f5170ef40f",
-      "task": "3.15-review",
+      "agent": "lm",
+      "at": "2026-08-19T14:13:26+00:00",
+      "hash": "a2f11e0a5d43ab8a746878686875b5d2ddf010f915f0dba206860f8d85765030",
+      "task": "F-223",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1960,9 +1909,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lm",
-      "at": "2026-08-19T13:59:55+00:00",
-      "hash": "1af00c714e6bdb926f5b27e718ba16aa2400e2a34ca4985e84358eeaf07c2c5a",
-      "task": "F-208",
+      "at": "2026-08-19T14:13:26+00:00",
+      "hash": "067a5e34801931d568230ce20a59920c442d3148a91cabf24483a17b75f33a9e",
+      "task": "F-223",
       "token": null
     },
     "entities/player/player.tscn": {
@@ -2768,6 +2717,13 @@
       "at": "2026-08-19T05:09:22+00:00",
       "hash": "b7fbfb8208d716c168e4ab4630bad067982b5bbb1ed582880fad256db55b1a37",
       "task": "F-157"
+    },
+    "tools/command_console_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T14:13:26+00:00",
+      "hash": "f79ce12519a2a5950d3452fdfb067e74aa94b7c504a54c52f0674f721b4ac6f9",
+      "task": "F-223",
+      "token": null
     },
     "tools/command_net_check.gd": {
       "agent": "lp",
@@ -4545,6 +4501,14 @@
       "tier": "T2",
       "title": "Seed replication + client-side regeneration; mutable-state delta sync (`ARCHITECTURE.md` \u00a74)"
     },
+    "4.6-review": {
+      "est": "0.5",
+      "milestone": "M4",
+      "review_of": "4.6",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 4.6 @ ab3cb28 \u2014 judge the commit, file findings, no edits"
+    },
     "4.7": {
       "done_at": "2026-08-19T00:08:59+00:00",
       "done_by": "hollow7",
@@ -4590,6 +4554,14 @@
       "status": "done",
       "tier": "T2",
       "title": "Enemy AI framework: state machine, perception, telegraphed attacks, group behaviour"
+    },
+    "5.1-review": {
+      "est": "0.5",
+      "milestone": "M5",
+      "review_of": "5.1",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 5.1 @ 8af3787 \u2014 judge the commit, file findings, no edits"
     },
     "5.10": {
       "est": "3",
@@ -6894,9 +6866,11 @@
       "title": "Eight Blender preview generators render correctly only because an unrelated object happens to get created (or the camera type happens to get flipped) between their reposition and their render \u2014 no check would catch it if that incidental code is ever removed"
     },
     "F-223": {
+      "done_at": "2026-08-19T14:13:26+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "CommandService's synchronously-resolved commands never print in the console \u2014 result signal fires before the pending-handle guard is armed"
     },

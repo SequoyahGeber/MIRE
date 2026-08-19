@@ -199,10 +199,25 @@ func _invocation_scope(spec: Dictionary, raw_args: PackedStringArray) -> StringN
 ## `command_result(handle, result)` fires once, whenever the answer is ready — synchronously, still
 ## inside this call, for everything that does not need the network; asynchronously, after a real RPC
 ## round trip, for a client's HOST-scope command.
+##
+## F-223: a caller that needs to recognize its OWN handle inside a `command_result` listener (rather
+## than just reacting to every result) cannot do that armed-after-the-fact — the synchronous case
+## above means the result can already have fired by the time `submit()` returns the handle to arm
+## against. Use `reserve_handle()` + `submit_with_handle()` instead: reserve the handle, arm whatever
+## `handle`-keyed state the listener checks, THEN submit. `submit()` itself stays exactly as it was
+## for a caller that only cares about the eventual result and never needs to filter by handle.
 func submit(line: String, ctx: Dictionary) -> int:
-	var handle: int = _take_id()
-	_run_submission(handle, line, ctx)
+	var handle: int = reserve_handle()
+	submit_with_handle(handle, line, ctx)
 	return handle
+
+
+func reserve_handle() -> int:
+	return _take_id()
+
+
+func submit_with_handle(handle: int, line: String, ctx: Dictionary) -> void:
+	_run_submission(handle, line, ctx)
 
 
 func _run_submission(handle: int, line: String, ctx: Dictionary) -> void:

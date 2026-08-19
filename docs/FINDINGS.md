@@ -440,44 +440,6 @@ instruction.
 
 ---
 
-### F-223 · CommandService's synchronously-resolved commands never print in the console — result signal fires before the pending-handle guard is armed
-
-**Area:** netcode · **Severity:** high · **Found:** 2026-08-19 by lp
-
-**Found:** 2026-08-19 by lp during 3.13-review
-
-`autoload/debug_console.gd:_run()` calls `command_service.call("submit", line, ctx)` (`autoload/
-command_service.gd:submit()`), *then* sets `_pending_handles[handle] = true` on the next line.
-`submit()` -> `_run_submission()` -> `execute()` only actually suspends (a real `await`) when a
-non-host peer submits a HOST-scope command over the RPC (`_submit_to_host`). For every LOCAL
-command (`help`, `items`, `clear`, `enemies`, `commands`, …) and every HOST-scope command typed by
-the host itself (`give`, `spawn`, `killall`, …) — i.e. the entire single-player/host-typed path,
-the majority of real console usage — `execute()` never suspends, so `_run_submission` runs to
-completion synchronously *inside* the `submit()` call: it emits `command_result` before `submit()`
-even returns the handle to `_run()`. `_on_command_result` (already connected) fires immediately,
-finds `_pending_handles.has(handle)` false (line 172 hasn't executed yet) and silently discards the
-result. debug_console.gd's own comment at the site even states the premise correctly ("A LOCAL
-command never leaves this process, so it resolves inside `submit()` above before this line even
-runs") without noticing that the *signal* fires in that same window too.
-
-Net effect: typing `help`, `items`, `give branch 5`, `spawn crawler`, etc. directly into the host's
-own console (or any LOCAL command from a client) prints nothing — only the echoed `> <line>`
-appears, never the result. Verified empirically: booted the project headless, called
-`DebugConsole._on_submitted("help")` directly, and the output buffer contains the echoed `> help`
-line only — `help`'s actual listing never appears (`command_service.execute("help", ...)` on its
-own returns the text fine, confirming the break is in the submit()/signal wiring, not the command
-itself). `tools/command_check.gd` doesn't catch this because it calls `command_service.execute()`
-directly, bypassing `submit()`. `tools/command_net_check.gd`'s phase C only exercises the genuinely
-async client-over-RPC path (console open + paused), which is the one path that already suspends
-before `submit()` returns — so it passes while the much more common synchronous path is silently
-broken.
-
-Fix shape: set `_pending_handles[handle] = true` (and connect the `command_result` signal, if not
-already connected) *before* calling `submit()`, not after — same ordering problem likely applies to
-`_unpaused_for_handles` if a future LOCAL/host-typed path is ever made to pause first.
-
----
-
 ### F-224 · CommandService's per-client _resolved_requests dictionary never shrinks over a session
 
 **Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lp
@@ -498,6 +460,60 @@ severity table ("mild inefficiency"), fix opportunistically: e.g. erase the requ
 ---
 
 ## Resolved
+
+### F-223 · CommandService's synchronously-resolved commands never print in the console — result signal fires before the pending-handle guard is armed — **fixed**
+
+**Area:** netcode · **Severity:** high · **Found:** 2026-08-19 by lp during 3.13-review
+
+`autoload/debug_console.gd:_run()` called `command_service.call("submit", line, ctx)` (`autoload/
+command_service.gd:submit()`), *then* set `_pending_handles[handle] = true` on the next line.
+`submit()` -> `_run_submission()` -> `execute()` only actually suspends (a real `await`) when a
+non-host peer submits a HOST-scope command over the RPC (`_submit_to_host`). For every LOCAL
+command (`help`, `items`, `clear`, `enemies`, `commands`, …) and every HOST-scope command typed by
+the host itself (`give`, `spawn`, `killall`, …) — i.e. the entire single-player/host-typed path,
+the majority of real console usage — `execute()` never suspended, so `_run_submission` ran to
+completion synchronously *inside* the `submit()` call: it emitted `command_result` before `submit()`
+even returned the handle to `_run()`. `_on_command_result` (already connected) fired immediately,
+found `_pending_handles.has(handle)` false (the arming line hadn't executed yet) and silently
+discarded the result. Net effect: typing `help`, `items`, `give branch 5`, `spawn crawler`, etc.
+directly into the host's own console (or any LOCAL command from a client) printed nothing — only the
+echoed `> <line>` appeared, never the result.
+
+**Ran the check before touching anything** (per the finding's own stale-file warning —
+`autoload/debug_console.gd` had 1 commit since filing): that commit was F-130 (`2c86ed9`, the
+`register()` shim removal), which never touches `_run()`'s ordering — confirmed by reading the diff.
+The bug was still live; `_pending_handles[handle] = true` was still one line after `submit()`.
+
+**Resolved 2026-08-19 by lm.** Root cause: `CommandService.submit()` allocates its handle AND runs the
+command to completion inside the same call for anything that doesn't need a real network `await` —
+any caller arming a handle-keyed guard on the line after `submit()` returns is one step too late for
+that case. Fix: split allocation from execution. `CommandService.reserve_handle()` (`_take_id()`
+alone) and `CommandService.submit_with_handle(handle, line, ctx)` (`_run_submission()` alone) are the
+new two-step form; `submit()` is now a thin wrapper over both, unchanged for a caller that never
+filters by handle. `DebugConsole._run()` now calls `reserve_handle()`, arms `_pending_handles[handle]`
+(and `_unpaused_for_handles[handle]` when applicable, D-076) FIRST, and only then calls
+`submit_with_handle()` — so the guard is armed before execution can possibly complete, for every
+path, not just the ones that happen to suspend.
+
+Wrote `tools/command_console_check.gd` — no prior check drove `DebugConsole._on_submitted()` for the
+synchronous path and read its own output buffer back (`command_check.gd` bypasses `submit()` via
+`execute()`; `command_net_check.gd` phase C only exercises the genuinely async client-over-RPC path).
+Verified: `agent godot --script tools/command_console_check.gd` → `COMMAND_CONSOLE_CHECK failures=0`
+— `help` now prints its full listing (not just the `> help` echo), `give branch 5` (HOST scope,
+host-typed, still fully synchronous) prints `gave 5 x branch`, and `_pending_handles` is empty again
+after both resolve. Re-ran `tools/command_check.gd` (`COMMAND_CHECK failures=0`) and
+`tools/command_net_check.gd` (`COMMAND_NET_CHECK failures=0`, including the paused-console RPC round
+trip D-076 fixed) — neither regressed.
+
+**Swept for the same shape:** `CommandService.submit()` had exactly one caller in the whole codebase
+(`debug_console.gd`) — no sibling call site to fix. Checked every other `request_id`/`_pending_*`
+dictionary in the repo (inventory, crafting, combat, build, hauling, chest, player_health): every one
+belongs to a genuine cross-process RPC round trip that always suspends before returning its id, never
+this synchronous-resolution shape.
+
+Full writeup: `docs/SPECS.md` F-223 block.
+
+---
 
 ### F-208 · F-203's sway case is still unsolved — `_apply_sway`'s per-mesh height mask needs a per-vertex baked channel before sway-bearing props can join the cross-asset chunk merge — **fixed**
 

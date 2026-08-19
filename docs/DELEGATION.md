@@ -3113,12 +3113,20 @@ command_service.call("register_spec", &"my_command", {
 - **`commands` / `commands --json`** (LOCAL, meta) is the introspection contract 3.16's coverage check
   reads: `data.commands` is `Array[Dictionary]` of `{name, scope, help, arg_count}`.
 - **Calling from OUTSIDE an autoload that can't safely `await` through `.call()`** (i.e. everyone —
-  see the file header): `var handle: int = command_service.call("submit", line, ctx)`, then listen for
-  `command_service.command_result(handle, result)` once, filtered by handle — `debug_console.gd`'s
-  `_run()`/`_on_command_result()` is the worked example. A script that instead holds a
-  **typed/preloaded** reference (`const S = preload("res://autoload/command_service.gd")`, then `node
-  as S`) can `await s.execute(line, ctx)` directly — `tools/command_check.gd` is that worked example,
-  and it's how every check should talk to it.
+  see the file header), **when the caller needs to recognize its OWN handle inside a `command_result`
+  listener** (F-223): a LOCAL command, or a HOST command typed by the machine that owns execution,
+  resolves and emits `command_result` SYNCHRONOUSLY — before a plain `submit()` call would even return
+  the handle to arm a guard against. Use the two-step form instead: `var handle: int =
+  command_service.call("reserve_handle")`, arm whatever `handle`-keyed state the listener checks, THEN
+  `command_service.call("submit_with_handle", handle, line, ctx)` — `debug_console.gd`'s `_run()`/
+  `_on_command_result()` is the worked example, and `tools/command_console_check.gd` is the regression
+  guard proving the synchronous path actually reaches the listener now. Plain `command_service.call(
+  "submit", line, ctx)` still works and still returns a handle — it's just not safe to arm a filter
+  against after the fact; fine for a caller that only wants the eventual result and never filters by
+  handle. A script that instead holds a **typed/preloaded** reference (`const S =
+  preload("res://autoload/command_service.gd")`, then `node as S`) can `await s.execute(line, ctx)`
+  directly — `tools/command_check.gd` is that worked example, and it's how every check should talk to
+  it.
 
 **Protocol bump 15 → 16**: `net_submit_command(request_id: int, line: String)` (client → host,
 `any_peer`/reliable) and `net_command_result(request_id: int, result: Dictionary)` (host → the one

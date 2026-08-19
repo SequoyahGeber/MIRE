@@ -5229,3 +5229,18 @@ Notes along the way:
 Files: `docs/FINDINGS.md`
 
 Commit at time of writing: `6a8f9b4`
+
+---
+
+### DONE · F-223 · lm · 2026-08-19T14:13:26+00:00
+
+**CommandService's synchronously-resolved commands never print in the console — result signal fires before the pending-handle guard is armed**
+
+Fixed: CommandService.submit() allocated its handle and ran to completion synchronously (emitting command_result) before returning that handle for any LOCAL/host-typed command — DebugConsole's _pending_handles guard, armed one line after submit() returned, was always too late for that path, so a real console user typing help/give/spawn/etc saw only the echoed '> line', never the result. Split submit() into reserve_handle() + submit_with_handle(); DebugConsole._run() now reserves+arms both guards before calling submit_with_handle(). New regression guard tools/command_console_check.gd drives DebugConsole._on_submitted() directly and reads its own output buffer back (COMMAND_CONSOLE_CHECK failures=0: help's full listing and 'gave 5 x branch' both print, _pending_handles drains to 0). command_check.gd and command_net_check.gd both still failures=0. Wrote the missing SPECS.md F-223 block, moved FINDINGS.md's entry to Resolved, updated DELEGATION.md's documented submit() calling pattern to the safe two-step form.
+
+Notes along the way:
+- docs/FINDINGS.md held by lp (3.15-review) at claim time — claimed everything else and proceeding with the fix; will retry FINDINGS.md at close-out rather than dropping the whole task over a transient review lock.
+
+Files: `autoload/debug_console.gd`, `autoload/command_service.gd`, `tools/command_console_check.gd`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `c508133`

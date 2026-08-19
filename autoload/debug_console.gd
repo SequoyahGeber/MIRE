@@ -154,10 +154,18 @@ func _on_submitted(text: String) -> void:
 
 ## Submits through CommandService and prints whatever CommandResult eventually comes back —
 ## synchronously for a LOCAL command or a HOST command typed on the host, after a real RPC round trip
-## for a HOST command typed on a client. `submit()` + `command_result` rather than `await execute()`
-## directly: this file only ever holds CommandService through `get_node_or_null().call()`, and
-## awaiting a coroutine through that dynamic dispatch is not a pattern anything else in this codebase
-## relies on, so this does not either (see command_service.gd's file header).
+## for a HOST command typed on a client. `reserve_handle()` + `submit_with_handle()` + `command_result`
+## rather than `await execute()` directly: this file only ever holds CommandService through
+## `get_node_or_null().call()`, and awaiting a coroutine through that dynamic dispatch is not a
+## pattern anything else in this codebase relies on, so this does not either (see command_service.gd's
+## file header).
+##
+## F-223: this used to call plain `submit()` and arm `_pending_handles[handle]` on the line AFTER —
+## but a LOCAL command (or a HOST command typed by the host itself) resolves and fires
+## `command_result` synchronously INSIDE `submit()`, before it returns the handle. `_on_command_result`
+## found the guard not armed yet and silently discarded every such result, so only the echoed
+## `> <line>` ever printed. Reserving the handle first and arming both guards BEFORE calling
+## `submit_with_handle()` closes that window for every path, not just the ones that happen to suspend.
 func _run(line: String) -> void:
 	var command_service: Node = get_node_or_null(^"/root/CommandService")
 	if command_service == null:
@@ -168,7 +176,7 @@ func _run(line: String) -> void:
 		_command_service_connected = true
 
 	var ctx: Dictionary = command_service.call("build_local_ctx", &"console")
-	var handle: int = int(command_service.call("submit", line, ctx))
+	var handle: int = int(command_service.call("reserve_handle"))
 	_pending_handles[handle] = true
 
 	# COMMANDS.md §10's wrinkle, MEASURED rather than assumed: tools/command_net_check.gd proved a
@@ -177,11 +185,15 @@ func _run(line: String) -> void:
 	# reply never resumes this process's own awaiting coroutine until something unpauses it. So:
 	# unpause for exactly as long as a request from THIS console is in flight, and re-pause once
 	# every such request has resolved (see `_on_command_result`). A LOCAL command never leaves this
-	# process, so it resolves inside `submit()` above before this line even runs — nothing to unpause
-	# for. Filed as D-076 (docs/DECISIONS.md).
+	# process, so it resolves inside `submit_with_handle()` below before this call even returns —
+	# harmless to arm anyway: `_on_command_result` erases the same handle from `_unpaused_for_handles`
+	# a few lines later in the same synchronous call, so it is armed and drained within one frame.
+	# Filed as D-076 (docs/DECISIONS.md).
 	if pause_while_open and get_tree().paused:
 		get_tree().paused = false
 		_unpaused_for_handles[handle] = true
+
+	command_service.call("submit_with_handle", handle, line, ctx)
 
 
 func _on_command_result(handle: int, result: Dictionary) -> void:

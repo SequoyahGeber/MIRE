@@ -6825,6 +6825,60 @@ geometry the way `extraction_service.gd`/`wellspring_service.gd` do, so neither 
 
 ---
 
+## F-223 · CommandService's synchronously-resolved commands never print in the console — result signal fires before the pending-handle guard is armed
+
+**Claim:** `autoload/debug_console.gd`, `autoload/command_service.gd`, `tools/command_console_check.gd`.
+Network authority: none of its own — this is a same-process signal-ordering bug in the CLIENT-LOCAL
+console presentation layer over CommandService's existing authority row (docs/ARCHITECTURE.md §2.2,
+"Command execution"); no new state, no RPC.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Ran the check before touching anything** (per the finding's own warning — `autoload/debug_console.gd`
+had 1 commit since filing): read the diff (`2c86ed9`, F-130 — deletes the `register()` shim, migrates
+handler return shapes to `{ok, message, data}`) and confirmed it never touches `_run()`'s ordering.
+`_pending_handles[handle] = true` was still the line immediately AFTER `submit()`, unchanged. The bug
+was still live.
+
+**The fix:** the root cause is that `CommandService.submit()` allocates its handle AND runs the
+command to completion (for anything that does not need a real network `await` — the entire
+single-player/host-typed path) inside the same call, emitting `command_result` before returning the
+handle to the caller. A caller that arms a `handle`-keyed guard on the line after `submit()` returns is
+always one step too late for that synchronous case. Split allocation from execution:
+`CommandService.reserve_handle()` (just `_take_id()`) and `CommandService.submit_with_handle(handle,
+line, ctx)` (just `_run_submission(handle, line, ctx)`) are the new two-step form; `submit()` itself is
+now a thin `reserve_handle()` + `submit_with_handle()` pair, unchanged for a caller that never needs to
+filter by handle. `DebugConsole._run()` calls `reserve_handle()`, arms `_pending_handles[handle]` (and
+`_unpaused_for_handles[handle]` when applicable, D-076), and only THEN calls `submit_with_handle()` —
+so the guard is armed before execution can possibly complete, for every path, not just the ones that
+happen to suspend.
+
+**Verify:** wrote `tools/command_console_check.gd` — no prior check drove `DebugConsole._on_submitted()`
+for the synchronous path and read its own output buffer back (`command_check.gd` bypasses `submit()`
+entirely via `execute()`; `command_net_check.gd` phase C only exercises the genuinely async
+client-over-RPC path). `.agent/bin/agent godot --script tools/command_console_check.gd` →
+`COMMAND_CONSOLE_CHECK failures=0`: typing `help` into the console now prints the full command listing
+(not just the `> help` echo), typing `give branch 5` (HOST scope, host-typed, still fully synchronous)
+prints `gave 5 x branch`, and `_pending_handles` is empty again after both resolve (the guard did real
+work and drained, rather than never mattering). Re-ran `tools/command_check.gd`
+(`COMMAND_CHECK failures=0`) and `tools/command_net_check.gd` (`COMMAND_NET_CHECK failures=0`,
+including the paused-console RPC round trip D-076 fixed) to confirm neither regressed.
+
+**Swept for the same shape:** grepped for every caller of `CommandService.submit()` — `debug_console.gd`
+is the only one in the codebase, so there was no sibling call site to fix. Grepped for the broader
+pattern (a function that returns a request/handle id which a caller then uses to arm a dictionary-keyed
+guard, where the underlying call might resolve before the guard is armed) — `func submit(`/`func
+request(`/`func reserve` and every other `request_id`/`_pending_*` dictionary in the repo belongs to a
+genuine cross-process RPC round trip (host/client, always a real network `await`, never resolves
+synchronously inside the call that returns the id), which is not this bug's shape. CommandService's
+`submit()` was the only place a request could resolve synchronously inside the same call that hands
+back its own id.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**
