@@ -1531,9 +1531,9 @@
     },
     "core/game_state.gd": {
       "agent": "lm",
-      "at": "2026-08-19T01:27:57+00:00",
-      "hash": "862544710c784a3bbc455b41f2887d78776e68dd12e4d61fde77fbea9a351bd3",
-      "task": "6.1"
+      "at": "2026-08-19T03:19:09+00:00",
+      "hash": "4022a26487978dee3ea05c7b31fb80a1200e7fac6d1989baf2d8af8010390292",
+      "task": "6.10"
     },
     "core/net/net_session.gd": {
       "agent": "lm",
@@ -2413,6 +2413,12 @@
       "hash": "20dc907ca050867a070a115cffdc39bbc2011108b345f75d0c2d5be432c06b5a",
       "task": "3.2"
     },
+    "tools/main_menu_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T03:19:09+00:00",
+      "hash": "0fd0f51784b2eff124fc006592d2a09649081912e9c779ab642974a2bb149398",
+      "task": "6.10"
+    },
     "tools/mapgen/hollow_layout.py": {
       "agent": "tine18",
       "at": "2026-08-18T17:43:02+00:00",
@@ -2730,6 +2736,18 @@
       "at": "2026-08-18T21:26:59+00:00",
       "hash": "6b4406b283778fafd4d8b98c23fd73fa17ec85bab8ebdb82c0092e31f00dbc00",
       "task": "3.2"
+    },
+    "ui/menu/main_menu.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T03:19:09+00:00",
+      "hash": "229bdc23c150f22a63d8b3ad4f3dbd1deb6d1f13394d2f4203f62e05a89dc0d6",
+      "task": "6.10"
+    },
+    "ui/menu/settings_menu.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T03:19:09+00:00",
+      "hash": "733bf4aa36cdb747cdc6e753adbb44047d046856fdee52e134d04280ec673910",
+      "task": "6.10"
     },
     "world/chunk/chunk_mesher.gd": {
       "agent": "wick20",
@@ -3715,9 +3733,11 @@
       "title": "Cycle state machine: advance, escalate spread rate, expand enemy pool, announce (`DESIGN.md` \u00a75.1)"
     },
     "6.10": {
+      "done_at": "2026-08-19T03:19:09+00:00",
+      "done_by": "lm",
       "est": "5",
       "milestone": "M6",
-      "status": "todo",
+      "status": "done",
       "tier": "T0",
       "title": "Main menu, lobby UI, settings, seed entry"
     },
@@ -5374,6 +5394,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`Wellspring._finish_cap()` still emits `wellspring_capped` from a host-only guard, so a non-host peer's `SalvageService` milestone bonus silently undercounts"
+    },
+    "F-169": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Task 6.7's new `net_run_defeated` RPC shipped with no `PROTOCOL_VERSION` bump \u2014 `net_version.gd` was held all session by another lane's claim"
     }
   },
   "version": 1

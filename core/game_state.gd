@@ -11,19 +11,50 @@ extends Node
 ## reproducible across restarts, only that every peer IN the run agrees, which replication (not a
 ## fixed constant) already provides. `autoload/world_delta_log.gd` is what actually gets the value
 ## to a client — this file only holds it and decides when a fresh one is drawn.
+##
+## Task 6.10 adds a UI-facing override: [method set_pending_seed] stages a specific value so a typed
+## seed beats real entropy on the very next draw, without touching HOW a seed reaches a client (still
+## entirely `WorldDeltaLog`'s job) or its authority (still host-only — a client staging a value only
+## ever affects seeds that peer itself later hosts).
 
 signal seed_ready(value: int)
 
 var run_seed: int = 0
 var _seed_ready: bool = false
 
+## Task 6.10's seed-entry field stages a value here before hosting starts; whichever of
+## [method host_generate_seed]/[method ensure_seed] draws next consumes it once, then clears it, so
+## a later reconnect without a fresh entry falls back to real entropy same as always. 0 means
+## "no override" — `ui/menu/main_menu.gd` never stages a real 0, mapping the one-in-four-billion
+## String.hash() collision away from it too.
+var _pending_seed: int = 0
+var _has_pending_seed: bool = false
+
+
+## UI-facing. `value == 0` clears a previously staged override.
+func set_pending_seed(value: int) -> void:
+	_pending_seed = value
+	_has_pending_seed = value != 0
+
+
+func has_pending_seed() -> bool:
+	return _has_pending_seed
+
+
+func pending_seed() -> int:
+	return _pending_seed
+
 
 ## Host-only. Called once per hosted session (`NetTransport.server_started`) and lazily by
 ## [method ensure_seed] for offline/host-of-one play, which never fires that signal at all.
 func host_generate_seed() -> int:
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
-	run_seed = rng.randi()
+	if _has_pending_seed:
+		run_seed = _pending_seed
+		_has_pending_seed = false
+	else:
+		var rng := RandomNumberGenerator.new()
+		rng.randomize()
+		run_seed = rng.randi()
 	_seed_ready = true
 	seed_ready.emit(run_seed)
 	return run_seed

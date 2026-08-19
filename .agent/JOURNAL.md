@@ -3908,3 +3908,18 @@ Notes along the way:
 Files: `autoload/defeat_service.gd`, `ui/hud/defeat_hud.gd`, `world/mire/mire_grid.gd`, `systems/health/player_health.gd`, `tools/defeat_check.gd`, `systems/health/downed_state.gd`
 
 Commit at time of writing: `8ee179f`
+
+---
+
+### DONE · 6.10 · lm · 2026-08-19T03:19:09+00:00
+
+**Main menu, lobby UI, settings, seed entry**
+
+Main menu shell (F1, ui/menu/main_menu.gd) + settings shell (ui/menu/settings_menu.gd) + seed entry (GameState.set_pending_seed) shipped and registered. tools/main_menu_check.gd: 29/29 assertions pass. Regressions: seed_sync_check, mire_grid_check, resource_scatter_check, defeat_check, handshake_check, net_check_pattern_check, inventory_ui_check all failures=0; lobby_menu_check's 5 failures and crafting_ui_check's 19 failures are both pre-existing (reproduced via agent baseline against 5a09b1c), unrelated to this task, filed as F-170/F-171. agent godot --quit-after 15: 0 ERROR: lines. Settings deliberately ships empty (7.5 owns the content per graphics_quality.gd's own header + SPECS.md's M7 look-ahead); MainMenu deliberately never auto-opens or binds Esc (reserved for M7 pause menu). F-172 records that solo play still can't pick a seed under the current instant-boot flow. Docs: SPECS.md new §6.10 block, DECISIONS.md D-110, FINDINGS.md F-170/F-171/F-172, DELEGATION.md Current state.
+
+Notes along the way:
+- Scoped down from a full boot-gating main menu: MainMenu is a keypress-toggled overlay (F1), never auto-opens, never binds Esc (reserved for M7 pause menu per player_controller.gd's own comment). SettingsMenu ships as an empty shell — graphics_quality.gd's header and SPECS.md's M7 look-ahead both already reserve real settings content for task 7.5. Seed entry stages through new GameState.set_pending_seed()/has_pending_seed()/pending_seed(), consumed once by host_generate_seed(). Filed F-170 (lobby_menu_check flakes with a real Steam client running), F-171 (crafting_ui_check 19 pre-existing failures, unrelated), F-172 (seed entry doesn't reach solo play under the current instant-boot flow) — none caused by this task, all reproduced via agent baseline.
+
+Files: `core/game_state.gd`, `ui/menu/main_menu.gd`, `ui/menu/settings_menu.gd`, `tools/main_menu_check.gd`
+
+Commit at time of writing: `5a09b1c`
