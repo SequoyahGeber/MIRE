@@ -4463,3 +4463,15 @@ vitals_hud_check rewritten to the 6.7 contract: solo downed now asserts DefeatSe
 Files: `tools/vitals_hud_check.gd`
 
 Commit at time of writing: `2c86ed9`
+
+---
+
+### DONE · F-193 · yarrow21 · 2026-08-19T07:04:53+00:00
+
+**Three checks print undeclared engine errors on clean runs — salvage_check's provoked corrupt-save pair, nav_bake_check's map-sync timing query, boss_check's exit leak**
+
+Two of three declared: salvage_check declares its provoked corrupt-save pair (same patterns as unlock_check's F-182 precedent), nav_bake_check declares the pre-sync query error with a comment on why declaring beats fixing (trap 2's method is real queries, so the first probes necessarily fire before map sync — waiting on readiness signals is exactly what that trap distrusts). Both verified failures=0 with the declaration in the summary line. boss_check's exit leak (2 resources, 22 ObjectDB instances) deliberately NOT declared — it is a real leak, not a provoked fixture, and declaring it would hide it; it stays recorded in the resolution as the finding's open tail for whoever next opens boss_check.
+
+Files: `tools/salvage_check.gd`, `tools/nav_bake_check.gd`
+
+Commit at time of writing: `4b87459`

@@ -57,7 +57,11 @@ func _run() -> void:
 
 	if baker != null:
 		baker.free()
-	print("\nNAV_BAKE_CHECK failures=%d" % failures)
+	# The premature-query error is PROVOKED by design (F-193): trap 2's whole method is that only a
+	# real query proves readiness, so the poll's first probes necessarily fire before the map's
+	# first synchronization and the engine logs each one. Declaring it beats "fixing" it, because
+	# the fix would be waiting on the exact signals trap 2 exists to distrust.
+	print("\nNAV_BAKE_CHECK failures=%d · EXPECTED_ERROR_PATTERNS=\"before first map synchronization\"" % failures)
 	finish()
 
 

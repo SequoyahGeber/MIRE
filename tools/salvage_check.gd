@@ -54,7 +54,9 @@ func _run() -> void:
 	_check_save_versioning()
 
 	_cleanup_test_paths()
-	print("\nSALVAGE_CHECK failures=%d" % failures)
+	# Standing rule 4 (docs/SPECS.md): declare provoked errors by pattern rather than silencing
+	# them — same two lines unlock_check declares for the same corrupt-save fixture (F-182/F-193).
+	print("\nSALVAGE_CHECK failures=%d · EXPECTED_ERROR_PATTERNS=\"Parse JSON failed|did not contain a JSON object\"" % failures)
 	finish()
 
 
