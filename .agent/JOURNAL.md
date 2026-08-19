@@ -4906,3 +4906,13 @@ Notes along the way:
 Files: `docs/FINDINGS.md`
 
 Commit at time of writing: `16ce2c0`
+
+---
+
+### DONE · 5.3-review · lm · 2026-08-19T11:11:24+00:00
+
+**Review 5.3 @ 26d4294 — judge the commit, file findings, no edits**
+
+clean — reviewed impl commit 577edbd (docs commit 26d4294 was F-161/F-162 filing only). Host-authoritative shot sim matches spec's four-way split (client-predicted draw, host-derived aim/flight/hit, cosmetic broadcast flight, host-broadcast impact). PvP exclusion, mutual exclusion both directions, _damageable_owner() upward-walk, and the ammo re-check-on-release dry-fire path all match spec prose exactly. No bare autoload refs in --script-reachable code (only doc comments name CombatService/RangedCombatService). ARCHITECTURE.md §2.2 row and D-102 both consistent with F-161's un-versioned-RPC call. Ran tools/ranged_combat_check.gd (46 assertions, failures=0), tools/ranged_combat_net_check.gd (real 2-process ENet, failures=0), and all 5 named regression checks (combat_check, combat_net_check, harvest_tool_ladder_check, command_catalog_check, verify_setup) green unmodified. Full boot --quit-after 20: 0 ERROR: lines. DELEGATION.md Current state carries the API and the _damageable_owner gotcha as required. No findings filed.
+
+Commit at time of writing: `9b31ab7`
