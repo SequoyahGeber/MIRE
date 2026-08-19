@@ -5901,6 +5901,58 @@ was one code path, already fixed, whose effect had silently shown up in 29 place
 | F-043 | Decision spec'd under M2 above. |
 | F-049 | Two named fixes in `.agent/bin/agent` (`_sync_findings` closes departed findings; start/board call it); ship with a before/after board diff. |
 
+---
+
+## F-165 · Task 6.5's two new extraction RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
+
+**Claim:** `core/net/net_version.gd`, `tools/handshake_check.gd` — claimed to hold them stable while
+verifying, but neither needed an edit; see below. Network authority: none of its own (infrastructure,
+not simulated state) — `core/net/net_version.gd`'s own header already states the one authority fact
+that matters, that the host is the arbiter of a version mismatch.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Turned out already fixed on disk.** F-161 (task 5.3), F-165 (task 6.5, this one), F-169 (task 6.7)
+and F-178 (F-157) are the same omission four times over — `net_version.gd`/`handshake_check.gd` held
+by lane slate17's task 3.7 claim across all four sessions, so each shipped its RPCs un-versioned and
+filed a finding instead (D-100/D-102/D-120 cover why that was an acceptable transient risk). Between
+F-165 being filed and this task picking it up, hollow7's F-161 session fixed all four in one pass:
+`PROTOCOL_VERSION` 20 → 21 (folded into one bump rather than four retroactive numbers, because the
+intermediate versions never existed as a build anyone ran), `net_version.gd`'s `## 21` history block
+naming all four RPC sets by task, `handshake_check.gd`'s assertion raised to match, and a new
+mechanism — `core/net/rpc_manifest.gd` + `tools/rpc_manifest_check.gd` — that scans every `@rpc` in
+game code into one canonical signature and fails when the wire surface moves without `PROTOCOL_VERSION`
+moving with it, so a fifth omission is a red check instead of a fifth finding. D-133 records that
+decision.
+
+**What was actually left for this task:** hollow7's own close-out said so explicitly — "DOCS NOT
+WRITTEN: lm holds docs/DECISIONS.md and docs/DELEGATION.md for F-183 for the whole session." F-183
+closed two minutes after F-161's `done`, so both files were free again by the time this task started.
+The remaining work was the bookkeeping close: record D-133, add the manifest API to DELEGATION.md
+*Current state*, and move F-161/F-165/F-169/F-178 to `## Resolved` — `docs/FINDINGS.md`'s own board
+had flagged F-161 as DONE-in-state-but-still-Open, exactly this drift.
+
+**Verified (this task, independently, not just trusting hollow7's note):**
+`agent godot --script tools/handshake_check.gd` → 0 failures, `PROTOCOL_VERSION == 21` assertion
+passes, real two-peer ENet hello/reject exchange passes both the matching- and mismatched-version
+cases. `agent godot --script tools/rpc_manifest_check.gd` → `RPC_MANIFEST_CHECK failures=0`, 55 RPCs
+scanned, signature and count both match `RECORDED_SIGNATURE`/`RECORDED_ENTRY_COUNT`. That check is
+itself the sweep for a fifth un-bumped RPC (AGENTS.md §3) — a mechanical PASS stands in for a manual
+grep across the whole `@rpc` surface.
+
+**Swept for the same shape elsewhere:** the four un-bumped-RPC findings *are* the "same shape
+elsewhere" this sweep would have found — already folded into one fix by hollow7. One new, unrelated
+bug surfaced while verifying: `rpc_manifest.gd`'s FNV-1a seed literal overflows signed 64-bit int and
+prints engine `ERROR:` lines on every run (though the check's PASS/FAIL is unaffected, since the error
+is deterministic). Filed as F-213 rather than fixed here — it's a distinct defect in code this task
+didn't write, and re-deriving `RECORDED_SIGNATURE` deserves its own verification pass, not a rider on
+a bookkeeping close-out.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

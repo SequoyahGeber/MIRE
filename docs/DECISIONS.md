@@ -3753,3 +3753,37 @@ supposed to make the refusal go away by construction (fill in the config, the gu
 firing). Would reconsider the 8.4/8.11 split if 8.11 turns out to need pipeline changes beyond
 config values (e.g. a fourth depot, or a build layout steampipe can't express with this task's
 `FileMapping`/`ContentRoot` shape) — that would mean the split drew the line in the wrong place.
+
+### D-133 · 2026-08-19 · F-161/F-165/F-169/F-178's four un-bumped RPCs get ONE retroactive `PROTOCOL_VERSION` bump, not four — and the rule that was missed four times gets a mechanical check, not a fifth reminder
+
+Four tasks (5.3, 6.5, 6.7, F-157) each shipped real new RPCs while `core/net/net_version.gd` and
+`tools/handshake_check.gd` sat behind lane slate17's task 3.7 claim for the whole session, so each
+filed a finding (F-161, F-165, F-169, F-178) instead of bumping the version — D-100/D-102/D-120
+already ratified shipping un-versioned as acceptable transient risk for a project with no
+compatibility window (source control, not staggered binaries). By the time a lane finally held
+`net_version.gd` free (hollow7, F-161), all four were outstanding at once.
+
+**One bump, not four.** The obvious-looking alternative — number them retroactively, 20/21/22/23 in
+task order — would be fiction: versions 20–22 never existed as a build anyone ran, connected to, or
+shipped. A version number's only job is telling two real builds apart; minting three that no build
+ever carried adds nothing a single "N+1, four RPC sets at once" bump doesn't already say, and invites
+a future reader to go looking for what changed *between* 20 and 21 when nothing did. `net_version.gd`'s
+own history comments (`## 21 (F-161/F-165/F-169/F-178, one bump for four omissions)`) name all four
+RPC sets under the one entry instead.
+
+**The rule itself needed a mechanism, not a fifth writeup.** Four different agents, four different
+tasks, hit the identical omission — at that point it stops being a discipline gap and becomes a
+missing check. `core/net/rpc_manifest.gd` scans every `@rpc` in game code (excluding `tools/`, whose
+own harness RPCs like `handshake_check.gd`'s would otherwise force a version bump for adding a test)
+into one canonical `<path>::<func>(<types>)|<config>` signature per RPC, hashes the sorted set
+(FNV-1a), and records it alongside the `PROTOCOL_VERSION` it was taken at. `tools/rpc_manifest_check.gd`
+fails whenever the scanned signature no longer matches `RECORDED_SIGNATURE`, printing the exact RPC
+that changed and a paste-ready re-record block — so a fifth un-bumped RPC is a red check the moment it
+ships, not something that waits for someone to notice and file a finding. Proven both directions
+empirically before trusting it: adding a probe RPC failed the check and named it; removing it went
+green again.
+
+**Would change my mind:** a case where two builds genuinely need to interoperate across a version gap
+(e.g. a public beta branch running behind main) — that would mean "N and N+1 interoperate" stops being
+a guarantee nobody needs, and retroactive/incremental numbering would start mattering for real. Not
+expected before Steam release, and STEAM.md's branch model doesn't describe one today.

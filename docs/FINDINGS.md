@@ -69,29 +69,6 @@ do is worth as much as the record of what we did.
 
 ## Open
 
-### F-161 · Task 5.3's three new ranged-combat RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
-
-**Area:** netcode · **Severity:** medium · **Found:** 2026-08-18 by lp during 5.3
-
-`autoload/ranged_combat_service.gd` added `net_request_shot`, `net_shot_fired` and `net_shot_resolved`
-— a real new wire shape, same class of change `core/net/net_version.gd`'s own header says must bump
-`PROTOCOL_VERSION` ("an RPC's name, argument order, or @rpc config... changed"). `core/net/net_version.gd`
-and `tools/handshake_check.gd` were both held by lane slate17's 3.7 claim for this task's entire
-session, so neither could be edited under AGENTS.md's claim rule. D-102 records the call (ship
-un-versioned rather than stall the task) and why it's an acceptable transient risk given this project
-ships from one evolving source tree, not staggered binaries.
-
-**What closes this:** whoever next holds `core/net/net_version.gd`:
-1. Bump `const PROTOCOL_VERSION: int = 19` to `20`.
-2. Add a `## 20 (task 5.3)` comment naming the three RPCs, matching every entry above it.
-3. Raise `tools/handshake_check.gd`'s `_check("PROTOCOL_VERSION reflects task 4.8's Wellspring channel RPC", NetVersion.PROTOCOL_VERSION == 19, ...)` assertion to `== 20` (and its label, since it will no longer be about 4.8).
-4. `agent godot --script tools/handshake_check.gd` green is the actual closing proof — not just the absence of a WARN line.
-
-No code change to `ranged_combat_service.gd` itself is needed; the RPCs are already correct and
-covered by `tools/ranged_combat_check.gd`/`tools/ranged_combat_net_check.gd`, both `failures=0`. This
-is purely the bookkeeping bump D-100 already hit once for task 6.1 (that task avoided it by reusing
-`WorldDeltaLog` instead — not an option here, see D-102).
-
 ### F-139 · `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline
 
 **Area:** worldgen / netcode · **Severity:** low · **Found:** 2026-08-18 by lm during 4.6
@@ -322,24 +299,6 @@ six agents a check can queue behind several others. That is a throughput questio
 one, and the instrumentation added alongside F-104 (holder identity, 30s heartbeat, measured wait on
 acquire) now produces the hold times needed to decide it. Decide against those numbers.
 
-### F-165 · Task 6.5's two new extraction RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
-
-**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.5
-
-`systems/extraction/extraction_ship.gd` added `net_request_repair` and `net_request_toggle_departure`
-— two real new wire shapes, plus its own `SceneReplicationConfig`
-(`repair_stage`/`departure_channeling`/`departure_progress_sec`/`departure_required_players`/
-`departed`). `core/net/net_version.gd` and `tools/handshake_check.gd` were both held by lane
-slate17's 3.7 claim for this task's entire session, the identical situation F-161 already recorded
-for task 5.3's ranged-combat RPCs — D-102 covers why shipping un-versioned is an acceptable transient
-risk here.
-
-**What closes this — same list as F-161, do both in one pass:**
-1. Bump `const PROTOCOL_VERSION: int = 19` to `20`, or `21` if F-161 lands first.
-2. Add a `## N (task 6.5)` comment naming `net_request_repair`, `net_request_toggle_departure`, and
-   the ExtractionShip synchronizer's five properties, matching every entry above it.
-3. Raise `tools/handshake_check.gd`'s version-number assertion to match, and its label.
-
 ### F-166 · `world/gen/authored_world.gd` has no `shipwreck` marker kind, so task 6.5's ExtractionShip is built but never reachable in the live Hollowmere map — same shape as F-146's chest gap
 
 **Area:** world-gen · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.5
@@ -362,31 +321,6 @@ for tasks 4.3/4.4).
 Hollowmere layout with `meta("kind") == "shipwreck"`, in a shore-adjacent spot — same recipe
 `wellspring_service.gd`'s own "objective" marker already proves works. No gameplay-side change is
 needed; `ExtractionService` picks it up automatically the next time the scene builds.
-
-### F-169 · Task 6.7's new `net_run_defeated` RPC shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
-
-**Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lm during 6.7
-
-`autoload/defeat_service.gd` added `net_run_defeated` (host → everyone, reliable) — a real new wire
-shape, same class of change `core/net/net_version.gd`'s own header says must bump
-`PROTOCOL_VERSION`. `core/net/net_version.gd` and `tools/handshake_check.gd` were both held by lane
-slate17's 3.7 claim for this task's entire session, so neither could be edited under AGENTS.md's
-claim rule. This is the same gap F-161 (task 5.3) and F-165 (task 6.5) already recorded, for the
-same reason, against the same held files — D-102 covers why this is an acceptable transient risk
-for a project that ships from one evolving source tree rather than staggered binaries.
-
-**What closes this:** whoever next holds `core/net/net_version.gd` — likely the same pass that
-closes F-161/F-165, since all three are one bump apiece:
-1. Bump `PROTOCOL_VERSION` past whatever F-161/F-165 left it at.
-2. Add a `## N (task 6.7)` comment naming `net_run_defeated`, matching every entry above it.
-3. Raise `tools/handshake_check.gd`'s version assertion to match, updating its label.
-4. `agent godot --script tools/handshake_check.gd` green is the actual closing proof.
-
-No code change to `defeat_service.gd` itself is needed — the RPC is already correct and covered by
-`tools/defeat_check.gd` (`failures=0`), which calls it directly the way a real client receiving it
-would (see that check's own "net_run_defeated" section).
-
----
 
 ### F-174 · No dev machine can stand in for "mid-range" — `tools/perf_probe.gd`'s baseline is only ever measured on the fastest hardware in the project
 
@@ -422,29 +356,6 @@ sees a number well above 60, and calls it done. **What closes this:** the same t
 F-006 — Sequoyah (or a CI runner) with access to actual mid-range/worst-case hardware runs
 `perf_probe.gd` there at least once, so the roadmap's "target 60fps mid-range" line has ever been
 checked against anything but relative deltas on the fastest machine in the project.
-
----
-
-### F-178 · F-157's three new display-name RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
-
-**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp during F-157
-
-`autoload/net_transport.gd` added `net_request_display_name` (client → host), `net_display_name_changed`
-and `net_display_name_snapshot` (both host → peers) — a real new wire shape, same class of change
-`core/net/net_version.gd`'s own header says must bump `PROTOCOL_VERSION`. `core/net/net_version.gd`
-and `tools/handshake_check.gd` were both held by lane slate17's 3.7 claim for this task's entire
-session, the identical contention D-102/F-161 (task 5.3), F-165 (task 6.5), and F-169 (task 6.7) each
-already hit and shipped through. D-120 records the call for this instance.
-
-**What closes this:** whoever next holds `core/net/net_version.gd`:
-1. Bump `const PROTOCOL_VERSION: int = 19` to `20`.
-2. Add a `## 20 (F-157)` comment naming the three RPCs, matching every entry above it.
-3. Raise `tools/handshake_check.gd`'s pinned-version assertion to `== 20` and update its label.
-
-Consider, while there: F-161/F-165/F-169 name the SAME two files and are very likely still unbumped
-too (each was blocked by the same claim, in the same order — task 5.3, then 6.5, then 6.7, then this
-one) — check whether the version needs to jump by more than one, and whether all four RPC trios need
-their own `## N (task X)` comment rather than collapsing into a single bump.
 
 ---
 
@@ -735,7 +646,179 @@ same shape as the sentence D-099 already wrote once.
 
 ---
 
+### F-213 · core/net/rpc_manifest.gd's FNV-1a seed literal overflows signed 64-bit int, erroring on every scan even though the check itself stays deterministic
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lm
+
+Discovered while verifying F-165's close-out: `agent godot --script tools/rpc_manifest_check.gd` passes
+(`RPC_MANIFEST_CHECK failures=0`) but prints three `ERROR: Cannot represent 0xCBF29CE484222325 as a
+64-bit signed integer, since the value is too large. at: hex_to_int (core/string/ustring.cpp:2216)`
+lines every run.
+
+`RpcManifest.signature()` (`core/net/rpc_manifest.gd:169`) opens with
+`var h: int = 0xCBF29CE484222325` — the standard FNV-1a 64-bit offset basis. GDScript's `int` is
+signed 64-bit, and that literal (14695981039346656037 unsigned) exceeds the signed max
+(9223372036854775807), so the parser can't represent it and errors at parse time. The function's own
+next lines already handle exactly this class of problem for the *output* — `h & 0x7FFFFFFFFFFFFFFF`
+masks the top bit before `"%016x" % ...` "so the recorded constant reads like a typo" — but the same
+overflow at the *input* (the seed constant itself) was missed, one line above the comment explaining
+why it matters.
+
+**Why this doesn't invalidate F-161/F-165/F-169/F-178's fix:** the error is deterministic — GDScript's
+`hex_to_int` failure leaves `h` at a fixed fallback value every run, so `signature()` still computes
+the same output every time and `RECORDED_SIGNATURE` still matches. `rpc_manifest_check.gd`'s
+PASS/FAIL correctness is unaffected; this is not a false-green risk. What is real: the algorithm
+running is not actually FNV-1a (the seed is wrong), and the check has printed engine `ERROR:` lines on
+every single green run since it was written today, which fails the "0 ERROR lines" bar this project's
+own check verifications hold everything else to.
+
+**What closes this:** whoever next holds `core/net/rpc_manifest.gd` rewrites the seed as its signed
+two's-complement equivalent (`-3750763034362895579`, same bit pattern, with a comment pointing at why —
+same reasoning the output mask already documents) or builds it from two in-range halves shifted
+together, confirms `agent godot --script tools/rpc_manifest_check.gd` prints zero `ERROR:` lines, and
+then re-records `RECORDED_SIGNATURE`/`RECORDED_ENTRY_COUNT` only if the new seed changes the computed
+hash (the check tool prints the paste-ready block if so). Not fixed here: out of scope for F-165 (a
+`PROTOCOL_VERSION` bookkeeping task) and touching the manifest hash algorithm deserves its own
+verification pass rather than a rider on an unrelated close-out.
+
+---
+
 ## Resolved
+
+### F-178 · F-157's three new display-name RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim — **fixed**
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp during F-157
+
+`autoload/net_transport.gd` added `net_request_display_name` (client → host), `net_display_name_changed`
+and `net_display_name_snapshot` (both host → peers) — a real new wire shape, same class of change
+`core/net/net_version.gd`'s own header says must bump `PROTOCOL_VERSION`. `core/net/net_version.gd`
+and `tools/handshake_check.gd` were both held by lane slate17's 3.7 claim for this task's entire
+session, the identical contention D-102/F-161 (task 5.3), F-165 (task 6.5), and F-169 (task 6.7) each
+already hit and shipped through. D-120 records the call for this instance.
+
+**What closes this:** whoever next holds `core/net/net_version.gd`:
+1. Bump `const PROTOCOL_VERSION: int = 19` to `20`.
+2. Add a `## 20 (F-157)` comment naming the three RPCs, matching every entry above it.
+3. Raise `tools/handshake_check.gd`'s pinned-version assertion to `== 20` and update its label.
+
+Consider, while there: F-161/F-165/F-169 name the SAME two files and are very likely still unbumped
+too (each was blocked by the same claim, in the same order — task 5.3, then 6.5, then 6.7, then this
+one) — check whether the version needs to jump by more than one, and whether all four RPC trios need
+their own `## N (task X)` comment rather than collapsing into a single bump.
+
+---
+
+**Resolved 2026-08-19 by lm.** Same fix as F-161/F-165/F-169 — see F-165's resolution note for the full account. net_version.gd's
+`## 21` history block names this task's three display-name RPCs (net_request_display_name,
+net_display_name_changed, net_display_name_snapshot) explicitly.
+
+Verified: `agent godot --script tools/handshake_check.gd` -> 0 failures. `agent godot --script
+tools/rpc_manifest_check.gd` -> failures=0, all three display-name RPCs present in the scanned
+55-RPC signature.
+
+### F-169 · Task 6.7's new `net_run_defeated` RPC shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim — **fixed**
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lm during 6.7
+
+`autoload/defeat_service.gd` added `net_run_defeated` (host → everyone, reliable) — a real new wire
+shape, same class of change `core/net/net_version.gd`'s own header says must bump
+`PROTOCOL_VERSION`. `core/net/net_version.gd` and `tools/handshake_check.gd` were both held by lane
+slate17's 3.7 claim for this task's entire session, so neither could be edited under AGENTS.md's
+claim rule. This is the same gap F-161 (task 5.3) and F-165 (task 6.5) already recorded, for the
+same reason, against the same held files — D-102 covers why this is an acceptable transient risk
+for a project that ships from one evolving source tree rather than staggered binaries.
+
+**What closes this:** whoever next holds `core/net/net_version.gd` — likely the same pass that
+closes F-161/F-165, since all three are one bump apiece:
+1. Bump `PROTOCOL_VERSION` past whatever F-161/F-165 left it at.
+2. Add a `## N (task 6.7)` comment naming `net_run_defeated`, matching every entry above it.
+3. Raise `tools/handshake_check.gd`'s version assertion to match, updating its label.
+4. `agent godot --script tools/handshake_check.gd` green is the actual closing proof.
+
+No code change to `defeat_service.gd` itself is needed — the RPC is already correct and covered by
+`tools/defeat_check.gd` (`failures=0`), which calls it directly the way a real client receiving it
+would (see that check's own "net_run_defeated" section).
+
+---
+
+**Resolved 2026-08-19 by lm.** Same fix as F-161/F-165/F-178 — see F-165's resolution note for the full account. net_version.gd's
+`## 21` history block names this task's net_run_defeated explicitly.
+
+Verified: `agent godot --script tools/handshake_check.gd` -> 0 failures. `agent godot --script
+tools/rpc_manifest_check.gd` -> failures=0, net_run_defeated present in the scanned 55-RPC signature.
+
+### F-161 · Task 5.3's three new ranged-combat RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim — **fixed**
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-18 by lp during 5.3
+
+`autoload/ranged_combat_service.gd` added `net_request_shot`, `net_shot_fired` and `net_shot_resolved`
+— a real new wire shape, same class of change `core/net/net_version.gd`'s own header says must bump
+`PROTOCOL_VERSION` ("an RPC's name, argument order, or @rpc config... changed"). `core/net/net_version.gd`
+and `tools/handshake_check.gd` were both held by lane slate17's 3.7 claim for this task's entire
+session, so neither could be edited under AGENTS.md's claim rule. D-102 records the call (ship
+un-versioned rather than stall the task) and why it's an acceptable transient risk given this project
+ships from one evolving source tree, not staggered binaries.
+
+**What closes this:** whoever next holds `core/net/net_version.gd`:
+1. Bump `const PROTOCOL_VERSION: int = 19` to `20`.
+2. Add a `## 20 (task 5.3)` comment naming the three RPCs, matching every entry above it.
+3. Raise `tools/handshake_check.gd`'s `_check("PROTOCOL_VERSION reflects task 4.8's Wellspring channel RPC", NetVersion.PROTOCOL_VERSION == 19, ...)` assertion to `== 20` (and its label, since it will no longer be about 4.8).
+4. `agent godot --script tools/handshake_check.gd` green is the actual closing proof — not just the absence of a WARN line.
+
+No code change to `ranged_combat_service.gd` itself is needed; the RPCs are already correct and
+covered by `tools/ranged_combat_check.gd`/`tools/ranged_combat_net_check.gd`, both `failures=0`. This
+is purely the bookkeeping bump D-100 already hit once for task 6.1 (that task avoided it by reusing
+`WorldDeltaLog` instead — not an option here, see D-102).
+
+**Resolved 2026-08-19 by lm.** Same fix as F-165/F-169/F-178 — see F-165's resolution note for the full account (hollow7's F-161
+session built the fix; this session completed the doc close-out that was blocked behind F-183's
+DECISIONS.md/DELEGATION.md claim). This entry was the one docs/FINDINGS.md's own board flagged as
+DONE-in-state-but-still-Open; moving it here fixes that drift.
+
+Verified: `agent godot --script tools/handshake_check.gd` -> 0 failures. `agent godot --script
+tools/rpc_manifest_check.gd` -> failures=0, 55 RPCs including net_request_shot/net_shot_fired/
+net_shot_resolved all present in the scanned signature.
+
+### F-165 · Task 6.5's two new extraction RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim — **fixed**
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.5
+
+`systems/extraction/extraction_ship.gd` added `net_request_repair` and `net_request_toggle_departure`
+— two real new wire shapes, plus its own `SceneReplicationConfig`
+(`repair_stage`/`departure_channeling`/`departure_progress_sec`/`departure_required_players`/
+`departed`). `core/net/net_version.gd` and `tools/handshake_check.gd` were both held by lane
+slate17's 3.7 claim for this task's entire session, the identical situation F-161 already recorded
+for task 5.3's ranged-combat RPCs — D-102 covers why shipping un-versioned is an acceptable transient
+risk here.
+
+**What closes this — same list as F-161, do both in one pass:**
+1. Bump `const PROTOCOL_VERSION: int = 19` to `20`, or `21` if F-161 lands first.
+2. Add a `## N (task 6.5)` comment naming `net_request_repair`, `net_request_toggle_departure`, and
+   the ExtractionShip synchronizer's five properties, matching every entry above it.
+3. Raise `tools/handshake_check.gd`'s version-number assertion to match, and its label.
+
+**Resolved 2026-08-19 by lm.** Already fixed on disk — hollow7's F-161 session folded all four un-bumped-RPC findings (F-161/165/
+169/178) into one PROTOCOL_VERSION bump (20 -> 21) plus core/net/rpc_manifest.gd/tools/
+rpc_manifest_check.gd, the mechanical check that prevents a fifth. net_version.gd's `## 21` history
+block names this task's two extraction RPCs (net_request_repair, net_request_toggle_departure) and
+ExtractionShip's five-property SceneReplicationConfig explicitly. What was missing was only the
+bookkeeping close: DECISIONS.md/DELEGATION.md were held by lm's own F-183 claim for hollow7's whole
+session, so the decision and API were never recorded and none of the four findings were moved to
+Resolved (docs/FINDINGS.md's own board flagged this drift: F-161 showed DONE in state but still
+listed under '## Open'). Closing all four together here since they share one fix, one verification,
+and FINDINGS.md's own text for F-165/F-169/F-178 each said as much ("same list as F-161, do both in
+one pass"). D-133 records the catch-up-bump-plus-manifest decision; DELEGATION.md Current state
+carries the re-record workflow API.
+
+Verified: `agent godot --script tools/handshake_check.gd` -> 0 failures (PROTOCOL_VERSION==21
+assertion passes, real 2-peer ENet mismatch/match exchange both pass). `agent godot --script
+tools/rpc_manifest_check.gd` -> RPC_MANIFEST_CHECK failures=0 (55 RPCs scanned, signature and count
+both match RECORDED_SIGNATURE/RECORDED_ENTRY_COUNT). Swept for a fifth un-bumped RPC beyond the
+four this catch-up covers: none — that is exactly what rpc_manifest_check.gd's PASS confirms
+mechanically rather than by manual grep. Filed F-213 for an unrelated bug surfaced during this
+verification (rpc_manifest.gd's FNV seed literal overflows signed 64-bit int and prints ERROR: lines
+every run, though the check's PASS/FAIL stays correct) — not fixed here, out of scope for a
+PROTOCOL_VERSION bookkeeping task.
 
 ### F-211 · Task 8.4's work order named the wrong verification scripts — `build_check.gd`/`build_net_check.gd`/`buildable_content_check.gd` test the buildable/crafting placement system (task 3.6/3.7), not the Steam export build pipeline — **fixed**
 
