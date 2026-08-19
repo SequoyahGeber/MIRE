@@ -75,6 +75,56 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-209 resolved: every menu supports gamepad focus navigation; `ui_accept`/`ui_cancel` now carry gamepad bindings project-wide (lm)
+
+**For anyone touching `MainMenu`/`SettingsMenu`/`LobbyMenu`/`InventoryUI`/`CraftingUI`/`UnlockMenu`
+next:** each now builds its focus chain with a per-file `_wire_vertical_chain(controls: Array)` helper
+(top/bottom `focus_neighbor_*` with wraparound — copy the pattern rather than re-deriving it) and a
+`_focus_style() -> StyleBoxFlat` helper (transparent-fill, bright-border outline, applied via
+`add_theme_stylebox_override("focus", ...)`). Both are duplicated per file on purpose, matching this
+codebase's existing `_button()`/`_panel_style()` duplication rather than a shared base class — if a
+future task adds an eighth menu, copy the shape rather than importing from one of these six.
+`set_open(true)` grabs focus on the first interactive control in every one of them; a dynamic row list
+(a keybind row, a per-station recipe row) has to call its own wiring helper again on rebuild, not just
+once at `_build_ui()` time — `SettingsMenu._build_keybind_rows()`/`_build_gamepad_bind_rows()` and
+`CraftingUI._rebuild_rows()` are the worked examples.
+
+**`InventoryUI` gained two things worth knowing before extending it:**
+1. `_wire_focus_neighbors()` — explicit grid/hotbar `focus_neighbor_*` wiring, re-run from
+   `_apply_layout_for_width()` every time the column count changes (8 desktop / 6 narrow). Explicit,
+   not automatic-geometric-search, because the grid and hotbar live in separate container trees.
+   Depends on `INVENTORY_SLOT_COUNT` (24) dividing evenly by both column counts — if either constant
+   ever changes to break that, this function's row-math needs a ragged-last-row case it does not have.
+2. A gamepad/keyboard equivalent to the mouse-only `_get_drag_data`/`_drop_data`: `ui_accept` on an
+   `InventorySlot` (added to `InventorySlot._gui_input`) calls `activate_requested`, which
+   `InventoryUI._on_slot_activated` turns into a pick-up-then-drop flow through the same
+   `request_slot_move()` a mouse drag already used. `carrying_slot_index()` exposes the in-progress
+   pick for checks (mirrors every other public accessor already on this file). `InventorySlot.setup()`
+   grew a required 6th `activate_callback: Callable` parameter — both call sites in
+   `InventoryUI._build_ui()` (backpack grid, hotbar row) already pass `_on_slot_activated`.
+
+**`ui_accept`/`ui_cancel` now carry `JOY_BUTTON_A`/`JOY_BUTTON_B` project-wide** (D-134) —
+`project.godot`'s `[input]` section, written by the one-shot `tools/bind_ui_gamepad_actions.gd`. Any
+future check or menu can now assume a focused `Button`/`OptionButton`/`CheckBox` responds to a real
+gamepad A press; before this task, only `ui_up`/`down`/`left`/`right` did.
+
+**Verification pattern for future menu/focus work:** `tools/menu_focus_check.gd` is the worked
+example for proving `focus_neighbor_*` actually works, not just that it's set — inject a real
+`InputEventJoypadButton` via `Input.parse_input_event()`, `await process_frame` a couple of times, and
+read `get_viewport().gui_get_focus_owner()` back. Calling a panel's own `_input()`/`_gui_input()`
+directly (`gamepad_check.gd`'s usual style) does NOT exercise focus movement — that's Godot's own
+Viewport GUI handling, not something any of these scripts implement themselves. Its `_walk_loop()`
+helper (tap one direction repeatedly until focus returns to the start, asserting no repeat visit along
+the way) is a reusable way to prove an entire chain is one correct closed loop without hardcoding how
+many controls are in it — useful again for F-216/F-217's eventual fixes.
+
+Not fixed here, filed instead: F-215 (`HSlider` has no `"focus"` theme item in Godot 4.7.1, so its
+ring override is inert — still fully operable, just invisible which one has focus), F-216
+(`AttunementUI`, the mandatory no-Esc run-start picker, has no gamepad focus support at all — higher
+severity than F-209 itself, since there's no way past it without a mouse), F-217 (`BuildBar`'s
+`PieceSlot` piece selection is still mouse-only; build mode toggle/rotate/confirm/destroy already work
+by gamepad since task 7.6). Full writeup: `docs/SPECS.md` F-209 block.
+
 ### 2026-08-19 — F-166 resolved: the Hollowmere map now has a `shipwreck` marker, so task 6.5's `ExtractionShip` is reachable in the live game (lm)
 
 **Supersedes** task 6.5's "Not reachable in the live game yet" note (below, ~line 1278) and the

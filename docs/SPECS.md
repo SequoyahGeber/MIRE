@@ -6008,6 +6008,101 @@ ships, so it was left alone.
 
 ---
 
+## F-209 · No menu in the game supports gamepad UI focus navigation — a bare controller with no Steam Input translation cannot open any panel
+
+**Claim:** `ui/menu/main_menu.gd`, `ui/menu/settings_menu.gd`, `ui/menu/unlock_menu.gd`,
+`ui/lobby/lobby_menu.gd`, `ui/inventory/inventory_ui.gd`, `ui/crafting/crafting_ui.gd`,
+`tools/menu_focus_check.gd`, `tools/bind_ui_gamepad_actions.gd`, and `project.godot` (claimed by
+name, D-021 — appended two new `[input]` entries, not exact-claim). `ui/loot/chest_ui.gd` was
+deliberately NOT touched — see below. Network authority: none for every file above — all client-local
+UI (the authority table's free last row), matching each file's own existing header.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's preamble.
+
+**Real gap #1 (the finding's own ask): every menu lacked initial focus and a `focus_neighbor_*`
+chain.** None of the seven set an initial `Control` focus on open or wired `focus_neighbor_*`/
+`focus_next`/`focus_previous`, so a D-pad press had nothing on screen to move between even though the
+underlying actions carried joypad bindings. Fixed identically in five files (MainMenu/SettingsMenu/
+LobbyMenu/CraftingUI/UnlockMenu): `set_open(true)` now calls `grab_focus()` on the first interactive
+control, and every Button/LineEdit/OptionButton/HSlider/CheckBox got `focus_neighbor_top`/`_bottom`
+(and, where a row has a horizontal sibling — MainMenu's SET, LobbyMenu's PASTE/JOIN — `_left`/
+`_right`) wired via a small `_wire_vertical_chain(controls: Array)` helper duplicated per file
+(matching this codebase's existing per-file `_button()`/`_panel_style()` duplication rather than a
+shared base class). Dynamic row lists (SettingsMenu's keybind/gamepad-bind rows, CraftingUI's
+per-station recipe rows) rewire the chain every time the row list rebuilds, not just once at
+`_build_ui()` time. A visible focus ring — none of these controls overrode the engine default focus
+style, easy to miss against the dark panel background — is a `StyleBoxFlat` with `bg_color` alpha 0
+and a bright accent border, applied via `add_theme_stylebox_override("focus", ...)`; Button-derived
+controls (Button/OptionButton/CheckBox) and LineEdit draw this natively — `HSlider` does not, filed as
+F-215 rather than solved here, since a slider is still fully operable by gamepad without one.
+
+**InventoryUI is the one file that needed something more than the chain.** Its 24-slot grid (8 or 6
+columns depending on `_apply_layout_for_width`'s responsive breakpoint) and its 8-slot hotbar live in
+two separate container trees, so Godot's automatic geometric neighbor search has no guarantee of
+picking the intended row/column across that boundary — wired explicitly instead, in
+`_wire_focus_neighbors()`, re-run every time the column count can change. `INVENTORY_SLOT_COUNT` (24)
+divides evenly by both column counts, so there is no ragged last row to special-case. Its drag-and-drop
+slot move (`_get_drag_data`/`_drop_data`) has no keyboard/gamepad equivalent at all — added a
+pick-up-and-drop flow: `ui_accept` on an occupied `InventorySlot` "picks it up"
+(`InventoryUI._on_slot_activated` tracks `_carrying_index`, exposed as `carrying_slot_index()` for
+checks), `ui_accept` on a different slot drops it there through the same `request_slot_move()` a mouse
+drop already used, `ui_accept` on the same slot cancels. A carried slot gets its own persistent
+highlight (`COLOUR_CARRY`), independent of focus (the source slot usually isn't focused any more by
+the time you navigate to the destination and drop).
+
+**Real gap #2, not in the finding text: `ui_accept`/`ui_cancel` carry NO gamepad binding in this
+Godot version at all.** D-131 (which scoped this finding out of task 7.6) and the finding itself both
+assumed "Godot's default `ui_up`/`ui_down`/`ui_accept`/`ui_cancel` actions already carry joypad D-pad/
+A-button bindings out of the box" — true for the four direction actions (confirmed live via
+`InputMap.action_get_events()`: D-pad buttons 11–14 plus the left stick), **false** for
+`ui_accept`/`ui_cancel`, which ship with only Enter/Kp Enter/Space and Escape respectively. Every
+`focus_neighbor_*` chain in this task would have been reachable by D-pad but nothing on it activatable
+or cancelable by a bare controller without this. Fixed in `project.godot` by
+`tools/bind_ui_gamepad_actions.gd`, a one-shot script (not a recurring check — same reasoning
+`setup_project.gd`'s own header gives for scripting an input-map write rather than hand-editing the
+Resource literal) that reads each action's CURRENT event list via `InputMap.action_get_events()`,
+appends a `JOY_BUTTON_A`/`JOY_BUTTON_B` event, and writes back through `ProjectSettings.set_setting()`
++ `.save()` — idempotent, so re-running it is harmless. `JOY_BUTTON_A` is already bound to this
+project's own `jump` action too; that overlap is inert while a blocking UI owns GUI focus (the
+Viewport consumes the event via the focused Button's `gui_input` before it ever reaches
+`_unhandled_input`, the same reason clicking a menu button never also fires `jump` today) and is not
+something this task changed.
+
+**`ui/loot/chest_ui.gd` needed no change.** Re-reading it against the finding's own claim that all
+seven "still require a real mouse click to open, select an item, or close": ChestUI has no interactive
+`Control` at all — no buttons, nothing to drag, only a title, non-interactive reward rows, a status
+label, and a close hint. `[E]` (the `interact` action, already gamepad-bound) opens it, `[E]`/`[Esc]`
+(both already gamepad-bound) close it. There was nothing to wire.
+
+**Verify:** `.agent/bin/agent godot --script tools/menu_focus_check.gd` → `MENU_FOCUS_CHECK
+failures=0`. Drives real `InputEventJoypadButton` presses through `Input.parse_input_event()` (not a
+node's own `_input()`/`_gui_input()` the way `gamepad_check.gd` drives gameplay actions — focus
+movement on `ui_up`/`down`/`left`/`right` is not something any of these panel scripts implement, it is
+Godot's own Viewport GUI input handling walking `focus_neighbor_*`, so the only way to prove it works
+is the real pipeline) for every menu: initial focus on open, a closed-loop D-pad walk through the full
+chain with no dead-end/short-loop, a functional `ui_accept` press (SET stages a seed, a CRAFT button
+actually crafts, an `InventorySlot` actually picks up and drops), and an `HSlider`'s `ui_left`/`right`
+actually moving its value. Also reran the pre-existing `tools/gamepad_check.gd`,
+`tools/main_menu_check.gd`, `tools/lobby_menu_check.gd`, `tools/settings_check.gd`,
+`tools/inventory_ui_check.gd`, `tools/crafting_ui_check.gd`, `tools/unlock_check.gd` — all green,
+confirming the focus/pick-up-and-drop additions didn't regress the mouse/keyboard paths those checks
+already prove.
+
+**Swept for the same shape elsewhere:** grepped every `ui/**/*.gd` for `Control.new()`/`Button.new()`/
+`OptionButton.new()`/`HSlider.new()`/`CheckBox.new()`/`LineEdit.new()` outside the six touched files.
+Found two real siblings this task did not claim and so filed rather than fixed: F-216
+(`ui/attunement/attunement_ui.gd`, task 3.9's mandatory run-start role picker — real Buttons, no
+gamepad focus support, and by its own header comment no Esc/dismiss path at all, which makes it
+*worse* than this finding's own scope) and F-217 (`ui/building/build_bar.gd`'s `PieceSlot` — mouse-
+click-only piece selection; build mode itself already toggles via gamepad since task 7.6). Also
+grepped `focus_neighbor\|grab_focus` project-wide beforehand — the only pre-existing hits were
+`debug_console.gd` (dev console, out of scope) and `lobby_menu.gd`'s own pre-existing
+`_join_field.grab_focus()`, confirming no other file already had partial wiring to reconcile with.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

@@ -562,41 +562,6 @@ worth confirming against real numbers rather than assumed.
 
 ---
 
-### F-209 · No menu in the game supports gamepad UI focus navigation — a bare controller with no Steam Input translation cannot open any panel
-
-**Area:** UI/input · **Severity:** medium · **Found:** 2026-08-19 by lm during 7.6
-
-Task 7.6 gave every core-gameplay action (movement, look, jump/sprint/interact/inventory/dodge/
-build/eat/attack/hotbar-cycle) a real gamepad `InputMap` binding, plus a gamepad button rebind flow
-in `SettingsMenu`. It deliberately did NOT touch menu navigation: `MainMenu`, `SettingsMenu`,
-`LobbyMenu`, `InventoryUI`, `CraftingUI`, `ChestUI`, and `UnlockMenu` all still require a real mouse
-click to open, select an item, or close (several — `InventoryUI`'s drag-and-drop stack moves,
-`SettingsMenu`'s sliders — have no keyboard equivalent either, only a gamepad-specific one is new
-here). None of the seven sets an initial `Control` focus or wires `focus_neighbor_*`, so even though
-Godot's default `ui_up`/`ui_down`/`ui_accept`/`ui_cancel` actions already carry joypad bindings out
-of the box, there is nothing on screen for a D-pad press to move between. D-131 records why this was
-scoped out of 7.6 rather than folded in: it is a UI-system-wide pass across seven files task 7.6 had
-no other reason to open, not an extension of the InputMap work that task actually did.
-
-On a real Steam Deck this is normally invisible — Steam Input's Desktop/Gamepad-with-mouse-emulation
-configuration maps a trackpad to a virtual cursor system-wide (the same mechanism D-013 called
-"nearly free" Deck support), so a menu click still arrives, just from a trackpad instead of a mouse.
-The gap is real for a BARE controller with no Steam Input translation between it and the game — a
-desktop Xbox/PlayStation pad plugged into a non-Steam launch, or this project's own `--windowed` dev
-builds run outside Steam. Those genuinely cannot open a single menu today.
-
-Whoever picks this up: give each of the seven menus an initial `grab_focus()` on open and
-`focus_neighbor_*`/`focus_next`/`focus_previous` across its interactive controls, plus a visible
-focus-ring theme override (none of them override `Control`'s default focus style, which is easy to
-miss against these menus' own dark panel backgrounds). `InventoryUI`'s drag-and-drop slot-move and
-`SettingsMenu`'s sliders need an explicit gamepad-button equivalent (e.g. `ui_accept` picks up/drops
-a stack, D-pad left/right steps a slider) since there is no drag gesture to bind a button to. Verify
-headlessly by driving `ui_up`/`ui_down`/`ui_accept` through each menu's real `_input()`/`_gui_input()`
-path the way `tools/gamepad_check.gd` already does for gameplay actions, checking
-`get_viewport().gui_get_focus_owner()` moves and lands on the expected control.
-
----
-
 ### F-210 · `Chest`'s loot roll still seeds from boot-time `randomize()` even though `GameState.run_seed` now exists — D-041's own reversal trigger has fired
 
 **Area:** loot/determinism · **Severity:** low · **Found:** 2026-08-19 by lp reviewing task 3.5
@@ -688,7 +653,148 @@ verification pass rather than a rider on an unrelated close-out.
 
 ---
 
+### F-215 · `HSlider` draws no visible focus ring in this Godot version — F-209's gamepad focus work left it the one control type still hard to tell is focused
+
+**Area:** UI/input · **Severity:** low · **Found:** 2026-08-19 by lm during F-209
+
+F-209 gave `SettingsMenu`'s sliders (master/music/sfx volume, mouse and gamepad look sensitivity, FOV)
+a visible `add_theme_stylebox_override("focus", ...)` ring the same way it did every Button/
+OptionButton/CheckBox/LineEdit in the six menus that task touched — but `HSlider`/`VSlider` (`Slider`
+in `scene/gui/slider.cpp`) has no `"focus"` theme item in Godot 4.7.1 at all, so the override is
+silently inert. Confirmed live: `tools/menu_focus_check.gd`'s D-pad walk correctly lands keyboard/
+gamepad focus on `SettingsMenu`'s sliders and `ui_left`/`ui_right` correctly adjusts them (Slider's
+own `gui_input` already handles that regardless of any focus ring) — the gap is purely that a player
+tabbing through the menu with a controller has no visual confirmation a slider is the thing that will
+move next, unlike every other control in the same panel.
+
+**What closes this:** either a small custom `Control` (or a `Slider` subclass) that draws its own
+outline on `NOTIFICATION_DRAW` when `has_focus()` — the same pattern `InventoryUI.InventorySlot`
+already uses for its own focus ring, since `PanelContainer` has the identical "no built-in focus
+stylebox" gap — or confirm in a future Godot upgrade whether `Slider` gained a `"focus"` theme item.
+Not done as part of F-209 itself because a slider is still fully operable by keyboard/gamepad without
+one; this is a polish gap, not a blocker.
+
+---
+
+### F-216 · `AttunementUI` (task 3.9's mandatory run-start role picker) has no gamepad focus support — worse than F-209's original scope, since this panel has no Esc/dismiss path at all
+
+**Area:** UI/input · **Severity:** high · **Found:** 2026-08-19 by lm sweeping for F-209's shape elsewhere
+
+`ui/attunement/attunement_ui.gd` is a real `Button`-per-role picker (`pick_button := Button.new()`,
+`pick_button.pressed.connect(choose.bind(role_id))`) that opens automatically the moment a player's own
+body exists (D-071) and — by the file's own header comment — has deliberately "no Escape/dismiss path
+... once open there is nothing to dismiss TO." It was not in F-209's own file list (`MainMenu`/
+`SettingsMenu`/`LobbyMenu`/`InventoryUI`/`CraftingUI`/`ChestUI`/`UnlockMenu`) and so was not touched by
+that task's fix. A bare controller with no Steam Input translation hitting this screen cannot pick a
+role, and because there is no dismiss path, **cannot get past it at all** — worse than every panel
+F-209 fixed, all of which were optional/reachable-by-choice. `tools/gamepad_check.gd`/
+`tools/attunement_ui_check.gd` (existing) don't cover it either.
+
+**What closes this:** the same recipe F-209 used elsewhere — `focus_neighbor_top`/`_bottom` chaining
+the CHOOSE buttons (built once per `ROLE_ORDER` entry, same shape `UnlockMenu`'s buy-button rows
+were), an initial `grab_focus()` on the first CHOOSE button when the panel opens, and a visible focus
+ring (`add_theme_stylebox_override("focus", ...)` — Button draws this natively). `ui_accept` already
+fires a focused Button's `pressed` signal for free once `ui_accept` carries a gamepad binding at all,
+which F-209 also fixed project-wide (`tools/bind_ui_gamepad_actions.gd`) — that part does not need
+repeating here. Verify with a check in the same shape `tools/menu_focus_check.gd` uses: drive a real
+`InputEventJoypadButton` through `Input.parse_input_event()`, confirm focus lands on the first CHOOSE
+button and `ui_accept` reaches `AttunementService.request_select()`.
+
+---
+
+### F-217 · `BuildBar`'s piece-selection slots are still mouse-click-only — task 7.6 gave build mode toggle/rotate/confirm/destroy real gamepad bindings but never touched which piece gets selected
+
+**Area:** UI/input · **Severity:** medium · **Found:** 2026-08-19 by lm sweeping for F-209's shape elsewhere
+
+`ui/building/build_bar.gd`'s `PieceSlot._gui_input()` only handles `InputEventMouseButton` — there is
+no gamepad or keyboard path to change `_selected_piece_id` at all. Unlike the seven F-209 panels, a
+bare controller CAN toggle build mode on (D-pad up, already gamepad-bound) and can rotate/confirm/
+destroy whatever piece is already selected — it just auto-selects Registry's first buildable
+(`build_bar.gd`'s own doc note, also relied on by `tools/gamepad_check.gd`'s build-cycle test) and can
+never be changed to anything else without a mouse. Not blocking in the F-216 sense (build mode is
+still usable, just locked to one piece), but a real functional gap for anyone actually trying to build
+with a bare controller.
+
+**What closes this:** `PieceSlot` already sets `focus_mode = Control.FOCUS_ALL` (same shape
+`InventorySlot`/`RecipeRow` started from), so the missing piece is the same `ui_accept`-in-`_gui_input`
+addition F-209 gave `InventorySlot` for its pick-up/drop flow — here it would just call
+`select_requested.call(piece_id)` directly, no carry state needed since selecting is a single action,
+not a two-step move. Add `focus_neighbor_left`/`_right` across the row (it is a single `HBoxContainer`,
+no cross-container hop like `InventoryUI`'s grid/hotbar split) and a visible focus ring. `BuildBar` is
+built per-player by `player_controller.gd`, not an autoload, so whatever check proves this should
+follow `tools/gamepad_check.gd`'s existing build-cycle setup rather than `tools/menu_focus_check.gd`'s
+autoload-node pattern.
+
+---
+
 ## Resolved
+
+### F-209 · No menu in the game supports gamepad UI focus navigation — a bare controller with no Steam Input translation cannot open any panel — **fixed**
+
+**Area:** UI/input · **Severity:** medium · **Found:** 2026-08-19 by lm during 7.6
+
+Task 7.6 gave every core-gameplay action (movement, look, jump/sprint/interact/inventory/dodge/
+build/eat/attack/hotbar-cycle) a real gamepad `InputMap` binding, plus a gamepad button rebind flow
+in `SettingsMenu`. It deliberately did NOT touch menu navigation: `MainMenu`, `SettingsMenu`,
+`LobbyMenu`, `InventoryUI`, `CraftingUI`, `ChestUI`, and `UnlockMenu` all still require a real mouse
+click to open, select an item, or close (several — `InventoryUI`'s drag-and-drop stack moves,
+`SettingsMenu`'s sliders — have no keyboard equivalent either, only a gamepad-specific one is new
+here). None of the seven sets an initial `Control` focus or wires `focus_neighbor_*`, so even though
+Godot's default `ui_up`/`ui_down`/`ui_accept`/`ui_cancel` actions already carry joypad bindings out
+of the box, there is nothing on screen for a D-pad press to move between. D-131 records why this was
+scoped out of 7.6 rather than folded in: it is a UI-system-wide pass across seven files task 7.6 had
+no other reason to open, not an extension of the InputMap work that task actually did.
+
+On a real Steam Deck this is normally invisible — Steam Input's Desktop/Gamepad-with-mouse-emulation
+configuration maps a trackpad to a virtual cursor system-wide (the same mechanism D-013 called
+"nearly free" Deck support), so a menu click still arrives, just from a trackpad instead of a mouse.
+The gap is real for a BARE controller with no Steam Input translation between it and the game — a
+desktop Xbox/PlayStation pad plugged into a non-Steam launch, or this project's own `--windowed` dev
+builds run outside Steam. Those genuinely cannot open a single menu today.
+
+Whoever picks this up: give each of the seven menus an initial `grab_focus()` on open and
+`focus_neighbor_*`/`focus_next`/`focus_previous` across its interactive controls, plus a visible
+focus-ring theme override (none of them override `Control`'s default focus style, which is easy to
+miss against these menus' own dark panel backgrounds). `InventoryUI`'s drag-and-drop slot-move and
+`SettingsMenu`'s sliders need an explicit gamepad-button equivalent (e.g. `ui_accept` picks up/drops
+a stack, D-pad left/right steps a slider) since there is no drag gesture to bind a button to. Verify
+headlessly by driving `ui_up`/`ui_down`/`ui_accept` through each menu's real `_input()`/`_gui_input()`
+path the way `tools/gamepad_check.gd` already does for gameplay actions, checking
+`get_viewport().gui_get_focus_owner()` moves and lands on the expected control.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed in six files (MainMenu/SettingsMenu/LobbyMenu/InventoryUI/CraftingUI/UnlockMenu) plus
+project.godot; ChestUI needed no change (no interactive Control at all — E/Esc already gamepad-bound).
+Every panel now grabs initial focus on open and wires a focus_neighbor_* chain (dynamic row lists —
+SettingsMenu's keybind rows, CraftingUI's per-station recipes — rewire on rebuild, not just at
+_build_ui() time), plus a visible focus ring via a "focus" stylebox override. InventoryUI's grid/
+hotbar split (two separate container trees) gets explicit _wire_focus_neighbors() rather than
+relying on Godot's automatic geometric search; its drag-and-drop got a real ui_accept
+pick-up-and-drop equivalent (InventoryUI._on_slot_activated, carrying_slot_index()).
+
+Real second gap found mid-task, not in the finding text: ui_accept/ui_cancel carry NO gamepad
+binding in this Godot version at all (confirmed live via InputMap.action_get_events()) — only
+ui_up/down/left/right do. D-131 and this finding both assumed otherwise. Fixed via
+tools/bind_ui_gamepad_actions.gd (one-shot, idempotent), which added JOY_BUTTON_A/B to project.godot.
+Without this, every focus_neighbor_* chain would be reachable but nothing on it activatable.
+
+Verified: `agent godot --script tools/menu_focus_check.gd` -> MENU_FOCUS_CHECK failures=0. Drives
+real InputEventJoypadButton presses through Input.parse_input_event() (not a node's own _input(),
+since focus movement is Godot's own Viewport GUI handling, not something these scripts implement) —
+initial focus, a closed-loop D-pad walk through every chain, a functional ui_accept press per menu
+(SET stages a seed, a CRAFT button crafts, an InventorySlot picks up/drops), and HSlider's
+ui_left/ui_right actually moving its value. Reran the pre-existing tools/gamepad_check.gd,
+main_menu_check.gd, lobby_menu_check.gd, settings_check.gd, inventory_ui_check.gd,
+crafting_ui_check.gd, unlock_check.gd — all green.
+
+Swept for the same shape elsewhere (AGENTS.md step 3): found two real siblings, filed separately
+since fixing them here would have meant claiming files this task never touched — F-216 (AttunementUI,
+the mandatory no-Esc run-start picker, high severity — worse than this finding's own scope since
+there's no dismiss path at all) and F-217 (BuildBar's PieceSlot selection, mouse-only). Also filed
+F-215 for a real but non-blocking polish gap this task's own fix left behind: HSlider has no "focus"
+theme item in Godot 4.7.1, so its focus ring override is inert even though ui_left/right and the
+chain both work on it.
 
 ### F-166 · `world/gen/authored_world.gd` has no `shipwreck` marker kind, so task 6.5's ExtractionShip is built but never reachable in the live Hollowmere map — same shape as F-146's chest gap — **fixed**
 

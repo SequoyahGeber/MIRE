@@ -3787,3 +3787,34 @@ green again.
 (e.g. a public beta branch running behind main) — that would mean "N and N+1 interoperate" stops being
 a guarantee nobody needs, and retroactive/incremental numbering would start mattering for real. Not
 expected before Steam release, and STEAM.md's branch model doesn't describe one today.
+
+### D-134 · 2026-08-19 · `ui_accept`/`ui_cancel` now carry a `JOY_BUTTON_A`/`JOY_BUTTON_B` gamepad binding project-wide — corrects a factual assumption D-131 and F-209 both made
+
+D-131 (task 7.6) and F-209 (filed by that same task) both asserted "Godot's default `ui_up`/`ui_down`/
+`ui_accept`/`ui_cancel` actions already carry joypad D-pad/A-button bindings out of the box." Verified
+live while fixing F-209 via `InputMap.action_get_events()`: true for the four direction actions (D-pad
+buttons 11–14 plus the left stick ship as engine defaults with no `project.godot` entry needed at
+all) — **false** for `ui_accept`/`ui_cancel` in Godot 4.7.1, which ship with only Enter/Kp Enter/Space
+and Escape respectively, no joypad event at all. Every `focus_neighbor_*` chain F-209 wired would have
+been reachable by D-pad but nothing on it activatable or cancelable by a bare controller without this.
+
+Fixed by adding one `JOY_BUTTON_A` event to `ui_accept` and one `JOY_BUTTON_B` event to `ui_cancel` in
+`project.godot`'s `[input]` section (via `tools/bind_ui_gamepad_actions.gd`, a one-shot idempotent
+script — reads each action's current event list through `InputMap.action_get_events()`, appends the
+joypad event, writes back through `ProjectSettings.set_setting()` + `.save()`), preserving every
+existing keyboard event rather than replacing them. **The call others must not relitigate:** treat
+`ui_accept`/`ui_cancel` as already gamepad-bound project-wide from here on — do not re-add a joypad
+event to either (the script is idempotent and no-ops if one is already present, but a hand-edit that
+skips checking `InputMap.action_get_events()` first could silently duplicate it), and do not assume,
+the way D-131/F-209 did, that any other built-in `ui_*` action already carries a joypad binding
+without checking live — the four direction actions do, these two did not, and that split was not
+something either agent verified before writing it down.
+
+`JOY_BUTTON_A` is already bound to this project's own `jump` action (task 7.6). That overlap is inert:
+a blocking UI panel owns GUI focus, so the Viewport's focused-`Control` `gui_input` consumes the event
+before it ever reaches `_unhandled_input`, the same reason clicking a menu button has never also fired
+`jump`. Not a new interaction this decision introduces.
+
+**Would change my mind:** a future Godot upgrade changing the engine's own `ui_accept`/`ui_cancel`
+defaults to include a joypad binding — at that point `project.godot`'s override becomes redundant
+(harmless, since it would specify the same event) rather than load-bearing, and could be pruned.
