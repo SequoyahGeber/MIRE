@@ -5013,3 +5013,15 @@ Notes along the way:
 - Doc-only fix, no code changed. Swept ARCHITECTURE.md for other PackedByteArray/bespoke-RPC mentions and checked D-100's sibling reuse decision (Cycle state -> WorldDeltaLog, no new RPC) against ARCHITECTURE.md:56 - already described generically as 'Replicated properties', not stale. No sibling instances found.
 
 Commit at time of writing: `5c91560`
+
+---
+
+### DONE · F-218 · lm · 2026-08-19T12:29:28+00:00
+
+**Decisions write their own reversal triggers and nothing ever re-checks them — two fired unnoticed in one session**
+
+Built tools/decision_trigger_check.py: mechanically flags docs/DECISIONS.md reversal triggers with concrete evidence they fired (class_name/func/signal/const/var declaration or project.godot autoload registration postdating the decision). Self-test 7/7 passed; real scan against docs/DECISIONS.md found D-041 (the finding's own worked example), verified it already resolved via F-210, annotated *Reviewed 2026-08-19* (new convention, D-135), re-scan fired=0. agent godot --quit-after 60 boots clean. findings_numbering_check.gd failures=0.
+
+Files: `tools/decision_trigger_check.py`
+
+Commit at time of writing: `42a9653`

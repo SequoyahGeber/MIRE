@@ -2809,6 +2809,13 @@
       "hash": "a44d807d6bd6e43c558c47f54b2afc9256a750eba1e0e83f0190c9dcb10611b8",
       "task": "6.2"
     },
+    "tools/decision_trigger_check.py": {
+      "agent": "lm",
+      "at": "2026-08-19T12:29:28+00:00",
+      "hash": "c6206eb8d7ab2aabe67e085c0fb66a66686975cf09db3f1b7e8bd8b3d7b3eef6",
+      "task": "F-218",
+      "token": null
+    },
     "tools/defeat_check.gd": {
       "agent": "lm",
       "at": "2026-08-19T03:06:45+00:00",
@@ -6759,9 +6766,11 @@
       "title": "`BuildBar`'s piece-selection slots are still mouse-click-only \u2014 task 7.6 gave build mode toggle/rotate/confirm/destroy real gamepad bindings but never touched which piece gets selected"
     },
     "F-218": {
+      "done_at": "2026-08-19T12:29:28+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Decisions write their own reversal triggers and nothing ever re-checks them \u2014 two fired unnoticed in one session"
     },
