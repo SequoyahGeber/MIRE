@@ -5557,3 +5557,18 @@ Fixed: Harvestable gained host_restore_depleted() (health/active/respawn-clock r
 Files: `world/gen/resource_scatter_field.gd`, `systems/harvesting/harvestable.gd`, `tools/resource_scatter_check.gd`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/SPECS.md`
 
 Commit at time of writing: `deccb23`
+
+---
+
+### DONE · F-229 · lp · 2026-08-19T15:31:50+00:00
+
+**`docs/SPECS.md` cites "D-095" twice for decisions that actually landed as D-096 and D-097 — both references now point at task 4.7's unrelated POI-placement decision**
+
+docs/SPECS.md:1617 D-095->D-097, docs/SPECS.md:2889 D-095->D-096. New tools/decision_ref_check.py (plain Python, decision_trigger_check.py's genre) finds dangling D-NNN citations project-wide + pins these two fixes as a regression guard: 'python3 tools/decision_ref_check.py' -> DECISION_REF_CHECK failures=0 (140 decisions, 0 dangling, both pins ok); --self-test -> 3/3 passed. Sweep found and fixed one real sibling: docs/DECISIONS.md:3907's D-138 entry had 204 wrongly D--prefixed instead of F--prefixed (meant F-204, docs/SPECS.md:5764) -- same stale-cross-reference shape. Full boot 'agent godot --quit-after 120' -> 0 stray ERROR: lines. FINDINGS.md F-229 moved to Resolved. Almost double-edited docs/DELEGATION.md (claimed by lm for F-230 concurrently) -- caught it via the claim command failing, surgically reverted my addition rather than skip DELEGATION.md, no lm content touched.
+
+Notes along the way:
+- docs/DELEGATION.md was claimed by lm for F-230 concurrently -- almost double-edited it (my F-229 entry landed non-overlapping with lm's F-230 entry, no git conflict, but I hadn't claimed it). Reverted my own addition surgically (Edit, not git checkout, to avoid clobbering lm's live uncommitted work) before it could get swept into either ship. Skipped the DELEGATION.md 'Current state' entry for F-229 as a result -- the new tools/decision_ref_check.py is documented in its own docstring and in docs/SPECS.md's new F-229 block instead, which is enough for the next task to find it.
+
+Files: `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `tools/decision_ref_check.py`
+
+Commit at time of writing: `fc18251`

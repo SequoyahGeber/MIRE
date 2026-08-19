@@ -440,34 +440,6 @@ instruction.
 
 ---
 
-### F-229 · `docs/SPECS.md` cites "D-095" twice for decisions that actually landed as D-096 and D-097 — both references now point at task 4.7's unrelated POI-placement decision
-
-**Area:** docs · **Severity:** low · **Found:** 2026-08-19 by lm during 4.7-review
-
-`docs/SPECS.md:1617` (task 5.1, AI framework) reads "as data on `EnemyDef` rather than by extracting
-a swappable brain class (**D-095** — one shape is still the only shape any content needs...)" — the
-actual decision with that rationale is `docs/DECISIONS.md` **D-097**
-("Task 5.1's AI framework generalises `Enemy` with `EnemyDef` fields, not a swappable
-`enemy_brain.gd`..."). Separately, `docs/SPECS.md:2889` (the F-139 `ChunkStreamer` contract) reads
-"...a single merged position list) is still F-139's own open design space. **D-095** records why no
-new API was added" — that decision is actually `docs/DECISIONS.md` **D-096**
-("F-132's fix is a calling contract, not a new `ChunkStreamer`/`ResourceScatterField` API"). The
-commit that added the second reference (`ee0b45f`) even titled itself "F-132 docs: resolve (D-096's
-no-new-API call)" — the commit message has the right number, only the prose body typo'd D-095.
-
-Both typos predate task 4.7 (`git log -L` on each line traces to `e8f64cb` and `ee0b45f`, both
-before `05d4330`). They collided with 4.7 only because D-095 happened to be the next free slot in
-`docs/DECISIONS.md` when 4.7 filed its own, real D-095 (POI placement's Poisson-disc/priority/two-
-radii decision) — that entry is correctly numbered and not itself at fault. The concrete failure: an
-agent reading either SPECS.md line and looking up D-095 now finds a page about Wellspring spacing
-instead of the AI-framework or ChunkStreamer decision they were pointed at — the same
-misdirection-by-stale-number shape as the F-153/D-093 collision noted in the 3.16 review.
-
-**Not fixed here** (review-only task). Fix is mechanical: `docs/SPECS.md:1617` "D-095" → "D-097",
-`docs/SPECS.md:2889` "D-095" → "D-096".
-
----
-
 ### F-230 · `FunctionRunner.effective_scope()` uses a dynamic-scope command's DECLARED max scope, not the actual scope of the line as written — a pure-LOCAL line silently forces its whole function to HOST
 
 **Area:** commands · **Severity:** medium · **Found:** 2026-08-19 by lp during 3.17-review
@@ -508,6 +480,47 @@ own raw args the same way top-level dispatch does, not against `time`'s worst ca
 ---
 
 ## Resolved
+
+### F-229 · `docs/SPECS.md` cites "D-095" twice for decisions that actually landed as D-096 and D-097 — both references now point at task 4.7's unrelated POI-placement decision — **fixed**
+
+**Area:** docs · **Severity:** low · **Found:** 2026-08-19 by lm during 4.7-review
+
+`docs/SPECS.md:1617` (task 5.1, AI framework) read "as data on `EnemyDef` rather than by extracting
+a swappable brain class (**D-095** — one shape is still the only shape any content needs...)" — the
+actual decision with that rationale is `docs/DECISIONS.md` **D-097**
+("Task 5.1's AI framework generalises `Enemy` with `EnemyDef` fields, not a swappable
+`enemy_brain.gd`..."). Separately, `docs/SPECS.md:2889` (the F-139 `ChunkStreamer` contract) read
+"...a single merged position list) is still F-139's own open design space. **D-095** records why no
+new API was added" — that decision is actually `docs/DECISIONS.md` **D-096**
+("F-132's fix is a calling contract, not a new `ChunkStreamer`/`ResourceScatterField` API"). The
+commit that added the second reference (`ee0b45f`) even titled itself "F-132 docs: resolve (D-096's
+no-new-API call)" — the commit message has the right number, only the prose body typo'd D-095.
+
+Both typos predate task 4.7 (`git log -L` on each line traces to `e8f64cb` and `ee0b45f`, both
+before `05d4330`). They collided with 4.7 only because D-095 happened to be the next free slot in
+`docs/DECISIONS.md` when 4.7 filed its own, real D-095 (POI placement's Poisson-disc/priority/two-
+radii decision) — that entry is correctly numbered and not itself at fault. The concrete failure: an
+agent reading either SPECS.md line and looking up D-095 now finds a page about Wellspring spacing
+instead of the AI-framework or ChunkStreamer decision they were pointed at — the same
+misdirection-by-stale-number shape as the F-153/D-093 collision noted in the 3.16 review.
+
+**Fixed:** `docs/SPECS.md:1617` "D-095" → "D-097"; `docs/SPECS.md:2889` "D-095" → "D-096". New
+`tools/decision_ref_check.py` (plain Python, `decision_trigger_check.py`'s genre — no Godot needed)
+parses every `### D-NNN` heading in `docs/DECISIONS.md` and flags any `D-NNN` cited anywhere in
+`docs/*.md` with no matching heading, plus pins these two exact fixes as a regression guard. Full
+spec and verification detail in `docs/SPECS.md`'s own new `F-229` block (this task wrote it — none
+existed).
+
+**Swept for the same shape:** `decision_ref_check.py`'s dangling-reference pass is project-wide, not
+scoped to the two known lines, and it caught one real sibling: `docs/DECISIONS.md:3907` (the `D-138`
+entry) mistakenly prefixed `204` with a `D-`, which has no matching heading at all — the prose ("the same
+`record["root"].location = ` pattern ... diagnosed as broken") clearly means `F-204`
+(`docs/SPECS.md:5764`, matching title), a finding number mistyped with a `D-` prefix rather than a
+wrong `D-` number, same root shape. Fixed in the same commit. `python3 tools/decision_ref_check.py`
+→ `DECISION_REF_CHECK failures=0` (140 decisions parsed, 0 dangling, both pins `ok`);
+`--self-test` → `3/3 passed`. Full boot (`agent godot --quit-after 120`) → 0 stray `ERROR:` lines.
+
+---
 
 ### F-228 · `craft`/`build` console commands charge and credit the HOST's own peer, not the issuing player, whenever a non-host op runs them — **fixed**
 

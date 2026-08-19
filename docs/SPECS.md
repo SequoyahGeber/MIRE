@@ -1614,7 +1614,7 @@ still made once, on the host, inside the existing `Enemy._physics_process()`.
 2.10 already shipped a real `IDLE -> CHASE -> TELL -> ATTACK -> RECOVER` state machine and a
 telegraphed attack (the hit resolves at the END of the tell, against where the target IS then) —
 this task does not rebuild either. What it generalises, **as data on `EnemyDef` rather than by
-extracting a swappable brain class** (D-095 — one shape is still the only shape any content needs; a
+extracting a swappable brain class** (D-097 — one shape is still the only shape any content needs; a
 real second AI shape, not a guess, is what should trigger that split), is:
 
 - **Perception** (`vision_angle_deg`, `requires_line_of_sight`) — acquisition-only. A facing cone
@@ -2886,7 +2886,7 @@ position, its own included — not just its own local player — so any point a 
 locally reach always has a host-resident, host-authoritative `Harvestable` waiting for its RPC.
 Documented as a header-level contract in both files rather than guessed at in code, since the actual
 wire format (or whether a live caller even keeps calling `set_anchors()` once per peer vs. computing
-a single merged position list) is still F-139's own open design space. D-095 records why no new API
+a single merged position list) is still F-139's own open design space. D-096 records why no new API
 was added.
 
 **One real trap found while proving this:** `ResourceScatterField.attach_to_streamer()` only reacts
@@ -7194,6 +7194,58 @@ take a `peer` or `selector` arg, so their actor is a parsed argument, not someth
 infer). `give`/`loadout` (`core/dev/dev_loadout.gd`, also implicit-actor) and `inv`/`loot`
 (`autoload/inventory_service.gd`, via `_resolve_peer(ctx, args)`) were already reading `ctx.peer_id`
 correctly — not this bug. No other sibling found.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
+## F-229 · `docs/SPECS.md` cites "D-095" twice for decisions that actually landed as D-096 and D-097
+
+**Claim:** `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `tools/decision_ref_check.py`
+(new). **Authority:** none — docs-only, no runtime system involved.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The bug:** `docs/SPECS.md:1617` (task 5.1, AI framework) and `docs/SPECS.md:2889` (the F-139
+`ChunkStreamer` contract) both cited `D-095`, but the decisions they were actually describing landed
+as `D-097` ("Task 5.1's AI framework generalises `Enemy` with `EnemyDef` fields, not a swappable
+`enemy_brain.gd`") and `D-096` ("F-132's fix is a calling contract, not a new
+`ChunkStreamer`/`ResourceScatterField` API") respectively. Both typos predate task 4.7
+(`e8f64cb`/`ee0b45f`) and only became actively misleading once 4.7 claimed the real `D-095` (POI
+placement's Poisson-disc/priority/two-radii call) for a third, unrelated decision — before that, an
+agent following either citation found nothing at all; after, it found a real page about the wrong
+system. Full analysis already in `docs/FINDINGS.md`'s `F-229` entry (filed by lm during 4.7-review).
+
+**The fix:** `docs/SPECS.md:1617` `D-095` → `D-097`; `docs/SPECS.md:2889` `D-095` → `D-096`. Both are
+now the only edits to those lines — the surrounding prose was already correct, only the number was
+wrong.
+
+**Verify:** new `tools/decision_ref_check.py` (plain Python, no Godot needed — same genre as
+F-218's `decision_trigger_check.py`) parses every `### D-NNN` heading in `docs/DECISIONS.md` and
+flags any `D-NNN` cited anywhere in `docs/*.md` that has no matching heading (a "dangling"
+citation), plus pins the two exact F-229 fixes so this specific collision can't silently regress if
+the lines are ever reflowed. `python3 tools/decision_ref_check.py --self-test` → `3/3 passed`.
+`python3 tools/decision_ref_check.py` on the live tree → `DECISION_REF_CHECK failures=0` (140
+decisions parsed, 0 dangling, both pins `ok`).
+
+**Swept for the same shape:** the dangling-reference pass above is a project-wide sweep, not just
+the two cited lines — it found one real sibling, `docs/DECISIONS.md:3907`'s own `D-138` entry, which
+mistakenly prefixed `204` with a `D-` where the prose ("the same
+`record["root"].location = ` pattern ... diagnosed as broken") clearly means finding `F-204`
+(`docs/SPECS.md:5764`, the exact matching title) — a finding number given the wrong prefix rather
+than a wrong decision number, same root shape (a stale/mistyped cross-reference that resolves to
+nothing or to the wrong thing). Fixed in the same commit since
+`docs/DECISIONS.md` was already under this task's claim. Re-ran `decision_ref_check.py` after both
+fixes → `dangling=0`. No further dangling or mismatched-pin references found across `docs/*.md`.
+
+**Not a general content-mismatch detector:** a citation that resolves to a real but WRONG decision
+(a live heading exists, just not the one meant) is not mechanically catchable without reading the
+prose on both ends — same posture `decision_trigger_check.py` already takes for its own trigger
+clauses. `decision_ref_check.py` narrows what needs that read; it doesn't replace it.
+
+Regression: full boot (`agent godot --quit-after 120`) — 0 stray `ERROR:` lines (expected, docs-only
+change; run to confirm nothing else was disturbed while these files were open).
 
 **Resolved** — see `docs/FINDINGS.md`.
 

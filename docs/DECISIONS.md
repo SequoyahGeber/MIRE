@@ -3904,7 +3904,7 @@ not a correction, and the normal version-bump rule would apply instead.
 ### D-138 · 2026-08-19 · D-128's "never take effect" was too broad — an existing object CAN be safely repositioned between a Blender preview generator's renders, but only when something else between the two calls forces Blender to re-evaluate the depsgraph, and nothing in the pipeline guarantees that on purpose
 
 *Narrows D-128, does not repeal it.* F-207 was filed as a mechanical `grep` sweep — the same
-`record["root"].location = ` pattern D-204 diagnosed as broken, found live in eight more generators —
+`record["root"].location = ` pattern F-204 diagnosed as broken, found live in eight more generators —
 and D-128 generalized F-204's diagnosis into a standing rule: never write an already-rendered object's
 `.location`/`.rotation_euler` a second time in one process. Closing F-207 required actually rebuilding
 all eight generators and inspecting the previously-flagged PNGs (`tools/blender/asset_repro_check.py`
