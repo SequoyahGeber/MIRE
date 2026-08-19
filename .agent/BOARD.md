@@ -9,13 +9,14 @@
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | wick20 | 2026-08-19 06:42 | `docs/ASSET_TRACKER.md`, `tools/blender/build_gatherable_plants.py`, `tools/blender/mire_art.py`, `assets/gatherables` |
-| **F-006** Three roadmap tasks assume a Windows or Linux machine we don't have | pike14 | 2026-08-19 06:41 | `docs/ROADMAP.md` |
+| **F-130** Three console commands never migrated to CommandService — they register via console.call("register", ...), which 3.13's sweep could not see | yarrow21 | 2026-08-19 06:47 | `autoload/graphics_quality.gd`, `autoload/debug_console.gd`, `autoload/command_service.gd` |
+| **F-184** `tools/audio/audio_check.py`'s exit code is inverted — it exits 0 when checks FAIL and 1 when they PASS | lm | 2026-08-19 06:48 | `tools/audio/audio_check.py` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 164/188 | 24 |
+| Findings | `█████████░` 165/190 | 25 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -49,7 +50,6 @@
 
 | | Finding | Status |
 |---|---|---|
-| 🔵 | **F-006** Three roadmap tasks assume a Windows or Linux machine we don't have | in_flight |
 | ⬜ | **F-020** Steam sessions cannot use NetSession's direct-address auto-rejoin loop | todo |
 | ⬜ | **F-023** Windows Steam first join intermittently exceeds the hard 10-second connection timeout | todo |
 | ⬜ | **F-024** A shipped LAN first join has no retry — only the debug launcher does | todo |
@@ -57,7 +57,7 @@
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-057** A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds | todo |
 | ⬜ | **F-112** `world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check — F-076's third system, not lifted | todo |
-| ⬜ | **F-130** Three console commands never migrated to CommandService — they register via console.call("register", ...), which 3.13's sweep could not see | todo |
+| 🔵 | **F-130** Three console commands never migrated to CommandService — they register via console.call("register", ...), which 3.13's sweep could not see | in_flight |
 | ⬜ | **F-139** `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline | todo |
 | ⬜ | **F-149** F-141's docs edits got committed under F-144's message — a concurrent agent's plain 'git commit' absorbs another lane's staged-but-uncommitted files | todo |
 | ⬜ | **F-151** `ui/loot/chest_ui.gd` was never registered, so no chest in the game could be opened — **fixed** | todo |
@@ -69,11 +69,13 @@
 | ⬜ | **F-170** `tools/lobby_menu_check.gd` fails (5/24) whenever the dev machine's own Steam client is actually running | todo |
 | ⬜ | **F-174** No dev machine can stand in for "mid-range" — `tools/perf_probe.gd`'s baseline is only ever measured on the fastest hardware in the project | todo |
 | ⬜ | **F-178** F-157's three new display-name RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim | todo |
-| ⬜ | **F-184** `tools/audio/audio_check.py`'s exit code is inverted — it exits 0 when checks FAIL and 1 when they PASS | todo |
+| 🔵 | **F-184** `tools/audio/audio_check.py`'s exit code is inverted — it exits 0 when checks FAIL and 1 when they PASS | in_flight |
 | ⬜ | **F-187** Props are 1,057 MultiMesh groups averaging 2.7 copies — F-100's cross-asset chunk merge is still not built, and now has a measured constraint | todo |
 | ⬜ | **F-188** Runtime-merged meshes have no shadow mesh, though every imported .glb gets one | todo |
 | ⬜ | **F-189** File claims have become the bottleneck D-011 named as its own reversal trigger — one claim blocked four consecutive tasks from bumping PROTOCOL_VERSION | todo |
+| ⬜ | **F-190** HEAD registers the RewardService autoload but does not contain its script, so a clean checkout fails to boot | todo |
+| ⬜ | **F-191** Staging and committing as two steps lets a concurrent agent's commit sweep up your staged work | todo |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.4` `3.5` `3.6` `3.8` `3.9` `3.10` `3.13` `3.14` `3.15` `3.16` `3.17` `4.1` `4.2` `4.3` `4.4` `4.5` `4.6` `4.7` `4.8` `4.9` `4.11` `5.1` `5.3` `5.5` `5.9` `6.1` `6.2` `6.4` `6.5` `6.6` `6.7` `6.9` `6.10` `7.5` `7.7` `7.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `3.8b` `4.0a` `4.0b` `F-001` `F-002` `F-003` `F-004` `F-005` `F-007` `F-008` `F-009` `F-010` `F-011` `F-012` `F-013` `F-014` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-030` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-042` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-103` `F-104` `F-105` `F-106` `F-107` `F-108` `F-109` `F-110` `F-111` `F-113` `F-114` `F-115` `F-116` `F-117` `F-118` `F-119` `F-120` `F-121` `F-122` `F-123` `F-124` `F-125` `F-126` `F-127` `F-128` `F-129` `F-131` `F-132` `F-133` `F-134` `F-135` `F-136` `F-137` `F-138` `F-140` `F-141` `F-142` `F-143` `F-144` `F-145` `F-146` `F-147` `F-148` `F-150` `F-152` `F-155` `F-156` `F-157` `F-159` `F-160` `F-161` `F-162` `F-163` `F-164` `F-167` `F-168` `F-171` `F-172` `F-173` `F-175` `F-176` `F-177` `F-179` `F-180` `F-181` `F-182` `F-183` `F-185` `F-186`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.4` `3.5` `3.6` `3.8` `3.9` `3.10` `3.13` `3.14` `3.15` `3.16` `3.17` `4.1` `4.2` `4.3` `4.4` `4.5` `4.6` `4.7` `4.8` `4.9` `4.11` `5.1` `5.3` `5.5` `5.9` `6.1` `6.2` `6.4` `6.5` `6.6` `6.7` `6.9` `6.10` `7.5` `7.7` `7.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `3.8b` `4.0a` `4.0b` `F-001` `F-002` `F-003` `F-004` `F-005` `F-006` `F-007` `F-008` `F-009` `F-010` `F-011` `F-012` `F-013` `F-014` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-030` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-042` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-103` `F-104` `F-105` `F-106` `F-107` `F-108` `F-109` `F-110` `F-111` `F-113` `F-114` `F-115` `F-116` `F-117` `F-118` `F-119` `F-120` `F-121` `F-122` `F-123` `F-124` `F-125` `F-126` `F-127` `F-128` `F-129` `F-131` `F-132` `F-133` `F-134` `F-135` `F-136` `F-137` `F-138` `F-140` `F-141` `F-142` `F-143` `F-144` `F-145` `F-146` `F-147` `F-148` `F-150` `F-152` `F-155` `F-156` `F-157` `F-159` `F-160` `F-161` `F-162` `F-163` `F-164` `F-167` `F-168` `F-171` `F-172` `F-173` `F-175` `F-176` `F-177` `F-179` `F-180` `F-181` `F-182` `F-183` `F-185` `F-186`

@@ -4405,3 +4405,15 @@ Notes along the way:
 Files: `autoload/reward_service.gd`, `tools/reward_service_check.gd`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/SPECS.md`, `docs/ARCHITECTURE.md`, `core/util/mire_log.gd`
 
 Commit at time of writing: `9c0f267`
+
+---
+
+### DONE · F-006 · pike14 · 2026-08-19T06:48:55+00:00
+
+**Three roadmap tasks assume a Windows or Linux machine we don't have**
+
+Premise falsified: all three machines exist and were used on 2026-08-18. 0.10 done across macOS/Linux/Windows; 1.12 has three accounts in one lobby; 7.12 had all three exports smoke-run on their real OS. The residual limit — both VMs render in software, so frame rate needs real hardware — is recorded against 7.12.
+
+Files: `docs/ROADMAP.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `cc8c917`
