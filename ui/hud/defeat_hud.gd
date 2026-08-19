@@ -88,7 +88,7 @@ func _on_run_wiped(cycle: int, _world_position: Vector3) -> void:
 
 
 ## Only the death-banking half of this signal is ours — `extracted == true` is 6.5/6.6's success
-## path, a screen this task does not own (nothing shows one yet; see docs/FINDINGS.md). Gated on
+## path, a screen `ui/hud/extraction_hud.gd` owns instead (F-238, resolved). Gated on
 ## `_salvage_known`, not `_shown` (F-235, see that field's own comment) — this can legitimately fire
 ## before `_on_run_wiped` does.
 func _on_salvage_banked(earned: int, total_salvage: int, _cycle: int, extracted: bool) -> void:

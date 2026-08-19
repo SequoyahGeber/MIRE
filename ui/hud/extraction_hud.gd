@@ -12,9 +12,24 @@ extends CanvasLayer
 ## either the LOCAL player's own inventory (already client-known) or a replicated ExtractionShip
 ## property; the only mutations sent are `request_repair()`/`request_toggle_departure()`, both of
 ## which the host re-validates before acting on them.
+##
+## F-238: a successful extraction had no run summary of its own — task 6.8 built one only for
+## `ui/hud/defeat_hud.gd`'s death path (`EventBus.subscribe_salvage_banked`'s `extracted == true`
+## branch was explicitly left unhandled by that file). This file now owns the success-path summary
+## the same way `DefeatHud` owns the death one: a terminal, full-screen overlay shown on
+## `EventBus.subscribe_run_extracted`, filled in with the Cycle reached, the modifiers drawn
+## (`CycleModifierService.active_modifier_ids()`, task 6.2 — read-only, nothing to subscribe to,
+## identical to `DefeatHud._modifiers_drawn_summary()`) and the Salvage banked
+## (`EventBus.subscribe_salvage_banked`, only the `extracted == true` branch). Kept in THIS file
+## rather than factored into a shared helper with `DefeatHud` (F-238's own suggestion) because this
+## task's claim does not include `defeat_hud.gd` — the small formatting duplication is deliberate,
+## not missed; a future task touching both files can still lift it into
+## `ui/hud/run_summary_format.gd`.
 
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
 const SHIP_GROUP: StringName = &"extraction_ship"
+const CYCLE_MODIFIER_SERVICE_PATH := ^"/root/CycleModifierService"
 const POLL_SEC: float = 0.15
 
 const COLOUR_PANEL := Color(0.055, 0.086, 0.070, 0.92)
@@ -25,6 +40,13 @@ const COLOUR_TRACK := Color(0.06, 0.08, 0.07, 0.85)
 
 const BAR_SIZE := Vector2(320.0, 16.0)
 
+## Summary screen palette — success-themed (green headline), distinct from `DefeatHud`'s red one,
+## same background darkness and detail-text colour so the two terminal screens read as a pair.
+const COLOUR_SUMMARY_BG := Color(0.02, 0.03, 0.02, 0.88)
+const COLOUR_SUMMARY_HEADLINE := Color(0.36, 0.78, 0.42, 1.0)
+const COLOUR_SUMMARY_DETAIL := Color(0.85, 0.85, 0.82, 1.0)
+const SUMMARY_SUBTITLE: String = "EXTRACTED SAFELY"
+
 var _panel: PanelContainer
 var _label: Label
 var _track: ColorRect
@@ -34,13 +56,33 @@ var _nearby: Node3D
 var _nearby_mode: StringName = &""
 var _poll_elapsed: float = 0.0
 
+var _summary_overlay: ColorRect
+var _summary_headline: Label
+var _summary_subtitle: Label
+var _summary_modifiers_label: Label
+var _summary_detail: Label
+var _summary_shown: bool = false
+## Tracked independently of `_summary_shown`, mirroring `DefeatHud._salvage_known` (F-235) — this
+## screen's own `run_extracted`/`salvage_banked` pair has the same "either can legitimately land
+## first" shape depending on autoload order, so neither guard may assume the other already ran.
+var _salvage_known: bool = false
+
 
 func _ready() -> void:
 	_build_ui()
 	set_process(true)
+	EVENT_BUS.subscribe_run_extracted(_on_run_extracted)
+	EVENT_BUS.subscribe_salvage_banked(_on_salvage_banked)
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_extracted(_on_run_extracted)
+	EVENT_BUS.unsubscribe_salvage_banked(_on_salvage_banked)
 
 
 func _process(delta: float) -> void:
+	if _summary_shown:
+		return
 	_poll_elapsed += delta
 	if _poll_elapsed < POLL_SEC:
 		return
@@ -61,6 +103,54 @@ func _input(event: InputEvent) -> void:
 	elif _nearby_mode == &"board":
 		_nearby.call(&"request_toggle_departure")
 	get_viewport().set_input_as_handled()
+
+
+## Terminal, like `DefeatHud`'s own screen and `ExtractionShip.departed` — once shown, never hides
+## again this session. Joins `blocks_gameplay_input` (D-032) the moment it shows, so
+## `player_controller.gd`'s `gameplay_input_allowed()` stops local movement/interact without pausing
+## the tree (a paused multiplayer client stalls networking — see that function's own note).
+func _on_run_extracted(cycle: int, _world_position: Vector3) -> void:
+	if _summary_shown:
+		return
+	_summary_shown = true
+	_summary_headline.text = "CYCLE %d" % cycle
+	_summary_subtitle.text = SUMMARY_SUBTITLE
+	_summary_modifiers_label.text = _modifiers_drawn_summary()
+	if not _salvage_known:
+		_summary_detail.text = "Tallying Salvage…"
+	_panel.visible = false
+	_summary_overlay.visible = true
+	add_to_group(BLOCKING_UI_GROUP)
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+## Only the extraction half of this signal is ours — `extracted == false` is `DefeatHud`'s own death
+## path. Gated on `_salvage_known`, not `_summary_shown` (same reasoning as `DefeatHud`'s F-235 fix)
+## since this can legitimately fire before `_on_run_extracted` does, depending on autoload order.
+func _on_salvage_banked(earned: int, total_salvage: int, _cycle: int, extracted: bool) -> void:
+	if not extracted or _salvage_known:
+		return
+	_salvage_known = true
+	_summary_detail.text = "Salvage earned: %d (%d total)" % [earned, total_salvage]
+
+
+## "Modifiers drawn" stat: the run's whole stacked deck (task 6.2's `CycleModifierService`), in draw
+## order, by display name — never a bare `CycleModifierDef` reference (F-016). Identical to
+## `DefeatHud._modifiers_drawn_summary()`; see this file's header for why it is duplicated rather
+## than shared.
+func _modifiers_drawn_summary() -> String:
+	var service: Node = get_node_or_null(CYCLE_MODIFIER_SERVICE_PATH)
+	if service == null:
+		return "Modifiers drawn: none"
+	var ids: Array = service.call(&"active_modifier_ids")
+	if ids.is_empty():
+		return "Modifiers drawn: none"
+	var names: PackedStringArray = []
+	for id: Variant in ids:
+		var def: Resource = service.call(&"def_for", id) as Resource
+		var display_name: String = String(def.get(&"display_name")) if def != null else ""
+		names.append(display_name if not display_name.is_empty() else String(id))
+	return "Modifiers drawn: %s" % ", ".join(names)
 
 
 ## Repair takes priority while any stage is left; once fully repaired, only boarding remains
@@ -191,3 +281,50 @@ func _build_ui() -> void:
 	_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_panel.offset_top = -220.0
 	_panel.offset_bottom = -160.0
+
+	_build_summary_ui()
+
+
+## Own `CanvasLayer` (layer 20, same as `DefeatHud`'s terminal screen) rather than this file's outer
+## layer 5 — the bottom-centre prompt panel above deliberately sits BELOW other gameplay UI
+## (inventory, chest, etc.), but a terminal run-ending screen must not.
+func _build_summary_ui() -> void:
+	var summary_layer := CanvasLayer.new()
+	summary_layer.layer = 20
+	add_child(summary_layer)
+
+	_summary_overlay = ColorRect.new()
+	_summary_overlay.color = COLOUR_SUMMARY_BG
+	_summary_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_summary_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_summary_overlay.visible = false
+	summary_layer.add_child(_summary_overlay)
+
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 12)
+	column.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_KEEP_SIZE)
+	_summary_overlay.add_child(column)
+
+	_summary_headline = Label.new()
+	_summary_headline.add_theme_color_override("font_color", COLOUR_SUMMARY_DETAIL)
+	_summary_headline.add_theme_font_size_override("font_size", 48)
+	_summary_headline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_summary_headline)
+
+	_summary_subtitle = Label.new()
+	_summary_subtitle.add_theme_color_override("font_color", COLOUR_SUMMARY_HEADLINE)
+	_summary_subtitle.add_theme_font_size_override("font_size", 26)
+	_summary_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_summary_subtitle)
+
+	_summary_modifiers_label = Label.new()
+	_summary_modifiers_label.add_theme_color_override("font_color", COLOUR_SUMMARY_DETAIL)
+	_summary_modifiers_label.add_theme_font_size_override("font_size", 18)
+	_summary_modifiers_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_summary_modifiers_label)
+
+	_summary_detail = Label.new()
+	_summary_detail.add_theme_color_override("font_color", COLOUR_SUMMARY_DETAIL)
+	_summary_detail.add_theme_font_size_override("font_size", 18)
+	_summary_detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_summary_detail)

@@ -6090,3 +6090,18 @@ Completed.
 Files: `core/save/steam_stats_save.gd`, `autoload/steam_stats.gd`, `autoload/rich_presence_service.gd`, `autoload/steam_lobby.gd`, `systems/extraction/extraction_ship.gd`, `tools/steam/ACHIEVEMENTS.md`, `tools/steam_stats_check.gd`
 
 Commit at time of writing: `1961bf5`
+
+---
+
+### DONE · F-238 · lp · 2026-08-19T19:36:41+00:00
+
+**A successful extraction has no run summary of its own — task 6.8 only extended the death screen**
+
+Extraction now has its own run summary: ui/hud/extraction_hud.gd shows a terminal overlay on run_extracted (Cycle, modifiers drawn, Salvage earned). Verified: agent godot --script tools/run_summary_check.gd (27 assertions, 0 failures, drives the real EventBus.emit_run_extracted -> SalvageService -> salvage_banked -> ExtractionHud chain). No regressions (extraction_check, salvage_check, defeat_check, cycle_modifier_check all failures=0). 0 ERROR: on full boot (--quit-after 20).
+
+Notes along the way:
+- Scope call: extraction summary built inside extraction_hud.gd (its own second CanvasLayer, layer 20) rather than a shared helper with defeat_hud.gd — claim didn't originally include defeat_hud.gd, so _modifiers_drawn_summary() is duplicated verbatim in both files. defeat_hud.gd claimed mid-task only to fix one stale comment.
+
+Files: `ui/hud/extraction_hud.gd`, `ui/hud/extraction_hud.gd.uid`, `tools/run_summary_check.gd`, `ui/hud/defeat_hud.gd`, `ui/hud/defeat_hud.gd.uid`
+
+Commit at time of writing: `d047572`

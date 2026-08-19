@@ -14,6 +14,13 @@ extends SceneTree
 ## on the old guard (`_detail.text` would still read the "Tallying Salvage…" placeholder) and passes
 ## on the `_salvage_known` fix.
 ##
+## F-238 extended this file with the mirror-image chain for the SUCCESS path:
+## `EventBus.emit_run_extracted()` (the same direct shortcut `salvage_check.gd` already takes,
+## since a real `ExtractionShip` departure needs a scene this bare harness doesn't have) ->
+## `SalvageService` banks -> `EventBus.salvage_banked` -> `ui/hud/extraction_hud.gd`'s own summary
+## overlay, which task 6.8 explicitly did not build (see this file's original header, and
+## docs/FINDINGS.md F-238).
+##
 ##   .agent/bin/agent godot --script tools/run_summary_check.gd
 ##
 ## `SalvageService._persistence_enabled()` (D-107) is false by default in a bare `--script`
@@ -30,6 +37,7 @@ var defeat_hud: Node
 var defeat_service: Node
 var cycle_modifier_service: Node
 var salvage_service: Node
+var extraction_hud: Node
 
 
 func _initialize() -> void:
@@ -50,6 +58,9 @@ func _run() -> void:
 	_check_full_defeat_chain()
 	_check_second_defeat_is_a_no_op()
 	_check_salvage_banked_guards()
+	_check_full_extraction_chain()
+	_check_second_extraction_is_a_no_op()
+	_check_extraction_salvage_banked_guards()
 
 	_cleanup()
 	print("\nRUN_SUMMARY_CHECK failures=%d" % failures)
@@ -62,13 +73,16 @@ func _check_wiring() -> bool:
 	defeat_service = root.get_node_or_null(^"DefeatService")
 	cycle_modifier_service = root.get_node_or_null(^"CycleModifierService")
 	salvage_service = root.get_node_or_null(^"SalvageService")
+	extraction_hud = root.get_node_or_null(^"ExtractionHud")
 	check(defeat_hud != null, "DefeatHud is registered as an autoload")
 	check(defeat_service != null, "DefeatService is registered as an autoload")
 	check(cycle_modifier_service != null, "CycleModifierService is registered as an autoload")
 	check(salvage_service != null, "SalvageService is registered as an autoload")
+	check(extraction_hud != null, "ExtractionHud is registered as an autoload")
 	if salvage_service != null:
 		salvage_service.set(&"save_path", TEST_SAVE_PATH)
-	return defeat_hud != null and defeat_service != null and cycle_modifier_service != null and salvage_service != null
+	return defeat_hud != null and defeat_service != null and cycle_modifier_service != null \
+		and salvage_service != null and extraction_hud != null
 
 
 func _cleanup() -> void:
@@ -155,6 +169,64 @@ func _check_salvage_banked_guards() -> void:
 	check(detail.text == before, "an extracted bank (6.5's own path) never overwrites the death screen: '%s'" % detail.text)
 	defeat_hud.call(&"_on_salvage_banked", 111, 222, 5, false)
 	check(detail.text == before, "a second non-extracted bank does not clobber the first real number: '%s'" % detail.text)
+
+
+## F-238: the mirror-image real chain for a successful extraction — `emit_run_extracted` is the
+## same direct shortcut `salvage_check.gd` already takes to prove SalvageService's own extraction
+## path, since standing up a real `ExtractionShip`/departure hold needs a live scene this bare
+## harness doesn't have. Cycle 7 (distinct from the defeat chain's Cycle 5 above) so a mixed-up
+## assertion between the two screens would fail loudly rather than coincidentally match.
+func _check_full_extraction_chain() -> void:
+	print("\n== the real run_extracted -> salvage_banked -> ExtractionHud chain ==")
+	EVENT_BUS.emit_run_extracted(7, Vector3(10.0, 0.0, 10.0))
+
+	var headline: Label = extraction_hud.get(&"_summary_headline") as Label
+	var subtitle: Label = extraction_hud.get(&"_summary_subtitle") as Label
+	var modifiers_label: Label = extraction_hud.get(&"_summary_modifiers_label") as Label
+	var detail: Label = extraction_hud.get(&"_summary_detail") as Label
+	var overlay: ColorRect = extraction_hud.get(&"_summary_overlay") as ColorRect
+	check(headline != null and subtitle != null and modifiers_label != null and detail != null
+		and overlay != null, "ExtractionHud built every label the summary needs")
+	if headline == null or subtitle == null or modifiers_label == null or detail == null or overlay == null:
+		return
+
+	check(headline.text == "CYCLE 7", "the headline names the Cycle reached: '%s'" % headline.text)
+	check(subtitle.text == "EXTRACTED SAFELY", "the subtitle reads success, not a death cause: '%s'" % subtitle.text)
+	check(modifiers_label.text.contains("Long Night"), "the stats block still names the drawn modifier: '%s'" % modifiers_label.text)
+	check(overlay.visible, "the overlay shows")
+	check(extraction_hud.is_in_group(&"blocks_gameplay_input"), "and blocks gameplay input (D-032)")
+
+	# Mirrors the F-235 regression proof one layer up: the real banked number must reach the
+	# screen, not the "Tallying Salvage…" placeholder, regardless of which of the two signals
+	# (`run_extracted`, `salvage_banked`) this file's own subscriber order makes land first.
+	check(detail.text.begins_with("Salvage earned: "), "the real banked number reached the screen, not the placeholder: '%s'" % detail.text)
+	check(not detail.text.contains("Tallying"), "the placeholder never survives to the final paint: '%s'" % detail.text)
+
+
+## Terminal, like the death screen (D-109) — proves `ExtractionHud._summary_shown` itself, not
+## `ExtractionShip.departed`'s own once-only setter (that guard already stops a real second
+## `run_extracted` at the source; this check fires the bus event directly, the same
+## `salvage_check.gd` shortcut this whole file uses, specifically to exercise the HUD's own guard
+## in isolation).
+func _check_second_extraction_is_a_no_op() -> void:
+	print("\n== a second extraction verdict is a no-op (terminal, D-109) ==")
+	var headline: Label = extraction_hud.get(&"_summary_headline") as Label
+	var before: String = headline.text
+	EVENT_BUS.emit_run_extracted(99, Vector3.ONE)
+	check(headline.text == before, "the summary screen does not repaint: '%s'" % headline.text)
+
+
+## Regression proof for `ExtractionHud`'s own `_salvage_known` idempotency, mirroring
+## `_check_salvage_banked_guards()` above: `extracted == false` is `DefeatHud`'s own path and must
+## never reach this screen, and a second `extracted == true` bank does not clobber the first number.
+func _check_extraction_salvage_banked_guards() -> void:
+	print("\n== ExtractionHud's own _on_salvage_banked guards hold ==")
+	var detail: Label = extraction_hud.get(&"_summary_detail") as Label
+	var before: String = detail.text
+	extraction_hud.call(&"_on_salvage_banked", 999, 9999, 7, false)
+	check(detail.text == before, "a death bank (DefeatHud's own path) never overwrites the extraction screen: '%s'" % detail.text)
+	extraction_hud.call(&"_on_salvage_banked", 111, 222, 7, true)
+	check(detail.text == before, "a second extracted bank does not clobber the first real number: '%s'" % detail.text)
 
 
 func check(condition: bool, description: String) -> void:
