@@ -344,7 +344,7 @@ Counted from `content/`:
 | Category | Files | Framework that consumes it |
 |---|---|---|
 | `cycle_modifiers/` | **1** | 6.2 — deck, draw, stacking, Cycle-weighted rules. Done. |
-| `unlocks/` | **1** | 6.9 — unlock tree + UI, and 6.6's Salvage curve. Both done. |
+| `unlocks/` | ~~1~~ **7** (2026-08-19, lp) | 6.9 — unlock tree + UI, and 6.6's Salvage curve. Both done. |
 | `ranged_weapons/` | **1** | 5.3 — bow, projectiles, host-authoritative hit validation. Done. |
 | `haulables/`, `hooks/` | 1 each | |
 | `stations/`, `scatter/` | 2 each | |
@@ -372,6 +372,23 @@ the balance and variety problems it would be run to find. Content first, then 2.
 gap between "the framework is done" and "the game has things in it", and it is currently the largest
 gap in the project. The one-at-a-time authoring rule applies: these want real attention per file, not
 a directory generated in a pass.
+
+**2026-08-19 (lp) — the `unlocks/` third is fixed; `cycle_modifiers/` and `ranged_weapons/` are not,
+so this finding stays under `## Open`.** Six unlocks authored one at a time (`unlock_loping_gait`,
+`unlock_coin_worm`, `unlock_bottomless_quiver`, `unlock_thin_step`, `unlock_night_pyre`,
+`unlock_cauter_seal` — see `docs/SPECS.md`'s new F-236 block for what each one changes about how a
+run is played and why). All six are `category = "powerup"`, gating an existing PowerupDef that
+already rolls in a real `content/loot/*.tres` table — confirmed live before authoring against it
+(D-111/F-173: `is_content_unlocked()` currently has no consumer for the other seven §4.6 categories,
+so an `attunement`/`poi`/`enemy`/`cycle_modifier`/`island_modifier`/`cosmetic`/`loadout` row would
+sell but gate nothing yet — D-146 records this so the next author doesn't rediscover it the hard
+way). `tools/unlock_check.gd` gained `_check_authored_content()`, which now validates every
+`content/unlocks/*.tres` file generically (not just the worked example): schema-clean, no two rows
+silently shadow the same `gates_id`, and every `powerup`-category row's `gates_id` both resolves to a
+real `PowerupDef` and actually appears as a POWERUP entry in an authored loot table. Verified:
+`.agent/bin/agent godot --script tools/unlock_check.gd` → `UNLOCK_CHECK failures=0` (7 rows total).
+**Left for whoever picks up the rest:** `cycle_modifiers/` (task 6.3, `todo`) and `ranged_weapons/`
+(no task id yet, per the roadmap — DELEGATION.md's Current state entry for this task says the same).
 
 ---
 
@@ -463,7 +480,67 @@ number that won't actually deliver it.
 
 ---
 
-### F-239 · The inv command reads slot keys that do not exist — inv always prints 'carrying nothing' and inv clear silently removes nothing
+### F-243 · The run loop is a line, not a circle — after defeat or extraction there is no path to a next run short of relaunching the process
+
+**Area:** systems · **Severity:** high · **Found:** 2026-08-19 by hollow7
+
+Verified by the 2026-08-19 game-loop audit (`tools/loop_audit_check.gd`, both endings driven on the
+shipped `levels/hollowmere.tscn`): every link of DESIGN.md §5's run arc now works — spawn, harvest,
+craft, build, eat, night wave, chests, Wellspring rewards, Mire response, Cycle+modifier,
+extraction with full banking, defeat with fraction banking. The arc then stops. Nothing anywhere
+starts the next run:
+
+- `ui/hud/defeat_hud.gd` has no actions at all — it subscribes to `run_wiped`/`salvage_banked` and
+  renders; there is no "new run" control for the player staring at the summary.
+- `ExtractionShip`'s successful departure likewise ends in a HUD state, not a flow.
+- No file under `ui/`, `autoload/`, `core/`, or `systems/` calls `reload_current_scene()` /
+  `change_scene_to_*` for a run reset, and no service exposes a `reset_run()` — grep for
+  restart/new_run/reload comes back empty of any run-scoped hit.
+- The run-scoped state that would need resetting is spread across at least: CycleService (cycle,
+  spread multiplier), CycleModifierService (active draws), MireGrid (the whole grid),
+  SalvageService (`wellsprings_capped_this_run`), PowerupService stacks, InventoryService stores,
+  PlayerHealth states, EnemyWorld population, WorldDeltaLog, placed buildables, opened chests,
+  capped Wellsprings, repaired ship. Nothing owns the set.
+
+6.8 (run summary) and 6.10 (menu/lobby) are both marked done, and no D-number records "relaunch to
+restart" as a deliberate ship decision — so this is a gap, not a choice. It bites hardest in
+co-op: a six-player lobby that wipes must fully relaunch six processes and re-invite through Steam
+to play again, which turns the "one more run" moment — the exact moment DESIGN.md §5.2 is built
+around — into a lobby teardown.
+
+Suggested shape (not prescribed): a HOST-scope `run restart` through the existing command front
+door plus a DefeatHud/extraction button that submits it; host reloads the level scene and
+broadcasts, services reset on a `run_started` signal they already mostly subscribe to
+(CycleService.run_started exists). The per-service reset inventory above is the real work; the
+audit doc carries the full trace.
+
+---
+
+### F-244 · The build verb refuses natural coordinates — nothing ground-snaps a command placement, so 'build wall_wood ~ ~ ~' reads as a bug
+
+**Area:** systems · **Severity:** low · **Found:** 2026-08-19 by hollow7
+
+Found by the 2026-08-19 game-loop audit. `build <id> <x y z>` (task 3.16,
+`autoload/build_service.gd::_cmd_build`) submits `Transform3D(Basis.IDENTITY, at)` raw. The
+placement ghost's snapping is client-side presentation, and the host validates but does not snap —
+so the y a player naturally supplies (`~`, their own capsule origin, ~1 m above terrain) floats the
+piece's base above the support probe, and EVERY free-standing piece refuses with 'nothing
+underneath it'. Measured on flat open ground in hollowmere: all 13 buildables refused at player
+height; raycast-grounded y placed a gate first try (costs paid).
+
+A player typing the obvious thing gets a refusal that reads like the validator is broken, when the
+actual problem is half a metre of y. Options, smallest first: (a) `_cmd_build` raycasts down from
+the given point and grounds y before submitting (command-side, no trust change — the host still
+validates); (b) the help text says "y must be exact ground level" (honest, cheap, worse); (c) the
+host snaps command-sourced placements the way the ghost does (changes D-034's surface, probably
+overkill). `tools/loop_audit_check.gd`'s build phase is the regression harness either way — it
+tries raw-height first and grounded second, so the transcript shows both behaviours.
+
+---
+
+## Resolved
+
+### F-239 · The inv command reads slot keys that do not exist — inv always prints 'carrying nothing' and inv clear silently removes nothing — **fixed**
 
 **Area:** systems · **Severity:** medium · **Found:** 2026-08-19 by hollow7
 
@@ -486,7 +563,17 @@ somewhere a check will keep it honest.
 
 ---
 
-## Resolved
+**Resolved 2026-08-19 by hollow7.** Fixed the same session it was filed (2026-08-19 game-loop audit). `_clear_inventory` and
+`_list_inventory` in `autoload/inventory_service.gd` now read the store's real snapshot keys
+(`item_id`/`amount`, per `inventory_store.gd:87`) instead of `item`/`count`, with a comment naming
+this finding so nobody "tidies" the keys back.
+
+Verified two ways: `tools/loop_audit_check.gd` now asserts `inv`'s rendered message contains real
+contents at the one moment the inventory is provably non-empty (right after a chest payout) — PASS
+"`inv` renders the real contents (F-239): peer 1 carries 40 item(s)" — and the same run's
+`_total_items` helper (same keys) read 40→100 across the Wellspring reward grant, which is the
+delta that exposed the bug in the first place. `command_check` and `command_catalog_check` remain
+green.
 
 ### F-242 · Any session can route lane work, so six orders reached the queues from agents that were not the director — **fixed**
 

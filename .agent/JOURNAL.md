@@ -5919,3 +5919,13 @@ Game-loop audit complete, both endings driven on the shipped map: tools/loop_aud
 Files: `autoload/inventory_service.gd`, `tools/loop_audit_check.gd`, `docs/AUDIT-2026-08-19-LOOP.md`
 
 Commit at time of writing: `989e2bb`
+
+---
+
+### DONE · 4.13 · slate17 · 2026-08-19T17:43:24+00:00
+
+**Terrain look: domain warp + masked ridged layer + per-biome amplitude tables (`WORLDGEN.md` §1, D-142); extend `check_determinism`, re-run `bench_chunks`**
+
+Completed.
+
+Commit at time of writing: `136b8bb`

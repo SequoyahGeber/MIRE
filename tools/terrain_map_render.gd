@@ -27,7 +27,7 @@ func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	var seed_value: int = _arg_int(args, "--seed", 20260819)
 	var size: int = _arg_int(args, "--size", 600)
-	var span: float = float(_arg_int(args, "--span", 1100))
+	var span: float = float(_arg_int(args, "--span", 340))
 	var out: String = _arg_str(args, "--out", "res://assets/audit/terrain/island_%d.png" % seed_value)
 
 	var defs: Array = []
@@ -57,7 +57,7 @@ func _initialize() -> void:
 			var colour: Color
 			if h <= SEA_LEVEL:
 				# Water, deepening with distance below the surface.
-				var depth: float = clampf(-h / 24.0, 0.0, 1.0)
+				var depth: float = clampf(-h / 12.0, 0.0, 1.0)
 				colour = Color(0.09, 0.16, 0.24).lerp(Color(0.03, 0.06, 0.11), depth)
 			else:
 				land += 1
@@ -67,7 +67,7 @@ func _initialize() -> void:
 					tint = BIOME_TINT.get(id, tint)
 				# Height shading on top of the biome tint: dark in the valleys,
 				# pale on the crests, so ridges are visible as ridges.
-				var lift: float = clampf(h / 70.0, 0.0, 1.0)
+				var lift: float = clampf(h / 30.0, 0.0, 1.0)
 				colour = tint.lerp(Color(0.94, 0.94, 0.90), lift * 0.75)
 				if h < 1.6:
 					colour = colour.lerp(Color(0.88, 0.83, 0.62), 0.65)   # the beach line

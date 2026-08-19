@@ -1274,6 +1274,36 @@ the largest single cost M4 has added**, and F-235 names the remaining win: the m
 `continent` and `ridge_mask` hash separately from `terrain_hash`, so a cross-platform mismatch says
 which one drifted rather than just that the surface did.
 
+**Sequoyah's direction, same day, after seeing the first render: the island was far too big, and the
+brief is one main island plus one or two mini islands really close to it, with big ocean otherwise.**
+Four consequences, all of them in this task:
+
+* **`ISLAND_RADIUS` 512 → 118 m** — an island ~236 m across, the class the hand-authored Hollowmere
+  is in (192 m, D-045) and what one evening can cover. The Mire grid still covers 1024 m; that is
+  the right way round, terrain sized to the run rather than to the simulation's bookkeeping.
+* **`HEIGHT_SCALE` 60 → 26 m.** Sixty metres of relief across 236 m is a cone whose every slope
+  beats the player's 46° floor limit.
+* **Shape scales with the island, texture does not.** Continental noise, its warp and the coast
+  jitter are authored against a 512 m island and scaled by `FREQUENCY_SCALE`, so a smaller island
+  has the same number of bays rather than cropping most of them out. Detail and ridges keep their
+  absolute frequency, because a ridge is tens of metres and a bump underfoot is a few metres whatever
+  size the island is — scaling those put crests 11 m apart and turned the interior into a sponge.
+* **Islets are placed, not grown.** One or two, at 1.22× the radius, from a fixed table of unit
+  vectors indexed by seed — a table rather than an angle because this file may not use `sin`/`cos`
+  (they resolve differently across platforms, and D-017/D-028 rest on this function being
+  bit-identical). Noise that produces satellites at all produces them out to the horizon, which is
+  the archipelago the first render showed.
+
+**A ridge only ever adds.** Re-centring the ridged fractal to −1..1 made it cut as deep as it lifted:
+22 m pits on a 26 m island, and an interior riddled with lakes. It is thresholded now, so troughs sit
+on the floor and only crests exist.
+
+**Two constants exist because of this, and callers must prefer them to the obvious ones:**
+`WORLD_RADIUS` (islets sit past `ISLAND_RADIUS`, so *that* is no longer where the land ends —
+anything culling or bounding the world wants this) and `MAX_HEIGHT` (`HEIGHT_SCALE` is the noise
+amplitude, not the peak: `LAND_BIAS` lifts the continent and ridges add on top). `tools/terrain_check.gd`
+asserted both of the old meanings and had to be brought forward with the model.
+
 ## Template
 
 ```
