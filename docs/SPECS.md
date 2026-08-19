@@ -8823,6 +8823,81 @@ a bug. No sibling fix needed.
 
 ---
 
+## F-245 · The whole Cycle Modifier feature is inert: seven modifiers, a weighted deck, and not one line of game code asks whether a modifier is active
+
+**Claim:** `systems/cycle/cycle_modifier_service.gd`, `systems/environment/day_night.gd`,
+`systems/wellspring/wellspring.gd`, `systems/loot/chest.gd`, `systems/harvesting/harvestable.gd`,
+`systems/enemies/enemy.gd`, `systems/waves/wave_spawner.gd`, `autoload/powerup_service.gd`,
+`world/mire/mire_grid.gd`, `content/cycle_modifiers/*.tres`, `tools/cycle_modifier_effects_check.gd`
+(new). **Authority:** no new row — every consumer already declares its own §2.2 row (Harvestable/
+world mutation, Wellspring ritual, Chest/world mutation, Enemies, Day/night+active modifiers, Mire
+grid); this only adds a host-side read of `CycleModifierService.has_modifier()`/`drought_active()` on
+top of each, never a new RPC.
+
+**The bug:** 6.2 built the deck/draw/stacking framework and 6.3 authored seven real modifiers, but
+`CycleModifierService.has_modifier(id)` was called from nowhere outside `systems/cycle/` and
+`tools/` (F-236/F-245's own text). Every authored `.tres` said so in its own `description`: "No
+effect is wired to any gameplay system yet." Drawing Drought did not reduce a harvest; drawing The
+Hunt spawned nothing.
+
+**The fix, one consumer per modifier, each against the exact seam its own `description` already
+named:**
+
+| id | consumer | effect |
+|---|---|---|
+| `drought` | `Harvestable._yield_amount()` | halves `yield_amount`; `CycleModifierService.drought_active()` tracks the "until the next Wellspring cap" window separately from the permanent draw stack — `_drought_cleared` resets false the instant `drought` is drawn, flips true on the next `EventBus.wellspring_capped` (any Wellspring) |
+| `long_night` | `DayNight._advance_host()` | halves how much of `delta` counts toward `time_of_day` while the clock is in the night phase (`_is_night()`), leaving the day phase untouched — roughly doubles the night's real-time length without a second day-length knob |
+| `tithe` | `Wellspring._start_channel()` | `required_players` +1 for a co-op attempt only — solo is exempt (see D-156) |
+| `static` | `Chest._unlock_check()` / `_price_for()` | the unlock-gate Callable refuses every POWERUP entry unconditionally (reuses D-111's existing gate — no `LootTableDef` change), and `cost_coins` (after `chest_price`) is halved |
+| `rooted` | `MireGrid._tick()` | passes an empty ward array to `SIM.tick()` regardless of `_ward_circles_provider` — a Ward's spread resistance (the only thing it ever did, see `mire_grid_sim.gd`) simply stops applying |
+| `bloom` | `Enemy._enter_death()` → `_maybe_bloom_split()` | spawns two children of the same `EnemyDef` at the death position via `EnemyWorld.host_spawn()`, each immediately damaged down to half `max_health`; `mark_as_bloom_child()` stops a child from splitting again |
+| `the_hunt` | `WaveSpawner._on_cycle_advanced()` → `_maybe_spawn_hunt_elite()` / `_retarget_hunt_elite()` | spawns one `tusker` (reused, not new content — D-156) per Cycle at an ambient spawn point; a `_physics_process` ticker retargets it every `HUNT_RETARGET_INTERVAL_SEC` to whoever `PowerupService.total_stacks()` (new) ranks highest, via `Enemy.host_force_target()` (new — unlike `alert()`, overrides an already-held target) |
+
+Every modifier's `.tres` `description` was rewritten to name what it now does instead of "no effect
+is wired" — a stale disclaimer left in place after the fix ships is the F-140/F-236/F-245 shape
+repeating a fourth time (see that finding's own "half a feature shipping green" warning).
+
+**Bug found and fixed during this task, not left for a sibling:** the first `tithe` implementation
+added the extra `required_players` unconditionally, including solo (1 -> 2) — `agent baseline
+--script tools/wellspring_recorruption_check.gd` proved 0 failures at HEAD and 3 against the naive
+fix (`_check_recapture_waits_for_its_own_next_cycle`'s solo recapture never completes once `tithe`
+is drawn mid-run, because only one player node ever exists in that check). Solo is now exempt — see
+D-156.
+
+**Verify:** `agent godot --script tools/cycle_modifier_check.gd` (`CYCLE_MODIFIER_CHECK failures=0`,
+unchanged by this task) and `tools/cycle_modifier_seed_check.gd` (unaffected). New:
+`tools/cycle_modifier_effects_check.gd` forces each modifier active by writing
+`CycleModifierService._active_ids` directly (same private-state-injection convention
+`cycle_modifier_check.gd`'s own incompatibility tests already use) and proves the actual gameplay
+effect for all seven — `CYCLE_MODIFIER_EFFECTS_CHECK failures=0`, 30 assertions,
+`EXPECTED_ERROR_PATTERNS="Parameter \"material\" is null"` declared for the tinted `tusker`'s
+headless-dummy-renderer material noise (`tools/bog_crawler_check.gd`'s own documented quirk, not a
+regression — confirmed by reproducing the same pattern on a stock `tusker` spawn+despawn outside
+this check). Full regression sweep, all `failures=0`: `harvestable_check`/`_net_check`,
+`day_night_check`/`_net_check`, `wellspring_check`/`_net_check`/`_recorruption_check`/`_hud_check`,
+`chest_check`/`_seed_check`/`_net_check`/`_placement_check`, `mire_grid_check`,
+`mire_interaction_check`, `powerup_check`/`_net_check`/`_review_check`, `enemy_check`/`_ai_check`/
+`_net_check`, `bog_crawler_check`, `wave_spawner_check`/`_cycle_net_check`.
+
+**Trap found while writing the new check, worth recording so nobody re-discovers it the slow way:** a
+GDScript lambda subscribed to `EventBus` (a bare-class static subscriber list, not a Node) and never
+unsubscribed crashes the headless process at script teardown (`recursive_mutex lock failed`) even
+though the check's own assertions already printed `failures=0` and `quit(0)` had already been called
+— the crash lands during engine finalization, after the check's own exit code was decided, so it
+still turns a green run into a non-zero process exit. Fix: store the lambda in a variable and
+`unsubscribe_*` it with that exact `Callable` before the script's `_run()` returns, same as every
+persistent system already does in its own `_exit_tree()`.
+
+**Swept for the same shape:** grepped every other content family whose `description`/comment still
+reads "no effect is wired" or "future consumer" — none remain in `content/cycle_modifiers/`. F-236
+(the sibling finding: unlock tree and ranged rack are also thin) and the roadmap's remaining
+14–24 un-authored Cycle Modifiers (`docs/DELEGATION.md`'s 6.3 close-out note) are explicitly out of
+this task's claim — new *content* volume, not the wiring gap this task closes.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

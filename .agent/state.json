@@ -1,86 +1,6 @@
 {
-  "claims": {
-    "autoload/powerup_service.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:21:01+00:00",
-      "task": "F-245",
-      "token": null
-    },
-    "systems/cycle/cycle_modifier_service.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:21:01+00:00",
-      "task": "F-245",
-      "token": null
-    },
-    "systems/enemies/enemy.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:21:01+00:00",
-      "task": "F-245",
-      "token": null
-    },
-    "systems/environment/day_night.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:21:01+00:00",
-      "task": "F-245",
-      "token": null
-    },
-    "systems/harvesting/harvestable.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:21:01+00:00",
-      "task": "F-245",
-      "token": null
-    },
-    "systems/loot/chest.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:21:01+00:00",
-      "task": "F-245",
-      "token": null
-    },
-    "systems/waves/wave_spawner.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:21:01+00:00",
-      "task": "F-245",
-      "token": null
-    },
-    "systems/wellspring/wellspring.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:21:01+00:00",
-      "task": "F-245",
-      "token": null
-    },
-    "tools/cycle_modifier_effects_check.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:29:30+00:00",
-      "task": "F-245",
-      "token": null
-    },
-    "world/mire/mire_grid.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:23:18+00:00",
-      "task": "F-245",
-      "token": null
-    }
-  },
-  "in_flight": {
-    "F-245": {
-      "agent": "lm2",
-      "files": [
-        "systems/cycle/cycle_modifier_service.gd",
-        "systems/environment/day_night.gd",
-        "systems/wellspring/wellspring.gd",
-        "systems/loot/chest.gd",
-        "systems/harvesting/harvestable.gd",
-        "systems/enemies/enemy.gd",
-        "systems/waves/wave_spawner.gd",
-        "autoload/powerup_service.gd",
-        "world/mire/mire_grid.gd",
-        "tools/cycle_modifier_effects_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-19T22:21:01+00:00",
-      "token": null
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".": {
       "agent": "lp",
@@ -964,10 +884,10 @@
       "task": "F-157"
     },
     "autoload/powerup_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
-      "hash": "2eb3fbf1bd627d400373b4e4308599516bd751a0c54798b5f49206bd6cb92195",
-      "task": "F-243",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "670c34417d7a9183bbae4deccaddf05b4e731586ad6e920e28db357b78907386",
+      "task": "F-245",
       "token": null
     },
     "autoload/ranged_combat_service.gd": {
@@ -1080,51 +1000,52 @@
       "token": null
     },
     "content/cycle_modifiers/bloom.tres": {
-      "agent": "lm",
-      "at": "2026-08-19T17:48:28+00:00",
-      "hash": "69c2bf73e318abe0e98877238e8f0606862b4e3bc4e4e2c4620dcf0242dc8514",
-      "task": "6.3",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "22ff75d8a75536ec8201e9a78c242e9ad49ef57c5ce976e990ef45396ca40078",
+      "task": "F-245",
       "token": null
     },
     "content/cycle_modifiers/drought.tres": {
-      "agent": "lm",
-      "at": "2026-08-19T17:48:28+00:00",
-      "hash": "a7385dd400187040ac1fa0c61ac34fae42b89612f69317a2aedf017ce66402ae",
-      "task": "6.3",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "c11636f87e7c004930c1be65eeda9e3373b5aba04e6ea2df9d418926526b6ebb",
+      "task": "F-245",
       "token": null
     },
     "content/cycle_modifiers/long_night.tres": {
-      "agent": "lm",
-      "at": "2026-08-19T01:57:43+00:00",
-      "hash": "2b5f9dd0b34dfc08b9f08ea5690e26498104229713cb849d3f8e5601c174f625",
-      "task": "6.2"
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "a5f79753d3fbc7957619de26689b0aec1c7e0ee61855940d93cb034c3a36330e",
+      "task": "F-245",
+      "token": null
     },
     "content/cycle_modifiers/rooted.tres": {
-      "agent": "lm",
-      "at": "2026-08-19T17:48:28+00:00",
-      "hash": "139fb6e51935c10250c2135fbfbae1606ba9b846dab4b208e5fa9d3ef53a84ab",
-      "task": "6.3",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "40eae1d29e278995f12ddeaf269556405a3e3d094bdf96eeb8c263ac734516ae",
+      "task": "F-245",
       "token": null
     },
     "content/cycle_modifiers/static.tres": {
-      "agent": "lm",
-      "at": "2026-08-19T17:48:28+00:00",
-      "hash": "201cd0f796b3a7f043c85eaf17c85b651e8dc15ba278c113ea899268b1e4a04e",
-      "task": "6.3",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "c4834e0f30279ac0fe6a73e60a818bf72e7324cbe7ae6d80c7ce577b1922d776",
+      "task": "F-245",
       "token": null
     },
     "content/cycle_modifiers/the_hunt.tres": {
-      "agent": "lm",
-      "at": "2026-08-19T17:48:28+00:00",
-      "hash": "4801425a9bfdbd8b8d644105cdc9b2183e88ae39f9dbfc7bde98e0f2b9c079ab",
-      "task": "6.3",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "eac8225e5a47f913a75459005083aab4ea42992ea95a7cf11ee3e2d4fac692c5",
+      "task": "F-245",
       "token": null
     },
     "content/cycle_modifiers/tithe.tres": {
-      "agent": "lm",
-      "at": "2026-08-19T17:48:28+00:00",
-      "hash": "329f3821cd2c74e50f5912fb26e13d9d04e9936b27e9926c9e85d403738522cb",
-      "task": "6.3",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "3b9be28af5abb5320403f7ab6059a0cdc0688b0dcfdaf6d3d9f41899689fcf38",
+      "task": "F-245",
       "token": null
     },
     "content/enemies": {
@@ -1437,24 +1358,24 @@
       "token": null
     },
     "docs/DECISIONS.md": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:35:43+00:00",
-      "hash": "0caecfb8a193f0b937cda671f17096d98e96e288fd926c7efa9561ab9b7367fb",
-      "task": "F-257",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "6f8fe5d8932c0199b1308a4c5d921c54d7f54ab583db585255c6c4f0fa870af8",
+      "task": "F-245",
       "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:35:43+00:00",
-      "hash": "d44dd27279075e5b7fd638d7f28c7aee5959511b2bc060c105c9e1828e294fc5",
-      "task": "F-257",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "62c8b657d598ed9b0f6ca46cb849540ce5b2d4cec3ca3bfc9a37191bc0ce886e",
+      "task": "F-245",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:35:43+00:00",
-      "hash": "ab385e56a90debf35c3a7d5c98950c552588cdc68220c35ea784e1da08d7bf22",
-      "task": "F-257",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "f7e5519237cb264de970b840f8e0fd4eeef36b2dccc29765b4b13b65d659fe05",
+      "task": "F-245",
       "token": null
     },
     "docs/NEXT.md": {
@@ -1472,10 +1393,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:35:43+00:00",
-      "hash": "354cf15f4e4a57bf3e02d44be16b242c5ce9696646e64c71a3a041b7216a4d9e",
-      "task": "F-257",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "8336f88b53a4589b42dc72232c5d44e712776af8bff8919fbf63ad5a7ebcb74a",
+      "task": "F-245",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -1593,11 +1514,11 @@
       "task": "6.2"
     },
     "systems/cycle/cycle_modifier_service.gd": {
-      "agent": "bram1",
-      "at": "2026-08-19T22:14:05+00:00",
-      "hash": "99615c90a6a37f4ba4a48883c3a76cf15350af8ee9e4f8b094d45cffa18147ae",
-      "task": "F-243",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "7f2e8d70b6cb77a7e955db39d925b617fc65d7c2d62bee53d9d074ccb51a3a8a",
+      "task": "F-245",
+      "token": null
     },
     "systems/cycle/cycle_modifier_service.gd.uid": {
       "agent": "lm",
@@ -1669,10 +1590,10 @@
       "task": "5.5"
     },
     "systems/enemies/enemy.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T17:59:43+00:00",
-      "hash": "3e9ee21fb945b6bfc7fc6aa19efe629697b872814775487163ee6876afbed3f6",
-      "task": "F-240",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "f844cd4219e5298aa4c3ff02648d57cc42d019666ba38b88aed8b484fd9e328c",
+      "task": "F-245",
       "token": null
     },
     "systems/enemies/enemy_def.gd": {
@@ -1683,10 +1604,11 @@
       "token": null
     },
     "systems/environment/day_night.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T22:57:40+00:00",
-      "hash": "67354501b62ca8175eb38d0ef823603e12c60c6229aeaf680c9e085fb5842761",
-      "task": "3.16"
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "ce7fe1109370d2ad3b1db8634a643be8ef414d060ca0bc0b2b56ebba67c67751",
+      "task": "F-245",
+      "token": null
     },
     "systems/extraction/extraction_ship.gd": {
       "agent": "bram1",
@@ -1696,10 +1618,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "systems/harvesting/harvestable.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T15:24:28+00:00",
-      "hash": "a1fc5d065b74ff17469e55a680c1646c9a9b26d4bb036d23b6f433bf67378e27",
-      "task": "F-231",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "651c0d28405b52d4b9bc71a1f104e839026dcabf5ad7d2f53042f3f91a17847b",
+      "task": "F-245",
       "token": null
     },
     "systems/health/downed_state.gd": {
@@ -1722,10 +1644,10 @@
       "task": "F-175"
     },
     "systems/loot/chest.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
-      "hash": "e6d290f323c961cd93b311d650276a0c2c12bed45d51ace9ea6d87bed82622c8",
-      "task": "F-243",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "b9a4e17df4dee0ab932e5c2df09abfd715c15cc5dec499a855f67151075d520d",
+      "task": "F-245",
       "token": null
     },
     "systems/loot/loot_table_def.gd": {
@@ -1749,18 +1671,18 @@
       "token": null
     },
     "systems/waves/wave_spawner.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T14:45:15+00:00",
-      "hash": "061f6a7cf985b9bf55b45c691bd2dfce593c14a0fe4a815f3a52175f3b9bfa59",
-      "task": "F-226",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "87cd10fd5d716127be661befa982f0a80058beeef5abe1c4608bbd54cc45cfdc",
+      "task": "F-245",
       "token": null
     },
     "systems/wellspring/wellspring.gd": {
-      "agent": "bram1",
-      "at": "2026-08-19T22:14:05+00:00",
-      "hash": "a92832f73be6808dbb0b117baa6b679cde5efc671cc97dbae6962fe960c3bf67",
-      "task": "F-243",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "18b2c3e93794ebfcd39479dbc3fcbdb6151c99a9ca474fefd18d383d8e155950",
+      "task": "F-245",
+      "token": null
     },
     "tools/_debug_door_swing.gd": {
       "agent": "lm",
@@ -2202,6 +2124,13 @@
       "at": "2026-08-19T01:57:43+00:00",
       "hash": "a44d807d6bd6e43c558c47f54b2afc9256a750eba1e0e83f0190c9dcb10611b8",
       "task": "6.2"
+    },
+    "tools/cycle_modifier_effects_check.gd": {
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "7b2af3a61ab36a892e08907c0ccb74f55aa7da6e15ef87cdc1f2f133585f233e",
+      "task": "F-245",
+      "token": null
     },
     "tools/cycle_modifier_seed_check.gd": {
       "agent": "lm",
@@ -3114,10 +3043,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "world/mire/mire_grid.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
-      "hash": "d1e1db6447588f0d8da4730f512d892b609421090ddcb4e7425445aa7047f5ba",
-      "task": "F-243",
+      "agent": "lm2",
+      "at": "2026-08-19T22:42:54+00:00",
+      "hash": "30d31e2fee7f3d0e616757a1eafb487716633bc42087f1e596fd9a32c7afa63d",
+      "task": "F-245",
       "token": null
     },
     "world/mire/mire_grid_sim.gd": {
@@ -6707,9 +6636,11 @@
       "title": "Review F-244 @ 039c5da \u2014 review and fix what you find"
     },
     "F-245": {
+      "done_at": "2026-08-19T22:42:54+00:00",
+      "done_by": "lm2",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "The whole Cycle Modifier feature is inert: seven modifiers, a weighted deck, and not one line of game code asks whether a modifier is active"
     },
@@ -6870,6 +6801,20 @@
       "status": "todo",
       "tier": "F",
       "title": "`Boss._tick_move_lunge()` duplicates `Enemy._tick_lunge()`'s logic instead of calling it, because the inherited method reads its speed off a def field rather than taking one as a parameter"
+    },
+    "F-265": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A concurrent lane's `agent ship` swept F-257's docs/SPECS.md and docs/FINDINGS.md edits into its own commit while lm3 still held claims on both"
+    },
+    "F-266": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "cmd_claim's load-check-save on state.json has no file lock, so two lanes can both pass the conflict check and both believe they hold the same claim"
     }
   },
   "version": 1

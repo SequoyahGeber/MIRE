@@ -50,6 +50,13 @@ var _defs: Dictionary = {}
 ## Host's own authoritative draw order. A client never writes this — it reads the stack back through
 ## `active_modifier_ids()` -> `_replicated_active_ids()` instead.
 var _active_ids: Array[StringName] = []
+## F-245: `drought`'s own text is the one modifier here whose effect is not simply "as long as it's
+## drawn" — content/cycle_modifiers/drought.tres reads "yield half until the NEXT Wellspring cap".
+## `has_modifier()` still reflects the permanent draw stack (DESIGN.md §5.1: a modifier never leaves
+## it), so this is tracked separately: reset to false the instant `drought` is drawn
+## (`host_draw_modifier()`), flipped true by the next `wellspring_capped` this file sees regardless of
+## which Wellspring capped. `drought_active()` below is the one place that combines the two.
+var _drought_cleared: bool = false
 var _rng := RandomNumberGenerator.new()
 var _transport_node: Node
 
@@ -57,11 +64,39 @@ var _transport_node: Node
 func _ready() -> void:
 	_load_defs()
 	EVENT_BUS.subscribe_cycle_advanced(_on_cycle_advanced)
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
+	EVENT_BUS.subscribe_wellspring_capped(_on_wellspring_capped)
 	_register_commands()
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_cycle_advanced(_on_cycle_advanced)
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
+	EVENT_BUS.unsubscribe_wellspring_capped(_on_wellspring_capped)
+
+
+func _on_wellspring_capped(_wellspring_name: StringName, _world_position: Vector3) -> void:
+	_drought_cleared = true
 
 
 func _on_cycle_advanced(cycle: int) -> void:
 	host_draw_modifier(cycle)
+
+
+## F-243: empties the stacked deck for a new run and overwrites `WorldDeltaLog`'s `COUNT_KEY` to 0 so
+## a client re-reading `active_modifier_ids()` before the next draw sees an empty stack rather than
+## last run's. Host-only (`_owns_modifiers()`), run BEFORE `CycleService.host_restart_run()`'s own
+## `_announce()` re-fires `cycle_advanced(1)` — `EVENT_BUS.emit_run_restarted()` reaches every
+## in-process subscriber synchronously, so this always clears before that later `cycle_advanced(1)`
+## triggers `_on_cycle_advanced()`'s own draw check against the now-empty deck.
+func _on_run_restarted() -> void:
+	if not _owns_modifiers():
+		return
+	_active_ids.clear()
+	_drought_cleared = false
+	var world_delta_log: Node = get_node_or_null(^"/root/WorldDeltaLog")
+	if world_delta_log != null:
+		world_delta_log.call("host_record", GLOBAL_CHUNK, KIND, COUNT_KEY, 0)
 
 
 ## The stacked modifiers drawn so far this run, in draw order, readable on any peer — host's own
@@ -75,6 +110,12 @@ func active_modifier_ids() -> Array[StringName]:
 
 func has_modifier(id: StringName) -> bool:
 	return active_modifier_ids().has(id)
+
+
+## F-245: `drought`'s own effect window — see `_drought_cleared`'s header note. `Harvestable` reads
+## this instead of `has_modifier(&"drought")` directly.
+func drought_active() -> bool:
+	return has_modifier(&"drought") and not _drought_cleared
 
 
 func def_for(id: StringName) -> Resource:
@@ -98,6 +139,8 @@ func host_draw_modifier(cycle: int) -> StringName:
 	var chosen: Resource = _weighted_pick(eligible, cycle)
 	var chosen_id: StringName = StringName(chosen.get(&"id"))
 	_active_ids.append(chosen_id)
+	if chosen_id == &"drought":
+		_drought_cleared = false
 	_announce(chosen, cycle)
 	return chosen_id
 

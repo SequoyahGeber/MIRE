@@ -4660,3 +4660,31 @@ agreement assertion stays a true and useful claim on both sides of the swap.
 a vendored third-party file, or a per-developer local override. Then the script's job becomes
 "write every home it owns and *verify* the rest", and the verification in `depot_wiring_check.sh`
 §4 becomes the primary mechanism rather than the backstop.
+
+### D-156 · 2026-08-19 · F-245's Cycle Modifier consumers: `tithe` exempts solo, `the_hunt` reuses `tusker` rather than authoring an elite
+
+Two scoping calls made while wiring the seven Cycle Modifiers' real effects (F-245), each affecting
+how a future modifier or content task should read these two files.
+
+**`tithe` (`Wellspring._start_channel()`) raises `required_players` by one only when the session is
+already co-op, never for a lone player.** The `.tres` description says "a duo... has to physically
+regroup" — read literally as "always +1," a solo run (`required_players` starts at 1) would need 2
+players that do not exist, making every Wellspring permanently uncappable for the rest of that run.
+`tools/wellspring_recorruption_check.gd`'s own solo recapture test caught this: `agent baseline`
+showed 0 failures at HEAD and 3 once `tithe`'s naive (unconditional) version could be drawn mid-run
+by that check's own Cycle advances. Solo is common in this project (`SOLO_DURATION_SEC` exists
+specifically for it) and DESIGN.md never floats "some modifiers make solo unwinnable" as intended
+chaos the way it does for, say, `the_hunt`'s late `min_cycle`. **Would change my mind:** a DESIGN.md
+update that explicitly wants a modifier able to hard-block solo progress — today none does, and
+`tithe`'s own prose is about raising an EXISTING co-op requirement, not inventing one from zero.
+
+**`the_hunt`'s "roaming elite" is `tusker` (this project's single toughest `EnemyDef`: 45 max_health
+against 7–9 for `strider`/`broodcaller`, the only two-digit `content/enemies/*.tres`), not a new
+hand-authored enemy.** AGENTS.md's "never bulk-generate content data" rule and F-245's own "framework,
+not content" scope both argue against inventing an 8.6.4 wave in `content/enemies/` just to give one
+Cycle Modifier a bespoke elite — the def only needs to be tougher than the ambient population and
+already exists. Tracking ("beelines for whoever holds the most powerups") comes from
+`WaveSpawner`'s own retarget ticker calling the new `Enemy.host_force_target()`, not from any new
+`EnemyDef` field — `tusker`'s stats are otherwise untouched. **Would change my mind:** a future task
+that wants the elite to visually read as distinct from a normal Tusker encounter (a tint, a VFX, a
+name) — that is presentation, not a reason to relitigate which `EnemyDef` backs it.

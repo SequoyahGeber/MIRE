@@ -236,14 +236,25 @@ func _deplete(instigator_peer_id: int) -> void:
 	active = false
 	visual_state = definition.active_state_scenes.size()
 	_respawn_remaining = definition.respawn_seconds
-	depleted.emit(instigator_peer_id, definition.yield_item_id, definition.yield_amount)
+	var amount: int = _yield_amount()
+	depleted.emit(instigator_peer_id, definition.yield_item_id, amount)
 	EVENT_BUS.emit_harvest_yielded(
 		definition.id,
 		instigator_peer_id,
 		definition.yield_item_id,
-		definition.yield_amount,
+		amount,
 		global_position
 	)
+
+
+## Cycle Modifier `drought` (F-245, content/cycle_modifiers/drought.tres): halves the yield while its
+## effect window is open — `CycleModifierService.drought_active()` is the one place that tracks when
+## that window closes (the next Wellspring cap), not just whether `drought` was ever drawn.
+func _yield_amount() -> int:
+	var modifiers: Node = get_node_or_null(^"/root/CycleModifierService")
+	if modifiers != null and bool(modifiers.call(&"drought_active")):
+		return definition.yield_amount / 2
+	return definition.yield_amount
 
 
 func _physics_process(delta: float) -> void:

@@ -32,6 +32,8 @@ extends Node
 ## losing a run's powerups the same way would be worse, because unlike an inventory they cannot be
 ## re-gathered.
 
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
+
 const LOG_CHANNEL: StringName = &"powerup"
 
 ## DESIGN.md §4.4: "Holding 3+ of a tag triggers a Resonance", 6+ a Greater Resonance. These are the
@@ -82,7 +84,12 @@ func _ready() -> void:
 	if session != null and session.has_signal(&"run_player_rebound"):
 		session.connect(&"run_player_rebound", _on_run_player_rebound)
 		session.connect(&"run_player_expired", _on_run_player_expired)
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 	_register_commands()
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
 
 
 
@@ -144,6 +151,19 @@ func host_clear(peer_id: int) -> void:
 	_commit(peer_id)
 
 
+## F-243: every present peer's stacks, for a fresh run. Reuses `host_clear()` per peer rather than
+## wiping `_stacks` directly, so each peer still gets its own replicated snapshot/broadcast.
+func host_clear_all() -> void:
+	if not _owns_mutation():
+		return
+	for peer_id: int in _stacks.keys().duplicate():
+		host_clear(peer_id)
+
+
+func _on_run_restarted() -> void:
+	host_clear_all()
+
+
 # ── The query seam ───────────────────────────────────────────────────────────────────────────────
 
 
@@ -183,6 +203,18 @@ func local_stat(stat_name: StringName, base: float) -> float:
 
 func stacks_of(peer_id: int, powerup_id: StringName) -> int:
 	return int(_held_for(peer_id).get(powerup_id, 0))
+
+
+## Total stacks across every powerup this peer holds, regardless of family. Cycle Modifier
+## `the_hunt`'s own leaderboard (F-245, content/cycle_modifiers/the_hunt.tres): `WaveSpawner` sums
+## this per live player to pick who its roaming elite tracks. Follows the same host-answers-for-
+## anybody / client-answers-for-itself split every other query here reads off `_held_for()`.
+func total_stacks(peer_id: int) -> int:
+	var held: Dictionary = _held_for(peer_id)
+	var total: int = 0
+	for powerup_id: StringName in held:
+		total += int(held[powerup_id])
+	return total
 
 
 ## Total stacks across every powerup carrying this tag. This is what a Resonance counts (§4.4), and

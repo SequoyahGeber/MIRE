@@ -6,7 +6,7 @@
 script = ExtResource("1_drought")
 id = &"drought"
 display_name = "Drought"
-description = "Resource nodes yield half until the next Wellspring cap. DESIGN.md §5.1's own example: the safe routine of chopping and mining stops paying, so a run that has been coasting on ambient harvesting has to go finish a Wellspring instead. No effect is wired to any gameplay system yet (framework scope, D-103's pattern) — the future consumer is Harvestable checking CycleModifierService.has_modifier(&\"drought\") against its own yield_amount, cleared by the same Wellspring.capped setter Salvage already subscribes to (ARCHITECTURE.md §2.2's Wellspring row)."
+description = "Resource nodes yield half until the next Wellspring cap. DESIGN.md §5.1's own example: the safe routine of chopping and mining stops paying, so a run that has been coasting on ambient harvesting has to go finish a Wellspring instead. F-245: Harvestable checks CycleModifierService.has_modifier(&\"drought\") against its own yield_amount, and CycleModifierService clears the effect off EventBus.wellspring_capped — the same event Salvage already subscribes to (ARCHITECTURE.md §2.2's Wellspring row)."
 min_cycle = 3
 base_weight = 1.0
 weight_growth_per_cycle = 0.0

@@ -411,61 +411,6 @@ audit doc carries the full trace.
 
 ---
 
-### F-245 · The whole Cycle Modifier feature is inert: seven modifiers, a weighted deck, and not one line of game code asks whether a modifier is active
-
-**Area:** gameplay · **Severity:** high · **Found:** 2026-08-19 by nettle12
-
-6.2 built the framework — deck, draw, stacking, Cycle weighting, a network snapshot so late joiners
-see the same draw. 6.3 has now authored seven modifiers into it. Both tasks are done and both did
-their jobs well; the deck genuinely draws a different card each Cycle.
-
-**Nothing listens.** `CycleModifierService.has_modifier(id)` is defined at
-`systems/cycle/cycle_modifier_service.gd:76` and is called from **nowhere** in `autoload/`,
-`systems/`, `core/`, `world/`, `ui/` or `entities/`. The alternative the service's own doc comment
-offers — subscribing to `EventBus.emit_cycle_modifier_drawn()` — has no subscriber either. Outside
-`systems/cycle/` and `tools/`, the only references to cycle modifiers anywhere are `registry.gd`
-loading the `.tres` files into a dictionary and the string `&"cycle_modifier"` in
-`UnlockDef.KNOWN_CATEGORIES`. The service emits into the void.
-
-Every authored modifier says so itself, in its own description:
-
-- `drought` — "Resource nodes yield half until the next Wellspring cap. **No effect is wired to any
-  gameplay system yet** (framework scope, D-103's pattern) — the future consumer is Harvestable
-  checking `has_modifier(&"drought")` against its own `yield_amount`."
-- `rooted` — "the Mire no longer recedes anywhere a Ward stands … **No effect is wired** … the future
-  consumer is MireGrid."
-- `the_hunt` — "a roaming elite … beelines for whichever player is carrying the most powerups …
-  **No effect is wired** … the future consumer is WaveSpawner/EnemyWorld."
-- `long_night`, the original from 6.2, is the same: "**No effect is wired** … (framework scope,
-  D-100's pattern)."
-
-So drawing **Drought** does not reduce a single harvest. Drawing **The Hunt** spawns nothing. The
-Cycle escalates and the game does not change.
-
-**This is not a defect in 6.2, 6.3, or any authored file, and not the lanes' error.** Each modifier
-is well-made: real design intent, `min_cycle` gating, tags, weight growth, and an honest statement of
-what is missing. The gap is that **no task owns the consumer side.** 6.2's scope was the framework,
-6.3's was the content, and D-100 then D-103 ratified "no effect wired yet, framework scope" as an
-accepted pattern — which made a system with no consumers feel settled rather than unfinished, twice.
-
-**It is now visible to the player, which raises the cost.** 6.8's run summary (shipped today) lists
-the modifiers drawn on the defeat screen. A player is now told "Drought" was in play for a run in
-which Drought did nothing.
-
-**The same shape has bitten twice before**, and that is the part worth keeping: F-140 (task 3.5
-shipped `loot_luck` and `chest_price` as stats with no reader, so three powerups silently lied) and
-F-236 (frameworks shipped with one content file each). Three instances of *one half of a feature
-shipping green because the half that would prove it does not exist.* A check that loads seven
-modifiers and asserts the deck draws them passes perfectly while the feature does nothing.
-
-**What would close this** is a consumer per modifier — each one names its own, so the work is
-enumerable rather than open-ended: Harvestable for `drought`, MireGrid for `rooted`,
-WaveSpawner/EnemyWorld for `the_hunt`, DayNight for `long_night`, and the equivalents for `tithe`,
-`static` and `bloom`. Worth considering alongside it: a check that fails when a shipped
-`CycleModifierDef` has no reader, so the fourth instance of this pattern cannot ship green.
-
----
-
 ### F-254 · CycleModifierService._announce() has the exact host-only EventBus.emit_cycle_modifier_drawn() gate F-250 just fixed for CycleService — same shape, unfixed sibling
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
@@ -867,6 +812,93 @@ file/area and would be a natural place to add real locking alongside it.
 ---
 
 ## Resolved
+
+### F-245 · The whole Cycle Modifier feature is inert: seven modifiers, a weighted deck, and not one line of game code asks whether a modifier is active — **fixed**
+
+**Area:** gameplay · **Severity:** high · **Found:** 2026-08-19 by nettle12
+
+6.2 built the framework — deck, draw, stacking, Cycle weighting, a network snapshot so late joiners
+see the same draw. 6.3 has now authored seven modifiers into it. Both tasks are done and both did
+their jobs well; the deck genuinely draws a different card each Cycle.
+
+**Nothing listens.** `CycleModifierService.has_modifier(id)` is defined at
+`systems/cycle/cycle_modifier_service.gd:76` and is called from **nowhere** in `autoload/`,
+`systems/`, `core/`, `world/`, `ui/` or `entities/`. The alternative the service's own doc comment
+offers — subscribing to `EventBus.emit_cycle_modifier_drawn()` — has no subscriber either. Outside
+`systems/cycle/` and `tools/`, the only references to cycle modifiers anywhere are `registry.gd`
+loading the `.tres` files into a dictionary and the string `&"cycle_modifier"` in
+`UnlockDef.KNOWN_CATEGORIES`. The service emits into the void.
+
+Every authored modifier says so itself, in its own description:
+
+- `drought` — "Resource nodes yield half until the next Wellspring cap. **No effect is wired to any
+  gameplay system yet** (framework scope, D-103's pattern) — the future consumer is Harvestable
+  checking `has_modifier(&"drought")` against its own `yield_amount`."
+- `rooted` — "the Mire no longer recedes anywhere a Ward stands … **No effect is wired** … the future
+  consumer is MireGrid."
+- `the_hunt` — "a roaming elite … beelines for whichever player is carrying the most powerups …
+  **No effect is wired** … the future consumer is WaveSpawner/EnemyWorld."
+- `long_night`, the original from 6.2, is the same: "**No effect is wired** … (framework scope,
+  D-100's pattern)."
+
+So drawing **Drought** does not reduce a single harvest. Drawing **The Hunt** spawns nothing. The
+Cycle escalates and the game does not change.
+
+**This is not a defect in 6.2, 6.3, or any authored file, and not the lanes' error.** Each modifier
+is well-made: real design intent, `min_cycle` gating, tags, weight growth, and an honest statement of
+what is missing. The gap is that **no task owns the consumer side.** 6.2's scope was the framework,
+6.3's was the content, and D-100 then D-103 ratified "no effect wired yet, framework scope" as an
+accepted pattern — which made a system with no consumers feel settled rather than unfinished, twice.
+
+**It is now visible to the player, which raises the cost.** 6.8's run summary (shipped today) lists
+the modifiers drawn on the defeat screen. A player is now told "Drought" was in play for a run in
+which Drought did nothing.
+
+**The same shape has bitten twice before**, and that is the part worth keeping: F-140 (task 3.5
+shipped `loot_luck` and `chest_price` as stats with no reader, so three powerups silently lied) and
+F-236 (frameworks shipped with one content file each). Three instances of *one half of a feature
+shipping green because the half that would prove it does not exist.* A check that loads seven
+modifiers and asserts the deck draws them passes perfectly while the feature does nothing.
+
+**What would close this** is a consumer per modifier — each one names its own, so the work is
+enumerable rather than open-ended: Harvestable for `drought`, MireGrid for `rooted`,
+WaveSpawner/EnemyWorld for `the_hunt`, DayNight for `long_night`, and the equivalents for `tithe`,
+`static` and `bloom`. Worth considering alongside it: a check that fails when a shipped
+`CycleModifierDef` has no reader, so the fourth instance of this pattern cannot ship green.
+
+---
+
+**Resolved 2026-08-19 by lm2.** **fixed** — all seven Cycle Modifiers now have a real gameplay consumer, one per modifier, each
+against the exact seam its own `.tres` description already named:
+
+- `drought` -> `Harvestable._yield_amount()` halves the yield; `CycleModifierService.drought_active()`
+  tracks the "until the next Wellspring cap" window separately from the permanent draw stack.
+- `long_night` -> `DayNight._advance_host()` halves the time-advance rate while in the night phase.
+- `tithe` -> `Wellspring._start_channel()` raises `required_players` by one for co-op only (solo
+  exempt — see D-156, a naive unconditional +1 bricked solo Wellspring capping).
+- `static` -> `Chest._unlock_check()`/`_price_for()` refuses every POWERUP roll and halves `cost_coins`.
+- `rooted` -> `MireGrid._tick()` passes an empty ward array regardless of the real provider, so a
+  Ward's spread resistance stops applying.
+- `bloom` -> `Enemy._enter_death()` spawns two reduced-health children via `EnemyWorld.host_spawn()`.
+- `the_hunt` -> `WaveSpawner` spawns one `tusker` (reused content, D-156) per Cycle and retargets it
+  every few seconds to whoever leads `PowerupService.total_stacks()` (new), via the new
+  `Enemy.host_force_target()`.
+
+Every modifier's `.tres` description was rewritten to drop the stale "no effect is wired" text.
+
+**Verified:** `agent godot --script tools/cycle_modifier_check.gd` (unchanged, `failures=0`) and
+`tools/cycle_modifier_seed_check.gd` (unaffected). New `tools/cycle_modifier_effects_check.gd` forces
+each modifier active and proves its real effect end to end — `CYCLE_MODIFIER_EFFECTS_CHECK failures=0`,
+30 assertions. Full regression sweep across every touched system's checks (harvestable, day_night,
+wellspring incl. recorruption/hud, chest incl. seed/placement, mire_grid, mire_interaction, powerup,
+enemy incl. ai, bog_crawler, wave_spawner incl. cycle_net) all `failures=0`.
+
+Full account, including the tithe/solo bug caught and fixed mid-task and a GDScript-lambda/EventBus
+crash trap found while writing the new check: `docs/SPECS.md`'s F-245 block. Design calls: D-156.
+API surface for the next task: `docs/DELEGATION.md` *Current state*.
+
+Left out of scope: the roadmap's remaining un-authored Cycle Modifiers and F-236's sibling gap in the
+unlock tree / ranged rack.
 
 ### F-257 · Real App ID must be written to two independent places; task 8.11's `apply_ids.sh` only reaches one of them — **fixed**
 

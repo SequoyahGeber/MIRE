@@ -75,6 +75,37 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-245 resolved: all seven Cycle Modifiers now have a real gameplay consumer — `has_modifier()`/`drought_active()` finally get called (lm2)
+
+**The API the next task builds on:**
+
+- `CycleModifierService.drought_active() -> bool` — `has_modifier(&"drought")` narrowed to the
+  window `drought.tres` actually promises ("yield half until the next Wellspring cap"). Any future
+  modifier whose effect is not simply "as long as it's drawn" should follow this shape (a
+  `_<id>_cleared`-style private flag, reset at draw time in `host_draw_modifier()`, flipped by
+  whichever `EventBus` signal ends the window) rather than inventing a second one.
+- `PowerupService.total_stacks(peer_id: int) -> int` — every stack a peer holds, summed across
+  families. Same host-answers-for-anybody/client-answers-for-itself split every other query on that
+  file already follows (`_held_for()`).
+- `Enemy.host_force_target(peer_id: int) -> void` — unlike `alert()`, overrides a target this enemy
+  already holds. Built for `the_hunt`'s tracking elite; any future "this enemy ignores normal
+  aggro/perception and beelines for X" effect should call this rather than poking `_target_peer`
+  directly.
+- `Enemy.mark_as_bloom_child() -> void` — the cross-instance setter for `_bloom_child`, the guard that
+  stops a `bloom`-spawned child from splitting again. Same shape as `alert()`: a public method, not a
+  poked private field, even though GDScript would allow the latter.
+- `tools/cycle_modifier_effects_check.gd` (new) — forces one modifier active at a time by writing
+  `CycleModifierService._active_ids` directly and exercises its real effect end to end. A future
+  8th modifier's own effect-wiring task should add a subtest here, not a new file.
+
+**Design calls made while wiring this, recorded as D-156** so they are not relitigated: `tithe`
+exempts solo sessions from its extra `required_players` (co-op only); `the_hunt`'s roaming elite
+reuses `tusker` rather than authoring new content.
+
+**Left for a later task, not this one's scope:** the roadmap's remaining 14–24 un-authored Cycle
+Modifiers (6.3's own close-out note, still true) and F-236's sibling gap in the unlock tree and
+ranged weapon rack — F-245 only closed the wiring hole in the seven that already existed.
+
 ### 2026-08-19 — F-257 resolved: `tools/steam/apply_ids.sh` now writes every home of the Steam App ID, and a partial swap is refused rather than performed (lm3)
 
 **The API the next task builds on — task 8.2, this is your whole repo-side swap:**

@@ -6462,3 +6462,15 @@ All five hardening pieces shipped and individually verified. Self-refresh: chain
 Files: `.agent/bin/agent`
 
 Commit at time of writing: `8e4e3b2`
+
+---
+
+### DONE · F-245 · lm2 · 2026-08-19T22:42:54+00:00
+
+**The whole Cycle Modifier feature is inert: seven modifiers, a weighted deck, and not one line of game code asks whether a modifier is active**
+
+All seven Cycle Modifiers now have a real gameplay consumer (drought->Harvestable, long_night->DayNight, tithe->Wellspring, static->Chest, rooted->MireGrid, bloom->Enemy split, the_hunt->WaveSpawner tracking elite). New tools/cycle_modifier_effects_check.gd forces each modifier active and proves its effect: CYCLE_MODIFIER_EFFECTS_CHECK failures=0 (30 assertions). cycle_modifier_check.gd/cycle_modifier_seed_check.gd unaffected (failures=0). Full regression sweep across every touched system green. Docs: SPECS.md F-245 block, DECISIONS.md D-156, DELEGATION.md Current state, FINDINGS.md resolved.
+
+Files: `systems/cycle/cycle_modifier_service.gd`, `systems/environment/day_night.gd`, `systems/wellspring/wellspring.gd`, `systems/loot/chest.gd`, `systems/harvesting/harvestable.gd`, `systems/enemies/enemy.gd`, `systems/waves/wave_spawner.gd`, `autoload/powerup_service.gd`, `world/mire/mire_grid.gd`, `tools/cycle_modifier_effects_check.gd`, `content/cycle_modifiers/bloom.tres`, `content/cycle_modifiers/drought.tres`, `content/cycle_modifiers/long_night.tres`, `content/cycle_modifiers/rooted.tres`, `content/cycle_modifiers/static.tres`, `content/cycle_modifiers/the_hunt.tres`, `content/cycle_modifiers/tithe.tres`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/SPECS.md`
+
+Commit at time of writing: `405f1fc`

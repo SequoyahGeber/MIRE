@@ -18,6 +18,7 @@ extends Node3D
 ## F-016: brand-new class_names this task introduces are not bare-resolvable in a fresh headless
 ## clone (no editor scan has rebuilt .godot/global_script_class_cache.cfg yet) — preload them.
 const LOOT_TABLE_DEF := preload("res://systems/loot/loot_table_def.gd")
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
 const SYNC_NODE_NAME: StringName = &"ChestSync"
 const VISUAL_NODE_NAME: StringName = &"ChestVisual"
@@ -78,6 +79,26 @@ func _ready() -> void:
 	_configuration_valid = _validate_configuration()
 	_build_synchronizer()
 	_refresh_visual()
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
+
+
+## F-243: re-closes this chest for a new run — same island, same Chest node (docs/DECISIONS.md's
+## F-243 entry). Host-only; a client's own copy no-ops and picks up the reset through the normal
+## replicated-property sync `opened` already uses. `_rng`'s sequence is deliberately left running
+## rather than reseeded — a restart's reproducibility is out of scope (see CycleService's F-243 note);
+## simplicity wins over a second reason to touch the seed.
+func host_reset_for_new_run() -> void:
+	if not _owns_world_mutation():
+		return
+	opened = false
+
+
+func _on_run_restarted() -> void:
+	host_reset_for_new_run()
 
 
 ## Returns a local request id immediately; the answer always arrives through open_confirmed.
@@ -185,15 +206,21 @@ func _accept_open_request(peer_id: int, request_id: int) -> void:
 
 
 ## The opener's own price, after `chest_price` — a stat three shipped powerups already grant and
-## nothing read until now (F-140). Never below zero, and never below 1 while the chest costs
-## anything at all: a discount that reaches "free" would make a priced tier unpriced.
+## nothing read until now (F-140) — and after Cycle Modifier `static`'s own halving (F-245,
+## content/cycle_modifiers/static.tres: "every chest's coin cost is halved"). Never below zero, and
+## never below 1 while the chest costs anything at all: a discount that reaches "free" would make a
+## priced tier unpriced.
 func _price_for(peer_id: int) -> int:
 	if cost_coins <= 0:
 		return 0
 	var powerups: Node = get_node_or_null(^"/root/PowerupService")
-	if powerups == null:
-		return cost_coins
-	return maxi(1, int(roundf(float(powerups.call("stat", peer_id, &"chest_price", float(cost_coins))))))
+	var price: float = (
+		float(powerups.call("stat", peer_id, &"chest_price", float(cost_coins)))
+		if powerups != null else float(cost_coins)
+	)
+	if _static_active():
+		price *= 0.5
+	return maxi(1, int(roundf(price)))
 
 
 ## Read against a base of 1.0, not 0.0. Every authored `loot_luck` modifier is multiplicative
@@ -214,11 +241,24 @@ func _luck_for(peer_id: int) -> float:
 ## process (either locally, or via `net_request_open`'s `_transport_is_host()` guard above) — so
 ## `/root/UnlockService` resolved here is always the host's own save, never the opening peer's,
 ## exactly the shape D-111 picked over replicating purchases.
+##
+## Cycle Modifier `static` (F-245, content/cycle_modifiers/static.tres: "no chest rolls a powerup
+## entry this Cycle") reuses this exact gate rather than adding a second one to `LootTableDef.roll()`
+## — `roll()` already treats a POWERUP entry this Callable refuses as zero-weight, the identical
+## mechanism D-111 built for the unlock tree, so a Callable that refuses everything while `static` is
+## active needs no change to that file at all.
 func _unlock_check() -> Callable:
+	if _static_active():
+		return func(_content_id: StringName) -> bool: return false
 	var unlock_service: Node = get_node_or_null(^"/root/UnlockService")
 	if unlock_service == null or not unlock_service.has_method("is_content_unlocked"):
 		return Callable()
 	return Callable(unlock_service, "is_content_unlocked")
+
+
+func _static_active() -> bool:
+	var modifiers: Node = get_node_or_null(^"/root/CycleModifierService")
+	return modifiers != null and bool(modifiers.call(&"has_modifier", &"static"))
 
 
 func _display_name_for(item_id: StringName) -> String:

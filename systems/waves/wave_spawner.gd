@@ -55,6 +55,17 @@ const CORRUPTED_SPAWN_CAP_PROBABILITY: float = 0.75
 const CYCLE_COUNT_STEP_PER_CYCLE: float = 0.15
 const CYCLE_COUNT_CAP_MULTIPLIER: float = 2.5
 
+## Cycle Modifier `the_hunt` (F-245, content/cycle_modifiers/the_hunt.tres: "a roaming elite ...
+## beelines for whichever player is carrying the most powerups"). Reuses `tusker` — this project's
+## single toughest existing `EnemyDef` (45 HP vs. 7-9 for everything else) — as the elite rather than
+## authoring new content for the role; AGENTS.md's "framework, not content" rule and D-152 (see
+## docs/DECISIONS.md) forbid a new hand-authored enemy for a single Cycle Modifier's sake.
+const HUNT_ELITE_ENEMY_ID: StringName = &"tusker"
+## How often the elite's target is re-checked against the current leaderboard while it lives — often
+## enough that a mid-Cycle chest opening actually redirects it, rare enough this is not a per-tick
+## group scan across every connected peer.
+const HUNT_RETARGET_INTERVAL_SEC: float = 2.0
+
 var _rng := RandomNumberGenerator.new()
 var _night_active: bool = false
 var _ambient_was_enabled: bool = true
@@ -68,6 +79,11 @@ var _unlocked_pool: Array[StringName] = []
 ## advanced yet" default `CycleService._current_cycle` itself uses — so `cycle_count_multiplier()`
 ## is exactly 1.0 before the first advance and every pre-existing wave-size assertion is unchanged.
 var _current_cycle: int = 1
+## `the_hunt`'s live tracking elite, or null between draws/before one is drawn. Host-only; a client
+## never reaches `_maybe_spawn_hunt_elite()` (`_owns_wave_director()` guards it) or `_physics_process`'s
+## retarget branch below the same way.
+var _hunt_elite: Node3D
+var _hunt_retarget_elapsed: float = 0.0
 
 
 func _ready() -> void:
@@ -109,6 +125,67 @@ func _on_rule_changed(id: StringName, new_value: float) -> void:
 
 func _on_cycle_advanced(cycle: int) -> void:
 	_current_cycle = cycle
+	_maybe_spawn_hunt_elite()
+
+
+## Host-only, self-guarded like every other spawn path here. A Cycle where the level has no ambient
+## spawn point to start from spawns nothing, the same silent no-op `host_start_wave()` already accepts
+## for the identical reason.
+func _maybe_spawn_hunt_elite() -> void:
+	if not _owns_wave_director():
+		return
+	var modifiers: Node = get_node_or_null(^"/root/CycleModifierService")
+	if modifiers == null or not bool(modifiers.call(&"has_modifier", &"the_hunt")):
+		return
+	var world: Node = get_node_or_null(^"/root/EnemyWorld")
+	if world == null:
+		return
+	var points: Array[Vector3] = world.call(&"ambient_spawn_points")
+	if points.is_empty():
+		return
+	var origin: Vector3 = points[_rng.randi_range(0, points.size() - 1)]
+	var elite: Node3D = world.call(&"host_spawn", HUNT_ELITE_ENEMY_ID, origin) as Node3D
+	if elite == null:
+		return
+	_hunt_elite = elite
+	_hunt_retarget_elapsed = HUNT_RETARGET_INTERVAL_SEC
+	_retarget_hunt_elite()
+
+
+## Host-only. Re-checks the leaderboard every `HUNT_RETARGET_INTERVAL_SEC` while an elite is alive —
+## `_hunt_elite` going invalid (death, despawn, run restart) simply stops this without any cleanup
+## needed, the same "stale ref, no unsubscribe" shape `_mire_grid_node` above already uses.
+func _physics_process(delta: float) -> void:
+	if _hunt_elite == null or not is_instance_valid(_hunt_elite):
+		_hunt_elite = null
+		return
+	_hunt_retarget_elapsed += delta
+	if _hunt_retarget_elapsed < HUNT_RETARGET_INTERVAL_SEC:
+		return
+	_hunt_retarget_elapsed = 0.0
+	_retarget_hunt_elite()
+
+
+func _retarget_hunt_elite() -> void:
+	if _hunt_elite == null or not is_instance_valid(_hunt_elite):
+		return
+	var powerups: Node = get_node_or_null(^"/root/PowerupService")
+	if powerups == null:
+		return
+	var best_peer: int = 0
+	var best_total: int = -1
+	for node: Node in get_tree().get_nodes_in_group(&"players"):
+		var player := node as Node3D
+		if player == null:
+			continue
+		var node_name: String = String(player.name)
+		var peer_id: int = node_name.to_int() if node_name.is_valid_int() else NetConfig.HOST_PEER_ID
+		var total: int = int(powerups.call(&"total_stacks", peer_id))
+		if total > best_total:
+			best_total = total
+			best_peer = peer_id
+	if best_peer > 0 and _hunt_elite.has_method(&"host_force_target"):
+		_hunt_elite.call(&"host_force_target", best_peer)
 
 
 ## Readable on any peer — same naming convention as `CycleService.current_cycle()`. Task 5.9;

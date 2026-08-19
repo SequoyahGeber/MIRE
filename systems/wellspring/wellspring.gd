@@ -109,8 +109,10 @@ var recorruption_sec: float = 0.0:
 		_maybe_refresh_visual()
 ## Replicated. True once this Wellspring has fully re-corrupted at least once — the only way to tell
 ## "never capped" (`wellspring_uncapped.glb`) apart from "was capped, lost it"
-## (`wellspring_corrupted.glb`) once `capped` is back to false. Never reset; a recapture only clears
-## `capped`/`recorruption_sec`.
+## (`wellspring_corrupted.glb`) once `capped` is back to false. Never reset within a run; a recapture
+## only clears `capped`/`recorruption_sec`. F-243 is the one cross-run exception —
+## `host_reset_for_new_run()` clears it too, since a new run needs a Wellspring that reads as "never
+## capped", not one still carrying the last run's degradation history.
 var has_recorrupted: bool = false:
 	set(value):
 		if has_recorrupted == value:
@@ -138,10 +140,12 @@ func _ready() -> void:
 	_last_visual_mesh_path = _mesh_path_for_state()
 	set_process(false)
 	EVENT_BUS.subscribe_cycle_advanced(_on_cycle_advanced)
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 
 
 func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_cycle_advanced(_on_cycle_advanced)
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
 
 
 ## Client-facing: press interact while in range. Toggles start/cancel; a no-op once capped.
@@ -182,8 +186,16 @@ func _process_toggle(peer_id: int) -> void:
 func _start_channel() -> void:
 	channeling = true
 	progress_sec = 0.0
-	required_players = 1 if _session_player_total() <= 1 else 2
-	duration_sec = SOLO_DURATION_SEC if required_players == 1 else COOP_DURATION_SEC
+	var solo: bool = _session_player_total() <= 1
+	# Cycle Modifier `tithe` (F-245, content/cycle_modifiers/tithe.tres): one more player must be
+	# physically present than usual. Read once here, same "snapshotted at channel start" rule every
+	# other field on this line already follows — a draw mid-ritual does not retroactively change an
+	# attempt already running. Solo is exempt: the def's own text ("a DUO ... has to physically
+	# regroup") is about raising an existing co-op requirement, not about making a Wellspring
+	# uncappable alone — tools/wellspring_recorruption_check.gd's solo recapture caught exactly that
+	# reading (`required_players` 1 -> 2 with only one player ever in the scene) before this guard.
+	required_players = (1 if solo else 2) + (1 if (_has_modifier(&"tithe") and not solo) else 0)
+	duration_sec = SOLO_DURATION_SEC if solo else COOP_DURATION_SEC
 	set_process(true)
 	_spawn_defense_wave()
 
@@ -194,6 +206,30 @@ func _cancel_channel() -> void:
 	channeling = false
 	progress_sec = 0.0
 	set_process(false)
+
+
+## F-243: resets this Wellspring to its never-capped state for a new run — same island, same node
+## (docs/DECISIONS.md's F-243 entry). Host-only; a client's own copy no-ops and picks up the reset
+## through the normal replicated-property sync every other mutation here already uses. Going through
+## `capped`'s own setter (rather than a private backing field) means a Wellspring capped when the run
+## ended also fires `wellspring_recorrupted` here — accepted, not a bug: `MireGrid._on_wellspring_
+## recorrupted()` only ever decrements `_capped_wellsprings` (clamped at 0), and `MireGrid.host_reset()`
+## (also subscribed to `run_restarted`) sets that count to 0 directly regardless of which order the
+## two subscribers run in.
+func host_reset_for_new_run() -> void:
+	if not _owns_mutation():
+		return
+	channeling = false
+	progress_sec = 0.0
+	_recorruption_active = false
+	recorruption_sec = 0.0
+	has_recorrupted = false
+	capped = false
+	set_process(false)
+
+
+func _on_run_restarted() -> void:
+	host_reset_for_new_run()
 
 
 func _process(delta: float) -> void:
@@ -402,6 +438,11 @@ func _flush_visual_refresh() -> void:
 		return
 	_visual_refresh_scheduled = false
 	_refresh_visual()
+
+
+func _has_modifier(id: StringName) -> bool:
+	var modifiers: Node = get_node_or_null(^"/root/CycleModifierService")
+	return modifiers != null and bool(modifiers.call(&"has_modifier", id))
 
 
 func _owns_mutation() -> bool:

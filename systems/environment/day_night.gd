@@ -76,10 +76,20 @@ func _physics_process(delta: float) -> void:
 		_advance_client(delta)
 
 
+## Cycle Modifier `long_night` (F-245, content/cycle_modifiers/long_night.tres: "nights last twice as
+## long"). Rather than a second day-length knob, this halves how much of `delta` counts toward
+## `time_of_day` while the clock currently sits in the night phase, so the day half of the cycle is
+## untouched and only the night half stretches to roughly double its real-time length.
+const LONG_NIGHT_RATE_MULTIPLIER: float = 0.5
+
+
 func _advance_host(delta: float) -> void:
 	var day_length: float = _resolve_day_length()
 	var previous: float = time_of_day
-	time_of_day = fposmod(time_of_day + delta / day_length, 1.0)
+	var effective_delta: float = delta
+	if _is_night(previous) and _has_modifier(&"long_night"):
+		effective_delta *= LONG_NIGHT_RATE_MULTIPLIER
+	time_of_day = fposmod(time_of_day + effective_delta / day_length, 1.0)
 	_check_thresholds(previous, time_of_day)
 	_apply_to_level(time_of_day)
 
@@ -179,6 +189,15 @@ func _apply_to_level(fraction_of_day: float) -> void:
 	if atmosphere == null:
 		return
 	atmosphere.call(&"set_time_of_day", fraction_of_day * 24.0)
+
+
+func _is_night(fraction: float) -> bool:
+	return fraction >= night_started_at or fraction < day_started_at
+
+
+func _has_modifier(id: StringName) -> bool:
+	var modifiers: Node = get_node_or_null(^"/root/CycleModifierService")
+	return modifiers != null and bool(modifiers.call(&"has_modifier", id))
 
 
 func _owns_mutation() -> bool:

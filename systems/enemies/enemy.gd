@@ -134,6 +134,10 @@ var _dissolve_elapsed: float = 0.0
 var _visual_rest_y: float = 0.0
 ## Restored if this body is ever revived or reused; death zeroes it (F-040).
 var _alive_collision_layer: int = 1
+## F-245: set by `_maybe_bloom_split()` on a freshly spawned child so its own death does not split
+## again — one kill grows a fight by exactly two, not without bound. Host-only bookkeeping, never
+## replicated: a client never runs `_enter_death()` at all (see `host_apply_damage()`'s own guard).
+var _bloom_child: bool = false
 
 
 func _ready() -> void:
@@ -194,6 +198,20 @@ func is_alive() -> bool:
 
 func target_peer() -> int:
 	return _target_peer
+
+
+## Cycle Modifier `the_hunt`'s tracking elite (F-245, content/cycle_modifiers/the_hunt.tres):
+## `WaveSpawner`'s own retarget ticker calls this on a schedule to keep the elite beelining for
+## whoever currently holds the most powerups. Unlike `alert()`, which only ever hands a target to an
+## UNENGAGED enemy, this always overrides — the elite's whole point is ignoring the normal perception/
+## aggro-range acquisition gate every other target change on this file goes through.
+func host_force_target(peer_id: int) -> void:
+	if not _owns_simulation() or state == State.DEAD:
+		return
+	var node: Node3D = _player_for(peer_id)
+	if node == null:
+		return
+	_acquire_target(peer_id, node)
 
 
 # ── Host simulation ───────────────────────────────────────────────────────────────────────────────
@@ -338,7 +356,39 @@ func _enter_death(instigator_peer_id: int) -> void:
 	# nothing detects or collides with it while it still lands where it died.
 	collision_layer = 0
 	remove_from_group(DAMAGEABLE_GROUP)
+	_maybe_bloom_split()
 	died.emit(instigator_peer_id)
+
+
+## Cycle Modifier `bloom` (F-245, content/cycle_modifiers/bloom.tres): an enemy that dies while it is
+## active spawns two reduced-health children of its own kind at the death position instead of just
+## dying. `_bloom_child` stops a spawned child from splitting again. Only ever reached from
+## `_enter_death()`, itself only reached through `host_apply_damage()`'s `_owns_simulation()` guard —
+## a client never runs this.
+func _maybe_bloom_split() -> void:
+	if _bloom_child or definition == null:
+		return
+	var modifiers: Node = get_node_or_null(^"/root/CycleModifierService")
+	if modifiers == null or not bool(modifiers.call(&"has_modifier", &"bloom")):
+		return
+	var world: Node = get_node_or_null(^"/root/EnemyWorld")
+	if world == null:
+		return
+	var child_health: int = maxi(definition.max_health / 2, 1)
+	var damage: int = maxi(definition.max_health - child_health, 0)
+	for _index: int in 2:
+		var child: Node = world.call(&"host_spawn", definition.id, global_position)
+		if child is Enemy:
+			var enemy_child: Enemy = child as Enemy
+			enemy_child.mark_as_bloom_child()
+			if damage > 0:
+				enemy_child.host_apply_damage(damage, 0)
+
+
+## Public cross-instance setter (same shape as `alert()` above) — `_bloom_child` stays private-by-
+## convention, only ever flipped through here.
+func mark_as_bloom_child() -> void:
+	_bloom_child = true
 
 
 func _aggro_on(peer_id: int) -> void:

@@ -61,11 +61,13 @@ func _ready() -> void:
 	set_physics_process(true)
 	EVENT_BUS.subscribe_wellspring_capped(_on_wellspring_capped)
 	EVENT_BUS.subscribe_wellspring_recorrupted(_on_wellspring_recorrupted)
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 
 
 func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_wellspring_capped(_on_wellspring_capped)
 	EVENT_BUS.unsubscribe_wellspring_recorrupted(_on_wellspring_recorrupted)
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
 
 
 func _physics_process(delta: float) -> void:
@@ -91,6 +93,26 @@ func ensure_ready() -> void:
 	_last_emitted = PackedFloat32Array()
 	_last_emitted.resize(SIM.CELL_COUNT)
 	_emit_changed_deltas()
+
+
+## F-243: re-seeds a clean grid for a new run from the SAME `GameState.run_seed` (docs/DECISIONS.md's
+## F-243 entry: a restart does not draw a fresh world seed), so this reproduces exactly the corruption-
+## free state `ensure_ready()` already produces on first boot — no new seeding logic, just letting it
+## run a second time. Host-only, self-guarded, so every peer's own `EVENT_BUS.run_restarted` handler
+## can call this unconditionally; a client's own copy simply no-ops and waits for the re-broadcast
+## deltas `ensure_ready()`'s own `_emit_changed_deltas()` sends.
+func host_reset() -> void:
+	if not _owns_simulation():
+		return
+	_seeded = false
+	_capped_wellsprings = 0
+	_elapsed = 0.0
+	_cycle_spread_multiplier = 1.0
+	ensure_ready()
+
+
+func _on_run_restarted() -> void:
+	host_reset()
 
 
 ## The current value (0..1, clean to fully corrupted) at a world position — every 4.11 consumer's
@@ -168,7 +190,14 @@ func consumed_fraction(threshold: float) -> float:
 
 
 func _tick() -> void:
-	var wards: Array = _ward_circles_provider.call() if _ward_circles_provider.is_valid() else []
+	# Cycle Modifier `rooted` (F-245, content/cycle_modifiers/rooted.tres: "the Mire no longer
+	# recedes anywhere a Ward stands"). `_is_warded()` in mire_grid_sim.gd is the ONLY thing a Ward
+	# does here — it resists this tick's spread from reaching warded cells, never actively shrinks
+	# existing corruption (only a capped Wellspring's `clear_radius()` does that). Passing an empty
+	# array while `rooted` is active reproduces exactly the no-wards case 4.9 already ships, so a
+	# Ward's resistance simply stops applying rather than needing a second code path.
+	var wards: Array = [] if _has_modifier(&"rooted") \
+		else (_ward_circles_provider.call() if _ward_circles_provider.is_valid() else [])
 	var rate: float = BASE_SPREAD_RATE * _cycle_spread_multiplier
 	for _cap_index: int in _capped_wellsprings:
 		rate *= SPREAD_REDUCTION_PER_CAP
@@ -217,6 +246,11 @@ func _chunk_for_cell(cell: Vector2i) -> Vector2i:
 	var world: Vector2 = SIM.cell_to_world_center(cell.x, cell.y)
 	var chunk_size: float = float(ChunkMesherScript.CHUNK_SIZE)
 	return Vector2i(floori(world.x / chunk_size), floori(world.y / chunk_size))
+
+
+func _has_modifier(id: StringName) -> bool:
+	var modifiers: Node = get_node_or_null(^"/root/CycleModifierService")
+	return modifiers != null and bool(modifiers.call(&"has_modifier", id))
 
 
 func _owns_simulation() -> bool:
