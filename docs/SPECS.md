@@ -8195,6 +8195,52 @@ Sequoyah's own external paperwork rather than on another task's shipped code.
 
 ---
 
+## F-237 · A-016 asks for a cave entrance, but D-142 put caves on the cut list — the asset would promise a space that cannot exist
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap.
+
+**Authority:** none — this is an asset/content finding, no runtime system involved.
+
+**Claim:** `docs/FINDINGS.md`, `docs/SPECS.md`. No code or asset claim needed — the finding's own
+three concerns were already addressed by the A-016a task, confirmed below rather than fixed here.
+
+**Confirmed already fixed before touching anything** — the finding's own flag ("files it names have
+changed since it was filed") was correct, and the change was the fix, not unrelated churn:
+
+1. **`cave entrance` cut from A-016**, reason recorded in the row exactly as suggested — `docs/
+   ASSET_TRACKER.md`'s A-016a row states "`cave entrance` was NOT built — filed as F-237", A-016b's
+   row repeats "`cave entrance` is deliberately absent", and `tools/blender/build_terrain_accents.py`
+   and `assets/terrain_accents/README.md` both carry the same explanation in their own words. No
+   `cave_entrance` GLB exists in `assets/terrain_accents/exports/` or its `catalog.json`.
+2. **`sinkhole`** (A-016b, still `NEXT`, not yet built) is pre-emptively re-scoped in the same row and
+   in the README's "A-016b" section: "needs re-scoping to a shallow surface depression for F-237's
+   reason — a 2D heightfield has nothing for a hole to go into." Nothing has shipped that violates
+   this yet because the asset doesn't exist yet; the constraint is on record before it's built, which
+   is what the finding asked for.
+3. **`cliff overhang`** shipped (A-016a, `DONE`) honest about what it is: the build script's docstring
+   states it "survives that same limit only because it is honest about being a rock ledge PLACED on a
+   slope, never a claim that the terrain itself overhangs" — a PROP on a slope, not a terrain feature
+   the heightfield can't produce, matching the finding's second-priority ask exactly.
+
+**Verify:** `agent godot --script tools/terrain_accents_check.gd` — 25 checks (24 asset assertions +
+1 catalog-completeness check), 0 failures, catalog lists exactly the 6 rock-half assets (`cliff_face`,
+`cliff_corner`, `cliff_overhang`, `rocky_slope`, `scree_pile`, `stone_steps`) and no `cave_entrance`.
+Done means: the above, plus this finding moved to `## Resolved` in `docs/FINDINGS.md`.
+
+**Swept for siblings:** grepped every `.md`/`.gd`/`.py`/`.tscn`/`.tres` file for `cave entrance` /
+`cave_entrance` — every hit is one of the five places above recording the cut, none propose building
+it. Read every remaining `ASSET_TRACKER.md` row for the same shape (an asset name implying an
+interior/underground space): found one live sibling, `A-020`'s `flooded cellar entrance` (`QUEUED`,
+not yet built) — same "entrance implying a below-ground room the heightfield can't back" trap F-237
+just cut from A-016. Filed as **F-255** rather than fixed here — A-020 is gated on two unshipped
+batches, re-scoping its row is a content-design call for whoever actually picks it up, not a rider on
+this task's claim.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 ## F-250 · `CycleService._announce()`'s `EventBus.emit_cycle_advanced()` still gates behind `_owns_cycle()`, so `cycle_advanced` never fires on a real connected client — F-226 fixed the reader-side symptom, not this root cause
 
 **Claim:** `systems/cycle/cycle_service.gd`, `autoload/world_delta_log.gd`, `core/events/event_bus.gd`,

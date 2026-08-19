@@ -375,44 +375,6 @@ real `PowerupDef` and actually appears as a POWERUP entry in an authored loot ta
 
 ---
 
-### F-237 · A-016 asks for a cave entrance, but D-142 put caves on the cut list — the asset would promise a space that cannot exist
-
-**Area:** world-gen · **Severity:** medium · **Found:** 2026-08-19 by wick20
-
-`docs/ASSET_TRACKER.md`'s **A-016** row lists twelve terrain accents, one of which is a **cave
-entrance**. That row predates the procedural-terrain decision.
-
-**D-142 (2026-08-19) rejects caves outright.** Its own words, listing what was rejected and why:
-"3D density/caves (2D Mire grid, low-end target, cut list)". The chosen method is a 2D heightfield —
-fBm + falloff base, domain warp, a masked ridged layer, steepest-descent river tracing and
-arithmetic carving. A 2D heightfield cannot express an overhung void, so there is no terrain feature
-for a cave-entrance asset to open into.
-
-Shipping the asset anyway produces the worst outcome available: a prop that reads as an entrance,
-that players will walk up to and try to enter, backed by solid ground. That is a bug report from
-every playtester who finds one, and the fix at that point is deleting an asset somebody built.
-
-**Two other rows in the same batch need re-scoping for the same reason, less severely.**
-`sinkhole` is fine only if it means a shallow surface depression rather than a hole through to
-anywhere; and `cliff overhang` is buildable as a PROP but cannot be expected to match a terrain
-overhang, because the heightfield cannot make one — it has to read as a rock ledge placed on a
-slope, not as terrain.
-
-**Suggested resolution**, in preference order:
-
-1. **Cut `cave entrance` from A-016** and record the reason in the row, the way A-006's row records
-   its waiver. If a burrow-scale hole is still wanted for flavour, `burrow entrance` (already in the
-   same row) covers it and is honest at its size — a hole a rat goes into, not a player.
-2. If caves are wanted later, they are a **worldgen** decision first and an asset decision second.
-   D-142 gates erosion the same way ("gated, not adopted"); caves deserve the same treatment rather
-   than arriving through the art queue.
-
-Filed while building A-016a (the rock/cliff half of the batch), which is unaffected — cliff face,
-cliff corner, cliff overhang, rocky slope, scree pile and natural stone steps all sit ON a
-heightfield and need nothing the method cannot produce.
-
----
-
 ### F-243 · The run loop is a line, not a circle — after defeat or extraction there is no path to a next run short of relaunching the process
 
 **Area:** systems · **Severity:** high · **Found:** 2026-08-19 by hollow7
@@ -765,7 +727,70 @@ draws for real, client's own `EventBus.subscribe_cycle_modifier_drawn()` listene
 
 ---
 
+### F-255 · A-020's `flooded cellar entrance` is the same shape F-237 just cut from A-016 — an entrance implying an interior/underground space the 2D heightfield cannot back
+
+**Area:** world-gen · **Severity:** low · **Found:** 2026-08-19 by lm during F-237's sibling sweep
+
+`docs/ASSET_TRACKER.md`'s **A-020** row (Landmark kit II, `QUEUED`, gated on A-015/A-017 — not yet
+built) lists `flooded cellar entrance` alongside `giant hollow tree`, `corrupted crater`, `Mire nest`,
+`broken dam` and others. Unlike `giant hollow tree` (a self-contained prop mesh with a void through
+its own trunk — already shipped in A-015, needs nothing from the terrain) or `corrupted crater` (a
+depression IN the heightfield, the same shape `sinkhole` was re-scoped to in F-237), a "cellar
+entrance" reads the same way `cave entrance` did: an opening that promises a below-ground interior a
+player can walk into. D-142's 2D heightfield has nowhere for that room to exist, so building it
+literally repeats F-237's exact mistake — an asset that reads as "go in here" backed by solid ground.
+
+**Not the same severity as F-237 was** — A-020 is `QUEUED`, gated on two batches that haven't shipped,
+so nothing is close to being built yet and there is time to scope it correctly before anyone opens
+Blender. Filed rather than fixed here: re-scoping it is a content-design call for whoever picks up
+A-020 (matching F-237's own `sinkhole` precedent — e.g. a flooded, half-collapsed structure standing
+mostly at grade with a token few steps down into ankle-deep water, never a real room below the
+heightfield), not a doc-tracker edit that belongs to this task's claim.
+
+**Suggested resolution**, mirroring F-237's: re-scope the row's own text before A-020 is picked up —
+"flooded cellar entrance" -> something like "flooded cellar ruin" that is explicit about being a
+sunken/collapsed structure sitting at or near grade, not a doorway into an excavated interior.
+
+---
+
 ## Resolved
+
+### F-237 · A-016 asks for a cave entrance, but D-142 put caves on the cut list — the asset would promise a space that cannot exist — **fixed**
+
+**Area:** world-gen · **Severity:** medium · **Found:** 2026-08-19 by wick20
+
+`docs/ASSET_TRACKER.md`'s **A-016** row listed a **cave entrance** among twelve terrain accents, from
+before the procedural-terrain decision. **D-142 (2026-08-19) rejects caves outright** ("3D
+density/caves (2D Mire grid, low-end target, cut list)") — the chosen 2D heightfield (fBm + falloff
+base, domain warp, masked ridged layer, steepest-descent river tracing, arithmetic carving) cannot
+express an overhung void, so there was no terrain feature for a cave-entrance asset to open into.
+Shipping it anyway would read as an entrance backed by solid ground — a bug report from every
+playtester who tries to walk in.
+
+---
+
+**Resolved 2026-08-19, confirmed already fixed by the A-016a task (filed while that task was in
+flight) rather than fixed in this task.** All three of the finding's asks landed there: (1)
+`cave entrance` cut from A-016, reason recorded in the row — `docs/ASSET_TRACKER.md`'s A-016a row
+("`cave entrance` was NOT built — filed as F-237") and A-016b row ("`cave entrance` is deliberately
+absent"), plus matching notes in `tools/blender/build_terrain_accents.py` and
+`assets/terrain_accents/README.md`; no `cave_entrance` GLB or catalog record exists anywhere under
+`assets/terrain_accents/`. (2) `sinkhole` (A-016b, still `NEXT`) is pre-emptively re-scoped to "a
+shallow surface depression" in both the tracker row and the README, on record before it's built. (3)
+`cliff overhang` (A-016a, shipped) is documented in the build script as "honest about being a rock
+ledge PLACED on a slope, never a claim that the terrain itself overhangs" — a PROP, not a terrain
+claim the heightfield can't back.
+
+Verified: `.agent/bin/agent godot --script tools/terrain_accents_check.gd` — 25 checks (24 asset
+assertions + 1 catalog-completeness check), 0 failures; catalog lists exactly the 6 rock-half assets
+and no `cave_entrance`.
+
+Swept for siblings: grepped every `.md`/`.gd`/`.py`/`.tscn`/`.tres` file for `cave entrance` /
+`cave_entrance` — every hit records the cut, none propose building it. Read every remaining
+`ASSET_TRACKER.md` row for the same shape; found one live sibling, A-020's `flooded cellar entrance`
+(`QUEUED`, not yet built) — filed as F-255 rather than fixed here, since it's gated on two unshipped
+batches and re-scoping is a content-design call for whoever picks up A-020. Full SPECS.md block
+written (task 0 — none existed).
 
 ### F-250 · CycleService._announce()'s EventBus.emit_cycle_advanced() still gates behind _owns_cycle(), so cycle_advanced never fires on a real connected client — F-226 fixed the reader-side symptom, not this root cause — **fixed**
 

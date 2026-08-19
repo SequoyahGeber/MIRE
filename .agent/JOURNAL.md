@@ -6144,3 +6144,18 @@ WorldDeltaLog gained a generic delta_applied signal; CycleService subscribes and
 Files: `systems/cycle/cycle_service.gd`, `autoload/world_delta_log.gd`, `core/events/event_bus.gd`, `autoload/rich_presence_service.gd`, `autoload/steam_stats.gd`, `tools/cycle_advanced_net_check.gd`, `tools/wave_spawner_cycle_net_check.gd`
 
 Commit at time of writing: `2699e6c`
+
+---
+
+### DONE · F-237 · lm · 2026-08-19T20:09:31+00:00
+
+**A-016 asks for a cave entrance, but D-142 put caves on the cut list — the asset would promise a space that cannot exist**
+
+Confirmed already fixed by the A-016a task (filed while it was in flight), not by this task — no code/asset changes needed. Verified: agent godot --script tools/terrain_accents_check.gd (25 checks, 0 failures, catalog has exactly the 6 rock-half assets and no cave_entrance); agent godot --script tools/findings_numbering_check.gd (0 failures). Wrote the missing docs/SPECS.md block, moved F-237 to Resolved in docs/FINDINGS.md. Sibling sweep found A-020's 'flooded cellar entrance' (QUEUED, unbuilt) carries the same risk — filed as F-255, not fixed (content-design call for whoever picks up A-020).
+
+Notes along the way:
+- Confirmed already fixed by A-016a task, not by this task. terrain_accents_check.gd: 25/25, no cave_entrance. Moved to Resolved in FINDINGS.md, wrote missing SPECS.md block (task 0). No code/asset claim needed.
+
+Files: `docs/FINDINGS.md`, `docs/SPECS.md`
+
+Commit at time of writing: `32a5c84`
