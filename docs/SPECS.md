@@ -1979,10 +1979,102 @@ than waiting on it.
 
 ---
 
+## 6.6 · Salvage: superlinear reward curve, extract-vs-die split, persistence, save-file versioning (`DESIGN.md` §4.6, §5.2)
+
+Written retroactively by the task that executed it (lm) — no block existed here beforehand;
+SPECS.md's own preamble makes writing one part of the task that discovers the gap. The bullet this
+replaces (below the old M6 remaining-tasks list) named the shape correctly — `user://salvage.json`,
+`schema_version: 1`, migration from day one — and this block follows it rather than relitigating it.
+
+**Authority:** new §2.2 row "Salvage" — **None**. Salvage is per-player account state, not
+simulation state: no two peers ever compare balances, so the authority table's "would two clients
+disagree" test never applies. Every peer runs the identical autoload and banks only into its own
+`user://salvage.json`, reacting only to events it received on its own process-local `EventBus`.
+
+**Claim:** `autoload/salvage_service.gd` (new), `core/save/salvage_save.gd` (new),
+`tools/salvage_check.gd` (new), `core/events/event_bus.gd`, `systems/extraction/extraction_ship.gd`,
+`project.godot` (one `agent autoload` registration: `SalvageService`).
+
+**The reward curve.** `SalvageService.reward_for_cycle(cycle)` returns
+`CYCLE_BASE * cycle^CYCLE_EXPONENT + milestone_bonus`, `CYCLE_BASE = 10`, `CYCLE_EXPONENT = 1.6` —
+superlinear by construction (an exponent > 1), satisfying DESIGN.md §5.2's "Cycle 9 worth much more
+than 3x Cycle 3" (measured: Cycle 3 = 58, Cycle 9 = 336, ~5.8x for 3x the Cycle). Placeholder-tuned,
+same unplaytested status as every other Cycle-facing constant in this codebase
+(`CycleService.SPREAD_ESCALATION_PER_CYCLE`, `ExtractionShip.REPAIR_COSTS`) — nothing here survives
+contact with Q6 ("does anyone ever actually extract") yet.
+
+**Milestone bonus.** DESIGN.md §4.6 names three secondary factors: "Wellsprings capped, bosses
+killed, tiers reached." Only the first is real and trackable today (`EventBus.wellspring_capped`
+already exists, +20 Salvage per cap this run via `WELLSPRING_CAP_BONUS`) — no boss enemy concept
+exists anywhere in the codebase, and nothing announces a crafting tier as "reached" this run. D-108
+records this as a deliberate scope cut, not an oversight: adding either later is one more
+`EventBus` subscription and one more counter, the same shape `_wellsprings_capped_this_run` already
+is, not a reward-formula change.
+
+**Extract-vs-die split.** `EventBus.subscribe_run_extracted()` (task 6.5) banks
+`reward_for_cycle(cycle)` in full. A new `EventBus.subscribe_run_wiped(cycle, world_position)`
+counterpart — DESIGN.md §5.2's "dying instead banks a fraction" — banks
+`round(reward_for_cycle(cycle) * DEATH_BANK_FRACTION)`, `DEATH_BANK_FRACTION = 0.5`. **Nothing emits
+`run_wiped` yet.** Task 6.7 ("Lose condition") owns deciding when a run has actually ended in
+defeat (team wipe with no bleed-out revive pending, or the island consumed —
+`docs/SPECS.md`'s own 6.7 look-ahead); 6.6 only builds the seam and the consumer, the same "future
+task's hook" shape D-092 established for `wellspring_capped`. D-108 records why 6.7 must call this
+exact signal rather than inventing a second one, and why its emitter MUST fire from a replicated
+property's setter (reaching every peer's own local `EventBus`) rather than a host-only guard —
+`event_bus.gd`'s own doc comment on `run_wiped` spells out the exact trap this task found and fixed
+for `run_extracted`.
+
+**The `run_extracted` host-only gap, fixed.** `ExtractionShip._finish_departure()` used to call
+`EVENT_BUS.emit_run_extracted()` directly, inside a host-only code path — harmless for the host's
+own Salvage, but a NON-host peer's local `EventBus` never received the event at all, so that
+player's own save would never bank. Moved the emit into `departed`'s property setter instead (the
+same pattern `repair_stage`'s setter already used for `_maybe_refresh_visual()`): the setter fires
+identically whether this process just set `departed = true` itself (the host) or received it over
+the wire via the existing `SceneReplicationConfig` (a client) — no new RPC, no protocol bump.
+`Wellspring._finish_cap()` still has the identical host-only shape for `wellspring_capped`, which
+means the milestone bonus above undercounts on non-host peers today; F-168 records that as a
+separate, smaller gap rather than expanding this task into a second system's file.
+
+**Persistence.** `core/save/salvage_save.gd` is pure data I/O — `load_data(path)` /
+`save_data(data, path)`, both defaulting to `user://salvage.json`, both taking an explicit `path`
+override so `tools/salvage_check.gd` never touches a real save. `schema_version: 1` is stamped on
+every write; `_migrate()` is the switch DESIGN wants "from day one" — today it only backfills a
+missing/old version to defaults (there is no real prior schema to migrate FROM yet), and every
+future bump adds one more `if version < N:` block rather than a reader that has to understand every
+historical shape. A missing or corrupt file resolves to a safe default instead of an error.
+
+**Test-harness persistence isolation (D-107) — the trap 6.9 must reuse, not rediscover.**
+`EventBus` is a per-process static: any `--script` check that legitimately fires a real
+`run_extracted`/`wellspring_capped` for ITS OWN system's test (confirmed with
+`tools/extraction_check.gd`'s departure-hold tests, which banked 116 real Salvage into this
+developer's actual save before the guard existed) reaches `SalvageService` exactly like the shipped
+game would. `SalvageService._persistence_enabled()` gates every disk write on
+`save_path != SalvageSave.SAVE_PATH or get_tree().current_scene != null` — a `--script` harness
+never loads `project.godot`'s `run/main_scene`, so `current_scene` stays null for its whole run,
+while the real game (and a `--quit-after N` full-boot check) always has one. `salvage_check.gd`
+opts back in by overriding `save_path` to a throwaway file before banking, which both isolates its
+writes AND proves persistence for real. Task 6.9 ("Unlock tree... local persistence beside 6.6's
+file") inherits this exact trap the moment it writes to `user://` from an event handler — reuse
+this guard shape, don't re-derive it.
+
+Verify: `tools/salvage_check.gd` (24 assertions) — autoload wiring; the curve is superlinear and
+convex and floors at Cycle 1; each Wellspring capped this run adds the same flat bonus and the
+tally resets once a run ends; extraction banks the reward in full while a wipe banks exactly
+`DEATH_BANK_FRACTION` of it, both writing through to disk and firing `salvage_banked` once with the
+right payload; `SalvageSave`'s versioning migrates an old/missing schema up, round-trips data
+losslessly, and resolves a missing or corrupt file to a safe default without crashing.
+`extraction_check`, `wellspring_recorruption_check`, `cycle_check`, `cycle_modifier_check`,
+`mire_grid_check`, `mire_interaction_check`, `wave_spawner_check`, `crafting_check`,
+`handshake_check` all stay `failures=0` (or `confirmations=N failures=0`), and none of them leaves a
+real `user://salvage.json` behind any more. `agent godot --quit-after 15` shows 0 `ERROR:` lines.
+Done means: `salvage_check.gd` at `failures=0`, the nine regression checks green, 0 `ERROR:` on a
+full boot, no real save-file pollution from an unrelated check, and `docs/DELEGATION.md`'s Current
+state carrying `SalvageService.total_salvage()` / `EventBus.subscribe_salvage_banked()` for 6.8's
+run summary and 6.9's unlock tree to build against.
+
+---
+
 - **6.3 Author 20–30 modifiers (T0).**
-- **6.6 Salvage & persistence (T2):** superlinear Salvage curve on extraction, split on death;
-  local per-player save `user://salvage.json` with an explicit `schema_version: 1` and a migration
-  switch from day one — versioning is this task's real deliverable. Runs stay unsaved (D-010).
 - **6.7 Lose condition (T1):** team wipe (all dead with zero bleed-out revives pending) or island
   consumed ⇒ defeat flow through GameState; solo death already respawns until then (2.13's rule).
 - **6.8 Run summary (T0):** headline Cycle number; stats GameState already accumulated.

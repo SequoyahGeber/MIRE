@@ -991,6 +991,35 @@ changed recently (`git log --oneline -- tools/crafting_net_check.gd`).
 
 ---
 
+### F-168 · `Wellspring._finish_cap()` still emits `wellspring_capped` from a host-only guard, so a non-host peer's `SalvageService` milestone bonus silently undercounts
+
+**Area:** systems/wellspring · netcode · **Severity:** low · **Found:** 2026-08-19 by lm during 6.6
+
+`EventBus` is a per-process static (see its own header comment) — an emit call that only runs
+inside a host-only `if` never reaches a client's own local bus at all, only the host's. Task 6.6
+hit exactly this bug in `ExtractionShip.departed` (fixed: the emit now lives in the property's
+setter, so it fires identically whether this process set the value itself or received it over the
+wire) because `SalvageService`'s milestone bonus needs every peer to see `wellspring_capped`, not
+just the host. `Wellspring._finish_cap()` (`systems/wellspring/wellspring.gd:218`) still has the
+original shape: `EVENT_BUS.emit_wellspring_capped()` sits directly in the host-only branch, never in
+`capped`'s setter. Consequence: on a non-host peer, capping a Wellspring correctly updates the
+replicated `capped`/mesh state (that part IS a property, already synced), but that peer's own
+`SalvageService` never sees the milestone and its Salvage payout is short by
+`WELLSPRING_CAP_BONUS` per cap it didn't personally trigger as host.
+
+**Why not fixed in 6.6:** `wellspring.gd` was untouched, working, fully-tested territory this task
+had no other reason to enter — the fix is a two-line move (same shape as `extraction_ship.gd`'s),
+but it is a second system's file for a T2/est-3 task whose own scope was already Salvage, not a
+Wellspring regression pass. `tools/wellspring_check.gd`/`wellspring_recorruption_check.gd` both stay
+green either way — they only assert against the host's own state, which is unaffected.
+
+**What closes this:** move `EVENT_BUS.emit_wellspring_capped(name, global_position)` out of
+`_finish_cap()`'s body and into `capped`'s setter, guarded on the false->true transition, the exact
+diff `extraction_ship.gd`'s `departed` setter already shows. Re-run `wellspring_check.gd` and
+`wellspring_recorruption_check.gd` (both should stay `failures=0`) plus `salvage_check.gd`.
+
+---
+
 ## Resolved
 
 ### F-160 · A transient API error kills a saturate chain, and nothing restarts it — the lane sits idle until a human notices — **fixed**

@@ -2774,3 +2774,81 @@ literally.
 (`ui/crafting/crafting_ui.gd`'s recipe rows), at which point `CraftingService` gaining a
 "mutate-in-place" recipe kind is a real feature worth building for more than one consumer, not a
 shim added just to satisfy this note.
+
+---
+
+### D-107 · 2026-08-19 · A persisting autoload must gate its own disk writes on "is this a real game boot", not trust every check that fires the event it listens for — task 6.6
+
+`SalvageService` is the first system in this codebase that writes to `user://` in response to a
+gameplay event, and it exposed a trap nothing before it could hit: `EventBus` is a per-process
+static, so ANY `--script` harness that legitimately fires a real `run_extracted` or
+`wellspring_capped` event to test ITS OWN system reaches every OTHER subscriber exactly as if it
+were the shipped game. Confirmed, not hypothetical: running `tools/extraction_check.gd` once — its
+departure-hold tests correctly complete two real extractions as part of proving that FSM — banked
+116 Salvage into this developer's actual `user://salvage.json` before this guard existed. A prior
+system reacting to the same events (`MireGrid` undoing a Wellspring's spread reduction on
+`wellspring_capped`) never showed this failure mode because its state lives only in memory and dies
+with the process; persistence is what turns a check's incidental side effect into permanent local
+corruption that outlives the run that caused it.
+
+**Took:** `SalvageService._persistence_enabled()` gates every write on
+`save_path != SalvageSave.SAVE_PATH or get_tree().current_scene != null`. A `--script` harness never
+loads `project.godot`'s `run/main_scene` (`current_scene` stays null for its whole run); the real
+game, and a `--quit-after N` full-boot smoke check, always has one. `tools/salvage_check.gd` opts
+back in by overriding `save_path` to a throwaway file before it ever banks anything, which both
+isolates its own writes from a real save AND is the thing that lets it prove persistence actually
+works. This puts the fix in exactly one place — the autoload that owns the disk write — rather than
+requiring every existing and future check that might incidentally fire `run_extracted`/
+`wellspring_capped`/`run_wiped` to know `SalvageService` exists and remember to disable it.
+
+**Rejected:** teaching every check that can complete a Wellspring capture or an extraction to
+explicitly silence `SalvageService` first. Fragile by construction — it is an opt-out an author has
+to remember to add to code that has no reason to know a completely different system is listening,
+and the failure mode (silent disk pollution) gives no signal that the opt-out was missed until
+someone notices their save total drifted.
+
+**Would change my mind:** a real dedicated-headless-server deployment that boots the actual game
+without `run_main_scene` set (unlikely — see `DESIGN.md` §7's "no dedicated servers" cut), or a
+future persistence system that legitimately needs to write from inside a `--script` harness without
+an explicit path override, at which point the guard needs a second, deliberate opt-in rather than
+the implicit one `current_scene` gives every real boot today.
+
+---
+
+### D-108 · 2026-08-19 · Salvage's reward curve, milestone scope, and the `run_wiped` seam — task 6.6
+
+Three scope calls DESIGN.md leaves open, made together because each is a "decide it, write down why"
+call under AGENTS.md rather than something worth stopping the task for.
+
+**The curve.** `reward_for_cycle(cycle) = CYCLE_BASE * cycle^CYCLE_EXPONENT + milestone_bonus`,
+`CYCLE_BASE = 10`, `CYCLE_EXPONENT = 1.6`. An exponent-based curve is superlinear by construction
+(DESIGN.md §5.2: "Cycle 9 worth much more than 3x Cycle 3") without needing a hand-authored lookup
+table that would need re-tuning every time a Cycle constant changes elsewhere. Measured: Cycle 3 =
+58, Cycle 9 = 336 (~5.8x for 3x the Cycle). Placeholder, unplaytested — same status as every other
+Cycle-facing constant in this codebase.
+
+**Milestone scope.** DESIGN.md §4.6 names three secondary factors: "Wellsprings capped, bosses
+killed, tiers reached." Only Wellsprings capped is real today — `EventBus.wellspring_capped` already
+exists and fires once per cap; no boss enemy concept exists anywhere in the codebase, and nothing
+announces a crafting tier as "reached" this run (`StationDef.tier` exists but is never broadcast).
+Building detection for either from scratch would be two other systems' worth of work smuggled into a
+T2/est-3 task. **Took:** ship the one real signal now (+20 Salvage/cap via `WELLSPRING_CAP_BONUS`),
+shape the counter (`_wellsprings_capped_this_run`, reset on `GameState.seed_ready`) so a future task
+adds a boss- or tier-reached bonus as one more `EventBus` subscription and one more counter, not a
+reward-formula change. **Would change my mind:** a boss or tier-announcement system landing before
+6.6's own numbers get a real playtest pass — at that point wire it in the same task that tunes the
+curve, rather than leaving the milestone half permanently thinner than DESIGN's list.
+
+**`run_wiped` ownership.** `EventBus.subscribe_run_wiped(cycle, world_position)` exists and
+`SalvageService` consumes it (banking `DEATH_BANK_FRACTION = 0.5` of the full reward), but nothing
+emits it — task 6.7 ("Lose condition") is the task that decides WHEN a run has actually ended in
+defeat (team wipe with no bleed-out revive pending, or the island consumed), which 6.6 has no
+business deciding. **6.7 must call this exact signal, not invent a second one** — `SalvageService`
+is already wired to only this name — **and must fire it the way 6.6 fixed `run_extracted`: from a
+replicated property's setter reaching every peer's own local `EventBus`, never from a host-only
+guard.** `Wellspring._finish_cap()` still has the old host-only shape for `wellspring_capped`
+(F-168) — that is the wrong shape to copy, not precedent to follow.
+
+**Would change my mind (on the split itself):** a playtest showing `DEATH_BANK_FRACTION = 0.5` makes
+extracting feel mandatory rather than a real bet either way (Q6) — DESIGN.md only specifies the
+direction ("a fraction"), not the number.

@@ -75,6 +75,57 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 6.6: Salvage — superlinear reward curve, extract-vs-die split, persistence, save-file versioning (lm)
+
+New `autoload/salvage_service.gd` (registered) + `core/save/salvage_save.gd` (pure data I/O, no
+autoload). Authority: **None** — per-player account state, `docs/ARCHITECTURE.md` §2.2's new
+"Salvage" row. `EventBus.subscribe_run_extracted()` (6.5) banks `reward_for_cycle(cycle)` in full;
+a new `EventBus.subscribe_run_wiped(cycle, world_position)` counterpart banks
+`DEATH_BANK_FRACTION` (0.5) of it — nothing emits `run_wiped` yet, that is 6.7's job (D-108).
+
+**Public API for 6.7, 6.8, 6.9 to build against:**
+
+- `SalvageService.total_salvage() -> int` — this peer's own lifetime balance, cached in memory and
+  kept in sync with `user://salvage.json` on every bank.
+- `SalvageService.reward_for_cycle(cycle: int) -> int` — the Cycle curve plus this run's milestone
+  bonus, BEFORE any death fraction. `CYCLE_BASE = 10`, `CYCLE_EXPONENT = 1.6` (superlinear:
+  Cycle 3 = 58, Cycle 9 = 336). Placeholder-tuned, no playtest yet (Q6).
+- `EventBus.subscribe_run_wiped(listener: Callable)` — listener signature
+  `(cycle: int, world_position: Vector3) -> void`. **6.7 must fire this exact signal** (D-108) —
+  `SalvageService` is already wired to only this name, not a second lose-condition event — **and
+  must fire it from a replicated property's setter**, the same fix this task made to
+  `ExtractionShip.departed` (D-107's sibling), never from a host-only guard: `EventBus` is a
+  per-process static, so a host-only emit never reaches a client's own local bus, and that peer's
+  Salvage would never bank a death.
+- `EventBus.subscribe_salvage_banked(listener: Callable)` — listener signature
+  `(earned: int, total_salvage: int, cycle: int, extracted: bool) -> void`, fired once per bank on
+  the peer that just banked. This is 6.8's ("run summary... Salvage earned") seam — nothing here
+  shows UI.
+- `core/save/salvage_save.gd` — `SalvageSave.load_data(path := SAVE_PATH)` /
+  `SalvageSave.save_data(data, path := SAVE_PATH)`, `SAVE_PATH = "user://salvage.json"`,
+  `SCHEMA_VERSION = 1`. Both take an explicit path override — that is how `tools/salvage_check.gd`
+  proves persistence without touching a real save, and the same override point 6.9 should reuse if
+  its own unlock-tree save wants a sibling file rather than a new top-level key on this one.
+- **D-107's test-isolation guard — read this before writing any new `user://`-persisting
+  autoload.** `SalvageService._persistence_enabled()` gates every disk write on
+  `save_path != SalvageSave.SAVE_PATH or get_tree().current_scene != null`, because a `--script`
+  check that legitimately fires a real `run_extracted`/`wellspring_capped` for its OWN system's
+  test (confirmed with `extraction_check.gd`) reaches this autoload exactly like the shipped game
+  would — it banked 116 real Salvage into a developer's actual save file before the guard existed.
+  6.9's own persistence needs the identical guard shape, not a rediscovery of the bug.
+- **Not yet fixed:** `Wellspring._finish_cap()` still emits `wellspring_capped` from a host-only
+  guard rather than a property setter (F-168) — the milestone bonus above undercounts on non-host
+  peers until that two-line move happens. The Cycle-curve half of the reward is unaffected
+  (`CycleService.current_cycle()` already replicates correctly via `WorldDeltaLog`).
+
+Verified: `tools/salvage_check.gd` (24 assertions, 0 failures) — curve, milestone bonus, both
+banking paths, persistence round-trip, save-file versioning/migration/corruption-fallback, and that
+`salvage_banked` fires with the right payload. No regressions: `extraction_check`,
+`wellspring_recorruption_check`, `cycle_check`, `cycle_modifier_check`, `mire_grid_check`,
+`mire_interaction_check`, `wave_spawner_check`, `crafting_check`, `handshake_check` all stay
+`failures=0`. 0 `ERROR:` on a full boot (`agent godot --quit-after 15`), and no run leaves a real
+`user://salvage.json` behind any more.
+
 ### 2026-08-19 — Task 6.5: Extraction — shipwreck repair, board-to-leave, group confirm hold (lm)
 
 New `class_name ExtractionShip` (`systems/extraction/extraction_ship.gd`), the same host-authoritative
