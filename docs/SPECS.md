@@ -8080,6 +8080,67 @@ versa for `DefeatHud`). No regressions: `extraction_check.gd`, `salvage_check.gd
 
 ---
 
+## F-241 · The chunk mesher rebuilds three noise objects for every one of a chunk's 1,089 samples
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap.
+
+**Authority:** none of its own — `IslandHeightmap`/`ChunkMesher` are both pure functions (no nodes,
+no shared state), the same "worldgen" row `docs/ARCHITECTURE.md` §2.2 already gives them. This task
+adds no new state and no new authority surface, only a second entry point on an existing one.
+
+**Claim:** `world/gen/island_heightmap.gd`, `world/chunk/chunk_mesher.gd`, `tools/noise_reuse_check.gd`
+(new — no focused check existed for this shape).
+
+**The gap:** `IslandHeightmap.height()` builds six fresh `FastNoiseLite` fields inside the call
+(base/coast/warp_x/warp_z/detail/ridge — more than the finding's own "three" once the 4.13/4.14
+warp and river-era layers are counted, but the same shape) — deliberately, so a shared instance is
+never sampled from two `WorkerThreadPool` tasks at once. `world/chunk/chunk_mesher.gd`'s
+`_sample_heights()` calls it once per apron sample, and a LOD0 apron is 33x33 = 1,089 points: ~6,500
+noise constructions per chunk to sample six fields that are IDENTICAL across every one of those
+points for a fixed `world_seed` — only the sample point changes.
+
+**The fix:** `IslandHeightmap.NoiseSet` (a small `RefCounted` bundling the six fields) plus
+`make_noise_set(world_seed) -> NoiseSet` and `height_from_set(x, z, set, world_seed, detail_amp,
+ridge_amp) -> float`, constructed from the exact same per-field calls `height()` used inline —
+`height()` itself now delegates to `height_from_set(x, z, make_noise_set(world_seed), world_seed,
+...)`, so its own per-call behavior and cost are unchanged and every existing caller (`continent()`
+still builds its own fields separately — out of scope, `chunk_mesher.gd` never calls it) keeps
+working with no signature change. `_warp_point` was split into `_warp_point_with(x, z, warp_x,
+warp_z)` (reusable, given already-built fields) and `_warp_point` (builds them, calls the `_with`
+version — kept for single-sample callers). `chunk_mesher.gd`'s `_sample_heights()` builds one
+`NoiseSet` before its sampling loop and calls `height_from_set()` per point — thread safety
+preserved exactly, since `noise_set` is a local built fresh inside every call to
+`_sample_heights()`, so every `WorkerThreadPool` task building a chunk still gets its own set, never
+shared with another task.
+
+**Verify:** `agent godot --script tools/noise_reuse_check.gd` (new) — bit-for-bit equivalence between
+`height()` and `height_from_set()` across two seeds and non-default amplitudes; `ChunkMesher.
+build_mesh()`'s real vertex heights matched against `height()` called directly at the same world
+coordinates (the actual integration, not just the two APIs agreeing with each other); and a
+same-process timing comparison proving the shared-`NoiseSet` path faster per sample (~1.9x measured
+— construction is only part of a sample's cost, so this is well under "six fields to one" but real).
+`agent godot --script tools/check_determinism.gd`'s `terrain_hash` (and all seven other hashes)
+bit-identical before and after — the same before/after-hash proof 4.13's own noise-dedup refactor
+used. `agent godot --script tools/terrain_check.gd` unchanged, 0 failures. `agent godot --script
+tools/bench_chunks.gd` before/after on the same machine: single-threaded 9.863 -> 5.877 ms/chunk,
+`WorkerThreadPool`-amortized 15.519 -> 4.495 ms/chunk. `agent godot --windowed --script
+tools/bench_chunk_gpu.gd` unaffected (collision cook/GPU upload dominate that budget, not noise).
+Full boot: `agent godot --quit-after 60`, 0 `ERROR:` lines. Done means: all of the above, plus this
+finding moved to `## Resolved` in `docs/FINDINGS.md`.
+
+**Found broken along the way, filed rather than fixed here:** `agent godot --windowed --script
+tools/chunk_stream_check.gd` has 5 pre-existing failures, confirmed via `git stash` of this task's
+own diff to be present on unmodified `main` too — unrelated to this fix, root cause is terrain
+retuning since F-128 leaving the LOD skirt and that check's own reference constants stale (F-251).
+`world/gen/resource_scatter.gd`'s `_placement_at()` has the identical per-sample noise-rebuild
+shape, lower severity, out of this task's claim (F-252) — the new `NoiseSet`/`height_from_set()` API
+is what its fix builds on.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

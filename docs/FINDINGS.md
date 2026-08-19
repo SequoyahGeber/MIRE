@@ -99,29 +99,6 @@ doc note) that deserves its own decision, not a rider on this task.
 
 ---
 
-### F-241 · The chunk mesher rebuilds three noise objects for every one of a chunk's 1,089 samples
-
-**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-19 by slate17 during 4.13
-
-`IslandHeightmap.height()` constructs its `FastNoiseLite` fields inside the call — deliberately, and
-for a good reason its own comment gives: a shared instance is not safe to sample from several
-`WorkerThreadPool` tasks at once. But `world/chunk/chunk_mesher.gd` calls it once per vertex, and a
-32 m chunk at 1 m spacing is **1,089 vertices**. That is ~3,300 noise constructions per chunk to
-sample three fields.
-
-4.13 measured the whole terrain cost at 3.85 ms/chunk single-threaded, up from 1.99 ms before its
-new layers (D-144). Construction is a large share of that and it buys nothing: the three fields are
-identical for every sample in the chunk — same seed, same settings — and only the sample point
-changes.
-
-**The fix, and why it was not done here:** a `NoiseSet` value built once per chunk and sampled many
-times keeps the thread-safety property exactly (one set per task, never shared) while removing the
-per-sample construction. It needs a second entry point on `IslandHeightmap` and a change in
-`chunk_mesher.gd`, which belongs to 4.3's owner rather than to a terrain-look task, and it must land
-with `check_determinism` unchanged — the refactor inside 4.13 that removed a duplicate construction
-did exactly that, and is the worked example: **hashes identical before and after is what proves an
-optimisation changed no output.**
-
 ### F-020 · Steam sessions cannot use NetSession's direct-address auto-rejoin loop
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-16 by tine during 1.7
@@ -688,7 +665,173 @@ into WorldDeltaLog and any new signal has to not change its existing contract.
 
 ---
 
+### F-251 · tools/chunk_stream_check.gd (windowed) has 5 pre-existing failures — terrain retuning since F-128 left the LOD skirt too shallow for the real seam gap
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-19 by lp
+
+Found 2026-08-19 by lp during F-241's verification (chunk mesher noise-reuse perf fix — unrelated
+change). `agent godot --windowed --script tools/chunk_stream_check.gd` currently reports **5
+functional failures**, confirmed via `git stash` to be present on unmodified `main` too (identical
+failure text/numbers with F-241's diff stashed out and restored) — nothing about this is caused by
+F-241; it was already broken and undetected because nothing has run this windowed check recently.
+
+**The two failures with a clear, likely-shared root cause — terrain got taller/rougher since F-128
+and D-142/D-144 tuned it, but the LOD skirt and this check's own reference constants never
+re-swept:**
+
+1. `skirt is deeper than the worst LOD-boundary divergence across the whole island` — measured worst
+   seam divergence is **12.4458 m** (seed 20260818, chunk (-4,0)) against `ChunkMesher.SKIRT_DEPTH`
+   of **2.600 m**. F-128/D-084 sized the skirt at 10% of `HEIGHT_SCALE` when `HEIGHT_SCALE` was 60
+   and the worst measured divergence was 1.78 m (a 3.4x margin, `chunk_mesher.gd:36-40`'s own
+   comment). `HEIGHT_SCALE` is now 26 (this file, unrelated task) and the ridged/river layers
+   (D-142/4.13-4.14) add relief `HEIGHT_SCALE` alone doesn't capture, so the 10%-of-amplitude
+   heuristic no longer holds — the skirt is now **4.8x too shallow for the real worst case**. If the
+   in-game LOD ring ever actually produces that chunk/seed combination at adjacent tiers, the crack
+   is visible: this is not just a stale test number, it is a plausible live rendering bug.
+2. The same section's `F-128's recorded worst-case divergence (1.779 m) has not drifted` assertion
+   also fails — that reference point (`WORST_KNOWN_SEED = 424242`, `WORST_KNOWN_CHUNK = (-5, 2)`,
+   `tools/chunk_stream_check.gd:38-40`) now measures **0.0000 m**, meaning the terrain shape at that
+   specific chunk/seed changed enough since F-128 that it no longer represents any LOD-boundary
+   divergence at all. The check's own reference case is stale, separately from the margin having
+   collapsed.
+
+**A third, likely the same class of staleness:** `a different seed changes the mesh` fails —
+`ChunkMesher.build_mesh(5, -3, BENCH_SEED, 1)` and the same chunk at `BENCH_SEED + 1` come back
+byte-identical. Chunk (5, -3) at `CHUNK_SIZE = 32` centres around world (160, -96), ~186 m from
+origin — outside `IslandHeightmap.ISLAND_RADIUS` (118 m, this file, retuned from the 512 m this
+check's constants were presumably chosen against). Both seeds are almost certainly sampling flat
+open water at that chunk regardless of seed. Likely fix: move `WORST_KNOWN_CHUNK`/the determinism
+check's chunk coordinate to something inside the current 118 m island, and re-measure
+`WORST_KNOWN_DIVERGENCE_M` and a real `SKIRT_DEPTH_FRACTION` against the current
+HEIGHT_SCALE/ridge/river terrain, the way F-128 originally measured them.
+
+**Two more failures observed, root cause not chased down here (out of scope for the task that found
+this) — file separately or fold in when someone re-does the whole sweep:**
+- `collision_faces() is terrain only — skirt is never handed to the physics server (D-084)` fails at
+  every LOD (`tools/chunk_stream_check.gd:176`, the `collision_min_y - mesh_min_y == SKIRT_DEPTH`
+  assertion) — plausibly the same "terrain now has more relief than the skirt math assumed" cause
+  (a border vertex's own height could now sit below `some_other_vertex - SKIRT_DEPTH`), but not
+  confirmed.
+- `found a second chunk with a harvestable placement, >= 10 chunks from the first, for the 'remote
+  peer' anchor` (F-132's union-of-interest section, `tools/chunk_stream_check.gd:529`) — no terrain
+  connection obvious; may be an unrelated scatter-table/seed issue.
+
+**What would close this:** a task claiming `world/chunk/chunk_mesher.gd` (`SKIRT_DEPTH_FRACTION`)
+and `tools/chunk_stream_check.gd` (`WORST_KNOWN_SEED`/`WORST_KNOWN_CHUNK`/`WORST_KNOWN_DIVERGENCE_M`,
+the determinism-check chunk coordinate) together: re-sweep the whole island for the real worst-case
+LOD-boundary divergence under the current heightmap (same four-seed sweep method F-128/D-084 used),
+retune `SKIRT_DEPTH_FRACTION` to clear it with a real margin, update the reference constants, and
+confirm `chunk_stream_check.gd` is green before moving on to the two unexplained failures.
+
+---
+
+### F-252 · resource_scatter.gd's _placement_at() has the exact per-sample noise-rebuild shape F-241 just fixed in the chunk mesher — height_from_set()/NoiseSet is now there to fix it
+
+**Area:** worldgen · **Severity:** low · **Found:** 2026-08-19 by lp
+
+Found 2026-08-19 by lp while sweeping for F-241's shape (the chunk mesher rebuilding fresh
+FastNoiseLite fields per sample instead of once per chunk).
+
+`world/gen/resource_scatter.gd:110` — `ResourceScatter._placement_at()` calls
+`IslandHeightmap.height(world_x, world_z, world_seed)` once per scattered candidate point, and
+`placements_for_chunk()` (`resource_scatter.gd:57`) calls `_placement_at()` once per grid cell per
+scatter def — up to `cells_per_side^2` times per def, several defs per chunk. Each `height()` call
+still rebuilds all six `FastNoiseLite` fields from scratch (F-241's fix reduced the chunk mesher's
+per-vertex cost but did not touch this call site, which is a different task's file and was out of
+F-241's claim).
+
+Lower severity than F-241 was: scatter cell sizes are metres, not the mesher's 1 m vertex spacing,
+so the per-chunk call count here is well under the mesher's 1,089 — likely tens to low hundreds
+depending on `cell_size_m`/def count, not thousands. Still the same wasted-construction shape, and
+it now has a ready-made fix: `IslandHeightmap.make_noise_set(world_seed)` once per
+`placements_for_chunk()` call (it already knows `world_seed` and `chunk_x`/`chunk_z` up front), then
+`IslandHeightmap.height_from_set(world_x, world_z, set, world_seed)` in place of `height()` at
+`_placement_at()`'s call site — same signature shape `world/chunk/chunk_mesher.gd`'s
+`_sample_heights()` now uses, and `tools/noise_reuse_check.gd` already proves the two APIs are
+bit-identical, so this is a pure perf change with no output-changing risk to verify beyond a
+`tools/resource_scatter_check.gd` clean run before/after.
+
+**What would close this:** a task claiming `world/gen/resource_scatter.gd` and
+`tools/resource_scatter_check.gd` threading a `NoiseSet` through `placements_for_chunk()` ->
+`_placement_at()` the same way F-241 did for the mesher.
+
+---
+
 ## Resolved
+
+### F-241 · The chunk mesher rebuilds three noise objects for every one of a chunk's 1,089 samples — **fixed**
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-19 by slate17 during 4.13
+
+`IslandHeightmap.height()` constructs its `FastNoiseLite` fields inside the call — deliberately, and
+for a good reason its own comment gives: a shared instance is not safe to sample from several
+`WorkerThreadPool` tasks at once. But `world/chunk/chunk_mesher.gd` calls it once per vertex, and a
+32 m chunk at 1 m spacing is **1,089 vertices**. That is ~3,300 noise constructions per chunk to
+sample three fields.
+
+4.13 measured the whole terrain cost at 3.85 ms/chunk single-threaded, up from 1.99 ms before its
+new layers (D-144). Construction is a large share of that and it buys nothing: the three fields are
+identical for every sample in the chunk — same seed, same settings — and only the sample point
+changes.
+
+**The fix, and why it was not done here:** a `NoiseSet` value built once per chunk and sampled many
+times keeps the thread-safety property exactly (one set per task, never shared) while removing the
+per-sample construction. It needs a second entry point on `IslandHeightmap` and a change in
+`chunk_mesher.gd`, which belongs to 4.3's owner rather than to a terrain-look task, and it must land
+with `check_determinism` unchanged — the refactor inside 4.13 that removed a duplicate construction
+did exactly that, and is the worked example: **hashes identical before and after is what proves an
+optimisation changed no output.**
+
+**Resolved 2026-08-19 by lp.** Fixed: `world/gen/island_heightmap.gd` gained `IslandHeightmap.NoiseSet` (bundles the six
+FastNoiseLite fields height() needs: base/coast/warp_x/warp_z/detail/ridge) and
+`make_noise_set(world_seed) -> NoiseSet` / `height_from_set(x, z, set, world_seed, detail_amp,
+ridge_amp) -> float`, built from the exact same per-field construction `height()` used inline
+before — `height()` itself is now a thin wrapper (`height_from_set(x, z, make_noise_set(world_seed),
+world_seed, ...)`), so its own behavior and cost per call are unchanged; only a caller sampling many
+points per seed benefits. `_warp_point` was split into `_warp_point_with(x, z, warp_x, warp_z)`
+(reusable) and `_warp_point` (builds warp_x/warp_z then calls it, kept for callers with one sample).
+
+`world/chunk/chunk_mesher.gd`'s `_sample_heights()` (the actual hot path — a LOD0 apron is
+33x33 = 1,089 points) now builds one `NoiseSet` via `Heightmap.make_noise_set(world_seed)` before its
+sampling loop and calls `Heightmap.height_from_set()` per point instead of `Heightmap.height()`.
+Thread safety preserved exactly: `noise_set` is a local built fresh inside `_sample_heights()`, so
+every `WorkerThreadPool` task building a chunk still gets its own set, never shared.
+
+Verified:
+- `tools/noise_reuse_check.gd` (new, written for this task) — 10/10 assertions: `height_from_set()`
+  through a `NoiseSet` is bit-for-bit identical to `height()` across two seeds and non-default
+  detail/ridge amplitudes; `ChunkMesher.build_mesh()`'s actual vertex heights (both LOD0's 1,089 and
+  a LOD1 chunk's 289) match `IslandHeightmap.height()` called directly at the same world
+  coordinates — the real integration, not just the two APIs agreeing with each other in isolation;
+  and the shared-NoiseSet path is empirically faster (measured 1.88-1.90x per sample on this shared
+  machine — construction is only part of a sample's cost, the fractal/domain-warp/river-corridor
+  math is the rest and is identical either way, so the ratio is well under "6 fields to 1" but real).
+- `agent godot --script tools/check_determinism.gd` — `terrain_hash c20eed19b44270a1` and all seven
+  other hashes identical before and after this change (byte-for-byte, same run pattern D-075's own
+  close-out used to prove a refactor changed no output).
+- `agent godot --script tools/terrain_check.gd` — 12/12 assertions, 0 failures, unchanged.
+- `agent godot --script tools/bench_chunks.gd` — before/after on this same shared machine:
+  single-threaded 9.863 -> 5.877 ms/chunk, `WorkerThreadPool`-amortized 15.519 -> 4.495 ms/chunk.
+  Determinism check inside the bench (same seed identical / different seed differs) still passes.
+- `agent godot --windowed --script tools/bench_chunk_gpu.gd` — unaffected (collision cook/GPU
+  upload dominate that budget, not noise sampling); numbers unchanged in shape from D-074/D-080.
+- `agent godot --windowed --script tools/chunk_stream_check.gd` — 5 functional failures, but
+  confirmed via `git stash` of this task's own diff that all 5 are pre-existing on unmodified
+  `main` too (identical failure text/numbers with the fix stashed out). Filed as F-251 rather than
+  fixed here — root cause is terrain retuning since F-128 (HEIGHT_SCALE 60->26, ISLAND_RADIUS
+  512->118, ridge/river layers) leaving the LOD skirt and this check's own reference constants
+  stale, unrelated to F-241's noise-reuse change.
+- Full boot: `agent godot --quit-after 60` — 0 `ERROR:` lines.
+
+Swept for the same shape elsewhere: `world/gen/resource_scatter.gd:110`'s `_placement_at()` calls
+`IslandHeightmap.height()` once per scattered candidate point (up to `cells_per_side^2` per scatter
+def per chunk) — same wasted-construction pattern, lower severity (tens-to-hundreds of calls per
+chunk, not 1,089), out of this task's claim. Filed as F-252 with the exact fix (thread a `NoiseSet`
+through `placements_for_chunk()`) since `height_from_set()` now exists to fix it with.
+
+Docs: `docs/SPECS.md` new F-241 block; `docs/DELEGATION.md` Current state entry with the new
+`NoiseSet`/`make_noise_set()`/`height_from_set()` API for the next per-point-sampling caller
+(resource_scatter's F-252, or anything else that samples many points per seed).
 
 ### F-238 · A successful extraction has no run summary of its own — task 6.8 only extended the death screen — **fixed**
 

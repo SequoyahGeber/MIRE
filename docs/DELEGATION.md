@@ -75,6 +75,51 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-241 resolved: IslandHeightmap.NoiseSet — sample many points per seed without rebuilding noise per point (lp)
+
+**Claim:** `world/gen/island_heightmap.gd`, `world/chunk/chunk_mesher.gd`, `tools/noise_reuse_check.gd`
+(new).
+
+**The API for anything sampling many points per `world_seed`** — `world/chunk/chunk_mesher.gd`'s
+`_sample_heights()` is the first caller, now using it for a LOD0 apron's 1,089 points:
+
+```gdscript
+var set: IslandHeightmap.NoiseSet = IslandHeightmap.make_noise_set(world_seed)   # once
+var h: float = IslandHeightmap.height_from_set(x, z, set, world_seed, detail_amp, ridge_amp)  # per point
+```
+
+Bit-identical to calling `IslandHeightmap.height(x, z, world_seed, detail_amp, ridge_amp)` per
+point — `height()` is now a thin wrapper around `height_from_set(x, z, make_noise_set(world_seed),
+world_seed, ...)`, unchanged in behavior or per-call cost, so nothing that already calls `height()`
+needs to change. `NoiseSet` bundles the six `FastNoiseLite` fields a sample needs
+(base/coast/warp_x/warp_z/detail/ridge); build ONE per `WorkerThreadPool` task (e.g. once per chunk)
+and never share it across tasks — same thread-safety rule the bare per-call construction always
+documented, just paid once instead of once per sample now.
+
+**Measured win:** `agent godot --script tools/bench_chunks.gd`, same machine, before/after —
+single-threaded 9.863 -> 5.877 ms/chunk, `WorkerThreadPool`-amortized 15.519 -> 4.495 ms/chunk.
+`tools/noise_reuse_check.gd`'s own micro-benchmark: ~1.9x per sample (lower than "6 fields to 1"
+suggests, because most of a sample's cost is the actual noise/domain-warp/river-corridor math, which
+`NoiseSet` reuse does not touch — only the six construction calls per sample are eliminated).
+
+**`continent()` was NOT changed** — it still builds `base_noise`/`coast_noise` inline per call. Not
+in `chunk_mesher.gd`'s hot path (only `height()`/now `height_from_set()` is), so out of F-241's
+scope; a future caller sampling `continent()` at density would want the same treatment.
+
+**Sibling gap found, not fixed here (F-252):** `world/gen/resource_scatter.gd:110`'s
+`_placement_at()` calls `IslandHeightmap.height()` once per scattered point — same shape, lower
+call count than the mesher, and now has `height_from_set()` to build against.
+
+**Verified:** `tools/noise_reuse_check.gd` (new, 10/10 assertions — bit-identical equivalence,
+`ChunkMesher.build_mesh()`'s real output matched against `height()` directly, and the speedup
+itself); `tools/check_determinism.gd`'s `terrain_hash` and all seven other hashes byte-identical
+before/after; `tools/terrain_check.gd` 0 failures; `tools/bench_chunks.gd`/`tools/bench_chunk_gpu.gd`
+still run clean. Full boot 0 `ERROR:` lines. Full spec: `docs/SPECS.md` F-241.
+
+**Found broken while verifying, filed not fixed:** `tools/chunk_stream_check.gd` (windowed) has 5
+pre-existing failures, confirmed present on unmodified `main` — terrain retuned since F-128 left the
+LOD skirt and that check's own reference constants stale (F-251, unrelated to this task).
+
 ### 2026-08-19 — F-238 resolved: a successful extraction now has its own run summary (lp)
 
 **Claim:** `ui/hud/extraction_hud.gd`, `ui/hud/extraction_hud.gd.uid`, `tools/run_summary_check.gd`,
@@ -313,6 +358,9 @@ authored into all three shipped biomes, `world/gen/biome_map.gd` rewired to the 
 IslandHeightmap.continent(x, z, seed)                  # biome-INDEPENDENT landmass; what decides biomes
 IslandHeightmap.height(x, z, seed, detail_amp, ridge_amp)   # the surface; amplitudes come from the biome
 IslandHeightmap.ridge_mask(continent_height)           # how much ridged layer applies at that height
+# Sampling MANY points per seed (F-241, 2026-08-19)? Build once, reuse — see the F-241 entry in
+# 'Current state' above: IslandHeightmap.make_noise_set(seed) -> NoiseSet, then
+# IslandHeightmap.height_from_set(x, z, set, seed, detail_amp, ridge_amp), bit-identical to height().
 BiomeMap.terrain_amplitudes(x, z, seed, defs) -> Vector2    # (detail, ridge) for a point, (1,1) if no def
 ```
 
@@ -3576,14 +3624,19 @@ ChunkMesher.CHUNK_SIZE = 32   ·   LOD_STEPS = [1, 2, 4]  (metres/vertex)   ·  
 Safe to call from any thread — no shared state, same guarantee `IslandHeightmap.height()` gives
 (D-075), which is what makes it safe from `WorkerThreadPool` at all.
 
-**Heads-up for 4.4/4.5's own per-point sampling:** `IslandHeightmap.height()` deliberately builds
-two fresh `FastNoiseLite` instances per call for thread safety (D-075). That cost D-080 measured
-directly: a LOD0 chunk's ~1225 apron samples raised `ChunkMesher.build_mesh()` from R2's original
-placeholder-noise 0.330 ms/chunk to **1.924 ms/chunk single-threaded (3.895 ms/chunk
-`WorkerThreadPool`-amortized)** — fine off-thread at chunk-streaming's sampling density (confirmed
-by the walk measurement below), but worth knowing before assuming per-vertex/per-scatter-point
-heightmap or biome sampling is free at whatever density 4.4's scatter tables or 4.5's nav bake
-resolution end up using.
+**Heads-up for 4.4/4.5's own per-point sampling (UPDATED by F-241, 2026-08-19):** `IslandHeightmap.
+height()` still builds fresh `FastNoiseLite` instances per call for thread safety (D-075, now six
+fields, not two — 4.13/4.14 added the warp/coast/ridge layers). That cost D-080 measured directly
+before F-241: a LOD0 chunk's ~1225 apron samples raised `ChunkMesher.build_mesh()` from R2's
+original placeholder-noise 0.330 ms/chunk to 1.924 ms/chunk single-threaded (3.895 ms/chunk
+`WorkerThreadPool`-amortized) — the number that made per-sample cost visible in the first place.
+**`chunk_mesher.gd` no longer pays it**: F-241 gave `IslandHeightmap` a `NoiseSet` (build once via
+`make_noise_set(world_seed)`, sample many points via `height_from_set()`) and `_sample_heights()`
+now uses it. Anything else sampling many points per seed — 4.4's scatter tables (F-252 names the
+exact call site still on the old per-call path), 4.5's nav bake resolution, or a future biome-map
+hot loop — should build one `NoiseSet` per seed/task and call `height_from_set()` rather than
+assuming a bare per-call `height()`/`continent()` is free at density. See F-241's entry above this
+one for the full API and the measured win.
 
 **Verified:** `agent godot --windowed --script tools/chunk_stream_check.gd` (must be windowed, not
 headless — F-005/D-074: the collision-cook numbers this whole system is budgeted around are

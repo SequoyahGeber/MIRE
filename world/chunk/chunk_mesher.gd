@@ -117,8 +117,14 @@ static func collision_faces(mesh: ArrayMesh, lod: int) -> PackedVector3Array:
 ## Height field with a 1-sample border on every side, at [param lod]'s step spacing, sampled at
 ## WORLD coordinates. Sampling in world space (not chunk-local) is what makes two neighbouring
 ## chunks — or two neighbouring LOD tiers — agree exactly wherever they sample the same point,
-## because `IslandHeightmap.height()` is a pure function of world x/z (D-075). No shared state:
-## every sample calls the heightmap fresh, so this is safe from any WorkerThreadPool task.
+## because `IslandHeightmap.height()` is a pure function of world x/z (D-075).
+##
+## Samples through ONE `IslandHeightmap.NoiseSet`, built once per call rather than once per sample
+## (F-241): a LOD0 apron is 33x33 = 1,089 points, and `height()`'s six `FastNoiseLite` fields are
+## identical across all of them for a fixed `world_seed` — only the sample point changes. Still
+## safe from any WorkerThreadPool task: `noise_set` is a local built fresh on every call into this
+## function, never shared or cached across calls, the same one-set-per-task rule
+## `IslandHeightmap.NoiseSet` documents.
 static func _sample_heights(
 	chunk_x: int, chunk_z: int, world_seed: int, lod: int
 ) -> PackedFloat32Array:
@@ -129,12 +135,13 @@ static func _sample_heights(
 	heights.resize(apron_side * apron_side)
 	var origin_x: float = float(chunk_x * CHUNK_SIZE)
 	var origin_z: float = float(chunk_z * CHUNK_SIZE)
+	var noise_set: Heightmap.NoiseSet = Heightmap.make_noise_set(world_seed)
 	for az: int in apron_side:
 		var world_z: float = origin_z + float((az - 1) * step)
 		var row: int = az * apron_side
 		for ax: int in apron_side:
 			var world_x: float = origin_x + float((ax - 1) * step)
-			heights[row + ax] = Heightmap.height(world_x, world_z, world_seed)
+			heights[row + ax] = Heightmap.height_from_set(world_x, world_z, noise_set, world_seed)
 	return heights
 
 

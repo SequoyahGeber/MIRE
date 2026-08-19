@@ -6105,3 +6105,18 @@ Notes along the way:
 Files: `ui/hud/extraction_hud.gd`, `ui/hud/extraction_hud.gd.uid`, `tools/run_summary_check.gd`, `ui/hud/defeat_hud.gd`, `ui/hud/defeat_hud.gd.uid`
 
 Commit at time of writing: `d047572`
+
+---
+
+### DONE · F-241 · lp · 2026-08-19T19:52:07+00:00
+
+**The chunk mesher rebuilds three noise objects for every one of a chunk's 1,089 samples**
+
+IslandHeightmap.NoiseSet + height_from_set(): chunk_mesher.gd builds one NoiseSet per chunk instead of 6 fresh FastNoiseLite fields per of 1,089 samples. Verified: tools/noise_reuse_check.gd (new, 10/10 assertions incl. bit-identical equivalence + real build_mesh() output matched against height() + measured 1.9x speedup); check_determinism.gd terrain_hash + all 7 hashes byte-identical before/after; terrain_check.gd 0 failures; bench_chunks.gd 9.863->5.877 ms/chunk single-threaded, 15.519->4.495 ms/chunk WorkerThreadPool-amortized; bench_chunk_gpu.gd unaffected; full boot 0 ERROR: lines. F-251/F-252 filed for pre-existing/sibling issues found during verification, not caused by this fix.
+
+Notes along the way:
+- Scope call: continent() left untouched (not in chunk_mesher.gd's hot path, no caller samples it at density). Perf check threshold set to 1.3x not 2x — most of a sample's cost is noise/domain-warp/river math, not FastNoiseLite construction, so measured speedup is ~1.9x rather than close to 6x; a stricter threshold would be flaky on this shared machine. Sibling gaps filed as F-251 (chunk_stream_check.gd pre-existing failures, terrain-retuning-related, confirmed unrelated via git stash) and F-252 (resource_scatter.gd's height() call, same shape, lower severity).
+
+Files: `world/gen/island_heightmap.gd`, `world/chunk/chunk_mesher.gd`, `tools/noise_reuse_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`
+
+Commit at time of writing: `349385e`

@@ -287,14 +287,21 @@ static func lobes(world_seed: int) -> Array[Vector3]:
 	return out
 
 
+## The point, bent, given already-built warp fields. Split out of `_warp_point` (F-241) so a
+## caller sampling many points for the same seed — `height_from_set`'s whole reason to exist —
+## bends each point without rebuilding `warp_x`/`warp_z`.
+static func _warp_point_with(x: float, z: float, warp_x: FastNoiseLite, warp_z: FastNoiseLite) -> Vector2:
+	return Vector2(x + warp_x.get_noise_2d(x, z) * SHAPE_WARP_AMPLITUDE,
+		z + warp_z.get_noise_2d(x, z) * SHAPE_WARP_AMPLITUDE)
+
+
 ## The point, bent. Everything that measures a distance in this file measures it here.
 static func _warp_point(x: float, z: float, world_seed: int) -> Vector2:
 	var warp_x := _make_noise(world_seed ^ SHAPE_WARP_SALT_X, SHAPE_WARP_FREQUENCY, 3,
 		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
 	var warp_z := _make_noise(world_seed ^ SHAPE_WARP_SALT_Z, SHAPE_WARP_FREQUENCY, 3,
 		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
-	return Vector2(x + warp_x.get_noise_2d(x, z) * SHAPE_WARP_AMPLITUDE,
-		z + warp_z.get_noise_2d(x, z) * SHAPE_WARP_AMPLITUDE)
+	return _warp_point_with(x, z, warp_x, warp_z)
 
 
 static func islet_centres(world_seed: int) -> Array[Vector2]:
@@ -432,10 +439,47 @@ static func _island_mask_bent(point: Vector2, world_seed: int, jitter: float = 0
 	return mask
 
 
-## The pure heightmap function. Deterministic for a given (x, z, world_seed): rebuilding both
+## Bundles the six `FastNoiseLite` fields one `height()` call builds, so a caller sampling many
+## points for the same `world_seed` — `world/chunk/chunk_mesher.gd`'s ~1,089 vertices per chunk is
+## the case that motivated this (F-241) — builds them ONCE via `make_noise_set()` and reuses them
+## through `height_from_set()` instead of paying six fresh constructions per sample. Same rule as
+## everywhere else in this file: one set per `WorkerThreadPool` task, never shared, because a
+## `FastNoiseLite` instance is not safe to sample from several tasks at once.
+class NoiseSet:
+	var base_noise: FastNoiseLite
+	var coast_noise: FastNoiseLite
+	var warp_x: FastNoiseLite
+	var warp_z: FastNoiseLite
+	var detail_noise: FastNoiseLite
+	var ridge_noise: FastNoiseLite
+
+
+## Builds one `NoiseSet` for `world_seed`. Every field is constructed exactly as `height()` built
+## it inline before F-241 — same seed, frequency and fractal settings — so sampling through a
+## `NoiseSet` and sampling through a bare `height()` call are bit-identical for the same
+## (x, z, world_seed); `tools/noise_reuse_check.gd` is the proof.
+static func make_noise_set(world_seed: int) -> NoiseSet:
+	var set := NoiseSet.new()
+	set.base_noise = _make_continent_noise(world_seed)
+	set.coast_noise = _make_noise(
+		world_seed ^ COAST_NOISE_SALT, COAST_FREQUENCY, 3, BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
+	set.warp_x = _make_noise(world_seed ^ SHAPE_WARP_SALT_X, SHAPE_WARP_FREQUENCY, 3,
+		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
+	set.warp_z = _make_noise(world_seed ^ SHAPE_WARP_SALT_Z, SHAPE_WARP_FREQUENCY, 3,
+		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
+	set.detail_noise = _make_noise(world_seed ^ DETAIL_NOISE_SALT, DETAIL_NOISE_FREQUENCY,
+		DETAIL_NOISE_OCTAVES, BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
+	set.ridge_noise = _make_noise(world_seed ^ RIDGE_NOISE_SALT, RIDGE_FREQUENCY, RIDGE_OCTAVES,
+		RIDGE_LACUNARITY, RIDGE_GAIN)
+	set.ridge_noise.fractal_type = FastNoiseLite.FRACTAL_RIDGED
+	return set
+
+
+## The pure heightmap function. Deterministic for a given (x, z, world_seed): rebuilding all six
 ## noise sources per call costs a small allocation but guarantees no shared mutable state, which is
 ## what makes this safe to call from any thread and what makes "same inputs, same output" hold
-## without qualification.
+## without qualification. A caller sampling many points per seed wants `height_from_set()` instead
+## (F-241) — same output, the construction cost paid once rather than per sample.
 ## The CONTINENT: warped fBm through the island mask, and nothing else. This is
 ## the half of the terrain that decides where land is, and it is deliberately
 ## biome-independent — `BiomeMap` reads it to decide which biome a point is in, so
@@ -483,29 +527,30 @@ static func ridge_mask(continent_height: float) -> float:
 ## caller with no biome table (and `BiomeMap` itself) gets.
 static func height(x: float, z: float, world_seed: int,
 		detail_amplitude: float = 1.0, ridge_amplitude: float = 1.0) -> float:
-	var base_noise := _make_continent_noise(world_seed)
-	var coast_noise := _make_noise(
-		world_seed ^ COAST_NOISE_SALT, COAST_FREQUENCY, 3, BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
-	var jitter: float = coast_noise.get_noise_2d(x, z) * COAST_JITTER
-	var bent: Vector2 = _warp_point(x, z, world_seed)
+	return height_from_set(x, z, make_noise_set(world_seed), world_seed,
+		detail_amplitude, ridge_amplitude)
+
+
+## Same result as `height()`, sampled through a `NoiseSet` the caller built once via
+## `make_noise_set()` instead of six fresh `FastNoiseLite` constructions per call (F-241).
+## `world_seed` is still required alongside `set`: the island mask (`lobes`/`islet_centres`) and
+## the river carve (`_apply_river` -> `river_polyline`) derive their geometry from it directly via
+## integer mixing, not from any noise field, so it is not something the noise set alone determines.
+static func height_from_set(x: float, z: float, set: NoiseSet, world_seed: int,
+		detail_amplitude: float = 1.0, ridge_amplitude: float = 1.0) -> float:
+	var jitter: float = set.coast_noise.get_noise_2d(x, z) * COAST_JITTER
+	var bent: Vector2 = _warp_point_with(x, z, set.warp_x, set.warp_z)
 	var mask: float = _island_mask_bent(bent, world_seed, jitter)
-	var continent_height: float = (base_noise.get_noise_2d(x, z) + LAND_BIAS) * HEIGHT_SCALE * mask
+	var continent_height: float = (set.base_noise.get_noise_2d(x, z) + LAND_BIAS) * HEIGHT_SCALE * mask
 
-	var detail_noise := _make_noise(
-		world_seed ^ DETAIL_NOISE_SALT, DETAIL_NOISE_FREQUENCY, DETAIL_NOISE_OCTAVES,
-		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
-	var detail: float = detail_noise.get_noise_2d(x, z) * DETAIL_NOISE_WEIGHT * detail_amplitude
+	var detail: float = set.detail_noise.get_noise_2d(x, z) * DETAIL_NOISE_WEIGHT * detail_amplitude
 
-	var ridge_noise := _make_noise(
-		world_seed ^ RIDGE_NOISE_SALT, RIDGE_FREQUENCY, RIDGE_OCTAVES,
-		RIDGE_LACUNARITY, RIDGE_GAIN)
-	ridge_noise.fractal_type = FastNoiseLite.FRACTAL_RIDGED
 	# A ridge only ever ADDS. Re-centring the ridged fractal to -1..1 and scaling
 	# it made the layer cut as deep as it lifted, which on a 26 m island carved
 	# 22 m pits — the interior came out riddled with lakes and read as a sponge.
 	# Thresholding instead keeps the crests and drops the troughs on the floor,
 	# which is what "ridges on the high ground" is supposed to mean.
-	var raw: float = ridge_noise.get_noise_2d(x, z)
+	var raw: float = set.ridge_noise.get_noise_2d(x, z)
 	var ridged: float = maxf(0.0, (raw - RIDGE_THRESHOLD) * RIDGE_GATHER)
 	var ridge: float = ridged * ridge_mask(continent_height) * ridge_amplitude * RIDGE_WEIGHT
 
