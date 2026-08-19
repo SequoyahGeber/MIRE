@@ -1,23 +1,6 @@
 {
-  "claims": {
-    "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T14:29:58+00:00",
-      "task": "6.9-review",
-      "token": null
-    }
-  },
-  "in_flight": {
-    "6.9-review": {
-      "agent": "lp",
-      "files": [
-        "docs/FINDINGS.md"
-      ],
-      "notes": [],
-      "started": "2026-08-19T14:29:58+00:00",
-      "token": null
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".": {
       "agent": "lp",
@@ -1745,9 +1728,9 @@
     },
     "docs/FINDINGS.md": {
       "agent": "lp",
-      "at": "2026-08-19T14:29:32+00:00",
+      "at": "2026-08-19T14:33:03+00:00",
       "hash": "bf6aa08487e1a90ee3cee72052042655fe895c4dd18911326dae25b128c1e125",
-      "task": "6.6-review",
+      "task": "6.9-review",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -4585,10 +4568,12 @@
       "title": "Cycle Modifier framework: deck, draw, stacking, Cycle-weighted rules, incompatibility tags"
     },
     "6.2-review": {
+      "done_at": "2026-08-19T14:33:02+00:00",
+      "done_by": "lm",
       "est": "0.5",
       "milestone": "M6",
       "review_of": "6.2",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 6.2 @ 5a6c11f \u2014 judge the commit, file findings, no edits"
     },
@@ -4682,10 +4667,12 @@
       "title": "Unlock tree + UI. Variety only, never power (`DESIGN.md` \u00a74.6)"
     },
     "6.9-review": {
+      "done_at": "2026-08-19T14:33:03+00:00",
+      "done_by": "lp",
       "est": "0.5",
       "milestone": "M6",
       "review_of": "6.9",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T1",
       "title": "Review 6.9 @ 2268b33 \u2014 judge the commit, file findings, no edits"
     },

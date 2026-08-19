@@ -5339,3 +5339,31 @@ Commit at time of writing: `a32bffd`
 Clean — ac70bf3 verified against SPECS.md 4.8, ARCHITECTURE.md §2.2 Wellspring row, D-092, DESIGN.md §4.2/§5. Host authority correct throughout: net_request_toggle_channel host-validated (range + capped-state re-checked server-side), host_tick/present_count/session_player_total all host-only gated via _owns_mutation(), defense wave spawn goes through WaveSpawner.host_spawn_wave_at's own _owns_wave_director() gate. Solo (150s, 2.5x per D-092) vs co-op (60s, matches DESIGN.md's '~60s') timers correct; cancel-forfeits vs absence-pauses split matches D-092. PROTOCOL_VERSION bumped 18->19, handshake_check.gd updated to match. tools/wellspring_check.gd: WELLSPRING_CHECK failures=0. tools/wave_spawner_check.gd: WAVE_SPAWNER_CHECK failures=0. tools/handshake_check.gd: 0 failures. Full headless boot: 0 ERROR: lines. Two real defects existed in the original commit but both were already independently found and fixed by later sessions before this review: WellspringHud was never registered as an autoload in ac70bf3 itself (confirmed via git show ac70bf3 -- project.godot, empty diff) -- caught as F-164, fixed by lp; and the host-only-guarded EventBus.emit_wellspring_capped() in _finish_cap() wouldn't reach a client's own bus -- caught as F-168, fixed by lm. Nothing new to file.
 
 Commit at time of writing: `180e3f9`
+
+---
+
+### DONE · 6.2-review · lm · 2026-08-19T14:33:02+00:00
+
+**Review 6.2 @ 5a6c11f — judge the commit, file findings, no edits**
+
+Clean, no findings. 5a6c11f verified against SPECS.md 6.2, ARCHITECTURE.md §2.2, D-103. cycle_modifier_check.gd 15/15 PASS; cycle_check.gd/mire_grid_check.gd/wave_spawner_check.gd all failures=0; full boot 0 ERROR:. Host authority, F-016 discipline, and no-new-RPC WorldDeltaLog reuse all correct.
+
+Notes along the way:
+- Reviewed 5a6c11f against SPECS.md 6.2, ARCHITECTURE.md §2.2 (Cycle state row: HOST), D-103. CycleModifierDef/CycleModifierService/event_bus/registry/long_night.tres all match spec exactly: weighted Cycle-eligible draw, symmetric tag exclusion + explicit incompatible_with, deck depletes without duplicate draws, WorldDeltaLog reuse (no new RPC, matches D-100's no-PROTOCOL_VERSION-bump precedent), F-016 discipline (CycleModifierDef never bare-referenced, Resource+.get/.call throughout), _owns_modifiers() host gate correct. cycle_modifier_check.gd 15/15 PASS (verified live, not just commit message). Regressions: cycle_check.gd, mire_grid_check.gd, wave_spawner_check.gd all failures=0. Full boot: 0 ERROR: lines. DELEGATION.md Current state carries the public API for 6.3. Noted for context only (not a 6.2 defect): a later commit 984f01c (F-220) reseeds the draw from run_seed, reversing 6.2's original real-entropy choice documented in D-103 — that's a separate already-resolved finding, out of this review's scope.
+
+Commit at time of writing: `bb11755`
+
+---
+
+### DONE · 6.9-review · lp · 2026-08-19T14:33:03+00:00
+
+**Review 6.9 @ 2268b33 — judge the commit, file findings, no edits**
+
+Clean, no findings. Reviewed 2268b33 (+9485513 docs) against SPECS.md 6.9 block, ARCHITECTURE.md §2.2 new Unlocks row, D-111, F-173. Authority correct (None, per-player user://unlocks.json, same shape as Salvage). UnlockDef schema structurally prevents power (no stat field, D-044 shape). purchase()/spend_salvage() both refuse-whole-thing on every failure path, verified in source. Autoload registration order matches spec exactly. No bare autoload identifiers. tools/unlock_check.gd (current, 40+ assertions) UNLOCK_CHECK failures=0, ERROR: lines match declared EXPECTED_ERROR_PATTERNS only. 11 named regressions all failures=0. agent godot --quit-after 15: 0 ERROR:.
+
+Notes along the way:
+- Verified 2268b33 (+9485513 docs) against SPECS.md 6.9: UnlockDef schema has no stat field (never-power enforced structurally, D-044 shape); UnlockService/SalvageService.spend_salvage()/purchase() both refuse-the-whole-thing on every failure path (checked source directly, no partial mutation on any refusal branch); autoload order in project.godot matches spec exactly (UnlockService after SalvageService, UnlockMenu before MainMenu); no bare autoload identifiers anywhere reachable by --script (get_node_or_null+call throughout). Worked example's original .tres description (git show 2268b33:content/unlocks/unlock_deep_pocket.tres) correctly said 'No pool yet checks...' — matches spec's explicit F-173 deferral, not a false claim (the current working-tree version I first looked at is post-F-173-fix and reads differently; had to diff the actual commit to be sure). tools/unlock_check.gd at HEAD (40+ assertions incl. later F-173 chest-gate additions) UNLOCK_CHECK failures=0, only declared ERROR: patterns. All 11 named regressions green. Full boot 0 ERROR:. No findings.
+
+Files: `docs/FINDINGS.md`
+
+Commit at time of writing: `bb11755`
