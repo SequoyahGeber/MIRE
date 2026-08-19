@@ -69,6 +69,36 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-248 · M8's real-App-ID dependency isn't encoded anywhere the board can see, so a task that needs it can surface as routable while 8.1/8.2 are still `todo`
+
+**Area:** process/tooling · **Severity:** low · **Found:** 2026-08-19 by lp during 8.11
+
+8.11 ("three depots wired to one app, per-platform launch options") showed up as a normal T1 `todo`
+task with no blocker flag, but its entire deliverable is impossible until task 8.2 (App ID swap)
+lands a real App ID — which itself needs task 8.1 (Steamworks account/tax/banking/$100 fee,
+Sequoyah's alone to run). D-132 had already called this out in prose for 8.4/8.11 specifically, but
+nothing in `.agent/state.json`/`agent brief`/`agent board` encodes "needs a real App ID" as a
+dependency, so an agent (or the director) discovers the block only by reading D-132 or SPECS.md —
+if either is missing or stale for a given task, the block isn't discoverable at all short of
+starting the task and hitting the wall, which is what happened here.
+
+**The same gap likely affects other M8 tasks that read as independently routable but aren't:** 8.3
+(achievements/stats/rich presence — real definitions need the real app), 8.5/8.6/8.7 (store page,
+trailer, Coming Soon — need the store page, which needs the App ID), 8.9 (build review submission).
+Not confirmed for each individually — that would need reading each one's own spec, which is outside
+this task's claim — but the shape (a T1/T0 task with no explicit prerequisite field, silently
+gated on 8.1/8.2's real-world paperwork) is the same one 8.11 just hit.
+
+**What would close this:** either a lightweight `depends_on` field on task rows the board can
+render as a blocker (e.g. `8.11 depends: 8.2`), or — cheaper — a standing note in `docs/NEXT.md` or
+at the top of M8's `ROADMAP.md` section listing which M8 tasks are unroutable until 8.1/8.2 ship, so
+the director doesn't have to rediscover this per-task. Left open rather than fixed here: changing
+`agent brief`/`agent board`'s rendering is harness work outside 8.11's own claim
+(`tools/steam/*`), and doing it well needs a design call (a real dependency graph vs. a one-line
+doc note) that deserves its own decision, not a rider on this task.
+
+---
+
 ### F-241 · The chunk mesher rebuilds three noise objects for every one of a chunk's 1,089 samples
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-19 by slate17 during 4.13

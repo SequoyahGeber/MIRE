@@ -69,7 +69,9 @@ one-line change if you routed it through `NetTransport` (`ARCHITECTURE.md` §2.3
 - [ ] Stats for the run-summary screen
 - [ ] Rich presence ("In a run — Cycle 7")
 - [ ] Steam Cloud for meta-progression save (small, easy, prevents heartbreak)
-- [ ] Depots + build pipeline; scripted `steamcmd` upload
+- [ ] Depots + build pipeline; scripted `steamcmd` upload. Pipeline built (task 8.4); the
+      dashboard runbook + ID-wiring script are ready in `tools/steam/DEPOT_SETUP.md` — blocked on
+      S2's real App ID (task 8.11, D-132)
 - [ ] **Password-protected beta branch** for friends
 - [ ] Test: install from Steam on a clean machine that isn't yours
 

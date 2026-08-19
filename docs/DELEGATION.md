@@ -75,6 +75,31 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 8.11: three depots wired to one app, per-platform launch options — genuinely blocked on 8.1/8.2, prep tooling shipped instead (lp)
+
+**Cannot complete this session.** 8.11's actual deliverable — real Steamworks depots and real
+per-platform launch options — needs a real App ID, which needs task 8.1 (Steamworks
+account/tax/banking/$100 fee) and 8.2 (App ID swap), both still `todo`. Steamworks' Depots and
+Launch Options pages don't exist until an App ID does, and 8.1 is Sequoyah's account/payment to run
+alone (`AGENTS.md` D-039). D-132 called this split in advance; this is that prediction landing.
+
+**What shipped instead — the most this task could do without an App ID:**
+- `tools/steam/DEPOT_SETUP.md` — the exact Steamworks dashboard runbook: create 3 depots, set each
+  one's OS/arch restriction, set each platform's launch option (Executable/Arguments/Type/Config
+  OS/Arch). The per-platform executable table (`MIRE.exe`/`MIRE.app`/`MIRE.x86_64`) is
+  cross-checked against `export_release.sh` (task 8.4) and each `depot_<platform>.vdf.template`'s
+  `ContentRoot`, so it can't silently drift from the pipeline it describes. One launch option per
+  platform — no dedicated server build exists (`ARCHITECTURE.md` §2.1).
+- `tools/steam/apply_ids.sh <app_id> <depot_windows> <depot_macos> <depot_linux>` — writes the four
+  real IDs into `steam_build_config.sh` in one command, refusing wrong arg count, non-numeric
+  input, either placeholder reappearing (480/0), or two depot IDs colliding.
+- `tools/steam/depot_wiring_check.sh` — verifies all of the above; passes at HEAD (see SPECS.md).
+
+**Next agent to pick this up (only after 8.2 lands a real App ID):** follow `DEPOT_SETUP.md` step
+by step in the Steamworks dashboard, run `apply_ids.sh` with the four real IDs, re-run
+`depot_wiring_check.sh`, then a real `steam_upload.sh internal-beta <username>`. Don't redesign the
+runbook or the script — D-132's addendum and `docs/SPECS.md`'s `## 8.11 ·` block both point here.
+
 ### 2026-08-19 — Task 4.14: every island gets its river — analytic, carved, monotonically downhill (yarrow21)
 
 **What shipped, verified:** the river layer in `world/gen/island_heightmap.gd` (D-142's recipe,

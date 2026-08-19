@@ -3862,6 +3862,16 @@ firing). Would reconsider the 8.4/8.11 split if 8.11 turns out to need pipeline 
 config values (e.g. a fourth depot, or a build layout steampipe can't express with this task's
 `FileMapping`/`ContentRoot` shape) — that would mean the split drew the line in the wrong place.
 
+**2026-08-19 addendum (task 8.11):** confirmed — 8.1/8.2 still `todo` when 8.11 ran, so the real
+depot creation and dashboard launch options this decision assigned to 8.11 stayed genuinely
+unreachable, exactly as predicted. 8.11 shipped everything short of that: `tools/steam/DEPOT_SETUP.md`
+(the exact dashboard runbook + per-platform launch option values, cross-checked against what
+`export_release.sh` builds) and `tools/steam/apply_ids.sh` (writes real IDs into
+`steam_build_config.sh` in one command instead of a hand-edit, once they exist). **Whoever resumes
+8.11 after 8.2 lands should not redesign this** — follow `DEPOT_SETUP.md` step by step, run
+`apply_ids.sh`, then `tools/steam/depot_wiring_check.sh` to confirm the wiring, then a real
+`steam_upload.sh`. Full spec: `docs/SPECS.md`'s `## 8.11 ·` block.
+
 ### D-133 · 2026-08-19 · F-161/F-165/F-169/F-178's four un-bumped RPCs get ONE retroactive `PROTOCOL_VERSION` bump, not four — and the rule that was missed four times gets a mechanical check, not a fifth reminder
 
 Four tasks (5.3, 6.5, 6.7, F-157) each shipped real new RPCs while `core/net/net_version.gd` and

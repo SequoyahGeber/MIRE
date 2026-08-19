@@ -6226,6 +6226,61 @@ no CLI/VDF surface exists for it), per-platform Steam launch options (8.11).
 
 ---
 
+## 8.11 · Three depots wired to one app, per-platform launch options — blocked on 8.1/8.2, prep tooling shipped
+
+No block existed here beforehand; this task wrote one per SPECS.md's own preamble. **This task
+cannot complete.** Its own deliverable — real Steamworks depots and real per-platform launch
+options — requires a real App ID, which requires task 8.1 (Steamworks account, tax/banking, $100
+Direct fee) and 8.2 (App ID swap), both still `todo` in `.agent/state.json` as of 2026-08-19.
+Steamworks' Builds → Depots page and the Installation → Launch Options page do not exist until an
+App ID does, and 8.1's account/tax/payment steps are Sequoyah's alone to run — no agent has that
+account access (`AGENTS.md` D-039's "his accounts" hand-off exception). D-132 already drew the
+8.4/8.11 split; this is that split's other half, and it hits the wall D-132 predicted.
+
+**Authority:** none (`ARCHITECTURE.md` §2.2) — offline build/release tooling, not a networked
+runtime system. Nothing here runs inside the game process.
+
+**Claim:** `tools/steam/steam_build_config.sh` (comment only — no placeholder value changed),
+`tools/steam/apply_ids.sh` (new), `tools/steam/depot_wiring_check.sh` (new),
+`tools/steam/DEPOT_SETUP.md` (new).
+
+**What this task built, since the real wiring is impossible right now:**
+- `tools/steam/DEPOT_SETUP.md` — the exact runbook for the Steamworks dashboard steps (create 3
+  depots, set each one's OS/arch restriction, set each platform's launch option fields) plus the
+  per-platform executable table (`MIRE.exe`/`MIRE.app`/`MIRE.x86_64`) cross-checked against what
+  `export_release.sh` (task 8.4) actually builds and what each `depot_<platform>.vdf.template`'s
+  `ContentRoot` already points at. One launch option per platform — MIRE has no dedicated server
+  build (`ARCHITECTURE.md` §2.1, `DESIGN.md` §7 cut list), so there's no client/server pair to
+  disambiguate.
+- `tools/steam/apply_ids.sh <app_id> <depot_windows> <depot_macos> <depot_linux>` — writes the four
+  real IDs into `steam_build_config.sh` in one command once they exist, refusing on wrong arg
+  count, non-numeric input, either placeholder value (480/0) reappearing, or two depot IDs
+  colliding. This is as much of "wiring the real IDs in" as is possible before an App ID exists.
+- `tools/steam/depot_wiring_check.sh` — the verify script below.
+
+**Verify:** `bash tools/steam/depot_wiring_check.sh` — `bash -n` on every `tools/steam/*.sh` script;
+`apply_ids.sh` run against a scratch copy of `steam_build_config.sh` refuses wrong arg count,
+non-numeric input, the 480 App ID placeholder, a 0 depot placeholder, and two equal depot IDs, then
+succeeds on four valid distinct numeric IDs and rewrites exactly those four lines, leaving every
+other line byte-identical (diffed); `DEPOT_SETUP.md`'s three executable names are cross-checked
+against `export_release.sh` and each depot template's `ContentRoot`. All pass at HEAD.
+
+**Swept for the same shape elsewhere (AGENTS.md §3):** no other task in the repo hand-edits a
+placeholder config file the way `steam_build_config.sh` does, so there was no sibling "write real
+values in once available" gap to widen — this is new tooling for a pattern task 8.4 introduced.
+
+**Done means (once un-blocked):** real depots exist in the Steamworks dashboard, their IDs are
+applied via `apply_ids.sh`, `depot_wiring_check.sh` still passes, and a real
+`steam_upload.sh internal-beta <username>` succeeds. **None of that is reachable from this
+session** — 8.1/8.2 have not run.
+
+**Explicitly NOT this task:** task 8.1 itself (Steamworks account/tax/banking/$100 fee — his
+account, D-039), task 8.2 (App ID swap), actually creating the Steamworks depots or setting the
+dashboard launch option fields (both require the App ID 8.2 produces), setting a beta branch's
+password (dashboard-only, no repo-side surface at all — D-132).
+
+---
+
 ## F-211 · Task 8.4's work order named the wrong verification scripts — `build_check.gd`/`build_net_check.gd`/`buildable_content_check.gd` test the buildable/crafting placement system (task 3.6/3.7), not the Steam export build pipeline
 
 **Claim:** `.agent/bin/agent`. No networked system, no `ARCHITECTURE.md` §2.2 row — this is offline
