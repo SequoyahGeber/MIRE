@@ -4078,3 +4078,19 @@ Verified the finding's premise first (agent godot --script tools/cycle_modifier_
 Files: `docs/SPECS.md`, `docs/FINDINGS.md`, `tools/_probe_typed_array_convert.gd`
 
 Commit at time of writing: `ecbcd0b`
+
+---
+
+### DONE · F-164 · lp · 2026-08-19T04:54:29+00:00
+
+**A capped Wellspring's re-corruption clock (task 6.4) has no HUD or ambient warning before it finishes — only the in-world mesh swap tells a player**
+
+Fixed the reported HUD/ambient-warning gap AND registered WellspringHud in [autoload] (it was never added, so the whole Wellspring HUD was unreachable in the live game since 4.8). New top-centre ambient panel in ui/hud/wellspring_hud.gd warns for ANY capped Wellspring crossing RECORRUPTING_VISUAL_FRACTION, independent of proximity. Verified: agent godot --script tools/wellspring_hud_check.gd -> WELLSPRING_HUD_CHECK failures=0 (11/11 PASS), run twice. No regressions: wellspring_check.gd and wellspring_recorruption_check.gd both failures=0. Full boot (agent godot --quit-after 20) clean, zero ERROR:. Finding moved to Resolved in docs/FINDINGS.md; new SPECS.md F-164 block; DELEGATION.md Current state entry added.
+
+Notes along the way:
+- Decision: ambient warning is map-wide + threshold-only, not gated on proximity or on 'the local player's own cap history' (no such tracking exists anywhere) — reasoning is in the new SPECS.md F-164 block and DELEGATION.md's Current state entry, not repeated as a separate D-number since it's UI-only scope with no cross-cutting API contract at stake.
+- F-149 recurred: docs/FINDINGS.md + docs/SPECS.md edits for this finding landed inside lm's F-163 commit (6f2aaa6), not a commit of this session's own — same shared-index window F-149 already documents. Verified harmless: content is correct and complete (findings_numbering_check.gd clean, F-164 correctly under ## Resolved), only mis-attributed. No action needed beyond this note.
+
+Files: `ui/hud/wellspring_hud.gd`, `tools/wellspring_hud_check.gd`, `tools/wellspring_hud_check.gd.uid`
+
+Commit at time of writing: `6f2aaa6`

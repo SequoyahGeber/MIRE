@@ -70,21 +70,6 @@
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
     },
-    "tools/wellspring_hud_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:50:30+00:00",
-      "task": "F-164"
-    },
-    "tools/wellspring_hud_check.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:50:30+00:00",
-      "task": "F-164"
-    },
-    "ui/hud/wellspring_hud.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:50:30+00:00",
-      "task": "F-164"
-    },
     "world/environment/draw_policy.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:57:54+00:00",
@@ -132,16 +117,6 @@
       ],
       "notes": [],
       "started": "2026-08-18T21:51:43+00:00"
-    },
-    "F-164": {
-      "agent": "lp",
-      "files": [
-        "ui/hud/wellspring_hud.gd",
-        "tools/wellspring_hud_check.gd",
-        "tools/wellspring_hud_check.gd.uid"
-      ],
-      "notes": [],
-      "started": "2026-08-19T04:50:30+00:00"
     }
   },
   "recent": {
@@ -2059,11 +2034,6 @@
       "hash": "23577ad0f25b2e6853c1b90a2c86c7acda7948b497d867db6c29dd7e4c41dec4",
       "task": "3.2"
     },
-    "systems/powerups/powerup_def.gd": {
-      "agent": "reed16",
-      "at": "2026-08-18T04:53:36+00:00",
-      "task": "F-078"
-    },
     "systems/rules/hook_def.gd": {
       "agent": "lp",
       "at": "2026-08-18T23:19:22+00:00",
@@ -2637,11 +2607,6 @@
       "hash": "303bb26659b755d943ab85476ba1b9da07f3da059d214eeeae59db34ffb5d83d",
       "task": "4.7"
     },
-    "tools/powerup_check.gd": {
-      "agent": "reed16",
-      "at": "2026-08-18T04:53:36+00:00",
-      "task": "F-078"
-    },
     "tools/powerup_review_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T05:35:30+00:00",
@@ -2810,6 +2775,18 @@
       "hash": "06229b2e9a2465f8313be9e51606939f20d1c38f6edb4dfebd085558ba90b036",
       "task": "4.8"
     },
+    "tools/wellspring_hud_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T04:54:29+00:00",
+      "hash": "f19200bb76653510cc0b6287634a5332a013c63a069eeffdab4291cb759a90d6",
+      "task": "F-164"
+    },
+    "tools/wellspring_hud_check.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-19T04:54:29+00:00",
+      "hash": "5e17c0fb475754cfd9b8734b0cea692ac0c39ef77a00645a7b7c13b4d7ddcf8a",
+      "task": "F-164"
+    },
     "tools/wellspring_net_check.gd": {
       "agent": "lm",
       "at": "2026-08-18T22:12:21+00:00",
@@ -2874,10 +2851,10 @@
       "task": "F-099"
     },
     "ui/hud/wellspring_hud.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T21:36:44+00:00",
-      "hash": "473e007f65ee7b308278a8a27bc2cc0c18c77c2a7d446b59f1c8ae81f7ec9a6c",
-      "task": "4.8"
+      "agent": "lp",
+      "at": "2026-08-19T04:54:29+00:00",
+      "hash": "20a329bae93822f106c605775c9342f6e25434458a11f27228cd5aa5a8e8d2a7",
+      "task": "F-164"
     },
     "ui/lobby/lobby_menu.gd": {
       "agent": "moss11",
@@ -5535,9 +5512,11 @@
       "title": "`expr as Array[T]` silently fails to convert an untyped Array's element type \u2014 a `.set()` onto a typed-array `@export` then no-ops with no error"
     },
     "F-164": {
+      "done_at": "2026-08-19T04:54:29+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "A capped Wellspring's re-corruption clock (task 6.4) has no HUD or ambient warning before it finishes \u2014 only the in-world mesh swap tells a player"
     },
