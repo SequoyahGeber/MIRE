@@ -65,6 +65,10 @@ static func placements_for_chunk(
 
 	var origin_x: float = float(chunk_x * CHUNK_MESHER.CHUNK_SIZE)
 	var origin_z: float = float(chunk_z * CHUNK_MESHER.CHUNK_SIZE)
+	# F-252, same fix F-241 gave the chunk mesher: one NoiseSet built here and reused for every
+	# candidate point in this chunk, instead of `_placement_at()` rebuilding all six FastNoiseLite
+	# fields per call via a bare `height()`.
+	var noise_set: ISLAND_HEIGHTMAP.NoiseSet = ISLAND_HEIGHTMAP.make_noise_set(world_seed)
 
 	for def: Resource in defs:
 		var total_weight: float = float(def.call(&"total_weight"))
@@ -77,7 +81,7 @@ static func placements_for_chunk(
 			for gz: int in cells_per_side:
 				var placement: Dictionary = _placement_at(
 					chunk_x, chunk_z, gx, gz, cell, origin_x, origin_z, world_seed, def, total_weight,
-					biome_defs
+					biome_defs, noise_set
 				)
 				if not placement.is_empty():
 					out.append(placement)
@@ -86,7 +90,8 @@ static func placements_for_chunk(
 
 static func _placement_at(
 	chunk_x: int, chunk_z: int, gx: int, gz: int, cell: float, origin_x: float, origin_z: float,
-	world_seed: int, def: Resource, total_weight: float, biome_defs: Array
+	world_seed: int, def: Resource, total_weight: float, biome_defs: Array,
+	noise_set: ISLAND_HEIGHTMAP.NoiseSet
 ) -> Dictionary:
 	var def_id: StringName = def.get(&"id")
 	var rng := RandomNumberGenerator.new()
@@ -107,7 +112,7 @@ static func _placement_at(
 	var world_x: float = origin_x + local_x
 	var world_z: float = origin_z + local_z
 
-	var height: float = ISLAND_HEIGHTMAP.height(world_x, world_z, world_seed)
+	var height: float = ISLAND_HEIGHTMAP.height_from_set(world_x, world_z, noise_set, world_seed)
 	var moisture: float = BIOME_MAP.moisture(world_x, world_z, world_seed)
 	var biome_id: StringName = BIOME_MAP.assign(height, moisture, biome_defs)
 	# The jitter may have carried a point out of the biome its cell nominally belongs to. Skip

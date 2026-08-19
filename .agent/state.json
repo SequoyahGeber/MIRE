@@ -1,5 +1,17 @@
 {
   "claims": {
+    ".agent/bin/agent": {
+      "agent": "bram1",
+      "at": "2026-08-19T21:29:09+00:00",
+      "task": "F-260",
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+    },
+    ".agent/bin/lane": {
+      "agent": "bram1",
+      "at": "2026-08-19T21:29:09+00:00",
+      "task": "F-260",
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+    },
     "autoload/build_service.gd": {
       "agent": "lm",
       "at": "2026-08-19T21:12:49+00:00",
@@ -114,11 +126,11 @@
       "task": "F-243",
       "token": null
     },
-    "tools/resource_scatter_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T20:37:21+00:00",
-      "task": "F-252",
-      "token": null
+    "tools/poi_check.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-19T22:07:06+00:00",
+      "task": "4.16",
+      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "tools/run_restart_check.gd": {
       "agent": "lm",
@@ -156,17 +168,17 @@
       "task": "4.16",
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
+    "world/gen/poi_map.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-19T22:07:06+00:00",
+      "task": "4.16",
+      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
+    },
     "world/gen/procedural_world.gd": {
       "agent": "hollow7",
       "at": "2026-08-19T21:18:49+00:00",
       "task": "4.16",
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
-    },
-    "world/gen/resource_scatter.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T20:37:21+00:00",
-      "task": "F-252",
-      "token": null
     },
     "world/gen/undergrowth.gd": {
       "agent": "hollow7",
@@ -192,7 +204,9 @@
         "world/gen/poi_def.gd",
         "content/poi/loot_cache.tres",
         "content/poi/enemy_nest.tres",
-        "content/poi/station_camp.tres"
+        "content/poi/station_camp.tres",
+        "world/gen/poi_map.gd",
+        "tools/poi_check.gd"
       ],
       "notes": [],
       "started": "2026-08-19T21:18:49+00:00",
@@ -226,15 +240,15 @@
       "started": "2026-08-19T21:12:49+00:00",
       "token": null
     },
-    "F-252": {
-      "agent": "lp",
+    "F-260": {
+      "agent": "bram1",
       "files": [
-        "world/gen/resource_scatter.gd",
-        "tools/resource_scatter_check.gd"
+        ".agent/bin/agent",
+        ".agent/bin/lane"
       ],
       "notes": [],
-      "started": "2026-08-19T20:37:21+00:00",
-      "token": null
+      "started": "2026-08-19T21:29:09+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     }
   },
   "recent": {
@@ -258,12 +272,6 @@
       "hash": "46491bac54f6ec11618a35a78ea356420052de3a6d50f1b6f9d8395d088da54c",
       "task": "F-189",
       "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
-    },
-    ".agent/bin/lane": {
-      "agent": "bram1",
-      "at": "2026-08-18T21:41:43+00:00",
-      "hash": "c0c2c7623fbc3ab6335732619acb07f81b73e9013b2c45f9eb320971496fdee5",
-      "task": "F-142"
     },
     ".agent/bin/lane-keeper": {
       "agent": "bram1",
@@ -1198,12 +1206,6 @@
       "hash": "6389418dfe91fc453840803c3d97f02ea2830be0df2800410a1417cf23a52129",
       "task": "F-173",
       "token": null
-    },
-    "autoload/wellspring_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T21:36:44+00:00",
-      "hash": "eeb7ec96bc55e3410a021329a48a66a3ad8705470dc325959f22e23698ce851e",
-      "task": "4.8"
     },
     "autoload/world_delta_log.gd": {
       "agent": "lp",
@@ -2360,12 +2362,6 @@
       "task": "4.14",
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
-    "tools/chest_check.gd": {
-      "agent": "reed16",
-      "at": "2026-08-18T22:00:56+00:00",
-      "hash": "d6573d6fa156a1e39bcc3f14cc781ea225cb0ebc2713b725960c6fb27a1427ec",
-      "task": "F-140"
-    },
     "tools/chest_placement_check.gd": {
       "agent": "lp",
       "at": "2026-08-19T05:56:17+00:00",
@@ -2588,12 +2584,6 @@
       "at": "2026-08-19T02:33:53+00:00",
       "hash": "c7dc42a86aa52b200dc3341e794b4b2c4571911c542f2a349c214b7601bda6a5",
       "task": "6.5"
-    },
-    "tools/flora_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T21:40:25+00:00",
-      "hash": "35c05db43290598337c9c45ebc4b3a85d82c2c619f6dd930cfdfae204f8bdc4e",
-      "task": "F-122"
     },
     "tools/food_check.gd": {
       "agent": "slate17",
@@ -2846,10 +2836,10 @@
       "token": null
     },
     "tools/resource_scatter_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T15:24:28+00:00",
+      "agent": "lp",
+      "at": "2026-08-19T22:08:33+00:00",
       "hash": "69e95ed466042d78d716343b2e9f3451ffd43cef2c7c1b76553f472557c32243",
-      "task": "F-231",
+      "task": "F-252",
       "token": null
     },
     "tools/reward_service_check.gd": {
@@ -3018,12 +3008,6 @@
       "task": "8.3",
       "token": null
     },
-    "tools/step_up_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T21:57:34+00:00",
-      "hash": "cc7468eb06b868ffbc1b32f75d811c4794e8a095219f9f558adad53afbbaa6e3",
-      "task": "F-136"
-    },
     "tools/stringname_sort_check.gd": {
       "agent": "lm",
       "at": "2026-08-19T05:33:29+00:00",
@@ -3085,12 +3069,6 @@
       "at": "2026-08-19T03:59:24+00:00",
       "hash": "69192a59ae1ca29ba1f827f7e82d88491aa16ad1f93dca3ba41fe76ef30b3e5d",
       "task": "5.9"
-    },
-    "tools/wave_spawner_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T21:36:44+00:00",
-      "hash": "ae266ae40af7627842c854b372822a0a12ad785a636b0b42bf096a7ef53c20d2",
-      "task": "4.8"
     },
     "tools/wave_spawner_cycle_net_check.gd": {
       "agent": "lp",
@@ -3381,6 +3359,13 @@
       "hash": "a30f5f98f79dddbcce0af985e8464dac72437a790662f5c31b6cc40028df0368",
       "task": "4.15",
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
+    },
+    "world/gen/resource_scatter.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T22:08:33+00:00",
+      "hash": "b76661fe001d8b25c64130a3af82bc9fcafaf7cd87a22ba95c07365965b6112a",
+      "task": "F-252",
+      "token": null
     },
     "world/gen/resource_scatter_field.gd": {
       "agent": "lm",
@@ -7024,9 +7009,11 @@
       "title": "tools/chunk_stream_check.gd (windowed) has 5 pre-existing failures \u2014 terrain retuning since F-128 left the LOD skirt too shallow for the real seam gap"
     },
     "F-252": {
+      "done_at": "2026-08-19T22:08:33+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "resource_scatter.gd's _placement_at() has the exact per-sample noise-rebuild shape F-241 just fixed in the chunk mesher \u2014 height_from_set()/NoiseSet is now there to fix it"
     },
@@ -7080,6 +7067,13 @@
       "status": "todo",
       "tier": "F",
       "title": "F-243's restart resets Cycle/Mire/inventory/etc but not WaveSpawner's unlocked enemy roster"
+    },
+    "F-260": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "docs/DECISIONS.md has no atomic number allocator, so two agents took D-146 within minutes of each other"
     }
   },
   "version": 1

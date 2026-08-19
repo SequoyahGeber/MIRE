@@ -6248,3 +6248,42 @@ Commit at time of writing: `f15cc40`
 D-150: LM switched to Opus at high effort (the weekly is the binding budget and expires unspent, so spend it on the most capable model available), and second_pass added — a completed task on that lane auto-queues agent order --review --fix against the commit it just made, so the reviewer repairs what it finds instead of filing it for a separate dispatch. Guards against a self-feeding queue: reviews are never reviewed, one pass per task per chain, nothing queued without a commit. Verified --fix and review-only render different orders; harness_check 34/34.
 
 Commit at time of writing: `f15cc40`
+
+---
+
+### HANDOFF · F-252 · lp · 2026-08-19T21:36:36+00:00
+
+**resource_scatter.gd's _placement_at() has the exact per-sample noise-rebuild shape F-241 just fixed in the chunk mesher — height_from_set()/NoiseSet is now there to fix it**
+
+LP stopped on F-252 at 2026-08-19T21:36:36+00:00 (exit 124, error). Tokens this run: 88,717 in / 384 out.
+The working diff is UNTOUCHED — its partial edits are still on disk, so read them before redoing anything. Full log: .agent/logs/LP-F-252-20260819-203623.jsonl
+
+Files it had already written or edited: world/gen/resource_scatter.gd.
+Its last words: "Still alive and legitimately running (23:43 elapsed, another lane's godot check). This is a normal blocking wait per the work order's guidance. I'll keep waiting in-process."
+Its last actions:
+  - Bash .agent/bin/agent godot --script tools/resource_scatter_check.gd 2>&1 | tail -80
+  - TaskOutput 
+  - TaskOutput 
+  - Bash ps -p 48197,48207 -o pid,etime,%cpu,command 2>&1; echo ---; cat "/Users/sequoyah
+  - Bash ps -p 49803 -o pid,etime,%cpu,command 2>&1; echo ---; ps -ef | grep -i godot | g
+  - TaskOutput 
+
+Tail of the failure:
+use_id":"toolu_01LGkkjpiFpc2sDbnxodtBC3-heartbeat-14","tool_name":"TaskOutput","parent_tool_use_id":"toolu_01LGkkjpiFpc2sDbnxodtBC3","elapsed_time_seconds":450,"heartbeat":true,"session_id":"66b50f47-dd14-48f1-8725-f1aacee0486f","uuid":"1657baa5-01ac-40a1-8548-cb33d67dd179"}
+timeout: exceeded 3600s
+
+Files: `world/gen/resource_scatter.gd`, `tools/resource_scatter_check.gd`
+
+Commit at time of writing: `ad3de76`
+
+---
+
+### DONE · F-252 · lp · 2026-08-19T22:08:33+00:00
+
+**resource_scatter.gd's _placement_at() has the exact per-sample noise-rebuild shape F-241 just fixed in the chunk mesher — height_from_set()/NoiseSet is now there to fix it**
+
+Fixed: resource_scatter.gd's placements_for_chunk() builds one IslandHeightmap.NoiseSet per chunk and threads it through _placement_at(), which now calls height_from_set() instead of a bare height() per candidate point (F-241's own API). Verified: agent godot --script tools/resource_scatter_check.gd -> RESOURCE_SCATTER_CHECK failures=0. Moved to Resolved in FINDINGS.md. Swept and filed F-261 for two siblings (poi_map.gd dart loop, BiomeMap.moisture()) left unfixed on purpose — different files/needs new infra.
+
+Files: `world/gen/resource_scatter.gd`, `tools/resource_scatter_check.gd`
+
+Commit at time of writing: `a71a6d5`
