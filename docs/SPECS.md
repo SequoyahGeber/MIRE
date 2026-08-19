@@ -1514,11 +1514,52 @@ anyone route AROUND the Mire on purpose, and did anyone have fun IN it.
 frameworks.** Content-heavy: agents ship frameworks + one worked example each; enemies/bosses/
 movesets are then T0 authoring + A-023..A-026 asset batches (tracker gates align).
 
-- **5.1 AI framework (T2):** generalize `Enemy` into `systems/enemies/enemy_brain.gd` states
-  (perception with aggro hysteresis — D-025's lesson applies to senses too; telegraphed attacks
-  with tell/commit data from the def; flee/pack flags). The crawler becomes worked example #1
-  re-expressed in the framework with **zero behavior change** (its check must still pass verbatim —
-  that is the refactor's acceptance).
+## 5.1 · Enemy AI framework: state machine, perception, telegraphed attacks, group behaviour (T2)
+
+**Authority:** §2.2 row "Enemies (spawn, AI, damage): HOST" — unchanged; every decision below is
+still made once, on the host, inside the existing `Enemy._physics_process()`.
+**Claim:** `systems/enemies/enemy.gd`, `systems/enemies/enemy_def.gd`, `tools/enemy_ai_check.gd`
+(+ its `.uid`).
+
+2.10 already shipped a real `IDLE -> CHASE -> TELL -> ATTACK -> RECOVER` state machine and a
+telegraphed attack (the hit resolves at the END of the tell, against where the target IS then) —
+this task does not rebuild either. What it generalises, **as data on `EnemyDef` rather than by
+extracting a swappable brain class** (D-095 — one shape is still the only shape any content needs; a
+real second AI shape, not a guess, is what should trigger that split), is:
+
+- **Perception** (`vision_angle_deg`, `requires_line_of_sight`) — acquisition-only. A facing cone
+  (360° = omnidirectional, 2.10's original behaviour) plus an optional
+  `PhysicsDirectSpaceState3D.intersect_ray` gate whether a NEW target can be acquired. An
+  already-held target is kept on distance alone (2.10's existing aggro/deaggro hysteresis) — losing
+  perception never drops a target already being chased.
+- **Alerting** (`alert_radius_m`) — a fresh (not re-affirmed) acquisition hands the same target
+  directly to every untargeted enemy within range (`Enemy.alert()` is the public entry point).
+  **One hop only** — an alerted enemy never itself alerts further, so a spotted player draws the
+  local pack without a chain reaction across the map.
+- **Attack-slot cap** (`max_concurrent_attackers`) — at most this many of one kind may be
+  TELL/ATTACK against the same target at once; the rest hold position at range instead of piling
+  on, rechecked every tick as slots free up (`Enemy._engaged_attackers()`).
+
+Build: all three land as new `@export` fields on `EnemyDef` plus the matching logic in
+`_resolve_target()`/`_tick_pursuit()`/`_aggro_on()` (now routed through one `_acquire_target()` so
+alerting can only fire from the two places a target is actually newly acquired). Defaults are chosen
+so `content/enemies/crawler.tres` — left unedited — keeps every `enemy_check.gd` assertion passing
+verbatim (`vision_angle_deg = 360` is a no-op cone check) while LOS/alerting/the attack cap are live
+at sensible defaults: an unused capability is a shipped-but-dead one (Hollowmere's own
+zero-crawlers-in-the-game history, `docs/DELEGATION.md`, is the standing example of why). No new
+replicated property, no new RPC — `state`/`health`/`hit_counter` are unchanged, and every new
+decision is made and consumed entirely inside the host's own simulation step.
+
+Verify: `tools/enemy_ai_check.gd` — the cone blocks/allows acquisition, an unobstructed ray gates it
+too, a wall placed AFTER acquisition does not drop an already-held target, alerting wakes an
+untargeted packmate in range one hop and no further (a two-hop control enemy stays untouched), and
+the attack-slot cap holds a third attacker back then lets it in once a slot frees. 2.10's
+`tools/enemy_check.gd` and `tools/enemy_net_check.gd` must still be `failures=0`, unmodified — that
+is this task's real "zero regression" bar, in place of a literal no-behaviour-change refactor.
+Done means: all four checks green, 0 `ERROR:` on a full boot (`agent godot --quit-after 20`), and
+`docs/DELEGATION.md`'s Current state carries the new `EnemyDef` fields and `Enemy.alert()` for 5.2's
+authors to build against.
+
 - **5.2 Enemy types (T0+A-023/24/25):** stats/tells in `.tres`, models via the tracker.
 - **5.3 Ranged combat (T2):** bow = client-predicted tracer, host-simulated projectile from the
   shooter's replicated yaw/pitch at fire tick (D-034's split applied to projectiles); arrows are
@@ -1862,6 +1903,56 @@ existing suite, with zero regressions to its own phase 1/2 or to `tools/resource
 anchors' LOD0/collision residency and both anchors' live wired `Harvestable`). Regression-checked:
 `agent godot --script tools/resource_scatter_check.gd` → `RESOURCE_SCATTER_CHECK failures=0`;
 `agent godot --script tools/verify_setup.gd` → `all checks passed`.
+
+---
+
+## F-137 · The build module lives in one `.tres` and nothing else knows it
+
+**Claim:** `tools/construction_check.gd`.
+
+**What was wrong:** `content/buildables/wall.tres` states MIRE's build module as data (`size =
+Vector3(2, 3, 0.25)`), and `tools/blender/build_construction_set.py` re-declares the same two numbers
+by hand as Python constants (`MODULE = 2.00`, `WALL_H = 3.00`, the latter's own comment naming
+`wall.tres` as its source). By the time this task picked it up, task 3.7 had also authored `door.tres`,
+`gate.tres`, `palisade.tres`, `palisade_gate.tres`, `dock.tres`, `bridge.tres` and `ladder.tres` —
+each restating a footprint that is supposed to tile with the exported construction kit
+(`assets/construction/catalog.json`) — so the "two copies of a number, no check between them" problem
+the finding named had already grown past the one buildable it was filed against. Nothing anywhere
+compared any `BuildableDef.size` to the numbers the engine actually measures off the kit.
+
+**Fix:** `tools/construction_check.gd` gained `_check_buildable_defs()`, called from `_init()` after
+`_check_state_drift()`. `wall.tres` has no exported GLB in the kit at all, so it is compared directly
+to this file's own `MODULE`/`WALL_H` constants (the same numbers the Blender script hand-declares on
+its side). Every other buildable that has a real catalog counterpart is looked up through a small
+`id -> frame name` table (`BUILDABLE_FRAME`) and compared to that catalog entry's engine-measured
+`run_span_m` (size.x) and `height_m` (size.y) instead — no new hardcoded expectation needed, since
+the catalog numbers are already cross-checked against the real GLBs by `_check_asset()` earlier in
+the same run. **Depth (size.z) is deliberately never compared** — `buildable_def.gd`'s own doc
+comment on `size` says a footprint may be thinner than its art on purpose (confirmed on `gate.tres`:
+footprint depth 0.4 m vs. the frame's art depth 0.464 m, an intentional gap, not a bug), so asserting
+it would misreport a design choice as drift.
+
+**Trap hit while verifying:** F-148 (already filed, `_check_doors()`'s degenerate-AABB error) has
+gotten much worse since it was filed — today's run logged 213,000+ `AABB size is negative` lines and
+did not finish inside a 5-minute budget, likely aggravated by task 3.7's in-progress door/gate/
+palisade-gate authoring adding more thin triangles to swing-check. Verified this task's own change in
+isolation by temporarily commenting out the `_check_doors()` call for one local run only (reverted
+before commit, never part of the shipped diff); `_check_doors()` itself is untouched. F-148 raised
+from low to medium severity with this update, since it can now make the whole check unusable as a
+gate, not just log a spurious error. Not fixed here — still task 3.7's own `.tres`/`.tscn`-adjacent
+territory per F-148's original scope note.
+
+**Done means:** `CONSTRUCTION_BUILDABLE_DEFS checked=8` reports zero failures on a clean tree, and
+deliberately perturbing the module (e.g. `MODULE = 2.5`) makes `wall.tres`'s check — and only that
+class of check — fail, proving the assertion is live rather than vacuous.
+
+**Verified 2026-08-18 (lm):** `agent godot --script tools/construction_check.gd` (with
+`_check_doors()` temporarily skipped for this one run to route around F-148's unrelated hang) →
+`CONSTRUCTION_BUILDABLE_DEFS checked=8`, `CONSTRUCTION_CHECK PASS`. Sanity-checked the check itself
+is not a no-op: temporarily set `MODULE = 2.5` → `FAIL wall.tres: size.x is 2.000 m, the kit's module
+is 2.50 m` (plus the pre-existing dock/palisade-corner/ramp checks that already used `MODULE`, as
+expected), then reverted to `MODULE = 2.0` and `_check_doors()` re-enabled — `git diff` against the
+shipped file shows only the intended `_check_buildable_defs()` addition, no leftover debug edits.
 
 ---
 

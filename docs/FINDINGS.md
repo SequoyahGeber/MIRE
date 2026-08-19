@@ -175,27 +175,6 @@ gets a `ChunkStreamer` + `ResourceScatterField` pair wired against `GameState.ru
 the exact API both `DELEGATION.md` entries already document. Until then, Hollowmere is the map, and
 that is a decision this finding is recording, not a bug anyone introduced.
 
-### F-137 · The build module lives in one `.tres` and nothing else knows it
-
-**Area:** process · **Severity:** low · **Found:** 2026-08-18 by slate17 during 2.1d (A-010)
-
-`content/buildables/wall.tres` is the only place that states MIRE's build module: `size = Vector3(2, 3, 0.25)`
-with `snap_step = 1.0` and `rotation_step_degrees = 90`. Nothing in the art pipeline referenced it —
-A-010 had to read that resource by hand and re-declare 2.00 m / 3.00 m as constants in
-`tools/blender/build_construction_set.py`, and `mire_art.SCALE` now carries eighteen entries derived
-from them.
-
-Two copies of a number that must agree, in two languages, with no check between them. The next
-buildable authored at 2.5 m, or the next art batch that assumes 2 m after someone changes the wall,
-silently produces a kit that does not tile — and the failure appears as art that looks fine in
-isolation (F-129's shape again).
-
-**What to do about it:** either have the art generators read the module out of `content/buildables/`
-at build time, or add a check that asserts the two agree — `tools/construction_check.gd` already
-loads both the catalog and the engine's resources, so asserting `wall.tres`'s `size.x` equals the
-catalog's `run_span_m` is a few lines in a place that already runs. Not done here because it needs a
-claim on `content/buildables/` and task 3.7 is the owner.
-
 ### F-138 · Rotating an AABB's corners is still the wrong ruler when the thing you are rotating is a moving part
 
 **Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by slate17 during 2.1d (A-010)
@@ -732,7 +711,21 @@ Until then: if two agents may share a name, do not trust a claim's `agent` field
 
 ### F-148 · construction_check.gd's door-swing solids AABB goes negative-size on thin per-triangle bounds, throwing an UNDECLARED engine error on every run
 
-**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by lm
+**Area:** tooling · **Severity:** medium (raised from low, see update) · **Found:** 2026-08-18 by lm
+
+**Update 2026-08-18 (lm, hit again while verifying F-137):** this got much worse than "ten-plus
+times per run" — `agent godot --script tools/construction_check.gd` today logged 213,000+ repeats of
+the `AABB size is negative` error from `_check_doors()` and the process did not reach `_finish()`
+inside a 5-minute budget at all (killed by the shell timeout mid-error-spam, output truncated to a
+1.4 GB log). Root cause is unchanged (a `.grow(-0.004)` on a degenerate per-triangle box), but the
+blow-up is likely proportional to how many door/gate/palisade-gate parts exist to swing-check, and
+task 3.7 was mid-authoring more of them (uncommitted `door.tscn`/`gate.tscn`/`palisade_gate.tscn`
+edits in the working tree at the time) — so this bug is no longer a cosmetic UNDECLARED-error line,
+it can make the whole check unusable as a verification gate. Raised to medium for that reason. Worked
+around it for F-137's own verification by temporarily commenting out the `_check_doors()` call for a
+single local run (not committed) to confirm the new `_check_buildable_defs()` check in isolation;
+`_check_doors()` itself was left untouched and still runs in the shipped file. Not fixed here — still
+task 3.7's `.tres`/`.tscn`-adjacent territory per this finding's own original scope note.
 
 `tools/construction_check.gd::_check_doors()` builds each frame collision solid from one triangle's
 three vertices — `AABB(low, high - low)` — then calls `.grow(-0.004)` to shave 4 mm off every face so
@@ -859,6 +852,40 @@ someone holds the file.
 ---
 
 ## Resolved
+
+### F-137 · The build module lives in one `.tres` and nothing else knows it — **fixed**
+
+**Area:** process · **Severity:** low · **Found:** 2026-08-18 by slate17 during 2.1d (A-010)
+
+`content/buildables/wall.tres` is the only place that states MIRE's build module: `size = Vector3(2, 3, 0.25)`
+with `snap_step = 1.0` and `rotation_step_degrees = 90`. Nothing in the art pipeline referenced it —
+A-010 had to read that resource by hand and re-declare 2.00 m / 3.00 m as constants in
+`tools/blender/build_construction_set.py`, and `mire_art.SCALE` now carries eighteen entries derived
+from them.
+
+Two copies of a number that must agree, in two languages, with no check between them. The next
+buildable authored at 2.5 m, or the next art batch that assumes 2 m after someone changes the wall,
+silently produces a kit that does not tile — and the failure appears as art that looks fine in
+isolation (F-129's shape again).
+
+**What to do about it:** either have the art generators read the module out of `content/buildables/`
+at build time, or add a check that asserts the two agree — `tools/construction_check.gd` already
+loads both the catalog and the engine's resources, so asserting `wall.tres`'s `size.x` equals the
+catalog's `run_span_m` is a few lines in a place that already runs. Not done here because it needs a
+claim on `content/buildables/` and task 3.7 is the owner.
+
+**Resolved 2026-08-19 by lm.** tools/construction_check.gd gained _check_buildable_defs(): wall.tres is checked directly against
+this file's MODULE/WALL_H constants (no catalog counterpart exists for it), and door/gate/palisade/
+palisade_gate/dock/bridge/ladder — all authored since this finding was filed — are each checked
+against their matching catalog entry's engine-measured run_span_m/height_m. Depth is deliberately
+never compared (buildable_def.gd's own doc comment: a footprint may be thinner than its art on
+purpose). Full spec + trap notes in docs/SPECS.md under F-137.
+
+Verified: `agent godot --script tools/construction_check.gd` -> CONSTRUCTION_BUILDABLE_DEFS
+checked=8, CONSTRUCTION_CHECK PASS (run with _check_doors() temporarily skipped to route around
+F-148's unrelated hang, which is now much worse than when filed - see F-148 update). Confirmed the
+check is live, not vacuous: temporarily set MODULE=2.5 -> FAIL wall.tres: size.x is 2.000 m, the
+kit's module is 2.50 m; reverted, git diff shows only the intended addition.
 
 ### F-156 · A finding goes stale when a neighbouring task fixes it in passing, and nothing tells the next lane before it spends a window — **fixed**
 

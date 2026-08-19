@@ -16,12 +16,29 @@ extends SceneTree
 ##
 ## Blender axes map as X -> X, Y -> -Z, Z -> Y. The kit's run axis is Blender x,
 ## so it is Godot x here, and the deck height is Godot y.
+##
+## It also ties the gameplay side to the art side (F-137): `content/buildables/*.tres` declares its
+## own footprint independently of the catalog this script already loads, and nothing used to check
+## the two agree.
 
 const EXPORT_DIR: String = "res://assets/construction/exports"
 const CATALOG_PATH: String = "res://assets/construction/catalog.json"
+const BUILDABLES_DIR: String = "res://content/buildables"
 const MODULE: float = 2.0
 const DECK_Y: float = 1.0
 const WALL_H: float = 3.0
+## F-137: buildable id -> the catalog frame it should tile with. Only run pitch (size.x) and stand
+## height (size.y) are compared, never depth — a footprint is allowed to be thinner than its art on
+## purpose (buildable_def.gd's own doc comment on `size`).
+const BUILDABLE_FRAME: Dictionary = {
+	"door": "door_wood_frame",
+	"gate": "gate_double_frame",
+	"palisade": "palisade_straight",
+	"palisade_gate": "palisade_gate_frame",
+	"dock": "dock_straight",
+	"bridge": "bridge_straight",
+	"ladder": "ladder",
+}
 ## From entities/player/player.tscn. The ramp is the one piece the player's legs
 ## can veto, so its slope is checked against the engine's own number.
 const FLOOR_MAX_ANGLE_DEG: float = 46.0
@@ -72,6 +89,7 @@ func _init() -> void:
 	_check_ramp()
 	_check_doors()
 	_check_state_drift()
+	_check_buildable_defs()
 	_finish()
 
 
@@ -449,6 +467,46 @@ func _check_state_drift() -> void:
 	if drift > TOLERANCE:
 		failures.append("bridge states drift %.3f mm at the shared trestle" % (drift * 1000.0))
 	print("CONSTRUCTION_STATE_DRIFT %.4f mm" % (drift * 1000.0))
+
+
+## F-137: `content/buildables/*.tres` states the module a second time, by hand, in a different
+## resource than the one everything above measures. `wall.tres` has no exported GLB at all, so it
+## is compared straight to this file's own MODULE/WALL_H constants (the same numbers
+## `tools/blender/build_construction_set.py` hand-declares on its side, per its own header comment).
+## Every other buildable with a catalog counterpart is compared to that entry's engine-measured
+## `run_span_m`/`height_m` instead, so a `.tres` authored off-module fails here without needing its
+## own hardcoded expectation.
+func _check_buildable_defs() -> void:
+	var wall := load("%s/wall.tres" % BUILDABLES_DIR) as BuildableDef
+	if wall == null:
+		failures.append("wall.tres: did not load as a BuildableDef")
+	else:
+		if absf(wall.size.x - MODULE) > TOLERANCE:
+			failures.append("wall.tres: size.x is %.3f m, the kit's module is %.2f m" % [wall.size.x, MODULE])
+		if absf(wall.size.y - WALL_H) > TOLERANCE:
+			failures.append("wall.tres: size.y is %.3f m, the kit's wall height is %.2f m" % [wall.size.y, WALL_H])
+
+	var checked := 1
+	for buildable_name: String in BUILDABLE_FRAME:
+		var frame_name: String = BUILDABLE_FRAME[buildable_name]
+		var entry := catalog.get(frame_name, {}) as Dictionary
+		if entry.is_empty():
+			failures.append("%s.tres: no '%s' entry in the catalog to check against" % [buildable_name, frame_name])
+			continue
+		var def := load("%s/%s.tres" % [BUILDABLES_DIR, buildable_name]) as BuildableDef
+		if def == null:
+			failures.append("%s.tres: did not load as a BuildableDef" % buildable_name)
+			continue
+		if entry.has("run_span_m"):
+			var run_span: float = float(entry["run_span_m"])
+			if absf(def.size.x - run_span) > 0.01:
+				failures.append("%s.tres: size.x is %.3f m, %s runs %.3f m" % [buildable_name, def.size.x, frame_name, run_span])
+		if entry.has("height_m"):
+			var height: float = float(entry["height_m"])
+			if absf(def.size.y - height) > 0.01:
+				failures.append("%s.tres: size.y is %.3f m, %s stands %.3f m" % [buildable_name, def.size.y, frame_name, height])
+		checked += 1
+	print("CONSTRUCTION_BUILDABLE_DEFS checked=%d" % checked)
 
 
 func _finish() -> void:

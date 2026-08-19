@@ -1602,16 +1602,16 @@
       "task": "4.7"
     },
     "docs/DELEGATION.md": {
-      "agent": "hollow7",
-      "at": "2026-08-19T00:08:59+00:00",
-      "hash": "24272cdca701ceb9a31944bd9d4d7b053f400e5792c5abd497ac6affd365020f",
-      "task": "4.7"
+      "agent": "lm",
+      "at": "2026-08-19T00:29:43+00:00",
+      "hash": "5d19e852cada5f1e3eb52d39ff3082b27e2b570d4d779c1921dfe9ef656cb2f4",
+      "task": "F-137"
     },
     "docs/FINDINGS.md": {
-      "agent": "bram1",
-      "at": "2026-08-19T00:24:18+00:00",
-      "hash": "66331b3a20fc1ea50352113a0a6b012ea791640fd13380bcb3f56cd9a0acd684",
-      "task": "F-156"
+      "agent": "lm",
+      "at": "2026-08-19T00:29:43+00:00",
+      "hash": "90009ba094025af5fedf0858567ed378f81e30f5ec2d693e679ede6d2859f11b",
+      "task": "F-137"
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -1642,14 +1642,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lm",
-      "at": "2026-08-18T21:57:34+00:00",
-      "hash": "d78fa131863b7daff3ba300c40fcadaa2fe9ad05e081573b2b3d9068e2ae81dd",
-      "task": "F-136"
-    },
-    "docs/STEAM_CROSS_PLATFORM_TEST.md": {
-      "agent": "flint5",
-      "at": "2026-08-18T00:27:27+00:00",
-      "task": "1.12"
+      "at": "2026-08-19T00:29:43+00:00",
+      "hash": "8263d2679305c5c6ec9a9fdfddf371e2e9faeb5e31dc9ce704e612c26c8cce08",
+      "task": "F-137"
     },
     "entities/player/player.tscn": {
       "agent": "lp",
@@ -2164,10 +2159,10 @@
       "task": "3.13"
     },
     "tools/construction_check.gd": {
-      "agent": "slate17",
-      "at": "2026-08-18T21:16:01+00:00",
-      "hash": "01ce25615c44a4e9a4a0ee597c070707516e3af1d5e9c357cee27758eab80f1b",
-      "task": "2.1d"
+      "agent": "lm",
+      "at": "2026-08-19T00:29:43+00:00",
+      "hash": "67c736d2db4817210c7b8e4421cbc556b4e1c5ea52b7d1d6bda32870da91a656",
+      "task": "F-137"
     },
     "tools/construction_check.gd.uid": {
       "agent": "slate17",
@@ -5037,9 +5032,11 @@
       "title": "The player controller has no step-up, so any lip in a walkable surface is a wall"
     },
     "F-137": {
+      "done_at": "2026-08-19T00:29:43+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The build module lives in one `.tres` and nothing else knows it"
     },

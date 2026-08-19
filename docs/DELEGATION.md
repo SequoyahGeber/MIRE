@@ -75,6 +75,81 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — F-137: `tools/construction_check.gd` now cross-checks every `content/buildables/*.tres` against the build module (lm)
+
+**What shipped, verified:** `_check_buildable_defs()`, called from `_init()`. `wall.tres` is checked
+against the file's own `MODULE`/`WALL_H` constants (it has no exported GLB); every other buildable
+listed in `BUILDABLE_FRAME` (`{buildable id: catalog frame name}`) is checked against that catalog
+entry's engine-measured `run_span_m`/`height_m` — depth is deliberately never compared, since a
+footprint may be legitimately thinner than its art (see `buildable_def.gd`'s doc comment on `size`).
+Verified `agent godot --script tools/construction_check.gd` → `CONSTRUCTION_BUILDABLE_DEFS
+checked=8`, and confirmed live (not vacuous) by temporarily breaking `MODULE` and watching it fail.
+
+**The seam the next buildable author builds against:** authoring a new module-tiled buildable (a
+`content/buildables/*.tres` whose footprint is meant to tile with an exported construction-kit GLB)
+means adding its `{id: frame_name}` pair to `BUILDABLE_FRAME` in `tools/construction_check.gd` —
+nothing does this automatically, so a piece left out of the table is silently unchecked, exactly the
+gap this task closed for the seven pieces authored since F-137 was filed. `ward.tres`/`ward_post.tres`
+and `barricade.tres`/`barricade_spike.tres` are intentionally NOT in the table — none of them tile
+against a module-pitch catalog frame (Ward is a radius, barricades have no catalog `run_span_m`).
+
+**Left for whoever fixes F-148:** that finding's `AABB size is negative` error in `_check_doors()`
+got much worse while verifying this task (213k+ repeats, run did not finish in 5 minutes) — raised
+to medium severity in `docs/FINDINGS.md`. Not fixed here; still out of scope per F-148's own text.
+
+### 2026-08-18 — Task 5.1: perception, alerting and an attack-slot cap land on `EnemyDef`/`Enemy` — the state machine and telegraph are unchanged (lp)
+
+**What shipped, verified:** `docs/SPECS.md`'s new `## 5.1` block, `EnemyDef` gains four fields, and
+`Enemy` gains the logic that reads them. 2.10's `IDLE -> CHASE -> TELL -> ATTACK -> RECOVER` machine
+and its telegraph (hit resolves at the END of the tell) are untouched — see D-097 for why this landed
+as data on the existing script rather than a swappable `enemy_brain.gd`, and why perception gates
+acquisition only, never retention.
+
+**The API 5.2's authors build against — four new `EnemyDef` fields, all with defaults that keep
+`content/enemies/crawler.tres` (left unedited) behaviourally identical to before this task:**
+```gdscript
+vision_angle_deg: float           # default 360.0 — the full arc, centred on facing, a NEW target can
+    # be acquired within. 360 = omnidirectional (2.10's original behaviour, still the common case).
+    # Below 360 gives a kind a genuine blind side. Checked on acquisition only.
+requires_line_of_sight: bool      # default true — acquisition additionally needs an unobstructed
+    # PhysicsDirectSpaceState3D ray (world geometry only). Also acquisition-only.
+alert_radius_m: float             # default 8.0 — on a NEW acquisition, every enemy of ANY kind within
+    # this radius that currently has no target of its own is handed the same one directly, no
+    # perception check. One hop: an alerted enemy never itself re-alerts. 0 disables it.
+max_concurrent_attackers: int     # default 2 — how many of this kind may be TELL/ATTACK against the
+    # same target at once; the rest hold position at range instead of piling on.
+```
+**One new public method:** `Enemy.alert(peer_id: int) -> void` — the entry point `_alert_nearby()`
+calls on packmates; only takes the target if the enemy currently has none. Callable directly (e.g. a
+future "call for help" ability), always host-only-guarded internally like every other decision on
+this class.
+
+**Both perception fields are acquisition-only by design — an already-held target never re-checks
+either one.** A wall between an enemy and its ALREADY-targeted player does not un-target it; the same
+wall between them BEFORE acquisition prevents it. This is what keeps the aggro/deaggro hysteresis
+(2.10) meaningful rather than fighting a perception re-check every tick.
+
+**No new replicated property, no new RPC, no `PROTOCOL_VERSION` bump.** `state`/`health`/
+`hit_counter` are exactly what `Enemy._build_synchronizer()` already replicated; every new decision
+(perception, alerting, the attack cap) is made and consumed entirely inside the host's own
+`_physics_process`, same authority row as everything else this class does (§2.2 "Enemies: HOST").
+
+**Verified:** `agent godot --script tools/enemy_ai_check.gd` — 19 assertions, `failures=0`: the cone
+blocks/allows acquisition, an unobstructed ray gates it too, a wall placed AFTER acquisition does not
+drop an already-held target, a fresh acquisition wakes an untargeted packmate within `alert_radius_m`
+on the SAME tick while an enemy outside that radius and a one-hop-removed control both stay
+untouched, the woken packmate actually closes distance once stepped, and the attack-slot cap holds a
+third simultaneous attacker back in CHASE then lets it attack once one of the first two cycles back
+through RECOVER. 2.10's own `tools/enemy_check.gd` and `tools/enemy_net_check.gd` still pass
+unmodified (`failures=0` each) — that is this task's regression bar, in place of a literal
+zero-behaviour-change refactor. `tools/entity_check.gd` and `tools/combat_feel_check.gd` (both read
+`Enemy`/`EnemyDef` fields) also still `failures=0`. Full boot (`agent godot --quit-after 20`), with
+Hollowmere's real ambient crawlers spawning and pathing: 0 `ERROR:` lines.
+
+**F-155 filed, not fixed here:** `PlayerHealth._is_dodging()` throws on any body with no `dodging`
+property (a bare test-harness player, e.g. both `enemy_check.gd`'s and `enemy_ai_check.gd`'s) — a
+pre-existing `SCRIPT ERROR:` on the enemy-attack-landed path, unrelated to this task's claim.
+
 ### 2026-08-18 — F-132 resolved: host union-of-interest needed no new API, only a calling contract — recorded for whoever wires a live `ChunkStreamer`/`ResourceScatterField` session (lm)
 
 **What shipped, verified:** F-132 (a remote client's scattered harvestable proxy may have no host

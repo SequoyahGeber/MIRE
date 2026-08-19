@@ -3607,3 +3607,18 @@ agent brief now warns when a finding's named files changed since it was filed, r
 Files: `.agent/bin/agent`, `docs/FINDINGS.md`
 
 Commit at time of writing: `8af3787`
+
+---
+
+### DONE · F-137 · lm · 2026-08-19T00:29:43+00:00
+
+**The build module lives in one `.tres` and nothing else knows it**
+
+tools/construction_check.gd gained _check_buildable_defs(): wall.tres checked against MODULE/WALL_H, and door/gate/palisade/palisade_gate/dock/bridge/ladder checked against their catalog frame's run_span_m/height_m via a new BUILDABLE_FRAME table. Verified: agent godot --script tools/construction_check.gd -> CONSTRUCTION_BUILDABLE_DEFS checked=8, CONSTRUCTION_CHECK PASS; confirmed the check is live by temporarily breaking MODULE and watching it fail correctly, then reverting. Docs: FINDINGS.md resolved, SPECS.md F-137 block added, DELEGATION.md Current state entry, F-148 severity raised to medium with an update note (its own bug, not fixed here).
+
+Notes along the way:
+- F-148 (AABB negative-size in _check_doors) has gotten much worse since it was filed: today's run produced 213k+ repeats of the error and the whole script did not finish inside 5 minutes, vs the 'ten-plus times per run' the finding describes. Verified my own change by temporarily skipping the _check_doors() call for one run only (reverted before commit) — CONSTRUCTION_BUILDABLE_DEFS checked=8, CONSTRUCTION_CHECK PASS. Likely aggravated by task 3.7's in-flight uncommitted door/gate/palisade_gate scene edits adding more thin triangles. Filing severity bump as a separate finding, not touching F-148's fix itself (out of scope, task 3.7 territory per its own text).
+
+Files: `tools/construction_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `5139114`
