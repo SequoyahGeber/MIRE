@@ -1,14 +1,6 @@
 {
   "claims": {},
-  "in_flight": {
-    "3.14-review": {
-      "agent": "lp",
-      "files": [],
-      "notes": [],
-      "started": "2026-08-19T14:03:45+00:00",
-      "token": null
-    }
-  },
+  "in_flight": {},
   "recent": {
     ".": {
       "agent": "lp",
@@ -4264,10 +4256,12 @@
       "title": "Gamerules \u2014 `RuleDef` content family + host-replicated `RuleService`, `rule`/`rules` commands, first-wave knob migration with export fallback (`COMMANDS.md` \u00a74)"
     },
     "3.14-review": {
+      "done_at": "2026-08-19T14:07:47+00:00",
+      "done_by": "lp",
       "est": "0.5",
       "milestone": "M3",
       "review_of": "3.14",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T1",
       "title": "Review 3.14 @ 80d668f \u2014 judge the commit, file findings, no edits"
     },

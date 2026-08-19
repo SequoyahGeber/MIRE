@@ -5201,3 +5201,16 @@ Commit at time of writing: `e5f0861`
 Clean, no findings. Reviewed 46a25e6 (+follow-up docs commit 8b7804e) against SPECS.md 6.1 block: CycleService correctly host-authoritative (_owns_cycle mirrors MireGrid's _owns_simulation pattern), no bare-autoload violations (cycle_service.gd is itself an autoload, exempt; MireLog is a pre-existing class_name convention), no randi()/determinism issues, WorldDeltaLog piggyback for Cycle replication is well-justified (D-100, net_version.gd held by another lane). Ran tools/cycle_check.gd myself: 16/16 assertions pass, 2 runs. Regression checks all failures=0: mire_grid_check.gd, wave_spawner_check.gd, mire_interaction_check.gd (its own EXPECTED_ERROR_PATTERNS for the unrelated material-null noise, per standing rule 4). Full boot (agent godot --quit-after 20): 0 ERROR: lines. docs/DELEGATION.md Current state carries CycleService's public API (current_cycle/host_advance_cycle/spread_multiplier + EventBus seam) accurately, shipped in the immediate follow-up commit 8b7804e.
 
 Commit at time of writing: `f6d9918`
+
+---
+
+### DONE · 3.14-review · lp · 2026-08-19T14:07:47+00:00
+
+**Review 3.14 @ 80d668f — judge the commit, file findings, no edits**
+
+Clean, no findings. Ran tools/rule_check.gd (57 assertions offline: coercion, content-family loading through Registry not disk fallback, defaults byte-identical to SHIPPED_DEFAULTS, rule/rules commands, clamp-announces-itself, LOCAL-read/HOST-set dynamic scope, reset + is_overridden, bad-input refusals, all four adopting owners actually following their rule) — 0 failures. Ran tools/rule_net_check.gd (real two-process ENet: pre-join value reaches joiner's RuleService AND its PlayerHealth owner, non-op read succeeds, non-op set refused with unchanged host value, opped client's set crosses net_submit_command and moves host's own WaveSpawner, host broadcast reaches connected client's EnemyWorld) — 0 failures. Ran tools/handshake_check.gd — 0 failures, confirms no protocol regression. Grepped all three outputs for ERROR: — none (only expected WARN lines from PlayerNet's pre-existing no-current-scene spawn warning, unrelated to this task). Verdict: matches spec exactly, D-085/D-086 both sound engineering calls with real trade-offs recorded, network authority row in ARCHITECTURE.md accurate.
+
+Notes along the way:
+- Reviewed 80d668f (Gamerules, hollow7) against COMMANDS.md §4 + ARCHITECTURE.md §2.2. Traced every claimed file: RuleDef bounds in content/rules/*.tres match each owner's @export_range exactly; export-fallback/adopt pattern (_bind_rules + rule_changed listener) correctly implemented in enemy_world.gd, dev_loadout.gd, wave_spawner.gd, player_health.gd; day_night.gd's is_overridden() precedence (D-085) verified live via check. Dynamic scope Callable (D-086) confirmed: _invocation_scope resolves per-call from raw args, host re-derives from its own re-parse (never trusts client), _declared_scope reports max for introspection. Protocol 16->17 documented in net_version.gd and handshake_check.gd. Autoload order RuleService right after Registry, before every adopting system — confirmed in project.godot. Rule 1 (bare autoload names) respected everywhere via get_node_or_null. F-016 preload respected (RULE_DEF const in both registry.gd and rule_service.gd).
+
+Commit at time of writing: `c1452dd`
