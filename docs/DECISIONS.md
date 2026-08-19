@@ -4379,6 +4379,59 @@ solo/offline achievement tracking against the live Steam API matters enough to p
 which point the right fix is probably `NetConfig`/`DevLaunch` gaining a flag that keeps `agent godot`
 itself Steam-free regardless of what autoloads want, not reverting this call.
 
+### D-149 · 2026-08-19 · F-243's run restart resets services IN PLACE — no level reload, no fresh world seed, host-only trigger with no new RPC
+
+Three scope calls, made together, closing F-243 ("the run loop is a line, not a circle").
+
+**Why services reset in place rather than reloading `levels/hollowmere.tscn`.** The finding's own
+"suggested shape (not prescribed)" was "host reloads the level scene and broadcasts, services reset
+on a `run_started` signal" — investigated and rejected. Nothing in this codebase has ever reloaded a
+scene at runtime (`grep`'d for `change_scene_to_file`/`change_scene_to_packed`/
+`reload_current_scene`across every `.gd` file: zero hits), and the players/enemies/buildables that
+would need to survive the reload live OUTSIDE the level tree anyway (`PlayerNet.Players`,
+`EnemyWorld`'s own container, `BuildService`'s own container — all children of their owning autoload,
+never of `Hollowmere`), so a reload buys nothing for those three and adds real risk (re-triggering
+`World`/`Undergrowth`'s generation cost live, mid-session, on every peer, for systems never built or
+tested to run twice in one process). The three systems a reload WOULD have reset for free — Chest,
+Wellspring, ExtractionShip, all children of level-tree marker nodes — instead grew their own small
+`host_reset_for_new_run()` (`systems/loot/chest.gd`, `systems/wellspring/wellspring.gd`,
+`systems/extraction/extraction_ship.gd`), the same size cost as writing the reload path safely would
+have been, without the new risk. **Would change my mind:** a future task that already needs a live
+scene-reload path for an unrelated reason (a level-select feature, say) — at that point resetting
+those three the "for free" way becomes worth revisiting.
+
+**Why a restart keeps the same `GameState.run_seed` — same island, same POI/Wellspring/Chest/
+ExtractionShip positions.** Regenerating the world seed live would need a NEW broadcast reaching
+every already-connected peer (`WorldDeltaLog.net_world_snapshot` only ever targets a peer that just
+joined — `NetSession.peer_admitted`, not a running session) plus every terrain/POI/streaming system
+proving it behaves correctly reseeded mid-process, none of which exists today and none of which F-243
+asked for ("no path to a next run", not "no path to a new island"). Only RUN-scoped state resets:
+Cycle, Mire corruption, Cycle Modifiers, inventory, health, enemies, buildables, chest/wellspring/ship
+progress. Filed as its own gap, F-258, so it reads as a real scope cut and not a missed case.
+
+**Why restart is HOST-only with no new RPC, not a per-player request routed through
+`CommandService`.** `CommandService`'s HOST-scope commands (`build`, `craft`, `give`, ...) all require
+the issuing peer to be "op" (`CommandService._is_op()` — the host is always op, nobody else is by
+default), which is right for that file's actual role: a debug/admin console layer, not the path real
+gameplay verbs use (`BuildService.request_place()` and its siblings call their own dedicated RPC
+directly, no op check, exactly why F-244 could even exist as a *separate* "the console `build` verb
+doesn't ground-snap" bug — the console command and the real placement flow are already two different
+code paths). A UI button any player can press therefore cannot go through `CommandService` without
+either op-ing every peer by default (unrelated scope creep) or adding a THIRD `request_*`/`net_*` RPC
+pair, which would need a `PROTOCOL_VERSION` bump (`core/net/net_version.gd`), a
+`tools/handshake_check.gd` assertion update, and re-recording `core/net/rpc_manifest.gd`'s scanned
+signature — real, mechanical work, but for a request that has a simpler answer: restart is a
+session-level decision, the same category `NetTransport` mode and `GameState.host_generate_seed()`
+already put entirely in the host's hands with no RPC of their own. `ui/hud/defeat_hud.gd`/
+`ui/hud/extraction_hud.gd`'s "Start Next Run" button only enables for the local peer that IS the host
+(`_is_host_or_solo()`); every other peer sees it disabled, reading "Waiting on the host to start the
+next run…". `CycleService.host_restart_run()` is still registered as a `restart` console command too
+(host-only, since the host is always op) — free, and matches the finding's own "through the existing
+command front door" framing for the one peer it actually works for. **Would change my mind:** a
+playtest where the host is reliably the first to alt-tab away or disconnect after a wipe, stranding
+the rest of the party — at that point the fix is probably "any present peer may restart", which
+genuinely does need the new RPC pair this decision avoids for now.
+
 **Why rich presence has no separate "in the menu" state.** The obvious first design was a
 menu-vs-in-run state machine ("In the menu" vs "In a run — Cycle N", `docs/STEAM.md` §S4's own
 suggested wording) — dropped once `ui/menu/main_menu.gd` and D-110 made it clear no such phase exists
@@ -4388,3 +4441,30 @@ play. Inventing a "menu" presence state would describe a boot phase that does no
 the game that does, so `RichPresenceService.compute_status_text()` is just "Cycle N", with the
 connected party size appended once there is one to report. **Would change my mind:** D-110's own
 trigger — a real "gate world-gen behind a start screen" task, scoped and reviewed on its own.
+
+### D-150 · 2026-08-19 · `chunk_stream_check.gd`'s union-of-interest separation is sized against the LOD0 ring, not the full load radius
+
+F-251's fix for the check's 5th pre-existing failure. `_check_union_of_interest()`'s `min_separation`
+was `LOAD_RADIUS_CHUNKS + HYSTERESIS_CHUNKS + 1` (10 chunks / 320 m) — big enough that NEITHER
+anchor's full outer streaming ring (LOD0 through LOD2, out to `LOAD_RADIUS_CHUNKS`) could reach the
+other's chunk. That doesn't fit the shipped island any more: `IslandHeightmap.ISLAND_RADIUS` shrank
+512→118 m in the same terrain retuning pass this finding's other 4 failures trace to (D-142/D-143
+era), and harvestable placements never occur past Chebyshev radius 6 from origin — open water beyond
+the island has none. No two harvestable-bearing chunks are ever 10 apart, so the search this
+constant feeds always returned `NOT_FOUND`, unrelated to any real `ChunkStreamer` bug.
+
+**Rebased to `LOD0_RADIUS_CHUNKS + HYSTERESIS_CHUNKS + 1` (4 chunks / 128 m) instead of shrinking the
+same LOAD_RADIUS-based formula.** The assertions this separation feeds only claim two things: both
+anchors' chunks load at LOD0 with a collider, and specifically that anchor B's collider comes from
+anchor B's OWN presence, not merely from sitting inside anchor A's radius somewhere. Proving that
+second claim only requires B to sit outside A's LOD0 ring (`LOD0_RADIUS_CHUNKS + HYSTERESIS_CHUNKS`)
+— A's LOD1/LOD2 rings extend further but never carry a collider, so a chunk inside them but outside
+A's LOD0 ring still could not have gotten its collider from A alone, which is the one thing the test
+needs to rule out. The stronger LOAD_RADIUS-based bound proved something true but unnecessary, and no
+longer fits inside the island's own harvestable footprint. 4 chunks does, with margin (real content
+reaches to radius 6, and the search still explores out to `ISLAND_CHUNK_RADIUS` — 10 chunks — before
+giving up).
+
+**Would change my mind:** the island growing back toward its original ~512 m scale (a future D-143
+reversal) — at that point the LOAD_RADIUS-based bound becomes achievable again and is the strictly
+stronger claim, worth reverting to.

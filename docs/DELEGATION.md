@@ -119,6 +119,9 @@ still run clean. Full boot 0 `ERROR:` lines. Full spec: `docs/SPECS.md` F-241.
 **Found broken while verifying, filed not fixed:** `tools/chunk_stream_check.gd` (windowed) has 5
 pre-existing failures, confirmed present on unmodified `main` — terrain retuned since F-128 left the
 LOD skirt and that check's own reference constants stale (F-251, unrelated to this task).
+**Fixed 2026-08-19 — see this section's own F-251 entry below and `docs/SPECS.md` F-251:** all 5
+failures resolved, `ChunkMesher.SKIRT_DEPTH_FRACTION` now 1.70 (was 0.10) against the current
+`HEIGHT_SCALE`.
 
 ### 2026-08-19 — F-238 resolved: a successful extraction now has its own run summary (lp)
 
@@ -6774,6 +6777,34 @@ Regression: `cycle_check.gd`, `wave_director_check.gd`, `cycle_modifier_check.gd
 `wave_spawner_cycle_net_check.gd` (one stale assertion updated — see SPECS.md Traps),
 `steam_stats_check.gd`, `rich_presence_check.gd`, `wellspring_check.gd`, `mire_grid_check.gd` — all
 green. Full boot (`agent godot --quit-after 120`) 0 stray `ERROR:`.
+
+### 2026-08-19 — F-251 fixed: `tools/chunk_stream_check.gd`'s 5 pre-existing failures were all stale terrain-retuning fallout, not real bugs — now 0 (lp)
+
+**`ChunkMesher.SKIRT_DEPTH_FRACTION` is now 1.70, not 0.10** — the constant anything sizing the LOD
+skirt (or anyone re-measuring the seam margin) should read. A 12-seed island-wide sweep found the
+worst LOD-boundary divergence is now 12.805 m (seed 4242, chunk `(3,-4)`) under the current terrain
+(D-142's domain warp + ridged layer + carved river), not the 1.78 m F-128 originally sized against.
+`SKIRT_DEPTH` (`= HEIGHT_SCALE * SKIRT_DEPTH_FRACTION`) is 44.2 m. Purely visual — `collision_faces()`
+still slices it out before Jolt ever sees it (D-084) — and free at runtime, since skirt vertex/tri
+COUNT doesn't scale with depth, only where the bottom ring sits in Y.
+
+**`tools/chunk_stream_check.gd`'s reference constants (`WORST_KNOWN_SEED`/`WORST_KNOWN_CHUNK`/
+`WORST_KNOWN_DIVERGENCE_M`) now point at that same seed-4242/chunk-(3,-4) spot-check**, and
+`ISLAND_CHUNK_RADIUS` (the sweep/search bound) shrunk 17→10 chunks to match `IslandHeightmap.
+ISLAND_RADIUS` (118 m, down from the 512 m these were sized against). The union-of-interest section's
+`min_separation` is now `LOD0_RADIUS_CHUNKS + HYSTERESIS_CHUNKS + 1` (4 chunks), not
+`LOAD_RADIUS_CHUNKS`-based (10 chunks, unreachable on the shrunk island — see D-150 for the full
+reasoning anyone touching that section again should read first).
+
+**None of this was a real gameplay bug** — full root-cause breakdown (why each of the 5 failures was
+stale test math, not broken code) is in `docs/SPECS.md`'s F-251 block. `docs/FINDINGS.md` F-253 had
+named this finding as its own hypothesis #1; ruled out there too (`check_determinism.gd` is clean,
+terrain generator is not non-deterministic) — F-253 is a real, separate snapshot-delivery bug.
+
+**Verified:** `agent godot --windowed --script tools/chunk_stream_check.gd` — 0 functional failures
+(was 5). Regression: `check_determinism.gd` (`terrain_hash` unchanged from F-241's recorded value),
+`terrain_check.gd` (0 failures), `bench_chunks.gd` (4.497 ms/chunk threaded, unchanged shape — skirt
+depth doesn't affect vertex/tri counts).
 
 ---
 

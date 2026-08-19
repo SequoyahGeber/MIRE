@@ -8342,6 +8342,105 @@ one-file mirror of this fix. Filed as **F-254** with both real fix options named
 
 ---
 
+## F-251 · `tools/chunk_stream_check.gd` (windowed) has 5 pre-existing failures — terrain retuning since F-128 left the LOD skirt too shallow for the real seam gap
+
+✅ shipped — see DELEGATION
+
+**Claim:** `world/chunk/chunk_mesher.gd` (`SKIRT_DEPTH_FRACTION`), `tools/chunk_stream_check.gd`
+(`WORST_KNOWN_SEED`/`WORST_KNOWN_CHUNK`/`WORST_KNOWN_DIVERGENCE_M`, `ISLAND_CHUNK_RADIUS`, the
+determinism-check chunk coordinate, the collision-band assertion, the union-of-interest
+`min_separation` formula). **Authority:** §2.2 "Chunk streaming / terrain LOD" — client-local,
+deterministic, unchanged; this task edits only tuning constants and check assertions, no new state
+and no RPC.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The bug, in five unrelated pieces, all traced to the same root cause — terrain got taller/rougher
+and the island got smaller since F-128/D-084 sized the skirt and this check's own reference points,
+and neither was ever re-swept:**
+
+1. `skirt is deeper than the worst LOD-boundary divergence across the whole island` — `HEIGHT_SCALE`
+   dropped 60→26 (D-142/4.13-4.14: domain warp + masked ridged layer + carved river), but that
+   layering adds sharp relief `HEIGHT_SCALE` alone never captured — a ridge crest can climb ~13 m
+   across a single 2-4 m LOD1/LOD2 chord. `SKIRT_DEPTH_FRACTION` (10% of `HEIGHT_SCALE`, sized
+   against a 1.78 m worst case at the old scale) covered barely a fifth of the real gap.
+2. `F-128's recorded worst-case divergence has not drifted` — `WORST_KNOWN_SEED`/`WORST_KNOWN_CHUNK`
+   pinned a specific spot-check point whose terrain shape changed enough since F-128 that it no
+   longer represents any LOD-boundary divergence at all (measured 0.0000 m).
+3. `a different seed changes the mesh` — the determinism test's chunk, `(5, -3)`, centres ~186 m
+   from origin: outside `IslandHeightmap.ISLAND_RADIUS` (118 m, shrunk from 512 m in the same
+   terrain pass), so it samples flat open water regardless of seed.
+4. `collision_faces() is terrain only` — not a real collision bug: the assertion required
+   `collision_min_y - mesh_min_y == SKIRT_DEPTH` exactly, which silently assumed a chunk's globally
+   lowest TERRAIN point always sits on its border (so the border vertex the skirt hangs from doubles
+   as the terrain minimum). True on the old, smoother terrain; the new ridge/river relief routinely
+   puts a chunk's lowest point in its interior instead, desyncing that coincidence by under a metre
+   with nothing actually broken.
+5. `found a second chunk with a harvestable placement, >= 10 chunks from the first, for the 'remote
+   peer' anchor` — `min_separation` was `LOAD_RADIUS_CHUNKS + HYSTERESIS_CHUNKS + 1` (10 chunks /
+   320 m), sized so neither anchor's full outer ring could reach the other. `ISLAND_RADIUS` shrank
+   to 118 m and harvestable placements never occur past Chebyshev radius 6 from origin, so no two
+   harvestable chunks are ever 10 apart any more — always `NOT_FOUND`, unrelated to `ChunkStreamer`.
+
+**The fix, one per failure:**
+
+1. `SKIRT_DEPTH_FRACTION`: 0.10 → 1.70. A 12-seed island-wide sweep (ad hoc script, not committed)
+   found a worst case of 12.805 m (seed 4242, chunk `(3,-4)`, LOD1/LOD2 boundary), spread 7.5-12.8 m
+   across all 12 seeds. 170% of the new `HEIGHT_SCALE` (44.2 m) reproduces F-128's original ~3.4x
+   margin against that measured worst case. Skirts are visual-only (`collision_faces()` slices them
+   out before they ever reach Jolt, D-084) and their vertex/triangle COUNT doesn't scale with depth
+   — only where the bottom ring sits in Y — so a deeper skirt costs nothing at runtime.
+2. `WORST_KNOWN_SEED`/`WORST_KNOWN_CHUNK`/`WORST_KNOWN_DIVERGENCE_M` updated to the new sweep's
+   worst point: `4242` / `(3, -4)` / `12.805`. `ISLAND_CHUNK_RADIUS` (the sweep's own scan bound)
+   shrunk 17 → 10 chunks to match the real island — correctness-neutral (open water contributes ~0
+   divergence either way), just fewer wasted iterations.
+3. Determinism test moved from chunk `(5, -3)` to `(0, 0)` — the island's own centre, guaranteed
+   land at any seed. Verified `BENCH_SEED` vs `BENCH_SEED + 1` actually diverge there before landing
+   it (they do, along with three other interior candidates tried).
+4. Collision assertion rewritten to check what actually matters: `collision_min_y` (from
+   `collision_faces()`) equals the TERRAIN block's own minimum Y exactly (proves no skirt vertex
+   leaked into collision), and the skirt's own vertices sit at least `SKIRT_DEPTH * 0.5` below that
+   terrain minimum (proves the skirt is unambiguously the lowest thing in the mesh) — no assumption
+   about where the chunk's lowest point happens to be.
+5. `min_separation` rebased from `LOAD_RADIUS_CHUNKS + HYSTERESIS_CHUNKS + 1` to
+   `LOD0_RADIUS_CHUNKS + HYSTERESIS_CHUNKS + 1` (10 → 4 chunks / 128 m) — see **D-150**. The
+   assertions that follow only need proof that anchor B's chunk got its LOD0 collider from its OWN
+   anchor, not merely from sitting inside anchor A's LOD0 ring; that only requires clearing A's LOD0
+   ring, not A's full outer streaming radius, and 4 chunks fits comfortably inside the shrunk island
+   (real harvestable content reaches to radius 6).
+
+**Verify:** `.agent/bin/agent godot --windowed --script tools/chunk_stream_check.gd` — 0 functional
+failures (was 5). Regression, unaffected by this task's changes: `tools/check_determinism.gd` —
+`terrain_hash c20eed19b44270a1`, byte-identical to F-241's recorded value (skirt depth doesn't touch
+terrain sampling); `tools/terrain_check.gd` — 0 failures; `tools/bench_chunks.gd` — 4.497 ms/chunk
+threaded-amortized, unchanged in shape from F-241's own numbers (skirt vertex/triangle counts are
+depth-independent, so cost is unaffected by the deeper skirt).
+
+**Traps:**
+- Don't chase `collision_faces()` as a real physics bug from failure #4's symptom — the count
+  assertion (`faces.size() == terrain_tris * 3`) and the "terrain stays the first `vert_count(lod)`
+  vertices" assertion, both already passing, structurally guarantee the skirt can't reach collision
+  (`_build_indices()` only ever writes terrain-vertex indices before `build_mesh()` appends the
+  skirt). The exact-equality assertion was measuring an incidental coincidence, not collision
+  correctness.
+- `tools/seed_sync_check.gd` (F-253) names this finding's family as its hypothesis #1 for its own 3
+  failures. Ruled out here: `tools/check_determinism.gd` (§Verify above) passes clean with an
+  unchanged `terrain_hash`, so the terrain generator itself is not non-deterministic — F-253's real
+  cause is hypothesis #2, a snapshot-delivery bug, not this finding's family. Noted on F-253 in
+  `docs/FINDINGS.md` so its next agent skips straight to hypothesis #2.
+
+**Swept for the same shape:** grepped for other hardcoded chunk coordinates, radii or worst-case
+constants sized against the pre-D-142/pre-D-143 terrain (`512`, `ISLAND_RADIUS`, `ISLAND_CHUNK_RADIUS`,
+`LOAD_RADIUS_CHUNKS` combinations) across `tools/` and `world/`. `tools/poi_check.gd` and
+`world/gen/island_heightmap.gd` itself already read `ISLAND_RADIUS` dynamically rather than hardcoding
+it — not this shape. No other file hardcodes a chunk coordinate or radius against the old island
+scale the way this check's five failures did.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

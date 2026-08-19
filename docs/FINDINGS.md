@@ -556,66 +556,6 @@ move.lunge_speed_m_s > 0.0`, mirroring `Enemy._tick_attack()`'s own condition ex
 
 ---
 
-### F-251 · tools/chunk_stream_check.gd (windowed) has 5 pre-existing failures — terrain retuning since F-128 left the LOD skirt too shallow for the real seam gap
-
-**Area:** worldgen · **Severity:** high · **Found:** 2026-08-19 by lp
-
-Found 2026-08-19 by lp during F-241's verification (chunk mesher noise-reuse perf fix — unrelated
-change). `agent godot --windowed --script tools/chunk_stream_check.gd` currently reports **5
-functional failures**, confirmed via `git stash` to be present on unmodified `main` too (identical
-failure text/numbers with F-241's diff stashed out and restored) — nothing about this is caused by
-F-241; it was already broken and undetected because nothing has run this windowed check recently.
-
-**The two failures with a clear, likely-shared root cause — terrain got taller/rougher since F-128
-and D-142/D-144 tuned it, but the LOD skirt and this check's own reference constants never
-re-swept:**
-
-1. `skirt is deeper than the worst LOD-boundary divergence across the whole island` — measured worst
-   seam divergence is **12.4458 m** (seed 20260818, chunk (-4,0)) against `ChunkMesher.SKIRT_DEPTH`
-   of **2.600 m**. F-128/D-084 sized the skirt at 10% of `HEIGHT_SCALE` when `HEIGHT_SCALE` was 60
-   and the worst measured divergence was 1.78 m (a 3.4x margin, `chunk_mesher.gd:36-40`'s own
-   comment). `HEIGHT_SCALE` is now 26 (this file, unrelated task) and the ridged/river layers
-   (D-142/4.13-4.14) add relief `HEIGHT_SCALE` alone doesn't capture, so the 10%-of-amplitude
-   heuristic no longer holds — the skirt is now **4.8x too shallow for the real worst case**. If the
-   in-game LOD ring ever actually produces that chunk/seed combination at adjacent tiers, the crack
-   is visible: this is not just a stale test number, it is a plausible live rendering bug.
-2. The same section's `F-128's recorded worst-case divergence (1.779 m) has not drifted` assertion
-   also fails — that reference point (`WORST_KNOWN_SEED = 424242`, `WORST_KNOWN_CHUNK = (-5, 2)`,
-   `tools/chunk_stream_check.gd:38-40`) now measures **0.0000 m**, meaning the terrain shape at that
-   specific chunk/seed changed enough since F-128 that it no longer represents any LOD-boundary
-   divergence at all. The check's own reference case is stale, separately from the margin having
-   collapsed.
-
-**A third, likely the same class of staleness:** `a different seed changes the mesh` fails —
-`ChunkMesher.build_mesh(5, -3, BENCH_SEED, 1)` and the same chunk at `BENCH_SEED + 1` come back
-byte-identical. Chunk (5, -3) at `CHUNK_SIZE = 32` centres around world (160, -96), ~186 m from
-origin — outside `IslandHeightmap.ISLAND_RADIUS` (118 m, this file, retuned from the 512 m this
-check's constants were presumably chosen against). Both seeds are almost certainly sampling flat
-open water at that chunk regardless of seed. Likely fix: move `WORST_KNOWN_CHUNK`/the determinism
-check's chunk coordinate to something inside the current 118 m island, and re-measure
-`WORST_KNOWN_DIVERGENCE_M` and a real `SKIRT_DEPTH_FRACTION` against the current
-HEIGHT_SCALE/ridge/river terrain, the way F-128 originally measured them.
-
-**Two more failures observed, root cause not chased down here (out of scope for the task that found
-this) — file separately or fold in when someone re-does the whole sweep:**
-- `collision_faces() is terrain only — skirt is never handed to the physics server (D-084)` fails at
-  every LOD (`tools/chunk_stream_check.gd:176`, the `collision_min_y - mesh_min_y == SKIRT_DEPTH`
-  assertion) — plausibly the same "terrain now has more relief than the skirt math assumed" cause
-  (a border vertex's own height could now sit below `some_other_vertex - SKIRT_DEPTH`), but not
-  confirmed.
-- `found a second chunk with a harvestable placement, >= 10 chunks from the first, for the 'remote
-  peer' anchor` (F-132's union-of-interest section, `tools/chunk_stream_check.gd:529`) — no terrain
-  connection obvious; may be an unrelated scatter-table/seed issue.
-
-**What would close this:** a task claiming `world/chunk/chunk_mesher.gd` (`SKIRT_DEPTH_FRACTION`)
-and `tools/chunk_stream_check.gd` (`WORST_KNOWN_SEED`/`WORST_KNOWN_CHUNK`/`WORST_KNOWN_DIVERGENCE_M`,
-the determinism-check chunk coordinate) together: re-sweep the whole island for the real worst-case
-LOD-boundary divergence under the current heightmap (same four-seed sweep method F-128/D-084 used),
-retune `SKIRT_DEPTH_FRACTION` to clear it with a real margin, update the reference constants, and
-confirm `chunk_stream_check.gd` is green before moving on to the two unexplained failures.
-
----
-
 ### F-252 · resource_scatter.gd's _placement_at() has the exact per-sample noise-rebuild shape F-241 just fixed in the chunk mesher — height_from_set()/NoiseSet is now there to fix it
 
 **Area:** worldgen · **Severity:** low · **Found:** 2026-08-19 by lp
@@ -674,6 +614,13 @@ Two candidate root causes, not yet distinguished:
      process would legitimately differ without any netcode bug at all.
   2. A real snapshot-delivery bug in `WorldDeltaLog.net_world_snapshot`/`_on_peer_admitted` (the
      admit-time snapshot RPC) — separate from the live-delta RPC, which still passes.
+
+**Update 2026-08-19 (lp, during F-251):** ran `tools/check_determinism.gd` standalone —
+`terrain_hash c20eed19b44270a1`, byte-identical to F-241's recorded value, 0 drift. **Rules out (1):
+the terrain generator is deterministic**, so this is NOT F-251's family — F-251's own 5 failures were
+all stale reference constants/assertions, not generator non-determinism, and are now fixed
+(`docs/SPECS.md` F-251 block). The real cause here is (2), a snapshot-delivery bug in
+`WorldDeltaLog`. Next agent: skip straight to the print-debugging step below.
 
 **What would close this:** run `tools/check_determinism.gd` standalone first (single-process) to
 rule out (1) — if that already fails on its own, this is F-251's family and should fold into that
@@ -818,7 +765,147 @@ explicitly rather than inherit silently.
 
 ---
 
+### F-258 · F-243's restart keeps the same world seed — no fresh island, no re-broadcast to already-connected peers
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lm
+
+F-243 (run restart) deliberately does not draw a fresh `GameState.run_seed` on restart — see
+docs/DECISIONS.md D-149's own entry for the full reasoning. The short version: regenerating the seed
+mid-session would need a live re-broadcast reaching every ALREADY-connected peer, and nothing in this
+codebase does that today (`WorldDeltaLog.net_world_snapshot` only ever targets a peer that just
+joined, via `NetSession.peer_admitted` — never a running session). A restart therefore reuses the
+same island, POI layout, and Wellspring/Chest/ExtractionShip positions every subsequent run this
+process plays.
+
+**Would take:** a new host -> everyone reliable RPC (protocol bump, `core/net/net_version.gd` +
+`tools/handshake_check.gd` + `core/net/rpc_manifest.gd`'s scanned signature) carrying a freshly drawn
+seed, PLUS every terrain/POI/streaming system (`ChunkStreamer`, `BiomeMap`, `PoiMap`,
+`ChestPlacementService`, `WellspringService`, `ExtractionService`) proving it behaves correctly when
+re-derived from a NEW seed mid-process rather than only at boot — none of which exists or has been
+exercised today. Real scope for its own task, not a quick add to F-243's.
+
+---
+
+### F-259 · F-243's restart resets Cycle/Mire/inventory/etc but not WaveSpawner's unlocked enemy roster
+
+**Area:** systems · **Severity:** low · **Found:** 2026-08-19 by lm
+
+`CycleService.host_advance_cycle()` calls `WaveSpawner.host_unlock_next_enemy()` each Cycle,
+progressively widening which enemies can spawn (`systems/waves/wave_spawner.gd`). F-243's restart
+(docs/DECISIONS.md D-149) resets every run-scoped system the finding itself enumerated — Cycle, Mire,
+Cycle Modifiers, inventory, health, enemies (despawned), buildables, chest/wellspring/ship progress —
+but WaveSpawner's own unlocked-roster state was never in that enumeration and this task did not touch
+it. A restarted run therefore starts at Cycle 1 with whatever enemy roster the PREVIOUS run had
+already unlocked, rather than the Cycle-1 starting roster a genuinely fresh run should see.
+
+**Would take:** a `WaveSpawner.host_reset_for_new_run()` (or equivalent) subscribed to
+`EVENT_BUS.subscribe_run_restarted()` — the same seam every other F-243 reset hangs off
+(`core/events/event_bus.gd`) — clearing whatever internal "unlocked so far" state
+`host_unlock_next_enemy()` tracks. Small, but needs its own look at that file (outside this task's
+claim) to confirm the roster is stored the way this assumes and that resetting it doesn't fight
+`_bind_rules()`'s export-fallback adoption.
+
+---
+
 ## Resolved
+
+### F-251 · tools/chunk_stream_check.gd (windowed) has 5 pre-existing failures — terrain retuning since F-128 left the LOD skirt too shallow for the real seam gap — **fixed**
+
+**Area:** worldgen · **Severity:** high · **Found:** 2026-08-19 by lp
+
+Found 2026-08-19 by lp during F-241's verification (chunk mesher noise-reuse perf fix — unrelated
+change). `agent godot --windowed --script tools/chunk_stream_check.gd` currently reports **5
+functional failures**, confirmed via `git stash` to be present on unmodified `main` too (identical
+failure text/numbers with F-241's diff stashed out and restored) — nothing about this is caused by
+F-241; it was already broken and undetected because nothing has run this windowed check recently.
+
+**The two failures with a clear, likely-shared root cause — terrain got taller/rougher since F-128
+and D-142/D-144 tuned it, but the LOD skirt and this check's own reference constants never
+re-swept:**
+
+1. `skirt is deeper than the worst LOD-boundary divergence across the whole island` — measured worst
+   seam divergence is **12.4458 m** (seed 20260818, chunk (-4,0)) against `ChunkMesher.SKIRT_DEPTH`
+   of **2.600 m**. F-128/D-084 sized the skirt at 10% of `HEIGHT_SCALE` when `HEIGHT_SCALE` was 60
+   and the worst measured divergence was 1.78 m (a 3.4x margin, `chunk_mesher.gd:36-40`'s own
+   comment). `HEIGHT_SCALE` is now 26 (this file, unrelated task) and the ridged/river layers
+   (D-142/4.13-4.14) add relief `HEIGHT_SCALE` alone doesn't capture, so the 10%-of-amplitude
+   heuristic no longer holds — the skirt is now **4.8x too shallow for the real worst case**. If the
+   in-game LOD ring ever actually produces that chunk/seed combination at adjacent tiers, the crack
+   is visible: this is not just a stale test number, it is a plausible live rendering bug.
+2. The same section's `F-128's recorded worst-case divergence (1.779 m) has not drifted` assertion
+   also fails — that reference point (`WORST_KNOWN_SEED = 424242`, `WORST_KNOWN_CHUNK = (-5, 2)`,
+   `tools/chunk_stream_check.gd:38-40`) now measures **0.0000 m**, meaning the terrain shape at that
+   specific chunk/seed changed enough since F-128 that it no longer represents any LOD-boundary
+   divergence at all. The check's own reference case is stale, separately from the margin having
+   collapsed.
+
+**A third, likely the same class of staleness:** `a different seed changes the mesh` fails —
+`ChunkMesher.build_mesh(5, -3, BENCH_SEED, 1)` and the same chunk at `BENCH_SEED + 1` come back
+byte-identical. Chunk (5, -3) at `CHUNK_SIZE = 32` centres around world (160, -96), ~186 m from
+origin — outside `IslandHeightmap.ISLAND_RADIUS` (118 m, this file, retuned from the 512 m this
+check's constants were presumably chosen against). Both seeds are almost certainly sampling flat
+open water at that chunk regardless of seed. Likely fix: move `WORST_KNOWN_CHUNK`/the determinism
+check's chunk coordinate to something inside the current 118 m island, and re-measure
+`WORST_KNOWN_DIVERGENCE_M` and a real `SKIRT_DEPTH_FRACTION` against the current
+HEIGHT_SCALE/ridge/river terrain, the way F-128 originally measured them.
+
+**Two more failures observed, root cause not chased down here (out of scope for the task that found
+this) — file separately or fold in when someone re-does the whole sweep:**
+- `collision_faces() is terrain only — skirt is never handed to the physics server (D-084)` fails at
+  every LOD (`tools/chunk_stream_check.gd:176`, the `collision_min_y - mesh_min_y == SKIRT_DEPTH`
+  assertion) — plausibly the same "terrain now has more relief than the skirt math assumed" cause
+  (a border vertex's own height could now sit below `some_other_vertex - SKIRT_DEPTH`), but not
+  confirmed.
+- `found a second chunk with a harvestable placement, >= 10 chunks from the first, for the 'remote
+  peer' anchor` (F-132's union-of-interest section, `tools/chunk_stream_check.gd:529`) — no terrain
+  connection obvious; may be an unrelated scatter-table/seed issue.
+
+**What would close this:** a task claiming `world/chunk/chunk_mesher.gd` (`SKIRT_DEPTH_FRACTION`)
+and `tools/chunk_stream_check.gd` (`WORST_KNOWN_SEED`/`WORST_KNOWN_CHUNK`/`WORST_KNOWN_DIVERGENCE_M`,
+the determinism-check chunk coordinate) together: re-sweep the whole island for the real worst-case
+LOD-boundary divergence under the current heightmap (same four-seed sweep method F-128/D-084 used),
+retune `SKIRT_DEPTH_FRACTION` to clear it with a real margin, update the reference constants, and
+confirm `chunk_stream_check.gd` is green before moving on to the two unexplained failures.
+
+---
+
+**Resolved 2026-08-19 by lp.** Fixed all 5 pre-existing failures in tools/chunk_stream_check.gd (windowed) — 0 failures now, was 5.
+All traced to the same terrain-retuning-left-constants-stale root cause D-142/D-143 (HEIGHT_SCALE
+60->26, ISLAND_RADIUS 512->118, ridge/river layers), plus one fragile check assertion the steeper
+terrain broke.
+
+1. SKIRT_DEPTH_FRACTION (world/chunk/chunk_mesher.gd) 0.10 -> 1.70: 12-seed island-wide sweep found
+   worst LOD-boundary divergence 12.805 m (seed 4242, chunk (3,-4)); new skirt (44.2 m) restores
+   F-128's original ~3.4x margin. Skirt vertex/tri count is depth-independent, so this costs nothing
+   at runtime.
+2. WORST_KNOWN_SEED/CHUNK/DIVERGENCE_M updated to the new sweep's worst point (4242 / (3,-4) /
+   12.805). ISLAND_CHUNK_RADIUS shrunk 17->10 to match the real island (correctness-neutral).
+3. Determinism test's chunk moved (5,-3) -> (0,0) — (5,-3) sampled flat open water outside the
+   shrunk ISLAND_RADIUS regardless of seed.
+4. Rewrote the collision-band assertion: it required collision_min_y - mesh_min_y == SKIRT_DEPTH
+   exactly, silently assuming a chunk's lowest TERRAIN point always sits on its border. New ridge/
+   river relief breaks that coincidence with nothing actually wrong. Now checks collision_min_y
+   equals the terrain block's own min exactly, and skirt sits >= SKIRT_DEPTH*0.5 below it.
+5. Union-of-interest min_separation rebased LOAD_RADIUS_CHUNKS-based (10 chunks/320m, unreachable —
+   harvestable content never extends past radius 6 on the shrunk island) to LOD0_RADIUS_CHUNKS-based
+   (4 chunks/128m) — see D-150 for why that's still the correct claim to test.
+
+Verified: `.agent/bin/agent godot --windowed --script tools/chunk_stream_check.gd` -> 0 functional
+failures. Regression, all clean and unaffected: tools/check_determinism.gd (terrain_hash
+c20eed19b44270a1, matches F-241's recorded value exactly), tools/terrain_check.gd (0 failures),
+tools/bench_chunks.gd (4.497 ms/chunk threaded, unchanged shape).
+
+Swept for the same shape (hardcoded chunk coords/radii against the old 512m island) across tools/
+and world/ — no other file has it; poi_check.gd and island_heightmap.gd already read ISLAND_RADIUS
+dynamically.
+
+Also confirmed F-253's hypothesis #1 (same root cause as this finding) is ruled out: determinism
+check is clean, so F-253 is a real snapshot-delivery bug, not terrain non-determinism. Noted on
+F-253 directly.
+
+Docs: docs/SPECS.md new F-251 block (task 0 of this order — none existed). docs/DECISIONS.md D-150
+(why min_separation is now LOD0-based, not LOAD_RADIUS-based). docs/FINDINGS.md F-253 updated with
+the determinism-ruled-out note.
 
 ### F-237 · A-016 asks for a cave entrance, but D-142 put caves on the cut list — the asset would promise a space that cannot exist — **fixed**
 
