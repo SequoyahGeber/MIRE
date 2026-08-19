@@ -7,6 +7,12 @@ extends SceneTree
 ## merge fell back to a mesh with ZERO surfaces, so a `surface_get_material(-1)` a caller assumed
 ## valid threw next and the batch drew nothing. Loud in the log, invisible on screen.
 ##
+## Also covers F-188: every imported .glb gets a shadow mesh from `meshes/create_shadow_meshes=true`,
+## but nothing generated one for a mesh `MeshMerge` assembles at runtime, until the fix added
+## `MeshMerge._shadow_mesh()`. Checked here for `merged()` against the real kit exports, and
+## separately against `merge_instances()` with two synthetic entries -- `merged()` alone would
+## never exercise `merge_instances()`'s own return path.
+##
 ## Exercises `MeshMerge.merged()` directly against every .glb kit export rather than booting a
 ## level: the failure is a property of the ASSET (a part missing a channel its siblings have),
 ## not of any one scene that happens to place it -- the same population core/render/mesh_merge.gd's
@@ -33,6 +39,7 @@ func _init() -> void:
 		failures.append("no kit exports/ directories found under %s" % ASSETS_DIR)
 	for kit in kits:
 		_check_kit(kit)
+	_check_merge_instances_shadow()
 	print("MESH_MERGE_CHECK checked=%d surfaces=%d" % [checked, total_surfaces])
 	_finish()
 
@@ -77,6 +84,7 @@ func _check_asset(path: String) -> void:
 	if mesh.get_surface_count() == 0:
 		failures.append("%s: merged mesh has zero surfaces -- the F-152 failure mode" % path)
 		return
+	_check_shadow_mesh(path, mesh)
 	for surface in mesh.get_surface_count():
 		total_surfaces += 1
 		var arrays: Array = mesh.surface_get_arrays(surface)
@@ -96,6 +104,56 @@ func _check_asset(path: String) -> void:
 					failures.append("%s surface %d: index %d out of range for %d vertices"
 						% [path, surface, index, vertex_count])
 					break
+
+
+## F-188: `mesh` must carry a hand-built shadow mesh, one surface per visible surface, in the same
+## order, position-and-index only -- the same invariant `MeshMerge._shadow_mesh()` promises.
+func _check_shadow_mesh(path: String, mesh: ArrayMesh) -> void:
+	var shadow := mesh.shadow_mesh
+	if shadow == null:
+		failures.append("%s: no shadow_mesh -- F-188" % path)
+		return
+	if shadow.get_surface_count() != mesh.get_surface_count():
+		failures.append("%s: shadow_mesh has %d surfaces, visible mesh has %d"
+			% [path, shadow.get_surface_count(), mesh.get_surface_count()])
+		return
+	for surface in shadow.get_surface_count():
+		var arrays: Array = shadow.surface_get_arrays(surface)
+		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+		if vertices.is_empty():
+			failures.append("%s shadow surface %d: no vertices" % [path, surface])
+		var visible_indices: Variant = mesh.surface_get_arrays(surface)[Mesh.ARRAY_INDEX]
+		var shadow_indices: Variant = arrays[Mesh.ARRAY_INDEX]
+		var visible_count: int = (visible_indices as PackedInt32Array).size() \
+			if visible_indices != null else 0
+		var shadow_count: int = (shadow_indices as PackedInt32Array).size() \
+			if shadow_indices != null else 0
+		if shadow_count != visible_count:
+			failures.append("%s shadow surface %d: %d indices, visible surface has %d"
+				% [path, surface, shadow_count, visible_count])
+		for slot in [Mesh.ARRAY_NORMAL, Mesh.ARRAY_TEX_UV, Mesh.ARRAY_TEX_UV2,
+				Mesh.ARRAY_COLOR, Mesh.ARRAY_TANGENT]:
+			if arrays[slot] != null:
+				failures.append("%s shadow surface %d: carries channel %d, expected position-only"
+					% [path, surface, slot])
+
+
+## `merge_instances()` has no .glb export to exercise it against -- `merged()`'s coverage above
+## never calls it. Two synthetic boxes stand in for two chunk placements.
+func _check_merge_instances_shadow() -> void:
+	var box := BoxMesh.new()
+	box.size = Vector3.ONE
+	var entries: Array = [
+		{"mesh": box, "transform": Transform3D.IDENTITY},
+		{"mesh": box, "transform": Transform3D(Basis.IDENTITY, Vector3(2, 0, 0))},
+	]
+	var combined := MeshMerge.merge_instances(entries)
+	checked += 1
+	if combined == null:
+		failures.append("merge_instances: two synthetic boxes merged to null")
+		return
+	total_surfaces += combined.get_surface_count()
+	_check_shadow_mesh("merge_instances synthetic", combined)
 
 
 ## Every present channel must carry exactly `stride` entries per vertex -- the invariant F-152's

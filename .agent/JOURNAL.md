@@ -4750,3 +4750,15 @@ Fixed: bevel-free box() override added to build_tool_weapon_set.py/build_loot_se
 Files: `tools/blender/build_tool_weapon_set.py`, `tools/blender/build_loot_set.py`, `tools/blender/build_enemy_crawler.py`, `tools/blender/asset_repro_check.py`, `docs/ASSET_TRACKER.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`, `assets/tools_weapons`, `assets/loot`, `assets/enemies`, `assets/source/tool_weapon_set.blend`, `assets/source/loot_set.blend`, `assets/source/enemy_crawler.blend`
 
 Commit at time of writing: `3888799`
+
+---
+
+### DONE · F-188 · lm · 2026-08-19T10:07:05+00:00
+
+**Runtime-merged meshes have no shadow mesh, though every imported .glb gets one**
+
+MeshMerge._build() and .merge_instances() now build and assign a hand-made shadow_mesh (position+index only). CACHE_VERSION 5->6. Verified: agent godot --script tools/mesh_merge_check.gd (extended with _check_shadow_mesh + synthetic merge_instances case, PASS on 361 assets/1372 surfaces), prop_chunk_merge_check.gd PASS, hollowmere_check.gd PASS. Swept repo for ImporterMesh/generate_lods/shadow_mesh -- mesh_merge.gd is the only runtime mesh assembler, no siblings found.
+
+Files: `core/render/mesh_merge.gd`, `tools/mesh_merge_check.gd`
+
+Commit at time of writing: `47796b6`

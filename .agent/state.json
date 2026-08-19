@@ -1,6 +1,30 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "tools/blender/build_flora_set.py": {
+      "agent": "lp",
+      "at": "2026-08-19T10:03:48+00:00",
+      "task": "F-204",
+      "token": null
+    },
+    "tools/blender/build_gatherable_plants.py": {
+      "agent": "lp",
+      "at": "2026-08-19T10:03:48+00:00",
+      "task": "F-204",
+      "token": null
+    }
+  },
+  "in_flight": {
+    "F-204": {
+      "agent": "lp",
+      "files": [
+        "tools/blender/build_gatherable_plants.py",
+        "tools/blender/build_flora_set.py"
+      ],
+      "notes": [],
+      "started": "2026-08-19T10:03:48+00:00",
+      "token": null
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
       "agent": "bram1",
@@ -1645,9 +1669,9 @@
     },
     "core/render/mesh_merge.gd": {
       "agent": "lm",
-      "at": "2026-08-19T07:54:03+00:00",
-      "hash": "36d52fec301435cd17756568613e749893c35cd0277ee8ba73fddbf896681882",
-      "task": "F-187",
+      "at": "2026-08-19T10:07:05+00:00",
+      "hash": "c488361a97a4eed2683b6de3b3345439ecaa7ea7497935abfc049775d201fc32",
+      "task": "F-188",
       "token": null
     },
     "core/save/salvage_save.gd": {
@@ -2906,10 +2930,11 @@
       "token": null
     },
     "tools/mesh_merge_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T00:50:11+00:00",
-      "hash": "93ee932ab629758343f98b86a47fb6a9c58844f3f77442cf05c5825988486788",
-      "task": "F-152"
+      "agent": "lm",
+      "at": "2026-08-19T10:07:05+00:00",
+      "hash": "bba0b96942cab732f6453fa174600566924918b5020d2dd344845706add6add5",
+      "task": "F-188",
+      "token": null
     },
     "tools/mesh_merge_check.gd.uid": {
       "agent": "lp",
@@ -6195,9 +6220,11 @@
       "title": "Props are 1,057 MultiMesh groups averaging 2.7 copies \u2014 F-100's cross-asset chunk merge is still not built, and now has a measured constraint"
     },
     "F-188": {
+      "done_at": "2026-08-19T10:07:05+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Runtime-merged meshes have no shadow mesh, though every imported .glb gets one"
     },
@@ -6331,7 +6358,7 @@
     "F-204": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "A Blender preview that moves assets between renders draws the layout it had at the first render"
     },
@@ -6341,6 +6368,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`agent check`/the pre-commit hook still lets a commit register or carry an untracked autoload target \u2014 F-200's mechanism #2 is still unbuilt"
+    },
+    "F-206": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`build_gatherable_plants.py` (A-011) has six `bevel=` sites with no local override \u2014 the same D-124 exposure, latent rather than live"
     }
   },
   "version": 1

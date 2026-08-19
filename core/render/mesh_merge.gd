@@ -17,7 +17,7 @@ extends RefCounted
 
 ## Bump when the merge changes what it produces — the disk cache key carries it, so a stale entry
 ## from an older shape can never be read back.
-const CACHE_VERSION: int = 5
+const CACHE_VERSION: int = 6
 const CACHE_DIR: String = "user://mesh_cache"
 ## The engine's own .glb import defaults, so a runtime merge simplifies the way the import
 ## pipeline would have.
@@ -212,6 +212,11 @@ static func _build(path: String) -> ArrayMesh:
 	var combined := importer.get_mesh()
 	if combined == null or combined.get_surface_count() == 0:
 		return null
+	# Every kit .glb imports with `meshes/create_shadow_meshes=true` and gets a position-only,
+	# welded shadow mesh from it; a mesh assembled at runtime through ImporterMesh gets none,
+	# because `ArrayMesh.create_shadow_mesh()` is not exposed to scripting (F-188). Built by hand
+	# instead, from the exact vertex/index data already collected above.
+	combined.shadow_mesh = _shadow_mesh(order, buckets)
 	DirAccess.make_dir_recursive_absolute(CACHE_DIR)
 	var save_error := ResourceSaver.save(combined, cache_path,
 		ResourceSaver.FLAG_BUNDLE_RESOURCES | ResourceSaver.FLAG_COMPRESS)
@@ -330,7 +335,37 @@ static func merge_instances(entries: Array) -> ArrayMesh:
 	if importer.get_surface_count() == 0:
 		return null
 	importer.generate_lods(LOD_NORMAL_MERGE_ANGLE, LOD_NORMAL_SPLIT_ANGLE, [])
-	return importer.get_mesh()
+	var combined := importer.get_mesh()
+	if combined == null or combined.get_surface_count() == 0:
+		return null
+	# Same F-188 fix as `_build()` — see its comment. Most callers land under
+	# `DrawPolicy.SHADOW_MIN_HEIGHT` and get `cast_shadow` turned off anyway (F-187's own props
+	# do), but this function makes no such guarantee for a future caller that merges something
+	# taller, so it earns the shadow mesh unconditionally rather than leaving a silent gap.
+	combined.shadow_mesh = _shadow_mesh(order, buckets)
+	return combined
+
+
+## The shadow mesh every imported .glb gets for free but a runtime merge does not (F-188) —
+## same surfaces and vertex order as the visible mesh, stripped to `ARRAY_VERTEX` and
+## `ARRAY_INDEX` only, which is all the shadow pass samples. Unwelded, unlike the importer's own
+## shadow meshes: `ArrayMesh.create_shadow_mesh()`, which would additionally dedupe vertices that
+## share a position, is not exposed to scripting, so this trades that last bit of vertex reuse
+## for correctness — the shadow pass still draws the right shape, at the position-only vertex
+## format every shadow pass already restricts itself to.
+static func _shadow_mesh(order: Array[String], buckets: Dictionary) -> ArrayMesh:
+	var shadow := ArrayMesh.new()
+	for key: String in order:
+		var bucket: Dictionary = buckets[key]
+		var vertices: PackedVector3Array = bucket["v"]
+		if vertices.is_empty():
+			continue
+		var arrays: Array = []
+		arrays.resize(Mesh.ARRAY_MAX)
+		arrays[Mesh.ARRAY_VERTEX] = vertices
+		arrays[Mesh.ARRAY_INDEX] = bucket["i"]
+		shadow.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return shadow if shadow.get_surface_count() > 0 else null
 
 
 ## What a material looks like, as a string. Two surfaces sharing one of these render the same,
