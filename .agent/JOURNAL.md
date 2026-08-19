@@ -3767,3 +3767,15 @@ _run_with_resume now retries after a 90s pause when the lane's error names itsel
 Files: `.agent/bin/agent`, `docs/FINDINGS.md`
 
 Commit at time of writing: `8b7804e`
+
+---
+
+### DONE · 4.5 · hollow7 · 2026-08-19T01:42:53+00:00
+
+**Runtime nav baking per chunk — or the R3 fallback decided in M0**
+
+NavBaker ships: per-chunk runtime NavMesh baking implementing D-016's measured rules verbatim (async bake only, cell 0.25, edge margin 1.10, one bake in flight, no border_size/filter_baking_aabb). Host-only — a client bakes nothing. Nav rides the LOD0/collision ring and retires on BOTH unload and LOD demotion; source geometry is ChunkMesher.collision_faces() so nav and collision cannot disagree. Winding is MEASURED per bake, not hard-coded, because ChunkMesher's winding may legitimately change and a hard-coded flip would silently produce an empty nav map. No RPC, so no protocol bump. D-101 records all three plus the correction that cost the most time: the check originally tested chunks (0,0)-(1,1), which for seed 20260818 are steep seabed at y -4 to -15 — every seam assertion failed and looked exactly like D-016's erosion hole. A slope census (82.5 percent of LAND walkable under 45 deg) settled it; the check now LOCATES walkable ground from the heightmap instead of hard-coding coords. The seam paths across with 0.000m arrival error. F-159 filed: placed buildables are not in the source geometry, so agents path through walls. 21 assertions, 0 failures, 0 engine ERROR lines.
+
+Files: `world/chunk/nav_baker.gd`, `world/chunk/chunk_streamer.gd`, `tools/nav_bake_check.gd`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/ARCHITECTURE.md`
+
+Commit at time of writing: `a6669f2`

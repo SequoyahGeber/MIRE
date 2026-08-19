@@ -2485,3 +2485,116 @@ that one call site to pass `BuildService.ward_radii()` through `MireGrid.set_war
 **Would change my mind:** nothing forces a future reader to preserve this split — if it ever reads as
 more confusing than useful, collapsing both into whichever task ships second is a two-line change,
 not a redesign.
+
+### D-100 · 2026-08-18 · Task 6.1's Cycle state machine: no new RPC (reuses `WorldDeltaLog`), no Cycle Modifier draw (defers to 6.2), no new enemy content (defers to 5.2)
+
+`CycleService` (`systems/cycle/cycle_service.gd`) needed a way for every peer to learn the current
+Cycle number, including a late joiner. The honest version is a small RPC pair, same shape as
+`DayNight.net_push_time` or `RuleService.net_rule_changed`/`net_rule_snapshot` — but `docs/SPECS.md`'s
+own standing rule 5 requires any new RPC to bump `PROTOCOL_VERSION` in `core/net/net_version.gd` and
+extend `tools/handshake_check.gd`, and both files were held all session by lane slate17's 3.7 claim.
+This is the exact situation F-126 hit and recorded (D-098): **reused an existing generic
+host-authoritative log instead of inventing a new RPC.** `WorldDeltaLog.host_record(chunk, kind, key,
+value)`/`latest()` already broadcasts to every connected peer immediately and folds into the snapshot
+a late joiner gets, and its `(chunk, kind, key) -> value` shape does not actually require the chunk to
+be spatial — task 4.9 already proved this same reuse for `MireGrid` (D-099). `CycleService` records
+the Cycle number at the fixed pseudo-chunk `Vector2i.ZERO`, kind `&"cycle"`, key `"current"`. **Would
+change my mind:** `net_version.gd`/`handshake_check.gd` becoming free — a real RPC pair would then be
+strictly cleaner (this one has no per-cell shape to justify piggybacking, unlike MireGrid's), and
+whoever picks it up should feel free to swap it in as a two-file, no-behavior-change refactor.
+
+**No Cycle Modifier is drawn on advance.** DESIGN.md §5.1 names it as one of the three things a Cycle
+does, but `docs/ROADMAP.md` splits "Cycle Modifier framework: deck, draw, stacking, Cycle-weighted
+rules, incompatibility tags" into its own task, 6.2 (T2, est 4) — building it here would be scope
+duplication against a task explicitly reserved for it, and there is no deck to draw from yet.
+`EventBus.emit_cycle_advanced(cycle)` is the seam 6.2 hangs its draw off, mirroring the "future task's
+hook" role D-092 gave `wellspring_capped`. **Would change my mind:** 6.2 shipping first and finding
+`cycle_advanced` the wrong shape to build on — nothing pins its signature beyond `(cycle: int)`.
+
+**Enemy roster expansion (`WaveSpawner.host_unlock_next_enemy()`) authors no new content.**
+AGENTS.md forbids bulk-generating `.tres` content, and task 5.2 ("8-12 enemy types") is the one that
+grows the real archetype roster; it has not shipped. `roster_order` defaults to `[&"bog_crawler"]` —
+content that already exists (task 4.11 authored it as the corrupted-spawn substitution variant) and
+is a legitimate second archetype by stats even though it reuses `crawler`'s model (F-158, already
+filed, is about exactly that visual gap — this decision makes bog_crawler surface *more* often, via
+the general roster and not just corrupted ground, which raises F-158's stakes but does not change its
+fix). `host_unlock_next_enemy()` is a no-op once `roster_order` is exhausted, never a crash — 5.2 (or
+any future content task) grows the real escalation by appending more ids to that export, no code
+change required. **Would change my mind:** nothing — this is the intended extension point.
+
+### D-101 · 2026-08-18 · Task 4.5's nav baking: host-only, LOD0-only, and winding is MEASURED rather than asserted
+
+D-016 already settled the hard part — runtime `NavigationMesh` baking stays, `bake_..._async` is the
+only bake we call, `cell_size` 0.25, `map_set_edge_connection_margin` 1.10, one bake in flight.
+`world/chunk/nav_baker.gd` implements those verbatim. Three calls it had to make on top:
+
+**Host only.** Pathfinding is host-authoritative (D-016, §2.2), enemies are host-owned bodies, and a
+client has nothing to path. `NavBaker.bind()` is a no-op on a non-host, so a six-player session pays
+the bake cost once rather than six times. Nothing is replicated — the map is derived from terrain
+every peer could regenerate anyway.
+
+**Nav rides the LOD0 ring, and leaves it too.** D-084 established that the collision ring IS the LOD0
+ring; navigation belongs on exactly the same one, because an agent pathing across terrain with no
+collider walks on nothing. The half that is easy to forget is the exit: a chunk DEMOTED to a coarser
+LOD retires its region, not just an unloaded one, or a stale region keeps describing terrain the
+streamer is no longer rendering at that resolution. Source geometry is
+`ChunkMesher.collision_faces()` — the same triangles the physics collider is cooked from, skirt
+sliced off — so navigation and collision cannot disagree about where the ground is.
+
+**Winding is measured per bake, not hard-coded.** §6 trap 1 is the expensive one: Recast treats a
+triangle as up-facing when `cross(v1-v0, v2-v0).y` is NEGATIVE, and conventional winding bakes
+*success with zero polygons*, silently. The obvious implementation hard-codes the flip.
+`_wound_for_recast()` instead measures the first triangle and flips only if needed, because
+`ChunkMesher`'s winding is its own business and may legitimately change — and if it did, a hard-coded
+flip would produce an empty nav map that nothing reports until an enemy stands still forever.
+`tools/nav_bake_check.gd` keeps the trap *proven* rather than commented: it bakes the same faces both
+ways and asserts the wrong winding yields exactly 0 polygons.
+
+**A correction worth recording, because it cost the most time in this task and was not a code bug.**
+The check originally baked chunks (0,0)-(1,1), commented "near the island centre, where the heightmap
+is reliably above water". For seed 20260818 those chunks are steep seabed at y = -4 to -15. Every
+seam assertion failed and looked exactly like the erosion hole D-016 describes — the path even
+stopped at x = 31.0, one metre short of the boundary, which is precisely the symptom. It was not:
+a slope census over the whole island showed **82.5% of land is walkable at under 45 degrees**, and a
+boundary with verified gentle land on both sides paths across with 0.000 m arrival error. The check
+now *locates* walkable terrain from the heightmap instead of hard-coding coordinates, so it is
+seed-independent and can never again report a bad test-terrain choice as a navigation defect.
+
+The generalizable lesson, and the reason this is a decision and not just a commit message: **an
+assertion loose enough to pass is worse than no assertion.** The first seam test asked only "does the
+path end within one chunk of the target" and passed at 25.6 m short. Sharpening it to "snap the
+target on-mesh, assert the endpoints are on opposite sides, demand arrival within 0.5 m" is what
+turned a green tick into a real question.
+
+**Would change my mind:** enemies needing to path on water or on structures. Buildables are NOT in
+the source geometry — 3.7's pieces are colliders the nav map does not know about, so an agent will
+path straight through a placed wall. That is the next real gap here, and it wants the streamer's
+placed geometry folded into the bake, not a second nav system. Filed as F-159.
+
+### D-102 · 2026-08-18 · Task 5.3's ranged combat ships three new RPCs with no `PROTOCOL_VERSION` bump — `net_version.gd`/`handshake_check.gd` were held all session by another lane's claim
+
+`RangedCombatService` needed a real RPC pair-plus-one — `net_request_shot` (client → host),
+`net_shot_fired` (host → everyone, cosmetic flight spawn), `net_shot_resolved` (host → everyone,
+authoritative hit/miss) — because a bow's flight is genuinely variable-length with no existing
+generic seam to piggyback on the way D-99/D-100 reused `WorldDeltaLog` for Mire deltas and the Cycle
+counter. `docs/SPECS.md`'s own standing rule 5 requires any new RPC to bump `PROTOCOL_VERSION` in
+`core/net/net_version.gd` and extend `tools/handshake_check.gd`'s pinned-version assertion — both
+files were held by lane slate17's 3.7 claim for this task's entire session (the same file, the same
+blocker D-100 hit for task 6.1).
+
+Unlike 6.1, this task could not route around needing the RPC — a projectile flight is not a discrete
+world-mutation delta with a `(chunk, kind, key)` shape, and forcing it through `WorldDeltaLog` would
+mean broadcasting the whole flight instead of the two cosmetic/authoritative messages that already
+match every other host-authoritative feature's shape (2.8's melee swing, 4.8's Wellspring channel).
+**Decided: ship the three RPCs un-versioned rather than stall the whole task on a file conflict** —
+the game is developed and shipped from one evolving source tree, not staggered binaries (`net_version.gd`'s
+own header: "this project ships from source control... there is no compatibility window"), so the
+real risk (two DIFFERENT-version builds of THIS commit connecting and silently desyncing over ranged
+combat) is transient and only matters mid-transition, not at any steady state. Filed as F-161 so it
+is not silently lost — whoever next holds `net_version.gd` bumps `PROTOCOL_VERSION` to 20 and
+documents these three RPCs in its own running comment, then raises `handshake_check.gd`'s pinned
+`PROTOCOL_VERSION == 19` assertion to 20.
+
+**Would change my mind:** `net_version.gd`/`handshake_check.gd` becoming free during a task that
+needs a real network feature verified — bump it then rather than defer again; two deferred bumps
+compounding is a real (not just theoretical) desync risk.

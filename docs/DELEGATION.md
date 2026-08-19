@@ -75,6 +75,125 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 5.3: ranged combat ships — bow, host-simulated arrow flight, host-authoritative hit validation (lp)
+
+**What shipped, verified:** the whole of `docs/SPECS.md`'s new `## 5.3` block. New content family
+`RangedWeaponDef` (`systems/combat/ranged_weapon_def.gd`, `Registry.ranged_weapons` +
+`get_ranged_weapon(item_id)`/`has_ranged_weapon(item_id)`, loaded from `content/ranged_weapons/*.tres`
+exactly like `weapons`), one worked example (`short_bow.tres` — draw 0.55s, recovery 0.35s, 34 m/s,
+4 damage, 60 m range, fires `arrow`). New autoload `RangedCombatService`
+(`autoload/ranged_combat_service.gd`, registered via `agent autoload`) owns the whole host state
+machine; `CombatService.request_attack()` checks `Registry.has_ranged_weapon()` on the selected
+hotbar slot FIRST and hands the whole action to `RangedCombatService.request_shot()` before any melee
+state is touched — melee's own `WeaponDef`/`_local_phase`/hitbox logic is completely untouched.
+
+**The API the next ranged-content or ranged-AI task builds against:**
+```gdscript
+RangedCombatService.request_shot(hotbar_index: int) -> int        # request id, or -1 if locked out
+RangedCombatService.ranged_weapon_for_hotbar_index(idx: int) -> RangedWeaponDef   # null if not a bow
+RangedCombatService.local_phase() -> Phase                        # IDLE/WIND_UP/COMMIT/RECOVERY
+RangedCombatService.local_phase_progress() -> float               # 0..1, WIND_UP/RECOVERY only
+RangedCombatService.host_shot_active(peer_id: int) -> bool
+signal shot_landed(peer_id, position, damage, target_name)        # host-confirmed connect
+signal shot_missed(peer_id, position)                             # host-confirmed non-connect
+signal shot_rejected(request_id, detail)
+CombatService.placeholder_impact_sound() -> AudioStream            # shared procedural thud, new public accessor
+```
+Mutual exclusion with melee is two cheap cross-calls, not a shared base class: both
+`CombatService.request_attack()` and `RangedCombatService.request_shot()` check the OTHER service's
+`local_phase()` before starting, via `get_node_or_null(^"/root/…")` + `.call()` (never a bare
+cross-reference between the two, per F-011 — see `systems/combat/aim_util.gd`'s own header for why
+`CombatAim` is not shared with melee's tested `_aim_direction()` either, on purpose).
+
+**The trap worth knowing before any future system raycasts against `&"damageable"`:** the physics
+collider a raycast hits is not necessarily the damageable node. `Enemy`/`PlayerController` are
+`CollisionObject3D` themselves, but `Harvestable` is a plain `Node3D` that finds a CHILD
+`CollisionObject3D` for its own collider — a raycast against it returns that anonymous child, which
+carries neither the `&"damageable"` group nor `host_apply_damage()`.
+`RangedCombatService._damageable_owner(node)` walks UP from the hit collider (itself included,
+bounded depth 8) to the nearest ancestor actually in the group; `_resolve_flight()` uses this instead
+of trusting the raycast's own `collider`. This task's own first attempt at
+`tools/ranged_combat_check.gd` didn't catch the bug until its `TestTarget` was reshaped to match
+Harvestable's actual wrapper structure (a bare `StaticBody3D` target would have passed either way) —
+worth remembering when writing the NEXT check that raycasts against this group.
+
+**PvP is cut (DESIGN.md §7), enforced here, not (yet) on melee.** `_resolve_flight()` treats a hit
+whose damageable owner is also in `&"players"` as a miss — the arrow still physically stops there (no
+pass-through to whatever is behind), it simply deals no damage. `CombatService`'s own melee target
+search has no equivalent exclusion; out of this task's claim, not chased.
+
+**No `PROTOCOL_VERSION` bump — D-102, F-161 (open).** `core/net/net_version.gd`/`tools/handshake_check.gd`
+were held by lane slate17's 3.7 claim all session. The three new RPCs (`net_request_shot`,
+`net_shot_fired`, `net_shot_resolved`) are live and both new checks prove them over a real two-process
+ENet connection; only the version-number bookkeeping is deferred.
+
+**Verified:** `agent godot --script tools/ranged_combat_check.gd` (offline, one process) — draw/flight/
+recovery timing, ammo consumed exactly once and only on release, a wall stops the flight (proving the
+raycast, not a distance test), PvP exclusion (stops on a player-shaped target, damages neither it nor
+whatever is behind it), a clean out-of-ammo rejection, melee/ranged mutual exclusion both directions —
+`failures=0`. `agent godot --script tools/ranged_combat_net_check.gd` (real two-process ENet, one
+client that sends only a hotbar index) — host-resolved connect with the host's own damage number, the
+host consuming exactly the client's one granted arrow, a clean host-side out-of-ammo rejection —
+`failures=0`. Regression, all unmodified and still green: `tools/combat_check.gd`,
+`tools/combat_net_check.gd` (melee, both `failures=0`), `tools/harvest_tool_ladder_check.gd`
+(`failures=0` — the shared tool-damage seam), `tools/command_catalog_check.gd` (`failures=0`),
+`tools/verify_setup.gd` (all checks passed). Full boot (`agent godot --quit-after 20`): 0 `ERROR:`
+lines. F-162 filed (not fixed, out of claim): `tools/viewmodel_check.gd` has one pre-existing,
+unrelated failure (three food items with no authored viewmodel), confirmed via `agent baseline`
+against HEAD before this task's changes.
+
+### 2026-08-18 — Task 4.5: runtime nav baking ships — per-chunk `NavBaker`, D-016's rules implemented verbatim (hollow7)
+
+**What shipped, verified:** `world/chunk/nav_baker.gd` (`class_name NavBaker extends Node`) — pairs
+with a `ChunkStreamer` the way `ResourceScatterField` does and keeps one navigation map in step with
+whichever LOD0 chunks are resident. **No protocol bump: this task added no RPC.** `chunk_streamer.gd`
+is unchanged — the baker binds by signal, it does not need the streamer to know about it.
+
+```gdscript
+var baker := NavBaker.new()
+add_child(baker)
+baker.bind(streamer, world_seed)     # false on a non-host, by design — see below
+baker.map_rid()                      # hand this to NavigationAgent3D.set_navigation_map()
+baker.is_queryable()                 # poll THIS, not a readiness flag (see trap 2)
+baker.region_count() / pending_bake_count() / has_region(coord)
+```
+
+**Host only.** Pathfinding is host-authoritative (D-016), enemies are host-owned bodies, so `bind()`
+is a no-op on a client and a six-player session pays the bake cost once. Pass `force_active: true`
+only from a harness with no session.
+
+**The constants are D-016's measurements, not preferences.** `CELL_SIZE` 0.25 (0.1 cost 80.7 ms/chunk
+— steeply superlinear), `EDGE_CONNECTION_MARGIN` 1.10 (must exceed 2 x agent radius or agents cannot
+cross a chunk boundary at all), `MAX_BAKES_IN_FLIGHT` 1 (16 in one frame blocked 6.8 ms), async bake
+only (the blocking form is 9.2 ms/chunk), `border_size` and `filter_baking_aabb` left at zero because
+both make the seam WORSE. `tools/nav_bake_check.gd` asserts each of these as a value, because every
+one of them fails silently.
+
+**Two things to know before you touch this.** Nav rides the LOD0/collision ring and *leaves* it — a
+chunk demoted to a coarser LOD retires its region, not just an unloaded one. And winding is measured
+per bake rather than hard-coded: Recast wants `cross(v1-v0, v2-v0).y` NEGATIVE, conventional winding
+bakes success-with-zero-polygons, and `ChunkMesher`'s winding is its own business that may change.
+D-101 has the reasoning.
+
+**The known gap, filed as F-159:** placed buildables are NOT in the source geometry. Agents will path
+straight through a wall or a Ward. Terrain-only was the right scope here, but it is a gap, not a
+design position — the finding sketches the fix.
+
+**A trap for whoever writes the next terrain-adjacent check.** Chunks (0,0)-(1,1) are NOT "near the
+island centre, above water" — for seed 20260818 they are steep seabed at y = -4 to -15. Testing nav
+there failed every seam assertion in a way that looked exactly like D-016's erosion hole (the path
+stopped at x = 31.0, one metre short of the boundary). A slope census settled it: **82.5% of LAND is
+walkable at under 45 degrees**, and a properly-chosen boundary paths across with 0.000 m arrival
+error. `nav_bake_check.gd` now LOCATES walkable ground from the heightmap rather than hard-coding
+coordinates — copy that approach rather than picking coordinates by eye.
+
+**Check:** `tools/nav_bake_check.gd` — 21 assertions: all four of §6's silent traps (including a
+negative control that asserts the wrong winding bakes exactly 0 polygons), async bake + queue +
+attach, real seam crossing with the endpoints asserted to be on opposite sides of the boundary,
+D-016's constants as values, and region retirement on both unload and LOD demotion. 0 failures,
+0 engine ERROR lines.
+
+
 ### 2026-08-18 — Task 6.1: Cycle state machine ships — advance, escalate spread rate, expand enemy pool, announce (lm)
 
 New autoload `CycleService` (`systems/cycle/cycle_service.gd`, registered via `agent autoload`) counts
