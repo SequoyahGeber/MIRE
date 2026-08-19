@@ -622,54 +622,6 @@ F-140 moves to '## Resolved'.
 
 ---
 
-### F-148 · construction_check.gd's door-swing solids AABB goes negative-size on thin per-triangle bounds, throwing an UNDECLARED engine error on every run
-
-**Area:** tooling · **Severity:** medium (raised from low, see update) · **Found:** 2026-08-18 by lm
-
-**Update 2026-08-18 (lm, hit again while verifying F-137):** this got much worse than "ten-plus
-times per run" — `agent godot --script tools/construction_check.gd` today logged 213,000+ repeats of
-the `AABB size is negative` error from `_check_doors()` and the process did not reach `_finish()`
-inside a 5-minute budget at all (killed by the shell timeout mid-error-spam, output truncated to a
-1.4 GB log). Root cause is unchanged (a `.grow(-0.004)` on a degenerate per-triangle box), but the
-blow-up is likely proportional to how many door/gate/palisade-gate parts exist to swing-check, and
-task 3.7 was mid-authoring more of them (uncommitted `door.tscn`/`gate.tscn`/`palisade_gate.tscn`
-edits in the working tree at the time) — so this bug is no longer a cosmetic UNDECLARED-error line,
-it can make the whole check unusable as a verification gate. Raised to medium for that reason. Worked
-around it for F-137's own verification by temporarily commenting out the `_check_doors()` call for a
-single local run (not committed) to confirm the new `_check_buildable_defs()` check in isolation;
-`_check_doors()` itself was left untouched and still runs in the shipped file. Not fixed here — still
-task 3.7's `.tres`/`.tscn`-adjacent territory per this finding's own original scope note.
-
-`tools/construction_check.gd::_check_doors()` builds each frame collision solid from one triangle's
-three vertices — `AABB(low, high - low)` — then calls `.grow(-0.004)` to shave 4 mm off every face so
-a near-touch doesn't misreport. A triangle is planar, so its per-axis extent is routinely near zero
-on at least one axis (any triangle lying flat against an axis-aligned face has exactly zero extent
-there); shrinking that already-thin box by 4 mm on both sides drives that axis negative.
-`AABB.has_point()` refuses a negative-size box outright — `ERROR: AABB size is negative, this is not
-supported. Use AABB.abs() to get an AABB with a positive size.` — logged once per vertex-vs-solid
-comparison that hits a degenerate solid, ten-plus times per `agent godot --script
-tools/construction_check.gd` run today.
-
-This is an UNDECLARED error under SPECS.md's standing rule #4 (grep every run for `ERROR:`, treat any
-undeclared line as failure regardless of exit code), so `CONSTRUCTION_CHECK PASS` is not a trustworthy
-verdict as written — the harness's own convention says this run should read as a failure. Found while
-verifying F-135 (unrelated: F-135 is deck_field's mating-plane fix, confirmed working via the
-CONSTRUCTION_WALKWAY/DOCK_CORNER/PALISADE_CORNER 0.0000 mm lines in the same run); this bug lives
-entirely inside `_check_doors()`'s collision-solid construction and never touches deck geometry.
-
-**Not the same bug as F-138.** F-138 was rotating each part's AABB *corners* instead of its vertices,
-which inflated the box; today's code already does the vertex/per-triangle rewrite F-138 describes, so
-that fix is in place. This is a new defect the rewrite's own `.grow(-0.004)` introduced: a per-triangle
-box is degenerate in a way a per-part box mostly wasn't, and shrinking a degenerate box goes negative
-instead of just staying thin.
-
-**Likely fix:** call `.abs()` on the triangle AABB before `.grow(-0.004)`, or clamp the grow so no
-axis can cross zero — either keeps the 4 mm tolerance intent without asking `has_point()` to evaluate
-an invalid box. Whatever the fix, re-run `agent godot --script tools/construction_check.gd` and grep
-for `ERROR:` to confirm zero UNDECLARED lines, not just that `CONSTRUCTION_DOORS swung=4` prints.
-
----
-
 ### F-149 · F-141's docs edits got committed under F-144's message — a concurrent agent's plain 'git commit' absorbs another lane's staged-but-uncommitted files
 
 **Area:** coordination · **Severity:** low · **Found:** 2026-08-18 by lm
@@ -1047,7 +999,112 @@ existing `RuleService.rule_ids()` check.
 
 ---
 
+### F-180 · construction_check.gd's door-swing check now finds real strap-vs-frame overlaps at 0 degrees, previously hidden by F-148's crash
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by lm during F-148
+
+F-148 fixed `_check_doors()`'s `AABB.grow(-0.004)` going negative on thin per-triangle bounds (see
+`## Resolved` below). With that crash gone, `agent godot --script tools/construction_check.gd` now
+runs `_check_doors()` to completion and reports real content:
+
+```
+FAIL  door_wood_leaf: Leaf_Strap_0 is inside the frame at 0 degrees
+FAIL  gate_double_leaf_left: Gate_L_Strap_0 is inside the frame at 0 degrees
+FAIL  gate_double_leaf_right: Gate_R_Strap_0 is inside the frame at 0 degrees
+CONSTRUCTION_CHECK FAIL failures=3
+```
+
+Reproduced twice, deterministic both times. Every failure is a `_Strap_0` part (leaf-side hinge
+strap hardware) reported inside the frame at 0 degrees (fully closed) — not a random assortment of
+parts, so this reads as a real geometry issue with how the strap hinges are authored on these three
+leaves, not check noise.
+
+Before F-148's fix, `_check_doors()` built a per-triangle `AABB` that went negative-size on any
+near-planar triangle, and `AABB.has_point()` errors out and returns `false` on an invalid box instead
+of throwing — so every comparison against a degenerate frame solid was silently skipped rather than
+evaluated. F-135's 2026-08-18 verification note (this file, `## Resolved`) recorded `CONSTRUCTION_
+CHECK PASS` on `_check_doors()` at the time, which is consistent with this: the crash was masking
+whatever overlap already existed then, not proof there was none.
+
+**Why not fixed here.** `door.tscn`, `gate.tscn`, and `palisade_gate.tscn` — the source scenes for
+these three leaves — are task 3.7's (slate17) uncommitted, actively-claimed work this whole session
+(`git status` shows all three modified, unclaimed by F-148). F-148's own claim was scoped to
+`tools/construction_check.gd` only. Whoever next holds those scenes should re-run `agent godot
+--script tools/construction_check.gd` first — if task 3.7 finishes strap placement and the failures
+clear on their own, this closes for free; if not, the strap hinge geometry on these three leaves
+needs adjusting so the closed-leaf strap plate doesn't intersect the frame's collision volume.
+
+---
+
 ## Resolved
+
+### F-148 · construction_check.gd's door-swing solids AABB goes negative-size on thin per-triangle bounds, throwing an UNDECLARED engine error on every run — **fixed**
+
+**Area:** tooling · **Severity:** medium (raised from low, see update) · **Found:** 2026-08-18 by lm
+
+**Update 2026-08-18 (lm, hit again while verifying F-137):** this got much worse than "ten-plus
+times per run" — `agent godot --script tools/construction_check.gd` today logged 213,000+ repeats of
+the `AABB size is negative` error from `_check_doors()` and the process did not reach `_finish()`
+inside a 5-minute budget at all (killed by the shell timeout mid-error-spam, output truncated to a
+1.4 GB log). Root cause is unchanged (a `.grow(-0.004)` on a degenerate per-triangle box), but the
+blow-up is likely proportional to how many door/gate/palisade-gate parts exist to swing-check, and
+task 3.7 was mid-authoring more of them (uncommitted `door.tscn`/`gate.tscn`/`palisade_gate.tscn`
+edits in the working tree at the time) — so this bug is no longer a cosmetic UNDECLARED-error line,
+it can make the whole check unusable as a verification gate. Raised to medium for that reason. Worked
+around it for F-137's own verification by temporarily commenting out the `_check_doors()` call for a
+single local run (not committed) to confirm the new `_check_buildable_defs()` check in isolation;
+`_check_doors()` itself was left untouched and still runs in the shipped file. Not fixed here — still
+task 3.7's `.tres`/`.tscn`-adjacent territory per this finding's own original scope note.
+
+`tools/construction_check.gd::_check_doors()` builds each frame collision solid from one triangle's
+three vertices — `AABB(low, high - low)` — then calls `.grow(-0.004)` to shave 4 mm off every face so
+a near-touch doesn't misreport. A triangle is planar, so its per-axis extent is routinely near zero
+on at least one axis (any triangle lying flat against an axis-aligned face has exactly zero extent
+there); shrinking that already-thin box by 4 mm on both sides drives that axis negative.
+`AABB.has_point()` refuses a negative-size box outright — `ERROR: AABB size is negative, this is not
+supported. Use AABB.abs() to get an AABB with a positive size.` — logged once per vertex-vs-solid
+comparison that hits a degenerate solid, ten-plus times per `agent godot --script
+tools/construction_check.gd` run today.
+
+This is an UNDECLARED error under SPECS.md's standing rule #4 (grep every run for `ERROR:`, treat any
+undeclared line as failure regardless of exit code), so `CONSTRUCTION_CHECK PASS` is not a trustworthy
+verdict as written — the harness's own convention says this run should read as a failure. Found while
+verifying F-135 (unrelated: F-135 is deck_field's mating-plane fix, confirmed working via the
+CONSTRUCTION_WALKWAY/DOCK_CORNER/PALISADE_CORNER 0.0000 mm lines in the same run); this bug lives
+entirely inside `_check_doors()`'s collision-solid construction and never touches deck geometry.
+
+**Not the same bug as F-138.** F-138 was rotating each part's AABB *corners* instead of its vertices,
+which inflated the box; today's code already does the vertex/per-triangle rewrite F-138 describes, so
+that fix is in place. This is a new defect the rewrite's own `.grow(-0.004)` introduced: a per-triangle
+box is degenerate in a way a per-part box mostly wasn't, and shrinking a degenerate box goes negative
+instead of just staying thin.
+
+**Likely fix:** call `.abs()` on the triangle AABB before `.grow(-0.004)`, or clamp the grow so no
+axis can cross zero — either keeps the 4 mm tolerance intent without asking `has_point()` to evaluate
+an invalid box. Whatever the fix, re-run `agent godot --script tools/construction_check.gd` and grep
+for `ERROR:` to confirm zero UNDECLARED lines, not just that `CONSTRUCTION_DOORS swung=4` prints.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed tools/construction_check.gd:_check_doors() — replaced the single AABB(low, high - low).grow(-0.004)
+call with a new _shrunk_solid(low, high, margin) helper that clamps each axis's half-extent at 0.0
+instead of letting grow() push it negative on a near-planar triangle. Rejected .abs() (the finding's
+other suggested fix): pre-grow it's a no-op, post-grow it flips a degenerate box to extend past the
+triangle's real bounds instead of collapsing to them.
+
+Verified: `agent godot --script tools/construction_check.gd` run twice, `grep -c 'ERROR:'` -> 0 both
+times (previously 213,000+ repeats / a 1.4 GB log per the finding's own update). CONSTRUCTION_DOORS
+swung=4 prints both runs; the check now reaches CONSTRUCTION_CHECK FAIL failures=3 deterministically
+instead of hanging mid-error-spam.
+
+Those 3 failures are real (strap-vs-frame overlaps at 0 degrees) and were previously hidden by the
+crash (AABB.has_point() errors and returns false on an invalid box rather than throwing, so degenerate
+comparisons were silently skipped, not evaluated) -- not a regression from this fix. Out of scope
+here: door.tscn/gate.tscn/palisade_gate.tscn (the source geometry) are task 3.7's uncommitted,
+actively-claimed work this session. Filed as F-180 with full repro and a pointer for whoever next
+holds those scenes.
+
+SPECS.md F-148 block written (no spec existed before this task).
 
 ### F-147 · F-145's fix protects new sessions only — already-collided identities stay live for up to SESSION_KEEP_DAYS — **fixed**
 

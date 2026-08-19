@@ -3905,6 +3905,51 @@ own session, and a lane's (`MIRE_AGENT`) claim stores no token and is still reco
 
 ---
 
+## F-148 · `construction_check.gd`'s door-swing solids AABB goes negative-size on thin per-triangle bounds, throwing an UNDECLARED engine error on every run
+
+**Claim:** `tools/construction_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Root cause:** `_check_doors()` builds a per-triangle collision solid as `AABB(low, high -
+low).grow(-0.004)`, shrinking every face 4 mm inward so a near-touch between a swinging leaf and its
+frame doesn't misreport. A triangle is planar, so its bounding box is routinely near-zero on at least
+one axis; shrinking an axis already thinner than 8 mm by 4 mm on each side drives that axis negative,
+and `AABB.has_point()` refuses a negative-size box with an UNDECLARED `ERROR: AABB size is negative`
+— logged once per vertex-vs-solid comparison that hits a degenerate solid (213,000+ times on the
+`.tscn` state that first surfaced it, per the finding's 2026-08-18 update).
+
+**Fix — clamp the shrink per axis instead of growing past zero:** new `_shrunk_solid(low, high,
+margin)` computes the triangle's center and half-extent directly and clamps each axis's half-extent
+at `0.0` (`maxf(half.axis - margin, 0.0)`) before reconstructing the `AABB`, replacing the
+`AABB(low, high - low).grow(-0.004)` call at the single site in `_check_doors()`. A degenerate axis
+collapses to zero width (no tolerance left to shrink) instead of inverting past zero.
+
+Rejected the finding's other suggested fix, `.abs()`: called *before* `grow()` it's a no-op (`AABB(low,
+high - low)` is already non-negative by construction, since `high`/`low` come from `.max()`/`.min()`).
+Called *after* `grow()` it produces a valid-but-wrong box — `AABB.abs()` normalizes a negative axis by
+shifting `position` by the full negative `size`, which on a degenerate axis (already smaller than the
+8 mm total shrink) flips the box to extend *outside* the original triangle's bounds on that axis
+rather than collapsing to it, silently loosening the door-swing check's tolerance exactly on the
+triangles most likely to matter.
+
+**Verify:** `agent godot --script tools/construction_check.gd`, grep for `ERROR:` — must be zero
+regardless of `CONSTRUCTION_CHECK`'s own PASS/FAIL verdict (the check's functional door-swing result
+is orthogonal to this finding, which is scoped to the crash only).
+
+**Verified 2026-08-18 (lm):** `agent godot --script tools/construction_check.gd` run twice —
+`grep -c 'ERROR:'` → `0` both times (previously 213,000+, or 4.8M+ on a heavier `.tscn` state per
+the finding's own note). `CONSTRUCTION_DOORS swung=4` prints both runs; the check now completes and
+reports `CONSTRUCTION_CHECK FAIL failures=3` deterministically — three real strap-vs-frame overlaps
+that the crash was previously masking (`AABB.has_point()` errors and returns `false` on an invalid
+box rather than throwing, so every comparison against a degenerate solid was silently skipped, not
+evaluated). Those three failures are a genuine, separate issue in task 3.7's in-progress door/gate/
+palisade-gate geometry — filed as F-180 rather than fixed here, since `door.tscn`/`gate.tscn`/
+`palisade_gate.tscn` are outside this task's claim and held by task 3.7 for the session.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |
