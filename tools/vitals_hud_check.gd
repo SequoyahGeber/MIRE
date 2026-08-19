@@ -70,16 +70,35 @@ func _run() -> void:
 	check(float(hud.get("_bleed_out_remaining")) < before,
 		"the countdown ticks between the host's ~1 Hz snapshots instead of standing still")
 
-	# ── dead ──────────────────────────────────────────────────────────────────────────────────────
-	health.call(&"_physics_process", bleed_out_seconds + 0.1)
-	check(bool(health.call("local_is_dead")), "the bleed-out expires")
-	check(banner.visible and title.text == "YOU DIED",
-		"death reads as death — the state Sequoyah reached twice without noticing")
-	check(detail.text.to_lower().contains("respawning"), "and the respawn is announced: '%s'" % detail.text)
+	# ── the run ends instead (6.7) ────────────────────────────────────────────────────────────────
+	# Solo, every present peer downed IS the team wipe: DefeatService latches `defeated` the same
+	# tick, and PlayerHealth._run_over freezes bleed-out/respawn for the rest of the session. This
+	# section used to assert 2.13's solo arc (expire -> "YOU DIED" -> respawn); 6.7 removed that arc
+	# on purpose — defeat_check asserts the same freeze from the service's side ("a huge post-defeat
+	# delta does not auto-respawn a downed peer"), and this check contradicted it for a day (F-192).
+	var defeat: Node = root.get_node_or_null(^"/root/DefeatService")
+	check(defeat != null and bool(defeat.call("is_defeated")),
+		"solo, going down IS the team wipe — DefeatService latched the run over (6.7)")
+	check(defeat != null and String(defeat.get("cause")) == "team_wipe",
+		"and the cause reads team_wipe")
 
-	# ── respawned ─────────────────────────────────────────────────────────────────────────────────
-	health.call(&"_physics_process", float(health.get("respawn_seconds")) + 0.1)
-	check(bool(health.call("local_is_alive")), "the player respawns")
+	health.call(&"_physics_process", bleed_out_seconds + 0.1)
+	check(not bool(health.call("local_is_dead")),
+		"a huge post-defeat delta does not advance the frozen bleed-out into a death")
+	check(bool(health.call("local_is_downed")),
+		"the player stays downed — the defeat flow owns what happens next, not a respawn timer")
+	check(banner.visible and title.text == "DOWNED",
+		"the vitals banner keeps naming the body's state; the run's verdict is DefeatHud's job")
+
+	# ── back to a live world, so the teammate sections test a running game ────────────────────────
+	# Same shape defeat_check uses between its scenarios: reset the service's latch, clear
+	# PlayerHealth's own `_run_over` copy, and put the local peer back on its feet through the
+	# host seam every revive already uses.
+	if defeat != null:
+		defeat.call("_reset")
+	health.set("_run_over", false)
+	check(bool(health.call("host_revive", 1)), "harness: the host revive seam accepts the downed peer")
+	check(bool(health.call("local_is_alive")), "the player is back up")
 	check(not banner.visible, "and the banner gets out of the way")
 
 	# ── a teammate goes down ──────────────────────────────────────────────────────────────────────

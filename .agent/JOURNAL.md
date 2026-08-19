@@ -4451,3 +4451,15 @@ All three shim commands migrated and the shim itself deleted. gfx moved to Comma
 Files: `autoload/graphics_quality.gd`, `autoload/debug_console.gd`, `autoload/command_service.gd`, `autoload/enemy_world.gd`, `core/dev/dev_loadout.gd`
 
 Commit at time of writing: `40e894d`
+
+---
+
+### DONE · F-192 · yarrow21 · 2026-08-19T07:04:33+00:00
+
+**tools/vitals_hud_check.gd still asserts 2.13's solo bleed-out->respawn arc, which 6.7 deliberately removed — the suite has contradicted itself since DefeatService shipped**
+
+vitals_hud_check rewritten to the 6.7 contract: solo downed now asserts DefeatService latched (cause team_wipe), a huge post-defeat delta does NOT advance the frozen bleed-out into a death (mirroring defeat_check's own assertion from the service side), the player stays downed, and the banner keeps naming the body's state while DefeatHud owns the verdict. Between sections it resets DefeatService (_reset), clears PlayerHealth._run_over, and revives peer 1 through host_revive — same shape defeat_check uses — so the teammate-down sections test a running game instead of cascading failures off the latched defeat. Verified: vitals_hud_check 0 failures (was 8); defeat_check and player_health_check still green.
+
+Files: `tools/vitals_hud_check.gd`
+
+Commit at time of writing: `2c86ed9`

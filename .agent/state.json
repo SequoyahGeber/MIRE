@@ -71,12 +71,6 @@
       "at": "2026-08-19T06:58:12+00:00",
       "task": "F-193",
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
-    },
-    "tools/vitals_hud_check.gd": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T06:58:12+00:00",
-      "task": "F-192",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     }
   },
   "in_flight": {
@@ -103,15 +97,6 @@
       "notes": [],
       "started": "2026-08-19T06:51:04+00:00",
       "token": null
-    },
-    "F-192": {
-      "agent": "yarrow21",
-      "files": [
-        "tools/vitals_hud_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-19T06:58:12+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "F-193": {
       "agent": "yarrow21",
@@ -2867,6 +2852,13 @@
       "agent": "larch10",
       "at": "2026-08-18T14:09:47+00:00",
       "task": "F-097"
+    },
+    "tools/vitals_hud_check.gd": {
+      "agent": "yarrow21",
+      "at": "2026-08-19T07:04:33+00:00",
+      "hash": "0d17301afc1b9cd47a70b6f099b7f3fea04b7ef42b79672c6dc6944d7a328b6e",
+      "task": "F-192",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "tools/wave_director_check.gd": {
       "agent": "lp",
@@ -5916,9 +5908,11 @@
       "title": "Staging and committing as two steps lets a concurrent agent's commit sweep up your staged work"
     },
     "F-192": {
+      "done_at": "2026-08-19T07:04:33+00:00",
+      "done_by": "yarrow21",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "tools/vitals_hud_check.gd still asserts 2.13's solo bleed-out->respawn arc, which 6.7 deliberately removed \u2014 the suite has contradicted itself since DefeatService shipped"
     },
