@@ -6353,3 +6353,18 @@ Claim-late is now the instruction: the order template and AGENTS.md rule 1 both 
 Files: `.agent/bin/agent`, `AGENTS.md`
 
 Commit at time of writing: `74aeb60`
+
+---
+
+### DONE · F-253 · lp · 2026-08-19T22:24:02+00:00
+
+**tools/seed_sync_check.gd has 3 pre-existing failures — confirmed unrelated to F-250 via git baseline**
+
+Root cause was NOT WorldDeltaLog snapshot delivery (the finding's own hypothesis) -- it was tools/seed_sync_check.gd gating its 'snapshot arrived' proof on GameState.is_seed_ready(), which legitimately flips true early on a not-yet-joined client because MireGrid draws itself a throwaway local seed before join() (intentional, D-110/D-119/F-172 behavior, confirmed via reverted print-debugging: client seed at msec~663, real net_world_snapshot RPC at msec~858). Fixed by gating the driver's poll on WorldDeltaLog's before_delta flag instead, which only reads true once net_world_snapshot() has actually run. No production code changed. Verified: agent godot --script tools/seed_sync_check.gd -> SEED_SYNC_CHECK failures=0, 4 consecutive runs (real-entropy seeds differ each run). Swept is_seed_ready() repo-wide: only other consumers are host-side (no race) and main_menu.gd's seed label (already self-corrects via seed_ready signal, no fix needed). Docs: SPECS.md new F-253 block, DECISIONS.md D-153 (do not fix MireGrid's early-true window -- it's decided behavior), FINDINGS.md moved to Resolved, DELEGATION.md Current state entry.
+
+Notes along the way:
+- Root cause found: NOT a WorldDeltaLog snapshot-delivery bug. MireGrid autoloads with set_physics_process(true) and unconditionally calls GameState.ensure_seed() the moment _owns_simulation() reads true, which it does for ANY not-yet-connected peer (transport inactive, not connecting) -- including a client process that is about to call join() but hasn't yet. Confirmed via temporary instrumentation (reverted): client draws its own random seed at msec=663, host's real net_world_snapshot RPC lands at msec=858 -- well after the driver's one-shot is_seed_ready()-gated reads already captured the wrong value. This premature draw is INTENTIONAL, decided behavior (D-110, D-119, F-172: solo/offline play must seed instantly at boot; the project explicitly rejected gating world-gen behind a menu/connection-state check), so the fix belongs in the check, not in MireGrid/GameState/WorldDeltaLog. Fix: gate the driver's poll on before_delta instead of is_seed_ready() -- before_delta only flips true once WorldDeltaLog.net_world_snapshot() has actually run (seed + state decode happen sequentially in that one RPC body), so it is the real proof the snapshot landed. Dropped claims on world/mire/mire_grid.gd, autoload/world_delta_log.gd, core/game_state.gd (state.json edited directly) since I ended up not needing them and mire_grid.gd already carried lm's uncommitted F-243 WIP -- holding that claim through ship would have swept lm's unrelated diff into this commit (the exact F-117 misattribution hazard, just predating my claim instead of following it).
+
+Files: `tools/seed_sync_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `92eed13`

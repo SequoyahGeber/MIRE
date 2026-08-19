@@ -556,48 +556,6 @@ move.lunge_speed_m_s > 0.0`, mirroring `Enemy._tick_attack()`'s own condition ex
 
 ---
 
-### F-253 · tools/seed_sync_check.gd has 3 pre-existing failures — confirmed unrelated to F-250 via git baseline
-
-**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
-
-Found 2026-08-19 by lp during F-250's regression sweep.
-
-`.agent/bin/agent godot --script tools/seed_sync_check.gd` reports SEED_SYNC_CHECK failures=3:
-  - "client-regenerated terrain_hash equals the host's" (host=e2856cc102653bb4 client=e31eed058305e1a0)
-  - "a mutation recorded before the client joined reached it via the late-joiner snapshot"
-(a third failure cascades from the same root: the snapshot value-match check also fails once the
-snapshot itself didn't land right). The one check that DOES still pass — "a mutation recorded AFTER
-the client joined reached it live (net_delta_applied)" — is the live-broadcast path, not the
-snapshot/seed path, which narrows this to snapshot delivery or terrain-seed determinism, not the RPC
-plumbing generally.
-
-Confirmed pre-existing and unrelated to F-250: `.agent/bin/agent baseline --script tools/seed_sync_check.gd`
-against unmodified HEAD (2699e6c) reproduces the identical 3 failures with identical hashes, before
-any of F-250's edits (world_delta_log.gd, cycle_service.gd, event_bus.gd) existed.
-
-Two candidate root causes, not yet distinguished:
-  1. Same shape as F-251 (terrain retuning since F-128 left seam/skirt constants stale) — if the
-     terrain generator itself is non-deterministic or drifted since this check's own reference
-     values were written, `check_determinism.gd`'s independently-computed `terrain_hash` on each
-     process would legitimately differ without any netcode bug at all.
-  2. A real snapshot-delivery bug in `WorldDeltaLog.net_world_snapshot`/`_on_peer_admitted` (the
-     admit-time snapshot RPC) — separate from the live-delta RPC, which still passes.
-
-**Update 2026-08-19 (lp, during F-251):** ran `tools/check_determinism.gd` standalone —
-`terrain_hash c20eed19b44270a1`, byte-identical to F-241's recorded value, 0 drift. **Rules out (1):
-the terrain generator is deterministic**, so this is NOT F-251's family — F-251's own 5 failures were
-all stale reference constants/assertions, not generator non-determinism, and are now fixed
-(`docs/SPECS.md` F-251 block). The real cause here is (2), a snapshot-delivery bug in
-`WorldDeltaLog`. Next agent: skip straight to the print-debugging step below.
-
-**What would close this:** run `tools/check_determinism.gd` standalone first (single-process) to
-rule out (1) — if that already fails on its own, this is F-251's family and should fold into that
-finding instead of getting its own fix. If determinism is clean, add print-debugging to
-`WorldDeltaLog._on_peer_admitted`/`net_world_snapshot` to find where compression/decompression or the
-`BEFORE_CHUNK`/`BEFORE_KEY` value drops between host write and client read.
-
----
-
 ### F-254 · CycleModifierService._announce() has the exact host-only EventBus.emit_cycle_modifier_drawn() gate F-250 just fixed for CycleService — same shape, unfixed sibling
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
@@ -839,7 +797,120 @@ counts or moisture frequency and pays for it again on every dart.
 
 ---
 
+### F-262 · Claims are held for the whole task — grabbed up front and released only at close-out — so a file locks for up to 2h even when it is edited for minutes, stalling other agents
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by bram1
+
+`cmd_claim` takes a task's whole file list at task START; `_release` runs only from
+`done`/`handoff`/`drop`, i.e. at close-out. So every claimed file is locked for the entire task —
+now up to the 7200s timeout with LM on Opus-high — regardless of when, or whether, it is actually
+edited. Sequoyah identified this as the stall cause on 2026-08-19, and the session's evidence agrees:
+`net_version.gd` held across four sessions (F-189), `graphics_quality.gd` blocking F-130 for hours,
+`mire_grid.gd` colliding between F-243 and F-253, F-144 holding twelve files for six hours with no
+writes. In nearly every case the file was claimed but not being edited.
+
+The fix has two halves of unequal value:
+
+**Claim late — near-pure win.** Claim a file only when the agent is about to edit it, not at task
+start. A task that edits eight files over two hours currently locks files seven and eight for two
+hours before touching them. Late claiming shrinks each lock to the minutes of actual work. The
+work-order template already lists the claim command up front; it should instead instruct the agent to
+claim each file (or tight group) immediately before its first edit.
+
+**Release after verification, not at close-out — the safe half of early release.** A task's files are
+one coherent change that is not final until its check passes: release `mire_grid.gd` mid-task and a
+sibling can edit it, then the task's own failed check needs it back and it has moved underneath. So
+per-file-on-finish is unsafe. But once the task's verification passes the files ARE done, and holding
+them through the docs-writing close-out (SPECS/DECISIONS/DELEGATION, which are separate files) blocks
+others for nothing. Release source claims at green-check time; keep only the docs files through
+close-out.
+
+Not a live flip: this changes how every agent claims, so it wants the work-order template rewritten,
+`AGENTS.md`'s claim rule updated, and a decision recorded — done deliberately, not while a fleet is
+mid-run. The `agent claim`/`_release` mechanics already support partial claim sets; the change is
+behavioural, in what the templates instruct, plus a helper to release a subset at verification.
+
+---
+
 ## Resolved
+
+### F-253 · tools/seed_sync_check.gd has 3 pre-existing failures — confirmed unrelated to F-250 via git baseline — **fixed**
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
+
+Found 2026-08-19 by lp during F-250's regression sweep.
+
+`.agent/bin/agent godot --script tools/seed_sync_check.gd` reports SEED_SYNC_CHECK failures=3:
+  - "client-regenerated terrain_hash equals the host's" (host=e2856cc102653bb4 client=e31eed058305e1a0)
+  - "a mutation recorded before the client joined reached it via the late-joiner snapshot"
+(a third failure cascades from the same root: the snapshot value-match check also fails once the
+snapshot itself didn't land right). The one check that DOES still pass — "a mutation recorded AFTER
+the client joined reached it live (net_delta_applied)" — is the live-broadcast path, not the
+snapshot/seed path, which narrows this to snapshot delivery or terrain-seed determinism, not the RPC
+plumbing generally.
+
+Confirmed pre-existing and unrelated to F-250: `.agent/bin/agent baseline --script tools/seed_sync_check.gd`
+against unmodified HEAD (2699e6c) reproduces the identical 3 failures with identical hashes, before
+any of F-250's edits (world_delta_log.gd, cycle_service.gd, event_bus.gd) existed.
+
+Two candidate root causes, not yet distinguished:
+  1. Same shape as F-251 (terrain retuning since F-128 left seam/skirt constants stale) — if the
+     terrain generator itself is non-deterministic or drifted since this check's own reference
+     values were written, `check_determinism.gd`'s independently-computed `terrain_hash` on each
+     process would legitimately differ without any netcode bug at all.
+  2. A real snapshot-delivery bug in `WorldDeltaLog.net_world_snapshot`/`_on_peer_admitted` (the
+     admit-time snapshot RPC) — separate from the live-delta RPC, which still passes.
+
+**Update 2026-08-19 (lp, during F-251):** ran `tools/check_determinism.gd` standalone —
+`terrain_hash c20eed19b44270a1`, byte-identical to F-241's recorded value, 0 drift. **Rules out (1):
+the terrain generator is deterministic**, so this is NOT F-251's family — F-251's own 5 failures were
+all stale reference constants/assertions, not generator non-determinism, and are now fixed
+(`docs/SPECS.md` F-251 block). The real cause here is (2), a snapshot-delivery bug in
+`WorldDeltaLog`. Next agent: skip straight to the print-debugging step below.
+
+**What would close this:** run `tools/check_determinism.gd` standalone first (single-process) to
+rule out (1) — if that already fails on its own, this is F-251's family and should fold into that
+finding instead of getting its own fix. If determinism is clean, add print-debugging to
+`WorldDeltaLog._on_peer_admitted`/`net_world_snapshot` to find where compression/decompression or the
+`BEFORE_CHUNK`/`BEFORE_KEY` value drops between host write and client read.
+
+---
+
+**Resolved 2026-08-19 by lp.** Hypothesis (2) was wrong — this is not a `WorldDeltaLog` snapshot-
+delivery bug. Print-debugging (added, verified, reverted; no trace in the shipped diff) timestamped
+the real sequence: the client's `GameState.is_seed_ready()` flips true at msec≈663, but the host's
+real `net_world_snapshot` RPC doesn't land until msec≈858. The early flip comes from the client's OWN
+`MireGrid` autoload drawing itself a throwaway local seed (`ensure_ready()` → `GameState.ensure_seed()`),
+which fires unconditionally on any not-yet-connected peer — `MireGrid._owns_simulation()` reads true
+whenever the transport is neither active nor connecting, correct for genuine solo/offline play but
+just as true for "about to join, hasn't yet." **That is intentional, already-decided behavior**
+(D-110/D-119 closing F-172: solo play must seed instantly at boot, and the project explicitly rejected
+gating world-gen behind a connection-state check) — not a bug to fix at the source. The check itself
+was gating its "snapshot arrived" proof on `seed_ready`, a flag that goes true for a reason having
+nothing to do with replication, then reading `run_seed`/`terrain_hash`/`before_delta` one-shot right
+after. It was a guaranteed miss on every run of this harness, not a flaky race.
+
+Fixed: `tools/seed_sync_check.gd`'s driver now polls `before_delta` instead of `seed_ready` before
+reading the client's snapshot. `before_delta` can only read true once
+`WorldDeltaLog.net_world_snapshot()` has actually run — that one RPC body sets the replicated seed and
+decodes the delta-log state sequentially, so it's unambiguous proof the whole snapshot landed, and
+every read gated behind it is now consistent by construction. No production code changed.
+
+Verified: `agent godot --script tools/seed_sync_check.gd` → `SEED_SYNC_CHECK failures=0`, run three
+times consecutively (seeds differ each run — real entropy — so three independent clean passes rule out
+a lucky single run).
+
+Swept for the same shape: `grep -rn "is_seed_ready"` across the repo found only two other consumers —
+`tools/seed_sync_check.gd`'s own host-side check (no race, the host generates its seed synchronously
+off `server_started`) and `ui/menu/main_menu.gd`'s "This run's seed" label, which already carries a
+comment naming this exact early-true behavior and already re-`_refresh()`s off `GameState.seed_ready`,
+so it self-corrects the instant the real snapshot's second emit fires — no user-visible defect, nothing
+to fix there.
+
+Docs: `docs/SPECS.md` new F-253 block, `docs/DECISIONS.md` new decision (do not "fix"
+`MireGrid._owns_simulation()`'s early-true window — it's D-110/D-119/F-172 working as designed).
+
+---
 
 ### F-252 · resource_scatter.gd's _placement_at() has the exact per-sample noise-rebuild shape F-241 just fixed in the chunk mesher — height_from_set()/NoiseSet is now there to fix it — **fixed**
 

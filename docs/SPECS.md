@@ -8488,6 +8488,61 @@ design decision (its own cache vs. folding into `IslandHeightmap.NoiseSet`) this
 
 ---
 
+## F-253 · `tools/seed_sync_check.gd` has 3 pre-existing failures — confirmed unrelated to F-250 via git baseline
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap.
+
+**Authority:** none of its own — this task touches only the check harness, not any networked system.
+`WorldDeltaLog`/`GameState`/`MireGrid` keep the authority rows `docs/ARCHITECTURE.md` §2.2 already
+gives them, unchanged.
+
+**Claim:** `tools/seed_sync_check.gd` only. (`world/mire/mire_grid.gd`, `autoload/world_delta_log.gd`,
+`core/game_state.gd` were claimed to instrument and rule out during investigation, then released —
+see "Found broken along the way" below for why none of the three needed a code change.)
+
+**The gap, and why the finding's own hypothesis (2) was wrong:** the finding suspected a real
+snapshot-delivery bug in `WorldDeltaLog.net_world_snapshot`/`_on_peer_admitted`. Temporary print
+instrumentation (added, verified, reverted — no trace left in the shipped diff) showed otherwise: the
+client's `GameState.is_seed_ready()` flips true at msec≈663, but the host's real `net_world_snapshot`
+RPC doesn't land until msec≈858 — `is_seed_ready()` goes true from the client's OWN `MireGrid`
+autoload drawing itself a throwaway local seed (`ensure_ready()` → `GameState.ensure_seed()`), which
+fires unconditionally on any not-yet-connected peer: `MireGrid._owns_simulation()` reads true whenever
+the transport is neither active nor connecting, which is correct for genuinely offline/solo play but
+just as true for "about to join, hasn't yet." **This is intentional, already-decided behavior** — D-110
+and D-119 (closing F-172) explicitly reject gating world-gen's first tick behind any connection-state
+check, precisely so solo play seeds instantly at boot. So `seed_sync_check.gd`'s driver was gating its
+"snapshot arrived" proof on a flag that can and does go true for a reason having nothing to do with
+replication, then reading `run_seed`/`terrain_hash`/`before_delta` one-shot immediately after — a
+guaranteed miss on the failing runs, not a flaky race (the local draw wins every time in this harness's
+process-launch shape).
+
+**The fix:** gate the driver's poll on `before_delta` instead of `seed_ready`. `before_delta` can only
+read true once `WorldDeltaLog.net_world_snapshot()` has actually executed — that one RPC body sets the
+replicated seed and decodes the delta-log state sequentially, so `before_delta` is unambiguous proof
+the whole snapshot landed, and every read gated behind it (`run_seed`, `terrain_hash`, `before_delta`
+itself) is now consistent by construction. No production code changed.
+
+**Verify:** `.agent/bin/agent godot --script tools/seed_sync_check.gd` — `SEED_SYNC_CHECK failures=0`,
+run three times consecutively (seeds differ each run — real entropy — so three independent passes rule
+out a lucky single run).
+
+**Found broken along the way, not fixed here:** nothing — the sweep (`grep -rn "is_seed_ready"`) found
+only two other consumers: `tools/seed_sync_check.gd:79` (host-side, no race — the host generates its
+own seed synchronously off `server_started`) and `ui/menu/main_menu.gd:215` (client-facing "This run's
+seed" label), which already carries its own comment naming this exact early-true behavior and already
+re-`_refresh()`s off `GameState.seed_ready`, so a client sees the label briefly show the local
+throwaway value and then self-correct the instant the real snapshot's `seed_ready.emit()` fires — no
+user-visible defect.
+
+**Decision recorded:** `docs/DECISIONS.md` — do not "fix" `MireGrid._owns_simulation()`'s early-true
+window; it is D-110/D-119/F-172 working as designed, and `is_seed_ready()` was never a promise that a
+*replicated* value has arrived, only that *some* value has been drawn.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

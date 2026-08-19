@@ -4468,3 +4468,132 @@ giving up).
 **Would change my mind:** the island growing back toward its original ~512 m scale (a future D-143
 reversal) — at that point the LOAD_RADIUS-based bound becomes achievable again and is the strictly
 stronger claim, worth reverting to.
+
+### D-150 · 2026-08-19 · The LM lane runs Opus at high effort and second-passes its own work: every completed task is auto-queued as a review-and-fix
+Two changes to the Max lane, both from measurements taken 2026-08-18/19.
+
+**Opus, not Sonnet.** The five-hour windows kept rolling over only part-used, which reads as spare
+capacity; the weekly underneath was at 90%. The weekly is the real budget and it expires unspent at
+its reset, so the question was never affordability but what the most capable thing to spend it on is
+before it evaporates. Effort rises to `high` for the same reason. (Claude Code has no `--effort`
+flag — it is a thinking budget expressed in the order text, so the ledger records what was asked
+for rather than implying a flag that was dropped.)
+
+**Second pass.** 26 independent reviews found 8 real defects that the implementing lane's own green
+checks had missed — a non-host op charging the host's inventory, an item duplicating on every chunk
+rebuild, a console that printed nothing. That is roughly a third of reviews finding something real,
+which makes review the highest-yield activity available. But each finding then needed its own order,
+brief, claim and verify cycle, rebuilding context the reviewer already had. So a completed task on a
+`second_pass` lane now auto-queues `--review --fix` against the commit it just made: the reviewer may
+repair what it finds, under a claim, verified, closed out normally.
+
+The `--fix` prompt draws two lines the review-only mode did not need. Do not rewrite work that is
+merely not how you would have done it — the bar is a nameable, provable defect, not a preference. And
+if a fix is larger than the change under review, file it instead and say why; a second pass that
+becomes a rewrite has stopped being a review. Guards against a self-feeding queue: a review is never
+itself reviewed, each task is second-passed once per chain, and nothing queues without a commit.
+
+A separate documentation stage was considered and rejected. Documentation was not a failure mode —
+the lanes wrote their own SPECS blocks, D-numbers and DELEGATION entries throughout — and a third
+agent would collide with the coder on exactly the docs files it needs, making it a relay rather than
+parallelism, starting cold to rebuild context the coder had warm.
+
+**Would change my mind:** second passes that mostly find nothing (the ~30% hit rate collapsing once
+the easy defects are gone), or a weekly window that stops being the binding constraint — either
+turns this from leverage into overhead.
+
+### D-151 · 2026-08-19 · Both Claude lanes run Opus; the second-pass reviewer runs at max effort and owns the bookkeeping
+Extends D-150. LP joins LM on Opus at high effort, for the same reason: a subscription weekly is a
+budget that expires unspent, so the only question is what the most capable thing to spend it on is.
+
+The review pass runs one tier above the work it reviews — `max`, where the implementing pass runs
+`high`. The asymmetry is deliberate. Writing a change is bounded by its spec; catching what a green
+check missed is open-ended search, and the second pass is the last look anyone gives that work. Today
+26 reviews found 8 defects that had already passed their own tests, which is where the leverage is.
+
+The reviewer also inherits the **bookkeeping**, because it is the last agent to see the task and the
+board is what every future agent routes off. A wrong entry there is read as truth and never
+re-examined, which makes it more expensive than a wrong line of code. It must check four things that
+have each gone wrong here: that the task is genuinely done and the board agrees (F-086 was marked
+`done` with its work unverified, and `agent claim` then refused anyone trying to pick it up); that a
+fixed finding actually moved to `## Resolved` (seven dispatches went to already-fixed findings in one
+day); that `docs/NEXT.md` still describes reality, since it is the plan a human reads first; and that
+SPECS, the `ARCHITECTURE.md` §2.2 row and DELEGATION's *Current state* describe what shipped rather
+than what was intended (§5 described a replication mechanism that was never built — F-212).
+
+**Would change my mind:** max-effort reviews finding no more than high-effort ones did, which would
+make the extra spend pure cost; or bookkeeping drift stopping on its own, which would mean the
+close-out protocol is now sufficient without a second reader.
+
+### D-152 · 2026-08-19 · The marker CONTRACT is kind AND name — PoiDef carries both, and the parity matrix asserts fixtures, not markers
+
+Task 4.16. Three calls:
+
+**1 · `PoiDef.marker_name` exists because two services' contract is the NAME.** The composer
+(4.15/D-143) published kind-tagged markers, which satisfies WellspringService and ExtractionService
+— but ChestPlacementService reads the TIER from a `Cache_*`/`Chest_<tier>_*` name prefix, and
+CraftingService resolves the station asset from an exact `Station_<asset>` name. A procedural map
+with kind-only markers therefore built zero chests and zero registered stations: two loop links
+silently missing, on the map that is supposed to become the default (4.19). `marker_name` on the
+def (empty = composer default) closes it as content, not code — and collisions are impossible
+because each marker is the sole child of its own site root. Worked examples authored one at a time:
+`loot_cache` (8 sites, `Cache_poi`), `enemy_nest` (5 sites, kind-only), `station_camp` (1 site,
+`Station_station_workbench_primitive`, the workbench GLB as its scene).
+
+**2 · The matrix asserts FIXTURES, not markers.** `tools/world_contract_check.gd` now boots both
+maps in one process — the shipped scene, then a code-built `ProceduralWorld` — and asks the same
+question of each: does every fixture the run arc needs actually stand? Wellspring ≥1, exactly one
+extraction ship, chests with resolvable tiers, at least one REGISTERED station (a marker whose
+asset matches a `StationDef.world_scene` — six of Hollowmere's eight station props are scenery, so
+"a station marker exists" proves nothing; the loop audit's own lesson), nest spawn points, a
+standable spawn, wired harvest proxies around it, and a MireGrid that seeded inside the island and
+recedes from a cap. Layout-shaped phases (F-076) still run only where a layout exists; F-112's
+Undergrowth phase is REQUIRED on the authored map and asserted ABSENT on the procedural one —
+flora there is ResourceScatterField's, and a second scatterer would mean two systems fighting
+over the same ground.
+
+**3 · One shipwreck, placed with objective priority.** The first matrix run failed with **two
+extraction ships**: 4.7 had authored `shipwreck` as scenery (`target_count = 3`) before extraction
+existed, and 4.15's `marker_kind` quietly turned every site into an exit. The run needs exactly
+one (D-095's priority lesson applies to the exit exactly as it did to the Wellspring — the door
+out of the run must not lose the good ground to landmarks): `target_count = 1`,
+`placement_priority = 5`.
+
+**MireGrid binding needed no code** — `MireGridSim` derives its bounds from
+`IslandHeightmap.ISLAND_RADIUS`, so 4.13's 118 m island rescaled the grid automatically
+(cell ≈ 0.92 m); the matrix asserts the seeded-and-recedes behaviour on both maps rather than
+trusting the derivation.
+
+**Would change my mind:** a second name-keyed service. If a third contract dimension appears
+(name, kind, and something else), the marker convention should become a typed meta dictionary
+instead of accreting fields on PoiDef.
+
+---
+
+### D-153 · 2026-08-19 · F-253: `MireGrid`'s pre-join throwaway local seed is not a bug — do not gate `_owns_simulation()` on connection intent
+
+F-253 (`tools/seed_sync_check.gd`'s 3 failures) traced to `GameState.is_seed_ready()` flipping true on
+a not-yet-joined client well before the host's real `net_world_snapshot` RPC lands — confirmed by
+timestamped print-debugging (client draws its own seed at msec≈663; the host's RPC doesn't arrive
+until msec≈858). The draw comes from `MireGrid.ensure_ready()` → `GameState.ensure_seed()`, gated by
+`_owns_simulation()`, which reads true for ANY peer whose transport is neither active nor connecting —
+correct for genuine solo/offline play, but also true for "about to join, hasn't called `join()` yet."
+
+**Call: leave `_owns_simulation()` alone.** This is D-110/D-119's own F-172 resolution working exactly
+as designed — solo/offline play must seed instantly at boot, and those decisions explicitly rejected
+gating world-gen's first tick behind any connection-state check, precisely to avoid relitigating that
+as a side effect of a smaller task (D-110's own words). `MireGrid`'s local draw is real-entropy waste,
+not corruption: `_owns_simulation()` flips false the instant the peer actually becomes a connected
+client, so the throwaway `_grid` is never read again (every consumer re-checks `_owns_simulation()` at
+call time), and `GameState.set_replicated_seed()` unconditionally overwrites `run_seed` once the real
+snapshot arrives, re-firing `seed_ready` so any subscriber (`ui/menu/main_menu.gd`'s "This run's seed"
+label included) self-corrects. Confirmed no consumer of `is_seed_ready()`/`run_seed` anywhere in the
+repo treats the pre-join value as durable.
+
+**What this means for future checks:** `GameState.is_seed_ready()` is not proof a *replicated* value
+has arrived — only that *some* value has been drawn, host-generated or not. A check that needs to
+prove replication specifically must gate on a fact only the replication path itself can produce (F-253
+used `WorldDeltaLog`'s `before_delta` flag, set only inside `net_world_snapshot()`'s own RPC body).
+
+**Would change my mind:** a future system that reads `run_seed` synchronously in that pre-join window
+for something durable (not just UI display) — today nothing does.

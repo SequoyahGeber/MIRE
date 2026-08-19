@@ -75,6 +75,69 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-253 resolved: `tools/seed_sync_check.gd`'s 3 failures were the check gating on the wrong signal, not a `WorldDeltaLog` bug (lp)
+
+**Claim:** `tools/seed_sync_check.gd` only — no production code changed.
+
+**What shipped, verified:** the finding's own hypothesis (a real snapshot-delivery bug in
+`WorldDeltaLog.net_world_snapshot`/`_on_peer_admitted`) was wrong. Print-debugging (reverted, no
+trace left) showed the client's `GameState.is_seed_ready()` flips true well before the host's real
+`net_world_snapshot` RPC lands, because `MireGrid` (autoload, always ticking) draws itself a
+throwaway local seed on any not-yet-connected peer — intentional, decided behavior (D-110/D-119/F-172:
+solo play seeds instantly at boot; see D-153 for why this is not something to fix at the source). The
+check was gating its "snapshot arrived" proof on that ambiguous flag. Fixed by gating on
+`before_delta` instead — it can only read true once `net_world_snapshot()`'s RPC body has actually run
+(seed + state decode happen sequentially in it), so it is unambiguous proof the whole snapshot landed.
+`SEED_SYNC_CHECK failures=0`, three consecutive runs (real-entropy seeds differ each run).
+
+**For the next agent touching seed/replication checks:** `GameState.is_seed_ready()` proves "some
+value has been drawn," never "the replicated value has arrived" — a not-yet-joined client's own
+`MireGrid` can and will draw one first. Gate on `WorldDeltaLog`'s `before_delta`/`delta_applied` (or
+an equivalent fact only the replication path itself produces) when the thing under test is
+specifically "did the network deliver this," not "is there a seed at all."
+
+**Docs:** `docs/SPECS.md` new F-253 block, `docs/DECISIONS.md` D-153, `docs/FINDINGS.md` F-253 moved
+to Resolved.
+
+### 2026-08-19 — Task 4.16: map-contract parity ships — the both-map fixture matrix, the kind+name marker contract, and required POIs that land on every seed (hollow7)
+
+**What shipped, verified:** `tools/world_contract_check.gd` is now the BOTH-MAP MATRIX — one
+process boots the shipped authored scene and then a code-built `ProceduralWorld` (the same
+composer `--procedural` uses) and asserts the LOOP FIXTURES on each: Wellspring ≥1, exactly one
+extraction ship, chests with resolvable tiers, at least one REGISTERED station (a marker whose
+asset matches a `StationDef.world_scene` — six of Hollowmere's eight station props are scenery, so
+"a station marker exists" proves nothing), nest spawn points, a standable spawn, wired harvest
+proxies around it, and a MireGrid that seeded inside the island and recedes from a cap. **Three
+runs on three random seeds: three PASS.** F-076's layout-shaped phases still run where a layout
+exists; F-112's Undergrowth phase is REQUIRED on the authored map and asserted ABSENT on the
+procedural one.
+
+**The marker contract is kind AND name (D-152).** `PoiDef.marker_name` (empty = composer default)
+exists because ChestPlacementService tiers from a `Cache_*`/`Chest_<tier>_*` NAME and
+CraftingService resolves stations from an exact `Station_<asset>` NAME — kind-only markers built
+zero of both on procedural. Three defs authored: `loot_cache` (8, `Cache_poi`), `enemy_nest` (5),
+`station_camp` (1, the primitive workbench). **Adding a POI kind that a name-keyed service must
+discover means authoring `marker_name` to that service's convention — the matrix fails if you
+forget.**
+
+**`PoiDef.required` + the relax ladder (D-152).** Real seeds on the 118 m island produce ZERO
+Wellsprings under authored constraints. A `required` def that places nothing gets two deterministic
+relax passes (terrain-fit dropped, then any-land) — spacing is never relaxed. Wellspring and
+shipwreck are `required = true`; shipwreck is also `target_count = 1, placement_priority = 5` now
+(it was 3× scenery from 4.7, which gave procedural islands two exits). `tools/poi_check.gd` proves
+the ladder both directions plus a 64-seed objective sweep.
+
+**MireGrid binding needed no code** — bounds derive from `IslandHeightmap.ISLAND_RADIUS`; the
+matrix asserts seeded-and-recedes on both maps rather than trusting the derivation.
+
+**For 4.19 (default cutover):** the parity bar WORLDGEN.md set is met at the fixture level and
+enforced by one check. What the matrix deliberately does not cover: island *feel* (4.18's walk),
+and per-service netted behaviour on procedural (the service net checks all run on synthetic/
+authored scenes; nothing suggests map-dependence, but it is unproven).
+
+**Checks:** `world_contract_check` (×3 seeds), `poi_check` (ladder + sweep),
+`procedural_world_check`, `verify_setup` — all green, 0 engine ERROR lines.
+
 ### 2026-08-19 — F-252 resolved: resource_scatter.gd's `_placement_at()` now samples height through F-241's `NoiseSet`, not a bare `height()` per point (lp)
 
 **Claim:** `world/gen/resource_scatter.gd`, `tools/resource_scatter_check.gd` (unchanged).

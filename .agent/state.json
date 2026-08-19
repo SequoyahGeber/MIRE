@@ -18,30 +18,6 @@
       "task": "F-245",
       "token": null
     },
-    "docs/DECISIONS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T22:12:47+00:00",
-      "task": "F-253",
-      "token": null
-    },
-    "docs/DELEGATION.md": {
-      "agent": "lp",
-      "at": "2026-08-19T22:12:47+00:00",
-      "task": "F-253",
-      "token": null
-    },
-    "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T22:12:47+00:00",
-      "task": "F-253",
-      "token": null
-    },
-    "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T22:12:47+00:00",
-      "task": "F-253",
-      "token": null
-    },
     "systems/cycle/cycle_modifier_service.gd": {
       "agent": "lm2",
       "at": "2026-08-19T22:21:01+00:00",
@@ -84,10 +60,16 @@
       "task": "F-245",
       "token": null
     },
-    "tools/seed_sync_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T22:12:47+00:00",
-      "task": "F-253",
+    "tools/enemy_content_check.gd": {
+      "agent": "lm3",
+      "at": "2026-08-19T22:22:12+00:00",
+      "task": "F-246",
+      "token": null
+    },
+    "world/mire/mire_grid.gd": {
+      "agent": "lm2",
+      "at": "2026-08-19T22:23:18+00:00",
+      "task": "F-245",
       "token": null
     }
   },
@@ -111,29 +93,20 @@
         "systems/harvesting/harvestable.gd",
         "systems/enemies/enemy.gd",
         "systems/waves/wave_spawner.gd",
-        "autoload/powerup_service.gd"
+        "autoload/powerup_service.gd",
+        "world/mire/mire_grid.gd"
       ],
       "notes": [],
       "started": "2026-08-19T22:21:01+00:00",
       "token": null
     },
-    "F-253": {
-      "agent": "lp",
+    "F-246": {
+      "agent": "lm3",
       "files": [
-        "tools/seed_sync_check.gd",
-        "docs/FINDINGS.md",
-        "docs/SPECS.md",
-        "docs/DECISIONS.md",
-        "docs/DELEGATION.md"
+        "tools/enemy_content_check.gd"
       ],
-      "notes": [
-        {
-          "at": "2026-08-19T22:18:04+00:00",
-          "by": "lp",
-          "text": "Root cause found: NOT a WorldDeltaLog snapshot-delivery bug. MireGrid autoloads with set_physics_process(true) and unconditionally calls GameState.ensure_seed() the moment _owns_simulation() reads true, which it does for ANY not-yet-connected peer (transport inactive, not connecting) -- including a client process that is about to call join() but hasn't yet. Confirmed via temporary instrumentation (reverted): client draws its own random seed at msec=663, host's real net_world_snapshot RPC lands at msec=858 -- well after the driver's one-shot is_seed_ready()-gated reads already captured the wrong value. This premature draw is INTENTIONAL, decided behavior (D-110, D-119, F-172: solo/offline play must seed instantly at boot; the project explicitly rejected gating world-gen behind a menu/connection-state check), so the fix belongs in the check, not in MireGrid/GameState/WorldDeltaLog. Fix: gate the driver's poll on before_delta instead of is_seed_ready() -- before_delta only flips true once WorldDeltaLog.net_world_snapshot() has actually run (seed + state decode happen sequentially in that one RPC body), so it is the real proof the snapshot landed. Dropped claims on world/mire/mire_grid.gd, autoload/world_delta_log.gd, core/game_state.gd (state.json edited directly) since I ended up not needing them and mire_grid.gd already carried lm's uncommitted F-243 WIP -- holding that claim through ship would have swept lm's unrelated diff into this commit (the exact F-117 misattribution hazard, just predating my claim instead of following it)."
-        }
-      ],
-      "started": "2026-08-19T22:12:47+00:00",
+      "notes": [],
+      "started": "2026-08-19T22:22:12+00:00",
       "token": null
     },
     "F-260": {
@@ -1489,24 +1462,24 @@
       "token": null
     },
     "docs/DECISIONS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
-      "hash": "9db581417b5342893d508bbeb3d9cde6edbae2d9c039934aaba240cc5cc2a0fa",
-      "task": "F-243",
+      "agent": "lp",
+      "at": "2026-08-19T22:24:02+00:00",
+      "hash": "97680c8a49d48c45fd17494bf757f1650a520c561f20b5f5de7edb865f90c0d3",
+      "task": "F-253",
       "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
-      "hash": "26c4fad79a467e951aa12b3600cec5bf396a116eb3eefa9f0c07150998b570aa",
-      "task": "F-243",
+      "agent": "lp",
+      "at": "2026-08-19T22:24:02+00:00",
+      "hash": "e47a7b776aa9edb0c5b0679ef3fc6b275997dc8651aaba3b7eb117b4b756babc",
+      "task": "F-253",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
-      "hash": "dcc8e3a0656c79126e5907a3d643a8a9a37d2645bf0491c891ed84fd69be1b30",
-      "task": "F-243",
+      "agent": "lp",
+      "at": "2026-08-19T22:24:02+00:00",
+      "hash": "f9c52d123895db2e1ec656b916b36790e7b5df0157cf00e8bbed5fc23eb646aa",
+      "task": "F-253",
       "token": null
     },
     "docs/NEXT.md": {
@@ -1524,10 +1497,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
-      "hash": "bac250967b99135dd5da8d172f47e08612909ce97632592669f90cb2e51b5cf5",
-      "task": "F-243",
+      "agent": "lp",
+      "at": "2026-08-19T22:24:02+00:00",
+      "hash": "3a55e952dd0f3bae477e263dc55ae8378f49ca659fbe7b15f3930e9ac1313b0b",
+      "task": "F-253",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -2670,6 +2643,13 @@
       "at": "2026-08-19T05:05:14+00:00",
       "hash": "2c30f86281561fbc0da64be8890f78e016cffd0d13f183c875515361a14e03f0",
       "task": "F-172"
+    },
+    "tools/seed_sync_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T22:24:02+00:00",
+      "hash": "0672e20b272cf1818f4cc02e8450b5e22920edfdf044759f4b360206f82b8bff",
+      "task": "F-253",
+      "token": null
     },
     "tools/settings_check.gd": {
       "agent": "lm",
@@ -6736,7 +6716,7 @@
     "F-246": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "`tools/enemy_content_check.gd`'s strider-vs-crawler kiting proof fails at a clean HEAD, independent of any in-flight change"
     },
@@ -6784,9 +6764,11 @@
       "title": "resource_scatter.gd's _placement_at() has the exact per-sample noise-rebuild shape F-241 just fixed in the chunk mesher \u2014 height_from_set()/NoiseSet is now there to fix it"
     },
     "F-253": {
+      "done_at": "2026-08-19T22:24:02+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "tools/seed_sync_check.gd has 3 pre-existing failures \u2014 confirmed unrelated to F-250 via git baseline"
     },

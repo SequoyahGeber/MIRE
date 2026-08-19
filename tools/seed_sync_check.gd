@@ -94,8 +94,20 @@ func _run_driver() -> void:
 		finish()
 		return
 
+	# F-253: this used to poll `seed_ready` here, which is NOT proof `net_world_snapshot` arrived —
+	# `GameState.is_seed_ready()` also flips true the moment the client's OWN `MireGrid` autoload
+	# draws itself a throwaway local seed (`ensure_ready()` -> `GameState.ensure_seed()`), which it
+	# does unconditionally on ANY not-yet-connected peer (`_owns_simulation()` reads true whenever
+	# the transport is neither active nor connecting — true for "genuinely offline", but just as true
+	# for "about to join, hasn't yet"). That is intentional, decided behavior (D-110, D-119, F-172:
+	# solo/offline play must seed instantly at boot, and the project explicitly rejected gating
+	# world-gen behind a connection-state check), so it is not something to fix here — it just means
+	# `seed_ready` alone proves nothing about replication. `before_delta` is the real proof: it can
+	# only read true once `WorldDeltaLog.net_world_snapshot()` has actually run, and that one RPC
+	# body sets the replicated seed and decodes the delta state sequentially, so gating on it makes
+	# every read below (which used to race the client's own premature local draw) consistent.
 	var snapshotted: bool = await _until(
-		func() -> bool: return bool(_read_result().get("seed_ready", false)), TIMEOUT_SEC
+		func() -> bool: return bool(_read_result().get("before_delta", false)), TIMEOUT_SEC
 	)
 	check(snapshotted, "client's run seed is ready (net_world_snapshot arrived)")
 
