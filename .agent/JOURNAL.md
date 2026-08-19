@@ -5969,3 +5969,40 @@ Commit at time of writing: `158bf6c`
 Files: `content/cycle_modifiers/drought.tres`, `content/cycle_modifiers/tithe.tres`, `content/cycle_modifiers/static.tres`, `content/cycle_modifiers/rooted.tres`, `content/cycle_modifiers/bloom.tres`, `content/cycle_modifiers/the_hunt.tres`, `systems/cycle/cycle_modifier_def.gd`, `tools/cycle_modifier_check.gd`
 
 Commit at time of writing: `158bf6c`
+
+---
+
+### DONE · 4.13 · slate17 · 2026-08-19T17:53:02+00:00
+
+**Terrain look: domain warp + masked ridged layer + per-biome amplitude tables (`WORLDGEN.md` §1, D-142); extend `check_determinism`, re-run `bench_chunks`**
+
+Completed.
+
+Commit at time of writing: `b807863`
+
+---
+
+### REOPEN · 4.13 · slate17 · 2026-08-19T17:54:05+00:00
+
+**Terrain look: domain warp + masked ridged layer + per-biome amplitude tables (`WORLDGEN.md` §1, D-142); extend `check_determinism`, re-run `bench_chunks`**
+
+Reopened (was marked done 2026-08-19 by slate17).
+
+The island-shape work is finished and verified but uncommitted: the file was claimed by 4.14 in the gap between 'agent done' releasing it and the ship. Reopening to hold the claim long enough to commit.
+
+Commit at time of writing: `b807863`
+
+---
+
+### DONE · 4.14 · yarrow21 · 2026-08-19T17:58:40+00:00
+
+**One guaranteed river: steepest-descent trace + carve, POI ground flattening (D-142)**
+
+The river ships: seeded 4-point polyline (source inside the farthest lobe, two seeded bends, overshot mouth), carved into continent() AND height() via min(surface, channel) so ridges become gorges and biomes read the valley as low ground (D-144 preserved). Bed linear source->below-sea. First terrain_check run caught real water-flowing-uphill: blending by the raw island mask let interior mask notches weaken the carve mid-river — fixed by steepening carve strength to smoothstep(0,0.35,mask); the monotonic-bed assertion is what found it and now guards it. Zero new per-sample noise builds (bent point computed once, shared by mask+river). check_determinism grew a river hash (geometry and carved samples separately); macOS baseline river=a70d5139ac9a9a0d terrain=c20eed19b44270a1, Windows rerun owed per §6a. terrain_check 12/12, biome/poi/procedural_world checks 0 failures. island_20260819.png re-rendered (was stale since 4.13's follow-up) and sent to Sequoyah. POI flattening half of the task: already satisfied by 4.13-era max_slope_m/flatness_probe_m selection constraints — nothing to add.
+
+Notes along the way:
+- HEADS UP from slate17 (4.13): world/gen/island_heightmap.gd in your working tree already carries 4.13's finished island-shape work, UNCOMMITTED — you claimed the file about four minutes after 'agent done 4.13' released it, and the edits were already in place. Nothing of yours is lost; it is 107 lines on top of what was committed at 158bf6c. What is in there: the island is now a union of 3-4 overlapping lobes (not a radial falloff), every mask is measured in warped space, lobe directions are independent so shapes vary seed to seed, ridges only ever add, and WORLD_RADIUS became world_radius() because GDScript will not evaluate maxf() in a const and the hand-computed literal was already wrong. tools/terrain_check.gd and docs/DECISIONS.md (D-144) in the same tree are the matching half — terrain_check calls world_radius(), so committing the heightmap WITHOUT it, or vice versa, leaves the repo broken. All green as it stands: terrain_check, biome_check, poi_check, procedural_world_check, world_contract_check 0 failures, verify_setup 167 ok. Your ship will carry it; if you would rather not, ping and I will re-claim and commit it myself. A patch is saved outside the repo either way.
+
+Files: `world/gen/island_heightmap.gd`, `tools/terrain_check.gd`, `tools/check_determinism.gd`, `tools/terrain_map_render.gd`
+
+Commit at time of writing: `b807863`

@@ -1,6 +1,37 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "systems/enemies/enemy.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T17:51:10+00:00",
+      "task": "F-240",
+      "token": null
+    },
+    "systems/enemies/enemy_def.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T17:51:10+00:00",
+      "task": "F-240",
+      "token": null
+    },
+    "tools/enemy_lunge_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T17:51:10+00:00",
+      "task": "F-240",
+      "token": null
+    }
+  },
+  "in_flight": {
+    "F-240": {
+      "agent": "lm",
+      "files": [
+        "systems/enemies/enemy.gd",
+        "systems/enemies/enemy_def.gd",
+        "tools/enemy_lunge_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-19T17:51:10+00:00",
+      "token": null
+    }
+  },
   "recent": {
     ".": {
       "agent": "lp",
@@ -1227,56 +1258,6 @@
       "hash": null,
       "task": "3.17"
     },
-    "content/harvestables/boulder.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:20+00:00",
-      "task": "F-114"
-    },
-    "content/harvestables/bush.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:56:19+00:00",
-      "task": "F-116"
-    },
-    "content/harvestables/fallen_log.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:20+00:00",
-      "task": "F-114"
-    },
-    "content/harvestables/iron_node.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:11+00:00",
-      "task": "F-113"
-    },
-    "content/harvestables/rock_cluster.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:20+00:00",
-      "task": "F-114"
-    },
-    "content/harvestables/sapling.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:56:19+00:00",
-      "task": "F-116"
-    },
-    "content/harvestables/stone_node.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:11+00:00",
-      "task": "F-113"
-    },
-    "content/harvestables/stump.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:20+00:00",
-      "task": "F-114"
-    },
-    "content/harvestables/tree.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:11+00:00",
-      "task": "F-113"
-    },
-    "content/harvestables/wild_tree.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:20+00:00",
-      "task": "F-114"
-    },
     "content/haulables/heavy_ore_crate.tres": {
       "agent": "lp",
       "at": "2026-08-18T18:59:24+00:00",
@@ -1301,26 +1282,6 @@
       "hash": "46be7f23384d036d44700a946e3e55a3bbec77e0aae8ea44f15eb1d183dac7de",
       "task": "F-162"
     },
-    "content/items/branch.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
-    },
-    "content/items/coal.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
-    },
-    "content/items/fibre_bundle.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
-    },
-    "content/items/flint.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
-    },
     "content/items/mushroom.tres": {
       "agent": "lp",
       "at": "2026-08-19T04:47:27+00:00",
@@ -1338,11 +1299,6 @@
       "at": "2026-08-19T01:44:21+00:00",
       "hash": "9a8d98427311711f20c343a120b1ecafe0ed5a2019402f1c84f002cb78db0906",
       "task": "5.3"
-    },
-    "content/items/stick.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:56:19+00:00",
-      "task": "F-116"
     },
     "content/loot": {
       "agent": "slate17",
@@ -1844,61 +1800,6 @@
       "hash": "eef148cf4e626c0eaa1fc93f73ad52a0982171f20d7e6fc57f12889ec0831145",
       "task": "5.3"
     },
-    "content/recipes/arrow.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/charcoal.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/cleaver.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/iron_pickaxe.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/iron_sword.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/repair_hammer.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/short_bow.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/skewer.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/stone_pickaxe.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/wooden_axe.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
-    },
-    "content/recipes/wooden_pickaxe.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
-    },
     "content/rules": {
       "agent": "hollow7",
       "at": "2026-08-18T21:00:45+00:00",
@@ -1978,51 +1879,6 @@
       "hash": "375bd1b0628b625a01446579b833ad9cb3018d8286c8658cdd3be3b931c2c375",
       "task": "F-173",
       "token": null
-    },
-    "content/weapons/cleaver.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:11+00:00",
-      "task": "F-113"
-    },
-    "content/weapons/iron_pickaxe.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:11+00:00",
-      "task": "F-113"
-    },
-    "content/weapons/iron_sword.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:11+00:00",
-      "task": "F-113"
-    },
-    "content/weapons/repair_hammer.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:11+00:00",
-      "task": "F-113"
-    },
-    "content/weapons/skewer.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:11+00:00",
-      "task": "F-113"
-    },
-    "content/weapons/stone_axe.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:11+00:00",
-      "task": "F-113"
-    },
-    "content/weapons/stone_pickaxe.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:11+00:00",
-      "task": "F-113"
-    },
-    "content/weapons/wooden_axe.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:11+00:00",
-      "task": "F-113"
-    },
-    "content/weapons/wooden_pickaxe.tres": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:11+00:00",
-      "task": "F-113"
     },
     "core/commands/entity_selector.gd": {
       "agent": "hollow7",
@@ -2364,11 +2220,6 @@
       "hash": "50f3c7864eced7f3e89cce7f84b659f32d15fc7bd51a1bdb675ac8585ff028ea",
       "task": "5.3"
     },
-    "systems/combat/weapon_def.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:11+00:00",
-      "task": "F-113"
-    },
     "systems/commands/function_runner.gd": {
       "agent": "lm",
       "at": "2026-08-19T15:32:50+00:00",
@@ -2490,22 +2341,12 @@
       "hash": "7cd07eafea9d6bead3a72eb053f8a8740be00b92318d41029231ece149b3cec8",
       "task": "6.6"
     },
-    "systems/harvesting/harvest_library.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:20+00:00",
-      "task": "F-114"
-    },
     "systems/harvesting/harvestable.gd": {
       "agent": "lm",
       "at": "2026-08-19T15:24:28+00:00",
       "hash": "a1fc5d065b74ff17469e55a680c1646c9a9b26d4bb036d23b6f433bf67378e27",
       "task": "F-231",
       "token": null
-    },
-    "systems/harvesting/harvestable_def.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:11+00:00",
-      "task": "F-113"
     },
     "systems/hauling/haul_math.gd": {
       "agent": "lp",
@@ -2988,11 +2829,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "tools/check_determinism.gd": {
-      "agent": "slate17",
-      "at": "2026-08-19T17:36:48+00:00",
-      "hash": "46510d179a5744082b345b90ad857e9704af6fff9a35f06893a769456c80dee6",
-      "task": "4.13",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+      "agent": "yarrow21",
+      "at": "2026-08-19T17:58:40+00:00",
+      "hash": "64671b2f34a784d0bb631f1b7f2bd77b7b647853d38f78b96b39aff56f6fb6ae",
+      "task": "4.14",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "tools/chest_check.gd": {
       "agent": "reed16",
@@ -3096,11 +2937,6 @@
       "at": "2026-08-18T21:16:01+00:00",
       "hash": "350a5f7ec8a8e621134776e21b9cdba82612fa8d05831bff5fd882341f133fc0",
       "task": "2.1d"
-    },
-    "tools/crafting_check.gd": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
     },
     "tools/crafting_net_check.gd": {
       "agent": "lm",
@@ -3350,16 +3186,6 @@
       "hash": "ddf7a967ed573e4218136850285596aeee50d1e7ab0583cd8c6aa68a640a2f86",
       "task": "F-144",
       "token": null
-    },
-    "tools/harvest_tool_ladder_check.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:20+00:00",
-      "task": "F-114"
-    },
-    "tools/harvest_world_check.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:20+00:00",
-      "task": "F-114"
     },
     "tools/haul_check.gd": {
       "agent": "lp",
@@ -3769,17 +3595,18 @@
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
     "tools/terrain_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T19:50:20+00:00",
-      "hash": "3afc355a9679c233640e616df0bf9d95cf4eeccf0d4e901e2d53f149c0d21343",
-      "task": "4.1"
+      "agent": "yarrow21",
+      "at": "2026-08-19T17:58:40+00:00",
+      "hash": "1138b7ed752b06421a3a7dac590396550f8c5ef8af4ce08b955fe6a0e782c2f3",
+      "task": "4.14",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "tools/terrain_map_render.gd": {
-      "agent": "slate17",
-      "at": "2026-08-19T17:36:48+00:00",
-      "hash": "8aae451628ea76c6baf9a8b16250bcc66eb567f98cc9ef80d00bb80282bcfa2a",
-      "task": "4.13",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+      "agent": "yarrow21",
+      "at": "2026-08-19T17:58:40+00:00",
+      "hash": "c3637f25d8c818ffe1f9e15c706bd3178bb7451a4344999dcf599a8ac6661b39",
+      "task": "4.14",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "tools/terrain_map_render.gd.uid": {
       "agent": "slate17",
@@ -4103,11 +3930,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "world/gen/island_heightmap.gd": {
-      "agent": "slate17",
-      "at": "2026-08-19T17:36:48+00:00",
-      "hash": "87e0aca48615b34cede89c0b80180438ad96397c9377bb41c89eccdd9323c93d",
-      "task": "4.13",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+      "agent": "yarrow21",
+      "at": "2026-08-19T17:58:40+00:00",
+      "hash": "58a80cbc529909b8dc7c09fc1ac7af23aad337312d6dc1b1191c5ebece736292",
+      "task": "4.14",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "world/gen/layouts/hollowmere.json": {
       "agent": "lm",
@@ -4948,18 +4775,18 @@
       "title": "Playtest \u2014 is the Mire stressful-fun or just stressful? (Q1, Q2)"
     },
     "4.13": {
-      "done_at": "2026-08-19T17:43:24+00:00",
-      "done_by": "slate17",
       "est": "3",
       "milestone": "M4",
-      "status": "done",
+      "status": "todo",
       "tier": "T2",
       "title": "Terrain look: domain warp + masked ridged layer + per-biome amplitude tables (`WORLDGEN.md` \u00a71, D-142); extend `check_determinism`, re-run `bench_chunks`"
     },
     "4.14": {
+      "done_at": "2026-08-19T17:58:40+00:00",
+      "done_by": "yarrow21",
       "est": "2",
       "milestone": "M4",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "One guaranteed river: steepest-descent trace + carve, POI ground flattening (D-142)"
     },
@@ -7701,7 +7528,7 @@
     "F-240": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "A telegraphed attack's reach and tell length cannot deny \"just take one step back\" \u2014 no `EnemyDef` field makes retreating-through-a-tell fail, so that pressure isn't available to future enemy content"
     },

@@ -126,6 +126,47 @@ const COAST_JITTER: float = 74.0 / FREQUENCY_SCALE
 const COAST_FREQUENCY: float = 0.0042 * FREQUENCY_SCALE
 const COAST_NOISE_SALT: int = 0x7A11C0
 
+## The island's gross form: a union of overlapping LOBES, not a disc.
+##
+## Sequoyah's direction (2026-08-19): "the islands are quite round, they shouldn't be standard
+## shapes." A radial falloff makes a coin, and displacing its edge with noise only makes a coin with
+## a wobbly rim — the silhouette is still a circle because the thing being displaced is a circle.
+## The fix has to change the FORM, not the trim: three or four overlapping lobes at different
+## offsets and radii, unioned, so the island has peninsulas, a waist, and bays that go somewhere.
+##
+## Lobes are placed off the same unit-vector table the islets use (no `sin`/`cos` in this file —
+## they resolve differently across platforms and D-017/D-028 rest on this function being
+## bit-identical), and their radii are chosen so the union always stays connected: every lobe
+## overlaps the first one.
+const LOBE_COUNT_MIN: int = 3
+const LOBE_COUNT_MAX: int = 4
+## How far a lobe's centre sits from the island's, and how big it is, as fractions of
+## ISLAND_RADIUS. The ranges are deliberately wide: lobes of similar size at similar offsets
+## average back out into the circle this exists to avoid.
+const LOBE_OFFSET_MIN: float = 0.28
+const LOBE_OFFSET_MAX: float = 0.88
+const LOBE_RADIUS_MIN: float = 0.40
+const LOBE_RADIUS_MAX: float = 0.72
+## The centred lobe the others hang off. Deliberately NOT the biggest thing in the
+## union: at 0.84 it was the island and everything else was a bump on it, which is
+## how a "lobed" island still renders as a circle. At 0.60 no single lobe owns the
+## outline, and the shape is whatever the union happens to be.
+const LOBE_BODY_RADIUS: float = 0.60
+## Every lobe must overlap the body by at least this much of ISLAND_RADIUS, so an
+## island is always one connected landmass however the seed falls. Enforced by
+## clamping the offset rather than by choosing numbers that happen to work.
+const LOBE_MIN_OVERLAP: float = 0.14
+const LOBE_SALT: int = 0x3C0A57
+
+## A vector warp applied to the point BEFORE any distance is measured, so every mask in this file —
+## island, lobes and islets alike — is measured in bent space. Scalar radial jitter can only push a
+## coastline in and out along its own radius, which keeps arcs as arcs; bending the plane turns them
+## into inlets and spits.
+const SHAPE_WARP_AMPLITUDE: float = 58.0 / FREQUENCY_SCALE
+const SHAPE_WARP_FREQUENCY: float = 0.0055 * FREQUENCY_SCALE
+const SHAPE_WARP_SALT_X: int = 0x51A9E
+const SHAPE_WARP_SALT_Z: int = 0x62B7F
+
 ## Satellite islets: one or two, deliberately close in, and nothing else out there.
 ##
 ## Sequoyah's direction (2026-08-19): one main island, maybe one or two mini islands really close
@@ -148,11 +189,50 @@ const ISLET_DISTANCE: float = 1.22
 const ISLET_RADIUS_FRACTION: float = 0.26
 const ISLET_SALT: int = 0x15E7
 
-## The outer bound of ALL land, islets included. `ISLAND_RADIUS` stopped being that bound the moment
-## islets were added — they sit at 1.22x it — and anything that means "past here it is open water"
-## has to read this instead. Chunk streaming, POI placement and the Mire grid all reason about the
-## edge of the world, and an edge that is 22% short of the real one is a coastline that gets culled.
-const WORLD_RADIUS: float = ISLAND_RADIUS * (ISLET_DISTANCE + ISLET_RADIUS_FRACTION)
+## THE RIVER (task 4.14, D-142) — one per island, guaranteed, analytic.
+##
+## Hollowmere's identity is "a river out of the northern rim through a gorge into the mere", and it
+## was authored. Procedurally the same guarantee comes from a SEEDED POLYLINE, not a traced flow:
+## tracing steepest descent needs the whole field and somewhere to cache it, and this file's
+## contract is pure functions with no shared state (D-075's thread-safety rests on it). Four points
+## — a source pulled inside the biggest outer lobe, two seeded bends, a mouth direction extended
+## past the coast — cost O(3 segments) of arithmetic per sample and derive from the same integer
+## mixing `lobes()`/`islet_centres()` already use. No trig, no RNG, nothing outside the D-017 set.
+##
+## The carve is `min(surface, channel)`: where terrain crosses the corridor the channel wins, which
+## is what cuts a GORGE through a ridge instead of the river politely climbing it. The channel bed
+## runs monotonically downhill from source to below sea level, so the water never flows uphill; the
+## whole depression is multiplied by the island mask, so at the real (warped, jittered) coast the
+## carve hands over to the sea exactly where the land ends, wherever this seed put it.
+##
+## Lateral distance is measured in BENT space like every other landform here — the same warp that
+## turns circular coasts into inlets turns this straight polyline into meanders for free.
+const RIVER_SOURCE_PULL: float = 0.55       # source sits this fraction of its lobe's offset inward
+const RIVER_BEND_FRACTIONS: Array[float] = [0.35, 0.68]   # where along the line the bends sit
+const RIVER_BEND_OFFSET_MIN: float = 0.08   # bend offset, as a fraction of river length
+const RIVER_BEND_OFFSET_MAX: float = 0.20
+const RIVER_OVERSHOOT: float = 1.18         # mouth extends to this x ISLAND_RADIUS past the source
+const RIVER_WIDTH_SOURCE: float = 3.5       # half-width in metres at the source...
+const RIVER_WIDTH_MOUTH: float = 9.0        # ...and at the mouth
+const RIVER_BED_SOURCE: float = 3.0         # bed height at the source (m)
+const RIVER_BED_MOUTH: float = -2.2         # below sea level: the mouth is open water
+const RIVER_BANK_RISE: float = 7.0          # how fast the channel ceiling rises off the bed
+const RIVER_CORRIDOR: float = 2.6           # carve influence ends at width x this
+const RIVER_SALT: int = 0x71E5B
+
+## The outer bound of ALL land, as a function rather than a constant: GDScript will not evaluate
+## `maxf()` in a const expression, and the alternative — a hand-computed literal — is exactly what
+## went wrong the first time. The original was `ISLAND_RADIUS * (ISLET_DISTANCE +
+## ISLET_RADIUS_FRACTION)`, correct for islets and quietly wrong the moment lobes could reach
+## further, which `terrain_check` caught as 11 mm of land sitting on the boundary.
+##
+## Anything that means "past here it is open water" reads this — chunk streaming, POI placement and
+## the Mire grid all reason about the edge of the world, and a short edge is a culled coastline.
+## Anything that adds a landform must appear in this expression or the bound stops being one.
+static func world_radius() -> float:
+	var lobe_reach: float = LOBE_OFFSET_MAX + LOBE_RADIUS_MAX
+	var islet_reach: float = ISLET_DISTANCE + ISLET_RADIUS_FRACTION
+	return ISLAND_RADIUS * maxf(lobe_reach, islet_reach) + SHAPE_WARP_AMPLITUDE + COAST_JITTER
 
 ## The highest ground this generator can produce, in metres.
 ##
@@ -180,6 +260,43 @@ static func _make_noise(noise_seed: int, frequency: float, octaves: int, lacunar
 ## radius, 0.0 beyond it. `t*t*t`, never `pow(t, 3.0)` — see the file header and D-017.
 ## How many islets this seed gets (one or two) and where they sit. Integer arithmetic only, so it
 ## is identical on every platform.
+## The lobe centres and radii this seed's island is built from. Integer arithmetic only.
+static func lobes(world_seed: int) -> Array[Vector3]:
+	var mixed: int = (world_seed ^ LOBE_SALT) & 0x7FFFFFFF
+	var count: int = LOBE_COUNT_MIN + (mixed % (LOBE_COUNT_MAX - LOBE_COUNT_MIN + 1))
+	# The first lobe is the island's body, centred and large; the rest hang off it.
+	var out: Array[Vector3] = [Vector3(0.0, 0.0, ISLAND_RADIUS * LOBE_BODY_RADIUS)]
+	for index in count:
+		var step: int = mixed / (11 + index * 17)
+		# Each lobe picks its own direction rather than stepping a fixed stride round
+		# the table. A fixed stride spreads lobes evenly, and evenly-spread lobes
+		# union back into the circle this whole mechanism exists to avoid — every
+		# seed came out the same rounded polygon. Independent directions let some
+		# seeds cluster their lobes (a long island with a waist) and others spread
+		# them (a broad one), which is variety rather than one shape with noise on it.
+		var direction: Vector2 = ISLET_DIRECTIONS[(step / (3 + index * 5)) % ISLET_DIRECTIONS.size()]
+		var offset_span: float = LOBE_OFFSET_MAX - LOBE_OFFSET_MIN
+		var radius_span: float = LOBE_RADIUS_MAX - LOBE_RADIUS_MIN
+		var offset: float = LOBE_OFFSET_MIN + offset_span * float(step % 17) / 16.0
+		var radius: float = LOBE_RADIUS_MIN + radius_span * float(step % 23) / 22.0
+		# Pull the lobe in if it would only graze the body: a tangent lobe reads as
+		# a separate island that happens to touch, and a gap reads as a bug.
+		offset = minf(offset, LOBE_BODY_RADIUS + radius - LOBE_MIN_OVERLAP)
+		var centre: Vector2 = direction * (ISLAND_RADIUS * offset)
+		out.append(Vector3(centre.x, centre.y, ISLAND_RADIUS * radius))
+	return out
+
+
+## The point, bent. Everything that measures a distance in this file measures it here.
+static func _warp_point(x: float, z: float, world_seed: int) -> Vector2:
+	var warp_x := _make_noise(world_seed ^ SHAPE_WARP_SALT_X, SHAPE_WARP_FREQUENCY, 3,
+		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
+	var warp_z := _make_noise(world_seed ^ SHAPE_WARP_SALT_Z, SHAPE_WARP_FREQUENCY, 3,
+		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
+	return Vector2(x + warp_x.get_noise_2d(x, z) * SHAPE_WARP_AMPLITUDE,
+		z + warp_z.get_noise_2d(x, z) * SHAPE_WARP_AMPLITUDE)
+
+
 static func islet_centres(world_seed: int) -> Array[Vector2]:
 	var mixed: int = (world_seed ^ ISLET_SALT) & 0x7FFFFFFF
 	var count: int = 1 + (mixed % 2)
@@ -191,6 +308,94 @@ static func islet_centres(world_seed: int) -> Array[Vector2]:
 		var direction: Vector2 = ISLET_DIRECTIONS[(slot + index * 3) % ISLET_DIRECTIONS.size()]
 		centres.append(direction * (ISLAND_RADIUS * ISLET_DISTANCE))
 	return centres
+
+
+## The river's four control points for this seed, in DESIGN space (pre-warp). Source: the centre
+## of the farthest-reaching non-body lobe, pulled toward the island's middle — reliably interior
+## high ground without sampling any noise. Mouth: the opposite direction, overshot past the coast;
+## the mask fades the carve out at the real shoreline so the overshoot costs nothing. Two bends
+## give the line a reason to exist before the warp bends it further.
+static func river_polyline(world_seed: int) -> PackedVector2Array:
+	var mixed: int = (world_seed ^ RIVER_SALT) & 0x7FFFFFFF
+	var source_dir := Vector2(1.0, 0.0)
+	var source_offset: float = ISLAND_RADIUS * LOBE_BODY_RADIUS * 0.5
+	var best_reach: float = 0.0
+	var lobe_list: Array[Vector3] = lobes(world_seed)
+	for index in range(1, lobe_list.size()):
+		var lobe: Vector3 = lobe_list[index]
+		var centre := Vector2(lobe.x, lobe.y)
+		var reach: float = centre.length() + lobe.z
+		if reach > best_reach:
+			best_reach = reach
+			source_dir = centre.normalized() if centre.length() > 0.001 else source_dir
+			source_offset = centre.length() * RIVER_SOURCE_PULL
+	var source: Vector2 = source_dir * source_offset
+	var mouth: Vector2 = -source_dir * (ISLAND_RADIUS * RIVER_OVERSHOOT)
+
+	var out := PackedVector2Array([source])
+	var along: Vector2 = mouth - source
+	var perpendicular := Vector2(-along.y, along.x)
+	for bend_index in RIVER_BEND_FRACTIONS.size():
+		var step: int = mixed / (13 + bend_index * 19)
+		var span: float = RIVER_BEND_OFFSET_MAX - RIVER_BEND_OFFSET_MIN
+		var magnitude: float = RIVER_BEND_OFFSET_MIN + span * float(step % 19) / 18.0
+		var side: float = 1.0 if (step % 2) == 0 else -1.0
+		out.append(source + along * RIVER_BEND_FRACTIONS[bend_index]
+			+ perpendicular * (magnitude * side))
+	out.append(mouth)
+	return out
+
+
+## The channel ceiling at `bent` (a point already in warped space), or a huge sentinel when the
+## point is outside the river's corridor. `t` is the 0..1 fraction along the whole polyline —
+## width and bed depth both grow with it, and the bed is LINEAR in t, which is the monotonic-
+## downhill guarantee terrain_check asserts.
+static func _river_channel(bent: Vector2, world_seed: int) -> float:
+	var points: PackedVector2Array = river_polyline(world_seed)
+	var total_length: float = 0.0
+	for index in range(points.size() - 1):
+		total_length += points[index].distance_to(points[index + 1])
+	if total_length <= 0.0:
+		return 1.0e9
+
+	var best_distance: float = 1.0e9
+	var best_t: float = 0.0
+	var walked: float = 0.0
+	for index in range(points.size() - 1):
+		var a: Vector2 = points[index]
+		var b: Vector2 = points[index + 1]
+		var segment: Vector2 = b - a
+		var segment_length: float = segment.length()
+		var to_point: Vector2 = bent - a
+		var projection: float = clampf(to_point.dot(segment) / (segment_length * segment_length),
+			0.0, 1.0)
+		var distance: float = (a + segment * projection).distance_to(bent)
+		if distance < best_distance:
+			best_distance = distance
+			best_t = (walked + segment_length * projection) / total_length
+		walked += segment_length
+
+	var width: float = lerpf(RIVER_WIDTH_SOURCE, RIVER_WIDTH_MOUTH, best_t)
+	if best_distance >= width * RIVER_CORRIDOR:
+		return 1.0e9
+	var bed: float = lerpf(RIVER_BED_SOURCE, RIVER_BED_MOUTH, best_t)
+	var lateral: float = best_distance / width
+	return bed + lateral * lateral * RIVER_BANK_RISE
+
+
+## `min(surface, channel)`, faded by the island mask so the carve ends where the land does.
+##
+## The fade is a STEEPENED mask, not the raw one: linearly blending by mask let every interior
+## mask dip — a coastal notch the warp pulled inland, a lobe seam — weaken the carve mid-river,
+## and the bed popped BACK UP over the notch: water flowing uphill, caught by terrain_check's
+## monotonic walk on the first run. Full carve strength from mask 0.35 up means the channel only
+## hands over to the sea in the true coastal fringe, where handing over is the point.
+static func _apply_river(bent: Vector2, world_seed: int, surface: float, mask: float) -> float:
+	var channel: float = _river_channel(bent, world_seed)
+	if channel >= surface:
+		return surface
+	var carve_strength: float = smoothstep(0.0, 0.35, mask)
+	return surface + (channel - surface) * carve_strength
 
 
 ## Falloff for one circular landmass. Cubic, so the shore drops away rather than ending at a line.
@@ -206,10 +411,18 @@ static func _radial_mask(distance: float, radius: float) -> float:
 
 
 static func _island_mask(x: float, z: float, world_seed: int, jitter: float = 0.0) -> float:
-	# The jitter moves the shoreline in and out, so the thresholds apply to a
-	# distance that varies around the island instead of a perfect circle.
-	var point := Vector2(x, z)
-	var mask: float = _radial_mask(point.length() - jitter, ISLAND_RADIUS)
+	# Measured in bent space, so no mask below is measuring a circle in the first
+	# place; the jitter then roughens what is already an irregular edge.
+	return _island_mask_bent(_warp_point(x, z, world_seed), world_seed, jitter)
+
+
+## The mask body, for a caller that already bent the point — `continent()`/`height()` bend once
+## and share it between the mask and the river (4.14), keeping the per-sample noise count flat.
+static func _island_mask_bent(point: Vector2, world_seed: int, jitter: float = 0.0) -> float:
+	var mask: float = 0.0
+	for lobe: Vector3 in lobes(world_seed):
+		var centre := Vector2(lobe.x, lobe.y)
+		mask = maxf(mask, _radial_mask(point.distance_to(centre) - jitter, lobe.z))
 	# The islets take the LARGER of the masks rather than adding, so where one
 	# overlaps the main island it merges into a headland instead of stacking into
 	# a spike offshore.
@@ -246,8 +459,12 @@ static func continent(x: float, z: float, world_seed: int) -> float:
 	var coast_noise := _make_noise(
 		world_seed ^ COAST_NOISE_SALT, COAST_FREQUENCY, 3, BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
 	var jitter: float = coast_noise.get_noise_2d(x, z) * COAST_JITTER
-	var shaped: float = base_noise.get_noise_2d(x, z) + LAND_BIAS
-	return shaped * HEIGHT_SCALE * _island_mask(x, z, world_seed, jitter)
+	var bent: Vector2 = _warp_point(x, z, world_seed)
+	var mask: float = _island_mask_bent(bent, world_seed, jitter)
+	var shaped: float = (base_noise.get_noise_2d(x, z) + LAND_BIAS) * HEIGHT_SCALE * mask
+	# The river carves the CONTINENT too (4.14): biomes read this surface (D-144), so the valley
+	# floor resolves as low ground — banks go shore/marsh by height, no special casing anywhere.
+	return _apply_river(bent, world_seed, shaped, mask)
 
 
 ## How much of the ridged layer applies at this continental height: none in the
@@ -270,7 +487,8 @@ static func height(x: float, z: float, world_seed: int,
 	var coast_noise := _make_noise(
 		world_seed ^ COAST_NOISE_SALT, COAST_FREQUENCY, 3, BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
 	var jitter: float = coast_noise.get_noise_2d(x, z) * COAST_JITTER
-	var mask: float = _island_mask(x, z, world_seed, jitter)
+	var bent: Vector2 = _warp_point(x, z, world_seed)
+	var mask: float = _island_mask_bent(bent, world_seed, jitter)
 	var continent_height: float = (base_noise.get_noise_2d(x, z) + LAND_BIAS) * HEIGHT_SCALE * mask
 
 	var detail_noise := _make_noise(
@@ -293,4 +511,8 @@ static func height(x: float, z: float, world_seed: int,
 
 	# Both rough layers ride the island mask too, so the coastline stays where the
 	# continent put it and an island does not grow a rocky halo out to sea.
-	return continent_height + (detail * HEIGHT_SCALE + ridge) * mask
+	var surface: float = continent_height + (detail * HEIGHT_SCALE + ridge) * mask
+	# Carved LAST (4.14): a ridge that wandered across the corridor loses to the channel, which is
+	# what a gorge is. The ridge_mask above deliberately reads the UNCARVED continent, so ridge
+	# placement stays stable on either side of the valley.
+	return _apply_river(bent, world_seed, surface, mask)

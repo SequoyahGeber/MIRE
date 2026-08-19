@@ -40,6 +40,7 @@ func _initialize() -> void:
 	print("noise_simplex  %s" % _hash_noise(FastNoiseLite.TYPE_SIMPLEX_SMOOTH))
 	print("noise_perlin   %s" % _hash_noise(FastNoiseLite.TYPE_PERLIN))
 	print("continent      %s" % _hash_continent())
+	print("river          %s" % _hash_river())
 	print("ridge_mask     %s" % _hash_ridge_mask())
 	print("float_math     %s" % _hash_float_math())
 	print("terrain_hash   %s" % _hash_terrain())
@@ -115,6 +116,35 @@ func _hash_float_math() -> String:
 ## cross-platform mismatch says WHICH one drifted. Domain warp and ridged fractal
 ## are both FastNoiseLite-internal, which is exactly why they are cheap to trust
 ## and exactly why they still have to be measured (D-142).
+## 4.14's river: the polyline control points AND carved samples along the corridor, hashed
+## separately so a cross-platform drift says whether the GEOMETRY moved (integer mixing — should
+## never drift) or the CARVE did (float lerp/smoothstep chain — the plausible suspect).
+func _hash_river() -> String:
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	var line: PackedVector2Array = IslandHeightmap.river_polyline(SEED)
+	for point: Vector2 in line:
+		_feed(ctx, point.x)
+		_feed(ctx, point.y)
+	for step in range(0, 33):
+		var t: float = float(step) / 32.0
+		var total: float = 0.0
+		for index in range(line.size() - 1):
+			total += line[index].distance_to(line[index + 1])
+		var walked: float = total * t
+		var probe: Vector2 = line[0]
+		for index in range(line.size() - 1):
+			var segment_length: float = line[index].distance_to(line[index + 1])
+			if walked <= segment_length or index == line.size() - 2:
+				probe = line[index] + (line[index + 1] - line[index]) \
+					* (walked / segment_length if segment_length > 0.0 else 0.0)
+				break
+			walked -= segment_length
+		_feed(ctx, IslandHeightmap.height(probe.x, probe.y, SEED))
+		_feed(ctx, IslandHeightmap.height(probe.x + 5.0, probe.y - 3.0, SEED))
+	return _digest(ctx)
+
+
 func _hash_continent() -> String:
 	var ctx := HashingContext.new()
 	ctx.start(HashingContext.HASH_SHA256)
