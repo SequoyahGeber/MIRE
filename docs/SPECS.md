@@ -3672,6 +3672,59 @@ stores `[]`, both alternative forms store the full 2-element array.
 
 ---
 
+## F-172 · Seed entry (task 6.10) only reaches the host-session path — solo/offline play draws its seed before any menu can be opened
+
+**Claim:** `core/game_state.gd`, `tools/seed_launch_arg_check.gd` (new).
+
+**Why the boot-gate fix is out of scope here:** the finding's own "why not fixed here" and D-110's
+own "would change my mind" both reserve "gate world-gen behind a start screen" for a task scoped and
+reviewed on its own — one that explicitly updates the two-process/full-boot check convention
+(`--quit-after N`, the two-process driver/probe shape) to dismiss the gate first. That is not this
+task: it is materially bigger, touches `run/main_scene`/`MireGrid` boot ordering, and no such task
+exists on `docs/ROADMAP.md`. Relitigating D-110 as a side effect of closing a low-severity finding
+would be the same mistake D-110 itself named and rejected for task 6.10.
+
+**What actually closes it:** the finding's real complaint, underneath "only reaches the host-session
+path," is narrower than a boot gate — **solo players have no way to set a seed at all**, full stop.
+`GameState.set_pending_seed()`/`host_generate_seed()`/`ensure_seed()` (4.6, 6.10) already solve the
+mechanism; the only gap is that nothing can call `set_pending_seed()` before `MireGrid._ready()`
+consumes it on the solo path. A launch argument closes exactly that gap without moving boot order at
+all: `core/dev/dev_launch.gd` already establishes the precedent of a debug-only `--host`/`--lan-join=`
+family, and `autoload/steam_lobby.gd`'s `STEAM_CONNECT_LOBBY_ARG` establishes the precedent of a
+**non-debug** cmdline arg reaching a real autoload in retail builds (Steam rich-presence join) — a
+`--seed=<value>` arg for solo/offline play is the second case, not the first: it is a real
+player-facing feature (the same one `MainMenu`'s seed field already offers hosts), reachable the one
+way solo play can reach it before world-gen ever runs — Steam's own "Launch Options" field, or a
+desktop shortcut, both of which already exist for players on any Steam title.
+
+**Fix:** `GameState._ready()` gains `_apply_launch_seed_arg()` as its very first line (before the
+existing `NetTransport` wiring), reading `OS.get_cmdline_user_args()` (falling back to
+`OS.get_cmdline_args()`, same two-step `dev_launch.gd` already uses) for a `--seed=<text>` argument
+and staging it via the existing `set_pending_seed()`. Parsing mirrors `ui/menu/main_menu.gd`'s own
+`request_set_seed()` exactly — a pure integer is used as-is (`String.is_valid_int()` /`to_int()`),
+any other text is hashed with `String.hash()` so a shared word-seed behaves identically whether typed
+in the menu or passed on the command line, and a hashed/typed value that lands on exactly 0 is bumped
+to 1 (0 means "no override" in `set_pending_seed`'s own contract). `GameState` is last-but-one in
+`[autoload]` order, immediately before `MireGrid` — every other autoload the file already depends on
+(`NetTransport`) is registered earlier, and nothing downstream of `GameState` can consume the seed
+before its own `_ready()` finishes, so the staged value is guaranteed to be in place before
+`MireGrid.ensure_ready()`'s `GameState.ensure_seed()` call ever runs, solo or hosted.
+
+**Done means:** `tools/seed_launch_arg_check.gd` proves, in a real headless process launched with
+`--seed=<int>`, that `GameState.run_seed` after boot equals that exact integer — i.e. `MireGrid`'s
+own real, automatic boot-time draw (not a value the check script drew itself) used the launch-arg
+seed instead of real entropy. A spawned child process with no `--seed=` arg proves the default (no
+override) path is unchanged, and a spawned child with a non-integer `--seed=` text proves the
+`String.hash()` parity with `MainMenu.request_set_seed()`.
+
+**Verified 2026-08-19 (lm):** `agent godot --script tools/seed_launch_arg_check.gd -- --seed=204060517`,
+twice back to back — `SEED_LAUNCH_ARG_CHECK failures=0` both times, all 8 assertions PASS. No
+regression: `agent godot --script tools/main_menu_check.gd` (28/28 PASS, including the pre-existing
+seed-staging assertions) and `agent godot --script tools/seed_sync_check.gd` (host/client seed
+replication, 12/12 PASS) both stayed clean after this change to `GameState._ready()`.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

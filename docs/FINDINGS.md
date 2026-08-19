@@ -931,31 +931,6 @@ run against either machine state still means something.
 
 ---
 
-### F-172 · Seed entry (task 6.10) only reaches the host-session path — solo/offline play draws its seed before any menu can be opened
-
-**Area:** UI/worldgen · **Severity:** low · **Found:** 2026-08-19 by lm during 6.10
-
-`ui/menu/main_menu.gd`'s seed field stages a value via `GameState.set_pending_seed()`, consumed by
-`GameState.host_generate_seed()` the next time `NetTransport.server_started` fires — i.e. the moment
-`LobbyMenu`'s HOST button succeeds. Solo/offline play never reaches that path: `run/main_scene` boots
-straight into `levels/hollowmere.tscn`, and `world/mire/mire_grid.gd`'s own `_ready()` calls
-`GameState.ensure_seed()` immediately, which draws (or would consume a pending value for) the seed
-before the player has had a single frame in which to open `MainMenu` and type one. In practice a solo
-player can stage a seed and watch the status line update, but it will sit unused — nothing hosts,
-so `host_generate_seed()` never fires, and `ensure_seed()` already ran before the field existed to be
-read from.
-
-**Why not fixed here:** closing this properly means gating world-gen's first `ensure_seed()` call
-behind an explicit "start" decision — i.e. an actual boot-time main menu that the game does not enter
-gameplay past until dismissed. That is a materially bigger, riskier change (touches `run/main_scene`
-or `world/mire/mire_grid.gd`'s boot ordering) than the CanvasLayer-overlay shell 6.10 shipped, and
-was explicitly rejected for this task on blast-radius grounds — see `docs/DECISIONS.md`'s 6.10 entry.
-
-**What closes this:** whichever future task actually gates the boot flow behind a start screen (not
-scheduled anywhere on `docs/ROADMAP.md` today) should route solo seed entry through that gate; until
-then, `ensure_seed()` staying eager is the safer default, and solo players wanting a specific seed
-have no way to set one.
-
 ### F-173 · `UnlockService.is_content_unlocked()` (task 6.9) has no caller anywhere in the game — wiring the first real gate needs a cross-peer design decision, not just a call site
 
 **Area:** meta-progression/netcode · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.9
@@ -1126,6 +1101,47 @@ approach (`piece_placed`/`piece_destroyed` from `BuildService`, folded into
 ---
 
 ## Resolved
+
+### F-172 · Seed entry (task 6.10) only reaches the host-session path — solo/offline play draws its seed before any menu can be opened — **fixed**
+
+**Area:** UI/worldgen · **Severity:** low · **Found:** 2026-08-19 by lm during 6.10
+
+`ui/menu/main_menu.gd`'s seed field stages a value via `GameState.set_pending_seed()`, consumed by
+`GameState.host_generate_seed()` the next time `NetTransport.server_started` fires — i.e. the moment
+`LobbyMenu`'s HOST button succeeds. Solo/offline play never reaches that path: `run/main_scene` boots
+straight into `levels/hollowmere.tscn`, and `world/mire/mire_grid.gd`'s own `_ready()` calls
+`GameState.ensure_seed()` immediately, which draws (or would consume a pending value for) the seed
+before the player has had a single frame in which to open `MainMenu` and type one. In practice a solo
+player can stage a seed and watch the status line update, but it will sit unused — nothing hosts,
+so `host_generate_seed()` never fires, and `ensure_seed()` already ran before the field existed to be
+read from.
+
+**Why not fixed here:** closing this properly means gating world-gen's first `ensure_seed()` call
+behind an explicit "start" decision — i.e. an actual boot-time main menu that the game does not enter
+gameplay past until dismissed. That is a materially bigger, riskier change (touches `run/main_scene`
+or `world/mire/mire_grid.gd`'s boot ordering) than the CanvasLayer-overlay shell 6.10 shipped, and
+was explicitly rejected for this task on blast-radius grounds — see `docs/DECISIONS.md`'s 6.10 entry.
+
+**What closes this:** whichever future task actually gates the boot flow behind a start screen (not
+scheduled anywhere on `docs/ROADMAP.md` today) should route solo seed entry through that gate; until
+then, `ensure_seed()` staying eager is the safer default, and solo players wanting a specific seed
+have no way to set one.
+
+**Resolved 2026-08-19 by lm.** Fixed with a launch argument, not the boot-gate D-110 explicitly reserved for its own future task:
+`--seed=<value>` now reaches `GameState._apply_launch_seed_arg()` (first line of `_ready()`, before
+`MireGrid` in [autoload] order) and stages it via the existing `set_pending_seed()` — the exact
+mechanism 6.10 already built, just reachable one process-launch earlier than a menu can open. Parsing
+mirrors `ui/menu/main_menu.gd`'s `request_set_seed()`: a pure integer is used as-is, other text hashes
+with `String.hash()`, 0 bumps to 1. Not debug-only (unlike `dev_launch.gd`) — `steam_lobby.gd`'s
+STEAM_CONNECT_LOBBY_ARG already establishes a retail-build cmdline arg reaching an autoload as a
+normal shape here, and this is a real player-facing feature (Steam "Launch Options" reaches it).
+
+Verified: `agent godot --script tools/seed_launch_arg_check.gd -- --seed=204060517`, twice back to
+back, SEED_LAUNCH_ARG_CHECK failures=0, all 8 assertions PASS — including that MireGrid's own real
+boot-time draw (not a value the check script drew itself) used the launch-arg seed. No regression:
+tools/main_menu_check.gd (28/28) and tools/seed_sync_check.gd (12/12) both stayed clean.
+
+Full spec/rationale: docs/SPECS.md's F-172 block.
 
 ### F-171 · `tools/crafting_ui_check.gd` fails 19/22 independent of task 6.10 — reproduced on a clean HEAD checkout — **fixed**
 

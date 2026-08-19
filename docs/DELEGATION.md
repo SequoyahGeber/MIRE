@@ -75,6 +75,34 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-172 fixed: a `--seed=<value>` launch argument gives solo/offline play the seed entry task 6.10's menu never reached (lm)
+
+Task 6.10 shipped `MainMenu`'s seed field, but it only ever reaches a HOST session — solo/offline
+play draws its seed in `MireGrid._ready()` before the player has a single frame to open a menu
+(F-172). The real boot-gate fix (a title screen the game boots INTO) is explicitly out of scope —
+D-110 reserves that for a task scoped and reviewed on its own, one that updates the two-process/
+`--quit-after N` check convention first. This fix instead closes the actual gap — solo players had
+**no way at all** to set a seed — without moving boot order: `GameState._apply_launch_seed_arg()`
+(new, first line of `_ready()`) parses a `--seed=<value>` launch argument and stages it via the
+already-shipped `set_pending_seed()`, using the exact same parsing `ui/menu/main_menu.gd`'s
+`request_set_seed()` already does (integer used as-is, other text hashed with `String.hash()`, 0
+bumped to 1). `GameState` is last-but-one in `[autoload]` order, immediately before `MireGrid`, so
+the staged value is guaranteed in place before anything can draw. **Not debug-only**, unlike
+`core/dev/dev_launch.gd`'s `--host`/`--lan-join=` family — `autoload/steam_lobby.gd`'s
+`STEAM_CONNECT_LOBBY_ARG` already establishes a retail-build cmdline arg reaching an autoload as
+normal here, and a Steam "Launch Options" field is the one channel solo/offline play can actually
+use to set this.
+
+**Usage:** launch with `--seed=<integer>` or `--seed=<any text>` (hashed). No UI, no console command
+— purely a launch-time override, same shape a player would set in Steam's Properties → Launch
+Options.
+
+**Verified:** `agent godot --script tools/seed_launch_arg_check.gd -- --seed=204060517`, twice back
+to back, `SEED_LAUNCH_ARG_CHECK failures=0`, all 8 assertions PASS — including that `MireGrid`'s own
+real boot-time draw (not a value the check script drew itself) used the launch-arg seed. No
+regression: `tools/main_menu_check.gd` (28/28) and `tools/seed_sync_check.gd` (12/12) both stayed
+clean. Full spec/rationale: `docs/SPECS.md`'s F-172 block.
+
 ### 2026-08-18 — F-164: a capped Wellspring's re-corruption clock gets an ambient HUD warning; `WellspringHud` finally gets registered (lp)
 
 Two gaps, both closed here. The filed finding was the missing warning; reading `ui/hud/

@@ -3252,3 +3252,38 @@ until M4" (its own words), a live-game gap this concrete (agents visibly walking
 actual play) might be worth porting the same signal-based approach into `EnemyWorld.bake_navigation()`
 directly rather than waiting on the ChunkStreamer cutover — that is F-177's own "what closes this"
 already, not a re-litigation of this call, just a possible reprioritization of it.
+
+### D-119 · 2026-08-19 · F-172's solo seed entry ships as a `--seed=<value>` launch argument, not a boot-gate, and it is not debug-only
+
+Two calls, made together closing F-172 (solo/offline play draws its seed before any menu can open to
+stage one — task 6.10's `MainMenu` only ever reaches a hosted session).
+
+**Why a launch argument, not the boot-gate D-110 already reserved.** F-172's own "why not fixed here"
+and D-110's own "would change my mind" both point at the same thing: gating world-gen's first
+`ensure_seed()` call behind an actual title screen is a task scoped and reviewed on its own, one that
+explicitly updates the two-process/`--quit-after N` full-boot check convention to dismiss the gate
+first. Treating F-172 as license to build that gate anyway — because it is the "real" fix and F-172
+is the finding that named it — would be exactly the mistake D-110 rejected for task 6.10 itself:
+relitigating a bigger decision as a side effect of a smaller task. F-172's actual complaint, stripped
+of the boot-gate framing, is narrower and already fully addressable: solo players had **no way at
+all** to choose a seed. `GameState.set_pending_seed()`/`host_generate_seed()`/`ensure_seed()` (4.6,
+6.10) already solve staging and consumption; the only gap was that nothing could call
+`set_pending_seed()` before `MireGrid._ready()` on the solo path. A launch argument closes that exact
+gap with zero boot-order change: `GameState._apply_launch_seed_arg()`, first line of `_ready()`,
+stages it before `MireGrid` (last-but-one vs. last in `[autoload]` order) ever asks.
+
+**Why not debug-only, unlike `core/dev/dev_launch.gd`'s `--host`/`--lan-join=` family.** Those exist
+to make a dev's own two-instance testing loop fast and would open an unwanted socket if they ever
+shipped live — `dev_launch.gd`'s own header says so explicitly. A seed override carries none of that
+risk: it only ever affects world-gen determinism for the process that passed it, the same
+`set_pending_seed()` a live client can already call harmlessly from `MainMenu` (its own header notes
+a client staging a value affects nothing but that peer's own future host). `autoload/steam_lobby.gd`'s
+`STEAM_CONNECT_LOBBY_ARG` already establishes that a retail-build cmdline arg reaching a real autoload
+is a normal shape in this project, not something reserved for dev tooling — and Steam's own
+"Launch Options" field (Properties → General, on any Steam title, retail included) is the one channel
+a solo player can actually use to set this before world-gen ever runs.
+
+**Would change my mind:** a real "gate world-gen behind a start screen" task landing — that task
+should route solo seed entry through its own gate (an in-game field, same UX as `MainMenu`'s host
+path) and can retire this launch argument or keep it alongside as a power-user shortcut; either is
+that task's call, not a reason to hold this one back until it exists.
