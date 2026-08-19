@@ -3,11 +3,11 @@
   "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T07:11:01+00:00",
-      "hash": "cb61c4108f0112f0dba63a781a6b22ea7fbae288561c84e70ed891b02d967841",
-      "task": "F-199",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
+      "agent": "bram1",
+      "at": "2026-08-19T07:32:38+00:00",
+      "hash": "7a9958241b8b2db8f554715d789c0a0f04f9e73a0ec7ab69f39be27fd02dc04a",
+      "task": "F-202",
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     ".agent/bin/lane": {
       "agent": "bram1",
@@ -1527,11 +1527,11 @@
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T07:21:38+00:00",
-      "hash": "e2afdba1eb1553aeda7c9a629bd5c85f8eaab2125fcb3712abd101bda3b3f403",
-      "task": "F-190",
-      "token": null
+      "agent": "bram1",
+      "at": "2026-08-19T07:32:38+00:00",
+      "hash": "45deed331f00b0e53596956f73d6533787aa0a96902fccf89acc0a898ff6551f",
+      "task": "F-202",
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -5941,6 +5941,22 @@
       "status": "todo",
       "tier": "F",
       "title": "No check verifies that project.godot's [autoload] targets are tracked at HEAD, so F-190's failure mode can recur"
+    },
+    "F-201": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`tools/steam_lobby_check.gd` prints \"all checks passed\" (exit 0) but always emits one undeclared engine `ERROR:` line, violating this project's own SPECS.md standing rule 4"
+    },
+    "F-202": {
+      "done_at": "2026-08-19T07:32:38+00:00",
+      "done_by": "bram1",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "A drained saturate chain exits immediately, so a lane goes idle in the gap before the next order lands"
     }
   },
   "version": 1

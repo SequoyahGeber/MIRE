@@ -4574,3 +4574,15 @@ tools/lobby_menu_check.gd: SAD-path assertions now probe SteamLobby.initialise()
 Files: `tools/lobby_menu_check.gd`
 
 Commit at time of writing: `dbf96a6`
+
+---
+
+### DONE · F-202 · bram1 · 2026-08-19T07:32:38+00:00
+
+**A drained saturate chain exits immediately, so a lane goes idle in the gap before the next order lands**
+
+Drain-mode chains now poll up to 120s for new orders before exiting, bounded so they cannot hold the saturate lock against a fresh chain. Verified both branches; the test surfaced a 20s-against-12s overshoot from sleeping a full interval before re-checking the deadline, now clamped to the remaining time and measuring exactly 12.0s. harness_check 26/26.
+
+Files: `.agent/bin/agent`, `docs/FINDINGS.md`
+
+Commit at time of writing: `0f3f89a`

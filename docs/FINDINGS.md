@@ -900,6 +900,34 @@ synchronous `leave()`-inside-`server_started`-handler pattern), fix the underlyi
 
 ## Resolved
 
+### F-202 · A drained saturate chain exits immediately, so a lane goes idle in the gap before the next order lands — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
+
+`_saturate_locked` treats an empty queue as "the work is finished" rather than "nothing to do right
+now", so the chain returns the instant it drains. In practice orders arrive continuously while a
+director is working, and the lane is dead in the seconds between the chain exiting and the next
+order being written.
+
+This was the single most frequent operational failure of the 2026-08-18 session — five separate
+occurrences, each costing a manual `agent saturate` restart. Every time the lane was perfectly
+healthy with quota to burn; three of those times the refill landed within a minute of the exit, and
+once it landed *seconds* after. The edge-triggered monitor caught each within 90s, which is the only
+reason the cost stayed small — an unattended chain would have idled until someone looked.
+
+**Fixed:** in drain mode the chain now polls for up to `EMPTY_QUEUE_GRACE_SECONDS` (120) before
+returning, and continues if anything shows up. Bounded on purpose: an unbounded wait would hold the
+per-lane saturate lock against a director trying to start a fresh chain, trading an idle lane for a
+stuck one.
+
+**Verified both branches, and a timing bug found by doing so.** With no orders queued it returns `[]`
+after the grace and exits normally; with orders present it returns them in 0s rather than burning the
+window. The first test showed **20s elapsed against a 12s grace** — the poll slept a full 10s
+interval before re-checking the deadline — so the sleep is now clamped to the remaining time and
+measures 12.0s exactly. `tools/harness_check.py` 26/26 throughout.
+
+---
+
 ### F-170 · `tools/lobby_menu_check.gd` fails (5/24) whenever the dev machine's own Steam client is actually running — **fixed**
 
 **Area:** tooling/checks · **Severity:** low · **Found:** 2026-08-19 by lm during 6.10

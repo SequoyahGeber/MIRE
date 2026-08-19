@@ -2428,6 +2428,31 @@ def _wait_for_lane_free(lane, limit=BUSY_WAIT_LIMIT):
     return False
 
 
+EMPTY_QUEUE_GRACE_SECONDS = 120   # how long a drained chain waits for the next order before exiting
+
+
+def _wait_for_new_orders(lane, seen, grace=EMPTY_QUEUE_GRACE_SECONDS):
+    """Poll briefly for orders that arrived after the queue drained. Empty list if none show up.
+
+    Bounded deliberately: a chain that waited forever would hold the per-lane saturate lock against
+    a director who wanted to start a fresh one, which trades an idle lane for a stuck one."""
+    deadline = time.time() + grace
+    announced = False
+    while time.time() < deadline:
+        fresh = [t for t, m in sorted(_open_orders().items())
+                 if m["lane"] == lane and t not in seen
+                 and load()["tasks"].get(t, {}).get("status") != "done"]
+        if fresh:
+            print("  %s· %d new order(s) arrived — continuing%s" % (C["dim"], len(fresh), C["x"]))
+            return fresh
+        if not announced:
+            print("  %s· queue empty; watching %ds for more before exiting%s"
+                  % (C["dim"], grace, C["x"]))
+            announced = True
+        time.sleep(max(0.0, min(10.0, deadline - time.time())))   # never overshoot the stated grace
+    return []
+
+
 def _saturate_locked(lane, wanted, watch, drain=False):
     """Run the lane's queue to the end. Two things this has to get right, both learned expensively.
 
@@ -2440,7 +2465,16 @@ def _saturate_locked(lane, wanted, watch, drain=False):
     to wait for that chain to end, which is exactly the moment the lane goes idle."""
     done_ok, stopped = [], None
     seen, queue, busy_waits = [], list(wanted), {}
-    while queue:
+    while True:
+        # An empty queue means "nothing to do RIGHT NOW", not "the work is finished". Exiting on the
+        # first empty read is the most frequent way a lane goes idle here: the chain drains, exits,
+        # and the director's next order lands seconds later with nothing running to pick it up. It
+        # happened five times in one session, each costing a manual restart. So wait a little and
+        # look again before giving up — orders arrive continuously while a director is awake.
+        if not queue and drain:
+            queue.extend(_wait_for_new_orders(lane, seen))
+        if not queue:
+            break
         tid = queue.pop(0)
         if tid not in seen:
             seen.append(tid)
