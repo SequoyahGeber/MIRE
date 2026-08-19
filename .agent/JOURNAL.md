@@ -5572,3 +5572,18 @@ Notes along the way:
 Files: `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `tools/decision_ref_check.py`
 
 Commit at time of writing: `fc18251`
+
+---
+
+### DONE · F-230 · lm · 2026-08-19T15:32:50+00:00
+
+**`FunctionRunner.effective_scope()` uses a dynamic-scope command's DECLARED max scope, not the actual scope of the line as written — a pure-LOCAL line silently forces its whole function to HOST**
+
+Fixed: FunctionRunner.effective_scope() now resolves each line's dynamic-scope command (time/rule/function/entity verbs) against its ACTUAL invocation args via new CommandService.line_invocation_scope(head, raw_args), not the command's declared max via scope_of(head). A function wrapping bare 'time query' (LOCAL) no longer forces the whole function to HOST. Verified: agent godot --script tools/function_check.gd -> FUNCTION_CHECK failures=0 (2 new regression cases: time query runs for non-op, time set 0.5 still refused); tools/command_catalog_check.gd (correct declared-max use) still failures=0; findings_numbering_check.gd failures=0; decision_ref_check.py failures=0; full boot 0 stray ERROR: lines. Docs: SPECS.md F-230 block written, FINDINGS.md moved to Resolved, DELEGATION.md Current state has the new line_invocation_scope() API and the callable contract change (scope_of_command now called with (head, raw_args), not just head).
+
+Notes along the way:
+- Bug confirmed still present (not fixed by the 4 command_service.gd commits since filing — those were F-226/F-228 unrelated actor-resolution fixes). Root cause: FunctionRunner.effective_scope() called scope_of_command.call(head) with only the command name, so CommandService.scope_of() always returned dynamic-scope commands' declared max (host). Fix: added CommandService.line_invocation_scope(head, raw_args) which resolves via the existing _invocation_scope(spec, raw_args) — same per-line resolution execute() itself uses — and effective_scope() now calls scope_of_command.call(head, parts.slice(1)) instead of just head. _function_scope() now passes line_invocation_scope instead of scope_of. Regression test added to tools/function_check.gd (test_dynamic_local_only wrapping 'time query', test_dynamic_needs_host wrapping 'time set 0.5') — both pass, 0 failures. Swept for the same declared-vs-invocation-scope confusion elsewhere: only other scope_of() callers (tools/rule_check.gd) check the declared max for the 'commands' listing purpose it's meant for, no other misuse found.
+
+Files: `autoload/command_service.gd`, `systems/commands/function_runner.gd`, `tools/function_check.gd`, `docs/DELEGATION.md`, `docs/FINDINGS.md`, `docs/SPECS.md`
+
+Commit at time of writing: `a0fbc06`

@@ -116,6 +116,23 @@ func _check_dynamic_scope_routes_through_function() -> void:
 	check(String(host_result.get("message", "")).begins_with("not op"),
 		"refused with the uniform not-op wording: %s" % host_result.get("message"))
 
+	# F-230: a DYNAMIC-scope command (D-086's `time`, `rule`, `function`, and the entity verbs) reports
+	# its DECLARED maximum (host) from `scope_of()` — correct for the `commands` listing, wrong for
+	# judging one concrete line. `time query` is a read; wrapped in a function it must stay LOCAL, not
+	# be forced to HOST just because `time set ...` (the same command's other form) can mutate.
+	command_service.register_function(&"test_dynamic_local_only", PackedStringArray(["time query"]))
+	var dynamic_local_result: Dictionary = await command_service.execute(
+		"function test_dynamic_local_only", non_op_ctx)
+	check(bool(dynamic_local_result.get("ok", false)),
+		"a function wrapping a LOCAL invocation of a dynamic-scope command runs for a non-op: %s"
+			% dynamic_local_result.get("message"))
+
+	command_service.register_function(&"test_dynamic_needs_host", PackedStringArray(["time set 0.5"]))
+	var dynamic_host_result: Dictionary = await command_service.execute(
+		"function test_dynamic_needs_host", non_op_ctx)
+	check(not bool(dynamic_host_result.get("ok", true)),
+		"a function wrapping a HOST invocation of the same dynamic-scope command still requires op")
+
 
 # ── recursion cap: an error, not a hang ─────────────────────────────────────────────────────────────
 

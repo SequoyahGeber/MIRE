@@ -7251,6 +7251,61 @@ change; run to confirm nothing else was disturbed while these files were open).
 
 ---
 
+## F-230 · `FunctionRunner.effective_scope()` used a dynamic-scope command's DECLARED max scope, not the actual scope of the line as written — a pure-LOCAL line silently forced its whole function to HOST
+
+**Claim:** `autoload/command_service.gd`, `systems/commands/function_runner.gd`,
+`tools/function_check.gd`, `docs/DELEGATION.md`. **Authority:** no new row — this is a gap inside the
+already-declared "Command execution" authority (§2.2), same as F-228; no new state, no new RPC, no
+new command.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble. Filed 2026-08-19 by lp during 3.17-review; `agent brief` flagged it as possibly already
+fixed (`autoload/command_service.gd` had 4 commits since filing) — checked first, confirmed still
+live: `effective_scope()` still called `scope_of_command.call(head)` with the bare head only.
+
+**The bug:** `FunctionRunner.effective_scope()` (`systems/commands/function_runner.gd`) computes a
+`.mcmd` function's routing scope as the max of its lines' scopes (COMMANDS.md §5.1). For a normal
+line it called `scope_of_command.call(head)`, wired to `CommandService.scope_of(name)` — the DECLARED
+maximum a dynamic-scope command (D-086: `time`, `rule`, `function`, the entity verbs) reports for the
+`commands` listing, always `&"host"`, regardless of the line's own arguments. `execute()` itself
+never makes this mistake — top-level dispatch resolves each invocation's real scope via
+`_invocation_scope(spec, raw_args)`, which calls the command's `scope: Callable` (e.g. `time`'s
+`_time_scope()`: LOCAL for `time query`, HOST for `time set`/`time add`) against the ACTUAL args
+typed. `effective_scope()` had no equivalent — it only ever asked "what can this command's name do at
+worst," so a function wrapping nothing but `time query` (a read) was refused to a non-op exactly as
+if it had written `time set 0.5`. Not a security hole (over-restricts only, never under-restricts —
+declared-max is always ≥ actual, so a genuinely HOST line can never be misclassified LOCAL), and no
+shipped content hit it (`night_siege.mcmd`/`dev_scenario.mcmd` use none of the four dynamic-scope
+command names), but a real correctness gap in a surface COMMANDS.md §5.1 sells as "Sequoyah authors
+scenarios for free, no code."
+
+**The fix:** added `CommandService.line_invocation_scope(head: StringName, raw_args:
+PackedStringArray) -> StringName`, a thin wrapper around the same `_invocation_scope(spec, raw_args)`
+top-level dispatch already uses (`_specs.get(head, {})` for the spec, unknown head defaults to
+`&"local"` same as `scope_of()` — `execute()` is what actually refuses an unknown command, this is
+only ever pre-flight routing). `effective_scope()`'s `scope_of_command` callable contract changed
+from `Callable(head) -> StringName` to `Callable(head, raw_args) -> StringName` — it now calls
+`scope_of_command.call(head, parts.slice(1))`, passing that line's own args, not just its name.
+`CommandService._function_scope()` now passes `line_invocation_scope` instead of `scope_of`.
+
+**Verify:** `tools/function_check.gd`'s dynamic-scope section gained two cases: a function wrapping
+only `time query` now runs for a non-op (`ok=true`), and a function wrapping `time set 0.5` (same
+command, HOST invocation) still refuses one (`ok=false`) — proving the fix distinguishes invocations
+of the SAME command, not just command names. `.agent/bin/agent godot --script
+tools/function_check.gd` → `FUNCTION_CHECK failures=0` (all prior cases plus both new ones pass).
+`tools/command_catalog_check.gd` (declared-max listing, the correct use of `scope_of()`) still
+`COMMAND_CATALOG_CHECK failures=0` — confirms the fix didn't touch that surface. Full boot
+(`agent godot --quit-after 120`) — 0 stray `ERROR:` lines.
+
+**Swept for the same shape:** grepped every `scope_of(` call site project-wide. The only other
+callers (`tools/rule_check.gd`) check the declared max for `rule`/`rules`, which is exactly the
+listing use `scope_of()` is for — not this bug. `FunctionRunner.effective_scope()` had exactly one
+production caller (`_function_scope()`); no sibling call site existed to carry the same mistake.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 ## F-231 · `ResourceScatterField`'s depletion-restore replays a real harvest yield, so every rebuild of an already-harvested scattered point grants a free duplicate of its item to the host
 
 **Claim:** `systems/harvesting/harvestable.gd`, `world/gen/resource_scatter_field.gd`,

@@ -2282,6 +2282,19 @@ command_service.register_function(&"my_fn", PackedStringArray(["give branch 1"])
 command_service.is_op(peer_id)                           # -> bool, read-only mirror of _is_op()
 ```
 
+**F-230 (2026-08-19, lm):** `effective_scope()` originally judged each line by
+`CommandService.scope_of(head)` — a dynamic-scope command's (`time`/`rule`/`function`/entity verbs)
+*declared* maximum, always `&"host"`. A function line reading `time query` (LOCAL, D-086) was
+misjudged HOST purely because `time set ...` (the same command, a different invocation) can mutate.
+Fixed: `CommandService.line_invocation_scope(head: StringName, raw_args: PackedStringArray) ->
+StringName` resolves the SAME per-line way top-level `execute()` does — through `_invocation_scope()`
+against that line's own raw args — and is what `_function_scope()` now passes into
+`effective_scope()`. `effective_scope()`'s `scope_of_command` callable contract changed accordingly:
+it is called as `scope_of_command.call(head, raw_args)`, not `scope_of_command.call(head)` — any new
+caller must pass a two-arg resolver, not `scope_of()`. Regression coverage:
+`tools/function_check.gd`'s dynamic-scope section wraps `time query` (must stay LOCAL) and
+`time set 0.5` (must still demand HOST) in functions and executes both as a non-op.
+
 **Hooks (§5.2).** `systems/rules/hook_def.gd` (`HookDef`: id, event, function, host_only, enabled) is
 a content family like any other, loaded by `Registry._load_dir()` from `content/hooks/*.tres` exactly
 like `RuleDef` (`Registry.hook_defs()/get_hook()/has_hook()`, same naming convention as `rule_defs()`

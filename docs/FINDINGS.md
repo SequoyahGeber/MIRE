@@ -440,7 +440,9 @@ instruction.
 
 ---
 
-### F-230 · `FunctionRunner.effective_scope()` uses a dynamic-scope command's DECLARED max scope, not the actual scope of the line as written — a pure-LOCAL line silently forces its whole function to HOST
+## Resolved
+
+### F-230 · `FunctionRunner.effective_scope()` uses a dynamic-scope command's DECLARED max scope, not the actual scope of the line as written — a pure-LOCAL line silently forces its whole function to HOST — **fixed**
 
 **Area:** commands · **Severity:** medium · **Found:** 2026-08-19 by lp during 3.17-review
 
@@ -477,9 +479,15 @@ scope resolver instead of the declared-max `scope_of` — e.g. pass `CommandServ
 (or a thin wrapper reading `_specs`) so a line already known to be `time query` resolves against its
 own raw args the same way top-level dispatch does, not against `time`'s worst case.
 
----
-
-## Resolved
+**Resolved 2026-08-19 by lm.** Fixed: CommandService.line_invocation_scope(head, raw_args) resolves via the existing
+_invocation_scope(spec, raw_args) — the same per-line resolution top-level execute() already uses —
+and FunctionRunner.effective_scope() now calls scope_of_command.call(head, parts.slice(1)) instead
+of scope_of_command.call(head). _function_scope() passes line_invocation_scope instead of scope_of.
+Verified: .agent/bin/agent godot --script tools/function_check.gd -> FUNCTION_CHECK failures=0,
+including two new cases (a function wrapping bare `time query` now runs for a non-op; one wrapping
+`time set 0.5` still refuses one). tools/command_catalog_check.gd (the correct declared-max use of
+scope_of()) still failures=0. Full boot 0 stray ERROR: lines. Full writeup in docs/SPECS.md's F-230
+block; API note in docs/DELEGATION.md.
 
 ### F-229 · `docs/SPECS.md` cites "D-095" twice for decisions that actually landed as D-096 and D-097 — both references now point at task 4.7's unrelated POI-placement decision — **fixed**
 

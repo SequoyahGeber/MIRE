@@ -192,6 +192,17 @@ func _invocation_scope(spec: Dictionary, raw_args: PackedStringArray) -> StringN
 	return StringName(scope)
 
 
+## F-230: the per-LINE counterpart to `scope_of()`. `scope_of()` reports a dynamic-scope command's
+## DECLARED maximum (correct for the `commands` listing, where no concrete args exist yet);
+## `FunctionRunner.effective_scope()` needs the actual scope of one already-written line instead, the
+## same way top-level `execute()` resolves it — via `_invocation_scope()` against that line's own raw
+## args, not against the command's worst case. `head` unknown to `_specs` resolves the same as an
+## unknown command does everywhere else scope is asked before dispatch: &"local", since `execute()`
+## itself is what actually refuses an unknown command.
+func line_invocation_scope(head: StringName, raw_args: PackedStringArray) -> StringName:
+	return _invocation_scope(_specs.get(head, {}), raw_args)
+
+
 # ── Execution ────────────────────────────────────────────────────────────────────────────────────
 
 
@@ -478,7 +489,7 @@ func _register_function_command() -> void:
 func _function_scope(raw_args: PackedStringArray) -> StringName:
 	if raw_args.is_empty():
 		return &"local"  # missing arg -> a usage error, not a mutation attempt
-	return FUNCTION_RUNNER.effective_scope(StringName(raw_args[0]), _functions, scope_of)
+	return FUNCTION_RUNNER.effective_scope(StringName(raw_args[0]), _functions, line_invocation_scope)
 
 
 ## Runs every line of `name` through THIS SAME execute() (never a second execution path), in order,

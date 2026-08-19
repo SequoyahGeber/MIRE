@@ -1,50 +1,6 @@
 {
-  "claims": {
-    "autoload/command_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T15:28:08+00:00",
-      "task": "F-230",
-      "token": null
-    },
-    "docs/DELEGATION.md": {
-      "agent": "lm",
-      "at": "2026-08-19T15:29:39+00:00",
-      "task": "F-230",
-      "token": null
-    },
-    "systems/commands/function_runner.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T15:28:08+00:00",
-      "task": "F-230",
-      "token": null
-    },
-    "tools/function_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T15:28:08+00:00",
-      "task": "F-230",
-      "token": null
-    }
-  },
-  "in_flight": {
-    "F-230": {
-      "agent": "lm",
-      "files": [
-        "autoload/command_service.gd",
-        "systems/commands/function_runner.gd",
-        "tools/function_check.gd",
-        "docs/DELEGATION.md"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-19T15:29:13+00:00",
-          "by": "lm",
-          "text": "Bug confirmed still present (not fixed by the 4 command_service.gd commits since filing \u2014 those were F-226/F-228 unrelated actor-resolution fixes). Root cause: FunctionRunner.effective_scope() called scope_of_command.call(head) with only the command name, so CommandService.scope_of() always returned dynamic-scope commands' declared max (host). Fix: added CommandService.line_invocation_scope(head, raw_args) which resolves via the existing _invocation_scope(spec, raw_args) \u2014 same per-line resolution execute() itself uses \u2014 and effective_scope() now calls scope_of_command.call(head, parts.slice(1)) instead of just head. _function_scope() now passes line_invocation_scope instead of scope_of. Regression test added to tools/function_check.gd (test_dynamic_local_only wrapping 'time query', test_dynamic_needs_host wrapping 'time set 0.5') \u2014 both pass, 0 failures. Swept for the same declared-vs-invocation-scope confusion elsewhere: only other scope_of() callers (tools/rule_check.gd) check the declared max for the 'commands' listing purpose it's meant for, no other misuse found."
-        }
-      ],
-      "started": "2026-08-19T15:28:08+00:00",
-      "token": null
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".": {
       "agent": "lp",
@@ -580,9 +536,9 @@
     },
     "autoload/command_service.gd": {
       "agent": "lm",
-      "at": "2026-08-19T14:17:44+00:00",
-      "hash": "40c7d9ce46d499c3ed6db14e3f40f893c3478eca5c778732979ef00d404a7120",
-      "task": "F-224",
+      "at": "2026-08-19T15:32:50+00:00",
+      "hash": "c0172390226eda9d673f8208ed1485069ce4758ffe10a21239b7fd5f91e3b622",
+      "task": "F-230",
       "token": null
     },
     "autoload/crafting_service.gd": {
@@ -1776,16 +1732,16 @@
     },
     "docs/DELEGATION.md": {
       "agent": "lm",
-      "at": "2026-08-19T15:24:28+00:00",
-      "hash": "d5c61a87f4e0fe57ccf03d89dab429cf0b1bb48c7b58ee7941d3934598b3bd9e",
-      "task": "F-231",
+      "at": "2026-08-19T15:32:50+00:00",
+      "hash": "16d533d9685b0d14c4999d32d06a3ddd46f45c008824ad1c5a5e61523c1fa234",
+      "task": "F-230",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T15:31:50+00:00",
-      "hash": "bd5ad1aff5c95348313237ffed809388161465074e90de11465c93521894aa8d",
-      "task": "F-229",
+      "agent": "lm",
+      "at": "2026-08-19T15:32:50+00:00",
+      "hash": "5cb9fc1b6d5f2dc0a1ae0ee36fb432793611a53722934f54e0c0eff9ee21161c",
+      "task": "F-230",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1808,10 +1764,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T15:31:50+00:00",
-      "hash": "22be70f6af5b2bf9e0366d3dc25383ac3bda09ee675e1e2d91416554575fa8d2",
-      "task": "F-229",
+      "agent": "lm",
+      "at": "2026-08-19T15:32:50+00:00",
+      "hash": "2bf06f29cf7e6ca371e92c1e68b4cf4ff49cb62f9aa48308ae85f016801ca4b7",
+      "task": "F-230",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -1979,10 +1935,11 @@
       "task": "F-113"
     },
     "systems/commands/function_runner.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T23:19:22+00:00",
-      "hash": "d1bf6fecda7f7d970f281844b28eb6243f8655e809e714f5a79700780695fb07",
-      "task": "3.17"
+      "agent": "lm",
+      "at": "2026-08-19T15:32:50+00:00",
+      "hash": "b841192980385a82f1d66bdbad3a4ef63c75acf6e01b3709cccce1698e688d88",
+      "task": "F-230",
+      "token": null
     },
     "systems/cycle/cycle_modifier_def.gd": {
       "agent": "lm",
@@ -2835,10 +2792,11 @@
       "token": null
     },
     "tools/function_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T23:19:22+00:00",
-      "hash": "8c237cd57c31f14bee5c9a8ea8f4f56b755a9d3debc3d1f66022008a1cf78c01",
-      "task": "3.17"
+      "agent": "lm",
+      "at": "2026-08-19T15:32:50+00:00",
+      "hash": "2bf85643ea9d766e213b4084106a982166af161979eddad056372fd383f45d62",
+      "task": "F-230",
+      "token": null
     },
     "tools/gamepad_check.gd": {
       "agent": "lm",
@@ -7002,9 +6960,11 @@
       "title": "`docs/SPECS.md` cites \"D-095\" twice for decisions that actually landed as D-096 and D-097 \u2014 both references now point at task 4.7's unrelated POI-placement decision"
     },
     "F-230": {
+      "done_at": "2026-08-19T15:32:50+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`FunctionRunner.effective_scope()` uses a dynamic-scope command's DECLARED max scope, not the actual scope of the line as written \u2014 a pure-LOCAL line silently forces its whole function to HOST"
     },

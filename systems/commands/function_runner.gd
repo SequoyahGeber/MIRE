@@ -64,8 +64,11 @@ static func scan_directory(dir_path: String) -> Dictionary[StringName, PackedStr
 ## before typing it, not after the RPC comes back). An unknown function, or one nested past the cap,
 ## resolves to &"host" — deny by default: safer to demand op for a name whose contents are unknown
 ## or unresolvable than to let it slip through as a LOCAL read. `scope_of_command` is
-## CommandService's own `scope_of(name) -> StringName`, passed in rather than referenced directly so
-## this stays node-free and testable with a synthetic functions dict and a fake Callable.
+## CommandService's own `line_invocation_scope(head, raw_args) -> StringName` (F-230), passed in
+## rather than referenced directly so this stays node-free and testable with a synthetic functions
+## dict and a fake Callable. It takes the FULL line — head plus that line's own raw args — because a
+## dynamic-scope command's actual scope depends on the concrete invocation (`time query` vs.
+## `time set 0.5`), not on the command's declared maximum.
 static func effective_scope(
 	name: StringName, functions: Dictionary[StringName, PackedStringArray], scope_of_command: Callable,
 	depth: int = 0
@@ -81,7 +84,7 @@ static func effective_scope(
 		if head == &"function" and parts.size() >= 2:
 			line_scope = effective_scope(StringName(parts[1]), functions, scope_of_command, depth + 1)
 		else:
-			line_scope = StringName(scope_of_command.call(head))
+			line_scope = StringName(scope_of_command.call(head, parts.slice(1)))
 		if line_scope == &"host":
 			return &"host"
 	return &"local"
