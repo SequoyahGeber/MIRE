@@ -2038,6 +2038,66 @@ warning printed.
 
 ---
 
+## F-130 · Three console commands never migrated to CommandService — `console.call("register", ...)` reflection calls hide from a name grep
+
+**Claim:** `core/dev/dev_frame_cap.gd`, `autoload/graphics_quality.gd`, plus whichever new guard
+file the regression check lands in. **`autoload/graphics_quality.gd` needs an exact claim**, and as
+of this writing (two sessions running) it has been held the entire time by another task (F-144) —
+check `agent brief F-130`'s "held by someone else" list before claiming; if it's still there, you
+cannot finish this without waiting it out or picking a different task meanwhile.
+
+**What was wrong:** `f9cb6f7` ("CommandService front door: ... migrate every console command") swept
+every call site that referenced `DebugConsole` (or its shim) directly, via
+`grep -rn 'DebugConsole.register('`. Three commands resolved the autoload at runtime instead and
+invoked it by name — `var console: Node = get_node_or_null(^"/root/DebugConsole"); console.call(
+"register", &"gfx", ...)` — so the verb name never sits next to the method name in the source text
+and no grep for the call site can match it. Cost: a `[WARN] dev: DebugConsole.register(...) uses the
+deprecated shim` line on every headless run per unmigrated verb, against a repo whose audit standard
+is 0 error lines read by eye.
+
+**Fix, in two parts:**
+1. Port each command to `CommandService.register_spec()` with a typed spec and a declared scope.
+   `fps_cap`/`vsync` (`core/dev/dev_frame_cap.gd`) are LOCAL — a frame cap/vsync toggle is this
+   peer's own rendering, nothing about it belongs to the host. `gfx`
+   (`autoload/graphics_quality.gd:181`, `_register_commands()`/`_cmd_gfx()`) is LOCAL for the same
+   reason — see its own header's AUTHORITY line.
+2. Build the regression guard this finding proposed, since the same call shape will hide the next
+   migration too: a SOURCE-TEXT check asserting no `.gd` outside `autoload/debug_console.gd` (the
+   shim's own implementation) contains the reflection shape `.call("register", ` /
+   `.call(&"register", ` — modeled on `tools/net_check_pattern_check.gd` (F-060). A name-based
+   check (like `tools/command_catalog_check.gd`'s shim-coverage assertion) cannot catch this: it only
+   checks names already in its own table, so a *new* verb someone forgets to migrate slips past it
+   silently, which is exactly how these three were missed the first time.
+
+**Verify:** `agent godot --script tools/command_shim_check.gd` → `failures=0` (zero reflection-shim
+call sites outside the shim's own file); `agent godot --script tools/command_catalog_check.gd` →
+`failures=0`; `agent godot --script tools/command_check.gd` and
+`agent godot --script tools/command_net_check.gd` → `failures=0` each, to confirm the ported specs
+still behave under the same coverage the catalog sweep already exercises.
+
+**Done means:** all four checks above at `failures=0`, no `[WARN] ... uses the deprecated shim` line
+in a headless run, docs/FINDINGS.md's F-130 moved to `## Resolved` with the verifying commands' output.
+
+**Progress so far, still not done:**
+- **2026-08-18, task 3.16 (lp):** `fps_cap`/`vsync` migrated — `core/dev/dev_frame_cap.gd` now
+  registers both through `register_spec()`. `gfx` left on the shim: `autoload/graphics_quality.gd`
+  was held under F-144's claim for the task's entire run.
+- **2026-08-18, this task (lp):** `autoload/graphics_quality.gd` still held by F-144 (`nettle12`) —
+  same block, unchanged since the prior session; confirmed via `agent claim F-130
+  autoload/graphics_quality.gd` failing with "claimed by nettle12 for task F-144". Wrote and shipped
+  the regression guard (part 2 above) as `tools/command_shim_check.gd`: it walks every `.gd` file for
+  the reflection-call shape and currently reports exactly one hit —
+  `autoload/graphics_quality.gd:197`, the `gfx` registration — which is correct: the guard is meant
+  to fail until `gfx` is actually migrated, and this is the first real signal (a check FAIL, not a
+  WARN buried in scrollback) that the next holder of that file has something to finish. Re-verified
+  `fps_cap`/`vsync` still clean: `command_catalog_check` (`COMMAND_CATALOG_CHECK failures=0`),
+  `command_check` (`COMMAND_CHECK failures=0`), `command_net_check` (`COMMAND_NET_CHECK failures=0`).
+  Did not touch `autoload/graphics_quality.gd` — no workaround, no forced claim. Finding stays
+  `## Open`; whoever next holds that file finishes part 1 for `gfx` (same shape as the `fps_cap`
+  example already in the file) and then `tools/command_shim_check.gd` should read `failures=0` too.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

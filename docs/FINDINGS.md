@@ -551,6 +551,24 @@ differently, by refusing to count a shim-registered verb as coverage, but that o
 §7 already lists, so a *new* verb someone forgets to migrate would still slip past silently as F-130
 originally warned.
 
+**Second session 2026-08-18 (lp) — still blocked on the same file, guard built this time.**
+`agent claim F-130 autoload/graphics_quality.gd` still fails — held by `nettle12` for F-144,
+unchanged from the last session (confirmed via `agent brief F-130`'s "held by someone else" list).
+Per protocol did not force or work around it: `gfx` is untouched. Instead built the regression guard
+this finding proposed in its "why the sweep missed them" section — `tools/command_shim_check.gd`,
+a source-text check in the style of `tools/net_check_pattern_check.gd` (F-060), asserting no `.gd`
+outside `autoload/debug_console.gd` contains the reflection shape `.call("register", ` /
+`.call(&"register", `. Verified it actually catches the shape it's meant to: `agent godot --script
+tools/command_shim_check.gd` → `COMMAND_SHIM_CHECK scripts=228 hits=1 failures=2`, the one hit being
+`autoload/graphics_quality.gd:197` (`gfx`) — exactly the remaining case, and exactly what a check
+that fails until the fix lands is supposed to report. Re-ran the other three to confirm nothing
+regressed: `command_catalog_check` `failures=0`, `command_check` `failures=0`, `command_net_check`
+`failures=0`. `docs/SPECS.md` gained the `## F-130` block that was missing (§0 of this task's own
+work order) — see it for the exact remaining fix shape and the done-means checklist, including
+`tools/command_shim_check.gd failures=0` as the new closing condition. Still **Open**: the fix is
+now fully specified and has a check that will announce the moment it lands, but `gfx` itself still
+needs `autoload/graphics_quality.gd` free to claim.
+
 ---
 
 ### F-144 · Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance

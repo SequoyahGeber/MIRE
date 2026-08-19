@@ -75,6 +75,26 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — F-130: a source-text guard for the DebugConsole shim's reflection call, `gfx` still not migrated (lp)
+
+**What shipped, verified:** `tools/command_shim_check.gd` — walks every `.gd` file for the reflection
+shape `.call("register", ` / `.call(&"register", ` (the call `console.get_node_or_null(^"/root/
+DebugConsole").call("register", ...)` uses, which hides from a plain `grep -rn 'DebugConsole.register('`
+because the verb name never sits next to the method name). `autoload/debug_console.gd` — the shim's own
+implementation — is exempt; every other hit is a command still on the deprecated path.
+`agent godot --script tools/command_shim_check.gd` → `COMMAND_SHIM_CHECK scripts=228 hits=1
+failures=2`, the one hit being `autoload/graphics_quality.gd:197` (`gfx`). Re-verified the other three
+command checks unaffected: `command_catalog_check`/`command_check`/`command_net_check` all
+`failures=0`. `docs/SPECS.md` gained the `## F-130` block this finding never had.
+
+**Still open, and what blocks it:** `gfx` itself is not migrated — `autoload/graphics_quality.gd` has
+been held by F-144 (`nettle12`) across two separate sessions on this finding now (task 3.16, then
+this one), so the fix (`fps_cap`'s shape in `core/dev/dev_frame_cap.gd` is the template) still needs
+whoever next holds that file. **The seam whoever finishes it builds against:** once `gfx` is ported to
+`CommandService.register_spec()` (LOCAL scope), `agent godot --script tools/command_shim_check.gd`
+should read `failures=0` — that is F-130's actual closing condition, not just the absence of the WARN
+line. Move F-130 to `## Resolved` only once that check is green.
+
 ### 2026-08-18 — F-137: `tools/construction_check.gd` now cross-checks every `content/buildables/*.tres` against the build module (lm)
 
 **What shipped, verified:** `_check_buildable_defs()`, called from `_init()`. `wall.tres` is checked
