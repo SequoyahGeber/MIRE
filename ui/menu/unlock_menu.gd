@@ -79,6 +79,7 @@ func set_open(open: bool) -> void:
 		_restore_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		_refresh()
+		_grab_initial_focus()
 	else:
 		remove_from_group(BLOCKING_UI_GROUP)
 		_root.release_focus()
@@ -254,8 +255,16 @@ func _build_ui() -> void:
 	_close_button.add_theme_stylebox_override("normal", _field_style(COLOUR_FIELD, COLOUR_BORDER))
 	_close_button.add_theme_stylebox_override("hover", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
 	_close_button.add_theme_stylebox_override("pressed", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
+	_close_button.add_theme_stylebox_override("focus", _focus_style())
 	_close_button.pressed.connect(request_close)
 	stack.add_child(_close_button)
+
+	# F-209: chain every BUY button plus CLOSE, in row order, wrapping top<->bottom.
+	var chain: Array = []
+	for unlock_id: StringName in _rows:
+		chain.append((_rows[unlock_id] as Dictionary)["buy_button"])
+	chain.append(_close_button)
+	_wire_vertical_chain(chain)
 
 	var close_hint := Label.new()
 	close_hint.text = "ESC  CLOSE"
@@ -306,10 +315,43 @@ func _build_rows() -> void:
 		buy_button.add_theme_stylebox_override("normal", _field_style(COLOUR_FIELD, COLOUR_BORDER))
 		buy_button.add_theme_stylebox_override("hover", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
 		buy_button.add_theme_stylebox_override("pressed", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
+		buy_button.add_theme_stylebox_override("focus", _focus_style())
 		buy_button.pressed.connect(func() -> void: request_purchase(unlock_id))
 		row.add_child(buy_button)
 
 		_rows[unlock_id] = {"def": def, "name_label": name_label, "buy_button": buy_button}
+
+
+## First BUY button — a disabled one (owned, or unaffordable) still takes and keeps focus like any
+## other Button, it just no-ops on ui_accept/click until it becomes enabled — or CLOSE if somehow no
+## unlocks are registered.
+func _grab_initial_focus() -> void:
+	for unlock_id: StringName in _rows:
+		(_rows[unlock_id] as Dictionary)["buy_button"].grab_focus()
+		return
+	_close_button.grab_focus()
+
+
+func _wire_vertical_chain(controls: Array) -> void:
+	var count: int = controls.size()
+	for i: int in count:
+		var current: Control = controls[i]
+		var prev: Control = controls[(i - 1 + count) % count]
+		var next: Control = controls[(i + 1) % count]
+		current.focus_neighbor_top = current.get_path_to(prev)
+		current.focus_neighbor_bottom = current.get_path_to(next)
+
+
+## Visible focus ring (F-209) — see main_menu.gd's copy of this helper for why it is a
+## transparent-fill outline stylebox rather than a themed default.
+func _focus_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+	style.draw_center = false
+	style.border_color = COLOUR_ACCENT
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(5)
+	return style
 
 
 func _panel_style() -> StyleBoxFlat:

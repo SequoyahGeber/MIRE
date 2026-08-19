@@ -4973,3 +4973,15 @@ Added shipwreck marker to hollowmere.json at MereShore [62,1.54,29] (the already
 Files: `world/gen/authored_world.gd`, `world/gen/layouts/hollowmere.json`, `tools/hollowmere_check.gd`
 
 Commit at time of writing: `c384efe`
+
+---
+
+### DONE · F-209 · lm · 2026-08-19T12:04:37+00:00
+
+**No menu in the game supports gamepad UI focus navigation — a bare controller with no Steam Input translation cannot open any panel**
+
+Every menu (MainMenu/SettingsMenu/LobbyMenu/InventoryUI/CraftingUI/UnlockMenu) grabs initial focus on open and wires a focus_neighbor_* chain reachable by D-pad; InventoryUI got explicit grid/hotbar wiring plus a ui_accept pick-up/drop equivalent for its mouse-only drag. Real second gap fixed project-wide: ui_accept/ui_cancel carried no gamepad binding at all in this Godot version (D-134) - added via tools/bind_ui_gamepad_actions.gd. Verified: agent godot --script tools/menu_focus_check.gd -> MENU_FOCUS_CHECK failures=0 (real InputEventJoypadButton through Input.parse_input_event(), not called directly against _input()); gamepad_check.gd, main_menu_check.gd, lobby_menu_check.gd, settings_check.gd, inventory_ui_check.gd, crafting_ui_check.gd, unlock_check.gd all still green. Swept for the same shape: filed F-215 (HSlider has no focus theme item), F-216 (AttunementUI's mandatory no-Esc picker has no gamepad support at all - higher severity), F-217 (BuildBar's PieceSlot selection is mouse-only).
+
+Files: `ui/menu/main_menu.gd`, `ui/menu/settings_menu.gd`, `ui/menu/unlock_menu.gd`, `ui/lobby/lobby_menu.gd`, `ui/inventory/inventory_ui.gd`, `ui/crafting/crafting_ui.gd`, `tools/menu_focus_check.gd`, `project.godot`, `tools/bind_ui_gamepad_actions.gd`
+
+Commit at time of writing: `b5d7f63`

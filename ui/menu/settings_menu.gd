@@ -54,6 +54,7 @@ var _invert_checkbox: CheckBox
 var _reduce_motion_checkbox: CheckBox
 var _gamepad_sensitivity_slider: HSlider
 var _keybind_buttons: Dictionary = {}
+var _reset_keybind_button: Button
 var _gamepad_keybind_buttons: Dictionary = {}
 var _status_label: Label
 
@@ -117,6 +118,7 @@ func set_open(open: bool) -> void:
 		_restore_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		_refresh_from_settings()
+		_graphics_option.grab_focus()
 	else:
 		_rebinding_action = &""
 		_rebinding_button = null
@@ -219,6 +221,7 @@ func _build_ui() -> void:
 	_close_button.add_theme_stylebox_override("normal", _field_style(COLOUR_FIELD, COLOUR_BORDER))
 	_close_button.add_theme_stylebox_override("hover", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
 	_close_button.add_theme_stylebox_override("pressed", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
+	_close_button.add_theme_stylebox_override("focus", _focus_style())
 	_close_button.pressed.connect(request_close)
 	outer.add_child(_close_button)
 
@@ -229,6 +232,21 @@ func _build_ui() -> void:
 	close_hint.add_theme_color_override("font_color", COLOUR_MUTED)
 	outer.add_child(close_hint)
 
+	# F-209: gamepad/keyboard focus chain down the visible order. Sliders/OptionButton/CheckBox
+	# already answer ui_left/ui_right/ui_accept once focused (Godot's own Range/Button gui_input) —
+	# only the chain, initial focus (set_open() above) and a visible ring on the Button-derived
+	# controls were missing. HSlider draws no built-in focus stylebox (Slider's theme has no "focus"
+	# item, unlike Button/OptionButton/CheckBox) — filed as a follow-up rather than solved here since
+	# a slider is still fully operable by gamepad without one, just harder to see which is focused.
+	var chain: Array = [_graphics_option, _master_slider, _music_slider, _sfx_slider,
+		_sensitivity_slider, _gamepad_sensitivity_slider, _fov_slider, _invert_checkbox,
+		_reduce_motion_checkbox]
+	chain.append_array(_keybind_buttons.values())
+	chain.append(_reset_keybind_button)
+	chain.append_array(_gamepad_keybind_buttons.values())
+	chain.append(_close_button)
+	_wire_vertical_chain(chain)
+
 
 func _build_graphics_row(parent: VBoxContainer) -> void:
 	_add_section_label(parent, "GRAPHICS")
@@ -237,6 +255,7 @@ func _build_graphics_row(parent: VBoxContainer) -> void:
 	_graphics_option.add_item("Medium")
 	_graphics_option.add_item("High")
 	_graphics_option.add_theme_color_override("font_color", COLOUR_TEXT)
+	_graphics_option.add_theme_stylebox_override("focus", _focus_style())
 	_graphics_option.item_selected.connect(_on_graphics_selected)
 	parent.add_child(_graphics_option)
 
@@ -266,6 +285,7 @@ func _build_look_rows(parent: VBoxContainer) -> void:
 	_invert_checkbox = CheckBox.new()
 	_invert_checkbox.text = "Invert Look Y"
 	_invert_checkbox.add_theme_color_override("font_color", COLOUR_TEXT)
+	_invert_checkbox.add_theme_stylebox_override("focus", _focus_style())
 	_invert_checkbox.toggled.connect(func(pressed: bool) -> void:
 		_settings_call("set_invert_y", [pressed]))
 	parent.add_child(_invert_checkbox)
@@ -276,6 +296,7 @@ func _build_accessibility_rows(parent: VBoxContainer) -> void:
 	_reduce_motion_checkbox = CheckBox.new()
 	_reduce_motion_checkbox.text = "Reduce Camera Motion"
 	_reduce_motion_checkbox.add_theme_color_override("font_color", COLOUR_TEXT)
+	_reduce_motion_checkbox.add_theme_stylebox_override("focus", _focus_style())
 	_reduce_motion_checkbox.toggled.connect(func(pressed: bool) -> void:
 		_settings_call("set_reduce_camera_motion", [pressed]))
 	parent.add_child(_reduce_motion_checkbox)
@@ -306,21 +327,23 @@ func _build_keybind_rows(parent: VBoxContainer) -> void:
 		button.add_theme_color_override("font_color", COLOUR_TEXT)
 		button.add_theme_stylebox_override("normal", _field_style(COLOUR_FIELD, COLOUR_BORDER))
 		button.add_theme_stylebox_override("hover", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
+		button.add_theme_stylebox_override("focus", _focus_style())
 		button.pressed.connect(_start_rebind.bind(action, button))
 		row.add_child(button)
 
 		_keybind_buttons[action] = button
 		parent.add_child(row)
 
-	var reset_button := Button.new()
-	reset_button.text = "RESET KEYBINDS"
-	reset_button.add_theme_color_override("font_color", COLOUR_TEXT)
-	reset_button.add_theme_stylebox_override("normal", _field_style(COLOUR_FIELD, COLOUR_BORDER))
-	reset_button.add_theme_stylebox_override("hover", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
-	reset_button.pressed.connect(func() -> void:
+	_reset_keybind_button = Button.new()
+	_reset_keybind_button.text = "RESET KEYBINDS"
+	_reset_keybind_button.add_theme_color_override("font_color", COLOUR_TEXT)
+	_reset_keybind_button.add_theme_stylebox_override("normal", _field_style(COLOUR_FIELD, COLOUR_BORDER))
+	_reset_keybind_button.add_theme_stylebox_override("hover", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
+	_reset_keybind_button.add_theme_stylebox_override("focus", _focus_style())
+	_reset_keybind_button.pressed.connect(func() -> void:
 		_settings_call("reset_keybinds", [])
 		_refresh_from_settings())
-	parent.add_child(reset_button)
+	parent.add_child(_reset_keybind_button)
 
 	_status_label = Label.new()
 	_status_label.name = "KeybindStatus"
@@ -356,6 +379,7 @@ func _build_gamepad_bind_rows(parent: VBoxContainer) -> void:
 		button.add_theme_color_override("font_color", COLOUR_TEXT)
 		button.add_theme_stylebox_override("normal", _field_style(COLOUR_FIELD, COLOUR_BORDER))
 		button.add_theme_stylebox_override("hover", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
+		button.add_theme_stylebox_override("focus", _focus_style())
 		button.pressed.connect(_start_rebind_joypad.bind(action, button))
 		row.add_child(button)
 
@@ -506,6 +530,28 @@ func _settings_call(method: StringName, args: Array) -> void:
 	var settings: Node = _settings_node()
 	if settings != null:
 		settings.callv(method, args)
+
+
+func _wire_vertical_chain(controls: Array) -> void:
+	var count: int = controls.size()
+	for i: int in count:
+		var current: Control = controls[i]
+		var prev: Control = controls[(i - 1 + count) % count]
+		var next: Control = controls[(i + 1) % count]
+		current.focus_neighbor_top = current.get_path_to(prev)
+		current.focus_neighbor_bottom = current.get_path_to(next)
+
+
+## Visible focus ring (F-209) — see main_menu.gd's copy of this helper for why it is a
+## transparent-fill outline stylebox rather than a themed default.
+func _focus_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+	style.draw_center = false
+	style.border_color = COLOUR_ACCENT
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(5)
+	return style
 
 
 func _panel_style() -> StyleBoxFlat:

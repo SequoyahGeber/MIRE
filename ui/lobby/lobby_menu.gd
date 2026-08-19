@@ -107,6 +107,8 @@ func set_open(open: bool) -> void:
 		_refresh()
 		if _idle_box.visible:
 			_join_field.grab_focus()
+		else:
+			_copy_button.grab_focus()
 	else:
 		remove_from_group(BLOCKING_UI_GROUP)
 		_root.release_focus()
@@ -401,6 +403,20 @@ func _build_ui() -> void:
 	_join_button = _button("JOIN", request_join)
 	join_row.add_child(_join_button)
 
+	# F-209: idle-box chain (host_button's own row <-> the join row's three widgets) and, further
+	# below, the lobby-box chain — two independent closed loops since _idle_box/_lobby_box are never
+	# both visible at once (set_open() grabs the right box's first control on open).
+	_join_field.add_theme_stylebox_override("focus", _focus_style())
+	_wire_vertical_chain([_host_button, _join_field])
+	_join_field.focus_neighbor_right = _join_field.get_path_to(_paste_button)
+	_paste_button.focus_neighbor_left = _paste_button.get_path_to(_join_field)
+	_paste_button.focus_neighbor_top = _paste_button.get_path_to(_host_button)
+	_paste_button.focus_neighbor_bottom = _paste_button.get_path_to(_host_button)
+	_paste_button.focus_neighbor_right = _paste_button.get_path_to(_join_button)
+	_join_button.focus_neighbor_left = _join_button.get_path_to(_paste_button)
+	_join_button.focus_neighbor_top = _join_button.get_path_to(_host_button)
+	_join_button.focus_neighbor_bottom = _join_button.get_path_to(_host_button)
+
 	# In a session: the ID to share, the overlay, who is in, and the way out.
 	_lobby_box = VBoxContainer.new()
 	_lobby_box.name = "LobbyBox"
@@ -421,6 +437,7 @@ func _build_ui() -> void:
 	_lobby_id_field = LineEdit.new()
 	_lobby_id_field.name = "LobbyIdField"
 	_lobby_id_field.editable = false
+	_lobby_id_field.focus_mode = Control.FOCUS_NONE
 	_lobby_id_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_lobby_id_field.add_theme_color_override("font_color", COLOUR_ACCENT)
 	id_row.add_child(_lobby_id_field)
@@ -445,6 +462,8 @@ func _build_ui() -> void:
 	_leave_button = _button("LEAVE SESSION", request_leave)
 	_lobby_box.add_child(_leave_button)
 
+	_wire_vertical_chain([_copy_button, _invite_button, _leave_button])
+
 	var close_hint := Label.new()
 	close_hint.text = "M / ESC  CLOSE"
 	close_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -460,8 +479,31 @@ func _button(text: String, on_pressed: Callable) -> Button:
 	button.add_theme_stylebox_override("normal", _field_style(COLOUR_FIELD, COLOUR_BORDER))
 	button.add_theme_stylebox_override("hover", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
 	button.add_theme_stylebox_override("pressed", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
+	button.add_theme_stylebox_override("focus", _focus_style())
 	button.pressed.connect(on_pressed)
 	return button
+
+
+func _wire_vertical_chain(controls: Array) -> void:
+	var count: int = controls.size()
+	for i: int in count:
+		var current: Control = controls[i]
+		var prev: Control = controls[(i - 1 + count) % count]
+		var next: Control = controls[(i + 1) % count]
+		current.focus_neighbor_top = current.get_path_to(prev)
+		current.focus_neighbor_bottom = current.get_path_to(next)
+
+
+## Visible focus ring (F-209) — see main_menu.gd's copy of this helper for why it is a
+## transparent-fill outline stylebox rather than a themed default.
+func _focus_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+	style.draw_center = false
+	style.border_color = COLOUR_ACCENT
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(5)
+	return style
 
 
 func _panel_style() -> StyleBoxFlat:

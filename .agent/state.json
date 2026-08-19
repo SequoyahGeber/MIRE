@@ -1964,9 +1964,9 @@
     },
     "project.godot": {
       "agent": "lm",
-      "at": "2026-08-19T10:44:59+00:00",
-      "hash": "0aff2f0f12c3ab1e887074575db5d26060e6b770ca76149636ef66dbbf172dad",
-      "task": "7.6",
+      "at": "2026-08-19T12:04:37+00:00",
+      "hash": "263d2b48324c1b68642367afc13dc30d776fb9dbfdb40cb370e30397ca41ad4f",
+      "task": "F-209",
       "token": null
     },
     "scenes/buildables/barricade.tscn": {
@@ -2451,6 +2451,13 @@
       "at": "2026-08-18T20:59:26+00:00",
       "hash": "5aa08f963311c6a16ed164219bfb5d7237a4abd4aae9a01d4c67768457af7390",
       "task": "F-128"
+    },
+    "tools/bind_ui_gamepad_actions.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T12:04:37+00:00",
+      "hash": "6a6288ddcd56c478ef3f0a8a5ede226d3c214fd6c0a2293f2a96450a61042182",
+      "task": "F-209",
+      "token": null
     },
     "tools/biome_check.gd": {
       "agent": "lm",
@@ -3086,6 +3093,13 @@
       "task": "F-146",
       "token": null
     },
+    "tools/menu_focus_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T12:04:37+00:00",
+      "hash": "897dab5ac7a97f4423d99242f52427dd54fcb2ec3108d0ce5e47cd547bb4b438",
+      "task": "F-209",
+      "token": null
+    },
     "tools/mesh_merge_check.gd": {
       "agent": "lm",
       "at": "2026-08-19T10:07:05+00:00",
@@ -3474,9 +3488,10 @@
     },
     "ui/crafting/crafting_ui.gd": {
       "agent": "lm",
-      "at": "2026-08-19T04:27:15+00:00",
-      "hash": "2439481058adbcbbd25adf41d262410ad52943c2773f9172e632ddd73cdb7159",
-      "task": "F-167"
+      "at": "2026-08-19T12:04:37+00:00",
+      "hash": "9b196f9f10b5c830ec3a67260897c91a8dec8ae1cdb2f437be2d44fa9fdaae10",
+      "task": "F-209",
+      "token": null
     },
     "ui/debug/net_debug_panel.gd": {
       "agent": "lp",
@@ -3523,15 +3538,17 @@
     },
     "ui/inventory/inventory_ui.gd": {
       "agent": "lm",
-      "at": "2026-08-19T10:44:59+00:00",
-      "hash": "3402484b652646f8b51235bd2d380c5c94161595c6326c675f3dea54aba05de4",
-      "task": "7.6",
+      "at": "2026-08-19T12:04:37+00:00",
+      "hash": "d698e561d657c5f3a498e227d1824120776180301091102878a5b551e14cce15",
+      "task": "F-209",
       "token": null
     },
     "ui/lobby/lobby_menu.gd": {
-      "agent": "moss11",
-      "at": "2026-08-18T18:06:11+00:00",
-      "task": "6.10"
+      "agent": "lm",
+      "at": "2026-08-19T12:04:37+00:00",
+      "hash": "cb163cb19fe9122c5b22b789cb2705554e68c57d76072f291a8260f4e048de3f",
+      "task": "F-209",
+      "token": null
     },
     "ui/loot/chest_ui.gd": {
       "agent": "lm",
@@ -3541,22 +3558,24 @@
     },
     "ui/menu/main_menu.gd": {
       "agent": "lm",
-      "at": "2026-08-19T03:34:03+00:00",
-      "hash": "4fe631faebd9357d88a0c99f40adac7db0651a3928ade9a686d763630a7829f3",
-      "task": "6.9"
+      "at": "2026-08-19T12:04:37+00:00",
+      "hash": "40a558f14ddd77b012869d5a09eb40995860221fa9ca425f2369bee540841334",
+      "task": "F-209",
+      "token": null
     },
     "ui/menu/settings_menu.gd": {
       "agent": "lm",
-      "at": "2026-08-19T10:44:59+00:00",
-      "hash": "8c4a7e592600e5fce9f581e7b6e1cb1eefc99e6e52a5a2eca0535cf4d5a5aa22",
-      "task": "7.6",
+      "at": "2026-08-19T12:04:37+00:00",
+      "hash": "2fe2af9faa86be4ceacdbe0f2812736812a6e355616f3d98b776537bc95007f4",
+      "task": "F-209",
       "token": null
     },
     "ui/menu/unlock_menu.gd": {
       "agent": "lm",
-      "at": "2026-08-19T03:34:03+00:00",
-      "hash": "77f5493a65ff57685e5d25de9dd7c85372f6b18b21dd5c913f621c594213c124",
-      "task": "6.9"
+      "at": "2026-08-19T12:04:37+00:00",
+      "hash": "fb9452d7b49287e473e6c1dfb8d0315434e79a3d3772c1215be878da788e0f85",
+      "task": "F-209",
+      "token": null
     },
     "world/chunk/chunk_mesher.gd": {
       "agent": "wick20",
@@ -6662,9 +6681,11 @@
       "title": "F-203's sway case is still unsolved \u2014 `_apply_sway`'s per-mesh height mask needs a per-vertex baked channel before sway-bearing props can join the cross-asset chunk merge"
     },
     "F-209": {
+      "done_at": "2026-08-19T12:04:37+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "No menu in the game supports gamepad UI focus navigation \u2014 a bare controller with no Steam Input translation cannot open any panel"
     },
@@ -6697,6 +6718,13 @@
       "status": "todo",
       "tier": "F",
       "title": "core/net/rpc_manifest.gd's FNV-1a seed literal overflows signed 64-bit int, erroring on every scan even though the check itself stays deterministic"
+    },
+    "F-214": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Undergrowth scatters through the new ExtractionShip's hull at MereShore \u2014 the offline plant pass has no way to know about a marker-bridge's runtime-built geometry"
     }
   },
   "version": 1

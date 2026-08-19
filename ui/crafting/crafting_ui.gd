@@ -24,6 +24,8 @@ const COLOUR_READY := Color(0.894, 0.704, 0.286, 1.0)
 const COLOUR_TEXT := Color(0.91, 0.94, 0.89, 1.0)
 const COLOUR_MUTED := Color(0.60, 0.69, 0.62, 1.0)
 const COLOUR_ERROR := Color(0.96, 0.47, 0.39, 1.0)
+## F-209: keyboard/gamepad focus ring, distinct from COLOUR_READY (the row's own "craftable" border).
+const COLOUR_FOCUS := Color(0.55, 0.85, 0.95, 1.0)
 
 
 ## One registered recipe. Rebuilt in place from the authoritative snapshot; never mutated locally.
@@ -91,6 +93,18 @@ class RecipeRow extends PanelContainer:
 		return _craft_button
 
 
+	## Button draws its own "focus" theme stylebox natively (unlike a bare PanelContainer), so this
+	## override is all a row needs — no focus_entered/exited plumbing like InventorySlot's.
+	func _focus_style() -> StyleBoxFlat:
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+		style.draw_center = false
+		style.border_color = COLOUR_FOCUS
+		style.set_border_width_all(2)
+		style.set_corner_radius_all(6)
+		return style
+
+
 	func _build_contents(recipe: RecipeDef) -> void:
 		_content_margin = MarginContainer.new()
 		_content_margin.add_theme_constant_override("margin_left", 14)
@@ -137,6 +151,7 @@ class RecipeRow extends PanelContainer:
 		_craft_button.text = "CRAFT"
 		_craft_button.custom_minimum_size = Vector2(104.0, 36.0)
 		_craft_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		_craft_button.add_theme_stylebox_override("focus", _focus_style())
 		_craft_button.pressed.connect(_on_pressed)
 		button_center.add_child(_craft_button)
 
@@ -287,6 +302,8 @@ func set_open(open: bool) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		_show_status("Craft from the workbench. The host confirms every craft.", false)
 		_refresh_rows()
+		if not _rows.is_empty():
+			_rows[0].craft_button().grab_focus()
 	else:
 		remove_from_group(BLOCKING_UI_GROUP)
 		_root.release_focus()
@@ -442,6 +459,16 @@ func _build_ui() -> void:
 	prompt_margin.add_child(_prompt_label)
 
 
+func _wire_vertical_chain(controls: Array) -> void:
+	var count: int = controls.size()
+	for i: int in count:
+		var current: Control = controls[i]
+		var prev: Control = controls[(i - 1 + count) % count]
+		var next: Control = controls[(i + 1) % count]
+		current.focus_neighbor_top = current.get_path_to(prev)
+		current.focus_neighbor_bottom = current.get_path_to(next)
+
+
 func _panel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = COLOUR_PANEL
@@ -490,6 +517,19 @@ func _rebuild_rows(station_id: StringName) -> void:
 		_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_empty_label.add_theme_color_override("font_color", COLOUR_MUTED)
 		_row_box.add_child(_empty_label)
+
+	# F-209: rows are torn down and rebuilt whenever the station identity changes (a fresh RecipeRow
+	# per recipe, never reused — see this function's own doc comment above), so the focus chain has
+	# to be rewired every time too, not just once at _build_ui() time. Re-grabbing focus only when
+	# already open covers the "walked straight from one station into another's range" case
+	# poll_station() describes, where the panel never closes across the switch.
+	if not _rows.is_empty():
+		var buttons: Array = []
+		for row: RecipeRow in _rows:
+			buttons.append(row.craft_button())
+		_wire_vertical_chain(buttons)
+		if _open:
+			_rows[0].craft_button().grab_focus()
 
 	_apply_responsive_layout()
 

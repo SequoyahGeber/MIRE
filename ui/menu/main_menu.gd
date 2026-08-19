@@ -104,6 +104,7 @@ func set_open(open: bool) -> void:
 		_restore_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		_refresh()
+		_seed_field.grab_focus()
 	else:
 		remove_from_group(BLOCKING_UI_GROUP)
 		_root.release_focus()
@@ -327,6 +328,29 @@ func _build_ui() -> void:
 	close_hint.add_theme_color_override("font_color", COLOUR_MUTED)
 	stack.add_child(close_hint)
 
+	# F-209: gamepad/keyboard focus navigation. Opening grabs _seed_field (set_open() above); this
+	# wires the D-pad/arrow chain down the visible order, wrapping top<->bottom, plus the seed
+	# row's SET button as an off-chain left/right hop. Godot's Slider/OptionButton/Button already
+	# answer ui_accept/ui_left/ui_right once focused — only the chain and a visible ring were missing.
+	_seed_field.add_theme_stylebox_override("focus", _focus_style())
+	_wire_vertical_chain([
+		_seed_field, _random_seed_button, _multiplayer_button,
+		_settings_button, _unlocks_button, _quit_button,
+	])
+	_seed_field.focus_neighbor_right = _seed_field.get_path_to(_set_seed_button)
+	_set_seed_button.focus_neighbor_left = _set_seed_button.get_path_to(_seed_field)
+	_set_seed_button.focus_neighbor_bottom = _set_seed_button.get_path_to(_random_seed_button)
+
+
+func _wire_vertical_chain(controls: Array) -> void:
+	var count: int = controls.size()
+	for i: int in count:
+		var current: Control = controls[i]
+		var prev: Control = controls[(i - 1 + count) % count]
+		var next: Control = controls[(i + 1) % count]
+		current.focus_neighbor_top = current.get_path_to(prev)
+		current.focus_neighbor_bottom = current.get_path_to(next)
+
 
 func _button(text: String, on_pressed: Callable) -> Button:
 	var button := Button.new()
@@ -335,8 +359,22 @@ func _button(text: String, on_pressed: Callable) -> Button:
 	button.add_theme_stylebox_override("normal", _field_style(COLOUR_FIELD, COLOUR_BORDER))
 	button.add_theme_stylebox_override("hover", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
 	button.add_theme_stylebox_override("pressed", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
+	button.add_theme_stylebox_override("focus", _focus_style())
 	button.pressed.connect(on_pressed)
 	return button
+
+
+## Visible focus ring (F-209) — a transparent-fill outline drawn as Button/LineEdit's "focus"
+## stylebox layer on top of normal/hover/pressed, since none of these controls override the
+## engine default focus style, which is easy to miss against a dark panel background.
+func _focus_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+	style.draw_center = false
+	style.border_color = COLOUR_ACCENT
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(5)
+	return style
 
 
 func _panel_style() -> StyleBoxFlat:

@@ -22,6 +22,11 @@ const COLOUR_SELECTED := Color(0.894, 0.704, 0.286, 1.0)
 const COLOUR_TEXT := Color(0.91, 0.94, 0.89, 1.0)
 const COLOUR_MUTED := Color(0.60, 0.69, 0.62, 1.0)
 const COLOUR_ERROR := Color(0.96, 0.47, 0.39, 1.0)
+## F-209: keyboard/gamepad focus ring and carried-stack indicator — distinct hues from
+## COLOUR_SELECTED (the hotbar's own gold "currently active" marker) so a focused-but-not-selected
+## slot and a slot being carried never read as the same state.
+const COLOUR_FOCUS := Color(0.55, 0.85, 0.95, 1.0)
+const COLOUR_CARRY := Color(0.95, 0.95, 0.85, 1.0)
 
 
 class InventorySlot extends PanelContainer:
@@ -32,6 +37,7 @@ class InventorySlot extends PanelContainer:
 	var amount: int = 0
 	var move_requested: Callable
 	var selected_requested: Callable
+	var activate_requested: Callable
 
 	var _key_label: Label
 	var _icon: TextureRect
@@ -42,7 +48,12 @@ class InventorySlot extends PanelContainer:
 	var _base_style: StyleBoxFlat
 	var _hover_style: StyleBoxFlat
 	var _selected_style: StyleBoxFlat
+	var _focus_style_box: StyleBoxFlat
+	var _carry_style: StyleBoxFlat
 	var _selected: bool = false
+	var _hovering: bool = false
+	var _has_focus: bool = false
+	var _carried: bool = false
 
 
 	func setup(
@@ -50,22 +61,27 @@ class InventorySlot extends PanelContainer:
 		display_index: int,
 		is_hotbar_slot: bool,
 		move_callback: Callable,
-		select_callback: Callable
+		select_callback: Callable,
+		activate_callback: Callable
 	) -> void:
 		slot_index = authority_index
 		view_index = display_index
 		hotbar_slot = is_hotbar_slot
 		move_requested = move_callback
 		selected_requested = select_callback
+		activate_requested = activate_callback
 		name = ("HotbarSlot%d" if hotbar_slot else "InventorySlot%d") % display_index
 		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		focus_mode = Control.FOCUS_ALL
 		_build_contents()
 		_build_styles()
+		focus_entered.connect(func() -> void: _has_focus = true; _update_style())
+		focus_exited.connect(func() -> void: _has_focus = false; _update_style())
 
 
-	func present(slot: Dictionary, item: ItemDef, selected: bool) -> void:
+	func present(slot: Dictionary, item: ItemDef, selected: bool, carried: bool = false) -> void:
 		_selected = selected
+		_carried = carried
 		item_id = StringName(String(slot.get("item_id", "")))
 		amount = int(slot.get("amount", 0))
 		set_meta(&"item_id", item_id)
@@ -90,10 +106,11 @@ class InventorySlot extends PanelContainer:
 				item.description if item != null and not item.description.is_empty() else String(item_id),
 			]
 
-		add_theme_stylebox_override("panel", _selected_style if selected else _base_style)
+		_update_style()
 		var region_name: String = "Hotbar" if hotbar_slot else "Inventory"
-		accessibility_name = "%s, %s slot %d" % [
-			tooltip_text.replace("\n", ", "), region_name, view_index + 1
+		var carry_suffix: String = ", carrying — press again here to cancel" if carried else ""
+		accessibility_name = "%s, %s slot %d%s" % [
+			tooltip_text.replace("\n", ", "), region_name, view_index + 1, carry_suffix
 		]
 
 
@@ -153,13 +170,38 @@ class InventorySlot extends PanelContainer:
 			and (event as InputEventMouseButton).pressed
 		):
 			selected_requested.call(view_index)
+			return
+		# F-209: the gamepad/keyboard equivalent to _get_drag_data/_drop_data's mouse-only drag —
+		# ui_accept on an item "picks it up" (activate_requested runs InventoryUI._on_slot_activated,
+		# which tracks the carried index), and ui_accept again on a destination slot drops it there
+		# through the same request_slot_move() path a real drop would have used.
+		if event.is_action_pressed(&"ui_accept"):
+			activate_requested.call(slot_index)
+			accept_event()
 
 
 	func _notification(what: int) -> void:
-		if what == NOTIFICATION_MOUSE_ENTER and not _selected:
-			add_theme_stylebox_override("panel", _hover_style)
+		if what == NOTIFICATION_MOUSE_ENTER:
+			_hovering = true
+			_update_style()
 		elif what == NOTIFICATION_MOUSE_EXIT:
-			add_theme_stylebox_override("panel", _selected_style if _selected else _base_style)
+			_hovering = false
+			_update_style()
+
+
+	## Priority when more than one state is true at once: carried (this stack is mid-move) beats
+	## keyboard/gamepad focus beats the hotbar's own "currently selected" marker beats a mouse hover.
+	func _update_style() -> void:
+		var style: StyleBoxFlat = _base_style
+		if _hovering:
+			style = _hover_style
+		if _selected:
+			style = _selected_style
+		if _has_focus:
+			style = _focus_style_box
+		if _carried:
+			style = _carry_style
+		add_theme_stylebox_override("panel", style)
 
 
 	func _build_contents() -> void:
@@ -217,6 +259,8 @@ class InventorySlot extends PanelContainer:
 		_base_style = _slot_style(COLOUR_SLOT, COLOUR_BORDER, 1)
 		_hover_style = _slot_style(COLOUR_SLOT_HOVER, COLOUR_SELECTED, 1)
 		_selected_style = _slot_style(COLOUR_SLOT, COLOUR_SELECTED, 3)
+		_focus_style_box = _slot_style(COLOUR_SLOT, COLOUR_FOCUS, 3)
+		_carry_style = _slot_style(COLOUR_SLOT_HOVER, COLOUR_CARRY, 3)
 		add_theme_stylebox_override("panel", _base_style)
 
 
@@ -252,6 +296,9 @@ var _snapshot: Array[Dictionary] = []
 var _inventory_open: bool = false
 var _selected_hotbar_index: int = 0
 var _restore_mouse_captured: bool = false
+## F-209: authority index currently "picked up" by the gamepad/keyboard equivalent of drag-and-drop,
+## or -1 when nothing is carried. See InventorySlot._gui_input's ui_accept branch.
+var _carrying_index: int = -1
 
 
 func _ready() -> void:
@@ -313,9 +360,12 @@ func set_open(open: bool) -> void:
 		_restore_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		_status_label.text = "Drag a stack onto another slot to move or merge it."
+		if not _hotbar_slots.is_empty():
+			_hotbar_slots[_selected_hotbar_index].grab_focus()
 	else:
 		remove_from_group(BLOCKING_UI_GROUP)
 		_root.release_focus()
+		_carrying_index = -1
 		if _restore_mouse_captured:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
@@ -331,6 +381,13 @@ func select_hotbar_slot(index: int) -> void:
 
 func selected_hotbar_slot() -> int:
 	return _selected_hotbar_index
+
+
+## The authority slot index currently picked up by the gamepad/keyboard pick-up-and-drop flow
+## (F-209), or -1 when nothing is carried. Exposed for the same reason every other bit of this file's
+## public API exists: a check drives the real _on_slot_activated() path and asserts on this directly.
+func carrying_slot_index() -> int:
+	return _carrying_index
 
 
 func request_slot_move(from_index: int, to_index: int, amount: int = 0) -> int:
@@ -438,7 +495,7 @@ func _build_ui() -> void:
 
 	for index: int in INVENTORY_SLOT_COUNT:
 		var slot := InventorySlot.new()
-		slot.setup(index, index, false, _on_move_requested, _on_hotbar_selected)
+		slot.setup(index, index, false, _on_move_requested, _on_hotbar_selected, _on_slot_activated)
 		_inventory_slots.append(slot)
 		_inventory_grid.add_child(slot)
 
@@ -485,7 +542,8 @@ func _build_ui() -> void:
 	for index: int in HOTBAR_SLOT_COUNT:
 		var slot := InventorySlot.new()
 		slot.setup(
-			HOTBAR_START_INDEX + index, index, true, _on_move_requested, _on_hotbar_selected
+			HOTBAR_START_INDEX + index, index, true,
+			_on_move_requested, _on_hotbar_selected, _on_slot_activated
 		)
 		_hotbar_slots.append(slot)
 		hotbar_row.add_child(slot)
@@ -511,11 +569,13 @@ func _refresh_slots() -> void:
 	for index: int in _inventory_slots.size():
 		var authority_index: int = _inventory_slots[index].slot_index
 		var slot: Dictionary = _snapshot[authority_index] if authority_index < _snapshot.size() else {}
-		_inventory_slots[index].present(slot, _item_for(slot), false)
+		_inventory_slots[index].present(slot, _item_for(slot), false, authority_index == _carrying_index)
 	for index: int in _hotbar_slots.size():
 		var authority_index: int = _hotbar_slots[index].slot_index
 		var slot: Dictionary = _snapshot[authority_index] if authority_index < _snapshot.size() else {}
-		_hotbar_slots[index].present(slot, _item_for(slot), index == _selected_hotbar_index)
+		_hotbar_slots[index].present(
+			slot, _item_for(slot), index == _selected_hotbar_index, authority_index == _carrying_index
+		)
 
 
 func _item_for(slot: Dictionary) -> ItemDef:
@@ -529,6 +589,32 @@ func _on_move_requested(from_index: int, to_index: int) -> void:
 
 func _on_hotbar_selected(index: int) -> void:
 	select_hotbar_slot(index)
+
+
+## F-209: the gamepad/keyboard equivalent of drag-and-drop. First ui_accept on an occupied slot
+## picks it up; a second ui_accept on a different slot drops it there through the real
+## request_slot_move() path (identical to what InventorySlot._drop_data sends for a mouse drag), and
+## ui_accept again on the SAME slot cancels the pickup instead of moving it onto itself.
+func _on_slot_activated(slot_index: int) -> void:
+	if _carrying_index == -1:
+		if _item_id_for_slot(slot_index) == &"":
+			return
+		_carrying_index = slot_index
+		_show_status("Carrying — select another slot and press again to move it, or press here to cancel.", false)
+	elif _carrying_index == slot_index:
+		_carrying_index = -1
+		_show_status("Drag a stack onto another slot to move or merge it.", false)
+	else:
+		var from_index: int = _carrying_index
+		_carrying_index = -1
+		request_slot_move(from_index, slot_index)
+	_refresh_slots()
+
+
+func _item_id_for_slot(slot_index: int) -> StringName:
+	if slot_index < 0 or slot_index >= _snapshot.size():
+		return &""
+	return StringName(String(_snapshot[slot_index].get("item_id", "")))
 
 
 func _on_operation_confirmed(_request_id: int, accepted: bool, detail: String) -> void:
@@ -557,3 +643,45 @@ func _apply_layout_for_width(viewport_width: float) -> void:
 	var hotbar_slot_px: float = clampf((available_hotbar_width - 54.0) / HOTBAR_SLOT_COUNT, 38.0, 62.0)
 	for slot: InventorySlot in _hotbar_slots:
 		slot.set_slot_size(hotbar_slot_px)
+
+	_wire_focus_neighbors()
+
+
+## F-209: explicit wiring rather than Godot's automatic geometric focus-neighbor search, because the
+## grid (GridContainer, 8 or 6 columns depending on this function's narrow check above) and the
+## hotbar (a separate HBoxContainer anchored to the bottom of the screen) live in different container
+## trees — an automatic search has no guarantee of picking the intended row/column across that
+## boundary. INVENTORY_SLOT_COUNT (24) divides evenly by both DESKTOP_INVENTORY_COLUMNS (8) and
+## NARROW_INVENTORY_COLUMNS (6), so every row is complete — no ragged-last-row case to special-case.
+## Re-run every time the column count can change, not just once at boot.
+func _wire_focus_neighbors() -> void:
+	var columns: int = _inventory_grid.columns
+	var count: int = _inventory_slots.size()
+	if columns <= 0 or count == 0 or _hotbar_slots.is_empty():
+		return
+	var rows: int = count / columns
+	for i: int in count:
+		var slot: InventorySlot = _inventory_slots[i]
+		var row: int = i / columns
+		var col: int = i % columns
+		var row_start: int = row * columns
+		var hotbar_col: int = mini(col, _hotbar_slots.size() - 1)
+		slot.focus_neighbor_left = slot.get_path_to(_inventory_slots[row_start + (col - 1 + columns) % columns])
+		slot.focus_neighbor_right = slot.get_path_to(_inventory_slots[row_start + (col + 1) % columns])
+		slot.focus_neighbor_top = slot.get_path_to(
+			_hotbar_slots[hotbar_col] if row == 0 else _inventory_slots[i - columns]
+		)
+		slot.focus_neighbor_bottom = slot.get_path_to(
+			_hotbar_slots[hotbar_col] if row == rows - 1 else _inventory_slots[i + columns]
+		)
+	var hotbar_count: int = _hotbar_slots.size()
+	for i: int in hotbar_count:
+		var hotbar_slot: InventorySlot = _hotbar_slots[i]
+		var grid_col: int = mini(i, columns - 1)
+		hotbar_slot.focus_neighbor_left = \
+			hotbar_slot.get_path_to(_hotbar_slots[(i - 1 + hotbar_count) % hotbar_count])
+		hotbar_slot.focus_neighbor_right = \
+			hotbar_slot.get_path_to(_hotbar_slots[(i + 1) % hotbar_count])
+		hotbar_slot.focus_neighbor_top = \
+			hotbar_slot.get_path_to(_inventory_slots[(rows - 1) * columns + grid_col])
+		hotbar_slot.focus_neighbor_bottom = hotbar_slot.get_path_to(_inventory_slots[grid_col])
