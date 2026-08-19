@@ -484,6 +484,73 @@ directly with that id, rather than going through the local-actor-assuming
 
 ---
 
+### F-229 · `docs/SPECS.md` cites "D-095" twice for decisions that actually landed as D-096 and D-097 — both references now point at task 4.7's unrelated POI-placement decision
+
+**Area:** docs · **Severity:** low · **Found:** 2026-08-19 by lm during 4.7-review
+
+`docs/SPECS.md:1617` (task 5.1, AI framework) reads "as data on `EnemyDef` rather than by extracting
+a swappable brain class (**D-095** — one shape is still the only shape any content needs...)" — the
+actual decision with that rationale is `docs/DECISIONS.md` **D-097**
+("Task 5.1's AI framework generalises `Enemy` with `EnemyDef` fields, not a swappable
+`enemy_brain.gd`..."). Separately, `docs/SPECS.md:2889` (the F-139 `ChunkStreamer` contract) reads
+"...a single merged position list) is still F-139's own open design space. **D-095** records why no
+new API was added" — that decision is actually `docs/DECISIONS.md` **D-096**
+("F-132's fix is a calling contract, not a new `ChunkStreamer`/`ResourceScatterField` API"). The
+commit that added the second reference (`ee0b45f`) even titled itself "F-132 docs: resolve (D-096's
+no-new-API call)" — the commit message has the right number, only the prose body typo'd D-095.
+
+Both typos predate task 4.7 (`git log -L` on each line traces to `e8f64cb` and `ee0b45f`, both
+before `05d4330`). They collided with 4.7 only because D-095 happened to be the next free slot in
+`docs/DECISIONS.md` when 4.7 filed its own, real D-095 (POI placement's Poisson-disc/priority/two-
+radii decision) — that entry is correctly numbered and not itself at fault. The concrete failure: an
+agent reading either SPECS.md line and looking up D-095 now finds a page about Wellspring spacing
+instead of the AI-framework or ChunkStreamer decision they were pointed at — the same
+misdirection-by-stale-number shape as the F-153/D-093 collision noted in the 3.16 review.
+
+**Not fixed here** (review-only task). Fix is mechanical: `docs/SPECS.md:1617` "D-095" → "D-097",
+`docs/SPECS.md:2889` "D-095" → "D-096".
+
+---
+
+### F-230 · `FunctionRunner.effective_scope()` uses a dynamic-scope command's DECLARED max scope, not the actual scope of the line as written — a pure-LOCAL line silently forces its whole function to HOST
+
+**Area:** commands · **Severity:** medium · **Found:** 2026-08-19 by lp during 3.17-review
+
+`systems/commands/function_runner.gd:696-714`'s `effective_scope()` computes a `.mcmd` function's
+routing scope per COMMANDS.md §5.1 ("effective scope is the max of its lines' scopes"). For a normal
+line it calls `scope_of_command.call(head)` — `CommandService.scope_of()`
+(`autoload/command_service.gd:167`) — which for any D-086 dynamic-scope command (`time`, `rule`,
+`function`, and 3.15's entity verbs) always returns `&"host"`, its declared MAXIMUM, regardless of
+that line's own arguments (`_declared_scope()`: "a dynamic-scope command reports &host, its maximum
+... the honest thing to tell someone reading the list"). That is correct for the command-listing use
+`scope_of()` was written for, but `effective_scope()` reuses it to judge one CONCRETE line, where the
+args are already known and D-086's whole mechanism (`_invocation_scope()`) exists precisely to tell
+`time query` (LOCAL) apart from `time set 0.5` (HOST) from those args.
+
+Concrete failure, reproduced live: `command_service.register_function(&"test_time_query_only",
+PackedStringArray(["time query"]))`, then as a non-op peer — `execute("time query", ctx)` directly
+returns `ok=true` (`"time 0.3481 (morning), day length 900s"`), but `execute("function
+test_time_query_only", ctx)` returns `ok=false, "not op — ask the host to op <peer> you first"`. The
+identical, harmless, read-only command is refused the moment it is wrapped in a function, because
+`effective_scope()` sees `time`'s declared max (host) instead of this line's actual invocation scope
+(local). Any future `.mcmd` author — COMMANDS.md §5.1 explicitly sells this surface as "Sequoyah
+authors scenarios for free, no code" — who writes a function containing only bare `time query`,
+`rule <id>` (a read), or a bare selector-listing `tag`/`tp` line will find a non-op can never run it,
+with no indication the function itself does nothing but read state. Not a security hole (it only ever
+over-restricts, never under-restricts — a genuinely HOST line can never be misclassified LOCAL by the
+same `&"host"`-is-the-max reasoning), and no shipped content hits it (`night_siege.mcmd`'s one line is
+`wave start 10`, `dev_scenario.mcmd`'s three lines are `give`/`spawn`/`enemies` — none of the four
+dynamic-scope command names), so it survives for now, but it is a real correctness gap in the
+mechanism `tools/function_check.gd` never exercises (its own dynamic-scope test uses `items` and
+`give branch 1`, both fixed-scope, never a dynamic-scope command's LOCAL invocation form as a line).
+
+**Not fixed here** (review-only task). Likely fix: `effective_scope()` needs a per-line invocation-
+scope resolver instead of the declared-max `scope_of` — e.g. pass `CommandService._invocation_scope`
+(or a thin wrapper reading `_specs`) so a line already known to be `time query` resolves against its
+own raw args the same way top-level dispatch does, not against `time`'s worst case.
+
+---
+
 ## Resolved
 
 ### F-227 · SalvageService's reward-curve comment states the wrong numbers — mismatches the formula it documents and its own SPECS.md block — **fixed**
