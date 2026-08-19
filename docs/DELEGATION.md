@@ -75,6 +75,53 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 4.11: the Mire's four world consumers ship — rotted yields, Blight debuff, corrupted spawn tables, Ward resistance (lm)
+
+Built directly on 4.9's `MireGrid.corruption_at()`, done immediately before this in the same
+session (see that entry above and D-099 for why the two shipped out of roadmap order). `agent godot
+--script tools/mire_interaction_check.gd` — 12 assertions, 0 failures, two consecutive runs. No
+regressions: `build_check.gd`, `inventory_check.gd`, `player_health_check.gd`,
+`wave_spawner_check.gd` and `mire_grid_check.gd` all still 0 failures.
+
+**Rotted resource yields** (`autoload/inventory_service.gd`, `_on_harvest_yielded`): corruption at
+the harvest's `world_position` scales a yield reduction, up to `ROT_LOSS_FRACTION` (0.6) of the
+amount at full corruption, never below 1 for a positive yield. Reduction only, never a substitute
+item — no new item exists to substitute in, and authoring one was out of this task's scope (D-073).
+
+**Blight debuff** (`systems/health/player_health.gd`): a new `_tick_blight()`, called from the same
+per-peer loop `_tick_hunger()` already runs in, applies hp drain through
+`DownedState.apply_damage()` — the exact transition path starvation already uses — whenever
+`MireGrid.corruption_at(body.global_position)` is at or above `BLIGHT_CORRUPTION_THRESHOLD` (0.15).
+Fractional damage accumulates across ticks (`_blight_accum`, same shape as `_starvation_accum`,
+cleared in every place that one is).
+
+**Corrupted spawn tables** (`systems/waves/wave_spawner.gd` + new `content/enemies/bog_crawler.tres`):
+`_spawn_one()` now routes every spawn position through `_corrupted_enemy_id_for()`, which
+substitutes `bog_crawler` for the default `enemy_id` slot with probability
+`corruption * CORRUPTED_SPAWN_CAP_PROBABILITY` (0.75 ceiling — never certainty). Applies to BOTH the
+ambient/dusk wave and 4.8's `host_spawn_wave_at()` position-override callers, since both request the
+same default slot. `bog_crawler` reuses `enemy_crawler.glb` (no new art authored — this task is
+mechanics, not asset authoring) with harder stats: `max_health 20` (was 12), `move_speed 3.6` (was
+4.4), `attack_damage 9` (was 6). **It looks IDENTICAL to a normal crawler today** — filed as F-158,
+a real gap for 4.10 (Mire visuals) or a later VFX pass, not something this task's scope covered.
+
+**Ward resistance** (`autoload/build_service.gd`, new `ward_radii()` + `_wire_mire_grid()`):
+`BuildService` now walks its own `_placed` pieces each call, returning `{position: Vector2, radius:
+float}` for every one whose def `is_ward()`, and wires itself into
+`MireGrid.set_ward_circles_provider()` via a `call_deferred()` in `_ready()` — deferred because
+`MireGrid` registers AFTER `BuildService` in `project.godot`, so `/root/MireGrid` does not exist yet
+during `BuildService._ready()` itself; by the time a deferred call runs, every autoload's `_ready()`
+has already completed. `MireGridSim`'s own ward-suppression math (`tick()`'s `ward_circles` param)
+was already proven correct by `tools/mire_grid_check.gd` in 4.9 — this task's own check instead
+proves the NEW wiring: a piece placed through `BuildService` really does reach the provider
+`MireGrid`'s tick calls.
+
+**Every new numeric constant here is placeholder-tuned**, same status as `MireGrid.BASE_SPREAD_RATE`
+and `IslandHeightmap.HEIGHT_SCALE`: `BLIGHT_CORRUPTION_THRESHOLD`, `BLIGHT_HP_DRAIN_PER_SEC_AT_FULL_
+CORRUPTION`, `ROT_LOSS_FRACTION`, `CORRUPTED_SPAWN_CAP_PROBABILITY`. None of these have a playtest
+behind them yet — 4.12 is that playtest, and it now has a complete (if unskinned) Mire loop to test
+against even though 4.10's visuals are still `todo`.
+
 ### 2026-08-18 — Task 4.9: the Mire grid ships — host-authoritative diffusion sim, replicated through 4.6's `WorldDeltaLog`, no new RPC (lm)
 
 **Why this shipped now instead of when the roadmap ordered it:** the 4.11 work order assumed 4.9

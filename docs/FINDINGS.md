@@ -69,6 +69,24 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-158 · `bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler
+
+**Area:** content/vfx · **Severity:** low · **Found:** 2026-08-19 by lm during 4.11
+
+Task 4.11 wired `systems/waves/wave_spawner.gd` to substitute `content/enemies/bog_crawler.tres`
+for the default `crawler` slot with a probability that scales with `MireGrid` corruption at the
+spawn point — the "corrupted spawn tables" SPECS.md 4.11 asks for. `bog_crawler` reuses
+`enemy_crawler.glb` as-is (tankier/slower/harder-hitting stats only; no new art was authored — 4.11
+is mechanics, not asset authoring, and content is hand-authored one asset at a time per D-073). The
+result is mechanically real but **invisible to a player**: a bog_crawler and a crawler currently
+render, animate and sound completely identically, so nothing on screen tells a player the Mire has
+made this fight harder until it already has.
+
+Task 4.10 (Mire visuals — shader tint, fog, particles) is the natural owner of a fix: even a simple
+material tint or a corruption-VFX attachment on `bog_crawler`'s instance would close this. Filing
+rather than fixing here because 4.10 hasn't shipped yet and this task's own scope was the mechanic,
+not the skin.
+
 ### F-151 · `ui/loot/chest_ui.gd` was never registered, so no chest in the game could be opened — **fixed**
 
 **Area:** ui · **Severity:** high · **Found:** 2026-08-18 by slate17 during 3.7
