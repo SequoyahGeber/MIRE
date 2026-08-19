@@ -4773,6 +4773,55 @@ No regressions: `build_check.gd`, `build_net_check.gd`, `combat_check.gd` all `f
 
 ---
 
+### 2026-08-19 — Player display names: `NetTransport` owns the registry, `CommandService._parse_peer()` consumes it (F-157, closes F-126/D-098's deferred half)
+
+`NetTransport` now holds the canonical peer id → display name map F-126/D-098 said belonged there.
+Public API, all on the `NetTransport` autoload:
+
+- `display_name(peer_id: int) -> String` — that peer's name, or a `"Player N"` placeholder if it has
+  none yet (in flight, or nobody ever named it — offline/solo included).
+- `display_names() -> Dictionary` — the whole map as this process currently knows it. The HOST's copy
+  is authoritative; every other peer's is a mirror kept current by the two RPCs below, so a caller
+  wanting a snapshot for its own UI (a lobby roster, a kill-feed) can read this on ANY peer, not just
+  the host.
+- `submit_display_name(name: String) -> void` — set/change THIS process's own name. `host()`/the
+  client's `connected_to_host` handler already call it once with a computed default (STEAM: threads
+  through `SteamLobby.local_persona_name()`, new this task, `_persona(local_steam_id())` under a
+  not-yet-initialised guard; LOCAL/LAN: `OS.get_environment("USERNAME")`/`"USER"`). **No name-entry UI
+  exists yet** — a future settings/lobby screen calls this again with whatever the player typed; there
+  is nothing else to wire.
+- `display_name_changed(peer_id: int, display_name: String)` signal — fires on every peer whenever an
+  entry in the map changes, same shape as the existing `peer_joined`/`peer_left`.
+
+Wire shape: `net_request_display_name` (client → host, one raw String — sanitized ONLY on the host,
+`_sanitize_display_name()`: strip control chars, trim, cap at 24, empty → `"Player N"`),
+`net_display_name_changed` (host → every remote peer, one id + its sanitized result — reaches the
+peer being renamed too, since its own mirror needs the SANITIZED value, which may differ from what it
+sent), `net_display_name_snapshot` (host → one newly admitted peer, the full map, sent from `_add_peer`
+right when the host admits them — so a joiner sees existing names without waiting on a resubmit).
+
+**Two peers may share a name — the registry does not dedupe.** `CommandService._resolve_peer_by_name()`
+(new, the name half of `_parse_peer()` docs/COMMANDS.md §2.2 always specified) does an exact
+case-insensitive match; zero matches refuses `"no peer named '<x>'"`, more than one refuses and lists
+every candidate peer id (`"'<x>' matches more than one peer (1, 4821771) — use their peer id"`), never
+guesses. Full reasoning: `docs/DECISIONS.md` D-120.
+
+**Ships without a `PROTOCOL_VERSION` bump** — `core/net/net_version.gd`/`tools/handshake_check.gd` were
+held by another lane's claim (`slate17`, 3.7) for this task's whole session, the same recurring gap
+D-102/F-161/F-165/F-169 already hit. Filed as **F-178**, continuing that chain.
+
+**Also touched:** `ui/debug/net_debug_panel.gd` — the session line and join/left log lines now show
+`id(name)` instead of a bare id, one of the two consumers F-157's own text named as still printing raw
+ids with nothing to resolve against.
+
+**Verify:** `agent godot --script tools/display_name_check.gd` — new file, real two-process ENet round
+trip (submission → sanitized broadcast → snapshot → name-based `op` resolution, case-insensitive →
+ambiguous-match refusal), 11/11 PASS. `tools/command_check.gd`'s "peer arg type" section updated for
+the new refusal wording, `COMMAND_CHECK failures=0`. Regression: `command_net_check.gd`,
+`net_debug_panel_check.gd`, `verify_setup.gd` all clean.
+
+---
+
 > **Historical documents — every task prompt from here down.** They predate D-021 (agents register
 > their own autoloads), D-031 (agents may edit Godot-authored files under exact claim), D-039 (do it
 > yourself rather than handing it back) and the D-036 lane system. Where a prompt says

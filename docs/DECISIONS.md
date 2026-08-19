@@ -3287,3 +3287,40 @@ a solo player can actually use to set this before world-gen ever runs.
 should route solo seed entry through its own gate (an in-game field, same UX as `MainMenu`'s host
 path) and can retire this launch argument or keep it alongside as a power-user shortcut; either is
 that task's call, not a reason to hold this one back until it exists.
+
+### D-120 · 2026-08-19 · F-157's display-name registry: sanitize on the host only, allow duplicate names and refuse an ambiguous `peer` resolution rather than guess, ship without a `PROTOCOL_VERSION` bump
+
+D-098 already named the owner (`NetTransport`) and the shape (host-authoritative map, threaded from
+`SteamLobby._persona()` in STEAM mode, a new client→host RPC for LOCAL/LAN) — this records the three
+calls D-098 left open plus the recurring one it flagged as a precondition.
+
+**1. Sanitize once, on the host, never on the sender.** `_sanitize_display_name()` strips control
+characters, trims edges, and caps at 24 characters, and it runs ONLY inside
+`NetTransport._host_apply_display_name()`. A client's own submission is never trusted raw — same
+stance `_parse_args`'s "the host re-parses the raw line from scratch" already takes for commands
+(D-078) and `BuildService` takes for a placement transform (D-034's neighbor). The 24-char cap is a
+UI-fit number (a roster line, a kill-feed entry), not a security boundary; there was nothing in
+`ARCHITECTURE.md`/`DESIGN.md` to derive a "correct" number from, so this is a judgment call, not a
+measurement — easy to raise later if a real name-entry UI wants more room.
+
+**2. Duplicate names are allowed, not deduplicated, and an ambiguous `peer` lookup refuses rather than
+picking one.** Rejecting a second player's chosen name because someone else already has it would need
+its own UX (a rename prompt, a forced suffix) that nothing asked for and this task has no mandate to
+invent. Instead `CommandService._resolve_peer_by_name()` treats two connected peers sharing a name as
+a genuine ambiguity and refuses with both candidate ids listed — the same "never guess" stance the
+selector grammar's own `@r` (random pick) is the sole deliberate exception to (`docs/COMMANDS.md`
+§3.2). A refusal that names the exact peer ids is one keystroke away from working (`op 4821771` instead
+of `op Rowan`); a silent wrong pick is not recoverable at all.
+
+**3. Ships without a `PROTOCOL_VERSION` bump — `core/net/net_version.gd` was held by another lane's
+claim (`slate17`, task 3.7) for this task's entire session,** the same contention D-102 (task 5.3) and
+its two repeats (F-165/F-169) already hit and accepted as a transient risk given this project ships
+from one evolving source tree, not staggered binaries. Filed as F-178 to carry the bump forward,
+continuing that same chain rather than inventing a fourth differently-worded finding for an
+identical root cause.
+
+**Would change my mind:** a real name-entry UI landing and wanting names longer than 24 characters —
+raising the cap is a one-constant change, not a design reversal. A future task that wants collision-
+proof identifiers (an achievement system, a save file keyed by name) should key on the peer id or a
+persistent account id, never on display name — this decision does not make display names unique and
+nothing should assume they are.
