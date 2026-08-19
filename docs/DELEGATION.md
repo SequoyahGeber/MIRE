@@ -75,6 +75,42 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 4.14: every island gets its river — analytic, carved, monotonically downhill (yarrow21)
+
+**What shipped, verified:** the river layer in `world/gen/island_heightmap.gd` (D-142's recipe,
+final terrain item before the erosion spike). One river per island, guaranteed: a **seeded
+polyline** (source pulled inside the farthest-reaching lobe, two seeded bends, mouth overshot past
+the coast), carved into BOTH `continent()` and `height()` by `min(surface, channel)` — so a ridge
+crossing the corridor becomes a gorge, and biomes resolve the valley floor as low ground with no
+special casing (D-144 holds). Bed runs linear source→below-sea; the carve rides a **steepened**
+island mask (`smoothstep(0, 0.35, mask)`).
+
+**The trap that steepened the mask, worth remembering:** blending the carve by the RAW mask let
+every interior mask dip (a warped-inland coastal notch, a lobe seam) weaken the channel mid-river —
+the bed popped up over the notch, i.e. water flowed uphill. `terrain_check`'s monotonic-bed walk
+caught it on the first run. If you add a landform that blends by mask, ask what happens where the
+mask dips *inland*.
+
+**APIs:**
+```gdscript
+IslandHeightmap.river_polyline(world_seed) -> PackedVector2Array   # 4 design-space points
+# the carve itself is internal to continent()/height() — callers see only the carved surface
+```
+Per-sample cost: zero new noise builds (`continent()`/`height()` now bend the point once and share
+it between mask and river; the polyline is integer/table arithmetic).
+
+**Checks:** `terrain_check` grew a river section — polyline determinism + divergence, 4 control
+points, **the bed never climbs on its way down** (2-axis warp-aware probe), reaches the sea,
+corridor-is-a-valley. `check_determinism` grew `river` (geometry + carved samples hashed
+separately, so a platform drift names its half). macOS baseline: `river a70d5139ac9a9a0d`,
+`terrain_hash c20eed19b44270a1` — **re-run on the D-028 Windows box next time it is out**, same as
+every §6a row. Regressions: `biome_check`, `poi_check`, `procedural_world_check` all 0.
+
+**Render:** `agent godot --script tools/terrain_map_render.gd -- --seed 20260819` —
+`assets/audit/terrain/island_20260819.png` regenerated (it was stale: 4.13's follow-up reshaping
+never re-rendered it; the committed PNG now shows lobes + islets + the river).
+
+
 ### 2026-08-19 — Task 6.3: six Cycle Modifier `.tres` files ship, against 6.2's deck (lm)
 
 **What shipped, verified:** `content/cycle_modifiers/{drought,tithe,static,rooted,bloom,the_hunt}.tres`
