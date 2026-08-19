@@ -75,6 +75,54 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 6.3: six Cycle Modifier `.tres` files ship, against 6.2's deck (lm)
+
+**What shipped, verified:** `content/cycle_modifiers/{drought,tithe,static,rooted,bloom,the_hunt}.tres`
+— six hand-authored modifiers alongside 6.2's `long_night.tres`, each chosen to change a run's
+priorities on a different system (harvesting yield, Wellspring presence, chest loot, mire recession,
+enemy death, enemy targeting), not to move a difficulty number. D-146 records the full design
+rationale (why six and not the roadmap's 20–30, the `min_cycle` staggering, why no
+`incompatible_tags` pairs were authored) and `docs/SPECS.md` §6.3 has the per-modifier table. No code
+or schema change — 6.2's `Registry`/`CycleModifierService` directory scan already picks up any
+`.tres` dropped into `content/cycle_modifiers/`.
+
+**`tools/cycle_modifier_check.gd` rewritten, not just re-run.** 6.2's own
+`_check_deck_depletes_no_duplicate()` assumed a 1-modifier deck exhausts on the Cycle immediately
+after `long_night` draws — with 7 real modifiers now, that assumption breaks. The rewrite drops the
+old hardcoded-id assumption entirely and instead advances Cycles until every authored id has been
+drawn (bounded by a `total + 5` safety cap, never a tuned number), asserting only invariants that
+hold regardless of which candidate a weighted pick selects: no single Cycle advance stacks more than
+one modifier, the full deck is drawn with no duplicates, and further advances past a full deck are a
+no-op. `_check_wiring()` and `_check_real_draw_via_cycle_advance()` are untouched and still pass
+unmodified — every new modifier's `min_cycle >= 3` was chosen specifically so Cycle 2 still draws
+`long_night` alone, matching 6.2's original assertion exactly (D-146).
+
+**Verified:** `agent godot --script tools/cycle_modifier_check.gd` → `CYCLE_MODIFIER_CHECK
+failures=0` (27 assertions, up from 15 — the deck-exhaustion rewrite added the rest). `agent godot
+--script tools/cycle_modifier_seed_check.gd` → `CYCLE_MODIFIER_SEED_CHECK failures=0`, unaffected by
+this task (it injects its own synthetic content, never reads real `.tres` files). Regressions
+`tools/cycle_check.gd`, `tools/mire_grid_check.gd`, `tools/wave_spawner_check.gd` all still
+`failures=0`. `agent godot --quit-after 20` — 0 `ERROR:` lines.
+
+**Schema gap, not worked around:** `CycleModifierDef` has no field for a numeric effect magnitude
+(yield multiplier, required-player delta, split-health fraction) — only `id`/`display_name`/
+`description` plus the weighting/tag fields 6.2 shipped. Every one of the six therefore states its
+intended effect as prose in `description` only, naming the exact future consumer and seam
+(`CycleModifierService.has_modifier(id)` against a named field/method — e.g. `drought` names
+`Harvestable.yield_amount`, `tithe` names `Wellspring.required_players`), the identical pattern
+`long_night.tres` already established. **What a future effect-wiring task builds against:** whether
+to add per-modifier typed fields to `CycleModifierDef`, or have each consuming system hardcode its
+own modifier's magnitude by id, is an open design choice this task deliberately left undecided rather
+than approximating with a stat field that doesn't fit every system's effect shape.
+
+**What's left of the roadmap's 20–30 (not done here, by design — D-146):** the six ship real
+variety across harvesting/wellspring/loot/mire/enemy-death/enemy-targeting, but several DESIGN.md
+§5.1-adjacent axes are still untouched by any modifier — day/night pacing beyond `long_night` itself,
+crafting/building cost pressure, extraction-stage pressure, and anything that reads
+`PowerupService`'s Resonance families. A later content-authoring task should read this list before
+picking its next few, so it reaches for an untouched axis rather than a fourth `scarcity`-tagged
+modifier.
+
 ### 2026-08-19 — Task 4.13: terrain look — a warped, ridged, biome-scaled island, and the tool that lets you see one (slate17)
 
 **What shipped, verified:** `world/gen/island_heightmap.gd` (domain warp, masked ridged layer,

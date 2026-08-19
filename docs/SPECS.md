@@ -2191,6 +2191,97 @@ green, 0 `ERROR:` on a full boot, and `docs/DELEGATION.md`'s Current state carry
 `CycleModifierService`'s public API for 6.3 (content authoring) and any future modifier-effect
 consumer to build against.
 
+## 6.3 · Author Cycle Modifier `.tres` content, against 6.2's framework (`DESIGN.md` §5.1 item 2)
+
+**Authority:** none of its own — content Defs are never network state (§2.2's usual "every peer
+loads the identical `.tres`" rule). The stack these draw into is still HOST-owned by
+`CycleModifierService` (6.2's row, unchanged).
+**Claim:** `content/cycle_modifiers/`, `systems/cycle/cycle_modifier_def.gd`,
+`tools/cycle_modifier_check.gd` (+ its `.uid`). No `project.godot`/autoload/registry change — 6.2
+already wired the directory scan; a new `.tres` here is picked up with no code change, the same as
+any other content family.
+
+**Roadmap's line says 20–30 files. AGENTS.md's "never bulk-generate content data" rule overrides
+that number** — this task ships **six**, hand-authored one at a time, each chosen because it changes
+what a run's priorities are, not because it moves a number. `long_night.tres` (6.2's worked example)
+was the *entire* deck until this task; six more finally give `CycleModifierService`'s weighted
+draw, stacking and incompatibility checks something real to select between. The other 14–24 the
+roadmap line names are intentionally left for later tasks — see the close-out note in
+`docs/DELEGATION.md` *Current state* for which corners of the design space are still untouched.
+
+**The six**, each against `CycleModifierDef`'s real schema (`id`/`display_name`/`description`/
+`min_cycle`/`base_weight`/`weight_growth_per_cycle`/`tags`/`incompatible_tags`/`incompatible_with`
+— no other fields exist; see the scope note below for what that rules out):
+
+| id | `min_cycle` | tag | what changes for the player |
+|---|---|---|---|
+| `drought` | 3 | `scarcity` | Resource nodes yield half until the next Wellspring cap — the safe "just go chop/mine" routine stops paying |
+| `tithe` | 3 | `wellspring` | Capping a Wellspring needs one more present player than usual — a split-up party has to regroup |
+| `static` | 3 | `loot` | No chest rolls a powerup this Cycle, but every chest's coin cost is halved — rewards diversifying past powerups, not hoarding coins |
+| `rooted` | 4 | `mire` | The Mire only recedes from a capped Wellspring, never from a Ward — a Ward-wall defense build loses its only lever |
+| `bloom` | 5 | `enemies` | Corrupted enemies split into two smaller ones on death — a doorway-kiting routine needs room to retreat, not more damage |
+| `the_hunt` | 6 | `enemies` | A roaming elite tracks whoever is carrying the most powerups — punishes the run's own success, not a coin flip |
+
+Four of the six (`static`, `rooted`, `bloom`, `the_hunt`) are DESIGN.md §5.1's own example table,
+picked because each already names the real system it will eventually hook (`Chest`/`LootTableDef`,
+`MireGrid`/`BuildService.ward_radii()`, `EnemyWorld`'s death handling, `WaveSpawner`+
+`PowerupService`'s per-peer stack counts) rather than needing one invented. `drought` and `tithe` are
+original, chosen to cover two systems none of the design doc's own six touch — harvesting yield
+(`Harvestable`) and Wellspring's presence gate (`required_players`) — so the deck does not lean
+entirely on combat/loot pressure.
+
+**`min_cycle` staggering is a deliberate curve, not arbitrary.** All six sit at `min_cycle >= 3`,
+strictly after `long_night`'s `2` — Cycle 2 is still guaranteed to draw `long_night` alone, so an
+early run keeps 6.2's original worked-example pacing exactly. `the_hunt` (an elite that targets
+whoever has pulled ahead on powerups) is deliberately the latest, `min_cycle = 6`, because it needs a
+run where someone actually HAS pulled ahead to have a real target — the same "not fair before Cycle
+7" caution this task's own work order raises. `rooted`/`bloom` sit mid-deck (4/5): both raise the
+combat/mire-management floor and read wrong as a Cycle-1 surprise. `drought`/`tithe`/`static` share
+`min_cycle = 3`, the earliest slot past `long_night` — mild scarcity/coordination pressure is fair
+that early, unlike an elite hunter or split enemies.
+
+**No incompatibility pairs were authored.** All six touch distinct systems (harvesting, Wellspring
+presence, chest loot, mire recession, enemy death, enemy AI targeting) — DESIGN.md Q7's stacking
+concern ("unfair nonsense at Cycle 10+") is about modifiers compounding the SAME axis, and none of
+these six share one closely enough to need a tag exclusion. `tags` are still set on every one
+(`scarcity`/`wellspring`/`loot`/`mire`/`enemies`×2) so a future modifier CAN declare
+`incompatible_tags` against this batch without touching these files again — see D-103's own "either
+author can declare the exclusion once" reasoning.
+
+**No modifier's effect is wired to any gameplay system — same scope cut 6.2 already made (D-103),
+not a new one.** Every description below names the exact future consumer and seam
+(`CycleModifierService.has_modifier(id)` against a named field/method on the real owning system),
+matching `long_night.tres`'s own pattern, so a later effect-wiring task has a written intent to
+implement against rather than reverse-engineering one from a bare id.
+
+**Schema gap found, not worked around (per this task's own instruction — say so, don't approximate
+with stats):** `CycleModifierDef` has no field for an actual numeric effect (a yield multiplier, a
+required-player delta, a split-health fraction) — only `id`/`display_name`/`description` plus the
+weighting/tag fields. Every one of the six therefore carries its intended effect as *prose only* in
+`description`, identical to `long_night.tres`. A future effect-wiring task will need to either add
+per-modifier typed fields to `CycleModifierDef` (risking one Def trying to serve every system's
+different effect shape) or have each consuming system (`Harvestable`, `Wellspring`, `Chest`,
+`EnemyWorld`, `WaveSpawner`) hardcode its own modifier's magnitude by id — that design choice is
+explicitly left open here, not decided by this task.
+
+Verify: `tools/cycle_modifier_check.gd` — `_check_wiring()` unchanged (still proves `long_night`
+loads through the real autoload chain); `_check_real_draw_via_cycle_advance()` unchanged and still
+passes unmodified, because every new modifier's `min_cycle >= 3` leaves Cycle 2 a single-candidate
+draw exactly as 6.2 authored the assertion; `_check_deck_depletes_no_duplicate()` rewritten (the old
+version assumed a 1-modifier deck exhausts on the very next advance, which no longer holds) to prove
+invariants that hold regardless of which candidate a weighted pick selects at each Cycle: no single
+advance ever stacks more than one modifier, and the full 7-entry deck (`long_night` + these six) is
+drawn exactly once each with no duplicates by the Cycle every authored `min_cycle` has passed,
+after which further advances are a no-op. `agent godot --script tools/cycle_modifier_check.gd` →
+`CYCLE_MODIFIER_CHECK failures=0` (27 assertions). `agent godot --script
+tools/cycle_modifier_seed_check.gd` unaffected (injects its own synthetic content, never reads real
+`.tres` files) — `CYCLE_MODIFIER_SEED_CHECK failures=0`. Regressions `tools/cycle_check.gd`,
+`tools/mire_grid_check.gd`, `tools/wave_spawner_check.gd` all still `failures=0`. `agent godot
+--quit-after 20` shows 0 `ERROR:` lines.
+Done means: all of the above green, and `docs/DELEGATION.md` *Current state* carrying which of the
+roadmap's 14–24 remaining modifiers (and which design-space corners — see the close-out) are still
+unauthored for whichever task picks this back up.
+
 ## 6.4 · Wellspring re-corruption over time (`DESIGN.md` §5.1 item 1; `ROADMAP.md`'s own line: "decay on a host timer unless Warded")
 
 Built ahead of 6.3 (content authoring) — the same "prerequisite, not a scope grab" shape D-099 already

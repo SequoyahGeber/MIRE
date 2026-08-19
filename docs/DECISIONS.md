@@ -4233,3 +4233,34 @@ the whole interface.
 
 **Would change my mind:** a second orchestrator with a genuinely separate lane pool and no shared
 queue — at which point the seat should be per-pool rather than global, not abolished.
+
+### D-146 · 2026-08-19 · Task 6.3 ships six Cycle Modifiers, not the roadmap's 20–30, and none of the six are tagged incompatible with each other
+The roadmap line for 6.3 reads "Author 20–30 Cycle Modifier `.tres` files," but AGENTS.md's
+never-bulk-generate rule (and this task's own work order, more bluntly) overrides a roadmap number
+whenever the two conflict: content is authored one asset at a time with a real design decision behind
+each, not spun out to hit a count. Six modifiers that each change what a run's priorities are
+(`drought`, `tithe`, `static`, `rooted`, `bloom`, `the_hunt` — see `docs/SPECS.md` §6.3 for what each
+does and why) are worth more than twenty that vary a number, and the roadmap's remaining 14–24 are
+left for a later task rather than padded out here.
+
+`min_cycle` staggering is the other call worth recording so nobody re-derives it: all six sit at
+`min_cycle >= 3`, which leaves Cycle 2 drawing `long_night` alone exactly as 6.2 authored it — that
+was deliberate, not incidental, so this task's `tools/cycle_modifier_check.gd` rewrite could keep
+6.2's own `_check_real_draw_via_cycle_advance()` assertion unmodified rather than making every future
+modifier's `min_cycle` a decision that also has to dodge Cycle 2. `the_hunt` (an elite that tracks
+whoever has the most powerups) sits latest at `min_cycle = 6` because the modifier needs a run where
+someone has actually pulled ahead to have a real target — DESIGN.md Q7's "unfair before Cycle 7" risk
+this task's own work order named.
+
+No `incompatible_tags`/`incompatible_with` pairs were authored among the six. Q7's stacking worry is
+about modifiers compounding the *same* axis into "unfair nonsense" — these six were deliberately
+picked to each land on a different system (harvesting yield, Wellspring presence, chest loot, mire
+recession, enemy death, enemy targeting), so none of them share an axis close enough to need an
+exclusion. Each still carries a `tags` entry (`scarcity`/`wellspring`/`loot`/`mire`/`enemies`×2) so a
+future modifier that DOES compound with one of these can declare the exclusion unilaterally, the same
+"either author declares it once" symmetry D-103 already established — this task simply had nothing on
+either side of a real conflict yet.
+
+**Would change my mind:** a playtest surfacing a specific pair from this six (or a future one against
+it) that is fun alone but breaks together — at which point the fix is one `incompatible_tags` entry
+on whichever modifier is added later, not a retroactive redesign of these six.

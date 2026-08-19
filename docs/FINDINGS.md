@@ -343,7 +343,7 @@ Counted from `content/`:
 
 | Category | Files | Framework that consumes it |
 |---|---|---|
-| `cycle_modifiers/` | **1** | 6.2 — deck, draw, stacking, Cycle-weighted rules. Done. |
+| `cycle_modifiers/` | ~~1~~ **7** (2026-08-19, lm, task 6.3) | 6.2 — deck, draw, stacking, Cycle-weighted rules. Done. |
 | `unlocks/` | ~~1~~ **7** (2026-08-19, lp) | 6.9 — unlock tree + UI, and 6.6's Salvage curve. Both done. |
 | `ranged_weapons/` | **1** | 5.3 — bow, projectiles, host-authoritative hit validation. Done. |
 | `haulables/`, `hooks/` | 1 each | |
@@ -355,8 +355,14 @@ Against `powerups/` at 72 and `buildables/` at 13, which are the two categories 
 
 - **A Cycle Modifier deck of one card means every run escalates identically.** 6.2 built draw,
   stacking and Cycle-weighting so that runs diverge; with one card there is nothing to draw, nothing
-  to stack, and no weighting to express. The entire variety system is inert, and it will keep testing
-  green. Task 6.3 exists for this and is still `todo`.
+  to stack, and no weighting to express. The entire variety system was inert, and it kept testing
+  green regardless. **Fixed for this row by task 6.3 (2026-08-19, lm)** — deck now holds 7
+  (`long_night` + 6 more spanning distinct systems: harvesting, Wellspring presence, chest loot, mire
+  recession, enemy death, enemy targeting; see `docs/DECISIONS.md` D-146). The roadmap line asked for
+  20–30; D-146 explains why 6.3 shipped 7 instead — not a shortfall against this finding's own bar,
+  which was "nothing to draw, nothing to stack," now false. `ranged_weapons/` (below) is this
+  finding's only remaining open row of the three named in its title — `unlocks/` was already fixed
+  above.
 - **An unlock tree of one unlock means Salvage has nothing to buy.** 6.6 shipped a superlinear reward
   curve and an extract-vs-die split; 6.9 shipped the tree and its UI. The meta-progression loop — the
   reason to do a second run after a wipe — terminates immediately. **No task covers authoring this
