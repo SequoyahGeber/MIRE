@@ -8,8 +8,6 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | wick20 | 2026-08-19 17:26 | `docs/ASSET_TRACKER.md`, `tools/blender/build_terrain_accents.py`, `tools/terrain_accents_check.gd`, `assets/terrain_accents` |
-| **F-236** Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon | lp | 2026-08-19 17:34 | `content/unlocks`, `systems/unlocks/unlock_def.gd`, `tools/unlock_check.gd` |
 | **F-239** The inv command reads slot keys that do not exist — inv always prints 'carrying nothing' and inv clear silently removes nothing | hollow7 | 2026-08-19 17:34 | `autoload/inventory_service.gd`, `tools/loop_audit_check.gd`, `docs/AUDIT-2026-08-19-LOOP.md` |
 
 ## Milestones
@@ -56,7 +54,7 @@
 | ⬜ | **F-025** Steam's callback pump runs once per rendered frame, so a slow frame rate slows the handshake | todo |
 | ⬜ | **F-044** Concurrent headless Godot runs share one import cache, which is the likely cause of F-038 | todo |
 | ⬜ | **F-174** No dev machine can stand in for "mid-range" — `tools/perf_probe.gd`'s baseline is only ever measured on the fastest hardware in the project | todo |
-| 🔵 | **F-236** Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon | in_flight |
+| ⬜ | **F-236** Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon | todo |
 | ⬜ | **F-237** A-016 asks for a cave entrance, but D-142 put caves on the cut list — the asset would promise a space that cannot exist | todo |
 | ⬜ | **F-238** A successful extraction has no run summary of its own — task 6.8 only extended the death screen | todo |
 | 🔵 | **F-239** The inv command reads slot keys that do not exist — inv always prints 'carrying nothing' and inv clear silently removes nothing | in_flight |

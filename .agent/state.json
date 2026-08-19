@@ -1,28 +1,10 @@
 {
   "claims": {
-    "assets/terrain_accents": {
-      "agent": "wick20",
-      "at": "2026-08-19T17:26:54+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    },
     "autoload/inventory_service.gd": {
       "agent": "hollow7",
       "at": "2026-08-19T17:34:41+00:00",
       "task": "F-239",
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
-    },
-    "content/unlocks": {
-      "agent": "lp",
-      "at": "2026-08-19T17:34:16+00:00",
-      "task": "F-236",
-      "token": null
-    },
-    "docs/ASSET_TRACKER.md": {
-      "agent": "wick20",
-      "at": "2026-08-19T17:26:54+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
     "docs/AUDIT-2026-08-19-LOOP.md": {
       "agent": "hollow7",
@@ -30,61 +12,14 @@
       "task": "F-239",
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
-    "systems/unlocks/unlock_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T17:34:16+00:00",
-      "task": "F-236",
-      "token": null
-    },
-    "tools/blender/build_terrain_accents.py": {
-      "agent": "wick20",
-      "at": "2026-08-19T17:26:54+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    },
     "tools/loop_audit_check.gd": {
       "agent": "hollow7",
       "at": "2026-08-19T17:34:41+00:00",
       "task": "F-239",
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
-    },
-    "tools/terrain_accents_check.gd": {
-      "agent": "wick20",
-      "at": "2026-08-19T17:26:54+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    },
-    "tools/unlock_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T17:34:16+00:00",
-      "task": "F-236",
-      "token": null
     }
   },
   "in_flight": {
-    "2.1d": {
-      "agent": "wick20",
-      "files": [
-        "docs/ASSET_TRACKER.md",
-        "tools/blender/build_terrain_accents.py",
-        "tools/terrain_accents_check.gd",
-        "assets/terrain_accents"
-      ],
-      "notes": [],
-      "started": "2026-08-19T17:26:54+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    },
-    "F-236": {
-      "agent": "lp",
-      "files": [
-        "content/unlocks",
-        "systems/unlocks/unlock_def.gd",
-        "tools/unlock_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-19T17:34:16+00:00",
-      "token": null
-    },
     "F-239": {
       "agent": "hollow7",
       "files": [
@@ -871,6 +806,13 @@
       "hash": "d569d908b7a009978d1b881075ce7b689b012312fa7fe2cc87b27b733ffad529",
       "task": "F-198",
       "token": null
+    },
+    "assets/terrain_accents": {
+      "agent": "wick20",
+      "at": "2026-08-19T17:37:53+00:00",
+      "hash": null,
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
     "assets/tools_weapons": {
       "agent": "lp",
@@ -2014,6 +1956,13 @@
       "hash": "07f0d5ac667748bbcd5555f74e7ea4ebe3b084e426b65bed8f2bb35387e7af4b",
       "task": "4.4"
     },
+    "content/unlocks": {
+      "agent": "lp",
+      "at": "2026-08-19T17:37:41+00:00",
+      "hash": null,
+      "task": "F-236",
+      "token": null
+    },
     "content/unlocks/unlock_deep_pocket.tres": {
       "agent": "lm",
       "at": "2026-08-19T05:46:33+00:00",
@@ -2174,8 +2123,8 @@
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "wick20",
-      "at": "2026-08-19T17:24:25+00:00",
-      "hash": "1fa9ccd8e2ca261d8279d19d29c64557241aad3c475137c1935d5fd38087d1ea",
+      "at": "2026-08-19T17:37:53+00:00",
+      "hash": "1ea4401cbd097808bf4121b5289e3cbd8a685afa8d5b081091bc9df4581d3d49",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
@@ -2611,10 +2560,11 @@
       "task": "3.14"
     },
     "systems/unlocks/unlock_def.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T03:34:03+00:00",
+      "agent": "lp",
+      "at": "2026-08-19T17:37:41+00:00",
       "hash": "c4b7c39be1ca9ccf33c0f67019c2da5fe6f36242427fc2402e08a1b37c2318c3",
-      "task": "6.9"
+      "task": "F-236",
+      "token": null
     },
     "systems/waves/wave_spawner.gd": {
       "agent": "lm",
@@ -2891,6 +2841,13 @@
       "hash": "749b7da548b26d66435055146534a4587aa21f4fd426a93b1429e6b6813537e1",
       "task": "F-196",
       "token": null
+    },
+    "tools/blender/build_terrain_accents.py": {
+      "agent": "wick20",
+      "at": "2026-08-19T17:37:53+00:00",
+      "hash": "0999e852c24ab56cf27dc577fd9df5646d1f03be41813613d450a5da5e67aedf",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
     "tools/blender/build_tool_weapon_set.py": {
       "agent": "lm",
@@ -3784,6 +3741,13 @@
       "task": "F-179",
       "token": null
     },
+    "tools/terrain_accents_check.gd": {
+      "agent": "wick20",
+      "at": "2026-08-19T17:37:53+00:00",
+      "hash": "feaabee4fd4c7cd107672f7bb7b386464ffc0070bc6406011c2cb1ee87b8296d",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+    },
     "tools/terrain_check.gd": {
       "agent": "lm",
       "at": "2026-08-18T19:50:20+00:00",
@@ -3805,10 +3769,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "tools/unlock_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T06:24:58+00:00",
-      "hash": "1a863bf7c6f51b927e558039174ab22a295dd00ecdbc791fb9347f840c108b22",
-      "task": "F-182",
+      "agent": "lp",
+      "at": "2026-08-19T17:37:41+00:00",
+      "hash": "b4ce61496d9ccdd5e4ce65d4af0a189334fac151052e12174121979ab38731ee",
+      "task": "F-236",
       "token": null
     },
     "tools/vitals_hud_check.gd": {
@@ -4519,7 +4483,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
@@ -7690,7 +7654,7 @@
     "F-236": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "F",
       "title": "Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon"
     },
