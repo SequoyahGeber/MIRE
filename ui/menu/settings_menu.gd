@@ -234,10 +234,9 @@ func _build_ui() -> void:
 
 	# F-209: gamepad/keyboard focus chain down the visible order. Sliders/OptionButton/CheckBox
 	# already answer ui_left/ui_right/ui_accept once focused (Godot's own Range/Button gui_input) —
-	# only the chain, initial focus (set_open() above) and a visible ring on the Button-derived
-	# controls were missing. HSlider draws no built-in focus stylebox (Slider's theme has no "focus"
-	# item, unlike Button/OptionButton/CheckBox) — filed as a follow-up rather than solved here since
-	# a slider is still fully operable by gamepad without one, just harder to see which is focused.
+	# only the chain, initial focus (set_open() above) and a visible ring on every control were
+	# missing. HSlider draws no built-in focus stylebox (Slider's theme has no "focus" item, unlike
+	# Button/OptionButton/CheckBox) — F-215 gives it one via FocusRingSlider's own _draw() override.
 	var chain: Array = [_graphics_option, _master_slider, _music_slider, _sfx_slider,
 		_sensitivity_slider, _gamepad_sensitivity_slider, _fov_slider, _invert_checkbox,
 		_reduce_motion_checkbox]
@@ -513,7 +512,8 @@ func _build_slider_row(parent: VBoxContainer, label_text: String, min_v: float, 
 	label.add_theme_color_override("font_color", COLOUR_MUTED)
 	parent.add_child(label)
 
-	var slider := HSlider.new()
+	var slider := FocusRingSlider.new()
+	slider.focus_ring_style = _focus_style()
 	slider.min_value = min_v
 	slider.max_value = max_v
 	slider.step = step

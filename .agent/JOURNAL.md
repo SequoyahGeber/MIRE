@@ -5067,3 +5067,15 @@ Notes along the way:
 Files: `core/net/rpc_manifest.gd`
 
 Commit at time of writing: `47e3f17`
+
+---
+
+### DONE · F-215 · lm · 2026-08-19T12:52:55+00:00
+
+**`HSlider` draws no visible focus ring in this Godot version — F-209's gamepad focus work left it the one control type still hard to tell is focused**
+
+Fixed: new ui/menu/focus_ring_slider.gd (FocusRingSlider extends HSlider) draws its own focus ring via _draw()+queue_redraw() since Slider has no 'focus' theme item in Godot 4.7.1. settings_menu.gd's _build_slider_row() now uses it for all six sliders, focus_ring_style set to the menu's existing _focus_style(). Verified: agent godot --script tools/menu_focus_check.gd -> failures=0 (new FocusRingSlider assertion included), agent godot --script tools/settings_check.gd -> failures=0, agent godot --script tools/findings_numbering_check.gd -> failures=0. Swept project-wide for other inert focus stylebox overrides and other Slider construction sites: none found. Docs: FINDINGS.md resolved via agent resolve, SPECS.md block written, DELEGATION.md current-state entry added.
+
+Files: `ui/menu/settings_menu.gd`, `ui/menu/focus_ring_slider.gd`, `tools/menu_focus_check.gd`
+
+Commit at time of writing: `d88c206`

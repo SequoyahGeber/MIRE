@@ -146,6 +146,11 @@ func _check_settings_menu() -> void:
 	await _tap(JOY_BUTTON_DPAD_DOWN)
 	var master_slider: Control = _focused()
 	check(master_slider is HSlider, "D-pad down from graphics reaches the master volume slider")
+	# F-215: Slider has no "focus" theme stylebox item in this Godot version, so every other
+	# control's has_theme_stylebox_override(&"focus") proxy doesn't apply here — the proxy for "has
+	# a visible ring" is FocusRingSlider's own _draw()-based one being wired with a real style.
+	check(master_slider is FocusRingSlider and (master_slider as FocusRingSlider).focus_ring_style != null,
+		"the master volume slider draws its own focus ring (FocusRingSlider, F-215)")
 	var value_before: float = (master_slider as HSlider).value
 	await _tap(JOY_BUTTON_DPAD_LEFT)
 	var value_after: float = (master_slider as HSlider).value

@@ -3117,9 +3117,9 @@
     },
     "tools/menu_focus_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T12:04:37+00:00",
-      "hash": "897dab5ac7a97f4423d99242f52427dd54fcb2ec3108d0ce5e47cd547bb4b438",
-      "task": "F-209",
+      "at": "2026-08-19T12:52:55+00:00",
+      "hash": "9fa4c1408944b75fcfde3b7d8224ead84c7cd29894c3ba99bbf91bcb5711ce34",
+      "task": "F-215",
       "token": null
     },
     "tools/mesh_merge_check.gd": {
@@ -3585,6 +3585,13 @@
       "hash": "5aa62173558185ebc5288f43c6f3873dce3573251c15603090040b758bd36b5c",
       "task": "F-175"
     },
+    "ui/menu/focus_ring_slider.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T12:52:55+00:00",
+      "hash": "09f9a623440b0ff1661080b4e188cfce2160f64ee1eb182b51535d87943ed4f9",
+      "task": "F-215",
+      "token": null
+    },
     "ui/menu/main_menu.gd": {
       "agent": "lm",
       "at": "2026-08-19T12:04:37+00:00",
@@ -3594,9 +3601,9 @@
     },
     "ui/menu/settings_menu.gd": {
       "agent": "lm",
-      "at": "2026-08-19T12:04:37+00:00",
-      "hash": "2fe2af9faa86be4ceacdbe0f2812736812a6e355616f3d98b776537bc95007f4",
-      "task": "F-209",
+      "at": "2026-08-19T12:52:55+00:00",
+      "hash": "70de1b4a594879b2ca381f368d051f5b6de3167515db161a10c17d22e075d3e8",
+      "task": "F-215",
       "token": null
     },
     "ui/menu/unlock_menu.gd": {
@@ -6762,9 +6769,11 @@
       "title": "Undergrowth scatters through the new ExtractionShip's hull at MereShore \u2014 the offline plant pass has no way to know about a marker-bridge's runtime-built geometry"
     },
     "F-215": {
+      "done_at": "2026-08-19T12:52:55+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`HSlider` draws no visible focus ring in this Godot version \u2014 F-209's gamepad focus work left it the one control type still hard to tell is focused"
     },
