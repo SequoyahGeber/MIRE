@@ -154,6 +154,12 @@ func _by_parent(level: Node) -> Dictionary:
 
 func _count_surfaces(node: Node, into: Dictionary) -> void:
 	var mesh: Mesh = null
+	# Hidden geometry submits nothing, and this subtree is full of it: HarvestWorld hides each
+	# prop's authored `Visual` when it swaps in a live Harvestable, so counting without this
+	# reports both copies and overstates the map's single largest bucket.
+	var geometry := node as GeometryInstance3D
+	if geometry != null and not geometry.visible:
+		return
 	if node is MultiMeshInstance3D:
 		var multimesh: MultiMesh = (node as MultiMeshInstance3D).multimesh
 		if multimesh != null:
@@ -168,7 +174,7 @@ func _count_surfaces(node: Node, into: Dictionary) -> void:
 		_count_surfaces(child, into)
 
 
-## What a camera standing IN the world actually submits.
+## What is in range of a camera standing IN the world — an upper bound on a frame, not a frame.
 ##
 ## Everything above counts the scene as built, which is the right number for "how much geometry
 ## exists" and the wrong one for "how much is drawn": `visibility_range` culling happens in the
@@ -280,8 +286,12 @@ func _report(stats: Dictionary, level: Node) -> void:
 		stats["tris_drawn"], stats["caster_tris"] * cascades])
 	print("  instances with a LOD distance  %d" % stats["with_lod_range"])
 	var effective := _in_range_draws(level, _eye_samples(level), shadow_distance)
-	print("\n-- what a camera in the world submits (%d eye positions, 360 degrees, no frustum) --"
-		% effective["samples"])
+	print("\n-- in range of a camera in the world (%d eye positions) --" % effective["samples"])
+	print("  NOT a frame's draw calls. This is a 360-degree count with no frustum test, so it is")
+	print("  an upper bound: the renderer also frustum-culls, and that culling overlaps heavily")
+	print("  with distance culling. Measured against tools/frame_cost_check.gd, a 56% cut in this")
+	print("  number was a 15% cut in real draw calls. Use it to compare STRUCTURE between two")
+	print("  builds; use frame_cost_check.gd for what a frame actually costs.")
 	print("  opaque    median %5d   worst %5d" % [
 		effective["opaque_median"], effective["opaque_worst"]])
 	print("  shadow    median %5d   worst %5d" % [
@@ -289,6 +299,17 @@ func _report(stats: Dictionary, level: Node) -> void:
 	print("  TOTAL     median %5d   worst %5d" % [
 		int(effective["opaque_median"]) + int(effective["shadow_median"]),
 		int(effective["opaque_worst"]) + int(effective["shadow_worst"])])
+
+	print("\n-- biggest single contributors (visible geometry, by owning asset) --")
+	var by_asset := _by_asset(level)
+	var asset_names: Array = by_asset.keys()
+	asset_names.sort_custom(func(a: String, b: String) -> bool:
+		return int((by_asset[a] as Dictionary)["surfaces"]) \
+			> int((by_asset[b] as Dictionary)["surfaces"]))
+	for i in mini(10, asset_names.size()):
+		var row: Dictionary = by_asset[asset_names[i]]
+		print("  %-34s %5d draws / %5d nodes / %5d copies" % [
+			asset_names[i], row["surfaces"], row["nodes"], row["copies"]])
 
 	print("\n-- draws by subtree --")
 	var names: Array = (stats["by_parent"] as Dictionary).keys()
@@ -340,3 +361,33 @@ func _finish() -> void:
 		print("  ! %s" % failure)
 	print("RENDER_CENSUS_GAPS %d" % failures.size())
 	quit(1)
+
+
+## Draws attributed to the asset that produced them, found through the `asset` meta the world
+## builder stamps on every batch and holder. Answers "what single thing should I fix next?" —
+## the subtree breakdown only ever says "the props", which is not actionable.
+func _by_asset(node: Node, into: Dictionary = {}, inherited: String = "") -> Dictionary:
+	var asset: String = String(node.get_meta(&"asset", inherited)) if node.has_meta(&"asset") \
+		else inherited
+	var geometry := node as GeometryInstance3D
+	if geometry != null and geometry.visible:
+		var mesh: Mesh = null
+		var copies: int = 1
+		if node is MultiMeshInstance3D:
+			var multimesh: MultiMesh = (node as MultiMeshInstance3D).multimesh
+			if multimesh != null:
+				mesh = multimesh.mesh
+				copies = multimesh.instance_count
+		elif node is MeshInstance3D:
+			mesh = (node as MeshInstance3D).mesh
+		if mesh != null:
+			var key: String = asset if not asset.is_empty() else "(unattributed)"
+			var row: Dictionary = into.get_or_add(key,
+				{"surfaces": 0, "nodes": 0, "copies": 0}) as Dictionary
+			row["surfaces"] = int(row["surfaces"]) + mesh.get_surface_count()
+			row["nodes"] = int(row["nodes"]) + 1
+			row["copies"] = int(row["copies"]) + copies
+	if geometry == null or geometry.visible:
+		for child in node.get_children():
+			_by_asset(child, into, asset)
+	return into
