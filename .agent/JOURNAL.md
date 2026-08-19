@@ -4683,3 +4683,18 @@ Fixed: tools/blender/godot_import_lock.py's import_cache_guard() holds agent god
 Files: `tools/blender/godot_import_lock.py`, `tools/blender/mire_art.py`, `tools/blender/build_adapted_nature_set.py`, `tools/blender/build_crafting_stations.py`, `tools/blender/build_construction_set.py`, `tools/blender/build_enemy_crawler.py`, `tools/blender/build_food_set.py`, `tools/blender/build_extraction_ship_set.py`, `tools/blender/build_flora_set.py`, `tools/blender/build_gatherable_plants.py`, `tools/blender/build_harvestable_resources.py`, `tools/blender/build_mire_map_kit.py`, `tools/blender/build_loot_set.py`, `tools/blender/build_playtest_hollow.py`, `tools/blender/build_pickup_kit.py`, `tools/blender/build_ward_set.py`, `tools/blender/build_tool_weapon_set.py`, `tools/blender/build_wellspring_set.py`, `tools/import_cache_guard_check.py`, `tools/audio/render_music.py`, `tools/audio/render_sfx.py`, `tools/blender/render_item_icons.py`
 
 Commit at time of writing: `bc0ecf2`
+
+---
+
+### DONE · F-200 · lp · 2026-08-19T09:26:48+00:00
+
+**No check verifies that project.godot's [autoload] targets are tracked at HEAD, so F-190's failure mode can recur**
+
+tools/autoload_tracked_check.py: pure-git/python check verifying every project.godot [autoload] target, and every static preload() reachable from one, is tracked at a given revision (default HEAD). Verified: current HEAD 58 autoloads/111 paths, failures=0; --self-test 3/3 (clean pass, catches F-190's untracked-autoload-target shape, catches F-144's tracked-autoload-untracked-preload shape); agent godot --quit-after 120 clean boot, 0 ERROR lines. Mechanism #2 (agent check enforcing this at commit time) not built — filed as F-205.
+
+Notes along the way:
+- Decided to build only mechanism #1 (tools/autoload_tracked_check.py, pure git+python, no Godot dep) since the check needs git blob-tracked-at-rev inspection, not engine state. Mechanism #2 (agent check refusing the commit) needs editing the shared harness under its own claim — filed as F-205 instead of scope-creeping this claim. Self-test with synthetic F-190/F-144 fixtures (not just a clean-HEAD pass) is what proves detection, not just that it runs.
+
+Files: `tools/autoload_tracked_check.py`
+
+Commit at time of writing: `362c7d5`
