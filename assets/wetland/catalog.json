@@ -1,0 +1,95 @@
+{
+  "batch": "A-043",
+  "family": "wetland",
+  "blender": "5.2.0 LTS",
+  "assets": [
+    {
+      "name": "cattail_bundle",
+      "file": "exports/cattail_bundle.glb",
+      "width_m": 0.8,
+      "depth_m": 0.113,
+      "height_m": 0.1893,
+      "target_m": 0.8,
+      "axis": "spread",
+      "parts": 1,
+      "polygons": 337,
+      "triangles": 736,
+      "materials": [
+        "MIRE_Fibre",
+        "MIRE_Leather",
+        "MIRE_Reed",
+        "MIRE_Sedge"
+      ]
+    },
+    {
+      "name": "reed_bed",
+      "file": "exports/reed_bed.glb",
+      "width_m": 1.1526,
+      "depth_m": 1.1385,
+      "height_m": 1.55,
+      "target_m": 1.55,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 542,
+      "triangles": 1016,
+      "materials": [
+        "MIRE_Leather",
+        "MIRE_Peat",
+        "MIRE_Reed",
+        "MIRE_Sedge"
+      ]
+    },
+    {
+      "name": "sphagnum_moss",
+      "file": "exports/sphagnum_moss.glb",
+      "width_m": 0.5645,
+      "depth_m": 0.62,
+      "height_m": 0.2162,
+      "target_m": 0.62,
+      "axis": "spread",
+      "parts": 1,
+      "polygons": 482,
+      "triangles": 680,
+      "materials": [
+        "MIRE_FlowerRust",
+        "MIRE_Moss",
+        "MIRE_MossLight"
+      ]
+    },
+    {
+      "name": "fish_shoal",
+      "file": "exports/fish_shoal.glb",
+      "width_m": 0.98,
+      "depth_m": 0.8316,
+      "height_m": 0.1221,
+      "target_m": 0.98,
+      "axis": "spread",
+      "parts": 1,
+      "polygons": 752,
+      "triangles": 836,
+      "materials": [
+        "MIRE_FishBelly",
+        "MIRE_FishScale",
+        "MIRE_Peat"
+      ]
+    },
+    {
+      "name": "glowcap_mushroom",
+      "file": "exports/glowcap_mushroom.glb",
+      "width_m": 0.2719,
+      "depth_m": 0.2802,
+      "height_m": 0.32,
+      "target_m": 0.32,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 662,
+      "triangles": 824,
+      "materials": [
+        "MIRE_FlowerCream",
+        "MIRE_Glowcap",
+        "MIRE_GlowcapGill",
+        "MIRE_Moss"
+      ]
+    }
+  ]
+}
