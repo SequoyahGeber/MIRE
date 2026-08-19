@@ -24,12 +24,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
-    "levels/hollowmere.tscn": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T07:02:16+00:00",
-      "task": "F-195",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
-    },
     "tools/blender/build_crafting_stations.py": {
       "agent": "lm",
       "at": "2026-08-19T06:51:04+00:00",
@@ -86,15 +80,6 @@
       "notes": [],
       "started": "2026-08-19T06:51:04+00:00",
       "token": null
-    },
-    "F-195": {
-      "agent": "yarrow21",
-      "files": [
-        "levels/hollowmere.tscn"
-      ],
-      "notes": [],
-      "started": "2026-08-19T07:02:16+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     }
   },
   "recent": {
@@ -1658,9 +1643,11 @@
       "task": "F-124"
     },
     "levels/hollowmere.tscn": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:07:48+00:00",
-      "task": "F-115"
+      "agent": "yarrow21",
+      "at": "2026-08-19T07:05:07+00:00",
+      "hash": "ae9d3b990d4a3b3a718a3b530448dfccc107b3ba2c81cec6d0b90f44afd3745a",
+      "task": "F-195",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "project.godot": {
       "agent": "slate17",
@@ -5908,9 +5895,11 @@
       "title": "environment_vfx's deferred _apply_node crashes on nodes freed between signal and call \u2014 136 engine errors in one harvest_world_net_check run"
     },
     "F-195": {
+      "done_at": "2026-08-19T07:05:07+00:00",
+      "done_by": "yarrow21",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "levels/hollowmere.tscn's Player drifted 1.84 m off the layout spawn \u2014 an editor-session nudge, caught by hollowmere_check"
     }

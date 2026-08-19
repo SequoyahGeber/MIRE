@@ -4487,3 +4487,15 @@ call_deferred('_apply_node', node) died at argument marshalling for nodes freed 
 Files: `autoload/environment_vfx.gd`
 
 Commit at time of writing: `de7efdd`
+
+---
+
+### DONE · F-195 · yarrow21 · 2026-08-19T07:05:07+00:00
+
+**levels/hollowmere.tscn's Player drifted 1.84 m off the layout spawn — an editor-session nudge, caught by hollowmere_check**
+
+Restored levels/hollowmere.tscn's Player to the layout spawn (-6.614, 2.423, 1.622) — was (-6.818, 2.425, 3.451), a +1.83m Z drag saved by today's editor session. Edited under an exact claim with agent editor-running confirming closed (D-031). Verified: hollowmere_check PASS (was FAIL 1, 'Player node is 1.84 m from the layout spawn').
+
+Files: `levels/hollowmere.tscn`
+
+Commit at time of writing: `0e71656`
