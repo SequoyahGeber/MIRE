@@ -59,12 +59,13 @@ var _visual: Node3D
 var _sync: MultiplayerSynchronizer
 var _visual_refresh_scheduled: bool = false
 ## Per-chest, independent of every other chest's stream. Never the global randi() (AGENTS.md).
-## Seeded from boot-time entropy rather than a fixed constant: unlike EnemyWorld's ambient scatter,
-## which must look identical across peers because every peer would otherwise compute it, a chest
-## roll happens ONLY on the host and is granted directly — there is nothing for other peers to
-## recompute, so nothing requires a fixed seed. This is a stand-in for a real per-run seed: once a
-## GameState.run_seed authority exists, re-derive this from (run_seed, a stable per-chest id) instead
-## of randomize() — see docs/DECISIONS.md D-041.
+## F-210: seeded from (GameState.run_seed, this node's own name) rather than boot-time entropy, so
+## two runs sharing a seed (a deliberate replay, a --seed= repro, F-172's solo seed entry) roll the
+## same loot — D-041's own reversal trigger, fired once GameState.run_seed shipped in task 4.6. A
+## chest roll still happens ONLY on the host and is granted directly, so nothing requires cross-peer
+## agreement on the VALUE; this is about run-to-run reproducibility, not replication. `name` is the
+## stable per-chest id: ChestPlacementService sets it to "Chest_<marker name>" before add_child(), so
+## it comes from the authored map layout, not from anything generated — see _seed_for_run() below.
 var _rng := RandomNumberGenerator.new()
 var _next_request_id: int = 1
 
@@ -73,7 +74,7 @@ func _ready() -> void:
 	set_multiplayer_authority(NetConfig.HOST_PEER_ID)
 	add_to_group(CHEST_GROUP)
 	if _owns_world_mutation():
-		_rng.randomize()
+		_rng.seed = _seed_for_run(_run_seed(), String(name))
 	_configuration_valid = _validate_configuration()
 	_build_synchronizer()
 	_refresh_visual()
@@ -346,6 +347,36 @@ func _flush_visual_refresh() -> void:
 
 func _owns_world_mutation() -> bool:
 	return not _transport_is_active() or _transport_is_host()
+
+
+## Host-only caller (F-210). GameState is a project-wide autoload (project.godot), present in every
+## scene including a headless SceneTree check, so this never needs a null guard the way NetTransport
+## lookups above do. ensure_seed() lazily draws one from real entropy if nothing has drawn it yet
+## (offline/host-of-one boot order), matching game_state.gd's own documented contract, and is a no-op
+## once a seed already exists — the common case, since MireGrid/NetTransport draw one earlier.
+func _run_seed() -> int:
+	var game_state: Node = get_node_or_null(^"/root/GameState")
+	if game_state == null:
+		return 0
+	return int(game_state.call("ensure_seed"))
+
+
+## Salt distinguishes this file's seed derivation from any other system mixing the same run_seed
+## (world/gen/poi_map.gd's 0x9017A11, world/gen/resource_scatter.gd's 0x5CA77E5) — same "XOR-a-salt"
+## convention those two files already establish. Integer multiply/xor only, same rule they state:
+## never Godot's hash(), whose StringName/String stability across platforms and engine versions is
+## not a documented guarantee the way fixed-width 64-bit int overflow is.
+const _SEED_SALT: int = 0xC4E57
+
+
+func _seed_for_run(run_seed: int, chest_id: String) -> int:
+	const PRIME: int = 1000003
+	var id_hash: int = 0x1000193
+	for byte: int in chest_id.to_utf8_buffer():
+		id_hash = (id_hash ^ byte) * 16777619
+	var h: int = run_seed ^ _SEED_SALT
+	h = h * PRIME + id_hash
+	return h
 
 
 func _transport() -> Node:

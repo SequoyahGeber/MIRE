@@ -2277,9 +2277,9 @@
     },
     "systems/loot/chest.gd": {
       "agent": "lm",
-      "at": "2026-08-19T05:46:33+00:00",
-      "hash": "a44d5c4350e43868fe6112ff79dbd4a44e9c7a0d9e236656fe87134e84ab67cd",
-      "task": "F-173",
+      "at": "2026-08-19T12:13:17+00:00",
+      "hash": "edf790b1a18b6c511658f99f1cd59746752d97d048bd4278b80d2782cc19ca0b",
+      "task": "F-210",
       "token": null
     },
     "systems/loot/loot_entry.gd": {
@@ -2699,6 +2699,13 @@
       "at": "2026-08-19T05:56:17+00:00",
       "hash": "a50cdb2e6933466e1ddb30327889da70a9d9f475f8d018ef18c2206c69aecb68",
       "task": "F-146",
+      "token": null
+    },
+    "tools/chest_seed_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T12:13:17+00:00",
+      "hash": "1a1c6b250209d41248329b46dd3d0b672e1ae69f936280187038ca3ae8c92555",
+      "task": "F-210",
       "token": null
     },
     "tools/chunk_seam_shot.gd": {
@@ -6690,9 +6697,11 @@
       "title": "No menu in the game supports gamepad UI focus navigation \u2014 a bare controller with no Steam Input translation cannot open any panel"
     },
     "F-210": {
+      "done_at": "2026-08-19T12:13:17+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`Chest`'s loot roll still seeds from boot-time `randomize()` even though `GameState.run_seed` now exists \u2014 D-041's own reversal trigger has fired"
     },
@@ -6725,6 +6734,34 @@
       "status": "todo",
       "tier": "F",
       "title": "Undergrowth scatters through the new ExtractionShip's hull at MereShore \u2014 the offline plant pass has no way to know about a marker-bridge's runtime-built geometry"
+    },
+    "F-215": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`HSlider` draws no visible focus ring in this Godot version \u2014 F-209's gamepad focus work left it the one control type still hard to tell is focused"
+    },
+    "F-216": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`AttunementUI` (task 3.9's mandatory run-start role picker) has no gamepad focus support \u2014 worse than F-209's original scope, since this panel has no Esc/dismiss path at all"
+    },
+    "F-217": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`BuildBar`'s piece-selection slots are still mouse-click-only \u2014 task 7.6 gave build mode toggle/rotate/confirm/destroy real gamepad bindings but never touched which piece gets selected"
+    },
+    "F-218": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Decisions write their own reversal triggers and nothing ever re-checks them \u2014 two fired unnoticed in one session"
     }
   },
   "version": 1

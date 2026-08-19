@@ -4985,3 +4985,18 @@ Every menu (MainMenu/SettingsMenu/LobbyMenu/InventoryUI/CraftingUI/UnlockMenu) g
 Files: `ui/menu/main_menu.gd`, `ui/menu/settings_menu.gd`, `ui/menu/unlock_menu.gd`, `ui/lobby/lobby_menu.gd`, `ui/inventory/inventory_ui.gd`, `ui/crafting/crafting_ui.gd`, `tools/menu_focus_check.gd`, `project.godot`, `tools/bind_ui_gamepad_actions.gd`
 
 Commit at time of writing: `b5d7f63`
+
+---
+
+### DONE · F-210 · lm · 2026-08-19T12:13:17+00:00
+
+**`Chest`'s loot roll still seeds from boot-time `randomize()` even though `GameState.run_seed` now exists — D-041's own reversal trigger has fired**
+
+Chest._ready() now seeds _rng from _seed_for_run(GameState.run_seed, String(name)) instead of randomize() — D-041's own reversal trigger, fired since task 4.6. name is stable (ChestPlacementService sets it from the marker before add_child()); mixing is integer multiply/xor, matching poi_map.gd/resource_scatter.gd's convention. Verified: agent godot --script tools/chest_seed_check.gd -> CHEST_SEED_CHECK failures=0 (same run_seed+name reproduces, either input changing changes the roll). No regressions: chest_check.gd, chest_placement_check.gd, loot_content_check.gd, chest_net_check.gd all green. Docs: SPECS.md F-210 block written, FINDINGS.md resolved + F-219/F-220 filed (same bug in RewardService/CycleModifierService, swept but not fixed here), DELEGATION.md current-state entry + ChunkStreamer note de-staled.
+
+Notes along the way:
+- Fixed chest.gd: _rng now seeds from _seed_for_run(GameState.run_seed, String(name)) instead of randomize(), integer multiply/xor mixing matching poi_map.gd/resource_scatter.gd's convention. name is stable because ChestPlacementService sets it to Chest_<marker name> before add_child(). tools/chest_seed_check.gd proves same-seed+same-id reproduces, differing seed or id changes the roll. CHEST_SEED_CHECK failures=0.
+
+Files: `systems/loot/chest.gd`, `tools/chest_seed_check.gd`
+
+Commit at time of writing: `8afbcfb`
