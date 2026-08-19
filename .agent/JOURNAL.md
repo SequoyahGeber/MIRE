@@ -5614,3 +5614,27 @@ Notes along the way:
 Files: `tools/rpc_surface_audit_check.gd`
 
 Commit at time of writing: `f0f750b`
+
+---
+
+### HANDOFF · 2.1d · slate17 · 2026-08-19T16:55:30+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-013 (camp storage and furniture) is DONE; A-014 (roads and navigation) is now NEXT. 16 GLBs in assets/camp/ from tools/blender/build_camp_set.py, 5,470 triangles, plus tools/camp_check.gd. No palette changes — it is built entirely from tokens A-010..A-012 already added. THE IDEA: everything structural comes off a stock list (plank 32 mm thick x 145 wide, post r46, rail r28, band 13, stave 22) and plank()/post()/rail()/band()/lashing() are the only ways to make it; each logs what it emits and the contract FAILS if an asset produced a structural mesh that did not come through them, with genuinely non-timber parts declared per asset in FREEFORM. That is what makes a stool, a bench, a table and four racks read as one camp. It caught its own author twice. Two shared frames: the four racks are one rack (0.0000 mm drift) and the crate is a state pair. Verified: build contract 16/16 with 207 stock parts logged, two clean rebuilds byte-identical, all-sides audit 0 defects against a clean --outdir, three sheets inspected, camp_check.gd 0 failures. WORTH COPYING: assert the named geometry at BUILD time (frame_bounds on the shared prefixes) and the visible consequence at IMPORT time (four racks stand the same height and width however differently they are loaded) — a GLB is one joined mesh, so repeating the build-time assertion in the engine is not possible and pretending otherwise produces a check that fails on correct art, which is what the first cut of camp_check.gd did. A-018's settlement shell is the same carpentry at building scale: use the stock numbers.
+
+Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_camp_set.py`, `tools/camp_check.gd`, `assets/camp`, `tools/camp_check.gd.uid`, `docs/FINDINGS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `29c3979`
+
+---
+
+### HANDOFF · 2.1d · slate17 · 2026-08-19T16:55:30+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+Re-claimed only to attach the exact output paths for D-031's ship check — see the previous A-013 note.
+
+Files: `assets/camp/catalog.json`, `assets/camp/exports/barrel_large.glb`, `assets/camp/exports/barrel_small.glb`, `assets/camp/exports/bedroll.glb`, `assets/camp/exports/bench.glb`, `assets/camp/exports/bucket.glb`, `assets/camp/exports/crate.glb`, `assets/camp/exports/crate_broken.glb`, `assets/camp/exports/lantern.glb`, `assets/camp/exports/rack_drying.glb`, `assets/camp/exports/rack_storage.glb`, `assets/camp/exports/rack_tool.glb`, `assets/camp/exports/rack_weapon.glb`, `assets/camp/exports/sack.glb`, `assets/camp/exports/shelf.glb`, `assets/camp/exports/stool.glb`, `assets/camp/exports/table.glb`, `assets/camp/preview/camp_furniture_preview.png`, `assets/camp/preview/camp_racks_preview.png`, `assets/camp/preview/camp_storage_preview.png`, `assets/source/camp_set.blend`
+
+Commit at time of writing: `29c3979`

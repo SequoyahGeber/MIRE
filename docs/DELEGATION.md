@@ -75,6 +75,33 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Asset batch A-013: the camp kit, built off one stock list (slate17)
+
+**What shipped, verified:** 16 GLBs in `assets/camp/exports/` (`tools/blender/build_camp_set.py`,
+`assets/source/camp_set.blend`), a catalog, three contact sheets, `tools/camp_check.gd`. No palette
+changes — the kit is made entirely of tokens A-010 through A-012 already added.
+
+**The stock list is the API.** `catalog.json` carries a `stock` block: plank 32 mm thick and 145 mm
+wide, post radius 46 mm, rail radius 28 mm, band 13 mm, stave 22 mm. Anything added to this kit
+later — and A-018's settlement shell, which is the same carpentry at building scale — should use
+those numbers rather than new ones, and should go through `plank()`/`post()`/`rail()`/`band()`/
+`lashing()` so the build contract can see it. A structural part built with a raw `box()` fails the
+build; genuinely non-timber parts are declared per asset in `FREEFORM`.
+
+**Two shared frames, named in the catalog's `frames` map.** `rack` (storage, weapon, tool, drying)
+and `crate` (intact, broken). Frame drift is **0.0000 mm**, asserted in the generator where the parts
+still have names. The engine cannot see those parts — a GLB is one joined mesh — so
+`tools/camp_check.gd` asserts the consequence instead: the four racks stand the same height and
+width however differently they are loaded, and a smashed crate may only grow past the crate it was,
+never shrink. That distinction is worth copying: **assert the named geometry at build time and the
+visible consequence at import time**, rather than repeating an assertion the importer cannot make.
+
+**For whoever wires these up:** every asset is ground-centred with no node transform, so it drops in
+at `Transform3D.IDENTITY`. None carry collision — presentation meshes, per the tracker's contract —
+and the pieces that obviously want a `BuildableDef` row eventually (task 3.7 owns
+`content/buildables/`) are the barrels, the crate, the table, the bench, the shelf and the four racks.
+
+
 ### 2026-08-19 — F-233 resolved: the residual `@rpc("any_peer")` surface F-232 left unfixed now has a standing audit check instead of a hand-written list (lm)
 
 **What shipped, the seam the next new `@rpc("any_peer")` handler builds on:**

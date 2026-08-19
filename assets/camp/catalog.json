@@ -1,0 +1,326 @@
+{
+  "batch": "A-013",
+  "family": "camp",
+  "blender": "5.2.0 LTS",
+  "stock": {
+    "plank_thickness_m": 0.032,
+    "plank_width_m": 0.145,
+    "post_radius_m": 0.046,
+    "rail_radius_m": 0.028,
+    "band_thickness_m": 0.013,
+    "stave_thickness_m": 0.022
+  },
+  "frames": {
+    "crate": [
+      "crate",
+      "crate_broken"
+    ],
+    "rack": [
+      "rack_storage",
+      "rack_weapon",
+      "rack_tool",
+      "rack_drying"
+    ]
+  },
+  "assets": [
+    {
+      "name": "barrel_small",
+      "file": "exports/barrel_small.glb",
+      "width_m": 0.4916,
+      "depth_m": 0.4894,
+      "height_m": 0.58,
+      "target_m": 0.58,
+      "axis": "height",
+      "frame": null,
+      "parts": 1,
+      "polygons": 176,
+      "triangles": 320,
+      "materials": [
+        "MIRE_IronDark",
+        "MIRE_WoodTimber",
+        "MIRE_WoodTimberLight"
+      ]
+    },
+    {
+      "name": "barrel_large",
+      "file": "exports/barrel_large.glb",
+      "width_m": 0.6818,
+      "depth_m": 0.6818,
+      "height_m": 0.88,
+      "target_m": 0.88,
+      "axis": "height",
+      "frame": null,
+      "parts": 1,
+      "polygons": 202,
+      "triangles": 388,
+      "materials": [
+        "MIRE_IronDark",
+        "MIRE_WoodTimber",
+        "MIRE_WoodTimberLight"
+      ]
+    },
+    {
+      "name": "crate",
+      "file": "exports/crate.glb",
+      "width_m": 0.653,
+      "depth_m": 0.653,
+      "height_m": 0.5848,
+      "target_m": 0.56,
+      "axis": "spread",
+      "frame": "crate",
+      "parts": 1,
+      "polygons": 162,
+      "triangles": 348,
+      "materials": [
+        "MIRE_IronDark",
+        "MIRE_WoodTimber",
+        "MIRE_WoodTimberLight"
+      ]
+    },
+    {
+      "name": "crate_broken",
+      "file": "exports/crate_broken.glb",
+      "width_m": 0.9902,
+      "depth_m": 0.7415,
+      "height_m": 0.5877,
+      "target_m": 0.56,
+      "axis": "spread",
+      "frame": "crate",
+      "parts": 1,
+      "polygons": 162,
+      "triangles": 324,
+      "materials": [
+        "MIRE_IronDark",
+        "MIRE_WoodTimber",
+        "MIRE_WoodTimberLight"
+      ]
+    },
+    {
+      "name": "sack",
+      "file": "exports/sack.glb",
+      "width_m": 0.3681,
+      "depth_m": 0.3725,
+      "height_m": 0.54,
+      "target_m": 0.54,
+      "axis": "height",
+      "frame": null,
+      "parts": 1,
+      "polygons": 170,
+      "triangles": 188,
+      "materials": [
+        "MIRE_Cloth",
+        "MIRE_ClothDark",
+        "MIRE_Rope"
+      ]
+    },
+    {
+      "name": "bucket",
+      "file": "exports/bucket.glb",
+      "width_m": 0.3051,
+      "depth_m": 0.3051,
+      "height_m": 0.34,
+      "target_m": 0.34,
+      "axis": "height",
+      "frame": null,
+      "parts": 1,
+      "polygons": 90,
+      "triangles": 210,
+      "materials": [
+        "MIRE_IronDark",
+        "MIRE_Rope",
+        "MIRE_WoodTimber"
+      ]
+    },
+    {
+      "name": "stool",
+      "file": "exports/stool.glb",
+      "width_m": 0.4857,
+      "depth_m": 0.4648,
+      "height_m": 0.46,
+      "target_m": 0.46,
+      "axis": "height",
+      "frame": null,
+      "parts": 1,
+      "polygons": 70,
+      "triangles": 172,
+      "materials": [
+        "MIRE_WoodBark",
+        "MIRE_WoodTimber",
+        "MIRE_WoodTimberLight"
+      ]
+    },
+    {
+      "name": "bench",
+      "file": "exports/bench.glb",
+      "width_m": 1.62,
+      "depth_m": 0.4999,
+      "height_m": 0.4803,
+      "target_m": 1.62,
+      "axis": "spread",
+      "frame": null,
+      "parts": 1,
+      "polygons": 78,
+      "triangles": 192,
+      "materials": [
+        "MIRE_WoodBark",
+        "MIRE_WoodTimber",
+        "MIRE_WoodTimberLight"
+      ]
+    },
+    {
+      "name": "table",
+      "file": "exports/table.glb",
+      "width_m": 1.72,
+      "depth_m": 0.7906,
+      "height_m": 0.8522,
+      "target_m": 1.72,
+      "axis": "spread",
+      "frame": null,
+      "parts": 1,
+      "polygons": 182,
+      "triangles": 320,
+      "materials": [
+        "MIRE_Cloth",
+        "MIRE_WoodBark",
+        "MIRE_WoodTimber",
+        "MIRE_WoodTimberLight"
+      ]
+    },
+    {
+      "name": "shelf",
+      "file": "exports/shelf.glb",
+      "width_m": 0.9722,
+      "depth_m": 0.3005,
+      "height_m": 1.42,
+      "target_m": 1.42,
+      "axis": "height",
+      "frame": null,
+      "parts": 1,
+      "polygons": 104,
+      "triangles": 248,
+      "materials": [
+        "MIRE_Rope",
+        "MIRE_WoodBark",
+        "MIRE_WoodTimber",
+        "MIRE_WoodTimberLight"
+      ]
+    },
+    {
+      "name": "bedroll",
+      "file": "exports/bedroll.glb",
+      "width_m": 1.86,
+      "depth_m": 0.3577,
+      "height_m": 0.3016,
+      "target_m": 1.86,
+      "axis": "spread",
+      "frame": null,
+      "parts": 1,
+      "polygons": 122,
+      "triangles": 200,
+      "materials": [
+        "MIRE_Canvas",
+        "MIRE_CanvasDark",
+        "MIRE_LeatherDark"
+      ]
+    },
+    {
+      "name": "rack_storage",
+      "file": "exports/rack_storage.glb",
+      "width_m": 1.2139,
+      "depth_m": 0.455,
+      "height_m": 1.68,
+      "target_m": 1.68,
+      "axis": "height",
+      "frame": "rack",
+      "parts": 1,
+      "polygons": 370,
+      "triangles": 580,
+      "materials": [
+        "MIRE_Clay",
+        "MIRE_ClothDark",
+        "MIRE_Rope",
+        "MIRE_WoodBark",
+        "MIRE_WoodTimber"
+      ]
+    },
+    {
+      "name": "rack_weapon",
+      "file": "exports/rack_weapon.glb",
+      "width_m": 1.2139,
+      "depth_m": 0.455,
+      "height_m": 1.68,
+      "target_m": 1.68,
+      "axis": "height",
+      "frame": "rack",
+      "parts": 1,
+      "polygons": 306,
+      "triangles": 540,
+      "materials": [
+        "MIRE_Iron",
+        "MIRE_IronDark",
+        "MIRE_Rope",
+        "MIRE_WoodBark",
+        "MIRE_WoodTimber"
+      ]
+    },
+    {
+      "name": "rack_tool",
+      "file": "exports/rack_tool.glb",
+      "width_m": 1.2139,
+      "depth_m": 0.455,
+      "height_m": 1.68,
+      "target_m": 1.68,
+      "axis": "height",
+      "frame": "rack",
+      "parts": 1,
+      "polygons": 391,
+      "triangles": 628,
+      "materials": [
+        "MIRE_Iron",
+        "MIRE_IronDark",
+        "MIRE_Rope",
+        "MIRE_WoodBark",
+        "MIRE_WoodTimber"
+      ]
+    },
+    {
+      "name": "rack_drying",
+      "file": "exports/rack_drying.glb",
+      "width_m": 1.2139,
+      "depth_m": 0.455,
+      "height_m": 1.68,
+      "target_m": 1.68,
+      "axis": "height",
+      "frame": "rack",
+      "parts": 1,
+      "polygons": 292,
+      "triangles": 504,
+      "materials": [
+        "MIRE_FishBelly",
+        "MIRE_Leather",
+        "MIRE_Rope",
+        "MIRE_WoodBark",
+        "MIRE_WoodTimber"
+      ]
+    },
+    {
+      "name": "lantern",
+      "file": "exports/lantern.glb",
+      "width_m": 0.1789,
+      "depth_m": 0.1789,
+      "height_m": 0.36,
+      "target_m": 0.36,
+      "axis": "height",
+      "frame": null,
+      "parts": 1,
+      "polygons": 221,
+      "triangles": 308,
+      "materials": [
+        "MIRE_Flame",
+        "MIRE_Ice",
+        "MIRE_Iron",
+        "MIRE_IronDark"
+      ]
+    }
+  ]
+}

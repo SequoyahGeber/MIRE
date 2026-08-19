@@ -87,6 +87,153 @@
       "hash": "e594bffa8ee896c5388f068e4cbb9134f1823003d735c625c091805a6c8b0906",
       "task": "2.1d"
     },
+    "assets/camp": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": null,
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/catalog.json": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "4280a7d85340da6695cb07b6b9915c1584dd52801903c848de349992edd205a1",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/barrel_large.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "287493298d7ada070455b43f6e65e196a0074f93c6ff29b1ef8183ade32d6ad6",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/barrel_small.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "e0ea4a37c7169fccd63f9624c0db6a2334815886eb8d5a3e43a9b22ed2929316",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/bedroll.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "68a681ee1dd6d0bc9fce7c15c9210e4824c6ae13b82202534af3cb70b3a745e9",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/bench.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "034f46651df7d84263652a401f5298a75a8bba14a9b59f03b7149e6ee56201bb",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/bucket.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "2263ecfab4dcd253960d0eea694e3f8b3252853e7d47fb0c0dd5ef727699266e",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/crate.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "2d20fc0bed22ca9ac1ce8e1a54f17fbd285df4831d3e61bdaecff8fd792c0238",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/crate_broken.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "f75ed9dc909507310213afd121526cd1dd9856c4e15d1db734632586561c07d0",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/lantern.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "06f6fd88941d14a5872cff760e987efe9cfa6db44817a8ee499be11f3b16bc43",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/rack_drying.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "dc69154223d36aa1856fca8bf686149b861bcffe175ee2e331ed9dd11e5ea6cc",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/rack_storage.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "35f56bd8dbeac7a643c84620c9acecf7d47853d7d37aafcfe7711b700835505c",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/rack_tool.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "f139701b78a736df4bc82c24e3813e14e80b356ab02bdaa87497204e60a24bb5",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/rack_weapon.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "001161c40820c7b9c080d962d7abd7e8e7fd8cba24c729479694b5356713173c",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/sack.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "a04f1ea1903d27c2ab356b61ebbd42a04d1eb8448dea816fd07711e6247042f6",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/shelf.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "866ae8febc9d7509daa36b513cd6b79b65486bcec42db9dce347ba30344c8671",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/stool.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "e959318e377f2a92e5091b80e9d2c62ace9a2b12b68ddce61d85817659573154",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/exports/table.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "799f21638351cc462f2f828aed63effd392964ee83cef2e820c02ded656dadd3",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/preview/camp_furniture_preview.png": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "829709e029f01fded846923cca50da1fef547d59c6d3be88e06acb611a3d8555",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/preview/camp_racks_preview.png": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "6e6e9c21f774bc0613a172fd961139e7f92bc9b8fc022982fba5782b82c94e02",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/camp/preview/camp_storage_preview.png": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "813b375632faa66d91f05671b9988a7d7bc83cd02b8edc3a57afbd2f3e9833a2",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
     "assets/construction": {
       "agent": "lm",
       "at": "2026-08-19T06:17:24+00:00",
@@ -420,6 +567,13 @@
       "agent": "tine18",
       "at": "2026-08-18T17:43:02+00:00",
       "task": "2.1j"
+    },
+    "assets/source/camp_set.blend": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "770540cbf68f846b647aecfbfa912e8dc876e1cf7d8db6d290e78ae54a8be514",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "assets/source/construction_set.blend": {
       "agent": "lm",
@@ -1717,11 +1871,11 @@
       "token": null
     },
     "docs/ASSET_TRACKER.md": {
-      "agent": "lp",
-      "at": "2026-08-19T09:57:59+00:00",
-      "hash": "9c1f320ece6d6b93df4781af02a2283c4db1d734a4aa4d4f30ea4390a597426d",
-      "task": "F-198",
-      "token": null
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "2710d64ce909b15805ff17bf23770ebc08c9a0db2841a086f2e8ec60f1db56be",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "docs/COMMANDS.md": {
       "agent": "lp",
@@ -1738,18 +1892,18 @@
       "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "lm",
-      "at": "2026-08-19T15:32:50+00:00",
-      "hash": "16d533d9685b0d14c4999d32d06a3ddd46f45c008824ad1c5a5e61523c1fa234",
-      "task": "F-230",
-      "token": null
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "71f2ff37eb03d0c145662c2e08e985f28f12b9053476a26fb39a603dd9474658",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T15:32:50+00:00",
-      "hash": "5cb9fc1b6d5f2dc0a1ae0ee36fb432793611a53722934f54e0c0eff9ee21161c",
-      "task": "F-230",
-      "token": null
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "d4d69693e84a17e4c0863864f952e171ac53f1cd4d03cb97187271485ef78dd4",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -2331,6 +2485,13 @@
       "task": "F-196",
       "token": null
     },
+    "tools/blender/build_camp_set.py": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "febcd653ba775b42526f2f5366ee12bafff1404776f9cca8c537974c7683a602",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
     "tools/blender/build_construction_set.py": {
       "agent": "lp",
       "at": "2026-08-19T09:20:59+00:00",
@@ -2500,6 +2661,20 @@
       "at": "2026-08-18T22:17:53+00:00",
       "hash": "0e628aeb876e19d5941fccccd0fbac700fb21f31439a1cbfbf218366a90a727a",
       "task": "3.7"
+    },
+    "tools/camp_check.gd": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "ac40f2e70afa3fefdd41886d46cbf1b3ac0d03cdf713650e06becfa1521f3b56",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "tools/camp_check.gd.uid": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:55:30+00:00",
+      "hash": "b626e71f3eab4c02dcdd9317e2a06b95f50f2a7372a9102b54cd192a44311db4",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "tools/check_determinism.gd": {
       "agent": "lm",
