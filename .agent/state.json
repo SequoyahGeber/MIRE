@@ -1,5 +1,17 @@
 {
   "claims": {
+    ".agent/bin/agent": {
+      "agent": "nettle12",
+      "at": "2026-08-19T06:36:53+00:00",
+      "task": "F-186",
+      "token": "CLAUDE_CODE_SESSION_ID:40988e99-50dc-4901-9548-e1fbdb4e0f6f"
+    },
+    "assets/gatherables": {
+      "agent": "wick20",
+      "at": "2026-08-19T06:42:56+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+    },
     "autoload/graphics_quality.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
@@ -11,22 +23,28 @@
       "task": "F-183",
       "token": null
     },
-    "core/net/rpc_manifest.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-19T06:35:32+00:00",
-      "task": "F-161",
-      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
-    },
     "core/render/mesh_merge.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T22:08:56+00:00",
       "task": "F-144"
+    },
+    "core/util/mire_log.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T06:36:39+00:00",
+      "task": "F-183",
+      "token": null
     },
     "docs/ARCHITECTURE.md": {
       "agent": "lm",
       "at": "2026-08-19T06:32:29+00:00",
       "task": "F-183",
       "token": null
+    },
+    "docs/ASSET_TRACKER.md": {
+      "agent": "wick20",
+      "at": "2026-08-19T06:42:56+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
     "docs/DECISIONS.md": {
       "agent": "lm",
@@ -45,6 +63,12 @@
       "at": "2026-08-19T06:32:29+00:00",
       "task": "F-183",
       "token": null
+    },
+    "docs/ROADMAP.md": {
+      "agent": "pike14",
+      "at": "2026-08-19T06:41:54+00:00",
+      "task": "F-006",
+      "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
       "agent": "lm",
@@ -67,6 +91,18 @@
       "at": "2026-08-18T22:14:11+00:00",
       "task": "F-144"
     },
+    "tools/blender/build_gatherable_plants.py": {
+      "agent": "wick20",
+      "at": "2026-08-19T06:42:56+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+    },
+    "tools/blender/mire_art.py": {
+      "agent": "wick20",
+      "at": "2026-08-19T06:42:56+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+    },
     "tools/environment_vfx_hollowmere_check.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T22:04:06+00:00",
@@ -76,6 +112,12 @@
       "agent": "nettle12",
       "at": "2026-08-18T22:25:03+00:00",
       "task": "F-144"
+    },
+    "tools/harness_check.py": {
+      "agent": "nettle12",
+      "at": "2026-08-19T06:42:51+00:00",
+      "task": "F-186",
+      "token": "CLAUDE_CODE_SESSION_ID:40988e99-50dc-4901-9548-e1fbdb4e0f6f"
     },
     "tools/harvest_batch_check.gd": {
       "agent": "nettle12",
@@ -92,12 +134,6 @@
       "at": "2026-08-19T06:32:29+00:00",
       "task": "F-183",
       "token": null
-    },
-    "tools/rpc_manifest_check.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-19T06:35:32+00:00",
-      "task": "F-161",
-      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "world/environment/draw_policy.gd": {
       "agent": "nettle12",
@@ -116,6 +152,27 @@
     }
   },
   "in_flight": {
+    "2.1d": {
+      "agent": "wick20",
+      "files": [
+        "docs/ASSET_TRACKER.md",
+        "tools/blender/build_gatherable_plants.py",
+        "tools/blender/mire_art.py",
+        "assets/gatherables"
+      ],
+      "notes": [],
+      "started": "2026-08-19T06:42:56+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+    },
+    "F-006": {
+      "agent": "pike14",
+      "files": [
+        "docs/ROADMAP.md"
+      ],
+      "notes": [],
+      "started": "2026-08-19T06:41:54+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
+    },
     "F-144": {
       "agent": "nettle12",
       "files": [
@@ -135,16 +192,6 @@
       "notes": [],
       "started": "2026-08-18T21:51:43+00:00"
     },
-    "F-161": {
-      "agent": "hollow7",
-      "files": [
-        "tools/rpc_manifest_check.gd",
-        "core/net/rpc_manifest.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-19T06:35:32+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
-    },
     "F-183": {
       "agent": "lm",
       "files": [
@@ -154,11 +201,22 @@
         "docs/DECISIONS.md",
         "docs/DELEGATION.md",
         "docs/SPECS.md",
-        "docs/ARCHITECTURE.md"
+        "docs/ARCHITECTURE.md",
+        "core/util/mire_log.gd"
       ],
       "notes": [],
       "started": "2026-08-19T06:32:29+00:00",
       "token": null
+    },
+    "F-186": {
+      "agent": "nettle12",
+      "files": [
+        ".agent/bin/agent",
+        "tools/harness_check.py"
+      ],
+      "notes": [],
+      "started": "2026-08-19T06:36:53+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:40988e99-50dc-4901-9548-e1fbdb4e0f6f"
     }
   },
   "recent": {
@@ -1558,11 +1616,18 @@
       "task": "4.6"
     },
     "core/net/net_version.gd": {
-      "agent": "slate17",
-      "at": "2026-08-19T06:36:13+00:00",
-      "hash": "eba1c1f46a78fcd688769c0189e439ce41d4081bf105fd57dc251b6e9421cab0",
-      "task": "3.7",
-      "token": null
+      "agent": "hollow7",
+      "at": "2026-08-19T06:44:02+00:00",
+      "hash": "7702471d1060ad6303500080e987674ce3a95830cc41bff4c286927ae50d8902",
+      "task": "F-161",
+      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
+    },
+    "core/net/rpc_manifest.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-19T06:44:02+00:00",
+      "hash": "fff0291ae8f0bf97cfaac6562518146a013ae1262ada49081f0d69d0fb52ea5a",
+      "task": "F-161",
+      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "core/save/salvage_save.gd": {
       "agent": "lm",
@@ -2496,11 +2561,11 @@
       "task": "F-115"
     },
     "tools/handshake_check.gd": {
-      "agent": "slate17",
-      "at": "2026-08-19T06:36:13+00:00",
-      "hash": "cfea94316b7888d02f0be758f2c3bb973d7ce1f16c82bb001ed924260eef9e88",
-      "task": "3.7",
-      "token": null
+      "agent": "hollow7",
+      "at": "2026-08-19T06:44:02+00:00",
+      "hash": "e3931999451d37e3c44d70a81b1934538e5e24770da79d91c05ad95b595d7cbe",
+      "task": "F-161",
+      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "tools/harness_check.py": {
       "agent": "lm",
@@ -2705,6 +2770,13 @@
       "at": "2026-08-18T20:38:46+00:00",
       "hash": "4721ae3b0838565cad056314059d2f441c3efba255e21b89890759330a2df12d",
       "task": "F-127"
+    },
+    "tools/rpc_manifest_check.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-19T06:44:02+00:00",
+      "hash": "8758ce994232864b8667f81a9c08cca8d86b9b2fdd436d40d9d2f12bf7f96293",
+      "task": "F-161",
+      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "tools/rule_check.gd": {
       "agent": "hollow7",
@@ -3260,11 +3332,11 @@
       "title": "Protocol/build version handshake \u2014 refuse mismatched builds with a clear message, not a desync"
     },
     "1.12": {
-      "est": "1.5",
+      "est": "1",
       "milestone": "M1",
       "status": "todo",
       "tier": "T0",
-      "title": "UNBLOCKED 2026-08-18 \u2014 D-030's wait is over: the in-game lobby join shipped (6.10's lobby-UI slice, press M). Cross-platform join test, Mac \u2194 Windows \u2194 Linux in one lobby over Steam. Transport is proven; only the evidence ceremony is left, and it now needs only the three machines"
+      "title": "READY \u2014 only the evidence ceremony is left. Cross-platform join test, Mac \u2194 Windows \u2194 Linux in one lobby over Steam. Transport, in-game join (press M), and shipped builds on all three OSes are all proven; 2026-08-18 fixed the three defects that would have failed the run itself: content survived export (F-121), the friends-list Join Game both appears and works (F-123, F-127), and two players no longer spawn inside one another (F-129 \u2014 the defect that would have failed \"movement is visible and smooth\"). What remains is running it with three mutual-friend accounts and capturing the evidence"
     },
     "1.2": {
       "done_at": "2026-08-16T03:10:07+00:00",
@@ -3421,7 +3493,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
@@ -4053,11 +4125,11 @@
       "title": "Export presets for macOS (universal), Windows, Linux \u2014 Steam redistributables bundled per platform, case-sensitivity audit"
     },
     "7.12": {
-      "est": "2",
+      "est": "1.5",
       "milestone": "M7",
       "status": "todo",
       "tier": "T0",
-      "title": "Test each export on its real OS, plus Steam Deck"
+      "title": "Test each export on its real OS, plus Steam Deck. Half-evidenced 2026-08-18: all three exports exist and were smoke-run on their real OS (macOS host, Windows VM, Linux VM) \u2014 each boots, loads identical content, and exits clean. What is genuinely left is *frame rate and rendering artifacts on real hardware*: both VMs render in software (the Windows guest reports `Microsoft Basic Render Driver`), so neither can judge performance. Plus Steam Deck"
     },
     "7.2": {
       "est": "4",
@@ -4140,7 +4212,7 @@
       "milestone": "M8",
       "status": "todo",
       "tier": "T0",
-      "title": "macOS codesign + notarisation (needs an Apple Developer account, $99/yr)"
+      "title": "macOS codesign + notarisation (needs an Apple Developer account, $99/yr). Carry F-124's entitlements through: the bundle needs `allow-dyld-environment-variables` or Steam cannot inject its overlay, and hardened runtime is required for notarisation \u2014 verify both survive with `codesign -d --entitlements -` after signing, not before"
     },
     "8.11": {
       "est": "2",
@@ -4161,14 +4233,14 @@
       "milestone": "M8",
       "status": "todo",
       "tier": "T1",
-      "title": "Achievements, stats, rich presence"
+      "title": "Achievements, stats, rich presence. The joinability half already ships: `SteamLobby` publishes the `connect` key and handles both join callbacks (F-123, F-127), so this is achievements, stats, and presence *display* strings \u2014 not the join plumbing"
     },
     "8.4": {
       "est": "3",
       "milestone": "M8",
       "status": "todo",
       "tier": "T1",
-      "title": "Depots, build pipeline, `steamcmd` upload script, branches"
+      "title": "Depots, build pipeline, `steamcmd` upload script, branches. Starts from working presets: `export_presets.cfg` has all three platforms and builds land in the gitignored `export/` (see DELEGATION.md). They are debug presets \u2014 release presets are this task's job, and `steam_appid.txt` must not ship in one (D-022)"
     },
     "8.5": {
       "est": "4",
@@ -4247,7 +4319,7 @@
     "F-006": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Three roadmap tasks assume a Windows or Linux machine we don't have"
     },
@@ -5575,9 +5647,11 @@
       "title": "A transient API error kills a saturate chain, and nothing restarts it \u2014 the lane sits idle until a human notices"
     },
     "F-161": {
+      "done_at": "2026-08-19T06:44:02+00:00",
+      "done_by": "hollow7",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Task 5.3's three new ranged-combat RPCs shipped with no `PROTOCOL_VERSION` bump \u2014 `net_version.gd` was held all session by another lane's claim"
     },
@@ -5780,6 +5854,34 @@
       "status": "done",
       "tier": "F",
       "title": "Fixing one instance of a bug class without sweeping for siblings is this project's most reliable source of new findings"
+    },
+    "F-186": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "A chat session that dies holds its claims forever \u2014 agent reap only frees lane claims, and a chat has no liveness signal at all"
+    },
+    "F-187": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Props are 1,057 MultiMesh groups averaging 2.7 copies \u2014 F-100's cross-asset chunk merge is still not built, and now has a measured constraint"
+    },
+    "F-188": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Runtime-merged meshes have no shadow mesh, though every imported .glb gets one"
+    },
+    "F-189": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "File claims have become the bottleneck D-011 named as its own reversal trigger \u2014 one claim blocked four consecutive tasks from bumping PROTOCOL_VERSION"
     }
   },
   "version": 1

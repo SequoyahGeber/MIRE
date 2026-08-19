@@ -80,7 +80,23 @@ extends RefCounted
 ## or shut a placed door or gate) and its own SceneReplicationConfig — `open`, ON_CHANGE, the entire
 ## schema a door has. Reliable: a dropped toggle leaves a door that is shut on the host and open on
 ## a client, which is a wall you can see through and walk into.
-const PROTOCOL_VERSION: int = 20
+## 21 (F-161/F-165/F-169/F-178, one bump for four omissions): four tasks shipped new RPCs without
+## bumping this constant, and each was filed separately before the pattern was visible. They are
+## folded into one bump because the versions in between never existed as a build anyone ran — there
+## is no compatibility window to preserve (see the note above), so four retroactive numbers would be
+## fiction. What actually shipped unversioned:
+##   · task 5.3, autoload/ranged_combat_service.gd — net_request_shot (client -> host), net_shot_fired
+##     (host -> everyone, the tracer), net_shot_resolved (host -> the shooter, the hit result).
+##   · task 6.5, the extraction pair — net_request_repair and net_request_toggle_departure.
+##   · task 6.7 — net_run_defeated, the host's team-wipe broadcast.
+##   · F-157, autoload/net_transport.gd — net_request_display_name (client -> host),
+##     net_display_name_changed (host -> everyone) and net_display_name_snapshot (host -> a joiner).
+##
+## `tools/rpc_manifest_check.gd` now scans every @rpc in the project and fails when the wire surface
+## moves without this constant moving with it, so a fifth omission is a red check rather than a
+## silent desync somebody diagnoses weeks later. Bumping this without re-recording the manifest
+## (core/net/rpc_manifest.gd) leaves that check red on purpose.
+const PROTOCOL_VERSION: int = 21
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).

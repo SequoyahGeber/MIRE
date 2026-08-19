@@ -4354,3 +4354,15 @@ Doors now open. systems/building/buildable_door.gd (extends buildable_piece.gd, 
 Files: `systems/building/buildable_door.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/door_check.gd`, `tools/door_check.gd.uid`, `ui/building/door_prompt.gd`, `ui/building/door_prompt.gd.uid`, `scenes/buildables/door.tscn`, `scenes/buildables/gate.tscn`, `scenes/buildables/palisade_gate.tscn`, `project.godot`
 
 Commit at time of writing: `c7e9a6d`
+
+---
+
+### DONE · F-161 · hollow7 · 2026-08-19T06:44:02+00:00
+
+**Task 5.3's three new ranged-combat RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim**
+
+Fixed all four un-bumped-RPC findings at once (F-161/165/169/178) and built the mechanism that prevents a fifth. PROTOCOL_VERSION 20 -> 21, folded into one bump because the intermediate versions never existed as a build anyone ran; net_version.gd's history block names all four sets (5.3's three ranged RPCs, 6.5's two extraction RPCs, 6.7's net_run_defeated, F-157's three display-name RPCs) and handshake_check.gd's hard-coded expectation follows. New: core/net/rpc_manifest.gd scans every @rpc in game code (tools/ excluded — handshake_check declares harness RPCs and counting them would be a false alarm) into one canonical signature, and tools/rpc_manifest_check.gd fails when that signature moves without PROTOCOL_VERSION moving with it, printing the exact RPC that changed plus a paste-ready re-record block. Proven empirically both ways: adding a probe RPC failed the check and named it with its full signature, removing it went green. 55 game RPCs recorded at v21. handshake_check, command_net_check, rule_net_check, entity_net_check, verify_setup all green. DOCS NOT WRITTEN: lm holds docs/DECISIONS.md and docs/DELEGATION.md for F-183 for the whole session; the decision to record is 'one catch-up bump for four omissions, plus a manifest check so the rule is mechanical rather than remembered', and DELEGATION needs the re-record workflow (bump, then paste the check's block, then extend handshake_check).
+
+Files: `tools/rpc_manifest_check.gd`, `core/net/rpc_manifest.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`
+
+Commit at time of writing: `30394f0`
