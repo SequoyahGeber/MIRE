@@ -1,49 +1,56 @@
 {
   "claims": {
-    "assets/paths": {
-      "agent": "slate17",
-      "at": "2026-08-19T16:57:43+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    "content/poi/shipwreck.tres": {
+      "agent": "yarrow21",
+      "at": "2026-08-19T17:05:32+00:00",
+      "task": "4.15",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
-    "docs/ASSET_TRACKER.md": {
-      "agent": "slate17",
-      "at": "2026-08-19T16:57:43+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    "content/poi/wellspring.tres": {
+      "agent": "yarrow21",
+      "at": "2026-08-19T17:05:32+00:00",
+      "task": "4.15",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
-    "tools/blender/build_path_set.py": {
-      "agent": "slate17",
-      "at": "2026-08-19T16:57:43+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    "core/dev/dev_launch.gd": {
+      "agent": "yarrow21",
+      "at": "2026-08-19T17:02:48+00:00",
+      "task": "4.15",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
-    "tools/blender/mire_art.py": {
-      "agent": "slate17",
-      "at": "2026-08-19T17:01:25+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    "tools/procedural_world_check.gd": {
+      "agent": "yarrow21",
+      "at": "2026-08-19T17:02:48+00:00",
+      "task": "4.15",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
-    "tools/path_check.gd": {
-      "agent": "slate17",
-      "at": "2026-08-19T16:57:43+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    "world/gen/poi_def.gd": {
+      "agent": "yarrow21",
+      "at": "2026-08-19T17:02:48+00:00",
+      "task": "4.15",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
+    },
+    "world/gen/procedural_world.gd": {
+      "agent": "yarrow21",
+      "at": "2026-08-19T17:02:48+00:00",
+      "task": "4.15",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     }
   },
   "in_flight": {
-    "2.1d": {
-      "agent": "slate17",
+    "4.15": {
+      "agent": "yarrow21",
       "files": [
-        "docs/ASSET_TRACKER.md",
-        "tools/blender/build_path_set.py",
-        "tools/path_check.gd",
-        "assets/paths",
-        "tools/blender/mire_art.py"
+        "world/gen/procedural_world.gd",
+        "world/gen/poi_def.gd",
+        "core/dev/dev_launch.gd",
+        "tools/procedural_world_check.gd",
+        "content/poi/wellspring.tres",
+        "content/poi/shipwreck.tres"
       ],
       "notes": [],
-      "started": "2026-08-19T16:57:43+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+      "started": "2026-08-19T17:02:48+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     }
   },
   "recent": {
@@ -613,6 +620,132 @@
       "at": "2026-08-18T17:43:02+00:00",
       "task": "2.1j"
     },
+    "assets/paths": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:42+00:00",
+      "hash": null,
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/catalog.json": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "6fcc19fba4e18a41147f52f61ec08df800f4f0773731183a8fa45b2c5c3c333e",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/exports/boardwalk_broken.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "98b9b8f733017006473aa6d529d305a85012c566a73aeb297b598217f414fb9f",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/exports/boardwalk_corner.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "3768fb93869ec2bab0b7d046e4dc067f3bed60588ec94de01b2bfd38428be5c4",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/exports/boardwalk_stairs.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "b3378d04f2acdeaa66c649d826ab375151143bf164328c08c8dd299d5d39f214",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/exports/boardwalk_straight.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "7889cb978c35ca5881c95c414f22180e184982dbcf2394d4d919368015510cf2",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/exports/path_cobble.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "4af5233af2137e25689b9b3815f6f5a93f918806e684c1fc0d11fdcd664af2a3",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/exports/path_corrupted.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "202ecc64370df00ef3fa17e462f4ea6a3910e697ffa02caef16c101820a75b6b",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/exports/path_dirt.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "ad4944daa831af7817614850f1eb9105be60f5b35eb02a7a339a71f5d4a1dd91",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/exports/path_mud.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "f60e9aa9a9a83ad68b7c01c35212c771e0964cb296c8082d4928b69dbdfbf1f0",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/exports/rune_marker.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "e5e2b1640dab284311967d50cc4ca30bf61b8cc67b824b7c03d9fa0d689108e9",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/exports/signpost.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "9e6016c8a11b9ee036af4f633796f278944c772d6c35e5069eed3ae9da6b5981",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/exports/stepping_stones.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "9db2c6207d39ff4b2e2b3e029842afd84f741b584c9279f1eeafa852c0148d18",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/exports/trail_marker.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "d96060b1004b582bbb78e196f1dec6c7de1c7ca263f275d9866e621af1f97218",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/exports/warning_sign.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "8f2546434bd9531e57e822334d1629902c2517de5e4814694d451872c16842fd",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/preview/path_boardwalk_preview.png": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "336c258ebdb158c82375d6a8488d6b533b7d5018af007200344e79afbbe4abe8",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/preview/path_markers_preview.png": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "b55b2f1be7e600a0e3bf2753e40601274df43a3b117eb75eac84814f9b6bedd0",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/paths/preview/path_surfaces_preview.png": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "7f8e212bc694278cc15fcf162e62bc336d3a159def7a5f252b809d22d0c8c040",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
     "assets/source/camp_set.blend": {
       "agent": "slate17",
       "at": "2026-08-19T16:55:30+00:00",
@@ -668,6 +801,13 @@
       "hash": "1eddcfbd02da273cd2b7f184cd56734fb6fedf02db81930020c12e5b0b05332e",
       "task": "F-198",
       "token": null
+    },
+    "assets/source/path_set.blend": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "91b6d844e7ab71832a16fa17c59cf02e0650ba3c19bdd83d353d5efd42ffcb5b",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "assets/source/playtest_hollow.blend": {
       "agent": "tine18",
@@ -1917,8 +2057,8 @@
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "slate17",
-      "at": "2026-08-19T16:55:30+00:00",
-      "hash": "2710d64ce909b15805ff17bf23770ebc08c9a0db2841a086f2e8ec60f1db56be",
+      "at": "2026-08-19T17:05:42+00:00",
+      "hash": "c10173d56b54f6cf0062c2e4e9a5524fda9843f7047169be6aa134829f36feee",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
@@ -1938,8 +2078,8 @@
     },
     "docs/DELEGATION.md": {
       "agent": "slate17",
-      "at": "2026-08-19T16:55:30+00:00",
-      "hash": "71f2ff37eb03d0c145662c2e08e985f28f12b9053476a26fb39a603dd9474658",
+      "at": "2026-08-19T17:05:42+00:00",
+      "hash": "4d1d07cdd75158811c82d780be9003300064a110a9406fb4496440db875be2b0",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
@@ -2607,6 +2747,13 @@
       "task": "F-207",
       "token": null
     },
+    "tools/blender/build_path_set.py": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:42+00:00",
+      "hash": "5e10b9aa02a649079b19296b0a23e9a7e8c111951356fa03fb73ed7145ca7244",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
     "tools/blender/build_pickup_kit.py": {
       "agent": "lp",
       "at": "2026-08-19T09:20:59+00:00",
@@ -2657,11 +2804,11 @@
       "token": null
     },
     "tools/blender/mire_art.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
-      "hash": "e340a2f02297c7838e17ba6a57cfb3efb476def7bb39ae7719d0d9c1ba385e7c",
-      "task": "F-196",
-      "token": null
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:43+00:00",
+      "hash": "a3e85f9177b0d15209486a745685d2a04ede9d6db04d080a67bedae3ed1ec6e5",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "tools/blender/render_item_icons.py": {
       "agent": "lp",
@@ -3232,6 +3379,20 @@
       "at": "2026-08-19T03:46:26+00:00",
       "hash": "e5b57b575da0bb10cf10f43698e50dacdd1083bafeb328870ffc6e9e58c3151c",
       "task": "7.8"
+    },
+    "tools/path_check.gd": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:42+00:00",
+      "hash": "6770350c2f25e535217efe862b4f13a39334390b2274544f0b7ff44a88fb8eea",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "tools/path_check.gd.uid": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:05:42+00:00",
+      "hash": "4376cdc2bb677bca62bb59abdc3b1cd518746fe36ecc0ecf947a881222342c25",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "tools/poi_check.gd": {
       "agent": "lm",
@@ -4145,7 +4306,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
@@ -4611,7 +4772,7 @@
     "4.15": {
       "est": "3",
       "milestone": "M4",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "`ProceduralWorld` composer behind `--procedural`: markers, spawn rule, `PoiDef.marker_kind` (D-143)"
     },

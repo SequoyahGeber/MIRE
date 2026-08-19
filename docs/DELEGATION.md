@@ -75,6 +75,33 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Asset batch A-014: roads, and the piece that joins two kits (slate17)
+
+**What shipped, verified:** 13 GLBs in `assets/paths/exports/` (`tools/blender/build_path_set.py`,
+`assets/source/path_set.blend`), a catalog, three contact sheets, `tools/path_check.gd`. One palette
+token appended (`water_still`).
+
+**The catalog now carries the module, not just the sizes:** `module_m` (2.00, A-010's),
+`deck_z_m` (`boardwalk` 0.22 and `construction_kit` 1.00), `plank_thickness_m` (0.055) and a
+`run_span_m` map naming which pieces tile and on which axes. Anything that lays roads should read
+those rather than re-deriving them — and anything that adds a road piece should join that map, or
+the tiling contract cannot see it.
+
+**Two gauges of timber, deliberately.** A-013's camp kit is 32 mm board stock; A-010's construction
+kit and this kit's boardwalk are 55 mm plank. The rule is *camp furniture is board stock, anything
+structural or walked on is plank stock* — worth stating because the two kits look like they
+disagree until you know which is which.
+
+**`boardwalk_stairs` is the only piece in either kit that changes level between them**, climbing
+0.22 → 1.00 m over one module at 21.3°. If a level or a generator wants a low walkway to meet a
+dock, that is the piece; nothing else in A-010 or A-014 does it.
+
+**A path tile's verge is assigned by position, not by `paint_faces`.** The slab's total height range
+is 28 mm, so height-based face selection — which is how every other kit paints moss and char —
+selects most of the tile and paints blocky patches down the middle of the road. Where a surface is
+nearly flat, decide the material while you still know where the quad IS.
+
+
 ### 2026-08-19 — Asset batch A-013: the camp kit, built off one stock list (slate17)
 
 **What shipped, verified:** 16 GLBs in `assets/camp/exports/` (`tools/blender/build_camp_set.py`,

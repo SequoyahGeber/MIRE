@@ -5638,3 +5638,27 @@ Re-claimed only to attach the exact output paths for D-031's ship check — see 
 Files: `assets/camp/catalog.json`, `assets/camp/exports/barrel_large.glb`, `assets/camp/exports/barrel_small.glb`, `assets/camp/exports/bedroll.glb`, `assets/camp/exports/bench.glb`, `assets/camp/exports/bucket.glb`, `assets/camp/exports/crate.glb`, `assets/camp/exports/crate_broken.glb`, `assets/camp/exports/lantern.glb`, `assets/camp/exports/rack_drying.glb`, `assets/camp/exports/rack_storage.glb`, `assets/camp/exports/rack_tool.glb`, `assets/camp/exports/rack_weapon.glb`, `assets/camp/exports/sack.glb`, `assets/camp/exports/shelf.glb`, `assets/camp/exports/stool.glb`, `assets/camp/exports/table.glb`, `assets/camp/preview/camp_furniture_preview.png`, `assets/camp/preview/camp_racks_preview.png`, `assets/camp/preview/camp_storage_preview.png`, `assets/source/camp_set.blend`
 
 Commit at time of writing: `29c3979`
+
+---
+
+### HANDOFF · 2.1d · slate17 · 2026-08-19T17:05:42+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-014 (roads and navigation) is DONE; A-015 (wetland nature) is now NEXT. 13 GLBs in assets/paths/ from tools/blender/build_path_set.py, 3,608 triangles, plus tools/path_check.gd and one palette token (water_still). This is the first batch governed by two earlier kits at once: every tiling piece is A-010's 2.00 m module measured on the walking SURFACE (F-135), and the boardwalk takes A-010's 55 mm plank rather than A-013's 32 mm board — camp furniture is board stock, anything structural or walked on is plank stock. boardwalk_stairs climbs 0.22 -> 1.00 m over one module at 21.3 degrees, joining this kit's low walkway to A-010's dock deck; it is the only piece in either kit that changes level between them. Four surfaces share one slab at 0.0000 mm drift. TRAP WORTH KNOWING: a path's total height range is 28 mm, so paint_faces (which selects by height) painted blocky patches of grass down the middle of the road — where a surface is nearly flat, decide the material while you still know where the quad is. Also: the first water colour read as Ward teal from above, which is the one association a road must not carry. Verified: build contract 13/13, two clean rebuilds byte-identical, all-sides audit 0 defects, three sheets inspected at the angle each asset is actually judged from, path_check.gd 0 failures confirming the module across all 8 tiling pieces.
+
+Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_path_set.py`, `tools/path_check.gd`, `assets/paths`, `tools/blender/mire_art.py`, `tools/path_check.gd.uid`, `docs/DELEGATION.md`
+
+Commit at time of writing: `89db19b`
+
+---
+
+### HANDOFF · 2.1d · slate17 · 2026-08-19T17:05:43+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+Re-claimed to attach A-014's exact output paths for D-031's ship check.
+
+Files: `assets/paths/catalog.json`, `assets/paths/exports/boardwalk_broken.glb`, `assets/paths/exports/boardwalk_corner.glb`, `assets/paths/exports/boardwalk_stairs.glb`, `assets/paths/exports/boardwalk_straight.glb`, `assets/paths/exports/path_cobble.glb`, `assets/paths/exports/path_corrupted.glb`, `assets/paths/exports/path_dirt.glb`, `assets/paths/exports/path_mud.glb`, `assets/paths/exports/rune_marker.glb`, `assets/paths/exports/signpost.glb`, `assets/paths/exports/stepping_stones.glb`, `assets/paths/exports/trail_marker.glb`, `assets/paths/exports/warning_sign.glb`, `assets/paths/preview/path_boardwalk_preview.png`, `assets/paths/preview/path_markers_preview.png`, `assets/paths/preview/path_surfaces_preview.png`, `assets/source/path_set.blend`, `tools/blender/mire_art.py`
+
+Commit at time of writing: `89db19b`

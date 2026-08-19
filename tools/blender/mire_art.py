@@ -196,6 +196,18 @@ PALETTE: dict[str, Swatch] = {
     "bread_crumb": Swatch("#E2C88F", 0.90, note="the open crumb of a torn loaf"),
     "fish_scale": Swatch("#7E93A0", 0.52, note="bog fish flank; a cold grey-blue that is the only cool NATURAL colour in the food kit"),
     "fish_belly": Swatch("#D9D3C0", 0.60, note="pale fish underside and the flesh a cooked fish shows"),
+    # Roads (A-014). Standing water on a road is NOT `clear_liquid` (Ward teal) and
+    # NOT `mire_liquid` (corruption purple) — both of those hues mean something in
+    # this game, and a puddle that borrows either is telling the player a lie about
+    # the road they are standing on. This is dirty water over dark ground.
+    "water_still": Swatch("#3E3B31", 0.12, note="standing water in a rut. Browner than it looks right in isolation, because the first value (#41504B) read as Ward teal from above, which is exactly the association a puddle must not carry"),
+    # Wetland gatherables II (A-043). Bioluminescence needs a hue that is not
+    # already spoken for: purple is the Mire, teal is the Ward, ember/flame are
+    # fire, `critical` is damage and `eye` is an enemy looking at you. A cold green
+    # glow is the one bright thing left that means "this is safe and useful", which
+    # is what a light-source ingredient should say from across a dark swamp.
+    "glowcap": Swatch("#C3DE84", 0.62, 0.0, "#CBFF63", 2.4, note="bioluminescent mushroom cap"),
+    "glowcap_gill": Swatch("#8FA85C", 0.70, note="shaded gills under a glowcap; unlit on purpose so the cap reads as the light"),
     # -- organic / creature -------------------------------------------------
     "flesh_raw": Swatch("#B85757", 0.82, note="raw meat; muted, never fire-engine red"),
     "flesh_fat": Swatch("#F9D1C4", 0.84),

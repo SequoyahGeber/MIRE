@@ -1,0 +1,297 @@
+{
+  "batch": "A-014",
+  "family": "paths",
+  "blender": "5.2.0 LTS",
+  "module_m": 2.0,
+  "deck_z_m": {
+    "boardwalk": 0.22,
+    "construction_kit": 1.0
+  },
+  "plank_thickness_m": 0.055,
+  "run_span_m": {
+    "path_dirt": [
+      2.0,
+      2.0
+    ],
+    "path_mud": [
+      2.0,
+      2.0
+    ],
+    "path_cobble": [
+      2.0,
+      2.0
+    ],
+    "path_corrupted": [
+      2.0,
+      2.0
+    ],
+    "boardwalk_straight": [
+      2.0,
+      null
+    ],
+    "boardwalk_corner": [
+      2.0,
+      2.0
+    ],
+    "boardwalk_broken": [
+      2.0,
+      null
+    ],
+    "stepping_stones": [
+      2.0,
+      null
+    ]
+  },
+  "frames": {
+    "path": [
+      "path_dirt",
+      "path_mud",
+      "path_cobble",
+      "path_corrupted"
+    ]
+  },
+  "assets": [
+    {
+      "name": "path_dirt",
+      "file": "exports/path_dirt.glb",
+      "width_m": 2.0,
+      "depth_m": 2.0,
+      "height_m": 0.0484,
+      "target_m": 2.0,
+      "axis": "spread",
+      "frame": "path",
+      "parts": 1,
+      "polygons": 208,
+      "triangles": 304,
+      "materials": [
+        "MIRE_GrassDry",
+        "MIRE_Stone",
+        "MIRE_StoneDark",
+        "MIRE_TerrainPath"
+      ]
+    },
+    {
+      "name": "path_mud",
+      "file": "exports/path_mud.glb",
+      "width_m": 2.0,
+      "depth_m": 2.0,
+      "height_m": 0.0646,
+      "target_m": 2.0,
+      "axis": "spread",
+      "frame": "path",
+      "parts": 1,
+      "polygons": 208,
+      "triangles": 304,
+      "materials": [
+        "MIRE_Peat",
+        "MIRE_Sedge",
+        "MIRE_WaterStill"
+      ]
+    },
+    {
+      "name": "path_cobble",
+      "file": "exports/path_cobble.glb",
+      "width_m": 2.0306,
+      "depth_m": 2.0103,
+      "height_m": 0.0736,
+      "target_m": 2.0,
+      "axis": "spread",
+      "frame": "path",
+      "parts": 1,
+      "polygons": 608,
+      "triangles": 704,
+      "materials": [
+        "MIRE_Moss",
+        "MIRE_Stone",
+        "MIRE_StoneDark",
+        "MIRE_TerrainPath"
+      ]
+    },
+    {
+      "name": "path_corrupted",
+      "file": "exports/path_corrupted.glb",
+      "width_m": 2.0,
+      "depth_m": 2.0,
+      "height_m": 0.0923,
+      "target_m": 2.0,
+      "axis": "spread",
+      "frame": "path",
+      "parts": 1,
+      "polygons": 183,
+      "triangles": 324,
+      "materials": [
+        "MIRE_Mire",
+        "MIRE_MireBlack",
+        "MIRE_MireGlow",
+        "MIRE_TerrainMire"
+      ]
+    },
+    {
+      "name": "boardwalk_straight",
+      "file": "exports/boardwalk_straight.glb",
+      "width_m": 2.0,
+      "depth_m": 1.84,
+      "height_m": 0.257,
+      "target_m": 2.0,
+      "axis": "spread",
+      "frame": null,
+      "parts": 1,
+      "polygons": 78,
+      "triangles": 156,
+      "materials": [
+        "MIRE_WoodBark",
+        "MIRE_WoodTimber",
+        "MIRE_WoodTimberLight"
+      ]
+    },
+    {
+      "name": "boardwalk_corner",
+      "file": "exports/boardwalk_corner.glb",
+      "width_m": 2.0,
+      "depth_m": 2.0,
+      "height_m": 0.257,
+      "target_m": 2.0,
+      "axis": "spread",
+      "frame": null,
+      "parts": 1,
+      "polygons": 90,
+      "triangles": 180,
+      "materials": [
+        "MIRE_WoodBark",
+        "MIRE_WoodTimber",
+        "MIRE_WoodTimberLight"
+      ]
+    },
+    {
+      "name": "boardwalk_stairs",
+      "file": "exports/boardwalk_stairs.glb",
+      "width_m": 2.0,
+      "depth_m": 1.7977,
+      "height_m": 1.0054,
+      "target_m": 2.0,
+      "axis": "spread",
+      "frame": null,
+      "parts": 1,
+      "polygons": 72,
+      "triangles": 144,
+      "materials": [
+        "MIRE_WoodBark",
+        "MIRE_WoodTimber",
+        "MIRE_WoodTimberLight"
+      ]
+    },
+    {
+      "name": "boardwalk_broken",
+      "file": "exports/boardwalk_broken.glb",
+      "width_m": 2.0,
+      "depth_m": 1.966,
+      "height_m": 0.7026,
+      "target_m": 2.0,
+      "axis": "spread",
+      "frame": null,
+      "parts": 1,
+      "polygons": 98,
+      "triangles": 164,
+      "materials": [
+        "MIRE_WoodBark",
+        "MIRE_WoodDead",
+        "MIRE_WoodTimber",
+        "MIRE_WoodTimberLight"
+      ]
+    },
+    {
+      "name": "stepping_stones",
+      "file": "exports/stepping_stones.glb",
+      "width_m": 2.0,
+      "depth_m": 0.8507,
+      "height_m": 0.0876,
+      "target_m": 2.0,
+      "axis": "spread",
+      "frame": null,
+      "parts": 1,
+      "polygons": 400,
+      "triangles": 400,
+      "materials": [
+        "MIRE_Moss",
+        "MIRE_Stone",
+        "MIRE_StoneDark"
+      ]
+    },
+    {
+      "name": "trail_marker",
+      "file": "exports/trail_marker.glb",
+      "width_m": 0.6009,
+      "depth_m": 0.5372,
+      "height_m": 0.94,
+      "target_m": 0.94,
+      "axis": "height",
+      "frame": null,
+      "parts": 1,
+      "polygons": 480,
+      "triangles": 480,
+      "materials": [
+        "MIRE_Lichen",
+        "MIRE_Stone",
+        "MIRE_StoneDark"
+      ]
+    },
+    {
+      "name": "rune_marker",
+      "file": "exports/rune_marker.glb",
+      "width_m": 0.7608,
+      "depth_m": 0.7623,
+      "height_m": 1.32,
+      "target_m": 1.32,
+      "axis": "height",
+      "frame": null,
+      "parts": 1,
+      "polygons": 135,
+      "triangles": 144,
+      "materials": [
+        "MIRE_Lichen",
+        "MIRE_Stone",
+        "MIRE_StoneDark"
+      ]
+    },
+    {
+      "name": "warning_sign",
+      "file": "exports/warning_sign.glb",
+      "width_m": 0.8313,
+      "depth_m": 0.4584,
+      "height_m": 1.46,
+      "target_m": 1.46,
+      "axis": "height",
+      "frame": null,
+      "parts": 1,
+      "polygons": 69,
+      "triangles": 108,
+      "materials": [
+        "MIRE_ClothRed",
+        "MIRE_IronDark",
+        "MIRE_StoneDark",
+        "MIRE_WoodBark",
+        "MIRE_WoodTimber"
+      ]
+    },
+    {
+      "name": "signpost",
+      "file": "exports/signpost.glb",
+      "width_m": 1.0267,
+      "depth_m": 0.8095,
+      "height_m": 2.05,
+      "target_m": 2.05,
+      "axis": "height",
+      "frame": null,
+      "parts": 1,
+      "polygons": 112,
+      "triangles": 196,
+      "materials": [
+        "MIRE_IronDark",
+        "MIRE_StoneDark",
+        "MIRE_WoodBark",
+        "MIRE_WoodTimber",
+        "MIRE_WoodTimberLight"
+      ]
+    }
+  ]
+}
