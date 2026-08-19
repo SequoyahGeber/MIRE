@@ -846,28 +846,6 @@ beyond just "the level loaded") or a player-health "downed" edge signal (not the
 triggered `downed_flag_changed`) should add one row each to `CommandService._HOOK_EVENTS` — the table
 `wire_hook()` already reads is the whole cost of a new event once the real signal exists.
 
-### F-155 · `PlayerHealth._is_dodging()` throws "Nonexistent 'bool' constructor" against any body with
-no `dodging` property, on every enemy attack
-
-**Area:** health · **Severity:** low · **Found:** 2026-08-18 by lp during 5.1
-
-`systems/health/player_health.gd:315` — `_is_dodging(peer_id)` does `bool(body.get(&"dodging"))`. A
-real player body (`entities/player/player_controller.gd`) always has `dodging` (task 3.8b), so this is
-silent in a real session. But `.get()` on a node with no such property returns Variant NIL, and
-`bool(NIL)` is not a valid conversion in Godot 4 — it throws `Invalid call. Nonexistent 'bool'
-constructor` rather than degrading to `false`. Any test harness that stands in a bare `Node3D` for a
-player (2.10's own `tools/enemy_check.gd` does exactly this, and 5.1's `tools/enemy_ai_check.gd`
-inherits it) hits this on every `_resolve_attack()` that reaches `EventBus.emit_enemy_attack_landed`
-— a `SCRIPT ERROR:` line on an otherwise passing check. Neither check's own `failures` tally catches
-it (it is an engine-level crash inside a signal handler, not a `check()` assertion), so it is only
-visible by reading the console output, not the printed verdict line.
-
-**Not fixed here** — `player_health.gd` was not in 5.1's claim, and this is pre-existing: it already
-fires the same way on 2.10/2.9's unmodified `enemy_check.gd`, which has shipped and stayed green since
-before this task. **What would close this:** `body != null and body.get(&"dodging") == true` — `==` against a bool
-literal degrades NIL to "not equal" instead of attempting a constructor call. One-line fix once
-someone holds the file.
-
 ### F-157 · No system tracks a player's display name anywhere in the project — F-126's `peer` name resolution has nothing to resolve against, and 3.16 shipped without adding one
 
 **Area:** netcode · **Severity:** low · **Found:** 2026-08-18 by lp while closing F-126
@@ -1181,6 +1159,36 @@ checked against anything but relative deltas on the fastest machine in the proje
 ---
 
 ## Resolved
+
+### F-155 · `PlayerHealth._is_dodging()` throws "Nonexistent 'bool' constructor" against any body with — **fixed**
+no `dodging` property, on every enemy attack
+
+**Area:** health · **Severity:** low · **Found:** 2026-08-18 by lp during 5.1
+
+`systems/health/player_health.gd:315` — `_is_dodging(peer_id)` does `bool(body.get(&"dodging"))`. A
+real player body (`entities/player/player_controller.gd`) always has `dodging` (task 3.8b), so this is
+silent in a real session. But `.get()` on a node with no such property returns Variant NIL, and
+`bool(NIL)` is not a valid conversion in Godot 4 — it throws `Invalid call. Nonexistent 'bool'
+constructor` rather than degrading to `false`. Any test harness that stands in a bare `Node3D` for a
+player (2.10's own `tools/enemy_check.gd` does exactly this, and 5.1's `tools/enemy_ai_check.gd`
+inherits it) hits this on every `_resolve_attack()` that reaches `EventBus.emit_enemy_attack_landed`
+— a `SCRIPT ERROR:` line on an otherwise passing check. Neither check's own `failures` tally catches
+it (it is an engine-level crash inside a signal handler, not a `check()` assertion), so it is only
+visible by reading the console output, not the printed verdict line.
+
+**Not fixed here** — `player_health.gd` was not in 5.1's claim, and this is pre-existing: it already
+fires the same way on 2.10/2.9's unmodified `enemy_check.gd`, which has shipped and stayed green since
+before this task. **What would close this:** `body != null and body.get(&"dodging") == true` — `==` against a bool
+literal degrades NIL to "not equal" instead of attempting a constructor call. One-line fix once
+someone holds the file.
+
+**Resolved 2026-08-19 by lm.** Fixed: `_is_dodging()` now compares `body.get(&"dodging") == true` instead of `bool(body.get(&"dodging"))`,
+so a body with no `dodging` property (NIL) degrades to false instead of throwing. Verified with
+`agent godot --script tools/enemy_check.gd` and `agent godot --script tools/enemy_ai_check.gd` — the
+`SCRIPT ERROR: Invalid call. Nonexistent 'bool' constructor` line at player_health.gd:349 is gone,
+both still `failures=0`. Also re-ran `tools/player_health_check.gd` (0 failures) and
+`tools/player_health_net_check.gd` (failures=0) as the health system's own regression bar. Spec block
+written at docs/SPECS.md (F-155, near F-150/F-152).
 
 ### F-160 · A transient API error kills a saturate chain, and nothing restarts it — the lane sits idle until a human notices — **fixed**
 

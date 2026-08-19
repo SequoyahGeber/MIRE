@@ -2972,6 +2972,38 @@ resolution were.
 
 ---
 
+## F-155 · `PlayerHealth._is_dodging()` throws "Nonexistent 'bool' constructor" against any body with no `dodging` property
+
+**Claim:** `systems/health/player_health.gd`, `docs/SPECS.md`, `docs/FINDINGS.md` (no check file —
+the existing `tools/enemy_check.gd` and `tools/enemy_ai_check.gd` already reproduce it, see below).
+
+**Root cause:** `_is_dodging(peer_id)` (`player_health.gd:347-349`) read `bool(body.get(&"dodging"))`.
+A real player body (`entities/player/player_controller.gd`) always carries `dodging` (task 3.8b), so
+this is silent in a real session. But `.get()` on a node with no such property returns Variant NIL,
+and `bool(NIL)` is not a valid conversion in Godot 4 — it throws `Invalid call. Nonexistent 'bool'
+constructor` instead of degrading to `false`. Both `tools/enemy_check.gd` (task 2.10) and
+`tools/enemy_ai_check.gd` (task 5.1) stand in a bare `Node3D` for a player, so every
+`_resolve_attack()` that reaches `EventBus.emit_enemy_attack_landed` hit this — a `SCRIPT ERROR:` line
+on an otherwise-passing check. Neither check's own `failures` tally caught it: it is an engine-level
+crash inside a signal handler, not a `check()` assertion, so it was only visible by reading console
+output, not the printed verdict line.
+
+**Fix:** `body != null and body.get(&"dodging") == true` — `==` against a bool literal degrades NIL to
+"not equal" instead of attempting a constructor call. One-line change, exactly as the finding
+predicted.
+
+**Verify:** `agent godot --script tools/enemy_check.gd` and `agent godot --script tools/enemy_ai_check.gd`,
+grep the output for `SCRIPT ERROR`; also `agent godot --script tools/player_health_check.gd` and
+`agent godot --script tools/player_health_net_check.gd` for the health system's own regression bar.
+
+**Verified 2026-08-18 (lm):** all four green after the fix —
+`ENEMY_CHECK attacks=0 failures=0` with zero `SCRIPT ERROR` lines (previously one, at
+`player_health.gd:349` on every attack), `ENEMY_AI_CHECK failures=0`, `player_health_check.gd` → `0
+failure(s)`, `player_health_net_check.gd` → `PLAYER_HEALTH_NET_CHECK client=1358131636->830238352
+failures=0`.
+
+---
+
 ## 7.8 · Network robustness: packet loss, high latency, hostile disconnect timing
 
 No block existed here beforehand; this file's own preamble makes writing one part of the task that
