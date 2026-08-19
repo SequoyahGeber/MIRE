@@ -440,6 +440,65 @@ instruction.
 
 ---
 
+### F-225 · `Enemy.alert()` bypasses `Boss._acquire_target()`'s override, so a boss pulled into a fight by a nearby ally's alert never engages until it first takes damage
+
+**Area:** enemies · **Severity:** medium · **Found:** 2026-08-19 by lm during 5.5-review
+
+`Boss` (`systems/enemies/boss.gd:49`) only leaves `DORMANT_PHASE` (-1) through `_update_phase()`,
+called from two places: `host_apply_damage()` (5.5's damage-seam override) and `_acquire_target()`'s
+override (`systems/enemies/boss.gd:100`, on the was-dormant transition). But `Enemy.alert()`
+(`systems/enemies/enemy.gd:386-393`) — the public method `_alert_nearby()` calls on every unengaged
+packmate within `alert_radius_m` when SOME OTHER enemy first acquires a target (5.1's pack-alerting
+feature) — sets `_target_peer`/`_target_node` directly and never routes through `_acquire_target()`.
+`Boss` does not override `alert()`.
+
+Concrete failure: a `Boss` standing within a regular `Enemy`'s `alert_radius_m` gets pulled into a
+fight the instant that Enemy acquires a player, via `alert()`. The boss then chases and attacks that
+player with `_target_peer` set, but `phase` stays at `DORMANT_PHASE` — `EventBus.boss_engaged` never
+fires (no music stinger), `Boss.is_engaged()` returns `false` (no health bar, `ui/hud/boss_health_hud.gd`
+stays hidden), and `_active_phase()` returns `null` so the boss fights with `EnemyDef`'s single fixed
+attack instead of its authored `BossPhaseDef.moves` — until it takes its first accepted hit, at which
+point `host_apply_damage()`'s `_update_phase()` call unconditionally exits dormant (`phase ==
+DORMANT_PHASE` short-circuits the `target_index > phase` check) and everything catches up. A boss a
+player never manages to land a hit on stays in this state for the whole encounter.
+
+`tools/boss_check.gd` sets its synthetic `BossDef`'s own `alert_radius_m` to `0.0` (line 396), which
+only suppresses the boss's own OUTGOING alert call — it does not exercise a nearby ally alerting the
+boss, so this path is untested. Fix shape: either override `alert()` on `Boss` the same way
+`_acquire_target()` is overridden (was-dormant check, then `_update_phase()`), or fold the was-dormant
+check into `phase`'s own setter/a `_target_peer` watcher so any path that sets a target reaches it.
+
+---
+
+### F-226 · `WaveSpawner.current_cycle()` is documented "readable on any peer" but is stuck at 1 forever on every client
+
+**Area:** waves/netcode · **Severity:** medium · **Found:** 2026-08-19 by lp during 5.9-review
+
+`WaveSpawner._current_cycle` (`systems/waves/wave_spawner.gd:63`) is updated only through
+`_on_cycle_advanced()` (line 106), wired to `EventBus.subscribe_cycle_advanced()` in `_ready()`
+(line 74). But `CycleService._announce()` (`systems/cycle/cycle_service.gd:142-149`), the only place
+`EVENT_BUS.emit_cycle_advanced()` is ever called, gates the whole body behind `_owns_cycle()`
+(line 143) — true for the host or a solo/offline process, **false for a real connected client**. So
+on a client, `EventBus.cycle_advanced` never fires locally, and `WaveSpawner._current_cycle` never
+leaves its `1` default no matter how many Cycles the host has actually advanced.
+
+`current_cycle()`'s own doc comment (line 110) says "Readable on any peer — same naming convention as
+`CycleService.current_cycle()`" — but `CycleService.current_cycle()` earns that claim with a real
+fallback (`_owns_cycle()` ? own int : `WorldDeltaLog.latest(...)`, `systems/cycle/cycle_service.gd:95-101`);
+`WaveSpawner.current_cycle()` has no such fallback, it just returns the stale local cache. Same root
+cause hits `cycle_count_multiplier()` (line 119), whose default arg (`cycle: int = _current_cycle`)
+reads the same stuck value.
+
+Concrete failure: docs/SPECS.md §5.9 names the exact use this API is for — "a future HUD/debug
+consumer... can read what pacing tier a wave spawned under without reaching into a private var." A
+debug HUD built on that promise and run on a client (not the host) will show "Cycle 1, x1.00" for the
+whole run, regardless of the real Cycle. Nothing shipped in 5.9 itself hits this — `host_start_wave()`
+only ever runs host-side, where the cache is correct — so today it's a trap, not a live bug.
+
+Fix shape: give `current_cycle()` the same host-int-or-`WorldDeltaLog`-fallback split
+`CycleService.current_cycle()` already uses, or drop the "readable on any peer" claim from the doc
+comment and mark both getters host-only until a real cross-peer consumer needs them.
+
 ---
 
 ## Resolved

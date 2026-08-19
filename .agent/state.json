@@ -1,6 +1,23 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "docs/FINDINGS.md": {
+      "agent": "lp",
+      "at": "2026-08-19T14:21:56+00:00",
+      "task": "5.9-review",
+      "token": null
+    }
+  },
+  "in_flight": {
+    "5.9-review": {
+      "agent": "lp",
+      "files": [
+        "docs/FINDINGS.md"
+      ],
+      "notes": [],
+      "started": "2026-08-19T14:21:56+00:00",
+      "token": null
+    }
+  },
   "recent": {
     ".": {
       "agent": "lp",
@@ -2518,11 +2535,6 @@
       "hash": "d6573d6fa156a1e39bcc3f14cc781ea225cb0ebc2713b725960c6fb27a1427ec",
       "task": "F-140"
     },
-    "tools/chest_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T14:23:28+00:00",
-      "task": "F-107"
-    },
     "tools/chest_placement_check.gd": {
       "agent": "lp",
       "at": "2026-08-19T05:56:17+00:00",
@@ -2766,11 +2778,6 @@
       "at": "2026-08-19T02:33:53+00:00",
       "hash": "c7dc42a86aa52b200dc3341e794b4b2c4571911c542f2a349c214b7601bda6a5",
       "task": "6.5"
-    },
-    "tools/findings_numbering_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T14:20:20+00:00",
-      "task": "F-058"
     },
     "tools/flora_check.gd": {
       "agent": "lm",
@@ -4474,10 +4481,12 @@
       "title": "Boss framework: phases, arena, telegraphs, health bar, music stinger"
     },
     "5.5-review": {
+      "done_at": "2026-08-19T14:25:21+00:00",
+      "done_by": "lm",
       "est": "0.5",
       "milestone": "M5",
       "review_of": "5.5",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 5.5 @ 59917ed \u2014 judge the commit, file findings, no edits"
     },
@@ -4510,6 +4519,14 @@
       "status": "done",
       "tier": "T1",
       "title": "Wave director: Cycle-aware pacing, composition, player-count scaling"
+    },
+    "5.9-review": {
+      "est": "0.5",
+      "milestone": "M5",
+      "review_of": "5.9",
+      "status": "in_flight",
+      "tier": "T1",
+      "title": "Review 5.9 @ d8dc751 \u2014 judge the commit, file findings, no edits"
     },
     "6.1": {
       "done_at": "2026-08-19T01:37:12+00:00",
@@ -4599,6 +4616,14 @@
       "tier": "T2",
       "title": "Salvage: superlinear reward curve, extract-vs-die split, persistence, save-file versioning"
     },
+    "6.6-review": {
+      "est": "0.5",
+      "milestone": "M6",
+      "review_of": "6.6",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 6.6 @ 64ffde3 \u2014 judge the commit, file findings, no edits"
+    },
     "6.7": {
       "done_at": "2026-08-19T03:06:45+00:00",
       "done_by": "lm",
@@ -4631,6 +4656,14 @@
       "status": "done",
       "tier": "T1",
       "title": "Unlock tree + UI. Variety only, never power (`DESIGN.md` \u00a74.6)"
+    },
+    "6.9-review": {
+      "est": "0.5",
+      "milestone": "M6",
+      "review_of": "6.9",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 6.9 @ 2268b33 \u2014 judge the commit, file findings, no edits"
     },
     "7.1": {
       "est": "10",
