@@ -12,7 +12,7 @@ _Nothing in flight._
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 189/205 | 16 |
+| Findings | `█████████░` 189/206 | 17 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -62,6 +62,7 @@ _Nothing in flight._
 | ⬜ | **F-203** AuthoredWorld's F-187 chunk merge excludes sway- and emitter-bearing props — a second attempt needs per-vertex height encoding or per-asset placement metadata inside a merged mesh | todo |
 | ⬜ | **F-205** `agent check`/the pre-commit hook still lets a commit register or carry an untracked autoload target — F-200's mechanism #2 is still unbuilt | todo |
 | ⬜ | **F-206** `build_gatherable_plants.py` (A-011) has six `bevel=` sites with no local override — the same D-124 exposure, latent rather than live | todo |
+| ⬜ | **F-207** F-204's same bug — an object repositioned between renders that never takes effect — is live in 8 more Blender generators, one of them twice | todo |
 
 ## Done
 

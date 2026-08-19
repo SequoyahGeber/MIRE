@@ -6453,6 +6453,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`build_gatherable_plants.py` (A-011) has six `bevel=` sites with no local override \u2014 the same D-124 exposure, latent rather than live"
+    },
+    "F-207": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "F-204's same bug \u2014 an object repositioned between renders that never takes effect \u2014 is live in 8 more Blender generators, one of them twice"
     }
   },
   "version": 1

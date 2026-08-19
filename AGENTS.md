@@ -217,6 +217,16 @@ claim the file — `.agent/bin/agent claim <id> .agent/bin/agent` — and claim 
 or ship will leave your own fix behind. After any harness edit, run `python3 tools/harness_check.py`;
 it needs no Godot and takes about a second.
 
+Because `ship` won't stage it, a harness fix is hand-committed exactly like a `docs/` edit — and it
+is the same bare-commit-sweep hazard, not a smaller one, because `.agent/bin/` is claimed rather than
+exempt: F-191's real incident was a claimed-and-just-released harness file (`.agent/bin/agent`) sitting
+staged when a *different* session's bare `git commit` fired and swept it into an unrelated commit
+message. Commit it by pathspec too:
+
+```bash
+git commit -m "F-0NN: what the harness fix does" -- .agent/bin/agent tools/harness_check.py
+```
+
 ### 6. Tell Sequoyah only what is genuinely his
 
 By now everything another *agent* needs is in the repo (step 3). What is left is the short list only a
