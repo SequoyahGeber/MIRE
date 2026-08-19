@@ -4499,3 +4499,15 @@ Restored levels/hollowmere.tscn's Player to the layout spawn (-6.614, 2.423, 1.6
 Files: `levels/hollowmere.tscn`
 
 Commit at time of writing: `0e71656`
+
+---
+
+### DONE · F-057 · lm · 2026-08-19T07:07:27+00:00
+
+**A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds**
+
+Bevel-free box() override in build_crafting_stations.py (same pattern as build_ward_set.py), rebuilt clean, verified byte-identical with new tools/blender/crafting_stations_repro_check.py (two separate-process rebuilds, reproduced the pre-fix drift, confirmed post-fix PASS x3), fresh Godot import clean (props=2880, 0 errors). Filed F-197 (stale commit swept crafting-station GLBs) and F-198 (3 sibling DONE batches still exposed) plus D-124 codifying the bevel-free rule.
+
+Files: `tools/blender/build_crafting_stations.py`, `assets/crafting_stations`, `assets/source/crafting_stations.blend`, `tools/blender/crafting_stations_repro_check.py`
+
+Commit at time of writing: `fbcad17`

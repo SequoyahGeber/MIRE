@@ -6,7 +6,7 @@
     "depth_m": 0.869,
     "height_m": 1.243,
     "mesh_parts": 15,
-    "polygons": 237,
+    "polygons": 97,
     "materials": [
       "MIRE_Iron",
       "MIRE_Rope",
@@ -22,7 +22,7 @@
     "depth_m": 1.045,
     "height_m": 2.103,
     "mesh_parts": 25,
-    "polygons": 461,
+    "polygons": 161,
     "materials": [
       "MIRE_ClothRed",
       "MIRE_Iron",
@@ -36,14 +36,13 @@
   {
     "name": "station_campfire",
     "family": "fire",
-    "width_m": 1.602,
-    "depth_m": 1.602,
-    "height_m": 1.294,
+    "width_m": 1.483,
+    "depth_m": 1.405,
+    "height_m": 1.203,
     "mesh_parts": 18,
     "polygons": 306,
     "materials": [
       "MIRE_Ember",
-      "MIRE_Ember.001",
       "MIRE_Flame",
       "MIRE_Stone",
       "MIRE_StoneLight",
@@ -53,9 +52,9 @@
   {
     "name": "station_cooking_spit",
     "family": "fire",
-    "width_m": 2.292,
-    "depth_m": 1.602,
-    "height_m": 1.759,
+    "width_m": 2.29,
+    "depth_m": 1.405,
+    "height_m": 1.667,
     "mesh_parts": 24,
     "polygons": 346,
     "materials": [
@@ -73,11 +72,11 @@
   {
     "name": "station_stone_furnace",
     "family": "forge",
-    "width_m": 2.412,
-    "depth_m": 1.757,
-    "height_m": 2.305,
+    "width_m": 2.151,
+    "depth_m": 1.508,
+    "height_m": 2.093,
     "mesh_parts": 22,
-    "polygons": 458,
+    "polygons": 358,
     "materials": [
       "MIRE_Coal",
       "MIRE_Ember",
@@ -93,7 +92,7 @@
     "depth_m": 0.892,
     "height_m": 1.36,
     "mesh_parts": 7,
-    "polygons": 136,
+    "polygons": 56,
     "materials": [
       "MIRE_Coal",
       "MIRE_Iron",
@@ -110,7 +109,7 @@
     "depth_m": 0.9,
     "height_m": 1.603,
     "mesh_parts": 32,
-    "polygons": 635,
+    "polygons": 255,
     "materials": [
       "MIRE_Brass",
       "MIRE_ClothRed",
@@ -129,7 +128,7 @@
     "depth_m": 1.24,
     "height_m": 1.164,
     "mesh_parts": 10,
-    "polygons": 152,
+    "polygons": 72,
     "materials": [
       "MIRE_Coal",
       "MIRE_Iron",

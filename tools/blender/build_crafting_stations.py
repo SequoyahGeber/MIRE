@@ -20,9 +20,35 @@ from mathutils import Vector
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from mire_art import (  # noqa: E402
-    SCALE, assign, box, check_scale, cone, cylinder_between, eevee_engine, ico,
+    SCALE, assign, check_scale, cone, cylinder_between, eevee_engine, ico,
     look_at, mat, mesh_object, move_to_collection, radial, reset_materials, world_bounds,
 )
+
+
+def box(
+    name: str,
+    location: tuple[float, float, float],
+    dimensions: tuple[float, float, float],
+    material: bpy.types.Material,
+    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    bevel: float = 0.0,
+) -> bpy.types.Object:
+    """Bevel-free box, overriding ``mire_art.box`` on purpose (F-057).
+
+    This kit's contract includes a byte-identical rebuild, and `build_ward_set.py`
+    found Blender's bevel modifier changing float bytes between otherwise
+    identical background exports on Apple Silicon. `build_flora_set.py`,
+    `build_construction_set.py` and `build_extraction_ship_set.py` all made the
+    same call for the same reason; this kit is the one family that shipped
+    without it. The ``bevel`` argument is accepted and ignored so the 23 call
+    sites below read the same as everywhere else in this file.
+    """
+    bpy.ops.mesh.primitive_cube_add(location=location, rotation=rotation)
+    obj = bpy.context.object
+    obj.name = name
+    obj.scale = (dimensions[0] * 0.5, dimensions[1] * 0.5, dimensions[2] * 0.5)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    return assign(obj, material)
 
 
 ROOT = Path(__file__).resolve().parents[2]

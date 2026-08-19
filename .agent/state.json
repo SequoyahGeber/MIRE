@@ -1,22 +1,10 @@
 {
   "claims": {
-    "assets/crafting_stations": {
-      "agent": "lm",
-      "at": "2026-08-19T06:55:08+00:00",
-      "task": "F-057",
-      "token": null
-    },
     "assets/gatherables": {
       "agent": "wick20",
       "at": "2026-08-19T07:04:39+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    },
-    "assets/source/crafting_stations.blend": {
-      "agent": "lm",
-      "at": "2026-08-19T06:55:08+00:00",
-      "task": "F-057",
-      "token": null
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "wick20",
@@ -24,23 +12,11 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
-    "tools/blender/build_crafting_stations.py": {
-      "agent": "lm",
-      "at": "2026-08-19T06:51:04+00:00",
-      "task": "F-057",
-      "token": null
-    },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "wick20",
       "at": "2026-08-19T06:42:56+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    },
-    "tools/blender/crafting_stations_repro_check.py": {
-      "agent": "lm",
-      "at": "2026-08-19T06:56:25+00:00",
-      "task": "F-057",
-      "token": null
     },
     "tools/blender/mire_art.py": {
       "agent": "wick20",
@@ -68,18 +44,6 @@
       "notes": [],
       "started": "2026-08-19T06:42:56+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    },
-    "F-057": {
-      "agent": "lm",
-      "files": [
-        "tools/blender/build_crafting_stations.py",
-        "assets/crafting_stations",
-        "assets/source/crafting_stations.blend",
-        "tools/blender/crafting_stations_repro_check.py"
-      ],
-      "notes": [],
-      "started": "2026-08-19T06:51:04+00:00",
-      "token": null
     }
   },
   "recent": {
@@ -167,6 +131,13 @@
       "at": "2026-08-19T06:17:24+00:00",
       "hash": null,
       "task": "F-180",
+      "token": null
+    },
+    "assets/crafting_stations": {
+      "agent": "lm",
+      "at": "2026-08-19T07:07:27+00:00",
+      "hash": null,
+      "task": "F-057",
       "token": null
     },
     "assets/icons/README.md": {
@@ -309,6 +280,13 @@
       "at": "2026-08-19T06:17:24+00:00",
       "hash": "e43b6321395986438c44b683ceb1c082db9b41d4592950528163192a7b9adbdf",
       "task": "F-180",
+      "token": null
+    },
+    "assets/source/crafting_stations.blend": {
+      "agent": "lm",
+      "at": "2026-08-19T07:07:27+00:00",
+      "hash": "80fe2364b9bec1d508e790375236ab21d2097590c720c8468c770eca4bfa03ee",
+      "task": "F-057",
       "token": null
     },
     "assets/source/extraction_ship_set.blend": {
@@ -2151,10 +2129,24 @@
       "task": "F-180",
       "token": null
     },
+    "tools/blender/build_crafting_stations.py": {
+      "agent": "lm",
+      "at": "2026-08-19T07:07:27+00:00",
+      "hash": "44698f8d37c7e70447193661033fdf4ef25507066e8b862461ad1f6e762a62f4",
+      "task": "F-057",
+      "token": null
+    },
     "tools/blender/build_extraction_ship_set.py": {
       "agent": "ivy8",
       "at": "2026-08-18T14:17:26+00:00",
       "task": "2.1d"
+    },
+    "tools/blender/crafting_stations_repro_check.py": {
+      "agent": "lm",
+      "at": "2026-08-19T07:07:27+00:00",
+      "hash": "4c8450853e540dfc4a6b4626a04bff2862a5ff18255c921fcf4578d05ca94116",
+      "task": "F-057",
+      "token": null
     },
     "tools/blender/mat_cache_check.py": {
       "agent": "lp",
@@ -4704,9 +4696,11 @@
       "title": "The player spawn sits 1.8 m under the new heightfield, so you fall through the map on join \u2014 **fixed**"
     },
     "F-057": {
+      "done_at": "2026-08-19T07:07:27+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds"
     },
