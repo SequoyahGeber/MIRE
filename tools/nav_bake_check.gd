@@ -50,6 +50,7 @@ func _run() -> void:
 	await _check_bakes_and_attaches()
 	await _check_map_queryable()
 	_check_seam_rules()
+	await _check_buildable_obstruction()
 	await _check_retire()
 
 	if baker != null:
@@ -222,6 +223,62 @@ func _check_seam_rules() -> void:
 		NavigationServer3D.map_get_edge_connection_margin(map),
 		NavBakerScript.EDGE_CONNECTION_MARGIN),
 		"the map actually received the wide margin")
+
+
+## F-159: a placed buildable is a real physics collider the terrain-only source geometry never saw,
+## so `NavigationAgent3D` steering drove straight through a wall or a Ward. Proof, not just "a signal
+## fired": query a point that is real, on-mesh, walkable ground BEFORE a piece exists there, place a
+## real registered piece (`ward`, content/buildables/ward.tres) with its centre exactly on that
+## point, and assert the SAME query now resolves MEASURABLY farther away — the exact spot the
+## pathfinder used to think was open ground is no longer part of the mesh. Then destroy it and assert
+## the query comes back close to its own baseline, proving the fix does not just add cruft that never
+## clears. Baseline is measured, not assumed zero: an analytic heightmap point is not necessarily ON
+## the baked mesh's own vertex grid, so `map_get_closest_point` can legitimately snap half a metre or
+## more away from it before any piece is involved — asserting a fixed small tolerance here would be
+## exactly the kind of silent-trap test this file otherwise warns against.
+func _check_buildable_obstruction() -> void:
+	print("\n== F-159: a placed piece carves the navmesh, a destroyed one un-carves it ==")
+	var map: RID = baker.call("map_rid")
+	var spot: Vector3 = Vector3(seam_x - 6.0,
+		HeightmapScript.height(seam_x - 6.0, seam_z, WORLD_SEED), seam_z)
+	var baseline: float = NavigationServer3D.map_get_closest_point(map, spot).distance_to(spot)
+	print("   baseline snap distance at %s: %.3fm" % [spot, baseline])
+
+	# Must be inside the tree: Node3D.global_position/global_rotation error (and silently read as
+	# zero) on an orphan node, which is exactly the kind of failure that would have made this check
+	# pass for the wrong reason — the piece tracked at the WORLD ORIGIN instead of `spot`.
+	var piece := Node3D.new()
+	piece.name = "F159TestWard"
+	root.add_child(piece)
+	piece.global_position = spot
+	piece.global_rotation.y = 0.0
+	var piece_name: StringName = StringName(piece.name)
+
+	baker.call("_on_piece_placed", piece, &"ward", 1)
+	check(int(baker.call("tracked_piece_count")) == 1, "the piece is tracked")
+
+	# Poll the real query, not just bake-queue drain: map_set_use_async_iterations(true) means the
+	# server's own polygon graph sync can lag a frame or two behind _attach() returning — §6 trap 2
+	# again, same reason is_queryable() polls rather than trusts a flag.
+	var pushed_away: bool = await _until(func() -> bool:
+		return NavigationServer3D.map_get_closest_point(map, spot).distance_to(spot) > baseline + 1.0,
+		SYNC_TIMEOUT_SEC)
+	check(pushed_away,
+		"placing a piece dead centre on that spot pushes the closest walkable point measurably "
+		+ "farther away (%.3fm, baseline %.3fm)"
+			% [NavigationServer3D.map_get_closest_point(map, spot).distance_to(spot), baseline])
+
+	baker.call("_on_piece_destroyed", &"ward", 1, piece_name, spot)
+	check(int(baker.call("tracked_piece_count")) == 0, "destroying it un-tracks it")
+
+	var restored: bool = await _until(func() -> bool:
+		return NavigationServer3D.map_get_closest_point(map, spot).distance_to(spot) < baseline + 0.3,
+		SYNC_TIMEOUT_SEC)
+	check(restored, "and the spot returns close to its own baseline (%.3fm, baseline %.3fm)"
+		% [NavigationServer3D.map_get_closest_point(map, spot).distance_to(spot), baseline])
+
+	root.remove_child(piece)
+	piece.free()
 
 
 func _check_retire() -> void:

@@ -53,7 +53,11 @@ const NAV_REBAKE_INTERVAL_SEC: float = 1.0
 signal build_confirmed(request_id: int, accepted: bool, reason: String)
 ## Host-side, for anything that wants to react to the world changing shape.
 signal piece_placed(piece: Node3D, def_id: StringName, owner_peer_id: int)
-signal piece_destroyed(def_id: StringName, owner_peer_id: int)
+## The piece's own node is already freed by the time this fires (F-159's NavBaker needs to erase its
+## tracked geometry and re-bake the right chunk without one), so its name and last position travel
+## with the signal instead.
+signal piece_destroyed(
+	def_id: StringName, owner_peer_id: int, piece_name: StringName, position: Vector3)
 
 var _container: Node3D
 var _spawner: MultiplayerSpawner
@@ -192,6 +196,7 @@ func _process_destroy(peer_id: int, piece_name: StringName, request_id: int) -> 
 
 	var def_id: StringName = record["def"]
 	var def: Resource = _definition(def_id)
+	var piece_position: Vector3 = (piece as Node3D).global_position
 
 	# F-084: destruction mirrors placement (docs/SPECS.md 3.6) — the host resolves the requesting
 	# player's OWN body and enforces the same range rule `_process_place` already trusts nobody
@@ -203,7 +208,6 @@ func _process_destroy(peer_id: int, piece_name: StringName, request_id: int) -> 
 	# placement gates its reversal.
 	if def != null:
 		var range_m: float = float(def.get(&"max_build_range_m"))
-		var piece_position: Vector3 = (piece as Node3D).global_position
 		if _builder_position(peer_id, piece_position).distance_to(piece_position) > range_m:
 			_answer(peer_id, request_id, false, VALIDATOR.reason_text(VALIDATOR.Reason.OUT_OF_RANGE))
 			return
@@ -220,7 +224,7 @@ func _process_destroy(peer_id: int, piece_name: StringName, request_id: int) -> 
 	_placed.erase(piece_name)
 	piece.queue_free()
 	_request_nav_rebake()
-	piece_destroyed.emit(def_id, int(record["owner"]))
+	piece_destroyed.emit(def_id, int(record["owner"]), piece_name, piece_position)
 	_answer(peer_id, request_id, true, "")
 
 
@@ -234,11 +238,14 @@ func host_piece_destroyed_by_damage(piece_name: StringName, instigator_peer_id: 
 		return
 	var record: Dictionary = _placed[piece_name]
 	var piece: Node = _container.get_node_or_null(NodePath(String(piece_name)))
+	var piece_position: Vector3 = (piece as Node3D).global_position if piece != null else Vector3.ZERO
 	_placed.erase(piece_name)
 	if piece != null:
 		piece.queue_free()
 	_request_nav_rebake()
-	piece_destroyed.emit(StringName(String(record.get("def", ""))), int(record.get("owner", 0)))
+	piece_destroyed.emit(
+		StringName(String(record.get("def", ""))), int(record.get("owner", 0)),
+		piece_name, piece_position)
 	MireLog.info(LOG_CHANNEL, "peer %d destroyed %s by damage" % [instigator_peer_id, piece_name])
 
 

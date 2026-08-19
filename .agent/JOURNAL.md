@@ -4051,3 +4051,18 @@ Fixed: content/items/{mushroom,berry,raw_meat}.tres now set view_model, reusing 
 Files: `content/items/mushroom.tres`, `content/items/berry.tres`, `content/items/raw_meat.tres`, `tools/_probe_food_grip.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DECISIONS.md`, `tools/_probe_food_grip.gd.uid`
 
 Commit at time of writing: `e2d8006`
+
+---
+
+### DONE · F-159 · lm · 2026-08-19T04:48:28+00:00
+
+**Placed buildables are invisible to the nav map — agents path straight through walls**
+
+NavBaker (task 4.5) now folds placed buildables into its bake so agents route around them, not through them. Verified: agent godot --script tools/nav_bake_check.gd -> failures=0 (new _check_buildable_obstruction section), run twice. No regressions: build_check.gd, build_net_check.gd, combat_check.gd all failures=0. NavBaker is not wired into the live game yet (F-139), so EnemyWorld.bake_navigation() -- the baker the shipped game actually runs -- still has this gap; filed separately as F-177 since fixing it needs autoload/enemy_world.gd, held by lp (5.5) for this whole session.
+
+Notes along the way:
+- Scoping decision: EnemyWorld.bake_navigation() is the LIVE nav baker (called at session bootstrap + by BuildService._request_nav_rebake()); NavBaker (task 4.5) is unreachable in the live game per F-139 (no ChunkStreamer caller yet). autoload/enemy_world.gd is locked by lp (5.5, boss framework) for this whole session, and folding buildable geometry into a bake correctly requires ONE combined parse+bake pass (can't composite two separately-baked regions and get correct Recast carving) -- so a sound fix needs that file. F-159 itself is scoped explicitly against NavBaker/ChunkMesher and tools/nav_bake_check.gd, so I'm implementing there instead: zero contention, and correct-by-construction for whenever F-139 wires a live ChunkStreamer. Not touching enemy_world.gd at all this task.
+
+Files: `world/chunk/nav_baker.gd`, `autoload/build_service.gd`, `tools/nav_bake_check.gd`
+
+Commit at time of writing: `dee22f8`

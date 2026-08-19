@@ -1,10 +1,5 @@
 {
   "claims": {
-    "autoload/build_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T04:39:53+00:00",
-      "task": "F-159"
-    },
     "autoload/graphics_quality.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
@@ -70,20 +65,10 @@
       "at": "2026-08-18T22:01:43+00:00",
       "task": "F-144"
     },
-    "tools/nav_bake_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T04:39:53+00:00",
-      "task": "F-159"
-    },
     "tools/render_census.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
-    },
-    "world/chunk/nav_baker.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T04:39:53+00:00",
-      "task": "F-159"
     },
     "world/environment/draw_policy.gd": {
       "agent": "nettle12",
@@ -132,22 +117,6 @@
       ],
       "notes": [],
       "started": "2026-08-18T21:51:43+00:00"
-    },
-    "F-159": {
-      "agent": "lm",
-      "files": [
-        "world/chunk/nav_baker.gd",
-        "autoload/build_service.gd",
-        "tools/nav_bake_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-19T04:39:59+00:00",
-          "by": "lm",
-          "text": "Scoping decision: EnemyWorld.bake_navigation() is the LIVE nav baker (called at session bootstrap + by BuildService._request_nav_rebake()); NavBaker (task 4.5) is unreachable in the live game per F-139 (no ChunkStreamer caller yet). autoload/enemy_world.gd is locked by lp (5.5, boss framework) for this whole session, and folding buildable geometry into a bake correctly requires ONE combined parse+bake pass (can't composite two separately-baked regions and get correct Recast carving) -- so a sound fix needs that file. F-159 itself is scoped explicitly against NavBaker/ChunkMesher and tools/nav_bake_check.gd, so I'm implementing there instead: zero contention, and correct-by-construction for whenever F-139 wires a live ChunkStreamer. Not touching enemy_world.gd at all this task."
-        }
-      ],
-      "started": "2026-08-19T04:39:53+00:00"
     }
   },
   "recent": {
@@ -426,9 +395,9 @@
     },
     "autoload/build_service.gd": {
       "agent": "lm",
-      "at": "2026-08-19T01:01:42+00:00",
-      "hash": "bae01bf5596ee6b0b3e69d8a3a5ad6aae83ac5e2c633d250d319f6611c219ea4",
-      "task": "4.11"
+      "at": "2026-08-19T04:48:28+00:00",
+      "hash": "8dcb5e684009b55576f161ea600b7a64db2952b8c879627c615e66822dd236a7",
+      "task": "F-159"
     },
     "autoload/combat_service.gd": {
       "agent": "lm",
@@ -2595,10 +2564,10 @@
       "task": "F-103"
     },
     "tools/nav_bake_check.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-19T01:42:53+00:00",
-      "hash": "c54762b4badea5408abfb81daf202d943719806ac86420a55c74b7fd8af920dc",
-      "task": "4.5"
+      "agent": "lm",
+      "at": "2026-08-19T04:48:28+00:00",
+      "hash": "28e6cc72ca2c135b82245b6ec5f6564bc3447e00f29a471a2da8cc6de93141ba",
+      "task": "F-159"
     },
     "tools/net_debug_panel_check.gd": {
       "agent": "lp",
@@ -2921,10 +2890,10 @@
       "task": "4.5"
     },
     "world/chunk/nav_baker.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-19T01:42:53+00:00",
-      "hash": "d6a66fb3c506d10a8bc1b43d0c56758dcd620f46dbf51657414a5ea7c90a79ed",
-      "task": "4.5"
+      "agent": "lm",
+      "at": "2026-08-19T04:48:28+00:00",
+      "hash": "e87a6c88d41690c7ef5235f1957d3089b73e88df7607f0dbe5f9d12d2b266e42",
+      "task": "F-159"
     },
     "world/environment/asset_vfx_library.gd": {
       "agent": "vane19",
@@ -5492,9 +5461,11 @@
       "title": "`bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler"
     },
     "F-159": {
+      "done_at": "2026-08-19T04:48:28+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Placed buildables are invisible to the nav map \u2014 agents path straight through walls"
     },
@@ -5622,6 +5593,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`tools/audio/render_music.py`'s ambient tracks are not byte-identical on re-render, contradicting `docs/AUDIO.md`'s \"reproduces the committed files bit-for-bit\" claim"
+    },
+    "F-177": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`EnemyWorld.bake_navigation()` \u2014 the LIVE nav baker \u2014 still ignores placed buildables; only `NavBaker` (task 4.5, unreachable per F-139) got F-159's fix"
     }
   },
   "version": 1
