@@ -4713,6 +4713,60 @@ WARNINGs from `enemy_world.gd::bake_navigation()`.
 
 ---
 
+## F-170 · `tools/lobby_menu_check.gd` fails (5/24) whenever the dev machine's own Steam client is actually running
+
+**Claim:** `tools/lobby_menu_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Root cause, confirmed by running the check on this machine with Steam actually running and
+logged in:** the check's SAD-path assertions paste a fake lobby id (`109775242382594016`) and call
+`request_join()`/`request_host()` expecting `SteamLobby` to refuse before touching the network. That
+assumption only holds when Steam is unreachable. When it is reachable, `join_by_id()` sets
+`SteamLobby._lobby_id` to the fake id *immediately* — before Steam's async callback ever answers —
+so `in_lobby()` goes true right away and the state machine sits in `JOINING`. The next call,
+`request_host()`, is then rejected with `"already joining a lobby"` instead of a Steam-unavailable
+reason, and every assertion after that cascades off the same stuck state (`copy with no lobby` also
+fails, since a lobby id is technically set). All 5 observed failures trace to this one state
+corruption, not five independent bugs.
+
+**Fix, the finding's second proposed shape (skip rather than mock):** before the SAD-path
+assertions, the check now calls `SteamLobby.initialise()` itself and reads `is_ready()` — the same
+call `request_join()`/`request_host()` would make anyway, so probing it early changes nothing on a
+Steam-less machine (idempotent — "safe to call repeatedly"). If Steam answers, the check never fires
+the fake-id join/host at all (that would start a REAL async request against Steam's servers, which
+is worse than untestable — `request_host()` would create an actual friends-only lobby); it prints
+which branch it took and calls a new `skip(description)` helper for the four Steam-dependent
+assertions instead of `check()`, so they show as `SKIP:` and do not count toward `failures`. Every
+other assertion (menu open/close, D-032 stacking, the two Steam-independent join/copy refusals) is
+unchanged and still runs and counts in both branches.
+
+**Sibling sweep (this task's own scan):** every other `tools/*_check.gd` referencing Steam —
+`steam_lobby_check.gd`, `steam_check.gd`, `rich_presence_check.gd`, `connect_retry_check.gd`,
+`display_name_check.gd` — already either requires Steam by design and documents that requirement in
+its header (`steam_lobby_check.gd`: "Requires the Steam client running and signed in"), or already
+branches gracefully on Steam's absence/presence (`steam_check.gd` prints a note rather than asserting
+success when the client isn't running; `rich_presence_check.gd` prints `skip` and returns when the
+`Steam` singleton is absent). None of them fire a real mutating Steam request while assuming Steam is
+unreachable — `lobby_menu_check.gd` was the only one making that specific mistake.
+
+**Verify:** `.agent/bin/agent godot --script tools/lobby_menu_check.gd`, run twice on this machine —
+once with the real Steam client running (`ps aux | grep steam_osx` confirmed it live) and once with
+it quit. Both runs: `LOBBY_MENU_CHECK failures=0`. With Steam running: the four Steam-dependent
+assertions print `SKIP:` and the branch line reads `STEAM AVAILABLE on this machine — skipping...`.
+With Steam absent: all 24 assertions run and pass, branch line reads `STEAM UNAVAILABLE on this
+machine — running...` — byte-identical assertion behaviour to the pre-fix code path (the `else`
+branch is untouched, just newly conditional). Steam was relaunched (`open -a Steam`) immediately
+after the Steam-absent run to restore the machine to its prior state.
+
+**Verified 2026-08-19 (lm):** both runs above, `failures=0` each. `.agent/bin/agent godot --script
+tools/steam_lobby_check.gd` also run per this task's own work order (step 2) — see `docs/FINDINGS.md`
+for its result, since a pre-existing failure there is unrelated to this finding's fix and is filed
+separately rather than silently folded into this close-out.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

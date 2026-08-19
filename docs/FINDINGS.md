@@ -469,27 +469,6 @@ would (see that check's own "net_run_defeated" section).
 
 ---
 
-### F-170 · `tools/lobby_menu_check.gd` fails (5/24) whenever the dev machine's own Steam client is actually running
-
-**Area:** tooling/checks · **Severity:** low · **Found:** 2026-08-19 by lm during 6.10
-
-The check's "Steam-less machine" branch (join/host/copy all refused, status naming Steam as the
-reason) assumes `SteamLobby` cannot reach a real Steam client. On a machine where Steam.app is
-actually running and logged in, `SteamAPI_Init()` succeeds, so `request_join`/`request_host` attempt
-a REAL join/host instead of failing fast — the five assertions that expect a Steam-unavailable status
-line fail because the status line says something else (a real, in-flight join attempt) instead.
-Reproduced on a clean `agent baseline` checkout of HEAD (`5a09b1c`), so it is not caused by any
-change in this task or a regression to chase — it is a standing gap between the check's assumption
-and this dev machine's actual state.
-
-**What closes this:** either mock/stub `SteamAPI_Init()` away for this check specifically (the check
-already accepts that "the happy path... needs a live Steam client and is 1.12's run"; the SAD paths
-it asserts should not depend on Steam's absence either), or have the check skip its Steam-unavailable
-assertions when `SteamLobby` reports Steam as actually available, printing which branch it took so a
-run against either machine state still means something.
-
----
-
 ### F-174 · No dev machine can stand in for "mid-range" — `tools/perf_probe.gd`'s baseline is only ever measured on the fastest hardware in the project
 
 **Area:** perf · **Severity:** low · **Found:** 2026-08-18 by lm during 7.7
@@ -865,7 +844,111 @@ script; #2 is the one that actually prevents the bad commit rather than catching
 
 ---
 
+### F-201 · `tools/steam_lobby_check.gd` prints "all checks passed" (exit 0) but always emits one undeclared engine `ERROR:` line, violating this project's own SPECS.md standing rule 4
+
+**Area:** tooling/netcode · **Severity:** medium · **Found:** 2026-08-19 by lm while verifying F-170
+(unrelated to that fix — `tools/steam_lobby_check.gd` was untouched by it, confirmed by `agent
+baseline --script tools/steam_lobby_check.gd` reproducing the identical line against a clean HEAD
+checkout)
+
+Every run against a real, logged-in Steam client — `.agent/bin/agent godot --script
+tools/steam_lobby_check.gd`, twice, both exit 0 — prints every one of its own 17 `ok` assertions and
+"all checks passed", then, after the script's own logic is done and while the SceneTree is still
+draining deferred calls, this:
+
+    [info] net: NetSession: session open as client (peer 0)
+    ERROR: Trying to call an RPC while no multiplayer peer is active.
+       at: rpcp (modules/multiplayer/scene_rpc_interface.cpp:475)
+       GDScript backtrace (most recent call first):
+           [0] _on_session_opened (res://core/net/net_session.gd:445)
+           [1] _emit_server_started (res://autoload/net_transport.gd:898)
+    WARNING: [WARN] net: PlayerNet: no current scene — spawning at world origin
+
+`NetTransport.host()` completing routes through `_emit_server_started()`, itself reached via a
+deferred call — `autoload/steam_lobby.gd`'s own header already documents that "an autoload's _ready
+lands late under a --script main loop", and that ordering caveat looks like the mechanism here: the
+check connects its *own* `server_started` handler in `_initialize()` (line 77), which runs before
+`NetSession`'s autoload `_ready()` gets to connect its own `_on_session_opened` to the same signal.
+Connection order decides emission order, so the check's own handler fires first — and it calls
+`lobby.leave()` synchronously inside that handler ("-- leave --" section), tearing the multiplayer
+peer down. `NetSession._on_session_opened()` then runs second against the same `server_started`
+emission, sees `_was_host == false` (it reads `NetTransport.is_host()` fresh, which the just-completed
+`leave()` has already flipped), and tries `net_client_hello.rpc_id(...)` with no active peer — the
+observed RPC error. The "peer 0" and "session open as client" in the log line, on a script that only
+ever hosts, is itself a symptom of the same already-torn-down state.
+
+**Why this is worth a finding and not a silent pass:** `docs/SPECS.md`'s own preamble, standing rule
+4, says exactly this case must count as a failure — "treat any UNDECLARED error line as failure even
+when the exit code is 0" — and names the fix as either removing the cause or declaring the pattern
+via `EXPECTED_ERROR_PATTERNS`. `tools/steam_lobby_check.gd` does neither; its `_finish()` grades only
+its own 17 named `_check()` calls and never greps its own log. A director or lane trusting `exit
+0`/`"all checks passed"` alone — the natural reading of this check's own verdict — would call the
+Steam lobby path clean when it is not.
+
+**What closes this:** whoever next claims `tools/steam_lobby_check.gd` (and, if the ordering theory
+above needs confirming, `autoload/net_transport.gd`/`core/net/net_session.gd`) should either (a) make
+the check itself declare `EXPECTED_ERROR_PATTERNS="Trying to call an RPC while no multiplayer peer is
+active"` on its own verdict line, the same shape `session_lifecycle_check`/`connect_retry_check`
+already use per the standing rule, if the ordering is judged an artifact of the check's own
+teardown-inside-a-signal-handler shape rather than a real production bug; or (b) if a real host
+disconnecting mid-session can hit this same window during actual play (not just this check's
+synchronous `leave()`-inside-`server_started`-handler pattern), fix the underlying race instead —
+`NetSession._on_session_opened()` should not attempt an RPC without first confirming
+`NetTransport.is_active()`/a live peer exists.
+
+---
+
 ## Resolved
+
+### F-170 · `tools/lobby_menu_check.gd` fails (5/24) whenever the dev machine's own Steam client is actually running — **fixed**
+
+**Area:** tooling/checks · **Severity:** low · **Found:** 2026-08-19 by lm during 6.10
+
+The check's "Steam-less machine" branch (join/host/copy all refused, status naming Steam as the
+reason) assumes `SteamLobby` cannot reach a real Steam client. On a machine where Steam.app is
+actually running and logged in, `SteamAPI_Init()` succeeds, so `request_join`/`request_host` attempt
+a REAL join/host instead of failing fast — the five assertions that expect a Steam-unavailable status
+line fail because the status line says something else (a real, in-flight join attempt) instead.
+Reproduced on a clean `agent baseline` checkout of HEAD (`5a09b1c`), so it is not caused by any
+change in this task or a regression to chase — it is a standing gap between the check's assumption
+and this dev machine's actual state.
+
+**What closes this:** either mock/stub `SteamAPI_Init()` away for this check specifically (the check
+already accepts that "the happy path... needs a live Steam client and is 1.12's run"; the SAD paths
+it asserts should not depend on Steam's absence either), or have the check skip its Steam-unavailable
+assertions when `SteamLobby` reports Steam as actually available, printing which branch it took so a
+run against either machine state still means something.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed in tools/lobby_menu_check.gd. Root cause: the SAD-path assertions fired a real join/host
+request with a fake lobby id, assuming SteamLobby would refuse before touching the network — but
+join_by_id() sets _lobby_id immediately (before Steam's async callback answers), so on a machine
+where Steam is actually running and logged in, the check's own state got stuck in JOINING and every
+assertion after it cascaded off that one corruption. Fix: probe SteamLobby.initialise()/is_ready()
+(idempotent, same call request_join()/request_host() make anyway) before firing the fake-id
+requests; skip the four Steam-dependent assertions with a new skip() helper (prints SKIP:, does not
+count as a failure) and a named branch line when Steam answers, instead of firing a request that
+would start a REAL async join/host against Steam's own servers.
+
+Verified on this machine (Steam client genuinely running and logged in):
+`.agent/bin/agent godot --script tools/lobby_menu_check.gd` -> LOBBY_MENU_CHECK failures=0, four
+SKIP: lines, branch printed "STEAM AVAILABLE on this machine...". Quit Steam and re-ran the same
+command -> failures=0, all 24 assertions run and pass, branch printed "STEAM UNAVAILABLE...";
+confirms the untouched else-branch is byte-identical to the prior passing behaviour. Relaunched
+Steam afterward to restore the machine's prior state.
+
+Sweep of every other tools/*_check.gd referencing Steam (steam_lobby_check.gd, steam_check.gd,
+rich_presence_check.gd, connect_retry_check.gd, display_name_check.gd): none share this bug shape —
+each already either requires Steam by documented design or already branches gracefully on its
+absence/presence. Full detail and the sibling sweep in docs/SPECS.md's new F-170 block.
+
+Also ran tools/steam_lobby_check.gd per this task's own work order step 2 (Steam actually available
+here, so it could run for real): all 17 of its own assertions passed, but it surfaced an unrelated
+pre-existing bug — one undeclared engine ERROR line on every run, confirmed via `agent baseline`
+against a clean HEAD checkout untouched by this fix. Filed separately as F-201 rather than folded
+into this close-out, since it is a different file and a different bug class (a signal-ordering
+teardown race, not a Steam-presence assumption).
 
 ### F-190 · HEAD registers the RewardService autoload but does not contain its script, so a clean checkout fails to boot — **fixed**
 

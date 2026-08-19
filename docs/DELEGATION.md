@@ -705,8 +705,9 @@ A staged seed only ever affects the process that staged it, and only that proces
 existing `WorldDeltaLog` snapshot is still what gets a DRAWN seed to a joining peer).
 
 **Verified:** `agent godot --script tools/main_menu_check.gd` — 29 assertions, 0 failures. No
-regressions: `lobby_menu_check` (F-170 records 5 pre-existing failures on a machine with a real Steam
-client running, reproduced on a clean `agent baseline` checkout, unrelated to this task),
+regressions: `lobby_menu_check` (F-170 fixed 2026-08-19 — was 5 pre-existing failures on a machine
+with a real Steam client running; now `failures=0` on either machine state, see F-170's Resolved
+entry),
 `seed_sync_check`, `mire_grid_check`, `resource_scatter_check`, `defeat_check`, `handshake_check`,
 `net_check_pattern_check`, `inventory_ui_check` all `failures=0` (`crafting_ui_check`'s 19 failures
 are also pre-existing per F-171, unrelated). `agent godot --quit-after 15`: 0 `ERROR:` lines.
@@ -2809,10 +2810,15 @@ terminals. Sequoyah asked for it now, explicitly ahead of its roadmap slot.
   detail, connect retries/rejoins, and a mapped "Steam is not available" for `ERR_UNAVAILABLE`.
   `invite_accepted` while already in a session opens the panel with the friend's lobby ID prefilled
   rather than yanking the player out (SteamLobby's own rule).
-- **Check:** `agent godot --script tools/lobby_menu_check.gd` — 19 assertions, green at ship.
-  Headless has no Steam client, so it proves the panel, the group interlock and every refusal path;
-  the happy path is 1.12's live run. Driveable from a check via `set_open()`, `request_host()`,
-  `request_join()`, `set_join_field_text()`, `status_text()`, `member_row_count()`.
+- **Check:** `agent godot --script tools/lobby_menu_check.gd` — 24 assertions. Headless has no Steam
+  client, so it proves the panel, the group interlock and every refusal path; the happy path is
+  1.12's live run. Driveable from a check via `set_open()`, `request_host()`, `request_join()`,
+  `set_join_field_text()`, `status_text()`, `member_row_count()`.
+  **F-170 (fixed 2026-08-19):** on a machine whose own Steam client is actually running and logged
+  in, the check probes `SteamLobby.initialise()`/`is_ready()` before its Steam-unavailable
+  assertions and prints `SKIP:` for the four that don't apply there, instead of firing a fake-id
+  join/host that would start a real request against Steam's servers. `failures=0` either way; a
+  `SKIP:` line is expected on a dev machine with Steam up, not a regression.
 - **Still open in 6.10:** main menu shell, settings, seed entry (feeds 4.6). The lobby slice is done.
 
 ### 2026-08-18 — F-113/F-114: harvesting is keyed to the ASSET, and health is authored in tool swings (vane19)
