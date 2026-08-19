@@ -141,7 +141,24 @@ func _reset() -> void:
 
 func _on_node_added(node: Node) -> void:
 	if node is GeometryInstance3D:
-		call_deferred("_apply_node", node)
+		# Through the untyped shim, not `_apply_node` itself (F-194): a node freed between this
+		# signal and the deferred call arrives as a freed Object, and a `GeometryInstance3D`-typed
+		# parameter rejects it AT MARSHALLING — one engine error per freed node, 136 in a single
+		# netted check run — before `_apply_node`'s own is_instance_valid guard can ever run.
+		call_deferred("_apply_node_deferred", node)
+
+
+## Deferred landing pad. The parameter is a bare Variant on purpose, and it cannot be tightened:
+## deferred marshalling rejects a freed instance against ANY object-typed parameter — including
+## plain `Object`, measured directly (the first version of this fix used `Object` and produced the
+## same 136 errors as the bug). Only an untyped parameter lets the freed value arrive, which is what
+## makes the validity check below reachable at last.
+func _apply_node_deferred(node: Variant) -> void:
+	if not is_instance_valid(node):
+		return
+	var geometry := node as GeometryInstance3D
+	if geometry != null:
+		_apply_node(geometry)
 
 
 func _apply_recursive(node: Node) -> void:

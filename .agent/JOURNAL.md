@@ -4475,3 +4475,15 @@ Two of three declared: salvage_check declares its provoked corrupt-save pair (sa
 Files: `tools/salvage_check.gd`, `tools/nav_bake_check.gd`
 
 Commit at time of writing: `4b87459`
+
+---
+
+### DONE · F-194 · yarrow21 · 2026-08-19T07:04:56+00:00
+
+**environment_vfx's deferred _apply_node crashes on nodes freed between signal and call — 136 engine errors in one harvest_world_net_check run**
+
+call_deferred('_apply_node', node) died at argument marshalling for nodes freed between node_added and the deferred call — the typed GeometryInstance3D parameter rejected the freed Object before the is_instance_valid guard could run. 136 ERROR lines per harvest_world_net_check run. Fixed with an untyped Variant landing pad (_apply_node_deferred) that validates then casts — and the parameter genuinely cannot be tightened: an Object-typed version was measured to produce the identical 136 errors, which is now recorded in the comment. Verified: harvest_world_net_check 0 ERROR lines (was 136), failures=0; environment_vfx_check foliage=8103 failures=0.
+
+Files: `autoload/environment_vfx.gd`
+
+Commit at time of writing: `de7efdd`

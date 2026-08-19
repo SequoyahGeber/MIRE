@@ -18,12 +18,6 @@
       "task": "F-057",
       "token": null
     },
-    "autoload/environment_vfx.gd": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T06:59:40+00:00",
-      "task": "F-194",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
-    },
     "docs/ASSET_TRACKER.md": {
       "agent": "wick20",
       "at": "2026-08-19T06:42:56+00:00",
@@ -92,15 +86,6 @@
       "notes": [],
       "started": "2026-08-19T06:51:04+00:00",
       "token": null
-    },
-    "F-194": {
-      "agent": "yarrow21",
-      "files": [
-        "autoload/environment_vfx.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-19T06:59:40+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "F-195": {
       "agent": "yarrow21",
@@ -441,9 +426,11 @@
       "task": "3.15"
     },
     "autoload/environment_vfx.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:15:00+00:00",
-      "task": "F-118"
+      "agent": "yarrow21",
+      "at": "2026-08-19T07:04:56+00:00",
+      "hash": "5f8f10f050e3336e5dec8e21b740b46dbeb7fd5ebe27865ce1e7edc836ba2385",
+      "task": "F-194",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "autoload/extraction_service.gd": {
       "agent": "lm",
@@ -5912,9 +5899,11 @@
       "title": "Three checks print undeclared engine errors on clean runs \u2014 salvage_check's provoked corrupt-save pair, nav_bake_check's map-sync timing query, boss_check's exit leak"
     },
     "F-194": {
+      "done_at": "2026-08-19T07:04:56+00:00",
+      "done_by": "yarrow21",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "environment_vfx's deferred _apply_node crashes on nodes freed between signal and call \u2014 136 engine errors in one harvest_world_net_check run"
     },
