@@ -66,6 +66,7 @@ from mire_art import (
     reset_materials,
     world_bounds,
 )
+from godot_import_lock import import_cache_guard  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 ASSET_DIR = ROOT / "assets" / "pickups"
@@ -530,4 +531,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    with import_cache_guard(Path(__file__).name):
+        main()

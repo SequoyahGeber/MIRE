@@ -18,10 +18,14 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from pathlib import Path
 
 import bpy
 from mathutils import Matrix, Vector
+
+sys.path.append(str(Path(__file__).resolve().parent))
+from godot_import_lock import import_cache_guard  # noqa: E402
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -351,4 +355,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    with import_cache_guard(Path(__file__).name):
+        main()

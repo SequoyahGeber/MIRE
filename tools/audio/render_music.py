@@ -57,6 +57,10 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import mire_audio as ma  # noqa: E402
 
+# tools/audio/render_music.py -> tools/audio -> tools -> repo root -> tools/blender.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "blender"))
+from godot_import_lock import import_cache_guard  # noqa: E402
+
 # ---------------------------------------------------------------------------
 # scores
 # ---------------------------------------------------------------------------
@@ -365,4 +369,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    with import_cache_guard(os.path.basename(__file__)):
+        main()

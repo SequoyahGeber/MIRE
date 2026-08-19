@@ -49,6 +49,7 @@ from mire_art import (  # noqa: E402
     Batch, box, cone, cylinder_between, eevee_engine, ground_and_centre, hull, look_at,
     mat, paint_faces, radial, reset_materials, tapered_between, world_bounds,
 )
+from godot_import_lock import import_cache_guard  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 EXPORT_DIR = ROOT / "assets" / "food" / "exports"
@@ -751,4 +752,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    with import_cache_guard(Path(__file__).name):
+        main()

@@ -2191,16 +2191,18 @@
       "task": "7.2"
     },
     "tools/audio/render_music.py": {
-      "agent": "lm",
-      "at": "2026-08-19T05:58:02+00:00",
-      "hash": "cd5be407ef94da6bce07f9600606cb15e2fac547c3ebfa8732c9f28d79b1e816",
-      "task": "F-176",
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "a94bdcc6191a92dab3ae5cb851cdfcd072e982add3131e36f7710e16d35eb98f",
+      "task": "F-196",
       "token": null
     },
     "tools/audio/render_sfx.py": {
-      "agent": "tine18",
-      "at": "2026-08-18T18:11:45+00:00",
-      "task": "7.1"
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "b4f691b113a160c281d5390d711b468ba6d87ea169eb32dca05c86eed8decc60",
+      "task": "F-196",
+      "token": null
     },
     "tools/audio/repro_check.py": {
       "agent": "lm",
@@ -2245,38 +2247,117 @@
       "hash": "35a60d1d3126d79407ade53380ae06c1cd16a05f177d9870456e60da9dbc1804",
       "task": "F-110"
     },
+    "tools/blender/build_adapted_nature_set.py": {
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "dd79153a21d9af0646901c1e993e6f166cecdfec71b4ed2b97aac8087a5e2aaf",
+      "task": "F-196",
+      "token": null
+    },
     "tools/blender/build_construction_set.py": {
-      "agent": "lm",
-      "at": "2026-08-19T06:17:24+00:00",
-      "hash": "24135060d9a5e4bdb8ed3a937b6e7badb36ec312974281c43083c2194aafab40",
-      "task": "F-180",
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "e86a074cb519b2d02f9c90a4d4e9ffa50c789bba035e386a9af62e4d8c102e01",
+      "task": "F-196",
       "token": null
     },
     "tools/blender/build_crafting_stations.py": {
-      "agent": "lm",
-      "at": "2026-08-19T07:07:27+00:00",
-      "hash": "44698f8d37c7e70447193661033fdf4ef25507066e8b862461ad1f6e762a62f4",
-      "task": "F-057",
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "2ee20c0dbd340cd8ec48ecb853df6337ad5a13a6793f02f976d64640a6c75495",
+      "task": "F-196",
+      "token": null
+    },
+    "tools/blender/build_enemy_crawler.py": {
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "e82b95c623b733f88efa5cf1d1988d46a3532774f0f0995d0314459c58acf5c3",
+      "task": "F-196",
       "token": null
     },
     "tools/blender/build_extraction_ship_set.py": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "df58172a89a683022824a507c5f4c41aee8fd44a67986596c8102c330aeff57f",
+      "task": "F-196",
+      "token": null
+    },
+    "tools/blender/build_flora_set.py": {
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "c8a4077eb49d25fe6b6b8a08cd568bc1e79f8e3a46b5d7a7dfdb66fd7ae661a1",
+      "task": "F-196",
+      "token": null
     },
     "tools/blender/build_food_set.py": {
-      "agent": "slate17",
-      "at": "2026-08-19T07:59:58+00:00",
-      "hash": "b8997540f9368cdd83f904f8f10cb9ed48ba7d65d6f04d07efd9756a30d516be",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "d8bfd10c3618487df65a2d8b1f4d1f486dfb6a3ccb499bb99ec9d8b21f9db95d",
+      "task": "F-196",
+      "token": null
     },
     "tools/blender/build_gatherable_plants.py": {
-      "agent": "wick20",
-      "at": "2026-08-19T07:08:14+00:00",
-      "hash": "6e6557ccab76231c491b3219fba5de04dab14b48319249186f53a89824ba18b4",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "6794984a96719ad81fd46308ec89d35a2f7eab621c174f50e5e1a154e6c62ccc",
+      "task": "F-196",
+      "token": null
+    },
+    "tools/blender/build_harvestable_resources.py": {
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "0ba4126a240fd1f302a93be3e49c24356f0dda385bb136eba25273f6a42a0caf",
+      "task": "F-196",
+      "token": null
+    },
+    "tools/blender/build_loot_set.py": {
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "8f027112d2074ab9b5639f9a5022453c3d4f6984728b97421065ec198136c9f7",
+      "task": "F-196",
+      "token": null
+    },
+    "tools/blender/build_mire_map_kit.py": {
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "38be93217c04c71c2504f9f962d870c4ce8458a4922dc3342bf3d025335d79fc",
+      "task": "F-196",
+      "token": null
+    },
+    "tools/blender/build_pickup_kit.py": {
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "d8bd3ab2dbfc223feaee8dbdd9dcf4c9bc889e6a27e237e89be110ae693a3e40",
+      "task": "F-196",
+      "token": null
+    },
+    "tools/blender/build_playtest_hollow.py": {
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "749b7da548b26d66435055146534a4587aa21f4fd426a93b1429e6b6813537e1",
+      "task": "F-196",
+      "token": null
+    },
+    "tools/blender/build_tool_weapon_set.py": {
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "af5e2e35a82dd5328c9ea615cf3d99ad1682c2daac02f0c8989e951768fa6469",
+      "task": "F-196",
+      "token": null
+    },
+    "tools/blender/build_ward_set.py": {
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "2d8382fe54b7a888e553d9f0cf479b002e6251200ea3e3bee322d2573c4f55d4",
+      "task": "F-196",
+      "token": null
+    },
+    "tools/blender/build_wellspring_set.py": {
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "745a59dcf2909bc955b1e281a39f2f3deecb89745370a21be0d9d4eda272b123",
+      "task": "F-196",
+      "token": null
     },
     "tools/blender/crafting_stations_repro_check.py": {
       "agent": "lm",
@@ -2285,22 +2366,31 @@
       "task": "F-057",
       "token": null
     },
+    "tools/blender/godot_import_lock.py": {
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "5c8e8a4a0e294381e7a7f9a9c6ada923a136cba44affa786aebaa54eda373030",
+      "task": "F-196",
+      "token": null
+    },
     "tools/blender/mat_cache_check.py": {
       "agent": "lp",
       "at": "2026-08-18T15:00:10+00:00",
       "task": "F-092"
     },
     "tools/blender/mire_art.py": {
-      "agent": "slate17",
-      "at": "2026-08-19T07:59:58+00:00",
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
       "hash": "e340a2f02297c7838e17ba6a57cfb3efb476def7bb39ae7719d0d9c1ba385e7c",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+      "task": "F-196",
+      "token": null
     },
     "tools/blender/render_item_icons.py": {
       "agent": "lp",
-      "at": "2026-08-18T14:15:06+00:00",
-      "task": "F-061"
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "4516e3dbe7c1bc9e5c257c8a13cce67e52f391ca2f45406e63b1758d674039ad",
+      "task": "F-196",
+      "token": null
     },
     "tools/blender/world_bounds_check.py": {
       "agent": "lp",
@@ -2695,6 +2785,13 @@
       "at": "2026-08-19T09:01:10+00:00",
       "hash": "4eb9e50996318f283d5cef407adcbcde645dbb42c4f789fffc6c0ec0d2d60463",
       "task": "F-154",
+      "token": null
+    },
+    "tools/import_cache_guard_check.py": {
+      "agent": "lp",
+      "at": "2026-08-19T09:20:59+00:00",
+      "hash": "22d46bb95a7d4ebdd7581b6cf60652394c243c800a77ca25809d3792dd045f5f",
+      "task": "F-196",
       "token": null
     },
     "tools/interp_coverage_check.gd": {
@@ -6090,9 +6187,11 @@
       "title": "levels/hollowmere.tscn's Player drifted 1.84 m off the layout spawn \u2014 an editor-session nudge, caught by hollowmere_check"
     },
     "F-196": {
+      "done_at": "2026-08-19T09:20:59+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "An asset rebuild concurrent with agent godot's auto-import pass poisons the import cache \u2014 8 station GLBs stayed unloadable across 40 minutes of checks until a forced --import"
     },

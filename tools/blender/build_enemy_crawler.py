@@ -42,6 +42,7 @@ import bpy
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from mire_art import mat, radial, around, reset_materials  # noqa: E402
+from godot_import_lock import import_cache_guard  # noqa: E402
 import numpy as np
 from mathutils import Vector
 
@@ -1006,4 +1007,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    with import_cache_guard(Path(__file__).name):
+        main()

@@ -4671,3 +4671,15 @@ Confirmed no harness bug: cmd_ship already pathspecs (F-014), and AGENTS.md's ma
 Files: `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `c5eeb43`
+
+---
+
+### DONE · F-196 · lp · 2026-08-19T09:20:59+00:00
+
+**An asset rebuild concurrent with agent godot's auto-import pass poisons the import cache — 8 station GLBs stayed unloadable across 40 minutes of checks until a forced --import**
+
+Fixed: tools/blender/godot_import_lock.py's import_cache_guard() holds agent godot's own .agent/locks/godot.lock for a writer's whole export, then forces a clean agent godot --import on release -- structurally closes the race, not just narrows it. Wired into all 19 asset writers (16 build_*.py GLB exporters, render_item_icons.py, render_music.py/render_sfx.py). Verified: python3 tools/import_cache_guard_check.py --godot -- 4/4, including a real interop case proving a genuine agent godot --quit-after 5 blocks on a held guard and only proceeds after release. agent godot --quit-after 120 -- clean boot, 0 new ERROR lines. agent godot --script tools/findings_numbering_check.gd -- failures=0. D-126 records the writer-must-hold-the-lock rule and the JSON-writer exception.
+
+Files: `tools/blender/godot_import_lock.py`, `tools/blender/mire_art.py`, `tools/blender/build_adapted_nature_set.py`, `tools/blender/build_crafting_stations.py`, `tools/blender/build_construction_set.py`, `tools/blender/build_enemy_crawler.py`, `tools/blender/build_food_set.py`, `tools/blender/build_extraction_ship_set.py`, `tools/blender/build_flora_set.py`, `tools/blender/build_gatherable_plants.py`, `tools/blender/build_harvestable_resources.py`, `tools/blender/build_mire_map_kit.py`, `tools/blender/build_loot_set.py`, `tools/blender/build_playtest_hollow.py`, `tools/blender/build_pickup_kit.py`, `tools/blender/build_ward_set.py`, `tools/blender/build_tool_weapon_set.py`, `tools/blender/build_wellspring_set.py`, `tools/import_cache_guard_check.py`, `tools/audio/render_music.py`, `tools/audio/render_sfx.py`, `tools/blender/render_item_icons.py`
+
+Commit at time of writing: `bc0ecf2`

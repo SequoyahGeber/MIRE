@@ -23,6 +23,7 @@ from mire_art import (  # noqa: E402
     SCALE, assign, check_scale, cone, cylinder_between, eevee_engine, ico,
     look_at, mat, mesh_object, move_to_collection, radial, reset_materials, world_bounds,
 )
+from godot_import_lock import import_cache_guard  # noqa: E402
 
 
 def box(
@@ -496,4 +497,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    with import_cache_guard(Path(__file__).name):
+        main()

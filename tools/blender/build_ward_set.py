@@ -24,6 +24,7 @@ from mire_art import (  # noqa: E402
     assign, cone, eevee_engine, ico, look_at, mat, move_to_collection,
     radial, around, reset_materials, world_bounds,
 )
+from godot_import_lock import import_cache_guard  # noqa: E402
 from mathutils import Vector
 
 
@@ -621,4 +622,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    with import_cache_guard(Path(__file__).name):
+        main()
