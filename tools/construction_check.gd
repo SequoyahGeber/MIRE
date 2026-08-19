@@ -365,6 +365,20 @@ func _check_ramp() -> void:
 	print("CONSTRUCTION_RAMP slope=%.2f deg rise=%.3f m toe=%.1f mm" % [angle, rise, box.position.y * 1000.0])
 
 
+## A per-triangle AABB shrunk inward by `margin` on every axis, clamped so a
+## degenerate (near-planar) triangle collapses to zero width on its thin axis
+## instead of `AABB.grow()` driving that axis negative (F-148). Plain `.abs()`
+## would instead flip a negative axis positive around its grown center, which
+## expands the box past the triangle's real bounds on that axis.
+func _shrunk_solid(low: Vector3, high: Vector3, margin: float) -> AABB:
+	var center := (low + high) * 0.5
+	var half := (high - low) * 0.5
+	half.x = maxf(half.x - margin, 0.0)
+	half.y = maxf(half.y - margin, 0.0)
+	half.z = maxf(half.z - margin, 0.0)
+	return AABB(center - half, half * 2.0)
+
+
 ## Hang every leaf in the frame the catalog gives it, swing it through the arc
 ## the catalog documents, and fail if any part of the leaf is ever inside any
 ## part of the frame. This is the whole of "working wood door": without it the
@@ -404,7 +418,7 @@ func _check_doors() -> void:
 			while index + 2 < soup.size():
 				var low := soup[index].min(soup[index + 1]).min(soup[index + 2])
 				var high := soup[index].max(soup[index + 1]).max(soup[index + 2])
-				solids.append(AABB(low, high - low).grow(-0.004))
+				solids.append(_shrunk_solid(low, high, 0.004))
 				index += 3
 
 		var worst_bite: float = 0.0

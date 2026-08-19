@@ -4163,3 +4163,15 @@ Fixed the collision blind spot F-145 left open: claim/in_flight/recent records n
 Files: `.agent/bin/agent`, `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md`
 
 Commit at time of writing: `c9ef393`
+
+---
+
+### DONE · F-148 · lm · 2026-08-19T05:24:38+00:00
+
+**construction_check.gd's door-swing solids AABB goes negative-size on thin per-triangle bounds, throwing an UNDECLARED engine error on every run**
+
+Fixed the AABB-negative-size crash in construction_check.gd's _check_doors() (clamped per-axis shrink via new _shrunk_solid() helper, not .abs()). Verified twice: agent godot --script tools/construction_check.gd -> grep -c 'ERROR:' = 0 both times (was 213,000+). Surfaced 3 real, previously-crash-masked door-swing failures out of scope (task 3.7's WIP scenes) -- filed as F-180. findings_numbering_check.gd clean (failures=0).
+
+Files: `tools/construction_check.gd`
+
+Commit at time of writing: `c9a7807`

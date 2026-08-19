@@ -2218,9 +2218,10 @@
     },
     "tools/construction_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T00:36:15+00:00",
-      "hash": "67c736d2db4817210c7b8e4421cbc556b4e1c5ea52b7d1d6bda32870da91a656",
-      "task": "F-138"
+      "at": "2026-08-19T05:24:38+00:00",
+      "hash": "8fae6b6202f45e822acf3b54beced0d82d2086eca3c2f2a9a3a930a6a5f621ad",
+      "task": "F-148",
+      "token": null
     },
     "tools/construction_check.gd.uid": {
       "agent": "slate17",
@@ -5325,9 +5326,11 @@
       "title": "F-145's fix protects new sessions only \u2014 already-collided identities stay live for up to SESSION_KEEP_DAYS"
     },
     "F-148": {
+      "done_at": "2026-08-19T05:24:38+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "construction_check.gd's door-swing solids AABB goes negative-size on thin per-triangle bounds, throwing an UNDECLARED engine error on every run"
     },
