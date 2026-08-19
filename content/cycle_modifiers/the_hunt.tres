@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CycleModifierDef" format=3]
+
+[ext_resource type="Script" path="res://systems/cycle/cycle_modifier_def.gd" id="1_the_hunt"]
+
+[resource]
+script = ExtResource("1_the_hunt")
+id = &"the_hunt"
+display_name = "The Hunt"
+description = "DESIGN.md §5.1's own example: a roaming elite enters the island and beelines for whichever player is carrying the most powerups, ignoring everyone else. It punishes the run's own success — the player who has been hoovering up every chest becomes the target, not a reward for the party sharing pickups evenly. Late-min_cycle on purpose: at Cycle 6 someone has usually pulled ahead on powerups, which is what gives the elite a real target to chase instead of a coin flip. No effect is wired to any gameplay system yet (framework scope, D-103's pattern) — the future consumer is WaveSpawner/EnemyWorld checking CycleModifierService.has_modifier(&\"the_hunt\") to spawn one tracking elite per Cycle, retargeting off PowerupService's own per-peer stack counts."
+min_cycle = 6
+base_weight = 1.0
+weight_growth_per_cycle = 0.0
+tags = Array[StringName]([&"enemies"])
+incompatible_tags = Array[StringName]([])
+incompatible_with = Array[StringName]([])

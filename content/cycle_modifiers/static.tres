@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CycleModifierDef" format=3]
+
+[ext_resource type="Script" path="res://systems/cycle/cycle_modifier_def.gd" id="1_static"]
+
+[resource]
+script = ExtResource("1_static")
+id = &"static"
+display_name = "Static"
+description = "DESIGN.md §5.1's own example: no chest rolls a powerup entry this Cycle, but every chest's coin cost is halved. A run that has been saving coins for one big roll gets nothing to spend them on; a run that has been skipping chests to save coins can suddenly afford all of them, for items only. It rewards whoever already diversified past powerups, not whoever hoarded the most coins. No effect is wired to any gameplay system yet (framework scope, D-103's pattern) — the future consumer is Chest checking CycleModifierService.has_modifier(&\"static\") before asking its LootTableDef.roll() for a POWERUP entry, and against its own cost_coins."
+min_cycle = 3
+base_weight = 1.0
+weight_growth_per_cycle = 0.0
+tags = Array[StringName]([&"loot"])
+incompatible_tags = Array[StringName]([])
+incompatible_with = Array[StringName]([])

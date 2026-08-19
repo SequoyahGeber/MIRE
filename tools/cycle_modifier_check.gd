@@ -110,18 +110,52 @@ func _check_real_draw_via_cycle_advance() -> void:
 	check(logged_slot0 == "long_night", "WorldDeltaLog's slot 0 is the drawn id ('%s')" % logged_slot0)
 
 
-## A second advance has nothing left in the deck (long_night already drawn, and this run authors
-## only that one worked example) — must be a no-op, not a crash or a duplicate, same convention
-## WaveSpawner.host_unlock_next_enemy() already uses past roster_order's end.
+## Task 6.3 grew the deck past the single long_night worked example — 7 real content modifiers
+## now (long_night min_cycle=2; drought/tithe/static min_cycle=3; rooted min_cycle=4; bloom
+## min_cycle=5; the_hunt min_cycle=6). Never hardcode WHICH id a given Cycle draws — the weighted
+## pick is real RNG (seeded per F-220, but the seed is derived from a live run_seed this check
+## never fixes) and two authors are free to add an 8th modifier at min_cycle=3 tomorrow, which
+## would silently break a test that assumed exactly 3 candidates go eligible there. Instead this
+## proves the invariants that hold regardless of WHICH candidate wins each weighted pick: a draw
+## never repeats an id, the stack size only ever grows by the number of still-eligible advances,
+## and the deck is fully exhausted (every content id drawn exactly once) by the Cycle every
+## authored id has become eligible — after which further advances are a no-op, not a crash.
 func _check_deck_depletes_no_duplicate() -> void:
-	print("\n== deck exhaustion is a no-op, not a crash or a duplicate ==")
+	print("\n== the grown deck draws every modifier exactly once, then goes quiet ==")
+	var total: int = int(cycle_modifier_service.get(&"_defs").size())
+
+	var seen_ids: Dictionary = {}
+	for active_id: StringName in cycle_modifier_service.call("active_modifier_ids"):
+		seen_ids[active_id] = true
+
+	# host_draw_modifier() appends at most one id per Cycle advance, so full deck coverage takes
+	# at most `total` further advances past whatever has already landed above (long_night, from
+	# the caller). `total + 5` is a safety cap on the loop itself, not a tuned expectation — it
+	# exists only so a future author adding an 8th modifier can never turn this into an infinite
+	# loop, not to assert how many Cycles the draw should take.
+	var advances: int = 0
+	while seen_ids.size() < total and advances < total + 5:
+		var before_size: int = seen_ids.size()
+		cycle_service.call("host_advance_cycle")
+		var active: Array = cycle_modifier_service.call("active_modifier_ids")
+		check(active.size() <= before_size + 1,
+			"a single Cycle advance never stacks more than one new modifier (%d -> %d)"
+			% [before_size, active.size()])
+		for active_id: StringName in active:
+			seen_ids[active_id] = true
+		advances += 1
+
+	check(seen_ids.size() == total,
+		"every authored modifier is drawn exactly once across the run (%d/%d)"
+		% [seen_ids.size(), total])
+
 	var before: Array = cycle_modifier_service.call("active_modifier_ids")
 	cycle_service.call("host_advance_cycle")
 	var after: Array = cycle_modifier_service.call("active_modifier_ids")
-	check(after.size() == before.size(), "advancing past the deck's only entry draws nothing new (%d)"
-		% after.size())
+	check(after.size() == before.size(),
+		"advancing past a fully-drawn deck draws nothing new (%d)" % after.size())
 
-	var drawn_id: StringName = cycle_modifier_service.call("host_draw_modifier", 99)
+	var drawn_id: StringName = cycle_modifier_service.call("host_draw_modifier", 999)
 	check(drawn_id == &"", "host_draw_modifier() on an exhausted deck returns '', not a crash")
 
 

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CycleModifierDef" format=3]
+
+[ext_resource type="Script" path="res://systems/cycle/cycle_modifier_def.gd" id="1_bloom"]
+
+[resource]
+script = ExtResource("1_bloom")
+id = &"bloom"
+display_name = "Bloom"
+description = "DESIGN.md §5.1's own example: corrupted enemies split into two smaller ones on death instead of just dying. A kite-and-poke routine that worked all run now leaves twice the bodies behind each fight, so a player who was fighting one at a time in a doorway suddenly needs room to retreat, not more damage. Stacks especially badly with a wave that is already dense — that is the intended late-Cycle chaos DESIGN.md §5.1 names, not a bug to tag around. No effect is wired to any gameplay system yet (framework scope, D-103's pattern) — the future consumer is Enemy's own death handling checking CycleModifierService.has_modifier(&\"bloom\") before EnemyWorld.host_spawn()s two reduced-health children at the death position."
+min_cycle = 5
+base_weight = 1.0
+weight_growth_per_cycle = 0.1
+tags = Array[StringName]([&"enemies"])
+incompatible_tags = Array[StringName]([])
+incompatible_with = Array[StringName]([])

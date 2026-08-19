@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CycleModifierDef" format=3]
+
+[ext_resource type="Script" path="res://systems/cycle/cycle_modifier_def.gd" id="1_rooted"]
+
+[resource]
+script = ExtResource("1_rooted")
+id = &"rooted"
+display_name = "Rooted"
+description = "DESIGN.md §5.1's own example: the Mire no longer recedes anywhere a Ward stands — only a capped Wellspring pushes it back. A defense build that has been walling the whole island in Wards to hold ground loses its only lever; only actually capping Wellsprings still shrinks the corruption. No effect is wired to any gameplay system yet (framework scope, D-103's pattern) — the future consumer is MireGrid checking CycleModifierService.has_modifier(&\"rooted\") before applying Ward-sourced recession, the same provider seam BuildService.ward_radii() already feeds Wellspring's own recorruption pause (ARCHITECTURE.md §2.2's Wellspring row)."
+min_cycle = 4
+base_weight = 1.0
+weight_growth_per_cycle = 0.1
+tags = Array[StringName]([&"mire"])
+incompatible_tags = Array[StringName]([])
+incompatible_with = Array[StringName]([])

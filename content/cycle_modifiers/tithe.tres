@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CycleModifierDef" format=3]
+
+[ext_resource type="Script" path="res://systems/cycle/cycle_modifier_def.gd" id="1_tithe"]
+
+[resource]
+script = ExtResource("1_tithe")
+id = &"tithe"
+display_name = "Tithe"
+description = "Capping a Wellspring now demands one more player standing in the ritual circle than usual. A duo that has been splitting up all Cycle — one channeling, one on watch — has to physically regroup, which is exactly the priority this modifier flips: presence becomes the scarce resource, not damage or gathering speed. No effect is wired to any gameplay system yet (framework scope, D-103's pattern) — the future consumer is Wellspring reading CycleModifierService.has_modifier(&\"tithe\") to raise its own required_players (ARCHITECTURE.md §2.2's Wellspring row already names that field as the presence-gate knob)."
+min_cycle = 3
+base_weight = 1.0
+weight_growth_per_cycle = 0.0
+tags = Array[StringName]([&"wellspring"])
+incompatible_tags = Array[StringName]([])
+incompatible_with = Array[StringName]([])

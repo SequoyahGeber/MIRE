@@ -1,37 +1,6 @@
 {
-  "claims": {
-    "content/cycle_modifiers": {
-      "agent": "lm",
-      "at": "2026-08-19T17:38:16+00:00",
-      "task": "6.3",
-      "token": null
-    },
-    "systems/cycle/cycle_modifier_def.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T17:38:16+00:00",
-      "task": "6.3",
-      "token": null
-    },
-    "tools/cycle_modifier_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T17:38:16+00:00",
-      "task": "6.3",
-      "token": null
-    }
-  },
-  "in_flight": {
-    "6.3": {
-      "agent": "lm",
-      "files": [
-        "content/cycle_modifiers",
-        "systems/cycle/cycle_modifier_def.gd",
-        "tools/cycle_modifier_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-19T17:38:16+00:00",
-      "token": null
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".": {
       "agent": "lp",
@@ -1162,11 +1131,60 @@
       "hash": "cbf7a1c989133cf33c377c0f1110f1dc424d022c1d7b2e3f4a6726d6596beaf6",
       "task": "3.7"
     },
+    "content/cycle_modifiers": {
+      "agent": "lm",
+      "at": "2026-08-19T17:47:04+00:00",
+      "hash": null,
+      "task": "6.3",
+      "token": null
+    },
+    "content/cycle_modifiers/bloom.tres": {
+      "agent": "lm",
+      "at": "2026-08-19T17:48:28+00:00",
+      "hash": "69c2bf73e318abe0e98877238e8f0606862b4e3bc4e4e2c4620dcf0242dc8514",
+      "task": "6.3",
+      "token": null
+    },
+    "content/cycle_modifiers/drought.tres": {
+      "agent": "lm",
+      "at": "2026-08-19T17:48:28+00:00",
+      "hash": "a7385dd400187040ac1fa0c61ac34fae42b89612f69317a2aedf017ce66402ae",
+      "task": "6.3",
+      "token": null
+    },
     "content/cycle_modifiers/long_night.tres": {
       "agent": "lm",
       "at": "2026-08-19T01:57:43+00:00",
       "hash": "2b5f9dd0b34dfc08b9f08ea5690e26498104229713cb849d3f8e5601c174f625",
       "task": "6.2"
+    },
+    "content/cycle_modifiers/rooted.tres": {
+      "agent": "lm",
+      "at": "2026-08-19T17:48:28+00:00",
+      "hash": "139fb6e51935c10250c2135fbfbae1606ba9b846dab4b208e5fa9d3ef53a84ab",
+      "task": "6.3",
+      "token": null
+    },
+    "content/cycle_modifiers/static.tres": {
+      "agent": "lm",
+      "at": "2026-08-19T17:48:28+00:00",
+      "hash": "201cd0f796b3a7f043c85eaf17c85b651e8dc15ba278c113ea899268b1e4a04e",
+      "task": "6.3",
+      "token": null
+    },
+    "content/cycle_modifiers/the_hunt.tres": {
+      "agent": "lm",
+      "at": "2026-08-19T17:48:28+00:00",
+      "hash": "4801425a9bfdbd8b8d644105cdc9b2183e88ae39f9dbfc7bde98e0f2b9c079ab",
+      "task": "6.3",
+      "token": null
+    },
+    "content/cycle_modifiers/tithe.tres": {
+      "agent": "lm",
+      "at": "2026-08-19T17:48:28+00:00",
+      "hash": "329f3821cd2c74e50f5912fb26e13d9d04e9936b27e9926c9e85d403738522cb",
+      "task": "6.3",
+      "token": null
     },
     "content/enemies": {
       "agent": "lm",
@@ -2360,9 +2378,10 @@
     },
     "systems/cycle/cycle_modifier_def.gd": {
       "agent": "lm",
-      "at": "2026-08-19T01:57:43+00:00",
+      "at": "2026-08-19T17:48:28+00:00",
       "hash": "06cc2675913228be7d1b11023a0d62c3e8a733dab7efd065fcab2760b984c95e",
-      "task": "6.2"
+      "task": "6.3",
+      "token": null
     },
     "systems/cycle/cycle_modifier_def.gd.uid": {
       "agent": "lm",
@@ -3109,9 +3128,10 @@
     },
     "tools/cycle_modifier_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T01:57:43+00:00",
-      "hash": "a0d9bb8a32dbb3d25997607c762ac2c271713bbf7028501156f6ea7deb6ecf81",
-      "task": "6.2"
+      "at": "2026-08-19T17:48:28+00:00",
+      "hash": "6572244e9b7a2b5d604532a07507168d4e01286b35f7a566a39c5dc6d17584ff",
+      "task": "6.3",
+      "token": null
     },
     "tools/cycle_modifier_check.gd.uid": {
       "agent": "lm",
@@ -5307,9 +5327,11 @@
       "title": "Review 6.2 @ 5a6c11f \u2014 judge the commit, file findings, no edits"
     },
     "6.3": {
+      "done_at": "2026-08-19T17:48:28+00:00",
+      "done_by": "lm",
       "est": "5",
       "milestone": "M6",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T0",
       "title": "Author 20\u201330 Cycle Modifier `.tres` files"
     },
@@ -7698,6 +7720,20 @@
       "status": "done",
       "tier": "F",
       "title": "Any session can route lane work, so six orders reached the queues from agents that were not the director"
+    },
+    "F-243": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The run loop is a line, not a circle \u2014 after defeat or extraction there is no path to a next run short of relaunching the process"
+    },
+    "F-244": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The build verb refuses natural coordinates \u2014 nothing ground-snaps a command placement, so 'build wall_wood ~ ~ ~' reads as a bug"
     }
   },
   "version": 1
