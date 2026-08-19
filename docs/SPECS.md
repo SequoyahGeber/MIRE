@@ -7739,6 +7739,84 @@ ignored and then deleted).
 
 ---
 
+## F-240 · A telegraphed attack's reach and tell length cannot deny "just take one step back" — no `EnemyDef` field makes retreating-through-a-tell fail
+
+**Claim:** `systems/enemies/enemy.gd`, `systems/enemies/enemy_def.gd`, `tools/enemy_lunge_check.gd`
+(new). Network authority: no new row — this stays inside the existing "Enemies (spawn, AI, damage):
+**Host**" row (`docs/ARCHITECTURE.md` §2.2). No new replicated property and no new RPC: the fix only
+changes what the host's own simulation does with `velocity.x`/`velocity.z` during a state every peer
+already replicates (`state`/`position`), the same "host-only decision inside the existing state
+machine" shape 5.1's three tunables (perception/alerting/attack-slot cap) already established.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Ran the check before touching anything**, per the finding's own warning (`docs/DELEGATION.md` 42
+commits since filing, `enemy.gd` 1 commit since). The one commit was F-158's `visual_tint` work,
+nowhere near `_tick_attack()`/`_resolve_attack()`. `tools/enemy_content_check.gd`'s own header still
+named the gap explicitly ("any nonzero player movement during a tell beats it regardless of
+`attack_range_m` — filed as F-240, not tested here because there is nothing here that would pass").
+The bug was live and unfixed.
+
+**The decision** (D-147, in full there): close ground during the TELL (a lunge), not sample the
+target's position at tell START. Sampling at start would let the hit land against a player who
+visibly created distance from a fully stationary enemy — a phantom hit, the opposite of DESIGN.md
+§6's readable telegraph. A lunge keeps the causality honest: the enemy's own replicated position
+visibly closes the gap, so a hit that lands corresponds to the enemy actually having reached the
+player.
+
+**The fix:** `EnemyDef.lunge_speed_m_s` (new, `Attack` group, `0.0`–`20.0`, default `0.0`). `Enemy.
+_tick_attack()` now branches: `state == State.TELL and definition.lunge_speed_m_s > 0.0` calls the new
+`_tick_lunge()` (moves toward the live target at `lunge_speed_m_s`, capped — stops at
+`stop_distance_m`, the same arrival distance pursuit itself stops at, so a lunge cannot carry the
+enemy through its own target); every other case keeps the original unconditional
+`velocity.x = velocity.z = 0.0`. `_resolve_attack()` is untouched — the hit still resolves at the
+tell's END against the target's THEN-current position, exactly as 2.10/5.1 built it. Default `0.0`
+means every shipped `EnemyDef` (`crawler`/`tusker`/`strider`/`broodcaller`) keeps the fully-stationary
+tell bit-for-bit; this is a framework tool for a future kind to opt into, not a content change — D-073/
+AGENTS.md's never-bulk-generate rule means authoring a kind that actually uses it is separate work,
+left to whichever task next wants this pressure.
+
+**Verify:** `tools/enemy_lunge_check.gd` (new), 23 assertions, driving `Enemy._physics_process()`
+directly against synthetic `EnemyDef`s exactly like `enemy_ai_check.gd`'s own pattern, player retreat
+calibrated against the engine's own fixed physics delta exactly like `enemy_content_check.gd`'s own
+`_measure_effective_step_seconds()`:
+- A `lunge_speed_m_s = 0.0` kind reproduces F-240's own bug unchanged: a continuously retreating
+  player still beats the swing, and the enemy never closes the gap it opened (2.00 m → 7.79 m).
+- The identical retreating player, against a kind whose `lunge_speed_m_s` (20.0) exceeds the player's
+  own sprint speed (6.0), no longer beats the swing — the hit lands, and the enemy measurably closed
+  ground doing it (2.00 m → 1.69 m).
+- A lunge already inside `stop_distance_m` when the tell begins holds position rather than closing
+  further (< 0.01 m drift over 5 steps) — proves it cannot carry the enemy through its target.
+- A lunge never applies outside TELL — ATTACK/RECOVER stay exactly as stationary as before (< 0.01 m
+  drift), so a committed swing still reads as committed.
+- All four shipped `EnemyDef`s still default `lunge_speed_m_s` to `0.0`, read live through
+  `EnemyWorld`, confirming this framework change touched no authored content.
+
+`.agent/bin/agent godot --script tools/enemy_lunge_check.gd` → `ENEMY_LUNGE_CHECK failures=0`, 0
+undeclared `ERROR:` lines. Regression: `enemy_check.gd` (`failures=0`, unchanged) and `enemy_ai_check.
+gd` (`failures=0`, unchanged) both still pass clean — 5.1's three tunables and 2.10's own telegraph
+proof are untouched by this change.
+
+**Swept for the same shape:** grepped every `.gd` file for `State.TELL`/`attack_tell_seconds`/
+`_tick_attack` — three hits: `enemy_def.gd`/`enemy.gd` (this task) and `boss.gd`. `Boss` (the only
+`extends Enemy` in the repo, confirmed by F-225's own prior sweep) has the identical gap a second
+time: `Boss._tick_attack()` only reaches `super._tick_attack()` (the path that would read
+`lunge_speed_m_s`) when the boss has no `BossPhaseDef.moves` for its current phase; a real move
+takes its own branch and unconditionally zeroes velocity, and `BossMoveDef` has no `lunge_speed_m_s`
+field of its own even if it didn't. Filed as F-247 rather than fixed here — `boss.gd`/`boss_move_def.
+gd` are outside this task's claim, and it is a second framework decision (a field on a different
+Resource, a second call site), not a one-line reuse.
+
+Also filed, unrelated to this fix but found while regression-testing: F-246 —
+`tools/enemy_content_check.gd`'s strider-vs-crawler kiting proof fails at a clean HEAD (`ENEMY_
+CONTENT_CHECK failures=2`, reproduced 3× via `agent baseline`), independent of any change this task
+made.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

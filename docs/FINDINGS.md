@@ -456,36 +456,6 @@ is picked up, rather than copy-pasting the private method.
 
 ---
 
-### F-240 · A telegraphed attack's reach and tell length cannot deny "just take one step back" — no `EnemyDef` field makes retreating-through-a-tell fail, so that pressure isn't available to future enemy content
-
-**Area:** enemies · **Severity:** low · **Found:** 2026-08-19 by lm during 5.2
-
-`Enemy._resolve_attack()` (systems/enemies/enemy.gd) always checks the target's distance at the
-INSTANT the tell ends, and `_tick_attack()` zeroes `velocity.x`/`velocity.z` for the entire
-TELL/ATTACK/RECOVER span — the enemy is fully stationary throughout its own swing (2.10's original
-design, generalised by 5.1, unchanged since). The consequence: for ANY `EnemyDef`, at ANY
-`attack_range_m`/`attack_tell_seconds` combination, a player who starts moving away the instant the
-tell begins always ends up outside `attack_range_m` by the time it resolves, because the enemy never
-closes the gap it opened. A bigger `attack_range_m` only changes how far out the tell can TRIGGER
-from — it does nothing to make the tell itself harder to walk away from once it has.
-
-Task 5.2 wanted this as one enemy kind's identity ("denies casual backpedaling, rewards using a real
-dodge") and confirmed by direct test that it does not hold: see `docs/DELEGATION.md`'s 2026-08-19
-task 5.2 entry for the full reasoning and the `tusker` kind that shipped with a different identity
-instead (a bigger `attack_recovery_seconds` payoff for standing and trading, which the state machine
-does support).
-
-**Not fixed here** — this is a design-space limitation of the existing state machine, not a bug in
-it; 2.10/5.1's behaviour is correct for what it set out to do. **What would close this:** either the
-enemy continuing to close ground during its own TELL/ATTACK span (a lunge/leap that covers distance
-mid-swing) or an attack that samples the target's position at tell START rather than tell END —
-either is a real change to `Enemy._tick_attack()`/`_resolve_attack()`, not a new `EnemyDef` field
-alone, and is worth deciding deliberately (a new field, or a per-kind attack "shape" enum) rather than
-re-discovered by the next author who wants this pressure and reaches for a bigger `attack_range_m`
-number that won't actually deliver it.
-
----
-
 ### F-243 · The run loop is a line, not a circle — after defeat or extraction there is no path to a next run short of relaunching the process
 
 **Area:** systems · **Severity:** high · **Found:** 2026-08-19 by hollow7
@@ -599,7 +569,131 @@ WaveSpawner/EnemyWorld for `the_hunt`, DayNight for `long_night`, and the equiva
 
 ---
 
+### F-246 · `tools/enemy_content_check.gd`'s strider-vs-crawler kiting proof fails at a clean HEAD, independent of any in-flight change
+
+**Area:** enemies · **Severity:** medium · **Found:** 2026-08-19 by lm during F-240
+
+`_check_speed_denies_kiting()` spawns `strider` (`move_speed = 7.5`, above `PLAYER_SPRINT_SPEED_MPS
+= 6.0`, confirmed passing by the test's own sanity check) against a continuously retreating synthetic
+player and asserts it closes the gap over 60 stepped calls, the same way `strider.tres`'s own header
+promises ("closes distance a below-sprint kind cannot"). Two of its assertions fail:
+
+```
+FAIL: neither ever closed to its own attack range — this measured pursuit, not a frozen telegraph
+FAIL: the strider closes the gap on the SAME retreating player despite it (8.00 m -> 9.82 m -> ~10.1 m across three runs)
+```
+
+The strider ends the loop further from the player than it started (8 m out to ~9.8–10.1 m), the
+opposite of task 5.2's own claim, and the first failure indicates one of the two enemies left `state
+== CHASE` before the loop finished (deaggro, most likely, given `strider.tres`'s `deaggro_radius_m =
+24.0` and the retreat running the full 60 steps regardless of state) — not confirmed further, since
+this is outside F-240's claim (`systems/enemies/enemy.gd`/`enemy_def.gd`, not `strider.tres` or the
+pursuit/steering code this exercises).
+
+**Reproduced three times in a row** with `.agent/bin/agent baseline --script
+tools/enemy_content_check.gd` against a fresh checkout of HEAD (`b807863`) — not a flake, not caused
+by F-240's own change (`enemy_lunge_check.gd`, `enemy_check.gd` and `enemy_ai_check.gd` all pass
+clean against the same HEAD and against F-240's working tree alike). `ENEMY_CONTENT_CHECK
+failures=2` every time.
+
+**What would close this:** find where the strider stops actually gaining ground on a retreating
+player — likely either a deaggro drop mid-loop or a pursuit/steering regression since 5.2 shipped —
+and fix it, or fix the test if the design intent genuinely changed since 5.2. Either way
+`tools/enemy_content_check.gd` should read `failures=0` at HEAD again.
+
+---
+
+### F-247 · F-240's exact gap exists a second time in `BossMoveDef` — a boss's own telegraphed moves have no way to close ground during their own TELL either, and `Boss._tick_attack()` would not even inherit `EnemyDef.lunge_speed_m_s` if it did
+
+**Area:** enemies · **Severity:** low · **Found:** 2026-08-19 by lm during F-240 (sweep for the same
+shape elsewhere, per AGENTS.md step 3)
+
+F-240 gave `EnemyDef` a `lunge_speed_m_s` field and `Enemy._tick_lunge()` so a kind's plain
+TELL/ATTACK/RECOVER attack can close ground during its own tell instead of standing fully still. A
+boss (`systems/enemies/boss.gd`, `extends Enemy`) does not use that path for its own attacks:
+`Boss._tick_attack()` (`boss.gd:243`) only falls through to `super._tick_attack(delta)` — the path
+that would read `lunge_speed_m_s` — when `_current_move()` returns null, i.e. only in the fallback
+case where the boss has no `BossPhaseDef.moves` defined for its current phase. Whenever a real move
+IS active (the normal case for any boss actually authored with moves), `_tick_attack()` takes its own
+branch instead (`boss.gd:248-249`) and unconditionally zeroes `velocity.x`/`velocity.z` for the whole
+span, exactly 2.10/5.1's original stationary-tell behaviour F-240 found in the base class.
+
+`BossMoveDef` (`systems/enemies/boss_move_def.gd`) has no field of its own for this either — its
+`Attack`/`Timing` groups (`damage`, `range_m`, `tell_seconds`, `attack_seconds`, `recovery_seconds`)
+are a per-move copy of `EnemyDef`'s own fixed fields, `lunge_speed_m_s` included by omission. So even
+authoring a boss whose `EnemyDef.lunge_speed_m_s` is nonzero would not help: a boss with any moves at
+all never reaches the branch that reads it.
+
+**Not fixed here** — `boss.gd`/`boss_move_def.gd` are outside F-240's claim (`enemy.gd`/`enemy_def.gd`
+only), and this is a second framework decision (a `BossMoveDef.lunge_speed_m_s` field, plus
+`Boss._tick_attack()`'s own branch calling the equivalent of `_tick_lunge()` — inherited `_tick_lunge()`
+already reads `_target_node`/`_resolve_target()` generically, so it should need no boss-specific
+version, only a call site), not a one-line reuse of F-240's fix.
+
+**What would close this:** add `lunge_speed_m_s` to `BossMoveDef` alongside its existing `Timing`
+group, and have `Boss._tick_attack()`'s own branch call `_tick_lunge()` when `state == State.TELL and
+move.lunge_speed_m_s > 0.0`, mirroring `Enemy._tick_attack()`'s own condition exactly. Verify against
+`tools/boss_check.gd`'s existing harness, the same way `enemy_lunge_check.gd` proved the base case.
+
+---
+
 ## Resolved
+
+### F-240 · A telegraphed attack's reach and tell length cannot deny "just take one step back" — no `EnemyDef` field makes retreating-through-a-tell fail, so that pressure isn't available to future enemy content — **fixed**
+
+**Area:** enemies · **Severity:** low · **Found:** 2026-08-19 by lm during 5.2
+
+`Enemy._resolve_attack()` (systems/enemies/enemy.gd) always checks the target's distance at the
+INSTANT the tell ends, and `_tick_attack()` zeroes `velocity.x`/`velocity.z` for the entire
+TELL/ATTACK/RECOVER span — the enemy is fully stationary throughout its own swing (2.10's original
+design, generalised by 5.1, unchanged since). The consequence: for ANY `EnemyDef`, at ANY
+`attack_range_m`/`attack_tell_seconds` combination, a player who starts moving away the instant the
+tell begins always ends up outside `attack_range_m` by the time it resolves, because the enemy never
+closes the gap it opened. A bigger `attack_range_m` only changes how far out the tell can TRIGGER
+from — it does nothing to make the tell itself harder to walk away from once it has.
+
+Task 5.2 wanted this as one enemy kind's identity ("denies casual backpedaling, rewards using a real
+dodge") and confirmed by direct test that it does not hold: see `docs/DELEGATION.md`'s 2026-08-19
+task 5.2 entry for the full reasoning and the `tusker` kind that shipped with a different identity
+instead (a bigger `attack_recovery_seconds` payoff for standing and trading, which the state machine
+does support).
+
+**Not fixed here** — this is a design-space limitation of the existing state machine, not a bug in
+it; 2.10/5.1's behaviour is correct for what it set out to do. **What would close this:** either the
+enemy continuing to close ground during its own TELL/ATTACK span (a lunge/leap that covers distance
+mid-swing) or an attack that samples the target's position at tell START rather than tell END —
+either is a real change to `Enemy._tick_attack()`/`_resolve_attack()`, not a new `EnemyDef` field
+alone, and is worth deciding deliberately (a new field, or a per-kind attack "shape" enum) rather than
+re-discovered by the next author who wants this pressure and reaches for a bigger `attack_range_m`
+number that won't actually deliver it.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed: EnemyDef.lunge_speed_m_s (new, Attack group, default 0.0) + Enemy._tick_lunge(), called from
+_tick_attack() only when state==TELL and lunge_speed_m_s>0.0 — closes ground toward the live target
+during the tell instead of standing fully still, capped at stop_distance_m so it cannot carry the
+enemy through its target. _resolve_attack() unchanged: the hit still resolves at tell END against the
+target's then-current position (D-147 explains why a lunge was chosen over sampling position at tell
+START — the latter would land a phantom hit against a player who visibly created distance, the
+opposite of DESIGN.md §6's readable telegraph). Default 0.0 keeps every shipped EnemyDef
+(crawler/tusker/strider/broodcaller) fully stationary, bit-for-bit — framework only, no content
+authored.
+
+Verified: tools/enemy_lunge_check.gd (new), 23 assertions — a lunge_speed_m_s=0 kind still loses to a
+continuously retreating player (reproduces F-240's own bug unchanged, 2.00m -> 7.79m gap grows), the
+identical retreat against lunge_speed_m_s=20.0 (> player sprint 6.0) no longer beats the swing and the
+enemy measurably closes ground (2.00m -> 1.69m), a lunge already inside stop_distance_m holds instead
+of overshooting (<0.01m drift), a lunge never applies outside TELL (<0.01m drift through ATTACK), and
+all four shipped EnemyDefs still default to 0.0 via EnemyWorld. `agent godot --script
+tools/enemy_lunge_check.gd` -> ENEMY_LUNGE_CHECK failures=0, 0 undeclared ERROR lines. Regression:
+enemy_check.gd and enemy_ai_check.gd both still failures=0, unchanged.
+
+Swept for the same shape: Boss (the only extends Enemy) has the identical gap in its own per-move
+attack path — filed as F-247, outside this task's claim. Also hit while regression-testing, unrelated:
+tools/enemy_content_check.gd's strider-vs-crawler kiting proof fails at a clean HEAD independent of
+this change, reproduced 3x via `agent baseline` — filed as F-246.
+
+Full writeup: docs/SPECS.md "## F-240" block. Design call: docs/DECISIONS.md D-147.
 
 ### F-239 · The inv command reads slot keys that do not exist — inv always prints 'carrying nothing' and inv clear silently removes nothing — **fixed**
 

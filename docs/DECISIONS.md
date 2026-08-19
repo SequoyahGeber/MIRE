@@ -1298,6 +1298,30 @@ Four consequences, all of them in this task:
 22 m pits on a 26 m island, and an interior riddled with lakes. It is thresholded now, so troughs sit
 on the floor and only crests exist.
 
+**Sequoyah, same day: "the islands are quite round, they shouldn't be standard shapes."** A radial
+falloff makes a coin, and displacing its edge with noise makes a coin with a wobbly rim — the
+silhouette is still a circle because the thing being displaced is a circle. Two changes, and the
+second mattered more than the first:
+
+* **The island is a union of overlapping lobes**, three or four of them, at seeded offsets and radii,
+  with the centred body lobe deliberately *not* the largest (0.60 against lobes up to 0.72). At 0.84
+  the body was the island and every other lobe was a bump on it, which still rendered as a circle.
+  Connectivity is enforced by clamping each lobe's offset so it must overlap the body, rather than by
+  picking numbers that happen to work.
+* **Lobe directions are independent, not evenly spaced.** Stepping a fixed stride round the direction
+  table spreads lobes evenly, and evenly-spread lobes union straight back into a rounded polygon —
+  every seed came out the same shape. Independent directions let some seeds cluster their lobes into
+  a long island with a waist and others spread them into a broad one. Variety is the point; one
+  irregular shape repeated is still a standard shape.
+
+Every mask is measured in **warped space** — a vector displacement applied to the point before any
+distance is taken — so arcs become inlets and spits rather than staying arcs with noise on them.
+
+**`world_radius()` is a function, not a constant, and that is deliberate.** GDScript will not
+evaluate `maxf()` in a const expression, and the alternative — a hand-computed literal — is exactly
+what went wrong: the first bound covered islets and was silently wrong the moment lobes could reach
+further. `terrain_check` caught it as 11 mm of land sitting on the boundary.
+
 **Two constants exist because of this, and callers must prefer them to the obvious ones:**
 `WORLD_RADIUS` (islets sit past `ISLAND_RADIUS`, so *that* is no longer where the land ends —
 anything culling or bounding the world wants this) and `MAX_HEIGHT` (`HEIGHT_SCALE` is the noise
@@ -4264,3 +4288,32 @@ either side of a real conflict yet.
 **Would change my mind:** a playtest surfacing a specific pair from this six (or a future one against
 it) that is fun alone but breaks together — at which point the fix is one `incompatible_tags` entry
 on whichever modifier is added later, not a retroactive redesign of these six.
+
+### D-147 · 2026-08-19 · F-240's fix is a lunge during the TELL, not a position sampled at tell START
+
+F-240 named two candidate fixes for "a telegraphed attack's reach and tell length cannot deny 'just
+take one step back'": either the enemy closes ground during its own TELL/ATTACK span, or the hit
+samples the target's position at tell **START** rather than tell **END**. This task built the first
+and rejected the second, deliberately.
+
+Sampling at tell start would make the hit connect against wherever the target stood when the
+telegraph began, regardless of anything the enemy's own model does between then and the swing. 2.9's
+whole hit-reaction and telegraph system stands on `state`/position being the truth the client renders
+— an enemy standing fully still (per its replicated `state`/`position`) that still lands a hit on a
+player who visibly created distance would read as a phantom hit, not a dodge that failed. That is
+the opposite of DESIGN.md §6's "readable telegraph": the player would have done everything right and
+lost anyway, with the game giving no visual reason why.
+
+A lunge keeps the causality honest: the enemy's own replicated position visibly closes the gap, so a
+player who gets hit was actually caught, not penalized for a decision the game made before they even
+started moving. `Enemy._resolve_attack()` is untouched — the hit still resolves at the tell's END
+against the target's THEN-current position, exactly as 2.10/5.1 built it; only whether the enemy
+itself moved during the tell is new. `EnemyDef.lunge_speed_m_s` defaults to `0.0`, so every shipped
+`EnemyDef` keeps the fully-stationary tell bit-for-bit — this is a framework tool for a future kind
+to opt into, not a change to any authored content (`tools/enemy_lunge_check.gd`'s last scenario
+confirms `crawler`/`tusker`/`strider`/`broodcaller` all still default to it).
+
+**Would change my mind:** a playtest establishing that a start-sampled "always lands, however you
+dodge" attack reads as fair for some specific enemy identity (e.g. an unavoidable ground-slam whose
+tell is itself the dodge window, not the swing) — at which point that is a second, additively-named
+field (e.g. `commits_to_start_position: bool`), not a replacement for this one.
