@@ -75,6 +75,45 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-232 resolved: hostile-client audit across every `net_request_*`/`net_submit_*` entry point — new `RpcRateLimiter` closes the one real gap it found (lm)
+
+**What shipped, the seam the next host RPC with real per-request cost builds on:**
+`core/net/rpc_rate_limiter.gd` — `RpcRateLimiter` (`RefCounted`), a per-peer minimum-interval gate:
+`allow(peer_id: int, min_interval_msec: int) -> bool` returns true (and records "now") at most once
+per `min_interval_msec` per peer, false otherwise; `reset(peer_id: int)` clears one peer's entry (F-059
+shape — call it from a peer-departure hook if a caller ever needs the timestamp not to carry across a
+reused peer id, though neither current caller bothers, since a stale timestamp only ever costs a new
+connection's first request up to `min_interval_msec` of extra latency, never a correctness bug). Wired
+into `BuildService.net_request_place`/`net_request_destroy` and
+`CommandService.net_submit_command` (`RATE_LIMIT_INTERVAL_MSEC = 100` in each, one `RpcRateLimiter`
+instance per autoload — never share one instance across files, since peer ids collide meaninglessly
+across unrelated request kinds). A throttled request gets an ordinary rejection reply through the
+handler's own existing confirm/result seam (`"requests too frequent — slow down"` /
+`"commands too frequent — slow down"`), never a silent drop.
+
+**The rule for the next `@rpc("any_peer")` handler that turns out to do real per-request host work**
+(a physics query, a tree scan, anything beyond O(1) dictionary/state lookups): `preload("res://
+core/net/rpc_rate_limiter.gd")`, one `var _rate_limiter := RATE_LIMITER.new()` per autoload/script, one
+`RATE_LIMIT_INTERVAL_MSEC` constant, and gate the RPC handler itself (not the local/offline call path
+— `_rate_limiter.allow(multiplayer.get_remote_sender_id(), RATE_LIMIT_INTERVAL_MSEC)` before doing any
+real work, replying with the ordinary rejection shape on false. `docs/FINDINGS.md` F-233 names every
+handler already checked and found NOT to need this yet — check there before assuming a new one does.
+
+**A second, unrelated fix the audit's own check surfaced:** `CommandService._parse_args()` now runs a
+`selector`-typed optional argument's default through `_parse_selector()` when the stored default is a
+raw String, instead of handing an unparsed string straight to a handler expecting the parsed Dictionary
+shape — the trap the `entities` command's own `"default": "@e"` had fallen into (its documented bare
+form, `entities` with no argument, crashed before this). Any future selector-typed optional arg gets
+this for free; no per-spec fix needed.
+
+**Verify:** `agent godot --script tools/hostile_client_check.gd` (new — real two-process ENet flood,
+`HOSTILE_CLIENT_CHECK failures=0`), `tools/build_net_check.gd` (0 failures, ordinary sequential
+requests unaffected), `tools/rpc_manifest_check.gd` (RPC count/PROTOCOL_VERSION unchanged — only
+handler bodies changed, no new wire shape), `tools/entity_check.gd`/`tools/command_check.gd`/
+`tools/function_check.gd`/`tools/command_console_check.gd` (all 0 failures). Full writeup:
+`docs/FINDINGS.md` F-232 (Resolved) and F-233 (residual, low severity), `docs/DECISIONS.md` D-141,
+`docs/SPECS.md` F-232 block.
+
 ### 2026-08-19 — F-231 resolved: `ResourceScatterField`'s depletion-restore no longer replays a real harvest yield — new `Harvestable.host_restore_depleted()` reaches the same state without the side effect (lm)
 
 **What shipped, the seam the next "restore remembered state" caller builds on:**

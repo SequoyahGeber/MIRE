@@ -7362,6 +7362,109 @@ at all.
 
 ---
 
+## F-232 · No system had been audited from a hostile-client perspective except disconnect timing — an audit across every `net_request_*`/`net_submit_*` entry point, and a fix for the one real gap it found
+
+**Claim:** `core/net/rpc_rate_limiter.gd` (new), `autoload/build_service.gd`,
+`autoload/command_service.gd`, `tools/hostile_client_check.gd` (new). **Authority:** no new row — every
+system audited keeps its already-declared §2.2 authority; this fixes a mechanism gap inside it, the
+same shape F-228/F-230/F-231 all took.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The audit.** Read every client-facing host RPC handler in the project (`grep -rln --include="*.gd"
+'@rpc("any_peer"' .`, minus `tools/`): `Chest.net_request_open`, `Wellspring.net_request_toggle_channel`,
+`BuildService.net_request_place`/`net_request_destroy`, `CraftingService.net_request_craft`,
+`PlayerHealth.net_request_consume_item`/`net_request_revive`/`net_report_local_stamina`,
+`Haulable.net_request_pickup`/`net_request_drop`, `BuildableDoor.net_request_toggle`,
+`ExtractionShip.net_request_repair`/`net_request_toggle_departure`,
+`CombatService.net_request_attack`, `RangedCombatService.net_request_shot`,
+`NetTransport.net_request_display_name`, `CommandService.net_submit_command`,
+`NetSession.net_client_hello`, and every `EntityDirectory` selector-driven command (`tp`/`kill`/`tag`,
+all HOST-scope, op-gated). Checked each against three attack classes docs/FINDINGS.md's F-232 entry
+named: forged identity (does the handler trust a client-supplied peer/target id, or derive the actor
+from `multiplayer.get_remote_sender_id()`?), out-of-range/out-of-state requests (does the host
+re-derive range/ownership/state, or trust the client's claim?), and command/selector op-escalation
+(can a non-op reach a HOST-scope verb through the raw RPC, bypassing the console's own gate?).
+
+**Result: every one of those was already sound.** Every handler re-derives the actor from
+`get_remote_sender_id()`, never a client-supplied peer id (the one exception — `PlayerHealth.
+net_request_revive`'s `target_peer` argument — is deliberately client-CHOSEN, not client-TRUSTED: the
+host re-validates the target is actually downed and in range of the reviver's own real position before
+acting on it). Every range/state check reads the host's own copy of the world, never a client-supplied
+value. `CommandService.net_submit_command()` re-parses the raw line from scratch and re-checks
+`_is_op(sender_id)` against the ACTUAL RPC sender for every HOST-scope command, regardless of how the
+line arrived — a non-op cannot reach `tp`/`kill`/`op` this way any more than through the console.
+`InventoryStore.move_stack()`'s from/to indices are bounds-checked before use (no OOB from a malicious
+index). This matches D-039's shape and the pattern the F-228 sweep already fixed across
+craft/build/demolish: this codebase's host RPC handlers already treat every wire value as untrusted by
+default.
+
+**The one real gap: resource/rate abuse — exactly what this finding's own text named as untested.**
+Two handlers do real, unbounded-per-request host work with no per-peer cooldown and no in-flight guard
+(unlike `Harvestable`'s per-definition request cooldown, or `CombatService`/`RangedCombatService`'s
+in-flight swing/shot lock, which already rate-limit those three by accident):
+- `BuildService.net_request_place()` runs a real `PhysicsDirectSpaceState3D` overlap query
+  (`PlacementValidator.evaluate()`) on every call, accepted or not.
+- `CommandService.net_submit_command()` runs a full re-parse and, for many commands, further work —
+  `entities`/`tp`/`kill`/`tag` all call `EntityDirectory.snapshot()`, a full entity-group tree scan —
+  on every call, and a LOCAL-scope command (`entities` included) needs **no op at all**, so this is
+  reachable by any connected peer, not just one the host has opped. A client's own `submit()` never
+  routes a LOCAL-scope command over the wire at all (COMMANDS.md: it runs wherever it was typed) — but
+  a hostile client has no reason to go through the game's own dispatch logic and can call the
+  `@rpc("any_peer")` function directly with any line it wants.
+
+**The fix:** `core/net/rpc_rate_limiter.gd` (new) — `RpcRateLimiter`, a small `RefCounted` per-peer
+minimum-interval gate (`allow(peer_id, min_interval_msec) -> bool`, `reset(peer_id)`). Wired into both
+handlers named above (`RATE_LIMIT_INTERVAL_MSEC: int = 100` in each, placeholder-tuned like this
+file's other rate constants — generous for any real play rhythm, tight enough to flatten a scripted
+flood to ~10 requests/sec instead of one per network frame). A throttled request still gets an
+ordinary rejection reply (`"requests too frequent — slow down"` /
+`"commands too frequent — slow down"`), never a silent drop, so a legitimate double-press is never
+mistaken for nothing happening. Gated only at the two client-facing RPC handlers — a local/offline
+call and a host-issued `build`/`demolish`/console command never touch the wire and so never touch the
+limiter either.
+
+**A second, unrelated bug the audit's own check surfaced:** `CommandService._parse_args()`'s
+optional-argument default path stored a `selector`-typed default as raw, UNPARSED grammar
+(`entity_directory.gd`'s `entities` spec: `"default": "@e"`, a String) and handed it straight to
+`resolve()`, which requires the parsed Dictionary shape every live selector token already gets via
+`_parse_selector()`. Typing the bare `entities` command — its own documented normal form,
+`entities [selector]` — crashed with a GDScript type error before this fix. Not part of the audit's
+own hostile-client scope (reachable by anyone, hostile or not, host included) but found while proving
+the rate limiter with a real two-process flood of that exact command. Fixed generally in
+`_parse_args()`: a `selector`-typed optional default that is a String is now run through
+`_parse_selector()` before being stored, the same as a live token would be — protects any future
+selector-typed optional arg from the identical trap, not just this one call site.
+
+**Verify:** `tools/hostile_client_check.gd` (new) — real two-process ENet check, same driver/child
+shape as `tools/build_net_check.gd` (task 3.6) and `tools/disconnect_timing_check.gd` (task 7.8): a
+genuine second process floods 40 back-to-back `net_request_place`/`net_submit_command "entities"`
+calls with no `await` between them (`FLOOD_COUNT = 40`, comfortably above what one `RATE_LIMIT_
+INTERVAL_MSEC` window could ever let through). `.agent/bin/agent godot --script
+tools/hostile_client_check.gd` → `HOSTILE_CLIENT_CHECK failures=0`: every flooded request got SOME
+reply (none silently dropped), 39/40 of each flood came back throttled, and 1/40 still got a real
+answer — proving the limiter engages under a real flood without ever blocking a peer outright. Also
+reran `tools/build_net_check.gd` (0 failures — ordinary sequential requests, well under the 100ms
+gate, are unaffected), `tools/rpc_manifest_check.gd` (`RPC count is still 55`, `PROTOCOL_VERSION (21)
+matches` — no wire signature changed, only handler bodies), `tools/entity_check.gd`,
+`tools/command_check.gd`, `tools/function_check.gd`, `tools/command_console_check.gd` (all 0
+failures), and a full boot (`agent godot --quit-after 120`) — 0 stray `ERROR:` lines.
+
+**Swept for the same shape:** every other `@rpc("any_peer")` handler listed under "The audit" above
+does O(1) dictionary/state work per call (a range check, a `Dictionary.has()`, a bounded-index array
+access) — none walks the scene tree or queries physics space per request the way `BuildService`'s
+validator and `EntityDirectory.snapshot()` do, and `CombatService`/`RangedCombatService` already
+self-limit via their in-flight phase lock. Filed as a residual finding (F-233) rather than blanket-
+applying the limiter everywhere: the other handlers' current per-request cost is low enough that
+rate-limiting them now would be pre-emptive hardening with no proven exploit behind it, not a fix for
+something this audit found — F-233 names them explicitly so a future pass does not have to re-derive
+the list.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

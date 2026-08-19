@@ -440,7 +440,99 @@ instruction.
 
 ---
 
+### F-233 · The rest of the `@rpc("any_peer")` surface has no per-peer rate limit either — currently low-severity, named explicitly so a future pass doesn't have to re-derive the list
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lm during F-232's audit
+
+F-232's audit read every client-facing host RPC handler and found (and fixed) exactly two doing
+unbounded real work per call with no throttle: `BuildService.net_request_place` (a physics overlap
+query) and `CommandService.net_submit_command` (an entity-tree scan for several commands, no op
+required for a LOCAL-scope one). `core/net/rpc_rate_limiter.gd`'s `RpcRateLimiter` now gates both —
+see docs/SPECS.md's F-232 block and D-141 for why only those two.
+
+Every other handler — `Chest.net_request_open`, `Wellspring.net_request_toggle_channel`,
+`CraftingService.net_request_craft`, `PlayerHealth.net_request_consume_item`/`net_request_revive`/
+`net_report_local_stamina`, `Haulable.net_request_pickup`/`net_request_drop`,
+`BuildableDoor.net_request_toggle`, `ExtractionShip.net_request_repair`/
+`net_request_toggle_departure`, `NetTransport.net_request_display_name` — currently does only O(1)
+work per call (a `Dictionary.has()`, a squared-distance check, a bounds-checked write), and
+`CombatService`/`RangedCombatService` already self-limit via their in-flight swing/shot lock. None of
+these has a demonstrated exploit behind it today. If one of them grows real per-request cost later (a
+new validation step, a new lookup that isn't O(1)), wire `RpcRateLimiter` onto it the same way — the
+class already exists, so that fix is one `allow()` call, not a new design.
+
+---
+
 ## Resolved
+
+### F-232 · No system has been audited from a hostile-client perspective except disconnect timing — every review to date asked whether code matches its spec, not what a malicious peer can force — **fixed**
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by bram1
+
+Twenty-six independent reviews landed on 2026-08-18/19 and found eight real defects. Every one of
+them was framed as spec-conformance: does this code do what its SPECS block, ARCHITECTURE row and
+decisions say it does. That framing is valuable — it caught F-228 (a non-host op's `craft` charging
+the host) and F-231 (an item duplication on every chunk rebuild) — but it asks a different question
+from the one an attacker asks.
+
+The single exception is task 7.8, which audited exactly one hostile scenario — a peer disconnecting
+between request and reply — and found **five** unguarded `rpc_id()` call sites in one pass. That hit
+rate is far above the review average, and it covered one narrow attack out of many.
+
+The attacks nobody has systematically tried, all against systems that now exist and are reachable:
+
+- **Forged identity in the payload.** F-084 was exactly this shape (any client destroying any
+  buildable by guessable node name) and was found by review, not by audit. Every `net_request_*`
+  that names a target — pieces, chests, wellsprings, haulables, entities via selector — deserves the
+  same question asked deliberately rather than incidentally.
+- **Out-of-range and out-of-state requests.** Host-side re-derivation is claimed in several
+  `ARCHITECTURE.md` §2.2 rows. Claimed is not the same as tested against a client that lies.
+- **Replay and duplicate submission.** Request ids exist; nothing has tried submitting the same id
+  twice, or a stale one, or one belonging to another peer.
+- **Command and selector abuse.** `CommandService` gates on an op set and `EntityDirectory` resolves
+  `@a`/`@e[...]` host-side (3.15's review confirmed the resolution is host-side). Nobody has tried
+  the op-escalation paths — a non-op submitting an op-only verb directly over RPC rather than through
+  the console that refuses it.
+- **Resource and rate abuse.** Nothing bounds how fast a client may submit requests; a peer looping
+  `net_request_place` costs the host a validation and a nav rebake each time.
+
+This wants a dedicated audit task per surface, in the shape 7.8 used: enumerate every entry point,
+write a two-process check that a hostile client actually drives, and fix what it proves. Filed rather
+than assumed — the reviews may have incidentally covered some of this, and the audit should confirm
+before writing new checks.
+
+---
+
+**Resolved 2026-08-19 by lm.** Audited every client-facing host RPC handler (chest/wellspring/build/craft/consume/revive/stamina/
+hauling/door/extraction/combat/ranged-combat/display-name/command/entity-selector) against forged
+identity, out-of-range/out-of-state, and command op-escalation — all already sound (every actor is
+derived from multiplayer.get_remote_sender_id(), every range/state check reads host-side truth, every
+HOST-scope command re-checks _is_op(sender_id) regardless of how the line arrived). Found and fixed the
+one real gap the finding itself named: unbounded per-peer request rate on two handlers doing real work
+per call with no cooldown — BuildService.net_request_place (a physics overlap query) and
+CommandService.net_submit_command (an entity-tree scan for several commands, no op required for a
+LOCAL-scope one like `entities`). Added core/net/rpc_rate_limiter.gd (RpcRateLimiter, a per-peer
+min-interval gate) and wired it into both. Also found and fixed an unrelated crash while proving it:
+CommandService._parse_args() stored a selector-typed optional default as raw unparsed grammar
+("entities"'s own default), which crashed the command's documented bare form; fixed generally for any
+selector-typed optional default, not just that one spec.
+
+Verified with a new real two-process ENet check, tools/hostile_client_check.gd (same driver/child
+shape as build_net_check.gd/disconnect_timing_check.gd): a genuine second process floods 40 back-to-
+back net_request_place/net_submit_command("entities") calls with no await between them.
+`.agent/bin/agent godot --script tools/hostile_client_check.gd` -> HOSTILE_CLIENT_CHECK failures=0 —
+every flood got a reply (none silently dropped), 39/40 throttled, 1/40 still answered (proves the
+limiter engages without ever blocking a peer outright). Also reran build_net_check.gd (0 failures,
+ordinary sequential requests unaffected), rpc_manifest_check.gd (RPC count/PROTOCOL_VERSION unchanged
+— only handler bodies changed), entity_check.gd, command_check.gd, function_check.gd,
+command_console_check.gd (all 0 failures), and a full boot (agent godot --quit-after 120, 0 stray
+ERROR: lines).
+
+Residual: the rest of the @rpc("any_peer") surface has no rate limit either, but every one of those
+does only O(1) work per call or is already in-flight-guarded — filed as F-233 (low severity) rather
+than blanket-applying the limiter with no proven cost behind it. D-141 records why a flat min-interval
+gate applied only to the two proven handlers, not a token bucket applied everywhere. Full write-up in
+docs/SPECS.md's new F-232 block.
 
 ### F-230 · `FunctionRunner.effective_scope()` uses a dynamic-scope command's DECLARED max scope, not the actual scope of the line as written — a pure-LOCAL line silently forces its whole function to HOST — **fixed**
 

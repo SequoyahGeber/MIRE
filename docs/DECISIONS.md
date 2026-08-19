@@ -4037,3 +4037,34 @@ exhaustive for "who does this command act on." A future command type that legiti
 shape (e.g. "the target is neither the issuer nor a parsed argument, but derived from world state")
 would be the first real counter-example, and should get its own decision rather than stretching this
 one.
+
+### D-141 · 2026-08-19 · Host RPC rate limiting: a flat per-peer min-interval gate, applied only where the audit proved real per-request cost — not a token bucket, not blanket-applied everywhere
+
+F-232's hostile-client audit found exactly two `@rpc("any_peer")` handlers doing unbounded real work
+per call with no existing throttle (`BuildService.net_request_place`'s physics overlap query,
+`CommandService.net_submit_command`'s entity-tree scan on `entities`/`tp`/`kill`/`tag`). Fixed both
+with `core/net/rpc_rate_limiter.gd` — `RpcRateLimiter.allow(peer_id, min_interval_msec) -> bool`, a
+per-peer "reject if less than N ms since your last allowed call" gate, `Time.get_ticks_msec()`-keyed,
+no burst allowance and no decay curve.
+
+**Why a flat min-interval, not a token bucket:** every handler already re-derives and re-validates
+everything about a request from host-side state (F-232's own audit result) — the limiter's only job is
+capping HOW OFTEN a peer may ask, not deciding whether an individual ask is valid. A token bucket would
+let a peer save up idle time and spend it as a burst, which buys nothing here: nothing about this
+project's request shapes benefits from bursting (a player does not queue up ten builds to fire at
+once), and a flat gate is one field and one comparison instead of a refill-rate/capacity pair to tune.
+
+**Why only the two proven handlers, not every `@rpc("any_peer")` in the project:** the audit read every
+one (docs/SPECS.md's F-232 block lists them) and found the rest already do O(1) work per call — a
+`Dictionary.has()`, a squared-distance check, a bounds-checked array write — or are already self-
+limited by an in-flight guard (`CombatService`/`RangedCombatService`'s one-swing/one-shot-at-a-time
+lock). Wiring a limiter onto a handler with no proven cost is hardening against a threat the audit
+never found, and F-232's own filed history (F-228, F-230, F-231 — each a real, demonstrated bug, not a
+defensive pass) is the house style this project has been running: fix what an audit proves, name what
+it did not, and let the next real finding pick the next target — F-233 names the swept-but-unfixed
+handlers explicitly so a future task does not have to re-derive the list.
+
+**Would change my mind:** a future finding demonstrating a genuine exploit against one of the handlers
+F-233 lists (their current O(1) cost turning out to compound in a way this audit missed), or a
+gameplay pattern that legitimately needs to burst requests (making a flat gate the wrong shape, not
+just an untuned one).
