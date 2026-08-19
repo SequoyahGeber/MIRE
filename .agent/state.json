@@ -4653,10 +4653,12 @@
       "title": "Cycle state machine: advance, escalate spread rate, expand enemy pool, announce (`DESIGN.md` \u00a75.1)"
     },
     "6.1-review": {
+      "done_at": "2026-08-19T14:06:44+00:00",
+      "done_by": "lm",
       "est": "0.5",
       "milestone": "M6",
       "review_of": "6.1",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 6.1 @ 46a25e6 \u2014 judge the commit, file findings, no edits"
     },

@@ -5191,3 +5191,13 @@ Clean — 1f0ff07 verified against SPECS.md 4.3, ARCHITECTURE.md §2.2, standing
 Files: `docs/FINDINGS.md`
 
 Commit at time of writing: `e5f0861`
+
+---
+
+### DONE · 6.1-review · lm · 2026-08-19T14:06:44+00:00
+
+**Review 6.1 @ 46a25e6 — judge the commit, file findings, no edits**
+
+Clean, no findings. Reviewed 46a25e6 (+follow-up docs commit 8b7804e) against SPECS.md 6.1 block: CycleService correctly host-authoritative (_owns_cycle mirrors MireGrid's _owns_simulation pattern), no bare-autoload violations (cycle_service.gd is itself an autoload, exempt; MireLog is a pre-existing class_name convention), no randi()/determinism issues, WorldDeltaLog piggyback for Cycle replication is well-justified (D-100, net_version.gd held by another lane). Ran tools/cycle_check.gd myself: 16/16 assertions pass, 2 runs. Regression checks all failures=0: mire_grid_check.gd, wave_spawner_check.gd, mire_interaction_check.gd (its own EXPECTED_ERROR_PATTERNS for the unrelated material-null noise, per standing rule 4). Full boot (agent godot --quit-after 20): 0 ERROR: lines. docs/DELEGATION.md Current state carries CycleService's public API (current_cycle/host_advance_cycle/spread_multiplier + EventBus seam) accurately, shipped in the immediate follow-up commit 8b7804e.
+
+Commit at time of writing: `f6d9918`
