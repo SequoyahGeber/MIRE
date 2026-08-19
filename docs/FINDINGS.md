@@ -551,6 +551,46 @@ own raw args the same way top-level dispatch does, not against `time`'s worst ca
 
 ---
 
+### F-231 · `ResourceScatterField`'s depletion-restore replays a real harvest yield, so every rebuild of an already-harvested scattered point grants a free duplicate of its item to the host
+
+**Area:** world-gen / inventory · **Severity:** high · **Found:** 2026-08-19 by lp during 4.4-review
+
+`world/gen/resource_scatter_field.gd:322-325` (`_wire_point_state()`, unchanged in spirit since 4.4's
+original `_apply_persisted_state()` at commit `9946f73`) restores a scattered point's remembered
+depletion by calling `harvestable.call("host_apply_damage", int(definition.get(&"max_health")),
+NetConfig.HOST_PEER_ID)` on the freshly-rebuilt `Harvestable`. That is the right call to re-arm
+`active=false` and the respawn clock (the file's own header explains why a direct `active` poke was
+wrong), but `host_apply_damage()` is not a silent state-setter — it is the SAME seam a real player
+swing uses, and when it brings health to 0 it runs `Harvestable._deplete()` in full
+(`systems/harvesting/harvestable.gd:215-226`): `depleted.emit()` and
+`EVENT_BUS.emit_harvest_yielded()`, both carrying the definition's real `yield_item_id`/`yield_amount`.
+`InventoryService._on_harvest_yielded()` (`autoload/inventory_service.gd:273-288`) subscribes to
+exactly that event and unconditionally `host_add()`s the yield into `peer_id`'s inventory — here
+always `NetConfig.HOST_PEER_ID` (peer 1), regardless of who actually harvested the point.
+
+Concrete failure: harvest any scattered NODE or BATCH resource, walk far enough that its chunk drops
+out of the LOD0/collision ring (`ARCHITECTURE.md`'s own boundary this file reuses), then walk back.
+The chunk rebuilds, `_wire_point_state()` sees `is_point_depleted() == true`, replays the lethal hit
+to restore `active=false` — and the host's inventory receives a second, unearned copy of the item.
+Repeat indefinitely: leaving and re-entering render range of the same tree/bush is an ordinary,
+trivially repeatable player action, not an edge case, and it is a **host-only** effect that fires even
+solo (`_owns_world_mutation()` is true offline), so every player who ever revisits a harvested resource
+point farms free materials. Reproduced live in `tools/resource_scatter_check.gd`'s own run: its
+"lifecycle" section deposits `[info] inventory: peer 1 collected 2 log` once for the real hit, then
+again for the depletion *restore* a few lines later — the check exercises this exact path and never
+notices because it only asserts `active == false` after rebuild, not that no new yield fired.
+
+**Not fixed here** (review-only task). The restore needs to reach `active=false` and arm the respawn
+clock without going through the yield-emitting half of `_deplete()` — either a small host-only
+`Harvestable` method that sets `active`/`_respawn_remaining` together (so a direct poke is finally
+safe, closing the trap the file's own header currently warns against) or a `host_apply_damage`
+variant/parameter that suppresses `depleted.emit()`/`EVENT_BUS.emit_harvest_yielded()` on a
+memory-restore call specifically. Whichever task 4.6's `WorldDeltaLog` follow-up or F-139's "give
+`ChunkStreamer`/`ResourceScatterField` a real caller" lands under should close this first — right now
+shipping either one turns this into a live dupe exploit.
+
+---
+
 ## Resolved
 
 ### F-227 · SalvageService's reward-curve comment states the wrong numbers — mismatches the formula it documents and its own SPECS.md block — **fixed**

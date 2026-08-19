@@ -5493,3 +5493,33 @@ Notes along the way:
 Files: `world/gen/poi_def.gd`, `world/gen/poi_map.gd`, `autoload/registry.gd`, `tools/poi_check.gd`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `59cec7f`
+
+---
+
+### DONE · 4.4-review · lp · 2026-08-19T15:03:38+00:00
+
+**Review 4.4 @ 9946f73 — judge the commit, file findings, no edits**
+
+4.4 sound on its own spec/authority terms -- resource_scatter_check.gd 0 failures (30 assertions), full boot 0 ERROR: lines, jittered-grid determinism/biome-gate/bounds all verified by hand, HarvestWorld wiring reused unmodified as claimed, network authority correctly derived (placement: none, standing: HOST via existing Harvestable row). One high finding, F-231: the depletion-restore path (host_apply_damage() replay, D-083's own fix for the active-poke respawn-clock bug) also replays Harvestable._deplete()'s yield side effect, so every chunk rebuild of an already-harvested point grants the host a free duplicate item -- reproduced live in the check's own inventory log, still present in HEAD after 4.6's WorldDeltaLog refactor (resource_scatter_field.gd:325).
+
+Notes along the way:
+- Traced D-083's host_apply_damage() restore all the way through Harvestable._deplete() -> depleted.emit()/EVENT_BUS.emit_harvest_yielded() -> InventoryService._on_harvest_yielded() -> host_add(). D-083 fixed the respawn-clock bug (poking active directly) but the replacement replays the FULL yield side effect too, not just active/respawn state. Confirmed live via tools/resource_scatter_check.gd's own log: 'peer 1 collected 2 log' fires twice -- once for the real hit, once for the depletion restore after chunk rebuild. Bug is unchanged by 4.6's WorldDeltaLog refactor (same call at resource_scatter_field.gd:325, now in _wire_point_state). Filed F-231 (high) -- host-only but fires even solo, and is trivially reproducible by walking out of and back into the LOD0 ring near any harvested resource.
+
+Files: `docs/FINDINGS.md`
+
+Commit at time of writing: `04bce72`
+
+---
+
+### DONE · 6.10-review · lm · 2026-08-19T15:03:55+00:00
+
+**Review 6.10 @ aebac9b — judge the commit, file findings, no edits**
+
+Sound, no findings. aebac9b matches SPECS.md 6.10 exactly: main_menu.gd/settings_menu.gd at-commit content verified via git show (settings shell is placeholder-only, no 7.5 content leak, matching D-110); ARCHITECTURE.md §2.2 authority (client-local UI, the free last row) declared correctly in both files' headers; seed staging (core/game_state.gd set_pending_seed/has_pending_seed/pending_seed) verified line-by-line -- numeric-as-is, non-numeric hashed via String.hash(), empty clears, 0-collision mapped to 1, reset() untouched so a pending seed survives a failed connect. D-032 hand-off (close self then open target) correct for MULTIPLAYER and SETTINGS; refuses to stack via blocks_gameplay_input group, confirmed against lobby_menu.gd's own membership. Rule 1 respected: every autoload access in main_menu.gd/settings_menu.gd goes through get_node_or_null+call, no bare identifiers. tools/main_menu_check.gd run live: MAIN_MENU_CHECK failures=0 (29/29 PASS). Regressions all failures=0 live: lobby_menu_check, seed_sync_check, mire_grid_check, resource_scatter_check, defeat_check, handshake_check (0 failure(s)), net_check_pattern_check, inventory_ui_check. Full boot (agent godot --quit-after 15): 0 ERROR: lines. DELEGATION.md Current state carries the full MainMenu/SettingsMenu/GameState API surface. One process curiosity noted (not filed): aebac9b's own diff has no project.godot change -- the two autoload registrations actually landed in the very next commit (2268b33, task 6.9, same lane 15 min later); HEAD is correct and ordered as spec'd, so nothing ships broken, but a bisect to aebac9b alone would show the check failing.
+
+Notes along the way:
+- aebac9b's own diff has no project.godot change; MainMenu/SettingsMenu autoload registration actually landed in the next commit (2268b33, task 6.9), 15 min later same lane. HEAD is fully correct and ordered SettingsMenu-then-MainMenu as spec'd -- not filing, since nothing ships broken and no future task needs to defend against it, but noting it since aebac9b alone (bisected) would fail main_menu_check.gd.
+
+Files: `.agent/BOARD.md`
+
+Commit at time of writing: `04bce72`

@@ -9,6 +9,13 @@
       "task": "3.5-review",
       "token": null
     },
+    ".agent/BOARD.md": {
+      "agent": "lm",
+      "at": "2026-08-19T15:03:55+00:00",
+      "hash": "975e2e9aba600de7f390d3e0b224c3169f59c4db1a1b77da659288714f19a97e",
+      "task": "6.10-review",
+      "token": null
+    },
     ".agent/bin/agent": {
       "agent": "lm",
       "at": "2026-08-19T11:05:30+00:00",
@@ -1730,9 +1737,9 @@
     },
     "docs/FINDINGS.md": {
       "agent": "lp",
-      "at": "2026-08-19T14:59:21+00:00",
-      "hash": "f82c42facd454e582cb8b0143a6330bbca17eb41e954ab5a7b50790e3d83039c",
-      "task": "3.17-review",
+      "at": "2026-08-19T15:03:38+00:00",
+      "hash": "68dc629540fbfcaf2b3327e4622405eb62d593e95f52ee3c444fb554977eeae6",
+      "task": "4.4-review",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1740,11 +1747,6 @@
       "at": "2026-08-18T21:26:59+00:00",
       "hash": "4afda3ae7b80644df85797defdd0ba84e393fcab1dee5e8dc98c3f79e7bc712b",
       "task": "3.2"
-    },
-    "docs/ORCHESTRATION.md": {
-      "agent": "bram1",
-      "at": "2026-08-18T15:01:15+00:00",
-      "task": "F-044"
     },
     "docs/POWERUPS.md": {
       "agent": "yarrow21",
@@ -2437,11 +2439,6 @@
       "hash": "5c8e8a4a0e294381e7a7f9a9c6ada923a136cba44affa786aebaa54eda373030",
       "task": "F-196",
       "token": null
-    },
-    "tools/blender/mat_cache_check.py": {
-      "agent": "lp",
-      "at": "2026-08-18T15:00:10+00:00",
-      "task": "F-092"
     },
     "tools/blender/mire_art.py": {
       "agent": "lp",
@@ -4384,10 +4381,12 @@
       "title": "Resource scatter via `MultiMeshInstance3D`, per-biome tables"
     },
     "4.4-review": {
+      "done_at": "2026-08-19T15:03:38+00:00",
+      "done_by": "lp",
       "est": "0.5",
       "milestone": "M4",
       "review_of": "4.4",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 4.4 @ 9946f73 \u2014 judge the commit, file findings, no edits"
     },
@@ -4623,10 +4622,12 @@
       "title": "Main menu, lobby UI, settings, seed entry"
     },
     "6.10-review": {
+      "done_at": "2026-08-19T15:03:55+00:00",
+      "done_by": "lm",
       "est": "0.5",
       "milestone": "M6",
       "review_of": "6.10",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 6.10 @ aebac9b \u2014 judge the commit, file findings, no edits"
     },
@@ -6924,6 +6925,20 @@
       "status": "todo",
       "tier": "F",
       "title": "`craft`/`build` console commands charge and credit the HOST's own peer, not the issuing player, whenever a non-host op runs them"
+    },
+    "F-229": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`docs/SPECS.md` cites \"D-095\" twice for decisions that actually landed as D-096 and D-097 \u2014 both references now point at task 4.7's unrelated POI-placement decision"
+    },
+    "F-230": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`FunctionRunner.effective_scope()` uses a dynamic-scope command's DECLARED max scope, not the actual scope of the line as written \u2014 a pure-LOCAL line silently forces its whole function to HOST"
     }
   },
   "version": 1
