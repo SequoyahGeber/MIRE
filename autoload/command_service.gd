@@ -787,21 +787,48 @@ func _parse_function_id(raw: String, _spec: Dictionary) -> Dictionary:
 	return {"ok": true, "value": id}
 
 
-## Peer id only for now, not COMMANDS.md §2.2's full "peer id int or player display name" — there is
-## no display-name registry yet anywhere in the project for the name half to resolve against (F-157;
-## F-126 filed the original gap and was closed as D-098 without building one — this file consumes
-## that registry once it exists, it does not own inventing it). Deliberately does NOT require the id
-## to be a currently connected peer: `op` is the main caller, and an op grant has to survive exactly
-## the reconnect gap D-035 describes (`_on_run_player_rebound`/`_on_run_player_expired` above) —
-## refusing to op someone mid-reconnect, or pre-authorizing a peer id the host expects to join, would
-## fight that on purpose.
+## COMMANDS.md §2.2's full "peer id int or player display name" (F-157 built the registry this
+## consumes — `NetTransport.display_names()` — after F-126 found the name half had nothing to resolve
+## against, and D-098 closed F-126 without building it here). Deliberately does NOT require an INT to
+## be a currently connected peer: `op` is the main caller, and an op grant has to survive exactly the
+## reconnect gap D-035 describes (`_on_run_player_rebound`/`_on_run_player_expired` above) — refusing
+## to op someone mid-reconnect, or pre-authorizing a peer id the host expects to join, would fight
+## that on purpose. A NAME, by contrast, only ever resolves against who is connected right now — there
+## is nothing to pre-authorize by name for a peer that has not joined and so has never submitted one.
 func _parse_peer(raw: String, _spec: Dictionary) -> Dictionary:
-	if not raw.is_valid_int():
-		return {"ok": false, "error": "'%s' is not a peer id" % raw}
-	var id: int = raw.to_int()
-	if id <= 0:
-		return {"ok": false, "error": "'%s' is not a valid peer id" % raw}
-	return {"ok": true, "value": id}
+	if raw.is_valid_int():
+		var id: int = raw.to_int()
+		if id <= 0:
+			return {"ok": false, "error": "'%s' is not a valid peer id" % raw}
+		return {"ok": true, "value": id}
+	return _resolve_peer_by_name(raw)
+
+
+## The name half of _parse_peer. Exact match, case-insensitive — a display name is a player-chosen
+## label, not an identifier, so `op bob` should hit "Bob". Two connected peers may share a name (the
+## registry does not dedupe — F-157), so an ambiguous match refuses rather than guessing which one was
+## meant, the same "never guess" stance @r's random-pick is the one deliberate exception to elsewhere
+## in this file.
+func _resolve_peer_by_name(raw: String) -> Dictionary:
+	var transport: Node = _transport()
+	if transport == null:
+		return {"ok": false, "error": "no peer named '%s'" % raw}
+	var names: Dictionary = transport.call("display_names")
+	var matches: Array[int] = []
+	for id_v: Variant in names:
+		if String(names[id_v]).nocasecmp_to(raw) == 0:
+			matches.append(int(id_v))
+	if matches.is_empty():
+		return {"ok": false, "error": "no peer named '%s'" % raw}
+	if matches.size() > 1:
+		matches.sort()
+		var id_list: PackedStringArray = PackedStringArray()
+		for id: int in matches:
+			id_list.append(str(id))
+		return {"ok": false, "error": "'%s' matches more than one peer (%s) — use their peer id" % [
+			raw, ", ".join(id_list)
+		]}
+	return {"ok": true, "value": matches[0]}
 
 
 # ── Shared authority/lookup helpers (same shape as every other host service — dev_loadout.gd,

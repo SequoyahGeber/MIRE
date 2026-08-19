@@ -236,6 +236,16 @@ func local_steam_id() -> int:
 	return int(_steam.getSteamID())
 
 
+## This machine's own Steam persona name, or "" before initialise() — NetTransport threads this
+## through as the STEAM-mode source for its own peer id -> display name registry (F-157). Distinct
+## from _persona(steam_id), which resolves any lobby member's name and falls back to the id itself;
+## this one has no id to fall back to, so "not ready yet" has to read as empty, not as a number.
+func local_persona_name() -> String:
+	if not _initialised:
+		return ""
+	return _persona(local_steam_id())
+
+
 ## Everyone in the lobby: [code]{steam_id: int, name: String, is_owner: bool, is_local: bool}[/code],
 ## owner first. This is lobby membership, NOT session membership — see the note at the top of the
 ## file before using it for anything that matters.

@@ -38,6 +38,11 @@ signal connected_to_host()
 signal server_started()
 signal disconnected()
 
+## F-157: the peer id -> display name map changed. Fires on the host (who applied/decided it) and on
+## every peer that received the broadcast or the joining snapshot — same "everyone ends up agreeing"
+## shape as peer_joined/peer_left, just for a name instead of membership.
+signal display_name_changed(peer_id: int, display_name: String)
+
 ## Private on purpose — callers branch on is_host() / is_active() / current_mode(), not on this.
 enum _Status { OFFLINE, HOSTING, CONNECTING, CONNECTED }
 
@@ -77,11 +82,21 @@ const _PEER_TIMEOUT_LIMIT: int = 32
 const _PEER_TIMEOUT_MIN_MSEC: int = 2500
 const _PEER_TIMEOUT_MAX_MSEC: int = 8000
 
+## F-157. A display name is a label, not an identifier — this only needs to fit on an in-game roster
+## line and a kill-feed entry, not be unique or precise.
+const _DISPLAY_NAME_MAX_LEN: int = 24
+
 var _status: _Status = _Status.OFFLINE
 var _mode: NetConfig.Mode = NetConfig.Mode.OFFLINE
 
 ## Every peer in the session including the local one, ascending. Host is always 1, so it sorts first.
 var _peers: PackedInt32Array = PackedInt32Array()
+
+## F-157's registry: peer id -> sanitized display name. The HOST's copy is the canonical one — only
+## the host ever writes an entry (see net_request_display_name) — every other peer's copy is a mirror
+## kept current by net_display_name_changed/net_display_name_snapshot. Cleared entirely on _teardown,
+## same lifecycle as _peers: a display name means nothing outside the session that assigned it.
+var _display_names: Dictionary = {}
 
 ## Cached rather than read from multiplayer.get_unique_id() on demand. By the time the host-quit path
 ## runs, ENet has already torn the connection down and get_unique_id() no longer returns our id — so
@@ -210,6 +225,8 @@ func host(mode: NetConfig.Mode, port: int = -1) -> Error:
 	_local_id = NetConfig.HOST_PEER_ID
 	_peers = PackedInt32Array([NetConfig.HOST_PEER_ID])
 	_last_end_kind = EndKind.NONE
+	# F-157: the host is a peer too, and nothing else will ever submit a name on its behalf.
+	_host_apply_display_name(_local_id, _compute_default_display_name())
 
 	MireLog.info(NetConfig.LOG_CHANNEL, "hosting %s on %s — room for %d more" % [
 		mode_name(mode), _describe_target(), NetConfig.MAX_CLIENTS
@@ -318,6 +335,35 @@ func peer_ids() -> PackedInt32Array:
 ## that every service runs before an rpc_id() send (F-099).
 func has_peer(peer_id: int) -> bool:
 	return _peers.has(peer_id)
+
+
+## F-157. [param peer_id]'s display name, or a "Player N" placeholder if the registry has no entry
+## yet — the gap between a peer joining and its name actually landing (still in flight over the wire,
+## or this process's own mirror hasn't received the broadcast/snapshot yet), and the permanent state
+## for a peer id nobody ever named (offline single-player, or a check that never calls host()/join()).
+func display_name(peer_id: int) -> String:
+	var name: String = String(_display_names.get(peer_id, ""))
+	return name if not name.is_empty() else "Player %d" % peer_id
+
+
+## F-157. The whole peer id -> display name map as this process currently knows it — the host's copy
+## is authoritative, every other peer's is a mirror that may briefly lag it. Entries only exist for
+## peers that have actually submitted a name; missing entries fall back the same way display_name()
+## does, so a caller that just wants one name should use that instead of indexing this directly.
+func display_names() -> Dictionary:
+	return _display_names.duplicate()
+
+
+## F-157. Submit (or change) THIS process's own display name. Safe to call before a name is picked —
+## host()/join() already call it once with a computed default (SteamLobby's persona in STEAM mode, an
+## OS username otherwise) so nobody ends up with an empty entry — a settings/name-entry UI calls this
+## again later with whatever the player actually typed. Offline or mid-connect, this is a no-op: there
+## is nobody to submit to yet, and the auto-submit on connect will run once there is.
+func submit_display_name(name: String) -> void:
+	if _status == _Status.HOSTING:
+		_host_apply_display_name(_local_id, name)
+	elif _status == _Status.CONNECTED:
+		net_request_display_name.rpc_id(NetConfig.HOST_PEER_ID, name)
 
 
 ## The mode of the current session, or of the attempt in flight. OFFLINE when there is neither.
@@ -462,7 +508,11 @@ func _on_peer_disconnected(id: int) -> void:
 	MireLog.info(NetConfig.LOG_CHANNEL, "peer %d left (%d/%d)" % [
 		id, _peers.size(), NetConfig.MAX_PLAYERS
 	])
+	# Erased AFTER the signal, not before: a listener naming who just left (NetDebugPanel's log line,
+	# F-157) needs display_name(id) to still resolve during peer_left, not already be back to the
+	# "Player N" placeholder.
 	peer_left.emit(id)
+	_display_names.erase(id)
 
 
 func _on_connected_to_server() -> void:
@@ -491,6 +541,10 @@ func _on_connected_to_server() -> void:
 	for id: int in pending:
 		if id != self_id:
 			_add_peer(id)
+
+	# F-157: tell the host who we'd like to be called. Sent after the peer bookkeeping above so a
+	# server-side handler reading _peers for validation already sees us in it.
+	submit_display_name(_compute_default_display_name())
 
 
 func _on_connection_failed() -> void:
@@ -553,6 +607,105 @@ func _add_peer(id: int) -> void:
 		id, _peers.size(), NetConfig.MAX_PLAYERS
 	])
 	peer_joined.emit(id)
+	# F-157: hand the newcomer everyone's name so far — this peer's own submit_display_name() call
+	# (fired separately, once it reaches CONNECTED) tells the host what IT wants to be called, not
+	# what everyone else already picked.
+	if _status == _Status.HOSTING and id != _local_id:
+		net_display_name_snapshot.rpc_id(id, _display_names)
+
+
+# ── Display names (F-157) ─────────────────────────────────────────────────────────────────────────
+#
+# Authority (§2.2): HOST. The map lives here because NetTransport already owns the right lifecycle
+# hooks (_peers, _track_peer/_add_peer, peer_joined/peer_left) and the right key — the in-session net
+# peer id every other system uses, unlike SteamLobby's Steam-id-keyed lobby roster. A client's chosen
+# name is untrusted input crossing the wire, same stance every other write RPC in this project takes
+# (D-078's neighbor): sanitization happens ONLY on the host, in _host_apply_display_name. Two peers
+# picking the same name is allowed, not deduped — CommandService._parse_peer() refuses an ambiguous
+# name instead of guessing which peer it means.
+
+
+## Host-only: receives a client's own chosen name and decides what actually lands in the registry.
+## Ignored outside HOSTING (a stray call after leave()) and from anyone not currently a tracked peer
+## (a departed peer's in-flight packet, F-059's usual guard in reverse).
+@rpc("any_peer", "call_remote", "reliable")
+func net_request_display_name(raw_name: String) -> void:
+	if _status != _Status.HOSTING:
+		return
+	var sender_id: int = multiplayer.get_remote_sender_id()
+	if sender_id <= 0 or not _peers.has(sender_id):
+		return
+	_host_apply_display_name(sender_id, raw_name)
+
+
+## Host -> every other peer: one id's name changed. `rpc()` without call_local reaches every
+## CONNECTED remote, including the peer being renamed — which is correct here, not wasteful: that
+## peer's own mirror needs the host's SANITIZED result (it may differ from what it submitted), and it
+## learns that no other way. Only the host's own entry skips a round trip, applied directly by
+## _host_apply_display_name before this ever fires.
+@rpc("authority", "call_remote", "reliable")
+func net_display_name_changed(peer_id: int, name: String) -> void:
+	_display_names[peer_id] = name
+	display_name_changed.emit(peer_id, name)
+
+
+## Host -> one newly admitted peer: the full map as it stands, so a joiner sees every existing
+## player's name without waiting on each of them to individually resubmit. Same shape as
+## net_rule_snapshot (task 3.14) — one full-state catch-up RPC, ongoing changes ride the smaller
+## per-id broadcast above.
+@rpc("authority", "call_remote", "reliable")
+func net_display_name_snapshot(names: Dictionary) -> void:
+	for id_v: Variant in names:
+		var id: int = int(id_v)
+		var name: String = String(names[id_v])
+		_display_names[id] = name
+		display_name_changed.emit(id, name)
+
+
+## The only writer of _display_names. Applies the sanitized name and — since this may be called for
+## the host's OWN id with nobody else on the wire yet (see host()) — only broadcasts when there is
+## somebody to broadcast to. A no-op change (same name resubmitted) still gets here but is filtered
+## before it costs a broadcast.
+func _host_apply_display_name(peer_id: int, raw_name: String) -> void:
+	var name: String = _sanitize_display_name(raw_name, peer_id)
+	if String(_display_names.get(peer_id, "")) == name:
+		return
+	_display_names[peer_id] = name
+	display_name_changed.emit(peer_id, name)
+	if _status == _Status.HOSTING:
+		net_display_name_changed.rpc(peer_id, name)
+
+
+## Never trust the client's string raw (same stance as every other write RPC in this project): strip
+## control characters, trim, cap length, and fall back to a placeholder if nothing printable survives
+## — an empty or all-control-character submission must still leave the peer addressable by name rather
+## than by a name nobody can type.
+func _sanitize_display_name(raw: String, peer_id: int) -> String:
+	var cleaned: String = ""
+	for c: String in raw:
+		var code: int = c.unicode_at(0)
+		if code >= 0x20 and code != 0x7F:
+			cleaned += c
+	cleaned = cleaned.strip_edges()
+	if cleaned.length() > _DISPLAY_NAME_MAX_LEN:
+		cleaned = cleaned.substr(0, _DISPLAY_NAME_MAX_LEN).strip_edges()
+	return cleaned if not cleaned.is_empty() else "Player %d" % peer_id
+
+
+## What this process would like to be called, before anyone has typed anything into a name-entry UI
+## (none exists yet — F-157 is the registry, not the UI). STEAM threads through SteamLobby's own
+## persona lookup (`_persona`, already resolved for lobby members); LOCAL/LAN has no such source, so
+## an OS username is the best available default. Sanitized on arrival at the host either way, so an
+## empty or unusable result here is fine — it becomes the "Player N" fallback there, not here.
+func _compute_default_display_name() -> String:
+	if _mode == NetConfig.Mode.STEAM:
+		var lobby: Node = get_node_or_null(^"/root/SteamLobby")
+		if lobby != null and lobby.has_method(&"local_persona_name"):
+			var persona: String = String(lobby.call(&"local_persona_name"))
+			if not persona.is_empty():
+				return persona
+	var username: String = OS.get_environment("USERNAME")
+	return username if not username.is_empty() else OS.get_environment("USER")
 
 
 # ── Teardown ──────────────────────────────────────────────────────────────────────────────────────
@@ -582,11 +735,16 @@ func _teardown(announce: bool) -> void:
 	_port = 0
 
 	if not announce:
+		_display_names.clear()
 		return
 	for id: int in departed:
 		if id != local_id:
 			peer_left.emit(id)
 	disconnected.emit()
+	# Cleared AFTER the announcements, not before — same reasoning as _on_peer_disconnected: a
+	# listener naming who just left (NetDebugPanel's log line, F-157) needs display_name(id) to still
+	# resolve while peer_left is firing.
+	_display_names.clear()
 
 
 # ── ENet peers (LOCAL, LAN) ───────────────────────────────────────────────────────────────────────

@@ -250,13 +250,16 @@ func _check_op_deop_is_host_only() -> void:
 # ── peer arg type: id-only today, no display-name resolution (F-126/D-098) ────────────────────────
 
 
-## Pins `_parse_peer()`'s CURRENT, documented scope so a future edit cannot silently regress into
-## looking like name resolution when it is not (or silently break the D-078 not-currently-connected
-## allowance while "fixing" something else). F-126/D-098: the display-name half of docs/COMMANDS.md
-## §2.2's `peer` type spec has no registry to resolve against yet (F-157) and is deliberately not
-## built here — this only proves the int-only half stays exactly as documented.
+## Pins `_parse_peer()`'s documented scope (docs/COMMANDS.md §2.2: "peer id int or player display
+## name — resolves against connected peers"). F-157 built the registry the name half resolves
+## against (`NetTransport.display_names()`); this offline harness never calls host()/join(), so the
+## registry is always empty here — a name never matches, which is still a well-formed refusal, not a
+## crash or a silent mis-resolve. The registry's real round trip (a client submitting a name, the
+## host sanitizing and broadcasting it, `op <name>` actually landing on the right peer, and the
+## ambiguous-match refusal) is `tools/display_name_check.gd`'s job — this file cannot spin up a
+## second real peer.
 func _check_peer_arg_type() -> void:
-	print("\n== peer arg type: id int only, no display-name resolution yet (F-126) ==")
+	print("\n== peer arg type: id int, or a display name resolved against NetTransport (F-157) ==")
 
 	# D-078: an int that has never connected is still accepted — every other assertion in this file
 	# already leans on this (NON_OP_PEER = 999 never connects), so this makes it an explicit case.
@@ -265,12 +268,14 @@ func _check_peer_arg_type() -> void:
 		"op accepts an int peer id that has never connected (D-078): %s" % never_connected.get("message"))
 	await command_service.execute("deop 424242", _ctx(HOST_PEER))
 
-	# A display name (docs/COMMANDS.md §2.2's other half) is refused, not silently mis-resolved —
-	# there is no registry yet for it to resolve against (F-157).
+	# No peer named "bob" is connected (nobody is, offline) — refused by name lookup, not by the old
+	# "not an int" gap F-126 pinned. Distinguishing these two refusal reasons is the whole point of
+	# the exact-message assertion below: a future regression that made every non-int token fail the
+	# SAME way it used to would slip past a looser "not ok" check.
 	var by_name: Dictionary = await command_service.execute("op bob", _ctx(HOST_PEER))
-	check(not bool(by_name.get("ok", true)), "op by display name is refused, not silently accepted")
-	check(String(by_name.get("message", "")) == "'bob' is not a peer id",
-		"refusal names the exact gap: %s" % by_name.get("message"))
+	check(not bool(by_name.get("ok", true)), "op by an unmatched display name is refused")
+	check(String(by_name.get("message", "")) == "no peer named 'bob'",
+		"refusal names the lookup, not the old int-only gap: %s" % by_name.get("message"))
 
 	var zero: Dictionary = await command_service.execute("op 0", _ctx(HOST_PEER))
 	check(not bool(zero.get("ok", true)), "peer id 0 is refused")

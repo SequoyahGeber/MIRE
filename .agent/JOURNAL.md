@@ -4124,3 +4124,15 @@ Notes along the way:
 Files: `core/game_state.gd`, `tools/seed_launch_arg_check.gd`
 
 Commit at time of writing: `0244885`
+
+---
+
+### DONE · F-157 · lp · 2026-08-19T05:09:22+00:00
+
+**No system tracks a player's display name anywhere in the project — F-126's `peer` name resolution has nothing to resolve against, and 3.16 shipped without adding one**
+
+NetTransport owns a host-authoritative peer id -> display name registry (display_name()/display_names()/submit_display_name(), new net_request_display_name/net_display_name_changed/net_display_name_snapshot RPCs, sanitized host-side only). CommandService._parse_peer() resolves a non-numeric token against it case-insensitively, refusing an ambiguous match rather than guessing. net_debug_panel.gd shows id(name). No PROTOCOL_VERSION bump (net_version.gd held by slate17's 3.7 all session) -- filed F-178 continuing D-102's chain. Verified: agent godot --script tools/display_name_check.gd -> DISPLAY_NAME_CHECK failures=0 (11/11 PASS, real two-process round trip). agent godot --script tools/command_check.gd -> COMMAND_CHECK failures=0. Regression clean: command_net_check.gd, net_debug_panel_check.gd, verify_setup.gd, findings_numbering_check.gd all pass.
+
+Files: `autoload/net_transport.gd`, `autoload/steam_lobby.gd`, `autoload/command_service.gd`, `tools/command_check.gd`, `ui/debug/net_debug_panel.gd`, `tools/display_name_check.gd`, `tools/display_name_check.gd.uid`, `tools/net_debug_panel_check.gd`
+
+Commit at time of writing: `ef4f30b`

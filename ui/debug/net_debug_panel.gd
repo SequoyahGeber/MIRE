@@ -64,10 +64,13 @@ func _session_line() -> String:
 	]
 
 
+## F-157: each peer's own submitted (or defaulted) display name alongside its id — this panel was one
+## of the two consumers the finding named as still printing a raw id with nothing to resolve it
+## against, now that NetTransport.display_name() exists.
 func _format_peers(peers: PackedInt32Array) -> String:
 	var parts: Array[String] = []
 	for id: int in peers:
-		parts.append(str(id))
+		parts.append("%d(%s)" % [id, NetTransport.display_name(id)])
 	return "[%s]" % ", ".join(parts)
 
 
@@ -154,11 +157,15 @@ func _record(text: String) -> void:
 
 
 func _on_peer_joined(peer_id: int) -> void:
-	_record("joined  peer %d" % peer_id)
+	# A joiner's own name has usually not arrived yet (it's a separate RPC after this signal, F-157)
+	# — "Player N" here is display_name()'s own honest placeholder, not a bug; the log line does not
+	# refresh itself when the real name lands, same as every other line in this panel being a snapshot
+	# of the instant it was recorded.
+	_record("joined  peer %d (%s)" % [peer_id, NetTransport.display_name(peer_id)])
 
 
 func _on_peer_left(peer_id: int) -> void:
-	_record("left    peer %d" % peer_id)
+	_record("left    peer %d (%s)" % [peer_id, NetTransport.display_name(peer_id)])
 
 
 func _on_connection_failed(reason: String) -> void:
