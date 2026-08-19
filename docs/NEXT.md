@@ -8,11 +8,25 @@
 ## Status
 
 > **2026-08-19 — the engineering spine is close to done; what's left is mostly play, content, and
-> polish.** 89/131 tasks. M0 ✅ · M1 13/14 (only 1.12's three-machine evidence run) · M2 21/25 ·
-> M3 16/21 · M4 12/14 · M5 4/10 · M6 8/11 · M7 3/12 · M8 0/12. The full check battery was swept
+> polish.** 120/165 tasks. M0 ✅ · M1 13/14 (only 1.12's three-machine evidence run) · M2 21/25 ·
+> M3 23/27 · M4 22/30 · M5 8/14 · M6 15/18 · M7 5/13 · M8 1/12. The full check battery was swept
 > on 2026-08-19 — `docs/AUDIT-2026-08-19.md` is the report; everything runnable on this machine is
-> green except `boss_check`'s exit-leak diagnostic (F-193) and `lobby_menu_check` (F-170, order
-> queued).
+> now green, including `boss_check`'s exit-leak diagnostic (F-193) and `lobby_menu_check` (F-170),
+> both since resolved.
+>
+> **Findings: 223/231 closed, 8 open — and seven of the eight are not code you can sit down and
+> write.** Four are Steam/LAN join behaviour that needs a second machine and a real network
+> (F-020, F-023, F-024, F-025); F-044 is the shared Godot import cache; F-174 says no dev machine
+> here can stand in for mid-range hardware; F-222 is a Blender preview-generator dependency. The
+> one that is genuinely about how we work is **F-189 — file claims have become the bottleneck
+> D-011 named as its own reversal trigger.** Read that one before adding process.
+>
+> **The content, not the engine, is now the thin part.** The boot line counts 2 enemy definitions,
+> 1 cycle modifier and 1 unlock against 72 powerups and 13 buildables. 5.2 (enemy types) and 6.3
+> (cycle modifiers) are where the game gets deeper, and both are authoring tasks — one asset at a
+> time, with attention, never a batch of stat blocks generated in one pass. **5.2 went out to LM on
+> 2026-08-19 scoped to three enemies, not the roadmap line's eight to twelve,** for exactly that
+> reason; expect it to close with a handoff naming what is left rather than a full directory.
 
 **The game is a real roguelike now.** Press Play: you spawn in **Hollowmere** with a stocked
 hotbar. Walk, sprint, jump, dodge (with i-frames — Thin Step extends them), harvest with the tool
