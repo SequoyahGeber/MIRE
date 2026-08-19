@@ -1,6 +1,51 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "assets/paths": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:57:43+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "docs/ASSET_TRACKER.md": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:57:43+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "tools/blender/build_path_set.py": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:57:43+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "tools/blender/mire_art.py": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:01:25+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "tools/path_check.gd": {
+      "agent": "slate17",
+      "at": "2026-08-19T16:57:43+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    }
+  },
+  "in_flight": {
+    "2.1d": {
+      "agent": "slate17",
+      "files": [
+        "docs/ASSET_TRACKER.md",
+        "tools/blender/build_path_set.py",
+        "tools/path_check.gd",
+        "assets/paths",
+        "tools/blender/mire_art.py"
+      ],
+      "notes": [],
+      "started": "2026-08-19T16:57:43+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    }
+  },
   "recent": {
     ".": {
       "agent": "lp",
@@ -4100,7 +4145,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
