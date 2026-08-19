@@ -8028,6 +8028,58 @@ hand as a sanity check before relying on the new automated one — none.
 
 ---
 
+## F-238 · A successful extraction has no run summary of its own — task 6.8 only extended the death screen
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap. Task 6.8's own `## 6.8` block above records the scope call it made: extend
+`ui/hud/defeat_hud.gd` (the death path) and file this finding for the success path rather than
+build a second screen in the same task.
+
+**Authority:** no new §2.2 row. Presentation only, the same "VFX, audio, camera, UI" row
+`ui/hud/extraction_hud.gd` already used for task 6.5's repair/departure prompt — every field this
+task shows reads an already-authoritative value (`CycleModifierService.active_modifier_ids()`, the
+`salvage_banked` payload), none of it is decided here.
+
+**Claim:** `ui/hud/extraction_hud.gd`, `ui/hud/extraction_hud.gd.uid`, `tools/run_summary_check.gd`
+(extends task 6.8's file of the same name); `ui/hud/defeat_hud.gd`/`.uid` (claimed mid-task, one
+stale comment only — see below). No `project.godot` change: `ExtractionHud` is already registered
+after `CycleModifierService` and before `SalvageService`.
+
+**Fix:** `ExtractionHud` gained a second, terminal, full-screen summary overlay in its own
+`CanvasLayer` (layer 20, matching `DefeatHud`'s terminal priority — the existing bottom-centre
+prompt panel stays at this file's own layer 5, deliberately below other gameplay UI), shown on
+`EventBus.subscribe_run_extracted`: headline (`"CYCLE %d"`), a fixed subtitle (`"EXTRACTED SAFELY"`
+— extraction has only the one cause, unlike defeat's `team_wipe`/`island_consumed` split, so no
+`CAUSE_HEADLINES`-style dictionary was needed), "Modifiers drawn: …" (identical logic to
+`DefeatHud._modifiers_drawn_summary()`), and "Salvage earned: N (M total)" from
+`EventBus.subscribe_salvage_banked`'s `extracted == true` branch — the branch `DefeatHud` has always
+explicitly ignored. Joins `blocks_gameplay_input` (D-032) the moment it shows. `_salvage_known`
+tracked independently of `_summary_shown`, mirroring `DefeatHud`'s own F-235 fix, since
+`run_extracted` and the `salvage_banked` it triggers can land in either order depending on autoload
+registration.
+
+**Not shared with `DefeatHud`:** F-238's own suggestion (a shared `ui/hud/run_summary_format.gd`
+helper for the modifiers-drawn formatting) was not built — `_modifiers_drawn_summary()` is
+duplicated verbatim in both files rather than factored out, since this task's claim did not
+originally include `defeat_hud.gd`. That file WAS claimed mid-task, but only to fix one now-stale
+comment (`_on_salvage_banked`'s doc said the extraction path was "a screen this task does not own
+(nothing shows one yet)" — no longer true).
+
+Verify: `tools/run_summary_check.gd` (extended) drives BOTH real chains in one process —
+`DefeatService.net_run_defeated()` -> `run_wiped` -> `SalvageService` -> `salvage_banked` ->
+`DefeatHud` (task 6.8's original proof, unchanged) and `EventBus.emit_run_extracted()` (the same
+direct-emit shortcut `salvage_check.gd` already uses, since a real `ExtractionShip` departure needs
+a live scene this bare `--script` harness doesn't have) -> `SalvageService` -> `salvage_banked` ->
+`ExtractionHud` (new). 27 assertions, 0 failures — includes the terminal no-repaint proof and the
+cross-guard proof (`ExtractionHud._on_salvage_banked` ignores an `extracted == false` bank, and vice
+versa for `DefeatHud`). No regressions: `extraction_check.gd`, `salvage_check.gd`, `defeat_check.gd`,
+`cycle_modifier_check.gd` all `failures=0`. 0 `ERROR:` on a full boot (`agent godot --quit-after
+20`). Done means: all of the above, plus this finding moved to `## Resolved` in `docs/FINDINGS.md`.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

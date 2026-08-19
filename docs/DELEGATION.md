@@ -75,6 +75,54 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-238 resolved: a successful extraction now has its own run summary (lp)
+
+**Claim:** `ui/hud/extraction_hud.gd`, `ui/hud/extraction_hud.gd.uid`, `tools/run_summary_check.gd`,
+plus `ui/hud/defeat_hud.gd`/`.uid` (one stale comment, added mid-task — see below). No
+`project.godot` change: `ExtractionHud` is already registered after `CycleModifierService` and
+before `SalvageService`.
+
+Task 6.8 built the run-summary screen ROADMAP.md names only for the death path
+(`ui/hud/defeat_hud.gd`), explicitly filing F-238 for the success path. That gap is now closed:
+`ExtractionHud` (already the client-local presentation owner for `ExtractionShip`, task 6.5) gained
+a second, terminal, full-screen overlay — its own `CanvasLayer` at layer 20 (matching `DefeatHud`'s
+terminal priority; the existing bottom-centre repair/departure prompt panel stays at this file's own
+layer 5, deliberately below other gameplay UI) — shown on `EventBus.subscribe_run_extracted`. Same
+three-line shape as `DefeatHud`'s: headline (`"CYCLE %d"`), a fixed subtitle (`"EXTRACTED SAFELY"` —
+extraction has only the one cause, unlike defeat's `team_wipe`/`island_consumed` split, so no
+`CAUSE_HEADLINES`-style dictionary was needed), "Modifiers drawn: …"
+(`CycleModifierService.active_modifier_ids()`, read-only, nothing to subscribe to — identical to
+`DefeatHud._modifiers_drawn_summary()`), and "Salvage earned: N (M total)" from
+`EventBus.subscribe_salvage_banked`'s `extracted == true` branch (the branch `DefeatHud` has always
+explicitly ignored). Joins `blocks_gameplay_input` (D-032) the moment it shows, same as `DefeatHud`.
+
+**`_salvage_known` tracked independently of `_summary_shown`**, mirroring `DefeatHud`'s own F-235
+fix — `run_extracted` and the `salvage_banked` it triggers can legitimately land in either order
+depending on autoload registration, so neither handler may assume the other already ran. (In the
+shipped autoload order `ExtractionHud` actually subscribes to `run_extracted` before `SalvageService`
+does, so in practice `_on_run_extracted` always runs first here — opposite of `DefeatHud`'s F-235
+case — but the guard is written order-independent anyway rather than relying on that.)
+
+**Not shared with `DefeatHud`:** F-238's own note suggested factoring the "modifiers drawn"
+formatting into a shared `ui/hud/run_summary_format.gd` helper. Not done — this task's claim did not
+originally include `defeat_hud.gd`, so `_modifiers_drawn_summary()` is duplicated verbatim in both
+files rather than shared. `defeat_hud.gd` WAS claimed mid-task, but only to fix one now-stale
+comment (`_on_salvage_banked`'s doc said "`extracted == true` ... a screen this task does not own
+(nothing shows one yet)" — no longer true). A future task touching both files can still lift the
+duplicated formatter out.
+
+**Verified:** `tools/run_summary_check.gd` (extended, not new — task 6.8 had already claimed this
+exact filename for the death-path proof) now drives BOTH real chains in one process:
+`DefeatService.net_run_defeated()` -> `run_wiped` -> `SalvageService` -> `salvage_banked` ->
+`DefeatHud`, and `EventBus.emit_run_extracted()` (the same direct-emit shortcut `salvage_check.gd`
+already uses, since a real `ExtractionShip` departure needs a live scene this bare `--script`
+harness doesn't have) -> `SalvageService` -> `salvage_banked` -> `ExtractionHud`. 27 assertions, 0
+failures — includes the terminal no-repaint proof (a second `emit_run_extracted` doesn't touch the
+already-shown screen) and the cross-guard proof (`ExtractionHud._on_salvage_banked` ignores an
+`extracted == false` bank, and vice versa for `DefeatHud`). No regressions: `extraction_check.gd`,
+`salvage_check.gd`, `defeat_check.gd`, `cycle_modifier_check.gd` all `failures=0`. 0 `ERROR:` on a
+full boot (`agent godot --quit-after 20`).
+
 ### 2026-08-19 — Task 8.3: achievements, stats, rich presence — full framework shipped now, Steamworks dashboard registration blocked on 8.1/8.2 (lp)
 
 **Unlike 8.4/8.11, nothing here is blocked from actually running.** F-248 predicted 8.3 would hit the

@@ -466,26 +466,6 @@ heightfield and need nothing the method cannot produce.
 
 ---
 
-### F-238 · A successful extraction has no run summary of its own — task 6.8 only extended the death screen
-
-**Area:** ui · **Severity:** low · **Found:** 2026-08-19 by lp
-
-`ui/hud/defeat_hud.gd` (task 6.7, extended by 6.8's run summary — headline Cycle number, modifiers
-drawn, Salvage earned) only shows on `run_wiped`. `EventBus.subscribe_salvage_banked`'s `extracted ==
-true` branch is explicitly ignored by that file (task 6.7's own header: "a screen this task does not
-own"), and nothing else in the codebase shows a summary when `run_extracted` fires — `ExtractionShip`/
-`extraction_service.gd`/`ui/hud/extraction_hud.gd` (task 6.5) only cover the departure-hold flow, not
-what happens after. A player who successfully extracts sees no Cycle-reached / modifiers-drawn /
-Salvage-earned recap at all, only a defeated run does.
-
-Not fixed here: task 6.8's claim named only `ui/hud/defeat_hud.gd` (a death-path file); building a
-second summary screen for the success path is its own scope, likely wanting to share the
-"modifiers drawn" formatting `DefeatHud._modifiers_drawn_summary()` establishes rather than duplicate
-it — worth factoring out to a shared helper (`ui/hud/run_summary_format.gd` or similar) if/when this
-is picked up, rather than copy-pasting the private method.
-
----
-
 ### F-243 · The run loop is a line, not a circle — after defeat or extraction there is no path to a next run short of relaunching the process
 
 **Area:** systems · **Severity:** high · **Found:** 2026-08-19 by hollow7
@@ -709,6 +689,43 @@ into WorldDeltaLog and any new signal has to not change its existing contract.
 ---
 
 ## Resolved
+
+### F-238 · A successful extraction has no run summary of its own — task 6.8 only extended the death screen — **fixed**
+
+**Area:** ui · **Severity:** low · **Found:** 2026-08-19 by lp
+
+`ui/hud/defeat_hud.gd` (task 6.7, extended by 6.8's run summary — headline Cycle number, modifiers
+drawn, Salvage earned) only shows on `run_wiped`. `EventBus.subscribe_salvage_banked`'s `extracted ==
+true` branch is explicitly ignored by that file (task 6.7's own header: "a screen this task does not
+own"), and nothing else in the codebase shows a summary when `run_extracted` fires — `ExtractionShip`/
+`extraction_service.gd`/`ui/hud/extraction_hud.gd` (task 6.5) only cover the departure-hold flow, not
+what happens after. A player who successfully extracts sees no Cycle-reached / modifiers-drawn /
+Salvage-earned recap at all, only a defeated run does.
+
+Not fixed here: task 6.8's claim named only `ui/hud/defeat_hud.gd` (a death-path file); building a
+second summary screen for the success path is its own scope, likely wanting to share the
+"modifiers drawn" formatting `DefeatHud._modifiers_drawn_summary()` establishes rather than duplicate
+it — worth factoring out to a shared helper (`ui/hud/run_summary_format.gd` or similar) if/when this
+is picked up, rather than copy-pasting the private method.
+
+---
+
+**Resolved 2026-08-19 by lp.** Fixed: `ui/hud/extraction_hud.gd` gained a second, terminal, full-screen run summary overlay
+(own CanvasLayer, layer 20) shown on `EventBus.subscribe_run_extracted` — headline "CYCLE %d",
+"EXTRACTED SAFELY" subtitle, "Modifiers drawn: …" (CycleModifierService.active_modifier_ids(),
+same logic as DefeatHud's), and "Salvage earned: N (M total)" from subscribe_salvage_banked's
+extracted==true branch, the branch DefeatHud always explicitly ignored. `_salvage_known` tracked
+independently of `_summary_shown`, mirroring DefeatHud's own F-235 fix. Also fixed one now-stale
+comment in `ui/hud/defeat_hud.gd` ("a screen this task does not own (nothing shows one yet)").
+Docs: docs/SPECS.md new F-238 block, docs/DELEGATION.md Current state entry.
+
+Verified: `agent godot --script tools/run_summary_check.gd` (extended with the extraction-path
+chain alongside 6.8's original defeat-path proof) — 27 assertions, 0 failures. Drives the REAL
+chain: EventBus.emit_run_extracted() -> SalvageService banks -> salvage_banked -> ExtractionHud
+(same direct-emit shortcut salvage_check.gd already uses). Covers the terminal no-repaint case and
+both HUDs' extracted-flag cross-guards. No regressions: extraction_check.gd, salvage_check.gd,
+defeat_check.gd, cycle_modifier_check.gd all failures=0. 0 ERROR: lines on a full boot
+(`agent godot --quit-after 20`).
 
 ### F-249 · ExtractionShip.repair_stage's EventBus.emit_ship_repaired() call lived inside the host-only _process_repair(), so it never reached a client's own local EventBus — the exact F-168 host-only-emit-call trap, unfixed on this one signal — **fixed**
 
