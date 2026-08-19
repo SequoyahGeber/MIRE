@@ -6275,16 +6275,20 @@ to `steamInitEx()`, per `ARCHITECTURE.md` §2.4) is a second, independent 480 th
 never touches. Filed as F-257 rather than fixed here — the edit belongs to `core/net/`, which this
 task never claimed, and to task 8.2 by scope (it owns "swap App ID 480 → real App ID; verify all
 Steam features"). Breadcrumbed in `apply_ids.sh`'s header and added as `DEPOT_SETUP.md` step 6 so
-whoever runs 8.2 hits the pointer before believing the swap is finished.
+whoever runs 8.2 hits the pointer before believing the swap is finished. **Superseded 2026-08-19 by
+F-257's own fix (D-155):** a breadcrumb was judged too weak, and `apply_ids.sh` now writes all
+*three* homes of the App ID itself — the depot config, `core/net/net_config.gd`'s constant, and
+`steam_appid.txt`, the third one this sweep had missed. The paragraph above stands as the record of
+what 8.11 knew at the time; the current behaviour is F-257's block.
 
 **Done means (once un-blocked):** real depots exist in the Steamworks dashboard, their IDs are
-applied via `apply_ids.sh`, `depot_wiring_check.sh` still passes, `core/net/net_config.gd:79` is
-swapped too (F-257 — a separate edit `apply_ids.sh` does not make), and a real
-`steam_upload.sh internal-beta <username>` succeeds. **None of that is reachable from this
+applied via `apply_ids.sh` — which since D-155 also swaps `core/net/net_config.gd`'s constant and
+`steam_appid.txt`, so this is one command and not three edits (F-257) — `depot_wiring_check.sh`
+still passes, and a real `steam_upload.sh internal-beta <username>` succeeds. **None of that is reachable from this
 session** — 8.1/8.2 have not run.
 
 **Explicitly NOT this task:** task 8.1 itself (Steamworks account/tax/banking/$100 fee — his
-account, D-039), task 8.2 (App ID swap, including `net_config.gd:79` — F-257), actually creating the
+account, D-039), task 8.2 (App ID swap — since D-155 that is one `apply_ids.sh` run, F-257), actually creating the
 Steamworks depots or setting the dashboard launch option fields (both require the App ID 8.2
 produces), setting a beta branch's password (dashboard-only, no repo-side surface at all — D-132).
 
@@ -7972,6 +7976,84 @@ made.
 
 ---
 
+## F-247 · F-240's exact gap exists a second time in `BossMoveDef` — a boss's own telegraphed moves have no way to close ground during their own TELL either
+
+**Claim:** `systems/enemies/boss.gd`, `systems/enemies/boss_move_def.gd`, `tools/boss_check.gd`.
+Network authority: no new row — same "Enemies (spawn, AI, damage): **Host**" row F-240 stayed inside.
+No new replicated property, no new RPC: `move_index` (already replicated, task 5.5) is unchanged by
+this fix, and the extra per-move field only ever gets read host-side, inside the same
+`_owns_simulation()`-gated `_physics_process()` every other attack-timing decision on this class
+already lives in.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Ran the check before touching anything**, per the finding's own warning (3 commits against
+`AGENTS.md`, 1 against `boss.gd`, 1 against `boss_check.gd` since filing). `agent godot --script
+tools/boss_check.gd` passed clean at `failures=0` before any edit — expected: every existing
+assertion drives phases/leash/moves/fallback/spawn/music, and none of them ever retreats a target
+during a TELL, so nothing already covered the gap. The bug was live and unfixed.
+
+**The fix:** `BossMoveDef.lunge_speed_m_s` (new, `Timing` group, `0.0`–`20.0`, default `0.0`) — a
+**per-move** field, not a reuse of the boss's own inherited `EnemyDef.lunge_speed_m_s`. A boss's whole
+reason for having `BossMoveDef` at all is that its moves read differently from each other
+(`docs/DELEGATION.md`'s task 5.5 entry); one lunge speed shared across every move would undo that.
+`Boss._tick_attack()`'s own branch (the one that runs whenever `_current_move()` is non-null, i.e.
+whenever a real move is active — the normal case) now mirrors `Enemy._tick_attack()`'s own condition
+exactly: `state == State.TELL and move.lunge_speed_m_s > 0.0` calls a new `Boss._tick_move_lunge
+(speed_m_s)`, otherwise the span stays fully stationary as before. `_resolve_attack()` is untouched —
+the hit still resolves at the tell's END against the target's THEN-current position, `move.range_m`
+unchanged.
+
+`_tick_move_lunge()` is a small (~12-line) reimplementation of `Enemy._tick_lunge()`'s own logic
+(resolve target, cap at `definition.stop_distance_m`, step toward it), not a call to the inherited
+method — and not because that was the preferred design. The finding's own "what would close this"
+suggested calling the inherited `_tick_lunge()` directly, on the theory that it "already reads
+`_target_node`/`_resolve_target()` generically." It does, but it also reads its SPEED off
+`definition.lunge_speed_m_s` — a single value on the shared `EnemyDef`/`BossDef` — not a parameter,
+so calling it unmodified would apply the same one speed to every move regardless of that move's own
+`lunge_speed_m_s`, defeating the reason this field is per-move in the first place. The correct fix is
+parameterising `Enemy._tick_lunge()` to take a `speed_m_s: float` argument instead of reading the
+def field directly — but `systems/enemies/enemy.gd` was claimed by another lane (F-245) for this
+task's whole session, the same "touches zero lines of enemy.gd" constraint 5.5's own class doc
+comment already names for the rest of this file, so editing its signature was not available this
+task. `_tick_move_lunge()` closes the finding correctly today; whoever next has `enemy.gd` free
+should fold it into a parameterised `Enemy._tick_lunge(speed_m_s)` and delete the boss-local copy —
+noted in `docs/FINDINGS.md` as F-264 rather than left only here.
+
+**Verify:** `tools/boss_check.gd`'s new `_check_move_lunge()`, added alongside the existing
+`_check_telegraph_moves()`/`_check_fallback_no_moves()` scenarios, mirroring `enemy_lunge_check.gd`'s
+own proof for the base case (F-240) one level down — two single-move `BossPhaseDef`s keep the pick
+deterministic (`_check_telegraph_moves()`'s own `solo_def` pattern) rather than touching
+`Boss._pick_move_index()`:
+- A move left at `lunge_speed_m_s = 0.0` (the default) reproduces F-240's own bug unchanged: a
+  continuously retreating player still beats the swing, and the boss never closes the gap it opened
+  (2.00 m → 3.06 m).
+- The identical retreating player, against a move whose own `lunge_speed_m_s` (20.0) exceeds the
+  player's sprint speed (6.0), no longer beats the swing — the boss measurably closes ground
+  (2.00 m → 0.94 m).
+- A lunge already inside `stop_distance_m` (`BossDef`'s own inherited field) when the tell begins
+  holds position instead of closing further (< 0.01 m drift over 5 steps).
+- A freshly-authored `BossMoveDef` still defaults `lunge_speed_m_s` to `0.0` — this framework change
+  touched no authored move data (5.5 shipped no worked-example boss, so there is none to check live
+  through `EnemyWorld` the way F-240 checked the four shipped `EnemyDef`s).
+
+`.agent/bin/agent godot --script tools/boss_check.gd` → `BOSS_CHECK failures=0`, all 63 assertions
+pass (52 pre-existing + 11 new), 0 undeclared `ERROR:` lines. Regression: `tools/enemy_lunge_check.gd`
+(`failures=0`), `tools/enemy_check.gd` (`failures=0`) and `tools/enemy_ai_check.gd` (`failures=0`) all
+unchanged — this task never touched `enemy.gd`/`enemy_def.gd`. Full boot (`agent godot --quit-after
+20`): `loaded 5 enemy definition(s)`, 0 stray `ERROR:` lines.
+
+**Swept for the same shape:** `grep -rn "lunge_speed_m_s\|_tick_lunge" --include=*.gd .` and
+`grep -rln "extends Enemy" --include=*.gd .` — `Boss` is still the only real subclass of `Enemy` in
+the repo (the two other `extends Enemy` grep hits, `enemy_world.gd` and `boss_def.gd`, are a comment
+and `extends EnemyDef` respectively — a substring match, not a second subclass), so no third sibling
+exists to carry this gap further.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 ## F-236 · Three shipped systems have essentially no content in them — the `unlocks/` third
 
 **No spec existed for this finding** — writing it is this task's own first step, per this file's
@@ -8592,6 +8674,91 @@ every retreat/measurement loop at ≤12 steps and `enemy_ai_check.gd`'s one 60-i
 cap cycling) never depends on distance — none reach the ~33-tick threshold where the free-fall
 artifact bites, and all three already pass clean at HEAD per F-246's own filing. No sibling fix
 needed.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
+## F-257 · The real App ID must be written to three independent places; task 8.11's `apply_ids.sh` only reached one
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap.
+
+**Authority:** none (`ARCHITECTURE.md` §2.2) — offline release tooling plus one compile-time
+constant. Nothing here runs inside a networked system, and no RPC, wire format or `PROTOCOL_VERSION`
+is touched. The *value* being written is consumed by the Steam seam (`autoload/steam_lobby.gd`,
+HOST-authoritative lobby create/join), but this task changes only how the value gets there.
+
+**Claim:** `tools/steam/apply_ids.sh`, `tools/steam/depot_wiring_check.sh`,
+`tools/steam/steam_upload.sh`, `tools/steam/DEPOT_SETUP.md`, `core/net/net_config.gd`,
+`steam_appid.txt`, `tools/steam_check.gd`, plus the four docs. `tools/steam/steam_build_config.sh`
+was deliberately **not** claimed or edited — its placeholder values stay 480/0 until task 8.2 has a
+real App ID, and 8.11's check asserts every non-placeholder line of it stays byte-identical.
+
+**The gap:** the App ID has three independent homes and nothing derives any of them from another —
+`tools/steam/steam_build_config.sh` (offline `steamcmd` depot upload, task 8.4/D-132),
+`core/net/net_config.gd`'s `const STEAM_APP_ID` (the runtime value `steam_lobby.gd` passes to
+`steamInitEx()`, `ARCHITECTURE.md` §2.4/D-008), and `steam_appid.txt` at the repo root (what the
+Steam SDK reads on any dev run that inits with app_id 0, which `tools/steam_check.gd` does).
+`apply_ids.sh` rewrote only the first, and its own header, `DEPOT_SETUP.md` and the 8.11 spec block
+merely *mentioned* the second as a separate edit task 8.2 must also make. So 8.2 could run
+`apply_ids.sh` with the real ID, watch `depot_wiring_check.sh` go green, and ship a build that
+uploads to the correct Steamworks depot while every player's client still calls `steamInitEx()`
+against Spacewar's 480 — lobby creation and join silently broken, in what reads as a fully wired
+release. The finding named two homes; the sweep (below) found the third.
+
+**The fix (D-155 — chose F-257's option (b), one command does all of it):**
+- `apply_ids.sh` now writes all three. It **pre-flights every target before writing to any of
+  them** — each target line must exist exactly once, or it refuses having written nothing — and
+  **rolls all three back** if any value fails to read back afterwards. A rolled-back trio is
+  recoverable; a partly-applied one ships. `steam_appid.txt` is written with `printf '%s'`: the
+  checked-in file is a bare number with no trailing newline and Steam's SDK reads it verbatim.
+- `steam_upload.sh`, the last gate before a live and hard-to-reverse Steam publish, re-reads
+  `net_config.gd`'s constant itself and refuses to upload if it disagrees with the config's. This
+  is the backstop for a hand-edit that drifts them apart without going through `apply_ids.sh`.
+- `tools/steam_check.gd` asserted `app_id == 480` as a literal; it now asserts
+  `app_id == NetConfig.STEAM_APP_ID`. The literal would have had to be edited again at 8.2 and
+  would have failed loudly and uselessly until someone did; the agreement assertion is true and
+  useful on both sides of the swap, and is what notices `steam_appid.txt` drifting.
+- `net_config.gd`'s doc comment, `DEPOT_SETUP.md` steps 4–6 and the 8.11 block all now say one
+  command writes every home, rather than pointing at a manual companion edit.
+- **Claim boundary, answered rather than inherited (D-155):** yes, a `tools/` script may write into
+  `core/` and the repo root — a script that reaches only its own directory and leaves a note asking
+  someone to finish the job is exactly the failure being fixed. The protocol obligation lands on
+  the agent *running* it: the script's header and `DEPOT_SETUP.md` both state that whoever runs it
+  must hold claims on `core/net/net_config.gd` and `steam_appid.txt` too.
+
+**Verify:** `bash tools/steam/depot_wiring_check.sh` — ALL CHECKS PASSED, now five sections
+including the two new ones: §2 runs `apply_ids.sh` in an isolated fake repo and asserts it rewrites
+the depot config, the runtime constant and `steam_appid.txt` (byte-exact, no trailing newline)
+while leaving every other line of each byte-identical, and that it refuses a missing
+`net_config.gd`, a renamed constant line and a missing `steam_appid.txt` **without having touched
+`steam_build_config.sh`**; §4 asserts the three App IDs in the repo agree right now; §5 drives
+`steam_upload.sh`'s mismatch guard both ways. **Mutation-tested, since a check that cannot fail
+proves nothing:** restoring HEAD's `apply_ids.sh` fails §2 with three FAILs, and drifting either
+`net_config.gd` or `steam_appid.txt` fails §4. Also `agent godot --script tools/steam_check.gd`
+against a live Steam client — all checks pass, "running as App ID 480 (steam_appid.txt agrees with
+NetConfig)" — and `agent godot --quit-after 120`, 0 `ERROR:`/`SCRIPT ERROR` lines.
+
+**Swept for the same shape elsewhere (AGENTS.md §3):** the shape is "one value with N independent
+homes, and a tool that writes fewer than N". Grepping every `.gd`/`.sh`/`.cfg`/`.godot`/template for
+`480` and `steam_appid` found the third home this task then fixed — `steam_appid.txt`, which the
+finding itself had missed. The other multi-home constant in the repo is `PROTOCOL_VERSION`
+(`core/net/net_version.gd`, `core/net/rpc_manifest.gd`'s `RECORDED_PROTOCOL_VERSION`, and
+`tools/handshake_check.gd`'s literal `== 21`); it is **not** the same shape, because
+`tools/rpc_manifest_check.gd` already asserts the first two agree and the third fails loudly the
+moment they diverge — divergence there is impossible to miss, which is exactly what F-257's App ID
+lacked. No further sibling found.
+
+**Done means:** running `tools/steam/apply_ids.sh <app_id> <depot_win> <depot_mac> <depot_linux>`
+once is the entire repo-side App ID swap, a partial swap is refused rather than performed, and a
+drifted pair cannot reach Steam. Task 8.2's remaining work is running that command with the real ID
+and verifying Steam features against it — not a second file edit.
+
+**Explicitly NOT this task:** changing any placeholder value (480/0 stay until 8.2 has a real ID),
+task 8.1's Steamworks account/tax/$100 fee (his account, D-039), creating the depots or setting
+dashboard launch options (8.11, blocked on the App ID), and registering achievements against a real
+App ID (8.3).
 
 **Resolved** — see `docs/FINDINGS.md`.
 

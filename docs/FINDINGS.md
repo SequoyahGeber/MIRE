@@ -466,40 +466,6 @@ WaveSpawner/EnemyWorld for `the_hunt`, DayNight for `long_night`, and the equiva
 
 ---
 
-### F-247 · F-240's exact gap exists a second time in `BossMoveDef` — a boss's own telegraphed moves have no way to close ground during their own TELL either, and `Boss._tick_attack()` would not even inherit `EnemyDef.lunge_speed_m_s` if it did
-
-**Area:** enemies · **Severity:** low · **Found:** 2026-08-19 by lm during F-240 (sweep for the same
-shape elsewhere, per AGENTS.md step 3)
-
-F-240 gave `EnemyDef` a `lunge_speed_m_s` field and `Enemy._tick_lunge()` so a kind's plain
-TELL/ATTACK/RECOVER attack can close ground during its own tell instead of standing fully still. A
-boss (`systems/enemies/boss.gd`, `extends Enemy`) does not use that path for its own attacks:
-`Boss._tick_attack()` (`boss.gd:243`) only falls through to `super._tick_attack(delta)` — the path
-that would read `lunge_speed_m_s` — when `_current_move()` returns null, i.e. only in the fallback
-case where the boss has no `BossPhaseDef.moves` defined for its current phase. Whenever a real move
-IS active (the normal case for any boss actually authored with moves), `_tick_attack()` takes its own
-branch instead (`boss.gd:248-249`) and unconditionally zeroes `velocity.x`/`velocity.z` for the whole
-span, exactly 2.10/5.1's original stationary-tell behaviour F-240 found in the base class.
-
-`BossMoveDef` (`systems/enemies/boss_move_def.gd`) has no field of its own for this either — its
-`Attack`/`Timing` groups (`damage`, `range_m`, `tell_seconds`, `attack_seconds`, `recovery_seconds`)
-are a per-move copy of `EnemyDef`'s own fixed fields, `lunge_speed_m_s` included by omission. So even
-authoring a boss whose `EnemyDef.lunge_speed_m_s` is nonzero would not help: a boss with any moves at
-all never reaches the branch that reads it.
-
-**Not fixed here** — `boss.gd`/`boss_move_def.gd` are outside F-240's claim (`enemy.gd`/`enemy_def.gd`
-only), and this is a second framework decision (a `BossMoveDef.lunge_speed_m_s` field, plus
-`Boss._tick_attack()`'s own branch calling the equivalent of `_tick_lunge()` — inherited `_tick_lunge()`
-already reads `_target_node`/`_resolve_target()` generically, so it should need no boss-specific
-version, only a call site), not a one-line reuse of F-240's fix.
-
-**What would close this:** add `lunge_speed_m_s` to `BossMoveDef` alongside its existing `Timing`
-group, and have `Boss._tick_attack()`'s own branch call `_tick_lunge()` when `state == State.TELL and
-move.lunge_speed_m_s > 0.0`, mirroring `Enemy._tick_attack()`'s own condition exactly. Verify against
-`tools/boss_check.gd`'s existing harness, the same way `enemy_lunge_check.gd` proved the base case.
-
----
-
 ### F-254 · CycleModifierService._announce() has the exact host-only EventBus.emit_cycle_modifier_drawn() gate F-250 just fixed for CycleService — same shape, unfixed sibling
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
@@ -596,42 +562,6 @@ good at: a known reset far in the future, like a weekly window.
 `_chain_alive()` reports True for the lane that is running and False for an idle one; with both
 keepers armed, each lane converged to exactly one chain and started work (LM on F-243, LP on 8.11)
 with no pile-up on either lock.
-
----
-
-### F-257 · Real App ID must be written to two independent places; task 8.11's `apply_ids.sh` only reaches one of them
-
-**Area:** netcode/tooling · **Severity:** medium · **Found:** 2026-08-19 by lp during 8.11 (still
-blocked — see prior HANDOFF, unchanged this session)
-
-D-008/`ARCHITECTURE.md` §2.4 fixed `core/net/net_config.gd:79`'s `const STEAM_APP_ID: int = 480` as
-*the* one-line change point for the runtime Steam App ID — it's what `steam_lobby.gd` actually
-passes to `steamInitEx()`. Separately, task 8.4/D-132 gave `tools/steam/steam_build_config.sh` its
-own `STEAM_APP_ID` default, consumed only by the offline `steamcmd` upload pipeline
-(`export_release.sh` / `steam_upload.sh` / the `.vdf` templates) — a completely different concern,
-build-time depot upload rather than runtime lobby init.
-
-8.11's `apply_ids.sh <app_id> <depot_win> <depot_mac> <depot_linux>` (this task) only ever rewrites
-`steam_build_config.sh`. It never touches `net_config.gd`. So running `apply_ids.sh` with the real
-ID and having `depot_wiring_check.sh` pass proves nothing about the runtime constant — it's
-plausible for 8.2 ("swap App ID 480 → real App ID; verify all Steam features") to run
-`apply_ids.sh`, watch the guard clauses go green, and ship a build that uploads to the correct
-Steamworks depot while every player's client still calls `steamInitEx()` against Spacewar's 480,
-silently breaking lobby creation/join in what looks like a fully-wired release.
-
-Neither `apply_ids.sh`'s own comment header nor `docs/SPECS.md`'s `## 8.11 ·` block nor
-`tools/steam/DEPOT_SETUP.md` mentions `net_config.gd:79` as a second edit site — the only place that
-names it as the swap point is `ARCHITECTURE.md` §2.4 and the constant's own doc comment, and
-neither cross-references `apply_ids.sh`. No task currently owns making 8.2 aware both edits are
-required, or a single command doing both.
-
-**Would take:** either (a) a one-line addendum to `docs/SPECS.md`'s `## 8.2 ·` block (not yet
-written — 8.2 is still `todo`) naming `net_config.gd:79` as a required companion edit to
-`apply_ids.sh`, or (b) extending `apply_ids.sh` itself to also rewrite the `net_config.gd` constant
-so one command does both and a mismatch becomes structurally impossible. Whoever picks up 8.2 should
-decide which; (b) is stronger because it removes the chance to do one and forget the other, but it
-means a `tools/` script writing into `core/`, which is a claim-boundary question 8.2 should resolve
-explicitly rather than inherit silently.
 
 ---
 
@@ -776,7 +706,225 @@ behavioural, in what the templates instruct, plus a helper to release a subset a
 
 ---
 
+### F-263 · Hardening pass: chains run stale code after harness edits, one failing task stops a whole queue, dup-grabs under claim-late, re-reviews refuse, and D-numbers still race
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by bram1
+
+Five failure classes, every one observed live on 2026-08-19, one hardening pass:
+
+1. **Long-running chains execute stale code.** Python loads the harness at process start, so every
+   fix ships only to future chains: the 7200s timeout fix did not reach the chain that then timed out
+   at 3600s, and the second-pass mechanism silently did not exist in the slot-1 chain that predated
+   it. Fix: a chain checks the harness files' mtimes between tasks and re-execs itself when they
+   changed — same queue, same flags, new code.
+
+2. **One failing task stops the entire queue behind it.** F-243's timeout stopped the chain three
+   times; each restart re-hit F-243 first and died again, starving eight queued orders. "Do not chain
+   work onto a broken lane" is right for lane-level failure (exhausted, auth) and wrong for one bad
+   task. Fix: on a task failure with the lane still healthy, log it, leave the order for later, and
+   continue; stop only after two consecutive task failures or a lane-level stop.
+
+3. **Claim-late widens the duplicate-grab window.** in_flight used to register at the up-front claim;
+   with claim-late (D-154) the first claim can come minutes in, so concurrent slots drain the same
+   queue and grab the same task. Fix: the chain registers a lightweight in_flight marker at DISPATCH
+   under the slot's own identity; sibling chains skip in-flight tasks; the marker is removed if the
+   run dies before any real claim, and a real claim simply inherits it.
+
+4. **A review id, once done, refuses to review again.** cmd_order --review registers <tid>-review;
+   re-ordering after new commits found the stale done record and the chain skipped it. Reviewing a
+   NEW sha is new work: re-ordering a done review resets it to todo with the new sha.
+
+5. **D-numbers still race** (F-260, hit three times in one day). `agent decision "title"` now
+   allocates the next D-NNN under a lock, body on stdin, refusing while another agent holds an exact
+   claim on docs/DECISIONS.md — the same shape that fixed F-058 for findings.
+
+---
+
+### F-264 · `Boss._tick_move_lunge()` duplicates `Enemy._tick_lunge()`'s logic instead of calling it, because the inherited method reads its speed off a def field rather than taking one as a parameter
+
+**Area:** enemies · **Severity:** low · **Found:** 2026-08-19 by lm during F-247
+
+F-247 gave `BossMoveDef` its own `lunge_speed_m_s` so a boss's individual moves can close ground
+during their own TELL, each at its own speed (`systems/enemies/boss.gd`). The natural implementation
+would have been calling the existing `Enemy._tick_lunge()` (F-240) from `Boss._tick_attack()`'s move
+branch — same target-resolution, same `stop_distance_m` cap, no new code. That does not work as-is:
+`_tick_lunge()` does not take a speed argument, it reads `definition.lunge_speed_m_s` directly off
+the shared `EnemyDef`/`BossDef` resource. Calling it unmodified from a boss's move branch would apply
+the BOSS's own single inherited lunge speed to every move alike, which defeats the entire point of a
+**per-move** field — two moves with different `lunge_speed_m_s` values would lunge identically.
+
+**Not fixed here.** The correct fix is parameterising `Enemy._tick_lunge(speed_m_s: float)` and having
+both callers (`Enemy._tick_attack()`, passing `definition.lunge_speed_m_s`, and
+`Boss._tick_attack()`'s move branch, passing `move.lunge_speed_m_s`) pass their own speed in — at
+which point `Boss._tick_move_lunge()` becomes dead code and should be deleted. `systems/enemies/
+enemy.gd` was held by another lane's claim (F-245) for this task's whole session, so that edit was not
+available; F-247 shipped a ~12-line boss-local reimplementation of the same logic instead, which is
+correct today but is the exact kind of duplication that drifts the next time either copy changes.
+
+**What would close this:** change `Enemy._tick_lunge()`'s signature to take `speed_m_s: float`,
+update its one existing call site in `Enemy._tick_attack()` to pass `definition.lunge_speed_m_s`,
+replace `Boss._tick_move_lunge()`'s body with a call to the now-shared method passing
+`move.lunge_speed_m_s`, and delete `_tick_move_lunge()`. `tools/enemy_lunge_check.gd` and
+`tools/boss_check.gd`'s `_check_move_lunge()` should both still pass unmodified — this is a pure
+refactor, not a behaviour change, and both existing checks are strict enough to catch a signature
+mistake.
+
+---
+
 ## Resolved
+
+### F-257 · Real App ID must be written to two independent places; task 8.11's `apply_ids.sh` only reaches one of them — **fixed**
+
+**Area:** netcode/tooling · **Severity:** medium · **Found:** 2026-08-19 by lp during 8.11 (still
+blocked — see prior HANDOFF, unchanged this session)
+
+D-008/`ARCHITECTURE.md` §2.4 fixed `core/net/net_config.gd:79`'s `const STEAM_APP_ID: int = 480` as
+*the* one-line change point for the runtime Steam App ID — it's what `steam_lobby.gd` actually
+passes to `steamInitEx()`. Separately, task 8.4/D-132 gave `tools/steam/steam_build_config.sh` its
+own `STEAM_APP_ID` default, consumed only by the offline `steamcmd` upload pipeline
+(`export_release.sh` / `steam_upload.sh` / the `.vdf` templates) — a completely different concern,
+build-time depot upload rather than runtime lobby init.
+
+8.11's `apply_ids.sh <app_id> <depot_win> <depot_mac> <depot_linux>` (this task) only ever rewrites
+`steam_build_config.sh`. It never touches `net_config.gd`. So running `apply_ids.sh` with the real
+ID and having `depot_wiring_check.sh` pass proves nothing about the runtime constant — it's
+plausible for 8.2 ("swap App ID 480 → real App ID; verify all Steam features") to run
+`apply_ids.sh`, watch the guard clauses go green, and ship a build that uploads to the correct
+Steamworks depot while every player's client still calls `steamInitEx()` against Spacewar's 480,
+silently breaking lobby creation/join in what looks like a fully-wired release.
+
+Neither `apply_ids.sh`'s own comment header nor `docs/SPECS.md`'s `## 8.11 ·` block nor
+`tools/steam/DEPOT_SETUP.md` mentions `net_config.gd:79` as a second edit site — the only place that
+names it as the swap point is `ARCHITECTURE.md` §2.4 and the constant's own doc comment, and
+neither cross-references `apply_ids.sh`. No task currently owns making 8.2 aware both edits are
+required, or a single command doing both.
+
+**Would take:** either (a) a one-line addendum to `docs/SPECS.md`'s `## 8.2 ·` block (not yet
+written — 8.2 is still `todo`) naming `net_config.gd:79` as a required companion edit to
+`apply_ids.sh`, or (b) extending `apply_ids.sh` itself to also rewrite the `net_config.gd` constant
+so one command does both and a mismatch becomes structurally impossible. Whoever picks up 8.2 should
+decide which; (b) is stronger because it removes the chance to do one and forget the other, but it
+means a `tools/` script writing into `core/`, which is a claim-boundary question 8.2 should resolve
+explicitly rather than inherit silently.
+
+---
+
+**Resolved 2026-08-19 by lm3.** **Fixed (D-155), by making one command do all of it rather than documenting the companion edits.**
+The finding offered two options and judged (b) stronger; (b) is what shipped.
+
+**The sweep found a THIRD home the finding had missed:** `steam_appid.txt` at the repo root, what
+the Steam SDK reads on any dev run that calls `steamInitEx()` with app_id 0 — `tools/steam_check.gd`
+does exactly that. So the count was three, not two: `tools/steam/steam_build_config.sh` (offline
+depot upload), `core/net/net_config.gd`'s `const STEAM_APP_ID` (runtime), and `steam_appid.txt`
+(dev runs).
+
+`tools/steam/apply_ids.sh <app_id> <depot_win> <depot_mac> <depot_linux>` now writes all three. It
+pre-flights every target before writing to any of them — each target line must exist exactly once,
+or it refuses having written nothing — and rolls all three back if a value fails to read back
+afterwards. A rolled-back trio is recoverable; a partly-applied one ships. `steam_appid.txt` is
+written with `printf '%s'`, preserving the bare-number-no-trailing-newline shape the SDK reads
+verbatim. No placeholder value was changed: 480/0 stay until task 8.2 has a real App ID, and
+`steam_build_config.sh` was neither claimed nor edited.
+
+**Two backstops for a hand-edit that bypasses the script:** `steam_upload.sh` — the last gate
+before a live, hard-to-reverse Steam publish — re-reads `net_config.gd`'s constant itself and
+refuses to upload if it disagrees with the config's. And `tools/steam_check.gd`'s hardcoded
+`app_id == 480` became `app_id == NetConfig.STEAM_APP_ID`: the literal would have had to be edited
+again at 8.2 and would have failed loudly and uselessly until someone did, whereas the agreement
+assertion is a true and useful claim on both sides of the swap.
+
+**The claim-boundary question the finding raised is answered, not inherited (D-155):** a `tools/`
+script may write into `core/` and the repo root. A script that reaches only its own directory and
+leaves a note asking someone to finish the job is exactly the failure being fixed. The protocol
+obligation lands on the agent *running* it — `apply_ids.sh`'s header, `DEPOT_SETUP.md` step 4 and
+DELEGATION's next-agent note all state that whoever runs it must hold claims on
+`core/net/net_config.gd` and `steam_appid.txt` too.
+
+**Verified:** `bash tools/steam/depot_wiring_check.sh` — ALL CHECKS PASSED, now five sections. §2
+runs `apply_ids.sh` in an isolated fake repo and asserts it rewrites all three files (the
+`steam_appid.txt` assertion is byte-exact, including the absent trailing newline) while leaving
+every other line of each byte-identical, and that it refuses a missing `net_config.gd`, a renamed
+constant line and a missing `steam_appid.txt` **without having touched `steam_build_config.sh`**;
+§4 asserts the repo's three App IDs agree right now; §5 drives `steam_upload.sh`'s mismatch guard
+both ways. **Mutation-tested, because a check that cannot fail proves nothing:** restoring HEAD's
+`apply_ids.sh` fails §2 with three FAILs (exactly the pre-fix state), and drifting either
+`net_config.gd` or `steam_appid.txt` fails §4. Also `.agent/bin/agent godot --script
+tools/steam_check.gd` against a live Steam client — all checks pass, including "running as App ID
+480 (steam_appid.txt agrees with NetConfig)" — and `.agent/bin/agent godot --quit-after 120` with 0
+`ERROR:`/`SCRIPT ERROR` lines.
+
+**Stale line numbers, noted so nobody chases them:** this finding and several docs cited
+`core/net/net_config.gd:79`. The constant is now at line 89 (its doc comment grew). Docs updated
+here cite it by name rather than by line; `apply_ids.sh` and `depot_wiring_check.sh` match it by its
+declaration shape, and both fail loudly if that shape is reformatted rather than silently writing
+one place only.
+
+**Docs:** spec block written in `docs/SPECS.md` (`## F-257 ·` — none existed), the `## 8.11 ·`
+block's now-superseded "Filed as F-257 rather than fixed here" paragraph annotated,
+`tools/steam/DEPOT_SETUP.md` steps 4–6 rewritten (step 6 is no longer a separate manual edit),
+D-155 in `docs/DECISIONS.md`, and a *Current state* entry in `docs/DELEGATION.md`.
+
+### F-247 · F-240's exact gap exists a second time in `BossMoveDef` — a boss's own telegraphed moves have no way to close ground during their own TELL either, and `Boss._tick_attack()` would not even inherit `EnemyDef.lunge_speed_m_s` if it did — **fixed**
+
+**Area:** enemies · **Severity:** low · **Found:** 2026-08-19 by lm during F-240 (sweep for the same
+shape elsewhere, per AGENTS.md step 3)
+
+F-240 gave `EnemyDef` a `lunge_speed_m_s` field and `Enemy._tick_lunge()` so a kind's plain
+TELL/ATTACK/RECOVER attack can close ground during its own tell instead of standing fully still. A
+boss (`systems/enemies/boss.gd`, `extends Enemy`) does not use that path for its own attacks:
+`Boss._tick_attack()` (`boss.gd:243`) only falls through to `super._tick_attack(delta)` — the path
+that would read `lunge_speed_m_s` — when `_current_move()` returns null, i.e. only in the fallback
+case where the boss has no `BossPhaseDef.moves` defined for its current phase. Whenever a real move
+IS active (the normal case for any boss actually authored with moves), `_tick_attack()` takes its own
+branch instead (`boss.gd:248-249`) and unconditionally zeroes `velocity.x`/`velocity.z` for the whole
+span, exactly 2.10/5.1's original stationary-tell behaviour F-240 found in the base class.
+
+`BossMoveDef` (`systems/enemies/boss_move_def.gd`) has no field of its own for this either — its
+`Attack`/`Timing` groups (`damage`, `range_m`, `tell_seconds`, `attack_seconds`, `recovery_seconds`)
+are a per-move copy of `EnemyDef`'s own fixed fields, `lunge_speed_m_s` included by omission. So even
+authoring a boss whose `EnemyDef.lunge_speed_m_s` is nonzero would not help: a boss with any moves at
+all never reaches the branch that reads it.
+
+**Not fixed here** — `boss.gd`/`boss_move_def.gd` are outside F-240's claim (`enemy.gd`/`enemy_def.gd`
+only), and this is a second framework decision (a `BossMoveDef.lunge_speed_m_s` field, plus
+`Boss._tick_attack()`'s own branch calling the equivalent of `_tick_lunge()` — inherited `_tick_lunge()`
+already reads `_target_node`/`_resolve_target()` generically, so it should need no boss-specific
+version, only a call site), not a one-line reuse of F-240's fix.
+
+**What would close this:** add `lunge_speed_m_s` to `BossMoveDef` alongside its existing `Timing`
+group, and have `Boss._tick_attack()`'s own branch call `_tick_lunge()` when `state == State.TELL and
+move.lunge_speed_m_s > 0.0`, mirroring `Enemy._tick_attack()`'s own condition exactly. Verify against
+`tools/boss_check.gd`'s existing harness, the same way `enemy_lunge_check.gd` proved the base case.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed: BossMoveDef.lunge_speed_m_s (new, Timing group, default 0.0) + Boss._tick_move_lunge(speed_m_s),
+called from Boss._tick_attack()'s own move branch only when state==TELL and move.lunge_speed_m_s>0.0,
+mirroring Enemy._tick_attack()'s F-240 condition exactly one level down. _resolve_attack() unchanged:
+the hit still resolves at tell END against the target's then-current position, move.range_m unchanged.
+Per-move (not a reuse of the boss's own inherited EnemyDef.lunge_speed_m_s) because a boss's moves are
+meant to read differently from each other. _tick_move_lunge() is a small local reimplementation of
+Enemy._tick_lunge()'s logic rather than a call to it, because that method reads its speed off a def
+field, not a parameter, and systems/enemies/enemy.gd was held by another lane's claim (F-245) for this
+task's whole session so parameterising it was not available -- filed as F-264 for whoever has enemy.gd
+free next. Default 0.0 keeps every existing BossMoveDef stationary, bit-for-bit; framework only, no
+content authored (5.5 shipped no worked-example boss).
+
+Verified: tools/boss_check.gd's new _check_move_lunge() (11 new assertions) -- a lunge_speed_m_s=0
+move still loses to a continuously retreating player (2.00m -> 3.06m gap grows, reproducing F-240's own
+bug), the identical retreat against lunge_speed_m_s=20.0 (> player sprint 6.0) closes ground instead
+(2.00m -> 0.94m), a lunge already inside stop_distance_m holds instead of overshooting (<0.01m drift),
+and a freshly-authored BossMoveDef still defaults to 0.0. `agent godot --script tools/boss_check.gd` ->
+BOSS_CHECK failures=0, 63/63 assertions pass (52 pre-existing + 11 new), 0 undeclared ERROR lines.
+Regression: tools/enemy_lunge_check.gd, tools/enemy_check.gd, tools/enemy_ai_check.gd all failures=0,
+unchanged -- this task never touched enemy.gd/enemy_def.gd. Full boot (agent godot --quit-after 20):
+loaded 5 enemy definition(s), 0 stray ERROR: lines.
+
+Swept for the same shape: grep for lunge_speed_m_s/_tick_lunge and for extends Enemy across every .gd
+file -- Boss is still the only real subclass of Enemy in the repo, no third sibling found. Filed F-264
+(low) for the duplication _tick_move_lunge() leaves behind, to be folded away once enemy.gd is free.
+
+Full writeup: docs/SPECS.md "## F-247" block.
 
 ### F-244 · The build verb refuses natural coordinates — nothing ground-snaps a command placement, so 'build wall_wood ~ ~ ~' reads as a bug — **fixed**
 
