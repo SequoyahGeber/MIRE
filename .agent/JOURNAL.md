@@ -5788,3 +5788,20 @@ Commit at time of writing: `e886819`
 Completed.
 
 Commit at time of writing: `2072f7e`
+
+---
+
+### DONE · 6.8 · lp · 2026-08-19T17:29:13+00:00
+
+**Run summary: headline Cycle number, stats, modifiers drawn, Salvage earned**
+
+Run summary ships on ui/hud/defeat_hud.gd: headline 'CYCLE N', 'Modifiers drawn: ...' (CycleModifierService.active_modifier_ids()+def_for()), 'Salvage earned: N (M total)' (salvage_banked). Found+fixed F-235 (salvage number silently dropped by a subscriber-order race) in the same file. Verified: agent godot --script tools/run_summary_check.gd (19 assertions, 0 failures, real chain not a mock); defeat_check/salvage_check/cycle_modifier_check all failures=0; full boot 0 ERROR: lines. Filed F-238 (open): a successful extraction still has no summary screen.
+
+Notes along the way:
+- Scope decision: one screen not four — extended defeat_hud.gd (headline=Cycle number, modifiers-drawn + Salvage-earned as a two-row stats block) rather than building new UI. No new stat-tracking system (no kill/time tracking exists in the repo).
+- Found+fixed F-235 in the same file: SalvageService subscribes to run_wiped before DefeatHud (autoload order), so its salvage_banked emit landed while _shown was still false and got silently dropped by the old guard — the real Salvage number never reached the death screen in the live game. Fixed with an independent _salvage_known latch. tools/run_summary_check.gd's assertion is a genuine regression test (confirmed failing against the old guard).
+- Filed F-238: a successful extraction still has no run summary of its own — out of this task's claim (ui/hud/defeat_hud.gd only).
+
+Files: `ui/hud/defeat_hud.gd`, `ui/hud/defeat_hud.gd.uid`, `tools/run_summary_check.gd`
+
+Commit at time of writing: `c9d3c0e`
