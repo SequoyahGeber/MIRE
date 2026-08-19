@@ -5868,3 +5868,54 @@ Completed.
 Files: `world/gen/island_heightmap.gd`, `world/gen/biome_def.gd`, `tools/check_determinism.gd`, `content/biomes/forest.tres`, `content/biomes/grassland.tres`, `content/biomes/shore.tres`, `world/gen/biome_map.gd`, `tools/terrain_map_render.gd`, `tools/terrain_map_render.gd.uid`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`, `assets/audit/terrain/island_20260819.png`
 
 Commit at time of writing: `3b5e5c7`
+
+---
+
+### HANDOFF · F-236 · lp · 2026-08-19T17:37:41+00:00
+
+**Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon**
+
+LP stopped on F-236 at 2026-08-19T17:37:41+00:00 (exit 1, quota wall). Tokens this run: 6,284,449 in / 37,014 out.
+The working diff is UNTOUCHED — its partial edits are still on disk, so read them before redoing anything. Full log: .agent/logs/LP-F-236-20260819-172942.jsonl
+
+Files it had already written or edited: content/unlocks/unlock_loping_gait.tres, content/unlocks/unlock_coin_worm.tres, content/unlocks/unlock_bottomless_quiver.tres, content/unlocks/unlock_thin_step.tres, content/unlocks/unlock_night_pyre.tres, content/unlocks/unlock_cauter_seal.tres, tools/unlock_check.gd, docs/FINDINGS.md.
+Its last words: "You've hit your session limit · resets 11:50am (America/Vancouver)"
+Its last actions:
+  - Bash grep -n "def cmd_claim" -A 60 .agent/bin/agent | head -80
+  - Read /Users/sequoyahgeber/Desktop/MIRE/docs/FINDINGS.md
+  - Read /Users/sequoyahgeber/Desktop/MIRE/docs/FINDINGS.md
+  - Read /Users/sequoyahgeber/Desktop/MIRE/docs/FINDINGS.md
+  - Edit /Users/sequoyahgeber/Desktop/MIRE/docs/FINDINGS.md
+  - Edit /Users/sequoyahgeber/Desktop/MIRE/docs/FINDINGS.md
+
+Tail of the failure:
+hit your session limit · resets 11:50am (America/Vancouver)","type":"result","duration_ms":477691,"uuid":"d808486c-4325-4d27-bedc-111f12876f8c"}
+{"type":"system","subtype":"task_summary","detail":null,"uuid":"02fdafba-a1f8-41e0-b02b-690e63d7b987","session_id":"887194de-5ad9-4e5e-80a6-4650f271db1a"}
+
+Files: `content/unlocks`, `systems/unlocks/unlock_def.gd`, `tools/unlock_check.gd`
+
+Commit at time of writing: `99fb0e6`
+
+---
+
+### HANDOFF · 2.1d · wick20 · 2026-08-19T17:37:53+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-016a (terrain accents, rock half) DONE. A-016b is NEXT: mud bank, riverbank, streambed, sinkhole, burrow entrance — and note sinkhole needs re-scoping to a shallow surface depression, because D-142's 2D heightfield has nothing for a hole to go into (same reason cave entrance is filed as F-237 rather than built). Reusable: cliff_face/cliff_corner share an asserted 4.00 m x 5.00 m module with flat backs at y=0, so A-016b's bank pieces should pick a module too if they are meant to run along a contour. Two traps worth avoiding: build anything whose read is its PROFILE extending along X, since the preview camera looks down Y and three of my six rendered end-on until I turned them; and count catalog materials from polygons, not slots — paint_faces can leave a slot with zero qualifying faces, which Blender counts and glTF does not.
+
+Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_terrain_accents.py`, `tools/terrain_accents_check.gd`, `assets/terrain_accents`
+
+Commit at time of writing: `99fb0e6`
+
+---
+
+### DONE · F-239 · hollow7 · 2026-08-19T17:43:21+00:00
+
+**The inv command reads slot keys that do not exist — inv always prints 'carrying nothing' and inv clear silently removes nothing**
+
+Game-loop audit complete, both endings driven on the shipped map: tools/loop_audit_check.gd (34 assertions extract arc + 10 defeat arc, 0 failures, 0 engine ERROR lines). The arc works end to end — spawn through extraction/defeat with banking and persistence. F-239 (inv read nonexistent slot keys — printed 'carrying nothing' over a full inventory, inv clear silently no-oped) fixed and resolved with a regression guard inside the audit harness. F-243 filed: the loop's final edge is missing — no path from defeat/extraction to a next run short of relaunching the process, worst in co-op (six-process relaunch at the 'one more run' moment); 6.8/6.10 are done and nothing records this as deliberate. F-244 filed: build's natural coords refuse everything since nothing ground-snaps command placements. docs/AUDIT-2026-08-19-LOOP.md is the report: per-link table, method, content census (frameworks outnumber content — 1 cycle modifier vs 20-30 spec), F-139 grown to four unwired systems (ChunkStreamer/NavBaker/PoiMap/ResourceScatterField, zero non-tool callers). Canaries green at protocol 21 through a night of five lanes shipping.
+
+Files: `autoload/inventory_service.gd`, `tools/loop_audit_check.gd`, `docs/AUDIT-2026-08-19-LOOP.md`
+
+Commit at time of writing: `989e2bb`

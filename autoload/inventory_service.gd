@@ -556,8 +556,10 @@ func _clear_inventory(ctx: Dictionary, args: Dictionary) -> Dictionary:
 	var peer_id: int = _resolve_peer(ctx, args)
 	var removed: int = 0
 	for slot: Dictionary in host_slots(peer_id):
-		var item_id := StringName(String(slot.get("item", "")))
-		var amount: int = int(slot.get("count", 0))
+		# The store's snapshot shape is {item_id, amount} (inventory_store.gd) — F-239 was this
+		# function reading {item, count} and silently clearing nothing.
+		var item_id := StringName(String(slot.get("item_id", "")))
+		var amount: int = int(slot.get("amount", 0))
 		if item_id != &"" and amount > 0 and host_remove(peer_id, item_id, amount):
 			removed += amount
 	return {"ok": true, "message": "cleared %d item(s) from peer %d" % [removed, peer_id],
@@ -569,8 +571,8 @@ func _list_inventory(ctx: Dictionary, args: Dictionary) -> Dictionary:
 	var lines: PackedStringArray = []
 	var total: int = 0
 	for slot: Dictionary in host_slots(peer_id):
-		var item_id := StringName(String(slot.get("item", "")))
-		var amount: int = int(slot.get("count", 0))
+		var item_id := StringName(String(slot.get("item_id", "")))
+		var amount: int = int(slot.get("amount", 0))
 		if item_id == &"" or amount <= 0:
 			continue
 		total += amount
