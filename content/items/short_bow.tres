@@ -9,7 +9,7 @@
 script = ExtResource("2_xy7ha")
 id = &"short_bow"
 display_name = "Short Bow"
-description = "Ranged combat is not built yet. It is a stick with intent."
+description = "Draws slow, hits hard. Needs arrows."
 icon = ExtResource("1_uhe0b")
 category = 2
 stack_size = 1

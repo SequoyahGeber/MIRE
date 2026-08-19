@@ -17,6 +17,13 @@ extends Node
 ## Damageable targets join `&"damageable"` and implement
 ## `host_apply_damage(amount: int, instigator_peer_id: int) -> bool`. Harvestables implement it
 ## today; task 2.10's enemies join the same group and need no change here.
+##
+## Ranged weapons (task 5.3, `systems/combat/ranged_weapon_def.gd` + `autoload/ranged_combat_service.gd`)
+## are a SEPARATE content family and host state machine, not a mode of this one — a bow fires an ammo
+## item through a variable-length flight, which does not fit WeaponDef's fixed-duration swing shape.
+## `request_attack()` below checks `Registry.has_ranged_weapon()` on the selected slot first and hands
+## the whole action to `RangedCombatService` when it does, before any melee state is touched, so the
+## two systems' local lockouts stay mutually exclusive regardless of which hotbar slot is selected.
 
 const DAMAGEABLE_GROUP: StringName = &"damageable"
 const EYE_HEIGHT_M: float = 1.5
@@ -67,10 +74,18 @@ func _process(delta: float) -> void:
 
 ## Called by the owning PlayerController on the attack action. Starts the local swing immediately and
 ## asks the host to resolve it. Returns the request id, or -1 if the local swing is still locked out.
+##
+## Ranged weapons dispatch whole to RangedCombatService before any melee state is touched — see this
+## file's header and RangedCombatService.request_shot()'s own symmetric check back the other way.
 func request_attack() -> int:
 	if _local_phase != Phase.IDLE:
 		return -1
+	var ranged: Node = get_node_or_null(^"/root/RangedCombatService")
+	if ranged != null and int(ranged.call(&"local_phase")) != 0:
+		return -1
 	var hotbar_index: int = _selected_hotbar_index()
+	if _ranged_weapon_id_for(hotbar_index) != &"":
+		return int(ranged.call(&"request_shot", hotbar_index)) if ranged != null else -1
 	var weapon: WeaponDef = weapon_for_hotbar_index(hotbar_index)
 	_start_local_swing(weapon)
 
@@ -95,6 +110,17 @@ func weapon_for_hotbar_index(hotbar_index: int) -> WeaponDef:
 		return unarmed
 	var weapon: WeaponDef = Registry.get_weapon(item_id)
 	return weapon if weapon != null else unarmed
+
+
+## The item id in this hotbar slot IF Registry has a RangedWeaponDef for it, else &"" — the one
+## question request_attack() needs answered before it decides which system owns the click.
+func _ranged_weapon_id_for(hotbar_index: int) -> StringName:
+	if hotbar_index < 0 or hotbar_index >= HOTBAR_SLOT_COUNT:
+		return &""
+	var item_id: StringName = InventoryService.local_item_id(HOTBAR_START_INDEX + hotbar_index)
+	if item_id == &"" or not Registry.has_ranged_weapon(item_id):
+		return &""
+	return item_id
 
 
 func local_phase() -> Phase:
@@ -139,6 +165,12 @@ func local_hitstop_remaining() -> float:
 
 func host_swing_active(peer_id: int) -> bool:
 	return _host_swings.has(peer_id)
+
+
+## Shared with RangedCombatService (task 5.3) — a bow with no authored `impact_sound` plays the exact
+## same placeholder thud melee falls back to, rather than a second copy of the procedural synth below.
+func placeholder_impact_sound() -> AudioStream:
+	return _placeholder_impact
 
 
 # ── Host resolution ───────────────────────────────────────────────────────────────────────────────

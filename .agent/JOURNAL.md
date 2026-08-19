@@ -3779,3 +3779,33 @@ NavBaker ships: per-chunk runtime NavMesh baking implementing D-016's measured r
 Files: `world/chunk/nav_baker.gd`, `world/chunk/chunk_streamer.gd`, `tools/nav_bake_check.gd`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/ARCHITECTURE.md`
 
 Commit at time of writing: `a6669f2`
+
+---
+
+### DONE · 5.3 · lp · 2026-08-19T01:44:21+00:00
+
+**Ranged combat: bow, projectiles, host-authoritative hit validation**
+
+Ranged combat ships: bow draw -> host-simulated arrow flight (raycast per physics tick) -> host-authoritative
+hit resolution, mirroring melee's (2.8) client-predicted/host-resolved split with a fourth piece melee never
+needed (an actual variable-length flight). New RangedWeaponDef content family (content/ranged_weapons/,
+short_bow.tres worked example), new autoload RangedCombatService, CombatService.request_attack() dispatches
+ranged hotbar slots to it before touching melee state, mutual exclusion both directions.
+
+Verified: agent godot --script tools/ranged_combat_check.gd (offline) failures=0. agent godot --script
+tools/ranged_combat_net_check.gd (real 2-process ENet) failures=0 — host resolves the connect, consumes
+the client's one arrow, rejects a dry draw once out. Regression green and unmodified: combat_check.gd,
+combat_net_check.gd, harvest_tool_ladder_check.gd, command_catalog_check.gd, verify_setup.gd,
+findings_numbering_check.gd. Full boot (agent godot --quit-after 20): 0 ERROR: lines.
+
+F-161 open: no PROTOCOL_VERSION bump for the 3 new RPCs — net_version.gd/handshake_check.gd held by
+slate17's 3.7 claim all session (D-102 records the call). F-162 filed: viewmodel_check.gd has one
+pre-existing unrelated failure (3 food items, no viewmodel), confirmed via agent baseline against HEAD.
+
+Note: docs/ARCHITECTURE.md, docs/DECISIONS.md and docs/DELEGATION.md edits for this task already landed
+in HEAD (20e9210) — swept into hollow7's 4.5 docs commit via a shared working tree (content verified intact,
+each entry appears exactly once). Only docs/FINDINGS.md and docs/SPECS.md remain to hand-commit here.
+
+Files: `systems/combat/ranged_weapon_def.gd`, `systems/combat/ranged_weapon_def.gd.uid`, `systems/combat/aim_util.gd`, `systems/combat/aim_util.gd.uid`, `autoload/ranged_combat_service.gd`, `autoload/ranged_combat_service.gd.uid`, `autoload/combat_service.gd`, `autoload/registry.gd`, `content/ranged_weapons/short_bow.tres`, `tools/ranged_combat_check.gd`, `tools/ranged_combat_check.gd.uid`, `tools/ranged_combat_net_check.gd`, `tools/ranged_combat_net_check.gd.uid`, `content/items/short_bow.tres`
+
+Commit at time of writing: `20e9210`

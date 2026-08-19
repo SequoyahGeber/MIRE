@@ -14,6 +14,7 @@ const ITEMS_PATH: String = "res://content/items"
 const RECIPES_PATH: String = "res://content/recipes"
 const STATIONS_PATH: String = "res://content/stations"
 const WEAPONS_PATH: String = "res://content/weapons"
+const RANGED_WEAPONS_PATH: String = "res://content/ranged_weapons"
 const LOOT_PATH: String = "res://content/loot"
 const POWERUPS_PATH: String = "res://content/powerups"
 const BUILDABLES_PATH: String = "res://content/buildables"
@@ -66,6 +67,8 @@ const HOOK_DEF := preload("res://systems/rules/hook_def.gd")
 const ITEM_DEF := preload("res://systems/inventory/item_def.gd")
 const RECIPE_DEF := preload("res://systems/crafting/recipe_def.gd")
 const WEAPON_DEF := preload("res://systems/combat/weapon_def.gd")
+## Same F-016 reasoning again: RangedWeaponDef is new in task 5.3.
+const RANGED_WEAPON_DEF := preload("res://systems/combat/ranged_weapon_def.gd")
 
 var items: Dictionary[StringName, ItemDef] = {}
 var recipes: Dictionary[StringName, RecipeDef] = {}
@@ -75,6 +78,10 @@ var stations: Dictionary[StringName, Resource] = {}
 ## Keyed by the ItemDef id the weapon belongs to, not by an id of its own — a WeaponDef describes
 ## how an existing item swings (task 2.8).
 var weapons: Dictionary[StringName, WeaponDef] = {}
+## Keyed by the ItemDef id the BOW belongs to (task 5.3), same convention as `weapons` — a separate
+## family, not a second shape of WeaponDef, since a ranged weapon fires ammo through a variable-length
+## flight rather than colliding a fixed-duration swing arc.
+var ranged_weapons: Dictionary[StringName, RangedWeaponDef] = {}
 ## Keyed by tier id (task 3.5) — many placed Chests of the same tier share one table, same shared-
 ## content shape as `recipes`, not the per-instance shape `content/harvestables/` uses. Untyped
 ## Resource rather than LootTableDef for the same F-016 reason as the preload above.
@@ -129,6 +136,10 @@ func _ready() -> void:
 	_load_dir(RECIPES_PATH, "RecipeDef", RECIPE_DEF, &"id", "recipe id", recipes)
 	_load_dir(STATIONS_PATH, "StationDef", STATION_DEF, &"id", "station id", stations)
 	_load_dir(WEAPONS_PATH, "WeaponDef", WEAPON_DEF, &"item_id", "weapon for item", weapons)
+	_load_dir(
+		RANGED_WEAPONS_PATH, "RangedWeaponDef", RANGED_WEAPON_DEF, &"item_id",
+		"ranged weapon for item", ranged_weapons
+	)
 	_load_dir(LOOT_PATH, "LootTableDef", LOOT_TABLE_DEF, &"id", "loot table id", loot_tables)
 	_load_dir(POWERUPS_PATH, "PowerupDef", POWERUP_DEF, &"id", "powerup id", powerups)
 	_load_dir(BUILDABLES_PATH, "BuildableDef", BUILDABLE_DEF, &"id", "buildable id", buildables)
@@ -139,10 +150,10 @@ func _ready() -> void:
 	_load_dir(RULES_PATH, "RuleDef", RULE_DEF, &"id", "rule id", rules)
 	_load_dir(POI_PATH, "PoiDef", POI_DEF, &"id", "poi id", poi)
 	_load_dir(HOOKS_PATH, "HookDef", HOOK_DEF, &"id", "hook id", hooks)
-	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d loot table(s), %d powerup(s), %d buildable(s), %d haulable(s), %d attunement(s), %d biome(s), %d scatter table(s), %d rule(s), %d hook(s), %d poi(s)" % [
-		items.size(), recipes.size(), stations.size(), weapons.size(), loot_tables.size(),
-		powerups.size(), buildables.size(), haulables.size(), attunements.size(), biomes.size(),
-		scatter_tables.size(), rules.size(), hooks.size(), poi.size()
+	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d ranged weapon(s), %d loot table(s), %d powerup(s), %d buildable(s), %d haulable(s), %d attunement(s), %d biome(s), %d scatter table(s), %d rule(s), %d hook(s), %d poi(s)" % [
+		items.size(), recipes.size(), stations.size(), weapons.size(), ranged_weapons.size(),
+		loot_tables.size(), powerups.size(), buildables.size(), haulables.size(), attunements.size(),
+		biomes.size(), scatter_tables.size(), rules.size(), hooks.size(), poi.size()
 	])
 
 
@@ -176,6 +187,14 @@ func get_weapon(item_id: StringName) -> WeaponDef:
 
 func has_weapon(item_id: StringName) -> bool:
 	return weapons.has(item_id)
+
+
+func get_ranged_weapon(item_id: StringName) -> RangedWeaponDef:
+	return ranged_weapons.get(item_id)
+
+
+func has_ranged_weapon(item_id: StringName) -> bool:
+	return ranged_weapons.has(item_id)
 
 
 func get_loot_table(id: StringName) -> Resource:
