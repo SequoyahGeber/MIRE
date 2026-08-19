@@ -14,6 +14,16 @@ extends CharacterBody3D
 ## `host_apply_damage(amount, instigator_peer_id) -> bool`, so `CombatService` needed no change to
 ## make enemies hittable. Damage goes OUT as an `EventBus` event, because player health does not
 ## exist yet — task 2.13 (downed → bleed-out → revive) subscribes to it.
+##
+## Task 5.1 generalises three of 2.10's per-enemy behaviours into framework any `EnemyDef` can tune:
+## **perception** (`_can_perceive()` — a facing cone plus an optional line-of-sight ray gate
+## ACQUISITION only; an already-held target is kept on distance alone, per the existing hysteresis),
+## **alerting** (`_alert_nearby()`/`alert()` — a fresh acquisition hands the same target directly to
+## any untargeted packmate in `alert_radius_m`, one hop, no perception check of its own), and an
+## **attack-slot cap** (`_engaged_attackers()` — at most `max_concurrent_attackers` of one kind may be
+## telegraphing or swinging at the same target; the rest hold position instead of piling on). All
+## three are still host-only decisions inside the same state machine; no new replicated property, no
+## new RPC.
 
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const ENEMY_DEF := preload("res://systems/enemies/enemy_def.gd")
@@ -206,7 +216,13 @@ func _tick_pursuit(delta: float) -> void:
 	if distance <= definition.attack_range_m:
 		velocity.x = 0.0
 		velocity.z = 0.0
-		_enter_tell()
+		# Group behaviour (5.1): a full attack-slot cap on THIS target holds the enemy at range rather
+		# than telegraphing, so a pack surrounds and takes turns instead of alpha-striking together.
+		# Checked fresh every tick — a slot can free up the instant another attacker's swing resolves.
+		if _engaged_attackers(_target_peer) < definition.max_concurrent_attackers:
+			_enter_tell()
+		else:
+			state = State.CHASE
 		return
 
 	state = State.CHASE
@@ -282,13 +298,14 @@ func _enter_death(instigator_peer_id: int) -> void:
 
 func _aggro_on(peer_id: int) -> void:
 	if peer_id > 0:
-		_target_peer = peer_id
+		_acquire_target(peer_id, _player_for(peer_id))
 
 
-## Nearest player inside aggro range, with hysteresis: an acquired target is kept until it leaves the
-## larger deaggro radius, so an enemy on the boundary does not flicker every tick.
+## Nearest PERCEIVED player inside aggro range, with hysteresis: an acquired target is kept until it
+## leaves the larger deaggro radius, so an enemy on the boundary does not flicker every tick.
 func _resolve_target() -> Node3D:
 	# Held target: validated by cached reference, re-looked-up only when the cache is stale (F-099).
+	# Distance-only, deliberately — perception (below) gates ACQUISITION, not retention (5.1).
 	if _target_peer > 0:
 		if _target_node == null or not is_instance_valid(_target_node):
 			_target_node = _player_for(_target_peer)
@@ -313,12 +330,113 @@ func _resolve_target() -> Node3D:
 		var distance: float = global_position.distance_to(player.global_position)
 		if distance > best_distance:
 			continue
+		if not _can_perceive(player):
+			continue
 		best = player
 		best_distance = distance
 	if best != null:
-		_target_peer = _peer_of(best)
-		_target_node = best
+		_acquire_target(_peer_of(best), best)
 	return best
+
+
+## Sets the held target, and — only on a genuinely NEW acquisition, not a re-affirmed hold of the
+## same peer — wakes nearby packmates (5.1). Both callers above (a fresh hit, a fresh scan) funnel
+## through here so alerting cannot be triggered from more than these two places.
+func _acquire_target(peer_id: int, node: Node3D) -> void:
+	var is_new: bool = peer_id > 0 and peer_id != _target_peer
+	_target_peer = peer_id
+	_target_node = node
+	if is_new:
+		_alert_nearby(peer_id)
+
+
+## Hands `peer_id` directly to every enemy within `alert_radius_m` that has no target of its own —
+## no perception check, because this is "a packmate shouted", not "a packmate saw" (5.1). Deliberately
+## ONE HOP: `alert()` below never calls this again, so a spotted player draws the local pack without
+## a chain reaction across every enemy on the map.
+func _alert_nearby(peer_id: int) -> void:
+	if definition.alert_radius_m <= 0.0:
+		return
+	var radius_sq: float = definition.alert_radius_m * definition.alert_radius_m
+	for node: Node in get_tree().get_nodes_in_group(ENEMY_GROUP):
+		if node == self:
+			continue
+		var packmate := node as Enemy
+		if packmate == null or not is_instance_valid(packmate):
+			continue
+		if global_position.distance_squared_to(packmate.global_position) <= radius_sq:
+			packmate.alert(peer_id)
+
+
+## Public: called by a nearby packmate's `_alert_nearby()`. Only takes the target if this enemy is
+## currently unengaged — an alert must not rip an enemy off a fight it is already in. Host-only, like
+## every other decision this class makes; a client's copy never runs `_physics_process`, so it never
+## reaches the caller that would invoke this.
+func alert(peer_id: int) -> void:
+	if not _owns_simulation() or definition == null or state == State.DEAD or _target_peer != 0:
+		return
+	var node: Node3D = _player_for(peer_id)
+	if node == null:
+		return
+	_target_peer = peer_id
+	_target_node = node
+
+
+## How many OTHER enemies of any kind are currently telegraphing or swinging at `peer_id` (5.1's
+## attack-slot cap). Walks the same group `_alert_nearby()` does rather than a maintained counter —
+## counters drift when an enemy dies mid-swing; a live scan cannot.
+func _engaged_attackers(peer_id: int) -> int:
+	if peer_id <= 0:
+		return 0
+	var count: int = 0
+	for node: Node in get_tree().get_nodes_in_group(ENEMY_GROUP):
+		if node == self:
+			continue
+		var other := node as Enemy
+		if other == null or not is_instance_valid(other):
+			continue
+		if other.target_peer() == peer_id and (other.state == State.TELL or other.state == State.ATTACK):
+			count += 1
+	return count
+
+
+## Facing cone plus an optional line-of-sight ray, both acquisition-only (5.1) — see the doc comment
+## on `EnemyDef.vision_angle_deg`. `vision_angle_deg >= 360.0` skips the cone math entirely, which is
+## both the common case (most enemies are omnidirectional) and what keeps Enemy v1's original
+## acquisition behaviour bit-for-bit for any `EnemyDef` that never sets this.
+func _can_perceive(player: Node3D) -> bool:
+	if definition.vision_angle_deg < 360.0:
+		var flat: Vector3 = player.global_position - global_position
+		flat.y = 0.0
+		if flat.length_squared() > 0.0001:
+			var forward: Vector3 = -global_transform.basis.z
+			forward.y = 0.0
+			if forward.length_squared() > 0.0001:
+				var angle_deg: float = rad_to_deg(forward.normalized().angle_to(flat.normalized()))
+				if angle_deg > definition.vision_angle_deg * 0.5:
+					return false
+	if not definition.requires_line_of_sight:
+		return true
+	return _has_line_of_sight(player)
+
+
+## True if nothing solid sits between this enemy and `player`. Fails OPEN (visible) whenever the
+## question cannot be answered — no space state yet, no world — matching the rest of this file's
+## pattern of degrading to the simpler behaviour rather than freezing (see `_steer_toward()`'s comment
+## on an unbaked navmesh).
+func _has_line_of_sight(player: Node3D) -> bool:
+	if not is_inside_tree():
+		return true
+	var world: World3D = get_world_3d()
+	if world == null:
+		return true
+	var eye: Vector3 = global_position + Vector3.UP * (definition.height_m * 0.5)
+	var target_point: Vector3 = player.global_position + Vector3.UP * 0.9
+	var query := PhysicsRayQueryParameters3D.create(eye, target_point, collision_mask, [get_rid()])
+	var result: Dictionary = world.direct_space_state.intersect_ray(query)
+	if result.is_empty():
+		return true
+	return result.get("collider") == player
 
 
 ## Nav-driven where a navigation map exists, straight-line where it does not. `EnemyWorld` bakes a

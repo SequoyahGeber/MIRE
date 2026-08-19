@@ -3578,3 +3578,20 @@ Notes along the way:
 Files: `world/chunk/chunk_streamer.gd`, `world/gen/resource_scatter_field.gd`, `tools/chunk_stream_check.gd`
 
 Commit at time of writing: `05d4330`
+
+---
+
+### DONE · 5.1 · lp · 2026-08-19T00:23:49+00:00
+
+**Enemy AI framework: state machine, perception, telegraphed attacks, group behaviour**
+
+Perception (vision cone + LOS ray, acquisition-only), alerting (one-hop pack wake) and an attack-slot cap land as EnemyDef fields + Enemy logic, on top of 2.10's unchanged IDLE/CHASE/TELL/ATTACK/RECOVER + telegraph. Verified: agent godot --script tools/enemy_ai_check.gd (19 assertions, failures=0); enemy_check.gd and enemy_net_check.gd (2.10's, unmodified) still failures=0; entity_check.gd and combat_feel_check.gd still failures=0; full boot (agent godot --quit-after 20) 0 ERROR: lines with real ambient crawlers. docs/SPECS.md ## 5.1 block written, D-097 records the brain-vs-data-fields and perception-acquisition-only calls, DELEGATION Current state carries the new EnemyDef fields + Enemy.alert() API, F-155 filed for a pre-existing unrelated PlayerHealth crash.
+
+Notes along the way:
+- No SPECS.md block existed for 5.1; the old M5 overview called for extracting a swappable enemy_brain.gd. Decided (D-097) to keep it data-driven on EnemyDef instead — no second AI shape exists yet to design a brain interface against.
+- Perception (vision cone + LOS ray) gates ACQUISITION only, never retention — an already-held target survives a wall appearing or the target leaving the cone, same as 2.10's aggro/deaggro hysteresis already assumed. Verified both directions in enemy_ai_check.gd.
+- Filed F-155 (not fixed, out of claim): PlayerHealth._is_dodging() throws bool(NIL) on any body with no 'dodging' property — pre-existing, reproduces on 2.10's own enemy_check.gd too, hit on every enemy attack against a bare test-harness player.
+
+Files: `systems/enemies/enemy.gd`, `systems/enemies/enemy_def.gd`, `tools/enemy_ai_check.gd`, `tools/enemy_ai_check.gd.uid`
+
+Commit at time of writing: `ee0b45f`

@@ -55,6 +55,29 @@ extends Resource
 @export_range(0.05, 3.0, 0.05) var attack_seconds: float = 0.4
 @export_range(0.0, 5.0, 0.05) var attack_recovery_seconds: float = 0.5
 
+@export_group("Perception")
+## The full arc, centred on the enemy's own facing, it can ACQUIRE a new target within. 360 means
+## omnidirectional — Enemy v1's original behaviour, and still the default: a value below 360 gives
+## an enemy a genuine blind side. Gates acquisition only. An already-held target is kept on distance
+## alone (the Aggro group's hysteresis, below); it is never re-checked against the cone, so ducking
+## behind an enemy that has already spotted you does not un-aggro it.
+@export_range(1.0, 360.0, 1.0) var vision_angle_deg: float = 360.0
+## Acquisition additionally requires an unobstructed ray to the candidate — world geometry blocks it,
+## nothing else does. Like the cone above, this is checked only at acquisition, never at retention.
+@export var requires_line_of_sight: bool = true
+
+@export_group("Group")
+## On a NEW acquisition (not a refreshed hold of the same target), every enemy within this radius
+## that currently has no target of its own is handed the same one directly — no cone or line-of-sight
+## check, because an alert is "a packmate shouted", not "a packmate saw". Alerting is one hop: an
+## enemy woken this way does not itself alert further, so a spotted player draws the pack without
+## chaining across the whole map (see `Enemy._alert_nearby()`). 0 disables alerting for this kind.
+@export_range(0.0, 60.0, 0.5) var alert_radius_m: float = 8.0
+## How many of this enemy's kind may be committed to TELL/ATTACK against the same target at once. One
+## that reaches attack range while the cap is already full holds its position instead of telegraphing
+## — the pack surrounds and takes turns rather than alpha-striking together.
+@export_range(1, 12, 1) var max_concurrent_attackers: int = 2
+
 
 func validation_errors() -> PackedStringArray:
 	var errors: PackedStringArray = PackedStringArray()
