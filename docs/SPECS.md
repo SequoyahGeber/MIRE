@@ -5096,6 +5096,102 @@ eligibility gate and still reads `cast_shadow == SHADOW_CASTING_SETTING_OFF`), v
 
 ---
 
+## F-208 · F-203's sway case is still unsolved — `_apply_sway`'s per-mesh height mask needs a per-vertex baked channel before sway-bearing props can join the cross-asset chunk merge
+
+**Claim:** `world/gen/authored_world.gd`, `core/render/mesh_merge.gd`, `autoload/environment_vfx.gd`,
+`world/environment/foliage_wind.gdshader`, `tools/prop_chunk_merge_check.gd`,
+`tools/environment_vfx_hollowmere_check.gd`, `tools/mesh_merge_check.gd`, `docs/FINDINGS.md`,
+`docs/SPECS.md`, `docs/DELEGATION.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Scope decided here, matching F-203's own precedent:** an asset carrying BOTH sway and an emitter
+(`mire_tendril`: TENDRIL + SPORE, the only one on Hollowmere) stays excluded from every merge
+bucket. Solving that combination would need one merged holder to carry `EMITTER_META` (a class to
+register per-instance sites for) AND a baked sway mask at once — a real extension, but not what
+F-208's own title names, and not a regression: F-187 already excluded every sway-bearing asset from
+any merge bucket, so narrowing the new mechanism to sway-only assets loses nothing that worked
+before this task.
+
+**Fix — a per-vertex baked height mask (option 1 from `docs/FINDINGS.md`'s own list), plus a third
+merge bucket keyed by class the same way F-203's emitter bucket is:**
+
+1. `core/render/mesh_merge.gd`'s `merge_instances()` gained a `bake_height_mask: bool = false`
+   parameter. Computed once per entry (not per surface — `mesh.get_aabb()` already spans every
+   surface of one entry's own mesh): `mask_root_y`/`mask_inv_height` from that entry's own local
+   AABB, exactly what `EnvironmentVfx._apply_sway` would have read for that asset un-merged. Every
+   output vertex's UV2.x is overwritten with `clamp((source_v.y - mask_root_y) * mask_inv_height,
+   0, 1)` — computed from the SOURCE vertex, before `transform` moves it into the merged holder's
+   shared space, which is what lets two different source assets in one bucket keep two different,
+   individually-correct masks. Forces `ATTR_UV2` on for every bucket in a call that sets the flag,
+   since the caller (`sway_mergeable`) is always a sway-only merge and mixed UV2 presence would
+   leave some vertices with a stale mask.
+2. `world/environment/foliage_wind.gdshader` gained `uniform bool use_baked_mask = false`. The
+   vertex shader's height-mask base is `use_baked_mask ? clamp(UV2.x, 0, 1) : clamp((VERTEX.y -
+   wind_root_y) * wind_inv_height, 0, 1)` — everything downstream (smoothstep, `mask_power`,
+   `sway_strength`, phase) is unchanged and shared between both paths. Default false, so every
+   existing per-asset `MultiMesh`/loose-mesh sway material — the large majority of swaying
+   instances on any map — is byte-for-byte unaffected.
+3. `world/gen/authored_world.gd`'s `_build_props()` gained `sway_mergeable`, keyed
+   `"<chunk>|s<sway_int>"`, exactly parallel to `emitter_mergeable`'s `"<chunk>|e<emitter_int>"`.
+   Eligibility: non-harvestable, sub-`DrawPolicy.SHADOW_MIN_HEIGHT` (the unchanged guard — the
+   F-203 shadow-cascade trap cannot recur, since nothing entering any merge bucket ever changed
+   height-eligibility), `sway_for() != NONE`, and `emitter_for() == NONE` (see Scope above).
+   `sway_mergeable` folds into `mergeable` before the build loop the same way `emitter_mergeable`
+   does, so one loop still handles all three buckets — the key's `"|s<N>"` suffix (parsed
+   alongside the existing `"|e<N>"`) is the only new branch. `MeshMerge.merge_instances(entries,
+   sway != Sway.NONE)` passes the bake flag only for a sway-class bucket.
+4. The built holder for a sway-class bucket gets `EnvironmentVfx.SWAY_META` (`&"vfx_sway"`, an
+   `AssetVfxLibrary.Sway` int) declaring the profile directly — no `PLACEMENTS_META`, since nothing
+   downstream reads a per-instance position for pure sway, unlike the emitter case. A new
+   `AuthoredWorld.merged_sway_instance_count` stat records how many placements moved into this
+   bucket, purely for verification — the holder itself needs no live count.
+5. `EnvironmentVfx` gained `SWAY_META` and `_merged_sway_for()` (parallel to `EMITTER_META`/
+   `_merged_emitter_for()`), checked in `_apply_node()` before the asset-id walk — same ordering
+   rationale as F-203's emitter check. A merged sway holder routes to new `_apply_baked_sway()` /
+   `_baked_sway_material()`: same dressing shape as `_apply_sway`/`_sway_material` (dress the MESH
+   once, keyed by `get_instance_id()`, cached in the same `_dressed_meshes`/`_sway_materials`
+   dictionaries with a `"baked:"`-prefixed cache key so a baked and non-baked material sharing the
+   same colour/profile numbers never collide), but sets only the profile parameters plus
+   `use_baked_mask = true` — no `wind_root_y`/`wind_inv_height`, meaningless once several
+   placements share one mesh's AABB.
+
+**Correctness-preserving for every prop NOT newly eligible.** Every sway asset that stays on the
+per-asset `MultiMesh` path (too tall, or carrying an emitter too) is byte-for-byte unaffected —
+`_apply_sway`/`_sway_material` and the shader's non-baked branch are untouched by this fix.
+
+**On Hollowmere specifically:** `merged_meshes` 28 → 67 (39 new sway-class buckets across the
+map's ground-cover/frond/flower/bush/reed/flower/sapling types), `merged_sway_instance_count=456`
+individual placements baked into them. `frame_cost_check.gd` "as shipped" vs `agent baseline`
+(HEAD, pre-fix): draw calls 4,936 → 4,864 (a further win), primitives 1,147,078 → 1,171,296 (+2.1%,
+the same small LOD-boundary shift F-203 saw splitting its own buckets — nowhere near the +16–18%
+shadow-cascade regression F-187/F-203's history warns about), vram 253.2 → 278.2 MB (+9.9%, the
+real and expected cost of the new UV2 channel plus 39 more merge buckets, traded for the draw-call
+win). `frame_ms` "as shipped" is noisy on this shared machine — two back-to-back runs of the SAME
+built code read 17.86 ms and 9.43 ms — confirmed as scheduler noise from other agent lanes, not a
+regression: every `preset` row (high/medium/low, sampled independently of "as shipped") stayed flat
+or improved across both runs.
+
+**Verify:** `agent godot --script tools/mesh_merge_check.gd` (includes a new synthetic
+`bake_height_mask=true` test), `tools/prop_chunk_merge_check.gd`,
+`tools/environment_vfx_hollowmere_check.gd`, `tools/hollowmere_check.gd`,
+`tools/harvest_batch_check.gd`, `tools/harvest_world_check.gd`, `tools/resource_scatter_check.gd`;
+measure with `agent godot --windowed --script tools/frame_cost_check.gd` against `agent baseline
+--windowed --script tools/frame_cost_check.gd`.
+
+**Verified 2026-08-19 (lm):** every check above `PASS`/`failures=0`. `prop_chunk_merge_check.gd`:
+`eligible_props=719 eligible_chunks=67`, matching the 67 `merged_*` holders built — zero drift, and
+its own independent eligibility recompute now excludes a sway+emitter combo the same way
+`_build_props` does. Every merged holder's `cast_shadow` still reads OFF (F-203's own invariant).
+`environment_vfx_hollowmere_check.gd`: `merged_sway_instances=456` folded into the
+`swaying_copies > 1000` coverage assertion (which would otherwise undercount, since a sway holder
+publishes no live per-instance data to read a copy count back from), plus a new
+`merged_sway_instances > 0` assertion proving the bucket actually engaged on this map. Full
+writeup and numbers: `docs/FINDINGS.md` F-208.
+
+---
+
 ## F-154 · Two events in COMMANDS.md §5.2's own illustrative hook vocabulary — `run_started`, `player_downed` — had no shipped signal to bind to
 
 **Claim:** `systems/health/player_health.gd`, `systems/cycle/cycle_service.gd`,

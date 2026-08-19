@@ -29,11 +29,21 @@ uniform float mask_power : hint_range(0.0, 6.0) = 1.0;
 uniform float vertex_phase : hint_range(0.0, 1.0) = 1.0;
 uniform float wind_root_y = 0.0;
 uniform float wind_inv_height = 1.0;
+// F-208: a per-vertex baked alternative to wind_root_y/wind_inv_height. Those two assume VERTEX.y
+// is still in the mesh's own local frame, which is only true for a loose MeshInstance3D or one
+// MultiMesh copy — the instant several placements are baked into one static merged mesh
+// (core/render/mesh_merge.gd's merge_instances(..., bake_height_mask=true)), VERTEX.y reads a
+// placement's absolute, chunk-relative height instead. UV2.x carries the same normalised-height
+// value `wind_root_y`/`wind_inv_height` would have computed, baked per source vertex from ITS OWN
+// asset's local AABB at merge time instead of read from the merged mesh's now-meaningless one.
+uniform bool use_baked_mask = false;
 
 void vertex() {
 	// Height mask in MODEL space, so it stays valid wherever in the world the copy stands — a
 	// world-space mask would saturate for anything growing on the plateau.
-	float height_mask = clamp((VERTEX.y - wind_root_y) * wind_inv_height, 0.0, 1.0);
+	float height_mask = use_baked_mask
+		? clamp(UV2.x, 0.0, 1.0)
+		: clamp((VERTEX.y - wind_root_y) * wind_inv_height, 0.0, 1.0);
 	height_mask = height_mask * height_mask * (3.0 - 2.0 * height_mask);
 	// mask_power == 0 means "move the whole asset as one piece" — lily pads, which float rather
 	// than bend. Branching on a uniform is coherent across the draw and effectively free.

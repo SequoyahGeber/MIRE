@@ -73,6 +73,16 @@ func _run() -> void:
 	print("WIND multimesh_nodes=%d mesh_nodes=%d swaying_copies=%d assets=%d"
 		% [wind_multimeshes, wind_meshes, swaying_copies, int(controller.get("sway_asset_count"))])
 
+	# F-208: some short, non-emitter sway props now bake into a merged_* holder instead of
+	# staying in their own per-asset MultiMesh, so `swaying_copies` (which only counts
+	# MultiMeshInstance3D copies) alone undercounts total sway coverage after this fix. AuthoredWorld
+	# is the only source of how many placements moved — a merged holder publishes no per-instance
+	# `placements` for pure sway, so there is nothing else in the live scene to count them from.
+	var world := scene.get_node_or_null(^"World")
+	var merged_sway_instances: int = int(world.get("merged_sway_instance_count")) if world != null \
+		else 0
+	print("WIND merged_sway_instances=%d" % merged_sway_instances)
+
 	var sites: Dictionary = controller.call(&"site_counts")
 	var pools: Dictionary = controller.call(&"pool_counts")
 	for emitter: int in sites:
@@ -88,7 +98,10 @@ func _run() -> void:
 
 	# The bug this check exists for: both were zero on this map while the old check was green.
 	check(wind_multimeshes > 0, "wind reaches instanced geometry, not just loose meshes")
-	check(swaying_copies > 1000, "wind reaches the scatter field, not a handful of props")
+	check(swaying_copies + merged_sway_instances > 1000,
+		"wind reaches the scatter field, not a handful of props")
+	check(merged_sway_instances > 0,
+		"some sway props merged into the F-208 baked-height-mask bucket on this map")
 	check(int(controller.get("fire_source_count")) >= 3, "the map's fires are found")
 	check(sites.has(AssetVfx.Emitter.CRYSTAL), "mire crystals register as emitters")
 	# F-118. The number matters as much as the presence: one site per TREE, not one per mesh part

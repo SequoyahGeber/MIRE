@@ -75,6 +75,40 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-208 resolved: sway-bearing props can now join `AuthoredWorld`'s cross-asset chunk merge — a per-vertex baked height mask replaces the per-mesh AABB `_apply_sway` needs (lm)
+
+**What shipped, the seam the next merge-eligibility widening builds on:**
+
+- `core/render/mesh_merge.gd`'s `merge_instances(entries, bake_height_mask: bool = false)` — the
+  new parameter bakes a per-vertex normalised height into `UV2.x`, computed from EACH entry's own
+  source mesh's local AABB before that entry's placement `transform` is applied. Any future caller
+  that needs a per-vertex value surviving a cross-instance bake (not just sway) can reuse this
+  exact shape: compute the per-entry quantity from the entry's own local frame, write it before
+  `transform`, force the attribute bit on for the whole call.
+- `world/environment/foliage_wind.gdshader`'s `use_baked_mask` uniform — `false` (default) reads
+  the mask from `wind_root_y`/`wind_inv_height` against `VERTEX.y` exactly as before; `true` reads
+  it from `UV2.x` instead. Every existing per-asset sway material is unaffected; only a merged
+  holder's material sets the new uniform.
+- `world/gen/authored_world.gd`'s `_build_props()` gained `sway_mergeable`, a third bucket next to
+  `mergeable`/`emitter_mergeable`, keyed `"<chunk>|s<sway_int>"`. **Scope:** an asset with BOTH
+  sway and an emitter (`mire_tendril`) is excluded from every bucket — not attempted here, see
+  `docs/SPECS.md` F-208 for why. A merged sway holder carries `EnvironmentVfx.SWAY_META`
+  (`&"vfx_sway"`) and no `PLACEMENTS_META` (nothing reads a per-instance position for pure sway).
+- `autoload/environment_vfx.gd` gained `SWAY_META`, `_merged_sway_for()`, `_apply_baked_sway()`,
+  `_baked_sway_material()` — the same shape as F-203's `EMITTER_META`/`_merged_emitter_for()`/
+  `_register_emitter()`. A future third VFX category on a merged holder should follow this same
+  `*_META` constant + ancestor-walk + dedicated apply function pattern rather than inventing a new
+  one.
+- `AuthoredWorld.merged_sway_instance_count` — a plain stat, not read by any runtime system, that
+  exists only because a sway holder publishes no live per-instance data; any check that wants
+  "total swaying prop coverage" must add this to whatever it counts from live `MultiMeshInstance3D`
+  nodes (`tools/environment_vfx_hollowmere_check.gd` does this already).
+
+**Verify:** `agent godot --script tools/mesh_merge_check.gd`, `tools/prop_chunk_merge_check.gd`,
+`tools/environment_vfx_hollowmere_check.gd`. Full writeup: `docs/FINDINGS.md`/`docs/SPECS.md` F-208.
+
+---
+
 ### 2026-08-19 — F-214 resolved: `Undergrowth` now carves a keep-out disc for every `shipwreck`/`objective` marker, so grass no longer scatters through `ExtractionShip`'s hull or `Wellspring`'s foundation (lm)
 
 **What shipped:** `world/gen/undergrowth.gd`'s scatter pass (`_scatter()`) can now reject an attempt

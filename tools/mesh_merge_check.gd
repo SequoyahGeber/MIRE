@@ -40,6 +40,7 @@ func _init() -> void:
 	for kit in kits:
 		_check_kit(kit)
 	_check_merge_instances_shadow()
+	_check_merge_instances_baked_height_mask()
 	print("MESH_MERGE_CHECK checked=%d surfaces=%d" % [checked, total_surfaces])
 	_finish()
 
@@ -154,6 +155,51 @@ func _check_merge_instances_shadow() -> void:
 		return
 	total_surfaces += combined.get_surface_count()
 	_check_shadow_mesh("merge_instances synthetic", combined)
+
+
+## F-208: `merge_instances(entries, bake_height_mask=true)` must write UV2.x on every output
+## vertex as a per-entry-local normalised height (0 at that entry's OWN mesh's local AABB floor,
+## 1 at its own ceiling) rather than pass through -- or, since a BoxMesh carries no UV2 of its own,
+## leave it absent. Two boxes at different Y offsets, each two units tall, prove the mask is
+## computed from each entry's OWN local vertices before `transform` moves them apart -- if the bug
+## this guards against ever crept back in (baking from the MERGED mesh's absolute Y instead), the
+## second box's vertices would read outside [0, 1] once its placement transform's translation
+## leaked into the source-space height calculation.
+func _check_merge_instances_baked_height_mask() -> void:
+	var box := BoxMesh.new()
+	box.size = Vector3(1, 2, 1)
+	var entries: Array = [
+		{"mesh": box, "transform": Transform3D(Basis.IDENTITY, Vector3(0, 0, 0))},
+		{"mesh": box, "transform": Transform3D(Basis.IDENTITY, Vector3(5, 40, 0))},
+	]
+	var combined := MeshMerge.merge_instances(entries, true)
+	checked += 1
+	if combined == null:
+		failures.append("merge_instances(bake_height_mask=true): two synthetic boxes merged to null")
+		return
+	total_surfaces += combined.get_surface_count()
+	var saw_low := false
+	var saw_high := false
+	for surface in combined.get_surface_count():
+		var arrays: Array = combined.surface_get_arrays(surface)
+		var vertex_count: int = (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+		var uv2: Variant = arrays[Mesh.ARRAY_TEX_UV2]
+		if uv2 == null or (uv2 as PackedVector2Array).size() != vertex_count:
+			failures.append(
+				"merge_instances(bake_height_mask=true) surface %d: uv2 has %d entries, expected %d"
+				% [surface, _packed_size(uv2), vertex_count])
+			continue
+		for value: Vector2 in (uv2 as PackedVector2Array):
+			if value.x < -0.001 or value.x > 1.001:
+				failures.append(
+					"merge_instances(bake_height_mask=true): baked height %.3f outside [0, 1] -- "
+					% value.x + "the mask is reading a placement's absolute Y, not its own local one")
+			saw_low = saw_low or value.x < 0.1
+			saw_high = saw_high or value.x > 0.9
+	if not (saw_low and saw_high):
+		failures.append(
+			"merge_instances(bake_height_mask=true): never saw both a root (~0) and a tip (~1) "
+			+ "vertex -- the box's own local AABB may not be driving the bake")
 
 
 ## Every present channel must carry exactly `stride` entries per vertex -- the invariant F-152's

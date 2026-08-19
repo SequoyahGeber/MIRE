@@ -48,6 +48,12 @@ var harvestable_holders: int = 0
 ## Static per-chunk cross-asset merges built by F-187, counted separately from `multimesh_count`
 ## because they are not MultiMeshInstance3D nodes — one merged MeshInstance3D per chunk.
 var merged_prop_mesh_count: int = 0
+## F-208: how many individual prop placements were baked into a sway-class merge bucket, counted
+## separately because a sway holder publishes no `EnvironmentVfx.PLACEMENTS_META` (nothing reads
+## per-instance position for pure sway) — this is the only record of how many copies moved out of
+## the per-asset `MultiMeshInstance3D` sway path and into a merged mesh instead. Checks that want
+## "total swaying prop coverage" need this added to whatever they count from live MultiMesh nodes.
+var merged_sway_instance_count: int = 0
 
 var _layout: Dictionary = {}
 var _origin := Vector2.ZERO
@@ -417,6 +423,10 @@ func _build_props() -> void:
 	# comment at the classification site below for why the class has to be the merge key.
 	var mergeable: Dictionary = {}
 	var emitter_mergeable: Dictionary = {}
+	# F-208: a third bucket, keyed by (chunk, sway type) the same way `emitter_mergeable` is keyed
+	# by (chunk, emitter class) — see the classification comment at the bucketing site below for
+	# why the type has to be the merge key.
+	var sway_mergeable: Dictionary = {}
 	var harvestable: Array[Dictionary] = []
 	# Filled here rather than after classification: deciding whether a prop is short enough to
 	# merge needs its mesh's own AABB, and `_mesh_parts` memoizes per (kit, asset) regardless of
@@ -452,25 +462,43 @@ func _build_props() -> void:
 			object_height = object_mesh.get_aabb().size.y * float(prop.get("scale", 1.0))
 		var sway := AssetVfx.sway_for(asset_name)
 		var emitter := AssetVfx.emitter_for(asset_name)
-		# Sway's wind shader reads `VERTEX.y` in MODEL space against that ONE asset's own AABB
-		# (`wind_root_y`/`wind_inv_height`, set from `mesh.get_aabb()` in
-		# `EnvironmentVfx._apply_sway`) — correct for a single asset's own local frame, wrong the
-		# instant several placements' chunk-relative heights are baked into one static mesh,
-		# because the mask would then read terrain elevation within the chunk instead of height
-		# within each individual plant. A fix needs a per-vertex baked height mask computed from
-		# each source asset's own AABB before baking; not attempted here (F-203). And a merged
-		# chunk mesh tall or wide enough to cast a shadow routinely spans more than one of the
-		# four PSSM cascade splits — measured directly, this is what cost the first version of
-		# this merge its whole win: draw calls fell as expected, but shadow-pass primitives ROSE
-		# 16% (`frame_cost_check.gd` against `agent baseline`), because Godot re-renders a caster
-		# into every cascade its AABB touches and a whole chunk's worth of merged geometry touches
-		# more of them than one small prop ever did. Both stay excluded from every merge bucket
-		# below, solved by construction — merge only what will never cast a shadow and never sway.
-		if HarvestLib.is_harvestable(asset_id) \
-				or sway != AssetVfx.Sway.NONE \
-				or object_height >= DrawPolicy.SHADOW_MIN_HEIGHT:
+		# A merged chunk mesh tall or wide enough to cast a shadow routinely spans more than one
+		# of the four PSSM cascade splits — measured directly, this is what cost the first version
+		# of this merge its whole win: draw calls fell as expected, but shadow-pass primitives
+		# ROSE 16% (`frame_cost_check.gd` against `agent baseline`), because Godot re-renders a
+		# caster into every cascade its AABB touches and a whole chunk's worth of merged geometry
+		# touches more of them than one small prop ever did. Excluded from every merge bucket
+		# below, solved by construction — merge only what will never cast a shadow.
+		if HarvestLib.is_harvestable(asset_id) or object_height >= DrawPolicy.SHADOW_MIN_HEIGHT:
 			var key := "%d_%d|%s|%s" % [int(chunk[0]), int(chunk[1]), kit_name, asset_name]
 			grouped.get_or_add(key, [] as Array).append(prop)
+		elif sway != AssetVfx.Sway.NONE:
+			if emitter != AssetVfx.Emitter.NONE:
+				# F-208 scope: an asset carrying BOTH sway and an emitter (mire_tendril: TENDRIL +
+				# SPORE is the one on Hollowmere) stays on the original per-asset MultiMesh path
+				# rather than joining either new bucket — merging it into the sway bucket would
+				# need EMITTER_META and a baked height mask on the same holder at once, and into
+				# the emitter bucket would silently drop its sway. Neither is attempted here; not
+				# a regression, since F-187 excluded every sway-bearing asset from any merge
+				# bucket in the first place.
+				var key := "%d_%d|%s|%s" % [int(chunk[0]), int(chunk[1]), kit_name, asset_name]
+				grouped.get_or_add(key, [] as Array).append(prop)
+			else:
+				# F-208: `_apply_sway`'s wind shader reads `VERTEX.y` in MODEL space against that
+				# ONE asset's own AABB (`wind_root_y`/`wind_inv_height`, set from `mesh.get_aabb()`
+				# in `EnvironmentVfx._apply_sway`) — correct for a single asset's own local frame,
+				# wrong the instant several placements' chunk-relative heights are baked into one
+				# static mesh, because the mask would then read terrain elevation within the chunk
+				# instead of height within each individual plant. Splitting the merge by (chunk,
+				# sway type) — the same shape F-203 used for emitters — sidesteps this a
+				# different way: `MeshMerge.merge_instances(..., bake_height_mask=true)` bakes a
+				# correct per-vertex mask into UV2.x from each source asset's OWN local AABB
+				# before the merge, and every instance feeding one merged mesh this way already
+				# agrees on which `AssetVfxLibrary.Sway` profile to dress it with, so — like the
+				# emitter class — the holder can declare that profile directly
+				# (`EnvironmentVfx.SWAY_META`) instead of needing one surviving per-mesh AABB.
+				var skey := "%d_%d|s%d" % [int(chunk[0]), int(chunk[1]), int(sway)]
+				sway_mergeable.get_or_add(skey, [] as Array).append(prop)
 		elif emitter != AssetVfx.Emitter.NONE and emitter != AssetVfx.Emitter.GLOW:
 			# F-203: `EnvironmentVfx._register_emitter` keys the `PLACEMENTS_META` contract off
 			# ONE asset id per holder and infers ONE emitter class from it — a node merging
@@ -592,21 +620,30 @@ func _build_props() -> void:
 			props, asset, holder, harvest_root, transforms, local_transforms, meshes)
 
 
-	# F-203: folded into one dictionary and one loop so the two buckets share every line of the
-	# actual merge/bake/DrawPolicy logic — an emitter-keyed key ("<chunk>|e<N>") is the only thing
-	# that distinguishes an emitter_mergeable entry from a plain one below.
+	# F-203/F-208: folded into one dictionary and one loop so all three buckets share every line
+	# of the actual merge/bake/DrawPolicy logic — a trailing "|e<N>" or "|s<N>" on the key is the
+	# only thing that distinguishes an emitter- or sway-class bucket from a plain one below.
 	for ekey: String in emitter_mergeable:
 		mergeable[ekey] = emitter_mergeable[ekey]
+	for skey: String in sway_mergeable:
+		mergeable[skey] = sway_mergeable[skey]
 
 	for key: String in mergeable:
 		var props: Array = mergeable[key] as Array
-		# Keys look like "<chunk>" for the plain rigid bucket or "<chunk>|e<N>" for an
-		# emitter-class bucket (see the classification comment above) — parsed back out here
-		# rather than carried alongside the dictionaries, so the two buckets can share one loop.
+		# Keys look like "<chunk>" for the plain rigid bucket, "<chunk>|e<N>" for an emitter-class
+		# bucket, or "<chunk>|s<N>" for a sway-class bucket (see the classification comment above)
+		# — parsed back out here rather than carried alongside the dictionaries, so all three
+		# buckets can share one loop. Mutually exclusive: F-208 keeps a sway+emitter combo asset
+		# out of every merge bucket, so one key never carries both tags.
 		var emitter := AssetVfx.Emitter.NONE
+		var sway := AssetVfx.Sway.NONE
 		var pipe := key.find("|")
 		if pipe != -1:
-			emitter = int(key.substr(pipe + 2)) as AssetVfx.Emitter
+			var tag_value := int(key.substr(pipe + 2))
+			if key.substr(pipe + 1, 1) == "e":
+				emitter = tag_value as AssetVfx.Emitter
+			else:
+				sway = tag_value as AssetVfx.Sway
 		var entries: Array = []
 		# Raw placement origins, parallel to `entries` — only the emitter-class bucket needs
 		# these (as local, holder-relative positions once the centroid is known), but collecting
@@ -658,7 +695,7 @@ func _build_props() -> void:
 			var transform: Transform3D = entry["transform"]
 			local_entries.append({"mesh": entry["mesh"],
 				"transform": Transform3D(transform.basis, transform.origin - centroid)})
-		var combined := MeshMerge.merge_instances(local_entries)
+		var combined := MeshMerge.merge_instances(local_entries, sway != AssetVfx.Sway.NONE)
 		if combined == null:
 			continue
 		var holder := Node3D.new()
@@ -672,17 +709,22 @@ func _build_props() -> void:
 		instance.name = "MergedProps"
 		instance.mesh = combined
 		# No `asset` meta either way: this node deliberately spans many assets, so there is no one
-		# id to publish. The plain bucket also gets no `EnvironmentVfx.EMITTER_META` — it is
-		# exactly the props AssetVfxLibrary has nothing to say about, so `EnvironmentVfx`'s
+		# id to publish. The plain bucket also gets no `EnvironmentVfx.EMITTER_META`/`SWAY_META` —
+		# it is exactly the props AssetVfxLibrary has nothing to say about, so `EnvironmentVfx`'s
 		# meta-then-name walk correctly finds nothing and skips it. An emitter-class bucket DOES
 		# get `EMITTER_META` (F-203) plus the same `placements` meta a per-asset holder publishes,
-		# rebased onto this holder's own centroid exactly like `local_transforms` is above.
+		# rebased onto this holder's own centroid exactly like `local_transforms` is above. A
+		# sway-class bucket (F-208) gets `SWAY_META` instead — no `placements`, since nothing
+		# downstream reads a per-instance position for pure sway, only the profile to dress with.
 		if emitter != AssetVfx.Emitter.NONE:
 			var placements := PackedVector3Array()
 			for origin: Vector3 in origins:
 				placements.append(origin - centroid)
 			holder.set_meta(&"placements", placements)
 			holder.set_meta(&"vfx_emitter", int(emitter))
+		elif sway != AssetVfx.Sway.NONE:
+			holder.set_meta(&"vfx_sway", int(sway))
+			merged_sway_instance_count += entries.size()
 		DrawPolicy.apply(instance, AABB(Vector3.ZERO, Vector3(0.0, max_object_height, 0.0)), 1.0)
 		holder.add_child(instance)
 		merged_prop_mesh_count += 1

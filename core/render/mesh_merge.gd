@@ -240,7 +240,22 @@ static func _build(path: String) -> ArrayMesh:
 ## chunk and some other key), so there is no one source-file mtime to key a cache entry against.
 ## Cheap enough to rebuild every load anyway — entries are already-merged, indexed meshes, not glb
 ## scenes to reparse; only the vertex data is walked again.
-static func merge_instances(entries: Array) -> ArrayMesh:
+##
+## `bake_height_mask`, F-208: when true, UV2.x on every output vertex is overwritten with that
+## vertex's normalised height (0 at the entry's own mesh's local AABB floor, 1 at its own local
+## AABB ceiling) BEFORE `transform` is applied — one entry's own local frame, not the merged
+## holder's. `foliage_wind.gdshader`'s per-instance wind mask reads `wind_root_y`/`wind_inv_height`
+## against `VERTEX.y`, which is only correct while a mesh holds one placement's own local
+## geometry; once several placements' absolute, holder-relative heights are baked into one static
+## mesh (this function's whole purpose), that mask would read terrain elevation across the merge
+## instead of height within each individual plant. Baking the normalised height per source vertex,
+## from each entry's OWN bounds, survives the merge the runtime uniform cannot — see
+## `EnvironmentVfx._apply_baked_sway`, which reads this channel through `use_baked_mask` instead of
+## computing the mask from the merged mesh's now-meaningless AABB. Forces every bucket in this call
+## to carry UV2 (mixed presence would leave some vertices with a stale or absent mask), which is
+## safe here because every caller that sets this flag is building a sway-only merge — see
+## `world/gen/authored_world.gd`'s `sway_mergeable` bucket, the only caller that passes true.
+static func merge_instances(entries: Array, bake_height_mask: bool = false) -> ArrayMesh:
 	var buckets: Dictionary = {}
 	var order: Array[String] = []
 	for entry_value: Variant in entries:
@@ -250,11 +265,21 @@ static func merge_instances(entries: Array) -> ArrayMesh:
 		if mesh == null:
 			continue
 		var basis := transform.basis
+		# Computed once per entry, not per surface: `get_aabb()` already spans every surface of
+		# the entry's own mesh, and every surface shares the same source vertices' local frame.
+		var mask_root_y: float = 0.0
+		var mask_inv_height: float = 1.0
+		if bake_height_mask:
+			var bounds := mesh.get_aabb()
+			mask_root_y = bounds.position.y
+			mask_inv_height = 1.0 / maxf(bounds.size.y, 0.001)
 		for surface in mesh.get_surface_count():
 			var material := mesh.surface_get_material(surface)
 			var key := _fingerprint(material, surface)
 			var arrays: Array = mesh.surface_get_arrays(surface)
 			var attributes := _attribute_mask(arrays)
+			if bake_height_mask:
+				attributes |= ATTR_UV2
 			key = "%s#%d" % [key, attributes]
 			if not buckets.has(key):
 				buckets[key] = {"material": _shared_material(key, material),
@@ -278,7 +303,16 @@ static func merge_instances(entries: Array) -> ArrayMesh:
 				bucket["uv"] = out_uv
 			if attributes & ATTR_UV2:
 				var out_uv2: PackedVector2Array = bucket["uv2"]
-				out_uv2.append_array(arrays[Mesh.ARRAY_TEX_UV2])
+				if bake_height_mask:
+					# Baked from THIS entry's own local vertices, ignoring any real UV2 the source
+					# surface might carry — the two can never coexist on one merge (see the flag's
+					# own doc comment), and this kit's flora assets carry no lightmap UV2 anyway.
+					for index in source_v.size():
+						var t := clampf(
+							(source_v[index].y - mask_root_y) * mask_inv_height, 0.0, 1.0)
+						out_uv2.append(Vector2(t, 0.0))
+				else:
+					out_uv2.append_array(arrays[Mesh.ARRAY_TEX_UV2])
 				bucket["uv2"] = out_uv2
 			if attributes & ATTR_COLOR:
 				var out_color: PackedColorArray = bucket["color"]

@@ -5153,3 +5153,19 @@ Notes along the way:
 - Reviewed 27546a1 against SPECS.md 3.5 + ARCHITECTURE.md §2.2. The spec's later-added 'four mechanics' (LootEntry.kind/rarity, Chest.cost_coins/locked_by, gilded placement budget) postdate this commit (e1240b2, added 2026-08-18 10:47 vs commit at 19:28 the day before) and were already caught by F-140 and closed by F-146 — not re-flagging. Ran tools/chest_check.gd (25 assertions, 0 failures, one EXPECTED_ERROR_PATTERNS-declared push_error), tools/chest_net_check.gd (12 assertions, 0 failures, real two-process ENet), tools/handshake_check.gd (0 failures, PROTOCOL_VERSION 10 confirmed), tools/loot_content_check.gd (0 failures) — all through agent godot, no undeclared ERROR lines. Network authority header matches ARCHITECTURE.md §2.2 world-mutation row (HOST). Rule 1 (bare autoload names) respected: Registry/InventoryService/PlayerNet/NetTransport all via get_node_or_null in chest.gd; chest_ui.gd's bare Registry ref is fine since it is itself a registered autoload (rule 1's exemption). Rule 2 (F-016 preload) respected for LootTableDef/LootEntry. Verdict: clean, no new findings.
 
 Commit at time of writing: `1c32a4a`
+
+---
+
+### DONE · F-208 · lm · 2026-08-19T13:59:55+00:00
+
+**F-203's sway case is still unsolved — `_apply_sway`'s per-mesh height mask needs a per-vertex baked channel before sway-bearing props can join the cross-asset chunk merge**
+
+Built the per-vertex baked height-mask (option 1): MeshMerge.merge_instances() gained bake_height_mask, foliage_wind.gdshader gained use_baked_mask reading UV2.x, AuthoredWorld gained a sway_mergeable bucket (SWAY_META, parallel to F-203's emitter bucket), EnvironmentVfx gained _apply_baked_sway. Sway+emitter combo (mire_tendril) stays excluded, scoped and documented. Verified: agent godot --script tools/mesh_merge_check.gd (new baked-mask synthetic test), tools/prop_chunk_merge_check.gd (merged_meshes 28->67, eligible_props=719 eligible_chunks=67, zero drift, cast_shadow still OFF), tools/environment_vfx_hollowmere_check.gd (merged_sway_instances=456, new coverage assertion), tools/hollowmere_check.gd, harvest_batch/harvest_world/resource_scatter all PASS. frame_cost_check vs agent baseline: draw calls 4936->4864 (down), primitives +2.1% (no cascade regression), vram +9.9% (expected UV2 cost).
+
+Notes along the way:
+- Scope: sway+emitter combo (mire_tendril: TENDRIL+SPORE) stays excluded from every merge bucket, same as before F-187 — recorded in SPECS.md/FINDINGS.md rather than a new D-number since it's a narrow case call, not a cross-cutting API.
+- frame_cost_check's 'as shipped' frame_ms is noisy on this shared machine (17.86ms then 9.43ms on identical code, two runs) — confirmed noise not regression since preset high/medium/low rows (independent sampling) stayed flat/improved both times. Draw calls and primitives are the reproducible signal.
+
+Files: `world/gen/authored_world.gd`, `core/render/mesh_merge.gd`, `autoload/environment_vfx.gd`, `world/environment/foliage_wind.gdshader`, `tools/prop_chunk_merge_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `tools/mesh_merge_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `d3ba403`

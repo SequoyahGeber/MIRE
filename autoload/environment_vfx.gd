@@ -51,6 +51,14 @@ const PLACEMENTS_META: StringName = &"placements"
 ## Holds an `AssetVfxLibrary.Emitter` int. `PLACEMENTS_META` still carries the per-instance
 ## positions exactly as it does for a per-asset holder; only the class lookup changes.
 const EMITTER_META: StringName = &"vfx_emitter"
+## F-208: declares a merged multi-asset holder's sway profile directly, the same reason
+## `EMITTER_META` exists — `world/gen/authored_world.gd` stamps this on a `MeshInstance3D` that
+## bakes several DIFFERENT sway-bearing assets sharing ONE `AssetVfxLibrary.Sway` into one static
+## mesh per chunk. A merged holder's mesh already carries a per-vertex baked height mask (see
+## `core/render/mesh_merge.gd`'s `bake_height_mask`), so dressing it needs the profile only, never
+## a per-mesh AABB — `_apply_baked_sway` reads this instead of walking the asset-id path.
+## Holds an `AssetVfxLibrary.Sway` int.
+const SWAY_META: StringName = &"vfx_sway"
 const VFX_META: StringName = &"mire_environment_vfx_applied"
 ## Preloaded rather than referenced by its `class_name`. A brand-new `class_name` only enters
 ## `.godot/global_script_class_cache.cfg` when the editor scans the project, and `agent godot` is
@@ -185,12 +193,23 @@ func _apply_node(node: GeometryInstance3D) -> void:
 	# F-203: a merged multi-asset holder declares its class directly (EMITTER_META) because no
 	# single asset id survives the bake to look one up from. Checked before the asset-id walk so
 	# a merged node never falls through to it and resolves nothing. Sway never applies to one of
-	# these — the generator's merge-eligibility rule already excludes anything sway-bearing from
-	# this bucket, the same way it excludes anything tall enough to cast a shadow.
+	# these — the generator's merge-eligibility rule keeps a sway-and-emitter asset (mire_tendril)
+	# out of every merge bucket entirely (F-208), so an EMITTER_META holder is never also a
+	# SWAY_META one.
 	var merged_emitter := _merged_emitter_for(node)
 	if merged_emitter != AssetVfx.Emitter.NONE:
 		node.set_meta(VFX_META, true)
 		_register_emitter(node, merged_emitter, "")
+		return
+
+	# F-208: same shape as the emitter case above — a merged multi-asset holder declares its sway
+	# profile directly (SWAY_META) because no single asset id survives the bake to look one up
+	# from, and its mesh already carries the per-vertex baked height mask `_apply_baked_sway`
+	# needs instead of a per-mesh AABB.
+	var merged_sway := _merged_sway_for(node)
+	if merged_sway != AssetVfx.Sway.NONE:
+		node.set_meta(VFX_META, true)
+		_apply_baked_sway(node, merged_sway)
 		return
 
 	var asset_id := _asset_id_for(node)
@@ -240,6 +259,19 @@ func _merged_emitter_for(node: Node) -> AssetVfx.Emitter:
 			return int(cursor.get_meta(EMITTER_META)) as AssetVfx.Emitter
 		cursor = cursor.get_parent()
 	return AssetVfx.Emitter.NONE
+
+
+## F-208: same ancestor walk again, for a holder that declares `SWAY_META` instead of
+## `ASSET_META` — the merged-mesh case for sway-bearing props.
+func _merged_sway_for(node: Node) -> AssetVfx.Sway:
+	var cursor: Node = node
+	for _depth: int in 4:
+		if cursor == null:
+			break
+		if cursor.has_meta(SWAY_META):
+			return int(cursor.get_meta(SWAY_META)) as AssetVfx.Sway
+		cursor = cursor.get_parent()
+	return AssetVfx.Sway.NONE
 
 
 # ---------------------------------------------------------------------------------------------
@@ -319,6 +351,81 @@ func _sway_material(original: Material, profile: Dictionary, bounds: AABB) -> Sh
 	material.set_shader_parameter(&"vertex_phase", float(profile.get("vertex_phase", 1.0)))
 	material.set_shader_parameter(&"wind_root_y", bounds.position.y)
 	material.set_shader_parameter(&"wind_inv_height", 1.0 / bounds.size.y)
+	_sway_materials[key] = material
+	return material
+
+
+## F-208: the SWAY_META counterpart to `_apply_sway`, for a merged multi-asset chunk holder whose
+## mesh's own AABB spans the whole merge (terrain relief plus every source asset's height) rather
+## than one plant's local frame — `wind_root_y`/`wind_inv_height` computed from it would be
+## meaningless. `core/render/mesh_merge.gd`'s `merge_instances(..., bake_height_mask=true)` already
+## baked the correct per-vertex mask into UV2.x from each source asset's OWN local AABB before the
+## merge, so this only needs the sway PROFILE (strength/speed/bob/mask_power/vertex_phase) —
+## dressing itself just points the material at the baked channel instead of the two AABB uniforms.
+func _apply_baked_sway(node: GeometryInstance3D, sway: AssetVfx.Sway) -> void:
+	var mesh: Mesh = null
+	if node is MeshInstance3D:
+		mesh = (node as MeshInstance3D).mesh
+	elif node is MultiMeshInstance3D:
+		var multimesh := (node as MultiMeshInstance3D).multimesh
+		if multimesh != null:
+			mesh = multimesh.mesh
+	if mesh == null or mesh.get_surface_count() == 0:
+		return
+
+	var mesh_key := mesh.get_instance_id()
+	if _dressed_meshes.has(mesh_key):
+		foliage_mesh_count += 1
+		return
+	var existing := mesh.surface_get_material(0)
+	if existing is ShaderMaterial and (existing as ShaderMaterial).shader == FOLIAGE_SHADER:
+		_dressed_meshes[mesh_key] = true
+		foliage_mesh_count += 1
+		return
+	_dressed_meshes[mesh_key] = true
+
+	var profile := AssetVfx.sway_profile(sway)
+	for surface_index: int in mesh.get_surface_count():
+		var original := mesh.surface_get_material(surface_index)
+		mesh.surface_set_material(surface_index, _baked_sway_material(original, profile))
+	foliage_mesh_count += 1
+	sway_asset_count += 1
+
+
+## Same appearance-collapsing cache `_sway_material` keeps, kept separate from it: a baked-mask
+## material carries no `wind_root_y`/`wind_inv_height` (meaningless once several placements share
+## one mesh), so its cache key has no `bounds` term and must not collide with a per-asset one
+## sharing the same colour/profile numbers — two materials that read UV2 differently can never be
+## the same ShaderMaterial instance.
+func _baked_sway_material(original: Material, profile: Dictionary) -> ShaderMaterial:
+	var color := Color(0.24, 0.42, 0.16)
+	var material_roughness: float = 0.9
+	var vertex_color: bool = false
+	if original is StandardMaterial3D:
+		var standard := original as StandardMaterial3D
+		color = standard.albedo_color
+		material_roughness = standard.roughness
+		vertex_color = standard.vertex_color_use_as_albedo
+
+	var key := "baked:%s:%.2f:%d:%.3f:%.3f:%.3f:%.2f:%.2f" % [
+		color.to_html(), material_roughness, int(vertex_color),
+		float(profile.get("strength", 0.1)), float(profile.get("speed", 1.3)),
+		float(profile.get("bob", 0.0)), float(profile.get("mask_power", 1.0)),
+		float(profile.get("vertex_phase", 1.0))]
+	if _sway_materials.has(key):
+		return _sway_materials[key] as ShaderMaterial
+
+	var material := ShaderMaterial.new()
+	material.shader = FOLIAGE_SHADER
+	material.set_shader_parameter(&"albedo_color", color)
+	material.set_shader_parameter(&"roughness", material_roughness)
+	material.set_shader_parameter(&"use_vertex_color", vertex_color)
+	material.set_shader_parameter(&"sway_strength", float(profile.get("strength", 0.1)))
+	material.set_shader_parameter(&"sway_speed", float(profile.get("speed", 1.3)))
+	material.set_shader_parameter(&"bob_strength", float(profile.get("bob", 0.0)))
+	material.set_shader_parameter(&"mask_power", float(profile.get("mask_power", 1.0)))
+	material.set_shader_parameter(&"vertex_phase", float(profile.get("vertex_phase", 1.0)))
+	material.set_shader_parameter(&"use_baked_mask", true)
 	_sway_materials[key] = material
 	return material
 
