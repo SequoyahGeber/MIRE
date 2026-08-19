@@ -75,6 +75,28 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-252 resolved: resource_scatter.gd's `_placement_at()` now samples height through F-241's `NoiseSet`, not a bare `height()` per point (lp)
+
+**Claim:** `world/gen/resource_scatter.gd`, `tools/resource_scatter_check.gd` (unchanged).
+
+`placements_for_chunk()` builds one `IslandHeightmap.NoiseSet` via `make_noise_set(world_seed)` right
+alongside the `origin_x`/`origin_z` it already computes once per chunk, and passes it down through
+`_placement_at()`'s new trailing parameter. `_placement_at()` calls `height_from_set(world_x, world_z,
+noise_set, world_seed)` instead of the bare `height()` — exact same F-241 API `chunk_mesher.gd`
+already uses, no change to any function outside this file.
+
+`BiomeMap.moisture()` on the next line is untouched — different noise field, no `NoiseSet`-equivalent
+exists for it (F-261).
+
+**Verified:** `agent godot --script tools/resource_scatter_check.gd` — `RESOURCE_SCATTER_CHECK
+failures=0`, including the purity/determinism assertions and the full `ResourceScatterField` LOD0
+harvest-lifecycle suite. Full spec: `docs/SPECS.md` F-252.
+
+**Found broken along the way, filed not fixed:** `world/gen/poi_map.gd`'s dart-throwing loop has the
+identical bare-`height()` shape, and `BiomeMap.moisture()` has no `NoiseSet`-equivalent despite three
+per-sample callers — both world-gen-time cost rather than F-241's per-frame case, so lower severity.
+**F-261.**
+
 ### 2026-08-19 — F-241 resolved: IslandHeightmap.NoiseSet — sample many points per seed without rebuilding noise per point (lp)
 
 **Claim:** `world/gen/island_heightmap.gd`, `world/chunk/chunk_mesher.gd`, `tools/noise_reuse_check.gd`
@@ -106,9 +128,12 @@ suggests, because most of a sample's cost is the actual noise/domain-warp/river-
 in `chunk_mesher.gd`'s hot path (only `height()`/now `height_from_set()` is), so out of F-241's
 scope; a future caller sampling `continent()` at density would want the same treatment.
 
-**Sibling gap found, not fixed here (F-252):** `world/gen/resource_scatter.gd:110`'s
-`_placement_at()` calls `IslandHeightmap.height()` once per scattered point — same shape, lower
-call count than the mesher, and now has `height_from_set()` to build against.
+**Sibling gap found here, fixed by F-252:** `world/gen/resource_scatter.gd`'s `_placement_at()`
+called `IslandHeightmap.height()` once per scattered point — same shape, lower call count than the
+mesher. Now uses `height_from_set()` against a per-chunk `NoiseSet`, see F-252's own entry below.
+Two more siblings found while closing F-252, still open: `world/gen/poi_map.gd`'s dart-throwing loop
+(same bare-`height()` shape) and `BiomeMap.moisture()` (a different noise field, no `NoiseSet`-
+equivalent exists for it yet) — **F-261**.
 
 **Verified:** `tools/noise_reuse_check.gd` (new, 10/10 assertions — bit-identical equivalence,
 `ChunkMesher.build_mesh()`'s real output matched against `height()` directly, and the speedup

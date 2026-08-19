@@ -8441,6 +8441,53 @@ scale the way this check's five failures did.
 
 ---
 
+## F-252 · `resource_scatter.gd`'s `_placement_at()` has the exact per-sample noise-rebuild shape F-241 just fixed in the chunk mesher
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap. F-241's own block already named this exact gap under its "Found broken along the
+way" section, out of that task's claim on purpose.
+
+**Authority:** none of its own — `ResourceScatter` is a pure function (no nodes, no shared state),
+the same "worldgen" row `docs/ARCHITECTURE.md` §2.2 gives `IslandHeightmap`/`BiomeMap`. This task adds
+no new state, only a second parameter threaded through an existing call chain.
+
+**Claim:** `world/gen/resource_scatter.gd`, `tools/resource_scatter_check.gd` (unchanged — the
+existing determinism/purity assertions are exactly what a noise-reuse refactor must not break, no new
+check needed).
+
+**The gap:** `placements_for_chunk()` calls `_placement_at()` once per jittered-grid candidate point —
+`cells_per_side * cells_per_side` per `ScatterDef` per chunk, several hundred candidates in a typical
+chunk across two worked-example tables. `_placement_at()` called `IslandHeightmap.height()` (bare)
+for every surviving candidate, which since F-241 is known to rebuild six fresh `FastNoiseLite` fields
+per call — identical fields for every point in the same chunk, since they only depend on `world_seed`.
+
+**The fix:** `placements_for_chunk()` builds one `ISLAND_HEIGHTMAP.NoiseSet` via `make_noise_set
+(world_seed)` before its per-def/per-cell loops, exactly where `origin_x`/`origin_z` are already
+computed once per chunk. `_placement_at()` takes the `NoiseSet` as a new trailing parameter and calls
+`height_from_set(world_x, world_z, noise_set, world_seed)` instead of the bare `height()` — same
+F-241 API, same call shape `chunk_mesher.gd`'s `_sample_heights()` already uses. No signature change
+to any function outside this file; `BiomeMap.moisture()` at the next line is untouched (it has no
+`NoiseSet`-equivalent yet — a different noise field entirely, filed separately as F-261 rather than
+folded into this claim).
+
+**Verify:** `agent godot --script tools/resource_scatter_check.gd` — `RESOURCE_SCATTER_CHECK
+failures=0`, including the purity/determinism assertions (same (chunk, seed) still returns the
+identical placement list, a different seed still changes the field) and the `ResourceScatterField`
+LOD0 harvest-lifecycle suite (proxy materialize/deplete/rebuild/teardown), all of which exercise
+`_placement_at()`'s output and would catch a `NoiseSet` wired to the wrong seed or point.
+
+**Found broken along the way, filed rather than fixed here:** `world/gen/poi_map.gd`'s dart-throwing
+loop has the identical bare-`height()` shape (plus a redundant double-sample in `_slope_at()`), and
+`BiomeMap.moisture()` has no `NoiseSet`-equivalent at all despite three per-sample callers
+(`resource_scatter.gd` itself, `poi_map.gd`, `tools/terrain_map_render.gd`) — both world-generation-
+time cost rather than F-241's per-frame case, so lower severity; fixing the moisture half needs a
+design decision (its own cache vs. folding into `IslandHeightmap.NoiseSet`) this task doesn't assume.
+**F-261.**
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

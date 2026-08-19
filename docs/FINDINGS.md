@@ -556,38 +556,6 @@ move.lunge_speed_m_s > 0.0`, mirroring `Enemy._tick_attack()`'s own condition ex
 
 ---
 
-### F-252 · resource_scatter.gd's _placement_at() has the exact per-sample noise-rebuild shape F-241 just fixed in the chunk mesher — height_from_set()/NoiseSet is now there to fix it
-
-**Area:** worldgen · **Severity:** low · **Found:** 2026-08-19 by lp
-
-Found 2026-08-19 by lp while sweeping for F-241's shape (the chunk mesher rebuilding fresh
-FastNoiseLite fields per sample instead of once per chunk).
-
-`world/gen/resource_scatter.gd:110` — `ResourceScatter._placement_at()` calls
-`IslandHeightmap.height(world_x, world_z, world_seed)` once per scattered candidate point, and
-`placements_for_chunk()` (`resource_scatter.gd:57`) calls `_placement_at()` once per grid cell per
-scatter def — up to `cells_per_side^2` times per def, several defs per chunk. Each `height()` call
-still rebuilds all six `FastNoiseLite` fields from scratch (F-241's fix reduced the chunk mesher's
-per-vertex cost but did not touch this call site, which is a different task's file and was out of
-F-241's claim).
-
-Lower severity than F-241 was: scatter cell sizes are metres, not the mesher's 1 m vertex spacing,
-so the per-chunk call count here is well under the mesher's 1,089 — likely tens to low hundreds
-depending on `cell_size_m`/def count, not thousands. Still the same wasted-construction shape, and
-it now has a ready-made fix: `IslandHeightmap.make_noise_set(world_seed)` once per
-`placements_for_chunk()` call (it already knows `world_seed` and `chunk_x`/`chunk_z` up front), then
-`IslandHeightmap.height_from_set(world_x, world_z, set, world_seed)` in place of `height()` at
-`_placement_at()`'s call site — same signature shape `world/chunk/chunk_mesher.gd`'s
-`_sample_heights()` now uses, and `tools/noise_reuse_check.gd` already proves the two APIs are
-bit-identical, so this is a pure perf change with no output-changing risk to verify beyond a
-`tools/resource_scatter_check.gd` clean run before/after.
-
-**What would close this:** a task claiming `world/gen/resource_scatter.gd` and
-`tools/resource_scatter_check.gd` threading a `NoiseSet` through `placements_for_chunk()` ->
-`_placement_at()` the same way F-241 did for the mesher.
-
----
-
 ### F-253 · tools/seed_sync_check.gd has 3 pre-existing failures — confirmed unrelated to F-250 via git baseline
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
@@ -807,7 +775,126 @@ claim) to confirm the roster is stored the way this assumes and that resetting i
 
 ---
 
+### F-260 · docs/DECISIONS.md has no atomic number allocator, so two agents took D-146 within minutes of each other
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
+
+`agent finding` allocates F-numbers under a lock precisely because concurrent lanes reading "the next
+number" from the document both get the same answer — that is F-058, and it cost a renumbering pass
+(F-087) plus three findings that routed to the wrong entry. `docs/DECISIONS.md` has the identical
+shape and no equivalent allocator: an agent reads the highest `### D-NNN`, adds one, and appends.
+
+It fired on 2026-08-19. A lane recorded D-146 (task 6.3's Cycle Modifier count) while the director
+was writing a different D-146 (the LM lane's Opus/second-pass change) in the same minutes; by the
+time the collision was noticed the numbers had run on to D-149, so the director's entry became D-150.
+Nothing was lost because the collision was caught by eye, which is exactly the part that does not
+scale — F-058's pairs were not caught by eye, and two of them were still mis-routing weeks later.
+
+The fix is the one already proven for findings: an `agent decision "title"` that takes the body on
+stdin, allocates the next `D-NNN` under `.agent/locks/`, and appends atomically — so the number is
+reserved before the text is written rather than after. It should also decline to run while another
+agent holds an exact claim on `docs/DECISIONS.md`, which is the second half of the same race and the
+thing that blocked this commit.
+
+Worth noting the pre-commit hook did catch the claim half correctly, refusing a hand-commit that
+touched `docs/DECISIONS.md` while another lane held it — F-072's enforcement working as designed.
+
+---
+
+### F-261 · poi_map.gd's dart-throwing loop and BiomeMap.moisture() are the same per-sample noise-rebuild shape F-241/F-252 just fixed, with no NoiseSet-equivalent yet
+
+**Area:** worldgen · **Severity:** low · **Found:** 2026-08-19 by lp
+
+F-241 (chunk mesher) and F-252 (resource_scatter.gd) both fixed the "bare `IslandHeightmap.height()`
+rebuilds six FastNoiseLite fields per call" shape by routing hot loops through
+`IslandHeightmap.make_noise_set()`/`height_from_set()`. Two sibling call sites still have the bare
+shape and were left out of F-252's claim on purpose (different files, and one needs new
+infrastructure that doesn't exist yet):
+
+1. `world/gen/poi_map.gd`'s `_place_kind()`/`_slope_at()` — up to `DARTS_PER_SITE (30) *
+   MAX_ROUNDS_PER_SITE (24)` = 720 attempts per `PoiDef`, times however many POI defs ship, each
+   calling `ISLAND_HEIGHTMAP.height()` at least once (`_place_kind`, line 120) and `_slope_at()`
+   calls it FIVE more times per attempt (once for its own centre — redundant with the value
+   `_place_kind` already computed at line 120 and threw away — plus four probe offsets). This is
+   world-generation-time cost (once per island, not per frame), so lower severity than F-241's
+   per-frame chunk mesher case, but it is the identical bug shape and the fix is now a known
+   pattern: build one `NoiseSet` in `sites_for_island()`, thread it through `_place_kind`/
+   `_slope_at`, and have `_slope_at` take the already-computed centre height as a parameter instead
+   of resampling it.
+
+2. `world/gen/biome_map.gd`'s `moisture()` builds a fresh `FastNoiseLite` on every call — same
+   shape, different noise field (BiomeMap's own moisture layer, unrelated to IslandHeightmap's six).
+   There is no `NoiseSet`-equivalent for it yet. Callers that pay this per-sample: `resource_scatter.
+   gd`'s `_placement_at()` (this finding's own fix left this call alone — F-252's claim was
+   `_placement_at()`'s HEIGHT call specifically, matching the finding's own title), `poi_map.gd`'s
+   `_place_kind()` (via `biome_at()`), and `tools/terrain_map_render.gd`. Fixing this properly means
+   adding a moisture-noise cache to `biome_map.gd` (its own small `NoiseSet`-alike, or folding it
+   into `IslandHeightmap.NoiseSet` since both are keyed by the same `world_seed`) and threading it
+   through `biome_at()`/`terrain_amplitudes()` — a design decision for whoever picks this up, not
+   assumed here.
+
+Neither site is on a per-frame path, which is why this is filed at `low` rather than reusing F-241's
+severity — but both are the same class of bug F-241 named, so worth fixing before someone tunes POI
+counts or moisture frequency and pays for it again on every dart.
+
+---
+
 ## Resolved
+
+### F-252 · resource_scatter.gd's _placement_at() has the exact per-sample noise-rebuild shape F-241 just fixed in the chunk mesher — height_from_set()/NoiseSet is now there to fix it — **fixed**
+
+**Area:** worldgen · **Severity:** low · **Found:** 2026-08-19 by lp
+
+Found 2026-08-19 by lp while sweeping for F-241's shape (the chunk mesher rebuilding fresh
+FastNoiseLite fields per sample instead of once per chunk).
+
+`world/gen/resource_scatter.gd:110` — `ResourceScatter._placement_at()` calls
+`IslandHeightmap.height(world_x, world_z, world_seed)` once per scattered candidate point, and
+`placements_for_chunk()` (`resource_scatter.gd:57`) calls `_placement_at()` once per grid cell per
+scatter def — up to `cells_per_side^2` times per def, several defs per chunk. Each `height()` call
+still rebuilds all six `FastNoiseLite` fields from scratch (F-241's fix reduced the chunk mesher's
+per-vertex cost but did not touch this call site, which is a different task's file and was out of
+F-241's claim).
+
+Lower severity than F-241 was: scatter cell sizes are metres, not the mesher's 1 m vertex spacing,
+so the per-chunk call count here is well under the mesher's 1,089 — likely tens to low hundreds
+depending on `cell_size_m`/def count, not thousands. Still the same wasted-construction shape, and
+it now has a ready-made fix: `IslandHeightmap.make_noise_set(world_seed)` once per
+`placements_for_chunk()` call (it already knows `world_seed` and `chunk_x`/`chunk_z` up front), then
+`IslandHeightmap.height_from_set(world_x, world_z, set, world_seed)` in place of `height()` at
+`_placement_at()`'s call site — same signature shape `world/chunk/chunk_mesher.gd`'s
+`_sample_heights()` now uses, and `tools/noise_reuse_check.gd` already proves the two APIs are
+bit-identical, so this is a pure perf change with no output-changing risk to verify beyond a
+`tools/resource_scatter_check.gd` clean run before/after.
+
+**What would close this:** a task claiming `world/gen/resource_scatter.gd` and
+`tools/resource_scatter_check.gd` threading a `NoiseSet` through `placements_for_chunk()` ->
+`_placement_at()` the same way F-241 did for the mesher.
+
+---
+
+**Resolved 2026-08-19 by lp.** Fixed: placements_for_chunk() builds one IslandHeightmap.NoiseSet via make_noise_set(world_seed)
+once per chunk (alongside the origin_x/origin_z it already computes there) and threads it through
+_placement_at()'s new trailing parameter, which now calls height_from_set(world_x, world_z,
+noise_set, world_seed) instead of a bare height() per candidate point — F-241's own API, same shape
+chunk_mesher.gd already uses. No signature change outside this file; BiomeMap.moisture() at the next
+line is untouched (different noise field, no NoiseSet-equivalent exists for it — filed as F-261).
+
+Verified: agent godot --script tools/resource_scatter_check.gd -> RESOURCE_SCATTER_CHECK failures=0,
+including the purity/determinism assertions (same (chunk, seed) -> identical placement list, a
+different seed changes the field) and the full ResourceScatterField LOD0 harvest-lifecycle suite
+(materialize/harvest/deplete/teardown/rebuild), all of which exercise _placement_at()'s output.
+
+Swept for the same shape: world/gen/poi_map.gd's dart-throwing loop (_place_kind/_slope_at) has the
+identical bare-height() call shape, plus a redundant double-sample in _slope_at(); BiomeMap.moisture()
+rebuilds a fresh FastNoiseLite per call with three per-sample callers (resource_scatter.gd itself,
+poi_map.gd, tools/terrain_map_render.gd) and no NoiseSet-equivalent exists for it yet. Both are
+world-generation-time cost, not F-241's per-frame chunk-mesher case, so lower severity — filed
+separately as F-261 rather than pulled into this claim (poi_map.gd/biome_map.gd are outside this
+task's files, and the moisture half needs a design decision on where its own cache lives).
+
+Docs: docs/SPECS.md new F-252 block, docs/DELEGATION.md Current state entry (and F-241's own entry
+updated to point at this resolution + F-261), docs/FINDINGS.md F-261 filed for the sweep.
 
 ### F-251 · tools/chunk_stream_check.gd (windowed) has 5 pre-existing failures — terrain retuning since F-128 left the LOD skirt too shallow for the real seam gap — **fixed**
 
