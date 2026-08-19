@@ -4415,10 +4415,12 @@
       "title": "Enemy AI framework: state machine, perception, telegraphed attacks, group behaviour"
     },
     "5.1-review": {
+      "done_at": "2026-08-19T14:19:41+00:00",
+      "done_by": "lp",
       "est": "0.5",
       "milestone": "M5",
       "review_of": "5.1",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 5.1 @ 8af3787 \u2014 judge the commit, file findings, no edits"
     },
@@ -4470,6 +4472,14 @@
       "status": "done",
       "tier": "T2",
       "title": "Boss framework: phases, arena, telegraphs, health bar, music stinger"
+    },
+    "5.5-review": {
+      "est": "0.5",
+      "milestone": "M5",
+      "review_of": "5.5",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 5.5 @ 59917ed \u2014 judge the commit, file findings, no edits"
     },
     "5.6": {
       "est": "5",
@@ -4597,6 +4607,14 @@
       "status": "done",
       "tier": "T1",
       "title": "Lose condition: team wipe / island consumed, defeat flow"
+    },
+    "6.7-review": {
+      "est": "0.5",
+      "milestone": "M6",
+      "review_of": "6.7",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 6.7 @ 97f7d47 \u2014 judge the commit, file findings, no edits"
     },
     "6.8": {
       "est": "3",
