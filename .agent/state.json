@@ -2728,9 +2728,9 @@
     },
     "tools/unlock_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T05:46:33+00:00",
-      "hash": "af5ce852be87c260f40c5c490d277f047322d35490173b3bacd4ff07864f8956",
-      "task": "F-173",
+      "at": "2026-08-19T06:24:58+00:00",
+      "hash": "1a863bf7c6f51b927e558039174ab22a295dd00ecdbc791fb9347f840c108b22",
+      "task": "F-182",
       "token": null
     },
     "tools/vfx_site_probe.gd": {
@@ -5671,9 +5671,11 @@
       "title": "`Wellspring._finish_recorruption()` has the same host-only-guard `EventBus` emit bug F-168 fixed for `wellspring_capped` \u2014 `wellspring_recorrupted` still only fires on the host"
     },
     "F-182": {
+      "done_at": "2026-08-19T06:24:58+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "tools/unlock_check.gd's corrupt-save test provokes two engine ERROR lines with no EXPECTED_ERROR_PATTERNS declaration"
     },

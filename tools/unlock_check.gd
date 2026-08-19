@@ -94,7 +94,11 @@ func _run() -> void:
 	_check_save_versioning()
 
 	_cleanup_test_paths()
-	print("\nUNLOCK_CHECK failures=%d" % failures)
+	# _check_save_versioning()'s corrupt-save case deliberately feeds invalid JSON to
+	# UNLOCK_SAVE.load_data() to prove the safe-default fallback, provoking the engine's own
+	# "Parse JSON failed" line plus unlock_save.gd's "did not contain a JSON object" push_error.
+	# Standing rule 4 (docs/SPECS.md): declare provoked errors by pattern rather than silencing them.
+	print("\nUNLOCK_CHECK failures=%d · EXPECTED_ERROR_PATTERNS=\"Parse JSON failed|did not contain a JSON object\"" % failures)
 	finish()
 
 

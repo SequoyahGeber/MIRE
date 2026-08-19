@@ -4327,3 +4327,18 @@ Notes along the way:
 Files: `systems/wellspring/wellspring.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/ARCHITECTURE.md`, `tools/wellspring_check.gd`
 
 Commit at time of writing: `92ddbdd`
+
+---
+
+### DONE · F-182 · lm · 2026-08-19T06:24:58+00:00
+
+**tools/unlock_check.gd's corrupt-save test provokes two engine ERROR lines with no EXPECTED_ERROR_PATTERNS declaration**
+
+Added EXPECTED_ERROR_PATTERNS="Parse JSON failed|did not contain a JSON object" to tools/unlock_check.gd's finish() print (line 94-99), matching chest_check.gd's standing-rule-4 pattern. Verified: agent godot --script tools/unlock_check.gd run twice, UNLOCK_CHECK failures=0 both times, both engine ERROR lines present and matched, 0 undeclared ERROR lines. Wrote docs/SPECS.md F-182 block (none existed) and moved docs/FINDINGS.md section to Resolved.
+
+Notes along the way:
+- Verified fix headlessly (agent godot --script tools/unlock_check.gd, run twice): failures=0, both engine ERROR lines match EXPECTED_ERROR_PATTERNS, 0 undeclared. Wrote SPECS.md block (none existed) and moved FINDINGS.md section to Resolved.
+
+Files: `tools/unlock_check.gd`
+
+Commit at time of writing: `a4d33fc`
