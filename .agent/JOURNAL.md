@@ -5317,3 +5317,15 @@ Commit at time of writing: `8816c40`
 Clean, no findings. Reviewed 97f7d47 (code) + 5a09b1c (docs) against SPECS.md 6.7 block, ARCHITECTURE.md §2.2 new Lose-condition row, D-108/D-109. DefeatService correctly host-authoritative: team-wipe polls PlayerHealth.host_is_alive() across every _present_peers() peer, island-consumed polls MireGrid.consumed_fraction() on a 5s accumulator. defeated's setter fires EventBus.emit_run_wiped() unconditionally (no host-only guard, D-108's actual requirement) -- verified both the host's direct _apply_defeat() path and net_run_defeated's client-received path emit identically. PlayerHealth._run_over correctly freezes bleed-out/respawn/damage without host-gating. No bare autoload identifiers (get_node_or_null(^/root/X) + .call()/.get() throughout). net_ prefix present. F-169 (no PROTOCOL_VERSION bump for net_run_defeated) already filed and consistent with F-161/F-165's precedent -- net_version.gd was genuinely unclaimable all session. tools/defeat_check.gd: 24/24 PASS. All 10 named regressions (player_health_check, player_vitals_check, extraction_check, salvage_check, mire_grid_check, mire_interaction_check, wellspring_recorruption_check, cycle_check, cycle_modifier_check, wave_spawner_check) failures=0. agent godot --quit-after 15: 0 ERROR: lines.
 
 Commit at time of writing: `d704a0e`
+
+---
+
+### DONE · 6.6-review · lp · 2026-08-19T14:29:32+00:00
+
+**Review 6.6 @ 64ffde3 — judge the commit, file findings, no edits**
+
+Completed.
+
+Files: `docs/FINDINGS.md`
+
+Commit at time of writing: `a32bffd`

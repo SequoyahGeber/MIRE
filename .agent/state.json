@@ -1,6 +1,14 @@
 {
   "claims": {},
-  "in_flight": {},
+  "in_flight": {
+    "4.8-review": {
+      "agent": "lm",
+      "files": [],
+      "notes": [],
+      "started": "2026-08-19T14:28:44+00:00",
+      "token": null
+    }
+  },
   "recent": {
     ".": {
       "agent": "lp",
@@ -1728,9 +1736,9 @@
     },
     "docs/FINDINGS.md": {
       "agent": "lp",
-      "at": "2026-08-19T14:26:11+00:00",
-      "hash": "c57004a0f1231ffc6557f8b756f75508ff6a467770e6fccc6f66c12dcecac3dd",
-      "task": "5.9-review",
+      "at": "2026-08-19T14:29:32+00:00",
+      "hash": "bf6aa08487e1a90ee3cee72052042655fe895c4dd18911326dae25b128c1e125",
+      "task": "6.6-review",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -4376,6 +4384,14 @@
       "tier": "T1",
       "title": "Wellspring scene, capture ritual, 2-player requirement, defense wave (solo fallback: 1-player ritual with a longer timer, `DESIGN.md` \u00a75 solo rule)"
     },
+    "4.8-review": {
+      "est": "0.5",
+      "milestone": "M4",
+      "review_of": "4.8",
+      "status": "in_flight",
+      "tier": "T1",
+      "title": "Review 4.8 @ ac70bf3 \u2014 judge the commit, file findings, no edits"
+    },
     "4.9": {
       "done_at": "2026-08-19T00:54:44+00:00",
       "done_by": "lm",
@@ -4557,6 +4573,14 @@
       "tier": "T2",
       "title": "Cycle Modifier framework: deck, draw, stacking, Cycle-weighted rules, incompatibility tags"
     },
+    "6.2-review": {
+      "est": "0.5",
+      "milestone": "M6",
+      "review_of": "6.2",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 6.2 @ 5a6c11f \u2014 judge the commit, file findings, no edits"
+    },
     "6.3": {
       "est": "5",
       "milestone": "M6",
@@ -4602,10 +4626,12 @@
       "title": "Salvage: superlinear reward curve, extract-vs-die split, persistence, save-file versioning"
     },
     "6.6-review": {
+      "done_at": "2026-08-19T14:29:32+00:00",
+      "done_by": "lp",
       "est": "0.5",
       "milestone": "M6",
       "review_of": "6.6",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 6.6 @ 64ffde3 \u2014 judge the commit, file findings, no edits"
     },

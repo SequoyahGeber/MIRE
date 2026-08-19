@@ -501,6 +501,27 @@ comment and mark both getters host-only until a real cross-peer consumer needs t
 
 ---
 
+### F-227 · SalvageService's reward-curve comment states the wrong numbers — mismatches the formula it documents and its own SPECS.md block
+
+**Area:** salvage/docs · **Severity:** low · **Found:** 2026-08-19 by lp
+
+autoload/salvage_service.gd:284-288's doc comment on CYCLE_BASE/CYCLE_EXPONENT claims "Cycle 3
+-> 57, Cycle 9 -> ~359 (6.3x for 3x the Cycle...)". Computing the formula it's describing
+(round(CYCLE_BASE * cycle^CYCLE_EXPONENT), CYCLE_BASE=10, CYCLE_EXPONENT=1.6) actually gives
+Cycle 3 = 58, Cycle 9 = 336, a 5.8x ratio -- confirmed both by hand (python3 -c "round(10*3**1.6)"
+-> 58, round(10*9**1.6) -> 336) and by tools/salvage_check.gd's own live assertion output
+("Cycle 9's reward (336)... Cycle 3's (58...)"). docs/SPECS.md's 6.6 block and
+docs/DELEGATION.md's Current state entry both state the correct 58/336 pair -- only the in-code
+comment is wrong, apparently transcribed before a later constant tweak or a copy/paste slip that
+never got re-run.
+
+No functional impact -- reward_for_cycle() itself is correct and salvage_check.gd verifies the
+real numbers, not the comment. But a future task tuning CYCLE_BASE/CYCLE_EXPONENT against this
+comment's stated multiplier (rather than re-deriving it) would target the wrong bar. Fix is a
+one-line comment edit to match SPECS.md's own 58/336/5.8x.
+
+---
+
 ## Resolved
 
 ### F-224 · CommandService's per-client _resolved_requests dictionary never shrinks over a session — **fixed**
