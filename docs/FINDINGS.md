@@ -733,35 +733,6 @@ Hollowmere layout with `meta("kind") == "shipwreck"`, in a shore-adjacent spot �
 `wellspring_service.gd`'s own "objective" marker already proves works. No gameplay-side change is
 needed; `ExtractionService` picks it up automatically the next time the scene builds.
 
-### F-168 · `Wellspring._finish_cap()` still emits `wellspring_capped` from a host-only guard, so a non-host peer's `SalvageService` milestone bonus silently undercounts
-
-**Area:** systems/wellspring · netcode · **Severity:** low · **Found:** 2026-08-19 by lm during 6.6
-
-`EventBus` is a per-process static (see its own header comment) — an emit call that only runs
-inside a host-only `if` never reaches a client's own local bus at all, only the host's. Task 6.6
-hit exactly this bug in `ExtractionShip.departed` (fixed: the emit now lives in the property's
-setter, so it fires identically whether this process set the value itself or received it over the
-wire) because `SalvageService`'s milestone bonus needs every peer to see `wellspring_capped`, not
-just the host. `Wellspring._finish_cap()` (`systems/wellspring/wellspring.gd:218`) still has the
-original shape: `EVENT_BUS.emit_wellspring_capped()` sits directly in the host-only branch, never in
-`capped`'s setter. Consequence: on a non-host peer, capping a Wellspring correctly updates the
-replicated `capped`/mesh state (that part IS a property, already synced), but that peer's own
-`SalvageService` never sees the milestone and its Salvage payout is short by
-`WELLSPRING_CAP_BONUS` per cap it didn't personally trigger as host.
-
-**Why not fixed in 6.6:** `wellspring.gd` was untouched, working, fully-tested territory this task
-had no other reason to enter — the fix is a two-line move (same shape as `extraction_ship.gd`'s),
-but it is a second system's file for a T2/est-3 task whose own scope was already Salvage, not a
-Wellspring regression pass. `tools/wellspring_check.gd`/`wellspring_recorruption_check.gd` both stay
-green either way — they only assert against the host's own state, which is unaffected.
-
-**What closes this:** move `EVENT_BUS.emit_wellspring_capped(name, global_position)` out of
-`_finish_cap()`'s body and into `capped`'s setter, guarded on the false->true transition, the exact
-diff `extraction_ship.gd`'s `departed` setter already shows. Re-run `wellspring_check.gd` and
-`wellspring_recorruption_check.gd` (both should stay `failures=0`) plus `salvage_check.gd`.
-
----
-
 ### F-169 · Task 6.7's new `net_run_defeated` RPC shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
 
 **Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lm during 6.7
@@ -1036,7 +1007,85 @@ needs adjusting so the closed-leaf strap plate doesn't intersect the frame's col
 
 ---
 
+### F-181 · `Wellspring._finish_recorruption()` has the same host-only-guard `EventBus` emit bug F-168 fixed for `wellspring_capped` — `wellspring_recorrupted` still only fires on the host
+
+**Area:** systems/wellspring · netcode · **Severity:** low · **Found:** 2026-08-18 by lm during F-168
+
+F-168 moved `EVENT_BUS.emit_wellspring_capped()` out of `_finish_cap()`'s host-only body and into
+`capped`'s setter, because `EventBus` is a per-process static and a host-only emit never reaches a
+client's own local bus. `_finish_recorruption()` (`systems/wellspring/wellspring.gd`) has the
+identical shape: `EVENT_BUS.emit_wellspring_recorrupted(name, global_position)` sits directly in a
+body only `host_tick()` calls, itself gated on `_owns_mutation()` at the top — so a non-host peer's
+process never runs this line even though its own `capped` correctly replicates back to `false`.
+
+**Why not fixed alongside F-168:** nothing subscribes to `wellspring_recorrupted` yet.
+`core/events/event_bus.gd`'s own header comments call it a seam for a future system (same
+"future systems hook into this" role D-092 already gives `wellspring_capped`), and grepping the
+codebase for `subscribe_wellspring_recorrupted` today only turns up `event_bus.gd` itself. There is
+no live undercount to fix — this is a landmine for whichever future system (MireGrid's per-peer
+spread-rate bookkeeping is the obvious future consumer per `wellspring.gd`'s own header) is the
+first to subscribe on a client, not a bug with a present-day symptom.
+
+**What closes this:** the exact same move, applied to `capped`'s setter's true→false transition
+(guard on `capped == false` after being `true`, since `capped`'s setter already fires
+`_maybe_refresh_visual()` on every change and needs the emit gated the same way `wellspring_capped`
+is gated on false→true). Re-run `tools/wellspring_recorruption_check.gd` — it already asserts
+`EventBus.emit_wellspring_recorrupted fired exactly once`, so the existing coverage should catch a
+regression here for free once whoever fixes this adds a replication-shaped case the way F-168's
+`tools/wellspring_check.gd` change did for `wellspring_capped`.
+
+---
+
 ## Resolved
+
+### F-168 · `Wellspring._finish_cap()` still emits `wellspring_capped` from a host-only guard, so a non-host peer's `SalvageService` milestone bonus silently undercounts — **fixed**
+
+**Area:** systems/wellspring · netcode · **Severity:** low · **Found:** 2026-08-19 by lm during 6.6
+
+`EventBus` is a per-process static (see its own header comment) — an emit call that only runs
+inside a host-only `if` never reaches a client's own local bus at all, only the host's. Task 6.6
+hit exactly this bug in `ExtractionShip.departed` (fixed: the emit now lives in the property's
+setter, so it fires identically whether this process set the value itself or received it over the
+wire) because `SalvageService`'s milestone bonus needs every peer to see `wellspring_capped`, not
+just the host. `Wellspring._finish_cap()` (`systems/wellspring/wellspring.gd:218`) still has the
+original shape: `EVENT_BUS.emit_wellspring_capped()` sits directly in the host-only branch, never in
+`capped`'s setter. Consequence: on a non-host peer, capping a Wellspring correctly updates the
+replicated `capped`/mesh state (that part IS a property, already synced), but that peer's own
+`SalvageService` never sees the milestone and its Salvage payout is short by
+`WELLSPRING_CAP_BONUS` per cap it didn't personally trigger as host.
+
+**Why not fixed in 6.6:** `wellspring.gd` was untouched, working, fully-tested territory this task
+had no other reason to enter — the fix is a two-line move (same shape as `extraction_ship.gd`'s),
+but it is a second system's file for a T2/est-3 task whose own scope was already Salvage, not a
+Wellspring regression pass. `tools/wellspring_check.gd`/`wellspring_recorruption_check.gd` both stay
+green either way — they only assert against the host's own state, which is unaffected.
+
+**What closes this:** move `EVENT_BUS.emit_wellspring_capped(name, global_position)` out of
+`_finish_cap()`'s body and into `capped`'s setter, guarded on the false->true transition, the exact
+diff `extraction_ship.gd`'s `departed` setter already shows. Re-run `wellspring_check.gd` and
+`wellspring_recorruption_check.gd` (both should stay `failures=0`) plus `salvage_check.gd`.
+
+---
+
+**Resolved 2026-08-19 by lm.** Moved EVENT_BUS.emit_wellspring_capped() out of _finish_cap()'s host-only body into capped's setter
+(false->true transition), mirroring the fix task 6.6 already applied to extraction_ship.gd's
+departed setter. A non-host peer only ever learns capped went true via a replicated property delta
+from MultiplayerSynchronizer, never by calling _finish_cap() itself — so the emit now fires on every
+peer, not just the host that ran the ritual.
+
+New regression coverage: tools/wellspring_check.gd's _check_capped_event_via_replication() sets
+`capped = true` directly (bypassing the ritual/_finish_cap() entirely, the exact shape a client's
+sync delta takes) and asserts the event fires exactly once and does not re-fire on a redundant set.
+This would have failed before the fix (the emit lived only in _finish_cap()'s body).
+
+Verified: agent godot --script tools/wellspring_check.gd -> WELLSPRING_CHECK failures=0 (incl. the
+new F-168 section). agent godot --script tools/wellspring_recorruption_check.gd -> failures=0.
+agent godot --script tools/salvage_check.gd -> SALVAGE_CHECK failures=0 (milestone-bonus behavior
+unchanged).
+
+Filed F-181: _finish_recorruption() has the identical host-only-guard bug for
+wellspring_recorrupted, but nothing subscribes to that event yet (no live undercount), so left for
+whoever gives it a first subscriber. SPECS.md F-168 block written (no spec existed).
 
 ### F-148 · construction_check.gd's door-swing solids AABB goes negative-size on thin per-triangle bounds, throwing an UNDECLARED engine error on every run — **fixed**
 

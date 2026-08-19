@@ -430,9 +430,10 @@
     },
     "autoload/defeat_service.gd": {
       "agent": "lm",
-      "at": "2026-08-19T03:06:45+00:00",
-      "hash": "7c04b0ff03544a57d14ab9f93e0b159123979f1c2970a2b110ed475b1c3c43ab",
-      "task": "6.7"
+      "at": "2026-08-19T05:30:24+00:00",
+      "hash": "4ce59d3f131913d1f356580fd3be3abd2e22ab7ad558a4bde3503ec26a2c5d1e",
+      "task": "F-168",
+      "token": null
     },
     "autoload/enemy_world.gd": {
       "agent": "lp",
@@ -1495,10 +1496,11 @@
       "task": "3.14"
     },
     "core/events/event_bus.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "c24120d39b3024076aed8f1cb67b89851bde168a363352dc0e0fad2510e47e51",
-      "task": "5.5"
+      "agent": "lm",
+      "at": "2026-08-19T05:30:24+00:00",
+      "hash": "12af5c05b4b3c2012d2f509f516809163dcda62a08880caafe1f69b6e21f1f61",
+      "task": "F-168",
+      "token": null
     },
     "core/game_state.gd": {
       "agent": "lm",
@@ -1542,10 +1544,11 @@
       "task": "F-053"
     },
     "docs/ARCHITECTURE.md": {
-      "agent": "hollow7",
-      "at": "2026-08-19T01:42:53+00:00",
-      "hash": "8f35a5f33ec1fd5581fae42edbc952cf0bb2aa7948756eb2a937add1e7e21a5f",
-      "task": "4.5"
+      "agent": "lm",
+      "at": "2026-08-19T05:30:24+00:00",
+      "hash": "fce21a88f14454958520fc846218e9878b90b8cd4896d2a2c3dbe319c0335f97",
+      "task": "F-168",
+      "token": null
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "slate17",
@@ -1560,22 +1563,24 @@
       "task": "3.16"
     },
     "docs/DECISIONS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T04:47:27+00:00",
-      "hash": "f92a27e5fd1d2ddb99dbb91222982bab99e410a64104a3fb26446411e171b3e3",
-      "task": "F-162"
+      "agent": "lm",
+      "at": "2026-08-19T05:30:24+00:00",
+      "hash": "2bc28fd02272974074dd5e955661857850733a382c698d845673aa27b0ac9069",
+      "task": "F-168",
+      "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "hollow7",
-      "at": "2026-08-19T01:42:53+00:00",
-      "hash": "bd34bae67a902f36377ca8aea0740336a6173402913b47d5896065fc0d2f02bc",
-      "task": "4.5"
+      "agent": "lm",
+      "at": "2026-08-19T05:30:24+00:00",
+      "hash": "bde9c00154949469f7b92ba4e132f0f97e6f8c75adbe0e0ede83f346412c746c",
+      "task": "F-168",
+      "token": null
     },
     "docs/FINDINGS.md": {
       "agent": "lm",
-      "at": "2026-08-19T05:19:57+00:00",
-      "hash": "4161b2cf80798993c9185a94c6e71c64050b46312999f176760b5e30b564cb5e",
-      "task": "F-147",
+      "at": "2026-08-19T05:30:24+00:00",
+      "hash": "9877ee4a88f27a779d043eb89b8569cd359ab8f42752928f17d07aaf70820d1f",
+      "task": "F-168",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1602,9 +1607,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lm",
-      "at": "2026-08-19T05:19:57+00:00",
-      "hash": "26fc52608ef3de8cf73cf42397ee327447d3edffc4d83776d1e0b6f272305681",
-      "task": "F-147",
+      "at": "2026-08-19T05:30:24+00:00",
+      "hash": "6225ad84d3ff244d2f108d37703ec6a8782e78023b2568d44b73d3ee24b8d5ca",
+      "task": "F-168",
       "token": null
     },
     "entities/player/player.tscn": {
@@ -1818,10 +1823,11 @@
       "task": "6.1"
     },
     "systems/enemies/boss.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "a8e5992b5368ee8523254cc20bbd4a300d0180567f84f348a0e0421abcd75eaa",
-      "task": "5.5"
+      "agent": "lm",
+      "at": "2026-08-19T05:30:24+00:00",
+      "hash": "a1a138e5f553377fb8a60f013cf9c6fd87a5a90f35abe632999ecc2a1d9f9b1d",
+      "task": "F-168",
+      "token": null
     },
     "systems/enemies/boss.gd.uid": {
       "agent": "lp",
@@ -1984,9 +1990,10 @@
     },
     "systems/wellspring/wellspring.gd": {
       "agent": "lm",
-      "at": "2026-08-19T02:12:08+00:00",
-      "hash": "401c5a5edaeca152bdedccb6efdf192333abf647189a7123c1d9fb1184cb6e1f",
-      "task": "6.4"
+      "at": "2026-08-19T05:30:24+00:00",
+      "hash": "042935863968478c54b147ccc0484ea7bc78ed9f0cc9f075ffa8b9080d0fa804",
+      "task": "F-168",
+      "token": null
     },
     "tools/_probe_food_grip.gd": {
       "agent": "lp",
@@ -2698,9 +2705,10 @@
     },
     "tools/wellspring_check.gd": {
       "agent": "lm",
-      "at": "2026-08-18T21:36:44+00:00",
-      "hash": "06229b2e9a2465f8313be9e51606939f20d1c38f6edb4dfebd085558ba90b036",
-      "task": "4.8"
+      "at": "2026-08-19T05:30:24+00:00",
+      "hash": "8313851e43123b00663c2058b029d9371b8a5d1fa4432a76775688a135e113f3",
+      "task": "F-168",
+      "token": null
     },
     "tools/wellspring_hud_check.gd": {
       "agent": "lp",
@@ -5483,9 +5491,11 @@
       "title": "`tools/crafting_net_check.gd` fails (24/24) against a clean checkout of HEAD, independent of any in-flight change"
     },
     "F-168": {
+      "done_at": "2026-08-19T05:30:24+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`Wellspring._finish_cap()` still emits `wellspring_capped` from a host-only guard, so a non-host peer's `SalvageService` milestone bonus silently undercounts"
     },
@@ -5571,6 +5581,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`CommandService.spec_names()`/`function_names()` are the fourth and fifth `Array[StringName].sort()` sites F-175 found \u2014 not fixed here, `autoload/command_service.gd` was held all session by another lane's claim"
+    },
+    "F-180": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "construction_check.gd's door-swing check now finds real strap-vs-frame overlaps at 0 degrees, previously hidden by F-148's crash"
     }
   },
   "version": 1

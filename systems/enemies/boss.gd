@@ -20,8 +20,8 @@ extends Enemy
 ## row was needed). The one thing worth calling out twice: `EventBus.emit_boss_engaged()` /
 ## `emit_boss_phase_changed()` fire from `phase`'s own setter, and `emit_boss_defeated()` fires from
 ## `_play_state_animation()` (itself called from `Enemy.state`'s replicated setter) — never from a
-## host-only `if _owns_simulation()` guard, which is the exact bug `docs/FINDINGS.md` F-168 still has
-## open against `Wellspring.capped`. Firing from a replicated property's setter means every peer's own
+## host-only `if _owns_simulation()` guard, which is the exact bug `docs/FINDINGS.md` F-168 fixed
+## against `Wellspring.capped`. Firing from a replicated property's setter means every peer's own
 ## `EventBus` static reaches this emit on its own, from its own local set, the moment the host's value
 ## (or its replicated echo) lands — no second RPC required for cosmetic consumers like
 ## `BossMusicDirector`/`BossHealthHud`.

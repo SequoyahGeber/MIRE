@@ -70,13 +70,21 @@ const WELLSPRING_GROUP: StringName = &"wellspring"
 const SYNC_NODE_NAME: StringName = &"WellspringSync"
 const VISUAL_NODE_NAME: StringName = &"WellspringVisual"
 
-## Replicated. Setter keeps the visual correct when a network delta arrives on a client.
+## Replicated. Setter keeps the visual correct when a network delta arrives on a client, and fires
+## `wellspring_capped` on the false->true transition rather than `_finish_cap()` doing it directly
+## (F-168, same fix `extraction_ship.gd`'s `departed` setter already applies): `EventBus` is a
+## per-process static, so a host-only emit call never reaches a client's own local bus, and
+## `SalvageService`'s milestone bonus needs the event on EVERY peer. Driving the emit off the setter
+## means it fires identically whether this process just set `capped = true` itself (the host) or
+## received it over the wire (a client, via `_sync`).
 var capped: bool = false:
 	set(value):
 		if capped == value:
 			return
 		capped = value
 		_maybe_refresh_visual()
+		if capped:
+			EVENT_BUS.emit_wellspring_capped(name, global_position)
 
 ## Replicated. Presentation reads this to show/hide the progress prompt.
 var channeling: bool = false
@@ -215,7 +223,6 @@ func _finish_cap() -> void:
 	capped = true
 	recorruption_sec = 0.0
 	set_process(false)
-	EVENT_BUS.emit_wellspring_capped(name, global_position)
 
 
 ## Host-only. The seam DESIGN.md §5.1 item 1 names directly: "Capped Wellsprings begin

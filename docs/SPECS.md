@@ -3950,6 +3950,52 @@ palisade-gate geometry — filed as F-180 rather than fixed here, since `door.ts
 
 ---
 
+## F-168 · `Wellspring._finish_cap()` still emits `wellspring_capped` from a host-only guard, so a non-host peer's `SalvageService` milestone bonus silently undercounts
+
+**Claim:** `systems/wellspring/wellspring.gd`, `tools/wellspring_check.gd`, `docs/FINDINGS.md`,
+`docs/SPECS.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Root cause:** `EventBus` is a per-process static (its own header comment says so), so an emit call
+that only runs inside a host-only `if` branch never reaches a client's own local bus — only the
+host's ever fires. `_finish_cap()` had `EVENT_BUS.emit_wellspring_capped(name, global_position)`
+sitting directly in that host-only branch, the exact shape task 6.6 already fixed once for
+`ExtractionShip.departed` (`systems/extraction/extraction_ship.gd`). `capped`/`channeling`/
+`progress_sec`/etc. are the only state that crosses the wire, through a code-built
+`MultiplayerSynchronizer` — a non-host peer only ever learns `capped` went true from a replicated
+property delta, which never runs `_finish_cap()` at all. Consequence: on a non-host peer, capping a
+Wellspring correctly updates the replicated `capped`/mesh state, but that peer's own
+`SalvageService` never sees `wellspring_capped` and its Salvage payout is short by
+`WELLSPRING_CAP_BONUS` per cap it didn't personally trigger as host.
+
+**Fix — the same move `extraction_ship.gd`'s `departed` setter already made:** moved
+`EVENT_BUS.emit_wellspring_capped(name, global_position)` out of `_finish_cap()`'s body and into
+`capped`'s setter, guarded on the false→true transition. The setter now fires identically whether
+this process just set `capped = true` itself (the host, via `_finish_cap()`) or received it over the
+wire (a client, via `_sync`).
+
+**Not fixed in the same pass:** `_finish_recorruption()` has the identical host-only-guard shape for
+`emit_wellspring_recorrupted` (`capped = false` there is likewise inside a body only `host_tick()`
+— itself gated on `_owns_mutation()` — ever calls). Left alone: nothing subscribes to
+`wellspring_recorrupted` yet (`core/events/event_bus.gd`'s own comments call it a seam for a future
+system, same role D-092 gives `wellspring_capped`), so there is no live undercount to fix, and
+folding it in here would be scope creep on a task whose claim is `wellspring.gd` for the
+`wellspring_capped` bug specifically. Filed as F-181 for whichever task first gives
+`wellspring_recorrupted` a real subscriber.
+
+**Verify:** `agent godot --script tools/wellspring_check.gd` (new `_check_capped_event_via_replication()`
+proves the fix directly — a bare `capped = true` write with no ritual and no `host_tick()` in the
+call stack, the exact shape a client's synchronizer delta takes, now fires the event), plus
+`tools/wellspring_recorruption_check.gd` and `tools/salvage_check.gd` to confirm the host-side
+ritual/recorruption/milestone-bonus behavior is unchanged.
+
+**Verified 2026-08-18 (lm):** all three green — `WELLSPRING_CHECK failures=0`,
+`WELLSPRING_RECORRUPTION_CHECK failures=0`, `SALVAGE_CHECK failures=0`.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

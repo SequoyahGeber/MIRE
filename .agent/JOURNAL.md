@@ -4175,3 +4175,15 @@ Fixed the AABB-negative-size crash in construction_check.gd's _check_doors() (cl
 Files: `tools/construction_check.gd`
 
 Commit at time of writing: `c9a7807`
+
+---
+
+### DONE · F-168 · lm · 2026-08-19T05:30:24+00:00
+
+**`Wellspring._finish_cap()` still emits `wellspring_capped` from a host-only guard, so a non-host peer's `SalvageService` milestone bonus silently undercounts**
+
+Wellspring.capped's setter now fires wellspring_capped on false->true (moved out of _finish_cap()'s host-only body), same pattern as extraction_ship.gd's departed and defeat_service.gd's defeated. Fixes the non-host SalvageService milestone undercount. Verified: agent godot --script tools/wellspring_check.gd (new _check_capped_event_via_replication, failures=0), tools/wellspring_recorruption_check.gd (failures=0), tools/salvage_check.gd (failures=0). SPECS.md F-168 block written, FINDINGS.md resolved + F-181 filed for the sibling recorruption-emit bug (no live subscriber yet), ARCHITECTURE.md/DECISIONS.md/DELEGATION.md stale F-168 cross-references updated to reflect the fix.
+
+Files: `systems/wellspring/wellspring.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `tools/wellspring_check.gd`, `docs/ARCHITECTURE.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`, `core/events/event_bus.gd`, `systems/enemies/boss.gd`, `autoload/defeat_service.gd`
+
+Commit at time of writing: `2f15243`

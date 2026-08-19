@@ -2846,8 +2846,9 @@ defeat (team wipe with no bleed-out revive pending, or the island consumed), whi
 business deciding. **6.7 must call this exact signal, not invent a second one** — `SalvageService`
 is already wired to only this name — **and must fire it the way 6.6 fixed `run_extracted`: from a
 replicated property's setter reaching every peer's own local `EventBus`, never from a host-only
-guard.** `Wellspring._finish_cap()` still has the old host-only shape for `wellspring_capped`
-(F-168) — that is the wrong shape to copy, not precedent to follow.
+guard.** `Wellspring._finish_cap()` had the old host-only shape for `wellspring_capped` at the time
+this was written — that was the wrong shape to copy, not precedent to follow, and F-168 has since
+fixed it to the setter shape this note requires.
 
 **Would change my mind (on the split itself):** a playtest showing `DEATH_BANK_FRACTION = 0.5` makes
 extracting feel mandatory rather than a real bet either way (Q6) — DESIGN.md only specifies the
@@ -3169,10 +3170,10 @@ synchronizer `Enemy._build_synchronizer()` already builds — extended, not repl
 `super()` then reading `_sync.replication_config` back out. The one thing worth a second sentence:
 `EventBus.boss_engaged`/`boss_phase_changed` fire from `Boss.phase`'s own setter, and `boss_defeated`
 fires from `_play_state_animation()` — itself already invoked from `Enemy.state`'s replicated setter —
-rather than from a host-only `if _owns_simulation()` guard. `docs/FINDINGS.md` F-168 is the standing
-example of getting this wrong (`Wellspring._finish_cap()` still emits `wellspring_capped` from a
-host-only guard, undercounting on non-host peers); this task applied the D-107/D-108 fix pattern from
-the start rather than needing a second pass later.
+rather than from a host-only `if _owns_simulation()` guard. `docs/FINDINGS.md` F-168 was the standing
+example of getting this wrong (`Wellspring._finish_cap()` emitting `wellspring_capped` from a
+host-only guard, undercounting on non-host peers, since fixed) when this was written; this task
+applied the D-107/D-108 fix pattern from the start rather than needing a second pass later.
 
 **Would change my mind:** on (1), a THIRD boss-adjacent system needing yet another `enemy.gd` hook
 that cannot be reached by overriding would be a real signal to stop and actually claim/edit the base

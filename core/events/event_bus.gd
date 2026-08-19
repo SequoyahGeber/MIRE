@@ -362,8 +362,8 @@ static func unlock_purchased_subscriber_count() -> int:
 ## property (same `SceneReplicationConfig`/ALWAYS shape `state`/`health`/`hit_counter` already use on
 ## `Enemy`) — the host sets it directly, a client's copy receives it over the wire and its own local
 ## setter runs identically, so both processes reach this emit from their own call site. This is the
-## D-107/D-108 fix pattern (`docs/FINDINGS.md` F-168 is the standing example of getting it wrong)
-## applied from the start rather than retrofitted after a client-side bug report.
+## D-107/D-108 fix pattern (`docs/FINDINGS.md` F-168 was the standing example of getting it wrong,
+## since fixed) applied from the start rather than retrofitted after a client-side bug report.
 static func subscribe_boss_engaged(listener: Callable) -> void:
 	_prune_invalid(_boss_engaged_subscribers)
 	if listener.is_valid() and not _boss_engaged_subscribers.has(listener):
@@ -421,7 +421,7 @@ static func boss_phase_changed_subscriber_count() -> int:
 ## Fires once per boss, on every peer, the instant its `state` first reaches `Enemy.State.DEAD`.
 ## Hung off `Boss._play_state_animation()` rather than `Enemy._enter_death()` on purpose: the death
 ## override lives on the HOST call path only (`host_apply_damage()` gates entry), the same host-only
-## shape F-168 still has to fix for `Wellspring.capped`. `_play_state_animation()` is instead called
+## shape F-168 fixed for `Wellspring.capped`. `_play_state_animation()` is instead called
 ## from `state`'s own replicated setter — already proven, on every peer, by the fact that a client's
 ## copy of an ordinary `Enemy` already plays its death clip with no RPC of its own — so hanging the
 ## emit there gets every peer's own bus for free instead of needing a second fix later.

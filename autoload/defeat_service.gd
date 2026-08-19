@@ -6,8 +6,8 @@ extends Node
 ## NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2, new "Lose condition" row): HOST decides WHEN a run
 ## has actually ended in defeat — the same host-tick-driven verdict `CycleService`/`WaveSpawner`
 ## already make for their own state machines. Firing that verdict is deliberately NOT a host-only
-## guard around `EventBus.emit_run_wiped()` — that shape is `Wellspring._finish_cap()`'s still-open
-## bug (F-168) and the exact trap D-108 named for this task. `defeated`'s setter fires the emit, and
+## guard around `EventBus.emit_run_wiped()` — that shape was `Wellspring._finish_cap()`'s bug until
+## F-168 fixed it, and the exact trap D-108 named for this task. `defeated`'s setter fires the emit, and
 ## it runs identically whether this process just decided `defeated = true` itself (the host) or
 ## received the verdict over the wire (`net_run_defeated`, a client) — the same fix task 6.6 applied
 ## to `ExtractionShip.departed`'s setter. `SalvageService` is the seam's one existing consumer

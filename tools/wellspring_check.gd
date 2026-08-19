@@ -9,6 +9,10 @@ extends SceneTree
 ##      PAUSES (not resets) while under the 2-player presence requirement, then finishes once both
 ##      are present. `host_tick()` crosses whole ritual durations in one call, the same reason
 ##      `DayNight.host_advance()` exists — no need to wait 150 real seconds for a headless check.
+##   3. F-168: `wellspring_capped` fires off `capped`'s setter, not `_finish_cap()`'s host-only body —
+##      so setting `capped` the way a client's MultiplayerSynchronizer would (a bare property write,
+##      never through `_finish_cap()`) still fires the event. Before the fix this branch caught
+##      nothing, because the emit lived only in the host-only ritual path.
 ##
 ##   .agent/bin/agent godot --script tools/wellspring_check.gd
 
@@ -32,6 +36,7 @@ func _run() -> void:
 
 	await _check_marker_consumption()
 	_check_ritual_fsm()
+	_check_capped_event_via_replication()
 
 	print("\nWELLSPRING_CHECK failures=%d" % failures)
 	finish()
@@ -159,6 +164,33 @@ func _check_ritual_fsm() -> void:
 	check(bool(wellspring_two.get("capped")),
 		"progress resumes and finishes once both players are present")
 	world.call("host_despawn_all")
+
+
+## F-168: a non-host peer never calls `_finish_cap()` — it only ever learns `capped` went true by a
+## `MultiplayerSynchronizer` delta writing the property directly. Reproduce that shape exactly (bare
+## assignment, no ritual, no host_tick) and prove the event still fires — before the fix it did not,
+## because the emit lived in `_finish_cap()`'s host-only body instead of `capped`'s setter.
+func _check_capped_event_via_replication() -> void:
+	print("\n== F-168: capped fires wellspring_capped even set outside the host ritual path ==")
+	EVENT_BUS.subscribe_wellspring_capped(_on_wellspring_capped)
+	_capped_events.clear()
+
+	var wellspring := WELLSPRING_SCRIPT.new() as Node3D
+	wellspring.name = "CheckWellspringReplicated"
+	root.add_child(wellspring)
+
+	wellspring.set("capped", true)
+	check(_capped_events.size() == 1,
+		"a bare 'capped = true' write (the shape a client's synchronizer delta takes) fires the event")
+	if not _capped_events.is_empty():
+		check(String(_capped_events[0].get("name", "")) == "CheckWellspringReplicated",
+			"the capped event names the right Wellspring")
+
+	wellspring.set("capped", true)
+	check(_capped_events.size() == 1, "re-setting capped to the same value does not re-fire the event")
+
+	EVENT_BUS.unsubscribe_wellspring_capped(_on_wellspring_capped)
+	wellspring.queue_free()
 
 
 func _on_wellspring_capped(wellspring_name: StringName, world_position: Vector3) -> void:
