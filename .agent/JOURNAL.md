@@ -4300,3 +4300,15 @@ Fixed at root: HINGE-family leaves (door/gate/palisade-gate) were normalized exa
 Files: `tools/blender/build_construction_set.py`, `assets/construction`, `assets/source/construction_set.blend`, `tools/_debug_door_swing.gd`
 
 Commit at time of writing: `90dd12d`
+
+---
+
+### DONE · F-185 · bram1 · 2026-08-19T06:18:28+00:00
+
+**Fixing one instance of a bug class without sweeping for siblings is this project's most reliable source of new findings**
+
+Work-order template now requires a sibling sweep before close-out, citing F-059/7.8 (five missed has_peer guards), F-167/F-175 (five StringName.sort sites, two a determinism hazard) and F-168/F-181 (same bug, same file, sibling function). Verified the section reaches a freshly written order.
+
+Files: `.agent/bin/agent`, `docs/FINDINGS.md`
+
+Commit at time of writing: `6f8e55e`

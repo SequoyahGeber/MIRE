@@ -905,6 +905,39 @@ finding) already uses correctly.
 
 ## Resolved
 
+### F-185 · Fixing one instance of a bug class without sweeping for siblings is this project's most reliable source of new findings — **fixed**
+
+**Area:** process · **Severity:** medium · **Found:** 2026-08-19 by bram1
+
+Measured across one day, three separate bug classes were each fixed once, shipped, and then rediscovered:
+
+- **F-059** established the `has_peer()` guard against a departed peer. Five later `rpc_id()` sites
+  shipped without it — `combat_service._reject`, `ranged_combat_service._reject`,
+  `crafting_service._confirm_peer`, `command_service.net_submit_command`'s reply, and
+  `world_delta_log._on_peer_admitted`. Task 7.8 found all five at once by auditing every call site in
+  the repo rather than the one it tripped over, and proved each by reverting the guard and
+  reproducing the exact error.
+- **F-167** needed `sort_custom` for one `Array[StringName].sort()`. F-175 asked whether anything else
+  relied on the same broken assumption and found four more — two of them a determinism hazard, since
+  this project regenerates its world from a shared seed and a pointer-ordered sort can diverge
+  between host and client for reasons no log explains.
+- **F-168** fixed a host-only `EventBus` emit in `Wellspring._finish_cap()`. F-181 is the same bug, in
+  the same file, in the sibling function, missed on the first pass.
+
+The economics are lopsided. The sweep is one `grep -rn` over `--include=*.gd` inside a task that
+already has the context loaded; the alternative is a whole dispatch — order, brief, claim, verify,
+close out — routed at something the previous agent had open in its editor an hour earlier.
+
+**Fixed:** the work-order template gains a section before close-out — *"A bug you just fixed is
+evidence about a class, not an incident"* — instructing the lane to grep for the shape it just
+repaired and either fix the siblings under its claim or file them with the exact list. It cites the
+three cases above rather than stating a principle, because a lane acts on a named precedent more
+readily than on advice.
+
+**Verified:** `agent order F-112 --lane LP` writes an order containing the new section.
+
+---
+
 ### F-180 · construction_check.gd's door-swing check now finds real strap-vs-frame overlaps at 0 degrees, previously hidden by F-148's crash — **fixed**
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by lm during F-148

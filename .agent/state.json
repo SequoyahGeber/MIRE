@@ -121,11 +121,11 @@
   },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "lm",
-      "at": "2026-08-19T05:19:57+00:00",
-      "hash": "6948b40bab794914d07ff79df16ad0ff9f6793e7bb96f58ef5dad9c27c155ac2",
-      "task": "F-147",
-      "token": null
+      "agent": "bram1",
+      "at": "2026-08-19T06:18:28+00:00",
+      "hash": "5878100fe6ce687515782d2ef3f152193d67723f6d2adb207d087fc5b8597eb5",
+      "task": "F-185",
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     ".agent/bin/lane": {
       "agent": "bram1",
@@ -1579,11 +1579,11 @@
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T06:00:05+00:00",
-      "hash": "875f42ba7f34a8cadf506aecf00c6f686e7eddd2a6dda92ba6f9f21e6d5157e6",
-      "task": "F-154",
-      "token": null
+      "agent": "bram1",
+      "at": "2026-08-19T06:18:28+00:00",
+      "hash": "7aea5dc15dc287dc451099ab3e344bd46cc487fe3e74451bbff08aac8333b7b7",
+      "task": "F-185",
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -5688,6 +5688,15 @@
       "status": "todo",
       "tier": "F",
       "title": "`tools/audio/audio_check.py`'s exit code is inverted \u2014 it exits 0 when checks FAIL and 1 when they PASS"
+    },
+    "F-185": {
+      "done_at": "2026-08-19T06:18:28+00:00",
+      "done_by": "bram1",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Fixing one instance of a bug class without sweeping for siblings is this project's most reliable source of new findings"
     }
   },
   "version": 1

@@ -1949,7 +1949,25 @@ do not work around it. Two agents in one file is the failure this whole system e
 Always launch Godot through `agent godot`. It takes a lock so your run cannot collide with another
 lane's; a bare `Godot --headless` can corrupt the shared import cache (F-038, F-044).
 
-## 3. Close out — this part is not optional
+## 3. Before you close out: sweep for the same bug elsewhere
+
+**A bug you just fixed is evidence about a class, not an incident.** Before writing the close-out,
+grep the repo for the shape you just repaired — the same call, the same guard omission, the same
+wrong assumption — and either fix the siblings under your claim or file them with the exact list.
+This is the single most reliable source of new findings in this project, so a task that skips it is
+usually manufacturing the next one:
+
+- F-059 established the `has_peer()` guard; five later `rpc_id()` sites shipped without it, and 7.8
+  found all five at once by auditing every call site instead of the one it tripped over.
+- F-167 needed `sort_custom` for one `Array[StringName].sort()`; F-175 then found four more, two of
+  them a determinism hazard in seeded world generation.
+- F-168 fixed a host-only `EventBus` emit in `Wellspring`; F-181 is the *same bug in the same file*,
+  in the sibling function, missed on the first pass.
+
+The sweep is cheap — one `grep -rn` over `--include=*.gd` — and the alternative is that somebody
+routes a whole dispatch at what you already had open in your editor.
+
+## 4. Close out — this part is not optional
 
 **Verify first, then write the docs — never the other way round.** Moving a finding to
 `## Resolved`, or marking it `**fixed**`, is a claim that a check has *already passed*. The board
