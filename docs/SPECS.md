@@ -6495,6 +6495,73 @@ found outside F-216/F-217.
 
 ---
 
+## F-217 · `BuildBar`'s piece-selection slots are still mouse-click-only — task 7.6 gave build mode toggle/rotate/confirm/destroy real gamepad bindings but never touched which piece gets selected
+
+**Claim:** `ui/building/build_bar.gd`, `tools/gamepad_check.gd`. Network authority: none — client-local
+UI presentation, same as every other F-209/F-215/F-216 file; a slot selection only ever emits
+`piece_selected`, and `BuildService` remains the only thing that actually places or destroys anything.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The fix:** `PieceSlot` (`ui/building/build_bar.gd`'s inner class) already had
+`focus_mode = Control.FOCUS_ALL` but its `_gui_input()` only handled `InputEventMouseButton` — the
+exact gap the finding named. Three additions, all copied from an existing seam in this project rather
+than invented:
+1. **Selection** — `_gui_input()` gained the same `event.is_action_pressed(&"ui_accept")` branch
+   `InventoryUI.InventorySlot` uses for its own pick-up/drop flow (F-209), calling
+   `select_requested.call(piece_id)` directly since selecting a build piece is a single action, not a
+   two-step move.
+2. **Chain** — a new `_wire_horizontal_chain()` on `BuildBar` itself, run once at the end of
+   `_populate_slots()` (slots are built once at boot, never rebuilt — see that function's own doc
+   comment). Same wrap-around recipe `UnlockMenu._wire_vertical_chain()`/`AttunementUI`'s copy of it
+   use (F-209/F-216), but horizontal (`focus_neighbor_left`/`_right`) since the slots sit in one
+   `HBoxContainer` row, not a stacked column.
+3. **Focus ring** — `PieceSlot extends PanelContainer`, which (like `Slider`, F-215) has no native
+   `"focus"` theme stylebox item, so `add_theme_stylebox_override("focus", ...)` would be silently
+   inert. Used the *other* existing technique for this same gap on this same control type —
+   `InventoryUI.InventorySlot`'s own `"panel"` stylebox swap — rather than F-215's `_draw()`-override
+   technique, since `PieceSlot` already swaps its `"panel"` stylebox for `present(selected)` and
+   adding a third swapped style (`_focus_style`, new `COLOUR_FOCUS` constant matching
+   `InventoryUI`'s own hue) needed no new drawing code. `_update_style()` centralises the
+   selected/focus priority (focus wins, so navigating off the active piece is never mistaken for
+   still standing on it) the same way `InventorySlot._update_style()` already does for its own four
+   states.
+
+**Initial focus** is the one piece this finding's own "what closes this" note didn't fully spell out:
+`player_controller.gd`'s `set_selected_build_piece()` always calls `BuildBar.set_active(true)`
+immediately followed by `set_selected_piece(piece_id)` — there is no "activate with nothing selected"
+path (its own doc comment). So `set_selected_piece()` doubles as the initial-focus grab
+(`_grab_focus_for_selected()`, called at its end) without needing a separate open hook the way
+`AttunementUI._grab_initial_focus()` needed one (F-216) — every entry into build mode already funnels
+through this one method, click or gamepad alike.
+
+**Verify:** `.agent/bin/agent godot --script tools/gamepad_check.gd` → `GAMEPAD_CHECK failures=0`.
+New `_check_build_bar_slot_focus()`: spawns a real player and enters build mode exactly like the
+existing `_check_build_cycle_via_gamepad()`, then proves — through the real Viewport GUI input
+pipeline (`Input.parse_input_event()`, not a direct `_unhandled_input()` call, since focus movement
+is Godot's own GUI focus walk, the same reason `tools/menu_focus_check.gd` uses that mechanism for
+every other panel) — that selecting `wall_wood` grabs its slot's focus, D-pad right/left move focus
+across the row and back through `focus_neighbor_right`/`_left`, and `ui_accept` (gamepad A) on a
+focused slot actually changes `BuildGhost.current_piece_id()` through the real selection seam, not
+just a simulated click. Ran the check BEFORE any edit per the finding's own warning (all three named
+files had commits since filing): the assertions did not exist yet to fail, so confirmed the gap was
+still real by reading `build_bar.gd` directly first — `PieceSlot._gui_input()` had no `ui_accept`
+branch, `BuildBar` had no `focus_neighbor_*`/`grab_focus` call anywhere, matching F-215's "read the
+file, don't trust a green run that asserts nothing" precedent.
+
+**Swept for the same shape:** `grep -rn 'focus_mode = Control.FOCUS_ALL'` across `ui/`/`entities/` —
+only two runtime-construction sites in the whole project, `build_bar.gd` (this task) and
+`inventory_ui.gd` (already fixed, F-209). Every panel with `grab_focus`/`focus_neighbor` wiring
+(`attunement_ui.gd`, `crafting_ui.gd`, `inventory_ui.gd`, `lobby_menu.gd`, `main_menu.gd`,
+`settings_menu.gd`, `unlock_menu.gd`, now `build_bar.gd`) already carries it. F-216's own sweep had
+already named F-217 as the one remaining gap of this shape; this task closes it and finds no further
+sibling.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

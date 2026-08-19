@@ -564,7 +564,9 @@ worth confirming against real numbers rather than assumed.
 
 ---
 
-### F-217 · `BuildBar`'s piece-selection slots are still mouse-click-only — task 7.6 gave build mode toggle/rotate/confirm/destroy real gamepad bindings but never touched which piece gets selected
+## Resolved
+
+### F-217 · `BuildBar`'s piece-selection slots are still mouse-click-only — task 7.6 gave build mode toggle/rotate/confirm/destroy real gamepad bindings but never touched which piece gets selected — **fixed**
 
 **Area:** UI/input · **Severity:** medium · **Found:** 2026-08-19 by lm sweeping for F-209's shape elsewhere
 
@@ -587,9 +589,25 @@ built per-player by `player_controller.gd`, not an autoload, so whatever check p
 follow `tools/gamepad_check.gd`'s existing build-cycle setup rather than `tools/menu_focus_check.gd`'s
 autoload-node pattern.
 
----
+**Resolved 2026-08-19 by lm.** Fixed `ui/building/build_bar.gd`'s `PieceSlot`: `_gui_input()` gained a `ui_accept` branch calling
+`select_requested.call(piece_id)` (same shape as `InventoryUI.InventorySlot`, F-209); `BuildBar` gained
+`_wire_horizontal_chain()` (focus_neighbor_left/_right, wrapping, run once in `_populate_slots()`) and
+`_grab_focus_for_selected()` (called from `set_selected_piece()`, which player_controller.gd always
+calls together with `set_active(true)` — so every build-mode entry, click or gamepad, lands on a
+focused, focusable slot with no separate open hook needed). Focus ring uses the same `"panel"`
+stylebox-swap technique `InventoryUI.InventorySlot` already uses for this same "PanelContainer has no
+native focus stylebox" gap (new `_focus_style`/`COLOUR_FOCUS`, `_update_style()` centralises
+selected-vs-focus priority).
 
-## Resolved
+Verified: `.agent/bin/agent godot --script tools/gamepad_check.gd` -> `GAMEPAD_CHECK failures=0`, new
+`_check_build_bar_slot_focus()` proves selecting wall_wood grabs its slot's focus, D-pad right/left
+move focus across the row and back via the real focus_neighbor chain, and gamepad `ui_accept` (A) on a
+focused slot changes `BuildGhost.current_piece_id()` through the real selection seam (Input.parse_input_event,
+not a direct _unhandled_input call — same reasoning tools/menu_focus_check.gd uses for every other panel).
+
+Swept: only two `focus_mode = Control.FOCUS_ALL` runtime construction sites in the project
+(build_bar.gd, inventory_ui.gd) — both now carry grab_focus/focus_neighbor wiring. No sibling gap
+found. Full writeup: docs/SPECS.md F-217 block.
 
 ### F-216 · `AttunementUI` (task 3.9's mandatory run-start role picker) has no gamepad focus support — worse than F-209's original scope, since this panel has no Esc/dismiss path at all — **fixed**
 

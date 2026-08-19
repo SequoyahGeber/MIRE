@@ -75,6 +75,47 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-217 resolved: `BuildBar`'s piece-selection slots now support gamepad focus navigation — the last gap F-209/F-216's sweeps had already named (lm)
+
+`ui/building/build_bar.gd`'s `PieceSlot` (inner class of `BuildBar`) is the pattern to copy for any
+future runtime-built `PanelContainer` row that needs keyboard/gamepad selection: `focus_mode =
+Control.FOCUS_ALL` was already there, but `_gui_input()` only reacted to a mouse click. Three pieces,
+each reused from an existing seam rather than invented:
+
+- **Selection:** `_gui_input()` gained `event.is_action_pressed(&"ui_accept")` calling
+  `select_requested.call(piece_id)` — the same branch `InventoryUI.InventorySlot` uses for its own
+  pick-up/drop (F-209), minus the carry-state tracking since selecting a build piece is one action.
+- **Chain:** new `BuildBar._wire_horizontal_chain()`, run once at the end of `_populate_slots()`
+  (slots are boot-static, never rebuilt). Same wrap-around recipe as
+  `UnlockMenu._wire_vertical_chain()`/`AttunementUI`'s copy (F-209/F-216), but `focus_neighbor_left`/
+  `_right` instead of `_top`/`_bottom` since the slots sit in one `HBoxContainer` row.
+- **Focus ring:** `PieceSlot extends PanelContainer`, which has no native `"focus"` theme item — same
+  gap F-215 hit on `Slider`. Used `InventoryUI.InventorySlot`'s technique for this same control type
+  (a `"panel"` stylebox swap via `_update_style()`) rather than F-215's `_draw()`-override technique,
+  since `PieceSlot` already swaps `"panel"` for its selected-piece indicator and a third swapped style
+  (new `_focus_style`, `COLOUR_FOCUS` matching `InventoryUI`'s own hue) needed no new drawing code.
+  Priority when both are true: focus beats selected.
+
+**Initial focus needed no separate open hook.** `player_controller.gd`'s `set_selected_build_piece()`
+always calls `BuildBar.set_active(true)` immediately followed by `set_selected_piece(piece_id)` — there
+is no "activate with nothing selected" path. So `set_selected_piece()` itself grabs focus for the
+matching slot (`_grab_focus_for_selected()`), and every entry into build mode — click or gamepad —
+already funnels through that one method.
+
+**Verified:** `.agent/bin/agent godot --script tools/gamepad_check.gd` → `GAMEPAD_CHECK failures=0`.
+New `_check_build_bar_slot_focus()` drives real gamepad D-pad/`ui_accept` events through
+`Input.parse_input_event()` (focus movement is Godot's own Viewport GUI focus walk, not something
+`_unhandled_input()` implements — the same reason `tools/menu_focus_check.gd` uses that mechanism for
+every other panel) and reads `gui_get_focus_owner()` back, proving selection grabs focus, D-pad right/
+left move it across the row and back through the real `focus_neighbor` chain, and gamepad `ui_accept`
+on a focused slot changes `BuildGhost.current_piece_id()` through the real seam.
+
+**Swept, not found:** `grep -rn 'focus_mode = Control.FOCUS_ALL'` across `ui/`/`entities/` — only two
+runtime-construction sites exist in the project, `build_bar.gd` (this task) and `inventory_ui.gd`
+(already fixed, F-209); every panel with `grab_focus`/`focus_neighbor` wiring already carries it.
+F-216's own sweep had already named F-217 as the one remaining gap of this shape. Full writeup:
+`docs/SPECS.md` F-217 block.
+
 ### 2026-08-19 — F-215 resolved: `HSlider` now draws a real focus ring via `FocusRingSlider` (lm)
 
 `Slider` (`HSlider`'s base, `scene/gui/slider.cpp`) has no `"focus"` theme stylebox item in Godot
