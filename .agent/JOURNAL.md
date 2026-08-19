@@ -6006,3 +6006,15 @@ Notes along the way:
 Files: `world/gen/island_heightmap.gd`, `tools/terrain_check.gd`, `tools/check_determinism.gd`, `tools/terrain_map_render.gd`
 
 Commit at time of writing: `b807863`
+
+---
+
+### DONE · F-240 · lm · 2026-08-19T17:59:43+00:00
+
+**A telegraphed attack's reach and tell length cannot deny "just take one step back" — no `EnemyDef` field makes retreating-through-a-tell fail, so that pressure isn't available to future enemy content**
+
+EnemyDef.lunge_speed_m_s + Enemy._tick_lunge(): a kind can now close ground during its own TELL instead of standing fully still, denying 'just take one step back' without changing when the hit resolves. Default 0.0 keeps every shipped EnemyDef unchanged. Verified: agent godot --script tools/enemy_lunge_check.gd -> ENEMY_LUNGE_CHECK failures=0 (23 assertions), enemy_check.gd/enemy_ai_check.gd unchanged at failures=0. F-247 (Boss sibling gap) and F-246 (pre-existing unrelated enemy_content_check.gd failure) filed, not fixed here.
+
+Files: `systems/enemies/enemy.gd`, `systems/enemies/enemy_def.gd`, `tools/enemy_lunge_check.gd`
+
+Commit at time of writing: `9e56943`

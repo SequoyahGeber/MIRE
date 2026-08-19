@@ -1,37 +1,6 @@
 {
-  "claims": {
-    "systems/enemies/enemy.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T17:51:10+00:00",
-      "task": "F-240",
-      "token": null
-    },
-    "systems/enemies/enemy_def.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T17:51:10+00:00",
-      "task": "F-240",
-      "token": null
-    },
-    "tools/enemy_lunge_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T17:51:10+00:00",
-      "task": "F-240",
-      "token": null
-    }
-  },
-  "in_flight": {
-    "F-240": {
-      "agent": "lm",
-      "files": [
-        "systems/enemies/enemy.gd",
-        "systems/enemies/enemy_def.gd",
-        "tools/enemy_lunge_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-19T17:51:10+00:00",
-      "token": null
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".": {
       "agent": "lp",
@@ -2317,16 +2286,16 @@
     },
     "systems/enemies/enemy.gd": {
       "agent": "lm",
-      "at": "2026-08-19T07:17:23+00:00",
-      "hash": "0c4ab0de665500c3b21265cdb9b7a12f282e6a5719b58e9afd563a6657ebe4f4",
-      "task": "F-158",
+      "at": "2026-08-19T17:59:43+00:00",
+      "hash": "3e9ee21fb945b6bfc7fc6aa19efe629697b872814775487163ee6876afbed3f6",
+      "task": "F-240",
       "token": null
     },
     "systems/enemies/enemy_def.gd": {
       "agent": "lm",
-      "at": "2026-08-19T17:32:42+00:00",
-      "hash": "2997a75514ef93ceec89a38e10f329068d05b814f05266d7ed37f4d331c839f6",
-      "task": "5.2",
+      "at": "2026-08-19T17:59:43+00:00",
+      "hash": "54d017e52404ae8958deb5bd176a86df638b86e22fb41e1b0a7bc245fdc3a030",
+      "task": "F-240",
       "token": null
     },
     "systems/environment/day_night.gd": {
@@ -3075,6 +3044,13 @@
       "at": "2026-08-19T07:17:23+00:00",
       "hash": "21c0e98241d1dc170022eb5239e48410326b36d6525b7c138b49347b3fbb53ca",
       "task": "F-158",
+      "token": null
+    },
+    "tools/enemy_lunge_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T17:59:43+00:00",
+      "hash": "124340ef2e49f88c595143767c953af0da6b6be4a1edd1dd7772ffafb56454b6",
+      "task": "F-240",
       "token": null
     },
     "tools/entity_check.gd": {
@@ -7526,9 +7502,11 @@
       "title": "The inv command reads slot keys that do not exist \u2014 inv always prints 'carrying nothing' and inv clear silently removes nothing"
     },
     "F-240": {
+      "done_at": "2026-08-19T17:59:43+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "A telegraphed attack's reach and tell length cannot deny \"just take one step back\" \u2014 no `EnemyDef` field makes retreating-through-a-tell fail, so that pressure isn't available to future enemy content"
     },

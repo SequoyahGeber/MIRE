@@ -62,6 +62,16 @@ extends Resource
 ## tell's last, so the two play back to back without a pop.
 @export_range(0.05, 3.0, 0.05) var attack_seconds: float = 0.4
 @export_range(0.0, 5.0, 0.05) var attack_recovery_seconds: float = 0.5
+## Closes ground toward the target during the enemy's own TELL instead of standing fully still
+## (2.10/5.1's default for every existing kind). 0.0 — the default — preserves that stationary
+## behaviour bit-for-bit, so no shipped `EnemyDef` is affected. F-240: no field could make retreating
+## through a tell fail, because the enemy never moved during one — a bigger `attack_range_m` only
+## changes where the tell can trigger from, not whether it can be walked away from. A kind that sets
+## this above the target's own retreat speed closes the gap a straight-backward "just take one step
+## back" opens, without touching WHEN the hit resolves — `Enemy._resolve_attack()` still checks live
+## distance at the end of the tell, exactly as before. Capped at `stop_distance_m`, the same arrival
+## distance pursuit itself stops at, so a lunge cannot carry the enemy through its own target.
+@export_range(0.0, 20.0, 0.1) var lunge_speed_m_s: float = 0.0
 
 @export_group("Perception")
 ## The full arc, centred on the enemy's own facing, it can ACQUIRE a new target within. 360 means

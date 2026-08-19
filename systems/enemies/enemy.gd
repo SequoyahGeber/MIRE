@@ -24,6 +24,13 @@ extends CharacterBody3D
 ## telegraphing or swinging at the same target; the rest hold position instead of piling on). All
 ## three are still host-only decisions inside the same state machine; no new replicated property, no
 ## new RPC.
+##
+## F-240 adds a fourth tunable to the same TELL/ATTACK/RECOVER span: `_tick_lunge()` lets a kind whose
+## `EnemyDef.lunge_speed_m_s` is above 0.0 close ground during its own TELL instead of standing fully
+## still. The hit still resolves at the tell's END against wherever the target then is
+## (`_resolve_attack()`, unchanged) — this only changes whether the enemy stood still while that gap
+## opened, not when or how the hit is judged. Default 0.0 keeps every existing `EnemyDef` stationary,
+## bit-for-bit.
 
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const ENEMY_DEF := preload("res://systems/enemies/enemy_def.gd")
@@ -243,8 +250,11 @@ func _tick_pursuit(delta: float) -> void:
 
 
 func _tick_attack(delta: float) -> void:
-	velocity.x = 0.0
-	velocity.z = 0.0
+	if state == State.TELL and definition.lunge_speed_m_s > 0.0:
+		_tick_lunge()
+	else:
+		velocity.x = 0.0
+		velocity.z = 0.0
 	_phase_remaining -= delta
 	if _phase_remaining > 0.0:
 		return
@@ -277,6 +287,30 @@ func _resolve_attack() -> void:
 	EVENT_BUS.emit_enemy_attack_landed(
 		definition.id, _target_peer, definition.attack_damage, target.global_position
 	)
+
+
+## F-240: only called during TELL, and only when `definition.lunge_speed_m_s > 0.0` — every existing
+## `EnemyDef` leaves that at its 0.0 default and keeps 2.10/5.1's fully-stationary tell untouched. A
+## kind that opts in closes ground toward its live target for the tell's duration, the missing answer
+## to "just take one step back": the hit still resolves at the tell's END against wherever the target
+## then is (`_resolve_attack()`, unchanged), but the enemy is no longer guaranteed to have stood still
+## while that gap opened. Stops at `stop_distance_m` — the same arrival distance pursuit itself stops
+## at — so a lunge cannot carry the enemy through its own target.
+func _tick_lunge() -> void:
+	var target: Node3D = _resolve_target()
+	if target == null:
+		velocity.x = 0.0
+		velocity.z = 0.0
+		return
+	var to_target: Vector3 = target.global_position - global_position
+	var flat: Vector3 = Vector3(to_target.x, 0.0, to_target.z)
+	if flat.length() <= definition.stop_distance_m:
+		velocity.x = 0.0
+		velocity.z = 0.0
+		return
+	var step: Vector3 = flat.normalized()
+	velocity.x = step.x * definition.lunge_speed_m_s
+	velocity.z = step.z * definition.lunge_speed_m_s
 
 
 func _tick_corpse(delta: float) -> void:
