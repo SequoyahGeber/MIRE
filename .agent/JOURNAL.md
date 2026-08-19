@@ -5523,3 +5523,13 @@ Notes along the way:
 Files: `.agent/BOARD.md`
 
 Commit at time of writing: `04bce72`
+
+---
+
+### DONE · 7.6-review · lm · 2026-08-19T15:07:17+00:00
+
+**Review 7.6 @ de33ca2 — judge the commit, file findings, no edits**
+
+Review 7.6: sound, no findings. gamepad_check.gd: 45/45 assertions pass (InputMap wiring incl. no button/axis collisions across the 10 new/changed actions, PlayerCamera.apply_look_gamepad() through the real path incl. input_allowed suppression, hotbar cycle wraparound, eat, full build cycle toggle/rotate/confirm/destroy via real gamepad events, BuildBar F-217 focus nav). settings_check.gd: failures=0 (gamepad sensitivity clamp, JOYPAD_REBINDABLE_ACTIONS collision refusal, reset_keybinds restores gamepad defaults too). All 6 named regressions (verify_setup, build_check, combat_check, ranged_combat_check, inventory_ui_check, net_robustness_check) green, 0 ERROR: on full boot. §2.2 authority (client-local, VFX/audio/camera/UI row) correct — PlayerController's is_local_authority gates _physics_process so apply_look_gamepad never runs on remote proxies. D-131's JOYPAD_REBINDABLE_ACTIONS scope (button-bound only, axis/trigger excluded) implemented exactly as decided; D-134 (ui_accept/ui_cancel gamepad binding, landed after 7.6) doesn't implicate this commit. Rule 1 respected — all new autoload access goes through get_node_or_null + null-check. DELEGATION.md Current state carries the full action table and API surface as spec's Done-means requires.
+
+Commit at time of writing: `b080284`

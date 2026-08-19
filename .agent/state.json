@@ -4824,10 +4824,12 @@
       "title": "Gamepad support + Steam Deck compatibility (not verification)"
     },
     "7.6-review": {
+      "done_at": "2026-08-19T15:07:17+00:00",
+      "done_by": "lm",
       "est": "0.5",
       "milestone": "M7",
       "review_of": "7.6",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 7.6 @ de33ca2 \u2014 judge the commit, file findings, no edits"
     },
