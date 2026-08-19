@@ -2420,12 +2420,6 @@
       "task": "F-228",
       "token": null
     },
-    "tools/command_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T19:52:51+00:00",
-      "hash": "b96ed137463c04c3c42dc48559ccc9199197812f4ceb71b3a1ef046491a2505a",
-      "task": "3.13"
-    },
     "tools/command_resolved_requests_check.gd": {
       "agent": "lm",
       "at": "2026-08-19T14:17:44+00:00",
@@ -2906,6 +2900,13 @@
       "at": "2026-08-18T20:38:46+00:00",
       "hash": "4721ae3b0838565cad056314059d2f441c3efba255e21b89890759330a2df12d",
       "task": "F-127"
+    },
+    "tools/roadmap_dependency_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T19:56:11+00:00",
+      "hash": "5cba90001df2ff241373cc98c59902dcb5243e0b3a581703ee2ba19f0cae716e",
+      "task": "F-248",
+      "token": null
     },
     "tools/rpc_manifest_check.gd": {
       "agent": "hollow7",
@@ -7063,9 +7064,11 @@
       "title": "F-240's exact gap exists a second time in `BossMoveDef` \u2014 a boss's own telegraphed moves have no way to close ground during their own TELL either, and `Boss._tick_attack()` would not even inherit `EnemyDef.lunge_speed_m_s` if it did"
     },
     "F-248": {
+      "done_at": "2026-08-19T19:56:11+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "M8's real-App-ID dependency isn't encoded anywhere the board can see, so a task that needs it can surface as routable while 8.1/8.2 are still `todo`"
     },

@@ -6120,3 +6120,15 @@ Notes along the way:
 Files: `world/gen/island_heightmap.gd`, `world/chunk/chunk_mesher.gd`, `tools/noise_reuse_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`
 
 Commit at time of writing: `349385e`
+
+---
+
+### DONE · F-248 · lp · 2026-08-19T19:56:11+00:00
+
+**M8's real-App-ID dependency isn't encoded anywhere the board can see, so a task that needs it can surface as routable while 8.1/8.2 are still `todo`**
+
+Fixed: F-248 is resolved. Added a standing dependency note at the top of docs/ROADMAP.md's M8 section (8.1/8.2 gate 8.5/8.6/8.7/8.9/8.11's real deliverable; calls out 8.3/8.4 as the counter-example that shipped anyway against the placeholder App ID). New tools/roadmap_dependency_check.gd is the regression guard (SOURCE-TEXT check, same style as findings_numbering_check.gd). Verified: agent godot --script tools/roadmap_dependency_check.gd -> 0 failures, all PASS; agent godot --script tools/findings_numbering_check.gd -> 0 failures (open=16 resolved=238); agent godot --quit-after 120 -> clean boot, 0 ERROR: lines. Full SPECS.md F-248 block written (task 0, none existed). Finding moved to Resolved in docs/FINDINGS.md via agent resolve.
+
+Files: `tools/roadmap_dependency_check.gd`
+
+Commit at time of writing: `7388d8f`
