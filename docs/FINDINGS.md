@@ -369,6 +369,19 @@ observed serialising four concurrent runs and killing one lane outright:
 So the contention is now visible and bounded. **Decide the cache question against real hold times,
 not against this paragraph.**
 
+**2026-08-19, bram1 (director) — most of this is now answered by F-196; re-scope before working it.**
+The open question here was *make the checks tolerate a shared cache, or give each lane its own
+`.godot/` at the price of a full reimport each*. F-196 took the first option further than "tolerate":
+`tools/blender/godot_import_lock.py`'s `import_cache_guard()` makes an asset **writer** hold
+`agent godot`'s own lock for its whole export and forces a clean `--import` on release, wired into
+all 19 asset writers (D-126). A reader can no longer observe a half-written cache at all, so the
+writer/reader race that motivated per-lane caches is structurally closed rather than narrowed.
+
+What remains of F-044 is therefore only **contention** — the lock serialises headless runs, and with
+six agents a check can queue behind several others. That is a throughput question, not a correctness
+one, and the instrumentation added alongside F-104 (holder identity, 30s heartbeat, measured wait on
+acquire) now produces the hold times needed to decide it. Decide against those numbers.
+
 ### F-165 · Task 6.5's two new extraction RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.5

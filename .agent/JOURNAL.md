@@ -4698,3 +4698,15 @@ Notes along the way:
 Files: `tools/autoload_tracked_check.py`
 
 Commit at time of writing: `362c7d5`
+
+---
+
+### DONE · F-044 · bram1 · 2026-08-19T09:27:22+00:00
+
+**Concurrent headless Godot runs share one import cache, which is the likely cause of F-038**
+
+Annotated with F-196's resolution: the writer/reader race that motivated per-lane import caches is structurally closed by import_cache_guard() across all 19 asset writers (D-126), so only the contention/throughput question remains and the F-104 lock instrumentation now measures it. Finding deliberately stays open — the remaining decision is unmade, not resolved.
+
+Files: `docs/FINDINGS.md`
+
+Commit at time of writing: `c5db52a`
