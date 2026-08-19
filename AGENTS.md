@@ -98,15 +98,25 @@ findings silently parsed as open. If you ever do edit the file directly,
 
 ## The protocol
 
-### 1. Claim before you edit
+### 1. Claim each file late — right before you edit it, and release everything at the end
+
+Claim a file the moment before your first edit to it, not your whole file list up front. A claim
+locks a file for every other agent until you close out, so claiming early holds files idle — the main
+reason agents stall waiting on each other (F-262, D-153). `agent claim` is additive, so call it once
+per file (or tight group) as you reach it:
 
 ```bash
-.agent/bin/agent claim 2.4 systems/inventory/inventory.gd core/net/rpc_util.gd
+.agent/bin/agent claim 2.4 systems/inventory/inventory.gd     # about to edit this one now
+# ... later, when you reach the netcode part ...
+.agent/bin/agent claim 2.4 core/net/rpc_util.gd               # about to edit this one now
 ```
 
-Fails loudly if another agent holds that task or any of those files. **If it fails, pick a different
-task** — do not work around it. Two agents in one file is the failure mode this whole system exists to
-prevent.
+Release happens **all at once at close-out** — `done`/`handoff` does it. Do not release files mid-task:
+a fix your own check turns up can send you back into a file you thought you were done with, and if a
+sibling grabbed it meanwhile you have the exact two-agents-one-file race claims exist to prevent.
+
+Claiming fails loudly if another agent holds that task or file. **If it fails, pick different work** —
+do not work around it.
 
 ### 2. Leave a trail while you work
 
@@ -244,6 +254,24 @@ human can act on — he is deciding whether to start the next task based on this
 ---
 
 ## Hard rules
+
+### There is exactly one orchestrator, and it is not you
+
+The paid lanes (`LC1`, `LC2`, `LM`, `LP`) are routed by **one** session — the director. If you are
+reading this as an ordinary task agent, that is not you. Do not run `agent order`, `agent dispatch`
+or `agent saturate`. The harness now refuses them for anyone but the director and tells you who that
+is; `agent director` shows the current seat.
+
+This is not territorial. Six orders reached lane queues from peer sessions in a single day. The work
+was legitimate every time and nothing was corrupted — but the director's model of *what a lane will
+do next* stopped being true, which cost a duplicate dispatch onto a task another lane already held,
+and nearly cost a lane a whole window discovering that a peer chat was already working the finding it
+had just been sent. The director's job is deciding what gets worked and verifying what comes back;
+that requires owning the queue, for the same reason `agent claim` exists for files. Shared write
+access to a coordination surface makes every read of it a guess.
+
+**If you find work worth doing, file it** — `agent finding "..."` — and the director routes it. That
+is the entire interface between a task agent and the lanes. See D-145.
 
 ### Any agent working a list must be killable at any moment without losing what it did
 

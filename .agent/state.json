@@ -1,19 +1,141 @@
 {
   "claims": {
-    ".agent/bin/agent": {
-      "agent": "bram1",
-      "at": "2026-08-19T21:29:09+00:00",
-      "task": "F-260",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
-    },
     ".agent/bin/lane": {
       "agent": "bram1",
       "at": "2026-08-19T21:29:09+00:00",
       "task": "F-260",
       "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+    },
+    "autoload/build_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T22:19:09+00:00",
+      "task": "F-244",
+      "token": null
+    },
+    "autoload/powerup_service.gd": {
+      "agent": "lm2",
+      "at": "2026-08-19T22:21:01+00:00",
+      "task": "F-245",
+      "token": null
+    },
+    "docs/DECISIONS.md": {
+      "agent": "lp",
+      "at": "2026-08-19T22:12:47+00:00",
+      "task": "F-253",
+      "token": null
+    },
+    "docs/DELEGATION.md": {
+      "agent": "lp",
+      "at": "2026-08-19T22:12:47+00:00",
+      "task": "F-253",
+      "token": null
+    },
+    "docs/FINDINGS.md": {
+      "agent": "lp",
+      "at": "2026-08-19T22:12:47+00:00",
+      "task": "F-253",
+      "token": null
+    },
+    "docs/SPECS.md": {
+      "agent": "lp",
+      "at": "2026-08-19T22:12:47+00:00",
+      "task": "F-253",
+      "token": null
+    },
+    "systems/cycle/cycle_modifier_service.gd": {
+      "agent": "lm2",
+      "at": "2026-08-19T22:21:01+00:00",
+      "task": "F-245",
+      "token": null
+    },
+    "systems/enemies/enemy.gd": {
+      "agent": "lm2",
+      "at": "2026-08-19T22:21:01+00:00",
+      "task": "F-245",
+      "token": null
+    },
+    "systems/environment/day_night.gd": {
+      "agent": "lm2",
+      "at": "2026-08-19T22:21:01+00:00",
+      "task": "F-245",
+      "token": null
+    },
+    "systems/harvesting/harvestable.gd": {
+      "agent": "lm2",
+      "at": "2026-08-19T22:21:01+00:00",
+      "task": "F-245",
+      "token": null
+    },
+    "systems/loot/chest.gd": {
+      "agent": "lm2",
+      "at": "2026-08-19T22:21:01+00:00",
+      "task": "F-245",
+      "token": null
+    },
+    "systems/waves/wave_spawner.gd": {
+      "agent": "lm2",
+      "at": "2026-08-19T22:21:01+00:00",
+      "task": "F-245",
+      "token": null
+    },
+    "systems/wellspring/wellspring.gd": {
+      "agent": "lm2",
+      "at": "2026-08-19T22:21:01+00:00",
+      "task": "F-245",
+      "token": null
+    },
+    "tools/seed_sync_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T22:12:47+00:00",
+      "task": "F-253",
+      "token": null
     }
   },
   "in_flight": {
+    "F-244": {
+      "agent": "lm",
+      "files": [
+        "autoload/build_service.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-19T22:19:09+00:00",
+      "token": null
+    },
+    "F-245": {
+      "agent": "lm2",
+      "files": [
+        "systems/cycle/cycle_modifier_service.gd",
+        "systems/environment/day_night.gd",
+        "systems/wellspring/wellspring.gd",
+        "systems/loot/chest.gd",
+        "systems/harvesting/harvestable.gd",
+        "systems/enemies/enemy.gd",
+        "systems/waves/wave_spawner.gd",
+        "autoload/powerup_service.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-19T22:21:01+00:00",
+      "token": null
+    },
+    "F-253": {
+      "agent": "lp",
+      "files": [
+        "tools/seed_sync_check.gd",
+        "docs/FINDINGS.md",
+        "docs/SPECS.md",
+        "docs/DECISIONS.md",
+        "docs/DELEGATION.md"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-19T22:18:04+00:00",
+          "by": "lp",
+          "text": "Root cause found: NOT a WorldDeltaLog snapshot-delivery bug. MireGrid autoloads with set_physics_process(true) and unconditionally calls GameState.ensure_seed() the moment _owns_simulation() reads true, which it does for ANY not-yet-connected peer (transport inactive, not connecting) -- including a client process that is about to call join() but hasn't yet. Confirmed via temporary instrumentation (reverted): client draws its own random seed at msec=663, host's real net_world_snapshot RPC lands at msec=858 -- well after the driver's one-shot is_seed_ready()-gated reads already captured the wrong value. This premature draw is INTENTIONAL, decided behavior (D-110, D-119, F-172: solo/offline play must seed instantly at boot; the project explicitly rejected gating world-gen behind a menu/connection-state check), so the fix belongs in the check, not in MireGrid/GameState/WorldDeltaLog. Fix: gate the driver's poll on before_delta instead of is_seed_ready() -- before_delta only flips true once WorldDeltaLog.net_world_snapshot() has actually run (seed + state decode happen sequentially in that one RPC body), so it is the real proof the snapshot landed. Dropped claims on world/mire/mire_grid.gd, autoload/world_delta_log.gd, core/game_state.gd (state.json edited directly) since I ended up not needing them and mire_grid.gd already carried lm's uncommitted F-243 WIP -- holding that claim through ship would have swept lm's unrelated diff into this commit (the exact F-117 misattribution hazard, just predating my claim instead of following it)."
+        }
+      ],
+      "started": "2026-08-19T22:12:47+00:00",
+      "token": null
+    },
     "F-260": {
       "agent": "bram1",
       "files": [
@@ -42,9 +164,9 @@
     },
     ".agent/bin/agent": {
       "agent": "bram1",
-      "at": "2026-08-19T17:20:49+00:00",
-      "hash": "46491bac54f6ec11618a35a78ea356420052de3a6d50f1b6f9d8395d088da54c",
-      "task": "F-189",
+      "at": "2026-08-19T22:21:28+00:00",
+      "hash": "e6b6e02f0866fc9e60f0b88c986b3a8daee28f608731d231da499fee5b2afec4",
+      "task": "F-262",
       "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     ".agent/bin/lane-keeper": {
@@ -62,11 +184,11 @@
       "token": null
     },
     "AGENTS.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T07:11:01+00:00",
-      "hash": "743f9a437c09317ecd22a65ef63633b37c0830dba90879379cdbf3c275ff9c9a",
-      "task": "F-199",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
+      "agent": "bram1",
+      "at": "2026-08-19T22:21:28+00:00",
+      "hash": "cd277173c8789d9da5f017744264ebde0caa964e2f467a8bf9a82e75d57c2573",
+      "task": "F-262",
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "assets/audio/music/boss_stinger.ogg": {
       "agent": "lp",
@@ -800,10 +922,10 @@
       "task": "5.5"
     },
     "autoload/build_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
-      "hash": "c443b0d5bc74729538053f32cd2a88a6e69c504aa1510ae35b26f19d31d12e8a",
-      "task": "F-243",
+      "agent": "lm3",
+      "at": "2026-08-19T22:17:38+00:00",
+      "hash": "052d1a6887461876bbed46e8cf661d638c6fef501fa4b46f7b33bc699b1d7946",
+      "task": "F-244",
       "token": null
     },
     "autoload/chest_placement_service.gd": {
@@ -848,11 +970,11 @@
       "token": null
     },
     "autoload/defeat_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
+      "agent": "bram1",
+      "at": "2026-08-19T22:14:05+00:00",
       "hash": "435f5bcefc2658d558c35f67b11238cd85a5adc38c7d3d3796938cae4402738e",
       "task": "F-243",
-      "token": null
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "autoload/enemy_world.gd": {
       "agent": "lm",
@@ -1008,84 +1130,6 @@
       "hash": "351ace8c9ef5ae3cc0ef87dde0d673ead1e82537cae08a9a288f3b4f1fc33ae8",
       "task": "4.13",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "content/buildables/barricade.tres": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "646b6bc57a44e10dd2591cd76571a6fe9aaed9250a520008855a81acc7f7e953",
-      "task": "3.7"
-    },
-    "content/buildables/barricade_spike.tres": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "c182fd9927b456ed7009809bc3aa7a1b9e1c498d0a5d63123390b91f2db579d1",
-      "task": "3.7"
-    },
-    "content/buildables/bridge.tres": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "dd23bf5204124f46203e1b2c1feded78929095e26bf9ddf47b6454ed2e1d83a4",
-      "task": "3.7"
-    },
-    "content/buildables/dock.tres": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "d5d039ba923d97896257af24ef435ee82b4833ffe70923752370a07883172e35",
-      "task": "3.7"
-    },
-    "content/buildables/door.tres": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "7f41cb4b0ba2072d1cd56349dc576a751875aca167c9ab04b38c2ccf1b00cc9a",
-      "task": "3.7"
-    },
-    "content/buildables/gate.tres": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "79e15cf21c4a5ac62d32706f3bbe98fc841eb588e0668f9cdc0a157c1fa48919",
-      "task": "3.7"
-    },
-    "content/buildables/ladder.tres": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "37e5f0332434ca4a47d5cbf964cdcae460cb96923a57f47e1f9c4a197937b445",
-      "task": "3.7"
-    },
-    "content/buildables/palisade.tres": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "59de5e845c27664c143767348ab569bf1471cf1e7b421e1244b35bd475d75a9c",
-      "task": "3.7"
-    },
-    "content/buildables/palisade_gate.tres": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "577e521119be731d7a63590b016663be91bd770264072cedb6918c03a58d76af",
-      "task": "3.7"
-    },
-    "content/buildables/ramp.tres": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "fe36c963f1c06476c981ae20a206ffa9233a8681afcc827723a0edb5fdcbd82e",
-      "task": "3.7"
-    },
-    "content/buildables/wall.tres": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "c3147f73e7cc465b64f2381a76a53ce7c02b3a391e84c0ec10f40564e0408325",
-      "task": "3.7"
-    },
-    "content/buildables/ward.tres": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "beb15f7f6091acfeaa17fddd04e925cac1e6f6c66a327768e21170bd1b48b224",
-      "task": "3.7"
-    },
-    "content/buildables/ward_post.tres": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "cbf7a1c989133cf33c377c0f1110f1dc424d022c1d7b2e3f4a6726d6596beaf6",
-      "task": "3.7"
     },
     "content/cycle_modifiers": {
       "agent": "lm",
@@ -1343,11 +1387,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "core/events/event_bus.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
+      "agent": "bram1",
+      "at": "2026-08-19T22:14:05+00:00",
       "hash": "0acd746eab2fb7c07e754385e3ad565d39e1dad28347e1b93989c2b47302a7bf",
       "task": "F-243",
-      "token": null
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "core/game_state.gd": {
       "agent": "lm",
@@ -1521,30 +1565,6 @@
       "task": "F-209",
       "token": null
     },
-    "scenes/buildables/barricade.tscn": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "2804fac40c8014ba62d0f05d2b41427bbcd8074023ecb4d5dcf21899531e2c00",
-      "task": "3.7"
-    },
-    "scenes/buildables/barricade_spike.tscn": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "03467e9f5e9ce9a8fae7bd553ee596c841c3302cde2f10ced590329a87ad456a",
-      "task": "3.7"
-    },
-    "scenes/buildables/bridge.tscn": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "39d854376446178b9119295ae894947758966e256e8d11ec0cab0655ae41453b",
-      "task": "3.7"
-    },
-    "scenes/buildables/dock.tscn": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "f87c8a220b6488156c3b591c08b24830a2d89aa62232801beedaefcfe004d7ed",
-      "task": "3.7"
-    },
     "scenes/buildables/door.tscn": {
       "agent": "slate17",
       "at": "2026-08-19T06:36:13+00:00",
@@ -1559,54 +1579,12 @@
       "task": "3.7",
       "token": null
     },
-    "scenes/buildables/ladder.tscn": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "d29c35aa2c0028033144f278267ea5f4be05846a1f21a17823fc42576fc975cf",
-      "task": "3.7"
-    },
-    "scenes/buildables/palisade.tscn": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "cac0836dae71bcb280a9a4c13c8948ba11e9feceec7c86ad1b21e01b4fdce53f",
-      "task": "3.7"
-    },
     "scenes/buildables/palisade_gate.tscn": {
       "agent": "slate17",
       "at": "2026-08-19T06:36:13+00:00",
       "hash": "9fd3ef2ae57cae5025f54e07305ea1a50db5db745b853b953068d464608f4f61",
       "task": "3.7",
       "token": null
-    },
-    "scenes/buildables/ramp.tscn": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "b77718f1bc24dda0fe04eff107da135e10b9bddb8bcbe8a5be2a0172e1c1499a",
-      "task": "3.7"
-    },
-    "scenes/buildables/ward.tscn": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "02488c2753fa4de68fe2eff153f713cf47e52bc0f89a002d4a904a017c7eb4f4",
-      "task": "3.7"
-    },
-    "scenes/buildables/ward_post.tscn": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "9a9652dad84abf1d4ae362f93ffa90b90f62b1e40427bdb445827f4c3e1e567f",
-      "task": "3.7"
-    },
-    "systems/building/build_ghost.gd": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "c7cd027bfcdffe47eee54b5b7780aab1b4f837a3e6810b231e0ba561e50db72e",
-      "task": "3.7"
-    },
-    "systems/building/buildable_def.gd": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "0b8e0945661eafc9782a07d8341feab2291d74a19d45c5c189840dc612189775",
-      "task": "3.7"
     },
     "systems/building/buildable_door.gd": {
       "agent": "slate17",
@@ -1660,11 +1638,11 @@
       "task": "6.2"
     },
     "systems/cycle/cycle_modifier_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
+      "agent": "bram1",
+      "at": "2026-08-19T22:14:05+00:00",
       "hash": "99615c90a6a37f4ba4a48883c3a76cf15350af8ee9e4f8b094d45cffa18147ae",
       "task": "F-243",
-      "token": null
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "systems/cycle/cycle_modifier_service.gd.uid": {
       "agent": "lm",
@@ -1673,11 +1651,11 @@
       "task": "6.2"
     },
     "systems/cycle/cycle_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
+      "agent": "bram1",
+      "at": "2026-08-19T22:14:05+00:00",
       "hash": "d8be6c98a55aad6669e65085be47be283ceb065913fca641f3dfb026ca021477",
       "task": "F-243",
-      "token": null
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "systems/cycle/cycle_service.gd.uid": {
       "agent": "lm",
@@ -1755,11 +1733,11 @@
       "task": "3.16"
     },
     "systems/extraction/extraction_ship.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
+      "agent": "bram1",
+      "at": "2026-08-19T22:14:05+00:00",
       "hash": "ef7aa500a85e0c26df770a459b3c5fcea6099fcfb8f4420189a9cd9f0a2ae61c",
       "task": "F-243",
-      "token": null
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "systems/harvesting/harvestable.gd": {
       "agent": "lm",
@@ -1775,11 +1753,11 @@
       "task": "6.7"
     },
     "systems/health/player_health.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
+      "agent": "bram1",
+      "at": "2026-08-19T22:14:05+00:00",
       "hash": "f3fbd55e63b9fba8df8264a0a8931880732d2fdea31b33c6336109fd381af364",
       "task": "F-243",
-      "token": null
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "systems/inventory/inventory_store.gd": {
       "agent": "lm",
@@ -1822,11 +1800,11 @@
       "token": null
     },
     "systems/wellspring/wellspring.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
+      "agent": "bram1",
+      "at": "2026-08-19T22:14:05+00:00",
       "hash": "a92832f73be6808dbb0b117baa6b679cde5efc671cc97dbae6962fe960c3bf67",
       "task": "F-243",
-      "token": null
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "tools/_debug_door_swing.gd": {
       "agent": "lm",
@@ -2123,18 +2101,6 @@
       "at": "2026-08-19T04:35:12+00:00",
       "hash": "022d96ce48d828bd2b083e359f15c8adede42be6dc616bd62fd78d104d1422cd",
       "task": "5.5"
-    },
-    "tools/buildable_content_check.gd": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "f58166a80e999accdd6545fc6e1d8f8a86b8ca54c5e7fcb63251d31aeac56201",
-      "task": "3.7"
-    },
-    "tools/buildable_content_check.gd.uid": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:17:53+00:00",
-      "hash": "0e628aeb876e19d5941fccccd0fbac700fb21f31439a1cbfbf218366a90a727a",
-      "task": "3.7"
     },
     "tools/camp_check.gd": {
       "agent": "slate17",
@@ -2679,11 +2645,11 @@
       "task": "3.17"
     },
     "tools/run_restart_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
+      "agent": "bram1",
+      "at": "2026-08-19T22:14:05+00:00",
       "hash": "a3401240e6b32868130128b44c01f545c628e6aadb1127d45f2ab700bdba1763",
       "task": "F-243",
-      "token": null
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "tools/run_summary_check.gd": {
       "agent": "lp",
@@ -2898,12 +2864,6 @@
       "hash": "5e17c0fb475754cfd9b8734b0cea692ac0c39ef77a00645a7b7c13b4d7ddcf8a",
       "task": "F-164"
     },
-    "tools/wellspring_net_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T22:12:21+00:00",
-      "hash": "95b69b7999ee54af1388ee258e3e945ea9e28548675b25b6ad59e0bb471e257b",
-      "task": "F-141"
-    },
     "tools/wellspring_recorruption_check.gd": {
       "agent": "lm",
       "at": "2026-08-19T02:12:08+00:00",
@@ -2985,11 +2945,11 @@
       "task": "5.5"
     },
     "ui/hud/defeat_hud.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
+      "agent": "bram1",
+      "at": "2026-08-19T22:14:05+00:00",
       "hash": "c8f39e6ef50918896238b04f3e4180b9e3150020563c7a0dfa0a84917227dfdf",
       "task": "F-243",
-      "token": null
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "ui/hud/defeat_hud.gd.uid": {
       "agent": "lp",
@@ -2999,11 +2959,11 @@
       "token": null
     },
     "ui/hud/extraction_hud.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:11:38+00:00",
+      "agent": "bram1",
+      "at": "2026-08-19T22:14:05+00:00",
       "hash": "fb2e25ed2f00e96f7385a0e782217008f63c6c1454c6f46375f123147bed488b",
       "task": "F-243",
-      "token": null
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "ui/hud/extraction_hud.gd.uid": {
       "agent": "lp",
@@ -6751,23 +6711,25 @@
       "title": "Any session can route lane work, so six orders reached the queues from agents that were not the director"
     },
     "F-243": {
+      "done_at": "2026-08-19T22:14:05+00:00",
+      "done_by": "bram1",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "The run loop is a line, not a circle \u2014 after defeat or extraction there is no path to a next run short of relaunching the process"
     },
     "F-244": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "The build verb refuses natural coordinates \u2014 nothing ground-snaps a command placement, so 'build wall_wood ~ ~ ~' reads as a bug"
     },
     "F-245": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "The whole Cycle Modifier feature is inert: seven modifiers, a weighted deck, and not one line of game code asks whether a modifier is active"
     },
@@ -6824,7 +6786,7 @@
     "F-253": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "tools/seed_sync_check.gd has 3 pre-existing failures \u2014 confirmed unrelated to F-250 via git baseline"
     },
@@ -6885,6 +6847,15 @@
       "status": "todo",
       "tier": "F",
       "title": "poi_map.gd's dart-throwing loop and BiomeMap.moisture() are the same per-sample noise-rebuild shape F-241/F-252 just fixed, with no NoiseSet-equivalent yet"
+    },
+    "F-262": {
+      "done_at": "2026-08-19T22:21:28+00:00",
+      "done_by": "bram1",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Claims are held for the whole task \u2014 grabbed up front and released only at close-out \u2014 so a file locks for up to 2h even when it is edited for minutes, stalling other agents"
     }
   },
   "version": 1

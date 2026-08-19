@@ -2149,14 +2149,28 @@ happened once (task 3.5 ended itself waiting on the Godot lock). So:
   you stopped. Stopping silently is the one outcome worse than failing.
 
 %(spec)s
-## 1. Claim before your first edit
+## 1. Claim each file LATE — right before you first edit it, not all up front
+
+A claim locks a file for every other agent until you close out, so a file claimed at the start of a
+two-hour task is a file nobody else can touch for two hours — even if you do not edit it until the
+last ten minutes. That idle-holding is the single biggest cause of other agents stalling (F-262,
+D-153). So claim **incrementally, at the last moment**: when you are about to make your first edit to
+a file, claim exactly that file (or the tight group you are about to change together), then edit it.
 
 ```bash
+# NOT this — do not claim your whole file list up front:
 %(claim)s
+
+# Do this instead — one claim immediately before each file's first edit:
+.agent/bin/agent claim %(tid)s <the one file you are about to edit>
 ```
 
-If that fails, another lane holds a file you need. **Stop and run `.agent/bin/agent drop %(tid)s`** —
-do not work around it. Two agents in one file is the failure this whole system exists to prevent.
+`agent claim` is additive — call it as many times as you need and it appends. You still **release
+everything at once at close-out** (`done`/`handoff` does this); do not release files mid-task, because
+a fix your own verification turns up may send you back into a file you thought you were finished with.
+
+If a claim fails, another lane holds that file. **Stop and run `.agent/bin/agent drop %(tid)s`** — do
+not work around it. Two agents in one file is the failure this whole system exists to prevent.
 
 ## 2. Verify it yourself, headless — never ask a human to run it
 
@@ -2579,7 +2593,10 @@ def cmd_saturate(args):
 
     watch = "--watch" in args
     detach = "--detach" in args
-    wanted = [a for a in args[1:] if not a.startswith("--")]
+    slot = int(args[args.index("--slot") + 1]) if "--slot" in args else 1
+    # Drop the value that follows --slot too, or a bare "3" is mistaken for a task id.
+    skip = {str(slot)} if "--slot" in args else set()
+    wanted = [a for a in args[1:] if not a.startswith("--") and a not in skip]
     orders = _open_orders()
     drain = not wanted                    # no ids means "drain this lane", including later arrivals
     if not wanted:
@@ -2595,8 +2612,9 @@ def cmd_saturate(args):
     # `pgrep -f "agent saturate LP"`, so two chains each waited forever for the other AND themselves,
     # and the lane sat idle through a window it was supposed to be draining. A lock cannot match its
     # own name.
-    with file_lock("saturate-%s" % lane.lower(), timeout=8 * 3600):
-        return _saturate_locked(lane, wanted, watch, drain)
+    lock_name = "saturate-%s" % lane.lower() if slot <= 1 else "saturate-%s-%d" % (lane.lower(), slot)
+    with file_lock(lock_name, timeout=8 * 3600):
+        return _saturate_locked(lane, wanted, watch, drain, slot)
 
 
 def _wait_for_lane_free(lane, limit=BUSY_WAIT_LIMIT):
@@ -2664,7 +2682,18 @@ def _queue_second_pass(lane, tid, queue, seen):
         return
     if tid.endswith("-review") or "%s-review" % tid in seen:
         return
-    sha = _head()
+    # Not _head(): with concurrent slots, HEAD may be a sibling's commit made moments later, and a
+    # review aimed at the wrong sha confidently judges the wrong diff (this exact mistake was made by
+    # hand with 5.3's docs commit). Ship messages carry "Task <tid> shipped by", so find OUR commit.
+    r = _git("log", "-40", "--format=%H %s")
+    sha = ""
+    for line in r.stdout.splitlines():
+        h, _, msg = line.partition(" ")
+        if "Task %s shipped" % tid in msg:
+            sha = h[:12]
+            break
+    if not sha:
+        sha = _head()
     if not sha or sha == "?":
         return
     # Max effort on the review, above whatever the implementing pass ran at. The asymmetry is
@@ -2681,7 +2710,7 @@ def _queue_second_pass(lane, tid, queue, seen):
               % (C["dim"], tid, sha[:8], C["x"]))
 
 
-def _saturate_locked(lane, wanted, watch, drain=False):
+def _saturate_locked(lane, wanted, watch, drain=False, slot=1):
     """Run the lane's queue to the end. Two things this has to get right, both learned expensively.
 
     **A busy lane is not a failed lane.** `lane run` refuses to put a second agent on one account,
@@ -2709,10 +2738,16 @@ def _saturate_locked(lane, wanted, watch, drain=False):
         st = load()
         if st["tasks"].get(tid, {}).get("status") == "done":
             print("  %s· %s already done, skipping%s" % (C["dim"], tid, C["x"]))
+        elif tid in st.get("in_flight", {}):
+            # Another slot (or any agent) is mid-task on it. Leave it to them: if they die, their
+            # handoff releases it and a later chain re-adds it, since it will be neither done nor
+            # in flight. Requeueing it HERE would spin when only in-flight items remain.
+            print("  %s· %s in flight under %s — leaving it%s"
+                  % (C["dim"], tid, st["in_flight"][tid].get("agent", "?"), C["x"]))
         elif not os.path.exists(_order_path(tid)):
             print("  %s· no order for %s, skipping%s" % (C["dim"], tid, C["x"]))
         else:
-            code = _run_with_resume(lane, tid, watch)
+            code = _run_with_resume(lane, tid, watch, slot)
             if code == EX_LANE_BUSY:
                 busy_waits[tid] = busy_waits.get(tid, 0) + 1
                 if busy_waits[tid] <= MAX_BUSY_WAITS and _wait_for_lane_free(lane):
@@ -2794,7 +2829,7 @@ def _looks_transient(err):
     return bool(err and TRANSIENT_PAT.search(str(err)))
 
 
-def _run_with_resume(lane, tid, watch):
+def _run_with_resume(lane, tid, watch, slot=1):
     """Run one task, and with --watch, sleep out a short quota wall and pick it straight back up.
 
     The two windows do different jobs. The 5-hour session is the rate limiter — it fills fast and is
@@ -2806,7 +2841,8 @@ def _run_with_resume(lane, tid, watch):
     Only quota parks are resumed. A task that failed for any other reason is left alone, because
     retrying a broken task on a loop just burns the window it was waiting for."""
     for attempt in range(MAX_RESUMES + 1):
-        code = subprocess.call([LANE_BIN, "run", lane, tid], cwd=ROOT)
+        argv = [LANE_BIN, "run", lane, tid] + (["--slot", str(slot)] if slot > 1 else [])
+        code = subprocess.call(argv, cwd=ROOT)
         if code == 0 or not watch or attempt == MAX_RESUMES:
             return code
 

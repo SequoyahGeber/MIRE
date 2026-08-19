@@ -6329,3 +6329,27 @@ Both-map contract matrix shipped: world_contract_check now boots the shipped aut
 Files: `tools/world_contract_check.gd`, `world/gen/procedural_world.gd`, `world/gen/undergrowth.gd`, `tools/undergrowth_check.gd`, `world/gen/poi_def.gd`, `content/poi/loot_cache.tres`, `content/poi/enemy_nest.tres`, `content/poi/station_camp.tres`, `world/gen/poi_map.gd`, `tools/poi_check.gd`, `content/poi/wellspring.tres`, `content/poi/shipwreck.tres`
 
 Commit at time of writing: `537d5ad`
+
+---
+
+### DONE · F-243 · bram1 · 2026-08-19T22:14:05+00:00
+
+**The run loop is a line, not a circle — after defeat or extraction there is no path to a next run short of relaunching the process**
+
+Run restart wiring shipped and verified by the director after the implementing dispatch timed out twice at the verification step (Opus-high + Godot-lock contention exceeded the old 3600s ceiling; work itself was complete on disk). RUN_RESTART_CHECK failures=0: every service resets in place — defeat cleared, wellspring uncapped, chests re-closed, buildables cleared, enemies despawned, inventory emptied, player alive — plus a second Cycle advance after restart proves the restarted run keeps working. D-149: reset in place, no level reload, no fresh seed, host-only trigger, no new RPC.
+
+Files: `autoload/defeat_service.gd`, `core/events/event_bus.gd`, `systems/cycle/cycle_service.gd`, `systems/cycle/cycle_modifier_service.gd`, `systems/extraction/extraction_ship.gd`, `systems/health/player_health.gd`, `systems/wellspring/wellspring.gd`, `ui/hud/defeat_hud.gd`, `ui/hud/extraction_hud.gd`, `tools/run_restart_check.gd`
+
+Commit at time of writing: `74aeb60`
+
+---
+
+### DONE · F-262 · bram1 · 2026-08-19T22:21:28+00:00
+
+**Claims are held for the whole task — grabbed up front and released only at close-out — so a file locks for up to 2h even when it is edited for minutes, stalling other agents**
+
+Claim-late is now the instruction: the order template and AGENTS.md rule 1 both tell agents to claim each file the moment before its first edit rather than the whole list up front, since agent claim is additive. Release stays all-at-once at close-out — Sequoyah's call, the safe half: a fix a task's own check turns up can send it back into a file, so mid-task release reopens the two-agents-one-file race. This shrinks a file's lock from the whole task (up to 2h on Opus-high) to the minutes it is actually worked. D-153 to be recorded when docs/DECISIONS.md frees (held by lp for F-253). Verified a fresh order carries the new instruction; harness_check 34/34.
+
+Files: `.agent/bin/agent`, `AGENTS.md`
+
+Commit at time of writing: `74aeb60`
