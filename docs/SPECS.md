@@ -4863,6 +4863,65 @@ modelled, because that win lives in the sway/emitter cases F-203 now owns.
 
 ---
 
+## F-154 · Two events in COMMANDS.md §5.2's own illustrative hook vocabulary — `run_started`, `player_downed` — had no shipped signal to bind to
+
+**Claim:** `systems/health/player_health.gd`, `systems/cycle/cycle_service.gd`,
+`autoload/command_service.gd`, `tools/hook_events_check.gd` (new), `docs/FINDINGS.md`,
+`docs/SPECS.md`, `docs/DELEGATION.md`, `docs/COMMANDS.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The gap, per the finding:** `CommandService._HOOK_EVENTS` bound three of the five events
+COMMANDS.md §5.2 names illustratively (`night_started`, `day_started`, `enemy_died`); `run_started`
+and `player_downed` had no real signal, so naming either in a HookDef failed loudly (a MireLog error
+at wire time) rather than silently never firing — not a bug, but not a closed finding either.
+
+**Fix — one real signal each, on the system that already owns the lifecycle in question:**
+
+1. **`player_downed`** (`systems/health/player_health.gd`): a new `signal player_downed(peer_id: int)`,
+   host/solo-only, emitted at the exact three call sites `DownedState.apply_damage()` can return
+   `Transition.WENT_DOWN` from — `host_apply_damage()` (melee/enemy hits), `_tick_hunger()`
+   (starvation), `_tick_blight()` (Blight corruption) — a sibling sweep per F-185's own lesson, not
+   just the first site found. Deliberately distinct from the existing broadcast `downed_flag_changed`
+   bool: that one also fires `true->false` on revive, which is exactly the wrong shape for "just went
+   down" hook content (an author's `.mcmd` firing again on every successful revive). `apply_damage()`
+   already no-ops once `state != ALIVE`, so this can never double-fire for one down.
+2. **`run_started`** (`systems/cycle/cycle_service.gd`): a new `signal run_started()`, fired exactly
+   once per process from a new guarded `_emit_run_started()`, called right after `_ready()`'s existing
+   `_announce()`. Gated on the same `_owns_cycle()` host/solo check `_announce()` already uses — a
+   client joining someone else's run never fires its own copy, same split `night_started`/
+   `day_started` already establish. **Decision, recorded here rather than a new D-number** (no
+   cross-cutting API contract, this file already owns Cycle lifecycle per its ARCHITECTURE.md §2.2
+   row): a "run" is the whole process lifetime, not a session — `_current_cycle` already has no
+   session-open/close reset anywhere in this file (task 6.1's existing, unchanged behavior), so "fires
+   once per process" is the correct definition of "once per run" here, not an approximation forced by
+   convenience. A future hub-loop/"play again" flow that restarts a run without restarting the process
+   would need to revisit this guard — it does not exist today.
+3. **`autoload/command_service.gd`**: one `_HOOK_EVENTS` row each (`run_started` -> `/root/CycleService`
+   + the existing zero-arg `_on_hook_signal_0` handler; `player_downed` -> `/root/PlayerHealth` + a new
+   `_on_hook_signal_player_downed(peer_id, function_name, host_only)`), plus the stale class-doc comment
+   above the table (it named F-154 as still-open) rewritten to describe the now-real bindings.
+
+**Verify:** new `tools/hook_events_check.gd` — `agent godot --script tools/hook_events_check.gd`,
+`HOOK_EVENTS_CHECK failures=0`. Proves, per event: `wire_hook()` connects without an "unknown event"
+error; firing the real signal actually runs the bound function through `CommandService`'s real front
+door (the same proof `tools/function_check.gd` already gives `night_started`'s dusk crossing);
+`player_downed` additionally proves the edge shape directly against `PlayerHealth` (fires once on
+down, not again while still down, NOT on revive, fires again on a second down) and `run_started`
+proves its own one-shot boot emission already happened and a repeat call is a no-op. A deliberate
+negative case (an event still genuinely absent from the table) confirms the loud-failure path this
+finding relied on the whole time still works. Also re-ran `tools/function_check.gd`,
+`tools/cycle_check.gd`, `tools/player_health_check.gd`, `tools/command_catalog_check.gd` (all
+`failures=0`, unaffected) and a full headless boot (`agent godot --quit-after 60`) with zero `ERROR:`
+lines outside the deliberate negative-case one.
+
+**Verified 2026-08-19 (lp):** `HOOK_EVENTS_CHECK failures=0`; `FUNCTION_CHECK failures=0`;
+`CYCLE_CHECK failures=0`; `PLAYER_HEALTH_CHECK` `0 failure(s)`; `COMMAND_CATALOG_CHECK failures=0`;
+full boot clean.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

@@ -414,31 +414,6 @@ of assuming their own `agent ship`/hand-commit silently failed.
 
 ---
 
-### F-154 · Two events in COMMANDS.md §5.2's own illustrative hook vocabulary — `run_started`,
-`player_downed` — have no shipped signal to bind to
-
-**Area:** commands · **Severity:** low · **Found:** 2026-08-18 by lp during 3.17
-
-COMMANDS.md §5.2 names the starting event vocabulary as "`run_started`, `night_started`,
-`day_started`, `player_downed`, `enemy_died`". Three of those are real, existing signals
-(`DayNight.night_started`/`day_started`, `EnemyWorld.enemy_died`) and `CommandService._HOOK_EVENTS`
-(task 3.17) binds all three. The other two do not exist anywhere in the codebase today: nothing emits
-a `run_started` signal (there is no run-lifecycle system yet), and `PlayerHealth` has
-`downed_flag_changed(peer_id, downed)` — fired on both down AND revive — but no one-shot
-"just went down" signal a hook could bind to without also firing on every revive.
-
-Neither `player_health.gd` nor a run-lifecycle owner was in 3.17's claim, so no new signal was added
-to reach the illustrative list — that would have meant editing files outside this task's claim set to
-manufacture a signal for a mechanism that ships disabled by default anyway (D-094). Naming either
-event in a HookDef today is not silent, though: `CommandService.wire_hook()` logs a MireLog error at
-boot ("unknown event '...' has no signal binding") instead of quietly never firing, so authoring one
-by mistake is loud, not a mystery.
-
-**What would close this:** whichever task adds a real run-lifecycle owner (a "run started" moment
-beyond just "the level loaded") or a player-health "downed" edge signal (not the existing level-
-triggered `downed_flag_changed`) should add one row each to `CommandService._HOOK_EVENTS` — the table
-`wire_hook()` already reads is the whole cost of a new event once the real signal exists.
-
 ### F-165 · Task 6.5's two new extraction RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.5
@@ -947,6 +922,54 @@ alone hid the shadow regression in point 3 above; primitives is what caught it.
 ---
 
 ## Resolved
+
+### F-154 · Two events in COMMANDS.md §5.2's own illustrative hook vocabulary — `run_started`, — **fixed**
+`player_downed` — have no shipped signal to bind to
+
+**Area:** commands · **Severity:** low · **Found:** 2026-08-18 by lp during 3.17
+
+COMMANDS.md §5.2 names the starting event vocabulary as "`run_started`, `night_started`,
+`day_started`, `player_downed`, `enemy_died`". Three of those are real, existing signals
+(`DayNight.night_started`/`day_started`, `EnemyWorld.enemy_died`) and `CommandService._HOOK_EVENTS`
+(task 3.17) binds all three. The other two do not exist anywhere in the codebase today: nothing emits
+a `run_started` signal (there is no run-lifecycle system yet), and `PlayerHealth` has
+`downed_flag_changed(peer_id, downed)` — fired on both down AND revive — but no one-shot
+"just went down" signal a hook could bind to without also firing on every revive.
+
+Neither `player_health.gd` nor a run-lifecycle owner was in 3.17's claim, so no new signal was added
+to reach the illustrative list — that would have meant editing files outside this task's claim set to
+manufacture a signal for a mechanism that ships disabled by default anyway (D-094). Naming either
+event in a HookDef today is not silent, though: `CommandService.wire_hook()` logs a MireLog error at
+boot ("unknown event '...' has no signal binding") instead of quietly never firing, so authoring one
+by mistake is loud, not a mystery.
+
+**What would close this:** whichever task adds a real run-lifecycle owner (a "run started" moment
+beyond just "the level loaded") or a player-health "downed" edge signal (not the existing level-
+triggered `downed_flag_changed`) should add one row each to `CommandService._HOOK_EVENTS` — the table
+`wire_hook()` already reads is the whole cost of a new event once the real signal exists.
+
+**Resolved 2026-08-19 by lp.** Both events now bind to a real signal. `PlayerHealth.player_downed(peer_id)` (systems/health/player_health.gd)
+is a new host/solo-only, one-shot edge signal fired from all three sites `DownedState.apply_damage()` can
+return `Transition.WENT_DOWN` from (host_apply_damage, _tick_hunger, _tick_blight) — deliberately distinct
+from the existing broadcast `downed_flag_changed` bool, which also fires on revive.
+`CycleService.run_started()` (systems/cycle/cycle_service.gd) is a new signal fired exactly once per
+process, host/solo-only, the instant Cycle 1 is live (guarded so a later Cycle advance can never look like
+a second run starting). `CommandService._HOOK_EVENTS` gained one row each, plus a new
+`_on_hook_signal_player_downed` handler.
+
+Decision recorded in the new docs/SPECS.md F-154 block rather than a fresh D-number: a "run" is the whole
+process lifetime here, not a session — CycleService._current_cycle already has no session-close reset, so
+"fires once per process" is run_started's correct, permanent contract, not a placeholder.
+
+Verified: new tools/hook_events_check.gd (agent godot --script tools/hook_events_check.gd) ->
+HOOK_EVENTS_CHECK failures=0 — proves both events wire without an "unknown event" error, firing the real
+signal actually runs the bound function through CommandService's real front door (same proof
+function_check.gd gives night_started), player_downed's edge shape (fires once on down, not again while
+still down, NOT on revive, fires again on a second down), run_started's one-shot boot emission and its
+no-op re-call, and the negative case (an event still genuinely absent from the table still fails loudly).
+No regressions: tools/function_check.gd, tools/cycle_check.gd, tools/player_health_check.gd,
+tools/command_catalog_check.gd all still failures=0/0 failures; full headless boot (agent godot
+--quit-after 60) clean, zero ERROR: lines outside the deliberate negative-case one.
 
 ### F-187 · Props are 1,057 MultiMesh groups averaging 2.7 copies — F-100's cross-asset chunk merge is still not built, and now has a measured constraint — **fixed**
 

@@ -1150,6 +1150,11 @@ boot (`agent godot --quit-after 20`). Full design rationale and the "why not `ga
   `CycleService.host_advance_cycle()`.
 - `MireGrid.set_cycle_spread_multiplier(multiplier: float)` — already wired, called by
   `CycleService`; not something 6.2 needs to touch.
+- `CycleService.run_started` (signal, no args) — F-154 (2026-08-19, lp): fires exactly once per
+  process, host/solo-only, the instant Cycle 1 is live. `CommandService._HOOK_EVENTS`' own row is the
+  intended consumer (COMMANDS.md §5.2's `run_started` hook event); a run's lifetime is the whole
+  process lifetime here (no session-close reset exists for `_current_cycle`), so "once per process"
+  is this signal's actual, permanent contract, not a placeholder.
 - `WaveSpawner.host_unlock_next_enemy() -> StringName` / `unlocked_enemy_pool() -> Array[StringName]`
   — already wired. `roster_order` (`@export`, defaults to `[&"bog_crawler"]`) is the one place 5.2
   appends new archetypes; no code change needed there.
@@ -1530,18 +1535,25 @@ uses) connects every ENABLED HookDef's named event to its real signal via `_HOOK
 table mapping event name -> `{path, signal, handler}`:
 ```gdscript
 const _HOOK_EVENTS: Dictionary[StringName, Dictionary] = {
+    &"run_started":   {"path": ^"/root/CycleService", "signal": &"run_started", "handler": &"_on_hook_signal_0"},
     &"night_started": {"path": ^"/root/DayNight", "signal": &"night_started", "handler": &"_on_hook_signal_0"},
     &"day_started":   {"path": ^"/root/DayNight", "signal": &"day_started",   "handler": &"_on_hook_signal_0"},
+    &"player_downed": {"path": ^"/root/PlayerHealth", "signal": &"player_downed", "handler": &"_on_hook_signal_player_downed"},
     &"enemy_died":    {"path": ^"/root/EnemyWorld", "signal": &"enemy_died",  "handler": &"_on_hook_signal_enemy_died"},
 }
 ```
-Adding an event a future task ships a real signal for is one row here (F-154 names the two
-illustrative events — `run_started`, `player_downed` — with no signal to bind to yet; naming either
-in a HookDef today fails loudly at wire time, not silently). `CommandService.wire_hook(hook: Resource)`
-is public on purpose: a check (or a future in-game tool) can wire a synthetic HookDef directly, no
-Registry/content round trip needed — `has_wired_hook(id)` is the introspection half.
-`content/hooks/night_siege.tres` + `content/functions/night_siege.mcmd` is the one worked example
-(dusk -> `wave start 10`), shipped **disabled** — D-094 is why, and F-154 is what it deferred.
+Adding an event a future task ships a real signal for is one row here — F-154 (resolved,
+`docs/SPECS.md`'s own block) filled the last two of the five COMMANDS.md §5.2 names illustratively:
+`CycleService.run_started` (fires once per process, the instant Cycle 1 is live — host/solo-only,
+same `_owns_cycle()` gate `night_started`/`day_started` use) and `PlayerHealth.player_downed` (the
+real ALIVE→DOWNED edge — fired from all three sites `DownedState.apply_damage()` can return
+`Transition.WENT_DOWN` from: `host_apply_damage`, `_tick_hunger`, `_tick_blight` — distinct from the
+existing broadcast `downed_flag_changed` bool, which also fires `true->false` on revive). Naming an
+event still genuinely absent from this table still fails loudly at wire time, not silently.
+`CommandService.wire_hook(hook: Resource)` is public on purpose: a check (or a future in-game tool)
+can wire a synthetic HookDef directly, no Registry/content round trip needed — `has_wired_hook(id)`
+is the introspection half. `content/hooks/night_siege.tres` + `content/functions/night_siege.mcmd`
+is the one worked example (dusk -> `wave start 10`), shipped **disabled** — D-094 is why.
 
 **Autoexec (§5.3).** Host/offline only (`_owns_execution()`), deferred alongside hook wiring.
 `content/functions/autoexec.mcmd` — if present — is already in `_functions` like any other scanned
