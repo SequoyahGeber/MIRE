@@ -330,16 +330,27 @@ func net_command_result(request_id: int, result: Dictionary) -> void:
 signal _rpc_result_received(request_id: int, result: Dictionary)
 
 
+## F-224: `_resolved_requests` exists only to stop a late `_on_submit_timeout` from firing a second,
+## stale result after the real one already arrived — once THIS loop has consumed the matching result
+## and cancelled the pending timer, that entry has nothing left to guard and is erased so the
+## dictionary does not grow for the life of the client process. Cancelling the timer first is what
+## makes the erase safe: without it, the still-connected one-shot timer would fire later, find no
+## entry, and re-add one that nothing ever cleans up again — silently defeating the fix on every
+## request that resolves before its timeout.
 func _submit_to_host(line: String) -> Dictionary:
 	var request_id: int = _take_id()
 	net_submit_command.rpc_id(NetConfig.HOST_PEER_ID, request_id, line)
 
 	var timer: SceneTreeTimer = get_tree().create_timer(HOST_COMMAND_TIMEOUT_SEC)
-	timer.timeout.connect(_on_submit_timeout.bind(request_id), CONNECT_ONE_SHOT)
+	var timeout_callback: Callable = _on_submit_timeout.bind(request_id)
+	timer.timeout.connect(timeout_callback, CONNECT_ONE_SHOT)
 
 	while true:
 		var received: Array = await _rpc_result_received
 		if int(received[0]) == request_id:
+			if timer.timeout.is_connected(timeout_callback):
+				timer.timeout.disconnect(timeout_callback)
+			_resolved_requests.erase(request_id)
 			return received[1] as Dictionary
 	return _result(false, "unreachable", {})
 
@@ -356,6 +367,14 @@ func _take_id() -> int:
 	var id: int = _next_id
 	_next_id += 1
 	return id
+
+
+## Read-only mirror of `_resolved_requests.size()` for a caller outside this file
+## (`tools/command_resolved_requests_check.gd`'s F-224 regression guard) — same reasoning as `is_op()`'s
+## own mirror above: assert on the real private state, not on a side effect that some OTHER system
+## would also touch and make ambiguous.
+func resolved_request_count() -> int:
+	return _resolved_requests.size()
 
 
 # ── Op permissions (COMMANDS.md §1.3) ───────────────────────────────────────────────────────────────

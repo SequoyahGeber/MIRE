@@ -1450,6 +1450,38 @@ disabled-by-default per §5.2), `autoload/registry.gd` (hook loading), `tools/ru
   `DayNight.host_advance()` dusk crossing (the 2.12 pattern — drive the real clock, not the
   signal).
 
+## F-224 · `CommandService`'s per-client `_resolved_requests` dictionary never shrank over a session
+
+`_resolved_requests[request_id] = true` is written by `net_command_result` (a real reply landed) and
+by `_on_submit_timeout` (nothing came back in time) — client-side only, one entry per HOST-scope
+command a client ever submits over `net_submit_command`. Its only job is to stop whichever of those
+two fires SECOND from emitting a duplicate, stale `_rpc_result_received`. Nothing ever erased an
+entry, so the dictionary grew for the life of the client process — not a correctness bug (the guard's
+read is O(1) regardless of size), but MIRE's runs are explicitly endless (CLAUDE.md) and 3.17's
+functions/hooks can submit HOST-scope commands programmatically in a loop, so a long session had no
+bound on it. **Claim:** `autoload/command_service.gd`, `tools/command_resolved_requests_check.gd`
+(new).
+
+**Fix:** `_submit_to_host()` is the one place that consumes a request's matching
+`_rpc_result_received` — erase `_resolved_requests[request_id]` there, right after the match, instead
+of never. That alone would have reopened the race the dictionary exists to prevent: the pending
+`SceneTreeTimer.timeout` connection to `_on_submit_timeout` is still armed at that point, so if the
+real reply won the race, the timer would fire later anyway, find no entry, and re-add one that
+nothing would ever clean up again — silently defeating the fix on every request that resolves before
+its timeout (which is the common case). So the timeout connection is disconnected first (stored as a
+named `Callable` local so `is_connected`/`disconnect` target the exact bound instance), and only then
+is the entry erased. Added `resolved_request_count()`, a read-only mirror of the dictionary's size,
+the same "assert on real private state" reasoning `is_op()` already gives for its own mirror — the
+new check's only way to observe the dictionary from outside the file.
+
+**Shipped 2026-08-19.** Verified: `.agent/bin/agent godot --script
+tools/command_resolved_requests_check.gd` (new, real two-process ENet, `command_net_check.gd`'s own
+driver/probe shape — F-037) drives a non-op client through 5 HOST-scope round trips and asserts
+`resolved_request_count() == 0` after each one individually, not just at the end, so the check would
+have caught the "erase without disconnecting the timer" near-miss above. 0 failures, no undeclared
+`ERROR:` lines. `tools/command_net_check.gd` (the existing 3.13 suite) re-run clean, 0 failures,
+confirming the timer-cancel path doesn't change behavior for an opped client's normal round trip.
+
 ---
 
 # M4 — world & the Mire
