@@ -5478,3 +5478,18 @@ Notes along the way:
 Files: `docs/FINDINGS.md`
 
 Commit at time of writing: `0aef3d5`
+
+---
+
+### DONE · 4.7-review · lm · 2026-08-19T14:59:41+00:00
+
+**Review 4.7 @ 05d4330 — judge the commit, file findings, no edits**
+
+Sound. poi_check.gd 0 failures (38 assertions, 5 seeds) -- verified determinism (twice + def-order immunity), spacing (two-ruler rule, all pairs not just same-kind), constraints re-derived independently, honest counts on an unsatisfiable def, every kind + Wellspring landing every seed, including seed 24301 which D-095 records as the zero-Wellspring bug (now 4/4). Traced the actual generator code: draws happen before any constraint check so a rejected dart still advances the RNG identically (no desync), sort is priority-then-id not scan order, cross-kind spacing correctly uses max(clearance) not spacing. ARCHITECTURE.md §2.2 row accurate (derived, never wired), Registry loader matches every sibling family's pattern, no RPC anywhere. Full boot --quit-after 120: 0 ERROR: lines. One finding filed (F-229, low) -- D-095 is cited in SPECS.md twice for other decisions (now D-096/D-097), pre-existing typos that just collided with 4.7's own correctly-numbered D-095; not a 4.7 defect.
+
+Notes along the way:
+- Traced D-095's three uses (poi_def.gd, poi_map.gd docs) against DECISIONS.md and found docs/SPECS.md:1617 and :2889 already cite 'D-095' for two OTHER decisions (now correctly filed as D-096/D-097) -- pre-existing typos from commits e8f64cb/ee0b45f, predate 4.7, just collided with it since D-095 was the next free slot. Filed F-229. Not a defect in 4.7's own work.
+
+Files: `world/gen/poi_def.gd`, `world/gen/poi_map.gd`, `autoload/registry.gd`, `tools/poi_check.gd`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `59cec7f`

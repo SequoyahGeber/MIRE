@@ -1,65 +1,6 @@
 {
-  "claims": {
-    "autoload/registry.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T14:56:31+00:00",
-      "task": "4.7-review",
-      "token": null
-    },
-    "docs/ARCHITECTURE.md": {
-      "agent": "lm",
-      "at": "2026-08-19T14:56:31+00:00",
-      "task": "4.7-review",
-      "token": null
-    },
-    "docs/DECISIONS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T14:56:31+00:00",
-      "task": "4.7-review",
-      "token": null
-    },
-    "docs/DELEGATION.md": {
-      "agent": "lm",
-      "at": "2026-08-19T14:56:31+00:00",
-      "task": "4.7-review",
-      "token": null
-    },
-    "tools/poi_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T14:56:31+00:00",
-      "task": "4.7-review",
-      "token": null
-    },
-    "world/gen/poi_def.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T14:56:31+00:00",
-      "task": "4.7-review",
-      "token": null
-    },
-    "world/gen/poi_map.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T14:56:31+00:00",
-      "task": "4.7-review",
-      "token": null
-    }
-  },
-  "in_flight": {
-    "4.7-review": {
-      "agent": "lm",
-      "files": [
-        "world/gen/poi_def.gd",
-        "world/gen/poi_map.gd",
-        "autoload/registry.gd",
-        "tools/poi_check.gd",
-        "docs/ARCHITECTURE.md",
-        "docs/DECISIONS.md",
-        "docs/DELEGATION.md"
-      ],
-      "notes": [],
-      "started": "2026-08-19T14:56:31+00:00",
-      "token": null
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".": {
       "agent": "lp",
@@ -695,9 +636,10 @@
     },
     "autoload/registry.gd": {
       "agent": "lm",
-      "at": "2026-08-19T03:34:03+00:00",
+      "at": "2026-08-19T14:59:41+00:00",
       "hash": "a50bc437e28042b8836c978edf56b113df32c91a354b6f0b48465ac699b56828",
-      "task": "6.9"
+      "task": "4.7-review",
+      "token": null
     },
     "autoload/reward_service.gd": {
       "agent": "lm",
@@ -1753,9 +1695,9 @@
     },
     "docs/ARCHITECTURE.md": {
       "agent": "lm",
-      "at": "2026-08-19T06:46:55+00:00",
-      "hash": "30c0796b83f1648af5ddc4266399b44704661a58ac451f1509889a5d7536d6b8",
-      "task": "F-183",
+      "at": "2026-08-19T14:59:41+00:00",
+      "hash": "fc6545690716744a0a99346534d210fcfe64d8ebb636260ab2bd41a547bfb284",
+      "task": "4.7-review",
       "token": null
     },
     "docs/ASSET_TRACKER.md": {
@@ -1774,16 +1716,16 @@
     },
     "docs/DECISIONS.md": {
       "agent": "lm",
-      "at": "2026-08-19T13:44:07+00:00",
+      "at": "2026-08-19T14:59:41+00:00",
       "hash": "cc5ec46ee0cdd44932b9d506646f4e628e0581b20cbda8ed5d1f639edebbd593",
-      "task": "F-214",
+      "task": "4.7-review",
       "token": null
     },
     "docs/DELEGATION.md": {
       "agent": "lm",
-      "at": "2026-08-19T14:45:15+00:00",
+      "at": "2026-08-19T14:59:41+00:00",
       "hash": "1eef1aa2dd6b6201a2b339857405a4891df88ec5c8d7d41de7259b5ce8a4f780",
-      "task": "F-226",
+      "task": "4.7-review",
       "token": null
     },
     "docs/FINDINGS.md": {
@@ -3043,10 +2985,11 @@
       "task": "7.8"
     },
     "tools/poi_check.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-19T00:08:59+00:00",
+      "agent": "lm",
+      "at": "2026-08-19T14:59:41+00:00",
       "hash": "303bb26659b755d943ab85476ba1b9da07f3da059d214eeeae59db34ffb5d83d",
-      "task": "4.7"
+      "task": "4.7-review",
+      "token": null
     },
     "tools/prop_chunk_merge_check.gd": {
       "agent": "lm",
@@ -3571,16 +3514,18 @@
       "task": "2.1j"
     },
     "world/gen/poi_def.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-19T00:08:59+00:00",
+      "agent": "lm",
+      "at": "2026-08-19T14:59:41+00:00",
       "hash": "3ce7bc6639ed4292d1ad48a82ed65daca37930fe5cc753b40e8d2154269c168c",
-      "task": "4.7"
+      "task": "4.7-review",
+      "token": null
     },
     "world/gen/poi_map.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-19T00:08:59+00:00",
+      "agent": "lm",
+      "at": "2026-08-19T14:59:41+00:00",
       "hash": "c368abd4d29830679a8af5bdd60d102312db69db19335eb2576b2dd16d6cc80d",
-      "task": "4.7"
+      "task": "4.7-review",
+      "token": null
     },
     "world/gen/resource_scatter.gd": {
       "agent": "lm",
@@ -4484,10 +4429,12 @@
       "title": "POI placement: seeded Poisson-disc, Wellsprings + landmarks"
     },
     "4.7-review": {
+      "done_at": "2026-08-19T14:59:41+00:00",
+      "done_by": "lm",
       "est": "0.5",
       "milestone": "M4",
       "review_of": "4.7",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T1",
       "title": "Review 4.7 @ 05d4330 \u2014 judge the commit, file findings, no edits"
     },
