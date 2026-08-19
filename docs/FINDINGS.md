@@ -941,35 +941,6 @@ their own `## N (task X)` comment rather than collapsing into a single bump.
 
 ---
 
-### F-179 · `CommandService.spec_names()`/`function_names()` are the fourth and fifth `Array[StringName].sort()` sites F-175 found — not fixed here, `autoload/command_service.gd` was held all session by another lane's claim
-
-**Area:** core · **Severity:** low · **Found:** 2026-08-19 by lm while closing F-175
-
-F-175 named two call sites (`ui/loot/chest_ui.gd`, `autoload/rule_service.gd`) as needing the same
-`sort_custom` fix `CraftingService.recipes_for_station()` got under F-167, and asked whoever closed it
-to grep the rest of the codebase for any other `Array[StringName]` site before assuming that list was
-complete. It was not: `autoload/command_service.gd` has two more —
-- `spec_names()` (`autoload/command_service.gd:141-144`) — `names: Array[StringName]`, plain
-  `.sort()` at line 143.
-- `function_names()` (`autoload/command_service.gd:466-469`) — same shape, `.sort()` at line 469.
-
-Both are real: `spec_names()` backs the `help` console command's listing (see its own doc comment,
-"a caller … that wants to list commands without going through execute()/submit()"), so the same
-`StringName`-identity-not-content bug F-167 fixed for the crafting panel silently orders `help`'s
-command list by registration order, not alphabetically, exactly like F-167 and F-175's other two sites.
-`autoload/command_service.gd` was claimed by lane lp for F-157 for this session's entire duration
-(confirmed via `.agent/state.json`), so it was out of reach here — same shape of contention as F-161/
-F-165/F-169/F-178, just against this file instead of `core/net/net_version.gd`.
-
-**What closes this:** whoever next holds `autoload/command_service.gd`, apply the identical
-`names.sort_custom(func(a, b): return String(a) < String(b))` fix at both sites (pattern already
-landed at three other call sites under F-175: `rule_service.gd`, `chest_ui.gd`,
-`inventory_store.gd`, plus `crafting_service.gd` under F-167) and extend
-`tools/stringname_sort_check.gd` with a `spec_names()`/`function_names()` case the same shape as its
-existing `RuleService.rule_ids()` check.
-
----
-
 ### F-180 · construction_check.gd's door-swing check now finds real strap-vs-frame overlaps at 0 degrees, previously hidden by F-148's crash
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by lm during F-148
@@ -1037,6 +1008,47 @@ regression here for free once whoever fixes this adds a replication-shaped case 
 ---
 
 ## Resolved
+
+### F-179 · `CommandService.spec_names()`/`function_names()` are the fourth and fifth `Array[StringName].sort()` sites F-175 found — not fixed here, `autoload/command_service.gd` was held all session by another lane's claim — **fixed**
+
+**Area:** core · **Severity:** low · **Found:** 2026-08-19 by lm while closing F-175
+
+F-175 named two call sites (`ui/loot/chest_ui.gd`, `autoload/rule_service.gd`) as needing the same
+`sort_custom` fix `CraftingService.recipes_for_station()` got under F-167, and asked whoever closed it
+to grep the rest of the codebase for any other `Array[StringName]` site before assuming that list was
+complete. It was not: `autoload/command_service.gd` has two more —
+- `spec_names()` (`autoload/command_service.gd:141-144`) — `names: Array[StringName]`, plain
+  `.sort()` at line 143.
+- `function_names()` (`autoload/command_service.gd:466-469`) — same shape, `.sort()` at line 469.
+
+Both are real: `spec_names()` backs the `help` console command's listing (see its own doc comment,
+"a caller … that wants to list commands without going through execute()/submit()"), so the same
+`StringName`-identity-not-content bug F-167 fixed for the crafting panel silently orders `help`'s
+command list by registration order, not alphabetically, exactly like F-167 and F-175's other two sites.
+`autoload/command_service.gd` was claimed by lane lp for F-157 for this session's entire duration
+(confirmed via `.agent/state.json`), so it was out of reach here — same shape of contention as F-161/
+F-165/F-169/F-178, just against this file instead of `core/net/net_version.gd`.
+
+**What closes this:** whoever next holds `autoload/command_service.gd`, apply the identical
+`names.sort_custom(func(a, b): return String(a) < String(b))` fix at both sites (pattern already
+landed at three other call sites under F-175: `rule_service.gd`, `chest_ui.gd`,
+`inventory_store.gd`, plus `crafting_service.gd` under F-167) and extend
+`tools/stringname_sort_check.gd` with a `spec_names()`/`function_names()` case the same shape as its
+existing `RuleService.rule_ids()` check.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed both sites in autoload/command_service.gd — `spec_names()` (line ~143) and `function_names()`
+(line ~469) — with `names.sort_custom(func(a, b): return String(a) < String(b))`, the identical
+sort_custom fix F-175 landed at three other Array[StringName] sites (rule_service.gd, chest_ui.gd,
+inventory_store.gd). Extended tools/stringname_sort_check.gd with `_check_command_service()`:
+registers three throwaway specs/functions via the public register_spec()/register_function() APIs,
+named out of alphabetical order on purpose, and asserts spec_names()/function_names() both come back
+lexicographic. New SPECS.md block written per this file's own preamble (none existed for F-179).
+
+Verified: `agent godot --script tools/stringname_sort_check.gd` -> STRINGNAME_SORT_CHECK failures=0,
+14/14 PASS, run twice back to back. No regression: tools/command_check.gd (COMMAND_CHECK
+failures=0), tools/command_catalog_check.gd (COMMAND_CATALOG_CHECK failures=0).
 
 ### F-168 · `Wellspring._finish_cap()` still emits `wellspring_capped` from a host-only guard, so a non-host peer's `SalvageService` milestone bonus silently undercounts — **fixed**
 

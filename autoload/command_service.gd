@@ -140,7 +140,8 @@ func has_spec(name: StringName) -> bool:
 func spec_names() -> Array[StringName]:
 	var names: Array[StringName] = []
 	names.assign(_specs.keys())
-	names.sort()
+	# StringName's `<` compares interned identity, not string content — F-175.
+	names.sort_custom(func(a, b): return String(a) < String(b))
 	return names
 
 
@@ -466,7 +467,8 @@ func has_function(name: StringName) -> bool:
 func function_names() -> Array[StringName]:
 	var names: Array[StringName] = []
 	names.assign(_functions.keys())
-	names.sort()
+	# StringName's `<` compares interned identity, not string content — F-175.
+	names.sort_custom(func(a, b): return String(a) < String(b))
 	return names
 
 

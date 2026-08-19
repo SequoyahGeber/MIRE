@@ -4187,3 +4187,18 @@ Wellspring.capped's setter now fires wellspring_capped on false->true (moved out
 Files: `systems/wellspring/wellspring.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `tools/wellspring_check.gd`, `docs/ARCHITECTURE.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`, `core/events/event_bus.gd`, `systems/enemies/boss.gd`, `autoload/defeat_service.gd`
 
 Commit at time of writing: `2f15243`
+
+---
+
+### DONE · F-179 · lm · 2026-08-19T05:33:29+00:00
+
+**`CommandService.spec_names()`/`function_names()` are the fourth and fifth `Array[StringName].sort()` sites F-175 found — not fixed here, `autoload/command_service.gd` was held all session by another lane's claim**
+
+Fixed CommandService.spec_names()/function_names() Array[StringName].sort() bug with sort_custom (F-175's pattern). Verified: agent godot --script tools/stringname_sort_check.gd -> 14/14 PASS twice. No regression in command_check.gd/command_catalog_check.gd. SPECS.md block written, finding moved to Resolved.
+
+Notes along the way:
+- Fixed both sort() sites in command_service.gd with sort_custom, same pattern as F-175. Extended stringname_sort_check.gd with _check_command_service(). 14/14 PASS twice; no regression in command_check.gd or command_catalog_check.gd. Wrote SPECS.md block.
+
+Files: `autoload/command_service.gd`, `tools/stringname_sort_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`
+
+Commit at time of writing: `734e005`

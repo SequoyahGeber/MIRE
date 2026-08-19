@@ -3839,6 +3839,46 @@ flakiness.
 
 ---
 
+## F-179 · `CommandService.spec_names()`/`function_names()` are the fourth and fifth `Array[StringName].sort()` sites F-175 found — not fixed there, `autoload/command_service.gd` was held all session by another lane's claim
+
+**Claim:** `autoload/command_service.gd`, `tools/stringname_sort_check.gd`, `docs/FINDINGS.md`,
+`docs/SPECS.md`.
+
+**No spec existed for this finding** (filed 2026-08-19, the same session as this file's last sweep)
+— writing it is this task's own first step, per this file's preamble.
+
+**Root cause:** the same one F-167 and F-175 already established — `StringName`'s `<` compares
+interned identity, not string content, so `Array[StringName].sort()` silently tracks interning order
+instead of alphabetical order. F-175 swept the codebase for every remaining `Array[StringName]` +
+plain `.sort()` pair and found two more sites in `autoload/command_service.gd`, but could not fix
+them there — the file was claimed by lane lp for F-157 for that entire session — so it filed this
+finding instead of leaving the pair undiscovered for the next lane to re-find from scratch.
+
+**Fix, two sites in `autoload/command_service.gd`, same shape as F-167/F-175's:**
+1. `spec_names()` (line ~143) — `names.sort_custom(func(a, b): return String(a) < String(b))`.
+   Backs the `help` console command's listing (see the function's own doc comment: "a caller … that
+   wants to list commands without going through execute()/submit()"), so plain `.sort()` was silently
+   ordering `help`'s output by registration order, not alphabetically.
+2. `function_names()` (line ~469) — identical fix. Same shape, no live caller found beyond
+   `tools/stringname_sort_check.gd`'s own new coverage and `debug_console.gd:299`'s display use,
+   neither of which depended on the broken order, so this is a latent-bug fix, not a behavior change
+   any existing check had baked an assumption around.
+
+**Verify:** extended `tools/stringname_sort_check.gd` with `_check_command_service()`, same shape as
+its existing `RuleService.rule_ids()` case. Registers three throwaway specs
+(`register_spec()`, a public API) and three throwaway functions (`register_function()`, also public)
+with names chosen out of alphabetical order on purpose — `zz_…`, `aa_…`, `mm_…` — so a regression
+back to plain `.sort()` would have to coincidentally re-produce alphabetical order to slip past.
+Asserts `spec_names()`/`function_names()` include all three test entries and equal their own
+`sort_custom`-sorted duplicate.
+
+**Verified 2026-08-19 (lm):** `agent godot --script tools/stringname_sort_check.gd` →
+`STRINGNAME_SORT_CHECK failures=0`, all 14 assertions PASS (the prior 9 from F-175 plus 5 new), run
+twice back to back. No regression: `tools/command_check.gd` (`COMMAND_CHECK failures=0`) and
+`tools/command_catalog_check.gd` (`COMMAND_CATALOG_CHECK failures=0`) both stayed clean.
+
+---
+
 ## F-147 · F-145's fix protects new sessions only — already-collided identities stay live for up to SESSION_KEEP_DAYS
 
 **Claim:** `.agent/bin/agent`, `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md`.

@@ -8,10 +8,9 @@ extends SceneTree
 ##
 ##   .agent/bin/agent godot --script tools/stringname_sort_check.gd
 ##
-## Covers: RuleService.rule_ids(), InventoryStore._sorted_ids(), ChestUI's reward-row order. A
-## fourth pair of sites (CommandService.spec_names()/function_names()) is still bugged — filed as
-## F-179 rather than fixed here, since autoload/command_service.gd was held by another lane's claim
-## for the whole session (F-157).
+## Covers: RuleService.rule_ids(), InventoryStore._sorted_ids(), ChestUI's reward-row order, and
+## CommandService.spec_names()/function_names() (F-179 — the fourth/fifth site F-175 named but could
+## not fix itself, since autoload/command_service.gd was held by another lane's claim all session).
 const InventoryStoreScript := preload("res://systems/inventory/inventory_store.gd")
 
 var failures: int = 0
@@ -27,6 +26,7 @@ func _run() -> void:
 	_check_rule_service()
 	await _check_inventory_store()
 	await _check_chest_ui()
+	_check_command_service()
 
 	print("\nSTRINGNAME_SORT_CHECK failures=%d" % failures)
 	quit(0 if failures == 0 else 1)
@@ -76,6 +76,38 @@ func _check_chest_ui() -> void:
 			"chest UI reward rows are lexicographic by item id: %s" % [names])
 
 	chest_ui.call("_clear_rewards")
+
+
+func _check_command_service() -> void:
+	var commands: Node = root.get_node_or_null(^"CommandService")
+	check(commands != null, "CommandService autoload exists")
+	if commands == null:
+		return
+
+	var noop_handler: Callable = func(_ctx: Dictionary, _args: Dictionary) -> Dictionary:
+		return {"ok": true, "message": ""}
+	# Registered out of alphabetical order on purpose — the bug this guards against is plain
+	# `.sort()` silently keeping StringName interned-identity (roughly registration) order instead.
+	for name: StringName in [&"zz_stringname_sort_check", &"aa_stringname_sort_check", &"mm_stringname_sort_check"]:
+		commands.call("register_spec", name, {"handler": noop_handler})
+	commands.call("register_function", &"zz_stringname_sort_check_fn", PackedStringArray())
+	commands.call("register_function", &"aa_stringname_sort_check_fn", PackedStringArray())
+	commands.call("register_function", &"mm_stringname_sort_check_fn", PackedStringArray())
+
+	var spec_names: Array = commands.call("spec_names")
+	var expected_spec_names: Array = spec_names.duplicate()
+	expected_spec_names.sort_custom(func(a, b): return String(a) < String(b))
+	check(spec_names.has(&"aa_stringname_sort_check") and spec_names.has(&"mm_stringname_sort_check")
+		and spec_names.has(&"zz_stringname_sort_check"), "spec_names() includes all three test specs")
+	check(spec_names == expected_spec_names, "CommandService.spec_names() is lexicographic: %s" % [spec_names])
+
+	var function_names: Array = commands.call("function_names")
+	var expected_function_names: Array = function_names.duplicate()
+	expected_function_names.sort_custom(func(a, b): return String(a) < String(b))
+	check(function_names.has(&"aa_stringname_sort_check_fn") and function_names.has(&"mm_stringname_sort_check_fn")
+		and function_names.has(&"zz_stringname_sort_check_fn"), "function_names() includes all three test functions")
+	check(function_names == expected_function_names,
+		"CommandService.function_names() is lexicographic: %s" % [function_names])
 
 
 func check(condition: bool, description: String) -> void:
