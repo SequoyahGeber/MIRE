@@ -3649,3 +3649,15 @@ Resolved via D-098: no display-name registry built (F-126's own text says _parse
 Files: `autoload/command_service.gd`, `tools/command_check.gd`
 
 Commit at time of writing: `bb08b60`
+
+---
+
+### HANDOFF · F-130 · lp · 2026-08-19T00:44:18+00:00
+
+**Three console commands never migrated to CommandService — they register via console.call("register", ...), which 3.13's sweep could not see**
+
+gfx migration still blocked: autoload/graphics_quality.gd held by nettle12/F-144 across two sessions now (task 3.16 and this one) -- claim fails identically both times, did not force or work around it. What this session did instead, all committed: built tools/command_shim_check.gd, a source-text regression guard (F-060 style) that walks every .gd for the DebugConsole register() shim's reflection-call shape (call("register", / call(&"register",), exempting autoload/debug_console.gd itself. Verified it actually fires: COMMAND_SHIM_CHECK scripts=228 hits=1 failures=2, the one hit is graphics_quality.gd:197 (gfx) -- exactly right, since gfx is genuinely still unmigrated. Re-ran command_catalog_check/command_check/command_net_check: failures=0 each, nothing regressed. Wrote the docs/SPECS.md ## F-130 block this finding never had (fix shape, claim set, verify commands, done-means -- now includes command_shim_check.gd failures=0 as the real closing condition, not just the WARN line going away). Updated docs/DELEGATION.md Current state and docs/FINDINGS.md with this session's progress; finding stays Open. Next agent who holds autoload/graphics_quality.gd: port gfx to CommandService.register_spec() (LOCAL scope), same shape as fps_cap in core/dev/dev_frame_cap.gd, then confirm tools/command_shim_check.gd reads failures=0 and move F-130 to Resolved.
+
+Files: `tools/command_shim_check.gd`, `tools/command_shim_check.gd.uid`
+
+Commit at time of writing: `76f6cf5`

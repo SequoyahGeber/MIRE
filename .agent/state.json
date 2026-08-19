@@ -197,16 +197,6 @@
       "hash": null,
       "task": "2.1d"
     },
-    "assets/enemies": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
-    "assets/environment_additions": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
     "assets/flora": {
       "agent": "moss11",
       "at": "2026-08-18T02:21:14+00:00",
@@ -246,11 +236,6 @@
       "agent": "flint5",
       "at": "2026-08-18T04:58:38+00:00",
       "task": "F-073"
-    },
-    "assets/loot": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
     },
     "assets/maps": {
       "agent": "tine18",
@@ -372,21 +357,11 @@
       "at": "2026-08-18T14:17:26+00:00",
       "task": "2.1d"
     },
-    "assets/source/adapted_nature_set.blend": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
     "assets/source/construction_set.blend": {
       "agent": "slate17",
       "at": "2026-08-18T21:16:01+00:00",
       "hash": "6844164f9458da5dc0d31a5ee047d9c88248c7794997df993bbe1621f181202d",
       "task": "2.1d"
-    },
-    "assets/source/enemy_crawler.blend": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
     },
     "assets/source/extraction_ship_set.blend": {
       "agent": "ivy8",
@@ -398,34 +373,9 @@
       "at": "2026-08-18T02:21:14+00:00",
       "task": "2.1d"
     },
-    "assets/source/loot_set.blend": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
     "assets/source/playtest_hollow.blend": {
       "agent": "tine18",
       "at": "2026-08-18T17:43:02+00:00",
-      "task": "2.1j"
-    },
-    "assets/source/ward_set.blend": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
-    "assets/source/wellspring_set.blend": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
-    "assets/wards": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
-    "assets/wellsprings": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
       "task": "2.1j"
     },
     "autoload/attunement_service.gd": {
@@ -1683,11 +1633,6 @@
       "at": "2026-08-18T02:21:14+00:00",
       "task": "2.1d"
     },
-    "levels/playtest_map.tscn": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
     "project.godot": {
       "agent": "slate17",
       "at": "2026-08-18T22:22:14+00:00",
@@ -2017,21 +1962,11 @@
       "hash": "35a60d1d3126d79407ade53380ae06c1cd16a05f177d9870456e60da9dbc1804",
       "task": "F-110"
     },
-    "tools/blender/build_adapted_nature_set.py": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
     "tools/blender/build_construction_set.py": {
       "agent": "slate17",
       "at": "2026-08-18T21:16:01+00:00",
       "hash": "8aa2bf01cc0b21e0f4ef560a3dfe5f64206ce01751e8152f47003cc3e5d7386f",
       "task": "2.1d"
-    },
-    "tools/blender/build_enemy_crawler.py": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
     },
     "tools/blender/build_extraction_ship_set.py": {
       "agent": "ivy8",
@@ -2042,21 +1977,6 @@
       "agent": "moss11",
       "at": "2026-08-18T02:21:14+00:00",
       "task": "2.1d"
-    },
-    "tools/blender/build_loot_set.py": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/build_ward_set.py": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/build_wellspring_set.py": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
     },
     "tools/blender/mat_cache_check.py": {
       "agent": "lp",
@@ -2157,6 +2077,18 @@
       "at": "2026-08-18T19:52:51+00:00",
       "hash": "b96ed137463c04c3c42dc48559ccc9199197812f4ceb71b3a1ef046491a2505a",
       "task": "3.13"
+    },
+    "tools/command_shim_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T00:44:18+00:00",
+      "hash": "e8de5beb0474e11a0b8a8f3f6a10fc02e3559516060af944498ba856db729429",
+      "task": "F-130"
+    },
+    "tools/command_shim_check.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-19T00:44:18+00:00",
+      "hash": "55301bf426612dc0798ea76e1cf6a1206c2b50fe2c12595a3deccd5417b1dd8b",
+      "task": "F-130"
     },
     "tools/construction_check.gd": {
       "agent": "lm",
@@ -2436,16 +2368,6 @@
       "agent": "lp",
       "at": "2026-08-18T00:55:40+00:00",
       "task": "3.8"
-    },
-    "tools/playtest_hollow_check.gd": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
-    "tools/playtest_map_check.gd": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
     },
     "tools/png_pixels_equal.py": {
       "agent": "lp",
@@ -2781,11 +2703,6 @@
       "at": "2026-08-18T20:54:23+00:00",
       "hash": "a3d44c428c6c5cf87f048162bca54c5580432eaac660c248b3ebf718c1f8c595",
       "task": "4.4"
-    },
-    "world/gen/test_map_props.gd": {
-      "agent": "tine18",
-      "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
     },
     "world/gen/undergrowth.gd": {
       "agent": "larch10",
