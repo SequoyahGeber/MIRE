@@ -38,7 +38,7 @@ const SKIP_DIRS: PackedStringArray = [
 const RECORDED_PROTOCOL_VERSION: int = 21
 ## FNV-1a over the canonical manifest (see `signature()`). Regenerate with the check tool; never by
 ## hand, and never without also bumping the version above.
-const RECORDED_SIGNATURE: String = "621c8ba008c3520f"
+const RECORDED_SIGNATURE: String = "46487d0ba06e8e31"
 ## Carried alongside the hash purely so a failure can say "42 -> 45" before it says "the hash moved".
 ## A hash tells you something changed; a count tells you roughly what happened.
 const RECORDED_ENTRY_COUNT: int = 55
@@ -166,7 +166,11 @@ static func _split_top_level(text: String) -> PackedStringArray:
 ## reason: `hash()`'s implementation is not a contract, and a signature that changed between engine
 ## versions would cry wolf on every build.
 static func signature(entries: PackedStringArray) -> String:
-	var h: int = 0xCBF29CE484222325
+	# FNV-1a's offset basis is 0xCBF29CE484222325 (14695981039346656037 unsigned), which overflows
+	# GDScript's signed int64 literal parser (max 0x7FFFFFFFFFFFFFFF) and fails the script to load.
+	# -3750763034362895579 is its two's-complement signed reading of the identical 64 bits; FNV-1a's
+	# xor/multiply steps are mod-2^64 either way, so the arithmetic is unchanged.
+	var h: int = -3750763034362895579
 	for entry: String in entries:
 		for byte: int in entry.to_utf8_buffer():
 			h = (h ^ byte) * 0x100000001B3

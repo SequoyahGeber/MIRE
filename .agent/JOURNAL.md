@@ -5052,3 +5052,18 @@ Fixed cycle_modifier_service.gd: host_draw_modifier() now seeds _rng from _seed_
 Files: `systems/cycle/cycle_modifier_service.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `tools/cycle_modifier_seed_check.gd`
 
 Commit at time of writing: `da5c97c`
+
+---
+
+### DONE · F-213 · lm · 2026-08-19T12:47:53+00:00
+
+**core/net/rpc_manifest.gd's FNV-1a seed literal overflows signed 64-bit int, erroring on every scan even though the check itself stays deterministic**
+
+core/net/rpc_manifest.gd: fixed FNV-1a offset-basis literal overflow (signed two's-complement -3750763034362895579), re-recorded RECORDED_SIGNATURE (46487d0ba06e8e31, entry count unchanged at 55 — not a wire change, D-137). Verified: agent godot --script tools/rpc_manifest_check.gd -> RPC_MANIFEST_CHECK failures=0, zero stray ERROR: lines. Swept for sibling 16+ hex-digit literals project-wide, none found. Docs: FINDINGS.md F-213 moved to Resolved, DECISIONS.md D-137, SPECS.md F-213 block written.
+
+Notes along the way:
+- Overflow was a runtime hex_to_int failure (fallback h), not a parse-time crash — signature() still ran deterministically but with a broken seed. Re-recorded RECORDED_SIGNATURE only (entry count unchanged, not a wire change); recorded as D-137 since re-recording without a version bump is normally the exact mistake this checker exists to catch.
+
+Files: `core/net/rpc_manifest.gd`
+
+Commit at time of writing: `47e3f17`
