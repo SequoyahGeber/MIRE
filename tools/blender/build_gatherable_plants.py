@@ -43,7 +43,7 @@ sys.path.append(str(Path(__file__).resolve().parent))
 
 from mire_art import (  # noqa: E402
     Batch,
-    box,
+    assign,
     cone,
     cylinder_between,
     eevee_engine,
@@ -58,6 +58,30 @@ from mire_art import (  # noqa: E402
     world_bounds,
 )
 from godot_import_lock import import_cache_guard  # noqa: E402
+
+
+def box(
+    name: str,
+    location: tuple[float, float, float],
+    dimensions: tuple[float, float, float],
+    material: bpy.types.Material,
+    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    bevel: float = 0.0,
+) -> bpy.types.Object:
+    """Bevel-free box, overriding ``mire_art.box`` on purpose (D-124, F-206).
+
+    A-011's six `bevel=` sites passed straight through to `mire_art.box()`'s live
+    BEVEL modifier with no local override — a latent D-124 exposure (F-206) until
+    this row claimed a byte-identical rebuild. `bevel` is accepted and ignored so
+    every call site below reads unchanged.
+    """
+    bpy.ops.mesh.primitive_cube_add(location=location, rotation=rotation)
+    obj = bpy.context.object
+    obj.name = name
+    obj.scale = (dimensions[0] * 0.5, dimensions[1] * 0.5, dimensions[2] * 0.5)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    return assign(obj, material)
+
 
 ROOT = Path(__file__).resolve().parents[2]
 EXPORT_DIR = ROOT / "assets" / "gatherables" / "exports"

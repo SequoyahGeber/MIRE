@@ -4786,3 +4786,15 @@ Completed.
 Files: `tools/blender/build_gatherable_plants.py`, `tools/blender/build_flora_set.py`, `assets/flora/preview/flora_set_preview.png`, `assets/flora/preview/flowers_preview.png`, `assets/flora/preview/grasses_preview.png`, `assets/flora/preview/ground_cover_preview.png`, `assets/flora/preview/leafy_plants_preview.png`, `assets/flora/preview/shrubs_preview.png`, `assets/flora/preview/small_trees_preview.png`, `assets/gatherables/catalog.json`, `assets/gatherables/exports/berry_bush_harvested.glb`, `assets/gatherables/preview/berry_decision_preview.png`, `assets/gatherables/preview/gatherable_deposits_preview.png`, `assets/gatherables/preview/gatherable_plants_preview.png`, `assets/source/flora_set.blend`, `assets/source/gatherable_plants.blend`
 
 Commit at time of writing: `d284459`
+
+---
+
+### DONE · F-206 · lm · 2026-08-19T10:22:16+00:00
+
+**`build_gatherable_plants.py` (A-011) has six `bevel=` sites with no local override — the same D-124 exposure, latent rather than live**
+
+Fixed: build_gatherable_plants.py now has a local bevel-free box() override (D-124 shape). Rebuilt: GATHERABLES_CHECK PASS 10/10, triangles 5,472->5,184. Verified byte-identical across two clean rebuilds via asset_repro_check.py (10/10 GLBs+catalog); agent godot --script tools/gatherables_check.gd passes 41/41; full boot (agent godot --quit-after 60) clean, 0 ERROR lines. Added byte-identical claim to A-011's ASSET_TRACKER.md row since it's now proven. Swept all tools/blender/build_*.py bevel= callers for missing overrides -- none remain.
+
+Files: `tools/blender/build_gatherable_plants.py`, `assets/gatherables/catalog.json`, `assets/gatherables/exports/berry_bush_full.glb`, `assets/gatherables/exports/berry_bush_harvested.glb`, `assets/gatherables/exports/clay_deposit.glb`, `assets/gatherables/exports/fibre_plant.glb`, `assets/gatherables/exports/honeycomb.glb`, `assets/gatherables/exports/medicinal_herb.glb`, `assets/gatherables/exports/peat_deposit.glb`, `assets/gatherables/exports/poison_berry_bush.glb`, `assets/gatherables/exports/resin_node.glb`, `assets/gatherables/exports/wild_onion.glb`, `assets/gatherables/preview/gatherable_deposits_preview.png`, `assets/gatherables/preview/gatherable_plants_preview.png`, `assets/gatherables/preview/berry_decision_preview.png`, `assets/source/gatherable_plants.blend`
+
+Commit at time of writing: `39e1c22`
