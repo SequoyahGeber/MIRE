@@ -1,11 +1,5 @@
 {
   "claims": {
-    ".agent/bin/agent": {
-      "agent": "bram1",
-      "at": "2026-08-19T22:32:48+00:00",
-      "task": "F-263",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
-    },
     "autoload/powerup_service.gd": {
       "agent": "lm2",
       "at": "2026-08-19T22:21:01+00:00",
@@ -85,15 +79,6 @@
       "notes": [],
       "started": "2026-08-19T22:21:01+00:00",
       "token": null
-    },
-    "F-263": {
-      "agent": "bram1",
-      "files": [
-        ".agent/bin/agent"
-      ],
-      "notes": [],
-      "started": "2026-08-19T22:32:48+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     }
   },
   "recent": {
@@ -113,9 +98,9 @@
     },
     ".agent/bin/agent": {
       "agent": "bram1",
-      "at": "2026-08-19T22:25:36+00:00",
-      "hash": "e6b6e02f0866fc9e60f0b88c986b3a8daee28f608731d231da499fee5b2afec4",
-      "task": "F-260",
+      "at": "2026-08-19T22:36:17+00:00",
+      "hash": "f37448f0ed564ffaf49ba84263f90cafa2a98faa21d406ca1d2ef9ea3c17ffaf",
+      "task": "F-263",
       "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     ".agent/bin/lane": {
@@ -6871,9 +6856,11 @@
       "title": "Claims are held for the whole task \u2014 grabbed up front and released only at close-out \u2014 so a file locks for up to 2h even when it is edited for minutes, stalling other agents"
     },
     "F-263": {
+      "done_at": "2026-08-19T22:36:17+00:00",
+      "done_by": "bram1",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Hardening pass: chains run stale code after harness edits, one failing task stops a whole queue, dup-grabs under claim-late, re-reviews refuse, and D-numbers still race"
     },

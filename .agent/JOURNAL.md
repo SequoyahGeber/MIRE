@@ -6450,3 +6450,15 @@ Notes along the way:
 Files: `tools/steam/apply_ids.sh`, `tools/steam/depot_wiring_check.sh`, `tools/steam/DEPOT_SETUP.md`, `core/net/net_config.gd`, `tools/steam/steam_upload.sh`, `steam_appid.txt`, `tools/steam_check.gd`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `7760a45`
+
+---
+
+### DONE · F-263 · bram1 · 2026-08-19T22:36:17+00:00
+
+**Hardening pass: chains run stale code after harness edits, one failing task stops a whole queue, dup-grabs under claim-late, re-reviews refuse, and D-numbers still race**
+
+All five hardening pieces shipped and individually verified. Self-refresh: chains re-exec between tasks when the harness mtimes change, so fixes reach running fleets. Failure-continue: one bad task no longer starves the queue — continue past a single failure, stop on two consecutive or a lane-level stop. Dispatch markers: a chain registers in_flight under its slot identity at dispatch, closing the dup-grab window claim-late widened; markers self-clean if the run dies pre-claim. Review-reset: re-ordering a done review resets it to todo with the new sha, verified live on F-244-review. Decision allocator: agent decision allocates D-numbers under a lock and refused its own first invocation because lm3 holds DECISIONS.md — the guard firing on first contact. Fleet restarted on the new code: three slots, three distinct tasks, no duplicates.
+
+Files: `.agent/bin/agent`
+
+Commit at time of writing: `8e4e3b2`

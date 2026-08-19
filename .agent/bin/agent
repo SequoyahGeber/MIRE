@@ -40,6 +40,17 @@ LOCKS = os.path.join(AGENT_DIR, "locks")
 SILENT_HANG_SECONDS = 45        # silence this long AFTER a script error is F-104, not slowness
 LANE_BIN = os.path.join(AGENT_DIR, "bin", "lane")
 
+def _harness_mtimes():
+    out = []
+    for f in (os.path.abspath(__file__), LANE_BIN):
+        try:
+            out.append(os.path.getmtime(f))
+        except OSError:
+            out.append(0.0)
+    return out
+
+_HARNESS_LOADED = _harness_mtimes()
+
 EX_LANE_BUSY = 75               # lane run's "already running" — see .agent/bin/lane
 BUSY_WAIT_LIMIT = 2 * 3600      # a lane run is capped at an hour; wait past that and it is wedged
 MAX_BUSY_WAITS = 3              # per task, so a wedged lane cannot spin the queue forever
@@ -2493,6 +2504,15 @@ def cmd_order(args):
         # unregistered one is re-run on every drain for as long as the file exists.
         rid = "%s-review" % tid
         st_reg = load()
+        if st_reg["tasks"].get(rid, {}).get("status") == "done":
+            # A done review refers to a PREVIOUS sha. Re-ordering means new commits landed since;
+            # reviewing them is new work, and leaving the stale done record makes every chain skip
+            # the fresh order forever (observed with F-244-review).
+            st_reg["tasks"][rid]["status"] = "todo"
+            st_reg["tasks"][rid]["title"] = "Review %s @ %s — review and fix what you find" % (tid, sha)
+            st_reg["tasks"][rid].pop("done_at", None)
+            st_reg["tasks"][rid].pop("done_by", None)
+            save(st_reg)
         if rid not in st_reg["tasks"]:
             st_reg["tasks"][rid] = {
                 "title": "Review %s @ %s — %s" % (
@@ -2721,8 +2741,24 @@ def _saturate_locked(lane, wanted, watch, drain=False, slot=1):
     **The queue is re-read as it goes, not snapshotted.** Orders written after a chain started used
     to wait for that chain to end, which is exactly the moment the lane goes idle."""
     done_ok, stopped = [], None
+    failed = []
     seen, queue, busy_waits = [], list(wanted), {}
+    slot_agent = lane.lower() if slot <= 1 else "%s%d" % (lane.lower(), slot)
     while True:
+        # A long-running chain executes the code it loaded at start, so every harness fix ships only
+        # to FUTURE chains — the 7200s timeout fix never reached the chain that then died at 3600s,
+        # and the second-pass mechanism silently did not exist in chains predating it. Between tasks
+        # is the one safe moment to notice and re-exec: same queue, same flags, new code.
+        if _harness_mtimes() != _HARNESS_LOADED:
+            print("  %s· harness changed on disk — re-executing this chain with the new code%s"
+                  % (C["y"], C["x"]))
+            argv = [sys.executable, os.path.abspath(__file__), "saturate", lane] + queue
+            if watch:
+                argv.append("--watch")
+            if slot > 1:
+                argv += ["--slot", str(slot)]
+            sys.stdout.flush()
+            os.execv(sys.executable, argv)
         # An empty queue means "nothing to do RIGHT NOW", not "the work is finished". Exiting on the
         # first empty read is the most frequent way a lane goes idle here: the chain drains, exits,
         # and the director's next order lands seconds later with nothing running to pick it up. It
@@ -2738,7 +2774,9 @@ def _saturate_locked(lane, wanted, watch, drain=False, slot=1):
         st = load()
         if st["tasks"].get(tid, {}).get("status") == "done":
             print("  %s· %s already done, skipping%s" % (C["dim"], tid, C["x"]))
-        elif tid in st.get("in_flight", {}):
+        elif tid in st.get("in_flight", {}) and \
+                not (st["in_flight"][tid].get("agent") == slot_agent
+                     and st["in_flight"][tid].get("dispatched")):
             # Another slot (or any agent) is mid-task on it. Leave it to them: if they die, their
             # handoff releases it and a later chain re-adds it, since it will be neither done nor
             # in flight. Requeueing it HERE would spin when only in-flight items remain.
@@ -2747,7 +2785,29 @@ def _saturate_locked(lane, wanted, watch, drain=False, slot=1):
         elif not os.path.exists(_order_path(tid)):
             print("  %s· no order for %s, skipping%s" % (C["dim"], tid, C["x"]))
         else:
+            # Register intent BEFORE dispatching. Claim-late (D-154) moved the first `agent claim`
+            # minutes into a run, so sibling slots draining one queue could both grab a task in that
+            # window. The marker is this slot's own identity, so the lane agent's later claim simply
+            # inherits it (_is_mine matches by name for lanes); it is removed below if the run dies
+            # before any real claim registered files.
+            st2 = load()
+            if tid not in st2.get("in_flight", {}):
+                st2["in_flight"][tid] = {"agent": slot_agent, "token": None, "started": now(),
+                                         "files": [], "notes": [], "dispatched": True}
+                if tid in st2["tasks"]:
+                    st2["tasks"][tid]["status"] = "in_flight"
+                save(st2)
             code = _run_with_resume(lane, tid, watch, slot)
+            st3 = load()
+            marker = st3.get("in_flight", {}).get(tid)
+            if marker and marker.get("dispatched") and not marker.get("files"):
+                # The run ended without the agent ever claiming a file — a refusal, a pre-claim
+                # crash, or clean completion without edits. Drop the marker so the task is not
+                # stranded "in flight" under a ghost.
+                del st3["in_flight"][tid]
+                if code != 0 and st3["tasks"].get(tid, {}).get("status") == "in_flight":
+                    st3["tasks"][tid]["status"] = "todo"
+                save(st3)
             if code == EX_LANE_BUSY:
                 busy_waits[tid] = busy_waits.get(tid, 0) + 1
                 if busy_waits[tid] <= MAX_BUSY_WAITS and _wait_for_lane_free(lane):
@@ -2757,10 +2817,26 @@ def _saturate_locked(lane, wanted, watch, drain=False, slot=1):
                 break
             if code == 0:
                 done_ok.append(tid)
+                failed = []          # consecutive failures, not total
                 _queue_second_pass(lane, tid, queue, seen)
             else:
-                stopped = tid
-                break
+                lane_state = _lane_state().get(lane, {})
+                if lane_state.get("status") == "exhausted":
+                    stopped = tid    # the WINDOW is over — nothing behind this can run either
+                    break
+                # One bad task must not starve the queue behind it: F-243's timeout stopped the
+                # chain three times, and each restart re-hit F-243 first and died again, starving
+                # eight queued orders. The order stays on disk for a later chain (or a human) —
+                # this chain just moves on. Two consecutive failures means the problem is bigger
+                # than one task, and then stopping is right.
+                failed.append(tid)
+                if len(failed) >= 2:
+                    stopped = tid
+                    print("  %s· two consecutive task failures (%s) — stopping this chain%s"
+                          % (C["y"], ", ".join(failed), C["x"]))
+                    break
+                print("  %s· %s failed — leaving its order for later and continuing%s"
+                      % (C["y"], tid, C["x"]))
         if drain:
             for t, m in sorted(_open_orders().items()):
                 if m["lane"] == lane and t not in seen and t not in queue:
@@ -3541,6 +3617,44 @@ def _session_last_seen(claim, sessions):
     return age_hours(claim.get("at", "")), False
 
 
+def cmd_decision(args):
+    """Record a decision in docs/DECISIONS.md with an atomically allocated D-number.
+
+    F-260: DECISIONS.md had no allocator, so concurrent agents reading "highest D-NNN plus one" both
+    got the same answer — three collisions in one day (D-146 twice, D-153 taken mid-write, D-151/150
+    renumbered by hand). Identical shape to F-058, fixed identically: allocate under a lock, append
+    atomically, and the number is reserved before the text exists anywhere."""
+    if not args:
+        die('usage: agent decision "one-line decision title"  (body on stdin, '
+            'end with a **Would change my mind:** line)')
+    title = args[0]
+    body = sys.stdin.read().strip()
+    if not body:
+        die("the decision body comes on stdin — pipe it in with a heredoc")
+    if "Would change my mind" not in body:
+        die("every decision records its own reversal trigger — add a "
+            "'**Would change my mind:** ...' line (see F-218 for why this is load-bearing)")
+    path = os.path.join(ROOT, "docs", "DECISIONS.md")
+    me = whoami(required=False, assign=False) or "?"
+    st = load()
+    holder = st.get("claims", {}).get("docs/DECISIONS.md")
+    if holder and holder.get("agent") not in (me, None):
+        die("docs/DECISIONS.md is exact-claimed by %s for %s — wait for their release, do not "
+            "append into their diff" % (holder.get("agent"), holder.get("task")))
+    with file_lock("decisions"):
+        text = open(path).read()
+        n = max(int(m) for m in re.findall(r"^### D-(\d+)", text, re.M)) + 1
+        stamp = now()[:10]
+        entry = "\n\n### D-%d · %s · %s\n%s\n" % (n, stamp, title, body)
+        tmp = path + ".tmp"
+        with open(tmp, "w") as f:
+            f.write(text.rstrip("\n") + entry)
+        os.replace(tmp, path)
+    ok("recorded D-%d — %s" % (n, title[:70]))
+    print("  %sdocs/DECISIONS.md · commit it with your task's ship%s" % (C["dim"], C["x"]))
+    return 0
+
+
 def cmd_reap(args):
     """Release claims held by a lane whose process is gone, and surface chats that look abandoned.
 
@@ -3819,6 +3933,7 @@ COMMANDS = {
     "order": cmd_order, "dispatch": cmd_dispatch, "lanes": cmd_lanes,
     "collect": cmd_collect, "report": cmd_report, "reap": cmd_reap, "godot": cmd_godot,
     "saturate": cmd_saturate, "finding": cmd_finding, "director": cmd_director,
+    "decision": cmd_decision,
     "baseline": cmd_baseline,
     "autoload": cmd_autoload,
     "editor-running": cmd_editor_running,
