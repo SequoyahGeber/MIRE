@@ -6616,9 +6616,11 @@
       "title": "An asset rebuild concurrent with agent godot's auto-import pass poisons the import cache \u2014 8 station GLBs stayed unloadable across 40 minutes of checks until a forced --import"
     },
     "F-197": {
+      "done_at": "2026-08-19T13:12:39+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "A generated-asset commit swept up another lane's dirty crafting-station GLBs under an unrelated message \u2014 the F-149/F-191 sweep hazard reaching art files, not just docs/"
     },

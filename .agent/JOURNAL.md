@@ -5106,3 +5106,13 @@ PieceSlot: ui_accept selects, horizontal focus_neighbor chain wraps the row, pan
 Files: `ui/building/build_bar.gd`, `tools/gamepad_check.gd`
 
 Commit at time of writing: `f7e2177`
+
+---
+
+### DONE · F-197 · lm · 2026-08-19T13:12:39+00:00
+
+**A generated-asset commit swept up another lane's dirty crafting-station GLBs under an unrelated message — the F-149/F-191 sweep hazard reaching art files, not just docs/**
+
+Completed.
+
+Commit at time of writing: `de4ce8a`
