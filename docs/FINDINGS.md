@@ -771,6 +771,52 @@ mistake.
 
 ---
 
+### F-265 · A concurrent lane's `agent ship` swept F-257's docs/SPECS.md and docs/FINDINGS.md edits into its own commit while lm3 still held claims on both
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by lm3
+
+**Found:** 2026-08-19 by lm3 during F-257, immediately after shipping it.
+
+`agent ship F-257` committed nine of my eleven files (8e4e3b2). `docs/SPECS.md` and
+`docs/FINDINGS.md` were not among them — they had already been committed and pushed *by another
+lane* one commit earlier, in `7760a45 "F-247 docs: SPECS.md block, FINDINGS.md resolved + F-264
+filed"`. That commit's diffstat is `docs/FINDINGS.md | 288 +-` and `docs/SPECS.md | 177 +-`, which
+is byte-for-byte the diff `git diff --stat` reported for *my* uncommitted F-257 edits minutes
+earlier. It contains both lanes' content: 7 added lines mentioning F-257 and 6 mentioning F-247.
+
+No content was lost — everything is on `origin/main` and the next agent sees it, F-257's block is in
+SPECS.md and its section is correctly under `## Resolved`. The damage is attribution and
+revertability: F-257's docs are recorded as F-247's work, and reverting either task's commit now
+takes the other's docs with it. This is the F-117 misattribution hazard, reached from the other
+direction — F-117 was about *inheriting* someone's WIP into your claim; this is about your finished
+work being *taken* by someone else's pathspec.
+
+**The mechanism:** claims are advisory over a single shared working tree and index. `agent check`
+correctly refuses to let a lane commit a file another lane holds — it refused seven of lm2's F-245
+files for me during this very task, and printed the standard "commit only your own files, by
+pathspec" advice. But a lane whose own task legitimately edits `docs/SPECS.md` and
+`docs/FINDINGS.md` has those paths in its own pathspec, and `git commit -- docs/SPECS.md` commits
+the file's *entire* working-tree content, not just that lane's hunks. Since both lanes append to the
+same two append-heavy docs, the second one to ship takes everything. Claiming the file does not
+help: I held claims on both from before my first edit through `agent done`, and F-247's ship
+committed them anyway.
+
+**Would take:** deciding which of three shapes to adopt, then implementing it in `.agent/bin/agent`.
+(a) `agent ship` drops from its pathspec any file claimed by *another* task, the same rule
+`agent check` already applies, and says which files it skipped and who holds them — cheap, and turns
+a silent sweep into a legible "your docs are still uncommitted, ship again once lm3 closes out".
+(b) Per-lane docs fragments (`docs/findings.d/F-257.md`) concatenated by a check, so two lanes never
+write one file — removes the race entirely but is a real restructuring of four heavily
+cross-referenced docs. (c) Serialise docs writing behind a lock the way `agent godot` serialises the
+engine — simple, but a lane blocks at close-out, the worst time to wait.
+
+(a) is the smallest change that removes the silent failure and is where I would start; it is also
+the only one that needs no migration. Note this is adjacent to but distinct from D-154 (claim late,
+release at close-out) and F-262 — those are about how *long* a claim is held, whereas this is about
+a claim not being enforced at commit time for files a second lane also legitimately edits.
+
+---
+
 ## Resolved
 
 ### F-257 · Real App ID must be written to two independent places; task 8.11's `apply_ids.sh` only reaches one of them — **fixed**
