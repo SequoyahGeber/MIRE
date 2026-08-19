@@ -3405,3 +3405,44 @@ collapse to whatever ITEMS.md's column literally says. Nothing today asks for th
 column reads as flavor text describing a tier's overall economy, not a mechanic spec, and every
 tier this task actually placed (gilded) has an unambiguous single answer once the item catalog's own
 key-description line is read as authoritative over the looser table cell.
+
+### D-123 · 2026-08-19 · A Wellspring cap / boss kill grants its loot tier directly into every present player's own inventory — no spawned `Chest`, and one independent roll per player, not one shared roll
+
+F-183 found `wellspring`/`boss` (`docs/ITEMS.md` §5) authored, id-resolvable, and never rolled — a
+Wellspring cap and a boss kill are events, not positions, so F-146's marker-bridge placement pattern
+(`ChestPlacementService`) does not apply, and the finding itself left two design calls open. Both are
+settled here, by `autoload/reward_service.gd`:
+
+- **Direct grant, never a spawned `Chest`.** The finding's own alternative — instance a real `Chest`
+  at the trigger's position — needs that node to land at the SAME `NodePath` on every peer, since
+  Godot's high-level multiplayer API routes an RPC to a node by matching its path in the scene tree,
+  not by creation order or a spawn id. This codebase has exactly two patterns that guarantee that
+  today: `MultiplayerSpawner` (enemies/players — the engine's own mechanism) and
+  `ChestPlacementService`'s bridge, which works only because every peer builds it from identical
+  BOOT-TIME content (the map layout) in the same deterministic pass, so WHEN each peer's own
+  `node_added` signal happens to fire never changes WHAT gets built or where. A Wellspring
+  cap/boss-kill trigger has neither property — it fires at a real-time moment that depends on
+  gameplay and network latency, so two peers building a `Chest` "at the same moment" have no
+  guarantee of matching paths without inventing a THIRD synchronization mechanism (e.g. a spawn RPC
+  carrying an explicit id) this task has no budget to build and prove. `InventoryService.host_add()`/
+  `PowerupService.host_grant()` are already fully networked (each reaches a remote peer through its
+  own existing snapshot RPC) and need no new node at all — the same "harvest pattern" seam
+  `Chest._accept_open_request()` itself already grants through.
+- **One independent roll per present player, not one shared roll split among them.** A world-placed
+  chest already means "whoever gets there first loots it; a teammate who arrives after it's open
+  gets nothing from that instance." Granting every player present at the trigger their OWN
+  independent roll is the closer analogue — an event has no "who got there first," so treating it as
+  N simultaneous personal chest-opens (one per player) is more generous and avoids inventing a
+  "who deserves the boss loot" arbitration this task was never asked to design. `docs/ITEMS.md`
+  §5's "the objective's paycheck" phrasing reads as "what the objective pays," not "one prize split
+  N ways."
+
+**Would change my mind:** a future task that builds a general "spawn a networked object outside
+`MultiplayerSpawner`/boot-time content" primitive (an explicit host-assigned spawn id broadcast to
+every peer, the same idea `MultiplayerSpawner` already automates for scene-tree children) would
+remove the NodePath objection above and make a visible reward `Chest` straightforward — worth
+revisiting then, especially given `docs/DESIGN.md` §4.4's "a teammate needs to know what you got"
+social framing this decision's direct-grant version only serves indirectly (through
+`PowerupService`'s existing `net_powerup_counts` broadcast telling every teammate a stack count
+changed, not through anything visible in the world). A playtest showing the shared-roll split
+matters more than "everyone loots" would also revisit the second call.

@@ -75,6 +75,96 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-183 fixed: a Wellspring cap / boss kill finally rolls its loot tier — `autoload/reward_service.gd`, direct-grant, no spawned `Chest` (lm)
+
+D-123's two calls: **direct grant, never a spawned `Chest`** (an event-timed trigger has no
+established way to land a dynamically-instanced node at a matching `NodePath` on every peer — this
+codebase's only two patterns that guarantee that are `MultiplayerSpawner` and
+`ChestPlacementService`'s boot-deterministic marker bridge, and this fits neither), and **one
+independent roll per present player**, not one shared roll — the closer analogue to "whoever gets
+there first loots" a world chest already means.
+
+```gdscript
+# EventBus.subscribe_wellspring_capped() / subscribe_boss_defeated() already fire identically on
+# every peer (D-107/D-108/F-168/F-181's pattern) -- RewardService._owns_mutation() (copied
+# verbatim from Wellspring/Chest's own boilerplate) is what keeps a client from rolling anything.
+# Per present player (RewardService._present_peers(), same "distinct multiplayer authority in the
+# players group" helper DefeatService already has):
+Registry.get_loot_table(tier).roll(rng, 0.0, unlock_check)   # fresh RandomNumberGenerator, never randi()
+InventoryService.host_add(peer_id, item_id, amount)          # coins + items
+PowerupService.host_grant(peer_id, powerup_id, count)         # powerups
+```
+
+Reuses D-111/F-173's unlock-gating `Callable` exactly as `Chest._unlock_check()` builds it (the
+host's own `UnlockService`, since `_owns_mutation()` already restricts this to the host process) and
+the identical three-bucket dispatch `Chest._accept_open_request()` already uses — no new grant
+mechanism, just a new caller. `core/util/mire_log.gd` gained a `&"reward"` channel (`CHANNELS` array)
+for the per-grant log line, same "declare it so the console/overlay can toggle it" convention every
+other channel already follows.
+
+**Registered last** in `[autoload]` via `agent autoload RewardService res://autoload/reward_service.gd`
+— depends on `Registry`/`InventoryService`/`PowerupService`/`UnlockService`, all registered earlier.
+
+**Not built — see D-123 for why, and what would change it:** no `Chest` node, no visible in-world
+prop at the Wellspring/boss arena. `DESIGN.md`'s "a teammate sees a jackpot" social framing is only
+served indirectly today, through `PowerupService.host_grant()`'s already-existing
+`net_powerup_counts` broadcast (every teammate already learns when someone's stack count changes) —
+a future task building a general "spawn a networked object outside `MultiplayerSpawner`/boot-time
+content" primitive would remove the NodePath objection and make a visible reward chest
+straightforward; D-123 names exactly what that primitive would need to prove.
+
+**Verified:** `agent godot --script tools/reward_service_check.gd` → `REWARD_SERVICE_CHECK
+failures=0`, run three times (the check's rolls use non-seeded `randomize()`, same as `Chest`'s own
+per-instance stream) — against the REAL `content/loot/wellspring.tres` (all-POWERUP, coins 40-80)
+and `boss.tres` (mixed item/powerup, coins 100-220) content, no synthetic table. `agent godot
+--quit-after 60` → clean boot, no new `ERROR:` lines. No regressions: `tools/chest_check.gd`,
+`tools/chest_placement_check.gd`, `tools/wellspring_check.gd`, `tools/boss_check.gd`,
+`tools/unlock_check.gd`, `tools/loot_content_check.gd` all still `failures=0`.
+
+### 2026-08-18 — Task 3.7 (second half): the doors open — host-authoritative, and the doorway really clears (slate17)
+
+**What shipped, verified:** `systems/building/buildable_door.gd`, the three hinged piece scenes
+re-authored with split colliders, `ui/building/door_prompt.gd` registered as the `DoorPrompt`
+autoload, `PROTOCOL_VERSION` 19 → 20, and `tools/door_check.gd`. All green:
+`door_check` 0 failures across all three doors, plus `buildable_content_check`, `build_check`,
+`build_net_check`, `handshake_check` and `verify_setup` (123 checks) after the bump.
+
+**The seam:** a door is a `BuildableDef` whose scene root carries `buildable_door.gd`, which extends
+`buildable_piece.gd` — so it satisfies the `&"damageable"` contract F-085 is about and
+`BuildService._net_spawn_piece()` leaves the authored root alone, exactly as that function's own
+comment anticipated.
+
+```gdscript
+door.request_toggle() -> bool     # the interact seam; offline/host answer synchronously
+door.open: bool                   # replicated, host authority, the ENTIRE schema
+door.is_passable() -> bool        # whether the doorway is currently walkable
+door.toggled(open, by_peer_id)    # local signal for presentation and prompts
+```
+
+**Two things are worth copying rather than re-deriving.** First, **the collider changes with the
+state**: a door's shapes are split into the structure that always blocks (jambs, posts, header,
+lintel) and one `blocking_shapes` span across the opening that is disabled while open. A door that
+swings but whose collider does not is the worst version of this bug, because it looks right in
+motion — `door_check` sweeps a 0.32 m player capsule through the doorway in both states rather than
+trusting the transform (F-150). Second, **the swing is free** because A-010 exports every leaf with
+its origin on the hinge axis and `scenes/buildables/*.tscn` places it at the catalog's
+`hinge_offset_m` — opening a door is `leaf.rotation.y = angle` and there is no pivot for anyone to
+find by hand (D-039, D-090).
+
+**Owed, and blocked on a claim:** `docs/ARCHITECTURE.md` §2.2 needs the row below; the file was held
+by F-183 for this whole session (the same gap F-165 records for `net_version.gd`). Paste it under
+the world-mutation rows:
+
+> `| Placed doors and gates — open/shut state (task 3.7) | **Host.** `BuildableDoor` holds `open`;
+> only the host flips it, and the collider that spans the doorway follows the bool on every peer. |
+> New reliable `net_request_toggle` (client → host, carries no state); a code-built
+> `SceneReplicationConfig` with `open` ON_CHANGE, the same shape as `Chest.opened`. `PROTOCOL_VERSION`
+> 20. | Same "harvest pattern" as Chest and Wellspring: the request carries nothing, and the host
+> re-derives whether the requester is within the door's own `interact_range_m`. A client-predicted
+> swing is exactly the "two clients disagree" case — a door open on your screen and shut on the host
+> is a wall you can see through and walk into. |`
+
+
 ### 2026-08-18 — F-180 fixed: A-010's HINGE-family leaves now clear their frame at every swing angle — `HINGE_CLEARANCE` (lm)
 
 `tools/blender/build_construction_set.py`'s `create_asset()` used to normalize every `HINGE`-family

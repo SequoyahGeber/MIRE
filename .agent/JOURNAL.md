@@ -4390,3 +4390,18 @@ Merged kit geometry everywhere it is stamped, gave every merged mesh a LOD ladde
 Files: `tools/render_census.gd`, `world/gen/authored_world.gd`, `world/gen/undergrowth.gd`, `autoload/graphics_quality.gd`, `tools/_probe_lods.gd`, `world/environment/draw_policy.gd`, `tools/harvest_batch_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `core/render/mesh_merge.gd`, `systems/harvesting/harvestable.gd`, `tools/_probe_merge.gd`, `tools/frame_cost_check.gd`
 
 Commit at time of writing: `773f9fa`
+
+---
+
+### DONE · F-183 · lm · 2026-08-19T06:46:55+00:00
+
+**Wellspring caps and boss kills never grant a Chest — `wellspring`/`boss` tier loot tables are authored and reachable, but nothing ever rolls them**
+
+autoload/reward_service.gd (new autoload, host-only) subscribes to EventBus.subscribe_wellspring_capped()/subscribe_boss_defeated() -- both already fire identically on every peer from a replicated property's own setter (D-107/D-108/F-168/F-181) -- and for every present player (_present_peers()) rolls the trigger's real content tier (wellspring.tres/boss.tres) once via Registry.get_loot_table(), granting through the same InventoryService.host_add()/PowerupService.host_grant() seam Chest._accept_open_request() uses, reusing D-111/F-173's unlock-gating Callable. D-123 records the two design calls: direct grant (no spawned Chest -- no established cross-peer NodePath-sync story for an event-timed node outside MultiplayerSpawner/ChestPlacementService), and one independent roll per present player. Verified: agent godot --script tools/reward_service_check.gd -> REWARD_SERVICE_CHECK failures=0, run 3x against the REAL wellspring.tres/boss.tres content. agent godot --quit-after 60 -> clean boot, RewardService in project.godot autoload list. No regressions: chest_check/chest_placement_check/wellspring_check/boss_check/unlock_check/loot_content_check/findings_numbering_check all failures=0.
+
+Notes along the way:
+- F-190 observed live: agent autoload's atomic commit registered RewardService in project.godot before autoload/reward_service.gd itself was committed -- shipping immediately to close that window, not doing further polish first.
+
+Files: `autoload/reward_service.gd`, `tools/reward_service_check.gd`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/SPECS.md`, `docs/ARCHITECTURE.md`, `core/util/mire_log.gd`
+
+Commit at time of writing: `9c0f267`

@@ -789,55 +789,6 @@ finding) already uses correctly.
 
 ---
 
-### F-186 · A chat session that dies holds its claims forever — agent reap only frees lane claims, and a chat has no liveness signal at all
-
-**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by nettle12
-
-`agent reap` is documented as the backstop for claims left behind by a hard exit: "A lane killed
-hard — closed laptop, OOM, a hung CLI — leaves its claims behind, and every other lane that needs
-those files is blocked behind a corpse." Its body only ever considers lanes:
-
-    if holder in (n.lower() for n in LANE_NAMES) and holder not in alive:
-
-A lane is checkable because `lanes.json` carries its pid. A chat session carries nothing — the token
-in `sessions.json` records when the session *registered* and is never updated again — so there is no
-way to distinguish an abandoned chat from a busy one, and `reap` does not try. Claims left by a dead
-chat are therefore permanent until a human notices and runs `agent drop` by hand.
-
-**This is currently costing real work, and it has already recurred.** Two tasks have held 19 files
-between them for roughly 8.5 hours with their sessions idle:
-
-- **F-144** (`nettle12`, in flight since 21:51) holds 12 files, including
-  `world/gen/undergrowth.gd`, `world/gen/authored_world.gd`, `autoload/graphics_quality.gd` and
-  `core/render/mesh_merge.gd`. Its files were last modified at 15:07–15:10 local, ~8.4 hours before
-  this was written.
-- **3.7** (`slate17`, in flight since 22:23) holds 7 files including `core/net/net_version.gd` and
-  `tools/handshake_check.gd`.
-
-The downstream cost is in the journal, not hypothetical:
-
-- The enemy-LOD task had to scope itself away from F-144's props/harvestable/undergrowth half
-  because "F-144 (nettle12, 6h in flight) already holds every file [it] needs" — recorded as D-115.
-- The display-name task shipped without a PROTOCOL_VERSION bump because "net_version.gd held by
-  slate17's 3.7 all session", filing F-178 and continuing the chain D-102 had already started.
-- LP's queued **F-112** order claims `world/gen/undergrowth.gd`, which F-144 holds. LP's next wake is
-  08:50; that order cannot run.
-
-So the same two corpses have forced at least two documented scope-splits and two follow-up findings,
-and are set to burn a lane wake-up.
-
-**The fix has two halves.** A chat needs a liveness signal — a `seen` timestamp refreshed on each
-`agent` invocation, rate-limited so the pre-commit hook does not rewrite `sessions.json` on every
-command. Then `reap` can judge a chat the way it already judges a lane.
-
-**Freeing a chat's claims must stay conservative and explicit**, which is the important difference
-from the lane path: a lane is dead or alive, but a chat can be legitimately idle for hours while its
-human is at lunch, and its uncommitted edits are still sitting in the tree. Releasing the claim does
-not remove those edits — it removes the protection around them. So staleness should be *reported*
-by default and only released when asked for with an explicit threshold.
-
----
-
 ### F-187 · Props are 1,057 MultiMesh groups averaging 2.7 copies — F-100's cross-asset chunk merge is still not built, and now has a measured constraint
 
 **Area:** perf · **Severity:** medium · **Found:** 2026-08-19 by nettle12
@@ -1008,6 +959,108 @@ atomically from the working tree and cannot lose to the race, and verify with
 ---
 
 ## Resolved
+
+### F-186 · A chat session that dies holds its claims forever — agent reap only frees lane claims, and a chat has no liveness signal at all — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by nettle12
+
+`agent reap` is documented as the backstop for claims left behind by a hard exit: "A lane killed
+hard — closed laptop, OOM, a hung CLI — leaves its claims behind, and every other lane that needs
+those files is blocked behind a corpse." Its body only ever considers lanes:
+
+    if holder in (n.lower() for n in LANE_NAMES) and holder not in alive:
+
+A lane is checkable because `lanes.json` carries its pid. A chat session carries nothing — the token
+in `sessions.json` records when the session *registered* and is never updated again — so there is no
+way to distinguish an abandoned chat from a busy one, and `reap` does not try. Claims left by a dead
+chat are therefore permanent until a human notices and runs `agent drop` by hand.
+
+**This is currently costing real work, and it has already recurred.** Two tasks have held 19 files
+between them for roughly 8.5 hours with their sessions idle:
+
+- **F-144** (`nettle12`, in flight since 21:51) holds 12 files, including
+  `world/gen/undergrowth.gd`, `world/gen/authored_world.gd`, `autoload/graphics_quality.gd` and
+  `core/render/mesh_merge.gd`. Its files were last modified at 15:07–15:10 local, ~8.4 hours before
+  this was written.
+- **3.7** (`slate17`, in flight since 22:23) holds 7 files including `core/net/net_version.gd` and
+  `tools/handshake_check.gd`.
+
+The downstream cost is in the journal, not hypothetical:
+
+- The enemy-LOD task had to scope itself away from F-144's props/harvestable/undergrowth half
+  because "F-144 (nettle12, 6h in flight) already holds every file [it] needs" — recorded as D-115.
+- The display-name task shipped without a PROTOCOL_VERSION bump because "net_version.gd held by
+  slate17's 3.7 all session", filing F-178 and continuing the chain D-102 had already started.
+- LP's queued **F-112** order claims `world/gen/undergrowth.gd`, which F-144 holds. LP's next wake is
+  08:50; that order cannot run.
+
+So the same two corpses have forced at least two documented scope-splits and two follow-up findings,
+and are set to burn a lane wake-up.
+
+**The fix has two halves.** A chat needs a liveness signal — a `seen` timestamp refreshed on each
+`agent` invocation, rate-limited so the pre-commit hook does not rewrite `sessions.json` on every
+command. Then `reap` can judge a chat the way it already judges a lane.
+
+**Freeing a chat's claims must stay conservative and explicit**, which is the important difference
+from the lane path: a lane is dead or alive, but a chat can be legitimately idle for hours while its
+human is at lunch, and its uncommitted edits are still sitting in the tree. Releasing the claim does
+not remove those edits — it removes the protection around them. So staleness should be *reported*
+by default and only released when asked for with an explicit threshold.
+
+---
+
+**Resolved 2026-08-19 by nettle12.** Fixed in `.agent/bin/agent`, with a correction to this finding's own evidence — see the end.
+
+**The heartbeat.** `_beat()` runs once per invocation from `main()`, writing a `seen` timestamp into
+`sessions.json` for the calling chat. It lives in `main()` rather than `whoami()` because `board`,
+`reap` and the other read-only commands never resolve a name, so a session that only read would have
+looked abandoned. Rate-limited to one write a minute, and it catches `BaseException` — it runs before
+every command, and `die()` raises `SystemExit`, which an `except Exception` would let through.
+
+**It deliberately takes no lock.** The first version did, and that was a genuine mistake caught in
+testing: with dozens of live chats the new lock contended immediately, and every `agent` command
+began waiting 10s before dying on the timeout. A missed beat is harmless — the next command re-beats
+within the minute — so it re-reads immediately before the atomic replace and accepts the narrow
+lost-update window instead of paying a lock on the hottest path in the tool.
+
+**`reap` now judges chats, conservatively.** Lane behaviour is unchanged. Chat-held claims are
+grouped by task with how long that session has been silent, and by default are only *reported* —
+releasing a claim does not remove the uncommitted edits under it, it removes the protection around
+them, and a chat can be legitimately idle while its human is away. `--stale <hours>` is the explicit
+opt-in that actually frees them.
+
+**Ambiguity loses.** `_session_last_seen()` returns `(idle_hours, certain)`. With the claim's own
+session token it is certain. Without one — a claim written before F-147 added the field — the only
+handle is the agent name, and names collide (F-145), so the freshest session wearing that name may be
+a different chat entirely. Those report as `NAME SHARED, cannot attribute` and `--stale` refuses to
+act on them, because freeing a live chat's files is far worse than leaving a dead one's held.
+
+Verified with three new cases in `tools/harness_check.py` (25/25 pass). Against pre-fix HEAD the
+suite scores 23/25: "frees a chat claim whose session is long silent" and "plain reap never frees a
+chat's claim" both fail, confirming they are real regression tests. The third — the refusal on an
+unattributable name — passes at HEAD too, because HEAD never frees a chat claim at all and so
+refuses trivially; it is there to keep that safety property from regressing later, not to demonstrate
+the bug. Also fixed the `STATE` fixture, whose only task carried no `milestone` key, so any temp-repo
+command reaching `save()` crashed in `render_board`.
+
+---
+
+**Correction to this finding's evidence.** The body above claims two sessions had died and were
+holding files "behind a corpse". That framing was wrong, and the heartbeat this finding added is what
+disproved it:
+
+- **F-144 (`nettle12`) is alive.** Once `seen` existed, that session's heartbeat was seconds old. It
+  is a genuinely long-running task — 12 files held for ~9 hours — not an abandoned one. Its claims
+  are legitimate and must not be reaped.
+- **3.7 (`slate17`) has since closed.** `core/net/net_version.gd` is now held by `hollow7` for F-161.
+
+What remains true, and is what was actually fixed: `reap` covered only lanes, and a chat had no
+liveness signal at all, so there was no way to tell either case apart from a corpse — which is
+precisely why the wrong conclusion was reachable from the evidence available at the time. The
+downstream costs cited (D-115's scope split, D-102/F-178's deferred PROTOCOL_VERSION bump, LP's
+blocked F-112 order) are real, but they are the cost of *long-held live claims*, not of dead
+sessions. Whether a task should be allowed to hold 12 files for nine hours is a separate question and
+is not addressed here.
 
 ### F-183 · Wellspring caps and boss kills never grant a Chest — `wellspring`/`boss` tier loot tables are authored and reachable, but nothing ever rolls them — **fixed**
 

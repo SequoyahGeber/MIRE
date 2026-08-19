@@ -4415,6 +4415,83 @@ undeclared-`ERROR:` count is `0` both runs.
 
 ---
 
+## F-183 · Wellspring caps and boss kills never grant a Chest — `wellspring`/`boss` tier loot tables are authored and reachable, but nothing ever rolls them
+
+**Claim:** `autoload/reward_service.gd`, `tools/reward_service_check.gd`, `core/util/mire_log.gd`,
+`project.godot` (autoload registration only, via `agent autoload`), `docs/FINDINGS.md`,
+`docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/SPECS.md`, `docs/ARCHITECTURE.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Root cause:** F-146 gave every WORLD-PLACED chest tier a real owner (`ChestPlacementService`), but
+`wellspring` and `boss` (`docs/ITEMS.md` §5) were never meant to sit in the world at all — a
+Wellspring cap and a boss kill are events, not positions. Neither `Wellspring._finish_cap()` (only
+ever flips `capped`) nor `Boss._play_state_animation()` (only ever flips `state`) ever called
+`LootTableDef.roll()` against either table. Both tables pass `tools/loot_content_check.gd`'s
+id-resolution sweep — the content was never the gap, same shape F-146 itself was before its own fix,
+just for an event trigger instead of a placement marker.
+
+**Two design calls the finding itself left open, both decided here — see D-123:**
+1. **Direct grant, not a spawned `Chest`.** A world-placed chest's NodePath is safe across peers
+   because `ChestPlacementService` builds it deterministically, identically, from boot-time content
+   (the map layout) — nothing about WHEN a marker's `node_added` signal fires changes what gets
+   built. A Wellspring-cap/boss-kill trigger has no such guarantee: it fires at a moment that
+   depends on real-time gameplay and network latency, not shared boot-time content, so a
+   dynamically-instanced `Chest` at that moment has no established way to land at a matching
+   NodePath on every peer — this codebase's only two node-creation patterns that *do* guarantee
+   that are `MultiplayerSpawner` (enemies/players) and `ChestPlacementService`'s own boot-deterministic
+   bridge, and an event-timed trigger fits neither. A direct grant through the already-networked
+   `InventoryService.host_add()`/`PowerupService.host_grant()` seam (each already reaches a remote
+   peer through its own snapshot RPC) needs no new node and no new RPC at all.
+2. **One independent roll per present player, not one shared roll.** A world chest is already
+   "whoever gets there first loots it, nobody else does" — granting every present player their OWN
+   independent roll is the closer analogue (nobody is shut out because a teammate happened to be the
+   one who capped/landed the kill), and matches ITEMS.md's "the objective's paycheck" framing better
+   than a single split reward would.
+
+**Fix:** `autoload/reward_service.gd` (new autoload, registered last via `agent autoload
+RewardService res://autoload/reward_service.gd`). Subscribes to
+`EventBus.subscribe_wellspring_capped()`/`subscribe_boss_defeated()` — both already fire identically
+on every peer, straight from a replicated property's own setter (the D-107/D-108/F-168/F-181
+pattern), so no new RPC is needed to reach every peer's own copy of this autoload. HOST-only
+(`_owns_mutation()`, copied verbatim from `Wellspring`/`Chest`'s own boilerplate): resolves the
+trigger's tier through `Registry.get_loot_table()`, then for every currently-present player
+(`_present_peers()`, the same "distinct multiplayer authority in the `players` group" helper
+`DefeatService` already uses) rolls that table once with a fresh `RandomNumberGenerator` (never
+`randi()`) and the same D-111/F-173 unlock-gating `Callable` `Chest._unlock_check()` already builds,
+then grants coins/items through `InventoryService.host_add()` and powerups through
+`PowerupService.host_grant()` — the identical three-bucket dispatch `Chest._accept_open_request()`
+already uses. `core/util/mire_log.gd` gained a `&"reward"` channel so the per-grant log line is
+toggleable like every other system's.
+
+**Not attempted here:** no `Chest` node, no visible in-world prop at the Wellspring/boss arena — see
+call 1 above. A future task revisiting DESIGN.md's "teammates see a jackpot" social framing (already
+served indirectly here: `PowerupService.host_grant()`'s existing `net_powerup_counts` broadcast
+already tells every teammate when someone's stack count changes) should re-read D-123 before
+assuming a spawned-`Chest` version is a small follow-up — the NodePath-sync problem call 1 names is
+real engineering, not a stylistic choice.
+
+**Verify:** `agent godot --script tools/reward_service_check.gd` — proves, against the REAL
+`content/loot/wellspring.tres`/`boss.tres` content (no synthetic table, same choice
+`tools/chest_placement_check.gd` made for Hollowmere's real chest tiers): wiring (RewardService
+registered and actually subscribed to both hooks), a real Wellspring's `capped` transitioning true
+(a bare property write — the F-168 replication shape) grants the present player wellspring.tres's
+coin range plus at least one of its all-POWERUP rolls, `EventBus.emit_boss_defeated()` does the
+same against boss.tres's mixed item/powerup table, and `_present_peers()` returns every distinct
+authority in the `players` group (not just the first one) — a live multi-peer INVENTORY grant needs
+a real connected transport (`chest_net_check.gd`'s own two-process pattern), already-proven plumbing
+this file does not re-test.
+
+**Verified 2026-08-19 (lm):** `agent godot --script tools/reward_service_check.gd` →
+`REWARD_SERVICE_CHECK failures=0`, run three times (non-seeded `randomize()` rolls). `agent godot
+--quit-after 60` → clean boot, no new `ERROR:` lines, `RewardService` present in `project.godot`'s
+`[autoload]`. No regressions: `tools/chest_check.gd`, `tools/chest_placement_check.gd`,
+`tools/wellspring_check.gd`, `tools/boss_check.gd`, `tools/unlock_check.gd`,
+`tools/loot_content_check.gd` all still `failures=0`.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |
