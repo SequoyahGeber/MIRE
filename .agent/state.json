@@ -4350,10 +4350,12 @@
       "title": "Biome assignment (height \u00d7 moisture), biome `.tres` definitions"
     },
     "4.2-review": {
+      "done_at": "2026-08-19T14:54:35+00:00",
+      "done_by": "lm",
       "est": "0.5",
       "milestone": "M4",
       "review_of": "4.2",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 4.2 @ 645feb1 \u2014 judge the commit, file findings, no edits"
     },
@@ -6893,6 +6895,13 @@
       "status": "done",
       "tier": "F",
       "title": "SalvageService's reward-curve comment states the wrong numbers \u2014 mismatches the formula it documents and its own SPECS.md block"
+    },
+    "F-228": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`craft`/`build` console commands charge and credit the HOST's own peer, not the issuing player, whenever a non-host op runs them"
     }
   },
   "version": 1

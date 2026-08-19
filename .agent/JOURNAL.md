@@ -5453,3 +5453,13 @@ Notes along the way:
 Files: `docs/FINDINGS.md`
 
 Commit at time of writing: `e40b475`
+
+---
+
+### DONE · 4.2-review · lm · 2026-08-19T14:54:35+00:00
+
+**Review 4.2 @ 645feb1 — judge the commit, file findings, no edits**
+
+Clean — 645feb1 verified against SPECS.md 4.2 (BiomeDef .tres family, Registry loader for content/biomes/, biome=f(height,moisture) via safe ops, 3 worked examples), ARCHITECTURE.md §2.2 (no dedicated row needed; biome_def.gd's own doc comment correctly claims None authority — pure function of shared content + world_seed, same reasoning as the POI-placement row), §7 world-gen safe set (moisture()/assign()/biome_at() use only FastNoiseLite + arithmetic + comparisons, no transcendentals, no randi()), and standing rules 1/2 (BiomeDef/BiomeMap preloaded everywhere, never bare class_name; registry.gd's own bare Registry references are the autoload-script exception). tools/biome_check.gd (real registered Registry, not a private copy): 20/20 PASS, failures=0. Full boot --quit-after 120: 0 ERROR: lines (2 pre-existing unrelated navmesh precision WARNINGs only). Resolution rule hand-checked: priority ascending wins, id-alphabetical tiebreak (forest < grassland at the 0.5 moisture boundary), out-of-range falls back to lowest-priority def (shore) not empty StringName. 4.4/4.7 already consume BiomeMap.biome_at()/Registry.biomes via the same convention this task established, per DELEGATION.md. No findings.
+
+Commit at time of writing: `99ba60b`
