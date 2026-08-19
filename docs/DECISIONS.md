@@ -2941,3 +2941,46 @@ vs an old look-ahead line). `SettingsMenu` ships only the D-032 exclusivity, ope
 frame; 7.5 adds rows to its `stack` node and nothing else about this file needs to change. **Would
 change my mind:** nothing short of 7.5 itself — this is a scheduling call the roadmap already made,
 not a technical constraint this task discovered.
+
+### D-111 · 2026-08-19 · Task 6.9's unlock tree ships the full purchase/persistence/UI framework, but wires no live gameplay gate — F-173 explains why that is not a small follow-up
+
+**"Never power" is enforced by `UnlockDef`'s schema, not a runtime check.** The def has `id`,
+`category` (a closed §4.6 vocabulary), `display_name`, `description`, `cost`, `gates_id` — no
+numeric stat/bonus field exists anywhere on it, the same structural move D-044 already used to make
+a stray stat impossible to author onto `PowerupDef`. A future author cannot accidentally ship
+"+5% damage" through this system even by mistake; there is nowhere on the resource to put it.
+
+**Why the worked example (`unlock_deep_pocket.tres`, gating the real `deep_pocket` PowerupDef
+already rolled by `content/loot/bog.tres`) does not actually change what a chest can roll.** This
+was the natural first real gate — DESIGN.md §4.6 leads its unlockable list with "new powerups in
+the pool," and a live consumer would have been the strongest possible proof the framework works.
+It was cut for a real reason, not a scope shortcut: `LootTableDef.roll()` runs once, host-side, for
+whichever peer opened the chest, but `UnlockService.is_content_unlocked()` only ever answers for
+the CALLING peer's own local `user://unlocks.json` (§2.2's new "Unlocks" row is explicitly **None**
+— per-player, unreplicated, the same shape Salvage already has). Wiring the check into the host's
+roll would have to pick one of: gate the whole party's odds off the HOST's own unlock set
+regardless of who opened the chest (wrong — a client who bought the unlock would never see it
+drop), or somehow ask the opening PEER's own save (no seam exists to ask a peer for its own local
+state — Salvage/Unlocks were deliberately built with no RPC of their own). Either shipped choice
+would be a real bug wearing a "worked example" label. POI placement and enemy-roster expansion have
+the identical conflict one level worse: §2.2 already requires those to be byte-identical across
+every peer by construction (derived from the shared world seed), and a per-peer unlock set cannot
+satisfy that without either replicating purchases or making unlocks a session-wide (not per-player)
+setting — a real design call, not a missing line of glue code.
+
+**What shipped instead is a complete, independently-testable vertical slice with no consumer:** the
+def, the worked-example content file, `UnlockService.purchase()`/`is_content_unlocked()`,
+`SalvageService.spend_salvage()`, `EventBus.unlock_purchased`, and `UnlockMenu`'s buy flow all work
+and are covered by `tools/unlock_check.gd` end to end — buying the worked example really deducts
+Salvage, really persists, and really flips `is_content_unlocked(&"deep_pocket")` from false to true.
+Nothing in the shipped game calls `is_content_unlocked()` yet, so today that flip has no visible
+effect — exactly the same "framework, not effect wiring" cut D-103 already made for Cycle Modifiers
+(`has_modifier()` exists, nothing reads it into a gameplay system).
+
+**Would change my mind:** a task that resolves the cross-peer question first — either (a) purchases
+start replicating (a new reliable RPC, `UnlockService` gains an authority row closer to Salvage's
+`salvage_banked` counterpart but broadcast), or (b) the design settles for "the HOST's own unlock
+tree gates the run for everyone," which needs no RPC at all and matches how a single-player-rooted
+roguelike's meta-progression usually reads anyway. Either answer, once picked, makes wiring the
+first real gate (loot table, then POI/enemy roster) a small, mechanical follow-up — this decision is
+about not shipping the WRONG answer by default, not about the gate being hard to wire technically.

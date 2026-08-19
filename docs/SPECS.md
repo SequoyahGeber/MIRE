@@ -2156,6 +2156,93 @@ boot, and `docs/DELEGATION.md`'s Current state carrying `DefeatService.is_defeat
 
 ---
 
+## 6.9 · Unlock tree + UI. Variety only, never power (`DESIGN.md` §4.6)
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap. DESIGN.md §4.6 is the actual source of truth: "Salvage unlocks variety, never
+power. Unlockable: new powerups in the pool, new Attunements, new POI types, new enemy types, new
+Cycle Modifiers, new island modifiers, cosmetics, new starting loadout options (sidegrades). Never
+unlockable: +damage, +health, permanent stat boosts." Builds directly on task 6.6's Salvage —
+`SalvageService.total_salvage()`/a new `spend_salvage()` this task adds.
+
+**Authority:** new §2.2 row "Unlocks" — **None**, identical reasoning and shape to Salvage's own row
+(task 6.6, D-107): per-player account state in `user://unlocks.json`, no two peers ever compare
+purchased sets, every peer runs the same autoload reacting only to its own local calls.
+
+**Claim:** `systems/unlocks/unlock_def.gd` (new), `content/unlocks/` (new dir, one worked example),
+`core/save/unlock_save.gd` (new), `autoload/unlock_service.gd` (new), `ui/menu/unlock_menu.gd`
+(new), `tools/unlock_check.gd` (new), `autoload/registry.gd`, `autoload/salvage_service.gd`,
+`core/events/event_bus.gd`, `ui/menu/main_menu.gd`. `project.godot` — two `agent autoload`
+registrations, `UnlockService` (anywhere after `Registry`/`SalvageService`) and `UnlockMenu`
+(before `MainMenu`, same "opened by node path" convention `SettingsMenu` already uses).
+
+**"Never power" is a schema fact, not a runtime check.** `UnlockDef` (id, `category` — a closed
+§4.6 vocabulary: `powerup`/`attunement`/`poi`/`enemy`/`cycle_modifier`/`island_modifier`/
+`cosmetic`/`loadout` — `display_name`, `description`, `cost`, `gates_id`) has no numeric stat/bonus
+field anywhere on it, the same D-044 shape that already makes a stray stat impossible to author
+onto `PowerupDef`. There is no code path by which spending Salvage here could raise a number; the
+only thing a purchase can ever do is flip one boolean.
+
+**`UnlockService`** (autoload, `user://unlocks.json` via `core/save/unlock_save.gd` — a sibling
+save file to `SalvageSave`, not a second top-level key on it, per 6.6's own delegation note) tracks
+which ids this peer has purchased. `purchase(unlock_id)` spends through
+`SalvageService.spend_salvage(cost)` and marks the id purchased as one attempt — a refusal (already
+owned, unknown id, persistence disabled, insufficient Salvage) changes nothing on either side, the
+same "price and grant as one transaction" shape `Chest._accept_open_request()` already uses for
+coins. `is_content_unlocked(content_id)` is the gate seam a future consumer calls before adding
+something to a pool: true when nothing gates `content_id`, true once the UnlockDef that gates it is
+purchased, false otherwise. Same D-107 `_persistence_enabled()` guard as `SalvageService` — a
+`--script` check that forgets to override `save_path` cannot write a real player's save.
+
+**`SalvageService.spend_salvage(amount)`** (new) is the inverse of the existing `_bank()`: refuses
+the whole thing — balance and disk both untouched — rather than partially applying it, on a
+non-positive amount, disabled persistence, or a short balance. The one Salvage sink other than the
+existing banking path; any future spend reuses this rather than writing `total_salvage` itself.
+
+**`EventBus.emit_unlock_purchased(unlock_id, cost, total_salvage)`** (new) fires once per purchase,
+the same "future task's hook" role `salvage_banked` plays for 6.8's run summary — nothing here
+shows UI or gates a pool on its own.
+
+**The worked example does not wire a live gameplay gate — see F-173.** DESIGN.md's own list leads
+with "new powerups in the pool," and a real gate exists to prove against
+(`content/loot/bog.tres` already rolls the `deep_pocket` PowerupDef). `content/unlocks/
+unlock_deep_pocket.tres` gates it (D-073: one worked example, Sequoyah authors the rest). But
+`LootTableDef.roll()` is called once, host-side, for whichever peer opened the chest — and
+`is_content_unlocked()` only ever answers for the CALLING peer's own local `user://unlocks.json`.
+Wiring the check into that roll would gate the whole party's odds off whichever peer's save
+happens to be asked, or off the host's own save regardless of who opened the chest — neither is
+"the opener's own progress," and POI placement/enemy-roster expansion have the identical problem
+one level worse (§2.2 requires those to be BYTE-IDENTICAL across every peer, which a per-peer
+unlock set cannot give them without a design decision on how). F-173 records the gap and the
+options (replicate purchases; or let only the host's own unlock state gate a session, like a
+gamerule) for whichever task wires the first real consumer.
+
+**`UnlockMenu`** (new autoload `CanvasLayer`, code-built like `MainMenu`/`SettingsMenu`) lists every
+`Registry.unlock_defs()` row (sorted by id, built once — content is boot-time-static, D-073) with a
+BUY button that disables once owned or unaffordable. Opened only from `MainMenu`'s new UNLOCKS
+button, no hotkey of its own (same "hand off, don't stack" shape D-032 already gives
+`SettingsMenu`) — `MainMenu.request_open_unlocks()` closes `MainMenu` first, mirroring
+`request_open_settings()`.
+
+Verify: `tools/unlock_check.gd` (40+ assertions) — the worked example loads and indexes through
+`Registry`; `UnlockDef.validation_errors()` rejects a blank def, an out-of-vocabulary category, and
+a zero-cost row; `spend_salvage()`/`purchase()` both refuse-the-whole-thing on every failure path
+and leave balance/disk untouched; a successful purchase charges exactly once, persists, and fires
+`unlock_purchased` with the right payload; a repeat purchase of the same id is refused without a
+double-charge; `is_content_unlocked()` reads locked before purchase and unlocked after (and true by
+default for anything ungated); `UnlockMenu` opens/closes, joins `blocks_gameplay_input`, refuses to
+stack with `MainMenu` (D-032), and its BUY button state matches `is_purchased()`; `UnlockSave`
+migrates a missing-version file, falls back safely on a corrupt one, and round-trips. No
+regressions: `salvage_check`, `main_menu_check`, `defeat_check`, `extraction_check`,
+`wellspring_recorruption_check`, `crafting_check`, `cycle_check`, `cycle_modifier_check`,
+`mire_grid_check`, `mire_interaction_check`, `wave_spawner_check` all stay `failures=0`. `agent
+godot --quit-after 15` shows 0 `ERROR:` lines.
+Done means: `unlock_check.gd` at `failures=0`, the eleven regression checks green, 0 `ERROR:` on a
+full boot, and `docs/DELEGATION.md`'s Current state carrying `UnlockService.is_content_unlocked()`
+for whichever future task resolves F-173 and wires a real gate.
+
+---
+
 ## 6.10 · Main menu, lobby UI, settings, seed entry
 
 The old look-ahead bullet below this heading covered only the lobby-UI half, shipped ahead of the

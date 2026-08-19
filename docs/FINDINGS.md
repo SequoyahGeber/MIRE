@@ -1110,6 +1110,37 @@ scheduled anywhere on `docs/ROADMAP.md` today) should route solo seed entry thro
 then, `ensure_seed()` staying eager is the safer default, and solo players wanting a specific seed
 have no way to set one.
 
+### F-173 · `UnlockService.is_content_unlocked()` (task 6.9) has no caller anywhere in the game — wiring the first real gate needs a cross-peer design decision, not just a call site
+
+**Area:** meta-progression/netcode · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.9
+
+`autoload/unlock_service.gd`'s `is_content_unlocked(content_id)` correctly reads locked/unlocked
+against this PEER's own `user://unlocks.json` (docs/ARCHITECTURE.md §2.2's new "Unlocks" row is
+**None** — deliberately unreplicated, same shape as Salvage). Nothing calls it. The worked example,
+`content/unlocks/unlock_deep_pocket.tres`, gates the real `deep_pocket` PowerupDef that
+`content/loot/bog.tres` already rolls — the natural first real gate — but `LootTableDef.roll()` runs
+once, host-side, for whichever peer opened the chest. Checking the gate there means picking one of:
+gate the whole party's roll off the HOST's own unlock set regardless of who actually opened the
+chest (wrong the instant a non-host peer is the one who bought the unlock), or ask the OPENING
+peer's own save — for which no seam exists, since Salvage/Unlocks were built with no RPC of their
+own on purpose. POI placement and enemy-roster expansion (`WaveSpawner.host_unlock_next_enemy()` —
+an unrelated, in-run "unlock," not this system) have the same conflict one level worse: §2.2 already
+requires those derived lists to be byte-identical across every peer, which a per-peer unlock set
+cannot give them without either replicating purchases or making unlocks session-wide rather than
+per-player.
+
+**Why not fixed here:** task 6.9's own scope was the purchase/persistence/UI framework
+(`docs/ROADMAP.md`'s "Unlock tree + UI"); resolving which of the two designs above is correct is a
+call about Salvage's whole authority model, not something this task should decide as a side effect
+of wiring one gate. D-111 records the full reasoning and what would change it.
+
+**What closes this:** a task that picks one of D-111's two options — replicate purchases (a new
+reliable RPC broadcasting `unlock_purchased`, the same shape `salvage_banked` would need if Salvage
+itself ever needed cross-peer visibility), or make the unlock tree a HOST-only, session-wide setting
+(no RPC needed, `is_content_unlocked()` only ever asked of the host's own service) — and then wires
+`LootTableDef.roll()`'s POWERUP entries through it as the first real consumer. POI/enemy-roster
+gating is a natural follow-up once that pattern exists.
+
 ---
 
 ## Resolved

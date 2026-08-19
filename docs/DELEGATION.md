@@ -75,6 +75,83 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 6.9: Unlock tree + UI — full framework, no gameplay gate wired yet (F-173) (lm)
+
+New content family `UnlockDef` (`systems/unlocks/unlock_def.gd`) + `content/unlocks/` (one worked
+example, `unlock_deep_pocket.tres`, D-073) + `autoload/unlock_service.gd` (new) +
+`ui/menu/unlock_menu.gd` (new, autoload `UnlockMenu`). Authority: new §2.2 row "Unlocks" — **None**,
+same shape as Salvage (task 6.6): per-player `user://unlocks.json`, no two peers ever compare
+purchased sets. "Salvage unlocks variety, never power" (DESIGN.md §4.6) is enforced by `UnlockDef`'s
+schema having no stat/bonus field at all, not by a runtime check.
+
+**Public API for whichever task wires the first real gate (see F-173/D-111 before starting that
+task — the cross-peer question needs answering first, this is not just a missing call site):**
+
+```gdscript
+UnlockService.is_purchased(unlock_id: StringName) -> bool        # this peer's own purchased set
+UnlockService.purchased_ids() -> Array[StringName]
+UnlockService.is_content_unlocked(content_id: StringName) -> bool
+    # true if nothing gates content_id, or its UnlockDef is purchased; false if gated + not bought.
+    # Matches against every UnlockDef's own `gates_id` field, NOT the unlock's own `id`.
+UnlockService.purchase(unlock_id: StringName) -> bool
+    # Spends via SalvageService.spend_salvage(cost) and marks purchased, as one attempt — false
+    # (nothing changed either side) if already owned, unknown, persistence disabled, or too poor.
+```
+
+```gdscript
+SalvageService.spend_salvage(amount: int) -> bool
+    # New this task, the inverse of the existing _bank(): refuses the WHOLE thing (balance + disk
+    # both untouched) on a non-positive amount, disabled persistence (D-107's guard), or a short
+    # balance. The one Salvage sink other than banking; reuse this rather than writing
+    # total_salvage directly for any future spend.
+```
+
+```gdscript
+EventBus.subscribe_unlock_purchased(listener: Callable)   # (unlock_id, cost, total_salvage) -> void
+EventBus.emit_unlock_purchased(unlock_id, cost, total_salvage)
+    # Fires once per successful purchase, on the peer that made it. Same "future task's hook" role
+    # salvage_banked plays for 6.8 — nothing here shows UI or gates a pool by itself.
+```
+
+```gdscript
+Registry.unlock_defs() -> Dictionary        # StringName -> UnlockDef, keyed by unlock id
+Registry.get_unlock(id: StringName) -> Resource
+Registry.has_unlock(id: StringName) -> bool
+```
+
+`UnlockMenu` (opened only from `MainMenu`'s new UNLOCKS button, no hotkey of its own — same
+"sub-panel hands off, doesn't stack" shape D-032 already gives `SettingsMenu`):
+
+```gdscript
+UnlockMenu.set_open(open: bool) -> void
+UnlockMenu.is_open() -> bool
+UnlockMenu.request_close() -> void
+UnlockMenu.request_purchase(unlock_id: StringName) -> bool   # wraps UnlockService.purchase(), refreshes rows
+UnlockMenu.status_text() -> String
+UnlockMenu.balance_text() -> String
+UnlockMenu.row_count() -> int
+MainMenu.request_open_unlocks() -> void   # new — closes MainMenu, opens UnlockMenu
+```
+
+**Not built — and deliberately not, see F-173/D-111:** nothing in the shipped game calls
+`is_content_unlocked()`. The worked example gates the real `deep_pocket` PowerupDef (already rolled
+by `content/loot/bog.tres`), but wiring `LootTableDef.roll()` to check it would gate the whole
+party's odds off either the host's own save or an opening peer's save with no seam to ask it — a
+real cross-peer design question (§2.2's "Unlocks" row is per-peer, unreplicated; POI/enemy-roster
+gating has the identical conflict, one level worse, since those must be byte-identical across every
+peer). D-111 lays out the two ways to resolve it before that gate gets wired.
+
+Verified: `tools/unlock_check.gd` (40+ assertions, 0 failures) — schema-level "never power" via
+`UnlockDef.validation_errors()`, `spend_salvage()`/`purchase()` refuse-the-whole-thing on every
+failure path, a successful purchase charges once/persists/fires the event, a repeat purchase is
+refused without double-charging, `is_content_unlocked()` flips false→true across a real purchase,
+`UnlockMenu`'s open/close/D-032-exclusivity/BUY-button state, and `UnlockSave` versioning
+(migration, corrupt-file fallback, round trip). No regressions: `salvage_check`, `main_menu_check`,
+`defeat_check`, `extraction_check`, `wellspring_recorruption_check`, `crafting_check`,
+`cycle_check`, `cycle_modifier_check`, `mire_grid_check`, `mire_interaction_check`,
+`wave_spawner_check` all stay `failures=0`. 0 `ERROR:` on a full boot (`agent godot --quit-after
+15`).
+
 ### 2026-08-19 — Task 6.10: Main menu shell, settings shell, seed entry ship — the lobby-UI slice's own handoff closed out (lm)
 
 **What shipped, verified:** `ui/menu/main_menu.gd` (new autoload `MainMenu`, F1 to open, CanvasLayer
