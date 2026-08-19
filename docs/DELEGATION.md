@@ -75,6 +75,36 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 6.1: Cycle state machine ships — advance, escalate spread rate, expand enemy pool, announce (lm)
+
+New autoload `CycleService` (`systems/cycle/cycle_service.gd`, registered via `agent autoload`) counts
+`DayNight.day_started` crossings and every 3 (`DAYS_PER_CYCLE`) runs `host_advance_cycle()`: escalates
+`MireGrid`'s spread rate, expands `WaveSpawner`'s enemy roster, announces. `agent godot --script
+tools/cycle_check.gd` — 16 assertions, 0 failures. No regressions: `mire_grid_check.gd`,
+`wave_spawner_check.gd`, `mire_interaction_check.gd` all still `failures=0`. 0 `ERROR:` on a full
+boot (`agent godot --quit-after 20`). Full design rationale and the "why not `game_state.gd`" call in
+`docs/SPECS.md` §6.1; D-100 records the no-new-RPC/no-modifier-draw/no-new-content scope cuts.
+
+**Public API for 6.2 (Cycle Modifier framework) and any other consumer to build against:**
+
+- `CycleService.current_cycle() -> int` — readable on any peer (host's own int, or a client's
+  `WorldDeltaLog`-replicated copy). Starts at 1, seeded into `WorldDeltaLog` on boot so even a
+  pre-first-advance late joiner reads a real recorded value.
+- `CycleService.host_advance_cycle() -> int` — the whole state-machine step (escalate, expand,
+  announce). Host-only; returns the unchanged current cycle on a client. Public specifically so 6.2
+  (or the `cycle advance` console command, already wired) can force one outside the day-count path.
+- `CycleService.spread_multiplier() -> float` — the compounding `1.15^(cycles advanced)` factor
+  already applied to `MireGrid`.
+- `EventBus.subscribe_cycle_advanced(listener: Callable)` — listener signature `(cycle: int) -> void`,
+  fired by the host the instant a Cycle advances. **This is 6.2's seam** — no Cycle Modifier is drawn
+  today; whoever builds that draw subscribes here rather than adding a second call site to
+  `CycleService.host_advance_cycle()`.
+- `MireGrid.set_cycle_spread_multiplier(multiplier: float)` — already wired, called by
+  `CycleService`; not something 6.2 needs to touch.
+- `WaveSpawner.host_unlock_next_enemy() -> StringName` / `unlocked_enemy_pool() -> Array[StringName]`
+  — already wired. `roster_order` (`@export`, defaults to `[&"bog_crawler"]`) is the one place 5.2
+  appends new archetypes; no code change needed there.
+
 ### 2026-08-18 — Task 4.11: the Mire's four world consumers ship — rotted yields, Blight debuff, corrupted spawn tables, Ward resistance (lm)
 
 Built directly on 4.9's `MireGrid.corruption_at()`, done immediately before this in the same
