@@ -5140,3 +5140,16 @@ Fixed: Undergrowth._collect_marker_exclusions() carves a keep-out disc for shipw
 Files: `world/gen/undergrowth.gd`, `tools/hollowmere_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`
 
 Commit at time of writing: `40fc92b`
+
+---
+
+### DONE · 3.5-review · lp · 2026-08-19T13:54:00+00:00
+
+**Review 3.5 @ 27546a1 — judge the commit, file findings, no edits**
+
+Verdict: clean, no new findings. 27546a1 (3.5: chests, loot tables, coins) matches SPECS.md 3.5 and ARCHITECTURE.md §2.2's world-mutation HOST row (request -> host validates range/state -> host rolls per-chest RandomNumberGenerator -> InventoryService.host_add grants -> opened replicates). Checks run through agent godot: tools/chest_check.gd 25/25 PASS (CHEST_CHECK failures=0, its one push_error is the declared EXPECTED_ERROR_PATTERNS case), tools/chest_net_check.gd 12/12 PASS over a real two-process ENet session (CHEST_NET_CHECK failures=0), tools/handshake_check.gd 0 failures (PROTOCOL_VERSION 10, bumped correctly for net_request_open/net_open_result), tools/loot_content_check.gd 0 failures. No undeclared ERROR lines in any run. Standing rules 1-2 respected (get_node_or_null for autoloads in chest.gd; F-016 preloads for the brand-new LootTableDef/LootEntry class_names). The docs/SPECS.md 3.5 block's 'four mechanics' paragraph (kind/rarity/cost_coins/locked_by/gilded budget) was added to the spec the day AFTER this commit landed (e1240b2, 2026-08-18 10:47 vs 27546a1 at 2026-08-17 19:28) -- confirmed it was already caught by F-140 and fully closed by F-146, so not re-flagged here.
+
+Notes along the way:
+- Reviewed 27546a1 against SPECS.md 3.5 + ARCHITECTURE.md §2.2. The spec's later-added 'four mechanics' (LootEntry.kind/rarity, Chest.cost_coins/locked_by, gilded placement budget) postdate this commit (e1240b2, added 2026-08-18 10:47 vs commit at 19:28 the day before) and were already caught by F-140 and closed by F-146 — not re-flagging. Ran tools/chest_check.gd (25 assertions, 0 failures, one EXPECTED_ERROR_PATTERNS-declared push_error), tools/chest_net_check.gd (12 assertions, 0 failures, real two-process ENet), tools/handshake_check.gd (0 failures, PROTOCOL_VERSION 10 confirmed), tools/loot_content_check.gd (0 failures) — all through agent godot, no undeclared ERROR lines. Network authority header matches ARCHITECTURE.md §2.2 world-mutation row (HOST). Rule 1 (bare autoload names) respected: Registry/InventoryService/PlayerNet/NetTransport all via get_node_or_null in chest.gd; chest_ui.gd's bare Registry ref is fine since it is itself a registered autoload (rule 1's exemption). Rule 2 (F-016 preload) respected for LootTableDef/LootEntry. Verdict: clean, no new findings.
+
+Commit at time of writing: `1c32a4a`
