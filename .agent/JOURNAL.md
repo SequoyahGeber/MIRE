@@ -3700,3 +3700,15 @@ Rotted yields (InventoryService), Blight debuff (PlayerHealth, same DownedState.
 Files: `autoload/build_service.gd`, `systems/health/player_health.gd`, `autoload/inventory_service.gd`, `systems/waves/wave_spawner.gd`, `content/enemies/bog_crawler.tres`, `tools/mire_interaction_check.gd`
 
 Commit at time of writing: `219d99c`
+
+---
+
+### DONE · F-150 · lm · 2026-08-19T01:04:16+00:00
+
+**An authored collider is unverifiable by eye, and a .tscn's Transform3D floats are basis ROWS**
+
+Fix pre-existed (2012b44): ramp.tscn's sloped collider + tools/buildable_content_check.gd's physics-ray verification were already correct on disk, no code change needed. Wrote missing docs/SPECS.md F-150 block and moved docs/FINDINGS.md's F-150 to Resolved. Verified twice: agent godot --script tools/buildable_content_check.gd -> BUILDABLE_CONTENT defs=13 with_art=12 without_art=[wall_wood], BUILDABLE_RAMP toe=0.021 middle=0.506 head=0.990 angle=26.3, BUILDABLE_CONTENT_CHECK failures=0.
+
+Files: `docs/SPECS.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `4887510`

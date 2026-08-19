@@ -2141,6 +2141,40 @@ fix there once verified.
 
 ---
 
+## F-150 · An authored collider is unverifiable by eye, and a .tscn's Transform3D floats are basis ROWS
+
+**Claim:** `docs/SPECS.md`, `docs/FINDINGS.md` (none in `scenes/buildables/ramp.tscn` or
+`tools/buildable_content_check.gd` — see below).
+
+**What was wrong:** task 3.7's ramp piece needs a sloped collider, not a box (the controller has no
+step-up, F-136) and authoring the slope's `Transform3D` in the `.tscn` by hand hit two traps that a
+still-frame screenshot cannot catch: the file's basis floats are rows, so the naive rotation reads as
+the transpose and sends the ramp the wrong way; and the slab's centre has to be offset along the
+slope's own tilted normal (an x component as well as y) to seat its top face on the deck plane,
+because offsetting along y alone leaves a lip under the deck — exactly the wall F-136 describes.
+
+**Fix (already shipped by the time this task picked it up — no code change was needed):** the same
+3.7 commit (`2012b44`) that authored `ramp.tscn`'s collider also wrote
+`tools/buildable_content_check.gd`'s `_check_ramp_is_walkable()`, which drops three rays on a placed
+ramp instead of reading the transform: toe, middle, and head. That is the fix this finding actually
+asks for — verification by physics query, never by eyeballing basis floats — and it was already in
+place when this task started.
+
+**Done means:** `BUILDABLE_RAMP toe≈0.02 middle≈0.51 head≈0.99 angle≈26.3`, all three rays landing on
+the ramp, the head within `RAMP_TOLERANCE_M` (0.12 m) of the kit's 1.00 m deck, and
+`BUILDABLE_CONTENT_CHECK failures=0` overall (every def, not just the ramp).
+
+**Verified 2026-08-18 (lm):** `agent godot --script tools/buildable_content_check.gd` →
+`BUILDABLE_CONTENT defs=13 with_art=12 without_art=["wall_wood"]` (art-free `wall_wood` is expected,
+DELEGATION.md already records why), `BUILDABLE_RAMP toe=0.021 middle=0.506 head=0.990 angle=26.3`,
+`BUILDABLE_CONTENT_CHECK failures=0` — the exact numbers this finding's own text cites. Did not touch
+`ramp.tscn` or `buildable_content_check.gd`; both were correct on disk already. `docs/DELEGATION.md`
+*Current state* (2026-08-18 — Task 3.7) already cites this same check and credits the ramp's slope
+collider to F-150, so no delegation entry was missing — only this spec block and the finding's
+resolution were.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

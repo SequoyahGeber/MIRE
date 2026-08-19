@@ -109,33 +109,6 @@ ever calls it.
 line and no scene reference is dead code until proven otherwise, and `verify_setup`'s autoload
 assertion is the place a future orphan would be caught cheaply.
 
-### F-150 · An authored collider is unverifiable by eye, and a .tscn's Transform3D floats are basis ROWS
-
-**Area:** building · **Severity:** low · **Found:** 2026-08-18 by slate17 during 3.7
-
-Task 3.7's ramp is the one piece whose collider cannot be a box: the controller implements no
-step-up (F-136), so a ramp shaped like a 1.1 m box is a wall with a picture of a ramp on it. Its
-collider is therefore a slab rotated to the slope — and authoring that in a `.tscn` hit two traps in
-a row, neither of which changes how the piece looks in a still frame.
-
-**First, the sign.** A `.tscn` writes `Transform3D(xx, xy, xz, yx, ...)` as the basis **rows**, not
-as its column vectors, so the obvious reading is the transpose and the ramp was rotated the wrong
-way — it descended into the ground along the axis it was supposed to climb. The art was still
-correct, so every screenshot looked right.
-
-**Second, the seat.** Placing the slab's centre on the ramp's mid-height leaves its top FACE half a
-thickness below the planks — and the correction is along the slope's own tilted normal, so it has an
-x component as well as a y one. Ignoring that put the ramp's head 38 mm under the 1.00 m deck it
-exists to marry, which is exactly the lip F-136 says is a wall.
-
-**Both were found by a physics query, not by reading the numbers:**
-`tools/buildable_content_check.gd` drops three rays on a placed ramp and asserts where they land —
-toe 21 mm, middle 506 mm, head 990 mm, 26.3°. That is the transferable part: **an authored collider
-is verified by asking the physics server where the surface is, never by inspecting the transform.**
-The same check measures every piece's art against the footprint its `BuildableDef` declares, because
-`size` is deliberately data rather than a measurement of the scene (which is the right call, and
-also exactly how the two drift — F-137's shape).
-
 ### F-139 · `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline
 
 **Area:** worldgen / netcode · **Severity:** low · **Found:** 2026-08-18 by lm during 4.6
@@ -6848,6 +6821,48 @@ winding, and no check that measured counts, determinism, ring membership or fram
 have caught this — every one of those passes perfectly on an inside-out mesh. What caught it was
 taking F-128's fix as far as actually looking at a render.
 
+---
+
+### F-150 · An authored collider is unverifiable by eye, and a .tscn's Transform3D floats are basis ROWS — **fixed**
+
+**Area:** building · **Severity:** low · **Found:** 2026-08-18 by slate17 during 3.7
+
+Task 3.7's ramp is the one piece whose collider cannot be a box: the controller implements no
+step-up (F-136), so a ramp shaped like a 1.1 m box is a wall with a picture of a ramp on it. Its
+collider is therefore a slab rotated to the slope — and authoring that in a `.tscn` hit two traps in
+a row, neither of which changes how the piece looks in a still frame.
+
+**First, the sign.** A `.tscn` writes `Transform3D(xx, xy, xz, yx, ...)` as the basis **rows**, not
+as its column vectors, so the obvious reading is the transpose and the ramp was rotated the wrong
+way — it descended into the ground along the axis it was supposed to climb. The art was still
+correct, so every screenshot looked right.
+
+**Second, the seat.** Placing the slab's centre on the ramp's mid-height leaves its top FACE half a
+thickness below the planks — and the correction is along the slope's own tilted normal, so it has an
+x component as well as a y one. Ignoring that put the ramp's head 38 mm under the 1.00 m deck it
+exists to marry, which is exactly the lip F-136 says is a wall.
+
+**Both were found by a physics query, not by reading the numbers:**
+`tools/buildable_content_check.gd` drops three rays on a placed ramp and asserts where they land —
+toe 21 mm, middle 506 mm, head 990 mm, 26.3°. That is the transferable part: **an authored collider
+is verified by asking the physics server where the surface is, never by inspecting the transform.**
+The same check measures every piece's art against the footprint its `BuildableDef` declares, because
+`size` is deliberately data rather than a measurement of the scene (which is the right call, and
+also exactly how the two drift — F-137's shape).
+
+**Resolved 2026-08-18 by lm.** Already fixed by the time this task picked it up: the same 3.7 commit
+(`2012b44`) that authored `ramp.tscn`'s sloped collider also wrote
+`tools/buildable_content_check.gd`'s `_check_ramp_is_walkable()`, the physics-query verification this
+finding asks for. No code change was needed or made; `ramp.tscn` and `buildable_content_check.gd`
+stayed untouched. What was actually missing was the paper trail: no `docs/SPECS.md` block existed for
+F-150, so this task wrote one (full verification detail there) and closes the finding here.
+
+Verified: `agent godot --script tools/buildable_content_check.gd` →
+`BUILDABLE_CONTENT defs=13 with_art=12 without_art=["wall_wood"]`,
+`BUILDABLE_RAMP toe=0.021 middle=0.506 head=0.990 angle=26.3`, `BUILDABLE_CONTENT_CHECK failures=0` —
+matching this finding's own cited numbers exactly. `docs/DELEGATION.md` *Current state* already
+credited the ramp's slope collider to F-150 (2026-08-18 — Task 3.7 entry), so no delegation update
+was owed either.
 
 ---
 
