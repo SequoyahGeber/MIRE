@@ -24,6 +24,14 @@ extends Resource
 ## site either way; only the instancing caller cares.
 @export_file("*.tscn", "*.glb") var scene_path: String = ""
 
+## What this site IS to the world services (task 4.15, D-143): the `kind` meta the composer stamps
+## on the site's `authored_world_marker`. The vocabulary is the services' own — `objective`
+## (WellspringService), `shipwreck` (ExtractionService), `enemy_nest` (EnemyWorld), plus the chest
+## and `station` kinds — and an EMPTY value is legitimate scenery: a landmark that reserves space
+## but answers to nobody. Content stays in charge of what a POI means; the composer stays a dumb
+## loop. Authored maps ignore this field entirely (their generators place markers directly).
+@export var marker_kind: StringName = &""
+
 ## Placement order when several kinds compete for the same island — LOWER goes first and therefore
 ## wins the good ground. Same convention as `BiomeDef.priority`, and it exists because sorting by id
 ## alone put the Wellspring LAST (alphabetically) and let six standing stones and three shipwrecks

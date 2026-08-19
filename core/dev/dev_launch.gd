@@ -66,11 +66,35 @@ var _connected: bool = false
 var _ever_connected: bool = false
 
 
+const ProceduralWorldScript := preload("res://world/gen/procedural_world.gd")
+
+## Task 4.15 (D-143): `--procedural` swaps the main scene for a code-built ProceduralWorld before
+## any session opens. Debug-only like every other DevLaunch behaviour — the retail build boots the
+## shipped map and nothing else, until 4.19's default cutover retires this flag.
+var _procedural: bool = false
+
+
+func _swap_to_procedural() -> void:
+	var tree: SceneTree = get_tree()
+	var old_scene: Node = tree.current_scene
+	var world: Node3D = ProceduralWorldScript.new()
+	world.name = "ProceduralWorld"
+	tree.root.add_child(world)
+	tree.current_scene = world
+	if old_scene != null:
+		old_scene.queue_free()
+	MireLog.info(NetConfig.LOG_CHANNEL, "[DevLaunch] --procedural: swapped to ProceduralWorld")
+
+
 func _ready() -> void:
 	if not OS.is_debug_build():
 		return
 
 	_parse_launch()
+	if _procedural:
+		# Deferred: the engine is still assigning the authored main scene during autoload _ready;
+		# swapping now would race it. One frame later there is a current_scene to replace.
+		_swap_to_procedural.call_deferred()
 	if _role == Role.NONE:
 		return
 
@@ -128,6 +152,8 @@ func _parse_launch() -> void:
 			_lan_address = args[index + 1].strip_edges()
 		elif arg.begins_with("--port="):
 			_port = arg.trim_prefix("--port=").strip_edges().to_int()
+		elif arg == "--procedural":
+			_procedural = true
 
 	if _mode == LaunchMode.STEAM and _role == Role.CLIENT and _steam_lobby_id.is_empty():
 		MireLog.error(NetConfig.LOG_CHANNEL, "[DevLaunch] --steam-join needs a lobby id")

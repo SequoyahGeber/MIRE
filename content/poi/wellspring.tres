@@ -18,3 +18,4 @@ radius_min_fraction = 0.1
 radius_max_fraction = 0.75
 max_slope_m = 1.5
 flatness_probe_m = 3.0
+marker_kind = &"objective"

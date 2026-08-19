@@ -5662,3 +5662,27 @@ Re-claimed to attach A-014's exact output paths for D-031's ship check.
 Files: `assets/paths/catalog.json`, `assets/paths/exports/boardwalk_broken.glb`, `assets/paths/exports/boardwalk_corner.glb`, `assets/paths/exports/boardwalk_stairs.glb`, `assets/paths/exports/boardwalk_straight.glb`, `assets/paths/exports/path_cobble.glb`, `assets/paths/exports/path_corrupted.glb`, `assets/paths/exports/path_dirt.glb`, `assets/paths/exports/path_mud.glb`, `assets/paths/exports/rune_marker.glb`, `assets/paths/exports/signpost.glb`, `assets/paths/exports/stepping_stones.glb`, `assets/paths/exports/trail_marker.glb`, `assets/paths/exports/warning_sign.glb`, `assets/paths/preview/path_boardwalk_preview.png`, `assets/paths/preview/path_markers_preview.png`, `assets/paths/preview/path_surfaces_preview.png`, `assets/source/path_set.blend`, `tools/blender/mire_art.py`
 
 Commit at time of writing: `89db19b`
+
+---
+
+### HANDOFF · 2.1d · wick20 · 2026-08-19T17:07:19+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-043 wetland kit DONE and recorded. A-013 (camp) and A-014 (roads) shipped under slate17 in parallel; A-015 is the next unstarted P1 row. Two things worth reusing: teal (clear_liquid) and purple are reserved hues and BOTH the wetland and road kits independently needed a non-reserved water colour on the same day — peat-brown works; and a gatherable that shares parts with its source node needs an opposite silhouette (the cattail bundle lies down because upright it was indistinguishable from the reed bed).
+
+Files: `tools/blender/mire_art.py`, `assets/wetland`, `tools/blender/build_wetland_set.py`, `tools/wetland_check.gd`, `docs/ASSET_TRACKER.md`
+
+Commit at time of writing: `93c240d`
+
+---
+
+### DONE · 4.15 · yarrow21 · 2026-08-19T17:09:07+00:00
+
+**`ProceduralWorld` composer behind `--procedural`: markers, spawn rule, `PoiDef.marker_kind` (D-143)**
+
+ProceduralWorld composer shipped behind DevLaunch --procedural. Composes ChunkStreamer+NavBaker+ResourceScatterField+PoiMap off GameState.ensure_seed() and publishes the authored maps' marker contract; WellspringService built 4 live Wellsprings from the composer's markers with zero service changes — D-143's claim proven by execution. PoiDef.marker_kind added (wellspring->objective, shipwreck->shipwreck, standing_stones stays scenery). Deterministic shore-spawn rule per WORLDGEN §3.1, rings probed outermost-first, scored toward the Wellspring centroid. Two traps hit and recorded: markers must be configured BEFORE add_child (F-012's mechanism — services discover on node_added; this was the check's only first-run red), and set_anchors rejects an untyped array literal through call(). Verified: procedural_world_check failures=0 incl. same-seed exact site+spawn reproduction and different-seed divergence; live --procedural boot 0 ERROR lines; poi/resource_scatter/world_contract/verify_setup all green. 4.16 owes MireGrid binding, enemy_nest PoiDefs, chest/station kinds, the both-map check matrix.
+
+Files: `world/gen/procedural_world.gd`, `world/gen/poi_def.gd`, `core/dev/dev_launch.gd`, `tools/procedural_world_check.gd`, `content/poi/wellspring.tres`, `content/poi/shipwreck.tres`
+
+Commit at time of writing: `93c240d`

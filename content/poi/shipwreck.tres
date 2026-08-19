@@ -18,3 +18,4 @@ radius_min_fraction = 0.55
 radius_max_fraction = 0.95
 max_slope_m = 3.0
 flatness_probe_m = 5.0
+marker_kind = &"shipwreck"

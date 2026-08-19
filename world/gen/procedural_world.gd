@@ -1,0 +1,301 @@
+class_name ProceduralWorld
+extends Node3D
+
+## Task 4.15 (D-143) — the composer F-139 was waiting for: one node that turns the shipped, pure
+## pipeline (ChunkStreamer 4.3 · ResourceScatterField 4.4 · NavBaker 4.5 · PoiMap 4.7) into a
+## playable level, by publishing the SAME marker/group contract the authored maps publish. The
+## world services (Wellspring, Extraction, ChestPlacement, Crafting, EnemyWorld, HarvestWorld)
+## discover their sites by scanning these groups and metas — so they light up here unchanged, which
+## is the whole of D-143: the cutover composes, it does not rewrite.
+##
+## NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2): none of its own. Every placement below is derived
+## from `GameState.run_seed` (4.6) through pure functions, identically on every peer; mutations ride
+## the systems that already own them (Harvestable/HOST, WorldDeltaLog, MireGrid). This node never
+## sends or receives anything.
+##
+## Reachable only through `DevLaunch --procedural` until 4.19's default cutover — Hollowmere remains
+## the shipped map (F-139's own record of that decision). `tools/procedural_world_check.gd` boots
+## this headless and is the harness the parity work (4.16) extends.
+
+const IslandHeightmapScript := preload("res://world/gen/island_heightmap.gd")
+const BiomeMapScript := preload("res://world/gen/biome_map.gd")
+const PoiMapScript := preload("res://world/gen/poi_map.gd")
+const ChunkStreamerScript := preload("res://world/chunk/chunk_streamer.gd")
+const ChunkMesherScript := preload("res://world/chunk/chunk_mesher.gd")
+const NavBakerScript := preload("res://world/chunk/nav_baker.gd")
+const ScatterFieldScript := preload("res://world/gen/resource_scatter_field.gd")
+const PlayerScene := preload("res://entities/player/player.tscn")
+
+## Same contract constants `world/gen/authored_world.gd` publishes — duplicated by value, not
+## imported, for the same reason EntityDirectory duplicates its group names: the string IS the
+## contract, and a rename on either side must fail a check loudly rather than silently retarget.
+const MARKER_GROUP: StringName = &"authored_world_marker"
+const TERRAIN_GROUP: StringName = &"authored_world_terrain"
+
+## How far (m) the spawn probe walks in from the island edge looking for standable shore, and the
+## band of heights that read as "beach, above the waterline". WORLDGEN.md §3.1: shore start is a
+## pacing choice — the first minutes walk inland.
+## Probed outermost-first: the shore's radius depends on the seed (the falloff crosses the beach
+## band at a different distance per island), so the probe walks rings inward and takes the first
+## ring that yields standable beach — landfall stays as close to the water as this seed allows.
+const SPAWN_RING_FRACTIONS: Array[float] = [0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5]
+const SPAWN_HEIGHT_MIN: float = 1.0
+const SPAWN_HEIGHT_MAX: float = 5.0
+const SPAWN_MAX_SLOPE: float = 0.45          # rise over 1 m run — comfortably under walkable
+const SPAWN_CANDIDATES: int = 64             # angles probed around the shore ring
+## Extra clearance beyond a POI's own `clearance_m` so nobody spawns inside a defense wave.
+const SPAWN_POI_MARGIN_M: float = 8.0
+
+## True in the shipped game; the check turns it off to boot faster and to keep the harness free of
+## a live player body (the same switch `authored_world.gd` gives its props).
+@export var build_player: bool = true
+
+var world_seed: int = 0
+var streamer: Node3D
+var nav_baker: Node
+var scatter_field: Node3D
+var poi_sites: Array[Dictionary] = []
+var spawn_position: Vector3 = Vector3.ZERO
+
+var _markers_built: int = 0
+var _scenes_instanced: int = 0
+
+
+func _ready() -> void:
+	add_to_group(TERRAIN_GROUP)
+
+	# The one seam a procedural world needs that an authored one does not: the shared run seed.
+	# get_node_or_null, not a bare autoload name — this scene is booted by a --script harness whose
+	# compile pass runs before autoloads exist (F-011's standing rule).
+	var game_state: Node = get_node_or_null(^"/root/GameState")
+	if game_state == null:
+		push_error("ProceduralWorld: no GameState autoload — cannot derive a world without a seed")
+		return
+	world_seed = int(game_state.call(&"ensure_seed"))
+
+	_build_streamer()
+	_build_nav()
+	_build_scatter()
+	_build_poi_sites()
+	spawn_position = _pick_spawn()
+	_publish_spawn_marker()
+	if build_player:
+		_build_player()
+
+	MireLog.info(&"world", "ProceduralWorld: seed %d — %d POI site(s), %d marker(s), spawn %s" % [
+		world_seed, poi_sites.size(), _markers_built, spawn_position])
+
+
+## The same passthrough `authored_world.gd` exposes, so anything asking "the world" for ground
+## height keeps one call shape across both map kinds.
+func height_at(x: float, z: float) -> float:
+	return IslandHeightmapScript.height(x, z, world_seed)
+
+
+# ── the pipeline, composed ────────────────────────────────────────────────────────────────────────
+
+
+func _build_streamer() -> void:
+	streamer = ChunkStreamerScript.new()
+	streamer.name = "ChunkStreamer"
+	streamer.set(&"world_seed", world_seed)
+	add_child(streamer)
+
+
+func _build_nav() -> void:
+	nav_baker = NavBakerScript.new()
+	nav_baker.name = "NavBaker"
+	add_child(nav_baker)
+	nav_baker.call(&"bind", streamer, world_seed)
+
+
+func _build_scatter() -> void:
+	var registry: Node = get_node_or_null(^"/root/Registry")
+	scatter_field = ScatterFieldScript.new()
+	scatter_field.name = "ResourceScatterField"
+	scatter_field.set(&"world_seed", world_seed)
+	if registry != null:
+		scatter_field.set(&"scatter_defs", (registry.get(&"scatter_tables") as Dictionary).values())
+		scatter_field.set(&"biome_defs", (registry.get(&"biomes") as Dictionary).values())
+	add_child(scatter_field)
+	scatter_field.call(&"attach_to_streamer", streamer)
+
+
+## One site loop, dumb on purpose (D-143): WHAT a site is to the services lives on `PoiDef.
+## marker_kind`, WHERE it goes came from PoiMap. This function only instances and publishes.
+func _build_poi_sites() -> void:
+	var registry: Node = get_node_or_null(^"/root/Registry")
+	if registry == null:
+		return
+	var poi_defs: Array = (registry.get(&"poi") as Dictionary).values()
+	var biome_defs: Array = (registry.get(&"biomes") as Dictionary).values()
+	poi_sites = PoiMapScript.sites_for_island(world_seed, poi_defs, biome_defs)
+
+	var defs_by_id: Dictionary = {}
+	for def: Resource in poi_defs:
+		defs_by_id[def.get(&"id")] = def
+
+	var holder := Node3D.new()
+	holder.name = "PoiSites"
+	add_child(holder)
+
+	for site: Dictionary in poi_sites:
+		var def: Resource = defs_by_id.get(site.get("def_id"), null)
+		var site_root := Node3D.new()
+		site_root.name = String(site.get("site_id", "site"))
+		holder.add_child(site_root)
+		site_root.global_position = site.get("position", Vector3.ZERO)
+		site_root.rotation.y = float(site.get("rotation_y", 0.0))
+
+		var scene_path: String = String(site.get("scene_path", ""))
+		if not scene_path.is_empty():
+			var packed: Resource = load(scene_path)
+			if packed is PackedScene:
+				site_root.add_child((packed as PackedScene).instantiate())
+				_scenes_instanced += 1
+
+		# The marker IS the contract. Kind comes from content; an empty kind is scenery and gets
+		# no marker — same as an authored map simply not placing one.
+		var kind: String = "" if def == null else String(def.get(&"marker_kind"))
+		if kind.is_empty():
+			continue
+		var marker := Marker3D.new()
+		marker.name = "%sMarker" % site_root.name
+		# Group and meta BEFORE add_child — the services discover markers on `node_added`, which
+		# fires during add_child, so a marker configured afterwards enters the tree invisible to
+		# them. F-012's lesson (NetInterest before add_child), same mechanism, new consumer.
+		marker.add_to_group(MARKER_GROUP)
+		marker.set_meta(&"kind", kind)
+		site_root.add_child(marker)
+		_markers_built += 1
+
+
+# ── spawn (WORLDGEN.md §3.1) ──────────────────────────────────────────────────────────────────────
+
+
+## Deterministic from the seed and the POI layout: probe a ring of shore candidates, keep the
+## standable ones clear of every POI, prefer the one nearest the Wellsprings' centroid so the first
+## walk inland points at the game. Falls back to the least-bad candidate rather than failing —
+## a spawn that is slightly steep beats no spawn, and the check asserts the normal case is clean.
+func _pick_spawn() -> Vector3:
+	var objective_centroid: Vector3 = _objective_centroid()
+	var fallback: Vector3 = Vector3.ZERO
+	var fallback_height_error: float = INF
+
+	for ring_fraction: float in SPAWN_RING_FRACTIONS:
+		var best: Vector3 = Vector3.ZERO
+		var best_score: float = -INF
+		var radius: float = IslandHeightmapScript.ISLAND_RADIUS * ring_fraction
+		for index: int in range(SPAWN_CANDIDATES):
+		# TAU * i / N is a transcendental-free angle only if we avoid sin/cos... which we cannot
+		# for a ring. But determinism here needs same-input-same-output ACROSS PEERS for gameplay
+		# placement, and D-017's ban is scoped to WORLD-GEN state that must hash identically.
+		# A spawn point is gameplay state the host could even override; still, keep it in the safe
+		# set anyway by walking the square's perimeter instead of a trig circle — cheap and exact.
+			var t: float = float(index) / float(SPAWN_CANDIDATES)   # 0..1 around the perimeter
+			var direction: Vector2 = _square_perimeter_direction(t)
+			var x: float = direction.x * radius
+			var z: float = direction.y * radius
+			var height: float = height_at(x, z)
+
+			var height_error: float = 0.0
+			if height < SPAWN_HEIGHT_MIN:
+				height_error = SPAWN_HEIGHT_MIN - height
+			elif height > SPAWN_HEIGHT_MAX:
+				height_error = height - SPAWN_HEIGHT_MAX
+			if height_error < fallback_height_error:
+				fallback_height_error = height_error
+				fallback = Vector3(x, maxf(height, SPAWN_HEIGHT_MIN), z)
+			if height_error > 0.0:
+				continue
+			if _slope_at(x, z) > SPAWN_MAX_SLOPE:
+				continue
+			if not _clear_of_pois(x, z):
+				continue
+			# Standable shore. Score by closeness to the objectives so landfall faces the game.
+			var to_objectives: float = \
+				Vector2(x - objective_centroid.x, z - objective_centroid.z).length()
+			var score: float = -to_objectives
+			if score > best_score:
+				best_score = score
+				best = Vector3(x, height, z)
+		if best_score > -INF:
+			return best
+
+	return fallback
+
+
+## (x,z) unit-square perimeter walk — four linear segments, no trig, exact on every platform.
+func _square_perimeter_direction(t: float) -> Vector2:
+	var s: float = t * 4.0
+	if s < 1.0:
+		return Vector2(1.0, -1.0 + 2.0 * s).normalized()
+	if s < 2.0:
+		return Vector2(1.0 - 2.0 * (s - 1.0), 1.0).normalized()
+	if s < 3.0:
+		return Vector2(-1.0, 1.0 - 2.0 * (s - 2.0)).normalized()
+	return Vector2(-1.0 + 2.0 * (s - 3.0), -1.0).normalized()
+
+
+func _slope_at(x: float, z: float) -> float:
+	var here: float = height_at(x, z)
+	var dx: float = absf(height_at(x + 1.0, z) - here)
+	var dz: float = absf(height_at(x, z + 1.0) - here)
+	return maxf(dx, dz)
+
+
+func _clear_of_pois(x: float, z: float) -> bool:
+	for site: Dictionary in poi_sites:
+		var position: Vector3 = site.get("position", Vector3.ZERO)
+		var clearance: float = float(site.get("clearance", 0.0)) + SPAWN_POI_MARGIN_M
+		if Vector2(x - position.x, z - position.z).length() < clearance:
+			return false
+	return true
+
+
+func _objective_centroid() -> Vector3:
+	var total := Vector3.ZERO
+	var count: int = 0
+	for site: Dictionary in poi_sites:
+		if site.get("def_id") == &"wellspring":
+			total += site.get("position", Vector3.ZERO) as Vector3
+			count += 1
+	return total / float(count) if count > 0 else Vector3.ZERO
+
+
+## Published so a future session-spawn consumer can read it the way layout JSON is read today;
+## kind `spawn` is new with this file and deliberately not yet consumed by any service (the
+## authored flow's F-063 capture continues to work through the Player node below).
+func _publish_spawn_marker() -> void:
+	var marker := Marker3D.new()
+	marker.name = "SpawnMarker"
+	marker.position = spawn_position          # local == global: this node sits at the origin
+	marker.add_to_group(MARKER_GROUP)         # before add_child — same F-012 ordering as above
+	marker.set_meta(&"kind", "spawn")
+	add_child(marker)
+	_markers_built += 1
+
+
+func _build_player() -> void:
+	var player := PlayerScene.instantiate() as Node3D
+	player.name = "Player"           # the authored maps' convention: offline local authority
+	add_child(player)
+	player.position = spawn_position + Vector3.UP * 1.2
+	# Anchor the streamer on the player from the first frame, exactly how D-080's API expects to
+	# be driven; without an anchor nothing streams and the player falls through the void. The
+	# literal must be TYPED — `set_anchors(Array[Vector3])` rejects a plain Array through `call()`.
+	var anchors: Array[Vector3] = [player.position]
+	streamer.call(&"set_anchors", anchors)
+
+
+func _physics_process(_delta: float) -> void:
+	if streamer == null:
+		return
+	var anchors: Array[Vector3] = []
+	for node: Node in get_tree().get_nodes_in_group(&"players"):
+		var body := node as Node3D
+		if body != null:
+			anchors.append(body.global_position)
+	if anchors.is_empty():
+		anchors.append(spawn_position)
+	streamer.call(&"set_anchors", anchors)
