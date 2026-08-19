@@ -4596,3 +4596,18 @@ Commit at time of writing: `0f3f89a`
 Dissolved by D-125 — Sequoyah's direct call on 2026-08-19: 'Ignore combat gate, tuning can be done at any time don't let it hold things up.' The finding's ordering half (2.9 tuned against a tree instead of an enemy) was fixed when 2.9/2.10 swapped; its surviving function was holding 2.9's human gate open, and the gate no longer exists as a blocker. 2.9 itself stays on the roadmap as never-cut tuning work, done whenever he plays; SPECS.md's M5 header no longer names it as a gate; NEXT.md ranks it 'anytime, blocks nothing'.
 
 Commit at time of writing: `f0db4c5`
+
+---
+
+### DONE · F-187 · lm · 2026-08-19T07:54:03+00:00
+
+**Props are 1,057 MultiMesh groups averaging 2.7 copies — F-100's cross-asset chunk merge is still not built, and now has a measured constraint**
+
+MeshMerge.merge_instances() bakes several placements into one static mesh; AuthoredWorld._build_props() uses it for rigid/non-harvestable/non-emitter/non-sway/never-shadow-casting props (25 chunks, 218 props on Hollowmere), leaving everything else on the original per-(chunk,asset) MultiMesh path unchanged. Caught and fixed a real regression along the way (see notes/SPECS.md): a wider first attempt raised shadow-pass primitives 16% by letting merged AABBs span multiple PSSM cascades; the height gate sidesteps it by construction. Verified: agent godot --script tools/hollowmere_check.gd, mesh_merge_check.gd, environment_vfx_hollowmere_check.gd, harvest_batch_check.gd, harvest_world_check.gd, resource_scatter_check.gd, prop_chunk_merge_check.gd (new) all green; agent godot --windowed --script tools/frame_cost_check.gd against agent baseline: 867->786 visual nodes (-9.3%), draw calls unchanged, primitives +1.3%. Sway/emitter cases deferred to new F-203.
+
+Notes along the way:
+- Draw-count coarsening without a height-scoped shadow rule made frame cost WORSE (primitives +16%, frame_cost_check vs baseline) before the SHADOW_MIN_HEIGHT eligibility gate fixed it -- draw-call counts alone hid the regression, only primitives caught it. Scoped the merge to non-harvestable/non-emitter/non-sway/never-shadow-casting props only; filed F-203 for the harder sway+emitter cases.
+
+Files: `world/gen/authored_world.gd`, `core/render/mesh_merge.gd`, `tools/prop_chunk_merge_check.gd`
+
+Commit at time of writing: `4a716b4`

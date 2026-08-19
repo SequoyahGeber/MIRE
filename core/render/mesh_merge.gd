@@ -220,6 +220,119 @@ static func _build(path: String) -> ArrayMesh:
 	return combined
 
 
+## Bake several already-built meshes, each under its own placement transform, into ONE mesh with
+## one surface per (material, vertex-attribute) bucket — the same bucketing `_build` uses, for a
+## caller that already has meshes in hand (not a single source file to walk) and a placement
+## transform per instance (not a fixed offset within one glb's hierarchy).
+##
+## `world/gen/authored_world.gd` feeds it the per-asset merged meshes `merged()` already produced,
+## one call per chunk (F-187): grouping ACROSS assets this way is the difference between one
+## MultiMesh per (chunk, asset) at 2.7 copies each and one draw call per material appearance in
+## the whole chunk. Restricted by the caller to props that carry neither sway nor an emitter —
+## see `authored_world.gd`'s own comment for why those two are excluded rather than merged too.
+##
+## Never disk-cached, unlike `_build`: the caller decides how entries are grouped (by chunk, by
+## chunk and some other key), so there is no one source-file mtime to key a cache entry against.
+## Cheap enough to rebuild every load anyway — entries are already-merged, indexed meshes, not glb
+## scenes to reparse; only the vertex data is walked again.
+static func merge_instances(entries: Array) -> ArrayMesh:
+	var buckets: Dictionary = {}
+	var order: Array[String] = []
+	for entry_value: Variant in entries:
+		var entry := entry_value as Dictionary
+		var mesh: Mesh = entry.get("mesh")
+		var transform: Transform3D = entry["transform"]
+		if mesh == null:
+			continue
+		var basis := transform.basis
+		for surface in mesh.get_surface_count():
+			var material := mesh.surface_get_material(surface)
+			var key := _fingerprint(material, surface)
+			var arrays: Array = mesh.surface_get_arrays(surface)
+			var attributes := _attribute_mask(arrays)
+			key = "%s#%d" % [key, attributes]
+			if not buckets.has(key):
+				buckets[key] = {"material": _shared_material(key, material),
+					"v": PackedVector3Array(),
+					"n": PackedVector3Array(), "i": PackedInt32Array(),
+					"attributes": attributes,
+					"uv": PackedVector2Array(), "uv2": PackedVector2Array(),
+					"color": PackedColorArray(), "tangent": PackedFloat32Array()}
+				order.append(key)
+			var source_v: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+			var source_n: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+			var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+			var bucket: Dictionary = buckets[key]
+			var out_v: PackedVector3Array = bucket["v"]
+			var out_n: PackedVector3Array = bucket["n"]
+			var out_i: PackedInt32Array = bucket["i"]
+			# Same read-append-write-back rule as `_build` — a Packed*Array is a value type.
+			if attributes & ATTR_UV:
+				var out_uv: PackedVector2Array = bucket["uv"]
+				out_uv.append_array(arrays[Mesh.ARRAY_TEX_UV])
+				bucket["uv"] = out_uv
+			if attributes & ATTR_UV2:
+				var out_uv2: PackedVector2Array = bucket["uv2"]
+				out_uv2.append_array(arrays[Mesh.ARRAY_TEX_UV2])
+				bucket["uv2"] = out_uv2
+			if attributes & ATTR_COLOR:
+				var out_color: PackedColorArray = bucket["color"]
+				out_color.append_array(arrays[Mesh.ARRAY_COLOR])
+				bucket["color"] = out_color
+			if attributes & ATTR_TANGENT:
+				var source_t: PackedFloat32Array = arrays[Mesh.ARRAY_TANGENT]
+				var out_t: PackedFloat32Array = bucket["tangent"]
+				for t in range(0, source_t.size(), 4):
+					var rotated := (basis * Vector3(
+						source_t[t], source_t[t + 1], source_t[t + 2])).normalized()
+					out_t.append(rotated.x)
+					out_t.append(rotated.y)
+					out_t.append(rotated.z)
+					out_t.append(source_t[t + 3])
+				bucket["tangent"] = out_t
+			var base: int = out_v.size()
+			for index in source_v.size():
+				out_v.append(transform * source_v[index])
+				out_n.append((basis * source_n[index]).normalized() \
+					if index < source_n.size() else Vector3.UP)
+			if indices.is_empty():
+				for index in source_v.size():
+					out_i.append(base + index)
+			else:
+				for index in indices:
+					out_i.append(base + index)
+			bucket["v"] = out_v
+			bucket["n"] = out_n
+			bucket["i"] = out_i
+
+	var importer := ImporterMesh.new()
+	for key: String in order:
+		var bucket: Dictionary = buckets[key]
+		var vertices: PackedVector3Array = bucket["v"]
+		if vertices.is_empty():
+			continue
+		var arrays: Array = []
+		arrays.resize(Mesh.ARRAY_MAX)
+		arrays[Mesh.ARRAY_VERTEX] = vertices
+		arrays[Mesh.ARRAY_NORMAL] = bucket["n"]
+		arrays[Mesh.ARRAY_INDEX] = bucket["i"]
+		var attributes: int = bucket["attributes"]
+		if attributes & ATTR_UV:
+			arrays[Mesh.ARRAY_TEX_UV] = bucket["uv"]
+		if attributes & ATTR_UV2:
+			arrays[Mesh.ARRAY_TEX_UV2] = bucket["uv2"]
+		if attributes & ATTR_COLOR:
+			arrays[Mesh.ARRAY_COLOR] = bucket["color"]
+		if attributes & ATTR_TANGENT:
+			arrays[Mesh.ARRAY_TANGENT] = bucket["tangent"]
+		importer.add_surface(Mesh.PRIMITIVE_TRIANGLES, arrays, [], {},
+			bucket["material"] as Material, key, 0)
+	if importer.get_surface_count() == 0:
+		return null
+	importer.generate_lods(LOD_NORMAL_MERGE_ANGLE, LOD_NORMAL_SPLIT_ANGLE, [])
+	return importer.get_mesh()
+
+
 ## What a material looks like, as a string. Two surfaces sharing one of these render the same,
 ## so they can share a surface — and a draw call.
 ##

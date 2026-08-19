@@ -45,6 +45,9 @@ var multimesh_count: int = 0
 var collider_count: int = 0
 var water_surfaces: int = 0
 var harvestable_holders: int = 0
+## Static per-chunk cross-asset merges built by F-187, counted separately from `multimesh_count`
+## because they are not MultiMeshInstance3D nodes — one merged MeshInstance3D per chunk.
+var merged_prop_mesh_count: int = 0
 
 var _layout: Dictionary = {}
 var _origin := Vector2.ZERO
@@ -71,10 +74,10 @@ func _ready() -> void:
 	_timed(timings, "lights", _build_lights)
 	_timed(timings, "markers", _build_markers)
 	print(
-		"AUTHORED_WORLD id=%s terrain_tris=%d props=%d multimeshes=%d colliders=%d water=%d harvestable=%d ms=%d phase_ms=[%s]" % [
+		"AUTHORED_WORLD id=%s terrain_tris=%d props=%d multimeshes=%d merged_meshes=%d colliders=%d water=%d harvestable=%d ms=%d phase_ms=[%s]" % [
 			String(_layout.get("id", "?")), terrain_triangles, prop_count, multimesh_count,
-			collider_count, water_surfaces, harvestable_holders, Time.get_ticks_msec() - started,
-			" ".join(timings)
+			merged_prop_mesh_count, collider_count, water_surfaces, harvestable_holders,
+			Time.get_ticks_msec() - started, " ".join(timings)
 		]
 	)
 
@@ -406,7 +409,15 @@ func _water_level(body: Dictionary, point: Vector2) -> float:
 ## one frustum test.
 func _build_props() -> void:
 	var grouped: Dictionary = {}
+	# F-187: rigid, non-emitting, non-batch, never-shadow-casting props merge across assets into
+	# one static mesh per chunk instead of one MultiMesh per (chunk, asset) — see the eligibility
+	# comment below for why the other prop classes are excluded rather than folded in too.
+	var mergeable: Dictionary = {}
 	var harvestable: Array[Dictionary] = []
+	# Filled here rather than after classification: deciding whether a prop is short enough to
+	# merge needs its mesh's own AABB, and `_mesh_parts` memoizes per (kit, asset) regardless of
+	# when it is first called, so calling it during classification costs nothing extra later.
+	var cache: Dictionary = {}
 	for prop_value: Variant in _layout.get("props", []):
 		var prop := prop_value as Dictionary
 		# Harvestability is a property of the ASSET, not of this placement (F-114). The layout's own
@@ -421,9 +432,43 @@ func _build_props() -> void:
 				harvestable.append(prop)
 				continue
 		var chunk: Array = prop.get("chunk", [0, 0]) as Array
-		var key := "%d_%d|%s|%s" % [int(chunk[0]), int(chunk[1]),
-			String(prop.get("kit", "")), String(prop.get("asset", ""))]
-		grouped.get_or_add(key, [] as Array).append(prop)
+		var kit_name := String(prop.get("kit", ""))
+		var asset_name := String(prop.get("asset", ""))
+		# Anything reaching this line that IS harvestable is BATCH representation (NODE already
+		# `continue`d above) — depletion hides ONE instance by zeroing its transform inside that
+		# asset's own MultiMesh (`_build_batch_harvestables`), which only works if the batch is
+		# still keyed one-asset-per-node. An emitter keys `EnvironmentVfx`'s "placements" meta off
+		# one asset id per holder, so a node mixing several assets' placements would attribute them
+		# to the wrong emitter, or to none. Sway's wind shader reads `VERTEX.y` in MODEL space
+		# against that ONE asset's own AABB (`wind_root_y`/`wind_inv_height`, set from
+		# `mesh.get_aabb()` in `EnvironmentVfx._apply_sway`) — correct for a single asset's own
+		# local frame, wrong the instant several placements' chunk-relative heights are baked into
+		# one static mesh, because the mask would then read terrain elevation within the chunk
+		# instead of height within each individual plant. And a merged chunk mesh tall or wide
+		# enough to cast a shadow routinely spans more than one of the four PSSM cascade splits —
+		# measured directly, this is what cost the first version of this merge its whole win: draw
+		# calls fell as expected, but shadow-pass primitives ROSE 16% (`frame_cost_check.gd` against
+		# `agent baseline`), because Godot re-renders a caster into every cascade its AABB touches
+		# and a whole chunk's worth of merged geometry touches more of them than one small prop
+		# ever did. Filed as F-203 rather than solved for the two harder cases (sway, emitter);
+		# solved here for shadows by construction — merge only what will never cast one anyway.
+		var mesh_key := "%s|%s" % [kit_name, asset_name]
+		if not cache.has(mesh_key):
+			cache[mesh_key] = _mesh_parts(kit_name, asset_name)
+		var object_meshes: Array = cache[mesh_key] as Array
+		var object_height := 0.0
+		if not object_meshes.is_empty():
+			var object_mesh: Mesh = (object_meshes[0] as Dictionary)["mesh"]
+			object_height = object_mesh.get_aabb().size.y * float(prop.get("scale", 1.0))
+		if HarvestLib.is_harvestable(asset_id) \
+				or AssetVfx.emitter_for(asset_name) != AssetVfx.Emitter.NONE \
+				or AssetVfx.sway_for(asset_name) != AssetVfx.Sway.NONE \
+				or object_height >= DrawPolicy.SHADOW_MIN_HEIGHT:
+			var key := "%d_%d|%s|%s" % [int(chunk[0]), int(chunk[1]), kit_name, asset_name]
+			grouped.get_or_add(key, [] as Array).append(prop)
+		else:
+			var mkey := "%d_%d" % [int(chunk[0]), int(chunk[1])]
+			mergeable.get_or_add(mkey, [] as Array).append(prop)
 
 	var visuals := Node3D.new()
 	visuals.name = "PropVisuals"
@@ -432,7 +477,6 @@ func _build_props() -> void:
 	bodies.name = "PropCollision"
 	add_child(bodies)
 
-	var cache: Dictionary = {}
 	var harvest_root := Node3D.new()
 	harvest_root.name = "Harvestables"
 	add_child(harvest_root)
@@ -522,6 +566,75 @@ func _build_props() -> void:
 		# MultiMesh, and are therefore what a restore has to write back.
 		_build_batch_harvestables(
 			props, asset, holder, harvest_root, transforms, local_transforms, meshes)
+
+
+	for key: String in mergeable:
+		var props: Array = mergeable[key] as Array
+		var entries: Array = []
+		var centroid := Vector3.ZERO
+		# The tallest single OBJECT going into this merge, not the merged mesh's own AABB — the
+		# merged mesh's vertices are baked at their absolute world height relative to the holder,
+		# so its AABB spans the chunk's terrain relief as well as every object's own height, and
+		# terrain relief alone is routinely several metres on Hollowmere. Feeding that span to
+		# `DrawPolicy` would classify nearly every merge as TALL and draw it to 260 m regardless of
+		# what is actually in it — measured: this exact bug cost the merge its whole win, taking
+		# `frame_cost_check.gd`'s primitive count UP 18% instead of down (F-187's baseline compare).
+		var max_object_height: float = 0.0
+		for prop_value: Variant in props:
+			var prop := prop_value as Dictionary
+			var kit := String(prop.get("kit", ""))
+			var asset := String(prop.get("asset", ""))
+			# Same cache the grouped path above fills -- keyed identically (kit|asset), so an asset
+			# placed both as scenery and, elsewhere, densely enough to earn its own MultiMesh group
+			# still costs one `_mesh_parts` call.
+			var mesh_key := "%s|%s" % [kit, asset]
+			if not cache.has(mesh_key):
+				cache[mesh_key] = _mesh_parts(kit, asset)
+			var meshes: Array = cache[mesh_key] as Array
+			if meshes.is_empty():
+				continue
+			var pos: Array = prop.get("pos", [0.0, 0.0, 0.0]) as Array
+			var prop_scale := float(prop.get("scale", 1.0))
+			var placement := Transform3D(
+				Basis(Vector3.UP, float(prop.get("yaw", 0.0))),
+				Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
+			).scaled_local(Vector3.ONE * prop_scale)
+			var mesh_entry: Dictionary = meshes[0] as Dictionary
+			var object_mesh: Mesh = mesh_entry["mesh"]
+			entries.append({"mesh": object_mesh,
+				"transform": placement * (mesh_entry["offset"] as Transform3D)})
+			centroid += placement.origin
+			max_object_height = maxf(max_object_height, object_mesh.get_aabb().size.y * prop_scale)
+			_add_prop_collision(bodies, prop, placement)
+			prop_count += 1
+		if entries.is_empty():
+			continue
+		centroid /= float(entries.size())
+		var local_entries: Array = []
+		for entry_value: Variant in entries:
+			var entry := entry_value as Dictionary
+			var transform: Transform3D = entry["transform"]
+			local_entries.append({"mesh": entry["mesh"],
+				"transform": Transform3D(transform.basis, transform.origin - centroid)})
+		var combined := MeshMerge.merge_instances(local_entries)
+		if combined == null:
+			continue
+		var holder := Node3D.new()
+		# Same centroid-rebasing reasoning as the grouped path above: `visibility_range` measures
+		# from the node's own origin, and an ArrayMesh's AABB is exact once its vertices are baked
+		# relative to that origin rather than the world's.
+		holder.position = centroid
+		holder.name = "merged_%s" % key
+		visuals.add_child(holder)
+		var instance := MeshInstance3D.new()
+		instance.name = "MergedProps"
+		instance.mesh = combined
+		# No `asset` meta: this node deliberately spans many assets, and the mergeable set is
+		# exactly the props AssetVfxLibrary has nothing to say about -- EnvironmentVfx's
+		# `_asset_id_for` walk finds no meta and no matching node name, and skips it, correctly.
+		DrawPolicy.apply(instance, AABB(Vector3.ZERO, Vector3(0.0, max_object_height, 0.0)), 1.0)
+		holder.add_child(instance)
+		merged_prop_mesh_count += 1
 
 
 ## Collapse an asset to ONE mesh with one surface per material.
