@@ -4094,3 +4094,18 @@ Notes along the way:
 Files: `ui/hud/wellspring_hud.gd`, `tools/wellspring_hud_check.gd`, `tools/wellspring_hud_check.gd.uid`
 
 Commit at time of writing: `6f2aaa6`
+
+---
+
+### DONE · F-171 · lm · 2026-08-19T04:58:11+00:00
+
+**`tools/crafting_ui_check.gd` fails 19/22 independent of task 6.10 — reproduced on a clean HEAD checkout**
+
+Fixed tools/crafting_ui_check.gd's hardcoded row-index-0 assumption (same shape F-167 fixed in crafting_net_check.gd) with a _row_for() id-scan helper. agent godot --script tools/crafting_ui_check.gd -> failures=0 (34/34 PASS), run twice.
+
+Notes along the way:
+- Root cause: same hardcoded-index-0 shape F-167 fixed in crafting_net_check.gd, but in the sibling crafting_ui_check.gd which F-167 didn't touch. Content (tasks 3.2-3.4) legitimately grew workbench to 11 recipes / furnace to 2, alphabetical row order means stone_axe/iron_ingot aren't row 0 any more. Not a content or UI bug - fixed the check with a _row_for() id-scan helper, same pattern as F-167.
+
+Files: `tools/crafting_ui_check.gd`
+
+Commit at time of writing: `ab54d0f`

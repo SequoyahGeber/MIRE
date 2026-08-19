@@ -2321,9 +2321,10 @@
       "task": "F-167"
     },
     "tools/crafting_ui_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T05:04:45+00:00",
-      "task": "3.1"
+      "agent": "lm",
+      "at": "2026-08-19T04:58:11+00:00",
+      "hash": "7b68826b8224179991f48c3430137f162253bf752664069922871e2e537cd90b",
+      "task": "F-171"
     },
     "tools/cycle_check.gd": {
       "agent": "lm",
@@ -5565,9 +5566,11 @@
       "title": "`tools/lobby_menu_check.gd` fails (5/24) whenever the dev machine's own Steam client is actually running"
     },
     "F-171": {
+      "done_at": "2026-08-19T04:58:11+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`tools/crafting_ui_check.gd` fails 19/22 independent of task 6.10 \u2014 reproduced on a clean HEAD checkout"
     },
