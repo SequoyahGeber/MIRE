@@ -1,51 +1,6 @@
 {
-  "claims": {
-    "assets/gatherables": {
-      "agent": "wick20",
-      "at": "2026-08-19T07:04:39+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    },
-    "docs/ASSET_TRACKER.md": {
-      "agent": "wick20",
-      "at": "2026-08-19T06:42:56+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    },
-    "tools/blender/build_gatherable_plants.py": {
-      "agent": "wick20",
-      "at": "2026-08-19T06:42:56+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    },
-    "tools/blender/mire_art.py": {
-      "agent": "wick20",
-      "at": "2026-08-19T06:42:56+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    },
-    "tools/gatherables_check.gd": {
-      "agent": "wick20",
-      "at": "2026-08-19T07:04:39+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    }
-  },
-  "in_flight": {
-    "2.1d": {
-      "agent": "wick20",
-      "files": [
-        "docs/ASSET_TRACKER.md",
-        "tools/blender/build_gatherable_plants.py",
-        "tools/blender/mire_art.py",
-        "assets/gatherables",
-        "tools/gatherables_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-19T06:42:56+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
       "agent": "nettle12",
@@ -139,6 +94,20 @@
       "hash": null,
       "task": "F-057",
       "token": null
+    },
+    "assets/gatherables": {
+      "agent": "wick20",
+      "at": "2026-08-19T07:08:14+00:00",
+      "hash": null,
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+    },
+    "assets/gatherables/preview/gatherables_preview.png": {
+      "agent": "wick20",
+      "at": "2026-08-19T07:08:14+00:00",
+      "hash": null,
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
     "assets/icons/README.md": {
       "agent": "lp",
@@ -1528,10 +1497,11 @@
       "token": null
     },
     "docs/ASSET_TRACKER.md": {
-      "agent": "slate17",
-      "at": "2026-08-18T21:16:01+00:00",
-      "hash": "2c8a64c33d4249fddd211f65c8245f9ae0437d88051138e3e6ffe881414b3ff1",
-      "task": "2.1d"
+      "agent": "wick20",
+      "at": "2026-08-19T07:08:14+00:00",
+      "hash": "8dd82a9ba40922dff2190b2b471ddd64274d47bc8c220fe264fdd72111964515",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
     "docs/COMMANDS.md": {
       "agent": "lp",
@@ -2141,6 +2111,13 @@
       "at": "2026-08-18T14:17:26+00:00",
       "task": "2.1d"
     },
+    "tools/blender/build_gatherable_plants.py": {
+      "agent": "wick20",
+      "at": "2026-08-19T07:08:14+00:00",
+      "hash": "6e6557ccab76231c491b3219fba5de04dab14b48319249186f53a89824ba18b4",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+    },
     "tools/blender/crafting_stations_repro_check.py": {
       "agent": "lm",
       "at": "2026-08-19T07:07:27+00:00",
@@ -2154,10 +2131,11 @@
       "task": "F-092"
     },
     "tools/blender/mire_art.py": {
-      "agent": "slate17",
-      "at": "2026-08-18T21:16:01+00:00",
-      "hash": "415d9f379fdc988eef144b0549fc555106c768d8e6e7b945fd4a94807098b41f",
-      "task": "2.1d"
+      "agent": "wick20",
+      "at": "2026-08-19T07:08:14+00:00",
+      "hash": "0a1efc92a81045a355a4c69c43568005743d1e3ca960f61b71b8da70b8532c06",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
     "tools/blender/render_item_icons.py": {
       "agent": "lp",
@@ -2456,6 +2434,13 @@
       "at": "2026-08-18T23:19:22+00:00",
       "hash": "8c237cd57c31f14bee5c9a8ea8f4f56b755a9d3debc3d1f66022008a1cf78c01",
       "task": "3.17"
+    },
+    "tools/gatherables_check.gd": {
+      "agent": "wick20",
+      "at": "2026-08-19T07:08:14+00:00",
+      "hash": "078088870f1d6b98aedb780a624dfc746ef143641ce9b689d63345e4668299e8",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
     "tools/godot_prepass_check.py": {
       "agent": "lp",
@@ -3441,7 +3426,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
@@ -5896,6 +5881,27 @@
       "status": "done",
       "tier": "F",
       "title": "levels/hollowmere.tscn's Player drifted 1.84 m off the layout spawn \u2014 an editor-session nudge, caught by hollowmere_check"
+    },
+    "F-196": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "An asset rebuild concurrent with agent godot's auto-import pass poisons the import cache \u2014 8 station GLBs stayed unloadable across 40 minutes of checks until a forced --import"
+    },
+    "F-197": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A generated-asset commit swept up another lane's dirty crafting-station GLBs under an unrelated message \u2014 the F-149/F-191 sweep hazard reaching art files, not just docs/"
+    },
+    "F-198": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Three DONE asset batches (A-004, A-005, A-006) still call `mire_art.box()`'s bevel-capable version with no override \u2014 the same F-057 exposure their own tracker rows already claim to have passed"
     }
   },
   "version": 1

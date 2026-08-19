@@ -6,15 +6,13 @@
 
 ## In flight
 
-| Task | Agent | Started | Files claimed |
-|---|---|---|---|
-| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | wick20 | 2026-08-19 06:42 | `docs/ASSET_TRACKER.md`, `tools/blender/build_gatherable_plants.py`, `tools/blender/mire_art.py`, `assets/gatherables`, `tools/gatherables_check.gd` |
+_Nothing in flight._
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 173/194 | 21 |
+| Findings | `█████████░` 173/197 | 24 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -69,6 +67,9 @@
 | ⬜ | **F-189** File claims have become the bottleneck D-011 named as its own reversal trigger — one claim blocked four consecutive tasks from bumping PROTOCOL_VERSION | todo |
 | ⬜ | **F-190** HEAD registers the RewardService autoload but does not contain its script, so a clean checkout fails to boot | todo |
 | ⬜ | **F-191** Staging and committing as two steps lets a concurrent agent's commit sweep up your staged work | todo |
+| ⬜ | **F-196** An asset rebuild concurrent with agent godot's auto-import pass poisons the import cache — 8 station GLBs stayed unloadable across 40 minutes of checks until a forced --import | todo |
+| ⬜ | **F-197** A generated-asset commit swept up another lane's dirty crafting-station GLBs under an unrelated message — the F-149/F-191 sweep hazard reaching art files, not just docs/ | todo |
+| ⬜ | **F-198** Three DONE asset batches (A-004, A-005, A-006) still call `mire_art.box()`'s bevel-capable version with no override — the same F-057 exposure their own tracker rows already claim to have passed | todo |
 
 ## Done
 
