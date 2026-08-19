@@ -6,11 +6,23 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
-    "content/enemies": {
-      "agent": "lm",
-      "at": "2026-08-19T17:18:01+00:00",
-      "task": "5.2",
-      "token": null
+    "content/biomes/forest.tres": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:29:44+00:00",
+      "task": "4.13",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "content/biomes/grassland.tres": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:29:44+00:00",
+      "task": "4.13",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "content/biomes/shore.tres": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:29:44+00:00",
+      "task": "4.13",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "wick20",
@@ -18,29 +30,53 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
-    "systems/enemies/enemy_def.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T17:18:01+00:00",
-      "task": "5.2",
-      "token": null
-    },
     "tools/blender/build_terrain_accents.py": {
       "agent": "wick20",
       "at": "2026-08-19T17:26:54+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
-    "tools/enemy_content_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T17:18:01+00:00",
-      "task": "5.2",
-      "token": null
+    "tools/check_determinism.gd": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:29:44+00:00",
+      "task": "4.13",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "tools/terrain_accents_check.gd": {
       "agent": "wick20",
       "at": "2026-08-19T17:26:54+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+    },
+    "tools/terrain_map_render.gd": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:31:34+00:00",
+      "task": "4.13",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "tools/terrain_map_render.gd.uid": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:31:34+00:00",
+      "task": "4.13",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "world/gen/biome_def.gd": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:29:44+00:00",
+      "task": "4.13",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "world/gen/biome_map.gd": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:30:12+00:00",
+      "task": "4.13",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "world/gen/island_heightmap.gd": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:29:44+00:00",
+      "task": "4.13",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     }
   },
   "in_flight": {
@@ -58,21 +94,20 @@
     },
     "4.13": {
       "agent": "slate17",
-      "files": [],
+      "files": [
+        "world/gen/island_heightmap.gd",
+        "world/gen/biome_def.gd",
+        "tools/check_determinism.gd",
+        "content/biomes/forest.tres",
+        "content/biomes/grassland.tres",
+        "content/biomes/shore.tres",
+        "world/gen/biome_map.gd",
+        "tools/terrain_map_render.gd",
+        "tools/terrain_map_render.gd.uid"
+      ],
       "notes": [],
       "started": "2026-08-19T17:28:36+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "5.2": {
-      "agent": "lm",
-      "files": [
-        "content/enemies",
-        "systems/enemies/enemy_def.gd",
-        "tools/enemy_content_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-19T17:18:01+00:00",
-      "token": null
     }
   },
   "recent": {
@@ -1203,11 +1238,39 @@
       "hash": "2b5f9dd0b34dfc08b9f08ea5690e26498104229713cb849d3f8e5601c174f625",
       "task": "6.2"
     },
+    "content/enemies": {
+      "agent": "lm",
+      "at": "2026-08-19T17:32:42+00:00",
+      "hash": null,
+      "task": "5.2",
+      "token": null
+    },
     "content/enemies/bog_crawler.tres": {
       "agent": "lm",
       "at": "2026-08-19T07:17:23+00:00",
       "hash": "edbb11d2a6b511d21ec3357e2fa4b71e0f62c60a5c056df2976c77cc999420b6",
       "task": "F-158",
+      "token": null
+    },
+    "content/enemies/broodcaller.tres": {
+      "agent": "lm",
+      "at": "2026-08-19T17:33:59+00:00",
+      "hash": "4633cd24ed48b7440a5d6b440feb06251ef175b1e05d341dfa037d146314e561",
+      "task": "5.2",
+      "token": null
+    },
+    "content/enemies/strider.tres": {
+      "agent": "lm",
+      "at": "2026-08-19T17:33:59+00:00",
+      "hash": "b71a0671b626be37db164ff40c3e41cc43707cf69066833994faf9900ff6c16b",
+      "task": "5.2",
+      "token": null
+    },
+    "content/enemies/tusker.tres": {
+      "agent": "lm",
+      "at": "2026-08-19T17:33:59+00:00",
+      "hash": "cfac0b64c370f581eccb16726e4d8da2f584ce482a9015d8484bb58e418c74ce",
+      "task": "5.2",
       "token": null
     },
     "content/functions": {
@@ -2447,9 +2510,9 @@
     },
     "systems/enemies/enemy_def.gd": {
       "agent": "lm",
-      "at": "2026-08-19T07:17:23+00:00",
+      "at": "2026-08-19T17:32:42+00:00",
       "hash": "2997a75514ef93ceec89a38e10f329068d05b814f05266d7ed37f4d331c839f6",
-      "task": "F-158",
+      "task": "5.2",
       "token": null
     },
     "systems/environment/day_night.gd": {
@@ -3190,6 +3253,13 @@
       "agent": "lp",
       "at": "2026-08-18T18:16:36+00:00",
       "task": "F-111"
+    },
+    "tools/enemy_content_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T17:32:42+00:00",
+      "hash": "ac895dace10b00c5f314116ef2ebb5621f09f50eedf2b2addb824a7b8e519123",
+      "task": "5.2",
+      "token": null
     },
     "tools/enemy_lod_check.gd": {
       "agent": "lm",
@@ -5103,9 +5173,11 @@
       "title": "Combat balance pass across the Cycle curve, not at one difficulty"
     },
     "5.2": {
+      "done_at": "2026-08-19T17:33:59+00:00",
+      "done_by": "lm",
       "est": "14",
       "milestone": "M5",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T0",
       "title": "8\u201312 enemy types (scenes + `.tres` stats + animation setup)"
     },
@@ -7594,7 +7666,7 @@
     "F-235": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "defeat_hud.gd's salvage-banked guard drops the real number on every real defeat \u2014 SalvageService subscribes to run_wiped before DefeatHud, so its synchronous salvage_banked emit lands while _shown is still false"
     },
@@ -7604,6 +7676,20 @@
       "status": "todo",
       "tier": "F",
       "title": "Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon"
+    },
+    "F-237": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A-016 asks for a cave entrance, but D-142 put caves on the cut list \u2014 the asset would promise a space that cannot exist"
+    },
+    "F-238": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A successful extraction has no run summary of its own \u2014 task 6.8 only extended the death screen"
     }
   },
   "version": 1

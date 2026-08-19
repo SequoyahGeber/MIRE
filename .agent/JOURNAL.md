@@ -5805,3 +5805,44 @@ Notes along the way:
 Files: `ui/hud/defeat_hud.gd`, `ui/hud/defeat_hud.gd.uid`, `tools/run_summary_check.gd`
 
 Commit at time of writing: `c9d3c0e`
+
+---
+
+### DONE · 5.2 · lm · 2026-08-19T17:32:42+00:00
+
+**8–12 enemy types (scenes + `.tres` stats + animation setup)**
+
+3 new enemy kinds (strider, tusker, broodcaller) shipped as content/enemies/*.tres, deliberately not 8-12 per D-073's one-at-a-time rule -- roadmap line needs 5-9 more from the next task on this line. Each kind's identity proven BEHAVIORALLY against the crawler baseline, not just read off its stat block: agent godot --script tools/enemy_content_check.gd -> 27/27 assertions pass. Regression: tools/enemy_check.gd and tools/enemy_ai_check.gd both failures=0, unmodified. Full boot agent godot --quit-after 20: loaded 5 enemy definition(s), 0 stray ERROR: lines. Wrote docs/SPECS.md's missing ## 5.2 block, filed F-235 (a design-space limit: no EnemyDef field can make a telegraphed attack survive a player just walking backward during the tell), and documented a harness trap in DELEGATION.md (move_and_slide() ignores the delta passed to a manually-stepped _physics_process call).
+
+Notes along the way:
+- Scoped to 3 enemies not 8-12 per D-073/AGENTS.md (standing rule: content authored one asset at a time, never bulk). Decision + full reasoning in docs/SPECS.md's new ## 5.2 block.
+- Discovered the state machine can't support 'denies backpedal via reach' for ANY EnemyDef combo (hit resolves at tell-END against live position, enemy frozen the whole TELL/ATTACK/RECOVER span) -- filed F-235, redesigned tusker's identity around attack_recovery_seconds instead.
+- tools/enemy_content_check.gd's speed-comparison test initially failed: CharacterBody3D.move_and_slide() reads the engine's own physics delta, not the delta passed to a manually-stepped _physics_process() call -- a hand-moved Node3D player on a literal speed*delta clock is NOT comparable to a stepped Enemy. Fixed by calibrating retreat distance against a probe's own measured per-call displacement. Documented in the check's header comment and DELEGATION.md so the next speed-comparison check doesn't re-hit it.
+
+Files: `content/enemies`, `systems/enemies/enemy_def.gd`, `tools/enemy_content_check.gd`
+
+Commit at time of writing: `52f868e`
+
+---
+
+### REOPEN · 5.2 · lm · 2026-08-19T17:33:52+00:00
+
+**8–12 enemy types (scenes + `.tres` stats + animation setup)**
+
+Reopened (was marked done 2026-08-19 by lm).
+
+done/ship ran out of order -- ship failed because the Godot-authored .tres files need an exact-file claim (D-031), not the directory-level claim I made. Reopening to add the exact claim and complete the commit; the work itself (content, spec, check, docs) is unchanged and already verified.
+
+Commit at time of writing: `52f868e`
+
+---
+
+### DONE · 5.2 · lm · 2026-08-19T17:33:59+00:00
+
+**8–12 enemy types (scenes + `.tres` stats + animation setup)**
+
+3 new enemy kinds (strider, tusker, broodcaller) shipped as content/enemies/*.tres under exact per-file claims (D-031), deliberately not 8-12 per D-073's one-at-a-time rule -- roadmap line needs 5-9 more from the next task on this line. Each kind's identity proven BEHAVIORALLY against the crawler baseline, not just read off its stat block: agent godot --script tools/enemy_content_check.gd -> 27/27 assertions pass. Regression: tools/enemy_check.gd and tools/enemy_ai_check.gd both failures=0, unmodified. Full boot agent godot --quit-after 20: loaded 5 enemy definition(s), 0 stray ERROR: lines. Wrote docs/SPECS.md's missing ## 5.2 block, filed F-235, documented a harness trap in DELEGATION.md.
+
+Files: `content/enemies/strider.tres`, `content/enemies/tusker.tres`, `content/enemies/broodcaller.tres`
+
+Commit at time of writing: `52f868e`

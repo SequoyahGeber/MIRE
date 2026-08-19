@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="EnemyDef" format=3]
+
+[ext_resource type="PackedScene" path="res://assets/enemies/exports/enemy_crawler.glb" id="1_uh0gl"]
+[ext_resource type="Script" path="res://systems/enemies/enemy_def.gd" id="2_d3gob"]
+
+[resource]
+script = ExtResource("2_d3gob")
+id = &"broodcaller"
+display_name = "Broodcaller"
+model = ExtResource("1_uh0gl")
+model_yaw_offset_degrees = 180.0
+visual_tint = Color(0.55, 0.25, 0.55, 1)
+max_health = 9
+move_speed = 4.0
+attack_damage = 5
+aggro_radius_m = 22.0
+deaggro_radius_m = 30.0
+alert_radius_m = 28.0
+max_concurrent_attackers = 5

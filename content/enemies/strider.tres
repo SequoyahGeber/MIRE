@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="EnemyDef" format=3]
+
+[ext_resource type="PackedScene" path="res://assets/enemies/exports/enemy_crawler.glb" id="1_uh0gl"]
+[ext_resource type="Script" path="res://systems/enemies/enemy_def.gd" id="2_d3gob"]
+
+[resource]
+script = ExtResource("2_d3gob")
+id = &"strider"
+display_name = "Marsh Strider"
+model = ExtResource("1_uh0gl")
+model_yaw_offset_degrees = 180.0
+visual_tint = Color(0.85, 0.78, 0.35, 1)
+radius_m = 0.35
+height_m = 0.5
+max_health = 7
+move_speed = 7.5
+stop_distance_m = 1.0
+turn_speed_rad = 10.0
+aggro_radius_m = 16.0
+deaggro_radius_m = 24.0
+attack_range_m = 1.4
+attack_damage = 4
+attack_tell_seconds = 0.22
+attack_seconds = 0.2
+attack_recovery_seconds = 0.35
