@@ -2098,6 +2098,49 @@ in a headless run, docs/FINDINGS.md's F-130 moved to `## Resolved` with the veri
 
 ---
 
+## F-152 · `core/render/mesh_merge.gd` builds an invalid surface at boot, so merged undergrowth silently draws nothing
+
+**Claim:** `tools/mesh_merge_check.gd` (none in `core/render/mesh_merge.gd` — see below).
+
+**What was wrong:** at the finding's HEAD (`e5f96b1`) a merge that concatenated an optional vertex
+channel (UV/UV2/colour/tangent) without first checking every merged part carried it produced arrays of
+mismatched length. `mesh_create_surface_data_from_arrays` rejects that silently
+(`"array.size() != p_vertex_array_len"`), the merge fell back to a mesh with zero surfaces, and the
+caller's next `surface_get_material(-1)` went out of bounds — loud in the log, invisible on screen.
+
+**Fix (already shipped by the time this task picked it up — no code change was needed):** F-144's own
+mesh-merging work (commit `76d48bc`, in flight under a separate claim the whole time this task ran)
+rewrote the bucketing to key on `_attribute_mask(arrays)` as well as material appearance
+(`mesh_merge.gd:103-110`), so two parts can only land in the same bucket if they carry the *same* set
+of optional channels — and each channel is appended only when the whole bucket declares it
+(`mesh_merge.gd:136-160`). The mismatched-length case F-152 describes cannot occur any more: a part
+missing a channel its bucket-mates have starts a bucket of its own instead of being concatenated into
+one that doesn't fit it.
+
+**Verify:** `agent godot --script tools/mesh_merge_check.gd` — new check, since none existed. Clears
+`MeshMerge`'s disk cache first (so it exercises `_build()`, not a cached mesh from a previous good
+run), then calls `MeshMerge.merged()` directly on every `.glb` under every `assets/*/exports/` kit
+directory (discovered, not a fixed list) and asserts a non-null, non-zero-surface mesh whose every
+present channel has exactly one entry per vertex (four for tangents) — the exact invariant the bug
+broke. A source that legitimately has no mesh parts is allowed to merge to null; one that has parts and
+still merges to null or to zero surfaces is the F-152 failure mode and fails the check.
+
+**Done means:** `MESH_MERGE_CHECK_GODOT PASS` with `checked` equal to every kit `.glb` on disk, and a
+plain boot (`agent godot --quit-after N`) shows zero `mesh_merge.gd`-attributed `ERROR:` lines.
+
+**Verified 2026-08-18 (lp):** `agent godot --script tools/mesh_merge_check.gd` →
+`MESH_MERGE_CHECK checked=337 surfaces=1287`, `MESH_MERGE_CHECK_GODOT PASS` — every kit export
+(environment, harvestables, flora, crafting_stations, wards, wellsprings, tools_weapons, construction,
+enemies, loot, pickups, ships, environment_additions) merges to a mesh with matching per-vertex channel
+lengths on every surface. Cross-checked against the finding's own repro:
+`agent godot --quit-after 20` on the real boot scene (`levels/hollowmere.tscn`, which is what the
+finding's stack trace came from) → zero `ERROR:` lines total, none mentioning `mesh_merge.gd`,
+`array.size()`, `p_idx`, or `surfaces.size()`. Did not touch `core/render/mesh_merge.gd` or
+`world/gen/undergrowth.gd` — both remained under F-144's claim for this task's entire run; nothing to
+fix there once verified.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

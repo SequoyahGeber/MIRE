@@ -91,36 +91,6 @@ ever calls it.
 line and no scene reference is dead code until proven otherwise, and `verify_setup`'s autoload
 assertion is the place a future orphan would be caught cheaply.
 
-### F-152 · `core/render/mesh_merge.gd` builds an invalid surface at boot, so merged undergrowth silently draws nothing
-
-**Area:** rendering · **Severity:** medium · **Found:** 2026-08-18 by slate17 during 3.7 · **Owner:** F-144 (nettle12)
-
-At HEAD (`e5f96b1`, F-144's mesh merging) a plain boot — `.agent/bin/agent godot --quit-after 5` —
-emits a repeating error triple from the same call site:
-
-```
-ERROR: Condition "array.size() != p_vertex_array_len" is true. Returning: ERR_INVALID_PARAMETER
-ERROR: Invalid array format for surface.       at: mesh_create_surface_data_from_arrays
-ERROR: Index p_idx = -1 is out of bounds (surfaces.size() = 0).
-  [0] _build (res://core/render/mesh_merge.gd:202)
-  [1] merged (res://core/render/mesh_merge.gd:37)
-  [2] _emit (res://world/gen/undergrowth.gd:517)
-  [3] _scatter (res://world/gen/undergrowth.gd:294)
-```
-
-The surface is rejected, so the merge produces a mesh with zero surfaces and the following
-`surface_get_material(-1)` is out of bounds. Every affected undergrowth batch therefore draws
-nothing — the failure is loud in the log and invisible on screen, which is the worst combination:
-it reads as "the grass is a bit sparse".
-
-Most likely one of the merged source arrays is missing a channel the others have (a mesh with no UV,
-no colour or no tangent among meshes that have them), so the concatenated arrays disagree with the
-declared format. A per-source format mask, intersected across the batch before concatenating, is the
-usual fix.
-
-**Not fixed here:** both files are claimed by F-144, which is still in flight. Filed rather than
-touched (AGENTS.md). Reproduce with the boot command above; grep for `mesh_merge.gd:202`.
-
 ### F-150 · An authored collider is unverifiable by eye, and a .tscn's Transform3D floats are basis ROWS
 
 **Area:** building · **Severity:** low · **Found:** 2026-08-18 by slate17 during 3.7
@@ -854,6 +824,53 @@ with the raw id, same as F-126 already established. This is scheduling informati
 ---
 
 ## Resolved
+
+### F-152 · `core/render/mesh_merge.gd` builds an invalid surface at boot, so merged undergrowth silently draws nothing — **fixed**
+
+**Area:** rendering · **Severity:** medium · **Found:** 2026-08-18 by slate17 during 3.7 · **Owner:** F-144 (nettle12)
+
+At HEAD (`e5f96b1`, F-144's mesh merging) a plain boot — `.agent/bin/agent godot --quit-after 5` —
+emits a repeating error triple from the same call site:
+
+```
+ERROR: Condition "array.size() != p_vertex_array_len" is true. Returning: ERR_INVALID_PARAMETER
+ERROR: Invalid array format for surface.       at: mesh_create_surface_data_from_arrays
+ERROR: Index p_idx = -1 is out of bounds (surfaces.size() = 0).
+  [0] _build (res://core/render/mesh_merge.gd:202)
+  [1] merged (res://core/render/mesh_merge.gd:37)
+  [2] _emit (res://world/gen/undergrowth.gd:517)
+  [3] _scatter (res://world/gen/undergrowth.gd:294)
+```
+
+The surface is rejected, so the merge produces a mesh with zero surfaces and the following
+`surface_get_material(-1)` is out of bounds. Every affected undergrowth batch therefore draws
+nothing — the failure is loud in the log and invisible on screen, which is the worst combination:
+it reads as "the grass is a bit sparse".
+
+Most likely one of the merged source arrays is missing a channel the others have (a mesh with no UV,
+no colour or no tangent among meshes that have them), so the concatenated arrays disagree with the
+declared format. A per-source format mask, intersected across the batch before concatenating, is the
+usual fix.
+
+**Not fixed here:** both files are claimed by F-144, which is still in flight. Filed rather than
+touched (AGENTS.md). Reproduce with the boot command above; grep for `mesh_merge.gd:202`.
+
+**Resolved 2026-08-19 by lp.** Already fixed by the time this task picked it up: F-144's attribute-mask bucketing (commit
+76d48bc, in flight under nettle12's claim the whole time this task ran) keys merge buckets on
+`_attribute_mask(arrays)` as well as material appearance, so two parts can only share a bucket
+when they carry the same optional vertex channels -- the mismatched-array-length case this
+finding describes can no longer happen. No code change was needed or made; both
+core/render/mesh_merge.gd and world/gen/undergrowth.gd stayed under F-144's claim untouched.
+
+Verified: wrote tools/mesh_merge_check.gd (none existed) -- clears MeshMerge's disk cache, then
+calls MeshMerge.merged() directly on every .glb under every assets/*/exports/ kit dir (discovered,
+not hardcoded) and asserts a non-null mesh whose every surface's present channels each carry
+exactly one entry per vertex (four for tangents). `agent godot --script tools/mesh_merge_check.gd`
+-> `MESH_MERGE_CHECK checked=337 surfaces=1287`, `MESH_MERGE_CHECK_GODOT PASS`. Cross-checked
+against the finding's own repro: `agent godot --quit-after 20` on levels/hollowmere.tscn (the
+boot scene the original stack trace came from) -> zero ERROR: lines total, none mentioning
+mesh_merge.gd, array.size(), p_idx, or surfaces.size(). Full spec + verification detail in
+docs/SPECS.md under F-152.
 
 ### F-126 · CommandService's `peer` argument type has no display-name resolution — peer ids only — **fixed**
 

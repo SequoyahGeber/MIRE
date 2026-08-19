@@ -75,6 +75,30 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — F-152: `tools/mesh_merge_check.gd` pins `MeshMerge`'s per-vertex-channel invariant; the bug was already fixed by F-144 (lp)
+
+**What shipped, verified:** F-152 was filed against `e5f96b1`; by the time this task picked it up,
+F-144's own in-flight rewrite (commit `76d48bc`) had already fixed it — merge buckets now key on
+`_attribute_mask(arrays)` as well as material appearance (`core/render/mesh_merge.gd:103-110`), so two
+parts only share a bucket when they carry the same optional vertex channels, and the mismatched-array-
+length crash this finding describes can't recur. No code change was needed or made; both
+`core/render/mesh_merge.gd` and `world/gen/undergrowth.gd` stayed under F-144's claim, untouched, for
+this task's whole run. Wrote `tools/mesh_merge_check.gd` (none existed) since closing a finding needs a
+check, not just a read of the diff: it clears `MeshMerge`'s disk cache, then calls `MeshMerge.merged()`
+directly on every `.glb` under every `assets/*/exports/` kit dir (discovered from disk, not a fixed
+list — new kits are covered automatically) and asserts a non-null, non-zero-surface mesh whose every
+present channel carries exactly one entry per vertex (four for tangents). `agent godot --script
+tools/mesh_merge_check.gd` → `MESH_MERGE_CHECK checked=337 surfaces=1287`, `MESH_MERGE_CHECK_GODOT
+PASS`. Cross-checked against the finding's own repro — `agent godot --quit-after 20` on
+`levels/hollowmere.tscn` (the boot scene the original stack trace came from) → zero `ERROR:` lines,
+none mentioning `mesh_merge.gd`, `array.size()`, `p_idx`, or `surfaces.size()`.
+
+**The seam the next kit-asset merge builds against:** `tools/mesh_merge_check.gd` is now the standing
+regression guard for `MeshMerge` — anything that changes bucketing, the attribute mask, or what gets
+appended per-channel should keep this green before shipping. It runs stand-alone (no level boot, no
+scene dependency) against every kit `exports/` folder that exists today, so a brand-new kit directory
+is covered the moment its `exports/` subfolder appears — nothing needs to register it.
+
 ### 2026-08-18 — F-130: a source-text guard for the DebugConsole shim's reflection call, `gfx` still not migrated (lp)
 
 **What shipped, verified:** `tools/command_shim_check.gd` — walks every `.gd` file for the reflection
