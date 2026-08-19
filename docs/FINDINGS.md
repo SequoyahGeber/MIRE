@@ -69,6 +69,29 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-211 · Task 8.4's work order named the wrong verification scripts — `build_check.gd`/`build_net_check.gd`/`buildable_content_check.gd` test the buildable/crafting placement system (task 3.6/3.7), not the Steam export build pipeline
+
+**Area:** tooling/docs · **Severity:** low · **Found:** 2026-08-19 by lm during 8.4
+
+The 8.4 work order's "Verify it yourself, headless" section told the agent to run `tools/build_check.gd`,
+`tools/build_net_check.gd` and `tools/buildable_content_check.gd` to verify "Depots, build pipeline,
+`steamcmd` upload script, branches." All three scripts' own header comments say otherwise:
+`build_check.gd` is "Offline proof for task 3.6's placement rules" (the in-game buildable/structure
+system), `build_net_check.gd` is its two-process networked counterpart, and `buildable_content_check.gd`
+verifies task 3.7's buildable `.tres` content set. None of the three touch `export_presets.cfg`,
+Godot's export pipeline, or anything Steam-related — the name collision is "build" the crafting/
+construction system vs. "build" the compile-and-export pipeline, two unrelated meanings sharing one
+word. Actually running them would have proven nothing about 8.4's deliverable and burned a chunk of
+this task's quota for zero signal.
+
+**What closes this:** whoever next writes or dispatches a work order for a build-pipeline/export/Steam
+task should verify against the actual artifact instead (an `agent godot --headless --export-release/
+--export-debug` run, a smoke-boot of the exported binary, `bash -n`/shellcheck on any new shell script)
+rather than trusting a "run these checks" list without opening them first. This task's own SPECS.md
+block (`## 8.4 ·`) records what was actually run and why. No code fix needed — this is a one-time
+work-order-authoring trap, not a bug in the named scripts themselves, which are correct for their own
+task.
+
 ### F-161 · Task 5.3's three new ranged-combat RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-18 by lp during 5.3
@@ -678,6 +701,32 @@ a stack, D-pad left/right steps a slider) since there is no drag gesture to bind
 headlessly by driving `ui_up`/`ui_down`/`ui_accept` through each menu's real `_input()`/`_gui_input()`
 path the way `tools/gamepad_check.gd` already does for gameplay actions, checking
 `get_viewport().gui_get_focus_owner()` moves and lands on the expected control.
+
+---
+
+### F-210 · `Chest`'s loot roll still seeds from boot-time `randomize()` even though `GameState.run_seed` now exists — D-041's own reversal trigger has fired
+
+**Area:** loot/determinism · **Severity:** low · **Found:** 2026-08-19 by lp reviewing task 3.5
+
+`docs/DECISIONS.md` D-041 (task 3.5, 2026-08-17) is explicit that each `Chest._rng` calling
+`randomize()` in `_ready()` is a **provisional** stand-in: "the moment a real per-run seed authority
+exists ... `Chest` should switch to deriving its seed from `(run_seed, a stable per-chest id)` instead
+of `randomize()` ... `Chest.host_seed_rng(seed_value)` already exists as the seam that switch would
+call into — it does not need new API, only a new caller." Task 4.6 (`ab3cb28`, 2026-08-18) added
+exactly that authority — `GameState.run_seed`, host-drawn from real entropy, replicated to clients —
+and `docs/DELEGATION.md`'s `ChunkStreamer` entry already names the still-open gap for `Chest`
+specifically. Nobody has wired the two together: `systems/loot/chest.gd:76` still calls
+`_rng.randomize()` unconditionally, ignoring `GameState.run_seed` entirely.
+
+Not a desync or correctness bug today — the roll is host-only and granted directly, so nothing
+requires cross-peer agreement, and this was true when D-041 was written too. What's missing is what
+D-041 named as the actual payoff: two otherwise-identical runs sharing a `run_seed` (a deliberate
+replay, a bug-repro seed passed via `--seed=`, F-172's solo seed entry) currently still get different
+chest loot from run to run, because the seed never enters the picture. `Chest.host_seed_rng(seed_id)`
+is the existing seam — whoever picks this up needs a stable per-chest id to combine with
+`GameState.run_seed` (a placed chest has no such id today; `ChestPlacementService`'s deterministic
+marker NodePath, per F-146, is the most likely source) and a caller at chest-spawn time, host-only,
+before first use.
 
 ---
 

@@ -75,6 +75,45 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 8.4: Steam release export presets, `steamcmd` upload pipeline, branch guard — built against D-008's placeholder App ID, ready for 8.2/8.11 to fill in (lm)
+
+**What shipped:** three new release export presets in `export_presets.cfg` — `"macOS (Release)"`,
+`"Windows Desktop (Release)"`, `"Linux (Release)"` (`preset.3`/`.4`/`.5`) — a near-duplicate of the
+existing three debug presets, differing only by `exclude_filter="steam_appid.txt"` (D-022) and an
+`export/release/<platform>/` output path; the debug presets are byte-for-byte untouched.
+`tools/steam/export_release.sh` runs all three through `agent godot --headless --export-release`.
+`tools/steam/steam_build_config.sh` holds the four Steam identifiers (`STEAM_APP_ID`,
+`STEAM_DEPOT_WINDOWS/MACOS/LINUX`, `STEAM_BRANCH`) as the single place to edit once real ones exist.
+`tools/steam/templates/{app_build,depot_windows,depot_macos,depot_linux}.vdf.template` are steampipe
+build scripts with `@TOKEN@` placeholders; `tools/steam/steam_upload.sh` renders them into
+`tools/steam/generated/*.vdf` (gitignored) and runs `steamcmd +login <user> +run_app_build <vdf>
++quit`.
+
+**Every value is still task 8.4's own placeholder** — `STEAM_APP_ID=480` (D-008), all three depot
+IDs `0`, branch `"internal-beta"`. `steam_upload.sh` refuses to run for real while any of these are
+still placeholders, naming which of 8.2 (App ID) or 8.11 (depot IDs, per-platform launch options)
+supplies the real value. It also refuses `branch=default` (the public branch) unless
+`STEAM_ALLOW_PUBLIC=1` is explicitly set — a public Steam publish is not something a wrong CLI arg
+should be able to trigger silently. D-132 records the full 8.4/8.11 split and why the branch
+password itself has no scriptable surface (Steamworks web dashboard only).
+
+**Verified:** all three release presets export cleanly through `agent godot --headless
+--export-release`; the macOS release binary boots headless (`--quit-after 15`) with `AUTHORED_WORLD`
+reporting real content (props=2880, harvestable=1156) and 0 `ERROR:` lines. Confirmed empirically —
+not just via `exclude_filter` — that `steam_appid.txt` was never packed into either the debug or the
+release `.pck` in the first place (`all_resources` doesn't pick up a bare non-imported `.txt` at the
+project root); the new `exclude_filter` is defense in depth, not the sole fix. `steam_upload.sh`'s
+five guard clauses (placeholder App ID, placeholder depot IDs, `default` branch without override, no
+username, `steamcmd` missing) each verified to fire correctly and in order; with a fake `steamcmd`
+stub, real-looking IDs, a non-default branch and a username, the script renders all four templates
+with correct substitutions and every template's relative `ContentRoot` path resolves to the right
+`export/release/<platform>/` directory from `tools/steam/generated/`.
+
+**Not this task, and why:** real App ID/depot IDs (8.1/8.2/8.11 — `.agent/state.json` still shows
+both `todo`), macOS codesign/notarisation (8.10, needs an Apple Developer account nobody has yet),
+setting a branch's password (Steamworks dashboard only). Full spec: `docs/SPECS.md`'s `## 8.4 ·`
+block.
+
 ### 2026-08-19 — Task 7.6: Gamepad support — every core-gameplay action now has a joypad `InputMap` binding, `PlayerCamera` gained analog-stick look (the one gap that mattered), and `SettingsService`/`SettingsMenu` gained gamepad-button rebinding (lm)
 
 **What shipped:** `project.godot`'s `[input]` section gained nine new actions and one missing

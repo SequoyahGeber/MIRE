@@ -5756,6 +5756,82 @@ this exact shape in the repo.
 
 ---
 
+## 8.4 · Depots, build pipeline, `steamcmd` upload script, branches ✅ shipped — see DELEGATION
+
+No block existed here beforehand; this task wrote one per SPECS.md's own preamble. **Task 8.1
+(Steamworks account/$100 fee/real App ID) and 8.2 (App ID swap) have not run** — `.agent/state.json`
+still shows both `todo` — so there is no real App ID or Steamworks depot set to wire up yet. This
+task therefore builds the pipeline generically, against placeholders, ready for 8.2/8.11 to fill in.
+**8.11 ("three depots wired to one app, per-platform launch options") is the task that puts real IDs
+in and sets launch options in the Steamworks web dashboard — this task does not overlap it.**
+
+**Authority:** none (`ARCHITECTURE.md` §2.2) — this is offline build/release tooling, not a
+networked runtime system. Nothing here runs inside the game process.
+
+**Claim:** `export_presets.cfg` (Godot-authored, exact claim, editor closed — D-031), `.gitignore`,
+`tools/steam/steam_build_config.sh`, `tools/steam/export_release.sh`, `tools/steam/steam_upload.sh`,
+`tools/steam/templates/{app_build,depot_windows,depot_macos,depot_linux}.vdf.template`.
+
+**Release export presets:** three new presets in `export_presets.cfg` — `"macOS (Release)"`,
+`"Windows Desktop (Release)"`, `"Linux (Release)"` (`preset.3`/`.4`/`.5`) — deliberately a
+near-duplicate of the existing three debug presets rather than a flag-swap on the same preset
+object, so debug export behaviour is untouched. The one substantive diff: `exclude_filter=
+"steam_appid.txt"`, satisfying D-022's "must not ship in a release build." **Verified empirically
+that this is defense in depth, not the load-bearing fix:** exporting either a debug or a release
+preset never emits a `Storing File: res://steam_appid.txt` line in the first place — Godot's
+`all_resources` export filter does not pick up a bare non-imported `.txt` sitting at the project
+root, so the file was never packed into any `.pck`, debug or release, before this task either.
+Output lands in `export/release/<platform>/`, parallel to the existing gitignored `export/`.
+macOS codesign/notarisation stays ad-hoc/unset (same as the debug preset) — real signing is task
+8.10's job, gated on an Apple Developer account that doesn't exist yet.
+
+**Build script:** `tools/steam/export_release.sh` — `--export-release` for all three platforms,
+always through `agent godot` (F-044's shared import-cache lock).
+
+**steamcmd upload pipeline:** `tools/steam/steam_build_config.sh` is the single source of the four
+Steam identifiers (`STEAM_APP_ID`, `STEAM_DEPOT_WINDOWS/MACOS/LINUX`, `STEAM_BRANCH`) — all still
+task 8.4's placeholder values (`480`/`0`/`0`/`0`/`"internal-beta"`) until 8.2/8.11 land. `.vdf`
+templates live in `tools/steam/templates/` with `@TOKEN@` placeholders; `steam_upload.sh` renders
+them into `tools/steam/generated/*.vdf` (gitignored — a stale render is worse than no render) and
+runs `steamcmd +login <user> +run_app_build <rendered app_build.vdf> +quit`.
+
+**Branches (S4's "password-protected beta branch"):** `steamcmd`/steampipe VDFs have no field for a
+branch *password* — that's set once in the Steamworks web dashboard (App Admin → Builds → Steam
+Pipeline → Branches), not scriptable from this repo. What this task's script DOES own: which branch
+a given upload's `SetLive` targets, and refusing to ever target `"default"` (the public branch)
+unless `STEAM_ALLOW_PUBLIC=1` is explicitly set — an accidental public Steam release is a
+hard-to-reverse action worth a guard clause, not just a doc note.
+
+**Verify:** `bash -n` on all three scripts. All five of `steam_upload.sh`'s guard clauses fire, in
+order, against deliberately-wrong inputs: placeholder `STEAM_APP_ID` (480) → refuses; real App ID
+but placeholder depot IDs (0) → refuses; `branch=default` with no override → refuses; no Steam
+username → refuses; `steamcmd` missing from `PATH` → refuses with an install pointer. With a fake
+`steamcmd` stub on `PATH`, real App ID/depot IDs, a non-default branch and a username, the script
+renders all four templates with the correct substituted values (checked by `cat`), invokes the stub
+with the expected `+login <user> +run_app_build <path> +quit` argument line, and every template's
+relative `ContentRoot`/depot-file path resolves correctly from `tools/steam/generated/` back to the
+repo root and `export/release/<platform>/` (checked with `realpath`/`ls -d`). Real exports: `agent
+godot --headless --export-release` succeeded for all three platforms; the macOS release binary was
+smoke-run headless (`--quit-after 15`) and logged a fully-loaded `AUTHORED_WORLD` (props=2880,
+harvestable=1156) with 0 `ERROR:` lines, the same bar `DELEGATION.md`'s existing debug-build smoke
+test uses.
+
+**Swept for the same shape elsewhere (AGENTS.md §3):** grepped the repo for any existing
+`steamcmd`/`depot`/`.vdf` tooling before writing this — none existed (confirmed against
+`docs/DELEGATION.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, and a repo-wide `find`), so there was
+no sibling instance of this gap to fix. This task is new tooling, not a bug fix, so the sweep found
+nothing to widen.
+
+**Done means:** the three release presets export cleanly and boot with real content loaded, the
+upload script's guard clauses all verified against a fake `steamcmd`, and `docs/DELEGATION.md`'s
+*Current state* carries the placeholder values and file layout task 8.2/8.11 build against.
+
+**Explicitly NOT this task:** real App ID/depot IDs (8.2/8.11 — they don't exist yet), macOS
+codesign/notarisation (8.10), setting a branch's actual password (Steamworks web dashboard only,
+no CLI/VDF surface exists for it), per-platform Steam launch options (8.11).
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

@@ -3719,3 +3719,37 @@ observable either way, today). If GLOW's emissive material is ever actually impl
 runtime-applied, per-instance-varying effect rather than a baked asset material, this decision's
 premise for it no longer holds and it would need the same class-bucketing treatment CRYSTAL/CAMPFIRE
 already get.
+
+### D-132 · 2026-08-19 · Task 8.4 built the Steam build/upload pipeline against placeholder App ID and depot IDs, hard-refusing to run until real ones land; 8.4 owns the tooling, 8.11 owns wiring the real IDs in
+
+Task 8.1 (Steamworks account/tax/banking/$100 fee) and 8.2 (App ID swap) had not run when 8.4 started
+— `.agent/state.json` still showed both `todo` — so there was no real App ID or Steamworks depot set
+to build against. Two ways to handle that: stub the task out and hand it to Sequoyah once 8.1/8.2
+land, or build the pipeline now against named placeholders and make it refuse to run for real until
+they're replaced. Chose the second: `tools/steam/steam_build_config.sh` holds `STEAM_APP_ID=480`
+(D-008's own dev placeholder) and `STEAM_DEPOT_WINDOWS/MACOS/LINUX=0`, and `steam_upload.sh` checks
+for exactly those placeholder values before doing anything else, refusing with a message naming which
+task fills them in. This means the whole pipeline — export presets, template rendering, steamcmd
+invocation shape — is built, tested (with a fake `steamcmd` stub standing in for the real one, which
+no machine in this project has installed yet) and ready the moment 8.2/8.11 supply real values,
+instead of being 8.11's problem to build from scratch under a tighter T1 estimate.
+
+**8.4 vs 8.11 split, made explicit because the two task titles overlap ("depots" appears in both):**
+8.4 is the pipeline and tooling — release export presets, the `steamcmd` upload script, `.vdf`
+templates, the never-publish-to-`default`-without-`STEAM_ALLOW_PUBLIC=1` guard. 8.11 ("three depots
+wired to one app, per-platform launch options") is creating the real depots in the Steamworks web
+dashboard once the App ID exists, filling their IDs into `steam_build_config.sh`, and setting each
+depot's launch options in that same dashboard — neither of which can happen before 8.2, and neither
+of which this task fabricated placeholder values for beyond the guard-clause sentinels above.
+
+**The password half of "password-protected beta branch" (STEAM.md S4) has no steamcmd/VDF surface at
+all** — it's set once in the Steamworks web dashboard (App Admin → Builds → Steam Pipeline →
+Branches) and stays there; `steam_upload.sh` only controls which branch's `SetLive` a given upload
+targets, never a password. Documented in the 8.4 SPECS.md block so nobody goes looking for a VDF
+field that doesn't exist.
+
+**Would change my mind:** nothing about the placeholder mechanism itself — a real App ID landing is
+supposed to make the refusal go away by construction (fill in the config, the guard clause stops
+firing). Would reconsider the 8.4/8.11 split if 8.11 turns out to need pipeline changes beyond
+config values (e.g. a fourth depot, or a build layout steampipe can't express with this task's
+`FileMapping`/`ContentRoot` shape) — that would mean the split drew the line in the wrong place.
