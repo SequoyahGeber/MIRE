@@ -3043,11 +3043,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "world/mire/mire_grid.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
+      "agent": "bram1",
+      "at": "2026-08-19T22:45:40+00:00",
       "hash": "30d31e2fee7f3d0e616757a1eafb487716633bc42087f1e596fd9a32c7afa63d",
-      "task": "F-245",
-      "token": null
+      "task": "F-267",
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "world/mire/mire_grid_sim.gd": {
       "agent": "lm",
@@ -6815,6 +6815,15 @@
       "status": "todo",
       "tier": "F",
       "title": "cmd_claim's load-check-save on state.json has no file lock, so two lanes can both pass the conflict check and both believe they hold the same claim"
+    },
+    "F-267": {
+      "done_at": "2026-08-19T22:45:40+00:00",
+      "done_by": "bram1",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "ship sweeps a sibling's uncommitted hunks when its claimed file carries them \u2014 F-197's shape reached source files and carried a debug probe into HEAD"
     }
   },
   "version": 1

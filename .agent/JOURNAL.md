@@ -6474,3 +6474,15 @@ All seven Cycle Modifiers now have a real gameplay consumer (drought->Harvestabl
 Files: `systems/cycle/cycle_modifier_service.gd`, `systems/environment/day_night.gd`, `systems/wellspring/wellspring.gd`, `systems/loot/chest.gd`, `systems/harvesting/harvestable.gd`, `systems/enemies/enemy.gd`, `systems/waves/wave_spawner.gd`, `autoload/powerup_service.gd`, `world/mire/mire_grid.gd`, `tools/cycle_modifier_effects_check.gd`, `content/cycle_modifiers/bloom.tres`, `content/cycle_modifiers/drought.tres`, `content/cycle_modifiers/long_night.tres`, `content/cycle_modifiers/rooted.tres`, `content/cycle_modifiers/static.tres`, `content/cycle_modifiers/the_hunt.tres`, `content/cycle_modifiers/tithe.tres`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/SPECS.md`
 
 Commit at time of writing: `405f1fc`
+
+---
+
+### DONE · F-267 · bram1 · 2026-08-19T22:45:40+00:00
+
+**ship sweeps a sibling's uncommitted hunks when its claimed file carries them — F-197's shape reached source files and carried a debug probe into HEAD**
+
+Filed the ship-sweep recurrence for design; stripped the swept DEBUG_PROBE from mire_grid.gd in this task's own commit, RUN_RESTART_CHECK failures=0 after the strip. D-157 recorded through the new allocator — its first successful output after its claim-guard correctly refused while the file was held.
+
+Files: `world/mire/mire_grid.gd`
+
+Commit at time of writing: `6d7e756`
