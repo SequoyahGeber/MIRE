@@ -101,9 +101,18 @@ DEFAULT_LANES = {
     # no longer route, verify, or close anything out until the window rolls.
     "LM": {
         "account": "Claude Max 5x (shared with the director)", "cli": "claude",
-        "home": "~/.mire/lanes/claude-max", "model": "sonnet", "effort": "medium",
+        # Opus at high effort, not Sonnet at medium: this lane's weekly is the real budget and it
+        # expires unspent at the reset, so the question is never "can we afford it" but "what is the
+        # most capable thing we can spend it on before it evaporates". The five-hour windows kept
+        # rolling over only part-used while the weekly drained underneath — the classic misread.
+        "home": "~/.mire/lanes/claude-max", "model": "opus", "effort": "high",
         "areas": ["core/", "autoload/", "systems/", "entities/"], "tier": "T2",
         "role": "code", "permissions": "bypass", "reserve_pct": 90,
+        # Every completed task is automatically re-queued as a review-and-fix pass (D-150). Today's
+        # 26 reviews found 8 real defects that green checks missed — a ~30% hit rate on work that had
+        # already passed its own tests — but each finding then cost a separate dispatch to repair.
+        # A reviewer that may edit closes the loop in one pass instead of three.
+        "second_pass": True,
     },
     "LP": {
         "account": "Claude Pro", "cli": "claude",

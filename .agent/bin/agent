@@ -295,6 +295,63 @@ def whoami(required=True, assign=True):
     return None
 
 
+DIRECTOR_FILE = os.path.join(AGENT_DIR, "director")
+
+
+def _director():
+    """The agent name currently holding the orchestrator role, or '' if nobody has claimed it."""
+    try:
+        with open(DIRECTOR_FILE) as f:
+            return f.read().strip()
+    except IOError:
+        return ""
+
+
+def require_director(verb):
+    """Refuse lane routing to anyone but the one orchestrator (D-145).
+
+    Every session on this repo can reach `.agent/bin/agent`, so any of them *could* write orders and
+    dispatch the paid lanes. Six did, across one session — the work was legitimate every time, but
+    the director's model of "what will this lane do next" stopped being true, and it cost a duplicate
+    dispatch and a near-collision with a peer already working the same finding.
+
+    Routing is one seat. A peer session that spots work worth doing files a finding; the director
+    picks it up from there. That is the whole interface — and it is the same reason `agent claim`
+    exists for files: shared write access to a coordination surface makes every read of it a guess."""
+    held = _director()
+    me = whoami(required=False, assign=False) or "?"
+    if not held or held == me:
+        return
+    die("%s is the director; only they route lane work.\n"
+        "  You ran: agent %s\n"
+        "  If you have found work worth doing, file it instead:  agent finding \"...\"\n"
+        "  Taking over deliberately:  agent director --take" % (held, verb))
+
+
+def cmd_director(args):
+    """Show, claim, or clear the orchestrator seat."""
+    me = whoami(required=False, assign=False) or "?"
+    if "--clear" in args:
+        try:
+            os.remove(DIRECTOR_FILE)
+        except OSError:
+            pass
+        ok("director seat cleared — any session may route again")
+        return 0
+    if "--take" in args:
+        os.makedirs(AGENT_DIR, exist_ok=True)
+        with open(DIRECTOR_FILE, "w") as f:
+            f.write(me + "\n")
+        ok("%s is now the director — lane routing is yours alone" % me)
+        return 0
+    held = _director()
+    if not held:
+        print("no director set — any session can route. Claim it with:  agent director --take")
+    else:
+        print("director: %s%s" % (held, "  (you)" if held == me else "  (not you)"))
+    return 0
+
+
 def whoami_token():
     """This chat's session token, or None for a lane (MIRE_AGENT) or a shell with no session id.
 
@@ -2180,13 +2237,26 @@ If you run out of quota or hit a wall, stop cleanly instead of thrashing:
 """
 
 
+REVIEW_ONLY_MODE = """**You are not here to implement.** Do not edit source. Read the change, judge it against its spec,
+and report. The one exception is `docs/FINDINGS.md`, where your findings belong."""
+
+REVIEW_FIX_MODE = """**This is a second pass: review it, then fix what you find.** Read the change, judge it against its
+spec, and repair the defects you can — under a proper claim, verified by a real check, closed out
+like any other task. This exists because reviewing and fixing were separate dispatches: 26 reviews
+found 8 real defects that green checks had missed, and every one then waited for its own order,
+brief, claim and verify cycle. You already have the context those second dispatches had to rebuild.
+
+Two things this does **not** license. Do not rewrite work that is merely not how you would have done
+it — the bar is a defect you can name and prove, not a preference. And if a fix is larger than the
+change under review, file it instead and say why; a second pass that turns into a rewrite has stopped
+being a review."""
+
 REVIEW_TEMPLATE = """<!-- lane:%(lane)s model:%(model)s effort:%(effort)s review:%(tid)s files: -->
 # Review order — %(tid)s  ·  lane %(lane)s  (%(account)s)
 
 You are **%(lane)s**, reviewing work another lane implemented. Your agent name is `%(agent)s`.
 
-**You are not here to implement.** Do not edit source. Read the change, judge it against its spec,
-and report. The one exception is `docs/FINDINGS.md`, where your findings belong.
+%(fixmode)s
 
 ## What to review
 
@@ -2242,6 +2312,7 @@ def cmd_order(args):
 
     The order is generated, not hand-written. Hand-written prompts are what made Sequoyah the
     courier; anything a lane needs that isn't in here is a bug in the docs, not a missing prompt."""
+    require_director("order")
     if not args:
         die('usage: agent order <task-id> [--lane LC1] [--files a.gd b.gd] [--verify "cmd"]')
     st = load()
@@ -2262,6 +2333,7 @@ def cmd_order(args):
     if "--effort" in args:
         effort = args[args.index("--effort") + 1]
     review = "--review" in args
+    fix = "--fix" in args
     sha = args[args.index("--sha") + 1] if "--sha" in args else "HEAD"
     if "--files" in args:
         rest = args[args.index("--files") + 1:]
@@ -2387,12 +2459,15 @@ def cmd_order(args):
         st_reg = load()
         if rid not in st_reg["tasks"]:
             st_reg["tasks"][rid] = {
-                "title": "Review %s @ %s — judge the commit, file findings, no edits" % (tid, sha),
+                "title": "Review %s @ %s — %s" % (
+                    tid, sha,
+                    "review and fix what you find" if fix else "judge the commit, file findings, no edits"),
                 "tier": "T1", "est": "0.5", "status": "todo",
                 "milestone": t.get("milestone", ""), "review_of": tid,
             }
             save(st_reg)
         body = REVIEW_TEMPLATE % {
+            "fixmode": REVIEW_FIX_MODE if fix else REVIEW_ONLY_MODE,
             "lane": lane, "account": account, "agent": lane.lower(), "tid": tid, "sha": sha,
             "model": model or lanes.get(lane, {}).get("model", "default"), "effort": effort,
             "verify": verify, "brief": _plain(cmd_brief, [tid]).strip(),
@@ -2437,6 +2512,7 @@ def cmd_order(args):
 
 def cmd_dispatch(args):
     """Hand a lane its order and run it headlessly."""
+    require_director("dispatch")
     if not args:
         die("usage: agent dispatch <LANE> [task-id] [--dry-run]")
     lane = args[0].upper()
@@ -2471,6 +2547,7 @@ def cmd_saturate(args):
     It stops on a hard wall (the lane parks itself and the remaining orders stay queued for the next
     window) and on a task that fails for any other reason, because chaining more work onto a broken
     lane just multiplies the mess."""
+    require_director("saturate")
     if not args:
         die("usage: agent saturate <LANE> [task-id ...]\n"
             "  with no ids, runs every open order assigned to that lane")
@@ -2549,6 +2626,36 @@ def _wait_for_new_orders(lane, seen, grace=EMPTY_QUEUE_GRACE_SECONDS):
     return []
 
 
+def _queue_second_pass(lane, tid, queue, seen):
+    """After a task lands on a second-pass lane, queue a review-and-fix of the commit it just made.
+
+    D-150. Today's evidence: 26 independent reviews found 8 real defects that the implementing lane's
+    own green checks had missed — roughly a third of the reviews. But every one of those findings
+    then needed its own order, brief, claim and verify cycle to repair, rebuilding context the
+    reviewer already had. Chaining the pass onto completion closes that loop without a director in it.
+
+    Guards, because a self-feeding queue is the obvious way to make an infinite one: a review is
+    never itself reviewed, a task is reviewed once per chain, and nothing is queued if the task
+    produced no commit to look at."""
+    lane_cfg = _lane_state().get(lane, {})
+    if not lane_cfg.get("second_pass"):
+        return
+    if tid.endswith("-review") or "%s-review" % tid in seen:
+        return
+    sha = _head()
+    if not sha or sha == "?":
+        return
+    argv = [sys.executable, __file__, "order", tid, "--lane", lane, "--review", "--fix",
+            "--sha", sha]
+    if subprocess.call(argv, cwd=ROOT, stdout=subprocess.DEVNULL) != 0:
+        return
+    rid = "%s-review" % tid
+    if rid not in queue and rid not in seen:
+        queue.append(rid)
+        print("  %s· second pass queued: %s will be reviewed and fixed at %s%s"
+              % (C["dim"], tid, sha[:8], C["x"]))
+
+
 def _saturate_locked(lane, wanted, watch, drain=False):
     """Run the lane's queue to the end. Two things this has to get right, both learned expensively.
 
@@ -2590,6 +2697,7 @@ def _saturate_locked(lane, wanted, watch, drain=False):
                 break
             if code == 0:
                 done_ok.append(tid)
+                _queue_second_pass(lane, tid, queue, seen)
             else:
                 stopped = tid
                 break
@@ -3649,7 +3757,7 @@ COMMANDS = {
     # Orchestration (D-036)
     "order": cmd_order, "dispatch": cmd_dispatch, "lanes": cmd_lanes,
     "collect": cmd_collect, "report": cmd_report, "reap": cmd_reap, "godot": cmd_godot,
-    "saturate": cmd_saturate, "finding": cmd_finding,
+    "saturate": cmd_saturate, "finding": cmd_finding, "director": cmd_director,
     "baseline": cmd_baseline,
     "autoload": cmd_autoload,
     "editor-running": cmd_editor_running,
