@@ -2895,3 +2895,49 @@ placeholder-tuned, the same unplaytested status as every other Mire constant in 
 a playtest showing the island reads as "consumed" while large playable pockets remain, or the
 opposite — players reaching the DESIGN-intended "soft wall" (Cycle 8–12) well before the fraction
 trips.
+
+---
+
+### D-110 · 2026-08-19 · Task 6.10: `MainMenu` never auto-opens and never binds Esc; settings ships as a shell, not 7.5's content
+
+Three calls, made together because each is a "decide it, write down why" call under AGENTS.md, for
+the "main menu shell, settings, and seed entry" the lobby-UI slice (D-030) left open.
+
+**Why `MainMenu` (F1, not Esc) never auto-opens at boot.** The obvious reading of "main menu" is a
+title screen the game boots INTO, gating play behind it. Two things rule that out here. First,
+`entities/player/player_controller.gd`'s `ui_cancel` handler already has a one-line comment
+reserving Esc for exactly this: "Temporary mouse release. Replaced by the pause menu in M7." Binding
+Esc to a menu now — even a different one — relitigates a reservation four milestones early, for a
+key the pause menu will want back. Second, and more load-bearing: `run/main_scene` boots straight
+into `levels/hollowmere.tscn`, and this project's whole verification method (D-023) leans on
+two-process checks and `--quit-after N` full-boot smoke runs that expect to act on a live world
+immediately — every panel already shipped (`LobbyMenu`/`InventoryUI`/`CraftingUI`/`DebugConsole`)
+opens on an explicit keypress and NONE auto-open, for exactly this reason. An auto-shown blocking
+overlay at boot would be the first panel to break that invariant, silently, for every lane's checks,
+not just this task's own. **Would change my mind:** a real "gate world-gen behind a start screen"
+task, scoped and reviewed on its own, that explicitly updates the two-process/full-boot check
+convention to dismiss the gate first — not a decision this task should make as a side effect of
+"main menu" sounding like a title screen.
+
+**Why seed entry stages through `GameState`, not a new field on `MainMenu` itself.** `GameState`
+already owns `run_seed` and already decides when a fresh one is drawn (`host_generate_seed`,
+`ensure_seed` — task 4.6, D-089). Adding `set_pending_seed()`/`has_pending_seed()`/`pending_seed()` to
+that same file keeps exactly one place deciding what a session's seed is, with the UI only ever
+staging a request. F-172 records the one gap this leaves: solo/offline play draws its seed
+(`MireGrid._ready()` → `GameState.ensure_seed()`) before the player can ever open the menu that
+would stage one, so seed entry today only reaches the HOST path, not solo play. **Would change my
+mind:** if solo seed entry becomes a real ask — see F-172's own note on what actually closes that
+(a boot-gate task, not a `MainMenu` change).
+
+**Why `ui/menu/settings_menu.gd` ships as an empty shell instead of real graphics/audio/sensitivity
+controls.** `autoload/graphics_quality.gd`'s own header comment already reserves "Task 7.5's settings
+menu gets three buttons now," and `docs/SPECS.md`'s M7 look-ahead names task 7.5 as the one that
+ships `user://settings.cfg` persistence and a `SettingsService` autoload for
+graphics/audio/sensitivity/keybinds/FOV/accessibility — `docs/ROADMAP.md`'s own 6.10/7.5 split says
+the same thing ("T0 shell + T1 wiring" for 6.10, the full knob list for 7.5). Building any of that
+content here would be 6.10 designing 6.10's own content ahead of 7.5's own task, the exact trap D-089
+named for `game_state.gd` (task 6.1 vs 4.6) and D-109 named again for `defeat_service.gd` (task 6.7
+vs an old look-ahead line). `SettingsMenu` ships only the D-032 exclusivity, open/close and visual
+frame; 7.5 adds rows to its `stack` node and nothing else about this file needs to change. **Would
+change my mind:** nothing short of 7.5 itself — this is a scheduling call the roadmap already made,
+not a technical constraint this task discovered.

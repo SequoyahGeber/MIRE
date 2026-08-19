@@ -75,6 +75,62 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 6.10: Main menu shell, settings shell, seed entry ship — the lobby-UI slice's own handoff closed out (lm)
+
+**What shipped, verified:** `ui/menu/main_menu.gd` (new autoload `MainMenu`, F1 to open, CanvasLayer
+layer 57) and `ui/menu/settings_menu.gd` (new autoload `SettingsMenu`, layer 58, opened only from
+`MainMenu`) — both registered in `project.godot`. `core/game_state.gd` gained a UI-facing seed
+override. D-110 records the three scope calls (no auto-open/no Esc binding, seed stages through
+`GameState` not a new field, settings ships as a shell not 7.5's content); F-172 records the one gap
+left open (solo play draws its seed before any menu can stage one).
+
+**`MainMenu` API — client-local, no authority of its own:**
+
+```gdscript
+MainMenu.set_open(open: bool) -> void         # refuses to open while another blocks_gameplay_input
+                                                # node holds the group (D-032)
+MainMenu.is_open() -> bool
+MainMenu.request_set_seed() -> void            # stages _seed_field's text via GameState.set_pending_seed
+MainMenu.request_random_seed() -> void         # clears a staged override
+MainMenu.request_open_multiplayer() -> void    # closes MainMenu, opens LobbyMenu
+MainMenu.request_open_settings() -> void       # closes MainMenu, opens SettingsMenu
+MainMenu.seed_field_text() / set_seed_field_text(text: String)
+MainMenu.status_text() -> String
+```
+
+**`SettingsMenu` API — the shell 7.5 builds its controls into:**
+
+```gdscript
+SettingsMenu.set_open(open: bool) -> void      # same D-032 exclusivity as every other panel
+SettingsMenu.is_open() -> bool
+```
+
+7.5 adds its rows as children of the `VBoxContainer` named `SettingsStack` inside
+`ui/menu/settings_menu.gd`'s `_build_ui()` — everything else in that file (shading, centering,
+panel style, open/close, the blocking group) stays as-is.
+
+**`GameState` seed-staging addition (4.6's `run_seed`/`host_generate_seed`/`ensure_seed`/
+`set_replicated_seed`/`is_seed_ready` are all unchanged):**
+
+```gdscript
+GameState.set_pending_seed(value: int) -> void   # 0 clears; anything else stages it
+GameState.has_pending_seed() -> bool
+GameState.pending_seed() -> int
+# host_generate_seed() now checks the staged value FIRST, consuming it once, before falling back
+# to real entropy exactly as before. ensure_seed() and set_replicated_seed() are untouched.
+```
+
+A staged seed only ever affects the process that staged it, and only that process's own next
+`host_generate_seed()`/`ensure_seed()` draw — it is never sent over the wire on its own (4.6's
+existing `WorldDeltaLog` snapshot is still what gets a DRAWN seed to a joining peer).
+
+**Verified:** `agent godot --script tools/main_menu_check.gd` — 29 assertions, 0 failures. No
+regressions: `lobby_menu_check` (F-170 records 5 pre-existing failures on a machine with a real Steam
+client running, reproduced on a clean `agent baseline` checkout, unrelated to this task),
+`seed_sync_check`, `mire_grid_check`, `resource_scatter_check`, `defeat_check`, `handshake_check`,
+`net_check_pattern_check`, `inventory_ui_check` all `failures=0` (`crafting_ui_check`'s 19 failures
+are also pre-existing per F-171, unrelated). `agent godot --quit-after 15`: 0 `ERROR:` lines.
+
 ### 2026-08-19 — Task 6.7: Lose condition — team wipe / island consumed, defeat flow (lm)
 
 New `autoload/defeat_service.gd` (registered) + `ui/hud/defeat_hud.gd` (registered, after

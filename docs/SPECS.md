@@ -2156,14 +2156,89 @@ boot, and `docs/DELEGATION.md`'s Current state carrying `DefeatService.is_defeat
 
 ---
 
+## 6.10 · Main menu, lobby UI, settings, seed entry
+
+The old look-ahead bullet below this heading covered only the lobby-UI half, shipped ahead of the
+rest under D-030 (`ui/lobby/lobby_menu.gd`, press M — host/join/invite/leave over the already-proven
+`SteamLobby` seams). This block is the full spec for what that slice's own handoff left open: "the
+main menu shell, settings, and seed entry feeding 4.6." No block existed here beforehand; SPECS.md's
+own preamble makes writing one part of the task that discovers the gap.
+
+**Authority:** client-local UI, `ARCHITECTURE.md` §2.2's free last row — same row `LobbyMenu` already
+declared. Seed entry stages a value through `GameState.set_pending_seed()`, which is itself
+host-only-consumed (only `GameState.host_generate_seed()`/`ensure_seed()` ever read it, and only on
+the process that called them) — typing a seed grants a client no new power.
+
+**Claim:** `core/game_state.gd`, `ui/menu/main_menu.gd` (new), `ui/menu/settings_menu.gd` (new),
+`tools/main_menu_check.gd` (new). `project.godot` — two `agent autoload` registrations,
+`SettingsMenu` then `MainMenu` (load order doesn't actually matter here — both call the panels they
+open by node path at request time, not at `_ready` — but this keeps registration order reading the
+same way the panels nest).
+
+**Main menu shell.** `ui/menu/main_menu.gd` (new autoload `MainMenu`, code-built `CanvasLayer`,
+layer 57 — same construction pattern as `LobbyMenu`: a `Control` root, a shading `ColorRect`, a
+`CenterContainer`'d panel). Toggled with **F1** (raw keycode, LobbyMenu's-M/DebugConsole's-backtick
+convention), closed with Esc, consumed in `_input` before it reaches anything else. Esc was
+deliberately NOT used to open it: `entities/player/player_controller.gd`'s own comment on its
+`ui_cancel` handler already reserves that role — "Replaced by the pause menu in M7" — and a menu that
+also auto-opens on `ui_cancel` now would be relitigating that reservation four milestones early. Joins
+`blocks_gameplay_input` while open and refuses to stack on another cursor UI (D-032); opening the
+lobby or settings panel from here calls `set_open(false)` on itself FIRST, then the target panel's
+`set_open(true)` — a hand-off, never a stack, the same shape D-032's own note asks of "a future build
+menu, ward panel or map."
+
+**Deliberately does not auto-open at boot.** `world/mire/mire_grid.gd` already draws the run seed
+inside its own `_ready()` (`GameState.ensure_seed()`) the instant the main scene loads, so there is no
+"before the game starts" moment left to gate for solo play — see F-172 for the follow-up this leaves
+open. Auto-opening was also rejected on its own merits: every panel already in this game
+(`LobbyMenu`/`InventoryUI`/`CraftingUI`/`DebugConsole`/…) opens on a keypress, never automatically,
+and this project's verification method leans hard on two-process checks and full-boot smoke runs that
+expect to act on the world immediately (D-023) — an auto-shown blocking overlay is exactly the kind of
+change that breaks those silently, for every lane, not just this task's own checks.
+
+**Seed entry.** A `LineEdit` + SET button on `MainMenu`. Pure-integer text is staged as-is; anything
+else is hashed with `String.hash()` (a fixed algorithm — same result for the same string on every
+platform) so a seed can be shared as a memorable word the same way a numeric one gets shared. Empty
+text clears a staged override. `core/game_state.gd` gains `set_pending_seed(value)` /
+`has_pending_seed()` / `pending_seed()`; `host_generate_seed()` now checks the pending value first and
+consumes it once (falling back to real entropy exactly as before when nothing is staged) — `reset()`
+is untouched, so a pending seed survives a failed connect attempt for the retry to use. This is the
+"seed entry feeding 4.6" the 6.10 look-ahead bullet named: 4.6 (`core/game_state.gd`,
+`WorldDeltaLog`) already owns how a drawn seed reaches every peer; this task only changes WHICH value
+gets drawn, never who's authoritative for it or how it travels.
+
+**Settings — shell only, not content.** `ui/menu/settings_menu.gd` (new autoload `SettingsMenu`,
+same construction pattern, layer 58): the D-032 exclusivity, open/close, and visual frame every future
+control needs, with a placeholder label and a `stack` node future rows attach to. Holds no real
+settings on purpose — `autoload/graphics_quality.gd`'s own header comment already reserves "Task
+7.5's settings menu gets three buttons now," and `docs/SPECS.md`'s own M7 look-ahead names task 7.5 as
+the one that ships `user://settings.cfg` persistence and a `SettingsService` autoload for
+graphics/audio/sensitivity/keybinds/FOV/accessibility. Building any of that here would be 6.10
+designing 6.10's own content ahead of 7.5's own task — the same trap D-089 named for `game_state.gd`
+and D-109 named again for `defeat_service.gd`. Opened only from `MainMenu`; no keybind of its own yet,
+since nothing inside it needs one.
+
+Verify: `tools/main_menu_check.gd` (29 assertions) — both panels exist, open/close, own the cursor and
+the blocking group while open; numeric seed text is staged verbatim, non-numeric text hashes
+deterministically (the same word twice stages the same value), empty text clears a staged seed, and a
+staged seed provably wins `host_generate_seed()`'s very next draw and is then consumed (not reused);
+opening MULTIPLAYER or SETTINGS from `MainMenu` closes it first and opens the target; none of
+`MainMenu`/`SettingsMenu`/`LobbyMenu` will open while either of the other two holds the blocking
+group. No regressions: `lobby_menu_check` (see F-170 — 5 pre-existing failures on a machine with a
+real Steam client running, reproduced on a clean `agent baseline` checkout, unrelated to this task),
+`seed_sync_check`, `mire_grid_check`, `resource_scatter_check`, `defeat_check`, `handshake_check`,
+`net_check_pattern_check`, `inventory_ui_check` all `failures=0`. `agent godot --quit-after 15` shows
+0 `ERROR:` lines.
+Done means: `main_menu_check.gd` at `failures=0`, the regression set green, 0 `ERROR:` on a full boot,
+and `docs/DELEGATION.md`'s Current state carrying the `MainMenu`/`SettingsMenu`/`GameState` API
+surface for 1.12's evidence run and task 7.5 to build against.
+
+---
+
 - **6.3 Author 20–30 modifiers (T0).**
 - **6.8 Run summary (T0):** headline Cycle number; stats GameState already accumulated.
 - **6.9 Unlock tree (T1):** Salvage spends into **variety only, never power** (D-009/DESIGN §4.6 —
   refuse any stat unlock in review); data-driven nodes, local persistence beside 6.6's file.
-- **6.10 Main menu + lobby UI (T0 shell + T1 wiring):** `SteamLobby.host_session()`,
-  `join_by_id()`, `open_invite_overlay()` already exist and are proven — this is UI over live seams,
-  plus seed entry feeding 4.6. **Unblocks the deferred 1.12 evidence run (D-030) — schedule it
-  immediately after.**
 - **6.11 Long playtests (T0):** Q3 (the wall), Q6 (does anyone extract), Q7 (deep-modifier
   fairness). Protocol per 2.14; multiple evenings.
 

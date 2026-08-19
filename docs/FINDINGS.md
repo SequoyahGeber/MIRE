@@ -1045,6 +1045,73 @@ would (see that check's own "net_run_defeated" section).
 
 ---
 
+### F-170 · `tools/lobby_menu_check.gd` fails (5/24) whenever the dev machine's own Steam client is actually running
+
+**Area:** tooling/checks · **Severity:** low · **Found:** 2026-08-19 by lm during 6.10
+
+The check's "Steam-less machine" branch (join/host/copy all refused, status naming Steam as the
+reason) assumes `SteamLobby` cannot reach a real Steam client. On a machine where Steam.app is
+actually running and logged in, `SteamAPI_Init()` succeeds, so `request_join`/`request_host` attempt
+a REAL join/host instead of failing fast — the five assertions that expect a Steam-unavailable status
+line fail because the status line says something else (a real, in-flight join attempt) instead.
+Reproduced on a clean `agent baseline` checkout of HEAD (`5a09b1c`), so it is not caused by any
+change in this task or a regression to chase — it is a standing gap between the check's assumption
+and this dev machine's actual state.
+
+**What closes this:** either mock/stub `SteamAPI_Init()` away for this check specifically (the check
+already accepts that "the happy path... needs a live Steam client and is 1.12's run"; the SAD paths
+it asserts should not depend on Steam's absence either), or have the check skip its Steam-unavailable
+assertions when `SteamLobby` reports Steam as actually available, printing which branch it took so a
+run against either machine state still means something.
+
+---
+
+### F-171 · `tools/crafting_ui_check.gd` fails 19/22 independent of task 6.10 — reproduced on a clean HEAD checkout
+
+**Area:** crafting/UI · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.10 (regression sweep)
+
+Ran as part of 6.10's regression sweep (nothing in 6.10 touches crafting). `CRAFTING_UI_CHECK
+confirmations=3 failures=19` against the working tree; `agent baseline --script
+tools/crafting_ui_check.gd` reproduces the identical `failures=19` against a clean checkout of
+`5a09b1c`, so this predates 6.10 and is not something this task caused. First failing assertion is
+"furnace craft grants one iron ingot" (`tools/crafting_ui_check.gd:161`), which points at either the
+crafting UI's confirm path or `CraftingService`/`furnace` content itself rather than at the check's
+own scaffolding — worth a look before trusting crafting UI checks green elsewhere.
+
+**What closes this:** whoever next touches `ui/crafting/crafting_ui.gd` or `systems/crafting/*`
+should run `tools/crafting_ui_check.gd` first (not just after their change) to see which of the 19
+are pre-existing versus newly caused, then chase the furnace-craft failure specifically as the
+likely root rather than treating all 19 as independent.
+
+---
+
+### F-172 · Seed entry (task 6.10) only reaches the host-session path — solo/offline play draws its seed before any menu can be opened
+
+**Area:** UI/worldgen · **Severity:** low · **Found:** 2026-08-19 by lm during 6.10
+
+`ui/menu/main_menu.gd`'s seed field stages a value via `GameState.set_pending_seed()`, consumed by
+`GameState.host_generate_seed()` the next time `NetTransport.server_started` fires — i.e. the moment
+`LobbyMenu`'s HOST button succeeds. Solo/offline play never reaches that path: `run/main_scene` boots
+straight into `levels/hollowmere.tscn`, and `world/mire/mire_grid.gd`'s own `_ready()` calls
+`GameState.ensure_seed()` immediately, which draws (or would consume a pending value for) the seed
+before the player has had a single frame in which to open `MainMenu` and type one. In practice a solo
+player can stage a seed and watch the status line update, but it will sit unused — nothing hosts,
+so `host_generate_seed()` never fires, and `ensure_seed()` already ran before the field existed to be
+read from.
+
+**Why not fixed here:** closing this properly means gating world-gen's first `ensure_seed()` call
+behind an explicit "start" decision — i.e. an actual boot-time main menu that the game does not enter
+gameplay past until dismissed. That is a materially bigger, riskier change (touches `run/main_scene`
+or `world/mire/mire_grid.gd`'s boot ordering) than the CanvasLayer-overlay shell 6.10 shipped, and
+was explicitly rejected for this task on blast-radius grounds — see `docs/DECISIONS.md`'s 6.10 entry.
+
+**What closes this:** whichever future task actually gates the boot flow behind a start screen (not
+scheduled anywhere on `docs/ROADMAP.md` today) should route solo seed entry through that gate; until
+then, `ensure_seed()` staying eager is the safer default, and solo players wanting a specific seed
+have no way to set one.
+
+---
+
 ## Resolved
 
 ### F-160 · A transient API error kills a saturate chain, and nothing restarts it — the lane sits idle until a human notices — **fixed**
