@@ -25,12 +25,17 @@ extends CanvasLayer
 ## task's claim does not include `defeat_hud.gd` — the small formatting duplication is deliberate,
 ## not missed; a future task touching both files can still lift it into
 ## `ui/hud/run_summary_format.gd`.
+##
+## F-243: same un-terminal button `ui/hud/defeat_hud.gd` grew — see that file's own F-243 note for
+## why only the local HOST peer's press does anything.
 
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
 const SHIP_GROUP: StringName = &"extraction_ship"
 const CYCLE_MODIFIER_SERVICE_PATH := ^"/root/CycleModifierService"
 const POLL_SEC: float = 0.15
+const RESTART_LABEL: String = "Start Next Run"
+const WAITING_LABEL: String = "Waiting on the host to start the next run…"
 
 const COLOUR_PANEL := Color(0.055, 0.086, 0.070, 0.92)
 const COLOUR_BORDER := Color(0.345, 0.475, 0.390, 1.0)
@@ -61,11 +66,14 @@ var _summary_headline: Label
 var _summary_subtitle: Label
 var _summary_modifiers_label: Label
 var _summary_detail: Label
+var _restart_button: Button
 var _summary_shown: bool = false
 ## Tracked independently of `_summary_shown`, mirroring `DefeatHud._salvage_known` (F-235) — this
 ## screen's own `run_extracted`/`salvage_banked` pair has the same "either can legitimately land
 ## first" shape depending on autoload order, so neither guard may assume the other already ran.
 var _salvage_known: bool = false
+## F-243: same capture `DefeatHud` grew — this screen never needed one before, since it never closed.
+var _restore_mouse_captured: bool = false
 
 
 func _ready() -> void:
@@ -73,11 +81,13 @@ func _ready() -> void:
 	set_process(true)
 	EVENT_BUS.subscribe_run_extracted(_on_run_extracted)
 	EVENT_BUS.subscribe_salvage_banked(_on_salvage_banked)
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 
 
 func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_run_extracted(_on_run_extracted)
 	EVENT_BUS.unsubscribe_salvage_banked(_on_salvage_banked)
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
 
 
 func _process(delta: float) -> void:
@@ -105,10 +115,11 @@ func _input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 
-## Terminal, like `DefeatHud`'s own screen and `ExtractionShip.departed` — once shown, never hides
-## again this session. Joins `blocks_gameplay_input` (D-032) the moment it shows, so
-## `player_controller.gd`'s `gameplay_input_allowed()` stops local movement/interact without pausing
-## the tree (a paused multiplayer client stalls networking — see that function's own note).
+## Terminal for the run it ends, like `DefeatHud`'s own screen and `ExtractionShip.departed` — once
+## shown, stays up until the run itself resets. Joins `blocks_gameplay_input` (D-032) the moment it
+## shows, so `player_controller.gd`'s `gameplay_input_allowed()` stops local movement/interact
+## without pausing the tree (a paused multiplayer client stalls networking — see that function's own
+## note). F-243's un-terminal path is `_on_run_restarted()` just below.
 func _on_run_extracted(cycle: int, _world_position: Vector3) -> void:
 	if _summary_shown:
 		return
@@ -118,10 +129,47 @@ func _on_run_extracted(cycle: int, _world_position: Vector3) -> void:
 	_summary_modifiers_label.text = _modifiers_drawn_summary()
 	if not _salvage_known:
 		_summary_detail.text = "Tallying Salvage…"
+	_refresh_restart_button()
 	_panel.visible = false
 	_summary_overlay.visible = true
 	add_to_group(BLOCKING_UI_GROUP)
+	_restore_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+## F-243: every peer's own `EVENT_BUS.run_restarted` (see `CycleService`'s own F-243 note for the
+## host-emits/client-re-derives split) hides this screen and clears the one-shot guards so a SECOND
+## extraction this session shows fresh numbers instead of no-op-ping on `_summary_shown` still true.
+func _on_run_restarted() -> void:
+	if not _summary_shown:
+		return
+	_summary_shown = false
+	_salvage_known = false
+	_summary_overlay.visible = false
+	remove_from_group(BLOCKING_UI_GROUP)
+	if _restore_mouse_captured:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _refresh_restart_button() -> void:
+	var is_local_host: bool = _is_host_or_solo()
+	_restart_button.text = RESTART_LABEL if is_local_host else WAITING_LABEL
+	_restart_button.disabled = not is_local_host
+
+
+func _is_host_or_solo() -> bool:
+	var transport: Node = get_node_or_null(^"/root/NetTransport")
+	if transport == null:
+		return true
+	if bool(transport.call("is_host")):
+		return true
+	return not bool(transport.call("is_active")) and not bool(transport.call("is_connecting"))
+
+
+func _on_restart_pressed() -> void:
+	var cycle_service: Node = get_node_or_null(^"/root/CycleService")
+	if cycle_service != null:
+		cycle_service.call("host_restart_run")
 
 
 ## Only the extraction half of this signal is ours — `extracted == false` is `DefeatHud`'s own death
@@ -328,3 +376,10 @@ func _build_summary_ui() -> void:
 	_summary_detail.add_theme_font_size_override("font_size", 18)
 	_summary_detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(_summary_detail)
+
+	_restart_button = Button.new()
+	_restart_button.text = RESTART_LABEL
+	_restart_button.custom_minimum_size = Vector2(240.0, 44.0)
+	_restart_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_restart_button.pressed.connect(_on_restart_pressed)
+	column.add_child(_restart_button)

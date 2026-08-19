@@ -75,7 +75,16 @@ func _ready() -> void:
 	transport.get("server_started").connect(_reset)
 	transport.get("connected_to_host").connect(_reset)
 	transport.get("disconnected").connect(_reset)
+	# F-243: same reset, off the same run-lifecycle moment a real session boundary already uses it
+	# for — a restart is a new run without a new NetTransport session, and `_reset()`'s own no-op
+	# guard (`if defeated == value: return`, inside the setter) makes calling it unconditionally on
+	# every peer, host or client, safe even when nothing was actually defeated.
+	EVENT_BUS.subscribe_run_restarted(_reset)
 	_register_commands()
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_restarted(_reset)
 
 
 func _physics_process(delta: float) -> void:

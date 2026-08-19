@@ -199,6 +199,7 @@ func _ready() -> void:
 	_reset_local_cache()
 	EVENT_BUS.subscribe_enemy_attack_landed(_on_enemy_attack_landed)
 	EVENT_BUS.subscribe_run_wiped(_on_run_wiped)
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 	_connect_player_net()
 
 	var transport: Node = _transport()
@@ -230,6 +231,7 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_enemy_attack_landed(_on_enemy_attack_landed)
 	EVENT_BUS.unsubscribe_run_wiped(_on_run_wiped)
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
 
 
 # ── Physics tick (host-owned bleed-out / respawn timers) ─────────────────────────────────────────
@@ -806,11 +808,36 @@ func _on_session_opened() -> void:
 	_host_stamina_reports.clear()
 	_run_over = false
 	_reset_local_cache()
-	if not bool(_transport().call("is_host")):
-		return
-	for peer_id: int in _transport().call("peer_ids"):
-		_ensure_host_state(peer_id)
-		_publish_snapshot(peer_id)
+	if bool(_transport().call("is_active")):
+		if not bool(_transport().call("is_host")):
+			return
+		for peer_id: int in _transport().call("peer_ids"):
+			_ensure_host_state(peer_id)
+			_publish_snapshot(peer_id)
+	else:
+		# Mirrors `_ready()`'s own offline branch (`peer_ids()` is empty offline, so the loop above
+		# would silently skip the local peer) — F-243's restart needed to reach this path a second
+		# time, which is what surfaced this gap; `_ready()` only ever hit it once, at boot.
+		_ensure_host_state(NetConfig.HOST_PEER_ID)
+		_publish_snapshot(NetConfig.HOST_PEER_ID)
+
+
+## F-243: same trick InventoryService's own sibling method uses — toggle `_session_open` off so
+## `_on_session_opened()`'s guard lets it re-run, reviving every present peer to a fresh
+## `_ensure_host_state()` (full health, no downed/dead flags) and re-publishing it, without tearing
+## down the real `NetTransport` session (docs/DECISIONS.md's F-243 entry).
+func host_reset_for_new_run() -> void:
+	_session_open = false
+	_on_session_opened()
+
+
+## `_owns_mutation()`, not `is_host()` (F-243's original bug, caught by `tools/run_restart_check.gd`):
+## solo/offline is this file's whole other mode (`_ready()`'s own else-branch), and `is_host()` reads
+## false there (`NetTransport.is_host()`'s own doc comment — it is true only while an actual session
+## is HOSTING). A solo restart never called `host_reset_for_new_run()` at all until this was fixed.
+func _on_run_restarted() -> void:
+	if _owns_mutation():
+		host_reset_for_new_run()
 
 
 func _on_peer_joined(peer_id: int) -> void:

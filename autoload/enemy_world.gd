@@ -12,6 +12,7 @@ extends Node
 ## of the thing walking on it. The region is baked once from the level's static collision at session
 ## start; enemies then just have a map to query.
 
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const ENEMY_SCRIPT := preload("res://systems/enemies/enemy.gd")
 const ENEMY_DEF := preload("res://systems/enemies/enemy_def.gd")
 ## Task 5.5. `BossDef extends EnemyDef`, so `_load_defs()`'s `res is ENEMY_DEF` check already accepts
@@ -79,9 +80,21 @@ func _ready() -> void:
 		transport.get("server_started").connect(_on_session_opened)
 		transport.get("connected_to_host").connect(_on_session_opened)
 		transport.get("disconnected").connect(_on_disconnected)
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 	_register_commands()
 	_bind_rules()
 	MireLog.info(&"content", "loaded %d enemy definition(s)" % defs.size())
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
+
+
+## F-243: a fresh run starts with a clear field — `host_despawn_all()` already exists (task 2.12's
+## dawn-clear), self-guarded on `_owns_spawning()`, so every peer's own copy can call this
+## unconditionally off `run_restarted` and only the host's actually frees anything.
+func _on_run_restarted() -> void:
+	host_despawn_all()
 
 
 ## COMMANDS.md §4.3's export-fallback seam, in the direction the framework requires: this file ASKS

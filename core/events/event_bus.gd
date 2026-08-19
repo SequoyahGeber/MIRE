@@ -24,6 +24,7 @@ static var _unlock_purchased_subscribers: Array[Callable] = []
 static var _boss_engaged_subscribers: Array[Callable] = []
 static var _boss_phase_changed_subscribers: Array[Callable] = []
 static var _boss_defeated_subscribers: Array[Callable] = []
+static var _run_restarted_subscribers: Array[Callable] = []
 
 
 ## Listener signature:
@@ -450,6 +451,37 @@ static func emit_boss_defeated(boss_id: StringName, world_position: Vector3) -> 
 static func boss_defeated_subscriber_count() -> int:
 	_prune_invalid(_boss_defeated_subscribers)
 	return _boss_defeated_subscribers.size()
+
+
+## Listener signature: () -> void
+##
+## F-243: the seam every run-scoped system resets itself off — `CycleService.host_restart_run()`'s
+## whole job. Same two-channel shape `cycle_advanced` already established (F-250): the host emits
+## directly from `host_restart_run()`; a client re-derives the identical emit from the
+## `run`/`generation` `WorldDeltaLog` record that same call writes, landing locally
+## (`CycleService._on_world_delta_applied()`). Every subscriber below is expected to reset its OWN
+## state and self-guard on whatever authority check it already uses (`_owns_mutation()`,
+## `_owns_simulation()`, ...) — this signal does not imply "you are the host", only "a new run just
+## began"; a client-only reset (a HUD's terminal overlay, for instance) needs no guard at all.
+static func subscribe_run_restarted(listener: Callable) -> void:
+	_prune_invalid(_run_restarted_subscribers)
+	if listener.is_valid() and not _run_restarted_subscribers.has(listener):
+		_run_restarted_subscribers.append(listener)
+
+
+static func unsubscribe_run_restarted(listener: Callable) -> void:
+	_run_restarted_subscribers.erase(listener)
+
+
+static func emit_run_restarted() -> void:
+	_prune_invalid(_run_restarted_subscribers)
+	for listener: Callable in _run_restarted_subscribers.duplicate():
+		listener.call()
+
+
+static func run_restarted_subscriber_count() -> int:
+	_prune_invalid(_run_restarted_subscribers)
+	return _run_restarted_subscribers.size()
 
 
 static func _prune_invalid(subscribers: Array[Callable]) -> void:

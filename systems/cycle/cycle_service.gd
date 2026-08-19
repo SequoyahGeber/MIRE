@@ -28,6 +28,26 @@ extends Node
 ## F-154: this file is also now the run-lifecycle owner COMMANDS.md §5.2's illustrative hook
 ## vocabulary was missing — see `run_started`'s own doc comment below for the exact "once per
 ## process, host/solo only" contract `CommandService._HOOK_EVENTS`'s new row binds against.
+##
+## F-243: and the run-RESTART owner — `run_started` above fires exactly once per process by design
+## (see its own doc comment) and stays that way; a second "a run began" moment needed a signal of its
+## own, `EVENT_BUS.run_restarted` (subscribed by every run-scoped system: MireGrid, CycleModifier-
+## Service, PowerupService, InventoryService, PlayerHealth, EnemyWorld, BuildService, DefeatService,
+## and every live Wellspring/Chest/ExtractionShip instance). `host_restart_run()` is HOST-only and
+## deliberately NOT its own RPC — see docs/DECISIONS.md's F-243 entry: only the host peer can ever
+## trigger it (the HUD button only shows for the local host; a non-host sees "waiting on the host"),
+## so there is no client request to carry across the wire, the same reason `GameState.
+## host_generate_seed()` needs none either. What DOES need to reach every peer — the reset itself —
+## reuses the exact `WorldDeltaLog` no-new-RPC trick `_announce()`/`_on_world_delta_applied()` already
+## prove below for `cycle_advanced`, under a second `kind` so the two never collide.
+##
+## SCOPE CUT, written down so nobody "fixes" it as an oversight: a restart keeps the same
+## `GameState.run_seed` — same island, same POI/Wellspring/Chest/ExtractionShip positions, same
+## biome/terrain layout. Only RUN-scoped state resets (Cycle, Mire corruption, modifiers, inventory,
+## health, enemies, buildables, chest/wellspring/ship progress). Drawing a fresh world seed on
+## restart would need a live re-broadcast to every already-connected peer, which nothing in this
+## codebase does today (`WorldDeltaLog.net_world_snapshot` only ever reaches a NEWLY joining peer) —
+## real scope, not this finding's, and filed as F-258.
 
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
@@ -36,6 +56,14 @@ const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const GLOBAL_CHUNK: Vector2i = Vector2i.ZERO
 const KIND: StringName = &"cycle"
 const KEY: String = "current"
+## F-243: a second, unrelated scalar under the SAME pseudo-chunk — `WorldDeltaLog` keys by
+## `(chunk, kind, key)`, so a distinct `kind` here can never collide with the Cycle record above.
+## Monotonically increasing rather than a bool: `_apply()` (WorldDeltaLog's own) always re-emits
+## `delta_applied` regardless of whether the stored value actually changed, so even this could in
+## principle be a bare "ping" — but a real counter also gives a check something to assert moved by
+## exactly 1, and costs nothing extra.
+const RUN_KIND: StringName = &"run"
+const RUN_KEY: String = "generation"
 
 const DAYS_PER_CYCLE: int = 3
 ## DESIGN.md §5.1 "Mire base spread rate increases, permanently" — +15%/Cycle, compounding
@@ -60,6 +88,7 @@ var _current_cycle: int = 1
 var _spread_multiplier: float = 1.0
 var _days_elapsed: int = 0
 var _run_started_emitted: bool = false
+var _run_generation: int = 0
 var _transport_node: Node
 
 
@@ -133,6 +162,40 @@ func host_advance_cycle() -> int:
 	return _current_cycle
 
 
+## F-243: the whole run-restart trigger. HOST-only, and only once the run has actually ended — a
+## defeat (`DefeatService.defeated`) or a completed extraction (any `&"extraction_ship"` group member
+## with `departed == true`); nothing here ends a run in progress. Resets THIS process's own Cycle
+## state, then broadcasts `run_restarted` twice over: directly (host's own local subscribers, e.g.
+## this process's own MireGrid/PlayerHealth/...) and through the `RUN_KIND`/`RUN_KEY` WorldDeltaLog
+## record every OTHER connected peer's own `_on_world_delta_applied()` re-derives the identical emit
+## from. `_announce()` runs last so CycleModifierService's stack is already cleared before the
+## `cycle_advanced(1)` it fires triggers that service's own Cycle-1 draw check.
+func host_restart_run() -> int:
+	if not _owns_cycle() or not _run_has_ended():
+		return _current_cycle
+	_current_cycle = 1
+	_spread_multiplier = 1.0
+	_days_elapsed = 0
+	_run_generation += 1
+	EVENT_BUS.emit_run_restarted()
+	var world_delta_log: Node = get_node_or_null(^"/root/WorldDeltaLog")
+	if world_delta_log != null:
+		world_delta_log.call("host_record", GLOBAL_CHUNK, RUN_KIND, RUN_KEY, _run_generation)
+	_announce()
+	MireLog.info(&"world", "Run restarted — Cycle 1 begins")
+	return _current_cycle
+
+
+func _run_has_ended() -> bool:
+	var defeat_service: Node = get_node_or_null(^"/root/DefeatService")
+	if defeat_service != null and bool(defeat_service.get(&"defeated")):
+		return true
+	for node: Node in get_tree().get_nodes_in_group(&"extraction_ship"):
+		if bool(node.get(&"departed")):
+			return true
+	return false
+
+
 func _escalate_spread_rate() -> void:
 	var mire_grid: Node = get_node_or_null(^"/root/MireGrid")
 	if mire_grid != null and mire_grid.has_method(&"set_cycle_spread_multiplier"):
@@ -172,9 +235,15 @@ func _announce() -> void:
 ## own `host_record()` call also runs through `_apply()` and fires this same signal — never
 ## double-emits; it already emitted directly above.
 func _on_world_delta_applied(chunk: Vector2i, kind: StringName, key: String, value: Variant) -> void:
-	if _owns_cycle() or chunk != GLOBAL_CHUNK or kind != KIND or key != KEY:
+	if _owns_cycle() or chunk != GLOBAL_CHUNK:
 		return
-	EVENT_BUS.emit_cycle_advanced(int(value))
+	if kind == KIND and key == KEY:
+		EVENT_BUS.emit_cycle_advanced(int(value))
+	elif kind == RUN_KIND and key == RUN_KEY:
+		# F-243: a client's own copy of this same landing — `host_restart_run()`'s `RUN_KIND` record —
+		# re-derived the identical way `cycle_advanced` is just above. Guarded on `_owns_cycle()` like
+		# every other branch here: the host already emitted this directly inside `host_restart_run()`.
+		EVENT_BUS.emit_run_restarted()
 
 
 func _owns_cycle() -> bool:
@@ -209,6 +278,16 @@ func _register_commands() -> void:
 		"handler": _cmd_cycle,
 		"help": "cycle status | cycle advance — read or force-advance the Cycle state machine",
 	})
+	# F-243: console/dev convenience only — the host is always op (CommandService._is_op()), so this
+	# works for the one peer that can ever restart anyway. The real HUD trigger (`ui/hud/defeat_hud.gd`
+	# / `ui/hud/extraction_hud.gd`) calls `host_restart_run()` directly rather than through here, since
+	# a non-host player pressing that button must also work and HOST-scope commands require op.
+	command_service.call("register_spec", &"restart", {
+		"scope": &"host",
+		"args": [],
+		"handler": _cmd_restart,
+		"help": "restart — start the next run (host only, once this one has ended)",
+	})
 
 
 func _cycle_scope(raw_args: PackedStringArray) -> StringName:
@@ -223,4 +302,11 @@ func _cmd_cycle(_ctx: Dictionary, args: Dictionary) -> Dictionary:
 		], "data": {"cycle": current_cycle(), "spread_multiplier": _spread_multiplier}}
 
 	var new_cycle: int = host_advance_cycle()
+	return {"ok": true, "message": "Cycle %d begins" % new_cycle, "data": {"cycle": new_cycle}}
+
+
+func _cmd_restart(_ctx: Dictionary, _args: Dictionary) -> Dictionary:
+	if not _run_has_ended():
+		return {"ok": false, "message": "run still in progress", "data": {}}
+	var new_cycle: int = host_restart_run()
 	return {"ok": true, "message": "Cycle %d begins" % new_cycle, "data": {"cycle": new_cycle}}

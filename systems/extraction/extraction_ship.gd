@@ -124,7 +124,9 @@ var departure_channeling: bool = false
 var departure_progress_sec: float = 0.0
 ## Replicated. Snapshotted when the hold starts — how many players must stay aboard.
 var departure_required_players: int = 1
-## Replicated. True once the crew has finished the departure hold. Terminal — never reset.
+## Replicated. True once the crew has finished the departure hold. Terminal for the run it belongs
+## to — F-243 is the one exception: `host_reset_for_new_run()` clears it back to false for the NEXT
+## run, the same way `DefeatService.defeated` already resets on a session boundary.
 ##
 ## Setter fires `run_extracted` rather than `_finish_departure()` doing it directly (task 6.6):
 ## `EventBus` is a per-process static, so a host-only emit call would never reach a client's own
@@ -155,6 +157,11 @@ func _ready() -> void:
 	_refresh_visual()
 	_last_hull_stage = repair_stage
 	set_process(false)
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
 
 
 ## Client-facing: press interact while holding a repair hammer, in range, with the current stage's
@@ -281,6 +288,25 @@ func _finish_departure() -> void:
 	departure_channeling = false
 	departed = true
 	set_process(false)
+
+
+## F-243: resets the wreck to its wrecked, un-departed state for a new run — same island, same
+## ExtractionShip node (docs/DECISIONS.md's F-243 entry: a restart keeps the world, only run-scoped
+## state resets). Host-only; a client's own copy no-ops and picks up the reset through the normal
+## replicated-property sync every other mutation here already uses.
+func host_reset_for_new_run() -> void:
+	if not _owns_mutation():
+		return
+	repair_stage = 0
+	departure_channeling = false
+	departure_progress_sec = 0.0
+	departure_required_players = 1
+	departed = false
+	set_process(false)
+
+
+func _on_run_restarted() -> void:
+	host_reset_for_new_run()
 
 
 func _current_cycle() -> int:

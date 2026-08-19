@@ -28,10 +28,19 @@ extends CanvasLayer
 ## 6.2's own framework, already stacked for the run's whole life, nothing to subscribe to), the same
 ## `get_node_or_null(^"/root/X")` + `.call()`/`.get()` pattern `extraction_hud.gd._format_cost()`
 ## already uses for a content `Resource` (F-016: never a bare `CycleModifierDef` reference here).
+##
+## F-243: "terminal... never hides itself again this session" (just below) stopped being literally
+## true — a "Start Next Run" button now un-terminals it. Only the local HOST peer's press does
+## anything (`CycleService.host_restart_run()` is host-only and there is no request RPC — see that
+## file's own F-243 note and docs/DECISIONS.md); a non-host peer sees the button disabled with a
+## "waiting on the host" label instead of a working control, so nothing here needs a network request
+## of its own. `_on_run_restarted()` is this screen's un-terminal path, symmetric with `_on_run_wiped`.
 
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
 const CYCLE_MODIFIER_SERVICE_PATH := ^"/root/CycleModifierService"
+const RESTART_LABEL: String = "Start Next Run"
+const WAITING_LABEL: String = "Waiting on the host to start the next run…"
 
 ## Indexed by `DefeatService.cause` — a cause this file has never heard of (a future third lose
 ## condition) still gets a real line via `.get()`'s default below, not a blank one.
@@ -50,7 +59,12 @@ var _headline: Label
 var _cause_label: Label
 var _modifiers_label: Label
 var _detail: Label
+var _restart_button: Button
 var _shown: bool = false
+## Same "did movement own the mouse before this overlay took it" capture every other
+## `blocks_gameplay_input` screen in this codebase uses (`ui/inventory/inventory_ui.gd`,
+## `ui/loot/chest_ui.gd`, ...) — this screen never needed one before F-243, since it never closed.
+var _restore_mouse_captured: bool = false
 ## F-235: `SalvageService` (autoload order before `DefeatHud` in `project.godot`) subscribes to
 ## `run_wiped` first, so its own `salvage_banked` emit — triggered synchronously from inside
 ## `EventBus.emit_run_wiped()`, before this file's OWN `_on_run_wiped` has run — always used to land
@@ -65,11 +79,13 @@ func _ready() -> void:
 	_build_ui()
 	EVENT_BUS.subscribe_run_wiped(_on_run_wiped)
 	EVENT_BUS.subscribe_salvage_banked(_on_salvage_banked)
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
 
 
 func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_run_wiped(_on_run_wiped)
 	EVENT_BUS.unsubscribe_salvage_banked(_on_salvage_banked)
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
 
 
 func _on_run_wiped(cycle: int, _world_position: Vector3) -> void:
@@ -82,9 +98,47 @@ func _on_run_wiped(cycle: int, _world_position: Vector3) -> void:
 	_modifiers_label.text = _modifiers_drawn_summary()
 	if not _salvage_known:
 		_detail.text = "Tallying Salvage…"
+	_refresh_restart_button()
 	_overlay.visible = true
 	add_to_group(BLOCKING_UI_GROUP)
+	_restore_mouse_captured = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+## F-243: the un-terminal path — every peer's own `EVENT_BUS.run_restarted` (host emits it directly
+## from `host_restart_run()`; a client re-derives it, see `CycleService._on_world_delta_applied()`)
+## hides this screen and clears the one-shot guards so a SECOND defeat this session shows fresh
+## numbers instead of silently no-op-ping on `_shown` still being true.
+func _on_run_restarted() -> void:
+	if not _shown:
+		return
+	_shown = false
+	_salvage_known = false
+	_overlay.visible = false
+	remove_from_group(BLOCKING_UI_GROUP)
+	if _restore_mouse_captured:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+func _refresh_restart_button() -> void:
+	var is_local_host: bool = _is_host_or_solo()
+	_restart_button.text = RESTART_LABEL if is_local_host else WAITING_LABEL
+	_restart_button.disabled = not is_local_host
+
+
+func _is_host_or_solo() -> bool:
+	var transport: Node = get_node_or_null(^"/root/NetTransport")
+	if transport == null:
+		return true
+	if bool(transport.call("is_host")):
+		return true
+	return not bool(transport.call("is_active")) and not bool(transport.call("is_connecting"))
+
+
+func _on_restart_pressed() -> void:
+	var cycle_service: Node = get_node_or_null(^"/root/CycleService")
+	if cycle_service != null:
+		cycle_service.call("host_restart_run")
 
 
 ## Only the death-banking half of this signal is ours — `extracted == true` is 6.5/6.6's success
@@ -158,3 +212,10 @@ func _build_ui() -> void:
 	_detail.add_theme_font_size_override("font_size", 18)
 	_detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(_detail)
+
+	_restart_button = Button.new()
+	_restart_button.text = RESTART_LABEL
+	_restart_button.custom_minimum_size = Vector2(240.0, 44.0)
+	_restart_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_restart_button.pressed.connect(_on_restart_pressed)
+	column.add_child(_restart_button)
