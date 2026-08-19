@@ -3507,3 +3507,39 @@ reaches them too: work that can proceed without their answers should proceed.
 **Would change my mind:** nothing an agent can observe — this is his call about his own process.
 If a tuning debt ever demonstrably blocks something technical (e.g. a moveset framework that cannot
 be designed without knowing base swing timing), say so in the task, don't resurrect the gate.
+
+### D-126 · 2026-08-19 · Every asset-writer script holds `agent godot`'s own lock for its whole export window — `tools/blender/godot_import_lock.import_cache_guard`, not a narrower per-file fix
+
+F-196: a crafting-station GLB rebuild raced the audit battery's `agent godot` runs, which each force
+an import pre-pass (F-093) under `.agent/locks/godot.lock` (F-044). The writer never touched that
+lock, so one import pass caught a torn read mid-write, stamped the cache against it, and every later
+pass — including the writer's own trailing checks — kept reading "already imported" and skipped: 16
+ERROR lines per run for 40 minutes, until a human ran `agent godot --import` by hand.
+
+Two fixes were on the table (F-196's own text): a hash-verify failure ledger inside `agent godot`
+itself, or making the *writer* take the same lock. Took the second — it needs no change to
+`.agent/bin/agent`, no new ledger state, and it closes the race at its actual source (a writer that
+never coordinated at all) rather than making the reader smarter about tolerating torn data it should
+never have seen.
+
+**The rule: any script that writes a file under `assets/` Godot imports through `EditorFileSystem`
+(a `.glb`, `.png`, `.ogg`, `.wav` — anything with a `.import` sidecar) must wrap its whole write
+window in `tools/blender/godot_import_lock.import_cache_guard()`, not just its final write call.**
+Holding the lock for the *entire* export — not only a trailing `--import` — is what makes the race
+structurally impossible rather than merely less likely: no `agent godot` run can even start a Godot
+process while the writer is inside the guard, so nothing can stamp the cache against partial
+content in the first place. On release the guard also forces one definitive `agent godot --import`
+against the now-finished files, so a check run immediately after a rebuild sees correct assets
+rather than depending on some other lane's next check to notice and re-import.
+
+Landed in all 19 existing writers: the 16 `tools/blender/build_*.py` GLB exporters,
+`render_item_icons.py` (PNG), and `tools/audio/render_music.py`/`render_sfx.py` (OGG/WAV). A JSON
+writer (`tools/mapgen/hollow_layout.py`, `hollowmere_layout.py`) does NOT need this — Godot reads
+JSON directly at runtime, never through the import pipeline, so there is no cache to poison.
+
+**Would change my mind:** if `agent godot`'s import pre-pass (F-093) ever moves off `.agent/locks/godot.lock`
+onto a different serialization mechanism, every writer needs to follow — `godot_import_lock.py` is
+the one place that would need updating, by design (its `GODOT_LOCK`/`GODOT_HOLDER` paths are the only
+coupling point). A future writer that forgets to import the guard is a review-time bug, not a design
+question — `tools/import_cache_guard_check.py` proves the guard itself works; it cannot prove a new
+script remembered to call it.

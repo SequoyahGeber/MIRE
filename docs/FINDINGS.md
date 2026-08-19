@@ -630,37 +630,6 @@ changing the hook, rather than trusting this paragraph.
 
 ---
 
-### F-196 · An asset rebuild concurrent with agent godot's auto-import pass poisons the import cache — 8 station GLBs stayed unloadable across 40 minutes of checks until a forced --import
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by yarrow21
-
-Observed by the 2026-08-19 audit battery, an F-044 sibling with a sharper mechanism. An art session
-rebuilt all 8 `assets/crafting_stations/exports/*.glb` (working tree, 23:51) while the audit's
-check battery was cycling `agent godot` runs. From then on, every map-loading check logged
-`Failed loading resource: res://assets/crafting_stations/exports/station_*.glb` +
-`MeshMerge could not load ...` — 16 ERROR lines per run across `world_contract_check`,
-`hollowmere_check`, and `harvest_world_net_check` — for over half an hour of subsequent runs, even
-though each run starts with F-093's auto-import pass, and even though the GLBs on disk were valid
-(magic `glTF`, sane sizes, loadable after a manual pass).
-
-The poisoning shape: an import pass that runs DURING the writer's window records the new file
-stamps against partially-old content, so every later pass sees "already imported" and skips —
-the cache is wrong and self-healing never triggers. A single explicit `agent godot --import`
-cleared all of it (0 ERROR lines after).
-
-Two candidate fixes, either works:
-- `agent godot`'s import pass could hash-verify (not stamp-verify) assets that FAILED to load in
-  the previous run — needs a failure ledger, probably overkill.
-- Cheaper and honest: the art pipeline scripts (`tools/blender/*.py` writers) end by touching a
-  marker the harness reads, or simply by running `agent godot --import` themselves under the same
-  godot lock every other engine run already takes — the writer knows exactly when it finished;
-  the readers can only guess.
-
-Until one lands: if map checks suddenly log GLB load failures and the files look fine, run
-`agent godot --import` once before diagnosing anything.
-
----
-
 ### F-197 · A generated-asset commit swept up another lane's dirty crafting-station GLBs under an unrelated message — the F-149/F-191 sweep hazard reaching art files, not just docs/
 
 **Area:** coordination / art pipeline · **Severity:** low · **Found:** 2026-08-19 by lm during F-057
@@ -877,6 +846,63 @@ alone hid the shadow regression in point 3 above; primitives is what caught it.
 ---
 
 ## Resolved
+
+### F-196 · An asset rebuild concurrent with agent godot's auto-import pass poisons the import cache — 8 station GLBs stayed unloadable across 40 minutes of checks until a forced --import — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by yarrow21
+
+Observed by the 2026-08-19 audit battery, an F-044 sibling with a sharper mechanism. An art session
+rebuilt all 8 `assets/crafting_stations/exports/*.glb` (working tree, 23:51) while the audit's
+check battery was cycling `agent godot` runs. From then on, every map-loading check logged
+`Failed loading resource: res://assets/crafting_stations/exports/station_*.glb` +
+`MeshMerge could not load ...` — 16 ERROR lines per run across `world_contract_check`,
+`hollowmere_check`, and `harvest_world_net_check` — for over half an hour of subsequent runs, even
+though each run starts with F-093's auto-import pass, and even though the GLBs on disk were valid
+(magic `glTF`, sane sizes, loadable after a manual pass).
+
+The poisoning shape: an import pass that runs DURING the writer's window records the new file
+stamps against partially-old content, so every later pass sees "already imported" and skips —
+the cache is wrong and self-healing never triggers. A single explicit `agent godot --import`
+cleared all of it (0 ERROR lines after).
+
+Two candidate fixes, either works:
+- `agent godot`'s import pass could hash-verify (not stamp-verify) assets that FAILED to load in
+  the previous run — needs a failure ledger, probably overkill.
+- Cheaper and honest: the art pipeline scripts (`tools/blender/*.py` writers) end by touching a
+  marker the harness reads, or simply by running `agent godot --import` themselves under the same
+  godot lock every other engine run already takes — the writer knows exactly when it finished;
+  the readers can only guess.
+
+Until one lands: if map checks suddenly log GLB load failures and the files look fine, run
+`agent godot --import` once before diagnosing anything.
+
+---
+
+**Resolved 2026-08-19 by lp.** Fixed by making the writer coordinate rather than the reader tolerate torn data: new
+tools/blender/godot_import_lock.py (dependency-free, no bpy) exposes import_cache_guard(label,
+force_import=True) — an fcntl.flock context manager on the exact .agent/locks/godot.lock file
+agent godot's own file_lock("godot", ...) uses (F-044), held for a writer's WHOLE export window, not
+just a trailing import call. That makes the race structurally impossible: no agent godot run can
+even start a Godot process while a writer is inside the guard, so nothing can stamp the shared
+.godot/ cache against partial content. On release it also shells out to `agent godot --import` once,
+forcing a clean definitive import against the now-finished files — the same manual step the finding
+already verified clears a poisoned cache.
+
+Swept for every sibling, not just the crafting-station family that tripped the incident: any script
+writing into an assets/ path Godot imports through EditorFileSystem (.glb/.png/.ogg/.wav — anything
+with a .import sidecar). Found and fixed 19: all 16 tools/blender/build_*.py GLB exporters,
+render_item_icons.py (PNG), and tools/audio/render_music.py/render_sfx.py (OGG/WAV) — each now wraps
+its __main__ main() call in `with import_cache_guard(...)`. tools/mapgen/hollow_layout.py and
+hollowmere_layout.py write JSON Godot reads directly at runtime (no .import sidecar) and correctly
+need no guard — recorded as D-126 so a future JSON writer isn't second-guessed.
+
+Verified: `python3 tools/import_cache_guard_check.py --godot` -- 4/4, including a real interop case
+(a genuine `agent godot --quit-after 5` launched concurrently while a second process holds the guard
+blocks until release, then runs clean) that proves the two lock paths are the SAME file, not two
+that happen to look alike. `agent godot --quit-after 120` -- clean boot, 0 new ERROR lines against
+world content including the crafting stations. `python3 -m py_compile` on all 19 edited writers plus
+the two new modules -- all clean. Full account and claim list: docs/SPECS.md's new F-196 block.
+API for future writers: docs/DELEGATION.md Current state, 2026-08-19 F-196 entry.
 
 ### F-149 · F-141's docs edits got committed under F-144's message — a concurrent agent's plain 'git commit' absorbs another lane's staged-but-uncommitted files — **fixed**
 

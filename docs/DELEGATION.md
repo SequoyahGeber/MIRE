@@ -5216,6 +5216,60 @@ in budget, a live free chest opens end to end, a live gilded chest is refused wi
 
 ---
 
+### 2026-08-19 — F-196 fixed: every asset-writer script now holds `agent godot`'s own lock for its whole export, `tools/blender/godot_import_lock.import_cache_guard`
+
+**The bug:** a crafting-station GLB rebuild raced the audit battery's `agent godot` runs (each of
+which forces an import pre-pass, F-093, under `.agent/locks/godot.lock`, F-044). The writer never
+touched that lock, so a concurrent import pass read a GLB mid-write, stamped the shared `.godot/`
+cache against the torn content, and every later pass — including the writer's own trailing checks —
+kept reading "already imported" and skipped it. 16 ERROR lines per run for 40 minutes; self-healing
+never triggered until a human ran `agent godot --import` by hand. Full account in `docs/FINDINGS.md`
+(Resolved) and the decision made about the fix shape in `D-126`.
+
+**The fix, and the API the next writer builds against:**
+
+```python
+sys.path.append(str(Path(__file__).resolve().parent))   # tools/blender scripts already do this
+from godot_import_lock import import_cache_guard         # dependency-free, no bpy import
+
+if __name__ == "__main__":
+    with import_cache_guard(Path(__file__).name):         # label, for anyone waiting on the lock
+        main()
+```
+
+`tools/blender/godot_import_lock.py` is new and carries no `bpy` dependency on purpose — it is
+importable by a bare `python3` interpreter (`tools/import_cache_guard_check.py` does exactly that)
+as well as from inside a Blender-embedded one. `import_cache_guard(label, force_import=True)`:
+`fcntl.flock`s the exact file `.agent/bin/agent`'s own `file_lock("godot", ...)` uses
+(`.agent/locks/godot.lock`), writes/clears the same holder-record JSON shape so a lane waiting on
+`agent godot` sees "held by ... running <label>" rather than "holder unknown", and — on a clean
+release — shells out to `agent godot --import` once to force a definitive import against the
+now-finished files. Wrap the **whole** write (every `main()` call that touches `assets/`), not just
+the final export line — a narrower wrap still leaves the mid-write window open to the exact race
+F-196 found.
+
+**Landed in all 19 existing writers:** the 16 `tools/blender/build_*.py` GLB exporters,
+`tools/blender/render_item_icons.py` (PNG), `tools/audio/render_music.py` and
+`tools/audio/render_sfx.py` (OGG/WAV) — every script that writes into an `assets/` path Godot
+imports through `EditorFileSystem`. `tools/mapgen/hollow_layout.py`/`hollowmere_layout.py` write
+JSON that Godot reads directly at runtime (never through the import pipeline), so they carry no
+`.import` sidecar and were correctly left out — see D-126 for why.
+
+**What the next writer builds against:** any NEW `build_*.py`, icon/audio renderer, or other script
+that writes a `.glb`/`.png`/`.ogg`/`.wav`/anything-with-a-`.import`-sidecar under `assets/` must
+import and wrap with `import_cache_guard` the same way — copy any of the 19 sites above. Nothing
+enforces this at review time; `tools/import_cache_guard_check.py` proves the guard mechanism itself
+works, not that a new script remembered to call it.
+
+**Verified:** `python3 tools/import_cache_guard_check.py --godot` — 4/4, including the real interop
+case (a genuine `agent godot --quit-after 5`, launched concurrently while a held guard is live in a
+second process, blocks until release and only then runs clean — proof the two lock paths actually
+resolve to the same file, not two that happen to look alike). `agent godot --quit-after 120` — clean
+boot, `world_contract_check`-relevant assets (crafting stations included) load with 0 new ERROR
+lines. All 19 edited writers pass `python3 -m py_compile`.
+
+---
+
 > **Historical documents — every task prompt from here down.** They predate D-021 (agents register
 > their own autoloads), D-031 (agents may edit Godot-authored files under exact claim), D-039 (do it
 > yourself rather than handing it back) and the D-036 lane system. Where a prompt says

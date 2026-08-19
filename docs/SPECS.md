@@ -4982,6 +4982,77 @@ un-pathspec'd commit call exists to be the next incident.
 
 ---
 
+## F-196 · An asset rebuild concurrent with `agent godot`'s auto-import pass poisons the import cache — 8 station GLBs stayed unloadable across 40 minutes of checks until a forced `--import`
+
+**Claim:** `tools/blender/godot_import_lock.py` (new), `tools/blender/mire_art.py`,
+`tools/blender/build_adapted_nature_set.py`, `build_crafting_stations.py`, `build_construction_set.py`,
+`build_enemy_crawler.py`, `build_food_set.py`, `build_extraction_ship_set.py`, `build_flora_set.py`,
+`build_gatherable_plants.py`, `build_harvestable_resources.py`, `build_mire_map_kit.py`,
+`build_loot_set.py`, `build_playtest_hollow.py`, `build_pickup_kit.py`, `build_ward_set.py`,
+`build_tool_weapon_set.py`, `build_wellspring_set.py`, `render_item_icons.py`,
+`tools/audio/render_music.py`, `tools/audio/render_sfx.py`, `tools/import_cache_guard_check.py` (new).
+Pure tooling — no production/runtime file, no `ARCHITECTURE.md` §2.2 authority row.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Root cause, confirmed rather than re-derived:** `agent godot` (`cmd_godot` in `.agent/bin/agent`)
+already serialises every Godot process against every other one via `.agent/locks/godot.lock`
+(F-044), and forces an import pre-pass under that same lock before every run (F-093). But a Blender
+asset writer is not a Godot process — it never took that lock, so nothing stopped one lane's
+`agent godot` import pass from reading a GLB mid-write. F-196's incident: 8 crafting-station GLBs
+rebuilt in the working tree while the 2026-08-19 audit battery cycled `agent godot` runs; one import
+pass caught a torn read, stamped `.godot/`'s cache against it, and — because nothing on disk changes
+after the writer finishes — every later pass, including the writer's own trailing checks, kept
+reading "already imported" and skipped it. 16 ERROR lines per run, 40+ minutes, until a human ran
+`agent godot --import` by hand.
+
+**The fix — chosen from the finding's own two candidates (a hash-verify failure ledger inside
+`agent godot`, or making the writer coordinate):** a new dependency-free module,
+`tools/blender/godot_import_lock.py`, exposes `import_cache_guard(label, force_import=True)` — a
+context manager that `fcntl.flock`s the exact same `.agent/locks/godot.lock` file, writes/clears a
+holder-record JSON in the same shape `.agent/bin/agent`'s own `file_lock` writes (so a lane waiting
+on `agent godot` sees "held by ... running <label>", not "holder unknown"), and on release shells
+out to `agent godot --import` once — the same manual step the finding already verified clears a
+poisoned cache. Held for the writer's **entire** export, not just a trailing import call: that is
+what makes the race structurally impossible (no `agent godot` run can even start while the guard is
+held) rather than merely narrower. Kept `bpy`-free so `tools/import_cache_guard_check.py` can drive
+it with a bare `python3` interpreter.
+
+Every `build_*.py` writer's `if __name__ == "__main__":` block now reads:
+
+```python
+if __name__ == "__main__":
+    with import_cache_guard(Path(__file__).name):
+        main()
+```
+
+**Swept for siblings — this is where the finding's real scope turned out to be:** grepped for every
+script that writes into an `assets/` path Godot imports through `EditorFileSystem` (anything that
+gets a `.import` sidecar — `.glb`/`.png`/`.ogg`/`.wav`), not just the one family that happened to
+trip the incident. Found and fixed 19 total: the 16 `build_*.py` GLB exporters,
+`render_item_icons.py` (PNG icons), and `tools/audio/render_music.py`/`render_sfx.py` (OGG/WAV) —
+all newly claimed and wrapped the same way. `tools/mapgen/hollow_layout.py`/`hollowmere_layout.py`
+write JSON layouts that Godot reads directly at runtime, never through the import pipeline, so they
+carry no `.import` sidecar and correctly need no guard (recorded as `D-126`, so nobody re-litigates
+it against a future JSON writer).
+
+**Verified 2026-08-19 (lp):**
+
+- `python3 tools/import_cache_guard_check.py --godot` → 4/4. The fourth case is the one that
+  actually proves the fix rather than re-deriving its own lock path and calling that proof: it holds
+  the guard in a subprocess, launches a REAL `agent godot --quit-after 5` concurrently, asserts it
+  has not exited 2.5s in (still holding), then asserts it completes cleanly only after the guard
+  releases — direct evidence the two resolve to the identical `.agent/locks/godot.lock`, not two
+  paths that happen to look alike.
+- `agent godot --quit-after 120` → clean boot, world content (crafting stations included) loads with
+  0 new `ERROR:`/`Failed loading resource` lines — the exact symptom F-196 reported.
+- `python3 -m py_compile` on all 19 edited writers plus the two new modules — all clean.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |
