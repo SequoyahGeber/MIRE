@@ -1832,9 +1832,76 @@ green, 0 `ERROR:` on a full boot, and `docs/DELEGATION.md`'s Current state carry
 `CycleModifierService`'s public API for 6.3 (content authoring) and any future modifier-effect
 consumer to build against.
 
+## 6.4 · Wellspring re-corruption over time (`DESIGN.md` §5.1 item 1; `ROADMAP.md`'s own line: "decay on a host timer unless Warded")
+
+Built ahead of 6.3 (content authoring) — the same "prerequisite, not a scope grab" shape D-099 already
+named for 4.11 building ahead of 4.9's completion order. 6.3's Cycle Modifiers and this task's clock
+are independent consumers of the same `EventBus.cycle_advanced` seam; neither blocks the other.
+
+**Authority:** §2.2 row "Wellspring ritual" (extended this task to cover the re-corruption clock) —
+**Host**. Only the host ticks `recorruption_sec`, checks Ward coverage, and decides when the clock
+finishes; every other peer reads the replicated result.
+**Claim:** `systems/wellspring/wellspring.gd`, `core/events/event_bus.gd`, `world/mire/mire_grid.gd`,
+`tools/wellspring_recorruption_check.gd` (+ its `.uid`). No new autoload, no `project.godot` edit —
+this extends the existing `Wellspring` node task 4.8 already ships.
+
+DESIGN.md §5.1: "at the end of each Cycle, three things happen: 1. Mire base spread rate increases,
+permanently. Capped Wellsprings begin re-corrupting. 2. A Cycle Modifier is drawn... 3. Enemy roster
+expands." Items 2 and 3 are 6.2's and 6.1's own jobs; this task is the first sentence of item 1's
+second half, which neither 6.1 nor 6.2 touched.
+
+**The clock.** `Wellspring._on_cycle_advanced()` subscribes to `EventBus.cycle_advanced` (6.1's seam)
+and, the first time it fires while `capped == true`, sets host-only `_recorruption_active = true` and
+resumes `set_process(true)`. From then on `host_tick()` — the same method the ritual already exposes
+so a check can cross a whole 60-150s attempt in one call — also advances a new replicated
+`recorruption_sec: float` toward `RECORRUPTION_DURATION_SEC` (900s, placeholder-tuned; D-104) each
+frame, UNLESS `_is_warded()` reports a placed Ward covers this Wellspring's position, in which case
+the clock pauses (not resets) for that frame — ROADMAP.md's own "unless Warded" line, D-104.
+`_is_warded()` reuses `BuildService.ward_radii()`, the identical source `MireGrid`'s own
+`_ward_circles_provider` already consumes for spread resistance (task 4.11), rather than adding a
+second Ward-reading seam. Reaching `RECORRUPTION_DURATION_SEC` runs `_finish_recorruption()`: `capped`
+flips back to `false` — the Wellspring's exact pre-ritual state, so `request_toggle_channel()`
+recaptures it with zero special-casing — a new replicated `has_recorrupted: bool` becomes (and stays)
+`true`, `recorruption_sec` resets to 0, and `EventBus.emit_wellspring_recorrupted(name,
+global_position)` fires (new subscriber list, same shape as `wellspring_capped`).
+
+**The visual.** Both new replicated fields feed `_mesh_path_for_state()`, which now picks among all
+four A-008 condition-state GLBs (`assets/wellsprings/README.md`'s state-swap contract), not just two:
+capped below `RECORRUPTING_VISUAL_FRACTION` (0.5) of the clock shows `wellspring_capped.glb`; capped
+at or past it shows the visibly-decaying `wellspring_recorrupting.glb`; uncapped and never capped
+shows the original `wellspring_uncapped.glb`; uncapped via `has_recorrupted == true` shows the worse
+`wellspring_corrupted.glb`. Every replicated field's setter funnels through `_maybe_refresh_visual()`,
+which recomputes the target path and only schedules the (deferred) rebuild when it actually changed —
+`recorruption_sec` changes every tick while the clock runs, so this is the difference between one
+mesh swap per state crossing and one per frame.
+
+**`MireGrid` is the finish event's real consumer.** `_on_wellspring_recorrupted()` — the symmetric
+half of the existing `_on_wellspring_capped()` — decrements `_capped_wellsprings`, undoing the
+per-cap spread-rate reduction (`SPREAD_REDUCTION_PER_CAP`) the cap granted. It does NOT hand-reseed
+the 48m cleared radius: `MireGridSim.tick()`'s flood-fill already regrows a zeroed circle from its
+still-corrupted edge inward once the multiplier lifts, the same mechanic every other cleared cell on
+the map uses (D-104 records why a second SIM function would just duplicate that by hand).
+
+Verify: `tools/wellspring_recorruption_check.gd` (24 assertions) — a capped Wellspring does not
+degrade absent a Cycle turnover, however long `host_tick()` runs; a turnover starts the clock without
+instantly finishing it; the mesh crosses into the re-corrupting state at the visual threshold while
+still capped; a full clock flips `capped` false, sets `has_recorrupted`, fires
+`emit_wellspring_recorrupted` exactly once, and shows the corrupted (not original uncapped) mesh; a
+placed Ward pauses accrual entirely and accrual resumes the instant it is gone; `MireGrid`'s capped
+count goes up on cap and back down on full re-corruption; and a recaptured Wellspring waits for its
+OWN next Cycle turnover rather than resuming a stale clock. `tools/wellspring_check.gd`,
+`tools/mire_grid_check.gd`, `tools/mire_interaction_check.gd`, `tools/build_check.gd`,
+`tools/cycle_check.gd`, `tools/cycle_modifier_check.gd` and `tools/wave_spawner_check.gd` all stay
+`failures=0` — the regression bar, since `Wellspring`'s existing ritual fields, `MireGrid`'s existing
+tick, and `EventBus`'s existing signal lists all keep their prior shape. `agent godot --quit-after 20`
+shows 0 `ERROR:` lines.
+Done means: `wellspring_recorruption_check.gd` at `failures=0`, all seven regression checks green,
+0 `ERROR:` on a full boot, and `docs/DELEGATION.md`'s Current state carrying the new replicated
+fields and `EventBus.subscribe_wellspring_recorrupted()` for whatever future task adds a HUD warning
+before a Wellspring finishes decaying (F-164 — no such warning exists yet; the in-world mesh swap is
+the only signal today).
+
 - **6.3 Author 20–30 modifiers (T0).**
-- **6.4 Re-corruption (T1):** captured Wellsprings decay on a host timer unless Warded — a consumer
-  of 4.9 + 3.6's fields.
 - **6.5 Extraction (T2):** shipwreck POI (A-009 assets), staged repair via recipes (3.1's timed
   crafts), board-to-leave with group confirm UI (all-aboard-or-cancel flow, host-arbitrated,
   60 s window). **Never-cut item.**

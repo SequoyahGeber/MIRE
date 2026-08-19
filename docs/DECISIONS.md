@@ -2663,3 +2663,48 @@ not just in `.tres` text.
 pairs anyway and the tag mechanism goes unused — then simplify to id-only. On effect wiring, nothing
 — that is deliberately the next task's decision to make with the rest of the Cycle Modifier picture
 (roster size, UI announce, extraction pacing) in view.
+
+### D-104 · 2026-08-18 · Task 6.4's Wellspring re-corruption: a real-time clock gated by Cycle turnover, paused (not reset) under a Ward, and no hand-seeded local re-corruption
+
+**The clock only starts at the next Cycle turnover, not the instant a Wellspring caps.**
+DESIGN.md §5.1 lists "Capped Wellsprings begin re-corrupting" as one of three things that happen "at
+the end of each Cycle," alongside the spread-rate escalation and enemy-roster expansion 6.1 already
+built off the identical `EventBus.cycle_advanced` seam. Reading `capped` at the moment of a
+`cycle_advanced` event, rather than starting a timer the instant `_finish_cap()` runs, means a
+Wellspring capped seconds before a Cycle ends is not punished with almost no grace period, and a
+Wellspring capped seconds after one is not left immune for an entire extra Cycle by accident — both
+read the same clock at the same shared moment, exactly the "read once at the threshold" rule
+`Wellspring._session_player_total()` already uses for the ritual's own player-count snapshot.
+
+**`RECORRUPTION_DURATION_SEC` (900s) and `RECORRUPTING_VISUAL_FRACTION` (0.5) are placeholder-tuned,
+same status as `MireGrid.BASE_SPREAD_RATE` and `CycleService.SPREAD_ESCALATION_PER_CYCLE`.** No
+number is written down anywhere in DESIGN.md beyond "slowly re-corrupt." 900s matches
+`DayNight.day_length_seconds`'s own default (also 900s) so a capped Wellspring left completely
+unattended survives roughly one in-game day of its clock before it needs attention — long enough not
+to feel instant, short enough to force a real choice before too many Cycles pass. Nothing here has
+been through a real playtest.
+
+**The clock PAUSES, not resets, while a placed Ward covers the Wellspring** — ROADMAP.md's own 6.4
+line names this explicitly ("decay on a host timer unless Warded"), a real written mandate this task
+found waiting for it, not something invented from scratch. `Wellspring._is_warded()` reuses
+`BuildService.ward_radii()`, the exact same source `MireGrid`'s own `_ward_circles_provider` already
+consumes for spread resistance (task 4.11) — one extra autoload hop instead of threading a second
+seam through `MireGrid`. Pausing rather than resetting matches D-092's existing precedent for the
+ritual's own under-presence case: a Ward is protection, not a fresh punishment for stepping away and
+coming back.
+
+**No SIM-level re-seed of the cleared radius on full re-corruption.** `MireGrid._on_wellspring_capped()`
+zeroes a 48m radius; the symmetric `_on_wellspring_recorrupted()` only decrements
+`_capped_wellsprings` (undoing the spread-rate reduction the cap granted) and does NOT hand-seed
+corruption back into that circle. `MireGridSim.tick()`'s own flood-fill only spreads outward from a
+cell that already has a nonzero value, so a fully-zeroed circle regrows from its still-corrupted edge
+inward on its own, over subsequent ticks, once the multiplier lifts — the identical mechanic every
+other cleared cell on the map already uses. Writing a second "reseed a radius" SIM function would
+duplicate that regrowth by hand for no visible difference, and risks disagreeing with it (a
+hand-picked reseed value the flood-fill would then fight or ignore).
+
+**Would change my mind:** on the two placeholder constants, a real playtest (Q3, the wall) measuring
+that Wellsprings decay before or long after the pressure curve wants them to. On the no-reseed call,
+if a playtest shows the flood-fill regrowth is imperceptibly slow at the map's edges (few corrupted
+neighbours to spread from) — then a small, capped reseed pulse at the moment of `_finish_recorruption()`
+would be the fix, not a redesign.

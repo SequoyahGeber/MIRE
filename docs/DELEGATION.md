@@ -75,6 +75,46 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 6.4: Wellspring re-corruption over time ships — a Cycle-gated clock, Ward pause, all four A-008 condition states now live (lm)
+
+Built ahead of 6.3 (D-099's "prerequisite, not a scope grab" shape) — no dependency either way, both
+are independent consumers of 6.1's `EventBus.cycle_advanced` seam. Extends `systems/wellspring/wellspring.gd`
+(no new autoload, no `project.godot` edit): a capped Wellspring's clock only starts at the NEXT real
+Cycle turnover (not the instant it caps), ticks through the existing `host_tick()` seam, and PAUSES —
+never resets — while any placed Ward covers its position (`BuildService.ward_radii()`, the same
+source `MireGrid` already consumes; ROADMAP.md's own 6.4 line names this "unless Warded" and this
+task found that written mandate waiting for it). Finishing flips `capped` back to `false` — the exact
+pre-ritual state, so the existing ritual recaptures it with zero special-casing — and fires a new
+`EventBus.emit_wellspring_recorrupted()`, `MireGrid`'s seam to undo the per-cap spread-rate reduction
+(`_capped_wellsprings` decrements symmetrically with `_on_wellspring_capped()`'s own increment; no
+hand-reseed of the cleared radius — the flood-fill regrows it on its own, D-104). All four A-008
+condition-state GLBs are live now, not just two: capped below `RECORRUPTING_VISUAL_FRACTION` (0.5)
+shows `wellspring_capped.glb`, at/past it shows `wellspring_recorrupting.glb`, uncapped-and-never-capped
+shows `wellspring_uncapped.glb`, uncapped-via-full-recorruption shows `wellspring_corrupted.glb`.
+
+`agent godot --script tools/wellspring_recorruption_check.gd` — 24 assertions, 0 failures. No
+regressions: `wellspring_check.gd`, `mire_grid_check.gd`, `mire_interaction_check.gd`,
+`build_check.gd`, `cycle_check.gd`, `cycle_modifier_check.gd`, `wave_spawner_check.gd` all still
+`failures=0`. 0 `ERROR:` on a full boot (`agent godot --quit-after 20`). Full design rationale in
+`docs/SPECS.md` §6.4; D-104 records the Cycle-turnover gating, the two placeholder-tuned constants,
+the Ward-pause reuse of `BuildService.ward_radii()`, and the no-hand-reseed call. F-164 records the
+one deliberate scope cut worth flagging: no HUD/ambient warning exists yet before a Wellspring
+finishes decaying — only the in-world mesh swap signals it today.
+
+**Public API for any future consumer (a HUD warning per F-164, an extraction-pacing tool, a future
+Wellspring-adjacent system) to build against:**
+
+- `Wellspring.recorruption_sec: float` / `Wellspring.has_recorrupted: bool` — new replicated fields,
+  readable on any peer the same way `capped`/`progress_sec` already are (host's own value, or a
+  client's synced copy via the existing code-built `SceneReplicationConfig`).
+- `EventBus.subscribe_wellspring_recorrupted(listener: Callable)` — listener signature
+  `(wellspring_name: StringName, world_position: Vector3) -> void`, fired by the host the instant a
+  capped Wellspring's clock finishes. Same shape as `subscribe_wellspring_capped`.
+- `MireGrid.capped_wellspring_count() -> int` (pre-existing, task 4.9) now moves in both directions —
+  it no longer only grows for the life of a run.
+- `Wellspring.RECORRUPTION_DURATION_SEC` / `Wellspring.RECORRUPTING_VISUAL_FRACTION` — placeholder-tuned
+  constants (D-104); read these rather than hard-coding a threshold in a future consumer.
+
 ### 2026-08-18 — Task 6.2: Cycle Modifier framework ships — deck, draw, stacking, Cycle-weighted rules, incompatibility tags (lm)
 
 New autoload `CycleModifierService` (`systems/cycle/cycle_modifier_service.gd`, registered via

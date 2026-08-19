@@ -134,6 +134,26 @@ tier as F-016's class_name rule) the next time that file is touched for an unrel
 read before the mistake rather than after. No code fix needed — `tools/cycle_modifier_check.gd`
 already uses the constructor form throughout.
 
+### F-164 · A capped Wellspring's re-corruption clock (task 6.4) has no HUD or ambient warning before it finishes — only the in-world mesh swap tells a player
+
+**Area:** UI/UX · **Severity:** low · **Found:** 2026-08-18 by lm during 6.4
+
+`ui/hud/wellspring_hud.gd` only ever shows a prompt for an uncapped Wellspring (`_refresh_nearby()`
+skips any node where `capped == true`), so a player who is not standing right next to a decaying
+Wellspring gets no signal at all that it is losing its cap — no toast, no map marker, no ambient cue —
+until either they happen to walk past and see the `wellspring_recorrupting.glb` state, or it finishes
+outright and the "Hold [key] to begin capping" prompt reappears. This is a real, deliberate scope cut
+(`docs/SPECS.md` §6.4: "the in-world mesh swap is the only signal today") — task 6.4 is the backend
+clock, and ARCHITECTURE.md §2.2's "VFX, audio, camera, UI" row makes this presentation, a different
+system's job — but it is a genuine gap: DESIGN.md's whole framing is that the Mire's state should be
+"visible on the horizon," and a capped Wellspring quietly expiring off-screen cuts against that.
+
+**What closes this:** a future UI/polish task adds a warning once `recorruption_sec` crosses
+`RECORRUPTING_VISUAL_FRACTION` (or some other threshold) on any Wellspring the local player has ever
+capped — `EventBus.subscribe_wellspring_recorrupted()` already exists for the "it's gone" case;
+crossing the visual threshold has no event of its own yet and would need one, or a poll against the
+replicated `recorruption_sec` field the way `wellspring_hud.gd` already polls `progress_sec`.
+
 ### F-158 · `bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler
 
 **Area:** content/vfx · **Severity:** low · **Found:** 2026-08-19 by lm during 4.11
