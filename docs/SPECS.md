@@ -4380,6 +4380,41 @@ host-side ritual/clock/visual-state behavior is unchanged) and a full headless b
 
 ---
 
+## F-182 · `tools/unlock_check.gd`'s corrupt-save test provokes two engine ERROR lines with no `EXPECTED_ERROR_PATTERNS` declaration
+
+**Claim:** `tools/unlock_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Root cause:** `_check_save_versioning()` deliberately writes `"{not valid json"` to
+`TEST_CORRUPT_PATH` and calls `UNLOCK_SAVE.load_data()` on it, to prove the safe-default fallback
+(`purchased_ids == []`) rather than a crash. That fallback path is real production code
+(`core/save/unlock_save.gd:35-37`) and logs two engine lines on the way there: the engine's own
+`ERROR: Parse JSON failed. Error at line 0: Expected key` from `JSON.parse_string()`, then
+`unlock_save.gd`'s own `push_error("UnlockSave: %s did not contain a JSON object, starting fresh")`.
+Standing rule 4 (this file, preamble) requires either line to be declared by pattern in the check's
+verdict line; `finish()`'s print at `tools/unlock_check.gd:97` (pre-fix) had none, unlike
+`tools/chest_check.gd`'s own provoked-error case (`references unknown loot tier` →
+`EXPECTED_ERROR_PATTERNS`). `failures` itself was never miscounted — `check()` only increments on a
+failed assertion, never on a `push_error` — so this was a paperwork gap in the grep-graded verdict
+line, not a correctness bug hiding a real failure.
+
+**Fix:** added `· EXPECTED_ERROR_PATTERNS="Parse JSON failed|did not contain a JSON object"` to the
+`finish()` print at `tools/unlock_check.gd:94-98` (formerly line 97), same shape
+`tools/chest_check.gd:150` already uses, with a comment naming why the two lines are expected instead
+of silenced.
+
+**Verify:** `agent godot --script tools/unlock_check.gd`, grep for `ERROR:` and exclude the declared
+patterns — must be zero: `grep 'ERROR:' <log> | grep -vE 'Parse JSON failed|did not contain a JSON
+object' | wc -l`.
+
+**Verified 2026-08-19 (lm):** `UNLOCK_CHECK failures=0` both runs; both engine `ERROR:` lines present
+each run (`Parse JSON failed`, `did not contain a JSON object`) and both match the declared pattern;
+undeclared-`ERROR:` count is `0` both runs.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

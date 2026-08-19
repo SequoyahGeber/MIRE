@@ -798,30 +798,6 @@ their own `## N (task X)` comment rather than collapsing into a single bump.
 
 ---
 
-### F-182 · tools/unlock_check.gd's corrupt-save test provokes two engine ERROR lines with no EXPECTED_ERROR_PATTERNS declaration
-
-**Area:** verification · **Severity:** low · **Found:** 2026-08-19 by lm
-
-_check_save_versioning() deliberately writes an invalid JSON file to TEST_CORRUPT_PATH and calls
-UNLOCK_SAVE.load_data() on it, expecting (and correctly getting) the safe-default fallback — but
-that fallback path logs two real engine lines ("Parse JSON failed" and "did not contain a JSON
-object, starting fresh") that the check's own finish() print never declares, unlike
-tools/chest_check.gd's own provoked-error line ("references unknown loot tail" ->
-EXPECTED_ERROR_PATTERNS="references unknown loot tail" -- SPECS.md's standing rule 4). Found while
-adding F-173's chest-gate integration tests to this file and grepping the run's own output for
-ERROR lines as usual.
-
-Not fixed here: pre-existing behavior, unrelated to F-173's own scope (unlock_service.gd,
-loot_table_def.gd, chest.gd's new gate). failures=0 was already correct before and after my
-change -- the check() counter never counted these push_error calls as failures either way, so
-nothing is silently passing that should fail. This is a standing-rule-4 paperwork gap, not a
-correctness bug.
-
-What closes this: add `· EXPECTED_ERROR_PATTERNS="Parse JSON failed|did not contain a JSON
-object"` to unlock_check.gd's finish() print, same shape chest_check.gd already uses.
-
----
-
 ### F-183 · Wellspring caps and boss kills never grant a Chest — `wellspring`/`boss` tier loot tables are authored and reachable, but nothing ever rolls them
 
 **Area:** loot · **Severity:** medium · **Found:** 2026-08-19 by lp while closing F-146
@@ -875,6 +851,32 @@ finding) already uses correctly.
 ---
 
 ## Resolved
+
+### F-182 · tools/unlock_check.gd's corrupt-save test provokes two engine ERROR lines with no EXPECTED_ERROR_PATTERNS declaration — **fixed**
+
+**Area:** verification · **Severity:** low · **Found:** 2026-08-19 by lm
+
+_check_save_versioning() deliberately writes an invalid JSON file to TEST_CORRUPT_PATH and calls
+UNLOCK_SAVE.load_data() on it, expecting (and correctly getting) the safe-default fallback — but
+that fallback path logs two real engine lines ("Parse JSON failed" and "did not contain a JSON
+object, starting fresh") that the check's own finish() print never declared, unlike
+tools/chest_check.gd's own provoked-error line ("references unknown loot tier" ->
+EXPECTED_ERROR_PATTERNS="references unknown loot tier" -- SPECS.md's standing rule 4). failures=0
+was already correct both before and after — check()'s counter never counted these push_error calls
+as failures either way, so this was a standing-rule-4 paperwork gap, not a correctness bug hiding a
+real failure.
+
+**Fixed:** added `· EXPECTED_ERROR_PATTERNS="Parse JSON failed|did not contain a JSON object"` to
+`tools/unlock_check.gd`'s `finish()` print (was line 97, now the `finish()` block at line 94-99),
+same shape `tools/chest_check.gd` already uses, with a one-line comment naming why the two lines are
+expected instead of silenced.
+
+**Verified:** `agent godot --script tools/unlock_check.gd`, run twice. Both runs: `UNLOCK_CHECK
+failures=0`, both engine lines present ("Parse JSON failed", "did not contain a JSON object"), and
+`grep 'ERROR:' <log> | grep -vE 'Parse JSON failed|did not contain a JSON object' | wc -l` → `0` both
+times. Full spec written at `docs/SPECS.md` (F-182, none existed before this task).
+
+---
 
 ### F-181 · `Wellspring._finish_recorruption()` has the same host-only-guard `EventBus` emit bug F-168 fixed for `wellspring_capped` — `wellspring_recorrupted` still only fires on the host — **fixed**
 
