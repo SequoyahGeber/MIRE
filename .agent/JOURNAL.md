@@ -5587,3 +5587,15 @@ Notes along the way:
 Files: `autoload/command_service.gd`, `systems/commands/function_runner.gd`, `tools/function_check.gd`, `docs/DELEGATION.md`, `docs/FINDINGS.md`, `docs/SPECS.md`
 
 Commit at time of writing: `a0fbc06`
+
+---
+
+### DONE · F-232 · lm · 2026-08-19T15:47:09+00:00
+
+**No system has been audited from a hostile-client perspective except disconnect timing — every review to date asked whether code matches its spec, not what a malicious peer can force**
+
+Audited every host RPC entry point for hostile-client attacks (forged identity, out-of-range/state, command op-escalation) -- all already sound. Fixed the one real gap: unbounded per-peer request rate on BuildService.net_request_place and CommandService.net_submit_command. Added core/net/rpc_rate_limiter.gd (RpcRateLimiter), wired into both. Also fixed an unrelated crash in CommandService._parse_args() (selector-typed default stored unparsed). Verified with new tools/hostile_client_check.gd (real two-process ENet flood): HOSTILE_CLIENT_CHECK failures=0. Regression: build_net_check.gd, rpc_manifest_check.gd, entity_check.gd, command_check.gd, function_check.gd, command_console_check.gd all 0 failures; full boot 0 stray ERROR:. Residual low-severity gap filed as F-233; design recorded as D-141.
+
+Files: `core/net/rpc_rate_limiter.gd`, `autoload/build_service.gd`, `autoload/command_service.gd`, `tools/hostile_client_check.gd`
+
+Commit at time of writing: `96eae77`

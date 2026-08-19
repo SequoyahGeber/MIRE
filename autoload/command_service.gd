@@ -50,6 +50,16 @@ const _FALSE_WORDS: PackedStringArray = ["off", "false", "0", "no"]
 ## F-016: FunctionRunner is a script new this session. Preloaded rather than referenced bare, one-
 ## directional only — FunctionRunner itself never preloads this file back, so there is no cycle.
 const FUNCTION_RUNNER := preload("res://systems/commands/function_runner.gd")
+const RATE_LIMITER := preload("res://core/net/rpc_rate_limiter.gd")
+
+## F-232: `net_submit_command` requires no op for a LOCAL-scope command (`entities`, `recipes`,
+## `commands`…) — by design, since a read is never a mutation COMMANDS.md §1.3 needs to gate. That
+## means ANY connected peer, opped or not, could loop e.g. `entities` and force
+## `EntityDirectory.snapshot()` — a full entity-group tree scan — on every single submission, with no
+## cooldown before this. Placeholder-tuned like `BuildService`'s own F-232 constant: generous enough
+## that a real player spamming the console by hand never notices, tight enough to flatten a scripted
+## flood to a small, bounded rate.
+const RATE_LIMIT_INTERVAL_MSEC: int = 100
 
 ## docs/COMMANDS.md §5.1/§5.3. content/functions/autoexec.mcmd, if present, is scanned in like any
 ## other function and also auto-run at boot (host/offline only) — see `_run_autoexec()`.
@@ -104,6 +114,9 @@ var _functions: Dictionary[StringName, PackedStringArray] = {}
 ## Hook ids this process has actually connected a signal for — `has_wired_hook()` is what
 ## tools/function_check.gd asserts against rather than reaching into a private Dictionary.
 var _wired_hooks: Dictionary[StringName, bool] = {}
+## F-232: gates `net_submit_command` only — a locally-typed console line, a `function` line, and a
+## hook-fired line never touch the wire and so never touch this either.
+var _rate_limiter := RATE_LIMITER.new()
 
 
 func _ready() -> void:
@@ -324,6 +337,11 @@ func net_submit_command(request_id: int, line: String) -> void:
 	if not _owns_execution():
 		return
 	var sender_id: int = multiplayer.get_remote_sender_id()
+	if not _rate_limiter.allow(sender_id, RATE_LIMIT_INTERVAL_MSEC):
+		if _peer_connected(sender_id):
+			net_command_result.rpc_id(
+				sender_id, request_id, _result(false, "commands too frequent — slow down", {}))
+		return
 	var ctx: Dictionary = _build_ctx(sender_id, &"rpc")
 	var result: Dictionary = await execute(line, ctx)
 	# F-059's shape: the `await` above is exactly the window for a hostile disconnect — the sender
@@ -708,7 +726,18 @@ func _parse_args(spec: Dictionary, raw_args: PackedStringArray, ctx: Dictionary 
 
 		if i >= raw_args.size():
 			if bool(arg_spec.get("optional", false)):
-				parsed[arg_name] = arg_spec.get("default")
+				var default_value: Variant = arg_spec.get("default")
+				# F-232: a `selector`-typed default is meaningful written as raw grammar ("@e"), the
+				# same text a live token would be — every OTHER caller of a parsed selector
+				# (EntityDirectory.resolve(), _cmd_entities' own `EntitySelector.describe()`) expects
+				# the PARSED Dictionary shape, not the string. A default stored unparsed reached a
+				# selector consumer as a bare String and crashed the first time anyone typed the
+				# command's own documented bare form (`entities` with no argument at all).
+				if type_name == &"selector" and default_value is String:
+					var parsed_default: Dictionary = _parse_selector(default_value, arg_spec)
+					default_value = parsed_default.get("value", {}) \
+						if bool(parsed_default.get("ok", false)) else {}
+				parsed[arg_name] = default_value
 				continue
 			return {"ok": false, "kind": "missing", "error": "missing <%s>" % arg_name}
 

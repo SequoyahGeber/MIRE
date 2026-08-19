@@ -32,6 +32,7 @@ const VALIDATOR := preload("res://systems/building/placement_validator.gd")
 ## F-085: the `&"damageable"` group's damage implementation. Attached to whichever piece root
 ## doesn't already bring its own — see `_net_spawn_piece()` and the script's own doc comment.
 const BUILDABLE_PIECE := preload("res://systems/building/buildable_piece.gd")
+const RATE_LIMITER := preload("res://core/net/rpc_rate_limiter.gd")
 
 const LOG_CHANNEL: StringName = &"world"
 const CONTAINER_NODE: StringName = &"Buildings"
@@ -49,6 +50,15 @@ const QUERY_MASK: int = 1
 ## polygons on Hollowmere); a player dragging out a ten-piece wall would otherwise trigger ten of
 ## them back to back and hitch the host every time. Per-chunk baking is task 4.5's problem.
 const NAV_REBAKE_INTERVAL_SEC: float = 1.0
+
+## F-232: a place/destroy request costs the host a real `PhysicsDirectSpaceState3D` overlap query
+## (place) or a NodePath resolution and possibly a nav rebake (destroy) whether or not it is accepted
+## — neither had any per-peer cooldown before this, so a connected peer looping either bought free host
+## CPU with no exploit of any single request required. Placeholder-tuned, same status as this file's
+## own `NAV_REBAKE_INTERVAL_SEC`: generous enough that no legitimate placement/teardown rhythm ever
+## brushes it (dragging out a wall one piece per click is well under 10/sec), tight enough to flatten a
+## tight request loop to a small, bounded rate instead of one-query-per-network-frame.
+const RATE_LIMIT_INTERVAL_MSEC: int = 100
 
 signal build_confirmed(request_id: int, accepted: bool, reason: String)
 ## Host-side, for anything that wants to react to the world changing shape.
@@ -70,6 +80,9 @@ var _nav_rebake_pending: bool = false
 var _nav_rebake_elapsed: float = 0.0
 ## Cached transport ref (F-099). Path-resolved (F-011 — harnesses install theirs at /root).
 var _transport_node: Node
+## F-232: gates the two client-facing RPC handlers only — a local/offline call or a host-issued
+## `build`/`demolish` command never touches the wire and so never touches this either.
+var _rate_limiter := RATE_LIMITER.new()
 
 
 func _ready() -> void:
@@ -401,15 +414,22 @@ func _generated_piece(def: Resource) -> Node3D:
 func net_request_place(piece_id: String, placement: Transform3D, request_id: int) -> void:
 	if not bool(_transport().call("is_host")):
 		return
-	_process_place(
-		multiplayer.get_remote_sender_id(), StringName(piece_id), placement, request_id)
+	var sender_id: int = multiplayer.get_remote_sender_id()
+	if not _rate_limiter.allow(sender_id, RATE_LIMIT_INTERVAL_MSEC):
+		_answer(sender_id, request_id, false, "requests too frequent — slow down")
+		return
+	_process_place(sender_id, StringName(piece_id), placement, request_id)
 
 
 @rpc("any_peer", "call_remote", "reliable")
 func net_request_destroy(piece_name: String, request_id: int) -> void:
 	if not bool(_transport().call("is_host")):
 		return
-	_process_destroy(multiplayer.get_remote_sender_id(), StringName(piece_name), request_id)
+	var sender_id: int = multiplayer.get_remote_sender_id()
+	if not _rate_limiter.allow(sender_id, RATE_LIMIT_INTERVAL_MSEC):
+		_answer(sender_id, request_id, false, "requests too frequent — slow down")
+		return
+	_process_destroy(sender_id, StringName(piece_name), request_id)
 
 
 @rpc("authority", "call_remote", "reliable")

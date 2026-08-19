@@ -508,10 +508,10 @@
       "task": "5.5"
     },
     "autoload/build_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T15:23:39+00:00",
-      "hash": "323ead8ec13f1591a9f3f7802bd05c2da0f62acfb9e911fb25b12e24aea4ebfd",
-      "task": "F-228",
+      "agent": "lm",
+      "at": "2026-08-19T15:47:09+00:00",
+      "hash": "a3f66e81b654b8997cb253058e1bdcaff8c08f114eb94e27e61e456aaf16dfe3",
+      "task": "F-232",
       "token": null
     },
     "autoload/chest_placement_service.gd": {
@@ -536,9 +536,9 @@
     },
     "autoload/command_service.gd": {
       "agent": "lm",
-      "at": "2026-08-19T15:32:50+00:00",
-      "hash": "c0172390226eda9d673f8208ed1485069ce4758ffe10a21239b7fd5f91e3b622",
-      "task": "F-230",
+      "at": "2026-08-19T15:47:09+00:00",
+      "hash": "d91ff85f18fcfc51c1dd37adf85e33124854f371be32c05f79ccf3980cb653b0",
+      "task": "F-232",
       "token": null
     },
     "autoload/crafting_service.gd": {
@@ -1667,6 +1667,13 @@
       "at": "2026-08-19T12:47:53+00:00",
       "hash": "60bf0bd3e00417e11c1f806876ed502fce0b923e503bf3a03a2f33745ed1ad7e",
       "task": "F-213",
+      "token": null
+    },
+    "core/net/rpc_rate_limiter.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T15:47:09+00:00",
+      "hash": "43ea50eafcc9f77a5df1ab8158cbf263a70e200bcfb388095303470dfdb2ba08",
+      "task": "F-232",
       "token": null
     },
     "core/render/mesh_merge.gd": {
@@ -2890,6 +2897,13 @@
       "at": "2026-08-19T09:01:10+00:00",
       "hash": "4eb9e50996318f283d5cef407adcbcde645dbb42c4f789fffc6c0ec0d2d60463",
       "task": "F-154",
+      "token": null
+    },
+    "tools/hostile_client_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T15:47:09+00:00",
+      "hash": "8e422e72e0b069d39455fc43194c25cb21c869ec3ff38fa6d3c534d7bc95b523",
+      "task": "F-232",
       "token": null
     },
     "tools/import_cache_guard_check.py": {
@@ -6976,6 +6990,15 @@
       "status": "done",
       "tier": "F",
       "title": "`ResourceScatterField`'s depletion-restore replays a real harvest yield, so every rebuild of an already-harvested scattered point grants a free duplicate of its item to the host"
+    },
+    "F-232": {
+      "done_at": "2026-08-19T15:47:09+00:00",
+      "done_by": "lm",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "No system has been audited from a hostile-client perspective except disconnect timing \u2014 every review to date asked whether code matches its spec, not what a malicious peer can force"
     }
   },
   "version": 1
