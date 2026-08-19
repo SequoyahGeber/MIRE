@@ -210,8 +210,8 @@
     },
     "assets/food/preview/diag_one.png": {
       "agent": "slate17",
-      "at": "2026-08-19T08:00:11+00:00",
-      "hash": "750d0dd44661d9da1f851a38ca78b343bae45678d9563c771ff3e263d7cce0ea",
+      "at": "2026-08-19T08:00:26+00:00",
+      "hash": null,
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },

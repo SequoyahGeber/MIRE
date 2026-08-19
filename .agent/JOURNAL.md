@@ -4635,3 +4635,15 @@ See the previous handoff note for A-012 — re-claimed only to attach the exact 
 Files: `assets/food/catalog.json`, `assets/food/exports/bog_loaf.glb`, `assets/food/exports/cooked_fish.glb`, `assets/food/exports/cooked_meat.glb`, `assets/food/exports/fired_flask.glb`, `assets/food/exports/healing_draught.glb`, `assets/food/exports/healing_stew.glb`, `assets/food/exports/hearty_stew.glb`, `assets/food/exports/honey_jar.glb`, `assets/food/exports/meat_skewer.glb`, `assets/food/exports/pale_draught.glb`, `assets/food/exports/raw_fish.glb`, `assets/food/exports/stamina_tonic.glb`, `assets/food/exports/suspicious_sludge.glb`, `assets/food/preview/diag_one.png`, `assets/food/preview/food_cooked_preview.png`, `assets/food/preview/food_tonics_preview.png`, `assets/food/preview/food_vessels_preview.png`, `assets/source/food_set.blend`
 
 Commit at time of writing: `131a86a`
+
+---
+
+### HANDOFF · 2.1d · slate17 · 2026-08-19T08:00:26+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+Removed a stray diagnostic render (diag_one.png) that the A-012 ship swept in.
+
+Files: `assets/food/preview/diag_one.png`
+
+Commit at time of writing: `3845e87`
