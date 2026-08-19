@@ -160,7 +160,14 @@ EDGE_S = 8.0  # beds/drone render loop+EDGE with EDGE-long cos edges; wrap_loop 
 
 def pad_note_spans(sections: list[list[str]], section_s: float) -> list[tuple[float, float, str]]:
     """Merge common tones across adjacent sections into single held voices —
-    real voice-leading, so only the notes that change actually move."""
+    real voice-leading, so only the notes that change actually move.
+
+    Iterates newly-wanted notes in sorted order rather than the raw `set`'s
+    order: Python randomizes a `set`'s string iteration order per process
+    (PYTHONHASHSEED), and `render_track()` draws from a shared seeded `rng`
+    once per span in the order `pad_note_spans` returns them — so an
+    unsorted `set` here silently made every render's jitter/gain/pan
+    non-reproducible despite the fixed seed (F-176)."""
     spans: list[tuple[float, float, str]] = []
     active: dict[str, float] = {}
     t = 0.0
@@ -168,7 +175,7 @@ def pad_note_spans(sections: list[list[str]], section_s: float) -> list[tuple[fl
         wanted = set(notes)
         for note in [k for k in active if k not in wanted]:
             spans.append((active.pop(note), t, note))
-        for note in wanted:
+        for note in sorted(wanted):
             active.setdefault(note, t)
         t += section_s
     for note, start in active.items():

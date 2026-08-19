@@ -4247,3 +4247,18 @@ Notes along the way:
 Files: `autoload/chest_placement_service.gd`, `tools/mapgen/hollowmere_layout.py`, `world/gen/layouts/hollowmere.json`, `tools/chest_placement_check.gd`, `project.godot`, `autoload/chest_placement_service.gd.uid`, `tools/chest_placement_check.gd.uid`
 
 Commit at time of writing: `c2dec01`
+
+---
+
+### DONE · F-176 · lm · 2026-08-19T05:58:02+00:00
+
+**`tools/audio/render_music.py`'s ambient tracks are not byte-identical on re-render, contradicting `docs/AUDIO.md`'s "reproduces the committed files bit-for-bit" claim**
+
+Fixed render_music.py's real determinism bug (pad_note_spans() set() iteration order tied to PYTHONHASHSEED, not just OGG encoder drift as filed). docs/AUDIO.md reworded to an accurate claim. New tools/audio/repro_check.py proves it: python3 tools/audio/repro_check.py -> REPRO_CHECK failures=0, run twice. agent godot --quit-after 120 clean. Filed F-184 for an unrelated exit-code bug spotted in audio_check.py.
+
+Notes along the way:
+- Root cause was NOT just OGG encoder drift as the finding guessed: pad_note_spans() iterated a raw set() of note names, whose string order depends on PYTHONHASHSEED, which fed the shared seeded rng's draw order -> WAV masters themselves were non-reproducible, not just the .ogg. Fixed via sorted(wanted). Separately confirmed OGG container bytes differ run-to-run even with identical PCM input (libsndfile stamps a random per-stream serial number) -- inherent to OGG, not fixable/not a bug; repro_check.py verifies via decoded-PCM equality instead of raw bytes.
+
+Files: `tools/audio/render_music.py`, `tools/audio/repro_check.py`
+
+Commit at time of writing: `14d962b`

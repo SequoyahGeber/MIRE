@@ -35,18 +35,6 @@
       "at": "2026-08-18T22:14:11+00:00",
       "task": "F-144"
     },
-    "tools/audio/render_music.py": {
-      "agent": "lm",
-      "at": "2026-08-19T05:51:35+00:00",
-      "task": "F-176",
-      "token": null
-    },
-    "tools/audio/repro_check.py": {
-      "agent": "lm",
-      "at": "2026-08-19T05:51:35+00:00",
-      "task": "F-176",
-      "token": null
-    },
     "tools/door_check.gd": {
       "agent": "slate17",
       "at": "2026-08-18T22:24:36+00:00",
@@ -129,16 +117,6 @@
       ],
       "notes": [],
       "started": "2026-08-18T21:51:43+00:00"
-    },
-    "F-176": {
-      "agent": "lm",
-      "files": [
-        "tools/audio/render_music.py",
-        "tools/audio/repro_check.py"
-      ],
-      "notes": [],
-      "started": "2026-08-19T05:51:35+00:00",
-      "token": null
     }
   },
   "recent": {
@@ -2071,15 +2049,23 @@
       "task": "7.2"
     },
     "tools/audio/render_music.py": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "d27e0674c46ea10ea60836eed769e8bf083f1dd3a86f80d8f0370ed00c161a2c",
-      "task": "5.5"
+      "agent": "lm",
+      "at": "2026-08-19T05:58:02+00:00",
+      "hash": "cd5be407ef94da6bce07f9600606cb15e2fac547c3ebfa8732c9f28d79b1e816",
+      "task": "F-176",
+      "token": null
     },
     "tools/audio/render_sfx.py": {
       "agent": "tine18",
       "at": "2026-08-18T18:11:45+00:00",
       "task": "7.1"
+    },
+    "tools/audio/repro_check.py": {
+      "agent": "lm",
+      "at": "2026-08-19T05:58:02+00:00",
+      "hash": "5ae221bde2de4c95f276a333146a214c62947d179f1f6f32ab605c6e18709fe5",
+      "task": "F-176",
+      "token": null
     },
     "tools/audio_import_check.gd": {
       "agent": "lp",
@@ -5604,9 +5590,11 @@
       "title": "`Array[StringName].sort()` does not sort lexicographically \u2014 at least two other call sites besides F-167's rely on it anyway"
     },
     "F-176": {
+      "done_at": "2026-08-19T05:58:02+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`tools/audio/render_music.py`'s ambient tracks are not byte-identical on re-render, contradicting `docs/AUDIO.md`'s \"reproduces the committed files bit-for-bit\" claim"
     },
@@ -5655,6 +5643,20 @@
       "status": "todo",
       "tier": "F",
       "title": "tools/unlock_check.gd's corrupt-save test provokes two engine ERROR lines with no EXPECTED_ERROR_PATTERNS declaration"
+    },
+    "F-183": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Wellspring caps and boss kills never grant a Chest \u2014 `wellspring`/`boss` tier loot tables are authored and reachable, but nothing ever rolls them"
+    },
+    "F-184": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`tools/audio/audio_check.py`'s exit code is inverted \u2014 it exits 0 when checks FAIL and 1 when they PASS"
     }
   },
   "version": 1
