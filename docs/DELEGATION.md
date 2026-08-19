@@ -75,6 +75,31 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-220 resolved: `CycleModifierService`'s per-cycle modifier draw derives its seed from `GameState.run_seed`, not boot-time entropy (lm)
+
+Same fix shape as F-210/F-219 below, and the simplest of the three: no new id scheme needed.
+**`CycleModifierService` (`systems/cycle/cycle_modifier_service.gd`) gained the identical private
+pair `Chest`/`RewardService` carry** — `_run_seed() -> int` and `_seed_for_run(run_seed: int, draw_id:
+String) -> int` (own salt `_SEED_SALT = 0xB16B00B5`, distinct from every other file's). `cycle: int`
+was already `host_draw_modifier()`'s own parameter and is a Cycle's stable per-draw id on its own (a
+Cycle only advances forward, and each cycle draws at most once) — no counter to mint, unlike
+`RewardService`. `_ready()`'s `_rng.randomize()` is gone; `host_draw_modifier()` now sets `_rng.seed =
+_seed_for_run(_run_seed(), str(cycle))` immediately before `_weighted_pick()`.
+
+**Verified:** new `tools/cycle_modifier_seed_check.gd` — `agent godot --script
+tools/cycle_modifier_seed_check.gd` → `CYCLE_MODIFIER_SEED_CHECK failures=0`. Real content ships only
+one Cycle Modifier (`long_night.tres`), too few for a weighted pick to show seed-dependent variation,
+so the check injects three synthetic equally-weighted candidates straight into `_defs` (same seam
+`tools/cycle_modifier_check.gd`'s own incompatibility tests use) and checks: same `run_seed` + same
+`cycle` draws identically; replaying a `run_seed` across a cycle sequence reproduces the exact same
+per-cycle draws; a different `run_seed` at the same cycles draws a different sequence.
+`tools/cycle_modifier_check.gd` (the existing wiring/eligibility check, unchanged) still
+`CYCLE_MODIFIER_CHECK failures=0`.
+
+**Swept, not found:** all `.randomize()` call sites project-wide re-checked (three remain, all
+previously-confirmed intentional exceptions — see F-219's own sweep note below). F-220 was the last
+of the four live sites F-210's original sweep found.
+
 ### 2026-08-19 — F-219 resolved: `RewardService`'s Wellspring/boss-kill loot roll derives its seed from `GameState.run_seed`, not boot-time entropy (lm)
 
 Same fix shape as F-210's `Chest` entry below, adapted for a trigger with no placement id of its own.
