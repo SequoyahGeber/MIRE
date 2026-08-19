@@ -1909,19 +1909,28 @@ def _suggest_check(tid, title):
     A task that ends with a check someone can re-run is a task the director can verify by reading
     one exit code instead of re-deriving the work. There are ~49 of these in tools/ already.
 
-    Match on name parts, not substrings: 'cycle' must not select session_lifecycle_check."""
+    Match on name parts, not substrings: 'cycle' must not select session_lifecycle_check.
+
+    F-211: count DISTINCT PARTS matched, not words. 8.4's title contains both "build" and "builds"
+    — two different words in the `_tokens()` set — which both fuzzy-match the single part "build".
+    Counting per word let that one real signal double itself past the `>= 2` noise floor and
+    suggested build_check.gd/build_net_check.gd/buildable_content_check.gd (task 3.6/3.7's
+    placement system) for a Steam export-pipeline task that shares nothing but the word "build".
+    Requiring two distinct filename PARTS to each find their own matching word closes this: a
+    plural/inflection pair can never satisfy it alone, since they can only ever match one part
+    between them."""
     words = _tokens(title)
     scored = []
     for path in sorted(glob.glob(os.path.join(ROOT, "tools", "*_check.gd"))):
         stem = os.path.basename(path)[:-3]
         parts = [p for p in stem.split("_") if p != "check"]
-        hits = sum(1 for w in words
-                   if any(p.startswith(w[:5]) or w.startswith(p[:5]) for p in parts))
-        if hits >= 2:
+        matched = {p for p in parts
+                   if any(p.startswith(w[:5]) or w.startswith(p[:5]) for w in words)}
+        if len(matched) >= 2:
             # One shared word is noise, not a match: "food items" picks item_icons_check, and
             # pointing a lane at the wrong proof is worse than admitting there isn't one — it will
             # run a green check and believe its work is verified.
-            scored.append((-hits, "tools/%s.gd" % stem))
+            scored.append((-len(matched), "tools/%s.gd" % stem))
     scored.sort()
     return [p for _, p in scored[:3]]
 

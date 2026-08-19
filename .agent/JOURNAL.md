@@ -4879,3 +4879,15 @@ Notes along the way:
 Files: `export_presets.cfg`, `.gitignore`, `tools/steam/steam_build_config.sh`, `tools/steam/export_release.sh`, `tools/steam/steam_upload.sh`, `tools/steam/templates/app_build.vdf.template`, `tools/steam/templates/depot_windows.vdf.template`, `tools/steam/templates/depot_macos.vdf.template`, `tools/steam/templates/depot_linux.vdf.template`
 
 Commit at time of writing: `efd6b79`
+
+---
+
+### DONE · F-211 · lm · 2026-08-19T11:05:30+00:00
+
+**Task 8.4's work order named the wrong verification scripts — `build_check.gd`/`build_net_check.gd`/`buildable_content_check.gd` test the buildable/crafting placement system (task 3.6/3.7), not the Steam export build pipeline**
+
+Fixed agent order's _suggest_check() root cause: it counted matching WORDS not distinct filename PARTS, so a word/plural pair (build/builds) alone could satisfy the >=2 noise floor and suggest an unrelated check. Now requires two independent parts to match. Verified against all 344 titles in .agent/state.json (29 diffs, all confirmed false-positive drops, none a real match lost); 8.4's title now suggests []. Syntax-checked with ast.parse. Full writeup docs/SPECS.md '## F-211 ·', summary in docs/DELEGATION.md Current state.
+
+Files: `.agent/bin/agent`
+
+Commit at time of writing: `04ef7b6`

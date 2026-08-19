@@ -10,10 +10,10 @@
       "token": null
     },
     ".agent/bin/agent": {
-      "agent": "lp",
-      "at": "2026-08-19T10:25:06+00:00",
-      "hash": "3bc323554770887e3b783030ec794828af47a1ed21682edded78c5a92bd5f5e6",
-      "task": "F-205",
+      "agent": "lm",
+      "at": "2026-08-19T11:05:30+00:00",
+      "hash": "50568145fe0b7288f584ec8844e0a86724f765300a215042b2b02d2c8e9a1d38",
+      "task": "F-211",
       "token": null
     },
     ".agent/bin/lane": {
@@ -4471,6 +4471,14 @@
       "tier": "T2",
       "title": "Mire grid simulation + delta replication (`ARCHITECTURE.md` \u00a75)"
     },
+    "4.9-review": {
+      "est": "0.5",
+      "milestone": "M4",
+      "review_of": "4.9",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 4.9 @ 219d99c \u2014 judge the commit, file findings, no edits"
+    },
     "5.1": {
       "done_at": "2026-08-19T00:23:49+00:00",
       "done_by": "lp",
@@ -4502,6 +4510,14 @@
       "status": "done",
       "tier": "T2",
       "title": "Ranged combat: bow, projectiles, host-authoritative hit validation"
+    },
+    "5.3-review": {
+      "est": "0.5",
+      "milestone": "M5",
+      "review_of": "5.3",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 5.3 @ 26d4294 \u2014 judge the commit, file findings, no edits"
     },
     "5.4": {
       "est": "6",
@@ -4607,6 +4623,14 @@
       "status": "done",
       "tier": "T2",
       "title": "Extraction: shipwreck POI, repair recipe, board-to-leave, group confirm flow (`DESIGN.md` \u00a75.2)"
+    },
+    "6.5-review": {
+      "est": "0.5",
+      "milestone": "M6",
+      "review_of": "6.5",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 6.5 @ 900ef93 \u2014 judge the commit, file findings, no edits"
     },
     "6.6": {
       "done_at": "2026-08-19T02:49:31+00:00",
@@ -6629,6 +6653,22 @@
       "status": "todo",
       "tier": "F",
       "title": "No menu in the game supports gamepad UI focus navigation \u2014 a bare controller with no Steam Input translation cannot open any panel"
+    },
+    "F-210": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`Chest`'s loot roll still seeds from boot-time `randomize()` even though `GameState.run_seed` now exists \u2014 D-041's own reversal trigger has fired"
+    },
+    "F-211": {
+      "done_at": "2026-08-19T11:05:30+00:00",
+      "done_by": "lm",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Task 8.4's work order named the wrong verification scripts \u2014 `build_check.gd`/`build_net_check.gd`/`buildable_content_check.gd` test the buildable/crafting placement system (task 3.6/3.7), not the Steam export build pipeline"
     }
   },
   "version": 1
