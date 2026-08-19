@@ -75,6 +75,31 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-211 fixed: `agent order`'s `_suggest_check()` no longer lets a word/plural pair (build/builds, command/commands, …) double-count into a fake second match (lm)
+
+`.agent/bin/agent`'s `_suggest_check(tid, title)` — the function that fills a work order's "Verify it
+yourself, headless" section whenever `docs/SPECS.md` has no block yet for the task — matched
+`tools/*_check.gd` filenames against a task title by fuzzy-word overlap, requiring `>= 2` hits before
+suggesting a file. It counted matching WORDS, not distinct filename PARTS, so two different spellings
+of one word (e.g. "build" and "builds", both real tokens in `_tokens()`'s dedup set) could satisfy the
+`>= 2` floor by themselves, with no second genuine signal. This is what put
+`build_check.gd`/`build_net_check.gd`/`buildable_content_check.gd` (task 3.6/3.7's buildable/crafting
+placement system) into task 8.4's Steam-export work order — 8.4's title has "build" and "builds", none
+of which have anything to do with those scripts' actual subject.
+
+**Fixed:** now requires two of a filename's own underscore-split parts to each independently match a
+title word — a plural/inflection pair can only ever satisfy one part between them. Verified against
+every title in `.agent/state.json` (344 tasks/findings): 29 changed, all 29 read by hand, every one a
+dropped false positive of the identical shape (`session`/`sessions`, `command`/`commands`,
+`craft`/`crafting`, and others) — full detail in `docs/SPECS.md`'s `## F-211 ·` block.
+
+**What this means for future `agent order` calls:** a task with no SPECS.md block yet now gets a
+*correct* suggestion or none at all — never falls back to `.agent/bin/agent godot --quit-after 120 #
+no focused check exists yet`, same as before, but no longer risks pointing a lane at a green check
+that proves nothing about its actual deliverable. If `agent order` still suggests the wrong check for
+some other task, that is real signal the title-matching heuristic needs more than this fix, not
+something to work around by hand-editing the generated order.
+
 ### 2026-08-19 — Task 8.4: Steam release export presets, `steamcmd` upload pipeline, branch guard — built against D-008's placeholder App ID, ready for 8.2/8.11 to fill in (lm)
 
 **What shipped:** three new release export presets in `export_presets.cfg` — `"macOS (Release)"`,

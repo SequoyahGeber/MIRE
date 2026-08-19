@@ -5832,6 +5832,61 @@ no CLI/VDF surface exists for it), per-platform Steam launch options (8.11).
 
 ---
 
+## F-211 · Task 8.4's work order named the wrong verification scripts — `build_check.gd`/`build_net_check.gd`/`buildable_content_check.gd` test the buildable/crafting placement system (task 3.6/3.7), not the Steam export build pipeline
+
+**Claim:** `.agent/bin/agent`. No networked system, no `ARCHITECTURE.md` §2.2 row — this is offline
+director tooling, not game code.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Root cause — not a one-off authoring slip:** `agent order` generates the "Verify it yourself,
+headless" section from `checks = _spec_verify(spec) or _suggest_check(tid, t["title"])`
+(`.agent/bin/agent:2307`); 8.4 had no `docs/SPECS.md` block yet at dispatch time, so it fell to
+`_suggest_check()` (`.agent/bin/agent:1906`), which scores each `tools/*_check.gd` by fuzzy-matching
+the task title's words against the filename's underscore-split parts and suggests any file scoring
+`>= 2` — a deliberate noise floor, per its own comment: "one shared word is noise, not a match." The
+bug: it counted matching WORDS, not distinct PARTS. 8.4's title contains both "build" and "builds" —
+two different tokens in `_tokens()`'s dedup set — and both fuzzy-match the single part `"build"`. One
+real signal doubled itself past the `>= 2` floor and pulled in `build_check.gd`, `build_net_check.gd`
+and `buildable_content_check.gd`, whose actual subject (task 3.6/3.7's in-game buildable/crafting
+placement system) shares nothing with 8.4's Steam export pipeline but the word "build" itself.
+
+**Decision made here:** fix the heuristic rather than leave this as "a one-time work-order-authoring
+trap" (the finding's own first-pass read, filed before the generator's source was traced) — it is a
+reachable bug in shared dispatch tooling that every future `agent order` call goes through, not a
+mistake by whoever wrote 8.4's order text (nobody wrote it by hand; `agent order` generated it). Any
+task with no SPECS.md block yet, whose title contains a word alongside its own plural/inflected form,
+was exposed to the identical false match.
+
+**Fix:** `_suggest_check()` now scores by the number of DISTINCT PARTS matched, not the number of
+matching words — a filename is suggested only when at least two of its own underscore-split parts
+each find independent evidence in the title, so two spellings of the same word (build/builds,
+command/commands, session/sessions, craft/crafting, ship/shipwreck, unlock/unlocked, …) can satisfy
+at most one part between them and can no longer manufacture a second, fake one.
+
+**Verified:** loaded `.agent/bin/agent` as a module and called `_suggest_check("8.4", <8.4's real
+title from .agent/state.json>)` directly — returns `[]` instead of the three wrong scripts. Ran both
+the old and new scoring logic against every title in `.agent/state.json` (344 tasks + findings): 29
+titles changed. Read all 29 diffs by hand — every dropped suggestion traces to the identical
+single-word-doubling bug, including cases with zero code relevance (0.12, a pure orchestration-harness
+task, was suggesting `lan_launch_check.gd`; 8.1, a Steamworks-account/paperwork task with no code
+component at all, was suggesting `steam_check.gd`). None of the 29 diffs dropped a suggestion the
+title gave genuine two-part evidence for — where a title does name two distinct check-name parts
+(3.16's "catalog", F-68's "spawner", F-179's "stringname"/"sort"), that check is still suggested.
+`python3 -c "import ast; ast.parse(open('.agent/bin/agent').read())"` → syntax OK. No `agent godot`
+check applies: this is pure offline director tooling with no game-engine surface, and running the
+three scripts this finding is *about* would repeat 8.4's exact mistake rather than verify the fix.
+
+**Swept for the same shape elsewhere (AGENTS.md §3):** grepped `.agent/bin/agent` for the same
+per-word (rather than per-distinct-signal) scoring pattern (`hits >=`, `sum(1 for`) — `_suggest_check()`
+was the only site with this shape. The 344-title sweep above stands in for "fix the siblings": there
+was one code path, already fixed, whose effect had silently shown up in 29 places.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

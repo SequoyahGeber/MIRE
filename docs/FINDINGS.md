@@ -69,29 +69,6 @@ do is worth as much as the record of what we did.
 
 ## Open
 
-### F-211 · Task 8.4's work order named the wrong verification scripts — `build_check.gd`/`build_net_check.gd`/`buildable_content_check.gd` test the buildable/crafting placement system (task 3.6/3.7), not the Steam export build pipeline
-
-**Area:** tooling/docs · **Severity:** low · **Found:** 2026-08-19 by lm during 8.4
-
-The 8.4 work order's "Verify it yourself, headless" section told the agent to run `tools/build_check.gd`,
-`tools/build_net_check.gd` and `tools/buildable_content_check.gd` to verify "Depots, build pipeline,
-`steamcmd` upload script, branches." All three scripts' own header comments say otherwise:
-`build_check.gd` is "Offline proof for task 3.6's placement rules" (the in-game buildable/structure
-system), `build_net_check.gd` is its two-process networked counterpart, and `buildable_content_check.gd`
-verifies task 3.7's buildable `.tres` content set. None of the three touch `export_presets.cfg`,
-Godot's export pipeline, or anything Steam-related — the name collision is "build" the crafting/
-construction system vs. "build" the compile-and-export pipeline, two unrelated meanings sharing one
-word. Actually running them would have proven nothing about 8.4's deliverable and burned a chunk of
-this task's quota for zero signal.
-
-**What closes this:** whoever next writes or dispatches a work order for a build-pipeline/export/Steam
-task should verify against the actual artifact instead (an `agent godot --headless --export-release/
---export-debug` run, a smoke-boot of the exported binary, `bash -n`/shellcheck on any new shell script)
-rather than trusting a "run these checks" list without opening them first. This task's own SPECS.md
-block (`## 8.4 ·`) records what was actually run and why. No code fix needed — this is a one-time
-work-order-authoring trap, not a bug in the named scripts themselves, which are correct for their own
-task.
-
 ### F-161 · Task 5.3's three new ranged-combat RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-18 by lp during 5.3
@@ -731,6 +708,49 @@ before first use.
 ---
 
 ## Resolved
+
+### F-211 · Task 8.4's work order named the wrong verification scripts — `build_check.gd`/`build_net_check.gd`/`buildable_content_check.gd` test the buildable/crafting placement system (task 3.6/3.7), not the Steam export build pipeline — **fixed**
+
+**Area:** tooling/docs · **Severity:** low · **Found:** 2026-08-19 by lm during 8.4
+
+The 8.4 work order's "Verify it yourself, headless" section told the agent to run `tools/build_check.gd`,
+`tools/build_net_check.gd` and `tools/buildable_content_check.gd` to verify "Depots, build pipeline,
+`steamcmd` upload script, branches." All three scripts' own header comments say otherwise:
+`build_check.gd` is "Offline proof for task 3.6's placement rules" (the in-game buildable/structure
+system), `build_net_check.gd` is its two-process networked counterpart, and `buildable_content_check.gd`
+verifies task 3.7's buildable `.tres` content set. None of the three touch `export_presets.cfg`,
+Godot's export pipeline, or anything Steam-related — the name collision is "build" the crafting/
+construction system vs. "build" the compile-and-export pipeline, two unrelated meanings sharing one
+word. Actually running them would have proven nothing about 8.4's deliverable and burned a chunk of
+this task's quota for zero signal.
+
+**What closes this:** whoever next writes or dispatches a work order for a build-pipeline/export/Steam
+task should verify against the actual artifact instead (an `agent godot --headless --export-release/
+--export-debug` run, a smoke-boot of the exported binary, `bash -n`/shellcheck on any new shell script)
+rather than trusting a "run these checks" list without opening them first. This task's own SPECS.md
+block (`## 8.4 ·`) records what was actually run and why. No code fix needed — this is a one-time
+work-order-authoring trap, not a bug in the named scripts themselves, which are correct for their own
+task.
+
+**Resolved 2026-08-19 by lm.** Fixed the actual root cause, not just documented it. Traced the wrong suggestions to `agent order`'s
+`_suggest_check()` (`.agent/bin/agent:1906`), which fills a work order's verify section from title
+keyword-matching whenever no `docs/SPECS.md` block exists yet — 8.4's case. It scored by counting
+WORDS that fuzzy-matched a filename's parts, not distinct PARTS, so "build" and "builds" (two tokens
+in 8.4's title) both matched the single part "build" and doubled past the >= 2 noise floor, pulling
+in build_check.gd/build_net_check.gd/buildable_content_check.gd — task 3.6/3.7's placement system,
+unrelated to Steam export.
+
+Fix: now requires two of a filename's own parts to each independently match a title word, so a
+plural/inflection pair can satisfy at most one part. Verified: `_suggest_check("8.4", <real 8.4
+title>)` now returns []. Ran old vs new logic against all 344 titles in .agent/state.json — 29
+changed, read every diff by hand, all 29 were dropped false positives of the identical shape (e.g.
+0.12 was suggesting lan_launch_check.gd, 8.1 a paperwork-only task was suggesting steam_check.gd);
+none dropped a suggestion with genuine two-part title evidence. `python3 -c "import ast;
+ast.parse(open('.agent/bin/agent').read())"` -> syntax OK. Swept .agent/bin/agent for the same
+per-word scoring shape (`hits >=`, `sum(1 for`) — _suggest_check() was the only site.
+
+Full writeup: docs/SPECS.md `## F-211 ·` block. docs/DELEGATION.md Current state carries the summary
+for future agent order calls.
 
 ### F-203 · AuthoredWorld's F-187 chunk merge excludes sway- and emitter-bearing props — a second attempt needs per-vertex height encoding or per-asset placement metadata inside a merged mesh — **fixed (emitters); sway spun out to F-208**
 
