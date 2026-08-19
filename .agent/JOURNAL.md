@@ -4202,3 +4202,18 @@ Notes along the way:
 Files: `autoload/command_service.gd`, `tools/stringname_sort_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`
 
 Commit at time of writing: `734e005`
+
+---
+
+### DONE · F-177 · lp · 2026-08-19T05:39:13+00:00
+
+**`EnemyWorld.bake_navigation()` — the LIVE nav baker — still ignores placed buildables; only `NavBaker` (task 4.5, unreachable per F-139) got F-159's fix**
+
+EnemyWorld.bake_navigation() (the live nav baker) now includes BuildService's placed pieces via a second parse_source_geometry_data() rooted at /root/BuildService/Buildings, merged before the one bake call. Verified: agent godot --script tools/nav_bake_check.gd -> NAV_BAKE_CHECK failures=0, run twice; new _check_enemy_world_buildable_obstruction() proves a real BuildService.request_place() forces map_get_path() to detour (6.000m straight -> 7.525m/5 waypoints) and un-detour after request_destroy(). No regressions: build_check.gd, build_net_check.gd, combat_check.gd, enemy_check.gd all failures=0. Docs: FINDINGS.md F-177 moved to Resolved, DECISIONS.md D-121, SPECS.md F-177 block, DELEGATION.md Current state entry.
+
+Notes along the way:
+- Fixed in autoload/enemy_world.gd: bake_navigation() now does a second parse_source_geometry_data() rooted at /root/BuildService/Buildings, merged into the terrain geometry before the one bake call. D-121 records why this is a second parse-and-merge rather than porting NavBaker's box-tracking. New check tools/nav_bake_check.gd::_check_enemy_world_buildable_obstruction() uses a path-length assertion (map_get_path detour), not point-snap distance -- found a real Recast/Godot quirk where a box flush on a perfectly flat coincident surface leaves a disconnected walkable island at its centre, snappable but unroutable. failures=0, ran twice.
+
+Files: `autoload/enemy_world.gd`, `tools/nav_bake_check.gd`
+
+Commit at time of writing: `48a0f81`

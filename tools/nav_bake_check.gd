@@ -11,6 +11,7 @@ extends SceneTree
 ## "our bake produced polygons" does not by itself prove we understood why.
 const NavBakerScript = preload("res://world/chunk/nav_baker.gd")
 const MesherScript = preload("res://world/chunk/chunk_mesher.gd")
+const VALIDATOR = preload("res://systems/building/placement_validator.gd")
 
 const HeightmapScript = preload("res://world/gen/island_heightmap.gd")
 
@@ -52,6 +53,7 @@ func _run() -> void:
 	_check_seam_rules()
 	await _check_buildable_obstruction()
 	await _check_retire()
+	await _check_enemy_world_buildable_obstruction()
 
 	if baker != null:
 		baker.free()
@@ -294,6 +296,145 @@ func _check_retire() -> void:
 	baker.call("_on_chunk_mesh_ready", coords[1], 1)
 	check(not bool(baker.call("has_region", coords[1])),
 		"a chunk demoted below LOD0 also loses its region")
+
+
+## F-177: `EnemyWorld.bake_navigation()` is the LIVE nav baker — the one a real session bootstraps
+## at start and `BuildService._request_nav_rebake()` re-triggers on every placement/destroy
+## (docs/DECISIONS.md D-118). Only `NavBaker` (task 4.5, unreachable in the live game per F-139) got
+## F-159's original fix; this proves the same fix now also lands where the live game actually calls
+## in. A REAL `BuildService.request_place()`, not a synthetic body dropped by hand — build_check.gd
+## already proved that round trip works, this proves the SIDE EFFECT of it (a rebaked live navmesh)
+## now actually happens. A placed piece's container lives under the `BuildService` autoload
+## (`/root/BuildService/Buildings`), a SIBLING of the level under `/root`, never a descendant of
+## `current_scene` — the bug was never "the bake can't see solid geometry", it never walked into the
+## container that holds it.
+##
+## Proof is a PATH, not a point-snap distance: `map_get_closest_point()` at the piece's own centre
+## is unreliable evidence here, and provably so, not just cautiously avoided — a piece resting flush
+## on a perfectly flat floor (the simplest, most controllable test fixture) hits a Recast/Godot
+## rasterization quirk where the piece's coincident-height bottom face and the floor's top can leave
+## a tiny disconnected "island" polygon surviving at the exact centre, which a nearest-point query
+## snaps onto despite it having no edge shared with anything else on the map (confirmed with a direct
+## polygon dump: probed both through `parse_source_geometry_data()` walking the scene tree, as this
+## file does, AND through a single-object combined parse the way NavBaker builds its own source data
+## — same island either way, so it is a property of the geometry, not of how the fix merges data).
+## `NavigationServer3D.map_get_path()` sidesteps it cleanly: pathfinding only ever walks CONNECTED
+## polygon edges, so a disconnected island cannot be routed through even where it can be snapped
+## onto, and a path from one side of the piece to the other is the thing this fix actually needs to
+## be true for an enemy in the live game.
+func _check_enemy_world_buildable_obstruction() -> void:
+	print("\n== F-177: EnemyWorld.bake_navigation() (the LIVE baker) also sees a placed buildable ==")
+	var enemy_world: Node = root.get_node_or_null(^"EnemyWorld")
+	var build_service: Node = root.get_node_or_null(^"BuildService")
+	var inventory: Node = root.get_node_or_null(^"InventoryService")
+	check(enemy_world != null and build_service != null and inventory != null,
+		"EnemyWorld, BuildService and InventoryService are all registered autoloads")
+	if enemy_world == null or build_service == null or inventory == null:
+		return
+
+	# A flat synthetic floor, same shape as build_check.gd's own `_build_world()` fixture — plenty
+	# of clear, gentle ground on every side of the piece for the validator's support probes to find,
+	# which real heightmap terrain at any one spot is not guaranteed to offer (this seed's is hilly
+	# enough that a 2.4 m Ward footprint routinely fails support well before it fails slope).
+	var level := Node3D.new()
+	level.name = "F177TestLevel"
+	root.add_child(level)
+	current_scene = level
+
+	var floor_body := StaticBody3D.new()
+	floor_body.collision_layer = VALIDATOR.TERRAIN_LAYER  # F-082's ground-support layer
+	floor_body.position = Vector3(300.0, -0.5, 300.0)
+	var floor_shape := CollisionShape3D.new()
+	var floor_box := BoxShape3D.new()
+	floor_box.size = Vector3(20.0, 1.0, 20.0)
+	floor_shape.shape = floor_box
+	floor_body.add_child(floor_shape)
+	level.add_child(floor_body)
+	# A freshly-added collider needs the physics server to sync before a space-state query (the
+	# validator's support probe, below) can see it — build_check.gd's own `_build_world()` waits the
+	# same two physics frames for the same reason.
+	await physics_frame
+	await physics_frame
+
+	var spot := Vector3(300.0, 0.0, 300.0)
+
+	enemy_world.call(&"bake_navigation")
+	var region: NavigationRegion3D = enemy_world.call(&"nav_region") as NavigationRegion3D
+	check(region != null, "the live baker attaches a NavigationRegion3D")
+	if region == null:
+		return
+	var map: RID = region.get_navigation_map()
+
+	var queryable: bool = await _until(
+		func() -> bool: return NavigationServer3D.map_get_closest_point(map, spot) != Vector3.ZERO,
+		SYNC_TIMEOUT_SEC)
+	check(queryable, "the terrain-only bake is queryable at the test spot")
+	if not queryable:
+		return
+
+	# Two points either side of where the piece is about to go — snapped onto the mesh FIRST, so
+	# comparing before/after lengths is not itself contaminated by the piece nudging where either
+	# endpoint snaps.
+	var left: Vector3 = NavigationServer3D.map_get_closest_point(map, spot + Vector3(-3.0, 0.0, 0.0))
+	var right: Vector3 = NavigationServer3D.map_get_closest_point(map, spot + Vector3(3.0, 0.0, 0.0))
+	var path_before: PackedVector3Array = NavigationServer3D.map_get_path(map, left, right, true)
+	var len_before: float = _path_length(path_before)
+	check(path_before.size() >= 2 and is_equal_approx(len_before, left.distance_to(right)),
+		"before any piece exists, the path from one side to the other is the straight line (%.3fm)"
+			% len_before)
+
+	var confirmations: Array[Dictionary] = []
+	var on_confirmed := func(request_id: int, accepted: bool, reason: String) -> void:
+		confirmations.append({"request_id": request_id, "accepted": accepted, "reason": reason})
+	build_service.connect(&"build_confirmed", on_confirmed)
+
+	# `ward` (content/buildables/ward.tres): a real registered piece with a real authored scene
+	# (`scenes/buildables/ward.tscn`, a `StaticBody3D` + `BoxShape3D`), not a generated stand-in —
+	# the same fixture F-159's own NavBaker check above already uses. Same host-of-one shape
+	# build_check.gd's own `_check_host_placement()` already proved: fund the cost, then place for
+	# real through the real request/host-decides round trip.
+	inventory.call(&"host_transaction", 1, {} as Dictionary,
+		{&"log": 10, &"stone": 8, &"iron_ingot": 2} as Dictionary)
+	build_service.call(&"request_place", &"ward", Transform3D(Basis(), spot))
+	await process_frame
+	check(confirmations.size() == 1 and bool(confirmations[0]["accepted"]),
+		"a real BuildService.request_place() dead centre on the test spot is accepted (%s)"
+			% (String(confirmations[0]["reason"]) if confirmations.size() == 1 else "no confirmation"))
+	check(int(build_service.call(&"placed_count")) == 1, "and exactly one piece exists")
+
+	enemy_world.call(&"bake_navigation")
+	var detoured: bool = await _until(func() -> bool:
+		var path: PackedVector3Array = NavigationServer3D.map_get_path(map, left, right, true)
+		return path.size() > 2 and _path_length(path) > len_before + 1.0,
+		SYNC_TIMEOUT_SEC)
+	var path_after: PackedVector3Array = NavigationServer3D.map_get_path(map, left, right, true)
+	check(detoured,
+		("re-baking after a REAL host placement forces the same path to detour around it (%.3fm, was "
+			+ "%.3fm straight, %d waypoints) — the live baker now sees BuildService's own placed pieces")
+			% [_path_length(path_after), len_before, path_after.size()])
+
+	var pieces: Array = get_nodes_in_group(&"buildable_piece")
+	check(pieces.size() == 1, "the piece is findable through its usual group")
+	if not pieces.is_empty():
+		var piece_name := StringName((pieces[0] as Node).name)
+		build_service.call(&"request_destroy", piece_name)
+		await process_frame
+		enemy_world.call(&"bake_navigation")
+		var restored: bool = await _until(func() -> bool:
+			var path: PackedVector3Array = NavigationServer3D.map_get_path(map, left, right, true)
+			return is_equal_approx(_path_length(path), len_before),
+			SYNC_TIMEOUT_SEC)
+		check(restored, "and destroying it un-carves the path back to a straight line (%.3fm, was %.3fm)"
+			% [_path_length(NavigationServer3D.map_get_path(map, left, right, true)), len_before])
+
+	build_service.disconnect(&"build_confirmed", on_confirmed)
+
+
+func _path_length(path: PackedVector3Array) -> float:
+	var total: float = 0.0
+	for i in range(1, path.size()):
+		total += path[i - 1].distance_to(path[i])
+	return total
 
 
 func _until(condition: Callable, timeout_seconds: float) -> bool:

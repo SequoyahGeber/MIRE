@@ -449,6 +449,25 @@ func bake_navigation() -> Node:
 
 	var geometry := NavigationMeshSourceGeometryData3D.new()
 	NavigationServer3D.parse_source_geometry_data(nav_mesh, geometry, scene_root)
+
+	# F-177: a placed buildable's StaticBody3D lives under `BuildService`'s own container
+	# (`/root/BuildService/Buildings`, D-023 — an autoload keeps its spawned content as its own
+	# child so it survives a scene reload) — a SIBLING of the level under `/root`, never a
+	# descendant of `scene_root`. The walk above therefore never reaches it, which is F-159's exact
+	# gap: a placed wall or Ward is a real physics collider the bake never saw. NavBaker (task 4.5)
+	# already fixed this for itself by folding piece boxes into the same source data before its one
+	# bake call (D-118) — same "one combined pass" requirement applies here, because Recast carves a
+	# hole around solid geometry by seeing it alongside whatever it's carving, so two independently
+	# baked regions cannot composite into that result. Parsed into its own data and merged rather
+	# than reusing `geometry` directly: `parse_source_geometry_data` is a walk rooted at ONE node,
+	# so two roots need two calls regardless, and merging keeps each call's data intact if a future
+	# root fails to parse instead of one call silently clobbering the other's data.
+	var buildables: Node = get_node_or_null(^"/root/BuildService/Buildings")
+	if buildables != null and buildables.get_child_count() > 0:
+		var piece_geometry := NavigationMeshSourceGeometryData3D.new()
+		NavigationServer3D.parse_source_geometry_data(nav_mesh, piece_geometry, buildables)
+		geometry.merge(piece_geometry)
+
 	if geometry.has_data():
 		NavigationServer3D.bake_from_source_geometry_data(nav_mesh, geometry)
 	_nav_polygon_count = nav_mesh.get_polygon_count()
