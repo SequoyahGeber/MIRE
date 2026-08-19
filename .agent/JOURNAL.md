@@ -5710,3 +5710,37 @@ Decided as D-144: claims stay, staleness gets fixed. Every measured blockage was
 Files: `.agent/bin/agent`, `docs/DECISIONS.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `4aea4c7`
+
+---
+
+### REOPEN · F-234 · nettle12 · 2026-08-19T17:22:09+00:00
+
+**docs/NEXT.md's status block is ten hours stale — it is the doc every session is told to read first**
+
+Reopened (was marked done 2026-08-19 by nettle12).
+
+The refreshed status block got the findings picture wrong: it says 8 open and singles out F-189 as the only open process question, but F-189 was resolved as D-144 and docs/FINDINGS.md carries 7 open, all of them hardware- or dependency-bound. The count came from state.json, which is stale for F-189; the doc is authoritative.
+
+Commit at time of writing: `2d4cd45`
+
+---
+
+### DONE · F-234 · nettle12 · 2026-08-19T17:22:56+00:00
+
+**docs/NEXT.md's status block is ten hours stale — it is the doc every session is told to read first**
+
+Corrected the findings paragraph: 7 open (not 8), and F-189 is resolved as D-144 rather than the lone open process question. Recorded that state.json and agent report both still list F-189 while docs/FINDINGS.md has it resolved, and that the doc is the authority.
+
+Files: `docs/NEXT.md`
+
+Commit at time of writing: `2d4cd45`
+
+---
+
+### DONE · F-189 · nettle12 · 2026-08-19T17:23:22+00:00
+
+**File claims have become the bottleneck D-011 named as its own reversal trigger — one claim blocked four consecutive tasks from bumping PROTOCOL_VERSION**
+
+State-only correction: F-189 was resolved as D-144 and its section already sits under '## Resolved' in docs/FINDINGS.md, but state.json still carried it as open, so agent report showed 8 open findings instead of 7. No code or doc change.
+
+Commit at time of writing: `9b7f6c3`

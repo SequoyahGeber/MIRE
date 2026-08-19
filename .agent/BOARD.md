@@ -9,8 +9,9 @@
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
 | **5.2** 8–12 enemy types (scenes + `.tres` stats + animation setup) | lm | 2026-08-19 17:18 | `content/enemies`, `systems/enemies/enemy_def.gd`, `tools/enemy_content_check.gd` |
+| **6.8** Run summary: headline Cycle number, stats, modifiers drawn, Salvage earned | lp | 2026-08-19 17:20 | `ui/hud/defeat_hud.gd`, `ui/hud/defeat_hud.gd.uid`, `tools/run_summary_check.gd` |
 | **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | wick20 | 2026-08-19 17:14 | `docs/ASSET_TRACKER.md`, `tools/blender/build_wetland_nature.py`, `tools/wetland_nature_check.gd`, `assets/wetland_nature` |
-| **F-222** Eight Blender preview generators render correctly only because an unrelated object happens to get created (or the camera type happens to get flipped) between their reposition and their render — no check would catch it if that incidental code is ever removed | slate17 | 2026-08-19 17:20 | — |
+| **F-222** Eight Blender preview generators render correctly only because an unrelated object happens to get created (or the camera type happens to get flipped) between their reposition and their render — no check would catch it if that incidental code is ever removed | slate17 | 2026-08-19 17:20 | `tools/blender/preview_census.py`, `docs/FINDINGS.md` |
 
 ## Milestones
 
