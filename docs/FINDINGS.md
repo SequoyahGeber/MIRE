@@ -440,6 +440,50 @@ instruction.
 
 ---
 
+### F-228 · `craft`/`build` console commands charge and credit the HOST's own peer, not the issuing player, whenever a non-host op runs them
+
+**Area:** netcode · **Severity:** high · **Found:** 2026-08-19 by lp during 3.16-review
+
+Task 3.16's `_cmd_craft` (`autoload/crafting_service.gd:409`) and `_cmd_build`
+(`autoload/build_service.gd:527`) both discard the `ctx` their own HOST-scope handler is given and
+call `request_craft(recipe_id)` / `request_place(piece_id, placement)` — the exact functions the
+in-game UI calls on the *issuing player's own local process*. Both of those, on a mutation-owning
+process, resolve the actor via `_local_peer_id()` (`crafting_service.gd:372`,
+`build_service.gd:489`), never the caller's `ctx.peer_id`.
+
+For the host typing the command locally that's harmless — `_local_peer_id()` and `ctx.peer_id`
+happen to be the same value. But a non-host **op** (a supported, intended path: `CommandService`
+lets the host `op <peer>` any connected client, and COMMANDS.md's whole `craft`/`build` catalog
+rows exist for exactly this kind of admin/debug use) reaches these handlers through
+`net_submit_command` → the host re-executes the line with `ctx.peer_id` set to the real
+`multiplayer.get_remote_sender_id()` (`command_service.gd:312-316`) — correct — and then the handler
+throws that away. `request_craft`/`request_place` see `_owns_mutation()` true (they're now running
+*on the host*) and call `_process_craft(_local_peer_id(), ...)` /
+`_process_place(_local_peer_id(), ...)`, i.e. the **host's own peer id**, not the client who typed
+the command.
+
+Concrete failure: a non-host op typing `craft torch` has the ingredients pulled from the **host's**
+inventory and the crafted item deposited into the **host's** inventory — the op's own inventory is
+untouched and they get no item. `build campfire 10 0 5` is worse: `BuildService._process_place`
+(`build_service.gd:156-176`) both spends the cost via
+`inventory.host_transaction(peer_id, cost, {})` and records `_placed[name] = {"def": ..., "owner":
+peer_id}` using that same wrong id, so the placed piece is permanently misattributed to the host in
+`_placed`, not just the one transaction. Contrast with the real UI path
+(`net_request_craft`/equivalent build RPC), which correctly resolves the actor via
+`multiplayer.get_remote_sender_id()` on the host side (`crafting_service.gd:159-163`) — the console
+command is the one path that gets this wrong.
+
+`tools/command_catalog_check.gd` cannot catch this by its own stated design ("does not execute the
+mutating verbs" — its own file header); this needs a real two-process check that ops a client and
+runs `craft`/`build` from it.
+
+**Not fixed here** (review-only task). Likely fix: `_cmd_craft`/`_cmd_build` should read
+`int(ctx.get("peer_id", ...))` and call `_process_craft`/`_process_place` (or an equivalent seam)
+directly with that id, rather than going through the local-actor-assuming
+`request_craft`/`request_place` entry points.
+
+---
+
 ## Resolved
 
 ### F-227 · SalvageService's reward-curve comment states the wrong numbers — mismatches the formula it documents and its own SPECS.md block — **fixed**

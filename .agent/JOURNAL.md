@@ -5438,3 +5438,18 @@ Notes along the way:
 - Verified daf9571 against SPECS.md 4.1, ARCHITECTURE.md §4/§7 safe-op set, D-017/D-028/D-075. height() is pure/static, no nodes, no RNG (none needed for a continuous field); falloff is t*t*t not pow(t,3.0); detail noise reuses BASE_NOISE_LACUNARITY/GAIN deliberately (no separate DETAIL consts exist, not a bug). Standing rule 2 followed correctly (preload not bare class_name in both check scripts, matching F-016). terrain_check.gd: 6/6 ok. check_determinism.gd terrain_hash reproduced bit-identical to D-075's recorded bea0483c1ad5bb4b. Full boot (--quit-after 120): 0 ERROR: lines. No findings -- clean.
 
 Commit at time of writing: `6a58450`
+
+---
+
+### DONE · 3.16-review · lp · 2026-08-19T14:53:44+00:00
+
+**Review 3.16 @ d1c59dd — judge the commit, file findings, no edits**
+
+Sound overall, one high-severity finding (F-228): craft/build console commands mis-attribute ingredient cost and ownership to the HOST rather than the issuing op when run by a non-host peer -- _cmd_craft/_cmd_build discard ctx.peer_id and go through request_craft()/request_place(), which resolve the actor via _local_peer_id() (correct only when the host itself types the command). Confirmed by tracing net_submit_command's real ctx.peer_id=remote-sender vs _local_peer_id()'s host-only value, plus _process_craft/_process_place's use of that id for host_transaction and _placed ownership. Everything else verified clean against SPECS.md 3.16, COMMANDS.md §7, ARCHITECTURE.md §2.2: tools/command_catalog_check.gd (agent godot) ran 0 failures -- 45 commands, every §7 row present at correct scope, no leftover DebugConsole.register() shim registrations, every HOST verb refuses non-op. Rule 1 (no bare autoload identifiers) respected everywhere via get_node_or_null. D-093/F-153 clear/inv collision resolution correct. lobby verbs correctly LOCAL (D-030 cross-play test delivered). Filed F-228 in docs/FINDINGS.md.
+
+Notes along the way:
+- Traced a real bug: _cmd_craft/_cmd_build (crafting_service.gd, build_service.gd) discard ctx.peer_id and call request_craft()/request_place(), which resolve the actor via _local_peer_id() -- correct when host types it locally, wrong when a non-host op's console command is relayed through net_submit_command (host re-executes with ctx.peer_id = real issuer, but the handler ignores it). Filed F-228 (high). tools/command_catalog_check.gd (0 failures, 45 commands, all §7 rows present at correct scope, no shim registrations, all HOST verbs gate on op) passes clean and by its own admitted design ('does not execute the mutating verbs') would never have caught this. Everything else traced clean: rule 1 (bare autoload names) respected via get_node_or_null in every new _register_commands()/handler across inventory_service.gd, player_health.gd, day_night.gd, wave_spawner.gd, powerup_service.gd, harvest_world.gd, steam_lobby.gd, dev_frame_cap.gd; F-016 preload respected (command_service.gd preloads itself for the check, registry lookups via get_node_or_null); D-093/F-153's clear/inv collision resolution correct; lobby verbs correctly LOCAL scope (D-030 cross-play test delivered); dynamic-scope time/rule host_args probing correct per D-086.
+
+Files: `docs/FINDINGS.md`
+
+Commit at time of writing: `e40b475`

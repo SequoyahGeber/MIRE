@@ -1,23 +1,6 @@
 {
-  "claims": {
-    "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T14:52:16+00:00",
-      "task": "3.16-review",
-      "token": null
-    }
-  },
-  "in_flight": {
-    "3.16-review": {
-      "agent": "lp",
-      "files": [
-        "docs/FINDINGS.md"
-      ],
-      "notes": [],
-      "started": "2026-08-19T14:52:16+00:00",
-      "token": null
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".": {
       "agent": "lp",
@@ -1745,10 +1728,10 @@
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T14:51:00+00:00",
-      "hash": "53e926aec567ffa332382702dd05e08da9430b87fb7d912974572166cde6b0ba",
-      "task": "3.1-review",
+      "agent": "lp",
+      "at": "2026-08-19T14:53:44+00:00",
+      "hash": "79cb237d911e8de3f38ac221fb45b1bfb22094af443a4c36387aa7937c9d481c",
+      "task": "3.16-review",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -4154,10 +4137,12 @@
       "title": "Command catalog sweep \u2014 every system verb in `COMMANDS.md` \u00a77 incl. D-030's `lobby host/join/invite`, plus the coverage check"
     },
     "3.16-review": {
+      "done_at": "2026-08-19T14:53:44+00:00",
+      "done_by": "lp",
       "est": "0.5",
       "milestone": "M3",
       "review_of": "3.16",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T1",
       "title": "Review 3.16 @ d1c59dd \u2014 judge the commit, file findings, no edits"
     },
