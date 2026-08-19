@@ -5040,3 +5040,15 @@ Notes along the way:
 Files: `autoload/reward_service.gd`, `tools/reward_service_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`, `tools/reward_service_seed_check.gd`
 
 Commit at time of writing: `3445bfb`
+
+---
+
+### DONE · F-220 · lm · 2026-08-19T12:42:58+00:00
+
+**`CycleModifierService`'s per-cycle modifier draw is the same boot-time-`randomize()` bug — and already has the stable id `Chest` needed**
+
+Fixed cycle_modifier_service.gd: host_draw_modifier() now seeds _rng from _seed_for_run(_run_seed(), str(cycle)) instead of _ready()'s boot-time randomize(); cycle was already the stable per-draw id, no new id scheme needed. tools/cycle_modifier_seed_check.gd (synthetic 3-candidate injection, real content has only 1 modifier) proves same-seed+same-cycle reproduces and different seed/cycle diverges. CYCLE_MODIFIER_SEED_CHECK failures=0, no regression in CYCLE_MODIFIER_CHECK. Swept all randomize() sites: F-220 was the last of 4, other 3 confirmed intentional (run_seed source, debug command, cosmetic selector RNG).
+
+Files: `systems/cycle/cycle_modifier_service.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `tools/cycle_modifier_seed_check.gd`
+
+Commit at time of writing: `da5c97c`

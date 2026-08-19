@@ -24,10 +24,13 @@ extends Node
 ## a brand-new `class_name` (this task's own) is not bare-resolvable in a fresh headless clone.
 ## `RuleService`/`RuleDef` is the established worked example of this same split.
 ##
-## The draw itself does not roll a seeded RNG the way world generation must (ARCHITECTURE.md §7) —
-## it happens exactly once, host-only, and no other peer ever recomputes it, the same reasoning
-## D-041 gives `Chest`'s loot roll: real entropy via `randomize()`, broadcast as the authoritative
-## result rather than agreed on by recomputation.
+## The draw seeds from `(GameState.run_seed, cycle)` rather than boot-time entropy — F-220, the same
+## bug D-041/F-210 fixed in `Chest` and F-219/D-136 fixed in `RewardService`: two runs sharing a seed
+## must draw the same modifier(s) in the same order. `cycle` is already the stable per-draw id
+## `host_draw_modifier()` receives as a parameter — no counter needed the way `RewardService` had to
+## mint one (D-136), since a Cycle only ever advances forward and each cycle draws at most once. The
+## roll still happens exactly once, host-only, and no other peer ever recomputes it — this is about
+## run-to-run reproducibility, not cross-peer agreement, same distinction `Chest`'s own header draws.
 
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const CYCLE_MODIFIER_DEF := preload("res://systems/cycle/cycle_modifier_def.gd")
@@ -53,7 +56,6 @@ var _transport_node: Node
 
 func _ready() -> void:
 	_load_defs()
-	_rng.randomize()
 	EVENT_BUS.subscribe_cycle_advanced(_on_cycle_advanced)
 	_register_commands()
 
@@ -92,6 +94,7 @@ func host_draw_modifier(cycle: int) -> StringName:
 	if eligible.is_empty():
 		MireLog.info(&"world", "Cycle %d: no eligible Cycle Modifier to draw" % cycle)
 		return &""
+	_rng.seed = _seed_for_run(_run_seed(), str(cycle))
 	var chosen: Resource = _weighted_pick(eligible, cycle)
 	var chosen_id: StringName = StringName(chosen.get(&"id"))
 	_active_ids.append(chosen_id)
@@ -151,8 +154,9 @@ func _has_any(needles: Array, haystack: Array[StringName]) -> bool:
 	return false
 
 
-## Weighted random pick over `candidates`, each weighted by `weight_at(cycle)`. Not a seeded draw —
-## see the header note on why real entropy is correct here.
+## Weighted random pick over `candidates`, each weighted by `weight_at(cycle)`. `_rng` is seeded by
+## the caller (`host_draw_modifier()`) from `(run_seed, cycle)` immediately before this runs — see
+## the header note.
 func _weighted_pick(candidates: Array[Resource], cycle: int) -> Resource:
 	var total_weight: float = 0.0
 	for def: Resource in candidates:
@@ -209,6 +213,39 @@ func _transport() -> Node:
 	if _transport_node == null or not is_instance_valid(_transport_node):
 		_transport_node = get_node_or_null(^"/root/NetTransport")
 	return _transport_node
+
+
+## Host-only caller (F-220, same contract as `Chest._run_seed()`/`RewardService._run_seed()`).
+## GameState is a project-wide autoload, present in every scene including a headless SceneTree check,
+## so this never needs the null guard the transport lookups above carry. `ensure_seed()` lazily draws
+## one from real entropy if nothing has drawn it yet (offline/host-of-one boot order) and is a no-op
+## once a seed exists.
+func _run_seed() -> int:
+	var game_state: Node = get_node_or_null(^"/root/GameState")
+	if game_state == null:
+		return 0
+	return int(game_state.call("ensure_seed"))
+
+
+## Salt distinguishes this file's seed derivation from every other file mixing the same run_seed
+## (`systems/loot/chest.gd`'s `0xC4E57`, `autoload/reward_service.gd`'s `0x9E3779B9`, `world/gen/
+## poi_map.gd`'s `0x9017A11`, `world/gen/resource_scatter.gd`'s `0x5CA77E5`) — same "own salt per
+## file" convention those establish. Integer multiply/xor only, never Godot's `hash()`, for the
+## identical cross-platform-stability reason `chest.gd` documents on its own copy of this constant.
+const _SEED_SALT: int = 0xB16B00B5
+
+
+## Copy of `Chest._seed_for_run()`/`RewardService._seed_for_run()` — see `chest.gd`'s header for why
+## this is duplicated per file rather than shared. [param draw_id] is `str(cycle)`, the stable
+## per-draw id `host_draw_modifier()` already receives as a parameter.
+func _seed_for_run(run_seed: int, draw_id: String) -> int:
+	const PRIME: int = 1000003
+	var id_hash: int = 0x1000193
+	for byte: int in draw_id.to_utf8_buffer():
+		id_hash = (id_hash ^ byte) * 16777619
+	var h: int = run_seed ^ _SEED_SALT
+	h = h * PRIME + id_hash
+	return h
 
 
 ## Registry first (the real content front door); the direct disk scan below only runs when Registry

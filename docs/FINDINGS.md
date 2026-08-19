@@ -673,26 +673,31 @@ autoload-node pattern.
 
 ---
 
-### F-220 · `CycleModifierService`'s per-cycle modifier draw is the same boot-time-`randomize()` bug — and already has the stable id `Chest` needed
-
-**Area:** cycle/determinism · **Severity:** low · **Found:** 2026-08-19 by lm sweeping F-210's shape elsewhere
-
-`systems/cycle/cycle_modifier_service.gd:56`'s `_ready()` calls `_rng.randomize()` once at boot; every
-`host_draw_modifier(cycle: int)` call (`:88`) then draws from that same boot-seeded stream via
-`_weighted_pick()` (`:160`, `_rng.randf()`). Host-authoritative, run-shaping content — which Cycle
-Modifier(s) stack up over a run — that two runs sharing a `run_seed` currently still draw differently,
-same class of bug as `Chest`/F-219.
-
-Easier to fix than F-219: `host_draw_modifier` already receives `cycle: int` as a parameter, which is
-exactly the stable per-draw id F-210's fix needed to build for `Chest` from a marker name — no new id
-scheme required, just `_rng.seed = _seed_for_run(GameState.run_seed, str(cycle))` (or a local copy of
-that mixing helper) called at the top of `host_draw_modifier` instead of relying on `_ready()`'s
-boot-time seed. `WorldDeltaLog`'s existing replication of the drawn-modifier stack (this file's own
-header) is unaffected either way — replication carries the RESULT, never the roll.
-
----
-
 ## Resolved
+
+### F-220 · `CycleModifierService`'s per-cycle modifier draw is the same boot-time-`randomize()` bug — and already has the stable id `Chest` needed — **fixed**
+
+**Area:** cycle/determinism · **Severity:** low · **Found:** 2026-08-19 by lm sweeping F-210's shape elsewhere · **Fixed:** 2026-08-19 by lm
+
+`host_draw_modifier()` now seeds `_rng.seed = _seed_for_run(_run_seed(), str(cycle))` immediately
+before `_weighted_pick()`, instead of relying on `_ready()`'s removed boot-time `_rng.randomize()`.
+No new id scheme needed — `cycle` was already the stable per-draw id, the same role `Chest`'s node
+`name` and `RewardService`'s minted counter play. `_seed_for_run()`/`_run_seed()` are direct copies
+of `Chest`'s own (own salt `0xB16B00B5`). Full reasoning: `docs/SPECS.md`'s F-220 block.
+
+**Verified:** new `tools/cycle_modifier_seed_check.gd` — `agent godot --script
+tools/cycle_modifier_seed_check.gd` → `CYCLE_MODIFIER_SEED_CHECK failures=0`. Injects three
+synthetic equally-weighted candidates (real content ships only one Cycle Modifier, too few to show
+seed-dependent variation) and proves: same `run_seed` + same `cycle` draws identically; replaying a
+`run_seed` across a cycle sequence reproduces the exact same per-cycle draws; a different `run_seed`
+at the same cycles draws a different sequence. No regression: `agent godot --script
+tools/cycle_modifier_check.gd` still `CYCLE_MODIFIER_CHECK failures=0`.
+
+**Swept for the same shape:** all `.randomize()` call sites project-wide re-checked (three remain).
+`core/game_state.gd:56` is the `run_seed` entropy source itself. `autoload/inventory_service.gd:599`
+and `autoload/entity_directory.gd:57` are the same two intentional exceptions F-210/F-219 already
+documented — re-confirmed `entity_directory.gd`'s `_rng` only drives console entity selectors
+(`@r`, random-sort), never a gameplay roll. F-220 was the last of the four live sites.
 
 ### F-219 · `RewardService`'s Wellspring/boss-kill loot roll is the same boot-time-`randomize()` bug F-210 just fixed in `Chest` — **fixed**
 

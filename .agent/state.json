@@ -1888,9 +1888,9 @@
     },
     "docs/FINDINGS.md": {
       "agent": "lm",
-      "at": "2026-08-19T12:38:25+00:00",
-      "hash": "76c68c40f413e2851bf3215cc1fc252e9b246c4f7a1af7505de2ea35d7fae311",
-      "task": "F-219",
+      "at": "2026-08-19T12:42:58+00:00",
+      "hash": "899e41e83b80324b7b4bef1ead97414666d307eb6df5721e9b1e17ba8b5ffa50",
+      "task": "F-220",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1919,9 +1919,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lm",
-      "at": "2026-08-19T12:38:25+00:00",
-      "hash": "f3094611931078315ee5993a59be52adde115912d6eaf20779ef686d4723790b",
-      "task": "F-219",
+      "at": "2026-08-19T12:42:58+00:00",
+      "hash": "f3dcc48383e7c50e50ae2b247f978f12d93ce2c83288534bf6eb7e972583a763",
+      "task": "F-220",
       "token": null
     },
     "entities/player/player.tscn": {
@@ -2123,9 +2123,10 @@
     },
     "systems/cycle/cycle_modifier_service.gd": {
       "agent": "lm",
-      "at": "2026-08-19T01:57:43+00:00",
-      "hash": "f89eaf435f30ea977059f242e111d1ea38b1a04eb51272efa3ed0d3ebc44a9c8",
-      "task": "6.2"
+      "at": "2026-08-19T12:42:58+00:00",
+      "hash": "efcafd2ee200aa49cb329208d3f7863fa6febaed4ebc9a418699f568ef8329c4",
+      "task": "F-220",
+      "token": null
     },
     "systems/cycle/cycle_modifier_service.gd.uid": {
       "agent": "lm",
@@ -2808,6 +2809,13 @@
       "at": "2026-08-19T01:57:43+00:00",
       "hash": "a44d807d6bd6e43c558c47f54b2afc9256a750eba1e0e83f0190c9dcb10611b8",
       "task": "6.2"
+    },
+    "tools/cycle_modifier_seed_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T12:42:58+00:00",
+      "hash": "315c0ab3347d4f8b9027d136fad14e96ddc8c6ea7cb312b6df4b6f4df2fdaa09",
+      "task": "F-220",
+      "token": null
     },
     "tools/decision_trigger_check.py": {
       "agent": "lm",
@@ -6791,9 +6799,11 @@
       "title": "`RewardService`'s Wellspring/boss-kill loot roll is the same boot-time-`randomize()` bug F-210 just fixed in `Chest`"
     },
     "F-220": {
+      "done_at": "2026-08-19T12:42:58+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`CycleModifierService`'s per-cycle modifier draw is the same boot-time-`randomize()` bug \u2014 and already has the stable id `Chest` needed"
     }

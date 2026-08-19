@@ -6304,6 +6304,59 @@ No new sibling instances found.
 
 ---
 
+## F-220 · `CycleModifierService`'s per-cycle modifier draw is the same boot-time-`randomize()` bug — and already has the stable id `Chest` needed
+
+**Claim:** `systems/cycle/cycle_modifier_service.gd`, `tools/cycle_modifier_seed_check.gd` (new).
+Network authority: HOST, same row `docs/ARCHITECTURE.md` §2.2 already declares for "Day/night, wave
+director, Cycle state, active modifiers" — this task changes what feeds the draw's RNG, not who
+draws.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The fix:** `_ready()` called `_rng.randomize()` once at boot (real entropy), so every
+`host_draw_modifier(cycle)` call drew from that same boot-seeded stream — two runs sharing a
+`GameState.run_seed` still stacked different modifiers. Unlike F-219's `RewardService`, no new id
+scheme was needed: `host_draw_modifier` already receives `cycle: int` as a parameter, and a Cycle
+only ever advances forward with each cycle drawing at most once, so `cycle` is already the stable
+per-draw id `Chest`'s node `name` and `RewardService`'s minted counter play the equivalent role for.
+`host_draw_modifier()` now seeds `_rng.seed = _seed_for_run(_run_seed(), str(cycle))` immediately
+before `_weighted_pick()`, instead of relying on `_ready()`'s boot-time seed (removed).
+`_seed_for_run()`/`_run_seed()` are direct copies of `Chest`'s own (own `_SEED_SALT = 0xB16B00B5`,
+distinct from `chest.gd`'s `0xC4E57`, `reward_service.gd`'s `0x9E3779B9`, `poi_map.gd`'s
+`0x9017A11`, `resource_scatter.gd`'s `0x5CA77E5`). `WorldDeltaLog`'s existing replication of the
+drawn-modifier stack is unaffected — replication carries the result, never the roll.
+
+**Not a desync/correctness bug, then or now** — same reasoning F-210/F-219's own spec blocks give:
+the draw is host-only and its result is broadcast through `WorldDeltaLog`, so no peer ever needs to
+agree on the roll itself, only the host's own two runs sharing a `run_seed` need to agree with each
+other. What changes is reproducibility.
+
+**Verify:** `.agent/bin/agent godot --script tools/cycle_modifier_seed_check.gd` →
+`CYCLE_MODIFIER_SEED_CHECK failures=0`, zero undeclared `ERROR:` lines. New check: real content ships
+only one Cycle Modifier so far (`long_night.tres`), so a weighted pick over a single candidate can
+never show variation regardless of seed — the check injects three equally-weighted synthetic
+candidates directly into `CycleModifierService._defs`, the same "GDScript has no real access
+control" seam `tools/cycle_modifier_check.gd`'s own incompatibility tests already use, and checks:
+(1) the same `run_seed` + same `cycle` draws identically; (2) replaying a `run_seed` across a
+sequence of cycles reproduces the exact same per-cycle draws; (3) a different `run_seed` at the same
+cycles draws a different sequence. `.agent/bin/agent godot --script tools/cycle_modifier_check.gd` →
+`CYCLE_MODIFIER_CHECK failures=0` still, unchanged (the existing wiring/eligibility check has no
+determinism assertion to break).
+
+**Swept for the same shape elsewhere:** grepped every `.randomize()` call site project-wide (three
+remaining after this fix, four before it — this file was the fourth). `core/game_state.gd:56` is the
+`run_seed` entropy source itself — must stay real entropy. `autoload/inventory_service.gd:599` and
+`autoload/entity_directory.gd:57` are the same two intentional exceptions F-210/F-219's own sweeps
+already documented (a debug console `loot` roll, and a cosmetic entity-selector RNG with no
+reproducibility claim — confirmed again by reading both call sites: `entity_directory.gd`'s `_rng` only
+drives `@r`/random-sort console selectors, never a gameplay roll). No new sibling instances found —
+F-220 was the last of the four.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**
