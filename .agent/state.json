@@ -6939,6 +6939,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`FunctionRunner.effective_scope()` uses a dynamic-scope command's DECLARED max scope, not the actual scope of the line as written \u2014 a pure-LOCAL line silently forces its whole function to HOST"
+    },
+    "F-231": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`ResourceScatterField`'s depletion-restore replays a real harvest yield, so every rebuild of an already-harvested scattered point grants a free duplicate of its item to the host"
     }
   },
   "version": 1

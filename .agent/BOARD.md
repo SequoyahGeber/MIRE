@@ -12,7 +12,7 @@ _Nothing in flight._
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 216/228 | 12 |
+| Findings | `█████████░` 216/229 | 13 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -58,6 +58,7 @@ _Nothing in flight._
 | ⬜ | **F-228** `craft`/`build` console commands charge and credit the HOST's own peer, not the issuing player, whenever a non-host op runs them | todo |
 | ⬜ | **F-229** `docs/SPECS.md` cites "D-095" twice for decisions that actually landed as D-096 and D-097 — both references now point at task 4.7's unrelated POI-placement decision | todo |
 | ⬜ | **F-230** `FunctionRunner.effective_scope()` uses a dynamic-scope command's DECLARED max scope, not the actual scope of the line as written — a pure-LOCAL line silently forces its whole function to HOST | todo |
+| ⬜ | **F-231** `ResourceScatterField`'s depletion-restore replays a real harvest yield, so every rebuild of an already-harvested scattered point grants a free duplicate of its item to the host | todo |
 
 ## Done
 
