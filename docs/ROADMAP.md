@@ -94,7 +94,7 @@ Plus the same thing in `LOCAL` mode in two windows in under 5 seconds.
 | 1.9 | **Spike R1** — 6 peers, 200 synced dummy entities, measure bandwidth and CPU | T2 | 1.5 |
 | 1.10 | Network debug panel: ping, bandwidth up/down, entity count, authority display | T1 | 1 |
 | 1.11 | Protocol/build version handshake — refuse mismatched builds with a clear message, not a desync | T2 | 1.5 |
-| 1.12 | **UNBLOCKED 2026-08-18 — D-030's wait is over: the in-game lobby join shipped (6.10's lobby-UI slice, press M).** Cross-platform join test, Mac ↔ Windows ↔ Linux in one lobby over Steam. Transport is proven; only the evidence ceremony is left, and it now needs only the three machines | T0 | 1.5 |
+| 1.12 | **READY — only the evidence ceremony is left.** Cross-platform join test, Mac ↔ Windows ↔ Linux in one lobby over Steam. Transport, in-game join (press M), and shipped builds on all three OSes are all proven; 2026-08-18 fixed the three defects that would have failed the run itself: content survived export (F-121), the friends-list **Join Game** both appears and works (F-123, F-127), and two players no longer spawn inside one another (F-129 — the defect that would have failed "movement is visible and smooth"). What remains is running it with three mutual-friend accounts and capturing the evidence | T0 | 1 |
 
 > **Task 1.3 is worth more than it looks.** One-keypress two-window multiplayer testing is the highest
 > ROI thing in this milestone. Every future multiplayer bug gets cheaper to find because of it.
@@ -274,7 +274,7 @@ craft, not code, and this is where you can work indefinitely without spending qu
 | 7.9 | Bug bash from playtest backlog | T0 | 6 |
 | 7.10 | Replace hero CC0 assets if desired (player hands, bosses, key items) | T0 | 2 |
 | 7.11 | Export presets for macOS (universal), Windows, Linux — Steam redistributables bundled per platform, case-sensitivity audit | T0 | 3 |
-| 7.12 | Test each export on its real OS, plus Steam Deck | T0 | 2 |
+| 7.12 | Test each export on its real OS, plus Steam Deck. **Half-evidenced 2026-08-18:** all three exports exist and were smoke-run on their real OS (macOS host, Windows VM, Linux VM) — each boots, loads identical content, and exits clean. What is genuinely left is *frame rate and rendering artifacts on real hardware*: both VMs render in software (the Windows guest reports `Microsoft Basic Render Driver`), so neither can judge performance. Plus Steam Deck | T0 | 1.5 |
 
 ---
 
@@ -287,14 +287,14 @@ See `STEAM.md` for the full checklist and the hard scheduling constraints.
 | 8.0 | **Name search** — Steam store + trademark search for "MIRE" (`STEAM.md` S1 calls this blocking; `DESIGN.md` header repeats it). Do before any store-page work; a rename after 8.5/8.7 costs the Coming Soon clock | T0 | 0.5 |
 | 8.1 | Steamworks account, tax/banking, $100 Steam Direct fee, real App ID | T0 | 2 |
 | 8.2 | Swap App ID 480 → real App ID; verify all Steam features | T0 | 1 |
-| 8.3 | Achievements, stats, rich presence | T1 | 3 |
-| 8.4 | Depots, build pipeline, `steamcmd` upload script, branches | T1 | 3 |
+| 8.3 | Achievements, stats, rich presence. **The joinability half already ships:** `SteamLobby` publishes the `connect` key and handles both join callbacks (F-123, F-127), so this is achievements, stats, and presence *display* strings — not the join plumbing | T1 | 3 |
+| 8.4 | Depots, build pipeline, `steamcmd` upload script, branches. **Starts from working presets:** `export_presets.cfg` has all three platforms and builds land in the gitignored `export/` (see DELEGATION.md). They are **debug** presets — release presets are this task's job, and `steam_appid.txt` must not ship in one (D-022) | T1 | 3 |
 | 8.5 | Store page: description, tags, screenshots, capsule art | T0 | 4 |
 | 8.6 | Trailer: capture, cut, audio | T0 | 4 |
 | 8.7 | Coming Soon page live (starts the mandatory 2-week clock) | T0 | 1 |
 | 8.8 | Closed beta on a password-protected branch with friends | T0 | 1 |
 | 8.9 | Build review submission, fix findings, release | T0 | 1 |
-| 8.10 | macOS codesign + notarisation (needs an Apple Developer account, $99/yr) | T0 | 2 |
+| 8.10 | macOS codesign + notarisation (needs an Apple Developer account, $99/yr). **Carry F-124's entitlements through:** the bundle needs `allow-dyld-environment-variables` or Steam cannot inject its overlay, and hardened runtime is required for notarisation — verify both survive with `codesign -d --entitlements -` after signing, not before | T0 | 2 |
 | 8.11 | Three depots wired to one app, per-platform launch options | T1 | 2 |
 
 ---

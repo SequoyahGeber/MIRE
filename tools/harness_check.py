@@ -29,7 +29,8 @@ HARNESS = os.path.join(ROOT, ".agent", "bin", "agent")
 # `_release()` leaves behind when a task closes, and it is where `ship` reads the task's file list.
 STATE = """{
   "version": 1,
-  "tasks": {"9.9": {"title": "a task that edited one ordinary file", "tier": "T1", "status": "todo"}},
+  "tasks": {"9.9": {"title": "a task that edited one ordinary file", "tier": "T1",
+            "status": "todo", "milestone": "M9"}},
   "in_flight": {},
   "claims": %(claims)s,
   "recent": %(recent)s
@@ -282,6 +283,66 @@ def _(harness):
     r = run([".agent/bin/agent", "check"], d, session="token-A")
     assert r.returncode == 0, (
         "check blocked a session from committing its own claim:\n%s%s" % (r.stdout, r.stderr))
+    return r.stdout.strip()
+
+
+@case("reap --stale frees a chat claim whose session is long silent (F-186)")
+def _(harness):
+    # `reap` was written for lanes, which have a pid in lanes.json to check. A chat has no pid, and
+    # its sessions.json entry recorded only when it registered — so a chat that died held its files
+    # forever and every task needing them was blocked behind it. The `seen` heartbeat is what makes
+    # a chat judgeable at all; here token-A last beat well over the threshold.
+    claims = ('{"world/thing.gd": {"agent": "nettle12", "token": "MIRE_SESSION:token-A", '
+              '"task": "9.8", "at": "2026-08-18T12:00:00+00:00"}}')
+    d = build_repo(harness, claims=claims)
+    with open(os.path.join(d, ".agent", "sessions.json"), "w") as f:
+        json.dump({"MIRE_SESSION:token-A": {"name": "nettle12",
+                                            "at": "2026-08-18T12:00:00+00:00",
+                                            "seen": "2026-08-18T12:00:00+00:00"}}, f)
+    r = run([".agent/bin/agent", "reap", "--stale", "1"], d, session="token-B")
+    assert r.returncode == 0, "reap failed: %s" % brief(r.stdout + r.stderr)
+    with open(os.path.join(d, ".agent", "state.json")) as f:
+        assert "world/thing.gd" not in json.load(f)["claims"], (
+            "reap --stale left a long-silent chat's claim in place:\n%s" % r.stdout)
+    return r.stdout.strip()
+
+
+@case("reap --stale refuses a chat claim it cannot attribute, because the name is shared (F-186)")
+def _(harness):
+    # The dangerous case. A pre-F-147 claim carries no token, only a name — and names collide
+    # (F-145). If two sessions wear one name, the freshest of them is not necessarily the holder, so
+    # trusting it would free a LIVE chat's files while its uncommitted edits sit in the tree.
+    # Ambiguity must lose: report it, never act on it.
+    claims = ('{"world/thing.gd": {"agent": "nettle12", '
+              '"task": "9.8", "at": "2026-08-18T12:00:00+00:00"}}')
+    d = build_repo(harness, claims=claims)
+    with open(os.path.join(d, ".agent", "sessions.json"), "w") as f:
+        json.dump({"MIRE_SESSION:token-A": {"name": "nettle12", "at": "2026-08-18T12:00:00+00:00"},
+                   "MIRE_SESSION:token-B": {"name": "nettle12", "at": "2026-08-18T12:00:00+00:00",
+                                            "seen": "2026-08-18T12:00:00+00:00"}}, f)
+    r = run([".agent/bin/agent", "reap", "--stale", "1"], d, session="token-C")
+    with open(os.path.join(d, ".agent", "state.json")) as f:
+        assert "world/thing.gd" in json.load(f)["claims"], (
+            "reap --stale freed a claim it could not attribute to a session:\n%s" % r.stdout)
+    return r.stdout.strip()
+
+
+@case("plain reap never frees a chat's claim — it only reports it (F-186)")
+def _(harness):
+    # A chat can be legitimately idle for hours with real uncommitted work. Releasing the claim does
+    # not remove those edits, it removes the protection around them, so the default must be advisory.
+    claims = ('{"world/thing.gd": {"agent": "nettle12", "token": "MIRE_SESSION:token-A", '
+              '"task": "9.8", "at": "2026-08-18T12:00:00+00:00"}}')
+    d = build_repo(harness, claims=claims)
+    with open(os.path.join(d, ".agent", "sessions.json"), "w") as f:
+        json.dump({"MIRE_SESSION:token-A": {"name": "nettle12",
+                                            "at": "2026-08-18T12:00:00+00:00",
+                                            "seen": "2026-08-18T12:00:00+00:00"}}, f)
+    r = run([".agent/bin/agent", "reap"], d, session="token-B")
+    with open(os.path.join(d, ".agent", "state.json")) as f:
+        assert "world/thing.gd" in json.load(f)["claims"], (
+            "plain reap freed a chat's claim without being asked:\n%s" % r.stdout)
+    assert "9.8" in r.stdout, "plain reap did not report the silent task: %s" % r.stdout
     return r.stdout.strip()
 
 

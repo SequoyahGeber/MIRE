@@ -173,6 +173,59 @@ def _save_sessions(data):
     os.replace(tmp, SESSIONS)
 
 
+# One write a minute at most. whoami() runs on every single command, including the pre-commit
+# hook, and sessions.json is rewritten whole each time.
+SESSION_HEARTBEAT_HOURS = 60.0 / 3600.0
+
+
+def _touch_session(token, sessions):
+    """Record that this chat is still alive, so `reap` can tell an abandoned session from a busy one.
+
+    A lane has a pid in lanes.json to check; a chat had nothing at all — its `at` is the moment it
+    registered and never moved — so claims left behind by a dead chat sat forever and blocked every
+    task that needed those files (F-186).
+
+    Deliberately takes no lock. This runs on every command with dozens of chats live, and a lock here
+    serialises all of them behind one file — the first version did exactly that and, with a contended
+    lock, spent 10s per command before dying. A missed beat is harmless: the next command re-beats
+    within the minute, and `reap` only ever *reports* on this by default. So re-read immediately
+    before the atomic replace, which narrows the lost-update window to the write itself, and accept
+    that window rather than pay for it on every invocation."""
+    rec = sessions.get(token)
+    if not isinstance(rec, dict):
+        return
+    if age_hours(rec.get("seen") or rec.get("at", "")) < SESSION_HEARTBEAT_HOURS:
+        return
+    try:
+        fresh = _load_sessions()
+        target = fresh.get(token)
+        if not isinstance(target, dict):
+            return
+        target["seen"] = now()
+        _save_sessions(fresh)
+        rec["seen"] = target["seen"]
+    except (IOError, OSError, ValueError, TypeError):
+        pass
+
+
+def _beat():
+    """Heartbeat for this invocation. Silent and best-effort by design: a lane (MIRE_AGENT, no
+    token) or an unregistered shell simply has nothing to record.
+
+    Catches BaseException on purpose. This runs before every single command, so anything it raises
+    would take down a command that has nothing to do with it — and `die()` raises SystemExit, which
+    an `except Exception` would let straight through."""
+    try:
+        token = whoami_token()
+        if not token:
+            return
+        sessions = _load_sessions()
+        if token in sessions:
+            _touch_session(token, sessions)
+    except BaseException:
+        pass
+
+
 def _prune_sessions(data):
     fresh = {}
     for token, rec in data.items():
@@ -219,6 +272,7 @@ def whoami(required=True, assign=True):
     token = _session_token()
     sessions = _load_sessions()
     if token and token in sessions:
+        _touch_session(token, sessions)
         return sessions[token]["name"]
 
     legacy = ""
@@ -3149,14 +3203,49 @@ def _done_without_closeout(st):
             if kind == "handoff" and st["tasks"].get(t, {}).get("status") == "done"]
 
 
+CHAT_STALE_REPORT_HOURS = 4.0
+
+
+def _session_last_seen(claim, sessions):
+    """(idle_hours, certain) for the session holding this claim.
+
+    Prefers the claim's own session token (F-147 put it there), which is unambiguous. Without one,
+    the only handle is the agent name — and names collide (F-145), so the freshest session wearing
+    that name may be a completely different chat. Guessing there would report a live task as
+    abandoned and, under `--stale`, free a working session's files. So an ambiguous name returns
+    certain=False: the age is still shown, but it is the age of the claim itself, and `--stale`
+    refuses to act on it."""
+    tok = claim.get("token")
+    if tok:
+        rec = sessions.get(tok)
+        if isinstance(rec, dict):
+            return age_hours(rec.get("seen") or rec.get("at", "")), True
+        # A token that is no longer in sessions.json has been pruned — that session is long gone.
+        return age_hours(claim.get("at", "")), True
+
+    same = [r for r in sessions.values()
+            if isinstance(r, dict) and r.get("name") == claim.get("agent")]
+    if len(same) == 1:
+        return age_hours(same[0].get("seen") or same[0].get("at", "")), True
+    return age_hours(claim.get("at", "")), False
+
+
 def cmd_reap(args):
-    """Release claims held by a lane whose process is gone.
+    """Release claims held by a lane whose process is gone, and surface chats that look abandoned.
 
     A lane killed hard — closed laptop, OOM, a hung CLI — leaves its claims behind, and every other
     lane that needs those files is blocked behind a corpse. `lane run` files a handoff on any exit
-    it survives to see; this is the backstop for the exits it doesn't."""
+    it survives to see; this is the backstop for the exits it doesn't.
+
+    A chat cannot be judged the same way: it has no pid, only the `seen` heartbeat whoami() writes,
+    and it can be legitimately idle for hours while its human is at lunch with real uncommitted edits
+    in the tree. Releasing a claim does not remove those edits, it removes the protection around them
+    (F-186). So chats are only ever *reported* here unless `--stale <hours>` explicitly asks."""
+    stale_hours = float(args[args.index("--stale") + 1]) if "--stale" in args else None
     st = load()
+    sessions = _load_sessions()
     lanes = _lane_state()
+    lane_agents = {n.lower() for n in LANE_NAMES}
     alive = {}
     for name, lane in lanes.items():
         pid = lane.get("pid")
@@ -3170,30 +3259,73 @@ def cmd_reap(args):
     freed, tasks = [], set()
     for path, claim in list(st["claims"].items()):
         holder = claim["agent"]
-        if holder in (n.lower() for n in LANE_NAMES) and holder not in alive:
+        if holder in lane_agents and holder not in alive:
             del st["claims"][path]
             freed.append((path, holder, claim["task"]))
             tasks.add(claim["task"])
 
     for tid in list(st["in_flight"]):
         entry = st["in_flight"][tid]
-        if entry["agent"] in (n.lower() for n in LANE_NAMES) and entry["agent"] not in alive:
+        if entry["agent"] in lane_agents and entry["agent"] not in alive:
             del st["in_flight"][tid]
             if st["tasks"].get(tid, {}).get("status") == "in_flight":
                 st["tasks"][tid]["status"] = "todo"
             tasks.add(tid)
 
-    if not freed and not tasks:
+    # Chat-held claims, grouped by task, with how long that session has been silent.
+    chat = {}
+    for path, claim in st["claims"].items():
+        if claim["agent"] in lane_agents:
+            continue
+        idle, certain = _session_last_seen(claim, sessions)
+        rec = chat.setdefault(claim["task"],
+                              {"agent": claim["agent"], "idle": idle, "certain": True, "files": []})
+        rec["files"].append(path)
+        rec["idle"] = max(rec["idle"], idle)
+        rec["certain"] = rec["certain"] and certain
+
+    threshold = stale_hours if stale_hours is not None else CHAT_STALE_REPORT_HOURS
+    stale = {t: r for t, r in chat.items() if r["idle"] >= threshold}
+
+    if stale_hours is not None:
+        for tid, rec in list(stale.items()):
+            if not rec["certain"]:
+                # Name shared by more than one session — we cannot tell which one holds this, and
+                # freeing a live chat's files is worse than leaving a dead one's held.
+                continue
+            for path in rec["files"]:
+                st["claims"].pop(path, None)
+                freed.append((path, rec["agent"], tid))
+            st["in_flight"].pop(tid, None)
+            if st["tasks"].get(tid, {}).get("status") == "in_flight":
+                st["tasks"][tid]["status"] = "todo"
+            tasks.add(tid)
+
+    if freed or tasks:
+        save(st)
+        ok("reaped %d claim(s) across %d task(s)" % (len(freed), len(tasks)))
+        for path, holder, tid in freed:
+            print("  %s· %s (was %s, %s)%s" % (C["dim"], path, holder, tid, C["x"]))
+        print("  %sthose tasks are back on the board — re-order them when a lane frees up%s"
+              % (C["dim"], C["x"]))
+    else:
         ok("nothing to reap — no lane is holding claims it shouldn't")
         if alive:
             print("  %slive: %s%s" % (C["dim"], ", ".join(sorted(alive)), C["x"]))
-        return
-    save(st)
-    ok("reaped %d claim(s) across %d task(s)" % (len(freed), len(tasks)))
-    for path, holder, tid in freed:
-        print("  %s· %s (was %s, %s)%s" % (C["dim"], path, holder, tid, C["x"]))
-    print("  %sthose tasks are back on the board — re-order them when a lane frees up%s"
-          % (C["dim"], C["x"]))
+
+    if stale and stale_hours is None:
+        print("\n%s⚠ %d chat task(s) silent for %gh or more, still holding claims%s"
+              % (C["y"], len(stale), threshold, C["x"]))
+        for tid, rec in sorted(stale.items(), key=lambda kv: -kv[1]["idle"]):
+            note = "" if rec["certain"] else " · NAME SHARED, cannot attribute — will not auto-free"
+            print("  %s %s · %s · %.1fh silent · %d file(s)%s%s"
+                  % (C["y"], tid, rec["agent"], rec["idle"], len(rec["files"]), note, C["x"]))
+            for path in sorted(rec["files"]):
+                print("      %s· %s%s" % (C["dim"], path, C["x"]))
+        print("  %sthe session may simply be idle — its uncommitted edits are still in the tree.%s"
+              % (C["dim"], C["x"]))
+        print("  %scheck with the human, then:  agent reap --stale %g%s"
+              % (C["dim"], threshold, C["x"]))
 
 
 def _git_since(hours):
@@ -3439,6 +3571,10 @@ def main():
     cmd = sys.argv[1]
     if cmd not in COMMANDS:
         die("unknown command '%s'\n\n%s" % (cmd, USAGE))
+    # Every invocation is proof this chat is alive, so the beat goes here rather than in whoami():
+    # `board`, `reap` and the read-only commands never resolve a name, and a session that only reads
+    # would have looked abandoned (F-186).
+    _beat()
     # Propagate the command's exit code. `agent godot` wraps a check whose failure MUST be visible to
     # whoever ran it — a lane that reads exit 0 from a failing check will ship a broken change and
     # report it verified. Commands that return None (all the original ones) still exit 0.
