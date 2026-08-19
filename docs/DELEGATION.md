@@ -75,6 +75,50 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-205 fixed: `cmd_check` (the pre-commit hook) now refuses a commit that would register or carry an untracked autoload target — F-200's mechanism #2 (lp)
+
+**What changed, for anyone touching `.agent/bin/agent`'s `cmd_check` or `tools/autoload_tracked_check.py`:**
+a new `_autoload_tracked_missing(changed)` helper in `.agent/bin/agent` (just above `cmd_check`)
+imports `tools/autoload_tracked_check` and calls its `sweep("")` whenever `changed` (the set
+`cmd_check` is about to judge) includes `project.godot` or any `.gd` file. Anything `sweep` reports
+missing is appended to `cmd_check`'s `errors` list — same list the claim/D-031 checks feed — so it
+blocks the commit the same way a foreign claim does, independent of and in addition to the ownership
+checks in the per-file loop.
+
+**The trick that made this a same-file, zero-new-logic change:** `autoload_tracked_check.py`'s
+`tracked_at`/`read_at` already build their git paths as `"%s:%s" % (rev, path)`. Pass `rev=""` and
+that collapses to git's own `:path` syntax — the INDEX. For any tracked path the index already IS
+"staged content if there is any, HEAD's otherwise", which is exactly the overlay a pre-commit hook
+needs (there's no commit sha yet to name). So `--rev ""` reaches the right revision for free — no new
+git-diffing code, and `autoload_tracked_check.py`'s checking code (`sweep`/`tracked_at`/`read_at`/the
+two regexes) is untouched; only its docstring changed, to document the `--rev ""` form, and its
+self-test gained one case (`catches_staged_precommit_f205_shape`) proving that form catches a target
+that was never even `git add`ed.
+
+**Fails open on its own breakage, on purpose:** an import or `sweep()` exception inside
+`_autoload_tracked_missing` returns `[]` (no missing targets found) rather than blocking the commit —
+this gate is pure upside over F-200's after-the-fact `--self-test`-verified check, never the only
+thing standing between a bad commit and the tree, so a bug in the gate itself must never be the thing
+that blocks an unrelated commit.
+
+**Test harness gained a hook-simulation mode:** `tools/harness_check.py`'s `run()` took a new
+`as_hook=True` kwarg — sets `GIT_INDEX_FILE` before invoking `.agent/bin/agent check`, which is what
+flips `cmd_check`'s own `staged_only` branch to the STAGED/INDEX code path (F-001) instead of its
+working-tree fallback. Every case before F-205 called `check` bare, so all of them exercise only the
+fallback path; a future case that needs to test the real pre-commit-hook behavior (STAGED view, not
+working tree) should pass `as_hook=True` rather than adding a second ad hoc env dance. `build_repo()`
+also now seeds a real `project.godot` (one clean `[autoload]` entry pointing at the fixture's
+`world/thing.gd`) and copies the real `tools/autoload_tracked_check.py` into the fixture's `tools/`
+dir, so every existing case doubles as a no-false-positive proof for this gate for free.
+
+**Verified:** `python3 tools/autoload_tracked_check.py --self-test` → 4/4. `python3
+tools/harness_check.py` → 34/34 (3 new F-205 cases). `python3 tools/autoload_tracked_check.py` (real
+repo, HEAD) → `autoloads=58 paths_checked=111 failures=0`. `.agent/bin/agent check` on the real
+working tree → clean pass. `agent godot --script tools/findings_numbering_check.gd` → structure
+intact after moving F-205 to `## Resolved`.
+
+**What's NOT built:** nothing — F-200's finding named exactly two mechanisms and both now exist.
+
 ### 2026-08-19 — F-206 resolved: `build_gatherable_plants.py` (A-011) gets the bevel-free `box()` override, closing the D-124 exposure F-198 left latent and adding the byte-identical claim A-012 already carries (lm)
 
 **The gap:** F-198 fixed three live D-124 violations (families whose tracker rows already claimed a

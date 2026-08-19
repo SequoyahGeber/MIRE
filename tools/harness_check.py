@@ -45,13 +45,20 @@ def brief(text, lines=3, chars=300):
     return head + (" …" if len(text.strip()) > len(head) else "")
 
 
-def run(cmd, cwd, agent="alpha", session=None, check=False, godot_bin=None, stdin=None):
+def run(cmd, cwd, agent="alpha", session=None, check=False, godot_bin=None, stdin=None, as_hook=False):
     """`stdin` is a string for the commands that read a body that way (`finding`, `resolve`).
     Passing "" is meaningful and not the same as omitting it — it is how the empty-body refusal gets
     tested, since a pipe is never a tty either way.
 
     `session` stands in for a real chat's session-id env var (F-147): pass it instead of `agent` to
-    drive `whoami()`'s auto-name/token machinery rather than a lane's fixed MIRE_AGENT identity."""
+    drive `whoami()`'s auto-name/token machinery rather than a lane's fixed MIRE_AGENT identity.
+
+    `as_hook`: cmd_check branches on `GIT_INDEX_FILE` (F-001) — set only inside a real git hook — to
+    decide whether to judge the STAGED set or fall back to a working-tree scan. Every case above this
+    predates that flag and calls `check` bare, so it always exercises the fallback path; a case that
+    needs the STAGED-set behaviour a real pre-commit hook gets (F-205's autoload sweep judges what
+    would actually be committed) must ask for it explicitly rather than accidentally exercising the
+    other one."""
     env = dict(os.environ, NO_COLOR="1")
     env.pop("MIRE_AGENT", None)
     env.pop("MIRE_SESSION", None)
@@ -63,6 +70,8 @@ def run(cmd, cwd, agent="alpha", session=None, check=False, godot_bin=None, stdi
         # Stand in for the engine so the argv the wrapper builds is observable, and so a test never
         # launches a real Godot against a throwaway project.
         env["GODOT_BIN"] = godot_bin
+    if as_hook:
+        env["GIT_INDEX_FILE"] = os.path.join(cwd, ".git", "index")
     r = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, input=stdin)
     if check and r.returncode != 0:
         # AssertionError, not SystemExit: a failed setup command is a failed case, and SystemExit
@@ -81,8 +90,13 @@ def build_repo(harness_src, claims="{}", recent=None):
     d = tempfile.mkdtemp(prefix="mire-harness-")
     os.makedirs(os.path.join(d, ".agent", "bin"))
     os.makedirs(os.path.join(d, "world"))
+    os.makedirs(os.path.join(d, "tools"))
     shutil.copy(harness_src, os.path.join(d, ".agent", "bin", "agent"))
     os.chmod(os.path.join(d, ".agent", "bin", "agent"), 0o755)
+    # F-205: cmd_check imports this to run the autoload sweep — the real module, not a stub, so a
+    # regression in either file shows up here rather than only at the real repo's HEAD.
+    shutil.copy(os.path.join(ROOT, "tools", "autoload_tracked_check.py"),
+                os.path.join(d, "tools", "autoload_tracked_check.py"))
 
     def write(rel, text):
         with open(os.path.join(d, rel), "w") as f:
@@ -111,6 +125,12 @@ def build_repo(harness_src, claims="{}", recent=None):
     # A .uid sidecar already on disk keeps ship from shelling out to Godot for it (F-017).
     write("world/thing.gd", "extends Node\n")
     write("world/thing.gd.uid", "uid://abc123\n")
+    # A clean, resolvable autoload registration — F-205's cases mutate this from a known-good base
+    # rather than starting from nothing, so a case that does NOT touch project.godot at all (nearly
+    # every case above) is proof the sweep stays silent on an ordinary commit, not just that it never
+    # ran.
+    write("project.godot", '[application]\n\nconfig/name="fixture"\n\n[autoload]\n\n'
+                            'Thing="*res://world/thing.gd"\n')
 
     run(["git", "init", "-q", "-b", "main"], d, check=True)
     run(["git", "config", "user.email", "harness@test"], d, check=True)
@@ -830,6 +850,59 @@ def _(harness):
     assert "edited without a claim" in out, "expected the generic warning: %s" % brief(out)
     assert "F-191" not in out, "the sweep-specific warning fired outside its grace window: %s" % brief(out)
     return out.strip()
+
+
+@case("check blocks a commit that registers an autoload whose script was never committed or staged (F-190 shape, F-205)")
+def _(harness):
+    d = build_repo(harness)
+    with open(os.path.join(d, "project.godot"), "a") as f:
+        f.write('Extra="*res://autoload/extra.gd"\n')  # autoload/extra.gd never created at all
+    run(["git", "add", "--", "project.godot"], d, check=True)
+    r = run([".agent/bin/agent", "check"], d, as_hook=True)
+    assert r.returncode != 0, (
+        "check let a commit register an autoload whose script isn't tracked:\n%s"
+        % brief(r.stdout + r.stderr))
+    out = r.stdout + r.stderr
+    assert "res://autoload/extra.gd" in out, "block didn't name the missing target: %s" % brief(out)
+    assert "F-205" in out or "F-200" in out, "block didn't cite the mechanism: %s" % brief(out)
+    return out.strip()
+
+
+@case("check blocks a commit whose staged autoload script preloads an untracked dependency (F-144 shape, F-205)")
+def _(harness):
+    d = build_repo(harness)
+    os.makedirs(os.path.join(d, "autoload"))
+    with open(os.path.join(d, "autoload", "extra.gd"), "w") as f:
+        f.write('extends Node\nconst Dep := preload("res://autoload/missing_dep.gd")\n')
+    with open(os.path.join(d, "project.godot"), "a") as f:
+        f.write('Extra="*res://autoload/extra.gd"\n')
+    # extra.gd itself IS staged this time — missing_dep.gd, what it preloads, deliberately isn't.
+    run(["git", "add", "--", "project.godot", "autoload/extra.gd"], d, check=True)
+    r = run([".agent/bin/agent", "check"], d, as_hook=True)
+    assert r.returncode != 0, (
+        "check let a staged autoload's untracked transitive preload through:\n%s"
+        % brief(r.stdout + r.stderr))
+    out = r.stdout + r.stderr
+    assert "res://autoload/missing_dep.gd" in out, "block didn't name the missing dependency: %s" % brief(out)
+    return out.strip()
+
+
+@case("check stays quiet when a new autoload's script is staged in the same commit (F-205, no false positive)")
+def _(harness):
+    d = build_repo(harness)
+    os.makedirs(os.path.join(d, "autoload"))
+    with open(os.path.join(d, "autoload", "extra.gd"), "w") as f:
+        f.write("extends Node\n")
+    with open(os.path.join(d, "project.godot"), "a") as f:
+        f.write('Extra="*res://autoload/extra.gd"\n')
+    run(["git", "add", "--", "project.godot", "autoload/extra.gd"], d, check=True)
+    r = run([".agent/bin/agent", "check"], d, as_hook=True)
+    assert r.returncode == 0, (
+        "check blocked a legitimate autoload whose script IS staged alongside it:\n%s"
+        % brief(r.stdout + r.stderr))
+    out = r.stdout + r.stderr
+    assert "F-205" not in out and "F-200" not in out, "false-positive autoload block: %s" % brief(out)
+    return out.strip() or "(no output — silent pass)"
 
 
 def main():

@@ -5459,6 +5459,67 @@ armature rather than a plain mesh). Filed as **F-207** with the exact file/line 
 
 ---
 
+## F-205 · `agent check`/the pre-commit hook still lets a commit register or carry an untracked autoload target — F-200's mechanism #2 is still unbuilt
+
+**Claim:** `.agent/bin/agent`, `tools/autoload_tracked_check.py`, `tools/harness_check.py`,
+`docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble. Its brief carried a staleness warning (`tools/autoload_tracked_check.py` had a commit
+since filing) — checked first per that warning: that one commit is `d77c061`, F-200 itself landing
+`autoload_tracked_check.py` for the first time, in the same session that then filed this finding
+against it. Not a fix of the gap — `--self-test` still ran 3/3 with zero pre-commit integration, so
+the finding was still live and the work was still to build.
+
+**What was wrong:** F-200 built `tools/autoload_tracked_check.py` — proves, for a given revision,
+that every `project.godot` `[autoload]` target and everything it transitively `preload()`s is a git
+blob that revision actually has — but nothing called it before a commit landed.
+`.agent/bin/agent:cmd_check` (the pre-commit hook) only ever judged claims and the closed-editor rule;
+a commit registering `Thing="*res://autoload/thing.gd"` while `thing.gd` was neither staged alongside
+it nor already in `HEAD` still went through clean — F-190's and F-144's exact shape, still possible.
+
+**Fix:** `cmd_check` now calls a new `_autoload_tracked_missing(changed)` (`.agent/bin/agent`) that,
+when `changed` includes `project.godot` or any `.gd` file, imports `autoload_tracked_check` and calls
+`sweep("")`. The empty-string `--rev` was already free: `autoload_tracked_check.py`'s `tracked_at`/
+`read_at` build `"%s:%s" % (rev, path)`, and an empty `rev` collapses that to git's own `:path`
+syntax — the INDEX, which for any tracked path already IS "staged content if there is any, HEAD's
+otherwise": exactly the overlay a pre-commit hook needs, with no new revision-diffing logic and no
+edit to `autoload_tracked_check.py`'s checking code at all (only its docstring, documenting the
+`--rev ""` form). Anything `sweep("")` reports missing becomes a `cmd_check` error — blocking the
+commit — independent of the per-file claim loop, since ownership and "does this boot" are unrelated
+questions. Never fails a commit closed over a broken checker: an import/`sweep()` exception returns
+`[]` (fails open on the checker's own failure, the one place in `cmd_check` that fails open on
+purpose — this gate is pure upside over F-200's after-the-fact check, never the sole guard).
+
+**Verify:**
+- `python3 tools/autoload_tracked_check.py --self-test` → `4/4 passed` (new case
+  `catches_staged_precommit_f205_shape`: stages an autoload registration, never `git add`s its
+  target, checks `--rev ""` — no commit exists yet to name by sha, proving the INDEX view is what a
+  real pre-commit hook needs, not `--rev HEAD`).
+- `python3 tools/harness_check.py` → `34/34 passed`, three new cases exercising `cmd_check` itself
+  through a simulated git hook (`run(..., as_hook=True)`, sets `GIT_INDEX_FILE` so `cmd_check` takes
+  the STAGED/INDEX branch, F-001): registers an autoload whose script is staged nowhere (blocked,
+  names the path, cites F-200/F-205); a staged autoload script whose own `preload()` target is
+  untracked (blocked, names the transitive path); and the sanctioned path — a new autoload's script
+  staged in the SAME commit (passes silently, `F-051`'s existing warning only — proves no
+  false-positive on the one case this whole mechanism must never block).
+- `python3 tools/autoload_tracked_check.py` (real repo, HEAD) →
+  `AUTOLOAD_TRACKED_CHECK rev=HEAD autoloads=58 paths_checked=111` / `failures=0`.
+- `.agent/bin/agent check` on the real working tree at close-out → clean pass, confirming the new
+  gate doesn't fire on an ordinary commit that never touches project.godot/`.gd` files it shouldn't.
+
+**Swept for the same shape elsewhere:** `grep -rln "cat-file -e\|tracked_at\|res://" tools/*.py` —
+only `autoload_tracked_check.py` (and now `harness_check.py`, which imports it for the new test
+cases) does git-blob-tracked-at-rev checking. The repo's other `tools/*_check.py` files
+(`godot_prepass_check.py`, `import_cache_guard_check.py`, `png_pixels_equal_check.py`) verify
+unrelated mechanisms (import ordering, cache-lock interop, pixel-identical reproduction) and are
+already wired into the checks that use them — no other "a checker exists but nothing calls it
+pre-commit" instance found.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 ## F-206 · `build_gatherable_plants.py` (A-011) has six `bevel=` sites with no local override — the same D-124 exposure, latent rather than live
 
 **Claim:** `tools/blender/build_gatherable_plants.py`, `assets/gatherables/catalog.json`,

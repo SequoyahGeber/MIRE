@@ -4798,3 +4798,15 @@ Fixed: build_gatherable_plants.py now has a local bevel-free box() override (D-1
 Files: `tools/blender/build_gatherable_plants.py`, `assets/gatherables/catalog.json`, `assets/gatherables/exports/berry_bush_full.glb`, `assets/gatherables/exports/berry_bush_harvested.glb`, `assets/gatherables/exports/clay_deposit.glb`, `assets/gatherables/exports/fibre_plant.glb`, `assets/gatherables/exports/honeycomb.glb`, `assets/gatherables/exports/medicinal_herb.glb`, `assets/gatherables/exports/peat_deposit.glb`, `assets/gatherables/exports/poison_berry_bush.glb`, `assets/gatherables/exports/resin_node.glb`, `assets/gatherables/exports/wild_onion.glb`, `assets/gatherables/preview/gatherable_deposits_preview.png`, `assets/gatherables/preview/gatherable_plants_preview.png`, `assets/gatherables/preview/berry_decision_preview.png`, `assets/source/gatherable_plants.blend`
 
 Commit at time of writing: `39e1c22`
+
+---
+
+### DONE · F-205 · lp · 2026-08-19T10:25:06+00:00
+
+**`agent check`/the pre-commit hook still lets a commit register or carry an untracked autoload target — F-200's mechanism #2 is still unbuilt**
+
+Fixed. cmd_check now refuses a commit that would register/carry an untracked autoload target, F-200's mechanism #2. Verified: python3 tools/autoload_tracked_check.py --self-test -> 4/4; python3 tools/harness_check.py -> 34/34 (3 new F-205 cases simulating the real pre-commit hook via GIT_INDEX_FILE); python3 tools/autoload_tracked_check.py (HEAD) -> failures=0; agent check on real tree -> clean pass; agent godot --script tools/findings_numbering_check.gd -> structure intact after moving F-205 to Resolved. Docs: SPECS.md spec block, FINDINGS.md resolved, DECISIONS.md D-129, DELEGATION.md current-state entry.
+
+Files: `.agent/bin/agent`, `tools/autoload_tracked_check.py`, `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`
+
+Commit at time of writing: `4a9d0ca`

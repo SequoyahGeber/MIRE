@@ -3619,3 +3619,29 @@ newly-created object) found no in-process workaround. If that ever changes, this
 to "just move it," but re-verify with `tools/blender/asset_repro_check.py` plus an actual look at the
 rendered PNG before trusting it, the way F-086-shaped "looks done, never checked" failures keep
 costing this project.
+
+---
+
+### D-129 · 2026-08-19 · A pre-commit hook that needs "what THIS commit would leave behind" reads git's INDEX, not a synthesized diff-over-HEAD — and it fails OPEN on its own breakage, never closed
+
+F-205 needed `cmd_check` to judge whether an autoload target would resolve after a commit that has no
+sha yet. Two calls worth pinning down so a future editor of `cmd_check`/`tools/autoload_tracked_check.py`
+doesn't relitigate either:
+
+1. **The revision to check is git's INDEX (`:path`), not a hand-rolled overlay of `git diff --cached`
+   onto `HEAD`.** For any tracked path, the index already **is** "staged content if there is any,
+   HEAD's otherwise" — that's what an index is. `tools/autoload_tracked_check.py` already builds its
+   git paths as `"%s:%s" % (rev, path)`; passing `rev=""` collapses that to `:path` for free, with no
+   new diffing logic and no edit to the file's actual checking code. Reach for this same trick before
+   writing bespoke "staged-plus-HEAD" logic anywhere else in the harness that needs the same overlay.
+2. **A check gate added defensively (catches more than the ownership/claim checks already catch) must
+   fail OPEN on its own internal errors, not closed.** `_autoload_tracked_missing()` returns `[]` — no
+   missing targets found — if importing or running `autoload_tracked_check` throws. This inverts the
+   rest of `cmd_check`'s posture (elsewhere, "never fail open" means an unreadable diff falls back to
+   *demanding* a claim, D-031's own comment) on purpose: the claim system is the only thing standing
+   between two agents' concurrent edits, so it must refuse when uncertain. The autoload gate is pure
+   upside layered on top of F-200's already-shipped after-the-fact check (`--self-test`-verified
+   separately) — it is never the sole guard against a bad commit, so a bug in the gate itself must
+   never be able to block an unrelated commit. Any future gate added to `cmd_check` should ask which
+   category it's in before choosing a failure direction, not copy whichever one is nearest in the
+   source.

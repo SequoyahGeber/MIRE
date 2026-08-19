@@ -1420,6 +1420,38 @@ def _autoload_only_project_change(staged):
         return False  # Never fail open: an unreadable diff falls back to demanding the claim.
 
 
+def _autoload_tracked_missing(changed):
+    """F-205: mechanism #2 for F-200's hazard. F-200 built `tools/autoload_tracked_check.py`, which
+    proves — for any given revision — that every `[autoload]` target in project.godot, and everything
+    it transitively `preload()`s, is a blob git actually has. It did not stop a bad commit from
+    landing; this does. When `changed` (whatever cmd_check is about to judge) touches project.godot
+    or a `.gd` script, sweep the same graph against the revision a pre-commit hook actually cares
+    about: what THIS commit would leave behind. There is no sha to name yet, so that revision is
+    git's own index — for any tracked path the index already IS "staged content if there is any,
+    HEAD's otherwise", which is exactly the overlay this needs — and `autoload_tracked_check.py`
+    reaches it through the plain `:path` syntax its `--rev ""` builds. Reuses that file's
+    regexes/BFS (`sweep()`) rather than re-deriving them, per F-205's finding.
+
+    Returns [] when nothing autoload-shaped changed (skip the sweep — the common case) or the
+    checker itself can't be imported/run: a broken checker is its own bug (caught by
+    `autoload_tracked_check.py --self-test`), and cmd_check must never fail a commit closed over
+    that, the same "never fail open... falls back to demanding" caution as the rest of this file,
+    inverted — here failing OPEN (silently skipping) is the safe direction, since this gate is pure
+    upside over F-200's after-the-fact check, never the only thing standing between a bad commit and
+    the tree."""
+    if not any(f == "project.godot" or f.endswith(".gd") for f in changed):
+        return []
+    tools_dir = os.path.join(ROOT, "tools")
+    if tools_dir not in sys.path:
+        sys.path.insert(0, tools_dir)
+    try:
+        import autoload_tracked_check as _autoload_check
+        missing, _visited = _autoload_check.sweep("")
+        return missing
+    except Exception:
+        return []
+
+
 def cmd_check(args):
     """Verify uncommitted changes respect claims and the closed-editor rule.
     Run by the pre-commit hook."""
@@ -1539,6 +1571,16 @@ def cmd_check(args):
                                 % (f, r.get("agent", "another session"), age_hours(r.get("at", ""))))
             else:
                 warnings.append("%s — edited without a claim" % f)
+
+    # F-205: ownership (above) says nothing about whether the commit BOOTS. A claim violation and a
+    # dangling autoload target are unrelated failure modes, so this always runs, human or agent,
+    # independent of the per-file claim loop above.
+    for path, root in _autoload_tracked_missing(changed):
+        same = path == root
+        errors.append(
+            "%s%s — not a tracked blob in this commit (F-190/F-144 shape); "
+            "tools/autoload_tracked_check.py would fail (F-200/F-205)"
+            % (path, "" if same else " (reachable via autoload %s)" % root))
 
     for w in warnings:
         print("%s⚠ %s%s" % (C["y"], w, C["x"]))

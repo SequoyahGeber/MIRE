@@ -1,43 +1,12 @@
 {
-  "claims": {
-    ".agent/bin/agent": {
-      "agent": "lp",
-      "at": "2026-08-19T10:17:37+00:00",
-      "task": "F-205",
-      "token": null
-    },
-    "tools/autoload_tracked_check.py": {
-      "agent": "lp",
-      "at": "2026-08-19T10:17:37+00:00",
-      "task": "F-205",
-      "token": null
-    },
-    "tools/harness_check.py": {
-      "agent": "lp",
-      "at": "2026-08-19T10:17:37+00:00",
-      "task": "F-205",
-      "token": null
-    }
-  },
-  "in_flight": {
-    "F-205": {
-      "agent": "lp",
-      "files": [
-        ".agent/bin/agent",
-        "tools/autoload_tracked_check.py",
-        "tools/harness_check.py"
-      ],
-      "notes": [],
-      "started": "2026-08-19T10:17:37+00:00",
-      "token": null
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
-      "agent": "lm",
-      "at": "2026-08-19T10:14:06+00:00",
-      "hash": "fa669dc4f31a263f0e7f5ad1bf3f2af0a4d63d78c56870830886553c241269db",
-      "task": "F-191",
+      "agent": "lp",
+      "at": "2026-08-19T10:25:06+00:00",
+      "hash": "3bc323554770887e3b783030ec794828af47a1ed21682edded78c5a92bd5f5e6",
+      "task": "F-205",
       "token": null
     },
     ".agent/bin/lane": {
@@ -1895,23 +1864,23 @@
     },
     "docs/DECISIONS.md": {
       "agent": "lp",
-      "at": "2026-08-19T09:57:59+00:00",
-      "hash": "d32785a6a25c9a95e3603de671957909c9ea1c1b34406c6b72e60efba32e0c50",
-      "task": "F-198",
+      "at": "2026-08-19T10:25:06+00:00",
+      "hash": "62ebb08bd5854e6ea1398e7da8160205638db634d1c99df34180b9fdcc061ba2",
+      "task": "F-205",
       "token": null
     },
     "docs/DELEGATION.md": {
       "agent": "lp",
-      "at": "2026-08-19T09:57:59+00:00",
-      "hash": "18a60a82724deff556194504df480830a523cd0d8388477c53c4a5685ec41423",
-      "task": "F-198",
+      "at": "2026-08-19T10:25:06+00:00",
+      "hash": "0ccdde2c3b0771dca400d9dd2174acb2fb86c3ccf791fdfd15478de95e3f91a0",
+      "task": "F-205",
       "token": null
     },
     "docs/FINDINGS.md": {
       "agent": "lp",
-      "at": "2026-08-19T09:57:59+00:00",
-      "hash": "44c2459383ee3925ab66acb6bcba5cf85f38b5a7148305f82d0d072d081ffb71",
-      "task": "F-198",
+      "at": "2026-08-19T10:25:06+00:00",
+      "hash": "de88a98525f70153cbac62f2ef736edd78428867559b1aad74e065b172b0d2fd",
+      "task": "F-205",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1940,9 +1909,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lp",
-      "at": "2026-08-19T09:57:59+00:00",
-      "hash": "f29d655c4ffdea91f46832300cfe1e2794c1d6ed64097b693f2299e17c2b7e68",
-      "task": "F-198",
+      "at": "2026-08-19T10:25:06+00:00",
+      "hash": "5915b1e3e861d02370cef6c8d3b1bb92315229281712f84c0282ee3f91cab578",
+      "task": "F-205",
       "token": null
     },
     "entities/player/player.tscn": {
@@ -2453,9 +2422,9 @@
     },
     "tools/autoload_tracked_check.py": {
       "agent": "lp",
-      "at": "2026-08-19T09:26:48+00:00",
-      "hash": "8c531438428e3951c5fd9cb79e9e0987e1a61a25d013a42a279feb5e4743a966",
-      "task": "F-200",
+      "at": "2026-08-19T10:25:06+00:00",
+      "hash": "e9953928e2bfe10f9b854646fd8b826c5e5c93e32311fe550ef870ff16460de9",
+      "task": "F-205",
       "token": null
     },
     "tools/bench_chunk_gpu.gd": {
@@ -2986,10 +2955,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "tools/harness_check.py": {
-      "agent": "lm",
-      "at": "2026-08-19T10:14:06+00:00",
-      "hash": "a9408effce00cb5d9e2014136eaab8bbd1297dc262dcf8bda2730434b81bbc8d",
-      "task": "F-191",
+      "agent": "lp",
+      "at": "2026-08-19T10:25:06+00:00",
+      "hash": "dfcf6d64f6f472b5fbc4c58b432ed05063d7060e7fd81adf6c8aafba09463020",
+      "task": "F-205",
       "token": null
     },
     "tools/harvest_batch_check.gd": {
@@ -6535,9 +6504,11 @@
       "title": "A Blender preview that moves assets between renders draws the layout it had at the first render"
     },
     "F-205": {
+      "done_at": "2026-08-19T10:25:06+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`agent check`/the pre-commit hook still lets a commit register or carry an untracked autoload target \u2014 F-200's mechanism #2 is still unbuilt"
     },

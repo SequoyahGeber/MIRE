@@ -24,13 +24,22 @@ nothing about what a clean checkout of that revision would have. For every `res:
 Run:
     python3 tools/autoload_tracked_check.py            # HEAD
     python3 tools/autoload_tracked_check.py --rev abc123
+    python3 tools/autoload_tracked_check.py --rev ""    # what's STAGED right now, HEAD for the rest —
+                                                          # git's own `:path` index syntax, which is
+                                                          # what `--rev` + `:` builds when rev is empty.
+                                                          # This is the revision a pre-commit hook wants:
+                                                          # there is no commit yet to name by sha.
     .agent/bin/agent baseline python3 tools/autoload_tracked_check.py   # a clean checkout of HEAD
     python3 tools/autoload_tracked_check.py --self-test  # proves it catches F-190's and F-144's
                                                           # exact shapes, in a throwaway repo
 
 No Godot needed — this is pure git, so it's cheap enough to run on every commit that touches
-project.godot or an autoload script (see docs/FINDINGS.md F-200 for the still-open mechanism #2,
-a pre-commit hook enforcement of the same rule).
+project.godot or an autoload script. F-205 is mechanism #2: `.agent/bin/agent:cmd_check` (the
+pre-commit hook) imports this module and calls `sweep("")` — the INDEX view above — whenever the
+changed set includes project.godot or a .gd file, and refuses the commit if anything comes back
+missing. Reuses this file's regexes/BFS rather than re-deriving them; see
+`_case_catches_staged_precommit_f205_shape` below for the fixture that proves the INDEX view catches
+a target that was never even `git add`ed, not just one missing from a named commit.
 """
 
 from __future__ import annotations
@@ -191,10 +200,27 @@ def _case_catches_f144_shape():
         return "tracked autoload, untracked transitive preload: caught, exit %d" % r.returncode
 
 
+def _case_catches_staged_precommit_f205_shape():
+    """F-205's shape: nothing has been committed yet, so there is no revision to name by sha —
+    the check has to work against what's staged. `git add` the autoload registration but
+    deliberately never `git add` its target, then check `--rev ""` (the INDEX view) instead of
+    `--rev HEAD`. This is exactly what `.agent/bin/agent:cmd_check` calls pre-commit."""
+    with tempfile.TemporaryDirectory(prefix="mire-autoload-check-") as tmp:
+        d, write, git_ = _self_test_repo(tmp)
+        write("project.godot", '[autoload]\n\nThing="*res://autoload/thing.gd"\n')
+        git_(["add", "tools", "project.godot"])  # thing.gd deliberately never `git add`ed
+        r = _run_self(d, rev="")
+        assert r.returncode != 0, (
+            "did not fail on a staged-but-uncommitted missing target:\n%s" % r.stdout)
+        assert "res://autoload/thing.gd" in r.stdout, r.stdout
+        return "staged autoload, target never git-added: caught pre-commit, exit %d" % r.returncode
+
+
 SELF_TEST_CASES = [
     ("clean_passes", _case_clean_passes),
     ("catches_f190_shape", _case_catches_f190_shape),
     ("catches_f144_shape", _case_catches_f144_shape),
+    ("catches_staged_precommit_f205_shape", _case_catches_staged_precommit_f205_shape),
 ]
 
 
