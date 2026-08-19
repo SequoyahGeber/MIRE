@@ -3900,3 +3900,62 @@ overflow bug has poisoned since day one.
 produced `"621c8ba008c3520f"` under a since-reverted version of the seed constant — that would make
 the old value a legitimate prior recording superseded by a real (if inadvertent) wire-adjacent change,
 not a correction, and the normal version-bump rule would apply instead.
+
+### D-138 · 2026-08-19 · D-128's "never take effect" was too broad — an existing object CAN be safely repositioned between a Blender preview generator's renders, but only when something else between the two calls forces Blender to re-evaluate the depsgraph, and nothing in the pipeline guarantees that on purpose
+
+*Narrows D-128, does not repeal it.* F-207 was filed as a mechanical `grep` sweep — the same
+`record["root"].location = ` pattern D-204 diagnosed as broken, found live in eight more generators —
+and D-128 generalized F-204's diagnosis into a standing rule: never write an already-rendered object's
+`.location`/`.rotation_euler` a second time in one process. Closing F-207 required actually rebuilding
+all eight generators and inspecting the previously-flagged PNGs (`tools/blender/asset_repro_check.py`
+only checks geometry, never pixels — the same gap F-204 named). None of the nine flagged renders were
+actually broken. Confirmed by disabling each reposition line in a throwaway copy and diffing the
+rendered output against the real script: every one produced a materially different (correctly
+scattered/off-frame) image, proving the real script's reposition **did** take effect.
+
+**What actually determines whether a reposition takes effect, empirically (Blender 5.2.0 LTS,
+`--background`, this repo's exact generators):**
+
+1. **An object that has never yet appeared in any render this process has made** (`hide_render=True`
+   through every prior `bpy.ops.render.render()` call) picks up a location/rotation assigned right
+   before its first appearance correctly, no matter how late in the process that assignment happens.
+   `build_tool_weapon_set.py`'s viewmodel render is this case: those records sit hidden through the
+   world-preview render, then get shown, repositioned and rotated for the very next render — and it
+   renders exactly as authored.
+2. **Repositioning an object that HAS already appeared in a render is unreliable BY DEFAULT** — this
+   is F-204's real, still-correct finding, reproduced verbatim by rebuilding the pre-fix
+   `build_gatherable_plants.py` from `2330435^` under today's Blender: the reference cube froze at
+   its first sheet's transform on the second sheet, exactly as originally diagnosed.
+3. **...UNLESS something else runs between the reposition and the render that forces Blender to
+   re-evaluate the scene.** Every one of the eight generators F-207 flagged does exactly this by
+   accident: `build_crafting_stations.py`, `build_harvestable_resources.py`,
+   `build_wellspring_set.py` (via `add_scale_reference`), `build_loot_set.py`, `build_ward_set.py`
+   (via `add_scale_reference`), `build_enemy_crawler.py`, and `build_tool_weapon_set.py`'s showcase
+   render all create brand-new mesh objects (`ico()`/`cone()`/`box()`/`cylinder_between()`, all
+   `bpy.ops.mesh.primitive_*_add` underneath) for a scale reference AFTER the reposition and BEFORE
+   the render — and that object creation is enough to un-stale every OTHER object's pending transform
+   too, not just the new one's. `build_mire_map_kit.py`'s hero shot creates no new geometry but does
+   change `camera.data.type` from `ORTHO` to `PERSP` right before its render, which empirically has
+   the same unsticking effect. Confirmed for both mechanisms by re-running each generator with its
+   reposition line replaced with `pass` and diffing against the real output.
+
+**Why this stays a narrowing, not a reversal of D-128's rule:** nothing above is a documented Blender
+guarantee — it is an accidental side effect of unrelated code (a scale prop's construction, a camera
+mode flip) that happens to force a full depsgraph refresh in this Blender build. Reordering or
+deleting that incidental code — e.g. "simplifying" a showcase render by dropping its scale reference,
+or reusing one `camera.data` block across two different-typed cameras — would silently reintroduce
+F-204's exact bug with no check to catch it (geometry checks don't look at pixels, and none of these
+eight files even have one). **D-128's authoring rule remains the correct one to follow when WRITING a
+new multi-render generator:** build one object per position before the first render, hide/show it,
+never reposition an existing rendered object on purpose. This decision only means an agent auditing an
+*existing* generator for this bug must rebuild and look at the actual pixels — matching the
+composition the code clearly intends — before assuming a `.location =` between two `render()` calls is
+broken. Filed as F-222 for the follow-up: harden the eight now-accidentally-correct renders with
+`make_reference`/`hero_duplicate` so correctness stops depending on an unrelated object happening to
+get created nearby.
+
+**Would change my mind:** discovering Blender's actual trigger for the depsgraph refresh (still
+unknown — candidate is any `bpy.ops` call that internally touches `view_layer.update()` or rebuilds
+the operator's undo state, but `view_layer.update()` called directly was already ruled out by F-204's
+own probe table) — that would turn this from "an accident we've verified nine instances of" into a
+documented mechanism a generator could rely on rather than merely observing after the fact.

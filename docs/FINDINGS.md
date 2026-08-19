@@ -431,7 +431,84 @@ option 4 is already someone's live task.
 
 ---
 
-### F-207 · F-204's same bug — an object repositioned between renders that never takes effect — is live in 8 more Blender generators, one of them twice
+### F-208 · F-203's sway case is still unsolved — `_apply_sway`'s per-mesh height mask needs a per-vertex baked channel before sway-bearing props can join the cross-asset chunk merge
+
+**Area:** perf · **Severity:** low · **Found:** 2026-08-19 by lp while closing F-203
+
+F-203 closed the emitter half of its own finding (see `## Resolved`) but deliberately left sway
+untouched — `AuthoredWorld._build_props()` still routes anything `AssetVfx.sway_for() != NONE`
+into the original per-(chunk, kit, asset) `MultiMesh` path, same as before F-187.
+
+`EnvironmentVfx._apply_sway` dresses a MESH once, keyed by the mesh's own `get_instance_id()`, and
+applies ONE `AssetVfxLibrary.Sway` profile to every surface of it. The wind shader
+(`world/environment/foliage_wind.gdshader`) reads `VERTEX.y` in MODEL space against
+`wind_root_y`/`wind_inv_height`, both derived from `mesh.get_aabb()` — correct when that AABB is
+one plant's own local frame (true for both a loose `MeshInstance3D` and a `MultiMesh`, since a
+MultiMesh copy's base vertices are per-copy, not baked), and wrong the instant several placements'
+absolute, chunk-relative heights are baked into one static mesh: the mask would then read terrain
+elevation across the merge instead of height within each individual plant.
+
+A fix needs one of:
+
+1. A per-vertex baked height-mask — a spare vertex channel (UV2 or a custom one) written at merge
+   time from each SOURCE asset's own local AABB before baking, read by a modified
+   `foliage_wind.gdshader` path instead of `wind_root_y`/`wind_inv_height`. This is the harder of
+   the two mechanisms named in F-203's own title, and the only one still open.
+2. Keep sway-bearing props out of the cross-asset merge permanently and pursue F-100's original
+   coarser-grouping idea for them instead — same-sway-type multi-asset `MultiMesh` groups (still
+   one node per group, not per asset, but never a baked static mesh) rather than
+   `MeshMerge.merge_instances()`.
+
+Whoever picks this up: F-203's emitter fix is the template for how a merge bucket declares state a
+merged holder's baked geometry can no longer carry on its own (`EnvironmentVfx.EMITTER_META`) — the
+same shape (a class or a mask, not an asset id) is what a sway fix needs too. Measure with
+`tools/frame_cost_check.gd` against `agent baseline`, same as F-187/F-203 — the shadow-cascade trap
+those two hit is not a risk here (sway-bearing props are all short foliage, already excluded from
+shadow casting by their own height), but a wider merge changing which chunk buckets exist is still
+worth confirming against real numbers rather than assumed.
+
+---
+
+### F-222 · Eight Blender preview generators render correctly only because an unrelated object happens to get created (or the camera type happens to get flipped) between their reposition and their render — no check would catch it if that incidental code is ever removed
+
+**Area:** art-pipeline · **Severity:** low · **Found:** 2026-08-19 by lm while closing F-207
+
+F-207 flagged nine renders across eight generators as hitting F-204's "an object repositioned between
+renders never takes effect" bug, from a mechanical grep for the same code shape. None of the nine are
+actually broken — verified by disabling each reposition in a throwaway copy of each script and diffing
+the rendered output against the real one; every real render showed the intended, correctly-repositioned
+composition. `docs/DECISIONS.md` D-138 has the full investigation and the mechanism: `object.location`
+reassigned on an already-rendered object is unreliable by default (F-204's diagnosis holds, reproduced
+verbatim against the pre-fix `build_gatherable_plants.py`), but in every one of these eight files
+*something else* between the reposition and the render happens to force Blender to re-evaluate the
+scene — new scale-reference geometry created via `bpy.ops.mesh.primitive_*_add` in seven of them
+(`build_crafting_stations.py`, `build_harvestable_resources.py`, `build_wellspring_set.py`,
+`build_loot_set.py`, `build_ward_set.py`, `build_enemy_crawler.py`,
+`build_tool_weapon_set.py`'s showcase render), or a `camera.data.type` flip from `ORTHO` to `PERSP` in
+the eighth (`build_mire_map_kit.py`'s hero shot).
+
+This is an accident, not a guarantee — nothing in Blender's documented behavior promises that creating
+an unrelated object or changing camera type re-evaluates a stale transform, and no `check()` in any of
+these files (none of the eight has one) or in `tools/blender/asset_repro_check.py` (geometry only,
+never pixels) would notice if it stopped happening. **Not fixed here**, because there is currently no
+actual bug to fix and D-128/AGENTS.md both caution against rewriting working hand-authored code without
+one. The risk: if a future edit to any of these eight files removes or reorders the scale-reference
+creation (or, for `build_mire_map_kit.py`, the camera-type flip) relative to the reposition it currently
+masks, F-204's exact bug reappears silently — a blank or wrong-position tile that ships in the next
+`DONE` batch, exactly like A-012's original incident.
+
+**A real fix, if anyone wants to remove the risk rather than merely note it:** apply D-128's own
+established pattern — `make_reference`/`hero_duplicate`, both already implemented in
+`build_gatherable_plants.py`/`build_flora_set.py` — to the nine renders this finding lists, so each one
+is correct by construction rather than by incidental side effect. Verify with
+`tools/blender/asset_repro_check.py` plus an actual look at the rendered PNG, per D-128's own standing
+instruction.
+
+---
+
+## Resolved
+
+### F-207 · F-204's same bug — an object repositioned between renders that never takes effect — is live in 8 more Blender generators, one of them twice — **fixed**
 
 **Area:** art-pipeline · **Severity:** medium · **Found:** 2026-08-19 by lp during F-204's required sweep
 
@@ -490,47 +567,25 @@ open the previously-broken preview PNG rather than trusting the exit code.
 
 ---
 
-### F-208 · F-203's sway case is still unsolved — `_apply_sway`'s per-mesh height mask needs a per-vertex baked channel before sway-bearing props can join the cross-asset chunk merge
+**Resolved 2026-08-19 by lm.** Verified all nine flagged renders across the 8 generators are NOT actually broken — the grep sweep
+that filed this finding matched the code shape but never checked pixels. For each, disabled the
+reposition line in a throwaway copy, rebuilt, and diffed against the real script's output: every real
+render shows the intended, correctly-repositioned composition (crafting_stations, harvestable_resources,
+wellspring_set, loot_set, ward_set, enemy_crawler, tool_weapon_set's showcase render all confirmed via
+diff test; tool_weapon_set's viewmodel render and mire_map_kit's hero shot confirmed the same way).
 
-**Area:** perf · **Severity:** low · **Found:** 2026-08-19 by lp while closing F-203
+Mechanism (docs/DECISIONS.md D-138): F-204's diagnosis still holds in general (reproduced verbatim
+against the pre-fix build_gatherable_plants.py under today's Blender), but in all nine cases something
+else between the reposition and the render — new scale-reference geometry via
+bpy.ops.mesh.primitive_*_add, a camera.data.type flip, or the object never having appeared in an
+earlier render — happens to force a depsgraph re-evaluation that un-stales the position too. This is
+an accident of nearby code, not a guarantee, so filed F-222 for the residual fragility risk (no check
+would catch a regression if that incidental code is ever removed).
 
-F-203 closed the emitter half of its own finding (see `## Resolved`) but deliberately left sway
-untouched — `AuthoredWorld._build_props()` still routes anything `AssetVfx.sway_for() != NONE`
-into the original per-(chunk, kit, asset) `MultiMesh` path, same as before F-187.
-
-`EnvironmentVfx._apply_sway` dresses a MESH once, keyed by the mesh's own `get_instance_id()`, and
-applies ONE `AssetVfxLibrary.Sway` profile to every surface of it. The wind shader
-(`world/environment/foliage_wind.gdshader`) reads `VERTEX.y` in MODEL space against
-`wind_root_y`/`wind_inv_height`, both derived from `mesh.get_aabb()` — correct when that AABB is
-one plant's own local frame (true for both a loose `MeshInstance3D` and a `MultiMesh`, since a
-MultiMesh copy's base vertices are per-copy, not baked), and wrong the instant several placements'
-absolute, chunk-relative heights are baked into one static mesh: the mask would then read terrain
-elevation across the merge instead of height within each individual plant.
-
-A fix needs one of:
-
-1. A per-vertex baked height-mask — a spare vertex channel (UV2 or a custom one) written at merge
-   time from each SOURCE asset's own local AABB before baking, read by a modified
-   `foliage_wind.gdshader` path instead of `wind_root_y`/`wind_inv_height`. This is the harder of
-   the two mechanisms named in F-203's own title, and the only one still open.
-2. Keep sway-bearing props out of the cross-asset merge permanently and pursue F-100's original
-   coarser-grouping idea for them instead — same-sway-type multi-asset `MultiMesh` groups (still
-   one node per group, not per asset, but never a baked static mesh) rather than
-   `MeshMerge.merge_instances()`.
-
-Whoever picks this up: F-203's emitter fix is the template for how a merge bucket declares state a
-merged holder's baked geometry can no longer carry on its own (`EnvironmentVfx.EMITTER_META`) — the
-same shape (a class or a mask, not an asset id) is what a sway fix needs too. Measure with
-`tools/frame_cost_check.gd` against `agent baseline`, same as F-187/F-203 — the shadow-cascade trap
-those two hit is not a risk here (sway-bearing props are all short foliage, already excluded from
-shadow casting by their own height), but a wider merge changing which chunk buckets exist is still
-worth confirming against real numbers rather than assumed.
-
----
-
----
-
-## Resolved
+No code changed. All 8 generators verified via tools/blender/asset_repro_check.py (labels A-001,
+A-003 through A-009): every one prints "*_ASSET_REPRO_CHECK PASS", every exported GLB and catalog.json
+byte-identical across two fresh rebuilds. Working tree left clean (git checkout -- assets/) since no
+fix was needed. Full writeup in docs/SPECS.md's new F-207 block and docs/DECISIONS.md D-138.
 
 ### F-197 · A generated-asset commit swept up another lane's dirty crafting-station GLBs under an unrelated message — the F-149/F-191 sweep hazard reaching art files, not just docs/ — **fixed**
 

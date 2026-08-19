@@ -6619,6 +6619,66 @@ already `## Resolved`; nothing else names either as its own fix).
 
 ---
 
+## F-207 · F-204's same bug — an object repositioned between renders that never takes effect — is live in 8 more Blender generators, one of them twice
+
+**Claim:** none — this task found no code defect to fix, only nine already-correct renders to verify
+and a finding to close. Coordination/verification only, so no `ARCHITECTURE.md` §2.2 authority row.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**What F-207 claimed:** a mechanical `grep -n "bpy.ops.render.render\|\.location = " tools/blender/build_*.py`
+found the same code SHAPE F-204 fixed (`object.location` reassigned between two `bpy.ops.render.render()`
+calls in one process) live in `build_enemy_crawler.py`, `build_crafting_stations.py`,
+`build_harvestable_resources.py`, `build_mire_map_kit.py`, `build_wellspring_set.py`,
+`build_loot_set.py`, `build_ward_set.py`, and `build_tool_weapon_set.py` (twice) — nine renders total,
+never verified against actual pixels.
+
+**What this task found:** none of the nine are actually broken. For each, disabled the reposition line
+in a throwaway copy of the script (`pass` in place of the `.location =`/`.rotation_euler =` line),
+rebuilt standalone, and diffed the resulting preview PNG against the real script's output:
+
+| File | Broken render(s) claimed | Actually broken? |
+|---|---|---|
+| `build_crafting_stations.py` | scale preview (2nd of 2) | No — diff test shows real reposition takes effect |
+| `build_harvestable_resources.py` | scale preview (2nd of 2) | No — same masked shape, visual match to showcase |
+| `build_mire_map_kit.py` | hero shot (8th of 8) | No — diff test shows real reposition takes effect |
+| `build_wellspring_set.py` | scale preview (2nd of 2) | No — same masked shape, visual match to showcase |
+| `build_loot_set.py` | scale preview (2nd of 2) | No — same masked shape, visual match to showcase |
+| `build_ward_set.py` | scale preview (2nd of 2) | No — same masked shape, visual match to showcase |
+| `build_tool_weapon_set.py` | viewmodel preview (2nd of 3) | No — real render shows the intended grid+tilt |
+| `build_tool_weapon_set.py` | scale preview (3rd of 3) | No — diff test shows real reposition takes effect |
+| `build_enemy_crawler.py` | scale preview (2nd of 2) | No — exaggerated-offset test shows real reposition takes effect |
+
+`docs/DECISIONS.md` D-138 has the mechanism: F-204's diagnosis is still correct in general (reproduced
+verbatim by rebuilding the pre-fix `build_gatherable_plants.py` from `2330435^` under today's Blender —
+the reference cube froze exactly as originally described), but in every one of these nine cases
+something else between the reposition and the render — new scale-reference geometry via
+`bpy.ops.mesh.primitive_*_add`, a `camera.data.type` flip, or the object simply never having appeared
+in an earlier render — happens to force Blender to re-evaluate the stale transform too. The grep sweep
+that filed F-207 could only see the code shape, not this side effect, so it over-flagged all nine.
+
+**Not fixed here**, because there is no actual bug: none of these files' pixels need to change, and
+rewriting already-correct hand-authored generator code "to be safe" is exactly the unnecessary-churn
+AGENTS.md warns against. Filed **F-222** for the real residual risk: correctness here depends on
+incidental code (the scale prop, the camera-type flip) that a future edit could remove without any
+check noticing.
+
+**Verify:** every file rebuilt standalone
+(`/Applications/Blender.app/Contents/MacOS/Blender --background --python tools/blender/build_X.py`) and
+run through `tools/blender/asset_repro_check.py` (`A-001` through `A-009` labels) — all nine
+`*_ASSET_REPRO_CHECK PASS`, every exported GLB and catalog.json byte-identical across two fresh
+rebuilds. Working tree left clean afterward (`git checkout -- assets/`); no `assets/` files needed to
+change since no code changed.
+
+**Swept for the same shape elsewhere:** this task's whole scope was F-204's already-completed sweep;
+no further generators outside the nine named above match the pattern (confirmed by F-204's own grep,
+re-run and unchanged in file list).
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**
