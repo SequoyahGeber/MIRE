@@ -6165,6 +6165,31 @@ already has `cycle: int` as a ready-made stable id, so its fix is close to mecha
 
 ---
 
+## F-212 · `ARCHITECTURE.md` §5 still describes the Mire grid's replication as a bespoke batched `PackedByteArray` RPC — task 4.9 shipped a different, permanent mechanism and never updated it
+
+**Claim:** `docs/ARCHITECTURE.md` only — docs are exempt from claims (F-006). No code, no check to
+run: this finding is a stale doc, not a stale behavior. `world/mire/mire_grid.gd`'s own header
+already describes the real mechanism correctly, and every runtime consumer already reads it right.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's preamble.
+
+**The fix:** `ARCHITECTURE.md:203-204` said Mire replication batches changed `(index, value)` pairs
+into a `PackedByteArray` RPC. Task 4.9 shipped `WorldDeltaLog.host_record(chunk, kind, key, value)`
+(task 4.6's generic per-cell-keyed-by-chunk log) instead, once per changed cell, never a bespoke byte
+array — D-099 (2026-08-18) records why and is explicit that this is permanent, not provisional:
+"there is no future world in which a bespoke RPC becomes the better answer" (a new RPC pair needs a
+`PROTOCOL_VERSION` bump in `core/net/net_version.gd`, which was held by another lane's claim the whole
+session 4.9 shipped, and `WorldDeltaLog` was the strictly better fit regardless of file availability).
+§5's replication bullet now names `WorldDeltaLog.host_record()`, same shape as the sentence D-099
+already wrote once, and states clients only ever read corruption back through the replicated log.
+
+**Verify:** read-only — confirm `docs/ARCHITECTURE.md` §5 no longer mentions `PackedByteArray` and
+matches `world/mire/mire_grid.gd:3-19`'s doc comment and D-099's own text.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

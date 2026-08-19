@@ -562,34 +562,6 @@ worth confirming against real numbers rather than assumed.
 
 ---
 
-### F-212 · `ARCHITECTURE.md` §5 still describes the Mire grid's replication as a bespoke batched `PackedByteArray` RPC — task 4.9 shipped a different, permanent mechanism and never updated it
-
-**Area:** docs/netcode · **Severity:** low · **Found:** 2026-08-19 by lm reviewing task 4.9
-
-`docs/ARCHITECTURE.md:203-204` still reads: "send only *changed* cells as `(index, value)` pairs
-since last tick, batched into a `PackedByteArray` RPC." Task 4.9 shipped something else —
-`world/mire/mire_grid.gd._emit_changed_deltas()` calls `WorldDeltaLog.host_record(chunk, kind, key,
-value)` once per changed cell (task 4.6's generic per-cell-keyed-by-chunk log), never a batched byte
-array of any kind. `docs/DECISIONS.md` D-099 records why — `core/net/net_version.gd` was held by
-another lane's claim all session, so a new RPC pair (which a `PROTOCOL_VERSION` bump would require)
-was not just extra work, it was impossible to ship that session — and is explicit that this is
-permanent, not provisional: "**Would change my mind:** nothing, really ... there is no future world
-in which a bespoke RPC becomes the better answer." That makes this a settled architecture decision,
-not a stopgap, which is exactly the case where the architecture doc should have been updated to
-match, the way §2.2's extraction/ranged-combat/display-name rows already were when *those* tasks hit
-the same `net_version.gd` contention (each names its real RPC pair inline). §5 is the one row nobody
-went back to fix.
-
-Not a code bug — `MireGrid`'s own doc comment (`world/mire/mire_grid.gd:3-19`) already explains the
-real mechanism correctly, and every runtime consumer reads it right. The failure mode is a future
-reader trusting `ARCHITECTURE.md` §5 as ground truth (as this project's own `CLAUDE.md` tells every
-agent to) and building the next Mire-adjacent system — 4.10's visuals, or a future replication
-consumer — around a `PackedByteArray` wire format that was never built and never will be. A two-line
-fix: replace §5's replication bullet with a line naming `WorldDeltaLog.host_record()`/`latest()`,
-same shape as the sentence D-099 already wrote once.
-
----
-
 ### F-213 · core/net/rpc_manifest.gd's FNV-1a seed literal overflows signed 64-bit int, erroring on every scan even though the check itself stays deterministic
 
 **Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lm
@@ -776,6 +748,43 @@ header) is unaffected either way — replication carries the RESULT, never the r
 ---
 
 ## Resolved
+
+### F-212 · `ARCHITECTURE.md` §5 still describes the Mire grid's replication as a bespoke batched `PackedByteArray` RPC — task 4.9 shipped a different, permanent mechanism and never updated it — **fixed**
+
+**Area:** docs/netcode · **Severity:** low · **Found:** 2026-08-19 by lm reviewing task 4.9
+
+`docs/ARCHITECTURE.md:203-204` still reads: "send only *changed* cells as `(index, value)` pairs
+since last tick, batched into a `PackedByteArray` RPC." Task 4.9 shipped something else —
+`world/mire/mire_grid.gd._emit_changed_deltas()` calls `WorldDeltaLog.host_record(chunk, kind, key,
+value)` once per changed cell (task 4.6's generic per-cell-keyed-by-chunk log), never a batched byte
+array of any kind. `docs/DECISIONS.md` D-099 records why — `core/net/net_version.gd` was held by
+another lane's claim all session, so a new RPC pair (which a `PROTOCOL_VERSION` bump would require)
+was not just extra work, it was impossible to ship that session — and is explicit that this is
+permanent, not provisional: "**Would change my mind:** nothing, really ... there is no future world
+in which a bespoke RPC becomes the better answer." That makes this a settled architecture decision,
+not a stopgap, which is exactly the case where the architecture doc should have been updated to
+match, the way §2.2's extraction/ranged-combat/display-name rows already were when *those* tasks hit
+the same `net_version.gd` contention (each names its real RPC pair inline). §5 is the one row nobody
+went back to fix.
+
+Not a code bug — `MireGrid`'s own doc comment (`world/mire/mire_grid.gd:3-19`) already explains the
+real mechanism correctly, and every runtime consumer reads it right. The failure mode is a future
+reader trusting `ARCHITECTURE.md` §5 as ground truth (as this project's own `CLAUDE.md` tells every
+agent to) and building the next Mire-adjacent system — 4.10's visuals, or a future replication
+consumer — around a `PackedByteArray` wire format that was never built and never will be. A two-line
+fix: replace §5's replication bullet with a line naming `WorldDeltaLog.host_record()`/`latest()`,
+same shape as the sentence D-099 already wrote once.
+
+---
+
+**Resolved 2026-08-19 by lm.** Doc-only fix. ARCHITECTURE.md:203-204 replaced the stale "PackedByteArray RPC" replication bullet
+with the real, permanent mechanism task 4.9 shipped: WorldDeltaLog.host_record(chunk, kind, key,
+value) per changed cell (task 4.6's log), matching D-099's own text and mire_grid.gd's header
+comment. No code changed - MireGrid already implemented this correctly; only the doc was stale.
+Verified by re-reading docs/ARCHITECTURE.md §5 (no PackedByteArray mention remains) against
+world/mire/mire_grid.gd:3-19 and docs/DECISIONS.md D-099. Wrote the missing SPECS.md F-212 block
+per this file's own preamble ("if a spec is missing, fixing it here is part of the task that
+discovers it").
 
 ### F-210 · `Chest`'s loot roll still seeds from boot-time `randomize()` even though `GameState.run_seed` now exists — D-041's own reversal trigger has fired — **fixed**
 

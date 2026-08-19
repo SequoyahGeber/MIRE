@@ -200,8 +200,11 @@ The island falloff is `1.0 - d * d * d`, never `1.0 - pow(d, 3.0)`.
 - 256×256 `PackedFloat32Array` over island bounds, one cell ≈ 4m
 - Tick every 2s: for each corrupted cell, bleed corruption into neighbours at the current Cycle's rate
 - Wellspring caps subtract corruption in a radius; Wards resist accumulation in a radius
-- **Replication:** send only *changed* cells as `(index, value)` pairs since last tick, batched into a
-  `PackedByteArray` RPC. A typical tick changes a few hundred cells — trivially small.
+- **Replication:** every changed cell is written host-side through `WorldDeltaLog.host_record(chunk,
+  kind, key, value)` (task 4.6's generic per-cell-keyed-by-chunk log) as it changes, not batched into a
+  bespoke RPC — a new RPC pair would need a `PROTOCOL_VERSION` bump, and D-099 found `WorldDeltaLog` the
+  strictly better fit regardless. Clients read corruption back from the replicated log; the host never
+  simulates on a client.
 - **Visualization is entirely client-side:** the grid drives a texture uploaded to a shader that
   controls ground tint, fog density, and particle spawn. No extra bandwidth for the pretty part.
 
