@@ -3117,9 +3117,9 @@
     },
     "tools/menu_focus_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T12:52:55+00:00",
-      "hash": "9fa4c1408944b75fcfde3b7d8224ead84c7cd29894c3ba99bbf91bcb5711ce34",
-      "task": "F-215",
+      "at": "2026-08-19T13:00:01+00:00",
+      "hash": "24fca17d7257483d376cc6cd10d6330fc8ff8bf967f887cb098a5684f8c9483f",
+      "task": "F-216",
       "token": null
     },
     "tools/mesh_merge_check.gd": {
@@ -3490,9 +3490,10 @@
     },
     "ui/attunement/attunement_ui.gd": {
       "agent": "lm",
-      "at": "2026-08-18T19:15:45+00:00",
-      "hash": "daebea624b0b9adcd239e6f1f51228c62e9212d0c1b5c4c650604a1063c38023",
-      "task": "3.9"
+      "at": "2026-08-19T13:00:01+00:00",
+      "hash": "f288b95013a5a4cd86d9d07b58b3c52eb96f4d8e691e1bb13ba727500657bf17",
+      "task": "F-216",
+      "token": null
     },
     "ui/building/build_bar.gd": {
       "agent": "lm",
@@ -6778,9 +6779,11 @@
       "title": "`HSlider` draws no visible focus ring in this Godot version \u2014 F-209's gamepad focus work left it the one control type still hard to tell is focused"
     },
     "F-216": {
+      "done_at": "2026-08-19T13:00:01+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`AttunementUI` (task 3.9's mandatory run-start role picker) has no gamepad focus support \u2014 worse than F-209's original scope, since this panel has no Esc/dismiss path at all"
     },

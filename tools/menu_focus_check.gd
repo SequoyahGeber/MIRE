@@ -17,6 +17,10 @@ extends SceneTree
 ## it and E/Esc closes it, both already gamepad-bound actions before this task, so there is nothing
 ## for a check here to prove.
 ##
+## F-216 added `_check_attunement_ui()`: AttunementUI (task 3.9's run-start role picker) was not in
+## F-209's own file list and shipped with no gamepad focus support at all — worse than every panel
+## above, since it has no Esc/dismiss path, so a bare controller could not get past it, full stop.
+##
 ## Run with: .agent/bin/agent godot --script tools/menu_focus_check.gd
 
 var failures: int = 0
@@ -30,6 +34,16 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 
+	# AttunementUI runs FIRST and deliberately: its background poll timer (attunement_ui.gd's
+	# _poll_for_local_player, autostart, 0.5s) opens the picker for ANY node in the "players" group
+	# with authority, not just a real player — and CraftingUI's own check below adds exactly such a
+	# stand-in node for its station-range test. Running AttunementUI's check after that one let its
+	# timer fire mid-CraftingUI-check and steal focus (F-216's grab_focus() addition made this an
+	# actual failure, not just a silent extra shade). Once this check completes,
+	# AttunementService.local_selection() is permanently non-empty, so the trigger's own early-return
+	# guard (`_open or local_selection() != ""`) keeps it from ever firing again for the rest of this
+	# script's run — going first is what makes every later check's own "players" group node safe.
+	await _check_attunement_ui()
 	await _check_main_menu()
 	await _check_settings_menu()
 	await _check_lobby_menu_idle()
@@ -385,6 +399,57 @@ func _check_inventory_ui() -> void:
 
 	ui.call(&"set_open", false)
 	await process_frame
+
+
+# ── AttunementUI ──────────────────────────────────────────────────────────────────────────────────
+
+
+## F-216: unlike every other panel above, this one has no Esc/dismiss path at all (see
+## ui/attunement/attunement_ui.gd's file header) — a bare controller reaching this screen with no
+## gamepad focus support cannot get past it, full stop. The chain/ring assertions below prove the
+## same shape as the other panels; the closing assertion after ui_accept is the one that actually
+## proves a bare controller can get past this screen, which is the whole point of the finding.
+func _check_attunement_ui() -> void:
+	print("\n== AttunementUI: initial focus, full CHOOSE-button chain (wraps), ui_accept fires the pick ==")
+	var ui: Node = root.get_node_or_null(^"AttunementUI")
+	var service: Node = root.get_node_or_null(^"AttunementService")
+	var powerups: Node = root.get_node_or_null(^"PowerupService")
+	check(ui != null and service != null and powerups != null,
+		"AttunementUI/AttunementService/PowerupService autoloads exist")
+	if ui == null or service == null or powerups == null:
+		return
+
+	var stand_in := Node3D.new()
+	stand_in.name = "MenuFocusCheckAttunementPlayer"
+	stand_in.add_to_group(&"players")
+	root.add_child(stand_in)
+	await process_frame
+	ui.call(&"poll_now")
+	check(bool(ui.call(&"is_open")), "the picker opened for the local player's first body")
+
+	var role_count: int = int(ui.call(&"role_button_count"))
+	check(role_count > 0, "content ships at least one role to test the chain on")
+	if role_count == 0:
+		stand_in.queue_free()
+		return
+
+	var first_button: Control = _focused()
+	check(first_button is Button, "opening grabs the first ROLE_ORDER CHOOSE button")
+	check(first_button != null and first_button.has_theme_stylebox_override(&"focus"),
+		"the first CHOOSE button carries a visible focus ring override")
+
+	await _walk_loop(first_button, JOY_BUTTON_DPAD_DOWN, role_count + 2, "AttunementUI")
+
+	# host_clear keeps this a fresh pick regardless of what earlier checks in this run granted the
+	# host peer — AttunementService.request_select() refuses a second pick outright (respec is out
+	# of scope, see attunement_service.gd), so a stale grant here would silently no-op ui_accept
+	# below instead of proving it fires.
+	powerups.call(&"host_clear", NetConfig.HOST_PEER_ID)
+	await _tap(JOY_BUTTON_A)
+	check(not bool(ui.call(&"is_open")),
+		"ui_accept on the focused CHOOSE button fires the same request_select() a click would have, closing the picker on acceptance — this is the only way past this screen with no mouse")
+
+	stand_in.queue_free()
 
 
 func check(condition: bool, description: String) -> void:

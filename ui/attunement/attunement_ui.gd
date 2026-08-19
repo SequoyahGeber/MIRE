@@ -14,6 +14,14 @@ extends CanvasLayer
 ## the offline hand-placed Player or a PlayerNet spawn. Joins the D-032 group while open. There is no
 ## Escape/dismiss path — task 3.9's spec locks the pick after selection and respec is out of scope,
 ## so once open there is nothing to dismiss TO.
+##
+## F-216: because there is no dismiss path, a bare controller MUST be able to reach a CHOOSE button
+## with no mouse at all — unlike every other F-209 panel, this one is not optional. Opening grabs
+## the first ROLE_ORDER button, the buttons chain top<->bottom (_wire_vertical_chain, rebuilt with
+## the rows every open since Registry content is boot-time-static but the row set still gets torn
+## down and rebuilt per open), and each carries a visible "focus" stylebox override. ui_accept
+## already carries a gamepad binding project-wide (tools/bind_ui_gamepad_actions.gd, F-209) so no
+## further wiring is needed for CHOOSE itself.
 
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
 const PLAYERS_GROUP: StringName = &"players"
@@ -115,6 +123,7 @@ func _open_picker() -> void:
 	_rebuild_role_rows()
 	_refresh_party()
 	_show_status("Pick one — it is locked for the run.", false)
+	_grab_initial_focus()
 
 
 func _close_picker() -> void:
@@ -161,6 +170,14 @@ func _rebuild_role_rows() -> void:
 		if definition == null:
 			continue
 		_roles_box.add_child(_build_role_row(definition))
+
+	# F-216: chain every CHOOSE button, in ROLE_ORDER, wrapping top<->bottom — same recipe F-209
+	# gave UnlockMenu's BUY-button rows (unlock_menu.gd's _wire_vertical_chain).
+	var chain: Array = []
+	for role_id: StringName in ROLE_ORDER:
+		if _role_buttons.has(role_id):
+			chain.append(_role_buttons[role_id])
+	_wire_vertical_chain(chain)
 
 
 func _build_role_row(definition: Resource) -> PanelContainer:
@@ -209,6 +226,7 @@ func _build_role_row(definition: Resource) -> PanelContainer:
 	pick_button.add_theme_color_override("font_color", COLOUR_TEXT)
 	pick_button.add_theme_stylebox_override("normal", _field_style(COLOUR_ROW, COLOUR_BORDER))
 	pick_button.add_theme_stylebox_override("hover", _field_style(COLOUR_ROW, COLOUR_ACCENT))
+	pick_button.add_theme_stylebox_override("focus", _focus_style())
 	pick_button.pressed.connect(choose.bind(role_id))
 	row.add_child(pick_button)
 	_role_buttons[role_id] = pick_button
@@ -229,6 +247,26 @@ func _refresh_party() -> void:
 func _set_buttons_disabled(disabled: bool) -> void:
 	for button: Button in _role_buttons.values():
 		button.disabled = disabled
+
+
+## F-216: this panel has no Esc/dismiss path (see file header) — a bare controller's only way past
+## it is ui_accept on a focused CHOOSE button, so unlike every other F-209 panel, grabbing initial
+## focus here is not a convenience, it is what makes the panel reachable at all.
+func _grab_initial_focus() -> void:
+	for role_id: StringName in ROLE_ORDER:
+		if _role_buttons.has(role_id):
+			_role_buttons[role_id].grab_focus()
+			return
+
+
+func _wire_vertical_chain(controls: Array) -> void:
+	var count: int = controls.size()
+	for i: int in count:
+		var current: Control = controls[i]
+		var prev: Control = controls[(i - 1 + count) % count]
+		var next: Control = controls[(i + 1) % count]
+		current.focus_neighbor_top = current.get_path_to(prev)
+		current.focus_neighbor_bottom = current.get_path_to(next)
 
 
 func _show_status(text: String, is_error: bool) -> void:
@@ -342,4 +380,16 @@ func _field_style(fill: Color, border: Color) -> StyleBoxFlat:
 	style.content_margin_right = 12.0
 	style.content_margin_top = 7.0
 	style.content_margin_bottom = 7.0
+	return style
+
+
+## Visible focus ring (F-209/F-216) — same transparent-fill outline shape as main_menu.gd/
+## unlock_menu.gd's own copies of this helper.
+func _focus_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+	style.draw_center = false
+	style.border_color = COLOUR_ACCENT
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(5)
 	return style

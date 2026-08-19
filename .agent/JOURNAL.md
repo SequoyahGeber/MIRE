@@ -5079,3 +5079,18 @@ Fixed: new ui/menu/focus_ring_slider.gd (FocusRingSlider extends HSlider) draws 
 Files: `ui/menu/settings_menu.gd`, `ui/menu/focus_ring_slider.gd`, `tools/menu_focus_check.gd`
 
 Commit at time of writing: `d88c206`
+
+---
+
+### DONE · F-216 · lm · 2026-08-19T13:00:01+00:00
+
+**`AttunementUI` (task 3.9's mandatory run-start role picker) has no gamepad focus support — worse than F-209's original scope, since this panel has no Esc/dismiss path at all**
+
+attunement_ui.gd's CHOOSE buttons now grab initial focus, chain top<->bottom, and draw a visible focus ring (F-209's recipe) — a bare controller can now navigate and pick, closing the panel's only hard softlock. Verified: agent godot --script tools/menu_focus_check.gd -> MENU_FOCUS_CHECK failures=0 (new _check_attunement_ui, plus the other 6 panel checks still pass), and tools/attunement_ui_check.gd -> ATTUNEMENT_UI_CHECK failures=0. Swept ui/ for the same shape: clean, only F-217 remains (already filed).
+
+Notes along the way:
+- Reordered menu_focus_check.gd so _check_attunement_ui() runs FIRST: AttunementUI's background poll timer (0.5s, autostart) opens the picker for ANY node in the players group with authority, and CraftingUI's own check adds such a stand-in node — adding grab_focus() made that a real focus-steal failure instead of a silent extra shade. Confirmed the pre-existing 0-failure baseline had no such collision (grab_focus is new).
+
+Files: `ui/attunement/attunement_ui.gd`, `tools/menu_focus_check.gd`
+
+Commit at time of writing: `a25b4cc`
