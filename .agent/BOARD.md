@@ -10,12 +10,16 @@
 |---|---|---|---|
 | **3.7** Buildable pieces (walls/floors/ramps/doors) + Ward structures | slate17 | 2026-08-18 22:23 | `systems/building/buildable_door.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/door_check.gd`, `tools/door_check.gd.uid` |
 | **F-144** Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance | nettle12 | 2026-08-18 21:51 | `tools/render_census.gd`, `world/gen/authored_world.gd`, `world/gen/undergrowth.gd`, `autoload/graphics_quality.gd`, `tools/_probe_lods.gd`, `world/environment/draw_policy.gd`, `tools/harvest_batch_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `core/render/mesh_merge.gd`, `systems/harvesting/harvestable.gd`, `tools/_probe_merge.gd`, `tools/frame_cost_check.gd` |
+| **F-159** Placed buildables are invisible to the nav map — agents path straight through walls | lm | 2026-08-19 04:39 | `world/chunk/nav_baker.gd`, `autoload/build_service.gd`, `tools/nav_bake_check.gd` |
+
+**F-159 notes:**
+- Scoping decision: EnemyWorld.bake_navigation() is the LIVE nav baker (called at session bootstrap + by BuildService._request_nav_rebake()); NavBaker (task 4.5) is unreachable in the live game per F-139 (no ChunkStreamer caller yet). autoload/enemy_world.gd is locked by lp (5.5, boss framework) for this whole session, and folding buildable geometry into a bake correctly requires ONE combined parse+bake pass (can't composite two separately-baked regions and get correct Recast carving) -- so a sound fix needs that file. F-159 itself is scoped explicitly against NavBaker/ChunkMesher and tools/nav_bake_check.gd, so I'm implementing there instead: zero contention, and correct-by-construction for whenever F-139 wires a live ChunkStreamer. Not touching enemy_world.gd at all this task.
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `████████░░` 140/174 | 34 |
+| Findings | `████████░░` 141/175 | 34 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -68,9 +72,8 @@
 | ⬜ | **F-154** Two events in COMMANDS.md §5.2's own illustrative hook vocabulary — `run_started`, | todo |
 | ⬜ | **F-157** No system tracks a player's display name anywhere in the project — F-126's `peer` name resolution has nothing to resolve against, and 3.16 shipped without adding one | todo |
 | ⬜ | **F-158** `bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler | todo |
-| ⬜ | **F-159** Placed buildables are invisible to the nav map — agents path straight through walls | todo |
+| 🔵 | **F-159** Placed buildables are invisible to the nav map — agents path straight through walls | in_flight |
 | ⬜ | **F-161** Task 5.3's three new ranged-combat RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim | todo |
-| ⬜ | **F-162** `tools/viewmodel_check.gd` fails independently of task 5.3 — three food items have no authored viewmodel | todo |
 | ⬜ | **F-163** `expr as Array[T]` silently fails to convert an untyped Array's element type — a `.set()` onto a typed-array `@export` then no-ops with no error | todo |
 | ⬜ | **F-164** A capped Wellspring's re-corruption clock (task 6.4) has no HUD or ambient warning before it finishes — only the in-world mesh swap tells a player | todo |
 | ⬜ | **F-165** Task 6.5's two new extraction RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim | todo |
@@ -83,7 +86,8 @@
 | ⬜ | **F-173** `UnlockService.is_content_unlocked()` (task 6.9) has no caller anywhere in the game — wiring the first real gate needs a cross-peer design decision, not just a call site | todo |
 | ⬜ | **F-174** No dev machine can stand in for "mid-range" — `tools/perf_probe.gd`'s baseline is only ever measured on the fastest hardware in the project | todo |
 | ⬜ | **F-175** `Array[StringName].sort()` does not sort lexicographically — at least two other call sites besides F-167's rely on it anyway | todo |
+| ⬜ | **F-176** `tools/audio/render_music.py`'s ambient tracks are not byte-identical on re-render, contradicting `docs/AUDIO.md`'s "reproduces the committed files bit-for-bit" claim | todo |
 
 ## Done
 
-`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.4` `3.5` `3.6` `3.8` `3.9` `3.10` `3.13` `3.14` `3.15` `3.16` `3.17` `4.1` `4.2` `4.3` `4.4` `4.5` `4.6` `4.7` `4.8` `4.9` `4.11` `5.1` `5.3` `5.5` `5.9` `6.1` `6.2` `6.4` `6.5` `6.6` `6.7` `6.9` `6.10` `7.5` `7.7` `7.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `3.8b` `4.0a` `4.0b` `F-001` `F-002` `F-003` `F-004` `F-005` `F-007` `F-008` `F-009` `F-010` `F-011` `F-012` `F-013` `F-014` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-030` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-042` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-103` `F-104` `F-105` `F-106` `F-107` `F-108` `F-109` `F-110` `F-111` `F-113` `F-114` `F-115` `F-116` `F-117` `F-118` `F-119` `F-120` `F-121` `F-122` `F-123` `F-124` `F-125` `F-126` `F-127` `F-128` `F-129` `F-131` `F-132` `F-133` `F-134` `F-135` `F-136` `F-137` `F-138` `F-140` `F-141` `F-142` `F-143` `F-145` `F-150` `F-152` `F-155` `F-156` `F-160` `F-167`
+`0.1` `0.2` `0.3` `0.4` `0.5` `0.6` `0.7` `0.8` `0.9` `0.10` `0.11` `0.12` `1.0` `1.1` `1.2` `1.3` `1.4` `1.5` `1.6` `1.7` `1.8` `1.9` `1.10` `1.11` `2.1` `2.2` `2.3` `2.4` `2.5` `2.6` `2.7` `2.8` `2.10` `2.11` `2.12` `2.13` `3.1` `3.3` `3.4` `3.5` `3.6` `3.8` `3.9` `3.10` `3.13` `3.14` `3.15` `3.16` `3.17` `4.1` `4.2` `4.3` `4.4` `4.5` `4.6` `4.7` `4.8` `4.9` `4.11` `5.1` `5.3` `5.5` `5.9` `6.1` `6.2` `6.4` `6.5` `6.6` `6.7` `6.9` `6.10` `7.5` `7.7` `7.8` `1.0b` `2.12-review` `2.1b` `2.1c` `2.1e` `2.1f` `2.1g` `2.1h` `2.1i` `2.1k` `3.3-review` `3.6-review` `3.8b` `4.0a` `4.0b` `F-001` `F-002` `F-003` `F-004` `F-005` `F-007` `F-008` `F-009` `F-010` `F-011` `F-012` `F-013` `F-014` `F-015` `F-016` `F-017` `F-018` `F-019` `F-021` `F-022` `F-026` `F-027` `F-028` `F-029` `F-030` `F-031` `F-032` `F-033` `F-034` `F-035` `F-036` `F-037` `F-038` `F-039` `F-040` `F-041` `F-042` `F-043` `F-045` `F-046` `F-047` `F-048` `F-049` `F-050` `F-051` `F-052` `F-053` `F-054` `F-055` `F-056` `F-058` `F-059` `F-060` `F-061` `F-062` `F-063` `F-064` `F-065` `F-066` `F-067` `F-068` `F-069` `F-070` `F-071` `F-072` `F-073` `F-074` `F-075` `F-076` `F-077` `F-078` `F-079` `F-080` `F-081` `F-082` `F-083` `F-084` `F-085` `F-086` `F-087` `F-088` `F-089` `F-090` `F-091` `F-092` `F-093` `F-094` `F-095` `F-096` `F-097` `F-098` `F-099` `F-100` `F-101` `F-102` `F-103` `F-104` `F-105` `F-106` `F-107` `F-108` `F-109` `F-110` `F-111` `F-113` `F-114` `F-115` `F-116` `F-117` `F-118` `F-119` `F-120` `F-121` `F-122` `F-123` `F-124` `F-125` `F-126` `F-127` `F-128` `F-129` `F-131` `F-132` `F-133` `F-134` `F-135` `F-136` `F-137` `F-138` `F-140` `F-141` `F-142` `F-143` `F-145` `F-150` `F-152` `F-155` `F-156` `F-160` `F-162` `F-167`

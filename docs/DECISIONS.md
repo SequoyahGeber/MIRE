@@ -3181,3 +3181,33 @@ the moment a real boss task (5.6+) needs players physically contained (not just 
 leashed), that task owns deciding the mechanism (procedural walls, a POI-authored collision volume,
 something else) and should read this decision rather than re-litigate whether arena geometry belongs
 in the framework — it was a deliberate cut, not an oversight.
+
+---
+
+### D-117 · 2026-08-18 · F-162's three food viewmodels reuse the shipped pickup GLB instead of commissioning a dedicated first-person export
+
+Every other holdable `ItemDef` (ten A-004 tools/weapons plus A-021S's iron sword) ships a paired
+`*_viewmodel.glb` alongside its `*_world.glb` — a second export, posed and framed for first-person
+by the Blender pipeline in `docs/ASSET_TRACKER.md`'s 2.1d contract. `mushroom`, `berry` and
+`raw_meat` never got that treatment, and `tools/viewmodel_check.gd` requires every non-`RESOURCE`
+`ItemDef` to carry a `view_model` (F-162). Two ways to close it: commission a new asset batch through
+2.1d (a build script, GLB 2.0 validation, orbit inspection, catalog entry — the same weight as A-004
+or A-021S), or reuse the `PackedScene` already set as `world_model`.
+
+**Reuse won.** A-002's 2.1j pass already built these three at true, honest scale for a 1.8 m player
+("Legibility by quantity, not inflation" — a handful of berries, a pair of mushroom caps, a cut of
+meat, not inflated blobs), so the geometry is exactly what a hand would actually be holding — this
+isn't placeholder content, it's the correct content, just never wired into the `view_model` slot. A
+dedicated 2.1d batch for three low-severity food items would cost a full Blender build/verify cycle
+for a visual delta a reused, already-shipped mesh mostly closes: `grip_offset`/`grip_rotation_degrees`/
+`grip_scale` were computed per item from a measured AABB (`tools/_probe_food_grip.gd`, in the shape of
+`tools/_probe_lods.gd`), not guessed, and `attack_style = NONE` — same as `short_bow`/`arrow`, the two
+existing items with "no meaningful swing arc" — keeps them out of `viewmodel_check.gd`'s bladed-tool
+tables. `AGENTS.md`/`CLAUDE.md` bar *bulk-generating* new content; wiring an existing, hand-authored
+asset into a second slot with a computed transform is not that.
+
+**Would change my mind:** the moment food items need to visibly change model between raw/cooked/rotten
+states, or a boss/enemy needs to see what a player is holding at a distance and the pickup-scale mesh
+reads badly there, a dedicated FP-framed export earns its 2.1d batch — this decision only says the
+*first* viewmodel for these three doesn't need one. Re-litigate per item if art review (still pending
+across A-002, per `ASSET_TRACKER.md`'s review column) flags the reused geometry as reading wrong.

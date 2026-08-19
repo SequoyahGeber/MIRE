@@ -4039,3 +4039,15 @@ Notes along the way:
 Files: `core/events/event_bus.gd`, `autoload/enemy_world.gd`, `systems/enemies/boss_move_def.gd`, `systems/enemies/boss_move_def.gd.uid`, `systems/enemies/boss_phase_def.gd`, `systems/enemies/boss_phase_def.gd.uid`, `systems/enemies/boss_def.gd`, `systems/enemies/boss_def.gd.uid`, `systems/enemies/boss.gd`, `systems/enemies/boss.gd.uid`, `autoload/boss_music_director.gd`, `autoload/boss_music_director.gd.uid`, `ui/hud/boss_health_hud.gd`, `ui/hud/boss_health_hud.gd.uid`, `tools/boss_check.gd`, `tools/boss_check.gd.uid`, `tools/audio/render_music.py`, `assets/audio/music/boss_stinger.ogg`, `assets/audio/music/boss_stinger.ogg.import`, `project.godot`, `tools/audio_import_check.gd`
 
 Commit at time of writing: `f84250d`
+
+---
+
+### DONE · F-162 · lp · 2026-08-19T04:47:27+00:00
+
+**`tools/viewmodel_check.gd` fails independently of task 5.3 — three food items have no authored viewmodel**
+
+Fixed: content/items/{mushroom,berry,raw_meat}.tres now set view_model, reusing the shipped world_model PackedScene (D-117) with per-item grip transforms computed from a measured AABB (tools/_probe_food_grip.gd), attack_style=NONE. Verified: agent godot --script tools/viewmodel_check.gd -> failures=0, 21/21 PASS, run twice. Windowed screenshots confirm visual placement. Spec: docs/SPECS.md 'F-162'. Decision: docs/DECISIONS.md D-117. Finding moved to Resolved.
+
+Files: `content/items/mushroom.tres`, `content/items/berry.tres`, `content/items/raw_meat.tres`, `tools/_probe_food_grip.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DECISIONS.md`, `tools/_probe_food_grip.gd.uid`
+
+Commit at time of writing: `e2d8006`

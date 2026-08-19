@@ -92,20 +92,6 @@ covered by `tools/ranged_combat_check.gd`/`tools/ranged_combat_net_check.gd`, bo
 is purely the bookkeeping bump D-100 already hit once for task 6.1 (that task avoided it by reusing
 `WorldDeltaLog` instead — not an option here, see D-102).
 
-### F-162 · `tools/viewmodel_check.gd` fails independently of task 5.3 — three food items have no authored viewmodel
-
-**Area:** content · **Severity:** low · **Found:** 2026-08-18 by lp during 5.3
-
-`tools/viewmodel_check.gd`'s `PASS/FAIL: every tool and weapon has a viewmodel (mushroom, berry,
-raw_meat)` assertion fails at HEAD, before any of this task's changes — confirmed with
-`agent baseline --script tools/viewmodel_check.gd`, which fails identically on a clean checkout of
-the commit this task started from. Three consumable `ItemDef`s (`mushroom`, `berry`, `raw_meat`)
-have no `view_model` set, so equipping one shows an empty hand instead of the item. Not chased here:
-it is pure content authoring (an export on three `.tres` files, no code), outside this task's claim,
-and every other `viewmodel_check.gd` assertion — including the new ones a bow/arrow viewmodel would
-exercise if 5.3 had added its own arc — passes. Whoever authors those three items' viewmodels next
-closes this; `agent godot --script tools/viewmodel_check.gd` going `failures=0` is the proof.
-
 ### F-163 · `expr as Array[T]` silently fails to convert an untyped Array's element type — a `.set()` onto a typed-array `@export` then no-ops with no error
 
 **Area:** GDScript/tooling · **Severity:** medium · **Found:** 2026-08-18 by lm during 6.2
@@ -877,37 +863,6 @@ with the raw id, same as F-126 already established. This is scheduling informati
 
 ---
 
-### F-159 · Placed buildables are invisible to the nav map — agents path straight through walls
-
-**Area:** world · **Severity:** medium · **Found:** 2026-08-19 by hollow7
-
-`world/chunk/nav_baker.gd` (task 4.5) bakes navigation from `ChunkMesher.collision_faces()` — the
-terrain triangles, and only those. Every other collider in the world is absent from the source
-geometry, so the navigation mesh describes bare terrain.
-
-The consequence is concrete: a wall placed through `BuildService` (task 3.6/3.7) is a real physics
-collider that an agent's *path* passes straight through. `NavigationAgent3D` steering will drive an
-enemy into it and it will grind against the collider rather than route around. The same applies to
-Ward structures, crafting stations, and anything else 3.7 places — the whole point of a Ward is that
-enemies must deal with it, and right now the pathfinder does not know it exists.
-
-Terrain-only was the right scope for 4.5 (D-101 records it): the streaming/bake budget D-016 measured
-is a terrain measurement, and folding in dynamic geometry changes both the cost and the invalidation
-rules. But it is a gap, not a design position.
-
-**What a fix probably looks like.** `NavigationMeshSourceGeometryData3D` accepts more than one
-`add_faces` call, so a placed piece's collision faces can be appended to its chunk's source geometry
-before the bake. The hard half is invalidation: placing or destroying a piece must re-bake the chunk
-it sits in, which means BuildService needs to tell NavBaker (a signal it already emits —
-`piece_placed`/`piece_destroyed`), and the one-bake-in-flight queue has to absorb build spam without
-falling behind. Obstacle avoidance (`NavigationObstacle3D`) is the cheaper alternative for small or
-temporary pieces and may be the better answer for anything a player throws down mid-fight.
-
-Verify a fix with `tools/nav_bake_check.gd`'s existing shape: place a piece across the seam path it
-already tests, and assert the route detours rather than passing through.
-
----
-
 ### F-165 · Task 6.5's two new extraction RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.5
@@ -1203,9 +1158,122 @@ libvorbis/libsndfile version so the encode step itself becomes reproducible. Who
 away any diff to `ambient_day.ogg`/`ambient_night.ogg` they did not mean to produce — this session
 nearly committed an unrelated ~4 KB regen of both tracks as a side effect of adding one new asset.
 
+### F-177 · `EnemyWorld.bake_navigation()` — the LIVE nav baker — still ignores placed buildables; only `NavBaker` (task 4.5, unreachable per F-139) got F-159's fix
+
+**Area:** world / netcode · **Severity:** low · **Found:** 2026-08-19 by lm during F-159
+
+F-159 asked for placed buildables (walls, Wards, anything `BuildService` spawns) to stop being
+invisible to navigation. The fix landed entirely in `world/chunk/nav_baker.gd` — `NavBaker`, task
+4.5's per-chunk baker — because that is what F-159's own wording scoped it against and what `tools/
+nav_bake_check.gd` verifies. But `NavBaker` is not what the shipped game actually paths against
+today: nothing instantiates a `ChunkStreamer` in the live level yet (F-139), so `NavBaker.bind()` is
+never called outside its own check script. The baker the live game DOES run —
+`EnemyWorld.bake_navigation()`, called at session bootstrap and re-triggered by
+`BuildService._request_nav_rebake()` on every placement/destroy — still does exactly what F-159
+originally described: `NavigationServer3D.parse_source_geometry_data(nav_mesh, geometry, scene_root)`
+walks `get_tree().current_scene`, and `BuildService`'s placed-piece container is a child of the
+`BuildService` autoload, not of the scene — so a wall placed in a live LOCAL/LAN/Steam session today
+is still a collider `NavigationAgent3D` steering will drive straight through.
+
+**Why not fixed here:** `autoload/enemy_world.gd` was held by another lane (`lp`, task 5.5, boss
+framework) for this entire session, and folding buildable geometry into a bake correctly requires ONE
+combined parse+bake pass — compositing two independently-baked regions cannot produce the same
+result Recast would from seeing both terrain and buildables together, so there was no sound fix that
+avoided this file.
+
+**What closes this:** whichever task wires a live `ChunkStreamer`/`NavBaker` pair into the actual
+playable level (F-139's own open question — "most likely after 4.7 POI placement, possibly not until
+M4's playtest gate") makes `EnemyWorld.bake_navigation()` retire in `NavBaker`'s favor, at which point
+this finding closes as a side effect with no separate work needed — `NavBaker` already carries F-159's
+fix. If the live baker stays `EnemyWorld.bake_navigation()` for longer than that, the same signal-based
+approach (`piece_placed`/`piece_destroyed` from `BuildService`, folded into
+`NavigationMeshSourceGeometryData3D` before the ONE bake call, box faces via the same convention
+`NavBaker._box_faces()` establishes) should be ported there directly instead of waiting.
+
 ---
 
 ## Resolved
+
+### F-162 · `tools/viewmodel_check.gd` fails independently of task 5.3 — three food items have no authored viewmodel — **fixed**
+
+**Area:** content · **Severity:** low · **Found:** 2026-08-18 by lp during 5.3
+
+`tools/viewmodel_check.gd`'s `PASS/FAIL: every tool and weapon has a viewmodel (mushroom, berry,
+raw_meat)` assertion fails at HEAD, before any of this task's changes — confirmed with
+`agent baseline --script tools/viewmodel_check.gd`, which fails identically on a clean checkout of
+the commit this task started from. Three consumable `ItemDef`s (`mushroom`, `berry`, `raw_meat`)
+have no `view_model` set, so equipping one shows an empty hand instead of the item. Not chased here:
+it is pure content authoring (an export on three `.tres` files, no code), outside this task's claim,
+and every other `viewmodel_check.gd` assertion — including the new ones a bow/arrow viewmodel would
+exercise if 5.3 had added its own arc — passes. Whoever authors those three items' viewmodels next
+closes this; `agent godot --script tools/viewmodel_check.gd` going `failures=0` is the proof.
+
+**Resolved 2026-08-19 by lp.** **fixed** — content/items/{mushroom,berry,raw_meat}.tres now set view_model (reusing the shipped
+world_model PackedScene per D-117, not a new asset batch), with per-item grip_offset/
+grip_rotation_degrees/grip_scale computed from a measured AABB (tools/_probe_food_grip.gd) rather than
+guessed, and attack_style = NONE (same as short_bow/arrow — "carried, never swung").
+
+Verified: `agent godot --script tools/viewmodel_check.gd` -> `VIEWMODEL_CHECK failures=0`, all 21
+assertions PASS (including "every tool and weapon has a viewmodel ()" and "every item with a viewmodel
+was measured (14)" — 11 tools/weapons + these 3). Ran twice, both clean. Windowed screenshots via
+`agent godot --windowed --script tools/_probe_food_grip.gd` (saved /tmp/mire_food_*.png, read back)
+confirm all three render on-screen, correctly sized, non-clipping. Full spec: docs/SPECS.md "F-162".
+Decision record: docs/DECISIONS.md D-117.
+
+### F-159 · Placed buildables are invisible to the nav map — agents path straight through walls — **fixed**
+
+**Area:** world · **Severity:** medium · **Found:** 2026-08-19 by hollow7
+
+`world/chunk/nav_baker.gd` (task 4.5) bakes navigation from `ChunkMesher.collision_faces()` — the
+terrain triangles, and only those. Every other collider in the world is absent from the source
+geometry, so the navigation mesh describes bare terrain.
+
+The consequence is concrete: a wall placed through `BuildService` (task 3.6/3.7) is a real physics
+collider that an agent's *path* passes straight through. `NavigationAgent3D` steering will drive an
+enemy into it and it will grind against the collider rather than route around. The same applies to
+Ward structures, crafting stations, and anything else 3.7 places — the whole point of a Ward is that
+enemies must deal with it, and right now the pathfinder does not know it exists.
+
+Terrain-only was the right scope for 4.5 (D-101 records it): the streaming/bake budget D-016 measured
+is a terrain measurement, and folding in dynamic geometry changes both the cost and the invalidation
+rules. But it is a gap, not a design position.
+
+**What a fix probably looks like.** `NavigationMeshSourceGeometryData3D` accepts more than one
+`add_faces` call, so a placed piece's collision faces can be appended to its chunk's source geometry
+before the bake. The hard half is invalidation: placing or destroying a piece must re-bake the chunk
+it sits in, which means BuildService needs to tell NavBaker (a signal it already emits —
+`piece_placed`/`piece_destroyed`), and the one-bake-in-flight queue has to absorb build spam without
+falling behind. Obstacle avoidance (`NavigationObstacle3D`) is the cheaper alternative for small or
+temporary pieces and may be the better answer for anything a player throws down mid-fight.
+
+Verify a fix with `tools/nav_bake_check.gd`'s existing shape: place a piece across the seam path it
+already tests, and assert the route detours rather than passing through.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed in world/chunk/nav_baker.gd's own bake, per the scoping decision recorded in docs/SPECS.md's
+F-159 block: bind() now also connects to BuildService's piece_placed/piece_destroyed signals, tracks
+every placed piece's {coord, position, yaw, size}, and _source_geometry(coord) folds each tracked
+piece (as a closed 12-triangle box, via new static _box_faces()) into the SAME
+NavigationMeshSourceGeometryData3D as that chunk's terrain faces before baking -- one combined pass,
+so Recast genuinely carves a hole around the piece rather than compositing two regions that never saw
+each other's geometry. A new _rebake_chunk() re-queues an already-attached chunk when a piece changes
+it (the opposite case from request_bake()'s existing redundant-signal dedupe guard), and _attach() now
+frees a stale region before replacing it so a rebake cannot leak the old RID. autoload/build_service.gd's
+piece_destroyed signal widened to carry the piece's name and last position, since its node is already
+freed by the time the signal fires and NavBaker needs both to find the right chunk. NavBaker (task 4.5)
+is not yet wired into the live game (F-139), so this fix does not yet reach an actual playing session --
+EnemyWorld.bake_navigation(), the baker the shipped game runs today, still has this exact gap, tracked
+separately as F-177 since fixing it needed a file (autoload/enemy_world.gd) held by another lane for
+this whole session.
+
+Verified: agent godot --script tools/nav_bake_check.gd -> NAV_BAKE_CHECK failures=0, including new
+_check_buildable_obstruction() -- places a real ward piece dead-centre on a proven-walkable point and
+asserts NavigationServer3D.map_get_closest_point() for that exact point moves measurably farther away,
+then destroys it and asserts the query returns close to its own pre-piece baseline. Ran twice, both
+clean. No regressions: build_check.gd, build_net_check.gd (real two-process ENet), combat_check.gd
+(exercises host_piece_destroyed_by_damage's new signal arity) all failures=0. agent godot --quit-after 20:
+no new ERROR:/SCRIPT ERROR: lines.
 
 ### F-167 · `tools/crafting_net_check.gd` fails (24/24) against a clean checkout of HEAD, independent of any in-flight change — **fixed**
 

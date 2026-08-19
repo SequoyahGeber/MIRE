@@ -1,5 +1,10 @@
 {
   "claims": {
+    "autoload/build_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T04:39:53+00:00",
+      "task": "F-159"
+    },
     "autoload/graphics_quality.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
@@ -65,10 +70,20 @@
       "at": "2026-08-18T22:01:43+00:00",
       "task": "F-144"
     },
+    "tools/nav_bake_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T04:39:53+00:00",
+      "task": "F-159"
+    },
     "tools/render_census.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
+    },
+    "world/chunk/nav_baker.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T04:39:53+00:00",
+      "task": "F-159"
     },
     "world/environment/draw_policy.gd": {
       "agent": "nettle12",
@@ -117,6 +132,22 @@
       ],
       "notes": [],
       "started": "2026-08-18T21:51:43+00:00"
+    },
+    "F-159": {
+      "agent": "lm",
+      "files": [
+        "world/chunk/nav_baker.gd",
+        "autoload/build_service.gd",
+        "tools/nav_bake_check.gd"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-19T04:39:59+00:00",
+          "by": "lm",
+          "text": "Scoping decision: EnemyWorld.bake_navigation() is the LIVE nav baker (called at session bootstrap + by BuildService._request_nav_rebake()); NavBaker (task 4.5) is unreachable in the live game per F-139 (no ChunkStreamer caller yet). autoload/enemy_world.gd is locked by lp (5.5, boss framework) for this whole session, and folding buildable geometry into a bake correctly requires ONE combined parse+bake pass (can't composite two separately-baked regions and get correct Recast carving) -- so a sound fix needs that file. F-159 itself is scoped explicitly against NavBaker/ChunkMesher and tools/nav_bake_check.gd, so I'm implementing there instead: zero contention, and correct-by-construction for whenever F-139 wires a live ChunkStreamer. Not touching enemy_world.gd at all this task."
+        }
+      ],
+      "started": "2026-08-19T04:39:53+00:00"
     }
   },
   "recent": {
@@ -769,9 +800,10 @@
       "task": "F-073"
     },
     "content/items/berry.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
+      "agent": "lp",
+      "at": "2026-08-19T04:47:27+00:00",
+      "hash": "46be7f23384d036d44700a946e3e55a3bbec77e0aae8ea44f15eb1d183dac7de",
+      "task": "F-162"
     },
     "content/items/branch.tres": {
       "agent": "ivy8",
@@ -819,14 +851,16 @@
       "task": "F-073"
     },
     "content/items/mushroom.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
+      "agent": "lp",
+      "at": "2026-08-19T04:47:27+00:00",
+      "hash": "485974effff9e9e87a390d95d8316965df49c24c1d2f14ba23436962f2d1a25e",
+      "task": "F-162"
     },
     "content/items/raw_meat.tres": {
-      "agent": "ivy8",
-      "at": "2026-08-18T17:57:51+00:00",
-      "task": "3.2"
+      "agent": "lp",
+      "at": "2026-08-19T04:47:27+00:00",
+      "hash": "4bde096db155e5a42659780dbf92cde555d03ae178ec0f3c695d5c36a9b741b2",
+      "task": "F-162"
     },
     "content/items/repair_hammer.tres": {
       "agent": "flint5",
@@ -1626,10 +1660,10 @@
       "task": "3.16"
     },
     "docs/DECISIONS.md": {
-      "agent": "hollow7",
-      "at": "2026-08-19T01:42:53+00:00",
-      "hash": "a6e14abd64582702c637f09a8f974bf3d34d8a1f5f1d730c5bf8ae65971d73f9",
-      "task": "4.5"
+      "agent": "lp",
+      "at": "2026-08-19T04:47:27+00:00",
+      "hash": "f92a27e5fd1d2ddb99dbb91222982bab99e410a64104a3fb26446411e171b3e3",
+      "task": "F-162"
     },
     "docs/DELEGATION.md": {
       "agent": "hollow7",
@@ -1638,10 +1672,10 @@
       "task": "4.5"
     },
     "docs/FINDINGS.md": {
-      "agent": "bram1",
-      "at": "2026-08-19T01:38:44+00:00",
-      "hash": "0abef1c613e7d404a4eba1774122c9cedecefd2825ca00b3c64545a4981719a0",
-      "task": "F-160"
+      "agent": "lp",
+      "at": "2026-08-19T04:47:27+00:00",
+      "hash": "96c87146d73402eaa1f18fcfd33e8b6ed18a03b030e6868d2b6b1e643bb551c9",
+      "task": "F-162"
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -1666,10 +1700,10 @@
       "task": "F-036"
     },
     "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T04:10:33+00:00",
-      "hash": "a03e759d22c7097519e71903ef796cc13f90f26af81841218f9306029666b7d1",
-      "task": "7.7"
+      "agent": "lp",
+      "at": "2026-08-19T04:47:27+00:00",
+      "hash": "cd58df7e389a8262f0c31cddee9903717d97c8799e434eb1df7592adaf3ce387",
+      "task": "F-162"
     },
     "entities/player/player.tscn": {
       "agent": "lp",
@@ -2065,6 +2099,18 @@
       "at": "2026-08-19T02:12:08+00:00",
       "hash": "401c5a5edaeca152bdedccb6efdf192333abf647189a7123c1d9fb1184cb6e1f",
       "task": "6.4"
+    },
+    "tools/_probe_food_grip.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T04:47:27+00:00",
+      "hash": "cf3efbdd279a3c87ac3bcdb54c8bf1541d84d9ab23c942338b7b86fa15b460f6",
+      "task": "F-162"
+    },
+    "tools/_probe_food_grip.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-19T04:47:27+00:00",
+      "hash": "b2b189ec154aebfadbd54c9f0656efdd6bbe27316f83e7d1e6b3d7d29f7ceb9e",
+      "task": "F-162"
     },
     "tools/atmosphere_look_shot.gd": {
       "agent": "vane19",
@@ -2480,16 +2526,6 @@
       "hash": "15c687f705d60eb9d4e1ea673fc9e7e05942b7c89dc66a9eabd0e235ba33260f",
       "task": "3.10"
     },
-    "tools/hollowmere_check.gd": {
-      "agent": "ivy8",
-      "at": "2026-08-18T04:46:24+00:00",
-      "task": "2.1k"
-    },
-    "tools/hollowmere_render_check.gd": {
-      "agent": "ivy8",
-      "at": "2026-08-18T04:46:24+00:00",
-      "task": "2.1k"
-    },
     "tools/interp_coverage_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T18:59:24+00:00",
@@ -2528,16 +2564,6 @@
       "agent": "tine18",
       "at": "2026-08-18T17:43:02+00:00",
       "task": "2.1j"
-    },
-    "tools/mapgen/hollowmere_layout.py": {
-      "agent": "ivy8",
-      "at": "2026-08-18T04:46:24+00:00",
-      "task": "2.1k"
-    },
-    "tools/mapgen/hollowmere_plan.py": {
-      "agent": "ivy8",
-      "at": "2026-08-18T04:46:24+00:00",
-      "task": "2.1k"
     },
     "tools/mesh_merge_check.gd": {
       "agent": "lp",
@@ -2962,11 +2988,6 @@
       "at": "2026-08-18T19:50:20+00:00",
       "hash": "a58a0c1a379c5198bb694cec343d356f53dedfc7b52d4741e3cbf272354acd1f",
       "task": "4.1"
-    },
-    "world/gen/layouts/hollowmere.json": {
-      "agent": "ivy8",
-      "at": "2026-08-18T04:46:24+00:00",
-      "task": "2.1k"
     },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "tine18",
@@ -5473,7 +5494,7 @@
     "F-159": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Placed buildables are invisible to the nav map \u2014 agents path straight through walls"
     },
@@ -5494,9 +5515,11 @@
       "title": "Task 5.3's three new ranged-combat RPCs shipped with no `PROTOCOL_VERSION` bump \u2014 `net_version.gd` was held all session by another lane's claim"
     },
     "F-162": {
+      "done_at": "2026-08-19T04:47:27+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`tools/viewmodel_check.gd` fails independently of task 5.3 \u2014 three food items have no authored viewmodel"
     },
@@ -5592,6 +5615,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`Array[StringName].sort()` does not sort lexicographically \u2014 at least two other call sites besides F-167's rely on it anyway"
+    },
+    "F-176": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`tools/audio/render_music.py`'s ambient tracks are not byte-identical on re-render, contradicting `docs/AUDIO.md`'s \"reproduces the committed files bit-for-bit\" claim"
     }
   },
   "version": 1

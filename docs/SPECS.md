@@ -3168,6 +3168,126 @@ filed as F-175 rather than fixed here, since neither file is in this task's clai
 
 ---
 
+## F-162 · `tools/viewmodel_check.gd` fails independently of task 5.3 — three food items have no authored viewmodel
+
+**Claim:** `content/items/mushroom.tres`, `content/items/berry.tres`, `content/items/raw_meat.tres`,
+plus a throwaway probe (`tools/_probe_food_grip.gd`) — no production script needed a change.
+
+**Root cause:** `mushroom`, `berry` and `raw_meat` are `ItemDef.Category.CONSUMABLE`, so
+`tools/viewmodel_check.gd`'s `item.category != RESOURCE and item.view_model == null` assertion
+requires them to carry one, same as every tool/weapon. Nobody had ever set one — A-002 (task-era asset
+batch) shipped only `world_model` pickups for these three, and A-004's paired `*_viewmodel.glb` exports
+only ever covered the ten tools/weapons. Equipping a food item showed an empty hand.
+
+**Decision — reuse the existing pickup GLB as the view_model, don't commission new art.** A-002's
+2.1j pass ("Legibility by quantity, not inflation") already built these three at true, honest scale
+for a 1.8 m player — 0.17 m mushroom pair, 0.08 m berry cluster, 0.30 m meat cut — so the same
+`PackedScene` used for `world_model` is set as `view_model` too, with hand-computed per-item
+`grip_offset`/`grip_rotation_degrees`/`grip_scale` instead of a dedicated first-person export.
+**Recorded as D-117** because the alternative — a new Blender batch through `docs/ASSET_TRACKER.md`'s
+2.1d pipeline, with its own build script, GLB validation and orbit inspection — is what every other
+holdable item's viewmodel went through, and is out of proportion to this finding's severity
+(`low`) and to what a Findings-tier task should take on; `AGENTS.md`/`CLAUDE.md` both bar bulk-authoring
+new content, and reusing shipped, hand-authored geometry isn't that. A future asset batch MAY still
+give these three dedicated FP-framed exports; this fix does not block that, it only stops the empty
+hand today.
+
+**Grip values, derived from measured geometry, not guessed:** `tools/_probe_food_grip.gd` (a scratch
+probe in the shape of `tools/_probe_lods.gd`/`tools/_probe_merge.gd`) instantiates each pickup GLB and
+walks its `MeshInstance3D`s to print a composed local-space AABB — `mushroom` 0.169 m, `berry` 0.080 m,
+`raw_meat` 0.300 m across their longest axis, all ground-centred per the art contract. `grip_scale`
+is `1.0` for mushroom and raw_meat (their true size already reads fine held), `1.8` for berry (a
+true-scale 0.08 m cluster is unreadable at arm's length — the one deliberate deviation from "true
+size", for legibility). `attack_style = NONE` on all three: they are never swung, and `NONE` is the
+`ItemDef.AttackStyle` documented for "bows, arrows, carried things" — it also keeps them out of
+`viewmodel_check.gd`'s `CHOP_ITEMS`/`BLADE_PLANE_ITEMS` tables, which stay tools/weapons-only.
+`raw_meat` needed a tilt (`rot = (-25, 20, 0)`) and a pulled-back, scaled-down grip (`0.55` at
+`z = -0.55`) because its native pose is a flat slab whose broad face reads as an oversized flat plane
+face-on to the camera at native scale and distance — confirmed by screenshotting the change through
+`agent godot --windowed --script tools/_probe_food_grip.gd`, saving `/tmp/mire_food_*.png`, and
+reading them back before and after.
+
+**Verify:** `agent godot --script tools/viewmodel_check.gd` → `VIEWMODEL_CHECK failures=0`, all 21
+assertions PASS including `every tool and weapon has a viewmodel ()` (empty = nothing missing) and
+`every item with a viewmodel was measured (14)` (11 tools/weapons + these 3). Ran twice, both clean.
+Windowed screenshots via `tools/_probe_food_grip.gd` confirm all three render on-screen, correctly
+sized, non-clipping, matching their hotbar icons.
+
+---
+
+## F-159 · Placed buildables are invisible to the nav map — agents path straight through walls
+
+**Claim:** `world/chunk/nav_baker.gd`, `autoload/build_service.gd`, `tools/nav_bake_check.gd`.
+
+**Scoping decision, made explicit because it is not what the finding's own wording implies at a
+glance.** `EnemyWorld.bake_navigation()` (`autoload/enemy_world.gd`) is the nav baker the SHIPPED
+game actually runs — called once at session bootstrap and re-triggered by
+`BuildService._request_nav_rebake()` on every placement/destroy. `NavBaker` (task 4.5, this file) is
+not: nothing instantiates a `ChunkStreamer` in the live level yet (F-139), so `NavBaker.bind()` is
+never called outside its own check script. Folding buildable geometry into a bake correctly requires
+ONE combined parse+bake pass — Recast carves a hole around solid geometry by seeing it in the SAME
+source data as the terrain it's carving, so two independently-baked regions cannot composite into the
+same result no matter how they're layered. That means the sound fix lives in whichever file owns the
+actual `parse_source_geometry_data` + `bake_from_source_geometry_data` call, and `autoload/
+enemy_world.gd` was held by another lane (`lp`, task 5.5, boss framework) for this task's entire
+session. F-159 itself is scoped explicitly against `NavBaker`/`ChunkMesher` and names `tools/
+nav_bake_check.gd`'s shape as the verification path, so that is where this task lands the fix — zero
+claim contention, and correct-by-construction for whenever F-139 eventually wires a live
+`ChunkStreamer` and `NavBaker` becomes the system of record. `EnemyWorld.bake_navigation()` itself is
+untouched; it still has the same gap this finding describes, tracked as F-177 since fixing it means
+editing a file this task could not claim.
+
+**Fix, three parts, all in `world/chunk/nav_baker.gd` unless noted:**
+
+1. `bind()` now also connects directly to `BuildService`'s `piece_placed`/`piece_destroyed` signals
+   (autoload-to-autoload, the same pattern `BuildService._wire_mire_grid()` already uses) — a no-op
+   in any harness with no `BuildService`, same tolerance every other autoload lookup here already has.
+2. Every tracked piece is stored as `{coord, position, yaw, size}` (`size` read from the piece's own
+   `BuildableDef` via `/root/Registry` — the same field `BuildService._generated_piece()` builds its
+   physics collider from, so nav agrees with physics for exactly the geometry that exists in the game
+   today). `_source_geometry(coord)` now folds every piece whose stored `coord` matches into the SAME
+   `NavigationMeshSourceGeometryData3D` as the chunk's terrain faces, via a new static `_box_faces()`
+   that builds a closed 12-triangle box and runs it through the file's existing `_wound_for_recast()`
+   (now `static`, so `_box_faces()` can call it) — reusing that function is what keeps a box's winding
+   correct without re-deriving Recast's inverted convention by hand for six differently-facing faces.
+3. Placing or destroying a piece calls a new `_rebake_chunk(coord)`, which re-queues that chunk if it
+   already has a region (or is on its way to one) — the OPPOSITE case from `request_bake()`'s existing
+   dedupe guard, which exists to ignore a redundant `chunk_mesh_ready` for a chunk that already has a
+   CORRECT region. `_attach()` gained a free-the-stale-region-first step for this: re-attaching a
+   coord that already has one would otherwise leak the old region RID and leave both sitting on the
+   map at once, describing geometry that no longer agrees with itself.
+
+`autoload/build_service.gd`: `piece_destroyed` widened from `(def_id, owner_peer_id)` to `(def_id,
+owner_peer_id, piece_name, position)` — the piece's node is already freed by the time it fires, so
+`NavBaker` needs its name (to erase the tracked entry) and last position (to find its chunk) handed
+over rather than looked up. No existing listener connected to the old 2-arg signature (checked by
+grep), so this is not a breaking change to anything shipped.
+
+**Verify:** `tools/nav_bake_check.gd`, new `_check_buildable_obstruction()` — queries a real,
+on-mesh point, places a real registered `ward` piece (`content/buildables/ward.tres`) with its centre
+exactly there through `NavBaker._on_piece_placed()`, and asserts the SAME query now resolves
+measurably farther away (baseline snap distance + 1.0 m, polled rather than snapshotted once — the
+map's own async iteration sync can lag `_attach()` by a frame or two, same reason `is_queryable()`
+polls rather than trusts a flag). Destroys it and asserts the query returns close to its own
+baseline — proving the fix does not just add cruft that never clears. Baseline is measured, not
+assumed near-zero: an analytic heightmap point is not guaranteed to sit exactly on the baked mesh's
+own vertex grid, so `map_get_closest_point` legitimately snapped 0.663 m away before any piece was
+ever involved on this seed — asserting a fixed small tolerance instead would have been exactly the
+kind of silent trap this file otherwise warns against (an earlier draft of this check did that and
+both new assertions passed for the wrong reason, on a piece that had failed to attach at all).
+
+`agent godot --script tools/nav_bake_check.gd` → `NAV_BAKE_CHECK failures=0`, all assertions PASS
+including the four pre-existing sections. Ran twice, both clean. No regressions: `build_check.gd`
+(`failures=0`), `build_net_check.gd` (`failures=0`, real two-process ENet), `combat_check.gd`
+(`failures=0` — exercises `BuildService.host_piece_destroyed_by_damage`'s new signal arity).
+`agent godot --quit-after 20`: no new `ERROR:`/`SCRIPT ERROR:` lines. The "Navigation region
+synchronization had 4 edge error(s)" warning during the initial 4-chunk bake is pre-existing —
+reproduced identically against a clean `agent baseline` checkout of HEAD, unrelated to this task.
+
+**Done means:** `docs/FINDINGS.md`'s F-159 section moved to `## Resolved` with this same summary.
+
+---
+
 ## 7.8 · Network robustness: packet loss, high latency, hostile disconnect timing
 
 No block existed here beforehand; this file's own preamble makes writing one part of the task that
