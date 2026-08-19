@@ -6159,3 +6159,13 @@ Notes along the way:
 Files: `docs/FINDINGS.md`, `docs/SPECS.md`
 
 Commit at time of writing: `32a5c84`
+
+---
+
+### DONE · F-237 · lm · 2026-08-19T20:09:47+00:00
+
+**A-016 asks for a cave entrance, but D-142 put caves on the cut list — the asset would promise a space that cannot exist**
+
+Confirmed already fixed by the A-016a task, not by this task: cave entrance cut from A-016 (docs/ASSET_TRACKER.md A-016a/A-016b rows), sinkhole re-scoped to shallow surface depression, cliff overhang documented as a PROP not a terrain claim. Verified: agent godot --script tools/terrain_accents_check.gd, 25/25 checks, 0 failures, no cave_entrance in catalog. Wrote missing SPECS.md block. Sibling sweep found F-255 (A-020 flooded cellar entrance, same shape, QUEUED not yet built) and filed it rather than fixing (content-design call for whoever picks up A-020).
+
+Commit at time of writing: `a68a34b`
