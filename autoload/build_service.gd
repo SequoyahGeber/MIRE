@@ -521,28 +521,40 @@ func _register_commands() -> void:
 	})
 
 
-## Through `request_place()`, the same seam the placement ghost submits — so the command inherits
-## the host's own validation (overlap, support, ownership) rather than a second, laxer copy of it
-## (§3.3, and D-034's trust stance about never believing a client-supplied transform).
+## Calls _process_place() directly with the ISSUING peer (ctx.peer_id), rather than request_place() —
+## request_place() resolves the actor via _local_peer_id(), which is correct for the placement ghost
+## (it always runs as the actor's own local call) but wrong here: a HOST-scope command handler always
+## executes on the host process (command_service.gd's execute()/_execute_locally() never reach a
+## handler anywhere else), including when a non-host op is the one who typed it and the line reached
+## here over net_submit_command. Going through request_place() there would resolve _local_peer_id()
+## to the HOST's own id and charge/attribute the placement to the host instead of the op (F-228).
+## This still validates through the exact same _process_place() the ghost's own request goes through
+## — same overlap/support/cost check, just with the right actor — so the host's own validation is
+## still what decides it (§3.3, D-034); only the actor resolution changes.
 func _cmd_build(ctx: Dictionary, args: Dictionary) -> Dictionary:
 	var piece_id: StringName = args.get("piece", &"")
+	var peer_id: int = int(ctx.get("peer_id", _local_peer_id()))
 	var placement := Transform3D(Basis.IDENTITY, args.get("at", Vector3.ZERO) as Vector3)
-	var request_id: int = request_place(piece_id, placement)
-	if request_id <= 0:
-		return {"ok": false, "message": "build refused for '%s'" % piece_id, "data": {}}
+	var request_id: int = _take_request_id()
+	_process_place(peer_id, piece_id, placement, request_id)
 	return {"ok": true, "message": "build %s requested (#%d)" % [piece_id, request_id],
 		"data": {"piece": String(piece_id), "request": request_id}}
 
 
+## Same F-228 shape as _cmd_build: calls _process_destroy() directly with ctx.peer_id rather than
+## request_destroy(), which would resolve the refund target (and the _answer() recipient) via
+## _local_peer_id() — the HOST's own id, not the op who typed `demolish` — for exactly the same
+## "handler always runs on the host process" reason.
 func _cmd_demolish(ctx: Dictionary, args: Dictionary) -> Dictionary:
 	var directory: Node = get_node_or_null(^"/root/EntityDirectory")
 	if directory == null:
 		return {"ok": false, "message": "EntityDirectory is not loaded", "data": {}}
+	var peer_id: int = int(ctx.get("peer_id", _local_peer_id()))
 	var requested: int = 0
 	for entry: Dictionary in directory.call("resolve", args.get("target", {}), ctx):
 		if String(entry["kind"]) != "buildable":
 			continue
-		if request_destroy(StringName((entry["node"] as Node).name)) > 0:
-			requested += 1
+		_process_destroy(peer_id, StringName((entry["node"] as Node).name), _take_request_id())
+		requested += 1
 	return {"ok": true,
 		"message": "demolish requested for %d piece(s)" % requested, "data": {"count": requested}}

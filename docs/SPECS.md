@@ -7118,6 +7118,87 @@ descriptive value, not a computed example. No other stale worked-example comment
 
 ---
 
+## F-228 · `craft`/`build` console commands charge and credit the HOST's own peer, not the issuing player, whenever a non-host op runs them
+
+**Claim:** `autoload/crafting_service.gd`, `autoload/build_service.gd`,
+`tools/command_craft_build_net_check.gd` (new). **Authority:** no new row — this is a gap in the
+existing "Command execution" row (§2.2: "HOST for mutating commands; client submits, host validates
+op status and executes; results return to the issuer") — the bug is that results were NOT returning
+to the issuer for these three verbs. No new state, no new RPC.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The bug:** `_cmd_craft`/`_cmd_build` (task 3.16) discarded their own `ctx` and called
+`request_craft(recipe_id)`/`request_place(piece_id, placement)` — the exact entry points the crafting
+UI and the placement ghost call on their OWN local process, where resolving the actor via
+`_local_peer_id()` is correct. A `CommandService` HOST-scope handler is different: it always executes
+ON THE HOST regardless of who typed the line — a non-host op's submission re-enters via
+`net_submit_command`, which re-parses and re-executes on the host too (COMMANDS.md's "host re-parses
+the raw line from scratch" design). So `_local_peer_id()` inside the handler was always the HOST's own
+id, and a non-host op's `craft`/`build` silently spent/credited the HOST's own inventory and
+build-ledger ownership instead of the op's. Worse: `_confirm_peer()`/`_answer()` also gate the
+RPC-back-to-issuer on `peer_id == _local_peer_id()`, which was already wrong by then, so the op's own
+client never received the confirmation at all — `craft_confirmed`/`build_confirmed` simply never
+fired for them.
+
+**Swept before fixing anything else** and found a third instance of the identical shape in the SAME
+file, not named in the original finding: `_cmd_demolish` (`autoload/build_service.gd`) called
+`request_destroy(piece_name)`, which has the identical `_local_peer_id()` resolution — a non-host op's
+`demolish` would refund the HOST, not the op, and the op would never see the confirmation either.
+
+**The fix:** all three handlers now read the issuing peer off `ctx.peer_id` — accurate for both the
+host's own console (`ctx.peer_id == _local_peer_id()` there anyway) and a re-executed
+`net_submit_command` line (`command_service.gd`'s `_build_ctx()` populates it from
+`multiplayer.get_remote_sender_id()`) — and call `_process_craft()`/`_process_place()`/
+`_process_destroy()` DIRECTLY, skipping `request_craft()`/`request_place()`/`request_destroy()`
+entirely. Same validation (ingredient/station/range for craft; overlap/support/cost for build; range
+for demolish) runs exactly as before — COMMANDS.md §7's "goes through the normal request path, not
+around it" still holds, since `_process_*` IS that path; only the actor resolution changes. D-140
+records the general rule for the next implicit-actor HOST-scope command.
+
+**Verify:** new `tools/command_craft_build_net_check.gd` — a real two-process ENet host+client, driver
+signal-gated (build_net_check.gd's own pattern: the client waits for the driver to finish asserting
+one phase before starting the next, since on loopback ENet the client can otherwise run all three
+console commands to completion faster than the driver's poll interval notices the first). An op'd
+non-host client runs `craft stone_axe`, `build wall_wood ~ ~ ~3`, then `demolish @e[type=buildable]`
+over the real console-command RPC path (never a shortcut straight to a service method).
+`.agent/bin/agent godot --script tools/command_craft_build_net_check.gd` ->
+`COMMAND_CRAFT_BUILD_NET_CHECK failures=0` (27 assertions): the crafted axe, the build cost, and the
+demolish refund all land on the CLIENT's own inventory, never the host's (which stays untouched
+throughout, since it was never granted anything); the placed piece's recorded `owner` is the client's
+peer id, not the host's; and `craft_confirmed`/`build_confirmed` actually reach the issuing client
+(correlated by request_id in a `Dictionary`, never a reset-then-wait boolean — the command's own
+synchronous reply and the async confirmation RPC race each other on the wire with no guaranteed
+order, so a flag reset right before waiting on it can clobber a confirmation that already landed and
+then wait forever for one that will not come again; `crafting_net_check.gd`'s own
+`confirmations: Dictionary[int, Dictionary]` is the pattern this copies).
+
+**Confirmed the check catches the regression, not just the fix:** reverted the two fixed files against
+a saved `git diff` patch (`git apply -R`, not `git stash` — repo-wide and forbidden per AGENTS.md),
+reran -> 14/27 assertions fail (craft never confirms to the client; build/demolish never even produce
+a piece the client's owner-check can find, since `_process_place`/`_process_destroy` ran with the
+wrong actor throughout). Reapplied the fix (`git apply`), reran -> 0 failures again.
+
+Regressions all stayed green: `tools/crafting_check.gd` (7 confirmations, 0 fail),
+`tools/crafting_net_check.gd` (0 fail), `tools/build_check.gd` (0 fail), `tools/build_net_check.gd`
+(0 fail), `tools/command_check.gd` (0 fail), `tools/command_net_check.gd` (0 fail),
+`tools/command_catalog_check.gd` (0 fail, 45 commands), `tools/command_console_check.gd` (0 fail).
+Full boot (`agent godot --quit-after 120`) 0 stray `ERROR:` lines.
+
+**Swept for the same shape:** grepped every `"scope": &"host"` registration project-wide.
+`craft`/`build`/`demolish` were the only verbs with an IMPLICIT actor (no `peer`/`selector`
+argument — COMMANDS.md §7's catalog confirms every other row takes one explicitly: `give`, `inv`,
+`loot`, `damage`, `heal`, `down`, `revive`, `starve`, `powerup give/clear`, `stat`, `kill`, `tp`, all
+take a `peer` or `selector` arg, so their actor is a parsed argument, not something the handler must
+infer). `give`/`loadout` (`core/dev/dev_loadout.gd`, also implicit-actor) and `inv`/`loot`
+(`autoload/inventory_service.gd`, via `_resolve_peer(ctx, args)`) were already reading `ctx.peer_id`
+correctly — not this bug. No other sibling found.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

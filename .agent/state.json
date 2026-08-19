@@ -1,6 +1,58 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "docs/DECISIONS.md": {
+      "agent": "lm",
+      "at": "2026-08-19T15:10:05+00:00",
+      "task": "F-231",
+      "token": null
+    },
+    "docs/DELEGATION.md": {
+      "agent": "lm",
+      "at": "2026-08-19T15:10:05+00:00",
+      "task": "F-231",
+      "token": null
+    },
+    "docs/FINDINGS.md": {
+      "agent": "lm",
+      "at": "2026-08-19T15:10:05+00:00",
+      "task": "F-231",
+      "token": null
+    },
+    "systems/harvesting/harvestable.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T15:10:05+00:00",
+      "task": "F-231",
+      "token": null
+    },
+    "tools/resource_scatter_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T15:10:05+00:00",
+      "task": "F-231",
+      "token": null
+    },
+    "world/gen/resource_scatter_field.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T15:10:05+00:00",
+      "task": "F-231",
+      "token": null
+    }
+  },
+  "in_flight": {
+    "F-231": {
+      "agent": "lm",
+      "files": [
+        "world/gen/resource_scatter_field.gd",
+        "systems/harvesting/harvestable.gd",
+        "tools/resource_scatter_check.gd",
+        "docs/FINDINGS.md",
+        "docs/DECISIONS.md",
+        "docs/DELEGATION.md"
+      ],
+      "notes": [],
+      "started": "2026-08-19T15:10:05+00:00",
+      "token": null
+    }
+  },
   "recent": {
     ".": {
       "agent": "lp",
@@ -508,10 +560,11 @@
       "task": "5.5"
     },
     "autoload/build_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T04:48:28+00:00",
-      "hash": "8dcb5e684009b55576f161ea600b7a64db2952b8c879627c615e66822dd236a7",
-      "task": "F-159"
+      "agent": "lp",
+      "at": "2026-08-19T15:23:39+00:00",
+      "hash": "323ead8ec13f1591a9f3f7802bd05c2da0f62acfb9e911fb25b12e24aea4ebfd",
+      "task": "F-228",
+      "token": null
     },
     "autoload/chest_placement_service.gd": {
       "agent": "lp",
@@ -541,10 +594,11 @@
       "token": null
     },
     "autoload/crafting_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T04:27:15+00:00",
-      "hash": "4c30c37066cef74da74783291030c6bdee9836557ba8eff0793f726818f02a97",
-      "task": "F-167"
+      "agent": "lp",
+      "at": "2026-08-19T15:23:39+00:00",
+      "hash": "10e14dd4a6b5b7eec32395259609a86f0c9c974d5a5050c47435da3df3fdb7ca",
+      "task": "F-228",
+      "token": null
     },
     "autoload/debug_console.gd": {
       "agent": "lm",
@@ -1763,9 +1817,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lp",
-      "at": "2026-08-19T14:48:16+00:00",
-      "hash": "b8b3f503b65d31671cc69bd20e99878836ceb034b7e25b98a13e69bce3b0f56e",
-      "task": "F-227",
+      "at": "2026-08-19T15:23:39+00:00",
+      "hash": "2dffa682f15888f099cef57f7eb59d6590d05aa9e920c49bf560f08266291d36",
+      "task": "F-228",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -2553,6 +2607,13 @@
       "at": "2026-08-19T14:13:26+00:00",
       "hash": "f79ce12519a2a5950d3452fdfb067e74aa94b7c504a54c52f0674f721b4ac6f9",
       "task": "F-223",
+      "token": null
+    },
+    "tools/command_craft_build_net_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T15:23:39+00:00",
+      "hash": "1fab34055cad4a62a31d043fac5de041cbd021e5fb0e174dc2ea8ad73659fdd8",
+      "task": "F-228",
       "token": null
     },
     "tools/command_net_check.gd": {
@@ -6922,9 +6983,11 @@
       "title": "SalvageService's reward-curve comment states the wrong numbers \u2014 mismatches the formula it documents and its own SPECS.md block"
     },
     "F-228": {
+      "done_at": "2026-08-19T15:23:39+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`craft`/`build` console commands charge and credit the HOST's own peer, not the issuing player, whenever a non-host op runs them"
     },
@@ -6945,7 +7008,7 @@
     "F-231": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "`ResourceScatterField`'s depletion-restore replays a real harvest yield, so every rebuild of an already-harvested scattered point grants a free duplicate of its item to the host"
     }

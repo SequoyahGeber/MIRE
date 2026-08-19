@@ -402,20 +402,25 @@ func _register_commands() -> void:
 	})
 
 
-## Deliberately goes through `request_craft()` — the SAME path the crafting UI uses — rather than
-## reaching for a host_craft shortcut. COMMANDS.md §7 spells this one out ("goes through the normal
-## request path, not around it") because a command that skipped the ingredient check would make
-## `craft` useless for the thing you actually want it for: proving the ingredient check works.
-func _cmd_craft(_ctx: Dictionary, args: Dictionary) -> Dictionary:
+## Calls _process_craft() directly with the ISSUING peer (ctx.peer_id), rather than request_craft() —
+## request_craft() resolves the actor via _local_peer_id(), which is correct for the crafting UI (it
+## always runs as the actor's own local call) but wrong here: a HOST-scope command handler always
+## executes on the host process (command_service.gd's execute()/_execute_locally() never reach a
+## handler anywhere else), including when a non-host op is the one who typed it and the line reached
+## here over net_submit_command. Going through request_craft() there would resolve _local_peer_id()
+## to the HOST's own id and silently craft on the host's behalf instead of the op's (F-228). This
+## still validates through the exact same _process_craft() the UI's own request goes through — same
+## ingredient/station/range check, just with the right actor — so COMMANDS.md §7's "goes through the
+## normal request path, not around it" still holds; only the actor resolution changes.
+func _cmd_craft(ctx: Dictionary, args: Dictionary) -> Dictionary:
 	var recipe_id: StringName = args.get("recipe", &"")
-	var request_id: int = request_craft(recipe_id)
-	if request_id <= 0:
-		return {"ok": false,
-			"message": "craft refused — missing ingredients, no station in range, or no inventory",
-			"data": {"recipe": String(recipe_id)}}
-	# The confirmation is asynchronous (craft_confirmed), and a LOCAL-synchronous handler cannot
-	# await it — see command_service.gd's header. Reporting the accepted REQUEST is honest: the
-	# console prints the confirmation itself when it lands, exactly as it does for the UI path.
+	var peer_id: int = int(ctx.get("peer_id", _local_peer_id()))
+	var request_id: int = _take_request_id()
+	_process_craft(peer_id, recipe_id, request_id)
+	# The confirmation is asynchronous (craft_confirmed/net_craft_confirmed), and a LOCAL-synchronous
+	# handler cannot await it — see command_service.gd's header. Reporting the accepted REQUEST is
+	# honest: _confirm_peer() delivers the real confirmation to the actual issuer when it lands,
+	# exactly as it does for the UI path.
 	return {"ok": true, "message": "craft %s requested (#%d)" % [recipe_id, request_id],
 		"data": {"recipe": String(recipe_id), "request": request_id}}
 

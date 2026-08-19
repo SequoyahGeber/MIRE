@@ -5533,3 +5533,15 @@ Commit at time of writing: `04bce72`
 Review 7.6: sound, no findings. gamepad_check.gd: 45/45 assertions pass (InputMap wiring incl. no button/axis collisions across the 10 new/changed actions, PlayerCamera.apply_look_gamepad() through the real path incl. input_allowed suppression, hotbar cycle wraparound, eat, full build cycle toggle/rotate/confirm/destroy via real gamepad events, BuildBar F-217 focus nav). settings_check.gd: failures=0 (gamepad sensitivity clamp, JOYPAD_REBINDABLE_ACTIONS collision refusal, reset_keybinds restores gamepad defaults too). All 6 named regressions (verify_setup, build_check, combat_check, ranged_combat_check, inventory_ui_check, net_robustness_check) green, 0 ERROR: on full boot. §2.2 authority (client-local, VFX/audio/camera/UI row) correct — PlayerController's is_local_authority gates _physics_process so apply_look_gamepad never runs on remote proxies. D-131's JOYPAD_REBINDABLE_ACTIONS scope (button-bound only, axis/trigger excluded) implemented exactly as decided; D-134 (ui_accept/ui_cancel gamepad binding, landed after 7.6) doesn't implicate this commit. Rule 1 respected — all new autoload access goes through get_node_or_null + null-check. DELEGATION.md Current state carries the full action table and API surface as spec's Done-means requires.
 
 Commit at time of writing: `b080284`
+
+---
+
+### DONE · F-228 · lp · 2026-08-19T15:23:39+00:00
+
+**`craft`/`build` console commands charge and credit the HOST's own peer, not the issuing player, whenever a non-host op runs them**
+
+craft/build/demolish console commands now resolve the actor via ctx.peer_id instead of request_craft()/request_place()/request_destroy()'s local-actor assumption. Verified with new tools/command_craft_build_net_check.gd (real 2-process ENet, op'd non-host client): 27/27 assertions pass; reverting the fix reproduces 14/27 failures, confirming the check catches the regression. Regressions green: crafting_check/crafting_net_check/build_check/build_net_check/command_check/command_net_check/command_catalog_check/command_console_check all 0 fail. Full boot 0 ERROR:. D-140 filed for the general rule; docs/SPECS.md F-228 block added; docs/FINDINGS.md moved to Resolved; docs/DELEGATION.md Current state updated.
+
+Files: `autoload/crafting_service.gd`, `autoload/build_service.gd`, `tools/command_craft_build_net_check.gd`, `docs/SPECS.md`
+
+Commit at time of writing: `19f81aa`
