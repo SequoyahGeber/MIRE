@@ -2379,3 +2379,44 @@ pair to the union, and can verify against the now-proven mechanism rather than r
 **Would change my mind:** the live-wiring task finding the union genuinely needs a dedicated method
 (e.g., because per-peer add/remove churn makes hand-assembling the anchor array error-prone) — that
 is additive, not a reason this decision was wrong, and belongs with that task's own claim.
+
+### D-097 · 2026-08-18 · Task 5.1's AI framework generalises `Enemy` with `EnemyDef` fields, not a swappable `enemy_brain.gd`; perception gates acquisition only, never retention
+
+`docs/SPECS.md`'s old M5 overview (written before per-task blocks existed for this milestone) called
+for "generaliz[ing] `Enemy` into `systems/enemies/enemy_brain.gd` states" as the shape of 5.1's
+refactor. Two calls made instead, both now the spec (5.1's new `## 5.1` block).
+
+**1 · Perception (`vision_angle_deg`, `requires_line_of_sight`), alerting (`alert_radius_m`) and the
+attack-slot cap (`max_concurrent_attackers`) landed as `EnemyDef` fields plus logic inside the
+existing `Enemy` script — no `enemy_brain.gd`, no swappable component.** 2.10's state machine is
+already fully data-driven per `EnemyDef` (D-006), and every enemy this project has authored or has
+planned through 5.2 (8–12 more crawler-shaped kinds) shares one shape: chase, telegraph, commit,
+recover. A "brain" abstraction earns its cost when a SECOND genuinely different AI shape exists to
+design the interface against — a ranged kiter (5.3), a stationary turret, a boss phase machine (5.5)
+— not as a guess made against the one shape that exists today. Splitting speculatively here would be
+exactly the kind of exploration-without-a-real-need AGENTS.md already warns off content generation
+for, applied to architecture instead.
+
+**2 · Perception gates ACQUISITION only. An already-held target is kept on distance alone (2.10's
+existing aggro/deaggro hysteresis) — losing line of sight, or the target stepping outside the vision
+cone, never drops a target already being chased.** The alternative — re-checking perception every
+tick — makes an enemy forget a target the instant it ducks behind cover, which reads as broken
+tracking rather than as stealth (nothing in `DESIGN.md` asks for a stealth mechanic), and it would
+also fight `_face()`: a chasing enemy continuously turns toward its held target, so a cone re-check
+against a target it is actively turning to face is nearly always true anyway and buys nothing.
+`tools/enemy_ai_check.gd` proves the asymmetry directly — a wall placed AFTER acquisition does not
+un-target, the identical wall placed BEFORE acquisition prevents it entirely.
+
+**Both calls are why `content/enemies/crawler.tres`, left completely unedited, keeps every
+`enemy_check.gd`/`enemy_net_check.gd` assertion passing verbatim** — the new fields' defaults
+(`vision_angle_deg = 360`, i.e. no cone) preserve 2.10's exact acquisition behaviour for that one
+enemy, while LOS/alerting/the attack cap are live at sensible defaults rather than shipped inert
+(Hollowmere's own "nothing reads `enemy_nest`, so the map shipped with zero crawlers" history,
+`docs/DELEGATION.md`, is why an unused capability is treated as a bug here, not a safe default).
+
+**Would change my mind:** 5.2, 5.3 or 5.5 authoring an enemy whose AI shape cannot be expressed as
+`EnemyDef` data over the existing state machine (not just different numbers, a different STATE
+GRAPH) — that is the real second example a `brain` interface should be designed against. On
+perception: a future task deliberately wanting stealth-breaks-tracking as a mechanic should gate that
+behind its own new field (e.g. `perception_recheck_interval_sec`) rather than reversing this default,
+since most enemies should keep the current "committed once spotted" read.
