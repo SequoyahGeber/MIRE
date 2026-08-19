@@ -8597,6 +8597,65 @@ needed.
 
 ---
 
+## F-244 · The build verb refuses natural coordinates — nothing ground-snaps a command placement, so 'build wall_wood ~ ~ ~' reads as a bug
+
+**Claim:** `autoload/build_service.gd`. **Authority:** no new row — this is a gap in the existing
+"world mutation" row (§2.2: HOST decides, charges, spawns). No new state, no new RPC.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The bug:** `_cmd_build` (task 3.16) built `Transform3D(Basis.IDENTITY, args.get("at"))` straight
+from the command's raw coordinate and handed it to `_process_place()`. `PlacementValidator.
+snap_transform()` (`systems/building/placement_validator.gd`) deliberately preserves the y it is
+given verbatim — its own comment says so: y is "wherever the caller's aim ray actually hit, terrain
+or another piece's real top surface," never a value to round. The placement ghost earns that trust
+with a real raycast every frame (`build_ghost.gd::update_aim`, against `QUERY_MASK |
+VALIDATOR.TERRAIN_LAYER`); the console command never raycasts at all. So the y a player naturally
+types — `~`, their own capsule origin, ~1 m above the terrain the support probe actually checks
+(F-075's dedicated ground layer) — reached the validator ungrounded, and every free-standing
+placement refused with "nothing underneath it," reading like the validator was broken when the actual
+gap was half a metre of y.
+
+**The fix:** new `_ground_command_placement(origin: Vector3) -> Vector3` in `build_service.gd`,
+called from `_cmd_build` before the transform is built. Raycasts straight down from
+`origin + Vector3.UP * GROUND_SNAP_LIFT_M` to `origin + Vector3.DOWN * GROUND_SNAP_DEPTH_M` (3 m /
+20 m — wide enough to cover a command aimed from well above a cliff or into a shallow valley, not
+just the ~1 m capsule-origin case) against the same `QUERY_MASK | VALIDATOR.TERRAIN_LAYER` mask the
+ghost's own aim ray uses, and takes the hit's y — bare terrain or an already-placed piece's top, so a
+command can ground onto stacked pieces the same way aiming at one does (D-056). No hit leaves the raw
+y untouched, so `evaluate()` still reports a real reason (e.g. genuinely out of range) instead of this
+silently doing nothing. Command-side only, no trust change: `_process_place()` still runs
+`snap_transform()`/`evaluate()` from scratch against the host's own physics world (§3.3, D-034) for
+this exact point, same as every other placement source — this only fixes what y a command submits for
+validation, not who is believed.
+
+**Verify:** ad hoc probe (not a tracked check — deleted after use), reproducing the finding's own
+repro literally: boots `levels/hollowmere.tscn`, reads the spawned player's real capsule origin (y
+≈ 2.02, terrain at y ≈ 2.19 there), issues `build wall_wood ~ ~ ~` through `CommandService` exactly
+once with no retry of its own. Confirmed the regression first — reverted the fix (`git stash` scoped
+to just this file), reran: `build_confirmed` fires `accepted=false, reason='nothing underneath it'`,
+no piece exists. Restored the fix, reran: `accepted=true`, piece lands at the grounded y (2.186), not
+the raw one (2.023) — 0 failures. `.agent/bin/agent godot --script
+tools/command_craft_build_net_check.gd` (the work order's named check) also passes its build-phase
+assertions before and after — confirmed via `agent baseline` that its 10 unrelated failures
+(craft/demolish RPC confirmation) are pre-existing at HEAD, untouched by this fix; that check's own
+`build wall_wood 2.0 0.0 3.0` uses an already-grounded literal and so never exercised this bug either
+way, which is why a dedicated raw-coordinate probe was needed. `tools/loop_audit_check.gd`'s build
+phase also stayed green (`gate` placed, same refusals as baseline) — it already retries with its own
+grounded-y fallback on attempts 2-3 (see that file's build-phase comment), so it can't discriminate
+this fix either; not touched, since changing it is a documentation nit, not a functional need.
+
+**Swept for the same shape:** grepped every `"type": &"vec3"` command argument project-wide — three
+total. `enemy_world.gd`'s `spawn <enemy> [at]` and `entity_directory.gd`'s `tp <peer> <destination>`
+both take a raw vec3 too, but neither goes through `PlacementValidator`/`requires_support` — an exact
+typed coordinate is the correct, intended behaviour for spawning an enemy or teleporting a player, not
+a bug. No sibling fix needed.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

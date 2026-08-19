@@ -411,28 +411,6 @@ audit doc carries the full trace.
 
 ---
 
-### F-244 · The build verb refuses natural coordinates — nothing ground-snaps a command placement, so 'build wall_wood ~ ~ ~' reads as a bug
-
-**Area:** systems · **Severity:** low · **Found:** 2026-08-19 by hollow7
-
-Found by the 2026-08-19 game-loop audit. `build <id> <x y z>` (task 3.16,
-`autoload/build_service.gd::_cmd_build`) submits `Transform3D(Basis.IDENTITY, at)` raw. The
-placement ghost's snapping is client-side presentation, and the host validates but does not snap —
-so the y a player naturally supplies (`~`, their own capsule origin, ~1 m above terrain) floats the
-piece's base above the support probe, and EVERY free-standing piece refuses with 'nothing
-underneath it'. Measured on flat open ground in hollowmere: all 13 buildables refused at player
-height; raycast-grounded y placed a gate first try (costs paid).
-
-A player typing the obvious thing gets a refusal that reads like the validator is broken, when the
-actual problem is half a metre of y. Options, smallest first: (a) `_cmd_build` raycasts down from
-the given point and grounds y before submitting (command-side, no trust change — the host still
-validates); (b) the help text says "y must be exact ground level" (honest, cheap, worse); (c) the
-host snaps command-sourced placements the way the ghost does (changes D-034's surface, probably
-overkill). `tools/loop_audit_check.gd`'s build phase is the regression harness either way — it
-tries raw-height first and grounded second, so the transcript shows both behaviours.
-
----
-
 ### F-245 · The whole Cycle Modifier feature is inert: seven modifiers, a weighted deck, and not one line of game code asks whether a modifier is active
 
 **Area:** gameplay · **Severity:** high · **Found:** 2026-08-19 by nettle12
@@ -799,6 +777,50 @@ behavioural, in what the templates instruct, plus a helper to release a subset a
 ---
 
 ## Resolved
+
+### F-244 · The build verb refuses natural coordinates — nothing ground-snaps a command placement, so 'build wall_wood ~ ~ ~' reads as a bug — **fixed**
+
+**Area:** systems · **Severity:** low · **Found:** 2026-08-19 by hollow7
+
+Found by the 2026-08-19 game-loop audit. `build <id> <x y z>` (task 3.16,
+`autoload/build_service.gd::_cmd_build`) submits `Transform3D(Basis.IDENTITY, at)` raw. The
+placement ghost's snapping is client-side presentation, and the host validates but does not snap —
+so the y a player naturally supplies (`~`, their own capsule origin, ~1 m above terrain) floats the
+piece's base above the support probe, and EVERY free-standing piece refuses with 'nothing
+underneath it'. Measured on flat open ground in hollowmere: all 13 buildables refused at player
+height; raycast-grounded y placed a gate first try (costs paid).
+
+A player typing the obvious thing gets a refusal that reads like the validator is broken, when the
+actual problem is half a metre of y. Options, smallest first: (a) `_cmd_build` raycasts down from
+the given point and grounds y before submitting (command-side, no trust change — the host still
+validates); (b) the help text says "y must be exact ground level" (honest, cheap, worse); (c) the
+host snaps command-sourced placements the way the ghost does (changes D-034's surface, probably
+overkill). `tools/loop_audit_check.gd`'s build phase is the regression harness either way — it
+tries raw-height first and grounded second, so the transcript shows both behaviours.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed in autoload/build_service.gd: new _ground_command_placement() raycasts straight down from the
+command's raw `at` point (3 m up / 20 m down, same QUERY_MASK | VALIDATOR.TERRAIN_LAYER mask the
+placement ghost's own aim ray uses) and grounds y to whatever it hits before _cmd_build ever builds
+the transform. No trust change — _process_place() still re-snaps/re-validates this exact point from
+scratch (§3.3, D-034); only the y a command submits for validation changes.
+
+Verified with an ad hoc probe (deleted after use) reproducing the finding's own repro: booted
+levels/hollowmere.tscn, issued `build wall_wood ~ ~ ~` through CommandService with the real spawned
+player's capsule origin (y=2.02) and no retry of its own. Confirmed the regression first (git-stashed
+the fix, reran: accepted=false, reason='nothing underneath it', 0 pieces); restored the fix, reran:
+accepted=true, piece landed at the grounded y (2.186), 0 failures. The work order's named check
+(tools/command_craft_build_net_check.gd) passes its build-phase assertions before and after — its
+other 10 failures are pre-existing at HEAD (confirmed via `agent baseline`), unrelated to this fix,
+and that check's own build call uses an already-grounded literal coordinate so never exercised this
+bug either way — which is why the dedicated probe was needed.
+
+Swept every `"type": &"vec3"` command arg project-wide (3 total): enemy_world.gd's `spawn` and
+entity_directory.gd's `tp` both take a raw vec3 too, but neither goes through PlacementValidator —
+exact typed coordinates are correct there, not a sibling bug.
+
+Full spec written at docs/SPECS.md (task 0 of this order — none existed before).
 
 ### F-246 · `tools/enemy_content_check.gd`'s strider-vs-crawler kiting proof fails at a clean HEAD, independent of any in-flight change — **fixed**
 

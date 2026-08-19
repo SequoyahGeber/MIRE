@@ -60,6 +60,14 @@ const NAV_REBAKE_INTERVAL_SEC: float = 1.0
 ## tight request loop to a small, bounded rate instead of one-query-per-network-frame.
 const RATE_LIMIT_INTERVAL_MSEC: int = 100
 
+## F-244: how far above/below a `build` command's raw coordinate to look for the real ground before
+## grounding it — see `_ground_command_placement()`. Wide on purpose: the point a player naturally
+## supplies is their own capsule origin, ~1 m above terrain, but a command may also aim from well
+## above a cliff or below an overhang, and the alternative (a narrow window) just turns those cases
+## into the same "nothing underneath it" refusal this exists to fix.
+const GROUND_SNAP_LIFT_M: float = 3.0
+const GROUND_SNAP_DEPTH_M: float = 20.0
+
 signal build_confirmed(request_id: int, accepted: bool, reason: String)
 ## Host-side, for anything that wants to react to the world changing shape.
 signal piece_placed(piece: Node3D, def_id: StringName, owner_peer_id: int)
@@ -554,11 +562,37 @@ func _register_commands() -> void:
 func _cmd_build(ctx: Dictionary, args: Dictionary) -> Dictionary:
 	var piece_id: StringName = args.get("piece", &"")
 	var peer_id: int = int(ctx.get("peer_id", _local_peer_id()))
-	var placement := Transform3D(Basis.IDENTITY, args.get("at", Vector3.ZERO) as Vector3)
+	var at: Vector3 = _ground_command_placement(args.get("at", Vector3.ZERO) as Vector3)
+	var placement := Transform3D(Basis.IDENTITY, at)
 	var request_id: int = _take_request_id()
 	_process_place(peer_id, piece_id, placement, request_id)
 	return {"ok": true, "message": "build %s requested (#%d)" % [piece_id, request_id],
 		"data": {"piece": String(piece_id), "request": request_id}}
+
+
+## F-244: `build <id> <x y z>` gives a raw world point — typically the player's own capsule origin,
+## ~1 m above the terrain `PlacementValidator`'s support probe actually checks (F-075's dedicated
+## ground layer). The placement ghost never has this problem because its aim ray already finds the
+## real surface every frame (`build_ghost.gd::update_aim`); a command has no aim ray, only the
+## coordinate it was typed with, so this does the same downward raycast the ghost does and grounds Y
+## to whatever it hits before the point ever reaches `_process_place()`. Command-side only, and it
+## changes no trust boundary: `_process_place()` re-snaps and re-validates this exact point through
+## `PlacementValidator` regardless, the same as it does for every other placement source (§3.3,
+## D-034) — this only fixes what Y the host is asked to validate in the first place. No ground found
+## (off the map, or a harness with no physics world at all) leaves the raw Y untouched, so
+## `evaluate()` still reports a real reason instead of this silently doing nothing.
+func _ground_command_placement(origin: Vector3) -> Vector3:
+	var space: PhysicsDirectSpaceState3D = _space_state()
+	if space == null:
+		return origin
+	var query := PhysicsRayQueryParameters3D.create(
+		origin + Vector3.UP * GROUND_SNAP_LIFT_M, origin + Vector3.DOWN * GROUND_SNAP_DEPTH_M)
+	# Same mask as the ghost's own aim ray (build_ghost.gd) — bare terrain (F-075) OR an
+	# already-placed piece's top, so a command can ground onto stacked pieces the same way aiming at
+	# one does (D-056).
+	query.collision_mask = QUERY_MASK | VALIDATOR.TERRAIN_LAYER
+	var hit: Dictionary = space.intersect_ray(query)
+	return origin if hit.is_empty() else Vector3(origin.x, (hit["position"] as Vector3).y, origin.z)
 
 
 ## Same F-228 shape as _cmd_build: calls _process_destroy() directly with ctx.peer_id rather than

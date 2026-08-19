@@ -1,28 +1,16 @@
 {
   "claims": {
-    ".agent/bin/lane": {
-      "agent": "bram1",
-      "at": "2026-08-19T21:29:09+00:00",
-      "task": "F-260",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
-    },
-    "autoload/build_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T22:19:09+00:00",
-      "task": "F-244",
-      "token": null
-    },
     "autoload/powerup_service.gd": {
       "agent": "lm2",
       "at": "2026-08-19T22:21:01+00:00",
       "task": "F-245",
       "token": null
     },
-    "docs/DECISIONS.md": {
-      "agent": "bram1",
-      "at": "2026-08-19T22:25:03+00:00",
-      "task": "F-260",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+    "core/net/net_config.gd": {
+      "agent": "lm3",
+      "at": "2026-08-19T22:26:54+00:00",
+      "task": "F-257",
+      "token": null
     },
     "systems/cycle/cycle_modifier_service.gd": {
       "agent": "lm2",
@@ -66,6 +54,30 @@
       "task": "F-245",
       "token": null
     },
+    "tools/steam/DEPOT_SETUP.md": {
+      "agent": "lm3",
+      "at": "2026-08-19T22:26:54+00:00",
+      "task": "F-257",
+      "token": null
+    },
+    "tools/steam/apply_ids.sh": {
+      "agent": "lm3",
+      "at": "2026-08-19T22:26:54+00:00",
+      "task": "F-257",
+      "token": null
+    },
+    "tools/steam/depot_wiring_check.sh": {
+      "agent": "lm3",
+      "at": "2026-08-19T22:26:54+00:00",
+      "task": "F-257",
+      "token": null
+    },
+    "tools/steam/steam_upload.sh": {
+      "agent": "lm3",
+      "at": "2026-08-19T22:27:13+00:00",
+      "task": "F-257",
+      "token": null
+    },
     "world/mire/mire_grid.gd": {
       "agent": "lm2",
       "at": "2026-08-19T22:23:18+00:00",
@@ -74,15 +86,6 @@
     }
   },
   "in_flight": {
-    "F-244": {
-      "agent": "lm",
-      "files": [
-        "autoload/build_service.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-19T22:19:09+00:00",
-      "token": null
-    },
     "F-245": {
       "agent": "lm2",
       "files": [
@@ -100,16 +103,18 @@
       "started": "2026-08-19T22:21:01+00:00",
       "token": null
     },
-    "F-260": {
-      "agent": "bram1",
+    "F-257": {
+      "agent": "lm3",
       "files": [
-        ".agent/bin/agent",
-        ".agent/bin/lane",
-        "docs/DECISIONS.md"
+        "tools/steam/apply_ids.sh",
+        "tools/steam/depot_wiring_check.sh",
+        "tools/steam/DEPOT_SETUP.md",
+        "core/net/net_config.gd",
+        "tools/steam/steam_upload.sh"
       ],
       "notes": [],
-      "started": "2026-08-19T21:29:09+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+      "started": "2026-08-19T22:26:54+00:00",
+      "token": null
     }
   },
   "recent": {
@@ -129,9 +134,16 @@
     },
     ".agent/bin/agent": {
       "agent": "bram1",
-      "at": "2026-08-19T22:21:28+00:00",
+      "at": "2026-08-19T22:25:36+00:00",
       "hash": "e6b6e02f0866fc9e60f0b88c986b3a8daee28f608731d231da499fee5b2afec4",
-      "task": "F-262",
+      "task": "F-260",
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+    },
+    ".agent/bin/lane": {
+      "agent": "bram1",
+      "at": "2026-08-19T22:25:36+00:00",
+      "hash": "3c4e46b1b1f2f1a0076b905172e3f475dcf3fcbc18ed0c39677174184f331168",
+      "task": "F-260",
       "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     ".agent/bin/lane-keeper": {
@@ -887,9 +899,9 @@
       "task": "5.5"
     },
     "autoload/build_service.gd": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:17:38+00:00",
-      "hash": "052d1a6887461876bbed46e8cf661d638c6fef501fa4b46f7b33bc699b1d7946",
+      "agent": "lm",
+      "at": "2026-08-19T22:28:29+00:00",
+      "hash": "27ad59d6ad6e6a4e05e2126cd45888ee8c8db6f8fc6c8d5f7e783861676fec79",
       "task": "F-244",
       "token": null
     },
@@ -1454,24 +1466,24 @@
       "token": null
     },
     "docs/DECISIONS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T22:24:02+00:00",
-      "hash": "97680c8a49d48c45fd17494bf757f1650a520c561f20b5f5de7edb865f90c0d3",
-      "task": "F-253",
-      "token": null
+      "agent": "bram1",
+      "at": "2026-08-19T22:25:36+00:00",
+      "hash": "e190d4b97125e6213ab8496094916e01161994aa182a95d048849ad6112c2cd6",
+      "task": "F-260",
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     },
     "docs/DELEGATION.md": {
-      "agent": "lp",
-      "at": "2026-08-19T22:24:02+00:00",
+      "agent": "lm",
+      "at": "2026-08-19T22:28:29+00:00",
       "hash": "e47a7b776aa9edb0c5b0679ef3fc6b275997dc8651aaba3b7eb117b4b756babc",
-      "task": "F-253",
+      "task": "F-244",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T22:24:02+00:00",
-      "hash": "f9c52d123895db2e1ec656b916b36790e7b5df0157cf00e8bbed5fc23eb646aa",
-      "task": "F-253",
+      "agent": "lm",
+      "at": "2026-08-19T22:28:29+00:00",
+      "hash": "75d07902d0efe9d78a9112a7899e1eeae60d788c4a0859b868142efdb580b3fd",
+      "task": "F-244",
       "token": null
     },
     "docs/NEXT.md": {
@@ -1489,10 +1501,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T22:24:02+00:00",
-      "hash": "3a55e952dd0f3bae477e263dc55ae8378f49ca659fbe7b15f3930e9ac1313b0b",
-      "task": "F-253",
+      "agent": "lm",
+      "at": "2026-08-19T22:28:29+00:00",
+      "hash": "2bad06da202a42a2830e51541dccbf4181b794e53e619bf5952946ff828f7d95",
+      "task": "F-244",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -6692,9 +6704,11 @@
       "title": "The run loop is a line, not a circle \u2014 after defeat or extraction there is no path to a next run short of relaunching the process"
     },
     "F-244": {
+      "done_at": "2026-08-19T22:28:29+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "The build verb refuses natural coordinates \u2014 nothing ground-snaps a command placement, so 'build wall_wood ~ ~ ~' reads as a bug"
     },
@@ -6713,6 +6727,14 @@
       "status": "done",
       "tier": "F",
       "title": "`tools/enemy_content_check.gd`'s strider-vs-crawler kiting proof fails at a clean HEAD, independent of any in-flight change"
+    },
+    "F-246-review": {
+      "est": "0.5",
+      "milestone": "Findings",
+      "review_of": "F-246",
+      "status": "done",
+      "tier": "T1",
+      "title": "Review F-246 @ d934601 \u2014 review and fix what you find"
     },
     "F-247": {
       "est": "\u2014",
@@ -6792,7 +6814,7 @@
     "F-257": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "Real App ID must be written to two independent places; task 8.11's `apply_ids.sh` only reaches one of them"
     },
@@ -6811,9 +6833,11 @@
       "title": "F-243's restart resets Cycle/Mire/inventory/etc but not WaveSpawner's unlocked enemy roster"
     },
     "F-260": {
+      "done_at": "2026-08-19T22:25:36+00:00",
+      "done_by": "bram1",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "docs/DECISIONS.md has no atomic number allocator, so two agents took D-146 within minutes of each other"
     },

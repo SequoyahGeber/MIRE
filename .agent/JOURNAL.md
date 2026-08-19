@@ -6380,3 +6380,27 @@ tools/enemy_content_check.gd's strider-vs-crawler kiting proof now passes at HEA
 Files: `tools/enemy_content_check.gd`
 
 Commit at time of writing: `ffea194`
+
+---
+
+### DONE · F-260 · bram1 · 2026-08-19T22:25:36+00:00
+
+**docs/DECISIONS.md has no atomic number allocator, so two agents took D-146 within minutes of each other**
+
+Filed the decision-number race; recording D-154 (claim-late) exposed it live again — D-153 was taken by a concurrent agent between my read and write. The fix belongs in a future agent decision allocator per this finding; recording it here as the third same-day instance.
+
+Files: `.agent/bin/agent`, `.agent/bin/lane`, `docs/DECISIONS.md`
+
+Commit at time of writing: `3438d64`
+
+---
+
+### DONE · F-244 · lm · 2026-08-19T22:28:29+00:00
+
+**The build verb refuses natural coordinates — nothing ground-snaps a command placement, so 'build wall_wood ~ ~ ~' reads as a bug**
+
+Fixed: autoload/build_service.gd's _cmd_build now grounds the raw y through _ground_command_placement() (3m up/20m down raycast, same mask the placement ghost uses) before validating, so 'build wall_wood ~ ~ ~' places on real ground instead of refusing 'nothing underneath it'. Verified with a deleted ad hoc probe against the shipped hollowmere map: fails without the fix (accepted=false, 'nothing underneath it'), passes with it (accepted=true, piece grounded at y=2.186 vs raw y=2.023). tools/command_craft_build_net_check.gd (the order's named check) build-phase assertions pass; its other 10 failures are pre-existing at HEAD per 'agent baseline', unrelated. Spec written docs/SPECS.md, finding moved to Resolved, findings_numbering_check.gd clean. Swept all 3 vec3 command args project-wide -- no sibling bug (spawn/tp are correctly exact-coordinate, not support-validated).
+
+Files: `autoload/build_service.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `d934601`
