@@ -124,7 +124,9 @@ DEFAULT_LANES = {
     },
     "LP": {
         "account": "Claude Pro", "cli": "claude",
-        "home": "~/.mire/lanes/claude-pro", "model": "sonnet", "effort": "medium",
+        # Opus at high effort, same reasoning as LM (D-150): this account's weekly is a budget that
+        # expires unspent, so the only question is what the most capable thing to spend it on is.
+        "home": "~/.mire/lanes/claude-pro", "model": "opus", "effort": "high",
         "areas": ["systems/", "ui/", "autoload/", "core/", "entities/"], "tier": "T1",
         "role": "code", "permissions": "bypass",
     },

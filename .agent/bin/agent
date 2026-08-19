@@ -2249,7 +2249,29 @@ brief, claim and verify cycle. You already have the context those second dispatc
 Two things this does **not** license. Do not rewrite work that is merely not how you would have done
 it — the bar is a defect you can name and prove, not a preference. And if a fix is larger than the
 change under review, file it instead and say why; a second pass that turns into a rewrite has stopped
-being a review."""
+being a review.
+
+## Then check the record, not just the code
+
+You are also the last agent who will look at this task, so the bookkeeping is yours to get right. The
+board is what every future agent routes off, and a wrong entry there costs more than a wrong line of
+code: it is read as truth and never re-examined. Each of these has gone wrong on this repo:
+
+- **Is the task actually done, and does the board say so?** F-086 was marked `done` because its
+  author wrote the docs close-out *before* running the check, then stalled — so the board reported
+  finished work that had never been verified, and `agent claim` then refused anyone who tried to pick
+  it up. If the work is not really finished, say so and reopen it rather than leaving a comfortable
+  lie in `state.json`.
+- **Did its finding move to `## Resolved`?** A fixed finding left under `## Open` gets routed again.
+  Seven dispatches went to already-fixed findings in one day.
+- **Is `docs/NEXT.md` still true?** It is the plan a human reads first. If this change moved the
+  project — a system now reachable, a task no longer next, a count that shifted — update it.
+- **Do the docs describe what shipped, not what was intended?** `ARCHITECTURE.md` §5 described a
+  replication mechanism that was never built, because the task chose a different one and nobody went
+  back (F-212). Check the SPECS block, the `ARCHITECTURE.md` §2.2 row, and `DELEGATION.md`'s
+  *Current state* against the code as it actually is.
+
+Fix what you can under your claim; file what you cannot reach."""
 
 REVIEW_TEMPLATE = """<!-- lane:%(lane)s model:%(model)s effort:%(effort)s review:%(tid)s files: -->
 # Review order — %(tid)s  ·  lane %(lane)s  (%(account)s)
@@ -2645,8 +2667,11 @@ def _queue_second_pass(lane, tid, queue, seen):
     sha = _head()
     if not sha or sha == "?":
         return
+    # Max effort on the review, above whatever the implementing pass ran at. The asymmetry is
+    # deliberate: writing the change is bounded by its spec, but catching what a green check missed
+    # is open-ended search, and it is the last look anyone gives this work.
     argv = [sys.executable, __file__, "order", tid, "--lane", lane, "--review", "--fix",
-            "--sha", sha]
+            "--sha", sha, "--effort", "max"]
     if subprocess.call(argv, cwd=ROOT, stdout=subprocess.DEVNULL) != 0:
         return
     rid = "%s-review" % tid
