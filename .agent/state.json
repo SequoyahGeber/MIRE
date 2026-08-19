@@ -1,6 +1,44 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "docs/FINDINGS.md": {
+      "agent": "lp",
+      "at": "2026-08-19T14:35:26+00:00",
+      "task": "F-225",
+      "token": null
+    },
+    "docs/SPECS.md": {
+      "agent": "lp",
+      "at": "2026-08-19T14:35:26+00:00",
+      "task": "F-225",
+      "token": null
+    },
+    "systems/enemies/boss.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T14:35:26+00:00",
+      "task": "F-225",
+      "token": null
+    },
+    "tools/boss_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T14:35:26+00:00",
+      "task": "F-225",
+      "token": null
+    }
+  },
+  "in_flight": {
+    "F-225": {
+      "agent": "lp",
+      "files": [
+        "systems/enemies/boss.gd",
+        "tools/boss_check.gd",
+        "docs/FINDINGS.md",
+        "docs/SPECS.md"
+      ],
+      "notes": [],
+      "started": "2026-08-19T14:35:26+00:00",
+      "token": null
+    }
+  },
   "recent": {
     ".": {
       "agent": "lp",
@@ -1764,11 +1802,6 @@
       "task": "F-224",
       "token": null
     },
-    "entities/player/player.tscn": {
-      "agent": "lp",
-      "at": "2026-08-18T14:37:19+00:00",
-      "task": "F-075"
-    },
     "entities/player/player_camera.gd": {
       "agent": "lm",
       "at": "2026-08-19T10:44:59+00:00",
@@ -1903,11 +1936,6 @@
       "hash": "03bb64c7b1af9d38d510ae282f163fb8894d74eedeb6fec9b1168f0a4b68019a",
       "task": "3.7",
       "token": null
-    },
-    "systems/building/placement_validator.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T14:37:19+00:00",
-      "task": "F-075"
     },
     "systems/combat/aim_util.gd": {
       "agent": "lp",
@@ -4285,6 +4313,16 @@
       "status": "done",
       "tier": "T1",
       "title": "Mire \u2194 world interaction: rotted resources, Blight debuff, corrupted spawns, Ward resistance"
+    },
+    "4.11-review": {
+      "done_at": "2026-08-19T14:37:43+00:00",
+      "done_by": "lm",
+      "est": "0.5",
+      "milestone": "M4",
+      "review_of": "4.11",
+      "status": "done",
+      "tier": "T1",
+      "title": "Review 4.11 @ 69dbe5a \u2014 judge the commit, file findings, no edits"
     },
     "4.12": {
       "est": "2",
@@ -6807,7 +6845,7 @@
     "F-225": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "`Enemy.alert()` bypasses `Boss._acquire_target()`'s override, so a boss pulled into a fight by a nearby ally's alert never engages until it first takes damage"
     },

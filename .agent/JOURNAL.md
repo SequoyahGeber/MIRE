@@ -5367,3 +5367,13 @@ Notes along the way:
 Files: `docs/FINDINGS.md`
 
 Commit at time of writing: `bb11755`
+
+---
+
+### DONE · 4.11-review · lm · 2026-08-19T14:37:43+00:00
+
+**Review 4.11 @ 69dbe5a — judge the commit, file findings, no edits**
+
+Clean, no findings -- 69dbe5a verified against SPECS.md 4.11, ARCHITECTURE.md §2.2 (Inventory/crafting, PlayerHealth's own hunger row, Mire grid, wave director all Host; no new authority anywhere per spec), D-099 (4.9-built-ahead-of-order, Ward split, WorldDeltaLog reuse). All four consumers checked against source: rotted yields reduce-only via _rot_adjusted_amount (never below 1, ROT_LOSS_FRACTION=0.6), Blight reuses DownedState.apply_damage() same as starvation, corrupted spawns only substitute the default enemy_id slot (guarded by base_id != enemy_id), Ward resistance wiring matches MireGrid's pre-authored seam exactly (signature, autoload order BuildService before MireGrid in project.godot, deferred _wire_mire_grid call). No bare autoload identifiers -- every cross-autoload reach is get_node_or_null(^"/root/X") or .call(). mire_interaction_check.gd: MIRE_INTERACTION_CHECK failures=0, 10/10 PASS, only the declared dummy-renderer material-null pattern in ERROR: output. Re-ran inventory_net_check.gd, player_health_net_check.gd, wave_spawner_check.gd, build_net_check.gd: all failures=0. Full boot (agent godot --quit-after 20): 0 ERROR:. F-158 (bog_crawler visual parity) was already filed and fixed in a later commit, consistent with the diff here.
+
+Commit at time of writing: `6cdcd7c`
