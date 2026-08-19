@@ -75,6 +75,93 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 4.9: the Mire grid ships — host-authoritative diffusion sim, replicated through 4.6's `WorldDeltaLog`, no new RPC (lm)
+
+**Why this shipped now instead of when the roadmap ordered it:** the 4.11 work order assumed 4.9
+was already done ("each one is a small consumer of an existing seam") — it was not
+(`state.json` had it `todo`). D-092 already flagged this exact gap in advance: "Mire (4.9-4.11)
+does not exist yet — there is no corruption grid to clear." All four of 4.11's consumers need a
+corruption query that cannot exist without this task, so it went first, under its own claim/done/ship.
+
+**What shipped, verified:** `world/mire/mire_grid_sim.gd` (`class_name MireGridSim`, pure — same
+discipline as `IslandHeightmap`/`BiomeMap`: no nodes, no shared state, safe off the main thread) and
+`world/mire/mire_grid.gd` (new autoload **MireGrid**, registered in `project.godot`), the live
+256x256-cell, ~4m/cell diffusion grid `docs/ARCHITECTURE.md` §5 specifies, covering the same 1024m
+`IslandHeightmap.ISLAND_RADIUS` already covers — one shared source of truth for "how big is the
+island" rather than a second copy of the number. `agent godot --script tools/mire_grid_check.gd` —
+23 assertions, 0 failures, two consecutive runs (pure-function determinism/mechanics, the live
+autoload offline, and a real two-process ENet proof that a connected client never simulates).
+
+**Replication reuses `WorldDeltaLog.host_record()` (task 4.6) instead of a new RPC pair.** That
+file's own doc comment names the Mire grid as "this log's next intended consumer, same
+per-cell-keyed-by-chunk shape, a different kind" — `MireGrid.KIND = &"mire"` is that kind. This
+was the actual unblock: `core/net/net_version.gd` and `tools/handshake_check.gd` (where a new RPC
+would need its `PROTOCOL_VERSION` bump) were held by another lane (3.7) for this entire session, so
+a bespoke RPC pair was not just extra work, it was impossible to ship right now. No protocol bump,
+no `handshake_check.gd` change — `WorldDeltaLog` already carries new peers' late-join snapshot and
+live deltas for us.
+
+**`MireGrid` public API:**
+
+```gdscript
+MireGrid.corruption_at(world_position: Vector3) -> float   # 0..1, works on host AND client
+MireGrid.is_corrupted(world_position: Vector3, threshold: float = 0.05) -> bool
+MireGrid.set_ward_circles_provider(provider: Callable) -> void
+	# () -> Array[Dictionary]{position: Vector2, radius: float}, called once per tick.
+	# Unset today — 4.9 ships with no wards wired in on purpose, see below.
+MireGrid.capped_wellspring_count() -> int
+MireGrid.host_set_corruption_at(world_position: Vector3, value: float) -> void   # host-only, test/debug seam
+MireGrid.flush_deltas() -> void   # host-only, forces an immediate broadcast without waiting TICK_INTERVAL_SEC
+```
+
+**Deliberately split from 4.11, even though the two docs disagree about which task owns it:**
+ARCHITECTURE.md §5 lists "Wards resist accumulation in a radius" as intrinsic to the grid's own
+tick; SPECS.md's 4.11 block lists "Ward posts... suppress spread in radius" as that task's own
+consumer. Both are honored: `MireGridSim.tick()` already takes a `ward_circles` parameter (the
+mechanism can only live in one place, the tick loop itself), but `mire_grid.gd` calls it with
+whatever `_ward_circles_provider` returns — empty today, so 4.9 ships with no ward awareness at
+all. 4.11's own job is exactly one wire: `BuildService.ward_radii()` (new, that task's to add) into
+`MireGrid.set_ward_circles_provider()`.
+
+**Wellspring cap integration IS 4.9's own job** (SPECS.md's 4.11 list never mentions it) and ships
+here: `MireGrid` subscribes to `EventBus.subscribe_wellspring_capped` (the exact seam D-092 named)
+and on each cap, zeroes corruption in a 48m radius (DESIGN.md §4.2's "local corruption cleared")
+and multiplies the effective spread rate by `0.85` per cap, compounding ("global spread rate
+reduced" — no fixed fraction is written down anywhere else to read instead).
+
+**Seeded spread, not random:** `MireGridSim.seed_initial(world_seed)` places 4 corruption clusters
+using a `RandomNumberGenerator` seeded `world_seed ^ SEED_CLUSTER_SALT` (D-017's XOR-salt
+convention) — same `world_seed` always produces the identical grid, same discipline as terrain even
+though nothing here needs to be cross-platform bit-identical (this is host-only, live-simulated
+state transmitted as data, never independently recomputed on a client — see below).
+
+**"A client never simulates" is asserted structurally, not just by matching numbers.** The two-process
+check's negative assertion reads the client process's own `_owns_simulation()`/`_grid` fields
+directly via `Object.get()`/`.call()` (GDScript has no real privacy) rather than only checking that
+`corruption_at()` returns the right value — a client that (bug) ran its OWN
+`seed_initial(same_world_seed)` would produce the *identical* grid to the host's real one, since
+seeding is deterministic, which would make a numbers-only check pass while masking exactly this
+regression. **One trap the check had to route around deliberately:** an unconnected process is its
+own "host of one" by this project's standing convention (`_owns_simulation()`, same shape as
+`PlayerHealth._owns_mutation()`), so it legitimately self-seeds/ticks in the window before `join()`
+completes — that is not a bug, every other host-authoritative system here does the same thing. The
+assertion that matters starts from the instant `is_active()` first turns true: `_owns_simulation()`
+must already read false there, and `_grid` must be byte-for-byte frozen from that instant forward no
+matter how much real time passes. Asserting "`_grid` was empty for the whole process lifetime"
+(the first version written) fails on a true negative for this reason — fixed before this closed.
+
+**Spread rate (`BASE_SPREAD_RATE = 0.06`) is placeholder-tuned**, the same status as
+`IslandHeightmap.HEIGHT_SCALE` — ARCHITECTURE.md §5 calls for "the current Cycle's rate" and no
+Cycle Modifier system exists yet to read a real one from.
+
+**Not wired to the live game (Hollowmere) any more than the rest of M4's procedural pipeline is** —
+same situation F-139 already names for `ChunkStreamer`/`ResourceScatterField`. This is not a new gap:
+`IslandHeightmap.ISLAND_RADIUS` (512m) already covers Hollowmere's real coordinate space (its
+authored props sit well inside it — the Wellspring marker is at (4, -0.6, 64), for instance), so
+`MireGrid.corruption_at()` returns meaningful answers for real player/harvestable/enemy positions
+today regardless of which terrain mesh renders underneath. A full map-cutover (procedural terrain
+replacing Hollowmere) remains a separate, later decision per F-134.
+
 ### 2026-08-18 — F-152: `tools/mesh_merge_check.gd` pins `MeshMerge`'s per-vertex-channel invariant; the bug was already fixed by F-144 (lp)
 
 **What shipped, verified:** F-152 was filed against `e5f96b1`; by the time this task picked it up,

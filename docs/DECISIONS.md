@@ -2454,3 +2454,34 @@ forward with a correct owner-agnostic framing, since F-126's own pointer at task
 own "players get a display name" as its own deliverable — at that point building the registry (most
 naturally in `NetTransport`, per F-157) is that task's job, and `_parse_peer` gets a two-line addition
 to consume it. Nothing here should be read as an argument against ever building it.
+
+### D-099 · 2026-08-18 · Task 4.9 built ahead of order (its prerequisite, not a scope grab); Mire replication reuses `WorldDeltaLog` instead of a new RPC; Ward resistance splits across 4.9/4.11 by where the mechanism can physically live
+
+The 4.11 work order text ("each one is a small consumer of an existing seam; no new authority
+anywhere") assumed task 4.9 — the Mire grid itself — already existed. It did not (`state.json` had
+it `todo`); D-092 had already flagged this exact gap in advance. All four of 4.11's consumers need
+`MireGrid.corruption_at()`, which cannot exist without 4.9, so 4.9 was done first, under its own
+claim/verify/done/ship, before touching 4.11 at all — not a scope expansion of 4.11, a separate
+roadmap task done in the order its own dependency requires.
+
+**Replication reuses `WorldDeltaLog.host_record()` (task 4.6) rather than a bespoke RPC pair.** That
+file's own doc comment already named the Mire grid as its next intended consumer, "same
+per-cell-keyed-by-chunk shape, a different kind" — this was not just the tidier option, it was the
+only one available this session: a new RPC needs a `PROTOCOL_VERSION` bump in
+`core/net/net_version.gd`, extended in lockstep in `tools/handshake_check.gd` (SPECS.md's own
+standing rule), and both files were held by another lane (3.7) for the entire session. **Would
+change my mind:** nothing, really — `WorldDeltaLog` is a strictly better fit regardless of file
+availability (R4's "too chatty at scale" risk is exactly what quantized per-cell deltas already
+solve for existing consumers), so there is no future world in which a bespoke RPC becomes the
+better answer.
+
+**Ward resistance is split, not because it is easiest but because ARCHITECTURE.md and SPECS.md
+name two different owners for it and both are honorable.** ARCHITECTURE.md §5 places "Wards resist
+accumulation in a radius" inside the grid's own tick description; SPECS.md's 4.11 block lists "Ward
+posts... suppress spread in radius" as that task's consumer. The mechanism can only live in one
+place — `MireGridSim.tick(grid, ward_circles, spread_rate)` — so 4.9 ships that parameter and calls
+it with an empty array (no wards, 4.9's own honest behaviour); 4.11 is the one commit that changes
+that one call site to pass `BuildService.ward_radii()` through `MireGrid.set_ward_circles_provider()`.
+**Would change my mind:** nothing forces a future reader to preserve this split — if it ever reads as
+more confusing than useful, collapsing both into whichever task ships second is a two-line change,
+not a redesign.
