@@ -4586,3 +4586,13 @@ Drain-mode chains now poll up to 120s for new orders before exiting, bounded so 
 Files: `.agent/bin/agent`, `docs/FINDINGS.md`
 
 Commit at time of writing: `0f3f89a`
+
+---
+
+### DONE · F-036 · yarrow21 · 2026-08-19T07:37:50+00:00
+
+**Task 2.9's gate cannot be met in its roadmap position — the enemy it tunes against lands in 2.10**
+
+Dissolved by D-125 — Sequoyah's direct call on 2026-08-19: 'Ignore combat gate, tuning can be done at any time don't let it hold things up.' The finding's ordering half (2.9 tuned against a tree instead of an enemy) was fixed when 2.9/2.10 swapped; its surviving function was holding 2.9's human gate open, and the gate no longer exists as a blocker. 2.9 itself stays on the roadmap as never-cut tuning work, done whenever he plays; SPECS.md's M5 header no longer names it as a gate; NEXT.md ranks it 'anytime, blocks nothing'.
+
+Commit at time of writing: `f0db4c5`

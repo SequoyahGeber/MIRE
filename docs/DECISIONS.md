@@ -3478,3 +3478,32 @@ should apply, and the reason it's a known, not a newly-discovered, shape of fix.
 in background mode — this is pinned tooling (D-038), so that would have to be verified on the exact
 pinned build, not assumed from a changelog. Until then, the modifier costs a family byte-identical
 evidence it can't get back except by not using it.
+
+### D-125 · 2026-08-19 · Tuning gates do not block the roadmap — 2.9's combat gate is dissolved as a blocker
+
+Sequoyah, verbatim: **"Ignore combat gate, tuning can be done at any time don't let it hold things
+up."** Said in response to the 2026-08-19 audit ranking 2.9 as "the oldest open debt on the board"
+and the first thing to do next.
+
+What changes:
+
+- **2.9 stays on the roadmap as work** — combat feel still gets tuned, and it is still on the
+  never-cut list. What it loses is its *gate function*: no task, milestone, or dispatch waits for a
+  2.9 verdict. M5's header ("GATE: 2.9 passed ... no second weapon before one feels great") is
+  rewritten in `SPECS.md`; enemy types, movesets, bosses and balance proceed on their own schedule.
+- **Tuning is continuous parallel work, not a checkpoint.** An agent or director must never present
+  a feel-tuning gate as the reason work is deferred, and must not rank one first merely because it
+  is old. When Sequoyah plays and has verdicts, they are folded in as ordinary findings/tuning
+  passes — whenever that happens.
+- **F-036 resolves with this decision.** Its ordering half was fixed long ago (2.9/2.10 swapped);
+  its surviving function was "the human gate is still open", and the gate no longer exists as a
+  blocker.
+
+What this deliberately does NOT dissolve: the question-answering playtests (2.14's fun check,
+3.11's Attunement roles, 4.12's Mire go/no-go, 6.11's long runs). Those exist to answer design
+questions, not to tune feel, and only Sequoyah can close them — but note the spirit of this call
+reaches them too: work that can proceed without their answers should proceed.
+
+**Would change my mind:** nothing an agent can observe — this is his call about his own process.
+If a tuning debt ever demonstrably blocks something technical (e.g. a moveset framework that cannot
+be designed without knowing base swing timing), say so in the task, don't resurrect the gate.

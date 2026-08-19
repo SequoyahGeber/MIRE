@@ -3563,6 +3563,13 @@ spent; what remains is that **2.9's gate is still open**, because passing it req
 playtest and `tools/combat_feel_check.gd` deliberately measures relationships rather than declaring
 anything fun. This entry stays open only until Sequoyah plays it and says yes or no.
 
+**2026-08-19, yarrow21 — the gate itself is dissolved (D-125).** Sequoyah, verbatim: "Ignore combat
+gate, tuning can be done at any time don't let it hold things up." 2.9 stays on the roadmap as
+never-cut tuning *work*, folded in whenever he plays; nothing waits on it. `SPECS.md`'s M5 header no
+longer names it as a gate, `NEXT.md` ranks it "anytime, blocks nothing", and
+`tools/combat_feel_check.gd` remains its instrument. This finding is finished — not by a verdict,
+but by the verdict no longer being a prerequisite for anything.
+
 *Filed as F-033, then F-035, and finally renumbered to F-036 on 2026-08-16: both earlier numbers were taken by entries that landed
 concurrently (a resolved F-033, and kiln9's F-034 and F-035). `NEXT.md` and the 2.8 journal note refer to it by the new number.*
 

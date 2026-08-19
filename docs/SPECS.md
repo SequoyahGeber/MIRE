@@ -1522,8 +1522,9 @@ anyone route AROUND the Mire on purpose, and did anyone have fun IN it.
 
 # M5 — combat, enemies & bosses
 
-**GATE: 2.9 passed (the never-cut rule: no second weapon before one feels great) and M3's
-frameworks.** Content-heavy: agents ship frameworks + one worked example each; enemies/bosses/
+**GATE: M3's frameworks only. 2.9 no longer gates anything (D-125** — "tuning can be done at any
+time don't let it hold things up"; combat feel stays never-cut *work*, folded in whenever Sequoyah
+plays**).** Content-heavy: agents ship frameworks + one worked example each; enemies/bosses/
 movesets are then T0 authoring + A-023..A-026 asset batches (tracker gates align).
 
 ## 5.1 · Enemy AI framework: state machine, perception, telegraphed attacks, group behaviour (T2)

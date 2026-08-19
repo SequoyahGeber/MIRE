@@ -50,14 +50,14 @@ id / Steam invite) · `--seed=` launch arg for a chosen island.
 
 | # | What | Who | State |
 |---|---|---|---|
-| 2.9 | **Play the combat gate.** Ten crawler kills, judge tell/arc/hitstop/kill-length, tune in the inspector, pass or fail it out loud. SPECS.md has the run-sheet. Closes F-036. | **You** | open — the oldest debt on the board |
-| 2.14 | **Playtest with friends** — verbatim quotes, one full night, then re-read DESIGN §8. The build finally has enough game to judge. | You + friends | after 2.9 |
+| 2.14 | **Playtest with friends** — verbatim quotes, one full night, then re-read DESIGN §8. The build finally has enough game to judge. | You + friends | whenever an evening aligns |
 | 5.2 / 5.4 | Enemy variety (8–12 types over 5.1's framework) and weapon movesets — the biggest lever on run variety. A-023/24/25 asset batches gate the models; stats/tells are `.tres` authoring now. | lanes + tracker | ready |
 | 3.2 / 6.3 | Item/recipe content over `docs/ITEMS.md` (~45 authorable now) and 20–30 Cycle Modifiers. One at a time, real attention each (D-073). | lanes | ready |
 | 4.10 | Mire visuals — tint, fog, particles, audio shift over `MireGrid`'s cells. The signature system still *looks* like a debug grid. | lane | ready |
 | 5.6–5.8 | Bosses 1–3 over 5.5's framework (guardian scales with Cycle; Hunt elite; Cycle 7+ threat). | lanes | after 5.2's first types |
 | 1.12 | Steam cross-platform evidence run — needs the three machines, nothing else. `STEAM_CROSS_PLATFORM_TEST.md` has everything. | You + hardware | whenever the machines align |
-| 3.11 / 4.12 / 6.11 | The remaining playtest gates (Attunement roles · Mire stressful-fun · the wall / extraction / deep-modifier fairness). | You + friends | as their systems finish |
+| 3.11 / 4.12 / 6.11 | The remaining question-answering playtests (Attunement roles · Mire stressful-fun · the wall / extraction / deep-modifier fairness). | You + friends | as their systems finish |
+| 2.9 | Combat-feel tuning — **not a gate any more (D-125)**: ten crawler kills, judge tell/arc/hitstop, tune in the inspector, whenever. SPECS.md keeps the run-sheet. | You | anytime, blocks nothing |
 
 **Do not start M7 polish before 2.14 has produced its quotes** — polish against unplaytested feel
 is polish twice.

@@ -6,7 +6,9 @@
 
 ## In flight
 
-_Nothing in flight._
+| Task | Agent | Started | Files claimed |
+|---|---|---|---|
+| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | slate17 | 2026-08-19 07:37 | `docs/ASSET_TRACKER.md`, `tools/blender/build_food_set.py`, `tools/food_check.gd`, `assets/food` |
 
 ## Milestones
 
