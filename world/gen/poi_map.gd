@@ -101,7 +101,7 @@ static func _place_kind(
 	var placed_before: int = sites.size()
 	_place_kind_pass(definition, world_seed, biome_defs, sites, rng, 0)
 
-	# D-151: a REQUIRED kind that placed nothing gets the ladder, not a shrug. Each rung relaxes
+	# D-152: a REQUIRED kind that placed nothing gets the ladder, not a shrug. Each rung relaxes
 	# one constraint family and reruns the same deterministic dart loop (the rng stream simply
 	# continues, so every peer still computes the identical outcome). Rung 1 drops the terrain-fit
 	# tests (slope, biome); rung 2 additionally opens height to "any land" and the radius band to
@@ -116,7 +116,7 @@ static func _place_kind(
 
 
 ## One full dart-throwing pass at [param relax] level: 0 = the def's authored constraints exactly
-## as before D-151; 1 = terrain-fit dropped (slope, biome); 2 = additionally any land above the
+## as before D-152; 1 = terrain-fit dropped (slope, biome); 2 = additionally any land above the
 ## waterline, anywhere on the disc. Spacing holds at every level.
 static func _place_kind_pass(
 	definition: Resource, world_seed: int, biome_defs: Array, sites: Array[Dictionary],

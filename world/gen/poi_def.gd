@@ -51,7 +51,7 @@ extends Resource
 ## island, it is a broken run, and 4.13's smaller island (118 m, 60 m height scale) produces real
 ## seeds where the authored constraints match no ground at all. When normal placement lands zero,
 ## poi_map.gd relaxes THIS def's terrain-fit constraints in documented steps rather than shipping
-## an island with no game on it (D-151). Landmarks and caches leave this off: fewer of those on a
+## an island with no game on it (D-152). Landmarks and caches leave this off: fewer of those on a
 ## hostile seed is flavour, not breakage.
 @export var required: bool = false
 
