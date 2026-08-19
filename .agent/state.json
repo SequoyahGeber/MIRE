@@ -1,5 +1,11 @@
 {
   "claims": {
+    "assets/wetland": {
+      "agent": "wick20",
+      "at": "2026-08-19T17:05:53+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+    },
     "content/poi/shipwreck.tres": {
       "agent": "yarrow21",
       "at": "2026-08-19T17:05:32+00:00",
@@ -18,11 +24,35 @@
       "task": "4.15",
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
+    "docs/ASSET_TRACKER.md": {
+      "agent": "wick20",
+      "at": "2026-08-19T17:06:46+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+    },
+    "tools/blender/build_wetland_set.py": {
+      "agent": "wick20",
+      "at": "2026-08-19T17:05:53+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+    },
+    "tools/blender/mire_art.py": {
+      "agent": "wick20",
+      "at": "2026-08-19T17:05:53+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+    },
     "tools/procedural_world_check.gd": {
       "agent": "yarrow21",
       "at": "2026-08-19T17:02:48+00:00",
       "task": "4.15",
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
+    },
+    "tools/wetland_check.gd": {
+      "agent": "wick20",
+      "at": "2026-08-19T17:05:53+00:00",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
     "world/gen/poi_def.gd": {
       "agent": "yarrow21",
@@ -38,6 +68,19 @@
     }
   },
   "in_flight": {
+    "2.1d": {
+      "agent": "wick20",
+      "files": [
+        "tools/blender/mire_art.py",
+        "assets/wetland",
+        "tools/blender/build_wetland_set.py",
+        "tools/wetland_check.gd",
+        "docs/ASSET_TRACKER.md"
+      ],
+      "notes": [],
+      "started": "2026-08-19T17:05:53+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+    },
     "4.15": {
       "agent": "yarrow21",
       "files": [
@@ -4306,7 +4349,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },

@@ -9,6 +9,7 @@
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
 | **4.15** `ProceduralWorld` composer behind `--procedural`: markers, spawn rule, `PoiDef.marker_kind` (D-143) | yarrow21 | 2026-08-19 17:02 | `world/gen/procedural_world.gd`, `world/gen/poi_def.gd`, `core/dev/dev_launch.gd`, `tools/procedural_world_check.gd`, `content/poi/wellspring.tres`, `content/poi/shipwreck.tres` |
+| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | wick20 | 2026-08-19 17:05 | `tools/blender/mire_art.py`, `assets/wetland`, `tools/blender/build_wetland_set.py`, `tools/wetland_check.gd`, `docs/ASSET_TRACKER.md` |
 
 ## Milestones
 
