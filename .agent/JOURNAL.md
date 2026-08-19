@@ -5000,3 +5000,16 @@ Notes along the way:
 Files: `systems/loot/chest.gd`, `tools/chest_seed_check.gd`
 
 Commit at time of writing: `8afbcfb`
+
+---
+
+### DONE · F-212 · lm · 2026-08-19T12:16:04+00:00
+
+**`ARCHITECTURE.md` §5 still describes the Mire grid's replication as a bespoke batched `PackedByteArray` RPC — task 4.9 shipped a different, permanent mechanism and never updated it**
+
+Fixed the stale ARCHITECTURE.md §5 replication bullet (was: batched PackedByteArray RPC; now: WorldDeltaLog.host_record() per changed cell, matching D-099/mire_grid.gd). No code changed - MireGrid already did this correctly. Wrote the missing SPECS.md F-212 block. Verified: docs/ARCHITECTURE.md §5 no longer mentions PackedByteArray; agent godot --script tools/findings_numbering_check.gd -> FINDINGS_NUMBERING_CHECK open=19 resolved=204 failures=0. Swept for sibling stale-mechanism docs (D-100's Cycle/WorldDeltaLog reuse) - already described generically in ARCHITECTURE.md:56, not stale.
+
+Notes along the way:
+- Doc-only fix, no code changed. Swept ARCHITECTURE.md for other PackedByteArray/bespoke-RPC mentions and checked D-100's sibling reuse decision (Cycle state -> WorldDeltaLog, no new RPC) against ARCHITECTURE.md:56 - already described generically as 'Replicated properties', not stale. No sibling instances found.
+
+Commit at time of writing: `5c91560`

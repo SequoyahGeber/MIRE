@@ -6715,9 +6715,11 @@
       "title": "Task 8.4's work order named the wrong verification scripts \u2014 `build_check.gd`/`build_net_check.gd`/`buildable_content_check.gd` test the buildable/crafting placement system (task 3.6/3.7), not the Steam export build pipeline"
     },
     "F-212": {
+      "done_at": "2026-08-19T12:16:04+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`ARCHITECTURE.md` \u00a75 still describes the Mire grid's replication as a bespoke batched `PackedByteArray` RPC \u2014 task 4.9 shipped a different, permanent mechanism and never updated it"
     },
@@ -6762,6 +6764,20 @@
       "status": "todo",
       "tier": "F",
       "title": "Decisions write their own reversal triggers and nothing ever re-checks them \u2014 two fired unnoticed in one session"
+    },
+    "F-219": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`RewardService`'s Wellspring/boss-kill loot roll is the same boot-time-`randomize()` bug F-210 just fixed in `Chest`"
+    },
+    "F-220": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`CycleModifierService`'s per-cycle modifier draw is the same boot-time-`randomize()` bug \u2014 and already has the stable id `Chest` needed"
     }
   },
   "version": 1
