@@ -562,32 +562,6 @@ worth confirming against real numbers rather than assumed.
 
 ---
 
-### F-210 · `Chest`'s loot roll still seeds from boot-time `randomize()` even though `GameState.run_seed` now exists — D-041's own reversal trigger has fired
-
-**Area:** loot/determinism · **Severity:** low · **Found:** 2026-08-19 by lp reviewing task 3.5
-
-`docs/DECISIONS.md` D-041 (task 3.5, 2026-08-17) is explicit that each `Chest._rng` calling
-`randomize()` in `_ready()` is a **provisional** stand-in: "the moment a real per-run seed authority
-exists ... `Chest` should switch to deriving its seed from `(run_seed, a stable per-chest id)` instead
-of `randomize()` ... `Chest.host_seed_rng(seed_value)` already exists as the seam that switch would
-call into — it does not need new API, only a new caller." Task 4.6 (`ab3cb28`, 2026-08-18) added
-exactly that authority — `GameState.run_seed`, host-drawn from real entropy, replicated to clients —
-and `docs/DELEGATION.md`'s `ChunkStreamer` entry already names the still-open gap for `Chest`
-specifically. Nobody has wired the two together: `systems/loot/chest.gd:76` still calls
-`_rng.randomize()` unconditionally, ignoring `GameState.run_seed` entirely.
-
-Not a desync or correctness bug today — the roll is host-only and granted directly, so nothing
-requires cross-peer agreement, and this was true when D-041 was written too. What's missing is what
-D-041 named as the actual payoff: two otherwise-identical runs sharing a `run_seed` (a deliberate
-replay, a bug-repro seed passed via `--seed=`, F-172's solo seed entry) currently still get different
-chest loot from run to run, because the seed never enters the picture. `Chest.host_seed_rng(seed_id)`
-is the existing seam — whoever picks this up needs a stable per-chest id to combine with
-`GameState.run_seed` (a placed chest has no such id today; `ChestPlacementService`'s deterministic
-marker NodePath, per F-146, is the most likely source) and a caller at chest-spawn time, host-only,
-before first use.
-
----
-
 ### F-212 · `ARCHITECTURE.md` §5 still describes the Mire grid's replication as a bespoke batched `PackedByteArray` RPC — task 4.9 shipped a different, permanent mechanism and never updated it
 
 **Area:** docs/netcode · **Severity:** low · **Found:** 2026-08-19 by lm reviewing task 4.9
@@ -727,7 +701,134 @@ autoload-node pattern.
 
 ---
 
+### F-218 · Decisions write their own reversal triggers and nothing ever re-checks them — two fired unnoticed in one session
+
+**Area:** process · **Severity:** medium · **Found:** 2026-08-19 by bram1
+
+`docs/DECISIONS.md`'s template ends every entry with **Would change my mind:** — the specific evidence
+that should make someone revisit the call. It is a genuinely good practice and the entries are written
+honestly. But nothing ever re-reads those clauses, so a fired trigger sits unnoticed until an agent
+happens to trip over the consequence.
+
+Two fired in the 2026-08-18/19 session alone, both found by accident rather than by process:
+
+- **D-011** chose file claims over per-agent git worktrees, with the trigger *"agents working
+  concurrently often enough that file claims become a bottleneck"*. F-189 documents it firing four
+  times over: one claim on `core/net/net_version.gd` held across four sessions caused four tasks
+  (F-161, F-165, F-169, F-178) to each ship new RPCs un-versioned and file a finding instead.
+- **D-041** governs `Chest`'s loot seeding, with a trigger that fires once a run seed exists.
+  `GameState.run_seed` shipped in task 4.6; F-210 records that the chest roll still seeds from
+  boot-time `randomize()`, which in a seeded co-op roguelike means loot is neither reproducible from
+  a seed nor guaranteed to agree between peers.
+
+Both were caught because a lane was already working nearby. Neither would have been caught otherwise,
+and the cost compounds silently — D-011's trigger had been firing for four sessions.
+
+**What would help, roughly in order of how buildable it is:** a check that extracts every *Would
+change my mind* clause and reports the ones naming a symbol, file or task id that now exists or has
+changed since the decision was written (D-041's names a run seed; `GameState.run_seed` exists — that
+is mechanically detectable). Failing that, even a periodic surfacing of all trigger clauses in
+`agent start` would beat the current zero. The full problem is not automatable — most triggers are
+prose judgements — but the subset that names concrete artifacts is, and that subset caught both of
+tonight's.
+
+Filed rather than built: this wants a design pass, not a director's quick patch.
+
+---
+
+### F-219 · `RewardService`'s Wellspring/boss-kill loot roll is the same boot-time-`randomize()` bug F-210 just fixed in `Chest`
+
+**Area:** loot/determinism · **Severity:** low · **Found:** 2026-08-19 by lm sweeping F-210's shape elsewhere
+
+`autoload/reward_service.gd:75-76`'s `_grant_tier_to_party()` — the direct-grant path a Wellspring cap
+or boss kill uses instead of spawning a `Chest` (D-123) — creates a fresh `RandomNumberGenerator` and
+calls `.randomize()` on it every time it fires, exactly the bug D-041 named and F-210 just fixed for
+`Chest`: two runs sharing a `run_seed` still get different party rewards. `docs/DELEGATION.md`'s own
+F-183 entry already flags this ("the check's rolls use non-seeded `randomize()`, same as `Chest`'s
+own") but nothing tracked it as an open gap until now.
+
+Not a straight copy of F-210's fix: `Chest` had an obvious stable id (its own node `name`, itself
+derived from the authored map's marker name) and rolls exactly once per chest. `_grant_tier_to_party`
+rolls once **per present peer, per trigger** (a Wellspring cap, a boss kill) with no placement id to
+derive from — the trigger itself would need a stable id (a monotonic per-run reward-event counter is
+the likely shape, since two Wellspring caps or two boss kills in the same run must not roll the same)
+combined with the receiving peer's id, so no two peers' independent rolls from the same event
+coincide. `_seed_for_run()`'s multiply/xor mixing (`systems/loot/chest.gd`) is the pattern to reuse;
+the missing piece is only what feeds it as the "chest id" half.
+
+### F-220 · `CycleModifierService`'s per-cycle modifier draw is the same boot-time-`randomize()` bug — and already has the stable id `Chest` needed
+
+**Area:** cycle/determinism · **Severity:** low · **Found:** 2026-08-19 by lm sweeping F-210's shape elsewhere
+
+`systems/cycle/cycle_modifier_service.gd:56`'s `_ready()` calls `_rng.randomize()` once at boot; every
+`host_draw_modifier(cycle: int)` call (`:88`) then draws from that same boot-seeded stream via
+`_weighted_pick()` (`:160`, `_rng.randf()`). Host-authoritative, run-shaping content — which Cycle
+Modifier(s) stack up over a run — that two runs sharing a `run_seed` currently still draw differently,
+same class of bug as `Chest`/F-219.
+
+Easier to fix than F-219: `host_draw_modifier` already receives `cycle: int` as a parameter, which is
+exactly the stable per-draw id F-210's fix needed to build for `Chest` from a marker name — no new id
+scheme required, just `_rng.seed = _seed_for_run(GameState.run_seed, str(cycle))` (or a local copy of
+that mixing helper) called at the top of `host_draw_modifier` instead of relying on `_ready()`'s
+boot-time seed. `WorldDeltaLog`'s existing replication of the drawn-modifier stack (this file's own
+header) is unaffected either way — replication carries the RESULT, never the roll.
+
+---
+
 ## Resolved
+
+### F-210 · `Chest`'s loot roll still seeds from boot-time `randomize()` even though `GameState.run_seed` now exists — D-041's own reversal trigger has fired — **fixed**
+
+**Area:** loot/determinism · **Severity:** low · **Found:** 2026-08-19 by lp reviewing task 3.5
+
+`docs/DECISIONS.md` D-041 (task 3.5, 2026-08-17) is explicit that each `Chest._rng` calling
+`randomize()` in `_ready()` is a **provisional** stand-in: "the moment a real per-run seed authority
+exists ... `Chest` should switch to deriving its seed from `(run_seed, a stable per-chest id)` instead
+of `randomize()` ... `Chest.host_seed_rng(seed_value)` already exists as the seam that switch would
+call into — it does not need new API, only a new caller." Task 4.6 (`ab3cb28`, 2026-08-18) added
+exactly that authority — `GameState.run_seed`, host-drawn from real entropy, replicated to clients —
+and `docs/DELEGATION.md`'s `ChunkStreamer` entry already names the still-open gap for `Chest`
+specifically. Nobody has wired the two together: `systems/loot/chest.gd:76` still calls
+`_rng.randomize()` unconditionally, ignoring `GameState.run_seed` entirely.
+
+Not a desync or correctness bug today — the roll is host-only and granted directly, so nothing
+requires cross-peer agreement, and this was true when D-041 was written too. What's missing is what
+D-041 named as the actual payoff: two otherwise-identical runs sharing a `run_seed` (a deliberate
+replay, a bug-repro seed passed via `--seed=`, F-172's solo seed entry) currently still get different
+chest loot from run to run, because the seed never enters the picture. `Chest.host_seed_rng(seed_id)`
+is the existing seam — whoever picks this up needs a stable per-chest id to combine with
+`GameState.run_seed` (a placed chest has no such id today; `ChestPlacementService`'s deterministic
+marker NodePath, per F-146, is the most likely source) and a caller at chest-spawn time, host-only,
+before first use.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed: systems/loot/chest.gd's Chest._ready() now derives its RNG seed from
+_seed_for_run(GameState.run_seed, String(name)) instead of calling _rng.randomize() at boot. `name`
+is the stable per-chest id — ChestPlacementService already sets it to "Chest_<marker name>" (from
+the authored map layout) before add_child(), so it is fixed and identical on every peer, never
+generated. _seed_for_run() mixes (run_seed, chest_id) with integer multiply/xor only, matching the
+existing world/gen/poi_map.gd and world/gen/resource_scatter.gd convention (never Godot's hash(),
+whose cross-platform stability is undocumented) — new const _SEED_SALT: int = 0xC4E57 keeps this
+file's salt distinct from those two. Chest.host_seed_rng() (the existing debug/test override seam
+D-041 already named) is untouched.
+
+Verified with a new tools/chest_seed_check.gd (SceneTree, same synthetic-Registry-injection pattern
+as tools/chest_check.gd): builds real Chest nodes with GameState.set_replicated_seed() forcing a
+fixed run_seed, and proves (a) same run_seed + same chest name -> identical granted loot,
+(b) same run_seed + different chest name -> different loot, (c) different run_seed + same chest name
+-> different loot. `.agent/bin/agent godot --script tools/chest_seed_check.gd` ->
+`CHEST_SEED_CHECK failures=0`, zero undeclared ERROR: lines.
+
+Swept for the same bug shape (SPECS.md standing rule / this task's own mandate): grepped every
+`.randomize()` call site. autoload/inventory_service.gd:599 is an intentional exception (debug
+`loot` console command, commented "must never advance a run's shared streams"). 
+autoload/entity_directory.gd:57 seeds a cosmetic id/tag RNG, not run content, no reproducibility
+claim exists for it. Two real siblings found and filed rather than fixed here (out of this task's
+claim, and each needs its own id-derivation design, not a copy-paste):
+F-219 (autoload/reward_service.gd:76, RewardService's Wellspring/boss-kill party loot roll) and
+F-220 (systems/cycle/cycle_modifier_service.gd:56, CycleModifierService's per-cycle modifier draw —
+already has cycle:int as a ready-made stable id, so its fix is close to mechanical).
 
 ### F-209 · No menu in the game supports gamepad UI focus navigation — a bare controller with no Steam Input translation cannot open any panel — **fixed**
 

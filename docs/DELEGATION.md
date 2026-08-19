@@ -75,6 +75,29 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-210 resolved: `Chest`'s loot roll derives its seed from `GameState.run_seed`, not boot-time entropy (lm)
+
+**`Chest` (`systems/loot/chest.gd`) now has two private helpers anything deriving a host-only,
+run-reproducible seed can copy the shape of:** `_run_seed() -> int` (reads `GameState.ensure_seed()`
+through the standard `get_node_or_null(^"/root/GameState")` + `.call()` seam) and
+`_seed_for_run(run_seed: int, chest_id: String) -> int` (integer multiply/xor mixing, `_SEED_SALT =
+0xC4E57`, same convention `world/gen/poi_map.gd`/`world/gen/resource_scatter.gd` already use — pick a
+fresh, distinct salt if you copy this into a new file rather than reusing `0xC4E57`). `_ready()` calls
+`_rng.seed = _seed_for_run(_run_seed(), String(name))` — `name` works as the stable per-chest id only
+because `ChestPlacementService` sets it (`"Chest_<marker name>"`) before `add_child()`; a system with
+no equivalent authored-and-fixed id (F-219's `RewardService` trigger events) needs to invent one
+before this pattern applies. `Chest.host_seed_rng(seed_value)` (the debug/test override seam) is
+unchanged and still wins over whatever `_ready()` computed, for any caller that invokes it afterward.
+
+**Filed rather than fixed, same bug shape:** F-219 (`RewardService`'s Wellspring/boss-kill party
+roll) and F-220 (`CycleModifierService`'s per-cycle modifier draw — already has `cycle: int` as a
+ready-made stable id, so its fix is the closest to a direct copy of this one).
+
+**Verified:** new `tools/chest_seed_check.gd` — `agent godot --script tools/chest_seed_check.gd` →
+`CHEST_SEED_CHECK failures=0`. Proves same `(run_seed, chest name)` grants identical loot twice, and
+that changing either input changes the grant (1..999 amount range, so a coincidental match is not a
+realistic false-pass).
+
 ### 2026-08-19 — F-209 resolved: every menu supports gamepad focus navigation; `ui_accept`/`ui_cancel` now carry gamepad bindings project-wide (lm)
 
 **For anyone touching `MainMenu`/`SettingsMenu`/`LobbyMenu`/`InventoryUI`/`CraftingUI`/`UnlockMenu`
@@ -2715,9 +2738,10 @@ streamer.last_process_cost_ms() -> float     # this node's OWN per-frame issuing
 - **A chunk's world footprint** is `Vector3(coord.x * ChunkMesher.CHUNK_SIZE, 0.0, coord.y *
   ChunkMesher.CHUNK_SIZE)` to `+CHUNK_SIZE` on both axes (`CHUNK_SIZE = 32`) — matches
   `ChunkStreamer`'s own placement of the `MeshInstance3D`.
-- **`world_seed` has no default.** No `GameState.run_seed` or equivalent exists yet (D-041 already
-  flagged this gap for `Chest`; it is still open) — whoever wires this into the live game supplies
-  the shared run seed explicitly, most likely 4.6's job.
+- **`world_seed` has no default.** Written before task 4.6 shipped `GameState.run_seed` — that
+  authority now exists and `Chest` derives its own seed from it (F-210) — but nothing in the shipped
+  game instantiates a `ChunkStreamer` yet (next bullet), so whoever does still supplies `world_seed`
+  explicitly; `GameState.run_seed`/`ensure_seed()` is the value to pass.
 - **Nothing in the shipped game instantiates a `ChunkStreamer` yet**, same as 4.1/4.2's
   `IslandHeightmap`/`BiomeMap` before it — this is a pure, tested system waiting on 4.6 (seed
   replication + client regen) to actually be added to a running level.

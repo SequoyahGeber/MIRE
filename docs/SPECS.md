@@ -6103,6 +6103,68 @@ grepped `focus_neighbor\|grab_focus` project-wide beforehand — the only pre-ex
 
 ---
 
+## F-210 · `Chest`'s loot roll still seeds from boot-time `randomize()` even though `GameState.run_seed` now exists — D-041's own reversal trigger has fired
+
+**Claim:** `systems/loot/chest.gd`, `tools/chest_seed_check.gd` (new). Network authority: HOST, same
+row `chest.gd`'s own header already declares — this task changes what feeds the roll's RNG, not who
+rolls it.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's preamble.
+
+**The fix:** `Chest._ready()` called `_rng.randomize()` (real boot-time entropy) unconditionally on
+the host. D-041 (2026-08-17) chose that deliberately as a **provisional** stand-in, and named its own
+exact reversal trigger: "the moment a real per-run seed authority exists ... `Chest` should switch to
+deriving its seed from `(run_seed, a stable per-chest id)` instead of `randomize()`." Task 4.6 shipped
+that authority (`GameState.run_seed`) on 2026-08-18; nobody wired the two together until now. `_ready()`
+now calls `_rng.seed = _seed_for_run(_run_seed(), String(name))`. `_run_seed()` reads
+`GameState.ensure_seed()` through `get_node_or_null(^"/root/GameState")` (GameState is a project-wide
+autoload — no null path exists in the shipped game, only a defensive `return 0` for a hypothetical
+scene missing it). The stable per-chest id is the chest's own `name`: `ChestPlacementService`
+(`autoload/chest_placement_service.gd:98`) already sets `chest.name = "Chest_%s" % marker.name` from
+the authored map layout **before** `add_child()`, so it is fixed, deterministic, and identical on
+every peer — never generated, never dependent on load order. `_seed_for_run(run_seed, chest_id)` mixes
+the two with integer multiply/xor only (never Godot's `hash()`, whose cross-platform/cross-version
+stability for `String`/`StringName` is not a documented guarantee) — the exact convention
+`world/gen/poi_map.gd`'s `_kind_seed()`/`_hash_id()` and `world/gen/resource_scatter.gd`'s
+`_point_seed()`/`_hash_id()` already established for the same reason; `_SEED_SALT: int = 0xC4E57`
+keeps this file's mix distinct from those two files' own salts (`0x9017A11`, `0x5CA77E5`).
+`Chest.host_seed_rng(seed_value)` — the existing debug/test override seam D-041's own text pointed
+at — is untouched; every existing check that calls it (`chest_check.gd`, `loot_content_check.gd`)
+still overrides the seed explicitly after `_ready()` runs, so this change does not alter their
+behavior.
+
+**Not a desync/correctness bug, then or now** — the roll is host-only and granted directly, so no
+peer ever needs to agree on the value, only the host's own two runs sharing a `run_seed` need to agree
+with EACH OTHER. What changes is reproducibility: a deliberate replay, a bug-repro `--seed=` launch
+(`core/game_state.gd`'s `_apply_launch_seed_arg()`), or F-172's solo seed entry now gets the same
+chest loot every time instead of a fresh roll from real entropy.
+
+**Verify:** `.agent/bin/agent godot --script tools/chest_seed_check.gd` → `CHEST_SEED_CHECK
+failures=0`, zero undeclared `ERROR:` lines. New check (same synthetic-Registry-injection pattern
+`tools/chest_check.gd` already uses — content stays hand-authored, this only proves the framework):
+builds real `Chest` nodes under fixed names via `CHEST_SCRIPT.new()` + `root.add_child()`, forces a
+specific `run_seed` with `GameState.set_replicated_seed()`, opens them offline (host-of-one, same path
+`chest_check.gd` proves), and checks granted loot from a wide (1..999) amount range: same
+`(run_seed, chest name)` grants identically twice; changing either the name or the `run_seed` changes
+the grant. `remove_child()` + `free()` (not `queue_free()`) between spawns reusing the same name — a
+still-pending deferred free would make the next `add_child()` silently uniquify the name instead of
+reusing it, which would quietly break the "same id" premise the check exists to prove.
+
+**Swept for the same shape elsewhere:** grepped every `.randomize()` call site project-wide.
+`autoload/inventory_service.gd:599` is an intentional exception, commented in place ("a debug roll
+must never advance a run's shared or world-gen streams" — the console `loot` command).
+`autoload/entity_directory.gd:57` seeds a cosmetic entity-id/tag RNG with no reproducibility claim on
+it anywhere. Two real siblings found and filed rather than fixed (outside this task's claim, and each
+needs its own id-derivation design rather than a copy-paste of `_seed_for_run`): F-219
+(`autoload/reward_service.gd:76`, `RewardService`'s Wellspring-cap/boss-kill party loot roll — no
+placement id to key off, needs a per-run reward-event counter) and F-220
+(`systems/cycle/cycle_modifier_service.gd:56`, `CycleModifierService`'s per-cycle modifier draw —
+already has `cycle: int` as a ready-made stable id, so its fix is close to mechanical).
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**
