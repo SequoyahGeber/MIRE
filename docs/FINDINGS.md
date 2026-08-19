@@ -69,6 +69,43 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-161 · Task 5.3's three new ranged-combat RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-18 by lp during 5.3
+
+`autoload/ranged_combat_service.gd` added `net_request_shot`, `net_shot_fired` and `net_shot_resolved`
+— a real new wire shape, same class of change `core/net/net_version.gd`'s own header says must bump
+`PROTOCOL_VERSION` ("an RPC's name, argument order, or @rpc config... changed"). `core/net/net_version.gd`
+and `tools/handshake_check.gd` were both held by lane slate17's 3.7 claim for this task's entire
+session, so neither could be edited under AGENTS.md's claim rule. D-102 records the call (ship
+un-versioned rather than stall the task) and why it's an acceptable transient risk given this project
+ships from one evolving source tree, not staggered binaries.
+
+**What closes this:** whoever next holds `core/net/net_version.gd`:
+1. Bump `const PROTOCOL_VERSION: int = 19` to `20`.
+2. Add a `## 20 (task 5.3)` comment naming the three RPCs, matching every entry above it.
+3. Raise `tools/handshake_check.gd`'s `_check("PROTOCOL_VERSION reflects task 4.8's Wellspring channel RPC", NetVersion.PROTOCOL_VERSION == 19, ...)` assertion to `== 20` (and its label, since it will no longer be about 4.8).
+4. `agent godot --script tools/handshake_check.gd` green is the actual closing proof — not just the absence of a WARN line.
+
+No code change to `ranged_combat_service.gd` itself is needed; the RPCs are already correct and
+covered by `tools/ranged_combat_check.gd`/`tools/ranged_combat_net_check.gd`, both `failures=0`. This
+is purely the bookkeeping bump D-100 already hit once for task 6.1 (that task avoided it by reusing
+`WorldDeltaLog` instead — not an option here, see D-102).
+
+### F-162 · `tools/viewmodel_check.gd` fails independently of task 5.3 — three food items have no authored viewmodel
+
+**Area:** content · **Severity:** low · **Found:** 2026-08-18 by lp during 5.3
+
+`tools/viewmodel_check.gd`'s `PASS/FAIL: every tool and weapon has a viewmodel (mushroom, berry,
+raw_meat)` assertion fails at HEAD, before any of this task's changes — confirmed with
+`agent baseline --script tools/viewmodel_check.gd`, which fails identically on a clean checkout of
+the commit this task started from. Three consumable `ItemDef`s (`mushroom`, `berry`, `raw_meat`)
+have no `view_model` set, so equipping one shows an empty hand instead of the item. Not chased here:
+it is pure content authoring (an export on three `.tres` files, no code), outside this task's claim,
+and every other `viewmodel_check.gd` assertion — including the new ones a bow/arrow viewmodel would
+exercise if 5.3 had added its own arc — passes. Whoever authors those three items' viewmodels next
+closes this; `agent godot --script tools/viewmodel_check.gd` going `failures=0` is the proof.
+
 ### F-158 · `bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler
 
 **Area:** content/vfx · **Severity:** low · **Found:** 2026-08-19 by lm during 4.11

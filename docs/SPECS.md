@@ -1561,9 +1561,7 @@ Done means: all four checks green, 0 `ERROR:` on a full boot (`agent godot --qui
 authors to build against.
 
 - **5.2 Enemy types (T0+A-023/24/25):** stats/tells in `.tres`, models via the tracker.
-- **5.3 Ranged combat (T2):** bow = client-predicted tracer, host-simulated projectile from the
-  shooter's replicated yaw/pitch at fire tick (D-034's split applied to projectiles); arrows are
-  inventory items consumed by `host_transaction`; hit applies through `&"damageable"`.
+- **5.3 Ranged combat:** done — see the `## 5.3` block below.
 - **5.4 Movesets (T0/T1):** per-fork `WeaponDef` extensions (combo windows, alt-attack flag) —
   data first, one T1 task for the combo state machine, then T0 tuning.
 - **5.5 Boss framework (T2):** phases as an array of `BossPhaseDef` (hp threshold, moveset id,
@@ -1573,6 +1571,93 @@ authors to build against.
 - **5.9 Wave director (T1):** 2.12's spawner gains composition tables (per-Cycle enemy pools,
   weights) — the file already has the seams; this is its planned growth, not a rewrite.
 - **5.10 Balance (T0):** across the Cycle curve, not at one difficulty; record tables.
+
+## 5.3 · Ranged combat: bow, projectiles, host-authoritative hit validation (T2)
+
+**Authority:** new §2.2 row, "Ranged weapons (bow + arrow)": **Host.** Same three-way split melee
+(2.8) established, plus a fourth piece melee never needed — an actual flight. The draw is the
+shooter's own client-local prediction; the shot (aim, ammo, hit) is host-only, derived from the
+shooter's own already-replicated transform, never a client-sent vector; the flight VISUAL is
+cosmetic prediction identical on every peer, driven off one broadcast; the impact is host-broadcast
+once, authoritative.
+**Claim:** `systems/combat/ranged_weapon_def.gd`, `systems/combat/aim_util.gd`,
+`autoload/ranged_combat_service.gd` (+ every file's own `.uid`), `autoload/combat_service.gd`,
+`autoload/registry.gd`, `content/ranged_weapons/short_bow.tres`, `content/items/short_bow.tres`,
+`tools/ranged_combat_check.gd`, `tools/ranged_combat_net_check.gd` (+ their `.uid`s).
+`project.godot` registers `RangedCombatService` via `agent autoload` (F-051) — never claimed.
+
+**Why a separate content family and host state machine, not a mode of `WeaponDef`/`CombatService`:**
+a bow fires an ammo item through a variable-length flight (however long the arrow actually takes to
+connect or run out of range) rather than colliding a fixed-duration swing arc — `WeaponDef`'s whole
+shape (`wind_up`/`commit`/`recovery` as fixed authored durations) does not fit. `RangedWeaponDef`
+(`item_id`, `ammo_item_id`, `draw_seconds`, `recovery_seconds`, `projectile_speed_m_s`,
+`gravity_scale`, `max_range_m`, `damage`, feel fields) lives beside `WeaponDef` in
+`systems/combat/`, loaded into a new `Registry.ranged_weapons` family exactly like `weapons`
+(`get_ranged_weapon`/`has_ranged_weapon`). `CombatService.request_attack()` checks
+`Registry.has_ranged_weapon()` on the selected hotbar slot FIRST and hands the whole action to
+`RangedCombatService.request_shot()` before any melee state is touched, so `attack` stays the one
+input both weapon families answer. Both directions of a mutual-exclusion check (each service asks
+the other's `local_phase()`) keep a melee swing and a bow draw from ever overlapping regardless of
+which hotbar slot triggers first.
+
+**The host's own shot simulation, per peer, per physics tick (`RangedCombatService._advance_host_shots`):**
+WIND_UP (the draw; host re-validates ammo at both accept and release, so a dry stack between the two
+is a clean dry-fire, not a phantom arrow) → on release, `CombatAim.direction()`/`eye_position()`
+(`systems/combat/aim_util.gd`, the same yaw+pitch formula melee's own private `_aim_direction()`
+uses, factored out for this task but NOT retrofitted onto melee's tested code — the two stay
+independent copies on purpose) derive the aim from the shooter's replicated transform, ammo is
+consumed (`InventoryService.host_remove`), and the arrow begins COMMIT (flight) → one
+`PhysicsDirectSpaceState3D.intersect_ray()` per tick between last and current position (mask
+`1 | PlacementValidator.TERRAIN_LAYER`, same shape as `Enemy._has_line_of_sight()`), swept so a fast
+arrow cannot skip a thin collider between two frames → a hit, a wall, or `max_range_m` ends the
+flight and starts RECOVERY.
+
+**The raycast's own collider is not necessarily the `&"damageable"` node — this is the one trap
+worth knowing before any future system raycasts against this group.** `Enemy`/`PlayerController` are
+`CollisionObject3D` themselves, but `Harvestable` is a plain `Node3D` that finds a CHILD
+`CollisionObject3D` for its own collider. `RangedCombatService._damageable_owner()` walks UP from
+whatever the raycast hit (itself included, bounded depth) to the nearest ancestor actually in the
+group — skipping this is a silent "arrows can hit enemies/players but never a Harvestable" bug that
+a check aimed only at CharacterBody3D-shaped targets would never catch (this task's own first attempt
+didn't, until its check's `TestTarget` was reshaped to match Harvestable's actual wrapper structure).
+
+**PvP is cut (DESIGN.md §7).** `_resolve_flight()` excludes any hit whose damageable owner is also
+in `&"players"` — an arrow that reaches another player's own body still physically stops there (it
+does not pass through to whatever is behind), it simply deals no damage. Melee's own target search
+has no such exclusion today (out of this task's claim; not chased here).
+
+**The flight visual is client-local prediction on every peer, including the shooter and the host
+itself**, reusing the ammo item's OWN authored `world_model` (`arrow_world.glb`) as the flying mesh —
+no new asset. One broadcast (`net_shot_fired`: origin, direction, speed, `gravity_scale`, both the
+bow's and the ammo's item id) is enough for every peer to run the identical kinematic formula
+independently; there is no per-tick position sync (ARCHITECTURE.md §2.5). `net_shot_resolved` (hit,
+position, damage, target name) is the one authoritative broadcast that despawns/snaps the visual and
+starts every peer's own feel consequences — hitstop/shake for the shooter, a positional impact sound
+for everyone, reusing `CombatService.placeholder_impact_sound()` when a bow has no authored one
+rather than a second procedural-audio copy.
+
+**No `PROTOCOL_VERSION` bump — D-102, F-161.** SPECS.md's own standing rule 5 requires one for any
+new RPC; `core/net/net_version.gd` and `tools/handshake_check.gd` were held all session by lane
+slate17's 3.7 claim, the same situation D-100 recorded for task 6.1. Unlike 6.1, this task could not
+route around needing a real RPC (a variable-length flight has no existing generic seam to piggyback
+on the way `WorldDeltaLog` did), so three new RPCs (`net_request_shot`, `net_shot_fired`,
+`net_shot_resolved`) ship un-versioned rather than the task stalling on a file another lane held.
+
+Verify: `tools/ranged_combat_check.gd` (offline, one process) — draw/flight/recovery timing, ammo
+consumed only on release (not on draw, not twice), a wall stops the flight (proving the raycast, not
+a distance test), PvP exclusion (the arrow stops on a player-shaped target but never damages it, and
+nothing behind it is reached either), an out-of-ammo draw is rejected cleanly, melee/ranged mutual
+exclusion both directions. `tools/ranged_combat_net_check.gd` (real two-process ENet, `combat_net_check.gd`'s
+own shape) — a client that only ever sends a hotbar index gets a host-resolved connect with the
+host's own damage number, a host-consumed arrow, and a clean host-side rejection once it is out.
+Both `failures=0`. Regression: `tools/combat_check.gd`, `tools/combat_net_check.gd`,
+`tools/harvest_tool_ladder_check.gd`, `tools/command_catalog_check.gd`, `tools/verify_setup.gd` all
+still `failures=0` / all checks passed, unmodified — melee's own local phase and hitbox logic are
+untouched. Full boot (`agent godot --quit-after 20`): 0 `ERROR:` lines.
+Done means: both new checks green, the five regression checks green, 0 `ERROR:` on a full boot, and
+`docs/DELEGATION.md`'s Current state carries `RangedWeaponDef`'s fields, `RangedCombatService`'s
+public API, and the `_damageable_owner()` gotcha for whatever system next raycasts against
+`&"damageable"`.
 
 ---
 
