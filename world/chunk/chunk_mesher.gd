@@ -34,11 +34,17 @@ const INDEX_COUNT: int = TRI_COUNT * 3
 
 ## Skirt depth as a fraction of the heightmap's own peak amplitude rather than a bare metre count,
 ## so the margin survives `IslandHeightmap.HEIGHT_SCALE` being retuned — 4.1 explicitly calls that
-## value a placeholder awaiting a real pass. See F-128/D-084: the worst LOD-boundary divergence
-## measured over the whole island across four seeds is 1.78 m (LOD1 against LOD2) at the current
-## HEIGHT_SCALE of 60, so 10% of amplitude is a ~3.4x margin. `tools/chunk_stream_check.gd`
-## re-measures the divergence and fails if that margin is ever lost.
-const SKIRT_DEPTH_FRACTION: float = 0.10
+## value a placeholder awaiting a real pass. See F-128/D-084 for the original sizing.
+##
+## Retuned by F-251 (2026-08-19): D-142/4.13-4.14's domain warp + masked ridged layer + carved
+## river added relief `HEIGHT_SCALE` alone doesn't capture — a ridge crest can climb ~13 m across a
+## single LOD1/LOD2 chord (2-4 m of world space), even though `HEIGHT_SCALE` itself dropped from 60
+## to 26 in the same retuning. A 12-seed island-wide sweep (`tools/_tmp_seam_probe.gd`, not
+## committed) found a worst case of 12.805 m (seed 4242, chunk (3,-4)); 10% of the new HEIGHT_SCALE
+## (2.6 m) covers barely a fifth of that. 170% of HEIGHT_SCALE clears it with the same ~3.4x margin
+## F-128 originally sized for, scaled to the new worst case. `tools/chunk_stream_check.gd`
+## re-measures the divergence every run and fails if the margin is ever lost again.
+const SKIRT_DEPTH_FRACTION: float = 1.70
 const SKIRT_DEPTH: float = Heightmap.HEIGHT_SCALE * SKIRT_DEPTH_FRACTION
 
 

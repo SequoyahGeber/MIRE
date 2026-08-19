@@ -6199,3 +6199,15 @@ Next agent (only after 8.2 lands a real App ID): follow DEPOT_SETUP.md step by s
 Files: `tools/steam/apply_ids.sh`, `tools/steam/DEPOT_SETUP.md`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `1571cd7`
+
+---
+
+### DONE · F-251 · lp · 2026-08-19T20:35:34+00:00
+
+**tools/chunk_stream_check.gd (windowed) has 5 pre-existing failures — terrain retuning since F-128 left the LOD skirt too shallow for the real seam gap**
+
+All 5 pre-existing chunk_stream_check.gd failures fixed and verified: agent godot --windowed --script tools/chunk_stream_check.gd -> 0 functional failures (was 5). SKIRT_DEPTH_FRACTION 0.10->1.70 in chunk_mesher.gd; WORST_KNOWN_*/ISLAND_CHUNK_RADIUS/determinism-test-chunk/collision-band-assertion/min_separation formula fixed in chunk_stream_check.gd. Regression clean: check_determinism.gd, terrain_check.gd, bench_chunks.gd. Docs: SPECS.md F-251 block, DECISIONS.md D-150, DELEGATION.md close-out entry, FINDINGS.md F-253 updated (ruled out shared root cause) and F-251 moved to Resolved.
+
+Files: `world/chunk/chunk_mesher.gd`, `tools/chunk_stream_check.gd`
+
+Commit at time of writing: `2c02105`

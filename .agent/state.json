@@ -1,6 +1,128 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "autoload/build_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    },
+    "autoload/defeat_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    },
+    "autoload/enemy_world.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    },
+    "autoload/inventory_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    },
+    "autoload/powerup_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    },
+    "core/events/event_bus.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    },
+    "systems/cycle/cycle_modifier_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    },
+    "systems/cycle/cycle_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    },
+    "systems/extraction/extraction_ship.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    },
+    "systems/health/player_health.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    },
+    "systems/loot/chest.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    },
+    "systems/wellspring/wellspring.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    },
+    "tools/run_restart_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    },
+    "ui/hud/defeat_hud.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    },
+    "ui/hud/extraction_hud.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    },
+    "world/mire/mire_grid.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T20:25:35+00:00",
+      "task": "F-243",
+      "token": null
+    }
+  },
+  "in_flight": {
+    "F-243": {
+      "agent": "lm",
+      "files": [
+        "core/events/event_bus.gd",
+        "systems/cycle/cycle_service.gd",
+        "world/mire/mire_grid.gd",
+        "systems/cycle/cycle_modifier_service.gd",
+        "autoload/powerup_service.gd",
+        "autoload/inventory_service.gd",
+        "systems/health/player_health.gd",
+        "autoload/enemy_world.gd",
+        "autoload/build_service.gd",
+        "autoload/defeat_service.gd",
+        "systems/extraction/extraction_ship.gd",
+        "systems/wellspring/wellspring.gd",
+        "systems/loot/chest.gd",
+        "ui/hud/defeat_hud.gd",
+        "ui/hud/extraction_hud.gd",
+        "tools/run_restart_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-19T20:25:35+00:00",
+      "token": null
+    }
+  },
   "recent": {
     ".": {
       "agent": "lp",
@@ -2391,10 +2513,11 @@
       "task": "F-128"
     },
     "tools/chunk_stream_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T00:21:07+00:00",
-      "hash": "db0ba5dfe3d00a1f9faec34a86f43e649a25ae629a9fa97e73e7a4437fbf3082",
-      "task": "F-132"
+      "agent": "lp",
+      "at": "2026-08-19T20:35:34+00:00",
+      "hash": "ccac6b19bd84bfab3a193c2044a9e0a85ff12cba77eeee5f5223fc755877f65a",
+      "task": "F-251",
+      "token": null
     },
     "tools/command_catalog_check.gd": {
       "agent": "lp",
@@ -3356,9 +3479,9 @@
     },
     "world/chunk/chunk_mesher.gd": {
       "agent": "lp",
-      "at": "2026-08-19T19:52:07+00:00",
-      "hash": "12ed8ee6e18312780c0a8133edfe34d4356e8a13cd78025be04eea4ffa0190a5",
-      "task": "F-241",
+      "at": "2026-08-19T20:35:34+00:00",
+      "hash": "758b60240c15d8e2cdf91d3c8fae57ef795314f93d3e343bdbf99c30c6d4370d",
+      "task": "F-251",
       "token": null
     },
     "world/chunk/chunk_streamer.gd": {
@@ -7042,7 +7165,7 @@
     "F-243": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "The run loop is a line, not a circle \u2014 after defeat or extraction there is no path to a next run short of relaunching the process"
     },
@@ -7093,9 +7216,11 @@
       "title": "CycleService._announce()'s EventBus.emit_cycle_advanced() still gates behind _owns_cycle(), so cycle_advanced never fires on a real connected client \u2014 F-226 fixed the reader-side symptom, not this root cause"
     },
     "F-251": {
+      "done_at": "2026-08-19T20:35:34+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "tools/chunk_stream_check.gd (windowed) has 5 pre-existing failures \u2014 terrain retuning since F-128 left the LOD skirt too shallow for the real seam gap"
     },
@@ -7135,6 +7260,13 @@
       "status": "done",
       "tier": "F",
       "title": "Arming several one-shot revives to cover an unattended stretch stacks saturate chains, and the lane idles while they queue on its own lock"
+    },
+    "F-257": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Real App ID must be written to two independent places; task 8.11's `apply_ids.sh` only reaches one of them"
     }
   },
   "version": 1

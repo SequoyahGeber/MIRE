@@ -35,12 +35,21 @@ const BENCH_SEED: int = 20260818
 ## The worst LOD-boundary divergence found when F-128 was fixed, and where it was found — swept
 ## over the whole island across four seeds. Kept as an explicit spot-check so the recorded number
 ## stays honest rather than drifting into folklore.
-const WORST_KNOWN_SEED: int = 424242
-const WORST_KNOWN_CHUNK := Vector2i(-5, 2)
-const WORST_KNOWN_DIVERGENCE_M: float = 1.779
-## Chunk radius that covers the island (IslandHeightmap.ISLAND_RADIUS 512 m / CHUNK_SIZE 32 m,
-## plus a ring of margin for the falloff shoulder).
-const ISLAND_CHUNK_RADIUS: int = 17
+##
+## Re-measured by F-251 (2026-08-19): the terrain retuning that dropped `HEIGHT_SCALE` 60->26 and
+## added the domain-warped ridged layer + carved river (D-142/4.13-4.14) moved the worst case far
+## from F-128's original spot. A 12-seed island-wide sweep found the new worst at seed 4242, chunk
+## (3,-4), edge 0 (south), LOD1/LOD2 boundary — 12.805 m, against a spread of 7.5-12.8 m across all
+## 12 seeds sampled. `SKIRT_DEPTH_FRACTION` in `chunk_mesher.gd` was retuned alongside this.
+const WORST_KNOWN_SEED: int = 4242
+const WORST_KNOWN_CHUNK := Vector2i(3, -4)
+const WORST_KNOWN_DIVERGENCE_M: float = 12.805
+## Chunk radius the seam/harvestable sweeps scan. `IslandHeightmap.ISLAND_RADIUS` is 118 m
+## (CHUNK_SIZE 32 m -> ~4 chunks), so 10 chunks (320 m) is a wide margin past the falloff shoulder
+## into open water — cheap because water contributes ~0 divergence and no harvestable placements,
+## it just costs empty iterations. Was 17 (F-128's era, sized against a 512 m island that no longer
+## exists); shrunk by F-251 for speed, not correctness — either radius finds the same worst case.
+const ISLAND_CHUNK_RADIUS: int = 10
 ## D-018: the tuned player controller default. The spec's own acceptance line names this speed.
 const SPRINT_SPEED_MPS: float = 6.0
 const TARGET_DISTANCE_M: float = 500.0
@@ -98,9 +107,14 @@ func _run() -> void:
 		and ChunkMesher.tri_count(2) == 128)
 
 	print("\n-- mesh determinism (thread-safety precondition — D-075's guarantee extended to lod) --")
-	var m1: ArrayMesh = ChunkMesher.build_mesh(5, -3, BENCH_SEED, 1)
-	var m2: ArrayMesh = ChunkMesher.build_mesh(5, -3, BENCH_SEED, 1)
-	var m3: ArrayMesh = ChunkMesher.build_mesh(5, -3, BENCH_SEED + 1, 1)
+	# Chunk (0, 0) — the island's own centre, guaranteed land regardless of seed. F-251
+	# (2026-08-19): this was chunk (5, -3), which centres ~186 m from origin — outside
+	# `IslandHeightmap.ISLAND_RADIUS` (118 m, shrunk from 512 m since this check was written) and
+	# therefore flat open water at every seed, so "a different seed changes the mesh" failed for a
+	# reason that had nothing to do with determinism.
+	var m1: ArrayMesh = ChunkMesher.build_mesh(0, 0, BENCH_SEED, 1)
+	var m2: ArrayMesh = ChunkMesher.build_mesh(0, 0, BENCH_SEED, 1)
+	var m3: ArrayMesh = ChunkMesher.build_mesh(0, 0, BENCH_SEED + 1, 1)
 	var v1: PackedVector3Array = m1.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 	var v2: PackedVector3Array = m2.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 	var v3: PackedVector3Array = m3.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
@@ -163,17 +177,31 @@ func _check_skirt_geometry() -> void:
 				if not is_equal_approx(p.x, float(x * step)) or not is_equal_approx(p.z, float(z * step)):
 					all_layout_ok = false
 
-		# Collision must be terrain only: same triangle count, and nothing reaching down into the
-		# skirt's depth band.
+		# Collision must be terrain only: same triangle count, its lowest point matches the
+		# TERRAIN block's own lowest vertex exactly (proving no skirt vertex leaked in), and the
+		# skirt sits well clear beneath it.
+		#
+		# F-251 (2026-08-19): this used to compare `collision_min_y` against the whole mesh's
+		# `mesh_min_y` and require the difference equal `SKIRT_DEPTH` exactly — which silently
+		# assumed the chunk's globally lowest TERRAIN point always sits on the border (so the
+		# border vertex the skirt hangs from doubles as the terrain minimum). That held on the
+		# smoother pre-D-142 terrain; the domain-warped ridged layer + carved river now routinely
+		# put the lowest point of a chunk in its INTERIOR instead, which desyncs that coincidence
+		# by up to a metre or so without anything actually being wrong — collision was terrain-only
+		# the whole time, this assertion was just measuring the wrong thing.
 		var faces: PackedVector3Array = ChunkMesher.collision_faces(mesh, lod)
 		var collision_min_y: float = 1.0e30
 		for f: Vector3 in faces:
 			collision_min_y = minf(collision_min_y, f.y)
-		var mesh_min_y: float = 1.0e30
-		for p2: Vector3 in verts:
-			mesh_min_y = minf(mesh_min_y, p2.y)
+		var terrain_min_y: float = 1.0e30
+		for i: int in terrain_verts:
+			terrain_min_y = minf(terrain_min_y, verts[i].y)
+		var skirt_min_y: float = 1.0e30
+		for i: int in range(terrain_verts, verts.size()):
+			skirt_min_y = minf(skirt_min_y, verts[i].y)
 		if faces.size() != terrain_tris * 3 \
-			or not is_equal_approx(collision_min_y - mesh_min_y, ChunkMesher.SKIRT_DEPTH):
+			or not is_equal_approx(collision_min_y, terrain_min_y) \
+			or skirt_min_y > terrain_min_y - ChunkMesher.SKIRT_DEPTH * 0.5:
 			all_collision_ok = false
 			detail += "LOD%d collision; " % lod
 
@@ -506,10 +534,11 @@ func _check_sprint_walk(root_node: Node3D) -> void:
 ## independent anchors — standing in for "the host's own local player" and "a remote connected
 ## peer's last-known position" — must resolve BOTH chunks to a resident, collision-bearing LOD0
 ## entry, and a real `ResourceScatterField` attached to it must build a live, `HarvestWorld`-wired
-## `Harvestable` at each. `min_separation` is chosen so neither anchor's own ring
-## (`LOAD_RADIUS_CHUNKS + HYSTERESIS_CHUNKS`) can reach the other's chunk — a streamer that (bugged)
-## only ever unioned its NEAREST anchor would still pass a test where the two targets happen to sit
-## inside each other's ring, so this rules that out by construction rather than by luck.
+## `Harvestable` at each. `min_separation` is chosen so anchor A's own LOD0 ring
+## (`LOD0_RADIUS_CHUNKS + HYSTERESIS_CHUNKS`, see F-251/D-150) can't reach anchor B's chunk — a
+## streamer that (bugged) only ever unioned its NEAREST anchor would still pass a test where the two
+## targets happen to sit inside each other's LOD0 ring, so this rules that out by construction
+## rather than by luck.
 func _check_union_of_interest() -> void:
 	var registry: Node = root.get_node_or_null(^"Registry")
 	_check("Registry is registered as an autoload", registry != null)
@@ -524,7 +553,14 @@ func _check_union_of_interest() -> void:
 	if chunk_a == NOT_FOUND_CHUNK:
 		return
 
-	var min_separation: int = ChunkStreamer.LOAD_RADIUS_CHUNKS + ChunkStreamer.HYSTERESIS_CHUNKS + 1
+	# F-251 (2026-08-19): was LOAD_RADIUS_CHUNKS-based (10 chunks / 320 m) — a separation big enough
+	# that NEITHER anchor's full outer ring could reach the other. That doesn't fit this island any
+	# more: `IslandHeightmap.ISLAND_RADIUS` shrank 512->118 m (D-143 era) and harvestable placements
+	# never occur past Chebyshev radius 6 from origin (open water beyond the island has none), so no
+	# two harvestable-bearing chunks are ever 10 apart and this always returned NOT_FOUND. The
+	# assertions below only need chunk_b outside chunk_a's LOD0 ring (proving b's own COLLIDER came
+	# from b's own anchor, not from a's radius) — see D-150.
+	var min_separation: int = ChunkStreamer.LOD0_RADIUS_CHUNKS + ChunkStreamer.HYSTERESIS_CHUNKS + 1
 	var chunk_b: Vector2i = _find_harvestable_chunk(scatter_defs, biome_defs, chunk_a, min_separation)
 	_check("found a second chunk with a harvestable placement, >= %d chunks from the first, for the 'remote peer' anchor (%s)" % [min_separation, chunk_b],
 		chunk_b != NOT_FOUND_CHUNK)
