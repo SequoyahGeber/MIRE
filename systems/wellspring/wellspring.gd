@@ -18,11 +18,25 @@ extends Node3D
 ## corruption-clear, or Attunement selection. See docs/DECISIONS.md for why — the short version is
 ## that Mire (4.9-4.11) does not exist yet and Attunement already fires at run start, not at cap
 ## (D-071). `EventBus.emit_wellspring_capped()` is the seam those future systems hook into.
+##
+## Task 6.4 (DESIGN.md §5.1 item 1, "Capped Wellsprings begin re-corrupting"; ROADMAP.md's own 6.4
+## line: "decay on a host timer unless Warded"): once `capped`, the NEXT `EventBus.cycle_advanced`
+## starts a real-time degradation clock (`recorruption_sec`) that only accrues while no placed Ward
+## (`autoload/build_service.gd`'s `ward_radii()`, the same provider `MireGrid` already consumes for
+## its own tick — task 4.11) covers this Wellspring's position — the identical pause-not-reset rule
+## D-092 already gives the ritual's own presence requirement. It rides the same `host_tick()` this
+## file already exposes for the ritual, so a check can cross the whole clock in one call exactly like
+## it already does for a 60-150s ritual. Finishing flips `capped` back to `false` — the exact
+## pre-ritual state, so `request_toggle_channel()` recaptures it with no special-casing — and fires
+## `EventBus.emit_wellspring_recorrupted()`, `MireGrid`'s seam to undo the spread-rate reduction this
+## cap granted (D-104).
 
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
 const UNCAPPED_MESH_PATH: String = "res://assets/wellsprings/exports/wellspring_uncapped.glb"
 const CAPPED_MESH_PATH: String = "res://assets/wellsprings/exports/wellspring_capped.glb"
+const RECORRUPTING_MESH_PATH: String = "res://assets/wellsprings/exports/wellspring_recorrupting.glb"
+const CORRUPTED_MESH_PATH: String = "res://assets/wellsprings/exports/wellspring_corrupted.glb"
 ## Shared across all four A-008 condition states (assets/wellsprings/README.md's state-swap
 ## contract): same 4.6 m foundation, centred at the shared origin, regardless of which state is
 ## showing. Collision is therefore built once and never swapped.
@@ -40,6 +54,18 @@ const DEFENSE_WAVE_PER_PLAYER: int = 1
 const DEFENSE_WAVE_ENEMY_ID: StringName = &"crawler"
 const DEFENSE_WAVE_SCATTER_M: float = 5.0
 
+## Placeholder-tuned, same status as `MireGrid.BASE_SPREAD_RATE` and `CycleService`'s own escalation
+## constant — nothing here has been through a real playtest yet. Chosen so a capped Wellspring left
+## unattended survives a good chunk of the Cycle that started its clock (`DayNight.day_length_seconds`
+## defaults to 900s) without the timer feeling instant, but still forces a real choice before too
+## many Cycles pass.
+const RECORRUPTION_DURATION_SEC: float = 900.0
+## Below this fraction of `RECORRUPTION_DURATION_SEC` the capped mesh keeps showing — a Wellspring
+## that just started degrading should not look different yet. At and above it, the mesh swaps to the
+## visibly-decaying `wellspring_recorrupting.glb` state (assets/wellsprings/README.md's state-swap
+## contract) so players get a read on borrowed time before it flips back to needing a fresh ritual.
+const RECORRUPTING_VISUAL_FRACTION: float = 0.5
+
 const WELLSPRING_GROUP: StringName = &"wellspring"
 const SYNC_NODE_NAME: StringName = &"WellspringSync"
 const VISUAL_NODE_NAME: StringName = &"WellspringVisual"
@@ -50,7 +76,7 @@ var capped: bool = false:
 		if capped == value:
 			return
 		capped = value
-		_schedule_visual_refresh()
+		_maybe_refresh_visual()
 
 ## Replicated. Presentation reads this to show/hide the progress prompt.
 var channeling: bool = false
@@ -60,10 +86,34 @@ var progress_sec: float = 0.0
 var duration_sec: float = COOP_DURATION_SEC
 ## Replicated. Snapshotted when the channel starts — how many players must stay present.
 var required_players: int = 2
+## Replicated. Real-time seconds accumulated toward `RECORRUPTION_DURATION_SEC` since the last time
+## a Cycle advanced while this Wellspring was capped. Zero whenever `capped` is false.
+var recorruption_sec: float = 0.0:
+	set(value):
+		if is_equal_approx(recorruption_sec, value):
+			return
+		recorruption_sec = value
+		_maybe_refresh_visual()
+## Replicated. True once this Wellspring has fully re-corrupted at least once — the only way to tell
+## "never capped" (`wellspring_uncapped.glb`) apart from "was capped, lost it"
+## (`wellspring_corrupted.glb`) once `capped` is back to false. Never reset; a recapture only clears
+## `capped`/`recorruption_sec`.
+var has_recorrupted: bool = false:
+	set(value):
+		if has_recorrupted == value:
+			return
+		has_recorrupted = value
+		_maybe_refresh_visual()
+
+## Host-only, not replicated: whether this run's degradation clock is currently ticking. Set by
+## `_on_cycle_advanced()`, cleared by `_finish_recorruption()`. Clients never read this — they only
+## ever see the replicated `recorruption_sec` it drives.
+var _recorruption_active: bool = false
 
 var _visual: Node3D
 var _sync: MultiplayerSynchronizer
 var _visual_refresh_scheduled: bool = false
+var _last_visual_mesh_path: String = ""
 
 
 func _ready() -> void:
@@ -72,7 +122,13 @@ func _ready() -> void:
 	_build_collision()
 	_build_synchronizer()
 	_refresh_visual()
+	_last_visual_mesh_path = _mesh_path_for_state()
 	set_process(false)
+	EVENT_BUS.subscribe_cycle_advanced(_on_cycle_advanced)
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_cycle_advanced(_on_cycle_advanced)
 
 
 ## Client-facing: press interact while in range. Toggles start/cancel; a no-op once capped.
@@ -131,26 +187,73 @@ func _process(delta: float) -> void:
 	host_tick(delta)
 
 
-## Advances the ritual by `delta` seconds, host-only. Split out of `_process()` so a check can cross
-## a whole 60-150 s ritual in a handful of calls instead of thousands of real engine frames — the
-## same reason `DayNight.host_advance()` is public rather than something only `_physics_process`
-## calls.
+## Advances the ritual AND the re-corruption clock by `delta` seconds, host-only. Split out of
+## `_process()` so a check can cross a whole 60-150 s ritual, or the much longer
+## `RECORRUPTION_DURATION_SEC` clock, in a handful of calls instead of thousands of real engine
+## frames — the same reason `DayNight.host_advance()` is public rather than something only
+## `_physics_process` calls.
 func host_tick(delta: float) -> void:
-	if not _owns_mutation() or not channeling:
+	if not _owns_mutation():
 		set_process(false)
 		return
-	if _present_count() >= required_players:
-		progress_sec = minf(progress_sec + delta, duration_sec)
-	if progress_sec >= duration_sec:
-		_finish_cap()
+	if channeling:
+		if _present_count() >= required_players:
+			progress_sec = minf(progress_sec + delta, duration_sec)
+		if progress_sec >= duration_sec:
+			_finish_cap()
+	if capped and _recorruption_active and not _is_warded():
+		recorruption_sec = minf(recorruption_sec + delta, RECORRUPTION_DURATION_SEC)
+		if recorruption_sec >= RECORRUPTION_DURATION_SEC:
+			_finish_recorruption()
+	if not channeling and not (capped and _recorruption_active):
+		set_process(false)
 
 
 func _finish_cap() -> void:
 	channeling = false
 	progress_sec = 0.0
 	capped = true
+	recorruption_sec = 0.0
 	set_process(false)
 	EVENT_BUS.emit_wellspring_capped(name, global_position)
+
+
+## Host-only. The seam DESIGN.md §5.1 item 1 names directly: "Capped Wellsprings begin
+## re-corrupting" is one of the three things that happen at a Cycle turnover. A Wellspring capped
+## mid-Cycle gets its first free ride to the NEXT turnover before the clock starts — same "read once
+## at the threshold moment" rule `_session_player_total()` already follows for the ritual itself.
+func _on_cycle_advanced(_cycle: int) -> void:
+	if not _owns_mutation() or not capped or _recorruption_active:
+		return
+	_recorruption_active = true
+	set_process(true)
+
+
+## ROADMAP.md's 6.4 line names this explicitly ("unless Warded"). Reuses `BuildService.ward_radii()`
+## rather than `MireGrid`'s own `_ward_circles_provider` (private to that file) — same source, same
+## shape, one extra hop through the autoload instead of threading a second seam through MireGrid.
+func _is_warded() -> bool:
+	var build_service: Node = get_node_or_null(^"/root/BuildService")
+	if build_service == null:
+		return false
+	var position: Vector2 = Vector2(global_position.x, global_position.z)
+	for circle: Dictionary in build_service.call(&"ward_radii"):
+		var radius: float = float(circle.get("radius", 0.0))
+		if radius <= 0.0:
+			continue
+		var center: Vector2 = circle.get("position", Vector2.ZERO)
+		if position.distance_to(center) <= radius:
+			return true
+	return false
+
+
+func _finish_recorruption() -> void:
+	_recorruption_active = false
+	has_recorrupted = true
+	capped = false
+	recorruption_sec = 0.0
+	set_process(false)
+	EVENT_BUS.emit_wellspring_recorrupted(name, global_position)
 
 
 func _spawn_defense_wave() -> void:
@@ -215,7 +318,8 @@ func _build_collision() -> void:
 func _build_synchronizer() -> void:
 	var config := SceneReplicationConfig.new()
 	for property_name: String in [
-		"capped", "channeling", "progress_sec", "duration_sec", "required_players"
+		"capped", "channeling", "progress_sec", "duration_sec", "required_players",
+		"recorruption_sec", "has_recorrupted"
 	]:
 		var property_path := NodePath(".:%s" % property_name)
 		config.add_property(property_path)
@@ -233,6 +337,19 @@ func _build_synchronizer() -> void:
 	add_child(_sync)
 
 
+## The condition-state mesh for the current replicated fields — one of the four A-008 states
+## (assets/wellsprings/README.md's state-swap contract). `capped` alone no longer decides this: a
+## capped Wellspring past `RECORRUPTING_VISUAL_FRACTION` of its clock shows the decaying state, and
+## an uncapped one that got there by fully re-corrupting (rather than never having been capped) shows
+## the worse "corrupted" state, not the original "uncapped" one.
+func _mesh_path_for_state() -> String:
+	if capped:
+		if recorruption_sec >= RECORRUPTION_DURATION_SEC * RECORRUPTING_VISUAL_FRACTION:
+			return RECORRUPTING_MESH_PATH
+		return CAPPED_MESH_PATH
+	return CORRUPTED_MESH_PATH if has_recorrupted else UNCAPPED_MESH_PATH
+
+
 func _refresh_visual() -> void:
 	if not is_inside_tree():
 		return
@@ -240,7 +357,7 @@ func _refresh_visual() -> void:
 		remove_child(_visual)
 		_visual.queue_free()
 		_visual = null
-	var packed: PackedScene = load(CAPPED_MESH_PATH if capped else UNCAPPED_MESH_PATH) as PackedScene
+	var packed: PackedScene = load(_mesh_path_for_state()) as PackedScene
 	if packed == null:
 		return
 	_visual = packed.instantiate() as Node3D
@@ -249,6 +366,17 @@ func _refresh_visual() -> void:
 		return
 	_visual.name = VISUAL_NODE_NAME
 	add_child(_visual)
+
+
+## Recomputes the target mesh path and only schedules an actual rebuild when it changed — called
+## from every replicated field's setter, including `recorruption_sec`, which changes every tick
+## while the clock runs. Cheap: a string compare, not a scene load, on every no-op call.
+func _maybe_refresh_visual() -> void:
+	var target: String = _mesh_path_for_state()
+	if target == _last_visual_mesh_path:
+		return
+	_last_visual_mesh_path = target
+	_schedule_visual_refresh()
 
 
 func _schedule_visual_refresh() -> void:

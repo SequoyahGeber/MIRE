@@ -13,6 +13,7 @@ extends RefCounted
 static var _harvest_yielded_subscribers: Array[Callable] = []
 static var _enemy_attack_landed_subscribers: Array[Callable] = []
 static var _wellspring_capped_subscribers: Array[Callable] = []
+static var _wellspring_recorrupted_subscribers: Array[Callable] = []
 static var _cycle_advanced_subscribers: Array[Callable] = []
 static var _cycle_modifier_drawn_subscribers: Array[Callable] = []
 
@@ -104,6 +105,34 @@ static func emit_wellspring_capped(wellspring_name: StringName, world_position: 
 static func wellspring_capped_subscriber_count() -> int:
 	_prune_invalid(_wellspring_capped_subscribers)
 	return _wellspring_capped_subscribers.size()
+
+
+## Listener signature: (wellspring_name: StringName, world_position: Vector3) -> void
+##
+## Emitted by the HOST only, the instant a capped Wellspring's re-corruption timer finishes (task
+## 6.4, DESIGN.md §5.1 item 1: "Capped Wellsprings begin re-corrupting"). The Wellspring itself goes
+## back to `capped == false`, exactly its pre-ritual state, so the same channel ritual recaptures it.
+## `MireGrid` is this event's own first consumer — it undoes the per-cap spread-rate reduction
+## `wellspring_capped` granted, the symmetric half of that hook.
+static func subscribe_wellspring_recorrupted(listener: Callable) -> void:
+	_prune_invalid(_wellspring_recorrupted_subscribers)
+	if listener.is_valid() and not _wellspring_recorrupted_subscribers.has(listener):
+		_wellspring_recorrupted_subscribers.append(listener)
+
+
+static func unsubscribe_wellspring_recorrupted(listener: Callable) -> void:
+	_wellspring_recorrupted_subscribers.erase(listener)
+
+
+static func emit_wellspring_recorrupted(wellspring_name: StringName, world_position: Vector3) -> void:
+	_prune_invalid(_wellspring_recorrupted_subscribers)
+	for listener: Callable in _wellspring_recorrupted_subscribers.duplicate():
+		listener.call(wellspring_name, world_position)
+
+
+static func wellspring_recorrupted_subscriber_count() -> int:
+	_prune_invalid(_wellspring_recorrupted_subscribers)
+	return _wellspring_recorrupted_subscribers.size()
 
 
 ## Listener signature: (cycle: int) -> void

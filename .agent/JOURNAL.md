@@ -3850,3 +3850,18 @@ Notes along the way:
 Files: `systems/cycle/cycle_modifier_def.gd`, `systems/cycle/cycle_modifier_def.gd.uid`, `systems/cycle/cycle_modifier_service.gd`, `systems/cycle/cycle_modifier_service.gd.uid`, `content/cycle_modifiers/long_night.tres`, `core/events/event_bus.gd`, `tools/cycle_modifier_check.gd`, `tools/cycle_modifier_check.gd.uid`, `autoload/registry.gd`
 
 Commit at time of writing: `26d4294`
+
+---
+
+### DONE · 6.4 · lm · 2026-08-19T02:12:08+00:00
+
+**Wellspring re-corruption over time**
+
+Wellspring re-corruption over time ships. tools/wellspring_recorruption_check.gd (24 assertions) failures=0: 'agent godot --script tools/wellspring_recorruption_check.gd'. Regressions green (wellspring_check, mire_grid_check, mire_interaction_check, build_check, cycle_check, cycle_modifier_check, wave_spawner_check all failures=0); 0 ERROR: on 'agent godot --quit-after 20'. Docs: SPECS.md §6.4, DECISIONS.md D-104, DELEGATION.md Current state, FINDINGS.md F-164, ARCHITECTURE.md §2.2.
+
+Notes along the way:
+- Implemented: Cycle-gated re-corruption clock on Wellspring (subscribes EventBus.cycle_advanced, host_tick advances recorruption_sec toward RECORRUPTION_DURATION_SEC=900s, paused not reset while a Ward covers it per ROADMAP.md's own 'unless Warded' line). All four A-008 mesh states now wired via _mesh_path_for_state(). MireGrid._on_wellspring_recorrupted() undoes the per-cap spread reduction symmetrically. New EventBus.wellspring_recorrupted signal. tools/wellspring_recorruption_check.gd: 24 assertions, 0 failures. Regressions (wellspring/mire_grid/mire_interaction/build/cycle/cycle_modifier/wave_spawner checks) all failures=0. 0 ERROR: on full boot. Docs written: SPECS.md §6.4, DECISIONS.md D-104, DELEGATION.md Current state, FINDINGS.md F-164 (no HUD warning yet, deliberate cut), ARCHITECTURE.md §2.2 Wellspring row extended.
+
+Files: `systems/wellspring/wellspring.gd`, `core/events/event_bus.gd`, `world/mire/mire_grid.gd`, `tools/wellspring_recorruption_check.gd`
+
+Commit at time of writing: `cff4141`

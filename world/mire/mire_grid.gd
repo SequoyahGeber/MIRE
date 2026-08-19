@@ -60,10 +60,12 @@ var _cycle_spread_multiplier: float = 1.0
 func _ready() -> void:
 	set_physics_process(true)
 	EVENT_BUS.subscribe_wellspring_capped(_on_wellspring_capped)
+	EVENT_BUS.subscribe_wellspring_recorrupted(_on_wellspring_recorrupted)
 
 
 func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_wellspring_capped(_on_wellspring_capped)
+	EVENT_BUS.unsubscribe_wellspring_recorrupted(_on_wellspring_recorrupted)
 
 
 func _physics_process(delta: float) -> void:
@@ -166,6 +168,18 @@ func _on_wellspring_capped(_wellspring_name: StringName, world_position: Vector3
 	_grid = SIM.clear_radius(_grid, Vector2(world_position.x, world_position.z), WELLSPRING_CLEAR_RADIUS_M)
 	_capped_wellsprings += 1
 	_emit_changed_deltas()
+
+
+## Task 6.4's symmetric half of `_on_wellspring_capped()`: a Wellspring that fully re-corrupts stops
+## helping, so its spread-rate reduction comes back off `_tick()`'s multiplier. No radius re-seed
+## here — `clear_radius()` only zeroed the cells, it never froze them, so `_tick()`'s own flood-fill
+## already regrows the circle from its still-corrupted edge inward once the multiplier lifts, the
+## same mechanic every other cleared cell on the map uses. Never negative: `_capped_wellsprings`
+## tracks a real count, and a stray extra recorruption event must not push it below zero.
+func _on_wellspring_recorrupted(_wellspring_name: StringName, _world_position: Vector3) -> void:
+	if not _owns_simulation():
+		return
+	_capped_wellsprings = maxi(_capped_wellsprings - 1, 0)
 
 
 func _emit_changed_deltas() -> void:

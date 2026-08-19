@@ -1527,9 +1527,9 @@
     },
     "core/events/event_bus.gd": {
       "agent": "lm",
-      "at": "2026-08-19T01:57:43+00:00",
-      "hash": "053d528f7aa6301eaf622cec94d35e8f9d6b8e51a4a63be9bdccdda0e1f083c9",
-      "task": "6.2"
+      "at": "2026-08-19T02:12:08+00:00",
+      "hash": "a4668c84893acfa2633480a225b313bb58387faa42c55d5bbf8bddb2aef5aaa7",
+      "task": "6.4"
     },
     "core/game_state.gd": {
       "agent": "lm",
@@ -1957,9 +1957,9 @@
     },
     "systems/wellspring/wellspring.gd": {
       "agent": "lm",
-      "at": "2026-08-18T22:12:21+00:00",
-      "hash": "484dc3680cf7e899731c5f7cb90b998fc44aaed4c605d02ad7a7294f66418006",
-      "task": "F-141"
+      "at": "2026-08-19T02:12:08+00:00",
+      "hash": "401c5a5edaeca152bdedccb6efdf192333abf647189a7123c1d9fb1184cb6e1f",
+      "task": "6.4"
     },
     "tools/atmosphere_look_shot.gd": {
       "agent": "vane19",
@@ -2671,6 +2671,12 @@
       "hash": "95b69b7999ee54af1388ee258e3e945ea9e28548675b25b6ad59e0bb471e257b",
       "task": "F-141"
     },
+    "tools/wellspring_recorruption_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T02:12:08+00:00",
+      "hash": "5c228ab76bbabd2b7f7d9e0433ff2b111e245f358626d67eb66794802ae3378b",
+      "task": "6.4"
+    },
     "tools/world_contract_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T14:44:41+00:00",
@@ -2863,9 +2869,9 @@
     },
     "world/mire/mire_grid.gd": {
       "agent": "lm",
-      "at": "2026-08-19T01:37:12+00:00",
-      "hash": "8a06b560fd11f727ccd2ff3ff096a131b46f8e8806462a757a540417cff4bb49",
-      "task": "6.1"
+      "at": "2026-08-19T02:12:08+00:00",
+      "hash": "829585a63e21a1a51529fa214c14d7f16974c09cdf69b79980dbcaca804a85ec",
+      "task": "6.4"
     },
     "world/mire/mire_grid_sim.gd": {
       "agent": "lm",
@@ -3743,9 +3749,11 @@
       "title": "Author 20\u201330 Cycle Modifier `.tres` files"
     },
     "6.4": {
+      "done_at": "2026-08-19T02:12:08+00:00",
+      "done_by": "lm",
       "est": "1",
       "milestone": "M6",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Wellspring re-corruption over time"
     },
