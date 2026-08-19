@@ -86,8 +86,17 @@ func _run() -> void:
 		"the builder recorded one placement per mesh part of this batch")
 	var standing: Transform3D = (placed[0] as Transform3D) if not placed.is_empty() else Transform3D.IDENTITY
 	check(standing.basis.determinant() != 0.0, "the bush was placed at a real size")
-	check(standing.origin.is_equal_approx(holder.global_position),
-		"the recorded placement is where the holder stands")
+	# `batch_transforms` is in the MULTIMESH's space, not the world's — F-144 rebased each batch
+	# onto a holder standing at the group's centroid so `visibility_range` had a meaningful
+	# distance to measure. Pushing the recorded transform back through that node is what proves
+	# the two halves agree: a rebase that lost its offset would put the restored bush exactly
+	# `centroid` away from the logic holder that speaks for it, and nothing else would notice.
+	var batch_node := _multimesh_node(root, multimesh)
+	check(batch_node != null, "the batch's MultiMesh belongs to a node in the tree")
+	var world: Vector3 = (batch_node.global_transform * standing).origin if batch_node != null \
+		else standing.origin
+	check(world.is_equal_approx(holder.global_position),
+		"the recorded placement, taken through its batch node, is where the holder stands")
 	observe(multimesh.get_instance_transform(index).is_equal_approx(standing),
 		"the batch really draws the bush at its recorded placement")
 
@@ -152,3 +161,16 @@ func check(condition: bool, description: String) -> void:
 
 func _finish() -> void:
 	quit(1 if failures > 0 else 0)
+
+
+## The node that draws a given MultiMesh. `batch_meshes` records the RESOURCE, because that is
+## all `HarvestWorld` needs to hide one copy, so the node has to be found by search.
+func _multimesh_node(from: Node, target: MultiMesh) -> MultiMeshInstance3D:
+	var instance := from as MultiMeshInstance3D
+	if instance != null and instance.multimesh == target:
+		return instance
+	for child in from.get_children():
+		var found := _multimesh_node(child, target)
+		if found != null:
+			return found
+	return null

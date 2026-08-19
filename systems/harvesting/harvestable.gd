@@ -10,6 +10,10 @@ extends Node3D
 ## replicated on-change through a code-built MultiplayerSynchronizer (D-023). Offline play runs the
 ## same authority path locally.
 
+## Preloaded, not referenced by `class_name`: a new global class is invisible to a headless
+## `--script` run until the editor rescans the project.
+const MeshMerge := preload("res://core/render/mesh_merge.gd")
+const DrawPolicy := preload("res://world/environment/draw_policy.gd")
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const HARVESTABLE_DEFINITION := preload("res://systems/harvesting/harvestable_def.gd")
 const SYNC_NODE_NAME: StringName = &"HarvestSync"
@@ -329,6 +333,19 @@ func _refresh_visual() -> void:
 		return
 	_visual.name = VISUAL_NODE_NAME
 	add_child(_visual)
+	# State scenes are the kit's .glb as authored: fifty-six separate MeshInstance3D nodes for a
+	# tree, which is fifty-six draw calls per tree per frame. The world builder has always merged
+	# them before stamping a prop; nothing merged them here, so wiring a tree as a live
+	# harvestable multiplied its cost by fourteen the moment it became choppable. Forty-four
+	# trees were 2,464 of Hollowmere's 8,354 opaque draws (F-144).
+	#
+	# The merge caches per source file, so this is one collapse per state scene for the whole
+	# world, not one per tree — and DrawPolicy then bounds how far the result is drawn.
+	var source: String = scene.resource_path
+	if not source.is_empty():
+		var merged := MeshMerge.collapse(_visual, source)
+		if merged != null:
+			DrawPolicy.apply(merged, merged.mesh.get_aabb(), maxf(global_basis.get_scale().y, 0.001))
 
 
 func _schedule_visual_refresh() -> void:

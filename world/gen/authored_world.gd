@@ -141,7 +141,11 @@ func height_at(x: float, z: float) -> float:
 ## occludes only the world's outside — ~2 draws culled, while the per-frame occlusion raster
 ## cost real main-thread time. Re-attempt only for worlds with genuinely blocking sightlines
 ## (interiors, canyon systems), and re-measure with tools/perf_probe.gd when you do.
-const MESH_CACHE_DIR: String = "user://mesh_cache"
+## Draw distance and shadow policy, decided from geometry so it survives into generated worlds.
+const DrawPolicy := preload("res://world/environment/draw_policy.gd")
+## The asset merge itself, shared with `systems/harvesting/harvestable.gd` — a wired tree has to
+## collapse to the same geometry the world builder stamps, or it costs fifty-six draws (F-144).
+const MeshMerge := preload("res://core/render/mesh_merge.gd")
 ## Preloaded, not referenced by `class_name`: a new global class is invisible to a headless
 ## `--script` run until the editor rescans the project.
 const AssetVfx := preload("res://world/environment/asset_vfx_library.gd")
@@ -448,17 +452,33 @@ func _build_props() -> void:
 		if meshes.is_empty():
 			continue
 		var transforms: Array[Transform3D] = []
+		var centroid := Vector3.ZERO
+		var max_scale: float = 0.0
 		for prop_value: Variant in props:
 			var prop := prop_value as Dictionary
 			var pos: Array = prop.get("pos", [0.0, 0.0, 0.0]) as Array
+			var prop_scale := float(prop.get("scale", 1.0))
 			var placement := Transform3D(
 				Basis(Vector3.UP, float(prop.get("yaw", 0.0))),
 				Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
-			).scaled_local(Vector3.ONE * float(prop.get("scale", 1.0)))
+			).scaled_local(Vector3.ONE * prop_scale)
 			transforms.append(placement)
+			centroid += placement.origin
+			max_scale = maxf(max_scale, prop_scale)
 			_add_prop_collision(bodies, prop, placement)
 			prop_count += 1
+		centroid /= float(transforms.size())
+		# Rebase every copy onto the group's centre before it goes into the MultiMesh, and stand
+		# the holder there. `visibility_range` measures the camera's distance to the node's
+		# ORIGIN, and a holder left at the world origin makes that distance meaningless — the
+		# whole batch would cull together on the far side of the map, or never cull at all
+		# (F-144). `world/gen/undergrowth.gd` rebases onto cell centres for exactly this reason.
+		# These groups are already per-chunk, so the centroid is a tight stand-in for the batch.
+		var local_transforms: Array[Transform3D] = []
+		for placement: Transform3D in transforms:
+			local_transforms.append(Transform3D(placement.basis, placement.origin - centroid))
 		var holder := Node3D.new()
+		holder.position = centroid
 		holder.name = key.replace("|", "_")
 		# The asset id travels with the geometry so presentation can bind to it without knowing
 		# anything about this map (F-097). Same `asset` meta the harvestable holders already
@@ -466,13 +486,19 @@ func _build_props() -> void:
 		# nothing else about the scene, and the world generator that replaces this file inherits
 		# every effect by stamping it too.
 		holder.set_meta(&"asset", asset)
-		# Where each copy stands. Only assets whose presentation is per-copy get this, so the
-		# other 2,800-odd props cost nothing. It exists because instance transforms inside a
-		# MultiMesh are unreadable outside the GPU — see EnvironmentVfx.PLACEMENTS_META. The
-		# holder sits at the origin, so these are already world positions.
+		# Where each copy stands, in the HOLDER's space. Only assets whose presentation is
+		# per-copy get this, so the other 2,800-odd props cost nothing. It exists because
+		# instance transforms inside a MultiMesh are unreadable outside the GPU — see
+		# EnvironmentVfx.PLACEMENTS_META.
+		#
+		# Local, not world: `EnvironmentVfx._register_emitter` multiplies each entry by the
+		# node's `global_transform`. That was always the contract, but until F-144 stood this
+		# holder at its group's centroid the holder sat at the origin, so world positions
+		# happened to satisfy it. They no longer do — publishing world positions here would put
+		# every firefly and every ember one full centroid away from the prop it belongs to.
 		if AssetVfx.emitter_for(asset) != AssetVfx.Emitter.NONE:
 			var origins := PackedVector3Array()
-			for placement: Transform3D in transforms:
+			for placement: Transform3D in local_transforms:
 				origins.append(placement.origin)
 			holder.set_meta(&"placements", origins)
 		visuals.add_child(holder)
@@ -481,16 +507,21 @@ func _build_props() -> void:
 			var multimesh := MultiMesh.new()
 			multimesh.transform_format = MultiMesh.TRANSFORM_3D
 			multimesh.mesh = entry["mesh"]
-			multimesh.instance_count = transforms.size()
-			for index in transforms.size():
-				multimesh.set_instance_transform(index, transforms[index] * (entry["offset"] as Transform3D))
+			multimesh.instance_count = local_transforms.size()
+			for index in local_transforms.size():
+				multimesh.set_instance_transform(
+					index, local_transforms[index] * (entry["offset"] as Transform3D))
 			var instance := MultiMeshInstance3D.new()
 			instance.name = String(entry["name"])
 			instance.multimesh = multimesh
 			instance.set_meta(&"asset", asset)
+			DrawPolicy.apply(instance, (entry["mesh"] as Mesh).get_aabb(), max_scale)
 			holder.add_child(instance)
 			multimesh_count += 1
-		_build_batch_harvestables(props, asset, holder, harvest_root, transforms, meshes)
+		# World transforms place the logic holders; local ones are what actually sit in the
+		# MultiMesh, and are therefore what a restore has to write back.
+		_build_batch_harvestables(
+			props, asset, holder, harvest_root, transforms, local_transforms, meshes)
 
 
 ## Collapse an asset to ONE mesh with one surface per material.
@@ -507,78 +538,10 @@ func _build_props() -> void:
 ## doing it here as well means the older kits get the same benefit without a
 ## rebuild that would collide with another agent's claim.
 func _mesh_parts(kit: String, asset: String) -> Array:
-	var path := "res://assets/%s/exports/%s.glb" % [kit, asset]
-	# F-095: the merge below is the expensive part of the world build, and its result depends
-	# only on the GLB — so it is saved to user:// keyed by the source's modified time. Editing a
-	# kit asset changes the stamp and orphans the old entry; a torn or unreadable cache file
-	# loads as null and falls through to a rebuild that overwrites it. A player's FIRST load
-	# still pays full price — the durable fix is baking merged meshes at export time, which
-	# belongs to the art pipeline (F-095 names the seam).
-	var cache_path := "%s/%s_%s_%d.res" % [
-		MESH_CACHE_DIR, kit, asset, FileAccess.get_modified_time(path)]
-	if ResourceLoader.exists(cache_path):
-		var cached := load(cache_path) as ArrayMesh
-		if cached != null:
-			return [{"mesh": cached, "offset": Transform3D.IDENTITY, "name": asset}]
-	var packed: PackedScene = load(path) as PackedScene
-	if packed == null:
-		push_error("AuthoredWorld could not load %s" % path)
+	var mesh := MeshMerge.merged("res://assets/%s/exports/%s.glb" % [kit, asset])
+	if mesh == null:
 		return []
-	var sample := packed.instantiate()
-	var found: Array[MeshInstance3D] = []
-	_collect_meshes(sample, found)
-
-	var buckets: Dictionary = {}
-	var order: Array[String] = []
-	for part in found:
-		var offset := _offset_to(part, sample)
-		var basis := offset.basis
-		var mesh := part.mesh
-		for surface in mesh.get_surface_count():
-			var material := mesh.surface_get_material(surface)
-			var key := material.resource_name if material != null else "surface_%d" % surface
-			if not buckets.has(key):
-				buckets[key] = {"material": material, "v": PackedVector3Array(), "n": PackedVector3Array()}
-				order.append(key)
-			var arrays: Array = mesh.surface_get_arrays(surface)
-			var source_v: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-			var source_n: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
-			var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
-			var bucket: Dictionary = buckets[key]
-			var out_v: PackedVector3Array = bucket["v"]
-			var out_n: PackedVector3Array = bucket["n"]
-			if indices.is_empty():
-				for index in source_v.size():
-					out_v.append(offset * source_v[index])
-					out_n.append((basis * source_n[index]).normalized() if index < source_n.size() else Vector3.UP)
-			else:
-				for index in indices:
-					out_v.append(offset * source_v[index])
-					out_n.append((basis * source_n[index]).normalized() if index < source_n.size() else Vector3.UP)
-			bucket["v"] = out_v
-			bucket["n"] = out_n
-	sample.free()
-
-	var combined := ArrayMesh.new()
-	for key in order:
-		var bucket: Dictionary = buckets[key]
-		var vertices: PackedVector3Array = bucket["v"]
-		if vertices.is_empty():
-			continue
-		var arrays: Array = []
-		arrays.resize(Mesh.ARRAY_MAX)
-		arrays[Mesh.ARRAY_VERTEX] = vertices
-		arrays[Mesh.ARRAY_NORMAL] = bucket["n"]
-		combined.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-		combined.surface_set_material(combined.get_surface_count() - 1, bucket["material"])
-	if combined.get_surface_count() == 0:
-		return []
-	DirAccess.make_dir_recursive_absolute(MESH_CACHE_DIR)
-	var save_error := ResourceSaver.save(combined, cache_path,
-		ResourceSaver.FLAG_BUNDLE_RESOURCES | ResourceSaver.FLAG_COMPRESS)
-	if save_error != OK:
-		push_warning("AuthoredWorld could not cache %s: %s" % [cache_path, error_string(save_error)])
-	return [{"mesh": combined, "offset": Transform3D.IDENTITY, "name": asset}]
+	return [{"mesh": mesh, "offset": Transform3D.IDENTITY, "name": asset}]
 
 
 ## One node per harvestable prop: a holder in `HARVESTABLE_HOLDER_GROUP` carrying
@@ -620,6 +583,11 @@ func _build_harvestables(props: Array[Dictionary], cache: Dictionary, root: Node
 		visual.name = "Visual"
 		visual.mesh = entry["mesh"]
 		visual.transform = entry["offset"] as Transform3D
+		# The map's single largest draw bucket: 3,008 individually placed harvestables were
+		# 3,662 opaque draws and 14,648 more in the four shadow cascades, half of every draw
+		# call the frame submitted, none of them bounded by distance (F-144).
+		DrawPolicy.apply(visual, (entry["mesh"] as Mesh).get_aabb(),
+			float(prop.get("scale", 1.0)))
 		holder.add_child(visual)
 
 		var body := StaticBody3D.new()
@@ -648,7 +616,7 @@ func _build_harvestables(props: Array[Dictionary], cache: Dictionary, root: Node
 ## than by raycast, so a bush with no collision is still perfectly swingable.
 func _build_batch_harvestables(
 	props: Array, asset: String, batch_holder: Node3D, root: Node3D,
-	transforms: Array[Transform3D], meshes: Array
+	transforms: Array[Transform3D], local_transforms: Array[Transform3D], meshes: Array
 ) -> void:
 	var asset_id := StringName(asset)
 	if not HarvestLib.is_harvestable(asset_id):
@@ -684,30 +652,17 @@ func _build_batch_harvestables(
 		# `MultiMesh.get_instance_transform()` would be a RenderingServer round trip per prop at wire
 		# time — 794 of them here — and returns identity under the dummy renderer every headless
 		# check runs on, so a restore would quietly teleport every bush to the world origin.
+		# In the MULTIMESH's space, not the world's — F-144 rebased each batch onto its holder,
+		# and `HarvestWorld._batch_visual_hook` feeds these straight back into
+		# `set_instance_transform`. World transforms here would restore a chopped bush at the
+		# holder's offset from the origin, which is to say somewhere else entirely.
 		var placements: Array[Transform3D] = []
 		for part: int in slots.size():
-			placements.append(transforms[index] * offsets[part])
+			placements.append(local_transforms[index] * offsets[part])
 		holder.set_meta(&"batch_transforms", placements)
 		holder.add_to_group(HARVESTABLE_HOLDER_GROUP)
 		root.add_child(holder)
 		harvestable_holders += 1
-
-
-func _collect_meshes(node: Node, out: Array[MeshInstance3D]) -> void:
-	if node is MeshInstance3D and (node as MeshInstance3D).mesh != null:
-		out.append(node as MeshInstance3D)
-	for child in node.get_children():
-		_collect_meshes(child, out)
-
-
-func _offset_to(node: Node3D, root: Node) -> Transform3D:
-	var result := Transform3D.IDENTITY
-	var current: Node = node
-	while current != null and current != root:
-		if current is Node3D:
-			result = (current as Node3D).transform * result
-		current = current.get_parent()
-	return result
 
 
 func _add_prop_collision(parent: Node3D, prop: Dictionary, placement: Transform3D) -> void:

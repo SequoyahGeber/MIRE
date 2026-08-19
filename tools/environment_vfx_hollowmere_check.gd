@@ -15,6 +15,7 @@ extends SceneTree
 const VFX_SCRIPT := preload("res://autoload/environment_vfx.gd")
 const FOLIAGE_SHADER := preload("res://world/environment/foliage_wind.gdshader")
 const AssetVfx := preload("res://world/environment/asset_vfx_library.gd")
+const LAYOUT_PATH: String = "res://world/gen/layouts/hollowmere.json"
 
 var failures: int = 0
 
@@ -122,8 +123,64 @@ func _run() -> void:
 		"the pool is far smaller than the world it covers (%d nodes for %d sites)"
 		% [total_pool, total_sites])
 
+	_check_placement_space(scene)
+
 	print("ENVIRONMENT_VFX_HOLLOWMERE_CHECK failures=%d" % failures)
 	finish()
+
+
+## Every emitter site must land on the prop it belongs to, checked against the layout file.
+##
+## The counts above pass whether or not the positions are right, and that is a real gap: the
+## `placements` meta is consumed as `node.global_transform * entry`, so it is LOCAL to the node
+## publishing it. Until F-144 every publisher stood at the world origin, which made local and
+## world identical and let the contract go untested. The moment a holder moved — F-144 stands
+## each batch at its group's centroid so `visibility_range` has a distance worth measuring —
+## world-space entries would have thrown every firefly, ember and falling leaf a full centroid
+## away from its prop, silently, with all sixteen count assertions still green.
+func _check_placement_space(scene: Node) -> void:
+	var layout: Dictionary = JSON.parse_string(
+		FileAccess.get_file_as_string(LAYOUT_PATH)) as Dictionary
+	if layout == null or layout.is_empty():
+		check(false, "the layout file reads, so emitter positions can be checked against it")
+		return
+	# Where the layout says each emitter-bearing asset actually stands.
+	var expected: Dictionary = {}
+	for value: Variant in layout.get("props", []):
+		var prop := value as Dictionary
+		var asset := String(prop.get("asset", ""))
+		if AssetVfx.emitter_for(asset) == AssetVfx.Emitter.NONE:
+			continue
+		var pos: Array = prop.get("pos", [0.0, 0.0, 0.0]) as Array
+		# Read, append, write back: a PackedVector3Array is a value type, so appending to what
+		# `get_or_add` hands back would mutate a copy and store nothing.
+		var sites_so_far: PackedVector3Array = expected.get(asset, PackedVector3Array())
+		sites_so_far.append(Vector3(float(pos[0]), float(pos[1]), float(pos[2])))
+		expected[asset] = sites_so_far
+
+	var checked: int = 0
+	var stray: int = 0
+	var worst: float = 0.0
+	for node: Node in _all_descendants(scene):
+		if not node.has_meta(&"placements"):
+			continue
+		var host := node as Node3D
+		var asset := String(node.get_meta(&"asset", ""))
+		if host == null or not expected.has(asset):
+			continue
+		var sites: PackedVector3Array = expected[asset]
+		for entry: Vector3 in node.get_meta(&"placements") as PackedVector3Array:
+			var world: Vector3 = host.global_transform * entry
+			var nearest: float = INF
+			for site: Vector3 in sites:
+				nearest = minf(nearest, world.distance_to(site))
+			checked += 1
+			worst = maxf(worst, nearest)
+			if nearest > 0.01:
+				stray += 1
+	check(checked > 0, "emitter-bearing batches publish placements to check (%d)" % checked)
+	check(stray == 0, "every published emitter site stands on its own prop "
+		+ "(%d of %d stray, worst %.2f m)" % [stray, checked, worst])
 
 
 func _uses_wind(mesh: Mesh) -> bool:
