@@ -5116,3 +5116,15 @@ Commit at time of writing: `f7e2177`
 Completed.
 
 Commit at time of writing: `de4ce8a`
+
+---
+
+### DONE · F-207 · lm · 2026-08-19T13:37:33+00:00
+
+**F-204's same bug — an object repositioned between renders that never takes effect — is live in 8 more Blender generators, one of them twice**
+
+Verified all 9 flagged renders across the 8 generators are not actually broken (grep sweep never checked pixels); mechanism documented as D-138, fragility follow-up filed as F-222. All 8 generators pass tools/blender/asset_repro_check.py. No code changed.
+
+Files: `tools/blender/build_enemy_crawler.py`, `tools/blender/build_crafting_stations.py`, `tools/blender/build_harvestable_resources.py`, `tools/blender/build_mire_map_kit.py`, `tools/blender/build_wellspring_set.py`, `tools/blender/build_loot_set.py`, `tools/blender/build_ward_set.py`, `tools/blender/build_tool_weapon_set.py`
+
+Commit at time of writing: `7d39e5c`

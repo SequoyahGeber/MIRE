@@ -2500,17 +2500,17 @@
       "token": null
     },
     "tools/blender/build_crafting_stations.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
+      "agent": "lm",
+      "at": "2026-08-19T13:37:33+00:00",
       "hash": "2ee20c0dbd340cd8ec48ecb853df6337ad5a13a6793f02f976d64640a6c75495",
-      "task": "F-196",
+      "task": "F-207",
       "token": null
     },
     "tools/blender/build_enemy_crawler.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:57:59+00:00",
+      "agent": "lm",
+      "at": "2026-08-19T13:37:33+00:00",
       "hash": "22f832b3651256f8530655ae0a6d106de21ff5df00fc98e3ddc5571b829a33be",
-      "task": "F-198",
+      "task": "F-207",
       "token": null
     },
     "tools/blender/build_extraction_ship_set.py": {
@@ -2542,24 +2542,24 @@
       "token": null
     },
     "tools/blender/build_harvestable_resources.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
+      "agent": "lm",
+      "at": "2026-08-19T13:37:33+00:00",
       "hash": "0ba4126a240fd1f302a93be3e49c24356f0dda385bb136eba25273f6a42a0caf",
-      "task": "F-196",
+      "task": "F-207",
       "token": null
     },
     "tools/blender/build_loot_set.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:57:59+00:00",
+      "agent": "lm",
+      "at": "2026-08-19T13:37:33+00:00",
       "hash": "e0cf0748c45a3a2f365cdae2c8b4ae6895b1ec96594d0b6a9b01ca8895a2a42d",
-      "task": "F-198",
+      "task": "F-207",
       "token": null
     },
     "tools/blender/build_mire_map_kit.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
+      "agent": "lm",
+      "at": "2026-08-19T13:37:33+00:00",
       "hash": "38be93217c04c71c2504f9f962d870c4ce8458a4922dc3342bf3d025335d79fc",
-      "task": "F-196",
+      "task": "F-207",
       "token": null
     },
     "tools/blender/build_pickup_kit.py": {
@@ -2577,24 +2577,24 @@
       "token": null
     },
     "tools/blender/build_tool_weapon_set.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:57:59+00:00",
+      "agent": "lm",
+      "at": "2026-08-19T13:37:33+00:00",
       "hash": "3485c44f6aee4d2ada466853ed0e429dd3c756feda0fa044765b9ef07435f1e7",
-      "task": "F-198",
+      "task": "F-207",
       "token": null
     },
     "tools/blender/build_ward_set.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
+      "agent": "lm",
+      "at": "2026-08-19T13:37:33+00:00",
       "hash": "2d8382fe54b7a888e553d9f0cf479b002e6251200ea3e3bee322d2573c4f55d4",
-      "task": "F-196",
+      "task": "F-207",
       "token": null
     },
     "tools/blender/build_wellspring_set.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
+      "agent": "lm",
+      "at": "2026-08-19T13:37:33+00:00",
       "hash": "745a59dcf2909bc955b1e281a39f2f3deecb89745370a21be0d9d4eda272b123",
-      "task": "F-196",
+      "task": "F-207",
       "token": null
     },
     "tools/blender/crafting_stations_repro_check.py": {
@@ -3171,11 +3171,6 @@
       "at": "2026-08-19T03:46:26+00:00",
       "hash": "e5b57b575da0bb10cf10f43698e50dacdd1083bafeb328870ffc6e9e58c3151c",
       "task": "7.8"
-    },
-    "tools/perf_probe.gd": {
-      "agent": "coil23",
-      "at": "2026-08-18T13:15:50+00:00",
-      "task": "F-098"
     },
     "tools/player_vitals_check.gd": {
       "agent": "lp",
@@ -6706,9 +6701,11 @@
       "title": "`build_gatherable_plants.py` (A-011) has six `bevel=` sites with no local override \u2014 the same D-124 exposure, latent rather than live"
     },
     "F-207": {
+      "done_at": "2026-08-19T13:37:33+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "F-204's same bug \u2014 an object repositioned between renders that never takes effect \u2014 is live in 8 more Blender generators, one of them twice"
     },
