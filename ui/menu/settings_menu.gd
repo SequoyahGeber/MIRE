@@ -1,9 +1,11 @@
 extends CanvasLayer
 
-## SettingsMenu — task 7.5's real graphics/audio/look/accessibility/keybind controls, built into
-## the D-032 exclusivity/open-close/visual-frame shell task 6.10 shipped (D-110). Every control here
-## is a thin view over `SettingsService`: this file owns no settings state of its own, only the
-## widgets and the InputMap rebind-capture flow the service's `rebind_action()` needs a listener for.
+## SettingsMenu — task 7.5's real graphics/audio/look/accessibility/keybind controls (task 7.6 added
+## gamepad look sensitivity and a gamepad-button rebind section), built into the D-032
+## exclusivity/open-close/visual-frame shell task 6.10 shipped (D-110). Every control here is a thin
+## view over `SettingsService`: this file owns no settings state of its own, only the widgets and the
+## two InputMap rebind-capture flows the service's `rebind_action()`/`rebind_action_joypad()` need a
+## listener for.
 ## Register as autoload `SettingsMenu` → res://ui/menu/settings_menu.gd, AFTER `MainMenu` in
 ## `project.godot` (`MainMenu.request_open_settings()` opens this by node path).
 ##
@@ -31,6 +33,10 @@ const ACTION_LABELS: Dictionary = {
 	&"inventory": "Inventory",
 	&"build": "Build",
 	&"dodge": "Dodge",
+	&"eat": "Eat",
+	&"build_rotate": "Rotate Piece",
+	&"hotbar_prev": "Hotbar Previous",
+	&"hotbar_next": "Hotbar Next",
 }
 
 var _root: Control
@@ -46,7 +52,9 @@ var _sensitivity_slider: HSlider
 var _fov_slider: HSlider
 var _invert_checkbox: CheckBox
 var _reduce_motion_checkbox: CheckBox
+var _gamepad_sensitivity_slider: HSlider
 var _keybind_buttons: Dictionary = {}
+var _gamepad_keybind_buttons: Dictionary = {}
 var _status_label: Label
 
 var _open: bool = false
@@ -54,6 +62,12 @@ var _restore_mouse_captured: bool = false
 ## Non-empty while waiting for the next physical key press to rebind this action (see `_input()`).
 var _rebinding_action: StringName = &""
 var _rebinding_button: Button
+## Non-empty while waiting for the next gamepad button press to rebind this action (task 7.6) — kept
+## separate from `_rebinding_action` so a keyboard-row capture and a gamepad-row capture can never be
+## started at the same time by mistake (`_start_rebind`/`_start_rebind_joypad` each refuse to start a
+## capture while the OTHER kind is already waiting, see their own guard).
+var _rebinding_joypad_action: StringName = &""
+var _rebinding_joypad_button: Button
 
 
 func _ready() -> void:
@@ -67,6 +81,11 @@ func _input(event: InputEvent) -> void:
 		return
 	if get_viewport().is_input_handled():
 		return
+	if _rebinding_joypad_action != &"" and event is InputEventJoypadButton \
+			and (event as InputEventJoypadButton).pressed:
+		get_viewport().set_input_as_handled()
+		_finish_rebind_joypad(event as InputEventJoypadButton)
+		return
 	if not (event is InputEventKey):
 		return
 	var key: InputEventKey = event
@@ -75,6 +94,10 @@ func _input(event: InputEvent) -> void:
 	if _rebinding_action != &"":
 		get_viewport().set_input_as_handled()
 		_finish_rebind(key)
+		return
+	if _rebinding_joypad_action != &"" and key.keycode == KEY_ESCAPE:
+		get_viewport().set_input_as_handled()
+		_cancel_rebind_joypad()
 		return
 	if key.keycode == KEY_ESCAPE:
 		set_open(false)
@@ -97,6 +120,8 @@ func set_open(open: bool) -> void:
 	else:
 		_rebinding_action = &""
 		_rebinding_button = null
+		_rebinding_joypad_action = &""
+		_rebinding_joypad_button = null
 		remove_from_group(BLOCKING_UI_GROUP)
 		_root.release_focus()
 		if _restore_mouse_captured:
@@ -184,6 +209,7 @@ func _build_ui() -> void:
 	_build_look_rows(stack)
 	_build_accessibility_rows(stack)
 	_build_keybind_rows(stack)
+	_build_gamepad_bind_rows(stack)
 
 	outer.add_child(HSeparator.new())
 
@@ -233,6 +259,8 @@ func _build_look_rows(parent: VBoxContainer) -> void:
 	_add_section_label(parent, "LOOK")
 	_sensitivity_slider = _build_slider_row(parent, "Mouse Sensitivity", 0.01, 1.0, 0.01,
 		func(v: float) -> void: _settings_call("set_look_sensitivity", [v]))
+	_gamepad_sensitivity_slider = _build_slider_row(parent, "Gamepad Look Sensitivity", 30.0, 720.0, 5.0,
+		func(v: float) -> void: _settings_call("set_gamepad_look_sensitivity", [v]))
 	_fov_slider = _build_slider_row(parent, "Field of View", 60.0, 110.0, 1.0,
 		func(v: float) -> void: _settings_call("set_fov_degrees", [v]))
 	_invert_checkbox = CheckBox.new()
@@ -303,8 +331,40 @@ func _build_keybind_rows(parent: VBoxContainer) -> void:
 	parent.add_child(_status_label)
 
 
+func _build_gamepad_bind_rows(parent: VBoxContainer) -> void:
+	_add_section_label(parent, "GAMEPAD BINDS")
+	_gamepad_keybind_buttons.clear()
+	var settings: Node = _settings_node()
+	var actions: PackedStringArray = PackedStringArray()
+	if settings != null and settings.has_method("rebindable_actions_joypad"):
+		actions = settings.call("rebindable_actions_joypad") as PackedStringArray
+
+	for action_name: String in actions:
+		var action := StringName(action_name)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+
+		var label := Label.new()
+		label.text = String(ACTION_LABELS.get(action, action_name.capitalize()))
+		label.custom_minimum_size = Vector2(150.0, 0.0)
+		label.add_theme_color_override("font_color", COLOUR_TEXT)
+		row.add_child(label)
+
+		var button := Button.new()
+		button.custom_minimum_size = Vector2(130.0, 0.0)
+		button.text = String(settings.call("keybind_label_joypad", action)) if settings != null else "—"
+		button.add_theme_color_override("font_color", COLOUR_TEXT)
+		button.add_theme_stylebox_override("normal", _field_style(COLOUR_FIELD, COLOUR_BORDER))
+		button.add_theme_stylebox_override("hover", _field_style(COLOUR_FIELD, COLOUR_ACCENT))
+		button.pressed.connect(_start_rebind_joypad.bind(action, button))
+		row.add_child(button)
+
+		_gamepad_keybind_buttons[action] = button
+		parent.add_child(row)
+
+
 func _start_rebind(action: StringName, button: Button) -> void:
-	if _rebinding_action != &"":
+	if _rebinding_action != &"" or _rebinding_joypad_action != &"":
 		return
 	_rebinding_action = action
 	_rebinding_button = button
@@ -332,6 +392,44 @@ func _finish_rebind(key: InputEventKey) -> void:
 	button.text = String(settings.call("keybind_label", action))
 
 
+func _start_rebind_joypad(action: StringName, button: Button) -> void:
+	if _rebinding_action != &"" or _rebinding_joypad_action != &"":
+		return
+	_rebinding_joypad_action = action
+	_rebinding_joypad_button = button
+	button.text = "PRESS A BUTTON…"
+	_set_status("Press a gamepad button to bind %s, or Esc to cancel." %
+		String(ACTION_LABELS.get(action, String(action))))
+
+
+func _finish_rebind_joypad(joy_event: InputEventJoypadButton) -> void:
+	var action := _rebinding_joypad_action
+	var button := _rebinding_joypad_button
+	_rebinding_joypad_action = &""
+	_rebinding_joypad_button = null
+	var settings: Node = _settings_node()
+	if settings == null or button == null:
+		return
+	var conflict: StringName = StringName(settings.call("rebind_action_joypad", action, joy_event))
+	if conflict != &"":
+		_set_status("Already bound to %s." % String(ACTION_LABELS.get(conflict, String(conflict))))
+	else:
+		_set_status("Bound %s." % String(ACTION_LABELS.get(action, String(action))))
+	button.text = String(settings.call("keybind_label_joypad", action))
+
+
+func _cancel_rebind_joypad() -> void:
+	var button := _rebinding_joypad_button
+	var action := _rebinding_joypad_action
+	_rebinding_joypad_action = &""
+	_rebinding_joypad_button = null
+	var settings: Node = _settings_node()
+	if settings == null or button == null:
+		return
+	_set_status("")
+	button.text = String(settings.call("keybind_label_joypad", action))
+
+
 func _set_status(text: String) -> void:
 	if _status_label != null:
 		_status_label.text = text
@@ -350,6 +448,7 @@ func _refresh_from_settings() -> void:
 	_set_slider(_music_slider, float(settings.call("music_volume")))
 	_set_slider(_sfx_slider, float(settings.call("sfx_volume")))
 	_set_slider(_sensitivity_slider, float(settings.call("look_sensitivity")))
+	_set_slider(_gamepad_sensitivity_slider, float(settings.call("gamepad_look_sensitivity")))
 	_set_slider(_fov_slider, float(settings.call("fov_degrees")))
 
 	_invert_checkbox.set_block_signals(true)
@@ -362,6 +461,9 @@ func _refresh_from_settings() -> void:
 
 	for action: StringName in _keybind_buttons.keys():
 		(_keybind_buttons[action] as Button).text = String(settings.call("keybind_label", action))
+	for action: StringName in _gamepad_keybind_buttons.keys():
+		(_gamepad_keybind_buttons[action] as Button).text = \
+			String(settings.call("keybind_label_joypad", action))
 	_set_status("")
 
 

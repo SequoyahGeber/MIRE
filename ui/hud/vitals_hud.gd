@@ -11,11 +11,11 @@ extends CanvasLayer
 ## ui/crafting/crafting_ui.gd): an always-on HUD has nowhere safe to live in a hand-authored scene
 ## file without an exact claim on that scene, and this autoload needs none.
 ##
-## Eating is bound to a raw keycode rather than a new InputMap action (see EAT_KEY below) — the same
-## choice ui/inventory/inventory_ui.gd already made for hotbar slots 1-8, and for the same reason:
-## project.godot was held by another lane's task when this shipped, and a raw key avoids needing it.
+## Eating is bound to the "eat" InputMap action (G / gamepad D-pad down) — task 7.6 promoted it from
+## the raw keycode read this file used while project.godot was held by another lane's task. Hotbar
+## slots 1-8 in ui/inventory/inventory_ui.gd stay raw keys on purpose (no sane single gamepad button
+## per slot); that task instead gained a gamepad "hotbar_prev"/"hotbar_next" cycle of its own.
 
-const EAT_KEY: Key = KEY_G
 const BLOCKING_UI_GROUP: StringName = &"blocks_gameplay_input"
 
 const BAR_SIZE := Vector2(220.0, 14.0)
@@ -108,10 +108,7 @@ func _exit_tree() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if not (event is InputEventKey):
-		return
-	var key: InputEventKey = event
-	if not key.pressed or key.echo or key.keycode != EAT_KEY:
+	if not event.is_action_pressed(&"eat"):
 		return
 	if get_viewport().is_input_handled():
 		return
@@ -392,11 +389,25 @@ func _refresh_hint() -> void:
 	var item: ItemDef = _selected_consumable_item()
 	var showing: bool = item != null
 	if showing:
-		_hint_label.text = "[G] Eat %s" % (item.display_name if not item.display_name.is_empty() else String(item.id))
+		_hint_label.text = "[%s] Eat %s" % [
+			_eat_key_label(),
+			item.display_name if not item.display_name.is_empty() else String(item.id),
+		]
 	if _hint_label.visible != showing:
 		_hint_label.visible = showing
 		# The hint toggling is the one non-resize thing that changes the column's height.
 		_apply_layout()
+
+
+## Same "the prompt should not start lying the first time anyone rebinds the key" reasoning as
+## _interact_key_label(). "eat" always carries at least one InputEventKey (its authored default),
+## so the "EAT" fallback below only ever fires against a hand-rolled action with no keyboard event.
+func _eat_key_label() -> String:
+	for event: InputEvent in InputMap.action_get_events(&"eat"):
+		var key := event as InputEventKey
+		if key != null:
+			return key.as_text_physical_keycode().to_upper()
+	return "EAT"
 
 
 func _selected_consumable_id() -> StringName:

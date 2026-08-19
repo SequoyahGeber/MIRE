@@ -1,11 +1,11 @@
 class_name SettingsSave
 extends RefCounted
 
-## Persistence for task 7.5's player settings — graphics preset, audio bus volumes, look
-## sensitivity/invert-Y/FOV, the "reduce camera motion" accessibility toggle, and any keyboard
-## keybind overrides. Same shape as `salvage_save.gd`/`unlock_save.gd`: pure data I/O, no autoload;
-## a missing file, a corrupt file and an old-schema file all resolve to something the caller can use
-## without checking first.
+## Persistence for task 7.5/7.6's player settings — graphics preset, audio bus volumes, mouse and
+## gamepad look sensitivity/invert-Y/FOV, the "reduce camera motion" accessibility toggle, and any
+## keyboard or gamepad-button keybind overrides. Same shape as `salvage_save.gd`/`unlock_save.gd`:
+## pure data I/O, no autoload; a missing file, a corrupt file and an old-schema file all resolve to
+## something the caller can use without checking first.
 ##
 ## NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2, "VFX, audio, camera, UI" row): none. Per-player
 ## presentation settings on that player's own machine — nothing here is ever sent to another peer.
@@ -59,10 +59,12 @@ static func _default_data() -> Dictionary:
 		&"music_volume": 1.0,
 		&"sfx_volume": 1.0,
 		&"look_sensitivity": 0.12,
+		&"gamepad_look_sensitivity": 180.0,
 		&"invert_y": false,
 		&"fov_degrees": 75.0,
 		&"reduce_camera_motion": false,
 		&"keybinds": {},
+		&"joypad_binds": {},
 	}
 
 

@@ -46,11 +46,6 @@ const PLAYER_VIEWMODEL := preload("res://entities/player/viewmodel.gd")
 ## viewmodel above.
 const BUILD_GHOST := preload("res://systems/building/build_ghost.gd")
 const BUILD_BAR := preload("res://ui/building/build_bar.gd")
-## Piece rotate/destroy are raw input rather than new InputMap actions — ui/hud/vitals_hud.gd's
-## EAT_KEY sets the precedent, for the same reason it applies here: `project.godot` is held by
-## another lane's task (F-095) as this ships. "build" itself (mode toggle) is already a registered
-## action from 3.6 and is reused as-is.
-const BUILD_ROTATE_KEY: Key = KEY_R
 
 @export_group("Speed")
 ## Base ground speed, metres per second.
@@ -405,23 +400,20 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	# Rotate/destroy are raw input, not InputMap actions (see BUILD_ROTATE_KEY's own comment) and
-	# only ever mean anything while a piece is being previewed, so both branches fall through to the
-	# rest of this function on any other key/button rather than swallowing it.
-	if is_build_mode_active() and event is InputEventKey:
-		var key: InputEventKey = event
-		if key.pressed and not key.echo and key.keycode == BUILD_ROTATE_KEY \
-				and gameplay_input_allowed():
-			_build_ghost.call(&"rotate_step", 1)
-			get_viewport().set_input_as_handled()
-			return
-	if is_build_mode_active() and event is InputEventMouseButton:
-		var mouse_button: InputEventMouseButton = event
-		if mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_RIGHT \
-				and gameplay_input_allowed():
-			_request_build_destroy()
-			get_viewport().set_input_as_handled()
-			return
+	# Rotate/destroy (task 7.6: promoted from raw key/mouse-button reads to real InputMap actions,
+	# each keyboard/mouse-PLUS-gamepad-bound — see project.godot's own "build_rotate"/"build_destroy"
+	# entries) only ever mean anything while a piece is being previewed, so both branches fall through
+	# to the rest of this function on any other input rather than swallowing it.
+	if is_build_mode_active() and event.is_action_pressed(&"build_rotate") \
+			and gameplay_input_allowed():
+		_build_ghost.call(&"rotate_step", 1)
+		get_viewport().set_input_as_handled()
+		return
+	if is_build_mode_active() and event.is_action_pressed(&"build_destroy") \
+			and gameplay_input_allowed():
+		_request_build_destroy()
+		get_viewport().set_input_as_handled()
+		return
 
 	# Dodge (task 3.8b): a discrete press, not a held/buffered action like jump — the dash either
 	# commits now or it doesn't, so there is nothing to buffer. gameplay_input_allowed() gates it the
@@ -479,6 +471,12 @@ func _physics_process(delta: float) -> void:
 	var input_allowed: bool = gameplay_input_allowed()
 	var downed: bool = _is_downed()
 	var dead: bool = _is_dead()
+
+	# Gamepad look (task 7.6): a held analog value sampled every tick, unlike mouse look's one-shot
+	# InputEventMouseMotion in _unhandled_input — see PlayerCamera.apply_look_gamepad()'s own note.
+	# Applied before movement reads transform.basis below so a stick turn and the move it causes land
+	# in the same tick, the way a mouse turn already does relative to whichever tick move runs in.
+	camera.apply_look_gamepad(delta, input_allowed)
 
 	_tick_timers(delta)
 	_tick_dodge(delta)

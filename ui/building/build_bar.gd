@@ -4,12 +4,11 @@ extends CanvasLayer
 ## with no way for a player to reach any of it). Built directly by
 ## entities/player/player_controller.gd for the local player only, the same way it builds its
 ## Viewmodel and debug avatar — NOT an autoload like ui/crafting/crafting_ui.gd or
-## ui/inventory/inventory_ui.gd. Two reasons: nobody needs to see another player's piece picker
-## (client-local presentation, §2.2 last row, same as the ghost it sits beside), and `project.godot`
-## is held by another lane's task (F-095) as this ships — this follows ui/hud/vitals_hud.gd's own
-## EAT_KEY precedent of avoiding that file entirely rather than waiting on it. No new InputMap action
-## either: piece rotate (R) and destroy (right-click) are raw input handled in
-## player_controller.gd itself, not here — this bar is selection and status display only. Toggling
+## ui/inventory/inventory_ui.gd. Nobody needs to see another player's piece picker (client-local
+## presentation, §2.2 last row, same as the ghost it sits beside), so this is built per-player.
+## Piece rotate/destroy (task 7.6: real InputMap actions "build_rotate"/"build_destroy", each
+## keyboard/mouse plus gamepad) are handled in player_controller.gd itself, not here — this bar is
+## selection and status display only. Toggling
 ## build mode (the existing "build" InputMap action) is also read in player_controller.gd, so this
 ## bar and the player's build-mode state can never disagree about whether the mode is on; the player
 ## pushes state into this bar (`set_active`, `set_selected_piece`, `set_ghost_status`) rather than

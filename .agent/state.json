@@ -1,90 +1,20 @@
 {
   "claims": {
-    "autoload/settings_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T10:30:09+00:00",
-      "task": "7.6",
-      "token": null
-    },
-    "core/save/settings_save.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T10:32:42+00:00",
-      "task": "7.6",
-      "token": null
-    },
-    "entities/player/player_camera.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T10:30:09+00:00",
-      "task": "7.6",
-      "token": null
-    },
-    "entities/player/player_controller.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T10:30:09+00:00",
-      "task": "7.6",
-      "token": null
-    },
-    "project.godot": {
-      "agent": "lm",
-      "at": "2026-08-19T10:30:09+00:00",
-      "task": "7.6",
-      "token": null
-    },
-    "tools/gamepad_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T10:30:09+00:00",
-      "task": "7.6",
-      "token": null
-    },
-    "tools/settings_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T10:30:09+00:00",
-      "task": "7.6",
-      "token": null
-    },
-    "ui/building/build_bar.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T10:30:09+00:00",
-      "task": "7.6",
-      "token": null
-    },
-    "ui/hud/vitals_hud.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T10:30:09+00:00",
-      "task": "7.6",
-      "token": null
-    },
-    "ui/inventory/inventory_ui.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T10:30:09+00:00",
-      "task": "7.6",
-      "token": null
-    },
-    "ui/menu/settings_menu.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T10:30:09+00:00",
-      "task": "7.6",
+    ".": {
+      "agent": "lp",
+      "at": "2026-08-19T10:43:44+00:00",
+      "task": "3.5-review",
       "token": null
     }
   },
   "in_flight": {
-    "7.6": {
-      "agent": "lm",
+    "3.5-review": {
+      "agent": "lp",
       "files": [
-        "project.godot",
-        "entities/player/player_camera.gd",
-        "entities/player/player_controller.gd",
-        "ui/hud/vitals_hud.gd",
-        "ui/inventory/inventory_ui.gd",
-        "ui/building/build_bar.gd",
-        "autoload/settings_service.gd",
-        "ui/menu/settings_menu.gd",
-        "tools/settings_check.gd",
-        "tools/gamepad_check.gd",
-        "core/save/settings_save.gd"
+        "."
       ],
       "notes": [],
-      "started": "2026-08-19T10:30:09+00:00",
+      "started": "2026-08-19T10:43:44+00:00",
       "token": null
     }
   },
@@ -890,9 +820,10 @@
     },
     "autoload/settings_service.gd": {
       "agent": "lm",
-      "at": "2026-08-19T04:02:20+00:00",
-      "hash": "8f26f978f57863c43af3beaacd55e0692a42e52cf14daa600b775a3b1207e3db",
-      "task": "7.5"
+      "at": "2026-08-19T10:44:59+00:00",
+      "hash": "8ca0d5847343a6bb949634126e1f1020aea76ce3cbc478f6cb3ffa6a5d1fffe9",
+      "task": "7.6",
+      "token": null
     },
     "autoload/steam_lobby.gd": {
       "agent": "lp",
@@ -1906,9 +1837,10 @@
     },
     "core/save/settings_save.gd": {
       "agent": "lm",
-      "at": "2026-08-19T04:02:20+00:00",
-      "hash": "889d0b0361d3b7869752a432ea02490302ffdc7be9b1e773853fda226cd7603a",
-      "task": "7.5"
+      "at": "2026-08-19T10:44:59+00:00",
+      "hash": "9d5426dd43ccd4d3522501c1d843c04fd1f69368d1b94dd2690c53a0ef69a3f0",
+      "task": "7.6",
+      "token": null
     },
     "core/save/unlock_save.gd": {
       "agent": "lm",
@@ -2008,15 +1940,17 @@
     },
     "entities/player/player_camera.gd": {
       "agent": "lm",
-      "at": "2026-08-19T04:02:20+00:00",
-      "hash": "daf601b2cbcdcd8136acf048590c95caa65758df77f32405d611225d65a145d8",
-      "task": "7.5"
+      "at": "2026-08-19T10:44:59+00:00",
+      "hash": "cdc5d6a570daedb5c0dc5ef08ecaee4345d242db0c6cec5f303719e838788ccc",
+      "task": "7.6",
+      "token": null
     },
     "entities/player/player_controller.gd": {
       "agent": "lm",
-      "at": "2026-08-18T21:57:34+00:00",
-      "hash": "074b376738a15e125b96f81afb67c255dea7d4f75b72625c4e4b4e7067569aba",
-      "task": "F-136"
+      "at": "2026-08-19T10:44:59+00:00",
+      "hash": "8a9fdb9f130ec55de9104aec50911e2e161bc15f1d54db449a74917b13b3c56c",
+      "task": "7.6",
+      "token": null
     },
     "entities/player/viewmodel.gd": {
       "agent": "kiln9",
@@ -2037,10 +1971,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "project.godot": {
-      "agent": "slate17",
-      "at": "2026-08-19T06:36:13+00:00",
-      "hash": "cc88b3103ebe86093d032b513043f9af1b7fc15f6753bf66fee1258a97045ee2",
-      "task": "3.7",
+      "agent": "lm",
+      "at": "2026-08-19T10:44:59+00:00",
+      "hash": "0aff2f0f12c3ab1e887074575db5d26060e6b770ca76149636ef66dbbf172dad",
+      "task": "7.6",
       "token": null
     },
     "scenes/buildables/barricade.tscn": {
@@ -3011,6 +2945,13 @@
       "hash": "8c237cd57c31f14bee5c9a8ea8f4f56b755a9d3debc3d1f66022008a1cf78c01",
       "task": "3.17"
     },
+    "tools/gamepad_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T10:44:59+00:00",
+      "hash": "e53f14e87898039982d3c710f37f1f3431903273fa32263ce22e5a1345999ed4",
+      "task": "7.6",
+      "token": null
+    },
     "tools/gatherables_check.gd": {
       "agent": "wick20",
       "at": "2026-08-19T07:08:14+00:00",
@@ -3332,9 +3273,10 @@
     },
     "tools/settings_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T04:02:20+00:00",
-      "hash": "0c70e909e4e2f1208646bc9c964d120a425f4ff9b3be9767449e6ea0e83c5e10",
-      "task": "7.5"
+      "at": "2026-08-19T10:44:59+00:00",
+      "hash": "a03f869dc96508935e25100e1f1ec41df742cae049431f223f3e88aa43877034",
+      "task": "7.6",
+      "token": null
     },
     "tools/setup_attunement_content.gd": {
       "agent": "lm",
@@ -3469,9 +3411,11 @@
       "task": "3.9"
     },
     "ui/building/build_bar.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T13:22:27+00:00",
-      "task": "F-086"
+      "agent": "lm",
+      "at": "2026-08-19T10:44:59+00:00",
+      "hash": "ace933112dfce82a984c12d11ebad6a010ae6d099abd5e7f18c7ded244a55dc6",
+      "task": "7.6",
+      "token": null
     },
     "ui/building/door_prompt.gd": {
       "agent": "slate17",
@@ -3524,15 +3468,24 @@
       "task": "6.5"
     },
     "ui/hud/vitals_hud.gd": {
-      "agent": "kiln9",
-      "at": "2026-08-18T14:10:44+00:00",
-      "task": "F-099"
+      "agent": "lm",
+      "at": "2026-08-19T10:44:59+00:00",
+      "hash": "39655108e9366bf6d1794bc14d6c7c02135369a14c95f56f7f31949d3776a6f3",
+      "task": "7.6",
+      "token": null
     },
     "ui/hud/wellspring_hud.gd": {
       "agent": "lp",
       "at": "2026-08-19T04:54:29+00:00",
       "hash": "20a329bae93822f106c605775c9342f6e25434458a11f27228cd5aa5a8e8d2a7",
       "task": "F-164"
+    },
+    "ui/inventory/inventory_ui.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T10:44:59+00:00",
+      "hash": "3402484b652646f8b51235bd2d380c5c94161595c6326c675f3dea54aba05de4",
+      "task": "7.6",
+      "token": null
     },
     "ui/lobby/lobby_menu.gd": {
       "agent": "moss11",
@@ -3553,9 +3506,10 @@
     },
     "ui/menu/settings_menu.gd": {
       "agent": "lm",
-      "at": "2026-08-19T04:02:20+00:00",
-      "hash": "1059934bd92dbaab340444f3d9f666dab19f06f23a366cb9a91a8187b6929231",
-      "task": "7.5"
+      "at": "2026-08-19T10:44:59+00:00",
+      "hash": "8c4a7e592600e5fce9f581e7b6e1cb1eefc99e6e52a5a2eca0535cf4d5a5aa22",
+      "task": "7.6",
+      "token": null
     },
     "ui/menu/unlock_menu.gd": {
       "agent": "lm",
@@ -4297,7 +4251,7 @@
       "est": "0.5",
       "milestone": "M3",
       "review_of": "3.5",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T1",
       "title": "Review 3.5 @ 27546a1 \u2014 judge the commit, file findings, no edits"
     },
@@ -4706,9 +4660,11 @@
       "title": "Settings: graphics, audio, sensitivity, keybinds, FOV, accessibility basics"
     },
     "7.6": {
+      "done_at": "2026-08-19T10:44:59+00:00",
+      "done_by": "lm",
       "est": "3",
       "milestone": "M7",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T1",
       "title": "Gamepad support + Steam Deck compatibility (not verification)"
     },
@@ -6616,6 +6572,13 @@
       "status": "todo",
       "tier": "F",
       "title": "F-204's same bug \u2014 an object repositioned between renders that never takes effect \u2014 is live in 8 more Blender generators, one of them twice"
+    },
+    "F-208": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "F-203's sway case is still unsolved \u2014 `_apply_sway`'s per-mesh height mask needs a per-vertex baked channel before sway-bearing props can join the cross-asset chunk merge"
     }
   },
   "version": 1

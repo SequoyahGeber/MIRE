@@ -1,10 +1,13 @@
 extends SceneTree
 
-## Offline proof for task 7.5: SettingsSave's own load/corrupt/migrate/round-trip contract (same
+## Offline proof for tasks 7.5/7.6: SettingsSave's own load/corrupt/migrate/round-trip contract (same
 ## shape `unlock_check.gd`/`salvage_check.gd` already prove for their save files), SettingsService's
-## live setters — graphics preset delegation, audio bus volume/mute, sensitivity/invert-Y/FOV
-## clamping, the "reduce camera motion" accessibility toggle, keybind rebind/conflict/reset — and
-## that `PlayerCamera`/`SettingsMenu` actually read those values back.
+## live setters — graphics preset delegation, audio bus volume/mute, mouse/gamepad sensitivity/
+## invert-Y/FOV clamping, the "reduce camera motion" accessibility toggle, keyboard keybind
+## rebind/conflict/reset, gamepad button rebind/conflict/reset (7.6) — and that
+## `PlayerCamera`/`SettingsMenu` actually read those values back. Gamepad GAMEPLAY behaviour (the
+## right-stick look actually turning the camera, "eat"/"build_rotate"/hotbar-cycle firing through
+## real InputEventJoypad* events) is `tools/gamepad_check.gd`'s job, not this file's.
 ##
 ## Run with: .agent/bin/agent godot --script tools/settings_check.gd
 
@@ -48,6 +51,7 @@ func _run() -> void:
 	_check_audio_buses(settings)
 	_check_look_and_accessibility(settings)
 	_check_keybinds(settings)
+	_check_joypad_keybinds(settings)
 	await _check_player_camera(settings)
 	_check_menu(settings, menu)
 
@@ -86,8 +90,8 @@ func _check_settings_save() -> void:
 
 	SETTINGS_SAVE.save_data({
 		"graphics_preset": 1, "master_volume": 0.3, "music_volume": 0.4, "sfx_volume": 0.5,
-		"look_sensitivity": 0.2, "invert_y": true, "fov_degrees": 95.0,
-		"reduce_camera_motion": true, "keybinds": {"jump": 74},
+		"look_sensitivity": 0.2, "gamepad_look_sensitivity": 240.0, "invert_y": true, "fov_degrees": 95.0,
+		"reduce_camera_motion": true, "keybinds": {"jump": 74}, "joypad_binds": {"jump": 2},
 	}, TEST_ROUNDTRIP_PATH)
 	var round_trip: Dictionary = SETTINGS_SAVE.load_data(TEST_ROUNDTRIP_PATH)
 	check(int(round_trip.get(&"graphics_preset", -1)) == 1, "round trip: graphics preset")
@@ -96,6 +100,10 @@ func _check_settings_save() -> void:
 	check(bool(round_trip.get(&"reduce_camera_motion", false)) == true, "round trip: reduce_camera_motion")
 	check(int((round_trip.get(&"keybinds", {}) as Dictionary).get("jump", -1)) == 74,
 		"round trip: a keybind override")
+	check(is_equal_approx(float(round_trip.get(&"gamepad_look_sensitivity", -1.0)), 240.0),
+		"round trip: gamepad_look_sensitivity")
+	check(int((round_trip.get(&"joypad_binds", {}) as Dictionary).get("jump", -1)) == 2,
+		"round trip: a joypad button rebind override")
 
 
 func _check_graphics(settings: Node, gfx: Node) -> void:
@@ -146,6 +154,16 @@ func _check_look_and_accessibility(settings: Node) -> void:
 	settings.call("set_look_sensitivity", 0.3)
 	check(is_equal_approx(float(settings.call("look_sensitivity")), 0.3), "an in-range sensitivity is read back")
 
+	settings.call("set_gamepad_look_sensitivity", 1000.0)
+	check(is_equal_approx(float(settings.call("gamepad_look_sensitivity")), 720.0),
+		"gamepad sensitivity clamps to its max (720)")
+	settings.call("set_gamepad_look_sensitivity", 1.0)
+	check(is_equal_approx(float(settings.call("gamepad_look_sensitivity")), 30.0),
+		"gamepad sensitivity clamps to its min (30)")
+	settings.call("set_gamepad_look_sensitivity", 200.0)
+	check(is_equal_approx(float(settings.call("gamepad_look_sensitivity")), 200.0),
+		"an in-range gamepad sensitivity is read back")
+
 	check(bool(settings.call("invert_y")) == false, "invert_y defaults false")
 	settings.call("set_invert_y", true)
 	check(bool(settings.call("invert_y")) == true, "set_invert_y(true) is read back")
@@ -164,7 +182,11 @@ func _check_keybinds(settings: Node) -> void:
 	print("\n== SettingsService: keybinds ==")
 	var actions: PackedStringArray = settings.call("rebindable_actions") as PackedStringArray
 	check(actions.has("jump") and actions.has("dodge"), "rebindable_actions names the keyboard-primary actions")
+	check(actions.has("eat") and actions.has("build_rotate"),
+		"eat/build_rotate (promoted from raw keys by 7.6) are rebindable")
 	check(not actions.has("attack"), "attack (mouse-primary) is not rebindable")
+	check(not actions.has("build_destroy"),
+		"build_destroy (mouse-primary, same D-131 reasoning as attack) is not keyboard-rebindable")
 
 	var original_label: String = String(settings.call("keybind_label", &"jump"))
 	var to_j := InputEventKey.new()
@@ -189,9 +211,45 @@ func _check_keybinds(settings: Node) -> void:
 		"reset_keybinds restores jump's authored default")
 
 
+func _check_joypad_keybinds(settings: Node) -> void:
+	print("\n== SettingsService: gamepad button keybinds (task 7.6) ==")
+	var actions: PackedStringArray = settings.call("rebindable_actions_joypad") as PackedStringArray
+	check(actions.has("jump") and actions.has("hotbar_prev") and actions.has("hotbar_next"),
+		"rebindable_actions_joypad names the button-bound actions")
+	check(not actions.has("attack") and not actions.has("move_forward") and not actions.has("build_destroy"),
+		"axis/trigger-bound actions (movement, look, attack, build_destroy) are not joypad-rebindable")
+
+	var original_label: String = String(settings.call("keybind_label_joypad", &"jump"))
+	check(original_label == "A", "jump's authored gamepad default reads as A")
+
+	var to_lb := InputEventJoypadButton.new()
+	to_lb.button_index = JOY_BUTTON_LEFT_SHOULDER
+	var conflict: StringName = settings.call("rebind_action_joypad", &"jump", to_lb) as StringName
+	check(conflict == &"hotbar_prev", "rebinding jump onto hotbar_prev's own button is refused, naming it")
+	check(String(settings.call("keybind_label_joypad", &"jump")) == original_label,
+		"the refused rebind left jump's own binding untouched")
+
+	var to_dpad_left := InputEventJoypadButton.new()
+	to_dpad_left.button_index = JOY_BUTTON_DPAD_LEFT
+	var second_conflict: StringName = \
+		settings.call("rebind_action_joypad", &"jump", to_dpad_left) as StringName
+	check(second_conflict == &"", "rebinding jump to an unused button (D-pad left) succeeds")
+	check(String(settings.call("keybind_label_joypad", &"jump")) == "D-PAD LEFT",
+		"jump's gamepad label now reads D-PAD LEFT")
+
+	var not_rebindable: StringName = \
+		settings.call("rebind_action_joypad", &"attack", to_dpad_left) as StringName
+	check(not_rebindable != &"", "rebinding a non-joypad-rebindable action is refused, not silently accepted")
+
+	settings.call("reset_keybinds")
+	check(String(settings.call("keybind_label_joypad", &"jump")) == original_label,
+		"reset_keybinds restores jump's authored gamepad default too")
+
+
 func _check_player_camera(settings: Node) -> void:
 	print("\n== PlayerCamera reads SettingsService ==")
 	settings.call("set_look_sensitivity", 0.42)
+	settings.call("set_gamepad_look_sensitivity", 300.0)
 	settings.call("set_invert_y", true)
 	settings.call("set_fov_degrees", 88.0)
 	settings.call("set_reduce_camera_motion", true)
@@ -209,6 +267,8 @@ func _check_player_camera(settings: Node) -> void:
 
 	check(is_equal_approx(float(pivot.get(&"look_sensitivity")), 0.42),
 		"a freshly-readied PlayerCamera picks up the live sensitivity")
+	check(is_equal_approx(float(pivot.get(&"gamepad_look_sensitivity")), 300.0),
+		"a freshly-readied PlayerCamera picks up the live gamepad sensitivity")
 	check(bool(pivot.get(&"invert_y")) == true, "a freshly-readied PlayerCamera picks up invert_y")
 	check(is_equal_approx(float(pivot.get(&"_base_fov")), 88.0),
 		"a freshly-readied PlayerCamera picks up the live FOV")
@@ -243,7 +303,11 @@ func _check_menu(settings: Node, menu: Node) -> void:
 	check(graphics_option != null and graphics_option.item_count == 3,
 		"the graphics dropdown has exactly Low/Medium/High")
 	var keybind_buttons: Dictionary = menu.get(&"_keybind_buttons") as Dictionary
-	check(keybind_buttons.size() == 10, "one keybind row per rebindable action")
+	check(keybind_buttons.size() == 12, "one keybind row per rebindable action")
+	var gamepad_keybind_buttons: Dictionary = menu.get(&"_gamepad_keybind_buttons") as Dictionary
+	check(gamepad_keybind_buttons.size() == 10, "one gamepad-bind row per joypad-rebindable action")
+	var gamepad_slider: HSlider = menu.get(&"_gamepad_sensitivity_slider") as HSlider
+	check(gamepad_slider != null, "the gamepad sensitivity slider exists")
 
 	var other := Node.new()
 	other.name = "SettingsCheckOtherUI"

@@ -9,13 +9,18 @@ extends Node3D
 ##
 ## Expects to be a child of the player body, with a Camera3D child of its own.
 ##
-## `look_sensitivity`, `invert_y`, resting FOV and whether shake/sprint-FOV run at all are
-## overridden from `SettingsService` (task 7.5) if that autoload is present — see `_apply_settings()`
-## — so the `@export` values below are only the fallback for a scene run without it (e.g. a check).
+## `look_sensitivity`, `gamepad_look_sensitivity`, `invert_y`, resting FOV and whether shake/sprint-FOV
+## run at all are overridden from `SettingsService` (task 7.5/7.6) if that autoload is present — see
+## `_apply_settings()` — so the `@export` values below are only the fallback for a scene run without
+## it (e.g. a check).
 
 @export_group("Look")
 ## Degrees of rotation per pixel of mouse movement.
 @export_range(0.01, 1.0, 0.01) var look_sensitivity: float = 0.12
+## Degrees of rotation PER SECOND at full analog-stick deflection (task 7.6). A rate, not a
+## per-pixel delta like `look_sensitivity` — a gamepad stick reports a HELD magnitude every frame,
+## not a discrete motion event, so `apply_look_gamepad()` has to multiply by `delta` itself.
+@export_range(30.0, 720.0, 5.0) var gamepad_look_sensitivity: float = 180.0
 ## Invert vertical look.
 @export var invert_y: bool = false
 ## How far up/down the view can pitch, in degrees. Just under 90 avoids gimbal weirdness at the poles.
@@ -73,6 +78,8 @@ func _apply_settings() -> void:
 		return
 	if settings.has_method("look_sensitivity"):
 		look_sensitivity = float(settings.call("look_sensitivity"))
+	if settings.has_method("gamepad_look_sensitivity"):
+		gamepad_look_sensitivity = float(settings.call("gamepad_look_sensitivity"))
 	if settings.has_method("invert_y"):
 		invert_y = bool(settings.call("invert_y"))
 	if settings.has_method("fov_degrees"):
@@ -87,13 +94,34 @@ func _apply_settings() -> void:
 ## direction and view direction can never drift apart.
 func apply_look(relative: Vector2) -> void:
 	var sensitivity: float = deg_to_rad(look_sensitivity)
-
-	_body.rotate_y(-relative.x * sensitivity)
-
 	var pitch_delta: float = -relative.y * sensitivity
 	if invert_y:
 		pitch_delta = -pitch_delta
+	_rotate_view(-relative.x * sensitivity, pitch_delta)
 
+
+## The gamepad half of look (task 7.6) — `PlayerController._physics_process()` calls this every tick
+## with the right stick's `Input.get_vector()` already resolved through `input_allowed` (F-105's
+## "resolve once, thread it through" pattern, not re-derived here). Unlike `apply_look()`, this is a
+## HELD magnitude sampled every tick rather than a one-shot motion event, so it has to scale by
+## `delta` itself — `gamepad_look_sensitivity` is degrees/second, not degrees/pixel. `input_allowed`
+## is the gamepad equivalent of `apply_look()`'s own `Input.mouse_mode == MOUSE_MODE_CAPTURED` gate:
+## the thing that stops the view spinning while a blocking UI (inventory, settings) is open.
+func apply_look_gamepad(delta: float, input_allowed: bool) -> void:
+	if not input_allowed:
+		return
+	var stick: Vector2 = Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down")
+	if stick == Vector2.ZERO:
+		return
+	var rate: float = deg_to_rad(gamepad_look_sensitivity) * delta
+	var pitch_delta: float = -stick.y * rate
+	if invert_y:
+		pitch_delta = -pitch_delta
+	_rotate_view(-stick.x * rate, pitch_delta)
+
+
+func _rotate_view(yaw_delta: float, pitch_delta: float) -> void:
+	_body.rotate_y(yaw_delta)
 	var limit: float = deg_to_rad(pitch_limit_degrees)
 	rotation.x = clampf(rotation.x + pitch_delta, -limit, limit)
 

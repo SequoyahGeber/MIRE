@@ -4822,3 +4822,15 @@ Emitter case fixed: AuthoredWorld._build_props() gains an emitter_mergeable buck
 Files: `world/gen/authored_world.gd`, `autoload/environment_vfx.gd`, `tools/prop_chunk_merge_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `docs/FINDINGS.md`, `docs/DELEGATION.md`, `docs/SPECS.md`, `docs/DECISIONS.md`
 
 Commit at time of writing: `add1025`
+
+---
+
+### DONE · 7.6 · lm · 2026-08-19T10:44:59+00:00
+
+**Gamepad support + Steam Deck compatibility (not verification)**
+
+Gamepad support shipped and verified headlessly. The core gap: nothing rotated the camera from a gamepad at all — PlayerCamera.apply_look_gamepad() (right stick, degrees/sec) fixes that, polled from PlayerController._physics_process(). Every core-gameplay action now carries a joypad InputMap binding: fixed build's missing gamepad button, promoted eat/build_rotate/build_destroy from raw-key/raw-mouse reads to real actions (keyboard+gamepad), added hotbar_prev/hotbar_next (LB/RB) gamepad hotbar cycling. SettingsService/SettingsMenu gained gamepad-button rebinding (D-131 scopes it to button-bound actions only) plus a gamepad look sensitivity slider. Verified: tools/gamepad_check.gd (new, failures=0) drives every action through real InputEventJoypadButton/Motion events into the real PlayerController/InventoryUI/VitalsHud handlers, plus an InputMap wiring audit against project.godot's hand-edited [input] section. tools/settings_check.gd extended, failures=0. No regressions: verify_setup/build_check/combat_check/ranged_combat_check/inventory_ui_check/net_robustness_check all failures=0. agent godot --quit-after 20: 0 ERROR: lines.
+
+Files: `project.godot`, `entities/player/player_camera.gd`, `entities/player/player_controller.gd`, `ui/hud/vitals_hud.gd`, `ui/inventory/inventory_ui.gd`, `ui/building/build_bar.gd`, `autoload/settings_service.gd`, `ui/menu/settings_menu.gd`, `tools/settings_check.gd`, `tools/gamepad_check.gd`, `core/save/settings_save.gd`
+
+Commit at time of writing: `ab54adb`

@@ -285,6 +285,15 @@ func _input(event: InputEvent) -> void:
 		set_open(false)
 		get_viewport().set_input_as_handled()
 		return
+	# Gamepad hotbar cycle (task 7.6) — the 1-8 number-row keys below have no sane one-to-one gamepad
+	# equivalent, so the shoulder buttons step the selection instead, same wrap-around a scroll wheel
+	# would give a mouse user.
+	if event.is_action_pressed(&"hotbar_prev"):
+		select_hotbar_slot(wrapi(_selected_hotbar_index - 1, 0, HOTBAR_SLOT_COUNT))
+		return
+	if event.is_action_pressed(&"hotbar_next"):
+		select_hotbar_slot(wrapi(_selected_hotbar_index + 1, 0, HOTBAR_SLOT_COUNT))
+		return
 	if event is InputEventKey and event.is_pressed() and not event.is_echo():
 		var key: InputEventKey = event
 		var focus_owner: Control = get_viewport().gui_get_focus_owner()
