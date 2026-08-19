@@ -75,6 +75,46 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-187 fixed: `MeshMerge.merge_instances()` bakes several placements into one static mesh — AuthoredWorld uses it for rigid, non-emitting, non-sway, never-shadow-casting props (lm)
+
+`core/render/mesh_merge.gd` gained `merge_instances(entries: Array) -> ArrayMesh`, where `entries` is
+`Array[Dictionary]` of `{"mesh": Mesh, "transform": Transform3D}` — additive next to the existing
+`merged()`/`_build()` (per-source-file merge, untouched, still what F-152's pinned check exercises).
+Same bucket-by-(material-appearance, vertex-attribute-mask) algorithm, generalised for a caller that
+already has meshes in hand (not a `.glb` to load) and a full placement transform per entry (not a
+fixed offset inside one asset's own hierarchy). **Never disk-cached** — the caller decides how
+entries are grouped, so there is no one source-file mtime to key a cache entry against; cheap enough
+to rebuild every load since entries are already-merged, already-indexed meshes.
+
+**The seam the next cross-placement merge builds against — and its one real constraint:** whatever
+you bake with `merge_instances()`, `DrawPolicy.apply()` needs an AABB sized from your OWN objects'
+individual heights, never `combined.get_aabb()` — the merged mesh's own AABB reflects the terrain (or
+whatever else) the placements are spread across as much as any object's actual height, and feeding it
+to `DrawPolicy` misclassifies draw distance and, for anything tall enough to cast a shadow, causes
+Godot to re-render the whole merged primitive count into every PSSM cascade its now-larger AABB
+touches — measured as a 16% primitive regression on Hollowmere before this was caught
+(`tools/frame_cost_check.gd` against `agent baseline`, see docs/SPECS.md's F-187 block). Build a
+synthetic `AABB(Vector3.ZERO, Vector3(0, max_of_your_objects_own_heights, 0))` instead, as
+`AuthoredWorld._build_props()`'s `mergeable` loop does.
+
+`AuthoredWorld._build_props()` (`world/gen/authored_world.gd`) is the first caller: a prop merges
+across assets into one static mesh per chunk only when it is simultaneously not harvestable, carries
+no `AssetVfxLibrary` emitter, carries no sway, and its own mesh height stays under
+`DrawPolicy.SHADOW_MIN_HEIGHT` — see F-203 for exactly what a caller wanting to include sway- or
+emitter-bearing props would need to solve first (a height-encoded vertex channel for sway; per-asset
+placement sub-ranges for emitters). Merged holders live under `PropVisuals` named `merged_<chunk>`,
+each with one `MeshInstance3D` child named `MergedProps` and no `asset` meta (deliberate — the node
+spans many assets, so `EnvironmentVfx._asset_id_for`'s meta-then-name walk correctly finds nothing
+and skips it). `AuthoredWorld.merged_prop_mesh_count` counts them, separate from `multimesh_count`.
+
+**Verified:** `agent godot --script tools/prop_chunk_merge_check.gd` (new — independently recomputes
+eligibility from the layout file and asserts it matches what the scene built, plus asserts every
+merged node's `cast_shadow` reads OFF), plus `hollowmere_check.gd`, `mesh_merge_check.gd`,
+`environment_vfx_hollowmere_check.gd`, `harvest_batch_check.gd`, `harvest_world_check.gd`,
+`resource_scatter_check.gd` — all green. `frame_cost_check.gd` against `agent baseline`: 867 → 786
+authored-world visual nodes (−9.3%), draw calls unchanged on Hollowmere specifically, primitives
++1.3% (not the +16% the unfixed version measured).
+
 ### 2026-08-19 — F-158 fixed: `EnemyDef` gains a general `visual_tint`, so a stat-only variant no longer has to be visually identical to its base kind (lm)
 
 `systems/enemies/enemy_def.gd` gained `visual_tint: Color = Color(1,1,1,1)`. Default is a true no-op

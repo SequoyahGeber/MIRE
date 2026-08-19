@@ -529,45 +529,6 @@ their own `## N (task X)` comment rather than collapsing into a single bump.
 
 ---
 
-### F-187 · Props are 1,057 MultiMesh groups averaging 2.7 copies — F-100's cross-asset chunk merge is still not built, and now has a measured constraint
-
-**Area:** perf · **Severity:** medium · **Found:** 2026-08-19 by nettle12
-
-F-144 left this on the table deliberately, with numbers it did not have before.
-
-`AuthoredWorld._build_props` still groups by `(chunk, kit, asset)`: 2,869 props become 1,057
-MultiMesh groups, 2.71 copies each, and 495 of those groups hold exactly ONE copy. That is
-instancing overhead with none of instancing's payoff — F-100's original complaint, still true.
-PropVisuals is ~2,584 of the map's 4,855 built opaque surfaces.
-
-What F-100's design did not know, and what a second attempt needs:
-
-- **Coarsening the grouping key is not the fix.** Grouping per 2x2 super-chunk drops 1,057 groups
-  to 689, but `visibility_range` measures camera distance to the node's ORIGIN, so a larger group
-  culls as a unit from a centre that is further from its own members. At the shipped 32 m chunk a
-  group's half-diagonal is already 22 m against an 80 m small-prop range. Coarsening trades the
-  draw-distance win for the draw-count win rather than adding to it. A merge that bakes transforms
-  into one static mesh per chunk does not have this problem — the node's AABB is then exact.
-
-- **Merging across assets must preserve two per-asset bindings.** `EnvironmentVfx._apply_sway`
-  sets a material override per surface, keyed on the node's `asset` meta, and `_register_emitter`
-  reads a `placements` meta off it. So the merge buckets by (sway profile, material appearance),
-  not by material alone, and emitter-bearing assets keep their own node. Measured on Hollowmere:
-  of 2,482 props in PropVisuals, 794 are batch-harvestable and must stay in a MultiMesh (their
-  copies are hidden individually by zeroing one instance transform), 335 carry an emitter, ~966
-  carry sway across three profiles, ~387 are inert. So roughly 1,688 are mergeable.
-
-- **Material buckets are already cheap.** F-144 keys buckets on a material's appearance rather
-  than its name, which collapsed 201 named materials to 85 distinct ones across 218 prop assets,
-  with no albedo texture anywhere in the kit. A per-chunk merge would therefore produce few
-  buckets per chunk, not many.
-
-Measure any attempt with `tools/frame_cost_check.gd` (real RenderingServer counters, sweeps the
-presets), not with `tools/render_census.gd` alone — the census is a no-frustum upper bound and
-overstates changes roughly fourfold.
-
----
-
 ### F-188 · Runtime-merged meshes have no shadow mesh, though every imported .glb gets one
 
 **Area:** perf · **Severity:** low · **Found:** 2026-08-19 by nettle12
@@ -898,7 +859,130 @@ synchronous `leave()`-inside-`server_started`-handler pattern), fix the underlyi
 
 ---
 
+### F-203 · AuthoredWorld's F-187 chunk merge excludes sway- and emitter-bearing props — a second attempt needs per-vertex height encoding or per-asset placement metadata inside a merged mesh
+
+**Area:** perf · **Severity:** medium · **Found:** 2026-08-19 by lm
+
+F-187's cross-asset per-chunk prop merge (`world/gen/authored_world.gd::_build_props`,
+`MeshMerge.merge_instances` in `core/render/mesh_merge.gd`) only merges props that are
+simultaneously non-harvestable, carry no `AssetVfxLibrary` emitter, carry no sway, AND whose own
+mesh AABB height (scaled) is below `DrawPolicy.SHADOW_MIN_HEIGHT` (1.2 m) — on Hollowmere that is
+a modest slice of the 2,869 authored props, well short of the ~1,353 the original finding measured
+as theoretically mergeable (sway + inert, excluding the 335 emitter-bearing ones).
+
+Three reasons the wider set was deliberately left out rather than folded in:
+
+1. **Sway.** `EnvironmentVfx._apply_sway` dresses a mesh once, keyed by the mesh's own
+   `get_instance_id()`, and applies ONE `AssetVfxLibrary.Sway` profile to every surface of it. The
+   wind shader (`world/environment/foliage_wind.gdshader`) reads `VERTEX.y` in MODEL space against
+   `wind_root_y`/`wind_inv_height`, derived from `mesh.get_aabb()` — correct when that AABB is one
+   plant's own local frame (true for both a loose `MeshInstance3D` and a `MultiMesh`, since a
+   MultiMesh copy's base vertices are per-copy, not baked), and wrong the instant several
+   placements' absolute, chunk-relative heights are baked into one static mesh: the mask would then
+   read terrain elevation across the merge instead of height within each individual plant. A fix
+   needs either a per-vertex baked height-mask (e.g. in a spare channel, read by a modified shader
+   path) computed from each SOURCE asset's own AABB before baking, or keeping sway-bearing props out
+   of the cross-asset merge permanently and pursuing F-100's coarser-grouping idea for them instead
+   (same-sway-type multi-asset MultiMesh groups, not a baked static mesh).
+
+2. **Emitters.** `EnvironmentVfx._register_emitter` keys the `PLACEMENTS_META` contract off ONE
+   asset id per holder node and infers ONE `AssetVfxLibrary.Emitter` class from it. A node that
+   merges several different emitter-bearing assets would either misattribute their sites to the
+   wrong emitter class or drop them. Splitting by (chunk, emitter-class) the way F-187's shipped
+   code splits by nothing-but-shadow-height would work for the ~335 emitter-bearing props, but the
+   placements meta would then need to record which sub-range of a merged mesh's baked vertices
+   belongs to which of several different assets — more bookkeeping than the shadow-height filter
+   needed, since here the ASSET identity itself (not just a shared profile) has to survive the merge.
+
+3. **Shadow cascades — solved for THIS task by construction, not fixed in general.** A first,
+   wider version of this merge (everything rigid, any height) measured a real regression:
+   `tools/frame_cost_check.gd` against `agent baseline` showed draw calls falling as expected but
+   shadow-pass PRIMITIVES rising 16%, because a merged chunk mesh tall enough to cast a shadow
+   routinely spans more than one of the four PSSM cascade splits, and Godot re-renders a caster into
+   every cascade its AABB touches. Restricting the merge to objects whose own height never crosses
+   `DrawPolicy.SHADOW_MIN_HEIGHT` sidesteps this (those objects never cast a shadow regardless of
+   grouping), but it also caps how much of the map can ever qualify. Whoever widens the merge to
+   taller rigid props needs either sub-chunking fine enough that a merged AABB reliably stays inside
+   one cascade split, or to accept and re-measure the cross-cascade cost against the draw-call win.
+
+Measure any attempt with `tools/frame_cost_check.gd` (paired with `agent baseline`) — draw calls
+alone hid the shadow regression in point 3 above; primitives is what caught it.
+
+---
+
 ## Resolved
+
+### F-187 · Props are 1,057 MultiMesh groups averaging 2.7 copies — F-100's cross-asset chunk merge is still not built, and now has a measured constraint — **fixed**
+
+**Area:** perf · **Severity:** medium · **Found:** 2026-08-19 by nettle12
+
+F-144 left this on the table deliberately, with numbers it did not have before.
+
+`AuthoredWorld._build_props` still groups by `(chunk, kit, asset)`: 2,869 props become 1,057
+MultiMesh groups, 2.71 copies each, and 495 of those groups hold exactly ONE copy. That is
+instancing overhead with none of instancing's payoff — F-100's original complaint, still true.
+PropVisuals is ~2,584 of the map's 4,855 built opaque surfaces.
+
+What F-100's design did not know, and what a second attempt needs:
+
+- **Coarsening the grouping key is not the fix.** Grouping per 2x2 super-chunk drops 1,057 groups
+  to 689, but `visibility_range` measures camera distance to the node's ORIGIN, so a larger group
+  culls as a unit from a centre that is further from its own members. At the shipped 32 m chunk a
+  group's half-diagonal is already 22 m against an 80 m small-prop range. Coarsening trades the
+  draw-distance win for the draw-count win rather than adding to it. A merge that bakes transforms
+  into one static mesh per chunk does not have this problem — the node's AABB is then exact.
+
+- **Merging across assets must preserve two per-asset bindings.** `EnvironmentVfx._apply_sway`
+  sets a material override per surface, keyed on the node's `asset` meta, and `_register_emitter`
+  reads a `placements` meta off it. So the merge buckets by (sway profile, material appearance),
+  not by material alone, and emitter-bearing assets keep their own node. Measured on Hollowmere:
+  of 2,482 props in PropVisuals, 794 are batch-harvestable and must stay in a MultiMesh (their
+  copies are hidden individually by zeroing one instance transform), 335 carry an emitter, ~966
+  carry sway across three profiles, ~387 are inert. So roughly 1,688 are mergeable.
+
+- **Material buckets are already cheap.** F-144 keys buckets on a material's appearance rather
+  than its name, which collapsed 201 named materials to 85 distinct ones across 218 prop assets,
+  with no albedo texture anywhere in the kit. A per-chunk merge would therefore produce few
+  buckets per chunk, not many.
+
+Measure any attempt with `tools/frame_cost_check.gd` (real RenderingServer counters, sweeps the
+presets), not with `tools/render_census.gd` alone — the census is a no-frustum upper bound and
+overstates changes roughly fourfold.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed with a real, conservatively-scoped cross-asset chunk merge, not the full draw-count win F-100
+originally modelled — see docs/SPECS.md's F-187 block for the full story, root cause, the shadow-
+cascade regression it caught and fixed, and exact verify commands.
+
+MeshMerge gained merge_instances() (core/render/mesh_merge.gd), additive next to the existing
+per-asset merged()/_build(). AuthoredWorld._build_props() now classifies each prop as it groups
+them: mergeable (folded into one merge_instances() call per chunk) only when it is not harvestable,
+carries no AssetVfxLibrary emitter, carries no sway, AND its own mesh height stays under
+DrawPolicy.SHADOW_MIN_HEIGHT (1.2 m) -- everything else keeps the original per-(chunk,kit,asset)
+MultiMesh path unchanged. The height gate exists because a first, wider attempt (any rigid prop,
+any height) measured a real regression with tools/frame_cost_check.gd against `agent baseline`:
+draw calls fell as expected but shadow-pass primitives rose 16%, because a merged chunk mesh tall
+enough to cast a shadow routinely spans more than one of the four PSSM cascade splits and Godot
+re-renders its whole primitive count into each one. Restricting the merge to objects that never
+cast a shadow regardless of grouping sidesteps this by construction.
+
+New tools/prop_chunk_merge_check.gd independently recomputes eligibility from the layout file and
+asserts it matches what the scene actually built (drift-detection, not just a smoke test) and
+asserts every merged node's cast_shadow reads OFF (the load-bearing invariant the regression above
+depends on).
+
+Verified: agent godot --script tools/hollowmere_check.gd, tools/mesh_merge_check.gd,
+tools/environment_vfx_hollowmere_check.gd, tools/harvest_batch_check.gd, tools/harvest_world_check.gd,
+tools/resource_scatter_check.gd, tools/prop_chunk_merge_check.gd -- all PASS/failures=0. Measured
+with agent godot --windowed --script tools/frame_cost_check.gd against agent baseline --windowed
+--script tools/frame_cost_check.gd: AuthoredWorld visual nodes 867 -> 786 (-9.3%), draw calls 4,943
+-> 4,943 (unchanged on Hollowmere specifically -- the eligible subset's material diversity roughly
+cancels the node-count win), primitives 1,143,574 -> 1,158,264 (+1.3%, not the +16% the unfixed
+version measured).
+
+The sway- and emitter-bearing cases F-100 originally wanted included are real further work, not
+solved here -- filed as F-203 with the exact mechanism each would need.
 
 ### F-202 · A drained saturate chain exits immediately, so a lane goes idle in the gap before the next order lands — **fixed**
 

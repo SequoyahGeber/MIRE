@@ -4768,6 +4768,101 @@ separately rather than silently folded into this close-out.
 
 ---
 
+## F-187 · Props are 1,057 MultiMesh groups averaging 2.7 copies — F-100's cross-asset chunk merge is still not built
+
+**Claim:** `world/gen/authored_world.gd`, `core/render/mesh_merge.gd`, `tools/prop_chunk_merge_check.gd`,
+`docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Root cause:** `AuthoredWorld._build_props()` grouped every prop by `(chunk, kit, asset)` — one
+`MultiMeshInstance3D` per group — so a chunk holding six DIFFERENT rock/log/ruin assets built six
+draw calls even though every one of them was static, unanimated scenery that could have shared one.
+F-100 designed a real fix and F-144 filed it forward as F-187 with three specific constraints a
+naive "coarsen the grouping key" attempt would miss (see the original finding text, still in
+`## Resolved` history): batch-harvestables' depletion hook, `EnvironmentVfx`'s per-asset sway/emitter
+contracts, and `visibility_range`'s node-origin distance measurement.
+
+**Fix — merge only the props none of those three contracts touch, one static mesh per chunk:**
+
+1. `core/render/mesh_merge.gd` gains `merge_instances(entries: Array) -> ArrayMesh`, additive next to
+   the existing `merged()`/`_build()` (untouched, still what F-152's pinned invariant check exercises).
+   Same bucket-by-(material-appearance, vertex-attribute-mask) algorithm as `_build`, but for a caller
+   that already has meshes in hand (not a `.glb` to walk) and a full placement `Transform3D` per entry
+   (not a fixed offset within one asset's own hierarchy) — vertices are baked with `transform * v`,
+   normals with `basis * n`. Never disk-cached: the caller decides how entries are grouped, so there is
+   no single source-file mtime to key a cache entry against, and rebuilding from already-merged,
+   already-indexed meshes is cheap regardless.
+
+2. `AuthoredWorld._build_props()` classifies each prop while it groups them (not after): a prop is
+   `mergeable` — folded into one `merge_instances()` call per chunk — only when it is simultaneously
+   **not harvestable** (BATCH depletion hides one instance by zeroing its transform inside that asset's
+   OWN `MultiMesh`; NODE harvestables were already excluded upstream), **carries no `AssetVfxLibrary`
+   emitter** (`EnvironmentVfx._register_emitter` keys `PLACEMENTS_META` off one asset id per holder — a
+   merged node spanning several assets would misattribute or drop their sites), **carries no sway**
+   (`_apply_sway` dresses a mesh once with ONE profile for every surface, and the wind shader's height
+   mask reads `VERTEX.y` in MODEL space against that mesh's own AABB — correct for one asset's local
+   frame, wrong once several placements' absolute heights are baked into one static mesh), **and** its
+   own mesh AABB height (scaled) is below `DrawPolicy.SHADOW_MIN_HEIGHT` (1.2 m) — see the shadow trap
+   below for why. Everything else keeps the original per-(chunk, kit, asset) `MultiMesh` path,
+   byte-for-byte unchanged. The merged holder is centroid-rebased exactly like the existing grouped
+   holders (`visibility_range` measures from the node's own origin, and a real `ArrayMesh`'s AABB is
+   exact once its vertices are relative to that origin), and carries no `asset` meta at all — deliberate,
+   since it spans many assets by construction and `EnvironmentVfx._asset_id_for`'s meta-then-name walk
+   correctly finds nothing and skips it.
+
+**Trap found while verifying — coarsening the grouping key without fixing draw distance made frame
+cost WORSE, not better:** the first version merged every rigid/non-emitting/non-sway prop regardless of
+height, sized with `DrawPolicy.apply(instance, combined.get_aabb(), 1.0)` — the MERGED mesh's own AABB,
+whose vertical span reflects the chunk's terrain relief (routinely several metres on Hollowmere) as much
+as any object's actual height. That misclassified nearly every merge as TALL (`DrawPolicy.
+TALL_MIN_HEIGHT` = 4 m ⇒ 260 m draw distance) regardless of what was actually in it, and a still-large
+merged AABB that DOES cast a shadow routinely spans more than one of the four PSSM cascade splits, so
+Godot re-renders its whole primitive count into every cascade it touches. Measured with
+`tools/frame_cost_check.gd` against `agent baseline`: draw calls fell as expected (867 → 645 authored-
+world visual nodes) but shadow-pass PRIMITIVES ROSE 16% (1,143,574 → 1,356,306) — draw-call counting
+alone would have shipped a regression. Fixed two ways: (a) `DrawPolicy.apply` is now given a synthetic
+AABB built from the MAX of each individual object's own scaled height, not the merged mesh's own AABB;
+(b) the eligibility rule additionally requires that per-object height stay under `SHADOW_MIN_HEIGHT`, so
+every merged node's `cast_shadow` reads OFF by construction and the cascade-crossing question never
+arises. The remaining sway/emitter cases are real further work, not solved here — filed as F-203 with
+the exact mechanism each one would need (height-encoded vertex channel for sway; per-asset placement
+sub-ranges for emitters).
+
+**New check, `tools/prop_chunk_merge_check.gd`** (none existed): boots Hollowmere and (1) walks every
+`PropVisuals/merged_*` holder, asserting it carries exactly one `MergedProps` `MeshInstance3D` with real
+geometry, a draw distance, and — the load-bearing invariant from the trap above — `cast_shadow ==
+SHADOW_CASTING_SETTING_OFF`; (2) independently recomputes eligibility straight from the layout file and
+the same three libraries `_build_props` classifies against (`HarvestLibrary`, `AssetVfxLibrary`,
+`DrawPolicy`, `MeshMerge`), and asserts the number of distinct eligible chunks matches the number of
+`merged_*` holders actually built — a drift between the two classifications (an eligibility rule edited
+in one place and not the other) fails loudly instead of silently merging, or failing to merge, the wrong
+props.
+
+**Sibling sweep:** grepped every `DrawPolicy.apply` call site (`world/gen/authored_world.gd` twice more,
+`systems/harvesting/harvestable.gd` once) for the same shape — an aggregate AABB standing in for a
+single object's height. The other three all pass a single asset's or a single harvestable instance's own
+`mesh.get_aabb()`, never a cross-placement bake, so none share the bug; this merge is the first code in
+the repo that bakes more than one placement into one mesh, so there was no pre-existing sibling to find.
+
+**Verify:** `.agent/bin/agent godot --script tools/hollowmere_check.gd`,
+`tools/mesh_merge_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `tools/harvest_batch_check.gd`,
+`tools/harvest_world_check.gd`, `tools/resource_scatter_check.gd`, `tools/prop_chunk_merge_check.gd`
+(new); measure with `agent godot --windowed --script tools/frame_cost_check.gd` against `agent baseline
+--windowed --script tools/frame_cost_check.gd`.
+
+**Verified 2026-08-19 (lm):** every check above `PASS`/`failures=0`. `AUTHORED_WORLD` at HEAD:
+`multimeshes=867` → `multimeshes=761 merged_meshes=25` (786 total visual nodes, −9.3%).
+`prop_chunk_merge_check.gd`: `eligible_props=218 eligible_chunks=25`, matching the 25 `merged_*` holders
+built — zero drift. `frame_cost_check.gd` "as shipped": draw calls 4,943 → 4,943 (unchanged — the
+eligible subset's material diversity roughly cancels the node-count win on Hollowmere specifically),
+primitives 1,143,574 → 1,158,264 (+1.3%, not the +16% the unfixed version measured), vram 242.9 MB →
+247.2 MB. A real, verified, conservatively-scoped fix — not the full draw-call win F-100 originally
+modelled, because that win lives in the sway/emitter cases F-203 now owns.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |
