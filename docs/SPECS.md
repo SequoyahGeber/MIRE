@@ -5159,6 +5159,59 @@ deferred correctly. No sibling instance of this specific ordering bug found.
 
 ---
 
+## F-112 · `world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check — F-076's third system
+
+**Claim:** `world/gen/undergrowth.gd`, `tools/world_contract_check.gd`, `tools/hollowmere_check.gd`.
+No new networked system — `Undergrowth` already declares `None` authority (presentation-only,
+client-local, deterministic from the layout seed) and this task adds a check plus a read-only export,
+neither of which changes that.
+
+**Root cause / what's missing:** F-076 generalized `EnemyWorld`/`HarvestWorld`'s group-name blind
+spot into `tools/world_contract_check.gd`, map-agnostic, but explicitly left `Undergrowth`'s "don't
+grow on top of a prop" rule uncovered — it has no equivalent ground-truth field sitting directly in a
+layout the way `markers[].kind`/`props[].harvestable` do. `tools/hollowmere_check.gd`'s
+`_check_undergrowth_stays_off_props` was the only check for it, and it is Hollowmere-specific.
+
+**Fix:** `Undergrowth.sample_ground_gaps() -> Array[float]` (new), stride-sampling this run's
+`_placements` — the world-space `Transform3D`s `_scatter()` already computed — and reporting each
+sampled plant's height above the layout's own heightfield (`_layout_height()`, already generic).
+`world_contract_check.gd` gained `_check_undergrowth(level)`: finds the map's `Undergrowth` node, and
+if it exposes `sample_ground_gaps()`, flags a FAIL when more than 2% of sampled plants sit more than
+0.6 m above ground — the same tuning `hollowmere_check.gd`'s function already proved (a handful
+legitimately stand on bridge decks/camp floors; a genuine "grass on the boulders" bug reads as
+hundreds). No layout `Dictionary` needed for this half — `Undergrowth` already read its own, so it
+runs whether or not `_layout_for()` found a `World.layout_path` on the map at all.
+
+**Found while verifying (folded into this task, not filed separately — see D-127):**
+`hollowmere_check.gd`'s existing function had two compounding bugs, invisible to each other. It read
+`MultiMesh.get_instance_transform()`'s origin bare, with no `to_global()` — that origin is
+CELL-LOCAL (rebased around each MultiMesh's own centre in `undergrowth.gd::_emit()`), so
+`height_at(origin.x, origin.z)` sampled terrain near world (0,0) for every plant regardless of where
+it actually stood. That went unnoticed because `MultiMesh` instance transforms live on the
+RenderingServer and the `--headless` dummy renderer this check has always run under
+(`agent godot --script`, never `--windowed`) answers every read with identity, no error (F-103,
+`tools/multimesh_readback_check.gd`) — `worst=0.00 m` every run wasn't this check passing, it was
+`get_instance_transform()` returning the same near-origin coordinate for every sample. **This check
+had asserted nothing since it shipped.** Fixed by having it delegate to the new
+`sample_ground_gaps()` too, which reads `_placements` directly and needs no renderer at all — one
+correct implementation instead of two, and no `--windowed` requirement anywhere in this task.
+
+**Verified 2026-08-19:** `agent godot --script tools/world_contract_check.gd` on the live Hollowmere
+boot: `WORLD_CONTRACT_UNDERGROWTH sampled=10342 perched=4 worst=0.65m`, `WORLD_CONTRACT_CHECK PASS`
+(0.04%, well under the 2% tolerance — confirms Hollowmere's real prop-avoidance is fine, not just
+that the check runs). `agent godot --script tools/hollowmere_check.gd` reports the identical
+`sampled=10342 perched=4 worst=0.65 m`, `HOLLOWMERE_CHECK PASS` — both checks now agree because both
+call the same method. **Regression-proved the check catches the actual bug shape**: temporarily
+stubbed `_is_prop()` to always return `false` (reintroducing F-076's exact defect) —
+`world_contract_check.gd` correctly failed loudly (`851/11297 perched, 7.5%`, `WORLD_CONTRACT_CHECK
+FAIL`) before the stub was reverted and a clean re-run confirmed `perched=4` again. Full boot clean
+(`agent godot --quit-after 120`, no new ERROR lines). `tools/multimesh_readback_check.gd`,
+`tools/harvest_world_check.gd`, `tools/enemy_check.gd` unaffected (`failures=0`).
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

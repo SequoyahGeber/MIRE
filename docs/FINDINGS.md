@@ -155,30 +155,6 @@ gets a `ChunkStreamer` + `ResourceScatterField` pair wired against `GameState.ru
 the exact API both `DELEGATION.md` entries already document. Until then, Hollowmere is the map, and
 that is a decision this finding is recording, not a bug anyone introduced.
 
-### F-112 · `world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check — F-076's third system, not lifted
-
-**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-18 by lp during F-076
-
-F-076 generalized two of the three systems Hollowmere's launch exposed (`EnemyWorld`, `HarvestWorld`)
-into `tools/world_contract_check.gd`, which runs against whatever map is `project.godot`'s main scene
-with no per-map code. The third — `Undergrowth`'s "don't grow on top of a prop" rule
-(`world/gen/undergrowth.gd:_is_prop`) — was not: it wasn't in this task's claim
-(`autoload/enemy_world.gd`, `autoload/harvest_world.gd` only), and unlike the other two it has no
-clean ground-truth field to read straight from a layout — "which props are solid" isn't in the JSON,
-only in which collider the generator happens to tag with `prop_group`. The only check for it today is
-still `tools/hollowmere_check.gd::_check_undergrowth_stays_off_props`, which is Hollowmere-specific
-(reads `world.height_at()` and hardcodes the "Undergrowth"/"World" node names of that one scene).
-
-**What to do about it:** the shape that generalized the other two should transfer — sample a handful
-of each MultiMesh's instance transforms, ray down onto the SAME collider the placer used, and assert
-the landing collider is never in `prop_group` — but doing that without a specific map's coordinates
-needs `Undergrowth` itself to expose something like `sample_ground_gaps() -> Array[float]` the way
-`EnemyWorld`/`HarvestWorld` now expose `expected_*_count()`, so a generic tool can ask the system
-rather than reimplementing its raycast. Needs a claim on `world/gen/undergrowth.gd` and
-`tools/world_contract_check.gd`.
-
-
-
 ### F-020 · Steam sessions cannot use NetSession's direct-address auto-rejoin loop
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-16 by tine during 1.7
@@ -804,6 +780,55 @@ loop (F-081/D-057) is a separate piece of work from the read-only check F-200 as
 ---
 
 ## Resolved
+
+### F-112 · `world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check — F-076's third system, not lifted — **fixed**
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-18 by lp during F-076
+
+F-076 generalized two of the three systems Hollowmere's launch exposed (`EnemyWorld`, `HarvestWorld`)
+into `tools/world_contract_check.gd`, which runs against whatever map is `project.godot`'s main scene
+with no per-map code. The third — `Undergrowth`'s "don't grow on top of a prop" rule
+(`world/gen/undergrowth.gd:_is_prop`) — was not: it wasn't in this task's claim
+(`autoload/enemy_world.gd`, `autoload/harvest_world.gd` only), and unlike the other two it has no
+clean ground-truth field to read straight from a layout — "which props are solid" isn't in the JSON,
+only in which collider the generator happens to tag with `prop_group`. The only check for it today is
+still `tools/hollowmere_check.gd::_check_undergrowth_stays_off_props`, which is Hollowmere-specific
+(reads `world.height_at()` and hardcodes the "Undergrowth"/"World" node names of that one scene).
+
+**What to do about it:** the shape that generalized the other two should transfer — sample a handful
+of each MultiMesh's instance transforms, ray down onto the SAME collider the placer used, and assert
+the landing collider is never in `prop_group` — but doing that without a specific map's coordinates
+needs `Undergrowth` itself to expose something like `sample_ground_gaps() -> Array[float]` the way
+`EnemyWorld`/`HarvestWorld` now expose `expected_*_count()`, so a generic tool can ask the system
+rather than reimplementing its raycast. Needs a claim on `world/gen/undergrowth.gd` and
+`tools/world_contract_check.gd`.
+
+**Resolved 2026-08-19 by lp.** Fixed 2026-08-19 by lp. Undergrowth.sample_ground_gaps() -> Array[float] (world/gen/undergrowth.gd)
+stride-samples this run's _placements -- the world-space Transform3Ds _scatter() already computed --
+and reports each sampled plant's height above the layout's own heightfield. world_contract_check.gd
+gained _check_undergrowth(level): finds the map's Undergrowth node and, if it exposes
+sample_ground_gaps(), fails when >2% of sampled plants sit >0.6m above ground (same tuning
+hollowmere_check.gd's own function already proved). No layout Dictionary needed -- Undergrowth
+already read its own, so this runs on any map regardless of World.layout_path.
+
+Found while verifying, folded into this task (D-127): hollowmere_check.gd's existing
+_check_undergrowth_stays_off_props had two compounding bugs -- it read
+MultiMesh.get_instance_transform()'s origin bare (no to_global(), so it's CELL-LOCAL not world
+position) AND that call answers identity under the --headless dummy renderer this check has always
+run under (F-103), so worst=0.00m every run was never a real assertion. This check had asserted
+nothing since it shipped. Fixed by delegating it to the new sample_ground_gaps() too -- one correct
+implementation, no renderer dependency anywhere.
+
+Verified: agent godot --script tools/world_contract_check.gd on the live Hollowmere boot ->
+WORLD_CONTRACT_UNDERGROWTH sampled=10342 perched=4 worst=0.65m, WORLD_CONTRACT_CHECK PASS (0.04%,
+well under 2% tolerance -- real prop-avoidance confirmed, not just that the check runs).
+agent godot --script tools/hollowmere_check.gd reports the identical sampled=10342 perched=4
+worst=0.65m, HOLLOWMERE_CHECK PASS. Regression-proved: temporarily stubbed _is_prop() to always
+return false (F-076's exact defect) -> world_contract_check.gd correctly FAILed loudly
+(851/11297 perched, 7.5%), reverted, re-ran clean (perched=4 again). Full boot clean
+(agent godot --quit-after 120). tools/multimesh_readback_check.gd, tools/harvest_world_check.gd,
+tools/enemy_check.gd unaffected (failures=0). Spec: docs/SPECS.md ## F-112. Decision recorded:
+docs/DECISIONS.md D-127.
 
 ### F-201 · `tools/steam_lobby_check.gd` prints "all checks passed" (exit 0) but always emits one undeclared engine `ERROR:` line, violating this project's own SPECS.md standing rule 4 — **fixed**
 

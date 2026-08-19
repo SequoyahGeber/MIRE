@@ -3056,12 +3056,18 @@ map is actually shipped rather than one hardcoded scene path.
   below). A map not built that way has nothing to compare against; the layout-shaped checks are
   skipped, not failed, so this never blocks a genuinely different kind of world generator.
 
-**Not covered — filed as F-112:** `world/gen/undergrowth.gd`'s "don't grow on top of a prop" rule,
-the third system the original F-076 named. It has no equivalent ground-truth field sitting in a
-layout the way markers/`harvestable` props do — "which collider is solid" is a fact about which node
-the generator tagged, not something the JSON states directly — so generalizing it needs `Undergrowth`
-to expose something like `sample_ground_gaps()` first. `tools/hollowmere_check.gd`'s
-`_check_undergrowth_stays_off_props` is still the only check for it, and it is Hollowmere-specific.
+**Now covered too (F-112, 2026-08-19):** `world/gen/undergrowth.gd`'s "don't grow on top of a prop"
+rule, the third system the original F-076 named. `Undergrowth.sample_ground_gaps() -> Array[float]`
+stride-samples this run's `_placements` — the world-space transforms `_scatter()` already computed,
+read directly rather than through `MultiMesh.get_instance_transform()` (D-127: that call answers
+identity under `--headless` with no error, F-103) — and reports each one's height above the layout's
+own heightfield. `_check_undergrowth()` in `world_contract_check.gd` flags it if more than 2% of
+sampled plants sit more than 0.6 m above ground (a few legitimately stand on bridge decks/camp
+floors; a genuine "grass on the boulders" bug reads as hundreds, not a handful — same tuning
+`tools/hollowmere_check.gd::_check_undergrowth_stays_off_props` already proved, which now calls
+`sample_ground_gaps()` too instead of its own now-removed, always-broken readback). No layout
+Dictionary needed — `Undergrowth` reads its own ground truth internally, so this runs whether or not
+`_layout_for()` found a `World.layout_path` on the map at all.
 
 ### 2026-08-18 — a named collision-layer convention exists now (F-075/D-061): layer 2 is terrain, and ONLY terrain
 
@@ -3499,6 +3505,8 @@ wrong call at this size: one mesh 356 m across cannot be culled.
   collider's parent instead of the collider (grass grew on top of trees and rocks), the road test read
   a schema this map does not write (bushes grew down the middle of every road), and the probe ray ran
   between fixed world heights of 24 m and −12 m, so nothing above 24 m grew anything at all.
+  `sample_ground_gaps() -> Array[float]` (F-112) exposes its ground-truth check the same way —
+  see the F-076/F-112 section above for what reads it.
 - **Neither node has network authority and neither may gain any.** They are presentation. Anything
   that needs to change during a run — a broken bridge, a flooded zone — is host state.
 

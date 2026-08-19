@@ -3543,3 +3543,39 @@ the one place that would need updating, by design (its `GODOT_LOCK`/`GODOT_HOLDE
 coupling point). A future writer that forgets to import the guard is a review-time bug, not a design
 question — `tools/import_cache_guard_check.py` proves the guard itself works; it cannot prove a new
 script remembered to call it.
+
+### D-127 · 2026-08-19 · A check that needs a generator's per-instance placements reads the generator's own already-computed transforms, never `MultiMesh.get_instance_transform()`
+
+F-112: generalizing `tools/hollowmere_check.gd::_check_undergrowth_stays_off_props` for
+`tools/world_contract_check.gd` found it reading live `MultiMeshInstance3D`s back with
+`get_instance_transform()`, with no `to_global()` and no renderer guard. Two bugs, compounding: the
+returned origin is CELL-LOCAL (rebased around each MultiMesh's own centre in
+`undergrowth.gd::_emit()`), so `height_at(origin.x, origin.z)` was sampling terrain near world (0,0)
+for every plant regardless of where it actually stood; and `MultiMesh` instance transforms live on
+the RenderingServer, so the `--headless` dummy renderer this check has always run under
+(`agent godot --script`, never `--windowed`) answers every read with identity, no error (F-103,
+already documented for production code in `tools/multimesh_readback_check.gd`). The two bugs hid each
+other: `worst=0.00 m` every run wasn't the check passing, it was `get_instance_transform()` returning
+the same near-origin coordinate for every sample. This check has asserted nothing since it shipped.
+
+**The fix that generalizes, not just patches:** `world/gen/undergrowth.gd`'s new
+`sample_ground_gaps()` reads `_placements` — the world-space `Transform3D`s `_scatter()` already
+computed before `_emit()` ever rebases them onto a MultiMesh — instead of reading a live
+`MultiMeshInstance3D` back at all. This sidesteps F-103 rather than routing around it with
+`--windowed` + a `DisplayServer.get_name() == "headless"` skip guard (the pattern
+`tools/harvest_batch_check.gd` uses, and what an earlier draft of this fix did): no renderer
+dependency, correct under a plain headless run, and one implementation instead of two to keep in
+sync — `hollowmere_check.gd`'s function now calls `sample_ground_gaps()` too rather than
+re-deriving the same raycast.
+
+**The rule: when a generator already holds the per-instance transforms it placed (a member variable,
+a published `meta`), a check reads THAT, never `MultiMesh.get_instance_transform()`.** The MultiMesh
+is a render target, not a data store, under this engine's headless mode — F-103 said so for
+production code (`EnvironmentVfx`); this extends it to check code, where the failure mode is worse:
+production code that reads a MultiMesh back breaks visibly (props at the world origin), but a CHECK
+that does the same thing passes green while proving nothing, silently, for as long as nobody thinks
+to question a `worst=0.00 m` that never moves.
+
+**Would change my mind:** a generator that has no separate placement record and truly only has the
+MultiMesh (nothing here does yet) — then `--windowed` + the `DisplayServer` skip guard is the
+fallback, not a violation of this rule.
