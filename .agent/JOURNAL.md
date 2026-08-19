@@ -4066,3 +4066,15 @@ Notes along the way:
 Files: `world/chunk/nav_baker.gd`, `autoload/build_service.gd`, `tools/nav_bake_check.gd`
 
 Commit at time of writing: `dee22f8`
+
+---
+
+### DONE · F-163 · lm · 2026-08-19T04:53:06+00:00
+
+**`expr as Array[T]` silently fails to convert an untyped Array's element type — a `.set()` onto a typed-array `@export` then no-ops with no error**
+
+Verified the finding's premise first (agent godot --script tools/cycle_modifier_check.gd -> failures=0, clean): no code fix was needed, the file the finding named already used the correct constructor form. Closed by resolving F-163 in docs/FINDINGS.md and promoting the rule into docs/SPECS.md's standing-rules list (now five) plus a matching ## F-163 spec block, per the finding's own 'what closes this'. Along the way, corrected the finding's suggested fix: Array[StringName](expr) bracket-generic call syntax is a PARSE ERROR in real .gd script code (only valid inside .tres text resources) -- confirmed with new tools/_probe_typed_array_convert.gd, which also confirms the two forms that actually work: Array(expr, TYPE_STRING_NAME, &"", null) and declare-then-assign(). Full boot sanity: agent godot --quit-after 120, 0 ERROR/SCRIPT ERROR lines.
+
+Files: `docs/SPECS.md`, `docs/FINDINGS.md`, `tools/_probe_typed_array_convert.gd`
+
+Commit at time of writing: `ecbcd0b`

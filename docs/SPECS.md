@@ -35,7 +35,7 @@ each names the **GATE** it must not start before — a gate line is a hard stop,
    what you DID. Hand-off is only for visual/taste/playfeel judgment, his accounts or hardware, or
    work he is significantly faster at. Per-task commits make bold edits one revert from safe.
 
-### The four standing rules (they have already cost real sessions)
+### The five standing rules (they have already cost real sessions)
 
 1. **Never name an autoload as a bare identifier in any script a `--script` harness can reach at
    compile time** — that is any script pulled in through a `class_name` or `preload` chain (F-011,
@@ -51,6 +51,18 @@ each names the **GATE** it must not start before — a gate line is a hard stop,
    `session_lifecycle_check` and `connect_retry_check` declare patterns today (F-052). A check
    with no declaration gets zero allowance, and never "fix" a declared error by silencing the
    production log call that emits it.
+5. `expr as Array[T]` does **not** perform an element-wise runtime conversion of an already-untyped
+   `Array` — it silently leaves the array untyped, and `Object.set()` onto a strictly-typed
+   `Array[T]` `@export` then no-ops with no error (F-163). `Array[T](expr)` is **not** a fix in real
+   `.gd` code either — that bracket-generic call syntax is only valid inside a `.tres` text
+   resource's own literal parser; written as an executable statement in a `.gd` script it is a parse
+   error (`Cannot call on an expression`), confirmed with `tools/_probe_typed_array_convert.gd`. The
+   forms that actually work in script code: the 4-arg builtin constructor,
+   `Array(expr, TYPE_STRING_NAME, &"", null)` (what `tools/cycle_modifier_check.gd` uses), or
+   declare-then-`assign()`, `var typed: Array[T] = []; typed.assign(expr)`. A plain array literal
+   assigned directly to a typed-array-declared local (`var x: Array[T] = [...]`) still converts
+   correctly at declaration time — the failure is specific to converting an already-untyped `Array`
+   *value*.
 
 ### Seams that already exist (build on these, never reinvent)
 
@@ -3215,6 +3227,55 @@ sized, non-clipping, matching their hotbar icons.
 
 ---
 
+## F-164 · A capped Wellspring's re-corruption clock (task 6.4) has no HUD or ambient warning before it finishes
+
+**Claim:** `ui/hud/wellspring_hud.gd`, `tools/wellspring_hud_check.gd` (new), plus `project.godot`
+via `agent autoload` (never a hand-claim, D-021/F-051).
+
+**Two gaps, not one.** The finding as filed is about the missing warning, but reading
+`ui/hud/wellspring_hud.gd` before touching anything surfaced a second, larger gap the finding text
+never mentions: `WellspringHud` was **never added to `[autoload]`** — task 6.5's DELEGATION.md entry
+flags this in passing ("unlike `wellspring_hud.gd`, which ships the same pattern but was never added
+to `[autoload]`") but it was never filed or fixed. The whole Wellspring HUD — the existing capping
+prompt/progress bar included, not just this task's new warning — has been unreachable in the live
+game since task 4.8 shipped it. A warning built into a HUD nothing loads is not shipped (AGENTS.md,
+D-039), so fixing the registration is part of closing this finding, not a separate task: `agent
+autoload WellspringHud res://ui/hud/wellspring_hud.gd`.
+
+**Decision — an ambient, map-wide banner, not a proximity-gated one, and not scoped to "Wellsprings
+the local player has capped".** The finding's own suggested closure floated both "any Wellspring the
+local player has ever capped" and a plain threshold poll; the former needs a per-player cap-history
+table that does not exist anywhere in the codebase today (no system tracks "which player capped
+which Wellspring" — inventing one to gate a single warning line is out of proportion to a `low`
+severity finding). DESIGN.md's framing — the Mire's state should be "visible on the horizon" — argues
+for the SIMPLER shape being the more correct one anyway: every peer already reads the same replicated
+`recorruption_sec`/`capped` fields this HUD polls for the in-range prompt, so a second poll over every
+member of the `wellspring` group, independent of the local camera's position, costs nothing new and
+warns every player, not just whoever capped it. A second top-centre panel (the existing prompt stays
+bottom-centre) shows once ANY capped Wellspring's `recorruption_sec` crosses
+`Wellspring.RECORRUPTION_DURATION_SEC * Wellspring.RECORRUPTING_VISUAL_FRACTION` — the exact fraction
+the in-world mesh already swaps at, so the HUD text and the visual agree — with a `m:ss` countdown to
+the nearest one, and a count when more than one Wellspring is past it at once. Reads the constants off
+`Wellspring` (global `class_name`) directly rather than hard-coding the threshold, per the guidance
+task 6.4 already left for this exact consumer in DELEGATION.md.
+
+**Fix:** `ui/hud/wellspring_hud.gd` gains `_build_warning_panel()` (built alongside the existing
+bottom prompt in `_build_ui()`) and `_refresh_recorruption_warning()`, polled on the same `POLL_SEC`
+cadence as `_refresh_nearby()`/`_refresh_panel()` but reading every `wellspring`-group member, not
+just `_nearby` (which by design only ever tracks an UNCAPPED Wellspring in range — the pair that
+drives the capping prompt, and structurally cannot see a capped-and-recorrupting one).
+
+**Verify:** new `tools/wellspring_hud_check.gd` — spawns real `Wellspring` nodes (same construction
+`wellspring_recorruption_check.gd` uses) 5000m from the origin with no `Camera3D` in the tree at all,
+proving the warning is not a proximity read; drives `capped`/`recorruption_sec` directly and calls
+`_refresh_recorruption_warning()` inline rather than waiting on real poll timing. `agent godot
+--script tools/wellspring_hud_check.gd` → `WELLSPRING_HUD_CHECK failures=0`, all 11 assertions PASS.
+Ran twice, both clean. No regressions: `wellspring_check.gd` and `wellspring_recorruption_check.gd`
+both still `failures=0`. `agent godot --quit-after 20` boots with zero `ERROR:` lines and
+`WellspringHud` present in the autoload list.
+
+---
+
 ## F-159 · Placed buildables are invisible to the nav map — agents path straight through walls
 
 **Claim:** `world/chunk/nav_baker.gd`, `autoload/build_service.gd`, `tools/nav_bake_check.gd`.
@@ -3537,6 +3598,46 @@ against, rather than inventing a second settings store.
 already handles an old save missing the new key. A setting a gameplay system reads every frame
 (sensitivity, FOV, reduce-motion) should be pulled once and cached on `settings_changed`, the way
 `PlayerCamera._apply_settings()` does, never read live off the autoload in a hot path.
+
+---
+
+## F-163 · `expr as Array[T]` silently fails to convert an untyped Array's element type — a `.set()` onto a typed-array `@export` then no-ops with no error
+
+**Claim:** `docs/SPECS.md`, `docs/FINDINGS.md`, `tools/_probe_typed_array_convert.gd` (new, throwaway
+— no production or check script needed a change; `tools/cycle_modifier_check.gd`, the file the
+finding was filed against, already used the correct constructor form throughout).
+
+**Root cause, confirmed by probe:** `expr as Array[StringName]` does not perform an element-wise
+runtime conversion of an already-untyped `Array` — `get_typed_builtin()` on the result is still `0`
+(untyped), and a subsequent `Object.set()` onto a strictly-typed `Array[StringName]` `@export`
+property silently stores an empty array, no error either direction.
+
+**The finding's own suggested fix needed a correction before it went into the standing rules.** It
+named `Array[StringName](expr)` (bracket-generic constructor call) as *the* fix. That syntax is valid
+inside a `.tres` text resource's own literal parser (`content/powerups/*.tres` already uses it), but
+written as an executable statement in real `.gd` script code it is a **parse error** —
+`Cannot call on an expression. Use ".call()" if it's a Callable.` — confirmed directly with
+`tools/_probe_typed_array_convert.gd`. The forms that actually compile and work in script code: the
+4-arg builtin constructor `Array(expr, TYPE_STRING_NAME, &"", null)` (what
+`tools/cycle_modifier_check.gd` already uses, and the correct fix reference now), or declare-then-
+`assign()`: `var typed: Array[T] = []; typed.assign(expr)`. Both confirmed round-tripping correctly
+through `.set()`/`.get()` on a real `Array[StringName]` `@export`. A plain array literal assigned
+directly to a typed-array-declared local (`var x: Array[T] = [...]`) still converts correctly at
+declaration time — the failure is specific to converting an already-untyped `Array` *value*.
+
+**Fix:** no code fix — `tools/cycle_modifier_check.gd` was already correct. This task added
+`tools/_probe_typed_array_convert.gd` (a permanent regression-flavored probe, kept for whenever this
+rule needs re-confirming against a future engine version) and promoted the corrected rule into
+`docs/SPECS.md`'s standing-rules list (now five; see above), since the finding's own "what closes
+this" said the note belongs there, one tier with F-016's `class_name` rule.
+
+**Verify:** `agent godot --script tools/cycle_modifier_check.gd` → `CYCLE_MODIFIER_CHECK failures=0`,
+0 engine `ERROR:`/`SCRIPT ERROR` lines, confirming the premise (files this finding named had already
+changed since filing, and the fix was already in place). `agent godot --script
+tools/_probe_typed_array_convert.gd` reproduces the trap and both working alternatives directly.
+
+**Verified 2026-08-18 (lm):** both commands above ran clean; probe output confirmed `as Array[T]`
+stores `[]`, both alternative forms store the full 2-element array.
 
 ---
 

@@ -92,54 +92,6 @@ covered by `tools/ranged_combat_check.gd`/`tools/ranged_combat_net_check.gd`, bo
 is purely the bookkeeping bump D-100 already hit once for task 6.1 (that task avoided it by reusing
 `WorldDeltaLog` instead — not an option here, see D-102).
 
-### F-163 · `expr as Array[T]` silently fails to convert an untyped Array's element type — a `.set()` onto a typed-array `@export` then no-ops with no error
-
-**Area:** GDScript/tooling · **Severity:** medium · **Found:** 2026-08-18 by lm during 6.2
-
-Building synthetic `CycleModifierDef` instances for `tools/cycle_modifier_check.gd`, assigning an
-untyped `Array` parameter into a `tags: Array[StringName]` `@export` var via
-`def.set(&"tags", tags as Array[StringName])` produced an empty array every time — no error, no
-warning, no exception, just silently discarded. `as Array[StringName]` does not perform an
-element-wise runtime conversion of an already-untyped `Array`; it appears to leave the array's
-element type unchanged, and `Object.set()` on a strictly-typed `Array[T]` `@export` property then
-rejects the mismatched Variant without complaint. This is the same class of trap `ARCHITECTURE.md`
-§6b already catalogues for the Recast bridge — wrong result, no diagnostic — just in core GDScript
-typed-array handling rather than an engine subsystem.
-
-The fix is the constructor call form: `Array[StringName](expr)`, not `expr as Array[StringName]`.
-`content/powerups/*.tres` already uses this exact syntax for typed array/dictionary literals
-(`tags = Array[StringName]([&"Blood", &"Kinetic"])`), which turns out to be load-bearing at runtime
-too, not just inside `.tres` resource text — any GDScript that builds a typed array from an untyped
-one (a test harness constructing synthetic content defs, a loader normalizing a dynamically-sourced
-list) needs the constructor form. A plain array literal assigned directly to a typed-array-declared
-local (`var x: Array[StringName] = [...]`) converts correctly at declaration time; the failure is
-specific to converting an *already-untyped* `Array` value via `as`.
-
-**What closes this:** promoting this note into `docs/SPECS.md`'s "four standing rules" list (same
-tier as F-016's class_name rule) the next time that file is touched for an unrelated task, so it is
-read before the mistake rather than after. No code fix needed — `tools/cycle_modifier_check.gd`
-already uses the constructor form throughout.
-
-### F-164 · A capped Wellspring's re-corruption clock (task 6.4) has no HUD or ambient warning before it finishes — only the in-world mesh swap tells a player
-
-**Area:** UI/UX · **Severity:** low · **Found:** 2026-08-18 by lm during 6.4
-
-`ui/hud/wellspring_hud.gd` only ever shows a prompt for an uncapped Wellspring (`_refresh_nearby()`
-skips any node where `capped == true`), so a player who is not standing right next to a decaying
-Wellspring gets no signal at all that it is losing its cap — no toast, no map marker, no ambient cue —
-until either they happen to walk past and see the `wellspring_recorrupting.glb` state, or it finishes
-outright and the "Hold [key] to begin capping" prompt reappears. This is a real, deliberate scope cut
-(`docs/SPECS.md` §6.4: "the in-world mesh swap is the only signal today") — task 6.4 is the backend
-clock, and ARCHITECTURE.md §2.2's "VFX, audio, camera, UI" row makes this presentation, a different
-system's job — but it is a genuine gap: DESIGN.md's whole framing is that the Mire's state should be
-"visible on the horizon," and a capped Wellspring quietly expiring off-screen cuts against that.
-
-**What closes this:** a future UI/polish task adds a warning once `recorruption_sec` crosses
-`RECORRUPTING_VISUAL_FRACTION` (or some other threshold) on any Wellspring the local player has ever
-capped — `EventBus.subscribe_wellspring_recorrupted()` already exists for the "it's gone" case;
-crossing the visual threshold has no event of its own yet and would need one, or a poll against the
-replicated `recorruption_sec` field the way `wellspring_hud.gd` already polls `progress_sec`.
-
 ### F-158 · `bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler
 
 **Area:** content/vfx · **Severity:** low · **Found:** 2026-08-19 by lm during 4.11
@@ -1193,6 +1145,91 @@ approach (`piece_placed`/`piece_destroyed` from `BuildService`, folded into
 ---
 
 ## Resolved
+
+### F-164 · A capped Wellspring's re-corruption clock (task 6.4) has no HUD or ambient warning before it finishes — only the in-world mesh swap tells a player — **fixed**
+
+**Area:** UI/UX · **Severity:** low · **Found:** 2026-08-18 by lm during 6.4
+
+`ui/hud/wellspring_hud.gd` only ever shows a prompt for an uncapped Wellspring (`_refresh_nearby()`
+skips any node where `capped == true`), so a player who is not standing right next to a decaying
+Wellspring gets no signal at all that it is losing its cap — no toast, no map marker, no ambient cue —
+until either they happen to walk past and see the `wellspring_recorrupting.glb` state, or it finishes
+outright and the "Hold [key] to begin capping" prompt reappears. This is a real, deliberate scope cut
+(`docs/SPECS.md` §6.4: "the in-world mesh swap is the only signal today") — task 6.4 is the backend
+clock, and ARCHITECTURE.md §2.2's "VFX, audio, camera, UI" row makes this presentation, a different
+system's job — but it is a genuine gap: DESIGN.md's whole framing is that the Mire's state should be
+"visible on the horizon," and a capped Wellspring quietly expiring off-screen cuts against that.
+
+**What closes this:** a future UI/polish task adds a warning once `recorruption_sec` crosses
+`RECORRUPTING_VISUAL_FRACTION` (or some other threshold) on any Wellspring the local player has ever
+capped — `EventBus.subscribe_wellspring_recorrupted()` already exists for the "it's gone" case;
+crossing the visual threshold has no event of its own yet and would need one, or a poll against the
+replicated `recorruption_sec` field the way `wellspring_hud.gd` already polls `progress_sec`.
+
+**Resolved 2026-08-19 by lp.** Fixed both the reported gap and a bigger one it uncovered: `WellspringHud` had never been added to
+`[autoload]` (registered now via `agent autoload WellspringHud res://ui/hud/wellspring_hud.gd`) — the
+whole HUD, capping prompt included, was unreachable in the live game since task 4.8, not just this
+finding's warning. `ui/hud/wellspring_hud.gd` gained a second, top-centre ambient panel
+(`_refresh_recorruption_warning()`, polled alongside the existing prompt) that shows once ANY capped
+Wellspring's `recorruption_sec` crosses `Wellspring.RECORRUPTION_DURATION_SEC *
+RECORRUPTING_VISUAL_FRACTION` — the same fraction the in-world mesh already swaps at — with an m:ss
+countdown, independent of proximity or who capped it (DESIGN.md's "visible on the horizon"; full
+reasoning and the "why not gate on the local player's own cap history" call in SPECS.md's new F-164
+block). New `tools/wellspring_hud_check.gd`: `agent godot --script tools/wellspring_hud_check.gd` ->
+`WELLSPRING_HUD_CHECK failures=0`, 11/11 PASS, run twice. No regressions: `wellspring_check.gd` and
+`wellspring_recorruption_check.gd` both `failures=0`. `agent godot --quit-after 20` boots with zero
+`ERROR:` lines.
+
+### F-163 · `expr as Array[T]` silently fails to convert an untyped Array's element type — a `.set()` onto a typed-array `@export` then no-ops with no error — **fixed**
+
+**Area:** GDScript/tooling · **Severity:** medium · **Found:** 2026-08-18 by lm during 6.2
+
+Building synthetic `CycleModifierDef` instances for `tools/cycle_modifier_check.gd`, assigning an
+untyped `Array` parameter into a `tags: Array[StringName]` `@export` var via
+`def.set(&"tags", tags as Array[StringName])` produced an empty array every time — no error, no
+warning, no exception, just silently discarded. `as Array[StringName]` does not perform an
+element-wise runtime conversion of an already-untyped `Array`; it appears to leave the array's
+element type unchanged, and `Object.set()` on a strictly-typed `Array[T]` `@export` property then
+rejects the mismatched Variant without complaint. This is the same class of trap `ARCHITECTURE.md`
+§6b already catalogues for the Recast bridge — wrong result, no diagnostic — just in core GDScript
+typed-array handling rather than an engine subsystem.
+
+The fix is the constructor call form: `Array[StringName](expr)`, not `expr as Array[StringName]`.
+`content/powerups/*.tres` already uses this exact syntax for typed array/dictionary literals
+(`tags = Array[StringName]([&"Blood", &"Kinetic"])`), which turns out to be load-bearing at runtime
+too, not just inside `.tres` resource text — any GDScript that builds a typed array from an untyped
+one (a test harness constructing synthetic content defs, a loader normalizing a dynamically-sourced
+list) needs the constructor form. A plain array literal assigned directly to a typed-array-declared
+local (`var x: Array[StringName] = [...]`) converts correctly at declaration time; the failure is
+specific to converting an *already-untyped* `Array` value via `as`.
+
+**What closes this:** promoting this note into `docs/SPECS.md`'s "four standing rules" list (same
+tier as F-016's class_name rule) the next time that file is touched for an unrelated task, so it is
+read before the mistake rather than after. No code fix needed — `tools/cycle_modifier_check.gd`
+already uses the constructor form throughout.
+
+**Resolved 2026-08-19 by lm.** No code fix needed — tools/cycle_modifier_check.gd (the file the finding was filed against) already
+used the constructor form throughout, confirmed by re-running it: `agent godot --script
+tools/cycle_modifier_check.gd` -> CYCLE_MODIFIER_CHECK failures=0, no engine ERROR:/SCRIPT ERROR lines.
+
+Closed by promoting the rule into docs/SPECS.md's standing-rules list (now five) as the finding's own
+"what closes this" specified, one tier with F-016's class_name rule, and added a matching ## F-163
+spec block there with Claim/Root cause/Fix/Verify.
+
+Correction made along the way: the finding's own suggested fix, `Array[StringName](expr)` bracket-
+generic constructor-call syntax, is valid inside a .tres text resource's literal parser but is a
+PARSE ERROR ("Cannot call on an expression") when written as an executable statement in real .gd
+script code -- confirmed directly with a new throwaway probe, tools/_probe_typed_array_convert.gd.
+The forms that actually compile and work in script code are the 4-arg builtin constructor
+`Array(expr, TYPE_STRING_NAME, &"", null)` (what cycle_modifier_check.gd actually uses) or declare-
+then-assign() (`var typed: Array[T] = []; typed.assign(expr)`). Both round-trip correctly through
+.set()/.get() on a real typed-array @export; `as Array[T]` does not, stores []. The standing rule in
+docs/SPECS.md and the ## F-163 spec block both carry the corrected guidance, not the finding's
+original (subtly wrong) fix text.
+
+Verified: `agent godot --script tools/cycle_modifier_check.gd` -> failures=0, clean.
+`agent godot --script tools/_probe_typed_array_convert.gd` -> reproduces the as-Array[T] silent-empty
+trap and confirms both working alternatives store the full array.
 
 ### F-162 · `tools/viewmodel_check.gd` fails independently of task 5.3 — three food items have no authored viewmodel — **fixed**
 
