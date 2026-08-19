@@ -1800,11 +1800,11 @@
       "task": "4.6"
     },
     "core/net/net_version.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-19T06:44:02+00:00",
+      "agent": "lm",
+      "at": "2026-08-19T11:25:46+00:00",
       "hash": "7702471d1060ad6303500080e987674ce3a95830cc41bff4c286927ae50d8902",
-      "task": "F-161",
-      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
+      "task": "F-165",
+      "token": null
     },
     "core/net/rpc_manifest.gd": {
       "agent": "hollow7",
@@ -2968,11 +2968,11 @@
       "task": "F-115"
     },
     "tools/handshake_check.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-19T06:44:02+00:00",
+      "agent": "lm",
+      "at": "2026-08-19T11:25:46+00:00",
       "hash": "e3931999451d37e3c44d70a81b1934538e5e24770da79d91c05ad95b595d7cbe",
-      "task": "F-161",
-      "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
+      "task": "F-165",
+      "token": null
     },
     "tools/harness_check.py": {
       "agent": "lp",
@@ -6276,9 +6276,11 @@
       "title": "A capped Wellspring's re-corruption clock (task 6.4) has no HUD or ambient warning before it finishes \u2014 only the in-world mesh swap tells a player"
     },
     "F-165": {
+      "done_at": "2026-08-19T11:25:46+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Task 6.5's two new extraction RPCs shipped with no `PROTOCOL_VERSION` bump \u2014 `net_version.gd` was held all session by another lane's claim"
     },
@@ -6308,9 +6310,11 @@
       "title": "`Wellspring._finish_cap()` still emits `wellspring_capped` from a host-only guard, so a non-host peer's `SalvageService` milestone bonus silently undercounts"
     },
     "F-169": {
+      "done_at": "2026-08-19T11:25:49+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Task 6.7's new `net_run_defeated` RPC shipped with no `PROTOCOL_VERSION` bump \u2014 `net_version.gd` was held all session by another lane's claim"
     },
@@ -6385,9 +6389,11 @@
       "title": "`EnemyWorld.bake_navigation()` \u2014 the LIVE nav baker \u2014 still ignores placed buildables; only `NavBaker` (task 4.5, unreachable per F-139) got F-159's fix"
     },
     "F-178": {
+      "done_at": "2026-08-19T11:25:50+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "F-157's three new display-name RPCs shipped with no `PROTOCOL_VERSION` bump \u2014 `net_version.gd` was held all session by another lane's claim"
     },

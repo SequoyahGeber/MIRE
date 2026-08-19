@@ -4926,3 +4926,38 @@ Commit at time of writing: `9b31ab7`
 Clean. Reviewed commits 065c315 (code) + 900ef93 (docs) against SPECS.md's 6.5 block. Host authority correct (repair/departure only advance/resolve on host; net_request_repair/net_request_toggle_departure both gate on _transport_is_host() and re-derive range/tool/cost/presence server-side, matching the ARCHITECTURE.md §2.2 Extraction row and the harvest pattern D-106 chose over CraftingService). D-105 (presence-gated hold, whole-session count) and D-106 (no CraftingService retrofit) are both well-reasoned and checked against real code before deciding, not assumed. RPCs correctly net_-prefixed, typed GDScript throughout, no bare-autoload violations (NetConfig is an established class_name, not an autoload — fine per rule 1's own carve-out), and extraction_hud.gd's bare 'ExtractionShip.DEPARTURE_HOLD_SEC' reference — the one thing that looked like a fresh F-016 violation at first read — is already the codebase's established pattern (wellspring_hud.gd does the identical 'Wellspring.RECORRUPTION_DURATION_SEC') and is moot anyway since agent godot's _import_pass() (F-093) rebuilds the class cache before every run, closing the fresh-clone gap F-016 originally warned about. F-165 (no PROTOCOL_VERSION bump) and F-166 (no shipwreck marker in authored_world.gd) were both self-filed accurately during 6.5 itself, with real root causes (net_version.gd and authored_world.gd held by other lanes' claims all session) and correctly cite D-102's precedent. Verified myself: tools/extraction_check.gd 34/34 pass, 0 ERROR: lines; all 8 named regression checks (wellspring_check, cycle_check, cycle_modifier_check, wave_spawner_check, crafting_check, mire_grid_check, mire_interaction_check, handshake_check) green; full boot (agent godot --quit-after 15) 0 ERROR: lines. No findings filed.
 
 Commit at time of writing: `31d46ec`
+
+---
+
+### DONE · F-165 · lm · 2026-08-19T11:25:46+00:00
+
+**Task 6.5's two new extraction RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim**
+
+F-161/F-165/F-169/F-178 all closed: PROTOCOL_VERSION 20->21 catch-up bump + rpc_manifest.gd mechanical check already shipped by hollow7's F-161 session, verified independently here (handshake_check 0 failures, rpc_manifest_check failures=0). Wrote the missing D-133, DELEGATION.md re-record workflow entry, and SPECS.md F-165 block; moved all four findings to Resolved. Filed F-213 (rpc_manifest.gd FNV seed overflow, cosmetic ERROR lines only).
+
+Notes along the way:
+- Code fix already shipped under hollow7's F-161 (PROTOCOL_VERSION 20->21, rpc_manifest.gd mechanism). Decided to close F-161/F-165/F-169/F-178 together since they share one fix/one verification and DELEGATION.md/DECISIONS.md were the only missing piece, now free (F-183 closed). D-133 records the catch-up-bump decision. Filed F-213 for an unrelated FNV seed overflow bug found while verifying rpc_manifest_check.gd (doesn't affect its PASS/FAIL correctness).
+
+Files: `core/net/net_version.gd`, `tools/handshake_check.gd`
+
+Commit at time of writing: `0d66ff3`
+
+---
+
+### DONE · F-169 · lm · 2026-08-19T11:25:49+00:00
+
+**Task 6.7's new `net_run_defeated` RPC shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim**
+
+Same fix as F-161/F-165/F-178 (PROTOCOL_VERSION 20->21 catch-up bump + rpc_manifest.gd, shipped by hollow7's F-161 session). Closed together with F-165 since all four share one fix/one verification. See F-165's DONE note and D-133 for the full account.
+
+Commit at time of writing: `0d66ff3`
+
+---
+
+### DONE · F-178 · lm · 2026-08-19T11:25:50+00:00
+
+**F-157's three new display-name RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim**
+
+Same fix as F-161/F-165/F-169 (PROTOCOL_VERSION 20->21 catch-up bump + rpc_manifest.gd, shipped by hollow7's F-161 session). Closed together with F-165 since all four share one fix/one verification. See F-165's DONE note and D-133 for the full account.
+
+Commit at time of writing: `0d66ff3`
