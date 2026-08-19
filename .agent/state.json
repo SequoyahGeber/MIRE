@@ -2968,9 +2968,9 @@
     },
     "tools/gamepad_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T10:44:59+00:00",
-      "hash": "e53f14e87898039982d3c710f37f1f3431903273fa32263ce22e5a1345999ed4",
-      "task": "7.6",
+      "at": "2026-08-19T13:07:12+00:00",
+      "hash": "f53f348c58c78b68377d7c6304afe64d374a9643e25914d946ef20d5a4af558a",
+      "task": "F-217",
       "token": null
     },
     "tools/gatherables_check.gd": {
@@ -3497,9 +3497,9 @@
     },
     "ui/building/build_bar.gd": {
       "agent": "lm",
-      "at": "2026-08-19T10:44:59+00:00",
-      "hash": "ace933112dfce82a984c12d11ebad6a010ae6d099abd5e7f18c7ded244a55dc6",
-      "task": "7.6",
+      "at": "2026-08-19T13:07:12+00:00",
+      "hash": "4ac936be0227259feeed82d27c1ad5d92ae0acf2f1ff4e431b739d783b6e7161",
+      "task": "F-217",
       "token": null
     },
     "ui/building/door_prompt.gd": {
@@ -6788,9 +6788,11 @@
       "title": "`AttunementUI` (task 3.9's mandatory run-start role picker) has no gamepad focus support \u2014 worse than F-209's original scope, since this panel has no Esc/dismiss path at all"
     },
     "F-217": {
+      "done_at": "2026-08-19T13:07:12+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`BuildBar`'s piece-selection slots are still mouse-click-only \u2014 task 7.6 gave build mode toggle/rotate/confirm/destroy real gamepad bindings but never touched which piece gets selected"
     },

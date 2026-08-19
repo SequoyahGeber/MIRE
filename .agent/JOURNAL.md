@@ -5094,3 +5094,15 @@ Notes along the way:
 Files: `ui/attunement/attunement_ui.gd`, `tools/menu_focus_check.gd`
 
 Commit at time of writing: `a25b4cc`
+
+---
+
+### DONE · F-217 · lm · 2026-08-19T13:07:12+00:00
+
+**`BuildBar`'s piece-selection slots are still mouse-click-only — task 7.6 gave build mode toggle/rotate/confirm/destroy real gamepad bindings but never touched which piece gets selected**
+
+PieceSlot: ui_accept selects, horizontal focus_neighbor chain wraps the row, panel-stylebox-swap focus ring (InventoryUI's technique), grab_focus on every set_selected_piece() call. Verified: agent godot --script tools/gamepad_check.gd -> GAMEPAD_CHECK failures=0, new _check_build_bar_slot_focus() proves real D-pad/ui_accept navigation through Input.parse_input_event(). Swept: only 2 focus_mode=FOCUS_ALL sites in project, both now wired.
+
+Files: `ui/building/build_bar.gd`, `tools/gamepad_check.gd`
+
+Commit at time of writing: `f7e2177`

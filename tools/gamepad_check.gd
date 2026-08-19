@@ -33,6 +33,7 @@ func _run() -> void:
 	await _check_hotbar_cycle()
 	await _check_eat()
 	await _check_build_cycle_via_gamepad()
+	await _check_build_bar_slot_focus()
 
 	print("\nGAMEPAD_CHECK failures=%d" % failures)
 	finish()
@@ -331,6 +332,115 @@ func _check_build_cycle_via_gamepad() -> void:
 	player.queue_free()
 
 
+# ── Build mode: BuildBar piece-slot selection via gamepad focus (F-217) ────────────────────────────
+
+
+## F-217: unlike every other assertion in this file, slot focus movement is not something
+## player_controller.gd's _unhandled_input implements — it is Godot's own Viewport GUI input handling
+## walking PieceSlot's focus_neighbor_left/_right, the same "put a real event through the real
+## pipeline and read gui_get_focus_owner() back" shape tools/menu_focus_check.gd already uses for
+## every other panel's chain. So this check uses Input.parse_input_event() (via _tap_focus below)
+## rather than calling _unhandled_input directly like the rest of this file.
+func _check_build_bar_slot_focus() -> void:
+	print("\n== BuildBar: piece-slot selection through real gamepad focus navigation (F-217) ==")
+	var player_net: Node = root.get_node_or_null(^"PlayerNet")
+	var players_root: Node = player_net.call(&"players_root") as Node if player_net != null else null
+	var registry: Node = root.get_node_or_null(^"Registry")
+	service = root.get_node_or_null(^"BuildService")
+	inventory = root.get_node_or_null(^"InventoryService")
+	check(players_root != null and registry != null and service != null and inventory != null,
+		"PlayerNet/Registry/BuildService/InventoryService all exist")
+	if players_root == null or registry == null or service == null or inventory == null:
+		return
+
+	level = Node3D.new()
+	level.name = "GamepadCheckBuildBarLevel"
+	root.add_child(level)
+	current_scene = level
+	_add_floor(Vector3(0.0, -0.5, 0.0), Vector3(40.0, 1.0, 40.0))
+	await physics_frame
+	await physics_frame
+
+	# Same "name must be '1'" requirement _check_build_cycle_via_gamepad's own comment explains —
+	# is_local_authority gates BuildBar's own construction, not just _unhandled_input.
+	var player: CharacterBody3D = \
+		preload("res://entities/player/player.tscn").instantiate() as CharacterBody3D
+	player.name = "1"
+	player.position = Vector3(0.0, 0.0, 0.0)
+	players_root.add_child(player)
+	await process_frame
+	await process_frame
+
+	var camera_pivot: Node3D = player.get(&"camera")
+	if camera_pivot == null:
+		check(false, "the real player has a camera pivot")
+		player.queue_free()
+		return
+	camera_pivot.rotation.x = deg_to_rad(-40.0)
+
+	inventory.call(&"host_transaction", 1, {} as Dictionary, {&"log": 10} as Dictionary)
+
+	var build_bar: Node = player.get_node_or_null(^"BuildBar")
+	check(build_bar != null, "the real player has a BuildBar")
+	if build_bar == null:
+		player.queue_free()
+		return
+
+	# Pin the piece explicitly (same real selection API the click/gamepad-cycle checks use) rather
+	# than trusting the auto-selected first buildable, so the slot lookup below is deterministic.
+	check(bool(player.call(&"set_selected_build_piece", &"wall_wood")),
+		"the real selection API accepts wall_wood")
+	await process_frame
+
+	var slot_total: int = int(build_bar.call(&"slot_count"))
+	check(slot_total > 1,
+		"content ships more than one buildable, enough to prove focus actually moves across slots")
+	if slot_total <= 1:
+		player.queue_free()
+		return
+
+	var wall_index: int = -1
+	for i: int in slot_total:
+		if build_bar.call(&"slot_piece_id", i) == &"wall_wood":
+			wall_index = i
+			break
+	check(wall_index >= 0, "wall_wood is one of BuildBar's registered slots")
+	if wall_index < 0:
+		player.queue_free()
+		return
+
+	var focused: Control = root.get_viewport().gui_get_focus_owner()
+	check(focused != null and focused.name == "BuildSlot_wall_wood",
+		"selecting wall_wood through the real API also grabs its BuildBar slot's keyboard/gamepad focus")
+
+	var next_piece_id: StringName = StringName(build_bar.call(&"slot_piece_id", (wall_index + 1) % slot_total))
+	await _tap_focus(JOY_BUTTON_DPAD_RIGHT)
+	var focused_right: Control = root.get_viewport().gui_get_focus_owner()
+	check(focused_right != null and focused_right.name == "BuildSlot_%s" % String(next_piece_id),
+		"D-pad right moves focus to the next slot in the row through focus_neighbor_right")
+
+	await _tap_focus(JOY_BUTTON_DPAD_LEFT)
+	var focused_left: Control = root.get_viewport().gui_get_focus_owner()
+	check(focused_left != null and focused_left.name == "BuildSlot_wall_wood",
+		"D-pad left returns focus to wall_wood's slot through focus_neighbor_left")
+
+	var ghost: Node = player.get_node_or_null(^"BuildGhost")
+	check(ghost != null, "a real BuildGhost is attached")
+	if ghost == null:
+		player.queue_free()
+		return
+
+	await _tap_focus(JOY_BUTTON_DPAD_RIGHT)
+	await _tap_focus(JOY_BUTTON_A)
+	await process_frame
+	check(StringName(ghost.call(&"current_piece_id")) == next_piece_id,
+		"ui_accept (A) on a focused BuildBar slot selects that piece through the real seam, not just a mouse click")
+	check(bool(build_bar.call(&"is_active")),
+		"BuildBar stays active — a gamepad-driven selection is not mistaken for closing the bar")
+
+	player.queue_free()
+
+
 func _add_floor(centre: Vector3, size: Vector3) -> void:
 	var body := StaticBody3D.new()
 	body.position = centre
@@ -361,6 +471,23 @@ func _joy_axis_event(axis: int, value: float) -> InputEventJoypadMotion:
 	event.axis = axis
 	event.axis_value = value
 	return event
+
+
+## F-217: tools/menu_focus_check.gd's own `_tap` — focus navigation only happens through the real
+## Viewport GUI input pipeline (Input.parse_input_event), not a node's own _input()/_unhandled_input,
+## so `_check_build_bar_slot_focus()` needs this instead of `_joy_button_event` + a direct call.
+func _tap_focus(button_index: int) -> void:
+	var press := InputEventJoypadButton.new()
+	press.button_index = button_index
+	press.pressed = true
+	Input.parse_input_event(press)
+	await process_frame
+	await process_frame
+	var release := InputEventJoypadButton.new()
+	release.button_index = button_index
+	release.pressed = false
+	Input.parse_input_event(release)
+	await process_frame
 
 
 func check(condition: bool, description: String) -> void:

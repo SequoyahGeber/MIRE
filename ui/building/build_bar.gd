@@ -17,6 +17,11 @@ extends CanvasLayer
 ## NETWORK AUTHORITY: none (§2.2 last row). A slot click only emits `piece_selected` — the player
 ## decides whether/how to act on it, and BuildService remains the only thing that ever actually
 ## places or destroys anything.
+##
+## F-217: `PieceSlot` now also selects via `ui_accept` while focused, and every slot chains to its
+## row neighbours (`focus_neighbor_left`/`_right`, wrapping) so a bare controller can actually change
+## which piece is selected — before this, toggle/rotate/confirm/destroy were gamepad-bound (task 7.6)
+## but selection itself was mouse-only.
 
 const COLOUR_PANEL := Color(0.055, 0.086, 0.070, 0.97)
 const COLOUR_ROW := Color(0.085, 0.125, 0.102, 0.98)
@@ -25,6 +30,10 @@ const COLOUR_READY := Color(0.894, 0.704, 0.286, 1.0)
 const COLOUR_TEXT := Color(0.91, 0.94, 0.89, 1.0)
 const COLOUR_MUTED := Color(0.60, 0.69, 0.62, 1.0)
 const COLOUR_ERROR := Color(0.96, 0.47, 0.39, 1.0)
+## F-217: keyboard/gamepad focus ring, same hue `InventoryUI` picked (F-209) for the identical
+## "focused but not necessarily the active one" state — distinct from COLOUR_READY, which marks the
+## piece build mode is actually placing.
+const COLOUR_FOCUS := Color(0.55, 0.85, 0.95, 1.0)
 
 
 ## One registered buildable. Selecting never places anything — it only tells the player which piece
@@ -37,6 +46,9 @@ class PieceSlot extends PanelContainer:
 	var _icon: TextureRect
 	var _base_style: StyleBoxFlat
 	var _selected_style: StyleBoxFlat
+	var _focus_style: StyleBoxFlat
+	var _selected: bool = false
+	var _has_focus: bool = false
 
 
 	func setup(def: Resource, select_callback: Callable) -> void:
@@ -48,10 +60,27 @@ class PieceSlot extends PanelContainer:
 		focus_mode = Control.FOCUS_ALL
 		_build_contents(def)
 		_build_styles()
+		focus_entered.connect(func() -> void: _has_focus = true; _update_style())
+		focus_exited.connect(func() -> void: _has_focus = false; _update_style())
 
 
 	func present(selected: bool) -> void:
-		add_theme_stylebox_override("panel", _selected_style if selected else _base_style)
+		_selected = selected
+		_update_style()
+
+
+	## F-217: `PanelContainer` has no native `"focus"` theme item (the same gap F-215 hit on
+	## `Slider`), so keyboard/gamepad focus is a `"panel"` stylebox swap here — the identical
+	## technique `InventoryUI.InventorySlot` already uses for the same control type. Priority: focus
+	## beats selected, so navigating away from the currently-building piece is never mistaken for
+	## still standing on it.
+	func _update_style() -> void:
+		var style: StyleBoxFlat = _base_style
+		if _selected:
+			style = _selected_style
+		if _has_focus:
+			style = _focus_style
+		add_theme_stylebox_override("panel", style)
 
 
 	func _build_contents(def: Resource) -> void:
@@ -111,6 +140,7 @@ class PieceSlot extends PanelContainer:
 	func _build_styles() -> void:
 		_base_style = _slot_style(COLOUR_BORDER, 1)
 		_selected_style = _slot_style(COLOUR_READY, 3)
+		_focus_style = _slot_style(COLOUR_FOCUS, 3)
 		add_theme_stylebox_override("panel", _base_style)
 
 
@@ -130,6 +160,13 @@ class PieceSlot extends PanelContainer:
 			and (event as InputEventMouseButton).pressed
 		):
 			select_requested.call(piece_id)
+			return
+		# F-217: the gamepad/keyboard equivalent of the mouse click above — same
+		# ui_accept-in-_gui_input shape F-209 gave InventorySlot, but a single select_requested call
+		# is the whole action here (no carry state to track, unlike a slot move).
+		if event.is_action_pressed(&"ui_accept"):
+			select_requested.call(piece_id)
+			accept_event()
 
 
 ## Emitted on a slot click. The player decides what to do with it (player_controller.gd's
@@ -173,6 +210,21 @@ func set_selected_piece(piece_id: StringName) -> void:
 	_selected_piece_id = piece_id
 	for slot: PieceSlot in _slots:
 		slot.present(slot.piece_id == piece_id)
+	_grab_focus_for_selected()
+
+
+## F-217: player_controller.gd's set_selected_build_piece() calls set_active(true) and
+## set_selected_piece() together on every entry into build mode (there is no "activate with nothing
+## selected" path — see its own doc comment), so this single method doubles as the initial-focus grab
+## AttunementUI's _grab_initial_focus() needed a separate open hook for (F-216). A slot click routes
+## back through here too (piece_selected -> player_controller.gd -> set_selected_build_piece()), so a
+## mouse click also leaves focus on the clicked slot — harmless, since Control already does that on
+## its own for a FOCUS_ALL control.
+func _grab_focus_for_selected() -> void:
+	for slot: PieceSlot in _slots:
+		if slot.piece_id == _selected_piece_id:
+			slot.grab_focus()
+			return
 
 
 ## Fed every physics tick the player is in build mode, straight from BuildGhost's own
@@ -278,6 +330,24 @@ func _populate_slots() -> void:
 		slot.setup(def, _on_slot_pressed)
 		_slots.append(slot)
 		_row.add_child(slot)
+	_wire_horizontal_chain(_slots)
+
+
+## F-217: same recipe F-209/F-216 gave every other panel's control chain (UnlockMenu's
+## _wire_vertical_chain, AttunementUI's copy of it) — but horizontal, since the slots sit in one
+## HBoxContainer row rather than a stacked column, so ui_left/ui_right is the natural axis. Wraps
+## first<->last like every other chain in this project. Built once here alongside the slots
+## themselves (see this function's own doc comment on why slots are static).
+func _wire_horizontal_chain(slots: Array[PieceSlot]) -> void:
+	var count: int = slots.size()
+	if count == 0:
+		return
+	for i: int in count:
+		var current: PieceSlot = slots[i]
+		var prev: PieceSlot = slots[(i - 1 + count) % count]
+		var next: PieceSlot = slots[(i + 1) % count]
+		current.focus_neighbor_left = current.get_path_to(prev)
+		current.focus_neighbor_right = current.get_path_to(next)
 
 
 func _on_slot_pressed(piece_id: StringName) -> void:
