@@ -6,6 +6,14 @@ extends Node
 ## NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2, "Day/night, wave director, Cycle state, active
 ## modifiers"): **HOST**. Only the host creates or clears the population; EnemyWorld's existing
 ## MultiplayerSpawner replicates those host-owned bodies, so this service adds no RPC.
+##
+## Task 5.9 (docs/SPECS.md §5.9): Cycle-aware pacing (`cycle_count_multiplier()`) and composition
+## weighting (`_roll_roster()`) on top of the player-count scaling and roster-unlock mechanics 2.12/
+## 3.14/4.11/6.1 already shipped. `_current_cycle` is cached from `EventBus.subscribe_cycle_advanced`
+## — the same read-only subscription `CycleModifierService` already uses — never queried live, so a
+## wave already on the ground is never resized mid-flight.
+
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
 const DEFAULT_SEED: int = 0x57415645  # "WAVE"
 ## Task 4.11's "corrupted spawn tables": a spawn landing on corrupted ground has a chance to produce
@@ -33,6 +41,16 @@ const CORRUPTED_SPAWN_CAP_PROBABILITY: float = 0.75
 ## enemy types") is the one that grows this list with real new archetypes. See D-100.
 @export var roster_order: Array[StringName] = [&"bog_crawler"]
 
+## Cycle-aware pacing (task 5.9, DESIGN.md §5.3's "comfortable -> contested -> desperate -> the end"
+## curve). Additive, not compounding like `CycleService.SPREAD_ESCALATION_PER_CYCLE` — DESIGN.md
+## §5.4 is explicit that replayability comes from STACKING MODIFIERS, not raw content/enemy volume,
+## so a wave's SIZE deliberately saturates while its COMPOSITION (`_roll_roster()` below) keeps
+## shifting for the life of the run. Placeholder-tuned like every other Cycle constant in this
+## codebase — nothing tunes this until a real playtest measures the wall (Q3). The cap lands at
+## Cycle 11 (1.0 + 10 * 0.15 = 2.5), inside DESIGN.md §5.3's own "wall around Cycle 8-12" window.
+const CYCLE_COUNT_STEP_PER_CYCLE: float = 0.15
+const CYCLE_COUNT_CAP_MULTIPLIER: float = 2.5
+
 var _rng := RandomNumberGenerator.new()
 var _night_active: bool = false
 var _ambient_was_enabled: bool = true
@@ -42,6 +60,10 @@ var _mire_grid_node: Node
 ## Archetypes unlocked so far from `roster_order`, in the order they were unlocked. `enemy_id` is
 ## always in the pool implicitly and is never duplicated in here.
 var _unlocked_pool: Array[StringName] = []
+## Cached from `EventBus.subscribe_cycle_advanced` (task 5.9). Starts at 1 — the same "no Cycle has
+## advanced yet" default `CycleService._current_cycle` itself uses — so `cycle_count_multiplier()`
+## is exactly 1.0 before the first advance and every pre-existing wave-size assertion is unchanged.
+var _current_cycle: int = 1
 
 
 func _ready() -> void:
@@ -49,6 +71,7 @@ func _ready() -> void:
 	# Before the DayNight lookup, which returns early when there is none (a harness, the main menu).
 	# Binding rules is not conditional on a day cycle existing — the wave sizes are still the sizes.
 	_bind_rules()
+	EVENT_BUS.subscribe_cycle_advanced(_on_cycle_advanced)
 	var day_night: Node = get_node_or_null(^"/root/DayNight")
 	if day_night == null:
 		return
@@ -78,6 +101,26 @@ func _on_rule_changed(id: StringName, new_value: float) -> void:
 		base_count = roundi(new_value)
 	elif id == &"wave_per_player":
 		per_player = roundi(new_value)
+
+
+func _on_cycle_advanced(cycle: int) -> void:
+	_current_cycle = cycle
+
+
+## Readable on any peer — same naming convention as `CycleService.current_cycle()`. Task 5.9.
+func current_cycle() -> int:
+	return _current_cycle
+
+
+## Additive, capped Cycle-driven size multiplier — see the constants' own header note for why this
+## does not compound the way `CycleService`'s spread multiplier does. Defaults to the cached
+## `_current_cycle` so `host_start_wave()` can call it bare; an explicit `cycle` arg lets a check (or
+## a future balance tool) probe any Cycle without waiting for a real advance.
+func cycle_count_multiplier(cycle: int = _current_cycle) -> float:
+	return minf(
+		1.0 + maxf(float(cycle - 1), 0.0) * CYCLE_COUNT_STEP_PER_CYCLE,
+		CYCLE_COUNT_CAP_MULTIPLIER
+	)
 
 
 ## Starts exactly one population for the night. A repeated threshold signal cannot add a second
@@ -126,14 +169,27 @@ func _spawn_one(
 	world.call("host_spawn", _corrupted_enemy_id_for(position, chosen_id), position)
 
 
-## Even odds across `enemy_id` plus every archetype `host_unlock_next_enemy()` has unlocked so far.
-## An empty `_unlocked_pool` (Cycle 1, before any advance) always returns `enemy_id` — 4.9's own
-## shipped behaviour, unchanged.
+## Weighted across `enemy_id` plus every archetype `host_unlock_next_enemy()` has unlocked so far
+## (task 5.9 — was flat/even odds before this task). `enemy_id` always keeps weight 1; the Nth
+## unlocked archetype (1-indexed, in unlock order) gets weight `N + 1`, so the most-recently-unlocked
+## archetype is always the single most common pick — composition keeps shifting for the life of the
+## run instead of diluting toward a flat average as the roster grows. An empty `_unlocked_pool`
+## (Cycle 1, before any advance) always returns `enemy_id` — 4.9's own shipped behaviour, unchanged.
 func _roll_roster() -> StringName:
 	if _unlocked_pool.is_empty():
 		return enemy_id
-	var pick: int = _rng.randi_range(0, _unlocked_pool.size())
-	return enemy_id if pick == 0 else _unlocked_pool[pick - 1]
+	var total_weight: float = 1.0
+	for index: int in _unlocked_pool.size():
+		total_weight += float(index + 2)
+	var roll: float = _rng.randf() * total_weight
+	if roll < 1.0:
+		return enemy_id
+	var cursor: float = 1.0
+	for index: int in _unlocked_pool.size():
+		cursor += float(index + 2)
+		if roll < cursor:
+			return _unlocked_pool[index]
+	return _unlocked_pool[_unlocked_pool.size() - 1]
 
 
 ## Host-only. Task 6.1's `CycleService` calls this once per Cycle advance. Returns the archetype
@@ -237,9 +293,13 @@ func _register_commands() -> void:
 func _cmd_wave(_ctx: Dictionary, args: Dictionary) -> Dictionary:
 	var operation: String = String(args.get("op", "status"))
 	if operation == "status":
-		return {"ok": true, "message": "wave %s — base %d + %d per player" % [
-			"active" if _night_active else "idle", base_count, per_player
-		], "data": {"active": _night_active, "base": base_count, "per_player": per_player}}
+		return {"ok": true, "message": "wave %s — base %d + %d per player, Cycle %d (x%.2f)" % [
+			"active" if _night_active else "idle", base_count, per_player,
+			_current_cycle, cycle_count_multiplier()
+		], "data": {
+			"active": _night_active, "base": base_count, "per_player": per_player,
+			"cycle": _current_cycle, "cycle_multiplier": cycle_count_multiplier(),
+		}}
 
 	if operation == "stop":
 		if not host_stop_wave():
@@ -277,7 +337,7 @@ func host_start_wave(override_count: int = 0) -> int:
 	if points.is_empty():
 		return 0
 	var spawn_count: int = override_count if override_count > 0 \
-		else base_count + per_player * _live_player_count()
+		else roundi((base_count + per_player * _live_player_count()) * cycle_count_multiplier())
 	for _index: int in spawn_count:
 		var origin: Vector3 = points[_rng.randi_range(0, points.size() - 1)] as Vector3
 		_spawn_one(world, origin, scatter_m)

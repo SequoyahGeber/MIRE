@@ -3954,3 +3954,18 @@ Notes along the way:
 Files: `autoload/combat_service.gd`, `autoload/ranged_combat_service.gd`, `autoload/crafting_service.gd`, `autoload/command_service.gd`, `autoload/world_delta_log.gd`, `tools/net_robustness_check.gd`
 
 Commit at time of writing: `9485513`
+
+---
+
+### DONE · 5.9 · lp · 2026-08-19T03:59:24+00:00
+
+**Wave director: Cycle-aware pacing, composition, player-count scaling**
+
+Cycle-aware wave pacing + composition weighting ships on top of the already-shipped player-count scaling and roster-unlock mechanics. WaveSpawner.cycle_count_multiplier(cycle) = additive, capped 2.5x at Cycle 11 (D-113); host_start_wave()'s size formula now applies it. _roll_roster() weights the most-recently-unlocked archetype highest instead of flat odds. New public current_cycle()/cycle_count_multiplier() API. Verified: agent godot --script tools/wave_director_check.gd (19 assertions, 0 failures); regressions wave_spawner_check.gd/cycle_check.gd/cycle_modifier_check.gd all still 0 failures, unmodified; agent godot --quit-after 20 shows 0 ERROR: lines. Docs: SPECS.md §5.9 (new block), DECISIONS.md D-113, DELEGATION.md Current state.
+
+Notes along the way:
+- No SPECS.md block existed; wrote docs/SPECS.md §5.9. Player-count scaling + roster-unlock composition already shipped (2.12/3.14/6.1) -- this task's actual delta is Cycle-aware SIZE pacing (cycle_count_multiplier: additive, capped 2.5x at Cycle 11, D-113 explains why not compounding like CycleService's spread multiplier) and weighted roster composition (_roll_roster now weights the most-recently-unlocked archetype highest instead of flat odds). New current_cycle()/cycle_count_multiplier() public API for 5.10's balance pass. Verified via new tools/wave_director_check.gd (19 assertions, 0 failures); wave_spawner_check/cycle_check/cycle_modifier_check all unmodified and green; full boot 0 ERROR:.
+
+Files: `systems/waves/wave_spawner.gd`, `tools/wave_director_check.gd`, `tools/wave_director_check.gd.uid`
+
+Commit at time of writing: `df8512e`
