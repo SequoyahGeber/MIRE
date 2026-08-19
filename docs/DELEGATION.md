@@ -1292,9 +1292,18 @@ state, only a host-side read of `CycleService.current_cycle()` via the existing
 **Public API `WaveSpawner` gained:**
 
 ```gdscript
-WaveSpawner.current_cycle() -> int                       # cached from EventBus.cycle_advanced, defaults 1
-WaveSpawner.cycle_count_multiplier(cycle: int = current) -> float  # 1.0 + (cycle-1)*0.15, capped 2.5 at Cycle 11
+WaveSpawner.current_cycle() -> int                       # readable on any peer (F-226) — host/solo's own cached int, or a client's WorldDeltaLog-replicated read; defaults 1 before any Cycle has advanced
+WaveSpawner.cycle_count_multiplier(cycle: int = -1) -> float  # -1 sentinel reads current_cycle(); 1.0 + (cycle-1)*0.15, capped 2.5 at Cycle 11
 ```
+
+**F-226 (2026-08-19, lm):** at ship, `current_cycle()` only ever read the local `_current_cycle`
+cache `_on_cycle_advanced()` fills from `EventBus.cycle_advanced` — but `CycleService._announce()`
+only fires that event host-side (`_owns_cycle()`), so a real client's cache never left `1` despite
+the getter's own doc comment claiming "readable on any peer." Fixed to take the identical
+host-int-or-`WorldDeltaLog`-fallback split `CycleService.current_cycle()` already uses, keyed on the
+file's existing `_owns_wave_director()` guard. Any future HUD/debug consumer built on this getter
+(the reason 5.9 added it) can now trust the doc comment on a real client, not just the host. Verified
+by a real two-process check, `tools/wave_spawner_cycle_net_check.gd` — see docs/SPECS.md F-226.
 
 `host_start_wave()`'s size formula is now
 `roundi((base_count + per_player * live_player_count) * cycle_count_multiplier())` — additive and

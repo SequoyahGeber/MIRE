@@ -1484,6 +1484,51 @@ confirming the timer-cancel path doesn't change behavior for an opped client's n
 
 ---
 
+## F-226 · `WaveSpawner.current_cycle()` is documented "readable on any peer" but is stuck at 1 forever on every client
+
+`WaveSpawner._current_cycle` (`systems/waves/wave_spawner.gd`) was updated only through
+`_on_cycle_advanced()`, wired to `EventBus.subscribe_cycle_advanced()` in `_ready()`. But
+`CycleService._announce()` (`systems/cycle/cycle_service.gd:142-149`), the only place
+`EventBus.emit_cycle_advanced()` is ever called, gates the whole body behind `_owns_cycle()` — true
+for the host or a solo/offline process, false for a real connected client. So on a client,
+`EventBus.cycle_advanced` never fired locally, and `WaveSpawner._current_cycle` never left its `1`
+default no matter how many Cycles the host had actually advanced — despite `current_cycle()`'s own
+doc comment claiming the same "readable on any peer" contract `CycleService.current_cycle()` earns
+with a real fallback (`_owns_cycle()` ? own int : `WorldDeltaLog.latest(...)`). Same root cause hit
+`cycle_count_multiplier()`, whose default arg (`cycle: int = _current_cycle`) read the same stuck
+value. **Claim:** `systems/waves/wave_spawner.gd`, `tools/wave_director_check.gd`,
+`tools/wave_spawner_cycle_net_check.gd` (new), `docs/FINDINGS.md`, `docs/SPECS.md`.
+
+**Fix:** gave `current_cycle()` the same host-int-or-`WorldDeltaLog`-fallback split
+`CycleService.current_cycle()` already uses — host/solo (`_owns_wave_director()`) still returns the
+cached `_current_cycle`; a real client instead reads `WorldDeltaLog.latest(...)` at the exact
+chunk/kind/key `CycleService._announce()` writes to, sourced by preloading
+`res://systems/cycle/cycle_service.gd` and reading its `GLOBAL_CHUNK`/`KIND`/`KEY` consts directly
+rather than hand-copying the magic values, so the two getters cannot drift apart. `cycle_count_multiplier()`'s
+default argument became a `-1` sentinel resolving through the fixed `current_cycle()` — GDScript
+default parameter values cannot themselves be method calls, so a bare `= current_cycle()` default was
+not an option.
+
+**Shipped 2026-08-19.** Verified: the pre-existing `tools/wave_director_check.gd` exercises
+`current_cycle()` only via a *direct* `EVENT_BUS.emit_cycle_advanced()` call, which bypasses
+`CycleService` entirely and would PASS even with F-226's bug present, so it does not regression-guard
+this fix by itself — re-run clean regardless (0 failures) to confirm no behavior change to the
+existing cache/host path. The real proof is the new
+`.agent/bin/agent godot --script tools/wave_spawner_cycle_net_check.gd` (two-process ENet, driver
+plays host, spawned child is a real connected client — `day_night_net_check.gd`'s driver/probe
+shape): the host advances the Cycle 3 times for real through `CycleService.host_advance_cycle()`, and
+the client's `WaveSpawner.current_cycle()` reaches the correct value (4) while its private
+`_current_cycle` cache independently verified stuck at `1` — proving the fix actually took the
+`WorldDeltaLog` fallback path rather than some stray local emission. 0 failures. Swept the whole
+codebase (`EventBus.subscribe_*`/`emit_*` call sites, every `_owns_*()`/`is_host()` gate, every other
+"readable/works on any peer" doc claim, and the only two other `_current_*`-cache fields in the
+codebase) for the same shape — every other candidate already has a real per-peer fallback
+(`CycleModifierService.active_modifier_ids()`, `MireGrid.corruption_at()`) or a different, unaffected
+cross-peer delivery mechanism (RPC broadcast or `MultiplayerSynchronizer` replication). No sibling
+found.
+
+---
+
 # M4 — world & the Mire
 
 **GATE for the whole milestone: 4.0a measured.** (4.0b is DONE — D-028.)
@@ -6966,6 +7011,67 @@ now route through `Boss`'s override. The other two (`_enter_death()`, the held-t
 heal mechanic yet") and dropping a target must not un-engage a boss already mid-fight. Also grepped for
 any other `extends Enemy` in the repo — `Boss` is the only subclass, so there is no sibling class this
 same override-gap could recur in.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
+## F-226 · `WaveSpawner.current_cycle()` is documented "readable on any peer" but is stuck at 1 forever on every client
+
+**Claim:** `systems/waves/wave_spawner.gd`, `tools/wave_director_check.gd` (+ its `.uid`),
+`tools/wave_spawner_cycle_net_check.gd` (new). **Authority:** §2.2 row "Day/night, wave director,
+Cycle state, active modifiers: HOST" — unchanged; this task adds no new replicated state and no new
+RPC, only a client-side read path onto storage `CycleService`/`WorldDeltaLog` already replicate.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The bug:** `WaveSpawner._current_cycle` was updated only by `_on_cycle_advanced()`, wired to
+`EventBus.subscribe_cycle_advanced()`. But `CycleService._announce()` (the only place
+`EVENT_BUS.emit_cycle_advanced()` is ever called) gates its whole body behind `_owns_cycle()` —
+true for the host or a solo/offline process, false for a real connected client. So a client's local
+`EventBus` subscription never fires, and `current_cycle()`'s doc comment claim ("readable on any
+peer — same naming convention as `CycleService.current_cycle()`") was false: unlike
+`CycleService.current_cycle()`, which earns that claim with a real `_owns_cycle() ? own int :
+WorldDeltaLog.latest(...)` fallback, `WaveSpawner.current_cycle()` had no such fallback and just
+returned the stale `1` default forever on a client. `cycle_count_multiplier()`'s default arg
+(`cycle: int = _current_cycle`) inherited the same stuck value.
+
+**The fix:** `current_cycle()` now takes the identical host-int-or-`WorldDeltaLog`-fallback split
+`CycleService.current_cycle()` already uses, keyed on `_owns_wave_director()` — the same
+host-or-offline guard every other host-side mutation in this file already checks, not a new
+predicate. The `WorldDeltaLog.latest()` call reads the exact `(chunk, kind, key)` address
+`CycleService._announce()` writes to, addressed through a `const CYCLE_SERVICE_SCRIPT :=
+preload("res://systems/cycle/cycle_service.gd")` rather than a hand-copied literal, so the two
+getters cannot drift apart if `CycleService`'s addressing ever changes. `cycle_count_multiplier()`'s
+default arg became a `cycle: int = -1` sentinel that reads `current_cycle()` when unset (a GDScript
+default parameter value cannot itself be a method call) — so `host_start_wave()`'s bare call now
+resolves through the live per-peer path too, and an explicit non-negative `cycle` arg still lets a
+check probe any Cycle without waiting for a real advance.
+
+**Verify:** new `tools/wave_spawner_cycle_net_check.gd` — a real two-process ENet host+client, driver
+plays the host in-process, a spawned child process is the client (same driver/probe shape as
+`tools/day_night_net_check.gd`). The host advances the Cycle for real through
+`CycleService.host_advance_cycle()` three times (1 → 4); the client, which never receives the
+host-only `EventBus` emission, must still read Cycle 4 back through the `WorldDeltaLog` fallback.
+Also asserts the client's private `_current_cycle` cache stays at its `1` default throughout — proof
+the getter actually took the fallback path rather than some stray local emission reaching it — and
+that `cycle_count_multiplier()` called bare on the client matches the explicit-cycle call.
+`.agent/bin/agent godot --script tools/wave_spawner_cycle_net_check.gd` →
+`WAVE_SPAWNER_CYCLE_NET_CHECK failures=0`. `tools/wave_director_check.gd` (single-process; exercises
+`current_cycle()` via a direct `EVENT_BUS.emit_cycle_advanced()` call, which bypasses `CycleService`
+entirely and would have passed even with this bug present — it only proves the getter reads its own
+cache, not that a client's cache ever gets updated) stays green:
+`WAVE_DIRECTOR_CHECK failures=0`. Regression: `tools/wave_spawner_check.gd`
+(`WAVE_SPAWNER_CHECK failures=0`), `tools/cycle_check.gd` (`CYCLE_CHECK failures=0`). Full boot
+(`agent godot --quit-after 120`) 0 stray `ERROR:`.
+
+**Swept for the same shape:** grepped every `"readable on any peer"` doc comment project-wide (three
+total). `CycleModifierService.active_modifier_ids()` already does the correct
+`_owns_modifiers() ? local array : _replicated_active_ids()` split — not buggy. `Wellspring`'s own
+`EventBus.subscribe_cycle_advanced()` subscriber (`_on_cycle_advanced()`) is explicitly documented
+"Host-only, not replicated" and self-guards on `_owns_mutation()` — it never claims cross-peer
+readability, so it is not this bug's shape. No sibling instances found.
 
 **Resolved** — see `docs/FINDINGS.md`.
 

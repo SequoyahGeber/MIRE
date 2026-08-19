@@ -5389,3 +5389,15 @@ Fixed: Boss.alert() now overrides Enemy.alert() (D-116 pattern, was-dormant + _u
 Files: `systems/enemies/boss.gd`, `tools/boss_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`
 
 Commit at time of writing: `afd6de3`
+
+---
+
+### DONE · F-226 · lm · 2026-08-19T14:45:15+00:00
+
+**`WaveSpawner.current_cycle()` is documented "readable on any peer" but is stuck at 1 forever on every client**
+
+Fixed: WaveSpawner.current_cycle() now uses the host-int-or-WorldDeltaLog-fallback split CycleService.current_cycle() already uses (keyed on _owns_wave_director()), so a real client's read matches the host's Cycle instead of sticking at 1. cycle_count_multiplier()'s default arg is a -1 sentinel resolving through current_cycle(). Verified: new two-process check tools/wave_spawner_cycle_net_check.gd -- WAVE_SPAWNER_CYCLE_NET_CHECK failures=0 (host advances Cycle 1->4 for real, client reads 4 back via WorldDeltaLog while its own EventBus-fed cache stays stuck at 1, proving the fallback path). wave_director_check.gd failures=0, wave_spawner_check.gd failures=0, cycle_check.gd failures=0, findings_numbering_check.gd failures=0. Full boot (--quit-after 120) 0 stray ERROR:. Swept for the same 'readable on any peer' shape project-wide (3 total) -- no siblings found, the other two are already correct/correctly scoped. Wrote SPECS.md F-226 block (no spec existed), moved FINDINGS.md via agent resolve, updated DELEGATION.md's WaveSpawner API entry.
+
+Files: `systems/waves/wave_spawner.gd`, `tools/wave_director_check.gd`, `tools/wave_spawner_cycle_net_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `76c60e7`

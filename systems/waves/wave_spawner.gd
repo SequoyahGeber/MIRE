@@ -14,6 +14,10 @@ extends Node
 ## wave already on the ground is never resized mid-flight.
 
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
+## F-226: `current_cycle()`'s client fallback reads `WorldDeltaLog` at the exact address
+## `CycleService._announce()` writes to — preloading the script (not hand-copying its
+## `GLOBAL_CHUNK`/`KIND`/`KEY` consts here) keeps the two getters unable to drift apart.
+const CYCLE_SERVICE_SCRIPT := preload("res://systems/cycle/cycle_service.gd")
 
 const DEFAULT_SEED: int = 0x57415645  # "WAVE"
 ## Task 4.11's "corrupted spawn tables": a spawn landing on corrupted ground has a chance to produce
@@ -107,18 +111,36 @@ func _on_cycle_advanced(cycle: int) -> void:
 	_current_cycle = cycle
 
 
-## Readable on any peer — same naming convention as `CycleService.current_cycle()`. Task 5.9.
+## Readable on any peer — same naming convention as `CycleService.current_cycle()`. Task 5.9;
+## per-peer split added by F-226. Host/solo returns the cached `_current_cycle` (kept live by
+## `_on_cycle_advanced`'s local `EventBus` subscription, which only ever fires in-process for the
+## peer that owns the wave director). A real connected client never receives that emission —
+## `CycleService._announce()` gates it behind `_owns_cycle()`, host-only — so it instead reads
+## `WorldDeltaLog`, the same replicated record `CycleService.current_cycle()` itself falls back to,
+## at the identical chunk/kind/key, so both getters agree on every peer.
 func current_cycle() -> int:
-	return _current_cycle
+	if _owns_wave_director():
+		return _current_cycle
+	var world_delta_log: Node = get_node_or_null(^"/root/WorldDeltaLog")
+	if world_delta_log == null:
+		return _current_cycle
+	return int(world_delta_log.call(
+		&"latest",
+		CYCLE_SERVICE_SCRIPT.GLOBAL_CHUNK, CYCLE_SERVICE_SCRIPT.KIND, CYCLE_SERVICE_SCRIPT.KEY,
+		_current_cycle
+	))
 
 
 ## Additive, capped Cycle-driven size multiplier — see the constants' own header note for why this
-## does not compound the way `CycleService`'s spread multiplier does. Defaults to the cached
-## `_current_cycle` so `host_start_wave()` can call it bare; an explicit `cycle` arg lets a check (or
-## a future balance tool) probe any Cycle without waiting for a real advance.
-func cycle_count_multiplier(cycle: int = _current_cycle) -> float:
+## does not compound the way `CycleService`'s spread multiplier does. `cycle < 0` (the default) reads
+## the live `current_cycle()` — F-226's per-peer split, not just the local cache — so
+## `host_start_wave()` can call it bare; an explicit non-negative `cycle` arg lets a check (or a
+## future balance tool) probe any Cycle without waiting for a real advance. A GDScript default
+## parameter value cannot itself be a method call, hence the sentinel rather than `= current_cycle()`.
+func cycle_count_multiplier(cycle: int = -1) -> float:
+	var target_cycle: int = cycle if cycle >= 0 else current_cycle()
 	return minf(
-		1.0 + maxf(float(cycle - 1), 0.0) * CYCLE_COUNT_STEP_PER_CYCLE,
+		1.0 + maxf(float(target_cycle - 1), 0.0) * CYCLE_COUNT_STEP_PER_CYCLE,
 		CYCLE_COUNT_CAP_MULTIPLIER
 	)
 

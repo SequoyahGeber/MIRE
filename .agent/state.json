@@ -1721,16 +1721,16 @@
     },
     "docs/DELEGATION.md": {
       "agent": "lm",
-      "at": "2026-08-19T14:13:26+00:00",
-      "hash": "594cc3c257dd1b4e4c60a70df4d8222eb69bad9ae6d09edb4531eac8484ab418",
-      "task": "F-223",
+      "at": "2026-08-19T14:45:15+00:00",
+      "hash": "1eef1aa2dd6b6201a2b339857405a4891df88ec5c8d7d41de7259b5ce8a4f780",
+      "task": "F-226",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T14:39:47+00:00",
-      "hash": "1f852d7ffa0d2bccb15d062c02689569d73e758bfb284dd3d6aea1815d2c6d66",
-      "task": "F-225",
+      "agent": "lm",
+      "at": "2026-08-19T14:45:15+00:00",
+      "hash": "c4fc8a21761d7dc9cb75835544d923b744fb819f44e7d33a948bc01c0b2bf8f3",
+      "task": "F-226",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1758,10 +1758,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T14:39:47+00:00",
-      "hash": "83a457e4e0d25deb3f0846b2c89c32d22ffa76b8c0af68c5424b3810dfd87481",
-      "task": "F-225",
+      "agent": "lm",
+      "at": "2026-08-19T14:45:15+00:00",
+      "hash": "5729e93f6c6b0f36e59640a2e33ece444a30bc08480a8bb8e24edd500ae33802",
+      "task": "F-226",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -2141,9 +2141,9 @@
     },
     "systems/waves/wave_spawner.gd": {
       "agent": "lm",
-      "at": "2026-08-19T07:17:23+00:00",
-      "hash": "3b49d5722bea511ef16b2012de8adcfbb3af99fd8f26396106ae5d7525a24735",
-      "task": "F-158",
+      "at": "2026-08-19T14:45:15+00:00",
+      "hash": "061f6a7cf985b9bf55b45c691bd2dfce593c14a0fe4a815f3a52175f3b9bfa59",
+      "task": "F-226",
       "token": null
     },
     "systems/wellspring/wellspring.gd": {
@@ -3228,9 +3228,9 @@
     },
     "tools/wave_director_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T07:17:23+00:00",
+      "at": "2026-08-19T14:45:15+00:00",
       "hash": "6a95e90554fdfc285d98155a7ce93f7b4c8fec4637659b52461b0d426a1ad560",
-      "task": "F-158",
+      "task": "F-226",
       "token": null
     },
     "tools/wave_director_check.gd.uid": {
@@ -3244,6 +3244,13 @@
       "at": "2026-08-18T21:36:44+00:00",
       "hash": "ae266ae40af7627842c854b372822a0a12ad785a636b0b42bf096a7ef53c20d2",
       "task": "4.8"
+    },
+    "tools/wave_spawner_cycle_net_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T14:45:15+00:00",
+      "hash": "276caa8c8dcd84580102d2df5505fbf555fab15f3ea8012032f05198b3ec6509",
+      "task": "F-226",
+      "token": null
     },
     "tools/wellspring_check.gd": {
       "agent": "lm",
@@ -6815,9 +6822,11 @@
       "title": "`Enemy.alert()` bypasses `Boss._acquire_target()`'s override, so a boss pulled into a fight by a nearby ally's alert never engages until it first takes damage"
     },
     "F-226": {
+      "done_at": "2026-08-19T14:45:15+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`WaveSpawner.current_cycle()` is documented \"readable on any peer\" but is stuck at 1 forever on every client"
     },

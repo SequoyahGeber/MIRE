@@ -440,7 +440,30 @@ instruction.
 
 ---
 
-### F-226 · `WaveSpawner.current_cycle()` is documented "readable on any peer" but is stuck at 1 forever on every client
+### F-227 · SalvageService's reward-curve comment states the wrong numbers — mismatches the formula it documents and its own SPECS.md block
+
+**Area:** salvage/docs · **Severity:** low · **Found:** 2026-08-19 by lp
+
+autoload/salvage_service.gd:284-288's doc comment on CYCLE_BASE/CYCLE_EXPONENT claims "Cycle 3
+-> 57, Cycle 9 -> ~359 (6.3x for 3x the Cycle...)". Computing the formula it's describing
+(round(CYCLE_BASE * cycle^CYCLE_EXPONENT), CYCLE_BASE=10, CYCLE_EXPONENT=1.6) actually gives
+Cycle 3 = 58, Cycle 9 = 336, a 5.8x ratio -- confirmed both by hand (python3 -c "round(10*3**1.6)"
+-> 58, round(10*9**1.6) -> 336) and by tools/salvage_check.gd's own live assertion output
+("Cycle 9's reward (336)... Cycle 3's (58...)"). docs/SPECS.md's 6.6 block and
+docs/DELEGATION.md's Current state entry both state the correct 58/336 pair -- only the in-code
+comment is wrong, apparently transcribed before a later constant tweak or a copy/paste slip that
+never got re-run.
+
+No functional impact -- reward_for_cycle() itself is correct and salvage_check.gd verifies the
+real numbers, not the comment. But a future task tuning CYCLE_BASE/CYCLE_EXPONENT against this
+comment's stated multiplier (rather than re-deriving it) would target the wrong bar. Fix is a
+one-line comment edit to match SPECS.md's own 58/336/5.8x.
+
+---
+
+## Resolved
+
+### F-226 · `WaveSpawner.current_cycle()` is documented "readable on any peer" but is stuck at 1 forever on every client — **fixed**
 
 **Area:** waves/netcode · **Severity:** medium · **Found:** 2026-08-19 by lp during 5.9-review
 
@@ -471,28 +494,34 @@ comment and mark both getters host-only until a real cross-peer consumer needs t
 
 ---
 
-### F-227 · SalvageService's reward-curve comment states the wrong numbers — mismatches the formula it documents and its own SPECS.md block
+**Resolved 2026-08-19 by lm.** Fixed: current_cycle() now mirrors CycleService.current_cycle()'s host-int-or-WorldDeltaLog-fallback
+split, keyed on _owns_wave_director() (the file's existing host/offline guard). Reads the exact
+(GLOBAL_CHUNK, KIND, KEY) address CycleService._announce() writes to, via a preloaded
+CYCLE_SERVICE_SCRIPT const rather than a hand-copied literal so the two getters can't drift apart.
+cycle_count_multiplier()'s default arg is now a -1 sentinel that resolves through current_cycle()
+(a default value can't itself be a method call), so host_start_wave()'s bare call also takes the
+live per-peer path.
 
-**Area:** salvage/docs · **Severity:** low · **Found:** 2026-08-19 by lp
+Verified with a new real two-process check, tools/wave_spawner_cycle_net_check.gd (driver/probe
+shape, same as day_night_net_check.gd): host advances the Cycle 3 times via
+CycleService.host_advance_cycle() (1->4); the client -- which never receives CycleService's
+host-only EventBus emission -- reads Cycle 4 back through the WorldDeltaLog fallback, while its
+private _current_cycle cache stays at 1 the whole time (proves the fallback path actually ran, not
+a stray local emission). cycle_count_multiplier() called bare on the client matches the
+explicit-cycle call. `agent godot --script tools/wave_spawner_cycle_net_check.gd` ->
+WAVE_SPAWNER_CYCLE_NET_CHECK failures=0. tools/wave_director_check.gd (single-process, exercises
+current_cycle() via a direct EVENT_BUS.emit_cycle_advanced() call that bypasses CycleService
+entirely and would have passed even with this bug live) stays green: WAVE_DIRECTOR_CHECK
+failures=0. Regression: wave_spawner_check.gd failures=0, cycle_check.gd failures=0. Full boot
+(agent godot --quit-after 120) 0 stray ERROR:.
 
-autoload/salvage_service.gd:284-288's doc comment on CYCLE_BASE/CYCLE_EXPONENT claims "Cycle 3
--> 57, Cycle 9 -> ~359 (6.3x for 3x the Cycle...)". Computing the formula it's describing
-(round(CYCLE_BASE * cycle^CYCLE_EXPONENT), CYCLE_BASE=10, CYCLE_EXPONENT=1.6) actually gives
-Cycle 3 = 58, Cycle 9 = 336, a 5.8x ratio -- confirmed both by hand (python3 -c "round(10*3**1.6)"
--> 58, round(10*9**1.6) -> 336) and by tools/salvage_check.gd's own live assertion output
-("Cycle 9's reward (336)... Cycle 3's (58...)"). docs/SPECS.md's 6.6 block and
-docs/DELEGATION.md's Current state entry both state the correct 58/336 pair -- only the in-code
-comment is wrong, apparently transcribed before a later constant tweak or a copy/paste slip that
-never got re-run.
-
-No functional impact -- reward_for_cycle() itself is correct and salvage_check.gd verifies the
-real numbers, not the comment. But a future task tuning CYCLE_BASE/CYCLE_EXPONENT against this
-comment's stated multiplier (rather than re-deriving it) would target the wrong bar. Fix is a
-one-line comment edit to match SPECS.md's own 58/336/5.8x.
-
----
-
-## Resolved
+Swept for the same shape: grepped every "readable on any peer" doc comment project-wide (3 total).
+CycleModifierService.active_modifier_ids() already does the correct
+_owns_modifiers()-or-_replicated_active_ids() split -- not buggy. Wellspring's
+EventBus.subscribe_cycle_advanced() subscriber is explicitly documented host-only/not-replicated
+and self-guards on _owns_mutation() -- never claims cross-peer readability, not this bug's shape.
+No sibling instances found. Wrote the missing SPECS.md block for F-226 (task step 0) in the same
+shape as F-219/F-225's finding-fix blocks.
 
 ### F-225 · `Enemy.alert()` bypasses `Boss._acquire_target()`'s override, so a boss pulled into a fight by a nearby ally's alert never engages until it first takes damage — **fixed**
 
