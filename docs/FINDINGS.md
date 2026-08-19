@@ -348,6 +348,25 @@ instruction.
 
 ## Resolved
 
+**2026-08-19, slate17 — resolved by adding the check this finding says nobody has.**
+`tools/blender/preview_census.py` reads the shipped PNGs. It finds each sheet's subjects by column
+occupancy against the sheet's own corner colour, and then makes the assertion that actually matters:
+**subjects are laid on an even pitch, so a missing one leaves a gap about twice the median.** That is
+how F-204's blank tile was really spotted — by measuring the picture, not by looking at it — and it
+holds regardless of *why* a sheet is wrong, which is the point, because the mechanism resisted
+reproduction (see F-204's correction below).
+
+Proven against the defect rather than asserted: blanking one tile out of a shipped sheet makes it
+report `widest gap 2.00x median` and exit 1; the untouched sheet reports `1.00x` and exits 0. Eleven
+sheets pass today. The twelfth, `construction_pieces_preview.png`, is **skipped with a reason** — it
+is rendered over a lit ground plane, so there is no plain backdrop to separate subjects against. That
+is a fact about the sheet, not a failure, and the tool says which.
+
+The eight generators were **not** rewritten: F-222's own reasoning stands, D-128 cautions against
+rewriting working hand-authored art code, and there is now something that would notice if the
+incidental re-evaluation stopped happening. Run it from a plain shell, no Blender needed:
+`python3 tools/blender/preview_census.py`.
+
 ### F-189 · File claims have become the bottleneck D-011 named as its own reversal trigger — one claim blocked four consecutive tasks from bumping PROTOCOL_VERSION — **decided: D-144, claims stay**
 
 **Area:** coordination · **Severity:** high · **Found:** 2026-08-19 by reed16
@@ -471,6 +490,17 @@ computes them exactly, so they go stale the moment anybody ships — this block 
 date while its own date line read "2026-08-19", which is worse than an obviously old timestamp
 because nothing prompts the reader to re-check. If it goes stale again, generate the line instead of
 rewriting it.
+
+**Correction, same session.** The first version of this refresh introduced an error of its own: it
+reported "8 open" and singled out F-189 as the only open process question. F-189 had already been
+resolved as D-144 (claims stay; fix claim staleness rather than move to per-agent worktrees), and
+`docs/FINDINGS.md` carries 7 open, every one of them hardware- or dependency-bound.
+
+The cause is worth more than the fix: the count was taken from `state.json`, which still lists F-189
+as open, while the doc had it resolved. `agent report` reads the same stale state and also says 8.
+For findings, `docs/FINDINGS.md`'s `## Open` section is the authority — `agent start` derives
+done-ness from it, and the two disagree right now. NEXT.md now says so explicitly rather than
+quietly depending on it.
 
 ### F-139 · `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline — **fixed**
 
@@ -2315,6 +2345,25 @@ third renders both relocate objects that never move). Not fixed here: each needs
 `build_enemy_crawler.py`'s showcase involves an armature, not a plain mesh — real per-file work, not
 a mechanical sweep. `docs/SPECS.md` carries this task's `## F-204` block; `docs/DECISIONS.md` D-128
 records the general fix pattern for whoever picks up F-207.
+
+**2026-08-19, slate17 — correction to the mechanism, from the agent who filed it.**
+Two controlled reproductions failed to reproduce the stated cause. A cube moved between two renders
+in an otherwise empty scene moves correctly with no flush at all; so does a mesh parented to an
+Empty when the Empty is moved, which is exactly the shape `create_asset()` produces. lm's D-138
+investigation reached the same place from the other direction: it disabled the reposition in each of
+eight other generators and found all nine renders already correct.
+
+So **"an object repositioned between renders never takes effect" is too strong**, and anyone who
+restructures a generator on the strength of that sentence alone is paying for a rule that has not
+been demonstrated. What is not in doubt is the symptom: A-012's sheet really did ship with a tile
+blank, verified by measuring the pixels, while the asset probed as present, visible, correctly
+placed and carrying its geometry.
+
+The transferable lesson is therefore the **diagnostic, not the mechanism**: a contact sheet is
+evidence about the scene only if something reads the picture. `tools/blender/preview_census.py`
+(F-222) is that reader, and the layout-then-aim structure this finding recommends remains good
+practice for a different and defensible reason — it is simpler than moving things, and it cannot go
+stale — rather than because repositioning is known to be broken.
 
 ### F-188 · Runtime-merged meshes have no shadow mesh, though every imported .glb gets one — **fixed**
 

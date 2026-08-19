@@ -6,23 +6,11 @@
       "task": "5.2",
       "token": null
     },
-    "docs/FINDINGS.md": {
-      "agent": "slate17",
-      "at": "2026-08-19T17:22:16+00:00",
-      "task": "F-222",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
     "systems/enemies/enemy_def.gd": {
       "agent": "lm",
       "at": "2026-08-19T17:18:01+00:00",
       "task": "5.2",
       "token": null
-    },
-    "tools/blender/preview_census.py": {
-      "agent": "slate17",
-      "at": "2026-08-19T17:22:16+00:00",
-      "task": "F-222",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "tools/enemy_content_check.gd": {
       "agent": "lm",
@@ -71,16 +59,6 @@
       "notes": [],
       "started": "2026-08-19T17:20:58+00:00",
       "token": null
-    },
-    "F-222": {
-      "agent": "slate17",
-      "files": [
-        "tools/blender/preview_census.py",
-        "docs/FINDINGS.md"
-      ],
-      "notes": [],
-      "started": "2026-08-19T17:20:17+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     }
   },
   "recent": {
@@ -2149,11 +2127,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "docs/FINDINGS.md": {
-      "agent": "bram1",
-      "at": "2026-08-19T17:20:49+00:00",
-      "hash": "bb6c3a55bd4e692a6be36f8b432be2fe8d22cb6d5210d1e3189a2da7baa71745",
-      "task": "F-189",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+      "agent": "slate17",
+      "at": "2026-08-19T17:25:02+00:00",
+      "hash": "60dfefbe592ab9e4d6ccdef44dbe809ee0d1c2325faa262afa245d0944414206",
+      "task": "F-222",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -2895,6 +2873,13 @@
       "hash": "a3e85f9177b0d15209486a745685d2a04ede9d6db04d080a67bedae3ed1ec6e5",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+    },
+    "tools/blender/preview_census.py": {
+      "agent": "slate17",
+      "at": "2026-08-19T17:25:02+00:00",
+      "hash": "ef88911827c776e40719c6afe313598603644cc81876f4186c6f02a46183e1e9",
+      "task": "F-222",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "tools/blender/render_item_icons.py": {
       "agent": "lp",
@@ -7459,9 +7444,11 @@
       "title": "`CycleModifierService`'s per-cycle modifier draw is the same boot-time-`randomize()` bug \u2014 and already has the stable id `Chest` needed"
     },
     "F-222": {
+      "done_at": "2026-08-19T17:25:02+00:00",
+      "done_by": "slate17",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Eight Blender preview generators render correctly only because an unrelated object happens to get created (or the camera type happens to get flipped) between their reposition and their render \u2014 no check would catch it if that incidental code is ever removed"
     },

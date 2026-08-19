@@ -5744,3 +5744,27 @@ Commit at time of writing: `2d4cd45`
 State-only correction: F-189 was resolved as D-144 and its section already sits under '## Resolved' in docs/FINDINGS.md, but state.json still carried it as open, so agent report showed 8 open findings instead of 7. No code or doc change.
 
 Commit at time of writing: `9b7f6c3`
+
+---
+
+### HANDOFF · 2.1d · wick20 · 2026-08-19T17:24:25+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-015 wetland nature DONE (6 of 12 — the other six already ship in flora/environment). A-016 (terrain accents) is NEXT. Three things worth reusing: (1) canopy masses should be base icosahedra, subdivisions=0 — 20 faces vs 80, so you can afford ~17 masses that MERGE into a crown instead of 4 that read as parasols on sticks, and the alder got cheaper AND better that way (1,580 -> 960 tris); (2) A-000V's 'three masses, never eighteen' is a rule about bushes and does NOT transfer to tree crowns; (3) before starting any batch, diff its row against assets/*/catalog.json — A-043 and A-015 were each roughly half already-shipped, and remaking an asset that exists is worse than a gap.
+
+Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_wetland_nature.py`, `tools/wetland_nature_check.gd`, `assets/wetland_nature`
+
+Commit at time of writing: `d541a01`
+
+---
+
+### DONE · F-222 · slate17 · 2026-08-19T17:25:02+00:00
+
+**Eight Blender preview generators render correctly only because an unrelated object happens to get created (or the camera type happens to get flipped) between their reposition and their render — no check would catch it if that incidental code is ever removed**
+
+Completed.
+
+Files: `tools/blender/preview_census.py`, `docs/FINDINGS.md`
+
+Commit at time of writing: `8f5f9cf`
