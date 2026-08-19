@@ -309,34 +309,38 @@ func _covers(vertices: PackedVector3Array, point: Vector3) -> bool:
 ## map puts the group on the collider itself, so grass grew over the tops of rocks
 ## and up through the trees. A plant standing well above the terrain under it is
 ## standing on something, and the only somethings here are props.
+##
+## F-112: this used to walk the live `MultiMeshInstance3D`s itself, comparing
+## `get_instance_transform()`'s origin — which is CELL-LOCAL, rebased around each MultiMesh's own
+## centre in `undergrowth.gd::_emit()` — directly against `height_at()` with no `to_global()`, so
+## `height_at(origin.x, origin.z)` was sampling the terrain near world (0,0) for every plant on
+## the map regardless of where it actually stood. That bug was invisible because of a second one:
+## `MultiMesh` instance transforms live on the RenderingServer, and the dummy renderer this check
+## has always run under (`agent godot --script`, no `--windowed`) answers every read with
+## identity/zero, no error (F-103, `tools/multimesh_readback_check.gd`) — `worst=0.00 m` every run
+## wasn't this check passing, it was `get_instance_transform()` returning the same coordinate for
+## every sample regardless of index, which coincidentally undershot 0.6 m near world origin. This
+## check asserted nothing since it shipped. Now delegates to `Undergrowth.sample_ground_gaps()`
+## (F-112, built for `tools/world_contract_check.gd`), which reads the world-space transforms
+## `_scatter()` already computed instead of reading the live MultiMesh back — correct under a
+## plain headless run, with no renderer dependency and no duplicate raycast to keep in sync.
 func _check_undergrowth_stays_off_props(level: Node) -> void:
 	var undergrowth := level.get_node_or_null("Undergrowth")
-	var world := level.get_node_or_null("World")
-	if undergrowth == null or world == null:
+	if undergrowth == null or not undergrowth.has_method(&"sample_ground_gaps"):
 		return
+	var gaps: Array = undergrowth.call("sample_ground_gaps")
 	var perched := 0
-	var sampled := 0
 	var worst := 0.0
-	for holder in undergrowth.get_children():
-		for child in (holder as Node).get_children():
-			var instance := child as MultiMeshInstance3D
-			if instance == null or instance.multimesh == null:
-				continue
-			var count: int = instance.multimesh.instance_count
-			var stride: int = maxi(1, count / 40)
-			for index in range(0, count, stride):
-				var origin: Vector3 = instance.multimesh.get_instance_transform(index).origin
-				sampled += 1
-				var gap := origin.y - float(world.call("height_at", origin.x, origin.z))
-				if gap > 0.6:
-					perched += 1
-					worst = maxf(worst, gap)
-	print("HOLLOWMERE_FLORA_GROUND sampled=%d perched=%d worst=%.2f m" % [sampled, perched, worst])
+	for gap: float in gaps:
+		if gap > 0.6:
+			perched += 1
+			worst = maxf(worst, gap)
+	print("HOLLOWMERE_FLORA_GROUND sampled=%d perched=%d worst=%.2f m" % [gaps.size(), perched, worst])
 	# A handful sit on bridge decks and camp floors, which is correct. A field of
 	# them on top of the boulders is not, and that reads as hundreds.
-	if sampled > 0 and float(perched) / float(sampled) > 0.02:
+	if gaps.size() > 0 and float(perched) / float(gaps.size()) > 0.02:
 		failures.append("%d of %d sampled plants (%.1f%%) grow on top of props" % [
-			perched, sampled, 100.0 * float(perched) / float(sampled)
+			perched, gaps.size(), 100.0 * float(perched) / float(gaps.size())
 		])
 
 

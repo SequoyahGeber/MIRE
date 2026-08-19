@@ -21,10 +21,15 @@ extends SceneTree
 ## already reads generically). A map not built that way has nothing to compare against and the
 ## layout-shaped checks are skipped rather than failed.
 ##
-## Undergrowth's prop-group bug (grass growing on top of props) is NOT covered here: it needs a
-## per-instance ground-height probe against the specific map's terrain, which is what
-## `tools/hollowmere_check.gd::_check_undergrowth_stays_off_props` already does; lifting that one
-## the same way is follow-up work, noted in `docs/DELEGATION.md`.
+## F-112: `Undergrowth`'s prop-avoidance is generalized the same way, once `Undergrowth` is found —
+## `sample_ground_gaps()` reads its OWN ground truth (the layout heightfield, via the same
+## `_layout_height()` it scatters against) rather than through `prop_group`, so a map whose
+## `prop_group` export is misconfigured — the F-076 blind spot, transplanted to this system —
+## still shows up here instead of grading itself against its own mistake. It reads world-space
+## transforms `Undergrowth` already computed at scatter time rather than reading its live
+## `MultiMeshInstance3D`s back — that RenderingServer round trip answers identity under
+## `--headless` with no error (F-103) — so this runs and asserts under a plain headless run same
+## as everything else in this file.
 ##
 ## Run with: .agent/bin/agent godot --script tools/world_contract_check.gd
 
@@ -60,6 +65,9 @@ func _run() -> void:
 		_check_enemy_world(layout)
 		await _check_enemy_world_live(layout)
 		await _check_harvest_world(layout)
+	# Undergrowth reads its own ground truth (the layout's heightfield, generically) rather than
+	# one this script hands it, so it runs whether or not a World.layout_path was found above.
+	_check_undergrowth(level)
 
 	level.queue_free()
 	_finish()
@@ -128,6 +136,33 @@ func _check_harvest_world(layout: Dictionary) -> void:
 		failures.append(
 			"layout declares %d harvestable prop(s) but HarvestWorld wired none — its "
 			% expected + "HOLDER_GROUPS has not been taught this map's holder group")
+
+
+## F-112: no layout Dictionary needed here — `Undergrowth` already read its own to scatter, and
+## `sample_ground_gaps()` compares its live placements against that same ground truth internally.
+## Same 0.6 m / 2% tuning `tools/hollowmere_check.gd::_check_undergrowth_stays_off_props` already
+## proved: a handful of plants legitimately sit on bridge decks and camp floors above the raw
+## heightfield, and a genuine "grass grows on the boulders" bug reads as hundreds, not a handful.
+func _check_undergrowth(level: Node) -> void:
+	var undergrowth: Node = level.get_node_or_null(^"Undergrowth")
+	if undergrowth == null or not undergrowth.has_method(&"sample_ground_gaps"):
+		return
+	var gaps: Array = undergrowth.call("sample_ground_gaps")
+	var perched := 0
+	var worst := 0.0
+	for gap: float in gaps:
+		if gap > 0.6:
+			perched += 1
+			worst = maxf(worst, gap)
+	print("WORLD_CONTRACT_UNDERGROWTH sampled=%d perched=%d worst=%.2fm" % [
+		gaps.size(), perched, worst
+	])
+	if gaps.size() > 0 and float(perched) / float(gaps.size()) > 0.02:
+		failures.append(
+			"%d of %d sampled undergrowth plants (%.1f%%) grow on top of props" % [
+				perched, gaps.size(), 100.0 * float(perched) / float(gaps.size())
+			]
+		)
 
 
 func _finish() -> void:

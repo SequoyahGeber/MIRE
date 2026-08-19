@@ -4722,3 +4722,19 @@ Fixed: tools/steam_lobby_check.gd declares EXPECTED_ERROR_PATTERNS on its verdic
 Files: `tools/steam_lobby_check.gd`
 
 Commit at time of writing: `e94b4b1`
+
+---
+
+### DONE · F-112 · lp · 2026-08-19T09:45:37+00:00
+
+**`world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check — F-076's third system, not lifted**
+
+Undergrowth.sample_ground_gaps() exposes ground truth (world-space _placements vs layout heightfield, no MultiMesh readback); world_contract_check.gd's new _check_undergrowth() uses it map-agnostically (0.6m/2% tuning); hollowmere_check.gd's own version delegated to it too, fixing a pre-existing bug where it had asserted nothing since it shipped (F-103 headless MultiMesh readback + missing to_global, D-127). Verified: agent godot --script tools/world_contract_check.gd -> WORLD_CONTRACT_UNDERGROWTH sampled=10342 perched=4 worst=0.65m PASS; hollowmere_check.gd identical result; regression-proved via temporary _is_prop() stub (851/11297 perched, FAILs loudly, reverted clean); full boot + sibling checks unaffected.
+
+Notes along the way:
+- Implemented sample_ground_gaps() on Undergrowth using _layout_height() ground truth (not _is_prop self-consistency, which would inherit the exact F-076 blind spot if prop_group is misconfigured). world_contract_check.gd now calls it via _check_undergrowth(), reusing hollowmere_check's proven 0.6m/2% tuning. Next: run agent godot --script tools/world_contract_check.gd to verify.
+- Found while verifying: MultiMesh.get_instance_transform() is write-only under headless (documented engine limit, F-103/F-077/tools/multimesh_readback_check.gd) -- my first _check_undergrowth run (headless) reported 36% perched/worst=14.24m, a false positive from reading cell-relative garbage as world position. Confirmed real values only appear --windowed. Also found tools/hollowmere_check.gd::_check_undergrowth_stays_off_props (the very check F-112 is generalizing) never converts local->global at all and has run headless-only (agent godot --script, no --windowed) since it shipped -- it has been silently vacuous (worst=0.00 every run, proving nothing) since the day it was written. Claimed it too to fix in the same sweep. Fixing both: to_global() conversion + DisplayServer.get_name()=="headless" skip-guard (matches tools/harvest_batch_check.gd's established pattern) so neither check lies under the default headless invocation, and both actually validate under --windowed.
+
+Files: `world/gen/undergrowth.gd`, `tools/world_contract_check.gd`, `tools/hollowmere_check.gd`
+
+Commit at time of writing: `2c1ec87`

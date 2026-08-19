@@ -474,6 +474,37 @@ func _is_prop(collider: Node) -> bool:
 	return false
 
 
+## F-112: stride-sample this run's placements and report how far each one sits above the
+## layout's own heightfield — near 0 for a normal landing, large and positive when a plant grew
+## on top of a prop instead of the ground around it (a bridge deck or camp floor legitimately
+## reads the same way too; `_layout_height()`'s own doc explains why). Ground truth is the
+## heightfield, not `prop_group`: re-walking `_is_prop()` here would only ever agree with
+## `_ground_at()`'s placement-time call to the same function, so a map whose `prop_group` export
+## points at the wrong group — this file's own exact F-076 blind spot — would silently pass a
+## check built that way.
+##
+## Reads `_placements` — the world-space transforms `_scatter()` already computed — rather than
+## reading them back out of the live `MultiMeshInstance3D`s `_emit()` built from them. Instance
+## transforms live on the RenderingServer, and `MultiMesh.get_instance_transform()` answers
+## identity under the `--headless` dummy renderer with no error (F-103); this avoids that trap
+## entirely instead of routing a checker around it, and works under a plain headless run like
+## every other ground-truth export this file's siblings expose
+## (`EnemyWorld.expected_nest_count()`/`HarvestWorld.expected_harvestable_count()`) so
+## `tools/world_contract_check.gd` can ask this system instead of reimplementing its raycast +
+## heightfield lookup for every future map.
+func sample_ground_gaps() -> Array[float]:
+	var gaps: Array[float] = []
+	for asset: String in _placements:
+		var cells: Dictionary = _placements[asset] as Dictionary
+		for cell: Vector2i in cells:
+			var transforms: Array = cells[cell] as Array
+			var stride: int = maxi(1, transforms.size() / 40)
+			for index in range(0, transforms.size(), stride):
+				var origin: Vector3 = (transforms[index] as Transform3D).origin
+				gaps.append(origin.y - _layout_height(Vector2(origin.x, origin.z)))
+	return gaps
+
+
 ## The layout's own ground height, used only to aim the probe ray. The ray still
 ## decides where the plant sits — it lands on the collision a player walks on,
 ## which may be a bridge deck or a camp floor rather than the heightfield.
