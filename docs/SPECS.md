@@ -2896,6 +2896,100 @@ resolution were.
 
 ---
 
+## 7.8 · Network robustness: packet loss, high latency, hostile disconnect timing
+
+No block existed here beforehand; this file's own preamble makes writing one part of the task that
+discovers the gap.
+
+**Authority:** none of its own. Like `net_version.gd` and `NetTransport`, this task is infrastructure
+and verification, not simulated state — it adds no new replicated property and no new RPC, so it adds
+no new §2.2 row. What it does is audit and hold the line on a pattern §2.2's own host-authoritative
+rows already depend on: every specific-peer `rpc_id()` send has to check the target is still there.
+
+**Claim:** `autoload/combat_service.gd`, `autoload/ranged_combat_service.gd`,
+`autoload/crafting_service.gd`, `autoload/command_service.gd`, `autoload/world_delta_log.gd`,
+`tools/net_robustness_check.gd` (new).
+
+**What "packet loss" and "high latency" turn out to mean here.** Godot's `ENetMultiplayerPeer` /
+`ENetConnection` / `ENetPacketPeer` bindings expose no loss- or latency-injection API (checked by
+listing `ClassDB.class_get_method_list()` for all three at the pinned 4.7 build — the only match
+anywhere in the set is `ENetPacketPeer.throttle_configure`, which shapes ENet's own outgoing
+bandwidth throttle, not a fault injector) and there is no cross-platform, no-sudo way to fake loss/RTT
+on a raw socket from a headless macOS dev box either. So "handles packet loss and high latency"
+resolves to two things this codebase already had to get right for unrelated reasons, both re-verified
+rather than rebuilt:
+
+1. **Every state-mutating RPC in the project is reliable** (`@rpc(..., "reliable")` — confirmed by
+   grepping every `@rpc(` declaration in the repo; the only two `"unreliable"` RPCs are
+   `PlayerHealth.net_report_local_stamina`, explicitly advisory per its own header note (D-072's
+   sibling reasoning), and `DayNight`'s ~1 Hz time-of-day push, which is self-healing by construction
+   — a dropped tick is corrected by the next one a second later). A lost packet on any of those two
+   degrades gracefully by design; a lost packet on anything else would silently desync two peers,
+   which is exactly what "reliable" prevents at the transport level regardless of how bad the loss
+   gets.
+2. **`NetTransport._tune_peer_timeout` already treats "high latency" as the normal case, not the
+   exception**: ENet's dead-peer ceiling is lowered from 30 s to 8 s (`_PEER_TIMEOUT_MAX_MSEC`), but
+   the floor stays at 2.5 s (`_PEER_TIMEOUT_MIN_MSEC`) specifically so a connection that has merely
+   gotten slow — not dead — is not evicted for it. This task did not change either number; it read the
+   reasoning already on file there and confirmed it is still the right shape for "degraded, not gone."
+
+**What "hostile disconnect timing" turned out to be: a real bug class, found by audit.** `docs/
+FINDINGS.md`'s F-059 fixed one instance of a specific shape — `InventoryService._publish_snapshot`
+sent `rpc_id(peer_id, ...)` to a peer id that D-035's grace window keeps alive in a dictionary for 90 s
+after it disconnects, with no check that the peer is still actually connected — and left the fix
+(`NetTransport.has_peer(peer_id)` before the send) as a pattern for every other specific-peer `rpc_id`
+call in the codebase. `PlayerHealth`, `PowerupService`, `BuildService`, `RuleService`,
+`AttunementService`, `Chest`, `Haulable`, `RuleService` all already carried it. This task greped every
+`rpc_id(` call site in the repo against that pattern and found **five that did not**, all sharing the
+same shape — a request lands, the host does host-authoritative work (sometimes across an `await`), and
+replies with `rpc_id()` to whoever asked, with no check that "whoever asked" hasn't disconnected in the
+meantime:
+
+- `CombatService._reject` — a melee attacker that disconnects between `net_request_attack` and the
+  host's rejection.
+- `RangedCombatService._reject` — same shape, a shooter mid-draw.
+- `CraftingService._confirm_peer` — a crafter that disconnects while a timed craft is resolving.
+- `CommandService.net_submit_command`'s reply — the `await execute(line, ctx)` inside the RPC handler
+  itself is the window; a sender that drops during a slow command's execution was never checked before
+  the reply.
+- `WorldDeltaLog._on_peer_admitted` — fires synchronously off `NetSession.peer_admitted`, so the window
+  is a single instant rather than an `await`, but the same unguarded send was there.
+
+Each got the same one-line fix: gate the `rpc_id()` on `NetTransport.has_peer(peer_id)` (`command_
+service.gd` and `world_delta_log.gd` gained a small private helper in the same shape every other file
+with this guard already has; `combat_service.gd`/`ranged_combat_service.gd`/`crafting_service.gd`
+already referenced `NetTransport` directly, so the fix is inline). `net_session.gd`'s own
+`net_run_identity.rpc_id()` was checked and deliberately left alone — it answers synchronously inside
+the very RPC handler the sender's hello arrived through, so there is no gap between receipt and reply
+for a disconnect to land in, unlike every site above.
+
+**Verify:** `tools/net_robustness_check.gd` (new) — hosts a real LOCAL session, then drives
+`CombatService._reject`, `RangedCombatService._reject`, `CraftingService._confirm_peer`, and
+`WorldDeltaLog._on_peer_admitted` directly against a peer id that was never admitted (`GHOST_PEER`,
+chosen outside ENet's real id range), and checks `CommandService._peer_connected` answers correctly for
+both a ghost id and a real one. Reproduced first: with the five guards reverted, the exact same run
+prints `ERROR: Attempt to call RPC with unknown peer ID: 999919` at every directly-driven site — the
+verbatim wording F-059 already established for this bug class. Restored the fix, re-ran three times:
+0 `ERROR:` lines, 0 failures every time. No regressions: `combat_net_check`, `ranged_combat_net_check`,
+`crafting_check`, `command_net_check`, `seed_sync_check` (exercises `WorldDeltaLog`'s snapshot RPC),
+`mire_grid_check` all stay `failures=0`/`0 failure(s)`. (`crafting_net_check` fails 24/24 — reproduced
+identically against a clean `agent baseline` checkout of HEAD, pre-existing and unrelated, F-167.)
+`agent godot --quit-after 15`: 0 `ERROR:` lines on a full boot.
+
+**Done means:** `net_robustness_check.gd` at 0 failures with the bug-then-fix reproduction shown above,
+the six regression checks green, 0 `ERROR:` on a full boot, and the five fixed call sites are the last
+ones in the repo carrying this shape — confirmed by the same repo-wide `rpc_id(` audit this task ran,
+not by inspection of the five files alone.
+
+**Traps for the next task that touches a host-authoritative service:** any new `rpc_id(peer_id, ...)`
+that targets someone other than the sender of the RPC currently executing — a broadcast to a specific
+"known peer" while iterating a roster, a reply after an `await`, a snapshot sent off a lifecycle signal
+— needs the same `has_peer()` guard from the moment it is written, not as a follow-up finding. D-035's
+90 s grace window is what makes this a standing hazard rather than a one-time bug: a departed peer id
+is a live dictionary key for a minute and a half in every session that runs long enough to hit it.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

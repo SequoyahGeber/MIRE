@@ -75,6 +75,53 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 7.8: Network robustness — audited every specific-peer `rpc_id()` in the repo against F-059's guard pattern, fixed the five that lacked it (lm)
+
+No new autoload, no new RPC, no new §2.2 row (D-112 explains why: this task added no new simulated
+state, so there is nothing new to declare authority over — same shape `net_version.gd`/`NetTransport`
+already have). "Packet loss / high latency" turned out to mean auditing what already handles them
+(Godot's ENet bindings expose no loss/latency injection at all — checked directly via
+`ClassDB.class_get_method_list()`, D-112 has the detail) rather than building a simulator nothing else
+needs. "Hostile disconnect timing" turned out to be a real, findable bug class: `docs/FINDINGS.md`
+F-059 fixed one unguarded specific-peer `rpc_id()` send and left `NetTransport.has_peer(peer_id)` as
+the pattern for every other one. This task grepped every `rpc_id(` call site in the repo against that
+pattern and fixed the five that had not adopted it:
+
+```gdscript
+# All five gained the same one-line guard — `and NetTransport.has_peer(peer_id)` (or a private
+# `_peer_connected(peer_id)` helper in the same shape PlayerHealth/PowerupService/BuildService/
+# RuleService already carry) before the rpc_id() send:
+autoload/combat_service.gd          CombatService._reject
+autoload/ranged_combat_service.gd   RangedCombatService._reject
+autoload/crafting_service.gd        CraftingService._confirm_peer
+autoload/command_service.gd         CommandService.net_submit_command's reply (the `await execute()`
+                                     inside the RPC handler is the disconnect window)
+autoload/world_delta_log.gd         WorldDeltaLog._on_peer_admitted
+```
+
+**If you are about to write a new `rpc_id(peer_id, ...)` that targets someone other than the sender of
+the RPC currently executing, it needs this guard from the start** — a reply after an `await`, a
+broadcast to a specific "known peer" while iterating a roster, a snapshot sent off a lifecycle signal.
+D-035's 90 s post-disconnect grace window is what makes an unguarded send a standing hazard rather than
+a one-off: a departed peer id is a live dictionary key for a minute and a half in any session that
+runs long enough to hit it, and Godot's answer to `rpc_id()` at an id it does not recognise is
+`ERROR: Attempt to call RPC with unknown peer ID`, not a silent no-op.
+
+**Public API for verifying this class of bug in the future:** `tools/net_robustness_check.gd` (new) —
+hosts a real LOCAL session and drives each of the four directly-callable sites above against a peer id
+that was never admitted (`GHOST_PEER = 999919`, outside ENet's real id range), plus checks
+`CommandService._peer_connected()` answers correctly for a ghost id and a real one. The check's own
+header comment shows the exact `agent baseline` invocation that reproduces the bug against a pre-fix
+revision — the same before/after methodology F-059's own resolution note used.
+
+Verified: `tools/net_robustness_check.gd` — 0 failures, and (reverting the five guards first) the exact
+same run reproduces `ERROR: Attempt to call RPC with unknown peer ID: 999919` at every directly-driven
+site, restored and re-ran clean three times. No regressions: `combat_net_check`, `ranged_combat_net_check`,
+`crafting_check`, `command_net_check`, `seed_sync_check`, `mire_grid_check` all `failures=0`/`0
+failure(s)`. (`crafting_net_check` fails 24/24 — reproduced identically against a clean `agent
+baseline` checkout of HEAD, pre-existing and unrelated, F-167.) 0 `ERROR:` on a full boot (`agent godot
+--quit-after 15`).
+
 ### 2026-08-19 — Task 6.9: Unlock tree + UI — full framework, no gameplay gate wired yet (F-173) (lm)
 
 New content family `UnlockDef` (`systems/unlocks/unlock_def.gd`) + `content/unlocks/` (one worked

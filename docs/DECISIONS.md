@@ -2984,3 +2984,30 @@ tree gates the run for everyone," which needs no RPC at all and matches how a si
 roguelike's meta-progression usually reads anyway. Either answer, once picked, makes wiring the
 first real gate (loot table, then POI/enemy roster) a small, mechanical follow-up — this decision is
 about not shipping the WRONG answer by default, not about the gate being hard to wire technically.
+
+### D-112 · 2026-08-19 · Task 7.8 adds no new §2.2 authority row; "packet loss / high latency" resolves to auditing what already exists, not simulating a wire
+
+Every prior task with an open `## §2.2` instruction to "declare a row" was shipping new simulated
+state — a replicated property, a new RPC, something two peers could disagree about. Task 7.8 ships
+neither: it fixed five unguarded `rpc_id()` sends (see `SPECS.md` §7.8) and added one verification
+script. Giving that a table row would misrepresent the table — every existing "none of its own" entry
+(`net_version.gd`, `NetTransport` itself) is infrastructure for the same reason, and neither has a row.
+The right read of "every system declares its authority" is that a task which adds no state to disagree
+over has nothing to declare, not that it must invent a row to satisfy the letter of the rule.
+
+**The other half of this decision: packet loss and high latency are not simulable on this dev setup,
+and the task's scope reads as "hold the line on what already handles them," not "build a fault
+injector."** Checked directly — `ClassDB.class_get_method_list()` against `ENetConnection`,
+`ENetPacketPeer`, `ENetMultiplayerPeer` at the pinned Godot 4.7 build has no loss- or latency-injection
+method anywhere in the three (`ENetPacketPeer.throttle_configure` is ENet's own outgoing bandwidth
+throttle, not a fault injector), and there is no cross-platform, no-sudo way to fake WAN conditions on
+a raw loopback socket from a headless macOS box either. So this task verified the two things that
+already stand in for "packet loss doesn't desync state" (every mutating RPC is reliable; the two
+`"unreliable"` RPCs in the whole repo are both self-healing by construction) and "high latency doesn't
+evict a live peer" (`NetTransport`'s 2.5–8 s dead-peer window already treats slow as different from
+gone), rather than building simulation infrastructure nothing else in the project has a use for.
+
+**Would change my mind:** a future Godot upgrade that exposes real loss/latency injection on
+`ENetConnection` (worth revisiting then — a real WAN-conditions harness would be strictly better than
+this audit), or a task that DOES add new simulated state to this system (a reconnect-quality metric
+replicated to a HUD, say) — that task gets a real row, not this one retroactively.
