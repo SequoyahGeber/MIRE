@@ -440,7 +440,9 @@ instruction.
 
 ---
 
-### F-233 · The rest of the `@rpc("any_peer")` surface has no per-peer rate limit either — currently low-severity, named explicitly so a future pass doesn't have to re-derive the list
+## Resolved
+
+### F-233 · The rest of the `@rpc("any_peer")` surface has no per-peer rate limit either — currently low-severity, named explicitly so a future pass doesn't have to re-derive the list — **fixed**
 
 **Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lm during F-232's audit
 
@@ -454,16 +456,37 @@ Every other handler — `Chest.net_request_open`, `Wellspring.net_request_toggle
 `CraftingService.net_request_craft`, `PlayerHealth.net_request_consume_item`/`net_request_revive`/
 `net_report_local_stamina`, `Haulable.net_request_pickup`/`net_request_drop`,
 `BuildableDoor.net_request_toggle`, `ExtractionShip.net_request_repair`/
-`net_request_toggle_departure`, `NetTransport.net_request_display_name` — currently does only O(1)
-work per call (a `Dictionary.has()`, a squared-distance check, a bounds-checked write), and
-`CombatService`/`RangedCombatService` already self-limit via their in-flight swing/shot lock. None of
-these has a demonstrated exploit behind it today. If one of them grows real per-request cost later (a
-new validation step, a new lookup that isn't O(1)), wire `RpcRateLimiter` onto it the same way — the
-class already exists, so that fix is one `allow()` call, not a new design.
+`net_request_toggle_departure`, `NetTransport.net_request_display_name`,
+`AttunementService.net_request_attunement`, `InventoryService.net_request_remove`/
+`net_request_move_stack`, `NetSession.net_client_hello` — currently does only O(1) work per call (a
+`Dictionary.has()`, a squared-distance check, a bounds-checked write, or — for the connection
+handshake — work bounded by the connected-peer count), and `Harvestable.net_request_hit`/
+`CombatService.net_request_attack`/`RangedCombatService.net_request_shot` already self-limit (a
+per-definition request cooldown, an in-flight swing/shot lock). None of these has a demonstrated
+exploit behind it today. If one of them grows real per-request cost later (a new validation step, a
+new lookup that isn't O(1)), wire `RpcRateLimiter` onto it the same way — the class already exists, so
+that fix is one `allow()` call, not a new design.
 
----
+**2026-08-19 update by lm:** the four handlers named here in bold above —
+`AttunementService.net_request_attunement`, `InventoryService.net_request_remove`/
+`net_request_move_stack`, and `Harvestable.net_request_hit` — were missing from this list and from
+F-232's own audit enumeration in `docs/SPECS.md` when this finding was filed; the original sweep's
+`grep` predated (or missed) them. Re-swept with `RpcManifest.scan()` (every `@rpc` in the project,
+already used by `tools/rpc_manifest_check.gd` for wire-signature drift) instead of a hand-run `grep`,
+confirmed each does the same bounded/self-guarded work the rest of this list already covers, and added
+a standing check — `tools/rpc_surface_audit_check.gd` — so a handler like this cannot silently join the
+"unreviewed" bucket again. See `docs/SPECS.md`'s F-233 block.
 
-## Resolved
+**Resolved 2026-08-19 by lm.** Wrote the missing docs/SPECS.md block (none existed) and a standing check, tools/rpc_surface_audit_check.gd,
+that buckets every @rpc("any_peer") entry RpcManifest.scan() finds into RATE_LIMITED/SELF_GUARDED/BOUNDED_O1
+and fails on anything untriaged or stale, replacing the hand-run grep both F-232 and this finding used.
+Re-deriving the list this way surfaced four handlers missing from both F-232's and F-233's original
+lists -- AttunementService.net_request_attunement, InventoryService.net_request_remove/net_request_move_stack,
+Harvestable.net_request_hit -- all confirmed the same bounded/self-guarded shape as their bucket, no code
+fix needed. docs/FINDINGS.md's own list corrected in place with a dated update.
+Verified: `.agent/bin/agent godot --script tools/rpc_surface_audit_check.gd` -> RPC_SURFACE_AUDIT_CHECK
+failures=0 (22/22 any_peer entries triaged, 22/22 triaged entries still present). Full boot
+(`agent godot --quit-after 120`) -> 0 stray ERROR: lines. No game code changed.
 
 ### F-232 · No system has been audited from a hostile-client perspective except disconnect timing — every review to date asked whether code matches its spec, not what a malicious peer can force — **fixed**
 

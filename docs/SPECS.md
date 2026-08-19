@@ -7465,6 +7465,66 @@ the list.
 
 ---
 
+## F-233 · The rest of the `@rpc("any_peer")` surface has no per-peer rate limit either — currently low-severity, named explicitly so a future pass doesn't have to re-derive the list
+
+**Claim:** `tools/rpc_surface_audit_check.gd` (new). **Authority:** no new row — this is an audit
+mechanism, not a system; every handler it checks keeps its already-declared §2.2 authority.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble. The brief flagged the finding as possibly already fixed (both `core/net/rpc_rate_limiter.gd`
+and this file had moved since 2026-08-19); it wasn't — F-232 deliberately did not touch the handlers
+F-233 names, and D-141 records why not. What was missing was a spec block and a mechanism, not a fix.
+
+**The mechanism.** F-232's audit and F-233's write-up both hand-derived their handler lists with a
+one-off `grep`. A hand-derived list is exactly the kind of artifact this project's own `AGENTS.md`
+warns about: correct the day it's written, silently stale the first time someone adds a handler and
+doesn't know to re-run the grep. `tools/rpc_surface_audit_check.gd` (new) fixes that by building on
+`RpcManifest.scan()` — the same scanner `tools/rpc_manifest_check.gd` already uses for wire-signature
+drift — instead of a hand-run `grep`. It buckets every `@rpc("any_peer")` entry the scanner finds into
+`RATE_LIMITED` (gated through `RpcRateLimiter`: `BuildService.net_request_place`/`net_request_destroy`,
+`CommandService.net_submit_command`), `SELF_GUARDED` (its own cooldown or in-flight lock:
+`Harvestable.net_request_hit`, `CombatService.net_request_attack`, `RangedCombatService.net_request_
+shot`), or `BOUNDED_O1` (a `Dictionary.has()`, a squared-distance check, a bounds-checked write, or —
+for the connection handshake — work bounded by connected-peer count: `Chest.net_request_open`,
+`Wellspring.net_request_toggle_channel`, `CraftingService.net_request_craft`, `PlayerHealth.net_
+request_consume_item`/`net_request_revive`/`net_report_local_stamina`, `Haulable.net_request_pickup`/
+`net_request_drop`, `BuildableDoor.net_request_toggle`, `ExtractionShip.net_request_repair`/`net_
+request_toggle_departure`, `NetTransport.net_request_display_name`, `AttunementService.net_request_
+attunement`, `InventoryService.net_request_remove`/`net_request_move_stack`, `NetSession.net_client_
+hello`). An `any_peer` entry the scan finds in none of the three buckets fails the check by name — a
+new handler nobody has triaged. A bucketed entry the scan no longer finds also fails — a renamed or
+removed handler this list forgot to update. Neither direction can go silently stale again.
+
+**Swept for the same shape and found real drift.** Re-running the audit against the actual current
+`@rpc("any_peer")` surface (not the two files' hand-written lists) turned up four handlers present in
+neither F-232's `docs/SPECS.md` audit enumeration nor F-233's `docs/FINDINGS.md` residual list:
+`AttunementService.net_request_attunement` (checked: `has_selected()` is a `Dictionary` lookup,
+`_definition()` is cache-backed after the first resolve — bounded), `InventoryService.net_request_
+remove`/`net_request_move_stack` (checked: `host_remove()`/`host_move_stack()` both bound to the fixed
+`SLOT_COUNT`-sized store, the same shape as the already-audited `Haulable.net_request_pickup`/`net_
+request_drop`), and `Harvestable.net_request_hit` (checked: `_request_is_valid()` already gates on a
+per-peer `_last_request_msec` cooldown keyed to `definition.request_cooldown_seconds` — this one was
+referenced in `rpc_rate_limiter.gd`'s own docstring and in D-141's rationale as an example of a system
+that "already self-limits", but never actually appeared in either list itself). None of the four needed
+a fix — all four are the same shape as an already-triaged handler in their bucket — but the two lists
+that were supposed to be the complete residual surface were not complete. This is the exact failure
+mode the mechanism above closes: a hand-maintained list drifting the moment a handler nobody re-audits
+exists. `docs/FINDINGS.md`'s F-233 entry is corrected in place with a dated update rather than treated
+as a new finding, since no bug was found — only an incomplete audit trail.
+
+**Verify:** `.agent/bin/agent godot --script tools/rpc_surface_audit_check.gd` →
+`RPC_SURFACE_AUDIT_CHECK failures=0` (all 22 `any_peer` entries in the 55-entry manifest triaged, all
+22 triaged entries still present). A full boot (`agent godot --quit-after 120`) — 0 stray `ERROR:`
+lines. No game code changed, so no other check was expected to move; `tools/rpc_manifest_check.gd`
+still reports `RPC count is still 55`/`PROTOCOL_VERSION (21) matches` since the new check lives in
+`tools/`, which `RpcManifest.scan()` deliberately excludes (its own doc comment explains why: counting
+harness scaffolding would make writing a check demand a protocol bump, a false alarm that gets checks
+ignored and then deleted).
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

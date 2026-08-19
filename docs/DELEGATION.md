@@ -75,6 +75,31 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-233 resolved: the residual `@rpc("any_peer")` surface F-232 left unfixed now has a standing audit check instead of a hand-written list (lm)
+
+**What shipped, the seam the next new `@rpc("any_peer")` handler builds on:**
+`tools/rpc_surface_audit_check.gd` (new) — buckets every `any_peer` entry `RpcManifest.scan()` finds
+(the same scanner `tools/rpc_manifest_check.gd` uses for wire-signature drift) into `RATE_LIMITED`,
+`SELF_GUARDED`, or `BOUNDED_O1`, and fails if any entry is in none of the three (new, untriaged) or if
+a bucketed entry has disappeared (stale list). Run it with `.agent/bin/agent godot --script
+tools/rpc_surface_audit_check.gd`. **When you add a new `@rpc("any_peer")` handler:** if it does real
+per-request work (a physics/space query, a tree or group scan — anything beyond a `Dictionary`
+lookup or a bounds-checked write), wire it through `RpcRateLimiter` per the rule in the F-232 entry
+below and add its key to `RATE_LIMITED`; if it already has its own cooldown or in-flight guard, add it
+to `SELF_GUARDED`; otherwise add it to `BOUNDED_O1`. The check fails loudly either way if you forget —
+that's the point.
+
+**Found while re-deriving the list, not by inspection:** `AttunementService.net_request_attunement`,
+`InventoryService.net_request_remove`/`net_request_move_stack`, and `Harvestable.net_request_hit` were
+missing from both F-232's `docs/SPECS.md` audit enumeration and F-233's original `docs/FINDINGS.md`
+list. All four turned out to be the same shape as an already-triaged handler in their bucket (no fix
+needed) — the gap was in the audit trail, not the code. `docs/FINDINGS.md`'s F-233 entry carries a
+dated correction rather than a new finding number, since nothing was broken.
+
+**Verify:** `.agent/bin/agent godot --script tools/rpc_surface_audit_check.gd` →
+`RPC_SURFACE_AUDIT_CHECK failures=0`. Full boot (`agent godot --quit-after 120`) — 0 stray `ERROR:`
+lines. Full write-up: `docs/FINDINGS.md` F-233 (Resolved), `docs/SPECS.md` F-233 block.
+
 ### 2026-08-19 — F-232 resolved: hostile-client audit across every `net_request_*`/`net_submit_*` entry point — new `RpcRateLimiter` closes the one real gap it found (lm)
 
 **What shipped, the seam the next host RPC with real per-request cost builds on:**
