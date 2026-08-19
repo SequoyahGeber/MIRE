@@ -3839,6 +3839,72 @@ flakiness.
 
 ---
 
+## F-147 · F-145's fix protects new sessions only — already-collided identities stay live for up to SESSION_KEEP_DAYS
+
+**Claim:** `.agent/bin/agent`, `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md`.
+
+**No spec existed for this finding** (it was filed 2026-08-18, the same day as this file's last
+sweep) — writing it is this task's own first step, per this file's preamble.
+
+**Root cause:** F-145 fixed `_auto_name()` — a chat's assigned name is now unique among live
+sessions going forward — but left the *comparison* untouched everywhere a claim's ownership is
+checked (`agent claim`, `agent brief`, the pre-commit `agent check`, `_blame_foreign_break`): every
+one of them read `claim["agent"] != me`, a bare name compare. That is exactly the property that had
+already failed once: F-147's own live example recorded two different chat sessions both auto-named
+`nettle12` in one working tree, one of them holding five live `F-144` claims. Nothing in F-145's fix
+helps that pair — `whoami()` returns each session's *already-registered* name from `sessions.json`
+before `_auto_name()` is ever consulted again — and nothing stops a third chat from colliding with
+either of them the same way for up to `SESSION_KEEP_DAYS` (14 days) after the older session's last
+activity. A name-only claim can't tell such sessions apart, so `agent claim` grants a claim its
+holder never made, and the pre-commit `check` waves the resulting commit through.
+
+**Fix — do the durable part F-145 deliberately deferred:** store the claiming session's token
+(`_session_token()`, e.g. `"CLAUDE_CODE_SESSION_ID:<uuid>"`) beside `agent` in every claim record,
+and prefer it over the name wherever ownership is decided.
+
+- New `whoami_token()`: the current chat's session token, or `None` for a lane (`MIRE_AGENT` is
+  fixed and unique by construction, so a lane claim intentionally carries no token) or a shell with
+  no session id at all.
+- New `_is_mine(record, me, me_token)`: if the record has a stored `token` *and* the caller has one,
+  compare tokens; otherwise fall back to the name compare, which is what a lane claim and every
+  claim written before this change still need.
+- `cmd_claim` now writes `"token": whoami_token()` into both the `in_flight` entry and every file's
+  `claims` entry; `_release()` carries it into the `recent` snapshot `check`'s grace window reads.
+- Every ownership comparison in `cmd_claim`, `cmd_brief`, `cmd_check` (including its `in_grace`
+  closure), and `_blame_foreign_break` now calls `_is_mine()` instead of comparing `["agent"]`
+  directly. `agent order`'s own conflict check (line ~2140, comparing a live claim against a
+  *target lane's* fixed name before dispatch, not against the caller's own identity) is deliberately
+  untouched — there is no "my session" to prefer a token for there, and lane names don't collide.
+
+**Does not touch the residual window itself:** already-collided `sessions.json` entries still exist
+and still resolve to shared names until `_prune_sessions()` drops them at `SESSION_KEEP_DAYS`. That
+was F-145's deliberate, documented tradeoff (renaming a live session would orphan its claims
+mid-task) and this task doesn't relitigate it. What changes is the *consequence* of a collision
+happening: two sessions sharing a name can no longer walk into each other's claims, because the
+schema no longer depends on the name being unique to prove ownership.
+
+**Verify:** two new `tools/harness_check.py` cases build on its existing sandboxed-repo harness.
+Both rig `sessions.json` so two different session tokens resolve to the *same* auto-name
+(`nettle12`), reproducing the finding's live example without depending on `crc32` luck:
+- `check blocks a colliding SESSION TOKEN even when the auto-assigned NAME matches` — a claim
+  written under token A's name+token; `agent check` run as token B (same name, different token)
+  over the same file must be refused.
+- `check still allows the SAME session token to commit its own harness claim` — the no-regression
+  control: the exact same setup run as token A itself must pass clean.
+
+Confirmed the first case is a real regression test, not a vacuous one: run against the pre-fix
+harness at `HEAD` (`python3 tools/harness_check.py --rev HEAD`) it fails (`21/22`); against the
+fixed working tree it passes (`22/22`).
+
+**Verified 2026-08-18 (lm):** `python3 tools/harness_check.py` → `22/22 passed`, including both new
+cases. `python3 -m py_compile .agent/bin/agent` clean. Also exercised `_is_mine()` and the
+claim-write path directly (loaded the real module, repointed its state paths at a scratch
+directory so the live shared board was never touched) to confirm: a same-name/different-token
+claim is blocked, a legacy claim with no `token` field still falls back to name comparison for its
+own session, and a lane's (`MIRE_AGENT`) claim stores no token and is still recognized as its own.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

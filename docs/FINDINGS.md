@@ -622,50 +622,6 @@ F-140 moves to '## Resolved'.
 
 ---
 
-### F-147 · F-145's fix protects new sessions only — already-collided identities stay live for up to SESSION_KEEP_DAYS
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by nettle12
-
-F-145 fixed the *generator*: a session assigned a name from now on gets a token-unique one. It
-deliberately did not rename anyone, because `whoami()` resolves a registered token from
-`sessions.json` before `_auto_name()` is reached, and claims are keyed by name — renaming a live
-session would orphan its claims mid-task.
-
-The consequence is a residual window. Every identity that already collided stays collided until
-`_prune_sessions()` drops it at `SESSION_KEEP_DAYS` = 14 days. At the time of writing that is eleven
-names covering 25 sessions (`ivy8` x5, `nettle12` x4, `reed16` x4, `pike14` x3, `yarrow21` x3, and
-`moss11`, `tine18`, `wick20`, `flint5`, `dusk3`, `kiln9` x2 each).
-
-**Live example, recorded so the risk is concrete rather than theoretical.** While F-145 was being
-fixed, two different chat sessions were both named `nettle12` and both running in this one working
-tree. The other one held five claims for F-144:
-
-    autoload/graphics_quality.gd      nettle12  F-144
-    tools/_probe_lods.gd              nettle12  F-144
-    tools/render_census.gd            nettle12  F-144
-    world/environment/draw_policy.gd  nettle12  F-144
-    world/gen/authored_world.gd       nettle12  F-144
-    world/gen/undergrowth.gd          nettle12  F-144
-
-To the session fixing F-145 those are indistinguishable from its own claims. `agent claim` on any of
-them would have been granted, and the pre-commit `agent check` would have let it commit them, because
-both compare a bare `c["agent"] != me`.
-
-**The durable fix is to compare the session token, not the name** — store the token beside `agent` in
-each claim and prefer it when both sides have one, falling back to the name for lane agents and for
-claims written before the schema change.
-
-**Deliberately not done in F-145,** and this is the part worth keeping: `.agent/bin/agent` is the hot
-path for every session and lane, and at that moment four agents were mid-task through it (LM on F-136,
-plus F-140, F-144, and the F-145 session itself). A claims-schema change is not additive the way the
-one-line `_auto_name` return was, and shipping it under those conditions risked breaking running work
-to close a window that is already shrinking on its own. Do it when the tree is quiet.
-
-Until then: if two agents may share a name, do not trust a claim's `agent` field alone — check
-`agent report`'s In-flight list for which *task* holds the file, since task ids do not collide.
-
----
-
 ### F-148 · construction_check.gd's door-swing solids AABB goes negative-size on thin per-triangle bounds, throwing an UNDECLARED engine error on every run
 
 **Area:** tooling · **Severity:** medium (raised from low, see update) · **Found:** 2026-08-18 by lm
@@ -1092,6 +1048,82 @@ existing `RuleService.rule_ids()` check.
 ---
 
 ## Resolved
+
+### F-147 · F-145's fix protects new sessions only — already-collided identities stay live for up to SESSION_KEEP_DAYS — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by nettle12
+
+F-145 fixed the *generator*: a session assigned a name from now on gets a token-unique one. It
+deliberately did not rename anyone, because `whoami()` resolves a registered token from
+`sessions.json` before `_auto_name()` is reached, and claims are keyed by name — renaming a live
+session would orphan its claims mid-task.
+
+The consequence is a residual window. Every identity that already collided stays collided until
+`_prune_sessions()` drops it at `SESSION_KEEP_DAYS` = 14 days. At the time of writing that is eleven
+names covering 25 sessions (`ivy8` x5, `nettle12` x4, `reed16` x4, `pike14` x3, `yarrow21` x3, and
+`moss11`, `tine18`, `wick20`, `flint5`, `dusk3`, `kiln9` x2 each).
+
+**Live example, recorded so the risk is concrete rather than theoretical.** While F-145 was being
+fixed, two different chat sessions were both named `nettle12` and both running in this one working
+tree. The other one held five claims for F-144:
+
+    autoload/graphics_quality.gd      nettle12  F-144
+    tools/_probe_lods.gd              nettle12  F-144
+    tools/render_census.gd            nettle12  F-144
+    world/environment/draw_policy.gd  nettle12  F-144
+    world/gen/authored_world.gd       nettle12  F-144
+    world/gen/undergrowth.gd          nettle12  F-144
+
+To the session fixing F-145 those are indistinguishable from its own claims. `agent claim` on any of
+them would have been granted, and the pre-commit `agent check` would have let it commit them, because
+both compare a bare `c["agent"] != me`.
+
+**The durable fix is to compare the session token, not the name** — store the token beside `agent` in
+each claim and prefer it when both sides have one, falling back to the name for lane agents and for
+claims written before the schema change.
+
+**Deliberately not done in F-145,** and this is the part worth keeping: `.agent/bin/agent` is the hot
+path for every session and lane, and at that moment four agents were mid-task through it (LM on F-136,
+plus F-140, F-144, and the F-145 session itself). A claims-schema change is not additive the way the
+one-line `_auto_name` return was, and shipping it under those conditions risked breaking running work
+to close a window that is already shrinking on its own. Do it when the tree is quiet.
+
+Until then: if two agents may share a name, do not trust a claim's `agent` field alone — check
+`agent report`'s In-flight list for which *task* holds the file, since task ids do not collide.
+
+---
+
+**Resolved 2026-08-19 by lm.** Checked the premise first per the brief's warning: still reproduced. F-145 only fixed the
+generator (_auto_name); every comparison that decides claim ownership (`agent claim`, `agent
+brief`, the pre-commit `agent check`, `_blame_foreign_break`) still compared bare `agent` names,
+so two sessions that already share a name (F-147's own live example: two chats both auto-named
+`nettle12`) remain indistinguishable to those checks for up to SESSION_KEEP_DAYS.
+
+Fix, in .agent/bin/agent: new `whoami_token()` (the session's token, None for a lane/MIRE_AGENT
+identity) and `_is_mine(record, me, me_token)` (prefers comparing the stored session token when
+both sides have one, falls back to the name otherwise). `cmd_claim` now stores `"token":
+whoami_token()` in every in_flight/claims record; `_release()` carries it into the `recent`
+snapshot. Every ownership comparison across cmd_claim/cmd_brief/cmd_check(+in_grace)/
+_blame_foreign_break now goes through `_is_mine()` instead of comparing `["agent"]` directly.
+`agent order`'s pre-dispatch conflict check (line ~2140) is deliberately untouched — it checks a
+claim against a target LANE's fixed name before that lane's own session exists, not against the
+caller's identity, and lane names don't collide.
+
+Does not shrink the residual SESSION_KEEP_DAYS window itself (F-145's documented, deliberate
+tradeoff — renaming a live session would orphan its claims) — it changes the consequence of a
+collision from "silently grants the wrong session a claim" to "correctly refused."
+
+Verified: two new tools/harness_check.py cases reproduce the finding's exact live example inside
+its existing sandboxed-repo harness (two session tokens rigged via sessions.json to resolve to the
+same auto-name, `nettle12`) — one proves `agent check` now refuses a same-name/different-token
+commit over another session's claim, the other is the no-regression control proving the same
+session's own claim still commits clean. Confirmed the first case is a real regression test by
+running it against the pre-fix harness (`python3 tools/harness_check.py --rev HEAD` -> 21/22,
+that case FAILs) versus the fixed working tree (`python3 tools/harness_check.py` -> 22/22, all
+pass). Also unit-verified `_is_mine()` and the claim-write path directly against a scratch state
+directory (never touching the live shared board): a same-name/different-token claim is blocked, a
+legacy claim with no `token` field still falls back to name comparison, and a lane's claim stores
+no token and is still recognized as its own. `python3 -m py_compile .agent/bin/agent` clean.
 
 ### F-175 · `Array[StringName].sort()` does not sort lexicographically — at least two other call sites besides F-167's rely on it anyway — **fixed**
 

@@ -43,16 +43,24 @@ def brief(text, lines=3, chars=300):
     return head + (" …" if len(text.strip()) > len(head) else "")
 
 
-def run(cmd, cwd, agent="alpha", check=False, godot_bin=None, stdin=None):
+def run(cmd, cwd, agent="alpha", session=None, check=False, godot_bin=None, stdin=None):
     """`stdin` is a string for the commands that read a body that way (`finding`, `resolve`).
     Passing "" is meaningful and not the same as omitting it — it is how the empty-body refusal gets
-    tested, since a pipe is never a tty either way."""
-    env = dict(os.environ, MIRE_AGENT=agent, NO_COLOR="1")
+    tested, since a pipe is never a tty either way.
+
+    `session` stands in for a real chat's session-id env var (F-147): pass it instead of `agent` to
+    drive `whoami()`'s auto-name/token machinery rather than a lane's fixed MIRE_AGENT identity."""
+    env = dict(os.environ, NO_COLOR="1")
+    env.pop("MIRE_AGENT", None)
+    env.pop("MIRE_SESSION", None)
+    if session is not None:
+        env["MIRE_SESSION"] = session
+    else:
+        env["MIRE_AGENT"] = agent
     if godot_bin:
         # Stand in for the engine so the argv the wrapper builds is observable, and so a test never
         # launches a real Godot against a throwaway project.
         env["GODOT_BIN"] = godot_bin
-    env.pop("MIRE_SESSION", None)
     r = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, input=stdin)
     if check and r.returncode != 0:
         # AssertionError, not SystemExit: a failed setup command is a failed case, and SystemExit
@@ -237,6 +245,43 @@ def _(harness):
     assert r.returncode != 0, ("check passed a harness file claimed by another agent:\n%s%s"
                                % (r.stdout, r.stderr))
     assert "beta" in (r.stdout + r.stderr), "check did not name the holder: %s" % r.stdout
+    return r.stdout.strip()
+
+
+@case("check blocks a colliding SESSION TOKEN even when the auto-assigned NAME matches (F-147)")
+def _(harness):
+    # F-145 fixed the generator so a FRESH chat never lands on a taken name again, but did nothing
+    # for identities that already collided before that fix landed — F-147's residual risk. The
+    # schema itself was the deeper gap: a claim keyed by `agent` name alone can't tell two
+    # DIFFERENT chats apart once they share one, which is exactly what happened live (two sessions
+    # both auto-named "nettle12"). Reproduce that directly rather than relying on crc32 luck: one
+    # claim recorded under token-A's name AND token, a second session (token-B) whose
+    # sessions.json entry already resolves to the SAME name, touching the same file token-A holds.
+    claims = ('{".agent/bin/agent": {"agent": "nettle12", "token": "MIRE_SESSION:token-A", '
+              '"task": "9.8", "at": "2026-08-18T12:00:00+00:00"}}')
+    d = build_repo(harness, claims=claims)
+    with open(os.path.join(d, ".agent", "sessions.json"), "w") as f:
+        json.dump({"MIRE_SESSION:token-B": {"name": "nettle12", "at": "2026-08-18T12:00:00+00:00"}}, f)
+    run(["git", "add", "--", ".agent/bin/agent"], d, check=True)
+    r = run([".agent/bin/agent", "check"], d, session="token-B")
+    assert r.returncode != 0, (
+        "check let a same-NAME, different-TOKEN session commit over another session's claim:\n%s%s"
+        % (r.stdout, r.stderr))
+    assert "nettle12" in (r.stdout + r.stderr), "check did not name the holder: %s" % r.stdout
+    return r.stdout.strip()
+
+
+@case("check still allows the SAME session token to commit its own harness claim (F-147, no false-positive)")
+def _(harness):
+    claims = ('{".agent/bin/agent": {"agent": "nettle12", "token": "MIRE_SESSION:token-A", '
+              '"task": "9.8", "at": "2026-08-18T12:00:00+00:00"}}')
+    d = build_repo(harness, claims=claims)
+    with open(os.path.join(d, ".agent", "sessions.json"), "w") as f:
+        json.dump({"MIRE_SESSION:token-A": {"name": "nettle12", "at": "2026-08-18T12:00:00+00:00"}}, f)
+    run(["git", "add", "--", ".agent/bin/agent"], d, check=True)
+    r = run([".agent/bin/agent", "check"], d, session="token-A")
+    assert r.returncode == 0, (
+        "check blocked a session from committing its own claim:\n%s%s" % (r.stdout, r.stderr))
     return r.stdout.strip()
 
 

@@ -4151,3 +4151,15 @@ Notes along the way:
 Files: `ui/loot/chest_ui.gd`, `autoload/rule_service.gd`, `systems/inventory/inventory_store.gd`, `tools/stringname_sort_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`
 
 Commit at time of writing: `d725432`
+
+---
+
+### DONE · F-147 · lm · 2026-08-19T05:19:57+00:00
+
+**F-145's fix protects new sessions only — already-collided identities stay live for up to SESSION_KEEP_DAYS**
+
+Fixed the collision blind spot F-145 left open: claim/in_flight/recent records now carry the claiming session's token, and every ownership comparison (agent claim, agent brief, pre-commit agent check incl. in_grace, _blame_foreign_break) prefers it over the bare agent name, falling back to name for lane agents and pre-existing claims. Verified with two new tools/harness_check.py cases reproducing the finding's live two-sessions-named-nettle12 example (22/22 pass; the new case fails 21/22 against pre-fix HEAD, confirming it's a real regression test) plus a direct scratch-state unit check of _is_mine()/whoami_token(). Finding moved to Resolved via agent resolve; findings_numbering_check.gd clean (failures=0).
+
+Files: `.agent/bin/agent`, `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md`
+
+Commit at time of writing: `c9ef393`

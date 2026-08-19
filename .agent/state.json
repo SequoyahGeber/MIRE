@@ -1,5 +1,10 @@
 {
   "claims": {
+    "autoload/enemy_world.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T05:13:40+00:00",
+      "task": "F-177"
+    },
     "autoload/graphics_quality.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
@@ -65,6 +70,11 @@
       "at": "2026-08-18T22:01:43+00:00",
       "task": "F-144"
     },
+    "tools/nav_bake_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T05:13:40+00:00",
+      "task": "F-177"
+    },
     "tools/render_census.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
@@ -117,25 +127,30 @@
       ],
       "notes": [],
       "started": "2026-08-18T21:51:43+00:00"
+    },
+    "F-177": {
+      "agent": "lp",
+      "files": [
+        "autoload/enemy_world.gd",
+        "tools/nav_bake_check.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-19T05:13:40+00:00"
     }
   },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "bram1",
-      "at": "2026-08-19T01:38:44+00:00",
-      "hash": "f356e3c3e87a4f0f7b7e7018628b5a98531f3072b1914fe978cfc7df0aa95da5",
-      "task": "F-160"
+      "agent": "lm",
+      "at": "2026-08-19T05:19:57+00:00",
+      "hash": "6948b40bab794914d07ff79df16ad0ff9f6793e7bb96f58ef5dad9c27c155ac2",
+      "task": "F-147",
+      "token": null
     },
     ".agent/bin/lane": {
       "agent": "bram1",
       "at": "2026-08-18T21:41:43+00:00",
       "hash": "c0c2c7623fbc3ab6335732619acb07f81b73e9013b2c45f9eb320971496fdee5",
       "task": "F-142"
-    },
-    ".agent/bin/lane-revive": {
-      "agent": "ivy8",
-      "at": "2026-08-18T05:14:05+00:00",
-      "task": "F-091"
     },
     ".gitignore": {
       "agent": "nettle12",
@@ -1558,9 +1573,10 @@
     },
     "docs/FINDINGS.md": {
       "agent": "lm",
-      "at": "2026-08-19T05:12:18+00:00",
-      "hash": "477f088075e9d7c0437901b0c71856b99592161099b3b5ee6989aa45754d14f9",
-      "task": "F-175"
+      "at": "2026-08-19T05:19:57+00:00",
+      "hash": "4161b2cf80798993c9185a94c6e71c64050b46312999f176760b5e30b564cb5e",
+      "task": "F-147",
+      "token": null
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -1586,9 +1602,10 @@
     },
     "docs/SPECS.md": {
       "agent": "lm",
-      "at": "2026-08-19T05:12:18+00:00",
-      "hash": "bc4ba4926ecbfe082327552c33afb45f130b2ba0e9c3e961dd398415ebecfd0a",
-      "task": "F-175"
+      "at": "2026-08-19T05:19:57+00:00",
+      "hash": "26fc52608ef3de8cf73cf42397ee327447d3edffc4d83776d1e0b6f272305681",
+      "task": "F-147",
+      "token": null
     },
     "entities/player/player.tscn": {
       "agent": "lp",
@@ -2123,11 +2140,6 @@
       "at": "2026-08-18T14:55:48+00:00",
       "task": "F-105"
     },
-    "tools/build_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T05:19:32+00:00",
-      "task": "F-084"
-    },
     "tools/buildable_content_check.gd": {
       "agent": "slate17",
       "at": "2026-08-18T22:17:53+00:00",
@@ -2384,10 +2396,11 @@
       "task": "4.8"
     },
     "tools/harness_check.py": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T21:05:35+00:00",
-      "hash": "89346f12be42c7b669e06bfbaec11983c279064b6b4b0c9a918d47693f10e3ec",
-      "task": "F-134"
+      "agent": "lm",
+      "at": "2026-08-19T05:19:57+00:00",
+      "hash": "49376265e83367842f5bc45b4335e2abd5595bf98c24a92d2b3d1c81fa00345b",
+      "task": "F-147",
+      "token": null
     },
     "tools/harvest_batch_check.gd": {
       "agent": "vane19",
@@ -5303,9 +5316,11 @@
       "title": "Nothing in the game places a chest, so the gilded tier's 1-2/island budget has no owner"
     },
     "F-147": {
+      "done_at": "2026-08-19T05:19:57+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "F-145's fix protects new sessions only \u2014 already-collided identities stay live for up to SESSION_KEEP_DAYS"
     },
@@ -5536,7 +5551,7 @@
     "F-177": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "`EnemyWorld.bake_navigation()` \u2014 the LIVE nav baker \u2014 still ignores placed buildables; only `NavBaker` (task 4.5, unreachable per F-139) got F-159's fix"
     },

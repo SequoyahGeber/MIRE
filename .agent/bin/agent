@@ -241,6 +241,30 @@ def whoami(required=True, assign=True):
     return None
 
 
+def whoami_token():
+    """This chat's session token, or None for a lane (MIRE_AGENT) or a shell with no session id.
+
+    A lane's name is fixed and unique by construction, so it needs no token to disambiguate.
+    Auto-named chats are the ones that can collide (F-145: two different chats assigned the same
+    name from AUTO_NAMES) — this is what lets `_is_mine` tell them apart once that happens."""
+    if os.environ.get("MIRE_AGENT", "").strip():
+        return None
+    return _session_token()
+
+
+def _is_mine(record, me, me_token):
+    """True if a claim/in-flight/recent record belongs to this session (F-147).
+
+    F-145 fixed new auto-names from colliding, but did nothing for identities that already had —
+    an old claim's `agent` field is indistinguishable from a same-named live session by name alone.
+    Prefer the session token when both the record and this session have one; fall back to the name
+    for lane agents (no token by design) and for records written before this field existed."""
+    tok = record.get("token")
+    if tok and me_token:
+        return tok == me_token
+    return record.get("agent") == me
+
+
 def die(msg):
     print("%s✗ %s%s" % (C["r"], msg, C["x"]))
     sys.exit(1)
@@ -727,6 +751,7 @@ def cmd_brief(args):
     tid = _require_task(st, args[0], "brief")
 
     me = whoami(required=False) or "?"
+    me_token = whoami_token()
     t = st["tasks"][tid]
     print("\n%s%s · %s%s" % (C["b"], tid, t["title"], C["x"]))
     print("  %s%s · tier %s · est %s · status %s%s"
@@ -734,7 +759,7 @@ def cmd_brief(args):
              t.get("est", "?"), t["status"], C["x"]))
 
     held = st["in_flight"].get(tid)
-    if held and held["agent"] != me:
+    if held and not _is_mine(held, me, me_token):
         print("\n  %s⚠ already in flight under '%s' since %s — pick another task%s"
               % (C["y"], held["agent"], held["started"][:16].replace("T", " "), C["x"]))
     if t["status"] == "done":
@@ -798,7 +823,7 @@ def cmd_brief(args):
                 for line in _wrap(" ".join(e["body"][1:3]))[:2]:
                     print("    %s%s%s" % (C["dim"], line[4:], C["x"]))
 
-    others = {f: c for f, c in st["claims"].items() if c["agent"] != me}
+    others = {f: c for f, c in st["claims"].items() if not _is_mine(c, me, me_token)}
     if others:
         print("\n%sHeld by someone else right now — do not edit%s" % (C["b"], C["x"]))
         for f, c in sorted(others.items()):
@@ -823,6 +848,7 @@ def cmd_claim(args):
     if not args:
         die("usage: agent claim <task-id> [files...]")
     me = whoami()
+    me_token = whoami_token()
     files = [_rel(f) for f in args[1:]]
     st = load()
     tid = _require_task(st, args[0], "claim")
@@ -830,23 +856,23 @@ def cmd_claim(args):
     if st["tasks"][tid]["status"] == "done":
         die("%s is already done" % tid)
     held = st["in_flight"].get(tid)
-    if held and held["agent"] != me:
+    if held and not _is_mine(held, me, me_token):
         die("%s is already claimed by %s (started %s)" % (tid, held["agent"], held["started"]))
 
     conflicts = [(f, st["claims"][f]) for f in files
-                 if f in st["claims"] and st["claims"][f]["agent"] != me]
+                 if f in st["claims"] and not _is_mine(st["claims"][f], me, me_token)]
     if conflicts:
         for f, c in conflicts:
             print("%s✗ %s is claimed by %s for task %s%s" % (C["r"], f, c["agent"], c["task"], C["x"]))
         die("resolve the overlap before continuing — two agents in one file will conflict")
 
     if not held:
-        st["in_flight"][tid] = {"agent": me, "started": now(), "files": [], "notes": []}
+        st["in_flight"][tid] = {"agent": me, "token": me_token, "started": now(), "files": [], "notes": []}
     entry = st["in_flight"][tid]
     for f in files:
         if f not in entry["files"]:
             entry["files"].append(f)
-        st["claims"][f] = {"task": tid, "agent": me, "at": now()}
+        st["claims"][f] = {"task": tid, "agent": me, "token": me_token, "at": now()}
     st["tasks"][tid]["status"] = "in_flight"
     save(st)
 
@@ -912,7 +938,8 @@ def _release(st, tid):
             # working tree no longer matches this snapshot when ship runs, somebody else touched the
             # file in between and ship should say so instead of silently sweeping it into this
             # task's commit under this task's name.
-            recent[f] = {"task": tid, "agent": entry["agent"], "at": now(), "hash": _file_hash(f)}
+            recent[f] = {"task": tid, "agent": entry["agent"], "token": entry.get("token"),
+                         "at": now(), "hash": _file_hash(f)}
     return entry
 
 
@@ -1343,6 +1370,7 @@ def cmd_check(args):
     """Verify uncommitted changes respect claims and the closed-editor rule.
     Run by the pre-commit hook."""
     me = whoami(required=False) or "unknown"
+    me_token = whoami_token()
     st = load()
 
     # Inside a git hook, judge the STAGED set — that is what is actually being
@@ -1390,7 +1418,7 @@ def cmd_check(args):
 
     def in_grace(path):
         r = st.get("recent", {}).get(path)
-        return bool(r) and r["agent"] == me and age_hours(r["at"]) < RECENT_GRACE_HOURS
+        return bool(r) and _is_mine(r, me, me_token) and age_hours(r["at"]) < RECENT_GRACE_HOURS
 
     for f in changed:
         if ((any(f.startswith(p) for p in FREE_PREFIXES)
@@ -1404,7 +1432,7 @@ def cmd_check(args):
             # session committed that file with the hook waving it through, because the hook saw a
             # docs/ prefix and stopped asking. An explicit claim now means what it looks like.
             held = st["claims"].get(f)
-            if held and held["agent"] != me and not in_grace(f) and not human:
+            if held and not _is_mine(held, me, me_token) and not in_grace(f) and not human:
                 errors.append("%s — %s holds an exact claim on it for %s. docs/ is free only while "
                               "nobody has claimed it (F-006/F-072)" % (f, held["agent"], held["task"]))
             continue
@@ -1423,7 +1451,7 @@ def cmd_check(args):
                 continue
             # D-031: agents may edit Godot-authored files under an exact claim, but
             # never while the editor is running because it may overwrite them.
-            if (c and c["agent"] == me) or in_grace(f):
+            if (c and _is_mine(c, me, me_token)) or in_grace(f):
                 if godot_is_running():
                     errors.append("%s — Godot is running; close it before committing editor-guarded files (D-031)" % f)
                 else:
@@ -1431,7 +1459,7 @@ def cmd_check(args):
                 continue
             errors.append("%s — Godot file requires an exact-file claim and a closed editor (D-031)" % f)
             continue
-        if c and c["agent"] != me:
+        if c and not _is_mine(c, me, me_token):
             # The human integrates everyone's work, so they may commit any file.
             # Agents may not touch a file another agent holds.
             if human:
@@ -2746,9 +2774,10 @@ def _blame_foreign_break(files):
     did not write, or edit a file somebody else holds. Say whose it is instead."""
     st = load()
     me = whoami(required=False, assign=False)
+    me_token = whoami_token()
     for f in files:
         claim = st.get("claims", {}).get(f)
-        if claim and claim["agent"] == me:
+        if claim and _is_mine(claim, me, me_token):
             continue                      # your own claimed file — that break really is yours
         dirty = _git("status", "--porcelain", "--", f).stdout.strip()
         if not claim and not dirty:
