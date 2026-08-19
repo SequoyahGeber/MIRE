@@ -2852,3 +2852,46 @@ guard.** `Wellspring._finish_cap()` still has the old host-only shape for `wells
 **Would change my mind (on the split itself):** a playtest showing `DEATH_BANK_FRACTION = 0.5` makes
 extracting feel mandatory rather than a real bet either way (Q6) — DESIGN.md only specifies the
 direction ("a fraction"), not the number.
+
+---
+
+### D-109 · 2026-08-19 · Task 6.7's lose condition: a dedicated `DefeatService`, not `game_state.gd`; a broadcast RPC, not a `MultiplayerSynchronizer`; "down" alone is a wipe; a fraction, not "every cell", for island-consumed
+
+Four calls, made together because each is a "decide it, write down why" call under AGENTS.md.
+
+**Why `autoload/defeat_service.gd`, not `core/game_state.gd`.** `docs/SPECS.md`'s old 6.7 look-ahead
+line said "defeat flow through GameState", and `ARCHITECTURE.md` §3 does reserve `game_state.gd`'s
+slot for "act, day, seed, run status." Task 6.1 already answered this exact question for the Cycle
+state machine and reversed it: `game_state.gd`'s header comment reserves the *file path*, not a
+mandate to grow that specific file, and `game_state.gd` stays scoped to run-seed authority so mixing
+an unrelated state machine into it does not blur that scope for no benefit. The identical reasoning
+applies here — a dedicated `systems`/`autoload` file per system is the pattern every other
+Cycle-adjacent autoload in this codebase already follows (`CycleService`, `MireGrid`, `WaveSpawner`,
+`DayNight`), and `DefeatService` is one more.
+
+**Why a broadcast RPC (`net_run_defeated`), not `MultiplayerSynchronizer` + `SceneReplicationConfig`
+(D-023's usual mechanism for `Wellspring`/`ExtractionShip`/`Chest`/`Harvestable`).** That mechanism
+exists to bring a LATE JOINER up to date with ongoing state — a synchronizer replays its property's
+current value to a peer that connects after the fact. A run that has just ended in defeat has no
+"late" left to join: the whole point is that play stops. A single reliable broadcast, sent once from
+the same setter every peer's own `_apply_defeat()` runs through (host directly, client via the RPC
+handler), is the whole mechanism this needs, and it avoids standing up `NetInterest`/`NetConfig`
+machinery built for spatial, continuously-relevant props. **Would change my mind:** if a future task
+needs a mid-defeat late joiner to see the same defeat screen (e.g. a spectator flow) — that is a real
+"bring a joiner up to date" need this shape does not cover.
+
+**"Down" alone is a wipe — no separate "and no revive available" check.** DESIGN.md §5.3: "all
+players down simultaneously with no revive available." A revive requires a reviving player to be
+ALIVE (`PlayerHealth._validate_revive`); the instant every present peer reads `host_is_alive() ==
+false`, there is by construction nobody left who could revive anybody, so "no revive available" is
+already true and does not need its own timer or flag.
+
+**Island-consumed is a fraction (`ISLAND_CONSUMED_FRACTION = 0.97` of the grid at/above
+`ISLAND_CONSUMED_CORRUPTION = 0.95`), not "every single cell."** `IslandHeightmap.
+FALLOFF_START_FRACTION`'s outer taper means the grid's edge cells never fully saturate the way its
+interior does, so a "wait for 100%" rule would never actually fire. Both numbers are
+placeholder-tuned, the same unplaytested status as every other Mire constant in this codebase
+(`MireGrid.BASE_SPREAD_RATE`, `CycleService.SPREAD_ESCALATION_PER_CYCLE`). **Would change my mind:**
+a playtest showing the island reads as "consumed" while large playable pockets remain, or the
+opposite — players reaching the DESIGN-intended "soft wall" (Cycle 8–12) well before the fraction
+trips.

@@ -2074,9 +2074,89 @@ run summary and 6.9's unlock tree to build against.
 
 ---
 
+## 6.7 · Lose condition: team wipe / island consumed, defeat flow (`DESIGN.md` §5.3)
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap. DESIGN.md §5.3 is the actual source of truth: "Losing = all players down
+simultaneously with no revive available, or the Mire consumes the island." The old M6
+remaining-tasks bullet this replaces named `game_state.gd` as the destination — superseded; see
+D-109 for why that reservation does not survive contact the same way task 6.1 already found for
+`CycleService`.
+
+**Authority:** new §2.2 row "Lose condition — team wipe / island consumed" — **Host** decides the
+verdict; a reliable broadcast RPC carries it to every peer, not a `MultiplayerSynchronizer` (D-109
+explains why a synchronizer, D-023's usual mechanism, is the wrong tool for a one-shot terminal
+event with no late joiner to catch up).
+
+**Claim:** `autoload/defeat_service.gd` (new), `ui/hud/defeat_hud.gd` (new),
+`world/mire/mire_grid.gd`, `systems/health/player_health.gd`, `systems/health/downed_state.gd`
+(doc-only), `tools/defeat_check.gd` (new). `project.godot` — two `agent autoload` registrations,
+`DefeatService` then `DefeatHud` (the latter after `SalvageService`, for the reason its own header
+comment gives).
+
+**Team wipe.** `DefeatService._physics_process` polls, every host tick, whether every peer in the
+`&"players"` group (the same "who is actually here right now" signal `ExtractionShip`'s own
+presence checks already use, not `NetTransport.peer_ids()` — see that method's own note on why) reads
+`PlayerHealth.host_is_alive() == false`. DESIGN's "no revive available" needs no separate check: a
+revive requires an ALIVE reviver, so the instant nobody is alive, nobody could revive anyone either.
+"Down" (not full DEAD/bled-out) is already enough — D-109 spells out why.
+
+**Island consumed.** New `MireGrid.consumed_fraction(threshold)` (host-only, mirrors
+`corruption_at()`'s own peer split) walks the 256x256 grid and returns what fraction sits at or
+above `threshold`. `DefeatService` polls it on a 5s accumulator (the only one of the two triggers
+worth throttling — it is a 65536-cell walk) and fires once `ISLAND_CONSUMED_FRACTION = 0.97` of the
+grid sits at or above `ISLAND_CONSUMED_CORRUPTION = 0.95`. Both numbers are placeholder-tuned; D-109
+explains why a fraction, not "every cell."
+
+**Firing the verdict without a host-only guard (D-108's actual requirement).** `defeated`'s setter
+fires `EventBus.emit_run_wiped(cycle, world_position)` — the exact seam `SalvageService` (task 6.6)
+already consumes and was waiting on. The host calls `_apply_defeat()` directly (which sets `cause`
+then `defeated = true`, firing the emit on the host's own process) and broadcasts `net_run_defeated`
+to every connected peer; each client's own `net_run_defeated` handler calls the SAME `_apply_defeat()`,
+so the emit reaches that peer's own local `EventBus` too — never a host-only `if` around the emit
+call, the shape `Wellspring._finish_cap()` still has (F-168) and D-108 named as the trap to avoid.
+No `PROTOCOL_VERSION` bump for `net_run_defeated` — `core/net/net_version.gd` was held by lane
+slate17's 3.7 claim all session (F-169, same gap F-161/F-165 already recorded).
+
+**Freezing `PlayerHealth` — the trap this task exists to close.** Before this task, `DownedState`'s
+own FSM (DEAD -[respawn_remaining expires]-> ALIVE) ran unconditionally: a real team wipe would
+bleed everyone out to DEAD and then auto-respawn them all a few seconds later, silently undoing the
+verdict. `PlayerHealth` now subscribes `EventBus.subscribe_run_wiped` and latches `_run_over = true`
+the instant it fires (on every peer — the fix above means every peer's own subscription actually
+receives it); `_physics_process` and `host_apply_damage` both early-return while `_run_over` is set,
+so no timer advances and no further hit lands. Cleared alongside every other session-scoped flag in
+`_on_session_opened()`/`_on_disconnected()`.
+
+**The defeat flow.** `ui/hud/defeat_hud.gd` (new autoload, code-built `CanvasLayer` — same reasoning
+`extraction_hud.gd` gives for not needing a hand-authored scene) reacts to `run_wiped` client-locally:
+a full-screen overlay names the cause (`CAUSE_HEADLINES`, keyed off `DefeatService.cause`) and the
+Cycle reached, joins `blocks_gameplay_input` (D-032, same group `inventory_ui.gd`/`lobby_menu.gd`
+use) so `player_controller.gd`'s `gameplay_input_allowed()` stops the local player without pausing
+the tree, and updates its detail line with the actual banked Salvage once `salvage_banked` arrives
+(filtered on `extracted == false`, so a later successful extraction's own bank never overwrites a
+death screen that is not showing). No scene transition / return-to-menu — that infrastructure does
+not exist anywhere yet, not even for a successful extraction (6.5/6.6 shipped no win screen either);
+building one is out of scope here and belongs with 6.8/6.10's UI work.
+
+Verify: `tools/defeat_check.gd` (24 assertions) — `consumed_fraction()` reports the real fraction at
+a fully seeded, fully saturated, and half-saturated grid; one peer down out of two is never a wipe,
+both down fires exactly one `run_wiped` carrying the real Cycle, a second tick after defeat fires no
+more, an empty player roster is never read as a wipe; the verdict latches `PlayerHealth._run_over`,
+rejects further damage, and survives a 100-second `_physics_process` tick without auto-respawning a
+downed peer; a saturated grid trips `island_consumed` independently of team-wipe; and — the check
+that actually proves D-108's requirement — calling `net_run_defeated` directly (the code path a real
+client takes, not the host's own trigger) drives `defeated`/`cause` and fires `run_wiped` on its own.
+No regressions: `player_health_check`, `player_vitals_check`, `extraction_check`, `salvage_check`,
+`mire_grid_check`, `mire_interaction_check`, `wellspring_recorruption_check`, `cycle_check`,
+`cycle_modifier_check`, `wave_spawner_check` all stay `failures=0` / `0 failure(s)`. `agent godot
+--quit-after 15` shows 0 `ERROR:` lines.
+Done means: `defeat_check.gd` at `failures=0`, the ten regression checks green, 0 `ERROR:` on a full
+boot, and `docs/DELEGATION.md`'s Current state carrying `DefeatService.is_defeated()`/`cause` for
+6.8's run summary to build against.
+
+---
+
 - **6.3 Author 20–30 modifiers (T0).**
-- **6.7 Lose condition (T1):** team wipe (all dead with zero bleed-out revives pending) or island
-  consumed ⇒ defeat flow through GameState; solo death already respawns until then (2.13's rule).
 - **6.8 Run summary (T0):** headline Cycle number; stats GameState already accumulated.
 - **6.9 Unlock tree (T1):** Salvage spends into **variety only, never power** (D-009/DESIGN §4.6 —
   refuse any stat unlock in review); data-driven nodes, local persistence beside 6.6's file.

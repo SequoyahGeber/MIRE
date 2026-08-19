@@ -62,6 +62,8 @@ CycleModifierService="*res://systems/cycle/cycle_modifier_service.gd"
 ExtractionService="*res://autoload/extraction_service.gd"
 ExtractionHud="*res://ui/hud/extraction_hud.gd"
 SalvageService="*res://autoload/salvage_service.gd"
+DefeatService="*res://autoload/defeat_service.gd"
+DefeatHud="*res://ui/hud/defeat_hud.gd"
 
 [display]
 

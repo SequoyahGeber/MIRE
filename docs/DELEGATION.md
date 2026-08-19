@@ -75,6 +75,45 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 6.7: Lose condition — team wipe / island consumed, defeat flow (lm)
+
+New `autoload/defeat_service.gd` (registered) + `ui/hud/defeat_hud.gd` (registered, after
+`SalvageService`). Authority: new §2.2 row "Lose condition" — **Host** decides, a reliable broadcast
+RPC (`net_run_defeated`) carries the verdict to every peer, not a `MultiplayerSynchronizer` (D-109).
+Finally fires `EventBus.run_wiped`, the seam task 6.6 built and left waiting.
+
+**Public API for 6.8 (run summary) and anything else that needs to know how a run ended:**
+
+- `DefeatService.is_defeated() -> bool` — true once the verdict has landed, on every peer (the host
+  decided it; a client learned it over the wire). Terminal for the session.
+- `DefeatService.cause -> StringName` — `&"team_wipe"` or `&"island_consumed"`, readable directly as
+  a property (`defeat_service.get(&"cause")` from a `--script` harness, `DefeatService.cause` from
+  real game code). Set before `defeated` flips true, so a `run_wiped` subscriber reading it back
+  never sees the old value.
+- `EventBus.subscribe_run_wiped(listener)` — already existed (task 6.6); this task is what finally
+  emits it, from every peer's own `defeated` setter, never a host-only guard.
+- `MireGrid.consumed_fraction(threshold: float) -> float` — host-only (mirrors `corruption_at()`'s
+  own peer split), what fraction of the 256x256 grid sits at/above `threshold`. `DefeatService`'s own
+  consumer, but generic enough for a future HUD warning (F-164's own open gap) to poll too.
+- `PlayerHealth._run_over` (private, but worth knowing about) — latches true on `run_wiped` and
+  freezes `_physics_process`/`host_apply_damage`. Nothing downstream should need to read this
+  directly; `DefeatService.is_defeated()` is the public answer to "is the run over".
+
+**Not built:** any scene transition or return-to-menu flow. `ui/hud/defeat_hud.gd` shows a
+full-screen overlay and blocks input, but nothing here ends the Godot session or returns to a main
+menu — that infrastructure does not exist anywhere yet (a successful extraction has no win screen
+either). `NetTransport.leave()` is the seam a future "return to menu" button would call.
+
+Verified: `tools/defeat_check.gd` (24 assertions, 0 failures) — `consumed_fraction()` math, team-wipe
+requires every present peer down (not just one), the verdict is terminal and freezes `PlayerHealth`
+against both further damage and auto-respawn, island-consumed fires independently, and
+`net_run_defeated` (the code path an actual client takes) drives the same setter and reaches
+`EventBus.run_wiped` on its own — the check that actually proves D-108's requirement. No
+regressions: `player_health_check`, `player_vitals_check`, `extraction_check`, `salvage_check`,
+`mire_grid_check`, `mire_interaction_check`, `wellspring_recorruption_check`, `cycle_check`,
+`cycle_modifier_check`, `wave_spawner_check` all stay green. 0 `ERROR:` on a full boot (`agent godot
+--quit-after 15`).
+
 ### 2026-08-19 — Task 6.6: Salvage — superlinear reward curve, extract-vs-die split, persistence, save-file versioning (lm)
 
 New `autoload/salvage_service.gd` (registered) + `core/save/salvage_save.gd` (pure data I/O, no

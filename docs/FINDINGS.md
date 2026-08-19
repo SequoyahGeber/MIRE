@@ -1020,6 +1020,31 @@ diff `extraction_ship.gd`'s `departed` setter already shows. Re-run `wellspring_
 
 ---
 
+### F-169 · Task 6.7's new `net_run_defeated` RPC shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lm during 6.7
+
+`autoload/defeat_service.gd` added `net_run_defeated` (host → everyone, reliable) — a real new wire
+shape, same class of change `core/net/net_version.gd`'s own header says must bump
+`PROTOCOL_VERSION`. `core/net/net_version.gd` and `tools/handshake_check.gd` were both held by lane
+slate17's 3.7 claim for this task's entire session, so neither could be edited under AGENTS.md's
+claim rule. This is the same gap F-161 (task 5.3) and F-165 (task 6.5) already recorded, for the
+same reason, against the same held files — D-102 covers why this is an acceptable transient risk
+for a project that ships from one evolving source tree rather than staggered binaries.
+
+**What closes this:** whoever next holds `core/net/net_version.gd` — likely the same pass that
+closes F-161/F-165, since all three are one bump apiece:
+1. Bump `PROTOCOL_VERSION` past whatever F-161/F-165 left it at.
+2. Add a `## N (task 6.7)` comment naming `net_run_defeated`, matching every entry above it.
+3. Raise `tools/handshake_check.gd`'s version assertion to match, updating its label.
+4. `agent godot --script tools/handshake_check.gd` green is the actual closing proof.
+
+No code change to `defeat_service.gd` itself is needed — the RPC is already correct and covered by
+`tools/defeat_check.gd` (`failures=0`), which calls it directly the way a real client receiving it
+would (see that check's own "net_run_defeated" section).
+
+---
+
 ## Resolved
 
 ### F-160 · A transient API error kills a saturate chain, and nothing restarts it — the lane sits idle until a human notices — **fixed**
