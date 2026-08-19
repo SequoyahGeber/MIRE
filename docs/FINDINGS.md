@@ -181,6 +181,8 @@ needs `Undergrowth` itself to expose something like `sample_ground_gaps() -> Arr
 rather than reimplementing its raycast. Needs a claim on `world/gen/undergrowth.gd` and
 `tools/world_contract_check.gd`.
 
+
+
 ### F-006 · Three roadmap tasks assume a Windows or Linux machine we don't have
 
 **Area:** process · **Severity:** high · **Found:** 2026-08-15 by claude
@@ -261,9 +263,7 @@ results from this box are a closer proxy for the Deck than anything else availab
 
 Still worth a `DECISIONS.md` entry: "cross-platform verification happens on Unraid x86_64 VMs, with
 these known gaps" is a standing decision that shapes M7 and M8, not just a finding.
-
 ---
-
 
 ### F-020 · Steam sessions cannot use NetSession's direct-address auto-rejoin loop
 
@@ -772,41 +772,6 @@ their own `## N (task X)` comment rather than collapsing into a single bump.
 
 ---
 
-### F-183 · Wellspring caps and boss kills never grant a Chest — `wellspring`/`boss` tier loot tables are authored and reachable, but nothing ever rolls them
-
-**Area:** loot · **Severity:** medium · **Found:** 2026-08-19 by lp while closing F-146
-
-F-146 gave every WORLD-PLACED chest tier a real owner (`autoload/chest_placement_service.gd`), but
-`docs/ITEMS.md` §5 names two tiers that were never meant to sit in the world at all: "Wellspring
-Chest (`wellspring`) | granted on a cap — never priced" and "Boss Cache (`boss`) | guardian / titan
-kills". Neither `systems/wellspring/wellspring.gd`'s cap flow (`_finish_cap()`, D-092's
-`wellspring_capped` event) nor anything under `systems/enemies/` (`boss.gd`, `boss_phase_def.gd`)
-ever constructs a `Chest`, calls `LootTableDef.roll()`, or otherwise reads `content/loot/wellspring
-.tres`/`content/loot/boss.tres` — confirmed by grep, zero hits for `Chest`/`LootTableDef`/`roll(` in
-either file. Both tables are authored and pass `tools/loot_content_check.gd`'s id-resolution sweep,
-so the content is not the gap — same shape F-146 itself was before this task, just for a different
-trigger than "a marker exists".
-
-This is a real, if smaller, version of F-146's own root cause: a `LootTableDef` with no caller pays
-for authoring and gets nothing back. Unlike F-146, this is NOT a placement problem — a Wellspring cap
-and a boss kill are events, not positions, so `ChestPlacementService`'s marker-bridge pattern does
-not apply. The right shape is closer to `PowerupService.host_grant()`'s direct-call seam: the host
-process rolls the table itself (no `Chest` node needed at all, since there is nothing in the world to
-open — the reward should just land in the capping/killing party's inventory the moment the trigger
-fires) or, if a physical reward chest at the Wellspring/boss arena is the intended presentation
-(closer to what `loot_chest_wellspring_open`'s existing decorative placement at the Blight landmark
-suggests), a `Chest` instanced at the trigger's own position with `tier` set and `cost_coins = 0`,
-`locked_by = &""` (both are already-granted rewards, never gated).
-
-Whoever takes this needs a design call this finding does not make: grant the roll directly into
-inventory the moment the trigger fires, or spawn a real `Chest` at the trigger site for players to
-walk up and open. `docs/DESIGN.md` §4.4's "publish a jackpot to the team" social-decision framing
-(referenced by `tools/powerup_net_check.gd`'s own comments) argues for the latter — a chest a
-teammate can see is a decision made in front of the group, not a silent inventory grant — but that
-is a playtest-worthy claim, not a decided one.
-
----
-
 ### F-184 · `tools/audio/audio_check.py`'s exit code is inverted — it exits 0 when checks FAIL and 1 when they PASS
 
 **Area:** audio · **Severity:** low · **Found:** 2026-08-18 by lm during F-176
@@ -1004,7 +969,91 @@ option 4 is already someone's live task.
 
 ---
 
+### F-190 · HEAD registers the RewardService autoload but does not contain its script, so a clean checkout fails to boot
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by nettle12
+
+`project.godot` at HEAD carries `RewardService="*res://autoload/reward_service.gd"` (line 76) and
+`autoload/reward_service.gd` is not tracked — it exists only in the shared working tree. A clean
+checkout therefore starts with:
+
+    ERROR: Failed to instantiate an autoload, can't load from path: res://autoload/reward_service.gd
+
+`agent baseline --script tools/hollowmere_check.gd` reproduces it in one command. The same run
+also reports one genuine assertion failure at HEAD, unrelated to the autoload: "Player node is
+1.84 m from the layout spawn — the scene has drifted", which arrived with the layout change that
+took Hollowmere from 2,869 props to 2,880.
+
+This is the second instance of one failure mode in a day, and the other one was mine, so it is
+worth naming rather than just fixing. `agent autoload` writes `project.godot` deliberately without
+a claim (F-051), which is right — but it means the REGISTRATION and the SCRIPT are committed by
+two different acts, and nothing checks that a commit which adds the first also adds the second.
+F-144 shipped exactly the same shape: `autoload/graphics_quality.gd` was committed preloading
+`res://world/environment/draw_policy.gd` while that file existed only on disk, because several
+sessions share one working tree and `git add` followed by `git commit` is not atomic against
+another session's git activity in between — thirteen staged paths, three committed, no error.
+
+Two things would have caught it:
+
+1. A check that every `res://` path named in `project.godot`'s `[autoload]` block, and every
+   `preload()` target in a tracked script, is itself tracked at HEAD. Cheap, and it catches the
+   whole class rather than these two instances.
+2. `agent check` looking at the INDEX as well as the working tree. It currently reports on
+   working-tree state, so a commit that silently lost most of its paths passes it.
+
+Until then, commit by pathspec (`git commit -m ... -- <paths>`), which stages and commits
+atomically from the working tree and cannot lose to the race, and verify with
+`git cat-file -e HEAD:<path>` rather than trusting that the commit contained what was staged.
+
+---
+
 ## Resolved
+
+### F-183 · Wellspring caps and boss kills never grant a Chest — `wellspring`/`boss` tier loot tables are authored and reachable, but nothing ever rolls them — **fixed**
+
+**Area:** loot · **Severity:** medium · **Found:** 2026-08-19 by lp while closing F-146
+
+F-146 gave every WORLD-PLACED chest tier a real owner (`autoload/chest_placement_service.gd`), but
+`docs/ITEMS.md` §5 names two tiers that were never meant to sit in the world at all: "Wellspring
+Chest (`wellspring`) | granted on a cap — never priced" and "Boss Cache (`boss`) | guardian / titan
+kills". Neither `systems/wellspring/wellspring.gd`'s cap flow (`_finish_cap()`, D-092's
+`wellspring_capped` event) nor anything under `systems/enemies/` (`boss.gd`, `boss_phase_def.gd`)
+ever constructed a `Chest`, called `LootTableDef.roll()`, or otherwise read `content/loot/wellspring
+.tres`/`content/loot/boss.tres` — confirmed by grep, zero hits for `Chest`/`LootTableDef`/`roll(` in
+either file. Both tables were authored and passed `tools/loot_content_check.gd`'s id-resolution
+sweep, so the content was never the gap — same shape F-146 itself was before its own fix, just for a
+different trigger than "a marker exists".
+
+The finding left a design call open: grant the roll directly into inventory the moment the trigger
+fires, or spawn a real `Chest` at the trigger site for players to walk up and open.
+
+**Fixed:** `autoload/reward_service.gd` (new autoload). Subscribes to
+`EventBus.subscribe_wellspring_capped()`/`subscribe_boss_defeated()` — both already fire identically
+on every peer, straight from a replicated property's own setter (D-107/D-108/F-168/F-181's pattern).
+Host-only, it resolves the trigger's tier through `Registry.get_loot_table()` and, for every
+currently-present player (`_present_peers()`, the same "distinct multiplayer authority in the
+`players` group" helper `DefeatService` already uses), rolls that table once with a fresh
+`RandomNumberGenerator` and D-111/F-173's unlock-gating `Callable`, then grants coins/items through
+`InventoryService.host_add()` and powerups through `PowerupService.host_grant()` — the identical
+three-bucket dispatch `Chest._accept_open_request()` already uses. D-123 settles the design call:
+**direct grant, never a spawned `Chest`** (an event-timed trigger has no established way to land a
+dynamically-instanced node at a matching cross-peer `NodePath`, unlike `MultiplayerSpawner` or
+`ChestPlacementService`'s boot-deterministic marker bridge), and **one independent roll per present
+player**, not one shared roll — the closer analogue to "whoever gets there first loots" a world
+chest already means. `core/util/mire_log.gd` gained a `&"reward"` channel for the per-grant log line.
+
+**Verified:** `agent godot --script tools/reward_service_check.gd` (new) → `REWARD_SERVICE_CHECK
+failures=0`, run three times — against the REAL `content/loot/wellspring.tres`/`boss.tres` content,
+no synthetic table: wiring, a real Wellspring's `capped` transitioning true (the F-168 replication
+shape) grants the present player wellspring.tres's own coin range plus at least one of its
+all-POWERUP rolls, `EventBus.emit_boss_defeated()` does the same against boss.tres's mixed
+item/powerup table, and `_present_peers()` returns every distinct authority in the `players` group.
+`agent godot --quit-after 60` → clean boot, no new `ERROR:` lines. No regressions:
+`tools/chest_check.gd`, `tools/chest_placement_check.gd`, `tools/wellspring_check.gd`,
+`tools/boss_check.gd`, `tools/unlock_check.gd`, `tools/loot_content_check.gd` all still
+`failures=0`. Full spec: `docs/SPECS.md` (F-183, none existed before this task).
+
+---
 
 ### F-144 · Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance — **fixed**
 
