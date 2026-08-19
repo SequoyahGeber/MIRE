@@ -440,6 +440,63 @@ instruction.
 
 ---
 
+### F-223 · CommandService's synchronously-resolved commands never print in the console — result signal fires before the pending-handle guard is armed
+
+**Area:** netcode · **Severity:** high · **Found:** 2026-08-19 by lp
+
+**Found:** 2026-08-19 by lp during 3.13-review
+
+`autoload/debug_console.gd:_run()` calls `command_service.call("submit", line, ctx)` (`autoload/
+command_service.gd:submit()`), *then* sets `_pending_handles[handle] = true` on the next line.
+`submit()` -> `_run_submission()` -> `execute()` only actually suspends (a real `await`) when a
+non-host peer submits a HOST-scope command over the RPC (`_submit_to_host`). For every LOCAL
+command (`help`, `items`, `clear`, `enemies`, `commands`, …) and every HOST-scope command typed by
+the host itself (`give`, `spawn`, `killall`, …) — i.e. the entire single-player/host-typed path,
+the majority of real console usage — `execute()` never suspends, so `_run_submission` runs to
+completion synchronously *inside* the `submit()` call: it emits `command_result` before `submit()`
+even returns the handle to `_run()`. `_on_command_result` (already connected) fires immediately,
+finds `_pending_handles.has(handle)` false (line 172 hasn't executed yet) and silently discards the
+result. debug_console.gd's own comment at the site even states the premise correctly ("A LOCAL
+command never leaves this process, so it resolves inside `submit()` above before this line even
+runs") without noticing that the *signal* fires in that same window too.
+
+Net effect: typing `help`, `items`, `give branch 5`, `spawn crawler`, etc. directly into the host's
+own console (or any LOCAL command from a client) prints nothing — only the echoed `> <line>`
+appears, never the result. Verified empirically: booted the project headless, called
+`DebugConsole._on_submitted("help")` directly, and the output buffer contains the echoed `> help`
+line only — `help`'s actual listing never appears (`command_service.execute("help", ...)` on its
+own returns the text fine, confirming the break is in the submit()/signal wiring, not the command
+itself). `tools/command_check.gd` doesn't catch this because it calls `command_service.execute()`
+directly, bypassing `submit()`. `tools/command_net_check.gd`'s phase C only exercises the genuinely
+async client-over-RPC path (console open + paused), which is the one path that already suspends
+before `submit()` returns — so it passes while the much more common synchronous path is silently
+broken.
+
+Fix shape: set `_pending_handles[handle] = true` (and connect the `command_result` signal, if not
+already connected) *before* calling `submit()`, not after — same ordering problem likely applies to
+`_unpaused_for_handles` if a future LOCAL/host-typed path is ever made to pause first.
+
+---
+
+### F-224 · CommandService's per-client _resolved_requests dictionary never shrinks over a session
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lp
+
+**Found:** 2026-08-19 by lp during 3.13-review
+
+`autoload/command_service.gd:_resolved_requests` gets one entry per HOST-scope command a *client*
+ever submits over the host RPC path (`net_command_result` and `_on_submit_timeout` both do
+`_resolved_requests[request_id] = true`, guarding against a late timeout firing after a real reply
+already landed — see line ~333). Nothing ever erases an entry once written; the dictionary only
+grows for the lifetime of the client process. MIRE's runs are explicitly endless/escalating
+(CLAUDE.md) and 3.17's functions/hooks can submit commands programmatically, so a long session or
+a hook-driven function loop could accumulate a large number of stale int keys with no bound.
+Not a correctness bug today (the guard's read is O(1) either way) — filed as low per FINDINGS.md's
+severity table ("mild inefficiency"), fix opportunistically: e.g. erase the request's own entry once
+`_rpc_result_received` has been consumed by `_submit_to_host`'s awaiting loop.
+
+---
+
 ## Resolved
 
 ### F-208 · F-203's sway case is still unsolved — `_apply_sway`'s per-mesh height mask needs a per-vertex baked channel before sway-bearing props can join the cross-asset chunk merge — **fixed**

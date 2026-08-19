@@ -1,6 +1,14 @@
 {
   "claims": {},
-  "in_flight": {},
+  "in_flight": {
+    "3.14-review": {
+      "agent": "lp",
+      "files": [],
+      "notes": [],
+      "started": "2026-08-19T14:03:45+00:00",
+      "token": null
+    }
+  },
   "recent": {
     ".": {
       "agent": "lp",
@@ -1846,11 +1854,6 @@
       "task": "F-183",
       "token": null
     },
-    "docs/AI-WORKFLOW.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-18T14:02:22+00:00",
-      "task": "F-053"
-    },
     "docs/ARCHITECTURE.md": {
       "agent": "lm",
       "at": "2026-08-19T06:46:55+00:00",
@@ -1888,9 +1891,9 @@
     },
     "docs/FINDINGS.md": {
       "agent": "lm",
-      "at": "2026-08-19T13:59:55+00:00",
-      "hash": "836b4f5adf98cf58de889ffcd543c4d3e46bcf9d02a0ee9624dcfc41388001ae",
-      "task": "F-208",
+      "at": "2026-08-19T14:04:11+00:00",
+      "hash": "e19f3b401914319a88ae19aba3bee5b87a7682146195eb1163a786f5170ef40f",
+      "task": "4.3-review",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -4242,10 +4245,12 @@
       "title": "Command core \u2014 `CommandService` front door: typed arg specs, LOCAL/HOST scopes, client\u2192host RPC + op permissions, migrate every existing console command (`docs/COMMANDS.md` \u00a71\u20132)"
     },
     "3.13-review": {
+      "done_at": "2026-08-19T14:02:16+00:00",
+      "done_by": "lp",
       "est": "0.5",
       "milestone": "M3",
       "review_of": "3.13",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 3.13 @ f9cb6f7 \u2014 judge the commit, file findings, no edits"
     },
@@ -4262,7 +4267,7 @@
       "est": "0.5",
       "milestone": "M3",
       "review_of": "3.14",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T1",
       "title": "Review 3.14 @ 80d668f \u2014 judge the commit, file findings, no edits"
     },
@@ -4476,6 +4481,16 @@
       "tier": "T2",
       "title": "Chunk streaming + LOD, `WorkerThreadPool` mesh generation"
     },
+    "4.3-review": {
+      "done_at": "2026-08-19T14:04:11+00:00",
+      "done_by": "lm",
+      "est": "0.5",
+      "milestone": "M4",
+      "review_of": "4.3",
+      "status": "done",
+      "tier": "T1",
+      "title": "Review 4.3 @ 1f0ff07 \u2014 judge the commit, file findings, no edits"
+    },
     "4.4": {
       "done_at": "2026-08-18T20:54:23+00:00",
       "done_by": "lm",
@@ -4636,6 +4651,14 @@
       "status": "done",
       "tier": "T2",
       "title": "Cycle state machine: advance, escalate spread rate, expand enemy pool, announce (`DESIGN.md` \u00a75.1)"
+    },
+    "6.1-review": {
+      "est": "0.5",
+      "milestone": "M6",
+      "review_of": "6.1",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 6.1 @ 46a25e6 \u2014 judge the commit, file findings, no edits"
     },
     "6.10": {
       "done_at": "2026-08-19T03:19:09+00:00",
@@ -6840,6 +6863,20 @@
       "status": "todo",
       "tier": "F",
       "title": "Eight Blender preview generators render correctly only because an unrelated object happens to get created (or the camera type happens to get flipped) between their reposition and their render \u2014 no check would catch it if that incidental code is ever removed"
+    },
+    "F-223": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "CommandService's synchronously-resolved commands never print in the console \u2014 result signal fires before the pending-handle guard is armed"
+    },
+    "F-224": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "CommandService's per-client _resolved_requests dictionary never shrinks over a session"
     }
   },
   "version": 1

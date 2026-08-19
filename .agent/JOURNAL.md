@@ -5169,3 +5169,25 @@ Notes along the way:
 Files: `world/gen/authored_world.gd`, `core/render/mesh_merge.gd`, `autoload/environment_vfx.gd`, `world/environment/foliage_wind.gdshader`, `tools/prop_chunk_merge_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `tools/mesh_merge_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `d3ba403`
+
+---
+
+### DONE · 3.13-review · lp · 2026-08-19T14:02:16+00:00
+
+**Review 3.13 @ f9cb6f7 — judge the commit, file findings, no edits**
+
+Reviewed f9cb6f7 (+ companion docs commit 28d6fb6) against SPECS.md 3.13/COMMANDS.md §1-2 and ARCHITECTURE.md §2.2. Ran tools/command_check.gd (0 failures, 60+ assertions) and tools/command_net_check.gd (0 failures, real two-process ENet, phase C proves the paused-tree RPC round trip) at HEAD, both through agent godot, no undeclared ERROR: lines. Network authority header matches ARCHITECTURE.md's new Command execution row (HOST for mutating commands). Standing rule 1 respected: command_service.gd/debug_console.gd are autoloads themselves (exempt); tools/command_check.gd and command_net_check.gd preload the script and use root.get_node_or_null, no bare autoload names reachable by --script. Protocol bumped 15->16 + handshake_check literal updated in the same commit. give's exact output strings preserved. D-076/077/078 and F-126 filed, ARCHITECTURE.md row and autoload registration landed in the companion commit 28d6fb6 (14s later, same session) rather than f9cb6f7 itself, which is fine — same task, same commit pair. Found two real problems, both filed: F-223 (high) — DebugConsole._run() sets _pending_handles[handle]=true AFTER calling submit(), but submit() resolves synchronously and emits command_result for any LOCAL command or any HOST command typed by the host itself, so the result arrives before the guard is armed and is silently discarded — verified empirically (DebugConsole._on_submitted('help') headless: only the echoed '> help' line appears, never the help text). Neither command_check.gd (calls execute() directly) nor command_net_check.gd's phase C (tests only the genuinely-async client-over-RPC path) exercises this. F-224 (low) — _resolved_requests never shrinks over a session.
+
+Commit at time of writing: `e5f0861`
+
+---
+
+### DONE · 4.3-review · lm · 2026-08-19T14:04:11+00:00
+
+**Review 4.3 @ 1f0ff07 — judge the commit, file findings, no edits**
+
+Clean — 1f0ff07 verified against SPECS.md 4.3, ARCHITECTURE.md §2.2, standing rules. Ring/LOD/hysteresis math checked by hand (tightening immediate, loosening past leave-boundary, big jumps unload correctly). agent godot --windowed --script tools/chunk_stream_check.gd: 0 functional failures, sprint-walk acceptance holds (own-cost mean 0.15ms worst 7.75ms, zero hitches/16.667ms, 9987 frames). One high-severity bug did ship in 1f0ff07 (inverted triangle winding, floor players fall through) but it's not a new finding: already caught same-day by wick20 via F-128 work, filed/fixed as F-133, check suite amended to assert facing. No new findings filed.
+
+Files: `docs/FINDINGS.md`
+
+Commit at time of writing: `e5f0861`
