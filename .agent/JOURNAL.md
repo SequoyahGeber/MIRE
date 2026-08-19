@@ -4109,3 +4109,18 @@ Notes along the way:
 Files: `tools/crafting_ui_check.gd`
 
 Commit at time of writing: `ab54d0f`
+
+---
+
+### DONE · F-172 · lm · 2026-08-19T05:05:14+00:00
+
+**Seed entry (task 6.10) only reaches the host-session path — solo/offline play draws its seed before any menu can be opened**
+
+GameState._apply_launch_seed_arg() stages a --seed=<value> launch arg via the existing set_pending_seed() before MireGrid ever draws — solo/offline play now has a real way to set a seed. agent godot --script tools/seed_launch_arg_check.gd -- --seed=204060517 -> SEED_LAUNCH_ARG_CHECK failures=0 (8/8 PASS), run twice. No regressions: main_menu_check.gd 28/28, seed_sync_check.gd 12/12, --quit-after 20 clean. Spec in docs/SPECS.md, decision D-119, DELEGATION.md Current state updated, finding moved to Resolved.
+
+Notes along the way:
+- Fixed via GameState._apply_launch_seed_arg() (--seed= launch arg), not the boot-gate D-110 reserved for its own task. New D-119 records why (not a relitigation of D-110) and why it's not debug-only. tools/seed_launch_arg_check.gd: 8/8 PASS twice. No regression in main_menu_check (28/28) or seed_sync_check (12/12). Full --quit-after 20 smoke run clean.
+
+Files: `core/game_state.gd`, `tools/seed_launch_arg_check.gd`
+
+Commit at time of writing: `0244885`

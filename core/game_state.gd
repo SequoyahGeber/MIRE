@@ -88,6 +88,7 @@ func reset() -> void:
 
 
 func _ready() -> void:
+	_apply_launch_seed_arg()
 	var transport: Node = get_node_or_null(^"/root/NetTransport")
 	if transport == null:
 		return
@@ -103,3 +104,33 @@ func _on_hosting() -> void:
 
 func _on_disconnected() -> void:
 	reset()
+
+
+## F-172: solo/offline play draws its seed in `MireGrid._ready()` before any menu can open to stage
+## one via [method set_pending_seed] — task 6.10's UI path only ever reaches a hosted session
+## (D-110). `GameState` is last-but-one in `[autoload]` order, immediately before `MireGrid`, so a
+## `--seed=<value>` launch argument staged here is guaranteed in place before anything downstream
+## can draw. Parsing mirrors `ui/menu/main_menu.gd`'s own `request_set_seed()`: a pure integer is
+## used as-is, any other text is hashed with `String.hash()` (same fixed algorithm on every
+## platform) so a shared word-seed behaves identically whether typed in the menu or passed on the
+## command line, and a value that lands on exactly 0 is bumped to 1 — 0 means "no override" in
+## `set_pending_seed`'s own contract. Same two-step args lookup `core/dev/dev_launch.gd` already
+## uses, but — unlike that file — not debug-only: seed entry is a real player-facing feature
+## (`MainMenu`'s own field), and `autoload/steam_lobby.gd`'s `STEAM_CONNECT_LOBBY_ARG` already
+## establishes that a retail-build cmdline arg reaching an autoload is a normal shape here, the same
+## way a Steam "Launch Options" field already reaches any other Steam title.
+func _apply_launch_seed_arg() -> void:
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	if args.is_empty():
+		args = OS.get_cmdline_args()
+	for arg: String in args:
+		if not arg.begins_with("--seed="):
+			continue
+		var text: String = arg.trim_prefix("--seed=").strip_edges()
+		if text.is_empty():
+			return
+		var value: int = int(text.to_int()) if text.is_valid_int() else text.hash()
+		if value == 0:
+			value = 1
+		set_pending_seed(value)
+		return

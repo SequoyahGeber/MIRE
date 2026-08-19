@@ -1,9 +1,24 @@
 {
   "claims": {
+    "autoload/command_service.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T05:00:09+00:00",
+      "task": "F-157"
+    },
     "autoload/graphics_quality.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
+    },
+    "autoload/net_transport.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T05:00:09+00:00",
+      "task": "F-157"
+    },
+    "autoload/steam_lobby.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T05:00:09+00:00",
+      "task": "F-157"
     },
     "core/net/net_version.gd": {
       "agent": "slate17",
@@ -34,6 +49,21 @@
       "agent": "nettle12",
       "at": "2026-08-18T22:14:11+00:00",
       "task": "F-144"
+    },
+    "tools/command_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T05:00:09+00:00",
+      "task": "F-157"
+    },
+    "tools/display_name_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T05:00:09+00:00",
+      "task": "F-157"
+    },
+    "tools/display_name_check.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-19T05:00:09+00:00",
+      "task": "F-157"
     },
     "tools/door_check.gd": {
       "agent": "slate17",
@@ -69,6 +99,11 @@
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
+    },
+    "ui/debug/net_debug_panel.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T05:00:09+00:00",
+      "task": "F-157"
     },
     "world/environment/draw_policy.gd": {
       "agent": "nettle12",
@@ -117,6 +152,20 @@
       ],
       "notes": [],
       "started": "2026-08-18T21:51:43+00:00"
+    },
+    "F-157": {
+      "agent": "lp",
+      "files": [
+        "autoload/net_transport.gd",
+        "autoload/steam_lobby.gd",
+        "autoload/command_service.gd",
+        "tools/command_check.gd",
+        "ui/debug/net_debug_panel.gd",
+        "tools/display_name_check.gd",
+        "tools/display_name_check.gd.uid"
+      ],
+      "notes": [],
+      "started": "2026-08-19T05:00:09+00:00"
     }
   },
   "recent": {
@@ -224,25 +273,10 @@
       "at": "2026-08-18T14:15:06+00:00",
       "task": "F-061"
     },
-    "assets/icons/exports/icon_stone_axe.png": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
-    },
-    "assets/icons/exports/icon_wooden_axe.png": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
-    },
     "assets/icons/preview": {
       "agent": "lp",
       "at": "2026-08-18T14:15:06+00:00",
       "task": "F-061"
-    },
-    "assets/icons/preview/item_icons_sheet.png": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
     },
     "assets/maps": {
       "agent": "tine18",
@@ -763,11 +797,6 @@
       "hash": "254f90e035eb91c65353c542a747169a68c2f173c62aa1680f9ee34b7510f850",
       "task": "3.17"
     },
-    "content/items/arrow.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
-    },
     "content/items/berry.tres": {
       "agent": "lp",
       "at": "2026-08-19T04:47:27+00:00",
@@ -778,11 +807,6 @@
       "agent": "ivy8",
       "at": "2026-08-18T17:57:51+00:00",
       "task": "3.2"
-    },
-    "content/items/cleaver.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
     },
     "content/items/coal.tres": {
       "agent": "ivy8",
@@ -804,21 +828,6 @@
       "at": "2026-08-18T17:57:51+00:00",
       "task": "3.2"
     },
-    "content/items/iron_ingot.tres": {
-      "agent": "lp",
-      "at": "2026-08-18T05:04:45+00:00",
-      "task": "3.1"
-    },
-    "content/items/iron_pickaxe.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
-    },
-    "content/items/iron_sword.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
-    },
     "content/items/mushroom.tres": {
       "agent": "lp",
       "at": "2026-08-19T04:47:27+00:00",
@@ -831,46 +840,16 @@
       "hash": "4bde096db155e5a42659780dbf92cde555d03ae178ec0f3c695d5c36a9b741b2",
       "task": "F-162"
     },
-    "content/items/repair_hammer.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
-    },
     "content/items/short_bow.tres": {
       "agent": "lp",
       "at": "2026-08-19T01:44:21+00:00",
       "hash": "9a8d98427311711f20c343a120b1ecafe0ed5a2019402f1c84f002cb78db0906",
       "task": "5.3"
     },
-    "content/items/skewer.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
-    },
     "content/items/stick.tres": {
       "agent": "vane19",
       "at": "2026-08-18T17:56:19+00:00",
       "task": "F-116"
-    },
-    "content/items/stone_axe.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
-    },
-    "content/items/stone_pickaxe.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
-    },
-    "content/items/wooden_axe.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
-    },
-    "content/items/wooden_pickaxe.tres": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
     },
     "content/loot": {
       "agent": "slate17",
@@ -1373,11 +1352,6 @@
       "at": "2026-08-18T17:57:51+00:00",
       "task": "3.2"
     },
-    "content/recipes/iron_ingot.tres": {
-      "agent": "lp",
-      "at": "2026-08-18T05:04:45+00:00",
-      "task": "3.1"
-    },
     "content/recipes/iron_pickaxe.tres": {
       "agent": "ivy8",
       "at": "2026-08-18T17:57:51+00:00",
@@ -1484,16 +1458,6 @@
       "hash": "07f0d5ac667748bbcd5555f74e7ea4ebe3b084e426b65bed8f2bb35387e7af4b",
       "task": "4.4"
     },
-    "content/stations/furnace.tres": {
-      "agent": "lp",
-      "at": "2026-08-18T05:04:45+00:00",
-      "task": "3.1"
-    },
-    "content/stations/workbench.tres": {
-      "agent": "lp",
-      "at": "2026-08-18T05:04:45+00:00",
-      "task": "3.1"
-    },
     "content/unlocks/unlock_deep_pocket.tres": {
       "agent": "lm",
       "at": "2026-08-19T03:34:03+00:00",
@@ -1571,9 +1535,9 @@
     },
     "core/game_state.gd": {
       "agent": "lm",
-      "at": "2026-08-19T03:19:09+00:00",
-      "hash": "4022a26487978dee3ea05c7b31fb80a1200e7fac6d1989baf2d8af8010390292",
-      "task": "6.10"
+      "at": "2026-08-19T05:05:14+00:00",
+      "hash": "9f50039fed622ac30fea635f6cbc63a05d4fd4a619ce59bb163e8406b441b563",
+      "task": "F-172"
     },
     "core/net/net_session.gd": {
       "agent": "lm",
@@ -1848,16 +1812,6 @@
       "hash": "d1bf6fecda7f7d970f281844b28eb6243f8655e809e714f5a79700780695fb07",
       "task": "3.17"
     },
-    "systems/crafting/recipe_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T05:04:45+00:00",
-      "task": "3.1"
-    },
-    "systems/crafting/station_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T05:04:45+00:00",
-      "task": "3.1"
-    },
     "systems/cycle/cycle_modifier_def.gd": {
       "agent": "lm",
       "at": "2026-08-19T01:57:43+00:00",
@@ -2010,11 +1964,6 @@
       "at": "2026-08-19T04:12:50+00:00",
       "hash": "f9ac38771e2e5b7b9d559796fbde6818530989f0274eeed62fe18baf2013bff7",
       "task": "F-155"
-    },
-    "systems/inventory/item_def.gd": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
     },
     "systems/loot/chest.gd": {
       "agent": "slate17",
@@ -2673,6 +2622,12 @@
       "hash": "d03dd326e575e6cc6b4bb7e87067dfc3980e38824b32608f853350e1d02a4d24",
       "task": "6.6"
     },
+    "tools/seed_launch_arg_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T05:05:14+00:00",
+      "hash": "2c30f86281561fbc0da64be8890f78e016cffd0d13f183c875515361a14e03f0",
+      "task": "F-172"
+    },
     "tools/seed_sync_check.gd": {
       "agent": "lm",
       "at": "2026-08-18T21:13:43+00:00",
@@ -2691,26 +2646,11 @@
       "hash": "e6ad2ad688b5e52974351563239d1aa77782fa23465bd592cc371b15325bcb06",
       "task": "3.9"
     },
-    "tools/setup_crafting_content.gd": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
-    },
     "tools/setup_haul_content.gd": {
       "agent": "lp",
       "at": "2026-08-18T18:59:24+00:00",
       "hash": "4a73035d613f2e88eb7562f8fda804262200845855e79923787f53a5ab18d91c",
       "task": "3.10"
-    },
-    "tools/setup_station_content.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T05:04:45+00:00",
-      "task": "3.1"
-    },
-    "tools/setup_tool_content.gd": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
     },
     "tools/ship_check.gd": {
       "agent": "lm",
@@ -2746,11 +2686,6 @@
       "agent": "larch10",
       "at": "2026-08-18T14:09:47+00:00",
       "task": "F-097"
-    },
-    "tools/viewmodel_check.gd": {
-      "agent": "flint5",
-      "at": "2026-08-18T04:58:38+00:00",
-      "task": "F-073"
     },
     "tools/wave_director_check.gd": {
       "agent": "lp",
@@ -5458,7 +5393,7 @@
     "F-157": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "No system tracks a player's display name anywhere in the project \u2014 F-126's `peer` name resolution has nothing to resolve against, and 3.16 shipped without adding one"
     },
@@ -5575,9 +5510,11 @@
       "title": "`tools/crafting_ui_check.gd` fails 19/22 independent of task 6.10 \u2014 reproduced on a clean HEAD checkout"
     },
     "F-172": {
+      "done_at": "2026-08-19T05:05:14+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Seed entry (task 6.10) only reaches the host-session path \u2014 solo/offline play draws its seed before any menu can be opened"
     },
