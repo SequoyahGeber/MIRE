@@ -1,23 +1,6 @@
 {
-  "claims": {
-    "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T14:21:56+00:00",
-      "task": "5.9-review",
-      "token": null
-    }
-  },
-  "in_flight": {
-    "5.9-review": {
-      "agent": "lp",
-      "files": [
-        "docs/FINDINGS.md"
-      ],
-      "notes": [],
-      "started": "2026-08-19T14:21:56+00:00",
-      "token": null
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".": {
       "agent": "lp",
@@ -1744,10 +1727,10 @@
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T14:17:44+00:00",
-      "hash": "68c0067af14b89afd0436374ade21bc71782017d5c5d6260a1517073c1496f46",
-      "task": "F-224",
+      "agent": "lp",
+      "at": "2026-08-19T14:26:11+00:00",
+      "hash": "c57004a0f1231ffc6557f8b756f75508ff6a467770e6fccc6f66c12dcecac3dd",
+      "task": "5.9-review",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -4521,10 +4504,12 @@
       "title": "Wave director: Cycle-aware pacing, composition, player-count scaling"
     },
     "5.9-review": {
+      "done_at": "2026-08-19T14:26:11+00:00",
+      "done_by": "lp",
       "est": "0.5",
       "milestone": "M5",
       "review_of": "5.9",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T1",
       "title": "Review 5.9 @ d8dc751 \u2014 judge the commit, file findings, no edits"
     },
@@ -6792,6 +6777,20 @@
       "status": "done",
       "tier": "F",
       "title": "CommandService's per-client _resolved_requests dictionary never shrinks over a session"
+    },
+    "F-225": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`Enemy.alert()` bypasses `Boss._acquire_target()`'s override, so a boss pulled into a fight by a nearby ally's alert never engages until it first takes damage"
+    },
+    "F-226": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`WaveSpawner.current_cycle()` is documented \"readable on any peer\" but is stuck at 1 forever on every client"
     }
   },
   "version": 1
