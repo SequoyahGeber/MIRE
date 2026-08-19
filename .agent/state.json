@@ -774,12 +774,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
-    "autoload/attunement_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T19:15:45+00:00",
-      "hash": "1821465ef11d0a9b55d0b1d2b498039345fe08ec2c7a01726507a4e9f49348a8",
-      "task": "3.9"
-    },
     "autoload/boss_music_director.gd": {
       "agent": "lp",
       "at": "2026-08-19T04:35:12+00:00",
@@ -937,6 +931,13 @@
       "task": "F-219",
       "token": null
     },
+    "autoload/rich_presence_service.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T19:28:43+00:00",
+      "hash": "36f67217798e23c644da6277391c010d63fd88b66cf943963a3ff2eb6f2b3b67",
+      "task": "8.3",
+      "token": null
+    },
     "autoload/rule_service.gd": {
       "agent": "lm",
       "at": "2026-08-19T05:12:18+00:00",
@@ -959,9 +960,17 @@
     },
     "autoload/steam_lobby.gd": {
       "agent": "lp",
-      "at": "2026-08-19T05:09:22+00:00",
-      "hash": "7e2719bd514eeb18fcaddcfb5883cb1ca97e12943e394c04b6cddc7a07cf6224",
-      "task": "F-157"
+      "at": "2026-08-19T19:28:43+00:00",
+      "hash": "28f292911bd8cc00f94529f8b713415e09cdf37f9d6e38301842097b06432ab4",
+      "task": "8.3",
+      "token": null
+    },
+    "autoload/steam_stats.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T19:28:43+00:00",
+      "hash": "c193275dc50183cd346a30b93550fa781fac0da014ecc260852e7ec78d01e0ec",
+      "task": "8.3",
+      "token": null
     },
     "autoload/unlock_service.gd": {
       "agent": "lm",
@@ -981,30 +990,6 @@
       "at": "2026-08-19T03:46:26+00:00",
       "hash": "2ae3b920ba8fac3867f9b45e4148e2905a085ac38e5e5462c80fd18cee8711da",
       "task": "7.8"
-    },
-    "content/attunements/forager.tres": {
-      "agent": "lm",
-      "at": "2026-08-18T19:15:45+00:00",
-      "hash": "c7e63351e057a23780344b2a5759b8358147c7b5ab4100c7f675f1e05e367e62",
-      "task": "3.9"
-    },
-    "content/attunements/reaver.tres": {
-      "agent": "lm",
-      "at": "2026-08-18T19:15:45+00:00",
-      "hash": "d7ce63cf2c880ba870e02e7803b350bbe8ff02aac0cad34f35d8c48238a42d03",
-      "task": "3.9"
-    },
-    "content/attunements/tinker.tres": {
-      "agent": "lm",
-      "at": "2026-08-18T19:15:45+00:00",
-      "hash": "2a64087e6066627cf3d26e13d3486a161d97b90dff3648bd37c5474be7a35785",
-      "task": "3.9"
-    },
-    "content/attunements/warden.tres": {
-      "agent": "lm",
-      "at": "2026-08-18T19:15:45+00:00",
-      "hash": "36797aed40854eda32745be953a72ec23d0b1b85baa381722ff042db3d72998d",
-      "task": "3.9"
     },
     "content/biomes/forest.tres": {
       "agent": "slate17",
@@ -1322,30 +1307,6 @@
       "at": "2026-08-18T19:45:41+00:00",
       "hash": "fbae612f7f188f8a44c79ef12f3b00e8711577d5b15ca18030df56cfd8b6f774",
       "task": "3.4"
-    },
-    "content/powerups/attunement_forager.tres": {
-      "agent": "lm",
-      "at": "2026-08-18T19:15:45+00:00",
-      "hash": "15672ce033afd7da2f2734b7f01b6f702d9a05eb5573a7ab5453c3603d0bde68",
-      "task": "3.9"
-    },
-    "content/powerups/attunement_reaver.tres": {
-      "agent": "lm",
-      "at": "2026-08-18T19:15:45+00:00",
-      "hash": "b30befc8e6577d4327a0b7807e36b31480980a8ef8a33e81bc75a66d6fe00463",
-      "task": "3.9"
-    },
-    "content/powerups/attunement_tinker.tres": {
-      "agent": "lm",
-      "at": "2026-08-18T19:15:45+00:00",
-      "hash": "6805aacd57c9a05e88f9b21445c2fc1ce85555444974357dc35fbca3c39839f5",
-      "task": "3.9"
-    },
-    "content/powerups/attunement_warden.tres": {
-      "agent": "lm",
-      "at": "2026-08-18T19:15:45+00:00",
-      "hash": "3dcb8bf4ceb845025d93e99d1cc8d26e094d13077be948141d48c8b523d48baa",
-      "task": "3.9"
     },
     "content/powerups/bellows_lung.tres": {
       "agent": "wick20",
@@ -1945,6 +1906,13 @@
       "task": "7.6",
       "token": null
     },
+    "core/save/steam_stats_save.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T19:28:43+00:00",
+      "hash": "60082afd246675c0b052ac59c65fce37fc54143a73c7d1416136c85421cf9a7f",
+      "task": "8.3",
+      "token": null
+    },
     "core/save/unlock_save.gd": {
       "agent": "lm",
       "at": "2026-08-19T03:34:03+00:00",
@@ -2150,12 +2118,6 @@
       "hash": "9a9652dad84abf1d4ae362f93ffa90b90f62b1e40427bdb445827f4c3e1e567f",
       "task": "3.7"
     },
-    "systems/attunement/attunement_def.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T19:15:45+00:00",
-      "hash": "664df1ba0225e29dbe59041a15e2e7d6e6063be5a6f288c365aec695e8a878d4",
-      "task": "3.9"
-    },
     "systems/building/build_ghost.gd": {
       "agent": "slate17",
       "at": "2026-08-18T22:17:53+00:00",
@@ -2315,10 +2277,11 @@
       "task": "3.16"
     },
     "systems/extraction/extraction_ship.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T02:49:31+00:00",
-      "hash": "7cd07eafea9d6bead3a72eb053f8a8740be00b92318d41029231ece149b3cec8",
-      "task": "6.6"
+      "agent": "lp",
+      "at": "2026-08-19T19:28:43+00:00",
+      "hash": "dfc053ea2496bbb3c4c58699dacac1a5f79467312aae0fa208ed8119151e5cff",
+      "task": "8.3",
+      "token": null
     },
     "systems/harvesting/harvestable.gd": {
       "agent": "lm",
@@ -2437,24 +2400,6 @@
       "at": "2026-08-19T04:53:06+00:00",
       "hash": "408c867b7409be5095e68665416133b806f06b5d2e554ff208ffdaccc2923fad",
       "task": "F-163"
-    },
-    "tools/attunement_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T19:15:45+00:00",
-      "hash": "f739527758db2597ff3a34c0a296821a154738559e4bb99db4c972f68c2b3242",
-      "task": "3.9"
-    },
-    "tools/attunement_net_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T19:15:45+00:00",
-      "hash": "6b4571a6d9f1fb37f4ef65d3e3d13c244ae9f63e6e0f61e0da6c3b01a9a3d613",
-      "task": "3.9"
-    },
-    "tools/attunement_ui_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T19:15:45+00:00",
-      "hash": "bae3b00293c9a423bc1c7e6db61c98aa728b811ee28045f1616aff7122e44de6",
-      "task": "3.9"
     },
     "tools/audio/audio_check.py": {
       "agent": "lm",
@@ -2943,12 +2888,6 @@
       "hash": "01848958ae92752e0972baa0d9e175ea463be9ed00b955a72474f93082432cdd",
       "task": "6.7"
     },
-    "tools/dimension_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T19:25:18+00:00",
-      "hash": "46bda7fc9e6b95402d8e6b86b309cd5da5538c615e7d48f0b2c5c00dc351d57f",
-      "task": "F-108"
-    },
     "tools/display_name_check.gd": {
       "agent": "lp",
       "at": "2026-08-19T05:09:22+00:00",
@@ -2966,12 +2905,6 @@
       "at": "2026-08-18T21:01:16+00:00",
       "hash": "d8e76424e4a30f4ef9dc7f0336c6fc8e2066de142c8c7dbb6ce07fbcd70534df",
       "task": "F-125"
-    },
-    "tools/dodge_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T19:16:34+00:00",
-      "hash": "8ed924f802fc0889e89807cf5c4bde66e60f0d3f12ea806a2d238421ca6a8f8a",
-      "task": "3.8b"
     },
     "tools/door_check.gd": {
       "agent": "slate17",
@@ -3398,23 +3331,18 @@
       "task": "7.6",
       "token": null
     },
-    "tools/setup_attunement_content.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T19:15:45+00:00",
-      "hash": "e6ad2ad688b5e52974351563239d1aa77782fa23465bd592cc371b15325bcb06",
-      "task": "3.9"
-    },
-    "tools/ship_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-18T19:25:18+00:00",
-      "hash": "a15092d0f13d7b9cc89379920e6af911aae27ddc1ec0cff318047d56e63c5547",
-      "task": "F-108"
-    },
     "tools/spawn_slot_check.gd": {
       "agent": "pike14",
       "at": "2026-08-18T20:38:46+00:00",
       "hash": "10da7456685e283a2a31f98d611f66936a6b5439ad89a88050f7e40c1f0668df",
       "task": "F-129"
+    },
+    "tools/steam/ACHIEVEMENTS.md": {
+      "agent": "lp",
+      "at": "2026-08-19T19:28:43+00:00",
+      "hash": "5d696c820592f33b3e807550c96078ba3e249e85604ce92caba400f31c1e6dcc",
+      "task": "8.3",
+      "token": null
     },
     "tools/steam/DEPOT_SETUP.md": {
       "agent": "lp",
@@ -3491,6 +3419,13 @@
       "at": "2026-08-19T09:31:00+00:00",
       "hash": "522ff8963b7cb1c6db4e8a60c1a41656c1bb8ee92e479a34852e86687e97a931",
       "task": "F-201",
+      "token": null
+    },
+    "tools/steam_stats_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T19:28:43+00:00",
+      "hash": "29a7213f3d95fd22b9454ef7c60020e864c3d3ed44d5e1bdb47681a8f61e7ec2",
+      "task": "8.3",
       "token": null
     },
     "tools/step_up_check.gd": {
@@ -5278,9 +5213,11 @@
       "title": "Swap App ID 480 \u2192 real App ID; verify all Steam features"
     },
     "8.3": {
+      "done_at": "2026-08-19T19:28:43+00:00",
+      "done_by": "lp",
       "est": "3",
       "milestone": "M8",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Achievements, stats, rich presence. The joinability half already ships: `SteamLobby` publishes the `connect` key and handles both join callbacks (F-123, F-127), so this is achievements, stats, and presence *display* strings \u2014 not the join plumbing"
     },
@@ -7470,6 +7407,13 @@
       "status": "todo",
       "tier": "F",
       "title": "F-240's exact gap exists a second time in `BossMoveDef` \u2014 a boss's own telegraphed moves have no way to close ground during their own TELL either, and `Boss._tick_attack()` would not even inherit `EnemyDef.lunge_speed_m_s` if it did"
+    },
+    "F-248": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "M8's real-App-ID dependency isn't encoded anywhere the board can see, so a task that needs it can surface as routable while 8.1/8.2 are still `todo`"
     }
   },
   "version": 1

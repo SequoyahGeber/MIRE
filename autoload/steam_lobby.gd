@@ -76,6 +76,14 @@ func _ready() -> void:
 	# anything; initialise() is called when the player actually asks for a Steam session (a menu, in
 	# M6). The one exception is a launch that is itself an accepted invite — nothing else would ever
 	# get around to reading it, and the player has already said yes by clicking Join.
+	#
+	# Task 8.3 considered — and reverted — having RichPresenceService/SteamStats call initialise()
+	# eagerly from their own _ready() so a solo player would earn achievements without ever hosting a
+	# lobby. On any machine with a real Steam client running, that turned EVERY headless
+	# `agent godot` run project-wide into a real SteamAPI_Init() call, confirmed by diffing
+	# `tools/salvage_check.gd`'s log before and after. Both of those files now only ever read Steam
+	# state THIS method (or a launch invite) already brought up — see their own headers and
+	# docs/DECISIONS.md.
 	if _has_launch_invite():
 		MireLog.info(NetConfig.LOG_CHANNEL, "launched from a Steam invite — bringing Steam up")
 		initialise()
@@ -525,6 +533,18 @@ func _clear_joinable() -> void:
 	if not _initialised:
 		return
 	_steam.setRichPresence("connect", "")
+
+
+## Sets Steam's raw rich-presence "status" key — task 8.3's human-readable line, distinct from the
+## `connect` key above (that one controls the Join Game button, not the text a friend actually
+## reads). No-op when Steam is not initialised. `RichPresenceService` is the one caller today and is
+## expected to remain the only one — route any other status text through it rather than calling
+## setRichPresence a second place, the same "one place owns this API surface" reasoning
+## `_advertise_joinable`/`_clear_joinable` already follow for the `connect` key.
+func set_status(text: String) -> void:
+	if not _initialised:
+		return
+	_steam.setRichPresence("status", text)
 
 
 # ── Commands (docs/COMMANDS.md §7 — task 3.16, and D-030's cross-play test delivered) ────────────

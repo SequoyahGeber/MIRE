@@ -6078,3 +6078,15 @@ Next agent, only after 8.2 lands a real App ID: follow DEPOT_SETUP.md in the Ste
 Files: `tools/steam/steam_build_config.sh`, `tools/steam/apply_ids.sh`, `tools/steam/depot_wiring_check.sh`, `tools/steam/DEPOT_SETUP.md`
 
 Commit at time of writing: `0cae54b`
+
+---
+
+### DONE · 8.3 · lp · 2026-08-19T19:28:43+00:00
+
+**Achievements, stats, rich presence. The joinability half already ships: `SteamLobby` publishes the `connect` key and handles both join callbacks (F-123, F-127), so this is achievements, stats, and presence *display* strings — not the join plumbing**
+
+Completed.
+
+Files: `core/save/steam_stats_save.gd`, `autoload/steam_stats.gd`, `autoload/rich_presence_service.gd`, `autoload/steam_lobby.gd`, `systems/extraction/extraction_ship.gd`, `tools/steam/ACHIEVEMENTS.md`, `tools/steam_stats_check.gd`
+
+Commit at time of writing: `1961bf5`

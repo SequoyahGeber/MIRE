@@ -93,12 +93,30 @@ const HULL_NODE_NAME: StringName = &"ShipHull"
 const RIG_NODE_NAME: StringName = &"ShipRig"
 
 ## Replicated. 0 (wrecked) .. REPAIR_STAGE_COUNT (fully repaired).
+##
+## Fires `emit_ship_repaired` from the setter, not from `_process_repair()` directly (task 8.3,
+## F-249) — `_process_repair()` only runs where `_owns_mutation()` is true (host-only), the exact
+## host-only-emit-call trap F-168 first found on `Wellspring.capped` and fixed by moving the emit
+## into the replicated property's own setter (D-107/D-108's pattern, `departed` below already
+## applies it). `EventBus` is a per-process static, so a host-only emit never reached a client's own
+## local bus — nothing had ever consumed `ship_repaired` client-side to notice until task 8.3's
+## SteamStats needed it on every peer, not just the host's.
+##
+## `is_inside_tree()`-guarded, same as `_maybe_refresh_visual()` just below it — `global_position` on
+## a Node3D outside the tree logs an engine error rather than a real position, and a real
+## ExtractionShip is always a placed world node by the time anything sets its repair stage. The one
+## caller that isn't is `tools/extraction_check.gd`'s own departure-FSM setup, which sets
+## `repair_stage = REPAIR_STAGE_COUNT` BEFORE `add_child()` as a shortcut past the repair minigame —
+## exactly like the old host-only `_process_repair()` call site, that path never emitted either.
 var repair_stage: int = 0:
 	set(value):
 		if repair_stage == value:
 			return
+		var was_repaired: bool = repair_stage >= REPAIR_STAGE_COUNT
 		repair_stage = value
 		_maybe_refresh_visual()
+		if not was_repaired and repair_stage >= REPAIR_STAGE_COUNT and is_inside_tree():
+			EVENT_BUS.emit_ship_repaired(name, global_position)
 
 ## Replicated. Presentation reads this to show/hide the departure hold prompt.
 var departure_channeling: bool = false
@@ -210,8 +228,6 @@ func _process_repair(peer_id: int) -> void:
 	if not bool(inventory.call(&"host_transaction", peer_id, cost, {})):
 		return
 	repair_stage += 1
-	if repair_stage >= REPAIR_STAGE_COUNT:
-		EVENT_BUS.emit_ship_repaired(name, global_position)
 
 
 func _process_toggle_departure(peer_id: int) -> void:
