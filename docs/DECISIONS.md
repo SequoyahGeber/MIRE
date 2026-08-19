@@ -4597,3 +4597,26 @@ used `WorldDeltaLog`'s `before_delta` flag, set only inside `net_world_snapshot(
 
 **Would change my mind:** a future system that reads `run_seed` synchronously in that pre-join window
 for something durable (not just UI display) — today nothing does.
+
+### D-154 · 2026-08-19 · Claim files late and release them all at close-out
+A claim locks a file for every other agent until the claiming task closes out. The old protocol had
+agents claim their whole file list up front, so a file was locked for the entire task — up to the
+2-hour timeout with LM on Opus — even when it was edited for only minutes near the end. Sequoyah
+identified this as the primary cause of agents stalling on each other (F-262), and the session bore it
+out: net_version.gd held across four sessions, graphics_quality.gd blocking F-130 for hours, twelve
+files held six hours with no writes.
+
+The fix has two halves and only the first was adopted. **Claim late**: claim each file the moment
+before its first edit, not up front. `agent claim` is additive, so this needs no new mechanism —
+only the instruction, now in the order template and AGENTS.md rule 1. It shrinks a file's lock from
+the whole task to the minutes it is actually worked.
+
+**Release stays all-at-once at close-out** — the early-release half was considered and rejected. A
+task's files are one change that is not final until its own verification passes; releasing a file
+mid-task lets a sibling edit it, and if the task's check then sends it back into that file the result
+is the exact two-agents-one-file race claims exist to prevent. Holding claims through the short
+docs-writing close-out is a small price for that safety.
+
+**Would change my mind:** measured evidence that close-out itself (the docs-writing tail, after the
+last source edit) is where the remaining contention lives — which would justify releasing source
+claims at green-check time while keeping only the docs files, the rejected half revisited with data.
