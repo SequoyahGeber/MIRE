@@ -5329,3 +5329,13 @@ Completed.
 Files: `docs/FINDINGS.md`
 
 Commit at time of writing: `a32bffd`
+
+---
+
+### DONE · 4.8-review · lm · 2026-08-19T14:30:49+00:00
+
+**Review 4.8 @ ac70bf3 — judge the commit, file findings, no edits**
+
+Clean — ac70bf3 verified against SPECS.md 4.8, ARCHITECTURE.md §2.2 Wellspring row, D-092, DESIGN.md §4.2/§5. Host authority correct throughout: net_request_toggle_channel host-validated (range + capped-state re-checked server-side), host_tick/present_count/session_player_total all host-only gated via _owns_mutation(), defense wave spawn goes through WaveSpawner.host_spawn_wave_at's own _owns_wave_director() gate. Solo (150s, 2.5x per D-092) vs co-op (60s, matches DESIGN.md's '~60s') timers correct; cancel-forfeits vs absence-pauses split matches D-092. PROTOCOL_VERSION bumped 18->19, handshake_check.gd updated to match. tools/wellspring_check.gd: WELLSPRING_CHECK failures=0. tools/wave_spawner_check.gd: WAVE_SPAWNER_CHECK failures=0. tools/handshake_check.gd: 0 failures. Full headless boot: 0 ERROR: lines. Two real defects existed in the original commit but both were already independently found and fixed by later sessions before this review: WellspringHud was never registered as an autoload in ac70bf3 itself (confirmed via git show ac70bf3 -- project.godot, empty diff) -- caught as F-164, fixed by lp; and the host-only-guarded EventBus.emit_wellspring_capped() in _finish_cap() wouldn't reach a client's own bus -- caught as F-168, fixed by lm. Nothing new to file.
+
+Commit at time of writing: `180e3f9`

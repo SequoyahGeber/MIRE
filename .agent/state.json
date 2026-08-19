@@ -1,11 +1,20 @@
 {
-  "claims": {},
+  "claims": {
+    "docs/FINDINGS.md": {
+      "agent": "lp",
+      "at": "2026-08-19T14:29:58+00:00",
+      "task": "6.9-review",
+      "token": null
+    }
+  },
   "in_flight": {
-    "4.8-review": {
-      "agent": "lm",
-      "files": [],
+    "6.9-review": {
+      "agent": "lp",
+      "files": [
+        "docs/FINDINGS.md"
+      ],
       "notes": [],
-      "started": "2026-08-19T14:28:44+00:00",
+      "started": "2026-08-19T14:29:58+00:00",
       "token": null
     }
   },
@@ -4385,10 +4394,12 @@
       "title": "Wellspring scene, capture ritual, 2-player requirement, defense wave (solo fallback: 1-player ritual with a longer timer, `DESIGN.md` \u00a75 solo rule)"
     },
     "4.8-review": {
+      "done_at": "2026-08-19T14:30:49+00:00",
+      "done_by": "lm",
       "est": "0.5",
       "milestone": "M4",
       "review_of": "4.8",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T1",
       "title": "Review 4.8 @ ac70bf3 \u2014 judge the commit, file findings, no edits"
     },
@@ -4674,7 +4685,7 @@
       "est": "0.5",
       "milestone": "M6",
       "review_of": "6.9",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T1",
       "title": "Review 6.9 @ 2268b33 \u2014 judge the commit, file findings, no edits"
     },
@@ -6819,6 +6830,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`WaveSpawner.current_cycle()` is documented \"readable on any peer\" but is stuck at 1 forever on every client"
+    },
+    "F-227": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "SalvageService's reward-curve comment states the wrong numbers \u2014 mismatches the formula it documents and its own SPECS.md block"
     }
   },
   "version": 1
