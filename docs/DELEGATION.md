@@ -75,6 +75,50 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 6.8: Run summary — headline Cycle number, modifiers drawn, Salvage earned (lp)
+
+Extends `ui/hud/defeat_hud.gd` (task 6.7's terminal death overlay) rather than building a second
+screen — no new autoload, no `project.godot` change (`CycleModifierService` already registers
+before `DefeatHud`). Authority: no new §2.2 row, same "VFX, audio, camera, UI" client-local row 6.7
+already used — every field shown reads an already-authoritative value. No new stat-tracking system
+was built (no kill counter, no elapsed-time clock — neither exists anywhere in the codebase); D-039
+scope call recorded in `docs/SPECS.md`'s new §6.8 block: the roadmap line is one screen with one
+headline (Cycle number) and a two-row stats block (modifiers drawn, Salvage earned), not four
+separate elements.
+
+**What changed on screen:** the Cycle number moved from the old detail line into the headline
+(`"CYCLE %d"`, 48pt); the old cause text (`CAUSE_HEADLINES`) is now a secondary line; a new
+"Modifiers drawn: …" line reads `CycleModifierService.active_modifier_ids()` + `def_for(id)` for
+each `display_name` directly (task 6.2's deck is already stacked for the run's whole life — nothing
+to subscribe to), falling back to the raw id if a def failed to load and to "none" on an empty deck;
+the Salvage line is now labelled "Salvage earned: N (M total)" from the same `salvage_banked`
+payload task 6.6 already fires.
+
+**F-235 found and fixed in the same file, same task.** `_on_salvage_banked`'s old `not _shown` guard
+assumed `_on_run_wiped` always ran first. Backwards: `SalvageService` subscribes to `run_wiped`
+before `DefeatHud` does (autoload order), so its `salvage_banked` emit fires synchronously *inside*
+`EventBus.emit_run_wiped()`, before `_shown` is set — the real banked number was silently dropped
+every time, with nothing to re-fire it, so the death screen's Salvage line never actually updated in
+the live game. Fixed by tracking `_salvage_known` independently of `_shown`: whichever of the two
+arrives first wins, the second never clobbers it.
+
+**Public surface (nothing new for other tasks to build against — this task is a pure consumer):**
+`DefeatHud._modifiers_drawn_summary() -> String` is private but worth knowing about if a future task
+extends this same screen further; everything it reads (`DefeatService.cause`,
+`CycleModifierService.active_modifier_ids()`/`def_for()`, `salvage_banked`'s payload) was already
+public from tasks 6.2/6.6/6.7.
+
+**Not built:** a summary for a successful extraction — F-238 (open, filed by this task) records the
+gap; the roadmap's "run summary" line is written against the death path only (`ui/hud/defeat_hud.gd`
+is the only file this task's claim named).
+
+Verified: `tools/run_summary_check.gd` (19 assertions, 0 failures) — drives the REAL chain
+(`DefeatService.net_run_defeated()` -> `EventBus.run_wiped` -> `SalvageService` banks ->
+`salvage_banked` -> `DefeatHud`), not a mock (F-068's convention); the F-235 assertion is a genuine
+regression test, confirmed to fail against the reverted guard before the fix landed. No regressions:
+`defeat_check.gd`, `salvage_check.gd`, `cycle_modifier_check.gd` all `failures=0`. 0 `ERROR:` on a
+full boot (`agent godot --quit-after 15`).
+
 ### 2026-08-19 — Task 4.15: the ProceduralWorld composer ships — a generated island is now a playable level behind `--procedural` (yarrow21)
 
 **What shipped, verified:** `world/gen/procedural_world.gd` (`class_name ProceduralWorld`, a

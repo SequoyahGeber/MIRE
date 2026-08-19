@@ -1661,6 +1661,77 @@ authors to build against.
   weights) — the file already has the seams; this is its planned growth, not a rewrite.
 - **5.10 Balance (T0):** across the Cycle curve, not at one difficulty; record tables.
 
+## 5.2 · Enemy types: distinct kinds authored as `EnemyDef` `.tres` data (T0)
+
+**No block existed for this task** — SPECS.md's own preamble rule applies: fixing a missing spec
+belongs to the task that discovers it. The roadmap line says "8-12 enemy types"; that count is a
+target for the milestone, not a quota for one task — see the standing rule below before authoring
+more.
+
+**Authority:** §2.2 row "Enemies (spawn, AI, damage): HOST" — unchanged. This task adds no code path,
+only data; every `.tres` is consumed by the existing host-only `Enemy`/`EnemyWorld`.
+
+**Claim:** `content/enemies`, `systems/enemies/enemy_def.gd`, `tools/enemy_content_check.gd` (+ its
+`.uid`). `enemy_def.gd` only needs claiming because a future kind may need a field this task's authors
+find missing — if you don't touch it, ship without an edit to it.
+
+**Standing rule for this task, not just this one pass at it (D-073, AGENTS.md "Never bulk-generate
+content data"): one enemy at a time, each with a real decision behind it, never a batch.** A dozen
+`.tres` files that are the same fight with different numbers is worse than three that are actually
+different fights. **Author 2-4 per pass and stop — leave the rest of "8-12" to the next task on this
+line, named honestly in the close-out.** Balance and roster coverage are not this task's job; a
+distinct *fight* is.
+
+**What "distinct to fight" means against this state machine, concretely** — read
+`systems/enemies/enemy_def.gd`'s full field list and `systems/enemies/enemy.gd`'s state machine
+before authoring; every kind is built entirely from the fields that already exist (5.1 added
+perception/alerting/the attack-slot cap; nothing else has landed since):
+
+- **How it closes distance** — `move_speed`/`turn_speed_rad`/`stop_distance_m` relative to the
+  player's own `walk_speed`/`sprint_speed` (`entities/player/player_controller.gd`, 4.0/6.0 m/s
+  today). A kind whose `move_speed` exceeds player sprint cannot be out-walked in the open — the
+  player has to break line of sight, use terrain, or spend a dodge's burst speed
+  (`dodge_impulse` × `dodge_duration_sec`, 10.0 × 0.25 = 2.5 m today) to gain separation. A kind
+  below sprint speed can always be kited indefinitely; that's a legitimate choice too, not a bug —
+  it just means the design elsewhere (damage, HP, alerting) is where its pressure has to live.
+- **What it costs to stand and trade versus retreat** — `attack_range_m` sets how far out its
+  telegraph can trigger; a kind with a bigger range than the crawler's default makes a distance
+  that reads as "safe" against the crawler actually inside this kind's own telegraph range.
+  `attack_recovery_seconds` sets the free window after a swing resolves; a long one rewards staying
+  in and punishing the recovery over retreating and re-approaching from scratch.
+- **Group pressure** — `alert_radius_m` (how far a fresh acquisition wakes an idle packmate, one
+  hop) and `max_concurrent_attackers` (how many of one kind may commit to the same target at once).
+  Raising both together turns "fight the one that found you" into "the whole local pack converges
+  and stacks attacks," which punishes planting and slugging in the open rather than pulling back to
+  a chokepoint.
+- **What is NOT available from stats alone, and must not be faked as one:** the hit always resolves
+  at the END of the tell against the target's THEN-current position (2.10/5.1), and the enemy is
+  fully stationary for the whole TELL/ATTACK/RECOVER span (`Enemy._tick_attack()` zeroes velocity
+  every tick in all three states). **Any nonzero player movement during a tell always beats it,
+  regardless of `attack_range_m` or `attack_tell_seconds`** — there is no field that makes "just
+  take one step back" stop working, because nothing about the state machine's own resolve-at-target
+  check depends on how big the enemy's reach was at the moment the tell started. A design that
+  wants "you cannot simply back out of this one" needs either the enemy still closing ground during
+  its own tell/attack (a lunge) or an attack that samples the target's position at tell START
+  instead of tell END — neither exists today. Filed as F-223; do not relitigate by trying to buy
+  that pressure with a bigger `attack_range_m` number, it will not hold up under test.
+
+**Build:** one `.tres` per kind in `content/enemies/`, same shape as `crawler.tres`/`bog_crawler.tres`
+— `id`, `display_name`, the shared `model` (`enemy_crawler.glb` — D-073 forbids new art for a stats
+task; use `visual_tint`, F-158, to read as visually distinct), then whichever `@export` fields the
+kind's identity actually needs. Leave every field the identity doesn't touch at `EnemyDef`'s own
+default so the diff against the baseline stays legible.
+
+Verify: `tools/enemy_content_check.gd` — every new def's `validation_errors()` is empty; each kind's
+claimed identity is proven behaviourally, not just read back off its own stat block (a kind whose
+whole point is speed is proven by outracing a fleeing player at sprint speed while the baseline
+crawler falls behind under the identical test; a kind whose point is reach is proven by telegraphing
+from a distance that leaves the baseline crawler still in CHASE; a kind whose point is pack pressure
+is proven by waking a packmate beyond the baseline's own `alert_radius_m` and by more than the
+baseline's `max_concurrent_attackers` committing to one target at once). Regression:
+`tools/enemy_check.gd`, `tools/enemy_ai_check.gd` still `failures=0`, unmodified. Full boot
+(`agent godot --quit-after 20`): 0 stray `ERROR:` lines.
+
 ## 5.3 · Ranged combat: bow, projectiles, host-authoritative hit validation (T2)
 
 **Authority:** new §2.2 row, "Ranged weapons (bow + arrow)": **Host.** Same three-way split melee
@@ -2441,6 +2512,58 @@ No regressions: `player_health_check`, `player_vitals_check`, `extraction_check`
 Done means: `defeat_check.gd` at `failures=0`, the ten regression checks green, 0 `ERROR:` on a full
 boot, and `docs/DELEGATION.md`'s Current state carrying `DefeatService.is_defeated()`/`cause` for
 6.8's run summary to build against.
+
+---
+
+## 6.8 · Run summary: headline Cycle number, stats, modifiers drawn, Salvage earned
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap. `ROADMAP.md`'s one-line description is the only prior spec; DESIGN.md names no
+dedicated run-summary section, so the scope call below is this task's own (recorded, not
+relitigated silently) rather than lifted from a design doc.
+
+**Authority:** no new §2.2 row. Presentation only, the same "VFX, audio, camera, UI" row task 6.7
+already used for `defeat_hud.gd` — every field this task shows reads an already-authoritative value
+(`DefeatService.cause`, `CycleModifierService.active_modifier_ids()`, the `salvage_banked` payload),
+none of it is decided here.
+
+**Claim:** `ui/hud/defeat_hud.gd`, `ui/hud/defeat_hud.gd.uid`, `tools/run_summary_check.gd` (new).
+No `project.godot` change — `DefeatHud` and `CycleModifierService` are both already registered, in
+an order (`CycleModifierService` before `DefeatHud`) that already lets this task read the deck
+directly with no new autoload dependency ordering to fix.
+
+**Scope decision: one screen, not four.** The roadmap line reads as a single summary panel with one
+headline (the Cycle reached) and a small stats block underneath (modifiers drawn, Salvage earned) —
+not four independent UI elements. This task extends the existing `ui/hud/defeat_hud.gd` overlay
+(task 6.7's terminal, full-screen, `blocks_gameplay_input` death screen) rather than building a
+second screen, since a run's only other terminal state (a successful extraction) still has no
+summary of its own either (F-238, filed by this task, still open) and nothing else in the codebase
+ends a run. The
+Cycle number moves from the old detail line into the headline position (`"CYCLE %d"`, large text);
+the old cause text (`CAUSE_HEADLINES`) becomes a secondary line; a new "Modifiers drawn: …" line
+reads `CycleModifierService.active_modifier_ids()` directly (the deck is already stacked for the
+run's whole life — nothing to subscribe to, D-103's framework is read-only from here); the existing
+Salvage line is relabelled "Salvage earned: N (M total)" from the same `salvage_banked` payload task
+6.6 already fires. **No new stat-tracking system was built** (no kill counter, no elapsed-time
+clock, no damage log exists anywhere in the codebase to read from) — "stats" is the modifiers-drawn
++ Salvage-earned block already described, not a promise of a third, unbuilt number.
+
+**F-235 found and fixed in the same file, same task.** `_on_salvage_banked`'s old `not _shown` guard
+assumed `_on_run_wiped` always runs before the `salvage_banked` it triggers — backwards:
+`SalvageService` subscribes to `run_wiped` before `DefeatHud` does (autoload order), so its
+`salvage_banked` emit fires synchronously *inside* `EventBus.emit_run_wiped()`, before this file's
+own `_on_run_wiped` has set `_shown`, and the real number was silently dropped with nothing to
+re-fire it. Fixed by tracking `_salvage_known` independently of `_shown`, so whichever of the two
+arrives first wins and the second never overwrites it. See `docs/FINDINGS.md` F-235 (resolved) for
+the full note.
+
+Verify: `tools/run_summary_check.gd` — drives the real chain (`DefeatService.net_run_defeated()` ->
+`EventBus.run_wiped` -> `SalvageService` banks -> `salvage_banked` -> `DefeatHud`), the same
+"real chain, not a mock" convention `cycle_modifier_check.gd` established (F-068), plus a direct call
+into `_modifiers_drawn_summary()` for the pre-any-draw "none" case a live single-emit flow cannot
+reach twice. No regressions: `defeat_check.gd`, `salvage_check.gd`, `cycle_modifier_check.gd`.
+Done means: `run_summary_check.gd` at `failures=0`, the three regression checks green, 0 `ERROR:` on
+a full boot (`agent godot --quit-after 15`).
 
 ---
 

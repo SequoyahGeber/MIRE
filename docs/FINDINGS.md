@@ -309,7 +309,145 @@ checked against anything but relative deltas on the fastest machine in the proje
 
 ---
 
+### F-236 · Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon
+
+**Area:** content · **Severity:** high · **Found:** 2026-08-19 by nettle12
+
+The engine work is done and the systems boot clean, which makes this easy to miss on a status line:
+every framework reports green because a deck of one card draws successfully.
+
+Counted from `content/`:
+
+| Category | Files | Framework that consumes it |
+|---|---|---|
+| `cycle_modifiers/` | **1** | 6.2 — deck, draw, stacking, Cycle-weighted rules. Done. |
+| `unlocks/` | **1** | 6.9 — unlock tree + UI, and 6.6's Salvage curve. Both done. |
+| `ranged_weapons/` | **1** | 5.3 — bow, projectiles, host-authoritative hit validation. Done. |
+| `haulables/`, `hooks/` | 1 each | |
+| `stations/`, `scatter/` | 2 each | |
+
+Against `powerups/` at 72 and `buildables/` at 13, which are the two categories that did get authored.
+
+**What each of these means at the table, which is the point:**
+
+- **A Cycle Modifier deck of one card means every run escalates identically.** 6.2 built draw,
+  stacking and Cycle-weighting so that runs diverge; with one card there is nothing to draw, nothing
+  to stack, and no weighting to express. The entire variety system is inert, and it will keep testing
+  green. Task 6.3 exists for this and is still `todo`.
+- **An unlock tree of one unlock means Salvage has nothing to buy.** 6.6 shipped a superlinear reward
+  curve and an extract-vs-die split; 6.9 shipped the tree and its UI. The meta-progression loop — the
+  reason to do a second run after a wipe — terminates immediately. **No task covers authoring this
+  content.** 6.9 is marked done because the tree and UI shipped, exactly the shape F-140 recorded for
+  3.5: the system landed, the content it exists to present never did.
+- **One ranged weapon** against nine melee, after 5.3 built projectiles and hit validation.
+
+**This is the honest answer to "is the game ready to playtest?" — no, and not because the systems are
+unfinished.** A playtest right now measures one modifier, one unlock and one bow, so it cannot find
+the balance and variety problems it would be run to find. Content first, then 2.14/3.11/4.12/6.11.
+
+**Not a bug in any of the systems named**, and not an argument that they were built wrong. It is the
+gap between "the framework is done" and "the game has things in it", and it is currently the largest
+gap in the project. The one-at-a-time authoring rule applies: these want real attention per file, not
+a directory generated in a pass.
+
+---
+
+### F-237 · A-016 asks for a cave entrance, but D-142 put caves on the cut list — the asset would promise a space that cannot exist
+
+**Area:** world-gen · **Severity:** medium · **Found:** 2026-08-19 by wick20
+
+`docs/ASSET_TRACKER.md`'s **A-016** row lists twelve terrain accents, one of which is a **cave
+entrance**. That row predates the procedural-terrain decision.
+
+**D-142 (2026-08-19) rejects caves outright.** Its own words, listing what was rejected and why:
+"3D density/caves (2D Mire grid, low-end target, cut list)". The chosen method is a 2D heightfield —
+fBm + falloff base, domain warp, a masked ridged layer, steepest-descent river tracing and
+arithmetic carving. A 2D heightfield cannot express an overhung void, so there is no terrain feature
+for a cave-entrance asset to open into.
+
+Shipping the asset anyway produces the worst outcome available: a prop that reads as an entrance,
+that players will walk up to and try to enter, backed by solid ground. That is a bug report from
+every playtester who finds one, and the fix at that point is deleting an asset somebody built.
+
+**Two other rows in the same batch need re-scoping for the same reason, less severely.**
+`sinkhole` is fine only if it means a shallow surface depression rather than a hole through to
+anywhere; and `cliff overhang` is buildable as a PROP but cannot be expected to match a terrain
+overhang, because the heightfield cannot make one — it has to read as a rock ledge placed on a
+slope, not as terrain.
+
+**Suggested resolution**, in preference order:
+
+1. **Cut `cave entrance` from A-016** and record the reason in the row, the way A-006's row records
+   its waiver. If a burrow-scale hole is still wanted for flavour, `burrow entrance` (already in the
+   same row) covers it and is honest at its size — a hole a rat goes into, not a player.
+2. If caves are wanted later, they are a **worldgen** decision first and an asset decision second.
+   D-142 gates erosion the same way ("gated, not adopted"); caves deserve the same treatment rather
+   than arriving through the art queue.
+
+Filed while building A-016a (the rock/cliff half of the batch), which is unaffected — cliff face,
+cliff corner, cliff overhang, rocky slope, scree pile and natural stone steps all sit ON a
+heightfield and need nothing the method cannot produce.
+
+---
+
+### F-238 · A successful extraction has no run summary of its own — task 6.8 only extended the death screen
+
+**Area:** ui · **Severity:** low · **Found:** 2026-08-19 by lp
+
+`ui/hud/defeat_hud.gd` (task 6.7, extended by 6.8's run summary — headline Cycle number, modifiers
+drawn, Salvage earned) only shows on `run_wiped`. `EventBus.subscribe_salvage_banked`'s `extracted ==
+true` branch is explicitly ignored by that file (task 6.7's own header: "a screen this task does not
+own"), and nothing else in the codebase shows a summary when `run_extracted` fires — `ExtractionShip`/
+`extraction_service.gd`/`ui/hud/extraction_hud.gd` (task 6.5) only cover the departure-hold flow, not
+what happens after. A player who successfully extracts sees no Cycle-reached / modifiers-drawn /
+Salvage-earned recap at all, only a defeated run does.
+
+Not fixed here: task 6.8's claim named only `ui/hud/defeat_hud.gd` (a death-path file); building a
+second summary screen for the success path is its own scope, likely wanting to share the
+"modifiers drawn" formatting `DefeatHud._modifiers_drawn_summary()` establishes rather than duplicate
+it — worth factoring out to a shared helper (`ui/hud/run_summary_format.gd` or similar) if/when this
+is picked up, rather than copy-pasting the private method.
+
+---
+
 ## Resolved
+
+### F-235 · defeat_hud.gd's salvage-banked guard drops the real number on every real defeat — SalvageService subscribes to run_wiped before DefeatHud, so its synchronous salvage_banked emit lands while _shown is still false — **fixed**
+
+**Area:** ui · **Severity:** medium · **Found:** 2026-08-19 by lp
+
+`ui/hud/defeat_hud.gd`'s `_on_salvage_banked` gated its update on `not _shown`, assuming
+`_on_run_wiped` always runs first. It doesn't: `SalvageService` subscribes to `EventBus.run_wiped`
+before `DefeatHud` does (autoload order in `project.godot` — `SalvageService` then, much later,
+`DefeatHud`), and `EventBus.emit_run_wiped()` calls its subscribers in subscription order. So the
+real chain is: `DefeatService._apply_defeat()` sets `defeated = true` -> its setter fires
+`EventBus.emit_run_wiped()` -> `SalvageService._on_run_wiped()` banks and calls
+`EventBus.emit_salvage_banked()` SYNCHRONOUSLY, before `DefeatHud._on_run_wiped` has run at all ->
+`DefeatHud._on_salvage_banked` sees `_shown == false` and discards the real number -> only then does
+`DefeatHud._on_run_wiped` run and stamp the detail line with a placeholder that nothing ever
+replaces, because `salvage_banked` only fires once per death.
+
+Found building task 6.8's run summary (`tools/run_summary_check.gd`, which fails against this old
+guard and passes against the fix — see that check's own header for the exact assertion). Never
+shipped to a live build with the class as previously named ("Cycle %d reached", no Salvage number) —
+a player would simply never see the banked amount on the death screen.
+
+**Fixed in the same task/file:** `_on_salvage_banked` now tracks `_salvage_known` independently of
+`_shown` — whichever of `run_wiped`/`salvage_banked` arrives first wins, the second never clobbers
+it. Verified: `agent godot --script tools/run_summary_check.gd` — the "F-223 fixed" assertion fails
+against the reverted `not _shown` guard and passes against the fix; `defeat_check.gd`/
+`salvage_check.gd`/`cycle_modifier_check.gd` stay `failures=0`; full boot 0 `ERROR:` lines.
+
+---
+
+**Resolved 2026-08-19 by lp.** Fixed in the same task (6.8) that found it. `_on_salvage_banked` now tracks `_salvage_known`
+independently of `_shown` — whichever of `run_wiped`/`salvage_banked` arrives first wins, the second
+never clobbers it. Verified: `agent godot --script tools/run_summary_check.gd` (19 assertions,
+0 failures) — the "F-235 fixed" assertion is a real regression test: it fails against the reverted
+`not _shown` guard (confirmed before applying the fix) and passes against the fix, driving the real
+`DefeatService.net_run_defeated()` -> `EventBus.run_wiped` -> `SalvageService` banks ->
+`salvage_banked` -> `DefeatHud` chain, not a mock. No regressions: `defeat_check.gd`, `salvage_check.gd`,
+`cycle_modifier_check.gd` all `failures=0`. Full boot 0 `ERROR:` lines.
 
 ### F-222 · Eight Blender preview generators render correctly only because an unrelated object happens to get created (or the camera type happens to get flipped) between their reposition and their render — no check would catch it if that incidental code is ever removed — **resolved**
 
