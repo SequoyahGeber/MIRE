@@ -3712,3 +3712,46 @@ Fix pre-existed (2012b44): ramp.tscn's sloped collider + tools/buildable_content
 Files: `docs/SPECS.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `4887510`
+
+---
+
+### HANDOFF · 6.1 · lm · 2026-08-19T01:27:57+00:00
+
+**Cycle state machine: advance, escalate spread rate, expand enemy pool, announce (`DESIGN.md` §5.1)**
+
+LM stopped on 6.1 at 2026-08-19T01:27:57+00:00 (exit 1, error). Tokens this run: 12,415,222 in / 59,915 out.
+The working diff is UNTOUCHED — its partial edits are still on disk, so read them before redoing anything. Full log: .agent/logs/LM-6.1-20260819-010427.jsonl
+
+Files it had already written or edited: systems/cycle/cycle_service.gd, core/events/event_bus.gd, world/mire/mire_grid.gd, systems/waves/wave_spawner.gd, tools/cycle_check.gd.
+Its last words: "API Error: 521 {"type":"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-521/","title":"Error 521: Web server is down","status":521,"detail":"Cloudflare attempted to connect to the origin web server, but the connection was refused. The origin is down, blocking Cloudflare IPs, or not accepting connections on the configured port.","instance":"a2"
+Its last actions:
+  - Bash grep -n "^### 3\|^## 3\." docs/ARCHITECTURE.md | head -10
+  - Bash grep -n "GameState\|game_state" docs/ARCHITECTURE.md
+  - Bash sed -n '108,145p' docs/ARCHITECTURE.md
+  - Read /Users/sequoyahgeber/Desktop/MIRE/core/game_state.gd
+  - Bash .agent/bin/agent board 2>&1 | head -60
+  - Bash .agent/bin/agent claim 6.1 core/game_state.gd
+
+Tail of the failure:
+a moment. If it persists, check https://status.claude.com.","type":"result","duration_ms":1409265,"uuid":"b3a2ab22-bde0-4d66-9798-ffad490b4b92"}
+{"type":"system","subtype":"task_summary","detail":null,"uuid":"3725140b-9db7-4282-b024-1e772c1ebbf5","session_id":"4733cec7-0964-4fff-a0c4-e781b6e4c826"}
+
+Files: `systems/cycle/cycle_service.gd`, `core/events/event_bus.gd`, `world/mire/mire_grid.gd`, `systems/waves/wave_spawner.gd`, `tools/cycle_check.gd`, `core/game_state.gd`
+
+Commit at time of writing: `9deeb3a`
+
+---
+
+### DONE · 6.1 · lm · 2026-08-19T01:37:12+00:00
+
+**Cycle state machine: advance, escalate spread rate, expand enemy pool, announce (`DESIGN.md` §5.1)**
+
+CycleService autoload (systems/cycle/cycle_service.gd): host counts DayNight.day_started x3 -> host_advance_cycle() escalates MireGrid spread rate (+15%/cycle, compounding), expands WaveSpawner's enemy roster (host_unlock_next_enemy), announces via WorldDeltaLog (late-joiner safe, no new RPC per D-100) + EventBus.emit_cycle_advanced (6.2's draw seam) + log line. Verified: agent godot --script tools/cycle_check.gd -> 16 assertions, failures=0, 2 consecutive runs; mire_grid_check/wave_spawner_check/mire_interaction_check all failures=0 (no regressions); agent godot --quit-after 20 -> 0 ERROR:. docs/SPECS.md 6.1 block written, docs/DELEGATION.md Current state carries the public API for 6.2.
+
+Notes along the way:
+- Picked up prior LM run's crash (Cloudflare 521, not a logic bug) — cycle_service.gd/event_bus.gd/mire_grid.gd/wave_spawner.gd/cycle_check.gd/D-100 were already complete and correct on disk. Verified rather than rewrote: cycle_check.gd 16 assertions x2 runs, mire_grid_check/wave_spawner_check/mire_interaction_check all failures=0, 0 ERROR: on full boot.
+- Wrote the missing docs/SPECS.md 6.1 block. It deviates from the old M6-gate bullet (core/game_state.gd autoload, Wellspring/extraction-triggered) because DESIGN.md §5.1 is the actual source of truth and says ~3 in-game days via DayNight, not Wellspring/extraction events. Kept CycleService as its own systems/cycle/ autoload rather than folding into game_state.gd (seed authority only) — documented why in the SPECS block.
+
+Files: `systems/cycle/cycle_service.gd`, `systems/cycle/cycle_service.gd.uid`, `core/events/event_bus.gd`, `world/mire/mire_grid.gd`, `systems/waves/wave_spawner.gd`, `tools/cycle_check.gd`, `tools/cycle_check.gd.uid`, `project.godot`, `docs/SPECS.md`
+
+Commit at time of writing: `9deeb3a`

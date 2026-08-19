@@ -26,6 +26,12 @@ const CORRUPTED_SPAWN_CAP_PROBABILITY: float = 0.75
 @export_range(0, 32, 1) var per_player: int = 2
 @export_range(0.0, 20.0, 0.25) var scatter_m: float = 4.0
 @export var enemy_id: StringName = &"crawler"
+## Task 6.1's "enemy roster expands" (DESIGN.md §5.1): archetypes that join the night pool alongside
+## `enemy_id`, one per `host_unlock_next_enemy()` call, in order. `bog_crawler` already exists as a
+## distinct-stats archetype (task 4.11 authored it for corrupted-spawn substitution); no new content
+## was authored for this task — AGENTS.md forbids bulk-generating `.tres` content, and task 5.2 ("8-12
+## enemy types") is the one that grows this list with real new archetypes. See D-100.
+@export var roster_order: Array[StringName] = [&"bog_crawler"]
 
 var _rng := RandomNumberGenerator.new()
 var _night_active: bool = false
@@ -33,6 +39,9 @@ var _ambient_was_enabled: bool = true
 ## Cached MireGrid ref (F-099). MireGrid registers after this autoload, so it is resolved lazily
 ## rather than in _ready() (F-011).
 var _mire_grid_node: Node
+## Archetypes unlocked so far from `roster_order`, in the order they were unlocked. `enemy_id` is
+## always in the pool implicitly and is never duplicated in here.
+var _unlocked_pool: Array[StringName] = []
 
 
 func _ready() -> void:
@@ -101,16 +110,46 @@ func host_spawn_wave_at(
 	return count
 
 
+## `spawn_enemy_id` left at its default (`&""`) rolls the unlocked roster (`_roll_roster()`) — the
+## path `host_start_wave()`'s own night population takes. A caller with an explicit id (task 4.8's
+## Wellspring defense wave, both checks) always gets exactly that id, never a roster substitution.
 func _spawn_one(
-	world: Node, origin: Vector3, spawn_scatter_m: float, spawn_enemy_id: StringName = enemy_id
+	world: Node, origin: Vector3, spawn_scatter_m: float, spawn_enemy_id: StringName = &""
 ) -> void:
+	var chosen_id: StringName = spawn_enemy_id if spawn_enemy_id != &"" else _roll_roster()
 	var offset := Vector3(
 		_rng.randf_range(-spawn_scatter_m, spawn_scatter_m),
 		0.0,
 		_rng.randf_range(-spawn_scatter_m, spawn_scatter_m)
 	)
 	var position: Vector3 = origin + offset
-	world.call("host_spawn", _corrupted_enemy_id_for(position, spawn_enemy_id), position)
+	world.call("host_spawn", _corrupted_enemy_id_for(position, chosen_id), position)
+
+
+## Even odds across `enemy_id` plus every archetype `host_unlock_next_enemy()` has unlocked so far.
+## An empty `_unlocked_pool` (Cycle 1, before any advance) always returns `enemy_id` — 4.9's own
+## shipped behaviour, unchanged.
+func _roll_roster() -> StringName:
+	if _unlocked_pool.is_empty():
+		return enemy_id
+	var pick: int = _rng.randi_range(0, _unlocked_pool.size())
+	return enemy_id if pick == 0 else _unlocked_pool[pick - 1]
+
+
+## Host-only. Task 6.1's `CycleService` calls this once per Cycle advance. Returns the archetype
+## just unlocked, or `&""` when `roster_order` is exhausted (or this peer does not own the wave
+## director) — `CycleService` treats either the same way DayNight's crossing already does when a
+## downstream system is missing: nothing to do, not an error.
+func host_unlock_next_enemy() -> StringName:
+	if not _owns_wave_director() or _unlocked_pool.size() >= roster_order.size():
+		return &""
+	var next_id: StringName = roster_order[_unlocked_pool.size()]
+	_unlocked_pool.append(next_id)
+	return next_id
+
+
+func unlocked_enemy_pool() -> Array[StringName]:
+	return _unlocked_pool.duplicate()
 
 
 ## Substitutes CORRUPTED_ENEMY_ID with probability scaling linearly with corruption at the actual

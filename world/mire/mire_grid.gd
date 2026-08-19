@@ -27,9 +27,10 @@ const ChunkMesherScript := preload("res://world/chunk/chunk_mesher.gd")
 ## `WorldDeltaLog`'s `kind` for every record this file writes.
 const KIND: StringName = &"mire"
 const TICK_INTERVAL_SEC: float = 2.0
-## Placeholder-tuned, same status as `IslandHeightmap.HEIGHT_SCALE`: ARCHITECTURE.md §5 calls for
-## "the current Cycle's rate" and no Cycle Modifier system exists yet to read one from. Revisit once
-## one does.
+## Placeholder-tuned, same status as `IslandHeightmap.HEIGHT_SCALE`. ARCHITECTURE.md §5 calls for
+## "the current Cycle's rate" — task 6.1's `CycleService` now supplies the Cycle half of that via
+## `set_cycle_spread_multiplier()` (`_cycle_spread_multiplier` below); this constant is still the
+## un-escalated Cycle-1 base and still wants a real playtest to tune it.
 const BASE_SPREAD_RATE: float = 0.06
 ## DESIGN.md §4.2: a Wellspring cap "reduces global spread rate" alongside its own local clear. No
 ## fixed fraction is written down anywhere else, so each additional cap this run further multiplies
@@ -50,6 +51,10 @@ var _seeded: bool = false
 ## () -> Array[Dictionary]{position: Vector2, radius: float}. Unset (no wards) until 4.11 calls
 ## `set_ward_circles_provider()`.
 var _ward_circles_provider: Callable = Callable()
+## Task 6.1's "Mire base spread rate increases, permanently" (DESIGN.md §5.1). Multiplies
+## BASE_SPREAD_RATE alongside the existing per-Wellspring-cap reduction; 1.0 (never set) is 4.9's
+## own shipped behaviour, unchanged until `CycleService` calls `set_cycle_spread_multiplier()`.
+var _cycle_spread_multiplier: float = 1.0
 
 
 func _ready() -> void:
@@ -115,6 +120,13 @@ func set_ward_circles_provider(provider: Callable) -> void:
 	_ward_circles_provider = provider
 
 
+## Host-only seam for task 6.1's `CycleService`: escalates the base spread rate a Cycle at a time.
+## Takes effect on the NEXT tick, same "read once, applied going forward" shape every other
+## Cycle-driven knob in this project uses.
+func set_cycle_spread_multiplier(multiplier: float) -> void:
+	_cycle_spread_multiplier = multiplier
+
+
 ## Host-only test/debug seam: sets one cell directly, bypassing the real diffusion. Real gameplay
 ## never calls this — checks use it to set up a known corruption level without waiting on `_tick()`'s
 ## actual spread to arrive there on its own.
@@ -141,7 +153,7 @@ func capped_wellspring_count() -> int:
 
 func _tick() -> void:
 	var wards: Array = _ward_circles_provider.call() if _ward_circles_provider.is_valid() else []
-	var rate: float = BASE_SPREAD_RATE
+	var rate: float = BASE_SPREAD_RATE * _cycle_spread_multiplier
 	for _cap_index: int in _capped_wellsprings:
 		rate *= SPREAD_REDUCTION_PER_CAP
 	_grid = SIM.tick(_grid, wards, rate)

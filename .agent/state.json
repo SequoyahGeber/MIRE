@@ -25,6 +25,11 @@
       "at": "2026-08-19T01:03:14+00:00",
       "task": "5.3"
     },
+    "content/items/short_bow.tres": {
+      "agent": "lp",
+      "at": "2026-08-19T01:08:32+00:00",
+      "task": "5.3"
+    },
     "content/ranged_weapons/short_bow.tres": {
       "agent": "lp",
       "at": "2026-08-19T01:03:14+00:00",
@@ -39,6 +44,21 @@
       "agent": "nettle12",
       "at": "2026-08-18T22:08:56+00:00",
       "task": "F-144"
+    },
+    "docs/ARCHITECTURE.md": {
+      "agent": "hollow7",
+      "at": "2026-08-19T01:36:44+00:00",
+      "task": "4.5"
+    },
+    "docs/DECISIONS.md": {
+      "agent": "hollow7",
+      "at": "2026-08-19T01:36:44+00:00",
+      "task": "4.5"
+    },
+    "docs/DELEGATION.md": {
+      "agent": "hollow7",
+      "at": "2026-08-19T01:36:44+00:00",
+      "task": "4.5"
     },
     "systems/building/buildable_door.gd": {
       "agent": "slate17",
@@ -110,6 +130,11 @@
       "at": "2026-08-18T22:01:43+00:00",
       "task": "F-144"
     },
+    "tools/nav_bake_check.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-19T01:15:34+00:00",
+      "task": "4.5"
+    },
     "tools/ranged_combat_check.gd": {
       "agent": "lp",
       "at": "2026-08-19T01:03:14+00:00",
@@ -134,6 +159,16 @@
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
+    },
+    "world/chunk/chunk_streamer.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-19T01:15:34+00:00",
+      "task": "4.5"
+    },
+    "world/chunk/nav_baker.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-19T01:15:34+00:00",
+      "task": "4.5"
     },
     "world/environment/draw_policy.gd": {
       "agent": "nettle12",
@@ -164,6 +199,19 @@
       "notes": [],
       "started": "2026-08-18T22:23:08+00:00"
     },
+    "4.5": {
+      "agent": "hollow7",
+      "files": [
+        "world/chunk/nav_baker.gd",
+        "world/chunk/chunk_streamer.gd",
+        "tools/nav_bake_check.gd",
+        "docs/DECISIONS.md",
+        "docs/DELEGATION.md",
+        "docs/ARCHITECTURE.md"
+      ],
+      "notes": [],
+      "started": "2026-08-19T01:15:34+00:00"
+    },
     "5.3": {
       "agent": "lp",
       "files": [
@@ -179,7 +227,8 @@
         "tools/ranged_combat_check.gd",
         "tools/ranged_combat_check.gd.uid",
         "tools/ranged_combat_net_check.gd",
-        "tools/ranged_combat_net_check.gd.uid"
+        "tools/ranged_combat_net_check.gd.uid",
+        "content/items/short_bow.tres"
       ],
       "notes": [],
       "started": "2026-08-19T01:03:14+00:00"
@@ -1586,15 +1635,15 @@
     },
     "core/events/event_bus.gd": {
       "agent": "lm",
-      "at": "2026-08-18T21:36:44+00:00",
-      "hash": "95e6b255da6bbb1f78d472e60e0b21a0fba3ee5a56ec265d53cf131b7d43b703",
-      "task": "4.8"
+      "at": "2026-08-19T01:37:12+00:00",
+      "hash": "5fdc102eee057a1c793bf5518bada4b7e87aa439fc0eae1f4fa574a5b8a4c6d1",
+      "task": "6.1"
     },
     "core/game_state.gd": {
       "agent": "lm",
-      "at": "2026-08-18T21:13:43+00:00",
+      "at": "2026-08-19T01:27:57+00:00",
       "hash": "862544710c784a3bbc455b41f2887d78776e68dd12e4d61fde77fbea9a351bd3",
-      "task": "4.6"
+      "task": "6.1"
     },
     "core/net/net_session.gd": {
       "agent": "lm",
@@ -1683,9 +1732,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lm",
-      "at": "2026-08-19T01:04:16+00:00",
-      "hash": "afc17f3e3843612a83035c13bd5d3375845c4945133645dfd515c51c10a9685c",
-      "task": "F-150"
+      "at": "2026-08-19T01:37:12+00:00",
+      "hash": "eb4ced71f345a308ab062f0fc7a3e090340d0e19582957c12591fc84d7b51901",
+      "task": "6.1"
     },
     "entities/player/player.tscn": {
       "agent": "lp",
@@ -1725,10 +1774,10 @@
       "task": "2.1d"
     },
     "project.godot": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:22:14+00:00",
-      "hash": "008eecf547a8cec29ce9908b9c1f12893cba11344cc86bd8ef79f90b2d7fd8fb",
-      "task": "3.7"
+      "agent": "lm",
+      "at": "2026-08-19T01:37:12+00:00",
+      "hash": "47697379932f353ca24004f762fd8089ac72875945531a45d8f313f72dbcae7d",
+      "task": "6.1"
     },
     "scenes/buildables/barricade.tscn": {
       "agent": "slate17",
@@ -1851,6 +1900,18 @@
       "at": "2026-08-18T05:04:45+00:00",
       "task": "3.1"
     },
+    "systems/cycle/cycle_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T01:37:12+00:00",
+      "hash": "d580388e8d89d85866a237e940dec728843ae0b04413e48b2c7b326c5632b658",
+      "task": "6.1"
+    },
+    "systems/cycle/cycle_service.gd.uid": {
+      "agent": "lm",
+      "at": "2026-08-19T01:37:12+00:00",
+      "hash": "299201d22445a0041c5262615e0791f6d4a4f780e9b7289b16bc1ea1f2384047",
+      "task": "6.1"
+    },
     "systems/enemies/enemy.gd": {
       "agent": "lp",
       "at": "2026-08-19T00:23:49+00:00",
@@ -1950,9 +2011,9 @@
     },
     "systems/waves/wave_spawner.gd": {
       "agent": "lm",
-      "at": "2026-08-19T01:01:42+00:00",
-      "hash": "90d603eec7d0be1898ac9f620d9e48cde98052ff6c56b8326a616a5bdf8d9848",
-      "task": "4.11"
+      "at": "2026-08-19T01:37:12+00:00",
+      "hash": "dde03c32f3728c4baa73eafdfb182d1e263f15a99789abb435d652c0f73c0b7d",
+      "task": "6.1"
     },
     "systems/wellspring/wellspring.gd": {
       "agent": "lm",
@@ -2202,6 +2263,18 @@
       "agent": "lp",
       "at": "2026-08-18T05:04:45+00:00",
       "task": "3.1"
+    },
+    "tools/cycle_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T01:37:12+00:00",
+      "hash": "4f032c7334cc081459be06f053e78275466949d9e84c98523a2785c880ad989b",
+      "task": "6.1"
+    },
+    "tools/cycle_check.gd.uid": {
+      "agent": "lm",
+      "at": "2026-08-19T01:37:12+00:00",
+      "hash": "b6ebb74ed24f49081a2fa2f169690bb0e42ffff08ef2b24fa8c77c9b4966b5a9",
+      "task": "6.1"
     },
     "tools/dimension_check.gd": {
       "agent": "lm",
@@ -2574,11 +2647,6 @@
       "hash": "a15092d0f13d7b9cc89379920e6af911aae27ddc1ec0cff318047d56e63c5547",
       "task": "F-108"
     },
-    "tools/spawn_ground_probe.gd": {
-      "agent": "flint5",
-      "at": "2026-08-18T01:20:10+00:00",
-      "task": "F-056"
-    },
     "tools/spawn_slot_check.gd": {
       "agent": "pike14",
       "at": "2026-08-18T20:38:46+00:00",
@@ -2816,9 +2884,9 @@
     },
     "world/mire/mire_grid.gd": {
       "agent": "lm",
-      "at": "2026-08-19T00:54:44+00:00",
-      "hash": "ecd825514293a931aea61063cbd7fc282d99dc7f56bfef9c144a580dc2b1d192",
-      "task": "4.9"
+      "at": "2026-08-19T01:37:12+00:00",
+      "hash": "8a06b560fd11f727ccd2ff3ff096a131b46f8e8806462a757a540417cff4bb49",
+      "task": "6.1"
     },
     "world/mire/mire_grid_sim.gd": {
       "agent": "lm",
@@ -3540,7 +3608,7 @@
     "4.5": {
       "est": "5",
       "milestone": "M4",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "Runtime nav baking per chunk \u2014 or the R3 fallback decided in M0"
     },
@@ -3653,9 +3721,11 @@
       "title": "Wave director: Cycle-aware pacing, composition, player-count scaling"
     },
     "6.1": {
+      "done_at": "2026-08-19T01:37:12+00:00",
+      "done_by": "lm",
       "est": "3",
       "milestone": "M6",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Cycle state machine: advance, escalate spread rate, expand enemy pool, announce (`DESIGN.md` \u00a75.1)"
     },

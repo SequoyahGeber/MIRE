@@ -1580,10 +1580,73 @@ authors to build against.
 
 **GATE: M4's world (extraction ship is a POI; Cycle escalation reads the Mire).**
 
-- **6.1 Cycle state machine (T2):** `core/game_state.gd` autoload — `ARCHITECTURE.md` §3 already
-  reserves it (act, day, seed, run status, HOST-auth). Cycle advances on Wellspring/extraction
-  events, escalates Mire spread rate + wave director pools, announces via EventBus. 2.11's DayNight
-  feeds it days; it does not own time.
+## 6.1 · Cycle state machine: advance, escalate spread rate, expand enemy pool, announce (`DESIGN.md` §5.1)
+
+**Authority:** §2.2 row "Day/night, wave director, Cycle state, active modifiers: HOST" — a Cycle is
+a single global int, and only the host advances it; every other peer reads a replicated copy.
+**Claim:** `systems/cycle/cycle_service.gd` (+ its `.uid`), `core/events/event_bus.gd`,
+`world/mire/mire_grid.gd`, `systems/waves/wave_spawner.gd`, `tools/cycle_check.gd` (+ its `.uid`).
+`project.godot` is registered via `agent autoload CycleService systems/cycle/cycle_service.gd`
+(F-051) — never claimed.
+
+DESIGN.md §5.1: "A Cycle is roughly 3 in-game days... at the end of each Cycle, three things happen:
+1. Mire base spread rate increases, permanently. 2. A Cycle Modifier is drawn. 3. Enemy roster
+expands." Then it announces. New autoload `CycleService` counts `DayNight.day_started` crossings
+(the same subscription `WaveSpawner` already holds) and every `DAYS_PER_CYCLE` (3) of them runs
+`host_advance_cycle()`, which does all three named steps plus announce:
+
+1. **Escalate spread rate** — `_spread_multiplier *= SPREAD_ESCALATION_PER_CYCLE` (1.15,
+   placeholder-tuned like every other Cycle-facing constant here), passed to a new
+   `MireGrid.set_cycle_spread_multiplier()` seam that multiplies `BASE_SPREAD_RATE` in `_tick()`,
+   alongside the existing per-Wellspring-cap reduction. Compounds permanently across the run, per
+   DESIGN.md.
+2. **Draw a Cycle Modifier** — OUT OF SCOPE (D-100). `docs/ROADMAP.md` gives the deck/draw/stacking
+   framework its own task, 6.2, which does not exist yet; building a draw here would duplicate it
+   against nothing to draw from. `EventBus.emit_cycle_advanced(cycle)` (new subscriber list, same
+   shape as `wellspring_capped`) is the seam 6.2 hangs its draw off.
+3. **Expand enemy roster** — new `WaveSpawner.host_unlock_next_enemy()` appends the next id from a
+   new `@export var roster_order: Array[StringName]` (default `[&"bog_crawler"]`, task 4.11's
+   corrupted-spawn archetype — no new content authored per D-073/AGENTS.md's ban on bulk-generating
+   `.tres` content; 5.2 grows the real list) into a new `_unlocked_pool`. `_spawn_one()`'s default
+   `spawn_enemy_id` changed from `enemy_id` to `&""`, meaning "roll `_roll_roster()`" — even odds
+   across `enemy_id` plus every unlocked archetype. An explicit id (4.8's Wellspring defense wave)
+   still bypasses the roll entirely.
+4. **Announce** — `WorldDeltaLog.host_record(Vector2i.ZERO, &"cycle", "current", cycle)`, the same
+   generic-log reuse `MireGrid` proved in 4.9 (D-099), so a late joiner reads the real Cycle number
+   instead of the class default. No new RPC (D-100) — `net_version.gd`/`handshake_check.gd` were held
+   all session by another lane's task 3.7 claim. Plus `EVENT_BUS.emit_cycle_advanced()` and a
+   `MireLog.info` line.
+
+`host_advance_cycle()` is public and host-guarded (`_owns_cycle()`, same shape as
+`MireGrid._owns_simulation()`) so both the real day-count path and a new `cycle status|advance`
+console command (docs/COMMANDS.md §7 convention) drive the identical code.
+
+**Where this deviates from the M6 gate bullet that used to sit here:** that bullet (written before
+this task, now superseded by this block) named `core/game_state.gd` as the autoload and "Wellspring/
+extraction events" as the advance trigger. Neither survived contact with the actual source of truth,
+`DESIGN.md` §5.1, which is explicit about "~3 in-game days" as the trigger and does not mention
+Wellsprings or extraction advancing a Cycle at all (Wellspring caps recede the Mire locally and
+reduce its spread rate — §4.2/4.9 — a separate mechanic from the Cycle clock). `game_state.gd`'s own
+header comment ("task 6.1 is where the rest of that slot gets built") reserved the *file path*, not a
+mandate to grow that specific file — `game_state.gd` is scoped to run-seed authority (task 4.6) and
+mixing an unrelated state machine into it would blur that scope for no benefit; a dedicated
+`systems/cycle/cycle_service.gd` matches the one-file-per-system pattern every other Cycle-adjacent
+autoload here already uses (`MireGrid`, `WaveSpawner`, `DayNight`).
+
+Verify: `tools/cycle_check.gd` — the autoload is registered and really subscribed to the real
+`DayNight`'s signal (not a fake harness-built one — the F-068 lesson `wave_spawner_check.gd` already
+records), `host_advance_cycle()` increments the Cycle, escalates `MireGrid`'s multiplier, expands
+`WaveSpawner`'s pool with real content, and is a no-op (not a crash) past `roster_order`'s end; three
+`day_started` crossings advance exactly one Cycle and one or two crossings do not; the announce reaches
+both an `EventBus` subscriber and `WorldDeltaLog`'s late-joiner snapshot. `mire_grid_check.gd`,
+`wave_spawner_check.gd` and `mire_interaction_check.gd` must stay `failures=0` — this task's real
+regression bar, since none of their own behavior should change when `_cycle_spread_multiplier`/
+`roster_order` sit at their unchanged defaults (1.0 / one entry never yet unlocked).
+Done means: `cycle_check.gd` plus the three regression checks all green, 0 `ERROR:` on a full boot
+(`agent godot --quit-after 20`), and `docs/DELEGATION.md`'s Current state carries `CycleService`'s
+public API (`current_cycle()`, `host_advance_cycle()`, `spread_multiplier()`) for 6.2's Cycle
+Modifier framework to build against.
+
 - **6.2 Modifier framework (T2):** `CycleModifierDef` (`id`, `weight_by_cycle`, `incompatible_with:
   Array[StringName]`, effect hooks over PowerupService/wave tables/Mire rates). Host draws seeded
   at each Cycle boundary; broadcast; UI announce. **Never-cut item.**

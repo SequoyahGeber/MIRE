@@ -13,6 +13,7 @@ extends RefCounted
 static var _harvest_yielded_subscribers: Array[Callable] = []
 static var _enemy_attack_landed_subscribers: Array[Callable] = []
 static var _wellspring_capped_subscribers: Array[Callable] = []
+static var _cycle_advanced_subscribers: Array[Callable] = []
 
 
 ## Listener signature:
@@ -102,6 +103,33 @@ static func emit_wellspring_capped(wellspring_name: StringName, world_position: 
 static func wellspring_capped_subscriber_count() -> int:
 	_prune_invalid(_wellspring_capped_subscribers)
 	return _wellspring_capped_subscribers.size()
+
+
+## Listener signature: (cycle: int) -> void
+##
+## Emitted by the HOST only, the moment `CycleService` advances a Cycle (task 6.1, DESIGN.md §5.1).
+## No Cycle Modifier is drawn here — 6.2 owns the deck/draw/stacking framework, which does not exist
+## yet; this event is the seam it drives off, the same "future task's hook" role D-092 gave
+## wellspring_capped above.
+static func subscribe_cycle_advanced(listener: Callable) -> void:
+	_prune_invalid(_cycle_advanced_subscribers)
+	if listener.is_valid() and not _cycle_advanced_subscribers.has(listener):
+		_cycle_advanced_subscribers.append(listener)
+
+
+static func unsubscribe_cycle_advanced(listener: Callable) -> void:
+	_cycle_advanced_subscribers.erase(listener)
+
+
+static func emit_cycle_advanced(cycle: int) -> void:
+	_prune_invalid(_cycle_advanced_subscribers)
+	for listener: Callable in _cycle_advanced_subscribers.duplicate():
+		listener.call(cycle)
+
+
+static func cycle_advanced_subscriber_count() -> int:
+	_prune_invalid(_cycle_advanced_subscribers)
+	return _cycle_advanced_subscribers.size()
 
 
 static func _prune_invalid(subscribers: Array[Callable]) -> void:

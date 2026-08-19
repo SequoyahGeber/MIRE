@@ -56,6 +56,8 @@ WorldDeltaLog="*res://autoload/world_delta_log.gd"
 WellspringService="*res://autoload/wellspring_service.gd"
 ChestUI="*res://ui/loot/chest_ui.gd"
 MireGrid="*res://world/mire/mire_grid.gd"
+RangedCombatService="*res://autoload/ranged_combat_service.gd"
+CycleService="*res://systems/cycle/cycle_service.gd"
 
 [display]
 
