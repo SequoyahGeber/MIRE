@@ -3984,3 +3984,18 @@ Notes along the way:
 Files: `core/save/settings_save.gd`, `autoload/settings_service.gd`, `ui/menu/settings_menu.gd`, `entities/player/player_camera.gd`, `autoload/combat_service.gd`, `autoload/ranged_combat_service.gd`, `project.godot`, `tools/settings_check.gd`
 
 Commit at time of writing: `d428efe`
+
+---
+
+### DONE · 7.7 · lm · 2026-08-19T04:10:33+00:00
+
+**Performance pass: profile, LOD tuning, draw calls, target 60fps mid-range**
+
+Enemy render LOD shipped: Enemy._build_visual() sets visibility_range_end=90m/margin=8m/FADE_SELF on every enemy MeshInstance3D (systems/enemies/enemy.gd). Scoped away from F-144's props/harvestable/undergrowth LOD+batching (held by nettle12, 6h in flight, exact same file set) since enemies can't be merged into F-144's batched-mesh approach anyway — see D-115. Verified: 'agent godot --script tools/enemy_lod_check.gd' (new) spawns every content/enemies/*.tres def through the real EnemyWorld.host_spawn() and asserts the LOD properties on every mesh -> 0 failures. No regression: tools/wave_spawner_check.gd stays failures=0. Full boot 'agent godot --quit-after 120' -> 0 ERROR lines. Wrote docs/SPECS.md §7.7 (no block existed), docs/FINDINGS.md F-174 (this dev machine can't represent mid-range hardware — perf_probe.gd hits 120fps+ as-shipped on the M5 Pro), docs/DECISIONS.md D-115 (the F-144 scope split), docs/DELEGATION.md Current state (the new Enemy.VISIBILITY_RANGE_END_M/VISIBILITY_RANGE_FADE_MARGIN_M seam).
+
+Notes along the way:
+- Scoped to enemy visibility-range LOD only — F-144 (nettle12, 6h in flight) already holds every file the props/harvestable/undergrowth half of this task's title needs. D-115 records the split.
+
+Files: `systems/enemies/enemy.gd`, `tools/enemy_lod_check.gd`, `docs/SPECS.md`
+
+Commit at time of writing: `1d6fd7f`

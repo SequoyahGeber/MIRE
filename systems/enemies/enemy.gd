@@ -58,6 +58,17 @@ const DISSOLVE_HOLD_FRACTION: float = 0.35
 const REPATH_DISTANCE_M: float = 1.0
 const RESCAN_INTERVAL_SEC: float = 0.2
 
+## Client-local render LOD (7.7). Waves grow without bound as Cycles escalate
+## (`WaveSpawner.cycle_count_multiplier()`, DESIGN's "endless, no win condition"), and unlike F-144's
+## props/undergrowth an enemy can't be merged into a static batched mesh — each is independently
+## animated. A visibility-range self-fade is the lever that's actually available: past this distance
+## an enemy is already outside both aggro (`deaggro_radius_m` tops out at 26 m by default) and any
+## readable telegraph (DESIGN.md §6), so nothing gameplay-relevant is lost by not drawing it. Purely
+## cosmetic — no two peers can disagree about when a mesh fades (ARCHITECTURE.md §2.2, "VFX, audio,
+## camera, UI" row) — so this needs no replication.
+const VISIBILITY_RANGE_END_M: float = 90.0
+const VISIBILITY_RANGE_FADE_MARGIN_M: float = 8.0
+
 enum State { IDLE, CHASE, TELL, ATTACK, RECOVER, DEAD }
 
 ## Host-only. Cosmetic consumers on every peer should watch `state` through the synchronizer instead.
@@ -502,7 +513,11 @@ func _build_visual() -> void:
 	_visual_rest_y = _visual.position.y
 	add_child(_visual)
 	for node: Node in _visual.find_children("*", "MeshInstance3D", true, false):
-		_overlay_meshes.append(node as MeshInstance3D)
+		var mesh_instance: MeshInstance3D = node as MeshInstance3D
+		mesh_instance.visibility_range_end = VISIBILITY_RANGE_END_M
+		mesh_instance.visibility_range_end_margin = VISIBILITY_RANGE_FADE_MARGIN_M
+		mesh_instance.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+		_overlay_meshes.append(mesh_instance)
 	var players: Array[Node] = _visual.find_children("*", "AnimationPlayer", true, false)
 	if not players.is_empty():
 		_anim = players[0] as AnimationPlayer

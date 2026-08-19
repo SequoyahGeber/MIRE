@@ -3066,6 +3066,73 @@ is a live dictionary key for a minute and a half in every session that runs long
 
 ---
 
+## 7.7 · Performance pass: profile, LOD tuning, draw calls, target 60fps mid-range
+
+No block existed here beforehand; this file's own preamble makes writing one part of the task that
+discovers the gap.
+
+**Authority:** none of its own — client-local rendering detail (ARCHITECTURE.md §2.2, "VFX, audio,
+camera, UI" row: never networked, no two peers can disagree about it).
+
+**Claim:** `systems/enemies/enemy.gd`, `tools/enemy_lod_check.gd` (new).
+
+**The scope decision, and why it's narrower than the title.** `agent brief 7.7` showed F-144 ("Props
+have no LOD and no cross-asset batching") already 6h in flight under `nettle12`, holding every file
+this task's title would otherwise touch: `autoload/graphics_quality.gd`, `core/render/mesh_merge.gd`,
+`systems/harvesting/harvestable.gd`, `world/environment/draw_policy.gd`,
+`world/gen/authored_world.gd`, `world/gen/undergrowth.gd`, plus F-144's own probes and checks. F-144's
+own text is literally this task's headline ("no mesh LOD anywhere", "cross-asset batching") for
+everything that IS mergeable — props, harvestables, undergrowth, ~2,900 renders total. Working the
+same surface here would mean either editing files under someone else's claim (AGENTS.md: "two agents
+in one file is the failure mode this whole system exists to prevent") or blocking on a 6-hour claim
+with no ETA, which the work order's own header forbids ("never end your turn to wait").
+
+So 7.7 took the one performance surface F-144 does not and cannot cover: **enemies**. `Enemy` is a
+`CharacterBody3D` with an independently-animated skeletal `MeshInstance3D` per instance — it can never
+be merged into a static batched mesh the way a static prop can, so F-144's lever (merge + batch) does
+not apply here at all; the only lever available is a **visibility-range LOD**. This matters on its own
+timeline: `WaveSpawner.cycle_count_multiplier()` scales wave size every Cycle with no cap on run length
+(DESIGN.md: "Endless escalating runs, no win condition"), so the enemy-count contribution to frame cost
+grows over the course of a run in a way the (fixed-count) world's props never do.
+
+**What shipped.** `Enemy._build_visual()` (`systems/enemies/enemy.gd`) now sets, on every
+`MeshInstance3D` found under an enemy's instantiated visual: `visibility_range_end = 90.0` m,
+`visibility_range_end_margin = 8.0` m, `visibility_range_fade_mode =
+GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF`. 90 m was chosen against `EnemyDef.deaggro_radius_m`
+(26 m default, 120 m export ceiling) and DESIGN.md §6's readable-telegraph requirement: past 90 m an
+enemy is already well outside both aggro and any attack a player could be reacting to, so nothing
+gameplay-relevant is lost by not drawing it. The 8 m margin dithers the fade instead of a hard pop —
+the same `FADE_SELF` pattern `docs/DELEGATION.md`'s undergrowth-scatter section already uses for the
+same reason. Two constants (`Enemy.VISIBILITY_RANGE_END_M`, `Enemy.VISIBILITY_RANGE_FADE_MARGIN_M`)
+hold the numbers so a future tuning pass has one place to change them.
+
+**Profiling.** `tools/perf_probe.gd` (F-090) was re-run to get a current baseline
+(`.agent/bin/agent godot --display-driver macos --script tools/perf_probe.gd`) — see `docs/
+FINDINGS.md` F-174 for the numbers and why this dev machine (Apple M5 Pro) cannot itself stand in for
+"mid-range": it hits 120fps+ "as shipped" with vsync on, so the 60fps mid-range target can only be
+reasoned about through the existing preset/dynamic-resolution levers (F-098), not measured directly
+here.
+
+**Verify:** `tools/enemy_lod_check.gd` (new) — spawns one of every enemy def currently in
+`content/enemies/` through the real, registered `EnemyWorld.host_spawn()` (F-068's lesson: a private
+harness copy tests nothing real), and asserts every `MeshInstance3D` under each spawned enemy's visual
+carries a nonzero `visibility_range_end`, a nonzero fade margin, and `FADE_SELF` mode. `.agent/bin/
+agent godot --script tools/enemy_lod_check.gd` → 0 failures. No regressions:
+`tools/wave_spawner_check.gd` (exercises `host_spawn`/`host_despawn_all` heavily) stays
+`failures=0`.
+
+**Done means:** `enemy_lod_check.gd` green, `wave_spawner_check.gd` still green, and the scope split
+against F-144 recorded so neither side re-derives it — see `docs/DECISIONS.md` D-115.
+
+**Traps / what's left for whoever picks this up next.** F-144 is the rest of this task's title (props/
+harvestables/undergrowth LOD + batching) and is still in flight — do not re-open that surface here or
+duplicate it; read F-144's own resolution when it lands instead. This task did not attempt a
+mid-range hardware measurement (no such machine is available locally, same gap F-090 already
+recorded) — if F-006's "no Windows/Linux machine" gap is ever closed, re-running `perf_probe.gd`
+there is the first real "target 60fps mid-range" verification this project will have had.
+
+---
+
 ## 7.5 · Settings: graphics, audio, sensitivity, keybinds, FOV, accessibility basics
 
 No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
