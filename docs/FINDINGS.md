@@ -440,11 +440,13 @@ instruction.
 
 ---
 
-### F-224 · CommandService's per-client _resolved_requests dictionary never shrinks over a session
+---
 
-**Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lp
+## Resolved
 
-**Found:** 2026-08-19 by lp during 3.13-review
+### F-224 · CommandService's per-client _resolved_requests dictionary never shrinks over a session — **fixed**
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lp during 3.13-review
 
 `autoload/command_service.gd:_resolved_requests` gets one entry per HOST-scope command a *client*
 ever submits over the host RPC path (`net_command_result` and `_on_submit_timeout` both do
@@ -457,9 +459,29 @@ Not a correctness bug today (the guard's read is O(1) either way) — filed as l
 severity table ("mild inefficiency"), fix opportunistically: e.g. erase the request's own entry once
 `_rpc_result_received` has been consumed by `_submit_to_host`'s awaiting loop.
 
----
+**Resolved 2026-08-19 by lm.** Confirmed still live at HEAD (3 commits since filing, none touched the
+dictionary — F-223 added `reserve_handle()`/`submit_with_handle()` but didn't erase anything). Fix:
+`_submit_to_host()` erases `_resolved_requests[request_id]` right after it consumes the matching
+`_rpc_result_received` — but only after disconnecting the still-pending `_on_submit_timeout` timer
+connection first. Erasing without that disconnect would have reopened the exact race the dictionary
+exists to prevent: the timer would still fire later, find no entry, and silently re-add one that
+nothing would ever clean up again, defeating the fix on every request that resolves before its
+timeout (the common case). Full writeup and the exact diff shape: `docs/SPECS.md` F-224.
 
-## Resolved
+Wrote `tools/command_resolved_requests_check.gd` (real two-process ENet, `command_net_check.gd`'s own
+driver/probe shape — F-037; a non-op client's HOST-scope command still round-trips through
+`_submit_to_host()` on its way to a "not op" refusal, so no op-ing is needed to exercise the guard).
+Added `CommandService.resolved_request_count()`, a read-only mirror of the dictionary's size (same
+reasoning as `is_op()`'s own mirror), as the check's only way to observe it from outside the file.
+Verified: `agent godot --script tools/command_resolved_requests_check.gd` → 0 failures, asserting
+`resolved_request_count() == 0` after each of 5 round trips individually (not just at the end — this
+is what would have caught the "erase without disconnecting the timer" near-miss). Re-ran
+`tools/command_net_check.gd` (the existing 3.13 suite) clean, 0 failures, confirming the timer-cancel
+path doesn't change behavior for an opped client's normal round trip. No undeclared `ERROR:` lines in
+either run. Swept the repo for the same shape (a Dictionary guard raced against a `create_timer()`
+callback) — `debug_console.gd`'s `_pending_handles`/`_unpaused_for_handles` (F-223) looked similar but
+both are already erased unconditionally inside `_on_command_result`, which always fires exactly once
+per handle; no sibling instance found elsewhere in `autoload/`, `systems/`, or `core/`.
 
 ### F-223 · CommandService's synchronously-resolved commands never print in the console — result signal fires before the pending-handle guard is armed — **fixed**
 

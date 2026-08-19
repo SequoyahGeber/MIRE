@@ -68,16 +68,6 @@
       "at": "2026-08-18T18:11:45+00:00",
       "task": "7.1"
     },
-    "assets/audit/a009/geometry_report.json": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/audit/a009/geometry_report.jsonl": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
     "assets/audit/geometry_report.json": {
       "agent": "slate17",
       "at": "2026-08-18T21:16:01+00:00",
@@ -412,26 +402,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
-    "assets/icons/README.md": {
-      "agent": "lp",
-      "at": "2026-08-18T14:15:06+00:00",
-      "task": "F-061"
-    },
-    "assets/icons/catalog.json": {
-      "agent": "lp",
-      "at": "2026-08-18T14:15:06+00:00",
-      "task": "F-061"
-    },
-    "assets/icons/exports": {
-      "agent": "lp",
-      "at": "2026-08-18T14:15:06+00:00",
-      "task": "F-061"
-    },
-    "assets/icons/preview": {
-      "agent": "lp",
-      "at": "2026-08-18T14:15:06+00:00",
-      "task": "F-061"
-    },
     "assets/loot": {
       "agent": "lp",
       "at": "2026-08-19T09:57:59+00:00",
@@ -443,116 +413,6 @@
       "agent": "tine18",
       "at": "2026-08-18T17:43:02+00:00",
       "task": "2.1j"
-    },
-    "assets/ships": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/README.md": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/catalog.json": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_anchor.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_boarding_ramp.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_cargo_hatch.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_debris_cluster.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_departure_bell.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_donation_crate.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_hull_repair_1.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_hull_repair_2.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_hull_repaired.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_hull_wrecked.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_mast.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_mast_broken.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_rudder.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_sail_furled.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/exports/ship_sail_raised.glb": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/preview/ship_preview.png": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/preview/ship_rig_preview.png": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/preview/ship_scale_preview.png": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "assets/ships/preview/ship_states_preview.png": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
     },
     "assets/source/construction_set.blend": {
       "agent": "lm",
@@ -574,11 +434,6 @@
       "hash": "1c90720e81755d28e96883003c2752ef39c3f8775865b2749944e0b9fcd06e4c",
       "task": "F-198",
       "token": null
-    },
-    "assets/source/extraction_ship_set.blend": {
-      "agent": "ivy8",
-      "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
     },
     "assets/source/flora_set.blend": {
       "agent": "lp",
@@ -673,9 +528,9 @@
     },
     "autoload/command_service.gd": {
       "agent": "lm",
-      "at": "2026-08-19T14:13:26+00:00",
-      "hash": "8d1113edc3889f2997958bc9c7cadd5ea9cf2bdb941df2b14a4ffa7aeb197c5f",
-      "task": "F-223",
+      "at": "2026-08-19T14:17:44+00:00",
+      "hash": "40c7d9ce46d499c3ed6db14e3f40f893c3478eca5c778732979ef00d404a7120",
+      "task": "F-224",
       "token": null
     },
     "autoload/crafting_service.gd": {
@@ -1058,11 +913,6 @@
       "agent": "ivy8",
       "at": "2026-08-18T17:57:51+00:00",
       "task": "3.2"
-    },
-    "content/items/coins.tres": {
-      "agent": "lp",
-      "at": "2026-08-18T14:15:06+00:00",
-      "task": "F-061"
     },
     "content/items/fibre_bundle.tres": {
       "agent": "ivy8",
@@ -1878,9 +1728,9 @@
     },
     "docs/FINDINGS.md": {
       "agent": "lm",
-      "at": "2026-08-19T14:13:26+00:00",
-      "hash": "a2f11e0a5d43ab8a746878686875b5d2ddf010f915f0dba206860f8d85765030",
-      "task": "F-223",
+      "at": "2026-08-19T14:17:44+00:00",
+      "hash": "68c0067af14b89afd0436374ade21bc71782017d5c5d6260a1517073c1496f46",
+      "task": "F-224",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1909,9 +1759,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lm",
-      "at": "2026-08-19T14:13:26+00:00",
-      "hash": "067a5e34801931d568230ce20a59920c442d3148a91cabf24483a17b75f33a9e",
-      "task": "F-223",
+      "at": "2026-08-19T14:17:44+00:00",
+      "hash": "478a7a0aa3f78c0d75e799697625dc33c22aa02d1d119e1893e51b8d4e53187a",
+      "task": "F-224",
       "token": null
     },
     "entities/player/player.tscn": {
@@ -2730,6 +2580,13 @@
       "at": "2026-08-18T19:52:51+00:00",
       "hash": "b96ed137463c04c3c42dc48559ccc9199197812f4ceb71b3a1ef046491a2505a",
       "task": "3.13"
+    },
+    "tools/command_resolved_requests_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T14:17:44+00:00",
+      "hash": "6d87a3ed8c0b1b6abad1a6a96d6ae4d2e7a82c246edf6d34812e10ad2190c8b9",
+      "task": "F-224",
+      "token": null
     },
     "tools/command_shim_check.gd": {
       "agent": "lp",
@@ -4502,10 +4359,12 @@
       "title": "Seed replication + client-side regeneration; mutable-state delta sync (`ARCHITECTURE.md` \u00a74)"
     },
     "4.6-review": {
+      "done_at": "2026-08-19T14:17:44+00:00",
+      "done_by": "lp",
       "est": "0.5",
       "milestone": "M4",
       "review_of": "4.6",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 4.6 @ ab3cb28 \u2014 judge the commit, file findings, no edits"
     },
@@ -6875,9 +6734,11 @@
       "title": "CommandService's synchronously-resolved commands never print in the console \u2014 result signal fires before the pending-handle guard is armed"
     },
     "F-224": {
+      "done_at": "2026-08-19T14:17:44+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "CommandService's per-client _resolved_requests dictionary never shrinks over a session"
     }

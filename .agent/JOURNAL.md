@@ -5244,3 +5244,28 @@ Notes along the way:
 Files: `autoload/debug_console.gd`, `autoload/command_service.gd`, `tools/command_console_check.gd`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `c508133`
+
+---
+
+### DONE · F-224 · lm · 2026-08-19T14:17:44+00:00
+
+**CommandService's per-client _resolved_requests dictionary never shrinks over a session**
+
+Fixed: CommandService._submit_to_host() now erases _resolved_requests[request_id] after disconnecting the pending timeout timer connection (erase-without-disconnect would silently reopen the leak 5s later). Added resolved_request_count() read-only mirror. Verified with new tools/command_resolved_requests_check.gd (real 2-process ENet, 0 failures, resolved_request_count()==0 after each of 5 round trips individually) and a clean re-run of tools/command_net_check.gd (0 failures). Moved F-224 to Resolved in docs/FINDINGS.md; full writeup in docs/SPECS.md.
+
+Notes along the way:
+- Fixed: _submit_to_host() disconnects the pending timeout timer before erasing _resolved_requests[request_id] — erasing without the disconnect would silently reopen the leak 5s later on every request. New check tools/command_resolved_requests_check.gd (2-process, non-op client so no op-ing needed) verifies resolved_request_count()==0 after each of 5 round trips. command_net_check.gd re-run clean. Swept for siblings: debug_console.gd's _pending_handles/_unpaused_for_handles look similar but already erase correctly (F-223) — no sibling found.
+
+Files: `autoload/command_service.gd`, `tools/command_resolved_requests_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `70c7b98`
+
+---
+
+### DONE · 4.6-review · lp · 2026-08-19T14:17:44+00:00
+
+**Review 4.6 @ ab3cb28 — judge the commit, file findings, no edits**
+
+Clean — ab3cb28 verified against SPECS.md 4.6, ARCHITECTURE.md §2.2/§4, D-089, standing rules. tools/seed_sync_check.gd (real two-process ENet): 0 failures — host draws seed on hosting start, client-regenerated terrain_hash matches host's exactly, a pre-join mutation reaches the late joiner via net_world_snapshot, a post-join mutation reaches it live via net_delta_applied. tools/resource_scatter_check.gd: 0 failures (depletion-memory rewire unregressed). tools/handshake_check.gd: 0 failures, PROTOCOL_VERSION bump 17->18 correctly declared and matches the real ENet mismatch-reject exchange. Full boot (--quit-after 20): 0 ERROR: lines. Host authority is correctly gated throughout (WorldDeltaLog._owns_world_state(), Harvestable's existing _owns_world_mutation()); no bare autoload identifiers (rule 1 clean, checked game_state.gd/world_delta_log.gd/resource_scatter_field.gd); depleted/respawned signals only ever fire host-side so the client-side WorldDeltaLog.connect() calls are correctly inert. Traced a suspected chattiness bug (replaying a known-depleted point's restore hit would re-broadcast to every peer on each chunk rebuild) and confirmed it's actually avoided: _wire_point_state() calls host_apply_damage() for the restore BEFORE connecting the depleted signal to _record_point_state(), so the replay's own signal has no listener yet — deliberate ordering, not a bug. F-139 (no live ChunkStreamer/ResourceScatterField caller yet) and F-132 (host chunk-residency gap) are both pre-existing, self-filed/accurately scoped by 4.6's own author, not something this commit should have closed. No new findings.
+
+Commit at time of writing: `70c7b98`
