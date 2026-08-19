@@ -3637,3 +3637,15 @@ Notes along the way:
 Files: `tools/construction_check.gd`
 
 Commit at time of writing: `e8f64cb`
+
+---
+
+### DONE · F-126 · lp · 2026-08-19T00:38:39+00:00
+
+**CommandService's `peer` argument type has no display-name resolution — peer ids only**
+
+Resolved via D-098: no display-name registry built (F-126's own text says _parse_peer should consume one, not invent one; also genuinely blocked -- the LOCAL/LAN fix needs a new client->host RPC, which needs a PROTOCOL_VERSION bump in core/net/net_version.gd, held all task by slate17's 3.7 claim). Filed F-157 to carry the actual registry forward since 3.16 already shipped without it. tools/command_check.gd gained a 'peer arg type' section (7 new assertions) pinning current behavior: display-name token refused with exact message, 0/negative/non-integer refused, unconnected int still accepted (D-078). Verified: agent godot --script tools/command_check.gd -> COMMAND_CHECK failures=0, zero ERROR: lines; agent godot --script tools/verify_setup.gd -> all checks passed; agent godot --script tools/findings_numbering_check.gd -> failures=0 (open=21 resolved=139).
+
+Files: `autoload/command_service.gd`, `tools/command_check.gd`
+
+Commit at time of writing: `bb08b60`

@@ -785,10 +785,13 @@ func _parse_function_id(raw: String, _spec: Dictionary) -> Dictionary:
 
 
 ## Peer id only for now, not COMMANDS.md §2.2's full "peer id int or player display name" — there is
-## no display-name registry yet (filed F-126). Deliberately does NOT require the id to be a currently
-## connected peer: `op` is the main caller, and an op grant has to survive exactly the reconnect gap
-## D-035 describes (`_on_run_player_rebound`/`_on_run_player_expired` above) — refusing to op someone
-## mid-reconnect, or pre-authorizing a peer id the host expects to join, would fight that on purpose.
+## no display-name registry yet anywhere in the project for the name half to resolve against (F-157;
+## F-126 filed the original gap and was closed as D-098 without building one — this file consumes
+## that registry once it exists, it does not own inventing it). Deliberately does NOT require the id
+## to be a currently connected peer: `op` is the main caller, and an op grant has to survive exactly
+## the reconnect gap D-035 describes (`_on_run_player_rebound`/`_on_run_player_expired` above) —
+## refusing to op someone mid-reconnect, or pre-authorizing a peer id the host expects to join, would
+## fight that on purpose.
 func _parse_peer(raw: String, _spec: Dictionary) -> Dictionary:
 	if not raw.is_valid_int():
 		return {"ok": false, "error": "'%s' is not a peer id" % raw}

@@ -51,6 +51,7 @@ func _run() -> void:
 	await _check_scope_routing()
 	await _check_op_refusal_and_grant()
 	await _check_op_deop_is_host_only()
+	await _check_peer_arg_type()
 
 	print("\nCOMMAND_CHECK failures=%d" % failures)
 	finish()
@@ -244,6 +245,43 @@ func _check_op_deop_is_host_only() -> void:
 		"refusal explains why: %s" % second_op_attempt.get("message"))
 
 	await command_service.execute("deop %d" % NON_OP_PEER, _ctx(HOST_PEER))
+
+
+# ── peer arg type: id-only today, no display-name resolution (F-126/D-098) ────────────────────────
+
+
+## Pins `_parse_peer()`'s CURRENT, documented scope so a future edit cannot silently regress into
+## looking like name resolution when it is not (or silently break the D-078 not-currently-connected
+## allowance while "fixing" something else). F-126/D-098: the display-name half of docs/COMMANDS.md
+## §2.2's `peer` type spec has no registry to resolve against yet (F-157) and is deliberately not
+## built here — this only proves the int-only half stays exactly as documented.
+func _check_peer_arg_type() -> void:
+	print("\n== peer arg type: id int only, no display-name resolution yet (F-126) ==")
+
+	# D-078: an int that has never connected is still accepted — every other assertion in this file
+	# already leans on this (NON_OP_PEER = 999 never connects), so this makes it an explicit case.
+	var never_connected: Dictionary = await command_service.execute("op 424242", _ctx(HOST_PEER))
+	check(bool(never_connected.get("ok", false)),
+		"op accepts an int peer id that has never connected (D-078): %s" % never_connected.get("message"))
+	await command_service.execute("deop 424242", _ctx(HOST_PEER))
+
+	# A display name (docs/COMMANDS.md §2.2's other half) is refused, not silently mis-resolved —
+	# there is no registry yet for it to resolve against (F-157).
+	var by_name: Dictionary = await command_service.execute("op bob", _ctx(HOST_PEER))
+	check(not bool(by_name.get("ok", true)), "op by display name is refused, not silently accepted")
+	check(String(by_name.get("message", "")) == "'bob' is not a peer id",
+		"refusal names the exact gap: %s" % by_name.get("message"))
+
+	var zero: Dictionary = await command_service.execute("op 0", _ctx(HOST_PEER))
+	check(not bool(zero.get("ok", true)), "peer id 0 is refused")
+	check(String(zero.get("message", "")) == "'0' is not a valid peer id",
+		"zero fails the positive-id check, not the int check: %s" % zero.get("message"))
+
+	var negative: Dictionary = await command_service.execute("op -5", _ctx(HOST_PEER))
+	check(not bool(negative.get("ok", true)), "a negative peer id is refused: %s" % negative.get("message"))
+
+	var not_int: Dictionary = await command_service.execute("op 3.5", _ctx(HOST_PEER))
+	check(not bool(not_int.get("ok", true)), "a non-integer token is refused: %s" % not_int.get("message"))
 
 
 func check(condition: bool, description: String) -> void:
