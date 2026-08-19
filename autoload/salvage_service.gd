@@ -21,8 +21,8 @@ const SALVAGE_SAVE := preload("res://core/save/salvage_save.gd")
 
 ## DESIGN.md §5.2: "the reward curve for pushing deeper must be superlinear (Cycle 9 worth much more
 ## than 3x Cycle 3), or nobody ever gambles." `CYCLE_EXPONENT > 1` is what makes it superlinear;
-## `CYCLE_BASE` just scales the whole curve to a number that feels worth banking. Cycle 3 -> 57,
-## Cycle 9 -> ~359 (6.3x for 3x the Cycle, comfortably clearing the "much more than 3x" bar).
+## `CYCLE_BASE` just scales the whole curve to a number that feels worth banking. Cycle 3 -> 58,
+## Cycle 9 -> 336 (~5.8x for 3x the Cycle, comfortably clearing the "much more than 3x" bar).
 ## Placeholder-tuned, same status as every other Cycle-facing constant in this codebase
 ## (`CycleService.SPREAD_ESCALATION_PER_CYCLE`, `ExtractionShip.REPAIR_COSTS`) — nothing here has
 ## been through a real playtest (Q6: "does anyone ever actually extract").

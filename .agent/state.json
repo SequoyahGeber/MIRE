@@ -654,10 +654,11 @@
       "task": "F-175"
     },
     "autoload/salvage_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T03:34:03+00:00",
-      "hash": "ee22edfa1eb34ac2308c30ef687d553c15cde45d27cc99f0bca0a23c8663407d",
-      "task": "6.9"
+      "agent": "lp",
+      "at": "2026-08-19T14:48:16+00:00",
+      "hash": "b969365c82c0def6e96ae64d9f868723717e15775cf8e547eecc0fe58de0dd07",
+      "task": "F-227",
+      "token": null
     },
     "autoload/settings_service.gd": {
       "agent": "lm",
@@ -1727,10 +1728,10 @@
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T14:45:15+00:00",
-      "hash": "c4fc8a21761d7dc9cb75835544d923b744fb819f44e7d33a948bc01c0b2bf8f3",
-      "task": "F-226",
+      "agent": "lp",
+      "at": "2026-08-19T14:48:16+00:00",
+      "hash": "53e926aec567ffa332382702dd05e08da9430b87fb7d912974572166cde6b0ba",
+      "task": "F-227",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1758,10 +1759,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T14:45:15+00:00",
-      "hash": "5729e93f6c6b0f36e59640a2e33ece444a30bc08480a8bb8e24edd500ae33802",
-      "task": "F-226",
+      "agent": "lp",
+      "at": "2026-08-19T14:48:16+00:00",
+      "hash": "b8b3f503b65d31671cc69bd20e99878836ceb034b7e25b98a13e69bce3b0f56e",
+      "task": "F-227",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -4036,6 +4037,14 @@
       "tier": "T2",
       "title": "Full tier/fork crafting tree, stations (workbench \u2192 furnace \u2192 anvil) (`DESIGN.md` \u00a74.3)"
     },
+    "3.1-review": {
+      "est": "0.5",
+      "milestone": "M3",
+      "review_of": "3.1",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 3.1 @ f0d0073 \u2014 judge the commit, file findings, no edits"
+    },
     "3.10": {
       "done_at": "2026-08-18T18:59:24+00:00",
       "done_by": "lp",
@@ -4268,6 +4277,14 @@
       "tier": "T2",
       "title": "Seeded island heightmap: layered noise + island falloff, deterministic RNG per subsystem"
     },
+    "4.1-review": {
+      "est": "0.5",
+      "milestone": "M4",
+      "review_of": "4.1",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 4.1 @ daf9571 \u2014 judge the commit, file findings, no edits"
+    },
     "4.10": {
       "est": "4",
       "milestone": "M4",
@@ -4309,6 +4326,14 @@
       "status": "done",
       "tier": "T2",
       "title": "Biome assignment (height \u00d7 moisture), biome `.tres` definitions"
+    },
+    "4.2-review": {
+      "est": "0.5",
+      "milestone": "M4",
+      "review_of": "4.2",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review 4.2 @ 645feb1 \u2014 judge the commit, file findings, no edits"
     },
     "4.3": {
       "done_at": "2026-08-18T20:24:23+00:00",
@@ -6831,9 +6856,11 @@
       "title": "`WaveSpawner.current_cycle()` is documented \"readable on any peer\" but is stuck at 1 forever on every client"
     },
     "F-227": {
+      "done_at": "2026-08-19T14:48:16+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "SalvageService's reward-curve comment states the wrong numbers \u2014 mismatches the formula it documents and its own SPECS.md block"
     }

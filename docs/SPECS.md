@@ -7077,6 +7077,47 @@ readability, so it is not this bug's shape. No sibling instances found.
 
 ---
 
+## F-227 · `SalvageService`'s reward-curve comment states the wrong numbers — mismatches the formula it documents and its own SPECS.md block
+
+**Claim:** `autoload/salvage_service.gd`, `docs/SPECS.md`. **Authority:** no new row — this is a
+doc-comment-only gap in the existing "Salvage" row (§2.2, **None**), 6.6's own block above. No code
+path changed and no new check is needed beyond re-running the existing one.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Ran the check before touching anything** (per the finding's own warning — `tools/salvage_check.gd`
+had 1 commit since filing, `docs/SPECS.md`/`docs/DELEGATION.md` many more): re-derived the formula by
+hand (`round(10 * 3**1.6) == 58`, `round(10 * 9**1.6) == 336`, `python3`) and against
+`tools/salvage_check.gd`'s own live assertion output, which already reads 58/336. `reward_for_cycle()`
+itself (line 108-109) was never wrong — only `autoload/salvage_service.gd:24-25`'s doc comment above
+`CYCLE_BASE`/`CYCLE_EXPONENT` still read "Cycle 3 -> 57, Cycle 9 -> ~359 (6.3x...)", stale against both
+the real formula output and this file's own 6.6 block (line 2289) and `docs/DELEGATION.md`'s 6.6 entry
+(line 1572), both of which already stated the correct 58/336 pair. The bug was exactly the comment, and
+only the comment.
+
+**The fix:** one-line edit to the doc comment — "Cycle 3 -> 57, Cycle 9 -> ~359 (6.3x..." became
+"Cycle 3 -> 58, Cycle 9 -> 336 (~5.8x...", matching SPECS.md's own stated pair. No other line in the
+file changed.
+
+**Verify:** `.agent/bin/agent godot --script tools/salvage_check.gd` → `SALVAGE_CHECK failures=0`
+(includes the pre-existing "Cycle 9's reward is worth more than 3x Cycle 3's" assertion, unaffected
+since it reads the live formula, not the comment). Also re-ran `tools/reward_service_check.gd` →
+`REWARD_SERVICE_CHECK failures=0` and `tools/reward_service_seed_check.gd` →
+`REWARD_SERVICE_SEED_CHECK failures=0` (this work order's named checks; unrelated system, both were
+already green and stayed green — no shared code path with `SalvageService`).
+
+**Swept for the same shape:** grepped every `CYCLE_BASE`/`CYCLE_EXPONENT` reference project-wide —
+only `autoload/salvage_service.gd` defines or reads them, no sibling copy. Grepped every doc comment
+with a `\d.\dx` worked-multiplier example (three hits): `world/chunk/chunk_mesher.gd`'s
+`SKIRT_DEPTH_FRACTION` comment ("~3.4x margin") checks out against its own constants
+(`0.10 * HEIGHT_SCALE(60) / 1.78m == 3.37x`); `world/environment/draw_policy.gd`'s "1.4x" is a bare
+descriptive value, not a computed example. No other stale worked-example comment found.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

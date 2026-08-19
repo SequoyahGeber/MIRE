@@ -440,28 +440,38 @@ instruction.
 
 ---
 
-### F-227 · SalvageService's reward-curve comment states the wrong numbers — mismatches the formula it documents and its own SPECS.md block
+## Resolved
+
+### F-227 · SalvageService's reward-curve comment states the wrong numbers — mismatches the formula it documents and its own SPECS.md block — **fixed**
 
 **Area:** salvage/docs · **Severity:** low · **Found:** 2026-08-19 by lp
 
-autoload/salvage_service.gd:284-288's doc comment on CYCLE_BASE/CYCLE_EXPONENT claims "Cycle 3
--> 57, Cycle 9 -> ~359 (6.3x for 3x the Cycle...)". Computing the formula it's describing
-(round(CYCLE_BASE * cycle^CYCLE_EXPONENT), CYCLE_BASE=10, CYCLE_EXPONENT=1.6) actually gives
-Cycle 3 = 58, Cycle 9 = 336, a 5.8x ratio -- confirmed both by hand (python3 -c "round(10*3**1.6)"
--> 58, round(10*9**1.6) -> 336) and by tools/salvage_check.gd's own live assertion output
-("Cycle 9's reward (336)... Cycle 3's (58...)"). docs/SPECS.md's 6.6 block and
-docs/DELEGATION.md's Current state entry both state the correct 58/336 pair -- only the in-code
-comment is wrong, apparently transcribed before a later constant tweak or a copy/paste slip that
-never got re-run.
+`autoload/salvage_service.gd:24-25`'s doc comment on `CYCLE_BASE`/`CYCLE_EXPONENT` claimed "Cycle 3
+-> 57, Cycle 9 -> ~359 (6.3x for 3x the Cycle...)". Computing the formula it describes
+(`round(CYCLE_BASE * cycle^CYCLE_EXPONENT)`, `CYCLE_BASE=10`, `CYCLE_EXPONENT=1.6`) actually gives
+Cycle 3 = 58, Cycle 9 = 336, a ~5.8x ratio — confirmed both by hand (`python3 -c "round(10*3**1.6)"`
+-> 58, `round(10*9**1.6)` -> 336) and by `tools/salvage_check.gd`'s own live assertion output
+("Cycle 9's reward (336)... Cycle 3's (58...)"). `docs/SPECS.md`'s 6.6 block and
+`docs/DELEGATION.md`'s Current state entry both already stated the correct 58/336 pair — only the
+in-code comment was wrong, apparently transcribed before a later constant tweak or a copy/paste slip
+that never got re-run.
 
-No functional impact -- reward_for_cycle() itself is correct and salvage_check.gd verifies the
-real numbers, not the comment. But a future task tuning CYCLE_BASE/CYCLE_EXPONENT against this
-comment's stated multiplier (rather than re-deriving it) would target the wrong bar. Fix is a
-one-line comment edit to match SPECS.md's own 58/336/5.8x.
+No functional impact — `reward_for_cycle()` itself was always correct and `salvage_check.gd` verifies
+the real numbers, not the comment.
+
+**Resolved 2026-08-19 by lp.** Fixed: `autoload/salvage_service.gd:24-25`'s comment now reads
+"Cycle 3 -> 58, Cycle 9 -> 336 (~5.8x..." matching `SPECS.md`'s own stated pair — no other line
+changed. Verified `.agent/bin/agent godot --script tools/salvage_check.gd` ->
+`SALVAGE_CHECK failures=0`, plus this work order's named checks `tools/reward_service_check.gd` ->
+`REWARD_SERVICE_CHECK failures=0` and `tools/reward_service_seed_check.gd` ->
+`REWARD_SERVICE_SEED_CHECK failures=0` (unrelated system, already green, stayed green). Swept for the
+same shape: grepped every `CYCLE_BASE`/`CYCLE_EXPONENT` reference (only this one file) and every
+doc comment with a computed `\d.\dx` worked-multiplier example project-wide (three hits total) —
+`chunk_mesher.gd`'s `SKIRT_DEPTH_FRACTION` "~3.4x" comment checks out against its own constants,
+`draw_policy.gd`'s "1.4x" is a bare descriptive value, not a computed example. No sibling found.
+Full spec block: `docs/SPECS.md` F-227.
 
 ---
-
-## Resolved
 
 ### F-226 · `WaveSpawner.current_cycle()` is documented "readable on any peer" but is stuck at 1 forever on every client — **fixed**
 

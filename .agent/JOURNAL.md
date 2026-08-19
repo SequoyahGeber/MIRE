@@ -5401,3 +5401,15 @@ Fixed: WaveSpawner.current_cycle() now uses the host-int-or-WorldDeltaLog-fallba
 Files: `systems/waves/wave_spawner.gd`, `tools/wave_director_check.gd`, `tools/wave_spawner_cycle_net_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `76c60e7`
+
+---
+
+### DONE · F-227 · lp · 2026-08-19T14:48:16+00:00
+
+**SalvageService's reward-curve comment states the wrong numbers — mismatches the formula it documents and its own SPECS.md block**
+
+Fixed: autoload/salvage_service.gd:24-25's doc comment now reads Cycle 3 -> 58, Cycle 9 -> 336 (~5.8x), matching the real reward_for_cycle() formula output and SPECS.md/DELEGATION.md's already-correct 58/336 pair -- was previously wrong (57/~359/6.3x). No functional change, comment-only. Verified: agent godot --script tools/salvage_check.gd -> SALVAGE_CHECK failures=0; tools/reward_service_check.gd -> REWARD_SERVICE_CHECK failures=0; tools/reward_service_seed_check.gd -> REWARD_SERVICE_SEED_CHECK failures=0. Swept for the same shape: only CYCLE_BASE/CYCLE_EXPONENT definer in repo; grepped every doc comment with a computed Nx worked-multiplier example project-wide (3 hits) -- chunk_mesher.gd and draw_policy.gd both check out, no sibling stale-comment found. New docs/SPECS.md F-227 block written (none existed). Moved to Resolved in docs/FINDINGS.md.
+
+Files: `autoload/salvage_service.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`
+
+Commit at time of writing: `fc42b45`
