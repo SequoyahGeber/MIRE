@@ -1,0 +1,111 @@
+{
+  "batch": "A-015",
+  "family": "wetland_nature",
+  "blender": "5.2.0 LTS",
+  "assets": [
+    {
+      "name": "alder",
+      "file": "exports/alder.glb",
+      "width_m": 3.7547,
+      "depth_m": 3.4737,
+      "height_m": 5.6,
+      "target_m": 5.6,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 690,
+      "triangles": 960,
+      "materials": [
+        "MIRE_Leaf",
+        "MIRE_LeafDeep",
+        "MIRE_WoodBarkDark"
+      ]
+    },
+    {
+      "name": "hollow_tree",
+      "file": "exports/hollow_tree.glb",
+      "width_m": 1.872,
+      "depth_m": 2.0401,
+      "height_m": 4.9,
+      "target_m": 4.9,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 437,
+      "triangles": 548,
+      "materials": [
+        "MIRE_Leaf",
+        "MIRE_LeafDeep",
+        "MIRE_WoodBarkDark",
+        "MIRE_WoodDead"
+      ]
+    },
+    {
+      "name": "uprooted_tree",
+      "file": "exports/uprooted_tree.glb",
+      "width_m": 6.4,
+      "depth_m": 3.3806,
+      "height_m": 3.3181,
+      "target_m": 6.4,
+      "axis": "spread",
+      "parts": 1,
+      "polygons": 451,
+      "triangles": 628,
+      "materials": [
+        "MIRE_LeafDry",
+        "MIRE_TerrainPath",
+        "MIRE_WoodBarkDark"
+      ]
+    },
+    {
+      "name": "mangrove_tree",
+      "file": "exports/mangrove_tree.glb",
+      "width_m": 2.1014,
+      "depth_m": 2.1376,
+      "height_m": 4.6,
+      "target_m": 4.6,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 314,
+      "triangles": 512,
+      "materials": [
+        "MIRE_Leaf",
+        "MIRE_LeafDeep",
+        "MIRE_WoodBarkDark"
+      ]
+    },
+    {
+      "name": "duckweed",
+      "file": "exports/duckweed.glb",
+      "width_m": 0.94,
+      "depth_m": 0.9307,
+      "height_m": 0.013,
+      "target_m": 0.94,
+      "axis": "spread",
+      "parts": 1,
+      "polygons": 592,
+      "triangles": 592,
+      "materials": [
+        "MIRE_Leaf",
+        "MIRE_LeafLight",
+        "MIRE_Peat"
+      ]
+    },
+    {
+      "name": "hanging_moss",
+      "file": "exports/hanging_moss.glb",
+      "width_m": 1.0888,
+      "depth_m": 0.2304,
+      "height_m": 1.65,
+      "target_m": 1.65,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 381,
+      "triangles": 696,
+      "materials": [
+        "MIRE_Moss",
+        "MIRE_MossDark",
+        "MIRE_MossLight",
+        "MIRE_WoodBarkDark"
+      ]
+    }
+  ]
+}
