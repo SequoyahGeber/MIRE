@@ -75,6 +75,40 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Asset batch A-012: the food kit — and the art that unblocks `ITEMS.md`'s food and tonic rows (slate17)
+
+**What shipped, verified:** 13 GLBs in `assets/food/exports/` (`tools/blender/build_food_set.py`,
+`assets/source/food_set.blend`), a catalog, three contact sheets, and `tools/food_check.gd`.
+Nine palette tokens appended to `mire_art.PALETTE` — append-only, so nothing downstream rebuilt.
+
+**Names, so nobody re-derives them:** `cooked_meat` `raw_fish` `cooked_fish` `bog_loaf`
+`meat_skewer` `hearty_stew` `healing_stew` `honey_jar` `fired_flask` `healing_draught`
+`pale_draught` `stamina_tonic` `suspicious_sludge`. Two are deliberate: the food skewer is
+**`meat_skewer`**, because `skewer` is already the weapon (`ITEMS.md` §4.4 flags the collision by
+name), and the tracker's "water flask" ships as **`fired_flask`** because §9 cut thirst and made that
+asset the container every tonic is made in.
+
+**Three shared frames, and the catalog names them.** `catalog.json` carries a `frames` map:
+`flask` (the five tonics), `bowl` (the two stews), `fish` (raw and cooked). Siblings measure
+**identically** — same bounds, same triangle count, 0.0000 mm drift asserted in Blender AND
+re-asserted in the engine — so gameplay can swap a raw fish for a cooked one, or an empty flask for a
+full one, with no mesh jump and no second collision shape. Anything that adds a tonic should add a
+colour to the existing flask, not a new bottle.
+
+**What this unblocks.** `ITEMS.md` W1/W3's food and tonic rows were blocked on art because
+`item_icons_check` requires every `ItemDef` to carry a real icon. These GLBs are what
+`tools/blender/render_item_icons.py` renders icons from: append them to its `SOURCES`, re-render, and
+compare **decoded pixels, not file hashes** (F-042). Task 3.2's remaining W1 slice and 3.8's food work
+can then be authored. `content/loot/` already references none of these ids, so nothing breaks in the
+meantime.
+
+**Read F-204 before writing another generator's preview code.** A Blender contact sheet that moves
+assets between renders draws the layout it had at the FIRST render — the objects probe as present,
+visible and correctly placed, and a tile still comes out blank. A-012 places every asset once through
+a `LAYOUT` table and only ever aims the camera. `build_gatherable_plants.py` and `build_flora_set.py`
+still have the moving shape.
+
+
 ### 2026-08-19 — F-187 fixed: `MeshMerge.merge_instances()` bakes several placements into one static mesh — AuthoredWorld uses it for rigid, non-emitting, non-sway, never-shadow-casting props (lm)
 
 `core/render/mesh_merge.gd` gained `merge_instances(entries: Array) -> ArrayMesh`, where `entries` is

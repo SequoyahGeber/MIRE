@@ -1,0 +1,264 @@
+{
+  "batch": "A-012",
+  "family": "food",
+  "blender": "5.2.0 LTS",
+  "frames": {
+    "flask": [
+      "fired_flask",
+      "healing_draught",
+      "pale_draught",
+      "stamina_tonic",
+      "suspicious_sludge"
+    ],
+    "bowl": [
+      "hearty_stew",
+      "healing_stew"
+    ],
+    "fish": [
+      "raw_fish",
+      "cooked_fish"
+    ]
+  },
+  "assets": [
+    {
+      "name": "cooked_meat",
+      "file": "exports/cooked_meat.glb",
+      "width_m": 0.26,
+      "depth_m": 0.1413,
+      "height_m": 0.0781,
+      "target_m": 0.26,
+      "axis": "spread",
+      "frame": null,
+      "parts": 1,
+      "polygons": 122,
+      "triangles": 152,
+      "materials": [
+        "MIRE_Bone",
+        "MIRE_FleshCharred",
+        "MIRE_FleshCooked"
+      ]
+    },
+    {
+      "name": "raw_fish",
+      "file": "exports/raw_fish.glb",
+      "width_m": 0.34,
+      "depth_m": 0.0903,
+      "height_m": 0.106,
+      "target_m": 0.34,
+      "axis": "spread",
+      "frame": "fish",
+      "parts": 1,
+      "polygons": 109,
+      "triangles": 145,
+      "materials": [
+        "MIRE_Coal",
+        "MIRE_FishBelly",
+        "MIRE_FishScale"
+      ]
+    },
+    {
+      "name": "cooked_fish",
+      "file": "exports/cooked_fish.glb",
+      "width_m": 0.34,
+      "depth_m": 0.0903,
+      "height_m": 0.106,
+      "target_m": 0.34,
+      "axis": "spread",
+      "frame": "fish",
+      "parts": 1,
+      "polygons": 109,
+      "triangles": 145,
+      "materials": [
+        "MIRE_Coal",
+        "MIRE_FishBelly",
+        "MIRE_FleshCharred"
+      ]
+    },
+    {
+      "name": "bog_loaf",
+      "file": "exports/bog_loaf.glb",
+      "width_m": 0.24,
+      "depth_m": 0.1459,
+      "height_m": 0.1304,
+      "target_m": 0.24,
+      "axis": "spread",
+      "frame": null,
+      "parts": 1,
+      "polygons": 163,
+      "triangles": 166,
+      "materials": [
+        "MIRE_BreadCrumb",
+        "MIRE_BreadCrust"
+      ]
+    },
+    {
+      "name": "meat_skewer",
+      "file": "exports/meat_skewer.glb",
+      "width_m": 0.4,
+      "depth_m": 0.0793,
+      "height_m": 0.054,
+      "target_m": 0.4,
+      "axis": "spread",
+      "frame": null,
+      "parts": 1,
+      "polygons": 248,
+      "triangles": 260,
+      "materials": [
+        "MIRE_FleshCharred",
+        "MIRE_FleshCooked",
+        "MIRE_WoodTimber"
+      ]
+    },
+    {
+      "name": "hearty_stew",
+      "file": "exports/hearty_stew.glb",
+      "width_m": 0.21,
+      "depth_m": 0.2097,
+      "height_m": 0.1197,
+      "target_m": 0.21,
+      "axis": "spread",
+      "frame": "bowl",
+      "parts": 1,
+      "polygons": 226,
+      "triangles": 280,
+      "materials": [
+        "MIRE_Broth",
+        "MIRE_FleshCooked",
+        "MIRE_WoodTimber"
+      ]
+    },
+    {
+      "name": "healing_stew",
+      "file": "exports/healing_stew.glb",
+      "width_m": 0.21,
+      "depth_m": 0.2097,
+      "height_m": 0.1197,
+      "target_m": 0.21,
+      "axis": "spread",
+      "frame": "bowl",
+      "parts": 1,
+      "polygons": 226,
+      "triangles": 280,
+      "materials": [
+        "MIRE_Broth",
+        "MIRE_Moss",
+        "MIRE_TonicPale",
+        "MIRE_WoodTimber"
+      ]
+    },
+    {
+      "name": "honey_jar",
+      "file": "exports/honey_jar.glb",
+      "width_m": 0.1486,
+      "depth_m": 0.1425,
+      "height_m": 0.19,
+      "target_m": 0.19,
+      "axis": "height",
+      "frame": null,
+      "parts": 1,
+      "polygons": 135,
+      "triangles": 216,
+      "materials": [
+        "MIRE_Clay",
+        "MIRE_Honey",
+        "MIRE_Rope",
+        "MIRE_Wax"
+      ]
+    },
+    {
+      "name": "fired_flask",
+      "file": "exports/fired_flask.glb",
+      "width_m": 0.1312,
+      "depth_m": 0.1314,
+      "height_m": 0.23,
+      "target_m": 0.23,
+      "axis": "height",
+      "frame": "flask",
+      "parts": 1,
+      "polygons": 139,
+      "triangles": 244,
+      "materials": [
+        "MIRE_Clay",
+        "MIRE_Rope",
+        "MIRE_Wax",
+        "MIRE_WoodTimber"
+      ]
+    },
+    {
+      "name": "healing_draught",
+      "file": "exports/healing_draught.glb",
+      "width_m": 0.1312,
+      "depth_m": 0.1314,
+      "height_m": 0.23,
+      "target_m": 0.23,
+      "axis": "height",
+      "frame": "flask",
+      "parts": 1,
+      "polygons": 139,
+      "triangles": 244,
+      "materials": [
+        "MIRE_Clay",
+        "MIRE_Rope",
+        "MIRE_TonicRed",
+        "MIRE_WoodTimber"
+      ]
+    },
+    {
+      "name": "pale_draught",
+      "file": "exports/pale_draught.glb",
+      "width_m": 0.1312,
+      "depth_m": 0.1314,
+      "height_m": 0.23,
+      "target_m": 0.23,
+      "axis": "height",
+      "frame": "flask",
+      "parts": 1,
+      "polygons": 139,
+      "triangles": 244,
+      "materials": [
+        "MIRE_Clay",
+        "MIRE_Rope",
+        "MIRE_TonicPale",
+        "MIRE_WoodTimber"
+      ]
+    },
+    {
+      "name": "stamina_tonic",
+      "file": "exports/stamina_tonic.glb",
+      "width_m": 0.1312,
+      "depth_m": 0.1314,
+      "height_m": 0.23,
+      "target_m": 0.23,
+      "axis": "height",
+      "frame": "flask",
+      "parts": 1,
+      "polygons": 139,
+      "triangles": 244,
+      "materials": [
+        "MIRE_Clay",
+        "MIRE_Rope",
+        "MIRE_TonicAmber",
+        "MIRE_WoodTimber"
+      ]
+    },
+    {
+      "name": "suspicious_sludge",
+      "file": "exports/suspicious_sludge.glb",
+      "width_m": 0.1312,
+      "depth_m": 0.1314,
+      "height_m": 0.23,
+      "target_m": 0.23,
+      "axis": "height",
+      "frame": "flask",
+      "parts": 1,
+      "polygons": 139,
+      "triangles": 244,
+      "materials": [
+        "MIRE_Clay",
+        "MIRE_Rope",
+        "MIRE_Sludge",
+        "MIRE_WoodTimber"
+      ]
+    }
+  ]
+}

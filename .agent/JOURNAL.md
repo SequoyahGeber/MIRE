@@ -4611,3 +4611,27 @@ Notes along the way:
 Files: `world/gen/authored_world.gd`, `core/render/mesh_merge.gd`, `tools/prop_chunk_merge_check.gd`
 
 Commit at time of writing: `4a716b4`
+
+---
+
+### HANDOFF · 2.1d · slate17 · 2026-08-19T07:59:58+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-012 (food, tonics and containers) is DONE; A-013 (camp storage and furniture) is now NEXT. 13 GLBs in assets/food/ from tools/blender/build_food_set.py, 2,864 triangles, plus tools/food_check.gd and nine appended palette tokens. The batch's idea is that nine of the thirteen come off three shared frames — five tonics are one flask, two stews are one bowl, raw and cooked fish are one fish — and every difference between siblings costs zero geometry (paint_faces). Verified: build contract 13/13 with sibling drift 0.0000 mm, two clean rebuilds byte-identical, all-sides audit 0 defects against a clean --outdir, three contact sheets inspected, and 'agent godot --script tools/food_check.gd' 0 failures re-measuring every import from its vertices. READ F-204 BEFORE WRITING THE NEXT GENERATOR'S PREVIEW CODE: a Blender contact sheet that moves assets between renders draws the layout it had at the first render, so a tile comes out blank while the asset probes as present, visible and correctly placed — it cost this batch an hour and it looks exactly like an asset that failed to build. A-012 places every asset once via a LAYOUT table and only aims the camera; build_gatherable_plants.py and build_flora_set.py still have the moving shape and their committed sheets may not show what their code says. NEXT USEFUL STEP BEYOND A-013: these GLBs are what render_item_icons.py needs to unblock ITEMS.md W1/W3 food and tonic authoring — append to SOURCES, re-render, compare decoded pixels not hashes (F-042).
+
+Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_food_set.py`, `tools/food_check.gd`, `assets/food`, `tools/blender/mire_art.py`, `tools/food_check.gd.uid`, `docs/FINDINGS.md`, `docs/DELEGATION.md`, `assets/food/catalog.json`, `assets/food/README.md`
+
+Commit at time of writing: `131a86a`
+
+---
+
+### HANDOFF · 2.1d · slate17 · 2026-08-19T08:00:11+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+See the previous handoff note for A-012 — re-claimed only to attach the exact output paths for D-031's ship check.
+
+Files: `assets/food/catalog.json`, `assets/food/exports/bog_loaf.glb`, `assets/food/exports/cooked_fish.glb`, `assets/food/exports/cooked_meat.glb`, `assets/food/exports/fired_flask.glb`, `assets/food/exports/healing_draught.glb`, `assets/food/exports/healing_stew.glb`, `assets/food/exports/hearty_stew.glb`, `assets/food/exports/honey_jar.glb`, `assets/food/exports/meat_skewer.glb`, `assets/food/exports/pale_draught.glb`, `assets/food/exports/raw_fish.glb`, `assets/food/exports/stamina_tonic.glb`, `assets/food/exports/suspicious_sludge.glb`, `assets/food/preview/diag_one.png`, `assets/food/preview/food_cooked_preview.png`, `assets/food/preview/food_tonics_preview.png`, `assets/food/preview/food_vessels_preview.png`, `assets/source/food_set.blend`
+
+Commit at time of writing: `131a86a`

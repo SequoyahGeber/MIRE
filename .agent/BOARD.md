@@ -6,15 +6,13 @@
 
 ## In flight
 
-| Task | Agent | Started | Files claimed |
-|---|---|---|---|
-| **2.1d** Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close | slate17 | 2026-08-19 07:37 | `docs/ASSET_TRACKER.md`, `tools/blender/build_food_set.py`, `tools/food_check.gd`, `assets/food`, `tools/blender/mire_art.py` |
+_Nothing in flight._
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 179/201 | 22 |
+| Findings | `█████████░` 179/202 | 23 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -70,6 +68,7 @@
 | ⬜ | **F-198** Three DONE asset batches (A-004, A-005, A-006) still call `mire_art.box()`'s bevel-capable version with no override — the same F-057 exposure their own tracker rows already claim to have passed | todo |
 | ⬜ | **F-200** No check verifies that project.godot's [autoload] targets are tracked at HEAD, so F-190's failure mode can recur | todo |
 | ⬜ | **F-201** `tools/steam_lobby_check.gd` prints "all checks passed" (exit 0) but always emits one undeclared engine `ERROR:` line, violating this project's own SPECS.md standing rule 4 | todo |
+| ⬜ | **F-203** AuthoredWorld's F-187 chunk merge excludes sway- and emitter-bearing props — a second attempt needs per-vertex height encoding or per-asset placement metadata inside a merged mesh | todo |
 
 ## Done
 

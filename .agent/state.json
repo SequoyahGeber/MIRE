@@ -1,51 +1,6 @@
 {
-  "claims": {
-    "assets/food": {
-      "agent": "slate17",
-      "at": "2026-08-19T07:37:43+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "docs/ASSET_TRACKER.md": {
-      "agent": "slate17",
-      "at": "2026-08-19T07:37:43+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "tools/blender/build_food_set.py": {
-      "agent": "slate17",
-      "at": "2026-08-19T07:37:43+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "tools/blender/mire_art.py": {
-      "agent": "slate17",
-      "at": "2026-08-19T07:38:49+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    },
-    "tools/food_check.gd": {
-      "agent": "slate17",
-      "at": "2026-08-19T07:37:43+00:00",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    }
-  },
-  "in_flight": {
-    "2.1d": {
-      "agent": "slate17",
-      "files": [
-        "docs/ASSET_TRACKER.md",
-        "tools/blender/build_food_set.py",
-        "tools/food_check.gd",
-        "assets/food",
-        "tools/blender/mire_art.py"
-      ],
-      "notes": [],
-      "started": "2026-08-19T07:37:43+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
       "agent": "bram1",
@@ -140,6 +95,146 @@
       "hash": null,
       "task": "F-057",
       "token": null
+    },
+    "assets/food": {
+      "agent": "slate17",
+      "at": "2026-08-19T07:59:58+00:00",
+      "hash": null,
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/README.md": {
+      "agent": "slate17",
+      "at": "2026-08-19T07:59:58+00:00",
+      "hash": null,
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/catalog.json": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "94832223df6a7ee8670a1bab725d27fc1077819e0491e95e8ab09d36f889e590",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/exports/bog_loaf.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "be1b1920297fad5fc28d108ef4f97656ca4f866c97785c0786944b9db83db7a2",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/exports/cooked_fish.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "43df39ec9e41e7ae1001d48401faefaf10df20b3755512426384a452b9a937cb",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/exports/cooked_meat.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "d6a9db5792a0d2de7c4e2b128bde32edd71a7baafe986fb4299c40d9f2249eaf",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/exports/fired_flask.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "c6b5f1fedb6e0002f0038816b4856ff11a23d966fa9979928d4e7e14c8beb7f2",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/exports/healing_draught.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "5f1a0c9043093a19dafb6a77ff806f991ecb72b3c18fae782f8dddda4693e5de",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/exports/healing_stew.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "397e425c5aa9d03cdf5e87138a58e6f48332db74cc4fb9729c89f6a89a574197",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/exports/hearty_stew.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "4097f3a89b568827571dc607020f5850c4079dbb9fcf91791294e14da8c399ed",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/exports/honey_jar.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "644c280f023888152f02d8a21807a0236025f3edf6cd68256519df0f71f6cae9",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/exports/meat_skewer.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "45992d10635d0bd15160cd6ad99f124aee6ada985ea5c5232e5d0ed2cc3a0d29",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/exports/pale_draught.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "19a878c9f8a99528f209c938ee2281dc12c08c0858a8d720991aee708ed8833b",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/exports/raw_fish.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "2b97be9aa48b6c3bd43ea67db8332292b611057190f012e69b5ac96824718027",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/exports/stamina_tonic.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "f6514b243e3f3a07fff515f5792186cd4eff9e550a3d5c69bea908f71936c45d",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/exports/suspicious_sludge.glb": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "2f6466d45793525d5d92af6b2d47490877cc9364c0bf94bed598207bd215a47b",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/preview/diag_one.png": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "750d0dd44661d9da1f851a38ca78b343bae45678d9563c771ff3e263d7cce0ea",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/preview/food_cooked_preview.png": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "b2316b43be25de6f89cbd1c679ef9a63979e8c221102100738c08cc277b2754a",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/preview/food_tonics_preview.png": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "00e172d216ec5ccdc80c0f166d5277ff1f4d7871d9ba92082c3772af253e7b38",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/food/preview/food_vessels_preview.png": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "46a5f80d73d62d095d1bb99283522a8dbf819695b33a955b608379cf2b9c3aec",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "assets/gatherables": {
       "agent": "wick20",
@@ -308,6 +403,13 @@
       "agent": "ivy8",
       "at": "2026-08-18T14:17:26+00:00",
       "task": "2.1d"
+    },
+    "assets/source/food_set.blend": {
+      "agent": "slate17",
+      "at": "2026-08-19T08:00:11+00:00",
+      "hash": "c414bbd8acab25fc4b0bb7f715f4e58e345e1cad4136b2362586b9804f6797e8",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "assets/source/playtest_hollow.blend": {
       "agent": "tine18",
@@ -1544,11 +1646,11 @@
       "token": null
     },
     "docs/ASSET_TRACKER.md": {
-      "agent": "wick20",
-      "at": "2026-08-19T07:08:14+00:00",
-      "hash": "8dd82a9ba40922dff2190b2b471ddd64274d47bc8c220fe264fdd72111964515",
+      "agent": "slate17",
+      "at": "2026-08-19T07:59:58+00:00",
+      "hash": "078be020e48d06e380cd9ed55503b1d66c828b196fb34d418ea18b283aea5d35",
       "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "docs/COMMANDS.md": {
       "agent": "lp",
@@ -1565,18 +1667,18 @@
       "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "lm",
-      "at": "2026-08-19T06:46:55+00:00",
-      "hash": "586cd5bf5a52e857c3aa39a0bc89918928885fa7ad376f9d19db38129f6d4e93",
-      "task": "F-183",
-      "token": null
+      "agent": "slate17",
+      "at": "2026-08-19T07:59:58+00:00",
+      "hash": "a4c7e4553ab9764a3b01d34365cf544f4d309bcd8291a9bb5cb6fb53cf0ef742",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "docs/FINDINGS.md": {
-      "agent": "bram1",
-      "at": "2026-08-19T07:32:38+00:00",
-      "hash": "45deed331f00b0e53596956f73d6533787aa0a96902fccf89acc0a898ff6551f",
-      "task": "F-202",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+      "agent": "slate17",
+      "at": "2026-08-19T07:59:58+00:00",
+      "hash": "80a6c16868ad77ff341df371ffe83e28ab71cb82bd83d279525b81b3259fc01b",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -2161,6 +2263,13 @@
       "at": "2026-08-18T14:17:26+00:00",
       "task": "2.1d"
     },
+    "tools/blender/build_food_set.py": {
+      "agent": "slate17",
+      "at": "2026-08-19T07:59:58+00:00",
+      "hash": "b8997540f9368cdd83f904f8f10cb9ed48ba7d65d6f04d07efd9756a30d516be",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "wick20",
       "at": "2026-08-19T07:08:14+00:00",
@@ -2181,11 +2290,11 @@
       "task": "F-092"
     },
     "tools/blender/mire_art.py": {
-      "agent": "wick20",
-      "at": "2026-08-19T07:08:14+00:00",
-      "hash": "0a1efc92a81045a355a4c69c43568005743d1e3ca960f61b71b8da70b8532c06",
+      "agent": "slate17",
+      "at": "2026-08-19T07:59:58+00:00",
+      "hash": "e340a2f02297c7838e17ba6a57cfb3efb476def7bb39ae7719d0d9c1ba385e7c",
       "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "tools/blender/render_item_icons.py": {
       "agent": "lp",
@@ -2479,6 +2588,20 @@
       "at": "2026-08-18T21:40:25+00:00",
       "hash": "35c05db43290598337c9c45ebc4b3a85d82c2c619f6dd930cfdfae204f8bdc4e",
       "task": "F-122"
+    },
+    "tools/food_check.gd": {
+      "agent": "slate17",
+      "at": "2026-08-19T07:59:58+00:00",
+      "hash": "2d31880bb3e1d3dbf52c7c4a05bf853009d8a4a5814de88d4420f35fcba38d98",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "tools/food_check.gd.uid": {
+      "agent": "slate17",
+      "at": "2026-08-19T07:59:58+00:00",
+      "hash": "afa9c31e55b5a0293b826bfd965b914c5a685076167906b30e8c4f4307b2f3f2",
+      "task": "2.1d",
+      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
     },
     "tools/frame_cost_check.gd": {
       "agent": "nettle12",
@@ -3495,7 +3618,7 @@
     "2.1d": {
       "est": "4",
       "milestone": "M2",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T0",
       "title": "Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close"
     },
@@ -6013,6 +6136,13 @@
       "status": "done",
       "tier": "F",
       "title": "A drained saturate chain exits immediately, so a lane goes idle in the gap before the next order lands"
+    },
+    "F-203": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "AuthoredWorld's F-187 chunk merge excludes sway- and emitter-bearing props \u2014 a second attempt needs per-vertex height encoding or per-asset placement metadata inside a merged mesh"
     }
   },
   "version": 1

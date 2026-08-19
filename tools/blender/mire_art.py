@@ -182,6 +182,20 @@ PALETTE: dict[str, Swatch] = {
     "clay": Swatch("#A57E5B", 0.68, note="riverbank clay; less rough than dirt because it is damp"),
     "peat": Swatch("#4C3A2B", 0.94, note="cut wet peat; darker and browner than charred wood"),
     "resin": Swatch("#B0611A", 0.38, note="amber sap; deliberately deeper than wood_cut (#DDAA65), which it is always seen against — the first value was #CE8A33 and the sap read as more cut wood"),
+    # Food and tonics (A-012). A tonic is read by the colour of what is in the
+    # flask, so these four have to be separable at inventory-icon size, in fog,
+    # and next to each other: warm red, cold pale, amber, and the one that is
+    # obviously wrong. None of them may drift toward the reserved Mire purple or
+    # Ward teal — a healing draught must never read as corruption.
+    "tonic_red": Swatch("#C4384A", 0.30, note="healing draught; warmer and lighter than blood (#7A1E1E), which is a wound, not a cure"),
+    "tonic_pale": Swatch("#BFD8D2", 0.26, note="Pale Draught, the Blight cleanse; desaturated toward white so it never reads as Ward teal"),
+    "tonic_amber": Swatch("#D99B2E", 0.28, note="stamina tonic; distinct from honey (#C67C24) by being yellower, because both are seen in glass"),
+    "sludge": Swatch("#6E7A3C", 0.52, note="Suspicious Sludge; the one food colour allowed to look wrong. Olive, not green — a green would read as healthy"),
+    "broth": Swatch("#9A6432", 0.34, note="stew in a bowl; low roughness is the surface, and it sits between cooked meat and clay so a bowl reads as full"),
+    "bread_crust": Swatch("#A76A34", 0.86, note="baked crust; browner than wood_cut so a loaf is never mistaken for a cut end"),
+    "bread_crumb": Swatch("#E2C88F", 0.90, note="the open crumb of a torn loaf"),
+    "fish_scale": Swatch("#7E93A0", 0.52, note="bog fish flank; a cold grey-blue that is the only cool NATURAL colour in the food kit"),
+    "fish_belly": Swatch("#D9D3C0", 0.60, note="pale fish underside and the flesh a cooked fish shows"),
     # -- organic / creature -------------------------------------------------
     "flesh_raw": Swatch("#B85757", 0.82, note="raw meat; muted, never fire-engine red"),
     "flesh_fat": Swatch("#F9D1C4", 0.84),

@@ -69,6 +69,42 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-204 · A Blender preview that moves assets between renders draws the layout it had at the first render
+
+**Area:** art-pipeline · **Severity:** medium · **Found:** 2026-08-19 by slate17 during 2.1d (A-012)
+
+Every asset generator in `tools/blender/` renders its contact sheets the same way: show a subset,
+move those assets into a row, aim the camera, `bpy.ops.render.render()`, repeat. In a `--background`
+process that does not work. The **first** render fixes the layout, and every later render draws the
+assets where they were then — so a sheet frames empty ground while the objects it wanted are
+somewhere else in the world.
+
+It does not look like a framing bug. It looks like an asset failing to build: A-012's contact sheet
+came out with one of five tiles simply blank. The asset was present, `hide_render=False`,
+`visible_get()` true, in a linked collection, carrying its 109 polygons, with `matrix_world` at
+exactly the requested position — every probe said it was there, and it did not render. It also
+renders perfectly when it is the only asset on the sheet, which is what makes this expensive: the
+obvious next step is to go looking for what is wrong with that one asset, and nothing is.
+
+**What does and does not take effect between renders in one background process:**
+
+| Change | Applies to the next render |
+|---|---|
+| `camera.location` / `ortho_scale` | yes |
+| `object.hide_render` | yes |
+| `object.location` on an existing object | **no** |
+| an object created after the first render | **no** |
+| `view_layer.update()`, `scene.frame_set()`, linked duplicates, a fresh scene via `temp_override` | did not help |
+
+**The fix that works: place assets once and never move them.** A-012 authors a `LAYOUT` table — each
+asset gets an `(x, row_y)` at creation — and a sheet is a camera aimed at a row with the other rows
+hidden. Nothing moves after the first evaluation, so there is nothing stale to flush.
+
+**`build_gatherable_plants.py` (A-011) and `build_flora_set.py` have the same shape** — they
+reposition roots per sheet and re-render — so their committed preview sheets may not show what their
+code says they show. Worth a look before anyone judges those kits from their sheets; the assets
+themselves are unaffected, because every generator's *contract* measures geometry rather than pixels.
+
 ### F-161 · Task 5.3's three new ranged-combat RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-18 by lp during 5.3
