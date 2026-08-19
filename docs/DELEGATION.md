@@ -266,9 +266,8 @@ EventBus.subscribe_boss_defeated(listener)        # (boss_id: StringName, world_
 All three fire from a REPLICATED property's own setter (`Boss.phase`'s setter for the first two,
 `Boss._play_state_animation()` — itself already invoked from `Enemy.state`'s replicated setter — for
 the third), never from a host-only guard. This is the D-107/D-108 fix pattern applied from the start;
-`Wellspring.capped`'s setter now applies it too (F-168 fixed it), and `docs/FINDINGS.md` F-181 is the
-standing example of a system (`Wellspring._finish_recorruption()`'s `emit_wellspring_recorrupted`)
-that still has the host-only bug this pattern avoids.
+`Wellspring.capped`'s setter now applies it on both its transitions (F-168 fixed `wellspring_capped`
+on false→true, F-181 fixed the identical bug on `wellspring_recorrupted`'s true→false transition).
 
 **`BossMusicDirector` (new autoload, client-local) and `BossHealthHud` (new autoload, client-local,
 `ui/hud/boss_health_hud.gd`)** subscribe to the three events / poll the `bosses` group respectively —
@@ -670,11 +669,12 @@ a new `EventBus.subscribe_run_wiped(cycle, world_position)` counterpart banks
   test (confirmed with `extraction_check.gd`) reaches this autoload exactly like the shipped game
   would — it banked 116 real Salvage into a developer's actual save file before the guard existed.
   6.9's own persistence needs the identical guard shape, not a rediscovery of the bug.
-- **Fixed (F-168):** `Wellspring.capped`'s setter now fires `wellspring_capped` on the false->true
-  transition, same as `_finish_cap()` used to do from its host-only body — so the milestone bonus
-  above no longer undercounts on non-host peers. `Wellspring._finish_recorruption()`'s
-  `emit_wellspring_recorrupted` still has the old host-only shape (F-181), but nothing subscribes to
-  it yet, so there is no live undercount from that half. The Cycle-curve half of the reward was
+- **Fixed (F-168, F-181):** `Wellspring.capped`'s setter now fires `wellspring_capped` on the
+  false->true transition and `wellspring_recorrupted` on the true->false transition, same as
+  `_finish_cap()`/`_finish_recorruption()` used to do from their host-only bodies — so the milestone
+  bonus above no longer undercounts on non-host peers. Nothing subscribes to `wellspring_recorrupted`
+  yet, so F-181 had no live undercount to fix (it closes the gap before any future subscriber, e.g. a
+  recorruption Salvage penalty, would have inherited it). The Cycle-curve half of the reward was
   never affected (`CycleService.current_cycle()` already replicates correctly via `WorldDeltaLog`).
 
 Verified: `tools/salvage_check.gd` (24 assertions, 0 failures) — curve, milestone bonus, both

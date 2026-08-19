@@ -71,12 +71,15 @@ const SYNC_NODE_NAME: StringName = &"WellspringSync"
 const VISUAL_NODE_NAME: StringName = &"WellspringVisual"
 
 ## Replicated. Setter keeps the visual correct when a network delta arrives on a client, and fires
-## `wellspring_capped` on the false->true transition rather than `_finish_cap()` doing it directly
-## (F-168, same fix `extraction_ship.gd`'s `departed` setter already applies): `EventBus` is a
-## per-process static, so a host-only emit call never reaches a client's own local bus, and
-## `SalvageService`'s milestone bonus needs the event on EVERY peer. Driving the emit off the setter
-## means it fires identically whether this process just set `capped = true` itself (the host) or
-## received it over the wire (a client, via `_sync`).
+## `wellspring_capped`/`wellspring_recorrupted` on the false->true / true->false transitions rather
+## than `_finish_cap()`/`_finish_recorruption()` doing it directly (F-168 fixed the former; F-181
+## applied the identical fix to the latter, which had the same bug — `_finish_recorruption()` is only
+## ever reached via `host_tick()`'s `_owns_mutation()` guard, so its direct emit call never ran on a
+## client at all). `EventBus` is a per-process static, so a host-only emit call never reaches a
+## client's own local bus, and `SalvageService`'s milestone bonus needs both events on EVERY peer.
+## Driving the emit off the setter means it fires identically whether this process just set `capped`
+## itself (the host) or received it over the wire (a client, via `_sync`) — `capped` is one of the
+## replicated properties in `_build_synchronizer()`, so both paths run this same setter.
 var capped: bool = false:
 	set(value):
 		if capped == value:
@@ -85,6 +88,8 @@ var capped: bool = false:
 		_maybe_refresh_visual()
 		if capped:
 			EVENT_BUS.emit_wellspring_capped(name, global_position)
+		else:
+			EVENT_BUS.emit_wellspring_recorrupted(name, global_position)
 
 ## Replicated. Presentation reads this to show/hide the progress prompt.
 var channeling: bool = false
@@ -260,7 +265,6 @@ func _finish_recorruption() -> void:
 	capped = false
 	recorruption_sec = 0.0
 	set_process(false)
-	EVENT_BUS.emit_wellspring_recorrupted(name, global_position)
 
 
 func _spawn_defense_wave() -> void:

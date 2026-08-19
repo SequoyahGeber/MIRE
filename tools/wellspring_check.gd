@@ -13,6 +13,9 @@ extends SceneTree
 ##      so setting `capped` the way a client's MultiplayerSynchronizer would (a bare property write,
 ##      never through `_finish_cap()`) still fires the event. Before the fix this branch caught
 ##      nothing, because the emit lived only in the host-only ritual path.
+##   4. F-181: the identical bug existed on the true->false transition — `wellspring_recorrupted` fired
+##      from `_finish_recorruption()`'s host-only body, so a bare `capped = false` write (the shape a
+##      client's synchronizer delta takes) fired nothing. Same fix, same setter, symmetric proof.
 ##
 ##   .agent/bin/agent godot --script tools/wellspring_check.gd
 
@@ -22,6 +25,7 @@ const EVENT_BUS := preload("res://core/events/event_bus.gd")
 var failures: int = 0
 var world: Node
 var _capped_events: Array = []
+var _recorrupted_events: Array = []
 
 
 func _initialize() -> void:
@@ -37,6 +41,7 @@ func _run() -> void:
 	await _check_marker_consumption()
 	_check_ritual_fsm()
 	_check_capped_event_via_replication()
+	_check_recorrupted_event_via_replication()
 
 	print("\nWELLSPRING_CHECK failures=%d" % failures)
 	finish()
@@ -195,6 +200,39 @@ func _check_capped_event_via_replication() -> void:
 
 func _on_wellspring_capped(wellspring_name: StringName, world_position: Vector3) -> void:
 	_capped_events.append({"name": String(wellspring_name), "position": world_position})
+
+
+## F-181: a non-host peer never calls `_finish_recorruption()` — it only ever learns `capped` went
+## false by a `MultiplayerSynchronizer` delta writing the property directly. Reproduce that shape
+## exactly (bare assignment, no clock, no host_tick) and prove the event still fires — before the fix
+## it did not, because the emit lived in `_finish_recorruption()`'s host-only body instead of
+## `capped`'s setter.
+func _check_recorrupted_event_via_replication() -> void:
+	print("\n== F-181: capped=false fires wellspring_recorrupted even set outside the host clock path ==")
+	EVENT_BUS.subscribe_wellspring_recorrupted(_on_wellspring_recorrupted)
+	_recorrupted_events.clear()
+
+	var wellspring := WELLSPRING_SCRIPT.new() as Node3D
+	wellspring.name = "CheckWellspringRecorruptedReplicated"
+	root.add_child(wellspring)
+
+	wellspring.set("capped", true)
+	wellspring.set("capped", false)
+	check(_recorrupted_events.size() == 1,
+		"a bare 'capped = false' write (the shape a client's synchronizer delta takes) fires the event")
+	if not _recorrupted_events.is_empty():
+		check(String(_recorrupted_events[0].get("name", "")) == "CheckWellspringRecorruptedReplicated",
+			"the recorrupted event names the right Wellspring")
+
+	wellspring.set("capped", false)
+	check(_recorrupted_events.size() == 1, "re-setting capped to the same value does not re-fire the event")
+
+	EVENT_BUS.unsubscribe_wellspring_recorrupted(_on_wellspring_recorrupted)
+	wellspring.queue_free()
+
+
+func _on_wellspring_recorrupted(wellspring_name: StringName, world_position: Vector3) -> void:
+	_recorrupted_events.append({"name": String(wellspring_name), "position": world_position})
 
 
 func check(condition: bool, description: String) -> void:

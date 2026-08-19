@@ -798,35 +798,6 @@ their own `## N (task X)` comment rather than collapsing into a single bump.
 
 ---
 
-### F-181 · `Wellspring._finish_recorruption()` has the same host-only-guard `EventBus` emit bug F-168 fixed for `wellspring_capped` — `wellspring_recorrupted` still only fires on the host
-
-**Area:** systems/wellspring · netcode · **Severity:** low · **Found:** 2026-08-18 by lm during F-168
-
-F-168 moved `EVENT_BUS.emit_wellspring_capped()` out of `_finish_cap()`'s host-only body and into
-`capped`'s setter, because `EventBus` is a per-process static and a host-only emit never reaches a
-client's own local bus. `_finish_recorruption()` (`systems/wellspring/wellspring.gd`) has the
-identical shape: `EVENT_BUS.emit_wellspring_recorrupted(name, global_position)` sits directly in a
-body only `host_tick()` calls, itself gated on `_owns_mutation()` at the top — so a non-host peer's
-process never runs this line even though its own `capped` correctly replicates back to `false`.
-
-**Why not fixed alongside F-168:** nothing subscribes to `wellspring_recorrupted` yet.
-`core/events/event_bus.gd`'s own header comments call it a seam for a future system (same
-"future systems hook into this" role D-092 already gives `wellspring_capped`), and grepping the
-codebase for `subscribe_wellspring_recorrupted` today only turns up `event_bus.gd` itself. There is
-no live undercount to fix — this is a landmine for whichever future system (MireGrid's per-peer
-spread-rate bookkeeping is the obvious future consumer per `wellspring.gd`'s own header) is the
-first to subscribe on a client, not a bug with a present-day symptom.
-
-**What closes this:** the exact same move, applied to `capped`'s setter's true→false transition
-(guard on `capped == false` after being `true`, since `capped`'s setter already fires
-`_maybe_refresh_visual()` on every change and needs the emit gated the same way `wellspring_capped`
-is gated on false→true). Re-run `tools/wellspring_recorruption_check.gd` — it already asserts
-`EventBus.emit_wellspring_recorrupted fired exactly once`, so the existing coverage should catch a
-regression here for free once whoever fixes this adds a replication-shaped case the way F-168's
-`tools/wellspring_check.gd` change did for `wellspring_capped`.
-
----
-
 ### F-182 · tools/unlock_check.gd's corrupt-save test provokes two engine ERROR lines with no EXPECTED_ERROR_PATTERNS declaration
 
 **Area:** verification · **Severity:** low · **Found:** 2026-08-19 by lm
@@ -904,6 +875,41 @@ finding) already uses correctly.
 ---
 
 ## Resolved
+
+### F-181 · `Wellspring._finish_recorruption()` has the same host-only-guard `EventBus` emit bug F-168 fixed for `wellspring_capped` — `wellspring_recorrupted` still only fires on the host — **fixed**
+
+**Area:** systems/wellspring · netcode · **Severity:** low · **Found:** 2026-08-18 by lm during F-168
+
+F-168 moved `EVENT_BUS.emit_wellspring_capped()` out of `_finish_cap()`'s host-only body and into
+`capped`'s setter, because `EventBus` is a per-process static and a host-only emit never reaches a
+client's own local bus. `_finish_recorruption()` (`systems/wellspring/wellspring.gd`) had the
+identical shape: `EVENT_BUS.emit_wellspring_recorrupted(name, global_position)` sat directly in a
+body only `host_tick()` calls, itself gated on `_owns_mutation()` at the top — so a non-host peer's
+process never ran this line even though its own `capped` correctly replicated back to `false`.
+
+Confirmed still present before touching anything: `tools/wellspring_recorruption_check.gd` passed
+(`failures=0`) at HEAD, but that check runs single-process with no transport active, so
+`_owns_mutation()` is unconditionally true and cannot distinguish "fires on every peer" from "fires
+because this process happens to be host." Reading `_finish_recorruption()` directly confirmed the bug
+was real.
+
+**Fixed:** moved `EVENT_BUS.emit_wellspring_recorrupted(name, global_position)` out of
+`_finish_recorruption()`'s body and into `capped`'s setter's `else` branch (`capped` only ever
+transitions to `false` from `_finish_recorruption()` — verified every assignment site in the file — so
+no extra guard was needed). The setter now fires `wellspring_recorrupted` identically whether this
+process just set `capped = false` itself (the host) or received it over the wire (a client, via
+`_sync`). Nothing subscribes to `wellspring_recorrupted` yet, so there was no live undercount to fix —
+this closes the gap before any future subscriber inherits it, the same role F-168 played for
+`wellspring_capped`.
+
+**Verified:** `agent godot --script tools/wellspring_check.gd` — added
+`_check_recorrupted_event_via_replication()`, the symmetric proof `_check_capped_event_via_replication()`
+already gave F-168 (a bare `capped = false` write with no clock and no `host_tick()` in the call stack
+fires the event exactly once and names the right Wellspring). `WELLSPRING_CHECK failures=0`. Re-ran
+`tools/wellspring_recorruption_check.gd` (`failures=0`, host-side behavior unchanged) and a full
+headless boot (`agent godot --quit-after 60`, clean, no new errors).
+
+---
 
 ### F-185 · Fixing one instance of a bug class without sweeping for siblings is this project's most reliable source of new findings — **fixed**
 

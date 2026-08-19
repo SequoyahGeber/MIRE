@@ -1546,9 +1546,9 @@
     },
     "docs/ARCHITECTURE.md": {
       "agent": "lm",
-      "at": "2026-08-19T05:46:33+00:00",
-      "hash": "7534f033988cf797deaae3ddccd39f351f2b7bc66a77458f3d3cf3b7d38a8c1b",
-      "task": "F-173",
+      "at": "2026-08-19T06:22:41+00:00",
+      "hash": "10fa127f398787e58ff6f1b40e4c575d1dcba7fc1019c96aae9c79e0c44495d2",
+      "task": "F-181",
       "token": null
     },
     "docs/ASSET_TRACKER.md": {
@@ -1572,18 +1572,18 @@
       "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "lp",
-      "at": "2026-08-19T06:00:05+00:00",
-      "hash": "69177d57b500c589aaf6de10dc1f34f43399a979d1ec07ea0f5f3c7df0ff49e1",
-      "task": "F-154",
+      "agent": "lm",
+      "at": "2026-08-19T06:22:41+00:00",
+      "hash": "9c60f0ce8467ce2a35ac8e209883ae9ba80faaef1b1da0dbdb53937e4d26666c",
+      "task": "F-181",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "bram1",
-      "at": "2026-08-19T06:18:28+00:00",
-      "hash": "7aea5dc15dc287dc451099ab3e344bd46cc487fe3e74451bbff08aac8333b7b7",
-      "task": "F-185",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+      "agent": "lm",
+      "at": "2026-08-19T06:22:41+00:00",
+      "hash": "927074afc3335761dbd66578212e7496a4c2e6bb91e7154780f5bfff6035134f",
+      "task": "F-181",
+      "token": null
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -1608,10 +1608,10 @@
       "task": "F-036"
     },
     "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T06:00:05+00:00",
-      "hash": "bbf388b935514c8cf9dfbfe034633ff545b3331e4bd19c0192e3959de1756e70",
-      "task": "F-154",
+      "agent": "lm",
+      "at": "2026-08-19T06:22:41+00:00",
+      "hash": "beb9b02b99a223f55750748fd4dcb89edb011703721bba09361d3973bebbb8d9",
+      "task": "F-181",
       "token": null
     },
     "entities/player/player.tscn": {
@@ -1994,9 +1994,9 @@
     },
     "systems/wellspring/wellspring.gd": {
       "agent": "lm",
-      "at": "2026-08-19T05:30:24+00:00",
-      "hash": "042935863968478c54b147ccc0484ea7bc78ed9f0cc9f075ffa8b9080d0fa804",
-      "task": "F-168",
+      "at": "2026-08-19T06:22:41+00:00",
+      "hash": "1a355c67e08d2ae88d05f2ac6d86ab6693a0c2afa567a9c0e732cd3978faa670",
+      "task": "F-181",
       "token": null
     },
     "tools/_debug_door_swing.gd": {
@@ -2758,9 +2758,9 @@
     },
     "tools/wellspring_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T05:30:24+00:00",
-      "hash": "8313851e43123b00663c2058b029d9371b8a5d1fa4432a76775688a135e113f3",
-      "task": "F-168",
+      "at": "2026-08-19T06:22:41+00:00",
+      "hash": "b3557cc66bc75b89a2b0bad8291a27995b2421670cce438de9efaf1b160af4ce",
+      "task": "F-181",
       "token": null
     },
     "tools/wellspring_hud_check.gd": {
@@ -5662,9 +5662,11 @@
       "title": "construction_check.gd's door-swing check now finds real strap-vs-frame overlaps at 0 degrees, previously hidden by F-148's crash"
     },
     "F-181": {
+      "done_at": "2026-08-19T06:22:41+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`Wellspring._finish_recorruption()` has the same host-only-guard `EventBus` emit bug F-168 fixed for `wellspring_capped` \u2014 `wellspring_recorrupted` still only fires on the host"
     },

@@ -4312,3 +4312,18 @@ Work-order template now requires a sibling sweep before close-out, citing F-059/
 Files: `.agent/bin/agent`, `docs/FINDINGS.md`
 
 Commit at time of writing: `6f8e55e`
+
+---
+
+### DONE · F-181 · lm · 2026-08-19T06:22:41+00:00
+
+**`Wellspring._finish_recorruption()` has the same host-only-guard `EventBus` emit bug F-168 fixed for `wellspring_capped` — `wellspring_recorrupted` still only fires on the host**
+
+Fixed: moved EVENT_BUS.emit_wellspring_recorrupted() out of _finish_recorruption()'s host-only body into capped's setter (else branch, symmetric to F-168's true-branch fix for wellspring_capped) — capped only ever goes true->false via that one call site. Added tools/wellspring_check.gd::_check_recorrupted_event_via_replication() (bare capped=false write, no clock, no host_tick in the call stack, fires the event once and names the right Wellspring). Verified: agent godot --script tools/wellspring_check.gd -> WELLSPRING_CHECK failures=0 (new F-181 section passes); agent godot --script tools/wellspring_recorruption_check.gd -> failures=0 (host-side behavior unchanged); full boot agent godot --quit-after 60 clean. Wrote docs/SPECS.md F-181 block (none existed), moved finding to docs/FINDINGS.md Resolved, updated docs/DELEGATION.md and docs/ARCHITECTURE.md's stale F-181-still-open references.
+
+Notes along the way:
+- Confirmed the finding was still real despite wellspring_recorruption_check.gd passing at HEAD: that check is single-process with no transport, so _owns_mutation() is always true and it can't distinguish host-only emit from every-peer emit. Fixed by moving emit_wellspring_recorrupted() from _finish_recorruption()'s host-only body into capped's setter (else branch of the existing F-168 pattern) — capped only ever transitions false<-true from that one call site, verified via grep. Added the symmetric replication-shaped test to wellspring_check.gd.
+
+Files: `systems/wellspring/wellspring.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/ARCHITECTURE.md`, `tools/wellspring_check.gd`
+
+Commit at time of writing: `92ddbdd`
