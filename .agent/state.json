@@ -30,12 +30,6 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
-    "tools/audio/audio_check.py": {
-      "agent": "lm",
-      "at": "2026-08-19T06:48:07+00:00",
-      "task": "F-184",
-      "token": null
-    },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "wick20",
       "at": "2026-08-19T06:42:56+00:00",
@@ -72,15 +66,6 @@
       "notes": [],
       "started": "2026-08-19T06:47:08+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
-    },
-    "F-184": {
-      "agent": "lm",
-      "files": [
-        "tools/audio/audio_check.py"
-      ],
-      "notes": [],
-      "started": "2026-08-19T06:48:07+00:00",
-      "token": null
     }
   },
   "recent": {
@@ -2073,9 +2058,11 @@
       "task": "3.9"
     },
     "tools/audio/audio_check.py": {
-      "agent": "tine18",
-      "at": "2026-08-18T18:10:49+00:00",
-      "task": "7.2"
+      "agent": "lm",
+      "at": "2026-08-19T06:49:28+00:00",
+      "hash": "ba7a007a54f22175513991e81913a564d3e1bb850c10c04ac8f17316e22b0d4e",
+      "task": "F-184",
+      "token": null
     },
     "tools/audio/mire_audio.py": {
       "agent": "tine18",
@@ -5787,9 +5774,11 @@
       "title": "Wellspring caps and boss kills never grant a Chest \u2014 `wellspring`/`boss` tier loot tables are authored and reachable, but nothing ever rolls them"
     },
     "F-184": {
+      "done_at": "2026-08-19T06:49:28+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`tools/audio/audio_check.py`'s exit code is inverted \u2014 it exits 0 when checks FAIL and 1 when they PASS"
     },

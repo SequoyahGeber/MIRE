@@ -4417,3 +4417,15 @@ Premise falsified: all three machines exist and were used on 2026-08-18. 0.10 do
 Files: `docs/ROADMAP.md`, `docs/FINDINGS.md`
 
 Commit at time of writing: `cc8c917`
+
+---
+
+### DONE · F-184 · lm · 2026-08-19T06:49:28+00:00
+
+**`tools/audio/audio_check.py`'s exit code is inverted — it exits 0 when checks FAIL and 1 when they PASS**
+
+Completed.
+
+Files: `tools/audio/audio_check.py`
+
+Commit at time of writing: `3870c2b`

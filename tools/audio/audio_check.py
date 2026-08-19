@@ -119,7 +119,7 @@ def main() -> None:
                 check(False, f"{track}.wav present in --build-dir")
 
     print(f"\nAUDIO_CHECK failures={failures}")
-    sys.exit(0 if failures else 1)
+    sys.exit(1 if failures else 0)
 
 
 if __name__ == "__main__":
