@@ -3102,3 +3102,28 @@ of "accessibility basics" is exactly the scope-creep AGENTS.md warns against ("a
 surrounding cleanup"). **Would change my mind:** a specific accessibility ask from Sequoyah's own
 playtesting, or a future task that already owns the relevant system (a dialogue/audio-cue task owning
 subtitles, a UI task owning palette).
+
+---
+
+### D-115 · 2026-08-18 · Task 7.7 ("Performance pass … LOD tuning, draw calls") ships enemy-visual LOD, not props/draw-call batching — that surface belongs to F-144
+
+`agent brief 7.7` showed F-144 ("Props have no LOD and no cross-asset batching") already 6h in flight
+under a different lane, holding `autoload/graphics_quality.gd`, `core/render/mesh_merge.gd`,
+`systems/harvesting/harvestable.gd`, `world/environment/draw_policy.gd`,
+`world/gen/authored_world.gd`, and `world/gen/undergrowth.gd` — every file the "LOD tuning, draw
+calls" half of 7.7's title would otherwise touch, and F-144's own finding text is close to verbatim
+the same headline ("no mesh LOD anywhere", "cross-asset batching"). AGENTS.md is explicit that two
+agents in one file is the exact failure this project's claim system exists to prevent, and this work
+order's own header forbids ending a turn to wait on another lane's claim. So rather than block on
+F-144 or duplicate its scope in parallel (guaranteed merge pain on the same handful of files, decided
+by whoever ships second), 7.7 was narrowed to the one performance surface F-144's fix cannot reach at
+all: **enemies**, which are independently-animated per-instance meshes, not static geometry that can
+be merged into F-144's batched-mesh approach. `Enemy._build_visual()` now sets a visibility-range
+self-fade (90 m, 8 m margin) on every enemy mesh — see `docs/SPECS.md` §7.7 and F-174 for the full
+writeup and the profiling numbers behind the 90 m choice.
+
+**Would change my mind:** nothing about this split needs revisiting once F-144 ships — the two tasks
+were always disjoint (mergeable static geometry vs. per-instance animated meshes), this decision just
+records that they were worked as two separate claims rather than one lane blocking on the other. A
+future perf pass that wants a SINGLE combined write-up of "everything with a visibility range now"
+should read both F-144's resolution and `docs/SPECS.md` §7.7 rather than re-deriving either.

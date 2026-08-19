@@ -4544,6 +4544,30 @@ changing, so failing assertions there tell you exactly what moved.
 Full writeup: `docs/FINDINGS.md` F-126 (Resolved) and F-157 (Open), `docs/DECISIONS.md` D-098,
 `docs/SPECS.md` F-126.
 
+### 2026-08-18 — enemy render LOD (task 7.7): a visibility-range self-fade, `Enemy.VISIBILITY_RANGE_END_M`/`VISIBILITY_RANGE_FADE_MARGIN_M`
+
+`systems/enemies/enemy.gd`'s `_build_visual()` now sets `visibility_range_end = 90.0`,
+`visibility_range_end_margin = 8.0`, and `visibility_range_fade_mode =
+GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF` on every `MeshInstance3D` it finds under an enemy's
+instantiated visual — both constants live on `Enemy` (`VISIBILITY_RANGE_END_M`,
+`VISIBILITY_RANGE_FADE_MARGIN_M`) as the single place to retune them. This is deliberately separate
+from F-144's prop/harvestable/undergrowth LOD+batching work: an enemy's mesh is per-instance and
+independently animated, so it can never be merged the way F-144 merges static props — visibility-range
+fade is the only lever that applies here. D-115/F-174/`docs/SPECS.md` §7.7 have the full reasoning
+and the 90 m choice's justification against `EnemyDef.deaggro_radius_m`.
+
+**For whoever tunes graphics presets next:** this is currently a fixed constant, not wired into
+`GraphicsQuality`'s low/medium/high presets the way undergrowth density and shadow distance are
+(`autoload/graphics_quality.gd`, held by F-144 for the whole of this task's session so it could not be
+touched here). A preset-aware enemy LOD range (tighter on `low`, per D-055's pattern) is a natural
+follow-up once F-144 releases that file — there is no finding number for this because it is a nice-to-
+have, not a gap, but the seam (`Enemy.VISIBILITY_RANGE_END_M`) is public and ready for a setter.
+
+**Verify:** `tools/enemy_lod_check.gd` (new) spawns every enemy def in `content/enemies/` through the
+real `EnemyWorld.host_spawn()` and asserts the three properties above on every mesh found. `.agent/
+bin/agent godot --script tools/enemy_lod_check.gd` → 0 failures. `tools/wave_spawner_check.gd`
+(exercises the same spawn/despawn path heavily) stays green — no regression.
+
 ---
 
 > **Historical documents — every task prompt from here down.** They predate D-021 (agents register

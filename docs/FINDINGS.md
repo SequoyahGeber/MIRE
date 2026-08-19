@@ -1143,6 +1143,43 @@ gating is a natural follow-up once that pattern exists.
 
 ---
 
+### F-174 · No dev machine can stand in for "mid-range" — `tools/perf_probe.gd`'s baseline is only ever measured on the fastest hardware in the project
+
+**Area:** perf · **Severity:** low · **Found:** 2026-08-18 by lm during 7.7
+
+Task 7.7 ("Performance pass … target 60fps mid-range") re-ran `tools/perf_probe.gd`
+(`.agent/bin/agent godot --display-driver macos --script tools/perf_probe.gd`) to get a current
+baseline before deciding where to spend the task. Every config it printed for the shipped Hollowmere
+level was already comfortably above 60fps at 1x resolution scale on this machine — "0 as shipped
+(vsync ON)" alone reads 120fps, and every other toggle in the sweep (undergrowth hidden, shadows off,
+render scale 50%, `gfx` presets) only goes up from there:
+
+```
+display: (3024, 1898) px backing store | screen scale 2.0x | refresh 120 Hz
+  0 as shipped (vsync ON)         120 fps  med   7.17 ms  p95   9.86 ms
+  1 vsync OFF (baseline)          140 fps  med   6.99 ms  p95   8.69 ms
+  11 gfx preset low               285 fps  med   3.57 ms  p95   4.99 ms
+```
+
+This machine is an Apple M5 Pro — the fastest hardware anyone develops MIRE on, not the worst.
+`docs/DECISIONS.md` (referencing F-090) already names "Sequoyah['s machine]" as the actual worst
+computer this game must run well on, and F-006 already records that this project has no Windows or
+Linux machine at all. Put together: nobody has ever run `perf_probe.gd` against hardware anywhere
+near the "mid-range" the roadmap's own task title names, on any platform. Every perf decision made so
+far (F-090's frame-budget audit, F-095, F-098's dynamic resolution, F-144's LOD/batching work) is
+correct in relative terms — a toggle that saves 1.5ms here will save roughly proportional time on
+slower hardware too — but the absolute "hits 60fps on mid-range" claim in the roadmap has never
+actually been checked against anything but the fastest box in the project.
+
+**Not fixed here** — there is no second machine to fix it with. Filed so the gap is visible rather
+than silently assumed away by every perf task (including this one) that runs `perf_probe.gd`,
+sees a number well above 60, and calls it done. **What closes this:** the same thing that closes
+F-006 — Sequoyah (or a CI runner) with access to actual mid-range/worst-case hardware runs
+`perf_probe.gd` there at least once, so the roadmap's "target 60fps mid-range" line has ever been
+checked against anything but relative deltas on the fastest machine in the project.
+
+---
+
 ## Resolved
 
 ### F-160 · A transient API error kills a saturate chain, and nothing restarts it — the lane sits idle until a human notices — **fixed**
