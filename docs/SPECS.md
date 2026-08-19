@@ -6357,6 +6357,43 @@ F-220 was the last of the four.
 
 ---
 
+## F-213 · `core/net/rpc_manifest.gd`'s FNV-1a seed literal overflows signed 64-bit int, erroring on every scan even though the check itself stays deterministic
+
+**Claim:** `core/net/rpc_manifest.gd`. Network authority: none — this is a source scanner and a
+constant, same row the file's own header already states.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The fix:** `RpcManifest.signature()` opened with `var h: int = 0xCBF29CE484222325`, FNV-1a's
+standard 64-bit offset basis. GDScript's `int` is signed 64-bit; that literal is 14695981039346656037
+unsigned, past the signed max of 9223372036854775807, so `hex_to_int` errored on every run and left
+`h` at a fallback value — the check kept passing/failing deterministically, but the algorithm running
+was never actually FNV-1a. Rewrote the literal as its signed two's-complement reading of the identical
+64 bits, `-3750763034362895579`, with a comment pointing at why (mirrors the reasoning the existing
+output mask, `h & 0x7FFFFFFFFFFFFFFF`, already documents for the far end of the same function).
+
+**Re-recording, not a wire change:** the corrected seed changed `signature()`'s output
+(`"621c8ba008c3520f"` → `"46487d0ba06e8e31"`), which `rpc_manifest_check.gd` treats as drift requiring
+a `PROTOCOL_VERSION` bump. It isn't one here — `RECORDED_ENTRY_COUNT` stayed at 55 and every known RPC
+was still found; only the hash of an always-broken seed changed once the seed became correct. This
+file's entire git history is the one commit that introduced both `PROTOCOL_VERSION` 21 and this bug
+simultaneously, so `RECORDED_SIGNATURE` was never produced by a real run of the tool in the first
+place — recorded as D-137, the one case where re-recording without a version bump is the correct call
+rather than the omission the checker exists to catch.
+
+**Verify:** `.agent/bin/agent godot --script tools/rpc_manifest_check.gd` →
+`RPC_MANIFEST_CHECK failures=0`, zero stray engine `ERROR:` lines (previously three `hex_to_int`
+failures every run, per this finding's original report).
+
+**Swept for the same shape:** `grep -rn "0x[0-9A-Fa-f]\{16,\}" --include='*.gd'` project-wide — the
+only literal long enough to exceed signed int64 range anywhere in the codebase was this one. No
+sibling instances.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

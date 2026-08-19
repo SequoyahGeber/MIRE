@@ -562,41 +562,6 @@ worth confirming against real numbers rather than assumed.
 
 ---
 
-### F-213 · core/net/rpc_manifest.gd's FNV-1a seed literal overflows signed 64-bit int, erroring on every scan even though the check itself stays deterministic
-
-**Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lm
-
-Discovered while verifying F-165's close-out: `agent godot --script tools/rpc_manifest_check.gd` passes
-(`RPC_MANIFEST_CHECK failures=0`) but prints three `ERROR: Cannot represent 0xCBF29CE484222325 as a
-64-bit signed integer, since the value is too large. at: hex_to_int (core/string/ustring.cpp:2216)`
-lines every run.
-
-`RpcManifest.signature()` (`core/net/rpc_manifest.gd:169`) opens with
-`var h: int = 0xCBF29CE484222325` — the standard FNV-1a 64-bit offset basis. GDScript's `int` is
-signed 64-bit, and that literal (14695981039346656037 unsigned) exceeds the signed max
-(9223372036854775807), so the parser can't represent it and errors at parse time. The function's own
-next lines already handle exactly this class of problem for the *output* — `h & 0x7FFFFFFFFFFFFFFF`
-masks the top bit before `"%016x" % ...` "so the recorded constant reads like a typo" — but the same
-overflow at the *input* (the seed constant itself) was missed, one line above the comment explaining
-why it matters.
-
-**Why this doesn't invalidate F-161/F-165/F-169/F-178's fix:** the error is deterministic — GDScript's
-`hex_to_int` failure leaves `h` at a fixed fallback value every run, so `signature()` still computes
-the same output every time and `RECORDED_SIGNATURE` still matches. `rpc_manifest_check.gd`'s
-PASS/FAIL correctness is unaffected; this is not a false-green risk. What is real: the algorithm
-running is not actually FNV-1a (the seed is wrong), and the check has printed engine `ERROR:` lines on
-every single green run since it was written today, which fails the "0 ERROR lines" bar this project's
-own check verifications hold everything else to.
-
-**What closes this:** whoever next holds `core/net/rpc_manifest.gd` rewrites the seed as its signed
-two's-complement equivalent (`-3750763034362895579`, same bit pattern, with a comment pointing at why —
-same reasoning the output mask already documents) or builds it from two in-range halves shifted
-together, confirms `agent godot --script tools/rpc_manifest_check.gd` prints zero `ERROR:` lines, and
-then re-records `RECORDED_SIGNATURE`/`RECORDED_ENTRY_COUNT` only if the new seed changes the computed
-hash (the check tool prints the paste-ready block if so). Not fixed here: out of scope for F-165 (a
-`PROTOCOL_VERSION` bookkeeping task) and touching the manifest hash algorithm deserves its own
-verification pass rather than a rider on an unrelated close-out.
-
 ---
 
 ### F-215 · `HSlider` draws no visible focus ring in this Godot version — F-209's gamepad focus work left it the one control type still hard to tell is focused
@@ -674,6 +639,33 @@ autoload-node pattern.
 ---
 
 ## Resolved
+
+### F-213 · core/net/rpc_manifest.gd's FNV-1a seed literal overflows signed 64-bit int, erroring on every scan even though the check itself stays deterministic — **fixed**
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-19 by lm · **Fixed:** 2026-08-19 by lm
+
+`RpcManifest.signature()` (`core/net/rpc_manifest.gd:169`) opened with
+`var h: int = 0xCBF29CE484222325`, the FNV-1a 64-bit offset basis. GDScript's `int` is signed 64-bit
+and that literal (14695981039346656037 unsigned) exceeds the signed max (9223372036854775807);
+`hex_to_int` couldn't represent it and errored every run, silently falling back so `h` started from a
+value that was never actually FNV-1a's offset basis. Rewrote it as
+`var h: int = -3750763034362895579` — the same 64 bits read as signed two's complement — with a
+comment pointing at why, matching the reasoning the existing output mask
+(`h & 0x7FFFFFFFFFFFFFFF`) already documents.
+
+The corrected seed changed `signature()`'s output (entry count unchanged at 55, so this is not a wire
+change), so per this finding's own closure note `RECORDED_SIGNATURE` was re-recorded:
+`"621c8ba008c3520f"` → `"46487d0ba06e8e31"`. `RECORDED_PROTOCOL_VERSION` stays `21` — nothing about
+the RPC surface moved, only the hash of the correctly-seeded scan. Recorded as D-137 since a bare
+signature mismatch with no version bump is normally exactly the mistake this checker exists to catch;
+this is the one legitimate exception.
+
+**Verified:** `agent godot --script tools/rpc_manifest_check.gd` → `RPC_MANIFEST_CHECK failures=0`,
+zero stray engine `ERROR:` lines (previously three `hex_to_int` errors every run).
+
+**Swept for the same shape:** `grep -rn "0x[0-9A-Fa-f]\{16,\}" --include='*.gd'` project-wide — no
+other 16-hex-digit (i.e. overflow-capable) literal exists anywhere else in the codebase. This file was
+the only instance.
 
 ### F-220 · `CycleModifierService`'s per-cycle modifier draw is the same boot-time-`randomize()` bug — and already has the stable id `Chest` needed — **fixed**
 

@@ -3871,3 +3871,32 @@ answer whenever there is a trigger but no marker.
 per frame/tick in a way that needs sub-tick ordering the counter alone can't express — none does today
 (`_grant_tier_to_party` runs synchronously to completion before the next `EventBus` emission is even
 possible), but a batched/queued trigger path would need a tie-breaker beyond call order.
+
+### D-137 · 2026-08-19 · `rpc_manifest_check.gd`'s own rule — a signature that moves without `PROTOCOL_VERSION` moving is the mistake it exists to catch — has exactly one legitimate exception: correcting a signature that was never validly produced in the first place
+
+F-213: `RpcManifest.signature()`'s FNV-1a offset-basis literal overflowed GDScript's signed int64
+parser (`0xCBF29CE484222325` is 14695981039346656037 unsigned, past the 9223372036854775807 signed
+max), so `hex_to_int` failed on every single run since the manifest was created in the same commit
+that introduced `PROTOCOL_VERSION` 21 — there is no earlier commit where this file's `scan()` ever
+successfully executed. `RECORDED_SIGNATURE` was therefore never actually produced by running the
+tool; it was pasted in by hand or from an external re-implementation at recording time, and it is not
+a value the check's own documented process (re-run, paste the printed block) could ever have
+generated.
+
+Fixing the overflow (rewriting the literal as its signed two's-complement equivalent,
+`-3750763034362895579`) changed `signature()`'s computed output, because the seed itself was wrong
+before. Entry count stayed at 55 and every known RPC was still found — the wire surface did not move,
+only the correctness of the hash of it did. **Decided: re-record `RECORDED_SIGNATURE` alone, leave
+`RECORDED_PROTOCOL_VERSION` at 21.** Bumping `PROTOCOL_VERSION` here would be the actual lie — it
+would tell every future build that the wire changed on 2026-08-19 when nothing about any RPC did.
+
+This is not a loophole for casual re-recording: `rpc_manifest_check.gd`'s assertion that a moved
+signature demands a version bump stays the default and correct read for every other case. It gives
+way only when the recorded value provably could not have come from a real run of the tool — provable
+here because the file's entire git history is one commit, and that commit is the one this same
+overflow bug has poisoned since day one.
+
+**Would change my mind:** discovering a commit where `rpc_manifest_check.gd` genuinely ran clean and
+produced `"621c8ba008c3520f"` under a since-reverted version of the seed constant — that would make
+the old value a legitimate prior recording superseded by a real (if inadvertent) wire-adjacent change,
+not a correction, and the normal version-bump rule would apply instead.
