@@ -6404,3 +6404,31 @@ Fixed: autoload/build_service.gd's _cmd_build now grounds the raw y through _gro
 Files: `autoload/build_service.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `d934601`
+
+---
+
+### HANDOFF · F-254 · lp · 2026-08-19T22:35:12+00:00
+
+**CycleModifierService._announce() has the exact host-only EventBus.emit_cycle_modifier_drawn() gate F-250 just fixed for CycleService — same shape, unfixed sibling**
+
+LP stopped on F-254 at 2026-08-19T22:35:12+00:00 (exit 1, quota wall). Tokens this run: 0 in / 0 out.
+The working diff is UNTOUCHED — its partial edits are still on disk, so read them before redoing anything. Full log: .agent/logs/LP-F-254-20260819-223511.jsonl
+
+Its last words: "You've hit your session limit · resets 4:50pm (America/Vancouver)"
+
+Tail of the failure:
+inal_reason":"api_error","fast_mode_state":"off","fast_mode_disabled_reason":"sdk_opt_in_required","subtype":"success","api_error_status":429,"result":"You've hit your session limit · resets 4:50pm (America/Vancouver)","type":"result","duration_ms":378,"uuid":"8a08277f-1411-4e41-aa30-4ac35b3ec1ae"}
+
+Commit at time of writing: `039c5da`
+
+---
+
+### DONE · F-247 · lm · 2026-08-19T22:35:17+00:00
+
+**F-240's exact gap exists a second time in `BossMoveDef` — a boss's own telegraphed moves have no way to close ground during their own TELL either, and `Boss._tick_attack()` would not even inherit `EnemyDef.lunge_speed_m_s` if it did**
+
+BossMoveDef.lunge_speed_m_s + Boss._tick_move_lunge(): a boss's own telegraphed moves now close ground during their own TELL, per-move. agent godot --script tools/boss_check.gd -> BOSS_CHECK failures=0 (63/63, 11 new). Regressions clean (enemy_lunge_check/enemy_check/enemy_ai_check all failures=0). Filed F-264 for the enemy.gd-locked duplication left behind.
+
+Files: `systems/enemies/boss.gd`, `systems/enemies/boss_move_def.gd`, `tools/boss_check.gd`
+
+Commit at time of writing: `039c5da`

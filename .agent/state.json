@@ -1,5 +1,11 @@
 {
   "claims": {
+    ".agent/bin/agent": {
+      "agent": "bram1",
+      "at": "2026-08-19T22:32:48+00:00",
+      "task": "F-263",
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+    },
     "autoload/powerup_service.gd": {
       "agent": "lm2",
       "at": "2026-08-19T22:21:01+00:00",
@@ -9,6 +15,36 @@
     "core/net/net_config.gd": {
       "agent": "lm3",
       "at": "2026-08-19T22:26:54+00:00",
+      "task": "F-257",
+      "token": null
+    },
+    "docs/DECISIONS.md": {
+      "agent": "lm3",
+      "at": "2026-08-19T22:32:36+00:00",
+      "task": "F-257",
+      "token": null
+    },
+    "docs/DELEGATION.md": {
+      "agent": "lm3",
+      "at": "2026-08-19T22:32:36+00:00",
+      "task": "F-257",
+      "token": null
+    },
+    "docs/FINDINGS.md": {
+      "agent": "lm3",
+      "at": "2026-08-19T22:32:36+00:00",
+      "task": "F-257",
+      "token": null
+    },
+    "docs/SPECS.md": {
+      "agent": "lm3",
+      "at": "2026-08-19T22:32:36+00:00",
+      "task": "F-257",
+      "token": null
+    },
+    "steam_appid.txt": {
+      "agent": "lm3",
+      "at": "2026-08-19T22:30:42+00:00",
       "task": "F-257",
       "token": null
     },
@@ -54,6 +90,12 @@
       "task": "F-245",
       "token": null
     },
+    "tools/cycle_modifier_effects_check.gd": {
+      "agent": "lm2",
+      "at": "2026-08-19T22:29:30+00:00",
+      "task": "F-245",
+      "token": null
+    },
     "tools/steam/DEPOT_SETUP.md": {
       "agent": "lm3",
       "at": "2026-08-19T22:26:54+00:00",
@@ -78,6 +120,12 @@
       "task": "F-257",
       "token": null
     },
+    "tools/steam_check.gd": {
+      "agent": "lm3",
+      "at": "2026-08-19T22:30:42+00:00",
+      "task": "F-257",
+      "token": null
+    },
     "world/mire/mire_grid.gd": {
       "agent": "lm2",
       "at": "2026-08-19T22:23:18+00:00",
@@ -97,7 +145,8 @@
         "systems/enemies/enemy.gd",
         "systems/waves/wave_spawner.gd",
         "autoload/powerup_service.gd",
-        "world/mire/mire_grid.gd"
+        "world/mire/mire_grid.gd",
+        "tools/cycle_modifier_effects_check.gd"
       ],
       "notes": [],
       "started": "2026-08-19T22:21:01+00:00",
@@ -110,11 +159,26 @@
         "tools/steam/depot_wiring_check.sh",
         "tools/steam/DEPOT_SETUP.md",
         "core/net/net_config.gd",
-        "tools/steam/steam_upload.sh"
+        "tools/steam/steam_upload.sh",
+        "steam_appid.txt",
+        "tools/steam_check.gd",
+        "docs/SPECS.md",
+        "docs/DECISIONS.md",
+        "docs/DELEGATION.md",
+        "docs/FINDINGS.md"
       ],
       "notes": [],
       "started": "2026-08-19T22:26:54+00:00",
       "token": null
+    },
+    "F-263": {
+      "agent": "bram1",
+      "files": [
+        ".agent/bin/agent"
+      ],
+      "notes": [],
+      "started": "2026-08-19T22:32:48+00:00",
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
     }
   },
   "recent": {
@@ -1641,10 +1705,10 @@
       "task": "6.1"
     },
     "systems/enemies/boss.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T14:39:47+00:00",
-      "hash": "4d8bba053e3525a3df240a809aad2424283012274bae1a1f8489a76232f9b547",
-      "task": "F-225",
+      "agent": "lm",
+      "at": "2026-08-19T22:35:17+00:00",
+      "hash": "526a1f65074b56cbb53a4eb6d9df2bc9865e80d104610eee85c016fb8134aa13",
+      "task": "F-247",
       "token": null
     },
     "systems/enemies/boss.gd.uid": {
@@ -1666,10 +1730,11 @@
       "task": "5.5"
     },
     "systems/enemies/boss_move_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "36d49802549b01c93eb6b2d67cef7f4906411d902ee8f0d0fda461e22983f493",
-      "task": "5.5"
+      "agent": "lm",
+      "at": "2026-08-19T22:35:17+00:00",
+      "hash": "662fcb0076647bae6b52b1e9c302a42a8237731b8df46583980e93193cd80e4a",
+      "task": "F-247",
+      "token": null
     },
     "systems/enemies/boss_move_def.gd.uid": {
       "agent": "lp",
@@ -2067,10 +2132,10 @@
       "token": null
     },
     "tools/boss_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T14:39:47+00:00",
-      "hash": "53c3d41a7b0ae34f2081334a72a1e5b38b3a30912930a98fd9d2f79703e9f2d8",
-      "task": "F-225",
+      "agent": "lm",
+      "at": "2026-08-19T22:35:17+00:00",
+      "hash": "06f5090017bd5e27ce74f42c9265ad69c274e8c4aa76c73860b8d459a2fad7cc",
+      "task": "F-247",
       "token": null
     },
     "tools/boss_check.gd.uid": {
@@ -6712,6 +6777,14 @@
       "tier": "F",
       "title": "The build verb refuses natural coordinates \u2014 nothing ground-snaps a command placement, so 'build wall_wood ~ ~ ~' reads as a bug"
     },
+    "F-244-review": {
+      "est": "0.5",
+      "milestone": "Findings",
+      "review_of": "F-244",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review F-244 @ 039c5da \u2014 review and fix what you find"
+    },
     "F-245": {
       "est": "\u2014",
       "milestone": "Findings",
@@ -6737,9 +6810,11 @@
       "title": "Review F-246 @ d934601 \u2014 review and fix what you find"
     },
     "F-247": {
+      "done_at": "2026-08-19T22:35:17+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "F-240's exact gap exists a second time in `BossMoveDef` \u2014 a boss's own telegraphed moves have no way to close ground during their own TELL either, and `Boss._tick_attack()` would not even inherit `EnemyDef.lunge_speed_m_s` if it did"
     },
@@ -6856,6 +6931,13 @@
       "status": "done",
       "tier": "F",
       "title": "Claims are held for the whole task \u2014 grabbed up front and released only at close-out \u2014 so a file locks for up to 2h even when it is edited for minutes, stalling other agents"
+    },
+    "F-263": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "in_flight",
+      "tier": "F",
+      "title": "Hardening pass: chains run stale code after harness edits, one failing task stops a whole queue, dup-grabs under claim-late, re-reviews refuse, and D-numbers still race"
     }
   },
   "version": 1

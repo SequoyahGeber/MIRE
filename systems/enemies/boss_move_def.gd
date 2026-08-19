@@ -25,6 +25,15 @@ extends Resource
 @export_range(0.05, 6.0, 0.05) var tell_seconds: float = 0.6
 @export_range(0.05, 6.0, 0.05) var attack_seconds: float = 0.4
 @export_range(0.0, 10.0, 0.05) var recovery_seconds: float = 0.8
+## F-247: the per-move equivalent of `EnemyDef.lunge_speed_m_s` (F-240) — closes ground toward the
+## target during THIS move's own TELL instead of standing fully still, the same missing answer to
+## "just take one step back" F-240 gave plain enemies. A per-move field, not a reuse of the boss's own
+## inherited `EnemyDef.lunge_speed_m_s`, because a boss's moves are meant to read and feel different
+## from each other (`Boss._tick_attack()`'s whole reason for existing) — one shared speed would make
+## every move lunge identically or not at all. 0.0, the default, preserves every existing `BossMoveDef`
+## fully stationary, bit-for-bit. See `Boss._tick_move_lunge()` for why this is not simply routed
+## through the inherited `Enemy._tick_lunge()`.
+@export_range(0.0, 20.0, 0.1) var lunge_speed_m_s: float = 0.0
 
 @export_group("Selection")
 ## Relative odds this move is picked the next time the boss commits to an attack, among whatever

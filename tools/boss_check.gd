@@ -26,6 +26,8 @@ const EVENT_BUS := preload("res://core/events/event_bus.gd")
 ## convention here, and this check already builds everything else it needs locally).
 const ENEMY_SCRIPT := preload("res://systems/enemies/enemy.gd")
 const ENEMY_DEF := preload("res://systems/enemies/enemy_def.gd")
+## F-247's own retreat-speed baseline, same value `tools/enemy_lunge_check.gd` uses for the base case.
+const PLAYER_SPRINT_SPEED_MPS: float = 6.0
 
 var failures: int = 0
 var _next_peer: int = 9000
@@ -47,6 +49,8 @@ func _run() -> void:
 	await _check_arena_leash()
 	await process_frame
 	await _check_telegraph_moves()
+	await process_frame
+	await _check_move_lunge()
 	await process_frame
 	await _check_fallback_no_moves()
 	await process_frame
@@ -306,6 +310,119 @@ func _check_telegraph_moves() -> void:
 
 	EVENT_BUS.unsubscribe_enemy_attack_landed(on_landed)
 	_cleanup([boss, solo_boss, target])
+
+
+# ── F-247: a chosen move's own lunge_speed_m_s closes ground during ITS tell ────────────────────
+
+## Mirrors `tools/enemy_lunge_check.gd`'s own proof for the base `Enemy` case (F-240) one level down:
+## a move left at `lunge_speed_m_s`'s 0.0 default still loses to a continuously retreating player
+## exactly like F-240's original bug, and a move whose own lunge speed outpaces the retreat closes
+## ground on the SAME backpedal instead. Distinct moves in separate single-move phases (mirroring
+## `_check_telegraph_moves()`'s `solo_def` pattern) keep the pick deterministic without touching
+## `Boss._pick_move_index()`.
+func _check_move_lunge() -> void:
+	var origin := Vector3(3000.0, 0.0, 0.0)
+
+	var still: Resource = _make_move(&"still_slam", 10, 3.0, 0.6, 0.1, 0.1, 1.0)
+	still.set("lunge_speed_m_s", 0.0)
+	var lunging: Resource = _make_move(&"lunging_slam", 10, 3.0, 0.6, 0.1, 0.1, 1.0)
+	lunging.set("lunge_speed_m_s", 20.0)
+	check(float(lunging.get("lunge_speed_m_s")) > PLAYER_SPRINT_SPEED_MPS,
+		"sanity: this move's lunge speed really does exceed player sprint speed")
+
+	var still_def: Resource = _make_boss_def([_make_phase(1.0, [still])])
+	var still_boss: Node3D = _spawn_boss(still_def, origin)
+	var still_player: Node3D = _spawn_player(origin + Vector3(0.0, 0.0, -2.0))
+	var effective_step_seconds: float = _measure_effective_step_seconds(still_def)
+	var retreat_step_m: float = PLAYER_SPRINT_SPEED_MPS * effective_step_seconds
+
+	_step(still_boss, 0.1)
+	check(int(still_boss.get("state")) == 2, "sanity: the still move enters TELL immediately at 2 m")
+	var still_start: float = _flat_distance(still_boss, still_player)
+	var still_steps: int = _retreat_through_tell(still_boss, still_player, retreat_step_m)
+	check(still_steps > 0 and still_steps < 200,
+		"the still move's tell actually ended within the loop's own bound")
+	check(_flat_distance(still_boss, still_player) > still_start,
+		"lunge_speed_m_s = 0.0 (the default): the boss never closes the gap during this move's tell (%.2f m -> %.2f m)"
+			% [still_start, _flat_distance(still_boss, still_player)])
+	_cleanup([still_boss, still_player])
+
+	var lunge_def: Resource = _make_boss_def([_make_phase(1.0, [lunging])])
+	var lunge_boss: Node3D = _spawn_boss(lunge_def, origin + Vector3(50.0, 0.0, 0.0))
+	var lunge_player: Node3D = _spawn_player(lunge_boss.global_position + Vector3(0.0, 0.0, -2.0))
+
+	_step(lunge_boss, 0.1)
+	check(int(lunge_boss.get("state")) == 2, "sanity: the lunging move enters TELL immediately at 2 m")
+	var lunge_start: float = _flat_distance(lunge_boss, lunge_player)
+	var lunge_steps: int = _retreat_through_tell(lunge_boss, lunge_player, retreat_step_m)
+	check(lunge_steps > 0 and lunge_steps < 200,
+		"the lunging move's tell actually ended within the loop's own bound")
+	check(_flat_distance(lunge_boss, lunge_player) < lunge_start,
+		"F-247 fixed: a move whose own lunge_speed_m_s outpaces the player closes ground on the SAME retreat (%.2f m -> %.2f m)"
+			% [lunge_start, _flat_distance(lunge_boss, lunge_player)])
+	_cleanup([lunge_boss, lunge_player])
+
+	# stop_distance_m cap: already inside it when the tell begins, held motionless rather than shoved
+	# through the target — the same guarantee `enemy_lunge_check.gd`'s own
+	# `_check_lunge_stops_at_stop_distance()` proves for the base case. `BossDef` carries
+	# `stop_distance_m` by inheritance from `EnemyDef`, so this is the boss's own field, not the move's.
+	var cap_def: Resource = _make_boss_def([_make_phase(1.0, [lunging])])
+	cap_def.set("stop_distance_m", 1.0)
+	var cap_boss: Node3D = _spawn_boss(cap_def, origin + Vector3(100.0, 0.0, 0.0))
+	var cap_player: Node3D = _spawn_player(cap_boss.global_position + Vector3(0.0, 0.0, -0.6))
+	_step(cap_boss, 0.1)
+	check(int(cap_boss.get("state")) == 2, "sanity: it enters TELL immediately at 0.6 m")
+	var before: Vector3 = cap_boss.global_position
+	_step(cap_boss, 0.1, 5)
+	check(int(cap_boss.get("state")) == 2, "still telegraphing (0.6 s tell)")
+	var after: Vector3 = cap_boss.global_position
+	check(Vector2(after.x - before.x, after.z - before.z).length() < 0.01,
+		"already inside stop_distance_m — the move's lunge holds position instead of closing further")
+	_cleanup([cap_boss, cap_player])
+
+	# Every freshly-authored BossMoveDef still defaults to 0.0 — this framework fix changes no content.
+	var default_move: Resource = BOSS_MOVE_DEF.new()
+	check(is_equal_approx(float(default_move.get("lunge_speed_m_s")), 0.0),
+		"a freshly-authored BossMoveDef defaults lunge_speed_m_s to 0.0, unchanged tell behaviour")
+
+
+## Retreats `player` directly away from `boss` by `retreat_step_m` and steps the boss once, repeated
+## until it leaves TELL — copied from `enemy_lunge_check.gd`'s own helper of the same contract.
+func _retreat_through_tell(boss: Node3D, player: Node3D, retreat_step_m: float) -> int:
+	var steps: int = 0
+	while int(boss.get("state")) == 2 and steps < 200:  # State.TELL == 2
+		_retreat_by(player, boss, retreat_step_m)
+		_step(boss, 0.02)
+		steps += 1
+	return steps
+
+
+func _retreat_by(player: Node3D, boss: Node3D, distance_m: float) -> void:
+	var away: Vector3 = player.global_position - boss.global_position
+	away.y = 0.0
+	if away.length_squared() < 0.0001:
+		return
+	player.global_position += away.normalized() * distance_m
+
+
+## How far one `_physics_process()` call actually moves a `Boss` per unit of its own `move_speed` —
+## the engine's own fixed physics delta, invisible to and unaffected by the `delta` this script passes
+## in. Copied from `enemy_lunge_check.gd`'s own helper; see its header for the full reasoning.
+func _measure_effective_step_seconds(reference_def: Resource) -> float:
+	var probe: Node3D = _spawn_boss(reference_def, Vector3(9000.0, 0.0, 0.0))
+	var probe_player: Node3D = _spawn_player(Vector3(9000.0, 0.0, -12.0))
+	_step(probe, 0.1)
+	var before: Vector3 = probe.global_position
+	_step(probe, 0.1)
+	var after: Vector3 = probe.global_position
+	var displaced: float = Vector2(after.x - before.x, after.z - before.z).length()
+	_cleanup([probe, probe_player])
+	return displaced / float(reference_def.get("move_speed"))
+
+
+func _flat_distance(a: Node3D, b: Node3D) -> float:
+	var delta: Vector3 = a.global_position - b.global_position
+	return Vector2(delta.x, delta.z).length()
 
 
 # ── Fallback: an empty-moves phase behaves exactly like a plain Enemy's one fixed attack ────────
