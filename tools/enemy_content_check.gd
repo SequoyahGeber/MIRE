@@ -18,7 +18,7 @@ extends SceneTree
 ## What this task's own SPECS.md `## 5.2` block found NOT provable from any field: the hit always
 ## resolves at the END of the tell against the target's THEN-current position, and the enemy is fully
 ## stationary for the whole TELL/ATTACK/RECOVER span (`Enemy._tick_attack()`), so any nonzero player
-## movement during a tell beats it regardless of `attack_range_m` — filed as F-235, not tested here
+## movement during a tell beats it regardless of `attack_range_m` — filed as F-240, not tested here
 ## because there is nothing here that would pass.
 ##
 ## Scenarios build `Enemy` nodes directly against the REAL loaded defs (no model, no EnemyWorld spawn

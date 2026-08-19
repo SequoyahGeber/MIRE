@@ -1713,7 +1713,7 @@ perception/alerting/the attack-slot cap; nothing else has landed since):
   check depends on how big the enemy's reach was at the moment the tell started. A design that
   wants "you cannot simply back out of this one" needs either the enemy still closing ground during
   its own tell/attack (a lunge) or an attack that samples the target's position at tell START
-  instead of tell END — neither exists today. Filed as F-223; do not relitigate by trying to buy
+  instead of tell END — neither exists today. Filed as F-240; do not relitigate by trying to buy
   that pressure with a bigger `attack_range_m` number, it will not hold up under test.
 
 **Build:** one `.tres` per kind in `content/enemies/`, same shape as `crawler.tres`/`bog_crawler.tres`

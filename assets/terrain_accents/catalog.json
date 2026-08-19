@@ -1,0 +1,106 @@
+{
+  "batch": "A-016a",
+  "family": "terrain_accents",
+  "blender": "5.2.0 LTS",
+  "assets": [
+    {
+      "name": "cliff_face",
+      "file": "exports/cliff_face.glb",
+      "width_m": 4.2947,
+      "depth_m": 2.0375,
+      "height_m": 5.0,
+      "target_m": 5.0,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 376,
+      "triangles": 484,
+      "materials": [
+        "MIRE_Moss",
+        "MIRE_Stone",
+        "MIRE_StoneDark"
+      ]
+    },
+    {
+      "name": "cliff_corner",
+      "file": "exports/cliff_corner.glb",
+      "width_m": 3.2647,
+      "depth_m": 3.437,
+      "height_m": 5.0,
+      "target_m": 5.0,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 650,
+      "triangles": 920,
+      "materials": [
+        "MIRE_Moss",
+        "MIRE_Stone",
+        "MIRE_StoneDark"
+      ]
+    },
+    {
+      "name": "cliff_overhang",
+      "file": "exports/cliff_overhang.glb",
+      "width_m": 3.3626,
+      "depth_m": 3.4783,
+      "height_m": 2.6,
+      "target_m": 2.6,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 330,
+      "triangles": 420,
+      "materials": [
+        "MIRE_Moss",
+        "MIRE_Stone",
+        "MIRE_StoneDark"
+      ]
+    },
+    {
+      "name": "rocky_slope",
+      "file": "exports/rocky_slope.glb",
+      "width_m": 3.9,
+      "depth_m": 3.0988,
+      "height_m": 1.3269,
+      "target_m": 3.9,
+      "axis": "spread",
+      "parts": 1,
+      "polygons": 340,
+      "triangles": 340,
+      "materials": [
+        "MIRE_Stone",
+        "MIRE_StoneDark"
+      ]
+    },
+    {
+      "name": "scree_pile",
+      "file": "exports/scree_pile.glb",
+      "width_m": 2.6,
+      "depth_m": 2.0048,
+      "height_m": 0.384,
+      "target_m": 2.6,
+      "axis": "spread",
+      "parts": 1,
+      "polygons": 740,
+      "triangles": 740,
+      "materials": [
+        "MIRE_Stone",
+        "MIRE_StoneDark"
+      ]
+    },
+    {
+      "name": "stone_steps",
+      "file": "exports/stone_steps.glb",
+      "width_m": 4.4,
+      "depth_m": 4.0819,
+      "height_m": 2.7984,
+      "target_m": 4.4,
+      "axis": "spread",
+      "parts": 1,
+      "polygons": 280,
+      "triangles": 280,
+      "materials": [
+        "MIRE_Stone",
+        "MIRE_StoneDark"
+      ]
+    }
+  ]
+}
