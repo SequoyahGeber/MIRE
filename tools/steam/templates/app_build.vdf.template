@@ -1,0 +1,21 @@
+// steampipe app build script (task 8.4). Rendered by steam_upload.sh into
+// tools/steam/generated/app_build.vdf (gitignored) with the real values from
+// tools/steam/steam_build_config.sh — never edit the generated file, edit this template or the
+// config instead.
+"appbuild"
+{
+	"appid"		"@STEAM_APP_ID@"
+	"desc"		"MIRE release build"
+	"buildoutput"	"../../../export/steam_build_output/"
+	"contentroot"	"../../../"
+	"setlive"	"@STEAM_BRANCH@"
+	"preview"	"0"
+	"local"		""
+
+	"depots"
+	{
+		"@STEAM_DEPOT_WINDOWS@"	"depot_windows.vdf"
+		"@STEAM_DEPOT_MACOS@"	"depot_macos.vdf"
+		"@STEAM_DEPOT_LINUX@"	"depot_linux.vdf"
+	}
+}

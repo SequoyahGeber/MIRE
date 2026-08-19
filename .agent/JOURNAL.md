@@ -4834,3 +4834,48 @@ Gamepad support shipped and verified headlessly. The core gap: nothing rotated t
 Files: `project.godot`, `entities/player/player_camera.gd`, `entities/player/player_controller.gd`, `ui/hud/vitals_hud.gd`, `ui/inventory/inventory_ui.gd`, `ui/building/build_bar.gd`, `autoload/settings_service.gd`, `ui/menu/settings_menu.gd`, `tools/settings_check.gd`, `tools/gamepad_check.gd`, `core/save/settings_save.gd`
 
 Commit at time of writing: `ab54adb`
+
+---
+
+### HANDOFF · 3.5-review · lp · 2026-08-19T10:46:08+00:00
+
+**Review 3.5 @ 27546a1 — judge the commit, file findings, no edits**
+
+LP stopped on 3.5-review at 2026-08-19T10:46:08+00:00 (exit 1, quota wall). Tokens this run: 2,422,401 in / 15,095 out.
+The working diff is UNTOUCHED — its partial edits are still on disk, so read them before redoing anything. Full log: .agent/logs/LP-3.5-review-20260819-104238.jsonl
+
+Files it had already written or edited: docs/FINDINGS.md.
+Its last words: "You've hit your session limit · resets 6:50am (America/Vancouver)"
+Its last actions:
+  - Bash git show -s --format="%h %ci %s" ab3cb28 8cd0ba8 aebac9b
+echo ---
+git log --onel
+  - Bash grep -n "^### F-2" docs/FINDINGS.md | tail -10
+  - Bash sed -n '1,70p' docs/FINDINGS.md
+  - Bash sed -n '640,650p' docs/FINDINGS.md
+  - Bash sed -n '649,686p' docs/FINDINGS.md
+  - Edit /Users/sequoyahgeber/Desktop/MIRE/docs/FINDINGS.md
+
+Tail of the failure:
+hit your session limit · resets 6:50am (America/Vancouver)","type":"result","duration_ms":209419,"uuid":"ea87a7f7-e248-4dbc-9e4e-ba8fe5778c8c"}
+{"type":"system","subtype":"task_summary","detail":null,"uuid":"cbdf7ef0-c2ba-4d64-8ea2-6391eb058bb3","session_id":"fe04339b-e44a-4c3e-a0c9-b1a08f485e84"}
+
+Files: `.`
+
+Commit at time of writing: `efd6b79`
+
+---
+
+### DONE · 8.4 · lm · 2026-08-19T10:57:39+00:00
+
+**Depots, build pipeline, `steamcmd` upload script, branches. Starts from working presets: `export_presets.cfg` has all three platforms and builds land in the gitignored `export/` (see DELEGATION.md). They are debug presets — release presets are this task's job, and `steam_appid.txt` must not ship in one (D-022)**
+
+Release export presets (macOS/Windows/Linux) added to export_presets.cfg, all three verified via 'agent godot --headless --export-release'; macOS release binary smoke-booted with real content loaded and 0 ERROR: lines. steamcmd upload pipeline (tools/steam/) built against D-008's placeholder App ID 480 + depot IDs 0, with steam_upload.sh's five guard clauses (placeholder App ID, placeholder depots, public-branch-without-override, no username, missing steamcmd) all verified to fire correctly, and template rendering verified end-to-end with a fake steamcmd stub. steam_appid.txt confirmed empirically excluded from both debug and release .pck files. F-211 filed (work order's verify section named the wrong scripts), D-132 records the 8.4/8.11 task split and placeholder convention.
+
+Notes along the way:
+- Real App ID/depot IDs don't exist yet (8.1/8.2 still todo) — built release presets + steamcmd pipeline against D-008's 480 placeholder, with steam_upload.sh refusing to run until 8.2/8.11 fill in real values. D-132 records the 8.4/8.11 split.
+- Work order's verify section named build_check.gd/build_net_check.gd/buildable_content_check.gd — those test the buildable/crafting placement system (3.6/3.7), unrelated to the Steam export pipeline. Filed F-211, verified against real agent godot --export-release runs instead.
+
+Files: `export_presets.cfg`, `.gitignore`, `tools/steam/steam_build_config.sh`, `tools/steam/export_release.sh`, `tools/steam/steam_upload.sh`, `tools/steam/templates/app_build.vdf.template`, `tools/steam/templates/depot_windows.vdf.template`, `tools/steam/templates/depot_macos.vdf.template`, `tools/steam/templates/depot_linux.vdf.template`
+
+Commit at time of writing: `efd6b79`

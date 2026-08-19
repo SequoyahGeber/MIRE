@@ -1,24 +1,14 @@
 {
-  "claims": {
+  "claims": {},
+  "in_flight": {},
+  "recent": {
     ".": {
       "agent": "lp",
-      "at": "2026-08-19T10:43:44+00:00",
+      "at": "2026-08-19T10:46:08+00:00",
+      "hash": null,
       "task": "3.5-review",
       "token": null
-    }
-  },
-  "in_flight": {
-    "3.5-review": {
-      "agent": "lp",
-      "files": [
-        "."
-      ],
-      "notes": [],
-      "started": "2026-08-19T10:43:44+00:00",
-      "token": null
-    }
-  },
-  "recent": {
+    },
     ".agent/bin/agent": {
       "agent": "lp",
       "at": "2026-08-19T10:25:06+00:00",
@@ -33,10 +23,11 @@
       "task": "F-142"
     },
     ".gitignore": {
-      "agent": "nettle12",
-      "at": "2026-08-18T21:51:44+00:00",
-      "hash": "74e2dec5b778d0b0fe2a0b229b93f4d88cbb980af8623257451c75d05b296535",
-      "task": "F-143"
+      "agent": "lm",
+      "at": "2026-08-19T10:57:39+00:00",
+      "hash": "0d72d5badf5ecd49c53ea81f2b6979c76e04792f746071f895a2d9a4c9c29575",
+      "task": "8.4",
+      "token": null
     },
     "AGENTS.md": {
       "agent": "yarrow21",
@@ -1958,10 +1949,11 @@
       "task": "F-099"
     },
     "export_presets.cfg": {
-      "agent": "pike14",
-      "at": "2026-08-18T19:39:51+00:00",
-      "hash": "9d4104e9ea756fc3b877ca257647b16b3ade50c611fba60dbfb8c972df143493",
-      "task": "F-124"
+      "agent": "lm",
+      "at": "2026-08-19T10:57:39+00:00",
+      "hash": "ee8974ead450b674488ad53fa18b605497a6d0dc94a331c9dc701f481c051b3c",
+      "task": "8.4",
+      "token": null
     },
     "levels/hollowmere.tscn": {
       "agent": "yarrow21",
@@ -3302,6 +3294,55 @@
       "hash": "10da7456685e283a2a31f98d611f66936a6b5439ad89a88050f7e40c1f0668df",
       "task": "F-129"
     },
+    "tools/steam/export_release.sh": {
+      "agent": "lm",
+      "at": "2026-08-19T10:57:39+00:00",
+      "hash": "fe5a9b8d9f8175b29d0d8448d603c7c5002f90ed50db49a8521ec38748067eb5",
+      "task": "8.4",
+      "token": null
+    },
+    "tools/steam/steam_build_config.sh": {
+      "agent": "lm",
+      "at": "2026-08-19T10:57:39+00:00",
+      "hash": "f005befdabeef22d454110a4dbebc6e8344ec7f51c1ed6f5046162344961a7cb",
+      "task": "8.4",
+      "token": null
+    },
+    "tools/steam/steam_upload.sh": {
+      "agent": "lm",
+      "at": "2026-08-19T10:57:39+00:00",
+      "hash": "1224573fcb54e1d7ad2d0497a73d19a04b7965ae99a9cad3ba7be41ed6a5eef5",
+      "task": "8.4",
+      "token": null
+    },
+    "tools/steam/templates/app_build.vdf.template": {
+      "agent": "lm",
+      "at": "2026-08-19T10:57:39+00:00",
+      "hash": "bb38f5f43b76704deb58e6fd885d3e564f7e29be418e1e4a8b2ffdb46410e9f3",
+      "task": "8.4",
+      "token": null
+    },
+    "tools/steam/templates/depot_linux.vdf.template": {
+      "agent": "lm",
+      "at": "2026-08-19T10:57:39+00:00",
+      "hash": "402bd73c0c9d2b69716906ef72661aa767c7cc5ecf45c08ad5255c0474658215",
+      "task": "8.4",
+      "token": null
+    },
+    "tools/steam/templates/depot_macos.vdf.template": {
+      "agent": "lm",
+      "at": "2026-08-19T10:57:39+00:00",
+      "hash": "584537cb313d2381433e7526499394bf6a160d5eb994049c1a0185fe06e2d03f",
+      "task": "8.4",
+      "token": null
+    },
+    "tools/steam/templates/depot_windows.vdf.template": {
+      "agent": "lm",
+      "at": "2026-08-19T10:57:39+00:00",
+      "hash": "79e4666121fe3833111303aee489bae7710c40f7d65a94423f28a43fddc59dcc",
+      "task": "8.4",
+      "token": null
+    },
     "tools/steam_lobby_check.gd": {
       "agent": "lp",
       "at": "2026-08-19T09:31:00+00:00",
@@ -4251,7 +4292,7 @@
       "est": "0.5",
       "milestone": "M3",
       "review_of": "3.5",
-      "status": "in_flight",
+      "status": "todo",
       "tier": "T1",
       "title": "Review 3.5 @ 27546a1 \u2014 judge the commit, file findings, no edits"
     },
@@ -4736,9 +4777,11 @@
       "title": "Achievements, stats, rich presence. The joinability half already ships: `SteamLobby` publishes the `connect` key and handles both join callbacks (F-123, F-127), so this is achievements, stats, and presence *display* strings \u2014 not the join plumbing"
     },
     "8.4": {
+      "done_at": "2026-08-19T10:57:39+00:00",
+      "done_by": "lm",
       "est": "3",
       "milestone": "M8",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Depots, build pipeline, `steamcmd` upload script, branches. Starts from working presets: `export_presets.cfg` has all three platforms and builds land in the gitignored `export/` (see DELEGATION.md). They are debug presets \u2014 release presets are this task's job, and `steam_appid.txt` must not ship in one (D-022)"
     },
@@ -6579,6 +6622,13 @@
       "status": "todo",
       "tier": "F",
       "title": "F-203's sway case is still unsolved \u2014 `_apply_sway`'s per-mesh height mask needs a per-vertex baked channel before sway-bearing props can join the cross-asset chunk merge"
+    },
+    "F-209": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "No menu in the game supports gamepad UI focus navigation \u2014 a bare controller with no Steam Input translation cannot open any panel"
     }
   },
   "version": 1

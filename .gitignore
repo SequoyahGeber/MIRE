@@ -9,6 +9,11 @@
 # Godot exports
 export/
 
+# Rendered steampipe build scripts (task 8.4) — steam_upload.sh regenerates these from
+# tools/steam/templates/*.vdf.template + tools/steam/steam_build_config.sh on every run, so a
+# committed one would just be a stale render nobody would notice going out of date.
+tools/steam/generated/
+
 # macOS
 .DS_Store
 

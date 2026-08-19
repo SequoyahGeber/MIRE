@@ -1,0 +1,14 @@
+// steampipe depot script (task 8.4) for the Linux build. Rendered by steam_upload.sh — see
+// app_build.vdf.template's header.
+"DepotBuildConfig"
+{
+	"DepotID"	"@STEAM_DEPOT_LINUX@"
+	"ContentRoot"	"../../../export/release/linux/"
+
+	"FileMapping"
+	{
+		"LocalPath"	"*"
+		"DepotPath"	"."
+		"recursive"	"1"
+	}
+}
