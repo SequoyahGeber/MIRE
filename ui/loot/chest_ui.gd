@@ -344,7 +344,8 @@ func _populate_rewards(granted: Dictionary) -> void:
 	var ids: Array[StringName] = []
 	for item_id: StringName in granted:
 		ids.append(item_id)
-	ids.sort()
+	# StringName's `<` compares interned identity, not string content — F-175.
+	ids.sort_custom(func(a, b): return String(a) < String(b))
 	for item_id: StringName in ids:
 		# A reward row names either namespace: chests grant items AND powerups through the same
 		# `granted` dictionary, because from the opener's side they are both "what I got".

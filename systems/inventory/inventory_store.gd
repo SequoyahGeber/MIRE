@@ -236,7 +236,8 @@ func _sorted_ids(values: Dictionary) -> Array[StringName]:
 	var result: Array[StringName] = []
 	for key: Variant in values:
 		result.append(StringName(String(key)))
-	result.sort()
+	# StringName's `<` compares interned identity, not string content — F-175.
+	result.sort_custom(func(a, b): return String(a) < String(b))
 	return result
 
 

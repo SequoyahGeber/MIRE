@@ -784,37 +784,6 @@ beyond just "the level loaded") or a player-health "downed" edge signal (not the
 triggered `downed_flag_changed`) should add one row each to `CommandService._HOOK_EVENTS` — the table
 `wire_hook()` already reads is the whole cost of a new event once the real signal exists.
 
-### F-157 · No system tracks a player's display name anywhere in the project — F-126's `peer` name resolution has nothing to resolve against, and 3.16 shipped without adding one
-
-**Area:** netcode · **Severity:** low · **Found:** 2026-08-18 by lp while closing F-126
-
-F-126 named task 3.16 (the command catalog sweep) as the most natural owner of a per-player
-display-name registry; 3.16 has since shipped (`docs/ROADMAP.md` marks it done) without adding one,
-so that pointer is now stale. Confirmed still true project-wide: no file anywhere defines a peer id
-→ display name map. `NetTransport` (`autoload/net_transport.gd`) tracks only a `PackedInt32Array` of
-bare peer ids (`_peers`/`peer_joined`/`peer_left`); `NetDebugPanel`/`net_debug_panel.gd` prints raw
-`peer %d`; `SteamLobby` (`autoload/steam_lobby.gd`) resolves a Steam persona name per lobby *member*
-(`_persona()`), but that is lobby membership before a session starts, keyed by Steam id, not by the
-in-session ENet/net peer id every other system uses, and it does not exist at all in LOCAL/LAN mode.
-
-**What would close this:** whoever adds the registry should own a single canonical peer id → display
-name map, not one invented per-caller. `NetTransport` is the natural home — it already owns peer
-bookkeeping (`_peers`, `_track_peer`/`_add_peer`, `peer_joined`/`peer_left`) and the correct
-lobby-agnostic keying (net peer id, works in every `NetConfig.Mode`). Needs: a name source per mode
-(LOCAL/LAN has none today — a client would need to submit one, e.g. `OS.get_environment("USERNAME")`
-as a placeholder default, over a new reliable client→host RPC; STEAM already has one in
-`SteamLobby._persona()` and just needs threading through), sanitization/length cap on the host side
-(never trust the client's string raw), and a signal so `NetDebugPanel`, a future lobby roster label,
-and a future kill-feed can all read the same map instead of separately reinventing "what does peer N
-call itself". Once it exists, `CommandService._parse_peer()` (`autoload/command_service.gd`) should
-resolve a non-numeric token against it before failing, per `docs/COMMANDS.md` §2.2's `peer` type spec
-— see the doc comment on `_parse_peer()` itself, which already names this file as the successor.
-
-Not filed as blocking anything: `op <peer_id>` and every other `peer`-typed command work fine today
-with the raw id, same as F-126 already established. This is scheduling information, not a defect.
-
----
-
 ### F-165 · Task 6.5's two new extraction RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.5
@@ -1001,36 +970,6 @@ checked against anything but relative deltas on the fastest machine in the proje
 
 ---
 
-### F-175 · `Array[StringName].sort()` does not sort lexicographically — at least two other call sites besides F-167's rely on it anyway
-
-**Area:** core · **Severity:** low · **Found:** 2026-08-19 by lm during F-167
-
-`StringName`'s comparison operator compares interned identity, not string content, so
-`Array[StringName].sort()` silently does **not** produce alphabetical order — confirmed with a
-throwaway probe script (`tools/_probe_sn_sort.gd`, deleted after use, not committed): sorting
-`["iron_sword","stone_pickaxe","arrow","cleaver","wooden_axe"]` as `Array[String]` gives
-`[arrow, cleaver, iron_sword, stone_pickaxe, wooden_axe]` as expected; the identical values as
-`Array[StringName]` give `[iron_sword, stone_pickaxe, wooden_axe, cleaver, arrow]`. F-167 hit this in
-`CraftingService.recipes_for_station()`, fixed there with `ids.sort_custom(func(a, b): return
-String(a) < String(b))`.
-
-Two more call sites build an `Array[StringName]` and call plain `.sort()` expecting alphabetical
-order, neither touched here because neither file is in F-167's claim set:
-- `ui/loot/chest_ui.gd:347` (`var ids: Array[StringName]` at line 344)
-- `autoload/rule_service.gd:118-120` (`ids.sort()` on a `Array[StringName] = []`, plus a second read
-  of the now-stale-order result at `rule_service.gd:279`)
-
-Neither has an obvious player-visible symptom yet (chest UI isn't wired to anything — F-151 — and
-rule_service's list order may not be presentation-facing), which is likely why F-167's exact failure
-shape (a hardcoded index silently pointing at the wrong entry once a list grows past one item) hasn't
-been noticed there yet. **What closes this:** whoever next holds either file, apply the same
-`sort_custom(func(a, b): return String(a) < String(b))` fix, and grep the rest of the codebase's
-`\.sort()` call sites for any other `Array[StringName]` declaration before assuming this is the
-complete list — this session did not do an exhaustive sweep, only checked the sites plain-text search
-turned up near variables named `ids`.
-
----
-
 ### F-176 · `tools/audio/render_music.py`'s ambient tracks are not byte-identical on re-render, contradicting `docs/AUDIO.md`'s "reproduces the committed files bit-for-bit" claim
 
 **Area:** audio · **Severity:** low · **Found:** 2026-08-18 by lp during 5.5
@@ -1100,7 +1039,169 @@ approach (`piece_placed`/`piece_destroyed` from `BuildService`, folded into
 
 ---
 
+### F-178 · F-157's three new display-name RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp during F-157
+
+`autoload/net_transport.gd` added `net_request_display_name` (client → host), `net_display_name_changed`
+and `net_display_name_snapshot` (both host → peers) — a real new wire shape, same class of change
+`core/net/net_version.gd`'s own header says must bump `PROTOCOL_VERSION`. `core/net/net_version.gd`
+and `tools/handshake_check.gd` were both held by lane slate17's 3.7 claim for this task's entire
+session, the identical contention D-102/F-161 (task 5.3), F-165 (task 6.5), and F-169 (task 6.7) each
+already hit and shipped through. D-120 records the call for this instance.
+
+**What closes this:** whoever next holds `core/net/net_version.gd`:
+1. Bump `const PROTOCOL_VERSION: int = 19` to `20`.
+2. Add a `## 20 (F-157)` comment naming the three RPCs, matching every entry above it.
+3. Raise `tools/handshake_check.gd`'s pinned-version assertion to `== 20` and update its label.
+
+Consider, while there: F-161/F-165/F-169 name the SAME two files and are very likely still unbumped
+too (each was blocked by the same claim, in the same order — task 5.3, then 6.5, then 6.7, then this
+one) — check whether the version needs to jump by more than one, and whether all four RPC trios need
+their own `## N (task X)` comment rather than collapsing into a single bump.
+
+---
+
+### F-179 · `CommandService.spec_names()`/`function_names()` are the fourth and fifth `Array[StringName].sort()` sites F-175 found — not fixed here, `autoload/command_service.gd` was held all session by another lane's claim
+
+**Area:** core · **Severity:** low · **Found:** 2026-08-19 by lm while closing F-175
+
+F-175 named two call sites (`ui/loot/chest_ui.gd`, `autoload/rule_service.gd`) as needing the same
+`sort_custom` fix `CraftingService.recipes_for_station()` got under F-167, and asked whoever closed it
+to grep the rest of the codebase for any other `Array[StringName]` site before assuming that list was
+complete. It was not: `autoload/command_service.gd` has two more —
+- `spec_names()` (`autoload/command_service.gd:141-144`) — `names: Array[StringName]`, plain
+  `.sort()` at line 143.
+- `function_names()` (`autoload/command_service.gd:466-469`) — same shape, `.sort()` at line 469.
+
+Both are real: `spec_names()` backs the `help` console command's listing (see its own doc comment,
+"a caller … that wants to list commands without going through execute()/submit()"), so the same
+`StringName`-identity-not-content bug F-167 fixed for the crafting panel silently orders `help`'s
+command list by registration order, not alphabetically, exactly like F-167 and F-175's other two sites.
+`autoload/command_service.gd` was claimed by lane lp for F-157 for this session's entire duration
+(confirmed via `.agent/state.json`), so it was out of reach here — same shape of contention as F-161/
+F-165/F-169/F-178, just against this file instead of `core/net/net_version.gd`.
+
+**What closes this:** whoever next holds `autoload/command_service.gd`, apply the identical
+`names.sort_custom(func(a, b): return String(a) < String(b))` fix at both sites (pattern already
+landed at three other call sites under F-175: `rule_service.gd`, `chest_ui.gd`,
+`inventory_store.gd`, plus `crafting_service.gd` under F-167) and extend
+`tools/stringname_sort_check.gd` with a `spec_names()`/`function_names()` case the same shape as its
+existing `RuleService.rule_ids()` check.
+
+---
+
 ## Resolved
+
+### F-175 · `Array[StringName].sort()` does not sort lexicographically — at least two other call sites besides F-167's rely on it anyway — **fixed**
+
+**Area:** core · **Severity:** low · **Found:** 2026-08-19 by lm during F-167
+
+`StringName`'s comparison operator compares interned identity, not string content, so
+`Array[StringName].sort()` silently does **not** produce alphabetical order — confirmed with a
+throwaway probe script (`tools/_probe_sn_sort.gd`, deleted after use, not committed): sorting
+`["iron_sword","stone_pickaxe","arrow","cleaver","wooden_axe"]` as `Array[String]` gives
+`[arrow, cleaver, iron_sword, stone_pickaxe, wooden_axe]` as expected; the identical values as
+`Array[StringName]` give `[iron_sword, stone_pickaxe, wooden_axe, cleaver, arrow]`. F-167 hit this in
+`CraftingService.recipes_for_station()`, fixed there with `ids.sort_custom(func(a, b): return
+String(a) < String(b))`.
+
+Two more call sites build an `Array[StringName]` and call plain `.sort()` expecting alphabetical
+order, neither touched here because neither file was in F-167's claim set:
+- `ui/loot/chest_ui.gd:347` (`var ids: Array[StringName]` at line 344)
+- `autoload/rule_service.gd:118-120` (`ids.sort()` on a `Array[StringName] = []`, plus a second read
+  of the now-stale-order result at `rule_service.gd:279`)
+
+Neither had an obvious player-visible symptom yet (chest UI isn't wired to anything — F-151 — and
+rule_service's list order may not be presentation-facing), which is likely why F-167's exact failure
+shape (a hardcoded index silently pointing at the wrong entry once a list grows past one item) hadn't
+been noticed there yet.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed both named sites plus a third the finding's own "grep for more"
+instruction turned up: `systems/inventory/inventory_store.gd`'s `_sorted_ids()` (feeds
+`apply_transaction()`'s removal/addition order) had the identical shape. All three now use
+`sort_custom(func(a, b): return String(a) < String(b))`, the same fix F-167 landed in
+`crafting_service.gd`. A full-codebase grep for `Array[StringName]` declarations paired with a
+plain `.sort()` call also found `autoload/command_service.gd`'s `spec_names()`/`function_names()` —
+same bug, not fixed here because that file was held by lane lp's F-157 claim for this session's
+entire duration; filed as F-179 rather than left silently undiscovered. No other `Array[StringName]`
+site in the codebase pairs with a plain `.sort()` call as of this session.
+
+New check `tools/stringname_sort_check.gd` proves all three fixes together: `RuleService.rule_ids()`
+returns its 8 rules in lexicographic order, `InventoryStore._sorted_ids()` sorts a 3-key dict
+correctly, and `ChestUI._populate_rewards()` renders its reward rows in the same order. Verified via
+`agent godot --script tools/stringname_sort_check.gd` → `STRINGNAME_SORT_CHECK failures=0`, all 8
+assertions PASS, run twice to rule out flakiness.
+
+---
+
+### F-157 · No system tracks a player's display name anywhere in the project — F-126's `peer` name resolution has nothing to resolve against, and 3.16 shipped without adding one — **fixed**
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-18 by lp while closing F-126
+
+F-126 named task 3.16 (the command catalog sweep) as the most natural owner of a per-player
+display-name registry; 3.16 has since shipped (`docs/ROADMAP.md` marks it done) without adding one,
+so that pointer is now stale. Confirmed still true project-wide: no file anywhere defines a peer id
+→ display name map. `NetTransport` (`autoload/net_transport.gd`) tracks only a `PackedInt32Array` of
+bare peer ids (`_peers`/`peer_joined`/`peer_left`); `NetDebugPanel`/`net_debug_panel.gd` prints raw
+`peer %d`; `SteamLobby` (`autoload/steam_lobby.gd`) resolves a Steam persona name per lobby *member*
+(`_persona()`), but that is lobby membership before a session starts, keyed by Steam id, not by the
+in-session ENet/net peer id every other system uses, and it does not exist at all in LOCAL/LAN mode.
+
+**What would close this:** whoever adds the registry should own a single canonical peer id → display
+name map, not one invented per-caller. `NetTransport` is the natural home — it already owns peer
+bookkeeping (`_peers`, `_track_peer`/`_add_peer`, `peer_joined`/`peer_left`) and the correct
+lobby-agnostic keying (net peer id, works in every `NetConfig.Mode`). Needs: a name source per mode
+(LOCAL/LAN has none today — a client would need to submit one, e.g. `OS.get_environment("USERNAME")`
+as a placeholder default, over a new reliable client→host RPC; STEAM already has one in
+`SteamLobby._persona()` and just needs threading through), sanitization/length cap on the host side
+(never trust the client's string raw), and a signal so `NetDebugPanel`, a future lobby roster label,
+and a future kill-feed can all read the same map instead of separately reinventing "what does peer N
+call itself". Once it exists, `CommandService._parse_peer()` (`autoload/command_service.gd`) should
+resolve a non-numeric token against it before failing, per `docs/COMMANDS.md` §2.2's `peer` type spec
+— see the doc comment on `_parse_peer()` itself, which already names this file as the successor.
+
+Not filed as blocking anything: `op <peer_id>` and every other `peer`-typed command work fine today
+with the raw id, same as F-126 already established. This is scheduling information, not a defect.
+
+---
+
+**Resolved 2026-08-19 by lp.** Fixed. NetTransport now owns the peer id -> display name registry (D-098's named owner):
+display_name()/display_names()/submit_display_name() public API, HOST-authoritative
+(new ARCHITECTURE.md §2.2 row), sanitized only on the host (_sanitize_display_name: strip
+control chars, trim, cap 24, empty -> "Player N"). New wire shape (no existing seam fit):
+net_request_display_name (client -> host), net_display_name_changed (host -> every remote),
+net_display_name_snapshot (host -> a newly admitted peer, sent at admission time). Default
+name auto-submitted on connect: STEAM threads through new SteamLobby.local_persona_name();
+LOCAL/LAN falls back to OS username. No name-entry UI exists yet -- out of scope, a future
+one just calls submit_display_name() again.
+
+CommandService._parse_peer() now consumes the registry: a non-numeric token resolves
+case-insensitively against NetTransport.display_names(); duplicate names are allowed
+(not deduped) and an ambiguous match refuses listing every candidate peer id rather than
+guessing (D-120). tools/command_check.gd's peer-arg-type section (F-126's own coverage)
+updated for the new refusal wording. ui/debug/net_debug_panel.gd's session line and
+join/left log now show id(name) instead of a bare id -- one of the two consumers F-157's
+own text named.
+
+Ships without a PROTOCOL_VERSION bump -- core/net/net_version.gd/tools/handshake_check.gd
+were held by slate17's 3.7 claim for this task's whole session, the same recurring gap
+D-102/F-161/F-165/F-169 already hit. Filed as F-178, continuing that chain.
+
+Verified: agent godot --script tools/display_name_check.gd (new file, real two-process
+ENet round trip) -> DISPLAY_NAME_CHECK failures=0, 11/11 PASS (submission round trip,
+sanitization of a padded/control-char/overlong name, snapshot delivery to a peer that
+joined after the name was already set, case-insensitive op <name> resolving to the right
+peer id, ambiguous-name refusal naming both candidate ids). agent godot --script
+tools/command_check.gd -> COMMAND_CHECK failures=0 (24 assertions). Regression: agent
+godot --script tools/command_net_check.gd -> COMMAND_NET_CHECK failures=0; agent godot
+--script tools/net_debug_panel_check.gd -> 0 failure(s); agent godot --script
+tools/verify_setup.gd -> all checks passed. Zero unexpected ERROR: lines across all four
+runs (only the pre-existing gfx deprecation warning, F-130, unrelated). Full writeup:
+docs/SPECS.md F-157, docs/DECISIONS.md D-120, docs/DELEGATION.md Current state,
+docs/ARCHITECTURE.md §2.2.
 
 ### F-172 · Seed entry (task 6.10) only reaches the host-session path — solo/offline play draws its seed before any menu can be opened — **fixed**
 

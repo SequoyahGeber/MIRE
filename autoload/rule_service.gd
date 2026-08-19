@@ -117,7 +117,8 @@ func is_overridden(id: StringName) -> bool:
 func rule_ids() -> Array[StringName]:
 	var ids: Array[StringName] = []
 	ids.assign(_values.keys())
-	ids.sort()
+	# StringName's `<` compares interned identity, not string content — F-175.
+	ids.sort_custom(func(a, b): return String(a) < String(b))
 	return ids
 
 

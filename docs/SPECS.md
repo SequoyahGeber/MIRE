@@ -2962,6 +2962,76 @@ warning printed.
 
 ---
 
+## F-157 · No system tracks a player's display name anywhere in the project — F-126's `peer` name resolution has nothing to resolve against
+
+**Claim:** `autoload/net_transport.gd`, `autoload/steam_lobby.gd`, `autoload/command_service.gd`,
+`ui/debug/net_debug_panel.gd`, `tools/command_check.gd`, `tools/net_debug_panel_check.gd`, plus a new
+`tools/display_name_check.gd` (needs a `.uid` sidecar claimed too, F-010). Check `agent brief F-157`'s
+"held by someone else" list for `core/net/net_version.gd`/`tools/handshake_check.gd` before claiming —
+if still held, this spec's own precedent (D-102/F-161/F-165/F-169) is: build the RPCs anyway, file the
+`PROTOCOL_VERSION` bump as its own finding, do not wait on it.
+
+**What was wrong:** confirmed project-wide (F-126's original text, re-confirmed here): no file defines
+a peer id → display name map. `NetTransport` tracked bare ids only; `SteamLobby._persona()` resolves a
+name per lobby *member*, keyed by Steam id, a different key than the in-session net peer id every other
+system uses, and does not exist in LOCAL/LAN at all. `CommandService._parse_peer()` implemented only
+the int half of docs/COMMANDS.md §2.2's `peer` type spec ("peer id int or player display name").
+
+**Fix, four pieces:**
+
+1. **Registry, in `NetTransport`** (D-098 named this file as the natural owner — it already has the
+   right lifecycle hooks and the right key): `_display_names: Dictionary` (peer id → sanitized
+   String), `display_name(id)`/`display_names()`/`submit_display_name(name)` public, `signal
+   display_name_changed(peer_id, display_name)`. HOST-authoritative (new `ARCHITECTURE.md` §2.2 row):
+   only `_host_apply_display_name()` writes the map, and it is the only place `_sanitize_display_name()`
+   runs — never trust a client's raw string, same stance every other write RPC in the project takes.
+2. **Wire shape, all new, no existing seam to reuse** (a display name has no per-cell/per-chunk shape
+   the way Mire deltas or the Cycle counter did for D-99/D-100's `WorldDeltaLog` reuse):
+   `net_request_display_name` (client → host, one raw String), `net_display_name_changed` (host →
+   every remote, one id + result — reaches the renamed peer too, since it needs the SANITIZED value),
+   `net_display_name_snapshot` (host → one newly admitted peer, sent from `_add_peer` at admission
+   time, the full map so far). `host()`/the client's `connected_to_host` handler each call
+   `submit_display_name()` once with a computed default — STEAM threads through a new
+   `SteamLobby.local_persona_name()` (`_persona(local_steam_id())`, guarded on `_initialised`);
+   LOCAL/LAN falls back to `OS.get_environment("USERNAME")`/`"USER"`. No name-entry UI exists or is in
+   scope — a future one just calls `submit_display_name()` again.
+3. **`CommandService._parse_peer()` consumes it**: a non-numeric token now resolves against
+   `NetTransport.display_names()` (exact, case-insensitive) instead of failing outright. Two peers
+   sharing a name is allowed, not deduped — an ambiguous match refuses and lists every candidate peer
+   id rather than guessing (`docs/DECISIONS.md` D-120). `tools/command_check.gd`'s "peer arg type"
+   section (F-126's own coverage) updates for the new refusal wording; its offline harness never calls
+   host()/join(), so it can only prove the "no match" refusal — the real round trip needs a second
+   real peer, hence (4).
+4. **`tools/display_name_check.gd`**, new — two real ENet processes (same driver/probe shape as
+   `command_net_check.gd`): submission → host sanitizes and broadcasts → the sender's own mirror
+   reflects the sanitized result → a peer that connects AFTER a name is already set receives it via
+   the snapshot, not a resubmit → `op <name>` resolves to the right peer id, case-insensitively → two
+   peers sharing a name refuse `op <name>` with both ids listed. Also touched: `net_debug_panel.gd`'s
+   session line and join/left log now show `id(name)` — one of the two consumers F-157's own text
+   named as still printing a bare id.
+
+**Verify:** `agent godot --script tools/display_name_check.gd` (new, 11/11 PASS). Regression:
+`tools/command_check.gd`, `tools/command_net_check.gd`, `tools/net_debug_panel_check.gd`,
+`tools/verify_setup.gd` all `failures=0` / all checks passed.
+
+**Done means:** the four files above changed, `docs/ARCHITECTURE.md` §2.2 carries the new authority
+row, `docs/DECISIONS.md` carries D-120, `docs/FINDINGS.md` moves F-157 to `## Resolved` and adds F-178
+(the `PROTOCOL_VERSION` gap, continuing D-102's chain) under `## Open`, `docs/DELEGATION.md` *Current
+state* carries the public API the next task (a lobby roster label, a kill-feed, a name-entry UI) builds
+against.
+
+**Verified 2026-08-19 (lp):** `agent godot --script tools/display_name_check.gd` → `DISPLAY_NAME_CHECK
+failures=0`, all 11 assertions PASS (submission round trip, sanitization of a padded/control-character/
+overlong name, snapshot delivery to a peer that joined after the name was already set, case-insensitive
+`op <name>` resolving to the correct peer id, ambiguous-name refusal naming both candidate ids).
+`tools/command_check.gd` → `COMMAND_CHECK failures=0` (24 assertions, including the updated peer-arg
+section). Regression: `tools/command_net_check.gd` → `COMMAND_NET_CHECK failures=0`;
+`tools/net_debug_panel_check.gd` → `0 failure(s)`; `tools/verify_setup.gd` → `all checks passed`. Zero
+unexpected `ERROR:` lines across all four runs — only the pre-existing `gfx` deprecation warning
+(F-130, unrelated).
+
+---
+
 ## F-130 · Three console commands never migrated to CommandService — `console.call("register", ...)` reflection calls hide from a name grep
 
 **Claim:** `core/dev/dev_frame_cap.gd`, `autoload/graphics_quality.gd`, plus whichever new guard
@@ -3722,6 +3792,50 @@ twice back to back — `SEED_LAUNCH_ARG_CHECK failures=0` both times, all 8 asse
 regression: `agent godot --script tools/main_menu_check.gd` (28/28 PASS, including the pre-existing
 seed-staging assertions) and `agent godot --script tools/seed_sync_check.gd` (host/client seed
 replication, 12/12 PASS) both stayed clean after this change to `GameState._ready()`.
+
+---
+
+## F-175 · `Array[StringName].sort()` does not sort lexicographically — at least two other call sites besides F-167's rely on it anyway
+
+**Claim:** `ui/loot/chest_ui.gd`, `autoload/rule_service.gd`, `systems/inventory/inventory_store.gd`,
+`tools/stringname_sort_check.gd` (new), `docs/FINDINGS.md`, `docs/SPECS.md`.
+
+**Root cause:** already established under F-167 — `StringName`'s `<` compares interned identity, not
+string content, so `Array[StringName].sort()` silently tracks whatever order the values happened to
+be interned in rather than alphabetical order. F-167 fixed the one site it hit
+(`CraftingService.recipes_for_station()`) and filed F-175 naming two more sites it found by grep but
+did not touch, since neither file was in its claim set.
+
+**Fix, three sites, same shape as F-167's:**
+1. `autoload/rule_service.gd` — `rule_ids()` now sorts with
+   `ids.sort_custom(func(a, b): return String(a) < String(b))`. Feeds the `rules` console command's
+   listing order and `RuleService`'s own doc comment's "stable order" promise, which plain `.sort()`
+   never actually delivered.
+2. `ui/loot/chest_ui.gd` — `_populate_rewards()`'s reward-row order gets the same fix. Not yet
+   player-visible (F-151: chest UI has no in-game caller), but the panel now genuinely orders its
+   rows alphabetically once one exists.
+3. `systems/inventory/inventory_store.gd` — `_sorted_ids()` gets the same fix. Feeds
+   `apply_transaction()`'s removal/addition order for the crafting seam; order doesn't change
+   transaction correctness (removals fully precede additions either way) but was silently not the
+   stable alphabetical order the function's contract implies.
+
+**Swept for more:** grepped every `Array[StringName]` declaration in the codebase against every
+plain `.sort()` call site. Found one more pair — `autoload/command_service.gd`'s
+`spec_names()`/`function_names()` — not fixed here because that file was held by lane lp's F-157
+claim for this session's entire duration; filed as F-179 rather than left undiscovered for the next
+lane to re-find from scratch. No other site pairs an `Array[StringName]` with a plain `.sort()` as of
+this session.
+
+**Verify:** new `tools/stringname_sort_check.gd` boots the real project and proves all three fixes
+directly: `RuleService.rule_ids()` returns its 8 shipped rules in lexicographic order;
+`InventoryStore._sorted_ids()` (called via `.call()`, same pattern other checks use for
+underscore-named methods) sorts a 3-key out-of-order dict correctly; `ChestUI._populate_rewards()`
+renders three granted items (`wooden_axe`, `arrow`, `mushroom`) as reward rows in `Arrow, Mushroom,
+Wooden Axe` order rather than dictionary-insertion order.
+
+**Verified 2026-08-19 (lm):** `agent godot --script tools/stringname_sort_check.gd` →
+`STRINGNAME_SORT_CHECK failures=0`, all 8 assertions PASS, run twice back to back to rule out
+flakiness.
 
 ---
 

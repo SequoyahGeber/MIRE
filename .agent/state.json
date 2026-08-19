@@ -5,11 +5,6 @@
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
     },
-    "autoload/rule_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T05:08:39+00:00",
-      "task": "F-175"
-    },
     "core/net/net_version.gd": {
       "agent": "slate17",
       "at": "2026-08-18T22:23:08+00:00",
@@ -20,16 +15,6 @@
       "at": "2026-08-18T22:08:56+00:00",
       "task": "F-144"
     },
-    "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T05:08:39+00:00",
-      "task": "F-175"
-    },
-    "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T05:08:39+00:00",
-      "task": "F-175"
-    },
     "systems/building/buildable_door.gd": {
       "agent": "slate17",
       "at": "2026-08-18T22:23:08+00:00",
@@ -39,11 +24,6 @@
       "agent": "nettle12",
       "at": "2026-08-18T22:08:56+00:00",
       "task": "F-144"
-    },
-    "systems/inventory/inventory_store.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T05:08:39+00:00",
-      "task": "F-175"
     },
     "tools/_probe_lods.gd": {
       "agent": "nettle12",
@@ -89,16 +69,6 @@
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
-    },
-    "tools/stringname_sort_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T05:08:39+00:00",
-      "task": "F-175"
-    },
-    "ui/loot/chest_ui.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T05:08:39+00:00",
-      "task": "F-175"
     },
     "world/environment/draw_policy.gd": {
       "agent": "nettle12",
@@ -147,19 +117,6 @@
       ],
       "notes": [],
       "started": "2026-08-18T21:51:43+00:00"
-    },
-    "F-175": {
-      "agent": "lm",
-      "files": [
-        "ui/loot/chest_ui.gd",
-        "autoload/rule_service.gd",
-        "systems/inventory/inventory_store.gd",
-        "tools/stringname_sort_check.gd",
-        "docs/FINDINGS.md",
-        "docs/SPECS.md"
-      ],
-      "notes": [],
-      "started": "2026-08-19T05:08:39+00:00"
     }
   },
   "recent": {
@@ -545,10 +502,10 @@
       "task": "6.9"
     },
     "autoload/rule_service.gd": {
-      "agent": "hollow7",
-      "at": "2026-08-18T21:00:45+00:00",
-      "hash": "47dba118dc19dd04fac474c592051e20a16c653cbe6d9909b38c888b4e6c7517",
-      "task": "3.14"
+      "agent": "lm",
+      "at": "2026-08-19T05:12:18+00:00",
+      "hash": "c84da9806e4d95dc3dd3b58a84e126ba5692f0d23b1850cb891cb49c6d50dbfa",
+      "task": "F-175"
     },
     "autoload/salvage_service.gd": {
       "agent": "lm",
@@ -1601,9 +1558,9 @@
     },
     "docs/FINDINGS.md": {
       "agent": "lm",
-      "at": "2026-08-19T04:53:06+00:00",
-      "hash": "bbedc66b2d8d8e67d1c2016bb6f86b65a0387827c2d444eaf665c1f249eb54e7",
-      "task": "F-163"
+      "at": "2026-08-19T05:12:18+00:00",
+      "hash": "477f088075e9d7c0437901b0c71856b99592161099b3b5ee6989aa45754d14f9",
+      "task": "F-175"
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -1629,9 +1586,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lm",
-      "at": "2026-08-19T04:53:06+00:00",
-      "hash": "8d26b4cbd820f20332f244345be2ed1d41fb078118c1e01fbcb1246754c4a40c",
-      "task": "F-163"
+      "at": "2026-08-19T05:12:18+00:00",
+      "hash": "bc4ba4926ecbfe082327552c33afb45f130b2ba0e9c3e961dd398415ebecfd0a",
+      "task": "F-175"
     },
     "entities/player/player.tscn": {
       "agent": "lp",
@@ -1959,6 +1916,12 @@
       "at": "2026-08-19T04:12:50+00:00",
       "hash": "f9ac38771e2e5b7b9d559796fbde6818530989f0274eeed62fe18baf2013bff7",
       "task": "F-155"
+    },
+    "systems/inventory/inventory_store.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T05:12:18+00:00",
+      "hash": "61228f7f18d8dc7af70564dec007b5fdc25382b2f26d0ca7913e29378982fa53",
+      "task": "F-175"
     },
     "systems/loot/chest.gd": {
       "agent": "slate17",
@@ -2678,6 +2641,12 @@
       "hash": "cc7468eb06b868ffbc1b32f75d811c4794e8a095219f9f558adad53afbbaa6e3",
       "task": "F-136"
     },
+    "tools/stringname_sort_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T05:12:18+00:00",
+      "hash": "a91a9d4e0886965791f50514324233a8b28a13f26f859dd92019513ec9dc130d",
+      "task": "F-175"
+    },
     "tools/terrain_check.gd": {
       "agent": "lm",
       "at": "2026-08-18T19:50:20+00:00",
@@ -2812,10 +2781,10 @@
       "task": "6.10"
     },
     "ui/loot/chest_ui.gd": {
-      "agent": "slate17",
-      "at": "2026-08-18T21:26:59+00:00",
-      "hash": "6b4406b283778fafd4d8b98c23fd73fa17ec85bab8ebdb82c0092e31f00dbc00",
-      "task": "3.2"
+      "agent": "lm",
+      "at": "2026-08-19T05:12:18+00:00",
+      "hash": "5aa62173558185ebc5288f43c6f3873dce3573251c15603090040b758bd36b5c",
+      "task": "F-175"
     },
     "ui/menu/main_menu.gd": {
       "agent": "lm",
@@ -5549,9 +5518,11 @@
       "title": "No dev machine can stand in for \"mid-range\" \u2014 `tools/perf_probe.gd`'s baseline is only ever measured on the fastest hardware in the project"
     },
     "F-175": {
+      "done_at": "2026-08-19T05:12:18+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`Array[StringName].sort()` does not sort lexicographically \u2014 at least two other call sites besides F-167's rely on it anyway"
     },
@@ -5568,6 +5539,20 @@
       "status": "todo",
       "tier": "F",
       "title": "`EnemyWorld.bake_navigation()` \u2014 the LIVE nav baker \u2014 still ignores placed buildables; only `NavBaker` (task 4.5, unreachable per F-139) got F-159's fix"
+    },
+    "F-178": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "F-157's three new display-name RPCs shipped with no `PROTOCOL_VERSION` bump \u2014 `net_version.gd` was held all session by another lane's claim"
+    },
+    "F-179": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`CommandService.spec_names()`/`function_names()` are the fourth and fifth `Array[StringName].sort()` sites F-175 found \u2014 not fixed here, `autoload/command_service.gd` was held all session by another lane's claim"
     }
   },
   "version": 1

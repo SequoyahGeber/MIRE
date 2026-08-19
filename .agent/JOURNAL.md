@@ -4136,3 +4136,18 @@ NetTransport owns a host-authoritative peer id -> display name registry (display
 Files: `autoload/net_transport.gd`, `autoload/steam_lobby.gd`, `autoload/command_service.gd`, `tools/command_check.gd`, `ui/debug/net_debug_panel.gd`, `tools/display_name_check.gd`, `tools/display_name_check.gd.uid`, `tools/net_debug_panel_check.gd`
 
 Commit at time of writing: `ef4f30b`
+
+---
+
+### DONE · F-175 · lm · 2026-08-19T05:12:18+00:00
+
+**`Array[StringName].sort()` does not sort lexicographically — at least two other call sites besides F-167's rely on it anyway**
+
+Fixed the 3 Array[StringName].sort() call sites named/found (rule_service.gd, chest_ui.gd, inventory_store.gd) with sort_custom(String comparison), same fix F-167 used. New tools/stringname_sort_check.gd: agent godot --script tools/stringname_sort_check.gd -> STRINGNAME_SORT_CHECK failures=0, 8/8 PASS, run twice. No regression: rule_check.gd, inventory_check.gd, inventory_net_check.gd all still green. Filed F-179 for command_service.gd's 2 remaining sites, blocked by lp's F-157 claim all session. SPECS.md block added.
+
+Notes along the way:
+- Fixed 3 sites (rule_service.gd, chest_ui.gd, inventory_store.gd). Swept codebase for more Array[StringName]+.sort() pairs, found command_service.gd's spec_names()/function_names() but it's held by lp for F-157 all session -- filed as F-179 instead. New tools/stringname_sort_check.gd, agent godot --script tools/stringname_sort_check.gd -> failures=0 (8/8 PASS), run twice.
+
+Files: `ui/loot/chest_ui.gd`, `autoload/rule_service.gd`, `systems/inventory/inventory_store.gd`, `tools/stringname_sort_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`
+
+Commit at time of writing: `d725432`
