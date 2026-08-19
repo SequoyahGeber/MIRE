@@ -6132,3 +6132,15 @@ Fixed: F-248 is resolved. Added a standing dependency note at the top of docs/RO
 Files: `tools/roadmap_dependency_check.gd`
 
 Commit at time of writing: `7388d8f`
+
+---
+
+### DONE · F-250 · lp · 2026-08-19T20:06:51+00:00
+
+**CycleService._announce()'s EventBus.emit_cycle_advanced() still gates behind _owns_cycle(), so cycle_advanced never fires on a real connected client — F-226 fixed the reader-side symptom, not this root cause**
+
+WorldDeltaLog gained a generic delta_applied signal; CycleService subscribes and re-derives EventBus.cycle_advanced on a client, guarded on _owns_cycle() so the host never double-emits. Verified: agent godot --script tools/cycle_advanced_net_check.gd -> CYCLE_ADVANCED_NET_CHECK failures=0 (real two-process check, client listener fires 3x with correct Cycle after 3 real host advances). Regression green: cycle_check, wave_director_check, cycle_modifier_check, wave_spawner_cycle_net_check (one stale assertion updated), steam_stats_check, rich_presence_check, wellspring_check, mire_grid_check. Full boot 0 stray ERROR:. Swept all EVENT_BUS.emit_* sites; filed F-253 (unrelated pre-existing seed_sync_check failures) and F-254 (same-shape sibling in CycleModifierService, needs a schema addition first).
+
+Files: `systems/cycle/cycle_service.gd`, `autoload/world_delta_log.gd`, `core/events/event_bus.gd`, `autoload/rich_presence_service.gd`, `autoload/steam_stats.gd`, `tools/cycle_advanced_net_check.gd`, `tools/wave_spawner_cycle_net_check.gd`
+
+Commit at time of writing: `2699e6c`

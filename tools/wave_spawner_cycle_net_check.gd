@@ -3,15 +3,27 @@ extends SceneTree
 ## Real two-process ENet proof for F-226: `WaveSpawner.current_cycle()` claims "readable on any
 ## peer" but was reading only a private `_current_cycle` cache that `_on_cycle_advanced()` updates
 ## from `EventBus.cycle_advanced` — and `CycleService._announce()`
-## (systems/cycle/cycle_service.gd:142-149) gates that emission behind `_owns_cycle()`, host-only, so
+## (systems/cycle/cycle_service.gd:142-149) gated that emission behind `_owns_cycle()`, host-only, so
 ## a real client's cache never left its `1` default. `tools/wave_director_check.gd` already exercises
 ## `current_cycle()` against a DIRECT `EVENT_BUS.emit_cycle_advanced()` call, which bypasses
 ## `CycleService` entirely and would PASS even with F-226's bug present — it only proves the getter
 ## reads its own cache, not that a real client ever gets that cache updated. This file proves the
 ## actual cross-peer path instead: the HOST advances the Cycle for real through
-## `CycleService.host_advance_cycle()`, and the CLIENT — which never receives the host-only EventBus
-## emission — must still read the correct Cycle back, through the `WorldDeltaLog` fallback F-226
-## added to `current_cycle()`.
+## `CycleService.host_advance_cycle()`, and the CLIENT must still read the correct Cycle back,
+## through the `WorldDeltaLog` fallback F-226 added to `current_cycle()`.
+##
+## F-250 (2026-08-19) fixed `_announce()`'s host-only gate on the EMIT side too — a client's own
+## `EventBus.cycle_advanced` now really fires, re-derived from `WorldDeltaLog` locally
+## (`CycleService._on_world_delta_applied()`). That means `WaveSpawner`'s private `_current_cycle`
+## cache is no longer stuck at `1` on a client either — it now updates from the live signal exactly
+## like the host's own copy does, so this file's old "the cache stays at 1, proving the read went
+## through the WorldDeltaLog fallback and not a stray local emission" assertion no longer holds: the
+## emission is real now, not stray, and the cache legitimately follows it. The assertion below was
+## updated to check the cache reflects the real Cycle too, rather than asserting it stays wrong.
+## `current_cycle()`'s own `WorldDeltaLog` fallback branch is still real and still load-bearing for
+## the window before a client's first `cycle_advanced` signal ever arrives (right after joining,
+## before the host's next advance) — `tools/cycle_advanced_net_check.gd` is F-250's dedicated proof
+## that the signal path itself now reaches a client at all.
 ##
 ##   .agent/bin/agent godot --script tools/wave_spawner_cycle_net_check.gd
 ##
@@ -88,9 +100,10 @@ func _run_driver() -> void:
 		+ "(F-226) — got %s") % [expected_cycle, str(_read_result().get("current_cycle", -1))])
 
 	var client_result: Dictionary = _read_result()
-	check(int(client_result.get("cached_current_cycle", -1)) == 1,
-		("client's private _current_cycle cache stays at 1 — proves current_cycle() actually took "
-		+ "the WorldDeltaLog fallback path, not a stray local EventBus emission"))
+	check(int(client_result.get("cached_current_cycle", -1)) == expected_cycle,
+		("F-250: client's private _current_cycle cache also reflects the real Cycle (%d) now — the "
+		+ "signal reaching a client is no longer stray, so the cache legitimately follows it too — "
+		+ "got %s") % [expected_cycle, str(client_result.get("cached_current_cycle", -1))])
 	check(int(client_result.get("multiplier_matches", 0)) == 1,
 		"cycle_count_multiplier() called bare on the client also reflects the real Cycle")
 	check(int(client_result.get("failures", -1)) == 0, "client-side self checks report 0 failures")

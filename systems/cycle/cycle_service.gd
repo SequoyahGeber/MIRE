@@ -19,7 +19,11 @@ extends Node
 ##      6.2 hangs a draw off; nothing consumes it today.
 ##   3. expand the enemy roster          -> `WaveSpawner.host_unlock_next_enemy()`
 ## then announces: a `WorldDeltaLog` record (every peer, including a late joiner, learns the new
-## number), an `EventBus` emission (in-process listeners), and a log line.
+## number), an `EventBus` emission, and a log line. The `EventBus` emission reaches every peer's own
+## bus, not just the host's process — `_announce()` itself only ever runs host-side, but
+## `_on_world_delta_applied()` re-derives the identical emit on a client from the same
+## `WorldDeltaLog` record landing there (F-250; before this, a client's own
+## `EventBus.subscribe_cycle_advanced()` listeners never fired at all).
 ##
 ## F-154: this file is also now the run-lifecycle owner COMMANDS.md §5.2's illustrative hook
 ## vocabulary was missing — see `run_started`'s own doc comment below for the exact "once per
@@ -63,6 +67,12 @@ func _ready() -> void:
 	var day_night: Node = get_node_or_null(^"/root/DayNight")
 	if day_night != null and day_night.has_signal(&"day_started"):
 		day_night.connect(&"day_started", _on_day_started)
+	# F-250: a client's own EventBus never gets `_announce()`'s emit directly (host-only, see that
+	# method's header) — this re-derives it locally from the log record the host's `_announce()` also
+	# writes, the moment it actually lands.
+	var world_delta_log: Node = get_node_or_null(^"/root/WorldDeltaLog")
+	if world_delta_log != null and world_delta_log.has_signal(&"delta_applied"):
+		world_delta_log.connect(&"delta_applied", _on_world_delta_applied)
 	# Seeds WorldDeltaLog with Cycle 1 immediately, so a peer joining before the first advance still
 	# reads a real recorded value instead of falling back to `latest()`'s default parameter.
 	_announce()
@@ -138,7 +148,9 @@ func _expand_enemy_pool() -> StringName:
 
 ## Host-only. Records the current Cycle into WorldDeltaLog (broadcasts to every already-connected
 ## peer, and folds into the snapshot a late joiner gets — see the header note) and fires
-## EventBus.emit_cycle_advanced() for in-process listeners.
+## EventBus.emit_cycle_advanced() for this process's own in-process listeners. A client never runs
+## this method (guarded below) — see `_on_world_delta_applied()` for how its own peer's
+## `cycle_advanced` still fires.
 func _announce() -> void:
 	if not _owns_cycle():
 		return
@@ -147,6 +159,22 @@ func _announce() -> void:
 		world_delta_log.call("host_record", GLOBAL_CHUNK, KIND, KEY, _current_cycle)
 	EVENT_BUS.emit_cycle_advanced(_current_cycle)
 	MireLog.info(&"world", "Cycle %d begins — spread x%.2f" % [_current_cycle, _spread_multiplier])
+
+
+## F-250: `_announce()` above only ever runs host-side (`_owns_cycle()`), so a real connected
+## client's own `EventBus.cycle_advanced` never fired at all — every `subscribe_cycle_advanced()`
+## listener went silent on every peer but the host's, no matter how many Cycles actually passed.
+## `WorldDeltaLog.delta_applied` fires the instant this process's own `_apply()` stores a value —
+## for a client that is `net_delta_applied` landing the host's live `host_record()` write, the same
+## real mutation `_announce()` itself is derived from. Re-emitting from here gives every peer's own
+## bus a real, live `cycle_advanced` — not a poll — without a new RPC (D-099/D-100's no-new-RPC
+## reuse of `WorldDeltaLog` for exactly this shape). Guarded on `_owns_cycle()` so the host — whose
+## own `host_record()` call also runs through `_apply()` and fires this same signal — never
+## double-emits; it already emitted directly above.
+func _on_world_delta_applied(chunk: Vector2i, kind: StringName, key: String, value: Variant) -> void:
+	if _owns_cycle() or chunk != GLOBAL_CHUNK or kind != KIND or key != KEY:
+		return
+	EVENT_BUS.emit_cycle_advanced(int(value))
 
 
 func _owns_cycle() -> bool:

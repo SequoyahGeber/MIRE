@@ -25,6 +25,16 @@ extends Node
 ## never "what happened to it" — cheaper to snapshot and replay, and there is nothing today that
 ## would read a history.
 
+## F-250: fired every time `_apply()` actually stores a value — on the host from its own
+## `host_record()` call, and on a client from `net_delta_applied` (a live turnover) or nowhere else
+## (`net_world_snapshot` replaces `_state` wholesale for a late joiner and does not go through
+## `_apply()`, so a snapshot never re-fires this — a joiner reads the caught-up value directly via
+## [method latest] instead, same as before this signal existed). Generic across every `kind` this log
+## ever carries, so `CycleService` can hang a real-time client-side re-derivation of
+## `EventBus.cycle_advanced` off it (F-250's fix) without this file knowing anything about Cycle
+## specifically, and any future kind gets the same for free.
+signal delta_applied(chunk: Vector2i, kind: StringName, key: String, value: Variant)
+
 ## chunk -> kind (as String) -> key -> value.
 var _state: Dictionary = {}
 
@@ -78,6 +88,7 @@ func _apply(chunk: Vector2i, kind: StringName, key: String, value: Variant) -> v
 	var chunk_state: Dictionary = _state.get_or_add(chunk, {})
 	var kind_state: Dictionary = chunk_state.get_or_add(String(kind), {})
 	kind_state[key] = value
+	delta_applied.emit(chunk, kind, key, value)
 
 
 ## Host -> one newly admitted peer: the run seed and the whole accumulated log in one reliable RPC

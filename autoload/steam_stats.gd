@@ -94,7 +94,9 @@ const SALVAGE_ACHIEVEMENTS: Dictionary = {
 }
 
 ## How often `_process()` re-reads `CycleService.current_cycle()`. Not driven by
-## `EventBus.subscribe_cycle_advanced()` — see the header note on the poll vs. the (broken) signal.
+## `EventBus.subscribe_cycle_advanced()` — written when that signal never reached a client at all
+## (F-250). F-250 has since fixed the signal itself, but this file's poll is left as-is: it already
+## works and needs no upkeep. See `RichPresenceService`'s header note, same poll for the same reason.
 const POLL_INTERVAL_SEC: float = 2.0
 
 var _steam: Object = null

@@ -145,7 +145,13 @@ static func wellspring_recorrupted_subscriber_count() -> int:
 
 ## Listener signature: (cycle: int) -> void
 ##
-## Emitted by the HOST only, the moment `CycleService` advances a Cycle (task 6.1, DESIGN.md §5.1).
+## Fires on EVERY peer's own bus the moment `CycleService` advances a Cycle (task 6.1, DESIGN.md
+## §5.1) — the host emits directly from `_announce()`; a client re-derives the identical emit from
+## `WorldDeltaLog`'s replicated record of that same advance landing locally
+## (`CycleService._on_world_delta_applied()`, F-250). Before F-250, `CycleService._announce()` gated
+## this whole emit behind a host-only guard, so a client's own subscribers never fired at all —
+## `SteamStats`/`RichPresenceService` (task 8.3) worked around that by polling
+## `CycleService.current_cycle()` instead; a new subscriber no longer needs to.
 ## No Cycle Modifier is drawn here — 6.2 owns the deck/draw/stacking framework, which does not exist
 ## yet; this event is the seam it drives off, the same "future task's hook" role D-092 gave
 ## wellspring_capped above.

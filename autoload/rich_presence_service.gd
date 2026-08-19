@@ -13,18 +13,14 @@ extends Node
 ## Steam achievement already sit in. Every peer computes its own string from its own locally-visible
 ## state; nothing here is replicated and no two peers ever compare presence text.
 ##
-## POLLS `CycleService.current_cycle()` rather than subscribing to `EventBus.subscribe_cycle_advanced()`
-## — that event never reaches a real connected client at all. `CycleService._announce()`
-## (systems/cycle/cycle_service.gd) still gates its `EVENT_BUS.emit_cycle_advanced()` call behind
-## `_owns_cycle()` (true only for the host or a solo/offline process), the exact host-only-emit-call
-## trap F-168/F-181 already fixed elsewhere (`wellspring_capped`, `run_wiped`, `boss_phase_changed`)
-## by moving the emit into a replicated property's own setter — `cycle_advanced` was never given the
-## same fix because nothing client-side had needed it yet (F-226 fixed `WaveSpawner`'s READER-side
-## fallback, not this root cause). Presence has to be right on every peer, not just the host's, so
-## this reads `CycleService.current_cycle()` directly instead — that getter DOES have the correct
-## per-peer fallback (host int, or `WorldDeltaLog`'s replicated copy) already. See a new finding filed
-## alongside this task for the real fix (a `WorldDeltaLog` change-notification signal), out of scope
-## here.
+## POLLS `CycleService.current_cycle()` on a 2s timer rather than subscribing to
+## `EventBus.subscribe_cycle_advanced()` — written when that event never reached a real connected
+## client at all (F-250, `CycleService._announce()`'s emit gated behind a host-only guard). F-250 has
+## since fixed the signal itself (`CycleService._on_world_delta_applied()` now re-derives the same
+## emit on every peer), so a NEW client-side Cycle consumer no longer needs this workaround — but
+## this file's own poll is left as-is rather than swapped, since it already works, needs no upkeep,
+## and presence text updating up to 2s after a real advance is not a bug worth a mid-task rewrite of
+## working code.
 ##
 ## NO SEPARATE "IN THE MENU" STATE. The obvious first design was a menu/in-run state machine
 ## ("In the menu" vs "In a run — Cycle N", `docs/STEAM.md` §S4's own suggested wording) — dropped
