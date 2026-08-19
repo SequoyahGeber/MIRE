@@ -667,7 +667,89 @@ move.lunge_speed_m_s > 0.0`, mirroring `Enemy._tick_attack()`'s own condition ex
 
 ---
 
+### F-250 · CycleService._announce()'s EventBus.emit_cycle_advanced() still gates behind _owns_cycle(), so cycle_advanced never fires on a real connected client — F-226 fixed the reader-side symptom, not this root cause
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
+
+Found 2026-08-19 by lp during task 8.3.
+
+`CycleService._announce()` (systems/cycle/cycle_service.gd) calls `EVENT_BUS.emit_cycle_advanced()`
+only after `if not _owns_cycle(): return` — true for the host or a solo/offline process, false for a
+real connected client. So on a client, `EventBus.cycle_advanced` never fires locally at all, no
+matter how many Cycles the host has actually advanced. This is the exact root cause F-226 diagnosed
+for `WaveSpawner.current_cycle()` — but F-226's own fix only gave that ONE reader a correct
+host-int-or-WorldDeltaLog fallback; it never touched `_announce()`'s emit itself, so every OTHER
+`EventBus.subscribe_cycle_advanced()` listener in the codebase still has the trap live under it.
+
+Unlike `wellspring_capped`/`run_wiped`/`boss_phase_changed`/`departed` (all fixed via D-107/D-108's
+"fire the emit from a replicated property's own setter" pattern), this one does not have a
+structural fix that shape: Cycle rides `WorldDeltaLog` (a `(chunk, kind, key) -> value` log), not a
+`SceneReplicationConfig` property with its own setter, by deliberate design (D-099/D-100, to avoid a
+new RPC). `WorldDeltaLog` itself has no "a delta was just applied" signal a client-side listener
+could hang a derived local emit off (`autoload/world_delta_log.gd`'s `_apply()` mutates silently) --
+adding one is a real fix but touches a file `MireGrid` also depends on, out of scope for a
+single-file fix.
+
+Task 8.3 (RichPresenceService, SteamStats) is the first real consumer that needed a client-correct
+Cycle number for something genuinely per-peer (a Steam achievement has to unlock on every player's
+own account, not just the host's; presence text has to be right on every peer's own friends-list
+entry) -- both work around it by POLLING `CycleService.current_cycle()` (which DOES have the correct
+per-peer fallback, unlike `WaveSpawner`'s old broken getter) on a 2s timer instead of subscribing to
+the broken signal. That is a real, working fix for those two files, not a workaround that silently
+produces wrong output -- but it is polling where a signal should exist, and any FUTURE
+cycle_advanced subscriber that assumes the doc comment ("HOST only" -- accurate) means "but every
+peer's own local bus still gets it eventually" will hit this exact trap.
+
+Fix shape: give WorldDeltaLog a generic `delta_applied(chunk, kind, key, value)` signal fired from
+`_apply()`, and have `CycleService` hang its own `cycle_advanced` derivation off that on a client,
+mirroring the D-107/D-108 "fire from the thing that actually changed, on every peer" pattern applied
+to a log-backed value instead of a property. Bigger than a one-file fix since MireGrid also calls
+into WorldDeltaLog and any new signal has to not change its existing contract.
+
+---
+
 ## Resolved
+
+### F-249 · ExtractionShip.repair_stage's EventBus.emit_ship_repaired() call lived inside the host-only _process_repair(), so it never reached a client's own local EventBus — the exact F-168 host-only-emit-call trap, unfixed on this one signal — **fixed**
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
+
+Found 2026-08-19 by lp during task 8.3's sweep step.
+
+`_process_repair()` (systems/extraction/extraction_ship.gd) only runs where `_owns_mutation()` is
+true (host-only, per the guard at its own top). The line that fired `EVENT_BUS.emit_ship_repaired()`
+lived inside that body, so it only ever ran on the process that owns the mutation — exactly the trap
+F-168 first found and fixed on `Wellspring.capped` (D-107/D-108: move the emit into the replicated
+property's own setter, so it fires identically whether this process just set the value itself, the
+host, or received it over the wire, a client). `repair_stage`'s neighbour `departed` already applies
+that fix a few lines down in the same file; `repair_stage` itself was the one holdout.
+
+Concrete failure: nothing had ever consumed `ship_repaired` client-side to notice — task 8.3's
+`SteamStats` (achievements/stats) is the first real per-peer-local consumer, since a Steam
+achievement has to unlock on every peer's own account, not just the host's.
+
+Nobody had swept `EVENT_BUS.emit_*` call sites against `_owns_mutation()`/`_owns_cycle()` guards
+project-wide before this — worth a future task doing exactly that grep, the same shape 7.8 did for
+`rpc_id()` call sites against F-059's guard.
+
+**Resolved 2026-08-19 by lp.** Fixed 2026-08-19 by lp, same task 8.3. Moved the emit into repair_stage's own setter (matching
+departed's existing pattern): fires once, the instant repair_stage first reaches
+REPAIR_STAGE_COUNT, guarded on `is_inside_tree()` (global_position on a Node3D outside the tree logs
+an engine error rather than a real position — the setter's neighbour _maybe_refresh_visual() already
+carries the same guard for the same reason; the one caller that sets repair_stage before add_child()
+is tools/extraction_check.gd's own departure-FSM test shortcut, and it never emitted under the old
+code either). Removed the now-dead call from _process_repair().
+
+Verified: tools/steam_stats_check.gd drives repair_stage directly (0->2 fires nothing, 2->3 fires
+exactly once, a same-value re-set fires nothing again) with no host-only call path involved at all,
+then proves the event reaches a real subscriber (SteamStats's SHIPS_REPAIRED stat + ACH_SHIPWRIGHT).
+tools/extraction_check.gd (pre-existing, not owned by this task) still passes unchanged --
+`agent godot --script tools/extraction_check.gd` -> EXTRACTION_CHECK failures=0, "EventBus.emit_ship_repaired
+fired exactly once" still holds for the host-path repair flow it already tested, and the departure-FSM
+section's pre-tree repair_stage shortcut now correctly emits nothing (previously it also emitted
+nothing, but only because the emit lived somewhere that shortcut never reached -- same observable
+behavior, now for the documented reason instead of by accident). Zero undeclared ERROR: lines in
+either check (SPECS.md standing rule 4).
 
 ### F-240 · A telegraphed attack's reach and tell length cannot deny "just take one step back" — no `EnemyDef` field makes retreating-through-a-tell fail, so that pressure isn't available to future enemy content — **fixed**
 

@@ -75,6 +75,73 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 8.3: achievements, stats, rich presence — full framework shipped now, Steamworks dashboard registration blocked on 8.1/8.2 (lp)
+
+**Unlike 8.4/8.11, nothing here is blocked from actually running.** F-248 predicted 8.3 would hit the
+same "needs the real App ID" wall 8.11 did — it does, but only for the Steamworks DASHBOARD side, not
+the code: `setStatInt()`/`setAchievement()` fail harmlessly against an id no dashboard has registered
+(App ID 480 has none of ours defined), so every trigger/persistence/push path below is fully shipped,
+verified, and needs zero follow-up code change once the dashboard rows exist — there is no
+placeholder value to swap the way 8.4/8.11's App ID/depot IDs are.
+
+**`autoload/steam_stats.gd` (new autoload `SteamStats`)** — achievements + stats. Ten
+`ALL_ACHIEVEMENTS` (D-148: hand-picked, not the ~20 `docs/STEAM.md` names as an aim), seven `STAT_*`
+counters. Every trigger rides an existing `EventBus` signal — `run_extracted`/`run_wiped`/
+`wellspring_capped`/`boss_defeated`/`ship_repaired`/`salvage_banked`/`unlock_purchased` — except
+Cycle milestones, which poll `CycleService.current_cycle()` on a 2s timer instead of subscribing to
+`cycle_advanced` (F-250: that signal never reaches a client). Local tally persists to
+`user://steam_stats.json` via `core/save/steam_stats_save.gd` (same shape as `SalvageSave`/
+`UnlockSave`); `save_path` override for `tools/steam_stats_check.gd`, same guard pattern
+`SalvageService` uses. Pushes to the real Steam API only once `SteamLobby.is_ready()` AND
+`user_stats_received` has answered (`steam_sync_ready()`) — see D-148 for why this file never calls
+`SteamLobby.initialise()` itself. `steamstats` console command (LOCAL scope) prints this peer's own
+tally + sync status.
+
+**`autoload/rich_presence_service.gd` (new autoload `RichPresenceService`)** — the "status" rich
+presence key (distinct from `SteamLobby`'s existing "connect" key, which controls the Join Game
+button, not display text). `compute_status_text()` is pure — "Cycle N", or "Cycle N · P players"
+once `NetTransport.peer_ids().size() > 1` — polled the same way and for the same reason as
+`SteamStats`'s Cycle tracking. No menu/in-run state machine (D-148: the game has no menu phase to
+distinguish, D-110). Pushes via a new `SteamLobby.set_status(text)` method — the one call site; route
+any other status-text producer through it rather than a second `setRichPresence` call site.
+
+**`autoload/steam_lobby.gd`** — one addition (`set_status()`, next to `_advertise_joinable`/
+`_clear_joinable`), one comment update (the "not initialised at boot" paragraph now also explains why
+`RichPresenceService`/`SteamStats` don't call `initialise()` either, and what was tried and reverted).
+No behavior change to anything that shipped before this task.
+
+**F-249 (fixed, same task) — sweep finding, not part of the original spec:** `ExtractionShip.
+repair_stage`'s `EventBus.emit_ship_repaired()` lived inside the host-only `_process_repair()`, the
+exact F-168 host-only-emit-call trap, unfixed on this one signal until `SteamStats` needed it
+client-side. Moved into `repair_stage`'s own setter (matching `departed`'s existing pattern),
+`is_inside_tree()`-guarded (a real `ExtractionShip` is always in the tree; the one caller that isn't,
+`tools/extraction_check.gd`'s departure-FSM setup, never emitted under the old code either, so
+behavior for that pre-existing check is unchanged).
+
+**F-250 (open) — the bigger sibling, not fixed here:** `CycleService._announce()`'s
+`EventBus.emit_cycle_advanced()` is STILL gated behind `_owns_cycle()`, so the signal itself never
+reaches a client. `SteamStats`/`RichPresenceService` route around it by polling
+`CycleService.current_cycle()` (which has the correct per-peer fallback already, unlike
+`WaveSpawner`'s pre-F-226 getter) instead of subscribing. The real fix needs `WorldDeltaLog` to grow
+a change-notification signal — bigger than a one-file fix (`MireGrid` also depends on
+`WorldDeltaLog`), left for whoever needs a real-time (not polled) cross-peer Cycle change next.
+
+**`tools/steam/ACHIEVEMENTS.md` (new)** — the Steamworks dashboard runbook, `DEPOT_SETUP.md`'s own
+shape: exact API-name/display-name/description text for all ten achievements and all seven stats,
+ready to paste in once task 8.2 lands a real App ID. No script analogous to `apply_ids.sh` — achievement/
+stat API names are OURS to choose, not Valve's to assign, so there is nothing to write back into the
+repo afterward.
+
+**Verified:** `agent godot --script tools/steam_stats_check.gd` — 33 checks, 0 failures, 0 undeclared
+`ERROR:` lines (one declared pattern, `"resources still in use"` — `BossMusicDirector` reacting to
+this check's own synthetic `boss_defeated` event exactly like the shipped game would, same
+`--script`-harness-reaches-every-real-subscriber trap `tools/salvage_check.gd`'s own header already
+documents; orthogonal to this task). `agent godot --script tools/rich_presence_check.gd` (F-123/F-127,
+named by this task's own work order) still passes unchanged. `agent godot --script
+tools/extraction_check.gd` (pre-existing, not owned by this task, exercises the F-249 fix's file)
+still passes with 0 undeclared errors. `agent godot --headless --quit-after 15` — full real-game boot,
+both new autoloads ticking, 0 `ERROR:` lines.
+
 ### 2026-08-19 — Task 8.11: three depots wired to one app, per-platform launch options — genuinely blocked on 8.1/8.2, prep tooling shipped instead (lp)
 
 **Cannot complete this session.** 8.11's actual deliverable — real Steamworks depots and real

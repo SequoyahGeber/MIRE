@@ -65,9 +65,11 @@ one-line change if you routed it through `NetTransport` (`ARCHITECTURE.md` §2.3
 
 ### S4 · Technical integration
 - [ ] Real App ID swapped in, all Steam features re-verified
-- [ ] Achievements defined (aim ~20; Cycle-depth achievements are natural here — "Reach Cycle 5/10/15")
-- [ ] Stats for the run-summary screen
-- [ ] Rich presence ("In a run — Cycle 7")
+- [x] Achievements/stats/rich presence — code shipped task 8.3: ten achievements (Cycle-depth ones
+      included, per this line's own suggestion), seven stats, live "Cycle N" presence text. Pushing
+      to the real Steam API is silently inert until the dashboard rows exist — see
+      `tools/steam/ACHIEVEMENTS.md` for the exact copy-paste-ready runbook, blocked on S2's App ID
+      the same way depots were (task 8.11, D-132's split applied again).
 - [ ] Steam Cloud for meta-progression save (small, easy, prevents heartbreak)
 - [ ] Depots + build pipeline; scripted `steamcmd` upload. Pipeline built (task 8.4); the
       dashboard runbook + ID-wiring script are ready in `tools/steam/DEPOT_SETUP.md` — blocked on

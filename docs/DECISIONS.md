@@ -4336,3 +4336,46 @@ confirms `crawler`/`tusker`/`strider`/`broodcaller` all still default to it).
 dodge" attack reads as fair for some specific enemy identity (e.g. an unavoidable ground-slam whose
 tell is itself the dodge window, not the swing) — at which point that is a second, additively-named
 field (e.g. `commits_to_start_position: bool`), not a replacement for this one.
+
+### D-148 · 2026-08-19 · Task 8.3's achievements/stats/rich presence: ten hand-picked achievements not ~20, Steam is never eagerly initialised by these new autoloads, and presence has no "in the menu" state
+
+Three calls, made together, the same "decide it, write down why" shape D-110 already used for a set
+of small calls in one task.
+
+**Why ten achievements, not the ~20 `docs/STEAM.md` §S4 names as an aim.** D-146 already set this
+precedent for content in this exact shape ("Task 6.3 ships six Cycle Modifiers, not the roadmap's
+20-30, and none of the six are tagged incompatible with each other") — a bulk sweep produces a whole
+family of uniformly mediocre entries, which is worse than fewer that are each tied to a milestone
+that genuinely fires in the shipped game today. `autoload/steam_stats.gd`'s `ALL_ACHIEVEMENTS` is the
+ten: first extraction, first Wellspring capped, first boss defeated, the ship repaired, Cycle 5/10/15
+reached, 500/2000 lifetime Salvage banked, first unlock purchased. **Would change my mind:** a real
+playtest surfacing specific moments worth celebrating that these ten miss — add those individually,
+the same "one asset at a time" rule D-073 already states for hand-authored content.
+
+**Why `RichPresenceService`/`SteamStats` never call `SteamLobby.initialise()` themselves.** The first
+version of this task had both new autoloads call `initialise()` unconditionally from their own
+`_ready()`, so a solo player who never hosts or joins a lobby would still get live Steam
+achievements/presence — Steam is otherwise only brought up when the player actually asks for a
+session (`SteamLobby`'s own header). Reverted the same session: on any machine with a real Steam
+client running — this dev machine included — that turned EVERY headless `agent godot` run
+project-wide into a real `SteamAPI_Init()` call, confirmed by running `tools/salvage_check.gd` before
+and after and diffing the log (Steam client startup lines and ObjectDB-leak warnings at exit appear
+only in the "after" run). A presence-only task is not the place to widen how eagerly the whole
+project's tooling talks to a live third-party client. Both files now only read/push Steam state that
+something else — a real hosted/joined session, an accepted invite — already brought up
+(`SteamLobby.is_ready()`); LOCAL tracking (the counters `SteamStats` persists to
+`user://steam_stats.json`, and every assertion in `tools/steam_stats_check.gd`) needs no Steam
+session at all and is unaffected either way. **Would change my mind:** a real product decision that
+solo/offline achievement tracking against the live Steam API matters enough to pay this cost — at
+which point the right fix is probably `NetConfig`/`DevLaunch` gaining a flag that keeps `agent godot`
+itself Steam-free regardless of what autoloads want, not reverting this call.
+
+**Why rich presence has no separate "in the menu" state.** The obvious first design was a
+menu-vs-in-run state machine ("In the menu" vs "In a run — Cycle N", `docs/STEAM.md` §S4's own
+suggested wording) — dropped once `ui/menu/main_menu.gd` and D-110 made it clear no such phase exists
+in the shipped game: `run/main_scene` boots straight into a live `levels/hollowmere.tscn` with a
+Cycle already ticking (`MireGrid._ready()` draws the seed immediately), and `MainMenu` never gates
+play. Inventing a "menu" presence state would describe a boot phase that does not exist rather than
+the game that does, so `RichPresenceService.compute_status_text()` is just "Cycle N", with the
+connected party size appended once there is one to report. **Would change my mind:** D-110's own
+trigger — a real "gate world-gen behind a start screen" task, scoped and reviewed on its own.
