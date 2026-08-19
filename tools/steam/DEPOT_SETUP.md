@@ -66,6 +66,13 @@ option, not a client/server pair.
    internal-beta <username>` against the `internal-beta` branch (never `default` without
    `STEAM_ALLOW_PUBLIC=1` — `steam_upload.sh`'s own guard).
 
+6. **Separately, swap `core/net/net_config.gd:79`'s `STEAM_APP_ID` constant too.** Step 4 above only
+   rewrites the build/upload pipeline's copy in `steam_build_config.sh` — it does not touch this one,
+   and this is the constant `steam_lobby.gd` actually passes to `steamInitEx()` at runtime
+   (`ARCHITECTURE.md` §2.4 names it the one-line swap point). `depot_wiring_check.sh` passing is not
+   evidence this step happened; nothing currently checks the two stay in sync (F-257). Do this one as
+   part of task 8.2, not 8.11 — it's `core/`, not `tools/steam/`.
+
 ## What is NOT scriptable from this repo
 
 A beta branch's **password** has no steamcmd/VDF field either (D-132) — same dashboard-only

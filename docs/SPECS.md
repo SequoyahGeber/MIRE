@@ -6267,17 +6267,32 @@ against `export_release.sh` and each depot template's `ContentRoot`. All pass at
 
 **Swept for the same shape elsewhere (AGENTS.md §3):** no other task in the repo hand-edits a
 placeholder config file the way `steam_build_config.sh` does, so there was no sibling "write real
-values in once available" gap to widen — this is new tooling for a pattern task 8.4 introduced.
+values in once available" gap to widen — this is new tooling for a pattern task 8.4 introduced. A
+second re-dispatch of this task (2026-08-19, same day, 8.1/8.2 still `todo`) widened the sweep from
+"another hand-edited config file" to "another hardcoded copy of the same value" and found one:
+`core/net/net_config.gd:79`'s own `STEAM_APP_ID` constant (the runtime one `steam_lobby.gd` passes
+to `steamInitEx()`, per `ARCHITECTURE.md` §2.4) is a second, independent 480 that `apply_ids.sh`
+never touches. Filed as F-257 rather than fixed here — the edit belongs to `core/net/`, which this
+task never claimed, and to task 8.2 by scope (it owns "swap App ID 480 → real App ID; verify all
+Steam features"). Breadcrumbed in `apply_ids.sh`'s header and added as `DEPOT_SETUP.md` step 6 so
+whoever runs 8.2 hits the pointer before believing the swap is finished.
 
 **Done means (once un-blocked):** real depots exist in the Steamworks dashboard, their IDs are
-applied via `apply_ids.sh`, `depot_wiring_check.sh` still passes, and a real
+applied via `apply_ids.sh`, `depot_wiring_check.sh` still passes, `core/net/net_config.gd:79` is
+swapped too (F-257 — a separate edit `apply_ids.sh` does not make), and a real
 `steam_upload.sh internal-beta <username>` succeeds. **None of that is reachable from this
 session** — 8.1/8.2 have not run.
 
 **Explicitly NOT this task:** task 8.1 itself (Steamworks account/tax/banking/$100 fee — his
-account, D-039), task 8.2 (App ID swap), actually creating the Steamworks depots or setting the
-dashboard launch option fields (both require the App ID 8.2 produces), setting a beta branch's
-password (dashboard-only, no repo-side surface at all — D-132).
+account, D-039), task 8.2 (App ID swap, including `net_config.gd:79` — F-257), actually creating the
+Steamworks depots or setting the dashboard launch option fields (both require the App ID 8.2
+produces), setting a beta branch's password (dashboard-only, no repo-side surface at all — D-132).
+
+**2026-08-19, re-dispatched (still blocked):** `.agent/state.json` re-checked — 8.1/8.2 both still
+`todo`, so nothing here became reachable. Re-ran verification to catch drift since the first pass:
+`depot_wiring_check.sh` (all checks pass), `tools/roadmap_dependency_check.gd` (0 failures, F-248's
+note still intact), and a full headless boot (`agent godot --quit-after 120`, 0 `ERROR:` lines). All
+clean — no regressions. The only new output this round is F-257 above.
 
 ---
 

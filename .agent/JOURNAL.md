@@ -6181,3 +6181,21 @@ Added .agent/bin/lane-keeper: one idempotent daemon per lane that starts a chain
 Files: `.agent/bin/lane-keeper`
 
 Commit at time of writing: `1c134e8`
+
+---
+
+### HANDOFF · 8.11 · lp · 2026-08-19T20:13:49+00:00
+
+**Three depots wired to one app, per-platform launch options**
+
+Still genuinely blocked, unchanged from the prior lp handoff: 8.11's real deliverable (Steamworks depots + launch options) needs a real App ID from 8.1 (Sequoyah's account/tax/$100 fee, D-039) then 8.2 (App ID swap) — both confirmed todo in .agent/state.json again this session. Nothing to build until then.
+
+What this session did instead: re-verified everything the prior session shipped is still intact — bash tools/steam/depot_wiring_check.sh (ALL CHECKS PASSED), agent godot --script tools/roadmap_dependency_check.gd (failures=0), agent godot --script tools/findings_numbering_check.gd (open=19 resolved=240 failures=0), agent godot --quit-after 120 (0 ERROR: lines). No drift since the first pass.
+
+New this session: swept wider per AGENTS.md step 3 (same-shape sweep) and found F-257 — core/net/net_config.gd:79 has its OWN hardcoded STEAM_APP_ID=480 (the one steam_lobby.gd actually passes to steamInitEx() at runtime, ARCHITECTURE.md §2.4), completely independent of tools/steam/steam_build_config.sh's copy. apply_ids.sh (this task's own tool) only ever writes the build-config copy — running it and seeing depot_wiring_check.sh pass proves nothing about the runtime constant. Filed F-257, added a breadcrumb to apply_ids.sh's own header, added DEPOT_SETUP.md step 6 naming the net_config.gd edit explicitly, and updated D-132's addendum + SPECS.md's 8.11 block + DELEGATION.md's 8.11 entry so whoever runs 8.2 hits the pointer before believing the App ID swap is finished.
+
+Next agent (only after 8.2 lands a real App ID): follow DEPOT_SETUP.md step by step — dashboard depot creation, apply_ids.sh with the four real IDs, depot_wiring_check.sh, THEN net_config.gd:79's STEAM_APP_ID (DEPOT_SETUP.md step 6, F-257 — apply_ids.sh does not do this for you), then a real steam_upload.sh internal-beta <username>. Don't redesign the runbook or apply_ids.sh.
+
+Files: `tools/steam/apply_ids.sh`, `tools/steam/DEPOT_SETUP.md`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `1571cd7`

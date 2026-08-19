@@ -753,6 +753,71 @@ sunken/collapsed structure sitting at or near grade, not a doorway into an excav
 
 ---
 
+### F-256 · Arming several one-shot revives to cover an unattended stretch stacks saturate chains, and the lane idles while they queue on its own lock
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
+
+`lane-revive` (F-091) fires once at a named time, which is right for a known reset and wrong for a
+long unattended stretch. Covering five window rollovers means arming five daemons, each of which
+starts its own `agent saturate` chain. They then serialise on the per-lane saturate lock — and every
+chain in that queue burns its full `EMPTY_QUEUE_GRACE_SECONDS` (F-202) before releasing, so the lane
+sits idle while the others wait their turn.
+
+Measured 2026-08-19, and it was self-inflicted: five revives armed for an overnight window left LM
+**idle with six orders queued** and four chains alive, one holding `.agent/locks/saturate-lm.lock`
+and three blocked behind it. The two fixes interact badly — the grace period assumes a single chain,
+and one-shot revives assume they are the only one.
+
+**Fixed:** `.agent/bin/lane-keeper <LANE> [--hours N]` — one long-lived daemon per lane that polls
+every five minutes and starts a chain **only when there is queued work and no chain already exists
+for that lane**. Because it checks before acting it cannot stack, running two keepers is harmless,
+and a chain that stops for any reason (reserve stop, error, drained queue) is picked back up at the
+next poll rather than at a time somebody guessed in advance. `lane-revive` stays for the case it is
+good at: a known reset far in the future, like a weekly window.
+
+**Verified:** `_queued()` returns LM's five and LP's one from real order files, skipping done tasks;
+`_chain_alive()` reports True for the lane that is running and False for an idle one; with both
+keepers armed, each lane converged to exactly one chain and started work (LM on F-243, LP on 8.11)
+with no pile-up on either lock.
+
+---
+
+### F-257 · Real App ID must be written to two independent places; task 8.11's `apply_ids.sh` only reaches one of them
+
+**Area:** netcode/tooling · **Severity:** medium · **Found:** 2026-08-19 by lp during 8.11 (still
+blocked — see prior HANDOFF, unchanged this session)
+
+D-008/`ARCHITECTURE.md` §2.4 fixed `core/net/net_config.gd:79`'s `const STEAM_APP_ID: int = 480` as
+*the* one-line change point for the runtime Steam App ID — it's what `steam_lobby.gd` actually
+passes to `steamInitEx()`. Separately, task 8.4/D-132 gave `tools/steam/steam_build_config.sh` its
+own `STEAM_APP_ID` default, consumed only by the offline `steamcmd` upload pipeline
+(`export_release.sh` / `steam_upload.sh` / the `.vdf` templates) — a completely different concern,
+build-time depot upload rather than runtime lobby init.
+
+8.11's `apply_ids.sh <app_id> <depot_win> <depot_mac> <depot_linux>` (this task) only ever rewrites
+`steam_build_config.sh`. It never touches `net_config.gd`. So running `apply_ids.sh` with the real
+ID and having `depot_wiring_check.sh` pass proves nothing about the runtime constant — it's
+plausible for 8.2 ("swap App ID 480 → real App ID; verify all Steam features") to run
+`apply_ids.sh`, watch the guard clauses go green, and ship a build that uploads to the correct
+Steamworks depot while every player's client still calls `steamInitEx()` against Spacewar's 480,
+silently breaking lobby creation/join in what looks like a fully-wired release.
+
+Neither `apply_ids.sh`'s own comment header nor `docs/SPECS.md`'s `## 8.11 ·` block nor
+`tools/steam/DEPOT_SETUP.md` mentions `net_config.gd:79` as a second edit site — the only place that
+names it as the swap point is `ARCHITECTURE.md` §2.4 and the constant's own doc comment, and
+neither cross-references `apply_ids.sh`. No task currently owns making 8.2 aware both edits are
+required, or a single command doing both.
+
+**Would take:** either (a) a one-line addendum to `docs/SPECS.md`'s `## 8.2 ·` block (not yet
+written — 8.2 is still `todo`) naming `net_config.gd:79` as a required companion edit to
+`apply_ids.sh`, or (b) extending `apply_ids.sh` itself to also rewrite the `net_config.gd` constant
+so one command does both and a mismatch becomes structurally impossible. Whoever picks up 8.2 should
+decide which; (b) is stronger because it removes the chance to do one and forget the other, but it
+means a `tools/` script writing into `core/`, which is a claim-boundary question 8.2 should resolve
+explicitly rather than inherit silently.
+
+---
+
 ## Resolved
 
 ### F-237 · A-016 asks for a cave entrance, but D-142 put caves on the cut list — the asset would promise a space that cannot exist — **fixed**

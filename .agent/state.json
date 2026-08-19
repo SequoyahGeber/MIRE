@@ -1610,9 +1610,9 @@
     },
     "docs/DECISIONS.md": {
       "agent": "lp",
-      "at": "2026-08-19T19:52:07+00:00",
-      "hash": "98737a77c67c9773c48e0e3310d0d04ab68f9cafc246b79b86e39a641dc3881e",
-      "task": "F-241",
+      "at": "2026-08-19T20:13:49+00:00",
+      "hash": "a9c67ffd8445aa0c4b975f6d8be42da272f2c4c0a9573b5f47b351c9217a71f9",
+      "task": "8.11",
       "token": null
     },
     "docs/DELEGATION.md": {
@@ -1623,10 +1623,10 @@
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T20:09:31+00:00",
-      "hash": "13ea2d44b3d0559657641c911d913ce5fcb2ad734307f3198d27669bb9b04802",
-      "task": "F-237",
+      "agent": "lp",
+      "at": "2026-08-19T20:13:49+00:00",
+      "hash": "766cc2012ff3ded2136ecf94d9b4d752871754f2575b4d81a253be3078fc16d2",
+      "task": "8.11",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1656,10 +1656,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T20:09:31+00:00",
-      "hash": "a06d199d555a43e2dbd88a15119b3f35a3a67623b3328b85bf6fdc7617f36d7e",
-      "task": "F-237",
+      "agent": "lp",
+      "at": "2026-08-19T20:13:49+00:00",
+      "hash": "e0356a2d746928d6184698fce5a0ee5483c739c16d4b514779cfd926fe8555c0",
+      "task": "8.11",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -2997,15 +2997,15 @@
     },
     "tools/steam/DEPOT_SETUP.md": {
       "agent": "lp",
-      "at": "2026-08-19T19:05:14+00:00",
-      "hash": "6c04f3df80c9b8abd5eea75cbb7c78f7adfb0a30bcd11b8d860047910a87d74c",
+      "at": "2026-08-19T20:13:49+00:00",
+      "hash": "ea23b8a6d511a448358854dd0a7790a80d5b223ae555dfe89f698887ff2a8fa2",
       "task": "8.11",
       "token": null
     },
     "tools/steam/apply_ids.sh": {
       "agent": "lp",
-      "at": "2026-08-19T19:05:14+00:00",
-      "hash": "09e54e74e53e22e062e6bcbbdeb712e7782d95d1c45789f1751dae502c0bf074",
+      "at": "2026-08-19T20:13:49+00:00",
+      "hash": "6c14857a6155c785cd1296814496b5fd43912eb370e88a7980726d0d7225d0b5",
       "task": "8.11",
       "token": null
     },

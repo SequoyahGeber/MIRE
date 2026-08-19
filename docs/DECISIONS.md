@@ -3872,6 +3872,15 @@ unreachable, exactly as predicted. 8.11 shipped everything short of that: `tools
 `apply_ids.sh`, then `tools/steam/depot_wiring_check.sh` to confirm the wiring, then a real
 `steam_upload.sh`. Full spec: `docs/SPECS.md`'s `## 8.11 ·` block.
 
+**Second 2026-08-19 addendum (8.11 re-dispatched same day):** still blocked, 8.1/8.2 still `todo` —
+re-verified `depot_wiring_check.sh`, `tools/roadmap_dependency_check.gd`, and a full headless boot
+all clean, no drift since the first pass. One new thing found on the wider sweep: `apply_ids.sh`
+only ever writes `steam_build_config.sh`'s copy of the App ID; `core/net/net_config.gd:79` holds an
+entirely separate `STEAM_APP_ID` constant (the one `steam_lobby.gd` actually uses at runtime,
+`ARCHITECTURE.md` §2.4) that nothing in 8.11's tooling touches. Filed as F-257 and added as
+`DEPOT_SETUP.md` step 6 rather than fixed here, since the edit is `core/net/` and belongs to 8.2 by
+scope, not 8.11.
+
 ### D-133 · 2026-08-19 · F-161/F-165/F-169/F-178's four un-bumped RPCs get ONE retroactive `PROTOCOL_VERSION` bump, not four — and the rule that was missed four times gets a mechanical check, not a fifth reminder
 
 Four tasks (5.3, 6.5, 6.7, F-157) each shipped real new RPCs while `core/net/net_version.gd` and

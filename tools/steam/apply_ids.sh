@@ -9,6 +9,11 @@
 ## (task 8.4, D-132). Never touches steam_upload.sh or the .vdf templates; those were already
 ## written generically against whatever real IDs eventually land here.
 ##
+## Does NOT touch core/net/net_config.gd's STEAM_APP_ID — the runtime constant steam_lobby.gd
+## actually passes to steamInitEx() (ARCHITECTURE.md §2.4 names that the swap point). That is a
+## separate edit task 8.2 must also make; running this script alone does not mean the App ID is
+## swapped everywhere (F-257).
+##
 ## Refuses to run if any argument still looks like a placeholder (480, or 0), isn't a plain
 ## positive integer, or two depot IDs collide — a typo here would write a config that silently
 ## un-refuses steam_upload.sh's guard with the WRONG real-looking ID, which is a worse failure
