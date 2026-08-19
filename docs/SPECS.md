@@ -6252,6 +6252,58 @@ instances found.
 
 ---
 
+## F-219 · `RewardService`'s Wellspring/boss-kill loot roll is the same boot-time-`randomize()` bug F-210 just fixed in `Chest`
+
+**Claim:** `autoload/reward_service.gd`, `tools/reward_service_seed_check.gd` (new). Network
+authority: HOST, same "Event-granted loot" row `docs/ARCHITECTURE.md` §2.2 already declares — this
+task changes what feeds the roll's RNG, not who rolls it.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The fix:** `_grant_tier_to_party()` created one `RandomNumberGenerator` per trigger and called
+`.randomize()` on it (real boot-time entropy), shared across every present peer's roll. `Chest` had
+an obvious stable id to seed from instead (its own node `name`, authored by
+`ChestPlacementService`) — a Wellspring cap / boss kill has no placement, so this task mints a
+different id: a monotonic per-run counter (`_next_reward_event_id`), incremented once per trigger
+call, combined with the receiving peer's id so two peers' independent rolls from the SAME trigger
+never coincide. Each peer now gets its own `RandomNumberGenerator`, seeded with
+`_seed_for_run(_run_seed(), "%s:%d:%d" % [tier, event_id, peer_id])` — `_seed_for_run()`/`_run_seed()`
+are direct copies of `Chest`'s own (own `_SEED_SALT = 0x9E3779B9`, distinct from `chest.gd`'s
+`0xC4E57`, `poi_map.gd`'s `0x9017A11`, `resource_scatter.gd`'s `0x5CA77E5`). The counter resets to 1
+on `GameState.seed_ready` — the same "a run has begun" hook `autoload/salvage_service.gd` already
+uses to zero its own per-run milestone tally — so a deliberate same-seed replay (a bug repro, F-172's
+seed entry) started from a fresh boot reproduces the same sequence of grants rather than drifting
+because a previous boot in the same process had granted a different number of rewards first.
+
+**Not a desync/correctness bug, then or now** — same reasoning F-210's own spec block gives: the
+roll is host-only and granted directly, so no peer ever needs to agree on the value, only the host's
+own two runs sharing a `run_seed` need to agree with each other. What changes is reproducibility.
+
+**Verify:** `.agent/bin/agent godot --script tools/reward_service_seed_check.gd` →
+`REWARD_SERVICE_SEED_CHECK failures=0`, zero undeclared `ERROR:` lines. New check, same
+synthetic-content-avoidance choice `tools/reward_service_check.gd` already made (proves against the
+REAL `content/loot/wellspring.tres`, not a synthetic table): fires `EventBus.emit_wellspring_capped()`
+against a fixed `GameState.run_seed`, diffs the check player's coin/powerup-stack state before and
+after each trigger to get a comparable roll fingerprint, and checks three cases — (1) the same
+`run_seed`, replayed from a fresh `seed_ready` reset, rolls identically; (2) a second trigger in the
+SAME run (no reset) does not repeat the first roll; (3) a different `run_seed` at the same trigger
+position rolls differently. `.agent/bin/agent godot --script tools/reward_service_check.gd` →
+`REWARD_SERVICE_CHECK failures=0` still, unchanged (the existing wiring/grant-amount check has no
+determinism assertion to break).
+
+**Swept for the same shape elsewhere:** grepped every `.randomize()` call site project-wide (four
+total, project-wide). `core/game_state.gd:56` is the run_seed entropy source itself — must stay real
+entropy. `autoload/inventory_service.gd:599` and `autoload/entity_directory.gd:57` are the same two
+intentional exceptions F-210's own sweep already documented (a debug console `loot` roll, and a
+cosmetic entity-selector RNG with no reproducibility claim). `systems/cycle/cycle_modifier_service.gd:56`
+is F-220, already filed by F-210's sweep — not touched here; it needs its own fix under its own claim.
+No new sibling instances found.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

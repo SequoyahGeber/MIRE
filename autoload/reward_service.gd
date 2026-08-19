@@ -39,15 +39,33 @@ const BOSS_TIER: StringName = &"boss"
 ## host_add()` seam.
 const COIN_ITEM_ID: StringName = &"coins"
 
+## F-219: same boot-time-`randomize()` bug D-041/F-210 fixed for `Chest` — two runs sharing a
+## `GameState.run_seed` must grant the same party rewards. `Chest` had an obvious stable id (its own
+## node `name`, authored by `ChestPlacementService`); a Wellspring cap / boss kill has none, so this
+## file mints one: a monotonic per-run counter, incremented once per trigger (not per peer — two caps
+## in the same run must not roll the same), combined with the receiving peer's id so independent
+## peers' rolls from the same trigger never coincide. Reset on `GameState.seed_ready`, the same "a run
+## has begun" hook `autoload/salvage_service.gd` already uses to zero its own per-run tally — without
+## the reset, a deliberate same-seed replay (F-172's seed entry) started from a fresh boot would still
+## diverge if this process had granted a different NUMBER of rewards before that replay began.
+var _next_reward_event_id: int = 1
+
 
 func _ready() -> void:
 	EVENT_BUS.subscribe_wellspring_capped(_on_wellspring_capped)
 	EVENT_BUS.subscribe_boss_defeated(_on_boss_defeated)
+	var game_state: Node = get_node_or_null(^"/root/GameState")
+	if game_state != null:
+		game_state.connect(&"seed_ready", _on_seed_ready)
 
 
 func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_wellspring_capped(_on_wellspring_capped)
 	EVENT_BUS.unsubscribe_boss_defeated(_on_boss_defeated)
+
+
+func _on_seed_ready(_value: int) -> void:
+	_next_reward_event_id = 1
 
 
 func _on_wellspring_capped(_wellspring_name: StringName, _world_position: Vector3) -> void:
@@ -72,10 +90,13 @@ func _grant_tier_to_party(tier: StringName) -> void:
 	if loot_table == null:
 		push_warning("RewardService: tier '%s' has no loot table to roll" % tier)
 		return
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
+	var event_id: int = _next_reward_event_id
+	_next_reward_event_id += 1
+	var run_seed: int = _run_seed()
 	var unlock_check: Callable = _unlock_check()
 	for peer_id: int in peers:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = _seed_for_run(run_seed, "%s:%d:%d" % [tier, event_id, peer_id])
 		var roll: Dictionary = loot_table.call("roll", rng, 0.0, unlock_check)
 		_grant_roll(peer_id, tier, roll)
 
@@ -143,6 +164,39 @@ func _present_peers() -> PackedInt32Array:
 		if peer_id > 0 and not peers.has(peer_id):
 			peers.append(peer_id)
 	return peers
+
+
+## Host-only caller (F-219, same contract as `Chest._run_seed()`). GameState is a project-wide
+## autoload, present in every scene including a headless SceneTree check, so this never needs the
+## null guard the transport lookups below carry. `ensure_seed()` lazily draws one from real entropy
+## if nothing has drawn it yet (offline/host-of-one boot order) and is a no-op once a seed exists.
+func _run_seed() -> int:
+	var game_state: Node = get_node_or_null(^"/root/GameState")
+	if game_state == null:
+		return 0
+	return int(game_state.call("ensure_seed"))
+
+
+## Salt distinguishes this file's seed derivation from every other file mixing the same run_seed
+## (`systems/loot/chest.gd`'s `0xC4E57`, `world/gen/poi_map.gd`'s `0x9017A11`, `world/gen/
+## resource_scatter.gd`'s `0x5CA77E5`) — same "own salt per file" convention those establish. Integer
+## multiply/xor only, never Godot's `hash()`, for the identical cross-platform-stability reason
+## `chest.gd` documents on its own copy of this constant.
+const _SEED_SALT: int = 0x9E3779B9
+
+
+## Copy of `Chest._seed_for_run()` — see that file's header for why this is duplicated per file
+## rather than shared. [param event_key] is "<tier>:<event_id>:<peer_id>", the "chest id" half F-210's
+## fix needed a stable node name for; here it is a monotonic per-run trigger counter plus the
+## receiving peer's id instead, since a Wellspring cap / boss kill has no placement to derive one from.
+func _seed_for_run(run_seed: int, event_key: String) -> int:
+	const PRIME: int = 1000003
+	var id_hash: int = 0x1000193
+	for byte: int in event_key.to_utf8_buffer():
+		id_hash = (id_hash ^ byte) * 16777619
+	var h: int = run_seed ^ _SEED_SALT
+	h = h * PRIME + id_hash
+	return h
 
 
 func _owns_mutation() -> bool:

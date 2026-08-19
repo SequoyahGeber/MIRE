@@ -75,6 +75,36 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-219 resolved: `RewardService`'s Wellspring/boss-kill loot roll derives its seed from `GameState.run_seed`, not boot-time entropy (lm)
+
+Same fix shape as F-210's `Chest` entry below, adapted for a trigger with no placement id of its own.
+**`RewardService` (`autoload/reward_service.gd`) gained the identical private pair `Chest` has** —
+`_run_seed() -> int` and `_seed_for_run(run_seed: int, event_key: String) -> int` (own salt
+`_SEED_SALT = 0x9E3779B9`, distinct from every other file's) — plus one thing `Chest` didn't need: a
+`_next_reward_event_id: int` counter, since a Wellspring cap / boss kill has no stable node name to
+key off. It increments once per `_grant_tier_to_party()` call (once per TRIGGER, not per peer — two
+caps in one run must not roll the same) and resets to 1 on `GameState.seed_ready`, the same "a run
+has begun" hook `autoload/salvage_service.gd` already subscribes to for its own per-run tally reset —
+copy that file's `_ready()`/`_exit_tree()` connect/disconnect pair for any other per-run counter that
+needs the same reset. Each present peer's roll now seeds from `_seed_for_run(run_seed, "%s:%d:%d" %
+[tier, event_id, peer_id])` — a fresh `RandomNumberGenerator` per peer, replacing the one shared
+`.randomize()`d generator the whole trigger used to loop over.
+
+**Verified:** new `tools/reward_service_seed_check.gd` — `agent godot --script
+tools/reward_service_seed_check.gd` → `REWARD_SERVICE_SEED_CHECK failures=0`. Fires
+`EventBus.emit_wellspring_capped()` against the REAL `content/loot/wellspring.tres` (no synthetic
+table — same choice `tools/reward_service_check.gd` already made) and diffs the check player's
+coin/powerup-stack state around each trigger to get a comparable fingerprint: same `run_seed`
+replayed from a fresh `seed_ready` reset rolls identically; a second trigger in the same run (no
+reset) does not repeat the first roll; a different `run_seed` at the same trigger position rolls
+differently. `tools/reward_service_check.gd` (the existing wiring/grant-amount check, unchanged) still
+`REWARD_SERVICE_CHECK failures=0` — its own "non-seeded `randomize()`" caveat in the F-183 entry below
+is now stale; this entry supersedes it.
+
+**Swept, not found:** all four `.randomize()` call sites project-wide checked again. Only
+`systems/cycle/cycle_modifier_service.gd:56` is a live sibling of this bug shape, and it was already
+filed as F-220 by F-210's own sweep — left open, outside this task's claim.
+
 ### 2026-08-19 — F-218 resolved: `tools/decision_trigger_check.py` mechanically flags fired `docs/DECISIONS.md` reversal triggers (lm)
 
 **Run `python3 tools/decision_trigger_check.py` any time you're about to add a decision, or touch

@@ -5025,3 +5025,18 @@ Built tools/decision_trigger_check.py: mechanically flags docs/DECISIONS.md reve
 Files: `tools/decision_trigger_check.py`
 
 Commit at time of writing: `42a9653`
+
+---
+
+### DONE · F-219 · lm · 2026-08-19T12:38:25+00:00
+
+**`RewardService`'s Wellspring/boss-kill loot roll is the same boot-time-`randomize()` bug F-210 just fixed in `Chest`**
+
+Fixed autoload/reward_service.gd: _grant_tier_to_party() now seeds a fresh RandomNumberGenerator per peer from _seed_for_run(run_seed, tier:event_id:peer_id) instead of shared .randomize(); event_id is a new monotonic _next_reward_event_id counter reset on GameState.seed_ready. Verified: agent godot --script tools/reward_service_seed_check.gd -> REWARD_SERVICE_SEED_CHECK failures=0 (same-seed replay identical, second same-run trigger differs, different seed differs, against real wellspring.tres). No regression: reward_service_check, chest_check, chest_placement_check, wellspring_check, boss_check, unlock_check, loot_content_check all failures=0; clean --quit-after 60 boot. Docs: FINDINGS.md moved to Resolved, SPECS.md F-219 block added, DELEGATION.md current-state entry added, D-136 recorded (id-scheme decision). Swept all 4 randomize() call sites: only cycle_modifier_service.gd is a live sibling, already tracked as F-220.
+
+Notes along the way:
+- Fixed reward_service.gd: per-peer seeded RNG from (run_seed, tier, monotonic _next_reward_event_id, peer_id), counter resets on GameState.seed_ready (salvage_service.gd's pattern). New tools/reward_service_seed_check.gd proves determinism against real wellspring.tres. Recorded id-scheme as D-136. Swept all 4 randomize() sites: only cycle_modifier_service.gd is a live sibling, already filed as F-220.
+
+Files: `autoload/reward_service.gd`, `tools/reward_service_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`, `tools/reward_service_seed_check.gd`
+
+Commit at time of writing: `3445bfb`

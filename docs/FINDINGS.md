@@ -673,26 +673,6 @@ autoload-node pattern.
 
 ---
 
-### F-219 · `RewardService`'s Wellspring/boss-kill loot roll is the same boot-time-`randomize()` bug F-210 just fixed in `Chest`
-
-**Area:** loot/determinism · **Severity:** low · **Found:** 2026-08-19 by lm sweeping F-210's shape elsewhere
-
-`autoload/reward_service.gd:75-76`'s `_grant_tier_to_party()` — the direct-grant path a Wellspring cap
-or boss kill uses instead of spawning a `Chest` (D-123) — creates a fresh `RandomNumberGenerator` and
-calls `.randomize()` on it every time it fires, exactly the bug D-041 named and F-210 just fixed for
-`Chest`: two runs sharing a `run_seed` still get different party rewards. `docs/DELEGATION.md`'s own
-F-183 entry already flags this ("the check's rolls use non-seeded `randomize()`, same as `Chest`'s
-own") but nothing tracked it as an open gap until now.
-
-Not a straight copy of F-210's fix: `Chest` had an obvious stable id (its own node `name`, itself
-derived from the authored map's marker name) and rolls exactly once per chest. `_grant_tier_to_party`
-rolls once **per present peer, per trigger** (a Wellspring cap, a boss kill) with no placement id to
-derive from — the trigger itself would need a stable id (a monotonic per-run reward-event counter is
-the likely shape, since two Wellspring caps or two boss kills in the same run must not roll the same)
-combined with the receiving peer's id, so no two peers' independent rolls from the same event
-coincide. `_seed_for_run()`'s multiply/xor mixing (`systems/loot/chest.gd`) is the pattern to reuse;
-the missing piece is only what feeds it as the "chest id" half.
-
 ### F-220 · `CycleModifierService`'s per-cycle modifier draw is the same boot-time-`randomize()` bug — and already has the stable id `Chest` needed
 
 **Area:** cycle/determinism · **Severity:** low · **Found:** 2026-08-19 by lm sweeping F-210's shape elsewhere
@@ -713,6 +693,29 @@ header) is unaffected either way — replication carries the RESULT, never the r
 ---
 
 ## Resolved
+
+### F-219 · `RewardService`'s Wellspring/boss-kill loot roll is the same boot-time-`randomize()` bug F-210 just fixed in `Chest` — **fixed**
+
+**Area:** loot/determinism · **Severity:** low · **Found:** 2026-08-19 by lm sweeping F-210's shape elsewhere · **Fixed:** 2026-08-19 by lm
+
+`_grant_tier_to_party()` now seeds a fresh `RandomNumberGenerator` per peer from
+`_seed_for_run(_run_seed(), "%s:%d:%d" % [tier, event_id, peer_id])` instead of calling `.randomize()`
+— `event_id` is a new `_next_reward_event_id` counter, monotonic per run (incremented once per
+trigger, not per peer, so two Wellspring caps in one run don't coincide) and reset to 1 on
+`GameState.seed_ready` (the same "a run has begun" hook `autoload/salvage_service.gd` already uses to
+zero its own per-run tally). `_seed_for_run()`/`_run_seed()` are direct copies of `Chest`'s own (own
+salt `0x9E3779B9`). Full reasoning and the id-scheme decision: `docs/SPECS.md`'s F-219 block.
+
+**Verified:** new `tools/reward_service_seed_check.gd` — `agent godot --script
+tools/reward_service_seed_check.gd` → `REWARD_SERVICE_SEED_CHECK failures=0`. Against the REAL
+`content/loot/wellspring.tres` content, proves: same `run_seed` replayed from a fresh `seed_ready`
+reset rolls identically; a second trigger in the same run (no reset) does not repeat the first roll;
+a different `run_seed` at the same trigger position rolls differently. No regression: `agent godot
+--script tools/reward_service_check.gd` still `REWARD_SERVICE_CHECK failures=0`.
+
+**Swept for the same shape:** all four `.randomize()` call sites project-wide checked. Only
+`systems/cycle/cycle_modifier_service.gd:56` is a live sibling, and it was already filed as F-220 by
+F-210's own sweep — left open, not this task's claim.
 
 ### F-218 · Decisions write their own reversal triggers and nothing ever re-checks them — two fired unnoticed in one session — **fixed**
 

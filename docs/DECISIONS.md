@@ -3841,3 +3841,33 @@ identically to `Superseded by`/`Amended by`: present, skip; absent, keep flaggin
 supersede the decision — a `*Reviewed*` note that doesn't explain why the fired evidence still leaves
 the original call standing is worth challenging on sight, the same as a `*Superseded by*` pointer with
 no real successor entry would be.
+
+### D-136 · 2026-08-19 · An event-triggered loot roll with no placement id seeds from a monotonic per-run trigger counter, combined with the receiving peer's id — reset on `GameState.seed_ready`
+
+F-219: `RewardService._grant_tier_to_party()` needed D-041/F-210's `(run_seed, stable id)` seeding
+fix, but `Chest`'s stable id (its own node `name`, authored by `ChestPlacementService` before
+`add_child()`) has no equivalent here — a Wellspring cap or boss kill is a moment in time, not a
+placed object with a name. Two candidates existed: hash something about the trigger itself (a
+`Wellspring`'s node name, an enemy's instance id) or mint a counter. The trigger-identity route was
+rejected — a `Wellspring` and a `Boss` are two different classes with no shared identity scheme today,
+and a boss respawns/re-instantiates in a way a placed `Chest` marker never does, so "the boss's own
+id" is not actually stable across a run the way "the chest's own name" is. **Decided: a monotonic
+`_next_reward_event_id`, incremented once per trigger (never per peer — two caps in one run must not
+roll the same), reset to 1 on `GameState.seed_ready`.** That signal is the closest thing this codebase
+has to "a run has begun" on every peer, host and client alike (`autoload/salvage_service.gd` already
+resets its own per-run milestone tally there) — without the reset, a deliberate same-seed replay
+(F-172's seed entry, a bug-repro `--seed=` launch) started fresh would still diverge from an earlier
+run that happened to fire a different NUMBER of reward events before the point being compared.
+
+The receiving peer's id is mixed into the same seed alongside the counter and the tier
+(`_seed_for_run(run_seed, "%s:%d:%d" % [tier, event_id, peer_id])`) so that the party's `N`
+independent-but-simultaneous rolls from one trigger never collide with each other, and the tier keeps
+a wellspring-tier and boss-tier roll from colliding if their counters ever line up. This is the
+general shape any future event-triggered (not placement-triggered) host roll should copy: a per-run
+counter reset on `seed_ready`, salted per file same as `Chest`/`RewardService` already are, is the
+answer whenever there is a trigger but no marker.
+
+**Would change my mind:** a future system where the SAME trigger can legitimately fire more than once
+per frame/tick in a way that needs sub-tick ordering the counter alone can't express — none does today
+(`_grant_tier_to_party` runs synchronously to completion before the next `EventBus` emission is even
+possible), but a batched/queued trigger path would need a tie-breaker beyond call order.

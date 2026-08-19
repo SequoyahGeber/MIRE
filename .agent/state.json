@@ -792,9 +792,9 @@
     },
     "autoload/reward_service.gd": {
       "agent": "lm",
-      "at": "2026-08-19T06:46:55+00:00",
-      "hash": "9bba291c3c4ea63bfa60ab3ab93ddb8a85909658b8715d4becb1aefe2754296b",
-      "task": "F-183",
+      "at": "2026-08-19T12:38:25+00:00",
+      "hash": "9526cfa93a2eaddb31d32da64f79ce1262fc68fc804077771e7cb9e982b37a02",
+      "task": "F-219",
       "token": null
     },
     "autoload/rule_service.gd": {
@@ -1873,24 +1873,24 @@
       "token": null
     },
     "docs/DECISIONS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T10:42:16+00:00",
-      "hash": "f7393aae8cfb388683550c13bf8040105ef0295a1ba6c6f85c74cc0e6138de6c",
-      "task": "F-203",
+      "agent": "lm",
+      "at": "2026-08-19T12:38:25+00:00",
+      "hash": "c9132bd4941e2a40a5ca2f6b9f485f4d1128f681848a98964e7c4c998a9e4c5f",
+      "task": "F-219",
       "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "lp",
-      "at": "2026-08-19T10:42:16+00:00",
-      "hash": "8a6cecd6541fafa3da63bd8cab8ae1ed92c4a7273bfa84a8c3d502348b327db2",
-      "task": "F-203",
+      "agent": "lm",
+      "at": "2026-08-19T12:38:25+00:00",
+      "hash": "e024508538ef748cb71e27f5cf33e3df7cf25f24e6577306851dd8dff63d4cd4",
+      "task": "F-219",
       "token": null
     },
     "docs/FINDINGS.md": {
       "agent": "lm",
-      "at": "2026-08-19T11:08:32+00:00",
-      "hash": "7632ece069ae3239160fbbdf2cb9f7a56c0c84def0562c21fb7dd2072d34831f",
-      "task": "4.9-review",
+      "at": "2026-08-19T12:38:25+00:00",
+      "hash": "76c68c40f413e2851bf3215cc1fc252e9b246c4f7a1af7505de2ea35d7fae311",
+      "task": "F-219",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1918,10 +1918,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T10:42:16+00:00",
-      "hash": "3e70443bf1eb87e583cba86027448a7900a69716f8fcee5d0442fd79801333f2",
-      "task": "F-203",
+      "agent": "lm",
+      "at": "2026-08-19T12:38:25+00:00",
+      "hash": "f3094611931078315ee5993a59be52adde115912d6eaf20779ef686d4723790b",
+      "task": "F-219",
       "token": null
     },
     "entities/player/player.tscn": {
@@ -3236,9 +3236,16 @@
     },
     "tools/reward_service_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T06:46:55+00:00",
+      "at": "2026-08-19T12:38:25+00:00",
       "hash": "54bd567c2eb945db8e068397b4b69c72526847d1bb2429a9b30e259afbbd786a",
-      "task": "F-183",
+      "task": "F-219",
+      "token": null
+    },
+    "tools/reward_service_seed_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T12:38:25+00:00",
+      "hash": "ded0bd0b4bb0cc9425b61da58ab56d30b2d1f8b89bb3d43bc86990705a1af1c7",
+      "task": "F-219",
       "token": null
     },
     "tools/rich_presence_check.gd": {
@@ -6775,9 +6782,11 @@
       "title": "Decisions write their own reversal triggers and nothing ever re-checks them \u2014 two fired unnoticed in one session"
     },
     "F-219": {
+      "done_at": "2026-08-19T12:38:25+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`RewardService`'s Wellspring/boss-kill loot roll is the same boot-time-`randomize()` bug F-210 just fixed in `Chest`"
     },
