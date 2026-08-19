@@ -102,6 +102,15 @@ DECK_W = 2.00        # deck width across the run
 RAMP_RISE = 1.00     # one ramp climbs exactly one deck
 RAMP_TOE = 0.012     # feathered toe: a wedge with no degenerate edge
 PLANK_T = 0.055      # a sawn plank
+# F-180: every HINGE leaf is normalized flush to its own hinge axis (x=0) and its own
+# back-most extent (see create_asset()) — and the frame's opening was authored so that
+# same axis sits exactly on the jamb/post's inner face, so leaf geometry that reaches
+# either reference lands exactly on the frame's collision face, not just near it.
+# construction_check.gd's swing sweep caught this both closed (0 degrees, the strap and
+# leaf boards) and fully open (90 degrees, ledges/rails/braces whose back edge is the
+# leaf's own z=0 reference). HINGE_CLEARANCE backs every leaf off by a real few
+# millimetres so no vertex sits on the frame face by a coincidental float match.
+HINGE_CLEARANCE = 0.008
 HALF = MODULE * 0.5
 
 #: Steepest walkable slope, from `entities/player/player.tscn`. The ramp is
@@ -942,7 +951,11 @@ def create_asset(name: str, build_fn: Callable[[], None], display_location: tupl
     elif family == HINGE:
         low, high = world_bounds(made)
         swing = HINGES[name]["swing"]
-        offset = Vector((-low.x if swing > 0 else -high.x, -high.y, 0.0))
+        offset = Vector((
+            -low.x + HINGE_CLEARANCE if swing > 0 else -high.x - HINGE_CLEARANCE,
+            -high.y - HINGE_CLEARANCE,
+            0.0,
+        ))
         for obj in made:
             obj.location += offset
     move_to_collection(made, collection)
@@ -1052,8 +1065,10 @@ def check(records: list[dict]) -> list[str]:
         else:
             # The hinge axis is the leaf's outer back corner: everything hangs
             # in front of it, so opening the door sweeps forward and nothing
-            # crosses the jamb plane.
-            if abs(record["high"].y) > 0.001:
+            # crosses the jamb plane. F-180: literally flush (0 mm) turned out to mean
+            # exactly ON the jamb's collision face rather than in front of it, so the
+            # corner sits HINGE_CLEARANCE behind the axis on purpose now.
+            if abs(record["high"].y + HINGE_CLEARANCE) > 0.001:
                 problems.append(f"{name}: hangs {record['high'].y * 1000:.1f} mm behind its hinge axis")
             if record["min_z"] < -0.001:
                 problems.append(f"{name}: {record['min_z'] * 1000:.1f} mm below the ground plane")
@@ -1107,8 +1122,9 @@ def check(records: list[dict]) -> list[str]:
             continue
         swing = spec["swing"]
         hinge_edge = leaf["low"].x if swing > 0 else leaf["high"].x
-        if abs(hinge_edge) > 0.002:
-            problems.append(f"{name}: hinge edge at x={hinge_edge:.4f}, not on its own origin")
+        # F-180: HINGE_CLEARANCE holds the edge that many mm off its own origin on purpose.
+        if abs(abs(hinge_edge) - HINGE_CLEARANCE) > 0.002:
+            problems.append(f"{name}: hinge edge at x={hinge_edge:.4f}, not {HINGE_CLEARANCE:.3f} m off its own origin")
         centre_x, half_width, top_z = OPENINGS[spec["frame"]]
         leaf_width = leaf["width"]
         offset_x = spec["offset"][0]

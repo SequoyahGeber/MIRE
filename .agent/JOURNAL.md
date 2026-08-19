@@ -4262,3 +4262,41 @@ Notes along the way:
 Files: `tools/audio/render_music.py`, `tools/audio/repro_check.py`
 
 Commit at time of writing: `14d962b`
+
+---
+
+### HANDOFF · F-154 · lp · 2026-08-19T06:00:05+00:00
+
+**Two events in COMMANDS.md §5.2's own illustrative hook vocabulary — `run_started`,**
+
+LP stopped on F-154 at 2026-08-19T06:00:05+00:00 (exit 1, quota wall). Tokens this run: 1,691,567 in / 11,024 out.
+The working diff is UNTOUCHED — its partial edits are still on disk, so read them before redoing anything. Full log: .agent/logs/LP-F-154-20260819-055730.jsonl
+
+Its last words: "You've hit your session limit · resets 1:50am (America/Vancouver)"
+Its last actions:
+  - Bash grep -n "_on_enemy_died\|host_kill\|_owns_mutation\|func die\|died.emit\|host_en
+  - Read /Users/sequoyahgeber/Desktop/MIRE/systems/health/player_health.gd
+  - Read /Users/sequoyahgeber/Desktop/MIRE/systems/health/player_health.gd
+  - Read /Users/sequoyahgeber/Desktop/MIRE/systems/health/player_health.gd
+  - Bash .agent/bin/agent claim F-154 systems/health/player_health.gd autoload/command_se
+  - Bash grep -rln "wire_hook\|_HOOK_EVENTS\|has_wired_hook" /Users/sequoyahgeber/Desktop
+
+Tail of the failure:
+hit your session limit · resets 1:50am (America/Vancouver)","type":"result","duration_ms":153551,"uuid":"905513a8-2f2b-42e2-9ee6-8eaf2c73d67c"}
+{"type":"system","subtype":"task_summary","detail":null,"uuid":"39e8f976-3e88-4b4c-8303-047241a1f4d2","session_id":"fc78bc06-3b72-4704-878e-920de04547c9"}
+
+Files: `systems/health/player_health.gd`, `autoload/command_service.gd`, `docs/COMMANDS.md`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `tools/hook_events_check.gd`, `tools/hook_events_check.gd.uid`
+
+Commit at time of writing: `90dd12d`
+
+---
+
+### DONE · F-180 · lm · 2026-08-19T06:17:24+00:00
+
+**construction_check.gd's door-swing check now finds real strap-vs-frame overlaps at 0 degrees, previously hidden by F-148's crash**
+
+Fixed at root: HINGE-family leaves (door/gate/palisade-gate) were normalized exactly flush to the hinge axis and their own back-face reference, coinciding with the frame's collision face by design (hinge_offset_m places that same origin exactly on the opening edge). New HINGE_CLEARANCE=0.008 in build_construction_set.py's create_asset() gives every hinge leaf real 8mm standoff instead of a coincidental float-exact touch; hinge_offset_m and everything downstream (task 3.7's scene wiring) is unaffected. Rebuilt via Blender 5.2.0 LTS: build contract 0 problems, only the 4 HINGE exports+previews+.blend changed, other 14 exports/catalog.json byte-identical. agent godot --script tools/construction_check.gd -> CONSTRUCTION_CHECK PASS, run twice. Docs: docs/SPECS.md F-180 block (new), docs/FINDINGS.md moved to Resolved, docs/DELEGATION.md Current state entry.
+
+Files: `tools/blender/build_construction_set.py`, `assets/construction`, `assets/source/construction_set.blend`, `tools/_debug_door_swing.gd`
+
+Commit at time of writing: `90dd12d`

@@ -35,7 +35,10 @@ face) is Godot **−Z**.
   butts to. The catalog's `mates_m` says where the neighbours go: `[-2, 0, 0]`, and `[0, 2, 0]` for a
   section turned 90° (Blender +y, so Godot −z).
 - **`hinge_axis`** — the four leaves. Origin on the hinge: the leaf's outer back corner, at ground
-  level. A scene hangs one and swings it, and that is the whole API:
+  level — offset a real `HINGE_CLEARANCE` (8 mm) in front of the geometry rather than flush with it
+  (F-180: flush measured as exactly 0 mm meant the leaf's own edge and the frame's collision face
+  landed on the identical float, which read as touching, not "in front of"). A scene hangs one and
+  swings it, and that is the whole API:
 
 ```gdscript
 var frame := load("res://assets/construction/exports/door_wood_frame.glb").instantiate()

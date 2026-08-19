@@ -1,12 +1,26 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=8 format=3]
 
+[ext_resource type="Script" path="res://systems/building/buildable_door.gd" id="0_door"]
 [ext_resource type="PackedScene" path="res://assets/construction/exports/door_wood_frame.glb" id="1_art"]
 [ext_resource type="PackedScene" path="res://assets/construction/exports/door_wood_leaf.glb" id="2_art"]
 
 [sub_resource type="BoxShape3D" id="Shape_0"]
-size = Vector3(2.0, 3.0, 0.28)
+size = Vector3(0.45, 3.0, 0.28)
+
+[sub_resource type="BoxShape3D" id="Shape_1"]
+size = Vector3(0.45, 3.0, 0.28)
+
+[sub_resource type="BoxShape3D" id="Shape_2"]
+size = Vector3(1.1, 0.85, 0.28)
+
+[sub_resource type="BoxShape3D" id="Shape_3"]
+size = Vector3(1.1, 2.15, 0.1)
 
 [node name="Door" type="StaticBody3D"]
+script = ExtResource("0_door")
+leaves = Array[NodePath]([NodePath("Art1")])
+leaf_degrees = Array[float]([90.0])
+blocking_shapes = Array[NodePath]([NodePath("Leaf")])
 collision_layer = 1
 collision_mask = 0
 
@@ -15,6 +29,18 @@ collision_mask = 0
 [node name="Art1" parent="." instance=ExtResource("2_art")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.55, 0, 0.02)
 
-[node name="Body" type="CollisionShape3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+[node name="JambL" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.775, 1.5, 0)
 shape = SubResource("Shape_0")
+
+[node name="JambR" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.775, 1.5, 0)
+shape = SubResource("Shape_1")
+
+[node name="Header" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.575, 0)
+shape = SubResource("Shape_2")
+
+[node name="Leaf" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.075, 0.02)
+shape = SubResource("Shape_3")
