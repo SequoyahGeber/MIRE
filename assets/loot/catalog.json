@@ -6,7 +6,7 @@
     "depth_m": 0.486,
     "height_m": 0.566,
     "mesh_parts": 16,
-    "polygons": 216,
+    "polygons": 96,
     "materials": [
       "MIRE_Iron",
       "MIRE_IronLight",
@@ -21,7 +21,7 @@
     "depth_m": 0.752,
     "height_m": 0.848,
     "mesh_parts": 20,
-    "polygons": 278,
+    "polygons": 138,
     "materials": [
       "MIRE_ClothRed",
       "MIRE_Gold",
@@ -38,7 +38,7 @@
     "depth_m": 0.587,
     "height_m": 0.658,
     "mesh_parts": 21,
-    "polygons": 240,
+    "polygons": 140,
     "materials": [
       "MIRE_CrystalTip",
       "MIRE_Mire",
@@ -53,7 +53,7 @@
     "depth_m": 0.899,
     "height_m": 0.941,
     "mesh_parts": 24,
-    "polygons": 360,
+    "polygons": 260,
     "materials": [
       "MIRE_CrystalTip",
       "MIRE_Mire",
@@ -68,7 +68,7 @@
     "depth_m": 0.645,
     "height_m": 0.708,
     "mesh_parts": 24,
-    "polygons": 264,
+    "polygons": 144,
     "materials": [
       "MIRE_IronDark",
       "MIRE_IronLight",
@@ -83,10 +83,10 @@
     "depth_m": 0.964,
     "height_m": 1.068,
     "mesh_parts": 30,
-    "polygons": 378,
+    "polygons": 198,
     "materials": [
       "MIRE_Gold",
-      "MIRE_Iron.001",
+      "MIRE_Iron",
       "MIRE_IronDark",
       "MIRE_IronLight",
       "MIRE_MireLight",
@@ -99,7 +99,7 @@
     "family": "carried",
     "width_m": 0.304,
     "depth_m": 0.3,
-    "height_m": 0.354,
+    "height_m": 0.349,
     "mesh_parts": 11,
     "polygons": 164,
     "materials": [
@@ -116,7 +116,7 @@
     "depth_m": 0.461,
     "height_m": 0.485,
     "mesh_parts": 10,
-    "polygons": 210,
+    "polygons": 190,
     "materials": [
       "MIRE_Ember",
       "MIRE_Flame",
@@ -131,11 +131,11 @@
     "depth_m": 0.405,
     "height_m": 0.437,
     "mesh_parts": 10,
-    "polygons": 220,
+    "polygons": 140,
     "materials": [
       "MIRE_Cloth",
       "MIRE_ClothDark",
-      "MIRE_Iron.001",
+      "MIRE_Iron",
       "MIRE_Leaf",
       "MIRE_Rope"
     ]
@@ -147,13 +147,13 @@
     "depth_m": 0.469,
     "height_m": 0.743,
     "mesh_parts": 11,
-    "polygons": 212,
+    "polygons": 72,
     "materials": [
       "MIRE_Canvas",
       "MIRE_CanvasDark",
       "MIRE_ClothRed",
       "MIRE_Gold",
-      "MIRE_Iron.001",
+      "MIRE_Iron",
       "MIRE_IronLight",
       "MIRE_LeatherDark",
       "MIRE_MireGlow"

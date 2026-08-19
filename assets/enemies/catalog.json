@@ -6,7 +6,7 @@
     "depth_m": 1.095,
     "height_m": 0.589,
     "mesh_parts": 1,
-    "polygons": 794,
+    "polygons": 634,
     "bones": 17,
     "animations": [
       "idle-loop",
@@ -51,7 +51,7 @@
     "depth_m": 0.263,
     "height_m": 0.176,
     "mesh_parts": 3,
-    "polygons": 59,
+    "polygons": 19,
     "bones": 0,
     "animations": [],
     "materials": [

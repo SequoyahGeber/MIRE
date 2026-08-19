@@ -107,17 +107,21 @@ def box(
     rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
     bevel: float = 0.0,
 ) -> bpy.types.Object:
+    """Bevel-free box (D-124).
+
+    This override predates F-198's discovery that it still copied
+    ``mire_art.box()``'s bevel-applying body verbatim, despite looking like
+    the ward-set bevel-free pattern at a glance. This family's tracker row
+    claims a byte-identical rebuild; the bevel modifier changes float bytes
+    between otherwise identical background exports on Apple Silicon (F-057).
+    ``bevel`` is accepted and ignored so the five call sites below read
+    unchanged.
+    """
     bpy.ops.mesh.primitive_cube_add(location=location, rotation=rotation)
     obj = bpy.context.object
     obj.name = name
     obj.scale = (dimensions[0] * 0.5, dimensions[1] * 0.5, dimensions[2] * 0.5)
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    if bevel > 0.0:
-        modifier = obj.modifiers.new("Low_Poly_Bevel", "BEVEL")
-        modifier.width = bevel
-        modifier.segments = 1
-        bpy.context.view_layer.objects.active = obj
-        bpy.ops.object.modifier_apply(modifier=modifier.name)
     return assign(obj, mat)
 
 

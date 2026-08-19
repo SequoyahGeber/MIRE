@@ -4738,3 +4738,15 @@ Notes along the way:
 Files: `world/gen/undergrowth.gd`, `tools/world_contract_check.gd`, `tools/hollowmere_check.gd`
 
 Commit at time of writing: `2c1ec87`
+
+---
+
+### DONE · F-198 · lp · 2026-08-19T09:57:59+00:00
+
+**Three DONE asset batches (A-004, A-005, A-006) still call `mire_art.box()`'s bevel-capable version with no override — the same F-057 exposure their own tracker rows already claim to have passed**
+
+Fixed: bevel-free box() override added to build_tool_weapon_set.py/build_loot_set.py, and the crawler's existing override actually stripped of its modifier-apply. Verified with new tools/blender/asset_repro_check.py: byte-identical GLBs+catalog across two clean rebuilds for A-004 (22/22), A-005 (10/10), A-006 (4/4). Each family's engine check still passes: item_icons_check.gd, loot_content_check.gd, enemy_crawler_check.gd, all clean imports. ASSET_TRACKER rows updated with new evidence. F-206 filed for build_gatherable_plants.py's same-shaped but not-yet-live gap.
+
+Files: `tools/blender/build_tool_weapon_set.py`, `tools/blender/build_loot_set.py`, `tools/blender/build_enemy_crawler.py`, `tools/blender/asset_repro_check.py`, `docs/ASSET_TRACKER.md`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`, `assets/tools_weapons`, `assets/loot`, `assets/enemies`, `assets/source/tool_weapon_set.blend`, `assets/source/loot_set.blend`, `assets/source/enemy_crawler.blend`
+
+Commit at time of writing: `3888799`

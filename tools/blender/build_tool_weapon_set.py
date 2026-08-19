@@ -33,11 +33,34 @@ import bpy
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from mire_art import (  # noqa: E402
-    assign, box, cone, cylinder_between, eevee_engine, ico, look_at, make_consistent, mat,
+    assign, cone, cylinder_between, eevee_engine, ico, look_at, make_consistent, mat,
     mesh_object, move_to_collection, radial, around, reset_materials, tapered_between, world_bounds,
 )
 from godot_import_lock import import_cache_guard  # noqa: E402
 from mathutils import Vector
+
+
+def box(
+    name: str,
+    location: tuple[float, float, float],
+    dimensions: tuple[float, float, float],
+    mat: bpy.types.Material,
+    rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    bevel: float = 0.0,
+) -> bpy.types.Object:
+    """Bevel-free box, overriding ``mire_art.box`` on purpose (D-124).
+
+    This family's tracker row claims a byte-identical rebuild; the bevel
+    modifier changes float bytes between otherwise identical background
+    exports on Apple Silicon (F-057). ``bevel`` is accepted and ignored so the
+    one call site (``Cleaver_Bolster``) reads unchanged.
+    """
+    bpy.ops.mesh.primitive_cube_add(location=location, rotation=rotation)
+    obj = bpy.context.object
+    obj.name = name
+    obj.scale = (dimensions[0] * 0.5, dimensions[1] * 0.5, dimensions[2] * 0.5)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    return assign(obj, mat)
 
 
 ROOT = Path(__file__).resolve().parents[2]

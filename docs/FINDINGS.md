@@ -653,49 +653,6 @@ re-deriving it by hand, which is the whole reason F-057 took longer than "apply 
 
 ---
 
-### F-198 · Three DONE asset batches (A-004, A-005, A-006) still call `mire_art.box()`'s bevel-capable version with no override — the same F-057 exposure their own tracker rows already claim to have passed
-
-**Area:** art pipeline · **Severity:** low · **Found:** 2026-08-19 by lm during F-057's close-out sweep
-
-F-057's fix (bevel-free `box()` override, dropping Blender's bevel modifier because it changed float
-bytes between otherwise identical background exports on Apple Silicon) is not new invention —
-`build_ward_set.py` had already made this exact call, and `build_flora_set.py`,
-`build_construction_set.py` and `build_extraction_ship_set.py` all cite F-057 in their own comments
-for doing the same. `build_crafting_stations.py`, the family that originally *found* the bug, was the
-one family that had never applied its own fix — that gap is what F-057 closed.
-
-The sweep this close-out requires (`grep -rn "bevel=" tools/blender/*.py`, then check each hit for a
-local bevel-free `box()` override) found three more live gaps, none touched here — fixing any of them
-means rebuilding and re-verifying that batch's full contract, which is out of this task's scope:
-
-- `tools/blender/build_tool_weapon_set.py:580` — one site (`Cleaver_Bolster`, `bevel=0.022`). A-004's
-  `docs/ASSET_TRACKER.md` row claims "deterministic rebuild ... passed."
-- `tools/blender/build_loot_set.py` — thirteen sites across chest bodies, locks, cloth and bag parts
-  (lines 119-122, 143, 177, 188, 234, 245-246, 275, 299, 310). A-005's row claims "Byte-identical
-  deterministic rebuild ... passed."
-- `tools/blender/build_enemy_crawler.py` — five sites on the crawler's body/head/jaw (lines 300, 303,
-  306, 317, 324), and its own local `box()` override (line 101) copies `mire_art.box()`'s
-  bevel-applying body verbatim rather than stripping it — an override that looks like the ward-set
-  pattern at a glance but does not actually change behavior. A-006's row claims "Byte-identical
-  deterministic rebuild ... passed."
-
-`tools/blender/build_gatherable_plants.py` also has five `bevel=` sites with no override, but that
-batch is still in progress under task 2.1d (currently claimed) and not yet marked `DONE`, so it is
-not included in the claim above — worth the same fix before that task claims a deterministic-rebuild
-pass.
-
-Whether any of these three DONE batches' committed GLBs actually exhibit drift is unverified — F-057
-itself only reproduced on 1 of 6 clean rebuilds of one bevel-heavy asset, so the odds any single
-batch's evidence run happened to hit it are low but nonzero, and low-probability-but-nonzero is
-exactly what "the verification contract requires a deterministic clean rebuild" is supposed to rule
-out. The fix, when someone picks this up, is mechanical and known: copy `build_ward_set.py`'s
-bevel-free `box()` override (or `build_crafting_stations.py`'s, same shape) into each file, rebuild,
-diff two clean rebuilds' GLBs and catalog byte-for-byte (`tools/blender/crafting_stations_repro_check.py`
-is a reusable template — its two-separate-process pattern is what F-057 needed and an earlier
-in-process draft did not catch), and update the tracker row's evidence line.
-
----
-
 ### F-203 · AuthoredWorld's F-187 chunk merge excludes sway- and emitter-bearing props — a second attempt needs per-vertex height encoding or per-asset placement metadata inside a merged mesh
 
 **Area:** perf · **Severity:** medium · **Found:** 2026-08-19 by lm
@@ -779,7 +736,96 @@ loop (F-081/D-057) is a separate piece of work from the read-only check F-200 as
 
 ---
 
+### F-206 · `build_gatherable_plants.py` (A-011) has six `bevel=` sites with no local override — the same D-124 exposure, latent rather than live
+
+**Area:** art pipeline · **Severity:** low · **Found:** 2026-08-19 by lp during F-198's required sweep
+
+F-198's own sweep (`grep -c bevel= tools/blender/build_*.py` against every family with a local `box()`
+override) found `tools/blender/build_gatherable_plants.py` still passes `bevel=` straight through to
+`mire_art.box()`'s live BEVEL modifier at six sites (lines 481, 506, 519, 556, 561, 573 as of this
+finding), with no bevel-free override of its own. F-198 itself flagged this exact gap when A-011 was
+still in progress under task 2.1d and not yet `DONE`; A-011 has since shipped `DONE`
+(`docs/ASSET_TRACKER.md`), so the batch this warning was about now exists on disk.
+
+**Not the same violation as F-198's three, and not fixed here:** D-124's rule triggers on a tracker
+row that claims (or will claim) a byte-identical rebuild. A-011's `DONE` row makes no such claim — its
+verification is a build-time contract (9 conditions, 10/10), an all-sides audit, and
+`tools/gatherables_check.gd`'s 41 engine assertions, none of which assert GLB byte-reproducibility
+across two clean rebuilds. So today this is a latent risk, not a live one: nobody has shipped a false
+"byte-identical" claim the way A-004/A-005/A-006 had.
+
+**What would make this live:** any future task that re-verifies A-011 and wants to add a
+byte-identical-rebuild claim to its row (bringing it in line with A-012's, which already has one) must
+fix this first, the same mechanical way F-198 did — copy `build_ward_set.py`'s bevel-free `box()`
+override shape, rebuild, and diff two clean rebuilds with `tools/blender/asset_repro_check.py
+--script tools/blender/build_gatherable_plants.py --export-dir assets/gatherables/exports --catalog
+assets/gatherables/catalog.json --label A-011` (the generalized tool F-198 wrote, no per-family repro
+script needed). Expect polygon counts to drop on the affected assets (peat bank, path stones, wood
+cuts) the same way A-004/A-005/A-006's did.
+
+---
+
 ## Resolved
+
+### F-198 · Three DONE asset batches (A-004, A-005, A-006) still call `mire_art.box()`'s bevel-capable version with no override — the same F-057 exposure their own tracker rows already claim to have passed — **fixed**
+
+**Area:** art pipeline · **Severity:** low · **Found:** 2026-08-19 by lm during F-057's close-out sweep
+
+F-057's fix (bevel-free `box()` override, dropping Blender's bevel modifier because it changed float
+bytes between otherwise identical background exports on Apple Silicon) is not new invention —
+`build_ward_set.py` had already made this exact call, and `build_flora_set.py`,
+`build_construction_set.py` and `build_extraction_ship_set.py` all cite F-057 in their own comments
+for doing the same. `build_crafting_stations.py`, the family that originally *found* the bug, was the
+one family that had never applied its own fix — that gap is what F-057 closed.
+
+The sweep this close-out requires (`grep -rn "bevel=" tools/blender/*.py`, then check each hit for a
+local bevel-free `box()` override) found three more live gaps, none touched here — fixing any of them
+means rebuilding and re-verifying that batch's full contract, which is out of this task's scope:
+
+- `tools/blender/build_tool_weapon_set.py:580` — one site (`Cleaver_Bolster`, `bevel=0.022`). A-004's
+  `docs/ASSET_TRACKER.md` row claims "deterministic rebuild ... passed."
+- `tools/blender/build_loot_set.py` — thirteen sites across chest bodies, locks, cloth and bag parts
+  (lines 119-122, 143, 177, 188, 234, 245-246, 275, 299, 310). A-005's row claims "Byte-identical
+  deterministic rebuild ... passed."
+- `tools/blender/build_enemy_crawler.py` — five sites on the crawler's body/head/jaw (lines 300, 303,
+  306, 317, 324), and its own local `box()` override (line 101) copies `mire_art.box()`'s
+  bevel-applying body verbatim rather than stripping it — an override that looks like the ward-set
+  pattern at a glance but does not actually change behavior. A-006's row claims "Byte-identical
+  deterministic rebuild ... passed."
+
+`tools/blender/build_gatherable_plants.py` also has five `bevel=` sites with no override, but that
+batch is still in progress under task 2.1d (currently claimed) and not yet marked `DONE`, so it is
+not included in the claim above — worth the same fix before that task claims a deterministic-rebuild
+pass.
+
+Whether any of these three DONE batches' committed GLBs actually exhibit drift is unverified — F-057
+itself only reproduced on 1 of 6 clean rebuilds of one bevel-heavy asset, so the odds any single
+batch's evidence run happened to hit it are low but nonzero, and low-probability-but-nonzero is
+exactly what "the verification contract requires a deterministic clean rebuild" is supposed to rule
+out. The fix, when someone picks this up, is mechanical and known: copy `build_ward_set.py`'s
+bevel-free `box()` override (or `build_crafting_stations.py`'s, same shape) into each file, rebuild,
+diff two clean rebuilds' GLBs and catalog byte-for-byte (`tools/blender/crafting_stations_repro_check.py`
+is a reusable template — its two-separate-process pattern is what F-057 needed and an earlier
+in-process draft did not catch), and update the tracker row's evidence line.
+
+---
+
+**Resolved 2026-08-19 by lp.** Fixed: build_tool_weapon_set.py (A-004R), build_loot_set.py (A-005), build_enemy_crawler.py (A-006)
+each got a bevel-free box() override per D-124 (build_ward_set.py's shape) — the crawler's existing
+override previously copied mire_art.box()'s bevel-applying body verbatim, so it looked like the
+pattern without ever changing behavior. Wrote tools/blender/asset_repro_check.py, generalizing
+F-057's crafting_stations_repro_check.py into a CLI any family can call
+(--script/--export-dir/--catalog/--label), and used it to prove all three: byte-identical GLBs and
+catalog across two clean separate-process Blender rebuilds — A-004 22/22, A-005 10/10, A-006 4/4.
+Each family's own engine check still passes post-rebuild: agent godot --script
+tools/item_icons_check.gd (A-004), tools/loot_content_check.gd (A-005), tools/enemy_crawler_check.gd
+(A-006) — all PASS, 0 ERROR lines, fresh import clean. Polygon totals drop as expected from the
+missing chamfers (A-004R cleaver 174->154, A-005 2542->1542, A-006 1172->972); docs/ASSET_TRACKER.md
+rows carry the new counts and the verification command. Required sweep
+(grep -c bevel= tools/blender/build_*.py) found one more live gap, build_gatherable_plants.py
+(A-011, six sites) — filed as F-206 rather than fixed here since its tracker row makes no
+byte-identical claim today, so it isn't a live D-124 violation. Full spec block in docs/SPECS.md;
+new tool documented in docs/DELEGATION.md Current state.
 
 ### F-112 · `world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check — F-076's third system, not lifted — **fixed**
 

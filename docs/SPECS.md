@@ -5212,6 +5212,64 @@ FAIL`) before the stub was reverted and a clean re-run confirmed `perched=4` aga
 
 ---
 
+## F-198 · Three DONE asset batches (A-004, A-005, A-006) still call `mire_art.box()`'s bevel-capable version with no override
+
+**Claim:** `tools/blender/build_tool_weapon_set.py`, `tools/blender/build_loot_set.py`,
+`tools/blender/build_enemy_crawler.py`, `tools/blender/asset_repro_check.py` (new),
+`docs/ASSET_TRACKER.md`. No networked system — pure offline art tooling.
+
+**Root cause / what's missing:** D-124 established the rule (F-057's four sibling families already
+followed it independently): a family whose tracker row claims a byte-identical rebuild must not pass
+`bevel=` through to `mire_art.box()`'s live BEVEL modifier, because the modifier changes float bytes
+between otherwise identical background exports on Apple Silicon. Three `DONE` batches never got the
+fix: `build_tool_weapon_set.py` (one site, `Cleaver_Bolster`), `build_loot_set.py` (thirteen sites
+across chest bodies/locks/cloth/bag parts), and `build_enemy_crawler.py` (five sites — its local
+`box()` override existed but copied `mire_art.box()`'s bevel-applying body verbatim, so it looked
+like the ward-set pattern without ever changing behavior).
+
+**Fix:** Added a bevel-free local `box()` override to each of the first two files (same shape as
+`build_ward_set.py`'s: accepts `bevel` for call-site compatibility, never applies the modifier), and
+fixed `build_enemy_crawler.py`'s existing override to actually drop the `if bevel > 0.0: apply
+modifier` branch instead of reproducing it. Wrote `tools/blender/asset_repro_check.py`, generalizing
+`crafting_stations_repro_check.py` (F-057's single-family original) into a CLI tool any family can
+call: `--script <builder> --export-dir <dir> --catalog <path> --label <id>` runs the builder as two
+separate Blender processes and diffs every GLB plus the catalog byte-for-byte.
+
+**Verified 2026-08-19:** Each family rebuilt and reverified —
+`asset_repro_check.py --script tools/blender/build_tool_weapon_set.py --export-dir
+assets/tools_weapons/exports --catalog assets/tools_weapons/catalog.json --label A-004` (22/22
+byte-identical GLBs + catalog across two clean separate-process rebuilds), same for `build_loot_set.py`
+→ A-005 (10/10) and `build_enemy_crawler.py` → A-006 (4/4). Polygon totals drop as expected from the
+missing chamfers: A-004R's cleaver 174→154 (only design touched), A-005 2,542→1,542 (all thirteen
+sites), A-006 1,172→972 (crawler 794→634, shell fragment 59→19; nest and leg fragment carry no
+`bevel=` of their own and are unaffected). Footprints (`width_m`/`depth_m`) are unchanged on every
+export except 4–6 mm depth drift on `stone_axe` and `arrow` — neither calls `box(bevel=...)` — plus a
+handful of `.001`/`.002` material-name suffixes silently disappearing from the catalog (e.g.
+`MIRE_ClothRed.002` → `MIRE_ClothRed`). Both are one script run's ripple, not noise: all eleven
+designs build inside one Blender process, and `Cleaver_Bolster`'s old `modifier_apply` call (which
+sets `view_layer.objects.active`) was perturbing Blender's shared session state for whatever design
+built after it — removing that call also removed the perturbation, incidentally cleaning up spurious
+duplicate material datablocks the old bevel-applying run was creating. Confirmed stable, not new
+nondeterminism, by this task's own two-clean-rebuild proof (byte-identical both times); well inside
+the "~6 cm of A-004" tolerance the A-004R docstring already allows. Each family's own engine check
+still passes clean post-rebuild: `agent godot --script tools/item_icons_check.gd` (A-004),
+`agent godot --script tools/loot_content_check.gd` (A-005), `agent godot --script
+tools/enemy_crawler_check.gd` (A-006) — all PASS, no ERROR lines, fresh import clean.
+
+**Sweep (required before close-out):** `grep -c bevel= tools/blender/build_*.py` against every family
+with a local `box()` override found one more live gap outside this task's three: **F-206**,
+`build_gatherable_plants.py` (A-011) has six `bevel=` sites and no override, but its tracker row does
+not currently claim a byte-identical rebuild, so it is not in D-124 violation today — filed rather
+than fixed here, since fixing it means rebuilding and reverifying A-011's own contract, out of this
+claim's scope. `build_food_set.py` (A-012) DOES claim byte-identical rebuild but has zero `bevel=`
+sites (built entirely from `paint_faces` colour differences) — clean by construction, no action
+needed. `build_crafting_stations.py` and `build_ward_set.py` already carry the fix from F-057/D-124's
+original close-out.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

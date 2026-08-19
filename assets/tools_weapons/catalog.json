@@ -42,7 +42,7 @@
     "design": "stone_axe",
     "presentation": "world",
     "width_m": 0.767,
-    "depth_m": 0.208,
+    "depth_m": 0.204,
     "height_m": 1.396,
     "mesh_parts": 17,
     "polygons": 348,
@@ -60,7 +60,7 @@
     "design": "stone_axe",
     "presentation": "viewmodel",
     "width_m": 0.767,
-    "depth_m": 0.208,
+    "depth_m": 0.204,
     "height_m": 1.396,
     "mesh_parts": 17,
     "polygons": 348,
@@ -189,7 +189,7 @@
     "depth_m": 0.182,
     "height_m": 1.122,
     "mesh_parts": 13,
-    "polygons": 174,
+    "polygons": 154,
     "materials": [
       "MIRE_Brass",
       "MIRE_Iron",
@@ -206,7 +206,7 @@
     "depth_m": 0.182,
     "height_m": 1.122,
     "mesh_parts": 13,
-    "polygons": 174,
+    "polygons": 154,
     "materials": [
       "MIRE_Brass",
       "MIRE_Iron",
@@ -263,7 +263,7 @@
       "MIRE_Fibre",
       "MIRE_Leather",
       "MIRE_WoodBark",
-      "MIRE_WoodTimberLight.001"
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -280,7 +280,7 @@
       "MIRE_Fibre",
       "MIRE_Leather",
       "MIRE_WoodBark",
-      "MIRE_WoodTimberLight.001"
+      "MIRE_WoodTimberLight"
     ]
   },
   {
@@ -288,18 +288,18 @@
     "design": "arrow",
     "presentation": "world",
     "width_m": 0.226,
-    "depth_m": 0.245,
+    "depth_m": 0.239,
     "height_m": 1.476,
     "mesh_parts": 9,
     "polygons": 114,
     "materials": [
       "MIRE_Cloth",
-      "MIRE_ClothRed.002",
+      "MIRE_ClothRed",
       "MIRE_IronDark",
       "MIRE_Rope",
       "MIRE_StoneLight",
       "MIRE_WoodBark",
-      "MIRE_WoodTimber.001"
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -307,18 +307,18 @@
     "design": "arrow",
     "presentation": "viewmodel",
     "width_m": 0.226,
-    "depth_m": 0.245,
+    "depth_m": 0.239,
     "height_m": 1.476,
     "mesh_parts": 9,
     "polygons": 114,
     "materials": [
       "MIRE_Cloth",
-      "MIRE_ClothRed.002",
+      "MIRE_ClothRed",
       "MIRE_IronDark",
       "MIRE_Rope",
       "MIRE_StoneLight",
       "MIRE_WoodBark",
-      "MIRE_WoodTimber.001"
+      "MIRE_WoodTimber"
     ]
   },
   {
@@ -332,7 +332,7 @@
     "polygons": 348,
     "materials": [
       "MIRE_Brass",
-      "MIRE_ClothRed.001",
+      "MIRE_ClothRed",
       "MIRE_Iron",
       "MIRE_IronDark",
       "MIRE_IronLight",
@@ -352,7 +352,7 @@
     "polygons": 348,
     "materials": [
       "MIRE_Brass",
-      "MIRE_ClothRed.001",
+      "MIRE_ClothRed",
       "MIRE_Iron",
       "MIRE_IronDark",
       "MIRE_IronLight",

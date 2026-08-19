@@ -5321,6 +5321,42 @@ scope for the read-only check this task built.
 
 ---
 
+### 2026-08-19 — F-198 fixed: A-004/A-005/A-006 rebuilt bevel-free (D-124), and `tools/blender/asset_repro_check.py` generalizes F-057's single-family repro proof to any builder
+
+**The bug it closes:** `build_tool_weapon_set.py`, `build_loot_set.py` and `build_enemy_crawler.py`
+each shipped `DONE` claiming a byte-identical rebuild while still passing `bevel=` through to (or, for
+the crawler, copying verbatim) `mire_art.box()`'s live BEVEL modifier — the exact float-byte-drift
+exposure D-124 exists to prevent. Fixed each with a bevel-free local `box()` override (`build_ward_set.py`'s
+shape), rebuilt, and reverified. Full account in `docs/FINDINGS.md` (Resolved) and `docs/SPECS.md`.
+
+**The API the next art family builds against — no more per-family repro scripts:**
+
+```bash
+python3 tools/blender/asset_repro_check.py \
+    --script tools/blender/build_<family>.py \
+    --export-dir assets/<family>/exports \
+    --catalog assets/<family>/catalog.json \
+    --label <tracker-id>
+```
+
+Runs the builder as two separate Blender processes (never in-process — Blender doesn't purge orphan
+datablocks on `object.delete()`, so a second in-process call collides with the first run's leftover
+names) and diffs every `*.glb` plus `catalog.json` byte-for-byte. `crafting_stations_repro_check.py`
+(F-057's original, `build_crafting_stations.py`-only) still exists and still works; new families
+should use the generic one instead of copying it a fourth time.
+
+**Verified:** all three families PASS — A-004 (22/22 GLBs + catalog), A-005 (10/10), A-006 (4/4),
+each across two clean separate-process rebuilds. Each family's own engine check still passes clean
+post-rebuild: `tools/item_icons_check.gd`, `tools/loot_content_check.gd`, `tools/enemy_crawler_check.gd`.
+`docs/ASSET_TRACKER.md`'s A-004R/A-005/A-006 rows carry the new polygon counts and the verification
+command.
+
+**What is NOT fixed:** `build_gatherable_plants.py` (A-011) has the same six-site gap, but its
+tracker row makes no byte-identical claim today so it isn't a live D-124 violation — filed as
+**F-206** for whoever adds that claim to A-011 later.
+
+---
+
 > **Historical documents — every task prompt from here down.** They predate D-021 (agents register
 > their own autoloads), D-031 (agents may edit Godot-authored files under exact claim), D-039 (do it
 > yourself rather than handing it back) and the D-036 lane system. Where a prompt says
