@@ -646,6 +646,41 @@ worth confirming against real numbers rather than assumed.
 
 ---
 
+### F-209 · No menu in the game supports gamepad UI focus navigation — a bare controller with no Steam Input translation cannot open any panel
+
+**Area:** UI/input · **Severity:** medium · **Found:** 2026-08-19 by lm during 7.6
+
+Task 7.6 gave every core-gameplay action (movement, look, jump/sprint/interact/inventory/dodge/
+build/eat/attack/hotbar-cycle) a real gamepad `InputMap` binding, plus a gamepad button rebind flow
+in `SettingsMenu`. It deliberately did NOT touch menu navigation: `MainMenu`, `SettingsMenu`,
+`LobbyMenu`, `InventoryUI`, `CraftingUI`, `ChestUI`, and `UnlockMenu` all still require a real mouse
+click to open, select an item, or close (several — `InventoryUI`'s drag-and-drop stack moves,
+`SettingsMenu`'s sliders — have no keyboard equivalent either, only a gamepad-specific one is new
+here). None of the seven sets an initial `Control` focus or wires `focus_neighbor_*`, so even though
+Godot's default `ui_up`/`ui_down`/`ui_accept`/`ui_cancel` actions already carry joypad bindings out
+of the box, there is nothing on screen for a D-pad press to move between. D-131 records why this was
+scoped out of 7.6 rather than folded in: it is a UI-system-wide pass across seven files task 7.6 had
+no other reason to open, not an extension of the InputMap work that task actually did.
+
+On a real Steam Deck this is normally invisible — Steam Input's Desktop/Gamepad-with-mouse-emulation
+configuration maps a trackpad to a virtual cursor system-wide (the same mechanism D-013 called
+"nearly free" Deck support), so a menu click still arrives, just from a trackpad instead of a mouse.
+The gap is real for a BARE controller with no Steam Input translation between it and the game — a
+desktop Xbox/PlayStation pad plugged into a non-Steam launch, or this project's own `--windowed` dev
+builds run outside Steam. Those genuinely cannot open a single menu today.
+
+Whoever picks this up: give each of the seven menus an initial `grab_focus()` on open and
+`focus_neighbor_*`/`focus_next`/`focus_previous` across its interactive controls, plus a visible
+focus-ring theme override (none of them override `Control`'s default focus style, which is easy to
+miss against these menus' own dark panel backgrounds). `InventoryUI`'s drag-and-drop slot-move and
+`SettingsMenu`'s sliders need an explicit gamepad-button equivalent (e.g. `ui_accept` picks up/drops
+a stack, D-pad left/right steps a slider) since there is no drag gesture to bind a button to. Verify
+headlessly by driving `ui_up`/`ui_down`/`ui_accept` through each menu's real `_input()`/`_gui_input()`
+path the way `tools/gamepad_check.gd` already does for gameplay actions, checking
+`get_viewport().gui_get_focus_owner()` moves and lands on the expected control.
+
+---
+
 ## Resolved
 
 ### F-203 · AuthoredWorld's F-187 chunk merge excludes sway- and emitter-bearing props — a second attempt needs per-vertex height encoding or per-asset placement metadata inside a merged mesh — **fixed (emitters); sway spun out to F-208**

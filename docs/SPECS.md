@@ -3757,6 +3757,97 @@ already handles an old save missing the new key. A setting a gameplay system rea
 
 ---
 
+## 7.6 · Gamepad support + Steam Deck compatibility (not verification)
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap. Steam Deck hardware remains unprovisioned (D-028) and stays that way — "not
+verification" in the title means this task ships and headlessly proves the CODE, not an on-device
+playtest, which is Sequoyah's to do once he owns a unit or borrows one.
+
+**Authority:** none of its own (`ARCHITECTURE.md` §2.2, "VFX, audio, camera, UI" row) — every input
+binding is per-player presentation/control, applied locally, never sent to another peer. GodotSteam's
+`SteamMultiplayerPeer` remaps any controller — including a Steam Deck's own — to a standard
+Xbox-layout gamepad via Steam Input before Godot's `Input` singleton ever sees an event (§2.4), so
+this task is entirely about giving that already-normalized device full coverage, not about detecting
+Deck hardware specifically.
+
+**Claim:** `project.godot` (InputMap only — see below), `entities/player/player_camera.gd`,
+`entities/player/player_controller.gd`, `ui/hud/vitals_hud.gd`, `ui/inventory/inventory_ui.gd`,
+`ui/building/build_bar.gd` (doc comment only), `autoload/settings_service.gd`,
+`core/save/settings_save.gd`, `ui/menu/settings_menu.gd`, `tools/settings_check.gd`,
+`tools/gamepad_check.gd` (new).
+
+**The gap that mattered most: nothing rotated the camera from a gamepad at all.** Every other verb
+(move, jump, sprint, interact, inventory, dodge, `attack`'s right-trigger axis) already had a joypad
+`InputMap` event from earlier tasks, but `PlayerCamera.apply_look()` only ever ran from
+`_unhandled_input`'s `InputEventMouseMotion` branch — a gamepad player could walk but never look
+around. Fixed by four new axis-bound actions (`look_left`/`look_right`/`look_up`/`look_down`, right
+stick, `JOY_AXIS_RIGHT_X`/`JOY_AXIS_RIGHT_Y`) and a new `PlayerCamera.apply_look_gamepad(delta:
+float, input_allowed: bool) -> void`, polled every tick from `PlayerController._physics_process()`
+(a HELD analog value, unlike mouse's one-shot motion event, so it has to scale by `delta` itself) —
+new `@export var gamepad_look_sensitivity: float = 180.0` (degrees/SECOND, not degrees/pixel).
+`input_allowed` (`gameplay_input_allowed()`, already resolved once per tick, F-105) is the gamepad
+equivalent of mouse look's own `Input.mouse_mode == MOUSE_MODE_CAPTURED` gate — both `apply_look()`
+and `apply_look_gamepad()` now share a `_rotate_view(yaw_delta, pitch_delta)` helper so the
+clamp/invert-Y logic exists exactly once.
+
+**Every raw-key/raw-mouse handler this project had accumulated for "no InputMap action, `project.godot`
+was held elsewhere" reasons (F-095-era) is now a real action, keyboard/mouse PLUS gamepad-bound:**
+`eat` (was `vitals_hud.gd`'s `EAT_KEY` = G; now G / gamepad D-pad down), `build_rotate` (was
+`player_controller.gd`'s `BUILD_ROTATE_KEY` = R; now R / gamepad D-pad right), `build_destroy` (was a
+raw right-click in the same file; now right-click / gamepad left trigger). `build` itself (existing
+action, mode toggle) gained the gamepad button it was missing (D-pad up) — every other action already
+had one; this was a plain gap, not a promotion. New gamepad-only `hotbar_prev`/`hotbar_next`
+(shoulder buttons LB/RB) cycle `InventoryUI`'s hotbar selection with wraparound — the 1-8 number-row
+keys stay keyboard-only on purpose, D-131, no sane single gamepad button per slot.
+
+**`SettingsService`/`SettingsMenu` (task 7.5's own extension point, D-114's forward pointer —
+"gamepad rebinding is task 7.6's own scope"):** `REBINDABLE_ACTIONS` (keyboard) grew by two (`eat`,
+`build_rotate`) now that they are real actions; `build_destroy` stays out for the same mouse-primary
+reasoning `attack` already had (D-131). A parallel `JOYPAD_REBINDABLE_ACTIONS` (10 button-bound
+actions only — every axis/trigger-bound action, including movement/look/`attack`/`build_destroy`,
+has no single-button capture flow, D-131) backs a new `rebind_action_joypad(action,
+InputEventJoypadButton) -> StringName` / `keybind_label_joypad(action) -> String` pair, same
+never-share-a-button conflict refusal `rebind_action()` already has for keyboard.
+`gamepad_look_sensitivity()`/`set_gamepad_look_sensitivity(float)` joins the LOOK section (clamped
+`[30, 720]` degrees/sec) next to mouse `look_sensitivity`. `SettingsMenu` gained a "GAMEPAD BINDS"
+section (one row + capture button per `JOYPAD_REBINDABLE_ACTIONS` entry) alongside the existing
+KEYBINDS section, and a second `_rebinding_joypad_action`/`_rebinding_joypad_button` capture-state
+pair so a keyboard-row capture and a gamepad-row capture can never race each other. `reset_keybinds()`
+now clears both keyboard AND gamepad overrides in one call (`InputMap.load_from_project_settings()`
+already restores both). Persisted via a `joypad_binds` dict + `gamepad_look_sensitivity` scalar added
+to `SettingsSave`'s schema — `_migrate()`'s existing backfill loop covers an old save missing either.
+
+**Verify:** `tools/gamepad_check.gd` (new) — every action this task's gamepad support relies on
+actually carries the joypad event `project.godot`'s hand-edited `[input]` section claims (a hand-typed
+`.ini` is exactly where a typo'd button/axis index hides silently); `PlayerCamera.apply_look_gamepad()`
+turning yaw/pitch from a real right-stick `Input.get_vector()` read, and being suppressed while
+`input_allowed` is false; `InventoryUI`'s `hotbar_prev`/`hotbar_next` cycling with wraparound through
+the real `_input()` path; `VitalsHud`'s `eat` action consuming a real hotbar item through the real
+`_input()` path; the full build cycle — toggle / rotate / confirm / destroy — fired entirely through
+real `InputEventJoypadButton`/`InputEventJoypadMotion` events into `PlayerController`'s real
+`_unhandled_input()`, the same "feed the real handler" shape `tools/build_check.gd` already uses for
+keyboard/mouse. `tools/settings_check.gd` extended for the joypad rebind API, `gamepad_look_sensitivity`
+clamping, and the grown `REBINDABLE_ACTIONS`/new `JOYPAD_REBINDABLE_ACTIONS` counts.
+No regressions: `verify_setup`/`build_check`/`combat_check`/`ranged_combat_check`/`inventory_ui_check`/
+`net_robustness_check` all stay `failures=0`. `agent godot --quit-after 20`: 0 `ERROR:` lines on a
+full boot.
+
+**Done means:** `gamepad_check.gd` and `settings_check.gd` both at `failures=0`, the six regression
+checks green, 0 `ERROR:` on a full boot, and `docs/DELEGATION.md`'s *Current state* carrying the full
+gamepad `InputMap` action list + `PlayerCamera`/`SettingsService` API surface for whatever future task
+touches input next.
+
+**Explicitly NOT this task (see `docs/FINDINGS.md` F-209):** in-engine gamepad UI FOCUS navigation
+(Tab/D-pad moving a highlight between `Button`s) for the menu shell — `MainMenu`/`SettingsMenu`/
+`LobbyMenu`/`InventoryUI`/`CraftingUI`/`ChestUI`/`UnlockMenu` all still expect a mouse click. On a real
+Steam Deck this is normally covered by Steam Input's own trackpad-as-virtual-mouse layer (the same
+reason D-013 called Deck support "nearly free"), not by anything this codebase provides — a bare
+gamepad with no Steam Input translation (a desktop Xbox controller, or a `--windowed` dev build) genuinely
+cannot open these menus today.
+
+---
+
 ## F-163 · `expr as Array[T]` silently fails to convert an untyped Array's element type — a `.set()` onto a typed-array `@export` then no-ops with no error
 
 **Claim:** `docs/SPECS.md`, `docs/FINDINGS.md`, `tools/_probe_typed_array_convert.gd` (new, throwaway

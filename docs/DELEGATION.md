@@ -75,6 +75,78 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 7.6: Gamepad support — every core-gameplay action now has a joypad `InputMap` binding, `PlayerCamera` gained analog-stick look (the one gap that mattered), and `SettingsService`/`SettingsMenu` gained gamepad-button rebinding (lm)
+
+**What shipped:** `project.godot`'s `[input]` section gained nine new actions and one missing
+binding on an existing one — full list below — and `entities/player/player_camera.gd` gained the
+piece that was actually missing: `apply_look_gamepad(delta: float, input_allowed: bool) -> void`,
+polled every tick from `PlayerController._physics_process()`, turning yaw/pitch from a real
+`Input.get_vector(&"look_left", &"look_right", &"look_up", &"look_down")` read (right stick) scaled
+by a new `@export var gamepad_look_sensitivity: float = 180.0` (degrees/SECOND — a held analog value,
+unlike mouse look's one-shot per-pixel motion event). `apply_look()` (mouse) and
+`apply_look_gamepad()` now share a `_rotate_view(yaw_delta, pitch_delta)` helper.
+
+**InputMap actions, for anyone adding a new player verb — every action below now needs BOTH a
+keyboard/mouse event and a gamepad event, or it silently loses gamepad players:**
+
+| Action | Keyboard/mouse | Gamepad |
+|---|---|---|
+| `build` | B | D-pad up (was missing a gamepad event entirely — plain gap, not new) |
+| `eat` | G | D-pad down (was `vitals_hud.gd`'s raw `EAT_KEY`) |
+| `build_rotate` | R | D-pad right (was `player_controller.gd`'s raw `BUILD_ROTATE_KEY`) |
+| `build_destroy` | Right-click | Left trigger, `JOY_AXIS_TRIGGER_LEFT` (was a raw right-click check) |
+| `hotbar_prev` / `hotbar_next` | — (1-8 number keys stay direct-select) | LB / RB, `InventoryUI` wraps at both ends |
+| `look_left` / `look_right` | — (mouse only) | Right stick X, `JOY_AXIS_RIGHT_X` |
+| `look_up` / `look_down` | — (mouse only) | Right stick Y, `JOY_AXIS_RIGHT_Y` |
+
+`eat`/`build_rotate`/`build_destroy` replace the raw-key/raw-mouse reads `vitals_hud.gd`/
+`player_controller.gd` carried since the F-095-era "`project.godot` was held by another lane" excuse
+— that excuse no longer applies to anything; a future raw-key handler should not cite it as
+precedent. `eat`/`build_rotate` joined `SettingsService.REBINDABLE_ACTIONS` (keyboard rebind);
+`build_destroy` did not, same mouse-primary reasoning `attack` already had (D-131).
+
+**`SettingsService` new surface:** `gamepad_look_sensitivity()`/`set_gamepad_look_sensitivity(float)`
+(clamped `[30, 720]`, same shape as `look_sensitivity`). `rebindable_actions_joypad()` ->
+`JOYPAD_REBINDABLE_ACTIONS` (10 button-bound actions: `jump`, `sprint`, `interact`, `inventory`,
+`build`, `dodge`, `eat`, `build_rotate`, `hotbar_prev`, `hotbar_next` — deliberately excludes every
+axis/trigger-bound action, D-131). `keybind_label_joypad(action) -> String` (Xbox-layout label:
+A/B/X/Y/LB/RB/L3/R3/BACK/GUIDE/START/D-PAD UP/DOWN/LEFT/RIGHT, via new `JOYPAD_BUTTON_LABELS`).
+`rebind_action_joypad(action, InputEventJoypadButton) -> StringName` (`&""` on success, else the
+conflicting action — same never-share-a-button contract `rebind_action()` has for keyboard).
+`reset_keybinds()` now restores gamepad bindings too, not just keyboard. Persisted via a new
+`joypad_binds` dict + `gamepad_look_sensitivity` scalar in `SettingsSave`'s schema (still schema
+version 1 — `_migrate()`'s existing backfill loop covers an old save missing either key, no version
+bump needed).
+
+**`SettingsMenu`** gained a "GAMEPAD BINDS" section (one row + capture button per
+`JOYPAD_REBINDABLE_ACTIONS` entry, `_gamepad_keybind_buttons` dict) below the existing KEYBINDS
+section, a "Gamepad Look Sensitivity" slider in LOOK, and a second capture-state pair
+(`_rebinding_joypad_action`/`_rebinding_joypad_button`) so a keyboard-row and a gamepad-row capture
+can never be started at once — `_input()` now branches on `InputEventJoypadButton` (when a gamepad
+capture is pending) before its existing `InputEventKey` branch, and Esc still cancels either kind.
+
+**`InventoryUI`** gained `hotbar_prev`/`hotbar_next` handling in its existing `_input()` (LB/RB,
+`wrapi()` wraparound at both ends) — the 1-8 number-row keys are untouched and still the only
+keyboard path; there is no gamepad equivalent for the number keys, only the cycle.
+
+**Explicitly not built:** gamepad UI FOCUS navigation for any menu (D-131, filed as F-209) — every
+menu still needs a real mouse click (or Steam Input's own trackpad-as-cursor emulation on a real
+Deck) to open or interact with. Full-stick/axis gamepad rebinding (swap which stick drives
+look/movement) — D-131's other half.
+
+**Verified:** `tools/gamepad_check.gd` (new) — every action above carries the exact joypad
+event/axis it claims (a hand-edited `project.godot` `[input]` .ini is exactly where a typo'd
+button/axis index hides silently); the gamepad look integration test rotates yaw/pitch through the
+real `apply_look_gamepad()` and confirms it is suppressed while `input_allowed` is false; the full
+build cycle (toggle/rotate/confirm/destroy) fires entirely through real
+`InputEventJoypadButton`/`InputEventJoypadMotion` events fed into `PlayerController`'s real
+`_unhandled_input()`, same "feed the real handler" shape `tools/build_check.gd` uses for
+keyboard/mouse; hotbar cycle and `eat` likewise through `InventoryUI`/`VitalsHud`'s real `_input()`.
+`failures=0`. `tools/settings_check.gd` extended (joypad rebind API, gamepad sensitivity clamping,
+grown action counts), `failures=0`. No regressions: `verify_setup`/`build_check`/`combat_check`/
+`ranged_combat_check`/`inventory_ui_check`/`net_robustness_check` all `failures=0`. `agent godot
+--quit-after 20`: 0 `ERROR:` lines. Full writeup: `docs/SPECS.md` 7.6 block.
+
 ### 2026-08-19 — F-203 fixed (emitter case): `AuthoredWorld`'s chunk merge now includes emitter-bearing props too, split by `(chunk, emitter class)`; `EnvironmentVfx.EMITTER_META` is the seam that made it need no change to `_register_emitter` (lp)
 
 **What shipped:** `AuthoredWorld._build_props()` gained a second merge bucket,

@@ -3672,6 +3672,46 @@ down the line) does not relitigate either:
    A future emitter class (or any other per-instance-tagged prop type) should get this same check
    before being assumed to need the expensive treatment its siblings do.
 
+### D-131 · 2026-08-19 · Task 7.6's gamepad rebind covers only JoypadButton-bound actions, never axis/trigger-bound ones — and menu UI focus navigation stays out of scope, resolved to Steam Input's own cursor emulation instead
+
+Two scope calls for gamepad support, made together because D-114 already named both boundaries this
+task would have to draw and "decide it, write down why" (AGENTS.md) applies to each.
+
+**Why `JOYPAD_REBINDABLE_ACTIONS` (`SettingsService.rebind_action_joypad()`) excludes every
+axis/trigger-bound action** — `move_forward/back/left/right`, `look_left/right/up/down`, `attack`,
+`build_destroy` — even though each already carries a gamepad binding. D-114 drew the equivalent line
+for KEYBOARD rebind around `attack`'s mouse binding: "a 'press a key to rebind' flow that also has to
+handle a different capture UI is a different capture UI, not a checkbox on the same one." The gamepad
+capture flow this task ships (`SettingsMenu._finish_rebind_joypad()`) is built the same way —
+"wait for the next `InputEventJoypadButton` press" — and that shape has no answer for "which stick"
+or "how far to pull a trigger before it counts." A stick pair is also two axes moving together
+(`move_forward` shares `JOY_AXIS_LEFT_Y` with `move_back`'s opposite sign), so even a single-axis
+capture flow would still need to ask which of two actions the player meant. **Would change my mind:**
+an explicit ask for full-stick rebinding (swap which stick drives movement vs. look, useful for players
+who prefer left-stick look) — that is a materially different, bigger capture UI (hold a direction,
+choose a stick, not just "press a button"), not a quick extension of this one.
+
+**Why menu UI focus navigation (Tab/D-pad moving a highlight between `Button`s, `ui_accept`
+"clicking" whatever has it) is explicitly out of this task**, even though `MainMenu`/`SettingsMenu`/
+`LobbyMenu`/`InventoryUI`/`CraftingUI`/`ChestUI`/`UnlockMenu` all still require a real mouse click to
+open, select, or close. Godot's default `ui_up`/`ui_down`/`ui_accept`/`ui_cancel` actions already
+carry joypad D-pad/A-button bindings out of the box, so the wiring for gamepad-driven `Control` focus
+exists — what is genuinely missing is every one of those seven menus setting an initial focus,
+wiring `focus_neighbor_*`/`focus_next`/`focus_previous` across a mix of `Button`/`OptionButton`/
+`HSlider`/drag-and-drop `InventorySlot`s (`ui/inventory/inventory_ui.gd`'s own drag-and-drop
+interaction has no keyboard/gamepad equivalent at all today), and giving each a visible focus outline
+— a UI-system-wide pass across seven files this task did not open for any other reason, not an
+extension of the InputMap work above. On a real Steam Deck this gap is normally invisible: Steam
+Input's Desktop/Gamepad-with-mouse-emulation configuration maps a trackpad to a virtual cursor
+system-wide, the same mechanism D-013 called "nearly free" Deck support — so a mouse click still
+works, it just arrives from a trackpad. Filed as F-209 rather than solved here because it is
+genuinely a bare-controller gap (a desktop Xbox controller with no Steam Input translation, or this
+project's own `--windowed` dev builds, cannot open these menus at all), not a Deck-specific one, and
+fixing it is a UI task, not an input-binding one. **Would change my mind:** a real Steam Deck in
+Sequoyah's hands surfacing this as an actual blocker in Desktop mode (not just Gamepad mode, which
+Steam Input's own cursor emulation already covers) — that would mean the emulation assumption above
+was wrong, not just incomplete.
+
 **Would change my mind:** a class whose "no per-instance node" claim turns out to be aspirational
 rather than implemented (checked here for GLOW: `mushroom_cluster`'s Blender material has no
 `emission_hex` set, so the effect is currently a no-op end to end — merging it changes nothing
