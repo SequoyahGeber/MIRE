@@ -949,26 +949,6 @@ Hollowmere layout with `meta("kind") == "shipwreck"`, in a shore-adjacent spot �
 `wellspring_service.gd`'s own "objective" marker already proves works. No gameplay-side change is
 needed; `ExtractionService` picks it up automatically the next time the scene builds.
 
-### F-167 · `tools/crafting_net_check.gd` fails (24/24) against a clean checkout of HEAD, independent of any in-flight change
-
-**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.5
-
-Run standalone (`agent godot --script tools/crafting_net_check.gd`) it fails every assertion from
-"client completes accepted and rejected craft requests" onward — `axe_count=-1`, `granted=true`,
-`complete=false`. `agent baseline --script tools/crafting_net_check.gd` reproduces the identical
-24 failures against a throwaway checkout of `b6f7329` (the committed HEAD at the time), so this is
-not a symptom of any lane's uncommitted work, including this task's — it is a standing regression in
-the two-process crafting network path itself. `docs/FINDINGS.md`'s own history (search
-"crafting_net_check") shows it passing 0 failures after an earlier fix, so something between then and
-`b6f7329` broke it again without a check catching the reintroduction.
-
-Not investigated further here — out of 6.5's scope, and the two-process ENet harness this check uses
-is expensive to bisect blind. Whoever picks this up should start by finding the last commit where
-`agent baseline --script tools/crafting_net_check.gd` was green, since the file itself hasn't
-changed recently (`git log --oneline -- tools/crafting_net_check.gd`).
-
----
-
 ### F-168 · `Wellspring._finish_cap()` still emits `wellspring_capped` from a host-only guard, so a non-host peer's `SalvageService` milestone bonus silently undercounts
 
 **Area:** systems/wellspring · netcode · **Severity:** low · **Found:** 2026-08-19 by lm during 6.6
@@ -1158,7 +1138,75 @@ checked against anything but relative deltas on the fastest machine in the proje
 
 ---
 
+### F-175 · `Array[StringName].sort()` does not sort lexicographically — at least two other call sites besides F-167's rely on it anyway
+
+**Area:** core · **Severity:** low · **Found:** 2026-08-19 by lm during F-167
+
+`StringName`'s comparison operator compares interned identity, not string content, so
+`Array[StringName].sort()` silently does **not** produce alphabetical order — confirmed with a
+throwaway probe script (`tools/_probe_sn_sort.gd`, deleted after use, not committed): sorting
+`["iron_sword","stone_pickaxe","arrow","cleaver","wooden_axe"]` as `Array[String]` gives
+`[arrow, cleaver, iron_sword, stone_pickaxe, wooden_axe]` as expected; the identical values as
+`Array[StringName]` give `[iron_sword, stone_pickaxe, wooden_axe, cleaver, arrow]`. F-167 hit this in
+`CraftingService.recipes_for_station()`, fixed there with `ids.sort_custom(func(a, b): return
+String(a) < String(b))`.
+
+Two more call sites build an `Array[StringName]` and call plain `.sort()` expecting alphabetical
+order, neither touched here because neither file is in F-167's claim set:
+- `ui/loot/chest_ui.gd:347` (`var ids: Array[StringName]` at line 344)
+- `autoload/rule_service.gd:118-120` (`ids.sort()` on a `Array[StringName] = []`, plus a second read
+  of the now-stale-order result at `rule_service.gd:279`)
+
+Neither has an obvious player-visible symptom yet (chest UI isn't wired to anything — F-151 — and
+rule_service's list order may not be presentation-facing), which is likely why F-167's exact failure
+shape (a hardcoded index silently pointing at the wrong entry once a list grows past one item) hasn't
+been noticed there yet. **What closes this:** whoever next holds either file, apply the same
+`sort_custom(func(a, b): return String(a) < String(b))` fix, and grep the rest of the codebase's
+`\.sort()` call sites for any other `Array[StringName]` declaration before assuming this is the
+complete list — this session did not do an exhaustive sweep, only checked the sites plain-text search
+turned up near variables named `ids`.
+
+---
+
 ## Resolved
+
+### F-167 · `tools/crafting_net_check.gd` fails (24/24) against a clean checkout of HEAD, independent of any in-flight change — **fixed**
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.5
+
+Run standalone (`agent godot --script tools/crafting_net_check.gd`) it fails every assertion from
+"client completes accepted and rejected craft requests" onward — `axe_count=-1`, `granted=true`,
+`complete=false`. `agent baseline --script tools/crafting_net_check.gd` reproduces the identical
+24 failures against a throwaway checkout of `b6f7329` (the committed HEAD at the time), so this is
+not a symptom of any lane's uncommitted work, including this task's — it is a standing regression in
+the two-process crafting network path itself. `docs/FINDINGS.md`'s own history (search
+"crafting_net_check") shows it passing 0 failures after an earlier fix, so something between then and
+`b6f7329` broke it again without a check catching the reintroduction.
+
+Not investigated further here — out of 6.5's scope, and the two-process ENet harness this check uses
+is expensive to bisect blind. Whoever picks this up should start by finding the last commit where
+`agent baseline --script tools/crafting_net_check.gd` was green, since the file itself hasn't
+changed recently (`git log --oneline -- tools/crafting_net_check.gd`).
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed two layers. (1) autoload/crafting_service.gd's recipes_for_station() sorted an
+Array[StringName] with plain .sort(), which does NOT sort lexicographically -- StringName's
+comparison compares interned identity, not string content (confirmed with a throwaway probe
+script). Fixed with ids.sort_custom(func(a,b): return String(a) < String(b)) -- a real UX fix,
+the workbench panel was never actually alphabetical. (2) tools/crafting_net_check.gd hardcoded
+row index 0 as "the recipe the client crafts", true only while the workbench had one recipe
+(task 2.6); tasks 3.2-3.4 grew it to 11, so index 0 stopped being stone_axe. Fixed by scanning
+displayed_recipe_id(i) for &"stone_axe" and using that row index throughout, degrading
+gracefully (existing assertions already fail loudly) if the recipe is ever missing.
+
+Filed F-175 for two more Array[StringName].sort() sites (ui/loot/chest_ui.gd,
+autoload/rule_service.gd) that likely have the same latent bug -- out of this task's claim set,
+not fixed here.
+
+Verified: agent godot --script tools/crafting_net_check.gd ->
+CRAFTING_NET_CHECK axe_count=1 failures=0, all 24 assertions PASS. Ran twice to rule out
+two-process ENet timing flakiness; both green.
 
 ### F-155 · `PlayerHealth._is_dodging()` throws "Nonexistent 'bool' constructor" against any body with — **fixed**
 no `dodging` property, on every enemy attack

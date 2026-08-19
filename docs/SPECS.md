@@ -3004,6 +3004,55 @@ failures=0`.
 
 ---
 
+## F-167 · `tools/crafting_net_check.gd` fails (24/24) against a clean checkout of HEAD, independent of any in-flight change
+
+**Claim:** `tools/crafting_net_check.gd`, `autoload/crafting_service.gd`, `ui/crafting/crafting_ui.gd`,
+`docs/SPECS.md`, `docs/FINDINGS.md` (existing check reproduces it, no new one needed).
+
+**Root cause, two layers.** `CraftingService.recipes_for_station()` builds a `RecipeDef` row list for
+a station by collecting every `Registry.recipes` key into `Array[StringName]` and calling `.sort()`,
+meant to give the workbench panel a stable, alphabetical order. `StringName`'s comparison operator
+compares interned identity, not string content, so `Array[StringName].sort()` does **not** sort
+lexicographically — confirmed with a throwaway probe script: sorting
+`["iron_sword","stone_pickaxe","arrow","cleaver","wooden_axe"]` as `Array[String]` gives the expected
+`[arrow, cleaver, iron_sword, stone_pickaxe, wooden_axe]`; the identical values as `Array[StringName]`
+give `[iron_sword, stone_pickaxe, wooden_axe, cleaver, arrow]`. The row order was therefore never
+alphabetical — it silently tracked `Registry.recipes`' Dictionary insertion order, itself just whatever
+order `DirAccess` happened to enumerate `content/recipes/*.tres` in.
+
+That was invisible while the workbench had a single recipe (`stone_axe`, task 2.6). As tasks 3.2–3.4
+authored more workbench recipes, the station's recipe count grew to 11, and `tools/crafting_net_check.gd`
+hardcoded index `0` for "the recipe the client crafts" — an assumption that broke the moment insertion
+order stopped agreeing with `stone_axe` being first. The client-side coroutine pressed row 0's craft
+button (which, depending on load order, resolved to `iron_sword` — 1 log + 4 iron ingot, ingredients
+the check never grants), the host correctly rejected it for missing ingredients, and every downstream
+assertion that depended on the axe actually completing (`craft_applied`, panel requirement text, the
+furnace phase gated behind the first phase's `complete` flag) failed or stalled on its own 15s timeout —
+that stacking of unrelated 15s waits is why the failing run visibly took far longer than the passing one.
+
+**Fix, two parts:**
+1. `autoload/crafting_service.gd` — `recipes_for_station()` now sorts with
+   `ids.sort_custom(func(a, b): return String(a) < String(b))`, comparing the string values instead of
+   the `StringName` handles. This is a real UX fix independent of the check: the workbench panel is
+   now genuinely alphabetical, which it never actually was.
+2. `tools/crafting_net_check.gd` — the client coroutine no longer assumes row 0. It scans
+   `crafting_ui.displayed_recipe_id(i)` for `&"stone_axe"` and uses that row index everywhere a recipe
+   row is read or the craft button is pressed. If the recipe is ever removed or renamed, every row call
+   below degrades gracefully (empty requirement text, `craftable = false`, `request_craft_at()` returns
+   `-1`), and the existing assertions against `"2/2 Log · 3/3 Stone"` etc. already fail loudly on that —
+   no separate guard needed.
+
+**Verify:** `agent godot --script tools/crafting_net_check.gd` →
+`CRAFTING_NET_CHECK ... axe_count=1 failures=0`, all 24 assertions PASS. Re-ran twice to rule out
+flakiness in the two-process ENet timing; both green.
+
+**Verified 2026-08-19 (lm):** confirmed via a standalone probe script that `Array[StringName].sort()`
+does not sort lexicographically on the pinned 4.7.1 build (see root cause above); the same content
+growth affects at least two other `Array[StringName].sort()` call sites elsewhere in the codebase —
+filed as F-175 rather than fixed here, since neither file is in this task's claim set.
+
+---
+
 ## 7.8 · Network robustness: packet loss, high latency, hostile disconnect timing
 
 No block existed here beforehand; this file's own preamble makes writing one part of the task that
