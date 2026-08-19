@@ -75,6 +75,44 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-257 resolved: `tools/steam/apply_ids.sh` now writes every home of the Steam App ID, and a partial swap is refused rather than performed (lm3)
+
+**The API the next task builds on — task 8.2, this is your whole repo-side swap:**
+
+```bash
+tools/steam/apply_ids.sh <app_id> <depot_windows> <depot_macos> <depot_linux>
+```
+
+One command, three files: `tools/steam/steam_build_config.sh` (offline `steamcmd` depot upload),
+`core/net/net_config.gd`'s `const STEAM_APP_ID` (the runtime value `steam_lobby.gd` passes to
+`steamInitEx()`), and `steam_appid.txt` at the repo root (what the Steam SDK reads on any dev run
+that inits with app_id 0). Nothing derives any of the three from another, so before this they could
+silently disagree — 8.2 could apply the real ID, watch `depot_wiring_check.sh` go green, and ship a
+build that uploads to the correct depot while every client still initialised against Spacewar's 480.
+D-155 records why one command was chosen over documenting three edits, and answers the claim-boundary
+question: a `tools/` script may write into `core/` and the repo root, and the agent running it holds
+the claims. **Claim `core/net/net_config.gd` and `steam_appid.txt` alongside the `tools/steam/` files
+before you run it.**
+
+It pre-flights all three targets before writing to any (each target line must exist exactly once, or
+it refuses having written nothing) and rolls all three back if a value fails to read back. Placeholder
+values (480, 0) are still refused as arguments, so it stays inert until 8.1 produces a real App ID.
+
+**Two backstops, for a hand-edit that bypasses the script:** `steam_upload.sh` re-reads
+`net_config.gd`'s constant itself and refuses to publish if it disagrees with the config's — the last
+gate before a live Steam publish. `depot_wiring_check.sh` grew §4 (all three App IDs agree in the
+repo right now) and §5 (that upload guard fires both ways), and its §2 now exercises `apply_ids.sh`'s
+three-file write and its three refusal paths in an isolated fake repo. `tools/steam_check.gd`'s
+`app_id == 480` literal became `app_id == NetConfig.STEAM_APP_ID`, so it stays a true assertion
+across the swap instead of needing an edit at 8.2.
+
+**Verified:** `bash tools/steam/depot_wiring_check.sh` — ALL CHECKS PASSED (five sections).
+Mutation-tested, since a check that cannot fail proves nothing: restoring HEAD's `apply_ids.sh`
+fails §2 with three FAILs, and drifting `net_config.gd` or `steam_appid.txt` fails §4. Plus
+`agent godot --script tools/steam_check.gd` against a live Steam client (all pass — "running as App
+ID 480 (steam_appid.txt agrees with NetConfig)") and `agent godot --quit-after 120`, 0 `ERROR:`
+lines. No placeholder value was changed; `steam_build_config.sh` was not claimed or edited.
+
 ### 2026-08-19 — F-253 resolved: `tools/seed_sync_check.gd`'s 3 failures were the check gating on the wrong signal, not a `WorldDeltaLog` bug (lp)
 
 **Claim:** `tools/seed_sync_check.gd` only — no production code changed.
@@ -347,11 +385,14 @@ alone (`AGENTS.md` D-039). D-132 called this split in advance; this is that pred
 - `tools/steam/depot_wiring_check.sh` — verifies all of the above; passes at HEAD (see SPECS.md).
 
 **Next agent to pick this up (only after 8.2 lands a real App ID):** follow `DEPOT_SETUP.md` step
-by step in the Steamworks dashboard, run `apply_ids.sh` with the four real IDs, re-run
-`depot_wiring_check.sh`, **then also swap `core/net/net_config.gd:79`'s `STEAM_APP_ID` constant —
-`apply_ids.sh` does not touch it (F-257), and it's the one `steam_lobby.gd` actually uses at
-runtime** — then a real `steam_upload.sh internal-beta <username>`. Don't redesign the runbook or
-the script — D-132's addendum and `docs/SPECS.md`'s `## 8.11 ·` block both point here.
+by step in the Steamworks dashboard, run `apply_ids.sh` with the four real IDs — **since D-155 that
+one command is the whole repo-side swap: it writes `steam_build_config.sh`, `core/net/net_config.gd`'s
+runtime `STEAM_APP_ID` constant and `steam_appid.txt`, and refuses rather than applying any of them
+partially (F-257)** — re-run `depot_wiring_check.sh` (its §4 asserts the three agree), then a real
+`steam_upload.sh internal-beta <username>`. Claim `core/net/net_config.gd` and `steam_appid.txt`
+alongside the `tools/steam/` files before running it; the script writes outside its own directory by
+design. Don't redesign the runbook or the script — D-132's addendum and `docs/SPECS.md`'s
+`## 8.11 ·` block both point here.
 
 **Re-dispatched same day, still blocked:** re-checked `.agent/state.json` (8.1/8.2 still `todo`) and
 re-ran `depot_wiring_check.sh`, `tools/roadmap_dependency_check.gd`, and a full headless boot — all

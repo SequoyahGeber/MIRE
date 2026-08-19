@@ -6432,3 +6432,21 @@ BossMoveDef.lunge_speed_m_s + Boss._tick_move_lunge(): a boss's own telegraphed 
 Files: `systems/enemies/boss.gd`, `systems/enemies/boss_move_def.gd`, `tools/boss_check.gd`
 
 Commit at time of writing: `039c5da`
+
+---
+
+### DONE · F-257 · lm3 · 2026-08-19T22:35:43+00:00
+
+**Real App ID must be written to two independent places; task 8.11's `apply_ids.sh` only reaches one of them**
+
+tools/steam/apply_ids.sh <app_id> <depot_win> <depot_mac> <depot_linux> is now the entire repo-side App ID swap: it writes all THREE independent homes of the value -- tools/steam/steam_build_config.sh (offline steamcmd depot upload), core/net/net_config.gd's const STEAM_APP_ID (the runtime value steam_lobby.gd passes to steamInitEx()), and steam_appid.txt at the repo root (what the Steam SDK reads on any dev run that inits with app_id 0). The finding named two; the sweep found the third. It pre-flights every target before writing to any of them (each target line must exist exactly once, or it refuses having written nothing) and rolls all three back if a value fails to read back -- a rolled-back trio is recoverable, a partly-applied one ships a build that uploads to the right depot while every client still initialises against Spacewar's 480. Two backstops for a hand-edit that bypasses the script: steam_upload.sh (the last gate before a live publish) re-reads net_config.gd's constant and refuses to upload on disagreement, and tools/steam_check.gd's hardcoded 'app_id == 480' became 'app_id == NetConfig.STEAM_APP_ID', which stays true across the swap instead of needing an edit at 8.2. No placeholder value changed -- 480/0 stay until 8.1/8.2 produce a real App ID, and steam_build_config.sh was neither claimed nor edited. D-155 records the choice (one command over documented companion edits) and answers the claim-boundary question the finding left open. Proof: 'bash tools/steam/depot_wiring_check.sh' -- ALL CHECKS PASSED, five sections, and mutation-tested (restoring HEAD's apply_ids.sh fails section 2 with three FAILs; drifting net_config.gd or steam_appid.txt fails section 4). Also '.agent/bin/agent godot --script tools/steam_check.gd' against a live Steam client (all pass, 'running as App ID 480 (steam_appid.txt agrees with NetConfig)') and '.agent/bin/agent godot --quit-after 120' with 0 ERROR: lines.
+
+Notes along the way:
+- Sweep found a THIRD home for the App ID the finding had missed: steam_appid.txt at the repo root, read by the Steam SDK on any dev run that inits with app_id 0 (tools/steam_check.gd does). apply_ids.sh now writes all three, not two.
+- Chose F-257's option (b) over (a) — one command rather than a documented companion edit — and answered its open claim-boundary question in D-155: a tools/ script may write into core/ and the repo root; the claim obligation lands on the agent running it, stated in the script header, DEPOT_SETUP.md and DELEGATION.
+- Mutation-tested the new checks rather than just watching them pass: restoring HEAD's apply_ids.sh fails depot_wiring_check.sh §2 with three FAILs (exactly the pre-fix state), and drifting net_config.gd or steam_appid.txt fails §4.
+- net_config.gd's STEAM_APP_ID moved from line 79 to 89 (its doc comment grew), so every doc citing 'net_config.gd:79' is now stale. Docs updated here cite it by name; the scripts match it by declaration shape and fail loudly if reformatted.
+
+Files: `tools/steam/apply_ids.sh`, `tools/steam/depot_wiring_check.sh`, `tools/steam/DEPOT_SETUP.md`, `core/net/net_config.gd`, `tools/steam/steam_upload.sh`, `steam_appid.txt`, `tools/steam_check.gd`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `7760a45`

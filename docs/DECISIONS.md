@@ -4620,3 +4620,43 @@ docs-writing close-out is a small price for that safety.
 **Would change my mind:** measured evidence that close-out itself (the docs-writing tail, after the
 last source edit) is where the remaining contention lives — which would justify releasing source
 claims at green-check time while keeping only the docs files, the rejected half revisited with data.
+
+### D-155 · 2026-08-19 · `apply_ids.sh` writes every home of the Steam App ID, including the two outside `tools/steam/`
+The real Steam App ID lives in three independent places, and nothing derives any of them from
+another: `tools/steam/steam_build_config.sh` (the offline `steamcmd` depot upload, task 8.4/D-132),
+`core/net/net_config.gd`'s `const STEAM_APP_ID` (the runtime value `steam_lobby.gd` passes to
+`steamInitEx()`, ARCHITECTURE.md §2.4/D-008), and `steam_appid.txt` at the repo root (what the Steam
+SDK reads on any dev run that calls `steamInitEx()` with app_id 0 — `tools/steam_check.gd` does).
+Task 8.11's `apply_ids.sh` reached only the first, so task 8.2 could apply the real ID, watch
+`depot_wiring_check.sh` go green, and ship a build that uploads to the correct depot while every
+client still initialises against Spacewar's 480 — unjoinable, and indistinguishable from a fully
+wired release (F-257).
+
+F-257 offered two fixes: document the companion edits in 8.2's spec block, or make one command do
+all of them. **Chose the second.** A documented second step is only as good as the reader; the whole
+point of a single `apply_ids.sh <app_id> <depot_win> <depot_mac> <depot_linux>` is that a partial
+swap becomes structurally impossible rather than merely discouraged. The script now pre-flights all
+three targets before writing to any of them, refuses if a target line is missing, renamed or
+duplicated, and rolls all three back if any value fails to read back — a rolled-back trio is
+recoverable, a half-applied one ships.
+
+**The claim-boundary question F-257 raised, answered:** yes, a `tools/` script may write into
+`core/` and the repo root. The alternative — a script that deliberately reaches only its own
+directory and leaves a note asking someone to finish the job — is exactly the failure being fixed,
+and the directory a file happens to live in is not a reason to let a release ship broken. The
+protocol obligation lands on the *agent running the script*, not on the script: `apply_ids.sh`'s
+header states that whoever runs it must hold claims on `core/net/net_config.gd` and
+`steam_appid.txt` as well as `steam_build_config.sh`, and task 8.2's spec block repeats it.
+
+**Belt and braces, because a hand-edit can still drift them:** `steam_upload.sh` — the last gate
+before a live, hard-to-reverse Steam publish — now reads `net_config.gd`'s constant itself and
+refuses to upload if it disagrees with the config's, and `depot_wiring_check.sh` asserts all three
+agree in the repo as it stands. `tools/steam_check.gd` was changed from asserting a hardcoded
+`app_id == 480` to asserting `app_id == NetConfig.STEAM_APP_ID`: the literal would have had to be
+edited again at 8.2 and would have failed loudly and uselessly until someone did, whereas the
+agreement assertion stays a true and useful claim on both sides of the swap.
+
+**Would change my mind:** a fourth home appearing that `apply_ids.sh` genuinely must not write —
+a vendored third-party file, or a per-developer local override. Then the script's job becomes
+"write every home it owns and *verify* the rest", and the verification in `depot_wiring_check.sh`
+§4 becomes the primary mechanism rather than the backstop.

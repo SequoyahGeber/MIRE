@@ -71,7 +71,9 @@ func _verify_init() -> void:
 		_check("steamInitEx present", false, "API changed — check the GodotSteam version")
 		return
 
-	# app_id 0 means "read steam_appid.txt", which this repo pins to 480 (Spacewar) per STEAM.md §2.
+	# app_id 0 means "read steam_appid.txt", which this repo pins to NetConfig.STEAM_APP_ID — 480
+	# (Spacewar) until task 8.2 swaps it, per STEAM.md §2. tools/steam/apply_ids.sh writes both, so
+	# they agree by construction; the getAppID() assertion below is what notices if they ever don't.
 	var result: Dictionary = steam.steamInitEx()
 	var status: int = int(result.get("status", -1))
 	var verbal: String = str(result.get("verbal", "no message"))
@@ -92,7 +94,15 @@ func _verify_init() -> void:
 			print("  signed in as %s (%d)" % [str(steam.getPersonaName()), id])
 	if steam.has_method("getAppID"):
 		var app_id: int = int(steam.getAppID())
-		_check("running as App ID 480", app_id == 480, "got %d — check steam_appid.txt" % app_id)
+		# Asserting agreement with NetConfig rather than a hardcoded 480: the literal would have to
+		# be edited again at task 8.2 (and would fail loudly and uselessly until someone did),
+		# whereas this stays a real claim — the dev-run App ID matches the runtime one (F-257).
+		var expected_app_id: int = NetConfig.STEAM_APP_ID
+		_check(
+			"running as App ID %d (steam_appid.txt agrees with NetConfig)" % expected_app_id,
+			app_id == expected_app_id,
+			"got %d, NetConfig.STEAM_APP_ID is %d — steam_appid.txt and core/net/net_config.gd have drifted; run tools/steam/apply_ids.sh, which writes both" % [app_id, expected_app_id]
+		)
 
 	if steam.has_method("steamShutdown"):
 		steam.steamShutdown()

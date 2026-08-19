@@ -56,22 +56,43 @@ option, not a client/server pair.
    tools/steam/apply_ids.sh <app_id> <depot_windows_id> <depot_macos_id> <depot_linux_id>
    ```
 
-   This rewrites the four placeholder defaults in `tools/steam/steam_build_config.sh` (task 8.4's
-   `STEAM_APP_ID`/`STEAM_DEPOT_WINDOWS`/`STEAM_DEPOT_MACOS`/`STEAM_DEPOT_LINUX`) and refuses if any
-   argument still looks like a placeholder, isn't numeric, or two depot IDs collide — see the
-   script's own header. It never touches `steam_upload.sh` or the `.vdf` templates; those were
-   already written generically against whatever real IDs land here (D-132).
+   This is the **only** command that needs running — it writes all three places the App ID lives,
+   which is the whole point of it existing (D-155, F-257):
 
-5. **Verify:** `bash tools/steam/depot_wiring_check.sh`, then a real `tools/steam/steam_upload.sh
-   internal-beta <username>` against the `internal-beta` branch (never `default` without
-   `STEAM_ALLOW_PUBLIC=1` — `steam_upload.sh`'s own guard).
+   | File | What reads it |
+   |---|---|
+   | `tools/steam/steam_build_config.sh` | the offline `steamcmd` depot upload — App ID + all three depot IDs (task 8.4) |
+   | `core/net/net_config.gd` (`const STEAM_APP_ID`) | the runtime value `steam_lobby.gd` passes to `steamInitEx()` (`ARCHITECTURE.md` §2.4) |
+   | `steam_appid.txt` (repo root) | the Steam SDK, on any dev run that inits with app_id 0 — `tools/steam_check.gd` does |
 
-6. **Separately, swap `core/net/net_config.gd:79`'s `STEAM_APP_ID` constant too.** Step 4 above only
-   rewrites the build/upload pipeline's copy in `steam_build_config.sh` — it does not touch this one,
-   and this is the constant `steam_lobby.gd` actually passes to `steamInitEx()` at runtime
-   (`ARCHITECTURE.md` §2.4 names it the one-line swap point). `depot_wiring_check.sh` passing is not
-   evidence this step happened; nothing currently checks the two stay in sync (F-257). Do this one as
-   part of task 8.2, not 8.11 — it's `core/`, not `tools/steam/`.
+   Nothing derives any of the three from another, so before D-155 it was possible to apply the real
+   ID, watch `depot_wiring_check.sh` go green, and ship a build that uploads to the correct depot
+   while every client still initialises against Spacewar's 480 — unjoinable, and indistinguishable
+   from a fully wired release. The script refuses if any argument still looks like a placeholder,
+   isn't numeric, or two depot IDs collide; it also refuses **before writing anything** if any of
+   the three target lines is missing, renamed or duplicated, and rolls all three back if a value
+   fails to read back. See the script's own header. It never touches `steam_upload.sh` or the
+   `.vdf` templates; those were already written generically against whatever real IDs land here
+   (D-132).
+
+   **If you are an agent:** two of those three files live outside `tools/steam/`. Hold claims on
+   `core/net/net_config.gd` and `steam_appid.txt` as well as `tools/steam/steam_build_config.sh`
+   before you run it (D-155).
+
+5. **Verify:** `bash tools/steam/depot_wiring_check.sh` — its §4 asserts all three App IDs agree,
+   which is the check that catches a hand-edit drifting them apart. Then a real
+   `tools/steam/steam_upload.sh internal-beta <username>` against the `internal-beta` branch (never
+   `default` without `STEAM_ALLOW_PUBLIC=1` — `steam_upload.sh`'s own guard). `steam_upload.sh`
+   independently re-reads `net_config.gd`'s constant and refuses to publish if it disagrees with
+   the config's, so a drifted pair cannot reach Steam even if nobody ran the check.
+
+6. **Task 8.2 owns the App ID swap; this runbook owns the depots.** 8.2's job is running step 4 with
+   the real App ID and then verifying Steam features actually work against it (lobby create/join,
+   achievements — `autoload/steam_stats.gd` has none registered under 480). It is no longer a
+   second, separate file edit: step 4 does the writing. What 8.2 must still do by hand is confirm
+   `depot_wiring_check.sh` §4 is green afterwards and re-run `agent godot --script
+   tools/steam_check.gd` with the Steam client up, which asserts the running App ID equals
+   `NetConfig.STEAM_APP_ID`.
 
 ## What is NOT scriptable from this repo
 

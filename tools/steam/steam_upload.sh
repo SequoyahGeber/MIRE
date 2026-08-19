@@ -16,7 +16,9 @@
 ##                 machine/account don't re-prompt.
 ##
 ## Reads STEAM_APP_ID / STEAM_DEPOT_* / STEAM_BRANCH from tools/steam/steam_build_config.sh — never
-## edit those values here. Renders tools/steam/templates/*.vdf.template into
+## edit those values here. Also cross-checks STEAM_APP_ID against core/net/net_config.gd's runtime
+## constant and refuses if they disagree (F-257) — this script is the last gate before a live
+## publish, and the two copies of the App ID have no other thing keeping them in step. Renders tools/steam/templates/*.vdf.template into
 ## tools/steam/generated/*.vdf (gitignored — depot IDs aren't secret, but a generated file with a
 ## stale render from a previous config is exactly the kind of thing that shouldn't sit in git and
 ## silently go stale) and hands the app build script to `steamcmd +run_app_build`.
@@ -34,6 +36,26 @@ STEAM_USER="${2:-${STEAM_USERNAME:-}}"
 if [[ "$STEAM_APP_ID" == "480" || "$STEAM_APP_ID" == "0" ]]; then
 	echo "steam_upload.sh: STEAM_APP_ID is still task 8.4's placeholder (${STEAM_APP_ID})." >&2
 	echo "  Fill in the real values in tools/steam/steam_build_config.sh once task 8.2 lands." >&2
+	exit 1
+fi
+# The App ID lives in two independent places and nothing derives one from the other: this config
+# (build-time depot upload) and core/net/net_config.gd's runtime constant, which steam_lobby.gd
+# passes to steamInitEx() (ARCHITECTURE.md §2.4, D-008). apply_ids.sh writes both, but a hand-edit
+# of either can still drift them apart, and a build uploaded to the right depot whose clients still
+# init against Spacewar's 480 looks fully wired and is unjoinable (F-257, D-155). Refuse here —
+# this is the last gate before a live, hard-to-reverse Steam publish.
+NET_APP_ID="$(sed -n 's/^const STEAM_APP_ID: int = \([0-9]*\)$/\1/p' core/net/net_config.gd)"
+if [[ -z "$NET_APP_ID" ]]; then
+	echo "steam_upload.sh: could not read core/net/net_config.gd's 'const STEAM_APP_ID' — it was renamed" >&2
+	echo "  or reformatted. That constant is the runtime App ID; fix it (and apply_ids.sh's matching" >&2
+	echo "  pre-flight) before uploading anything (F-257)." >&2
+	exit 1
+fi
+if [[ "$NET_APP_ID" != "$STEAM_APP_ID" ]]; then
+	echo "steam_upload.sh: App ID mismatch — the two places disagree (F-257)." >&2
+	echo "  tools/steam/steam_build_config.sh : ${STEAM_APP_ID}   (depot upload)" >&2
+	echo "  core/net/net_config.gd            : ${NET_APP_ID}   (runtime steamInitEx)" >&2
+	echo "  Run tools/steam/apply_ids.sh <app_id> <depot_win> <depot_mac> <depot_linux> — it writes both." >&2
 	exit 1
 fi
 if [[ "$STEAM_DEPOT_WINDOWS" == "0" || "$STEAM_DEPOT_MACOS" == "0" || "$STEAM_DEPOT_LINUX" == "0" ]]; then

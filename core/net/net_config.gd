@@ -76,6 +76,16 @@ const STEAM_CONNECT_TIMEOUT_SEC: float = 20.0
 
 ## Valve's public test app (Spacewar). Lobbies and P2P work for anyone with a Steam account, without
 ## buying an App ID. Replaced by the real one at M7 — §2.4 says that must stay a one-line change.
+##
+## This is the RUNTIME App ID: [code]steam_lobby.gd[/code] passes it straight to [code]steamInitEx()[/code].
+## The build/upload pipeline keeps its own, independent copy in
+## [code]tools/steam/steam_build_config.sh[/code], and nothing derives one from the other. Do not
+## hand-edit either one — run [code]tools/steam/apply_ids.sh <app_id> <depot_win> <depot_mac>
+## <depot_linux>[/code], which writes both in one command; [code]steam_upload.sh[/code] refuses to
+## publish if they ever disagree (F-257, D-155). That script matches this declaration line by its
+## exact shape ([code]const STEAM_APP_ID: int = <digits>[/code]) — reformat it and both the script's
+## pre-flight and [code]tools/steam/depot_wiring_check.sh[/code] fail loudly rather than silently
+## writing one place only.
 const STEAM_APP_ID: int = 480
 
 ## Looked up through ClassDB / Engine by name so this project compiles with the addon absent.

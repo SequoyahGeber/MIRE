@@ -12,42 +12,6 @@
       "task": "F-245",
       "token": null
     },
-    "core/net/net_config.gd": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:26:54+00:00",
-      "task": "F-257",
-      "token": null
-    },
-    "docs/DECISIONS.md": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:32:36+00:00",
-      "task": "F-257",
-      "token": null
-    },
-    "docs/DELEGATION.md": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:32:36+00:00",
-      "task": "F-257",
-      "token": null
-    },
-    "docs/FINDINGS.md": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:32:36+00:00",
-      "task": "F-257",
-      "token": null
-    },
-    "docs/SPECS.md": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:32:36+00:00",
-      "task": "F-257",
-      "token": null
-    },
-    "steam_appid.txt": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:30:42+00:00",
-      "task": "F-257",
-      "token": null
-    },
     "systems/cycle/cycle_modifier_service.gd": {
       "agent": "lm2",
       "at": "2026-08-19T22:21:01+00:00",
@@ -96,36 +60,6 @@
       "task": "F-245",
       "token": null
     },
-    "tools/steam/DEPOT_SETUP.md": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:26:54+00:00",
-      "task": "F-257",
-      "token": null
-    },
-    "tools/steam/apply_ids.sh": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:26:54+00:00",
-      "task": "F-257",
-      "token": null
-    },
-    "tools/steam/depot_wiring_check.sh": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:26:54+00:00",
-      "task": "F-257",
-      "token": null
-    },
-    "tools/steam/steam_upload.sh": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:27:13+00:00",
-      "task": "F-257",
-      "token": null
-    },
-    "tools/steam_check.gd": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:30:42+00:00",
-      "task": "F-257",
-      "token": null
-    },
     "world/mire/mire_grid.gd": {
       "agent": "lm2",
       "at": "2026-08-19T22:23:18+00:00",
@@ -150,25 +84,6 @@
       ],
       "notes": [],
       "started": "2026-08-19T22:21:01+00:00",
-      "token": null
-    },
-    "F-257": {
-      "agent": "lm3",
-      "files": [
-        "tools/steam/apply_ids.sh",
-        "tools/steam/depot_wiring_check.sh",
-        "tools/steam/DEPOT_SETUP.md",
-        "core/net/net_config.gd",
-        "tools/steam/steam_upload.sh",
-        "steam_appid.txt",
-        "tools/steam_check.gd",
-        "docs/SPECS.md",
-        "docs/DECISIONS.md",
-        "docs/DELEGATION.md",
-        "docs/FINDINGS.md"
-      ],
-      "notes": [],
-      "started": "2026-08-19T22:26:54+00:00",
       "token": null
     },
     "F-263": {
@@ -1440,6 +1355,13 @@
       "hash": "9f50039fed622ac30fea635f6cbc63a05d4fd4a619ce59bb163e8406b441b563",
       "task": "F-172"
     },
+    "core/net/net_config.gd": {
+      "agent": "lm3",
+      "at": "2026-08-19T22:35:43+00:00",
+      "hash": "a212fd3daffd9971b9d71d0505a5b028493751e440ae2c44c2e14ae272596dce",
+      "task": "F-257",
+      "token": null
+    },
     "core/net/net_version.gd": {
       "agent": "lm",
       "at": "2026-08-19T11:25:46+00:00",
@@ -1530,24 +1452,24 @@
       "token": null
     },
     "docs/DECISIONS.md": {
-      "agent": "bram1",
-      "at": "2026-08-19T22:25:36+00:00",
-      "hash": "e190d4b97125e6213ab8496094916e01161994aa182a95d048849ad6112c2cd6",
-      "task": "F-260",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+      "agent": "lm3",
+      "at": "2026-08-19T22:35:43+00:00",
+      "hash": "0caecfb8a193f0b937cda671f17096d98e96e288fd926c7efa9561ab9b7367fb",
+      "task": "F-257",
+      "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "lm",
-      "at": "2026-08-19T22:28:29+00:00",
-      "hash": "e47a7b776aa9edb0c5b0679ef3fc6b275997dc8651aaba3b7eb117b4b756babc",
-      "task": "F-244",
+      "agent": "lm3",
+      "at": "2026-08-19T22:35:43+00:00",
+      "hash": "d44dd27279075e5b7fd638d7f28c7aee5959511b2bc060c105c9e1828e294fc5",
+      "task": "F-257",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T22:28:29+00:00",
-      "hash": "75d07902d0efe9d78a9112a7899e1eeae60d788c4a0859b868142efdb580b3fd",
-      "task": "F-244",
+      "agent": "lm3",
+      "at": "2026-08-19T22:35:43+00:00",
+      "hash": "ab385e56a90debf35c3a7d5c98950c552588cdc68220c35ea784e1da08d7bf22",
+      "task": "F-257",
       "token": null
     },
     "docs/NEXT.md": {
@@ -1565,10 +1487,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T22:28:29+00:00",
-      "hash": "2bad06da202a42a2830e51541dccbf4181b794e53e619bf5952946ff828f7d95",
-      "task": "F-244",
+      "agent": "lm3",
+      "at": "2026-08-19T22:35:43+00:00",
+      "hash": "354cf15f4e4a57bf3e02d44be16b242c5ce9696646e64c71a3a041b7216a4d9e",
+      "task": "F-257",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -1625,6 +1547,13 @@
       "at": "2026-08-19T06:36:13+00:00",
       "hash": "9fd3ef2ae57cae5025f54e07305ea1a50db5db745b853b953068d464608f4f61",
       "task": "3.7",
+      "token": null
+    },
+    "steam_appid.txt": {
+      "agent": "lm3",
+      "at": "2026-08-19T22:35:43+00:00",
+      "hash": "ddfe0e8d462af661f81db36589c39882dc0f2330785b5d80cd34f2f520ad618f",
+      "task": "F-257",
       "token": null
     },
     "systems/building/buildable_door.gd": {
@@ -2735,24 +2664,24 @@
       "token": null
     },
     "tools/steam/DEPOT_SETUP.md": {
-      "agent": "lp",
-      "at": "2026-08-19T20:13:49+00:00",
-      "hash": "ea23b8a6d511a448358854dd0a7790a80d5b223ae555dfe89f698887ff2a8fa2",
-      "task": "8.11",
+      "agent": "lm3",
+      "at": "2026-08-19T22:35:43+00:00",
+      "hash": "ff9fd817028e45bd3b7e9b37905962d413cb5da67077ec3dd2938300f262e9d7",
+      "task": "F-257",
       "token": null
     },
     "tools/steam/apply_ids.sh": {
-      "agent": "lp",
-      "at": "2026-08-19T20:13:49+00:00",
-      "hash": "6c14857a6155c785cd1296814496b5fd43912eb370e88a7980726d0d7225d0b5",
-      "task": "8.11",
+      "agent": "lm3",
+      "at": "2026-08-19T22:35:43+00:00",
+      "hash": "7f4648a0f87f2d4f580edb34b66f55a4663df136316ce25bca81254dfb8d0a65",
+      "task": "F-257",
       "token": null
     },
     "tools/steam/depot_wiring_check.sh": {
-      "agent": "lp",
-      "at": "2026-08-19T19:05:14+00:00",
-      "hash": "07a184ff410887dc75ec173736f59cbb198732c8d8a1e6620b46c19f3a08ff88",
-      "task": "8.11",
+      "agent": "lm3",
+      "at": "2026-08-19T22:35:43+00:00",
+      "hash": "de0671a71604e064f26c703b785f6b51ed763e800529dc05d30bef5bb1f48c58",
+      "task": "F-257",
       "token": null
     },
     "tools/steam/export_release.sh": {
@@ -2770,10 +2699,10 @@
       "token": null
     },
     "tools/steam/steam_upload.sh": {
-      "agent": "lm",
-      "at": "2026-08-19T10:57:39+00:00",
-      "hash": "1224573fcb54e1d7ad2d0497a73d19a04b7965ae99a9cad3ba7be41ed6a5eef5",
-      "task": "8.4",
+      "agent": "lm3",
+      "at": "2026-08-19T22:35:43+00:00",
+      "hash": "03862b4d1b7fb88917cce04bff75156f98bead13b936637b722df1b9a70accd8",
+      "task": "F-257",
       "token": null
     },
     "tools/steam/templates/app_build.vdf.template": {
@@ -2802,6 +2731,13 @@
       "at": "2026-08-19T10:57:39+00:00",
       "hash": "79e4666121fe3833111303aee489bae7710c40f7d65a94423f28a43fddc59dcc",
       "task": "8.4",
+      "token": null
+    },
+    "tools/steam_check.gd": {
+      "agent": "lm3",
+      "at": "2026-08-19T22:35:43+00:00",
+      "hash": "5655e530a84324c747b8b7d4646251907ed40ba6362f271e3ce91a095bbb859c",
+      "task": "F-257",
       "token": null
     },
     "tools/steam_lobby_check.gd": {
@@ -6781,7 +6717,7 @@
       "est": "0.5",
       "milestone": "Findings",
       "review_of": "F-244",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review F-244 @ 039c5da \u2014 review and fix what you find"
     },
@@ -6887,9 +6823,11 @@
       "title": "Arming several one-shot revives to cover an unattended stretch stacks saturate chains, and the lane idles while they queue on its own lock"
     },
     "F-257": {
+      "done_at": "2026-08-19T22:35:43+00:00",
+      "done_by": "lm3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Real App ID must be written to two independent places; task 8.11's `apply_ids.sh` only reaches one of them"
     },
@@ -6938,6 +6876,13 @@
       "status": "in_flight",
       "tier": "F",
       "title": "Hardening pass: chains run stale code after harness edits, one failing task stops a whole queue, dup-grabs under claim-late, re-reviews refuse, and D-numbers still race"
+    },
+    "F-264": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`Boss._tick_move_lunge()` duplicates `Enemy._tick_lunge()`'s logic instead of calling it, because the inherited method reads its speed off a def field rather than taking one as a parameter"
     }
   },
   "version": 1
