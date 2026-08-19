@@ -1956,6 +1956,49 @@ shipped file shows only the intended `_check_buildable_defs()` addition, no left
 
 ---
 
+## F-138 · Rotating an AABB's corners is still the wrong ruler when the thing you are rotating is a moving part
+
+**Claim:** `tools/construction_check.gd` (none, if only verifying — see below).
+
+**What was wrong:** F-094 already established that `Transform3D * AABB` inflates a rotated object's
+measured bounds, and both `tools/ship_check.gd` and `mire_art.world_bounds` measure vertices instead
+for that reason. The first draft of `tools/construction_check.gd`'s door-swing test (`_check_doors()`)
+reintroduced the same error in a third form — not to measure a static asset, but to *move* one: it
+rotated each part's eight AABB corners at ten angles and took the AABB of the result. The box around a
+rotated box grows with the angle, so the test reported four innocent leaves colliding with their own
+frames at 60–90°, and the frames' own diagonal knee braces (themselves rotated boxes) were inflated
+into obstacles on the other side of the same comparison.
+
+**Fix (already shipped by the time this task picked it up — no code change was needed):**
+`_measure()` expands each mesh through its index buffer into a triangle soup once (`"points":
+vertices` on every measured part, doc comment at `tools/construction_check.gd:125`), and `_check_doors()`
+rotates leaf **vertices** through that soup (`basis * vertex + hinge_at`, line 419) and tests them
+against frame **per-triangle** bounds built the same way (`solids`, built per-triangle from the
+frame's own `points` at lines 395–408) — never `transform * get_aabb()` on either side.
+
+**Trap hit while verifying:** a bare `agent godot --script tools/construction_check.gd` run logs
+4.8M+ repeats of F-148's unrelated `AABB size is negative` error (1.4 GB log) because task 3.7's
+door/gate/palisade-gate scenes are still uncommitted in the working tree, same trigger F-137 hit. The
+run still completes and reaches `_finish()` — F-148 degrades signal-to-noise, it does not hang the
+process — so unlike F-137 this task did not need to route around it to get a trustworthy result.
+
+**Done means:** `CONSTRUCTION_DOORS swung=4` with zero door-swing failures on a clean tree, and the
+swing test is demonstrably live (not vacuous) — deliberately breaking the leaf's rotation origin makes
+it report a collision.
+
+**Verified 2026-08-18 (lm):** `agent godot --script tools/construction_check.gd` → `CONSTRUCTION_DOORS
+swung=4`, `CONSTRUCTION_STATE_DRIFT 0.0000 mm`, `CONSTRUCTION_BUILDABLE_DEFS checked=8`,
+`CONSTRUCTION_CHECK PASS` — zero door-swing failures, confirming all four hinged leaves (`door`,
+`gate`, `palisade_gate_leaf` and one more) swing their full documented arc with no false-positive
+contact from an inflated ruler. Confirmed the test is not a no-op: temporarily changed line 419's `+
+hinge_at` to `+ hinge_at * 0.0` (rotating each leaf about the world origin instead of its real hinge
+post, so it swings straight into geometry it was never aligned with) — re-ran and got
+`FAIL palisade_gate_leaf: Gate_Bar_3 is inside the frame at 0 degrees`, `CONSTRUCTION_CHECK
+FAIL failures=1`, proving the per-triangle vertex test actually fires. Reverted immediately after;
+`git diff tools/construction_check.gd` shows no changes.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

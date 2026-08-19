@@ -175,27 +175,6 @@ gets a `ChunkStreamer` + `ResourceScatterField` pair wired against `GameState.ru
 the exact API both `DELEGATION.md` entries already document. Until then, Hollowmere is the map, and
 that is a decision this finding is recording, not a bug anyone introduced.
 
-### F-138 · Rotating an AABB's corners is still the wrong ruler when the thing you are rotating is a moving part
-
-**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by slate17 during 2.1d (A-010)
-
-F-094 established that measuring a rotated object through `Transform3D * AABB` inflates it, and
-`tools/ship_check.gd` and `mire_art.world_bounds` both measure vertices for that reason. The first
-draft of `tools/construction_check.gd` reintroduced the same error in a **third** form: not to
-measure a static asset, but to *move* one — the door-swing test rotated each part's eight AABB
-corners and took the AABB of the result, at ten angles.
-
-The box around a rotated box is bigger the more the part is turned, so the test reported four
-innocent leaves colliding with their own frames at 60–90°, and the frames' diagonal knee braces —
-themselves rotated boxes — were inflated obstacles on the other side of the same comparison. It read
-exactly like a real art defect, and the tempting fix was to move the art.
-
-**The general rule:** a checker that *moves* geometry has to move the geometry. The fix was to expand
-each mesh through its index buffer into a triangle soup once, then rotate leaf **vertices** and test
-them against frame **per-triangle** bounds — after which all four leaves swing their full documented
-arc with zero contact, and the two defects that were real (a threshold the leaf was buried in, knee
-braces standing in the gateway) stayed reported.
-
 ### F-112 · `world/gen/undergrowth.gd`'s prop-avoidance still has no map-agnostic check — F-076's third system, not lifted
 
 **Area:** worldgen · **Severity:** medium · **Found:** 2026-08-18 by lp during F-076
@@ -849,9 +828,77 @@ before this task. **What would close this:** `body != null and body.get(&"dodgin
 literal degrades NIL to "not equal" instead of attempting a constructor call. One-line fix once
 someone holds the file.
 
+### F-157 · No system tracks a player's display name anywhere in the project — F-126's `peer` name resolution has nothing to resolve against, and 3.16 shipped without adding one
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-18 by lp while closing F-126
+
+F-126 named task 3.16 (the command catalog sweep) as the most natural owner of a per-player
+display-name registry; 3.16 has since shipped (`docs/ROADMAP.md` marks it done) without adding one,
+so that pointer is now stale. Confirmed still true project-wide: no file anywhere defines a peer id
+→ display name map. `NetTransport` (`autoload/net_transport.gd`) tracks only a `PackedInt32Array` of
+bare peer ids (`_peers`/`peer_joined`/`peer_left`); `NetDebugPanel`/`net_debug_panel.gd` prints raw
+`peer %d`; `SteamLobby` (`autoload/steam_lobby.gd`) resolves a Steam persona name per lobby *member*
+(`_persona()`), but that is lobby membership before a session starts, keyed by Steam id, not by the
+in-session ENet/net peer id every other system uses, and it does not exist at all in LOCAL/LAN mode.
+
+**What would close this:** whoever adds the registry should own a single canonical peer id → display
+name map, not one invented per-caller. `NetTransport` is the natural home — it already owns peer
+bookkeeping (`_peers`, `_track_peer`/`_add_peer`, `peer_joined`/`peer_left`) and the correct
+lobby-agnostic keying (net peer id, works in every `NetConfig.Mode`). Needs: a name source per mode
+(LOCAL/LAN has none today — a client would need to submit one, e.g. `OS.get_environment("USERNAME")`
+as a placeholder default, over a new reliable client→host RPC; STEAM already has one in
+`SteamLobby._persona()` and just needs threading through), sanitization/length cap on the host side
+(never trust the client's string raw), and a signal so `NetDebugPanel`, a future lobby roster label,
+and a future kill-feed can all read the same map instead of separately reinventing "what does peer N
+call itself". Once it exists, `CommandService._parse_peer()` (`autoload/command_service.gd`) should
+resolve a non-numeric token against it before failing, per `docs/COMMANDS.md` §2.2's `peer` type spec
+— see the doc comment on `_parse_peer()` itself, which already names this file as the successor.
+
+Not filed as blocking anything: `op <peer_id>` and every other `peer`-typed command work fine today
+with the raw id, same as F-126 already established. This is scheduling information, not a defect.
+
 ---
 
 ## Resolved
+
+### F-138 · Rotating an AABB's corners is still the wrong ruler when the thing you are rotating is a moving part — **fixed**
+
+**Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by slate17 during 2.1d (A-010)
+
+F-094 established that measuring a rotated object through `Transform3D * AABB` inflates it, and
+`tools/ship_check.gd` and `mire_art.world_bounds` both measure vertices for that reason. The first
+draft of `tools/construction_check.gd` reintroduced the same error in a **third** form: not to
+measure a static asset, but to *move* one — the door-swing test rotated each part's eight AABB
+corners and took the AABB of the result, at ten angles.
+
+The box around a rotated box is bigger the more the part is turned, so the test reported four
+innocent leaves colliding with their own frames at 60–90°, and the frames' diagonal knee braces —
+themselves rotated boxes — were inflated obstacles on the other side of the same comparison. It read
+exactly like a real art defect, and the tempting fix was to move the art.
+
+**The general rule:** a checker that *moves* geometry has to move the geometry. The fix was to expand
+each mesh through its index buffer into a triangle soup once, then rotate leaf **vertices** and test
+them against frame **per-triangle** bounds — after which all four leaves swing their full documented
+arc with zero contact, and the two defects that were real (a threshold the leaf was buried in, knee
+braces standing in the gateway) stayed reported.
+
+**Resolved 2026-08-19 by lm.** No code change needed — the fix described in this finding's own text was already shipped in
+tools/construction_check.gd by the time this task picked it up: _measure() expands each mesh into a
+triangle soup through its index buffer, and _check_doors() rotates leaf VERTICES against frame
+PER-TRIANGLE bounds (never transform * get_aabb() on either side). This task's job was verification
+and closing the doc trail SPECS.md never got (see the new ## F-138 block in docs/SPECS.md).
+
+Verified: `agent godot --script tools/construction_check.gd` -> CONSTRUCTION_DOORS swung=4,
+CONSTRUCTION_CHECK PASS, zero door-swing failures on a clean tree. Confirmed the test is live, not
+vacuous: temporarily changed line 419's `+ hinge_at` to `+ hinge_at * 0.0` (rotating a leaf about the
+world origin instead of its real hinge post) and reran -> FAIL palisade_gate_leaf: Gate_Bar_3 is
+inside the frame at 0 degrees, CONSTRUCTION_CHECK FAIL failures=1. Reverted immediately after;
+`git diff tools/construction_check.gd` shows no changes.
+
+Noted but out of scope: a bare run logs 4.8M+ repeats of F-148's unrelated "AABB size is negative"
+error (1.4 GB log, triggered by task 3.7's still-uncommitted door/gate/palisade-gate scenes) but the
+process still completes and reaches _finish() — F-148 is signal-to-noise, not a hang, so this task
+did not need to route around it the way F-137 did.
 
 ### F-137 · The build module lives in one `.tres` and nothing else knows it — **fixed**
 
