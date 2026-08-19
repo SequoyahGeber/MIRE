@@ -346,7 +346,9 @@ func _local_player() -> Node3D:
 func _confirm_peer(peer_id: int, request_id: int, accepted: bool, detail: String) -> void:
 	if peer_id == _local_peer_id():
 		_emit_confirmation(request_id, accepted, detail)
-	elif NetTransport.is_active():
+	elif NetTransport.is_active() and NetTransport.has_peer(peer_id):
+		# F-059's shape: a crafter can disconnect while a timed craft is resolving, between
+		# net_request_craft and this confirmation.
 		net_craft_confirmed.rpc_id(peer_id, request_id, accepted, detail)
 
 

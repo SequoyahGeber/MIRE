@@ -339,7 +339,9 @@ func _broadcast(
 func _reject(peer_id: int, request_id: int, detail: String) -> void:
 	if peer_id == _local_peer_id():
 		attack_rejected.emit(request_id, detail)
-	elif NetTransport.is_active():
+	elif NetTransport.is_active() and NetTransport.has_peer(peer_id):
+		# F-059's shape: an attacker that disconnects between net_request_attack and this rejection
+		# would otherwise take an rpc_id() to a peer id nothing is listening on any more.
 		net_attack_rejected.rpc_id(peer_id, request_id, detail)
 
 

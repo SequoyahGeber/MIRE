@@ -285,7 +285,10 @@ func net_submit_command(request_id: int, line: String) -> void:
 	var sender_id: int = multiplayer.get_remote_sender_id()
 	var ctx: Dictionary = _build_ctx(sender_id, &"rpc")
 	var result: Dictionary = await execute(line, ctx)
-	net_command_result.rpc_id(sender_id, request_id, result)
+	# F-059's shape: the `await` above is exactly the window for a hostile disconnect — the sender
+	# can drop mid-execution, and an unguarded rpc_id() back to it would log "unknown peer ID".
+	if _peer_connected(sender_id):
+		net_command_result.rpc_id(sender_id, request_id, result)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -820,6 +823,13 @@ func _local_peer_id() -> int:
 		return NetConfig.HOST_PEER_ID
 	var peer_id: int = int(transport.call("local_peer_id"))
 	return peer_id if peer_id > 0 else NetConfig.HOST_PEER_ID
+
+
+## F-059's guard, same shape as every other host service's rpc_id() send: a peer that has already
+## gone is still a valid dictionary key during D-035's grace window, but not a valid rpc_id() target.
+func _peer_connected(peer_id: int) -> bool:
+	var transport: Node = _transport()
+	return transport != null and bool(transport.call("has_peer", peer_id))
 
 
 func _body_for(peer_id: int) -> Node3D:

@@ -371,7 +371,9 @@ func _broadcast_resolved(
 func _reject(peer_id: int, request_id: int, detail: String) -> void:
 	if peer_id == _local_peer_id():
 		shot_rejected.emit(request_id, detail)
-	elif NetTransport.is_active():
+	elif NetTransport.is_active() and NetTransport.has_peer(peer_id):
+		# Same F-059 shape as CombatService._reject: a shooter can drop mid-draw, between
+		# net_request_shot and this rejection landing.
 		net_shot_rejected.rpc_id(peer_id, request_id, detail)
 
 

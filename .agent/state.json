@@ -376,22 +376,22 @@
       "task": "4.11"
     },
     "autoload/combat_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T01:44:21+00:00",
-      "hash": "30d0924f554ba30c28129cbd6aa9921de75e8bd1eef0ea59a150cf9448fa1ded",
-      "task": "5.3"
+      "agent": "lm",
+      "at": "2026-08-19T03:46:26+00:00",
+      "hash": "a51422be893d3d24bca093ca058921a982c541d8712c155ad8c34cb88b64af5c",
+      "task": "7.8"
     },
     "autoload/command_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T00:38:39+00:00",
-      "hash": "eb8dcfe657fc1a8348ca230e79e40c3677e569a61c5519630bfdd52a4248c310",
-      "task": "F-126"
+      "agent": "lm",
+      "at": "2026-08-19T03:46:26+00:00",
+      "hash": "170107ed16a2a6e5ac455fc9c3ccf64a2cb651dc891c9c318411ed59ac4fcdd1",
+      "task": "7.8"
     },
     "autoload/crafting_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T22:57:40+00:00",
-      "hash": "d832071109cf15448eb06862bfef2438a82990985b7a75b34f296ed9e2ca1c04",
-      "task": "3.16"
+      "agent": "lm",
+      "at": "2026-08-19T03:46:26+00:00",
+      "hash": "07886c537c88e074461a28f8dd574057d8ad3ae773a8c3b9fd05ab647fe79b68",
+      "task": "7.8"
     },
     "autoload/debug_console.gd": {
       "agent": "lp",
@@ -474,10 +474,10 @@
       "task": "3.16"
     },
     "autoload/ranged_combat_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T01:44:21+00:00",
-      "hash": "aca3d90bb35925d1fd51d05a2dc012e5a4bdd44ae357265ed30eb6d3efc5c807",
-      "task": "5.3"
+      "agent": "lm",
+      "at": "2026-08-19T03:46:26+00:00",
+      "hash": "7993fb17de54a537c79ff9f96f6a5e860ca74d8c60a8a32c53f34cf2ede078e4",
+      "task": "7.8"
     },
     "autoload/ranged_combat_service.gd.uid": {
       "agent": "lp",
@@ -523,9 +523,9 @@
     },
     "autoload/world_delta_log.gd": {
       "agent": "lm",
-      "at": "2026-08-18T21:13:43+00:00",
-      "hash": "8127db187ac24d7e6d323b2b823d81887dbe3208b3965e9592caee67ea8b714b",
-      "task": "4.6"
+      "at": "2026-08-19T03:46:26+00:00",
+      "hash": "2ae3b920ba8fac3867f9b45e4148e2905a085ac38e5e5462c80fd18cee8711da",
+      "task": "7.8"
     },
     "content/attunements/forager.tres": {
       "agent": "lm",
@@ -2503,6 +2503,12 @@
       "at": "2026-08-18T14:06:30+00:00",
       "task": "F-037"
     },
+    "tools/net_robustness_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T03:46:26+00:00",
+      "hash": "e5b57b575da0bb10cf10f43698e50dacdd1083bafeb328870ffc6e9e58c3151c",
+      "task": "7.8"
+    },
     "tools/perf_probe.gd": {
       "agent": "coil23",
       "at": "2026-08-18T13:15:50+00:00",
@@ -3923,9 +3929,11 @@
       "title": "Performance pass: profile, LOD tuning, draw calls, target 60fps mid-range"
     },
     "7.8": {
+      "done_at": "2026-08-19T03:46:26+00:00",
+      "done_by": "lm",
       "est": "3",
       "milestone": "M7",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Network robustness: packet loss, high latency, hostile disconnect timing"
     },
@@ -5460,6 +5468,13 @@
       "status": "todo",
       "tier": "F",
       "title": "Seed entry (task 6.10) only reaches the host-session path \u2014 solo/offline play draws its seed before any menu can be opened"
+    },
+    "F-173": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`UnlockService.is_content_unlocked()` (task 6.9) has no caller anywhere in the game \u2014 wiring the first real gate needs a cross-peer design decision, not just a call site"
     }
   },
   "version": 1

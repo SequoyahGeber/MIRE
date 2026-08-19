@@ -3938,3 +3938,19 @@ Notes along the way:
 Files: `systems/unlocks/unlock_def.gd`, `content/unlocks/unlock_deep_pocket.tres`, `core/save/unlock_save.gd`, `autoload/unlock_service.gd`, `ui/menu/unlock_menu.gd`, `tools/unlock_check.gd`, `autoload/registry.gd`, `autoload/salvage_service.gd`, `core/events/event_bus.gd`, `ui/menu/main_menu.gd`, `project.godot`
 
 Commit at time of writing: `0301b9e`
+
+---
+
+### DONE · 7.8 · lm · 2026-08-19T03:46:26+00:00
+
+**Network robustness: packet loss, high latency, hostile disconnect timing**
+
+Audited every specific-peer rpc_id() call site in the repo against F-059's has_peer() guard pattern; fixed the 5 that lacked it (combat_service._reject, ranged_combat_service._reject, crafting_service._confirm_peer, command_service.net_submit_command's reply, world_delta_log._on_peer_admitted) — a real hostile-disconnect-timing bug (peer drops between request and host reply, host rpc_id()s a dead peer id, ERROR: Attempt to call RPC with unknown peer ID). Godot's ENet bindings expose no packet-loss/latency injection (verified via ClassDB), so 'packet loss/high latency' resolved to verifying what already handles them: every mutating RPC is reliable, the 2 unreliable RPCs are self-healing by design, NetTransport's 2.5-8s dead-peer window already treats slow as different from gone (D-112). Proof: agent godot --script tools/net_robustness_check.gd -> 0 failures; with the 5 guards reverted, same run reproduces the exact ERROR at each site, restored clean. No regressions (combat_net_check, ranged_combat_net_check, crafting_check, command_net_check, seed_sync_check, mire_grid_check all failures=0; crafting_net_check's 24/24 is pre-existing F-167, reproduced via agent baseline). 0 ERROR on agent godot --quit-after 15.
+
+Notes along the way:
+- Godot's ENet bindings expose no packet-loss/latency injection (checked via ClassDB.class_get_method_list) — 'packet loss/high latency' resolved to auditing reliability+timeout tuning already in place (D-112), not building a simulator.
+- Audited every rpc_id(peer_id,...) call site in the repo against F-059's has_peer() guard pattern; found 5 unguarded (combat_service, ranged_combat_service, crafting_service, command_service, world_delta_log) — a real hostile-disconnect-timing bug class. Fixed all 5, wrote tools/net_robustness_check.gd which reproduces the exact ERROR before the fix and is clean after.
+
+Files: `autoload/combat_service.gd`, `autoload/ranged_combat_service.gd`, `autoload/crafting_service.gd`, `autoload/command_service.gd`, `autoload/world_delta_log.gd`, `tools/net_robustness_check.gd`
+
+Commit at time of writing: `9485513`

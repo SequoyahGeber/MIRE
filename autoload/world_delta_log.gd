@@ -109,7 +109,7 @@ func net_delta_applied(chunk_x: int, chunk_z: int, kind: String, key: String, va
 
 
 func _on_peer_admitted(peer_id: int) -> void:
-	if not _owns_world_state():
+	if not _owns_world_state() or not _transport_has_peer(peer_id):
 		return
 	var game_state: Node = get_node_or_null(^"/root/GameState")
 	var seed_value: int = int(game_state.call("ensure_seed")) if game_state != null else 0
@@ -130,3 +130,10 @@ func _transport_is_active() -> bool:
 func _transport_is_host() -> bool:
 	var transport: Node = get_node_or_null(^"/root/NetTransport")
 	return transport != null and bool(transport.call("is_host"))
+
+
+## F-059's guard: peer_admitted fires the instant a hello resolves, but a peer that disconnects in
+## that same instant is still an rpc_id() target nothing is listening on.
+func _transport_has_peer(peer_id: int) -> bool:
+	var transport: Node = get_node_or_null(^"/root/NetTransport")
+	return transport != null and bool(transport.call("has_peer", peer_id))
