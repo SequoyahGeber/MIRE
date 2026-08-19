@@ -1732,9 +1732,106 @@ Done means: `cycle_check.gd` plus the three regression checks all green, 0 `ERRO
 public API (`current_cycle()`, `host_advance_cycle()`, `spread_multiplier()`) for 6.2's Cycle
 Modifier framework to build against.
 
-- **6.2 Modifier framework (T2):** `CycleModifierDef` (`id`, `weight_by_cycle`, `incompatible_with:
-  Array[StringName]`, effect hooks over PowerupService/wave tables/Mire rates). Host draws seeded
-  at each Cycle boundary; broadcast; UI announce. **Never-cut item.**
+## 6.2 · Cycle Modifier framework: deck, draw, stacking, Cycle-weighted rules, incompatibility tags (`DESIGN.md` §5.1 item 2)
+
+**Authority:** §2.2 row "Day/night, wave director, Cycle state, active modifiers: HOST" — only the
+host draws and stacks; every other peer reads a replicated copy.
+**Claim:** `systems/cycle/cycle_modifier_def.gd` (+ its `.uid`), `systems/cycle/cycle_modifier_service.gd`
+(+ its `.uid`), `content/cycle_modifiers/long_night.tres`, `core/events/event_bus.gd`,
+`autoload/registry.gd`, `tools/cycle_modifier_check.gd` (+ its `.uid`). `project.godot` is registered
+via `agent autoload CycleModifierService systems/cycle/cycle_modifier_service.gd` (F-051) — never
+claimed. **If `autoload/registry.gd` is held by another lane when you start**, build
+`CycleModifierService`'s own content loader first (see the content-loading paragraph below for the
+exact fallback shape) and fold it into Registry the moment the file frees up, in the same session if
+possible — it did for this task (lane lp's 5.3 claim released mid-session).
+
+DESIGN.md §5.1 item 2, deferred out of task 6.1 by D-100: "A Cycle Modifier is drawn from a deck and
+announced." New autoload `CycleModifierService` subscribes to `EventBus.subscribe_cycle_advanced()`
+(the seam 6.1 built for exactly this) and draws one modifier from the deck the instant a Cycle
+advances, stacking it permanently for the rest of the run (DESIGN.md: "modifiers stack across a
+run").
+
+**`CycleModifierDef`** (`systems/cycle/cycle_modifier_def.gd`) is the content Def, authored one at a
+time in `content/cycle_modifiers/*.tres` (AGENTS.md — never bulk-generate content data; this task
+ships one worked example, `long_night.tres`, matching DESIGN.md's own first illustration):
+- `id`, `display_name`, `description` — same shape as every other content family.
+- `min_cycle: int` + `base_weight: float` + `weight_growth_per_cycle: float` — Cycle-weighted rules.
+  `weight_at(cycle)` returns 0 below `min_cycle`, else `base_weight + weight_growth_per_cycle *
+  (cycle - min_cycle)`, floored at 0. Linear, not a `Curve` resource — simpler to author for a first
+  framework pass; a `Curve`-based version is a compatible follow-up if linear proves too blunt.
+- `tags: Array[StringName]` + `incompatible_tags: Array[StringName]` — incompatibility tags
+  (DESIGN.md Q7's own mitigation: "tag modifiers as incompatible"), checked **symmetrically**: a
+  candidate is excluded if its own `incompatible_tags` names a tag already active, OR if an
+  already-active modifier's `incompatible_tags` names a tag the candidate carries. Either author can
+  declare the exclusion once.
+- `incompatible_with: Array[StringName]` — explicit id-level exclusion for a pair with no natural
+  shared tag. D-103 records why tags are primary and this is the escape hatch, not the reverse.
+
+**`CycleModifierService`** (`systems/cycle/cycle_modifier_service.gd`) is the deck/draw/stacking
+engine:
+- `_on_cycle_advanced(cycle)` (host-only, via the real `EventBus` subscription) calls
+  `host_draw_modifier(cycle)`, which is also public so a console command can force one, mirroring
+  `CycleService.host_advance_cycle()`'s own split.
+- Eligibility: not already drawn this run (a modifier draws **at most once per run** — the deck
+  depletes), `weight_at(cycle) > 0`, and passes both the tag check and the explicit
+  `incompatible_with` check against every currently-active modifier.
+- Selection: a plain weighted-random pick (`RandomNumberGenerator.randomize()`, not seeded) over the
+  eligible set — D-041's precedent for `Chest`'s loot roll applies verbatim: the draw happens once,
+  host-only, and no peer ever recomputes it, so real entropy is correct and a fixed seed would buy
+  nothing.
+- An empty eligible set is a no-op (`MireLog.info`, no crash, no duplicate) — same convention
+  `WaveSpawner.host_unlock_next_enemy()` already uses past `roster_order`'s end.
+- Announce: **no new RPC** (D-100/D-102's pattern — `core/net/net_version.gd`/`tools/handshake_check.gd`
+  were held all session by lane slate17's 3.7 claim). Reuses `WorldDeltaLog` under `kind =
+  &"cycle_modifier"`, one key per draw slot (`"0"`, `"1"`, ...) holding that slot's modifier id, plus
+  a `"count"` key so a late joiner knows how many slots to read — `active_modifier_ids()` reconstructs
+  the ordered stack from these on a client. Plus `EventBus.emit_cycle_modifier_drawn(id, cycle)` (new
+  subscriber list, same shape as `cycle_advanced`) and a `MireLog.info` line.
+- Public queries: `active_modifier_ids() -> Array[StringName]`, `has_modifier(id) -> bool`,
+  `def_for(id) -> Resource`.
+- Console command `modifiers` (docs/COMMANDS.md §7 convention, `scope = &"local"`) lists the active
+  stack by display name.
+
+**Content loads through `autoload/registry.gd` first**, same as every sibling Def — `CYCLE_MODIFIERS_PATH`
++ `CYCLE_MODIFIER_DEF` + `cycle_modifiers: Dictionary[StringName, Resource]` + one `_load_dir(...)`
+call in `Registry._ready()`, with `cycle_modifier_defs()`/`get_cycle_modifier(id)`/
+`has_cycle_modifier(id)` as its accessors (D-006's usual boot loader for every content family).
+`CycleModifierService._load_defs()` asks Registry (`get_node_or_null(^"/root/Registry")` +
+`.call("cycle_modifier_defs")`) and only falls back to its own direct disk scan
+(`_load_defs_from_disk()`, quieter and duplicating `Registry._load_dir`'s exact contract) when
+Registry is not present under `/root` — the identical "front door, then a seatbelt for a
+hand-instantiated harness" split `RuleService._load_defs()`/`_load_defs_from_disk()` already
+establishes for rules. `registry.gd` was held all session by lane lp's 5.3 claim when this task
+started, so the fallback shipped first and the fold happened once 5.3 released it — see D-103.
+
+**F-016 discipline throughout:** `CycleModifierDef` is a brand-new `class_name` this same commit —
+never referenced as a bare static type anywhere outside its own file. Every def is stored and passed
+as `Resource`, read via `.get(&"field")`/`.call("method")`, and identity-checked against the
+preloaded `CYCLE_MODIFIER_DEF` script constant, exactly the split `RuleDef`/`RuleService` and
+`HookDef`/`CommandService` already establish.
+
+**No modifier EFFECT is wired to any gameplay system.** `long_night.tres`'s description names what it
+should eventually do (double night length); nothing here touches `DayNight`. This is the identical
+scope cut D-094 made for `HookDef`/gameplay-by-hook and D-100 made for the draw itself: a framework
+task deciding what the first piece of modifier-driven gameplay actually IS would be scope creep
+against a task titled "framework." `EventBus.subscribe_cycle_modifier_drawn()` and
+`CycleModifierService.has_modifier(id)` are the seam a future consumer hangs a real effect off.
+
+Verify: `tools/cycle_modifier_check.gd` — wiring (the shipped autoload really loaded
+`long_night.tres`, not a fake harness-built def), `CycleModifierDef.weight_at()`'s Cycle-weighted
+math (below/at/past `min_cycle`, negative growth floors at 0), a REAL `CycleService.host_advance_cycle()`
+→ `EventBus` → draw → `WorldDeltaLog` chain (not a synthetic emission), deck exhaustion as a no-op,
+and both directions of the symmetric tag check plus the explicit `incompatible_with` check via
+injected synthetic defs (same "read/write an autoload's private state directly" convention
+`cycle_check.gd` already uses). `tools/cycle_check.gd`, `tools/mire_grid_check.gd` and
+`tools/wave_spawner_check.gd` must stay `failures=0` — this task's regression bar, since `EventBus`
+gained a new signal list but no existing one changed shape. `agent godot --quit-after 20` must show
+0 `ERROR:` lines.
+Done means: `cycle_modifier_check.gd` at `failures=0` (15 assertions), the three regression checks
+green, 0 `ERROR:` on a full boot, and `docs/DELEGATION.md`'s Current state carrying
+`CycleModifierService`'s public API for 6.3 (content authoring) and any future modifier-effect
+consumer to build against.
+
 - **6.3 Author 20–30 modifiers (T0).**
 - **6.4 Re-corruption (T1):** captured Wellsprings decay on a host timer unless Warded — a consumer
   of 4.9 + 3.6's fields.

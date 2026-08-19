@@ -58,6 +58,7 @@ ChestUI="*res://ui/loot/chest_ui.gd"
 MireGrid="*res://world/mire/mire_grid.gd"
 RangedCombatService="*res://autoload/ranged_combat_service.gd"
 CycleService="*res://systems/cycle/cycle_service.gd"
+CycleModifierService="*res://systems/cycle/cycle_modifier_service.gd"
 
 [display]
 

@@ -75,6 +75,47 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 6.2: Cycle Modifier framework ships — deck, draw, stacking, Cycle-weighted rules, incompatibility tags (lm)
+
+New autoload `CycleModifierService` (`systems/cycle/cycle_modifier_service.gd`, registered via
+`agent autoload`) draws a `CycleModifierDef` from the deck the instant `EventBus.emit_cycle_advanced()`
+fires (6.1's own seam), stacking it permanently and announcing through `WorldDeltaLog` + a new
+`EventBus` signal — no new RPC (D-100/D-102's pattern; `net_version.gd`/`handshake_check.gd` held all
+session by another lane). `agent godot --script tools/cycle_modifier_check.gd` — 15 assertions, 0
+failures. No regressions: `cycle_check.gd`, `mire_grid_check.gd`, `wave_spawner_check.gd` all still
+`failures=0`. 0 `ERROR:` on a full boot (`agent godot --quit-after 20`). Full design rationale in
+`docs/SPECS.md` §6.2; D-103 records the tags-vs-ids call, the Registry-first content loading (5.3
+released `registry.gd` mid-session, so `CycleModifierDef` folded in as a real content family instead
+of staying a workaround), and the no-seeded-RNG/no-effect-wiring scope cuts. F-163 records a real
+GDScript trap hit while building this (`expr as Array[T]` silently fails to convert an untyped
+Array's element type — use the constructor form `Array[T](expr)` instead).
+
+**Public API for 6.3 (content authoring) and any future modifier-effect consumer to build against:**
+
+- `CycleModifierService.active_modifier_ids() -> Array[StringName]` — the stacked modifiers drawn so
+  far this run, in draw order, readable on any peer (host's own array, or a client's
+  `WorldDeltaLog`-replicated reconstruction).
+- `CycleModifierService.has_modifier(id: StringName) -> bool` — the query a future gameplay consumer
+  (`DayNight`, `PowerupService`, `MireGrid`, ...) uses to check whether its own modifier is active.
+  **No modifier's effect is wired to any gameplay system yet** — this is deliberate framework scope
+  (D-103, same shape D-094 gave hooks); 6.3 or a later task is where a real consumer calls this.
+- `CycleModifierService.def_for(id: StringName) -> Resource` — the full `CycleModifierDef` (as
+  `Resource` — F-016, it is a brand-new `class_name`; read fields via `.get(&"field")`, never a bare
+  `CycleModifierDef` type).
+- `CycleModifierService.host_draw_modifier(cycle: int) -> StringName` — public and host-guarded so a
+  console command or a future forced-draw feature can drive the identical code
+  `_on_cycle_advanced()` uses. Returns `&""` on an exhausted/ineligible deck, never a crash.
+- `EventBus.subscribe_cycle_modifier_drawn(listener: Callable)` — listener signature
+  `(modifier_id: StringName, cycle: int) -> void`, fired by the host the instant a draw happens
+  (nothing fires when the deck had no eligible modifier — check `active_modifier_ids()` size for
+  that case). **This is the seam a future effect wiring hangs off**, mirroring `cycle_advanced`.
+- `content/cycle_modifiers/*.tres` loads through `Registry` like every other content family —
+  `Registry.cycle_modifier_defs() -> Dictionary`, `get_cycle_modifier(id) -> Resource`,
+  `has_cycle_modifier(id) -> bool`. `CycleModifierService._load_defs()` asks Registry first and only
+  falls back to its own direct disk scan when Registry is not under `/root` (a hand-instantiated
+  harness) — the identical "front door, then a quieter seatbelt" split
+  `RuleService._load_defs()`/`_load_defs_from_disk()` already establishes for rules.
+
 ### 2026-08-18 — Task 5.3: ranged combat ships — bow, host-simulated arrow flight, host-authoritative hit validation (lp)
 
 **What shipped, verified:** the whole of `docs/SPECS.md`'s new `## 5.3` block. New content family

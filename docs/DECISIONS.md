@@ -2598,3 +2598,68 @@ documents these three RPCs in its own running comment, then raises `handshake_ch
 **Would change my mind:** `net_version.gd`/`handshake_check.gd` becoming free during a task that
 needs a real network feature verified — bump it then rather than defer again; two deferred bumps
 compounding is a real (not just theoretical) desync risk.
+
+### D-103 · 2026-08-18 · Task 6.2's Cycle Modifier framework: tags over an id list, Registry-first content loading with a seatbelt fallback, no seeded RNG, no effect wiring
+
+Four calls, each narrower in scope than the M6 gate bullet that used to sketch this task.
+
+**Incompatibility is tag-first, with an explicit id list as the escape hatch.** The roadmap's own
+task title says "incompatibility tags" (plural), and DESIGN.md Q7's mitigation is literally "tag
+modifiers as incompatible" — not an `incompatible_with: Array[StringName]` id list, which is what
+the old M6 gate bullet in `docs/SPECS.md` (written before this task was scoped) sketched. A tag list
+scales better: a new modifier that conflicts with "every night-themed modifier" declares one tag
+once, instead of naming every existing night modifier by id and every future one needing to remember
+to add itself to that list. `CycleModifierDef` ships both — `tags`/`incompatible_tags` as the primary
+mechanism, plus a genuine `incompatible_with: Array[StringName]` for the rare pair that must never
+stack but shares no tag worth inventing. The tag check is symmetric by construction (a candidate is
+blocked if ITS OWN `incompatible_tags` names an active tag, OR if an ALREADY-ACTIVE modifier's
+`incompatible_tags` names a tag the candidate carries) so only one of two conflicting authors needs
+to declare the exclusion.
+
+**Content loads through `autoload/registry.gd` first, same as every sibling Def.** `registry.gd` was
+held all session by lane lp's task 5.3 claim when this task started — the identical shape D-100/D-102
+both hit against `net_version.gd` — so `CycleModifierService` was first built with its own
+self-contained scanner duplicating `Registry._load_dir`'s exact contract, specifically so folding it
+into Registry later would be a same-shape, no-behavior-change move. 5.3 shipped and released
+`registry.gd` before this task closed, so the fold happened in the same session rather than being
+left for a future one: `CYCLE_MODIFIERS_PATH`/`CYCLE_MODIFIER_DEF`/`cycle_modifiers` plus one
+`_load_dir(...)` call joined Registry's `_ready()` alongside every sibling family, with
+`cycle_modifier_defs()`/`get_cycle_modifier()`/`has_cycle_modifier()` as its accessors.
+`CycleModifierService._load_defs()` now asks Registry first (`get_node_or_null(^"/root/Registry")` +
+`.call("cycle_modifier_defs")`) and only falls back to its own direct disk scan
+(`_load_defs_from_disk()`) when Registry is not present under `/root` — the identical
+"front door, then a quieter seatbelt for a hand-instantiated harness" split
+`RuleService._load_defs()`/`_load_defs_from_disk()` already establishes for rules. The disk scanner
+is kept, not deleted, for exactly the reason `RuleService` keeps its own.
+
+**The draw does not use a seeded `RandomNumberGenerator`.** ARCHITECTURE.md §7 requires a seeded RNG
+inside world generation, where every peer must independently compute the same answer — that does not
+apply here. The draw happens exactly once, host-only, and no other peer ever recomputes it; the host
+broadcasts the authoritative result through `WorldDeltaLog` the same way it broadcasts a Cycle number.
+D-041 already settled this exact question for `Chest`'s loot roll: real entropy (`randomize()`) is
+correct precisely because nothing needs to agree by recomputation, only by receiving the same
+broadcast value.
+
+**No modifier's gameplay EFFECT is wired to `PowerupService`/`WaveSpawner`/`MireGrid` here** — the old
+gate bullet's "effect hooks over PowerupService/wave tables/Mire rates" phrase is deliberately not
+built. The roadmap task line itself only names "deck, draw, stacking, Cycle-weighted rules,
+incompatibility tags" — the framework, not a specific modifier's mechanics — and wiring a bespoke
+effect for `long_night` (the one worked example authored with this task, AGENTS.md's ban on
+bulk-generating content) would be deciding, inside a framework task, what the first piece of
+modifier-driven gameplay actually IS. That is the identical shape D-094 already used for
+`HookDef`/gameplay-by-hook, deferred to "M6 Cycle Modifiers... with the rest of the picture in view."
+`EventBus.emit_cycle_modifier_drawn(id, cycle)` and `CycleModifierService.has_modifier(id)` are the
+seam a future consumer hangs a real effect off, the same "future task's hook" role D-092 gave
+`wellspring_capped` and D-100 gave `cycle_advanced` itself.
+
+**A real trap, filed separately as F-163:** `expr as Array[StringName]` does NOT convert an untyped
+`Array`'s element type — it silently leaves the array untyped, and a subsequent `.set()` on a
+strictly-typed `Array[StringName]` `@export` property then no-ops with no error, no warning. The real
+conversion is the constructor call `Array[StringName](expr)` — the same syntax `content/powerups/*.tres`
+already uses for typed array/dictionary literals, which turned out to be load-bearing at runtime too,
+not just in `.tres` text.
+
+**Would change my mind:** on tags-vs-ids, a playtest showing authors keep reaching for explicit id
+pairs anyway and the tag mechanism goes unused — then simplify to id-only. On effect wiring, nothing
+— that is deliberately the next task's decision to make with the rest of the Cycle Modifier picture
+(roster size, UI announce, extraction pacing) in view.

@@ -106,6 +106,34 @@ and every other `viewmodel_check.gd` assertion — including the new ones a bow/
 exercise if 5.3 had added its own arc — passes. Whoever authors those three items' viewmodels next
 closes this; `agent godot --script tools/viewmodel_check.gd` going `failures=0` is the proof.
 
+### F-163 · `expr as Array[T]` silently fails to convert an untyped Array's element type — a `.set()` onto a typed-array `@export` then no-ops with no error
+
+**Area:** GDScript/tooling · **Severity:** medium · **Found:** 2026-08-18 by lm during 6.2
+
+Building synthetic `CycleModifierDef` instances for `tools/cycle_modifier_check.gd`, assigning an
+untyped `Array` parameter into a `tags: Array[StringName]` `@export` var via
+`def.set(&"tags", tags as Array[StringName])` produced an empty array every time — no error, no
+warning, no exception, just silently discarded. `as Array[StringName]` does not perform an
+element-wise runtime conversion of an already-untyped `Array`; it appears to leave the array's
+element type unchanged, and `Object.set()` on a strictly-typed `Array[T]` `@export` property then
+rejects the mismatched Variant without complaint. This is the same class of trap `ARCHITECTURE.md`
+§6b already catalogues for the Recast bridge — wrong result, no diagnostic — just in core GDScript
+typed-array handling rather than an engine subsystem.
+
+The fix is the constructor call form: `Array[StringName](expr)`, not `expr as Array[StringName]`.
+`content/powerups/*.tres` already uses this exact syntax for typed array/dictionary literals
+(`tags = Array[StringName]([&"Blood", &"Kinetic"])`), which turns out to be load-bearing at runtime
+too, not just inside `.tres` resource text — any GDScript that builds a typed array from an untyped
+one (a test harness constructing synthetic content defs, a loader normalizing a dynamically-sourced
+list) needs the constructor form. A plain array literal assigned directly to a typed-array-declared
+local (`var x: Array[StringName] = [...]`) converts correctly at declaration time; the failure is
+specific to converting an *already-untyped* `Array` value via `as`.
+
+**What closes this:** promoting this note into `docs/SPECS.md`'s "four standing rules" list (same
+tier as F-016's class_name rule) the next time that file is touched for an unrelated task, so it is
+read before the mistake rather than after. No code fix needed — `tools/cycle_modifier_check.gd`
+already uses the constructor form throughout.
+
 ### F-158 · `bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler
 
 **Area:** content/vfx · **Severity:** low · **Found:** 2026-08-19 by lm during 4.11
