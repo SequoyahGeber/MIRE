@@ -860,6 +860,42 @@ someone holds the file.
 
 ## Resolved
 
+### F-156 · A finding goes stale when a neighbouring task fixes it in passing, and nothing tells the next lane before it spends a window — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
+
+The most repeated waste in this project, measured across a single day: six dispatches (F-103, F-107,
+F-108, F-111, F-135, F-151) went to findings that had stopped being true. A neighbouring task fixes
+the underlying bug in passing, nobody moves the entry out of `## Open`, and it sits there looking
+exactly like work. The lane arrives, discovers the fix already landed, and spends its window writing
+the docs the original task skipped. That is not nothing — but it is not what was ordered, and the
+director keeps choosing it over real work because the board cannot tell the difference.
+
+**Fixed:** `agent brief` on an F-number now checks whether the files that finding names have changed
+since it was filed, and warns before the lane reads a word of the spec. It reads paths from the
+heading as well as the body — findings name their file in the title as often as in the prose — and
+tells the reader to run the check first, because that is the one cheap thing that settles it. It
+warns rather than blocks: a changed file does not prove a fix, and a finding that is still true
+should still be worked.
+
+**The bug that made the first version useless, and it is worth knowing generally:**
+`git log --since=2026-08-18` does **not** mean midnight. Git's approxidate reads a bare date as that
+day *at the current time of day*, so running it at 17:00 silently excludes everything committed
+earlier the same day — precisely the window in which a finding goes stale. Three test runs printed
+no warning and looked like a healthy guard with nothing to report. The fix is to pin the time:
+`--since=<date> 00:00`.
+
+That failure shape has now appeared three times in one day: the F-104 watchdog gated on an exit code
+Godot never returns, F-107's check whose closure captured a peer id by value, and this. **A mechanism
+that silently does nothing is indistinguishable from a mechanism with nothing to report.** Test the
+positive case before believing a quiet one.
+
+**Verified:** fires correctly on F-126 (`autoload/command_service.gd`, 5 commits since), F-152
+(`core/render/mesh_merge.gd`, 1 commit since) and F-137, both of the first two being orders queued to
+LP at the time of writing; the raw `git log` counts were confirmed by hand against each path.
+
+---
+
 ### F-132 · A remote client's scattered harvestable proxy may have no host counterpart to reach, because `ChunkStreamer` streams per-peer independently — **fixed**
 
 **Area:** world-gen / netcode · **Severity:** medium · **Found:** 2026-08-18 by lm during 4.4

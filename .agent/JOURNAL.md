@@ -3595,3 +3595,15 @@ Notes along the way:
 Files: `systems/enemies/enemy.gd`, `systems/enemies/enemy_def.gd`, `tools/enemy_ai_check.gd`, `tools/enemy_ai_check.gd.uid`
 
 Commit at time of writing: `ee0b45f`
+
+---
+
+### DONE · F-156 · bram1 · 2026-08-19T00:24:18+00:00
+
+**A finding goes stale when a neighbouring task fixes it in passing, and nothing tells the next lane before it spends a window**
+
+agent brief now warns when a finding's named files changed since it was filed, reading paths from the heading as well as the body, before the lane reads the spec. Warns rather than blocks. The first version never fired: git's approxidate reads a bare --since=<date> as that day at the CURRENT time of day, silently excluding everything committed earlier the same day — pinned to '<date> 00:00'. Verified firing on F-126, F-152 and F-137 with hand-checked git counts.
+
+Files: `.agent/bin/agent`, `docs/FINDINGS.md`
+
+Commit at time of writing: `8af3787`

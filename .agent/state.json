@@ -121,10 +121,10 @@
   },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "nettle12",
-      "at": "2026-08-18T21:56:28+00:00",
-      "hash": "e3d5b435dba1f6b3460ac1d7f8e2e13c3619918650abdd9b8f5b4690d54e2e43",
-      "task": "F-145"
+      "agent": "bram1",
+      "at": "2026-08-19T00:24:18+00:00",
+      "hash": "826c26322903a45a223034f286c9db93e6168bc47723a3ff718690f8673520ec",
+      "task": "F-156"
     },
     ".agent/bin/lane": {
       "agent": "bram1",
@@ -1608,10 +1608,10 @@
       "task": "4.7"
     },
     "docs/FINDINGS.md": {
-      "agent": "slate17",
-      "at": "2026-08-18T22:22:14+00:00",
-      "hash": "c3de32a2bbd6085ae34047e1076091e709e7fad6698ba26611f5fb82ecad8b36",
-      "task": "3.7"
+      "agent": "bram1",
+      "at": "2026-08-19T00:24:18+00:00",
+      "hash": "66331b3a20fc1ea50352113a0a6b012ea791640fd13380bcb3f56cd9a0acd684",
+      "task": "F-156"
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -5171,6 +5171,15 @@
       "status": "todo",
       "tier": "F",
       "title": "`PlayerHealth._is_dodging()` throws \"Nonexistent 'bool' constructor\" against any body with"
+    },
+    "F-156": {
+      "done_at": "2026-08-19T00:24:18+00:00",
+      "done_by": "bram1",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "A finding goes stale when a neighbouring task fixes it in passing, and nothing tells the next lane before it spends a window"
     }
   },
   "version": 1

@@ -651,6 +651,68 @@ def _wrap(text, width=94, indent="      "):
     return out
 
 
+def _warn_if_stale_finding(fid):
+    """Warn when a finding's own files moved after it was filed — it may already be fixed.
+
+    The most repeated waste in this project is dispatching a lane at a finding that stopped being
+    true. A neighbouring task fixes the underlying bug in passing, nobody edits `## Open`, and the
+    finding sits there looking like work. Six dispatches went this way in a single day (F-103, F-107,
+    F-108, F-111, F-135, F-151) — each one a lane spending a window to discover the fix had already
+    landed, then writing the docs the original task skipped.
+
+    This cannot be authoritative — a changed file does not prove the finding is fixed — so it warns
+    rather than blocks, and tells the reader to do the one thing that settles it: run the check
+    first. That is cheap; a wasted dispatch is not."""
+    body, filed = _finding_body(fid)
+    if not body or not filed:
+        return
+    # Paths appear as `tools/x.gd`, `tools/x.gd:126`, or bare in the heading — findings name their
+    # file in the title as often as in the body, which an earlier version of this missed entirely.
+    paths = sorted(set(re.findall(r"([a-zA-Z0-9_./-]+\.(?:gd|py|tres|tscn|gdshader|md|json))",
+                                  body)))
+    paths = [p for p in paths if os.path.exists(os.path.join(ROOT, p))][:12]
+    if not paths:
+        return
+    touched = []
+    for p in paths:
+        # "--since=2026-08-18" is NOT midnight: git's approxidate reads a bare date as that day at
+        # the CURRENT time of day, so at 5pm it silently excludes everything committed earlier the
+        # same day — which is most of what makes a finding stale. Pin the time explicitly.
+        out = _git("log", "--oneline", "--since=%s 00:00" % filed, "--", p).stdout.strip()
+        if out:
+            touched.append((p, len(out.splitlines())))
+    if not touched:
+        return
+    print("\n  %s⚠ this finding may already be fixed — files it names have changed since it was "
+          "filed (%s)%s" % (C["y"], filed[:10], C["x"]))
+    for p, n in touched[:6]:
+        print("      %s%s — %d commit(s) since%s" % (C["dim"], p, n, C["x"]))
+    print("  %sRun its check BEFORE editing anything. If it passes, the work is to close the "
+          "finding and write whatever docs the original fix skipped.%s" % (C["dim"], C["x"]))
+
+
+def _finding_body(fid):
+    """A finding's text and its filed date, read from the doc rather than the task registry."""
+    path = os.path.join(ROOT, "docs", "FINDINGS.md")
+    if not os.path.exists(path):
+        return "", ""
+    lines = open(path).read().split("\n")
+    body, grabbing = [], False
+    for line in lines:
+        if line.startswith("### "):
+            if grabbing:
+                break
+            grabbing = line.startswith("### %s " % fid) or line.startswith("### %s·" % fid)
+            if grabbing:
+                body.append(line)      # the heading names the file as often as the body does
+            continue
+        if grabbing:
+            body.append(line)
+    text = "\n".join(body)
+    m = re.search(r"\*\*Found:\*\*\s*(\d{4}-\d{2}-\d{2})", text)
+    return text, (m.group(1) if m else "")
+
+
 def cmd_brief(args):
     """Everything needed to start a task, in one call.
 
@@ -678,6 +740,8 @@ def cmd_brief(args):
     if t["status"] == "done":
         print("\n  %s⚠ already done (%s by %s) — check the journal below before redoing it%s"
               % (C["y"], t.get("done_at", "?")[:10], t.get("done_by", "?"), C["x"]))
+    if _is_finding(tid):
+        _warn_if_stale_finding(tid)
 
     # Read these, in this order. Bounded on purpose: this list is the alternative to
     # exploring, which is the most expensive thing an agent does here.
