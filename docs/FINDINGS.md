@@ -183,88 +183,6 @@ rather than reimplementing its raycast. Needs a claim on `world/gen/undergrowth.
 
 
 
-### F-006 · Three roadmap tasks assume a Windows or Linux machine we don't have
-
-**Area:** process · **Severity:** high · **Found:** 2026-08-15 by claude
-
-Development happens exclusively on a 14-inch M5 Pro MacBook Pro, permanently — there is no second
-machine and no plan to get one. Three tasks are written as though there is:
-
-| Task | Assumes |
-|---|---|
-| **0.10** (M0) | Running `tools/check_determinism.gd` on Windows and Linux to fill in the `ARCHITECTURE.md` §6a baseline table |
-| **1.12** (M1) | A Mac ↔ Windows ↔ Linux lobby over Steam |
-| **7.12** (M7) | Testing each export on its real OS, plus Steam Deck |
-
-**0.10 is the urgent one.** R6 asks whether seeded world gen diverges between macOS arm64 and Windows
-x86_64. If it does, §4's "clients regenerate the world from a seed" design is invalid and the fallback
-— host ships a compact heightmap — has to be adopted *before* M4 is built on the current assumption.
-That question is unanswerable on this hardware, and it is a genuine architectural fork, not a
-verification chore. The macOS column of the §6a table is filled in; the other two cannot be.
-
-**Updated resolution path, 2026-08-16:** Linux stays on the Unraid x86_64 KVM guest. A friend's
-physical Ryzen 5 5600 / RTX 3060 Windows 11 PC is now available, has Codex, and can clone the repo and
-run repo-authored validation briefs. Prefer it to a Windows VM: it answers the architecture question
-and supplies the real Windows GPU that Unraid passthrough could not safely provide.
-
-The distinction that decides where these VMs live:
-
-| Host | Guest arch | Answers R6? |
-|---|---|---|
-| MacBook (UTM) | **arm64** | **No** — holds the CPU architecture constant, so it tests OS divergence only. A green result here would be misleading. |
-| Unraid (KVM) | **x86_64** | **Yes** — this is the macOS-arm64 vs Windows-x86_64 comparison R6 is actually asking about. |
-
-Use Unraid for anything determinism- or architecture-sensitive. UTM on the MacBook is still useful for
-quick "does it launch on Linux" checks where architecture is irrelevant.
-
-What this does and doesn't close:
-
-- **0.10 / 4.0b — complete across macOS, Linux, and Windows.** `check_determinism.gd` is headless and
-  compute-only; no GPU, no display, no Steam. The Ubuntu guest ran it with no `sudo` and no extra
-  packages — `wget` and `rsync` were already present, so the project went over by `rsync` from the Mac
-  rather than `git clone`, sidestepping credentials on the guest entirely. Result in **D-017**: noise
-  and PRNG are bit-identical, raw libm calls are not. On 2026-08-16 the physical Windows PC ran both
-  probes twice on pinned Godot `4.7.1.stable.official.a13da4feb`; the three world-generation hashes
-  and all four safe-operation hashes matched macOS exactly. See D-028 and `ARCHITECTURE.md` §6a.
-- **7.12 — partially, and the gap is now confirmed rather than hypothetical.** The server's GTX 1070
-  is already passed through to Ollama and Plex, so it is not available to a VM without taking it from
-  services in use. Guests will render in software. **Second obstacle, found 2026-08-15 while building
-  the Ubuntu guest:** Unraid reports the 1070 as the host's *primary adapter* ("GPU is primary adapter,
-  vbios may be required"), so passing it to a VM also needs a dumped and patched vBIOS and risks
-  leaving the host without console output. GPU passthrough here is not a checkbox; treat software
-  rendering in the guests as the plan, not the fallback.
-
-  **Sequoyah's call, 2026-08-15:** container contention is *not* a real constraint — Plex does not
-  meaningfully need the card and Ollama can be paused on demand. So the only genuine obstacle to GPU
-  passthrough is the primary-adapter/vBIOS work above. Do not cite the containers as a blocker. VMs therefore answer "does the export launch and
-  behave correctly on this OS" — most of the value — but frame rate and rendering artifacts need real
-  hardware. Steam Deck remains a separate purchase decision.
-- **1.12 — machines and accounts are now available.** The macOS host, Windows VM and Linux VM each
-  run the pinned engine/GodotSteam build under distinct mutual-friend Steam accounts, and all three
-  peers have joined one Steam lobby. The remaining gap is test evidence and reliability, not machine
-  access: F-023 tracks the intermittent Windows first-join timeout, and the formal 60-second run is
-  still pending. Windows software rendering is sufficient for this transport/replication gate.
-
-The first physical-Windows run formally reported `FAIL` because each probe also emitted 306 unrelated
-startup errors. This was a harness/bootstrap error, not a determinism failure: `addons/godotsteam/` is
-intentionally gitignored by D-022, and a raw clone has no generated global class cache. A fresh local
-clone reproduced all 306; one `--headless --editor --quit` scan removed 303, leaving exactly the three
-missing-GodotSteam errors. Future clean-machine briefs must install the D-022-pinned addon first and
-run that scan. The probe scripts use only engine built-ins, reached their output, exited 0, and were
-bit-identical across both Windows runs, so their R6 evidence remains valid. This does **not** count as
-a clean Windows game boot test.
-
-Practical notes for whoever builds the guests: the host is a Ryzen 5 3600X with 32 GB, shared with the
-Ollama and Plex containers — assume only part of that RAM is free, and don't run both guests plus a
-loaded Ollama at once. Put the vdisks on the 2 TB NVMe, not the HDD array.
-
-Worth noting for later: Zen 2 is also the Steam Deck's CPU architecture, so CPU-side determinism
-results from this box are a closer proxy for the Deck than anything else available here.
-
-Still worth a `DECISIONS.md` entry: "cross-platform verification happens on Unraid x86_64 VMs, with
-these known gaps" is a standing decision that shapes M7 and M8, not just a finding.
----
-
 ### F-020 · Steam sessions cannot use NetSession's direct-address auto-rejoin loop
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-16 by tine during 1.7
@@ -959,6 +877,109 @@ atomically from the working tree and cannot lose to the race, and verify with
 ---
 
 ## Resolved
+
+### F-006 · Three roadmap tasks assume a Windows or Linux machine we don't have — **closed: premise no longer holds**
+
+**Area:** process · **Severity:** high · **Found:** 2026-08-15 by claude
+
+Development happens exclusively on a 14-inch M5 Pro MacBook Pro, permanently — there is no second
+machine and no plan to get one. Three tasks are written as though there is:
+
+| Task | Assumes |
+|---|---|
+| **0.10** (M0) | Running `tools/check_determinism.gd` on Windows and Linux to fill in the `ARCHITECTURE.md` §6a baseline table |
+| **1.12** (M1) | A Mac ↔ Windows ↔ Linux lobby over Steam |
+| **7.12** (M7) | Testing each export on its real OS, plus Steam Deck |
+
+**0.10 is the urgent one.** R6 asks whether seeded world gen diverges between macOS arm64 and Windows
+x86_64. If it does, §4's "clients regenerate the world from a seed" design is invalid and the fallback
+— host ships a compact heightmap — has to be adopted *before* M4 is built on the current assumption.
+That question is unanswerable on this hardware, and it is a genuine architectural fork, not a
+verification chore. The macOS column of the §6a table is filled in; the other two cannot be.
+
+**Updated resolution path, 2026-08-16:** Linux stays on the Unraid x86_64 KVM guest. A friend's
+physical Ryzen 5 5600 / RTX 3060 Windows 11 PC is now available, has Codex, and can clone the repo and
+run repo-authored validation briefs. Prefer it to a Windows VM: it answers the architecture question
+and supplies the real Windows GPU that Unraid passthrough could not safely provide.
+
+The distinction that decides where these VMs live:
+
+| Host | Guest arch | Answers R6? |
+|---|---|---|
+| MacBook (UTM) | **arm64** | **No** — holds the CPU architecture constant, so it tests OS divergence only. A green result here would be misleading. |
+| Unraid (KVM) | **x86_64** | **Yes** — this is the macOS-arm64 vs Windows-x86_64 comparison R6 is actually asking about. |
+
+Use Unraid for anything determinism- or architecture-sensitive. UTM on the MacBook is still useful for
+quick "does it launch on Linux" checks where architecture is irrelevant.
+
+What this does and doesn't close:
+
+- **0.10 / 4.0b — complete across macOS, Linux, and Windows.** `check_determinism.gd` is headless and
+  compute-only; no GPU, no display, no Steam. The Ubuntu guest ran it with no `sudo` and no extra
+  packages — `wget` and `rsync` were already present, so the project went over by `rsync` from the Mac
+  rather than `git clone`, sidestepping credentials on the guest entirely. Result in **D-017**: noise
+  and PRNG are bit-identical, raw libm calls are not. On 2026-08-16 the physical Windows PC ran both
+  probes twice on pinned Godot `4.7.1.stable.official.a13da4feb`; the three world-generation hashes
+  and all four safe-operation hashes matched macOS exactly. See D-028 and `ARCHITECTURE.md` §6a.
+- **7.12 — partially, and the gap is now confirmed rather than hypothetical.** The server's GTX 1070
+  is already passed through to Ollama and Plex, so it is not available to a VM without taking it from
+  services in use. Guests will render in software. **Second obstacle, found 2026-08-15 while building
+  the Ubuntu guest:** Unraid reports the 1070 as the host's *primary adapter* ("GPU is primary adapter,
+  vbios may be required"), so passing it to a VM also needs a dumped and patched vBIOS and risks
+  leaving the host without console output. GPU passthrough here is not a checkbox; treat software
+  rendering in the guests as the plan, not the fallback.
+
+  **Sequoyah's call, 2026-08-15:** container contention is *not* a real constraint — Plex does not
+  meaningfully need the card and Ollama can be paused on demand. So the only genuine obstacle to GPU
+  passthrough is the primary-adapter/vBIOS work above. Do not cite the containers as a blocker. VMs therefore answer "does the export launch and
+  behave correctly on this OS" — most of the value — but frame rate and rendering artifacts need real
+  hardware. Steam Deck remains a separate purchase decision.
+- **1.12 — machines and accounts are now available.** The macOS host, Windows VM and Linux VM each
+  run the pinned engine/GodotSteam build under distinct mutual-friend Steam accounts, and all three
+  peers have joined one Steam lobby. The remaining gap is test evidence and reliability, not machine
+  access: F-023 tracks the intermittent Windows first-join timeout, and the formal 60-second run is
+  still pending. Windows software rendering is sufficient for this transport/replication gate.
+
+The first physical-Windows run formally reported `FAIL` because each probe also emitted 306 unrelated
+startup errors. This was a harness/bootstrap error, not a determinism failure: `addons/godotsteam/` is
+intentionally gitignored by D-022, and a raw clone has no generated global class cache. A fresh local
+clone reproduced all 306; one `--headless --editor --quit` scan removed 303, leaving exactly the three
+missing-GodotSteam errors. Future clean-machine briefs must install the D-022-pinned addon first and
+run that scan. The probe scripts use only engine built-ins, reached their output, exited 0, and were
+bit-identical across both Windows runs, so their R6 evidence remains valid. This does **not** count as
+a clean Windows game boot test.
+
+Practical notes for whoever builds the guests: the host is a Ryzen 5 3600X with 32 GB, shared with the
+Ollama and Plex containers — assume only part of that RAM is free, and don't run both guests plus a
+loaded Ollama at once. Put the vdisks on the 2 TB NVMe, not the HDD array.
+
+Worth noting for later: Zen 2 is also the Steam Deck's CPU architecture, so CPU-side determinism
+results from this box are a closer proxy for the Deck than anything else available here.
+
+Still worth a `DECISIONS.md` entry: "cross-platform verification happens on Unraid x86_64 VMs, with
+these known gaps" is a standing decision that shapes M7 and M8, not just a finding.
+
+**Closed 2026-08-18 by pike14.** The finding's premise — "there is no second machine and no plan to
+get one" — is now false, and was falsified progressively by its own updates above rather than by any
+single event. All three of its tasks have moved off machine access as the blocker:
+
+- **0.10 — done.** Determinism ran on macOS, Linux and the physical Windows PC; the hashes match
+  (D-017, D-028, `ARCHITECTURE.md` §6a). The architectural fork this finding was really about — does
+  seeded world generation diverge across CPU architecture — is answered, and §4's
+  regenerate-from-seed design stands.
+- **1.12 — machine access is not the constraint.** All three machines run the pinned engine under
+  distinct mutual-friend accounts and have joined one lobby. What remains is the evidence run.
+- **7.12 — machine access is not the constraint either.** On 2026-08-18 all three exports were built
+  and smoke-run on their real OS. What that cannot cover is frame rate and rendering artifacts: both
+  VMs render in software (the Windows guest reports `Microsoft Basic Render Driver`). That is a
+  hardware-capability limit rather than a missing machine, and it stays with 7.12.
+
+Kept rather than deleted, because the distinction it established is still load-bearing and easy to
+get wrong: an arm64 UTM guest on the MacBook holds CPU architecture constant and therefore cannot
+answer an architecture question, while the x86_64 Unraid guest can. Anything determinism- or
+architecture-sensitive goes to Unraid or the physical Windows PC.
+
+---
 
 ### F-186 · A chat session that dies holds its claims forever — agent reap only frees lane claims, and a chat has no liveness signal at all — **fixed**
 
