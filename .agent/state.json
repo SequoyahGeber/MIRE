@@ -7444,7 +7444,7 @@
       "title": "`CycleModifierService`'s per-cycle modifier draw is the same boot-time-`randomize()` bug \u2014 and already has the stable id `Chest` needed"
     },
     "F-222": {
-      "done_at": "2026-08-19T17:25:02+00:00",
+      "done_at": "2026-08-19T17:25:25+00:00",
       "done_by": "slate17",
       "est": "\u2014",
       "milestone": "Findings",

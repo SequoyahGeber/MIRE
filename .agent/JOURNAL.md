@@ -5768,3 +5768,13 @@ Completed.
 Files: `tools/blender/preview_census.py`, `docs/FINDINGS.md`
 
 Commit at time of writing: `8f5f9cf`
+
+---
+
+### DONE · F-222 · slate17 · 2026-08-19T17:25:25+00:00
+
+**Eight Blender preview generators render correctly only because an unrelated object happens to get created (or the camera type happens to get flipped) between their reposition and their render — no check would catch it if that incidental code is ever removed**
+
+Completed.
+
+Commit at time of writing: `e886819`
