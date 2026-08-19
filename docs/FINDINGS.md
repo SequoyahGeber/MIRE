@@ -564,29 +564,6 @@ worth confirming against real numbers rather than assumed.
 
 ---
 
-### F-215 · `HSlider` draws no visible focus ring in this Godot version — F-209's gamepad focus work left it the one control type still hard to tell is focused
-
-**Area:** UI/input · **Severity:** low · **Found:** 2026-08-19 by lm during F-209
-
-F-209 gave `SettingsMenu`'s sliders (master/music/sfx volume, mouse and gamepad look sensitivity, FOV)
-a visible `add_theme_stylebox_override("focus", ...)` ring the same way it did every Button/
-OptionButton/CheckBox/LineEdit in the six menus that task touched — but `HSlider`/`VSlider` (`Slider`
-in `scene/gui/slider.cpp`) has no `"focus"` theme item in Godot 4.7.1 at all, so the override is
-silently inert. Confirmed live: `tools/menu_focus_check.gd`'s D-pad walk correctly lands keyboard/
-gamepad focus on `SettingsMenu`'s sliders and `ui_left`/`ui_right` correctly adjusts them (Slider's
-own `gui_input` already handles that regardless of any focus ring) — the gap is purely that a player
-tabbing through the menu with a controller has no visual confirmation a slider is the thing that will
-move next, unlike every other control in the same panel.
-
-**What closes this:** either a small custom `Control` (or a `Slider` subclass) that draws its own
-outline on `NOTIFICATION_DRAW` when `has_focus()` — the same pattern `InventoryUI.InventorySlot`
-already uses for its own focus ring, since `PanelContainer` has the identical "no built-in focus
-stylebox" gap — or confirm in a future Godot upgrade whether `Slider` gained a `"focus"` theme item.
-Not done as part of F-209 itself because a slider is still fully operable by keyboard/gamepad without
-one; this is a polish gap, not a blocker.
-
----
-
 ### F-216 · `AttunementUI` (task 3.9's mandatory run-start role picker) has no gamepad focus support — worse than F-209's original scope, since this panel has no Esc/dismiss path at all
 
 **Area:** UI/input · **Severity:** high · **Found:** 2026-08-19 by lm sweeping for F-209's shape elsewhere
@@ -639,6 +616,43 @@ autoload-node pattern.
 ---
 
 ## Resolved
+
+### F-215 · `HSlider` draws no visible focus ring in this Godot version — F-209's gamepad focus work left it the one control type still hard to tell is focused — **fixed**
+
+**Area:** UI/input · **Severity:** low · **Found:** 2026-08-19 by lm during F-209
+
+F-209 gave `SettingsMenu`'s sliders (master/music/sfx volume, mouse and gamepad look sensitivity, FOV)
+a visible `add_theme_stylebox_override("focus", ...)` ring the same way it did every Button/
+OptionButton/CheckBox/LineEdit in the six menus that task touched — but `HSlider`/`VSlider` (`Slider`
+in `scene/gui/slider.cpp`) has no `"focus"` theme item in Godot 4.7.1 at all, so the override is
+silently inert. Confirmed live: `tools/menu_focus_check.gd`'s D-pad walk correctly lands keyboard/
+gamepad focus on `SettingsMenu`'s sliders and `ui_left`/`ui_right` correctly adjusts them (Slider's
+own `gui_input` already handles that regardless of any focus ring) — the gap is purely that a player
+tabbing through the menu with a controller has no visual confirmation a slider is the thing that will
+move next, unlike every other control in the same panel.
+
+**What closes this:** either a small custom `Control` (or a `Slider` subclass) that draws its own
+outline on `NOTIFICATION_DRAW` when `has_focus()` — the same pattern `InventoryUI.InventorySlot`
+already uses for its own focus ring, since `PanelContainer` has the identical "no built-in focus
+stylebox" gap — or confirm in a future Godot upgrade whether `Slider` gained a `"focus"` theme item.
+Not done as part of F-209 itself because a slider is still fully operable by keyboard/gamepad without
+one; this is a polish gap, not a blocker.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed: new ui/menu/focus_ring_slider.gd (class_name FocusRingSlider extends HSlider) draws its own
+focus ring via _draw() + queue_redraw() on focus_entered/focus_exited, since Slider has no "focus"
+theme stylebox item in Godot 4.7.1 (unlike Button/OptionButton/CheckBox/LineEdit). settings_menu.gd's
+_build_slider_row() now constructs FocusRingSlider and sets focus_ring_style = _focus_style() (same
+style factory the menu's other controls already use) for all six sliders. Verified with
+`.agent/bin/agent godot --script tools/menu_focus_check.gd` -> MENU_FOCUS_CHECK failures=0, including
+a new assertion that the master volume slider is a FocusRingSlider with a non-null focus_ring_style
+(the plumbing proxy, since has_theme_stylebox_override(&"focus") doesn't apply to a Slider). Ran the
+check before editing per the finding's own warning: it passed then too, but only because it asserted
+nothing about slider focus at all — confirmed via settings_menu.gd source that the gap was real, not
+already fixed. Swept project-wide for the same shape (all add_theme_stylebox_override("focus", ...)
+call sites, all HSlider/VSlider construction sites): no sibling instances, only the six sliders this
+task already covers. Spec written in docs/SPECS.md (none existed).
 
 ### F-213 · core/net/rpc_manifest.gd's FNV-1a seed literal overflows signed 64-bit int, erroring on every scan even though the check itself stays deterministic — **fixed**
 

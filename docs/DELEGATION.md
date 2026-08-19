@@ -75,6 +75,30 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-215 resolved: `HSlider` now draws a real focus ring via `FocusRingSlider` (lm)
+
+`Slider` (`HSlider`'s base, `scene/gui/slider.cpp`) has no `"focus"` theme stylebox item in Godot
+4.7.1, unlike `Button`/`OptionButton`/`CheckBox`/`LineEdit` — `add_theme_stylebox_override("focus",
+...)` on an `HSlider` is silently inert. **New `ui/menu/focus_ring_slider.gd`,
+`class_name FocusRingSlider extends HSlider`, is the seam for this now:** set its public
+`focus_ring_style: StyleBoxFlat` to whatever `StyleBoxFlat` the menu already uses for its other
+controls' focus rings, and it draws that style over its own rect on `_draw()` whenever
+`has_focus()` is true, repainting via `queue_redraw()` on `focus_entered`/`focus_exited`. Any future
+task adding an `HSlider`/`VSlider` to a gamepad-navigable panel should construct `FocusRingSlider`
+instead of a bare `HSlider` and set `focus_ring_style` — don't re-add a dead `"focus"` stylebox
+override, and don't re-derive this fix. `settings_menu.gd`'s `_build_slider_row()` is the one real
+call site so far; all six of its sliders (master/music/sfx volume, mouse and gamepad look
+sensitivity, FOV) already route through it.
+
+**Verified:** `.agent/bin/agent godot --script tools/menu_focus_check.gd` → `MENU_FOCUS_CHECK
+failures=0`, including a new assertion that the master volume slider `is FocusRingSlider` with a
+non-null `focus_ring_style` — the plumbing proxy every other control's
+`has_theme_stylebox_override(&"focus")` check can't reach here.
+
+**Swept, not found:** every other `add_theme_stylebox_override("focus", ...)` call site targets a
+control type that does have a native `"focus"` item (Button/OptionButton/CheckBox/LineEdit); no
+other `HSlider`/`VSlider` construction site exists anywhere in the project.
+
 ### 2026-08-19 — F-220 resolved: `CycleModifierService`'s per-cycle modifier draw derives its seed from `GameState.run_seed`, not boot-time entropy (lm)
 
 Same fix shape as F-210/F-219 below, and the simplest of the three: no new id scheme needed.

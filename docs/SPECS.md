@@ -6394,6 +6394,53 @@ sibling instances.
 
 ---
 
+## F-215 · `HSlider` draws no visible focus ring in this Godot version — F-209's gamepad focus work left it the one control type still hard to tell is focused
+
+**Claim:** `ui/menu/settings_menu.gd`, `ui/menu/focus_ring_slider.gd` (new), `tools/menu_focus_check.gd`.
+Network authority: none — client-local UI presentation, same as every other file F-209 touched.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The fix:** `Slider` (`scene/gui/slider.cpp`, `HSlider`'s base) has no `"focus"` theme stylebox
+item in Godot 4.7.1, unlike `Button`/`OptionButton`/`CheckBox`/`LineEdit` — confirmed live before
+touching anything: `_build_slider_row()` in `settings_menu.gd` never called
+`add_theme_stylebox_override("focus", ...)` on its sliders at all (its own comment recorded the gap
+as a deliberate follow-up rather than an oversight), so there was no dead override to remove, only a
+ring to add. New `ui/menu/focus_ring_slider.gd` adds `class_name FocusRingSlider extends HSlider`: a
+public `focus_ring_style: StyleBoxFlat` the caller sets, connected `focus_entered`/`focus_exited`
+signals that call `queue_redraw()`, and a `_draw()` override that paints `focus_ring_style` over the
+control's own rect when `has_focus()` is true — additive on top of `Slider`'s native C++ drawing, the
+same "script `_draw()` layers over the engine's own NOTIFICATION_DRAW" mechanism
+`InventoryUI.InventorySlot` relies on to fake a focus stylebox for `PanelContainer` (a different
+technique there — a stylebox swap on `"panel"`, since `PanelContainer` has no ring-shaped native
+element to draw over) for the identical "no built-in focus stylebox" gap. `_build_slider_row()` now
+constructs `FocusRingSlider` instead of `HSlider` and sets `focus_ring_style = _focus_style()` — the
+same `StyleBoxFlat` factory every other control in the menu already uses, so the ring matches without
+a new colour constant.
+
+**Verify:** `.agent/bin/agent godot --script tools/menu_focus_check.gd` →
+`MENU_FOCUS_CHECK failures=0`. New assertion in `_check_settings_menu()`: since
+`has_theme_stylebox_override(&"focus")` (every other control's proxy for "has a visible ring") does
+not apply to a `Slider`, the check instead asserts `master_slider is FocusRingSlider and
+focus_ring_style != null` — the plumbing proxy for "this slider actually draws one". Ran the check
+BEFORE any edit per the finding's own warning (its target file had one commit since filing): it
+passed at 0 failures then too, but only because it asserted nothing about slider focus at all — read
+`settings_menu.gd` to confirm the gap was still real rather than trusting the green run.
+
+**Swept for the same shape:** `grep -rn 'stylebox_override(&\?"focus"'` project-wide — every other
+hit targets a `Button`/`OptionButton`/`CheckBox`/`LineEdit`, all of which do have a native `"focus"`
+theme item, so none are the same bug. `grep -rn 'HSlider\|VSlider\|Slider\.new\|extends Slider'`
+project-wide — the only other hits are `tools/settings_check.gd`'s `as HSlider` casts on the same two
+sliders this task already touches (an existing check reading them, not a second construction site).
+`settings_menu.gd`'s six sliders (master/music/sfx volume, mouse and gamepad look sensitivity, FOV)
+all route through the one `_build_slider_row()` this task changed, so no sibling instance exists
+anywhere else in the project.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**
