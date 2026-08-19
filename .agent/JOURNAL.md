@@ -4366,3 +4366,27 @@ Fixed all four un-bumped-RPC findings at once (F-161/165/169/178) and built the 
 Files: `tools/rpc_manifest_check.gd`, `core/net/rpc_manifest.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`
 
 Commit at time of writing: `30394f0`
+
+---
+
+### DONE · F-186 · nettle12 · 2026-08-19T06:45:25+00:00
+
+**A chat session that dies holds its claims forever — agent reap only frees lane claims, and a chat has no liveness signal at all**
+
+reap now judges chat sessions: a rate-limited, lock-free 'seen' heartbeat in main(), staleness reported by default and freed only with explicit --stale, and claims whose name is shared by several sessions are never auto-freed. 3 new harness_check cases (25/25; 23/25 at pre-fix HEAD). Corrected the finding's own evidence — F-144's session turned out to be alive.
+
+Files: `.agent/bin/agent`, `tools/harness_check.py`
+
+Commit at time of writing: `f496204`
+
+---
+
+### DONE · F-144 · nettle12 · 2026-08-19T06:46:23+00:00
+
+**Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance**
+
+Merged kit geometry everywhere it is stamped, gave every merged mesh a LOD ladder, and bounded prop draw distance. Real RenderingServer counters at 1280x720 vs 2f07f91: high 5,986->5,124 draws / 1.81M->1.18M primitives; low 3,520->2,811 / 898k->388k. Biggest single cause: live harvestables instantiated the raw 56-part .glb, so 44 trees were 29% of the frame. Filed F-187 (chunk merge, with the sway/emitter constraint F-100 lacked), F-188 (no shadow mesh on merged geometry), F-190 (HEAD boots broken: RewardService autoload registered, script untracked).
+
+Files: `tools/render_census.gd`, `world/gen/authored_world.gd`, `world/gen/undergrowth.gd`, `autoload/graphics_quality.gd`, `tools/_probe_lods.gd`, `world/environment/draw_policy.gd`, `tools/harvest_batch_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `core/render/mesh_merge.gd`, `systems/harvesting/harvestable.gd`, `tools/_probe_merge.gd`, `tools/frame_cost_check.gd`
+
+Commit at time of writing: `773f9fa`

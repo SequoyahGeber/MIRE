@@ -1,32 +1,16 @@
 {
   "claims": {
-    ".agent/bin/agent": {
-      "agent": "nettle12",
-      "at": "2026-08-19T06:36:53+00:00",
-      "task": "F-186",
-      "token": "CLAUDE_CODE_SESSION_ID:40988e99-50dc-4901-9548-e1fbdb4e0f6f"
-    },
     "assets/gatherables": {
       "agent": "wick20",
       "at": "2026-08-19T06:42:56+00:00",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
-    "autoload/graphics_quality.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-18T21:51:43+00:00",
-      "task": "F-144"
-    },
     "autoload/reward_service.gd": {
       "agent": "lm",
       "at": "2026-08-19T06:32:29+00:00",
       "task": "F-183",
       "token": null
-    },
-    "core/render/mesh_merge.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-18T22:08:56+00:00",
-      "task": "F-144"
     },
     "core/util/mire_log.gd": {
       "agent": "lm",
@@ -76,21 +60,6 @@
       "task": "F-183",
       "token": null
     },
-    "systems/harvesting/harvestable.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-18T22:08:56+00:00",
-      "task": "F-144"
-    },
-    "tools/_probe_lods.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-18T21:54:18+00:00",
-      "task": "F-144"
-    },
-    "tools/_probe_merge.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-18T22:14:11+00:00",
-      "task": "F-144"
-    },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "wick20",
       "at": "2026-08-19T06:42:56+00:00",
@@ -103,52 +72,11 @@
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
     },
-    "tools/environment_vfx_hollowmere_check.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-18T22:04:06+00:00",
-      "task": "F-144"
-    },
-    "tools/frame_cost_check.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-18T22:25:03+00:00",
-      "task": "F-144"
-    },
-    "tools/harness_check.py": {
-      "agent": "nettle12",
-      "at": "2026-08-19T06:42:51+00:00",
-      "task": "F-186",
-      "token": "CLAUDE_CODE_SESSION_ID:40988e99-50dc-4901-9548-e1fbdb4e0f6f"
-    },
-    "tools/harvest_batch_check.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-18T22:01:43+00:00",
-      "task": "F-144"
-    },
-    "tools/render_census.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-18T21:51:43+00:00",
-      "task": "F-144"
-    },
     "tools/reward_service_check.gd": {
       "agent": "lm",
       "at": "2026-08-19T06:32:29+00:00",
       "task": "F-183",
       "token": null
-    },
-    "world/environment/draw_policy.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-18T21:57:54+00:00",
-      "task": "F-144"
-    },
-    "world/gen/authored_world.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-18T21:51:43+00:00",
-      "task": "F-144"
-    },
-    "world/gen/undergrowth.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-18T21:51:43+00:00",
-      "task": "F-144"
     }
   },
   "in_flight": {
@@ -173,25 +101,6 @@
       "started": "2026-08-19T06:41:54+00:00",
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
-    "F-144": {
-      "agent": "nettle12",
-      "files": [
-        "tools/render_census.gd",
-        "world/gen/authored_world.gd",
-        "world/gen/undergrowth.gd",
-        "autoload/graphics_quality.gd",
-        "tools/_probe_lods.gd",
-        "world/environment/draw_policy.gd",
-        "tools/harvest_batch_check.gd",
-        "tools/environment_vfx_hollowmere_check.gd",
-        "core/render/mesh_merge.gd",
-        "systems/harvesting/harvestable.gd",
-        "tools/_probe_merge.gd",
-        "tools/frame_cost_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-18T21:51:43+00:00"
-    },
     "F-183": {
       "agent": "lm",
       "files": [
@@ -207,25 +116,15 @@
       "notes": [],
       "started": "2026-08-19T06:32:29+00:00",
       "token": null
-    },
-    "F-186": {
-      "agent": "nettle12",
-      "files": [
-        ".agent/bin/agent",
-        "tools/harness_check.py"
-      ],
-      "notes": [],
-      "started": "2026-08-19T06:36:53+00:00",
-      "token": "CLAUDE_CODE_SESSION_ID:40988e99-50dc-4901-9548-e1fbdb4e0f6f"
     }
   },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "bram1",
-      "at": "2026-08-19T06:18:28+00:00",
-      "hash": "5878100fe6ce687515782d2ef3f152193d67723f6d2adb207d087fc5b8597eb5",
-      "task": "F-185",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+      "agent": "nettle12",
+      "at": "2026-08-19T06:45:25+00:00",
+      "hash": "2d45c86ca0ff92f3b51311d47b480045b3c6c87367e1656955baa57821c0d240",
+      "task": "F-186",
+      "token": "CLAUDE_CODE_SESSION_ID:40988e99-50dc-4901-9548-e1fbdb4e0f6f"
     },
     ".agent/bin/lane": {
       "agent": "bram1",
@@ -558,9 +457,11 @@
       "task": "6.5"
     },
     "autoload/graphics_quality.gd": {
-      "agent": "coil23",
-      "at": "2026-08-18T13:15:50+00:00",
-      "task": "F-098"
+      "agent": "nettle12",
+      "at": "2026-08-19T06:46:23+00:00",
+      "hash": "2759870d78381ca541886a50185a853ceae357c08678b19a457a4ad48f059c43",
+      "task": "F-144",
+      "token": null
     },
     "autoload/harvest_world.gd": {
       "agent": "lp",
@@ -1629,6 +1530,13 @@
       "task": "F-161",
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
+    "core/render/mesh_merge.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-19T06:46:23+00:00",
+      "hash": "5fb5f5085692fd934112d6097472831424f178046cf280f0b6c40b26344cca1b",
+      "task": "F-144",
+      "token": null
+    },
     "core/save/salvage_save.gd": {
       "agent": "lm",
       "at": "2026-08-19T02:49:31+00:00",
@@ -2017,9 +1925,11 @@
       "task": "F-114"
     },
     "systems/harvesting/harvestable.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:11+00:00",
-      "task": "F-113"
+      "agent": "nettle12",
+      "at": "2026-08-19T06:46:23+00:00",
+      "hash": "7e6ee68bb1c986965382bcd6204698ca3434f479eabdadfd4e331c6278e27bd0",
+      "task": "F-144",
+      "token": null
     },
     "systems/harvesting/harvestable_def.gd": {
       "agent": "vane19",
@@ -2132,6 +2042,20 @@
       "at": "2026-08-19T04:47:27+00:00",
       "hash": "b2b189ec154aebfadbd54c9f0656efdd6bbe27316f83e7d1e6b3d7d29f7ceb9e",
       "task": "F-162"
+    },
+    "tools/_probe_lods.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-19T06:46:23+00:00",
+      "hash": null,
+      "task": "F-144",
+      "token": null
+    },
+    "tools/_probe_merge.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-19T06:46:23+00:00",
+      "hash": null,
+      "task": "F-144",
+      "token": null
     },
     "tools/_probe_typed_array_convert.gd": {
       "agent": "lm",
@@ -2517,9 +2441,11 @@
       "task": "F-097"
     },
     "tools/environment_vfx_hollowmere_check.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:15:00+00:00",
-      "task": "F-118"
+      "agent": "nettle12",
+      "at": "2026-08-19T06:46:23+00:00",
+      "hash": "c9e20b8d72e77d7cdb9c122bdb969937ab7a7ece9b84d77ec5066716d44bb5bd",
+      "task": "F-144",
+      "token": null
     },
     "tools/extraction_check.gd": {
       "agent": "lm",
@@ -2537,6 +2463,13 @@
       "at": "2026-08-18T21:40:25+00:00",
       "hash": "35c05db43290598337c9c45ebc4b3a85d82c2c619f6dd930cfdfae204f8bdc4e",
       "task": "F-122"
+    },
+    "tools/frame_cost_check.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-19T06:46:23+00:00",
+      "hash": "28ba5d67e7def8e82fb5a53c6bc197fc04304d1afdefdefdb8b9571461239173",
+      "task": "F-144",
+      "token": null
     },
     "tools/function_check.gd": {
       "agent": "lp",
@@ -2568,16 +2501,18 @@
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "tools/harness_check.py": {
-      "agent": "lm",
-      "at": "2026-08-19T05:19:57+00:00",
-      "hash": "49376265e83367842f5bc45b4335e2abd5595bf98c24a92d2b3d1c81fa00345b",
-      "task": "F-147",
-      "token": null
+      "agent": "nettle12",
+      "at": "2026-08-19T06:45:25+00:00",
+      "hash": "31b50d36347a3c3ff4586812ca4254fd38e18b86977b30fea7b5dc346ac8df2c",
+      "task": "F-186",
+      "token": "CLAUDE_CODE_SESSION_ID:40988e99-50dc-4901-9548-e1fbdb4e0f6f"
     },
     "tools/harvest_batch_check.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:20+00:00",
-      "task": "F-114"
+      "agent": "nettle12",
+      "at": "2026-08-19T06:46:23+00:00",
+      "hash": "ddf7a967ed573e4218136850285596aeee50d1e7ab0583cd8c6aa68a640a2f86",
+      "task": "F-144",
+      "token": null
     },
     "tools/harvest_tool_ladder_check.gd": {
       "agent": "vane19",
@@ -2758,6 +2693,13 @@
       "at": "2026-08-19T01:44:21+00:00",
       "hash": "cec43fec6e41130e20678eb5da7d69fca6e30e8b54f32f3bf52889312b54094c",
       "task": "5.3"
+    },
+    "tools/render_census.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-19T06:46:23+00:00",
+      "hash": "157ec0d11c0a40681a7c20f6948ab4a39847a69377a3be68a862235e3b04cce3",
+      "task": "F-144",
+      "token": null
     },
     "tools/resource_scatter_check.gd": {
       "agent": "lm",
@@ -3053,6 +2995,13 @@
       "at": "2026-08-18T18:15:00+00:00",
       "task": "F-118"
     },
+    "world/environment/draw_policy.gd": {
+      "agent": "nettle12",
+      "at": "2026-08-19T06:46:23+00:00",
+      "hash": "1bd0097c3138d21ae0aa94e08b2e661c7452980bc775563450bf3d0fa5df8f58",
+      "task": "F-144",
+      "token": null
+    },
     "world/environment/foliage_wind.gdshader": {
       "agent": "larch10",
       "at": "2026-08-18T14:09:47+00:00",
@@ -3089,9 +3038,11 @@
       "task": "F-115"
     },
     "world/gen/authored_world.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T17:55:20+00:00",
-      "task": "F-114"
+      "agent": "nettle12",
+      "at": "2026-08-19T06:46:23+00:00",
+      "hash": "8550bdafb0b53b6077eec4c2c99207a262bf3840fb20db8f7fd1a64da7060ede",
+      "task": "F-144",
+      "token": null
     },
     "world/gen/biome_def.gd": {
       "agent": "lm",
@@ -3160,9 +3111,11 @@
       "task": "4.4"
     },
     "world/gen/undergrowth.gd": {
-      "agent": "larch10",
-      "at": "2026-08-18T14:09:47+00:00",
-      "task": "F-097"
+      "agent": "nettle12",
+      "at": "2026-08-19T06:46:23+00:00",
+      "hash": "c874f543e917b4165779edc3b2d53f54404dd07ff0ab613395009c89b2e38756",
+      "task": "F-144",
+      "token": null
     },
     "world/mire/mire_grid.gd": {
       "agent": "lm",
@@ -5513,9 +5466,11 @@
       "title": "Audit contact sheets escape .gitignore when written to a per-audit subdirectory"
     },
     "F-144": {
+      "done_at": "2026-08-19T06:46:23+00:00",
+      "done_by": "nettle12",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance"
     },
@@ -5856,9 +5811,11 @@
       "title": "Fixing one instance of a bug class without sweeping for siblings is this project's most reliable source of new findings"
     },
     "F-186": {
+      "done_at": "2026-08-19T06:45:25+00:00",
+      "done_by": "nettle12",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "A chat session that dies holds its claims forever \u2014 agent reap only frees lane claims, and a chat has no liveness signal at all"
     },
