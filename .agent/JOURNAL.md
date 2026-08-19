@@ -5599,3 +5599,18 @@ Audited every host RPC entry point for hostile-client attacks (forged identity, 
 Files: `core/net/rpc_rate_limiter.gd`, `autoload/build_service.gd`, `autoload/command_service.gd`, `tools/hostile_client_check.gd`
 
 Commit at time of writing: `96eae77`
+
+---
+
+### DONE · F-233 · lm · 2026-08-19T15:52:54+00:00
+
+**The rest of the `@rpc("any_peer")` surface has no per-peer rate limit either — currently low-severity, named explicitly so a future pass doesn't have to re-derive the list**
+
+Wrote missing docs/SPECS.md block and tools/rpc_surface_audit_check.gd (buckets every any_peer entry from RpcManifest.scan() into RATE_LIMITED/SELF_GUARDED/BOUNDED_O1, fails on anything untriaged or stale). Sweep found 4 handlers missing from F-232/F-233's original lists, all confirmed safe, no code fix needed. Verified: agent godot --script tools/rpc_surface_audit_check.gd -> RPC_SURFACE_AUDIT_CHECK failures=0 (22/22 triaged). Full boot -> 0 stray ERROR lines. findings_numbering_check.gd and decision_ref_check.py both clean.
+
+Notes along the way:
+- No spec block existed for F-233; wrote one in docs/SPECS.md. Wrote tools/rpc_surface_audit_check.gd (a standing check built on RpcManifest.scan(), replacing the hand-run grep both F-232/F-233 used). Sweep against the actual current any_peer surface found 4 handlers missing from both lists (AttunementService.net_request_attunement, InventoryService.net_request_remove/net_request_move_stack, Harvestable.net_request_hit) -- all confirmed same bounded/self-guarded shape, no fix needed. Corrected FINDINGS.md's list in place. Resolved via agent resolve.
+
+Files: `tools/rpc_surface_audit_check.gd`
+
+Commit at time of writing: `f0f750b`
