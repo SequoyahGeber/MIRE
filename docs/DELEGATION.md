@@ -257,8 +257,15 @@ alone (`AGENTS.md` D-039). D-132 called this split in advance; this is that pred
 
 **Next agent to pick this up (only after 8.2 lands a real App ID):** follow `DEPOT_SETUP.md` step
 by step in the Steamworks dashboard, run `apply_ids.sh` with the four real IDs, re-run
-`depot_wiring_check.sh`, then a real `steam_upload.sh internal-beta <username>`. Don't redesign the
-runbook or the script — D-132's addendum and `docs/SPECS.md`'s `## 8.11 ·` block both point here.
+`depot_wiring_check.sh`, **then also swap `core/net/net_config.gd:79`'s `STEAM_APP_ID` constant —
+`apply_ids.sh` does not touch it (F-257), and it's the one `steam_lobby.gd` actually uses at
+runtime** — then a real `steam_upload.sh internal-beta <username>`. Don't redesign the runbook or
+the script — D-132's addendum and `docs/SPECS.md`'s `## 8.11 ·` block both point here.
+
+**Re-dispatched same day, still blocked:** re-checked `.agent/state.json` (8.1/8.2 still `todo`) and
+re-ran `depot_wiring_check.sh`, `tools/roadmap_dependency_check.gd`, and a full headless boot — all
+clean, no drift. Widened the sweep from "another hand-edited placeholder config" to "another
+hardcoded copy of the same value" and found F-257 above; that's the only change this round.
 
 ### 2026-08-19 — Task 4.14: every island gets its river — analytic, carved, monotonically downhill (yarrow21)
 
