@@ -69,33 +69,6 @@ do is worth as much as the record of what we did.
 
 ## Open
 
-### F-139 · `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline
-
-**Area:** worldgen / netcode · **Severity:** low · **Found:** 2026-08-18 by lm during 4.6
-
-Tasks 4.3 and 4.4 both shipped pure, tested, unreachable systems and said so explicitly in their own
-`DELEGATION.md` entries: "nothing in the shipped game instantiates a `ChunkStreamer` yet... waiting
-on 4.6." Task 4.6 shipped the piece those notes were waiting on — seed replication
-(`core/game_state.gd`) and the chunk-keyed mutation log (`autoload/world_delta_log.gd`) — and proved
-both mechanisms work with a real two-process ENet check (`tools/seed_sync_check.gd`). **It did NOT
-put a `ChunkStreamer`/`ResourceScatterField` pair into the actual playable level.** The shipped game
-still boots into the hand-authored Hollowmere map (`world/gen/authored_world.gd`); the procedural
-pipeline remains exactly as reachable as it was after 4.4 — by a check script that builds its own
-throwaway scene, not by anything a player's session ever runs.
-
-**Why not closed here:** swapping Hollowmere for procedural generation is not a mechanism task, it is
-a full map cutover — every system F-076 generalized against Hollowmere's launch (`EnemyWorld`,
-`HarvestWorld`, and F-112's still-open `Undergrowth` gap), every POI/nest marker, and 4.7's
-POI-placement task (not yet built) would all need to agree on the new map before a player could
-stand on it safely. Guessing at that scope inside a T2 "seed replication + delta sync" task would
-have been exactly the kind of scope creep `AGENTS.md` warns against.
-
-**What to do about it:** whichever task actually intends the island to be procedural (most likely
-after 4.7 POI placement, possibly not until M4's playtest gate in 4.12) is where a real level scene
-gets a `ChunkStreamer` + `ResourceScatterField` pair wired against `GameState.run_seed`, following
-the exact API both `DELEGATION.md` entries already document. Until then, Hollowmere is the map, and
-that is a decision this finding is recording, not a bug anyone introduced.
-
 ### F-020 · Steam sessions cannot use NetSession's direct-address auto-rejoin loop
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-16 by tine during 1.7
@@ -441,6 +414,43 @@ instruction.
 ---
 
 ## Resolved
+
+### F-139 · `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline — **fixed**
+
+**Area:** worldgen / netcode · **Severity:** low · **Found:** 2026-08-18 by lm during 4.6
+
+Tasks 4.3 and 4.4 both shipped pure, tested, unreachable systems and said so explicitly in their own
+`DELEGATION.md` entries: "nothing in the shipped game instantiates a `ChunkStreamer` yet... waiting
+on 4.6." Task 4.6 shipped the piece those notes were waiting on — seed replication
+(`core/game_state.gd`) and the chunk-keyed mutation log (`autoload/world_delta_log.gd`) — and proved
+both mechanisms work with a real two-process ENet check (`tools/seed_sync_check.gd`). **It did NOT
+put a `ChunkStreamer`/`ResourceScatterField` pair into the actual playable level.** The shipped game
+still boots into the hand-authored Hollowmere map (`world/gen/authored_world.gd`); the procedural
+pipeline remains exactly as reachable as it was after 4.4 — by a check script that builds its own
+throwaway scene, not by anything a player's session ever runs.
+
+**Why not closed here:** swapping Hollowmere for procedural generation is not a mechanism task, it is
+a full map cutover — every system F-076 generalized against Hollowmere's launch (`EnemyWorld`,
+`HarvestWorld`, and F-112's still-open `Undergrowth` gap), every POI/nest marker, and 4.7's
+POI-placement task (not yet built) would all need to agree on the new map before a player could
+stand on it safely. Guessing at that scope inside a T2 "seed replication + delta sync" task would
+have been exactly the kind of scope creep `AGENTS.md` warns against.
+
+**What to do about it:** whichever task actually intends the island to be procedural (most likely
+after 4.7 POI placement, possibly not until M4's playtest gate in 4.12) is where a real level scene
+gets a `ChunkStreamer` + `ResourceScatterField` pair wired against `GameState.run_seed`, following
+the exact API both `DELEGATION.md` entries already document. Until then, Hollowmere is the map, and
+that is a decision this finding is recording, not a bug anyone introduced.
+
+**Resolved 2026-08-19 by yarrow21.** They have a real caller now. Task 4.15 (D-143) shipped `world/gen/procedural_world.gd` — the
+composer this finding was waiting for: `ChunkStreamer` + `ResourceScatterField` + `NavBaker` +
+`PoiMap`, wired against `GameState.run_seed` exactly as the DELEGATION entries documented, reachable
+via `DevLaunch --procedural`, proven by `tools/procedural_world_check.gd` (failures=0) including
+the assertion that settles the scope worry this finding raised: **WellspringService built real
+Wellsprings from the composer's markers with no service changes** — the marker-group protocol was
+the map contract all along. The remaining distance to "the island players get by default" is the
+tracked 4.16→4.19 arc (parity matrix, feel walk, default swap), roadmap rows, not a finding.
+Hollowmere remains the shipped map until 4.19, as this finding recorded.
 
 ### F-233 · The rest of the `@rpc("any_peer")` surface has no per-peer rate limit either — currently low-severity, named explicitly so a future pass doesn't have to re-derive the list — **fixed**
 

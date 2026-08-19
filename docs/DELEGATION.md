@@ -75,6 +75,50 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 4.15: the ProceduralWorld composer ships — a generated island is now a playable level behind `--procedural` (yarrow21)
+
+**What shipped, verified:** `world/gen/procedural_world.gd` (`class_name ProceduralWorld`, a
+`Node3D`) — the composer F-139 was waiting for. It derives everything from `GameState.ensure_seed()`
+and composes the shipped pipeline: `ChunkStreamer` (4.3) + `NavBaker.bind()` (4.5) +
+`ResourceScatterField.attach_to_streamer()` (4.4) + `PoiMap.sites_for_island()` (4.7) — then
+**publishes the authored maps' own marker contract** (`authored_world_marker` + `kind` metas,
+`authored_world_terrain`, `height_at()` passthrough). D-143 recorded the claim; the check now
+proves it: **WellspringService built 4 live Wellsprings from the composer's `objective` markers
+with zero service changes.**
+
+**Boot it:** `agent godot --quit-after 25 -- --procedural --seed=20260819` (DevLaunch flag,
+debug-only; combines with `--seed=`/host/join flags). The default map is still Hollowmere until
+4.19.
+
+**Seams the next tasks build on:**
+
+```gdscript
+world.world_seed / world.poi_sites / world.spawn_position   # set by _ready()
+world.height_at(x, z) -> float                              # authored-world call shape
+world.build_player = false                                  # harness switch, like authored props
+PoiDef.marker_kind: StringName                              # "" = scenery; else the service kind
+```
+
+- **`PoiDef.marker_kind` is how content joins the world** (D-143): `objective`, `shipwreck`,
+  `enemy_nest`, chest kinds, `station` — the composer is a dumb loop. `wellspring.tres` and
+  `shipwreck.tres` carry theirs; `standing_stones` is deliberately scenery.
+- **Spawn rule (WORLDGEN.md §3.1):** rings probed outermost-first for standable beach
+  (height 1–5 m, slope ≤ 0.45, clear of every POI's `clearance_m` + 8 m), scored toward the
+  Wellspring centroid — landfall faces the game. Deterministic; published as a `spawn` marker
+  (kind is new, no consumer yet — F-063's Player-node capture still handles the session).
+- **The trap that cost this task its only red:** markers must join groups and get their `kind`
+  meta **BEFORE `add_child`** — services discover on `node_added`, which fires during add_child
+  (F-012's mechanism, new consumer). Configured-after markers are invisible to every service.
+- **What 4.16 owes:** MireGrid binding, EnemyWorld `enemy_nest` PoiDefs, chest/station kinds,
+  the both-map `world_contract_check` matrix, F-112's fold-in.
+
+**Verified:** `agent godot --script tools/procedural_world_check.gd` → **failures=0** (composition,
+marker census {objective:4, shipwreck:3, spawn:1} on seed 20260819, service light-up, spawn rule
+band/slope/clearance, same-seed exact reproduction of every site and the spawn, different-seed
+divergence). Live boot with the flag: **0 ERROR lines**. Regressions: `poi_check`,
+`resource_scatter_check`, `world_contract_check`, `verify_setup` all green.
+
+
 ### 2026-08-19 — Asset batch A-014: roads, and the piece that joins two kits (slate17)
 
 **What shipped, verified:** 13 GLBs in `assets/paths/exports/` (`tools/blender/build_path_set.py`,
