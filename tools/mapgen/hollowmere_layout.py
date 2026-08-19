@@ -1706,6 +1706,43 @@ def build_landmarks(placer: Placer, terrain: Terrain, markers: list[dict], light
                      yaw=yaw_along(x, z), spacing=1.0, note="waymark", force=True)
 
 
+def build_gilded_chests(placer: Placer, terrain: Terrain, markers: list[dict]) -> None:
+    """The Gilded Chest's world placement — `docs/ITEMS.md` §5/§6.4's "≈1–2 per island" rarity
+    budget (F-146: nothing in the game placed a chest at all, so this budget had no owner).
+
+    Named markers only, `"Chest_gilded_<n>"` — `autoload/chest_placement_service.gd` is the runtime
+    reader, and it tells a gilded chest from every other `kind == "loot"` marker by that prefix
+    alone, the same way the waymark loop above tells a `Cache_<n>` free scatter cache from
+    everything else. `validate()` re-derives the count from `markers` itself and fails the build if
+    it ever drifts outside 1–2, so the budget cannot silently grow or disappear under a future edit.
+
+    No `.tres`/mesh exists yet for the gilded tier's own look (`docs/ITEMS.md` §7, A-047 is still
+    queued) — this borrows `loot_chest_reinforced_closed`, the closest thing already in the loot kit
+    to "a chest that reads as expensive from a distance", as a placeholder. Swap the asset the day
+    A-047 ships; nothing else about the placement changes.
+
+    `force` stays False, unlike the waymark loop's — a rare chest earns its rarity by standing
+    somewhere the ordinary slope/water/clearance/road rules actually allow, not by being forced
+    through a wall. A candidate that fails those checks is skipped, not forced in, so the two
+    zones below are picked with room to spare rather than tuned to a single pixel.
+    """
+    candidates = [
+        ("SouthMarsh", -10.0, 72.0),
+        ("StoneMoor", 65.0, -35.0),
+        ("DeepForest", -40.0, -55.0),
+    ]
+    placed = 0
+    for zone, x, z in candidates:
+        if placed >= 2:
+            break
+        record = placer.place("loot", "loot_chest_reinforced_closed", zone, x, z,
+                               spacing=2.6, note="gilded chest (placeholder art, A-047)")
+        if record is None:
+            continue
+        placed += 1
+        markers.append(_marker(f"Chest_gilded_{placed}", "loot", x, terrain.height_at(x, z), z, zone))
+
+
 def ensure_coverage(placer: Placer, terrain: Terrain, markers: list[dict]) -> int:
     """Place one of every kit asset the scatter happened not to reach.
 
@@ -2125,6 +2162,28 @@ def validate(terrain: Terrain, placer: Placer, markers: list[dict],
             )
             if not near:
                 problems.append(f"{marker['name']} cannot be walked to from spawn")
+
+        # F-146: the Gilded Chest's placement budget (`docs/ITEMS.md` §6.4, "≈1-2 per island") is
+        # a COUNT, not a spacing rule — build_gilded_chests() can silently place fewer than
+        # intended (every candidate site rejected) or a future edit could add too many, and either
+        # is wrong in a way none of the spacing/reachability checks above would ever catch. Checked
+        # here, not as its own top-level pass, because reachability needs the same `seen` flood
+        # fill this branch already paid for.
+        gilded_chests = [m for m in markers if m["kind"] == "loot" and m["name"].startswith("Chest_gilded_")]
+        if not 1 <= len(gilded_chests) <= 2:
+            problems.append(
+                f"gilded chest budget is {len(gilded_chests)}, must be 1-2 per island (ITEMS.md §6.4)"
+            )
+        for marker in gilded_chests:
+            mx, _, mz = marker["pos"]
+            ix = int(round((mx - ORIGIN[0]) / CELL))
+            iz = int(round((mz - ORIGIN[1]) / CELL))
+            near = any(
+                0 <= ix + dx < NX and 0 <= iz + dz < NZ and seen[(iz + dz) * NX + ix + dx]
+                for dx in range(-3, 4) for dz in range(-3, 4)
+            )
+            if not near:
+                problems.append(f"{marker['name']} cannot be walked to from spawn")
     return problems
 
 
@@ -2146,6 +2205,8 @@ def main() -> None:
     build_landmarks(placer, terrain, markers, lights)
     landmark_props = len(placer.props)
     print(f"  landmarks: {landmark_props} props")
+
+    build_gilded_chests(placer, terrain, markers)
 
     # Two passes per zone, and the order is the whole reason a wood looks like a
     # wood. One pass draws from the full table by weight, and ground cover — which

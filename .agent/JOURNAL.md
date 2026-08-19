@@ -4232,3 +4232,18 @@ Notes along the way:
 Files: `autoload/unlock_service.gd`, `systems/loot/loot_table_def.gd`, `systems/loot/chest.gd`, `tools/unlock_check.gd`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/SPECS.md`, `docs/ARCHITECTURE.md`, `content/unlocks/unlock_deep_pocket.tres`
 
 Commit at time of writing: `cfeeb81`
+
+---
+
+### DONE · F-146 · lp · 2026-08-19T05:56:17+00:00
+
+**Nothing in the game places a chest, so the gilded tier's 1-2/island budget has no owner**
+
+ChestPlacementService (new autoload) bridges authored_world_marker (kind=loot) to live Chest nodes; 8 shipped Cache_ waymark markers now spawn openable free small-tier chests, and 2 new Chest_gilded_ markers close the 1-2/island budget with a generator-time assertion (tools/mapgen/hollowmere_layout.py validate()). Verified against the REAL Hollowmere boot: agent godot --script tools/chest_placement_check.gd -> failures=0 x2 (8/8 cache chests bridged, gilded budget in range, a free chest opens end to end, a gilded chest is refused without gilded_key). python3 tools/mapgen/hollowmere_layout.py -> HOLLOWMERE_VALIDATE PASS, JSON deterministic. agent godot --quit-after 120 clean. chest_check/loot_content_check/entity_check unaffected.
+
+Notes along the way:
+- Root cause: markers already existed for tier=small (8 Cache_ waymark caches, shipped since 4.7-era authoring) but nothing built a live Chest from them. Fix: autoload/chest_placement_service.gd bridges authored_world_marker (kind=loot) -> live Chest, same pattern as wellspring_service/crafting_service. Added 2 new Chest_gilded_ markers to tools/mapgen/hollowmere_layout.py (world/gen/layouts/hollowmere.json regenerated, deterministic, HOLLOWMERE_VALIDATE PASS) closing the 1-2/island budget gap with a real generator-time assertion. gilded is key-only (locked_by=gilded_key, cost 0) per ITEMS.md line 243; bog/strongbox get the coin-gate half of their or-a-key economy since Chest.gd charges cost+lock together, not either/or (no map content for those tiers yet, table is ready for whoever places them). tools/chest_placement_check.gd proves it against the REAL live Hollowmere boot (not synthetic-only): 8/8 cache chests bridged, gilded budget in range, a free chest actually opens, a gilded chest is actually refused without the key. 0 failures x2. Full boot clean (agent godot --quit-after 120), chest_check/loot_content_check/entity_check unaffected.
+
+Files: `autoload/chest_placement_service.gd`, `tools/mapgen/hollowmere_layout.py`, `world/gen/layouts/hollowmere.json`, `tools/chest_placement_check.gd`, `project.godot`, `autoload/chest_placement_service.gd.uid`, `tools/chest_placement_check.gd.uid`
+
+Commit at time of writing: `c2dec01`

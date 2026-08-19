@@ -35,6 +35,18 @@
       "at": "2026-08-18T22:14:11+00:00",
       "task": "F-144"
     },
+    "tools/audio/render_music.py": {
+      "agent": "lm",
+      "at": "2026-08-19T05:51:35+00:00",
+      "task": "F-176",
+      "token": null
+    },
+    "tools/audio/repro_check.py": {
+      "agent": "lm",
+      "at": "2026-08-19T05:51:35+00:00",
+      "task": "F-176",
+      "token": null
+    },
     "tools/door_check.gd": {
       "agent": "slate17",
       "at": "2026-08-18T22:24:36+00:00",
@@ -117,6 +129,16 @@
       ],
       "notes": [],
       "started": "2026-08-18T21:51:43+00:00"
+    },
+    "F-176": {
+      "agent": "lm",
+      "files": [
+        "tools/audio/render_music.py",
+        "tools/audio/repro_check.py"
+      ],
+      "notes": [],
+      "started": "2026-08-19T05:51:35+00:00",
+      "token": null
     }
   },
   "recent": {
@@ -379,6 +401,20 @@
       "at": "2026-08-19T04:48:28+00:00",
       "hash": "8dcb5e684009b55576f161ea600b7a64db2952b8c879627c615e66822dd236a7",
       "task": "F-159"
+    },
+    "autoload/chest_placement_service.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T05:56:17+00:00",
+      "hash": "81c41d6b18f973416557a57671ae2e5e8b302b4a0e49edfb801e05575b00a9d9",
+      "task": "F-146",
+      "token": null
+    },
+    "autoload/chest_placement_service.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-19T05:56:17+00:00",
+      "hash": "53e92da5f6c00af648b6e319dbcbf787330225fbe56aecde2d0c443c34db406a",
+      "task": "F-146",
+      "token": null
     },
     "autoload/combat_service.gd": {
       "agent": "lm",
@@ -1632,9 +1668,10 @@
     },
     "project.godot": {
       "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "cc6314b5004e323518ed6208e56d9f4ea7d68c5e8c47666a682dbf8413537c05",
-      "task": "5.5"
+      "at": "2026-08-19T05:56:17+00:00",
+      "hash": "084e3eee470346f131e4f5fb9f8e9a4258721b92a3e3471f38a282d7a85779ea",
+      "task": "F-146",
+      "token": null
     },
     "scenes/buildables/barricade.tscn": {
       "agent": "slate17",
@@ -1725,11 +1762,6 @@
       "at": "2026-08-18T22:17:53+00:00",
       "hash": "0b8e0945661eafc9782a07d8341feab2291d74a19d45c5c189840dc612189775",
       "task": "3.7"
-    },
-    "systems/building/buildable_piece.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T05:53:36+00:00",
-      "task": "F-085"
     },
     "systems/building/placement_validator.gd": {
       "agent": "lp",
@@ -2163,6 +2195,20 @@
       "at": "2026-08-18T14:23:28+00:00",
       "task": "F-107"
     },
+    "tools/chest_placement_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T05:56:17+00:00",
+      "hash": "01b43744806b2ad26b2b1c675a8c557c7babdb0962d44b1e0d37cbf8b7542273",
+      "task": "F-146",
+      "token": null
+    },
+    "tools/chest_placement_check.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-19T05:56:17+00:00",
+      "hash": "a50cdb2e6933466e1ddb30327889da70a9d9f475f8d018ef18c2206c69aecb68",
+      "task": "F-146",
+      "token": null
+    },
     "tools/chunk_seam_shot.gd": {
       "agent": "wick20",
       "at": "2026-08-18T20:59:26+00:00",
@@ -2462,6 +2508,13 @@
       "agent": "tine18",
       "at": "2026-08-18T17:43:02+00:00",
       "task": "2.1j"
+    },
+    "tools/mapgen/hollowmere_layout.py": {
+      "agent": "lp",
+      "at": "2026-08-19T05:56:17+00:00",
+      "hash": "6c185e55a249bd88ee36b733fc3307a5e148c9e2431d69d64e46c97f129285ee",
+      "task": "F-146",
+      "token": null
     },
     "tools/mesh_merge_check.gd": {
       "agent": "lp",
@@ -2891,6 +2944,13 @@
       "at": "2026-08-18T19:50:20+00:00",
       "hash": "a58a0c1a379c5198bb694cec343d356f53dedfc7b52d4741e3cbf272354acd1f",
       "task": "4.1"
+    },
+    "world/gen/layouts/hollowmere.json": {
+      "agent": "lp",
+      "at": "2026-08-19T05:56:17+00:00",
+      "hash": "ef234233a133fc2e16a41a7095e925b98e239b942e94aa4f2e3180dce7332468",
+      "task": "F-146",
+      "token": null
     },
     "world/gen/layouts/playtest_hollow.json": {
       "agent": "tine18",
@@ -5303,9 +5363,11 @@
       "title": "Auto-name collisions defeat the claim guard: the exhaustion fallback ignores the taken set, so concurrent sessions share one identity"
     },
     "F-146": {
+      "done_at": "2026-08-19T05:56:17+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Nothing in the game places a chest, so the gilded tier's 1-2/island budget has no owner"
     },
@@ -5544,7 +5606,7 @@
     "F-176": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "`tools/audio/render_music.py`'s ambient tracks are not byte-identical on re-render, contradicting `docs/AUDIO.md`'s \"reproduces the committed files bit-for-bit\" claim"
     },
@@ -5586,6 +5648,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`Wellspring._finish_recorruption()` has the same host-only-guard `EventBus` emit bug F-168 fixed for `wellspring_capped` \u2014 `wellspring_recorrupted` still only fires on the host"
+    },
+    "F-182": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "tools/unlock_check.gd's corrupt-save test provokes two engine ERROR lines with no EXPECTED_ERROR_PATTERNS declaration"
     }
   },
   "version": 1
