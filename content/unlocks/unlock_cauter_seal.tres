@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UnlockDef" format=3]
+
+[ext_resource type="Script" path="res://systems/unlocks/unlock_def.gd" id="1_cauter_seal"]
+
+[resource]
+script = ExtResource("1_cauter_seal")
+id = &"unlock_cauter_seal"
+category = &"powerup"
+display_name = "Cauterizing Kill"
+description = "Spends Salvage to mark the existing `cauter_seal` PowerupDef (content/powerups/cauter_seal.tres, heal 1 HP per melee kill in range, stacks to 5) as purchased. It is a POWERUP entry in content/loot/boss.tres, content/loot/strongbox.tres, content/loot/sunken.tres and content/loot/wellspring.tres — the widest reach of any row in this tree, so it is priced as the tree's current anchor, several deep runs' worth of Salvage rather than one. It doesn't raise a weapon's damage or a player's max HP; it turns aggressive melee itself into the sustain plan, which only matters if you keep closing distance and keep landing kills — a build commitment, not a buff."
+cost = 500
+gates_id = &"cauter_seal"

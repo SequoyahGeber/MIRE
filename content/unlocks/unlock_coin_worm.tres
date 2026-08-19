@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UnlockDef" format=3]
+
+[ext_resource type="Script" path="res://systems/unlocks/unlock_def.gd" id="1_coin_worm"]
+
+[resource]
+script = ExtResource("1_coin_worm")
+id = &"unlock_coin_worm"
+category = &"powerup"
+display_name = "Copper Appetite"
+description = "Spends Salvage to mark the existing `coin_worm` PowerupDef (content/powerups/coin_worm.tres, +150% coin gain, single stack) as purchased. It is a POWERUP entry in content/loot/gilded.tres, content/loot/sunken.tres and content/loot/wellspring.tres, so LootTableDef.roll()'s gate (D-111/F-173) applies at all three tiers at once until this is bought. Doesn't add a coin, doesn't spend one — it changes the RATE at which coins already in the run arrive, which is the kind of run you choose to have (rush the crafting tree, gear up fast, buy out chests) rather than a stat anyone is stronger for owning."
+cost = 150
+gates_id = &"coin_worm"

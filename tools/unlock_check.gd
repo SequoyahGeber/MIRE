@@ -83,6 +83,7 @@ func _run() -> void:
 
 	unlock_service.set(&"save_path", TEST_UNLOCK_PATH)
 
+	_check_authored_content()
 	_check_def_validation()
 	_check_loot_table_roll_gate()
 	await _check_spend_salvage()
@@ -125,6 +126,60 @@ func _check_wiring() -> bool:
 	check(def != null and String(def.get(&"gates_id")) == "deep_pocket",
 		"the worked example gates the real 'deep_pocket' PowerupDef id")
 	return true
+
+
+## F-236: the tree shipped 6.9 with exactly one row (the worked example) — a meta-progression loop
+## with nothing left to spend Salvage on past the first purchase. This checks every authored
+## content/unlocks/*.tres file, not just the worked example: each one validates clean, no two rows
+## silently shadow the same gates_id (is_content_unlocked() would only ever answer for whichever one
+## Dictionary iteration reaches first), and — the "confirm the seam is live before authoring against
+## it" instruction this task was given — every `category == "powerup"` row's `gates_id` actually
+## resolves to a real PowerupDef AND appears as a POWERUP-kind entry in at least one authored loot
+## table, so LootTableDef.roll()'s D-111/F-173 gate has something real to bite on rather than gating
+## a powerup no chest ever offers.
+func _check_authored_content() -> void:
+	print("\n== every authored content/unlocks/*.tres file (F-236) ==")
+	var defs: Dictionary = registry.call("unlock_defs")
+	check(defs.size() >= 7,
+		"the tree holds more than the single worked example (%d rows)" % defs.size())
+
+	var gated_powerup_ids: Dictionary[StringName, bool] = {}
+	for powerup_id: StringName in _all_loot_powerup_entry_ids():
+		gated_powerup_ids[powerup_id] = true
+
+	var seen_gates_ids: Dictionary[StringName, StringName] = {}
+	for id: StringName in defs.keys():
+		var def: Resource = defs[id]
+		check(def.call("validation_errors").is_empty(),
+			"%s passes UnlockDef.validation_errors()" % id)
+
+		var gates_id := StringName(String(def.get(&"gates_id")))
+		if gates_id != &"":
+			var earlier_owner: StringName = seen_gates_ids.get(gates_id, &"")
+			check(earlier_owner == &"",
+				"%s does not share gates_id '%s' with %s (the second would silently shadow the first)" %
+					[id, gates_id, earlier_owner])
+			seen_gates_ids[gates_id] = id
+
+		if String(def.get(&"category")) == "powerup":
+			check(gates_id != &"", "%s (category powerup) names a gates_id" % id)
+			check(bool(registry.call("has_powerup", gates_id)),
+				"%s's gates_id '%s' resolves to a real PowerupDef" % [id, gates_id])
+			check(gated_powerup_ids.has(gates_id),
+				"%s's gates_id '%s' appears as a POWERUP entry in a real loot table — the gate is live, not decorative" %
+					[id, gates_id])
+
+
+## Every item_id on a POWERUP-kind entry across every authored content/loot/*.tres table —
+## `LootTableDef.roll()`'s only live consumer of `is_content_unlocked()` (D-111/F-173).
+func _all_loot_powerup_entry_ids() -> Array[StringName]:
+	var ids: Array[StringName] = []
+	var loot_tables: Dictionary = registry.get("loot_tables")
+	for table: Resource in loot_tables.values():
+		for entry: Resource in (table.get(&"entries") as Array):
+			if entry != null and int(entry.get(&"kind")) == LOOT_ENTRY_SCRIPT.Kind.POWERUP:
+				ids.append(StringName(String(entry.get(&"item_id"))))
+	return ids
 
 
 func _check_def_validation() -> void:

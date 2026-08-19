@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UnlockDef" format=3]
+
+[ext_resource type="Script" path="res://systems/unlocks/unlock_def.gd" id="1_loping_gait"]
+
+[resource]
+script = ExtResource("1_loping_gait")
+id = &"unlock_loping_gait"
+category = &"powerup"
+display_name = "Long Stride"
+description = "Spends Salvage to mark the existing `loping_gait` PowerupDef (content/powerups/loping_gait.tres, +5% sprint speed per stack, stacks to 5) as purchased. content/loot/bog.tres's own loping_gait line is a POWERUP entry, so LootTableDef.roll()'s gate applies to it automatically (D-111/F-173): a Bog Chest never drops it until this is bought. The cheapest row in the tree on purpose — it is the first thing a new run of Salvage should buy, and it opens up a genuine sustained-sprint mobility build rather than making the existing kit stronger."
+cost = 75
+gates_id = &"loping_gait"

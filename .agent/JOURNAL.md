@@ -6018,3 +6018,42 @@ EnemyDef.lunge_speed_m_s + Enemy._tick_lunge(): a kind can now close ground duri
 Files: `systems/enemies/enemy.gd`, `systems/enemies/enemy_def.gd`, `tools/enemy_lunge_check.gd`
 
 Commit at time of writing: `9e56943`
+
+---
+
+### DONE · F-236 · lp · 2026-08-19T18:55:37+00:00
+
+**Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon**
+
+content/unlocks/ row of F-236 fixed: 6 new UnlockDef rows (unlock_loping_gait/coin_worm/bottomless_quiver/thin_step/night_pyre/cauter_seal), each category=powerup gating an existing PowerupDef confirmed live in a real content/loot/*.tres table, tree now 7 rows not 1. tools/unlock_check.gd's new _check_authored_content() generically validates every content/unlocks/*.tres (schema, no gates_id collisions, gates_id resolves to a real+live PowerupDef). Verify: agent godot --script tools/unlock_check.gd -> UNLOCK_CHECK failures=0. Docs: docs/SPECS.md gained its F-236 block, docs/DECISIONS.md D-111 gained a 2026-08-19 addendum (is_content_unlocked() still has exactly one consumer), docs/DELEGATION.md's 6.9 entry updated, docs/FINDINGS.md's F-236 unlocks row citation fixed (was pointing at the wrong D-number). F-236 stays OPEN overall: ranged_weapons/ (no task id yet) is the one row left; cycle_modifiers/ was already fixed by lm/6.3.
+
+Notes along the way:
+- Picked up a stalled lp session (quota wall) whose 6 unlock .tres + unlock_check.gd edits were already correct and verified (UNLOCK_CHECK failures=0). My work: fixed a mis-citation in FINDINGS.md (claimed D-146 records the is_content_unlocked() single-consumer gap; D-146 is actually task 6.3's Cycle Modifier count decision) by adding a real addendum to D-111 and pointing the citation there; wrote the missing docs/SPECS.md F-236 block (task 0); added a DELEGATION.md note under 6.9's entry for the next unlock author. Verified: unlock_check.gd failures=0, findings_numbering_check.gd failures=0 (open=15 resolved=234).
+
+Files: `content/unlocks`, `systems/unlocks/unlock_def.gd`, `tools/unlock_check.gd`
+
+Commit at time of writing: `4435e7c`
+
+---
+
+### REOPEN · F-236 · lp · 2026-08-19T18:56:46+00:00
+
+**Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon**
+
+Reopened (was marked done 2026-08-19 by lp).
+
+done was recorded before shipping; the .tres files were claimed at the content/unlocks directory level, not by exact path, so the pre-commit hook's D-031 exact-file-claim check blocked the commit. Re-claiming each .tres by exact path to commit cleanly, not new work.
+
+Commit at time of writing: `4435e7c`
+
+---
+
+### DONE · F-236 · lp · 2026-08-19T18:56:56+00:00
+
+**Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon**
+
+content/unlocks row of F-236 fixed: 6 new UnlockDef rows (unlock_loping_gait, unlock_coin_worm, unlock_bottomless_quiver, unlock_thin_step, unlock_night_pyre, unlock_cauter_seal), each category=powerup gating an existing PowerupDef confirmed live in a real content loot table, tree now 7 rows not 1. tools/unlock_check.gd's new _check_authored_content() generically validates every content/unlocks .tres file (schema, no gates_id collisions, gates_id resolves to a real and live PowerupDef). Verify: agent godot --script tools/unlock_check.gd -> UNLOCK_CHECK failures=0. Docs: docs/SPECS.md gained its F-236 block, docs/DECISIONS.md D-111 gained a 2026-08-19 addendum, docs/DELEGATION.md's 6.9 entry updated, docs/FINDINGS.md's F-236 unlocks row citation fixed. F-236 stays OPEN overall: ranged_weapons (no task id yet) is the one row left; cycle_modifiers was already fixed by lm on 6.3.
+
+Files: `content/unlocks/unlock_bottomless_quiver.tres`, `content/unlocks/unlock_cauter_seal.tres`, `content/unlocks/unlock_coin_worm.tres`, `content/unlocks/unlock_loping_gait.tres`, `content/unlocks/unlock_night_pyre.tres`, `content/unlocks/unlock_thin_step.tres`, `systems/unlocks/unlock_def.gd`, `tools/unlock_check.gd`
+
+Commit at time of writing: `4435e7c`

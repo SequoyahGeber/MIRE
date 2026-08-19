@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UnlockDef" format=3]
+
+[ext_resource type="Script" path="res://systems/unlocks/unlock_def.gd" id="1_thin_step"]
+
+[resource]
+script = ExtResource("1_thin_step")
+id = &"unlock_thin_step"
+category = &"powerup"
+display_name = "Between Steps"
+description = "Spends Salvage to mark the existing `thin_step` PowerupDef (content/powerups/thin_step.tres, +0.04s dodge i-frames per stack, stacks to 3) as purchased. It is a POWERUP entry in content/loot/strongbox.tres and content/loot/sunken.tres, so LootTableDef.roll()'s gate (D-111/F-173) applies at both. This is the tree's first pure-evasion row — it doesn't hit harder or carry more, it lets a dodge-timed playstyle actually work as intended instead of merely existing, the same 'variety, not power' shape as Deep Pockets and Long Stride but built around 3.8b's dodge window instead of movement or loot."
+cost = 300
+gates_id = &"thin_step"

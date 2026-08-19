@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UnlockDef" format=3]
+
+[ext_resource type="Script" path="res://systems/unlocks/unlock_def.gd" id="1_bottomless_quiver"]
+
+[resource]
+script = ExtResource("1_bottomless_quiver")
+id = &"unlock_bottomless_quiver"
+category = &"powerup"
+display_name = "Reaching Quiver"
+description = "Spends Salvage to mark the existing `bottomless_quiver` PowerupDef (content/powerups/bottomless_quiver.tres, 90% chance an arrow is saved on a hit, single stack) as purchased. It is a POWERUP entry in content/loot/gilded.tres, content/loot/sunken.tres and content/loot/wellspring.tres, so LootTableDef.roll()'s gate (D-111/F-173) applies at all three. Ranged play (task 5.3) lives or dies on ammo economy — without this, committing to a bow is a real resource bet every fight; owning it makes sustained archery a build a player can actually plan a run around, without the arrows hitting any harder."
+cost = 175
+gates_id = &"bottomless_quiver"

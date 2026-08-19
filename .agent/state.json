@@ -43,21 +43,6 @@
       "task": "F-199",
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
-    "assets/audio/music": {
-      "agent": "tine18",
-      "at": "2026-08-18T18:10:49+00:00",
-      "task": "7.2"
-    },
-    "assets/audio/music/ambient_day.ogg.import": {
-      "agent": "tine18",
-      "at": "2026-08-18T18:10:49+00:00",
-      "task": "7.2"
-    },
-    "assets/audio/music/ambient_night.ogg.import": {
-      "agent": "tine18",
-      "at": "2026-08-18T18:10:49+00:00",
-      "task": "7.2"
-    },
     "assets/audio/music/boss_stinger.ogg": {
       "agent": "lp",
       "at": "2026-08-19T04:35:12+00:00",
@@ -69,11 +54,6 @@
       "at": "2026-08-19T04:35:12+00:00",
       "hash": "e3556e7fc879a65aac3ef4181a169ec509f2ec3cb2d2268bc2686ef7413978e2",
       "task": "5.5"
-    },
-    "assets/audio/sfx": {
-      "agent": "tine18",
-      "at": "2026-08-18T18:11:45+00:00",
-      "task": "7.1"
     },
     "assets/audit/geometry_report.json": {
       "agent": "slate17",
@@ -1837,8 +1817,29 @@
     },
     "content/unlocks": {
       "agent": "lp",
-      "at": "2026-08-19T17:37:41+00:00",
+      "at": "2026-08-19T18:55:37+00:00",
       "hash": null,
+      "task": "F-236",
+      "token": null
+    },
+    "content/unlocks/unlock_bottomless_quiver.tres": {
+      "agent": "lp",
+      "at": "2026-08-19T18:56:56+00:00",
+      "hash": "4e2fe4b80d1692849fdcd578d21fc7d119638f0720bfb7d1dee6fa4098d3acaf",
+      "task": "F-236",
+      "token": null
+    },
+    "content/unlocks/unlock_cauter_seal.tres": {
+      "agent": "lp",
+      "at": "2026-08-19T18:56:56+00:00",
+      "hash": "e22f4989f83b7530fe96733d3780aa7d38f03cb2a07e29c5296a33fce14f263c",
+      "task": "F-236",
+      "token": null
+    },
+    "content/unlocks/unlock_coin_worm.tres": {
+      "agent": "lp",
+      "at": "2026-08-19T18:56:56+00:00",
+      "hash": "fa2a21ab2b48c079060e45908781a81c5ed06c6334a97ef0c86c50b98eda0515",
       "task": "F-236",
       "token": null
     },
@@ -1847,6 +1848,27 @@
       "at": "2026-08-19T05:46:33+00:00",
       "hash": "375bd1b0628b625a01446579b833ad9cb3018d8286c8658cdd3be3b931c2c375",
       "task": "F-173",
+      "token": null
+    },
+    "content/unlocks/unlock_loping_gait.tres": {
+      "agent": "lp",
+      "at": "2026-08-19T18:56:56+00:00",
+      "hash": "97e2ae8bceaea5c8fdcf8248e4bdc6c2effddd82267e833fd6cb98be949c02e2",
+      "task": "F-236",
+      "token": null
+    },
+    "content/unlocks/unlock_night_pyre.tres": {
+      "agent": "lp",
+      "at": "2026-08-19T18:56:56+00:00",
+      "hash": "8051b4c35858e942325e357227665c194f2f2c8361ca63d73e363a607fbd3e4a",
+      "task": "F-236",
+      "token": null
+    },
+    "content/unlocks/unlock_thin_step.tres": {
+      "agent": "lp",
+      "at": "2026-08-19T18:56:56+00:00",
+      "hash": "517df76d3382cfe570e2a32c8e66ea90731ac55c8b123db146ab29ca995d33e5",
+      "task": "F-236",
       "token": null
     },
     "core/commands/entity_selector.gd": {
@@ -2388,7 +2410,7 @@
     },
     "systems/unlocks/unlock_def.gd": {
       "agent": "lp",
-      "at": "2026-08-19T17:37:41+00:00",
+      "at": "2026-08-19T18:56:56+00:00",
       "hash": "c4b7c39be1ca9ccf33c0f67019c2da5fe6f36242427fc2402e08a1b37c2318c3",
       "task": "F-236",
       "token": null
@@ -2446,16 +2468,6 @@
       "hash": "408c867b7409be5095e68665416133b806f06b5d2e554ff208ffdaccc2923fad",
       "task": "F-163"
     },
-    "tools/atmosphere_look_shot.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:07:48+00:00",
-      "task": "F-115"
-    },
-    "tools/atmosphere_look_shot.gd.uid": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:07:48+00:00",
-      "task": "F-115"
-    },
     "tools/attunement_check.gd": {
       "agent": "lm",
       "at": "2026-08-18T19:15:45+00:00",
@@ -2480,11 +2492,6 @@
       "hash": "ba7a007a54f22175513991e81913a564d3e1bb850c10c04ac8f17316e22b0d4e",
       "task": "F-184",
       "token": null
-    },
-    "tools/audio/mire_audio.py": {
-      "agent": "tine18",
-      "at": "2026-08-18T18:10:49+00:00",
-      "task": "7.2"
     },
     "tools/audio/render_music.py": {
       "agent": "lp",
@@ -2745,11 +2752,6 @@
       "hash": "4516e3dbe7c1bc9e5c257c8a13cce67e52f391ca2f45406e63b1758d674039ad",
       "task": "F-196",
       "token": null
-    },
-    "tools/blender/world_bounds_check.py": {
-      "agent": "lp",
-      "at": "2026-08-18T18:02:23+00:00",
-      "task": "F-094"
     },
     "tools/bog_crawler_check.gd": {
       "agent": "lm",
@@ -3027,11 +3029,6 @@
       "hash": "ccf5b94ba59f531d565f11e91f8c0bdec77142583bff75fd664e1c1a8274ddf4",
       "task": "5.1"
     },
-    "tools/enemy_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T18:16:36+00:00",
-      "task": "F-111"
-    },
     "tools/enemy_content_check.gd": {
       "agent": "lm",
       "at": "2026-08-19T17:32:42+00:00",
@@ -3125,22 +3122,6 @@
       "hash": "078088870f1d6b98aedb780a624dfc746ef143641ce9b689d63345e4668299e8",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
-    },
-    "tools/godot_prepass_check.py": {
-      "agent": "lp",
-      "at": "2026-08-18T18:36:06+00:00",
-      "hash": "92854931e4789131065525de5df552dfd09344d5bbc59c0d6f3a578506273dbc",
-      "task": "F-119"
-    },
-    "tools/ground_fog_check.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:07:48+00:00",
-      "task": "F-115"
-    },
-    "tools/ground_fog_check.gd.uid": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:07:48+00:00",
-      "task": "F-115"
     },
     "tools/handshake_check.gd": {
       "agent": "lm",
@@ -3287,11 +3268,6 @@
       "hash": "714491d19f0ffb007341f1e5416e915b4e0c4287d8b2b454637fb150edfe6cff",
       "task": "F-158",
       "token": null
-    },
-    "tools/multimesh_readback_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T18:12:00+00:00",
-      "task": "F-103"
     },
     "tools/nav_bake_check.gd": {
       "agent": "yarrow21",
@@ -3593,7 +3569,7 @@
     },
     "tools/unlock_check.gd": {
       "agent": "lp",
-      "at": "2026-08-19T17:37:41+00:00",
+      "at": "2026-08-19T18:56:56+00:00",
       "hash": "b4ce61496d9ccdd5e4ce65d4af0a189334fac151052e12174121979ab38731ee",
       "task": "F-236",
       "token": null
@@ -3835,11 +3811,6 @@
       "hash": "e87a6c88d41690c7ef5235f1957d3089b73e88df7607f0dbe5f9d12d2b266e42",
       "task": "F-159"
     },
-    "world/environment/asset_vfx_library.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:15:00+00:00",
-      "task": "F-118"
-    },
     "world/environment/draw_policy.gd": {
       "agent": "nettle12",
       "at": "2026-08-19T06:46:23+00:00",
@@ -3853,36 +3824,6 @@
       "hash": "b8352835b9fe26e16e29209c081eddf2207f1264ce50532e871ca59e2bd66623",
       "task": "F-208",
       "token": null
-    },
-    "world/environment/ground_fog.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:07:48+00:00",
-      "task": "F-115"
-    },
-    "world/environment/ground_fog.gd.uid": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:07:48+00:00",
-      "task": "F-115"
-    },
-    "world/environment/ground_fog.gdshader": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:07:48+00:00",
-      "task": "F-115"
-    },
-    "world/environment/ground_fog.gdshader.uid": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:07:48+00:00",
-      "task": "F-115"
-    },
-    "world/environment/particle_billboard.gdshader": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:15:00+00:00",
-      "task": "F-118"
-    },
-    "world/environment/playtest_atmosphere.gd": {
-      "agent": "vane19",
-      "at": "2026-08-18T18:07:48+00:00",
-      "task": "F-115"
     },
     "world/gen/authored_world.gd": {
       "agent": "lm",
@@ -7472,9 +7413,11 @@
       "title": "A telegraphed attack's reach and tell length cannot deny \"just take one step back\" \u2014 no `EnemyDef` field makes retreating-through-a-tell fail, so that pressure isn't available to future enemy content"
     },
     "F-236": {
+      "done_at": "2026-08-19T18:56:56+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon"
     },
@@ -7539,6 +7482,27 @@
       "status": "todo",
       "tier": "F",
       "title": "The build verb refuses natural coordinates \u2014 nothing ground-snaps a command placement, so 'build wall_wood ~ ~ ~' reads as a bug"
+    },
+    "F-245": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "The whole Cycle Modifier feature is inert: seven modifiers, a weighted deck, and not one line of game code asks whether a modifier is active"
+    },
+    "F-246": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`tools/enemy_content_check.gd`'s strider-vs-crawler kiting proof fails at a clean HEAD, independent of any in-flight change"
+    },
+    "F-247": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "F-240's exact gap exists a second time in `BossMoveDef` \u2014 a boss's own telegraphed moves have no way to close ground during their own TELL either, and `Boss._tick_attack()` would not even inherit `EnemyDef.lunge_speed_m_s` if it did"
     }
   },
   "version": 1

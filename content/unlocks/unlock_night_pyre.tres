@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UnlockDef" format=3]
+
+[ext_resource type="Script" path="res://systems/unlocks/unlock_def.gd" id="1_night_pyre"]
+
+[resource]
+script = ExtResource("1_night_pyre")
+id = &"unlock_night_pyre"
+category = &"powerup"
+display_name = "Firebrand's Wager"
+description = "Spends Salvage to mark the existing `night_pyre` PowerupDef (content/powerups/night_pyre.tres, +8% melee damage at night per stack, stacks to 5) as purchased. It is a POWERUP entry in content/loot/boss.tres, content/loot/strongbox.tres and content/loot/sunken.tres, so LootTableDef.roll()'s gate (D-111/F-173) applies at all three. Its own description names the trade — 'everything out here can see exactly where you are' — so this unlock buys a risk/reward night-melee build, not a straight upgrade: strongest exactly when 2.11's night cycle makes the run most dangerous, which is what makes it a sidegrade and not a stat."
+cost = 400
+gates_id = &"night_pyre"
