@@ -3969,3 +3969,18 @@ Notes along the way:
 Files: `systems/waves/wave_spawner.gd`, `tools/wave_director_check.gd`, `tools/wave_director_check.gd.uid`
 
 Commit at time of writing: `df8512e`
+
+---
+
+### DONE · 7.5 · lm · 2026-08-19T04:02:20+00:00
+
+**Settings: graphics, audio, sensitivity, keybinds, FOV, accessibility basics**
+
+SettingsService autoload (user://settings.json via core/save/settings_save.gd, same JSON schema-versioned shape as SalvageSave/UnlockSave) plus real graphics/audio/sensitivity/FOV/keybind/accessibility controls filling ui/menu/settings_menu.gd's 6.10 shell. PlayerCamera reads sensitivity/invert-Y/FOV/reduce-camera-motion from it live; melee/ranged impact SFX route through a new SFX AudioServer bus; Music bus exists for a future MusicDirector. Verified: agent godot --script tools/settings_check.gd -> SETTINGS_CHECK failures=0 (51 assertions). No regressions: combat_check/ranged_combat_check/main_menu_check/build_check/combat_feel_check/verify_setup all failures=0. agent godot --quit-after 15 -> 0 ERROR: lines.
+
+Notes along the way:
+- F-051 trap: initially hand-edited project.godot to append the SettingsService autoload line (and included project.godot in my claim set), instead of using 'agent autoload <Name> <path>' which is the atomic, no-claim-needed way SPECS.md's own preamble names. git checkout'd the manual edit and re-did it via 'agent autoload SettingsService res://autoload/settings_service.gd' before shipping. project.godot stayed in my claim set from the original (over-broad) 'agent claim' call since there's no per-file unclaim, but the actual file write went through the atomic command, not my own edit.
+
+Files: `core/save/settings_save.gd`, `autoload/settings_service.gd`, `ui/menu/settings_menu.gd`, `entities/player/player_camera.gd`, `autoload/combat_service.gd`, `autoload/ranged_combat_service.gd`, `project.godot`, `tools/settings_check.gd`
+
+Commit at time of writing: `d428efe`

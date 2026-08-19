@@ -1,24 +1,9 @@
 {
   "claims": {
-    "autoload/combat_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T03:52:29+00:00",
-      "task": "7.5"
-    },
     "autoload/graphics_quality.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
-    },
-    "autoload/ranged_combat_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T03:52:29+00:00",
-      "task": "7.5"
-    },
-    "autoload/settings_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T03:52:29+00:00",
-      "task": "7.5"
     },
     "core/net/net_version.gd": {
       "agent": "slate17",
@@ -29,21 +14,6 @@
       "agent": "nettle12",
       "at": "2026-08-18T22:08:56+00:00",
       "task": "F-144"
-    },
-    "core/save/settings_save.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T03:52:29+00:00",
-      "task": "7.5"
-    },
-    "entities/player/player_camera.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T03:52:29+00:00",
-      "task": "7.5"
-    },
-    "project.godot": {
-      "agent": "lm",
-      "at": "2026-08-19T03:52:29+00:00",
-      "task": "7.5"
     },
     "systems/building/buildable_door.gd": {
       "agent": "slate17",
@@ -100,16 +70,6 @@
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
     },
-    "tools/settings_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T03:52:29+00:00",
-      "task": "7.5"
-    },
-    "ui/menu/settings_menu.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T03:52:29+00:00",
-      "task": "7.5"
-    },
     "world/environment/draw_policy.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:57:54+00:00",
@@ -138,27 +98,6 @@
       ],
       "notes": [],
       "started": "2026-08-18T22:23:08+00:00"
-    },
-    "7.5": {
-      "agent": "lm",
-      "files": [
-        "core/save/settings_save.gd",
-        "autoload/settings_service.gd",
-        "ui/menu/settings_menu.gd",
-        "entities/player/player_camera.gd",
-        "autoload/combat_service.gd",
-        "autoload/ranged_combat_service.gd",
-        "project.godot",
-        "tools/settings_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-19T03:59:26+00:00",
-          "by": "lm",
-          "text": "F-051 trap: initially hand-edited project.godot to append the SettingsService autoload line (and included project.godot in my claim set), instead of using 'agent autoload <Name> <path>' which is the atomic, no-claim-needed way SPECS.md's own preamble names. git checkout'd the manual edit and re-did it via 'agent autoload SettingsService res://autoload/settings_service.gd' before shipping. project.godot stayed in my claim set from the original (over-broad) 'agent claim' call since there's no per-file unclaim, but the actual file write went through the atomic command, not my own edit."
-        }
-      ],
-      "started": "2026-08-19T03:52:29+00:00"
     },
     "F-144": {
       "agent": "nettle12",
@@ -438,9 +377,9 @@
     },
     "autoload/combat_service.gd": {
       "agent": "lm",
-      "at": "2026-08-19T03:46:26+00:00",
-      "hash": "a51422be893d3d24bca093ca058921a982c541d8712c155ad8c34cb88b64af5c",
-      "task": "7.8"
+      "at": "2026-08-19T04:02:20+00:00",
+      "hash": "c90818c7412b644168df28e95294c09deace6a18301e384abde9ae6e81b0065c",
+      "task": "7.5"
     },
     "autoload/command_service.gd": {
       "agent": "lm",
@@ -536,9 +475,9 @@
     },
     "autoload/ranged_combat_service.gd": {
       "agent": "lm",
-      "at": "2026-08-19T03:46:26+00:00",
-      "hash": "7993fb17de54a537c79ff9f96f6a5e860ca74d8c60a8a32c53f34cf2ede078e4",
-      "task": "7.8"
+      "at": "2026-08-19T04:02:20+00:00",
+      "hash": "0e150d54dd9ca9385d54644545c996d52f2852d1d9df0c6bf9b98de36dee8b62",
+      "task": "7.5"
     },
     "autoload/ranged_combat_service.gd.uid": {
       "agent": "lp",
@@ -563,6 +502,12 @@
       "at": "2026-08-19T03:34:03+00:00",
       "hash": "ee22edfa1eb34ac2308c30ef687d553c15cde45d27cc99f0bca0a23c8663407d",
       "task": "6.9"
+    },
+    "autoload/settings_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T04:02:20+00:00",
+      "hash": "8f26f978f57863c43af3beaacd55e0692a42e52cf14daa600b775a3b1207e3db",
+      "task": "7.5"
     },
     "autoload/steam_lobby.gd": {
       "agent": "lp",
@@ -1626,6 +1571,12 @@
       "hash": "bdaba6cbaff423377b419b8a59e2fa2dcf3d25f7fde7947d6aad32be45da6fa5",
       "task": "6.6"
     },
+    "core/save/settings_save.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T04:02:20+00:00",
+      "hash": "889d0b0361d3b7869752a432ea02490302ffdc7be9b1e773853fda226cd7603a",
+      "task": "7.5"
+    },
     "core/save/unlock_save.gd": {
       "agent": "lm",
       "at": "2026-08-19T03:34:03+00:00",
@@ -1711,6 +1662,12 @@
       "at": "2026-08-18T14:37:19+00:00",
       "task": "F-075"
     },
+    "entities/player/player_camera.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T04:02:20+00:00",
+      "hash": "daf601b2cbcdcd8136acf048590c95caa65758df77f32405d611225d65a145d8",
+      "task": "7.5"
+    },
     "entities/player/player_controller.gd": {
       "agent": "lm",
       "at": "2026-08-18T21:57:34+00:00",
@@ -1735,9 +1692,9 @@
     },
     "project.godot": {
       "agent": "lm",
-      "at": "2026-08-19T03:34:03+00:00",
-      "hash": "cf2aed79ec74350ebd55ebfebefeb64e4968b9be9ec18acbd4c5058c0bc4a471",
-      "task": "6.9"
+      "at": "2026-08-19T04:02:20+00:00",
+      "hash": "93c9fc741d3954c0bdb553b28ddd96ad408ce90c4c91d2cdc44b124d6938fb7c",
+      "task": "7.5"
     },
     "scenes/buildables/barricade.tscn": {
       "agent": "slate17",
@@ -2682,6 +2639,12 @@
       "hash": "fefc8985eaf0ebee0b227dcbc8bb95a095d27ed49ed06ba77f6261621f107952",
       "task": "4.6"
     },
+    "tools/settings_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T04:02:20+00:00",
+      "hash": "0c70e909e4e2f1208646bc9c964d120a425f4ff9b3be9767449e6ea0e83c5e10",
+      "task": "7.5"
+    },
     "tools/setup_attunement_content.gd": {
       "agent": "lm",
       "at": "2026-08-18T19:15:45+00:00",
@@ -2848,9 +2811,9 @@
     },
     "ui/menu/settings_menu.gd": {
       "agent": "lm",
-      "at": "2026-08-19T03:19:09+00:00",
-      "hash": "733bf4aa36cdb747cdc6e753adbb44047d046856fdee52e134d04280ec673910",
-      "task": "6.10"
+      "at": "2026-08-19T04:02:20+00:00",
+      "hash": "1059934bd92dbaab340444f3d9f666dab19f06f23a366cb9a91a8187b6929231",
+      "task": "7.5"
     },
     "ui/menu/unlock_menu.gd": {
       "agent": "lm",
@@ -3977,9 +3940,11 @@
       "title": "UI/UX polish pass, consistent visual language, transitions"
     },
     "7.5": {
+      "done_at": "2026-08-19T04:02:20+00:00",
+      "done_by": "lm",
       "est": "4",
       "milestone": "M7",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T1",
       "title": "Settings: graphics, audio, sensitivity, keybinds, FOV, accessibility basics"
     },

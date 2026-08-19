@@ -8,6 +8,10 @@ extends Node3D
 ## which is why yaw lives on the body and only pitch lives on this node.
 ##
 ## Expects to be a child of the player body, with a Camera3D child of its own.
+##
+## `look_sensitivity`, `invert_y`, resting FOV and whether shake/sprint-FOV run at all are
+## overridden from `SettingsService` (task 7.5) if that autoload is present — see `_apply_settings()`
+## — so the `@export` values below are only the fallback for a scene run without it (e.g. a check).
 
 @export_group("Look")
 ## Degrees of rotation per pixel of mouse movement.
@@ -34,6 +38,11 @@ extends Node3D
 var _body: Node3D
 var _base_fov: float = 75.0
 var _sprinting: bool = false
+## Task 7.5's "Reduce Camera Motion" accessibility toggle, read from SettingsService. Suppresses
+## both the sprint FOV pulse and impact shake, the two things this class moves the camera on its
+## own without the player's input — a motion-sensitive player can turn off exactly those and keep
+## everything else.
+var _reduce_motion: bool = false
 
 ## Impact shake state. Client-local presentation, never networked (see the class docs above); decay
 ## is integrated from elapsed time rather than lerped per frame, so it is framerate-independent.
@@ -48,6 +57,30 @@ func _ready() -> void:
 	_base_fov = camera.fov
 	_camera_rest_position = camera.position
 	set_process(false)
+	_apply_settings()
+	var settings: Node = get_node_or_null(^"/root/SettingsService")
+	if settings != null and settings.has_signal("settings_changed"):
+		settings.connect("settings_changed", _apply_settings)
+
+
+## Pulls look sensitivity, invert-Y, resting FOV and the "reduce camera motion" toggle from
+## SettingsService (task 7.5) if present, overriding this node's own @export defaults. Called once
+## at ready and again on every `settings_changed` — the settings menu can be opened mid-run, and
+## this is a first-person camera, not a value that should need a scene reload to take effect.
+func _apply_settings() -> void:
+	var settings: Node = get_node_or_null(^"/root/SettingsService")
+	if settings == null:
+		return
+	if settings.has_method("look_sensitivity"):
+		look_sensitivity = float(settings.call("look_sensitivity"))
+	if settings.has_method("invert_y"):
+		invert_y = bool(settings.call("invert_y"))
+	if settings.has_method("fov_degrees"):
+		_base_fov = float(settings.call("fov_degrees"))
+		if not _sprinting:
+			camera.fov = _base_fov
+	if settings.has_method("reduce_camera_motion"):
+		_reduce_motion = bool(settings.call("reduce_camera_motion"))
 
 
 ## Called by the owning PlayerController with raw mouse motion. Yaw goes to the body so that movement
@@ -80,7 +113,7 @@ func set_sprinting(sprinting: bool) -> void:
 ## nothing and is never sent anywhere. Overlapping impacts take the stronger shake and restart it,
 ## rather than summing into a blur.
 func add_shake(magnitude: float, duration: float) -> void:
-	if magnitude <= 0.0 or duration <= 0.0:
+	if _reduce_motion or magnitude <= 0.0 or duration <= 0.0:
 		return
 	if _shake_elapsed < _shake_duration and magnitude < _shake_magnitude:
 		magnitude = _shake_magnitude
@@ -94,7 +127,7 @@ func shake_remaining() -> float:
 
 
 func _process(delta: float) -> void:
-	if sprint_fov_boost > 0.0:
+	if sprint_fov_boost > 0.0 and not _reduce_motion:
 		var target_fov: float = _base_fov + (sprint_fov_boost if _sprinting else 0.0)
 		# Framerate-independent exponential smoothing (F-002, ARCHITECTURE.md §5a rule 6). The naive
 		# `lerpf(a, b, speed * delta)` form converges at different rates at 60 and 240 fps, so the
@@ -103,7 +136,8 @@ func _process(delta: float) -> void:
 		# here rather than left as a documented cosmetic exception because it is the shape most
 		# likely to be copy-pasted into something that does affect gameplay.
 		camera.fov = lerpf(camera.fov, target_fov, 1.0 - exp(-fov_lerp_speed * delta))
-	_apply_shake(delta)
+	if not _reduce_motion:
+		_apply_shake(delta)
 
 
 func _apply_shake(delta: float) -> void:

@@ -532,6 +532,10 @@ func _play_impact(position: Vector3, weapon: RangedWeaponDef) -> void:
 	var player := AudioStreamPlayer3D.new()
 	player.name = "RangedImpact"
 	player.stream = stream
+	# Task 7.5: routed through the SFX bus so the settings menu's SFX slider covers it. The bus is
+	# created by SettingsService at boot; a nonexistent bus name just falls back to Master, so this
+	# is harmless if that autoload is ever absent (e.g. an isolated scene test).
+	player.bus = &"SFX"
 	player.max_distance = weapon.impact_audible_range_m
 	player.unit_size = 6.0
 	get_tree().root.add_child(player)
