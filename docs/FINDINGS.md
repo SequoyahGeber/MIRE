@@ -555,32 +555,6 @@ needs `autoload/graphics_quality.gd` free to claim.
 
 ---
 
-### F-144 · Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance
-
-**Area:** perf · **Severity:** high · **Found:** 2026-08-18 by nettle12
-
-Two levers that the frame-budget work (F-090/F-098) named but never pulled, found while looking for
-what is left after dynamic resolution shipped.
-
-1. NO MESH LOD ANYWHERE. `visibility_range_begin/end` and `lod_bias` appear nowhere in the
-   codebase. The terrain has a real LOD ladder (ChunkMesher LOD0/1/2), but every prop, every
-   flora MultiMesh and every harvestable renders its full triangle count at any distance, and
-   again in each of the four shadow cascades. On a weak GPU this is the dominant cost.
-
-   The merged prop meshes make it worse than the default: `AuthoredWorld._mesh_parts` builds an
-   ArrayMesh at runtime with `add_surface_from_arrays`, and a runtime ArrayMesh carries no LOD
-   levels at all — so even the automatic LOD Godot generates for imported meshes is discarded by
-   the very merge that made the map shippable.
-
-2. F-100's per-chunk cross-asset batching never landed. state.json marks F-100 done; the
-   finding text still says BLOCKED on F-097, and F-097 resolved on 2026-08-18. `_build_props`
-   still groups by `(chunk, kit, asset)`, one MultiMesh per group.
-
-Measure before and after with tools/render_census.gd (added by this finding) and
-tools/perf_probe.gd.
-
----
-
 ### F-149 · F-141's docs edits got committed under F-144's message — a concurrent agent's plain 'git commit' absorbs another lane's staged-but-uncommitted files
 
 **Area:** coordination · **Severity:** low · **Found:** 2026-08-18 by lm
@@ -850,7 +824,275 @@ finding) already uses correctly.
 
 ---
 
+### F-186 · A chat session that dies holds its claims forever — agent reap only frees lane claims, and a chat has no liveness signal at all
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by nettle12
+
+`agent reap` is documented as the backstop for claims left behind by a hard exit: "A lane killed
+hard — closed laptop, OOM, a hung CLI — leaves its claims behind, and every other lane that needs
+those files is blocked behind a corpse." Its body only ever considers lanes:
+
+    if holder in (n.lower() for n in LANE_NAMES) and holder not in alive:
+
+A lane is checkable because `lanes.json` carries its pid. A chat session carries nothing — the token
+in `sessions.json` records when the session *registered* and is never updated again — so there is no
+way to distinguish an abandoned chat from a busy one, and `reap` does not try. Claims left by a dead
+chat are therefore permanent until a human notices and runs `agent drop` by hand.
+
+**This is currently costing real work, and it has already recurred.** Two tasks have held 19 files
+between them for roughly 8.5 hours with their sessions idle:
+
+- **F-144** (`nettle12`, in flight since 21:51) holds 12 files, including
+  `world/gen/undergrowth.gd`, `world/gen/authored_world.gd`, `autoload/graphics_quality.gd` and
+  `core/render/mesh_merge.gd`. Its files were last modified at 15:07–15:10 local, ~8.4 hours before
+  this was written.
+- **3.7** (`slate17`, in flight since 22:23) holds 7 files including `core/net/net_version.gd` and
+  `tools/handshake_check.gd`.
+
+The downstream cost is in the journal, not hypothetical:
+
+- The enemy-LOD task had to scope itself away from F-144's props/harvestable/undergrowth half
+  because "F-144 (nettle12, 6h in flight) already holds every file [it] needs" — recorded as D-115.
+- The display-name task shipped without a PROTOCOL_VERSION bump because "net_version.gd held by
+  slate17's 3.7 all session", filing F-178 and continuing the chain D-102 had already started.
+- LP's queued **F-112** order claims `world/gen/undergrowth.gd`, which F-144 holds. LP's next wake is
+  08:50; that order cannot run.
+
+So the same two corpses have forced at least two documented scope-splits and two follow-up findings,
+and are set to burn a lane wake-up.
+
+**The fix has two halves.** A chat needs a liveness signal — a `seen` timestamp refreshed on each
+`agent` invocation, rate-limited so the pre-commit hook does not rewrite `sessions.json` on every
+command. Then `reap` can judge a chat the way it already judges a lane.
+
+**Freeing a chat's claims must stay conservative and explicit**, which is the important difference
+from the lane path: a lane is dead or alive, but a chat can be legitimately idle for hours while its
+human is at lunch, and its uncommitted edits are still sitting in the tree. Releasing the claim does
+not remove those edits — it removes the protection around them. So staleness should be *reported*
+by default and only released when asked for with an explicit threshold.
+
+---
+
+### F-187 · Props are 1,057 MultiMesh groups averaging 2.7 copies — F-100's cross-asset chunk merge is still not built, and now has a measured constraint
+
+**Area:** perf · **Severity:** medium · **Found:** 2026-08-19 by nettle12
+
+F-144 left this on the table deliberately, with numbers it did not have before.
+
+`AuthoredWorld._build_props` still groups by `(chunk, kit, asset)`: 2,869 props become 1,057
+MultiMesh groups, 2.71 copies each, and 495 of those groups hold exactly ONE copy. That is
+instancing overhead with none of instancing's payoff — F-100's original complaint, still true.
+PropVisuals is ~2,584 of the map's 4,855 built opaque surfaces.
+
+What F-100's design did not know, and what a second attempt needs:
+
+- **Coarsening the grouping key is not the fix.** Grouping per 2x2 super-chunk drops 1,057 groups
+  to 689, but `visibility_range` measures camera distance to the node's ORIGIN, so a larger group
+  culls as a unit from a centre that is further from its own members. At the shipped 32 m chunk a
+  group's half-diagonal is already 22 m against an 80 m small-prop range. Coarsening trades the
+  draw-distance win for the draw-count win rather than adding to it. A merge that bakes transforms
+  into one static mesh per chunk does not have this problem — the node's AABB is then exact.
+
+- **Merging across assets must preserve two per-asset bindings.** `EnvironmentVfx._apply_sway`
+  sets a material override per surface, keyed on the node's `asset` meta, and `_register_emitter`
+  reads a `placements` meta off it. So the merge buckets by (sway profile, material appearance),
+  not by material alone, and emitter-bearing assets keep their own node. Measured on Hollowmere:
+  of 2,482 props in PropVisuals, 794 are batch-harvestable and must stay in a MultiMesh (their
+  copies are hidden individually by zeroing one instance transform), 335 carry an emitter, ~966
+  carry sway across three profiles, ~387 are inert. So roughly 1,688 are mergeable.
+
+- **Material buckets are already cheap.** F-144 keys buckets on a material's appearance rather
+  than its name, which collapsed 201 named materials to 85 distinct ones across 218 prop assets,
+  with no albedo texture anywhere in the kit. A per-chunk merge would therefore produce few
+  buckets per chunk, not many.
+
+Measure any attempt with `tools/frame_cost_check.gd` (real RenderingServer counters, sweeps the
+presets), not with `tools/render_census.gd` alone — the census is a no-frustum upper bound and
+overstates changes roughly fourfold.
+
+---
+
+### F-188 · Runtime-merged meshes have no shadow mesh, though every imported .glb gets one
+
+**Area:** perf · **Severity:** low · **Found:** 2026-08-19 by nettle12
+
+Every kit .glb imports with `meshes/create_shadow_meshes=true`, so the import pipeline builds each
+one a position-only, welded shadow mesh that the renderer uses instead of the full vertex format
+during shadow passes. `core/render/mesh_merge.gd` builds its merged meshes at runtime through
+`ImporterMesh`, and nothing generates a shadow mesh for them — `ArrayMesh.create_shadow_mesh()` is
+not exposed to scripting, though the `shadow_mesh` property itself is settable.
+
+This is why F-144 did NOT route `world/gen/undergrowth.gd` through the shared merge: flora exports
+are genuinely one part each with distinct materials, so the merge collapses nothing there (2
+surfaces to 2, 3 to 3, triangles identical), and it would have cost them the shadow meshes their
+import already generates. For the prop and harvestable kits the merge is a large win and pays for
+the loss.
+
+The fix is to build the shadow mesh by hand — same surfaces, ARRAY_VERTEX and ARRAY_INDEX only —
+and assign it to `shadow_mesh`. Shadow passes are a large share of the frame's primitives
+(1.18M total at preset high, of which the shadow pass is most), so it is worth measuring. It needs
+a real look to confirm shadows are unchanged: a malformed shadow mesh shows up as wrong shadows,
+not as an error, and `tools/frame_cost_check.gd` would report it only as a suspiciously large
+primitive drop.
+
+---
+
+### F-189 · File claims have become the bottleneck D-011 named as its own reversal trigger — one claim blocked four consecutive tasks from bumping PROTOCOL_VERSION
+
+**Area:** coordination · **Severity:** high · **Found:** 2026-08-19 by reed16
+
+D-011 chose file claims over git worktrees and wrote its own invalidation condition:
+
+> **Would change my mind:** agents working concurrently often enough that file claims become a
+> bottleneck — at which point move to git worktrees per agent instead of claims.
+
+**That condition has fired, repeatedly, and no one has called it.** Four separate findings record the
+same single cause: `core/net/net_version.gd` and `tools/handshake_check.gd` were held by lane
+slate17's task 3.7 claim across four consecutive sessions, so four tasks each shipped a new RPC with
+no `PROTOCOL_VERSION` bump and filed a finding instead:
+
+| Finding | Task | RPCs shipped un-versioned |
+|---|---|---|
+| F-161 | 5.3 | `net_request_shot`, `net_shot_fired`, `net_shot_resolved` |
+| F-165 | 6.5 | the two extraction RPCs |
+| F-169 | 6.7 | `net_run_defeated` |
+| F-178 | F-157 | the three display-name RPCs |
+
+F-178 states the sequence outright — "each was blocked by the same claim, in the same order — task
+5.3, then 6.5, then 6.7, then this". **The agents saw the pattern and still filed a fourth instance
+rather than escalating to the cause**, which is the part worth keeping: the protocol gives an agent
+no way to say "the rule itself is now the problem", so each one dutifully wrote it up as bookkeeping
+and moved on. Two decisions (D-100, D-102) ratified shipping un-versioned as an acceptable transient
+risk, which made the workaround feel settled rather than symptomatic.
+
+**It is not confined to netcode.** The same shape has cost work elsewhere:
+
+- **F-130** (`gfx` shim migration) has been blocked across *two* separate sessions by
+  `autoload/graphics_quality.gd` being held for F-144 — the second session wrote a whole regression
+  guard (`tools/command_shim_check.gd`) around the file it could not edit.
+- **D-115** exists only to record a scope split forced by F-144 holding every file a task needed.
+- **F-149** is the same shared-state problem one layer down: the git index has no per-agent
+  partition, so one agent's plain `git commit` absorbed another's staged docs edits.
+- This session alone: F-149 blocked (`.agent/bin/agent` held for F-186), F-140's docs half blocked
+  (`docs/FINDINGS.md` held for F-183), and the queued F-112 order still points at
+  `world/gen/undergrowth.gd` while another session holds it.
+
+**Scale, measured rather than asserted:** at the moment of filing, **28 files are locked by 4
+concurrent in-flight tasks** across three chat sessions plus the LM lane. D-011 was written on
+2026-08-15 for "three agents (Claude Code, Codex, human)" working mostly one at a time.
+
+**What this finding is not:** an argument that claims were the wrong call in August. They were right,
+and the mechanical enforcement (pre-commit `agent check`) is what made concurrency safe enough to
+scale to the point where it now hurts. This is the trigger firing, not a design error.
+
+**What would close this,** in D-011's own terms — a decision, not a patch:
+
+1. **Worktrees per agent**, D-011's own named remedy. Real cost: each worktree needs its own Godot
+   import cache, which F-044 already flags as a contended shared resource, and `agent godot`'s lock
+   assumes one checkout.
+2. **Narrow the claim to the hunk, not the file,** for append-only files like `net_version.gd` —
+   its whole edit shape is "add a line, bump a constant", which never truly conflicts.
+3. **Exempt append-only coordination files from claims** the way F-006 already exempts `docs/`, and
+   let the pre-commit hook detect real overlap instead.
+4. **Do nothing structural, but make the bump un-skippable** — hollow7's in-flight F-161 work on
+   `core/net/rpc_manifest.gd` + `tools/rpc_manifest_check.gd` may already deliver this. If a check
+   fails when an RPC exists without a manifest entry, the fifth instance cannot ship quietly even
+   though the bottleneck remains.
+
+Filed by reed16 (director) rather than fixed here: choosing between these is a D-011-level call, and
+option 4 is already someone's live task.
+
+---
+
 ## Resolved
+
+### F-144 · Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance — **fixed**
+
+**Area:** perf · **Severity:** high · **Found:** 2026-08-18 by nettle12
+
+Two levers that the frame-budget work (F-090/F-098) named but never pulled, found while looking for
+what is left after dynamic resolution shipped.
+
+1. NO MESH LOD ANYWHERE. `visibility_range_begin/end` and `lod_bias` appear nowhere in the
+   codebase. The terrain has a real LOD ladder (ChunkMesher LOD0/1/2), but every prop, every
+   flora MultiMesh and every harvestable renders its full triangle count at any distance, and
+   again in each of the four shadow cascades. On a weak GPU this is the dominant cost.
+
+   The merged prop meshes make it worse than the default: `AuthoredWorld._mesh_parts` builds an
+   ArrayMesh at runtime with `add_surface_from_arrays`, and a runtime ArrayMesh carries no LOD
+   levels at all — so even the automatic LOD Godot generates for imported meshes is discarded by
+   the very merge that made the map shippable.
+
+2. F-100's per-chunk cross-asset batching never landed. state.json marks F-100 done; the
+   finding text still says BLOCKED on F-097, and F-097 resolved on 2026-08-18. `_build_props`
+   still groups by `(chunk, kit, asset)`, one MultiMesh per group.
+
+Measure before and after with tools/render_census.gd (added by this finding) and
+tools/perf_probe.gd.
+
+---
+
+**Resolved 2026-08-19 by nettle12.** Hollowmere's frame, measured with the RenderingServer's own counters at a pinned 1280x720
+(`tools/frame_cost_check.gd`, added here), this tree against 2f07f91:
+
+               draw calls              primitives                video memory
+  high      5,986 -> 5,124  (-14%)   1,808,509 -> 1,182,188  (-35%)   239 -> 243 MB
+  medium    5,543 -> 4,570  (-18%)   1,532,132 ->   834,933  (-46%)   226 -> 230 MB
+  low       3,520 -> 2,811  (-20%)     897,986 ->   387,975  (-57%)   170 -> 174 MB
+
+Four changes, largest first.
+
+1. **Live harvestables were never merged.** `HarvestableDef.active_state_scenes` points straight at
+   the kit .glb, and `harvest_tree_intact` is 56 separate MeshInstance3D nodes — so every tree the
+   player can chop cost 56 draw calls. Forty-four of them were 2,464 of the map's 8,354 built
+   opaque surfaces: 29% of the frame, from one asset. The world builder had always merged that same
+   .glb to 4 surfaces before stamping it as scenery; nothing merged it here. The merge moved to
+   `core/render/mesh_merge.gd`, cached per source file, and `Harvestable` collapses its state scene
+   through it. 2,464 -> 176.
+
+2. **The merge de-indexed.** It walked each source surface's index list and pushed a fresh vertex
+   per entry, discarding the artist's vertex reuse and leaving an unindexed result — and
+   `ImporterMesh.generate_lods` produces nothing at all from an unindexed surface. So the merge that
+   made the map shippable was also what denied every merged prop a LOD ladder. Rebasing each
+   surface's own indices fixes both; meshes carrying LODs went 71 -> 247.
+
+3. **Nothing had a draw distance except the undergrowth**, which had already proved the rule.
+   `world/environment/draw_policy.gd` sizes one from the mesh's own AABB — by geometry, not by an
+   asset list, so it holds for generated worlds — and drops shadow casting below 1.2 m.
+
+4. **`Viewport.mesh_lod_threshold` was at the engine default of 1.0 px**, which makes a LOD ladder
+   almost never fire. low takes 4.0, medium 2.0, high restores the default. This is most of why the
+   low preset gained the most.
+
+Also: surface buckets are keyed on what a material LOOKS like rather than what it is named. The kit
+is flat-shaded palette art — 218 prop assets, 201 named materials, not one albedo texture, only 85
+distinct appearances — so name-keying was splitting surfaces that render identically.
+
+Two contracts had been resting silently on prop batches standing at the world origin, and F-144
+moved them to their group centroid so `visibility_range` had a distance worth measuring. Both are
+now asserted rather than assumed: `HarvestWorld`'s `batch_transforms` (harvest_batch_check pushes
+the recorded placement back through its batch node) and `EnvironmentVfx`'s `placements` meta, which
+is consumed as `global_transform * entry` and so was always local-space — world-space entries would
+have thrown every firefly and falling leaf a full centroid off its prop with all sixteen count
+assertions still green. All 335 sites now check against the layout; worst error 0.00 m.
+
+Not done, filed instead: F-187 (cross-asset chunk merge, with the sway/emitter constraints that
+make F-100's design incomplete) and F-188 (merged meshes have no shadow mesh).
+
+Two corrections worth carrying forward. `tools/render_census.gd` models culling and is a
+360-degree, no-frustum UPPER BOUND: the same change reads as 56% there and 15% in the renderer's
+counters, because frustum culling overlaps heavily with distance culling. And F-098's estimate of
+the shadow pass — casters x cascades — overstates it roughly fourfold: PSSM splits are nested
+slices, a caster lands in one of them, and casters past the light's 85 m never enter the pass at
+all.
+
+Routing `world/gen/undergrowth.gd` through the shared merge was tried and reverted. It measured as
+a 2,034 -> 1,050 draw win, and the win was entirely an artifact of a bug in this change's own
+attribute handling. With that fixed, flora merges 2 surfaces to 2 and 3 to 3 with identical
+triangle counts: F-095's note was simply correct that the flora exports are already one part each.
+
+Verified: hollowmere PASS, flora PASS, settings 62 assertions, 462 harvest assertions across four
+checks, environment VFX failures=0, merged geometry triangle-for-triangle identical to source.
 
 ### F-182 · tools/unlock_check.gd's corrupt-save test provokes two engine ERROR lines with no EXPECTED_ERROR_PATTERNS declaration — **fixed**
 
