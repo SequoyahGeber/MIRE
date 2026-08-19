@@ -3893,3 +3893,18 @@ Notes along the way:
 Files: `core/events/event_bus.gd`, `systems/extraction/extraction_ship.gd`, `core/save/salvage_save.gd`, `autoload/salvage_service.gd`, `tools/salvage_check.gd`
 
 Commit at time of writing: `900ef93`
+
+---
+
+### DONE · 6.7 · lm · 2026-08-19T03:06:45+00:00
+
+**Lose condition: team wipe / island consumed, defeat flow**
+
+DefeatService (host-authoritative) autoload detects team wipe (every present player down) and island-consumed (MireGrid.consumed_fraction()>=0.97 at >=0.95 corruption), fires EventBus.run_wiped via a broadcast RPC driven from a replicated-property setter on every peer (never host-only). PlayerHealth freezes bleed-out/respawn/damage once the run is over. DefeatHud shows a full-screen defeat overlay with cause + Cycle + banked Salvage. Verified: agent godot --script tools/defeat_check.gd -> DEFEAT_CHECK failures=0 (24 assertions). Regressions green: player_health_check, player_vitals_check, extraction_check, salvage_check, mire_grid_check, mire_interaction_check, wellspring_recorruption_check, cycle_check, cycle_modifier_check, wave_spawner_check. agent godot --quit-after 15 -> 0 ERROR: lines.
+
+Notes along the way:
+- DefeatService (host-authoritative) + DefeatHud shipped. Team wipe = every present peer host_is_alive()==false (down alone is enough, no separate revive-available check). Island consumed = MireGrid.consumed_fraction() >= 0.97 of grid at >=0.95 corruption. Verdict fires via broadcast RPC net_run_defeated from a replicated-property setter (D-109), never a host-only guard — defeat_check.gd's last section calls net_run_defeated directly to prove the client-side code path independently. PlayerHealth freezes on run_wiped (_run_over) so a wipe can't auto-respawn itself. tools/defeat_check.gd: 24/24 pass. 10 regression checks green, 0 ERROR on full boot.
+
+Files: `autoload/defeat_service.gd`, `ui/hud/defeat_hud.gd`, `world/mire/mire_grid.gd`, `systems/health/player_health.gd`, `tools/defeat_check.gd`, `systems/health/downed_state.gd`
+
+Commit at time of writing: `8ee179f`

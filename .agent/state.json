@@ -404,6 +404,12 @@
       "at": "2026-08-18T14:10:44+00:00",
       "task": "F-099"
     },
+    "autoload/defeat_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T03:06:45+00:00",
+      "hash": "7c04b0ff03544a57d14ab9f93e0b159123979f1c2970a2b110ed475b1c3c43ab",
+      "task": "6.7"
+    },
     "autoload/enemy_world.gd": {
       "agent": "lp",
       "at": "2026-08-18T22:57:40+00:00",
@@ -1892,11 +1898,17 @@
       "hash": "b9e79a14c5b18194f90cb81a87dc86c70699fbb9cdb2a46843395620a8034528",
       "task": "3.10"
     },
+    "systems/health/downed_state.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T03:06:45+00:00",
+      "hash": "fd6b98630cc05f737bb74a2aaa46c8ad328cdddc853f59fdf7cb65c0129d99a2",
+      "task": "6.7"
+    },
     "systems/health/player_health.gd": {
       "agent": "lm",
-      "at": "2026-08-19T01:01:42+00:00",
-      "hash": "8da74258678a355e43f58cb3f634f0af97787fae128022cc0ebf72fb140c3b69",
-      "task": "4.11"
+      "at": "2026-08-19T03:06:45+00:00",
+      "hash": "1f2987516d6636a22d3a1dbf54de9ec37dd603a0df28e633e1c5fba7930adf3a",
+      "task": "6.7"
     },
     "systems/inventory/item_def.gd": {
       "agent": "flint5",
@@ -2201,6 +2213,12 @@
       "at": "2026-08-19T01:57:43+00:00",
       "hash": "a44d807d6bd6e43c558c47f54b2afc9256a750eba1e0e83f0190c9dcb10611b8",
       "task": "6.2"
+    },
+    "tools/defeat_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T03:06:45+00:00",
+      "hash": "01848958ae92752e0972baa0d9e175ea463be9ed00b955a72474f93082432cdd",
+      "task": "6.7"
     },
     "tools/dimension_check.gd": {
       "agent": "lm",
@@ -2679,6 +2697,12 @@
       "at": "2026-08-18T14:10:44+00:00",
       "task": "F-099"
     },
+    "ui/hud/defeat_hud.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T03:06:45+00:00",
+      "hash": "916185bb7638612b92db88bac42e78d81202e0b4fc4a540121c9de618dc72081",
+      "task": "6.7"
+    },
     "ui/hud/extraction_hud.gd": {
       "agent": "lm",
       "at": "2026-08-19T02:33:53+00:00",
@@ -2841,9 +2865,9 @@
     },
     "world/mire/mire_grid.gd": {
       "agent": "lm",
-      "at": "2026-08-19T02:12:08+00:00",
-      "hash": "829585a63e21a1a51529fa214c14d7f16974c09cdf69b79980dbcaca804a85ec",
-      "task": "6.4"
+      "at": "2026-08-19T03:06:45+00:00",
+      "hash": "9e8e41a67e2465ee530084a7a4853abe05b9e97991af0af6a97874c78fa92d90",
+      "task": "6.7"
     },
     "world/mire/mire_grid_sim.gd": {
       "agent": "lm",
@@ -3748,9 +3772,11 @@
       "title": "Salvage: superlinear reward curve, extract-vs-die split, persistence, save-file versioning"
     },
     "6.7": {
+      "done_at": "2026-08-19T03:06:45+00:00",
+      "done_by": "lm",
       "est": "2",
       "milestone": "M6",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Lose condition: team wipe / island consumed, defeat flow"
     },
@@ -5341,6 +5367,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`tools/crafting_net_check.gd` fails (24/24) against a clean checkout of HEAD, independent of any in-flight change"
+    },
+    "F-168": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`Wellspring._finish_cap()` still emits `wellspring_capped` from a host-only guard, so a non-host peer's `SalvageService` milestone bonus silently undercounts"
     }
   },
   "version": 1

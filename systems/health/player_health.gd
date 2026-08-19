@@ -81,8 +81,9 @@ const HUNGER_SNAPSHOT_INTERVAL_SEC: float = 1.0
 @export_range(0.5, 10.0, 0.1) var revive_radius_m: float = 3.0
 ## Fraction of max_hp restored by a successful revive.
 @export_range(0.05, 1.0, 0.05) var revive_hp_fraction: float = 0.5
-## How long a dead player waits before respawning at full hp. M2 rule: a solo death just respawns —
-## there is no run-fail state yet (task 6.7 owns the lose condition).
+## How long a dead player waits before respawning at full hp. Only reachable while the run is still
+## live — task 6.7's `DefeatService` freezes this (and every other) timer the instant every present
+## player is simultaneously downed or dead (`_run_over`, see that flag's own note).
 @export_range(0.5, 30.0, 0.5) var respawn_seconds: float = 5.0
 
 @export_group("Hunger")
@@ -177,11 +178,18 @@ var _session_open: bool = false
 var _transport_node: Node
 var _hunger_snapshot_elapsed: float = 0.0
 var _stamina_reconcile_elapsed: float = 0.0
+## Task 6.7: latched true the instant `EventBus.run_wiped` fires (`DefeatService`'s verdict — team
+## wipe or the island consumed, DESIGN.md §5.3). Freezes bleed-out/respawn/damage for the rest of the
+## session — see `_on_run_wiped()`'s own note on why, without this, a wipe would just auto-resolve
+## itself the moment every downed player's respawn timer expired. Cleared alongside every other
+## session-scoped flag in `_on_session_opened()`/`_on_disconnected()`.
+var _run_over: bool = false
 
 
 func _ready() -> void:
 	_reset_local_cache()
 	EVENT_BUS.subscribe_enemy_attack_landed(_on_enemy_attack_landed)
+	EVENT_BUS.subscribe_run_wiped(_on_run_wiped)
 	_connect_player_net()
 
 	var transport: Node = _transport()
@@ -212,13 +220,14 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	EVENT_BUS.unsubscribe_enemy_attack_landed(_on_enemy_attack_landed)
+	EVENT_BUS.unsubscribe_run_wiped(_on_run_wiped)
 
 
 # ── Physics tick (host-owned bleed-out / respawn timers) ─────────────────────────────────────────
 
 
 func _physics_process(delta: float) -> void:
-	if not _owns_mutation() or _states.is_empty():
+	if not _owns_mutation() or _states.is_empty() or _run_over:
 		return
 	_capture_local_spawn_transform()
 	_hunger_snapshot_elapsed += delta
@@ -290,7 +299,7 @@ func _tick_hunger(peer_id: int, downed_state: DOWNED_STATE, delta: float) -> boo
 ## Returns false while downed or dead (no corpse-kicking in M2) or for an unknown peer — CombatService
 ## treats false as a miss, not a phantom hit.
 func host_apply_damage(peer_id: int, amount: int, instigator_peer_id: int) -> bool:
-	if not _owns_mutation() or amount <= 0 or not _states.has(peer_id):
+	if not _owns_mutation() or _run_over or amount <= 0 or not _states.has(peer_id):
 		return false
 	var downed_state: DOWNED_STATE = _states[peer_id]
 	if not downed_state.is_alive():
@@ -318,6 +327,15 @@ func _on_enemy_attack_landed(
 	# instigator 0: no player threw this hit. host_apply_damage's instigator arg is only ever used
 	# for logging today; 0 is never a valid peer id so it reads unambiguously as "an enemy."
 	host_apply_damage(peer_id, damage, 0)
+
+
+## `EventBus.run_wiped` reaches every peer's own local bus (`DefeatService`'s replicated-property
+## fix — see its class doc), so this runs identically on the host and every client: nobody's copy of
+## `_run_over` needs an RPC of its own. Deliberately not host-gated — a client's own `_physics_process`
+## early-returns on `not _owns_mutation()` before it ever reads `_run_over`, but a purely defensive
+## flag costs nothing and means this file never has to reason about which peer set it.
+func _on_run_wiped(_cycle: int, _world_position: Vector3) -> void:
+	_run_over = true
 
 
 ## The i-frame DECISION (host-side, per task 3.8b's spec) reading the i-frame STATE (client-side,
@@ -772,6 +790,7 @@ func _on_session_opened() -> void:
 	_starvation_accum.clear()
 	_blight_accum.clear()
 	_host_stamina_reports.clear()
+	_run_over = false
 	_reset_local_cache()
 	if not bool(_transport().call("is_host")):
 		return
@@ -849,6 +868,7 @@ func _on_disconnected() -> void:
 	_starvation_accum.clear()
 	_blight_accum.clear()
 	_host_stamina_reports.clear()
+	_run_over = false
 	_reset_local_cache()
 	_ensure_host_state(NetConfig.HOST_PEER_ID)
 	_publish_snapshot(NetConfig.HOST_PEER_ID)

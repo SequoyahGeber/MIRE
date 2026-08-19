@@ -10,8 +10,10 @@ extends RefCounted
 ## Flow (DESIGN.md §4.5, "Downed, not dead" / DESIGN §5.2): ALIVE -[hp hits 0]-> DOWNED
 ## -[bleed_out_remaining expires]-> DEAD -[respawn_remaining expires]-> ALIVE at full hp. A
 ## teammate's successful revive short-circuits DOWNED back to ALIVE at revive_hp_fraction instead of
-## waiting out the bleed-out. M2 rule: a solo death just respawns — there is no run-fail state yet
-## (task 6.7 owns the lose condition).
+## waiting out the bleed-out. This class knows nothing of the run's outcome — task 6.7's
+## `DefeatService` decides that at the PlayerHealth level, by simply no longer calling tick() on any
+## instance here once every present player is simultaneously DOWNED or DEAD (see PlayerHealth's own
+## `_run_over` flag).
 
 enum State { ALIVE, DOWNED, DEAD }
 

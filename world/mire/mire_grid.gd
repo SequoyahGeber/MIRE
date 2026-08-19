@@ -153,6 +153,20 @@ func capped_wellspring_count() -> int:
 	return _capped_wellsprings
 
 
+## Host-only: what fraction of the whole grid is at or above [param threshold] corruption. Task
+## 6.7's own consumer — `DefeatService` polls this to decide "the Mire consumes the island"
+## (DESIGN.md §5.3). Returns 0.0 before the grid is seeded and on a client, which never simulates
+## and has no reason to decide this itself (the host's verdict replicates to it instead).
+func consumed_fraction(threshold: float) -> float:
+	if not _owns_simulation() or _grid.is_empty():
+		return 0.0
+	var count: int = 0
+	for value: float in _grid:
+		if value >= threshold:
+			count += 1
+	return float(count) / float(_grid.size())
+
+
 func _tick() -> void:
 	var wards: Array = _ward_circles_provider.call() if _ward_circles_provider.is_valid() else []
 	var rate: float = BASE_SPREAD_RATE * _cycle_spread_multiplier
