@@ -673,41 +673,6 @@ autoload-node pattern.
 
 ---
 
-### F-218 · Decisions write their own reversal triggers and nothing ever re-checks them — two fired unnoticed in one session
-
-**Area:** process · **Severity:** medium · **Found:** 2026-08-19 by bram1
-
-`docs/DECISIONS.md`'s template ends every entry with **Would change my mind:** — the specific evidence
-that should make someone revisit the call. It is a genuinely good practice and the entries are written
-honestly. But nothing ever re-reads those clauses, so a fired trigger sits unnoticed until an agent
-happens to trip over the consequence.
-
-Two fired in the 2026-08-18/19 session alone, both found by accident rather than by process:
-
-- **D-011** chose file claims over per-agent git worktrees, with the trigger *"agents working
-  concurrently often enough that file claims become a bottleneck"*. F-189 documents it firing four
-  times over: one claim on `core/net/net_version.gd` held across four sessions caused four tasks
-  (F-161, F-165, F-169, F-178) to each ship new RPCs un-versioned and file a finding instead.
-- **D-041** governs `Chest`'s loot seeding, with a trigger that fires once a run seed exists.
-  `GameState.run_seed` shipped in task 4.6; F-210 records that the chest roll still seeds from
-  boot-time `randomize()`, which in a seeded co-op roguelike means loot is neither reproducible from
-  a seed nor guaranteed to agree between peers.
-
-Both were caught because a lane was already working nearby. Neither would have been caught otherwise,
-and the cost compounds silently — D-011's trigger had been firing for four sessions.
-
-**What would help, roughly in order of how buildable it is:** a check that extracts every *Would
-change my mind* clause and reports the ones naming a symbol, file or task id that now exists or has
-changed since the decision was written (D-041's names a run seed; `GameState.run_seed` exists — that
-is mechanically detectable). Failing that, even a periodic surfacing of all trigger clauses in
-`agent start` would beat the current zero. The full problem is not automatable — most triggers are
-prose judgements — but the subset that names concrete artifacts is, and that subset caught both of
-tonight's.
-
-Filed rather than built: this wants a design pass, not a director's quick patch.
-
----
-
 ### F-219 · `RewardService`'s Wellspring/boss-kill loot roll is the same boot-time-`randomize()` bug F-210 just fixed in `Chest`
 
 **Area:** loot/determinism · **Severity:** low · **Found:** 2026-08-19 by lm sweeping F-210's shape elsewhere
@@ -748,6 +713,71 @@ header) is unaffected either way — replication carries the RESULT, never the r
 ---
 
 ## Resolved
+
+### F-218 · Decisions write their own reversal triggers and nothing ever re-checks them — two fired unnoticed in one session — **fixed**
+
+**Area:** process · **Severity:** medium · **Found:** 2026-08-19 by bram1
+
+`docs/DECISIONS.md`'s template ends every entry with **Would change my mind:** — the specific evidence
+that should make someone revisit the call. It is a genuinely good practice and the entries are written
+honestly. But nothing ever re-reads those clauses, so a fired trigger sits unnoticed until an agent
+happens to trip over the consequence.
+
+Two fired in the 2026-08-18/19 session alone, both found by accident rather than by process:
+
+- **D-011** chose file claims over per-agent git worktrees, with the trigger *"agents working
+  concurrently often enough that file claims become a bottleneck"*. F-189 documents it firing four
+  times over: one claim on `core/net/net_version.gd` held across four sessions caused four tasks
+  (F-161, F-165, F-169, F-178) to each ship new RPCs un-versioned and file a finding instead.
+- **D-041** governs `Chest`'s loot seeding, with a trigger that fires once a run seed exists.
+  `GameState.run_seed` shipped in task 4.6; F-210 records that the chest roll still seeds from
+  boot-time `randomize()`, which in a seeded co-op roguelike means loot is neither reproducible from
+  a seed nor guaranteed to agree between peers.
+
+Both were caught because a lane was already working nearby. Neither would have been caught otherwise,
+and the cost compounds silently — D-011's trigger had been firing for four sessions.
+
+**What would help, roughly in order of how buildable it is:** a check that extracts every *Would
+change my mind* clause and reports the ones naming a symbol, file or task id that now exists or has
+changed since the decision was written (D-041's names a run seed; `GameState.run_seed` exists — that
+is mechanically detectable). Failing that, even a periodic surfacing of all trigger clauses in
+`agent start` would beat the current zero. The full problem is not automatable — most triggers are
+prose judgements — but the subset that names concrete artifacts is, and that subset caught both of
+tonight's.
+
+Filed rather than built: this wants a design pass, not a director's quick patch.
+
+---
+
+**Resolved 2026-08-19 by lm.** Built `tools/decision_trigger_check.py` (F-218's own primary recommendation, ranked above the
+`agent start` fallback): parses every `### D-0NN` entry in `docs/DECISIONS.md`, extracts backtick
+tokens from its **Would change my mind:** clause, and resolves each to where it's actually declared
+today — a `class_name`/`func`/`signal`/`const`/`var` line, or a `project.godot` autoload registration
+(needed for D-041's own `GameState` shape, which is never `class_name`'d). If the declaration
+postdates the decision, the trigger has mechanical evidence it fired. A plain grep-for-mentions was
+tried first and rejected — Godot engine types like `MultiMesh`/`SceneReplicationConfig` are used as
+parameter types in a dozen scripts from day one and fired on nearly every decision naming an engine
+class; only a declaration site is real evidence THIS codebase introduced something new.
+
+Cold run against the real docs/DECISIONS.md found exactly the finding's own worked example: D-041.
+Verified it's genuinely fired (GameState.run_seed shipped in task 4.6, F-210 already did the switch
+D-041 asked for) and annotated it `*Reviewed 2026-08-19*` — a new one-line convention (D-135) for
+silencing a fired trigger that's still the right call without rewriting the reasoning body. Re-run
+after the annotation: `fired=0`.
+
+Verified via `python3 tools/decision_trigger_check.py --self-test` -> 7/7 passed (throwaway-repo
+synthetic history, same pattern as tools/harness_check.py: proves FIRE on a class_name symbol added
+after its decision, NOT on one predating it, NOT on a prose-only trigger with no backtick token, NOT
+on a decision already annotated *Reviewed*, and FIRE on a project.godot autoload added after its
+decision — the D-041/GameState shape). Real scan: `python3 tools/decision_trigger_check.py` ->
+`DECISION_TRIGGER_CHECK decisions=136 checkable=57 fired=0`. `.agent/bin/agent godot --quit-after 60`
+boots and imports the project cleanly (docs/tooling-only change, no GDScript touched).
+
+Not wired into `agent start`: a real-repo run costs ~5s, a tax on every session for a signal that
+only changes when DECISIONS.md or the source tree does. Documented as a manual/periodic tool in
+docs/DELEGATION.md instead. D-011's own trigger (a frequency judgement, no concrete referent) stays
+correctly outside what this can see — the finding itself scoped the mechanical subset to concrete
+artifacts only, and D-011's is not one.
 
 ### F-212 · `ARCHITECTURE.md` §5 still describes the Mire grid's replication as a bespoke batched `PackedByteArray` RPC — task 4.9 shipped a different, permanent mechanism and never updated it — **fixed**
 

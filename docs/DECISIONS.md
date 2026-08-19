@@ -728,6 +728,10 @@ irrelevant among friends" already covers movement speed on the same row) — or 
 moves dodge off the client-authoritative movement row entirely.
 
 ### D-041 · 2026-08-17 · Chest loot rolls seed from boot-time entropy, not a fixed constant — provisional until a real per-run seed exists
+*Reviewed 2026-08-19 — trigger fired as written: `GameState.run_seed` shipped in task 4.6. F-210
+did the switch this entry itself names, deriving `Chest`'s roll from `(run_seed, a stable per-chest
+id)` via the existing `Chest.host_seed_rng()` seam. No new decision needed; this one's provisional
+period is over and its "would change my mind" is spent.*
 
 Task 3.5's work order says "a per-run seeded `RandomNumberGenerator`," but no `GameState.run_seed`
 (or any per-run seed authority) exists yet in this codebase — `enemy_world.gd`'s ambient scatter and
@@ -3818,3 +3822,22 @@ before it ever reaches `_unhandled_input`, the same reason clicking a menu butto
 **Would change my mind:** a future Godot upgrade changing the engine's own `ui_accept`/`ui_cancel`
 defaults to include a joypad binding — at that point `project.godot`'s override becomes redundant
 (harmless, since it would specify the same event) rather than load-bearing, and could be pruned.
+
+### D-135 · 2026-08-19 · A reversal trigger that fired but is still the right call gets silenced with `*Reviewed <date> — <why>.*`, not by editing the reasoning
+F-218: every decision here ends with a **Would change my mind:** clause, and nothing ever re-checked
+whether one had fired — D-011's and D-041's both had, unnoticed, before agents tripped over the
+consequences by accident. `tools/decision_trigger_check.py` (F-218) now checks mechanically for the
+subset of triggers that name a concrete file or symbol, but a check that runs repeatedly needs a way
+to mark a fired trigger as reviewed, or it re-flags the same decision on every future run forever.
+This file's own preamble permits exactly one retro-edit — a one-line `*Superseded by D-0NN.*` pointer
+— for a decision whose call actually changed. That doesn't fit a trigger that fired and the call is
+*still right*: nothing was superseded, so writing a new entry would be a decision about nothing. The
+one-line marker convention already in practical use for that shape (`*Amended by D-031.*`, D-012)
+extends naturally: `*Reviewed <date> — <why the fired trigger doesn't change the call>.*`, right under
+the heading, same place the other markers live. It never touches the reasoning body — append-only
+stays append-only — it only records that someone looked. `tools/decision_trigger_check.py` treats it
+identically to `Superseded by`/`Amended by`: present, skip; absent, keep flagging.
+**Would change my mind:** this convention getting used to paper over a trigger that actually *should*
+supersede the decision — a `*Reviewed*` note that doesn't explain why the fired evidence still leaves
+the original call standing is worth challenging on sight, the same as a `*Superseded by*` pointer with
+no real successor entry would be.

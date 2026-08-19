@@ -75,6 +75,32 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-218 resolved: `tools/decision_trigger_check.py` mechanically flags fired `docs/DECISIONS.md` reversal triggers (lm)
+
+**Run `python3 tools/decision_trigger_check.py` any time you're about to add a decision, or touch
+one already there** — no claim needed, it's read-only and reads `docs/DECISIONS.md` off disk. Prints
+`DECISION_TRIGGER_CHECK decisions=N checkable=M fired=K` then one `FIRED D-0NN ...` line per hit,
+naming the backtick token, the file it's declared in, and the date. It is **not** wired into `agent
+start` — a real-repo run costs ~5s (many small `git log`/`git grep` calls), which is a tax on every
+session for a signal that only changes when `docs/DECISIONS.md` or the source tree does. Run it by
+hand.
+
+**What it can and can't see:** only a **Would change my mind:** clause that names a backtick-quoted
+file or symbol which now exists (declared via `class_name`/`func`/`signal`/`const`/`var`, or
+registered as a `project.godot` autoload — the `GameState`-style singleton shape) but didn't on the
+decision's own date. Most clauses are prose judgement calls (D-011's "often enough" among them) with
+nothing concrete to check — those stay silent, on purpose, not a bug.
+
+**If it flags a decision that's still the right call, don't argue with the fired evidence — annotate
+it.** D-135 (this task) settled the convention: a one-line `*Reviewed <date> — <why>.*` right under
+the decision's heading, same place `*Superseded by ...*`/`*Amended by ...*` already live, stops the
+check from re-flagging that decision on every future run without touching the append-only reasoning
+body. D-041 got exactly this treatment as the worked example — F-210 had already done the switch its
+trigger asked for; the annotation just records that the check now agrees.
+
+**`--self-test` proves the fire/no-fire distinction on synthetic history** (throwaway repo, same
+pattern as `tools/harness_check.py`) — run it after touching the script, before trusting a real scan.
+
 ### 2026-08-19 — F-210 resolved: `Chest`'s loot roll derives its seed from `GameState.run_seed`, not boot-time entropy (lm)
 
 **`Chest` (`systems/loot/chest.gd`) now has two private helpers anything deriving a host-only,

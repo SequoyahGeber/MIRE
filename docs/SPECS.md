@@ -6190,6 +6190,68 @@ matches `world/mire/mire_grid.gd:3-19`'s doc comment and D-099's own text.
 
 ---
 
+## F-218 · Decisions write their own reversal triggers and nothing ever re-checks them — two fired unnoticed in one session
+
+**Claim:** `tools/decision_trigger_check.py` (new). No network authority row — this is a docs/process
+tool, not a runtime system.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's preamble.
+
+**The fix:** every `docs/DECISIONS.md` entry ends with a **Would change my mind:** clause and nothing
+ever re-read them, so a fired trigger sat unnoticed until an agent tripped over its consequence by
+accident — D-011's (file claims becoming a bottleneck, caught by F-189) and D-041's (a real per-run
+seed authority existing, caught by F-210). The finding itself ranked a mechanical check above "just
+surface everything in `agent start`" because most trigger clauses are prose judgement calls with no
+concrete referent (D-011's "often enough" among them) — genuinely not automatable. The buildable
+subset is the one D-041 is: a clause naming a concrete symbol or file. `tools/decision_trigger_check.py`
+parses every `### D-0NN` heading and its trigger clause, pulls backtick-quoted tokens out of the
+clause, and for each resolves where it's actually *declared* in the tracked tree today — a
+`class_name`/`func`/`signal`/`const`/`var` line in a script, or a `Name="*res://..."` autoload
+registration in `project.godot` (autoload singletons like `GameState` are never `class_name`'d, so
+this second shape is required — the first version of this check missed D-041 entirely without it).
+A plain grep-for-mentions was tried first and rejected: `MultiMesh`/`SceneReplicationConfig`/
+`ConcavePolygonShape3D` are Godot engine types referenced as parameter/return types in a dozen
+scripts since day one, and would have fired on nearly every decision that names an engine class —
+only a declaration site is real evidence the *codebase* introduced something new. If the resolved
+declaration's earliest commit postdates the decision's own heading date, the trigger has mechanical
+evidence it fired. A decision annotated `*Superseded by ...*`, `*Amended by ...*`, or `*Reviewed
+...*` right under its heading is skipped — this task adds `*Reviewed <date> — <why>.*` as a new
+one-line convention (alongside the retro-edit markers the file's preamble already permits) so a fired
+trigger that's still the right call can be silenced without rewriting the reasoning body, instead of
+re-flagging forever on every future run.
+
+Running it cold against the real `docs/DECISIONS.md` found exactly one live case: D-041, the finding's
+own worked example. It has since been annotated `*Reviewed 2026-08-19*` (this task) recording that
+F-210 already did the switch D-041's trigger asked for, so a re-run now reports `fired=0`.
+
+**Verify:** `python3 tools/decision_trigger_check.py --self-test` → `7/7 passed`, exit 0. Builds a
+throwaway repo (same pattern as `tools/harness_check.py`/`tools/autoload_tracked_check.py`) with five
+synthetic decisions covering every branch: a `class_name` symbol added after its decision (must
+FIRE), one that predates its decision (must NOT), a prose-only trigger with no backtick token (not
+mechanically checkable — must NOT), a fired trigger already annotated `*Reviewed ...*` (must NOT
+re-fire), and a `project.godot` autoload registration added after its decision (must FIRE — the
+D-041/`GameState` shape). `python3 tools/decision_trigger_check.py` (no flag) scans the real
+`docs/DECISIONS.md` and prints `DECISION_TRIGGER_CHECK decisions=135 checkable=57 fired=0`.
+
+**Not wired into `agent start`.** The finding ranked the standalone mechanical check above that
+fallback, and a real-repo timing run came back at ~5s (multiple `git log`/`git grep` calls per
+backtick token across 57 checkable decisions) — a tax on every session across every lane, for a
+signal that changes only when `docs/DECISIONS.md` or the source tree changes. Run it by hand
+periodically, or whenever a task's own work touches `docs/DECISIONS.md`.
+
+**Swept for the same shape elsewhere:** grepped `tools/*.py` and `.agent/bin/agent` for the same
+markdown-heading-parsing bug this task's own first draft had (a regex that matches only the heading's
+*prefix* — `### D-\d+ · date` — then reads body from `match.end()`, which lands mid-title-line rather
+than at the next newline, so a `*Reviewed ...*`-style marker on the line right under the heading is
+silently never seen). `.agent/bin/agent`'s `_self_resolved_findings()` parses `### F-\d+` headings the
+same general way but captures the *whole* line (`^(### F-\d+ · .+)$`) before splitting, so it does not
+have this exposure. No other file in `tools/` parses markdown headings by regex at all. No sibling
+instances found.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**
