@@ -3579,3 +3579,43 @@ to question a `worst=0.00 m` that never moves.
 **Would change my mind:** a generator that has no separate placement record and truly only has the
 MultiMesh (nothing here does yet) — then `--windowed` + the `DisplayServer` skip guard is the
 fallback, not a violation of this rule.
+
+### D-128 · 2026-08-19 · A Blender preview generator never repositions an object after its process's first render — a second, third… placement gets its own object, placed once, then only ever hidden or shown
+
+F-204 diagnosed the mechanism (`object.location` assigned after `bpy.ops.render.render()` has run
+once, in the same `--background` process, never takes effect — only camera moves and `hide_render`
+toggles do) and fixed the two generators known to hit it. F-207's sweep then found the identical bug
+live in eight more generators, so this is now a recurring authoring trap, not a one-off, and needs a
+standing rule rather than a fresh diagnosis every time someone writes a multi-render preview.
+
+**The rule:** if a generator's preview section needs an asset (or a scale-reference cube) to appear
+at more than one position across its renders, build **one object per position it will ever occupy**,
+all of them before the first `bpy.ops.render.render()` call, and toggle each with `hide_render` —
+never write to `object.location`/`.rotation_euler` a second time for an object that has already
+appeared in a render.
+
+Two shapes, both landed in `build_gatherable_plants.py`/`build_flora_set.py` as the worked examples:
+
+- **A reference cube (or any fixed prop) needed at N distinct spots across N sheets:** a
+  `make_reference(tag, location)` helper, called once per sheet before the render loop, returns a
+  hidden cube already sitting where that sheet needs it; the render loop only flips `hide_render`.
+- **Specific already-built assets pulled into a tighter "showcase"/"hero" composition, possibly from
+  grid positions tens of metres apart:** a `hero_duplicate(record, location)` helper makes a
+  linked-mesh-data copy of the asset's single joined export mesh (`record["root"].children[0]`),
+  positioned via `dup.matrix_world = Matrix.Translation(delta) @ source.matrix_world` (never `.location`
+  alone, since it must survive whatever the source's own local-vs-parent split happens to be) — built
+  once, before any render, then hidden until its one shot and hidden again after.
+
+Before reaching for `hero_duplicate`, check whether the composition can be had for free: F-204's
+gatherables fix reordered `SPECS` so three states that needed to read left-to-right in a decision shot
+were already adjacent on the grid, and the decision shot then only ever moved the CAMERA to frame
+their real positions — no duplicate needed. Duplication is for compositions the grid genuinely cannot
+produce (assets from different family/category rows, spaced many metres apart).
+
+**Would change my mind:** a Blender version where `bpy.ops.render.render()` re-evaluates the full
+depsgraph including moved-object transforms before every call — nothing currently pinned
+(`D-038`, Blender 5.2.0 LTS) does this, and F-204's own probe table (camera vs. object vs.
+newly-created object) found no in-process workaround. If that ever changes, this rule can relax back
+to "just move it," but re-verify with `tools/blender/asset_repro_check.py` plus an actual look at the
+rendered PNG before trusting it, the way F-086-shaped "looks done, never checked" failures keep
+costing this project.

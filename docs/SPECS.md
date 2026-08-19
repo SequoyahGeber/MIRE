@@ -5029,6 +5029,75 @@ un-pathspec'd commit call exists to be the next incident.
 
 ---
 
+## F-191 · Staging and committing as two steps lets a concurrent agent's commit sweep up your staged work
+
+**Claim:** `.agent/bin/agent`, `tools/harness_check.py`. No production/runtime file — coordination
+tooling, not a networked system, so it declares no `ARCHITECTURE.md` §2.2 authority row.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Checked before touching anything, per the brief's own instruction.** `python3
+tools/harness_check.py` was 29/29 at HEAD, already covering F-149 (docs/ is claim-exempt, so two
+lanes' unclaimed docs staged together produce silence) and F-199 (a bare commit blocked ONLY by
+foreign *active* claims). Neither covers F-191's own incident shape: the two swept files
+(`.agent/bin/agent`, `tools/harness_check.py`) were **claimed and already released** (nettle12's F-186
+work, `done()` had run) by the time the other session's bare commit landed. Nothing in the existing
+suite exercised a released claim sitting staged under a different, current committer.
+
+**Root cause, the part F-191 itself left "untested":** the finding's own text asked "why did the hook
+admit the sweep instead of blocking it", listing `--no-verify` and a check/commit race as untested
+candidates. Neither — it's `in_grace()` (`.agent/bin/agent:1473`). `in_grace(f)` calls `_is_mine(r, me,
+me_token)` where `me` is **whoever is running the check right now**, i.e. the committer, not the agent
+who released the file. Once nettle12's F-186 task called `done()`, the claim was released (`c = None`
+in `cmd_check`) and nettle12's *own* next commit would correctly see `in_grace(f) == True` and skip
+straight to a quiet pass. But the actual incident's committer was a **different** session — for that
+committer, `_is_mine` compares nettle12's `recent` record against the wrong identity and returns
+`False`, so `in_grace` is `False` too, and the file falls to the generic `elif not c and not human and
+not in_grace(f)` branch: a plain `"edited without a claim"` **warning**, which does not block. F-072
+deliberately keeps unclaimed files free to commit, so this was never going to be a hard block — but the
+warning gave no hint that the file wasn't ownerless, it was another session's very-recent work about
+to be swept.
+
+**Fix, two parts:**
+
+1. **`.agent/bin/agent`'s `cmd_check`:** the `elif not c and not human and not in_grace(f)` branch now
+   checks `st["recent"][f]` directly (not through `in_grace`, which is scoped to the wrong identity for
+   this case) — if a record exists, belongs to a **different** agent, and is younger than
+   `RECENT_GRACE_HOURS`, the warning names that agent, cites F-191, and prints the pathspec fix instead
+   of the generic "edited without a claim" line. Still a warning, not an error — an unclaimed file
+   really is free to commit (F-072); the fix is naming the mechanism, not blocking, matching F-199's
+   same choice for the sibling active-claim case.
+2. **`AGENTS.md`'s F-081/D-057 harness section:** it told a task fixing the harness to claim
+   `.agent/bin/agent` before `done`, and separately that `ship` won't stage it — but never said HOW to
+   commit it afterward. That silent gap is what actually produced F-191's incident: nettle12 followed
+   the documented claim step, then had nothing telling them the hand-commit needed a pathspec (the
+   `docs/` hand-commit section already got this instruction from F-199; the harness-source section,
+   filed one day *before* F-199, never did). Added the same pathspec-commit instruction there, naming
+   F-191 as the incident.
+
+**This task's contribution: two new `tools/harness_check.py` cases**, plus the hook and doc fix above:
+
+1. A file released by a **different** agent (`beta`) 1h ago, staged under the current committer
+   (`alpha`) — `check` passes (still a warning, not a block) but names `beta`, `F-191`, and the
+   pathspec form.
+2. The same shape at 7h — past `RECENT_GRACE_HOURS` (6) — falls back to the plain "edited without a
+   claim" warning, proving the new branch is scoped to the actual race window and not a blanket
+   rename of every unclaimed-file warning.
+
+**Verified 2026-08-19 (lm):** `python3 tools/harness_check.py` — 31/31 (29 prior + 2 new).
+`python3 tools/harness_check.py --rev HEAD` (pre-fix harness) — 30/31, failing exactly the new
+sweep-naming case and nothing else, confirming it is a real regression guard. No Godot involved — this
+is a git/coordination-tooling question, not an engine one; `agent godot --quit-after 120` would have
+exercised nothing this finding is about.
+
+**Swept for siblings:** `grep -n '"commit"' .agent/bin/agent tools/*.py` — still only `cmd_ship`'s own
+pathspec'd call. Also grepped every other `AGENTS.md` hand-commit instruction (`grep -n "git commit"
+AGENTS.md`) — the `docs/` one already has the pathspec form (F-199); the harness one didn't until this
+task. No third hand-commit instruction exists in the doc to be the next gap.
+
+---
+
 ## F-196 · An asset rebuild concurrent with `agent godot`'s auto-import pass poisons the import cache — 8 station GLBs stayed unloadable across 40 minutes of checks until a forced `--import`
 
 **Claim:** `tools/blender/godot_import_lock.py` (new), `tools/blender/mire_art.py`,
@@ -5321,6 +5390,70 @@ resource on cached meshes didn't disturb world generation or its existing assert
 --include="*.gd" .` outside the two files this task touched returned nothing — `mesh_merge.gd` is
 the only runtime mesh assembler in the repo, so there is no sibling site building a mesh through
 `ImporterMesh` without a shadow mesh.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
+## F-204 · A Blender preview that moves assets between renders draws the layout it had at the first render
+
+**Claim:** `tools/blender/build_gatherable_plants.py`, `tools/blender/build_flora_set.py`,
+`docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**What was wrong:** every `tools/blender/build_*.py` generator builds its assets once, then renders
+several preview sheets from ONE `--background` Blender process by repositioning objects between
+`bpy.ops.render.render()` calls. That does not work: `object.location`/`.rotation_euler` assigned
+after the process's FIRST render never takes effect on any later render in the same process — only
+camera moves and `hide_render` toggles do (F-204's own probe table, `docs/FINDINGS.md`). DELEGATION.md
+already flagged `build_gatherable_plants.py` and `build_flora_set.py` as having this shape when A-012
+fixed it for the food kit. Confirmed both, concretely:
+
+- `build_gatherable_plants.py`: a single `figure` (scale-reference cube) was moved between all three
+  renders — only the first sheet's position ever took effect, so `gatherable_deposits_preview.png`
+  silently shipped missing its reference cube. The berry-decision shot also relocated three bush
+  roots to a hand-picked tight layout that never applied, so it drew the bushes at their real grid
+  positions instead.
+- `build_flora_set.py`: the same one-figure-moved-between-renders bug across all SIX family sheets
+  (only "shrubs", the first family, ever showed a reference cube), plus a "hero" shot
+  (`flora_set_preview.png`) that relocates 18 named assets from six family grids spaced 26 m apart —
+  never applied, so it would have drawn them scattered at positions the hero camera can't frame.
+
+Neither generator's `check()` caught this — both assert geometry (bounds, triangles, materials), and
+F-204's whole point is that the geometry is fine; only the preview pixels are wrong.
+
+**Fix — two techniques, both now the standing pattern (D-128):**
+
+1. **One object per position it will ever occupy, built before the first render, hidden/shown
+   thereafter.** `make_reference(tag, location)` in both files builds a scale-reference cube per
+   sheet up front; the render loop only flips `hide_render`.
+2. **Where the composition needs assets from far-apart grids (the flora hero shot):**
+   `hero_duplicate(record, location)` makes a linked-mesh-data copy of the asset's single joined
+   export mesh (`record["root"].children[0]`), placed via `dup.matrix_world =
+   Matrix.Translation(delta) @ source.matrix_world` before any render, then only hidden/shown.
+3. **Where the composition doesn't actually need relocation at all:** `build_gatherable_plants.py`'s
+   `SPECS` list was reordered so `berry_bush_full`, `poison_berry_bush`, `berry_bush_harvested` build
+   adjacently — their real grid position then already reads left-to-right the way the decision shot
+   wants, so that shot only ever moves the camera.
+
+**Verified:** both scripts run standalone
+(`/Applications/Blender.app/Contents/MacOS/Blender --background --python tools/blender/build_X.py`) —
+`GATHERABLES_CHECK PASS`, `FLORA_CHECK PASS`, geometry/catalog numbers unchanged from HEAD.
+`tools/blender/asset_repro_check.py` run against both scripts: every exported GLB and both
+`catalog.json` byte-identical across two fresh rebuilds (the one HEAD-vs-rebuild byte diff on
+`berry_bush_harvested.glb` is the SPECS reorder shifting Blender's internal material-interning order,
+confirmed harmless by the repro check, not a geometry change). Visually inspected the previously-
+broken tiles after rebuild — `berry_decision_preview.png`, `gatherable_deposits_preview.png`,
+`small_trees_preview.png`, `ground_cover_preview.png` (flora families 2 and 6), and
+`flora_set_preview.png` — all now show their reference cube / intended composition.
+
+**Swept for the same shape elsewhere:** `grep -n "bpy.ops.render.render\|\.location = "
+tools/blender/build_*.py` over every generator with more than one render call found the identical
+mechanism live in eight more files, none previously flagged. Not fixed here — each needs the same
+bespoke treatment against its own hand-authored scene (one, `build_enemy_crawler.py`, duplicates an
+armature rather than a plain mesh). Filed as **F-207** with the exact file/line list.
 
 **Resolved** — see `docs/FINDINGS.md`.
 

@@ -75,6 +75,62 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-191 resolved: `cmd_check` now names a different session's just-released, still-staged claim instead of the generic "edited without a claim" warning (lm)
+
+**What changed, for anyone touching `.agent/bin/agent`'s `cmd_check`:** the `elif not c and not human
+and not in_grace(f)` branch (around line 1524) no longer prints a flat "edited without a claim" for
+every unclaimed file. It first checks `st["recent"][f]` — if a record exists, its `agent` differs from
+the current committer, and it is younger than `RECENT_GRACE_HOURS` (6h), the warning instead names that
+agent, cites F-191, and prints the pathspec commit form. `in_grace()` itself is unchanged and still only
+recognizes the CLOSING session's own bare commit (`_is_mine` checked against the current committer) —
+this is a second, independent check alongside it, not a rewrite of it. Both are warnings, never errors:
+an unclaimed file is legitimately free to commit (F-072); this only changes what the warning says.
+
+**The other half, for anyone writing a new "hand-commit these files afterward" instruction in
+AGENTS.md:** every one of them now needs the pathspec form (`git commit -m "..." -- <files>`), not just
+the `docs/` one F-199 already covers. The harness-source section (F-081/D-057, "claim `.agent/bin/agent`
+before `done`") had exactly this gap until this task — it told you to claim the file and left the commit
+step undocumented, which is what actually produced F-191's real incident. If a future task adds a third
+category of file that `ship` deliberately won't stage (there are currently exactly two: `docs/` and
+`.agent/bin/`), give its hand-commit instruction a pathspec example too, in the same task that adds it.
+
+**Verify a change to either half against `python3 tools/harness_check.py`'s two F-191 cases** — a
+different agent's release inside the grace window (must name it), and the same shape past the window
+(must fall back to the generic warning) — so a future edit to `cmd_check` or `RECENT_GRACE_HOURS` gets
+caught in either direction. Full writeup: `docs/SPECS.md` F-191 block.
+
+### 2026-08-19 — F-204 resolved: `build_gatherable_plants.py`/`build_flora_set.py`'s previews no longer draw the layout they had at the first render, and D-128 names the pattern for the 8 more generators F-207 found with the same bug (lp)
+
+**The seam the next multi-render preview builds on (D-128):** if a generator's preview section needs
+an asset or a reference prop at more than one position across its renders, give each position its own
+object, built before the FIRST `bpy.ops.render.render()` call, toggled only with `hide_render` after
+that — never write `object.location`/`.rotation_euler` a second time for an object that has already
+appeared in a render; it silently does nothing.
+
+- `make_reference(tag, location)` (both files): a scale-reference cube per sheet, hidden by default,
+  shown only for its own render. Copy this whenever a sheet needs a prop the others don't share.
+- `hero_duplicate(record, location)` (`build_flora_set.py` only): a linked-mesh-data copy of an
+  asset's single joined export mesh (`record["root"].children[0]`), placed via `dup.matrix_world =
+  Matrix.Translation(delta) @ source.matrix_world` — for a composition that pulls specific assets
+  together from grids spaced many metres apart, where camera reframing alone can't reach.
+- Cheaper than either, when it applies: `build_gatherable_plants.py` reordered its `SPECS` list so
+  three states that needed to read left-to-right in a close-up shot were already adjacent on the
+  grid — the shot then only ever moves the camera, no duplicate object at all. Check this first.
+
+**Verified:** both scripts rebuilt standalone (`Blender --background --python
+tools/blender/build_X.py`) — `GATHERABLES_CHECK PASS`, `FLORA_CHECK PASS` — and
+`tools/blender/asset_repro_check.py` confirms every exported GLB and both `catalog.json`
+byte-identical across two fresh rebuilds (no geometry drift from the fix). Previously-broken tiles
+(`berry_decision_preview.png`, `gatherable_deposits_preview.png`, `small_trees_preview.png`,
+`ground_cover_preview.png`, `flora_set_preview.png`) visually confirmed correct after rebuild.
+
+**Not fixed here:** the identical bug is live in `build_enemy_crawler.py`, `build_crafting_stations.py`,
+`build_harvestable_resources.py`, `build_mire_map_kit.py`, `build_wellspring_set.py`,
+`build_loot_set.py`, `build_ward_set.py`, and `build_tool_weapon_set.py` (twice) — filed as **F-207**
+with the exact file/line list. Whoever picks it up should copy the two helpers above rather than
+re-deriving them; `build_enemy_crawler.py`'s showcase duplicates an **armature**, not a plain mesh, so
+its fix needs pose/bone data considered, not just `hero_duplicate()` as-is.
+
 ### 2026-08-19 — F-188 resolved: `MeshMerge` output now carries a shadow mesh, matching what every imported .glb already gets (lm)
 
 `core/render/mesh_merge.gd` gained a private `_shadow_mesh(order, buckets) -> ArrayMesh`, built from

@@ -69,42 +69,6 @@ do is worth as much as the record of what we did.
 
 ## Open
 
-### F-204 · A Blender preview that moves assets between renders draws the layout it had at the first render
-
-**Area:** art-pipeline · **Severity:** medium · **Found:** 2026-08-19 by slate17 during 2.1d (A-012)
-
-Every asset generator in `tools/blender/` renders its contact sheets the same way: show a subset,
-move those assets into a row, aim the camera, `bpy.ops.render.render()`, repeat. In a `--background`
-process that does not work. The **first** render fixes the layout, and every later render draws the
-assets where they were then — so a sheet frames empty ground while the objects it wanted are
-somewhere else in the world.
-
-It does not look like a framing bug. It looks like an asset failing to build: A-012's contact sheet
-came out with one of five tiles simply blank. The asset was present, `hide_render=False`,
-`visible_get()` true, in a linked collection, carrying its 109 polygons, with `matrix_world` at
-exactly the requested position — every probe said it was there, and it did not render. It also
-renders perfectly when it is the only asset on the sheet, which is what makes this expensive: the
-obvious next step is to go looking for what is wrong with that one asset, and nothing is.
-
-**What does and does not take effect between renders in one background process:**
-
-| Change | Applies to the next render |
-|---|---|
-| `camera.location` / `ortho_scale` | yes |
-| `object.hide_render` | yes |
-| `object.location` on an existing object | **no** |
-| an object created after the first render | **no** |
-| `view_layer.update()`, `scene.frame_set()`, linked duplicates, a fresh scene via `temp_override` | did not help |
-
-**The fix that works: place assets once and never move them.** A-012 authors a `LAYOUT` table — each
-asset gets an `(x, row_y)` at creation — and a sheet is a camera aimed at a row with the other rows
-hidden. Nothing moves after the first evaluation, so there is nothing stale to flush.
-
-**`build_gatherable_plants.py` (A-011) and `build_flora_set.py` have the same shape** — they
-reposition roots per sheet and re-render — so their committed preview sheets may not show what their
-code says they show. Worth a look before anyone judges those kits from their sheets; the assets
-themselves are unaffected, because every generator's *contract* measures geometry rather than pixels.
-
 ### F-161 · Task 5.3's three new ranged-combat RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-18 by lp during 5.3
@@ -551,49 +515,6 @@ option 4 is already someone's live task.
 
 ---
 
-### F-191 · Staging and committing as two steps lets a concurrent agent's commit sweep up your staged work
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by nettle12
-
-Observed directly. This session ran `git add .agent/bin/agent tools/harness_check.py`, confirmed both
-staged, then wrote a commit message and ran `git commit`. In the gap between those two commands
-another session committed, and its commit — `773f9fa`, "Roadmap: bring five task lines in line with
-what 2026-08-18 actually shipped" — carried all three files:
-
-    .agent/bin/agent       | 160 +++++++++++++++++++++--
-    docs/ROADMAP.md        |  10 ++--
-    tools/harness_check.py |  63 ++++++++++-
-
-`docs/ROADMAP.md` was that session's own work (F-006, claimed). The other two were this session's
-F-186 fix, staged and waiting. This session's own `git commit` then reported "0 changed file(s)" and
-committed nothing, because there was nothing left to commit.
-
-**Nothing was lost and nothing was corrupted** — the code reached origin intact. What was lost is the
-attribution and the reasoning: F-186's commit message explaining the heartbeat design, why it takes
-no lock, and why ambiguity refuses to auto-free, never entered history. The change now sits under a
-message about roadmap lines, where nobody looking for it will find it.
-
-The other session was not careless. Its own message explicitly declines to touch `docs/FINDINGS.md`
-"held by lane lm for F-183 and is being written to concurrently" — it was respecting claims
-carefully. The claim system protects files from concurrent *editing*; the git index is a single
-shared resource that no claim covers, and a broad `git add -A` / `git commit -a` sweeps whatever
-another agent happens to have staged.
-
-**The reliable mitigation is to never leave a gap: stage and commit in one step,** or use
-`agent ship`, which stages the claiming task's files and commits them together. Writing a long
-commit message in a heredoc *after* staging is exactly the gap that lost this one — compose the
-message first, then stage and commit as a single command.
-
-**Mechanism not fully established, and worth someone finishing.** The pre-commit hook should
-arguably have refused those two files: `in_grace()` is correctly scoped to the closing session via
-`_is_mine`, `.agent/bin/` is under UNFREE_PREFIXES so it is not free-by-prefix, and the files were
-either claimed by this session or in its own grace window at the time. Why the hook admitted them is
-untested — candidates are a `--no-verify`, a hook that stages more after its own check, or a race
-between the check and the commit. Anyone picking this up should reproduce with two processes before
-changing the hook, rather than trusting this paragraph.
-
----
-
 ### F-197 · A generated-asset commit swept up another lane's dirty crafting-station GLBs under an unrelated message — the F-149/F-191 sweep hazard reaching art files, not just docs/
 
 **Area:** coordination / art pipeline · **Severity:** low · **Found:** 2026-08-19 by lm during F-057
@@ -740,7 +661,208 @@ cuts) the same way A-004/A-005/A-006's did.
 
 ---
 
+### F-207 · F-204's same bug — an object repositioned between renders that never takes effect — is live in 8 more Blender generators, one of them twice
+
+**Area:** art-pipeline · **Severity:** medium · **Found:** 2026-08-19 by lp during F-204's required sweep
+
+F-204 fixed the two generators DELEGATION.md already knew had this shape
+(`build_gatherable_plants.py`, `build_flora_set.py`). `grep -n "bpy.ops.render.render\|\.location = "
+tools/blender/build_*.py` over every generator with more than one render call found the identical
+mechanism live in eight more, none previously flagged:
+
+| File | Broken render(s) | Repositioned between renders |
+|---|---|---|
+| `build_enemy_crawler.py` | `enemies_scale_preview.png` (2nd of 2) | `record["root"].location = showcase_positions[...]` (:955), between renders at :944 and :970 |
+| `build_crafting_stations.py` | 2nd of 2 | `record["root"].location = showcase[...]` (:476), between :464 and :489 |
+| `build_harvestable_resources.py` | 2nd of 2 | `record["root"].location = showcase[...]` (:619), between :607 and :635 |
+| `build_mire_map_kit.py` | `mire_map_kit_preview.png` (hero, 8th of 8) | `r["root"].location = hero_positions[...]` (:705), after all 7 category renders (:692 loop) |
+| `build_wellspring_set.py` | 2nd of 2 | `record["root"].location = showcase_positions[...]` (:765), between :753 and :771 |
+| `build_loot_set.py` | 2nd of 2 | `record["root"].location = showcase_positions[...]` (:586), between :573 and :601 |
+| `build_ward_set.py` | 2nd of 2 | `record["root"].location = showcase_positions[...]` (:605), between :593 and :611 |
+| `build_tool_weapon_set.py` | **both** the 2nd (`tools_weapons_viewmodel_preview.png`) and 3rd (`tools_weapons_scale_preview.png`) of 3 | `record["root"].location = (x, y, 0.0)` (:1207) between :1197/:1213, then `= showcase_positions[...]` (:1225) between :1213/:1239 |
+
+Every one follows the same shape F-204 diagnosed: build all assets once at a grid position, render
+sheet 1 (correct — nothing has moved yet), reposition selected roots to a curated "showcase"/"hero"
+layout, render sheet 2 — which silently draws the assets at their **sheet-1 grid position**, because
+`object.location` assigned after this process's first render never takes effect. Every one of these
+files' FIRST render is unaffected (nothing has been repositioned yet when it fires); every LATER
+render that depends on a reposition is suspect. Like F-204's original two, none of this trips any
+existing `check()` — those assert geometry, never pixels — so it has shipped silently in every
+`DONE` batch that has this shape.
+
+**Not fixed here** — each needs the same bespoke treatment F-204 worked out, against hand-authored
+scenes, not a mechanical sweep:
+
+- Six of the eight (`build_crafting_stations.py`, `build_harvestable_resources.py`,
+  `build_wellspring_set.py`, `build_loot_set.py`, `build_ward_set.py`, and both of
+  `build_tool_weapon_set.py`'s broken renders) are a single "showcase" shot pulling a handful of
+  assets into a hand-picked closer layout — the same shape `build_gatherable_plants.py`'s
+  berry-decision shot had. Check first whether the real grid positions already read correctly (as
+  they did there, once SPECS order was fixed) before reaching for a duplicate.
+- `build_mire_map_kit.py`'s hero shot and `build_enemy_crawler.py`'s showcase pull items from across
+  several widely-spaced grids (category/family rows tens of metres apart) — the
+  `build_flora_set.py` shape. These need real objects placed at their final spot before any render,
+  then only ever `hide_render`-toggled; D-128 records the pattern
+  (`make_reference`/`hero_duplicate` in `build_flora_set.py`/`build_gatherable_plants.py`) as the
+  one to copy, not reinvent.
+- `build_enemy_crawler.py`'s asset is an **armature**, not a plain mesh — `hero_duplicate()`'s
+  `source.copy()` + `matrix_world` translation works for a static mesh's single joined object; an
+  animated rig's duplicate needs its pose/bone data considered too. Read `mire_art`'s armature
+  handling before assuming a plain mesh-copy is enough.
+- `build_tool_weapon_set.py` also reassigns `record["root"].rotation_euler` alongside `.location` for
+  both broken renders (:1208, :1226) — same "assigned after the first render, never takes effect"
+  problem, so any fix here must carry rotation through `matrix_world`, not location alone.
+
+Verify any fix the same way F-204 did: rebuild standalone
+(`Blender --background --python tools/blender/build_X.py`), confirm the file's own `check()` stays
+`PASS`, run `tools/blender/asset_repro_check.py` against it to confirm no geometry drift, and actually
+open the previously-broken preview PNG rather than trusting the exit code.
+
+---
+
 ## Resolved
+
+### F-191 · Staging and committing as two steps lets a concurrent agent's commit sweep up your staged work — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by nettle12
+
+Observed directly. This session ran `git add .agent/bin/agent tools/harness_check.py`, confirmed both
+staged, then wrote a commit message and ran `git commit`. In the gap between those two commands
+another session committed, and its commit — `773f9fa`, "Roadmap: bring five task lines in line with
+what 2026-08-18 actually shipped" — carried all three files:
+
+    .agent/bin/agent       | 160 +++++++++++++++++++++--
+    docs/ROADMAP.md        |  10 ++--
+    tools/harness_check.py |  63 ++++++++++-
+
+`docs/ROADMAP.md` was that session's own work (F-006, claimed). The other two were this session's
+F-186 fix, staged and waiting. This session's own `git commit` then reported "0 changed file(s)" and
+committed nothing, because there was nothing left to commit.
+
+**Nothing was lost and nothing was corrupted** — the code reached origin intact. What was lost is the
+attribution and the reasoning: F-186's commit message explaining the heartbeat design, why it takes
+no lock, and why ambiguity refuses to auto-free, never entered history. The change now sits under a
+message about roadmap lines, where nobody looking for it will find it.
+
+The other session was not careless. Its own message explicitly declines to touch `docs/FINDINGS.md`
+"held by lane lm for F-183 and is being written to concurrently" — it was respecting claims
+carefully. The claim system protects files from concurrent *editing*; the git index is a single
+shared resource that no claim covers, and a broad `git add -A` / `git commit -a` sweeps whatever
+another agent happens to have staged.
+
+**The reliable mitigation is to never leave a gap: stage and commit in one step,** or use
+`agent ship`, which stages the claiming task's files and commits them together. Writing a long
+commit message in a heredoc *after* staging is exactly the gap that lost this one — compose the
+message first, then stage and commit as a single command.
+
+**Mechanism not fully established, and worth someone finishing.** The pre-commit hook should
+arguably have refused those two files: `in_grace()` is correctly scoped to the closing session via
+`_is_mine`, `.agent/bin/` is under UNFREE_PREFIXES so it is not free-by-prefix, and the files were
+either claimed by this session or in its own grace window at the time. Why the hook admitted them is
+untested — candidates are a `--no-verify`, a hook that stages more after its own check, or a race
+between the check and the commit. Anyone picking this up should reproduce with two processes before
+changing the hook, rather than trusting this paragraph.
+
+---
+
+**Resolved 2026-08-19 by lm.** Root cause was the "untested" part of F-191's own text: `in_grace()` in `.agent/bin/agent`'s pre-commit
+`cmd_check` checks `_is_mine` against the CURRENT committer, not the agent who released the file — so
+a file claimed-and-released by a DIFFERENT session sitting staged falls to the generic "edited without
+a claim" warning instead of anything naming the sweep risk. Fixed two parts: (1) that warning branch
+now looks at `st["recent"][f]` directly and, when the record belongs to a different agent within
+RECENT_GRACE_HOURS, names the agent, cites F-191, and prints the pathspec fix — still a warning, not a
+block, since an unclaimed file is legitimately free to commit (F-072); (2) AGENTS.md's F-081/D-057
+harness-source section told a task to claim `.agent/bin/agent` before `done` but never said how to
+commit it afterward — the actual doc gap that let nettle12 hand-commit without a pathspec in the real
+incident. Added the same pathspec instruction the docs/ section already got from F-199.
+
+Verified: `python3 tools/harness_check.py` — 31/31 (29 prior + 2 new cases: the sweep-naming warning
+firing within the grace window, and falling back to the generic warning outside it).
+`python3 tools/harness_check.py --rev HEAD` — 30/31, failing exactly the new case, confirming it is a
+real regression guard against the pre-fix harness. Swept `.agent/bin/agent`/`tools/*.py` for other
+un-pathspec'd `git commit` calls (none) and every AGENTS.md hand-commit instruction (docs/ already had
+the pathspec form from F-199; harness-source didn't, now fixed). Full spec: docs/SPECS.md F-191.
+
+### F-204 · A Blender preview that moves assets between renders draws the layout it had at the first render — **fixed**
+
+**Area:** art-pipeline · **Severity:** medium · **Found:** 2026-08-19 by slate17 during 2.1d (A-012)
+
+Every asset generator in `tools/blender/` renders its contact sheets the same way: show a subset,
+move those assets into a row, aim the camera, `bpy.ops.render.render()`, repeat. In a `--background`
+process that does not work. The **first** render fixes the layout, and every later render draws the
+assets where they were then — so a sheet frames empty ground while the objects it wanted are
+somewhere else in the world.
+
+It does not look like a framing bug. It looks like an asset failing to build: A-012's contact sheet
+came out with one of five tiles simply blank. The asset was present, `hide_render=False`,
+`visible_get()` true, in a linked collection, carrying its 109 polygons, with `matrix_world` at
+exactly the requested position — every probe said it was there, and it did not render. It also
+renders perfectly when it is the only asset on the sheet, which is what makes this expensive: the
+obvious next step is to go looking for what is wrong with that one asset, and nothing is.
+
+**What does and does not take effect between renders in one background process:**
+
+| Change | Applies to the next render |
+|---|---|
+| `camera.location` / `ortho_scale` | yes |
+| `object.hide_render` | yes |
+| `object.location` on an existing object | **no** |
+| an object created after the first render | **no** |
+| `view_layer.update()`, `scene.frame_set()`, linked duplicates, a fresh scene via `temp_override` | did not help |
+
+**The fix that works: place assets once and never move them.** A-012 authors a `LAYOUT` table — each
+asset gets an `(x, row_y)` at creation — and a sheet is a camera aimed at a row with the other rows
+hidden. Nothing moves after the first evaluation, so there is nothing stale to flush.
+
+**`build_gatherable_plants.py` (A-011) and `build_flora_set.py` have the same shape** — they
+reposition roots per sheet and re-render — so their committed preview sheets may not show what their
+code says they show. Worth a look before anyone judges those kits from their sheets; the assets
+themselves are unaffected, because every generator's *contract* measures geometry rather than pixels.
+
+**Resolved 2026-08-19 by lp.** Fixed the two generators DELEGATION.md's A-012 note named as still having the moving-layout shape:
+
+**`build_gatherable_plants.py`:** one `figure` (scale-reference cube) object was moved between all
+three renders (two family sheets + the berry-decision shot) — only the first sheet's cube position
+ever actually took effect, so `gatherable_deposits_preview.png` silently shipped with its reference
+cube frozen at the first sheet's position (off-frame). The berry-decision shot also relocated the
+three bush roots to a hand-picked tight layout that never took effect either, so the render drew them
+at their real grid positions. Fix: build one reference cube PER sheet (3 total), each placed once
+before any render and only ever `hide_render`-toggled, matching A-012's own established pattern; and
+reordered SPECS to build berry_bush_full, poison_berry_bush, berry_bush_harvested adjacently so their
+real grid position already reads left-to-right the way the decision shot wants — no object relocation
+needed at all, only camera aim (derived from the assets' real, already-known x positions).
+
+**`build_flora_set.py`:** same "one figure moved between renders" bug across all SIX family sheets
+(only "shrubs", the first family, ever showed its reference cube) — plus the "hero" showcase shot
+(`flora_set_preview.png`) relocated 18 named assets from across all six family grids (spaced 26 m
+apart) into a tight diorama; that relocation never took effect either, so the hero shot would have
+drawn them scattered at their real family-grid positions, mostly outside the hero camera's frame.
+Camera-only reframing can't fix the hero shot (the real positions span >150 m) unlike the gatherables
+case, so this one needed real placed-once objects: `hero_duplicate()` makes a linked-mesh-data copy
+of each hero asset's exported mesh, positioned at its hero spot via `Matrix.Translation(delta) @
+source.matrix_world` BEFORE any render, then only ever hidden/shown — never moved again. Six
+per-family reference cubes use the same `make_reference()` helper as gatherables.
+
+**Verified:** both scripts run standalone
+(`/Applications/Blender.app/Contents/MacOS/Blender --background --python tools/blender/build_X.py`),
+`GATHERABLES_CHECK PASS` / `FLORA_CHECK PASS`, geometry/catalog numbers unchanged from HEAD (only
+`berry_bush_harvested.glb` differs in bytes, from the SPECS reorder shifting Blender's internal
+material-interning order — confirmed harmless: `tools/blender/asset_repro_check.py` run against both
+scripts reports every GLB and both catalog.json byte-identical across two fresh rebuilds).
+Visually inspected the previously-broken tiles after rebuild — `berry_decision_preview.png`,
+`gatherable_deposits_preview.png`, `small_trees_preview.png` / `ground_cover_preview.png` (flora,
+families 2 and 6) and `flora_set_preview.png` (hero shot) — all now show their reference cube /
+intended composition instead of a missing or misplaced one.
+
+**Left open, filed as F-207:** the sweep for the same shape (AGENTS.md step 3) found it live in 8
+MORE generators — `build_enemy_crawler.py`, `build_crafting_stations.py`,
+`build_harvestable_resources.py`, `build_mire_map_kit.py`, `build_wellspring_set.py`,
+`build_loot_set.py`, `build_ward_set.py`, `build_tool_weapon_set.py` (this one twice — its second AND
+third renders both relocate objects that never move). Not fixed here: each needs the same bespoke
+`make_reference`/`hero_duplicate` treatment this task worked out, across hand-authored art files, and
+`build_enemy_crawler.py`'s showcase involves an armature, not a plain mesh — real per-file work, not
+a mechanical sweep. `docs/SPECS.md` carries this task's `## F-204` block; `docs/DECISIONS.md` D-128
+records the general fix pattern for whoever picks up F-207.
 
 ### F-188 · Runtime-merged meshes have no shadow mesh, though every imported .glb gets one — **fixed**
 
