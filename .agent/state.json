@@ -1,39 +1,9 @@
 {
   "claims": {
-    "assets/audio/music/boss_stinger.ogg": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
-    "assets/audio/music/boss_stinger.ogg.import": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
-    "autoload/boss_music_director.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
-    "autoload/boss_music_director.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
-    "autoload/enemy_world.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
     "autoload/graphics_quality.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
-    },
-    "core/events/event_bus.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
     },
     "core/net/net_version.gd": {
       "agent": "slate17",
@@ -45,55 +15,10 @@
       "at": "2026-08-18T22:08:56+00:00",
       "task": "F-144"
     },
-    "project.godot": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
     "systems/building/buildable_door.gd": {
       "agent": "slate17",
       "at": "2026-08-18T22:23:08+00:00",
       "task": "3.7"
-    },
-    "systems/enemies/boss.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
-    "systems/enemies/boss.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
-    "systems/enemies/boss_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
-    "systems/enemies/boss_def.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
-    "systems/enemies/boss_move_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
-    "systems/enemies/boss_move_def.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
-    "systems/enemies/boss_phase_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
-    "systems/enemies/boss_phase_def.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
     },
     "systems/harvesting/harvestable.gd": {
       "agent": "nettle12",
@@ -109,26 +34,6 @@
       "agent": "nettle12",
       "at": "2026-08-18T22:14:11+00:00",
       "task": "F-144"
-    },
-    "tools/audio/render_music.py": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
-    "tools/audio_import_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:26:43+00:00",
-      "task": "5.5"
-    },
-    "tools/boss_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
-    "tools/boss_check.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
     },
     "tools/door_check.gd": {
       "agent": "slate17",
@@ -165,16 +70,6 @@
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
     },
-    "ui/hud/boss_health_hud.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
-    "ui/hud/boss_health_hud.gd.uid": {
-      "agent": "lp",
-      "at": "2026-08-19T04:09:08+00:00",
-      "task": "5.5"
-    },
     "world/environment/draw_policy.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T21:57:54+00:00",
@@ -203,40 +98,6 @@
       ],
       "notes": [],
       "started": "2026-08-18T22:23:08+00:00"
-    },
-    "5.5": {
-      "agent": "lp",
-      "files": [
-        "core/events/event_bus.gd",
-        "autoload/enemy_world.gd",
-        "systems/enemies/boss_move_def.gd",
-        "systems/enemies/boss_move_def.gd.uid",
-        "systems/enemies/boss_phase_def.gd",
-        "systems/enemies/boss_phase_def.gd.uid",
-        "systems/enemies/boss_def.gd",
-        "systems/enemies/boss_def.gd.uid",
-        "systems/enemies/boss.gd",
-        "systems/enemies/boss.gd.uid",
-        "autoload/boss_music_director.gd",
-        "autoload/boss_music_director.gd.uid",
-        "ui/hud/boss_health_hud.gd",
-        "ui/hud/boss_health_hud.gd.uid",
-        "tools/boss_check.gd",
-        "tools/boss_check.gd.uid",
-        "tools/audio/render_music.py",
-        "assets/audio/music/boss_stinger.ogg",
-        "assets/audio/music/boss_stinger.ogg.import",
-        "project.godot",
-        "tools/audio_import_check.gd"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-19T04:09:14+00:00",
-          "by": "lp",
-          "text": "systems/enemies/enemy.gd was claimed by lm (7.7, perf/LOD) mid-brief \u2014 did not need it after all: Boss extends Enemy entirely via GDScript's normal virtual dispatch (override _can_perceive/_tick_pursuit/_enter_tell/_tick_attack/_resolve_attack/_acquire_target/host_apply_damage/_play_state_animation/_build_synchronizer, call super() where it should fall through), touching zero lines of enemy.gd. Arena leash implemented by resetting the inherited _target_peer/_target_node vars from an overridden _tick_pursuit() before calling super. boss_engaged/boss_phase_changed/boss_defeated all fire from Boss's own replicated 'phase' setter or from _play_state_animation() (itself invoked from Enemy's existing replicated 'state' setter) so every peer's own EventBus fires, not just the host's \u2014 the D-107/D-108/F-168 trap, avoided from the start instead of needing a later fix."
-        }
-      ],
-      "started": "2026-08-19T04:09:08+00:00"
     },
     "F-144": {
       "agent": "nettle12",
@@ -302,6 +163,18 @@
       "agent": "tine18",
       "at": "2026-08-18T18:10:49+00:00",
       "task": "7.2"
+    },
+    "assets/audio/music/boss_stinger.ogg": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "831e6bbe12aebe19bb37c173a2b8547ae100d9442eea4cc846682cf88f75a3a2",
+      "task": "5.5"
+    },
+    "assets/audio/music/boss_stinger.ogg.import": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "e3556e7fc879a65aac3ef4181a169ec509f2ec3cb2d2268bc2686ef7413978e2",
+      "task": "5.5"
     },
     "assets/audio/sfx": {
       "agent": "tine18",
@@ -508,6 +381,18 @@
       "hash": "1821465ef11d0a9b55d0b1d2b498039345fe08ec2c7a01726507a4e9f49348a8",
       "task": "3.9"
     },
+    "autoload/boss_music_director.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "2a662f226c188dcf8a278d73672d13d83a089d2cae6d0dbd80f7f1615f4f776e",
+      "task": "5.5"
+    },
+    "autoload/boss_music_director.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "d5f735466e539eabaf61f746e2715c6c144432496f34ccffbc908bdf7feb6e2d",
+      "task": "5.5"
+    },
     "autoload/build_service.gd": {
       "agent": "lm",
       "at": "2026-08-19T01:01:42+00:00",
@@ -551,9 +436,9 @@
     },
     "autoload/enemy_world.gd": {
       "agent": "lp",
-      "at": "2026-08-18T22:57:40+00:00",
-      "hash": "0cacc5174d22e9be4a0808d9a53760633313c41814c28287de52cc0589fda420",
-      "task": "3.16"
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "a1458cce414a349c66dfaebe3b1d4ed82eedebfbb370b7d0cf1cd1a5859dbe4d",
+      "task": "5.5"
     },
     "autoload/entity_directory.gd": {
       "agent": "hollow7",
@@ -1676,10 +1561,10 @@
       "task": "3.14"
     },
     "core/events/event_bus.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T03:34:03+00:00",
-      "hash": "a72f595727a70c1325b726cd5b9b128a704ad11629d41f3b855b636b470902d5",
-      "task": "6.9"
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "c24120d39b3024076aed8f1cb67b89851bde168a363352dc0e0fad2510e47e51",
+      "task": "5.5"
     },
     "core/game_state.gd": {
       "agent": "lm",
@@ -1820,10 +1705,10 @@
       "task": "F-115"
     },
     "project.godot": {
-      "agent": "lm",
-      "at": "2026-08-19T04:02:20+00:00",
-      "hash": "93c9fc741d3954c0bdb553b28ddd96ad408ce90c4c91d2cdc44b124d6938fb7c",
-      "task": "7.5"
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "cc6314b5004e323518ed6208e56d9f4ea7d68c5e8c47666a682dbf8413537c05",
+      "task": "5.5"
     },
     "scenes/buildables/barricade.tscn": {
       "agent": "slate17",
@@ -2006,6 +1891,54 @@
       "hash": "299201d22445a0041c5262615e0791f6d4a4f780e9b7289b16bc1ea1f2384047",
       "task": "6.1"
     },
+    "systems/enemies/boss.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "a8e5992b5368ee8523254cc20bbd4a300d0180567f84f348a0e0421abcd75eaa",
+      "task": "5.5"
+    },
+    "systems/enemies/boss.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "1262b13c1b2fe4a2e91e77c2a9d60f55ee2a68ef87e206f36186c735141403dc",
+      "task": "5.5"
+    },
+    "systems/enemies/boss_def.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "2516eb100bf7f9f81e12428dd0f0dddf6b935ce266c4ac9fbd7c95e28eee7770",
+      "task": "5.5"
+    },
+    "systems/enemies/boss_def.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "8920422e205f330392f27911c2cf3502d8bfb96f0000da1f5dfc9d6753746553",
+      "task": "5.5"
+    },
+    "systems/enemies/boss_move_def.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "36d49802549b01c93eb6b2d67cef7f4906411d902ee8f0d0fda461e22983f493",
+      "task": "5.5"
+    },
+    "systems/enemies/boss_move_def.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "9999448debf0799a2a97687ce94d7c06d7a262128256e60bd67325e436b45a5a",
+      "task": "5.5"
+    },
+    "systems/enemies/boss_phase_def.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "fdc14e941402ecbfea7bf4bfad0838e69e37cf83d498605f273fdddd0f3afcab",
+      "task": "5.5"
+    },
+    "systems/enemies/boss_phase_def.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "ead7599ee7f850bccff898526c00b85ddb18a9b2edc059ba4e7e004d244b8676",
+      "task": "5.5"
+    },
     "systems/enemies/enemy.gd": {
       "agent": "lm",
       "at": "2026-08-19T04:10:33+00:00",
@@ -2172,9 +2105,10 @@
       "task": "7.2"
     },
     "tools/audio/render_music.py": {
-      "agent": "tine18",
-      "at": "2026-08-18T18:10:49+00:00",
-      "task": "7.2"
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "d27e0674c46ea10ea60836eed769e8bf083f1dd3a86f80d8f0370ed00c161a2c",
+      "task": "5.5"
     },
     "tools/audio/render_sfx.py": {
       "agent": "tine18",
@@ -2182,9 +2116,10 @@
       "task": "7.1"
     },
     "tools/audio_import_check.gd": {
-      "agent": "tine18",
-      "at": "2026-08-18T18:10:49+00:00",
-      "task": "7.2"
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "d55ef1d8a5cc426fa641f19731200203943eb2eb5d59cc4843cb68625cf6d6a4",
+      "task": "5.5"
     },
     "tools/bench_chunk_gpu.gd": {
       "agent": "wick20",
@@ -2247,6 +2182,18 @@
       "agent": "lp",
       "at": "2026-08-18T18:02:23+00:00",
       "task": "F-094"
+    },
+    "tools/boss_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "74db29bb39ae4bd26901b76cde059886e372c9db3cd0ec37e04d4b00d29b8b2e",
+      "task": "5.5"
+    },
+    "tools/boss_check.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "022d96ce48d828bd2b083e359f15c8adede42be6dc616bd62fd78d104d1422cd",
+      "task": "5.5"
     },
     "tools/build_check.gd": {
       "agent": "lp",
@@ -2433,11 +2380,6 @@
       "hash": "a8fd3dd892a74fe23606f75155c318b8227f8aa072f39237a9ce7b77da91b812",
       "task": "7.7"
     },
-    "tools/enemy_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:33:16+00:00",
-      "task": "F-060"
-    },
     "tools/entity_check.gd": {
       "agent": "hollow7",
       "at": "2026-08-18T21:12:09+00:00",
@@ -2525,21 +2467,6 @@
       "agent": "vane19",
       "at": "2026-08-18T17:55:20+00:00",
       "task": "F-114"
-    },
-    "tools/harvest_world_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:33:16+00:00",
-      "task": "F-060"
-    },
-    "tools/harvestable_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:33:16+00:00",
-      "task": "F-060"
-    },
-    "tools/harvestable_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:33:16+00:00",
-      "task": "F-060"
     },
     "tools/haul_check.gd": {
       "agent": "lp",
@@ -2647,11 +2574,6 @@
       "hash": "c54762b4badea5408abfb81daf202d943719806ac86420a55c74b7fd8af920dc",
       "task": "4.5"
     },
-    "tools/net_check_pattern_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:33:16+00:00",
-      "task": "F-060"
-    },
     "tools/net_debug_panel_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T14:06:30+00:00",
@@ -2667,11 +2589,6 @@
       "agent": "coil23",
       "at": "2026-08-18T13:15:50+00:00",
       "task": "F-098"
-    },
-    "tools/player_health_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T04:33:16+00:00",
-      "task": "F-060"
     },
     "tools/player_vitals_check.gd": {
       "agent": "lp",
@@ -2900,6 +2817,18 @@
       "at": "2026-08-19T04:27:15+00:00",
       "hash": "2439481058adbcbbd25adf41d262410ad52943c2773f9172e632ddd73cdb7159",
       "task": "F-167"
+    },
+    "ui/hud/boss_health_hud.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "cf586c816de84567f282d549d5cbabc8cbee905bf7a7db387d54e1c9d100e3f1",
+      "task": "5.5"
+    },
+    "ui/hud/boss_health_hud.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-19T04:35:12+00:00",
+      "hash": "06a0668d887f91bf1f792bb6fba8571b9414d3333d9e79c904339fc5ce1781c1",
+      "task": "5.5"
     },
     "ui/hud/defeat_hud.gd": {
       "agent": "lm",
@@ -3893,9 +3822,11 @@
       "title": "Weapon variety per fork, weapon-specific movesets"
     },
     "5.5": {
+      "done_at": "2026-08-19T04:35:12+00:00",
+      "done_by": "lp",
       "est": "5",
       "milestone": "M5",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T2",
       "title": "Boss framework: phases, arena, telegraphs, health bar, music stinger"
     },
@@ -5654,6 +5585,13 @@
       "status": "todo",
       "tier": "F",
       "title": "No dev machine can stand in for \"mid-range\" \u2014 `tools/perf_probe.gd`'s baseline is only ever measured on the fastest hardware in the project"
+    },
+    "F-175": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`Array[StringName].sort()` does not sort lexicographically \u2014 at least two other call sites besides F-167's rely on it anyway"
     }
   },
   "version": 1

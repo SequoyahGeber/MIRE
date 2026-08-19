@@ -1,9 +1,9 @@
 extends SceneTree
 
-## Offline proof for tasks 7.1/7.2 (audio v1): every committed audio asset
-## imports and loads in-engine — music OGGs decode as AudioStreamOggVorbis
-## with loop enabled and the full 3:44 length, SFX WAVs decode as mono
-## AudioStreamWAV of sane length. Run through the shared import lock:
+## Offline proof for tasks 7.1/7.2 (audio v1) and 5.5 (the boss stinger): every committed audio
+## asset imports and loads in-engine — the two ambient beds decode as AudioStreamOggVorbis with
+## loop enabled and the full 3:44 length, the boss stinger decodes as a short non-looping one-shot,
+## SFX WAVs decode as mono AudioStreamWAV of sane length. Run through the shared import lock:
 ##
 ##   .agent/bin/agent godot --script tools/audio_import_check.gd
 ##
@@ -13,6 +13,13 @@ extends SceneTree
 const MUSIC_DIR := "res://assets/audio/music"
 const SFX_DIR := "res://assets/audio/sfx"
 const MUSIC_LEN_S := 224.0
+## `tools/audio/render_music.py`'s `BOSS_STINGER` (task 5.5) — a one-shot cue, not a bed, so it is
+## checked on its own rather than folded into the looped-ambience assertions below. The rendered
+## length is `dur_s + tail_s` (3.2 + 4.0), not `dur_s` alone: unlike the looped tracks (whose
+## `wrap_loop()` folds the reverb tail back onto the head), a one-shot has nothing to fold onto and
+## is left to ring out — the "hit" lands in the first ~1.1s, the rest is decay.
+const STINGER_NAME := "boss_stinger.ogg"
+const STINGER_LEN_S := 7.2
 
 var failures: int = 0
 
@@ -24,7 +31,10 @@ func _initialize() -> void:
 func _run() -> void:
 	print("\n== music: ogg streams, looped, full length ==")
 	var music_names: PackedStringArray = _list(MUSIC_DIR, ".ogg")
-	check(music_names.size() == 2, "found 2 music oggs (%d)" % music_names.size())
+	var stinger_index: int = music_names.find(STINGER_NAME)
+	if stinger_index >= 0:
+		music_names.remove_at(stinger_index)
+	check(music_names.size() == 2, "found 2 looped music oggs (%d)" % music_names.size())
 	for name in music_names:
 		var stream: AudioStream = load(MUSIC_DIR + "/" + name)
 		if stream == null:
@@ -36,6 +46,16 @@ func _run() -> void:
 			"%s length %.1fs ~= %.0fs" % [name, length, MUSIC_LEN_S])
 		var looped: bool = bool(stream.get("loop"))
 		check(looped, "%s has loop enabled" % name)
+
+	print("\n== music: the boss stinger, a short non-looping one-shot ==")
+	var stinger: AudioStream = load(MUSIC_DIR + "/" + STINGER_NAME)
+	check(stinger != null, "%s loads" % STINGER_NAME)
+	if stinger != null:
+		check(stinger is AudioStreamOggVorbis, "%s is AudioStreamOggVorbis" % STINGER_NAME)
+		var stinger_length: float = stinger.get_length()
+		check(absf(stinger_length - STINGER_LEN_S) < 1.0,
+			"%s length %.1fs ~= %.1fs" % [STINGER_NAME, stinger_length, STINGER_LEN_S])
+		check(not bool(stinger.get("loop")), "%s does not loop — it is a one-shot cue" % STINGER_NAME)
 
 	print("\n== sfx: mono wav streams ==")
 	var sfx_names: PackedStringArray = _list(SFX_DIR, ".wav")

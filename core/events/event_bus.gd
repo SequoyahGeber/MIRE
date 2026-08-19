@@ -21,6 +21,9 @@ static var _run_extracted_subscribers: Array[Callable] = []
 static var _run_wiped_subscribers: Array[Callable] = []
 static var _salvage_banked_subscribers: Array[Callable] = []
 static var _unlock_purchased_subscribers: Array[Callable] = []
+static var _boss_engaged_subscribers: Array[Callable] = []
+static var _boss_phase_changed_subscribers: Array[Callable] = []
+static var _boss_defeated_subscribers: Array[Callable] = []
 
 
 ## Listener signature:
@@ -346,6 +349,101 @@ static func emit_unlock_purchased(unlock_id: StringName, cost: int, total_salvag
 static func unlock_purchased_subscriber_count() -> int:
 	_prune_invalid(_unlock_purchased_subscribers)
 	return _unlock_purchased_subscribers.size()
+
+
+## Listener signature: (boss_id: StringName, world_position: Vector3) -> void
+##
+## Task 5.5's boss framework. Fires once per boss encounter, on EVERY peer, the instant `Boss.phase`
+## first leaves its dormant value (-1) — the same moment the boss takes its first target. This is the
+## "music stinger" hook: `BossMusicDirector` (client-local, task 5.5) is its one consumer today, and
+## a future HUD flourish or camera nudge can subscribe here too.
+##
+## **Fires from `Boss.phase`'s own setter, never from a host-only guard.** `phase` is a REPLICATED
+## property (same `SceneReplicationConfig`/ALWAYS shape `state`/`health`/`hit_counter` already use on
+## `Enemy`) — the host sets it directly, a client's copy receives it over the wire and its own local
+## setter runs identically, so both processes reach this emit from their own call site. This is the
+## D-107/D-108 fix pattern (`docs/FINDINGS.md` F-168 is the standing example of getting it wrong)
+## applied from the start rather than retrofitted after a client-side bug report.
+static func subscribe_boss_engaged(listener: Callable) -> void:
+	_prune_invalid(_boss_engaged_subscribers)
+	if listener.is_valid() and not _boss_engaged_subscribers.has(listener):
+		_boss_engaged_subscribers.append(listener)
+
+
+static func unsubscribe_boss_engaged(listener: Callable) -> void:
+	_boss_engaged_subscribers.erase(listener)
+
+
+static func emit_boss_engaged(boss_id: StringName, world_position: Vector3) -> void:
+	_prune_invalid(_boss_engaged_subscribers)
+	for listener: Callable in _boss_engaged_subscribers.duplicate():
+		listener.call(boss_id, world_position)
+
+
+static func boss_engaged_subscriber_count() -> int:
+	_prune_invalid(_boss_engaged_subscribers)
+	return _boss_engaged_subscribers.size()
+
+
+## Listener signature: (boss_id: StringName, previous_phase: int, new_phase: int,
+##      world_position: Vector3) -> void
+##
+## The `boss_engaged` counterpart for every phase transition AFTER the first (a health-threshold
+## crossing into `BossPhaseDef` index `new_phase`, per `BossDef.phase_for_health_fraction()`).
+## `previous_phase` is never -1 here — that transition is `boss_engaged` instead, so a stinger
+## consumer never has to special-case "engaged" out of a phase-change list. Same replicated-setter
+## guarantee as `boss_engaged` above: every peer's own `Boss.phase` setter fires this locally.
+static func subscribe_boss_phase_changed(listener: Callable) -> void:
+	_prune_invalid(_boss_phase_changed_subscribers)
+	if listener.is_valid() and not _boss_phase_changed_subscribers.has(listener):
+		_boss_phase_changed_subscribers.append(listener)
+
+
+static func unsubscribe_boss_phase_changed(listener: Callable) -> void:
+	_boss_phase_changed_subscribers.erase(listener)
+
+
+static func emit_boss_phase_changed(
+	boss_id: StringName, previous_phase: int, new_phase: int, world_position: Vector3
+) -> void:
+	_prune_invalid(_boss_phase_changed_subscribers)
+	for listener: Callable in _boss_phase_changed_subscribers.duplicate():
+		listener.call(boss_id, previous_phase, new_phase, world_position)
+
+
+static func boss_phase_changed_subscriber_count() -> int:
+	_prune_invalid(_boss_phase_changed_subscribers)
+	return _boss_phase_changed_subscribers.size()
+
+
+## Listener signature: (boss_id: StringName, world_position: Vector3) -> void
+##
+## Fires once per boss, on every peer, the instant its `state` first reaches `Enemy.State.DEAD`.
+## Hung off `Boss._play_state_animation()` rather than `Enemy._enter_death()` on purpose: the death
+## override lives on the HOST call path only (`host_apply_damage()` gates entry), the same host-only
+## shape F-168 still has to fix for `Wellspring.capped`. `_play_state_animation()` is instead called
+## from `state`'s own replicated setter — already proven, on every peer, by the fact that a client's
+## copy of an ordinary `Enemy` already plays its death clip with no RPC of its own — so hanging the
+## emit there gets every peer's own bus for free instead of needing a second fix later.
+static func subscribe_boss_defeated(listener: Callable) -> void:
+	_prune_invalid(_boss_defeated_subscribers)
+	if listener.is_valid() and not _boss_defeated_subscribers.has(listener):
+		_boss_defeated_subscribers.append(listener)
+
+
+static func unsubscribe_boss_defeated(listener: Callable) -> void:
+	_boss_defeated_subscribers.erase(listener)
+
+
+static func emit_boss_defeated(boss_id: StringName, world_position: Vector3) -> void:
+	_prune_invalid(_boss_defeated_subscribers)
+	for listener: Callable in _boss_defeated_subscribers.duplicate():
+		listener.call(boss_id, world_position)
+
+
+static func boss_defeated_subscriber_count() -> int:
+	_prune_invalid(_boss_defeated_subscribers)
+	return _boss_defeated_subscribers.size()
 
 
 static func _prune_invalid(subscribers: Array[Callable]) -> void:

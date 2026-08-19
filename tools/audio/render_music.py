@@ -23,6 +23,19 @@ Section 5 (Em+C over the D pedal) is the one shadowed moment; F major
 warmth answers it. A Karplus-Strong pluck carries a pentatonic-plus-B
 motif; rare FM bells glint like light off water.
 
+BOSS STINGER — task 5.5, a non-looping one-shot, not a bed: a low FM groan
+rises for under a second, lands on a sub thump the instant a fifth below
+NIGHT's own A-minor home (D1), with a dissonant pair of detuned FM bells
+struck a beat apart over it — same palette as NIGHT (the FM bell/groan
+voices, the one shared reverb IR shape), just compressed into an impact
+instead of held over 3:44. The impact itself lands inside the first
+~1.1 s; `dur_s` (3.2) plus `tail_s` (4.0) is the full ~7.2 s rendered
+file, left to ring out rather than folded back like the looped tracks
+(there is nothing to fold a one-shot's tail ONTO). `BossMusicDirector`
+(task 5.5) plays this on `EventBus.boss_engaged`/`boss_phase_changed`/
+`boss_defeated` — see its own header for why one cue covers all three
+rather than three assets.
+
 NIGHT — "Hollowmere Dark", A Aeolian leaning Phrygian, 7 x 32 s = 3:44 loop.
 Same voices an octave lower and darker (harmonic rolloff). Sub-root swells
 under each section. Section 5 is Bb major over the A pedal — the bII dread
@@ -125,6 +138,17 @@ NIGHT = {
     "ir": {"dur": 9.0, "tau": 1.6, "hf": 0.25},
     "wet": -6.0,
     "rms_target": -21.0,
+}
+
+BOSS_STINGER = {
+    "name": "boss_stinger",
+    "seed": 20260819,
+    "dur_s": 3.2,
+    "tail_s": 4.0,
+    "root": "D1",       # a fifth under NIGHT's A-minor home — lands lower than the ambience ever does
+    "bell": "A5",
+    "hit_at_s": 0.9,
+    "rms_target": -14.0,
 }
 
 EDGE_S = 8.0  # beds/drone render loop+EDGE with EDGE-long cos edges; wrap_loop folds them
@@ -250,6 +274,42 @@ def render_track(cfg: dict) -> np.ndarray:
     return mastered
 
 
+def render_stinger(cfg: dict) -> np.ndarray:
+    """One dramatic hit for a boss encounter (task 5.5) — not a bed: no EDGE fold, no wrap_loop,
+    just a Mix rendered once with its own reverb tail and mastered louder than the ambience (a
+    stinger needs to read as a foreground event, not a texture)."""
+    rng = np.random.default_rng(cfg["seed"])
+    dur_s = cfg["dur_s"]
+    ir = ma.make_ir(4.0, rng, tau_s=1.4, hf_ratio=0.3)
+    mix = ma.Mix(dur_s, tail_s=cfg["tail_s"])
+    hit_t = cfg["hit_at_s"]
+
+    # the rise into the hit
+    groan = ma.fm_groan(50.0, 72.0, hit_t + 0.1, rng, ratio=1.6, index=3.0)
+    mix.add(groan, 0.0, gain_db=-9.0, pan=0.0, send_db=-13.0)
+
+    # the hit itself: a sub thump under a dissonant pair of FM bells, one beat apart
+    sub_dur = 1.6
+    sub = ma.sine(ma.note_hz(cfg["root"]), sub_dur) * ma.exp_decay(ma.samples(sub_dur), 0.35)
+    mix.add(sub, hit_t, gain_db=-3.0, pan=0.0, send_db=-9.0)
+
+    bell_hz = ma.note_hz(cfg["bell"])
+    bell = ma.fm_bell(bell_hz, 2.2, rng, ratio=1.41, index=3.4)
+    mix.add(bell, hit_t, gain_db=-5.0, pan=0.0, send_db=-7.0)
+    # a second bell, detuned a minor 7th up and struck slightly later — unresolved, on purpose
+    bell2 = ma.fm_bell(bell_hz * 2.0 ** (10.0 / 12.0), 1.8, rng, ratio=1.41, index=3.0)
+    mix.add(bell2, hit_t + 0.16, gain_db=-8.0, pan=0.22, send_db=-8.0)
+
+    out = mix.render(ir, wet_db=-3.0)
+    mastered = ma.master(out, peak_db=-1.2)
+    rms = ma.rms_db(mastered)
+    if rms > cfg["rms_target"]:
+        mastered *= ma.db(cfg["rms_target"] - rms)
+    print(f"{cfg['name']}: {dur_s:.1f}s one-shot, peak {20*np.log10(np.max(np.abs(mastered))):.1f} dBFS, "
+          f"rms {ma.rms_db(mastered):.1f} dBFS")
+    return mastered
+
+
 def encode(wav_path: str, out_path: str, codec_args: list[str]) -> None:
     if out_path.endswith(".ogg"):
         # the brew ffmpeg here lacks libvorbis; libsndfile (via soundfile) has
@@ -285,6 +345,15 @@ def main() -> None:
                ["-c:a", "libvorbis", "-q:a", "5"])
         encode(wav, os.path.join(args.build_dir, cfg["name"] + ".mp3"),
                ["-c:a", "libmp3lame", "-q:a", "2"])
+
+    sig = render_stinger(BOSS_STINGER)
+    wav = os.path.join(args.build_dir, BOSS_STINGER["name"] + ".wav")
+    ma.write_wav(wav, sig, dither_rng)
+    encode(wav, os.path.join(args.ogg_dir, BOSS_STINGER["name"] + ".ogg"),
+           ["-c:a", "libvorbis", "-q:a", "5"])
+    encode(wav, os.path.join(args.build_dir, BOSS_STINGER["name"] + ".mp3"),
+           ["-c:a", "libmp3lame", "-q:a", "2"])
+
     print("done:", args.build_dir, "->", args.ogg_dir)
 
 

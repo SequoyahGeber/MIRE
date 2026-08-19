@@ -69,6 +69,8 @@ SettingsMenu="*res://ui/menu/settings_menu.gd"
 UnlockMenu="*res://ui/menu/unlock_menu.gd"
 MainMenu="*res://ui/menu/main_menu.gd"
 SettingsService="*res://autoload/settings_service.gd"
+BossMusicDirector="*res://autoload/boss_music_director.gd"
+BossHealthHud="*res://ui/hud/boss_health_hud.gd"
 
 [display]
 

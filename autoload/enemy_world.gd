@@ -14,6 +14,11 @@ extends Node
 
 const ENEMY_SCRIPT := preload("res://systems/enemies/enemy.gd")
 const ENEMY_DEF := preload("res://systems/enemies/enemy_def.gd")
+## Task 5.5. `BossDef extends EnemyDef`, so `_load_defs()`'s `res is ENEMY_DEF` check already accepts
+## one with no change; only the spawn-time script choice below needs to know the difference, so a
+## `BossDef` actually gets `Boss`'s phase/arena/telegraph machinery instead of plain `Enemy`.
+const BOSS_DEF := preload("res://systems/enemies/boss_def.gd")
+const BOSS_SCRIPT := preload("res://systems/enemies/boss.gd")
 
 const DEFS_PATH: String = "res://content/enemies"
 const CONTAINER_NODE: StringName = &"Enemies"
@@ -376,7 +381,9 @@ func _net_spawn_enemy(data: Variant) -> Node:
 	if def == null:
 		return null
 
-	var enemy: CharacterBody3D = ENEMY_SCRIPT.new()
+	# Same script choice on every peer, from the same replicated payload (D-023's usual rule) — a
+	# BossDef spawns Boss, anything else spawns the plain Enemy it always has (task 5.5).
+	var enemy: CharacterBody3D = BOSS_SCRIPT.new() if def is BOSS_DEF else ENEMY_SCRIPT.new()
 	enemy.name = "Enemy%d" % int(payload.get("index", 0))
 	enemy.set("definition", def)
 	enemy.position = payload.get("origin", Vector3.ZERO)
