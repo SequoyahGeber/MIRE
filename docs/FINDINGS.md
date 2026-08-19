@@ -484,31 +484,6 @@ their own `## N (task X)` comment rather than collapsing into a single bump.
 
 ---
 
-### F-188 · Runtime-merged meshes have no shadow mesh, though every imported .glb gets one
-
-**Area:** perf · **Severity:** low · **Found:** 2026-08-19 by nettle12
-
-Every kit .glb imports with `meshes/create_shadow_meshes=true`, so the import pipeline builds each
-one a position-only, welded shadow mesh that the renderer uses instead of the full vertex format
-during shadow passes. `core/render/mesh_merge.gd` builds its merged meshes at runtime through
-`ImporterMesh`, and nothing generates a shadow mesh for them — `ArrayMesh.create_shadow_mesh()` is
-not exposed to scripting, though the `shadow_mesh` property itself is settable.
-
-This is why F-144 did NOT route `world/gen/undergrowth.gd` through the shared merge: flora exports
-are genuinely one part each with distinct materials, so the merge collapses nothing there (2
-surfaces to 2, 3 to 3, triangles identical), and it would have cost them the shadow meshes their
-import already generates. For the prop and harvestable kits the merge is a large win and pays for
-the loss.
-
-The fix is to build the shadow mesh by hand — same surfaces, ARRAY_VERTEX and ARRAY_INDEX only —
-and assign it to `shadow_mesh`. Shadow passes are a large share of the frame's primitives
-(1.18M total at preset high, of which the shadow pass is most), so it is worth measuring. It needs
-a real look to confirm shadows are unchanged: a malformed shadow mesh shows up as wrong shadows,
-not as an error, and `tools/frame_cost_check.gd` would report it only as a suspiciously large
-primitive drop.
-
----
-
 ### F-189 · File claims have become the bottleneck D-011 named as its own reversal trigger — one claim blocked four consecutive tasks from bumping PROTOCOL_VERSION
 
 **Area:** coordination · **Severity:** high · **Found:** 2026-08-19 by reed16
@@ -766,6 +741,52 @@ cuts) the same way A-004/A-005/A-006's did.
 ---
 
 ## Resolved
+
+### F-188 · Runtime-merged meshes have no shadow mesh, though every imported .glb gets one — **fixed**
+
+**Area:** perf · **Severity:** low · **Found:** 2026-08-19 by nettle12
+
+Every kit .glb imports with `meshes/create_shadow_meshes=true`, so the import pipeline builds each
+one a position-only, welded shadow mesh that the renderer uses instead of the full vertex format
+during shadow passes. `core/render/mesh_merge.gd` builds its merged meshes at runtime through
+`ImporterMesh`, and nothing generates a shadow mesh for them — `ArrayMesh.create_shadow_mesh()` is
+not exposed to scripting, though the `shadow_mesh` property itself is settable.
+
+This is why F-144 did NOT route `world/gen/undergrowth.gd` through the shared merge: flora exports
+are genuinely one part each with distinct materials, so the merge collapses nothing there (2
+surfaces to 2, 3 to 3, triangles identical), and it would have cost them the shadow meshes their
+import already generates. For the prop and harvestable kits the merge is a large win and pays for
+the loss.
+
+The fix is to build the shadow mesh by hand — same surfaces, ARRAY_VERTEX and ARRAY_INDEX only —
+and assign it to `shadow_mesh`. Shadow passes are a large share of the frame's primitives
+(1.18M total at preset high, of which the shadow pass is most), so it is worth measuring. It needs
+a real look to confirm shadows are unchanged: a malformed shadow mesh shows up as wrong shadows,
+not as an error, and `tools/frame_cost_check.gd` would report it only as a suspiciously large
+primitive drop.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed: MeshMerge._build() and MeshMerge.merge_instances() (core/render/mesh_merge.gd) now build a
+hand-assembled shadow mesh (position+index only, per-bucket, no ArrayMesh.create_shadow_mesh() since
+it isn't exposed to scripting) and assign it to combined.shadow_mesh. CACHE_VERSION bumped 5->6 so
+the disk cache can't serve a pre-fix entry. merge_instances() fixed unconditionally even though its
+one live caller (AuthoredWorld's mergeable props) already has cast_shadow off via DrawPolicy's
+SHADOW_MIN_HEIGHT, because F-203 is open on lifting that restriction and the fix should already be
+in place when it does.
+
+Verified: agent godot --script tools/mesh_merge_check.gd -- extended with _check_shadow_mesh()
+(shadow_mesh non-null, surface count and per-surface index count match the visible mesh, no
+channel beyond position/index) against all 361 checked kit assets (1372 surfaces), plus a new
+_check_merge_instances_shadow() synthetic test since merged()'s own coverage never calls
+merge_instances(). MESH_MERGE_CHECK_GODOT PASS. Also reran tools/prop_chunk_merge_check.gd
+(PASS) and tools/hollowmere_check.gd (PASS) to confirm the cache-version bump and the extra
+shadow_mesh resource don't disturb world generation.
+
+Swept: grep -rn "ImporterMesh|generate_lods|shadow_mesh" --include="*.gd" . outside the two files
+this task touched returned nothing -- mesh_merge.gd is the only runtime mesh assembler in the repo.
+
+Full writeup: docs/SPECS.md F-188 block.
 
 ### F-198 · Three DONE asset batches (A-004, A-005, A-006) still call `mire_art.box()`'s bevel-capable version with no override — the same F-057 exposure their own tracker rows already claim to have passed — **fixed**
 

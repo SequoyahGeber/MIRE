@@ -5270,6 +5270,62 @@ original close-out.
 
 ---
 
+## F-188 · Runtime-merged meshes have no shadow mesh, though every imported .glb gets one
+
+**Claim:** `core/render/mesh_merge.gd`, `tools/mesh_merge_check.gd`, `docs/FINDINGS.md`,
+`docs/SPECS.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble. Its brief carried a staleness warning (`core/render/mesh_merge.gd` and
+`world/gen/undergrowth.gd` had commits since filing) — checked first per that warning: the
+`mesh_merge.gd` commit was F-187 adding `merge_instances()`, which still built through the same
+`ImporterMesh` path with no shadow mesh; the `undergrowth.gd` commit was F-112's unrelated
+prop-avoidance check. Read `core/render/mesh_merge.gd` in full — confirmed no `shadow_mesh` write
+anywhere in the file, so the finding was still live in both of its two mesh-building functions.
+
+**Root cause, confirmed rather than re-derived:** every kit `.glb` imports with
+`meshes/create_shadow_meshes=true`, so the import pipeline hands every `MeshInstance3D` a
+position-only, welded shadow mesh the shadow pass renders instead of the full vertex format. Both
+`MeshMerge._build()` (backing `merged()`/`collapse()`) and `MeshMerge.merge_instances()` assemble
+their output through `ImporterMesh` at runtime and never touch `shadow_mesh` — `ArrayMesh.
+create_shadow_mesh()` is not exposed to scripting, so nothing ever built one, and every merged prop
+or harvestable rendered its full vertex format (normals, UVs, tangents) into every shadow-pass
+draw a `.glb`-imported sibling would have skipped.
+
+**Fix:** added `MeshMerge._shadow_mesh(order, buckets)`, built from the same per-bucket vertex/index
+data `_build()` and `merge_instances()` already collect — one surface per visible surface, in the
+same order, stripped to `ARRAY_VERTEX` and `ARRAY_INDEX` only (unwelded, since the dedup
+`create_shadow_mesh()` would have done is not available to scripting; correctness over that last bit
+of vertex reuse). Assigned to `combined.shadow_mesh` at the end of both functions. `CACHE_VERSION`
+bumped 5 → 6 so `_build()`'s disk cache — keyed by source mtime and this constant — cannot serve a
+pre-fix entry with no shadow mesh back to a caller.
+
+**`merge_instances()` fixed unconditionally, not just where it is used today:** every current caller
+(`AuthoredWorld._build_props()`'s `mergeable` path) restricts itself to props under
+`DrawPolicy.SHADOW_MIN_HEIGHT`, which already turns `cast_shadow` off via `DrawPolicy.apply()` — so
+today's callers see no visible change. F-203 is open on lifting that restriction for sway- and
+emitter-bearing props; when it does, `merge_instances()` already has a shadow mesh rather than
+silently reintroducing this finding for taller merged content.
+
+**Verified:** `.agent/bin/agent godot --script tools/mesh_merge_check.gd` — extended with
+`_check_shadow_mesh()` (asserts `shadow_mesh` is non-null, carries the same surface count as the
+visible mesh, matching index counts per surface, and no channel beyond position/index) called
+against every one of 361 checked kit assets (1372 surfaces), plus a new
+`_check_merge_instances_shadow()` exercising `merge_instances()` directly with two synthetic boxes
+(`merged()`'s own coverage never calls it). `MESH_MERGE_CHECK_GODOT PASS`. Also reran
+`tools/prop_chunk_merge_check.gd` (`PROP_CHUNK_MERGE_CHECK PASS`) and `tools/hollowmere_check.gd`
+(`HOLLOWMERE_CHECK PASS`) to confirm the `CACHE_VERSION` bump and the additional `shadow_mesh`
+resource on cached meshes didn't disturb world generation or its existing assertions.
+
+**Swept for the same shape elsewhere:** `grep -rn "ImporterMesh\|generate_lods\|shadow_mesh"
+--include="*.gd" .` outside the two files this task touched returned nothing — `mesh_merge.gd` is
+the only runtime mesh assembler in the repo, so there is no sibling site building a mesh through
+`ImporterMesh` without a shadow mesh.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

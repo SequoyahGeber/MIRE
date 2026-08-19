@@ -75,6 +75,29 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-188 resolved: `MeshMerge` output now carries a shadow mesh, matching what every imported .glb already gets (lm)
+
+`core/render/mesh_merge.gd` gained a private `_shadow_mesh(order, buckets) -> ArrayMesh`, built from
+the same per-bucket vertex/index data `_build()` and `merge_instances()` already collect — one
+surface per visible surface, same order, stripped to `ARRAY_VERTEX`/`ARRAY_INDEX` only (unwelded:
+`ArrayMesh.create_shadow_mesh()`, which would additionally dedupe shared-position vertices, is not
+exposed to scripting). Both public entry points (`merged()`/`collapse()` via `_build()`, and
+`merge_instances()`) now assign it to `combined.shadow_mesh` before returning. `CACHE_VERSION` bumped
+5 → 6 so `_build()`'s disk cache can't serve a pre-fix entry with no shadow mesh.
+
+**The seam the next `MeshMerge` caller gets for free:** anything that reaches `merged()`,
+`collapse()`, or `merge_instances()` now gets a shadow mesh automatically — no caller-side change
+needed, and no new gap to remember when F-203 lifts `merge_instances()`'s current restriction to
+sub-`DrawPolicy.SHADOW_MIN_HEIGHT` props (the only reason today's one caller, `AuthoredWorld.
+_build_props()`'s `mergeable` path, never visibly needed this: `DrawPolicy.apply()` already turns
+`cast_shadow` off for everything short enough to qualify).
+
+**Verified:** `agent godot --script tools/mesh_merge_check.gd` — extended with `_check_shadow_mesh()`
+(shadow_mesh non-null, surface count and per-surface index count match the visible mesh, no channel
+beyond position/index), run against all 361 checked kit assets (1372 surfaces) plus a new synthetic
+`merge_instances()` case. `MESH_MERGE_CHECK_GODOT PASS`. `prop_chunk_merge_check.gd` and
+`hollowmere_check.gd` both still PASS post-bump. Full writeup: `docs/SPECS.md` F-188 block.
+
 ### 2026-08-19 — F-149 resolved: docs/ hand-commits stay attributable IF you pathspec them — no harness bug existed, the finding needed a regression test, not code (lp)
 
 No `.agent/bin/agent` defect: `cmd_ship` already commits by pathspec (F-014, predates this finding),
