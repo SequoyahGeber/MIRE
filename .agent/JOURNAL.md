@@ -3661,3 +3661,15 @@ gfx migration still blocked: autoload/graphics_quality.gd held by nettle12/F-144
 Files: `tools/command_shim_check.gd`, `tools/command_shim_check.gd.uid`
 
 Commit at time of writing: `76f6cf5`
+
+---
+
+### DONE · F-152 · lp · 2026-08-19T00:50:11+00:00
+
+**`core/render/mesh_merge.gd` builds an invalid surface at boot, so merged undergrowth silently draws nothing**
+
+Already fixed by F-144's in-flight attribute-mask bucketing (76d48bc); no code change needed. Wrote tools/mesh_merge_check.gd as the missing regression check -- MESH_MERGE_CHECK checked=337 surfaces=1287, MESH_MERGE_CHECK_GODOT PASS. Cross-checked with the finding's own repro (agent godot --quit-after 20 on levels/hollowmere.tscn): zero ERROR: lines.
+
+Files: `tools/mesh_merge_check.gd`, `tools/mesh_merge_check.gd.uid`
+
+Commit at time of writing: `c4c32ce`
