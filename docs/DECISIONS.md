@@ -2708,3 +2708,69 @@ that Wellsprings decay before or long after the pressure curve wants them to. On
 if a playtest shows the flood-fill regrowth is imperceptibly slow at the map's edges (few corrupted
 neighbours to spread from) — then a small, capped reseed pulse at the moment of `_finish_recorruption()`
 would be the fix, not a redesign.
+
+---
+
+### D-105 · 2026-08-19 · Extraction's "group confirm flow" is a presence-gated hold, not a per-peer ready-vote — task 6.5
+
+DESIGN.md §5.2 says boarding "ends the run successfully" for the whole crew and names no UI shape for
+the group's decision to leave. Two designs were live: (a) each player presses a personal "ready"
+toggle, tracked as a replicated per-peer set, and departure fires once everyone's flag is up; or (b)
+reuse Wellspring's own ritual FSM verbatim — an interact press starts a hold, it only advances while
+enough players are physically present, a second press cancels it outright — with "enough" set to the
+whole connected session rather than Wellspring's 1-2.
+
+**Took (b).** Three reasons. First, it needs no new replicated shape: `repair_stage`,
+`departure_channeling`, `departure_progress_sec`, `departure_required_players` and `departed` are all
+primitives, exactly Wellspring's own property list, so `ExtractionShip`'s `SceneReplicationConfig` is
+a copy-paste, not a novel Array/Dictionary-over-the-wire design nobody has proven works yet in this
+codebase. Second, it is the more thematic reading of "board-to-leave, group confirm": the whole crew
+has to physically gather at the wreck and hold there together, not tap a button from wherever they
+happen to be standing — the climax scene DESIGN.md's "one more Cycle" framing is written for. Third,
+it inherits D-092's already-settled cancel-forfeits/absence-pauses split for free, rather than
+re-deriving a third version of that rule.
+
+**Consequence:** a player who is downed, dead, or simply off exploring blocks departure until they
+either rejoin the group at the ship or someone accepts leaving without them — there is no "vote to
+leave without the straggler" path. That is read as correct for now: DESIGN.md's own frame is that
+extraction is a decision the whole crew makes together, and the game has no partial-run-continues
+state to strand a straggler in anyway (D-010 — a run is one sitting).
+
+**Would change my mind:** a playtest where a downed or disconnected-but-not-expired teammate
+repeatedly strands an otherwise-ready crew at the wreck long enough to feel bad, at which point the
+fix is most likely excluding downed players from `departure_required_players` (mirroring
+Wellspring's own presence count, which already only counts live players), not a redesign into the
+per-peer vote shape.
+
+---
+
+### D-106 · 2026-08-19 · Ship repair does NOT go through `CraftingService`/`RecipeDef`, despite `docs/SPECS.md`'s 6.4 look-ahead note saying "staged repair via recipes (3.1's timed crafts)" — task 6.5
+
+Checked `autoload/crafting_service.gd` before deciding this, rather than assuming. Its whole model is
+built around a STATIC, content-authored station: `Registry.stations` holds fixed `StationDef`
+entries, `nearby_station_id()` walks that registry (not a runtime scene tree) to find which one the
+player is next to, and every recipe's `output_item` is a real `ItemDef` granted straight into the
+requester's inventory via `InventoryService.host_transaction()`. None of that fits the ship: it is
+one runtime-built node per marker (`autoload/extraction_service.gd`, not a `Registry`-listed
+station), and a repair attempt has no item to grant — what it mutates is the ship's OWN replicated
+`repair_stage`, a shape `CraftingService` has no seam for at all.
+
+Retrofitting `CraftingService` to support a station that is a live node rather than a registry entry,
+and a recipe that mutates external state instead of granting an item, would be a real redesign of a
+system three other lanes build against, for one consumer — clearly outside a T2/est-3 task, and it
+risks regressing crafting for no player-visible gain (the two paths would look identical in the HUD
+either way).
+
+**Took instead:** the harvest-request pattern every other host-authoritative interaction in this
+codebase already uses (Wellspring's channel, Chest's open, BuildService's place/destroy) —
+`net_request_repair` carries no data, the host re-derives everything (range, tool, Cycle gate,
+inventory) and applies `InventoryService.host_transaction()` directly against `REPAIR_COSTS`, a
+plain `Array[Dictionary]` of `item_id -> count` living as tuning data on `ExtractionShip` itself, the
+same status as Wellspring's own `COOP_DURATION_SEC`/`RECORRUPTION_DURATION_SEC` constants. "Staged"
+is still true — three discrete stages, matching the four A-009 hull states 1:1 — "via recipes" is not,
+literally.
+
+**Would change my mind:** a later task that wants ship repair to show up inside the crafting UI itself
+(`ui/crafting/crafting_ui.gd`'s recipe rows), at which point `CraftingService` gaining a
+"mutate-in-place" recipe kind is a real feature worth building for more than one consumer, not a
+shim added just to satisfy this note.

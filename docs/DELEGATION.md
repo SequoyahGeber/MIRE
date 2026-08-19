@@ -75,6 +75,51 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 6.5: Extraction — shipwreck repair, board-to-leave, group confirm hold (lm)
+
+New `class_name ExtractionShip` (`systems/extraction/extraction_ship.gd`), the same host-authoritative
+harvest-pattern shape as `Wellspring`: three repair stages consuming mid-tier resources from a
+`repair_hammer`-holding player in range (`net_request_repair`), then, once fully repaired, a
+presence-gated departure hold requiring the WHOLE connected session aboard together for 60s
+(`net_request_toggle_departure`) — cancel forfeits progress, stepping off deck only pauses it, D-105's
+exact reuse of D-092's ritual rule. New `autoload/extraction_service.gd` (registered) bridges a
+`shipwreck`-kind `authored_world_marker` to a live `ExtractionShip`, identical split to
+`wellspring_service.gd`. New `ui/hud/extraction_hud.gd` (registered as `ExtractionHud` — unlike
+`wellspring_hud.gd`, which ships the same pattern but was never added to `[autoload]`, F-165's sibling
+gap) shows the repair-cost prompt or the departure-hold bar depending on range and `repair_stage`.
+
+**Not reachable in the live game yet.** `world/gen/authored_world.gd` has no `shipwreck` marker kind
+(F-166) — it was held by another lane's claim this whole session, so this task could not add one.
+`tools/extraction_check.gd` (34 assertions, 0 failures) proves the whole state machine against a
+synthetic marker instead, the same shape F-139 already established as acceptable for an
+unreachable-but-correct system. `PROTOCOL_VERSION` was NOT bumped for the two new RPCs — same
+`net_version.gd`-locked-all-session gap F-161 recorded for task 5.3 (F-165 records this one).
+
+No regressions: `wellspring_check`, `cycle_check`, `cycle_modifier_check`, `wave_spawner_check`,
+`crafting_check`, `mire_grid_check`, `mire_interaction_check`, `handshake_check` all still
+`failures=0`. 0 `ERROR:` on a full boot (`agent godot --quit-after 15`).
+(`tools/crafting_net_check.gd` fails 24/24, but `agent baseline` reproduces the identical failure
+against a clean checkout of HEAD — pre-existing, unrelated to this task, filed as F-167.)
+
+**Public API for 6.6 (Salvage/persistence) and 6.7 (lose condition) to build against:**
+
+- `EventBus.subscribe_run_extracted(listener: Callable)` — listener signature
+  `(cycle: int, world_position: Vector3) -> void`, fired by the host the instant the group's
+  departure hold completes. This is the ONLY seam a successful extraction fires — nothing banks
+  Salvage, ends the session, or shows a summary here; 6.6/6.8 own all of that.
+- `EventBus.subscribe_ship_repaired(listener: Callable)` — listener signature
+  `(ship_name: StringName, world_position: Vector3) -> void`, fired once when `repair_stage` reaches
+  its final stage (before boarding starts).
+- **There is still no `run_wiped`/lose-condition signal anywhere in the codebase.** 6.7 ("Lose
+  condition") owns building it — `run_extracted` is not a template for it, since a wipe has no
+  "everyone holds a button" moment to hang an RPC off. 6.6's "extract-vs-die split" needs both
+  signals to exist before its own work can start; 6.7 is listed after 6.6 on the roadmap but has no
+  stated dependency on it, so doing 6.7 first would unblock 6.6 rather than the reverse.
+- `ExtractionShip.REPAIR_COSTS: Array[Dictionary]` / `MIN_REPAIR_CYCLE`/`REPAIR_STAGE_COUNT` — the
+  repair recipe's tuning numbers, placeholder-tuned like every other Cycle-facing constant in this
+  codebase (Wellspring's ritual durations, `CycleService.SPREAD_ESCALATION_PER_CYCLE`). D-106 records
+  why these are plain data on the node rather than `RecipeDef` content.
+
 ### 2026-08-18 — Task 6.4: Wellspring re-corruption over time ships — a Cycle-gated clock, Ward pause, all four A-008 condition states now live (lm)
 
 Built ahead of 6.3 (D-099's "prerequisite, not a scope grab" shape) — no dependency either way, both

@@ -1901,10 +1901,85 @@ fields and `EventBus.subscribe_wellspring_recorrupted()` for whatever future tas
 before a Wellspring finishes decaying (F-164 — no such warning exists yet; the in-world mesh swap is
 the only signal today).
 
+---
+
+## 6.5 · Extraction: shipwreck POI, repair recipe, board-to-leave, group confirm flow (`DESIGN.md` §5.2)
+
+Written retroactively by the task that executed it (lm) — no block existed here beforehand; SPECS.md's
+own preamble makes writing one part of the task that discovers the gap.
+
+**Authority:** new §2.2 row "Extraction" — **Host**. `ExtractionShip` holds
+`repair_stage`/`departure_channeling`/`departure_progress_sec`/`departure_required_players`/`departed`;
+only the host advances or resolves any of them, same "harvest pattern" as Wellspring's ritual and
+Chest's open.
+**Claim:** `systems/extraction/extraction_ship.gd` (new), `autoload/extraction_service.gd` (new),
+`ui/hud/extraction_hud.gd` (new), `tools/extraction_check.gd` (new), `core/events/event_bus.gd`,
+`project.godot` (two `agent autoload` registrations: `ExtractionService`, `ExtractionHud`).
+
+DESIGN.md §5.2: repairable "from Cycle 3" with "mid-tier resources"; boarding "ends the run
+successfully: you bank your full Salvage." No Salvage economy exists yet (6.6's job) and no lose
+condition exists yet (6.7's job) — this task's whole scope is the mechanic up to and including the
+moment the crew departs, ending in one `EventBus` signal those two later tasks build on.
+
+**Assembly.** `ExtractionShip` follows `assets/ships/README.md`'s ship-frame contract exactly: hull,
+mast and sail swap per `repair_stage` (0 wrecked .. 3 repaired) using the README's own state->rig
+pairing (`mast_broken` for stages 0-1, `mast` + `sail_furled` at stage 2, `sail_raised` only once
+fully repaired); rudder, boarding ramp and cargo hatch are always present. A `BoxShape3D` collider
+approximates the repaired hull's footprint (state drift across all four hull states is 0.0000mm per
+the asset's own README, so one box covers every stage).
+
+**Repair.** `net_request_repair()` (client → host, no payload) is accepted only when: `CycleService.
+current_cycle() >= 3`; the requester is within `REPAIR_RANGE_M` (5m); the requester holds a
+`repair_hammer` (its own item description: "For mending wards. Also for endings."); and
+`InventoryService.host_can_remove()` passes for every entry in `REPAIR_COSTS[repair_stage]`. On
+success, `InventoryService.host_transaction()` consumes them atomically and `repair_stage` advances
+by exactly one — one call per stage, not a timer. `REPAIR_COSTS` is plain tuning data on the node
+(D-106 records why this is NOT a `RecipeDef`/`CraftingService` station, despite an earlier look-ahead
+note in this file suggesting "via recipes" — checked and rejected: `CraftingService`'s station model
+is a static content registry granting items, and this both needs a runtime-built "station" and grants
+no item at all). Reaching the final stage fires `EventBus.emit_ship_repaired()`.
+
+**Board-to-leave / group confirm.** Reachable only once `repair_stage == REPAIR_STAGE_COUNT`.
+`net_request_toggle_departure()` reuses Wellspring's own channel FSM verbatim (D-105): an in-range
+press starts a hold, `host_tick()` advances `departure_progress_sec` toward `DEPARTURE_HOLD_SEC` (60s)
+only while `_present_count(BOARD_RANGE_M) >= departure_required_players` (snapshotted at start to the
+WHOLE connected session, not Wellspring's 1-2), a second press cancels and forfeits progress outright,
+and merely stepping off deck only pauses it. Completion sets `departed = true` (terminal) and fires
+`EventBus.emit_run_extracted(cycle, world_position)` — the ONE seam a successful run fires. Nothing
+banks Salvage, tears down the session, or shows a summary here.
+
+**The marker bridge.** `autoload/extraction_service.gd` mirrors `wellspring_service.gd` exactly: it
+watches `&"authored_world_marker"` for a `kind == "shipwreck"` child and builds a live `ExtractionShip`
+there. `world/gen/authored_world.gd` has no such marker yet (F-166) — it was held by another lane's
+claim this task's entire session, so this system is complete and tested but not reachable in the live
+Hollowmere map today, the same shape F-139/F-146 already established as acceptable for an
+unreachable-but-correct system. `content/poi/shipwreck.tres` (task 4.7's procedural PoiMap, target
+3/island) is NOT the placement source here, on purpose — F-139 already recorded that the live game
+ships the authored map, not the procedural pipeline, so building against PoiMap would not have made
+this any more reachable today.
+
+**PROTOCOL_VERSION was not bumped.** `core/net/net_version.gd` and `tools/handshake_check.gd` were
+both held by another lane's claim this task's entire session — F-165 records the two new RPCs that
+need it whenever that file frees up, alongside F-161's still-open 5.3 entry.
+
+Verify: `tools/extraction_check.gd` (34 assertions) — autoload wiring; a `shipwreck` marker builds
+exactly one `ExtractionShip`, a non-matching marker builds none; repair is rejected before Cycle 3,
+out of range, without the hammer, or without the stage's resources, and consumes exactly what it
+costs on success, advancing one stage per call through all three; the departure hold is unreachable
+before repair completes, toggles start/cancel the same way Wellspring's does, pauses under-presence
+and resumes once the whole crew is aboard, and fires `run_extracted` exactly once on completion.
+`wellspring_check`, `cycle_check`, `cycle_modifier_check`, `wave_spawner_check`, `crafting_check`,
+`mire_grid_check`, `mire_interaction_check`, `handshake_check` all stay `failures=0`. `agent godot
+--quit-after 15` shows 0 `ERROR:` lines.
+Done means: `extraction_check.gd` at `failures=0`, the eight regression checks green, 0 `ERROR:` on a
+full boot, and `docs/DELEGATION.md`'s Current state carrying `EventBus.subscribe_run_extracted()` /
+`subscribe_ship_repaired()` for 6.6 and 6.7 to build against — and naming that 6.7 (lose condition)
+has no stated dependency on 6.6, so it can go first and unblock 6.6's "extract-vs-die split" rather
+than waiting on it.
+
+---
+
 - **6.3 Author 20–30 modifiers (T0).**
-- **6.5 Extraction (T2):** shipwreck POI (A-009 assets), staged repair via recipes (3.1's timed
-  crafts), board-to-leave with group confirm UI (all-aboard-or-cancel flow, host-arbitrated,
-  60 s window). **Never-cut item.**
 - **6.6 Salvage & persistence (T2):** superlinear Salvage curve on extraction, split on death;
   local per-player save `user://salvage.json` with an explicit `schema_version: 1` and a migration
   switch from day one — versioning is this task's real deliverable. Runs stay unsaved (D-010).

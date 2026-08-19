@@ -930,6 +930,67 @@ already tests, and assert the route detours rather than passing through.
 
 ---
 
+### F-165 · Task 6.5's two new extraction RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.5
+
+`systems/extraction/extraction_ship.gd` added `net_request_repair` and `net_request_toggle_departure`
+— two real new wire shapes, plus its own `SceneReplicationConfig`
+(`repair_stage`/`departure_channeling`/`departure_progress_sec`/`departure_required_players`/
+`departed`). `core/net/net_version.gd` and `tools/handshake_check.gd` were both held by lane
+slate17's 3.7 claim for this task's entire session, the identical situation F-161 already recorded
+for task 5.3's ranged-combat RPCs — D-102 covers why shipping un-versioned is an acceptable transient
+risk here.
+
+**What closes this — same list as F-161, do both in one pass:**
+1. Bump `const PROTOCOL_VERSION: int = 19` to `20`, or `21` if F-161 lands first.
+2. Add a `## N (task 6.5)` comment naming `net_request_repair`, `net_request_toggle_departure`, and
+   the ExtractionShip synchronizer's five properties, matching every entry above it.
+3. Raise `tools/handshake_check.gd`'s version-number assertion to match, and its label.
+
+### F-166 · `world/gen/authored_world.gd` has no `shipwreck` marker kind, so task 6.5's ExtractionShip is built but never reachable in the live Hollowmere map — same shape as F-146's chest gap
+
+**Area:** world-gen · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.5
+
+`autoload/extraction_service.gd` follows `wellspring_service.gd`'s exact bridge pattern: it watches
+`&"authored_world_marker"` for a child whose `kind` meta is `"shipwreck"` and builds a live
+`ExtractionShip` there. `grep -n 'shipwreck' world/gen/authored_world.gd` returns zero hits — the
+Hollowmere layout has no such marker, unlike the Wellspring's `"objective"` marker, which some
+earlier task (4.8) already added. `content/poi/shipwreck.tres` authors the procedural placement
+(task 4.7's PoiMap, target 3/island), but F-139 already recorded that the live game still ships the
+authored Hollowmere map, not the procedural pipeline — so neither path currently puts a shipwreck a
+player can ever see.
+
+`world/gen/authored_world.gd` was held all session by lane nettle12's F-144 claim, so this task could
+not add the marker itself; `tools/extraction_check.gd` proves the whole repair/board/departure state
+machine against a synthetic marker instead (the same "unreachable but correct" shape F-139 describes
+for tasks 4.3/4.4).
+
+**What closes this:** whoever next holds `world/gen/authored_world.gd`, drop one `Marker3D` in the
+Hollowmere layout with `meta("kind") == "shipwreck"`, in a shore-adjacent spot — same recipe
+`wellspring_service.gd`'s own "objective" marker already proves works. No gameplay-side change is
+needed; `ExtractionService` picks it up automatically the next time the scene builds.
+
+### F-167 · `tools/crafting_net_check.gd` fails (24/24) against a clean checkout of HEAD, independent of any in-flight change
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.5
+
+Run standalone (`agent godot --script tools/crafting_net_check.gd`) it fails every assertion from
+"client completes accepted and rejected craft requests" onward — `axe_count=-1`, `granted=true`,
+`complete=false`. `agent baseline --script tools/crafting_net_check.gd` reproduces the identical
+24 failures against a throwaway checkout of `b6f7329` (the committed HEAD at the time), so this is
+not a symptom of any lane's uncommitted work, including this task's — it is a standing regression in
+the two-process crafting network path itself. `docs/FINDINGS.md`'s own history (search
+"crafting_net_check") shows it passing 0 failures after an earlier fix, so something between then and
+`b6f7329` broke it again without a check catching the reintroduction.
+
+Not investigated further here — out of 6.5's scope, and the two-process ENet harness this check uses
+is expensive to bisect blind. Whoever picks this up should start by finding the last commit where
+`agent baseline --script tools/crafting_net_check.gd` was green, since the file itself hasn't
+changed recently (`git log --oneline -- tools/crafting_net_check.gd`).
+
+---
+
 ## Resolved
 
 ### F-160 · A transient API error kills a saturate chain, and nothing restarts it — the lane sits idle until a human notices — **fixed**
