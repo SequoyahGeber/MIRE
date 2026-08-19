@@ -14,12 +14,16 @@
 > now green, including `boss_check`'s exit-leak diagnostic (F-193) and `lobby_menu_check` (F-170),
 > both since resolved.
 >
-> **Findings: 223/231 closed, 8 open — and seven of the eight are not code you can sit down and
-> write.** Four are Steam/LAN join behaviour that needs a second machine and a real network
-> (F-020, F-023, F-024, F-025); F-044 is the shared Godot import cache; F-174 says no dev machine
-> here can stand in for mid-range hardware; F-222 is a Blender preview-generator dependency. The
-> one that is genuinely about how we work is **F-189 — file claims have become the bottleneck
-> D-011 named as its own reversal trigger.** Read that one before adding process.
+> **Findings: 7 open, and not one of them is code you can sit down and write.** Four are Steam/LAN
+> join behaviour needing a second machine and a real network (F-020, F-023, F-024, F-025); F-044 is
+> the shared Godot import cache; F-174 says no dev machine here can stand in for mid-range hardware;
+> F-222 is a Blender preview-generator dependency. Every open finding is now waiting on hardware,
+> another machine, or an external tool — which is a real milestone, and also means the findings
+> backlog is no longer a source of work for a lane.
+>
+> Count these from `docs/FINDINGS.md`'s `## Open` section, not from `state.json` or `agent report`:
+> those still list F-189, which was resolved as **D-144** (claims stay; fix claim staleness instead
+> of moving to per-agent worktrees). D-144 is worth reading before anyone proposes worktrees again.
 >
 > **The content, not the engine, is now the thin part.** The boot line counts 2 enemy definitions,
 > 1 cycle modifier and 1 unlock against 72 powerups and 13 buildables. 5.2 (enemy types) and 6.3
