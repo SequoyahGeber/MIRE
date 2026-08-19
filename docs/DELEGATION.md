@@ -75,6 +75,37 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — F-164: a capped Wellspring's re-corruption clock gets an ambient HUD warning; `WellspringHud` finally gets registered (lp)
+
+Two gaps, both closed here. The filed finding was the missing warning; reading `ui/hud/
+wellspring_hud.gd` before touching it surfaced the bigger one — `WellspringHud` had **never been
+added to `[autoload]`**, so the whole Wellspring HUD (the task 4.8 capping prompt included, not just
+this task's addition) has been unreachable in the live game since 4.8 shipped. Fixed via `agent
+autoload WellspringHud res://ui/hud/wellspring_hud.gd` — a script nothing loads isn't shipped
+(AGENTS.md, D-039).
+
+`ui/hud/wellspring_hud.gd` gained a second, top-centre panel independent of the existing bottom-centre
+capping prompt: `_refresh_recorruption_warning()`, polled on the same cadence as the existing
+`_refresh_nearby()`/`_refresh_panel()` pair but scanning every `wellspring`-group member rather than
+just `_nearby` (which structurally only ever tracks an UNCAPPED Wellspring in range — it cannot see a
+capped-and-recorrupting one). Shows once ANY capped Wellspring's `recorruption_sec` crosses
+`Wellspring.RECORRUPTION_DURATION_SEC * Wellspring.RECORRUPTING_VISUAL_FRACTION` (the same fraction
+the in-world mesh already swaps at) with an m:ss countdown to the nearest one and a count when more
+than one is past it — deliberately NOT gated on proximity or on "Wellsprings the local player
+personally capped" (no per-player cap-history exists anywhere to key that on; full reasoning in
+`docs/SPECS.md`'s new F-164 block).
+
+`agent godot --script tools/wellspring_hud_check.gd` → `WELLSPRING_HUD_CHECK failures=0`, 11/11 PASS,
+run twice. No regressions: `wellspring_check.gd`, `wellspring_recorruption_check.gd` both
+`failures=0`. `agent godot --quit-after 20` — zero `ERROR:` lines, `WellspringHud` present in
+`project.godot`'s `[autoload]`.
+
+**For any future Wellspring-adjacent consumer:** the ambient panel is `WellspringHud._warning_panel`/
+`_warning_label`, refreshed by `WellspringHud._refresh_recorruption_warning()` — read that function
+rather than re-deriving the threshold if you need the same "is anything currently recorrupting" read
+elsewhere (a minimap marker, a compass ping). It has no signal of its own yet; it is a poll, the same
+shape `_refresh_nearby()` already used for the in-range prompt.
+
 ### 2026-08-18 — Task 5.5: Boss framework — phases, arena leash, per-phase telegraphed moves, replicated health-bar seam, EventBus music-stinger hooks (lp)
 
 No new §2.2 authority row (D-116, same reasoning D-112 gave 7.8) — `Boss extends Enemy`
