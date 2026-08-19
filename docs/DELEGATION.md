@@ -211,13 +211,13 @@ client-side. Moved into `repair_stage`'s own setter (matching `departed`'s exist
 `tools/extraction_check.gd`'s departure-FSM setup, never emitted under the old code either, so
 behavior for that pre-existing check is unchanged).
 
-**F-250 (open) — the bigger sibling, not fixed here:** `CycleService._announce()`'s
-`EventBus.emit_cycle_advanced()` is STILL gated behind `_owns_cycle()`, so the signal itself never
-reaches a client. `SteamStats`/`RichPresenceService` route around it by polling
-`CycleService.current_cycle()` (which has the correct per-peer fallback already, unlike
-`WaveSpawner`'s pre-F-226 getter) instead of subscribing. The real fix needs `WorldDeltaLog` to grow
-a change-notification signal — bigger than a one-file fix (`MireGrid` also depends on
-`WorldDeltaLog`), left for whoever needs a real-time (not polled) cross-peer Cycle change next.
+**F-250 (fixed 2026-08-19, lp) — the bigger sibling named above, now closed:**
+`CycleService._announce()`'s `EventBus.emit_cycle_advanced()` was gated behind `_owns_cycle()`, so
+the signal never reached a client. `SteamStats`/`RichPresenceService` (this task) worked around it by
+polling `CycleService.current_cycle()` instead of subscribing — that poll is left in place (it
+already works, needs no upkeep), but a NEW client-side Cycle consumer no longer needs to copy it: see
+`WorldDeltaLog.delta_applied` below. Same-shape sibling found unfixed in `CycleModifierService`,
+filed separately as F-254.
 
 **`tools/steam/ACHIEVEMENTS.md` (new)** — the Steamworks dashboard runbook, `DEPOT_SETUP.md`'s own
 shape: exact API-name/display-name/description text for all ten achievements and all seven stats,
@@ -6735,6 +6735,38 @@ inventory/ownership/refund effect is asserted to land on the CLIENT, never the h
 pass; reverting the fix locally reproduces 14/27 failures, confirming the check actually catches the
 regression. Every existing crafting/build/command check (offline and net) stays green, full boot 0
 stray `ERROR:`.
+
+### 2026-08-19 — F-250 fixed: `WorldDeltaLog` grows a generic `delta_applied` signal, and `EventBus.cycle_advanced` finally reaches a real connected client (lp)
+
+**New API for the next `WorldDeltaLog`-backed system that needs a real-time (not polled) cross-peer
+change notification:** `WorldDeltaLog.delta_applied(chunk: Vector2i, kind: StringName, key: String,
+value: Variant)` — a signal, fired from `_apply()` (the one place a value is actually stored,
+whether locally on the host via `host_record()` or on a client via the `net_delta_applied` RPC
+handler). It does NOT fire for a late joiner's `net_world_snapshot` catch-up (that replaces `_state`
+wholesale, not through `_apply()`) — a joiner still reads its caught-up value directly through
+`latest()`. Filter on `(chunk, kind, key)` yourself; the signal is generic across every `kind` this
+log carries, same shape `EventBus`'s own per-event subscribe/unsubscribe pairs use, just node-signal
+flavored since `WorldDeltaLog` is a real autoload rather than a static dispatcher.
+
+**`CycleService` is the worked example consuming it:** `_on_world_delta_applied()` re-emits
+`EventBus.emit_cycle_advanced(int(value))` on a client whenever the delta matches its own
+`(GLOBAL_CHUNK, KIND, KEY)` address, guarded on `_owns_cycle()` so the host (which already emits
+directly from `_announce()`, and whose own `host_record()` call also fires this same signal) never
+double-emits. Full account in `docs/FINDINGS.md` F-250 (Resolved) and `docs/SPECS.md`'s F-250 block.
+
+**Fixed one real, unfixed sibling in the same sweep is NOT this task's — filed as F-254:**
+`CycleModifierService._announce()` has the identical `EVENT_BUS.emit_cycle_modifier_drawn()`-never-
+reaches-a-client shape, but its `WorldDeltaLog` record never stores which Cycle a Modifier was drawn
+on, so a `delta_applied`-based re-derivation needs a schema addition first — see F-254 for the two
+fix options it names.
+
+**Verified:** new `tools/cycle_advanced_net_check.gd` — a real two-process ENet check, host advances
+the Cycle three times for real, client's own `EventBus.subscribe_cycle_advanced()` listener (never
+polling) must actually fire with the right number each time. `CYCLE_ADVANCED_NET_CHECK failures=0`.
+Regression: `cycle_check.gd`, `wave_director_check.gd`, `cycle_modifier_check.gd`,
+`wave_spawner_cycle_net_check.gd` (one stale assertion updated — see SPECS.md Traps),
+`steam_stats_check.gd`, `rich_presence_check.gd`, `wellspring_check.gd`, `mire_grid_check.gd` — all
+green. Full boot (`agent godot --quit-after 120`) 0 stray `ERROR:`.
 
 ---
 

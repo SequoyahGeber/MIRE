@@ -8195,6 +8195,92 @@ Sequoyah's own external paperwork rather than on another task's shipped code.
 
 ---
 
+## F-250 · `CycleService._announce()`'s `EventBus.emit_cycle_advanced()` still gates behind `_owns_cycle()`, so `cycle_advanced` never fires on a real connected client — F-226 fixed the reader-side symptom, not this root cause
+
+**Claim:** `systems/cycle/cycle_service.gd`, `autoload/world_delta_log.gd`, `core/events/event_bus.gd`,
+`autoload/rich_presence_service.gd`, `autoload/steam_stats.gd` (stale doc comments only — see
+below), `tools/cycle_advanced_net_check.gd` (new), `tools/wave_spawner_cycle_net_check.gd` (one
+assertion updated — see Traps). **Authority:** §2.2 row "Day/night, wave director, Cycle state,
+active modifiers: HOST" — unchanged; this task adds no new RPC and no new replicated state, only a
+generic local signal on an existing autoload and a client-side re-derivation of an existing emit.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The bug:** `CycleService._announce()` is the only call site of `EVENT_BUS.emit_cycle_advanced()`,
+and its whole body — including the emit — is gated behind `if not _owns_cycle(): return`, true for
+the host or a solo/offline process, false for a real connected client. So a client's own local
+`EventBus` never fired `cycle_advanced` at all, no matter how many Cycles the host actually
+advanced. F-226 gave `WaveSpawner.current_cycle()` a correct `WorldDeltaLog`-fallback getter for
+this same root cause, but never touched the emit itself — every OTHER `subscribe_cycle_advanced()`
+listener in the codebase (present and future) still sat under the trap. Two task-8.3 consumers
+(`SteamStats`, `RichPresenceService`) had already worked around it by polling
+`CycleService.current_cycle()` instead of subscribing — a real, working choice, but polling where a
+signal should exist, and their own header comments named this exact finding as "out of scope."
+
+**The fix:** `WorldDeltaLog` gained a generic `signal delta_applied(chunk, kind, key, value)`, fired
+from `_apply()` — the one place every stored mutation actually lands, whether from the host's own
+`host_record()` or from a client's `net_delta_applied` RPC handler. It does NOT fire from
+`net_world_snapshot` (a late joiner's snapshot replaces `_state` wholesale, not through `_apply()`);
+a joiner reads its caught-up value directly via `latest()` instead, unchanged from before this
+signal existed. `CycleService` subscribes to it in `_ready()` and, in a new
+`_on_world_delta_applied()` handler, re-emits `EVENT_BUS.emit_cycle_advanced(int(value))` whenever
+the delta matches its own `(GLOBAL_CHUNK, KIND, KEY)` address — guarded on `_owns_cycle()` so the
+host (whose own `host_record()` call also runs through `_apply()` and fires this same signal) never
+double-emits; it already emits directly from `_announce()`. No new RPC (D-099/D-100's no-new-RPC
+reuse of `WorldDeltaLog` applies identically here — the signal is purely local, `_apply()` already
+ran by the time it fires, whichever peer is running it).
+
+**Verify:** new `tools/cycle_advanced_net_check.gd` — real two-process ENet host+client (same
+driver/probe shape as `tools/wave_spawner_cycle_net_check.gd`). The client subscribes ONLY through
+`EventBus.subscribe_cycle_advanced()` (never polls `current_cycle()` — that getter already had a
+correct fallback pre-F-250 via F-226 and would mask this exact bug). Host advances the Cycle for
+real three times through `CycleService.host_advance_cycle()`; client's listener must actually fire,
+with the right Cycle number, exactly once per real advance. `.agent/bin/agent godot --script
+tools/cycle_advanced_net_check.gd` → `CYCLE_ADVANCED_NET_CHECK failures=0`. Regression:
+`tools/cycle_check.gd` (`CYCLE_CHECK failures=0`), `tools/wave_director_check.gd`
+(`WAVE_DIRECTOR_CHECK failures=0`), `tools/cycle_modifier_check.gd` (`CYCLE_MODIFIER_CHECK
+failures=0`), `tools/steam_stats_check.gd` (`STEAM_STATS_CHECK failures=0`),
+`tools/rich_presence_check.gd` (all checks passed), `tools/wellspring_check.gd` (`WELLSPRING_CHECK
+failures=0`), `tools/mire_grid_check.gd` (`MIRE_GRID_CHECK failures=0`). Full boot (`agent godot
+--quit-after 120`) — see Done means below.
+
+**Traps:**
+- `tools/wave_spawner_cycle_net_check.gd` (F-226's own check) asserted the client's private
+  `_current_cycle` cache stayed at `1` throughout, as proof `current_cycle()` took the
+  `WorldDeltaLog` fallback path rather than "a stray local emission." That assertion is now WRONG
+  by design: the emission is no longer stray, so `WaveSpawner`'s cache legitimately updates from it
+  too. Updated the assertion to check the cache now matches the real Cycle instead of asserting it
+  stays broken — still green, `WAVE_SPAWNER_CYCLE_NET_CHECK failures=0`.
+- `tools/seed_sync_check.gd` fails with 3 pre-existing failures, confirmed via `agent baseline`
+  against unmodified HEAD to be unrelated to this task (terrain-hash/snapshot-delivery, not the live
+  delta path this task touches). Filed as **F-253**, not fixed here — out of claim scope and not
+  this task's root cause.
+
+**Swept for the same shape:** grepped every `EVENT_BUS.emit_*` call site project-wide and every
+`"HOST only"`/`"any peer"` doc-comment claim in `core/events/event_bus.gd`.
+`wellspring_capped`/`wellspring_recorrupted`/`ship_repaired`/`run_extracted`/`run_wiped`/
+`boss_engaged`/`boss_phase_changed` all already fire from a replicated property's own setter
+(D-107/D-108's pattern) — real cross-peer emits, not this bug's shape. `enemy_attack_landed` and
+`harvest_yielded` are explicitly documented host-only with no cross-peer claim and a host-owned
+consumer (player damage, host-owned inventory) — correct by design. `salvage_banked`/
+`unlock_purchased` are explicitly documented "emitted LOCALLY" per-peer, no cross-peer claim — not
+this bug's shape either.
+
+**Found one real, unfixed sibling: `CycleModifierService._announce()`** (its own doc comment says
+"same two-channel announce `CycleService._announce()` uses") has the identical
+`host_draw_modifier()`-gates-`_announce()` shape, so `EventBus.emit_cycle_modifier_drawn()` never
+reaches a client either — no live subscriber exists yet, so nothing is broken today, but the trap is
+live for the first one that subscribes. NOT fixed in this task: its `WorldDeltaLog` record never
+stores which Cycle a Modifier was drawn on (only `def_id` per slot and a count), so a client-side
+`delta_applied` handler cannot reconstruct the `cycle` argument `emit_cycle_modifier_drawn(def_id,
+cycle)` needs without either a schema change or a race-prone approximation — genuinely more than a
+one-file mirror of this fix. Filed as **F-254** with both real fix options named.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

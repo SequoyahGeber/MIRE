@@ -594,47 +594,6 @@ move.lunge_speed_m_s > 0.0`, mirroring `Enemy._tick_attack()`'s own condition ex
 
 ---
 
-### F-250 · CycleService._announce()'s EventBus.emit_cycle_advanced() still gates behind _owns_cycle(), so cycle_advanced never fires on a real connected client — F-226 fixed the reader-side symptom, not this root cause
-
-**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
-
-Found 2026-08-19 by lp during task 8.3.
-
-`CycleService._announce()` (systems/cycle/cycle_service.gd) calls `EVENT_BUS.emit_cycle_advanced()`
-only after `if not _owns_cycle(): return` — true for the host or a solo/offline process, false for a
-real connected client. So on a client, `EventBus.cycle_advanced` never fires locally at all, no
-matter how many Cycles the host has actually advanced. This is the exact root cause F-226 diagnosed
-for `WaveSpawner.current_cycle()` — but F-226's own fix only gave that ONE reader a correct
-host-int-or-WorldDeltaLog fallback; it never touched `_announce()`'s emit itself, so every OTHER
-`EventBus.subscribe_cycle_advanced()` listener in the codebase still has the trap live under it.
-
-Unlike `wellspring_capped`/`run_wiped`/`boss_phase_changed`/`departed` (all fixed via D-107/D-108's
-"fire the emit from a replicated property's own setter" pattern), this one does not have a
-structural fix that shape: Cycle rides `WorldDeltaLog` (a `(chunk, kind, key) -> value` log), not a
-`SceneReplicationConfig` property with its own setter, by deliberate design (D-099/D-100, to avoid a
-new RPC). `WorldDeltaLog` itself has no "a delta was just applied" signal a client-side listener
-could hang a derived local emit off (`autoload/world_delta_log.gd`'s `_apply()` mutates silently) --
-adding one is a real fix but touches a file `MireGrid` also depends on, out of scope for a
-single-file fix.
-
-Task 8.3 (RichPresenceService, SteamStats) is the first real consumer that needed a client-correct
-Cycle number for something genuinely per-peer (a Steam achievement has to unlock on every player's
-own account, not just the host's; presence text has to be right on every peer's own friends-list
-entry) -- both work around it by POLLING `CycleService.current_cycle()` (which DOES have the correct
-per-peer fallback, unlike `WaveSpawner`'s old broken getter) on a 2s timer instead of subscribing to
-the broken signal. That is a real, working fix for those two files, not a workaround that silently
-produces wrong output -- but it is polling where a signal should exist, and any FUTURE
-cycle_advanced subscriber that assumes the doc comment ("HOST only" -- accurate) means "but every
-peer's own local bus still gets it eventually" will hit this exact trap.
-
-Fix shape: give WorldDeltaLog a generic `delta_applied(chunk, kind, key, value)` signal fired from
-`_apply()`, and have `CycleService` hang its own `cycle_advanced` derivation off that on a client,
-mirroring the D-107/D-108 "fire from the thing that actually changed, on every peer" pattern applied
-to a log-backed value instead of a property. Bigger than a one-file fix since MireGrid also calls
-into WorldDeltaLog and any new signal has to not change its existing contract.
-
----
-
 ### F-251 · tools/chunk_stream_check.gd (windowed) has 5 pre-existing failures — terrain retuning since F-128 left the LOD skirt too shallow for the real seam gap
 
 **Area:** worldgen · **Severity:** high · **Found:** 2026-08-19 by lp
@@ -727,7 +686,178 @@ bit-identical, so this is a pure perf change with no output-changing risk to ver
 
 ---
 
+### F-253 · tools/seed_sync_check.gd has 3 pre-existing failures — confirmed unrelated to F-250 via git baseline
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
+
+Found 2026-08-19 by lp during F-250's regression sweep.
+
+`.agent/bin/agent godot --script tools/seed_sync_check.gd` reports SEED_SYNC_CHECK failures=3:
+  - "client-regenerated terrain_hash equals the host's" (host=e2856cc102653bb4 client=e31eed058305e1a0)
+  - "a mutation recorded before the client joined reached it via the late-joiner snapshot"
+(a third failure cascades from the same root: the snapshot value-match check also fails once the
+snapshot itself didn't land right). The one check that DOES still pass — "a mutation recorded AFTER
+the client joined reached it live (net_delta_applied)" — is the live-broadcast path, not the
+snapshot/seed path, which narrows this to snapshot delivery or terrain-seed determinism, not the RPC
+plumbing generally.
+
+Confirmed pre-existing and unrelated to F-250: `.agent/bin/agent baseline --script tools/seed_sync_check.gd`
+against unmodified HEAD (2699e6c) reproduces the identical 3 failures with identical hashes, before
+any of F-250's edits (world_delta_log.gd, cycle_service.gd, event_bus.gd) existed.
+
+Two candidate root causes, not yet distinguished:
+  1. Same shape as F-251 (terrain retuning since F-128 left seam/skirt constants stale) — if the
+     terrain generator itself is non-deterministic or drifted since this check's own reference
+     values were written, `check_determinism.gd`'s independently-computed `terrain_hash` on each
+     process would legitimately differ without any netcode bug at all.
+  2. A real snapshot-delivery bug in `WorldDeltaLog.net_world_snapshot`/`_on_peer_admitted` (the
+     admit-time snapshot RPC) — separate from the live-delta RPC, which still passes.
+
+**What would close this:** run `tools/check_determinism.gd` standalone first (single-process) to
+rule out (1) — if that already fails on its own, this is F-251's family and should fold into that
+finding instead of getting its own fix. If determinism is clean, add print-debugging to
+`WorldDeltaLog._on_peer_admitted`/`net_world_snapshot` to find where compression/decompression or the
+`BEFORE_CHUNK`/`BEFORE_KEY` value drops between host write and client read.
+
+---
+
+### F-254 · CycleModifierService._announce() has the exact host-only EventBus.emit_cycle_modifier_drawn() gate F-250 just fixed for CycleService — same shape, unfixed sibling
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
+
+Found 2026-08-19 by lp during F-250's sweep (systems/cycle/cycle_modifier_service.gd:173-184).
+
+`CycleModifierService._announce()` — its own doc comment literally says "same two-channel announce
+`CycleService._announce()` uses" — calls `EVENT_BUS.emit_cycle_modifier_drawn(def_id, cycle)`
+unconditionally, but `_announce()` is only ever reached from `host_draw_modifier()`, which returns
+early on `if not _owns_modifiers(): return &""` before ever calling `_announce()`. So exactly like
+`CycleService._announce()` pre-F-250, this emit only ever runs host-side; a real connected client's
+own `EventBus.subscribe_cycle_modifier_drawn()` listener never fires, no matter how many Cycle
+Modifiers the host actually draws. `active_modifier_ids()` already has the correct per-peer fallback
+(`_replicated_active_ids()` reading `WorldDeltaLog`, the same split `CycleService.current_cycle()`
+uses) — this is the same "getter is fine, the emitted SIGNAL never reaches a client" bug F-250 fixed
+in `CycleService`, and `docs/FINDINGS.md`'s own F-226 pattern before that. No live subscriber exists
+yet (`grep -rn "subscribe_cycle_modifier_drawn"` outside the two definition files: zero hits) so
+nothing is broken today — this is a trap for whoever wires the first client-visible reaction to a
+Modifier draw (a toast, a HUD banner), same "no live consumer yet" status F-250 had.
+
+**Why this is not a trivial copy of F-250's own fix:** `CycleService`'s `WorldDeltaLog` record IS the
+whole payload (`current`, one int) — a client's `delta_applied` handler can re-emit
+`cycle_advanced(value)` directly. `CycleModifierService`'s record is split across two keys per draw
+(`str(slot) -> def_id` and `COUNT_KEY -> count`) and **never records which Cycle a slot was drawn
+on** — `host_draw_modifier(cycle)` receives `cycle` as a parameter from `CycleService`'s own
+`_on_cycle_advanced` listener, but `_announce()` never writes it into `WorldDeltaLog`. A client-side
+`delta_applied` handler reconstructing `emit_cycle_modifier_drawn(def_id, cycle)` therefore has no
+stored `cycle` to hand back — approximating it from `CycleService.current_cycle()` at the moment the
+slot delta lands is racy (two separate `host_record()` calls -> two separate `net_delta_applied` RPCs,
+no ordering guarantee both have landed by the time either fires its local `_apply()`), and widening
+the stored value to `"%s:%d" % [def_id, cycle]` changes `_replicated_active_ids()`'s own parsing
+contract for every existing reader. Both are real fixes, neither is a one-line mirror of F-250's.
+
+**What would close this:** either (a) have `_announce()` also `host_record()` a per-slot
+`str(slot) + ":cycle"` key alongside the existing `def_id` key, and re-derive the emit from that pair
+on `delta_applied` (extends the schema, additive, doesn't change `_replicated_active_ids()`'s existing
+keys), or (b) drop `cycle_modifier_drawn`'s doc-implied "any peer" framing until a real client
+consumer forces the decision — same "mark host-only until needed" alternative F-226's own finding
+offered CycleService before F-250 did the real fix instead. `tools/cycle_advanced_net_check.gd`
+(F-250) is the worked pattern for whichever fix path gets picked: real two-process ENet proof, host
+draws for real, client's own `EventBus.subscribe_cycle_modifier_drawn()` listener must actually fire.
+
+---
+
 ## Resolved
+
+### F-250 · CycleService._announce()'s EventBus.emit_cycle_advanced() still gates behind _owns_cycle(), so cycle_advanced never fires on a real connected client — F-226 fixed the reader-side symptom, not this root cause — **fixed**
+
+**Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp
+
+Found 2026-08-19 by lp during task 8.3.
+
+`CycleService._announce()` (systems/cycle/cycle_service.gd) calls `EVENT_BUS.emit_cycle_advanced()`
+only after `if not _owns_cycle(): return` — true for the host or a solo/offline process, false for a
+real connected client. So on a client, `EventBus.cycle_advanced` never fires locally at all, no
+matter how many Cycles the host has actually advanced. This is the exact root cause F-226 diagnosed
+for `WaveSpawner.current_cycle()` — but F-226's own fix only gave that ONE reader a correct
+host-int-or-WorldDeltaLog fallback; it never touched `_announce()`'s emit itself, so every OTHER
+`EventBus.subscribe_cycle_advanced()` listener in the codebase still has the trap live under it.
+
+Unlike `wellspring_capped`/`run_wiped`/`boss_phase_changed`/`departed` (all fixed via D-107/D-108's
+"fire the emit from a replicated property's own setter" pattern), this one does not have a
+structural fix that shape: Cycle rides `WorldDeltaLog` (a `(chunk, kind, key) -> value` log), not a
+`SceneReplicationConfig` property with its own setter, by deliberate design (D-099/D-100, to avoid a
+new RPC). `WorldDeltaLog` itself has no "a delta was just applied" signal a client-side listener
+could hang a derived local emit off (`autoload/world_delta_log.gd`'s `_apply()` mutates silently) --
+adding one is a real fix but touches a file `MireGrid` also depends on, out of scope for a
+single-file fix.
+
+Task 8.3 (RichPresenceService, SteamStats) is the first real consumer that needed a client-correct
+Cycle number for something genuinely per-peer (a Steam achievement has to unlock on every player's
+own account, not just the host's; presence text has to be right on every peer's own friends-list
+entry) -- both work around it by POLLING `CycleService.current_cycle()` (which DOES have the correct
+per-peer fallback, unlike `WaveSpawner`'s old broken getter) on a 2s timer instead of subscribing to
+the broken signal. That is a real, working fix for those two files, not a workaround that silently
+produces wrong output -- but it is polling where a signal should exist, and any FUTURE
+cycle_advanced subscriber that assumes the doc comment ("HOST only" -- accurate) means "but every
+peer's own local bus still gets it eventually" will hit this exact trap.
+
+Fix shape: give WorldDeltaLog a generic `delta_applied(chunk, kind, key, value)` signal fired from
+`_apply()`, and have `CycleService` hang its own `cycle_advanced` derivation off that on a client,
+mirroring the D-107/D-108 "fire from the thing that actually changed, on every peer" pattern applied
+to a log-backed value instead of a property. Bigger than a one-file fix since MireGrid also calls
+into WorldDeltaLog and any new signal has to not change its existing contract.
+
+---
+
+**Resolved 2026-08-19 by lp.** Fixed 2026-08-19 by lp. `WorldDeltaLog` (autoload/world_delta_log.gd) grew a generic
+`signal delta_applied(chunk, kind, key, value)`, fired from `_apply()` — the one place a value is
+actually stored, on either the host (via `host_record()`) or a client (via the `net_delta_applied`
+RPC handler). It deliberately does NOT fire from `net_world_snapshot` (a late joiner's snapshot
+replaces `_state` wholesale, not through `_apply()`) — a joiner still reads its caught-up value
+directly via `latest()`, unchanged.
+
+`CycleService` (systems/cycle/cycle_service.gd) subscribes to it in `_ready()` and, in a new
+`_on_world_delta_applied()` handler, re-emits `EVENT_BUS.emit_cycle_advanced(int(value))` whenever
+the delta matches its own `(GLOBAL_CHUNK, KIND, KEY)` address — guarded on `_owns_cycle()` so the
+host (whose own `host_record()` call also runs through `_apply()` and fires this same signal) never
+double-emits; it already emits directly from `_announce()`. No new RPC — the signal is purely local,
+matching D-099/D-100's no-new-RPC reuse of WorldDeltaLog.
+
+Updated stale doc comments that called the signal "broken" (`autoload/rich_presence_service.gd`,
+`autoload/steam_stats.gd` — both keep their existing 2s poll, which already works and needs no
+upkeep) and `core/events/event_bus.gd`'s `cycle_advanced` doc, which used to claim "HOST only."
+
+Verified with new `tools/cycle_advanced_net_check.gd` — real two-process ENet check. The client
+subscribes ONLY through `EventBus.subscribe_cycle_advanced()` (never polls `current_cycle()`, which
+already had a correct fallback pre-F-250 via F-226 and would mask this exact bug). Host advances the
+Cycle 3 times for real through `CycleService.host_advance_cycle()`; client's listener fires exactly
+3 times with the correct Cycle number each time.
+`.agent/bin/agent godot --script tools/cycle_advanced_net_check.gd` ->
+CYCLE_ADVANCED_NET_CHECK failures=0.
+
+Regression: tools/cycle_check.gd -> CYCLE_CHECK failures=0. tools/wave_director_check.gd ->
+WAVE_DIRECTOR_CHECK failures=0. tools/cycle_modifier_check.gd -> CYCLE_MODIFIER_CHECK failures=0.
+tools/steam_stats_check.gd -> STEAM_STATS_CHECK failures=0. tools/rich_presence_check.gd -> all
+checks passed. tools/wellspring_check.gd -> WELLSPRING_CHECK failures=0. tools/mire_grid_check.gd ->
+MIRE_GRID_CHECK failures=0.
+
+tools/wave_spawner_cycle_net_check.gd (F-226's own check) had one assertion that is now WRONG by
+design ("client's private _current_cycle cache stays at 1, proving the emission never reached it") —
+the emission is no longer stray, so the cache legitimately updates now too. Updated the assertion to
+check the cache matches the real Cycle instead; still green,
+WAVE_SPAWNER_CYCLE_NET_CHECK failures=0.
+
+Swept every EVENT_BUS.emit_* call site project-wide and every "HOST only"/"any peer" doc claim in
+event_bus.gd. wellspring_capped/recorrupted/ship_repaired/run_extracted/run_wiped/boss_engaged/
+boss_phase_changed already fire from a replicated property's own setter (D-107/D-108) — not this
+bug's shape. enemy_attack_landed/harvest_yielded are explicitly host-only by design with a
+host-owned consumer. salvage_banked/unlock_purchased are explicitly documented per-peer-local.
+Found one real unfixed sibling — CycleModifierService._announce() has the identical shape but its
+WorldDeltaLog record never stores which Cycle a Modifier was drawn on, so the fix needs a schema
+addition first; filed separately as F-254 rather than folded in here. Also filed F-253 for
+tools/seed_sync_check.gd's 3 pre-existing failures, confirmed via `agent baseline` to be unrelated
+to this task.
+
+Full boot: `agent godot --quit-after 120` — see done note for the exact run.
 
 ### F-248 · M8's real-App-ID dependency isn't encoded anywhere the board can see, so a task that needs it can surface as routable while 8.1/8.2 are still `todo` — **fixed**
 
