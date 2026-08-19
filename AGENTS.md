@@ -196,7 +196,18 @@ under "Left alone" and you hand-commit them afterwards. That second commit is wh
 sneaks back in wearing a disguise: **`git add docs/` is a blanket add too.** `docs/` is the one
 directory every agent writes to and nobody locks, so a wildcard there is *more* likely to sweep up
 someone else's work than one anywhere else — it has already folded another agent's new roadmap row
-into an unrelated findings commit. Name the files: `git add docs/FINDINGS.md docs/DECISIONS.md`.
+into an unrelated findings commit. And naming the files in `git add` is only half the guard: several
+sessions share ONE git index, so by the time your bare `git commit` runs, the index may also hold
+another lane's mid-ship staged set — and your commit sweeps it (F-199: the 2026-08-19 audit's two
+staged docs landed inside an unrelated art commit exactly this way, while the hook blocked the
+mirror-image sweep in the other direction). **The commit's real boundary is a pathspec, so give it
+one:**
+
+```bash
+git commit -m "F-0NN docs: what changed" -- docs/FINDINGS.md docs/DECISIONS.md
+```
+
+`agent ship` already commits this way for its own staged set; the hand-commit for docs must too.
 
 **The harness under `.agent/bin/` is source, not coordination state (F-081/D-057).** `ship` carries
 `BOARD.md`, `JOURNAL.md` and `state.json` for you because nobody owns them; it deliberately does

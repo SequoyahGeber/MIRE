@@ -698,6 +698,32 @@ def _(harness):
     return "4 bad ids/notes and a damaged file all refused, nothing written"
 
 
+@case("a commit blocked ONLY by foreign claims names the shared-index mechanism and the pathspec fix (F-199)")
+def _(harness):
+    # alpha edited its own unclaimed doc; beta holds world/thing.gd, which is also dirty (their
+    # mid-ship state). alpha's bare commit must be blocked — and the block must explain that the
+    # obstacle is the shared index, and print the pathspec commit for alpha's OWN files.
+    d = build_repo(harness,
+                   claims='{"world/thing.gd": {"task": "8.8", "agent": "beta", '
+                          '"at": "2026-08-18T12:00:00+00:00"}}',
+                   recent="{}")
+    os.makedirs(os.path.join(d, "docs"), exist_ok=True)
+    with open(os.path.join(d, "docs", "NOTES.md"), "w") as f:
+        f.write("alpha's own doc edit\n")
+    # Stage both — the shared-index state at the moment of a bare commit — and drive the check
+    # directly, as the pre-commit hook would (build_repo installs no real hook).
+    r = run(["git", "add", "docs/NOTES.md", "world/thing.gd"], d, check=True)
+    r = run([".agent/bin/agent", "check"], d)
+    assert r.returncode != 0, "check passed a tree where beta's claimed file is dirty: %s" % brief(r.stdout)
+    out = r.stdout + r.stderr
+    assert "shared" in out and "git commit -m" in out and "docs/NOTES.md" in out, (
+        "the block did not explain the shared-index mechanism or name alpha's own pathspec:\n%s"
+        % brief(out, lines=12, chars=800))
+    assert "world/thing.gd" not in out.split("git commit -m")[1].splitlines()[0], (
+        "the suggested pathspec includes beta's claimed file")
+    return "guidance printed with alpha's files only"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rev", help="test the harness as of this git revision instead of the working tree")

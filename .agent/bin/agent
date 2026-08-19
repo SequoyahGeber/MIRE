@@ -1530,6 +1530,18 @@ def cmd_check(args):
     for e in errors:
         print("%s✗ %s%s" % (C["r"], e, C["x"]))
     if errors:
+        # F-199: when EVERY blocking file is some other agent's claim, the likeliest story is not
+        # "you edited their files" but "your bare commit is about to sweep the shared index, which
+        # currently holds their mid-ship staged set". The generic claim-violation list reads as an
+        # accusation and teaches --no-verify; naming the actual mechanism teaches the pathspec.
+        own_changes = [f for f in changed
+                       if not any(e.startswith(f + " ") for e in errors)]
+        if own_changes and all(" — claimed by " in e for e in errors):
+            print("\n%sEvery blocked file is another session's claim — this is usually the shared"
+                  % C["y"])
+            print("  git index carrying their mid-ship staged set, not your edit. Commit only your")
+            print("  own files, by pathspec:%s" % C["x"])
+            print("    git commit -m \"...\" -- %s" % " ".join(own_changes[:8]))
         print("\n%sCommit blocked.%s Use --no-verify only if you are certain.\n" % (C["r"], C["x"]))
         sys.exit(1)
     if not warnings:

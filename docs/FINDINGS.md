@@ -890,6 +890,48 @@ in-process draft did not catch), and update the tracker row's evidence line.
 
 ## Resolved
 
+### F-199 · Two sessions share one git index, so a bare 'git add + git commit' races every concurrent ship — the audit's two staged docs landed inside wick20's A-011 art commit — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by yarrow21
+
+Evidence, 2026-08-19: the audit session staged `docs/AUDIT-2026-08-19.md` + `docs/NEXT.md` and ran
+a bare `git commit`. In the same seconds, lane wick20's A-011 ship was mid-flight. Outcome, both
+directions of the hazard in one incident:
+
+- **The audit's own bare commit was BLOCKED by the pre-commit hook** — correctly: by commit time
+  the shared index also held wick20's staged claim set (`docs/ASSET_TRACKER.md`,
+  `tools/blender/*`, `tools/gatherables_check.gd`), and a bare commit would have swept another
+  lane's mid-ship files into an unrelated docs commit. The hook read them as claim violations and
+  refused. Right answer, confusing error — the listed files are someone else's, and nothing tells
+  the blocked committer "your index is shared; use a pathspec".
+- **The audit's two docs still landed in wick20's commit** (`fbcad17`, "Art A-011: gatherable
+  plants..."): content intact and pushed, but under the wrong message and task attribution. So
+  whatever wick20's exact commit shape was, pre-staged foreign paths went along.
+
+`cmd_ship` already guards ITS half — `git commit -- <to_stage>` with a comment naming this exact
+hazard (line ~1300). The unguarded half is every HAND commit the protocol prescribes for docs
+(ship deliberately leaves docs "Left alone", AGENTS.md tells agents to `git add docs/FINDINGS.md
+docs/DECISIONS.md` + commit): those instructions produce a bare commit, and a bare commit in a
+shared index is a race with every concurrent ship and every other hand-committer.
+
+Fix, two cheap halves:
+1. **AGENTS.md**: the docs hand-commit instruction becomes pathspec form —
+   `git commit -m "..." -- docs/FINDINGS.md docs/DECISIONS.md` — with one sentence saying why
+   (several sessions, one index; `git add` is advisory, the pathspec is the commit's actual
+   boundary).
+2. **The hook**, when it blocks: if every violating file is another agent's CLAIMED file and none
+   is in the committer's own claim/recent set, say "these are another session's staged files —
+   commit yours with: git commit -- <your files>" instead of the bare claim-violation list.
+
+Until then: always commit docs with an explicit `--` pathspec naming your files.
+
+**Resolved 2026-08-19 by yarrow21.** Both fix halves shipped: AGENTS.md prescribes the pathspec commit for the docs hand-commit (with
+the shared-index sentence), and the hook's block — when every violation is a foreign claim — now
+names the mechanism and prints `git commit -m "..." -- <your files>` with only the committer's own
+files. `tools/harness_check.py` 26/26 including the new case; `--rev HEAD` fails exactly it. The
+triggering incident stands as pushed history (`fbcad17` carries the audit docs with an art commit's
+message); content intact, attribution wrong, not worth a history rewrite.
+
 ### F-057 · A-003's deterministic-rebuild claim is false: two crafting-station GLBs differ byte-wise across identical rebuilds — **fixed**
 
 **Area:** art pipeline · **Severity:** low · **Found:** 2026-08-17 by tine18 during the 2.1j palette migration

@@ -1,13 +1,58 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "content/enemies/bog_crawler.tres": {
+      "agent": "lm",
+      "at": "2026-08-19T07:08:33+00:00",
+      "task": "F-158",
+      "token": null
+    },
+    "systems/enemies/enemy.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T07:11:00+00:00",
+      "task": "F-158",
+      "token": null
+    },
+    "systems/enemies/enemy_def.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T07:11:00+00:00",
+      "task": "F-158",
+      "token": null
+    },
+    "systems/waves/wave_spawner.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T07:08:33+00:00",
+      "task": "F-158",
+      "token": null
+    },
+    "tools/bog_crawler_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T07:10:58+00:00",
+      "task": "F-158",
+      "token": null
+    }
+  },
+  "in_flight": {
+    "F-158": {
+      "agent": "lm",
+      "files": [
+        "content/enemies/bog_crawler.tres",
+        "systems/waves/wave_spawner.gd",
+        "tools/bog_crawler_check.gd",
+        "systems/enemies/enemy_def.gd",
+        "systems/enemies/enemy.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-19T07:08:33+00:00",
+      "token": null
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "nettle12",
-      "at": "2026-08-19T06:45:25+00:00",
-      "hash": "2d45c86ca0ff92f3b51311d47b480045b3c6c87367e1656955baa57821c0d240",
-      "task": "F-186",
-      "token": "CLAUDE_CODE_SESSION_ID:40988e99-50dc-4901-9548-e1fbdb4e0f6f"
+      "agent": "yarrow21",
+      "at": "2026-08-19T07:11:01+00:00",
+      "hash": "cb61c4108f0112f0dba63a781a6b22ea7fbae288561c84e70ed891b02d967841",
+      "task": "F-199",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     ".agent/bin/lane": {
       "agent": "bram1",
@@ -23,9 +68,10 @@
     },
     "AGENTS.md": {
       "agent": "yarrow21",
-      "at": "2026-08-18T21:05:35+00:00",
-      "hash": "8eb00e18839701c96414c83c67c6aaaf60586a0d912b6679e1ae063aff527ea6",
-      "task": "F-134"
+      "at": "2026-08-19T07:11:01+00:00",
+      "hash": "743f9a437c09317ecd22a65ef63633b37c0830dba90879379cdbf3c275ff9c9a",
+      "task": "F-199",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "assets/audio/music": {
       "agent": "tine18",
@@ -1525,11 +1571,11 @@
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "pike14",
-      "at": "2026-08-19T06:48:55+00:00",
-      "hash": "af31a6fdcdc8ba89954bb5bd19c050a9052020109014503047bdf067c1b30af3",
-      "task": "F-006",
-      "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
+      "agent": "yarrow21",
+      "at": "2026-08-19T07:11:01+00:00",
+      "hash": "cb5f1ce28676bfd0122db07ad9f2fae6f838c3210ae06560270058e0c3924cd7",
+      "task": "F-199",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -2466,11 +2512,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "tools/harness_check.py": {
-      "agent": "nettle12",
-      "at": "2026-08-19T06:45:25+00:00",
-      "hash": "31b50d36347a3c3ff4586812ca4254fd38e18b86977b30fea7b5dc346ac8df2c",
-      "task": "F-186",
-      "token": "CLAUDE_CODE_SESSION_ID:40988e99-50dc-4901-9548-e1fbdb4e0f6f"
+      "agent": "yarrow21",
+      "at": "2026-08-19T07:11:01+00:00",
+      "hash": "eae5ce6b93dcce0b68a7733570c47b666703b01555fcbd0a0c7afb2a39ca18b9",
+      "task": "F-199",
+      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "tools/harvest_batch_check.gd": {
       "agent": "nettle12",
@@ -5567,7 +5613,7 @@
     "F-158": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "`bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler"
     },
@@ -5902,6 +5948,15 @@
       "status": "todo",
       "tier": "F",
       "title": "Three DONE asset batches (A-004, A-005, A-006) still call `mire_art.box()`'s bevel-capable version with no override \u2014 the same F-057 exposure their own tracker rows already claim to have passed"
+    },
+    "F-199": {
+      "done_at": "2026-08-19T07:11:01+00:00",
+      "done_by": "yarrow21",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Two sessions share one git index, so a bare 'git add + git commit' races every concurrent ship \u2014 the audit's two staged docs landed inside wick20's A-011 art commit"
     }
   },
   "version": 1

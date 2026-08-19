@@ -4511,3 +4511,27 @@ Bevel-free box() override in build_crafting_stations.py (same pattern as build_w
 Files: `tools/blender/build_crafting_stations.py`, `assets/crafting_stations`, `assets/source/crafting_stations.blend`, `tools/blender/crafting_stations_repro_check.py`
 
 Commit at time of writing: `fbcad17`
+
+---
+
+### HANDOFF · 2.1d · wick20 · 2026-08-19T07:08:14+00:00
+
+**Produce the single `NEXT` batch in `docs/ASSET_TRACKER.md`; verify, advance the queue, hand off rather than close**
+
+A-011 DONE — 10 gatherables in a new assets/gatherables kit, 5,472 tris, Blender 5.2.0 LTS. Verified three ways: build contract 10/10 (fails, not warns), all-sides audit 0 numeric defects against a clean --outdir, tools/gatherables_check.gd 41/41 engine-side. A-012 (food and consumables) is now NEXT under Sequoyah's standing 'keep making game assets' waiver, which cleared P1 only — P2 and P3 still wait on their gates, so stop at the end of P1 rather than promoting across a phase boundary. Two things the next batch should reuse: mire_art now owns Batch (flora still has a private copy, do not make a third), and a state set must take its SCALE from the shared geometry, not just its centre — centring a rescaled frame just centres the wrong size.
+
+Files: `docs/ASSET_TRACKER.md`, `tools/blender/build_gatherable_plants.py`, `tools/blender/mire_art.py`, `assets/gatherables`, `tools/gatherables_check.gd`, `assets/gatherables/preview/gatherables_preview.png`
+
+Commit at time of writing: `1bec865`
+
+---
+
+### DONE · F-199 · yarrow21 · 2026-08-19T07:11:01+00:00
+
+**Two sessions share one git index, so a bare 'git add + git commit' races every concurrent ship — the audit's two staged docs landed inside wick20's A-011 art commit**
+
+Both halves shipped. AGENTS.md's docs hand-commit instruction now uses the pathspec form (git commit -m ... -- <files>) with the one-sentence why: several sessions, one index — git add is advisory, the pathspec is the commit's actual boundary; agent ship already committed that way (the ~1300 comment) and now the hand-commit path matches. The hook, when EVERY blocking file is another agent's claim, explains the shared-index mechanism and prints the exact pathspec commit for the committer's own files instead of a bare claim-violation list that reads as an accusation and teaches --no-verify. Verified: harness_check 26/26 with a new case (alpha's doc staged beside beta's claimed mid-ship file -> block + guidance naming only alpha's file), --rev HEAD reproduces 25/26 failing exactly that case. The incident itself is unrecoverable by design — fbcad17 is pushed history; the audit docs' content is intact in it, only the attribution is wrong, and rewriting a pushed commit for attribution is worse than the wound.
+
+Files: `AGENTS.md`, `.agent/bin/agent`, `tools/harness_check.py`, `docs/FINDINGS.md`
+
+Commit at time of writing: `1253459`
