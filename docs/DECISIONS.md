@@ -1233,6 +1233,47 @@ stand-in stays a decision and never becomes a typo. World's Okayest Axe is `ston
 in the Gilded pool until A-047 gives it its gold skin; King's Purse is a 400–800 coin line, which
 needs no new mechanism at all.
 
+### D-144 · 2026-08-19 · Task 4.13: the continent decides where biomes are, the biome decides how rough its ground is — and the terrain look costs 1.9x the chunk build
+
+**The circularity, and the split that resolves it.** 4.13 gives every `BiomeDef` two terrain
+amplitudes, so the surface now depends on which biome a point is in. But `BiomeMap` decides the
+biome from height — so deciding it from the *final* height would mean the biome was chosen from a
+surface the biome itself shaped. `IslandHeightmap` is therefore split:
+
+* `continent(x, z, seed)` — warped fBm through the island mask, and nothing else. Biome-independent
+  by construction. This is what `BiomeMap.biome_at()` samples, and what a `BiomeDef`'s
+  `height_min`/`height_max` now mean.
+* `height(x, z, seed, detail_amplitude, ridge_amplitude)` — the continent plus the two rough layers,
+  scaled by the amplitudes the point's own biome authors. Defaults of 1.0 give the biome-blind
+  surface, so every existing caller keeps working.
+
+The one-line form: **the landmass decides where the biomes are; each biome decides how rough its own
+ground is.** A shore is flat because its multipliers are near zero, not because the island is lower
+there. `BiomeMap.terrain_amplitudes()` is the seam that hands a point's pair to the heightmap.
+
+**Three shape decisions the top-down render forced, none of which are visible from ground level.**
+`tools/terrain_map_render.gd` (new, headless, writes a PNG) is how these were found:
+
+1. **A continental lift (`LAND_BIAS`).** Simplex is centred on zero, so `noise * mask` puts half the
+   interior below sea level — the first render was an archipelago of ponds, not an island.
+2. **A jittered coastline (`COAST_JITTER`).** The falloff is a circle, so without it the island is
+   a coin with a sand rim. The mask reads a noise-displaced radius instead of the true one.
+3. **A much tighter falloff** (0.55 → 0.78 of the radius). The original taper left a ~230 m annulus
+   sitting within a metre or two of sea level, which handed `shore` most of the island's edge.
+
+**The cost, measured rather than assumed** (`tools/bench_chunks.gd`, same machine, same run):
+chunk build went **1.99 ms → 3.85 ms** single-threaded and **3.92 → 8.35 ms/chunk** amortized on the
+WorkerThreadPool — 1.9x, for domain warp plus a ridged layer plus the coast field. Naive assembly was
+2.4x; removing a duplicate noise construction per sample (the first cut built the base and coast
+fields twice) recovered a fifth of it, with `check_determinism`'s hashes unchanged across the
+refactor, which is what proves it was behaviour-neutral. **Against the worst-computers target this is
+the largest single cost M4 has added**, and F-235 names the remaining win: the mesher rebuilds three
+`FastNoiseLite` objects for every one of a chunk's 1,089 samples.
+
+**Both new operations are in the determinism probe in the same task that added them**, per D-142:
+`continent` and `ridge_mask` hash separately from `terrain_hash`, so a cross-platform mismatch says
+which one drifted rather than just that the surface did.
+
 ## Template
 
 ```
@@ -4140,3 +4181,25 @@ shared tree, and the rule against working around a claim is what keeps two agent
 than sequentially, or claim contention persisting after the staleness signal exists — either would
 mean the bottleneck is real concurrency rather than abandoned sessions, and worktrees become worth
 their import-cache cost.
+
+### D-145 · 2026-08-19 · Lane routing is a single seat: only the director may `order`, `dispatch` or `saturate`
+Every session on this repo can reach `.agent/bin/agent`, and for a while every session used it. Over
+one long day six work orders arrived in lane queues that the director had not written (F-132, F-057,
+F-158, 6.8, 6.3, F-236). None of them were wrong as work, and nothing was corrupted — the cost was
+subtler. The director's picture of what a lane would do next stopped being reliable, which produced a
+duplicate dispatch when a task was reassigned between lanes while another chain still held it queued,
+and an order aimed at a finding a peer chat had already started, which would have burned a dispatch
+discovering the collision.
+
+Routing is now one seat, enforced rather than requested: `agent order`/`dispatch`/`saturate` refuse
+any agent that is not the director and name who is. `agent director` shows the seat, `--take` claims
+it, `--clear` releases it. Nothing else changes — peer sessions claim files, work, and close out
+exactly as before.
+
+The reasoning is the same one behind file claims. A coordination surface with shared write access
+makes every read of it a guess, and the director's entire output is judgement about what came back.
+A task agent that spots work worth doing files a finding; the director picks it up from there. That is
+the whole interface.
+
+**Would change my mind:** a second orchestrator with a genuinely separate lane pool and no shared
+queue — at which point the seat should be per-pool rather than global, not abolished.

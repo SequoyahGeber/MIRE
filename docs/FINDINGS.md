@@ -69,6 +69,29 @@ do is worth as much as the record of what we did.
 
 ## Open
 
+### F-241 · The chunk mesher rebuilds three noise objects for every one of a chunk's 1,089 samples
+
+**Area:** worldgen · **Severity:** medium · **Found:** 2026-08-19 by slate17 during 4.13
+
+`IslandHeightmap.height()` constructs its `FastNoiseLite` fields inside the call — deliberately, and
+for a good reason its own comment gives: a shared instance is not safe to sample from several
+`WorkerThreadPool` tasks at once. But `world/chunk/chunk_mesher.gd` calls it once per vertex, and a
+32 m chunk at 1 m spacing is **1,089 vertices**. That is ~3,300 noise constructions per chunk to
+sample three fields.
+
+4.13 measured the whole terrain cost at 3.85 ms/chunk single-threaded, up from 1.99 ms before its
+new layers (D-144). Construction is a large share of that and it buys nothing: the three fields are
+identical for every sample in the chunk — same seed, same settings — and only the sample point
+changes.
+
+**The fix, and why it was not done here:** a `NoiseSet` value built once per chunk and sampled many
+times keeps the thread-safety property exactly (one set per task, never shared) while removing the
+per-sample construction. It needs a second entry point on `IslandHeightmap` and a change in
+`chunk_mesher.gd`, which belongs to 4.3's owner rather than to a terrain-look task, and it must land
+with `check_determinism` unchanged — the refactor inside 4.13 that removed a duplicate construction
+did exactly that, and is the worked example: **hashes identical before and after is what proves an
+optimisation changed no output.**
+
 ### F-020 · Steam sessions cannot use NetSession's direct-address auto-rejoin loop
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-16 by tine during 1.7
@@ -410,7 +433,93 @@ is picked up, rather than copy-pasting the private method.
 
 ---
 
+### F-240 · A telegraphed attack's reach and tell length cannot deny "just take one step back" — no `EnemyDef` field makes retreating-through-a-tell fail, so that pressure isn't available to future enemy content
+
+**Area:** enemies · **Severity:** low · **Found:** 2026-08-19 by lm during 5.2
+
+`Enemy._resolve_attack()` (systems/enemies/enemy.gd) always checks the target's distance at the
+INSTANT the tell ends, and `_tick_attack()` zeroes `velocity.x`/`velocity.z` for the entire
+TELL/ATTACK/RECOVER span — the enemy is fully stationary throughout its own swing (2.10's original
+design, generalised by 5.1, unchanged since). The consequence: for ANY `EnemyDef`, at ANY
+`attack_range_m`/`attack_tell_seconds` combination, a player who starts moving away the instant the
+tell begins always ends up outside `attack_range_m` by the time it resolves, because the enemy never
+closes the gap it opened. A bigger `attack_range_m` only changes how far out the tell can TRIGGER
+from — it does nothing to make the tell itself harder to walk away from once it has.
+
+Task 5.2 wanted this as one enemy kind's identity ("denies casual backpedaling, rewards using a real
+dodge") and confirmed by direct test that it does not hold: see `docs/DELEGATION.md`'s 2026-08-19
+task 5.2 entry for the full reasoning and the `tusker` kind that shipped with a different identity
+instead (a bigger `attack_recovery_seconds` payoff for standing and trading, which the state machine
+does support).
+
+**Not fixed here** — this is a design-space limitation of the existing state machine, not a bug in
+it; 2.10/5.1's behaviour is correct for what it set out to do. **What would close this:** either the
+enemy continuing to close ground during its own TELL/ATTACK span (a lunge/leap that covers distance
+mid-swing) or an attack that samples the target's position at tell START rather than tell END —
+either is a real change to `Enemy._tick_attack()`/`_resolve_attack()`, not a new `EnemyDef` field
+alone, and is worth deciding deliberately (a new field, or a per-kind attack "shape" enum) rather than
+re-discovered by the next author who wants this pressure and reaches for a bigger `attack_range_m`
+number that won't actually deliver it.
+
+---
+
+### F-239 · The inv command reads slot keys that do not exist — inv always prints 'carrying nothing' and inv clear silently removes nothing
+
+**Area:** systems · **Severity:** medium · **Found:** 2026-08-19 by hollow7
+
+Task 3.16 registered `inv [list|clear] [peer]` in `autoload/inventory_service.gd`, and both
+subcommands read each slot as `slot.get("item")` / `slot.get("count")`
+(`_list_inventory`/`_clear_inventory`, lines ~559/572). The store's actual snapshot shape is
+`{item_id, amount}` (`systems/inventory/inventory_store.gd:87`). Every lookup therefore returns the
+default: `inv` reports "peer N is carrying nothing" regardless of contents, and `inv clear` iterates
+the same empty view and removes nothing while reporting "cleared 0 item(s)" as a success.
+
+Why three layers of checks missed it: `command_check`'s give test asserts `host_count()` (correct
+keys, different seam); `command_catalog_check` asserts scope/refusal, never output;
+`inventory_check` drives the store directly. Nothing asserted the *command's* rendering of a
+non-empty inventory. Found by the 2026-08-19 game-loop audit (`tools/loop_audit_check.gd`), whose
+first draft copied the same wrong keys from the command — the audit's totals read 0 with a full
+inventory, which is what exposed both.
+
+Fix: read `item_id`/`amount` in both subcommands, and assert `inv`'s message against a known grant
+somewhere a check will keep it honest.
+
+---
+
 ## Resolved
+
+### F-242 · Any session can route lane work, so six orders reached the queues from agents that were not the director — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
+
+`agent order`, `agent dispatch` and `agent saturate` were open to every session with repo access.
+Over 2026-08-18/19 six orders arrived in lane queues that the director had not written — F-132,
+F-057, F-158, 6.8, 6.3, F-236. Every one was legitimate work and nothing was corrupted, which is
+exactly why it went unnoticed for most of a day.
+
+The cost is not corruption, it is that the director's read of its own queue stops being true. Two
+concrete instances: a task reassigned between lanes was dispatched twice, because the first lane's
+chain still held it in its snapshot queue and only the done-check caught the overlap; and an order
+was aimed at a finding a peer chat had already started, which would have spent a full dispatch
+discovering the collision. Neither is visible from `agent report` — the queue reads the same whoever
+wrote it.
+
+**Fixed:** routing is now a single seat. `agent director --take` claims it, `agent director` shows it,
+`--clear` releases it, and `order`/`dispatch`/`saturate` refuse anyone else by name, pointing them at
+`agent finding` as the correct interface. Recorded as D-145, with the rule stated in `AGENTS.md`'s
+hard rules (where a task agent will actually read it) and the seat-claim added to ORCHESTRATION §7's
+director start-up sequence.
+
+Nothing else changes: peer sessions claim files, work, and close out exactly as before. The
+reasoning is the same one behind file claims — a coordination surface with shared write access makes
+every read of it a guess.
+
+**Verified:** `MIRE_AGENT=peerchat9 agent order F-233 --lane LP` is refused, naming bram1 as director
+and pointing at `agent finding`; the director's own `agent order` still reaches its normal guards
+(already-done check fired, not the director check); `agent director` reports the seat correctly
+before and after `--take`; `tools/harness_check.py` 34/34.
+
+---
 
 ### F-235 · defeat_hud.gd's salvage-banked guard drops the real number on every real defeat — SalvageService subscribes to run_wiped before DefeatHud, so its synchronous salvage_banked emit lands while _shown is still false — **fixed**
 

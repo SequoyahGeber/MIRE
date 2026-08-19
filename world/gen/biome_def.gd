@@ -35,6 +35,20 @@ extends Resource
 ## sloppy grassland/forest range reaching down to 0m would otherwise compete for the same band.
 @export var priority: int = 10
 
+@export_group("Terrain")
+## How rough this biome's ground is, as multipliers on the two layers
+## `IslandHeightmap` adds on top of the continent. The continent itself is NOT
+## scaled here and cannot be: `BiomeMap` reads it to decide which biome a point
+## is in, so a biome that moved the continent would be choosing where it lives
+## (D-144). A shore is flat because its multipliers are near zero, not because
+## the island is lower there.
+@export_range(0.0, 4.0, 0.05) var detail_amplitude: float = 1.0
+## Ridged crests, and the reason a mountain biome looks like mountains. Masked by
+## continental height as well, so a high `ridge_amplitude` in a lowland biome
+## still produces lowland — the mask and the table have to agree before a crest
+## appears anywhere.
+@export_range(0.0, 4.0, 0.05) var ridge_amplitude: float = 1.0
+
 
 ## Same shape as every other Def's validation_errors() — registry.gd calls this before indexing and
 ## skips anything that fails, so a malformed .tres is a named boot error, not a silent hole in the

@@ -5856,3 +5856,15 @@ Commit at time of writing: `52f868e`
 Lane routing is now a single seat (D-145): order/dispatch/saturate refuse any agent but the director and point them at agent finding; agent director shows/takes/clears it. Rule stated in AGENTS.md hard rules and ORCHESTRATION §7's start-up sequence. Verified a simulated peer agent is refused by name while the director's own routing still works; harness_check 34/34.
 
 Commit at time of writing: `092077b`
+
+---
+
+### DONE · 4.13 · slate17 · 2026-08-19T17:36:48+00:00
+
+**Terrain look: domain warp + masked ridged layer + per-biome amplitude tables (`WORLDGEN.md` §1, D-142); extend `check_determinism`, re-run `bench_chunks`**
+
+Completed.
+
+Files: `world/gen/island_heightmap.gd`, `world/gen/biome_def.gd`, `tools/check_determinism.gd`, `content/biomes/forest.tres`, `content/biomes/grassland.tres`, `content/biomes/shore.tres`, `world/gen/biome_map.gd`, `tools/terrain_map_render.gd`, `tools/terrain_map_render.gd.uid`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`, `assets/audit/terrain/island_20260819.png`
+
+Commit at time of writing: `3b5e5c7`

@@ -39,6 +39,8 @@ func _initialize() -> void:
 	print("rng_sequence   %s" % _hash_rng())
 	print("noise_simplex  %s" % _hash_noise(FastNoiseLite.TYPE_SIMPLEX_SMOOTH))
 	print("noise_perlin   %s" % _hash_noise(FastNoiseLite.TYPE_PERLIN))
+	print("continent      %s" % _hash_continent())
+	print("ridge_mask     %s" % _hash_ridge_mask())
 	print("float_math     %s" % _hash_float_math())
 	print("terrain_hash   %s" % _hash_terrain())
 
@@ -109,6 +111,27 @@ func _hash_float_math() -> String:
 ## This is the real terrain pipeline, not a standalone probe of its parts — if this diverges across
 ## platforms while the four probes above don't, the bug is in island_heightmap.gd's own arithmetic,
 ## not in an engine primitive.
+## 4.13's two new operations, probed separately from the combined surface so a
+## cross-platform mismatch says WHICH one drifted. Domain warp and ridged fractal
+## are both FastNoiseLite-internal, which is exactly why they are cheap to trust
+## and exactly why they still have to be measured (D-142).
+func _hash_continent() -> String:
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	for x in range(-6, 7):
+		for z in range(-6, 7):
+			_feed(ctx, IslandHeightmap.continent(float(x) * 37.0, float(z) * 37.0, SEED))
+	return _digest(ctx)
+
+
+func _hash_ridge_mask() -> String:
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	for step in range(0, 41):
+		_feed(ctx, IslandHeightmap.ridge_mask(float(step) * 1.5))
+	return _digest(ctx)
+
+
 func _hash_terrain() -> String:
 	var ctx := HashingContext.new()
 	ctx.start(HashingContext.HASH_SHA256)

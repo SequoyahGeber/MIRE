@@ -72,10 +72,30 @@ static func _better(candidate: Resource, current: Resource) -> bool:
 	return String(candidate.get(&"id")) < String(current.get(&"id"))
 
 
-## Convenience one-shot: height + moisture + assignment for one world sample point. Callers that
-## already have the height (e.g. 4.3's chunk mesher, which needs it anyway to place vertices) should
-## call assign() directly with that value instead of recomputing it here.
+## Convenience one-shot: continental height + moisture + assignment for one world sample point.
+##
+## Samples `IslandHeightmap.continent()`, NOT `height()`, and that is the whole of D-144: since
+## 4.13 a biome carries terrain amplitudes, so `height()` depends on which biome a point is in.
+## Deciding the biome from `height()` would therefore be circular — the biome would be chosen from
+## a surface the biome itself shaped. The continent is the biome-independent half: the landmass
+## decides where the biomes are, and each biome decides how rough its own ground is.
+##
+## The `height_min`/`height_max` a BiomeDef authors are therefore CONTINENTAL heights. They read
+## the same as before for every biome shipped to date, because the rough layers only ever added
+## metres on top; a def tuned against the old combined surface would sit a few metres low.
 static func biome_at(x: float, z: float, world_seed: int, biome_defs: Array) -> StringName:
-	var height: float = IslandHeightmap.height(x, z, world_seed)
+	var continent_height: float = IslandHeightmap.continent(x, z, world_seed)
 	var moisture_value: float = moisture(x, z, world_seed)
-	return assign(height, moisture_value, biome_defs)
+	return assign(continent_height, moisture_value, biome_defs)
+
+
+## The two amplitudes a point's own biome authors, ready to hand to
+## `IslandHeightmap.height()`. Returns (1.0, 1.0) — the biome-blind terrain — when no def matches
+## or the table is empty, so a caller with no biome content still gets a surface.
+static func terrain_amplitudes(x: float, z: float, world_seed: int, biome_defs: Array) -> Vector2:
+	var id: StringName = biome_at(x, z, world_seed, biome_defs)
+	for def_value: Variant in biome_defs:
+		var def: Resource = def_value as Resource
+		if def != null and StringName(String(def.get(&"id"))) == id:
+			return Vector2(float(def.get(&"detail_amplitude")), float(def.get(&"ridge_amplitude")))
+	return Vector2.ONE

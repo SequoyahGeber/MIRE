@@ -75,6 +75,100 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 4.13: terrain look — a warped, ridged, biome-scaled island, and the tool that lets you see one (slate17)
+
+**What shipped, verified:** `world/gen/island_heightmap.gd` (domain warp, masked ridged layer,
+continental lift, jittered coastline, tighter falloff), two new fields on `world/gen/biome_def.gd`
+authored into all three shipped biomes, `world/gen/biome_map.gd` rewired to the continent,
+`tools/check_determinism.gd` extended with both new operations, and `tools/terrain_map_render.gd`.
+`biome_check`, `procedural_world_check` and `world_contract_check` are all 0 failures.
+
+**The API split is the thing to build against (D-144):**
+
+```gdscript
+IslandHeightmap.continent(x, z, seed)                  # biome-INDEPENDENT landmass; what decides biomes
+IslandHeightmap.height(x, z, seed, detail_amp, ridge_amp)   # the surface; amplitudes come from the biome
+IslandHeightmap.ridge_mask(continent_height)           # how much ridged layer applies at that height
+BiomeMap.terrain_amplitudes(x, z, seed, defs) -> Vector2    # (detail, ridge) for a point, (1,1) if no def
+```
+
+A `BiomeDef`'s `height_min`/`height_max` are **continental** heights from now on. Every shipped def
+reads the same as before, because the rough layers only ever add metres on top — but a def tuned
+against the old combined surface would sit a few metres low.
+
+**See the island before judging it.** `.agent/bin/agent godot --script tools/terrain_map_render.gd
+-- --seed 12345` writes a top-down PNG under `assets/audit/terrain/`: height-shaded, biome-tinted,
+sea level marked. Three shape defects that are invisible from a chunk at ground level were obvious
+in the first render — an archipelago instead of an island, a perfectly circular sand ring, and a
+230 m band of near-sea-level ground round the whole edge. 4.18's island-feel walk should start here
+rather than in the engine.
+
+**The cost is real and named.** Chunk build went 1.99 → 3.85 ms single-threaded (3.92 → 8.35 ms
+amortized on the pool) for the new layers. F-241 holds the remaining win: the mesher rebuilds three
+`FastNoiseLite` objects per vertex, 1,089 vertices per chunk, and a per-chunk `NoiseSet` would remove
+that without giving up the thread-safety property. Whoever takes it: hashes identical before and
+after is what proves an optimisation changed no output — that is how 4.13's own refactor was cleared.
+
+
+### 2026-08-19 — Task 5.2 (partial — 3 of the roadmap's "8-12"): three enemy kinds ship as `.tres` data, each proven to fight differently, not just to add up differently (lm)
+
+**What shipped, verified:** `docs/SPECS.md`'s new `## 5.2` block, and three new
+`content/enemies/*.tres` beside `crawler`/`bog_crawler` — no code changed, `EnemyDef`/`Enemy` needed
+no new field. **Deliberately 3, not 8-12** (D-073/AGENTS.md "never bulk-generate content data") —
+see the SPECS.md block for why, and the roadmap line still needs 5-9 more kinds from whoever picks
+this back up.
+
+```
+strider      — move_speed 7.5 (player sprint is 6.0) — cannot be kited on foot; only breaking line of
+               sight or spending a dodge's burst speed creates separation. 7 HP, 4 dmg: a decision to
+               fight it fast, not a war of attrition.
+tusker       — attack_range_m 3.4 (crawler's is 2.0) — a distance that reads as safe against a
+               crawler is already inside a tusker's telegraph. attack_recovery_seconds 1.3 (crawler's
+               0.5) is the reward for standing and punishing instead of retreating and re-approaching.
+               45 HP, 16 dmg, move_speed 2.6: slow enough to still be kiteable, so its pressure has to
+               come from range and the recovery payoff, not from denying distance.
+broodcaller  — alert_radius_m 28 (default 8), max_concurrent_attackers 5 (default 2) — planting and
+               fighting the one that found you wakes the whole local brood and lets more of them pile
+               on than a crawler pack ever could, punishing standing and slugging over falling back to
+               a chokepoint. 9 HP, 5 dmg individually: the pack is the threat, not any one of them.
+```
+
+All three reuse `enemy_crawler.glb` via `visual_tint` (F-158/D-073 — no new art for a stats task):
+strider pale yellow-tan, tusker dark rust red, broodcaller violet.
+
+**F-240 filed, not fixed here — a real limit on what "distinct to fight" can mean from `EnemyDef`
+alone:** the hit always resolves at the END of a tell against the target's THEN-current position, and
+`Enemy._tick_attack()` zeroes velocity for the whole TELL/ATTACK/RECOVER span — so **any nonzero
+player movement during a tell beats it, regardless of `attack_range_m` or `attack_tell_seconds`.**
+There is no field that makes "take one step back" stop working; that would need either the enemy
+still closing ground during its own tell/attack (a lunge) or an attack that samples the target's
+position at tell START, and neither exists today. Ruled out `tusker`'s original design ("denies
+backpedal") for exactly this reason before it shipped — see SPECS.md `## 5.2` for the full reasoning,
+kept there rather than only in the finding so the next author reads it before repeating the attempt.
+
+**The harness trap this task's own check tripped over, worth knowing before writing another
+speed-comparison check:** stepping `Enemy._physics_process(delta)` directly (the standard pattern —
+see `enemy_check.gd`'s header) makes `delta` a no-op for MOVEMENT specifically —
+`CharacterBody3D.move_and_slide()` reads the engine's own fixed physics delta, not the argument
+passed to the function that called it. Two `Enemy` instances stepped this way stay comparable to each
+other (confirmed empirically: measured per-call displacement ÷ `move_speed` agreed to four decimal
+places across two different kinds), but a bare `Node3D` "player" moved by hand at a literal
+`speed * delta` is on a different clock, and a naive comparison silently fails in the direction that
+looks plausible (both distances grow, just by different amounts) rather than erroring loudly.
+`tools/enemy_content_check.gd::_measure_effective_step_seconds()` calibrates a probe's own measured
+per-call displacement against its `move_speed` first, then scales the player's retreat off that same
+number instead of assuming one. Any future check that moves a plain node against a stepped `Enemy`
+and compares real-world distances needs the same calibration, not a literal m/s constant.
+
+**Verified:** `agent godot --script tools/enemy_content_check.gd` — 27/27 assertions pass, each new
+kind's identity proven behaviourally against the `crawler` baseline under an identical test (outracing
+a continuously retreating player at sprint speed; triggering a telegraph at a distance that leaves the
+baseline still chasing; waking a packmate/committing more attackers than the baseline's own defaults
+reach), not read back off its own stat block. Regression: `tools/enemy_check.gd` and
+`tools/enemy_ai_check.gd` both still `failures=0`, unmodified. Full boot
+(`agent godot --quit-after 20`): boot log confirms `loaded 5 enemy definition(s)`, 0 stray `ERROR:`
+lines.
+
 ### 2026-08-19 — Task 6.8: Run summary — headline Cycle number, modifiers drawn, Salvage earned (lp)
 
 Extends `ui/hud/defeat_hud.gd` (task 6.7's terminal death overlay) rather than building a second

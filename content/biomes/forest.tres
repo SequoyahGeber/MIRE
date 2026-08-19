@@ -11,3 +11,5 @@ height_max = 100.0
 moisture_min = 0.5
 moisture_max = 1.0
 priority = 10
+detail_amplitude = 1.15
+ridge_amplitude = 0.9
