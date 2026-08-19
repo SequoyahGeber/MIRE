@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="PoiDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/poi_def.gd" id="1_shipwreck"]
+
+[resource]
+script = ExtResource("1_shipwreck")
+id = &"shipwreck"
+display_name = "Shipwreck"
+scene_path = ""
+placement_priority = 60
+target_count = 3
+clearance_m = 30.0
+min_spacing_m = 120.0
+biomes = Array[StringName]([&"shore"])
+height_min = -2.0
+height_max = 4.0
+radius_min_fraction = 0.55
+radius_max_fraction = 0.95
+max_slope_m = 3.0
+flatness_probe_m = 5.0

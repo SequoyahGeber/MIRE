@@ -2307,3 +2307,46 @@ run-lifecycle or player-downed-edge signal knows where to add the one binding ro
 **Would change my mind:** a playtest (2.14/3.11 or later) wanting scripted variety sooner than M6 —
 same trigger COMMANDS.md §9 item 5 already named. Flipping `night_siege.tres` to `enabled = true` is
 the entire cost of trying it; nothing about the mechanism itself would need to change.
+
+### D-095 · 2026-08-18 · POI placement takes real Poisson-disc, an explicit priority, and two spacing radii — all three found by measuring, not by design
+
+Task 4.7 places Wellsprings and landmarks. Three calls, and the second and third were both bugs the
+check found before anyone could have seen them in game.
+
+**1 · Real Poisson-disc here, even though D-083 chose a jittered grid for scatter.** The two look
+like the same problem and are not. 4.4's resource scatter is generated PER CHUNK by peers that stream
+different chunks at different times, and true dart-throwing needs to see every previously accepted
+point — hence the grid. POIs are island-GLOBAL and few (a dozen or so), generated all at once by
+every peer from the shared seed, so dart-throwing is both affordable and correct. It matters here in
+a way it does not for scatter: two Wellsprings 12 m apart is a broken island; two bushes 12 m apart
+is a bush.
+
+**2 · Placement order is an authored `placement_priority`, not alphabetical.** `_sorted_defs` sorts
+defs before placing, because placement is order-dependent and an unstable order would mean two peers
+building different islands from one seed. The obvious stable key is `id` — and sorting by id alone
+put `wellspring` **last**, after `shipwreck` and `standing_stones`. Nine landmarks claimed the island
+first and squeezed the objective out: on seed 24301, measured, an island generated with **zero
+Wellsprings** — a run with no objective, and nothing anywhere would have reported it. `PoiDef` now
+carries `placement_priority` (lower first, `id` as the deterministic tie-break), the Wellspring sits
+at 0, and every tested seed places 4/4.
+
+**3 · `min_spacing_m` and `clearance_m` are separate numbers.** The first version used one radius for
+everything: same-kind separation doubled as the exclusion zone against other kinds. But those answer
+different questions. Wellsprings want 180 m *from each other* so they spread across the island;
+re-using 180 m as their exclusion radius against everything else carved four enormous holes out of
+the map and left one seed with no standing stones at all. A landmark 100 m from a Wellspring is fine;
+a second Wellspring there is not. Same-kind uses `min_spacing_m`; cross-kind uses the larger of the
+two defs' `clearance_m` (default 24 m). Both radii ride along on each returned site, so a later
+consumer — 4.4's scatter is the obvious one — can keep its own content out of a POI's footprint
+without holding the def list.
+
+**How all of this was found is the point.** `tools/poi_check.gd` asserts that every authored kind
+lands on a real island and that every seed gets at least one Wellspring. Determinism, spacing and
+constraint tests all passed while the zero-Wellspring island existed, because a layout that is
+consistently, deterministically wrong is still deterministic. The per-kind coverage assertion is the
+cheap one that actually caught it.
+
+**Would change my mind:** an island large enough that global dart-throwing gets slow (it is ~30 darts
+× a dozen sites today, so nowhere near), or a POI kind that must be placed relative to another rather
+than merely away from it — a dock beside a shipwreck. That is an anchoring rule, and it belongs in a
+second pass over the sites this one returns, not inside the dart loop.

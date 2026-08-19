@@ -22,6 +22,7 @@ const ATTUNEMENTS_PATH: String = "res://content/attunements"
 const BIOMES_PATH: String = "res://content/biomes"
 const SCATTER_PATH: String = "res://content/scatter"
 const RULES_PATH: String = "res://content/rules"
+const POI_PATH: String = "res://content/poi"
 const HOOKS_PATH: String = "res://content/hooks"
 
 ## F-016: LootTableDef is a brand-new class_name (task 3.5) and this autoload boots in every
@@ -48,6 +49,10 @@ const BIOME_DEF := preload("res://world/gen/biome_def.gd")
 ## does not live here; autoload/rule_service.gd owns that and is the only thing allowed to change one
 ## (docs/COMMANDS.md §4.2).
 const RULE_DEF := preload("res://systems/rules/rule_def.gd")
+## Same F-016 reasoning again: PoiDef is new in task 4.7. Lives under world/gen/ beside BiomeDef and
+## ScatterDef, matching ARCHITECTURE.md §3's project structure ("world/gen/ — island generation,
+## biome placement, POI scatter") rather than the systems/<domain> convention.
+const POI_DEF := preload("res://world/gen/poi_def.gd")
 ## Same F-016 reasoning again: ScatterDef is new in task 4.4. Lives under world/gen/ for the same
 ## reason BiomeDef does — §3's project structure already names it "POI scatter" territory.
 const SCATTER_DEF := preload("res://world/gen/scatter_def.gd")
@@ -108,6 +113,11 @@ var scatter_tables: Dictionary[StringName, Resource] = {}
 ## owning system, which is the whole point of the family.
 var rules: Dictionary[StringName, Resource] = {}
 
+## Keyed by POI id (task 4.7). Shared content, same shape as `biomes` — world/gen/poi_map.gd turns
+## these constraints plus the world seed into actual island sites; this is just the authored rules
+## for what may go where.
+var poi: Dictionary[StringName, Resource] = {}
+
 ## Keyed by hook id (task 3.17). Shared content, same shape as `rules`. One worked example ships
 ## with this task (`night_siege`, disabled by default); Sequoyah authors the rest (D-073 — one at a
 ## time, not a bulk sweep).
@@ -127,11 +137,12 @@ func _ready() -> void:
 	_load_dir(BIOMES_PATH, "BiomeDef", BIOME_DEF, &"id", "biome id", biomes)
 	_load_dir(SCATTER_PATH, "ScatterDef", SCATTER_DEF, &"id", "scatter table id", scatter_tables)
 	_load_dir(RULES_PATH, "RuleDef", RULE_DEF, &"id", "rule id", rules)
+	_load_dir(POI_PATH, "PoiDef", POI_DEF, &"id", "poi id", poi)
 	_load_dir(HOOKS_PATH, "HookDef", HOOK_DEF, &"id", "hook id", hooks)
-	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d loot table(s), %d powerup(s), %d buildable(s), %d haulable(s), %d attunement(s), %d biome(s), %d scatter table(s), %d rule(s), %d hook(s)" % [
+	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d loot table(s), %d powerup(s), %d buildable(s), %d haulable(s), %d attunement(s), %d biome(s), %d scatter table(s), %d rule(s), %d hook(s), %d poi(s)" % [
 		items.size(), recipes.size(), stations.size(), weapons.size(), loot_tables.size(),
 		powerups.size(), buildables.size(), haulables.size(), attunements.size(), biomes.size(),
-		scatter_tables.size(), rules.size(), hooks.size()
+		scatter_tables.size(), rules.size(), hooks.size(), poi.size()
 	])
 
 
@@ -210,6 +221,18 @@ func has_attunement(id: StringName) -> bool:
 ## The accessor RuleService looks for by name at boot. Named `rule_defs()` rather than exposing
 ## `rules` bare because "the rules" in conversation means their live values, which live in the
 ## service — this returns the authored DEFINITIONS, and the name should say so.
+func poi_defs() -> Dictionary:
+	return poi
+
+
+func get_poi(id: StringName) -> Resource:
+	return poi.get(id)
+
+
+func has_poi(id: StringName) -> bool:
+	return poi.has(id)
+
+
 func rule_defs() -> Dictionary:
 	return rules
 

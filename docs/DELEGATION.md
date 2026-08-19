@@ -75,6 +75,54 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 4.7: POI placement ships — seeded Poisson-disc, a `PoiDef` content family, Wellsprings and landmarks (hollow7)
+
+**What shipped, verified:** `world/gen/poi_def.gd` (`class_name PoiDef` — the authored constraints
+for one kind of POI) and `world/gen/poi_map.gd` (`class_name PoiMap` — the pure, static generator),
+plus the Registry family (`Registry.poi`, `poi_defs()`/`get_poi(id)`/`has_poi(id)`, boot log now ends
+`… 8 rule(s), 1 hook(s), 3 poi(s)`) and three worked examples in `content/poi/`.
+
+```gdscript
+PoiMap.sites_for_island(world_seed: int, poi_defs: Array, biome_defs: Array) -> Array[Dictionary]
+# each: {def_id: StringName, site_id: String, position: Vector3, rotation_y: float,
+#        biome: StringName, scene_path: String, spacing: float, clearance: float}
+```
+
+Pass `Registry.poi_defs().values()` and `Registry.biomes.values()` — the same convention
+`BiomeMap.biome_at()` and `ResourceScatter.placements_for_chunk()` callers already follow.
+`position.y` is the terrain height at that point, so a caller can instance straight onto it.
+
+**Like `IslandHeightmap`/`BiomeMap`/`ResourceScatter` before it, nothing in the shipped game calls
+this yet** — it is pure and tested, waiting on whoever wires a real generated world into a running
+level (the F-139 cluster). Wiring it is one call plus an instancing loop.
+
+**Authoring a new landmark is one `.tres`.** The fields that matter, and the two that are easy to get
+wrong: `placement_priority` (LOWER places first and wins the good ground — the Wellspring sits at 0),
+and the **two separate radii** — `min_spacing_m` between sites of the same kind, `clearance_m`
+between this kind and any other. They are separate for a measured reason; see D-095.
+
+**`scene_path` may be empty, legitimately.** `Wellspring` is script-constructed rather than a packed
+scene, and a def may exist purely to reserve space. `PoiMap` returns the site either way.
+
+**Two real bugs the check found, both worth knowing about before you author POI content.** Sorting
+defs by `id` alone placed the Wellspring last (alphabetically after `shipwreck` and
+`standing_stones`) and one measured seed generated an island with **zero Wellsprings** — a run with
+no objective. And using one radius for both same-kind and cross-kind spacing carved four 180 m holes
+out of the island and starved the landmarks. Determinism, spacing and constraint tests all passed
+while both were true, because a layout that is consistently wrong is still deterministic; the
+assertion that caught them is the cheap per-kind one ("does every authored kind actually land, and
+does every seed get a Wellspring"). Keep that assertion when you add kinds.
+
+**Check:** `tools/poi_check.gd` — 38 assertions over five seeds: determinism (same seed twice, and
+immunity to def *order*, since `Dictionary.values()` order is not a contract), spacing under the
+two-ruler rule, every constraint re-derived from the heightmap rather than trusted from the
+generator, different seeds producing different islands (the dropped-salt failure no determinism test
+can catch), honest counts for an unsatisfiable def, and per-kind coverage. 0 failures, 0 engine ERROR
+lines, alongside `biome_check`, `command_catalog_check`, `rule_check`, `verify_setup`.
+*(`chunk_stream_check` is unrunnable in the shared tree right now — a parse error in
+`tools/chunk_stream_check.gd`, held by lm for F-132. `agent godot` identified it as not mine.)*
+
+
 ### 2026-08-18 — Task 3.17: functions, hooks, autoexec and the headless command-file runner ship — COMMANDS.md §5–6 is complete (lp)
 
 **What shipped, verified:** the whole of `COMMANDS.md` §5–6, gated on 3.13 as specced.

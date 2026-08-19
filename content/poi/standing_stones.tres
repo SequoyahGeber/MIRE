@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="PoiDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/poi_def.gd" id="1_standing_stones"]
+
+[resource]
+script = ExtResource("1_standing_stones")
+id = &"standing_stones"
+display_name = "Standing Stones"
+scene_path = ""
+placement_priority = 50
+target_count = 6
+clearance_m = 30.0
+min_spacing_m = 90.0
+biomes = Array[StringName]([&"grassland"])
+height_min = 8.0
+height_max = 60.0
+radius_min_fraction = 0.15
+radius_max_fraction = 0.85
+max_slope_m = 2.5
+flatness_probe_m = 4.0
