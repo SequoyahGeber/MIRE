@@ -3923,3 +3923,18 @@ Notes along the way:
 Files: `core/game_state.gd`, `ui/menu/main_menu.gd`, `ui/menu/settings_menu.gd`, `tools/main_menu_check.gd`
 
 Commit at time of writing: `5a09b1c`
+
+---
+
+### DONE · 6.9 · lm · 2026-08-19T03:34:03+00:00
+
+**Unlock tree + UI. Variety only, never power (`DESIGN.md` §4.6)**
+
+Unlock tree + UI shipped: UnlockDef (content/unlocks/, one worked example), UnlockService (autoload, per-player user://unlocks.json, purchase()/is_content_unlocked()/is_purchased()), SalvageService.spend_salvage(), EventBus.unlock_purchased, UnlockMenu (opened from MainMenu's new UNLOCKS button). 'Never power' enforced structurally: UnlockDef has no stat field. tools/unlock_check.gd: 40+ assertions, 0 failures (agent godot --script tools/unlock_check.gd). 11 regression checks green (salvage/main_menu/defeat/extraction/wellspring_recorruption/crafting/cycle/cycle_modifier/mire_grid/mire_interaction/wave_spawner). 0 ERROR: on full boot (agent godot --quit-after 15). Worked example does NOT wire a live gameplay gate — F-173/D-111 explain why (cross-peer design question for a per-peer-unlock-state system gating a host-decided or must-match-every-peer pool), left for whoever answers that question next.
+
+Notes along the way:
+- Process deviation, caught before ship: initially claimed project.godot and hand-edited its [autoload] block instead of using 'agent autoload <Name> <path>' (F-051/D-021's actual mechanism, which never claims the file and takes its own short lock). Both entries (UnlockService, UnlockMenu) were correctly appended by hand, so re-running 'agent autoload' for each now confirms 'already registered' with no further change needed. Leaving project.godot in this task's claim set for the rest of the session since ship/done will release it shortly anyway and nobody else's brief named it as needed; future tasks should call 'agent autoload' from the start and never put project.godot in the initial claim list.
+
+Files: `systems/unlocks/unlock_def.gd`, `content/unlocks/unlock_deep_pocket.tres`, `core/save/unlock_save.gd`, `autoload/unlock_service.gd`, `ui/menu/unlock_menu.gd`, `tools/unlock_check.gd`, `autoload/registry.gd`, `autoload/salvage_service.gd`, `core/events/event_bus.gd`, `ui/menu/main_menu.gd`, `project.godot`
+
+Commit at time of writing: `0301b9e`

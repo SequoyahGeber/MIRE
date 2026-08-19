@@ -20,6 +20,7 @@ static var _ship_repaired_subscribers: Array[Callable] = []
 static var _run_extracted_subscribers: Array[Callable] = []
 static var _run_wiped_subscribers: Array[Callable] = []
 static var _salvage_banked_subscribers: Array[Callable] = []
+static var _unlock_purchased_subscribers: Array[Callable] = []
 
 
 ## Listener signature:
@@ -317,6 +318,34 @@ static func emit_salvage_banked(earned: int, total_salvage: int, cycle: int, ext
 static func salvage_banked_subscriber_count() -> int:
 	_prune_invalid(_salvage_banked_subscribers)
 	return _salvage_banked_subscribers.size()
+
+
+## Listener signature: (unlock_id: StringName, cost: int, total_salvage: int) -> void
+##
+## Emitted LOCALLY by `UnlockService` (task 6.9) on whichever peer just spent Salvage on
+## `unlock_id`, the instant it finishes writing `UnlockSave` — `cost` is what that row charged,
+## `total_salvage` is that peer's new balance after the spend. Same "future task's hook" role
+## `salvage_banked` plays for 6.8's run summary: nothing here shows UI or gates any pool, it only
+## announces that a purchase happened.
+static func subscribe_unlock_purchased(listener: Callable) -> void:
+	_prune_invalid(_unlock_purchased_subscribers)
+	if listener.is_valid() and not _unlock_purchased_subscribers.has(listener):
+		_unlock_purchased_subscribers.append(listener)
+
+
+static func unsubscribe_unlock_purchased(listener: Callable) -> void:
+	_unlock_purchased_subscribers.erase(listener)
+
+
+static func emit_unlock_purchased(unlock_id: StringName, cost: int, total_salvage: int) -> void:
+	_prune_invalid(_unlock_purchased_subscribers)
+	for listener: Callable in _unlock_purchased_subscribers.duplicate():
+		listener.call(unlock_id, cost, total_salvage)
+
+
+static func unlock_purchased_subscriber_count() -> int:
+	_prune_invalid(_unlock_purchased_subscribers)
+	return _unlock_purchased_subscribers.size()
 
 
 static func _prune_invalid(subscribers: Array[Callable]) -> void:

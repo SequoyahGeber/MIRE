@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UnlockDef" format=3]
+
+[ext_resource type="Script" path="res://systems/unlocks/unlock_def.gd" id="1_deep_pocket"]
+
+[resource]
+script = ExtResource("1_deep_pocket")
+id = &"unlock_deep_pocket"
+category = &"powerup"
+display_name = "Deep Pockets"
+description = "Worked example for task 6.9's framework — DESIGN.md §4.6. Spends Salvage to mark the existing `deep_pocket` PowerupDef (content/powerups/deep_pocket.tres) as purchased. No pool yet checks UnlockService.is_content_unlocked() before including a powerup (F-173) — see that finding for why wiring a real gate here would risk a cross-peer desync, not just a missing line of code."
+cost = 100
+gates_id = &"deep_pocket"

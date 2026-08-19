@@ -487,9 +487,9 @@
     },
     "autoload/registry.gd": {
       "agent": "lm",
-      "at": "2026-08-19T01:57:43+00:00",
-      "hash": "6eeb6c7df8f52f752021bbcacc72c02e313e8ab751434bd8aff51b50e4e00e25",
-      "task": "6.2"
+      "at": "2026-08-19T03:34:03+00:00",
+      "hash": "a50bc437e28042b8836c978edf56b113df32c91a354b6f0b48465ac699b56828",
+      "task": "6.9"
     },
     "autoload/rule_service.gd": {
       "agent": "hollow7",
@@ -499,15 +499,21 @@
     },
     "autoload/salvage_service.gd": {
       "agent": "lm",
-      "at": "2026-08-19T02:49:31+00:00",
-      "hash": "38b77d89ed8181d4151b85c765976db0eb29332ed5d7e2d1f93cbcdbf5332df4",
-      "task": "6.6"
+      "at": "2026-08-19T03:34:03+00:00",
+      "hash": "ee22edfa1eb34ac2308c30ef687d553c15cde45d27cc99f0bca0a23c8663407d",
+      "task": "6.9"
     },
     "autoload/steam_lobby.gd": {
       "agent": "lp",
       "at": "2026-08-18T22:57:40+00:00",
       "hash": "9ebb3b97dac5e792d5b9bff91d7c340ec6e2b6d9059777edcf1b5df498defbc3",
       "task": "3.16"
+    },
+    "autoload/unlock_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T03:34:03+00:00",
+      "hash": "c0baed5fa13edaa92ddfdc3e671228cb76c5bb0777d32931c684f47526194ea5",
+      "task": "6.9"
     },
     "autoload/wellspring_service.gd": {
       "agent": "lm",
@@ -1460,6 +1466,12 @@
       "at": "2026-08-18T05:04:45+00:00",
       "task": "3.1"
     },
+    "content/unlocks/unlock_deep_pocket.tres": {
+      "agent": "lm",
+      "at": "2026-08-19T03:34:03+00:00",
+      "hash": "9cbdbf035ba324c34b9d1cd86de3f176310af6b324d2a63f072ecafbb3e5a52d",
+      "task": "6.9"
+    },
     "content/weapons/cleaver.tres": {
       "agent": "vane19",
       "at": "2026-08-18T17:55:11+00:00",
@@ -1525,9 +1537,9 @@
     },
     "core/events/event_bus.gd": {
       "agent": "lm",
-      "at": "2026-08-19T02:49:31+00:00",
-      "hash": "b9cbe5163d3c80464e6a263d5ae340c13a57244628354dd6485c512dcc0885dd",
-      "task": "6.6"
+      "at": "2026-08-19T03:34:03+00:00",
+      "hash": "a72f595727a70c1325b726cd5b9b128a704ad11629d41f3b855b636b470902d5",
+      "task": "6.9"
     },
     "core/game_state.gd": {
       "agent": "lm",
@@ -1552,6 +1564,12 @@
       "at": "2026-08-19T02:49:31+00:00",
       "hash": "bdaba6cbaff423377b419b8a59e2fa2dcf3d25f7fde7947d6aad32be45da6fa5",
       "task": "6.6"
+    },
+    "core/save/unlock_save.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T03:34:03+00:00",
+      "hash": "3b4cb7c9b9aeab21a4ccbf4ce33b789a887ffd59872141026d46748e3f3e2089",
+      "task": "6.9"
     },
     "core/util/mire_log.gd": {
       "agent": "gale6",
@@ -1656,9 +1674,9 @@
     },
     "project.godot": {
       "agent": "lm",
-      "at": "2026-08-19T02:33:53+00:00",
-      "hash": "e1162f15a188663c9064acc7d7251bea8ce446979a66346c6af88308d6cb4d5b",
-      "task": "6.5"
+      "at": "2026-08-19T03:34:03+00:00",
+      "hash": "cf2aed79ec74350ebd55ebfebefeb64e4968b9be9ec18acbd4c5058c0bc4a471",
+      "task": "6.9"
     },
     "scenes/buildables/barricade.tscn": {
       "agent": "slate17",
@@ -1949,6 +1967,12 @@
       "at": "2026-08-18T21:00:45+00:00",
       "hash": "cc46a82cfa337d7e24e3a3c02aba529f22ed15343fa973e249fa407543cc48f8",
       "task": "3.14"
+    },
+    "systems/unlocks/unlock_def.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T03:34:03+00:00",
+      "hash": "c4b7c39be1ca9ccf33c0f67019c2da5fe6f36242427fc2402e08a1b37c2318c3",
+      "task": "6.9"
     },
     "systems/waves/wave_spawner.gd": {
       "agent": "lp",
@@ -2642,6 +2666,12 @@
       "hash": "3afc355a9679c233640e616df0bf9d95cf4eeccf0d4e901e2d53f149c0d21343",
       "task": "4.1"
     },
+    "tools/unlock_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T03:34:03+00:00",
+      "hash": "bb8649ef7c84f60b19d855478a195ff1f6ce0ab595060526fcf988aceed27347",
+      "task": "6.9"
+    },
     "tools/vfx_site_probe.gd": {
       "agent": "larch10",
       "at": "2026-08-18T14:09:47+00:00",
@@ -2739,15 +2769,21 @@
     },
     "ui/menu/main_menu.gd": {
       "agent": "lm",
-      "at": "2026-08-19T03:19:09+00:00",
-      "hash": "229bdc23c150f22a63d8b3ad4f3dbd1deb6d1f13394d2f4203f62e05a89dc0d6",
-      "task": "6.10"
+      "at": "2026-08-19T03:34:03+00:00",
+      "hash": "4fe631faebd9357d88a0c99f40adac7db0651a3928ade9a686d763630a7829f3",
+      "task": "6.9"
     },
     "ui/menu/settings_menu.gd": {
       "agent": "lm",
       "at": "2026-08-19T03:19:09+00:00",
       "hash": "733bf4aa36cdb747cdc6e753adbb44047d046856fdee52e134d04280ec673910",
       "task": "6.10"
+    },
+    "ui/menu/unlock_menu.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T03:34:03+00:00",
+      "hash": "77f5493a65ff57685e5d25de9dd7c85372f6b18b21dd5c913f621c594213c124",
+      "task": "6.9"
     },
     "world/chunk/chunk_mesher.gd": {
       "agent": "wick20",
@@ -3808,9 +3844,11 @@
       "title": "Run summary: headline Cycle number, stats, modifiers drawn, Salvage earned"
     },
     "6.9": {
+      "done_at": "2026-08-19T03:34:03+00:00",
+      "done_by": "lm",
       "est": "4",
       "milestone": "M6",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Unlock tree + UI. Variety only, never power (`DESIGN.md` \u00a74.6)"
     },
@@ -5401,6 +5439,27 @@
       "status": "todo",
       "tier": "F",
       "title": "Task 6.7's new `net_run_defeated` RPC shipped with no `PROTOCOL_VERSION` bump \u2014 `net_version.gd` was held all session by another lane's claim"
+    },
+    "F-170": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`tools/lobby_menu_check.gd` fails (5/24) whenever the dev machine's own Steam client is actually running"
+    },
+    "F-171": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`tools/crafting_ui_check.gd` fails 19/22 independent of task 6.10 \u2014 reproduced on a clean HEAD checkout"
+    },
+    "F-172": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Seed entry (task 6.10) only reaches the host-session path \u2014 solo/offline play draws its seed before any menu can be opened"
     }
   },
   "version": 1

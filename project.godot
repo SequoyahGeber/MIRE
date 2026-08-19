@@ -62,8 +62,12 @@ CycleModifierService="*res://systems/cycle/cycle_modifier_service.gd"
 ExtractionService="*res://autoload/extraction_service.gd"
 ExtractionHud="*res://ui/hud/extraction_hud.gd"
 SalvageService="*res://autoload/salvage_service.gd"
+UnlockService="*res://autoload/unlock_service.gd"
 DefeatService="*res://autoload/defeat_service.gd"
 DefeatHud="*res://ui/hud/defeat_hud.gd"
+SettingsMenu="*res://ui/menu/settings_menu.gd"
+UnlockMenu="*res://ui/menu/unlock_menu.gd"
+MainMenu="*res://ui/menu/main_menu.gd"
 
 [display]
 

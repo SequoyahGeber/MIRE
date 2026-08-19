@@ -18,9 +18,9 @@ extends CanvasLayer
 ## action map is not touched). Closed with Esc, consumed here in _input so the player controller's
 ## temporary mouse-release toggle (see its own comment: "Replaced by the pause menu in M7") never
 ## also reacts to the same press. Joins `blocks_gameplay_input` while open and refuses to stack on
-## any other cursor UI (D-032) — opening the lobby or settings panel from here first closes this one,
-## the same "hand off, don't stack" shape D-032's own note asks a "future build menu, ward panel or
-## map" to follow.
+## any other cursor UI (D-032) — opening the lobby, settings or unlocks panel from here first closes
+## this one, the same "hand off, don't stack" shape D-032's own note asks a "future build menu, ward
+## panel or map" to follow.
 ##
 ## Deliberately does NOT auto-open at boot. `world/mire/mire_grid.gd` already draws the run seed the
 ## instant the main scene loads (`GameState.ensure_seed()` in its own `_ready()`), so there is no
@@ -51,6 +51,7 @@ var _set_seed_button: Button
 var _random_seed_button: Button
 var _multiplayer_button: Button
 var _settings_button: Button
+var _unlocks_button: Button
 var _quit_button: Button
 
 var _open: bool = false
@@ -157,6 +158,15 @@ func request_open_settings() -> void:
 	var settings: Node = get_node_or_null(^"/root/SettingsMenu")
 	if settings != null:
 		settings.call("set_open", true)
+
+
+## Task 6.9: hands off to the Salvage-spending unlock tree the same "close first, then open" way
+## every other sub-panel here does (D-032) — never stacks two blocking panels.
+func request_open_unlocks() -> void:
+	set_open(false)
+	var unlocks: Node = get_node_or_null(^"/root/UnlockMenu")
+	if unlocks != null:
+		unlocks.call("set_open", true)
 
 
 func request_quit() -> void:
@@ -303,6 +313,9 @@ func _build_ui() -> void:
 
 	_settings_button = _button("SETTINGS", request_open_settings)
 	stack.add_child(_settings_button)
+
+	_unlocks_button = _button("UNLOCKS", request_open_unlocks)
+	stack.add_child(_unlocks_button)
 
 	_quit_button = _button("QUIT", request_quit)
 	stack.add_child(_quit_button)

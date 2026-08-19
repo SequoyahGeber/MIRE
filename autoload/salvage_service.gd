@@ -74,6 +74,27 @@ func total_salvage() -> int:
 	return _total_salvage_cache
 
 
+## Task 6.9's spend seam — the inverse of `_bank()`, same shape: refuse the whole thing rather than
+## partially apply it. Returns false, with NOTHING changed (memory or disk), if `amount` is not
+## positive, persistence is disabled (D-107's guard — a `--script` check that forgot to override
+## `save_path` must not spend into a real player's save), or the balance is short. `UnlockService`
+## is the one caller today; any future Salvage sink reuses this rather than writing `total_salvage`
+## itself, so there is exactly one place a negative balance could ever originate.
+func spend_salvage(amount: int) -> bool:
+	if amount <= 0:
+		return false
+	if not _persistence_enabled():
+		return false
+	var data: Dictionary = SALVAGE_SAVE.load_data(save_path)
+	var current: int = int(data.get(&"total_salvage", 0))
+	if amount > current:
+		return false
+	_total_salvage_cache = current - amount
+	data[&"total_salvage"] = _total_salvage_cache
+	SALVAGE_SAVE.save_data(data, save_path)
+	return true
+
+
 ## How many Wellsprings THIS peer has seen capped since the current run began (`GameState.seed_ready`
 ## resets the count). Exposed for `tools/salvage_check.gd` and for a future HUD/summary read, not
 ## consumed internally beyond `_milestone_bonus()`.
