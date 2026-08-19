@@ -209,6 +209,13 @@ because 4.3 and 4.6 get designed against whatever they return.
 | 4.10 | Mire visuals: shader ground tint, fog density, particles, audio shift | T0 | 4 |
 | 4.11 | Mire ↔ world interaction: rotted resources, Blight debuff, corrupted spawns, Ward resistance | T1 | 3 |
 | 4.12 | **Playtest — is the Mire stressful-fun or just stressful? (Q1, Q2)** | T0 | 2 |
+| 4.13 | Terrain look: domain warp + masked ridged layer + per-biome amplitude tables (`WORLDGEN.md` §1, D-142); extend `check_determinism`, re-run `bench_chunks` | T2 | 3 |
+| 4.14 | One guaranteed river: steepest-descent trace + carve, POI ground flattening (D-142) | T2 | 2 |
+| 4.15 | `ProceduralWorld` composer behind `--procedural`: markers, spawn rule, `PoiDef.marker_kind` (D-143) | T2 | 3 |
+| 4.16 | Map-contract parity: both-map check matrix, F-112 fold-in, MireGrid binding | T1 | 2 |
+| 4.17 | **Spike:** one-time seeded erosion; cross-platform hash on the D-028 machine; adopt/reject with numbers | T2 | 1.5 |
+| 4.18 | Three-seed island-feel walk vs Hollowmere (tuning input, not a gate — D-125) | T0 | 1 |
+| 4.19 | Default cutover to procedural; Hollowmere becomes fixture/reference | T1 | 1 |
 
 > 4.12 is a genuine go/no-go. The Mire is the game's identity; if it doesn't land, tune it hard or
 > replace it, but find out here — not in M7.

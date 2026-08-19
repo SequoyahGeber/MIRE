@@ -2,7 +2,7 @@
 
 > Written 2026-08-19 (yarrow21) on Sequoyah's directive: *"Start figuring out procedural world
 > generation"* + *"analyze [the procedural-terrain education corpus] and figure out the best method
-> for us."* This is the method decision (D-130), the composition architecture (D-131), and the task
+> for us."* This is the method decision (D-142), the composition architecture (D-143), and the task
 > breakdown. `docs/GAMELOOP.md` is its sibling: what a run *plays* like on these islands.
 
 ---
@@ -67,7 +67,7 @@ and [how Valheim derives everything from one hashed seed](https://cybrancee.com/
 | **Wave-function collapse for structures** | the WFC corpus | **REJECT for now.** Our POIs are authored prefabs placed by 4.7; WFC solves a variety problem we do not have at 3–7 POIs per island. Revisit only if ruins-variety ever becomes a playtest complaint. |
 | **Per-biome parameter tables over one noise stack** (not separate generators) | Kniberg's spline/table approach; Valheim's biome-by-distance | **ADOPT (4.13).** Biomes already resolve from height×moisture (4.2); 4.13 lets a `BiomeDef` scale amplitude/roughness so shores stay gentle and highlands crag — tables, not code forks, exactly the Minecraft shape. |
 
-**The recipe (D-130):** keep the 4.1 base; add domain warp + one masked ridged layer + per-biome
+**The recipe (D-142):** keep the 4.1 base; add domain warp + one masked ridged layer + per-biome
 amplitude tables (4.13); carve one guaranteed river and flatten POI ground (4.14); spike erosion
 behind the determinism gate (4.17) and adopt only on hash-equal evidence. Everything else stays
 rejected with reasons above. Every new operation must be added to `tools/check_determinism.gd`'s
@@ -89,7 +89,7 @@ probe **in the same task that adds it to the generator**.
 
 ---
 
-## 3 · The composer — how a procedural island becomes a *playable level* (D-131)
+## 3 · The composer — how a procedural island becomes a *playable level* (D-143)
 
 The audit's key discovery: **the map contract is the marker-group protocol.** Every world service
 already discovers its sites by scanning group `authored_world_marker` for a `kind` meta —

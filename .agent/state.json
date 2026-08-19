@@ -4594,6 +4594,55 @@
       "tier": "T0",
       "title": "Playtest \u2014 is the Mire stressful-fun or just stressful? (Q1, Q2)"
     },
+    "4.13": {
+      "est": "3",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Terrain look: domain warp + masked ridged layer + per-biome amplitude tables (`WORLDGEN.md` \u00a71, D-142); extend `check_determinism`, re-run `bench_chunks`"
+    },
+    "4.14": {
+      "est": "2",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T2",
+      "title": "One guaranteed river: steepest-descent trace + carve, POI ground flattening (D-142)"
+    },
+    "4.15": {
+      "est": "3",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T2",
+      "title": "`ProceduralWorld` composer behind `--procedural`: markers, spawn rule, `PoiDef.marker_kind` (D-143)"
+    },
+    "4.16": {
+      "est": "2",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Map-contract parity: both-map check matrix, F-112 fold-in, MireGrid binding"
+    },
+    "4.17": {
+      "est": "1.5",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T2",
+      "title": "Spike: one-time seeded erosion; cross-platform hash on the D-028 machine; adopt/reject with numbers"
+    },
+    "4.18": {
+      "est": "1",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T0",
+      "title": "Three-seed island-feel walk vs Hollowmere (tuning input, not a gate \u2014 D-125)"
+    },
+    "4.19": {
+      "est": "1",
+      "milestone": "M4",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Default cutover to procedural; Hollowmere becomes fixture/reference"
+    },
     "4.2": {
       "done_at": "2026-08-18T19:57:12+00:00",
       "done_by": "lm",

@@ -4068,3 +4068,49 @@ handlers explicitly so a future task does not have to re-derive the list.
 F-233 lists (their current O(1) cost turning out to compound in a way this audit missed), or a
 gameplay pattern that legitimately needs to burst requests (making a flat gate the wrong shape, not
 just an untuned one).
+
+### D-142 · 2026-08-19 · The procedural terrain method: keep the fBm+falloff base, add domain warp + a masked ridged layer + per-biome amplitude tables + one carved river; erosion enters only through a determinism-gated spike
+
+Chosen after surveying the procedural-terrain education canon (Lague's landmass/erosion series,
+Kniberg's Minecraft density/spline material, Patel's polygonal maps, terrain-erosion-3-ways, the
+academic survey, Valheim's derive-everything-from-one-seed architecture) against MIRE's five hard
+constraints — cross-platform determinism (D-017/D-028), the worst-computers target, a bounded
+~200 m island, Mire-grid compatibility, and POI-first pacing. Full survey with per-technique
+verdicts and sources: `docs/WORLDGEN.md` §1.
+
+The one-line form: **the smallest diff from the measured, shipped 4.1–4.7 stack that reproduces
+Hollowmere's hand-authored virtues as procedural guarantees.** Domain warp and ridged layers are
+FastNoiseLite-native (same trusted library, integer-seeded); the river is steepest-descent tracing
+plus arithmetic carving; POI ground-flattening keeps 4.7 in charge of pacing. Rejected outright:
+Voronoi re-architecture (discards a measured stack for the same output class), 3D density/caves
+(2D Mire grid, low-end target, cut list), WFC (solves a variety problem we don't have).
+
+**Erosion is the one seduction, and it is gated, not adopted.** A bounded island makes a one-time
+seeded droplet pass affordable, but iterative float accumulation is exactly where platforms drift.
+4.17's spike extends `tools/check_determinism.gd` and compares hashes on the D-028 Windows machine:
+hash-equal adopts it, anything else rejects it permanently.
+
+**Every new generator operation lands in the determinism probe in the same task that adds it.**
+
+**Would change my mind:** the island-feel walk (4.18) reading warped-noise islands as *less*
+legible than Hollowmere; or the erosion spike coming back hash-equal AND cheap, which upgrades it
+from rejected-by-default to the standard pass.
+
+### D-143 · 2026-08-19 · The cutover composes, it does not rewrite: one ProceduralWorld node emits the marker contract; flag first, parity second, default last
+
+The 2026-08-19 audit established that **the map contract is the marker-group protocol** — every
+world service (Wellspring, Extraction, ChestPlacement, Crafting, EnemyWorld) discovers its sites by
+scanning `authored_world_marker` for a `kind` meta, plus the `authored_world_terrain`/
+`_harvestable` groups. So procedural cutover = one composer node (`world/gen/procedural_world.gd`,
+task 4.15) that instantiates the shipped pieces (ChunkStreamer, ResourceScatterField, NavBaker,
+PoiMap) and **publishes the same markers**; services light up unchanged. `PoiDef` gains
+`marker_kind` so content stays in charge of what a POI *is* to the services.
+
+Rollout in that order: behind `DevLaunch --procedural` (nothing a player runs changes), then
+map-contract parity (`world_contract_check` runs BOTH maps; F-112 folds in), then Sequoyah's
+three-seed feel walk (schedules tuning, gates nothing — D-125), then the default main-scene swap
+with Hollowmere retiring to fixture/reference — the same retirement Playtest Hollow went through.
+
+**Would change my mind:** a service whose site discovery genuinely cannot express itself as a
+marker kind (none known — even stations fit); that would argue for a real WorldContract interface,
+a much bigger change than any current need justifies.

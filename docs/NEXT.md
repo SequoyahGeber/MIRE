@@ -48,6 +48,11 @@ id / Steam invite) · `--seed=` launch arg for a chosen island.
 
 ## Next, in order
 
+> **Standing focus (Sequoyah, 2026-08-19): procedural generation, until it is flawless.** The
+> plan is `docs/WORLDGEN.md` (method D-142, composer D-143) + `docs/GAMELOOP.md`; the work is ROADMAP
+> 4.13–4.19. Route lanes here first; content/asset tasks yield to this track.
+
+
 | # | What | Who | State |
 |---|---|---|---|
 | 2.14 | **Playtest with friends** — verbatim quotes, one full night, then re-read DESIGN §8. The build finally has enough game to judge. | You + friends | whenever an evening aligns |
