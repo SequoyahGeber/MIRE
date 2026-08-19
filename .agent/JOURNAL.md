@@ -4710,3 +4710,15 @@ Annotated with F-196's resolution: the writer/reader race that motivated per-lan
 Files: `docs/FINDINGS.md`
 
 Commit at time of writing: `c5db52a`
+
+---
+
+### DONE · F-201 · lp · 2026-08-19T09:31:00+00:00
+
+**`tools/steam_lobby_check.gd` prints "all checks passed" (exit 0) but always emits one undeclared engine `ERROR:` line, violating this project's own SPECS.md standing rule 4**
+
+Fixed: tools/steam_lobby_check.gd declares EXPECTED_ERROR_PATTERNS on its verdict line per SPECS.md standing rule 4 (finding's option a — confirmed no production server_started handler tears down synchronously the way this check's own harness does, so option b did not apply). Verified against a real logged-in Steam client, twice: agent godot --script tools/steam_lobby_check.gd exits 0, all 17 assertions pass, and grep 'ERROR:' | grep -vE 'Trying to call an RPC while no multiplayer peer is active' | wc -l -> 0. findings_numbering_check.gd: open=21 resolved=187 failures=0. Swept tools/*_check.gd for the same leave()-inside-handler race shape; no siblings found.
+
+Files: `tools/steam_lobby_check.gd`
+
+Commit at time of writing: `e94b4b1`

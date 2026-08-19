@@ -3055,6 +3055,13 @@
       "hash": "10da7456685e283a2a31f98d611f66936a6b5439ad89a88050f7e40c1f0668df",
       "task": "F-129"
     },
+    "tools/steam_lobby_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T09:31:00+00:00",
+      "hash": "522ff8963b7cb1c6db4e8a60c1a41656c1bb8ee92e479a34852e86687e97a931",
+      "task": "F-201",
+      "token": null
+    },
     "tools/step_up_check.gd": {
       "agent": "lm",
       "at": "2026-08-18T21:57:34+00:00",
@@ -4867,11 +4874,9 @@
       "title": "The iron sword ships complete and nothing puts it in a player's hand \u2014 **decided, won't add**"
     },
     "F-044": {
-      "done_at": "2026-08-19T09:27:22+00:00",
-      "done_by": "bram1",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "done",
+      "status": "todo",
       "tier": "F",
       "title": "Concurrent headless Godot runs share one import cache, which is the likely cause of F-038"
     },
@@ -6237,9 +6242,11 @@
       "title": "No check verifies that project.godot's [autoload] targets are tracked at HEAD, so F-190's failure mode can recur"
     },
     "F-201": {
+      "done_at": "2026-08-19T09:31:00+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`tools/steam_lobby_check.gd` prints \"all checks passed\" (exit 0) but always emits one undeclared engine `ERROR:` line, violating this project's own SPECS.md standing rule 4"
     },
@@ -6265,6 +6272,13 @@
       "status": "todo",
       "tier": "F",
       "title": "A Blender preview that moves assets between renders draws the layout it had at the first render"
+    },
+    "F-205": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`agent check`/the pre-commit hook still lets a commit register or carry an untracked autoload target \u2014 F-200's mechanism #2 is still unbuilt"
     }
   },
   "version": 1

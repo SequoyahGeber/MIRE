@@ -138,6 +138,20 @@ func _on_server_started() -> void:
 	_check("peer list is just the host", net.peer_ids().size() == 1)
 
 	print("\n-- leave --")
+	# F-201: this synchronous leave(), called from inside a server_started handler, provokes one
+	# engine ERROR every run — not a production bug. This script's own _on_server_started connects
+	# to NetTransport.server_started in _initialize() (line 77), which under a --script main loop
+	# runs BEFORE NetSession's autoload _ready() connects its own _on_session_opened to the same
+	# signal (steam_lobby.gd's header documents that autoload _ready() lands late here). So this
+	# handler's leave() runs and tears the peer down first, then NetSession._on_session_opened()
+	# runs second against the same emission, reads NetTransport.is_host() as now false, and tries
+	# net_client_hello.rpc_id() with no active peer. No real game code connects server_started and
+	# calls leave() synchronously from inside the handler (confirmed by grepping every
+	# server_started connection site) — this ordering only exists because of this check's own
+	# --script harness registering its handler ahead of the autoloads. Declared by pattern per
+	# SPECS.md standing rule 4 rather than restructured away, since restructuring this check's leave
+	# to be deferred would stop testing the thing task 1.4 actually needs proven: that a real,
+	# synchronous lobby.leave() call this soon after hosting starts leaves a clean lobby/session.
 	lobby.leave()
 	_check("out of the lobby", not lobby.in_lobby())
 	_check("lobby id cleared", lobby.current_lobby_id() == 0)
@@ -159,4 +173,8 @@ func _finish() -> void:
 		print("all checks passed")
 	else:
 		print("%d check(s) failed" % _failures)
+	# F-201: the SceneTree keeps draining deferred calls after this and prints one engine ERROR —
+	# see the comment on the "-- leave --" section above for why it is this check's own harness
+	# shape, not a production bug. Declared per SPECS.md standing rule 4.
+	print("EXPECTED_ERROR_PATTERNS=\"Trying to call an RPC while no multiplayer peer is active\"")
 	quit(1 if _failures > 0 else 0)
