@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="CycleModifierDef" format=3]
+
+[ext_resource type="Script" path="res://systems/cycle/cycle_modifier_def.gd" id="1_long_night"]
+
+[resource]
+script = ExtResource("1_long_night")
+id = &"long_night"
+display_name = "Long Night"
+description = "Nights last twice as long. Worked example for task 6.2's framework — DESIGN.md §5.1's own first illustration. No effect is wired to any gameplay system yet (framework scope, D-100's pattern); a future consumer checks CycleModifierService.has_modifier(&\"long_night\") against DayNight's night-length knob."
+min_cycle = 2
+base_weight = 1.0
+weight_growth_per_cycle = 0.15
+tags = Array[StringName]([&"night"])
+incompatible_tags = Array[StringName]([])
+incompatible_with = Array[StringName]([])

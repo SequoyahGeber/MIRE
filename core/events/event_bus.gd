@@ -14,6 +14,7 @@ static var _harvest_yielded_subscribers: Array[Callable] = []
 static var _enemy_attack_landed_subscribers: Array[Callable] = []
 static var _wellspring_capped_subscribers: Array[Callable] = []
 static var _cycle_advanced_subscribers: Array[Callable] = []
+static var _cycle_modifier_drawn_subscribers: Array[Callable] = []
 
 
 ## Listener signature:
@@ -130,6 +131,36 @@ static func emit_cycle_advanced(cycle: int) -> void:
 static func cycle_advanced_subscriber_count() -> int:
 	_prune_invalid(_cycle_advanced_subscribers)
 	return _cycle_advanced_subscribers.size()
+
+
+## Listener signature: (modifier_id: StringName, cycle: int) -> void
+##
+## Emitted by the HOST only, the instant `CycleModifierService` draws a Cycle Modifier from the deck
+## (task 6.2, DESIGN.md §5.1 item 2) — fired from inside the same `cycle_advanced` handler that draws
+## it, so a listener never sees a Cycle advance without also seeing that Cycle's draw (or its
+## absence, if the deck had nothing eligible left). No modifier EFFECT is wired to any gameplay
+## system here — this is the seam a future consumer (PowerupService, WaveSpawner, MireGrid) hangs an
+## actual effect off, the same "future task's hook" role D-092 gave `wellspring_capped` and D-100
+## gave `cycle_advanced` itself.
+static func subscribe_cycle_modifier_drawn(listener: Callable) -> void:
+	_prune_invalid(_cycle_modifier_drawn_subscribers)
+	if listener.is_valid() and not _cycle_modifier_drawn_subscribers.has(listener):
+		_cycle_modifier_drawn_subscribers.append(listener)
+
+
+static func unsubscribe_cycle_modifier_drawn(listener: Callable) -> void:
+	_cycle_modifier_drawn_subscribers.erase(listener)
+
+
+static func emit_cycle_modifier_drawn(modifier_id: StringName, cycle: int) -> void:
+	_prune_invalid(_cycle_modifier_drawn_subscribers)
+	for listener: Callable in _cycle_modifier_drawn_subscribers.duplicate():
+		listener.call(modifier_id, cycle)
+
+
+static func cycle_modifier_drawn_subscriber_count() -> int:
+	_prune_invalid(_cycle_modifier_drawn_subscribers)
+	return _cycle_modifier_drawn_subscribers.size()
 
 
 static func _prune_invalid(subscribers: Array[Callable]) -> void:

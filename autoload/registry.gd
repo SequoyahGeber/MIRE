@@ -25,6 +25,7 @@ const SCATTER_PATH: String = "res://content/scatter"
 const RULES_PATH: String = "res://content/rules"
 const POI_PATH: String = "res://content/poi"
 const HOOKS_PATH: String = "res://content/hooks"
+const CYCLE_MODIFIERS_PATH: String = "res://content/cycle_modifiers"
 
 ## F-016: LootTableDef is a brand-new class_name (task 3.5) and this autoload boots in every
 ## headless run, so a bare reference here would break every check in the project the moment the
@@ -62,6 +63,11 @@ const SCATTER_DEF := preload("res://world/gen/scatter_def.gd")
 ## actually WIRED to its real signal is not content and does not live here; autoload/command_service.gd
 ## owns that (docs/COMMANDS.md §5.2).
 const HOOK_DEF := preload("res://systems/rules/hook_def.gd")
+## Same F-016 reasoning again: CycleModifierDef is new in task 6.2. It is a content family like any
+## other — the AUTHORED definition of one Cycle Modifier (id, Cycle-weighted eligibility, tags).
+## Which ones are currently drawn/stacked is not content and does not live here;
+## systems/cycle/cycle_modifier_service.gd owns that (docs/SPECS.md §6.2).
+const CYCLE_MODIFIER_DEF := preload("res://systems/cycle/cycle_modifier_def.gd")
 ## Preloaded like the four above so the one generic loader can use script equality uniformly —
 ## it is the F-016-safe type check for every def, established or new (F-099).
 const ITEM_DEF := preload("res://systems/inventory/item_def.gd")
@@ -130,6 +136,12 @@ var poi: Dictionary[StringName, Resource] = {}
 ## time, not a bulk sweep).
 var hooks: Dictionary[StringName, Resource] = {}
 
+## Keyed by Cycle Modifier id (task 6.2). Shared content, same shape as `rules`/`hooks`. One worked
+## example ships with this task (`long_night`); Sequoyah authors the rest (D-073 — one at a time, not
+## a bulk sweep). Which ones are currently DRAWN is host-authoritative run state, not content — see
+## `systems/cycle/cycle_modifier_service.gd`.
+var cycle_modifiers: Dictionary[StringName, Resource] = {}
+
 
 func _ready() -> void:
 	_load_dir(ITEMS_PATH, "ItemDef", ITEM_DEF, &"id", "item id", items)
@@ -150,10 +162,15 @@ func _ready() -> void:
 	_load_dir(RULES_PATH, "RuleDef", RULE_DEF, &"id", "rule id", rules)
 	_load_dir(POI_PATH, "PoiDef", POI_DEF, &"id", "poi id", poi)
 	_load_dir(HOOKS_PATH, "HookDef", HOOK_DEF, &"id", "hook id", hooks)
-	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d ranged weapon(s), %d loot table(s), %d powerup(s), %d buildable(s), %d haulable(s), %d attunement(s), %d biome(s), %d scatter table(s), %d rule(s), %d hook(s), %d poi(s)" % [
+	_load_dir(
+		CYCLE_MODIFIERS_PATH, "CycleModifierDef", CYCLE_MODIFIER_DEF, &"id", "cycle modifier id",
+		cycle_modifiers
+	)
+	MireLog.info(&"content", "loaded %d item(s), %d recipe(s), %d station(s), %d weapon(s), %d ranged weapon(s), %d loot table(s), %d powerup(s), %d buildable(s), %d haulable(s), %d attunement(s), %d biome(s), %d scatter table(s), %d rule(s), %d hook(s), %d poi(s), %d cycle modifier(s)" % [
 		items.size(), recipes.size(), stations.size(), weapons.size(), ranged_weapons.size(),
 		loot_tables.size(), powerups.size(), buildables.size(), haulables.size(), attunements.size(),
-		biomes.size(), scatter_tables.size(), rules.size(), hooks.size(), poi.size()
+		biomes.size(), scatter_tables.size(), rules.size(), hooks.size(), poi.size(),
+		cycle_modifiers.size()
 	])
 
 
@@ -292,6 +309,20 @@ func get_hook(id: StringName) -> Resource:
 
 func has_hook(id: StringName) -> bool:
 	return hooks.has(id)
+
+
+## The accessor CycleModifierService looks for by name at boot, same naming reasoning as
+## `rule_defs()`/`hook_defs()` — the AUTHORED definitions, not which ones are currently drawn.
+func cycle_modifier_defs() -> Dictionary:
+	return cycle_modifiers
+
+
+func get_cycle_modifier(id: StringName) -> Resource:
+	return cycle_modifiers.get(id)
+
+
+func has_cycle_modifier(id: StringName) -> bool:
+	return cycle_modifiers.has(id)
 
 
 ## The one loader behind every content directory (F-099 — this replaced seven near-identical

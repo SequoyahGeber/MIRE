@@ -5,16 +5,6 @@
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
     },
-    "content/cycle_modifiers/long_night.tres": {
-      "agent": "lm",
-      "at": "2026-08-19T01:41:51+00:00",
-      "task": "6.2"
-    },
-    "core/events/event_bus.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T01:41:51+00:00",
-      "task": "6.2"
-    },
     "core/net/net_version.gd": {
       "agent": "slate17",
       "at": "2026-08-18T22:23:08+00:00",
@@ -30,26 +20,6 @@
       "at": "2026-08-18T22:23:08+00:00",
       "task": "3.7"
     },
-    "systems/cycle/cycle_modifier_def.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T01:41:51+00:00",
-      "task": "6.2"
-    },
-    "systems/cycle/cycle_modifier_def.gd.uid": {
-      "agent": "lm",
-      "at": "2026-08-19T01:41:51+00:00",
-      "task": "6.2"
-    },
-    "systems/cycle/cycle_modifier_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T01:41:51+00:00",
-      "task": "6.2"
-    },
-    "systems/cycle/cycle_modifier_service.gd.uid": {
-      "agent": "lm",
-      "at": "2026-08-19T01:41:51+00:00",
-      "task": "6.2"
-    },
     "systems/harvesting/harvestable.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T22:08:56+00:00",
@@ -64,16 +34,6 @@
       "agent": "nettle12",
       "at": "2026-08-18T22:14:11+00:00",
       "task": "F-144"
-    },
-    "tools/cycle_modifier_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T01:41:51+00:00",
-      "task": "6.2"
-    },
-    "tools/cycle_modifier_check.gd.uid": {
-      "agent": "lm",
-      "at": "2026-08-19T01:41:51+00:00",
-      "task": "6.2"
     },
     "tools/door_check.gd": {
       "agent": "slate17",
@@ -138,21 +98,6 @@
       ],
       "notes": [],
       "started": "2026-08-18T22:23:08+00:00"
-    },
-    "6.2": {
-      "agent": "lm",
-      "files": [
-        "systems/cycle/cycle_modifier_def.gd",
-        "systems/cycle/cycle_modifier_def.gd.uid",
-        "systems/cycle/cycle_modifier_service.gd",
-        "systems/cycle/cycle_modifier_service.gd.uid",
-        "content/cycle_modifiers/long_night.tres",
-        "core/events/event_bus.gd",
-        "tools/cycle_modifier_check.gd",
-        "tools/cycle_modifier_check.gd.uid"
-      ],
-      "notes": [],
-      "started": "2026-08-19T01:41:51+00:00"
     },
     "F-144": {
       "agent": "nettle12",
@@ -544,10 +489,10 @@
       "task": "5.3"
     },
     "autoload/registry.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T01:44:21+00:00",
-      "hash": "49e7935efc4b7e5d52fc2ffc496de6b87fa6478af6dc3d292faf0797dad90368",
-      "task": "5.3"
+      "agent": "lm",
+      "at": "2026-08-19T01:57:43+00:00",
+      "hash": "6eeb6c7df8f52f752021bbcacc72c02e313e8ab751434bd8aff51b50e4e00e25",
+      "task": "6.2"
     },
     "autoload/rule_service.gd": {
       "agent": "hollow7",
@@ -692,6 +637,12 @@
       "at": "2026-08-18T22:17:53+00:00",
       "hash": "cbf7a1c989133cf33c377c0f1110f1dc424d022c1d7b2e3f4a6726d6596beaf6",
       "task": "3.7"
+    },
+    "content/cycle_modifiers/long_night.tres": {
+      "agent": "lm",
+      "at": "2026-08-19T01:57:43+00:00",
+      "hash": "2b5f9dd0b34dfc08b9f08ea5690e26498104229713cb849d3f8e5601c174f625",
+      "task": "6.2"
     },
     "content/enemies/bog_crawler.tres": {
       "agent": "lm",
@@ -1576,9 +1527,9 @@
     },
     "core/events/event_bus.gd": {
       "agent": "lm",
-      "at": "2026-08-19T01:37:12+00:00",
-      "hash": "5fdc102eee057a1c793bf5518bada4b7e87aa439fc0eae1f4fa574a5b8a4c6d1",
-      "task": "6.1"
+      "at": "2026-08-19T01:57:43+00:00",
+      "hash": "053d528f7aa6301eaf622cec94d35e8f9d6b8e51a4a63be9bdccdda0e1f083c9",
+      "task": "6.2"
     },
     "core/game_state.gd": {
       "agent": "lm",
@@ -1865,6 +1816,30 @@
       "at": "2026-08-18T05:04:45+00:00",
       "task": "3.1"
     },
+    "systems/cycle/cycle_modifier_def.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T01:57:43+00:00",
+      "hash": "06cc2675913228be7d1b11023a0d62c3e8a733dab7efd065fcab2760b984c95e",
+      "task": "6.2"
+    },
+    "systems/cycle/cycle_modifier_def.gd.uid": {
+      "agent": "lm",
+      "at": "2026-08-19T01:57:43+00:00",
+      "hash": "5d71fd3dd94254c4ef226ead11099304cd032de0bcbadd403904b0f3bb980a63",
+      "task": "6.2"
+    },
+    "systems/cycle/cycle_modifier_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T01:57:43+00:00",
+      "hash": "f89eaf435f30ea977059f242e111d1ea38b1a04eb51272efa3ed0d3ebc44a9c8",
+      "task": "6.2"
+    },
+    "systems/cycle/cycle_modifier_service.gd.uid": {
+      "agent": "lm",
+      "at": "2026-08-19T01:57:43+00:00",
+      "hash": "72c90cd285372e4c611f7e6d67f2dbcb35e22562e6de99861377fb15bbd7d5fb",
+      "task": "6.2"
+    },
     "systems/cycle/cycle_service.gd": {
       "agent": "lm",
       "at": "2026-08-19T01:37:12+00:00",
@@ -1975,10 +1950,10 @@
       "task": "3.14"
     },
     "systems/waves/wave_spawner.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T01:37:12+00:00",
+      "agent": "lp",
+      "at": "2026-08-19T01:50:15+00:00",
       "hash": "dde03c32f3728c4baa73eafdfb182d1e263f15a99789abb435d652c0f73c0b7d",
-      "task": "6.1"
+      "task": "5.9"
     },
     "systems/wellspring/wellspring.gd": {
       "agent": "lm",
@@ -2235,6 +2210,18 @@
       "at": "2026-08-19T01:37:12+00:00",
       "hash": "b6ebb74ed24f49081a2fa2f169690bb0e42ffff08ef2b24fa8c77c9b4966b5a9",
       "task": "6.1"
+    },
+    "tools/cycle_modifier_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T01:57:43+00:00",
+      "hash": "a0d9bb8a32dbb3d25997607c762ac2c271713bbf7028501156f6ea7deb6ecf81",
+      "task": "6.2"
+    },
+    "tools/cycle_modifier_check.gd.uid": {
+      "agent": "lm",
+      "at": "2026-08-19T01:57:43+00:00",
+      "hash": "a44d807d6bd6e43c558c47f54b2afc9256a750eba1e0e83f0190c9dcb10611b8",
+      "task": "6.2"
     },
     "tools/dimension_check.gd": {
       "agent": "lm",
@@ -2659,6 +2646,12 @@
       "agent": "flint5",
       "at": "2026-08-18T04:58:38+00:00",
       "task": "F-073"
+    },
+    "tools/wave_director_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T01:50:15+00:00",
+      "hash": null,
+      "task": "5.9"
     },
     "tools/wave_spawner_check.gd": {
       "agent": "lm",
@@ -3734,9 +3727,11 @@
       "title": "Long playtests \u2014 find the wall (Q3), check anyone ever extracts (Q6), check deep modifiers stay fair (Q7)"
     },
     "6.2": {
+      "done_at": "2026-08-19T01:57:43+00:00",
+      "done_by": "lm",
       "est": "4",
       "milestone": "M6",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T2",
       "title": "Cycle Modifier framework: deck, draw, stacking, Cycle-weighted rules, incompatibility tags"
     },
@@ -5327,6 +5322,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`tools/viewmodel_check.gd` fails independently of task 5.3 \u2014 three food items have no authored viewmodel"
+    },
+    "F-163": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`expr as Array[T]` silently fails to convert an untyped Array's element type \u2014 a `.set()` onto a typed-array `@export` then no-ops with no error"
     }
   },
   "version": 1

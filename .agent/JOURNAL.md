@@ -3809,3 +3809,44 @@ each entry appears exactly once). Only docs/FINDINGS.md and docs/SPECS.md remain
 Files: `systems/combat/ranged_weapon_def.gd`, `systems/combat/ranged_weapon_def.gd.uid`, `systems/combat/aim_util.gd`, `systems/combat/aim_util.gd.uid`, `autoload/ranged_combat_service.gd`, `autoload/ranged_combat_service.gd.uid`, `autoload/combat_service.gd`, `autoload/registry.gd`, `content/ranged_weapons/short_bow.tres`, `tools/ranged_combat_check.gd`, `tools/ranged_combat_check.gd.uid`, `tools/ranged_combat_net_check.gd`, `tools/ranged_combat_net_check.gd.uid`, `content/items/short_bow.tres`
 
 Commit at time of writing: `20e9210`
+
+---
+
+### HANDOFF · 5.9 · lp · 2026-08-19T01:50:15+00:00
+
+**Wave director: Cycle-aware pacing, composition, player-count scaling**
+
+LP stopped on 5.9 at 2026-08-19T01:50:15+00:00 (exit 1, quota wall). Tokens this run: 1,323,539 in / 29,255 out.
+The working diff is UNTOUCHED — its partial edits are still on disk, so read them before redoing anything. Full log: .agent/logs/LP-5.9-20260819-014457.jsonl
+
+Its last words: "You've hit your session limit · resets 8:50pm (America/Vancouver)"
+Its last actions:
+  - Bash grep -rn "def_id\|\"def\"\|get_meta\|class_name" entities/enemies/*.gd 2>/dev/nu
+  - Bash find . -path ./.git -prune -o -iname "*enemy*.gd" -print
+  - Bash grep -n "func \|def_id\|@export\|is_alive" systems/enemies/enemy.gd | head -40
+  - Bash sed -n '355,412p' autoload/enemy_world.gd; echo ---ENEMYDEF---; sed -n '1,30p' s
+  - Bash sed -n '183,260p' autoload/enemy_world.gd
+  - Bash .agent/bin/agent claim 5.9 systems/waves/wave_spawner.gd tools/wave_director_che
+
+Tail of the failure:
+hit your session limit · resets 8:50pm (America/Vancouver)","type":"result","duration_ms":317243,"uuid":"eac823cb-0aab-4066-b821-50a2cb22b4f9"}
+{"type":"system","subtype":"task_summary","detail":null,"uuid":"244853f0-1275-4cad-9236-c5b2d456ec98","session_id":"903694da-a8d8-45ba-81dc-de8360d63daf"}
+
+Files: `systems/waves/wave_spawner.gd`, `tools/wave_director_check.gd`
+
+Commit at time of writing: `26d4294`
+
+---
+
+### DONE · 6.2 · lm · 2026-08-19T01:57:43+00:00
+
+**Cycle Modifier framework: deck, draw, stacking, Cycle-weighted rules, incompatibility tags**
+
+Cycle Modifier framework ships: deck/draw/stacking/Cycle-weighted eligibility/symmetric incompatibility tags + explicit incompatible_with. CycleModifierDef + CycleModifierService (autoload), content loads through Registry (registry.gd freed mid-session) with a RuleService-style disk-scan fallback. No new RPC — reuses WorldDeltaLog + new EventBus.emit_cycle_modifier_drawn seam. One worked example (long_night.tres). Verified: agent godot --script tools/cycle_modifier_check.gd (15 assertions, failures=0); regressions cycle_check/mire_grid_check/wave_spawner_check/rule_check/command_catalog_check/verify_setup all green; agent godot --quit-after 20 shows 0 ERROR: lines.
+
+Notes along the way:
+- Framework shipped: CycleModifierDef (tags + incompatible_with, Cycle-weighted weight_at()) + CycleModifierService (draw/stack via EventBus.subscribe_cycle_advanced, WorldDeltaLog announce, no new RPC). registry.gd freed mid-session (5.3 shipped) so folded CycleModifierDef in as a real content family instead of leaving the self-contained loader as tech debt. cycle_modifier_check.gd: 15 assertions, 0 failures. No regressions across cycle_check/mire_grid_check/wave_spawner_check/rule_check/command_catalog_check/verify_setup. 0 ERROR: on full boot.
+
+Files: `systems/cycle/cycle_modifier_def.gd`, `systems/cycle/cycle_modifier_def.gd.uid`, `systems/cycle/cycle_modifier_service.gd`, `systems/cycle/cycle_modifier_service.gd.uid`, `content/cycle_modifiers/long_night.tres`, `core/events/event_bus.gd`, `tools/cycle_modifier_check.gd`, `tools/cycle_modifier_check.gd.uid`, `autoload/registry.gd`
+
+Commit at time of writing: `26d4294`
