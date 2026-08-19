@@ -8,13 +8,15 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **F-243** The run loop is a line, not a circle — after defeat or extraction there is no path to a next run short of relaunching the process | lm | 2026-08-19 20:25 | `core/events/event_bus.gd`, `systems/cycle/cycle_service.gd`, `world/mire/mire_grid.gd`, `systems/cycle/cycle_modifier_service.gd`, `autoload/powerup_service.gd`, `autoload/inventory_service.gd`, `systems/health/player_health.gd`, `autoload/enemy_world.gd`, `autoload/build_service.gd`, `autoload/defeat_service.gd`, `systems/extraction/extraction_ship.gd`, `systems/wellspring/wellspring.gd`, `systems/loot/chest.gd`, `ui/hud/defeat_hud.gd`, `ui/hud/extraction_hud.gd`, `tools/run_restart_check.gd` |
+| **4.16** Map-contract parity: both-map check matrix, F-112 fold-in, MireGrid binding | hollow7 | 2026-08-19 21:18 | `tools/world_contract_check.gd`, `world/gen/procedural_world.gd`, `world/gen/undergrowth.gd`, `tools/undergrowth_check.gd`, `world/gen/poi_def.gd`, `content/poi/loot_cache.tres`, `content/poi/enemy_nest.tres`, `content/poi/station_camp.tres` |
+| **F-243** The run loop is a line, not a circle — after defeat or extraction there is no path to a next run short of relaunching the process | lm | 2026-08-19 21:12 | `core/events/event_bus.gd`, `systems/cycle/cycle_service.gd`, `world/mire/mire_grid.gd`, `systems/cycle/cycle_modifier_service.gd`, `autoload/powerup_service.gd`, `autoload/inventory_service.gd`, `systems/health/player_health.gd`, `autoload/enemy_world.gd`, `autoload/build_service.gd`, `autoload/defeat_service.gd`, `systems/extraction/extraction_ship.gd`, `systems/wellspring/wellspring.gd`, `systems/loot/chest.gd`, `ui/hud/defeat_hud.gd`, `ui/hud/extraction_hud.gd`, `tools/run_restart_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md` |
+| **F-252** resource_scatter.gd's _placement_at() has the exact per-sample noise-rebuild shape F-241 just fixed in the chunk mesher — height_from_set()/NoiseSet is now there to fix it | lp | 2026-08-19 20:37 | `world/gen/resource_scatter.gd`, `tools/resource_scatter_check.gd` |
 
 ## Milestones
 
 | Milestone | Progress | Remaining |
 |---|---|---|
-| Findings | `█████████░` 238/254 | 16 |
+| Findings | `█████████░` 238/256 | 18 |
 | M0 | `██████████` 12/12 | 0 |
 | M1 | `█████████░` 13/14 | 1 |
 | M2 | `████████░░` 21/25 | 4 |
@@ -59,11 +61,13 @@
 | ⬜ | **F-245** The whole Cycle Modifier feature is inert: seven modifiers, a weighted deck, and not one line of game code asks whether a modifier is active | todo |
 | ⬜ | **F-246** `tools/enemy_content_check.gd`'s strider-vs-crawler kiting proof fails at a clean HEAD, independent of any in-flight change | todo |
 | ⬜ | **F-247** F-240's exact gap exists a second time in `BossMoveDef` — a boss's own telegraphed moves have no way to close ground during their own TELL either, and `Boss._tick_attack()` would not even inherit `EnemyDef.lunge_speed_m_s` if it did | todo |
-| ⬜ | **F-252** resource_scatter.gd's _placement_at() has the exact per-sample noise-rebuild shape F-241 just fixed in the chunk mesher — height_from_set()/NoiseSet is now there to fix it | todo |
+| 🔵 | **F-252** resource_scatter.gd's _placement_at() has the exact per-sample noise-rebuild shape F-241 just fixed in the chunk mesher — height_from_set()/NoiseSet is now there to fix it | in_flight |
 | ⬜ | **F-253** tools/seed_sync_check.gd has 3 pre-existing failures — confirmed unrelated to F-250 via git baseline | todo |
 | ⬜ | **F-254** CycleModifierService._announce() has the exact host-only EventBus.emit_cycle_modifier_drawn() gate F-250 just fixed for CycleService — same shape, unfixed sibling | todo |
 | ⬜ | **F-255** A-020's `flooded cellar entrance` is the same shape F-237 just cut from A-016 — an entrance implying an interior/underground space the 2D heightfield cannot back | todo |
 | ⬜ | **F-257** Real App ID must be written to two independent places; task 8.11's `apply_ids.sh` only reaches one of them | todo |
+| ⬜ | **F-258** F-243's restart keeps the same world seed — no fresh island, no re-broadcast to already-connected peers | todo |
+| ⬜ | **F-259** F-243's restart resets Cycle/Mire/inventory/etc but not WaveSpawner's unlocked enemy roster | todo |
 
 ## Done
 

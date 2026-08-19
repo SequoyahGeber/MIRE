@@ -6211,3 +6211,40 @@ All 5 pre-existing chunk_stream_check.gd failures fixed and verified: agent godo
 Files: `world/chunk/chunk_mesher.gd`, `tools/chunk_stream_check.gd`
 
 Commit at time of writing: `2c02105`
+
+---
+
+### HANDOFF · F-243 · lm · 2026-08-19T21:10:15+00:00
+
+**The run loop is a line, not a circle — after defeat or extraction there is no path to a next run short of relaunching the process**
+
+LM stopped on F-243 at 2026-08-19T21:10:15+00:00 (exit 124, error). Tokens this run: 317,067 in / 1,887 out.
+The working diff is UNTOUCHED — its partial edits are still on disk, so read them before redoing anything. Full log: .agent/logs/LM-F-243-20260819-201002.jsonl
+
+Files it had already written or edited: core/events/event_bus.gd, systems/cycle/cycle_service.gd, world/mire/mire_grid.gd, systems/cycle/cycle_modifier_service.gd, autoload/powerup_service.gd, autoload/inventory_service.gd, systems/health/player_health.gd, autoload/enemy_world.gd, autoload/build_service.gd, autoload/defeat_service.gd, systems/extraction/extraction_ship.gd, systems/wellspring/wellspring.gd.
+Its last words: "Now let's run the actual headless verification — the moment of truth."
+Its last actions:
+  - TaskOutput 
+  - Read /private/tmp/claude-501/-Users-sequoyahgeber-Desktop-MIRE/847f6bb0-bec5-493d-bf8
+  - TaskOutput 
+  - Read /private/tmp/claude-501/-Users-sequoyahgeber-Desktop-MIRE/847f6bb0-bec5-493d-bf8
+  - Bash ps aux | grep -i godot | grep -v grep; echo ---LOCK---; ls -la /tmp/*.lock 2>/de
+  - TaskOutput 
+
+Tail of the failure:
+use_id":"toolu_01RV5AhS4wAgrLhPxHa7mQzB-heartbeat-13","tool_name":"TaskOutput","parent_tool_use_id":"toolu_01RV5AhS4wAgrLhPxHa7mQzB","elapsed_time_seconds":420,"heartbeat":true,"session_id":"847f6bb0-bec5-493d-bf8b-4a42ff293659","uuid":"f535b7e4-fb72-44d2-8dda-7689969af4b6"}
+timeout: exceeded 3600s
+
+Files: `core/events/event_bus.gd`, `systems/cycle/cycle_service.gd`, `world/mire/mire_grid.gd`, `systems/cycle/cycle_modifier_service.gd`, `autoload/powerup_service.gd`, `autoload/inventory_service.gd`, `systems/health/player_health.gd`, `autoload/enemy_world.gd`, `autoload/build_service.gd`, `autoload/defeat_service.gd`, `systems/extraction/extraction_ship.gd`, `systems/wellspring/wellspring.gd`, `systems/loot/chest.gd`, `ui/hud/defeat_hud.gd`, `ui/hud/extraction_hud.gd`, `tools/run_restart_check.gd`
+
+Commit at time of writing: `f15cc40`
+
+---
+
+### DONE · F-256 · bram1 · 2026-08-19T21:28:13+00:00
+
+**Arming several one-shot revives to cover an unattended stretch stacks saturate chains, and the lane idles while they queue on its own lock**
+
+D-150: LM switched to Opus at high effort (the weekly is the binding budget and expires unspent, so spend it on the most capable model available), and second_pass added — a completed task on that lane auto-queues agent order --review --fix against the commit it just made, so the reviewer repairs what it finds instead of filing it for a separate dispatch. Guards against a self-feeding queue: reviews are never reviewed, one pass per task per chain, nothing queued without a commit. Verified --fix and review-only render different orders; harness_check 34/34.
+
+Commit at time of writing: `f15cc40`
