@@ -168,6 +168,20 @@ PALETTE: dict[str, Swatch] = {
     # it never competes with the reserved Mire purple or Ward teal.
     "fungus_cap": Swatch("#A8437F", 0.88, note="pink toadstool cap"),
     "fungus_blue": Swatch("#4A79A8", 0.88, note="blue toadstool cap"),
+    # Gatherable plants and deposits (A-011). Added, never edited. Berry red is
+    # deliberately a true red and not the Mire's purple — a berry a player has to
+    # decide about must never read as corruption, which is the one hue that already
+    # means "do not touch". `berry_bloom` is the pale waxy film on real berry skin,
+    # and it is this family's whole poison tell: `ITEMS.md` says the poison berry
+    # "looks almost identical", so the difference had to be something a player can
+    # learn but not something they spot across a clearing.
+    "berry": Swatch("#B32F35", 0.84, note="ripe edible berry; true red, never toward the Mire"),
+    "berry_bloom": Swatch("#C9909A", 0.78, note="pale waxy bloom on berry skin; the poison tell"),
+    "wax": Swatch("#D8AC5E", 0.88, note="honeycomb wax"),
+    "honey": Swatch("#C67C24", 0.42, note="honey in the cell; the low roughness is the wetness"),
+    "clay": Swatch("#A57E5B", 0.68, note="riverbank clay; less rough than dirt because it is damp"),
+    "peat": Swatch("#4C3A2B", 0.94, note="cut wet peat; darker and browner than charred wood"),
+    "resin": Swatch("#B0611A", 0.38, note="amber sap; deliberately deeper than wood_cut (#DDAA65), which it is always seen against — the first value was #CE8A33 and the sap read as more cut wood"),
     # -- organic / creature -------------------------------------------------
     "flesh_raw": Swatch("#B85757", 0.82, note="raw meat; muted, never fire-engine red"),
     "flesh_fat": Swatch("#F9D1C4", 0.84),
@@ -940,3 +954,95 @@ def fork(
 
     grow(origin, heading, length, radius, depth, "0")
     return tips
+
+
+# ---------------------------------------------------------------------------
+# Batched geometry
+# ---------------------------------------------------------------------------
+
+
+class Batch:
+    """Accumulate many small shapes and emit one mesh per material.
+
+    A fibre plant is thirty blades. Thirty Blender objects export as thirty glTF
+    nodes with thirty primitives, which costs far more at runtime than the
+    triangles do — and props have no cross-asset batching yet (F-144), so the
+    node count is the cost. Everything repetitive goes through here instead.
+
+    Lifted into the shared library by A-011. `build_flora_set.py` still carries a
+    private copy of this class, `ribbon` and `blob` included; migrating it is a
+    behaviour-neutral change but it would rebuild all 84 flora assets, so it is
+    filed rather than done here. Do not make a third copy.
+    """
+
+    def __init__(self) -> None:
+        self._groups: dict[str, tuple[list, list]] = {}
+
+    def add(self, token: str, vertices: list, faces: list) -> None:
+        vert_list, face_list = self._groups.setdefault(token, ([], []))
+        offset = len(vert_list)
+        vert_list.extend(tuple(float(c) for c in v) for v in vertices)
+        face_list.extend(tuple(index + offset for index in face) for face in faces)
+
+    def blob(self, token: str, centre, radius, rng) -> None:
+        """An 8-triangle irregular octahedron — the cheapest thing that still
+        reads as a mass. For anything bigger than a berry or a flower head, use
+        `hull`."""
+        cx, cy, cz = centre
+        rx, ry, rz = (radius, radius, radius) if isinstance(radius, (int, float)) else radius
+
+        def wobble(value: float) -> float:
+            return value * rng.uniform(0.74, 1.26)
+
+        vertices = [
+            (cx + wobble(rx), cy, cz), (cx - wobble(rx), cy, cz),
+            (cx, cy + wobble(ry), cz), (cx, cy - wobble(ry), cz),
+            (cx, cy, cz + wobble(rz)), (cx, cy, cz - wobble(rz)),
+        ]
+        self.add(token, vertices, [
+            (0, 2, 4), (2, 1, 4), (1, 3, 4), (3, 0, 4),
+            (2, 0, 5), (1, 2, 5), (3, 1, 5), (0, 3, 5),
+        ])
+
+    def ribbon(self, token: str, spine: list, half_widths: list[float], fold: list[float]) -> None:
+        """A solid, folded strip along ``spine``: one leaf, one blade, one frond.
+
+        Cross-section is a triangle — left edge, right edge, raised centre — so
+        the strip has a top crease and a flat underside and is visible from every
+        direction. A one-sided leaf card is an invisible leaf, because Godot
+        imports glTF with back-face culling on; the crease is also what catches
+        light differently along its length, which is most of why a flat-shaded
+        leaf reads as a leaf.
+        """
+        if len(spine) < 2:
+            return
+        vertices: list[tuple[float, float, float]] = []
+        faces: list[tuple[int, ...]] = []
+        for index, point in enumerate(spine):
+            nxt = spine[min(index + 1, len(spine) - 1)]
+            prv = spine[max(index - 1, 0)]
+            tangent = Vector((nxt.x - prv.x, nxt.y - prv.y, 0.0))
+            if tangent.length < 1e-6:
+                tangent = Vector((1.0, 0.0, 0.0))
+            tangent.normalize()
+            side = Vector((-tangent.y, tangent.x, 0.0)) * half_widths[index]
+            vertices.extend([
+                (point.x - side.x, point.y - side.y, point.z),
+                (point.x + side.x, point.y + side.y, point.z),
+                (point.x, point.y, point.z + fold[index]),
+            ])
+        for index in range(len(spine) - 1):
+            a, b = index * 3, (index + 1) * 3
+            faces.extend([
+                (a + 0, b + 0, b + 2, a + 2),
+                (a + 2, b + 2, b + 1, a + 1),
+                (a + 1, b + 1, b + 0, a + 0),
+            ])
+        last = (len(spine) - 1) * 3
+        faces.extend([(0, 2, 1), (last + 1, last + 2, last + 0)])
+        self.add(token, vertices, faces)
+
+    def emit(self, prefix: str) -> None:
+        for token, (vertices, faces) in sorted(self._groups.items()):
+            if vertices:
+                mesh_object(f"{prefix}_{token}", vertices, faces, mat(token), recalculate=False)

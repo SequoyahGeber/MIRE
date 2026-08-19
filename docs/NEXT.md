@@ -7,87 +7,60 @@
 
 ## Status
 
-> **2026-08-18 — the map was re-authored (2.1k).** `levels/hollowmere.tscn` is the main scene and is
-> now **192 m across, not 356** (D-045): a river out of the northern rim through a gorge into the
-> mere, a plateau you climb by two ramps, a quarry at its foot, a ruined village, a lumber camp, a
-> hunters' camp, a stone circle, a watchtower, the Wellspring, an extraction yard — and the
-> **Blight** in the north-east, an ash-and-mire bowl holding the four crawler nests that every enemy
-> on this map now spawns from. **2,869 authored props** (against 1,415 on four times the area),
-> **83 live harvestable trees and ore nodes**, 10,240 scattered plants, and **every one of the 218
-> placeable kit assets appears somewhere** — the generator fails the run if one does not.
->
-> Four things were wrong and are fixed, each with a check that would catch it again: grass grew on
-> top of trees and rocks, bridge railings were mirrored across their own decks, the mere and the fen
-> drew two stacked water sheets, and props sat on a bilinear guess at the ground rather than on it.
-> A fifth was worse and invisible: **the map had no crawlers and no harvestables at all**, because
-> `EnemyWorld` and `HarvestWorld` were keyed to Playtest Hollow's group names (F-076).
->
-> `python3 tools/mapgen/hollowmere_plan.py` draws the layout as a labelled plan (SVG + PNG, pure
-> stdlib) — that is how to look at the map without the editor. `docs/DELEGATION.md` has the seams;
-> `agent godot --script tools/hollowmere_check.gd` verifies it and now asserts that crawlers really
-> spawn, harvestables really wire, nothing floats, no plant sits on a prop and no water stacks.
-> `tools/hollowmere_render_check.gd` still cannot screenshot: `agent godot` is always `--headless`
-> (F-077). Playtest Hollow is deprecated but kept as a test fixture — the headless checks boot it.
+> **2026-08-19 — the engineering spine is close to done; what's left is mostly play, content, and
+> polish.** 89/131 tasks. M0 ✅ · M1 13/14 (only 1.12's three-machine evidence run) · M2 21/25 ·
+> M3 16/21 · M4 12/14 · M5 4/10 · M6 8/11 · M7 3/12 · M8 0/12. The full check battery was swept
+> on 2026-08-19 — `docs/AUDIT-2026-08-19.md` is the report; everything runnable on this machine is
+> green except `boss_check`'s exit-leak diagnostic (F-193) and `lobby_menu_check` (F-170, order
+> queued).
 
-**Milestone:** M2 · Vertical slice — 17/22, and everything left is either yours or dispatched.
-M1 closed at 13/14 (1.12 deferred, D-030). M0 closed 11/11 plus 0.12 (orchestration).
+**The game is a real roguelike now.** Press Play: you spawn in **Hollowmere** with a stocked
+hotbar. Walk, sprint, jump, dodge (with i-frames — Thin Step extends them), harvest with the tool
+ladder, craft at stations, build (13 buildable pieces including doors that open and Ward posts),
+fight crawlers and a boss with melee or bow, loot placed chests, capture the Wellspring and defend
+its wave, watch it re-corrupt if unwarded, take Blight damage in the Mire as it spreads cell by
+cell, go down, get revived — or wipe, see the defeat screen, and keep your Salvage into the unlock
+tree. Cycles advance with modifiers; extraction is staged repairs on the shipwreck and an
+all-aboard vote. **Solo death = team wipe = run over (6.7)** — 2.13's solo respawn was the stopgap
+until the lose condition existed, and it is gone on purpose.
 
-**The game runs, and the loop is visible.** Press Play: you spawn in Playtest Hollow with a stocked
-hotbar, **the held item renders and swings** (F-041), and four crawlers hunt out of the East Mire
-nest. Walk, sprint, jump, harvest, craft at the workbench, fight, kill. Crawlers telegraph 0.4 s,
-outrun a walk (4.4 m/s), lose to a sprint, react to hits, and their corpses sink away. **Crawler hits
-now hurt you (2.13): hp hits 0 -> downed (crawl, no jump/sprint/attack) -> a teammate holds `interact`
-in range to revive, or bleed-out expires and you respawn at full health after a short delay.** The
-current build is no longer shadow-boxing — 2.9's playtest below is now judging danger, not just feel.
-**F3** overlay · **`~`** console · **Esc** releases the mouse.
+**F3** overlay · **`~`** console (typed CommandSpecs, LOCAL/HOST scopes, op-gated; selectors
+`@a @p @e[...]`; gamerules; the F-130 shim is deleted) · **M** multiplayer panel (host / join by
+id / Steam invite) · `--seed=` launch arg for a chosen island.
 
-**2.9's first playtest attempt found three defects, all now fixed (F-062/063/064).** Do not read the
-first attempt's impressions as a verdict on combat feel — the build was not swinging at the crawlers.
+**Facts that were stale here until 2026-08-19, now current:**
 
-- **Every axe swing was hitting you, not the enemy** (F-062). 2.13 put the player body into the
-  `&"damageable"` group so crawler hits could land; `CombatService` never excluded the swinger, and
-  the attacker's own origin beat any target past 1.5 m *and* bypassed the arc test. That is the whole
-  of "attacking the enemies doesn't seem to work anymore" and most of the damage taken.
-- **Downed, bleeding out and dead drew nothing on screen** (F-064). Sequoyah died and respawned twice
-  in one session without knowing it — the log said so, the screen did not. There is now a centre
-  banner with live countdowns, plus a teammate-down prompt.
-- **Solo respawn teleported to world origin instead of the level's spawn** (F-063), because the
-  signal that records a spawn point only fires inside a session.
+- **44 autoloads** (`verify_setup` asserts a floor, not a list). Boot content line:
+  23 items · 13 recipes · 2 stations · 9 melee + 1 ranged weapons · 7 loot tables · 72 powerups ·
+  13 buildables · 4 attunements · 3 biomes · 2 scatter tables · 8 rules · 3 POIs · 1 cycle
+  modifier · 1 unlock · 2 enemy definitions.
+- **Protocol version 21** (`core/net/net_version.gd`). Any new RPC bumps it and extends
+  `tools/rpc_manifest_check.gd` — the manifest check (F-161) is how a forgotten bump gets caught
+  now, not code review.
+- The procedural pipeline (heightmap → biomes → chunk streaming → scatter → nav → seed
+  replication + delta log) is **built, tested, and not yet the shipped map** — the game still
+  boots authored Hollowmere; the cutover is a full map task tracked as F-139. `--seed=` already
+  feeds the pipeline's checks.
+- Godot 4.7.1-stable `a13da4feb`, pinned (D-001, determinism baseline §6a). Blender pinned per
+  D-038.
 
-Re-run the gate on the current build. `agent godot --script tools/combat_self_hit_check.gd`,
-`tools/vitals_hud_check.gd` and `tools/player_health_check.gd` are all green.
-**The night sky reads as night now** (F-065): the cloud deck darkens and catches a warm sunset, a star field fades in across dusk and wheels overhead, and the sky material turns to its night colours only once the sun is actually below the horizon. Daylight is provably unchanged. `agent godot --script tools/atmosphere_night_check.gd`; pictures via `tools/hollowmere_night_render.gd`, which needs a window — see its header.
+---
 
-**2026-08-17 was four sessions in one day:**
+## Next, in order
 
-- **2.13 shipped** (lp): `PlayerHealth` autoload, host-authoritative, subscribes to the
-  `enemy_attack_landed` event 2.10 built with no runtime consumer until now. Downed/revive is
-  host-validated; presentation (crawl, blocked input) is client-local. Protocol version is 7.
-  `docs/DELEGATION.md` has the full seam.
+| # | What | Who | State |
+|---|---|---|---|
+| 2.9 | **Play the combat gate.** Ten crawler kills, judge tell/arc/hitstop/kill-length, tune in the inspector, pass or fail it out loud. SPECS.md has the run-sheet. Closes F-036. | **You** | open — the oldest debt on the board |
+| 2.14 | **Playtest with friends** — verbatim quotes, one full night, then re-read DESIGN §8. The build finally has enough game to judge. | You + friends | after 2.9 |
+| 5.2 / 5.4 | Enemy variety (8–12 types over 5.1's framework) and weapon movesets — the biggest lever on run variety. A-023/24/25 asset batches gate the models; stats/tells are `.tres` authoring now. | lanes + tracker | ready |
+| 3.2 / 6.3 | Item/recipe content over `docs/ITEMS.md` (~45 authorable now) and 20–30 Cycle Modifiers. One at a time, real attention each (D-073). | lanes | ready |
+| 4.10 | Mire visuals — tint, fog, particles, audio shift over `MireGrid`'s cells. The signature system still *looks* like a debug grid. | lane | ready |
+| 5.6–5.8 | Bosses 1–3 over 5.5's framework (guardian scales with Cycle; Hunt elite; Cycle 7+ threat). | lanes | after 5.2's first types |
+| 1.12 | Steam cross-platform evidence run — needs the three machines, nothing else. `STEAM_CROSS_PLATFORM_TEST.md` has everything. | You + hardware | whenever the machines align |
+| 3.11 / 4.12 / 6.11 | The remaining playtest gates (Attunement roles · Mire stressful-fun · the wall / extraction / deep-modifier fairness). | You + friends | as their systems finish |
 
-- **2.10 + 2.9's code shipped** (dusk3): host-authoritative Enemy v1, the combat-feel instrument
-  (`agent godot --script tools/combat_feel_check.gd`), hit reactions, corpse fade. F-036 resolved by
-  swapping 2.9/2.10; **2.9's human gate is the one thing still open in it.**
-- **The audit + remediation landed** (flint5): `docs/AUDIT-2026-08-17.md` is the full report. Every
-  single-process harness now runs at **0 failures and 0 engine-error lines** (F-046/F-047 fixed the
-  three that were green-over-errors and the one red one); the content generators warn before
-  overwriting tuned values and can no longer strip icons or revert the main scene (F-048);
-  `verify_setup` checks all 19 autoloads; the governing docs agree with D-031 again; and
-  **`docs/SPECS.md` now holds an execution spec for every remaining roadmap task** — lanes and
-  agents read their task's block there and should need zero exploration.
-- **The director/lane system shipped** (yarrow21, task 0.12, D-036/D-037): one director routes work
-  orders to three subscription lanes (2× Codex, 1× Claude Pro) via `agent order/dispatch/collect`;
-  lanes claim, verify through the shared `agent godot` lock (F-044), and ship under the same
-  protocol as everyone else. `docs/ORCHESTRATION.md` is the manual.
-
-**Twenty-five autoloads live**, `verify_setup` scans the `[autoload]` section and asserts a floor rather than a list, so adding one cannot red it (and dropping one still can). Boot log:
-`content: loaded 14 item(s), 1 recipe(s), 9 weapon(s)` + `1 enemy definition(s)` +
-`net: NetTransport ready (offline)`. `NetConfig` is a `class_name`, **not** an autoload; don't add it.
-Protocol version lives in `core/net/net_version.gd` (**currently 12** — 3.6's three build RPCs were
-the last bump); any new RPC bumps it and extends `tools/handshake_check.gd`.
-
-Godot 4.7.1-stable `a13da4feb`, pinned (D-001) — also the determinism baseline (§6a), so upgrading
-invalidates R6. Blender is pinned the same way now (D-038); the next asset batch records the version.
+**Do not start M7 polish before 2.14 has produced its quotes** — polish against unplaytested feel
+is polish twice.
 
 ---
 
@@ -99,54 +72,6 @@ LC1/LC2/LP implement dispatched orders. Any interactive agent chat can still tak
 old way — `agent start`, claim, work — the orchestration is additive.
 
 Protocol: [AGENTS.md](../AGENTS.md) · specs: [SPECS.md](SPECS.md) · dispatch: [ORCHESTRATION.md](ORCHESTRATION.md).
-
----
-
-## Next, in order
-
-| # | What | Who | State |
-|---|---|---|---|
-| 2.9 | **Play the combat gate — RE-RUN IT, the first attempt was judging a broken build.** SPECS.md has the run-sheet: ten crawler kills, judge tell/arc/hitstop/kill-length, tune in the inspector only, then pass or fail it out loud. Passing closes F-036. | **You** | open, unblocked |
-| 2.11 | Day/night — host-authoritative clock, sky client-local. `cycle_enabled` stays false forever; DayNight pushes the time instead. | lane | **done** |
-| 2.12 | Night waves over `EnemyWorld` seams. Shipped in `915c881` and **never registered**, so it did not run for a day (F-068); the autoload and the harness are fixed. | lane + gale6 | **done** |
-| 2.13 | Death & respawn — player health, downed→bleed-out→revive, the `enemy_attack_landed` subscriber that makes crawlers matter. | lp | **done** |
-| 3.3 | Powerup framework — tags, stacks, Resonance thresholds, one `stat()` query seam. **Done**; D-044 fixes the authoring shape 3.4 uses. | gale6 | **done** |
-| 2.14 | **Playtest with friends** — protocol in SPECS.md: verbatim quotes, one full night, then re-read DESIGN §8 before anything in M3. | You + friends | after the above |
-| 2.1d | A-009 extraction ship (15 models) — the asset queue's NEXT; tracker governs. | asset agent | ready |
-
-**1.12 is unblocked (2026-08-18):** the in-game lobby join D-030 was waiting for now exists —
-press **M** in game for the multiplayer panel (host / copy the lobby ID / paste-and-join / Steam
-invite overlay; 6.10's lobby-UI slice, `ui/lobby/lobby_menu.gd`, seams in DELEGATION.md). The
-evidence run still needs the three machines; everything to resume is in
-`STEAM_CROSS_PLATFORM_TEST.md`. **Do not start M3** before 2.14's DESIGN §8 re-read.
-
-**2026-08-18 — the command track is planned and queued (3.13–3.17).** Sequoyah asked for the game
-to be data-driven the way Minecraft's commands reach every system. `docs/COMMANDS.md` is the full
-spec: one `CommandService` front door, typed args, host-routed mutations behind an op set,
-selectors over a new EntityDirectory, a replicated gamerule family, command files + hooks, and a
-headless scenario runner the check suite gets to reuse. 3.13 gates the rest and is **exempt from
-the M3 gate** (recorded call, ROADMAP M3 note — it encodes no design answers and would actively
-help run 2.14 and D-030's cross-play test). Dispatchable to lanes as written.
-
-**2026-08-18 — the item/loot/chest economy is planned (`docs/ITEMS.md`).** Sequoyah asked for the
-full loot plan — resources, crafting components, chest rewards, the assets they need — with a lot of
-items and real jackpots: *something crazy good from a chest, even if it makes the game too easy
-sometimes* (now D-063). ITEMS.md is the catalog 3.2/3.5/3.8 author against, the way 3.4 reads
-POWERUPS.md: ~136 items + the existing 60-powerup sketch, chest tiers from free reed caches up to
-the Gilded Chest's Gleam pool, and five new gated asset batches (A-043–A-047). ~45 items are
-authorable the day 3.1 lands; everything else waits on its named gate. Inspiration researched
-(Muck, RoR2, Valheim, Lethal Company — patterns only, provenance table in the doc §1).
-
----
-
-## M0 debts — booked as M4 gates, don't lose them
-
-| # | What's actually unmeasured | Who | Est |
-|---|---|---|---|
-| 4.0a | `ConcavePolygonShape3D` cooking + GPU mesh upload per chunk, on a real renderer. R2 ran headless — no upload, no material, no collision; R3 measured *navigation* baking, a different code path. F-005, and the standing caveat on D-015. **Gates all of M4.** | agent | 1.5h |
-| 4.0b | Determinism on Windows x86_64 — **DONE** on a physical Ryzen 5 5600 (D-028). | done | ✅ |
-
-Nothing in M2/M3 depends on 4.0a. Don't pull it forward; just don't start 4.1 without it.
 
 ---
 
@@ -172,7 +97,7 @@ editor import before treating startup errors as game defects.
 .agent/bin/agent godot --script tools/verify_setup.gd
 ```
 
-Input map, all 19 autoloads, scene structure, live physics, §5a effective settings (F-003) — run it
+Input map, the autoload floor (44 today), scene structure, live physics, §5a effective settings (F-003) — run it
 after anything structural. `agent godot` serialises engine runs against the lanes (F-044); a bare
 `Godot --headless` is how two engines corrupt one import cache.
 

@@ -1,0 +1,186 @@
+{
+  "batch": "A-011",
+  "family": "gatherables",
+  "blender": "5.2.0 LTS",
+  "assets": [
+    {
+      "name": "berry_bush_full",
+      "file": "exports/berry_bush_full.glb",
+      "width_m": 0.9103,
+      "depth_m": 0.7269,
+      "height_m": 0.78,
+      "target_m": 0.78,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 720,
+      "triangles": 768,
+      "materials": [
+        "MIRE_Berry",
+        "MIRE_Leaf",
+        "MIRE_LeafLight",
+        "MIRE_WoodBark"
+      ]
+    },
+    {
+      "name": "berry_bush_harvested",
+      "file": "exports/berry_bush_harvested.glb",
+      "width_m": 0.8212,
+      "depth_m": 0.7144,
+      "height_m": 0.78,
+      "target_m": 0.78,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 368,
+      "triangles": 488,
+      "materials": [
+        "MIRE_Leaf",
+        "MIRE_LeafLight",
+        "MIRE_WoodBark",
+        "MIRE_WoodDead"
+      ]
+    },
+    {
+      "name": "poison_berry_bush",
+      "file": "exports/poison_berry_bush.glb",
+      "width_m": 0.9103,
+      "depth_m": 0.7269,
+      "height_m": 0.78,
+      "target_m": 0.78,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 720,
+      "triangles": 768,
+      "materials": [
+        "MIRE_Berry",
+        "MIRE_BerryBloom",
+        "MIRE_Leaf",
+        "MIRE_LeafLight",
+        "MIRE_WoodBark"
+      ]
+    },
+    {
+      "name": "fibre_plant",
+      "file": "exports/fibre_plant.glb",
+      "width_m": 0.5668,
+      "depth_m": 0.517,
+      "height_m": 0.88,
+      "target_m": 0.88,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 209,
+      "triangles": 380,
+      "materials": [
+        "MIRE_Fibre",
+        "MIRE_GrassDry",
+        "MIRE_Reed"
+      ]
+    },
+    {
+      "name": "medicinal_herb",
+      "file": "exports/medicinal_herb.glb",
+      "width_m": 0.3984,
+      "depth_m": 0.4024,
+      "height_m": 0.34,
+      "target_m": 0.34,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 339,
+      "triangles": 450,
+      "materials": [
+        "MIRE_FlowerWhite",
+        "MIRE_GrassDark",
+        "MIRE_Leaf",
+        "MIRE_LeafPale"
+      ]
+    },
+    {
+      "name": "wild_onion",
+      "file": "exports/wild_onion.glb",
+      "width_m": 0.2096,
+      "depth_m": 0.2157,
+      "height_m": 0.46,
+      "target_m": 0.46,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 425,
+      "triangles": 530,
+      "materials": [
+        "MIRE_Clay",
+        "MIRE_FlowerCream",
+        "MIRE_FlowerWhite",
+        "MIRE_Leaf"
+      ]
+    },
+    {
+      "name": "honeycomb",
+      "file": "exports/honeycomb.glb",
+      "width_m": 0.3362,
+      "depth_m": 0.1594,
+      "height_m": 0.38,
+      "target_m": 0.38,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 256,
+      "triangles": 400,
+      "materials": [
+        "MIRE_Honey",
+        "MIRE_Wax",
+        "MIRE_WoodBarkDark",
+        "MIRE_WoodDead"
+      ]
+    },
+    {
+      "name": "clay_deposit",
+      "file": "exports/clay_deposit.glb",
+      "width_m": 0.92,
+      "depth_m": 0.8551,
+      "height_m": 0.5016,
+      "target_m": 0.92,
+      "axis": "spread",
+      "parts": 1,
+      "polygons": 826,
+      "triangles": 844,
+      "materials": [
+        "MIRE_Clay",
+        "MIRE_StoneDark",
+        "MIRE_TerrainPath"
+      ]
+    },
+    {
+      "name": "peat_deposit",
+      "file": "exports/peat_deposit.glb",
+      "width_m": 1.06,
+      "depth_m": 0.9018,
+      "height_m": 0.4519,
+      "target_m": 1.06,
+      "axis": "spread",
+      "parts": 1,
+      "polygons": 181,
+      "triangles": 316,
+      "materials": [
+        "MIRE_GrassDry",
+        "MIRE_LeafLitter",
+        "MIRE_MossDark",
+        "MIRE_Peat"
+      ]
+    },
+    {
+      "name": "resin_node",
+      "file": "exports/resin_node.glb",
+      "width_m": 0.5891,
+      "depth_m": 0.3946,
+      "height_m": 0.74,
+      "target_m": 0.74,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 312,
+      "triangles": 528,
+      "materials": [
+        "MIRE_PineDark",
+        "MIRE_Resin",
+        "MIRE_WoodBarkDark",
+        "MIRE_WoodCut"
+      ]
+    }
+  ]
+}
