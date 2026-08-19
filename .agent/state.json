@@ -2540,9 +2540,11 @@
       "task": "F-038"
     },
     "tools/lobby_menu_check.gd": {
-      "agent": "moss11",
-      "at": "2026-08-18T18:06:11+00:00",
-      "task": "6.10"
+      "agent": "lm",
+      "at": "2026-08-19T07:30:27+00:00",
+      "hash": "7a61c0a75e7fc42c4d486a5afc3367e5d206c66da158d3d7597b32c801f37779",
+      "task": "F-170",
+      "token": null
     },
     "tools/loot_content_check.gd": {
       "agent": "slate17",
@@ -5682,9 +5684,11 @@
       "title": "Task 6.7's new `net_run_defeated` RPC shipped with no `PROTOCOL_VERSION` bump \u2014 `net_version.gd` was held all session by another lane's claim"
     },
     "F-170": {
+      "done_at": "2026-08-19T07:30:27+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`tools/lobby_menu_check.gd` fails (5/24) whenever the dev machine's own Steam client is actually running"
     },
@@ -5930,6 +5934,13 @@
       "status": "done",
       "tier": "F",
       "title": "Two sessions share one git index, so a bare 'git add + git commit' races every concurrent ship \u2014 the audit's two staged docs landed inside wick20's A-011 art commit"
+    },
+    "F-200": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "No check verifies that project.godot's [autoload] targets are tracked at HEAD, so F-190's failure mode can recur"
     }
   },
   "version": 1

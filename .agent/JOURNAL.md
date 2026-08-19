@@ -4562,3 +4562,15 @@ Notes along the way:
 Files: `docs/FINDINGS.md`, `docs/SPECS.md`
 
 Commit at time of writing: `baed56e`
+
+---
+
+### DONE · F-170 · lm · 2026-08-19T07:30:27+00:00
+
+**`tools/lobby_menu_check.gd` fails (5/24) whenever the dev machine's own Steam client is actually running**
+
+tools/lobby_menu_check.gd: SAD-path assertions now probe SteamLobby.initialise()/is_ready() before firing fake join/host requests, and skip (not fail) the four Steam-dependent assertions when Steam is actually reachable, instead of corrupting SteamLobby's state with a real async join. Verified failures=0 on this machine both with Steam running and with it quit (agent godot --script tools/lobby_menu_check.gd). Wrote the missing docs/SPECS.md block, moved F-170 to Resolved, filed F-201 for an unrelated pre-existing ERROR line found while running tools/steam_lobby_check.gd, updated docs/DELEGATION.md's stale lobby_menu_check references.
+
+Files: `tools/lobby_menu_check.gd`
+
+Commit at time of writing: `dbf96a6`

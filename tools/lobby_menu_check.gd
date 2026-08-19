@@ -5,6 +5,15 @@ extends SceneTree
 ## every refusal path a Steam-less headless run can reach reports through the status line instead of
 ## crashing. The happy path (a real lobby) needs the Steam client and is covered by 1.12's live run.
 ##
+## F-170: the Steam-unavailable assertions only mean anything on a machine whose own Steam client
+## really is unreachable. Firing them with a fake lobby ID against a machine where Steam IS running
+## and logged in does not test a refusal — it starts a REAL async join, which leaves SteamLobby
+## stuck mid-request (its `_lobby_id` is set the instant `join_by_id()` runs, before Steam answers)
+## and cascades into every assertion after it. So this probes `SteamLobby.is_ready()` (via the same
+## `initialise()` request_join()/request_host() would call anyway — idempotent, safe to call early)
+## before committing to those fake IDs, and skips them with a named reason when Steam is actually
+## reachable, instead of firing a request that can't fail the way the assertion expects.
+##
 ## Run with: .agent/bin/agent godot --script tools/lobby_menu_check.gd
 
 var failures: int = 0
@@ -42,17 +51,29 @@ func _run() -> void:
 		"empty join asks for a lobby ID")
 	check(not bool(lobby.call("in_lobby")), "empty join created no lobby state")
 
-	# Join with text on a Steam-less machine: SteamLobby refuses, the menu says why, nothing crashes.
-	menu.call("set_join_field_text", "109775242382594016")
-	menu.call("request_join")
-	check(String(menu.call("status_text")).to_lower().contains("steam"),
-		"joining without Steam names Steam as the reason")
-	check(not bool(lobby.call("in_lobby")), "refused join left no lobby state")
+	# F-170: which branch this machine is actually on, decided before any fake ID is used.
+	lobby.call("initialise")
+	var steam_available: bool = bool(lobby.call("is_ready"))
 
-	menu.call("request_host")
-	check(String(menu.call("status_text")).to_lower().contains("steam"),
-		"hosting without Steam names Steam as the reason")
-	check(not bool(lobby.call("in_lobby")), "refused host left no lobby state")
+	if steam_available:
+		print("STEAM AVAILABLE on this machine — skipping the Steam-unavailable join/host assertions (F-170); their happy-path coverage is 1.12's live run.")
+		skip("joining without Steam names Steam as the reason")
+		skip("refused join left no lobby state")
+		skip("hosting without Steam names Steam as the reason")
+		skip("refused host left no lobby state")
+	else:
+		print("STEAM UNAVAILABLE on this machine — running the Steam-unavailable join/host assertions.")
+		# Join with text on a Steam-less machine: SteamLobby refuses, the menu says why, nothing crashes.
+		menu.call("set_join_field_text", "109775242382594016")
+		menu.call("request_join")
+		check(String(menu.call("status_text")).to_lower().contains("steam"),
+			"joining without Steam names Steam as the reason")
+		check(not bool(lobby.call("in_lobby")), "refused join left no lobby state")
+
+		menu.call("request_host")
+		check(String(menu.call("status_text")).to_lower().contains("steam"),
+			"hosting without Steam names Steam as the reason")
+		check(not bool(lobby.call("in_lobby")), "refused host left no lobby state")
 
 	menu.call("request_copy_lobby_id")
 	check(String(menu.call("status_text")).to_lower().contains("host"),
@@ -86,6 +107,11 @@ func check(condition: bool, description: String) -> void:
 		return
 	failures += 1
 	push_error("FAIL: %s" % description)
+
+
+## F-170: an assertion this machine's Steam state makes untestable, not a failure to report.
+func skip(description: String) -> void:
+	print("SKIP: %s" % description)
 
 
 func finish() -> void:
