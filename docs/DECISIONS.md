@@ -3959,3 +3959,81 @@ unknown — candidate is any `bpy.ops` call that internally touches `view_layer.
 the operator's undo state, but `view_layer.update()` called directly was already ruled out by F-204's
 own probe table) — that would turn this from "an accident we've verified nine instances of" into a
 documented mechanism a generator could rely on rather than merely observing after the fact.
+
+---
+
+### D-139 · 2026-08-19 · Corrects D-083: a `Harvestable` depletion-memory restore is a full state
+seam of its own, `host_restore_depleted()`, not a replayed `host_apply_damage()` hit
+
+*Narrows D-083, does not repeal it.* D-083 was right that a direct poke at `Harvestable.active` is
+wrong — `active` alone skips arming the respawn clock (`_respawn_remaining`), so a freshly-restored
+point immediately auto-respawned on the next physics tick, and that failure mode is real and stays
+fixed. Where D-083 went wrong was the specific mechanism it picked to fix it: replaying a full
+`host_apply_damage()` hit reaches the right `active`/`_respawn_remaining` state, but `damage`-to-zero
+is not a silent state setter — it is the exact seam a real player swing uses, so reaching 0 health
+through it also runs `Harvestable._deplete()`'s `depleted.emit()` and
+`EVENT_BUS.emit_harvest_yielded()` in full. `InventoryService` subscribes to that event and
+unconditionally grants the yield, so every rebuild of an already-harvested `ResourceScatterField`
+point (leaving and re-entering the LOD0/collision ring — an ordinary, trivially repeatable player
+action, not an edge case) paid the host a second, unearned copy of the item. Filed and reproduced as
+F-231; `tools/resource_scatter_check.gd`'s own lifecycle section had exercised this exact path since
+4.4 and never noticed, because it only asserted `active == false` after rebuild, never that no new
+yield fired.
+
+**The fix keeps D-083's actual insight — restore the WHOLE state, not just `active` — while dropping
+the part that was never a requirement:** `systems/harvesting/harvestable.gd` gained
+`host_restore_depleted()`, a host-only method that reaches the identical final state
+`host_apply_damage()` reaching 0 health does (`health` zeroed, `active` off, `_respawn_remaining`
+armed at `respawn_seconds`) without emitting `depleted` or `EVENT_BUS.emit_harvest_yielded()`. It
+keeps the one property of the damage seam actually worth keeping — the method family's own
+host/offline-only gate, so a real client's call still quietly no-ops — without the yield side effect
+a memory replay never earned. `world/gen/resource_scatter_field.gd`'s `_wire_point_state()` now calls
+this instead of `host_apply_damage()`.
+
+**The general rule this leaves for the next "restore remembered state" seam:** never replay a
+mutation-with-side-effects method (anything that also fires an event another system reacts to) purely
+to reach that method's STATE outcome. Either factor the state change into its own method first, or —
+if state and side effect are inseparable in the existing seam — that is itself a sign the seam needs
+splitting before a second caller with different intent (remembering vs. reporting) reuses it.
+
+**Would change my mind:** a future host-authoritative replay case where the side effect genuinely
+SHOULD refire (e.g. a session-resume path that intentionally wants clients to re-see a "this point was
+just harvested" event) — that caller should still not reach for `host_apply_damage()` directly, but it
+would be a real vote for a THIRD explicit method (`host_replay_depletion_event()` or similar) rather
+than evidence this decision was wrong.
+
+---
+
+### D-140 · 2026-08-19 · A HOST-scope command handler with an IMPLICIT actor (no `peer`/`selector`
+arg) must read `ctx.peer_id`, never a local-actor entry point like `_local_peer_id()`
+
+F-228: `_cmd_craft`/`_cmd_build`/`_cmd_demolish` all called `request_craft()`/`request_place()`/
+`request_destroy()` — the exact entry points the crafting UI, the placement ghost, and the demolish
+tool call on their OWN local process, where resolving the actor via `_local_peer_id()` is correct
+because those callers only ever run as the actor's own local call. A `CommandService` HOST-scope
+handler is not that: `execute()`/`_execute_locally()` (`autoload/command_service.gd`) only ever call a
+HOST-scope handler ON THE HOST process — the host's own console typing it directly, or a non-host
+op's line re-entering via `net_submit_command`, re-parsed and re-executed on the host too
+(COMMANDS.md's "host re-parses the raw line from scratch" design). So `_local_peer_id()` read inside
+such a handler is ALWAYS the host's own id, never the actual issuer, and a non-host op's `craft`/
+`build`/`demolish` silently mutated the host's own inventory/build ledger — worse, the confirmation
+never even reached the real issuer, because `_confirm_peer()`/`_answer()` also gate the RPC-back on
+`peer_id == _local_peer_id()`, which was already the wrong value by the time it got there.
+
+**The rule for the next implicit-actor HOST-scope command:** read the actor off `ctx.peer_id` (which
+`command_service.gd`'s `_build_ctx()` populates correctly for both the local and the re-executed-RPC
+case — `multiplayer.get_remote_sender_id()` for the latter) and call the owning service's
+`_process_*`/host-side seam DIRECTLY with that id, never through an entry point whose OTHER caller is
+the actor's own local UI/tool. `give`/`loadout` (`core/dev/dev_loadout.gd`) and `inv`/`loot`
+(`autoload/inventory_service.gd`, via `_resolve_peer(ctx, args)`) already get this right — they were
+written against `ctx.peer_id` from the start, never against a local-actor helper, so they are the
+worked reference for what a new implicit-actor command should copy. A command that instead takes an
+explicit `peer`/`selector` argument (`kill`, `tp`, `heal`, `powerup give <peer>`, ...) never has this
+failure mode — the actor is already a parsed argument, not something the handler has to infer.
+
+**Would change my mind:** nothing found so far contradicts this — every HOST-scope handler in the
+repo was swept (F-228's own close-out) and the two shapes (explicit target arg vs. `ctx.peer_id`) are
+exhaustive for "who does this command act on." A future command type that legitimately needs a THIRD
+shape (e.g. "the target is neither the issuer nor a parsed argument, but derived from world state")
+would be the first real counter-example, and should get its own decision rather than stretching this
+one.

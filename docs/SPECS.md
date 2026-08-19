@@ -7199,6 +7199,62 @@ correctly — not this bug. No other sibling found.
 
 ---
 
+## F-231 · `ResourceScatterField`'s depletion-restore replays a real harvest yield, so every rebuild of an already-harvested scattered point grants a free duplicate of its item to the host
+
+**Claim:** `systems/harvesting/harvestable.gd`, `world/gen/resource_scatter_field.gd`,
+`tools/resource_scatter_check.gd`, `docs/SPECS.md`. **Authority:** no new row — `Harvestable` stays
+HOST (world mutation) and `ResourceScatterField` stays the same file's existing rows (§2.2); this
+fixes a mechanism inside the already-declared authority, not the authority itself.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+`world/gen/resource_scatter_field.gd`'s `_wire_point_state()` restored a scattered point's
+remembered depletion by replaying a full lethal hit through `Harvestable.host_apply_damage()`. That
+call is not a silent state setter — it is the SAME seam a real player swing uses, and reaching 0
+health through it runs `Harvestable._deplete()` in full: `depleted.emit()` and
+`EVENT_BUS.emit_harvest_yielded()`, both carrying the definition's real `yield_item_id`/
+`yield_amount`. `InventoryService._on_harvest_yielded()` subscribes to exactly that event and
+unconditionally grants the yield into `NetConfig.HOST_PEER_ID`'s inventory — so every time an
+already-harvested point's chunk left and re-entered the LOD0/collision ring (an ordinary, trivially
+repeatable player action), the host received a second, unearned copy of the item. Repeatable
+indefinitely, host-only, fires even solo.
+
+**The fix:** `systems/harvesting/harvestable.gd` gained `host_restore_depleted() -> bool`, a
+host-only method reaching the identical final state a lethal `host_apply_damage()` hit does
+(`health` zeroed, `active` off, `_respawn_remaining` armed at `definition.respawn_seconds`) without
+emitting `depleted` or calling `EVENT_BUS.emit_harvest_yielded()`. It keeps the same
+`_owns_world_mutation()`/`_configuration_valid`/`active` gate `host_apply_damage()` uses, so a real
+client's call still quietly no-ops. `_wire_point_state()` now calls `host_restore_depleted()`
+instead of `host_apply_damage()` when `is_point_depleted(point_id)` is true. The file's header
+comment and `_wire_point_state()`'s own doc-comment (both of which explained and justified the old
+`host_apply_damage()` replay) were rewritten to match. Recorded as `docs/DECISIONS.md` D-139 —
+narrows D-083 (which correctly said "restore the WHOLE state, not just `active`" but picked the
+wrong mechanism to do it).
+
+**Verify:** `.agent/bin/agent godot --script tools/resource_scatter_check.gd` — new assertions in the
+existing "lifecycle" section read `InventoryService.host_count(NetConfig.HOST_PEER_ID,
+yield_item_id)` before the real hit, after the real hit (asserts it rose by exactly
+`yield_amount`), and after the chunk tears down and rebuilds (asserts it does NOT rise again).
+27/27 assertions pass, 0 failures — the third reading now stays flat (`2 -> 2`) instead of doubling.
+Also re-ran `tools/harvestable_check.gd` (29/29 pass) and `tools/harvestable_net_check.gd`
+(`yields=1 failures=0`) to confirm `host_restore_depleted()` doesn't disturb the real-hit path it
+sits beside.
+
+**Swept for the same shape:** grepped every `host_apply_damage`/`host_apply_tool_damage` call site
+project-wide (`grep -rn "host_apply_damage(" --include=*.gd`). Every other caller — `CombatService`,
+`RangedCombatService`, `EntityDirectory`'s `kill` admin command, `BuildService`'s piece-damage
+handler — applies a genuinely new hit, never replays a remembered one; F-231's shape (a
+"restore remembered state" caller reusing a mutation-with-side-effects seam) had exactly one call
+site in the project. Also checked `world/gen/authored_world.gd`/`autoload/harvest_world.gd` (the
+non-procedural harvestable path `ResourceScatterField` mirrors) for an equivalent depletion-restore
+path — neither has one; only scattered points persist depletion memory across a chunk unload/rebuild
+at all.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

@@ -214,14 +214,29 @@ func _check_field_lifecycle() -> void:
 
 	# Deplete the node proxy, unload its chunk, and rebuild — the whole point of the depletion
 	# memory is that this exact point comes back down, not fresh.
+	var inventory: Node = root.get_node_or_null(^"InventoryService")
 	var point_id: String = ""
+	var yield_item_id: StringName = &""
+	var yield_amount: int = 0
+	var count_before_harvest: int = 0
 	if wired_node != null:
 		var definition: Resource = wired_node.get(&"definition")
 		point_id = String((node_holders[0] as Node3D).get_meta(&"point_id", ""))
+		yield_item_id = definition.get(&"yield_item_id")
+		yield_amount = int(definition.get(&"yield_amount"))
+		if inventory != null:
+			count_before_harvest = int(inventory.call("host_count", NetConfig.HOST_PEER_ID, yield_item_id))
 		check(bool(wired_node.call("host_apply_damage", int(definition.get(&"max_health")), 1)),
 			"the proxy accepts a lethal host hit like any other Harvestable")
 		await _settle()
 		check(not bool(wired_node.get(&"active")), "the proxy depletes")
+
+	var count_after_harvest: int = count_before_harvest
+	if inventory != null and not yield_item_id.is_empty():
+		count_after_harvest = int(inventory.call("host_count", NetConfig.HOST_PEER_ID, yield_item_id))
+		check(count_after_harvest == count_before_harvest + yield_amount,
+			"the real harvest granted its yield exactly once (%d -> %d, +%d expected)"
+				% [count_before_harvest, count_after_harvest, yield_amount])
 
 	fake_streamer.chunk_unloaded.emit(coord)
 	check(field.chunk_count() == 0, "the chunk tears down on chunk_unloaded")
@@ -247,6 +262,13 @@ func _check_field_lifecycle() -> void:
 		if rebuilt_harvestable != null:
 			check(not bool(rebuilt_harvestable.get(&"active")),
 				"the rebuilt proxy remembers it was depleted, instead of coming back full-health")
+		# F-231: the rebuild replays remembered depletion through host_restore_depleted(), not a
+		# second host_apply_damage() hit — it must NOT grant another copy of the yield.
+		if inventory != null and not yield_item_id.is_empty():
+			var count_after_rebuild: int = int(inventory.call("host_count", NetConfig.HOST_PEER_ID, yield_item_id))
+			check(count_after_rebuild == count_after_harvest,
+				"rebuilding an already-depleted point grants no duplicate yield (%d -> %d)"
+					% [count_after_harvest, count_after_rebuild])
 
 	# A chunk downgrading away from LOD0 (never unloading) tears down scatter too.
 	fake_streamer.chunk_mesh_ready.emit(coord, 1)

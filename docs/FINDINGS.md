@@ -440,50 +440,6 @@ instruction.
 
 ---
 
-### F-228 · `craft`/`build` console commands charge and credit the HOST's own peer, not the issuing player, whenever a non-host op runs them
-
-**Area:** netcode · **Severity:** high · **Found:** 2026-08-19 by lp during 3.16-review
-
-Task 3.16's `_cmd_craft` (`autoload/crafting_service.gd:409`) and `_cmd_build`
-(`autoload/build_service.gd:527`) both discard the `ctx` their own HOST-scope handler is given and
-call `request_craft(recipe_id)` / `request_place(piece_id, placement)` — the exact functions the
-in-game UI calls on the *issuing player's own local process*. Both of those, on a mutation-owning
-process, resolve the actor via `_local_peer_id()` (`crafting_service.gd:372`,
-`build_service.gd:489`), never the caller's `ctx.peer_id`.
-
-For the host typing the command locally that's harmless — `_local_peer_id()` and `ctx.peer_id`
-happen to be the same value. But a non-host **op** (a supported, intended path: `CommandService`
-lets the host `op <peer>` any connected client, and COMMANDS.md's whole `craft`/`build` catalog
-rows exist for exactly this kind of admin/debug use) reaches these handlers through
-`net_submit_command` → the host re-executes the line with `ctx.peer_id` set to the real
-`multiplayer.get_remote_sender_id()` (`command_service.gd:312-316`) — correct — and then the handler
-throws that away. `request_craft`/`request_place` see `_owns_mutation()` true (they're now running
-*on the host*) and call `_process_craft(_local_peer_id(), ...)` /
-`_process_place(_local_peer_id(), ...)`, i.e. the **host's own peer id**, not the client who typed
-the command.
-
-Concrete failure: a non-host op typing `craft torch` has the ingredients pulled from the **host's**
-inventory and the crafted item deposited into the **host's** inventory — the op's own inventory is
-untouched and they get no item. `build campfire 10 0 5` is worse: `BuildService._process_place`
-(`build_service.gd:156-176`) both spends the cost via
-`inventory.host_transaction(peer_id, cost, {})` and records `_placed[name] = {"def": ..., "owner":
-peer_id}` using that same wrong id, so the placed piece is permanently misattributed to the host in
-`_placed`, not just the one transaction. Contrast with the real UI path
-(`net_request_craft`/equivalent build RPC), which correctly resolves the actor via
-`multiplayer.get_remote_sender_id()` on the host side (`crafting_service.gd:159-163`) — the console
-command is the one path that gets this wrong.
-
-`tools/command_catalog_check.gd` cannot catch this by its own stated design ("does not execute the
-mutating verbs" — its own file header); this needs a real two-process check that ops a client and
-runs `craft`/`build` from it.
-
-**Not fixed here** (review-only task). Likely fix: `_cmd_craft`/`_cmd_build` should read
-`int(ctx.get("peer_id", ...))` and call `_process_craft`/`_process_place` (or an equivalent seam)
-directly with that id, rather than going through the local-actor-assuming
-`request_craft`/`request_place` entry points.
-
----
-
 ### F-229 · `docs/SPECS.md` cites "D-095" twice for decisions that actually landed as D-096 and D-097 — both references now point at task 4.7's unrelated POI-placement decision
 
 **Area:** docs · **Severity:** low · **Found:** 2026-08-19 by lm during 4.7-review
@@ -551,7 +507,97 @@ own raw args the same way top-level dispatch does, not against `time`'s worst ca
 
 ---
 
-### F-231 · `ResourceScatterField`'s depletion-restore replays a real harvest yield, so every rebuild of an already-harvested scattered point grants a free duplicate of its item to the host
+## Resolved
+
+### F-228 · `craft`/`build` console commands charge and credit the HOST's own peer, not the issuing player, whenever a non-host op runs them — **fixed**
+
+**Area:** netcode · **Severity:** high · **Found:** 2026-08-19 by lp during 3.16-review
+
+Task 3.16's `_cmd_craft` (`autoload/crafting_service.gd:409`) and `_cmd_build`
+(`autoload/build_service.gd:527`) both discard the `ctx` their own HOST-scope handler is given and
+call `request_craft(recipe_id)` / `request_place(piece_id, placement)` — the exact functions the
+in-game UI calls on the *issuing player's own local process*. Both of those, on a mutation-owning
+process, resolve the actor via `_local_peer_id()` (`crafting_service.gd:372`,
+`build_service.gd:489`), never the caller's `ctx.peer_id`.
+
+For the host typing the command locally that's harmless — `_local_peer_id()` and `ctx.peer_id`
+happen to be the same value. But a non-host **op** (a supported, intended path: `CommandService`
+lets the host `op <peer>` any connected client, and COMMANDS.md's whole `craft`/`build` catalog
+rows exist for exactly this kind of admin/debug use) reaches these handlers through
+`net_submit_command` → the host re-executes the line with `ctx.peer_id` set to the real
+`multiplayer.get_remote_sender_id()` (`command_service.gd:312-316`) — correct — and then the handler
+throws that away. `request_craft`/`request_place` see `_owns_mutation()` true (they're now running
+*on the host*) and call `_process_craft(_local_peer_id(), ...)` /
+`_process_place(_local_peer_id(), ...)`, i.e. the **host's own peer id**, not the client who typed
+the command.
+
+Concrete failure: a non-host op typing `craft torch` has the ingredients pulled from the **host's**
+inventory and the crafted item deposited into the **host's** inventory — the op's own inventory is
+untouched and they get no item. `build campfire 10 0 5` is worse: `BuildService._process_place`
+(`build_service.gd:156-176`) both spends the cost via
+`inventory.host_transaction(peer_id, cost, {})` and records `_placed[name] = {"def": ..., "owner":
+peer_id}` using that same wrong id, so the placed piece is permanently misattributed to the host in
+`_placed`, not just the one transaction. Contrast with the real UI path
+(`net_request_craft`/equivalent build RPC), which correctly resolves the actor via
+`multiplayer.get_remote_sender_id()` on the host side (`crafting_service.gd:159-163`) — the console
+command is the one path that gets this wrong.
+
+`tools/command_catalog_check.gd` cannot catch this by its own stated design ("does not execute the
+mutating verbs" — its own file header); this needs a real two-process check that ops a client and
+runs `craft`/`build` from it.
+
+**Not fixed here** (review-only task). Likely fix: `_cmd_craft`/`_cmd_build` should read
+`int(ctx.get("peer_id", ...))` and call `_process_craft`/`_process_place` (or an equivalent seam)
+directly with that id, rather than going through the local-actor-assuming
+`request_craft`/`request_place` entry points.
+
+---
+
+**Resolved 2026-08-19 by lp.** Fixed: `_cmd_craft` (autoload/crafting_service.gd), `_cmd_build`, and the sibling `_cmd_demolish`
+(autoload/build_service.gd — same bug, found in the sweep, not in the original finding) all used to
+go through `request_craft()`/`request_place()`/`request_destroy()`, the same local-actor-assuming
+entry points the crafting UI / placement ghost / demolish tool call on their OWN process, where
+`_local_peer_id()` is correct. A HOST-scope command handler is different: it always executes ON THE
+HOST regardless of who typed the line (a non-host submission re-enters via `net_submit_command`,
+which re-parses and re-executes on the host too), so `_local_peer_id()` inside the handler was always
+the HOST's own id. All three handlers now read the issuing peer off `ctx.peer_id` (accurate for both
+the host's own console and a re-executed `net_submit_command` line) and call
+`_process_craft()`/`_process_place()`/`_process_destroy()` directly, skipping the local-actor entry
+points entirely — same validation, correct actor.
+
+Verified with a new two-process check, tools/command_craft_build_net_check.gd: an op'd non-host
+client runs `craft stone_axe`, `build wall_wood ~ ~ ~3`, then `demolish @e[type=buildable]` over the
+real console-command RPC path. `.agent/bin/agent godot --script tools/command_craft_build_net_check.gd`
+-> `COMMAND_CRAFT_BUILD_NET_CHECK failures=0` (27 assertions): the crafted axe and the build/demolish
+log costs and refund all land on the CLIENT's own inventory, never the host's (which stays untouched
+throughout); the placed piece's recorded owner is the client's peer id, not the host's; and
+craft_confirmed/build_confirmed actually reach the issuing client (pre-fix, `_confirm_peer`/
+`_answer`'s `peer_id == _local_peer_id()` gate meant the client never got a confirmation at all, since
+`peer_id` was already wrongly the host's own id by the time it got there).
+
+Confirmed the check catches the regression: manually reverted the two fixes (git apply -R against a
+saved diff, not `git stash` — F-080), reran -> 14/27 assertions fail (craft never confirms, build/
+destroy silently no-op since `_owns_mutation()` is false for the wrongly-resolved actor on non-host
+runs... no — same host process either way; the point is `_process_place`/`_process_craft` ran with
+the HOST's own peer id, so nothing ever reached the client). Reapplied the fix, reran -> 0 failures.
+
+Regressions all still green: tools/crafting_check.gd (7 confirmations, 0 fail), crafting_net_check.gd
+(0 fail), build_check.gd (0 fail), build_net_check.gd (0 fail), command_check.gd (0 fail),
+command_net_check.gd (0 fail), command_catalog_check.gd (0 fail, 45 commands), command_console_check.gd
+(0 fail). Full boot (`agent godot --quit-after 120`) 0 stray `ERROR:` lines.
+
+Swept for the sibling shape across every HOST-scope command in the repo (grepped `"scope": &"host"`
+project-wide): `craft`/`build`/`demolish` are the only verbs with an IMPLICIT actor (no `peer`/
+`selector` argument — COMMANDS.md §7's catalog confirms this, every other row takes one explicitly).
+`give`/`loadout` (core/dev/dev_loadout.gd) are also implicit-actor but already correctly read
+`ctx.peer_id` — not this bug. `inv`/`loot` (inventory_service.gd) default their `peer` arg to the
+issuer via `_resolve_peer(ctx, args)`, also already correct. No other sibling found.
+
+No new spec existed for F-228 in docs/SPECS.md — added one (this task's own first step per the
+file's preamble). D-140 records the general rule (ctx.peer_id, never a local-actor entry point,
+inside a HOST-scope handler) so a future implicit-actor command doesn't reintroduce this.
+
+### F-231 · `ResourceScatterField`'s depletion-restore replays a real harvest yield, so every rebuild of an already-harvested scattered point grants a free duplicate of its item to the host — **fixed**
 
 **Area:** world-gen / inventory · **Severity:** high · **Found:** 2026-08-19 by lp during 4.4-review
 
@@ -589,9 +635,37 @@ memory-restore call specifically. Whichever task 4.6's `WorldDeltaLog` follow-up
 `ChunkStreamer`/`ResourceScatterField` a real caller" lands under should close this first — right now
 shipping either one turns this into a live dupe exploit.
 
----
+**Resolved 2026-08-19 by lm.** **fixed.** `systems/harvesting/harvestable.gd` gained a new host-only method,
+`host_restore_depleted()`, that reaches the exact final state a lethal `host_apply_damage()` hit
+does (`health` zeroed, `active` off, `_respawn_remaining` armed at `respawn_seconds`) WITHOUT
+emitting `depleted`/`EVENT_BUS.emit_harvest_yielded()` — the two signals that told
+`InventoryService._on_harvest_yielded()` a real harvest just happened and to grant its item.
+`world/gen/resource_scatter_field.gd`'s `_wire_point_state()` now calls
+`host_restore_depleted()` instead of replaying `host_apply_damage()` when it finds a point already
+marked depleted, so restoring remembered state after a chunk rebuild no longer pays out a second,
+unearned copy of the yield. File header and `_wire_point_state()`'s own doc-comment updated to match
+(they used to justify the now-removed `host_apply_damage()` replay). Recorded as D-139 in
+`docs/DECISIONS.md` — narrows D-083's still-correct "restore the WHOLE state, not just `active`"
+call, replacing its mechanism.
 
-## Resolved
+**Verified:** `.agent/bin/agent godot --script tools/resource_scatter_check.gd` — new assertions
+added to the existing "lifecycle" section read `InventoryService.host_count()` for the harvested
+item before the real hit, after the real hit, and after the chunk tears down and rebuilds; the third
+reading now stays flat (`2 -> 2`) instead of doubling. 27/27 assertions pass, 0 failures. Also
+re-ran `tools/harvestable_check.gd` (29/29 pass, including "lethal hit emits exactly one yield
+event" and "respawn does not duplicate yield") and `tools/harvestable_net_check.gd`
+(`yields=1 failures=0`) to confirm the new method didn't disturb the real-hit path it's a sibling
+of.
+
+**Swept for the same bug shape:** grepped every `host_apply_damage`/`host_apply_tool_damage` call
+site in the project (`grep -rn "host_apply_damage(" --include=*.gd`). Every other caller
+(`CombatService`, `RangedCombatService`, `EntityDirectory`'s `kill` admin command, `BuildService`'s
+piece-damage handler) is applying a REAL new hit, not replaying a remembered one — F-231's shape (a
+"restore remembered state" caller reusing a mutation-with-side-effects seam) has exactly one call
+site in the codebase, `ResourceScatterField`, now fixed. No sibling found. Also checked
+`world/gen/authored_world.gd`/`autoload/harvest_world.gd` (the non-procedural harvestable path this
+file mirrors) for an equivalent depletion-restore path — neither has one; only scattered points
+persist depletion memory across a chunk unload/rebuild.
 
 ### F-227 · SalvageService's reward-curve comment states the wrong numbers — mismatches the formula it documents and its own SPECS.md block — **fixed**
 

@@ -41,13 +41,19 @@ extends Node3D
 ## memory when the log has no opinion yet — a fresh peer between connecting and its
 ## `net_world_snapshot` RPC landing, or a harness that never registered `WorldDeltaLog` at all.
 ##
-## The restore itself is still a full `host_apply_damage()` hit through the SAME host-gated seam a
-## real swing uses, never a direct poke at `active` — that is not a stylistic choice: `active` alone
-## is only half of depletion's real state (`_deplete()` also arms the respawn clock), so a direct
-## poke left the respawn clock at its just-constructed 0.0 and the very next physics tick
-## auto-respawned the point straight back, caught by this task's own check when the bug first
-## shipped (D-083). Going through `host_apply_damage()` also means the restore inherits the method's
-## own authority gate for free: on a real client the call quietly no-ops, exactly as it should.
+## The restore itself is `Harvestable.host_restore_depleted()`, never a direct poke at `active` —
+## that is not a stylistic choice: `active` alone is only half of depletion's real state
+## (`_deplete()` also arms the respawn clock), so a direct poke left the respawn clock at its
+## just-constructed 0.0 and the very next physics tick auto-respawned the point straight back,
+## caught by this task's own check when the bug first shipped (D-083). `host_restore_depleted()`
+## reaches that same full state — but, unlike D-083's original fix of replaying a full
+## `host_apply_damage()` hit, does it WITHOUT emitting `depleted`/`EVENT_BUS.emit_harvest_yielded()`.
+## Replaying a real hit meant every rebuild of an already-harvested point paid the host a second,
+## unearned copy of the item (F-231) — `host_apply_damage()` is the seam a swing that HASN'T happened
+## yet uses to become one; a restore is remembering a swing that already fully happened and paid out
+## once. `host_restore_depleted()` keeps the one property worth keeping from that seam — it still
+## inherits the method family's own host/offline-only gate, so a real client's call quietly no-ops —
+## without the yield side effect a memory replay never earned.
 ##
 ## `docs/FINDINGS.md` F-132 (resolved) named this exact gap and its fix: the host's `ChunkStreamer`
 ## must be anchored to the UNION of every connected peer's last-known position, not just its own
@@ -303,9 +309,10 @@ func _build_batch_holder(
 
 ## Waits for `HarvestWorld`'s deferred wiring to give this holder a live `Harvestable` child, then
 ## (a) if this point is already known depleted (`WorldDeltaLog`, falling back to this file's own
-## peer-local memory), replays a full depletion hit through `host_apply_damage()` — the header
-## explains why that, and not a direct `active` poke, is the correct and safely-gated way to restore
-## it, and (b) wires the Harvestable's own `depleted`/`respawned` signals so any FUTURE change to
+## peer-local memory), restores that state through `host_restore_depleted()` — the header explains
+## why that, and not a direct `active` poke or a replayed `host_apply_damage()` hit, is the correct
+## and safely-gated way to restore it, and (b) wires the Harvestable's own `depleted`/`respawned`
+## signals so any FUTURE change to
 ## this point is recorded live, not only remembered at teardown. Called unconditionally for every
 ## holder this file builds, not just ones already believed depleted — a point that has never
 ## mutated still needs its future watched.
@@ -320,9 +327,7 @@ func _wire_point_state(holder_path: NodePath, point_id: String, attempts_left: i
 		return
 
 	if is_point_depleted(point_id):
-		var definition: Resource = harvestable.get(&"definition")
-		if definition != null:
-			harvestable.call("host_apply_damage", int(definition.get(&"max_health")), NetConfig.HOST_PEER_ID)
+		harvestable.call("host_restore_depleted")
 
 	harvestable.connect(&"depleted", func(_peer_id: int, _item_id: StringName, _amount: int) -> void:
 		_record_point_state(point_id, true))

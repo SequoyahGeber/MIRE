@@ -153,6 +153,26 @@ func host_apply_damage(amount: int, instigator_peer_id: int) -> bool:
 	return true
 
 
+## Host-only state restore for a point remembered as already depleted from a PRIOR real harvest
+## (`world/gen/resource_scatter_field.gd`'s depletion memory, F-231) — reaches the exact same final
+## state `host_apply_damage()` reaching 0 health does (`health` zeroed, `active` off, the respawn
+## clock armed at `respawn_seconds`), but never emits `depleted`/`EVENT_BUS.emit_harvest_yielded()`.
+## Those signals mean "a harvest just happened right now" to every listener downstream
+## (`InventoryService` grants their real item/amount unconditionally) — correct for an actual hit,
+## wrong for replaying a memory of one that already paid out once. Callers that only need to
+## RE-ESTABLISH depleted state, not report a new harvest, must use this instead of
+## `host_apply_damage()`.
+func host_restore_depleted() -> bool:
+	if not _owns_world_mutation() or not _configuration_valid or not active:
+		return false
+	health = 0
+	active = false
+	visual_state = definition.active_state_scenes.size()
+	_respawn_remaining = definition.respawn_seconds
+	_flush_visual_refresh()
+	return true
+
+
 ## Host-only explicit reset for admin commands and deterministic checks. Normal gameplay uses the
 ## physics-tick respawn clock.
 func host_respawn() -> bool:

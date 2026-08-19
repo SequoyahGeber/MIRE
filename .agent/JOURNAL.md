@@ -5545,3 +5545,15 @@ craft/build/demolish console commands now resolve the actor via ctx.peer_id inst
 Files: `autoload/crafting_service.gd`, `autoload/build_service.gd`, `tools/command_craft_build_net_check.gd`, `docs/SPECS.md`
 
 Commit at time of writing: `19f81aa`
+
+---
+
+### DONE · F-231 · lm · 2026-08-19T15:24:28+00:00
+
+**`ResourceScatterField`'s depletion-restore replays a real harvest yield, so every rebuild of an already-harvested scattered point grants a free duplicate of its item to the host**
+
+Fixed: Harvestable gained host_restore_depleted() (health/active/respawn-clock restore, no depleted/EVENT_BUS.emit_harvest_yielded()); ResourceScatterField._wire_point_state() now calls it instead of replaying host_apply_damage() to restore remembered depletion. tools/resource_scatter_check.gd's lifecycle section gained inventory-count assertions across harvest/teardown/rebuild — 27/27 pass, rebuild now reads '2 -> 2' (flat) instead of doubling. harvestable_check.gd 29/29, harvestable_net_check.gd yields=1 failures=0. Recorded D-139 (narrows D-083), F-231 spec block in SPECS.md, DELEGATION.md Current state entry. Swept every host_apply_damage call site project-wide -- no sibling of this replay-with-side-effects shape found.
+
+Files: `world/gen/resource_scatter_field.gd`, `systems/harvesting/harvestable.gd`, `tools/resource_scatter_check.gd`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/SPECS.md`
+
+Commit at time of writing: `deccb23`

@@ -1,58 +1,6 @@
 {
-  "claims": {
-    "docs/DECISIONS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T15:10:05+00:00",
-      "task": "F-231",
-      "token": null
-    },
-    "docs/DELEGATION.md": {
-      "agent": "lm",
-      "at": "2026-08-19T15:10:05+00:00",
-      "task": "F-231",
-      "token": null
-    },
-    "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T15:10:05+00:00",
-      "task": "F-231",
-      "token": null
-    },
-    "systems/harvesting/harvestable.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T15:10:05+00:00",
-      "task": "F-231",
-      "token": null
-    },
-    "tools/resource_scatter_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T15:10:05+00:00",
-      "task": "F-231",
-      "token": null
-    },
-    "world/gen/resource_scatter_field.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T15:10:05+00:00",
-      "task": "F-231",
-      "token": null
-    }
-  },
-  "in_flight": {
-    "F-231": {
-      "agent": "lm",
-      "files": [
-        "world/gen/resource_scatter_field.gd",
-        "systems/harvesting/harvestable.gd",
-        "tools/resource_scatter_check.gd",
-        "docs/FINDINGS.md",
-        "docs/DECISIONS.md",
-        "docs/DELEGATION.md"
-      ],
-      "notes": [],
-      "started": "2026-08-19T15:10:05+00:00",
-      "token": null
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".": {
       "agent": "lp",
@@ -1777,23 +1725,23 @@
     },
     "docs/DECISIONS.md": {
       "agent": "lm",
-      "at": "2026-08-19T14:59:41+00:00",
-      "hash": "cc5ec46ee0cdd44932b9d506646f4e628e0581b20cbda8ed5d1f639edebbd593",
-      "task": "4.7-review",
+      "at": "2026-08-19T15:24:28+00:00",
+      "hash": "c1669ded13cbad59c8309175c9d21d62c137f2484a50437170f3ca2a9cd275d6",
+      "task": "F-231",
       "token": null
     },
     "docs/DELEGATION.md": {
       "agent": "lm",
-      "at": "2026-08-19T14:59:41+00:00",
-      "hash": "1eef1aa2dd6b6201a2b339857405a4891df88ec5c8d7d41de7259b5ce8a4f780",
-      "task": "4.7-review",
+      "at": "2026-08-19T15:24:28+00:00",
+      "hash": "d5c61a87f4e0fe57ccf03d89dab429cf0b1bb48c7b58ee7941d3934598b3bd9e",
+      "task": "F-231",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T15:03:38+00:00",
-      "hash": "68dc629540fbfcaf2b3327e4622405eb62d593e95f52ee3c444fb554977eeae6",
-      "task": "4.4-review",
+      "agent": "lm",
+      "at": "2026-08-19T15:24:28+00:00",
+      "hash": "5fada6d62e23dd95cf51a5a32d0872fb01bb04c343f9f36b5bc368bb1ed29a56",
+      "task": "F-231",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1816,10 +1764,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T15:23:39+00:00",
-      "hash": "2dffa682f15888f099cef57f7eb59d6590d05aa9e920c49bf560f08266291d36",
-      "task": "F-228",
+      "agent": "lm",
+      "at": "2026-08-19T15:24:28+00:00",
+      "hash": "92f815058258711e56a3ac96021d2e2d4cf865b3c2484d6321de8e36795e7a67",
+      "task": "F-231",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -2111,10 +2059,10 @@
       "task": "F-114"
     },
     "systems/harvesting/harvestable.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-19T06:46:23+00:00",
-      "hash": "7e6ee68bb1c986965382bcd6204698ca3434f479eabdadfd4e331c6278e27bd0",
-      "task": "F-144",
+      "agent": "lm",
+      "at": "2026-08-19T15:24:28+00:00",
+      "hash": "a1fc5d065b74ff17469e55a680c1646c9a9b26d4bb036d23b6f433bf67378e27",
+      "task": "F-231",
       "token": null
     },
     "systems/harvesting/harvestable_def.gd": {
@@ -3089,9 +3037,10 @@
     },
     "tools/resource_scatter_check.gd": {
       "agent": "lm",
-      "at": "2026-08-18T20:54:23+00:00",
-      "hash": "7d4e27ec72c632754af3977839f8fb4875d7d4cac0607846797a301937c76cfc",
-      "task": "4.4"
+      "at": "2026-08-19T15:24:28+00:00",
+      "hash": "69e95ed466042d78d716343b2e9f3451ffd43cef2c7c1b76553f472557c32243",
+      "task": "F-231",
+      "token": null
     },
     "tools/reward_service_check.gd": {
       "agent": "lm",
@@ -3593,9 +3542,10 @@
     },
     "world/gen/resource_scatter_field.gd": {
       "agent": "lm",
-      "at": "2026-08-19T00:21:07+00:00",
-      "hash": "c474222fe03a89037cfda4952a32ed11825b82614f8b12ab2aa59ccfb837aaf6",
-      "task": "F-132"
+      "at": "2026-08-19T15:24:28+00:00",
+      "hash": "f8fd1ceb7010cee15782bffbf4c109343a8d054fcb29ad155cdad3e2eca49015",
+      "task": "F-231",
+      "token": null
     },
     "world/gen/scatter_def.gd": {
       "agent": "lm",
@@ -7006,9 +6956,11 @@
       "title": "`FunctionRunner.effective_scope()` uses a dynamic-scope command's DECLARED max scope, not the actual scope of the line as written \u2014 a pure-LOCAL line silently forces its whole function to HOST"
     },
     "F-231": {
+      "done_at": "2026-08-19T15:24:28+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`ResourceScatterField`'s depletion-restore replays a real harvest yield, so every rebuild of an already-harvested scattered point grants a free duplicate of its item to the host"
     }

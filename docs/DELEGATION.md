@@ -75,6 +75,33 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-231 resolved: `ResourceScatterField`'s depletion-restore no longer replays a real harvest yield — new `Harvestable.host_restore_depleted()` reaches the same state without the side effect (lm)
+
+**What shipped, the seam the next "restore remembered state" caller builds on:**
+`systems/harvesting/harvestable.gd` gained `host_restore_depleted() -> bool`, host-only (same
+`_owns_world_mutation()`/`_configuration_valid`/`active` gate `host_apply_damage()` uses). It reaches
+the identical final state a lethal `host_apply_damage()` hit does — `health` zeroed, `active` off,
+`_respawn_remaining` armed at `respawn_seconds` — but never emits `depleted` or
+`EVENT_BUS.emit_harvest_yielded()`. `world/gen/resource_scatter_field.gd`'s `_wire_point_state()`
+calls this instead of replaying `host_apply_damage()` when a rebuilt point's depletion memory
+(`WorldDeltaLog`, falling back to the field's own peer-local `_depleted`) says it was already
+harvested — the old path paid the host a second, unearned copy of the item on every chunk
+unload/reload of an already-harvested point, since reaching 0 health through `host_apply_damage()`
+always runs the same `_deplete()` a real swing does.
+
+**The rule for the next system that needs to restore remembered state through an existing
+mutation seam:** never replay a method that both changes state AND fires a signal another system
+reacts to, purely to reach its state outcome. `Harvestable` now has two explicitly separate host
+methods for this — `host_apply_damage()` for a hit that is happening right now and should be seen,
+`host_restore_depleted()` for remembering one that already happened and already paid out. Recorded
+as D-139 (narrows D-083, which was right that a direct `active` poke is wrong but picked the wrong
+mechanism to fix it).
+
+**Verify:** `agent godot --script tools/resource_scatter_check.gd` (27/27, new inventory-count
+assertions across harvest → teardown → rebuild), `tools/harvestable_check.gd` (29/29),
+`tools/harvestable_net_check.gd` (`yields=1 failures=0`). Full writeup: `docs/FINDINGS.md` F-231
+(Resolved), `docs/DECISIONS.md` D-139, `docs/SPECS.md` F-231 block.
+
 ### 2026-08-19 — F-208 resolved: sway-bearing props can now join `AuthoredWorld`'s cross-asset chunk merge — a per-vertex baked height mask replaces the per-mesh AABB `_apply_sway` needs (lm)
 
 **What shipped, the seam the next merge-eligibility widening builds on:**
@@ -6078,6 +6105,30 @@ command.
 **What is NOT fixed:** `build_gatherable_plants.py` (A-011) has the same six-site gap, but its
 tracker row makes no byte-identical claim today so it isn't a live D-124 violation — filed as
 **F-206** for whoever adds that claim to A-011 later.
+
+---
+
+### 2026-08-19 — F-228 fixed: `craft`/`build`/`demolish` console commands now charge/credit the ISSUING peer, never the host's own, when a non-host op runs them
+
+**The bug it closes:** `_cmd_craft`/`_cmd_build`/`_cmd_demolish` all called
+`request_craft()`/`request_place()`/`request_destroy()` — the local-actor-assuming entry points the
+crafting UI / placement ghost / demolish tool use on their OWN process — from inside a HOST-scope
+command handler, which always executes ON THE HOST regardless of who typed the line. So
+`_local_peer_id()` inside the handler was always the host's own id, and a non-host op's
+`craft`/`build`/`demolish` silently mutated the HOST's own inventory/build ledger, with the
+confirmation never even reaching the real issuer. Full account in `docs/FINDINGS.md` (Resolved) and
+`docs/SPECS.md`'s new F-228 block.
+
+**The rule the next implicit-actor HOST-scope command must follow — D-140:** read the actor off
+`ctx.peer_id`, never a local-actor entry point. `give`/`loadout`/`inv`/`loot` already did this
+correctly and are the worked reference.
+
+**Verified:** new `tools/command_craft_build_net_check.gd`, a real two-process ENet check — an op'd
+non-host client runs `craft`/`build`/`demolish` over the actual console-command RPC path and every
+inventory/ownership/refund effect is asserted to land on the CLIENT, never the host. 27/27 assertions
+pass; reverting the fix locally reproduces 14/27 failures, confirming the check actually catches the
+regression. Every existing crafting/build/command check (offline and net) stays green, full boot 0
+stray `ERROR:`.
 
 ---
 
