@@ -4762,3 +4762,15 @@ MeshMerge._build() and .merge_instances() now build and assign a hand-made shado
 Files: `core/render/mesh_merge.gd`, `tools/mesh_merge_check.gd`
 
 Commit at time of writing: `47796b6`
+
+---
+
+### DONE · F-191 · lm · 2026-08-19T10:14:06+00:00
+
+**Staging and committing as two steps lets a concurrent agent's commit sweep up your staged work**
+
+cmd_check's unclaimed-file warning now names a different session's just-released, still-staged claim (F-191 sweep hazard) instead of the generic 'edited without a claim' line, and AGENTS.md's harness-source hand-commit instruction (F-081/D-057) now gives the pathspec form, matching the docs/ section F-199 already fixed. Verified: python3 tools/harness_check.py 31/31 (29 prior + 2 new F-191 cases); --rev HEAD fails exactly the new case (30/31), confirming it's a real regression guard. agent godot --script tools/findings_numbering_check.gd PASS (open=18 resolved=192 failures=0). agent godot --quit-after 30, no ERROR lines. Full writeup docs/SPECS.md F-191 block, docs/DELEGATION.md Current state entry.
+
+Files: `.agent/bin/agent`, `tools/harness_check.py`
+
+Commit at time of writing: `02cd839`

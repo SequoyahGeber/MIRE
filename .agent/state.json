@@ -1,5 +1,89 @@
 {
   "claims": {
+    "assets/flora/preview/flora_set_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:13:47+00:00",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/flora/preview/flowers_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:13:47+00:00",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/flora/preview/grasses_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:13:47+00:00",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/flora/preview/ground_cover_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:13:47+00:00",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/flora/preview/leafy_plants_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:13:47+00:00",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/flora/preview/shrubs_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:13:47+00:00",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/flora/preview/small_trees_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:13:47+00:00",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/gatherables/catalog.json": {
+      "agent": "lp",
+      "at": "2026-08-19T10:13:47+00:00",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/gatherables/exports/berry_bush_harvested.glb": {
+      "agent": "lp",
+      "at": "2026-08-19T10:13:47+00:00",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/gatherables/preview/berry_decision_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:13:47+00:00",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/gatherables/preview/gatherable_deposits_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:13:47+00:00",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/gatherables/preview/gatherable_plants_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:13:47+00:00",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/source/flora_set.blend": {
+      "agent": "lp",
+      "at": "2026-08-19T10:13:47+00:00",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/source/gatherable_plants.blend": {
+      "agent": "lp",
+      "at": "2026-08-19T10:13:47+00:00",
+      "task": "F-204",
+      "token": null
+    },
     "tools/blender/build_flora_set.py": {
       "agent": "lp",
       "at": "2026-08-19T10:03:48+00:00",
@@ -18,7 +102,21 @@
       "agent": "lp",
       "files": [
         "tools/blender/build_gatherable_plants.py",
-        "tools/blender/build_flora_set.py"
+        "tools/blender/build_flora_set.py",
+        "assets/flora/preview/flora_set_preview.png",
+        "assets/flora/preview/flowers_preview.png",
+        "assets/flora/preview/grasses_preview.png",
+        "assets/flora/preview/ground_cover_preview.png",
+        "assets/flora/preview/leafy_plants_preview.png",
+        "assets/flora/preview/shrubs_preview.png",
+        "assets/flora/preview/small_trees_preview.png",
+        "assets/gatherables/catalog.json",
+        "assets/gatherables/exports/berry_bush_harvested.glb",
+        "assets/gatherables/preview/berry_decision_preview.png",
+        "assets/gatherables/preview/gatherable_deposits_preview.png",
+        "assets/gatherables/preview/gatherable_plants_preview.png",
+        "assets/source/flora_set.blend",
+        "assets/source/gatherable_plants.blend"
       ],
       "notes": [],
       "started": "2026-08-19T10:03:48+00:00",
@@ -27,11 +125,11 @@
   },
   "recent": {
     ".agent/bin/agent": {
-      "agent": "bram1",
-      "at": "2026-08-19T07:32:38+00:00",
-      "hash": "7a9958241b8b2db8f554715d789c0a0f04f9e73a0ec7ab69f39be27fd02dc04a",
-      "task": "F-202",
-      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+      "agent": "lm",
+      "at": "2026-08-19T10:14:06+00:00",
+      "hash": "fa669dc4f31a263f0e7f5ad1bf3f2af0a4d63d78c56870830886553c241269db",
+      "task": "F-191",
+      "token": null
     },
     ".agent/bin/lane": {
       "agent": "bram1",
@@ -2818,10 +2916,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "tools/harness_check.py": {
-      "agent": "lp",
-      "at": "2026-08-19T09:07:50+00:00",
-      "hash": "88082fc699e5daacb6572fc8fb1462e701ee57b5d7ec4ac51cd8fc0bcd1001e1",
-      "task": "F-149",
+      "agent": "lm",
+      "at": "2026-08-19T10:14:06+00:00",
+      "hash": "a9408effce00cb5d9e2014136eaab8bbd1297dc262dcf8bda2730434b81bbc8d",
+      "task": "F-191",
       "token": null
     },
     "tools/harvest_batch_check.gd": {
@@ -6245,9 +6343,11 @@
       "title": "HEAD registers the RewardService autoload but does not contain its script, so a clean checkout fails to boot"
     },
     "F-191": {
+      "done_at": "2026-08-19T10:14:06+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Staging and committing as two steps lets a concurrent agent's commit sweep up your staged work"
     },

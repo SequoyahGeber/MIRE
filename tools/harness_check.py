@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from datetime import datetime, timedelta, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HARNESS = os.path.join(ROOT, ".agent", "bin", "agent")
@@ -790,6 +791,45 @@ def _(harness):
     assert committed_a.returncode != 0, (
         "lane A's docs edit ended up committed under lane B's message anyway")
     return "lane B committed only docs/SPECS.md; lane A's docs/FINDINGS.md stayed staged, uncommitted"
+
+
+@case("check names the sweep mechanism when a DIFFERENT session's just-released claim is still "
+      "staged (F-191)")
+def _(harness):
+    # The real F-191 incident: nettle12 claimed+released `.agent/bin/agent` for F-186 (its `recent`
+    # record), staged it, and before nettle12's own commit ran, a DIFFERENT session's bare commit
+    # swept it in. `in_grace()` never catches this because it only recognizes the CLOSING session's
+    # own bare commit (`_is_mine` checked against the CURRENT committer, alpha here, not beta who
+    # actually released it) — so the file falls through to the generic "edited without a claim"
+    # warning unless the hook specifically looks for a different agent's recent release.
+    recent_at = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+    recent = '{"world/thing.gd": {"task": "8.8", "agent": "beta", "at": "%s"}}' % recent_at
+    d = build_repo(harness, recent=recent)
+    run(["git", "add", "--", "world/thing.gd"], d, check=True)
+    r = run([".agent/bin/agent", "check"], d, agent="alpha")
+    assert r.returncode == 0, "an unclaimed file must warn, not block: %s" % brief(r.stdout + r.stderr)
+    out = r.stdout + r.stderr
+    assert "beta" in out and "F-191" in out and "git commit -m" in out, (
+        "warning didn't name the releasing agent, F-191, or the pathspec fix:\n%s" % brief(out))
+    return out.strip()
+
+
+@case("check falls back to the generic unclaimed warning once the release is outside the grace "
+      "window (F-191)")
+def _(harness):
+    # Same shape, but the release is 7h old — past RECENT_GRACE_HOURS (6). The sweep risk this
+    # specifically flags is a same-day race between two sessions, not any file anyone ever
+    # touched; past the window it must read exactly like ordinary "edited without a claim".
+    recent_at = (datetime.now(timezone.utc) - timedelta(hours=7)).isoformat()
+    recent = '{"world/thing.gd": {"task": "8.8", "agent": "beta", "at": "%s"}}' % recent_at
+    d = build_repo(harness, recent=recent)
+    run(["git", "add", "--", "world/thing.gd"], d, check=True)
+    r = run([".agent/bin/agent", "check"], d, agent="alpha")
+    assert r.returncode == 0, "an unclaimed file must warn, not block: %s" % brief(r.stdout + r.stderr)
+    out = r.stdout + r.stderr
+    assert "edited without a claim" in out, "expected the generic warning: %s" % brief(out)
+    assert "F-191" not in out, "the sweep-specific warning fired outside its grace window: %s" % brief(out)
+    return out.strip()
 
 
 def main():

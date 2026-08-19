@@ -1523,7 +1523,22 @@ def cmd_check(args):
                 errors.append("%s — claimed by %s for task %s" % (f, c["agent"], c["task"]))
         elif not c and not human and not in_grace(f):
             # in_grace: just closed this task out; committing is the expected next step.
-            warnings.append("%s — edited without a claim" % f)
+            # F-191: `in_grace()` only recognizes the CLOSING session's own bare commit — it checks
+            # `_is_mine` against `me`, the agent running THIS check. It says nothing about a
+            # DIFFERENT session's bare commit landing while that file is still staged from someone
+            # else's just-finished task, which is exactly the real incident: a claimed-and-released
+            # harness file sat staged and a concurrent session's unrelated `git commit` swept it in.
+            # Unclaimed stays free to commit (F-072) — this can only warn, not block — but a released
+            # claim recorded under a DIFFERENT agent, still within the grace window, is specifically
+            # the sweep shape, so name it instead of the generic "edited without a claim".
+            r = st.get("recent", {}).get(f)
+            if r and not _is_mine(r, me, me_token) and age_hours(r.get("at", "")) < RECENT_GRACE_HOURS:
+                warnings.append("%s — %s finished with this file %.1fh ago and it is still staged; "
+                                "a bare commit here sweeps it into your message (F-191). Commit only "
+                                "your own files: git commit -m \"...\" -- <your files>"
+                                % (f, r.get("agent", "another session"), age_hours(r.get("at", ""))))
+            else:
+                warnings.append("%s — edited without a claim" % f)
 
     for w in warnings:
         print("%s⚠ %s%s" % (C["y"], w, C["x"]))
