@@ -4275,6 +4275,60 @@ reproducible. `git status assets/audio/music/` confirmed clean throughout.
 
 ---
 
+## F-180 · `construction_check.gd`'s door-swing check now finds real strap-vs-frame overlaps at 0 degrees, previously hidden by F-148's crash
+
+**Claim:** `tools/blender/build_construction_set.py`, `assets/construction` (catalog, exports,
+previews, README), `assets/source/construction_set.blend`. No `.tscn`/`.tres`/`.import` — the three
+scenes task 3.7 (slate17) had in flight (`door.tscn`, `gate.tscn`, `palisade_gate.tscn`) reference
+these GLBs but never needed editing; the fix is entirely upstream, in the art.
+
+**What was wrong:** F-148 fixed a crash in `_check_doors()`'s per-triangle `AABB.grow(-0.004)` going
+negative on near-planar triangles. With the crash gone, the swing check actually ran to completion
+and found `door_wood_leaf`, `gate_double_leaf_left` and `gate_double_leaf_right` each had a hinge
+strap sitting exactly on the frame's collision face at 0 degrees (closed) rather than clear of it.
+
+Root cause, once traced through `tools/blender/build_construction_set.py`'s `create_asset()`: every
+`HINGE`-family leaf (door, both gate halves, the palisade gate) is normalized so its swing-side edge
+lands at exactly local x=0 and its back-most extent lands at exactly local y=0 (Blender axes) — "the
+leaf's outer back corner," per `assets/construction/README.md`'s origin-rules section, chosen so
+`position = hinge_offset_m; rotate_y()` is the whole placement API (D-039). Separately,
+`hinge_offset_m` for each leaf was authored to place that same local origin exactly at its frame's
+opening edge (`half_width` from centre) — a real doorway, not a gap. Both constants are individually
+correct; together they put a genuinely-touching, non-degenerate leaf edge on the exact float value of
+the frame jamb/post's inner collision face. `Leaf_Strap_0`/`Gate_{L,R}_Strap_0` are the parts whose
+geometry reaches x=0 (the near end of the hinge strap plate), so they were the first thing the sweep
+caught, but they were not the only ones: fixing just the straps unmasked further parts touching the
+same face by the same mechanism — `Leaf_Board_0` at 0° (its near edge is also at x=0), and
+`Leaf_Ledge_0/1`, `Leaf_Brace`, and both gates' `Rail_*`/`Brace_*` at 90° (their back edge is at the
+leaf's own y=0/z=0 reference, which a 90° rotation maps onto the same x=0 frame face). This is a
+systemic authoring pattern, not three isolated strap placements, so per-part nudges would have kept
+surfacing new failures one at a time (confirmed by trying it: fixing the straps alone revealed the
+board; a wider fix was needed).
+
+**The fix:** `HINGE_CLEARANCE = 0.008` (new constant), applied inside `create_asset()`'s `HINGE`
+branch so the whole leaf is shifted a real 8 mm off both reference planes instead of exactly onto
+them — `offset.x` becomes `-low.x + HINGE_CLEARANCE` (or `-high.x - HINGE_CLEARANCE` for a
+leaf that opens `-x`), and `offset.y` becomes `-high.y - HINGE_CLEARANCE`. `hinge_offset_m` itself is
+untouched (it is a separate, hand-authored frame-placement constant, not derived from this internal
+normalization), so nothing downstream that reads the catalog changes. `check()`'s own two flush-origin
+assertions (`hangs behind its hinge axis`, `hinge edge at x=...`) were updated in lockstep — they now
+assert `HINGE_CLEARANCE`, not zero, since the zero-tolerance version is exactly the assumption that
+turned out to be wrong. Left `check()`'s existing 90°-swing sweep and its 5 mm jamb tolerance alone;
+that check already tolerated a small real gap; it just never had one to check against before.
+
+**Verified 2026-08-18 (lm):** `/Applications/Blender.app/Contents/MacOS/Blender --background --python
+tools/blender/build_construction_set.py` → build contract passes (0 problems), only the four HINGE
+exports changed (`door_wood_leaf`, `gate_double_leaf_left`, `gate_double_leaf_right`,
+`palisade_gate_leaf`) plus the four preview PNGs and the `.blend` source; the other 14 GROUND/JOINT
+exports and `catalog.json` are byte-identical, confirming the fix is contained to the leaf
+normalization. `.agent/bin/agent godot --script tools/construction_check.gd` → `CONSTRUCTION_CHECK
+PASS`, run twice. Also wrote a throwaway probe (not committed) that replicates `_check_doors()`'s
+overlap test without its stop-at-first-failure behaviour, to confirm zero touches remain across the
+full 0–90° sweep for all four hinge leaves, not just the one failure `CONSTRUCTION_CHECK` happens to
+report first.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

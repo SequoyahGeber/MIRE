@@ -75,6 +75,30 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — F-180 fixed: A-010's HINGE-family leaves now clear their frame at every swing angle — `HINGE_CLEARANCE` (lm)
+
+`tools/blender/build_construction_set.py`'s `create_asset()` used to normalize every `HINGE`-family
+leaf (door, both gate halves, the palisade gate) exactly flush to its own hinge axis and back-face
+reference — local x=0 and y=0, no gap. Since each leaf's `hinge_offset_m` was separately authored to
+place that same origin exactly on its frame's opening edge, "flush" meant a real, non-degenerate part
+of the leaf sat on the identical float value as the frame's collision face, not merely close to it.
+`tools/construction_check.gd`'s swing sweep (real per-triangle AABBs, not a bounding-box estimate)
+catches this as a genuine overlap once F-148's masking crash is out of the way; it does not tolerate
+"touching."
+
+**New convention for any future HINGE-family export:** `HINGE_CLEARANCE = 0.008` (8 mm) in
+`build_construction_set.py` is now baked into `create_asset()`'s `HINGE` branch — every hinge leaf's
+geometry sits 8 mm off both its swing-side edge and its back-face reference instead of exactly on
+them. `hinge_offset_m` in the catalog is unaffected (it is a separate, hand-authored frame-placement
+constant, not derived from this internal normalization), so nothing that reads the catalog — task
+3.7's scene wiring included — needs to change. `check()`'s own flush-origin assertions now expect
+`HINGE_CLEARANCE`, not zero, for the same reason.
+
+Verified: rebuilt via Blender 5.2.0 LTS, build contract 0 problems, only the four HINGE exports plus
+previews plus the `.blend` source changed (the other 14 exports and `catalog.json` byte-identical).
+`agent godot --script tools/construction_check.gd` → `CONSTRUCTION_CHECK PASS`, run twice. Full
+writeup: `docs/SPECS.md` F-180 block, `docs/FINDINGS.md` `## Resolved`.
+
 ### 2026-08-19 — F-173 fixed: task 6.9's unlock tree gates its first real drop — `LootTableDef.roll()`'s POWERUP entries, wired through `Chest` (lm)
 
 D-111's option (b): the HOST's own `UnlockService` gates the whole party's roll, no RPC. No new

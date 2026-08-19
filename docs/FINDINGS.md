@@ -798,43 +798,6 @@ their own `## N (task X)` comment rather than collapsing into a single bump.
 
 ---
 
-### F-180 · construction_check.gd's door-swing check now finds real strap-vs-frame overlaps at 0 degrees, previously hidden by F-148's crash
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by lm during F-148
-
-F-148 fixed `_check_doors()`'s `AABB.grow(-0.004)` going negative on thin per-triangle bounds (see
-`## Resolved` below). With that crash gone, `agent godot --script tools/construction_check.gd` now
-runs `_check_doors()` to completion and reports real content:
-
-```
-FAIL  door_wood_leaf: Leaf_Strap_0 is inside the frame at 0 degrees
-FAIL  gate_double_leaf_left: Gate_L_Strap_0 is inside the frame at 0 degrees
-FAIL  gate_double_leaf_right: Gate_R_Strap_0 is inside the frame at 0 degrees
-CONSTRUCTION_CHECK FAIL failures=3
-```
-
-Reproduced twice, deterministic both times. Every failure is a `_Strap_0` part (leaf-side hinge
-strap hardware) reported inside the frame at 0 degrees (fully closed) — not a random assortment of
-parts, so this reads as a real geometry issue with how the strap hinges are authored on these three
-leaves, not check noise.
-
-Before F-148's fix, `_check_doors()` built a per-triangle `AABB` that went negative-size on any
-near-planar triangle, and `AABB.has_point()` errors out and returns `false` on an invalid box instead
-of throwing — so every comparison against a degenerate frame solid was silently skipped rather than
-evaluated. F-135's 2026-08-18 verification note (this file, `## Resolved`) recorded `CONSTRUCTION_
-CHECK PASS` on `_check_doors()` at the time, which is consistent with this: the crash was masking
-whatever overlap already existed then, not proof there was none.
-
-**Why not fixed here.** `door.tscn`, `gate.tscn`, and `palisade_gate.tscn` — the source scenes for
-these three leaves — are task 3.7's (slate17) uncommitted, actively-claimed work this whole session
-(`git status` shows all three modified, unclaimed by F-148). F-148's own claim was scoped to
-`tools/construction_check.gd` only. Whoever next holds those scenes should re-run `agent godot
---script tools/construction_check.gd` first — if task 3.7 finishes strap placement and the failures
-clear on their own, this closes for free; if not, the strap hinge geometry on these three leaves
-needs adjusting so the closed-leaf strap plate doesn't intersect the frame's collision volume.
-
----
-
 ### F-181 · `Wellspring._finish_recorruption()` has the same host-only-guard `EventBus` emit bug F-168 fixed for `wellspring_capped` — `wellspring_recorrupted` still only fires on the host
 
 **Area:** systems/wellspring · netcode · **Severity:** low · **Found:** 2026-08-18 by lm during F-168
@@ -941,6 +904,65 @@ finding) already uses correctly.
 ---
 
 ## Resolved
+
+### F-180 · construction_check.gd's door-swing check now finds real strap-vs-frame overlaps at 0 degrees, previously hidden by F-148's crash — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-18 by lm during F-148
+
+F-148 fixed `_check_doors()`'s `AABB.grow(-0.004)` going negative on thin per-triangle bounds (see
+`## Resolved` below). With that crash gone, `agent godot --script tools/construction_check.gd` now
+runs `_check_doors()` to completion and reports real content:
+
+```
+FAIL  door_wood_leaf: Leaf_Strap_0 is inside the frame at 0 degrees
+FAIL  gate_double_leaf_left: Gate_L_Strap_0 is inside the frame at 0 degrees
+FAIL  gate_double_leaf_right: Gate_R_Strap_0 is inside the frame at 0 degrees
+CONSTRUCTION_CHECK FAIL failures=3
+```
+
+Reproduced twice, deterministic both times. Every failure is a `_Strap_0` part (leaf-side hinge
+strap hardware) reported inside the frame at 0 degrees (fully closed) — not a random assortment of
+parts, so this reads as a real geometry issue with how the strap hinges are authored on these three
+leaves, not check noise.
+
+Before F-148's fix, `_check_doors()` built a per-triangle `AABB` that went negative-size on any
+near-planar triangle, and `AABB.has_point()` errors out and returns `false` on an invalid box instead
+of throwing — so every comparison against a degenerate frame solid was silently skipped rather than
+evaluated. F-135's 2026-08-18 verification note (this file, `## Resolved`) recorded `CONSTRUCTION_
+CHECK PASS` on `_check_doors()` at the time, which is consistent with this: the crash was masking
+whatever overlap already existed then, not proof there was none.
+
+**Why not fixed here.** `door.tscn`, `gate.tscn`, and `palisade_gate.tscn` — the source scenes for
+these three leaves — are task 3.7's (slate17) uncommitted, actively-claimed work this whole session
+(`git status` shows all three modified, unclaimed by F-148). F-148's own claim was scoped to
+`tools/construction_check.gd` only. Whoever next holds those scenes should re-run `agent godot
+--script tools/construction_check.gd` first — if task 3.7 finishes strap placement and the failures
+clear on their own, this closes for free; if not, the strap hinge geometry on these three leaves
+needs adjusting so the closed-leaf strap plate doesn't intersect the frame's collision volume.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed in tools/blender/build_construction_set.py: HINGE-family leaves (door_wood_leaf,
+gate_double_leaf_left/right, palisade_gate_leaf) were normalized so their swing-side edge and
+back-most extent land exactly on local x=0/y=0, and hinge_offset_m was separately authored to place
+that same origin exactly on the frame's opening edge -- so a genuinely-touching leaf part landed on
+the exact float value of the frame's collision face. Fixing just Leaf_Strap_0 (the part the original
+run caught) unmasked more of the same class: Leaf_Board_0 at 0 degrees, then Leaf_Ledge/Brace and
+both gates' Rail/Brace at 90 degrees, once the strap stopped being the first failure in the sweep.
+Real fix is systemic: new HINGE_CLEARANCE = 0.008 in create_asset()'s HINGE branch backs every leaf
+8mm off both reference planes instead of exactly onto them; hinge_offset_m itself is untouched (a
+separate, hand-authored frame-placement constant), so nothing downstream changes. check()'s two
+flush-origin assertions were updated to expect HINGE_CLEARANCE instead of zero, since the zero
+assumption is exactly what was wrong.
+
+Verified: rebuilt via Blender 5.2.0 LTS -- build contract passes 0 problems, only the four HINGE
+exports + previews + .blend changed, the other 14 exports and catalog.json are byte-identical.
+`.agent/bin/agent godot --script tools/construction_check.gd` -> CONSTRUCTION_CHECK PASS, run twice.
+Also verified with a throwaway (uncommitted, deleted after use) probe that replicated _check_doors()
+without its stop-at-first-failure early exit, confirming zero touches across the full 0-90 degree
+sweep for all four hinge leaves, not just the one failure the real check happens to surface first.
+
+Full writeup: docs/SPECS.md F-180 block (no spec existed before this task).
 
 ### F-176 · `tools/audio/render_music.py`'s ambient tracks are not byte-identical on re-render, contradicting `docs/AUDIO.md`'s "reproduces the committed files bit-for-bit" claim — **fixed**
 
