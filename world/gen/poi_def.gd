@@ -31,6 +31,13 @@ extends Resource
 ## but answers to nobody. Content stays in charge of what a POI means; the composer stays a dumb
 ## loop. Authored maps ignore this field entirely (their generators place markers directly).
 @export var marker_kind: StringName = &""
+## The marker NODE NAME, for the two services whose contract is the name and not just the kind:
+## ChestPlacementService reads the tier from a `Cache_*`/`Chest_<tier>_*` prefix, and
+## CraftingService resolves the station asset from an exact `Station_<asset>` name. Empty keeps the
+## composer's default (site id + "Marker"), which is fine for every kind-only consumer
+## (objective/shipwreck). Collisions are impossible — each marker is the sole child of its own site
+## root — so an exact name here is safe to repeat across sites (4.16, D-146).
+@export var marker_name: String = ""
 
 ## Placement order when several kinds compete for the same island — LOWER goes first and therefore
 ## wins the good ground. Same convention as `BiomeDef.priority`, and it exists because sorting by id
@@ -38,6 +45,15 @@ extends Resource
 ## claim the island before the objective got a look in: on one measured seed that produced an island
 ## with ZERO Wellsprings. Ties break on `id`, which keeps placement deterministic. See D-095.
 @export var placement_priority: int = 50
+
+## A REQUIRED kind must land on EVERY island, whatever the seed hands it. The Wellspring is the
+## run's objective and the shipwreck is its only exit — an island without either is not a harder
+## island, it is a broken run, and 4.13's smaller island (118 m, 60 m height scale) produces real
+## seeds where the authored constraints match no ground at all. When normal placement lands zero,
+## poi_map.gd relaxes THIS def's terrain-fit constraints in documented steps rather than shipping
+## an island with no game on it (D-151). Landmarks and caches leave this off: fewer of those on a
+## hostile seed is flavour, not breakage.
+@export var required: bool = false
 
 @export_group("How many")
 ## Target count for one island. The generator places up to this many and reports what it achieved —

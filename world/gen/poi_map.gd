@@ -98,7 +98,32 @@ static func _place_kind(
 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _kind_seed(world_seed, def_id)
+	var placed_before: int = sites.size()
+	_place_kind_pass(definition, world_seed, biome_defs, sites, rng, 0)
 
+	# D-151: a REQUIRED kind that placed nothing gets the ladder, not a shrug. Each rung relaxes
+	# one constraint family and reruns the same deterministic dart loop (the rng stream simply
+	# continues, so every peer still computes the identical outcome). Rung 1 drops the terrain-fit
+	# tests (slope, biome); rung 2 additionally opens height to "any land" and the radius band to
+	# the whole disc. Spacing/clearance are never relaxed — two objectives fused together is the
+	# one thing worse than a slightly-tilted one.
+	if sites.size() == placed_before and bool(definition.get(&"required")):
+		_place_kind_pass(definition, world_seed, biome_defs, sites, rng, 1)
+		if sites.size() == placed_before:
+			_place_kind_pass(definition, world_seed, biome_defs, sites, rng, 2)
+
+	return
+
+
+## One full dart-throwing pass at [param relax] level: 0 = the def's authored constraints exactly
+## as before D-151; 1 = terrain-fit dropped (slope, biome); 2 = additionally any land above the
+## waterline, anywhere on the disc. Spacing holds at every level.
+static func _place_kind_pass(
+	definition: Resource, world_seed: int, biome_defs: Array, sites: Array[Dictionary],
+	rng: RandomNumberGenerator, relax: int
+) -> void:
+	var def_id := StringName(String(definition.get(&"id")))
+	var target: int = int(definition.get(&"target_count"))
 	var radius: float = ISLAND_HEIGHTMAP.ISLAND_RADIUS
 	var placed: int = 0
 	var rounds: int = 0
@@ -118,12 +143,22 @@ static func _place_kind(
 			if _too_close(x, z, definition, sites):
 				continue
 			var height: float = ISLAND_HEIGHTMAP.height(x, z, world_seed)
-			var slope: float = _slope_at(x, z, world_seed, float(definition.get(&"flatness_probe_m")))
-			if not bool(definition.call("accepts", height, slope, distance_fraction)):
-				continue
-			var biome: StringName = BIOME_MAP.biome_at(x, z, world_seed, biome_defs)
-			if not bool(definition.call("accepts_biome", biome)):
-				continue
+			if relax >= 2:
+				if height < 0.5:
+					continue
+			else:
+				var slope: float = _slope_at(x, z, world_seed, float(definition.get(&"flatness_probe_m")))
+				if relax >= 1:
+					# Height and radius still authored; slope/biome waived.
+					if height < float(definition.get(&"height_min")) \
+							or height > float(definition.get(&"height_max")):
+						continue
+				elif not bool(definition.call("accepts", height, slope, distance_fraction)):
+					continue
+				if relax == 0:
+					var biome: StringName = BIOME_MAP.biome_at(x, z, world_seed, biome_defs)
+					if not bool(definition.call("accepts_biome", biome)):
+						continue
 
 			placed += 1
 			sites.append({
@@ -133,7 +168,7 @@ static func _place_kind(
 				"site_id": "%s@%d,%d" % [def_id, roundi(x), roundi(z)],
 				"position": Vector3(x, height, z),
 				"rotation_y": spin,
-				"biome": biome,
+				"biome": BIOME_MAP.biome_at(x, z, world_seed, biome_defs),
 				"scene_path": String(definition.get(&"scene_path")),
 				"spacing": float(definition.get(&"min_spacing_m")),
 				"clearance": float(definition.get(&"clearance_m")),

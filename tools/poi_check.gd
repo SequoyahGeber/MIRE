@@ -185,6 +185,28 @@ func _check_honest_counts() -> void:
 		% sites.size())
 	check(elapsed < 2000, "and it gives up quickly rather than spinning (%d ms)" % elapsed)
 
+	# D-151's ladder, both directions. Same impossible constraints twice; the only difference is
+	# the `required` flag — the optional def stays honestly empty, the required one lands anyway.
+	var must_land: Resource = PoiDefScript.new()
+	must_land.id = &"must_land"
+	must_land.display_name = "Must Land"
+	must_land.required = true
+	must_land.target_count = 1
+	must_land.min_spacing_m = 24.0
+	must_land.height_min = 900.0
+	must_land.height_max = 1000.0
+	must_land.max_slope_m = 0.01
+	var landed: Array = PoiMapScript.sites_for_island(4242, [must_land], biome_defs)
+	check(landed.size() == 1,
+		"a REQUIRED def with unsatisfiable constraints still lands via the relax ladder (%d)"
+			% landed.size())
+	if landed.size() == 1:
+		var position: Vector3 = landed[0]["position"]
+		check(position.y >= 0.5, "and it landed on LAND, not seabed (y=%.2f)" % position.y)
+		var twice: Array = PoiMapScript.sites_for_island(4242, [must_land], biome_defs)
+		check(_fingerprint(landed) == _fingerprint(twice),
+			"the ladder is deterministic — same seed, same fallback site")
+
 	var generous: Resource = PoiDefScript.new()
 	generous.id = &"generous"
 	generous.display_name = "Generous"
@@ -224,14 +246,27 @@ func _check_every_kind_appears() -> void:
 			"'%s' placed %d site(s) across %d seeds — a kind that never lands is a dead def"
 				% [id, int(totals[id]), SEEDS.size()])
 
-	# The Wellspring specifically: DESIGN.md's capture ritual needs somewhere to happen on EVERY
-	# island, not on most of them. A seed with none is a run with no objective.
-	for world_seed: int in SEEDS:
+	# The Wellspring and the shipwreck specifically: the run's objective and its only exit need
+	# somewhere to happen on EVERY island. The 5-seed list above is for expensive assertions; this
+	# one is cheap enough to sweep WIDE, because the zero-Wellspring seed that motivated D-151 was
+	# found by a random boot, not by a curated list.
+	var objective_gaps: PackedStringArray = []
+	for sweep_seed: int in range(1, 65):
 		var wellsprings: int = 0
-		for site: Dictionary in PoiMapScript.sites_for_island(world_seed, poi_defs, biome_defs):
-			if StringName(String(site["def_id"])) == &"wellspring":
-				wellsprings += 1
-		check(wellsprings > 0, "seed %d has at least one Wellspring (%d)" % [world_seed, wellsprings])
+		var ships: int = 0
+		for site: Dictionary in PoiMapScript.sites_for_island(sweep_seed * 7919, poi_defs, biome_defs):
+			match StringName(String(site["def_id"])):
+				&"wellspring":
+					wellsprings += 1
+				&"shipwreck":
+					ships += 1
+		if wellsprings < 1:
+			objective_gaps.append("seed %d: no wellspring" % (sweep_seed * 7919))
+		if ships != 1:
+			objective_gaps.append("seed %d: %d ships" % [sweep_seed * 7919, ships])
+	check(objective_gaps.is_empty(),
+		"64-seed sweep: every island has >=1 Wellspring and exactly 1 shipwreck"
+			+ ("" if objective_gaps.is_empty() else " — %s" % "; ".join(objective_gaps)))
 
 
 ## Position rounded to a millimetre: two runs that agree must agree bit-for-bit in practice, but

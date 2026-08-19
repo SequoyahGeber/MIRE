@@ -6287,3 +6287,45 @@ Fixed: resource_scatter.gd's placements_for_chunk() builds one IslandHeightmap.N
 Files: `world/gen/resource_scatter.gd`, `tools/resource_scatter_check.gd`
 
 Commit at time of writing: `a71a6d5`
+
+---
+
+### HANDOFF · F-243 · lm · 2026-08-19T22:11:38+00:00
+
+**The run loop is a line, not a circle — after defeat or extraction there is no path to a next run short of relaunching the process**
+
+LM stopped on F-243 at 2026-08-19T22:11:38+00:00 (exit 124, error). Tokens this run: 192,441 in / 798 out.
+The working diff is UNTOUCHED — its partial edits are still on disk, so read them before redoing anything. Full log: .agent/logs/LM-F-243-20260819-211137.jsonl
+
+Files it had already written or edited: tools/run_restart_check.gd, autoload/inventory_service.gd, systems/health/player_health.gd.
+Its last words: "All 25 assertions pass, 0 failures. Now let's check for engine ERROR lines and do a broader sweep, then finish the close-out docs."
+Its last actions:
+  - Read /Users/sequoyahgeber/Desktop/MIRE/tools/run_restart_check.gd
+  - Edit /Users/sequoyahgeber/Desktop/MIRE/tools/run_restart_check.gd
+  - Bash .agent/bin/agent godot --script tools/run_restart_check.gd 2>&1 | grep -E "PASS|
+  - Bash tail -c 6000 "/Users/sequoyahgeber/Library/Application Support/Godot/app_userdat
+  - Bash cd /Users/sequoyahgeber/Desktop/MIRE
+grep -rn "is_host" --include=*.gd autoload 
+  - Bash cd /Users/sequoyahgeber/Desktop/MIRE
+grep -rn 'is_host' --include='*.gd' autoloa
+
+Tail of the failure:
+35-4fa2-ac5e-a564152e6c58","session_id":"8b5793b3-8505-4cbf-be51-c6fe0d1e7a9f"}
+{"type":"system","subtype":"thinking_tokens","estimated_tokens":550,"estimated_tokens_delta":100,"uuid":"73f48add-cdbd-4f70-80a9-751cd5af259b","session_id":"8b5793b3-8505-4cbf-be51-c6fe0d1e7a9f"}
+timeout: exceeded 3600s
+
+Files: `core/events/event_bus.gd`, `systems/cycle/cycle_service.gd`, `world/mire/mire_grid.gd`, `systems/cycle/cycle_modifier_service.gd`, `autoload/powerup_service.gd`, `autoload/inventory_service.gd`, `systems/health/player_health.gd`, `autoload/enemy_world.gd`, `autoload/build_service.gd`, `autoload/defeat_service.gd`, `systems/extraction/extraction_ship.gd`, `systems/wellspring/wellspring.gd`, `systems/loot/chest.gd`, `ui/hud/defeat_hud.gd`, `ui/hud/extraction_hud.gd`, `tools/run_restart_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `537d5ad`
+
+---
+
+### DONE · 4.16 · hollow7 · 2026-08-19T22:12:05+00:00
+
+**Map-contract parity: both-map check matrix, F-112 fold-in, MireGrid binding**
+
+Both-map contract matrix shipped: world_contract_check now boots the shipped authored scene AND a code-built ProceduralWorld in one process and asserts the LOOP FIXTURES per map — wellspring >=1, exactly one extraction ship, tiered chests, a REGISTERED station (StationDef.world_scene match, not just a marker), nest spawn points, standable spawn, wired harvest proxies around it, MireGrid seeded-and-recedes. Three runs, three random seeds, three PASS. What building it exposed and fixed: (1) the marker contract is kind AND NAME — chests tier from Cache_/Chest_<tier>_ prefixes and stations resolve from exact Station_<asset>, so kind-only composer markers built ZERO chests and ZERO stations on procedural; PoiDef.marker_name (empty = composer default) + three authored defs (loot_cache, enemy_nest, station_camp) close it as content. (2) TWO extraction ships — 4.7's shipwreck def was scenery (count 3) before 4.15's marker_kind made every site an exit; now count 1, priority 5. (3) REAL seeds produce zero-Wellspring islands on the 118m terrain — PoiDef.required + a deterministic relax ladder in poi_map (drop terrain-fit, then any-land; spacing never relaxed); poi_check proves both directions plus a 64-seed sweep (every island >=1 wellspring, exactly 1 ship). F-112 fold-in: undergrowth REQUIRED on authored, asserted ABSENT on procedural. MireGrid binding needed no code — bounds derive from ISLAND_RADIUS; the matrix asserts the behaviour instead of trusting the derivation. poi_check, procedural_world_check, verify_setup green. DOCS DEBT: lm holds DECISIONS/DELEGATION for F-243 all session; D-entry drafted at scratchpad/d_4_16.md, paste on release.
+
+Files: `tools/world_contract_check.gd`, `world/gen/procedural_world.gd`, `world/gen/undergrowth.gd`, `tools/undergrowth_check.gd`, `world/gen/poi_def.gd`, `content/poi/loot_cache.tres`, `content/poi/enemy_nest.tres`, `content/poi/station_camp.tres`, `world/gen/poi_map.gd`, `tools/poi_check.gd`, `content/poi/wellspring.tres`, `content/poi/shipwreck.tres`
+
+Commit at time of writing: `537d5ad`

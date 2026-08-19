@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="PoiDef" format=3]
+
+[ext_resource type="Script" path="res://world/gen/poi_def.gd" id="1_loot_cache"]
+
+[resource]
+script = ExtResource("1_loot_cache")
+id = &"loot_cache"
+display_name = "Supply Cache"
+scene_path = ""
+marker_kind = &"loot"
+marker_name = "Cache_poi"
+placement_priority = 70
+target_count = 8
+clearance_m = 12.0
+min_spacing_m = 70.0
+biomes = Array[StringName]([])
+height_min = 2.0
+height_max = 60.0
+radius_min_fraction = 0.1
+radius_max_fraction = 0.9
+max_slope_m = 2.5
+flatness_probe_m = 2.0

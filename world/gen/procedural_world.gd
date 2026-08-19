@@ -160,7 +160,10 @@ func _build_poi_sites() -> void:
 		if kind.is_empty():
 			continue
 		var marker := Marker3D.new()
-		marker.name = "%sMarker" % site_root.name
+		# An authored marker_name is the contract for name-keyed services (PoiDef's own note);
+		# the default suits every kind-only consumer.
+		var authored_name: String = "" if def == null else String(def.get(&"marker_name"))
+		marker.name = authored_name if not authored_name.is_empty() else "%sMarker" % site_root.name
 		# Group and meta BEFORE add_child — the services discover markers on `node_added`, which
 		# fires during add_child, so a marker configured afterwards enters the tree invisible to
 		# them. F-012's lesson (NetInterest before add_child), same mechanism, new consumer.

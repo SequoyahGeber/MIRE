@@ -7,6 +7,7 @@ script = ExtResource("1_wellspring")
 id = &"wellspring"
 display_name = "Wellspring"
 scene_path = ""
+required = true
 placement_priority = 0
 target_count = 4
 clearance_m = 40.0
