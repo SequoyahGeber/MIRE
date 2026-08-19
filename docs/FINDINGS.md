@@ -775,43 +775,6 @@ checked against anything but relative deltas on the fastest machine in the proje
 
 ---
 
-### F-176 · `tools/audio/render_music.py`'s ambient tracks are not byte-identical on re-render, contradicting `docs/AUDIO.md`'s "reproduces the committed files bit-for-bit" claim
-
-**Area:** audio · **Severity:** low · **Found:** 2026-08-18 by lp during 5.5
-
-Task 5.5 added a third render (`BOSS_STINGER`) to `tools/audio/render_music.py` and ran the script's
-`main()` to generate it, which re-renders `DAY`/`NIGHT` too (same `for cfg in (DAY, NIGHT):` loop the
-committed tracks came from). Both fixed-seed tracks came out numerically identical in RMS/peak
-(`ambient_day: 224s loop, peak -6.4 dBFS, rms -19.0 dBFS` — the exact numbers already in
-`docs/AUDIO.md`), but the re-rendered `.ogg` files are NOT byte-identical to the committed ones:
-
-```
-git diff --stat: ambient_day.ogg 2896114 -> 2893916 bytes, ambient_night.ogg 2024105 -> 2024015 bytes
-```
-
-`docs/AUDIO.md` states "Renders are seeded: re-running reproduces the committed files bit-for-bit."
-That is false on this machine — the numpy DSP synthesis itself is almost certainly deterministic
-(fixed seeds throughout `mire_audio.py`, and the RMS/peak numbers matched exactly), so the divergence
-is most likely in `encode()`'s OGG Vorbis path (`tools/audio/render_music.py`'s own comment notes it
-routes through `soundfile`'s chunked writer specifically because the local ffmpeg build lacks
-libvorbis) — a libvorbis/libsndfile version difference between whatever machine originally rendered
-the committed files and this one would produce numerically-equivalent but not byte-identical Vorbis
-streams, since Vorbis encoding is not required to be bit-reproducible across encoder versions the way
-the underlying PCM synthesis is.
-
-**Not investigated further, not fixed here** — out of task 5.5's claim (`ambient_day.ogg`/
-`ambient_night.ogg` were never claimed; the working tree was restored with `git checkout --` before
-this session's commit, so the two files ship unchanged). **What closes this:** either confirm the
-PCM masters ARE bit-identical across machines (proving the gap is purely encoder-version drift in the
-lossy OGG step, which would make `docs/AUDIO.md`'s claim technically about the WAV masters rather
-than the shipped `.ogg`s and worth rewording rather than fixing) or pin/vendor a specific
-libvorbis/libsndfile version so the encode step itself becomes reproducible. Whoever next touches
-`render_music.py` should `git status` immediately after running its `main()` and `git checkout --`
-away any diff to `ambient_day.ogg`/`ambient_night.ogg` they did not mean to produce — this session
-nearly committed an unrelated ~4 KB regen of both tracks as a side effect of adding one new asset.
-
----
-
 ### F-178 · F-157's three new display-name RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lp during F-157
@@ -978,6 +941,66 @@ finding) already uses correctly.
 ---
 
 ## Resolved
+
+### F-176 · `tools/audio/render_music.py`'s ambient tracks are not byte-identical on re-render, contradicting `docs/AUDIO.md`'s "reproduces the committed files bit-for-bit" claim — **fixed**
+
+**Area:** audio · **Severity:** low · **Found:** 2026-08-18 by lp during 5.5
+
+Task 5.5 added a third render (`BOSS_STINGER`) to `tools/audio/render_music.py` and ran the script's
+`main()` to generate it, which re-renders `DAY`/`NIGHT` too (same `for cfg in (DAY, NIGHT):` loop the
+committed tracks came from). Both fixed-seed tracks came out numerically identical in RMS/peak
+(`ambient_day: 224s loop, peak -6.4 dBFS, rms -19.0 dBFS` — the exact numbers already in
+`docs/AUDIO.md`), but the re-rendered `.ogg` files are NOT byte-identical to the committed ones:
+
+```
+git diff --stat: ambient_day.ogg 2896114 -> 2893916 bytes, ambient_night.ogg 2024105 -> 2024015 bytes
+```
+
+`docs/AUDIO.md` states "Renders are seeded: re-running reproduces the committed files bit-for-bit."
+That is false on this machine — the numpy DSP synthesis itself is almost certainly deterministic
+(fixed seeds throughout `mire_audio.py`, and the RMS/peak numbers matched exactly), so the divergence
+is most likely in `encode()`'s OGG Vorbis path (`tools/audio/render_music.py`'s own comment notes it
+routes through `soundfile`'s chunked writer specifically because the local ffmpeg build lacks
+libvorbis) — a libvorbis/libsndfile version difference between whatever machine originally rendered
+the committed files and this one would produce numerically-equivalent but not byte-identical Vorbis
+streams, since Vorbis encoding is not required to be bit-reproducible across encoder versions the way
+the underlying PCM synthesis is.
+
+**Not investigated further, not fixed here** — out of task 5.5's claim (`ambient_day.ogg`/
+`ambient_night.ogg` were never claimed; the working tree was restored with `git checkout --` before
+this session's commit, so the two files ship unchanged). **What closes this:** either confirm the
+PCM masters ARE bit-identical across machines (proving the gap is purely encoder-version drift in the
+lossy OGG step, which would make `docs/AUDIO.md`'s claim technically about the WAV masters rather
+than the shipped `.ogg`s and worth rewording rather than fixing) or pin/vendor a specific
+libvorbis/libsndfile version so the encode step itself becomes reproducible. Whoever next touches
+`render_music.py` should `git status` immediately after running its `main()` and `git checkout --`
+away any diff to `ambient_day.ogg`/`ambient_night.ogg` they did not mean to produce — this session
+nearly committed an unrelated ~4 KB regen of both tracks as a side effect of adding one new asset.
+
+---
+
+**Resolved 2026-08-19 by lm.** Root cause was two things, not the one the finding guessed. (1) pad_note_spans() iterated a raw
+Python set() of note names -- set string order depends on the per-process PYTHONHASHSEED, and that
+order fed the sequence of draws from render_track()'s shared seeded rng, so the fixed seed never
+actually pinned the master WAV output (confirmed: ambient_day.wav/ambient_night.wav differed
+byte-for-byte across two re-renders on this machine before the fix, peak dBFS drifting ~0.5 dB).
+Fixed by iterating sorted(wanted) instead. (2) Separately, and not a bug: libsndfile's OGG writer
+stamps a random per-stream serial number into the container on every encode (OGG format property),
+so raw .ogg bytes are never byte-identical across re-renders even given byte-identical PCM input --
+confirmed the *decoded* PCM is bit-identical (soundfile round-trip, np.array_equal true).
+
+docs/AUDIO.md's "reproduces the committed files bit-for-bit" claim reworded to say precisely what's
+true: PCM synthesis / master .wav files are bit-for-bit reproducible; shipped .ogg files are not
+byte-identical across encodes (container serial number/CRC only) but decode to identical PCM.
+
+Verified: python3 tools/audio/repro_check.py (new) -> REPRO_CHECK failures=0, all 6 checks (3
+tracks x wav+ogg) PASS, exit 0, run twice. agent godot --quit-after 120 -> clean boot, no new
+ERROR: lines. Did not regenerate committed assets/audio/music/*.ogg (rendered under pre-fix code,
+still valid audio) -- git status confirms that directory untouched throughout.
+
+Filed F-184 along the way: tools/audio/audio_check.py's exit code is inverted (exits 0 on FAIL, 1
+on PASS) -- noticed while modeling repro_check.py on its style, not fixed since audio_check.py
+wasn't in this task's claim.
 
 ### F-146 · Nothing in the game places a chest, so the gilded tier's 1-2/island budget has no owner — **fixed**
 

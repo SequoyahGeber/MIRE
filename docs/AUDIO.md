@@ -26,6 +26,7 @@ paced world. SFX are **mono** because `AudioStreamPlayer3D` spatialises mono sou
 python3 tools/audio/render_sfx.py            # -> assets/audio/sfx/ + preview reel in build dir
 python3 tools/audio/render_music.py          # -> assets/audio/music/*.ogg + master wav/mp3 in build dir
 python3 tools/audio/audio_check.py --build-dir <build dir>   # objective pass: clipping/DC/RMS/loop seams
+python3 tools/audio/repro_check.py           # F-176: proves re-renders are actually reproducible
 .agent/bin/agent godot --script tools/audio_import_check.gd  # proves the assets load in-engine
 ```
 
@@ -34,8 +35,19 @@ python3 tools/audio/audio_check.py --build-dir <build dir>   # objective pass: c
 
 Deps: system `python3` + numpy, plus `python3 -m pip install --user soundfile` (OGG Vorbis — the
 brew ffmpeg lacks libvorbis, and one giant soundfile write segfaults, hence the chunked writes in
-`render_music.py`). ffmpeg is only needed for the MP3 listening copies. Renders are seeded:
-re-running reproduces the committed files bit-for-bit; change a seed, get a sibling variation.
+`render_music.py`). ffmpeg is only needed for the MP3 listening copies.
+
+**Reproducibility (F-176):** renders are seeded, and the PCM synthesis is bit-for-bit
+deterministic — re-running `render_music.py` produces byte-identical master `.wav` files, proven
+by `tools/audio/repro_check.py`. This held only after fixing `pad_note_spans()`, which iterated a
+raw Python `set` of note names; `set` string order depends on the per-process hash seed
+(`PYTHONHASHSEED`), and that order fed the sequence of draws from the shared seeded `rng`, so
+every re-render's pad jitter/gain/pan silently differed despite the fixed seed. It now iterates
+`sorted(wanted)`. The shipped `.ogg` files are a different claim: raw OGG bytes are **not**
+byte-identical across encodes even from byte-identical PCM input, because libsndfile's OGG writer
+stamps a random per-stream serial number into the container on every encode (an OGG-format
+property, not a MIRE bug) — `repro_check.py` accounts for this by decoding both re-renders back to
+PCM and comparing *that*, which does match exactly. Change a seed, get a sibling variation.
 
 **Loudness contract:** music masters to RMS −19 (day) / −21 (night) dBFS, peaks ≤ −1.5. SFX are
 peak-normalised per recipe (−2.5 to −8 dBFS) with headroom for the mixer. Keep new sounds inside
