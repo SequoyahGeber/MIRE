@@ -5214,3 +5214,18 @@ Notes along the way:
 - Reviewed 80d668f (Gamerules, hollow7) against COMMANDS.md §4 + ARCHITECTURE.md §2.2. Traced every claimed file: RuleDef bounds in content/rules/*.tres match each owner's @export_range exactly; export-fallback/adopt pattern (_bind_rules + rule_changed listener) correctly implemented in enemy_world.gd, dev_loadout.gd, wave_spawner.gd, player_health.gd; day_night.gd's is_overridden() precedence (D-085) verified live via check. Dynamic scope Callable (D-086) confirmed: _invocation_scope resolves per-call from raw args, host re-derives from its own re-parse (never trusts client), _declared_scope reports max for introspection. Protocol 16->17 documented in net_version.gd and handshake_check.gd. Autoload order RuleService right after Registry, before every adopting system — confirmed in project.godot. Rule 1 (bare autoload names) respected everywhere via get_node_or_null. F-016 preload respected (RULE_DEF const in both registry.gd and rule_service.gd).
 
 Commit at time of writing: `c1452dd`
+
+---
+
+### DONE · 3.15-review · lp · 2026-08-19T14:11:00+00:00
+
+**Review 3.15 @ c8bd1d6 — judge the commit, file findings, no edits**
+
+clean, no findings — c8bd1d6 (hollow7's 3.15) verified against COMMANDS.md §3 and ARCHITECTURE.md §2.2. Selector grammar (core/commands/entity_selector.gd) is pure/node-free; EntityDirectory discovers by node group per D-088 with tools/entity_check.gd asserting the 6 group-name/owner pairs stay in sync. Authority respected throughout: tp on a player never writes a transform, goes through PlayerHealth.host_place_player -> net_force_respawn (reused, no protocol bump); kill routes through each owner's existing host_apply_damage, never a second mutation path; a HOST command re-resolves the raw client line against the host's own directory (net_submit_command ships the raw string, not client-parsed args/nodes). Rule 1 respected (get_node_or_null for CommandService/PlayerHealth everywhere). Ran tools/entity_check.gd (63 assertions, 0 failures), tools/entity_net_check.gd (real two-process ENet — non-op client's kill refused, opped client's kill resolves against the HOST's directory not its own partial view, tp @s moves the CLIENT's own body in the CLIENT's process, 0 failures), tools/handshake_check.gd (0 failures, confirms no protocol regression). No undeclared ERROR lines in any run. Note: c8bd1d6 also carries lm's unrelated 4.6 work (GameState/WorldDeltaLog autoload registration, D-089) bundled in the same commit — not a 3.15 defect, out of this review's scope.
+
+Notes along the way:
+- c8bd1d6 bundles hollow7's 3.15 work with lm's unrelated 4.6 work in the same commit (project.godot also registers GameState/WorldDeltaLog, docs/DECISIONS.md also gets D-089) — noted, not a 3.15 defect, scoped review to the entity-directory/selector files only.
+
+Files: `docs/FINDINGS.md`
+
+Commit at time of writing: `6a8f9b4`

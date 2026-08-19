@@ -1,6 +1,57 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "autoload/command_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T14:10:01+00:00",
+      "task": "F-223",
+      "token": null
+    },
+    "autoload/debug_console.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T14:10:01+00:00",
+      "task": "F-223",
+      "token": null
+    },
+    "docs/DELEGATION.md": {
+      "agent": "lm",
+      "at": "2026-08-19T14:10:01+00:00",
+      "task": "F-223",
+      "token": null
+    },
+    "docs/SPECS.md": {
+      "agent": "lm",
+      "at": "2026-08-19T14:10:01+00:00",
+      "task": "F-223",
+      "token": null
+    },
+    "tools/command_console_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T14:10:01+00:00",
+      "task": "F-223",
+      "token": null
+    }
+  },
+  "in_flight": {
+    "F-223": {
+      "agent": "lm",
+      "files": [
+        "autoload/debug_console.gd",
+        "autoload/command_service.gd",
+        "tools/command_console_check.gd",
+        "docs/SPECS.md",
+        "docs/DELEGATION.md"
+      ],
+      "notes": [
+        {
+          "at": "2026-08-19T14:10:05+00:00",
+          "by": "lm",
+          "text": "docs/FINDINGS.md held by lp (3.15-review) at claim time \u2014 claimed everything else and proceeding with the fix; will retry FINDINGS.md at close-out rather than dropping the whole task over a transient review lock."
+        }
+      ],
+      "started": "2026-08-19T14:10:01+00:00",
+      "token": null
+    }
+  },
   "recent": {
     ".": {
       "agent": "lp",
@@ -690,11 +741,6 @@
       "hash": "0439175bb96d3382129e525d3aa56104d156df2b017f37379af27df258621324",
       "task": "F-130",
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
-    },
-    "autoload/debug_overlay.gd": {
-      "agent": "kiln9",
-      "at": "2026-08-18T14:10:44+00:00",
-      "task": "F-099"
     },
     "autoload/defeat_service.gd": {
       "agent": "lm",
@@ -1882,10 +1928,10 @@
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T14:04:11+00:00",
+      "agent": "lp",
+      "at": "2026-08-19T14:11:00+00:00",
       "hash": "e19f3b401914319a88ae19aba3bee5b87a7682146195eb1163a786f5170ef40f",
-      "task": "4.3-review",
+      "task": "3.15-review",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1937,11 +1983,6 @@
       "hash": "8a9fdb9f130ec55de9104aec50911e2e161bc15f1d54db449a74917b13b3c56c",
       "task": "7.6",
       "token": null
-    },
-    "entities/player/viewmodel.gd": {
-      "agent": "kiln9",
-      "at": "2026-08-18T14:10:44+00:00",
-      "task": "F-099"
     },
     "export_presets.cfg": {
       "agent": "lm",
@@ -2900,11 +2941,6 @@
       "hash": "e6de694e92dd167d267b1822720fe326be9eee2e39f49e6321584e63fc22347c",
       "task": "3.15"
     },
-    "tools/environment_vfx_check.gd": {
-      "agent": "larch10",
-      "at": "2026-08-18T14:09:47+00:00",
-      "task": "F-097"
-    },
     "tools/environment_vfx_hollowmere_check.gd": {
       "agent": "lm",
       "at": "2026-08-19T13:59:55+00:00",
@@ -3388,11 +3424,6 @@
       "hash": "1a863bf7c6f51b927e558039174ab22a295dd00ecdbc791fb9347f840c108b22",
       "task": "F-182",
       "token": null
-    },
-    "tools/vfx_site_probe.gd": {
-      "agent": "larch10",
-      "at": "2026-08-18T14:09:47+00:00",
-      "task": "F-097"
     },
     "tools/vitals_hud_check.gd": {
       "agent": "yarrow21",
@@ -4275,10 +4306,12 @@
       "title": "EntityDirectory + selectors (`@a @p @e[...]`) + entity verbs `tp`/`kill`/`tag`/`entities`, authority-respecting player moves (`COMMANDS.md` \u00a73)"
     },
     "3.15-review": {
+      "done_at": "2026-08-19T14:11:00+00:00",
+      "done_by": "lp",
       "est": "0.5",
       "milestone": "M3",
       "review_of": "3.15",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 3.15 @ c8bd1d6 \u2014 judge the commit, file findings, no edits"
     },
@@ -6863,7 +6896,7 @@
     "F-223": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "CommandService's synchronously-resolved commands never print in the console \u2014 result signal fires before the pending-handle guard is armed"
     },
