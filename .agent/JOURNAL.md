@@ -3999,3 +3999,15 @@ Notes along the way:
 Files: `systems/enemies/enemy.gd`, `tools/enemy_lod_check.gd`, `docs/SPECS.md`
 
 Commit at time of writing: `1d6fd7f`
+
+---
+
+### DONE · F-155 · lm · 2026-08-19T04:12:50+00:00
+
+**`PlayerHealth._is_dodging()` throws "Nonexistent 'bool' constructor" against any body with**
+
+Fixed _is_dodging()'s bool(NIL) crash by comparing == true instead of constructing bool(). Verified: enemy_check.gd and enemy_ai_check.gd no longer emit SCRIPT ERROR at player_health.gd:349 (both failures=0), player_health_check.gd 0 failures, player_health_net_check.gd failures=0. Wrote missing SPECS.md block and moved finding to Resolved.
+
+Files: `systems/health/player_health.gd`
+
+Commit at time of writing: `40e847e`

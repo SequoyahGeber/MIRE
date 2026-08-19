@@ -346,7 +346,10 @@ func _on_run_wiped(_cycle: int, _world_position: Vector3) -> void:
 ## it covers speed-hacking their own position.
 func _is_dodging(peer_id: int) -> bool:
 	var body: Node3D = _player_body(peer_id)
-	return body != null and bool(body.get(&"dodging"))
+	# `==` against a bool literal degrades a NIL `.get()` (a body with no `dodging` property, e.g. a
+	# bare test-harness Node3D) to "not equal" instead of attempting `bool(NIL)`, which throws
+	# "Nonexistent 'bool' constructor" (F-155).
+	return body != null and body.get(&"dodging") == true
 
 
 # ── Consume item — food, task 3.8 ─────────────────────────────────────────────────────────────────

@@ -2075,9 +2075,9 @@
     },
     "systems/health/player_health.gd": {
       "agent": "lm",
-      "at": "2026-08-19T03:06:45+00:00",
-      "hash": "1f2987516d6636a22d3a1dbf54de9ec37dd603a0df28e633e1c5fba7930adf3a",
-      "task": "6.7"
+      "at": "2026-08-19T04:12:50+00:00",
+      "hash": "f9ac38771e2e5b7b9d559796fbde6818530989f0274eeed62fe18baf2013bff7",
+      "task": "F-155"
     },
     "systems/inventory/item_def.gd": {
       "agent": "flint5",
@@ -5515,9 +5515,11 @@
       "title": "Two events in COMMANDS.md \u00a75.2's own illustrative hook vocabulary \u2014 `run_started`,"
     },
     "F-155": {
+      "done_at": "2026-08-19T04:12:50+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`PlayerHealth._is_dodging()` throws \"Nonexistent 'bool' constructor\" against any body with"
     },
