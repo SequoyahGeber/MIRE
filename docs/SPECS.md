@@ -4910,6 +4910,101 @@ modelled, because that win lives in the sway/emitter cases F-203 now owns.
 
 ---
 
+## F-203 · AuthoredWorld's F-187 chunk merge excludes sway- and emitter-bearing props — a second attempt needs per-vertex height encoding or per-asset placement metadata inside a merged mesh
+
+**Claim:** `world/gen/authored_world.gd`, `autoload/environment_vfx.gd`,
+`tools/prop_chunk_merge_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `docs/FINDINGS.md`,
+`docs/SPECS.md`, `docs/DELEGATION.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Scope decided here: emitters, not sway.** F-203's own title names two mechanisms, one per case.
+The emitter case (per-asset/per-class placement metadata) is the one this task builds; the sway
+case (per-vertex height encoding) needs a shader change this task does not attempt, and is spun out
+to **F-208** with the exact remaining work rather than left silently unfinished inside a "closed"
+finding.
+
+**Fix — a second merge bucket, keyed by class instead of by nothing:**
+
+1. `AuthoredWorld._build_props()` classifies each non-harvestable, non-sway, sub-`SHADOW_MIN_HEIGHT`
+   prop a third way: `AssetVfx.emitter_for(asset) == NONE` still goes to the existing
+   asset-agnostic `mergeable` bucket (keyed `"<chunk_x>_<chunk_z>"`); an emitter class other than
+   `GLOW` goes to a new `emitter_mergeable` bucket keyed `"<chunk_x>_<chunk_z>|e<emitter_int>"`
+   instead — every instance feeding one merged mesh this way already agrees on which class to
+   register as, so the merge itself resolves the ambiguity F-187 couldn't. `GLOW` stays in the
+   plain bucket: `AssetVfxLibrary.Emitter.GLOW` is documented "emissive material only — no light,
+   no particles, no per-instance node", and nothing in `EnvironmentVfx` reads a class or a position
+   for it, so it needs none of the new bookkeeping.
+2. `emitter_mergeable`'s keys fold into `mergeable` before the build loop runs, so one loop handles
+   both buckets — the key's `"|e<N>"` suffix (absent for a plain chunk key) is parsed back into an
+   `AssetVfx.Emitter` at the top of each iteration. Every other line (grouping into `entries`,
+   computing the centroid, calling `MeshMerge.merge_instances()`, sizing `DrawPolicy.apply()` from
+   the max individual object height) is unchanged and shared.
+3. When the parsed key carries an emitter class, the built holder gets two new things a plain
+   merged holder does not: `EnvironmentVfx.PLACEMENTS_META` (`&"placements"`, unchanged contract —
+   local, centroid-relative positions, exactly like a per-asset `MultiMesh` holder already
+   publishes) and a new `EnvironmentVfx.EMITTER_META` (`&"vfx_emitter"`, an `AssetVfxLibrary.Emitter`
+   int) declaring the class directly, since no single asset id survives the bake to resolve one
+   from.
+4. `EnvironmentVfx._apply_node()` checks a new `_merged_emitter_for()` ancestor walk (parallel to
+   the existing `_asset_id_for()`) BEFORE the asset-id path, so a merged holder is routed straight
+   to `_register_emitter()` with its declared class and never falls through to the (fruitless)
+   asset-id lookup. `_register_emitter()` itself needed no change: it is called with an empty
+   `asset_id` (only used for the hand-authored-placeholder `replaces_host_mesh()` check, which is
+   never true for real authored-world geometry), and takes the same "read `PLACEMENTS_META` off an
+   ancestor, multiply by `global_transform`" path a per-asset holder already exercises.
+
+**Correctness-preserving, not a behaviour change.** Every emitter-bearing prop that reaches this
+new bucket was ALREADY getting an emitter site registered before this fix — F-187 routed it through
+the per-asset `MultiMesh` path, which already carried `ASSET_META` + `PLACEMENTS_META` and already
+worked. What changes is which node structure builds the geometry (fewer draw calls, same final
+`EnvironmentVfx` site count and behaviour), not whether the fire/crystal/spore effect exists.
+
+**On Hollowmere specifically, the emitter-class win is small: two props** (`ward_activation_crystal`
+and one `mire_crystal_f` instance, both CRYSTAL and both barely under 1.2 m). Every other
+emitter-bearing asset on this map sits just over `DrawPolicy.SHADOW_MIN_HEIGHT` and still routes
+through the original per-asset path. The bulk of the actual draw-call win on THIS map comes from
+folding `GLOW` (`mushroom_cluster_*`, 52 instances) into the plain bucket — a mechanism this fix
+also newly enables, since `GLOW` was excluded from the old rule purely because `emitter_for() !=
+NONE`, with no distinction for what a class actually needs at runtime. The mechanism itself is
+untied to Hollowmere's specific asset heights: a future map, or a shorter crystal/campfire mesh,
+gets the full per-class merge for free.
+
+**`tools/prop_chunk_merge_check.gd` updated in step:** its independent eligibility recompute now
+buckets by `(chunk)` or `(chunk, emitter class)` the same way `_build_props` does (GLOW excepted),
+so a drift between the two classifications still fails loudly rather than silently.
+
+**`tools/environment_vfx_hollowmere_check.gd`'s `_check_placement_space` widened:** the existing
+per-asset match (a merged holder's `placements`, read back through `global_transform`, must land on
+a real prop position from the layout) cannot apply to an `EMITTER_META`-only holder — no single
+asset id survives the merge to look up in the per-asset expected-sites table. A parallel
+`expected_by_emitter` grouping and a second branch validate an emitter-class holder against every
+layout site sharing its declared class instead — looser than the per-asset match (it cannot catch
+two same-class props swapping identities within one merge), but it is the check that would catch
+F-144's actual bug class (a stale or wrongly-rebased centroid), and without it this widened merge
+would silently stop being covered by the one check built to catch exactly that.
+
+**Verify:** `agent godot --script tools/prop_chunk_merge_check.gd`,
+`tools/environment_vfx_hollowmere_check.gd`, `tools/hollowmere_check.gd`,
+`tools/harvest_batch_check.gd`, `tools/harvest_world_check.gd`, `tools/resource_scatter_check.gd`,
+`tools/mesh_merge_check.gd`; measure with `agent godot --windowed --script
+tools/frame_cost_check.gd` against `agent baseline --windowed --script tools/frame_cost_check.gd`.
+
+**Verified 2026-08-19 (lp):** every check above `PASS`/`failures=0`. `AUTHORED_WORLD` at HEAD:
+`multimeshes=761 merged_meshes=25` → `multimeshes=734 merged_meshes=28`.
+`prop_chunk_merge_check.gd`: `eligible_props=263 eligible_chunks=28`, matching the 28 `merged_*`
+holders built — zero drift. `environment_vfx_hollowmere_check.gd`: `CRYSTAL sites=101` unchanged
+from pre-fix (confirms the refactor is behaviour-preserving), new
+`MERGED_EMITTER_PLACEMENTS checked=2 stray=0`. `frame_cost_check.gd` "as shipped" vs `agent
+baseline` (HEAD, pre-fix): draw calls 4,942 → 4,931, primitives 1,155,236 → 1,159,310 (+0.35%,
+nowhere near the +16% shadow-cascade regression F-187/F-203's own history warns about — every
+merged holder, plain or emitter-class, still passes through the same sub-`SHADOW_MIN_HEIGHT`
+eligibility gate and still reads `cast_shadow == SHADOW_CASTING_SETTING_OFF`), vram 251.4 MB →
+253.2 MB. Sway spun out to F-208 with the mechanism it still needs.
+
+---
+
 ## F-154 · Two events in COMMANDS.md §5.2's own illustrative hook vocabulary — `run_started`, `player_downed` — had no shipped signal to bind to
 
 **Claim:** `systems/health/player_health.gd`, `systems/cycle/cycle_service.gd`,

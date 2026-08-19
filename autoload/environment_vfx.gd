@@ -43,6 +43,14 @@ const ASSET_META: StringName = &"asset"
 ## generator publishes this for any asset whose presentation is per-copy; without it an instanced
 ## batch has no per-copy position that can be read anywhere but the GPU.
 const PLACEMENTS_META: StringName = &"placements"
+## F-203: declares a merged multi-asset holder's emitter class directly, bypassing the asset-id
+## lookup entirely. `world/gen/authored_world.gd` stamps this on a `MeshInstance3D` that bakes
+## several DIFFERENT emitter-bearing assets sharing ONE class into one static mesh per chunk —
+## `AssetVfxLibrary.emitter_for` can't resolve a class from asset identity once that identity no
+## longer survives the merge, so the generator declares the class it already grouped by instead.
+## Holds an `AssetVfxLibrary.Emitter` int. `PLACEMENTS_META` still carries the per-instance
+## positions exactly as it does for a per-asset holder; only the class lookup changes.
+const EMITTER_META: StringName = &"vfx_emitter"
 const VFX_META: StringName = &"mire_environment_vfx_applied"
 ## Preloaded rather than referenced by its `class_name`. A brand-new `class_name` only enters
 ## `.godot/global_script_class_cache.cfg` when the editor scans the project, and `agent godot` is
@@ -173,6 +181,18 @@ func _apply_node(node: GeometryInstance3D) -> void:
 		return
 	if node is GPUParticles3D:
 		return
+
+	# F-203: a merged multi-asset holder declares its class directly (EMITTER_META) because no
+	# single asset id survives the bake to look one up from. Checked before the asset-id walk so
+	# a merged node never falls through to it and resolves nothing. Sway never applies to one of
+	# these — the generator's merge-eligibility rule already excludes anything sway-bearing from
+	# this bucket, the same way it excludes anything tall enough to cast a shadow.
+	var merged_emitter := _merged_emitter_for(node)
+	if merged_emitter != AssetVfx.Emitter.NONE:
+		node.set_meta(VFX_META, true)
+		_register_emitter(node, merged_emitter, "")
+		return
+
 	var asset_id := _asset_id_for(node)
 	if asset_id.is_empty():
 		return
@@ -207,6 +227,19 @@ func _asset_id_for(node: Node) -> String:
 			return name
 		cursor = cursor.get_parent()
 	return ""
+
+
+## F-203: same ancestor walk as `_asset_id_for`, for a holder that declares `EMITTER_META`
+## instead of `ASSET_META` — the merged-mesh case where no single asset id applies.
+func _merged_emitter_for(node: Node) -> AssetVfx.Emitter:
+	var cursor: Node = node
+	for _depth: int in 4:
+		if cursor == null:
+			break
+		if cursor.has_meta(EMITTER_META):
+			return int(cursor.get_meta(EMITTER_META)) as AssetVfx.Emitter
+		cursor = cursor.get_parent()
+	return AssetVfx.Emitter.NONE
 
 
 # ---------------------------------------------------------------------------------------------

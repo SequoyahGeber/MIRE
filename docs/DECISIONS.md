@@ -3645,3 +3645,37 @@ doesn't relitigate either:
    never be able to block an unrelated commit. Any future gate added to `cmd_check` should ask which
    category it's in before choosing a failure direction, not copy whichever one is nearest in the
    source.
+
+### D-130 · 2026-08-19 · A cross-asset merge bucket that needs to preserve per-instance runtime behavior declares that behavior's CLASS directly on the holder, never reconstructs it from asset identity — and an emitter class that needs no runtime bookkeeping at all does not get a dedicated bucket
+
+F-203 widened `AuthoredWorld`'s F-187 chunk merge to include emitter-bearing props. Two calls worth
+pinning down so a future widening of this merge (the sway case F-208 spun out, or a third prop class
+down the line) does not relitigate either:
+
+1. **When several different source assets must merge into one holder but something downstream still
+   needs to know a per-instance CLASS (not identity), group the merge itself by that class and
+   declare it directly on the holder — never try to recover it from asset identity after the fact.**
+   `EnvironmentVfx._register_emitter` infers ONE `AssetVfxLibrary.Emitter` from ONE asset id; a merge
+   spanning several different emitter-bearing assets destroys the asset id the moment it bakes their
+   geometry together, so there is nothing left to infer from. Bucketing by `(chunk, emitter class)`
+   instead of `(chunk)` alone sidesteps the whole problem: every instance feeding one merged mesh
+   already agrees on the class, so the holder can just say so (`EnvironmentVfx.EMITTER_META`). This
+   generalizes past emitters — any future per-instance behavior a merge needs to preserve should ask
+   "can every instance in one bucket already agree on this?" before reaching for a more expensive
+   per-vertex or per-sub-range encoding.
+2. **Before giving a class the new bucket's metadata machinery, check whether it needs ANY of it.**
+   `AssetVfxLibrary.Emitter.GLOW` is documented "emissive material only — no light, no particles, no
+   per-instance node," and checked directly, nothing in `EnvironmentVfx` reads a class or a position
+   for it. It was excluded from F-187's merge purely because `emitter_for() != NONE`, with no
+   distinction for what the class actually costs at runtime — folding it into the existing
+   metadata-free bucket instead of the new emitter-class one cost nothing and needed no new code path.
+   A future emitter class (or any other per-instance-tagged prop type) should get this same check
+   before being assumed to need the expensive treatment its siblings do.
+
+**Would change my mind:** a class whose "no per-instance node" claim turns out to be aspirational
+rather than implemented (checked here for GLOW: `mushroom_cluster`'s Blender material has no
+`emission_hex` set, so the effect is currently a no-op end to end — merging it changes nothing
+observable either way, today). If GLOW's emissive material is ever actually implemented as a
+runtime-applied, per-instance-varying effect rather than a baked asset material, this decision's
+premise for it no longer holds and it would need the same class-bucketing treatment CRYSTAL/CAMPFIRE
+already get.

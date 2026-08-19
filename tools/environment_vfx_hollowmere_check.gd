@@ -138,35 +138,70 @@ func _run() -> void:
 ## each batch at its group's centroid so `visibility_range` has a distance worth measuring —
 ## world-space entries would have thrown every firefly, ember and falling leaf a full centroid
 ## away from its prop, silently, with all sixteen count assertions still green.
+##
+## F-203: a merged multi-asset holder carries `EnvironmentVfx.EMITTER_META` (`&"vfx_emitter"`)
+## instead of `&"asset"` — no single asset id survives the bake — so it cannot be matched against
+## `expected`'s per-asset site lists the way a per-asset holder is. It is matched against
+## `expected_by_emitter` instead: every layout site of ANY asset sharing that merged holder's
+## emitter class is a valid landing spot. Looser than the per-asset match (it cannot catch two
+## same-class props swapping identities within one merge), but it is the check that would have
+## caught F-144's actual bug class — a stale or wrongly-rebased centroid — and without it this
+## check would silently stop covering every prop `_build_props` routes into this bucket.
 func _check_placement_space(scene: Node) -> void:
 	var layout: Dictionary = JSON.parse_string(
 		FileAccess.get_file_as_string(LAYOUT_PATH)) as Dictionary
 	if layout == null or layout.is_empty():
 		check(false, "the layout file reads, so emitter positions can be checked against it")
 		return
-	# Where the layout says each emitter-bearing asset actually stands.
+	# Where the layout says each emitter-bearing asset actually stands, and the same sites
+	# regrouped by class alone for the merged-holder case below.
 	var expected: Dictionary = {}
+	var expected_by_emitter: Dictionary = {}
 	for value: Variant in layout.get("props", []):
 		var prop := value as Dictionary
 		var asset := String(prop.get("asset", ""))
-		if AssetVfx.emitter_for(asset) == AssetVfx.Emitter.NONE:
+		var emitter := AssetVfx.emitter_for(asset)
+		if emitter == AssetVfx.Emitter.NONE:
 			continue
 		var pos: Array = prop.get("pos", [0.0, 0.0, 0.0]) as Array
+		var site := Vector3(float(pos[0]), float(pos[1]), float(pos[2]))
 		# Read, append, write back: a PackedVector3Array is a value type, so appending to what
 		# `get_or_add` hands back would mutate a copy and store nothing.
 		var sites_so_far: PackedVector3Array = expected.get(asset, PackedVector3Array())
-		sites_so_far.append(Vector3(float(pos[0]), float(pos[1]), float(pos[2])))
+		sites_so_far.append(site)
 		expected[asset] = sites_so_far
+		var class_sites_so_far: PackedVector3Array = expected_by_emitter.get(
+			emitter, PackedVector3Array())
+		class_sites_so_far.append(site)
+		expected_by_emitter[emitter] = class_sites_so_far
 
 	var checked: int = 0
 	var stray: int = 0
 	var worst: float = 0.0
+	var merged_checked: int = 0
+	var merged_stray: int = 0
 	for node: Node in _all_descendants(scene):
 		if not node.has_meta(&"placements"):
 			continue
 		var host := node as Node3D
+		if host == null:
+			continue
+		if node.has_meta(&"vfx_emitter"):
+			var emitter: int = int(node.get_meta(&"vfx_emitter"))
+			if not expected_by_emitter.has(emitter):
+				continue
+			var class_sites: PackedVector3Array = expected_by_emitter[emitter]
+			for entry: Vector3 in node.get_meta(&"placements") as PackedVector3Array:
+				var world: Vector3 = host.global_transform * entry
+				var nearest: float = INF
+				for site: Vector3 in class_sites:
+					nearest = minf(nearest, world.distance_to(site))
+				merged_checked += 1
+				if nearest > 0.01:
+					merged_stray += 1
+			continue
 		var asset := String(node.get_meta(&"asset", ""))
-		if host == null or not expected.has(asset):
+		if not expected.has(asset):
 			continue
 		var sites: PackedVector3Array = expected[asset]
 		for entry: Vector3 in node.get_meta(&"placements") as PackedVector3Array:
@@ -181,6 +216,9 @@ func _check_placement_space(scene: Node) -> void:
 	check(checked > 0, "emitter-bearing batches publish placements to check (%d)" % checked)
 	check(stray == 0, "every published emitter site stands on its own prop "
 		+ "(%d of %d stray, worst %.2f m)" % [stray, checked, worst])
+	print("MERGED_EMITTER_PLACEMENTS checked=%d stray=%d" % [merged_checked, merged_stray])
+	check(merged_stray == 0, "every merged-holder emitter site lands on a real prop of its class "
+		+ "(%d of %d stray)" % [merged_stray, merged_checked])
 
 
 func _uses_wind(mesh: Mesh) -> bool:

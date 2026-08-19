@@ -1,6 +1,93 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "autoload/settings_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T10:30:09+00:00",
+      "task": "7.6",
+      "token": null
+    },
+    "core/save/settings_save.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T10:32:42+00:00",
+      "task": "7.6",
+      "token": null
+    },
+    "entities/player/player_camera.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T10:30:09+00:00",
+      "task": "7.6",
+      "token": null
+    },
+    "entities/player/player_controller.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T10:30:09+00:00",
+      "task": "7.6",
+      "token": null
+    },
+    "project.godot": {
+      "agent": "lm",
+      "at": "2026-08-19T10:30:09+00:00",
+      "task": "7.6",
+      "token": null
+    },
+    "tools/gamepad_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T10:30:09+00:00",
+      "task": "7.6",
+      "token": null
+    },
+    "tools/settings_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T10:30:09+00:00",
+      "task": "7.6",
+      "token": null
+    },
+    "ui/building/build_bar.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T10:30:09+00:00",
+      "task": "7.6",
+      "token": null
+    },
+    "ui/hud/vitals_hud.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T10:30:09+00:00",
+      "task": "7.6",
+      "token": null
+    },
+    "ui/inventory/inventory_ui.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T10:30:09+00:00",
+      "task": "7.6",
+      "token": null
+    },
+    "ui/menu/settings_menu.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T10:30:09+00:00",
+      "task": "7.6",
+      "token": null
+    }
+  },
+  "in_flight": {
+    "7.6": {
+      "agent": "lm",
+      "files": [
+        "project.godot",
+        "entities/player/player_camera.gd",
+        "entities/player/player_controller.gd",
+        "ui/hud/vitals_hud.gd",
+        "ui/inventory/inventory_ui.gd",
+        "ui/building/build_bar.gd",
+        "autoload/settings_service.gd",
+        "ui/menu/settings_menu.gd",
+        "tools/settings_check.gd",
+        "tools/gamepad_check.gd",
+        "core/save/settings_save.gd"
+      ],
+      "notes": [],
+      "started": "2026-08-19T10:30:09+00:00",
+      "token": null
+    }
+  },
   "recent": {
     ".agent/bin/agent": {
       "agent": "lp",
@@ -709,11 +796,11 @@
       "task": "3.15"
     },
     "autoload/environment_vfx.gd": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T07:04:56+00:00",
-      "hash": "5f8f10f050e3336e5dec8e21b740b46dbeb7fd5ebe27865ce1e7edc836ba2385",
-      "task": "F-194",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
+      "agent": "lp",
+      "at": "2026-08-19T10:42:16+00:00",
+      "hash": "16e863ca09d2e7e47e30139be56c889efda16bac8eb30e340c2e04c1f7de8246",
+      "task": "F-203",
+      "token": null
     },
     "autoload/extraction_service.gd": {
       "agent": "lm",
@@ -1864,23 +1951,23 @@
     },
     "docs/DECISIONS.md": {
       "agent": "lp",
-      "at": "2026-08-19T10:25:06+00:00",
-      "hash": "62ebb08bd5854e6ea1398e7da8160205638db634d1c99df34180b9fdcc061ba2",
-      "task": "F-205",
+      "at": "2026-08-19T10:42:16+00:00",
+      "hash": "f7393aae8cfb388683550c13bf8040105ef0295a1ba6c6f85c74cc0e6138de6c",
+      "task": "F-203",
       "token": null
     },
     "docs/DELEGATION.md": {
       "agent": "lp",
-      "at": "2026-08-19T10:25:06+00:00",
-      "hash": "0ccdde2c3b0771dca400d9dd2174acb2fb86c3ccf791fdfd15478de95e3f91a0",
-      "task": "F-205",
+      "at": "2026-08-19T10:42:16+00:00",
+      "hash": "8a6cecd6541fafa3da63bd8cab8ae1ed92c4a7273bfa84a8c3d502348b327db2",
+      "task": "F-203",
       "token": null
     },
     "docs/FINDINGS.md": {
       "agent": "lp",
-      "at": "2026-08-19T10:25:06+00:00",
-      "hash": "de88a98525f70153cbac62f2ef736edd78428867559b1aad74e065b172b0d2fd",
-      "task": "F-205",
+      "at": "2026-08-19T10:42:16+00:00",
+      "hash": "1908667bd00bdfcbc5346fbe0bd174ab9eef9ede217046df561da3269dcac382",
+      "task": "F-203",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1909,9 +1996,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lp",
-      "at": "2026-08-19T10:25:06+00:00",
-      "hash": "5915b1e3e861d02370cef6c8d3b1bb92315229281712f84c0282ee3f91cab578",
-      "task": "F-205",
+      "at": "2026-08-19T10:42:16+00:00",
+      "hash": "3e70443bf1eb87e583cba86027448a7900a69716f8fcee5d0442fd79801333f2",
+      "task": "F-203",
       "token": null
     },
     "entities/player/player.tscn": {
@@ -2874,10 +2961,10 @@
       "task": "F-097"
     },
     "tools/environment_vfx_hollowmere_check.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-19T06:46:23+00:00",
-      "hash": "c9e20b8d72e77d7cdb9c122bdb969937ab7a7ece9b84d77ec5066716d44bb5bd",
-      "task": "F-144",
+      "agent": "lp",
+      "at": "2026-08-19T10:42:16+00:00",
+      "hash": "eb86cdd31769dfe51b15113d004c5dd4218a6c527b9bb5dfee177fe9e1f946dd",
+      "task": "F-203",
       "token": null
     },
     "tools/extraction_check.gd": {
@@ -3143,10 +3230,10 @@
       "task": "4.7"
     },
     "tools/prop_chunk_merge_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T07:54:03+00:00",
-      "hash": "666d299a04dfe5f082f4a800ff6d22446f4e7c2dc661b1b107c5fb516b8a6da8",
-      "task": "F-187",
+      "agent": "lp",
+      "at": "2026-08-19T10:42:16+00:00",
+      "hash": "7d361018c1cb7eac792889dc8840ff8cf04df4d600c196c92f2efa85d22a7041",
+      "task": "F-203",
       "token": null
     },
     "tools/ranged_combat_check.gd": {
@@ -3542,10 +3629,10 @@
       "task": "F-115"
     },
     "world/gen/authored_world.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T07:54:03+00:00",
-      "hash": "d1f37cb8ceb6a8fcacc1508580a2a0ded3f4c24c23bfe292fad15b48b45142a9",
-      "task": "F-187",
+      "agent": "lp",
+      "at": "2026-08-19T10:42:16+00:00",
+      "hash": "0138619e92b794d27de993d455d84e4fdb1c532c7dd3c3bd5d4207d58d4c5bef",
+      "task": "F-203",
       "token": null
     },
     "world/gen/biome_def.gd": {
@@ -4621,7 +4708,7 @@
     "7.6": {
       "est": "3",
       "milestone": "M7",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T1",
       "title": "Gamepad support + Steam Deck compatibility (not verification)"
     },
@@ -6488,9 +6575,11 @@
       "title": "A drained saturate chain exits immediately, so a lane goes idle in the gap before the next order lands"
     },
     "F-203": {
+      "done_at": "2026-08-19T10:42:16+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "AuthoredWorld's F-187 chunk merge excludes sway- and emitter-bearing props \u2014 a second attempt needs per-vertex height encoding or per-asset placement metadata inside a merged mesh"
     },

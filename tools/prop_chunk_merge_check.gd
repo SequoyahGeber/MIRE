@@ -1,17 +1,21 @@
 extends SceneTree
 
-## Regression check for F-187: AuthoredWorld._build_props merges rigid, non-emitting, non-batch,
-## never-shadow-casting props across assets into one static mesh per chunk instead of one
-## MultiMesh per (chunk, asset).
+## Regression check for F-187/F-203: AuthoredWorld._build_props merges rigid, non-batch,
+## never-shadow-casting, non-sway props across assets into one static mesh per chunk instead of
+## one MultiMesh per (chunk, asset) — and, since F-203, does the same for emitter-bearing props
+## too, split into their own per-(chunk, emitter class) merge bucket rather than folded into the
+## chunk's plain one (GLOW excepted — it needs no per-instance bookkeeping and merges with the
+## plain bucket like any other inert prop).
 ##
 ## Two things could silently break this and neither would show up as an engine error:
 ##
 ## 1. The eligibility rule (harvestable, emitter, sway, shadow-height) could drift out of sync
 ##    between the classification loop and this check, quietly merging (or failing to merge) props
 ##    it shouldn't. This check recomputes eligibility independently, straight from the layout file
-##    and the same three libraries `_build_props` reads, and asserts the number of chunk buckets
-##    that recomputation predicts matches the number of "merged_*" holder nodes the scene actually
-##    built — a mismatch means the two classifications have drifted apart.
+##    and the same three libraries `_build_props` reads, and asserts the number of merge buckets
+##    (chunks, or chunk+emitter-class pairs) that recomputation predicts matches the number of
+##    "merged_*" holder nodes the scene actually built — a mismatch means the two classifications
+##    have drifted apart.
 ## 2. The shadow-cascade regression F-203 exists because of (measured with `frame_cost_check.gd`
 ##    against `agent baseline`: shadow-pass primitives rose 16% before the height filter was
 ##    added). Every merged node's own `cast_shadow` must read OFF, because the height filter is
@@ -97,14 +101,22 @@ func _check_holders(world: Node, expected_count: int) -> void:
 
 ## Recompute, straight from the layout and the same three libraries `_build_props` classifies
 ## against, which (chunk, prop) pairs SHOULD have merged — then check that count of distinct
-## chunks matches the holder count found above. A rule change that silently widens or narrows
-## eligibility moves this number without touching `merged_prop_mesh_count`'s own sanity check.
+## merge BUCKETS matches the holder count found above. A rule change that silently widens or
+## narrows eligibility moves this number without touching `merged_prop_mesh_count`'s own sanity
+## check.
+##
+## F-203: a bucket is a chunk on its own for a plain rigid prop, but a (chunk, emitter class)
+## pair for an emitter-bearing one — `_build_props` gives each emitter class its own merged mesh
+## per chunk rather than folding it into the chunk's single asset-agnostic one (see
+## `world/gen/authored_world.gd`'s classification comment for why the class has to be the merge
+## key). GLOW is the one emitter that stays folded into the plain bucket: nothing at runtime ever
+## reads a class or a position for it, so it needs none of the other classes' bookkeeping.
 func _check_eligibility_parity(actual_holders: int) -> void:
 	var layout: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(LAYOUT_PATH)) as Dictionary
 	if layout == null or layout.is_empty():
 		failures.append("could not read %s" % LAYOUT_PATH)
 		return
-	var chunks_with_eligible: Dictionary = {}
+	var buckets_with_eligible: Dictionary = {}
 	var eligible_props := 0
 	for value: Variant in layout.get("props", []):
 		var prop := value as Dictionary
@@ -114,8 +126,6 @@ func _check_eligibility_parity(actual_holders: int) -> void:
 			if HarvestLib.representation_for(asset_id) == HarvestLib.Represent.NODE:
 				continue
 		if HarvestLib.is_harvestable(asset_id):
-			continue
-		if AssetVfx.emitter_for(asset_name) != AssetVfx.Emitter.NONE:
 			continue
 		if AssetVfx.sway_for(asset_name) != AssetVfx.Sway.NONE:
 			continue
@@ -127,17 +137,21 @@ func _check_eligibility_parity(actual_holders: int) -> void:
 		if height >= DrawPolicy.SHADOW_MIN_HEIGHT:
 			continue
 		var chunk: Array = prop.get("chunk", [0, 0]) as Array
-		chunks_with_eligible["%d_%d" % [int(chunk[0]), int(chunk[1])]] = true
+		var bucket := "%d_%d" % [int(chunk[0]), int(chunk[1])]
+		var emitter := AssetVfx.emitter_for(asset_name)
+		if emitter != AssetVfx.Emitter.NONE and emitter != AssetVfx.Emitter.GLOW:
+			bucket = "%s|e%d" % [bucket, int(emitter)]
+		buckets_with_eligible[bucket] = true
 		eligible_props += 1
 	print("PROP_CHUNK_MERGE eligible_props=%d eligible_chunks=%d" % [
-		eligible_props, chunks_with_eligible.size()])
+		eligible_props, buckets_with_eligible.size()])
 	if eligible_props == 0:
 		failures.append("no prop in the layout independently recomputes as merge-eligible — "
 			+ "the check's own rule may have drifted from _build_props'")
-	if chunks_with_eligible.size() != actual_holders:
+	if buckets_with_eligible.size() != actual_holders:
 		failures.append(
-			"independent recompute predicts %d merged chunks, the scene built %d — "
-			% [chunks_with_eligible.size(), actual_holders]
+			"independent recompute predicts %d merged buckets, the scene built %d — "
+			% [buckets_with_eligible.size(), actual_holders]
 			+ "_build_props' eligibility rule and this check's have drifted apart")
 
 

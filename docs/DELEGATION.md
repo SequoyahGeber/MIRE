@@ -75,6 +75,51 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-203 fixed (emitter case): `AuthoredWorld`'s chunk merge now includes emitter-bearing props too, split by `(chunk, emitter class)`; `EnvironmentVfx.EMITTER_META` is the seam that made it need no change to `_register_emitter` (lp)
+
+**What shipped:** `AuthoredWorld._build_props()` gained a second merge bucket,
+`emitter_mergeable` — keyed `"<chunk_x>_<chunk_z>|e<emitter_int>"` instead of the plain bucket's
+`"<chunk_x>_<chunk_z>"` — for any non-harvestable, non-sway, sub-`DrawPolicy.SHADOW_MIN_HEIGHT`
+prop whose `AssetVfxLibrary.emitter_for()` is not `NONE` and not `GLOW`. It folds into the plain
+`mergeable` dictionary before the build loop runs, so **one loop bakes both buckets** — the key's
+`"|e<N>"` suffix (parsed at the top of each iteration) is the only thing that branches behaviour: an
+emitter-keyed holder additionally publishes `EnvironmentVfx.PLACEMENTS_META` (`&"placements"`,
+local/centroid-relative — unchanged contract) and a new `EnvironmentVfx.EMITTER_META`
+(`&"vfx_emitter"`, an `AssetVfxLibrary.Emitter` int) declaring its class directly.
+
+**The seam other callers build against:** a merged, multi-asset holder that needs `EnvironmentVfx`
+to do something per-instance (a light, a particle site — anything keyed off `PLACEMENTS_META`) but
+has no single asset id to resolve a class from can declare `EMITTER_META` instead of relying on
+`ASSET_META`. `EnvironmentVfx._apply_node()` checks a new `_merged_emitter_for()` ancestor walk
+(same shape as the existing `_asset_id_for()`) BEFORE the asset-id path and routes straight to
+`_register_emitter()` with the declared class — `_register_emitter()` itself needed **zero** changes;
+it already reads `PLACEMENTS_META` off an ancestor and multiplies by `global_transform`, exactly what
+a per-asset `MultiMesh` holder already exercises. **`GLOW`-class props were also newly folded into
+the existing metadata-free `mergeable` bucket** (not the new one) — `AssetVfxLibrary.Emitter.GLOW`
+is "emissive material only, no light, no particles, no per-instance node," so it needs neither
+`PLACEMENTS_META` nor `EMITTER_META`; anything reaching for a similarly inert future emitter class
+should check whether it too needs zero runtime bookkeeping before assuming it needs the new bucket.
+
+**Not built: the sway case.** F-203's title named two mechanisms (per-vertex height encoding for
+sway, per-asset placement metadata for emitters); only the emitter one shipped here. Spun out to
+**F-208** with the exact remaining shader/vertex-channel work — `_apply_sway`'s per-mesh height mask
+still cannot survive several placements' absolute heights being baked into one static mesh.
+
+**Verified:** `agent godot --script tools/prop_chunk_merge_check.gd` (its independent eligibility
+recompute updated to bucket by `(chunk, emitter class)` too, GLOW excepted) →
+`eligible_props=263 eligible_chunks=28` matching 28 built holders, `PASS`. `tools/
+environment_vfx_hollowmere_check.gd` (widened `_check_placement_space` to validate an
+`EMITTER_META` holder's placements against every layout site sharing its class, since no asset id
+survives to match per-asset) → `CRYSTAL sites=101` unchanged from pre-fix,
+`MERGED_EMITTER_PLACEMENTS checked=2 stray=0`, `PASS`. `tools/hollowmere_check.gd`, `tools/
+harvest_batch_check.gd`, `tools/harvest_world_check.gd`, `tools/resource_scatter_check.gd`, `tools/
+mesh_merge_check.gd` all `PASS`, unaffected. `agent godot --windowed --script
+tools/frame_cost_check.gd` against `agent baseline --windowed --script tools/frame_cost_check.gd`
+(HEAD, pre-fix): draw calls 4,942 → 4,931, primitives 1,155,236 → 1,159,310 (+0.35% — nowhere near
+the +16% shadow-cascade regression F-187/F-203's own history warns about; every merged holder still
+passes the same sub-`SHADOW_MIN_HEIGHT` gate and still reads `cast_shadow ==
+SHADOW_CASTING_SETTING_OFF`). Full writeup: `docs/SPECS.md` F-203 block.
+
 ### 2026-08-19 — F-205 fixed: `cmd_check` (the pre-commit hook) now refuses a commit that would register or carry an untracked autoload target — F-200's mechanism #2 (lp)
 
 **What changed, for anyone touching `.agent/bin/agent`'s `cmd_check` or `tools/autoload_tracked_check.py`:**
@@ -298,13 +343,17 @@ synthetic `AABB(Vector3.ZERO, Vector3(0, max_of_your_objects_own_heights, 0))` i
 
 `AuthoredWorld._build_props()` (`world/gen/authored_world.gd`) is the first caller: a prop merges
 across assets into one static mesh per chunk only when it is simultaneously not harvestable, carries
-no `AssetVfxLibrary` emitter, carries no sway, and its own mesh height stays under
-`DrawPolicy.SHADOW_MIN_HEIGHT` — see F-203 for exactly what a caller wanting to include sway- or
-emitter-bearing props would need to solve first (a height-encoded vertex channel for sway; per-asset
-placement sub-ranges for emitters). Merged holders live under `PropVisuals` named `merged_<chunk>`,
-each with one `MeshInstance3D` child named `MergedProps` and no `asset` meta (deliberate — the node
-spans many assets, so `EnvironmentVfx._asset_id_for`'s meta-then-name walk correctly finds nothing
-and skips it). `AuthoredWorld.merged_prop_mesh_count` counts them, separate from `multimesh_count`.
+no sway, and its own mesh height stays under `DrawPolicy.SHADOW_MIN_HEIGHT`. **F-203 lifted the
+emitter exclusion**: an emitter-bearing prop (other than `GLOW`) merges too, into its own
+per-(chunk, emitter class) bucket rather than the plain per-chunk one — see that entry above for the
+mechanism (`EnvironmentVfx.EMITTER_META`). Sway is still excluded; F-208 has what it would take.
+Merged holders live under `PropVisuals` named `merged_<chunk>` (a plain bucket) or
+`merged_<chunk>_e<N>` (an emitter-class bucket, `|` sanitized to `_` for the node name), each with
+one `MeshInstance3D` child named `MergedProps`. A plain holder carries no `asset` meta (deliberate —
+the node spans many assets, so `EnvironmentVfx._asset_id_for`'s meta-then-name walk correctly finds
+nothing and skips it); an emitter-class holder carries no `asset` meta either, but DOES carry
+`EMITTER_META` + `PLACEMENTS_META`. `AuthoredWorld.merged_prop_mesh_count` counts both kinds,
+separate from `multimesh_count`.
 
 **Verified:** `agent godot --script tools/prop_chunk_merge_check.gd` (new — independently recomputes
 eligibility from the layout file and asserts it matches what the scene built, plus asserts every

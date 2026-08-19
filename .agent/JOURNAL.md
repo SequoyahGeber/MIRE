@@ -4810,3 +4810,15 @@ Fixed. cmd_check now refuses a commit that would register/carry an untracked aut
 Files: `.agent/bin/agent`, `tools/autoload_tracked_check.py`, `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`
 
 Commit at time of writing: `4a9d0ca`
+
+---
+
+### DONE · F-203 · lp · 2026-08-19T10:42:16+00:00
+
+**AuthoredWorld's F-187 chunk merge excludes sway- and emitter-bearing props — a second attempt needs per-vertex height encoding or per-asset placement metadata inside a merged mesh**
+
+Emitter case fixed: AuthoredWorld._build_props() gains an emitter_mergeable bucket keyed (chunk, emitter class), folded into the shared merge loop; EnvironmentVfx gains EMITTER_META so a merged multi-asset holder declares its class directly instead of resolving one from an asset id lost in the bake. GLOW folds into the plain metadata-free bucket (needs none of it). Sway spun out to F-208 (needs a per-vertex shader change, not attempted). Verified: agent godot --script tools/prop_chunk_merge_check.gd (PASS, eligible_props=263 eligible_chunks=28, matches 28 built holders), tools/environment_vfx_hollowmere_check.gd (PASS, widened _check_placement_space validates merged-holder placements against its declared class; CRYSTAL sites=101 unchanged confirming behaviour-preserving; MERGED_EMITTER_PLACEMENTS checked=2 stray=0), tools/hollowmere_check.gd, tools/harvest_batch_check.gd, tools/harvest_world_check.gd, tools/resource_scatter_check.gd, tools/mesh_merge_check.gd all PASS. agent godot --windowed --script tools/frame_cost_check.gd vs agent baseline --windowed (HEAD pre-fix): draw calls 4942->4931, primitives 1155236->1159310 (+0.35%, no shadow-cascade regression), vram 251.4->253.2MB. Sweep: grep for other merge_instances() callers found none besides authored_world.gd; world/gen/undergrowth.gd deliberately never merges cross-asset (F-095), no sibling bug.
+
+Files: `world/gen/authored_world.gd`, `autoload/environment_vfx.gd`, `tools/prop_chunk_merge_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `docs/FINDINGS.md`, `docs/DELEGATION.md`, `docs/SPECS.md`, `docs/DECISIONS.md`
+
+Commit at time of writing: `add1025`

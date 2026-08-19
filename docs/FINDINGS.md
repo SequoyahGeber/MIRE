@@ -549,57 +549,6 @@ re-deriving it by hand, which is the whole reason F-057 took longer than "apply 
 
 ---
 
-### F-203 · AuthoredWorld's F-187 chunk merge excludes sway- and emitter-bearing props — a second attempt needs per-vertex height encoding or per-asset placement metadata inside a merged mesh
-
-**Area:** perf · **Severity:** medium · **Found:** 2026-08-19 by lm
-
-F-187's cross-asset per-chunk prop merge (`world/gen/authored_world.gd::_build_props`,
-`MeshMerge.merge_instances` in `core/render/mesh_merge.gd`) only merges props that are
-simultaneously non-harvestable, carry no `AssetVfxLibrary` emitter, carry no sway, AND whose own
-mesh AABB height (scaled) is below `DrawPolicy.SHADOW_MIN_HEIGHT` (1.2 m) — on Hollowmere that is
-a modest slice of the 2,869 authored props, well short of the ~1,353 the original finding measured
-as theoretically mergeable (sway + inert, excluding the 335 emitter-bearing ones).
-
-Three reasons the wider set was deliberately left out rather than folded in:
-
-1. **Sway.** `EnvironmentVfx._apply_sway` dresses a mesh once, keyed by the mesh's own
-   `get_instance_id()`, and applies ONE `AssetVfxLibrary.Sway` profile to every surface of it. The
-   wind shader (`world/environment/foliage_wind.gdshader`) reads `VERTEX.y` in MODEL space against
-   `wind_root_y`/`wind_inv_height`, derived from `mesh.get_aabb()` — correct when that AABB is one
-   plant's own local frame (true for both a loose `MeshInstance3D` and a `MultiMesh`, since a
-   MultiMesh copy's base vertices are per-copy, not baked), and wrong the instant several
-   placements' absolute, chunk-relative heights are baked into one static mesh: the mask would then
-   read terrain elevation across the merge instead of height within each individual plant. A fix
-   needs either a per-vertex baked height-mask (e.g. in a spare channel, read by a modified shader
-   path) computed from each SOURCE asset's own AABB before baking, or keeping sway-bearing props out
-   of the cross-asset merge permanently and pursuing F-100's coarser-grouping idea for them instead
-   (same-sway-type multi-asset MultiMesh groups, not a baked static mesh).
-
-2. **Emitters.** `EnvironmentVfx._register_emitter` keys the `PLACEMENTS_META` contract off ONE
-   asset id per holder node and infers ONE `AssetVfxLibrary.Emitter` class from it. A node that
-   merges several different emitter-bearing assets would either misattribute their sites to the
-   wrong emitter class or drop them. Splitting by (chunk, emitter-class) the way F-187's shipped
-   code splits by nothing-but-shadow-height would work for the ~335 emitter-bearing props, but the
-   placements meta would then need to record which sub-range of a merged mesh's baked vertices
-   belongs to which of several different assets — more bookkeeping than the shadow-height filter
-   needed, since here the ASSET identity itself (not just a shared profile) has to survive the merge.
-
-3. **Shadow cascades — solved for THIS task by construction, not fixed in general.** A first,
-   wider version of this merge (everything rigid, any height) measured a real regression:
-   `tools/frame_cost_check.gd` against `agent baseline` showed draw calls falling as expected but
-   shadow-pass PRIMITIVES rising 16%, because a merged chunk mesh tall enough to cast a shadow
-   routinely spans more than one of the four PSSM cascade splits, and Godot re-renders a caster into
-   every cascade its AABB touches. Restricting the merge to objects whose own height never crosses
-   `DrawPolicy.SHADOW_MIN_HEIGHT` sidesteps this (those objects never cast a shadow regardless of
-   grouping), but it also caps how much of the map can ever qualify. Whoever widens the merge to
-   taller rigid props needs either sub-chunking fine enough that a merged AABB reliably stays inside
-   one cascade split, or to accept and re-measure the cross-cascade cost against the draw-call win.
-
-Measure any attempt with `tools/frame_cost_check.gd` (paired with `agent baseline`) — draw calls
-alone hid the shadow regression in point 3 above; primitives is what caught it.
-
----
-
 ### F-207 · F-204's same bug — an object repositioned between renders that never takes effect — is live in 8 more Blender generators, one of them twice
 
 **Area:** art-pipeline · **Severity:** medium · **Found:** 2026-08-19 by lp during F-204's required sweep
@@ -659,7 +608,121 @@ open the previously-broken preview PNG rather than trusting the exit code.
 
 ---
 
+### F-208 · F-203's sway case is still unsolved — `_apply_sway`'s per-mesh height mask needs a per-vertex baked channel before sway-bearing props can join the cross-asset chunk merge
+
+**Area:** perf · **Severity:** low · **Found:** 2026-08-19 by lp while closing F-203
+
+F-203 closed the emitter half of its own finding (see `## Resolved`) but deliberately left sway
+untouched — `AuthoredWorld._build_props()` still routes anything `AssetVfx.sway_for() != NONE`
+into the original per-(chunk, kit, asset) `MultiMesh` path, same as before F-187.
+
+`EnvironmentVfx._apply_sway` dresses a MESH once, keyed by the mesh's own `get_instance_id()`, and
+applies ONE `AssetVfxLibrary.Sway` profile to every surface of it. The wind shader
+(`world/environment/foliage_wind.gdshader`) reads `VERTEX.y` in MODEL space against
+`wind_root_y`/`wind_inv_height`, both derived from `mesh.get_aabb()` — correct when that AABB is
+one plant's own local frame (true for both a loose `MeshInstance3D` and a `MultiMesh`, since a
+MultiMesh copy's base vertices are per-copy, not baked), and wrong the instant several placements'
+absolute, chunk-relative heights are baked into one static mesh: the mask would then read terrain
+elevation across the merge instead of height within each individual plant.
+
+A fix needs one of:
+
+1. A per-vertex baked height-mask — a spare vertex channel (UV2 or a custom one) written at merge
+   time from each SOURCE asset's own local AABB before baking, read by a modified
+   `foliage_wind.gdshader` path instead of `wind_root_y`/`wind_inv_height`. This is the harder of
+   the two mechanisms named in F-203's own title, and the only one still open.
+2. Keep sway-bearing props out of the cross-asset merge permanently and pursue F-100's original
+   coarser-grouping idea for them instead — same-sway-type multi-asset `MultiMesh` groups (still
+   one node per group, not per asset, but never a baked static mesh) rather than
+   `MeshMerge.merge_instances()`.
+
+Whoever picks this up: F-203's emitter fix is the template for how a merge bucket declares state a
+merged holder's baked geometry can no longer carry on its own (`EnvironmentVfx.EMITTER_META`) — the
+same shape (a class or a mask, not an asset id) is what a sway fix needs too. Measure with
+`tools/frame_cost_check.gd` against `agent baseline`, same as F-187/F-203 — the shadow-cascade trap
+those two hit is not a risk here (sway-bearing props are all short foliage, already excluded from
+shadow casting by their own height), but a wider merge changing which chunk buckets exist is still
+worth confirming against real numbers rather than assumed.
+
+---
+
 ## Resolved
+
+### F-203 · AuthoredWorld's F-187 chunk merge excludes sway- and emitter-bearing props — a second attempt needs per-vertex height encoding or per-asset placement metadata inside a merged mesh — **fixed (emitters); sway spun out to F-208**
+
+**Area:** perf · **Severity:** medium · **Found:** 2026-08-19 by lm
+
+F-187's cross-asset per-chunk prop merge (`world/gen/authored_world.gd::_build_props`,
+`MeshMerge.merge_instances` in `core/render/mesh_merge.gd`) only merged props that were
+simultaneously non-harvestable, carried no `AssetVfxLibrary` emitter, carried no sway, AND whose
+own mesh AABB height (scaled) was below `DrawPolicy.SHADOW_MIN_HEIGHT` (1.2 m). Three reasons the
+wider set was deliberately left out rather than folded in, from the original finding:
+
+1. **Sway** — needs a per-vertex baked height-mask or a permanently-separate coarser-grouping
+   scheme. **Not solved here** — spun out to **F-208** with the exact remaining mechanism, since it
+   needs a shader change this task did not attempt.
+2. **Emitters** — `EnvironmentVfx._register_emitter` keys `PLACEMENTS_META` off ONE asset id per
+   holder and infers ONE `AssetVfxLibrary.Emitter` class from it; a node merging several different
+   emitter-bearing assets would misattribute or drop their sites. **Solved here.**
+3. **Shadow cascades** — already solved by construction in F-187 (restrict every merge bucket to
+   objects under `SHADOW_MIN_HEIGHT`); unaffected by this fix, since that restriction still applies
+   to every entry regardless of which bucket it lands in.
+
+---
+
+**Resolved 2026-08-19 by lp.** Fixed the emitter case: `AuthoredWorld._build_props()` gained a
+second merge bucket, `emitter_mergeable`, keyed by `(chunk, emitter class)` instead of by nothing —
+every instance feeding one merged mesh already agrees on which `AssetVfxLibrary.Emitter` class to
+register as, so the holder can declare that class directly instead of relying on one asset id
+surviving the bake. `EnvironmentVfx` gained `EMITTER_META` (`&"vfx_emitter"`) for exactly this: a
+new `_merged_emitter_for()` ancestor walk (parallel to the existing `_asset_id_for()`) is checked in
+`_apply_node()` before the asset-id path, and routes straight to `_register_emitter()` with the
+declared class — the existing `PLACEMENTS_META`/`_register_emitter` machinery needed no changes at
+all, since a merged holder publishing local-space `placements` is exactly what a per-asset
+`MultiMesh` holder already does.
+
+`GLOW` is excluded from the new bucket on purpose and instead folds into the plain, metadata-free
+`mergeable` set: `AssetVfxLibrary.Emitter.GLOW` is documented as "emissive material only — no light,
+no particles, no per-instance node" and, checked directly, nothing in `EnvironmentVfx` ever reads a
+class or a position for it — it needs none of the new bookkeeping and merges exactly like any inert
+rigid prop.
+
+`emitter_mergeable`'s keys fold into `mergeable` before the build loop runs (a `"<chunk>|e<N>"`
+suffix distinguishes an emitter bucket from a plain `"<chunk>"` one), so the two buckets share every
+line of the actual merge/bake/`DrawPolicy` logic — only the trailing "publish placements + declare
+class" step is new and conditional on the parsed key.
+
+**On Hollowmere specifically, the emitter win is small** — most emitter-bearing assets here
+(`mire_crystal_*`, most `station_*`) sit just over `SHADOW_MIN_HEIGHT` and still route through the
+original per-asset `MultiMesh` path; only `ward_activation_crystal` and one `mire_crystal_f`
+instance (both CRYSTAL, both under 1.2 m) land in a real emitter-class merge bucket. The bulk of
+this fix's actual draw-call win on this map comes from folding `GLOW` (`mushroom_cluster_*`, 52
+instances) into the plain bucket. The mechanism itself is untied from Hollowmere's specific asset
+heights, though: `merged_meshes` 25 → 28, `multimeshes` 761 → 734.
+
+Verified:
+- `agent godot --script tools/prop_chunk_merge_check.gd` — `PROP_CHUNK_MERGE_CHECK PASS`,
+  `eligible_props=263 eligible_chunks=28`, matching the 28 `merged_*` holders built (its own
+  eligibility recompute updated in step to bucket by `(chunk, emitter class)` the same way
+  `_build_props` now does, GLOW excepted).
+- `agent godot --script tools/environment_vfx_hollowmere_check.gd` — all existing assertions still
+  `PASS` (`CRYSTAL sites=101` unchanged from before this fix — the emitter refactor is
+  correctness-preserving by design, not a behaviour change), plus a new
+  `_check_placement_space` branch that validates a merged holder's `EMITTER_META` + `placements`
+  against every layout site of its declared class (a per-asset match isn't possible once asset
+  identity no longer survives the merge): `MERGED_EMITTER_PLACEMENTS checked=2 stray=0`.
+- `agent godot --script tools/hollowmere_check.gd`, `tools/harvest_batch_check.gd`,
+  `tools/harvest_world_check.gd`, `tools/resource_scatter_check.gd`, `tools/mesh_merge_check.gd` —
+  all `PASS`, unaffected.
+- `agent godot --windowed --script tools/frame_cost_check.gd` against `agent baseline --windowed
+  --script tools/frame_cost_check.gd` (HEAD, pre-fix): draw calls 4,942 → 4,931, primitives
+  1,155,236 → 1,159,310 (+0.35%, nowhere near the +16% shadow-cascade regression F-187/F-203's
+  history warns about), vram 251.4 MB → 253.2 MB. No cascade regression — every merged holder still
+  reads `cast_shadow == SHADOW_CASTING_SETTING_OFF`, asserted by `prop_chunk_merge_check.gd`.
+
+Full writeup: `docs/SPECS.md` F-203 block. Sway: `docs/FINDINGS.md` F-208.
+
+---
 
 ### F-205 · `agent check`/the pre-commit hook still lets a commit register or carry an untracked autoload target — F-200's mechanism #2 is still unbuilt — **fixed**
 

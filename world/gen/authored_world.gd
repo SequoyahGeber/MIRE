@@ -409,10 +409,14 @@ func _water_level(body: Dictionary, point: Vector2) -> float:
 ## one frustum test.
 func _build_props() -> void:
 	var grouped: Dictionary = {}
-	# F-187: rigid, non-emitting, non-batch, never-shadow-casting props merge across assets into
-	# one static mesh per chunk instead of one MultiMesh per (chunk, asset) — see the eligibility
-	# comment below for why the other prop classes are excluded rather than folded in too.
+	# F-187: rigid, non-batch, never-shadow-casting props merge across assets into one static
+	# mesh per chunk instead of one MultiMesh per (chunk, asset) — see the eligibility comment
+	# below for why sway-bearing and shadow-tall props are still excluded. F-203 widened this to
+	# emitter-bearing props too: they merge into `emitter_mergeable`, a second bucket keyed by
+	# (chunk, emitter class) rather than folded into the asset-agnostic `mergeable` set — see the
+	# comment at the classification site below for why the class has to be the merge key.
 	var mergeable: Dictionary = {}
+	var emitter_mergeable: Dictionary = {}
 	var harvestable: Array[Dictionary] = []
 	# Filled here rather than after classification: deciding whether a prop is short enough to
 	# merge needs its mesh's own AABB, and `_mesh_parts` memoizes per (kit, asset) regardless of
@@ -437,21 +441,7 @@ func _build_props() -> void:
 		# Anything reaching this line that IS harvestable is BATCH representation (NODE already
 		# `continue`d above) — depletion hides ONE instance by zeroing its transform inside that
 		# asset's own MultiMesh (`_build_batch_harvestables`), which only works if the batch is
-		# still keyed one-asset-per-node. An emitter keys `EnvironmentVfx`'s "placements" meta off
-		# one asset id per holder, so a node mixing several assets' placements would attribute them
-		# to the wrong emitter, or to none. Sway's wind shader reads `VERTEX.y` in MODEL space
-		# against that ONE asset's own AABB (`wind_root_y`/`wind_inv_height`, set from
-		# `mesh.get_aabb()` in `EnvironmentVfx._apply_sway`) — correct for a single asset's own
-		# local frame, wrong the instant several placements' chunk-relative heights are baked into
-		# one static mesh, because the mask would then read terrain elevation within the chunk
-		# instead of height within each individual plant. And a merged chunk mesh tall or wide
-		# enough to cast a shadow routinely spans more than one of the four PSSM cascade splits —
-		# measured directly, this is what cost the first version of this merge its whole win: draw
-		# calls fell as expected, but shadow-pass primitives ROSE 16% (`frame_cost_check.gd` against
-		# `agent baseline`), because Godot re-renders a caster into every cascade its AABB touches
-		# and a whole chunk's worth of merged geometry touches more of them than one small prop
-		# ever did. Filed as F-203 rather than solved for the two harder cases (sway, emitter);
-		# solved here for shadows by construction — merge only what will never cast one anyway.
+		# still keyed one-asset-per-node.
 		var mesh_key := "%s|%s" % [kit_name, asset_name]
 		if not cache.has(mesh_key):
 			cache[mesh_key] = _mesh_parts(kit_name, asset_name)
@@ -460,12 +450,46 @@ func _build_props() -> void:
 		if not object_meshes.is_empty():
 			var object_mesh: Mesh = (object_meshes[0] as Dictionary)["mesh"]
 			object_height = object_mesh.get_aabb().size.y * float(prop.get("scale", 1.0))
+		var sway := AssetVfx.sway_for(asset_name)
+		var emitter := AssetVfx.emitter_for(asset_name)
+		# Sway's wind shader reads `VERTEX.y` in MODEL space against that ONE asset's own AABB
+		# (`wind_root_y`/`wind_inv_height`, set from `mesh.get_aabb()` in
+		# `EnvironmentVfx._apply_sway`) — correct for a single asset's own local frame, wrong the
+		# instant several placements' chunk-relative heights are baked into one static mesh,
+		# because the mask would then read terrain elevation within the chunk instead of height
+		# within each individual plant. A fix needs a per-vertex baked height mask computed from
+		# each source asset's own AABB before baking; not attempted here (F-203). And a merged
+		# chunk mesh tall or wide enough to cast a shadow routinely spans more than one of the
+		# four PSSM cascade splits — measured directly, this is what cost the first version of
+		# this merge its whole win: draw calls fell as expected, but shadow-pass primitives ROSE
+		# 16% (`frame_cost_check.gd` against `agent baseline`), because Godot re-renders a caster
+		# into every cascade its AABB touches and a whole chunk's worth of merged geometry touches
+		# more of them than one small prop ever did. Both stay excluded from every merge bucket
+		# below, solved by construction — merge only what will never cast a shadow and never sway.
 		if HarvestLib.is_harvestable(asset_id) \
-				or AssetVfx.emitter_for(asset_name) != AssetVfx.Emitter.NONE \
-				or AssetVfx.sway_for(asset_name) != AssetVfx.Sway.NONE \
+				or sway != AssetVfx.Sway.NONE \
 				or object_height >= DrawPolicy.SHADOW_MIN_HEIGHT:
 			var key := "%d_%d|%s|%s" % [int(chunk[0]), int(chunk[1]), kit_name, asset_name]
 			grouped.get_or_add(key, [] as Array).append(prop)
+		elif emitter != AssetVfx.Emitter.NONE and emitter != AssetVfx.Emitter.GLOW:
+			# F-203: `EnvironmentVfx._register_emitter` keys the `PLACEMENTS_META` contract off
+			# ONE asset id per holder and infers ONE emitter class from it — a node merging
+			# several different emitter-bearing assets would misattribute their sites to the
+			# wrong class, or drop them. Splitting the merge itself by (chunk, emitter class)
+			# instead of by nothing sidesteps that: every instance feeding one merged mesh
+			# already agrees on which class to register as, so the holder can declare that class
+			# directly (`EnvironmentVfx.EMITTER_META`) instead of relying on asset identity
+			# surviving the bake — no per-asset sub-range bookkeeping needed, because nothing
+			# downstream of the merge ever needs to know which of the group's several assets a
+			# given baked vertex came from, only which class the whole holder belongs to.
+			#
+			# GLOW is deliberately excluded from this branch — it falls through to the plain
+			# `mergeable` set below instead, because `AssetVfxLibrary.Emitter.GLOW` is "emissive
+			# material only — no light, no particles, no per-instance node": nothing at runtime
+			# ever reads a class or a position for it, so it needs none of this bookkeeping and
+			# merges exactly like any other inert rigid prop.
+			var ekey := "%d_%d|e%d" % [int(chunk[0]), int(chunk[1]), int(emitter)]
+			emitter_mergeable.get_or_add(ekey, [] as Array).append(prop)
 		else:
 			var mkey := "%d_%d" % [int(chunk[0]), int(chunk[1])]
 			mergeable.get_or_add(mkey, [] as Array).append(prop)
@@ -568,9 +592,26 @@ func _build_props() -> void:
 			props, asset, holder, harvest_root, transforms, local_transforms, meshes)
 
 
+	# F-203: folded into one dictionary and one loop so the two buckets share every line of the
+	# actual merge/bake/DrawPolicy logic — an emitter-keyed key ("<chunk>|e<N>") is the only thing
+	# that distinguishes an emitter_mergeable entry from a plain one below.
+	for ekey: String in emitter_mergeable:
+		mergeable[ekey] = emitter_mergeable[ekey]
+
 	for key: String in mergeable:
 		var props: Array = mergeable[key] as Array
+		# Keys look like "<chunk>" for the plain rigid bucket or "<chunk>|e<N>" for an
+		# emitter-class bucket (see the classification comment above) — parsed back out here
+		# rather than carried alongside the dictionaries, so the two buckets can share one loop.
+		var emitter := AssetVfx.Emitter.NONE
+		var pipe := key.find("|")
+		if pipe != -1:
+			emitter = int(key.substr(pipe + 2)) as AssetVfx.Emitter
 		var entries: Array = []
+		# Raw placement origins, parallel to `entries` — only the emitter-class bucket needs
+		# these (as local, holder-relative positions once the centroid is known), but collecting
+		# them costs nothing for the plain bucket, which simply never reads them.
+		var origins: Array[Vector3] = []
 		var centroid := Vector3.ZERO
 		# The tallest single OBJECT going into this merge, not the merged mesh's own AABB — the
 		# merged mesh's vertices are baked at their absolute world height relative to the holder,
@@ -603,6 +644,7 @@ func _build_props() -> void:
 			var object_mesh: Mesh = mesh_entry["mesh"]
 			entries.append({"mesh": object_mesh,
 				"transform": placement * (mesh_entry["offset"] as Transform3D)})
+			origins.append(placement.origin)
 			centroid += placement.origin
 			max_object_height = maxf(max_object_height, object_mesh.get_aabb().size.y * prop_scale)
 			_add_prop_collision(bodies, prop, placement)
@@ -624,14 +666,23 @@ func _build_props() -> void:
 		# from the node's own origin, and an ArrayMesh's AABB is exact once its vertices are baked
 		# relative to that origin rather than the world's.
 		holder.position = centroid
-		holder.name = "merged_%s" % key
+		holder.name = ("merged_%s" % key).replace("|", "_")
 		visuals.add_child(holder)
 		var instance := MeshInstance3D.new()
 		instance.name = "MergedProps"
 		instance.mesh = combined
-		# No `asset` meta: this node deliberately spans many assets, and the mergeable set is
-		# exactly the props AssetVfxLibrary has nothing to say about -- EnvironmentVfx's
-		# `_asset_id_for` walk finds no meta and no matching node name, and skips it, correctly.
+		# No `asset` meta either way: this node deliberately spans many assets, so there is no one
+		# id to publish. The plain bucket also gets no `EnvironmentVfx.EMITTER_META` — it is
+		# exactly the props AssetVfxLibrary has nothing to say about, so `EnvironmentVfx`'s
+		# meta-then-name walk correctly finds nothing and skips it. An emitter-class bucket DOES
+		# get `EMITTER_META` (F-203) plus the same `placements` meta a per-asset holder publishes,
+		# rebased onto this holder's own centroid exactly like `local_transforms` is above.
+		if emitter != AssetVfx.Emitter.NONE:
+			var placements := PackedVector3Array()
+			for origin: Vector3 in origins:
+				placements.append(origin - centroid)
+			holder.set_meta(&"placements", placements)
+			holder.set_meta(&"vfx_emitter", int(emitter))
 		DrawPolicy.apply(instance, AABB(Vector3.ZERO, Vector3(0.0, max_object_height, 0.0)), 1.0)
 		holder.add_child(instance)
 		merged_prop_mesh_count += 1
