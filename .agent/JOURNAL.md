@@ -4891,3 +4891,18 @@ Fixed agent order's _suggest_check() root cause: it counted matching WORDS not d
 Files: `.agent/bin/agent`
 
 Commit at time of writing: `04ef7b6`
+
+---
+
+### DONE · 4.9-review · lm · 2026-08-19T11:08:32+00:00
+
+**Review 4.9 @ 219d99c — judge the commit, file findings, no edits**
+
+Verdict: sound, ship as-is. tools/mire_grid_check.gd: 23/23 PASS, no ERROR: lines, MIRE_GRID_CHECK failures=0. Host authority, determinism, and the WorldDeltaLog-reuse decision (D-099) all check out against SPECS.md 4.9 and ARCHITECTURE.md §5/§2.2. Filed F-212 (low): ARCHITECTURE.md §5's replication bullet still describes a PackedByteArray RPC that was never built; doc-only, no code fix needed.
+
+Notes along the way:
+- Reviewed e4b1945/219d99c against SPECS.md 4.9, ARCHITECTURE.md §5/§2.2, D-099. Ran tools/mire_grid_check.gd headless: 23/23 PASS, no ERROR: lines, MIRE_GRID_CHECK failures=0. Code is sound: host authority correct (_owns_simulation() gate matches project convention), deterministic seeded clusters (RNG seeded world_seed^SALT, no randi()/randomize()), quantized delta emission answers R4's chattiness risk, ward/wellspring split matches D-099's reasoning, autoload registered via string path not bare identifier (rule 1 clean), two-process check's negative assertion is structural (reads _owns_simulation()/_grid directly) not just numeric. One real gap: ARCHITECTURE.md §5 still describes replication as a batched PackedByteArray RPC, but 4.9 shipped WorldDeltaLog reuse instead (D-099, permanent per its own 'would change my mind: nothing'). Filed F-212 (low) — doc staleness only, no code defect.
+
+Files: `docs/FINDINGS.md`
+
+Commit at time of writing: `16ce2c0`

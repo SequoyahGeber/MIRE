@@ -1887,10 +1887,10 @@
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T10:42:16+00:00",
-      "hash": "1908667bd00bdfcbc5346fbe0bd174ab9eef9ede217046df561da3269dcac382",
-      "task": "F-203",
+      "agent": "lm",
+      "at": "2026-08-19T11:08:32+00:00",
+      "hash": "7632ece069ae3239160fbbdf2cb9f7a56c0c84def0562c21fb7dd2072d34831f",
+      "task": "4.9-review",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -4472,10 +4472,12 @@
       "title": "Mire grid simulation + delta replication (`ARCHITECTURE.md` \u00a75)"
     },
     "4.9-review": {
+      "done_at": "2026-08-19T11:08:32+00:00",
+      "done_by": "lm",
       "est": "0.5",
       "milestone": "M4",
       "review_of": "4.9",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 4.9 @ 219d99c \u2014 judge the commit, file findings, no edits"
     },
