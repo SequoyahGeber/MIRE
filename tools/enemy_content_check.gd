@@ -25,6 +25,15 @@ extends SceneTree
 ## path — `enemy_check.gd` already proves that path end to end), spaced 500 m apart on X so no
 ## scenario's aggro/alert/attack-slot math can see another's. Timings are driven by stepping
 ## `_physics_process` directly, never by sleeping — see `enemy_check.gd`'s header for why.
+##
+## F-246: `_build_ground()` below floors the whole scenario span. Same shape as F-038's fix in
+## `combat_net_check.gd` — an unfloored `CharacterBody3D` free-falls for the life of the check, and
+## `_check_speed_denies_kiting()`'s 60-step retreat loop ran long enough for that fall alone to push
+## `_resolve_target()`'s honest 3D `distance_to()` past `deaggro_radius_m` (confirmed: the strider was
+## actually closing on the retreating player every step right up to the point it lost its target —
+## the pursuit/steering math was never wrong), dropping the target and freezing the enemy in place
+## while the test kept retreating the player. Nothing here tests vertical movement, so a floor is the
+## fix, not a re-tuned distance or iteration count.
 
 const ENEMY_SCRIPT := preload("res://systems/enemies/enemy.gd")
 
@@ -53,6 +62,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	_build_ground()
 	await process_frame
 	await process_frame
 	var world: Node = root.get_node_or_null(^"EnemyWorld")
@@ -264,6 +274,23 @@ func _check_attacker_cap(crawler_def: Resource, broodcaller_def: Resource) -> vo
 
 
 # ── Construction ──────────────────────────────────────────────────────────────────────────────────
+
+
+## F-246 / same shape as F-038's `combat_net_check.gd` fix: one flat `StaticBody3D` under the whole
+## scenario span (origins run 0..3500 on X, ring offsets and retreat drift add a margin either side)
+## so every spawned `Enemy` lands `is_on_floor() == true` and its gravity term stops accumulating,
+## instead of free-falling for the length of the check.
+func _build_ground() -> void:
+	var body := StaticBody3D.new()
+	body.name = "EnemyContentCheckGround"
+	body.collision_layer = 1
+	body.position = Vector3(1750.0, -0.5, 0.0)
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(4200.0, 1.0, 400.0)
+	shape.shape = box
+	body.add_child(shape)
+	root.add_child(body)
 
 
 func _spawn_enemy(def: Resource, position: Vector3) -> Node3D:

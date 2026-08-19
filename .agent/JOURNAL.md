@@ -6368,3 +6368,15 @@ Notes along the way:
 Files: `tools/seed_sync_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `92eed13`
+
+---
+
+### DONE · F-246 · lm3 · 2026-08-19T22:25:02+00:00
+
+**`tools/enemy_content_check.gd`'s strider-vs-crawler kiting proof fails at a clean HEAD, independent of any in-flight change**
+
+tools/enemy_content_check.gd's strider-vs-crawler kiting proof now passes at HEAD: added _build_ground() (a flat StaticBody3D under the whole scenario span, same shape as combat_net_check.gd's F-038 fix) so spawned Enemy nodes don't free-fall for the length of the 60-step retreat loop and spuriously trip real 3D-distance deaggro. Enemy.gd's pursuit AI was correct all along. Verified: agent godot --script tools/enemy_content_check.gd -> ENEMY_CONTENT_CHECK failures=0 (27/27 PASS). Also re-ran tools/enemy_crawler_check.gd clean. Swept sibling enemy_*_check.gd files for the same shape, none at risk.
+
+Files: `tools/enemy_content_check.gd`
+
+Commit at time of writing: `ffea194`

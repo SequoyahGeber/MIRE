@@ -18,6 +18,12 @@
       "task": "F-245",
       "token": null
     },
+    "docs/DECISIONS.md": {
+      "agent": "bram1",
+      "at": "2026-08-19T22:25:03+00:00",
+      "task": "F-260",
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+    },
     "systems/cycle/cycle_modifier_service.gd": {
       "agent": "lm2",
       "at": "2026-08-19T22:21:01+00:00",
@@ -60,12 +66,6 @@
       "task": "F-245",
       "token": null
     },
-    "tools/enemy_content_check.gd": {
-      "agent": "lm3",
-      "at": "2026-08-19T22:22:12+00:00",
-      "task": "F-246",
-      "token": null
-    },
     "world/mire/mire_grid.gd": {
       "agent": "lm2",
       "at": "2026-08-19T22:23:18+00:00",
@@ -100,20 +100,12 @@
       "started": "2026-08-19T22:21:01+00:00",
       "token": null
     },
-    "F-246": {
-      "agent": "lm3",
-      "files": [
-        "tools/enemy_content_check.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-19T22:22:12+00:00",
-      "token": null
-    },
     "F-260": {
       "agent": "bram1",
       "files": [
         ".agent/bin/agent",
-        ".agent/bin/lane"
+        ".agent/bin/lane",
+        "docs/DECISIONS.md"
       ],
       "notes": [],
       "started": "2026-08-19T21:29:09+00:00",
@@ -2286,10 +2278,10 @@
       "task": "5.1"
     },
     "tools/enemy_content_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T17:32:42+00:00",
-      "hash": "ac895dace10b00c5f314116ef2ebb5621f09f50eedf2b2addb824a7b8e519123",
-      "task": "5.2",
+      "agent": "lm3",
+      "at": "2026-08-19T22:25:02+00:00",
+      "hash": "ebd755ae1556cfd57661cb7443cc5824144200b9cf5b99ace0d3c1d0d49b60b1",
+      "task": "F-246",
       "token": null
     },
     "tools/enemy_lod_check.gd": {
@@ -6714,9 +6706,11 @@
       "title": "The whole Cycle Modifier feature is inert: seven modifiers, a weighted deck, and not one line of game code asks whether a modifier is active"
     },
     "F-246": {
+      "done_at": "2026-08-19T22:25:02+00:00",
+      "done_by": "lm3",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`tools/enemy_content_check.gd`'s strider-vs-crawler kiting proof fails at a clean HEAD, independent of any in-flight change"
     },
