@@ -4342,3 +4342,15 @@ Notes along the way:
 Files: `tools/unlock_check.gd`
 
 Commit at time of writing: `a4d33fc`
+
+---
+
+### HANDOFF · 3.7 · slate17 · 2026-08-19T06:36:13+00:00
+
+**Buildable pieces (walls/floors/ramps/doors) + Ward structures**
+
+Doors now open. systems/building/buildable_door.gd (extends buildable_piece.gd, so it keeps the damageable contract F-085 is about), the three hinged piece scenes re-authored with split colliders — structure that always blocks, plus one blocking_shapes span across the opening that is disabled while open — ui/building/door_prompt.gd registered as the DoorPrompt autoload so [E] actually reaches it, PROTOCOL_VERSION 19 -> 20 with handshake_check updated, and tools/door_check.gd. Verified: door_check 0 failures across door, gate and palisade_gate (each joins the group, validates, has a host-authoritative DoorSync replicating only .:open, stops a 0.32 m player capsule while shut, accepts an in-range toggle, becomes passable, swings its leaves to +/-90, and blocks again when closed); buildable_content_check, build_check, build_net_check, handshake_check and verify_setup all 0 failures after the bump; clean boot with both new autoloads. STILL OPEN ON 3.7: damaged-state art (buildable_piece.gd's doc comment assigns it here; hp is host-only and unreplicated, so a visible damage tier needs replication), wall_wood's art (waits on A-013/A-018), and the ladder is placeable but nothing in the controller climbs. OWED AND BLOCKED: docs/ARCHITECTURE.md §2.2 needs the door's authority row — the file was claimed by F-183 all session, and the row is written out ready to paste in the DELEGATION.md 'Current state' entry for this task.
+
+Files: `systems/building/buildable_door.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/door_check.gd`, `tools/door_check.gd.uid`, `ui/building/door_prompt.gd`, `ui/building/door_prompt.gd.uid`, `scenes/buildables/door.tscn`, `scenes/buildables/gate.tscn`, `scenes/buildables/palisade_gate.tscn`, `project.godot`
+
+Commit at time of writing: `c7e9a6d`

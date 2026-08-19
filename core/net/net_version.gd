@@ -76,7 +76,11 @@ extends RefCounted
 ## progress_sec/duration_sec/required_players, all ON_CHANGE). Reliable: a dropped toggle either
 ## strands a channel nobody can see running, or cancels one and leaves a client's HUD showing the
 ## progress bar of a channel the host already dropped.
-const PROTOCOL_VERSION: int = 19
+## 20 (task 3.7): systems/building/buildable_door.gd added net_request_toggle (client -> host, open
+## or shut a placed door or gate) and its own SceneReplicationConfig — `open`, ON_CHANGE, the entire
+## schema a door has. Reliable: a dropped toggle leaves a door that is shut on the host and open on
+## a client, which is a wall you can see through and walk into.
+const PROTOCOL_VERSION: int = 20
 
 ## Wire-format tag for the client→host hello RPC, kept separate from the reason string format so a
 ## mismatch renders identically everywhere it's read (a log line, a UI error, a check-tool assertion).

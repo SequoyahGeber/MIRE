@@ -8,8 +8,9 @@
 
 | Task | Agent | Started | Files claimed |
 |---|---|---|---|
-| **3.7** Buildable pieces (walls/floors/ramps/doors) + Ward structures | slate17 | 2026-08-18 22:23 | `systems/building/buildable_door.gd`, `core/net/net_version.gd`, `tools/handshake_check.gd`, `tools/door_check.gd`, `tools/door_check.gd.uid` |
 | **F-144** Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance | nettle12 | 2026-08-18 21:51 | `tools/render_census.gd`, `world/gen/authored_world.gd`, `world/gen/undergrowth.gd`, `autoload/graphics_quality.gd`, `tools/_probe_lods.gd`, `world/environment/draw_policy.gd`, `tools/harvest_batch_check.gd`, `tools/environment_vfx_hollowmere_check.gd`, `core/render/mesh_merge.gd`, `systems/harvesting/harvestable.gd`, `tools/_probe_merge.gd`, `tools/frame_cost_check.gd` |
+| **F-161** Task 5.3's three new ranged-combat RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim | hollow7 | 2026-08-19 06:35 | `tools/rpc_manifest_check.gd`, `core/net/rpc_manifest.gd` |
+| **F-183** Wellspring caps and boss kills never grant a Chest — `wellspring`/`boss` tier loot tables are authored and reachable, but nothing ever rolls them | lm | 2026-08-19 06:32 | `autoload/reward_service.gd`, `tools/reward_service_check.gd`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/SPECS.md`, `docs/ARCHITECTURE.md` |
 
 ## Milestones
 
@@ -64,14 +65,14 @@
 | ⬜ | **F-151** `ui/loot/chest_ui.gd` was never registered, so no chest in the game could be opened — **fixed** | todo |
 | ⬜ | **F-154** Two events in COMMANDS.md §5.2's own illustrative hook vocabulary — `run_started`, | todo |
 | ⬜ | **F-158** `bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler | todo |
-| ⬜ | **F-161** Task 5.3's three new ranged-combat RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim | todo |
+| 🔵 | **F-161** Task 5.3's three new ranged-combat RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim | in_flight |
 | ⬜ | **F-165** Task 6.5's two new extraction RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim | todo |
 | ⬜ | **F-166** `world/gen/authored_world.gd` has no `shipwreck` marker kind, so task 6.5's ExtractionShip is built but never reachable in the live Hollowmere map — same shape as F-146's chest gap | todo |
 | ⬜ | **F-169** Task 6.7's new `net_run_defeated` RPC shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim | todo |
 | ⬜ | **F-170** `tools/lobby_menu_check.gd` fails (5/24) whenever the dev machine's own Steam client is actually running | todo |
 | ⬜ | **F-174** No dev machine can stand in for "mid-range" — `tools/perf_probe.gd`'s baseline is only ever measured on the fastest hardware in the project | todo |
 | ⬜ | **F-178** F-157's three new display-name RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim | todo |
-| ⬜ | **F-183** Wellspring caps and boss kills never grant a Chest — `wellspring`/`boss` tier loot tables are authored and reachable, but nothing ever rolls them | todo |
+| 🔵 | **F-183** Wellspring caps and boss kills never grant a Chest — `wellspring`/`boss` tier loot tables are authored and reachable, but nothing ever rolls them | in_flight |
 | ⬜ | **F-184** `tools/audio/audio_check.py`'s exit code is inverted — it exits 0 when checks FAIL and 1 when they PASS | todo |
 
 ## Done

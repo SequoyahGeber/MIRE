@@ -67,8 +67,8 @@ func _initialize() -> void:
 	# bumped 18 -> 19 for wellspring.gd's net_request_toggle_channel plus its own SceneReplicationConfig.
 	# A hard-coded expectation here is deliberate: this check's whole point is to fail loudly the day
 	# someone adds a wire-shape change and forgets the bump.
-	_check("PROTOCOL_VERSION reflects task 4.8's Wellspring channel RPC",
-		NetVersion.PROTOCOL_VERSION == 19, str(NetVersion.PROTOCOL_VERSION))
+	_check("PROTOCOL_VERSION reflects task 3.7's door toggle RPC",
+		NetVersion.PROTOCOL_VERSION == 20, str(NetVersion.PROTOCOL_VERSION))
 
 	call_deferred(&"_run_wire_checks")
 
