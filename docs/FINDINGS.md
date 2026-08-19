@@ -92,24 +92,6 @@ covered by `tools/ranged_combat_check.gd`/`tools/ranged_combat_net_check.gd`, bo
 is purely the bookkeeping bump D-100 already hit once for task 6.1 (that task avoided it by reusing
 `WorldDeltaLog` instead — not an option here, see D-102).
 
-### F-158 · `bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler
-
-**Area:** content/vfx · **Severity:** low · **Found:** 2026-08-19 by lm during 4.11
-
-Task 4.11 wired `systems/waves/wave_spawner.gd` to substitute `content/enemies/bog_crawler.tres`
-for the default `crawler` slot with a probability that scales with `MireGrid` corruption at the
-spawn point — the "corrupted spawn tables" SPECS.md 4.11 asks for. `bog_crawler` reuses
-`enemy_crawler.glb` as-is (tankier/slower/harder-hitting stats only; no new art was authored — 4.11
-is mechanics, not asset authoring, and content is hand-authored one asset at a time per D-073). The
-result is mechanically real but **invisible to a player**: a bog_crawler and a crawler currently
-render, animate and sound completely identically, so nothing on screen tells a player the Mire has
-made this fight harder until it already has.
-
-Task 4.10 (Mire visuals — shader tint, fog, particles) is the natural owner of a fix: even a simple
-material tint or a corruption-VFX attachment on `bog_crawler`'s instance would close this. Filing
-rather than fixing here because 4.10 hasn't shipped yet and this task's own scope was the mechanic,
-not the skin.
-
 ### F-139 · `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline
 
 **Area:** worldgen / netcode · **Severity:** low · **Found:** 2026-08-18 by lm during 4.6
@@ -889,6 +871,41 @@ in-process draft did not catch), and update the tracker row's evidence line.
 ---
 
 ## Resolved
+
+### F-158 · `bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler — **fixed**
+
+**Area:** content/vfx · **Severity:** low · **Found:** 2026-08-19 by lm during 4.11
+
+Task 4.11 wired `systems/waves/wave_spawner.gd` to substitute `content/enemies/bog_crawler.tres`
+for the default `crawler` slot with a probability that scales with `MireGrid` corruption at the
+spawn point — the "corrupted spawn tables" SPECS.md 4.11 asks for. `bog_crawler` reuses
+`enemy_crawler.glb` as-is (tankier/slower/harder-hitting stats only; no new art was authored — 4.11
+is mechanics, not asset authoring, and content is hand-authored one asset at a time per D-073). The
+result is mechanically real but **invisible to a player**: a bog_crawler and a crawler currently
+render, animate and sound completely identically, so nothing on screen tells a player the Mire has
+made this fight harder until it already has.
+
+Task 4.10 (Mire visuals — shader tint, fog, particles) is the natural owner of a fix: even a simple
+material tint or a corruption-VFX attachment on `bog_crawler`'s instance would close this. Filing
+rather than fixing here because 4.10 hasn't shipped yet and this task's own scope was the mechanic,
+not the skin.
+
+**Resolved 2026-08-19 by lm.** Fixed with a general per-EnemyDef visual_tint field (systems/enemies/enemy_def.gd), applied as a
+per-surface albedo multiply in Enemy._build_visual() (systems/enemies/enemy.gd::_apply_visual_tint()).
+Default Color(1,1,1,1) is a true no-op — every other EnemyDef (crawler) renders unchanged.
+bog_crawler.tres now sets visual_tint = Color(0.38, 0.5, 0.34, 1), a murky corrupted-green, no new art
+authored (D-073). Full spec, root cause, and the sibling engine-noise fix are in docs/SPECS.md's new
+F-158 block.
+
+Verified: agent godot --script tools/bog_crawler_check.gd (new check) — failures=0 under both
+--headless and --windowed, 0 undeclared ERROR lines either way. Re-ran the three existing checks that
+also spawn real bog_crawler bodies (wave_director_check.gd, mire_interaction_check.gd,
+enemy_lod_check.gd) three times each after declaring the dummy-renderer's harmless
+`Parameter "material" is null` noise per standing rule 4 — failures=0 and 0 undeclared ERROR lines on
+every run. Full boot clean: agent godot --quit-after 120, no ERROR lines.
+
+Sibling sweep: bog_crawler is the only EnemyDef that reuses another kind's model today (only crawler
+and bog_crawler are authored; no BossDef .tres exists yet) — nothing else in this class to fix.
 
 ### F-199 · Two sessions share one git index, so a bare 'git add + git commit' races every concurrent ship — the audit's two staged docs landed inside wick20's A-011 art commit — **fixed**
 

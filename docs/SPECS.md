@@ -4601,6 +4601,84 @@ no-opping), clean boot.
 
 ---
 
+## F-158 · `bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler
+
+**Claim:** `content/enemies/bog_crawler.tres`, `systems/enemies/enemy_def.gd`, `systems/enemies/enemy.gd`,
+`tools/bog_crawler_check.gd`, `tools/wave_director_check.gd`, `tools/mire_interaction_check.gd`,
+`tools/enemy_lod_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Root cause:** task 4.11 wired corrupted-ground spawns to substitute `bog_crawler` for `crawler`
+(`systems/waves/wave_spawner.gd::_corrupted_enemy_id_for()`), but `bog_crawler.tres` reuses
+`enemy_crawler.glb` with no material change, no VFX, and `EnemyDef` had no field to carry one. The
+substitution is mechanically real (tankier/slower/harder-hitting) but invisible: a player sees the
+exact same model. Task 4.10 (Mire visuals — shader tint, fog, particles) is the natural long-term
+owner, but hasn't shipped, and this task's own scope doesn't require waiting for it — a stat-only
+variant needing *some* visual marker is a general shape, not specific to 4.10's atmosphere work.
+
+**Fix — a general per-`EnemyDef` cosmetic tint, not a `bog_crawler`-specific hack:**
+
+1. `systems/enemies/enemy_def.gd` gains `visual_tint: Color`, defaulting to `Color(1,1,1,1)` — a
+   true no-op, so every other authored `EnemyDef` (currently just `crawler`) renders bit-for-bit
+   unchanged. Cosmetic only, no replication needed: every peer loads the same `.tres` and computes
+   the same tint from it (ARCHITECTURE.md §2.2, "VFX, audio, camera, UI" row).
+2. `systems/enemies/enemy.gd::_build_visual()` calls a new `_apply_visual_tint()` after collecting
+   `_overlay_meshes`. It walks every `MeshInstance3D`'s surfaces, duplicates the *active* material
+   (so the original imported GLB material — shared across every instance of that model — is never
+   mutated), multiplies its `albedo_color` by `definition.visual_tint`, and sets it as a
+   `surface_override_material`. Skipped entirely when the tint is the default identity, so untinted
+   enemies (every one but `bog_crawler` today) never pay for a material duplicate. Deliberately a
+   separate mechanism from the existing hit-flash/dissolve `material_overlay` (2.9) — that slot is a
+   transient additive layer already reused for two different effects on the same field; a permanent
+   base tint sharing it would be clobbered the next time either effect ran.
+3. `content/enemies/bog_crawler.tres` sets `visual_tint = Color(0.38, 0.5, 0.34, 1)` — a murky,
+   desaturated green that reads as diseased/bog-corrupted at a glance, still recognizably the same
+   crawler silhouette and animation. No new art authored (D-073 — content is hand-authored, this
+   task is mechanics-adjacent VFX, not a new model).
+
+**New focused check, `tools/bog_crawler_check.gd`** (none existed): spawns one `crawler` and one
+`bog_crawler` through the real `EnemyWorld.host_spawn()`, and asserts at the material level, not just
+that the field round-trips — `crawler` carries no surface override at all (`_apply_visual_tint()` is
+a true no-op for it), `bog_crawler` carries a tinted one on every surface, the tint equals the
+original albedo times `visual_tint` exactly, and both still reference the same `model` resource (no
+new art).
+
+**Trap found while verifying — three existing checks provoke new engine noise:** `set_surface_
+override_material()` with a duplicated material triggers the headless dummy renderer's own
+`ERROR: Parameter "material" is null.` (`material_get_instance_shader_parameters`) — harmless CPU-side
+noise with no GPU backend to query, confirmed absent under `--windowed` (real Forward+ backend) with
+byte-identical assertion results either way. Standing rule 4 (this file's preamble) treats any
+undeclared `ERROR:` line as a failure regardless of exit code, so every check that spawns a real
+`bog_crawler` needed its verdict line to declare the pattern: `tools/wave_director_check.gd` (samples
+30 corrupted spawns, deterministically reproduces it), `tools/mire_interaction_check.gd` (spawns
+`bog_crawler` at full corruption — the roll makes it flaky per-run, so declared unconditionally rather
+than relying on a specific run producing it), and `tools/enemy_lod_check.gd` (walks every authored def
+including `bog_crawler` — observed intermittently, declared defensively for the same reason). None of
+the three needed a logic change; each only gained `EXPECTED_ERROR_PATTERNS="Parameter \"material\" is
+null"` on its own `finish()` print, the same shape `tools/chest_check.gd` already established.
+
+**Sibling sweep:** `bog_crawler` is currently the only `EnemyDef` that reuses another kind's `model`
+with stats-only differentiation — `crawler.tres` is the only other authored def, and no `BossDef`
+`.tres` exists yet (task 5.2's 8-12 enemy types and any boss content haven't shipped). Nothing else to
+fix under this class today.
+
+**Verify:** `agent godot --script tools/bog_crawler_check.gd`, plus the three re-verified siblings —
+`agent godot --script tools/wave_director_check.gd`, `tools/mire_interaction_check.gd`,
+`tools/enemy_lod_check.gd` — each graded by `grep 'ERROR:' <log> | grep -vE 'Parameter "material" is
+null' | wc -l`, must be zero.
+
+**Verified 2026-08-19 (lm):** `BOG_CRAWLER_CHECK failures=0` under both `--headless` and `--windowed`;
+zero ERROR lines at all under `--windowed`; zero *undeclared* ERROR lines under plain `--headless`
+(engine noise present, matches the declared pattern). `wave_director_check.gd`,
+`mire_interaction_check.gd`, `enemy_lod_check.gd` all re-run three times each after their declaration
+fix: `failures=0` and zero undeclared ERROR lines on every run. Full boot clean:
+`agent godot --quit-after 120` — no ERROR lines, only the pre-existing benign navmesh-precision
+WARNINGs from `enemy_world.gd::bake_navigation()`.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

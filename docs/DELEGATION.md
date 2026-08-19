@@ -75,6 +75,35 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-158 fixed: `EnemyDef` gains a general `visual_tint`, so a stat-only variant no longer has to be visually identical to its base kind (lm)
+
+`systems/enemies/enemy_def.gd` gained `visual_tint: Color = Color(1,1,1,1)`. Default is a true no-op
+— every `EnemyDef` that never sets it (every one but `bog_crawler` today) renders bit-for-bit
+unchanged. `systems/enemies/enemy.gd::_apply_visual_tint()` (called from `_build_visual()`) walks
+every `MeshInstance3D` under the visual, duplicates its active material per surface (never mutates the
+shared imported-GLB material), and multiplies `albedo_color` by the tint before setting it as a
+`surface_override_material`. Deliberately its own mechanism, separate from the existing hit-flash/
+dissolve `material_overlay` (2.9) — that slot is a transient additive layer already reused for two
+effects; a permanent base tint sharing it would get clobbered the next time either ran.
+
+**The seam task 5.2 (8-12 enemy types) and task 4.10 (Mire visuals) build against:** any future
+`EnemyDef` that reuses an existing `model` for a stat-only variant can set `visual_tint` alone to read
+as visually distinct — no new art required (D-73). `bog_crawler.tres` is the first and only user today:
+`visual_tint = Color(0.38, 0.5, 0.34, 1)`, a murky corrupted-green.
+
+**Trap for the next check that spawns a real enemy with a non-default `visual_tint`:** setting a
+duplicated `surface_override_material` provokes the headless dummy renderer's own harmless
+`ERROR: Parameter "material" is null.` (`material_get_instance_shader_parameters`) — confirmed absent
+under `--windowed` (real Forward+ backend), confirmed CPU-side assertions are identical either way.
+Declare `EXPECTED_ERROR_PATTERNS="Parameter \"material\" is null"` on the check's own verdict line
+(standing rule 4, docs/SPECS.md) rather than being surprised by it — `tools/wave_director_check.gd`,
+`tools/mire_interaction_check.gd` and `tools/enemy_lod_check.gd` all needed this once `bog_crawler`
+started actually rendering tinted.
+
+**Verified:** `agent godot --script tools/bog_crawler_check.gd` (new) → `failures=0` under both
+`--headless` and `--windowed`. Full details, root cause and the sibling-check fixes are in
+`docs/SPECS.md`'s F-158 block; `docs/FINDINGS.md`'s F-158 entry is now under `## Resolved`.
+
 ### 2026-08-19 — F-183 fixed: a Wellspring cap / boss kill finally rolls its loot tier — `autoload/reward_service.gd`, direct-grant, no spawned `Chest` (lm)
 
 D-123's two calls: **direct grant, never a spawned `Chest`** (an event-timed trigger has no
