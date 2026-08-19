@@ -4961,3 +4961,15 @@ Commit at time of writing: `0d66ff3`
 Same fix as F-161/F-165/F-169 (PROTOCOL_VERSION 20->21 catch-up bump + rpc_manifest.gd, shipped by hollow7's F-161 session). Closed together with F-165 since all four share one fix/one verification. See F-165's DONE note and D-133 for the full account.
 
 Commit at time of writing: `0d66ff3`
+
+---
+
+### DONE · F-166 · lm · 2026-08-19T11:33:23+00:00
+
+**`world/gen/authored_world.gd` has no `shipwreck` marker kind, so task 6.5's ExtractionShip is built but never reachable in the live Hollowmere map — same shape as F-146's chest gap**
+
+Added shipwreck marker to hollowmere.json at MereShore [62,1.54,29] (the already-built extraction dock); extraction_service.gd picks it up with no code change. Fixed a latent hollowmere_check.gd _probe_ground gap this exposed (runtime StaticBody colliders from wellspring/extraction_ship bridges weren't excluded). Verified: agent godot --script tools/hollowmere_check.gd -> HOLLOWMERE_CHECK PASS, HOLLOWMERE_SHIPWRECK ship_built=true, HOLLOWMERE_GROUND worst_delta=0.000m. tools/extraction_check.gd -> failures=0. Filed F-214 (cosmetic: undergrowth grows through the new ship hull, below check threshold, not fixed here).
+
+Files: `world/gen/authored_world.gd`, `world/gen/layouts/hollowmere.json`, `tools/hollowmere_check.gd`
+
+Commit at time of writing: `c384efe`

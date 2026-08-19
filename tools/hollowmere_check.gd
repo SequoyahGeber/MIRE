@@ -65,6 +65,7 @@ func _init() -> void:
 	_check_spawn(level, layout)
 	_probe_ground(level, world, layout)
 	_check_markers(level, layout)
+	_check_shipwreck_becomes_ship(level)
 	_check_nothing_floats(level, world, layout)
 	_check_water_is_one_sheet(level, world)
 	_check_undergrowth_stays_off_props(level)
@@ -109,6 +110,16 @@ func _probe_ground(level: Node, world: Node, layout: Dictionary) -> void:
 		# six-metre error in the terrain collider.
 		var collider := hit.get("collider") as Node
 		if collider != null and collider.is_in_group(&"authored_world_prop"):
+			samples -= 1
+			continue
+		# Wellspring and ExtractionShip (F-166) each drop their own solid StaticBody3D on top
+		# of the terrain — same "something to stand on, not the ground itself" shape as an
+		# authored prop, just built at runtime by a bridge service instead of the layout, so
+		# neither is in `authored_world_prop`. Skip by the collider's parent group instead.
+		var collider_parent := collider.get_parent() if collider != null else null
+		if collider_parent != null and (
+			collider_parent.is_in_group(&"wellspring") or collider_parent.is_in_group(&"extraction_ship")
+		):
 			samples -= 1
 			continue
 		worst = maxf(worst, absf((hit["position"] as Vector3).y - expected))
@@ -213,6 +224,34 @@ func _check_nothing_floats(level: Node, world: Node, layout: Dictionary) -> void
 		failures.append("%d of %d sampled props float (worst %.2f m, %s)" % [
 			floating, checked, worst, worst_name
 		])
+
+
+## F-166: `autoload/extraction_service.gd` bridges a `shipwreck`-kind marker into a live
+## `ExtractionShip`, but the map's own layout had no such marker — the bridge was proven only
+## against a synthetic marker (`tools/extraction_check.gd`), never against the real Hollowmere
+## layout it ships with. This closes that gap the way `_check_crawlers_have_a_home` already closes
+## the equivalent one for `EnemyWorld`: ask the live scene, not the JSON, whether the bridge fired.
+func _check_shipwreck_becomes_ship(level: Node) -> void:
+	var extraction: Node = root.get_node_or_null(^"ExtractionService")
+	if extraction == null:
+		failures.append("ExtractionService autoload is not registered")
+		return
+	var marker: Node3D = null
+	for candidate in level.get_tree().get_nodes_in_group(&"authored_world_marker"):
+		if String((candidate as Node).get_meta(&"kind", "")) == "shipwreck":
+			marker = candidate as Node3D
+			break
+	if marker == null:
+		failures.append("Hollowmere layout has no 'shipwreck' marker")
+		return
+	var ship: Node = null
+	for child in marker.get_children():
+		if String(child.name).begins_with("ExtractionShip_"):
+			ship = child
+			break
+	print("HOLLOWMERE_SHIPWRECK marker=%s ship_built=%s" % [marker.name, ship != null])
+	if ship == null:
+		failures.append("shipwreck marker %s has no live ExtractionShip child" % marker.name)
 
 
 ## Water must be ONE sheet, and its edge must be buried in the bank.
