@@ -75,6 +75,74 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — Task 7.5: Settings — graphics/audio/sensitivity/FOV/keybinds/accessibility, `SettingsService` autoload + real controls in 6.10's shell (lm)
+
+No new §2.2 authority row — everything here is client-local presentation (docs/DECISIONS.md D-114
+has the four scope calls: JSON persistence over `ConfigFile`, runtime-created audio buses over a
+`.tres` layout, keyboard-only keybind scope, "reduce camera motion" as the one accessibility
+control). `docs/SPECS.md`'s new `## 7.5` block is the full spec; this is the API surface the next
+task builds against.
+
+**`SettingsService` (new autoload, registered last via `agent autoload` — D-021 append-only) — the
+one seam that owns every setting:**
+
+```gdscript
+SettingsService.graphics_preset() -> int                         # GraphicsQuality.Preset int (0/1/2)
+SettingsService.set_graphics_preset(preset: int) -> void         # delegates to GraphicsQuality.apply()
+
+SettingsService.master_volume() / music_volume() / sfx_volume() -> float   # linear 0..1
+SettingsService.set_master_volume(v) / set_music_volume(v) / set_sfx_volume(v) -> void
+# Drives the AudioServer "Master"/"Music"/"SFX" buses (Music+SFX created at _ready() if missing,
+# both sending to Master); 0 mutes the bus, any positive value maps through linear_to_db().
+
+SettingsService.look_sensitivity() -> float        # clamped [0.01, 1.0], default 0.12
+SettingsService.set_look_sensitivity(v: float) -> void
+SettingsService.invert_y() -> bool
+SettingsService.set_invert_y(v: bool) -> void
+SettingsService.fov_degrees() -> float              # clamped [60, 110], default 75.0
+SettingsService.set_fov_degrees(v: float) -> void
+SettingsService.reduce_camera_motion() -> bool      # suppresses PlayerCamera shake + sprint FOV pulse
+SettingsService.set_reduce_camera_motion(v: bool) -> void
+
+SettingsService.rebindable_actions() -> PackedStringArray   # the 10 keyboard-primary actions;
+                                                             # "attack" (mouse-primary) is excluded
+SettingsService.keybind_label(action: StringName) -> String
+SettingsService.rebind_action(action: StringName, event: InputEventKey) -> StringName
+    # "" on success; else the OTHER rebindable action already holding that physical key — two
+    # actions can never share one, refused rather than silently double-bound.
+SettingsService.reset_keybinds() -> void            # InputMap.load_from_project_settings()
+
+signal SettingsService.settings_changed   # fires after every setter; PlayerCamera and SettingsMenu
+                                           # both refresh from this rather than a bespoke callback
+```
+
+Persists to `user://settings.json` via `core/save/settings_save.gd` — same schema-versioned
+migrate-in-place JSON shape as `SalvageSave`/`UnlockSave`, same `save_path` override +
+`_persistence_enabled()` D-107 guard a check overrides to avoid touching a real save file.
+
+**`PlayerCamera` (`entities/player/player_camera.gd`) now reads sensitivity/invert-Y/FOV/
+reduce-motion from `SettingsService` if present**, applied at `_ready()` and again on every
+`settings_changed` — its own `@export` values are only the fallback for a scene run without that
+autoload (a check, say). `add_shake()` is a no-op while `reduce_camera_motion()` is true.
+
+**`combat_service.gd`/`ranged_combat_service.gd`'s impact SFX now play on the `SFX` bus**
+(`player.bus = &"SFX"`), the only production code that plays a sound today — the SFX slider actually
+covers something. **Ambient music is still unwired** (7.1/7.2's own delegation note stands); the
+`Music` bus exists and sends to `Master` so a future `MusicDirector` has somewhere to play into, but
+the Music slider has no audible effect until that task lands.
+
+**`SettingsMenu` (`ui/menu/settings_menu.gd`)** fills 6.10's shell: GRAPHICS/AUDIO/LOOK/
+ACCESSIBILITY/KEYBINDS sections inside a `ScrollContainer`-wrapped `SettingsStack`, every control a
+thin view calling straight into `SettingsService` — the file owns no settings state of its own.
+Opening the menu (`set_open(true)`) calls a private `_refresh_from_settings()` that repopulates every
+control from the live singleton. No new public API beyond 6.10's own `set_open()`/`is_open()`/
+`request_close()`.
+
+**Verified:** `agent godot --script tools/settings_check.gd` — 51 assertions, `failures=0`.
+No regressions: `combat_check`, `ranged_combat_check`, `main_menu_check`, `build_check`,
+`combat_feel_check`, `verify_setup` all stay `failures=0`. `agent godot --quit-after 15`: 0
+`ERROR:` lines on a full boot.
+
 ### 2026-08-19 — Task 5.9: Wave director — Cycle-aware pacing, composition weighting on top of the player-count scaling and roster-unlock that already shipped (lp)
 
 No new §2.2 row, no new RPC — `systems/waves/wave_spawner.gd` already declared "Day/night, wave

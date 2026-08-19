@@ -3066,6 +3066,97 @@ is a live dictionary key for a minute and a half in every session that runs long
 
 ---
 
+## 7.5 · Settings: graphics, audio, sensitivity, keybinds, FOV, accessibility basics
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap. The old M7 look-ahead bullet for this task named a `ConfigFile`-backed
+`user://settings.cfg`; this task instead followed the JSON `core/save/<name>_save.gd` +
+`autoload/<name>_service.gd` shape `SalvageSave`/`SalvageService` (6.6) and `UnlockSave`/
+`UnlockService` (6.9) already established, for consistency with every other per-player persisted
+state in the repo rather than introducing a second save format — see D-114.
+
+**Authority:** none of its own (`ARCHITECTURE.md` §2.2, "VFX, audio, camera, UI" row) — every knob
+here is per-player presentation, applied locally, never sent to another peer.
+
+**Claim:** `core/save/settings_save.gd` (new), `autoload/settings_service.gd` (new),
+`ui/menu/settings_menu.gd`, `entities/player/player_camera.gd`, `autoload/combat_service.gd`,
+`autoload/ranged_combat_service.gd`, `tools/settings_check.gd` (new). `project.godot` — one
+`agent autoload SettingsService res://autoload/settings_service.gd`, appended last (D-021
+append-only; everything it reads at `_ready()` is either an engine singleton or an autoload already
+earlier in the list, and every consumer looks it up lazily by node path rather than assuming boot
+order, so where in the list it sits does not matter).
+
+**`SettingsService` (new autoload) owns every knob, `SettingsMenu` is a thin view over it.**
+Persists to `user://settings.json` via `SettingsSave`, same schema-versioned migrate-in-place shape
+`SalvageSave`/`UnlockSave` use, same `save_path` override + `_persistence_enabled()` D-107 guard
+(`current_scene == null` in a `--script` harness means no real save file is ever touched by a check).
+API: `graphics_preset()`/`set_graphics_preset(int)` (delegates to `GraphicsQuality.apply()`);
+`master_volume()`/`music_volume()`/`sfx_volume()` and their setters (drive the `Master`/`Music`/`SFX`
+`AudioServer` buses — `Music` and `SFX` are created at `_ready()` if missing, both sending to
+`Master`, so a 0 slider mutes the bus and any positive value maps through `linear_to_db()`);
+`look_sensitivity()`/`invert_y()`/`fov_degrees()` and their setters, clamped to
+`[0.01, 1.0]`/bool/`[60, 110]`; `reduce_camera_motion()`/`set_reduce_camera_motion(bool)`;
+`rebindable_actions()` (the ten keyboard-primary actions — `attack` stays mouse-bound and out of
+scope, D-114), `keybind_label(action)`, `rebind_action(action, InputEventKey) -> StringName` (`&""`
+on success, else the other rebindable action already holding that key — two actions never share a
+key), `reset_keybinds()` (`InputMap.load_from_project_settings()`). Every setter emits
+`settings_changed`.
+
+**`PlayerCamera` reads sensitivity/invert-Y/FOV/reduce-motion from `SettingsService`** if present,
+overriding its own `@export` fallbacks, applied once at `_ready()` and again on every
+`settings_changed` — the menu can open mid-run, and a first-person camera should not need a scene
+reload for a slider to take effect. "Reduce Camera Motion" suppresses exactly the two things this
+class moves the camera on its own without player input: impact shake (`add_shake()` becomes a no-op)
+and the sprint FOV pulse — everything else (pitch, yaw, the FOV slider's own resting value) is
+unaffected, so a motion-sensitive player loses only the two known migraine triggers, not first-person
+control.
+
+**Melee/ranged impact SFX (`combat_service.gd`/`ranged_combat_service.gd`) route through the new
+`SFX` bus** — one `player.bus = &"SFX"` line each, so the settings menu's SFX slider actually covers
+the only SFX the game plays through code today. Ambient music is still unwired (7.1/7.2's own
+delegation note) — the `Music` bus exists and sends to `Master` so a future `MusicDirector` has
+somewhere to play into, but nothing plays through it yet, and the Music slider has no audible effect
+until that task lands.
+
+**`SettingsMenu`** builds its rows into the `SettingsStack` VBoxContainer task 6.10's shell already
+named (now wrapped in a `ScrollContainer` — five sections' worth of controls does not fit the panel's
+original height), same code-built `Control`/`ColorRect`/`PanelContainer` construction pattern every
+other menu in this game uses. Sections: GRAPHICS (an `OptionButton`, Low/Medium/High), AUDIO (three
+volume `HSlider`s), LOOK (sensitivity/FOV sliders + an Invert-Y `CheckBox`), ACCESSIBILITY (the
+Reduce Camera Motion `CheckBox`), KEYBINDS (one row per rebindable action — click a button, it reads
+"PRESS A KEY…", the next physical key press (or Esc to cancel) calls `rebind_action()`; a status
+label surfaces a conflict by naming the action already holding that key — plus a Reset Keybinds
+button). Opening the menu calls `_refresh_from_settings()`, which repopulates every control from the
+live `SettingsService` values with `set_block_signals(true)` around each write so refreshing never
+re-triggers the setter it's reading from. D-032 exclusivity, open/close, Esc-to-close and the visual
+frame are all unchanged from 6.10's shell.
+
+**Verify:** `tools/settings_check.gd` (51 assertions) — `SettingsSave`'s missing/corrupt/
+missing-version/round-trip contract; `set_graphics_preset` visibly moving `GraphicsQuality.preset`;
+`Music`/`SFX` buses exist and send to `Master`; volume setters reaching the right bus in dB and
+muting at zero; sensitivity/FOV clamping at both ends; `reduce_camera_motion` read back;
+`rebindable_actions` excluding `attack`; a rebind succeeding, a conflicting rebind refused and naming
+the conflict, a non-rebindable action refused, `reset_keybinds` restoring the authored default; a
+freshly-readied `PlayerCamera` picking up live sensitivity/invert-Y/FOV and suppressing shake under
+reduce-motion, and an already-readied one live-updating on `settings_changed`; `SettingsMenu`
+opening/closing/D-032-refusing exactly as 6.10's shell did, its slider values matching
+`SettingsService` on open, and its dropdown/keybind-row counts. No regressions:
+`combat_check`/`ranged_combat_check`/`main_menu_check`/`build_check`/`combat_feel_check`/
+`verify_setup` all stay `failures=0`. `agent godot --quit-after 15`: 0 `ERROR:` lines on a full boot.
+
+**Done means:** `settings_check.gd` at `failures=0`, the six regression checks green, 0 `ERROR:` on a
+full boot, and `docs/DELEGATION.md`'s *Current state* carrying the `SettingsService`/`SettingsMenu`
+API surface for 7.6 (gamepad) and any future system that wants its own presentation setting to build
+against, rather than inventing a second settings store.
+
+**Traps for the next task that adds a setting:** add it to `SettingsSave._default_data()` and
+`SettingsService`'s load/save/getter/setter triad, not a parallel file — `_migrate()`'s backfill loop
+already handles an old save missing the new key. A setting a gameplay system reads every frame
+(sensitivity, FOV, reduce-motion) should be pulled once and cached on `settings_changed`, the way
+`PlayerCamera._apply_settings()` does, never read live off the autoload in a hot path.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

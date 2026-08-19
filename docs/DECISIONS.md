@@ -3044,3 +3044,61 @@ growing past the cap to hold difficulty. Both constants
 (`CYCLE_COUNT_STEP_PER_CYCLE`/`CYCLE_COUNT_CAP_MULTIPLIER`) are placeholder-tuned like every other
 Cycle-facing constant in this codebase — nothing here is precious, only the additive-and-capped SHAPE
 is the actual decision, not the two numbers.
+
+---
+
+### D-114 · 2026-08-19 · Task 7.5's settings: JSON persistence over `ConfigFile`, runtime-created audio buses over a `.tres` layout, keybinds scoped to keyboard-primary actions, "reduce camera motion" as the one accessibility control
+
+Four scope calls, made together because each is a "decide it, write down why" call under AGENTS.md
+for a task whose only spec was an M7 look-ahead bullet (`docs/SPECS.md`'s own preamble makes writing
+the real block part of this task).
+
+**Why `user://settings.json` via a new `SettingsSave`/`SettingsService` pair, not the
+`user://settings.cfg`/`ConfigFile` the old look-ahead bullet named.** By the time 7.5 was picked up,
+task 6.6 (`SalvageSave`/`SalvageService`) and task 6.9 (`UnlockSave`/`UnlockService`) had already
+established the repo's one real pattern for per-player persisted state: a static, autoload-free
+`core/save/<name>_save.gd` doing JSON load/save/migrate with a versioned schema, and a matching
+autoload that owns *when* to load/save and applies the values to the engine, guarded by the same
+`save_path` override + `current_scene == null` `_persistence_enabled()` check so a `--script` check
+never touches a real save file (D-107). Following `ConfigFile` instead would give this project two
+save formats for the same category of data — "per-player account/presentation state that survives a
+session" — for no reason other than the old bullet predating 6.6/6.9. Settings persistence gained
+nothing `ConfigFile` offers (typed sections, comments) that the JSON shape doesn't already handle via
+`_default_data()`/`_migrate()`. **Would change my mind:** a real cross-tool interop need for the
+settings file (an external launcher reading it, say) that specifically wants INI-shaped text —
+nothing this task found asked for that.
+
+**Why "Music"/"SFX" audio buses are created at runtime (`AudioServer.add_bus()`) rather than shipping
+a `default_bus_layout.tres`.** A committed bus layout resource is a Godot-authored file under D-031's
+exact-claim/closed-editor rule for two buses whose only property is "exists, sends to Master" — the
+kind of thing AGENTS.md's own Godot-file section says to prefer generating from a tool script over
+hand-authoring when the content is this small. `SettingsService._ensure_audio_buses()` checks
+`AudioServer.get_bus_index()` and only adds a bus if it's missing, so this is idempotent across
+restarts and adds nothing to this task's claim set. **Would change my mind:** a bus layout that needs
+per-bus effects (compression, a limiter) authored in the inspector — that content doesn't have a
+sane code-only representation the way "exists and routes to Master" does.
+
+**Why keybind rebinding covers only the ten keyboard-primary actions
+(`move_forward/back/left/right`, `jump`, `sprint`, `interact`, `inventory`, `build`, `dodge`), not
+`attack`.** `attack`'s primary binding is a mouse button (`project.godot`'s own `[input]` section),
+and a "press a key to rebind" flow that also has to handle "click a mouse button to rebind" is a
+different capture UI, not a checkbox on the same one — `SettingsMenu._finish_rebind()` only ever
+listens for `InputEventKey`. Scoping to keyboard-only keeps 7.5's keybind rows homogeneous (one
+button, one key, one conflict check) rather than half the rows behaving differently from the other
+half. **Would change my mind:** an explicit ask for mouse-button rebinding — `attack`'s joypad
+binding (axis 5) is also untouched by the same reasoning, and gamepad rebinding is task 7.6's own
+scope, not this one's.
+
+**Why "Reduce Camera Motion" is the one accessibility control this task ships, not a longer list.**
+`PlayerCamera` already had exactly two things that move the camera without the player's own input —
+impact shake (`add_shake()`) and the sprint FOV pulse (`_process()`'s `lerpf` toward a boosted FOV) —
+both named triggers for motion sensitivity/vestibular discomfort in the accessibility literature this
+genre gets compared against. A single toggle that suppresses both is content this task could build
+against an existing, well-understood seam and verify headlessly (`tools/settings_check.gd` calls
+`add_shake()` under the toggle and asserts `shake_remaining() == 0.0`). Colorblind palettes, subtitle
+systems, or a UI-scale slider would each need a system that does not exist yet (there is no subtitle
+system, no colorblind-aware palette definition anywhere in the repo) — inventing one as a side effect
+of "accessibility basics" is exactly the scope-creep AGENTS.md warns against ("a bug fix doesn't need
+surrounding cleanup"). **Would change my mind:** a specific accessibility ask from Sequoyah's own
+playtesting, or a future task that already owns the relevant system (a dialogue/audio-cue task owning
+subtitles, a UI task owning palette).
