@@ -4619,10 +4619,12 @@
       "title": "Lose condition: team wipe / island consumed, defeat flow"
     },
     "6.7-review": {
+      "done_at": "2026-08-19T14:27:47+00:00",
+      "done_by": "lm",
       "est": "0.5",
       "milestone": "M6",
       "review_of": "6.7",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 6.7 @ 97f7d47 \u2014 judge the commit, file findings, no edits"
     },
