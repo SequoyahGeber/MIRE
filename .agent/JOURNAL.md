@@ -5846,3 +5846,13 @@ Commit at time of writing: `52f868e`
 Files: `content/enemies/strider.tres`, `content/enemies/tusker.tres`, `content/enemies/broodcaller.tres`
 
 Commit at time of writing: `52f868e`
+
+---
+
+### DONE · F-242 · bram1 · 2026-08-19T17:36:42+00:00
+
+**Any session can route lane work, so six orders reached the queues from agents that were not the director**
+
+Lane routing is now a single seat (D-145): order/dispatch/saturate refuse any agent but the director and point them at agent finding; agent director shows/takes/clears it. Rule stated in AGENTS.md hard rules and ORCHESTRATION §7's start-up sequence. Verified a simulated peer agent is refused by name while the director's own routing still works; harness_check 34/34.
+
+Commit at time of writing: `092077b`
