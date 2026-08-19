@@ -62,7 +62,7 @@ from pathlib import Path
 from typing import Callable
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from mire_art import (  # noqa: E402
@@ -1259,35 +1259,61 @@ def main() -> None:
     # A 1.80 m reference stands in every family sheet. A plant kit whose sizes are
     # only ever compared against each other is exactly how the pickup kit ended up
     # with a 0.71 m berry.
-    bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0.9))
-    figure = bpy.context.object
-    figure.name = "Scale_Reference"
-    figure.scale = (0.20, 0.13, 0.90)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    figure.data.materials.append(mat("reference_blue"))
-    for old in list(figure.users_collection):
-        old.objects.unlink(figure)
-    preview_collection.objects.link(figure)
+    #
+    # One cube cannot serve six family sheets plus the hero shot: `object.location`
+    # set after this process's FIRST render never takes effect (F-204) — only
+    # camera moves and `hide_render` toggles do. The original code moved a single
+    # "figure" object between all seven renders, so only "shrubs" (the first
+    # family rendered) ever actually showed a reference cube; every later sheet
+    # silently shipped without one. Each render gets its own cube below, placed
+    # once here and only ever hidden or shown.
+    def make_reference(tag: str, location) -> bpy.types.Object:
+        bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0.9))
+        fig = bpy.context.object
+        fig.name = f"Scale_Reference_{tag}"
+        fig.scale = (0.20, 0.13, 0.90)
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        fig.data.materials.append(mat("reference_blue"))
+        fig.location = location
+        for old in list(fig.users_collection):
+            old.objects.unlink(fig)
+        preview_collection.objects.link(fig)
+        fig.hide_render = True
+        return fig
+
+    def hero_duplicate(record: dict, location) -> bpy.types.Object:
+        """A standalone, positioned copy of one asset's exported mesh, for the one
+        shot that pulls specific assets together from across six family grids
+        spaced 26 m apart. Repositioning `record["root"]` itself hits the same
+        F-204 problem the figure had — the original code did exactly that, so the
+        hero shot drew every asset at its family-grid position, not its curated
+        spot. A linked duplicate placed HERE, before any render, then only ever
+        hidden or shown, does not have that problem."""
+        source = record["root"].children[0]
+        delta = Vector(location) - record["root"].location
+        dup = source.copy()
+        dup.name = f"{record['name']}_hero"
+        dup.parent = None
+        dup.matrix_world = Matrix.Translation(delta) @ source.matrix_world
+        dup.hide_render = True
+        for old in list(dup.users_collection):
+            old.objects.unlink(dup)
+        preview_collection.objects.link(dup)
+        return dup
 
     def rows_in(family: str) -> int:
         return math.ceil(sum(1 for r in records if r["family"] == family) / COLUMNS)
 
+    # Every family sheet's own reference cube, and every hero duplicate, built
+    # now — before the first `bpy.ops.render.render()` call — so each placement
+    # actually takes effect.
+    family_rigs = []
     for family in FAMILY_ORDER:
         family_y = FAMILY_ORDER.index(family) * 26.0
-        for record in records:
-            set_visible(record, record["family"] == family)
         spacing = FAMILY_SPACING[family]
         half = (COLUMNS * spacing) * 0.5
-        figure.location = (-half - 1.1, family_y, 0.9)
-        width = (half + 1.4) * 2.0
-        tallest = max([r["height"] for r in records if r["family"] == family] + [1.85])
-        content = tallest * 0.90 + (rows_in(family) - 1) * spacing * 1.15 * 0.47 + 0.9
-        camera.data.ortho_scale = width
-        scene.render.resolution_y = int(min(1400, max(560, 1800 * content * 1.22 / width)))
-        camera.location = (0.0, family_y - 18.0, 9.5)
-        look_at(camera, (0.0, family_y, content * 0.34))
-        scene.render.filepath = str(PREVIEW_DIR / FAMILY_PREVIEWS[family])
-        bpy.ops.render.render(write_still=True)
+        figure = make_reference(family, (-half - 1.1, family_y, 0.9))
+        family_rigs.append((family, family_y, spacing, half, figure))
 
     hero = ["tree_willow_a", "tree_snag_b", "sapling_c", "sapling_a", "bush_round_b",
             "bush_broadleaf_a", "bush_thorn_a", "bush_dead_b", "bracken_b", "plant_dock_a",
@@ -1295,13 +1321,31 @@ def main() -> None:
             "clover_patch_a", "leaf_litter_a", "lily_pad_a", "sedge_b"]
     hero_spots = {name: ((index % 9) * 2.5 - 10.0, -3.6 + (index // 9) * 3.4, 0.0)
                   for index, name in enumerate(hero)}
-    saved = {}
+    by_name = {record["name"]: record for record in records}
+    hero_duplicates = {name: hero_duplicate(by_name[name], spot)
+                        for name, spot in hero_spots.items()}
+    hero_figure = make_reference("hero", (-12.4, -1.2, 0.9))
+
+    for family, family_y, spacing, half, figure in family_rigs:
+        for record in records:
+            set_visible(record, record["family"] == family)
+        width = (half + 1.4) * 2.0
+        tallest = max([r["height"] for r in records if r["family"] == family] + [1.85])
+        content = tallest * 0.90 + (rows_in(family) - 1) * spacing * 1.15 * 0.47 + 0.9
+        camera.data.ortho_scale = width
+        scene.render.resolution_y = int(min(1400, max(560, 1800 * content * 1.22 / width)))
+        camera.location = (0.0, family_y - 18.0, 9.5)
+        look_at(camera, (0.0, family_y, content * 0.34))
+        figure.hide_render = False
+        scene.render.filepath = str(PREVIEW_DIR / FAMILY_PREVIEWS[family])
+        bpy.ops.render.render(write_still=True)
+        figure.hide_render = True
+
     for record in records:
-        set_visible(record, record["name"] in hero_spots)
-        if record["name"] in hero_spots:
-            saved[record["name"]] = record["root"].location.copy()
-            record["root"].location = hero_spots[record["name"]]
-    figure.location = (-12.4, -1.2, 0.9)
+        set_visible(record, False)
+    for dup in hero_duplicates.values():
+        dup.hide_render = False
+    hero_figure.hide_render = False
     scene.render.resolution_y = 1000
     camera.data.type = "PERSP"
     camera.data.lens = 50.0
@@ -1310,9 +1354,10 @@ def main() -> None:
     scene.render.filepath = str(PREVIEW_DIR / "flora_set_preview.png")
     bpy.ops.render.render(write_still=True)
     for record in records:
-        if record["name"] in saved:
-            record["root"].location = saved[record["name"]]
         set_visible(record, True)
+    for dup in hero_duplicates.values():
+        dup.hide_render = True
+    hero_figure.hide_render = True
 
     bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE_PATH))
 

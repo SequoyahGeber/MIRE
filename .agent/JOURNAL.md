@@ -4774,3 +4774,15 @@ cmd_check's unclaimed-file warning now names a different session's just-released
 Files: `.agent/bin/agent`, `tools/harness_check.py`
 
 Commit at time of writing: `02cd839`
+
+---
+
+### DONE · F-204 · lp · 2026-08-19T10:14:11+00:00
+
+**A Blender preview that moves assets between renders draws the layout it had at the first render**
+
+Completed.
+
+Files: `tools/blender/build_gatherable_plants.py`, `tools/blender/build_flora_set.py`, `assets/flora/preview/flora_set_preview.png`, `assets/flora/preview/flowers_preview.png`, `assets/flora/preview/grasses_preview.png`, `assets/flora/preview/ground_cover_preview.png`, `assets/flora/preview/leafy_plants_preview.png`, `assets/flora/preview/shrubs_preview.png`, `assets/flora/preview/small_trees_preview.png`, `assets/gatherables/catalog.json`, `assets/gatherables/exports/berry_bush_harvested.glb`, `assets/gatherables/preview/berry_decision_preview.png`, `assets/gatherables/preview/gatherable_deposits_preview.png`, `assets/gatherables/preview/gatherable_plants_preview.png`, `assets/source/flora_set.blend`, `assets/source/gatherable_plants.blend`
+
+Commit at time of writing: `d284459`

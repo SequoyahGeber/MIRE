@@ -587,8 +587,12 @@ def build_resin_node(seed: int) -> None:
 
 SPECS: list[tuple[str, Callable[[int], None]]] = [
     ("berry_bush_full", build_berry_bush_full),
-    ("berry_bush_harvested", build_berry_bush_harvested),
+    # Poison built right after full, harvested after that: the berry-decision
+    # preview reads the three states left-to-right in build order (F-204 — it
+    # can no longer relocate them for that shot), and full/poison/harvested is
+    # the order the comparison wants.
     ("poison_berry_bush", build_poison_berry_bush),
+    ("berry_bush_harvested", build_berry_bush_harvested),
     ("fibre_plant", build_fibre_plant),
     ("medicinal_herb", build_medicinal_herb),
     ("wild_onion", build_wild_onion),
@@ -876,59 +880,85 @@ def main() -> None:
     # A 1.80 m reference stands in every sheet. A kit whose sizes are only ever
     # compared against each other is exactly how the pickup kit shipped a 0.71 m
     # berry next to a 1.08 m stone.
-    bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0.9))
-    figure = bpy.context.object
-    figure.name = "Scale_Reference"
-    figure.scale = (0.20, 0.13, 0.90)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    figure.data.materials.append(mat("reference_blue"))
-    for old in list(figure.users_collection):
-        old.objects.unlink(figure)
-    preview_collection.objects.link(figure)
+    #
+    # One cube cannot serve every sheet: `object.location` set after this
+    # process's FIRST render never takes effect (F-204) — only camera moves and
+    # `hide_render` toggles do. The original code moved one "figure" object
+    # between all three renders, so only the first sheet's reference cube ever
+    # actually appeared where intended. Each sheet below gets its own cube
+    # instead, placed once here and only ever hidden or shown.
+    def make_reference(tag: str, location) -> bpy.types.Object:
+        bpy.ops.mesh.primitive_cube_add(location=(0, 0, 0.9))
+        fig = bpy.context.object
+        fig.name = f"Scale_Reference_{tag}"
+        fig.scale = (0.20, 0.13, 0.90)
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        fig.data.materials.append(mat("reference_blue"))
+        fig.location = location
+        for old in list(fig.users_collection):
+            old.objects.unlink(fig)
+        preview_collection.objects.link(fig)
+        fig.hide_render = True
+        return fig
 
     def set_visible(record: dict, visible: bool) -> None:
         record["root"].hide_render = not visible
         for child in record["root"].children_recursive:
             child.hide_render = not visible
 
-    by_name = {record["name"]: record for record in records}
-    sheets = [
-        ("gatherable_plants_preview.png", 0.0,
-         ["berry_bush_full", "berry_bush_harvested", "poison_berry_bush",
-          "fibre_plant", "medicinal_herb", "wild_onion"]),
-        ("gatherable_deposits_preview.png", 8.0,
-         ["honeycomb", "clay_deposit", "peat_deposit", "resin_node"]),
-    ]
-    camera.data.type = "ORTHO"
-    scene.render.resolution_y = 760
-    for filename, sheet_y, names in sheets:
-        for record in records:
-            set_visible(record, record["name"] in names)
-        # Frame the assets actually on this sheet, with the 1.80 m figure standing
-        # clear to the left of the row rather than in front of the first asset.
+    def sheet_geometry(names: list) -> tuple[float, float, float]:
         first_x = -3.4
         last_x = first_x + (len(names) - 1) * 1.35
         figure_x = first_x - 1.15
         span = (last_x + 0.75) - (figure_x - 0.45)
-        camera.data.ortho_scale = span
-        figure.location = (figure_x, sheet_y, 0.9)
         centre_x = ((figure_x - 0.45) + (last_x + 0.75)) * 0.5
+        return figure_x, span, centre_x
+
+    by_name = {record["name"]: record for record in records}
+    sheets = [
+        ("gatherable_plants_preview.png", 0.0,
+         ["berry_bush_full", "poison_berry_bush", "berry_bush_harvested",
+          "fibre_plant", "medicinal_herb", "wild_onion"]),
+        ("gatherable_deposits_preview.png", 8.0,
+         ["honeycomb", "clay_deposit", "peat_deposit", "resin_node"]),
+    ]
+    # Every reference cube any render below will need, built now — before the
+    # first `bpy.ops.render.render()` call — so each one's placement actually
+    # takes effect (F-204).
+    sheet_rigs = []
+    for filename, sheet_y, names in sheets:
+        figure_x, span, centre_x = sheet_geometry(names)
+        figure = make_reference(filename, (figure_x, sheet_y, 0.9))
+        sheet_rigs.append((filename, sheet_y, names, span, centre_x, figure))
+    decision_names = ("berry_bush_full", "poison_berry_bush", "berry_bush_harvested")
+    # SPECS builds these three adjacent, in exactly this order, so their real
+    # grid positions already read left-to-right the way the comparison wants —
+    # this shot only ever aims a camera at them, it never relocates them.
+    decision_centre_x = by_name["poison_berry_bush"]["root"].location.x
+    decision_figure = make_reference(
+        "decision", (by_name["berry_bush_full"]["root"].location.x - 1.2, 0.80, 0.9))
+
+    camera.data.type = "ORTHO"
+    scene.render.resolution_y = 760
+    for filename, sheet_y, names, span, centre_x, figure in sheet_rigs:
+        for record in records:
+            set_visible(record, record["name"] in names)
+        # Frame the assets actually on this sheet, with the 1.80 m figure standing
+        # clear to the left of the row rather than in front of the first asset.
+        camera.data.ortho_scale = span
+        figure.hide_render = False
         camera.location = (centre_x, sheet_y - 12.0, 1.9)
         look_at(camera, (centre_x, sheet_y, 0.72))
         scene.render.filepath = str(PREVIEW_DIR / filename)
         bpy.ops.render.render(write_still=True)
+        figure.hide_render = True
 
     # The berry decision, at the distance the decision is actually made — standing
     # in front of the bushes rather than looking down on them, because "almost
     # identical" is a claim about what a player sees on approach.
     for record in records:
-        set_visible(record, record["name"] in ("berry_bush_full", "poison_berry_bush",
-                                               "berry_bush_harvested"))
-    saved = {r["name"]: r["root"].location.copy() for r in records}
-    by_name["berry_bush_full"]["root"].location = (-1.55, 0.0, 0.0)
-    by_name["poison_berry_bush"]["root"].location = (0.0, 0.0, 0.0)
-    by_name["berry_bush_harvested"]["root"].location = (1.55, 0.0, 0.0)
-    figure.location = (-2.75, 0.80, 0.9)
+        set_visible(record, record["name"] in decision_names)
+    decision_figure.hide_render = False
     camera.data.type = "PERSP"
     camera.data.lens = 40.0
     scene.render.resolution_y = 760
@@ -936,12 +966,11 @@ def main() -> None:
     # sat 3.15 m out on a 45 mm lens, which frames 2.5 m of a 3.2 m row — it
     # rendered as a macro shot of one bush, which cannot answer the question this
     # sheet exists to answer.
-    camera.location = (0.0, -5.95, 1.22)
-    look_at(camera, (0.0, 0.0, 0.42))
+    camera.location = (decision_centre_x, -5.95, 1.22)
+    look_at(camera, (decision_centre_x, 0.0, 0.42))
     scene.render.filepath = str(PREVIEW_DIR / "berry_decision_preview.png")
     bpy.ops.render.render(write_still=True)
     for record in records:
-        record["root"].location = saved[record["name"]]
         set_visible(record, True)
 
     bpy.ops.wm.save_as_mainfile(filepath=str(SOURCE_PATH))

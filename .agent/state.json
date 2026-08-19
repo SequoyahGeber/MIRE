@@ -1,128 +1,6 @@
 {
-  "claims": {
-    "assets/flora/preview/flora_set_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:13:47+00:00",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/flora/preview/flowers_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:13:47+00:00",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/flora/preview/grasses_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:13:47+00:00",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/flora/preview/ground_cover_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:13:47+00:00",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/flora/preview/leafy_plants_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:13:47+00:00",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/flora/preview/shrubs_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:13:47+00:00",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/flora/preview/small_trees_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:13:47+00:00",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/gatherables/catalog.json": {
-      "agent": "lp",
-      "at": "2026-08-19T10:13:47+00:00",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/gatherables/exports/berry_bush_harvested.glb": {
-      "agent": "lp",
-      "at": "2026-08-19T10:13:47+00:00",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/gatherables/preview/berry_decision_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:13:47+00:00",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/gatherables/preview/gatherable_deposits_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:13:47+00:00",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/gatherables/preview/gatherable_plants_preview.png": {
-      "agent": "lp",
-      "at": "2026-08-19T10:13:47+00:00",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/source/flora_set.blend": {
-      "agent": "lp",
-      "at": "2026-08-19T10:13:47+00:00",
-      "task": "F-204",
-      "token": null
-    },
-    "assets/source/gatherable_plants.blend": {
-      "agent": "lp",
-      "at": "2026-08-19T10:13:47+00:00",
-      "task": "F-204",
-      "token": null
-    },
-    "tools/blender/build_flora_set.py": {
-      "agent": "lp",
-      "at": "2026-08-19T10:03:48+00:00",
-      "task": "F-204",
-      "token": null
-    },
-    "tools/blender/build_gatherable_plants.py": {
-      "agent": "lp",
-      "at": "2026-08-19T10:03:48+00:00",
-      "task": "F-204",
-      "token": null
-    }
-  },
-  "in_flight": {
-    "F-204": {
-      "agent": "lp",
-      "files": [
-        "tools/blender/build_gatherable_plants.py",
-        "tools/blender/build_flora_set.py",
-        "assets/flora/preview/flora_set_preview.png",
-        "assets/flora/preview/flowers_preview.png",
-        "assets/flora/preview/grasses_preview.png",
-        "assets/flora/preview/ground_cover_preview.png",
-        "assets/flora/preview/leafy_plants_preview.png",
-        "assets/flora/preview/shrubs_preview.png",
-        "assets/flora/preview/small_trees_preview.png",
-        "assets/gatherables/catalog.json",
-        "assets/gatherables/exports/berry_bush_harvested.glb",
-        "assets/gatherables/preview/berry_decision_preview.png",
-        "assets/gatherables/preview/gatherable_deposits_preview.png",
-        "assets/gatherables/preview/gatherable_plants_preview.png",
-        "assets/source/flora_set.blend",
-        "assets/source/gatherable_plants.blend"
-      ],
-      "notes": [],
-      "started": "2026-08-19T10:03:48+00:00",
-      "token": null
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
       "agent": "lm",
@@ -223,6 +101,55 @@
       "at": "2026-08-19T09:57:59+00:00",
       "hash": null,
       "task": "F-198",
+      "token": null
+    },
+    "assets/flora/preview/flora_set_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "9d305596a34c79f3034a39b77d574f669327a9fac336490bacd551a6f013a797",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/flora/preview/flowers_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "adb081dbcc5386e801f7d3f5e4c1f63ed5cc7903661e6942954f18c4f13971d2",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/flora/preview/grasses_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "53e5a8d22c7601708dddaf59ba1c045c2fdcbc5b624dcda9f4c710b446def097",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/flora/preview/ground_cover_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "b0bc35d5a03e182076be89ac900cdcfbf638be9dc65bac8d54e1c0de1ccaa7b9",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/flora/preview/leafy_plants_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "f22a3c20a8864e6527adcf2424c8a0b4df094421b65c26c47477998518ea616a",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/flora/preview/shrubs_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "2024e0a0f42c2ba5414deb67869d3b0099651af3a7eeabb775ae27c19e103597",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/flora/preview/small_trees_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "9d71e05e3febfb8bc7d1a49dd0f9625b5ef0743a20130622f770d8e1958bc0b4",
+      "task": "F-204",
       "token": null
     },
     "assets/food": {
@@ -371,6 +298,41 @@
       "hash": null,
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:452432e7-8342-4692-b0ad-9983f1c3985d"
+    },
+    "assets/gatherables/catalog.json": {
+      "agent": "lp",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "6d2cd0dd941e5f95248b05a0e5e5baf27579dc5c9bf05dd3d70b924662f5ec94",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/gatherables/exports/berry_bush_harvested.glb": {
+      "agent": "lp",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "f31f2f87c1be8ecb1c65a40cac277b48e43c0b8f5a778cbd5d986c18b0de3bfb",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/gatherables/preview/berry_decision_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "3aec10ec2ca9b8ed662f3ad3380ff1a3210e2caf5d5a087acab6021d4f2b05bc",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/gatherables/preview/gatherable_deposits_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "6836dd2fca96959522ddfb086fbc55cefe76f301aa37138454ff1a2e8ae7d121",
+      "task": "F-204",
+      "token": null
+    },
+    "assets/gatherables/preview/gatherable_plants_preview.png": {
+      "agent": "lp",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "2761a7a5a2f77983bfe0dac8a4f389401007d1ac1ab478d3fa30dbbe11a66b13",
+      "task": "F-204",
+      "token": null
     },
     "assets/gatherables/preview/gatherables_preview.png": {
       "agent": "wick20",
@@ -547,12 +509,26 @@
       "at": "2026-08-18T14:17:26+00:00",
       "task": "2.1d"
     },
+    "assets/source/flora_set.blend": {
+      "agent": "lp",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "1c8e41ba7d7344198630efe011186bc640a8c17a5f79114e6bcf864549e997e7",
+      "task": "F-204",
+      "token": null
+    },
     "assets/source/food_set.blend": {
       "agent": "slate17",
       "at": "2026-08-19T08:00:11+00:00",
       "hash": "c414bbd8acab25fc4b0bb7f715f4e58e345e1cad4136b2362586b9804f6797e8",
       "task": "2.1d",
       "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+    },
+    "assets/source/gatherable_plants.blend": {
+      "agent": "lp",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "0d9761b4cd608a5ed8f84d8a4c73fce8ac27a53c0e608886d7ecef318bf9fb2a",
+      "task": "F-204",
+      "token": null
     },
     "assets/source/loot_set.blend": {
       "agent": "lp",
@@ -2462,9 +2438,9 @@
     },
     "tools/blender/build_flora_set.py": {
       "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
-      "hash": "c8a4077eb49d25fe6b6b8a08cd568bc1e79f8e3a46b5d7a7dfdb66fd7ae661a1",
-      "task": "F-196",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "6d823cddd4c4bfee0a8f3d16310431f592ba821179dc427fca75ece499983cfb",
+      "task": "F-204",
       "token": null
     },
     "tools/blender/build_food_set.py": {
@@ -2476,9 +2452,9 @@
     },
     "tools/blender/build_gatherable_plants.py": {
       "agent": "lp",
-      "at": "2026-08-19T09:20:59+00:00",
-      "hash": "6794984a96719ad81fd46308ec89d35a2f7eab621c174f50e5e1a154e6c62ccc",
-      "task": "F-196",
+      "at": "2026-08-19T10:14:11+00:00",
+      "hash": "c317e9ffba0304a7a4fe4da57ca4fb68d0ca86bc8a21915372a2b0735f693000",
+      "task": "F-204",
       "token": null
     },
     "tools/blender/build_harvestable_resources.py": {
@@ -6456,9 +6432,11 @@
       "title": "AuthoredWorld's F-187 chunk merge excludes sway- and emitter-bearing props \u2014 a second attempt needs per-vertex height encoding or per-asset placement metadata inside a merged mesh"
     },
     "F-204": {
+      "done_at": "2026-08-19T10:14:11+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "A Blender preview that moves assets between renders draws the layout it had at the first render"
     },

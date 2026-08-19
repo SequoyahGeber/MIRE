@@ -22,24 +22,6 @@
       ]
     },
     {
-      "name": "berry_bush_harvested",
-      "file": "exports/berry_bush_harvested.glb",
-      "width_m": 0.8212,
-      "depth_m": 0.7144,
-      "height_m": 0.78,
-      "target_m": 0.78,
-      "axis": "height",
-      "parts": 1,
-      "polygons": 368,
-      "triangles": 488,
-      "materials": [
-        "MIRE_Leaf",
-        "MIRE_LeafLight",
-        "MIRE_WoodBark",
-        "MIRE_WoodDead"
-      ]
-    },
-    {
       "name": "poison_berry_bush",
       "file": "exports/poison_berry_bush.glb",
       "width_m": 0.9103,
@@ -56,6 +38,24 @@
         "MIRE_Leaf",
         "MIRE_LeafLight",
         "MIRE_WoodBark"
+      ]
+    },
+    {
+      "name": "berry_bush_harvested",
+      "file": "exports/berry_bush_harvested.glb",
+      "width_m": 0.8212,
+      "depth_m": 0.7144,
+      "height_m": 0.78,
+      "target_m": 0.78,
+      "axis": "height",
+      "parts": 1,
+      "polygons": 368,
+      "triangles": 488,
+      "materials": [
+        "MIRE_Leaf",
+        "MIRE_LeafLight",
+        "MIRE_WoodBark",
+        "MIRE_WoodDead"
       ]
     },
     {
