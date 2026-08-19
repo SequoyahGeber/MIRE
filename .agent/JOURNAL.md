@@ -3865,3 +3865,15 @@ Notes along the way:
 Files: `systems/wellspring/wellspring.gd`, `core/events/event_bus.gd`, `world/mire/mire_grid.gd`, `tools/wellspring_recorruption_check.gd`
 
 Commit at time of writing: `cff4141`
+
+---
+
+### DONE · 6.5 · lm · 2026-08-19T02:33:53+00:00
+
+**Extraction: shipwreck POI, repair recipe, board-to-leave, group confirm flow (`DESIGN.md` §5.2)**
+
+Shipped: systems/extraction/extraction_ship.gd (host-authoritative repair-stage FSM + presence-gated departure hold, ship-frame assembly per assets/ships/README.md), autoload/extraction_service.gd (shipwreck-marker bridge, mirrors wellspring_service.gd), ui/hud/extraction_hud.gd (repair/board prompt, registered as autoload unlike wellspring_hud.gd's sibling gap), EventBus.ship_repaired/run_extracted signals. Verified: tools/extraction_check.gd 34 assertions, 0 failures (agent godot --script tools/extraction_check.gd). No regressions: wellspring_check/cycle_check/cycle_modifier_check/wave_spawner_check/crafting_check/mire_grid_check/mire_interaction_check/handshake_check/rule_check/command_catalog_check/verify_setup/build_check all failures=0. 0 ERROR: on full boot (agent godot --quit-after 15). Not reachable in the live Hollowmere map yet — authored_world.gd has no shipwreck marker (F-166, file was locked all session). PROTOCOL_VERSION not bumped (F-165, net_version.gd also locked all session). crafting_net_check's 24 pre-existing failures confirmed unrelated via agent baseline (F-167). Docs: SPECS.md §6.5, DECISIONS.md D-105/D-106, DELEGATION.md Current state, FINDINGS.md F-165/F-166/F-167, ARCHITECTURE.md §2.2 new Extraction row.
+
+Files: `systems/extraction/extraction_ship.gd`, `autoload/extraction_service.gd`, `ui/hud/extraction_hud.gd`, `tools/extraction_check.gd`, `core/events/event_bus.gd`, `project.godot`
+
+Commit at time of writing: `b6f7329`

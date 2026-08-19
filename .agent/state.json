@@ -197,11 +197,6 @@
       "hash": null,
       "task": "2.1d"
     },
-    "assets/flora": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
-      "task": "2.1d"
-    },
     "assets/icons/README.md": {
       "agent": "lp",
       "at": "2026-08-18T14:15:06+00:00",
@@ -241,11 +236,6 @@
       "agent": "tine18",
       "at": "2026-08-18T17:43:02+00:00",
       "task": "2.1j"
-    },
-    "assets/maps/preview": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
-      "task": "2.1d"
     },
     "assets/ships": {
       "agent": "ivy8",
@@ -368,11 +358,6 @@
       "at": "2026-08-18T14:17:26+00:00",
       "task": "2.1d"
     },
-    "assets/source/flora_set.blend": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
-      "task": "2.1d"
-    },
     "assets/source/playtest_hollow.blend": {
       "agent": "tine18",
       "at": "2026-08-18T17:43:02+00:00",
@@ -435,6 +420,12 @@
       "agent": "vane19",
       "at": "2026-08-18T18:15:00+00:00",
       "task": "F-118"
+    },
+    "autoload/extraction_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T02:33:53+00:00",
+      "hash": "9c18106ca92ae26af418ca4ebeada3b6e705dd5316e0b3c0d72dd8b1ce8d6d62",
+      "task": "6.5"
     },
     "autoload/graphics_quality.gd": {
       "agent": "coil23",
@@ -853,11 +844,6 @@
       "at": "2026-08-18T21:26:59+00:00",
       "hash": "a835c8350585c08eea9932aef41e2cd90dca6bf183e700892d211d0b7f43284c",
       "task": "3.2"
-    },
-    "content/loot/small.tres": {
-      "agent": "reed16",
-      "at": "2026-08-18T02:29:39+00:00",
-      "task": "3.5"
     },
     "content/loot/strongbox.tres": {
       "agent": "slate17",
@@ -1527,9 +1513,9 @@
     },
     "core/events/event_bus.gd": {
       "agent": "lm",
-      "at": "2026-08-19T02:12:08+00:00",
-      "hash": "a4668c84893acfa2633480a225b313bb58387faa42c55d5bbf8bddb2aef5aaa7",
-      "task": "6.4"
+      "at": "2026-08-19T02:33:53+00:00",
+      "hash": "feb54fef075ac6d572ce5d1cda474c4c21c66bf56653c3e9e5d48ec870cd1f80",
+      "task": "6.5"
     },
     "core/game_state.gd": {
       "agent": "lm",
@@ -1601,11 +1587,6 @@
       "hash": "4afda3ae7b80644df85797defdd0ba84e393fcab1dee5e8dc98c3f79e7bc712b",
       "task": "3.2"
     },
-    "docs/NEXT.md": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
-      "task": "2.1d"
-    },
     "docs/ORCHESTRATION.md": {
       "agent": "bram1",
       "at": "2026-08-18T15:01:15+00:00",
@@ -1650,26 +1631,16 @@
       "hash": "9d4104e9ea756fc3b877ca257647b16b3ade50c611fba60dbfb8c972df143493",
       "task": "F-124"
     },
-    "levels/greybox_test.tscn": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
-      "task": "2.1d"
-    },
     "levels/hollowmere.tscn": {
       "agent": "vane19",
       "at": "2026-08-18T18:07:48+00:00",
       "task": "F-115"
     },
-    "levels/playtest_hollow.tscn": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
-      "task": "2.1d"
-    },
     "project.godot": {
       "agent": "lm",
-      "at": "2026-08-19T01:37:12+00:00",
-      "hash": "47697379932f353ca24004f762fd8089ac72875945531a45d8f313f72dbcae7d",
-      "task": "6.1"
+      "at": "2026-08-19T02:33:53+00:00",
+      "hash": "e1162f15a188663c9064acc7d7251bea8ce446979a66346c6af88308d6cb4d5b",
+      "task": "6.5"
     },
     "scenes/buildables/barricade.tscn": {
       "agent": "slate17",
@@ -1870,6 +1841,12 @@
       "hash": "67354501b62ca8175eb38d0ef823603e12c60c6229aeaf680c9e085fb5842761",
       "task": "3.16"
     },
+    "systems/extraction/extraction_ship.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T02:33:53+00:00",
+      "hash": "691215fdb3d66a5938d0fc53f379b41074d333ffa201b3fe933727c6cb88a77b",
+      "task": "6.5"
+    },
     "systems/harvesting/harvest_library.gd": {
       "agent": "vane19",
       "at": "2026-08-18T17:55:20+00:00",
@@ -2058,11 +2035,6 @@
     "tools/blender/build_extraction_ship_set.py": {
       "agent": "ivy8",
       "at": "2026-08-18T14:17:26+00:00",
-      "task": "2.1d"
-    },
-    "tools/blender/build_flora_set.py": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
       "task": "2.1d"
     },
     "tools/blender/mat_cache_check.py": {
@@ -2285,6 +2257,12 @@
       "at": "2026-08-18T18:15:00+00:00",
       "task": "F-118"
     },
+    "tools/extraction_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T02:33:53+00:00",
+      "hash": "c7dc42a86aa52b200dc3341e794b4b2c4571911c542f2a349c214b7601bda6a5",
+      "task": "6.5"
+    },
     "tools/findings_numbering_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T14:20:20+00:00",
@@ -2295,11 +2273,6 @@
       "at": "2026-08-18T21:40:25+00:00",
       "hash": "35c05db43290598337c9c45ebc4b3a85d82c2c619f6dd930cfdfae204f8bdc4e",
       "task": "F-122"
-    },
-    "tools/frame_cap_check.gd": {
-      "agent": "reed16",
-      "at": "2026-08-18T02:29:39+00:00",
-      "task": "F-066"
     },
     "tools/function_check.gd": {
       "agent": "lp",
@@ -2698,6 +2671,12 @@
       "at": "2026-08-18T14:10:44+00:00",
       "task": "F-099"
     },
+    "ui/hud/extraction_hud.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T02:33:53+00:00",
+      "hash": "08c73bb80ec6a25d72e02601a7347d84972174fc08e43a833d1924ecf8a47d8e",
+      "task": "6.5"
+    },
     "ui/hud/vitals_hud.gd": {
       "agent": "kiln9",
       "at": "2026-08-18T14:10:44+00:00",
@@ -2820,11 +2799,6 @@
       "agent": "tine18",
       "at": "2026-08-18T17:43:02+00:00",
       "task": "2.1j"
-    },
-    "world/gen/playtest_hollow.gd": {
-      "agent": "moss11",
-      "at": "2026-08-18T02:21:14+00:00",
-      "task": "2.1d"
     },
     "world/gen/poi_def.gd": {
       "agent": "hollow7",
@@ -3758,9 +3732,11 @@
       "title": "Wellspring re-corruption over time"
     },
     "6.5": {
+      "done_at": "2026-08-19T02:33:53+00:00",
+      "done_by": "lm",
       "est": "3",
       "milestone": "M6",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Extraction: shipwreck POI, repair recipe, board-to-leave, group confirm flow (`DESIGN.md` \u00a75.2)"
     },
@@ -5337,6 +5313,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`expr as Array[T]` silently fails to convert an untyped Array's element type \u2014 a `.set()` onto a typed-array `@export` then no-ops with no error"
+    },
+    "F-164": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A capped Wellspring's re-corruption clock (task 6.4) has no HUD or ambient warning before it finishes \u2014 only the in-world mesh swap tells a player"
     }
   },
   "version": 1

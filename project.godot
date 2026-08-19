@@ -59,6 +59,8 @@ MireGrid="*res://world/mire/mire_grid.gd"
 RangedCombatService="*res://autoload/ranged_combat_service.gd"
 CycleService="*res://systems/cycle/cycle_service.gd"
 CycleModifierService="*res://systems/cycle/cycle_modifier_service.gd"
+ExtractionService="*res://autoload/extraction_service.gd"
+ExtractionHud="*res://ui/hud/extraction_hud.gd"
 
 [display]
 

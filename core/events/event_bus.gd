@@ -16,6 +16,8 @@ static var _wellspring_capped_subscribers: Array[Callable] = []
 static var _wellspring_recorrupted_subscribers: Array[Callable] = []
 static var _cycle_advanced_subscribers: Array[Callable] = []
 static var _cycle_modifier_drawn_subscribers: Array[Callable] = []
+static var _ship_repaired_subscribers: Array[Callable] = []
+static var _run_extracted_subscribers: Array[Callable] = []
 
 
 ## Listener signature:
@@ -190,6 +192,63 @@ static func emit_cycle_modifier_drawn(modifier_id: StringName, cycle: int) -> vo
 static func cycle_modifier_drawn_subscriber_count() -> int:
 	_prune_invalid(_cycle_modifier_drawn_subscribers)
 	return _cycle_modifier_drawn_subscribers.size()
+
+
+## Listener signature: (ship_name: StringName, world_position: Vector3) -> void
+##
+## Emitted by the HOST only, the instant `ExtractionShip.repair_stage` reaches its final stage (task
+## 6.5, DESIGN.md §5.2: "From Cycle 3, the wreck can be repaired with mid-tier resources"). No
+## departure happens here — boarding and the group confirm flow are a separate step the crew still
+## has to choose to take. This is only the "the wreck is seaworthy" moment, the seam a future VFX/
+## audio cue hangs off, same "future task's hook" role D-092 gave `wellspring_capped`.
+static func subscribe_ship_repaired(listener: Callable) -> void:
+	_prune_invalid(_ship_repaired_subscribers)
+	if listener.is_valid() and not _ship_repaired_subscribers.has(listener):
+		_ship_repaired_subscribers.append(listener)
+
+
+static func unsubscribe_ship_repaired(listener: Callable) -> void:
+	_ship_repaired_subscribers.erase(listener)
+
+
+static func emit_ship_repaired(ship_name: StringName, world_position: Vector3) -> void:
+	_prune_invalid(_ship_repaired_subscribers)
+	for listener: Callable in _ship_repaired_subscribers.duplicate():
+		listener.call(ship_name, world_position)
+
+
+static func ship_repaired_subscriber_count() -> int:
+	_prune_invalid(_ship_repaired_subscribers)
+	return _ship_repaired_subscribers.size()
+
+
+## Listener signature: (cycle: int, world_position: Vector3) -> void
+##
+## Emitted by the HOST only, the instant every present, connected player has held the group confirm
+## together long enough to complete `ExtractionShip`'s departure (task 6.5, DESIGN.md §5.2: boarding
+## "ends the run successfully: you bank your full Salvage, and your run is recorded at the Cycle you
+## reached"). Nothing here banks anything — 6.6 owns the superlinear reward curve, the extract-vs-die
+## split and persistence, none of which exist yet. This is that seam. There is deliberately no
+## `run_wiped`/lose counterpart yet either; see docs/FINDINGS.md for the gap 6.6 will need closed.
+static func subscribe_run_extracted(listener: Callable) -> void:
+	_prune_invalid(_run_extracted_subscribers)
+	if listener.is_valid() and not _run_extracted_subscribers.has(listener):
+		_run_extracted_subscribers.append(listener)
+
+
+static func unsubscribe_run_extracted(listener: Callable) -> void:
+	_run_extracted_subscribers.erase(listener)
+
+
+static func emit_run_extracted(cycle: int, world_position: Vector3) -> void:
+	_prune_invalid(_run_extracted_subscribers)
+	for listener: Callable in _run_extracted_subscribers.duplicate():
+		listener.call(cycle, world_position)
+
+
+static func run_extracted_subscriber_count() -> int:
+	_prune_invalid(_run_extracted_subscribers)
+	return _run_extracted_subscribers.size()
 
 
 static func _prune_invalid(subscribers: Array[Callable]) -> void:
