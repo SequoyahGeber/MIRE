@@ -15,6 +15,11 @@ extends Node
 ##   glow, volumetric  — post/froxel passes that touch the whole frame
 ##   undergrowth scale — instance budget of the densest scatter; a lower budget is a strict
 ##                       prefix of the full placement sequence, so it rescatters deterministically
+##   draw distance     — how far props and harvestables are drawn at all; the only knob that
+##                       removes work from the opaque pass and all four shadow cascades at once
+##   mesh LOD threshold— how eagerly the renderer drops to a coarser LOD. Worth nothing until
+##                       F-144 gave the merged meshes a LOD ladder to drop to; now it is the
+##                       cheapest way to trade silhouette detail for triangles on a weak GPU
 ##
 ## AUTHORITY: none (docs/ARCHITECTURE.md §2.2, "VFX, audio, camera, UI" row). Presentation is
 ## local to one machine; peers on different presets run the same simulation.
@@ -23,6 +28,10 @@ extends Node
 ## discovered through the tree at apply time (any DirectionalLight3D, any WorldEnvironment, a
 ## node named Undergrowth), and authored values are captured per node the first time a preset
 ## touches it, so `high` on a generated level restores that level's own numbers.
+
+## Preloaded rather than referenced by `class_name`: a new global class is invisible to a
+## headless `--script` run until the editor rescans the project.
+const DrawPolicy := preload("res://world/environment/draw_policy.gd")
 
 enum Preset { LOW, MEDIUM, HIGH }
 
@@ -39,18 +48,29 @@ const PRESETS: Dictionary = {
 		"glow": false,
 		"volumetric": false,
 		"undergrowth": 0.45,
+		"draw_distance": 0.55,
+		"lod_threshold": 4.0,
 	},
 	Preset.MEDIUM: {
 		"render_scale": 0.77,
 		"undergrowth": 0.8,
+		"draw_distance": 0.8,
+		"lod_threshold": 2.0,
 	},
 	Preset.HIGH: {},
 }
 const DEFAULT_SHADOW_ATLAS: int = 4096
+## The engine's own default, restored by `high` the same way every other authored value is.
+const DEFAULT_LOD_THRESHOLD: float = 1.0
 
 var preset: Preset = Preset.HIGH
 ## Read by world/gen/undergrowth.gd when it scatters; 1.0 until a preset lowers it.
 var undergrowth_density_scale: float = 1.0
+## Multiplies every draw distance `world/environment/draw_policy.gd` hands out. Pulling props in
+## is the strongest single lever a weak machine has, because an out-of-range instance costs
+## nothing in the opaque pass AND nothing in any of the shadow cascades — one cut is worth five
+## draw calls at the shipped four splits (F-144).
+var prop_draw_distance_scale: float = 1.0
 
 # Authored values captured the first time a preset touches a node, keyed by instance id, so
 # `high` restores rather than guesses. Ids from freed levels are never read again — an apply
@@ -139,6 +159,11 @@ func apply(new_preset: Preset) -> void:
 	_update_processing()
 
 	get_viewport().scaling_3d_scale = float(spec.get("render_scale", 1.0))
+	# Screen-space size, in pixels, below which the renderer takes the next LOD down. The engine
+	# default is 1.0 — near enough to "only switch when it cannot possibly show" — which is the
+	# right default for a machine that can afford it and the wrong one for the machine this game
+	# is meant to run on. Raising it costs silhouette detail at distance and nothing else.
+	get_viewport().mesh_lod_threshold = float(spec.get("lod_threshold", DEFAULT_LOD_THRESHOLD))
 	RenderingServer.directional_shadow_atlas_set_size(
 		int(spec.get("shadow_atlas", DEFAULT_SHADOW_ATLAS)), true)
 	if scene == null:
@@ -165,6 +190,9 @@ func apply(new_preset: Preset) -> void:
 			}) as Dictionary
 		environment.glow_enabled = bool(spec.get("glow", authored["glow"]))
 		environment.volumetric_fog_enabled = bool(spec.get("volumetric", authored["volumetric"]))
+
+	prop_draw_distance_scale = float(spec.get("draw_distance", 1.0))
+	DrawPolicy.rescale(get_tree())
 
 	var target_scale: float = float(spec.get("undergrowth", 1.0))
 	if target_scale != undergrowth_density_scale:

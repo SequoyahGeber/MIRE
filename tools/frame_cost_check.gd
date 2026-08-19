@@ -49,6 +49,36 @@ func _run() -> void:
 	for _i in WARMUP_FRAMES:
 		await process_frame
 
+	print("\n=== MIRE frame cost — %s ===" % SCENE_PATH)
+	print("Godot %s | %s | %s" % [
+		Engine.get_version_info()["string"], OS.get_name(), OS.get_processor_name()])
+	print("viewport %s | samples %d per row" % [root.size, SAMPLE_FRAMES])
+
+	# The shipped default first, then each preset, so the row that matters for the worst machine
+	# someone might play this on is measured rather than assumed.
+	var rows: Array[Dictionary] = [await _sample("as shipped")]
+	var quality: Node = root.get_node_or_null(^"GraphicsQuality")
+	if quality != null:
+		for preset: int in [2, 1, 0]:
+			quality.call(&"apply", preset)
+			# A preset that rescatters the undergrowth needs its rebuild to land before sampling.
+			for _i in 30:
+				await process_frame
+			rows.append(await _sample("preset %s" % ["low", "medium", "high"][preset]))
+
+	print("")
+	print("  %-16s %11s %13s %10s %10s" % ["", "draw calls", "primitives", "vram MB", "frame ms"])
+	for row: Dictionary in rows:
+		print("  %-16s %11d %13d %10.1f %10.2f" % [
+			row["name"], row["draws"], row["primitives"], row["vram"], row["ms"]])
+	var first: Dictionary = rows[0]
+	print("\nFRAME_COST draw_calls_median=%d primitives_median=%d vram_mb=%.1f frame_ms_median=%.2f"
+		% [first["draws"], first["primitives"], first["vram"], first["ms"]])
+	print("FRAME_COST_OK")
+	quit(0)
+
+
+func _sample(label: String) -> Dictionary:
 	var draw_calls: Array[int] = []
 	var primitives: Array[int] = []
 	var frame_ms: Array[float] = []
@@ -59,26 +89,14 @@ func _run() -> void:
 		primitives.append(int(RenderingServer.get_rendering_info(
 			RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)))
 		frame_ms.append(1000.0 / maxf(Engine.get_frames_per_second(), 0.001))
-
-	print("\n=== MIRE frame cost — %s ===" % SCENE_PATH)
-	print("Godot %s | %s | %s" % [
-		Engine.get_version_info()["string"], OS.get_name(), OS.get_processor_name()])
-	print("viewport %s | samples %d" % [root.size, SAMPLE_FRAMES])
-	print("FRAME_COST draw_calls_median=%d primitives_median=%d vram_mb=%.1f frame_ms_median=%.2f"
-		% [_median_i(draw_calls), _median_i(primitives),
-			float(RenderingServer.get_rendering_info(
-				RenderingServer.RENDERING_INFO_VIDEO_MEM_USED)) / 1048576.0,
-			_median_f(frame_ms)])
-	print("  draw calls   median %6d   min %6d   max %6d" % [
-		_median_i(draw_calls), draw_calls.min(), draw_calls.max()])
-	print("  primitives   median %6d" % _median_i(primitives))
-	print("  texture mem  %.1f MB | buffer mem %.1f MB" % [
-		float(RenderingServer.get_rendering_info(
-			RenderingServer.RENDERING_INFO_TEXTURE_MEM_USED)) / 1048576.0,
-		float(RenderingServer.get_rendering_info(
-			RenderingServer.RENDERING_INFO_BUFFER_MEM_USED)) / 1048576.0])
-	print("FRAME_COST_OK")
-	quit(0)
+	return {
+		"name": label,
+		"draws": _median_i(draw_calls),
+		"primitives": _median_i(primitives),
+		"vram": float(RenderingServer.get_rendering_info(
+			RenderingServer.RENDERING_INFO_VIDEO_MEM_USED)) / 1048576.0,
+		"ms": _median_f(frame_ms),
+	}
 
 
 func _median_i(values: Array[int]) -> int:
