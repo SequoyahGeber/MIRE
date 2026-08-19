@@ -5413,3 +5413,15 @@ Fixed: autoload/salvage_service.gd:24-25's doc comment now reads Cycle 3 -> 58, 
 Files: `autoload/salvage_service.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`
 
 Commit at time of writing: `fc42b45`
+
+---
+
+### DONE · 3.1-review · lm · 2026-08-19T14:51:00+00:00
+
+**Review 3.1 @ f0d0073 — judge the commit, file findings, no edits**
+
+Reviewed f0d0073 (+ docs companion 7f6c225) against SPECS.md 3.1 and ARCHITECTURE.md §2.2. Station-tier check (Registry.get_station resolution, rejects before range check), furnace timed craft (host-only _host_pending_crafts ticked in _process, ingredients checked early but only spent at completion via existing host_transaction), and client-side craft_progress() estimate (D-052, no new RPC/no protocol bump — confirmed PROTOCOL_VERSION unchanged at 21) all match spec. Worked example (workbench + furnace + iron_ore->iron_ingot, 2s) content correct. Hollowmere marker group generalization (authored_world_marker, F-057-shaped trap) mirrors HarvestWorld's fix. Network authority header matches ARCHITECTURE.md §2.2 Inventory/crafting row (Host). Rule 1 respected: bare Registry/InventoryService/NetTransport/NetConfig/PlayerNet refs in crafting_service.gd are exempt (the script is itself an autoload); crafting_ui.gd's bare refs match the established chest_ui.gd-reviewed pattern. Noted but not re-flagging: _confirm_peer's unguarded rpc_id() to a departed peer was a real gap here but was already fixed by 7.8 (34f1c5d), which added the NetTransport.has_peer(peer_id) guard. Ran tools/crafting_check.gd (0 failures, 52 assertions incl. station registration/tier-rejection/full timed-craft lifecycle), tools/crafting_net_check.gd (0 failures, real two-process ENet incl. remote furnace craft with no output leak to host), tools/crafting_ui_check.gd (0 failures, station-switch + live progress readout) — all through agent godot. Full agent godot --quit-after 120 boot: zero ERROR: lines. Verdict: clean, no findings.
+
+Files: `docs/FINDINGS.md`
+
+Commit at time of writing: `21a8ada`
