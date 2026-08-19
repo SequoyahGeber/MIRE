@@ -236,15 +236,15 @@ func _cmd_loadout(ctx: Dictionary, _args: Dictionary) -> Dictionary:
 		"data": {}}
 
 
-func _cmd_items(_ctx: Dictionary, _args: Dictionary) -> String:
+func _cmd_items(_ctx: Dictionary, _args: Dictionary) -> Dictionary:
 	var registry: Node = get_node_or_null(^"/root/Registry")
 	if registry == null:
-		return "no registry"
+		return {"ok": false, "message": "no registry", "data": {}}
 	var ids: Array[String] = []
 	for id: StringName in (registry.get("items") as Dictionary):
 		ids.append(String(id))
 	ids.sort()
-	return ", ".join(ids)
+	return {"ok": true, "message": ", ".join(ids), "data": {}}
 
 
 func _local_peer() -> int:

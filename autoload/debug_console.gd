@@ -129,32 +129,11 @@ func set_open(open: bool) -> void:
 		get_tree().paused = open
 
 
-## DEPRECATED (docs/COMMANDS.md §2.4) — kept so every pre-3.13 call site keeps working. Wraps
-## [param callable] in a LOCAL-scope CommandSpec with one `rest` argument, so it keeps receiving its
-## PackedStringArray of already-split arguments exactly as before. New commands should call
-## `CommandService.register_spec()` directly instead.
-func register(command: StringName, callable: Callable, usage: String = "") -> void:
-	MireLog.warn(&"dev", "DebugConsole.register('%s') uses the deprecated shim — " % command +
-		"migrate to CommandService.register_spec() (docs/COMMANDS.md §2.1)")
-	var command_service: Node = get_node_or_null(^"/root/CommandService")
-	if command_service == null:
-		return
-	var wrapped := func(_ctx: Dictionary, args: Dictionary) -> String:
-		return String(callable.call(args.get("rest", PackedStringArray())))
-	command_service.call("register_spec", command, {
-		"scope": &"local",
-		"args": [{"name": "rest", "type": &"rest"}],
-		"handler": wrapped,
-		"help": usage if usage != "" else String(command),
-	})
-
-
-## DEPRECATED alongside `register()` — CommandService has no unregister today (nothing needed one;
-## specs are meant to be re-registered, not withdrawn). Kept as a no-op so an old call site does not
-## hard-error; logs so the gap is visible if something actually relied on it.
-func unregister(command: StringName) -> void:
-	MireLog.warn(&"dev", "DebugConsole.unregister('%s') is a no-op — CommandService specs are not "
-		% command + "withdrawn once registered")
+## The pre-3.13 `register()`/`unregister()` deprecation shim lived here until F-130 closed: its
+## last caller (`gfx`) migrated to `CommandService.register_spec()`, and
+## `tools/command_shim_check.gd` fails the build if a new reflection caller ever appears — so the
+## compat path is deleted rather than kept as dead weight. If you are reading this because you
+## wanted `register()`: register a typed spec instead, docs/COMMANDS.md §2.1.
 
 
 func _on_submitted(text: String) -> void:
@@ -292,43 +271,43 @@ func _register_builtins() -> void:
 	})
 
 
-func _cmd_help(_ctx: Dictionary, _args: Dictionary) -> String:
+func _cmd_help(_ctx: Dictionary, _args: Dictionary) -> Dictionary:
 	var command_service: Node = get_node_or_null(^"/root/CommandService")
 	if command_service == null:
-		return ""
+		return {"ok": true, "message": "", "data": {}}
 	var names: Array = command_service.call("spec_names")
 	var lines: Array[String] = []
 	for command_name: Variant in names:
 		lines.append("  " + String(command_service.call("help_text", command_name)))
-	return "\n".join(lines)
+	return {"ok": true, "message": "\n".join(lines), "data": {}}
 
 
-func _cmd_clear(_ctx: Dictionary, _args: Dictionary) -> String:
+func _cmd_clear(_ctx: Dictionary, _args: Dictionary) -> Dictionary:
 	_output.clear()
-	return ""
+	return {"ok": true, "message": "", "data": {}}
 
 
-func _cmd_channels(_ctx: Dictionary, _args: Dictionary) -> String:
+func _cmd_channels(_ctx: Dictionary, _args: Dictionary) -> Dictionary:
 	var lines: Array[String] = []
 	var states: Dictionary[StringName, bool] = MireLog.channel_states()
 	for channel: StringName in states:
 		lines.append("  %-3s  %s" % ["on" if states[channel] else "off", channel])
-	return "\n".join(lines)
+	return {"ok": true, "message": "\n".join(lines), "data": {}}
 
 
-func _cmd_log(_ctx: Dictionary, args: Dictionary) -> String:
+func _cmd_log(_ctx: Dictionary, args: Dictionary) -> Dictionary:
 	var channel: String = String(args.get("channel", ""))
 	var enabled: bool = bool(args.get("state", false))
 	if not MireLog.set_enabled(StringName(channel), enabled):
-		return "no such channel: %s" % channel
-	return "%s -> %s" % [channel, "on" if enabled else "off"]
+		return {"ok": false, "message": "no such channel: %s" % channel, "data": {}}
+	return {"ok": true, "message": "%s -> %s" % [channel, "on" if enabled else "off"], "data": {}}
 
 
-func _cmd_overlay(_ctx: Dictionary, _args: Dictionary) -> String:
+func _cmd_overlay(_ctx: Dictionary, _args: Dictionary) -> Dictionary:
 	DebugOverlay.cycle_mode()
-	return ""
+	return {"ok": true, "message": "", "data": {}}
 
 
-func _cmd_quit(_ctx: Dictionary, _args: Dictionary) -> String:
+func _cmd_quit(_ctx: Dictionary, _args: Dictionary) -> Dictionary:
 	get_tree().quit()
-	return ""
+	return {"ok": true, "message": "", "data": {}}

@@ -254,8 +254,14 @@ func _normalize_result(outcome: Variant) -> Dictionary:
 		var d: Dictionary = outcome
 		return _result(bool(d.get("ok", true)), String(d.get("message", "")),
 			d.get("data", {}) as Dictionary)
-	# Compat-shim handlers (old DebugConsole.register() callables) return a bare String.
-	return _result(true, String(outcome) if outcome != null else "", {})
+	# Every registered handler returns the {ok, message, data} shape since F-130 removed the
+	# DebugConsole.register() shim (whose wrapped callables returned bare Strings). Anything else
+	# reaching here is a handler bug — say so instead of laundering it into a silent success, which
+	# is what the old String coercion would do to, say, a handler that forgot its return entirely
+	# (null -> "ok, empty message").
+	return _result(false,
+		"handler returned %s instead of {ok, message, data} — fix the spec's handler" %
+		type_string(typeof(outcome)), {})
 
 
 func _result(ok: bool, message: String, data: Dictionary) -> Dictionary:

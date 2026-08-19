@@ -4429,3 +4429,25 @@ Completed.
 Files: `tools/audio/audio_check.py`
 
 Commit at time of writing: `3870c2b`
+
+---
+
+### DONE · F-151 · yarrow21 · 2026-08-19T06:53:55+00:00
+
+**`ui/loot/chest_ui.gd` was never registered, so no chest in the game could be opened — **fixed****
+
+Status correction only — slate17's fix (agent autoload ChestUI) and its verification are recorded in the entry itself; it was written in-place under '## Open' and never moved, which the board has been flagging since. Moving it with agent resolve.
+
+Commit at time of writing: `40e894d`
+
+---
+
+### DONE · F-130 · yarrow21 · 2026-08-19T07:04:17+00:00
+
+**Three console commands never migrated to CommandService — they register via console.call("register", ...), which 3.13's sweep could not see**
+
+All three shim commands migrated and the shim itself deleted. gfx moved to CommandService.register_spec (LOCAL scope, two optional string args, handler dispatches the two-form grammar — same reasoning as rule's value arg); dev_frame_cap's two were already done by 3.16. Then the audit found the compat layer was load-bearing beyond the shim: 8 register_spec handlers (help/clear/channels/log/overlay/quit/enemies/items) still returned bare Strings and leaned on _normalize_result's silent String coercion. All 8 converted to the {ok, message, data} shape, the DebugConsole.register/unregister pair deleted (a tombstone comment points at register_spec), and _normalize_result now returns an explicit handler-bug failure for any non-conforming return instead of laundering it into a silent success — a null return used to read as 'ok, empty message'. Verified: command_shim_check scripts=290 hits=0 failures=0, command_check 0, command_catalog_check 0, command_net_check 0, dev_loadout_check 0. One near-miss worth the journal: my first strict-normalize version would have broken those 8 handlers — caught by grepping every registered handler's return type before trusting the checks alone.
+
+Files: `autoload/graphics_quality.gd`, `autoload/debug_console.gd`, `autoload/command_service.gd`, `autoload/enemy_world.gd`, `core/dev/dev_loadout.gd`
+
+Commit at time of writing: `40e894d`

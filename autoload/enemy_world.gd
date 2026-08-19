@@ -174,12 +174,13 @@ func _cmd_killall(_ctx: Dictionary, _args: Dictionary) -> Dictionary:
 	return {"ok": true, "message": "despawned %d" % count, "data": {"count": count}}
 
 
-func _cmd_enemies(_ctx: Dictionary, _args: Dictionary) -> String:
+func _cmd_enemies(_ctx: Dictionary, _args: Dictionary) -> Dictionary:
 	var points: Array[Vector3] = ambient_spawn_points()
-	return "%d alive, ambient %s (population %d), %d spawn point(s), navmesh %d polygons" % [
-		live_count(), "on" if ambient_enabled else "off", ambient_population,
-		points.size(), _nav_polygon_count
-	]
+	return {"ok": true, "message":
+		"%d alive, ambient %s (population %d), %d spawn point(s), navmesh %d polygons" % [
+			live_count(), "on" if ambient_enabled else "off", ambient_population,
+			points.size(), _nav_polygon_count
+		], "data": {}}
 
 
 ## Host-only, and the whole ambient loop. Deliberately coarse: it tops the population back up on a

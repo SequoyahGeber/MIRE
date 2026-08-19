@@ -203,35 +203,52 @@ func apply(new_preset: Preset) -> void:
 
 
 func _register_commands() -> void:
-	var console: Node = get_node_or_null(^"/root/DebugConsole")
-	if console == null or not console.has_method("register"):
+	# Migrated off DebugConsole.register()'s deprecation shim (F-130) — the last of the three
+	# stragglers, behind dev_frame_cap's two, because this file was under another task's claim when
+	# they were done. Same LOCAL-scope reasoning as fps_cap/vsync: a render preset is this machine's
+	# own presentation, never simulated state, so a client changing its own must not need op.
+	var command_service: Node = get_node_or_null(^"/root/CommandService")
+	if command_service == null:
 		return
-	console.call("register", &"gfx", _cmd_gfx,
-		"gfx [low|medium|high] | gfx auto [<fps>|off] — hardware preset / dynamic resolution")
+	command_service.call("register_spec", &"gfx", {
+		"scope": &"local",
+		# Two raw strings, dispatched by the handler: `gfx` has a two-form grammar
+		# (`gfx [low|medium|high]` vs `gfx auto [<fps>|off]`) that the flat arg table cannot
+		# express — same reasoning as `rule`'s value argument, where only the handler knows.
+		"args": [
+			{"name": "mode", "type": &"string", "optional": true, "default": ""},
+			{"name": "value", "type": &"string", "optional": true, "default": ""},
+		],
+		"handler": _cmd_gfx,
+		"help": "gfx [low|medium|high] | gfx auto [<fps>|off] — hardware preset / dynamic resolution",
+	})
 
 
-func _cmd_gfx(args: PackedStringArray) -> String:
-	if args.is_empty():
+func _cmd_gfx(_ctx: Dictionary, args: Dictionary) -> Dictionary:
+	var mode: String = String(args.get("mode", ""))
+	var value: String = String(args.get("value", ""))
+	if mode.is_empty():
 		var auto_state := "off"
 		if dynamic_scale_enabled:
 			auto_state = "on (target %s)" % ("panel refresh" if dynamic_scale_target_fps <= 0.0 \
 				else "%.0f fps" % dynamic_scale_target_fps)
-		return "gfx preset is %s (render scale %.0f%%, auto %s)" % [
-			PRESET_NAMES[preset], get_viewport().scaling_3d_scale * 100.0, auto_state]
-	if args[0] == "auto":
-		if args.size() >= 2 and args[1] == "off":
+		return {"ok": true, "message": "gfx preset is %s (render scale %.0f%%, auto %s)" % [
+			PRESET_NAMES[preset], get_viewport().scaling_3d_scale * 100.0, auto_state], "data": {}}
+	if mode == "auto":
+		if value == "off":
 			set_dynamic_scale(false)
-			return "dynamic resolution off — render scale back to %.0f%%" % \
-				(get_viewport().scaling_3d_scale * 100.0)
+			return {"ok": true, "message": "dynamic resolution off — render scale back to %.0f%%" % \
+				(get_viewport().scaling_3d_scale * 100.0), "data": {}}
 		var target: float = 0.0
-		if args.size() >= 2 and args[1].is_valid_float():
-			target = args[1].to_float()
+		if value.is_valid_float():
+			target = value.to_float()
 		set_dynamic_scale(true, target)
-		return "dynamic resolution on — holding %s" % \
-			("the panel's refresh rate" if target <= 0.0 else "%.0f fps" % target)
-	var index: int = PRESET_NAMES.find(args[0])
+		return {"ok": true, "message": "dynamic resolution on — holding %s" % \
+			("the panel's refresh rate" if target <= 0.0 else "%.0f fps" % target), "data": {}}
+	var index: int = PRESET_NAMES.find(mode)
 	if index < 0:
-		return "usage: gfx [low|medium|high] | gfx auto [<fps>|off]"
+		return {"ok": false,
+			"message": "usage: gfx [low|medium|high] | gfx auto [<fps>|off]", "data": {}}
 	apply(index as Preset)
-	return "gfx preset now %s (render scale %.0f%%)" % [
-		args[0], get_viewport().scaling_3d_scale * 100.0]
+	return {"ok": true, "message": "gfx preset now %s (render scale %.0f%%)" % [
+		mode, get_viewport().scaling_3d_scale * 100.0], "data": {}}
