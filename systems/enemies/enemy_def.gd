@@ -21,6 +21,14 @@ extends Resource
 ## other things are already placed against. 0 means the model faces -Z, which is Godot's forward.
 @export_range(-180.0, 180.0, 1.0) var model_yaw_offset_degrees: float = 0.0
 
+## Multiplied into every mesh's albedo at spawn (`Enemy._build_visual()`). `Color(1,1,1,1)` — the
+## default — is a no-op, so every existing EnemyDef renders exactly as before. Exists so a stat-only
+## variant (F-158: `bog_crawler` reuses `enemy_crawler.glb` unmodified, D-073 forbids new art for a
+## mechanics task) can still read as visually distinct without authoring a new model. Cosmetic only —
+## every peer loads the same `.tres` and computes the same tint, so this needs no replication
+## (ARCHITECTURE.md §2.2, "VFX, audio, camera, UI" row).
+@export var visual_tint: Color = Color(1.0, 1.0, 1.0, 1.0)
+
 @export_group("Body")
 @export_range(0.1, 4.0, 0.05) var radius_m: float = 0.45
 @export_range(0.2, 6.0, 0.05) var height_m: float = 0.6

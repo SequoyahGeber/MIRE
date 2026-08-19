@@ -518,12 +518,35 @@ func _build_visual() -> void:
 		mesh_instance.visibility_range_end_margin = VISIBILITY_RANGE_FADE_MARGIN_M
 		mesh_instance.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 		_overlay_meshes.append(mesh_instance)
+	_apply_visual_tint()
 	var players: Array[Node] = _visual.find_children("*", "AnimationPlayer", true, false)
 	if not players.is_empty():
 		_anim = players[0] as AnimationPlayer
 		# The one-shot hit clip otherwise ends frozen on its last pose: nothing replays the state
 		# clip until the next state CHANGE, so a chased-and-hit enemy walked with a locked pose.
 		_anim.animation_finished.connect(_on_animation_finished)
+
+
+## `EnemyDef.visual_tint` (F-158) as a per-surface albedo multiply, duplicated off the imported GLB's
+## own material so tinting one enemy's instance never touches the shared resource every other instance
+## of the same model references. `Color(1,1,1,1)` is the field's own no-op default, so this is a no-op
+## for every EnemyDef that never sets it — skipped outright rather than duplicating materials for
+## nothing.
+func _apply_visual_tint() -> void:
+	if definition.visual_tint == Color(1.0, 1.0, 1.0, 1.0):
+		return
+	for mesh_instance: MeshInstance3D in _overlay_meshes:
+		if mesh_instance.mesh == null:
+			continue
+		for surface: int in mesh_instance.mesh.get_surface_count():
+			var base_material: Material = mesh_instance.get_active_material(surface)
+			var tinted: Material = (
+				base_material.duplicate() if base_material != null else StandardMaterial3D.new()
+			)
+			if tinted is BaseMaterial3D:
+				var base_colour: Color = (tinted as BaseMaterial3D).albedo_color
+				(tinted as BaseMaterial3D).albedo_color = base_colour * definition.visual_tint
+			mesh_instance.set_surface_override_material(surface, tinted)
 
 
 func _build_agent() -> void:

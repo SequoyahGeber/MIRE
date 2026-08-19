@@ -51,6 +51,13 @@ func _run() -> void:
 	await process_frame
 	check(int(world.call(&"live_count")) == 0, "field is clear after host_despawn_all()")
 
+	# The loop above spawns bog_crawler too (it walks every authored def), so F-158's visual_tint
+	# (systems/enemies/enemy.gd `_apply_visual_tint()`) runs for real and can — observed
+	# intermittently, not every run — provoke the dummy renderer's own harmless
+	# `material_get_instance_shader_parameters` noise on a surface override. See
+	# tools/bog_crawler_check.gd's header for why. Standing rule 4 (docs/SPECS.md): declare by pattern
+	# rather than let an occasional run fail on undeclared engine noise.
+	print("EXPECTED_ERROR_PATTERNS=\"Parameter \\\"material\\\" is null\"")
 	finish()
 
 

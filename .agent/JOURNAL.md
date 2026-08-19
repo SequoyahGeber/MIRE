@@ -4535,3 +4535,15 @@ Both halves shipped. AGENTS.md's docs hand-commit instruction now uses the paths
 Files: `AGENTS.md`, `.agent/bin/agent`, `tools/harness_check.py`, `docs/FINDINGS.md`
 
 Commit at time of writing: `1253459`
+
+---
+
+### DONE · F-158 · lm · 2026-08-19T07:17:23+00:00
+
+**`bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler**
+
+EnemyDef.visual_tint (systems/enemies/enemy_def.gd) applied as a per-surface albedo multiply in Enemy._apply_visual_tint() (systems/enemies/enemy.gd), bog_crawler.tres set to a murky corrupted-green. New tools/bog_crawler_check.gd: failures=0 headless+windowed. Fixed the three sibling checks that now spawn a real tinted bog_crawler to declare the dummy-renderer's harmless material-null noise per standing rule 4. Full boot clean. See docs/SPECS.md F-158 block and docs/DELEGATION.md Current state for the API.
+
+Files: `content/enemies/bog_crawler.tres`, `systems/waves/wave_spawner.gd`, `tools/bog_crawler_check.gd`, `systems/enemies/enemy_def.gd`, `systems/enemies/enemy.gd`, `tools/wave_director_check.gd`, `tools/mire_interaction_check.gd`, `tools/enemy_lod_check.gd`
+
+Commit at time of writing: `b84f9e3`

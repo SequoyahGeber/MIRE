@@ -1,51 +1,6 @@
 {
-  "claims": {
-    "content/enemies/bog_crawler.tres": {
-      "agent": "lm",
-      "at": "2026-08-19T07:08:33+00:00",
-      "task": "F-158",
-      "token": null
-    },
-    "systems/enemies/enemy.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T07:11:00+00:00",
-      "task": "F-158",
-      "token": null
-    },
-    "systems/enemies/enemy_def.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T07:11:00+00:00",
-      "task": "F-158",
-      "token": null
-    },
-    "systems/waves/wave_spawner.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T07:08:33+00:00",
-      "task": "F-158",
-      "token": null
-    },
-    "tools/bog_crawler_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T07:10:58+00:00",
-      "task": "F-158",
-      "token": null
-    }
-  },
-  "in_flight": {
-    "F-158": {
-      "agent": "lm",
-      "files": [
-        "content/enemies/bog_crawler.tres",
-        "systems/waves/wave_spawner.gd",
-        "tools/bog_crawler_check.gd",
-        "systems/enemies/enemy_def.gd",
-        "systems/enemies/enemy.gd"
-      ],
-      "notes": [],
-      "started": "2026-08-19T07:08:33+00:00",
-      "token": null
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".agent/bin/agent": {
       "agent": "yarrow21",
@@ -655,9 +610,10 @@
     },
     "content/enemies/bog_crawler.tres": {
       "agent": "lm",
-      "at": "2026-08-19T01:01:42+00:00",
-      "hash": "1fa83de45b582d0c5a267bcd459d92b6616b63607deddd00502ffbc21ca2e52e",
-      "task": "4.11"
+      "at": "2026-08-19T07:17:23+00:00",
+      "hash": "edbb11d2a6b511d21ec3357e2fa4b71e0f62c60a5c056df2976c77cc999420b6",
+      "task": "F-158",
+      "token": null
     },
     "content/functions": {
       "agent": "lp",
@@ -1877,15 +1833,17 @@
     },
     "systems/enemies/enemy.gd": {
       "agent": "lm",
-      "at": "2026-08-19T04:10:33+00:00",
-      "hash": "ae16a0de975f0c8085fe571c54b4bcf64c3f0547dcd471f112c60f5095d3228d",
-      "task": "7.7"
+      "at": "2026-08-19T07:17:23+00:00",
+      "hash": "0c4ab0de665500c3b21265cdb9b7a12f282e6a5719b58e9afd563a6657ebe4f4",
+      "task": "F-158",
+      "token": null
     },
     "systems/enemies/enemy_def.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T00:23:49+00:00",
-      "hash": "aff4b4ede7a7769960674b8c07b305c5e568dc4719a8f2d222cb6ea913bfd2d1",
-      "task": "5.1"
+      "agent": "lm",
+      "at": "2026-08-19T07:17:23+00:00",
+      "hash": "2997a75514ef93ceec89a38e10f329068d05b814f05266d7ed37f4d331c839f6",
+      "task": "F-158",
+      "token": null
     },
     "systems/environment/day_night.gd": {
       "agent": "lp",
@@ -1992,10 +1950,11 @@
       "task": "6.9"
     },
     "systems/waves/wave_spawner.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T03:59:24+00:00",
+      "agent": "lm",
+      "at": "2026-08-19T07:17:23+00:00",
       "hash": "3b49d5722bea511ef16b2012de8adcfbb3af99fd8f26396106ae5d7525a24735",
-      "task": "5.9"
+      "task": "F-158",
+      "token": null
     },
     "systems/wellspring/wellspring.gd": {
       "agent": "lm",
@@ -2192,6 +2151,13 @@
       "agent": "lp",
       "at": "2026-08-18T18:02:23+00:00",
       "task": "F-094"
+    },
+    "tools/bog_crawler_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T07:17:23+00:00",
+      "hash": "b0e533e9549e0af45f046b7bc1010433bd6e89b72c3129957dd56c851fc032cd",
+      "task": "F-158",
+      "token": null
     },
     "tools/boss_check.gd": {
       "agent": "lp",
@@ -2423,9 +2389,10 @@
     },
     "tools/enemy_lod_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T04:10:33+00:00",
-      "hash": "a8fd3dd892a74fe23606f75155c318b8227f8aa072f39237a9ce7b77da91b812",
-      "task": "7.7"
+      "at": "2026-08-19T07:17:23+00:00",
+      "hash": "21c0e98241d1dc170022eb5239e48410326b36d6525b7c138b49347b3fbb53ca",
+      "task": "F-158",
+      "token": null
     },
     "tools/entity_check.gd": {
       "agent": "hollow7",
@@ -2627,9 +2594,10 @@
     },
     "tools/mire_interaction_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T01:01:42+00:00",
-      "hash": "97620c35815cefd98934fdd0ed74e3f7ca29f9c58d4c1bc5d931d1a8c24ea85b",
-      "task": "4.11"
+      "at": "2026-08-19T07:17:23+00:00",
+      "hash": "714491d19f0ffb007341f1e5416e915b4e0c4287d8b2b454637fb150edfe6cff",
+      "task": "F-158",
+      "token": null
     },
     "tools/multimesh_readback_check.gd": {
       "agent": "lp",
@@ -2844,10 +2812,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
     },
     "tools/wave_director_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T03:59:24+00:00",
-      "hash": "151222847f4bff5123e125b89d711349e9207dd239f7fbe566987c03abde4a2c",
-      "task": "5.9"
+      "agent": "lm",
+      "at": "2026-08-19T07:17:23+00:00",
+      "hash": "6a95e90554fdfc285d98155a7ce93f7b4c8fec4637659b52461b0d426a1ad560",
+      "task": "F-158",
+      "token": null
     },
     "tools/wave_director_check.gd.uid": {
       "agent": "lp",
@@ -5611,9 +5580,11 @@
       "title": "No system tracks a player's display name anywhere in the project \u2014 F-126's `peer` name resolution has nothing to resolve against, and 3.16 shipped without adding one"
     },
     "F-158": {
+      "done_at": "2026-08-19T07:17:23+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler"
     },

@@ -116,7 +116,15 @@ func _run() -> void:
 	world.call("host_despawn_all")
 	await process_frame
 
-	print("\nWAVE_DIRECTOR_CHECK failures=%d" % failures)
+	# Sampling above spawns real bog_crawler bodies, so F-158's visual_tint (systems/enemies/enemy.gd
+	# `_apply_visual_tint()`) runs for real and provokes the dummy renderer's own harmless
+	# `material_get_instance_shader_parameters` noise on every surface override it sets — see
+	# tools/bog_crawler_check.gd's header for why. Standing rule 4 (docs/SPECS.md): declare it by
+	# pattern rather than silencing it.
+	print(
+		"\nWAVE_DIRECTOR_CHECK failures=%d · EXPECTED_ERROR_PATTERNS=\"Parameter \\\"material\\\" is null\""
+		% failures
+	)
 	finish()
 
 

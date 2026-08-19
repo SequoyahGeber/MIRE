@@ -40,7 +40,17 @@ func _run() -> void:
 	await _check_corrupted_spawns()
 	_check_ward_resistance()
 
-	print("\nMIRE_INTERACTION_CHECK failures=%d" % failures)
+	# `_check_corrupted_spawns()` above spawns real bog_crawler bodies at full corruption, so F-158's
+	# visual_tint (systems/enemies/enemy.gd `_apply_visual_tint()`) runs for real and can provoke the
+	# dummy renderer's own harmless `material_get_instance_shader_parameters` noise on every surface
+	# override it sets — see tools/bog_crawler_check.gd's header for why. Whether it fires this run
+	# depends on the corrupted-spawn roll actually landing on bog_crawler at least once, so declare it
+	# unconditionally rather than relying on the roll. Standing rule 4 (docs/SPECS.md): declare by
+	# pattern rather than silencing it.
+	print(
+		"\nMIRE_INTERACTION_CHECK failures=%d · EXPECTED_ERROR_PATTERNS=\"Parameter \\\"material\\\" is null\""
+		% failures
+	)
 	finish()
 
 
