@@ -6441,6 +6441,60 @@ anywhere else in the project.
 
 ---
 
+## F-216 · `AttunementUI` (task 3.9's mandatory run-start role picker) has no gamepad focus support — worse than F-209's original scope, since this panel has no Esc/dismiss path at all
+
+**Claim:** `ui/attunement/attunement_ui.gd`, `tools/menu_focus_check.gd`. Network authority: none —
+client-local presentation over `AttunementService`'s real seam, same as every other F-209 file.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The fix:** the same recipe F-209 gave `UnlockMenu`'s BUY-button rows
+(`unlock_menu.gd`'s `_wire_vertical_chain()`/`_focus_style()`), copied onto `attunement_ui.gd`'s
+per-role CHOOSE buttons: a `_focus_style()` helper (transparent-fill outline `StyleBoxFlat`) applied
+via `add_theme_stylebox_override("focus", ...)` on every CHOOSE button as it is built, a
+`_wire_vertical_chain()` call over `_role_buttons` in `ROLE_ORDER` (wrapping top<->bottom) run at the
+end of `_rebuild_role_rows()` since the row set is torn down and rebuilt every open, and a new
+`_grab_initial_focus()` that grabs the first `ROLE_ORDER` button's focus, called from `_open_picker()`
+after the rebuild. `ui_accept` already carries a gamepad binding project-wide
+(`tools/bind_ui_gamepad_actions.gd`, F-209) so CHOOSE itself needed no further wiring — Button's
+native `pressed` fires on a focused `ui_accept` for free. Unlike every other F-209 panel, this one has
+no Esc/dismiss path (task 3.9's own design, respec out of scope) — grabbing initial focus is not a
+convenience here, it is what makes the panel reachable at all with no mouse.
+
+**Verify:** `.agent/bin/agent godot --script tools/menu_focus_check.gd` →
+`MENU_FOCUS_CHECK failures=0`. New `_check_attunement_ui()`: spawns a stand-in `"players"`-group
+node, confirms the picker auto-opens and grabs the first CHOOSE button with a visible focus ring,
+walks the D-pad chain to confirm it closes into one loop, then taps `ui_accept` and asserts
+`is_open()` goes false — the one assertion that actually proves a bare controller can get past this
+screen at all, since there is nothing else to check against (no Esc path to also prove). Ran the
+check BEFORE any edit per the finding's own warning (three named files had commits since filing): it
+failed on exactly the missing-focus assertions, confirming the finding was still live, not stale.
+
+**Trap found while verifying, not from the finding itself:** `AttunementUI`'s background poll timer
+(`_poll_timer`, autostart, 0.5s) opens the picker for **any** `"players"`-group node with authority,
+not only a real player body — and `_check_crafting_ui()` (already in `menu_focus_check.gd`) adds
+exactly such a stand-in node for its own station-range setup. Before this fix, an unrelated mid-run
+auto-open was harmless (an extra shade nobody asserted against); once `_grab_initial_focus()` existed,
+that same auto-open stole keyboard focus mid-`_check_crafting_ui()` and broke it. Fixed by moving
+`_check_attunement_ui()` to run **first** in `_run()` — once it completes,
+`AttunementService.local_selection()` is permanently non-empty, so the trigger's own guard
+(`_open or local_selection() != ""`) keeps the timer from ever firing again for the rest of the
+script's run, making every later check's own `"players"`-group node safe. Recorded here because nothing
+about this collision was in the finding, and the next agent extending this file needs to know
+`_check_attunement_ui()` is order-dependent and must stay first.
+
+**Swept for the same shape:** grepped `ui/` for `Button.new()\|OptionButton.new()\|LineEdit.new()\|HSlider.new()`
+against `grab_focus\|focus_neighbor\|stylebox_override(&\?"focus"` — every other runtime-built panel
+already carries this wiring from F-209 or F-215, or is the already-filed F-217
+(`ui/building/build_bar.gd`'s piece-selection slots, a real gap but not a hard block like this one
+since build mode toggle/rotate/confirm/destroy are already gamepad-bound). No new instance of this bug
+found outside F-216/F-217.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

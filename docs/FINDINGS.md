@@ -564,32 +564,6 @@ worth confirming against real numbers rather than assumed.
 
 ---
 
-### F-216 · `AttunementUI` (task 3.9's mandatory run-start role picker) has no gamepad focus support — worse than F-209's original scope, since this panel has no Esc/dismiss path at all
-
-**Area:** UI/input · **Severity:** high · **Found:** 2026-08-19 by lm sweeping for F-209's shape elsewhere
-
-`ui/attunement/attunement_ui.gd` is a real `Button`-per-role picker (`pick_button := Button.new()`,
-`pick_button.pressed.connect(choose.bind(role_id))`) that opens automatically the moment a player's own
-body exists (D-071) and — by the file's own header comment — has deliberately "no Escape/dismiss path
-... once open there is nothing to dismiss TO." It was not in F-209's own file list (`MainMenu`/
-`SettingsMenu`/`LobbyMenu`/`InventoryUI`/`CraftingUI`/`ChestUI`/`UnlockMenu`) and so was not touched by
-that task's fix. A bare controller with no Steam Input translation hitting this screen cannot pick a
-role, and because there is no dismiss path, **cannot get past it at all** — worse than every panel
-F-209 fixed, all of which were optional/reachable-by-choice. `tools/gamepad_check.gd`/
-`tools/attunement_ui_check.gd` (existing) don't cover it either.
-
-**What closes this:** the same recipe F-209 used elsewhere — `focus_neighbor_top`/`_bottom` chaining
-the CHOOSE buttons (built once per `ROLE_ORDER` entry, same shape `UnlockMenu`'s buy-button rows
-were), an initial `grab_focus()` on the first CHOOSE button when the panel opens, and a visible focus
-ring (`add_theme_stylebox_override("focus", ...)` — Button draws this natively). `ui_accept` already
-fires a focused Button's `pressed` signal for free once `ui_accept` carries a gamepad binding at all,
-which F-209 also fixed project-wide (`tools/bind_ui_gamepad_actions.gd`) — that part does not need
-repeating here. Verify with a check in the same shape `tools/menu_focus_check.gd` uses: drive a real
-`InputEventJoypadButton` through `Input.parse_input_event()`, confirm focus lands on the first CHOOSE
-button and `ui_accept` reaches `AttunementService.request_select()`.
-
----
-
 ### F-217 · `BuildBar`'s piece-selection slots are still mouse-click-only — task 7.6 gave build mode toggle/rotate/confirm/destroy real gamepad bindings but never touched which piece gets selected
 
 **Area:** UI/input · **Severity:** medium · **Found:** 2026-08-19 by lm sweeping for F-209's shape elsewhere
@@ -616,6 +590,52 @@ autoload-node pattern.
 ---
 
 ## Resolved
+
+### F-216 · `AttunementUI` (task 3.9's mandatory run-start role picker) has no gamepad focus support — worse than F-209's original scope, since this panel has no Esc/dismiss path at all — **fixed**
+
+**Area:** UI/input · **Severity:** high · **Found:** 2026-08-19 by lm sweeping for F-209's shape elsewhere
+
+`ui/attunement/attunement_ui.gd` is a real `Button`-per-role picker (`pick_button := Button.new()`,
+`pick_button.pressed.connect(choose.bind(role_id))`) that opens automatically the moment a player's own
+body exists (D-071) and — by the file's own header comment — has deliberately "no Escape/dismiss path
+... once open there is nothing to dismiss TO." It was not in F-209's own file list (`MainMenu`/
+`SettingsMenu`/`LobbyMenu`/`InventoryUI`/`CraftingUI`/`ChestUI`/`UnlockMenu`) and so was not touched by
+that task's fix. A bare controller with no Steam Input translation hitting this screen cannot pick a
+role, and because there is no dismiss path, **cannot get past it at all** — worse than every panel
+F-209 fixed, all of which were optional/reachable-by-choice. `tools/gamepad_check.gd`/
+`tools/attunement_ui_check.gd` (existing) don't cover it either.
+
+**What closes this:** the same recipe F-209 used elsewhere — `focus_neighbor_top`/`_bottom` chaining
+the CHOOSE buttons (built once per `ROLE_ORDER` entry, same shape `UnlockMenu`'s buy-button rows
+were), an initial `grab_focus()` on the first CHOOSE button when the panel opens, and a visible focus
+ring (`add_theme_stylebox_override("focus", ...)` — Button draws this natively). `ui_accept` already
+fires a focused Button's `pressed` signal for free once `ui_accept` carries a gamepad binding at all,
+which F-209 also fixed project-wide (`tools/bind_ui_gamepad_actions.gd`) — that part does not need
+repeating here. Verify with a check in the same shape `tools/menu_focus_check.gd` uses: drive a real
+`InputEventJoypadButton` through `Input.parse_input_event()`, confirm focus lands on the first CHOOSE
+button and `ui_accept` reaches `AttunementService.request_select()`.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed: `attunement_ui.gd`'s CHOOSE buttons now grab initial focus, chain top<->bottom
+(`_wire_vertical_chain`), and draw a visible focus ring (`_focus_style`) — the same recipe F-209 gave
+`UnlockMenu`. Since this panel has no Esc/dismiss path, grab_focus() on open is what makes it
+reachable at all with no mouse, not just a convenience.
+
+Verified: `.agent/bin/agent godot --script tools/menu_focus_check.gd` -> `MENU_FOCUS_CHECK failures=0`,
+new `_check_attunement_ui()` proves auto-open, initial focus + ring, a closed D-pad loop, and
+ui_accept firing request_select() and closing the picker. Also reran `tools/attunement_ui_check.gd`
+(unaffected) -> `ATTUNEMENT_UI_CHECK failures=0`.
+
+Found while verifying: AttunementUI's background poll timer opens for ANY "players"-group node, and
+CraftingUI's own check adds one for its station-range setup — grab_focus() turned that pre-existing
+mid-run auto-open into a focus-steal that broke CraftingUI's check. Fixed by moving
+_check_attunement_ui() to run first in menu_focus_check.gd's _run() (it self-disarms the timer for
+the rest of the script once local_selection() is set). Recorded in the SPECS.md block since nothing
+in the finding predicted it.
+
+Swept `ui/` for the same shape (grab_focus/focus_neighbor/focus stylebox missing on a runtime-built,
+blocking-group modal): clean. The only other gap is the already-filed F-217 (BuildBar piece slots).
 
 ### F-215 · `HSlider` draws no visible focus ring in this Godot version — F-209's gamepad focus work left it the one control type still hard to tell is focused — **fixed**
 
