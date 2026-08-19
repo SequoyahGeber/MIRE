@@ -4547,3 +4547,18 @@ EnemyDef.visual_tint (systems/enemies/enemy_def.gd) applied as a per-surface alb
 Files: `content/enemies/bog_crawler.tres`, `systems/waves/wave_spawner.gd`, `tools/bog_crawler_check.gd`, `systems/enemies/enemy_def.gd`, `systems/enemies/enemy.gd`, `tools/wave_director_check.gd`, `tools/mire_interaction_check.gd`, `tools/enemy_lod_check.gd`
 
 Commit at time of writing: `b84f9e3`
+
+---
+
+### DONE · F-190 · lm · 2026-08-19T07:21:38+00:00
+
+**HEAD registers the RewardService autoload but does not contain its script, so a clean checkout fails to boot**
+
+Already fixed at HEAD (F-183's ship committed reward_service.gd; registration was a separate earlier commit, now reconciled at HEAD). Verified: agent godot --script tools/reward_service_check.gd -> failures=0; agent godot --quit-after 60 -> clean boot, zero ERROR lines. Swept all 52 project.godot autoload entries for tracked-at-HEAD targets -- none broken. Moved F-190 to Resolved in FINDINGS.md, wrote its SPECS.md block, filed F-200 for the still-unbuilt prevention check the finding proposed.
+
+Notes along the way:
+- Already fixed at HEAD by F-183's own ship (reward_service.gd committed in c860a3f); registration line landed separately in bdb8562. Verified with reward_service_check.gd + a clean boot, swept all 52 autoload entries for the same shape (none), filed F-200 for the still-unbuilt prevention mechanism.
+
+Files: `docs/FINDINGS.md`, `docs/SPECS.md`
+
+Commit at time of writing: `baed56e`

@@ -1527,11 +1527,11 @@
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T07:11:01+00:00",
-      "hash": "cb5f1ce28676bfd0122db07ad9f2fae6f838c3210ae06560270058e0c3924cd7",
-      "task": "F-199",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
+      "agent": "lm",
+      "at": "2026-08-19T07:21:38+00:00",
+      "hash": "e2afdba1eb1553aeda7c9a629bd5c85f8eaab2125fcb3712abd101bda3b3f403",
+      "task": "F-190",
+      "token": null
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -1559,9 +1559,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lm",
-      "at": "2026-08-19T06:46:55+00:00",
-      "hash": "b5c30f130e954e7d5b4a3cc6f82b8c40e6b1d132c863078c92e6467a59508c69",
-      "task": "F-183",
+      "at": "2026-08-19T07:21:38+00:00",
+      "hash": "e47f9ba32ed09ec6e399acbd2b3a900c0f0907ba837e3576227cab5c9a6bdd7c",
+      "task": "F-190",
       "token": null
     },
     "entities/player/player.tscn": {
@@ -5850,9 +5850,11 @@
       "title": "File claims have become the bottleneck D-011 named as its own reversal trigger \u2014 one claim blocked four consecutive tasks from bumping PROTOCOL_VERSION"
     },
     "F-190": {
+      "done_at": "2026-08-19T07:21:38+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "HEAD registers the RewardService autoload but does not contain its script, so a clean checkout fails to boot"
     },

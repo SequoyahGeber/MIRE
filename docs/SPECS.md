@@ -4415,6 +4415,40 @@ undeclared-`ERROR:` count is `0` both runs.
 
 ---
 
+## F-190 · HEAD registers the RewardService autoload but does not contain its script, so a clean checkout fails to boot
+
+**Claim:** `docs/FINDINGS.md`, `docs/SPECS.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Already fixed by the time this task read the finding — the brief's own staleness warning was
+right.** F-183 (`agent ship`, commit `c860a3f`) committed `autoload/reward_service.gd` itself; the
+`project.godot` registration line landed in a separate, earlier commit (`bdb8562`, an unrelated
+"Doors that open" ship whose commit swept up the `agent autoload`-appended line — the exact race the
+finding names, not a new bug). Both are ancestors of the current `main` tip, so at HEAD the two acts
+are reconciled: the registration and the script it points at are both tracked. This task's job was to
+verify that rather than assume it, then close the finding.
+
+**Verify:** `git ls-files autoload/reward_service.gd` → tracked. `grep RewardService project.godot` →
+`RewardService="*res://autoload/reward_service.gd"` present. `.agent/bin/agent godot --script
+tools/reward_service_check.gd` → `REWARD_SERVICE_CHECK failures=0` (all 9 assertions pass, run
+against the real `content/loot/wellspring.tres`/`boss.tres` content). `.agent/bin/agent godot
+--quit-after 60` → clean boot, zero `ERROR:` lines — the exact failure the finding reproduces
+(`Failed to instantiate an autoload, can't load from path: ...`) does not occur.
+
+**Sweep for the same shape elsewhere:** every `res://` path named in every `[autoload]` line of
+`project.godot` (52 entries) is tracked at HEAD (`git ls-files --error-unmatch` on each, zero
+misses) — F-190's specific failure has no other live instance right now.
+
+**What is NOT fixed, and stays open as F-200:** the finding proposed two mechanisms that would catch
+a *future* instance of this same race — a check that every autoload/preload target is tracked at
+HEAD, and `agent check` judging the git INDEX instead of the working tree when `project.godot` is
+part of a commit. Neither exists yet; building them is out of this task's scope (verifying and
+closing an already-self-resolved bug) and is filed separately so the prevention work isn't lost.
+
+---
+
 ## F-183 · Wellspring caps and boss kills never grant a Chest — `wellspring`/`boss` tier loot tables are authored and reachable, but nothing ever rolls them
 
 **Claim:** `autoload/reward_service.gd`, `tools/reward_service_check.gd`, `core/util/mire_log.gd`,

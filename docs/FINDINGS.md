@@ -681,44 +681,6 @@ option 4 is already someone's live task.
 
 ---
 
-### F-190 · HEAD registers the RewardService autoload but does not contain its script, so a clean checkout fails to boot
-
-**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by nettle12
-
-`project.godot` at HEAD carries `RewardService="*res://autoload/reward_service.gd"` (line 76) and
-`autoload/reward_service.gd` is not tracked — it exists only in the shared working tree. A clean
-checkout therefore starts with:
-
-    ERROR: Failed to instantiate an autoload, can't load from path: res://autoload/reward_service.gd
-
-`agent baseline --script tools/hollowmere_check.gd` reproduces it in one command. The same run
-also reports one genuine assertion failure at HEAD, unrelated to the autoload: "Player node is
-1.84 m from the layout spawn — the scene has drifted", which arrived with the layout change that
-took Hollowmere from 2,869 props to 2,880.
-
-This is the second instance of one failure mode in a day, and the other one was mine, so it is
-worth naming rather than just fixing. `agent autoload` writes `project.godot` deliberately without
-a claim (F-051), which is right — but it means the REGISTRATION and the SCRIPT are committed by
-two different acts, and nothing checks that a commit which adds the first also adds the second.
-F-144 shipped exactly the same shape: `autoload/graphics_quality.gd` was committed preloading
-`res://world/environment/draw_policy.gd` while that file existed only on disk, because several
-sessions share one working tree and `git add` followed by `git commit` is not atomic against
-another session's git activity in between — thirteen staged paths, three committed, no error.
-
-Two things would have caught it:
-
-1. A check that every `res://` path named in `project.godot`'s `[autoload]` block, and every
-   `preload()` target in a tracked script, is itself tracked at HEAD. Cheap, and it catches the
-   whole class rather than these two instances.
-2. `agent check` looking at the INDEX as well as the working tree. It currently reports on
-   working-tree state, so a commit that silently lost most of its paths passes it.
-
-Until then, commit by pathspec (`git commit -m ... -- <paths>`), which stages and commits
-atomically from the working tree and cannot lose to the race, and verify with
-`git cat-file -e HEAD:<path>` rather than trusting that the commit contained what was staged.
-
----
-
 ### F-191 · Staging and committing as two steps lets a concurrent agent's commit sweep up your staged work
 
 **Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by nettle12
@@ -870,7 +832,92 @@ in-process draft did not catch), and update the tracker row's evidence line.
 
 ---
 
+### F-200 · No check verifies that project.godot's [autoload] targets are tracked at HEAD, so F-190's failure mode can recur
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by lm
+
+F-190 shipped as a race between two acts that are still not atomic: `agent autoload` appends the
+`project.godot` registration line (correctly claim-free per F-051, and it already checks the target
+exists on the local *disk*), while the script itself is committed separately by whatever claim covers
+it. Between those two commits — or if the script commit never lands, gets reverted, or is dropped by
+a rebase — HEAD registers an autoload whose script is not tracked, and a clean checkout fails to boot
+with `ERROR: Failed to instantiate an autoload, can't load from path: ...`. F-190 hit this for
+`autoload/reward_service.gd`; F-144 hit the identical shape for `autoload/graphics_quality.gd`
+preloading `res://world/environment/draw_policy.gd`. Both self-resolved only because the missing file
+was committed shortly after by the same lane's own follow-up work — nothing caught either at commit
+time, and nothing stops a third instance from shipping and staying broken.
+
+Two independent, cheap mechanisms would close this for good (both proposed when F-190 was filed, not
+yet built):
+
+1. A check — run in CI/headless, or as part of `tools/hollowmere_check.gd`'s own boot — that every
+   `res://` path named in `project.godot`'s `[autoload]` block, and every static `preload()` target in
+   a tracked script reachable from one, resolves to a file tracked at HEAD (`git ls-files
+   --error-unmatch`, not just `os.path.exists` against the working tree). Catches the whole class
+   regardless of which commit introduced the gap.
+2. `agent check` (the pre-commit hook, `.agent/bin/agent:cmd_check`) judging the STAGED/INDEX view
+   instead of only the working tree when `project.godot` is part of the commit — so a commit that
+   registers or already carries an autoload whose script blob is neither staged nor already in HEAD
+   is refused outright, before it ever reaches history.
+
+Neither is built. #1 is the faster win since it needs no changes to the shared `.agent/bin/agent`
+script; #2 is the one that actually prevents the bad commit rather than catching it after the fact.
+
+---
+
 ## Resolved
+
+### F-190 · HEAD registers the RewardService autoload but does not contain its script, so a clean checkout fails to boot — **fixed**
+
+**Area:** tooling · **Severity:** high · **Found:** 2026-08-19 by nettle12
+
+`project.godot` at HEAD carried `RewardService="*res://autoload/reward_service.gd"` (line 76) while
+`autoload/reward_service.gd` was not tracked — it existed only in the shared working tree. A clean
+checkout therefore started with:
+
+    ERROR: Failed to instantiate an autoload, can't load from path: res://autoload/reward_service.gd
+
+`agent baseline --script tools/hollowmere_check.gd` reproduces it in one command. The same run
+also reports one genuine assertion failure at HEAD, unrelated to the autoload: "Player node is
+1.84 m from the layout spawn — the scene has drifted", which arrived with the layout change that
+took Hollowmere from 2,869 props to 2,880 — that drift was fixed separately by F-195.
+
+This is the second instance of one failure mode in a day, and the other one was mine, so it is
+worth naming rather than just fixing. `agent autoload` writes `project.godot` deliberately without
+a claim (F-051), which is right — but it means the REGISTRATION and the SCRIPT are committed by
+two different acts, and nothing checks that a commit which adds the first also adds the second.
+F-144 shipped exactly the same shape: `autoload/graphics_quality.gd` was committed preloading
+`res://world/environment/draw_policy.gd` while that file existed only on disk, because several
+sessions share one working tree and `git add` followed by `git commit` is not atomic against
+another session's git activity in between — thirteen staged paths, three committed, no error.
+
+Two things would have caught it, neither built yet — filed separately as **F-200** rather than
+built here, since this task's job turned out to be verifying an already-self-resolved bug, not
+building prevention:
+
+1. A check that every `res://` path named in `project.godot`'s `[autoload]` block, and every
+   `preload()` target in a tracked script, is itself tracked at HEAD. Cheap, and it catches the
+   whole class rather than these two instances.
+2. `agent check` looking at the INDEX as well as the working tree. It currently reports on
+   working-tree state, so a commit that silently lost most of its paths passes it.
+
+**Resolved 2026-08-19 by lm.** By the time this task picked it up, F-183's own ship (`c860a3f`) had
+already committed `autoload/reward_service.gd`; the `project.godot` registration line had landed
+separately and earlier (`bdb8562`, an unrelated "Doors that open" commit that swept up the
+`agent autoload`-appended line — the exact race this finding names). Both commits are ancestors of
+the current `main` tip, so at HEAD the registration and its script are reconciled: `git ls-files
+autoload/reward_service.gd` shows it tracked, and `project.godot` still carries the line. This task's
+work was verifying that rather than trusting it, then closing the finding. Full spec: `docs/SPECS.md`
+(F-190, none existed before this task).
+
+**Verified:** `.agent/bin/agent godot --script tools/reward_service_check.gd` →
+`REWARD_SERVICE_CHECK failures=0` (all 9 assertions, against real `content/loot/wellspring.tres`/
+`boss.tres` content). `.agent/bin/agent godot --quit-after 60` → clean boot, zero `ERROR:` lines —
+the finding's own reproduction (`Failed to instantiate an autoload...`) does not occur. Sweep: every
+`res://` path in every one of `project.godot`'s 52 `[autoload]` lines is tracked at HEAD
+(`git ls-files --error-unmatch` on each, zero misses) — no other live instance of this shape exists
+right now. The prevention mechanism itself (the two numbered items above) remains unbuilt; that gap
+is F-200.
 
 ### F-158 · `bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler — **fixed**
 
