@@ -488,40 +488,6 @@ WaveSpawner/EnemyWorld for `the_hunt`, DayNight for `long_night`, and the equiva
 
 ---
 
-### F-246 · `tools/enemy_content_check.gd`'s strider-vs-crawler kiting proof fails at a clean HEAD, independent of any in-flight change
-
-**Area:** enemies · **Severity:** medium · **Found:** 2026-08-19 by lm during F-240
-
-`_check_speed_denies_kiting()` spawns `strider` (`move_speed = 7.5`, above `PLAYER_SPRINT_SPEED_MPS
-= 6.0`, confirmed passing by the test's own sanity check) against a continuously retreating synthetic
-player and asserts it closes the gap over 60 stepped calls, the same way `strider.tres`'s own header
-promises ("closes distance a below-sprint kind cannot"). Two of its assertions fail:
-
-```
-FAIL: neither ever closed to its own attack range — this measured pursuit, not a frozen telegraph
-FAIL: the strider closes the gap on the SAME retreating player despite it (8.00 m -> 9.82 m -> ~10.1 m across three runs)
-```
-
-The strider ends the loop further from the player than it started (8 m out to ~9.8–10.1 m), the
-opposite of task 5.2's own claim, and the first failure indicates one of the two enemies left `state
-== CHASE` before the loop finished (deaggro, most likely, given `strider.tres`'s `deaggro_radius_m =
-24.0` and the retreat running the full 60 steps regardless of state) — not confirmed further, since
-this is outside F-240's claim (`systems/enemies/enemy.gd`/`enemy_def.gd`, not `strider.tres` or the
-pursuit/steering code this exercises).
-
-**Reproduced three times in a row** with `.agent/bin/agent baseline --script
-tools/enemy_content_check.gd` against a fresh checkout of HEAD (`b807863`) — not a flake, not caused
-by F-240's own change (`enemy_lunge_check.gd`, `enemy_check.gd` and `enemy_ai_check.gd` all pass
-clean against the same HEAD and against F-240's working tree alike). `ENEMY_CONTENT_CHECK
-failures=2` every time.
-
-**What would close this:** find where the strider stops actually gaining ground on a retreating
-player — likely either a deaggro drop mid-loop or a pursuit/steering regression since 5.2 shipped —
-and fix it, or fix the test if the design intent genuinely changed since 5.2. Either way
-`tools/enemy_content_check.gd` should read `failures=0` at HEAD again.
-
----
-
 ### F-247 · F-240's exact gap exists a second time in `BossMoveDef` — a boss's own telegraphed moves have no way to close ground during their own TELL either, and `Boss._tick_attack()` would not even inherit `EnemyDef.lunge_speed_m_s` if it did
 
 **Area:** enemies · **Severity:** low · **Found:** 2026-08-19 by lm during F-240 (sweep for the same
@@ -833,6 +799,52 @@ behavioural, in what the templates instruct, plus a helper to release a subset a
 ---
 
 ## Resolved
+
+### F-246 · `tools/enemy_content_check.gd`'s strider-vs-crawler kiting proof fails at a clean HEAD, independent of any in-flight change — **fixed**
+
+**Area:** enemies · **Severity:** medium · **Found:** 2026-08-19 by lm during F-240
+
+`_check_speed_denies_kiting()` spawns `strider` (`move_speed = 7.5`, above `PLAYER_SPRINT_SPEED_MPS
+= 6.0`, confirmed passing by the test's own sanity check) against a continuously retreating synthetic
+player and asserts it closes the gap over 60 stepped calls, the same way `strider.tres`'s own header
+promises ("closes distance a below-sprint kind cannot"). Two of its assertions fail:
+
+```
+FAIL: neither ever closed to its own attack range — this measured pursuit, not a frozen telegraph
+FAIL: the strider closes the gap on the SAME retreating player despite it (8.00 m -> 9.82 m -> ~10.1 m across three runs)
+```
+
+The strider ends the loop further from the player than it started (8 m out to ~9.8–10.1 m), the
+opposite of task 5.2's own claim, and the first failure indicates one of the two enemies left `state
+== CHASE` before the loop finished (deaggro, most likely, given `strider.tres`'s `deaggro_radius_m =
+24.0` and the retreat running the full 60 steps regardless of state) — not confirmed further, since
+this is outside F-240's claim (`systems/enemies/enemy.gd`/`enemy_def.gd`, not `strider.tres` or the
+pursuit/steering code this exercises).
+
+**Reproduced three times in a row** with `.agent/bin/agent baseline --script
+tools/enemy_content_check.gd` against a fresh checkout of HEAD (`b807863`) — not a flake, not caused
+by F-240's own change (`enemy_lunge_check.gd`, `enemy_check.gd` and `enemy_ai_check.gd` all pass
+clean against the same HEAD and against F-240's working tree alike). `ENEMY_CONTENT_CHECK
+failures=2` every time.
+
+**What would close this:** find where the strider stops actually gaining ground on a retreating
+player — likely either a deaggro drop mid-loop or a pursuit/steering regression since 5.2 shipped —
+and fix it, or fix the test if the design intent genuinely changed since 5.2. Either way
+`tools/enemy_content_check.gd` should read `failures=0` at HEAD again.
+
+---
+
+**Resolved 2026-08-19 by lm3.** Fixed in tools/enemy_content_check.gd only — Enemy.gd's pursuit/steering was never wrong. Root
+cause: the check spawns bare Enemy nodes with no floor, so gravity free-falls them for the whole
+60-step retreat loop (same class as F-038's combat_net_check.gd fix). By tick 33 the strider's own
+vertical drop (y=-24.56) pushed Enemy._resolve_target()'s honest 3D distance_to() past
+deaggro_radius_m (24.0), dropping its target mid-chase — right after 33 ticks of genuinely closing
+the gap on the retreating player, proving the AI itself was correct. Added _build_ground() (one flat
+StaticBody3D spanning the scenario span, same shape as combat_net_check.gd's), called once at the
+top of _run(). Verified: `agent godot --script tools/enemy_content_check.gd` -> ENEMY_CONTENT_CHECK
+failures=0, all 27 checks PASS. Also re-ran tools/enemy_crawler_check.gd clean. Swept every other
+enemy_*_check.gd for the same shape (grep -n "_step(" for iteration counts) — none reach the ~33-tick
+threshold, no sibling fix needed. Full writeup: docs/SPECS.md "## F-246" block.
 
 ### F-253 · tools/seed_sync_check.gd has 3 pre-existing failures — confirmed unrelated to F-250 via git baseline — **fixed**
 

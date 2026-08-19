@@ -8543,6 +8543,60 @@ window; it is D-110/D-119/F-172 working as designed, and `is_seed_ready()` was n
 
 ---
 
+## F-246 · `tools/enemy_content_check.gd`'s strider-vs-crawler kiting proof fails at a clean HEAD, independent of any in-flight change
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap.
+
+**Authority:** none of its own — a fix confined to a `tools/` check script, no production system
+touched. `Enemy`'s own row (`docs/ARCHITECTURE.md` §2.2, "Enemies (spawn, AI, damage)": HOST,
+entirely) was the first thing ruled out, not the thing fixed.
+
+**Claim:** `tools/enemy_content_check.gd` only. `systems/enemies/enemy.gd` was read but not touched —
+its pursuit/steering math turned out to be correct (see below).
+
+**The gap:** `_check_speed_denies_kiting()` steps two `Enemy` nodes through 60 physics ticks with a
+continuously retreating synthetic player and asserts the faster-than-sprint `strider` closes the gap
+while the slower `crawler` baseline falls behind. It failed reproducibly at HEAD (`agent baseline`,
+three runs, `ENEMY_CONTENT_CHECK failures=2`).
+
+**Root cause, found by instrumenting a throwaway probe (`tools/_tmp_f246_probe.gd`, not committed)
+that logged `state`/`target_peer`/`global_position.y` every tick:** the strider *was* closing the
+distance every single step, right up until tick 33, when it abruptly lost its target and froze. Its
+`y` position at that tick was **-24.56** — this test spawns bare `Enemy` nodes with no ground under
+them, so gravity free-falls them for the life of the check (the same class of bug F-038 already fixed
+in `combat_net_check.gd` — see that file's `_build_ground()` comment). `Enemy._resolve_target()`'s
+deaggro check is honest 3D `global_position.distance_to()` (correct production behaviour — a real
+enemy is never airborne 24 m below its target), so once the free-fall alone pushed that 3D distance
+past `deaggro_radius_m` (24.0 for `strider`), the enemy dropped its target and stood still while the
+test kept retreating the player, reading as "the strider can't catch a kiting player" when the actual
+pursuit/steering code was never wrong. `enemy_ai_check.gd` already knew about this exact class of
+artifact (its own comment: "this harness has no floor, so a stepped body also free-falls") and works
+around it by keeping its retreat-adjacent assertions to flat distance over few steps; this check's
+60-step loop ran long enough for the vertical component to matter and nobody had made that connection
+for it.
+
+**The fix:** `_build_ground()` — one flat `StaticBody3D`/`BoxShape3D` spanning the whole scenario
+span (origins run 0..3500 on X across the four scenarios), `collision_layer = 1` so it's in every
+`Enemy`'s `collision_mask`. Called once at the top of `_run()`, same shape as `combat_net_check.gd`'s
+`_build_ground()` (F-038). No production file changed, no assertion re-tuned, no iteration count
+reduced.
+
+**Verify:** `.agent/bin/agent godot --script tools/enemy_content_check.gd` — `ENEMY_CONTENT_CHECK
+failures=0`, all 27 checks PASS including both kiting assertions (crawler 8.00 m → 11.16 m, strider
+8.00 m → 4.63 m). Also re-ran `tools/enemy_crawler_check.gd` (named in the work order) clean.
+
+**Found broken along the way, not fixed here:** nothing — swept every other `enemy_*_check.gd` for
+the same shape (`grep -n "_step("` for iteration counts). `enemy_check.gd`/`enemy_lunge_check.gd` cap
+every retreat/measurement loop at ≤12 steps and `enemy_ai_check.gd`'s one 60-iteration loop (attacker
+cap cycling) never depends on distance — none reach the ~33-tick threshold where the free-fall
+artifact bites, and all three already pass clean at HEAD per F-246's own filing. No sibling fix
+needed.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**
