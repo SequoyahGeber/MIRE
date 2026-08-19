@@ -707,39 +707,6 @@ in-process draft did not catch), and update the tracker row's evidence line.
 
 ---
 
-### F-200 · No check verifies that project.godot's [autoload] targets are tracked at HEAD, so F-190's failure mode can recur
-
-**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by lm
-
-F-190 shipped as a race between two acts that are still not atomic: `agent autoload` appends the
-`project.godot` registration line (correctly claim-free per F-051, and it already checks the target
-exists on the local *disk*), while the script itself is committed separately by whatever claim covers
-it. Between those two commits — or if the script commit never lands, gets reverted, or is dropped by
-a rebase — HEAD registers an autoload whose script is not tracked, and a clean checkout fails to boot
-with `ERROR: Failed to instantiate an autoload, can't load from path: ...`. F-190 hit this for
-`autoload/reward_service.gd`; F-144 hit the identical shape for `autoload/graphics_quality.gd`
-preloading `res://world/environment/draw_policy.gd`. Both self-resolved only because the missing file
-was committed shortly after by the same lane's own follow-up work — nothing caught either at commit
-time, and nothing stops a third instance from shipping and staying broken.
-
-Two independent, cheap mechanisms would close this for good (both proposed when F-190 was filed, not
-yet built):
-
-1. A check — run in CI/headless, or as part of `tools/hollowmere_check.gd`'s own boot — that every
-   `res://` path named in `project.godot`'s `[autoload]` block, and every static `preload()` target in
-   a tracked script reachable from one, resolves to a file tracked at HEAD (`git ls-files
-   --error-unmatch`, not just `os.path.exists` against the working tree). Catches the whole class
-   regardless of which commit introduced the gap.
-2. `agent check` (the pre-commit hook, `.agent/bin/agent:cmd_check`) judging the STAGED/INDEX view
-   instead of only the working tree when `project.godot` is part of the commit — so a commit that
-   registers or already carries an autoload whose script blob is neither staged nor already in HEAD
-   is refused outright, before it ever reaches history.
-
-Neither is built. #1 is the faster win since it needs no changes to the shared `.agent/bin/agent`
-script; #2 is the one that actually prevents the bad commit rather than catching it after the fact.
-
----
-
 ### F-201 · `tools/steam_lobby_check.gd` prints "all checks passed" (exit 0) but always emits one undeclared engine `ERROR:` line, violating this project's own SPECS.md standing rule 4
 
 **Area:** tooling/netcode · **Severity:** medium · **Found:** 2026-08-19 by lm while verifying F-170
@@ -845,7 +812,96 @@ alone hid the shadow regression in point 3 above; primitives is what caught it.
 
 ---
 
+### F-205 · `agent check`/the pre-commit hook still lets a commit register or carry an untracked autoload target — F-200's mechanism #2 is still unbuilt
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by lp while closing F-200
+
+F-200 named two independent, cheap mechanisms that would close its hazard for good. F-200 built only
+the first: `tools/autoload_tracked_check.py` verifies, for any given revision, that every `res://`
+path in `project.godot`'s `[autoload]` block — and every static `preload()` target transitively
+reachable from one, at that same revision — is a blob git actually has. That catches the whole class
+after the fact, run by hand or in CI.
+
+It does not stop the bad commit from landing. `.agent/bin/agent:cmd_check` (the pre-commit hook) only
+judges claims and the closed-editor rule against the STAGED/INDEX view; it never asks whether a
+commit that touches `project.godot` or an autoload script leaves every registered target
+resolvable. A commit that registers `Thing="*res://autoload/thing.gd"` while `thing.gd` is neither
+staged alongside it nor already in `HEAD` still goes through clean — F-190's and F-144's exact shape,
+still possible today.
+
+The fix is mechanical, now that the primitive exists: in `cmd_check`, when `project.godot` or any
+`.gd` is part of the staged set, run something equivalent to
+`autoload_tracked_check.sweep()`/`tracked_at()` against a view that overlays the INDEX on top of
+`HEAD` (not a plain `git cat-file -e HEAD:...`, since the point is to also accept a target staged in
+*this* commit) and refuse the commit if anything comes back missing. Reuse
+`tools/autoload_tracked_check.py`'s `AUTOLOAD_LINE`/`PRELOAD_CALL` regexes and BFS shape rather than
+re-deriving them — see that file's own self-test (`--self-test`) for the two fixtures (F-190's shape,
+F-144's shape) any reimplementation should keep passing.
+
+Not built here because it means editing `.agent/bin/agent` itself — shared harness source, a bigger
+and riskier claim than this task's scope, and its own exact-claim/`harness_check.py` verification
+loop (F-081/D-057) is a separate piece of work from the read-only check F-200 asked for.
+
+---
+
 ## Resolved
+
+### F-200 · No check verifies that project.godot's [autoload] targets are tracked at HEAD, so F-190's failure mode can recur — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by lm
+
+F-190 shipped as a race between two acts that are still not atomic: `agent autoload` appends the
+`project.godot` registration line (correctly claim-free per F-051, and it already checks the target
+exists on the local *disk*), while the script itself is committed separately by whatever claim covers
+it. Between those two commits — or if the script commit never lands, gets reverted, or is dropped by
+a rebase — HEAD registers an autoload whose script is not tracked, and a clean checkout fails to boot
+with `ERROR: Failed to instantiate an autoload, can't load from path: ...`. F-190 hit this for
+`autoload/reward_service.gd`; F-144 hit the identical shape for `autoload/graphics_quality.gd`
+preloading `res://world/environment/draw_policy.gd`. Both self-resolved only because the missing file
+was committed shortly after by the same lane's own follow-up work — nothing caught either at commit
+time, and nothing stops a third instance from shipping and staying broken.
+
+Two independent, cheap mechanisms would close this for good (both proposed when F-190 was filed, not
+yet built):
+
+1. A check — run in CI/headless, or as part of `tools/hollowmere_check.gd`'s own boot — that every
+   `res://` path named in `project.godot`'s `[autoload]` block, and every static `preload()` target in
+   a tracked script reachable from one, resolves to a file tracked at HEAD (`git ls-files
+   --error-unmatch`, not just `os.path.exists` against the working tree). Catches the whole class
+   regardless of which commit introduced the gap.
+2. `agent check` (the pre-commit hook, `.agent/bin/agent:cmd_check`) judging the STAGED/INDEX view
+   instead of only the working tree when `project.godot` is part of the commit — so a commit that
+   registers or already carries an autoload whose script blob is neither staged nor already in HEAD
+   is refused outright, before it ever reaches history.
+
+Neither is built. #1 is the faster win since it needs no changes to the shared `.agent/bin/agent`
+script; #2 is the one that actually prevents the bad commit rather than catching it after the fact.
+
+---
+
+**Resolved 2026-08-19 by lp.** Built mechanism #1 (of the two F-190 named): `tools/autoload_tracked_check.py`. For a given
+revision (default HEAD, pure git — no Godot needed) it reads project.godot's [autoload] block,
+verifies every res:// target is a blob tracked at that revision (`git cat-file -e <rev>:<path>`,
+not a filesystem check — the whole point, since F-190/F-144 both self-resolved on a dirty working
+tree that looked fine), then recurses into every static `preload("res://...")` string literal
+reachable from a tracked .gd, transitively, the same way — closing F-144's variant (the AUTOLOAD
+target itself was tracked; what it preloaded was not).
+
+Verified three ways:
+1. `python3 tools/autoload_tracked_check.py` at current HEAD →
+   `AUTOLOAD_TRACKED_CHECK rev=HEAD autoloads=58 paths_checked=111` / `failures=0` — no live
+   instance of the hazard exists right now (this task's own sweep of the class).
+2. `python3 tools/autoload_tracked_check.py --self-test` → 3/3 passed, in a throwaway git repo:
+   a clean tree (passes), F-190's exact shape (autoload target itself untracked — caught), and
+   F-144's exact shape (autoload script tracked, its preload target not — caught). This proves the
+   check catches the failure, not just that it runs.
+3. `agent godot --quit-after 120` → clean boot, zero `ERROR:` lines — the finding's own
+   reproduction (`Failed to instantiate an autoload...`) does not occur at HEAD.
+
+Mechanism #2 (agent check refusing the commit outright, from F-200's own text) is NOT built — it
+means editing the shared `.agent/bin/agent` harness, a separate and riskier claim than this task's
+scope. Filed as F-205 with the exact reuse path (this file's regexes/BFS) so it isn't lost.
+docs/DELEGATION.md's Current state records the script's CLI/API for whoever picks that up.
 
 ### F-196 · An asset rebuild concurrent with agent godot's auto-import pass poisons the import cache — 8 station GLBs stayed unloadable across 40 minutes of checks until a forced --import — **fixed**
 

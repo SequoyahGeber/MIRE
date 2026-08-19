@@ -5270,6 +5270,49 @@ lines. All 19 edited writers pass `python3 -m py_compile`.
 
 ---
 
+### 2026-08-19 — F-200 fixed: `tools/autoload_tracked_check.py` verifies every `project.godot` `[autoload]` target — and everything it transitively `preload()`s — is tracked in git at a given revision
+
+**The bug it closes:** `agent autoload` appends the `project.godot` registration line while the
+script itself is committed separately by whatever claim covers it — two acts that are not atomic.
+F-190 hit this for `autoload/reward_service.gd`; F-144 hit the same shape one level deeper,
+`autoload/graphics_quality.gd` (itself tracked) preloading an untracked `draw_policy.gd`. Both
+self-resolved by luck, and nothing caught either at commit time. Full account in `docs/FINDINGS.md`
+(Resolved) and `docs/SPECS.md`.
+
+**The API the next check/hook builds against:**
+
+```python
+python3 tools/autoload_tracked_check.py               # checks HEAD
+python3 tools/autoload_tracked_check.py --rev <sha>    # checks any revision
+python3 tools/autoload_tracked_check.py --self-test    # proves it catches F-190's/F-144's shapes
+```
+
+No Godot dependency — pure `git` + stdlib, so it is cheap enough to run on every commit that touches
+`project.godot` or a `.gd` autoload. Importable pieces for whoever builds F-205 (wiring this into
+`agent check`'s STAGED/INDEX view rather than running it as a separate pass):
+
+- `autoload_targets(rev)` — every `res://` path in `project.godot`'s `[autoload]` block at `rev`.
+- `tracked_at(rev, respath)` — `True` iff `res://path` is a git blob tracked at `rev`
+  (`git cat-file -e`, never a working-tree/`os.path.exists` check — the working tree is exactly what
+  self-resolved both historical incidents while looking fine).
+- `sweep(rev)` → `(missing, checked)` — BFS from every autoload target through every static
+  `preload("res://...")` string literal reachable from a tracked `.gd`, reading each file's content
+  at `rev` (`git show`), not off disk. `missing` is `[(path, autoload_root), ...]`.
+- `AUTOLOAD_LINE` / `PRELOAD_CALL` — the two regexes; reuse rather than re-deriving them.
+
+**Verified:** `python3 tools/autoload_tracked_check.py` → `autoloads=58 paths_checked=111
+failures=0` at current HEAD. `python3 tools/autoload_tracked_check.py --self-test` → 3/3 passed,
+against a throwaway git repo built and torn down per run — proves detection of both a bare untracked
+autoload target (F-190's shape) and a tracked autoload preloading an untracked dependency (F-144's
+shape), not just a clean pass. `agent godot --quit-after 120` → clean boot, 0 `ERROR:` lines.
+
+**What is NOT built:** wiring this into `agent check` (the pre-commit hook) so the bad commit is
+refused rather than caught after the fact — filed as **F-205**, since it means editing the shared
+`.agent/bin/agent` harness under its own claim and `harness_check.py` verification loop, out of
+scope for the read-only check this task built.
+
+---
+
 > **Historical documents — every task prompt from here down.** They predate D-021 (agents register
 > their own autoloads), D-031 (agents may edit Godot-authored files under exact claim), D-039 (do it
 > yourself rather than handing it back) and the D-036 lane system. Where a prompt says

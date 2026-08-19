@@ -4450,6 +4450,53 @@ closing an already-self-resolved bug) and is filed separately so the prevention 
 
 ---
 
+## F-200 · No check verifies that `project.godot`'s `[autoload]` targets are tracked at HEAD, so F-190's failure mode can recur
+
+**Claim:** `tools/autoload_tracked_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md`,
+`docs/DELEGATION.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble. Its brief carried a staleness warning (`autoload/graphics_quality.gd` had a commit since
+filing) — checked first per that warning: the commit was F-154's unrelated hook wiring, nothing
+touching the autoload/preload shape this finding is about, so the finding was still live and the
+work was still to build.
+
+**Built mechanism #1 of the finding's own two proposals** (not #2 — see below): a standalone,
+Godot-free check, `tools/autoload_tracked_check.py`. For a given revision (`--rev`, default `HEAD`)
+it reads `project.godot`'s `[autoload]` block, verifies every `res://` target resolves to a git blob
+tracked **at that revision** (`git cat-file -e <rev>:<path>`, never a working-tree/`os.path.exists`
+check — the whole point, since F-190 and F-144 both self-resolved on a dirty tree that looked fine
+locally), then recurses into every static `preload("res://...")` string literal reachable from a
+tracked `.gd` file, transitively, checked the same way — closing F-144's variant of the bug, where
+the AUTOLOAD's own script was tracked but something *it* preloaded was not.
+
+**Verify:**
+- `python3 tools/autoload_tracked_check.py` (HEAD) →
+  `AUTOLOAD_TRACKED_CHECK rev=HEAD autoloads=58 paths_checked=111` / `failures=0`.
+- `python3 tools/autoload_tracked_check.py --self-test` → `3/3 passed`, in a throwaway git repo it
+  builds and discards itself: a clean tree (must pass), F-190's exact shape — an autoload target
+  itself never committed (must fail, and does), and F-144's exact shape — the autoload script
+  tracked but its `preload()` target not (must fail, and does, naming the transitive path). This is
+  what proves the check catches the failure rather than merely running without crashing.
+- `.agent/bin/agent godot --quit-after 120` → clean boot, zero `ERROR:` lines — the finding's own
+  reproduction (`Failed to instantiate an autoload, can't load from path: ...`) does not occur.
+- `.agent/bin/agent godot --script tools/findings_numbering_check.gd` →
+  `FINDINGS_NUMBERING_CHECK open=22 resolved=186 failures=0` after moving F-200 to `## Resolved`
+  and filing F-205 under `## Open` — no heading damage (F-134's trap).
+
+**Sweep for the same shape elsewhere:** the check itself IS the sweep — it walks all 58 live
+`[autoload]` entries and every path transitively reachable from one (111 total), not just the two
+historical incidents (`reward_service.gd`, `graphics_quality.gd`/`draw_policy.gd`). Zero misses at
+current HEAD.
+
+**What is NOT built, and stays open as F-205:** the finding's mechanism #2 — `agent check` (the
+pre-commit hook) refusing a commit outright when it would register or carry an untracked autoload
+target, judging the STAGED/INDEX view rather than catching it after the fact. That needs editing the
+shared `.agent/bin/agent` harness, a separate and larger claim than this task's scope; filed
+separately with the exact reuse path (this file's regex/BFS) so the prevention work isn't lost twice.
+
+---
+
 ## F-183 · Wellspring caps and boss kills never grant a Chest — `wellspring`/`boss` tier loot tables are authored and reachable, but nothing ever rolls them
 
 **Claim:** `autoload/reward_service.gd`, `tools/reward_service_check.gd`, `core/util/mire_log.gd`,
