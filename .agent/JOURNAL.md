@@ -4659,3 +4659,15 @@ player_downed (PlayerHealth, host/solo-only edge signal, all 3 WENT_DOWN sites) 
 Files: `systems/health/player_health.gd`, `systems/cycle/cycle_service.gd`, `autoload/command_service.gd`, `tools/hook_events_check.gd`, `tools/hook_events_check.gd.uid`
 
 Commit at time of writing: `c831059`
+
+---
+
+### DONE · F-149 · lp · 2026-08-19T09:07:50+00:00
+
+**F-141's docs edits got committed under F-144's message — a concurrent agent's plain 'git commit' absorbs another lane's staged-but-uncommitted files**
+
+Confirmed no harness bug: cmd_ship already pathspecs (F-014), and AGENTS.md's mandatory pathspec-commit rule for docs/ hand-commits (added via F-199, naming F-149) already closes the hazard. Added 3 regression cases to tools/harness_check.py proving it — silent-pass setup, bare-commit repro of the incident, pathspec-commit fix. Verified: python3 tools/harness_check.py 32/32. Swept for sibling un-pathspec'd git-commit call sites in the harness — none found. FINDINGS.md moved to Resolved, SPECS.md spec block written, DELEGATION.md Current state entry added, findings_numbering_check.gd clean.
+
+Files: `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `c5eeb43`

@@ -4922,6 +4922,66 @@ full boot clean.
 
 ---
 
+## F-149 · F-141's docs edits got committed under F-144's message — a concurrent agent's plain `git commit` absorbs another lane's staged-but-uncommitted files
+
+**Claim:** `tools/harness_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`. No
+production/runtime file — this is coordination tooling, not a networked system, so it declares no
+`ARCHITECTURE.md` §2.2 authority row.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Checked before touching anything, per the brief's own instruction.** `python3
+tools/harness_check.py` (29/29 before this task's own additions) already carries F-199's case, which
+covers a *related* but narrower shape: a bare commit blocked because every offending file is another
+lane's exact **claim**. F-149's actual incident shape is different and that case does not exercise
+it — `docs/` is exempt from claims entirely (F-006/F-072), so two lanes' unclaimed docs edits sitting
+staged together produce **no error and no warning** from `agent check`; there was nothing here for the
+existing suite to have caught.
+
+**Root cause, confirmed rather than re-derived:** `git commit` with no pathspec commits the whole
+index, not just the committing agent's own staged files. This is pure git behavior, not a harness bug
+— nothing in `.agent/bin/agent` issues a bare `git commit` (`cmd_ship` already pathspecs, F-014,
+2026-08-16, predates this finding), so there was no code defect to fix. The hazard is entirely in
+*hand-typed* commits for `docs/` — the one class of commit the harness cannot perform for you, because
+`ship` deliberately leaves claim-exempt docs files for hand-commit (F-006).
+
+**Fix already landed by the time this finding was picked up, via F-199's work the day after F-149 was
+filed:** `AGENTS.md`'s ship section now mandates pathspec on every hand-commit of docs (`git commit -m
+"..." -- docs/FINDINGS.md docs/DECISIONS.md`), naming F-149 and F-199 as the motivating incidents. A
+pathspec commit builds its tree from HEAD plus only the named paths' current worktree bytes — it does
+not touch, read, or depend on whatever else happens to be sitting in the shared index, which is
+exactly the isolation F-149's incident needed and did not have. This finding's own two suggested
+closes were (a) a new atomic stage+commit helper, or (b) document and accept as known/low-severity
+since content is never lost, only misattributed — (b) is what actually shipped, one day after filing,
+as part of the sibling F-199 fix.
+
+**This task's contribution: a regression test proving (b) is real, not just written prose.** Three new
+`tools/harness_check.py` cases:
+
+1. Two lanes' unclaimed docs edits staged together — `agent check` passes with no output, confirming
+   F-149's premise (docs/ is silently exempt) still holds and nothing here would ever be caught by the
+   hook.
+2. The incident, reproduced with plain git: a bare `git commit` after that setup carries **both**
+   lanes' files under one lane's message — proves the hazard is real, not hypothetical, without
+   needing `--rev` against a "broken" harness (there is no broken harness; the break is a missing
+   `--`).
+3. The fix, same setup, one flag different: `git commit -m "..." -- docs/SPECS.md` commits only the
+   named file, and the other lane's staged `docs/FINDINGS.md` survives — still staged, still
+   uncommitted, ready for its own lane to commit separately. Matches how `cmd_ship`'s own pathspec
+   commit already behaves for claimed files (F-014); this proves the hand-typed form AGENTS.md tells a
+   docs-closer to type by hand gives the identical guarantee.
+
+**Verified 2026-08-19 (lp):** `python3 tools/harness_check.py` — 32/32 (29 prior + 3 new). No Godot
+involved — this is a git-behavior question, not an engine one, so `agent godot --quit-after 120`
+would have exercised nothing this finding is about; skipped for that reason, not skipped by omission.
+
+**Swept for siblings:** `grep -n '"commit"' .agent/bin/agent tools/*.py` — the only `git commit` call
+site anywhere in the harness or its checks is `cmd_ship`'s own, already pathspec'd. No second
+un-pathspec'd commit call exists to be the next incident.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

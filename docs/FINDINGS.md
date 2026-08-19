@@ -369,51 +369,6 @@ observed serialising four concurrent runs and killing one lane outright:
 So the contention is now visible and bounded. **Decide the cache question against real hold times,
 not against this paragraph.**
 
-### F-149 · F-141's docs edits got committed under F-144's message — a concurrent agent's plain 'git commit' absorbs another lane's staged-but-uncommitted files
-
-**Area:** coordination · **Severity:** low · **Found:** 2026-08-18 by lm
-
-This session (lm, F-141) staged exactly three named files — `git add docs/FINDINGS.md docs/SPECS.md
-docs/DELEGATION.md` — after `agent ship F-141` left them for hand-commit (docs/ is exempt from
-claims, F-006). The first `git commit` attempt was correctly BLOCKED by the pre-commit hook because
-other files were already sitting staged in the shared index — `autoload/graphics_quality.gd`,
-`core/render/mesh_merge.gd`, `systems/harvesting/harvestable.gd`, etc. — all claimed by a different
-concurrent lane (nettle12, F-144), not this session's. Those got unstaged with `git reset --
-<paths>` (non-destructive, working tree untouched) and the commit was retried with only the three
-named docs files staged.
-
-Before that retry ran, nettle12's own `agent ship`/`git commit` (their commit e5f96b1, "F-144: merge
-kit geometry everywhere it is stamped, and bound how far props draw") landed first — and its diff
-shows all three of F-141's staged docs edits inside it: the F-141 FINDINGS.md `**fixed**` +
-`## Resolved` move, the new F-141 SPECS.md block, and the F-141 DELEGATION.md `Current state` entry
-all appear in `e5f96b1`, none in a commit of this session's own.
-
-**Root cause:** `git commit` with no pathspec commits the WHOLE index, not just what the committing
-agent itself staged. AGENTS.md already documents the sibling hazard — a committing agent's OWN
-`git add docs/` (blanket) sweeping someone else's untracked docs edits into their commit — and its
-fix (name files exactly) is what this session followed. But naming files on `git add` only protects
-the ADDER's own blanket-add risk; it does nothing about a DIFFERENT concurrent agent's plain `git
-commit` scooping up files the first agent staged-but-not-yet-committed, because the git index itself
-has no per-agent partition and no lock of its own — only claimed *files* are protected (F-006 exempts
-docs/ from claims entirely), and the index is repo-wide shared state between every lane working in
-this one checkout.
-
-**Consequence here:** cosmetic only. The content is correct, complete, and already pushed to origin —
-verified by re-reading `e5f96b1`'s diff for all three files, which matches exactly what this session
-staged. Only the commit's authorship/message is wrong (credited to F-144's commit instead of a
-dedicated F-141 docs commit). Nothing was lost, corrupted, or silently dropped.
-
-**What would close this:** a narrow window exists between "docs files staged" and "docs files
-committed" during which any other lane's commit can absorb them. Options for whoever picks this up:
-(a) `agent ship`/a new `agent commit-docs <id> <files>` helper that commits immediately after
-staging, shrinking the window to effectively zero; (b) accept the risk as low-severity and cosmetic
-(current state) since content is never lost, only re-attributed, and file it under "known, harmless"
-in AGENTS.md's git-hazards section next to the blanket-add note it already carries. This finding
-exists so the next agent who sees a docs commit under a stranger's message understands why, instead
-of assuming their own `agent ship`/hand-commit silently failed.
-
----
-
 ### F-165 · Task 6.5's two new extraction RPCs shipped with no `PROTOCOL_VERSION` bump — `net_version.gd` was held all session by another lane's claim
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.5
@@ -922,6 +877,71 @@ alone hid the shadow regression in point 3 above; primitives is what caught it.
 ---
 
 ## Resolved
+
+### F-149 · F-141's docs edits got committed under F-144's message — a concurrent agent's plain 'git commit' absorbs another lane's staged-but-uncommitted files — **fixed**
+
+**Area:** coordination · **Severity:** low · **Found:** 2026-08-18 by lm
+
+This session (lm, F-141) staged exactly three named files — `git add docs/FINDINGS.md docs/SPECS.md
+docs/DELEGATION.md` — after `agent ship F-141` left them for hand-commit (docs/ is exempt from
+claims, F-006). The first `git commit` attempt was correctly BLOCKED by the pre-commit hook because
+other files were already sitting staged in the shared index — `autoload/graphics_quality.gd`,
+`core/render/mesh_merge.gd`, `systems/harvesting/harvestable.gd`, etc. — all claimed by a different
+concurrent lane (nettle12, F-144), not this session's. Those got unstaged with `git reset --
+<paths>` (non-destructive, working tree untouched) and the commit was retried with only the three
+named docs files staged.
+
+Before that retry ran, nettle12's own `agent ship`/`git commit` (their commit e5f96b1, "F-144: merge
+kit geometry everywhere it is stamped, and bound how far props draw") landed first — and its diff
+shows all three of F-141's staged docs edits inside it: the F-141 FINDINGS.md `**fixed**` +
+`## Resolved` move, the new F-141 SPECS.md block, and the F-141 DELEGATION.md `Current state` entry
+all appear in `e5f96b1`, none in a commit of this session's own.
+
+**Root cause:** `git commit` with no pathspec commits the WHOLE index, not just what the committing
+agent itself staged. AGENTS.md already documents the sibling hazard — a committing agent's OWN
+`git add docs/` (blanket) sweeping someone else's untracked docs edits into their commit — and its
+fix (name files exactly) is what this session followed. But naming files on `git add` only protects
+the ADDER's own blanket-add risk; it does nothing about a DIFFERENT concurrent agent's plain `git
+commit` scooping up files the first agent staged-but-not-yet-committed, because the git index itself
+has no per-agent partition and no lock of its own — only claimed *files* are protected (F-006 exempts
+docs/ from claims entirely), and the index is repo-wide shared state between every lane working in
+this one checkout.
+
+**Consequence here:** cosmetic only. The content is correct, complete, and already pushed to origin —
+verified by re-reading `e5f96b1`'s diff for all three files, which matches exactly what this session
+staged. Only the commit's authorship/message is wrong (credited to F-144's commit instead of a
+dedicated F-141 docs commit). Nothing was lost, corrupted, or silently dropped.
+
+**What would close this:** a narrow window exists between "docs files staged" and "docs files
+committed" during which any other lane's commit can absorb them. Options for whoever picks this up:
+(a) `agent ship`/a new `agent commit-docs <id> <files>` helper that commits immediately after
+staging, shrinking the window to effectively zero; (b) accept the risk as low-severity and cosmetic
+(current state) since content is never lost, only re-attributed, and file it under "known, harmless"
+in AGENTS.md's git-hazards section next to the blanket-add note it already carries. This finding
+exists so the next agent who sees a docs commit under a stranger's message understands why, instead
+of assuming their own `agent ship`/hand-commit silently failed.
+
+---
+
+**Resolved 2026-08-19 by lp.** Confirmed the root cause is pure git behavior (a bare `git commit` commits the whole index, not just
+the committer's own staged files) with no bug in `.agent/bin/agent` itself — `cmd_ship` already
+pathspecs its own commit (F-014, predates this finding). The actual gap was that `docs/` is
+claim-exempt (F-006/F-072), so two lanes' unclaimed docs edits sitting staged together produce no
+error and no warning from `agent check` — F-199's foreign-claim block (2026-08-19, the day after this
+was filed) doesn't see this shape either, since there is no blocked file to explain. AGENTS.md's ship
+section already mandates a pathspec on every hand-commit of docs, landed as part of that same F-199
+work and naming F-149 as one of its two motivating incidents — that is option (b) from this finding's
+own "what would close this" list (document + accept, since content is never lost, only misattributed).
+
+Added 3 regression cases to tools/harness_check.py proving the mitigation is real: (1) two lanes'
+unclaimed docs edits staged together pass `agent check` silently, confirming nothing would have caught
+this; (2) a bare `git commit` after that setup reproduces the incident, sweeping both lanes' files
+under one message; (3) the same setup committed with `git commit -m "..." -- docs/SPECS.md` carries
+only the named file, leaving the other lane's staged docs/FINDINGS.md untouched and still staged.
+
+Verified: `python3 tools/harness_check.py` — 32/32 (29 prior + 3 new). Swept `grep -n '"commit"'
+.agent/bin/agent tools/*.py` for sibling un-pathspec'd commit call sites — none exist; `cmd_ship`'s is
+the only one and it already pathspecs. Full spec at docs/SPECS.md's new F-149 block.
 
 ### F-154 · Two events in COMMANDS.md §5.2's own illustrative hook vocabulary — `run_started`, — **fixed**
 `player_downed` — have no shipped signal to bind to

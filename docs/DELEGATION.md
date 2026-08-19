@@ -75,6 +75,21 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-149 resolved: docs/ hand-commits stay attributable IF you pathspec them — no harness bug existed, the finding needed a regression test, not code (lp)
+
+No `.agent/bin/agent` defect: `cmd_ship` already commits by pathspec (F-014, predates this finding),
+so the only place the F-149 hazard can still occur is a **hand-typed** `docs/` commit — the one commit
+`ship` deliberately leaves for you (F-006 exempts `docs/` from claims). `agent check` stays silent on
+two lanes' unclaimed docs edits sitting staged together — there is no claim to have violated — so the
+only thing between that state and a misattributed commit is whether you type `git commit -m "..." --
+docs/FINDINGS.md docs/DECISIONS.md` (AGENTS.md's mandated form, closes it) or a bare `git commit`
+(sweeps whatever else is staged, exactly like the original nettle12/e5f96b1 incident).
+
+**Verify this class of fix, or write a new one, against `python3 tools/harness_check.py`'s three F-149
+cases** — the silent-pass setup, the bare-commit repro, and the pathspec-commit fix, in that order, so
+a future change to `agent check`'s `docs/` handling gets caught either direction (going quiet on a
+shape it should flag, or starting to flag a shape F-006 means to leave alone).
+
 ### 2026-08-19 — Asset batch A-012: the food kit — and the art that unblocks `ITEMS.md`'s food and tonic rows (slate17)
 
 **What shipped, verified:** 13 GLBs in `assets/food/exports/` (`tools/blender/build_food_set.py`,

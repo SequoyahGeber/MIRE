@@ -1667,18 +1667,18 @@
       "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "slate17",
-      "at": "2026-08-19T07:59:58+00:00",
-      "hash": "a4c7e4553ab9764a3b01d34365cf544f4d309bcd8291a9bb5cb6fb53cf0ef742",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+      "agent": "lp",
+      "at": "2026-08-19T09:07:50+00:00",
+      "hash": "0e9df5468981a9f51296472d1433a414d85304bb4d367909629c13b31512118a",
+      "task": "F-149",
+      "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "slate17",
-      "at": "2026-08-19T07:59:58+00:00",
-      "hash": "80a6c16868ad77ff341df371ffe83e28ab71cb82bd83d279525b81b3259fc01b",
-      "task": "2.1d",
-      "token": "CLAUDE_CODE_SESSION_ID:07a4dcf3-878c-4227-8611-f30b6dd14ada"
+      "agent": "lp",
+      "at": "2026-08-19T09:07:50+00:00",
+      "hash": "efec4c5f57788886b7b7853a5316f79a675d21cf80f352f44297424e3039b4f8",
+      "task": "F-149",
+      "token": null
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -1705,10 +1705,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T07:21:38+00:00",
-      "hash": "e47f9ba32ed09ec6e399acbd2b3a900c0f0907ba837e3576227cab5c9a6bdd7c",
-      "task": "F-190",
+      "agent": "lp",
+      "at": "2026-08-19T09:07:50+00:00",
+      "hash": "c2caa0138fd30bee0649112d46dc21573220df3746ea7d63e5934eb3e99700f0",
+      "task": "F-149",
       "token": null
     },
     "entities/player/player.tscn": {
@@ -2648,11 +2648,11 @@
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "tools/harness_check.py": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T07:11:01+00:00",
-      "hash": "eae5ce6b93dcce0b68a7733570c47b666703b01555fcbd0a0c7afb2a39ca18b9",
-      "task": "F-199",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
+      "agent": "lp",
+      "at": "2026-08-19T09:07:50+00:00",
+      "hash": "88082fc699e5daacb6572fc8fb1462e701ee57b5d7ec4ac51cd8fc0bcd1001e1",
+      "task": "F-149",
+      "token": null
     },
     "tools/harvest_batch_check.gd": {
       "agent": "nettle12",
@@ -5692,9 +5692,11 @@
       "title": "construction_check.gd's door-swing solids AABB goes negative-size on thin per-triangle bounds, throwing an UNDECLARED engine error on every run"
     },
     "F-149": {
+      "done_at": "2026-08-19T09:07:50+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "F-141's docs edits got committed under F-144's message \u2014 a concurrent agent's plain 'git commit' absorbs another lane's staged-but-uncommitted files"
     },

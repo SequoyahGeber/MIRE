@@ -724,6 +724,74 @@ def _(harness):
     return "guidance printed with alpha's files only"
 
 
+@case("two lanes' unclaimed docs edits sit staged together and `check` passes silently — docs/ is exempt (F-149 setup)")
+def _(harness):
+    # F-149's actual starting condition, distinct from F-199's: docs/ is claim-exempt (F-006), so
+    # NEITHER lane's staged file is "claimed by someone else" — `check` has nothing to block or even
+    # warn about. This is why the F-199 block (which fires only when every blocked file is a foreign
+    # claim) never sees this shape at all: there is no blocked file. The only thing standing between
+    # this state and a misattributed commit is which git command runs next — see the two cases below.
+    d = build_repo(harness)
+    os.makedirs(os.path.join(d, "docs"), exist_ok=True)
+    with open(os.path.join(d, "docs", "FINDINGS.md"), "w") as f:
+        f.write("lane A's staged docs edit\n")
+    with open(os.path.join(d, "docs", "SPECS.md"), "w") as f:
+        f.write("lane B's staged docs edit\n")
+    run(["git", "add", "docs/FINDINGS.md", "docs/SPECS.md"], d, check=True)
+    r = run([".agent/bin/agent", "check"], d)
+    assert r.returncode == 0, (
+        "check blocked two unclaimed docs/ edits — if this ever fires, F-149's premise (docs/ is "
+        "silently exempt) is stale and this whole finding needs re-reading before closing it:\n%s"
+        % brief(r.stdout + r.stderr))
+    return r.stdout.strip() or "(no output — silent pass, as F-006 intends)"
+
+
+@case("a bare `git commit` sweeps a different lane's staged-but-uncommitted docs file — the F-149 incident, reproduced")
+def _(harness):
+    d = build_repo(harness)
+    os.makedirs(os.path.join(d, "docs"), exist_ok=True)
+    with open(os.path.join(d, "docs", "FINDINGS.md"), "w") as f:
+        f.write("lane A's staged docs edit — not yet committed\n")
+    with open(os.path.join(d, "docs", "SPECS.md"), "w") as f:
+        f.write("lane B's staged docs edit\n")
+    run(["git", "add", "docs/FINDINGS.md", "docs/SPECS.md"], d, check=True)
+    # Lane B commits with no pathspec — exactly nettle12's e5f96b1 in the real incident.
+    run(["git", "commit", "-m", "F-144: lane B's own change"], d, check=True)
+    files = committed_files(d)
+    assert "docs/FINDINGS.md" in files, (
+        "setup broke: lane B's bare commit should have swept lane A's staged file, but didn't — "
+        "this case is supposed to demonstrate the hazard, not the fix")
+    return "reproduced: bare commit carried %s under lane B's message" % sorted(files)
+
+
+@case("a pathspec commit leaves a different lane's staged docs file untouched and still staged (F-149 fix)")
+def _(harness):
+    # The AGENTS.md-mandated form (`git commit -m "..." -- docs/X.md`) applied by the lane that is
+    # NOT lane A: it must commit only its own named file, and lane A's staged-but-uncommitted file
+    # must survive in the index, ready for lane A to commit separately under its own message —
+    # `agent ship`'s own commit already works this way (F-014); this proves the hand-commit form
+    # AGENTS.md tells a docs/ closer to type by hand behaves identically.
+    d = build_repo(harness)
+    os.makedirs(os.path.join(d, "docs"), exist_ok=True)
+    with open(os.path.join(d, "docs", "FINDINGS.md"), "w") as f:
+        f.write("lane A's staged docs edit — not yet committed\n")
+    with open(os.path.join(d, "docs", "SPECS.md"), "w") as f:
+        f.write("lane B's staged docs edit\n")
+    run(["git", "add", "docs/FINDINGS.md", "docs/SPECS.md"], d, check=True)
+    run(["git", "commit", "-m", "F-144: lane B's own change", "--", "docs/SPECS.md"], d, check=True)
+    files = committed_files(d)
+    assert files == {"docs/SPECS.md"}, (
+        "pathspec commit carried more than the named file: %s" % sorted(files))
+    staged = run(["git", "diff", "--cached", "--name-only"], d, check=True).stdout.split()
+    assert "docs/FINDINGS.md" in staged, (
+        "lane A's staged file was unstaged or lost by lane B's commit, not merely left alone: %s"
+        % staged)
+    committed_a = run(["git", "show", "HEAD:docs/FINDINGS.md"], d)
+    assert committed_a.returncode != 0, (
+        "lane A's docs edit ended up committed under lane B's message anyway")
+    return "lane B committed only docs/SPECS.md; lane A's docs/FINDINGS.md stayed staged, uncommitted"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rev", help="test the harness as of this git revision instead of the working tree")
