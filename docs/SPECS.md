@@ -4492,6 +4492,40 @@ this file does not re-test.
 
 ---
 
+## F-184 · `tools/audio/audio_check.py`'s exit code is inverted — it exits 0 when checks FAIL and 1 when they PASS
+
+**Claim:** `tools/audio/audio_check.py`, `docs/FINDINGS.md`, `docs/SPECS.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Root cause:** F-176 wrote `tools/audio/repro_check.py` alongside this finding and copy-paste
+started it from `audio_check.py`'s own `main()`. `audio_check.py:122` was `sys.exit(0 if failures
+else 1)` — Python's conditional expression evaluates the truthy branch first, so this exits `0`
+(success, by every shell/CI convention) exactly when `failures` is nonzero, and `1` (failure) exactly
+when `failures == 0`, backwards from every other check script in the repo (`*_check.gd`,
+`repro_check.py`, and every `tools/blender/*_check.py`, all of which already use the correct `1 if
+failures else 0` shape). F-176's own fix caught and corrected the copy, leaving only the original
+`audio_check.py` site broken.
+
+**Fix:** one line — `sys.exit(1 if failures else 0)`.
+
+**Sweep (per the F-185 close-out requirement):** `grep -rn "sys.exit(0 if\|sys.exit(1 if" --include="*.py" .`
+across the whole repo found five `sys.exit(N if failures else M)` sites total — this one, plus
+`repro_check.py` and all three `tools/blender/*_check.py` scripts — and only this one was inverted.
+No sibling bug found.
+
+**Verify:** run `tools/audio/audio_check.py` and confirm the printed `PASS`/`FAIL` lines agree with
+the process exit code in both directions — a real PASS run must exit `0`, and a forced FAIL (no SFX
+files present) must exit `1`.
+
+**Verified 2026-08-18 (lm):** `python3 tools/audio/audio_check.py` → all 19 SFX files `PASS`,
+`AUDIO_CHECK failures=0`, exit `0`. Copied the script into a throwaway repo layout with an empty
+`assets/audio/sfx/` to force `FAIL: found 0 sfx wavs` → `AUDIO_CHECK failures=1`, exit `1`. Both
+directions now agree with the printed result, where before the fix a real PASS run exited `1`.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

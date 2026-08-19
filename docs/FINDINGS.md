@@ -690,23 +690,6 @@ their own `## N (task X)` comment rather than collapsing into a single bump.
 
 ---
 
-### F-184 · `tools/audio/audio_check.py`'s exit code is inverted — it exits 0 when checks FAIL and 1 when they PASS
-
-**Area:** audio · **Severity:** low · **Found:** 2026-08-18 by lm during F-176
-
-`audio_check.py:122` is `sys.exit(0 if failures else 1)` — Python's conditional expression returns
-the first branch when the condition is truthy, so this exits `0` (success) when `failures` is
-nonzero and `1` (failure) when `failures == 0`, exactly backwards from every other check script in
-the repo (`*_check.gd`, `repro_check.py`) and from what any CI/pre-commit gate calling `$?` would
-assume. Confirmed live: `python3 tools/audio/audio_check.py` prints all `PASS` lines and
-`AUDIO_CHECK failures=0`, then exits `1`.
-
-Not fixed here — `tools/audio/audio_check.py` was not in this task's claim. One-line fix:
-`sys.exit(1 if failures else 0)`, same shape `tools/audio/repro_check.py` (written alongside this
-finding) already uses correctly.
-
----
-
 ### F-187 · Props are 1,057 MultiMesh groups averaging 2.7 copies — F-100's cross-asset chunk merge is still not built, and now has a measured constraint
 
 **Area:** perf · **Severity:** medium · **Found:** 2026-08-19 by nettle12
@@ -876,7 +859,82 @@ atomically from the working tree and cannot lose to the race, and verify with
 
 ---
 
+### F-191 · Staging and committing as two steps lets a concurrent agent's commit sweep up your staged work
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by nettle12
+
+Observed directly. This session ran `git add .agent/bin/agent tools/harness_check.py`, confirmed both
+staged, then wrote a commit message and ran `git commit`. In the gap between those two commands
+another session committed, and its commit — `773f9fa`, "Roadmap: bring five task lines in line with
+what 2026-08-18 actually shipped" — carried all three files:
+
+    .agent/bin/agent       | 160 +++++++++++++++++++++--
+    docs/ROADMAP.md        |  10 ++--
+    tools/harness_check.py |  63 ++++++++++-
+
+`docs/ROADMAP.md` was that session's own work (F-006, claimed). The other two were this session's
+F-186 fix, staged and waiting. This session's own `git commit` then reported "0 changed file(s)" and
+committed nothing, because there was nothing left to commit.
+
+**Nothing was lost and nothing was corrupted** — the code reached origin intact. What was lost is the
+attribution and the reasoning: F-186's commit message explaining the heartbeat design, why it takes
+no lock, and why ambiguity refuses to auto-free, never entered history. The change now sits under a
+message about roadmap lines, where nobody looking for it will find it.
+
+The other session was not careless. Its own message explicitly declines to touch `docs/FINDINGS.md`
+"held by lane lm for F-183 and is being written to concurrently" — it was respecting claims
+carefully. The claim system protects files from concurrent *editing*; the git index is a single
+shared resource that no claim covers, and a broad `git add -A` / `git commit -a` sweeps whatever
+another agent happens to have staged.
+
+**The reliable mitigation is to never leave a gap: stage and commit in one step,** or use
+`agent ship`, which stages the claiming task's files and commits them together. Writing a long
+commit message in a heredoc *after* staging is exactly the gap that lost this one — compose the
+message first, then stage and commit as a single command.
+
+**Mechanism not fully established, and worth someone finishing.** The pre-commit hook should
+arguably have refused those two files: `in_grace()` is correctly scoped to the closing session via
+`_is_mine`, `.agent/bin/` is under UNFREE_PREFIXES so it is not free-by-prefix, and the files were
+either claimed by this session or in its own grace window at the time. Why the hook admitted them is
+untested — candidates are a `--no-verify`, a hook that stages more after its own check, or a race
+between the check and the commit. Anyone picking this up should reproduce with two processes before
+changing the hook, rather than trusting this paragraph.
+
+---
+
 ## Resolved
+
+### F-184 · `tools/audio/audio_check.py`'s exit code is inverted — it exits 0 when checks FAIL and 1 when they PASS — **fixed**
+
+**Area:** audio · **Severity:** low · **Found:** 2026-08-18 by lm during F-176
+
+`audio_check.py:122` is `sys.exit(0 if failures else 1)` — Python's conditional expression returns
+the first branch when the condition is truthy, so this exits `0` (success) when `failures` is
+nonzero and `1` (failure) when `failures == 0`, exactly backwards from every other check script in
+the repo (`*_check.gd`, `repro_check.py`) and from what any CI/pre-commit gate calling `$?` would
+assume. Confirmed live: `python3 tools/audio/audio_check.py` prints all `PASS` lines and
+`AUDIO_CHECK failures=0`, then exits `1`.
+
+Not fixed here — `tools/audio/audio_check.py` was not in this task's claim. One-line fix:
+`sys.exit(1 if failures else 0)`, same shape `tools/audio/repro_check.py` (written alongside this
+finding) already uses correctly.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed: tools/audio/audio_check.py:122 was `sys.exit(0 if failures else 1)`, exactly backwards.
+Now `sys.exit(1 if failures else 0)`, matching every other check script's convention. Root cause:
+F-176 copy-pasted audio_check.py's main() to write repro_check.py alongside this finding and caught
+the inversion there, but never fixed the original site.
+
+Verified: `python3 tools/audio/audio_check.py` -> 19/19 SFX PASS, AUDIO_CHECK failures=0, exit 0.
+Forced a FAIL (empty sfx dir in a throwaway copy) -> AUDIO_CHECK failures=1, exit 1. Both directions
+now agree with the printed PASS/FAIL result.
+
+Swept the repo for the same copy-paste shape: `grep -rn "sys.exit(0 if\|sys.exit(1 if" --include="*.py" .`
+found 5 sites total (this one, repro_check.py, tools/blender/{audit_all_sides,mat_cache,world_bounds}_check.py)
+- only this one was inverted, no sibling bug.
+
+Wrote the missing SPECS.md block (docs/SPECS.md, after F-183) per this file's own preamble.
 
 ### F-006 · Three roadmap tasks assume a Windows or Linux machine we don't have — **closed: premise no longer holds**
 
