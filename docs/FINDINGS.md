@@ -632,35 +632,6 @@ loop (F-081/D-057) is a separate piece of work from the read-only check F-200 as
 
 ---
 
-### F-206 · `build_gatherable_plants.py` (A-011) has six `bevel=` sites with no local override — the same D-124 exposure, latent rather than live
-
-**Area:** art pipeline · **Severity:** low · **Found:** 2026-08-19 by lp during F-198's required sweep
-
-F-198's own sweep (`grep -c bevel= tools/blender/build_*.py` against every family with a local `box()`
-override) found `tools/blender/build_gatherable_plants.py` still passes `bevel=` straight through to
-`mire_art.box()`'s live BEVEL modifier at six sites (lines 481, 506, 519, 556, 561, 573 as of this
-finding), with no bevel-free override of its own. F-198 itself flagged this exact gap when A-011 was
-still in progress under task 2.1d and not yet `DONE`; A-011 has since shipped `DONE`
-(`docs/ASSET_TRACKER.md`), so the batch this warning was about now exists on disk.
-
-**Not the same violation as F-198's three, and not fixed here:** D-124's rule triggers on a tracker
-row that claims (or will claim) a byte-identical rebuild. A-011's `DONE` row makes no such claim — its
-verification is a build-time contract (9 conditions, 10/10), an all-sides audit, and
-`tools/gatherables_check.gd`'s 41 engine assertions, none of which assert GLB byte-reproducibility
-across two clean rebuilds. So today this is a latent risk, not a live one: nobody has shipped a false
-"byte-identical" claim the way A-004/A-005/A-006 had.
-
-**What would make this live:** any future task that re-verifies A-011 and wants to add a
-byte-identical-rebuild claim to its row (bringing it in line with A-012's, which already has one) must
-fix this first, the same mechanical way F-198 did — copy `build_ward_set.py`'s bevel-free `box()`
-override shape, rebuild, and diff two clean rebuilds with `tools/blender/asset_repro_check.py
---script tools/blender/build_gatherable_plants.py --export-dir assets/gatherables/exports --catalog
-assets/gatherables/catalog.json --label A-011` (the generalized tool F-198 wrote, no per-family repro
-script needed). Expect polygon counts to drop on the affected assets (peat bank, path stones, wood
-cuts) the same way A-004/A-005/A-006's did.
-
----
-
 ### F-207 · F-204's same bug — an object repositioned between renders that never takes effect — is live in 8 more Blender generators, one of them twice
 
 **Area:** art-pipeline · **Severity:** medium · **Found:** 2026-08-19 by lp during F-204's required sweep
@@ -721,6 +692,37 @@ open the previously-broken preview PNG rather than trusting the exit code.
 ---
 
 ## Resolved
+
+### F-206 · `build_gatherable_plants.py` (A-011) has six `bevel=` sites with no local override — the same D-124 exposure, latent rather than live — **fixed**
+
+**Area:** art pipeline · **Severity:** low · **Found:** 2026-08-19 by lp during F-198's required sweep
+
+F-198's own sweep (`grep -c bevel= tools/blender/build_*.py` against every family with a local `box()`
+override) found `tools/blender/build_gatherable_plants.py` still passes `bevel=` straight through to
+`mire_art.box()`'s live BEVEL modifier at six sites (lines 481, 506, 519, 556, 561, 573 as of this
+finding), with no bevel-free override of its own. F-198 itself flagged this exact gap when A-011 was
+still in progress under task 2.1d and not yet `DONE`; A-011 has since shipped `DONE`
+(`docs/ASSET_TRACKER.md`), so the batch this warning was about now exists on disk.
+
+**Not the same violation as F-198's three, and not fixed here:** D-124's rule triggers on a tracker
+row that claims (or will claim) a byte-identical rebuild. A-011's `DONE` row makes no such claim — its
+verification is a build-time contract (9 conditions, 10/10), an all-sides audit, and
+`tools/gatherables_check.gd`'s 41 engine assertions, none of which assert GLB byte-reproducibility
+across two clean rebuilds. So today this is a latent risk, not a live one: nobody has shipped a false
+"byte-identical" claim the way A-004/A-005/A-006 had.
+
+**What would make this live:** any future task that re-verifies A-011 and wants to add a
+byte-identical-rebuild claim to its row (bringing it in line with A-012's, which already has one) must
+fix this first, the same mechanical way F-198 did — copy `build_ward_set.py`'s bevel-free `box()`
+override shape, rebuild, and diff two clean rebuilds with `tools/blender/asset_repro_check.py
+--script tools/blender/build_gatherable_plants.py --export-dir assets/gatherables/exports --catalog
+assets/gatherables/catalog.json --label A-011` (the generalized tool F-198 wrote, no per-family repro
+script needed). Expect polygon counts to drop on the affected assets (peat bank, path stones, wood
+cuts) the same way A-004/A-005/A-006's did.
+
+---
+
+**Resolved 2026-08-19 by lm.** Added a local bevel-free box() override to build_gatherable_plants.py (same shape as build_ward_set.py's — assign() the cube, no BEVEL modifier, bevel kwarg accepted and ignored). Rebuilt clean: GATHERABLES_CHECK PASS 10/10, triangle total 5,472 -> 5,184, catalog dimensions unchanged at 3-decimal precision. Verified byte-identical across two clean separate-process rebuilds with `python3 tools/blender/asset_repro_check.py --script tools/blender/build_gatherable_plants.py --export-dir assets/gatherables/exports --catalog assets/gatherables/catalog.json --label A-011` (10/10 GLBs + catalog). `agent godot --script tools/gatherables_check.gd` passes clean, 41 assertions / 0 failures. Since determinism is now proven, also added the byte-identical claim to A-011's docs/ASSET_TRACKER.md row (matching A-012's) rather than leaving the fix unrecorded. Swept every tools/blender/build_*.py for `bevel=` sites with no local box() override (F-198's own sweep method) -- all six current callers now have one; this was the last gap of this shape in the repo. Full account in docs/SPECS.md and docs/DELEGATION.md Current state.
 
 ### F-191 · Staging and committing as two steps lets a concurrent agent's commit sweep up your staged work — **fixed**
 

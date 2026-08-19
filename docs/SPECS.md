@@ -5459,6 +5459,56 @@ armature rather than a plain mesh). Filed as **F-207** with the exact file/line 
 
 ---
 
+## F-206 · `build_gatherable_plants.py` (A-011) has six `bevel=` sites with no local override — the same D-124 exposure, latent rather than live
+
+**Claim:** `tools/blender/build_gatherable_plants.py`, `assets/gatherables/catalog.json`,
+`assets/gatherables/exports/*.glb` (10), `assets/gatherables/preview/*.png` (3),
+`assets/source/gatherable_plants.blend`, `docs/ASSET_TRACKER.md`, `docs/FINDINGS.md`,
+`docs/SPECS.md`, `docs/DELEGATION.md`. No networked system — pure offline art tooling.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Root cause / what's missing:** F-198's own sweep found this exact gap — `build_gatherable_plants.py`
+imports `box` straight from `mire_art` and calls it with `bevel=` at six sites (terrain path, peat
+bank, and four plant/deposit details) with no local override — but filed it as F-206 instead of fixing
+it there, because A-011's `docs/ASSET_TRACKER.md` row made no byte-identical-rebuild claim at the time,
+so D-124's trigger condition wasn't met: today's row still isn't a live violation. `docs/DELEGATION.md`'s
+F-198 entry named this explicitly as "for whoever adds that claim to A-011 later."
+
+**Decision made here:** rather than leave the gap open until some future task happens to add that
+claim, fix it now — the mechanical cost is identical either way (one override, one rebuild, one
+`asset_repro_check.py` run) and doing it here converts a standing "must remember to fix this later"
+trap into nothing, rather than leaving it for a task that has no reason to know it's expected of them.
+Since the rebuild already proves determinism, this task also adds the byte-identical claim to A-011's
+row, bringing it in line with A-012's — there is no reason to prove determinism and then not record it.
+
+**Fix:** added a local bevel-free `box()` override to `build_gatherable_plants.py` (same shape as
+`build_ward_set.py`'s and every other family's — `assign()` the cube, no `BEVEL` modifier, `bevel`
+kwarg accepted and ignored so all six call sites read unchanged). Rebuilt clean.
+
+**Verified 2026-08-19:** `agent claim` the generator plus every generated file it writes (exports,
+catalog, previews, source `.blend`) before editing. Standalone rebuild —
+`/Applications/Blender.app/Contents/MacOS/Blender --background --python
+tools/blender/build_gatherable_plants.py` — gives `GATHERABLES_CHECK PASS`, 10/10 assets, triangle
+total 5,472 → 5,184 (chamfers square off, D-124's accepted tradeoff), every catalog dimension
+unchanged at 3-decimal precision. `python3 tools/blender/asset_repro_check.py --script
+tools/blender/build_gatherable_plants.py --export-dir assets/gatherables/exports --catalog
+assets/gatherables/catalog.json --label A-011` → byte-identical GLBs and catalog across two clean
+separate-process rebuilds (10/10). `agent godot --script tools/gatherables_check.gd` → 41 assertions,
+0 failures, clean. `docs/ASSET_TRACKER.md`'s A-011 row carries the new triangle count and the
+byte-identical claim.
+
+**Swept for the same shape elsewhere (AGENTS.md §3):** `grep -rln "bevel=" tools/blender/build_*.py`
+found six callers total (`build_crafting_stations.py`, `build_enemy_crawler.py`,
+`build_gatherable_plants.py`, `build_loot_set.py`, `build_tool_weapon_set.py`, `build_ward_set.py`);
+cross-checked each for a local `def box` override — all six now have one. This was the last gap of
+this exact shape in the repo.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

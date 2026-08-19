@@ -75,6 +75,33 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-206 resolved: `build_gatherable_plants.py` (A-011) gets the bevel-free `box()` override, closing the D-124 exposure F-198 left latent and adding the byte-identical claim A-012 already carries (lm)
+
+**The gap:** F-198 fixed three live D-124 violations (families whose tracker rows already claimed a
+byte-identical rebuild while still calling `mire_art.box()`'s bevel-capable version) and, in the same
+sweep, found a fourth site with the same six-call shape — `build_gatherable_plants.py` — that wasn't
+live only because A-011's row made no byte-identical claim yet. That was filed as F-206 "for whoever
+adds that claim to A-011 later" (`docs/DELEGATION.md`'s F-198 entry, and `docs/FINDINGS.md`).
+
+**The fix:** added a local bevel-free `box()` override to `build_gatherable_plants.py`, identical in
+shape to `build_ward_set.py`'s and every other family's (`assign()` the cube, no `BEVEL` modifier,
+`bevel` kwarg accepted and ignored so all six call sites read unchanged). Rebuilt clean.
+
+**Verified:** `python3 tools/blender/asset_repro_check.py --script tools/blender/build_gatherable_plants.py
+--export-dir assets/gatherables/exports --catalog assets/gatherables/catalog.json --label A-011` gives
+byte-identical GLBs and catalog across two clean separate-process rebuilds (10/10) — so this task also
+added the byte-identical claim to A-011's `docs/ASSET_TRACKER.md` row, matching A-012's. `agent godot
+--script tools/gatherables_check.gd` still passes clean, 41 assertions / 0 failures. Triangle total
+drops from 5,472 to 5,184 (chamfers square off, D-124's accepted tradeoff); every catalog dimension is
+unchanged at 3-decimal precision, so nothing downstream (placement, collision, the `poison_berry_bush`
+near-copy pairing) needed a second look.
+
+**Swept for siblings (AGENTS.md §3):** grepped every `tools/blender/build_*.py` for `bevel=` call
+sites and cross-checked each hit for a local `def box` override. All six current callers
+(`build_crafting_stations.py`, `build_enemy_crawler.py`, `build_gatherable_plants.py`,
+`build_loot_set.py`, `build_tool_weapon_set.py`, `build_ward_set.py`) now have one — this was the last
+gap of this exact shape in the repo.
+
 ### 2026-08-19 — F-191 resolved: `cmd_check` now names a different session's just-released, still-staged claim instead of the generic "edited without a claim" warning (lm)
 
 **What changed, for anyone touching `.agent/bin/agent`'s `cmd_check`:** the `elif not c and not human
