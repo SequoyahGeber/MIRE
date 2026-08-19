@@ -129,6 +129,15 @@ signal host_health_changed(peer_id: int, hp: int, max_hp: int, state: int, revis
 signal host_stamina_reported(peer_id: int, stamina: float)
 ## Broadcast to every peer, including the downed peer itself: teammates must see who needs help.
 signal downed_flag_changed(peer_id: int, downed: bool)
+## Host-only, one-shot EDGE: fires exactly on the ALIVE -> DOWNED transition (DownedState's
+## Transition.WENT_DOWN), never on a revive and never a second time for a bleed-out that has already
+## landed. Unlike downed_flag_changed (broadcast bool, also fires true->false on revive), this is not
+## replicated — every emit site already runs host/solo-only (_owns_mutation() gates host_apply_damage
+## and the _physics_process loop both _tick_hunger and _tick_blight run inside), which is exactly the
+## audience CommandService._HOOK_EVENTS needs (§5.2 hooks default host_only). F-154: COMMANDS.md
+## §5.2's illustrative hook vocabulary named `player_downed` with no signal to bind to; this is that
+## signal, and CommandService._HOOK_EVENTS now has a row for it.
+signal player_downed(peer_id: int)
 ## Feedback for a revive request, owner-only. Mirrors InventoryService.operation_confirmed.
 signal revive_confirmed(request_id: int, accepted: bool, detail: String)
 ## Feedback for a consume-item request, owner-only. Same shape as revive_confirmed.
@@ -289,6 +298,7 @@ func _tick_hunger(peer_id: int, downed_state: DOWNED_STATE, delta: float) -> boo
 	var transition: int = downed_state.apply_damage(whole, bleed_out_seconds)
 	if transition == DOWNED_STATE.Transition.WENT_DOWN:
 		MireLog.info(LOG_CHANNEL, "PlayerHealth: peer %d starved down" % peer_id)
+		player_downed.emit(peer_id)
 	return true
 
 
@@ -310,6 +320,7 @@ func host_apply_damage(peer_id: int, amount: int, instigator_peer_id: int) -> bo
 		MireLog.info(LOG_CHANNEL, "PlayerHealth: peer %d downed (instigator %d)" % [
 			peer_id, instigator_peer_id
 		])
+		player_downed.emit(peer_id)
 	return true
 
 
@@ -1020,6 +1031,7 @@ func _tick_blight(peer_id: int, downed_state: DOWNED_STATE, delta: float) -> boo
 	var transition: int = downed_state.apply_damage(whole, bleed_out_seconds)
 	if transition == DOWNED_STATE.Transition.WENT_DOWN:
 		MireLog.info(LOG_CHANNEL, "PlayerHealth: peer %d downed by Blight" % peer_id)
+		player_downed.emit(peer_id)
 	return true
 
 

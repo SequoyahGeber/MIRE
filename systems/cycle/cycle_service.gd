@@ -20,6 +20,10 @@ extends Node
 ##   3. expand the enemy roster          -> `WaveSpawner.host_unlock_next_enemy()`
 ## then announces: a `WorldDeltaLog` record (every peer, including a late joiner, learns the new
 ## number), an `EventBus` emission (in-process listeners), and a log line.
+##
+## F-154: this file is also now the run-lifecycle owner COMMANDS.md §5.2's illustrative hook
+## vocabulary was missing — see `run_started`'s own doc comment below for the exact "once per
+## process, host/solo only" contract `CommandService._HOOK_EVENTS`'s new row binds against.
 
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 
@@ -36,9 +40,22 @@ const DAYS_PER_CYCLE: int = 3
 ## `MireGrid.BASE_SPREAD_RATE` — nothing tunes this until a real playtest measures the wall (Q3).
 const SPREAD_ESCALATION_PER_CYCLE: float = 1.15
 
+## Fires exactly once per process, the instant Cycle 1's state is live — the real "run started"
+## moment F-154 asked for (COMMANDS.md §5.2's illustrative hook vocabulary names it; nothing emitted
+## it until now). Deliberately NOT "the level loaded": this file's own `_ready()` only reaches the
+## emit after `_owns_cycle()` passes, the same host/solo-only gate `_announce()` uses, so a client
+## connecting to someone else's run never fires its own copy — same split `night_started`/
+## `day_started` already use, which is why `player_downed`'s new sibling row in
+## `CommandService._HOOK_EVENTS` and this one bind the same way. A run's lifetime is the whole
+## process lifetime here (`_current_cycle` has no session-close reset anywhere in this file, task
+## 6.1's existing behavior, not something this task changes), so "once per process" is the correct
+## "once per run", not an approximation of it.
+signal run_started()
+
 var _current_cycle: int = 1
 var _spread_multiplier: float = 1.0
 var _days_elapsed: int = 0
+var _run_started_emitted: bool = false
 var _transport_node: Node
 
 
@@ -49,7 +66,17 @@ func _ready() -> void:
 	# Seeds WorldDeltaLog with Cycle 1 immediately, so a peer joining before the first advance still
 	# reads a real recorded value instead of falling back to `latest()`'s default parameter.
 	_announce()
+	_emit_run_started()
 	_register_commands()
+
+
+## Guarded separately from `_announce()` (which re-runs on every later `host_advance_cycle()`) so
+## this can never fire more than once — `run_started` names the run BEGINNING, not each Cycle bump.
+func _emit_run_started() -> void:
+	if _run_started_emitted or not _owns_cycle():
+		return
+	_run_started_emitted = true
+	run_started.emit()
 
 
 func _on_day_started() -> void:

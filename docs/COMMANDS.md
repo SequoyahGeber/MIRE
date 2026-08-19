@@ -272,11 +272,14 @@ other — Sequoyah authors scenarios for free, no code.
 `systems/rules/hook_def.gd` → `content/hooks/*.tres`: `{event: StringName, function: StringName,
 host_only: bool = true}`. `CommandService` subscribes once to the named `EventBus`/autoload
 signals and runs the bound function when they fire, host-side. Event vocabulary starts with what
-exists: `run_started`, `night_started`, `day_started`, `player_downed`, `enemy_died`. A worked
-example ships: `content/hooks/night_siege.tres` + `night_siege.mcmd` (dusk → announce + spawn a
-themed wave) — then is **disabled by default** (`enabled: bool` on HookDef), because shipping
-gameplay-by-hook is a design decision for M6's Cycle Modifiers, not this track. The mechanism is
-what ships; M6 gets to build modifiers as data on top of it.
+exists: `run_started`, `night_started`, `day_started`, `player_downed`, `enemy_died` — all five now
+bind to a real signal (F-154 closed the last two: `CycleService.run_started` fires once per process
+the instant Cycle 1 is live, `PlayerHealth.player_downed` is the real ALIVE→DOWNED edge, distinct
+from the broadcast `downed_flag_changed` bool that also fires on revive). A worked example ships:
+`content/hooks/night_siege.tres` + `night_siege.mcmd` (dusk → announce + spawn a themed wave) —
+then is **disabled by default** (`enabled: bool` on HookDef), because shipping gameplay-by-hook is a
+design decision for M6's Cycle Modifiers, not this track. The mechanism is what ships; M6 gets to
+build modifiers as data on top of it.
 
 ### 5.3 Autoexec
 
@@ -395,9 +398,10 @@ with reasoning, so the tasks file them verbatim rather than relitigating:
    actually alive instead of maintaining a second list that can drift from it.
 5. **(3.17)** Hooks ship disabled-by-default; gameplay-by-data waits for M6 Cycle Modifiers to
    own it. *Would change:* 2.14/3.11 playtests wanting scripted variety sooner. **Filed as shipped**
-   (D-094), plus **F-154**: two of this section's own illustrative events (`run_started`,
-   `player_downed`) have no shipped signal to bind to yet — naming either in a HookDef fails loudly
-   at wire time instead of silently never firing.
+   (D-094), plus **F-154** (since resolved — `docs/SPECS.md`'s own block): two of this section's
+   illustrative events (`run_started`, `player_downed`) had no shipped signal to bind to; naming
+   either in a HookDef still fails loudly at wire time instead of silently never firing for any event
+   genuinely absent from the table, but both of these two now have a real row.
 
 ---
 

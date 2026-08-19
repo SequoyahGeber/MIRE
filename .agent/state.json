@@ -461,11 +461,11 @@
       "task": "7.5"
     },
     "autoload/command_service.gd": {
-      "agent": "yarrow21",
-      "at": "2026-08-19T07:04:17+00:00",
-      "hash": "1cd11d2ffe8e9873a7f50288455c88aafbf3e08cc2ebad82510dc8282656e1ca",
-      "task": "F-130",
-      "token": "CLAUDE_CODE_SESSION_ID:57a95c1b-bb5a-4ec8-8133-7329a1c52789"
+      "agent": "lp",
+      "at": "2026-08-19T09:01:10+00:00",
+      "hash": "658e8350f64cf60279b1ecfd7f11729a3c074f5e3f0050cacbd7a30153fcd3a1",
+      "task": "F-154",
+      "token": null
     },
     "autoload/crafting_service.gd": {
       "agent": "lm",
@@ -1918,10 +1918,11 @@
       "task": "6.2"
     },
     "systems/cycle/cycle_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T01:37:12+00:00",
-      "hash": "d580388e8d89d85866a237e940dec728843ae0b04413e48b2c7b326c5632b658",
-      "task": "6.1"
+      "agent": "lp",
+      "at": "2026-08-19T09:01:10+00:00",
+      "hash": "162f00bbe84d06f15f3da0059195df4d7b2f568e3397b031b998dc9c0ae76408",
+      "task": "F-154",
+      "token": null
     },
     "systems/cycle/cycle_service.gd.uid": {
       "agent": "lm",
@@ -2047,8 +2048,8 @@
     },
     "systems/health/player_health.gd": {
       "agent": "lp",
-      "at": "2026-08-19T06:00:05+00:00",
-      "hash": "f9ac38771e2e5b7b9d559796fbde6818530989f0274eeed62fe18baf2013bff7",
+      "at": "2026-08-19T09:01:10+00:00",
+      "hash": "94d96347f640efec8541172c90a1567f36423f6e6f19a9b2cd1bf3fb41a82d9d",
       "task": "F-154",
       "token": null
     },
@@ -2684,15 +2685,15 @@
     },
     "tools/hook_events_check.gd": {
       "agent": "lp",
-      "at": "2026-08-19T06:00:05+00:00",
-      "hash": null,
+      "at": "2026-08-19T09:01:10+00:00",
+      "hash": "8997340f9735ea2fec8b0b7681a352e42a8265941062c1596d89a0cd8352db3f",
       "task": "F-154",
       "token": null
     },
     "tools/hook_events_check.gd.uid": {
       "agent": "lp",
-      "at": "2026-08-19T06:00:05+00:00",
-      "hash": null,
+      "at": "2026-08-19T09:01:10+00:00",
+      "hash": "4eb9e50996318f283d5cef407adcbcde645dbb42c4f789fffc6c0ec0d2d60463",
       "task": "F-154",
       "token": null
     },
@@ -5725,9 +5726,11 @@
       "title": "`core/render/mesh_merge.gd` builds an invalid surface at boot, so merged undergrowth silently draws nothing"
     },
     "F-154": {
+      "done_at": "2026-08-19T09:01:10+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Two events in COMMANDS.md \u00a75.2's own illustrative hook vocabulary \u2014 `run_started`,"
     },
@@ -6143,6 +6146,13 @@
       "status": "todo",
       "tier": "F",
       "title": "AuthoredWorld's F-187 chunk merge excludes sway- and emitter-bearing props \u2014 a second attempt needs per-vertex height encoding or per-asset placement metadata inside a merged mesh"
+    },
+    "F-204": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A Blender preview that moves assets between renders draws the layout it had at the first render"
     }
   },
   "version": 1

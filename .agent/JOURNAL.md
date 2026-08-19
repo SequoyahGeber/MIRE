@@ -4647,3 +4647,15 @@ Removed a stray diagnostic render (diag_one.png) that the A-012 ship swept in.
 Files: `assets/food/preview/diag_one.png`
 
 Commit at time of writing: `3845e87`
+
+---
+
+### DONE · F-154 · lp · 2026-08-19T09:01:10+00:00
+
+**Two events in COMMANDS.md §5.2's own illustrative hook vocabulary — `run_started`,**
+
+player_downed (PlayerHealth, host/solo-only edge signal, all 3 WENT_DOWN sites) and run_started (CycleService, once per process, host/solo-only) both now bind in CommandService._HOOK_EVENTS. Verified: agent godot --script tools/hook_events_check.gd -> HOOK_EVENTS_CHECK failures=0. No regressions: function_check.gd/cycle_check.gd/player_health_check.gd/command_catalog_check.gd all still failures=0; full boot clean.
+
+Files: `systems/health/player_health.gd`, `systems/cycle/cycle_service.gd`, `autoload/command_service.gd`, `tools/hook_events_check.gd`, `tools/hook_events_check.gd.uid`
+
+Commit at time of writing: `c831059`

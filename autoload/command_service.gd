@@ -56,17 +56,25 @@ const FUNCTION_RUNNER := preload("res://systems/commands/function_runner.gd")
 const FUNCTIONS_DIR: String = "res://content/functions"
 
 ## docs/COMMANDS.md §5.2's event vocabulary "starts with what exists" — every entry here names a
-## REAL signal a prior task already shipped. `run_started`/`player_downed` are named in the design
-## doc's own illustrative list but have no shipped signal to bind to yet (filed F-154); a HookDef
-## naming either fails loudly at wire time (MireLog error) below instead of silently never firing.
-## `handler` is one of this file's own methods, shaped to match the named signal's exact arity —
-## Callable.bind() appends the hook's (function, host_only) pair AFTER whatever the signal itself
-## supplies, so the handler's own parameter list has to match the signal, not guess at it.
+## REAL signal a prior task already shipped. F-154 closed the last gap: `run_started`
+## (`CycleService.run_started`, fired once per process the instant Cycle 1 is live) and
+## `player_downed` (`PlayerHealth.player_downed`, the ALIVE->DOWNED edge, not the broadcast
+## `downed_flag_changed` bool that also fires on revive) both now have real rows below. A HookDef
+## naming an event still absent from this table fails loudly at wire time (MireLog error) instead of
+## silently never firing. `handler` is one of this file's own methods, shaped to match the named
+## signal's exact arity — Callable.bind() appends the hook's (function, host_only) pair AFTER
+## whatever the signal itself supplies, so the handler's own parameter list has to match the signal,
+## not guess at it.
 const _HOOK_EVENTS: Dictionary[StringName, Dictionary] = {
+	&"run_started": {
+		"path": ^"/root/CycleService", "signal": &"run_started", "handler": &"_on_hook_signal_0"},
 	&"night_started": {
 		"path": ^"/root/DayNight", "signal": &"night_started", "handler": &"_on_hook_signal_0"},
 	&"day_started": {
 		"path": ^"/root/DayNight", "signal": &"day_started", "handler": &"_on_hook_signal_0"},
+	&"player_downed": {
+		"path": ^"/root/PlayerHealth", "signal": &"player_downed",
+		"handler": &"_on_hook_signal_player_downed"},
 	&"enemy_died": {
 		"path": ^"/root/EnemyWorld", "signal": &"enemy_died", "handler": &"_on_hook_signal_enemy_died"},
 }
@@ -565,6 +573,12 @@ func _on_hook_signal_0(function_name: StringName, host_only: bool) -> void:
 
 func _on_hook_signal_enemy_died(
 	_enemy_id: StringName, _peer_id: int, _position: Vector3, function_name: StringName, host_only: bool
+) -> void:
+	_fire_hook(function_name, host_only)
+
+
+func _on_hook_signal_player_downed(
+	_peer_id: int, function_name: StringName, host_only: bool
 ) -> void:
 	_fire_hook(function_name, host_only)
 
