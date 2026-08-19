@@ -75,6 +75,102 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — Task 5.5: Boss framework — phases, arena leash, per-phase telegraphed moves, replicated health-bar seam, EventBus music-stinger hooks (lp)
+
+No new §2.2 authority row (D-116, same reasoning D-112 gave 7.8) — `Boss extends Enemy`
+(`systems/enemies/boss.gd`, new) and inherits the existing "Enemies: HOST" row verbatim. **No block
+existed for this task; docs/SPECS.md §5.5 is new.** `systems/enemies/enemy.gd` was claimed by lane lm
+(7.7) for this task's whole session — `Boss` needed zero edits to it; every extension point was
+already a plain overridable method or an inherited member var (D-116 has the full list and the
+general lesson).
+
+**New content-family files, `EnemyDef`'s own shape extended, not replaced:**
+
+```gdscript
+# systems/enemies/boss_move_def.gd — class_name BossMoveDef extends Resource
+# One telegraphed attack: id, damage, range_m, tell_seconds/attack_seconds/recovery_seconds,
+# weight (selection odds within a phase), tell_animation/attack_animation (clip names).
+
+# systems/enemies/boss_phase_def.gd — class_name BossPhaseDef extends Resource
+# hp_threshold_fraction (author phases in DESCENDING order, phase 0 = 1.0), moves: Array[BossMoveDef]
+# (empty is valid — falls back to EnemyDef's one fixed attack), move_speed_multiplier, seals_arena
+# (task 5.5's "arena flag" — see D-116 point 2 for why this is a leash, not geometry), music_cue.
+
+# systems/enemies/boss_def.gd — class_name BossDef extends EnemyDef
+BossDef.phases: Array[BossPhaseDef]
+BossDef.arena_radius_m: float                          # default 30.0
+BossDef.engage_music_cue / defeat_music_cue: StringName # read by BossMusicDirector; unused today,
+                                                         # the wiring point for a future per-boss cue
+BossDef.phase_for_health_fraction(fraction: float) -> int
+BossDef.validation_errors() -> PackedStringArray        # extends EnemyDef's own; also checks phase
+                                                         # ordering and phases[0].hp_threshold==1.0
+```
+
+**`Boss` (`systems/enemies/boss.gd`) public API for 5.6/5.7/5.8 to build against:**
+
+```gdscript
+Boss.phase: int                    # replicated. -1 (DORMANT_PHASE) until first engagement, then an
+                                    # index into BossDef.phases, monotonic (never regresses).
+Boss.move_index: int                # replicated. -1 when no move in flight; else an index into the
+                                    # ACTIVE phase's own `moves` array — read this, not a cached move,
+                                    # for presentation on every peer.
+Boss.arena_center: Vector3          # fixed at spawn position, read-only in practice.
+Boss.health_fraction() -> float     # 0..1, safe against null/zero-health def.
+Boss.phase_count() -> int           # 1 for a plain EnemyDef/empty-phases BossDef.
+Boss.is_engaged() -> bool           # phase != DORMANT and not dead — what a HUD gates visibility on.
+Boss.is_alive() -> bool             # inherited from Enemy, unchanged.
+```
+
+**`EnemyWorld` (`autoload/enemy_world.gd`) — one new branch, everything else unchanged:**
+`_net_spawn_enemy()` now instantiates `Boss` (not the plain `Enemy` script) whenever the spawned def
+`is BOSS_DEF` — the same replicated payload every peer already builds identically from, so this
+costs no new RPC. `_load_defs()` needed no change: `res is ENEMY_DEF` already accepts a `BossDef`
+since it extends `EnemyDef`.
+
+**Three new `EventBus` events (`core/events/event_bus.gd`) — the music-stinger hooks:**
+
+```gdscript
+EventBus.subscribe_boss_engaged(listener)         # (boss_id: StringName, world_position: Vector3)
+EventBus.subscribe_boss_phase_changed(listener)   # (boss_id, previous_phase: int, new_phase: int, world_position)
+EventBus.subscribe_boss_defeated(listener)        # (boss_id: StringName, world_position: Vector3)
+```
+
+All three fire from a REPLICATED property's own setter (`Boss.phase`'s setter for the first two,
+`Boss._play_state_animation()` — itself already invoked from `Enemy.state`'s replicated setter — for
+the third), never from a host-only guard. This is the D-107/D-108 fix pattern applied from the start;
+`docs/FINDINGS.md` F-168 is the standing example of a system (`Wellspring.capped`) that still has the
+host-only bug this pattern avoids.
+
+**`BossMusicDirector` (new autoload, client-local) and `BossHealthHud` (new autoload, client-local,
+`ui/hud/boss_health_hud.gd`)** subscribe to the three events / poll the `bosses` group respectively —
+neither has a public API beyond `BossMusicDirector.play_cue(cue_id: StringName)` (the seam a future
+per-boss cue routes through; today only `&"boss_stinger"` exists in `CUE_PATHS`). Both registered in
+`project.godot` via `agent autoload` (F-051).
+
+**New audio asset:** `assets/audio/music/boss_stinger.ogg` — `tools/audio/render_music.py`'s new
+`BOSS_STINGER` config + `render_stinger()` function, a ~7.2s non-looping one-shot (impact in the
+first ~1.1s, the rest its own reverb tail) built from NIGHT's own palette (D-066). Re-render with the
+script's existing `main()`; **running it also re-renders `ambient_day.ogg`/`ambient_night.ogg`, which
+came out numerically identical but NOT byte-identical to the committed files on this machine — F-176,
+not fixed here, `git checkout --` them if `main()` is ever re-run.**
+
+**Not built — deliberately, see `boss_def.gd`'s own header and D-116:** no worked-example `.tres`
+boss content ships with this task. 5.6/5.7/5.8 own the three real bosses; `tools/boss_check.gd`
+proves the whole framework against synthetic `BossDef`/`BossPhaseDef`/`BossMoveDef` trees instead, the
+same shape `enemy_ai_check.gd` already established as acceptable. Also not built: any PHYSICAL arena
+wall/pylons — `BossPhaseDef.seals_arena` is a data flag a boss-content task turns into real geometry
+(`docs/ASSET_TRACKER.md` A-027's "arena pylons"); the framework's own arena enforcement is a
+leash on the boss's own acquisition/retention only (D-116 point 2).
+
+Verified: `agent godot --script tools/boss_check.gd` (new, 45 assertions) — `failures=0`. No
+regressions: `tools/enemy_check.gd`, `tools/enemy_ai_check.gd`, `tools/enemy_net_check.gd`,
+`tools/entity_check.gd`, `tools/combat_feel_check.gd` all `failures=0` unmodified;
+`tools/enemy_facing_check.gd` (needs `--windowed`, F-077) still renders; `tools/enemy_crawler_check.gd`
+still `ok` on every asset. `tools/audio_import_check.gd` extended with a stinger-specific assertion
+group (the one-shot doesn't fit its prior "every music file is a 224s loop" assumption) —
+`failures=0`. Full boot (`agent godot --quit-after 20`): 0 `ERROR:` lines, both new autoloads silent
+until a boss actually engages (verified nothing plays/shows on a bare boot).
+
 ### 2026-08-19 — Task 7.5: Settings — graphics/audio/sensitivity/FOV/keybinds/accessibility, `SettingsService` autoload + real controls in 6.10's shell (lm)
 
 No new §2.2 authority row — everything here is client-local presentation (docs/DECISIONS.md D-114

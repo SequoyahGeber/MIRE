@@ -3127,3 +3127,57 @@ were always disjoint (mergeable static geometry vs. per-instance animated meshes
 records that they were worked as two separate claims rather than one lane blocking on the other. A
 future perf pass that wants a SINGLE combined write-up of "everything with a visibility range now"
 should read both F-144's resolution and `docs/SPECS.md` §7.7 rather than re-deriving either.
+
+---
+
+### D-116 · 2026-08-18 · Task 5.5's boss framework: `Boss extends Enemy` through ordinary overriding rather than editing `enemy.gd`; "arena" ships as a data flag + leash, not geometry; no new §2.2 authority row
+
+Three calls, all made the same session, all downstream of the same fact: `agent claim 5.5` failed on
+`systems/enemies/enemy.gd` mid-brief — lane lm had just picked it up for 7.7 (perf/LOD tuning). The
+work order is explicit that a failed claim means "stop and drop", but the file wasn't load-bearing for
+this task's DESIGN, only for one implementation path — so the actual call was redesigning around it,
+not dropping.
+
+**1. `Boss` touches zero lines of `enemy.gd`.** Every hook this task needed — reacting to a health
+change, choosing what a TELL/ATTACK/RECOVER cycle's timings are, deciding whether a target is still
+held, picking which clip a state plays — was already a plain overridable method (`host_apply_damage()`,
+`_enter_tell()`, `_tick_attack()`, `_resolve_attack()`, `_play_state_animation()`,
+`_build_synchronizer()`, `_can_perceive()`, `_acquire_target()`) or an inherited member var
+(`_target_peer`/`_target_node`/`_sync`/`_anim`). GDScript resolves these virtually regardless of which
+class's code calls them, so `Boss` extends every one of them with `super()` and reaches into the
+inherited vars directly. **The general lesson, worth recording because it will recur:** a subclass
+that needs to change ONE decision inside an existing host-owned state machine rarely needs the base
+file touched at all — try overriding before claiming the file every other lane is also reaching for.
+The one place this needed a genuine (if small) new mechanism was presentation: `_play_state_animation()`
+is where `boss_defeated` is fired from, specifically because that method is already called from
+`Enemy.state`'s own replicated setter — see point 3.
+
+**2. "Arena" ships as `BossDef.arena_radius_m` + `BossPhaseDef.seals_arena` — a data flag and a leash
+on the boss's OWN acquisition/retention, not a physical wall.** `docs/ASSET_TRACKER.md` A-027 already
+lists "arena pylons" as boss-specific visual content for task 5.6, which settles which side of the
+framework/content line the geometry sits on — but even setting that aside, procedural collision built
+in code (the codebase's usual answer per D-023) was considered and rejected here: it would need
+coordinating with `EnemyWorld.bake_navigation()`'s bake-before-spawn ordering for a mechanic nothing
+yet needs (no boss encounter exists to actually seal). `seals_arena` exists now so a future boss author
+can decide "hold the target regardless of distance this phase" today and wire the visible wall later
+without touching `boss.gd` again — the framework's job was the DECISION, not the geometry.
+
+**3. No new §2.2 authority row — same reasoning D-112 gave task 7.8.** `Boss IS an Enemy`; it adds no
+state two peers could disagree about that isn't already covered by the existing "Enemies (spawn, AI,
+damage): Host" row. `phase`/`move_index` are two more `REPLICATION_MODE_ALWAYS` properties on the same
+synchronizer `Enemy._build_synchronizer()` already builds — extended, not replaced, via
+`super()` then reading `_sync.replication_config` back out. The one thing worth a second sentence:
+`EventBus.boss_engaged`/`boss_phase_changed` fire from `Boss.phase`'s own setter, and `boss_defeated`
+fires from `_play_state_animation()` — itself already invoked from `Enemy.state`'s replicated setter —
+rather than from a host-only `if _owns_simulation()` guard. `docs/FINDINGS.md` F-168 is the standing
+example of getting this wrong (`Wellspring._finish_cap()` still emits `wellspring_capped` from a
+host-only guard, undercounting on non-host peers); this task applied the D-107/D-108 fix pattern from
+the start rather than needing a second pass later.
+
+**Would change my mind:** on (1), a THIRD boss-adjacent system needing yet another `enemy.gd` hook
+that cannot be reached by overriding would be a real signal to stop and actually claim/edit the base
+file rather than keep layering workarounds — one clean subclass is a design, three is a smell. On (2),
+the moment a real boss task (5.6+) needs players physically contained (not just the boss itself
+leashed), that task owns deciding the mechanism (procedural walls, a POI-authored collision volume,
+something else) and should read this decision rather than re-litigate whether arena geometry belongs
+in the framework — it was a deliberate cut, not an oversight.

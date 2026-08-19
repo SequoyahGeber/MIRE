@@ -1564,8 +1564,7 @@ authors to build against.
 - **5.3 Ranged combat:** done — see the `## 5.3` block below.
 - **5.4 Movesets (T0/T1):** per-fork `WeaponDef` extensions (combo windows, alt-attack flag) —
   data first, one T1 task for the combo state machine, then T0 tuning.
-- **5.5 Boss framework (T2):** phases as an array of `BossPhaseDef` (hp threshold, moveset id,
-  arena flags), health bar UI seam, music stinger hook via EventBus.
+- **5.5 Boss framework:** done — see the `## 5.5` block below.
 - **5.6/5.7/5.8 Bosses (T0 over 5.5):** Wellspring guardian scales with Cycle; Hunt elite spawned
   by modifier 6.2; deep-Cycle threat gated Cycle 7+.
 - **5.9 Wave director (T1):** 2.12's spawner gains composition tables (per-Cycle enemy pools,
@@ -1658,6 +1657,122 @@ Done means: both new checks green, the five regression checks green, 0 `ERROR:` 
 `docs/DELEGATION.md`'s Current state carries `RangedWeaponDef`'s fields, `RangedCombatService`'s
 public API, and the `_damageable_owner()` gotcha for whatever system next raycasts against
 `&"damageable"`.
+
+## 5.5 · Boss framework: phases, arena, telegraphs, health bar, music stinger (T2)
+
+**No block existed for this task** — SPECS.md's own preamble rule applies again: fixing a missing
+spec belongs to the task that discovers it. The M5 overview's own look-ahead (just above, in this
+file) sketched the shape correctly: "phases as an array of `BossPhaseDef` (hp threshold, moveset id,
+arena flags), health bar UI seam, music stinger hook via `EventBus`" — this block is that sketch made
+concrete, plus the "arena" split it left implicit.
+
+**Authority:** no new §2.2 row (D-116, same reasoning D-112 gave task 7.8). A boss IS an `Enemy` —
+`Boss extends Enemy` — so it inherits the existing "Enemies (spawn, AI, damage): **Host**" row
+verbatim. `phase`/`move_index` are two more `REPLICATION_MODE_ALWAYS` properties added to the same
+code-built `SceneReplicationConfig` `Enemy._build_synchronizer()` already builds; no new RPC.
+
+**Claim:** `core/events/event_bus.gd`, `autoload/enemy_world.gd`, `systems/enemies/boss_move_def.gd`,
+`systems/enemies/boss_phase_def.gd`, `systems/enemies/boss_def.gd`, `systems/enemies/boss.gd`,
+`autoload/boss_music_director.gd`, `ui/hud/boss_health_hud.gd`, `tools/boss_check.gd`,
+`tools/audio_import_check.gd`, `tools/audio/render_music.py` (+ every new file's own `.uid`).
+`project.godot` registers `BossMusicDirector`/`BossHealthHud` via `agent autoload` (F-051) — never
+hand-edited. **`systems/enemies/enemy.gd` was NOT claimed** — held all session by lane lm's 7.7
+(perf/LOD); see below for how `Boss` builds on it without touching a line.
+
+**Boss extends Enemy through ordinary GDScript overriding, not new hooks on the base class.** Every
+extension point this task needed already existed as a plain overridable method or an inherited
+member var — `_can_perceive()`, `_acquire_target()`, `host_apply_damage()`, `_enter_tell()`,
+`_tick_attack()`, `_resolve_attack()`, `_play_state_animation()`, `_build_synchronizer()`, and the
+raw `_target_peer`/`_target_node`/`_sync`/`_anim` fields — so `Boss` (`systems/enemies/boss.gd`)
+reaches everything it needs via `super()` and inheritance, with zero edits to `enemy.gd`. Worth
+recording as the general pattern: a subclass that needs to extend ONE decision an existing host-owned
+state machine makes rarely needs the base file touched at all in GDScript — try overriding first,
+before claiming the file everyone else is also reaching for.
+
+**Phases (`BossDef.phases: Array[BossPhaseDef]`).** Each `BossPhaseDef` carries an
+`hp_threshold_fraction` (descending order, phase 0 = 1.0 = full health), a `moves` array
+(`BossMoveDef`, see Telegraphs below), a `move_speed_multiplier`, a `seals_arena` flag (see Arena
+below), and an optional `music_cue` id. `BossDef.phase_for_health_fraction(fraction)` scans for the
+last index whose threshold the fraction still satisfies — monotonic by construction when authored in
+order, and `BossDef.validation_errors()` (extends `EnemyDef`'s own) catches an out-of-order array at
+author time. `Boss.phase` is `-1` (`DORMANT_PHASE`) until the boss takes its first target
+(`_acquire_target()`'s override calls `_update_phase()` on the was-dormant transition), then advances
+— never regresses — as `host_apply_damage()`'s override recomputes it after every accepted hit.
+
+**Telegraphs (`BossPhaseDef.moves: Array[BossMoveDef]`).** `EnemyDef` gives an ordinary enemy exactly
+one fixed attack (`attack_damage`/`attack_range_m`/three durations); a boss needs several per phase,
+so those same five numbers (plus a weight and two animation clip names) become one `BossMoveDef`
+array element instead. `Boss._enter_tell()` picks a move by weighted random
+(`_pick_move_index()`, a seeded `RandomNumberGenerator` — `WaveSpawner`'s own convention for a
+host-only decision nobody else needs to agree with) and replicates the choice via `move_index` so
+every peer's `_play_state_animation()` renders the SAME move's clip, not just the host's own. **An
+empty `moves` array (or an entirely phase-less `BossDef`) falls through to `EnemyDef`'s single fixed
+attack at every override site** — this is deliberate: it is what makes a `BossDef` with nothing
+authored beyond a `BossPhaseDef` behave exactly like a plain `Enemy` with a health bar and a stinger,
+the framework's own minimal-boss path.
+
+**Arena — a data flag in this task, not geometry.** `BossDef.arena_radius_m` plus
+`BossPhaseDef.seals_arena` are the framework's whole contribution: `Boss` never ACQUIRES a target
+outside its own arena (`_can_perceive()`'s override, on top of 5.1's cone/LOS checks) and, unless the
+active phase seals the arena, drops an already-held target the instant it leaves the radius
+(`_enforce_arena_leash()`, run each tick before `_tick_pursuit()`'s own logic). **The physical wall or
+pylons a player actually sees are boss-specific content** (`docs/ASSET_TRACKER.md` A-027's "arena
+pylons"), left to whichever task authors the real fight (5.6/5.7/5.8) — building procedural collision
+geometry in code was considered and rejected for this task: it would need coordinating with
+`EnemyWorld`'s navmesh bake order for no framework-level payoff, since nothing yet needs a boss fight
+players can physically be sealed inside. `seals_arena` exists now so a boss author can decide "no
+leash-drop this phase" today and wire the visible wall later without touching this file again.
+
+**Health bar (`ui/hud/boss_health_hud.gd`, new autoload `BossHealthHud`).** Client-local, same
+"poll a group, not a signal" shape `wellspring_hud.gd` uses — `Boss.health_fraction()`/
+`phase_count()`/`is_engaged()` are the three public reads it needs, all safe against a plain
+`EnemyDef` (no `BossDef` to read) or a dormant/dead boss. Shows nothing until a boss is engaged, same
+"hide until relevant" rule `wellspring_hud.gd` already established for its own bar.
+
+**Music stinger (`autoload/boss_music_director.gd`, new autoload `BossMusicDirector`).** The seam
+`docs/AUDIO.md`'s own "Not done yet" list already named this task for. Subscribes to the three new
+`EventBus` events below and plays `assets/audio/music/boss_stinger.ogg`
+(`tools/audio/render_music.py`'s new `BOSS_STINGER` — one non-looping ~7 s cue, impact in the first
+~1.1 s then its own reverb tail, built from NIGHT's own palette per D-066) through whichever
+`AudioStreamPlayer` in a round-robin pair is free, on the "Music" bus if `SettingsService` (task 7.5)
+has created one by the time it plays, else "Master". **No per-boss/per-phase cue ships** —
+`BossDef.engage_music_cue`/`BossPhaseDef.music_cue` exist as the wiring point, but `CUE_PATHS` holds
+only the one shared id today (AGENTS.md: framework, not content).
+
+**Three new `EventBus` events — `boss_engaged`, `boss_phase_changed`, `boss_defeated` — all fired from
+a REPLICATED property's own setter, never a host-only guard.** `boss_engaged`/`boss_phase_changed`
+come from `Boss.phase`'s setter directly; `boss_defeated` comes from `_play_state_animation()`
+(itself already called from `Enemy.state`'s existing replicated setter) the instant `state` first
+reaches DEAD. This is the D-107/D-108 fix pattern applied from the start — `docs/FINDINGS.md` F-168
+is the standing example of a system that got this wrong (`Wellspring._finish_cap()` still emits from
+a host-only `if`) and undercounts on non-host peers as a result. Every consumer here (the stinger, a
+future HUD flourish) reaches every peer's own local emit with no RPC of its own.
+
+**No worked-example boss content ships with this task.** 5.6/5.7/5.8 own the three real bosses;
+authoring a placeholder one here (with no model, to "prove the framework") would still be content per
+D-073's own rule, and a fake boss is a worse use of that authoring slot than three real ones.
+`tools/boss_check.gd` proves the framework against synthetic `BossDef`/`BossPhaseDef`/`BossMoveDef`
+trees instead — the same shape `enemy_ai_check.gd` already established as acceptable for a
+data-driven framework task.
+
+Verify: `tools/boss_check.gd` (new, 45 assertions) — content validation and
+`phase_for_health_fraction()`'s scan rule, engage/phase-transition/defeat firing exactly once each at
+the right moment with the right previous/new phase, the arena leash both directions (acquisition
+gated, retention dropped, sealed retention held), weighted move selection landing its expected 9:1
+share deterministically, a real TELL→ATTACK→RECOVER cycle using the CHOSEN move's own timings and
+damage rather than `EnemyDef`'s fixed ones, the empty-moves fallback matching `EnemyDef`'s fixed
+attack exactly, `EnemyWorld.host_spawn()` instantiating `Boss` (not plain `Enemy`) for a `BossDef`,
+and `BossMusicDirector` actually starting playback on all three `EventBus` hooks. `failures=0`.
+Regression: `tools/enemy_check.gd`, `tools/enemy_ai_check.gd`, `tools/enemy_net_check.gd`,
+`tools/entity_check.gd`, `tools/combat_feel_check.gd` all still `failures=0` unmodified;
+`tools/enemy_facing_check.gd` (needs `--windowed` for its render capture, F-077) still renders
+correctly; `tools/enemy_crawler_check.gd`'s import checks still pass. `tools/audio_import_check.gd`
+extended (not touched in a regression sense — it needed a new assertion group for the one-shot
+stinger alongside its existing looped-music assertions) — `failures=0`. Full boot (`agent godot
+--quit-after 20`): 0 `ERROR:` lines, both new autoloads silent until a boss actually engages.
+Done means: all checks above green, 0 `ERROR:` on a full boot, and `docs/DELEGATION.md`'s Current
+state carries `BossDef`/`BossPhaseDef`/`BossMoveDef`'s fields and `Boss`'s public API for 5.6/5.7/5.8
+to author their three real bosses against.
 
 ## 5.9 · Wave director: Cycle-aware pacing, composition, player-count scaling (T1)
 

@@ -12,6 +12,7 @@ store-page time.
 |---|---|---|
 | Day ambient | `assets/audio/music/ambient_day.ogg` | 3:44 seamless loop, D Dorian over a D pedal. Pads voice-lead a slow soprano arc (E–E–F–G–C5–A–G–F→E); Karplus-Strong motif, rare FM bells. RMS −19 dBFS |
 | Night ambient | `assets/audio/music/ambient_night.ogg` | 3:44 seamless loop, A Aeolian; section 5 is Bb-maj7 over the A pedal (the dread chord, bells strike its #11). Sub-root swells, three far FM groans. RMS −21 dBFS |
+| Boss stinger | `assets/audio/music/boss_stinger.ogg` | ~7.2s non-looping one-shot (task 5.5), NIGHT's own palette — a low FM groan rises into a sub thump and a dissonant pair of detuned FM bells, then rings out on the same reverb IR shape. Played by `BossMusicDirector` (client-local autoload) on `EventBus.boss_engaged`/`boss_phase_changed`/`boss_defeated` |
 | 19 SFX | `assets/audio/sfx/*.wav` | mono 16-bit 44.1 kHz: axe/pick hits (3 variants each), tree/stone breaks, melee whoosh+hit (2 each), mud footsteps (3), item pickup, chest open, ui click, build place |
 
 Palette rules that keep it one game: both tracks share the same pad/pluck/bell voices; reward
@@ -59,11 +60,17 @@ audio RPCs and must never be any.
 
 ## Not done yet (next tasks)
 
-- **MusicDirector autoload** (client-local): play `ambient_day.ogg`, crossfade ~8 s to
-  `ambient_night.ogg` on DayNight's `night_started` / back on `day_started` (signal names proven in
-  `tools/day_night_check.gd`). Two `AudioStreamPlayer`s on a `Music` bus is enough.
+- **Ambient MusicDirector autoload** (client-local, still not built — do not confuse with task 5.5's
+  `BossMusicDirector`, a separate one-shot-stinger autoload that ships): play `ambient_day.ogg`,
+  crossfade ~8 s to `ambient_night.ogg` on DayNight's `night_started` / back on `day_started` (signal
+  names proven in `tools/day_night_check.gd`). Two `AudioStreamPlayer`s on the "Music" bus
+  `SettingsService` (7.5) already creates is enough.
 - **SFX wiring**: `weapon_def.gd` / `harvestable_def.gd` sound fields + play sites — those files
   are under F-113/F-114 claims right now; wire after they clear. Bind sounds to the **asset defs**,
   never to a scene or map — release worlds are procgen.
-- **Buses & mix pass** (7.1's remainder): Master / Music / SFX / UI buses, settings sliders (7.5).
-- **More music** (7.2's remainder): menu theme, combat-intensity stems for escalation, boss (5.5).
+- **Buses & mix pass** (7.1's remainder): Master / Music / SFX / UI buses, settings sliders — done,
+  task 7.5.
+- **More music** (7.2's remainder): menu theme, combat-intensity stems for escalation. Boss (5.5) is
+  done — one shared stinger cue, not per-boss stems; a future task can add per-boss/per-phase cues
+  through `BossDef.engage_music_cue`/`BossPhaseDef.music_cue`, which exist but route to the shared
+  cue only (`BossMusicDirector.CUE_PATHS` has one entry today).
