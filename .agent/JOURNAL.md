@@ -3673,3 +3673,18 @@ Already fixed by F-144's in-flight attribute-mask bucketing (76d48bc); no code c
 Files: `tools/mesh_merge_check.gd`, `tools/mesh_merge_check.gd.uid`
 
 Commit at time of writing: `c4c32ce`
+
+---
+
+### DONE · 4.9 · lm · 2026-08-19T00:54:44+00:00
+
+**Mire grid simulation + delta replication (`ARCHITECTURE.md` §5)**
+
+MireGridSim (pure diffusion) + MireGrid autoload (host-authoritative, replicated via WorldDeltaLog, no new RPC/protocol bump). tools/mire_grid_check.gd: 23 assertions, 0 failures, 2 consecutive runs — determinism, ward suppression, wellspring-cap clearing, and a real two-process proof a connected client never simulates. Registered MireGrid autoload in project.godot. Ward wiring left empty on purpose for 4.11 (D-099).
+
+Notes along the way:
+- Order dispatched 4.11 assuming 4.9 already shipped ('each one is a small consumer of an existing seam'); it hasn't (state.json: todo). D-092 already flagged this: 'Mire (4.9-4.11) does not exist yet.' Doing 4.9 for real first since 4.11's four consumers cannot exist without a corruption query. Using WorldDeltaLog (4.6) as the replication mechanism per its own doc comment ('Mire grid is this log's next intended consumer') instead of a bespoke RPC — avoids needing net_version.gd/handshake_check.gd, both held by slate17 (3.7) all session. Splitting ward-resistance: MireGridSim.tick() takes a ward_circles param now (4.9), BuildService.ward_radii() wiring it live is 4.11's job per SPECS.md's own attribution.
+
+Files: `world/mire/mire_grid.gd`, `world/mire/mire_grid_sim.gd`, `tools/mire_grid_check.gd`
+
+Commit at time of writing: `11c39b2`
