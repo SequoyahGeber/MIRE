@@ -3551,3 +3551,30 @@ COMMANDS.md §5–6 shipped: functions (.mcmd, content/functions/, recursion cap
 Files: `systems/rules/hook_def.gd`, `autoload/command_service.gd`, `systems/commands/function_runner.gd`, `content/functions`, `content/hooks`, `autoload/registry.gd`, `tools/run_commands.gd`, `tools/function_check.gd`, `tools/command_catalog_check.gd`, `content/hooks/night_siege.tres`
 
 Commit at time of writing: `08f90c7`
+
+---
+
+### DONE · 4.7 · hollow7 · 2026-08-19T00:08:59+00:00
+
+**POI placement: seeded Poisson-disc, Wellsprings + landmarks**
+
+POI placement shipped: PoiDef content family, PoiMap pure generator, Registry hook, three authored kinds. Real Poisson-disc here (unlike D-083's jittered grid for scatter) because POIs are island-global and few, so dart-throwing is affordable and minimum spacing is the whole point. D-095 records three calls, two of which were bugs poi_check found: sorting defs by id alone placed the Wellspring LAST and seed 24301 generated an island with ZERO Wellsprings; and using one radius for both same-kind and cross-kind spacing carved four 180m holes out of the island. Fixed with placement_priority and a separate clearance_m. Determinism/spacing/constraint tests all passed while both bugs were live — the per-kind coverage assertion is what caught them. 38 assertions over 5 seeds, 0 failures, 0 engine ERROR lines. Nothing instantiates it yet, same as heightmap/biome/scatter before it (F-139 cluster).
+
+Files: `world/gen/poi_def.gd`, `world/gen/poi_map.gd`, `autoload/registry.gd`, `tools/poi_check.gd`, `content/poi`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/ARCHITECTURE.md`
+
+Commit at time of writing: `1210c43`
+
+---
+
+### DONE · F-132 · lm · 2026-08-19T00:21:07+00:00
+
+**A remote client's scattered harvestable proxy may have no host counterpart to reach, because `ChunkStreamer` streams per-peer independently**
+
+Resolved by contract (D-096), not code: ChunkStreamer.set_anchors() and ResourceScatterField already generalize correctly over N anchors; documented the host union-of-interest contract on both file headers for F-139's live caller. New tools/chunk_stream_check.gd union-of-interest section proves it end-to-end with a real ChunkStreamer + ResourceScatterField + HarvestWorld. Verified: agent godot --windowed --script tools/chunk_stream_check.gd -> 0 functional failure(s); agent godot --script tools/resource_scatter_check.gd -> failures=0; agent godot --script tools/verify_setup.gd -> all checks passed.
+
+Notes along the way:
+- Resolved by contract, not code: ChunkStreamer.set_anchors()/ResourceScatterField already generalize correctly over N anchors. Real fix owed is F-139's live caller anchoring the host to every connected peer's position. D-096 records the no-new-API call.
+
+Files: `world/chunk/chunk_streamer.gd`, `world/gen/resource_scatter_field.gd`, `tools/chunk_stream_check.gd`
+
+Commit at time of writing: `05d4330`

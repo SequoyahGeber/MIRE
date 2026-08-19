@@ -16,9 +16,20 @@ extends SceneTree
 ## across the same span) and asserts the skirt is deeper than that everywhere on the island. That
 ## makes the fix falsifiable from a terminal, and makes retuning `IslandHeightmap.HEIGHT_SCALE` or
 ## the noise fail loudly here instead of silently reopening the crack in-game.
+##
+## The union-of-interest section closes `docs/FINDINGS.md` F-132: a real `ChunkStreamer` fed TWO
+## independent, far-apart anchors (standing in for "the host's own local player" and "a remote
+## connected peer's last-known position") must build a resident, collision-bearing LOD0 chunk around
+## EACH one, not just the nearest — and a real `ResourceScatterField` attached to that same streamer
+## must turn both into live, `HarvestWorld`-wired `Harvestable` proxies. That is the exact property a
+## remote client's `Harvestable.request_hit()` `rpc_id(HOST_PEER_ID)` call depends on: a node at the
+## same NodePath actually existing on the host, even when the host's own player is elsewhere.
 
 const ChunkStreamer := preload("res://world/chunk/chunk_streamer.gd")
 const ChunkMesher := preload("res://world/chunk/chunk_mesher.gd")
+const ResourceScatterFieldScript := preload("res://world/gen/resource_scatter_field.gd")
+const ResourceScatterLib := preload("res://world/gen/resource_scatter.gd")
+const HarvestLib := preload("res://systems/harvesting/harvest_library.gd")
 
 const BENCH_SEED: int = 20260818
 ## The worst LOD-boundary divergence found when F-128 was fixed, and where it was found — swept
@@ -37,6 +48,8 @@ const HITCH_THRESHOLD_MS: float = 16.667
 ## Convergence timeout for phase 1's "wait until the ring settles" polls — protects against a
 ## silent hang reading as a slow pass instead of a failure.
 const MAX_SETTLE_FRAMES: int = 600
+## Sentinel: no chunk with a harvestable placement was found within the searched radius.
+const NOT_FOUND_CHUNK := Vector2i(999999, 999999)
 
 var _failures: int = 0
 
@@ -103,6 +116,9 @@ func _run() -> void:
 
 	print("\n-- 500 m sprint walk, hitch budget %.3f ms (phase 2 — the spec's acceptance test) --" % HITCH_THRESHOLD_MS)
 	await _check_sprint_walk(root_node)
+
+	print("\n-- host union-of-interest: two independent anchors each get a reachable proxy (F-132) --")
+	await _check_union_of_interest()
 
 	print("\n%d functional failure(s)\n" % _failures)
 	quit(1 if _failures > 0 else 0)
@@ -484,6 +500,138 @@ func _check_sprint_walk(root_node: Node3D) -> void:
 
 	streamer.queue_free()
 	await process_frame
+
+
+## F-132: proves the fix is a calling contract, not a code change. One real `ChunkStreamer` fed two
+## independent anchors — standing in for "the host's own local player" and "a remote connected
+## peer's last-known position" — must resolve BOTH chunks to a resident, collision-bearing LOD0
+## entry, and a real `ResourceScatterField` attached to it must build a live, `HarvestWorld`-wired
+## `Harvestable` at each. `min_separation` is chosen so neither anchor's own ring
+## (`LOAD_RADIUS_CHUNKS + HYSTERESIS_CHUNKS`) can reach the other's chunk — a streamer that (bugged)
+## only ever unioned its NEAREST anchor would still pass a test where the two targets happen to sit
+## inside each other's ring, so this rules that out by construction rather than by luck.
+func _check_union_of_interest() -> void:
+	var registry: Node = root.get_node_or_null(^"Registry")
+	_check("Registry is registered as an autoload", registry != null)
+	if registry == null:
+		return
+	var scatter_defs: Array = (registry.get(&"scatter_tables") as Dictionary).values()
+	var biome_defs: Array = (registry.get(&"biomes") as Dictionary).values()
+
+	var chunk_a: Vector2i = _find_harvestable_chunk(scatter_defs, biome_defs, Vector2i.ZERO, 0)
+	_check("found a chunk with a harvestable placement for the 'host local player' anchor (%s)" % chunk_a,
+		chunk_a != NOT_FOUND_CHUNK)
+	if chunk_a == NOT_FOUND_CHUNK:
+		return
+
+	var min_separation: int = ChunkStreamer.LOAD_RADIUS_CHUNKS + ChunkStreamer.HYSTERESIS_CHUNKS + 1
+	var chunk_b: Vector2i = _find_harvestable_chunk(scatter_defs, biome_defs, chunk_a, min_separation)
+	_check("found a second chunk with a harvestable placement, >= %d chunks from the first, for the 'remote peer' anchor (%s)" % [min_separation, chunk_b],
+		chunk_b != NOT_FOUND_CHUNK)
+	if chunk_b == NOT_FOUND_CHUNK:
+		return
+
+	var pos_a: Vector3 = _chunk_center(chunk_a)
+	var pos_b: Vector3 = _chunk_center(chunk_b)
+
+	# `current_scene` must be a DIRECT child of `root` (SceneTree enforces this) — unlike the other
+	# phases above, which nest under the shared `root_node`, this scene stands alone so
+	# `HarvestWorld.refresh_current_scene()`'s own scene-ancestry check (autoload/harvest_world.gd)
+	# actually wires the holders this phase builds.
+	var scene := Node3D.new()
+	scene.name = "UnionOfInterestCheckScene"
+	root.add_child(scene)
+	current_scene = scene
+
+	var streamer := ChunkStreamer.new()
+	streamer.world_seed = BENCH_SEED
+	scene.add_child(streamer)
+
+	# `attach_to_streamer()` only reacts to FUTURE `chunk_mesh_ready`/`chunk_unloaded` signals — it
+	# does not retroactively scan chunks already resident at attach time — so, matching the real
+	# caller order both DELEGATION.md snippets show (streamer built and added first, then the field
+	# attached, THEN anchors set and re-set every frame), the field is wired before the streamer is
+	# ever given anchors to stream around.
+	var field := ResourceScatterFieldScript.new()
+	field.world_seed = BENCH_SEED
+	field.scatter_defs = scatter_defs
+	field.biome_defs = biome_defs
+	scene.add_child(field)
+	field.attach_to_streamer(streamer)
+
+	# The host's own local player position PLUS a remote connected peer's last-known position — the
+	# union-of-interest contract F-132 records. A host anchored ONLY to its own local player never
+	# builds a proxy for a point a remote client can locally reach.
+	streamer.set_anchors([pos_a, pos_b])
+	await _settle(streamer)
+
+	_check("the 'host local' anchor's chunk loaded at LOD0 with a collider",
+		streamer.chunk_lod(chunk_a) == 0 and streamer.chunk_has_collision(chunk_a))
+	_check("the 'remote peer' anchor's chunk ALSO loaded at LOD0 with a collider — not just the nearest anchor's",
+		streamer.chunk_lod(chunk_b) == 0 and streamer.chunk_has_collision(chunk_b))
+
+	# Every chunk in EITHER anchor's LOD0 ring gets scatter, not just the two exact target chunks —
+	# `chunk_count()` alone can't tell them apart, so the holders below are checked by name.
+	await _wait_real_seconds(ResourceScatterFieldScript.COLLISION_POLL_INTERVAL_SEC * 4.0)
+	_check("both far-apart chunks are among the ones that materialized scatter (%d chunks total)" % field.chunk_count(),
+		field.get_node_or_null(NodePath("Chunk_%d_%d" % [chunk_a.x, chunk_a.y])) != null
+			and field.get_node_or_null(NodePath("Chunk_%d_%d" % [chunk_b.x, chunk_b.y])) != null)
+
+	var harvest: Node = root.get_node_or_null(^"HarvestWorld")
+	_check("HarvestWorld autoload exists", harvest != null)
+	if harvest != null:
+		harvest.call("refresh_current_scene")
+	for _frame: int in 8:
+		await process_frame
+
+	_check("a live, host-authoritative Harvestable exists at the 'host local' anchor's point",
+		_chunk_has_wired_harvestable(field, chunk_a))
+	_check("a live, host-authoritative Harvestable ALSO exists at the 'remote peer' anchor's point — the exact node an rpc_id(HOST_PEER_ID) call from that peer would need to reach (F-132)",
+		_chunk_has_wired_harvestable(field, chunk_b))
+
+	current_scene = null
+	scene.queue_free()
+	await process_frame
+
+
+## Scans outward in Chebyshev rings from the origin for the first chunk producing at least one
+## harvestable placement, skipping any coord within [param min_separation] chunks of [param avoid]
+## (Chebyshev, matching `ChunkStreamer`'s own ring metric). [param min_separation] 0 disables that
+## filter, for the first (unconstrained) search.
+func _find_harvestable_chunk(
+	scatter_defs: Array, biome_defs: Array, avoid: Vector2i, min_separation: int
+) -> Vector2i:
+	for radius: int in range(0, ISLAND_CHUNK_RADIUS + 1):
+		for cx: int in range(-radius, radius + 1):
+			for cz: int in range(-radius, radius + 1):
+				if maxi(absi(cx), absi(cz)) != radius:
+					continue
+				var coord := Vector2i(cx, cz)
+				if min_separation > 0 and maxi(absi(coord.x - avoid.x), absi(coord.y - avoid.y)) < min_separation:
+					continue
+				var placements: Array[Dictionary] = ResourceScatterLib.placements_for_chunk(
+					cx, cz, BENCH_SEED, scatter_defs, biome_defs
+				)
+				for placement: Dictionary in placements:
+					var asset_id: StringName = placement["asset"]
+					if HarvestLib.is_harvestable(asset_id):
+						return coord
+	return NOT_FOUND_CHUNK
+
+
+func _chunk_center(coord: Vector2i) -> Vector3:
+	var size: float = float(ChunkMesher.CHUNK_SIZE)
+	return Vector3((float(coord.x) + 0.5) * size, 0.0, (float(coord.y) + 0.5) * size)
+
+
+## `field`'s own child-naming convention (`world/gen/resource_scatter_field.gd::_build_chunk()`):
+## one holder named `Chunk_<x>_<z>` per resident chunk, however many `Harvestable` descendants
+## `HarvestWorld` has wired into it.
+func _chunk_has_wired_harvestable(field: Node, coord: Vector2i) -> bool:
+	var holder: Node = field.get_node_or_null(NodePath("Chunk_%d_%d" % [coord.x, coord.y]))
+	if holder == null:
+		return false
+	return not holder.find_children("Harvestable", "", true, false).is_empty()
 
 
 func _mean(values: PackedFloat32Array) -> float:

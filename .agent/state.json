@@ -20,6 +20,16 @@
       "at": "2026-08-18T22:23:08+00:00",
       "task": "3.7"
     },
+    "systems/enemies/enemy.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T00:09:16+00:00",
+      "task": "5.1"
+    },
+    "systems/enemies/enemy_def.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T00:09:16+00:00",
+      "task": "5.1"
+    },
     "systems/harvesting/harvestable.gd": {
       "agent": "nettle12",
       "at": "2026-08-18T22:08:56+00:00",
@@ -44,6 +54,16 @@
       "agent": "slate17",
       "at": "2026-08-18T22:24:36+00:00",
       "task": "3.7"
+    },
+    "tools/enemy_ai_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T00:09:16+00:00",
+      "task": "5.1"
+    },
+    "tools/enemy_ai_check.gd.uid": {
+      "agent": "lp",
+      "at": "2026-08-19T00:09:16+00:00",
+      "task": "5.1"
     },
     "tools/environment_vfx_hollowmere_check.gd": {
       "agent": "nettle12",
@@ -98,6 +118,17 @@
       ],
       "notes": [],
       "started": "2026-08-18T22:23:08+00:00"
+    },
+    "5.1": {
+      "agent": "lp",
+      "files": [
+        "systems/enemies/enemy.gd",
+        "systems/enemies/enemy_def.gd",
+        "tools/enemy_ai_check.gd",
+        "tools/enemy_ai_check.gd.uid"
+      ],
+      "notes": [],
+      "started": "2026-08-19T00:09:16+00:00"
     },
     "F-144": {
       "agent": "nettle12",
@@ -197,19 +228,9 @@
       "hash": null,
       "task": "2.1d"
     },
-    "assets/crafting_stations": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
-    },
     "assets/enemies": {
       "agent": "tine18",
       "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
-    "assets/environment": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
     "assets/environment_additions": {
@@ -221,11 +242,6 @@
       "agent": "moss11",
       "at": "2026-08-18T02:21:14+00:00",
       "task": "2.1d"
-    },
-    "assets/harvestables": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
     },
     "assets/icons/README.md": {
       "agent": "lp",
@@ -276,11 +292,6 @@
       "agent": "moss11",
       "at": "2026-08-18T02:21:14+00:00",
       "task": "2.1d"
-    },
-    "assets/pickups": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
     },
     "assets/ships": {
       "agent": "ivy8",
@@ -403,11 +414,6 @@
       "hash": "6844164f9458da5dc0d31a5ee047d9c88248c7794997df993bbe1621f181202d",
       "task": "2.1d"
     },
-    "assets/source/crafting_stations.blend": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
-    },
     "assets/source/enemy_crawler.blend": {
       "agent": "tine18",
       "at": "2026-08-18T00:39:51+00:00",
@@ -423,34 +429,14 @@
       "at": "2026-08-18T02:21:14+00:00",
       "task": "2.1d"
     },
-    "assets/source/harvestable_resources.blend": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
-    },
     "assets/source/loot_set.blend": {
       "agent": "tine18",
       "at": "2026-08-18T00:39:51+00:00",
       "task": "2.1j"
     },
-    "assets/source/mire_map_kit.blend": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
-    },
     "assets/source/playtest_hollow.blend": {
       "agent": "tine18",
       "at": "2026-08-18T17:43:02+00:00",
-      "task": "2.1j"
-    },
-    "assets/source/playtest_map.blend": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
-    },
-    "assets/source/tool_weapon_set.blend": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
     "assets/source/ward_set.blend": {
@@ -461,11 +447,6 @@
     "assets/source/wellspring_set.blend": {
       "agent": "tine18",
       "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
-    "assets/tools_weapons": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
     "assets/wards": {
@@ -576,10 +557,10 @@
       "task": "3.16"
     },
     "autoload/registry.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T23:19:22+00:00",
-      "hash": "f1b753d4669089ca05e7c5531bdfd85b1ed767b761ea7e7ec7b5a1b141098183",
-      "task": "3.17"
+      "agent": "hollow7",
+      "at": "2026-08-19T00:08:59+00:00",
+      "hash": "f2729f7bb5417d9775f37047d8e44a681deeb032ada74855232f822983a27b7a",
+      "task": "4.7"
     },
     "autoload/rule_service.gd": {
       "agent": "hollow7",
@@ -950,6 +931,12 @@
       "at": "2026-08-18T21:26:59+00:00",
       "hash": "f5cea6d082ca68cd6dde5bd1a4ab1786279197ef6b78840e532958ec45f00cd9",
       "task": "3.2"
+    },
+    "content/poi": {
+      "agent": "hollow7",
+      "at": "2026-08-19T00:08:59+00:00",
+      "hash": null,
+      "task": "4.7"
     },
     "content/powerups": {
       "agent": "slate17",
@@ -1581,11 +1568,6 @@
       "hash": "9f6bc8e573e107bdc1ab0844b190557b451e469480aa670fde8422df68e32596",
       "task": "3.16"
     },
-    "core/dev/dev_launch.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T23:25:50+00:00",
-      "task": "F-054"
-    },
     "core/dev/dev_loadout.gd": {
       "agent": "hollow7",
       "at": "2026-08-18T21:00:45+00:00",
@@ -1628,9 +1610,9 @@
     },
     "docs/ARCHITECTURE.md": {
       "agent": "hollow7",
-      "at": "2026-08-18T21:12:09+00:00",
-      "hash": "50580febeb33c633cbcbbafdb7638fe04c1bc24e9bc4bbe95d31184439676ccd",
-      "task": "3.15"
+      "at": "2026-08-19T00:08:59+00:00",
+      "hash": "38a6e3faaf3af9e44188f033850b5b0159490efd2ad46ad87ffc8c2b010beefb",
+      "task": "4.7"
     },
     "docs/ASSET_TRACKER.md": {
       "agent": "slate17",
@@ -1645,16 +1627,16 @@
       "task": "3.16"
     },
     "docs/DECISIONS.md": {
-      "agent": "lp",
-      "at": "2026-08-18T22:57:40+00:00",
-      "hash": "a54d412a3de17e63e7c1cf602af71f8dc86c9fe4d14041a837338e5e8c082547",
-      "task": "3.16"
+      "agent": "hollow7",
+      "at": "2026-08-19T00:08:59+00:00",
+      "hash": "897d2c42aac995c67627dd4ef01201f4decc6d7283b8344f8b49ea3d276b3944",
+      "task": "4.7"
     },
     "docs/DELEGATION.md": {
-      "agent": "lp",
-      "at": "2026-08-18T22:57:40+00:00",
-      "hash": "6cac276ab9b1bc77fb3d0bc681f40014252d02b7d503e2f0b4e73a2056fe2724",
-      "task": "3.16"
+      "agent": "hollow7",
+      "at": "2026-08-19T00:08:59+00:00",
+      "hash": "24272cdca701ceb9a31944bd9d4d7b053f400e5792c5abd497ac6affd365020f",
+      "task": "4.7"
     },
     "docs/FINDINGS.md": {
       "agent": "slate17",
@@ -2075,11 +2057,6 @@
       "hash": "8aa2bf01cc0b21e0f4ef560a3dfe5f64206ce01751e8152f47003cc3e5d7386f",
       "task": "2.1d"
     },
-    "tools/blender/build_crafting_stations.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
-    },
     "tools/blender/build_enemy_crawler.py": {
       "agent": "tine18",
       "at": "2026-08-18T00:39:51+00:00",
@@ -2095,39 +2072,9 @@
       "at": "2026-08-18T02:21:14+00:00",
       "task": "2.1d"
     },
-    "tools/blender/build_harvestable_resources.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
-    },
     "tools/blender/build_loot_set.py": {
       "agent": "tine18",
       "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/build_mire_map_kit.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/build_pickup_kit.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/build_playtest_hollow.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/build_playtest_map.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/build_tool_weapon_set.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
     "tools/blender/build_ward_set.py": {
@@ -2138,11 +2085,6 @@
     "tools/blender/build_wellspring_set.py": {
       "agent": "tine18",
       "at": "2026-08-18T00:39:51+00:00",
-      "task": "2.1j"
-    },
-    "tools/blender/detail_distribution.py": {
-      "agent": "tine18",
-      "at": "2026-08-17T23:34:54+00:00",
       "task": "2.1j"
     },
     "tools/blender/mat_cache_check.py": {
@@ -2212,10 +2154,10 @@
       "task": "F-128"
     },
     "tools/chunk_stream_check.gd": {
-      "agent": "wick20",
-      "at": "2026-08-18T20:59:26+00:00",
-      "hash": "7875f5f9c0a293dc5d4bdeadf2f4f5766359960490de84db720f06d752176a5b",
-      "task": "F-128"
+      "agent": "lm",
+      "at": "2026-08-19T00:21:07+00:00",
+      "hash": "db0ba5dfe3d00a1f9faec34a86f43e649a25ae629a9fa97e73e7a4437fbf3082",
+      "task": "F-132"
     },
     "tools/combat_net_check.gd": {
       "agent": "lp",
@@ -2271,16 +2213,6 @@
       "agent": "lp",
       "at": "2026-08-18T05:04:45+00:00",
       "task": "3.1"
-    },
-    "tools/day_night_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:13:02+00:00",
-      "task": "2.11"
-    },
-    "tools/day_night_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:13:02+00:00",
-      "task": "2.11"
     },
     "tools/dimension_check.gd": {
       "agent": "lm",
@@ -2450,11 +2382,6 @@
       "at": "2026-08-18T13:48:01+00:00",
       "task": "F-038"
     },
-    "tools/lan_launch_check.gd": {
-      "agent": "flint5",
-      "at": "2026-08-17T23:25:50+00:00",
-      "task": "F-054"
-    },
     "tools/lobby_menu_check.gd": {
       "agent": "moss11",
       "at": "2026-08-18T18:06:11+00:00",
@@ -2546,6 +2473,12 @@
       "agent": "lp",
       "at": "2026-08-18T13:55:00+00:00",
       "task": "F-079"
+    },
+    "tools/poi_check.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-19T00:08:59+00:00",
+      "hash": "303bb26659b755d943ab85476ba1b9da07f3da059d214eeeae59db34ffb5d83d",
+      "task": "4.7"
     },
     "tools/powerup_check.gd": {
       "agent": "reed16",
@@ -2737,10 +2670,10 @@
       "task": "F-133"
     },
     "world/chunk/chunk_streamer.gd": {
-      "agent": "wick20",
-      "at": "2026-08-18T20:59:26+00:00",
-      "hash": "1a75ddc1b59bc0964535ad45b77f875411542a858d3000e3929cd4beb3ee6830",
-      "task": "F-128"
+      "agent": "lm",
+      "at": "2026-08-19T00:21:07+00:00",
+      "hash": "0c963f8c4d118d39ced14b39be83e785a7df91d98d505b27b3ce9debcb2be2e3",
+      "task": "F-132"
     },
     "world/environment/asset_vfx_library.gd": {
       "agent": "vane19",
@@ -2830,6 +2763,18 @@
       "at": "2026-08-18T02:21:14+00:00",
       "task": "2.1d"
     },
+    "world/gen/poi_def.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-19T00:08:59+00:00",
+      "hash": "3ce7bc6639ed4292d1ad48a82ed65daca37930fe5cc753b40e8d2154269c168c",
+      "task": "4.7"
+    },
+    "world/gen/poi_map.gd": {
+      "agent": "hollow7",
+      "at": "2026-08-19T00:08:59+00:00",
+      "hash": "c368abd4d29830679a8af5bdd60d102312db69db19335eb2576b2dd16d6cc80d",
+      "task": "4.7"
+    },
     "world/gen/resource_scatter.gd": {
       "agent": "lm",
       "at": "2026-08-18T20:54:23+00:00",
@@ -2838,9 +2783,9 @@
     },
     "world/gen/resource_scatter_field.gd": {
       "agent": "lm",
-      "at": "2026-08-18T21:13:43+00:00",
-      "hash": "7a5320a4773896aae17261bd3f6201facafece5057def38d3343b2fbec1b1a85",
-      "task": "4.6"
+      "at": "2026-08-19T00:21:07+00:00",
+      "hash": "c474222fe03a89037cfda4952a32ed11825b82614f8b12ab2aa59ccfb837aaf6",
+      "task": "F-132"
     },
     "world/gen/scatter_def.gd": {
       "agent": "lm",
@@ -3590,9 +3535,11 @@
       "title": "Seed replication + client-side regeneration; mutable-state delta sync (`ARCHITECTURE.md` \u00a74)"
     },
     "4.7": {
+      "done_at": "2026-08-19T00:08:59+00:00",
+      "done_by": "hollow7",
       "est": "3",
       "milestone": "M4",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "POI placement: seeded Poisson-disc, Wellsprings + landmarks"
     },
@@ -3615,7 +3562,7 @@
     "5.1": {
       "est": "5",
       "milestone": "M5",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T2",
       "title": "Enemy AI framework: state machine, perception, telegraphed attacks, group behaviour"
     },
@@ -5055,9 +5002,11 @@
       "title": "The build module lives in one `.tres` and nothing else knows it"
     },
     "F-132": {
+      "done_at": "2026-08-19T00:21:07+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "A remote client's scattered harvestable proxy may have no host counterpart to reach, because `ChunkStreamer` streams per-peer independently"
     },
@@ -5218,6 +5167,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`core/render/mesh_merge.gd` builds an invalid surface at boot, so merged undergrowth silently draws nothing"
+    },
+    "F-154": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Two events in COMMANDS.md \u00a75.2's own illustrative hook vocabulary \u2014 `run_started`,"
     }
   },
   "version": 1

@@ -31,6 +31,19 @@ extends Node3D
 ## with no sqrt, cheap enough to run over hundreds of resident chunks (`NetInterest`'s circular
 ## filter runs over far fewer entities per peer per tick, which is why it can afford the sqrt-free
 ## squared-distance form instead — same idea, different shape for a different workload).
+##
+## **F-132's host contract.** A host that calls `set_anchors()` with only its own local player's
+## position never builds a chunk-resident harvestable proxy (`ResourceScatterField`, task 4.4) for a
+## point a REMOTE client's own local ring covers — that peer's `Harvestable.request_hit()`
+## `rpc_id(HOST_PEER_ID)` then has no node at that NodePath on the host to receive it, because
+## nothing here is anchored there. `set_anchors()` already takes an array for exactly this reason:
+## the host-side caller (whichever task first wires this into a live session — `docs/FINDINGS.md`
+## F-139) must pass the UNION of every connected peer's last-known position, its own included, not
+## just its own. Ring membership already unions correctly over an arbitrary anchor set (`_ring_distance()`
+## takes the nearest anchor, so a chunk stays resident as long as ANY anchor's ring reaches it) — no
+## API change was needed to support this, only the calling contract, verified in
+## `tools/chunk_stream_check.gd`'s union-of-interest section: two independent, far-apart anchors each
+## get their own resident, wired proxy from one streamer/field pair.
 
 const Mesher := preload("res://world/chunk/chunk_mesher.gd")
 const PlacementValidator := preload("res://systems/building/placement_validator.gd")

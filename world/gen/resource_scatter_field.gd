@@ -49,12 +49,18 @@ extends Node3D
 ## shipped (D-083). Going through `host_apply_damage()` also means the restore inherits the method's
 ## own authority gate for free: on a real client the call quietly no-ops, exactly as it should.
 ##
-## `docs/FINDINGS.md` F-132 is the one gap this does NOT close: `ChunkStreamer` runs independently
-## per peer (ARCHITECTURE.md §2.2), so a HOST whose own player is far from a REMOTE client's position
-## may have no holder loaded at that point at all — nothing exists there to receive the request the
-## client's own `Harvestable.request_hit()` would send, and nothing here writes to `WorldDeltaLog`
-## for a mutation that was never able to happen. Fixing that is a chunk-residency change on the HOST
-## side (F-132's own note on what it will look like), not a delta-log gap.
+## `docs/FINDINGS.md` F-132 (resolved) named this exact gap and its fix: the host's `ChunkStreamer`
+## must be anchored to the UNION of every connected peer's last-known position, not just its own
+## local player, so a remote client's own harvestable proxy always has a host-side counterpart at the
+## same NodePath to receive `Harvestable.request_hit()`'s `rpc_id(HOST_PEER_ID)`. That union-of-
+## interest mechanism needed no change here or in `ChunkStreamer` — `set_anchors()` already takes an
+## array, and this file already builds/tears down scatter per CHUNK, never per anchor, so any chunk
+## resident because of a REMOTE peer's anchor gets a proxy exactly like one resident because of the
+## host's own. `tools/chunk_stream_check.gd`'s union-of-interest section proves two independent,
+## far-apart anchors each get a live, wired `Harvestable` from one streamer/field pair. What is still
+## missing is a live caller that actually supplies that union — `docs/FINDINGS.md` F-139 tracks that
+## nothing yet instantiates `ChunkStreamer`/`ResourceScatterField` in the shipped game at all; whichever
+## task adds one must anchor the host's pair to every connected peer's position, not only its own.
 
 const ResourceScatterLib := preload("res://world/gen/resource_scatter.gd")
 const HarvestLib := preload("res://systems/harvesting/harvest_library.gd")
@@ -90,6 +96,14 @@ var _poll_accum: float = 0.0
 ## Connects to a running `ChunkStreamer` — a plain `Node3D`, per its own DELEGATION note, so this
 ## takes the general `Node` type and reaches its signals dynamically rather than depending on the
 ## class statically.
+##
+## **Call this before the streamer is given anchors to stream around, not after.** This file only
+## reacts to `chunk_mesh_ready`/`chunk_unloaded` as they FIRE — it never scans chunks already
+## resident on `streamer` at attach time — so attaching once `set_anchors()` has already settled a
+## ring leaves every one of those chunks without scatter until something forces them to reload.
+## `tools/chunk_stream_check.gd`'s union-of-interest section (F-132) hit exactly this ordering trap
+## while proving the multi-anchor case, which is why it's called out here rather than left to be
+## rediscovered.
 func attach_to_streamer(streamer: Node) -> void:
 	_streamer = streamer
 	streamer.chunk_mesh_ready.connect(_on_chunk_mesh_ready)
