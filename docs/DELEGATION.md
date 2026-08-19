@@ -4664,6 +4664,54 @@ real `EnemyWorld.host_spawn()` and asserts the three properties above on every m
 bin/agent godot --script tools/enemy_lod_check.gd` → 0 failures. `tools/wave_spawner_check.gd`
 (exercises the same spawn/despawn path heavily) stays green — no regression.
 
+### 2026-08-19 — F-159 fixed: `NavBaker` now bakes placed buildables around, not through — but the LIVE game does not run `NavBaker` yet
+
+`world/chunk/nav_baker.gd` — task 4.5's per-chunk baker — now connects directly to `BuildService`'s
+`piece_placed`/`piece_destroyed` signals inside `bind()` (autoload-to-autoload, the same pattern
+`BuildService._wire_mire_grid()` already uses) and tracks every placed piece as `{coord, position,
+yaw, size}` (`size` read from its `BuildableDef` via `/root/Registry` — the same field `BuildService.
+_generated_piece()` builds its physics collider from). `_source_geometry(coord)` folds each tracked
+piece into the SAME `NavigationMeshSourceGeometryData3D` as that chunk's terrain faces before baking —
+has to be one combined pass, since Recast carves a hole around solid geometry by seeing it alongside
+whatever it's carving; two independently-baked regions cannot composite into that result.
+
+**New public surface:**
+
+```gdscript
+baker.tracked_piece_count() -> int          # how many pieces NavBaker currently has geometry for
+NavBaker._box_faces(local_origin, yaw, size) -> PackedVector3Array   # static; 12 Recast-wound
+                                                                       # triangles for one piece's box
+```
+
+`_box_faces()` builds a closed box with one consistent outward-normal winding across all six faces,
+then runs the WHOLE buffer through the file's own `_wound_for_recast()` (now `static`, so this can
+call it) — reusing that function is what keeps every face correctly wound without re-deriving §6 trap
+1's inverted convention by hand per face. Copy this shape for any future non-terrain source geometry
+this file grows.
+
+**Invalidation:** placing/destroying a piece calls new `_rebake_chunk(coord)`, which re-queues a chunk
+that already has a region — the opposite of `request_bake()`'s existing dedupe guard, which exists to
+ignore a REDUNDANT `chunk_mesh_ready` for a chunk whose region is already correct. `_attach()` now
+frees a stale region before replacing it, so a rebake targeting an already-attached coord cannot leak
+the old RID or leave two regions on the map at once.
+
+`autoload/build_service.gd`'s `piece_destroyed` signal widened from `(def_id, owner_peer_id)` to
+`(def_id, owner_peer_id, piece_name, position)` — its node is already freed by the time the signal
+fires, so a listener that needs to find the piece's chunk (this one) needs both handed over rather
+than looked up. No existing listener connected to the old signature.
+
+**The gap this does NOT close:** `NavBaker` is not wired into the live game — nothing instantiates a
+`ChunkStreamer` in the actual playable level yet (F-139), so `bind()` is only ever called from `tools/
+nav_bake_check.gd`. The baker the shipped game runs today is `EnemyWorld.bake_navigation()`, which
+still has F-159's original gap untouched — filed separately as **F-177**, since fixing it needs
+`autoload/enemy_world.gd`, held by another lane (`lp`, task 5.5) for this entire session. Whoever wires
+a live `ChunkStreamer`/`NavBaker` pair (F-139) retires `EnemyWorld.bake_navigation()` in `NavBaker`'s
+favor and F-177 closes as a side effect — this fix is already sitting there waiting. Full reasoning:
+`docs/SPECS.md`'s F-159 block, `docs/DECISIONS.md` D-118.
+
+**Verify:** `tools/nav_bake_check.gd`, new `_check_buildable_obstruction()` — 0 failures, run twice.
+No regressions: `build_check.gd`, `build_net_check.gd`, `combat_check.gd` all `failures=0`.
+
 ---
 
 > **Historical documents — every task prompt from here down.** They predate D-021 (agents register

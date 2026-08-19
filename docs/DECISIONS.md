@@ -3211,3 +3211,44 @@ states, or a boss/enemy needs to see what a player is holding at a distance and 
 reads badly there, a dedicated FP-framed export earns its 2.1d batch — this decision only says the
 *first* viewmodel for these three doesn't need one. Re-litigate per item if art review (still pending
 across A-002, per `ASSET_TRACKER.md`'s review column) flags the reused geometry as reading wrong.
+
+---
+
+### D-118 · 2026-08-19 · F-159's fix lands in `NavBaker` (task 4.5), not `EnemyWorld.bake_navigation()` (the live baker) — a claim conflict, not a preference
+
+F-159 ("placed buildables are invisible to the nav map") is fixable in exactly one of two places: the
+per-chunk `NavBaker` task 4.5 shipped, or `EnemyWorld.bake_navigation()`, the single-region full-scene
+bake `EnemyWorld` actually runs at session bootstrap and `BuildService._request_nav_rebake()` re-
+triggers on every placement/destroy. Only the second one is what a live LOCAL/LAN/Steam session paths
+against today — `NavBaker` has no `ChunkStreamer` caller yet (F-139) and is exercised only by its own
+check script. Compositing a fix across BOTH files was considered and rejected: Recast carves a hole
+around solid geometry by seeing it in the SAME source data as whatever it's carving, so two
+independently-baked regions — one from each file — cannot produce that result no matter how they're
+layered or which one is "authoritative." The fix has to live entirely inside whichever file owns the
+one `parse_source_geometry_data` + `bake_from_source_geometry_data` call for a given piece of ground.
+
+`autoload/enemy_world.gd` was held by another lane (`lp`, task 5.5, boss framework) for this task's
+entire session — not stale, actively in flight. **This landed in `NavBaker` instead**, because F-159's
+own wording already scopes the fix there ("`world/chunk/nav_baker.gd` bakes navigation from
+`ChunkMesher.collision_faces()`... the finding sketches the fix") and names `tools/nav_bake_check.gd`
+as the verification path — a scope that does not depend on which system is live yet. The alternative
+this decision explicitly rejects: reparenting `BuildService`'s placed-piece container from the
+`BuildService` autoload into `get_tree().current_scene` so `EnemyWorld.bake_navigation()`'s existing
+`scene_root` walk would pick it up "for free," with no `enemy_world.gd` edit at all. Looks clever, but
+`EnemyWorld` itself keeps its OWN spawned content (`_container`/`_spawner`) as a child of the autoload
+for the same reason `BuildService` does — an autoload survives a scene reload and its own children do
+not need re-parenting after one, while anything hung off `current_scene` gets torn down with it. Moving
+only `BuildService`'s container would have coupled its lifecycle to the scene in a way nothing else in
+the codebase does, for a session-startup-order gain that saves editing one file this task could not
+claim anyway.
+
+**Consequence, tracked as F-177, not silently absorbed:** the live game still has F-159's original bug
+until F-139 wires a real `ChunkStreamer`, at which point `EnemyWorld.bake_navigation()` is expected to
+retire in `NavBaker`'s favor and F-177 closes for free — the fix is already sitting in `NavBaker`
+waiting for a caller.
+
+**Would change my mind:** if F-139 turns out to be scheduled much later than "after 4.7, possibly not
+until M4" (its own words), a live-game gap this concrete (agents visibly walking through walls in
+actual play) might be worth porting the same signal-based approach into `EnemyWorld.bake_navigation()`
+directly rather than waiting on the ChunkStreamer cutover — that is F-177's own "what closes this"
+already, not a re-litigation of this call, just a possible reprioritization of it.
