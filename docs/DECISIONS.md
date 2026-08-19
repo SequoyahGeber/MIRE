@@ -3085,6 +3085,15 @@ roguelike's meta-progression usually reads anyway. Either answer, once picked, m
 first real gate (loot table, then POI/enemy roster) a small, mechanical follow-up — this decision is
 about not shipping the WRONG answer by default, not about the gate being hard to wire technically.
 
+**2026-08-19 (lp, F-236) — `is_content_unlocked()` still has exactly one consumer.** Six more
+`content/unlocks/*.tres` rows shipped (all `category = "powerup"`, gating existing PowerupDefs that
+already roll in a real loot table — `docs/SPECS.md`'s F-236 block), but the only live gate remains
+`LootTableDef.roll()`'s POWERUP-kind check this decision already describes. An author who writes an
+`attunement`/`poi`/`enemy`/`cycle_modifier`/`island_modifier`/`cosmetic`/`loadout` row today ships a
+menu entry that spends real Salvage and marks itself purchased, but gates nothing — none of those
+seven categories has a callsite that asks `is_content_unlocked()` yet. Recording it here rather than
+letting the next author discover it by watching a purchased row change nothing.
+
 ### D-112 · 2026-08-19 · Task 7.8 adds no new §2.2 authority row; "packet loss / high latency" resolves to auditing what already exists, not simulating a wire
 
 Every prior task with an open `## §2.2` instruction to "declare a row" was shipping new simulated

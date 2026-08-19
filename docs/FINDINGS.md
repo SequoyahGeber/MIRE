@@ -387,8 +387,8 @@ run is played and why). All six are `category = "powerup"`, gating an existing P
 already rolls in a real `content/loot/*.tres` table — confirmed live before authoring against it
 (D-111/F-173: `is_content_unlocked()` currently has no consumer for the other seven §4.6 categories,
 so an `attunement`/`poi`/`enemy`/`cycle_modifier`/`island_modifier`/`cosmetic`/`loadout` row would
-sell but gate nothing yet — D-146 records this so the next author doesn't rediscover it the hard
-way). `tools/unlock_check.gd` gained `_check_authored_content()`, which now validates every
+sell but gate nothing yet — D-111's 2026-08-19 addendum records this so the next author doesn't
+rediscover it the hard way). `tools/unlock_check.gd` gained `_check_authored_content()`, which now validates every
 `content/unlocks/*.tres` file generically (not just the worked example): schema-clean, no two rows
 silently shadow the same `gates_id`, and every `powerup`-category row's `gates_id` both resolves to a
 real `PowerupDef` and actually appears as a POWERUP entry in an authored loot table. Verified:

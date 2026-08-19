@@ -7817,6 +7817,77 @@ made.
 
 ---
 
+## F-236 · Three shipped systems have essentially no content in them — the `unlocks/` third
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble. This block covers only the `unlocks/` row of the three the finding names.
+`cycle_modifiers/` has its own block at §6.3 (task 6.3, done); `ranged_weapons/` has no task id yet
+and stays open.
+
+**Authority:** none of its own — `UnlockDef` content is never network state, the same "every peer
+loads the identical `.tres`" shape every other content family uses. `docs/ARCHITECTURE.md` §2.2's
+"Unlocks" row (task 6.9, unchanged by this task) already covers the live state these definitions
+feed: per-player `user://unlocks.json`, no RPC, no two peers ever compare purchased sets.
+**Claim:** `content/unlocks/`, `systems/unlocks/unlock_def.gd`, `tools/unlock_check.gd`.
+
+**The gap this closes:** task 6.9 shipped the whole purchase/persistence/UI framework plus exactly
+one row, `unlock_deep_pocket.tres` (D-111's worked example). 6.6's superlinear reward curve and
+extract-vs-die split give a run something to bank; with one purchase available, Salvage had nothing
+left to spend on past a player's first extraction — the meta-progression loop that is supposed to be
+the reason to start a second run terminated immediately.
+
+**Six unlocks authored one at a time**, each gating an existing `PowerupDef` that already rolls in a
+real `content/loot/*.tres` table — confirmed live (`Registry.has_powerup()` + a real loot-table scan,
+not assumed) before authoring against it, per this task's own instruction:
+
+| id | cost | gates | loot tables it appears in | what changes about how a run is played |
+|---|---|---|---|---|
+| `unlock_loping_gait` | 75 | `loping_gait` (+5% sprint/stack, ×5) | `bog` | Cheapest row on purpose — the first Salvage spend a new run should make. Opens a sustained-sprint mobility build; doesn't make existing movement stronger, it makes chasing the stacks worthwhile |
+| `unlock_coin_worm` | 150 | `coin_worm` (+150% coin gain) | `gilded`, `sunken`, `wellspring` | Changes the RATE coins already in a run arrive, not the amount available — a "rush the crafting tree / buy out chests" run becomes a real choice rather than a wasted powerup slot |
+| `unlock_bottomless_quiver` | 175 | `bottomless_quiver` (90% arrow-save, ×1) | `gilded`, `sunken`, `wellspring` | Ranged play (task 5.3) lives or dies on ammo economy — without it, committing to a bow is a resource bet every fight; owning it makes sustained archery a build a player can plan a run around |
+| `unlock_thin_step` | 300 | `thin_step` (+0.04s dodge i-frames/stack, ×3) | `strongbox`, `sunken` | The tree's first pure-evasion row — lets a dodge-timed playstyle actually work as intended rather than merely existing |
+| `unlock_night_pyre` | 400 | `night_pyre` (+8% melee dmg at night/stack, ×5) | `boss`, `strongbox`, `sunken` | A risk/reward night-melee build: strongest exactly when the night cycle makes a run most dangerous, which is what makes it a sidegrade rather than a straight upgrade |
+| `unlock_cauter_seal` | 500 | `cauter_seal` (heal 1 HP/melee kill in range, ×5) | `boss`, `strongbox`, `sunken`, `wellspring` | Widest loot-table reach of the six, priced as the tree's current anchor. Turns aggressive melee itself into the sustain plan — only pays off if the player keeps closing distance and keeps landing kills, a build commitment rather than a buff |
+
+All six are `category = "powerup"` — the only category `is_content_unlocked()` has a live consumer
+for today (see below), the same constraint the worked example was already built under.
+
+**Schema gap confirmed, not worked around:** `UnlockDef` has no numeric stat/bonus field at all
+(D-111's own structural move, same shape D-044 used for `PowerupDef`) — "never power" is enforced by
+the schema, not a convention an author has to remember.
+
+**Traps for the next author, recorded so nobody rediscovers them the hard way:**
+- `is_content_unlocked()` has exactly one live consumer, `LootTableDef.roll()`'s POWERUP-kind gate
+  (D-111/F-173). An `attunement`/`poi`/`enemy`/`cycle_modifier`/`island_modifier`/`cosmetic`/
+  `loadout` row sells and persists correctly but gates nothing yet — see D-111's 2026-08-19
+  addendum in `docs/DECISIONS.md`.
+- Two `UnlockDef` rows must never share a `gates_id` — `is_content_unlocked()` answers via whichever
+  one `Registry.unlock_defs()`'s Dictionary iteration reaches, so the second would silently shadow
+  the first. `tools/unlock_check.gd`'s `_check_authored_content()` (new) asserts uniqueness across
+  every authored file, not just a hand-picked pair.
+
+**`tools/unlock_check.gd` gained `_check_authored_content()`**, which validates every
+`content/unlocks/*.tres` file generically instead of only the worked example: schema-clean
+(`validation_errors()` empty), no two rows share a `gates_id`, and every `powerup`-category row's
+`gates_id` both resolves to a real `PowerupDef` (`Registry.has_powerup()`) and actually appears as a
+POWERUP-kind entry in an authored loot table (`_all_loot_powerup_entry_ids()`, new helper) — so the
+check fails if a future row gates a powerup no chest ever offers, rather than passing on a
+decorative gate.
+
+**Verify:** `.agent/bin/agent godot --script tools/unlock_check.gd` → `UNLOCK_CHECK failures=0`
+(7 rows: the worked example + these six). Regression coverage inside the same script is unchanged —
+purchase flow, Salvage spend, chest-gate locked/unlocked, menu, save versioning all still pass.
+
+**Swept for the same shape:** grepped `is_content_unlocked` across every `.gd` file — three
+callsites (`autoload/unlock_service.gd`'s own definition, `autoload/reward_service.gd`,
+`systems/loot/chest.gd`), both consumers routing through the identical `LootTableDef.roll()` gate,
+no second half-wired consumer found. Grepped `content/unlocks/*.tres` for `gates_id` collisions by
+hand as a sanity check before relying on the new automated one — none.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

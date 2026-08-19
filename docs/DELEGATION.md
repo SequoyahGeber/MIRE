@@ -1852,6 +1852,22 @@ UnlockMenu.row_count() -> int
 MainMenu.request_open_unlocks() -> void   # new — closes MainMenu, opens UnlockMenu
 ```
 
+**2026-08-19 — F-236: six more rows shipped** (`unlock_loping_gait`/`unlock_coin_worm`/
+`unlock_bottomless_quiver`/`unlock_thin_step`/`unlock_night_pyre`/`unlock_cauter_seal`, all
+`category = "powerup"`, gating an existing `PowerupDef` already live in a real loot table —
+`docs/SPECS.md`'s F-236 block has the per-row table and reasoning). The tree is 7 rows, no longer
+just the worked example. `tools/unlock_check.gd` gained `_check_authored_content()`, which validates
+EVERY `content/unlocks/*.tres` file generically — schema-clean, no two rows share a `gates_id`, and
+every `powerup`-row's `gates_id` resolves to a real `PowerupDef` that actually appears as a POWERUP
+entry in an authored loot table. Run it after adding any new row; it catches a decorative gate
+(one that sells but nothing rolls against) before it ships.
+
+**Still true, unchanged by this task:** `is_content_unlocked()` has exactly one live consumer
+(`LootTableDef.roll()`'s POWERUP gate). A row in any of the other seven §4.6 categories
+(`attunement`/`poi`/`enemy`/`cycle_modifier`/`island_modifier`/`cosmetic`/`loadout`) will sell and
+persist but gate nothing until that category gets its own consumer — D-111's 2026-08-19 addendum in
+`docs/DECISIONS.md`.
+
 **Wired now, F-173 (see this file's own entry above for the shipped shape):** the worked example
 gates the real `deep_pocket` PowerupDef (already rolled by `content/loot/bog.tres`) through
 `LootTableDef.roll()`'s new `is_unlocked` Callable. **Still not built, D-111's other half:**
