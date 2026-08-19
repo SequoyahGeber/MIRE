@@ -309,7 +309,9 @@ checked against anything but relative deltas on the fastest machine in the proje
 
 ---
 
-### F-222 · Eight Blender preview generators render correctly only because an unrelated object happens to get created (or the camera type happens to get flipped) between their reposition and their render — no check would catch it if that incidental code is ever removed
+## Resolved
+
+### F-222 · Eight Blender preview generators render correctly only because an unrelated object happens to get created (or the camera type happens to get flipped) between their reposition and their render — no check would catch it if that incidental code is ever removed — **resolved**
 
 **Area:** art-pipeline · **Severity:** low · **Found:** 2026-08-19 by lm while closing F-207
 
@@ -345,8 +347,6 @@ is correct by construction rather than by incidental side effect. Verify with
 instruction.
 
 ---
-
-## Resolved
 
 **2026-08-19, slate17 — resolved by adding the check this finding says nobody has.**
 `tools/blender/preview_census.py` reads the shipped PNGs. It finds each sheet's subjects by column

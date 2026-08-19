@@ -5778,3 +5778,13 @@ Commit at time of writing: `8f5f9cf`
 Completed.
 
 Commit at time of writing: `e886819`
+
+---
+
+### DONE · F-222 · slate17 · 2026-08-19T17:26:05+00:00
+
+**Eight Blender preview generators render correctly only because an unrelated object happens to get created (or the camera type happens to get flipped) between their reposition and their render — no check would catch it if that incidental code is ever removed**
+
+Completed.
+
+Commit at time of writing: `2072f7e`
