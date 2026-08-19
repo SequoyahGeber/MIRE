@@ -75,6 +75,42 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-166 resolved: the Hollowmere map now has a `shipwreck` marker, so task 6.5's `ExtractionShip` is reachable in the live game (lm)
+
+**Supersedes** task 6.5's "Not reachable in the live game yet" note (below, ~line 1278) and the
+world-gen seams note that `extraction`/`objective` markers are "still unconsumed" (further below,
+~line 3852) — `extraction` is still unconsumed (it's a UI/label-only landmark kind,
+`tools/hollowmere_check.gd`'s `_check_markers` just requires it exist), but `shipwreck` is now live.
+
+`world/gen/layouts/hollowmere.json` gained one marker —
+`{"name":"Shipwreck","kind":"shipwreck","zone":"MereShore","pos":[62.0,1.54,29.0]}` — at the exact
+point the layout's own `extraction pad`/`cache`/`ward`/`rail`/`markers` props already built a dock
+around, with nothing ever placed on it. `autoload/extraction_service.gd` needed no change; it builds
+a live `ExtractionShip` there automatically the next time the scene constructs, same as
+`wellspring_service.gd`'s `"objective"` marker already proves.
+
+**For whoever next touches `world/gen/layouts/hollowmere.json`:** it is single-line minified JSON,
+~550 KB. Editing it by hand in an editor is impractical — load it with `json.load`, mutate the
+Python structure, and `json.dumps(data, separators=(",", ":"))` back out; that reproduces the file's
+existing compact formatting byte-for-byte apart from your actual change; diff it before committing.
+
+**`tools/hollowmere_check.gd` gained two things**, both worth knowing before extending it further:
+1. `_check_shipwreck_becomes_ship()` — finds the `shipwreck`-kind marker in the live scene and
+   asserts it has an `ExtractionShip_*` child, so the marker→live-object bridge is proven against the
+   *real* map, not just `tools/extraction_check.gd`'s synthetic one.
+2. `_probe_ground()`'s prop-collider skip now also skips any collider whose parent is in group
+   `&"wellspring"` or `&"extraction_ship"` — both drop a runtime-built `StaticBody3D` on the terrain
+   (`_build_collision()` in `wellspring.gd`/`extraction_ship.gd`) that was never in
+   `authored_world_prop` because it isn't a layout prop. This was a latent gap in the check itself
+   (Wellspring had the same exposure and just never got unlucky with the probe's seeded RNG) —
+   **any future live object built by a marker-bridge service with its own solid collision needs the
+   same group added here**, or a ground probe that happens to land on it will read as a false
+   terrain-collision failure.
+
+Verified: `agent godot --script tools/hollowmere_check.gd` → `HOLLOWMERE_CHECK PASS`,
+`HOLLOWMERE_SHIPWRECK marker=Shipwreck ship_built=true`. `agent godot --script tools/extraction_check.gd`
+→ `failures=0`, unaffected. Full writeup: `docs/SPECS.md` F-166 block.
+
 ### 2026-08-19 — F-161/F-165/F-169/F-178 closed: `PROTOCOL_VERSION` catch-up bump (20 → 21) plus `core/net/rpc_manifest.gd`, the mechanical check that replaces "remember to bump it" (lm)
 
 **The re-record workflow, for the next task that adds/removes/reshapes an RPC:** bump

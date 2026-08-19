@@ -5953,6 +5953,61 @@ a bookkeeping close-out.
 
 ---
 
+## F-166 · `world/gen/authored_world.gd` has no `shipwreck` marker kind, so task 6.5's ExtractionShip is built but never reachable in the live Hollowmere map — same shape as F-146's chest gap
+
+**Claim:** `world/gen/layouts/hollowmere.json`, `tools/hollowmere_check.gd`. The finding names
+`world/gen/authored_world.gd` as the file to hold, but that script only *reads* `markers` out of the
+layout — the actual data lives in `world/gen/layouts/hollowmere.json`, and that is the file the fix
+edits. Network authority: none — `authored_world.gd` builds identically on every peer (D-023's usual
+determinism argument for world gen), and `autoload/extraction_service.gd`'s own header already states
+the bridge it feeds has no authority of its own either.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Fix — one marker, not a code change.** `autoload/extraction_service.gd` was already correct; it
+just had nothing to find. The layout already carried the evidence for exactly where: an `"Extraction"`
+landmark marker (`kind: "extraction"`, used only as a UI/label requirement by
+`tools/hollowmere_check.gd`'s `_check_markers`, not consumed by any live-object bridge) sits at
+`MereShore [62.0, 1.54, 29.0]`, and the props array already has a whole authored dock built around
+that exact point — four `extraction pad`s in a square, plus `extraction cache`/`ward`/`rail`/`markers`
+— with no gameplay object ever placed on it. That is task 6.5's own unfinished half. Added one new
+marker, `{"name":"Shipwreck","kind":"shipwreck","zone":"MereShore","pos":[62.0,1.54,29.0]}`, at the
+same point — `extraction_service.gd` picks it up automatically, no gameplay-side change needed, same
+recipe `wellspring_service.gd`'s `"objective"` marker already proves. Edited the (minified, single-
+line) JSON with a small Python script rather than hand-editing 550 KB of text on one line.
+
+**Second gap the check surfaced, not in the finding text.** Building the real `ExtractionShip` at
+that marker for the first time exposed that `tools/hollowmere_check.gd`'s `_probe_ground` — which
+drops random rays and compares against the authored heightfield — only excludes hits on colliders in
+the `authored_world_prop` group. `ExtractionShip._build_collision()` (and `Wellspring._build_collision()`,
+same shape, same latent gap, never tripped because no probe happened to land on it) drop a solid
+`StaticBody3D` on top of the terrain at runtime, built by a bridge service rather than the layout, so
+neither is in that group. A probe landing on the new ship's hull read as a 3.9 m collision error and
+failed the check. Fixed by skipping any hit whose collider's parent is in `&"wellspring"` or
+`&"extraction_ship"` — the same groups those two `_ready()`s already call `add_to_group()` with — right
+alongside the existing `authored_world_prop` skip.
+
+**Verify:** `.agent/bin/agent godot --script tools/hollowmere_check.gd` → `HOLLOWMERE_MARKERS` now
+includes `"shipwreck": 1`, new `HOLLOWMERE_SHIPWRECK marker=Shipwreck ship_built=true` line (added to
+the check specifically to prove the bridge fires against the *real* map, not just
+`tools/extraction_check.gd`'s synthetic marker), `HOLLOWMERE_GROUND … worst_delta=0.000 m`,
+`HOLLOWMERE_CHECK PASS`. `.agent/bin/agent baseline --script tools/hollowmere_check.gd` against HEAD
+confirms the pre-fix state passed too (the ground-probe gap was invisible until this task's own
+marker gave it something to hit) — not a regression this task introduced into a previously-red check.
+`.agent/bin/agent godot --script tools/extraction_check.gd` still `failures=0`, unaffected.
+
+**Swept for the same shape elsewhere:** the other two marker-fed bridges in `autoload/` —
+`chest_placement_service.gd` (`"loot"`, F-146) and `wellspring_service.gd` (`"objective"`) — both
+already have markers in `hollowmere.json`; neither has this gap. `world/gen/layouts/playtest_hollow.json`
+has no `"shipwreck"` marker either, but `wellspring_service.gd`'s own header already documents that
+map as deprecated for new content (it predates POI placement) and it is not the map the live game
+ships, so it was left alone.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**
