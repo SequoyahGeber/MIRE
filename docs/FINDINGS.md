@@ -69,36 +69,6 @@ do is worth as much as the record of what we did.
 
 ## Open
 
-### F-248 · M8's real-App-ID dependency isn't encoded anywhere the board can see, so a task that needs it can surface as routable while 8.1/8.2 are still `todo`
-
-**Area:** process/tooling · **Severity:** low · **Found:** 2026-08-19 by lp during 8.11
-
-8.11 ("three depots wired to one app, per-platform launch options") showed up as a normal T1 `todo`
-task with no blocker flag, but its entire deliverable is impossible until task 8.2 (App ID swap)
-lands a real App ID — which itself needs task 8.1 (Steamworks account/tax/banking/$100 fee,
-Sequoyah's alone to run). D-132 had already called this out in prose for 8.4/8.11 specifically, but
-nothing in `.agent/state.json`/`agent brief`/`agent board` encodes "needs a real App ID" as a
-dependency, so an agent (or the director) discovers the block only by reading D-132 or SPECS.md —
-if either is missing or stale for a given task, the block isn't discoverable at all short of
-starting the task and hitting the wall, which is what happened here.
-
-**The same gap likely affects other M8 tasks that read as independently routable but aren't:** 8.3
-(achievements/stats/rich presence — real definitions need the real app), 8.5/8.6/8.7 (store page,
-trailer, Coming Soon — need the store page, which needs the App ID), 8.9 (build review submission).
-Not confirmed for each individually — that would need reading each one's own spec, which is outside
-this task's claim — but the shape (a T1/T0 task with no explicit prerequisite field, silently
-gated on 8.1/8.2's real-world paperwork) is the same one 8.11 just hit.
-
-**What would close this:** either a lightweight `depends_on` field on task rows the board can
-render as a blocker (e.g. `8.11 depends: 8.2`), or — cheaper — a standing note in `docs/NEXT.md` or
-at the top of M8's `ROADMAP.md` section listing which M8 tasks are unroutable until 8.1/8.2 ship, so
-the director doesn't have to rediscover this per-task. Left open rather than fixed here: changing
-`agent brief`/`agent board`'s rendering is harness work outside 8.11's own claim
-(`tools/steam/*`), and doing it well needs a design call (a real dependency graph vs. a one-line
-doc note) that deserves its own decision, not a rider on this task.
-
----
-
 ### F-020 · Steam sessions cannot use NetSession's direct-address auto-rejoin loop
 
 **Area:** netcode · **Severity:** medium · **Found:** 2026-08-16 by tine during 1.7
@@ -758,6 +728,55 @@ bit-identical, so this is a pure perf change with no output-changing risk to ver
 ---
 
 ## Resolved
+
+### F-248 · M8's real-App-ID dependency isn't encoded anywhere the board can see, so a task that needs it can surface as routable while 8.1/8.2 are still `todo` — **fixed**
+
+**Area:** process/tooling · **Severity:** low · **Found:** 2026-08-19 by lp during 8.11
+
+8.11 ("three depots wired to one app, per-platform launch options") showed up as a normal T1 `todo`
+task with no blocker flag, but its entire deliverable is impossible until task 8.2 (App ID swap)
+lands a real App ID — which itself needs task 8.1 (Steamworks account/tax/banking/$100 fee,
+Sequoyah's alone to run). D-132 had already called this out in prose for 8.4/8.11 specifically, but
+nothing in `.agent/state.json`/`agent brief`/`agent board` encodes "needs a real App ID" as a
+dependency, so an agent (or the director) discovers the block only by reading D-132 or SPECS.md —
+if either is missing or stale for a given task, the block isn't discoverable at all short of
+starting the task and hitting the wall, which is what happened here.
+
+**The same gap likely affects other M8 tasks that read as independently routable but aren't:** 8.3
+(achievements/stats/rich presence — real definitions need the real app), 8.5/8.6/8.7 (store page,
+trailer, Coming Soon — need the store page, which needs the App ID), 8.9 (build review submission).
+Not confirmed for each individually — that would need reading each one's own spec, which is outside
+this task's claim — but the shape (a T1/T0 task with no explicit prerequisite field, silently
+gated on 8.1/8.2's real-world paperwork) is the same one 8.11 just hit.
+
+**What would close this:** either a lightweight `depends_on` field on task rows the board can
+render as a blocker (e.g. `8.11 depends: 8.2`), or — cheaper — a standing note in `docs/NEXT.md` or
+at the top of M8's `ROADMAP.md` section listing which M8 tasks are unroutable until 8.1/8.2 ship, so
+the director doesn't have to rediscover this per-task. Left open rather than fixed here: changing
+`agent brief`/`agent board`'s rendering is harness work outside 8.11's own claim
+(`tools/steam/*`), and doing it well needs a design call (a real dependency graph vs. a one-line
+doc note) that deserves its own decision, not a rider on this task.
+
+---
+
+**Resolved 2026-08-19 by lp.** Fixed with the cheaper of the finding's own two options: a standing dependency note at the top of
+`docs/ROADMAP.md`'s M8 section (not `docs/NEXT.md` — that's where a director scanning by task id
+actually looks, and NEXT.md already warns against bloat). It names 8.1/8.2 as gating 8.5/8.6/8.7/8.9/8.11's
+real deliverable, and calls out 8.3/8.4 as the counter-example that shipped anyway against the
+placeholder App ID (D-132/D-148) — new information since the finding was filed, which is why "not
+confirmed for each individually" turned out to matter. `tools/roadmap_dependency_check.gd` (new,
+findings_numbering_check.gd's own SOURCE-TEXT-check style) is the regression guard: fails if the
+note disappears or any id it cites drifts out of the M8 table. A real `depends_on` board field
+(the finding's other, harder option) is deliberately left undone — real harness work and its own
+design call, not a rider on this fix.
+
+Verified: `.agent/bin/agent godot --script tools/roadmap_dependency_check.gd` — 0 failures, no
+undeclared ERROR: lines, all PASS (note present, every cited id still a real M8 table row, note
+mentions every GATED_ID and COUNTEREXAMPLE_ID it claims to).
+
+Swept for siblings: every other milestone header in docs/ROADMAP.md and every GATE: line in
+docs/SPECS.md gates on another task's shipped code, never on Sequoyah's own external paperwork — M8
+is the only milestone with this shape. Full SPECS.md block written (task 0 — none existed).
 
 ### F-241 · The chunk mesher rebuilds three noise objects for every one of a chunk's 1,089 samples — **fixed**
 

@@ -289,6 +289,19 @@ craft, not code, and this is where you can work indefinitely without spending qu
 
 See `STEAM.md` for the full checklist and the hard scheduling constraints.
 
+> **Dependency note (F-248):** most of this milestone reads as independently routable but isn't —
+> 8.1 (Steamworks account/tax/banking, real App ID) and 8.2 (swap App ID 480 → real) gate the actual
+> deliverable of **8.5, 8.6, 8.7, 8.9, 8.11**: none of those five can reach a real store page, a
+> submitted build, or real depot/launch-option wiring while the project is still running against the
+> placeholder App ID 480 (D-008). Route 8.0–8.2 first. This is *not* blanket — 8.3 and 8.4 both
+> shipped in full ahead of 8.1/8.2 by building the framework/tooling against the placeholder
+> (D-132's pattern: hard-refuse-to-run placeholders that 8.11 fills with the real IDs; D-148's
+> "framework, not the live App"), so a task reading as gated here may still have a real, finishable
+> slice — read its own row and SPECS.md block before assuming the whole task waits. No `depends_on`
+> field exists on task rows (that's real harness work, deliberately left undone — see F-248's
+> resolution); this note is the cheap standin the finding asked for, kept accurate by
+> `tools/roadmap_dependency_check.gd`.
+
 | # | Task | Tier | Est |
 |---|---|---|---|
 | 8.0 | **Name search** — Steam store + trademark search for "MIRE" (`STEAM.md` S1 calls this blocking; `DESIGN.md` header repeats it). Do before any store-page work; a rename after 8.5/8.7 costs the Coming Soon clock | T0 | 0.5 |

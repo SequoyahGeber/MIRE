@@ -8141,6 +8141,60 @@ is what its fix builds on.
 
 ---
 
+## F-248 · M8's real-App-ID dependency isn't encoded anywhere the board can see, so a task that needs it can surface as routable while 8.1/8.2 are still `todo`
+
+No block existed here beforehand; SPECS.md's own preamble makes writing one part of the task that
+discovers the gap.
+
+**Authority:** none — this is a docs/process finding, no runtime system involved.
+
+**Claim:** `tools/roadmap_dependency_check.gd` (new — no focused check existed for this shape).
+`docs/ROADMAP.md`, `docs/FINDINGS.md`, `docs/SPECS.md` are all `docs/` and need no claim (F-006).
+
+**The gap, confirmed still open before touching anything:** neither `.agent/state.json` nor
+`docs/NEXT.md` carried any trace of "M8 tasks past 8.2 need a real App ID" — `state.json`'s task
+rows have no `depends_on`/blocker field at all (checked every M8 id: 8.1–8.11 are plain
+`{status, title}`), and `docs/NEXT.md` has no standing note either. So the finding's warning that
+its own named files (`state.json`, `NEXT.md`) had changed since filing was a false alarm — the
+commits since were unrelated churn, not a fix.
+
+**What changed the picture since the finding was filed:** two of the tasks it flagged as suspect
+(not confirmed, by its own text) shipped in the meantime. 8.3 (achievements/stats/rich presence,
+D-148) and 8.4 (depot/build pipeline, D-132) both reached DONE *without* a real App ID, by building
+the framework/tooling against the placeholder (`STEAM_APP_ID=480`, D-008) rather than waiting. That
+is real information the original finding didn't have: **the dependency is not blanket across "reads
+as needing Steam"** — a task can still have a real, finishable slice even when its eventual full
+scope needs the real App ID. 8.5, 8.6, 8.7, 8.9 and 8.11 remain genuinely blocked on their actual
+deliverable (a real store page, a submitted build, real depot/launch-option wiring) — see the
+ROADMAP.md note for why each one specifically.
+
+**The fix:** chose the cheaper of the finding's own two options — "a standing note in
+`docs/NEXT.md` or at the top of M8's `ROADMAP.md` section" — over a `depends_on` field on task rows.
+A real field is harness work (`agent brief`/`board` rendering) plus its own design call (a flat
+field vs. a real dependency graph), which the finding explicitly said deserves its own decision, not
+a rider on this one. Put the note at the top of M8 in `docs/ROADMAP.md` (not `NEXT.md`) because
+that's where a director scanning tasks by id actually looks first, and because `NEXT.md` already
+carries an explicit warning against bloat-by-accretion for a file that loads every session.
+`tools/roadmap_dependency_check.gd` (new, `SOURCE-TEXT` check in `findings_numbering_check.gd`'s own
+style) is the standing regression guard: fails if the note disappears, or if any id it names
+(8.1/8.2/8.5/8.6/8.7/8.9/8.11, plus its own 8.3/8.4 counter-example) drifts out of the M8 table —
+the exact way a doc note rots silently otherwise.
+
+**Verify:** `agent godot --script tools/roadmap_dependency_check.gd` (new) — 0 failures, no
+undeclared `ERROR:` lines. Done means: the note lands, the check passes, and this finding moves to
+`## Resolved` in `docs/FINDINGS.md`.
+
+**Swept for siblings:** grepped every other milestone section header in `docs/ROADMAP.md` and every
+`GATE:` line in this file for the same shape (a hard real-world prerequisite with no board-visible
+marker) — M4's `GATE: 4.0a measured` and the per-task `**GATE: ...**` lines already ARE the
+board-adjacent marker this finding wanted for M8 (they're just prose in SPECS.md, not a state.json
+field, same gap in miniature) so no new instance found; M8 was the only milestone gated on
+Sequoyah's own external paperwork rather than on another task's shipped code.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**
