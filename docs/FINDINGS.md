@@ -581,47 +581,6 @@ tools/perf_probe.gd.
 
 ---
 
-### F-146 · Nothing in the game places a chest, so the gilded tier's 1-2/island budget has no owner
-
-**Area:** world-gen · **Severity:** medium · **Found:** 2026-08-18 by reed16
-
-`docs/ITEMS.md` §6 assigned four small things to task 3.5. Three of them — `LootEntry.kind`/`rarity`,
-`LootTableDef.roll`'s powerups bucket, and `Chest.cost_coins`/`locked_by` — were caught by F-140 and
-fixed inside 3.2. **The fourth was not**, and F-140 said so explicitly while resolving the rest:
-"a placement budget for `gilded` is still open and belongs to whatever places chests in the world."
-
-The reason it could not be fixed there is still true: **nothing places chests in the world at all.**
-`grep -rn chest --include='*.gd' world/` returns zero hits. `systems/loot/chest.gd` is a complete,
-net-authoritative, headlessly-proven chest that no world-generation code ever instantiates. All
-seven tiers are authored (`content/loot/{small,bog,strongbox,wellspring,gilded,sunken,boss}.tres`)
-and reachable through `Registry.get_loot_table`, so the content exists and the consumer does not.
-
-What the spec actually asks for, so it is not re-derived from scratch:
-
-- `ITEMS.md` §5 line 314 — **Gilded Chest** (`gilded`) is a "rare spawn (≈1–2/island) **or** a Gilded
-  Key", and is "unmistakable at distance". The count is a per-island budget, not a per-chunk
-  probability: a Poisson-disc or weighted-scatter pass that happens to average 1.5 per island is not
-  the same guarantee, and the "unmistakable at distance" clause means placement has to survive
-  whatever LOD/culling policy F-144 lands on.
-- `ITEMS.md` §6 item 4 — "A placement budget for `gilded` (≈1–2 per island) wherever chest placement
-  lands."
-- §5 also gives every other tier a spawn rule, so gilded is the *tightest* constraint but not the
-  only one this owner inherits.
-
-**Why this is not simply "part of 4.7".** Task 4.7 (POI placement: seeded Poisson-disc, Wellsprings +
-landmarks) is the obvious home, and probably is the home — but two things make it worth its own
-finding rather than a line inside that task. First, a per-island *count* budget is a different
-algorithm from Poisson-disc *spacing*, and 4.7's spec names spacing only. Second, F-139 records that
-`ChunkStreamer`/`ResourceScatterField` still have no real caller and the live game ships the authored
-Hollowmere map — so "per island" has no runtime meaning yet, and whoever takes this has to decide
-whether gilded chests are placed by the procedural pipeline (correct, but unreachable today) or hand-
-placed in the authored map as an interim (reachable, but throws the budget away at the D-092 switch).
-
-That decision is the finding. Filed rather than folded into F-140's resolution so it is not lost when
-F-140 moves to '## Resolved'.
-
----
-
 ### F-149 · F-141's docs edits got committed under F-144's message — a concurrent agent's plain 'git commit' absorbs another lane's staged-but-uncommitted files
 
 **Area:** coordination · **Severity:** low · **Found:** 2026-08-18 by lm
@@ -966,7 +925,122 @@ object"` to unlock_check.gd's finish() print, same shape chest_check.gd already 
 
 ---
 
+### F-183 · Wellspring caps and boss kills never grant a Chest — `wellspring`/`boss` tier loot tables are authored and reachable, but nothing ever rolls them
+
+**Area:** loot · **Severity:** medium · **Found:** 2026-08-19 by lp while closing F-146
+
+F-146 gave every WORLD-PLACED chest tier a real owner (`autoload/chest_placement_service.gd`), but
+`docs/ITEMS.md` §5 names two tiers that were never meant to sit in the world at all: "Wellspring
+Chest (`wellspring`) | granted on a cap — never priced" and "Boss Cache (`boss`) | guardian / titan
+kills". Neither `systems/wellspring/wellspring.gd`'s cap flow (`_finish_cap()`, D-092's
+`wellspring_capped` event) nor anything under `systems/enemies/` (`boss.gd`, `boss_phase_def.gd`)
+ever constructs a `Chest`, calls `LootTableDef.roll()`, or otherwise reads `content/loot/wellspring
+.tres`/`content/loot/boss.tres` — confirmed by grep, zero hits for `Chest`/`LootTableDef`/`roll(` in
+either file. Both tables are authored and pass `tools/loot_content_check.gd`'s id-resolution sweep,
+so the content is not the gap — same shape F-146 itself was before this task, just for a different
+trigger than "a marker exists".
+
+This is a real, if smaller, version of F-146's own root cause: a `LootTableDef` with no caller pays
+for authoring and gets nothing back. Unlike F-146, this is NOT a placement problem — a Wellspring cap
+and a boss kill are events, not positions, so `ChestPlacementService`'s marker-bridge pattern does
+not apply. The right shape is closer to `PowerupService.host_grant()`'s direct-call seam: the host
+process rolls the table itself (no `Chest` node needed at all, since there is nothing in the world to
+open — the reward should just land in the capping/killing party's inventory the moment the trigger
+fires) or, if a physical reward chest at the Wellspring/boss arena is the intended presentation
+(closer to what `loot_chest_wellspring_open`'s existing decorative placement at the Blight landmark
+suggests), a `Chest` instanced at the trigger's own position with `tier` set and `cost_coins = 0`,
+`locked_by = &""` (both are already-granted rewards, never gated).
+
+Whoever takes this needs a design call this finding does not make: grant the roll directly into
+inventory the moment the trigger fires, or spawn a real `Chest` at the trigger site for players to
+walk up and open. `docs/DESIGN.md` §4.4's "publish a jackpot to the team" social-decision framing
+(referenced by `tools/powerup_net_check.gd`'s own comments) argues for the latter — a chest a
+teammate can see is a decision made in front of the group, not a silent inventory grant — but that
+is a playtest-worthy claim, not a decided one.
+
+---
+
+### F-184 · `tools/audio/audio_check.py`'s exit code is inverted — it exits 0 when checks FAIL and 1 when they PASS
+
+**Area:** audio · **Severity:** low · **Found:** 2026-08-18 by lm during F-176
+
+`audio_check.py:122` is `sys.exit(0 if failures else 1)` — Python's conditional expression returns
+the first branch when the condition is truthy, so this exits `0` (success) when `failures` is
+nonzero and `1` (failure) when `failures == 0`, exactly backwards from every other check script in
+the repo (`*_check.gd`, `repro_check.py`) and from what any CI/pre-commit gate calling `$?` would
+assume. Confirmed live: `python3 tools/audio/audio_check.py` prints all `PASS` lines and
+`AUDIO_CHECK failures=0`, then exits `1`.
+
+Not fixed here — `tools/audio/audio_check.py` was not in this task's claim. One-line fix:
+`sys.exit(1 if failures else 0)`, same shape `tools/audio/repro_check.py` (written alongside this
+finding) already uses correctly.
+
+---
+
 ## Resolved
+
+### F-146 · Nothing in the game places a chest, so the gilded tier's 1-2/island budget has no owner — **fixed**
+
+**Area:** world-gen · **Severity:** medium · **Found:** 2026-08-18 by reed16
+
+`docs/ITEMS.md` §6 assigned four small things to task 3.5. Three of them — `LootEntry.kind`/`rarity`,
+`LootTableDef.roll`'s powerups bucket, and `Chest.cost_coins`/`locked_by` — were caught by F-140 and
+fixed inside 3.2. **The fourth was not**, and F-140 said so explicitly while resolving the rest:
+"a placement budget for `gilded` is still open and belongs to whatever places chests in the world."
+
+The reason it could not be fixed there is still true: **nothing places chests in the world at all.**
+`grep -rn chest --include='*.gd' world/` returns zero hits. `systems/loot/chest.gd` is a complete,
+net-authoritative, headlessly-proven chest that no world-generation code ever instantiates. All
+seven tiers are authored (`content/loot/{small,bog,strongbox,wellspring,gilded,sunken,boss}.tres`)
+and reachable through `Registry.get_loot_table`, so the content exists and the consumer does not.
+
+What the spec actually asks for, so it is not re-derived from scratch:
+
+- `ITEMS.md` §5 line 314 — **Gilded Chest** (`gilded`) is a "rare spawn (≈1–2/island) **or** a Gilded
+  Key", and is "unmistakable at distance". The count is a per-island budget, not a per-chunk
+  probability: a Poisson-disc or weighted-scatter pass that happens to average 1.5 per island is not
+  the same guarantee, and the "unmistakable at distance" clause means placement has to survive
+  whatever LOD/culling policy F-144 lands on.
+- `ITEMS.md` §6 item 4 — "A placement budget for `gilded` (≈1–2 per island) wherever chest placement
+  lands."
+- §5 also gives every other tier a spawn rule, so gilded is the *tightest* constraint but not the
+  only one this owner inherits.
+
+**Why this is not simply "part of 4.7".** Task 4.7 (POI placement: seeded Poisson-disc, Wellsprings +
+landmarks) is the obvious home, and probably is the home — but two things make it worth its own
+finding rather than a line inside that task. First, a per-island *count* budget is a different
+algorithm from Poisson-disc *spacing*, and 4.7's spec names spacing only. Second, F-139 records that
+`ChunkStreamer`/`ResourceScatterField` still have no real caller and the live game ships the authored
+Hollowmere map — so "per island" has no runtime meaning yet, and whoever takes this has to decide
+whether gilded chests are placed by the procedural pipeline (correct, but unreachable today) or hand-
+placed in the authored map as an interim (reachable, but throws the budget away at the D-092 switch).
+
+That decision is the finding. Filed rather than folded into F-140's resolution so it is not lost when
+F-140 moves to '## Resolved'.
+
+---
+
+**Resolved 2026-08-19 by lp.** Fixed in two parts. (1) autoload/chest_placement_service.gd: a new runtime bridge (same
+wellspring_service.gd/crafting_service.gd pattern) that turns any authored_world_marker
+(kind == "loot") into a live Chest, keyed off the marker's own name -- Cache_<n> -> tier
+small (the 8 already-shipped waymark caches, live for the first time); Chest_<tier>_<n> ->
+tier verbatim, cost/lock from a small economy table (D-122). (2)
+tools/mapgen/hollowmere_layout.py gained build_gilded_chests(): 2 new Chest_gilded_<n>
+markers placed through the ordinary slope/water/clearance/road rules, plus a validate()
+assertion that fails the generator build if the gilded count is ever outside 1-2 --
+world/gen/layouts/hollowmere.json regenerated and confirmed byte-identical on a second run.
+
+Verified: agent godot --script tools/chest_placement_check.gd -> failures=0, run twice,
+against the REAL Hollowmere main_scene boot (all 8 Cache_ markers bridged to an openable
+free Chest; both gilded markers bridged to a Chest locked by gilded_key; a live free chest
+opens end to end through InventoryService; a live gilded chest is correctly refused without
+the key). python3 tools/mapgen/hollowmere_layout.py -> HOLLOWMERE_VALIDATE PASS. agent godot
+--quit-after 120 -> clean boot, no new ERROR lines. tools/chest_check.gd,
+tools/loot_content_check.gd, tools/entity_check.gd all still failures=0 (chest.gd itself
+untouched). Design calls (gilded is key-only; bog/strongbox get the coin-gate half of their
+economy; sunken stays unpriced) recorded as D-122 -- Chest has no either/or gate mode, so a
+placed instance can only express one. wellspring/boss tier chest-granting is a different,
+still-open gap, filed as F-183.
 
 ### F-173 · `UnlockService.is_content_unlocked()` (task 6.9) has no caller anywhere in the game — wiring the first real gate needs a cross-peer design decision, not just a call site — **fixed**
 

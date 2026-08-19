@@ -4154,6 +4154,127 @@ verification surfaced (`tools/unlock_check.gd`'s corrupt-save test has no
 
 ---
 
+## F-146 · Nothing in the game places a chest, so the gilded tier's 1-2/island budget has no owner
+
+**Claim:** `autoload/chest_placement_service.gd`, `tools/mapgen/hollowmere_layout.py`,
+`world/gen/layouts/hollowmere.json`, `tools/chest_placement_check.gd` (+ its `.uid`), `project.godot`
+(autoload registration only, via `agent autoload`), `docs/FINDINGS.md`, `docs/SPECS.md`,
+`docs/DECISIONS.md`, `docs/DELEGATION.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Root cause:** two gaps, not one. `systems/loot/chest.gd` was a complete, net-authoritative,
+headlessly-proven chest that nothing in `world/` ever instantiated — `grep -rn chest --include='*.gd'
+world/` returned zero hits, exactly as F-146 recorded. But `tools/mapgen/hollowmere_layout.py`
+already had HALF the content: 8 `Cache_<n>` markers (`kind == "loot"`) sitting next to 8
+already-shipped `loot_chest_small_closed` decorative props (the "waymarks and loot worth walking to"
+loop, task 4.7-era authoring) — a marker with no code that ever read it. The gilded tier had neither
+half: no marker, no budget, no owner, matching F-140's own note while resolving 3.5's other three
+items ("a placement budget for gilded is still open and belongs to whatever places chests in the
+world").
+
+**Fix, two parts:**
+
+1. **`autoload/chest_placement_service.gd`** — a runtime bridge, same shape
+   `wellspring_service.gd`/`crafting_service.gd` already use for `authored_world.gd`'s other marker
+   kinds: watches `authored_world_marker` (`kind == "loot"`), reads a tier out of the marker's own
+   NAME (`"Cache_<n>"` → `small`; `"Chest_<tier>_<n>"` → `<tier>` verbatim), and instances a live
+   `Chest` there with per-tier `cost_coins`/`locked_by` from a small economy table. Authority: none
+   of its own (deterministic, identical build on every peer — see docs/ARCHITECTURE.md §2.2's new
+   row). This alone gives the 8 shipped `Cache_` markers their first live gameplay consumer — they
+   have been decorative-only since task 4.7.
+2. **`tools/mapgen/hollowmere_layout.py`** gained `build_gilded_chests()`: two `"Chest_gilded_<n>"`
+   markers (`SouthMarsh` and `StoneMoor`, picked because both cleared the ordinary
+   slope/water/clearance/road placement rules with room to spare — `force` stays False, unlike the
+   waymark loop's, because a rare chest should not need to be forced through a wall to exist), using
+   `loot_chest_reinforced_closed` as a placeholder mesh (no gilded-tier asset exists yet, A-047 is
+   still queued per ITEMS.md §7 — swap the asset the day it ships, nothing else about the placement
+   changes). `validate()` now re-derives the count from `markers` itself and fails the generator
+   build if it is ever outside 1-2 — the budget is enforced at content-generation time, not just
+   documented. `world/gen/layouts/hollowmere.json` regenerated; byte-identical on a second run
+   (determinism preserved, D-017/D-028).
+
+**Design calls this task made, not re-litigated elsewhere — see D-122:** gilded is **key-only**
+(`locked_by = &"gilded_key"`, `cost_coins = 0`) — ITEMS.md's item catalog is unambiguous ("Gilded Key
+... opens the Gilded Chest", line 243) even though the chest-table column's "≈1-2/island **or** a
+Gilded Key" phrasing reads more loosely. Bog/strongbox get the coin-gate half of their own
+"or a key" economy (`Chest._accept_open_request()` charges `cost_coins` AND `locked_by` in ONE
+transaction — it has no either/or mode, so a single placed instance can only express one gate); no
+map content places either tier yet, so this is the table ready for whoever does. Sunken stays
+unpriced ("risk-priced rather than coin-priced", ITEMS.md §5) — the hazard IS the price, not
+something `Chest`'s two gates can express, so this bridge does not place sunken chests at all
+pending a real hazard-placement pass.
+
+**Not fixed here, on purpose:** `wellspring`/`boss` tier chests are event-granted (a Wellspring cap,
+a boss kill), not world-scattered — genuinely a different owner, out of this finding's "placement"
+scope; filed as F-183 since neither currently has one either. Sunken/bog/strongbox get the bridge's
+economy table but no map markers yet — the finding named gilded's budget specifically, and adding
+map content for tiers nobody asked to place yet would be scope creep past what F-146 actually found
+broken.
+
+**Verify:** `agent godot --script tools/chest_placement_check.gd` — boots the REAL `main_scene`
+(Hollowmere), not a synthetic stand-in: all 8 shipped `Cache_` markers get a live, free, openable
+`small`-tier `Chest`; the gilded markers land within the 1-2 budget, locked by `gilded_key`, no coin
+price; a live free chest actually opens end to end (roll → grant → `InventoryService`); a live gilded
+chest is actually refused without the key, with a "locked" detail naming it. A fourth section adds
+synthetic markers to cover what a fixed live map cannot: wrong `kind`, an unrecognised name prefix,
+and idempotency across a second rescan. Plus `tools/mapgen/hollowmere_layout.py` itself —
+`HOLLOWMERE_VALIDATE PASS`, its own budget assertion included.
+
+**Verified 2026-08-19 (lp):** `python3 tools/mapgen/hollowmere_layout.py` → `HOLLOWMERE_VALIDATE PASS`,
+JSON byte-identical on a second run. `agent godot --script tools/chest_placement_check.gd` →
+`failures=0`, run twice. `agent godot --quit-after 120` → clean boot, no new `ERROR:` lines.
+`tools/chest_check.gd`, `tools/loot_content_check.gd`, `tools/entity_check.gd` all still
+`failures=0` — this task's bridge does not touch `chest.gd` itself, and none regressed.
+
+---
+
+## F-176 · `tools/audio/render_music.py`'s ambient tracks are not byte-identical on re-render, contradicting `docs/AUDIO.md`'s "reproduces the committed files bit-for-bit" claim
+
+**Claim:** `tools/audio/render_music.py`, `tools/audio/repro_check.py`, `docs/AUDIO.md`,
+`docs/FINDINGS.md`, `docs/SPECS.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Root cause — two, not one, and neither is what the finding guessed.** The finding suspected the
+divergence lived entirely in the OGG encode step. Re-rendering twice on this machine showed the
+master **WAVs themselves** differ between runs (not just the OGGs), which the fixed-seed synthesis
+should never allow. `pad_note_spans()` in `render_music.py` builds `wanted = set(notes)` and then
+does `for note in wanted: active.setdefault(note, t)` — Python randomizes a `set`'s string
+iteration order per process (`PYTHONHASHSEED`), and `render_track()`'s pad loop draws from a single
+shared seeded `rng` once per span, in the order `pad_note_spans` yields them. A hash-randomized
+iteration order silently reordered those `rng` draws every run, so the fixed seed never actually
+pinned the output — this is real, and predates this finding; F-176 just mis-attributed the symptom
+to encoding. Separately, and unrelated to the above, the OGG **container** is never going to be
+byte-identical even given byte-identical PCM input: libsndfile's OGG writer stamps a random 32-bit
+per-stream serial number into every page's header on each encode (part of the OGG container spec,
+not a MIRE bug), which also perturbs each page's CRC. Decoded audio content is unaffected either
+way.
+
+**Fix:** `pad_note_spans()` now iterates `sorted(wanted)` instead of the raw `set`, making note
+insertion order (and therefore every downstream `rng` draw) independent of the process hash seed.
+`docs/AUDIO.md`'s claim is reworded to say precisely what's true: the PCM synthesis/master `.wav`
+files are bit-for-bit reproducible; the shipped `.ogg` files are not byte-identical across encodes
+(container serial number/CRC only) but decode to bit-identical PCM.
+
+**Verify:** new `tools/audio/repro_check.py` renders `render_music.py` twice into throwaway temp
+dirs (never touching `assets/audio/music/`) and asserts (a) the two runs' master `.wav` files are
+byte-identical, (b) the two runs' `.ogg` files decode (via `soundfile`) to bit-identical PCM.
+Fixed a copy-paste exit-code inversion while writing it — see F-184.
+
+**Verified 2026-08-18 (lm):** `python3 tools/audio/repro_check.py` → `REPRO_CHECK failures=0`, all
+6 checks (3 tracks × wav+ogg) PASS, exit 0, run twice. Also reproduced the pre-fix bug directly:
+before the `sorted()` change, `ambient_day.wav` and `ambient_night.wav` differed byte-for-byte
+across two consecutive re-renders on this machine (peak dBFS drifted ±0.5 dB run to run); after the
+fix, identical across repeated runs both with a forced `PYTHONHASHSEED=0` and with Python's default
+randomized hash seed. Did not regenerate the committed `assets/audio/music/*.ogg` files — they were
+rendered under the pre-fix code and remain valid audio; this task only makes *future* re-renders
+reproducible. `git status assets/audio/music/` confirmed clean throughout.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

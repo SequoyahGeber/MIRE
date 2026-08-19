@@ -3325,3 +3325,83 @@ raising the cap is a one-constant change, not a design reversal. A future task t
 proof identifiers (an achievement system, a save file keyed by name) should key on the peer id or a
 persistent account id, never on display name — this decision does not make display names unique and
 nothing should assume they are.
+
+### D-121 · 2026-08-19 · F-177's fix lands directly in `EnemyWorld.bake_navigation()` as a second parse-and-merge, not a port of `NavBaker`'s per-piece box-tracking approach
+
+D-118 recorded why F-159's fix landed in `NavBaker` instead of the live baker (a claim conflict, not a
+preference) and left F-177 as the tracked consequence. With `autoload/enemy_world.gd` free this
+session, F-177's own text sketches the port explicitly: "the same signal-based approach
+(`piece_placed`/`piece_destroyed` from `BuildService`, folded into
+`NavigationMeshSourceGeometryData3D` before the ONE bake call, box faces via the same convention
+`NavBaker._box_faces()` establishes) should be ported there directly." This decision is choosing NOT
+to do that, and shipping a smaller fix instead.
+
+**Why not the port.** `NavBaker`'s box-tracking exists to solve a problem `EnemyWorld.bake_navigation()`
+does not have: `NavBaker` bakes ONE CHUNK at a time, incrementally, as chunks stream in and out, so it
+needs to remember every placed piece's `{coord, position, yaw, size}` between bakes to fold the right
+subset into each chunk's source geometry — and it needs a `BuildableDef.size`-derived synthetic box
+(`_box_faces()`) because it has no scene tree to walk; its terrain source is raw `ChunkMesher` triangle
+data, not a `StaticBody3D`. `EnemyWorld.bake_navigation()` does neither of those things: it re-parses
+`get_tree().current_scene` from scratch on every single call (session bootstrap, and every debounced
+`BuildService._request_nav_rebake()`), full-scene, synchronous, with no per-piece state carried between
+calls. Porting the tracking dictionary and the synthetic-box geometry into a baker that already
+re-derives everything from the live scene tree on every call would be solving the same problem twice
+with two different mechanisms in the same codebase, for no accuracy gain — worse, actually: a
+synthetic box reconstructed from `size` describes the same idealized footprint every unauthored piece
+gets, where re-parsing the piece's REAL `StaticBody3D`/`CollisionShape3D` (whatever `BuildService.
+_generated_piece()` built, or whatever an authored `.tscn` like `ward.tscn` actually contains) is
+already sitting right there in the tree, exactly the same way the terrain half of the bake already
+reads it.
+
+**What shipped instead.** `bake_navigation()` walks `scene_root` exactly as before (terrain, and
+anything else the level itself contains), then makes a SECOND `parse_source_geometry_data()` call
+rooted at `/root/BuildService/Buildings` — the placed-piece container, which is a *sibling* of the
+level under `/root`, not a descendant of `scene_root`, and was therefore invisible to the walk before
+this fix (F-177's actual bug, not a Recast limitation) — into a second
+`NavigationMeshSourceGeometryData3D`, then `.merge()`s that into the first before the single
+`bake_from_source_geometry_data()` call. Still ONE combined bake pass, same "Recast carves a hole by
+seeing everything together" requirement D-118 already established; just two parses feeding it instead
+of a tree walk plus a manually-authored triangle buffer.
+
+**Would change my mind:** if `EnemyWorld.bake_navigation()` ever moves off a full-scene reparse
+(e.g. picks up its own per-region incremental bake rather than re-baking the whole level on every
+placement), the per-piece bookkeeping `NavBaker` already has becomes the right shape again and this
+decision should be revisited. Until then, F-139 wiring a live `ChunkStreamer`/`NavBaker` pair is still
+what D-118 expected to retire this file outright — this decision does not change that trajectory, it
+just makes the interim state (however long F-139 takes) correct rather than merely documented as a
+known gap.
+
+### D-122 · 2026-08-19 · A placed chest picks ONE gate (coins or a key), never both — gilded is key-only, bog/strongbox are coin-gated, sunken is neither
+
+F-146 (chest world placement) needed a per-tier `cost_coins`/`locked_by` for every marker
+`autoload/chest_placement_service.gd` instances, and `docs/ITEMS.md` §5's "Getting in" column reads
+looser than `Chest` can actually express: Strongbox is "~60 coins **or** a Rusted Key", Gilded is
+"rare spawn (≈1-2/island) **or** a Gilded Key". `Chest._accept_open_request()` charges
+`cost_coins` AND `locked_by` together in ONE transaction (`removals[COIN_ITEM_ID] = price;
+removals[locked_by] = 1`) — there is no either/or mode, by design (a single atomic grant-or-nothing
+transaction, not a menu of payment options). A placement-time decision has to pick one gate per
+instance, and this decision records which:
+
+- **Gilded is key-only** (`cost_coins = 0`, `locked_by = &"gilded_key"`). The item catalog itself is
+  unambiguous — `docs/ITEMS.md` line 243: "Gilded Key ... opens the Gilded Chest" — with no mention
+  of a coin alternative anywhere outside the chest table's own looser phrasing. Read the "≈1-2/island"
+  half of that cell as the RARITY clause and "or a Gilded Key" as the only real gate; there is no coin
+  price to fall back to.
+- **Bog and strongbox are coin-gated** (25 and 60 respectively, `locked_by = &""`) — the coin half of
+  their own "or a key" economy, picked because it needs no key item to already exist in a run before
+  the first one can ever open, and because no map content places either tier yet (this task only
+  budgeted gilded), so there is no existing instance whose behavior this could contradict. A Rusted
+  Key-gated strongbox is a legitimate SECOND instance for whoever places bog/strongbox chests for
+  real, not a mode this one instance needs to also support.
+- **Sunken is neither** (`cost_coins = 0`, `locked_by = &""`) — `docs/ITEMS.md` §5 calls it
+  "risk-priced rather than coin-priced": the hazard of reaching it (Mire border, deep fen, drowned
+  cellar) is the price, and `Chest` has no way to charge that. This bridge does not place sunken
+  chests at all yet (no hazard-placement pass exists to pick real coordinates), so the table entry is
+  a placeholder for whoever adds one.
+
+**Would change my mind:** if `Chest` ever grows a genuine either/or gate (accept EITHER the coins OR
+the key, whichever the opener has), a placed instance could offer both again and this table would
+collapse to whatever ITEMS.md's column literally says. Nothing today asks for that — the two-gate
+column reads as flavor text describing a tier's overall economy, not a mechanic spec, and every
+tier this task actually placed (gilded) has an unambiguous single answer once the item catalog's own
+key-description line is read as authoritative over the looser table cell.

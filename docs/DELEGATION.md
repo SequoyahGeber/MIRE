@@ -4908,6 +4908,64 @@ back to the straight line after `request_destroy()`. No regressions: `build_chec
 
 ---
 
+### 2026-08-19 — F-146 fixed: `ChestPlacementService` gives every authored `loot` marker a live `Chest`, and the gilded tier finally has its 1-2/island budget
+
+**What shipped, verified:** `autoload/chest_placement_service.gd` — a runtime bridge, same split
+`wellspring_service.gd`/`crafting_service.gd` already use for `authored_world.gd`'s other marker
+kinds. Registered via `agent autoload` (F-051), append-only in `project.godot`.
+
+```gdscript
+# authored_world_marker (kind == "loot"), name-keyed — the ONLY input this bridge reads:
+#   "Cache_<n>"        -> Chest.tier = &"small",  cost_coins = 0,  locked_by = &""
+#   "Chest_<tier>_<n>" -> Chest.tier = &"<tier>",  cost_coins/locked_by from _ECONOMY_FOR_TIER
+# Any other loot marker, or any other marker kind, is left alone.
+```
+
+**The 8 shipped `Cache_` markers now do something.** They have existed since task 4.7-era authoring
+(`tools/mapgen/hollowmere_layout.py`'s "waymarks and loot worth walking to" loop) as a decorative
+`loot_chest_small_closed` prop plus an inert marker — this bridge is their first live gameplay
+consumer, no map content changed to get it.
+
+**The gilded budget:** `tools/mapgen/hollowmere_layout.py` gained `build_gilded_chests()` — 2 new
+`"Chest_gilded_<n>"` markers, `SouthMarsh` and `StoneMoor`, placed through the ordinary
+slope/water/clearance/road rules (not forced). `validate()` re-derives the count from `markers`
+itself and fails the generator build outside 1-2 — `world/gen/layouts/hollowmere.json` regenerated,
+deterministic (byte-identical on a second run). No gilded-tier mesh exists yet (A-047 still queued,
+`docs/ITEMS.md` §7), so these placeholder as `loot_chest_reinforced_closed` until real art lands —
+swap the asset in the JSON, nothing about the marker or the bridge needs to change.
+
+**Economy per tier — `D-122` has the full reasoning:** `Chest` charges `cost_coins` AND
+`locked_by` together in one transaction, never either/or, so a placed instance can only express ONE
+gate even where `docs/ITEMS.md` describes two. Gilded is key-only (`gilded_key`, no coin price — the
+item catalog's own line is unambiguous). Bog (25 coins) and strongbox (60 coins) are coin-gated —
+their own key alternative (a Rusted Key opening a strongbox for free) is a legitimate SECOND
+placed instance for whoever gives those tiers real map markers, not a mode this table needs to also
+support. Sunken has neither (unpriced, unlocked) — it is "risk-priced rather than coin-priced" per
+ITEMS.md §5, and this bridge does not place sunken chests at all yet; no hazard-placement pass picks
+real coordinates for it.
+
+**What the next task builds against:** placing a NEW chest tier in Hollowmere (bog, strongbox,
+sunken, or a second landmark of an existing tier) needs exactly one marker,
+`_marker(f"Chest_{tier}_{n}", "loot", x, y, z, zone)`, added anywhere in
+`tools/mapgen/hollowmere_layout.py` and a regenerated `hollowmere.json` — `ChestPlacementService`
+picks it up automatically, no autoload/script change required. A tier with no entry in
+`_ECONOMY_FOR_TIER` still builds (falls back to free/unlocked), so a new marker is never silently
+dropped; it is just unpriced until its economy is added to the table.
+
+**Left open, filed as F-183:** `wellspring`/`boss` tier chests are event-granted (a Wellspring cap, a
+boss kill), not world-scattered — a Wellspring cap does not currently spawn or open any `Chest` at
+all, and neither does a boss kill. Genuinely a different owner than "placement", and out of F-146's
+scope, but still nobody's job today.
+
+**Verify:** `agent godot --script tools/chest_placement_check.gd` → `failures=0`, run twice, against
+the REAL `main_scene` boot (not a synthetic scene) — all 8 `Cache_` markers bridged, gilded count
+in budget, a live free chest opens end to end, a live gilded chest is refused without the key.
+`python3 tools/mapgen/hollowmere_layout.py` → `HOLLOWMERE_VALIDATE PASS`. `agent godot --quit-after
+120` → clean boot, no new `ERROR:` lines. `tools/chest_check.gd`, `tools/loot_content_check.gd`,
+`tools/entity_check.gd` unaffected (`chest.gd` itself was not touched).
+
+---
+
 > **Historical documents — every task prompt from here down.** They predate D-021 (agents register
 > their own autoloads), D-031 (agents may edit Godot-authored files under exact claim), D-039 (do it
 > yourself rather than handing it back) and the D-036 lane system. Where a prompt says
