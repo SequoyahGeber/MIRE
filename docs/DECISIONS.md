@@ -4114,3 +4114,29 @@ with Hollowmere retiring to fixture/reference — the same retirement Playtest H
 **Would change my mind:** a service whose site discovery genuinely cannot express itself as a
 marker kind (none known — even stations fit); that would argue for a real WorldContract interface,
 a much bigger change than any current need justifies.
+
+### D-144 · 2026-08-19 · Keep file claims; fix claim STALENESS instead of moving to per-agent worktrees
+F-189 correctly reported that D-011's own reversal trigger — *"agents working concurrently often
+enough that file claims become a bottleneck"* — has fired repeatedly: one hold on
+`core/net/net_version.gd` spanned four sessions and cost four tasks their `PROTOCOL_VERSION` bump
+(F-161/F-165/F-169/F-178), and a twelve-file hold blocked three queued items for six hours. Reading
+that as "claims were the wrong choice" is the wrong inference. In every measured case the blockage
+was a claim that **outlived the session holding it**, not two agents genuinely needing one file at
+once; when those sessions ended, the claims cleared in bulk and the backlog drained in minutes.
+
+Moving to per-agent git worktrees would trade a transient, visible bottleneck for a permanent,
+expensive one: every agent needs its own `.godot/` import cache — the 42 MB artifact whose sharing
+F-196 has just made structurally safe (D-126) and whose full rebuild costs minutes per agent. It
+would also reintroduce merge conflicts in place of claim refusals, and the git-side hazards that made
+sharing painful (F-081, F-117, F-149, F-191, F-197) are now all closed and regression-tested.
+
+So: claims stay. What changes is that a refusal now reports how long the claim has been held and
+whether its file has been written to since, so a director can distinguish "someone is mid-edit" from
+"someone left four hours ago" — the judgement that was impossible before, when both rendered as the
+same `claimed by X` line. It deliberately frees nothing: another agent's uncommitted work sits in the
+shared tree, and the rule against working around a claim is what keeps two agents out of one file.
+
+**Would change my mind:** a measured case of two agents needing the same file *simultaneously* rather
+than sequentially, or claim contention persisting after the staleness signal exists — either would
+mean the bottleneck is real concurrency rather than abandoned sessions, and worktrees become worth
+their import-cache cost.

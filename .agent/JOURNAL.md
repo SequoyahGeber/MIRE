@@ -5686,3 +5686,27 @@ ProceduralWorld composer shipped behind DevLaunch --procedural. Composes ChunkSt
 Files: `world/gen/procedural_world.gd`, `world/gen/poi_def.gd`, `core/dev/dev_launch.gd`, `tools/procedural_world_check.gd`, `content/poi/wellspring.tres`, `content/poi/shipwreck.tres`
 
 Commit at time of writing: `93c240d`
+
+---
+
+### DONE · F-234 · nettle12 · 2026-08-19T17:20:23+00:00
+
+**docs/NEXT.md's status block is ten hours stale — it is the doc every session is told to read first**
+
+Refreshed the status block to 120/165 with real per-milestone counts, corrected the two audit caveats (F-193 and F-170 are both resolved), and added what the numbers do not say: seven of the eight open findings need hardware or a second machine, and content — not the engine — is now the thin part.
+
+Files: `docs/NEXT.md`
+
+Commit at time of writing: `4aea4c7`
+
+---
+
+### DONE · F-189 · bram1 · 2026-08-19T17:20:49+00:00
+
+**File claims have become the bottleneck D-011 named as its own reversal trigger — one claim blocked four consecutive tasks from bumping PROTOCOL_VERSION**
+
+Decided as D-144: claims stay, staleness gets fixed. Every measured blockage was a claim outliving its session, not simultaneous need; worktrees would trade that for a permanent per-agent import cache right after F-196/D-126 made sharing safe, and would reintroduce merge conflicts now that the git-side hazards are closed. Shipped: a claim refusal now reports hold duration and whether the file has been written since, so 'someone is mid-edit' and 'someone left hours ago' stop reading identically. Verified across all three states against a real 46h-idle file.
+
+Files: `.agent/bin/agent`, `docs/DECISIONS.md`, `docs/FINDINGS.md`
+
+Commit at time of writing: `4aea4c7`

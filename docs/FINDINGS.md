@@ -309,7 +309,46 @@ checked against anything but relative deltas on the fastest machine in the proje
 
 ---
 
-### F-189 · File claims have become the bottleneck D-011 named as its own reversal trigger — one claim blocked four consecutive tasks from bumping PROTOCOL_VERSION
+### F-222 · Eight Blender preview generators render correctly only because an unrelated object happens to get created (or the camera type happens to get flipped) between their reposition and their render — no check would catch it if that incidental code is ever removed
+
+**Area:** art-pipeline · **Severity:** low · **Found:** 2026-08-19 by lm while closing F-207
+
+F-207 flagged nine renders across eight generators as hitting F-204's "an object repositioned between
+renders never takes effect" bug, from a mechanical grep for the same code shape. None of the nine are
+actually broken — verified by disabling each reposition in a throwaway copy of each script and diffing
+the rendered output against the real one; every real render showed the intended, correctly-repositioned
+composition. `docs/DECISIONS.md` D-138 has the full investigation and the mechanism: `object.location`
+reassigned on an already-rendered object is unreliable by default (F-204's diagnosis holds, reproduced
+verbatim against the pre-fix `build_gatherable_plants.py`), but in every one of these eight files
+*something else* between the reposition and the render happens to force Blender to re-evaluate the
+scene — new scale-reference geometry created via `bpy.ops.mesh.primitive_*_add` in seven of them
+(`build_crafting_stations.py`, `build_harvestable_resources.py`, `build_wellspring_set.py`,
+`build_loot_set.py`, `build_ward_set.py`, `build_enemy_crawler.py`,
+`build_tool_weapon_set.py`'s showcase render), or a `camera.data.type` flip from `ORTHO` to `PERSP` in
+the eighth (`build_mire_map_kit.py`'s hero shot).
+
+This is an accident, not a guarantee — nothing in Blender's documented behavior promises that creating
+an unrelated object or changing camera type re-evaluates a stale transform, and no `check()` in any of
+these files (none of the eight has one) or in `tools/blender/asset_repro_check.py` (geometry only,
+never pixels) would notice if it stopped happening. **Not fixed here**, because there is currently no
+actual bug to fix and D-128/AGENTS.md both caution against rewriting working hand-authored code without
+one. The risk: if a future edit to any of these eight files removes or reorders the scale-reference
+creation (or, for `build_mire_map_kit.py`, the camera-type flip) relative to the reposition it currently
+masks, F-204's exact bug reappears silently — a blank or wrong-position tile that ships in the next
+`DONE` batch, exactly like A-012's original incident.
+
+**A real fix, if anyone wants to remove the risk rather than merely note it:** apply D-128's own
+established pattern — `make_reference`/`hero_duplicate`, both already implemented in
+`build_gatherable_plants.py`/`build_flora_set.py` — to the nine renders this finding lists, so each one
+is correct by construction rather than by incidental side effect. Verify with
+`tools/blender/asset_repro_check.py` plus an actual look at the rendered PNG, per D-128's own standing
+instruction.
+
+---
+
+## Resolved
+
+### F-189 · File claims have become the bottleneck D-011 named as its own reversal trigger — one claim blocked four consecutive tasks from bumping PROTOCOL_VERSION — **decided: D-144, claims stay**
 
 **Area:** coordination · **Severity:** high · **Found:** 2026-08-19 by reed16
 
@@ -374,46 +413,64 @@ scale to the point where it now hurts. This is the trigger firing, not a design 
 Filed by reed16 (director) rather than fixed here: choosing between these is a D-011-level call, and
 option 4 is already someone's live task.
 
----
+**Resolved 2026-08-19 by bram1 (director), as D-144.** The finding's evidence is accepted in full —
+the trigger fired, four times, and nobody called it. The inference is not: every measured blockage was
+a claim that outlived its session, not two agents needing one file at the same moment, and each
+cleared in bulk when those sessions ended. Worktrees would trade that transient bottleneck for a
+permanent per-agent `.godot/` import cache, days after F-196/D-126 made sharing that cache
+structurally safe, and would reintroduce merge conflicts in place of claim refusals now that the
+git-side hazards (F-081, F-117, F-149, F-191, F-197) are all closed and regression-tested.
 
-### F-222 · Eight Blender preview generators render correctly only because an unrelated object happens to get created (or the camera type happens to get flipped) between their reposition and their render — no check would catch it if that incidental code is ever removed
-
-**Area:** art-pipeline · **Severity:** low · **Found:** 2026-08-19 by lm while closing F-207
-
-F-207 flagged nine renders across eight generators as hitting F-204's "an object repositioned between
-renders never takes effect" bug, from a mechanical grep for the same code shape. None of the nine are
-actually broken — verified by disabling each reposition in a throwaway copy of each script and diffing
-the rendered output against the real one; every real render showed the intended, correctly-repositioned
-composition. `docs/DECISIONS.md` D-138 has the full investigation and the mechanism: `object.location`
-reassigned on an already-rendered object is unreliable by default (F-204's diagnosis holds, reproduced
-verbatim against the pre-fix `build_gatherable_plants.py`), but in every one of these eight files
-*something else* between the reposition and the render happens to force Blender to re-evaluate the
-scene — new scale-reference geometry created via `bpy.ops.mesh.primitive_*_add` in seven of them
-(`build_crafting_stations.py`, `build_harvestable_resources.py`, `build_wellspring_set.py`,
-`build_loot_set.py`, `build_ward_set.py`, `build_enemy_crawler.py`,
-`build_tool_weapon_set.py`'s showcase render), or a `camera.data.type` flip from `ORTHO` to `PERSP` in
-the eighth (`build_mire_map_kit.py`'s hero shot).
-
-This is an accident, not a guarantee — nothing in Blender's documented behavior promises that creating
-an unrelated object or changing camera type re-evaluates a stale transform, and no `check()` in any of
-these files (none of the eight has one) or in `tools/blender/asset_repro_check.py` (geometry only,
-never pixels) would notice if it stopped happening. **Not fixed here**, because there is currently no
-actual bug to fix and D-128/AGENTS.md both caution against rewriting working hand-authored code without
-one. The risk: if a future edit to any of these eight files removes or reorders the scale-reference
-creation (or, for `build_mire_map_kit.py`, the camera-type flip) relative to the reposition it currently
-masks, F-204's exact bug reappears silently — a blank or wrong-position tile that ships in the next
-`DONE` batch, exactly like A-012's original incident.
-
-**A real fix, if anyone wants to remove the risk rather than merely note it:** apply D-128's own
-established pattern — `make_reference`/`hero_duplicate`, both already implemented in
-`build_gatherable_plants.py`/`build_flora_set.py` — to the nine renders this finding lists, so each one
-is correct by construction rather than by incidental side effect. Verify with
-`tools/blender/asset_repro_check.py` plus an actual look at the rendered PNG, per D-128's own standing
-instruction.
+Shipped instead: a claim refusal now names how long the claim has been held and whether its file has
+been written to since — turning "claimed by X", which read identically for an active edit and an
+abandoned session, into a judgement a director can act on. It frees nothing; the rule against working
+around a claim is what keeps two agents out of one file. D-144 carries the reversal trigger.
 
 ---
 
-## Resolved
+### F-234 · docs/NEXT.md's status block is ten hours stale — it is the doc every session is told to read first — **fixed**
+
+**Area:** docs · **Severity:** low · **Found:** 2026-08-19 by nettle12
+
+`docs/NEXT.md` opens with "**Open this first, every time.** It exists so that coming back after a
+week or a month costs you ten minutes instead of a weekend. Update it before you stop working.
+Always."
+
+Its status block still reads `89/131 tasks · M3 16/21 · M4 12/14 · M5 4/10 · M6 8/11 · M7 3/12 ·
+M8 0/12`, which were the real numbers around 06:30 on 2026-08-19. The board is now 120/165 with
+M3 23/27, M4 22/30, M5 8/14, M6 15/18, M7 5/13, M8 1/12, and findings at 223/231.
+
+The date line already says 2026-08-19, so the block reads as current while being a day's work out of
+date — worse than an obviously old timestamp, because nothing prompts the reader to re-check. On a
+repo where a session is explicitly told to read this before anything else, that is a standing
+mis-brief for every agent that starts.
+
+Refreshed here. The underlying pull is that these counts are transcribed by hand into prose while
+`agent report` computes them exactly, so they go stale the moment anyone ships — worth considering
+whether the status line should be generated rather than written.
+
+**Resolved 2026-08-19 by nettle12.** Refreshed `docs/NEXT.md`'s status block against `agent report` and `state.json` rather than by hand:
+120/165 tasks, M3 23/27, M4 22/30, M5 8/14, M6 15/18, M7 5/13, M8 1/12, findings 223/231.
+
+Two caveats in the same paragraph were also stale and are now corrected rather than merely renumbered
+— it claimed the check battery was green "except `boss_check`'s exit-leak diagnostic (F-193) and
+`lobby_menu_check` (F-170, order queued)", and both of those findings have since closed. A reader was
+being told to expect two failures that no longer exist.
+
+Added two things the counts alone do not convey, since the point of this doc is to orient someone
+cold: that seven of the eight open findings are not sit-down-and-write code (four are Steam/LAN join
+behaviour needing a second machine and a real network, plus the import cache, mid-range hardware, and
+a Blender dependency), leaving F-189 as the only open process question; and that content is now the
+thin part — 2 enemy definitions, 1 cycle modifier and 1 unlock against 72 powerups and 13 buildables.
+
+Verified by re-deriving every number from `state.json` in one pass rather than transcribing from the
+board, and by checking F-193/F-170's status directly instead of trusting the prose.
+
+**The pull worth noticing:** these counts are hand-transcribed into prose while `agent report`
+computes them exactly, so they go stale the moment anybody ships — this block was a day's work out of
+date while its own date line read "2026-08-19", which is worse than an obviously old timestamp
+because nothing prompts the reader to re-check. If it goes stale again, generate the line instead of
+rewriting it.
 
 ### F-139 · `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline — **fixed**
 

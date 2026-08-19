@@ -1877,6 +1877,35 @@ def _lane_state():
         return {}
 
 
+CLAIM_STALE_HOURS = 2.0          # a claim older than this whose file is untouched is worth naming
+
+
+def _claim_liveness(path, claim):
+    """' — held 6.1h, file untouched 5.4h (likely abandoned)' or '' when the claim looks active.
+
+    D-144: the harm D-011's reversal trigger actually measured was not claims-as-such, it was claims
+    that OUTLIVE the session holding them. One hold on `core/net/net_version.gd` spanned four
+    sessions and cost four tasks their PROTOCOL_VERSION bump (F-161/F-165/F-169/F-178); another held
+    twelve files for six hours without a single write while blocking three queued items. In every
+    case the director could see only 'claimed by X' — identical text whether X was mid-edit or gone
+    an hour ago — so the only options were wait indefinitely or violate the protocol.
+
+    Naming the age and the file's last write turns that into a judgement someone can actually make.
+    It deliberately does NOT free anything: another agent's uncommitted work is on disk, and the
+    protocol's rule against working around a claim is what keeps two agents out of one file."""
+    held = age_hours(claim.get("at", "")) if claim.get("at") else None
+    if held is None or held < CLAIM_STALE_HOURS:
+        return ""
+    try:
+        idle = (time.time() - os.path.getmtime(os.path.join(ROOT, path))) / 3600.0
+    except OSError:
+        idle = None
+    if idle is not None and idle >= CLAIM_STALE_HOURS:
+        return " — held %.1fh, file untouched %.1fh (likely abandoned; ask before assuming)" % (
+            held, idle)
+    return " — held %.1fh (file still being edited)" % held
+
+
 def _plain(fn, args):
     """Capture a command's output with colour off — work orders are piped into another CLI as a
     prompt, and ANSI escapes in a prompt are just noise the model has to read past."""
@@ -2289,7 +2318,8 @@ def cmd_order(args):
     conflicts = [(f, st["claims"][f]) for f in files
                  if f in st["claims"] and st["claims"][f].get("agent") != lane.lower()]
     for f, c in conflicts:
-        print("%s✗ %s is claimed by %s for %s%s" % (C["r"], f, c["agent"], c["task"], C["x"]))
+        print("%s✗ %s is claimed by %s for %s%s%s"
+              % (C["r"], f, c["agent"], c["task"], _claim_liveness(f, c), C["x"]))
     if conflicts:
         die("that claim set overlaps live work — order a different task")
     st_now = load()
