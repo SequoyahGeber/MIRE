@@ -3180,6 +3180,37 @@ filed as F-175 rather than fixed here, since neither file is in this task's clai
 
 ---
 
+## F-171 · `tools/crafting_ui_check.gd` fails 19/22 independent of task 6.10 — reproduced on a clean HEAD checkout
+
+**Claim:** `tools/crafting_ui_check.gd` only — no production code changed.
+
+**Root cause:** the same hardcoded-index-0 shape F-167 already fixed in `tools/crafting_net_check.gd`,
+this time in the sibling check that F-167's own fix did not touch. `tools/crafting_ui_check.gd` was
+written for task 2.7's vertical slice, when the workbench had exactly one recipe (`stone_axe`) and the
+furnace exactly one (`iron_ingot`), and it asserted `recipe_row_count() == 1` plus
+`displayed_recipe_id(0) == <that recipe>` for each station. Content authoring in tasks 3.2–3.4 legitimately
+grew the workbench to 11 recipes and the furnace to 2 (`content/recipes/*.tres` — every non-smelting
+recipe defaults `RecipeDef.station` to `&"workbench"`; only `charcoal` and `iron_ingot` are explicitly
+`&"furnace"`), and `CraftingService.recipes_for_station()` orders rows alphabetically by id (already
+fixed for `StringName` vs `String` comparison under F-167). Alphabetically, `stone_axe` is not row 0 of
+the workbench (`arrow` is) and `iron_ingot` is not row 0 of the furnace (`charcoal` is), so every
+row-0-indexed assertion from "workbench renders the one registered recipe" onward failed — 19 of them,
+matching the finding. This is a stale check, not a content or UI bug: the workbench legitimately hosts
+every finished-good recipe, and the furnace legitimately hosts only the two smelting recipes.
+
+**Fix:** added a `_row_for(ui, recipe_id)` helper (same shape as F-167's fix in `crafting_net_check.gd`)
+that scans `displayed_recipe_id(i)` for the target recipe and returns its row index, or -1 if absent.
+Both stations' `recipe_row_count() == 1` assertions became `> 0` ("renders its registered recipes"),
+each gained a `check(row >= 0, ...)` assertion that the expected recipe is present, and every downstream
+`0` used as a row index (craft button presses, requirement text reads, craftable checks) became the
+resolved `axe_row` / `ingot_row`.
+
+**Verify:** `agent godot --script tools/crafting_ui_check.gd` → `CRAFTING_UI_CHECK confirmations=3
+failures=0`, all 34 assertions PASS. Ran twice to rule out timing flakiness in the timed-craft phase;
+both green.
+
+---
+
 ## F-162 · `tools/viewmodel_check.gd` fails independently of task 5.3 — three food items have no authored viewmodel
 
 **Claim:** `content/items/mushroom.tres`, `content/items/berry.tres`, `content/items/raw_meat.tres`,

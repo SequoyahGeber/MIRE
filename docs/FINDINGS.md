@@ -931,25 +931,6 @@ run against either machine state still means something.
 
 ---
 
-### F-171 · `tools/crafting_ui_check.gd` fails 19/22 independent of task 6.10 — reproduced on a clean HEAD checkout
-
-**Area:** crafting/UI · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.10 (regression sweep)
-
-Ran as part of 6.10's regression sweep (nothing in 6.10 touches crafting). `CRAFTING_UI_CHECK
-confirmations=3 failures=19` against the working tree; `agent baseline --script
-tools/crafting_ui_check.gd` reproduces the identical `failures=19` against a clean checkout of
-`5a09b1c`, so this predates 6.10 and is not something this task caused. First failing assertion is
-"furnace craft grants one iron ingot" (`tools/crafting_ui_check.gd:161`), which points at either the
-crafting UI's confirm path or `CraftingService`/`furnace` content itself rather than at the check's
-own scaffolding — worth a look before trusting crafting UI checks green elsewhere.
-
-**What closes this:** whoever next touches `ui/crafting/crafting_ui.gd` or `systems/crafting/*`
-should run `tools/crafting_ui_check.gd` first (not just after their change) to see which of the 19
-are pre-existing versus newly caused, then chase the furnace-craft failure specifically as the
-likely root rather than treating all 19 as independent.
-
----
-
 ### F-172 · Seed entry (task 6.10) only reaches the host-session path — solo/offline play draws its seed before any menu can be opened
 
 **Area:** UI/worldgen · **Severity:** low · **Found:** 2026-08-19 by lm during 6.10
@@ -1145,6 +1126,39 @@ approach (`piece_placed`/`piece_destroyed` from `BuildService`, folded into
 ---
 
 ## Resolved
+
+### F-171 · `tools/crafting_ui_check.gd` fails 19/22 independent of task 6.10 — reproduced on a clean HEAD checkout — **fixed**
+
+**Area:** crafting/UI · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.10 (regression sweep)
+
+Ran as part of 6.10's regression sweep (nothing in 6.10 touches crafting). `CRAFTING_UI_CHECK
+confirmations=3 failures=19` against the working tree; `agent baseline --script
+tools/crafting_ui_check.gd` reproduces the identical `failures=19` against a clean checkout of
+`5a09b1c`, so this predates 6.10 and is not something this task caused. First failing assertion is
+"furnace craft grants one iron ingot" (`tools/crafting_ui_check.gd:161`), which points at either the
+crafting UI's confirm path or `CraftingService`/`furnace` content itself rather than at the check's
+own scaffolding — worth a look before trusting crafting UI checks green elsewhere.
+
+**What closes this:** whoever next touches `ui/crafting/crafting_ui.gd` or `systems/crafting/*`
+should run `tools/crafting_ui_check.gd` first (not just after their change) to see which of the 19
+are pre-existing versus newly caused, then chase the furnace-craft failure specifically as the
+likely root rather than treating all 19 as independent.
+
+---
+
+**Resolved 2026-08-19 by lm.** Fixed tools/crafting_ui_check.gd: replaced hardcoded row index 0 (valid only while the workbench had
+one recipe, task 2.6) with a _row_for(ui, recipe_id) helper that scans displayed_recipe_id(i) — the
+identical fix F-167 already applied to crafting_net_check.gd, just not to this sibling check.
+recipe_row_count() == 1 assertions became > 0 ("renders its registered recipes"), each station gained a
+check(row >= 0, ...) that the expected recipe is present, and every downstream row-0 use became the
+resolved axe_row/ingot_row. Root cause was stale-check, not content or crafting-UI: content authoring
+(tasks 3.2-3.4) legitimately grew the workbench to 11 recipes and the furnace to 2, and
+recipes_for_station()'s alphabetical order puts stone_axe/iron_ingot past row 0. Full root cause and
+fix detail in docs/SPECS.md's new F-171 block.
+
+Verified: agent godot --script tools/crafting_ui_check.gd -> CRAFTING_UI_CHECK confirmations=3
+failures=0, all 34 assertions PASS. Ran twice to rule out timing flakiness in the timed-craft phase;
+both green.
 
 ### F-164 · A capped Wellspring's re-corruption clock (task 6.4) has no HUD or ambient warning before it finishes — only the in-world mesh swap tells a player — **fixed**
 
