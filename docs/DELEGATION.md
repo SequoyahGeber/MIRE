@@ -3682,6 +3682,32 @@ rather than returned dangling or raised. Any new `build_*.py` generator that cal
 loop can lean on this instead of writing its own cache-hit assertion. Full writeup and verification:
 `docs/FINDINGS.md` F-092 (Resolved), `docs/SPECS.md` F-092.
 
+### 2026-08-18 — `CommandService`'s `peer` arg stays id-only; no display-name registry exists anywhere yet (F-126/D-098/F-157)
+
+`autoload/command_service.gd`'s `_parse_peer()` is still exactly what it was: a positive-int
+validator, deliberately not requiring the id to be currently connected (D-078). `docs/COMMANDS.md`
+§2.2's "or player display name" half has nothing to resolve against — **no system in the project
+tracks a peer id → display name map**, checked project-wide while closing F-126 (`NetTransport`
+tracks bare ids only; `SteamLobby._persona()` resolves a Steam persona name per lobby *member*,
+keyed by Steam id, which is a different key than the in-session net peer id every other system uses,
+and it doesn't exist in LOCAL/LAN at all). D-098 records why this was not built inside F-126: the
+finding's own text says `_parse_peer` should consume a registry another system owns, not invent one,
+and building the LOCAL/LAN name source honestly needs a new client→host RPC — which per this file's
+own standing rule requires bumping `PROTOCOL_VERSION` in `core/net/net_version.gd`.
+
+**If your task is the one that adds player display names for its own reasons** (a lobby roster
+label, a kill-feed name, or finally making `give bob 5` work) — F-157 has the shape already scoped:
+own a single canonical peer id → name map in `NetTransport` (it already has the right lifecycle hooks
+— `_peers`, `_track_peer`/`_add_peer`, `peer_joined`/`peer_left` — and the right key, unlike
+`SteamLobby`), thread `SteamLobby._persona()` through for STEAM mode, add a client→host RPC for
+LOCAL/LAN (bump the protocol, extend `tools/handshake_check.gd` per the standing rule), then give
+`_parse_peer()` a two-line addition to resolve a non-numeric token against it before failing.
+`tools/command_check.gd`'s "peer arg type" section already pins the id-only behavior you'd be
+changing, so failing assertions there tell you exactly what moved.
+
+Full writeup: `docs/FINDINGS.md` F-126 (Resolved) and F-157 (Open), `docs/DECISIONS.md` D-098,
+`docs/SPECS.md` F-126.
+
 ---
 
 > **Historical documents — every task prompt from here down.** They predate D-021 (agents register

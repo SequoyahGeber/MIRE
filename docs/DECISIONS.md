@@ -2420,3 +2420,37 @@ GRAPH) — that is the real second example a `brain` interface should be designe
 perception: a future task deliberately wanting stealth-breaks-tracking as a mechanic should gate that
 behind its own new field (e.g. `perception_recheck_interval_sec`) rather than reversing this default,
 since most enemies should keep the current "committed once spotted" read.
+
+### D-098 · 2026-08-18 · F-126 is closed without adding a display-name registry — that registry does not belong to a `peer`-argument-parsing task
+
+Closing F-126 (`CommandService`'s `peer` argument type has no display-name resolution) did not touch
+`_parse_peer()`'s behavior, and that absence is the call worth recording — so a later task does not
+re-open F-126 to add the very registry its own text already said belonged elsewhere.
+
+**Two independent reasons, either alone sufficient:**
+
+1. **The finding's own text already forbids it.** F-126 says explicitly that `_parse_peer` "should
+   grow a name lookup against that same registry rather than inventing its own" — i.e. the registry
+   is owned by whichever system needs player display names for its own reasons (a lobby roster
+   label, a kill-feed name), and `CommandService` only ever consumes it. Building one here, scoped to
+   what a command parser needs, is exactly the private, throwaway lookup that sentence warns against.
+2. **It is not buildable inside this claim regardless.** A real registry needs a name to arrive from
+   somewhere. LOCAL/LAN has no existing source at all — only STEAM's `SteamLobby._persona()` does —
+   so the honest version needs a new client→host RPC, which `docs/SPECS.md`'s own standing rule
+   requires bumping `PROTOCOL_VERSION` in `core/net/net_version.gd` for. That file was held by
+   another lane's exact-file claim (3.7) for the entirety of this task, so building the registry
+   here was blocked by the claim system this project runs on, not just a scope judgment call.
+
+**What closing it actually consisted of:** verifying the gap is real, unchanged, and already honestly
+scoped — `_parse_peer()`'s own doc comment states the limitation and the code matches it exactly
+(rejects non-int tokens, never silently resolves a name). Added `tools/command_check.gd` coverage
+that pins this behavior (`peer` type rejects a non-numeric token with the documented message, and
+still accepts an unconnected int per D-078) so a future change to `_parse_peer` cannot silently
+regress into looking like name resolution when it is not. Filed F-157 to carry the actual registry
+forward with a correct owner-agnostic framing, since F-126's own pointer at task 3.16 is now stale —
+3.16 shipped without adding one.
+
+**Would change my mind:** `core/net/net_version.gd` becoming free and a task explicitly choosing to
+own "players get a display name" as its own deliverable — at that point building the registry (most
+naturally in `NetTransport`, per F-157) is that task's job, and `_parse_peer` gets a two-line addition
+to consume it. Nothing here should be read as an argument against ever building it.

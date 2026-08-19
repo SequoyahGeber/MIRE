@@ -497,30 +497,6 @@ docstring so the next family chooses deliberately instead of inheriting it.
 
 ---
 
-### F-126 · CommandService's `peer` argument type has no display-name resolution — peer ids only
-
-**Area:** netcode · **Severity:** low · **Found:** 2026-08-18 by lp during 3.13
-
-`docs/COMMANDS.md` §2.2 specifies the `peer` argument type as "peer id int or player display name —
-resolves against connected peers." `autoload/command_service.gd`'s `_parse_peer()` only implements
-the first half: it validates the token is a positive int and accepts it outright (see D-078's
-neighbor decision in `_parse_peer`'s own doc comment for why it does not even require the id to
-currently be connected — that part is deliberate, not part of this gap). There is no per-player
-display-name registry anywhere in the project yet for the second half to resolve against — `op
-<name>` and any future `peer`-typed command that would want to accept a friendly name instead of a
-raw id cannot.
-
-Nothing is broken today: `op <peer_id>` and every other `peer`-typed command work fine with the raw
-integer id, which is what `NetDebugPanel`/`net_debug_panel.gd` and the lobby roster already surface
-to a player who needs to look one up. This is scheduling information for whichever task first wants
-`give bob 5` to work rather than `give 988921899 5` — most naturally task 3.16 (the catalog sweep,
-which owns the rest of §2.2's argument-type completeness) or whatever eventually adds player display
-names to the project for other reasons (a lobby roster label, a kill-feed name) — `_parse_peer`
-should grow a name lookup against that same registry rather than inventing its own.
-
----
-
-
 ### F-130 · Three console commands never migrated to CommandService — they register via console.call("register", ...), which 3.13's sweep could not see
 
 **Area:** tooling · **Severity:** low · **Found:** 2026-08-18 by yarrow21
@@ -860,6 +836,41 @@ with the raw id, same as F-126 already established. This is scheduling informati
 ---
 
 ## Resolved
+
+### F-126 · CommandService's `peer` argument type has no display-name resolution — peer ids only — **fixed**
+
+**Area:** netcode · **Severity:** low · **Found:** 2026-08-18 by lp during 3.13
+
+`docs/COMMANDS.md` §2.2 specifies the `peer` argument type as "peer id int or player display name —
+resolves against connected peers." `autoload/command_service.gd`'s `_parse_peer()` only implements
+the first half: it validates the token is a positive int and accepts it outright (see D-078's
+neighbor decision in `_parse_peer`'s own doc comment for why it does not even require the id to
+currently be connected — that part is deliberate, not part of this gap). There is no per-player
+display-name registry anywhere in the project yet for the second half to resolve against — `op
+<name>` and any future `peer`-typed command that would want to accept a friendly name instead of a
+raw id cannot.
+
+Nothing is broken today: `op <peer_id>` and every other `peer`-typed command work fine with the raw
+integer id, which is what `NetDebugPanel`/`net_debug_panel.gd` and the lobby roster already surface
+to a player who needs to look one up. This is scheduling information for whichever task first wants
+`give bob 5` to work rather than `give 988921899 5` — most naturally task 3.16 (the catalog sweep,
+which owns the rest of §2.2's argument-type completeness) or whatever eventually adds player display
+names to the project for other reasons (a lobby roster label, a kill-feed name) — `_parse_peer`
+should grow a name lookup against that same registry rather than inventing its own.
+
+---
+
+**Resolved 2026-08-19 by lp.** Closed as D-098: no display-name registry built (F-126's own text says _parse_peer should consume
+one, not invent one; also blocked regardless — the honest LOCAL/LAN fix needs a new client->host RPC,
+which requires bumping PROTOCOL_VERSION in core/net/net_version.gd, held by slate17's exact-file claim
+for 3.7 the entire time). Filed F-157 to carry the actual registry forward (3.16 shipped without
+adding one, so F-126's original pointer at it is stale). Updated _parse_peer()'s doc comment to point
+at F-157. Added tools/command_check.gd's new "peer arg type" section pinning current behavior: a
+display-name token refused with the exact documented message (not silently mis-resolved), 0/negative/
+non-integer tokens refused, and an unconnected int still accepted (D-078) as its own explicit
+assertion. Verified: agent godot --script tools/command_check.gd -> COMMAND_CHECK failures=0, all 7
+new assertions PASS, zero ERROR: lines. Regression: agent godot --script tools/verify_setup.gd -> all
+checks passed. Full spec + verification in docs/SPECS.md's new F-126 block.
 
 ### F-138 · Rotating an AABB's corners is still the wrong ruler when the thing you are rotating is a moving part — **fixed**
 

@@ -1999,6 +1999,45 @@ FAIL failures=1`, proving the per-triangle vertex test actually fires. Reverted 
 
 ---
 
+## F-126 · `CommandService`'s `peer` argument type has no display-name resolution — peer ids only
+
+**Claim:** `autoload/command_service.gd`, `tools/command_check.gd`.
+
+**What was wrong:** `docs/COMMANDS.md` §2.2 specifies `peer` as "peer id int or player display name —
+resolves against connected peers." `_parse_peer()` only ever implemented the int half; there is no
+per-player display-name registry anywhere in the project for the name half to resolve against.
+Nothing was broken — `op <peer_id>` and every `peer`-typed command already work fine with the raw id,
+which is what `NetDebugPanel` and the lobby roster already surface — but the gap had no test pinning
+it, so a future edit to `_parse_peer` could silently regress the D-078 "unconnected id still accepted"
+allowance, or half-implement name resolution, with nothing catching it.
+
+**Fix:** none needed in `_parse_peer()` itself — see D-098. Building the display-name registry inside
+this claim would have been both wrong (F-126's own text says `_parse_peer` should consume a registry
+another system owns, not invent one for itself) and impossible regardless (the honest version needs a
+new client→host RPC for LOCAL/LAN, which `docs/SPECS.md`'s own standing rule requires bumping
+`PROTOCOL_VERSION` in `core/net/net_version.gd` for — held all task by another lane's exact-file claim
+for 3.7). Filed F-157 to carry the actual registry forward, since F-126's own pointer at task 3.16 is
+now stale (3.16 shipped without adding one). Updated `_parse_peer()`'s doc comment to point at F-157
+instead of a now-closed F-126. Added `tools/command_check.gd` coverage that pins the current, honestly-
+documented behavior: a display-name token is refused with the exact message, not silently mis-resolved
+or silently accepted; 0/negative/non-integer tokens are refused; an int that has never connected is
+still accepted (D-078, previously only exercised incidentally via `NON_OP_PEER = 999`, never asserted
+as its own case).
+
+**Verify:** `agent godot --script tools/command_check.gd`'s new "peer arg type" section.
+
+**Done means:** `COMMAND_CHECK failures=0` including the new section, docs/FINDINGS.md carries F-126
+under `## Resolved` and the new F-157 under `## Open`, D-098 records why no registry was built here.
+
+**Verified 2026-08-18 (lp):** `agent godot --script tools/command_check.gd` → `COMMAND_CHECK
+failures=0`, all 7 new assertions PASS including the exact refusal strings (`'bob' is not a peer id`,
+`'0' is not a valid peer id`) and the D-078 unconnected-id-accepted case (`opped peer 424242`). Zero
+`ERROR:` lines in the run. Regression-checked: `agent godot --script tools/verify_setup.gd` → `all
+checks passed`, unaffected pre-existing `gfx` deprecation warning (F-130, unrelated) still the only
+warning printed.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |
