@@ -814,7 +814,68 @@ with the raw id, same as F-126 already established. This is scheduling informati
 
 ---
 
+### F-159 · Placed buildables are invisible to the nav map — agents path straight through walls
+
+**Area:** world · **Severity:** medium · **Found:** 2026-08-19 by hollow7
+
+`world/chunk/nav_baker.gd` (task 4.5) bakes navigation from `ChunkMesher.collision_faces()` — the
+terrain triangles, and only those. Every other collider in the world is absent from the source
+geometry, so the navigation mesh describes bare terrain.
+
+The consequence is concrete: a wall placed through `BuildService` (task 3.6/3.7) is a real physics
+collider that an agent's *path* passes straight through. `NavigationAgent3D` steering will drive an
+enemy into it and it will grind against the collider rather than route around. The same applies to
+Ward structures, crafting stations, and anything else 3.7 places — the whole point of a Ward is that
+enemies must deal with it, and right now the pathfinder does not know it exists.
+
+Terrain-only was the right scope for 4.5 (D-101 records it): the streaming/bake budget D-016 measured
+is a terrain measurement, and folding in dynamic geometry changes both the cost and the invalidation
+rules. But it is a gap, not a design position.
+
+**What a fix probably looks like.** `NavigationMeshSourceGeometryData3D` accepts more than one
+`add_faces` call, so a placed piece's collision faces can be appended to its chunk's source geometry
+before the bake. The hard half is invalidation: placing or destroying a piece must re-bake the chunk
+it sits in, which means BuildService needs to tell NavBaker (a signal it already emits —
+`piece_placed`/`piece_destroyed`), and the one-bake-in-flight queue has to absorb build spam without
+falling behind. Obstacle avoidance (`NavigationObstacle3D`) is the cheaper alternative for small or
+temporary pieces and may be the better answer for anything a player throws down mid-fight.
+
+Verify a fix with `tools/nav_bake_check.gd`'s existing shape: place a piece across the seam path it
+already tests, and assert the route detours rather than passing through.
+
+---
+
 ## Resolved
+
+### F-160 · A transient API error kills a saturate chain, and nothing restarts it — the lane sits idle until a human notices — **fixed**
+
+**Area:** tooling · **Severity:** medium · **Found:** 2026-08-19 by bram1
+
+`--watch` sleeps out a quota wall and resumes, but every other non-zero exit ends the chain. That rule
+is right for a broken task — retrying one on a loop just burns the window — and wrong for the case
+where the service, not the task, failed.
+
+Observed 2026-08-19. LM lost 6.1 twenty-three minutes and 12.4M tokens in to
+`API Error: 521 — "Web server is down"`, Cloudflare unable to reach the origin. The CLI's own message
+calls it a server-side issue and says to try again in a moment. Instead the chain exited with four
+orders still queued, and the lane sat idle. It was caught inside two minutes only because a monitor
+happened to be armed and someone was awake to read it; overnight it would have idled until the
+window expired unspent, which is the one loss this whole harness exists to prevent.
+
+**Fixed:** `_run_with_resume` now retries once per attempt, after a 90-second pause, when the lane's
+recorded error names itself an infrastructure failure. The classifier is deliberately narrow — 5xx
+status codes, "web server is down", "bad gateway", "service unavailable", "overloaded_error",
+"server-side issue", "connection refused/reset", "temporarily unavailable" — and shares
+`MAX_RESUMES` with the quota path, so a persistent outage stops the chain rather than spinning on it.
+
+**Verified both directions, because a classifier that over-matches is worse than none.** It fires on
+the verbatim 521 body, the CLI's "server-side issue" wording, an `overloaded_error` payload, a 502,
+and a refused connection. It does NOT fire on: not-logged-in, a quota-limit message, a GDScript parse
+error, `exited 0 without closing out`, a check reporting `failures=2`, or a claim collision — the six
+failure shapes seen in this project that genuinely need a human. 0 wrong across 11 cases.
+`lane selftest` 23/23; both lanes still dispatching.
+
+---
 
 ### F-152 · `core/render/mesh_merge.gd` builds an invalid surface at boot, so merged undergrowth silently draws nothing — **fixed**
 

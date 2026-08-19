@@ -2404,6 +2404,21 @@ def _daemonise(lane):
     os.dup2(devnull, 0)
 
 
+TRANSIENT_RETRY_SECONDS = 90     # long enough for a 5xx to clear, short enough not to waste a window
+
+# Wording that means "the service failed", not "your task failed". Deliberately narrow: anything that
+# might be the task's own fault must NOT match, or a broken task retries in a loop and burns a window.
+TRANSIENT_PAT = re.compile(
+    r"error 5\d\d\b|status\"?:\s*5\d\d|web server is down|bad gateway|service unavailable"
+    r"|gateway time-?out|overloaded_error|server-side issue|internal server error"
+    r"|connection (?:refused|reset)|temporarily unavailable", re.I)
+
+
+def _looks_transient(err):
+    """True when a lane's failure names itself an infrastructure problem rather than a task fault."""
+    return bool(err and TRANSIENT_PAT.search(str(err)))
+
+
 def _run_with_resume(lane, tid, watch):
     """Run one task, and with --watch, sleep out a short quota wall and pick it straight back up.
 
@@ -2422,6 +2437,16 @@ def _run_with_resume(lane, tid, watch):
 
         state = _lane_state().get(lane, {})
         if state.get("status") != "exhausted":
+            # An infrastructure blip is not a broken task. LM lost 6.1 twenty-three minutes and 12M
+            # tokens in to `API Error: 521 — Web server is down`, which the CLI itself calls
+            # temporary; the chain then stopped and the lane sat idle until a human noticed. Retrying
+            # a genuinely broken task on a loop is still wrong, so this only retries errors that name
+            # themselves transient, and only after a pause.
+            if _looks_transient(state.get("last_error")):
+                print("%s· %s hit a transient API error on %s — retrying in %ds%s"
+                      % (C["y"], lane, tid, TRANSIENT_RETRY_SECONDS, C["x"]))
+                time.sleep(TRANSIENT_RETRY_SECONDS)
+                continue
             return code                       # a real failure, not a wall
         until = state.get("exhausted_until")
         try:

@@ -3755,3 +3755,15 @@ Notes along the way:
 Files: `systems/cycle/cycle_service.gd`, `systems/cycle/cycle_service.gd.uid`, `core/events/event_bus.gd`, `world/mire/mire_grid.gd`, `systems/waves/wave_spawner.gd`, `tools/cycle_check.gd`, `tools/cycle_check.gd.uid`, `project.godot`, `docs/SPECS.md`
 
 Commit at time of writing: `9deeb3a`
+
+---
+
+### DONE · F-160 · bram1 · 2026-08-19T01:38:44+00:00
+
+**A transient API error kills a saturate chain, and nothing restarts it — the lane sits idle until a human notices**
+
+_run_with_resume now retries after a 90s pause when the lane's error names itself infrastructure (5xx, web server is down, bad gateway, overloaded_error, server-side issue, connection refused), sharing MAX_RESUMES so a persistent outage still stops the chain. Classifier verified both directions: fires on the verbatim 521 body and four other transient shapes, does not fire on not-logged-in, quota limit, GDScript parse error, exited-0-without-closing-out, failures=2, or a claim collision. 0 wrong across 11 cases; lane selftest 23/23.
+
+Files: `.agent/bin/agent`, `docs/FINDINGS.md`
+
+Commit at time of writing: `8b7804e`

@@ -256,9 +256,9 @@
   "recent": {
     ".agent/bin/agent": {
       "agent": "bram1",
-      "at": "2026-08-19T00:24:18+00:00",
-      "hash": "826c26322903a45a223034f286c9db93e6168bc47723a3ff718690f8673520ec",
-      "task": "F-156"
+      "at": "2026-08-19T01:38:44+00:00",
+      "hash": "f356e3c3e87a4f0f7b7e7018628b5a98531f3072b1914fe978cfc7df0aa95da5",
+      "task": "F-160"
     },
     ".agent/bin/lane": {
       "agent": "bram1",
@@ -1698,10 +1698,10 @@
       "task": "F-137"
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T01:04:16+00:00",
-      "hash": "6acfff39a9b1239fb74a2591482778dde5e5f7873535a7543f365fa9a526af7f",
-      "task": "F-150"
+      "agent": "bram1",
+      "at": "2026-08-19T01:38:44+00:00",
+      "hash": "0abef1c613e7d404a4eba1774122c9cedecefd2825ca00b3c64545a4981719a0",
+      "task": "F-160"
     },
     "docs/ITEMS.md": {
       "agent": "slate17",
@@ -2202,11 +2202,6 @@
       "at": "2026-08-18T13:48:01+00:00",
       "task": "F-038"
     },
-    "tools/combat_self_hit_check.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-18T01:38:26+00:00",
-      "task": "F-062"
-    },
     "tools/command_catalog_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T23:19:22+00:00",
@@ -2532,11 +2527,6 @@
       "at": "2026-08-18T13:15:50+00:00",
       "task": "F-098"
     },
-    "tools/player_health_check.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-18T01:38:32+00:00",
-      "task": "F-063"
-    },
     "tools/player_health_net_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T04:33:16+00:00",
@@ -2674,11 +2664,6 @@
       "agent": "flint5",
       "at": "2026-08-18T04:58:38+00:00",
       "task": "F-073"
-    },
-    "tools/vitals_hud_check.gd": {
-      "agent": "nettle12",
-      "at": "2026-08-18T01:38:32+00:00",
-      "task": "F-064"
     },
     "tools/wave_spawner_check.gd": {
       "agent": "lm",
@@ -5307,6 +5292,22 @@
       "status": "todo",
       "tier": "F",
       "title": "`bog_crawler` (task 4.11's corrupted spawn-table variant) is visually identical to a normal crawler"
+    },
+    "F-159": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Placed buildables are invisible to the nav map \u2014 agents path straight through walls"
+    },
+    "F-160": {
+      "done_at": "2026-08-19T01:38:44+00:00",
+      "done_by": "bram1",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "A transient API error kills a saturate chain, and nothing restarts it \u2014 the lane sits idle until a human notices"
     }
   },
   "version": 1
