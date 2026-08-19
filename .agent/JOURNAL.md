@@ -5128,3 +5128,15 @@ Verified all 9 flagged renders across the 8 generators are not actually broken (
 Files: `tools/blender/build_enemy_crawler.py`, `tools/blender/build_crafting_stations.py`, `tools/blender/build_harvestable_resources.py`, `tools/blender/build_mire_map_kit.py`, `tools/blender/build_wellspring_set.py`, `tools/blender/build_loot_set.py`, `tools/blender/build_ward_set.py`, `tools/blender/build_tool_weapon_set.py`
 
 Commit at time of writing: `7d39e5c`
+
+---
+
+### DONE · F-214 · lm · 2026-08-19T13:44:07+00:00
+
+**Undergrowth scatters through the new ExtractionShip's hull at MereShore — the offline plant pass has no way to know about a marker-bridge's runtime-built geometry**
+
+Fixed: Undergrowth._collect_marker_exclusions() carves a keep-out disc for shipwreck/objective markers, sized from ExtractionShip.HULL_HALF_EXTENTS/Wellspring.FOUNDATION_RADIUS_M. Verified: agent godot --script tools/hollowmere_check.gd -> HOLLOWMERE_FLORA_GROUND sampled=10243 perched=0 worst=0.00 m, HOLLOWMERE_CHECK PASS (was perched=23 worst=4.26m). Swept chest_placement_service.gd/crafting_service.gd - neither builds new runtime collision, not exposed to this bug. Docs: SPECS.md new F-214 block, FINDINGS.md resolved, DELEGATION.md current-state entry.
+
+Files: `world/gen/undergrowth.gd`, `tools/hollowmere_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/DECISIONS.md`
+
+Commit at time of writing: `40fc92b`

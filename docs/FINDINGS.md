@@ -69,34 +69,6 @@ do is worth as much as the record of what we did.
 
 ## Open
 
-### F-214 · Undergrowth scatters through the new ExtractionShip's hull at MereShore — the offline plant pass has no way to know about a marker-bridge's runtime-built geometry
-
-**Area:** world-gen / vfx · **Severity:** low · **Found:** 2026-08-19 by lm while verifying F-166
-
-Adding Hollowmere's `shipwreck` marker (F-166) made `autoload/extraction_service.gd` build a real
-`ExtractionShip` at MereShore `[62.0, 1.54, 29.0]` for the first time. `tools/hollowmere_check.gd`'s
-`_check_undergrowth_stays_off_props()` (`worst`/`perched` in its `HOLLOWMERE_FLORA_GROUND` line) went
-from `perched=4 worst=0.65m` (baseline, HEAD) to `perched=23 worst=4.26m` with the marker in place —
-still well under the check's 2% failure threshold (23/10338 ≈ 0.22%), so nothing is red, but grass and
-bushes are now visibly growing up through the ship's ~3.8 m hull.
-
-**Why:** `Undergrowth`'s scatter pass runs once, offline, during world-gen, and avoids only what's in
-the layout at that time — the same `authored_world_prop` group `_probe_ground`/`_check_undergrowth_
-stays_off_props` already key off. `ExtractionShip` (and `Wellspring`, same shape, same exposure) is
-built afterward, at runtime, by a marker-bridge autoload the scatter pass has no way to see. The dock
-props placed around the marker (`extraction pad`/`cache`/`ward`/`rail`) DO get proper avoidance,
-because they're ordinary layout props; only the live gameplay object itself is invisible to scatter.
-
-**What closes this:** either (a) give `Undergrowth`'s scatter pass a static exclusion footprint for
-every known marker-bridge live object — reading `ExtractionShip.HULL_HALF_EXTENTS`/
-`Wellspring.FOUNDATION_RADIUS_M` at generation time and carving a keep-out disc around each
-`shipwreck`/`objective` marker the same way it already avoids authored props — or (b) accept it as
-cosmetic and tune it away by hand-placing a couple of `extraction ward`-style ground-cover exclusion
-props around the marker in the layout, cheaper than teaching the generator about runtime objects it
-doesn't otherwise need to know exist. Not fixed here: it's a pre-existing exposure in the scatter
-pass (Wellspring has always had it, just never had a probe or a player notice), out of scope for
-F-166's own claim set, and not a check regression — `tools/hollowmere_check.gd` still passes clean.
-
 ### F-139 · `ChunkStreamer`/`ResourceScatterField` still have no real caller — the live game still ships the authored Hollowmere map, not the procedural pipeline
 
 **Area:** worldgen / netcode · **Severity:** low · **Found:** 2026-08-18 by lm during 4.6
@@ -507,6 +479,45 @@ instruction.
 ---
 
 ## Resolved
+
+### F-214 · Undergrowth scatters through the new ExtractionShip's hull at MereShore — the offline plant pass has no way to know about a marker-bridge's runtime-built geometry — **fixed**
+
+**Area:** world-gen / vfx · **Severity:** low · **Found:** 2026-08-19 by lm while verifying F-166
+
+Adding Hollowmere's `shipwreck` marker (F-166) made `autoload/extraction_service.gd` build a real
+`ExtractionShip` at MereShore `[62.0, 1.54, 29.0]` for the first time. `tools/hollowmere_check.gd`'s
+`_check_undergrowth_stays_off_props()` (`worst`/`perched` in its `HOLLOWMERE_FLORA_GROUND` line) went
+from `perched=4 worst=0.65m` (baseline, HEAD) to `perched=23 worst=4.26m` with the marker in place —
+still well under the check's 2% failure threshold (23/10338 ≈ 0.22%), so nothing is red, but grass and
+bushes are now visibly growing up through the ship's ~3.8 m hull.
+
+**Why:** `Undergrowth`'s scatter pass runs once, offline, during world-gen, and avoids only what's in
+the layout at that time — the same `authored_world_prop` group `_probe_ground`/`_check_undergrowth_
+stays_off_props` already key off. `ExtractionShip` (and `Wellspring`, same shape, same exposure) is
+built afterward, at runtime, by a marker-bridge autoload the scatter pass has no way to see. The dock
+props placed around the marker (`extraction pad`/`cache`/`ward`/`rail`) DO get proper avoidance,
+because they're ordinary layout props; only the live gameplay object itself is invisible to scatter.
+
+**What closes this:** either (a) give `Undergrowth`'s scatter pass a static exclusion footprint for
+every known marker-bridge live object — reading `ExtractionShip.HULL_HALF_EXTENTS`/
+`Wellspring.FOUNDATION_RADIUS_M` at generation time and carving a keep-out disc around each
+`shipwreck`/`objective` marker the same way it already avoids authored props — or (b) accept it as
+cosmetic and tune it away by hand-placing a couple of `extraction ward`-style ground-cover exclusion
+props around the marker in the layout, cheaper than teaching the generator about runtime objects it
+doesn't otherwise need to know exist. Not fixed here: it's a pre-existing exposure in the scatter
+pass (Wellspring has always had it, just never had a probe or a player notice), out of scope for
+F-166's own claim set, and not a check regression — `tools/hollowmere_check.gd` still passes clean.
+
+**Resolved 2026-08-19 by lm.** Fixed: `Undergrowth._collect_marker_exclusions()` reads the layout's own `shipwreck`/`objective`
+markers and carves a keep-out disc for each, sized from `ExtractionShip.HULL_HALF_EXTENTS`
+(circumscribed, 6.02m) and `Wellspring.FOUNDATION_RADIUS_M` (2.4m) — the finding's own option (a).
+Scatter attempts inside a disc are rejected before the ray probe, same place road/bound checks
+already reject attempts. Verified: `agent godot --script tools/hollowmere_check.gd` went from
+`HOLLOWMERE_FLORA_GROUND sampled=10338 perched=23 worst=4.26 m` (pre-fix, matches the finding
+exactly) to `sampled=10243 perched=0 worst=0.00 m`, `HOLLOWMERE_CHECK PASS`. Swept
+`authored_world_marker` consumers (chest_placement_service.gd, crafting_service.gd) — neither
+builds new runtime geometry, both reuse an already-authored prop's mesh/collision, so neither is
+exposed to this bug. Full writeup: docs/SPECS.md F-214 block.
 
 ### F-207 · F-204's same bug — an object repositioned between renders that never takes effect — is live in 8 more Blender generators, one of them twice — **fixed**
 

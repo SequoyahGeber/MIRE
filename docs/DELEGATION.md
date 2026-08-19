@@ -75,6 +75,32 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-214 resolved: `Undergrowth` now carves a keep-out disc for every `shipwreck`/`objective` marker, so grass no longer scatters through `ExtractionShip`'s hull or `Wellspring`'s foundation (lm)
+
+**What shipped:** `world/gen/undergrowth.gd`'s scatter pass (`_scatter()`) can now reject an attempt
+before the ray probe if it falls inside a marker-bridge live object's own footprint —
+`_collect_marker_exclusions()` reads the layout's `markers` array once per scatter/rescatter and builds
+one disc per `shipwreck`/`objective` marker, `_in_marker_exclusion()` tests a candidate point against
+all of them. Each disc's radius is read from the object's own script — `ExtractionShip.HULL_HALF_EXTENTS`
+circumscribed in XZ (`≈6.02 m`) and `Wellspring.FOUNDATION_RADIUS_M` (`2.4 m`) — preloaded by path the
+same way `AssetVfx` already is in this file (F-016: a brand-new `class_name` is not bare-resolvable in a
+fresh headless `--script` run), not hard-coded, so the exclusion tracks either object's real size if it
+ever changes.
+
+**The pattern for the next marker-bridge object that needs this:** add its kind to the `match` in
+`_collect_marker_exclusions()` with a radius pulled from that object's own script the same way — nothing
+else in `Undergrowth` needs to change. This only matters for a bridge that builds genuinely new runtime
+collision from a marker (`autoload/extraction_service.gd`/`autoload/wellspring_service.gd`'s shape); a
+bridge that only adds a logic node onto an already-authored prop's existing mesh/collision — the shape
+`autoload/chest_placement_service.gd` and `autoload/crafting_service.gd` both use — was checked and does
+not need an entry, because the offline scatter pass already sees that geometry through the ordinary
+`prop_group` ray-avoidance path.
+
+**Verify:** `agent godot --script tools/hollowmere_check.gd` →
+`HOLLOWMERE_FLORA_GROUND sampled=10243 perched=0 worst=0.00 m`, `HOLLOWMERE_CHECK PASS` (was
+`sampled=10338 perched=23 worst=4.26 m` before the fix, matching the finding's own numbers exactly).
+Full writeup: `docs/SPECS.md` F-214 block.
+
 ### 2026-08-19 — F-197 resolved: both halves were already fixed by F-057 and F-191, neither cross-referenced this finding back — closing it needed no code (lm)
 
 No defect found: F-057 (`a0d0d46`) had already rebuilt and re-committed the crafting-station

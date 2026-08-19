@@ -6679,6 +6679,56 @@ re-run and unchanged in file list).
 
 ---
 
+## F-214 · Undergrowth scatters through the new ExtractionShip's hull at MereShore — the offline plant pass has no way to know about a marker-bridge's runtime-built geometry
+
+**Claim:** `world/gen/undergrowth.gd`, `tools/hollowmere_check.gd`. Network authority: none —
+`Undergrowth` is presentation-only and deterministic per its own file header; this fix reads two other
+systems' constants but adds no new state and no RPC.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Ran the check before touching anything** (per the finding's own warning — `tools/hollowmere_check.gd`
+had 2 commits since filing): `HOLLOWMERE_FLORA_GROUND sampled=10338 perched=23 worst=4.26 m`, identical
+to the finding's own numbers. Not fixed by either of those two commits; the gap was still real.
+
+**The fix — finding's option (a):** `Undergrowth._collect_marker_exclusions()` reads the layout's own
+`markers` array once per scatter (`_scatter()`, and cleared/rebuilt in `rescatter()` alongside its
+sibling collections) and builds a keep-out disc for every `shipwreck`/`objective` marker — the two kinds
+`autoload/extraction_service.gd`/`autoload/wellspring_service.gd` turn into a live, solid
+`ExtractionShip`/`Wellspring` after this pass has already run. Each disc's radius comes from the object's
+own script, preloaded the same way `AssetVfx` already is in this file (a brand-new `class_name` is not
+bare-resolvable in a fresh headless `--script` run, F-016): `ExtractionShip.HULL_HALF_EXTENTS`
+circumscribed in the XZ plane (`sqrt(5.6² + 2.2²) ≈ 6.02 m`, not the box itself, so it stays correct if
+either bridge ever gives its marker a rotation — neither does today) and `Wellspring.FOUNDATION_RADIUS_M`
+(2.4 m) directly, since that shape is already a circle. `_in_marker_exclusion()` rejects a scatter attempt
+inside any disc, checked once per attempt right after the map-bound check, before the ray probe or the
+zone/family roll — cheaper to reject early than to raycast a point that was always going to be thrown out.
+
+**Why a static disc and not waiting on the bridge:** `Undergrowth._ready()` already only waits two
+physics frames for the terrain's own colliders to exist; the marker-bridge autoloads build their objects
+via `call_deferred`, with no ordering guarantee relative to that wait, and creating one would couple a
+presentation-only, no-network-authority system to two host-authoritative gameplay systems for a purely
+cosmetic gap. Reading each object's known, already-`const` footprint at generation time — the finding's
+own option (a) — needs no such coupling and stays correct as long as those constants do.
+
+**Verify:** `.agent/bin/agent godot --script tools/hollowmere_check.gd` →
+`HOLLOWMERE_FLORA_GROUND sampled=10243 perched=0 worst=0.00 m`, `HOLLOWMERE_CHECK PASS`. `sampled`
+dropping by 95 (10338 → 10243) is the attempts now rejected by the two discs before a plant is ever
+placed; `perched` dropping from 23 to 0 is the fix. No new failures elsewhere in the same run.
+
+**Swept for the same shape:** every `authored_world_marker` consumer —
+`autoload/chest_placement_service.gd` (`loot` markers → `Chest`) and `autoload/crafting_service.gd`
+(`station` markers) — builds only a logic node against a marker whose visual/collision already exists as
+an ordinary authored prop or baked `MultiMeshInstance3D` (Hollowmere bakes station props with no
+per-instance node of their own, per that file's own header). Neither bridge constructs new runtime
+geometry the way `extraction_service.gd`/`wellspring_service.gd` do, so neither is exposed to this bug;
+`shipwreck`/`objective` were the only two marker kinds that needed a disc.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

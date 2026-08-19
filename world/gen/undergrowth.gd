@@ -38,6 +38,14 @@ const FLORA_DIR: String = "res://assets/flora/exports"
 ## Preloaded, not referenced by `class_name` — a new global class is invisible to a headless
 ## `--script` run until the editor rescans the project.
 const AssetVfx := preload("res://world/environment/asset_vfx_library.gd")
+## F-214: `shipwreck`/`objective` markers grow a real `ExtractionShip`/`Wellspring` at runtime
+## (`autoload/extraction_service.gd`, `autoload/wellspring_service.gd`), built by a bridge
+## autoload this scatter pass has no dependency on and cannot wait for — `_is_prop()` only
+## rejects colliders already in the physics space when a ray is cast, and the bridge has not
+## necessarily run yet. These two scripts are the source of truth for each object's XZ
+## footprint, so a keep-out disc read from them stays correct if either footprint ever changes.
+const ExtractionShipScript := preload("res://systems/extraction/extraction_ship.gd")
+const WellspringScript := preload("res://systems/wellspring/wellspring.gd")
 ## How far above and below the layout's own ground each probe ray runs. These used
 ## to be absolute world heights (24 m down to -12 m), which silently decided that
 ## nothing above 24 m gets undergrowth: the whole plateau, every ridge and the
@@ -196,6 +204,7 @@ var _nx: int = 0
 var _nz: int = 0
 var _variants: Dictionary = {}
 var _placements: Dictionary = {}
+var _marker_exclusions: Array = []
 
 
 func _ready() -> void:
@@ -229,6 +238,7 @@ func rescatter() -> void:
 	_zone_centres.clear()
 	_zone_pull.clear()
 	_variants.clear()
+	_marker_exclusions.clear()
 	_scatter(layout)
 
 
@@ -254,6 +264,7 @@ func _scatter(layout: Dictionary) -> void:
 		push_error("Undergrowth found no zones in the layout; nothing to scatter")
 		return
 	_collect_variants()
+	_collect_marker_exclusions(layout)
 
 	var space := get_world_3d().direct_space_state
 	# The preset scales the attempt budget, not the placements: the RNG sequence is untouched,
@@ -268,6 +279,8 @@ func _scatter(layout: Dictionary) -> void:
 			_rng.randf_range(-_bound, _bound), _rng.randf_range(-_bound, _bound)
 		)
 		if point.length() > _bound:
+			continue
+		if _in_marker_exclusion(point):
 			continue
 		var zone := _zone_for(point)
 		var family := _pick_family(zone)
@@ -342,6 +355,40 @@ func _collect_zone_centres(layout: Dictionary) -> void:
 		counts[zone] = int(counts.get(zone, 0)) + 1
 	for zone: String in sums:
 		_zone_centres[zone] = (sums[zone] as Vector2) / float(counts[zone])
+
+
+## F-214: a static keep-out disc for every marker whose kind a bridge autoload turns into a live,
+## solid gameplay object at runtime — `ExtractionShip` (`shipwreck`) and `Wellspring` (`objective`).
+## The disc is the object's own footprint circumscribed, not its bounding box, so it stays correct
+## regardless of the object's facing — neither bridge gives its marker a rotation today, but this
+## exclusion does not need to assume that stays true.
+func _collect_marker_exclusions(layout: Dictionary) -> void:
+	var extraction_radius := Vector2(
+		ExtractionShipScript.HULL_HALF_EXTENTS.x, ExtractionShipScript.HULL_HALF_EXTENTS.z
+	).length()
+	var wellspring_radius := float(WellspringScript.FOUNDATION_RADIUS_M)
+	for marker_value: Variant in layout.get("markers", []):
+		var marker := marker_value as Dictionary
+		var radius: float
+		match String(marker.get("kind", "")):
+			"shipwreck":
+				radius = extraction_radius
+			"objective":
+				radius = wellspring_radius
+			_:
+				continue
+		var pos: Array = marker.get("pos", [0.0, 0.0, 0.0]) as Array
+		_marker_exclusions.append({
+			"pos": Vector2(float(pos[0]), float(pos[2])), "radius": radius,
+		})
+
+
+## Is this point inside a runtime object's keep-out disc?
+func _in_marker_exclusion(point: Vector2) -> bool:
+	for exclusion: Dictionary in _marker_exclusions:
+		if point.distance_to(exclusion["pos"] as Vector2) <= float(exclusion["radius"]):
+			return true
+	return false
 
 
 func _collect_variants() -> void:

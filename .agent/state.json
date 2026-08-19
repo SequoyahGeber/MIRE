@@ -1874,23 +1874,23 @@
     },
     "docs/DECISIONS.md": {
       "agent": "lm",
-      "at": "2026-08-19T12:38:25+00:00",
-      "hash": "c9132bd4941e2a40a5ca2f6b9f485f4d1128f681848a98964e7c4c998a9e4c5f",
-      "task": "F-219",
+      "at": "2026-08-19T13:44:07+00:00",
+      "hash": "cc5ec46ee0cdd44932b9d506646f4e628e0581b20cbda8ed5d1f639edebbd593",
+      "task": "F-214",
       "token": null
     },
     "docs/DELEGATION.md": {
       "agent": "lm",
-      "at": "2026-08-19T12:38:25+00:00",
-      "hash": "e024508538ef748cb71e27f5cf33e3df7cf25f24e6577306851dd8dff63d4cd4",
-      "task": "F-219",
+      "at": "2026-08-19T13:44:07+00:00",
+      "hash": "c7992cec1e67b3fb8e257c20fe5326bdb87ba2de38046503c4a34418f0ce9148",
+      "task": "F-214",
       "token": null
     },
     "docs/FINDINGS.md": {
       "agent": "lm",
-      "at": "2026-08-19T12:42:58+00:00",
-      "hash": "899e41e83b80324b7b4bef1ead97414666d307eb6df5721e9b1e17ba8b5ffa50",
-      "task": "F-220",
+      "at": "2026-08-19T13:44:07+00:00",
+      "hash": "6b69513e8367b6c12879246a91e5d690514e85f2656b976dbdea6842593815e7",
+      "task": "F-214",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1919,9 +1919,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lm",
-      "at": "2026-08-19T12:42:58+00:00",
-      "hash": "f3dcc48383e7c50e50ae2b247f978f12d93ce2c83288534bf6eb7e972583a763",
-      "task": "F-220",
+      "at": "2026-08-19T13:44:07+00:00",
+      "hash": "35fe98ece3e19461d21569e88b24c1be992a9847db4300f143eb7911d2cc6645",
+      "task": "F-214",
       "token": null
     },
     "entities/player/player.tscn": {
@@ -3041,9 +3041,9 @@
     },
     "tools/hollowmere_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T11:33:23+00:00",
+      "at": "2026-08-19T13:44:07+00:00",
       "hash": "7d964c435e4d080f2b0a1b4e1d2726fce821f234b3a1bdfedc1e0aee4a09e2dc",
-      "task": "F-166",
+      "task": "F-214",
       "token": null
     },
     "tools/hook_events_check.gd": {
@@ -3748,10 +3748,10 @@
       "task": "4.4"
     },
     "world/gen/undergrowth.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T09:45:37+00:00",
-      "hash": "03c65ece39c79e2d3722575984e6a2a2cc91f24cac78f8e337071ebdd8c89341",
-      "task": "F-112",
+      "agent": "lm",
+      "at": "2026-08-19T13:44:07+00:00",
+      "hash": "c402a68314268f1a95a6c33d161451691ac29c7b8ee9cd3e5eb67563f02f86bb",
+      "task": "F-214",
       "token": null
     },
     "world/mire/mire_grid.gd": {
@@ -6762,9 +6762,11 @@
       "title": "core/net/rpc_manifest.gd's FNV-1a seed literal overflows signed 64-bit int, erroring on every scan even though the check itself stays deterministic"
     },
     "F-214": {
+      "done_at": "2026-08-19T13:44:07+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "Undergrowth scatters through the new ExtractionShip's hull at MereShore \u2014 the offline plant pass has no way to know about a marker-bridge's runtime-built geometry"
     },
@@ -6821,6 +6823,13 @@
       "status": "done",
       "tier": "F",
       "title": "`CycleModifierService`'s per-cycle modifier draw is the same boot-time-`randomize()` bug \u2014 and already has the stable id `Chest` needed"
+    },
+    "F-222": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Eight Blender preview generators render correctly only because an unrelated object happens to get created (or the camera type happens to get flipped) between their reposition and their render \u2014 no check would catch it if that incidental code is ever removed"
     }
   },
   "version": 1
