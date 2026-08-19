@@ -75,6 +75,51 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-173 fixed: task 6.9's unlock tree gates its first real drop — `LootTableDef.roll()`'s POWERUP entries, wired through `Chest` (lm)
+
+D-111's option (b): the HOST's own `UnlockService` gates the whole party's roll, no RPC. No new
+network seam was needed — `LootTableDef.roll()` only ever runs inside `Chest._accept_open_request()`,
+and that only ever executes in the host process (locally, or behind `net_request_open`'s own
+`_transport_is_host()` guard), so `/root/UnlockService` resolved there is already, structurally,
+the host's own instance, never the opening peer's.
+
+```gdscript
+LootTableDef.roll(rng: RandomNumberGenerator, luck: float = 0.0, is_unlocked: Callable = Callable()) -> Dictionary
+    # New third arg. Callable(content_id: StringName) -> bool, asked only for POWERUP entries (an
+    # ITEM entry is never gated). An entry it returns false for is zero-weighted for that draw —
+    # not removed from the table, so it rolls again once unlocked. Default (an invalid Callable)
+    # never filters anything — every pre-F-173 call site (tools/loot_content_check.gd,
+    # tools/chest_check.gd, InventoryService._cmd_loot's debug `loot` command) is unaffected.
+```
+
+```gdscript
+Chest._unlock_check() -> Callable
+    # Private helper, _accept_open_request()'s own seam: Callable(UnlockService, "is_content_unlocked")
+    # when /root/UnlockService is present, else an invalid Callable (fail-open — same posture
+    # is_content_unlocked() itself already takes when its own Registry dependency is missing).
+```
+
+The worked example (`content/unlocks/unlock_deep_pocket.tres`, gating the real `deep_pocket`
+PowerupDef `content/loot/bog.tres` already rolls) is now a real, live gate — a Bog Chest never
+drops `deep_pocket` until the host has purchased that unlock.
+
+**Still not built, and D-111 already says why:** POI placement and `WaveSpawner`'s in-run
+enemy-roster expansion (`host_unlock_next_enemy()` — an unrelated, in-run "unlock," not this
+system) both need state that is byte-identical across every peer, which a per-peer unlock set
+cannot give them through the same "only ever ask the host" trick this fix uses — that needs
+replicated purchases or a session-wide unlock tree first. Nothing here starts that; the next task
+into either pool should read D-111 before assuming this fix's pattern extends.
+
+Verified: `agent godot --script tools/unlock_check.gd` → `UNLOCK_CHECK failures=0`, run twice — new
+coverage is a pure `LootTableDef.roll()` unit (gated POWERUP never drawn locked, rolls normally
+unlocked, an ITEM entry is never gated, the no-argument call is unaffected) plus a real `Chest`-open
+integration test against the worked example's own gate: locked grants nothing, the identical tier
+grants the powerup once purchased. No regressions: `tools/chest_check.gd` and
+`tools/loot_content_check.gd`, both re-run clean. `docs/ARCHITECTURE.md` §2.2's "Unlocks" row and
+this file's own 6.9 entry below are both updated to match; `docs/FINDINGS.md` has F-173 in
+`## Resolved`. F-182 filed along the way (unrelated pre-existing gap, `tools/unlock_check.gd`'s
+corrupt-save test has no `EXPECTED_ERROR_PATTERNS`).
+
 ### 2026-08-19 — F-172 fixed: a `--seed=<value>` launch argument gives solo/offline play the seed entry task 6.10's menu never reached (lm)
 
 Task 6.10 shipped `MainMenu`'s seed field, but it only ever reaches a HOST session — solo/offline
@@ -391,7 +436,7 @@ failure(s)`. (`crafting_net_check` fails 24/24 — reproduced identically agains
 baseline` checkout of HEAD, pre-existing and unrelated, F-167.) 0 `ERROR:` on a full boot (`agent godot
 --quit-after 15`).
 
-### 2026-08-19 — Task 6.9: Unlock tree + UI — full framework, no gameplay gate wired yet (F-173) (lm)
+### 2026-08-19 — Task 6.9: Unlock tree + UI — full framework; the first gate is wired now, see F-173's own entry above (lm)
 
 New content family `UnlockDef` (`systems/unlocks/unlock_def.gd`) + `content/unlocks/` (one worked
 example, `unlock_deep_pocket.tres`, D-073) + `autoload/unlock_service.gd` (new) +
@@ -400,8 +445,9 @@ same shape as Salvage (task 6.6): per-player `user://unlocks.json`, no two peers
 purchased sets. "Salvage unlocks variety, never power" (DESIGN.md §4.6) is enforced by `UnlockDef`'s
 schema having no stat/bonus field at all, not by a runtime check.
 
-**Public API for whichever task wires the first real gate (see F-173/D-111 before starting that
-task — the cross-peer question needs answering first, this is not just a missing call site):**
+**Public API** (the first real gate now consumes `is_content_unlocked()` — see this file's F-173
+entry above for `LootTableDef.roll()`'s new `is_unlocked` param and `Chest._unlock_check()`; D-111
+still gates whoever wires POI placement or the enemy roster next):
 
 ```gdscript
 UnlockService.is_purchased(unlock_id: StringName) -> bool        # this peer's own purchased set
@@ -449,13 +495,12 @@ UnlockMenu.row_count() -> int
 MainMenu.request_open_unlocks() -> void   # new — closes MainMenu, opens UnlockMenu
 ```
 
-**Not built — and deliberately not, see F-173/D-111:** nothing in the shipped game calls
-`is_content_unlocked()`. The worked example gates the real `deep_pocket` PowerupDef (already rolled
-by `content/loot/bog.tres`), but wiring `LootTableDef.roll()` to check it would gate the whole
-party's odds off either the host's own save or an opening peer's save with no seam to ask it — a
-real cross-peer design question (§2.2's "Unlocks" row is per-peer, unreplicated; POI/enemy-roster
-gating has the identical conflict, one level worse, since those must be byte-identical across every
-peer). D-111 lays out the two ways to resolve it before that gate gets wired.
+**Wired now, F-173 (see this file's own entry above for the shipped shape):** the worked example
+gates the real `deep_pocket` PowerupDef (already rolled by `content/loot/bog.tres`) through
+`LootTableDef.roll()`'s new `is_unlocked` Callable. **Still not built, D-111's other half:**
+POI placement and the enemy roster need state byte-identical across every peer, which this same
+"only ever ask the host" pattern cannot give them without either replicating purchases or making
+unlocks session-wide — read D-111 before assuming this fix's pattern extends there directly.
 
 Verified: `tools/unlock_check.gd` (40+ assertions, 0 failures) — schema-level "never power" via
 `UnlockDef.validation_errors()`, `spend_salvage()`/`purchase()` refuse-the-whole-thing on every
@@ -4822,6 +4867,44 @@ trip (submission → sanitized broadcast → snapshot → name-based `op` resolu
 ambiguous-match refusal), 11/11 PASS. `tools/command_check.gd`'s "peer arg type" section updated for
 the new refusal wording, `COMMAND_CHECK failures=0`. Regression: `command_net_check.gd`,
 `net_debug_panel_check.gd`, `verify_setup.gd` all clean.
+
+### 2026-08-19 — F-177 fixed: `EnemyWorld.bake_navigation()` (the LIVE nav baker) now also sees placed buildables
+
+`autoload/enemy_world.gd`'s `bake_navigation()` still parses `get_tree().current_scene` first, exactly
+as before. It now ALSO parses `/root/BuildService/Buildings` (`BuildService`'s placed-piece
+container — a sibling of the level under `/root`, never a descendant of `scene_root`, which is the
+whole reason this was invisible before) into a second `NavigationMeshSourceGeometryData3D`, and
+`.merge()`s that into the first BEFORE the one `bake_from_source_geometry_data()` call. No new public
+API — same `bake_navigation() -> Node` signature, same call sites (`_physics_process()`'s bootstrap
+path, `BuildService._request_nav_rebake()`'s debounced re-trigger). `world/chunk/nav_baker.gd`
+(F-159/task 4.5) is untouched and still carries its own independent fix for whenever F-139 wires a
+live `ChunkStreamer` and retires this file's bake in `NavBaker`'s favor — `docs/DECISIONS.md` D-121
+has the full reasoning for why this fix is a second parse-and-merge rather than a port of `NavBaker`'s
+per-piece box-tracking approach.
+
+**For whoever adds the next non-scene-tree geometry source to this bake:** the pattern is `parse_source_
+geometry_data(nav_mesh, a_fresh_geometry_object, some_other_root)` then `first_geometry.merge(a_fresh_
+geometry_object)`, repeated once per extra root, all before the single `bake_from_source_geometry_data()`
+call — never a second bake, and never feed a second root into the SAME geometry object `scene_root`
+already populated (untested here whether `parse_source_geometry_data` clears an already-populated
+target; `merge()` is the documented way two separately-parsed sets combine).
+
+**A general Recast/Godot caveat this task's own check ran into, worth knowing before trusting a
+`map_get_closest_point()` assertion near a newly-placed obstacle:** a box resting exactly flush on a
+perfectly flat surface (its bottom face height coincident with the floor's top) can leave a tiny
+disconnected walkable "island" polygon surviving at the box's own centre — reproduced with both a
+two-parse-and-merge bake and a single combined parse over one shared root, so it is a property of the
+coincident-height geometry Recast rasterizes, not of how this fix merges source data. The island
+shares no polygon edge with the rest of the map, so `NavigationServer3D.map_get_path()` never actually
+routes across it — a path-based assertion (query a route from one side of the obstacle to the other,
+assert it detours) is the reliable proof; a point-snap query at the obstacle's exact centre is not.
+
+**Verify:** `agent godot --script tools/nav_bake_check.gd` → `NAV_BAKE_CHECK failures=0`, run twice.
+New `_check_enemy_world_buildable_obstruction()`: a real `BuildService.request_place()` round trip
+puts a `ward` across a route the live baker just baked; `map_get_path()` between the same two points
+goes from a straight 6.000 m / 3 waypoints to a 7.525 m / 5-waypoint detour once the piece lands, and
+back to the straight line after `request_destroy()`. No regressions: `build_check.gd`,
+`build_net_check.gd` (real two-process ENet), `combat_check.gd`, `enemy_check.gd`, all `failures=0`.
 
 ---
 

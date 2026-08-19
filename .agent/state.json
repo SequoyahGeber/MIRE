@@ -5,18 +5,6 @@
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
     },
-    "autoload/unlock_service.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T05:35:44+00:00",
-      "task": "F-173",
-      "token": null
-    },
-    "content/unlocks/unlock_deep_pocket.tres": {
-      "agent": "lm",
-      "at": "2026-08-19T05:37:52+00:00",
-      "task": "F-173",
-      "token": null
-    },
     "core/net/net_version.gd": {
       "agent": "slate17",
       "at": "2026-08-18T22:23:08+00:00",
@@ -27,36 +15,6 @@
       "at": "2026-08-18T22:08:56+00:00",
       "task": "F-144"
     },
-    "docs/ARCHITECTURE.md": {
-      "agent": "lm",
-      "at": "2026-08-19T05:35:44+00:00",
-      "task": "F-173",
-      "token": null
-    },
-    "docs/DECISIONS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T05:35:44+00:00",
-      "task": "F-173",
-      "token": null
-    },
-    "docs/DELEGATION.md": {
-      "agent": "lm",
-      "at": "2026-08-19T05:35:44+00:00",
-      "task": "F-173",
-      "token": null
-    },
-    "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T05:35:44+00:00",
-      "task": "F-173",
-      "token": null
-    },
-    "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T05:35:44+00:00",
-      "task": "F-173",
-      "token": null
-    },
     "systems/building/buildable_door.gd": {
       "agent": "slate17",
       "at": "2026-08-18T22:23:08+00:00",
@@ -66,18 +24,6 @@
       "agent": "nettle12",
       "at": "2026-08-18T22:08:56+00:00",
       "task": "F-144"
-    },
-    "systems/loot/chest.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T05:35:44+00:00",
-      "task": "F-173",
-      "token": null
-    },
-    "systems/loot/loot_table_def.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T05:35:44+00:00",
-      "task": "F-173",
-      "token": null
     },
     "tools/_probe_lods.gd": {
       "agent": "nettle12",
@@ -123,12 +69,6 @@
       "agent": "nettle12",
       "at": "2026-08-18T21:51:43+00:00",
       "task": "F-144"
-    },
-    "tools/unlock_check.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T05:35:44+00:00",
-      "task": "F-173",
-      "token": null
     },
     "world/environment/draw_policy.gd": {
       "agent": "nettle12",
@@ -177,30 +117,6 @@
       ],
       "notes": [],
       "started": "2026-08-18T21:51:43+00:00"
-    },
-    "F-173": {
-      "agent": "lm",
-      "files": [
-        "autoload/unlock_service.gd",
-        "systems/loot/loot_table_def.gd",
-        "systems/loot/chest.gd",
-        "tools/unlock_check.gd",
-        "docs/FINDINGS.md",
-        "docs/DECISIONS.md",
-        "docs/DELEGATION.md",
-        "docs/SPECS.md",
-        "docs/ARCHITECTURE.md",
-        "content/unlocks/unlock_deep_pocket.tres"
-      ],
-      "notes": [
-        {
-          "at": "2026-08-19T05:35:48+00:00",
-          "by": "lm",
-          "text": "D-111 decision: option (b) \u2014 HOST's own unlock tree gates the run for everyone, no RPC. LootTableDef.roll() runs host-side only inside Chest._accept_open_request, so UnlockService (an autoload, one instance per process) is already naturally the HOST's instance there \u2014 no new seam needed, just the call site. Wiring roll()'s POWERUP entries as the first real consumer."
-        }
-      ],
-      "started": "2026-08-19T05:35:44+00:00",
-      "token": null
     }
   },
   "recent": {
@@ -610,9 +526,10 @@
     },
     "autoload/unlock_service.gd": {
       "agent": "lm",
-      "at": "2026-08-19T03:34:03+00:00",
-      "hash": "c0baed5fa13edaa92ddfdc3e671228cb76c5bb0777d32931c684f47526194ea5",
-      "task": "6.9"
+      "at": "2026-08-19T05:46:33+00:00",
+      "hash": "6389418dfe91fc453840803c3d97f02ea2830be0df2800410a1417cf23a52129",
+      "task": "F-173",
+      "token": null
     },
     "autoload/wellspring_service.gd": {
       "agent": "lm",
@@ -1495,9 +1412,10 @@
     },
     "content/unlocks/unlock_deep_pocket.tres": {
       "agent": "lm",
-      "at": "2026-08-19T03:34:03+00:00",
-      "hash": "9cbdbf035ba324c34b9d1cd86de3f176310af6b324d2a63f072ecafbb3e5a52d",
-      "task": "6.9"
+      "at": "2026-08-19T05:46:33+00:00",
+      "hash": "375bd1b0628b625a01446579b833ad9cb3018d8286c8658cdd3be3b931c2c375",
+      "task": "F-173",
+      "token": null
     },
     "content/weapons/cleaver.tres": {
       "agent": "vane19",
@@ -1612,9 +1530,9 @@
     },
     "docs/ARCHITECTURE.md": {
       "agent": "lm",
-      "at": "2026-08-19T05:30:24+00:00",
-      "hash": "fce21a88f14454958520fc846218e9878b90b8cd4896d2a2c3dbe319c0335f97",
-      "task": "F-168",
+      "at": "2026-08-19T05:46:33+00:00",
+      "hash": "7534f033988cf797deaae3ddccd39f351f2b7bc66a77458f3d3cf3b7d38a8c1b",
+      "task": "F-173",
       "token": null
     },
     "docs/ASSET_TRACKER.md": {
@@ -1631,23 +1549,23 @@
     },
     "docs/DECISIONS.md": {
       "agent": "lm",
-      "at": "2026-08-19T05:30:24+00:00",
+      "at": "2026-08-19T05:46:33+00:00",
       "hash": "2bc28fd02272974074dd5e955661857850733a382c698d845673aa27b0ac9069",
-      "task": "F-168",
+      "task": "F-173",
       "token": null
     },
     "docs/DELEGATION.md": {
       "agent": "lm",
-      "at": "2026-08-19T05:30:24+00:00",
-      "hash": "bde9c00154949469f7b92ba4e132f0f97e6f8c75adbe0e0ede83f346412c746c",
-      "task": "F-168",
+      "at": "2026-08-19T05:46:33+00:00",
+      "hash": "01c67a64333de48d8e2b10961ced8471849fef162f70fed898d5738b306cdd60",
+      "task": "F-173",
       "token": null
     },
     "docs/FINDINGS.md": {
       "agent": "lm",
-      "at": "2026-08-19T05:33:29+00:00",
-      "hash": "5a0a730e8343bf77c53ac80710d49a660448c6341f8a29af46bc9e414e81df38",
-      "task": "F-179",
+      "at": "2026-08-19T05:46:33+00:00",
+      "hash": "5d9d724fb6ae5f3b80d63d9924b2832d83a9c35a4212ffdba0d651daf37247ff",
+      "task": "F-173",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1674,9 +1592,9 @@
     },
     "docs/SPECS.md": {
       "agent": "lm",
-      "at": "2026-08-19T05:33:29+00:00",
-      "hash": "b7452ea8a5239fdfa135e8e416502b0191ddc562000023cc9819810266e96729",
-      "task": "F-179",
+      "at": "2026-08-19T05:46:33+00:00",
+      "hash": "9e8b5957acce2a2eae3aa160233582bc1c0bec2e350358837b4fd9d9739c44c0",
+      "task": "F-173",
       "token": null
     },
     "entities/player/player.tscn": {
@@ -2014,10 +1932,11 @@
       "task": "F-175"
     },
     "systems/loot/chest.gd": {
-      "agent": "slate17",
-      "at": "2026-08-18T21:26:59+00:00",
-      "hash": "0ddf46c326fdc70a7cd8995616d50df2fa3ac79ed86e0e8a3971873f485407de",
-      "task": "3.2"
+      "agent": "lm",
+      "at": "2026-08-19T05:46:33+00:00",
+      "hash": "a44d5c4350e43868fe6112ff79dbd4a44e9c7a0d9e236656fe87134e84ab67cd",
+      "task": "F-173",
+      "token": null
     },
     "systems/loot/loot_entry.gd": {
       "agent": "slate17",
@@ -2026,10 +1945,11 @@
       "task": "3.2"
     },
     "systems/loot/loot_table_def.gd": {
-      "agent": "slate17",
-      "at": "2026-08-18T21:26:59+00:00",
-      "hash": "23577ad0f25b2e6853c1b90a2c86c7acda7948b497d867db6c29dd7e4c41dec4",
-      "task": "3.2"
+      "agent": "lm",
+      "at": "2026-08-19T05:46:33+00:00",
+      "hash": "4d54499e8658381f34822efc8b5837d66ed9ddbdc4aad9d0d91d8293eea92f50",
+      "task": "F-173",
+      "token": null
     },
     "systems/rules/hook_def.gd": {
       "agent": "lp",
@@ -2740,9 +2660,10 @@
     },
     "tools/unlock_check.gd": {
       "agent": "lm",
-      "at": "2026-08-19T03:34:03+00:00",
-      "hash": "bb8649ef7c84f60b19d855478a195ff1f6ce0ab595060526fcf988aceed27347",
-      "task": "6.9"
+      "at": "2026-08-19T05:46:33+00:00",
+      "hash": "af5ce852be87c260f40c5c490d277f047322d35490173b3bacd4ff07864f8956",
+      "task": "F-173",
+      "token": null
     },
     "tools/vfx_site_probe.gd": {
       "agent": "larch10",
@@ -5596,9 +5517,11 @@
       "title": "Seed entry (task 6.10) only reaches the host-session path \u2014 solo/offline play draws its seed before any menu can be opened"
     },
     "F-173": {
+      "done_at": "2026-08-19T05:46:33+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`UnlockService.is_content_unlocked()` (task 6.9) has no caller anywhere in the game \u2014 wiring the first real gate needs a cross-peer design decision, not just a call site"
     },

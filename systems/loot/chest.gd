@@ -10,7 +10,10 @@ extends Node3D
 ## RandomNumberGenerator (never randi()) → grants through InventoryService.host_add() → replies to
 ## the requester with what it got. The resulting `opened` bool is the only thing replicated to
 ## everyone else, through a code-built MultiplayerSynchronizer (D-023), same as Harvestable's `active`.
-## Offline play runs the same authority path locally.
+## Offline play runs the same authority path locally. The roll's POWERUP entries are gated by the
+## HOST's own UnlockService (D-111/F-173) regardless of who opened the chest — the same
+## host-decides-for-everyone shape as the roll itself, chosen over replicating purchases so the
+## per-peer "Unlocks" row (§2.2) needs no RPC of its own.
 
 ## F-016: brand-new class_names this task introduces are not bare-resolvable in a fresh headless
 ## clone (no editor scan has rebuilt .godot/global_script_class_cache.cfg yet) — preload them.
@@ -146,7 +149,7 @@ func _accept_open_request(peer_id: int, request_id: int) -> void:
 			_confirm_peer(peer_id, request_id, false, {}, reason)
 			return
 
-	var roll: Dictionary = loot_table.call("roll", _rng, _luck_for(peer_id))
+	var roll: Dictionary = loot_table.call("roll", _rng, _luck_for(peer_id), _unlock_check())
 	var granted: Dictionary = {}
 
 	var coin_amount: int = int(roll.get("coins", 0))
@@ -203,6 +206,18 @@ func _luck_for(peer_id: int) -> float:
 	if powerups == null:
 		return 0.0
 	return maxf(0.0, float(powerups.call("stat", peer_id, &"loot_luck", 1.0)) - 1.0)
+
+
+## D-111/F-173's chosen design: the HOST's own unlock tree gates the roll for the whole party, no
+## RPC needed. This runs only inside `_accept_open_request()`, which only ever executes in the host
+## process (either locally, or via `net_request_open`'s `_transport_is_host()` guard above) — so
+## `/root/UnlockService` resolved here is always the host's own save, never the opening peer's,
+## exactly the shape D-111 picked over replicating purchases.
+func _unlock_check() -> Callable:
+	var unlock_service: Node = get_node_or_null(^"/root/UnlockService")
+	if unlock_service == null or not unlock_service.has_method("is_content_unlocked"):
+		return Callable()
+	return Callable(unlock_service, "is_content_unlocked")
 
 
 func _display_name_for(item_id: StringName) -> String:

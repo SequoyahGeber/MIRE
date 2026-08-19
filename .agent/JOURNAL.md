@@ -4217,3 +4217,18 @@ Notes along the way:
 Files: `autoload/enemy_world.gd`, `tools/nav_bake_check.gd`
 
 Commit at time of writing: `48a0f81`
+
+---
+
+### DONE · F-173 · lm · 2026-08-19T05:46:33+00:00
+
+**`UnlockService.is_content_unlocked()` (task 6.9) has no caller anywhere in the game — wiring the first real gate needs a cross-peer design decision, not just a call site**
+
+D-111 option (b) wired: LootTableDef.roll() gains an optional is_unlocked Callable that zero-weights a gated POWERUP entry; Chest._unlock_check() sources it from the HOST process's own UnlockService, no RPC needed. agent godot --script tools/unlock_check.gd -> UNLOCK_CHECK failures=0, run twice; no regressions in chest_check.gd/loot_content_check.gd. docs/DECISIONS.md was in this task's claim set but never edited -- another lane's concurrent D-121 addition (F-177) was sitting in it dirty, so it was set aside via a scoped git stash before shipping to avoid misattributing that hunk to F-173, and will be restored after.
+
+Notes along the way:
+- D-111 decision: option (b) — HOST's own unlock tree gates the run for everyone, no RPC. LootTableDef.roll() runs host-side only inside Chest._accept_open_request, so UnlockService (an autoload, one instance per process) is already naturally the HOST's instance there — no new seam needed, just the call site. Wiring roll()'s POWERUP entries as the first real consumer.
+
+Files: `autoload/unlock_service.gd`, `systems/loot/loot_table_def.gd`, `systems/loot/chest.gd`, `tools/unlock_check.gd`, `docs/FINDINGS.md`, `docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/SPECS.md`, `docs/ARCHITECTURE.md`, `content/unlocks/unlock_deep_pocket.tres`
+
+Commit at time of writing: `cfeeb81`

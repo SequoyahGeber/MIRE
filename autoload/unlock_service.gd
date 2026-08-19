@@ -8,9 +8,13 @@ extends Node
 ## NETWORK AUTHORITY (docs/ARCHITECTURE.md §2.2, "Unlocks" row): NONE. Same reasoning and the same
 ## per-peer `user://` shape as SalvageService (task 6.6, D-107): a purchase is per-player account
 ## state, no two peers ever compare unlock sets, and every peer runs this exact autoload reacting
-## only to ITS OWN local calls. F-173 records the real consequence of that: `is_content_unlocked()`
-## cannot safely gate anything the host decides once for the whole party (a loot roll, an enemy
-## roster, a POI list) without the peers' unlock sets first agreeing — which they may not.
+## only to ITS OWN local calls. F-173/D-111 settled how something host-decided-for-everyone (a loot
+## roll) may still consume this per-peer state without an RPC: the caller must only ever ask
+## `is_content_unlocked()` from a codepath that runs in the HOST's own process (`Chest`'s loot roll,
+## via `_unlock_check()`, is the first — see D-111), never trust a value carried in from another
+## peer. A POI list or enemy roster, which §2.2 already requires byte-identical across every peer,
+## still cannot use this seam as-is; that is the "one level worse" case D-111 left open, not
+## something this task closes.
 
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const UNLOCK_SAVE := preload("res://core/save/unlock_save.gd")
@@ -40,9 +44,9 @@ func purchased_ids() -> Array[StringName]:
 
 ## True when `content_id` (a PowerupDef/AttunementDef/etc id, matched against every UnlockDef's own
 ## `gates_id`) is either ungated — no UnlockDef names it, so nothing stops it appearing — or gated
-## and this peer has already purchased the UnlockDef that gates it. The seam a future consumer
-## calls before adding something to a pool; see this file's own header and F-173 for why nothing
-## calls it yet.
+## and this peer has already purchased the UnlockDef that gates it. Answers for THIS peer's own
+## save only — see this file's own header for the rule about which callers may safely use that
+## (D-111/F-173). `Chest`'s loot roll is the first live consumer, via `_unlock_check()`.
 func is_content_unlocked(content_id: StringName) -> bool:
 	var registry: Node = get_node_or_null(^"/root/Registry")
 	if registry == null or not registry.has_method("unlock_defs"):

@@ -9,7 +9,8 @@ extends Resource
 ##
 ## Network authority: none. The table is immutable content loaded identically on every peer. Only the
 ## ROLL happens over the network's boundary, and it happens once, host-side, inside Chest — nothing
-## here is ever sent on the wire.
+## here is ever sent on the wire. `roll()`'s optional unlock gate (D-111/F-173) rides the same
+## boundary: the caller passes it a Callable, so this file never touches UnlockService directly.
 
 ## F-016: a brand-new class_name is not bare-resolvable in a fresh headless clone (no editor scan has
 ## rebuilt .godot/global_script_class_cache.cfg yet). Preload it and use the constant as the type.
@@ -64,9 +65,17 @@ func validation_errors() -> PackedStringArray:
 ## weight by (1 + luck * rarity), so a rarity-0 filler line is untouched and a rarity-3 jackpot line
 ## leans hardest — luck changes the ODDS and never the contents (D-063: tune frequency, not potency).
 ##
+## [param is_unlocked] gates POWERUP entries only (D-111/F-173): a `Callable(content_id: StringName)
+## -> bool`, called with each POWERUP entry's `item_id`. An entry it returns false for is treated as
+## zero-weight for this roll, same as an unauthored weight — it can still be drawn again once
+## unlocked, nothing about the table itself changes. An unset (invalid) Callable — the default, and
+## every call site that has no unlock system to ask — never filters anything, so this stays a no-op
+## for every caller that predates F-173. ITEM entries are never gated; only POWERUP rows can be
+## behind the unlock tree (DESIGN.md §4.6).
+##
 ## Returns {"coins": int, "items": Dictionary[StringName, int],
 ##          "powerups": Dictionary[StringName, int]}.
-func roll(rng: RandomNumberGenerator, luck: float = 0.0) -> Dictionary:
+func roll(rng: RandomNumberGenerator, luck: float = 0.0, is_unlocked: Callable = Callable()) -> Dictionary:
 	var result: Dictionary = {"coins": 0, "items": {}, "powerups": {}}
 	if coin_max > 0:
 		result["coins"] = rng.randi_range(coin_min, coin_max)
@@ -79,6 +88,9 @@ func roll(rng: RandomNumberGenerator, luck: float = 0.0) -> Dictionary:
 		var weight: float = 0.0
 		if entry != null:
 			weight = float(entry.get("weight"))
+			if weight > 0.0 and int(entry.get("kind")) == LOOT_ENTRY.Kind.POWERUP and is_unlocked.is_valid():
+				if not bool(is_unlocked.call(StringName(String(entry.get("item_id"))))):
+					weight = 0.0
 			if weight > 0.0:
 				weight *= 1.0 + maxf(0.0, luck) * float(entry.get("rarity"))
 			else:

@@ -3450,6 +3450,60 @@ reproduced identically against a clean `agent baseline` checkout of HEAD, unrela
 
 ---
 
+## F-177 · `EnemyWorld.bake_navigation()` — the LIVE nav baker — still ignores placed buildables; only `NavBaker` (task 4.5, unreachable per F-139) got F-159's fix
+
+No block existed here beforehand; this file's own preamble makes writing one part of the task that
+discovers the gap.
+
+**Claim:** `autoload/enemy_world.gd`, `tools/nav_bake_check.gd`.
+
+**What this is.** F-159's own fix landed in `world/chunk/nav_baker.gd` (task 4.5's per-chunk baker),
+not `EnemyWorld.bake_navigation()` (`autoload/enemy_world.gd`) — the baker a real LOCAL/LAN/Steam
+session actually runs, at bootstrap and on every `BuildService._request_nav_rebake()`. D-118 records
+why: `enemy_world.gd` was held by another lane's claim for that task's entire session. This finding is
+the tracked consequence. `docs/DECISIONS.md` D-121 has the full reasoning for the fix shape below.
+
+**Fix, in `autoload/enemy_world.gd`'s `bake_navigation()` only:**
+
+`NavigationServer3D.parse_source_geometry_data(nav_mesh, geometry, scene_root)` still runs exactly as
+before — that half of the bug was never real; terrain and any level-authored static geometry were
+always seen. What was missing: `BuildService`'s placed-piece container (`Buildings`, holding every
+piece `request_place()` has spawned) is a child of the `BuildService` autoload, not of `scene_root` —
+a SIBLING under `/root`, invisible to a walk rooted at the level. A second
+`parse_source_geometry_data()` call, rooted at `get_node_or_null(^"/root/BuildService/Buildings")`
+(a no-op skip if the node is absent or empty, same tolerance every other cross-autoload lookup in this
+file already has), fills a second `NavigationMeshSourceGeometryData3D`, which `.merge()`s into the
+first BEFORE the one `bake_from_source_geometry_data()` call — same "has to be one combined pass"
+requirement F-159/D-118 already established, still true here: Recast carves a hole around solid
+geometry only by seeing it in the same source data as whatever it's carving.
+
+**Verify:** `tools/nav_bake_check.gd`, new `_check_enemy_world_buildable_obstruction()` — a REAL
+`BuildService.request_place()` round trip (funded inventory, the actual host-decides path, not a
+piece dropped in by hand) puts a `ward` (`content/buildables/ward.tres`) across a two-point route
+`EnemyWorld.bake_navigation()` has just baked over a flat synthetic floor, and asserts
+`NavigationServer3D.map_get_path()` between those same two points goes from the straight line
+(6.000 m, 3 waypoints) to a real detour (7.525 m, 5 waypoints) once the piece lands, then back to the
+straight line after `request_destroy()`. Deliberately a PATH assertion, not F-159's own
+`map_get_closest_point()`-at-the-piece's-centre shape: that point-snap query is provably unreliable
+for a piece resting exactly flush on a perfectly flat test floor — a Recast/Godot rasterization quirk
+leaves a tiny disconnected walkable "island" polygon surviving at the exact centre in that specific
+case (reproduced identically whether via this fix's two-parse-and-merge or a single combined parse
+over one shared root, so it is a property of coincident-height geometry, not of how this fix merges
+data) — snappable despite sharing no edge with the rest of the map, and therefore never actually
+walkable in practice, since `map_get_path()` only ever routes across connected edges. Real heightmap
+terrain does not reliably dodge the same setup either, at least at this seed (a 2.4 m `ward` footprint
+routinely fails the placement validator's own support probes on it before slope ever enters the
+picture), which is why the check fixture is a flat synthetic floor — same shape `build_check.gd`'s
+own `_build_world()` already uses — rather than a real terrain chunk.
+
+`agent godot --script tools/nav_bake_check.gd` → `NAV_BAKE_CHECK failures=0`, all assertions PASS
+including the five pre-existing sections. Ran twice, both clean. No regressions: `build_check.gd`,
+`build_net_check.gd` (real two-process ENet), `combat_check.gd`, `enemy_check.gd`, all `failures=0`.
+
+**Done means:** `docs/FINDINGS.md`'s F-177 section moved to `## Resolved` with this same summary.
+
+---
+
 ## 7.8 · Network robustness: packet loss, high latency, hostile disconnect timing
 
 No block existed here beforehand; this file's own preamble makes writing one part of the task that
@@ -4033,6 +4087,70 @@ ritual/recorruption/milestone-bonus behavior is unchanged.
 
 **Verified 2026-08-18 (lm):** all three green — `WELLSPRING_CHECK failures=0`,
 `WELLSPRING_RECORRUPTION_CHECK failures=0`, `SALVAGE_CHECK failures=0`.
+
+---
+
+## F-173 · `UnlockService.is_content_unlocked()` (task 6.9) has no caller anywhere in the game — wiring the first real gate needs a cross-peer design decision, not just a call site
+
+**Claim:** `autoload/unlock_service.gd`, `systems/loot/loot_table_def.gd`, `systems/loot/chest.gd`,
+`tools/unlock_check.gd`, `content/unlocks/unlock_deep_pocket.tres`, `docs/FINDINGS.md`,
+`docs/DECISIONS.md`, `docs/DELEGATION.md`, `docs/SPECS.md`, `docs/ARCHITECTURE.md`.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The cross-peer question, and why it wasn't a missing line of code:** `is_content_unlocked()`
+answers only for the CALLING peer's own `user://unlocks.json` (§2.2's "Unlocks" row is **None** —
+per-player, unreplicated, the same shape Salvage already has). `LootTableDef.roll()` runs once,
+host-side, for whichever peer opened the chest. Checking the gate there meant picking one of D-111's
+two options: gate the whole party's roll off the HOST's own unlock set regardless of who opened the
+chest, or ask the OPENING peer's own save — for which no seam exists, since Salvage/Unlocks were
+built with no RPC of their own on purpose. D-111 settled on the first: **the HOST's own unlock tree
+gates the run for everyone**, needing no RPC at all.
+
+**Fix — no new seam, just the call site D-111 unblocked:**
+1. `systems/loot/loot_table_def.gd`: `roll()` gains a third, optional `is_unlocked: Callable`
+   (default an invalid Callable). In the existing per-entry weight loop, a POWERUP entry whose
+   `is_unlocked.call(item_id)` returns false is zero-weighted for that draw — the same "weight <=
+   0.0 is skipped" path `_weighted_pick()` already had. ITEM entries are never gated (kind check
+   guards it). An unset Callable never filters anything, so every pre-existing call site
+   (`tools/chest_check.gd`, `tools/loot_content_check.gd`, `InventoryService._cmd_loot`'s debug
+   `loot` command) is unaffected.
+2. `systems/loot/chest.gd`: new private `_unlock_check()` returns
+   `Callable(unlock_service, "is_content_unlocked")` when `/root/UnlockService` is present, else an
+   invalid Callable (fail-open, matching `is_content_unlocked()`'s own posture when ITS dependency,
+   Registry, is missing). `_accept_open_request()` passes it as `roll()`'s third argument. Because
+   `_accept_open_request()` only ever executes in the host process (called directly when this peer
+   IS the host, or from `net_request_open` behind its own `_transport_is_host()` guard), the
+   `UnlockService` instance `_unlock_check()` resolves is always the host's own — never the opening
+   peer's — with no RPC required to guarantee that.
+3. `autoload/unlock_service.gd`: header + `is_content_unlocked()` doc record the one rule this
+   design leans on — only ever call it from a codepath that runs in the asking process's OWN host,
+   never trust a value carried in from another peer.
+4. `content/unlocks/unlock_deep_pocket.tres`: description no longer claims "no pool checks this."
+
+**What this does NOT close:** POI placement and `WaveSpawner.host_unlock_next_enemy()` (an
+unrelated, in-run "unlock," not this system) both need state that is byte-identical across every
+peer — D-111's "one level worse" case, which a per-peer unlock set cannot satisfy through this same
+"only ever ask the host" trick without either replicating purchases or making unlocks session-wide.
+Not attempted here; F-173's own "what closes this" scoped the first consumer to the loot roll only.
+
+**Verify:** `agent godot --script tools/unlock_check.gd`. New coverage: a pure `LootTableDef.roll()`
+unit test (no UnlockService involved — a gated POWERUP entry with `is_unlocked() -> false` is never
+drawn even as the table's only entry; the same entry with `true` rolls normally; an ITEM entry is
+never gated; a bare `roll(rng, luck)` call with no third argument is unaffected) plus a real
+`Chest`-open integration test against the worked example's own gate (`deep_pocket`, matching
+`content/loot/bog.tres`'s real line): a locked open grants nothing, and the identical
+Registry-indexed tier grants the powerup once `unlock_deep_pocket` is purchased through the real
+purchase flow — same `UnlockService` instance both times. Regression: `tools/chest_check.gd`,
+`tools/loot_content_check.gd`.
+
+**Verified 2026-08-19 (lm):** `agent godot --script tools/unlock_check.gd` → `UNLOCK_CHECK
+failures=0`, run twice. `tools/chest_check.gd` → `CHEST_CHECK failures=0`. `tools/loot_content_check.gd`
+→ `LOOT_CONTENT_CHECK failures=0`. `tools/findings_numbering_check.gd` → `failures=0` after moving
+this finding to `## Resolved`. F-182 filed along the way for an unrelated pre-existing gap this
+verification surfaced (`tools/unlock_check.gd`'s corrupt-save test has no
+`EXPECTED_ERROR_PATTERNS` declaration) — not fixed here.
 
 ---
 

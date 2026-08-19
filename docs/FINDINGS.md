@@ -779,39 +779,6 @@ run against either machine state still means something.
 
 ---
 
-### F-173 · `UnlockService.is_content_unlocked()` (task 6.9) has no caller anywhere in the game — wiring the first real gate needs a cross-peer design decision, not just a call site
-
-**Area:** meta-progression/netcode · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.9
-
-`autoload/unlock_service.gd`'s `is_content_unlocked(content_id)` correctly reads locked/unlocked
-against this PEER's own `user://unlocks.json` (docs/ARCHITECTURE.md §2.2's new "Unlocks" row is
-**None** — deliberately unreplicated, same shape as Salvage). Nothing calls it. The worked example,
-`content/unlocks/unlock_deep_pocket.tres`, gates the real `deep_pocket` PowerupDef that
-`content/loot/bog.tres` already rolls — the natural first real gate — but `LootTableDef.roll()` runs
-once, host-side, for whichever peer opened the chest. Checking the gate there means picking one of:
-gate the whole party's roll off the HOST's own unlock set regardless of who actually opened the
-chest (wrong the instant a non-host peer is the one who bought the unlock), or ask the OPENING
-peer's own save — for which no seam exists, since Salvage/Unlocks were built with no RPC of their
-own on purpose. POI placement and enemy-roster expansion (`WaveSpawner.host_unlock_next_enemy()` —
-an unrelated, in-run "unlock," not this system) have the same conflict one level worse: §2.2 already
-requires those derived lists to be byte-identical across every peer, which a per-peer unlock set
-cannot give them without either replicating purchases or making unlocks session-wide rather than
-per-player.
-
-**Why not fixed here:** task 6.9's own scope was the purchase/persistence/UI framework
-(`docs/ROADMAP.md`'s "Unlock tree + UI"); resolving which of the two designs above is correct is a
-call about Salvage's whole authority model, not something this task should decide as a side effect
-of wiring one gate. D-111 records the full reasoning and what would change it.
-
-**What closes this:** a task that picks one of D-111's two options — replicate purchases (a new
-reliable RPC broadcasting `unlock_purchased`, the same shape `salvage_banked` would need if Salvage
-itself ever needed cross-peer visibility), or make the unlock tree a HOST-only, session-wide setting
-(no RPC needed, `is_content_unlocked()` only ever asked of the host's own service) — and then wires
-`LootTableDef.roll()`'s POWERUP entries through it as the first real consumer. POI/enemy-roster
-gating is a natural follow-up once that pattern exists.
-
----
-
 ### F-174 · No dev machine can stand in for "mid-range" — `tools/perf_probe.gd`'s baseline is only ever measured on the fastest hardware in the project
 
 **Area:** perf · **Severity:** low · **Found:** 2026-08-18 by lm during 7.7
@@ -883,38 +850,6 @@ libvorbis/libsndfile version so the encode step itself becomes reproducible. Who
 `render_music.py` should `git status` immediately after running its `main()` and `git checkout --`
 away any diff to `ambient_day.ogg`/`ambient_night.ogg` they did not mean to produce — this session
 nearly committed an unrelated ~4 KB regen of both tracks as a side effect of adding one new asset.
-
-### F-177 · `EnemyWorld.bake_navigation()` — the LIVE nav baker — still ignores placed buildables; only `NavBaker` (task 4.5, unreachable per F-139) got F-159's fix
-
-**Area:** world / netcode · **Severity:** low · **Found:** 2026-08-19 by lm during F-159
-
-F-159 asked for placed buildables (walls, Wards, anything `BuildService` spawns) to stop being
-invisible to navigation. The fix landed entirely in `world/chunk/nav_baker.gd` — `NavBaker`, task
-4.5's per-chunk baker — because that is what F-159's own wording scoped it against and what `tools/
-nav_bake_check.gd` verifies. But `NavBaker` is not what the shipped game actually paths against
-today: nothing instantiates a `ChunkStreamer` in the live level yet (F-139), so `NavBaker.bind()` is
-never called outside its own check script. The baker the live game DOES run —
-`EnemyWorld.bake_navigation()`, called at session bootstrap and re-triggered by
-`BuildService._request_nav_rebake()` on every placement/destroy — still does exactly what F-159
-originally described: `NavigationServer3D.parse_source_geometry_data(nav_mesh, geometry, scene_root)`
-walks `get_tree().current_scene`, and `BuildService`'s placed-piece container is a child of the
-`BuildService` autoload, not of the scene — so a wall placed in a live LOCAL/LAN/Steam session today
-is still a collider `NavigationAgent3D` steering will drive straight through.
-
-**Why not fixed here:** `autoload/enemy_world.gd` was held by another lane (`lp`, task 5.5, boss
-framework) for this entire session, and folding buildable geometry into a bake correctly requires ONE
-combined parse+bake pass — compositing two independently-baked regions cannot produce the same
-result Recast would from seeing both terrain and buildables together, so there was no sound fix that
-avoided this file.
-
-**What closes this:** whichever task wires a live `ChunkStreamer`/`NavBaker` pair into the actual
-playable level (F-139's own open question — "most likely after 4.7 POI placement, possibly not until
-M4's playtest gate") makes `EnemyWorld.bake_navigation()` retire in `NavBaker`'s favor, at which point
-this finding closes as a side effect with no separate work needed — `NavBaker` already carries F-159's
-fix. If the live baker stays `EnemyWorld.bake_navigation()` for longer than that, the same signal-based
-approach (`piece_placed`/`piece_destroyed` from `BuildService`, folded into
-`NavigationMeshSourceGeometryData3D` before the ONE bake call, box faces via the same convention
-`NavBaker._box_faces()` establishes) should be ported there directly instead of waiting.
 
 ---
 
@@ -1007,7 +942,105 @@ regression here for free once whoever fixes this adds a replication-shaped case 
 
 ---
 
+### F-182 · tools/unlock_check.gd's corrupt-save test provokes two engine ERROR lines with no EXPECTED_ERROR_PATTERNS declaration
+
+**Area:** verification · **Severity:** low · **Found:** 2026-08-19 by lm
+
+_check_save_versioning() deliberately writes an invalid JSON file to TEST_CORRUPT_PATH and calls
+UNLOCK_SAVE.load_data() on it, expecting (and correctly getting) the safe-default fallback — but
+that fallback path logs two real engine lines ("Parse JSON failed" and "did not contain a JSON
+object, starting fresh") that the check's own finish() print never declares, unlike
+tools/chest_check.gd's own provoked-error line ("references unknown loot tail" ->
+EXPECTED_ERROR_PATTERNS="references unknown loot tail" -- SPECS.md's standing rule 4). Found while
+adding F-173's chest-gate integration tests to this file and grepping the run's own output for
+ERROR lines as usual.
+
+Not fixed here: pre-existing behavior, unrelated to F-173's own scope (unlock_service.gd,
+loot_table_def.gd, chest.gd's new gate). failures=0 was already correct before and after my
+change -- the check() counter never counted these push_error calls as failures either way, so
+nothing is silently passing that should fail. This is a standing-rule-4 paperwork gap, not a
+correctness bug.
+
+What closes this: add `· EXPECTED_ERROR_PATTERNS="Parse JSON failed|did not contain a JSON
+object"` to unlock_check.gd's finish() print, same shape chest_check.gd already uses.
+
+---
+
 ## Resolved
+
+### F-173 · `UnlockService.is_content_unlocked()` (task 6.9) has no caller anywhere in the game — wiring the first real gate needs a cross-peer design decision, not just a call site — **fixed**
+
+**Area:** meta-progression/netcode · **Severity:** medium · **Found:** 2026-08-19 by lm during 6.9
+
+`autoload/unlock_service.gd`'s `is_content_unlocked(content_id)` correctly reads locked/unlocked
+against this PEER's own `user://unlocks.json` (docs/ARCHITECTURE.md §2.2's new "Unlocks" row is
+**None** — deliberately unreplicated, same shape as Salvage). Nothing calls it. The worked example,
+`content/unlocks/unlock_deep_pocket.tres`, gates the real `deep_pocket` PowerupDef that
+`content/loot/bog.tres` already rolls — the natural first real gate — but `LootTableDef.roll()` runs
+once, host-side, for whichever peer opened the chest. Checking the gate there means picking one of:
+gate the whole party's roll off the HOST's own unlock set regardless of who actually opened the
+chest (wrong the instant a non-host peer is the one who bought the unlock), or ask the OPENING
+peer's own save — for which no seam exists, since Salvage/Unlocks were built with no RPC of their
+own on purpose. POI placement and enemy-roster expansion (`WaveSpawner.host_unlock_next_enemy()` —
+an unrelated, in-run "unlock," not this system) have the same conflict one level worse: §2.2 already
+requires those derived lists to be byte-identical across every peer, which a per-peer unlock set
+cannot give them without either replicating purchases or making unlocks session-wide rather than
+per-player.
+
+**Why not fixed here:** task 6.9's own scope was the purchase/persistence/UI framework
+(`docs/ROADMAP.md`'s "Unlock tree + UI"); resolving which of the two designs above is correct is a
+call about Salvage's whole authority model, not something this task should decide as a side effect
+of wiring one gate. D-111 records the full reasoning and what would change it.
+
+**What closes this:** a task that picks one of D-111's two options — replicate purchases (a new
+reliable RPC broadcasting `unlock_purchased`, the same shape `salvage_banked` would need if Salvage
+itself ever needed cross-peer visibility), or make the unlock tree a HOST-only, session-wide setting
+(no RPC needed, `is_content_unlocked()` only ever asked of the host's own service) — and then wires
+`LootTableDef.roll()`'s POWERUP entries through it as the first real consumer. POI/enemy-roster
+gating is a natural follow-up once that pattern exists.
+
+---
+
+**Resolved 2026-08-19 by lm.** Wired D-111's option (b) — the HOST's own UnlockService gates the whole party's roll, no RPC. No
+new seam was needed: LootTableDef.roll() runs only inside Chest._accept_open_request(), which only
+ever executes in the host process (locally, or behind net_request_open's own
+_transport_is_host() guard), so the /root/UnlockService that codepath resolves is already,
+structurally, the host's own instance -- never the opening peer's.
+
+Fix, three files:
+- systems/loot/loot_table_def.gd: roll() takes a new optional `is_unlocked: Callable` (default
+  invalid Callable, so every pre-F-173 caller is unaffected). A POWERUP entry is zero-weighted for
+  that draw when the callable returns false; ITEM entries are never gated.
+- systems/loot/chest.gd: _accept_open_request() now passes _unlock_check() into roll() --
+  Callable(unlock_service, "is_content_unlocked") if /root/UnlockService is present, else an
+  invalid Callable (fail-open, same posture is_content_unlocked() itself takes when Registry is
+  missing).
+- autoload/unlock_service.gd: header + is_content_unlocked() doc updated to record the one rule
+  this design depends on -- only ever call it from a codepath that runs in the asking process's
+  OWN host, never trust a value carried in from another peer.
+- content/unlocks/unlock_deep_pocket.tres: description no longer says "no pool checks this."
+
+Also: docs/DELEGATION.md 'Current state' (the F-173 section) rewritten to describe the shipped
+gate instead of the still-open question; docs/ARCHITECTURE.md §2.2's "Unlocks" row gets a
+clarifying sentence about the host-only-caller rule; docs/SPECS.md gets a block (this finding had
+none). New finding filed along the way: F-182 (tools/unlock_check.gd's corrupt-save test provokes
+two undeclared engine ERROR lines -- pre-existing, unrelated to this fix, not fixed here).
+
+Verified: `.agent/bin/agent godot --script tools/unlock_check.gd` -> UNLOCK_CHECK failures=0, run
+twice. New coverage: a pure LootTableDef.roll() unit (gated POWERUP never drawn when locked, rolls
+normally when unlocked, an ITEM entry is never gated, no-argument call is unaffected) plus a real
+Chest-open integration test against the worked example's own gate (deep_pocket) -- locked grants
+nothing, and the identical chest tier grants the powerup once unlock_deep_pocket is purchased
+(same UnlockService instance, no RPC). No regressions: tools/chest_check.gd (CHEST_CHECK
+failures=0) and tools/loot_content_check.gd (LOOT_CONTENT_CHECK failures=0), both re-run after
+this change.
+
+POI placement and WaveSpawner's in-run enemy-roster expansion are NOT wired -- D-111 already flags
+those as "one level worse" (byte-identical-across-every-peer state a per-peer unlock set cannot
+satisfy without either replicating purchases or making unlocks session-wide), and F-173's own "what
+closes this" scoped the first consumer to the loot roll only. That remains open work for whoever
+picks up POI/enemy-roster gating; no new finding filed for it since D-111 already describes exactly
+what would need to change.
 
 ### F-179 · `CommandService.spec_names()`/`function_names()` are the fourth and fifth `Array[StringName].sort()` sites F-175 found — not fixed here, `autoload/command_service.gd` was held all session by another lane's claim — **fixed**
 
@@ -1592,6 +1625,55 @@ then destroys it and asserts the query returns close to its own pre-piece baseli
 clean. No regressions: build_check.gd, build_net_check.gd (real two-process ENet), combat_check.gd
 (exercises host_piece_destroyed_by_damage's new signal arity) all failures=0. agent godot --quit-after 20:
 no new ERROR:/SCRIPT ERROR: lines.
+
+### F-177 · `EnemyWorld.bake_navigation()` — the LIVE nav baker — still ignored placed buildables; only `NavBaker` (task 4.5, unreachable per F-139) got F-159's fix — **fixed**
+
+**Area:** world / netcode · **Severity:** low · **Found:** 2026-08-19 by lm during F-159
+
+F-159 asked for placed buildables (walls, Wards, anything `BuildService` spawns) to stop being
+invisible to navigation. The fix landed entirely in `world/chunk/nav_baker.gd` — `NavBaker`, task
+4.5's per-chunk baker — because `NavBaker` is not what the shipped game actually paths against:
+nothing instantiates a `ChunkStreamer` in the live level yet (F-139). The baker the live game DOES
+run — `EnemyWorld.bake_navigation()`, called at session bootstrap and re-triggered by
+`BuildService._request_nav_rebake()` on every placement/destroy — still walked only `get_tree().
+current_scene`, and `BuildService`'s placed-piece container is a child of the `BuildService` autoload,
+not of the scene, so a wall placed in a live LOCAL/LAN/Steam session was still a collider
+`NavigationAgent3D` steering drove straight through.
+
+**Resolved 2026-08-19 by lp.** `autoload/enemy_world.gd`'s `bake_navigation()` still walks
+`scene_root` exactly as before, then separately walks `/root/BuildService/Buildings` (the placed-piece
+container, a SIBLING of the level under `/root` — D-023's usual reason: an autoload keeps its own
+spawned content as its own child so it survives a scene reload) into a second
+`NavigationMeshSourceGeometryData3D` and `.merge()`s that into the first before the ONE
+`bake_from_source_geometry_data()` call — same "has to be one combined pass" requirement D-118 already
+recorded (Recast carves a hole around solid geometry by seeing it alongside whatever it is carving, so
+two independently-baked regions cannot produce that result). This lands directly in the live baker
+rather than porting `NavBaker`'s per-piece box-tracking approach (D-121): `bake_navigation()` already
+does one full-scene reparse+rebake on every call (no per-chunk incremental state to keep in step), so
+the two-root-parse-and-merge shape is the smaller, more directly equivalent change, and it uses each
+piece's REAL collider geometry (whatever `BuildService._generated_piece()` or an authored `.tscn`
+actually placed) rather than a synthetic box reconstructed from `BuildableDef.size` alone.
+
+Verified: `agent godot --script tools/nav_bake_check.gd` -> `NAV_BAKE_CHECK failures=0`, run twice, new
+`_check_enemy_world_buildable_obstruction()` — a real `BuildService.request_place()` (funded inventory,
+real host-decides round trip, not a synthetic body) puts a `ward` piece across a two-point route
+`EnemyWorld.bake_navigation()` had just baked, and asserts `NavigationServer3D.map_get_path()` between
+the same two points goes from the straight line (6.000m, 3 waypoints) to a real detour (7.525m, 5
+waypoints) after the piece lands, then back to the straight line after `request_destroy()`. Deliberately
+NOT a point-snap `map_get_closest_point()` assertion at the piece's own centre (F-159's own check uses
+that shape, and still does): a piece resting exactly flush on a perfectly flat floor — the simplest,
+most controllable test fixture — hits a Recast/Godot rasterization quirk where the piece's
+coincident-height bottom face and the floor's own top can leave a tiny walkable "island" polygon
+surviving at the exact centre, snappable despite sharing no edge with anything else on the map (and
+therefore never actually walkable in practice — `map_get_path()` only ever routes across connected
+edges). Confirmed this is a property of the geometry, not of the two-root-merge approach specifically:
+the same island appears baking a single combined parse over one shared root too. Real, uneven heightmap
+terrain does not reliably avoid it either at THIS seed (a 2.4 m `ward` footprint routinely fails the
+placement validator's own support probes there before slope even enters it — the terrain is hillier
+than a footprint that size tolerates), which is why this check's fixture is a flat synthetic floor
+(same shape build_check.gd's own `_build_world()` already uses) rather than real terrain. No
+regressions: `build_check.gd`, `build_net_check.gd` (real two-process ENet), `combat_check.gd`,
+`enemy_check.gd` all `failures=0`.
 
 ### F-167 · `tools/crafting_net_check.gd` fails (24/24) against a clean checkout of HEAD, independent of any in-flight change — **fixed**
 

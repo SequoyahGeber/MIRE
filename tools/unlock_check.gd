@@ -21,6 +21,13 @@ extends SceneTree
 ##      backfills defaults instead of crashing; a round trip preserves data and stamps the current
 ##      version; a corrupt or absent file resolves to a safe default rather than propagating an
 ##      error.
+##   8. F-173/D-111's first real gate: `LootTableDef.roll()`'s new `is_unlocked` Callable
+##      zero-weights a gated POWERUP entry (never drawn) when it returns false, rolls the entry
+##      normally when it returns true, never gates an ITEM entry, and is a no-op when the caller
+##      passes nothing (every pre-F-173 call site). Then, through a real `Chest` open against the
+##      worked example's own gated id (`deep_pocket`, content/loot/bog.tres's own line), proves the
+##      production wiring end to end: locked grants nothing, and the same tier grants the powerup
+##      once `unlock_deep_pocket` is purchased.
 ##
 ##   .agent/bin/agent godot --script tools/unlock_check.gd
 
@@ -28,6 +35,9 @@ const EVENT_BUS := preload("res://core/events/event_bus.gd")
 const UNLOCK_SAVE := preload("res://core/save/unlock_save.gd")
 const UNLOCK_DEF := preload("res://systems/unlocks/unlock_def.gd")
 const SALVAGE_SAVE := preload("res://core/save/salvage_save.gd")
+const LOOT_TABLE_DEF_SCRIPT := preload("res://systems/loot/loot_table_def.gd")
+const LOOT_ENTRY_SCRIPT := preload("res://systems/loot/loot_entry.gd")
+const CHEST_SCRIPT := preload("res://systems/loot/chest.gd")
 
 ## Every test path lives under a name a real save could never collide with, and every one of them
 ## is deleted at the end of the run — this check must never touch a real player's
@@ -43,6 +53,10 @@ const ALL_TEST_PATHS: PackedStringArray = [
 ]
 
 const WORKED_EXAMPLE_ID: StringName = &"unlock_deep_pocket"
+## The worked example's own `gates_id`, i.e. the content id `is_content_unlocked()` is actually asked
+## about — never the UnlockDef's own id. Matches the real line in content/loot/bog.tres.
+const WORKED_EXAMPLE_GATED_ID: StringName = &"deep_pocket"
+const CHEST_GATE_TIER: StringName = &"unlock_check_chest_gate"
 
 var failures: int = 0
 var registry: Node
@@ -67,10 +81,15 @@ func _run() -> void:
 		finish()
 		return
 
+	unlock_service.set(&"save_path", TEST_UNLOCK_PATH)
+
 	_check_def_validation()
+	_check_loot_table_roll_gate()
 	await _check_spend_salvage()
+	await _check_chest_gate_locked()
 	await _check_purchase_flow()
 	_check_content_gate()
+	await _check_chest_gate_unlocked()
 	_check_menu()
 	_check_save_versioning()
 
@@ -209,6 +228,113 @@ func _check_purchase_flow() -> void:
 	check(_purchased_events.size() == 1, "unlock_purchased does not fire again for a refused repeat")
 
 	EVENT_BUS.unsubscribe_unlock_purchased(_on_unlock_purchased)
+
+
+## Pure — no UnlockService, no Chest. Every table here has exactly one positive-weight entry, so the
+## draw it makes is deterministic regardless of the RNG seed: with the entry zero-weighted (gated +
+## locked) `roll()` returns before its draw loop ever runs; with it the table's only positive weight,
+## `_weighted_pick` cannot land on anything else.
+func _check_loot_table_roll_gate() -> void:
+	print("\n== LootTableDef.roll()'s is_unlocked gate, in isolation (D-111/F-173) ==")
+	var powerup_entry := LOOT_ENTRY_SCRIPT.new()
+	powerup_entry.set("kind", LOOT_ENTRY_SCRIPT.Kind.POWERUP)
+	powerup_entry.set("item_id", &"unlock_check_powerup")
+	powerup_entry.set("min_amount", 1)
+	powerup_entry.set("max_amount", 1)
+	powerup_entry.set("weight", 5.0)
+	var powerup_entries: Array[LOOT_ENTRY_SCRIPT] = [powerup_entry]
+	var powerup_table := LOOT_TABLE_DEF_SCRIPT.new()
+	powerup_table.set("roll_count", 3)
+	powerup_table.set("entries", powerup_entries)
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1
+
+	var locked: Dictionary = powerup_table.call("roll", rng, 0.0, func(_id: StringName) -> bool: return false)
+	check((locked.get("powerups", {}) as Dictionary).is_empty(),
+		"a gated POWERUP entry with is_unlocked() -> false is never drawn, even as the table's only entry")
+
+	var unlocked: Dictionary = powerup_table.call("roll", rng, 0.0, func(_id: StringName) -> bool: return true)
+	check(int((unlocked.get("powerups", {}) as Dictionary).get(&"unlock_check_powerup", 0)) == 3,
+		"the same entry with is_unlocked() -> true rolls normally (roll_count x amount)")
+
+	var no_gate: Dictionary = powerup_table.call("roll", rng, 0.0)
+	check(int((no_gate.get("powerups", {}) as Dictionary).get(&"unlock_check_powerup", 0)) == 3,
+		"calling roll() with no is_unlocked argument never gates — every pre-F-173 call site still works")
+
+	var item_entry := LOOT_ENTRY_SCRIPT.new()
+	item_entry.set("kind", LOOT_ENTRY_SCRIPT.Kind.ITEM)
+	item_entry.set("item_id", &"unlock_check_item")
+	item_entry.set("min_amount", 1)
+	item_entry.set("max_amount", 1)
+	item_entry.set("weight", 5.0)
+	var item_entries: Array[LOOT_ENTRY_SCRIPT] = [item_entry]
+	var item_table := LOOT_TABLE_DEF_SCRIPT.new()
+	item_table.set("roll_count", 3)
+	item_table.set("entries", item_entries)
+	var item_roll: Dictionary = item_table.call("roll", rng, 0.0, func(_id: StringName) -> bool: return false)
+	check(int((item_roll.get("items", {}) as Dictionary).get(&"unlock_check_item", 0)) == 3,
+		"an ITEM entry is never gated by is_unlocked, even when it returns false for everything")
+
+
+func _register_chest_gate_table() -> void:
+	var entry := LOOT_ENTRY_SCRIPT.new()
+	entry.set("kind", LOOT_ENTRY_SCRIPT.Kind.POWERUP)
+	entry.set("item_id", WORKED_EXAMPLE_GATED_ID)
+	entry.set("min_amount", 1)
+	entry.set("max_amount", 1)
+	entry.set("weight", 5.0)
+	var entries: Array[LOOT_ENTRY_SCRIPT] = [entry]
+	var table := LOOT_TABLE_DEF_SCRIPT.new()
+	table.set("id", CHEST_GATE_TIER)
+	table.set("roll_count", 1)
+	table.set("entries", entries)
+	var loot_tables: Dictionary = registry.get("loot_tables")
+	loot_tables[CHEST_GATE_TIER] = table
+	registry.set("loot_tables", loot_tables)
+
+
+func _open_chest_gate_once() -> Dictionary:
+	var chest: Node3D = CHEST_SCRIPT.new() as Node3D
+	chest.name = "UnlockCheckGateChest"
+	chest.set("tier", CHEST_GATE_TIER)
+	root.add_child(chest)
+	await process_frame
+	var confirmations: Array = []
+	chest.connect(&"open_confirmed", func(_rid: int, _accepted: bool, granted: Dictionary, _detail: String) -> void:
+		confirmations.append(granted))
+	chest.call("request_open")
+	var granted: Dictionary = confirmations[0] if confirmations.size() == 1 else {}
+	chest.queue_free()
+	return granted
+
+
+## Real Chest, real UnlockService, real Registry-indexed table — the exact wiring D-111 picked:
+## `_unlock_check()`'s Callable, sourced from the HOST process's own UnlockService, gates the roll.
+## Runs before `_check_purchase_flow()` purchases the worked example, so `deep_pocket` still reads
+## locked here.
+func _check_chest_gate_locked() -> void:
+	print("\n== Chest wires UnlockService into its own roll, locked (D-111/F-173) ==")
+	var powerup_service: Node = root.get_node_or_null(^"PowerupService")
+	check(powerup_service != null, "PowerupService is registered as an autoload")
+	if powerup_service == null:
+		return
+	_register_chest_gate_table()
+	var granted: Dictionary = await _open_chest_gate_once()
+	check(not granted.has(WORKED_EXAMPLE_GATED_ID),
+		"a real chest open never grants a POWERUP gated behind an unpurchased UnlockDef")
+
+
+## Runs after `_check_purchase_flow()` has actually bought `unlock_deep_pocket` — same UnlockService
+## instance, same chest tier, no other state changed. Proves the gate flips open, not just closed.
+func _check_chest_gate_unlocked() -> void:
+	print("\n== Chest wires UnlockService into its own roll, unlocked (D-111/F-173) ==")
+	var granted: Dictionary = await _open_chest_gate_once()
+	check(int(granted.get(WORKED_EXAMPLE_GATED_ID, 0)) == 1,
+		"once the gating UnlockDef is purchased, the same chest tier grants the powerup")
+	var loot_tables: Dictionary = registry.get("loot_tables")
+	loot_tables.erase(CHEST_GATE_TIER)
+	registry.set("loot_tables", loot_tables)
 
 
 func _check_content_gate() -> void:
