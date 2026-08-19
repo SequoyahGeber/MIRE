@@ -3622,3 +3622,18 @@ Notes along the way:
 Files: `tools/construction_check.gd`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `5139114`
+
+---
+
+### DONE · F-138 · lm · 2026-08-19T00:36:15+00:00
+
+**Rotating an AABB's corners is still the wrong ruler when the thing you are rotating is a moving part**
+
+Fix already shipped (vertex-vs-per-triangle door swing test in tools/construction_check.gd, no code change needed). Verified: agent godot --script tools/construction_check.gd -> CONSTRUCTION_DOORS swung=4, CONSTRUCTION_CHECK PASS, 0 door-swing failures; confirmed live (not vacuous) by a temporary hinge_at*0.0 break that correctly triggered FAIL. Wrote the missing docs/SPECS.md F-138 block and resolved the finding in docs/FINDINGS.md.
+
+Notes along the way:
+- Fix pre-existed in tools/construction_check.gd (vertex-vs-per-triangle-bounds). Wrote docs/SPECS.md F-138 block (none existed) and resolved the finding. F-148's AABB-negative-size spam is unrelated and out of scope; confirmed it does not hang the run, just floods the log.
+
+Files: `tools/construction_check.gd`
+
+Commit at time of writing: `e8f64cb`
