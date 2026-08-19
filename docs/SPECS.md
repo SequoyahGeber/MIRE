@@ -6562,6 +6562,63 @@ sibling.
 
 ---
 
+## F-197 · A generated-asset commit swept up another lane's dirty crafting-station GLBs under an unrelated message — the F-149/F-191 sweep hazard reaching art files, not just docs/
+
+**Claim:** none — this task found no code defect to fix, only two already-shipped fixes to verify and
+a finding to close. Coordination/verification only, so no `ARCHITECTURE.md` §2.2 authority row.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Checked before touching anything, per the brief's own instruction.** The finding's own text already
+said the F-057 fix (`a0d0d46`) "closes this specific instance" and only left the *mechanism* open. Two
+commits had landed against `tools/blender/build_crafting_stations.py` since F-197 was filed
+(`a0d0d46` F-057, `ddea946` F-196), so both halves needed re-checking rather than assuming the prose
+still held:
+
+1. **The specific instance** — does `assets/crafting_stations/exports/*.glb` at HEAD still match a
+   clean rebuild? Ran `python3 tools/blender/crafting_stations_repro_check.py` (F-057's own
+   determinism check, two separate Blender processes, byte diff): `CRAFTING_STATIONS_REPRO_CHECK
+   PASS`, all 8 GLBs and `catalog.json` byte-identical across both runs. More to the point for *this*
+   finding: `git status --porcelain` after the run showed **no diff on any export or catalog file** —
+   only `assets/crafting_stations/preview/*.png` (expected, F-042: renders are never byte-identical
+   even when correct) and `assets/source/crafting_stations.blend` (Blender's own save-state noise),
+   both discarded with `git checkout --` since they're not part of this task and not evidence of
+   anything. Zero diff on the files that matter means HEAD's exports are exactly what a clean rebuild
+   produces today — the specific staleness this finding reported is still fixed.
+2. **The mechanism** — F-197's own text left this open on the grounds that "the mechanism … is
+   unfixed and will recur … unless `ship`'s per-task staging is what everyone actually uses." F-191
+   (resolved chronologically *after* F-197 was filed — 10:14 vs. F-057's 07:07 the same day) added
+   exactly this: `cmd_check`'s `elif not c and not human and not in_grace(f)` branch now warns by name
+   when a file about to be swept into a bare commit was released by a *different*, still-recent agent,
+   citing F-191 and the pathspec fix, instead of a silent generic "edited without a claim." This is
+   not docs-scoped or harness-scoped code — the check loop (`for f in changed:` in `cmd_check`) runs
+   over every file in the commit, and `tools/harness_check.py`'s own F-191 regression case already
+   proves this on a plain non-docs path (`world/thing.gd`, not `.agent/bin/` or `docs/`), so
+   `assets/crafting_stations/exports/*.glb` gets the identical protection the moment it is claimed
+   through `agent claim` like any other non-free-prefix file. No new code needed — the generalization
+   already happened as a side effect of F-191's own fix, it was just never connected back to F-197 in
+   the docs.
+
+**This task's contribution is entirely in the docs the two originating fixes skipped:** neither
+F-057's nor F-191's resolution note in `docs/FINDINGS.md` cross-references F-197, so despite both
+halves being fixed, F-197 itself was still sitting open on the board. Verified both halves hold today
+(above), then moved F-197 to `## Resolved` with this reasoning and both commit citations, and wrote
+this spec block since none existed.
+
+**Verify:** `python3 tools/blender/crafting_stations_repro_check.py` → `CRAFTING_STATIONS_REPRO_CHECK
+PASS`, zero diff on `exports/`/`catalog.json`. `python3 tools/harness_check.py` → full pass, including
+the two F-191 cases run against `world/thing.gd`, proving the sweep-naming warning is general-purpose.
+
+**Swept for the same shape:** no code changed, so no sibling call sites to check — this task's sweep
+is documentary: grepped `docs/FINDINGS.md` for every other `## Resolved` entry citing F-149 or F-191
+to confirm none of them left a similar unresolved cross-reference (F-149 and F-191 themselves are
+already `## Resolved`; nothing else names either as its own fix).
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
 # Maintaining this file
 
 One block per task, same shape: **Goal / Authority / Claim / Build / Verify / Done means / Traps.**

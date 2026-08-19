@@ -75,6 +75,29 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-19 — F-197 resolved: both halves were already fixed by F-057 and F-191, neither cross-referenced this finding back — closing it needed no code (lm)
+
+No defect found: F-057 (`a0d0d46`) had already rebuilt and re-committed the crafting-station
+exports/catalog that this finding reported as stale, and F-191 (resolved chronologically *after*
+F-197 was filed) had already generalized `cmd_check`'s sweep-naming warning to every file in a commit,
+not a docs/harness-scoped subset — see that finding's own entry above for the mechanism. Neither
+resolution note in `docs/FINDINGS.md` linked back to F-197, so it sat open on the board despite both
+causes being fixed. Re-verified rather than trusted: `python3
+tools/blender/crafting_stations_repro_check.py` PASS with zero diff on `exports/`/`catalog.json`
+after the run (only the non-deterministic preview PNGs and `.blend` save-state changed, both
+expected and discarded), and `tools/harness_check.py`'s F-191 cases already exercise a plain
+non-docs path (`world/thing.gd`), proving the warning isn't scoped to the two file categories its
+own writeup discusses. **If you resolve a finding by pointing at another finding's fix, add the
+cross-reference in the same commit** — that's the gap this task closes, not a code change.
+
+**The general shape worth knowing about:** `agent brief <F-id>` already flags "this finding may
+already be fixed — files it names have changed since it was filed" for roughly two-thirds of the
+findings still open on the board (2026-08-19 snapshot: F-023, F-024, F-044, F-139, F-174, F-189,
+F-207, F-214). That flag only means the named files moved, not that the fix landed — each one still
+needs its own targeted re-check like this task did, not a blanket close. Not swept here: verifying
+eight unrelated findings across netcode, worldgen and tooling is eight separate tasks' worth of work,
+each needing its own repro, not a mechanical grep.
+
 ### 2026-08-19 — F-217 resolved: `BuildBar`'s piece-selection slots now support gamepad focus navigation — the last gap F-209/F-216's sweeps had already named (lm)
 
 `ui/building/build_bar.gd`'s `PieceSlot` (inner class of `BuildBar`) is the pattern to copy for any

@@ -431,40 +431,6 @@ option 4 is already someone's live task.
 
 ---
 
-### F-197 · A generated-asset commit swept up another lane's dirty crafting-station GLBs under an unrelated message — the F-149/F-191 sweep hazard reaching art files, not just docs/
-
-**Area:** coordination / art pipeline · **Severity:** low · **Found:** 2026-08-19 by lm during F-057
-
-While fixing F-057 (crafting stations' non-deterministic rebuild), the checked-in
-`assets/crafting_stations/exports/*.glb` at `HEAD` turned out not to match a clean rebuild of
-`tools/blender/build_crafting_stations.py` **at all** — different dimensions, an extra
-`MIRE_Ember.001` duplicate material, a different polygon count, not just a few drifted float bytes.
-`git log --follow -- assets/crafting_stations/exports/station_campfire.glb` shows its last real
-content change landed in `14ead00`, *"Art: tools/weapons migrated; palette re-anchored to measured
-base colours (2.1j)"* — a commit about a completely different asset family, whose message never
-mentions crafting stations at all.
-
-This is the same mechanism F-149 and F-191 already documented (a `git commit` with no pathspec, or a
-hand-rolled broad `git add`, sweeps whatever else is sitting dirty in the shared working tree into
-the committing agent's own commit) but landing on **generated asset files** rather than `docs/`. That
-matters because `docs/` is deliberately exempt from claims (F-006) so a sweep there is at least
-possible without a protocol violation — `assets/crafting_stations/exports/` is not docs, so whatever
-produced this either bypassed `agent claim`/`ship`'s per-task file staging with a hand-rolled `git add
--A`, or the crafting-station files were, at that moment, genuinely part of that commit's own claim
-set by mistake. Either way the result is indistinguishable from F-057's original "bevel drift"
-symptom from the outside — both present as "the checked-in GLB doesn't match a clean rebuild" — which
-is almost certainly why F-057 pattern-matched the bevel modifier as the sole cause and never actually
-ran two back-to-back clean rebuilds to check.
-
-Not re-investigated further here — the F-057 fix already rebuilt and re-committed the correct output,
-which closes this specific instance. Left open because the mechanism (a stale/misattributed asset
-commit) is unfixed and will recur on the next kit unless `ship`'s per-task staging is what everyone
-actually uses. Matches F-191's own severity judgment: nothing was lost or corrupted, only
-attribution — but attribution is exactly what makes a tracker row's evidence trustworthy without
-re-deriving it by hand, which is the whole reason F-057 took longer than "apply the known fix."
-
----
-
 ### F-207 · F-204's same bug — an object repositioned between renders that never takes effect — is live in 8 more Blender generators, one of them twice
 
 **Area:** art-pipeline · **Severity:** medium · **Found:** 2026-08-19 by lp during F-204's required sweep
@@ -565,6 +531,63 @@ worth confirming against real numbers rather than assumed.
 ---
 
 ## Resolved
+
+### F-197 · A generated-asset commit swept up another lane's dirty crafting-station GLBs under an unrelated message — the F-149/F-191 sweep hazard reaching art files, not just docs/ — **fixed**
+
+**Area:** coordination / art pipeline · **Severity:** low · **Found:** 2026-08-19 by lm during F-057
+
+While fixing F-057 (crafting stations' non-deterministic rebuild), the checked-in
+`assets/crafting_stations/exports/*.glb` at `HEAD` turned out not to match a clean rebuild of
+`tools/blender/build_crafting_stations.py` **at all** — different dimensions, an extra
+`MIRE_Ember.001` duplicate material, a different polygon count, not just a few drifted float bytes.
+`git log --follow -- assets/crafting_stations/exports/station_campfire.glb` shows its last real
+content change landed in `14ead00`, *"Art: tools/weapons migrated; palette re-anchored to measured
+base colours (2.1j)"* — a commit about a completely different asset family, whose message never
+mentions crafting stations at all.
+
+This is the same mechanism F-149 and F-191 already documented (a `git commit` with no pathspec, or a
+hand-rolled broad `git add`, sweeps whatever else is sitting dirty in the shared working tree into
+the committing agent's own commit) but landing on **generated asset files** rather than `docs/`. That
+matters because `docs/` is deliberately exempt from claims (F-006) so a sweep there is at least
+possible without a protocol violation — `assets/crafting_stations/exports/` is not docs, so whatever
+produced this either bypassed `agent claim`/`ship`'s per-task file staging with a hand-rolled `git add
+-A`, or the crafting-station files were, at that moment, genuinely part of that commit's own claim
+set by mistake. Either way the result is indistinguishable from F-057's original "bevel drift"
+symptom from the outside — both present as "the checked-in GLB doesn't match a clean rebuild" — which
+is almost certainly why F-057 pattern-matched the bevel modifier as the sole cause and never actually
+ran two back-to-back clean rebuilds to check.
+
+Not re-investigated further here — the F-057 fix already rebuilt and re-committed the correct output,
+which closes this specific instance. Left open because the mechanism (a stale/misattributed asset
+commit) is unfixed and will recur on the next kit unless `ship`'s per-task staging is what everyone
+actually uses. Matches F-191's own severity judgment: nothing was lost or corrupted, only
+attribution — but attribution is exactly what makes a tracker row's evidence trustworthy without
+re-deriving it by hand, which is the whole reason F-057 took longer than "apply the known fix."
+
+---
+
+**Resolved 2026-08-19 by lm.** Fix already shipped in two independent pieces, verified today (files changed since filing per the
+brief's own staleness warning):
+
+1. Specific instance — F-057 (a0d0d46) rebuilt build_crafting_stations.py's output with a bevel-free
+   box() override and re-committed correct exports/catalog/preview/.blend. Re-ran
+   `python3 tools/blender/crafting_stations_repro_check.py` today: CRAFTING_STATIONS_REPRO_CHECK PASS,
+   and `git status --porcelain` after the run showed zero diff on any exports/*.glb or catalog.json —
+   HEAD's checked-in files are exactly what a clean rebuild produces (only preview PNGs and the .blend
+   save-state changed, both expected non-determinism per F-042, discarded, not evidence of anything).
+
+2. Mechanism — F-191 (resolved 2026-08-19, chronologically after this finding was filed) generalized
+   `cmd_check`'s sweep-naming warning to any file, not just docs/.agent-bin: the `elif not c and not
+   human and not in_grace(f)` branch now names a different, still-recent agent's released claim and
+   cites the pathspec fix instead of a silent generic warning, for every file in the commit, not a
+   path-scoped subset. tools/harness_check.py's own F-191 regression case already proves this against
+   a plain non-docs path (world/thing.gd), so assets/crafting_stations/exports/*.glb gets identical
+   protection once claimed like any other file. No new code needed here; F-191 already generalized it
+   as a side effect, it just never got linked back to this finding.
+
+Neither F-057's nor F-191's own resolution note in this file cross-referenced F-197, so despite both
+halves being fixed, this finding was still sitting open on the board — that doc gap is this task's
+actual contribution. Wrote the missing spec block, docs/SPECS.md F-197.
 
 ### F-217 · `BuildBar`'s piece-selection slots are still mouse-click-only — task 7.6 gave build mode toggle/rotate/confirm/destroy real gamepad bindings but never touched which piece gets selected — **fixed**
 
