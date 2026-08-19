@@ -6169,3 +6169,15 @@ Commit at time of writing: `32a5c84`
 Confirmed already fixed by the A-016a task, not by this task: cave entrance cut from A-016 (docs/ASSET_TRACKER.md A-016a/A-016b rows), sinkhole re-scoped to shallow surface depression, cliff overhang documented as a PROP not a terrain claim. Verified: agent godot --script tools/terrain_accents_check.gd, 25/25 checks, 0 failures, no cave_entrance in catalog. Wrote missing SPECS.md block. Sibling sweep found F-255 (A-020 flooded cellar entrance, same shape, QUEUED not yet built) and filed it rather than fixing (content-design call for whoever picks up A-020).
 
 Commit at time of writing: `a68a34b`
+
+---
+
+### DONE · F-256 · bram1 · 2026-08-19T20:10:52+00:00
+
+**Arming several one-shot revives to cover an unattended stretch stacks saturate chains, and the lane idles while they queue on its own lock**
+
+Added .agent/bin/lane-keeper: one idempotent daemon per lane that starts a chain only when work is queued and no chain exists, replacing stacked one-shot revives for unattended stretches. Self-inflicted and measured — five armed revives left LM idle with six orders queued while four chains queued on its saturate lock. Verified both decision inputs against real state and confirmed each lane converged to exactly one chain.
+
+Files: `.agent/bin/lane-keeper`
+
+Commit at time of writing: `1c134e8`

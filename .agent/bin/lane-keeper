@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""Keep one lane draining, across window rollovers, without ever stacking chains.
+
+`lane-revive` fires once at a named time, which is fine for a known reset but wrong for an
+unattended stretch: covering five rollovers means arming five daemons, and each one starts its own
+`saturate` chain. They then serialise on the per-lane saturate lock, and every chain in the queue
+burns its empty-queue grace period before handing over — so the lane sits idle while four chains
+wait their turn. Measured 2026-08-19: five armed revives left LM idle with six orders queued.
+
+This is the idempotent form. One daemon per lane, polling: start a chain only when there is queued
+work AND no chain already exists for that lane. Because it checks before acting, running two keepers
+is harmless, and a chain that stops for any reason — reserve stop, error, drained queue — is picked
+back up at the next poll instead of needing a human or a scheduled guess.
+
+    .agent/bin/lane-keeper LM               # until stopped
+    .agent/bin/lane-keeper LM --hours 20    # give up after 20h (default 24)
+"""
+import glob
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+AGENT = os.path.join(ROOT, ".agent", "bin", "agent")
+LANE = os.path.join(ROOT, ".agent", "bin", "lane")
+POLL_SECONDS = 300
+
+
+def _queued(lane):
+    """Orders for this lane whose task is not already done."""
+    try:
+        with open(os.path.join(ROOT, ".agent", "state.json")) as f:
+            tasks = json.load(f).get("tasks", {})
+    except (IOError, ValueError):
+        tasks = {}
+    out = []
+    for path in glob.glob(os.path.join(ROOT, ".agent", "orders", "*.md")):
+        tid = os.path.basename(path)[:-3]
+        if tasks.get(tid, {}).get("status") == "done":
+            continue
+        try:
+            with open(path) as f:
+                head = f.readline()
+        except IOError:
+            continue
+        m = re.search(r"lane:(\S+)", head)
+        if m and m.group(1).upper() == lane:
+            out.append(tid)
+    return out
+
+
+def _chain_alive(lane):
+    """True if a saturate chain for this lane already exists — the check that prevents stacking."""
+    try:
+        out = subprocess.run(["ps", "-eo", "command"], capture_output=True,
+                             text=True, timeout=30).stdout
+    except (OSError, subprocess.SubprocessError):
+        return True            # can't tell: assume yes rather than risk a second chain
+    needle = "agent saturate %s" % lane
+    return any(needle in line and "lane-keeper" not in line for line in out.splitlines())
+
+
+def main():
+    if not sys.argv[1:]:
+        sys.exit("usage: lane-keeper <LANE> [--hours N]")
+    lane = sys.argv[1].upper()
+    hours = 24.0
+    if "--hours" in sys.argv:
+        hours = float(sys.argv[sys.argv.index("--hours") + 1])
+
+    log = os.path.join(ROOT, ".agent", "logs", "keeper-%s.log" % lane.lower())
+    os.makedirs(os.path.dirname(log), exist_ok=True)
+
+    if os.fork() > 0:
+        print("· %s keeper armed for %.0fh — restarts its chain whenever work is queued and none "
+              "is running" % (lane, hours))
+        print("  tail -f %s" % os.path.relpath(log, ROOT))
+        sys.stdout.flush()
+        os._exit(0)
+    os.setsid()
+    if os.fork() > 0:
+        os._exit(0)
+    fd = os.open(log, os.O_WRONLY | os.O_CREAT | os.O_APPEND)
+    os.dup2(fd, 1)
+    os.dup2(fd, 2)
+    os.dup2(os.open(os.devnull, os.O_RDONLY), 0)
+
+    deadline = time.time() + hours * 3600
+    while time.time() < deadline:
+        queued = _queued(lane)
+        if queued and not _chain_alive(lane):
+            stamp = time.strftime("%FT%TZ", time.gmtime())
+            print("[%s] %d order(s) queued and no chain — starting one" % (stamp, len(queued)),
+                  flush=True)
+            subprocess.call([LANE, "reset", lane], cwd=ROOT)
+            subprocess.call([AGENT, "saturate", lane, "--watch", "--detach"], cwd=ROOT)
+        time.sleep(POLL_SECONDS)
+    print("[%s] keeper for %s expired" % (time.strftime("%FT%TZ", time.gmtime()), lane), flush=True)
+
+
+if __name__ == "__main__":
+    main()

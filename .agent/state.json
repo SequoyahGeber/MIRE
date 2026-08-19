@@ -29,6 +29,13 @@
       "hash": "c0c2c7623fbc3ab6335732619acb07f81b73e9013b2c45f9eb320971496fdee5",
       "task": "F-142"
     },
+    ".agent/bin/lane-keeper": {
+      "agent": "bram1",
+      "at": "2026-08-19T20:10:52+00:00",
+      "hash": "0687176e4c2697fa9284c79bf2e909dde80f1eae2aa4c999fd3803df1216cd79",
+      "task": "F-256",
+      "token": "CLAUDE_CODE_SESSION_ID:abb8b8c4-6ef1-4b30-ba9f-17483b8afe99"
+    },
     ".gitignore": {
       "agent": "lm",
       "at": "2026-08-19T10:57:39+00:00",
@@ -7119,6 +7126,15 @@
       "status": "todo",
       "tier": "F",
       "title": "A-020's `flooded cellar entrance` is the same shape F-237 just cut from A-016 \u2014 an entrance implying an interior/underground space the 2D heightfield cannot back"
+    },
+    "F-256": {
+      "done_at": "2026-08-19T20:10:52+00:00",
+      "done_by": "bram1",
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "done",
+      "tier": "F",
+      "title": "Arming several one-shot revives to cover an unattended stretch stacks saturate chains, and the lane idles while they queue on its own lock"
     }
   },
   "version": 1
