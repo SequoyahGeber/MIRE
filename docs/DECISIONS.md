@@ -2350,3 +2350,32 @@ cheap one that actually caught it.
 × a dozen sites today, so nowhere near), or a POI kind that must be placed relative to another rather
 than merely away from it — a dock beside a shipwreck. That is an anchoring rule, and it belongs in a
 second pass over the sites this one returns, not inside the dart loop.
+
+### D-096 · 2026-08-18 · F-132's fix is a calling contract, not a new `ChunkStreamer`/`ResourceScatterField` API
+
+Closing F-132 (a remote client's scattered harvestable proxy may have no host counterpart to reach,
+because `ChunkStreamer` streams per-peer independently) did not touch either file's ring or proxy
+mechanics, and that absence is itself the call worth recording — so a later task does not "fix" F-132
+a second time by adding an API that already exists.
+
+**`ChunkStreamer.set_anchors()` already takes `Array[Vector3]`, and `_ring_distance()` already takes
+the NEAREST of every anchor** — a chunk stays resident as long as ANY anchor's ring reaches it,
+proven for a genuinely disjoint two-anchor case (chosen `>= LOAD_RADIUS_CHUNKS + HYSTERESIS_CHUNKS +
+1` chunks apart, so neither anchor's own ring could reach the other's target by construction) in
+`tools/chunk_stream_check.gd`'s new union-of-interest section. `ResourceScatterField` builds and
+tears down scatter per CHUNK, never per anchor, so it needed nothing extra either — a chunk resident
+because of a remote peer's anchor gets a proxy exactly like one resident because of the host's own.
+
+**What was actually missing is a live caller that supplies the union** — every connected peer's
+last-known position, the host's own included, not just its own local player — and no such caller
+exists yet (F-139: nothing instantiates `ChunkStreamer`/`ResourceScatterField` in the shipped game).
+Guessing at that caller's own shape here — a per-peer `set_anchors()` call each tick vs. a single
+merged position list recomputed on connect/disconnect/movement, and where "every connected peer's
+position" is even read from — would be inventing 4.7+'s own wiring code against no real session to
+verify it in, exactly what 4.4 already declined to do for this same finding. The contract is recorded
+as a header comment on both files instead: whichever task adds the real caller must anchor the host's
+pair to the union, and can verify against the now-proven mechanism rather than re-deriving it.
+
+**Would change my mind:** the live-wiring task finding the union genuinely needs a dedicated method
+(e.g., because per-peer add/remove churn makes hand-assembling the anchor array error-prone) — that
+is additive, not a reason this decision was wrong, and belongs with that task's own claim.

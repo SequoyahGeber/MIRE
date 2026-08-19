@@ -75,6 +75,41 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-18 — F-132 resolved: host union-of-interest needed no new API, only a calling contract — recorded for whoever wires a live `ChunkStreamer`/`ResourceScatterField` session (lm)
+
+**What shipped, verified:** F-132 (a remote client's scattered harvestable proxy may have no host
+counterpart to reach, because `ChunkStreamer` streams per-peer independently) is resolved without
+code changes to either system's ring or proxy mechanics — `ChunkStreamer.set_anchors()` already takes
+`Array[Vector3]` and already unions correctly over an arbitrary anchor set (`_ring_distance()` takes
+the NEAREST of every anchor, so a chunk stays resident as long as ANY anchor's ring reaches it), and
+`ResourceScatterField` already builds/tears down scatter per CHUNK, never per anchor. D-096 records
+why no new API was added.
+
+**The contract for whoever wires 4.6+/live-session streaming (F-139, still open — nothing
+instantiates either system in the shipped game yet):** anchor the HOST's `ChunkStreamer`/
+`ResourceScatterField` pair to the union of every connected peer's last-known position, its own
+included, not just its own local player. A host anchored only to its own local player never builds a
+chunk-resident harvestable proxy for a point a remote client's own local ring covers, and that
+client's `Harvestable.request_hit()` `rpc_id(HOST_PEER_ID)` call — which Godot's high-level
+multiplayer RPC routes by matching NodePath between peers — then has no node on the host to receive
+it. This is now a header-level doc comment on both `world/chunk/chunk_streamer.gd` and
+`world/gen/resource_scatter_field.gd`, not left implicit.
+
+**One real trap found while proving this, now documented on `attach_to_streamer()`'s own docstring:**
+`ResourceScatterField` only reacts to `chunk_mesh_ready`/`chunk_unloaded` as they FIRE — it never
+retroactively scans chunks already resident on the streamer at attach time. Attach the field to the
+streamer BEFORE the streamer is given anchors (matching both systems' own DELEGATION usage snippets'
+ordering), or every chunk resident before the attach silently gets no scatter.
+
+**Verified:** `agent godot --windowed --script tools/chunk_stream_check.gd`'s new union-of-interest
+section — a REAL `ChunkStreamer` fed two anchors chosen `>= LOAD_RADIUS_CHUNKS + HYSTERESIS_CHUNKS +
+1` chunks apart (so neither anchor's own ring could reach the other's target chunk by construction,
+not by luck), with a REAL `ResourceScatterField` attached, proving BOTH anchors' chunks load at LOD0
+with a collider and BOTH materialize a live, `HarvestWorld`-wired `Harvestable` — `0 functional
+failure(s)` across the whole file, including its pre-existing phase 1/phase 2 suites. Regression:
+`agent godot --script tools/resource_scatter_check.gd` → `RESOURCE_SCATTER_CHECK failures=0`;
+`agent godot --script tools/verify_setup.gd` → `all checks passed`.
+
 ### 2026-08-18 — Task 4.7: POI placement ships — seeded Poisson-disc, a `PoiDef` content family, Wellsprings and landmarks (hollow7)
 
 **What shipped, verified:** `world/gen/poi_def.gd` (`class_name PoiDef` — the authored constraints

@@ -1808,6 +1808,63 @@ RPC-cancel, and both replication-observed-not-direct-reply assertions.
 
 ---
 
+## F-132 · A remote client's scattered harvestable proxy may have no host counterpart to reach, because `ChunkStreamer` streams per-peer independently
+
+**Claim:** `world/chunk/chunk_streamer.gd`, `world/gen/resource_scatter_field.gd`,
+`tools/chunk_stream_check.gd`.
+
+**What was wrong:** task 4.4's `ResourceScatterField` builds a harvestable proxy's real,
+host-authoritative `Harvestable` state only for chunks inside `ChunkStreamer`'s LOD0/collision ring
+(D-083). Task 4.3's `ChunkStreamer` streams independently per peer by design (`ARCHITECTURE.md`
+§2.2) — a host and a client resolving different chunk sets around their own local players is
+correct, not a desync, for TERRAIN. But a client's own `Harvestable.request_hit()` sends
+`rpc_id(NetConfig.HOST_PEER_ID)` at a specific NodePath, and Godot's high-level multiplayer RPC
+routes by matching tree path between peers — if the host's own player is far enough that the host's
+`ChunkStreamer` never loaded that chunk, the host has no node at that path to receive the call at
+all. Not reachable in practice until 4.6+ wires `ChunkStreamer`/`ResourceScatterField` into a real
+session (still true — F-139).
+
+**Fix:** none needed in either file's ring/proxy mechanics — they already generalize correctly.
+`ChunkStreamer.set_anchors()` already takes `Array[Vector3]`, and `_ring_distance()` already takes
+the NEAREST of every anchor, so a chunk stays resident as long as ANY anchor's ring reaches it,
+independent of how many anchors there are. `ResourceScatterField` builds/tears down scatter per
+CHUNK, never per anchor, so a chunk resident because of a remote peer's anchor gets a proxy exactly
+like one resident because of the host's own. **The fix is the calling contract, not new code:**
+whichever task first wires these into a live session (F-139) must anchor the HOST's
+`ChunkStreamer`/`ResourceScatterField` pair to the union of every connected peer's last-known
+position, its own included — not just its own local player — so any point a remote client can
+locally reach always has a host-resident, host-authoritative `Harvestable` waiting for its RPC.
+Documented as a header-level contract in both files rather than guessed at in code, since the actual
+wire format (or whether a live caller even keeps calling `set_anchors()` once per peer vs. computing
+a single merged position list) is still F-139's own open design space. D-095 records why no new API
+was added.
+
+**One real trap found while proving this:** `ResourceScatterField.attach_to_streamer()` only reacts
+to `chunk_mesh_ready`/`chunk_unloaded` as they FIRE — it never retroactively scans chunks already
+resident on the streamer at attach time. A live caller that attaches the field AFTER the streamer's
+anchors have already settled a ring gets zero proxies for that ring until something forces a reload.
+Documented directly on `attach_to_streamer()`'s own docstring so the next caller doesn't rediscover
+it by a silent `chunk_count() == 0`.
+
+**Verify:** `agent godot --windowed --script tools/chunk_stream_check.gd`'s new union-of-interest
+section — a REAL `ChunkStreamer` fed two independent anchors (chosen `>= LOAD_RADIUS_CHUNKS +
+HYSTERESIS_CHUNKS + 1` chunks apart, so neither anchor's own ring could possibly reach the other's
+target by construction, not by luck) with a REAL `ResourceScatterField` attached, proving BOTH
+anchors' chunks load at LOD0 with a collider and BOTH materialize a live, `HarvestWorld`-wired
+`Harvestable` — the exact node an `rpc_id(HOST_PEER_ID)` call from either position would need to
+reach. Must run `--windowed` (F-005/D-074): real collision cooking is part of what's being proven.
+
+**Done means:** the union-of-interest section passes as part of `tools/chunk_stream_check.gd`'s
+existing suite, with zero regressions to its own phase 1/2 or to `tools/resource_scatter_check.gd`.
+
+**Verified 2026-08-18 (lm):** `agent godot --windowed --script tools/chunk_stream_check.gd` →
+`0 functional failure(s)`, every phase including the new union-of-interest section (`ok` on both
+anchors' LOD0/collision residency and both anchors' live wired `Harvestable`). Regression-checked:
+`agent godot --script tools/resource_scatter_check.gd` → `RESOURCE_SCATTER_CHECK failures=0`;
+`agent godot --script tools/verify_setup.gd` → `all checks passed`.
+
+---
+
 # Open findings worth dispatching as tasks (claim by F-number)
 
 | # | One-line spec |

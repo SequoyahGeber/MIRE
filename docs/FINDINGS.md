@@ -619,45 +619,6 @@ originally warned.
 
 ---
 
-### F-132 · A remote client's scattered harvestable proxy may have no host counterpart to reach, because `ChunkStreamer` streams per-peer independently
-
-**Area:** world-gen / netcode · **Severity:** medium · **Found:** 2026-08-18 by lm during 4.4
-
-`ARCHITECTURE.md` §2.2 deliberately makes chunk streaming client-local, independently per peer: "a
-host and a client streaming different chunk sets around their own local players is correct, not a
-desync" (D-080's own reasoning for task 4.3). Task 4.4's `ResourceScatterField` builds its
-harvestable proxies exactly on top of that same per-peer ring (`chunk_has_collision()`, D-083), and
-the proxy's depletion is real, host-authoritative `Harvestable` state living on whichever holder
-node happens to exist at that world position — same as any other harvestable.
-
-That composition has a gap the terrain-only case never had: a client's own `Harvestable` node for a
-point near ITS player sends `net_request_hit.rpc_id(NetConfig.HOST_PEER_ID)` targeting a specific
-NodePath. If the HOST's own player is far enough away that the host's `ChunkStreamer` never loaded
-that chunk, the host has no node at that path to receive the call at all — nothing types-checks or
-crashes today because nothing yet instantiates `ChunkStreamer`/`ResourceScatterField` in the live
-game (4.6 is the task that does), so this has not been reachable in practice, but it will be the
-moment 4.6 wires both into a running multiplayer session.
-
-**Why not fixed inside 4.4:** the honest fix is either (a) the host maintaining chunk-load state for
-the union of every connected player's position, not just its own local player's ring, or (b) a real
-chunk-keyed request/response that does not depend on a live node existing at a specific path on the
-receiving peer. Both are genuine multiplayer-interest-management design decisions that belong with
-whichever task first puts these systems in a real session — almost certainly 4.6 (seed replication +
-client regen + delta sync), whose whole job is "every mutation... replicates as deltas keyed by
-chunk" (`ARCHITECTURE.md` §4). Solving it inside 4.4 would mean guessing at 4.6's own wire format.
-
-**What fixing it will look like, most likely:** the host's own `ChunkStreamer`/`ResourceScatterField`
-pair gets anchored not just to the host's local player but to every connected peer's last-known
-position (a host-side "union of interest," the same shape `NetInterest` already applies per-entity
-for replication filtering, generalized to chunk residency) — so any point a REMOTE client can reach
-is guaranteed to have a host-side holder loaded to receive its request, even when the host's own
-player is elsewhere.
-
-**Claim:** none yet — no file to fix until the task that wires `ChunkStreamer` into a live session
-picks this up.
-
----
-
 ### F-144 · Props have no LOD and no cross-asset batching: every one of ~2,900 renders at full detail, in every shadow cascade, at every distance
 
 **Area:** perf · **Severity:** high · **Found:** 2026-08-18 by nettle12
@@ -873,9 +834,88 @@ beyond just "the level loaded") or a player-health "downed" edge signal (not the
 triggered `downed_flag_changed`) should add one row each to `CommandService._HOOK_EVENTS` — the table
 `wire_hook()` already reads is the whole cost of a new event once the real signal exists.
 
+### F-155 · `PlayerHealth._is_dodging()` throws "Nonexistent 'bool' constructor" against any body with
+no `dodging` property, on every enemy attack
+
+**Area:** health · **Severity:** low · **Found:** 2026-08-18 by lp during 5.1
+
+`systems/health/player_health.gd:315` — `_is_dodging(peer_id)` does `bool(body.get(&"dodging"))`. A
+real player body (`entities/player/player_controller.gd`) always has `dodging` (task 3.8b), so this is
+silent in a real session. But `.get()` on a node with no such property returns Variant NIL, and
+`bool(NIL)` is not a valid conversion in Godot 4 — it throws `Invalid call. Nonexistent 'bool'
+constructor` rather than degrading to `false`. Any test harness that stands in a bare `Node3D` for a
+player (2.10's own `tools/enemy_check.gd` does exactly this, and 5.1's `tools/enemy_ai_check.gd`
+inherits it) hits this on every `_resolve_attack()` that reaches `EventBus.emit_enemy_attack_landed`
+— a `SCRIPT ERROR:` line on an otherwise passing check. Neither check's own `failures` tally catches
+it (it is an engine-level crash inside a signal handler, not a `check()` assertion), so it is only
+visible by reading the console output, not the printed verdict line.
+
+**Not fixed here** — `player_health.gd` was not in 5.1's claim, and this is pre-existing: it already
+fires the same way on 2.10/2.9's unmodified `enemy_check.gd`, which has shipped and stayed green since
+before this task. **What would close this:** `body != null and body.get(&"dodging") == true` — `==` against a bool
+literal degrades NIL to "not equal" instead of attempting a constructor call. One-line fix once
+someone holds the file.
+
 ---
 
 ## Resolved
+
+### F-132 · A remote client's scattered harvestable proxy may have no host counterpart to reach, because `ChunkStreamer` streams per-peer independently — **fixed**
+
+**Area:** world-gen / netcode · **Severity:** medium · **Found:** 2026-08-18 by lm during 4.4
+
+`ARCHITECTURE.md` §2.2 deliberately makes chunk streaming client-local, independently per peer: "a
+host and a client streaming different chunk sets around their own local players is correct, not a
+desync" (D-080's own reasoning for task 4.3). Task 4.4's `ResourceScatterField` builds its
+harvestable proxies exactly on top of that same per-peer ring (`chunk_has_collision()`, D-083), and
+the proxy's depletion is real, host-authoritative `Harvestable` state living on whichever holder
+node happens to exist at that world position — same as any other harvestable.
+
+That composition has a gap the terrain-only case never had: a client's own `Harvestable` node for a
+point near ITS player sends `net_request_hit.rpc_id(NetConfig.HOST_PEER_ID)` targeting a specific
+NodePath. If the HOST's own player is far enough away that the host's `ChunkStreamer` never loaded
+that chunk, the host has no node at that path to receive the call at all — nothing types-checks or
+crashes today because nothing yet instantiates `ChunkStreamer`/`ResourceScatterField` in the live
+game (4.6 is the task that does), so this has not been reachable in practice, but it will be the
+moment 4.6 wires both into a running multiplayer session.
+
+**Why not fixed inside 4.4:** the honest fix is either (a) the host maintaining chunk-load state for
+the union of every connected player's position, not just its own local player's ring, or (b) a real
+chunk-keyed request/response that does not depend on a live node existing at a specific path on the
+receiving peer. Both are genuine multiplayer-interest-management design decisions that belong with
+whichever task first puts these systems in a real session — almost certainly 4.6 (seed replication +
+client regen + delta sync), whose whole job is "every mutation... replicates as deltas keyed by
+chunk" (`ARCHITECTURE.md` §4). Solving it inside 4.4 would mean guessing at 4.6's own wire format.
+
+**What fixing it will look like, most likely:** the host's own `ChunkStreamer`/`ResourceScatterField`
+pair gets anchored not just to the host's local player but to every connected peer's last-known
+position (a host-side "union of interest," the same shape `NetInterest` already applies per-entity
+for replication filtering, generalized to chunk residency) — so any point a REMOTE client can reach
+is guaranteed to have a host-side holder loaded to receive its request, even when the host's own
+player is elsewhere.
+
+**Claim:** none yet — no file to fix until the task that wires `ChunkStreamer` into a live session
+picks this up.
+
+---
+
+**Resolved 2026-08-19 by lm.** Resolved without code changes to ChunkStreamer/ResourceScatterField's ring or proxy mechanics — set_anchors()
+already takes Array[Vector3] and _ring_distance() already unions over the nearest of every anchor, so a chunk
+stays resident as long as ANY anchor's ring reaches it; ResourceScatterField already builds/tears down scatter
+per chunk, never per anchor. The fix is the calling contract (D-096): whichever task wires a live session
+(F-139, still open) must anchor the host's ChunkStreamer/ResourceScatterField pair to the union of every
+connected peer's last-known position, not just its own local player — now a header-level doc comment on both
+files instead of implicit. Also documented a real ordering trap found while proving this: attach_to_streamer()
+only reacts to future signals, so it must be called before the streamer is given anchors, or already-resident
+chunks silently get no scatter.
+
+Verified: agent godot --windowed --script tools/chunk_stream_check.gd's new union-of-interest section — a real
+ChunkStreamer fed two anchors >= LOAD_RADIUS_CHUNKS + HYSTERESIS_CHUNKS + 1 chunks apart (so neither anchor's
+own ring could reach the other's target by construction) with a real ResourceScatterField attached, proving
+both anchors' chunks load at LOD0 with a collider and both materialize a live, HarvestWorld-wired Harvestable.
+0 functional failure(s) across the whole file (all pre-existing phase 1/phase 2 assertions still pass).
+Regression: agent godot --script tools/resource_scatter_check.gd -> RESOURCE_SCATTER_CHECK failures=0;
+agent godot --script tools/verify_setup.gd -> all checks passed.
 
 ### F-153 · COMMANDS.md §7 lists 'clear' under both Inventory and Meta — one name, two systems — **fixed**
 
