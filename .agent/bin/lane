@@ -39,7 +39,15 @@ ORDERS = os.path.join(AGENT_DIR, "orders")
 LOGS = os.path.join(AGENT_DIR, "logs")
 AGENT = os.path.join(AGENT_DIR, "bin", "agent")
 
-DEFAULT_TIMEOUT = 3600          # a hung lane must not block the board forever
+# A hung lane must not block the board forever — but 3600 was cutting real work off, not hangs.
+# Two tasks hit it within an hour on 2026-08-19, and both were nearly finished: F-243's last words
+# were "now let's run the actual headless verification" after editing twelve files, and F-252 had
+# already written its fix. Nothing was lost (the handoff preserves the diff) but each retry pays the
+# whole hour again to reach the same point. Two pressures pushed past the old ceiling on the same
+# day: LM moved to Opus at high effort (D-150), which is slower per task by design, and six agents
+# now queue on one Godot lock so verification waits behind other runs. A genuine hang still gets
+# caught, just later.
+DEFAULT_TIMEOUT = 7200
 EX_BUSY = 75                    # lane is working: temporary, not broken — callers wait on this
 SOFT_STOP_PCT = 0.85            # stop before the wall, so the lane can still write its handoff
 
