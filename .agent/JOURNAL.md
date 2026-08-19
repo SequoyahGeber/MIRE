@@ -3877,3 +3877,19 @@ Shipped: systems/extraction/extraction_ship.gd (host-authoritative repair-stage 
 Files: `systems/extraction/extraction_ship.gd`, `autoload/extraction_service.gd`, `ui/hud/extraction_hud.gd`, `tools/extraction_check.gd`, `core/events/event_bus.gd`, `project.godot`
 
 Commit at time of writing: `b6f7329`
+
+---
+
+### DONE · 6.6 · lm · 2026-08-19T02:49:31+00:00
+
+**Salvage: superlinear reward curve, extract-vs-die split, persistence, save-file versioning**
+
+SalvageService (autoload, authority None) + SalvageSave persist Salvage across runs: superlinear reward_for_cycle(cycle) curve (CYCLE_BASE=10, CYCLE_EXPONENT=1.6; Cycle3=58, Cycle9=336), +20/Wellspring-capped milestone bonus, extraction banks it in full via run_extracted, a new run_wiped seam banks DEATH_BANK_FRACTION=0.5 (6.7 must emit it, D-108). user://salvage.json, schema_version:1 with a real _migrate() switch. Fixed ExtractionShip.departed to emit run_extracted from its setter (was host-only, D-108) so every peer's own Salvage banks, not just the host's. Found+fixed a real bug: unrelated checks (extraction_check.gd) banked real Salvage to the dev machine's actual save via the process-local EventBus -- D-107's _persistence_enabled() guard (current_scene null under --script) stops it, no other check needed to change. tools/salvage_check.gd: 24 assertions, 0 failures -- verified via: agent godot --script tools/salvage_check.gd. No regressions: extraction_check/wellspring_recorruption_check/cycle_check/cycle_modifier_check/mire_grid_check/mire_interaction_check/wave_spawner_check/crafting_check/handshake_check all failures=0. 0 ERROR: on full boot (agent godot --quit-after 15), no real save-file leaked. Docs: SPECS.md §6.6, DECISIONS.md D-107/D-108, FINDINGS.md F-168 (Wellspring.capped still host-only, undercounts milestone on non-host peers), DELEGATION.md Current state, ARCHITECTURE.md §2.2 Salvage row.
+
+Notes along the way:
+- Fixed a real bug found while building this: extraction_check.gd (unrelated to Salvage) banked 116 real Salvage into the dev machine's actual user://salvage.json via the process-local EventBus before SalvageService._persistence_enabled() existed (D-107).
+- run_wiped seam built (EventBus.subscribe_run_wiped/emit_run_wiped) but nothing emits it yet -- 6.7 owns real defeat detection and must reuse this exact signal, firing from a replicated property setter not a host-only guard (D-108).
+
+Files: `core/events/event_bus.gd`, `systems/extraction/extraction_ship.gd`, `core/save/salvage_save.gd`, `autoload/salvage_service.gd`, `tools/salvage_check.gd`
+
+Commit at time of writing: `900ef93`

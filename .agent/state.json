@@ -491,6 +491,12 @@
       "hash": "47dba118dc19dd04fac474c592051e20a16c653cbe6d9909b38c888b4e6c7517",
       "task": "3.14"
     },
+    "autoload/salvage_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T02:49:31+00:00",
+      "hash": "38b77d89ed8181d4151b85c765976db0eb29332ed5d7e2d1f93cbcdbf5332df4",
+      "task": "6.6"
+    },
     "autoload/steam_lobby.gd": {
       "agent": "lp",
       "at": "2026-08-18T22:57:40+00:00",
@@ -1513,9 +1519,9 @@
     },
     "core/events/event_bus.gd": {
       "agent": "lm",
-      "at": "2026-08-19T02:33:53+00:00",
-      "hash": "feb54fef075ac6d572ce5d1cda474c4c21c66bf56653c3e9e5d48ec870cd1f80",
-      "task": "6.5"
+      "at": "2026-08-19T02:49:31+00:00",
+      "hash": "b9cbe5163d3c80464e6a263d5ae340c13a57244628354dd6485c512dcc0885dd",
+      "task": "6.6"
     },
     "core/game_state.gd": {
       "agent": "lm",
@@ -1534,6 +1540,12 @@
       "at": "2026-08-18T21:36:44+00:00",
       "hash": "4d5d2f672c13a0b2da22d2e60a2d6313f8d5fbff5ad6a41505bd682b7a1d11dd",
       "task": "4.8"
+    },
+    "core/save/salvage_save.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T02:49:31+00:00",
+      "hash": "bdaba6cbaff423377b419b8a59e2fa2dcf3d25f7fde7947d6aad32be45da6fa5",
+      "task": "6.6"
     },
     "core/util/mire_log.gd": {
       "agent": "gale6",
@@ -1843,9 +1855,9 @@
     },
     "systems/extraction/extraction_ship.gd": {
       "agent": "lm",
-      "at": "2026-08-19T02:33:53+00:00",
-      "hash": "691215fdb3d66a5938d0fc53f379b41074d333ffa201b3fe933727c6cb88a77b",
-      "task": "6.5"
+      "at": "2026-08-19T02:49:31+00:00",
+      "hash": "7cd07eafea9d6bead3a72eb053f8a8740be00b92318d41029231ece149b3cec8",
+      "task": "6.6"
     },
     "systems/harvesting/harvest_library.gd": {
       "agent": "vane19",
@@ -1947,11 +1959,6 @@
       "agent": "vane19",
       "at": "2026-08-18T18:07:48+00:00",
       "task": "F-115"
-    },
-    "tools/atmosphere_night_check.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T02:48:51+00:00",
-      "task": "F-065"
     },
     "tools/attunement_check.gd": {
       "agent": "lm",
@@ -2355,11 +2362,6 @@
       "at": "2026-08-18T04:46:24+00:00",
       "task": "2.1k"
     },
-    "tools/hollowmere_night_render.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T02:48:51+00:00",
-      "task": "F-065"
-    },
     "tools/hollowmere_render_check.gd": {
       "agent": "ivy8",
       "at": "2026-08-18T04:46:24+00:00",
@@ -2552,6 +2554,12 @@
       "at": "2026-08-18T23:19:22+00:00",
       "hash": "84c7c952c94e1f2d1e42f30889b7ff0cb0aec949f1b4f03f1ee9692ab61eb559",
       "task": "3.17"
+    },
+    "tools/salvage_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T02:49:31+00:00",
+      "hash": "d03dd326e575e6cc6b4bb7e87067dfc3980e38824b32608f853350e1d02a4d24",
+      "task": "6.6"
     },
     "tools/seed_sync_check.gd": {
       "agent": "lm",
@@ -2747,11 +2755,6 @@
       "at": "2026-08-18T18:07:48+00:00",
       "task": "F-115"
     },
-    "world/environment/low_poly_clouds.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T02:48:51+00:00",
-      "task": "F-065"
-    },
     "world/environment/particle_billboard.gdshader": {
       "agent": "vane19",
       "at": "2026-08-18T18:15:00+00:00",
@@ -2761,11 +2764,6 @@
       "agent": "vane19",
       "at": "2026-08-18T18:07:48+00:00",
       "task": "F-115"
-    },
-    "world/environment/star_field.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T02:48:51+00:00",
-      "task": "F-065"
     },
     "world/gen/authored_world.gd": {
       "agent": "vane19",
@@ -3741,9 +3739,11 @@
       "title": "Extraction: shipwreck POI, repair recipe, board-to-leave, group confirm flow (`DESIGN.md` \u00a75.2)"
     },
     "6.6": {
+      "done_at": "2026-08-19T02:49:31+00:00",
+      "done_by": "lm",
       "est": "3",
       "milestone": "M6",
-      "status": "todo",
+      "status": "done",
       "tier": "T2",
       "title": "Salvage: superlinear reward curve, extract-vs-die split, persistence, save-file versioning"
     },
@@ -5320,6 +5320,27 @@
       "status": "todo",
       "tier": "F",
       "title": "A capped Wellspring's re-corruption clock (task 6.4) has no HUD or ambient warning before it finishes \u2014 only the in-world mesh swap tells a player"
+    },
+    "F-165": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "Task 6.5's two new extraction RPCs shipped with no `PROTOCOL_VERSION` bump \u2014 `net_version.gd` was held all session by another lane's claim"
+    },
+    "F-166": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`world/gen/authored_world.gd` has no `shipwreck` marker kind, so task 6.5's ExtractionShip is built but never reachable in the live Hollowmere map \u2014 same shape as F-146's chest gap"
+    },
+    "F-167": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "`tools/crafting_net_check.gd` fails (24/24) against a clean checkout of HEAD, independent of any in-flight change"
     }
   },
   "version": 1

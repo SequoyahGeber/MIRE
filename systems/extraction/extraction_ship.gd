@@ -107,7 +107,20 @@ var departure_progress_sec: float = 0.0
 ## Replicated. Snapshotted when the hold starts — how many players must stay aboard.
 var departure_required_players: int = 1
 ## Replicated. True once the crew has finished the departure hold. Terminal — never reset.
-var departed: bool = false
+##
+## Setter fires `run_extracted` rather than `_finish_departure()` doing it directly (task 6.6):
+## `EventBus` is a per-process static, so a host-only emit call would never reach a client's own
+## local bus, and `SalvageService` needs the event on EVERY peer to bank that peer's own Salvage
+## save. Driving the emit off the setter means it fires identically whether this process just set
+## `departed = true` itself (the host) or received it over the wire (a client, via `_sync`) — the
+## same fix `repair_stage`'s own setter already applies to `_maybe_refresh_visual()`.
+var departed: bool = false:
+	set(value):
+		if departed == value:
+			return
+		departed = value
+		if departed:
+			EVENT_BUS.emit_run_extracted(_current_cycle(), global_position)
 
 var _sync: MultiplayerSynchronizer
 var _hull_root: Node3D
@@ -252,7 +265,6 @@ func _finish_departure() -> void:
 	departure_channeling = false
 	departed = true
 	set_process(false)
-	EVENT_BUS.emit_run_extracted(_current_cycle(), global_position)
 
 
 func _current_cycle() -> int:

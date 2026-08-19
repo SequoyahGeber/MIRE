@@ -18,6 +18,8 @@ static var _cycle_advanced_subscribers: Array[Callable] = []
 static var _cycle_modifier_drawn_subscribers: Array[Callable] = []
 static var _ship_repaired_subscribers: Array[Callable] = []
 static var _run_extracted_subscribers: Array[Callable] = []
+static var _run_wiped_subscribers: Array[Callable] = []
+static var _salvage_banked_subscribers: Array[Callable] = []
 
 
 ## Listener signature:
@@ -227,9 +229,9 @@ static func ship_repaired_subscriber_count() -> int:
 ## Emitted by the HOST only, the instant every present, connected player has held the group confirm
 ## together long enough to complete `ExtractionShip`'s departure (task 6.5, DESIGN.md §5.2: boarding
 ## "ends the run successfully: you bank your full Salvage, and your run is recorded at the Cycle you
-## reached"). Nothing here banks anything — 6.6 owns the superlinear reward curve, the extract-vs-die
-## split and persistence, none of which exist yet. This is that seam. There is deliberately no
-## `run_wiped`/lose counterpart yet either; see docs/FINDINGS.md for the gap 6.6 will need closed.
+## reached"). Nothing here banks anything — `SalvageService` (task 6.6) is this signal's one
+## consumer, applying the superlinear reward curve and persisting the result locally. Its
+## `run_wiped` counterpart lives just below.
 static func subscribe_run_extracted(listener: Callable) -> void:
 	_prune_invalid(_run_extracted_subscribers)
 	if listener.is_valid() and not _run_extracted_subscribers.has(listener):
@@ -249,6 +251,72 @@ static func emit_run_extracted(cycle: int, world_position: Vector3) -> void:
 static func run_extracted_subscriber_count() -> int:
 	_prune_invalid(_run_extracted_subscribers)
 	return _run_extracted_subscribers.size()
+
+
+## Listener signature: (cycle: int, world_position: Vector3) -> void
+##
+## The `run_extracted` counterpart DESIGN.md §5.2 names but nothing has built yet: "dying instead
+## banks a fraction" needs a signal to bank against, the same way boarding needed `run_extracted`.
+## Task 6.6 (Salvage) adds this seam ahead of task 6.7 ("Lose condition"), which is the task that
+## will actually decide WHEN a run has ended in defeat — team wipe with no bleed-out revive pending,
+## or the island fully consumed (docs/SPECS.md's 6.7 look-ahead). Nothing here detects that; 6.7
+## must call `emit_run_wiped()` from wherever it lands that verdict, reusing this exact signal rather
+## than inventing a second one — `SalvageService` (task 6.6) is already wired to only this name.
+##
+## **6.7 must fire this the same way task 6.6 fixed `ExtractionShip.departed`'s emit: from a
+## REPLICATED property's setter, not a host-only guard.** `EventBus` is a per-process static — an
+## emit call that only runs inside a host-only `if` (the shape `_finish_departure()` used before
+## 6.6, and the shape `Wellspring._finish_cap()` still uses for `wellspring_capped`) never reaches a
+## client's own local bus at all, so that peer's own Salvage would never bank. See docs/FINDINGS.md
+## for the general version of this trap.
+static func subscribe_run_wiped(listener: Callable) -> void:
+	_prune_invalid(_run_wiped_subscribers)
+	if listener.is_valid() and not _run_wiped_subscribers.has(listener):
+		_run_wiped_subscribers.append(listener)
+
+
+static func unsubscribe_run_wiped(listener: Callable) -> void:
+	_run_wiped_subscribers.erase(listener)
+
+
+static func emit_run_wiped(cycle: int, world_position: Vector3) -> void:
+	_prune_invalid(_run_wiped_subscribers)
+	for listener: Callable in _run_wiped_subscribers.duplicate():
+		listener.call(cycle, world_position)
+
+
+static func run_wiped_subscriber_count() -> int:
+	_prune_invalid(_run_wiped_subscribers)
+	return _run_wiped_subscribers.size()
+
+
+## Listener signature: (earned: int, total_salvage: int, cycle: int, extracted: bool) -> void
+##
+## Emitted LOCALLY by `SalvageService` (task 6.6) on whichever peer just banked, the instant it
+## finishes writing `SalvageSave` — `earned` is this run's payout (already fraction-applied if
+## `extracted` is false), `total_salvage` is that peer's new lifetime balance, `cycle` is the Cycle
+## the run ended at. This is the seam task 6.8 ("run summary: ... Salvage earned") builds its screen
+## from — nothing here shows UI or ends a session, same "future task's hook" role D-092 gave
+## `wellspring_capped`.
+static func subscribe_salvage_banked(listener: Callable) -> void:
+	_prune_invalid(_salvage_banked_subscribers)
+	if listener.is_valid() and not _salvage_banked_subscribers.has(listener):
+		_salvage_banked_subscribers.append(listener)
+
+
+static func unsubscribe_salvage_banked(listener: Callable) -> void:
+	_salvage_banked_subscribers.erase(listener)
+
+
+static func emit_salvage_banked(earned: int, total_salvage: int, cycle: int, extracted: bool) -> void:
+	_prune_invalid(_salvage_banked_subscribers)
+	for listener: Callable in _salvage_banked_subscribers.duplicate():
+		listener.call(earned, total_salvage, cycle, extracted)
+
+
+static func salvage_banked_subscriber_count() -> int:
+	_prune_invalid(_salvage_banked_subscribers)
+	return _salvage_banked_subscribers.size()
 
 
 static func _prune_invalid(subscribers: Array[Callable]) -> void:
