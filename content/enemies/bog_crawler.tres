@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EnemyDef" format=3]
+
+[ext_resource type="PackedScene" path="res://assets/enemies/exports/enemy_crawler.glb" id="1_uh0gl"]
+[ext_resource type="Script" path="res://systems/enemies/enemy_def.gd" id="2_d3gob"]
+
+[resource]
+script = ExtResource("2_d3gob")
+id = &"bog_crawler"
+display_name = "Bog Crawler"
+model = ExtResource("1_uh0gl")
+model_yaw_offset_degrees = 180.0
+max_health = 20
+move_speed = 3.6
+attack_damage = 9

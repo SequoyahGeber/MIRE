@@ -49,6 +49,14 @@ const EVENT_BUS := preload("res://core/events/event_bus.gd")
 ## F-055 resolved: mire_log.gd gained a dedicated channel this task, so damage/downed/revive/
 ## hunger/consume lines no longer share `combat`'s firehose.
 const LOG_CHANNEL: StringName = &"health"
+## Task 4.11: Blight — standing in Mire corruption drains hp through the SAME
+## DownedState.apply_damage() transition path starvation already uses, so it can down a player like
+## anything else, not a separate death rule. Below this MireGrid.corruption_at() reading, a player is
+## just standing on tainted but non-lethal ground.
+const BLIGHT_CORRUPTION_THRESHOLD: float = 0.15
+## Scales linearly with corruption (0..1) above the threshold — full corruption drains this many
+## hp/sec, matching starvation_hp_drain_per_sec's own placeholder-tuned status.
+const BLIGHT_HP_DRAIN_PER_SEC_AT_FULL_CORRUPTION: float = 4.0
 ## Host tick throttle for hunger-only snapshot pushes — see the class doc above.
 const HUNGER_SNAPSHOT_INTERVAL_SEC: float = 1.0
 
@@ -132,6 +140,12 @@ var _revisions: Dictionary[int, int] = {}
 var _hunger: Dictionary[int, float] = {}
 ## Fractional starvation damage carried between ticks so a slow drain still lands whole-point hits.
 var _starvation_accum: Dictionary[int, float] = {}
+## Fractional Blight damage carried between ticks — same shape as _starvation_accum, see
+## _tick_blight()'s own note.
+var _blight_accum: Dictionary[int, float] = {}
+## Cached MireGrid ref (F-099 — _tick_blight runs every physics tick per tracked peer). Path-resolved
+## since MireGrid registers after this autoload (F-011).
+var _mire_grid_node: Node
 ## Host-owned, advisory only: the last stamina value each peer reported. Never used to gate anything
 ## — see the class doc's Stamina paragraph.
 var _host_stamina_reports: Dictionary[int, float] = {}
@@ -216,6 +230,7 @@ func _physics_process(delta: float) -> void:
 	for peer_id: int in _states:
 		var downed_state: DOWNED_STATE = _states[peer_id]
 		var starved: bool = _tick_hunger(peer_id, downed_state, delta)
+		var blighted: bool = _tick_blight(peer_id, downed_state, delta)
 		var transition: int = downed_state.tick(delta, respawn_seconds)
 		match transition:
 			DOWNED_STATE.Transition.DIED:
@@ -224,13 +239,14 @@ func _physics_process(delta: float) -> void:
 				continue
 			DOWNED_STATE.Transition.RESPAWNED:
 				MireLog.info(LOG_CHANNEL, "PlayerHealth: peer %d respawning" % peer_id)
-				# A fresh respawn should not start starving immediately.
+				# A fresh respawn should not start starving — or Blighted — immediately.
 				_hunger[peer_id] = max_hunger
 				_starvation_accum[peer_id] = 0.0
+				_blight_accum[peer_id] = 0.0
 				_commit(peer_id)
 				_teleport_to_spawn(peer_id)
 				continue
-		if starved or publish_hunger:
+		if starved or blighted or publish_hunger:
 			_commit(peer_id)
 
 
@@ -754,6 +770,7 @@ func _on_session_opened() -> void:
 	_clear_downed_flags()
 	_hunger.clear()
 	_starvation_accum.clear()
+	_blight_accum.clear()
 	_host_stamina_reports.clear()
 	_reset_local_cache()
 	if not bool(_transport().call("is_host")):
@@ -794,6 +811,8 @@ func _on_run_player_rebound(old_peer_id: int, new_peer_id: int) -> void:
 	_hunger.erase(old_peer_id)
 	_starvation_accum[new_peer_id] = float(_starvation_accum.get(old_peer_id, 0.0))
 	_starvation_accum.erase(old_peer_id)
+	_blight_accum[new_peer_id] = float(_blight_accum.get(old_peer_id, 0.0))
+	_blight_accum.erase(old_peer_id)
 	if _host_stamina_reports.has(old_peer_id):
 		_host_stamina_reports[new_peer_id] = _host_stamina_reports[old_peer_id]
 		_host_stamina_reports.erase(old_peer_id)
@@ -816,6 +835,7 @@ func _on_run_player_expired(peer_id: int) -> void:
 	_spawn_transforms.erase(peer_id)
 	_hunger.erase(peer_id)
 	_starvation_accum.erase(peer_id)
+	_blight_accum.erase(peer_id)
 	_host_stamina_reports.erase(peer_id)
 
 
@@ -827,6 +847,7 @@ func _on_disconnected() -> void:
 	_clear_downed_flags()
 	_hunger.clear()
 	_starvation_accum.clear()
+	_blight_accum.clear()
 	_host_stamina_reports.clear()
 	_reset_local_cache()
 	_ensure_host_state(NetConfig.HOST_PEER_ID)
@@ -943,6 +964,46 @@ func _ensure_host_state(peer_id: int) -> void:
 	_revisions[peer_id] = 0
 	_hunger[peer_id] = max_hunger
 	_starvation_accum[peer_id] = 0.0
+	_blight_accum[peer_id] = 0.0
+
+
+## Host-only, mirrors _tick_hunger()'s shape: fractional damage accumulated across ticks so a slow
+## drain still lands whole-point hits, applied through the SAME DownedState.apply_damage() transition
+## path a melee hit and starvation both already use. Reads MireGrid.corruption_at() at the player's
+## OWN body position — own movement is client authority (§2.2 row 1), but the host already trusts
+## that position exactly as much as every other system here does (D-039: cheating is irrelevant
+## among friends). Returns true only when a Blight hit actually landed, same reason _tick_hunger
+## does: _physics_process uses that to force an immediate snapshot instead of waiting on the
+## throttled hunger publish.
+func _tick_blight(peer_id: int, downed_state: DOWNED_STATE, delta: float) -> bool:
+	if not downed_state.is_alive():
+		_blight_accum[peer_id] = 0.0
+		return false
+	var body: Node3D = _player_body(peer_id)
+	var mire_grid: Node = _mire_grid()
+	if body == null or mire_grid == null:
+		return false
+	var corruption: float = float(mire_grid.call(&"corruption_at", body.global_position))
+	if corruption < BLIGHT_CORRUPTION_THRESHOLD:
+		_blight_accum[peer_id] = 0.0
+		return false
+	var accum: float = float(_blight_accum.get(peer_id, 0.0)) \
+		+ BLIGHT_HP_DRAIN_PER_SEC_AT_FULL_CORRUPTION * corruption * delta
+	var whole: int = int(accum)
+	if whole <= 0:
+		_blight_accum[peer_id] = accum
+		return false
+	_blight_accum[peer_id] = accum - float(whole)
+	var transition: int = downed_state.apply_damage(whole, bleed_out_seconds)
+	if transition == DOWNED_STATE.Transition.WENT_DOWN:
+		MireLog.info(LOG_CHANNEL, "PlayerHealth: peer %d downed by Blight" % peer_id)
+	return true
+
+
+func _mire_grid() -> Node:
+	if _mire_grid_node == null or not is_instance_valid(_mire_grid_node):
+		_mire_grid_node = get_node_or_null(^"/root/MireGrid")
+	return _mire_grid_node
 
 
 func _registry() -> Node:

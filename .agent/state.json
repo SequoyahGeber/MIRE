@@ -385,10 +385,10 @@
       "task": "3.9"
     },
     "autoload/build_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T22:57:40+00:00",
-      "hash": "bea0fc0108db3ae37e9f1b022cd2ada5ec78054af4cc62643925dfa58ebe313c",
-      "task": "3.16"
+      "agent": "lm",
+      "at": "2026-08-19T01:01:42+00:00",
+      "hash": "bae01bf5596ee6b0b3e69d8a3a5ad6aae83ac5e2c633d250d319f6611c219ea4",
+      "task": "4.11"
     },
     "autoload/combat_service.gd": {
       "agent": "vane19",
@@ -453,10 +453,10 @@
       "task": "3.10"
     },
     "autoload/inventory_service.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T22:57:40+00:00",
-      "hash": "28b681cba2a38cd5c9c8a761928436386aeeee7bf5d7f228d9d1b6319752df92",
-      "task": "3.16"
+      "agent": "lm",
+      "at": "2026-08-19T01:01:42+00:00",
+      "hash": "ad2ba02f78d17697bb7587748eea900bcc9b1ae915fdc42d912e6bad114f4ec1",
+      "task": "4.11"
     },
     "autoload/net_transport.gd": {
       "agent": "kiln9",
@@ -624,6 +624,12 @@
       "at": "2026-08-18T22:17:53+00:00",
       "hash": "cbf7a1c989133cf33c377c0f1110f1dc424d022c1d7b2e3f4a6726d6596beaf6",
       "task": "3.7"
+    },
+    "content/enemies/bog_crawler.tres": {
+      "agent": "lm",
+      "at": "2026-08-19T01:01:42+00:00",
+      "hash": "1fa83de45b582d0c5a267bcd459d92b6616b63607deddd00502ffbc21ca2e52e",
+      "task": "4.11"
     },
     "content/functions": {
       "agent": "lp",
@@ -1811,16 +1817,11 @@
       "hash": "b9e79a14c5b18194f90cb81a87dc86c70699fbb9cdb2a46843395620a8034528",
       "task": "3.10"
     },
-    "systems/health/downed_state.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:55:40+00:00",
-      "task": "3.8"
-    },
     "systems/health/player_health.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T22:57:40+00:00",
-      "hash": "b6760c98e5f95abab6b70805045bf8b8d248b45ce25a5e16b096f1f6df97be7d",
-      "task": "3.16"
+      "agent": "lm",
+      "at": "2026-08-19T01:01:42+00:00",
+      "hash": "8da74258678a355e43f58cb3f634f0af97787fae128022cc0ebf72fb140c3b69",
+      "task": "4.11"
     },
     "systems/inventory/item_def.gd": {
       "agent": "flint5",
@@ -1863,10 +1864,10 @@
       "task": "3.14"
     },
     "systems/waves/wave_spawner.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T22:57:40+00:00",
-      "hash": "387fa8d1a8e6e232bab40e8ea294614650fce2bae19986e23df7b34140c7be27",
-      "task": "3.16"
+      "agent": "lm",
+      "at": "2026-08-19T01:01:42+00:00",
+      "hash": "90d603eec7d0be1898ac9f620d9e48cde98052ff6c56b8326a616a5bdf8d9848",
+      "task": "4.11"
     },
     "systems/wellspring/wellspring.gd": {
       "agent": "lm",
@@ -2347,6 +2348,12 @@
       "hash": "a4f37656ad7ec290cc8ee97b21d9d9a177f168ec881f22c90561935873a95f80",
       "task": "4.9"
     },
+    "tools/mire_interaction_check.gd": {
+      "agent": "lm",
+      "at": "2026-08-19T01:01:42+00:00",
+      "hash": "97620c35815cefd98934fdd0ed74e3f7ca29f9c58d4c1bc5d931d1a8c24ea85b",
+      "task": "4.11"
+    },
     "tools/multimesh_readback_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T18:12:00+00:00",
@@ -2381,11 +2388,6 @@
       "agent": "lp",
       "at": "2026-08-18T14:55:48+00:00",
       "task": "F-105"
-    },
-    "tools/player_vitals_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T00:55:40+00:00",
-      "task": "3.8"
     },
     "tools/png_pixels_equal.py": {
       "agent": "lp",
@@ -3408,9 +3410,11 @@
       "title": "Mire visuals: shader ground tint, fog density, particles, audio shift"
     },
     "4.11": {
+      "done_at": "2026-08-19T01:01:42+00:00",
+      "done_by": "lm",
       "est": "3",
       "milestone": "M4",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Mire \u2194 world interaction: rotted resources, Blight debuff, corrupted spawns, Ward resistance"
     },

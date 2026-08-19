@@ -3688,3 +3688,15 @@ Notes along the way:
 Files: `world/mire/mire_grid.gd`, `world/mire/mire_grid_sim.gd`, `tools/mire_grid_check.gd`
 
 Commit at time of writing: `11c39b2`
+
+---
+
+### DONE · 4.11 · lm · 2026-08-19T01:01:42+00:00
+
+**Mire ↔ world interaction: rotted resources, Blight debuff, corrupted spawns, Ward resistance**
+
+Rotted yields (InventoryService), Blight debuff (PlayerHealth, same DownedState.apply_damage path as starvation), corrupted spawn tables (WaveSpawner + new bog_crawler.tres), Ward resistance wiring (BuildService.ward_radii() -> MireGrid.set_ward_circles_provider()). tools/mire_interaction_check.gd: 12 assertions, 0 failures, 2 consecutive runs. No regressions in build_check/inventory_check/player_health_check/wave_spawner_check/mire_grid_check. Filed F-158: bog_crawler has no visual distinction from crawler yet (4.10's job).
+
+Files: `autoload/build_service.gd`, `systems/health/player_health.gd`, `autoload/inventory_service.gd`, `systems/waves/wave_spawner.gd`, `content/enemies/bog_crawler.tres`, `tools/mire_interaction_check.gd`
+
+Commit at time of writing: `219d99c`

@@ -8,6 +8,14 @@ extends Node
 ## MultiplayerSpawner replicates those host-owned bodies, so this service adds no RPC.
 
 const DEFAULT_SEED: int = 0x57415645  # "WAVE"
+## Task 4.11's "corrupted spawn tables": a spawn landing on corrupted ground has a chance to produce
+## this Mire-tainted variant instead of the requested kind. Substitution only ever applies to the
+## default `enemy_id` slot (bog_crawler is a crawler variant, not a stand-in for anything else a
+## future caller might request).
+const CORRUPTED_ENEMY_ID: StringName = &"bog_crawler"
+## Ceiling probability at full (1.0) corruption — never certainty, so a heavily corrupted wave reads
+## as "worse," not "a different game."
+const CORRUPTED_SPAWN_CAP_PROBABILITY: float = 0.75
 
 ## Gamerules `wave_base_count` and `wave_per_player` (task 3.14). Both exports stay as the
 ## COMMANDS.md §4.3 fallback and are adopted from RuleService by `_bind_rules()` when authored.
@@ -22,6 +30,9 @@ const DEFAULT_SEED: int = 0x57415645  # "WAVE"
 var _rng := RandomNumberGenerator.new()
 var _night_active: bool = false
 var _ambient_was_enabled: bool = true
+## Cached MireGrid ref (F-099). MireGrid registers after this autoload, so it is resolved lazily
+## rather than in _ready() (F-011).
+var _mire_grid_node: Node
 
 
 func _ready() -> void:
@@ -98,7 +109,32 @@ func _spawn_one(
 		0.0,
 		_rng.randf_range(-spawn_scatter_m, spawn_scatter_m)
 	)
-	world.call("host_spawn", spawn_enemy_id, origin + offset)
+	var position: Vector3 = origin + offset
+	world.call("host_spawn", _corrupted_enemy_id_for(position, spawn_enemy_id), position)
+
+
+## Substitutes CORRUPTED_ENEMY_ID with probability scaling linearly with corruption at the actual
+## spawn point, capped at CORRUPTED_SPAWN_CAP_PROBABILITY. Only ever touches the default `enemy_id`
+## slot — a caller that explicitly asked for some other kind gets exactly that, never a surprise
+## reskin.
+func _corrupted_enemy_id_for(position: Vector3, base_id: StringName) -> StringName:
+	if base_id != enemy_id:
+		return base_id
+	var mire_grid: Node = _mire_grid()
+	if mire_grid == null:
+		return base_id
+	var corruption: float = float(mire_grid.call(&"corruption_at", position))
+	if corruption <= 0.0:
+		return base_id
+	if _rng.randf() < corruption * CORRUPTED_SPAWN_CAP_PROBABILITY:
+		return CORRUPTED_ENEMY_ID
+	return base_id
+
+
+func _mire_grid() -> Node:
+	if _mire_grid_node == null or not is_instance_valid(_mire_grid_node):
+		_mire_grid_node = get_node_or_null(^"/root/MireGrid")
+	return _mire_grid_node
 
 
 ## Clears the one-shot night population, restores the exact ambient setting found at dusk, and

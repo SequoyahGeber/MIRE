@@ -30,6 +30,9 @@ var _next_request_id: int = 1
 var _session_open: bool = false
 ## Cached transport ref (F-099). Path-resolved (F-011 — harnesses install theirs at /root).
 var _transport_node: Node
+## Cached MireGrid ref (F-099), same reason. MireGrid registers after this autoload, so it is
+## resolved lazily rather than in _ready() (F-011).
+var _mire_grid_node: Node
 
 
 func _ready() -> void:
@@ -263,22 +266,57 @@ func _emit_confirmation(request_id: int, accepted: bool, detail: String) -> void
 	operation_confirmed.emit(request_id, accepted, detail)
 
 
+## Task 4.11's "rotted resource yields": ground rich enough in corruption spoils part of the
+## harvest before it ever reaches a pack. Reduction only, never a substitution — no new item exists
+## to substitute in (content is hand-authored, D-073, and this task authors none), so "rotted" reads
+## as a smaller yield rather than a different one.
 func _on_harvest_yielded(
 	_harvestable_id: StringName,
 	peer_id: int,
 	item_id: StringName,
 	amount: int,
-	_world_position: Vector3
+	world_position: Vector3
 ) -> void:
 	if not _owns_mutation():
 		return
-	if host_add(peer_id, item_id, amount):
-		MireLog.info(&"inventory", "peer %d collected %d %s" % [peer_id, amount, item_id])
+	var granted: int = _rot_adjusted_amount(amount, world_position)
+	if host_add(peer_id, item_id, granted):
+		if granted < amount:
+			MireLog.info(&"inventory", "peer %d collected %d/%d %s — the Mire rotted the rest" % [
+				peer_id, granted, amount, item_id
+			])
+		else:
+			MireLog.info(&"inventory", "peer %d collected %d %s" % [peer_id, granted, item_id])
 	else:
 		MireLog.warn(
 			&"inventory",
-			"peer %d could not collect %d %s (invalid or full)" % [peer_id, amount, item_id]
+			"peer %d could not collect %d %s (invalid or full)" % [peer_id, granted, item_id]
 		)
+
+
+## Never returns less than 1 for a positive `amount` — corruption spoils PART of a harvest, it does
+## not make gathering pointless. Loss scales linearly with corruption (0..1): full corruption costs
+## up to ROT_LOSS_FRACTION of the yield, clean ground costs nothing.
+const ROT_LOSS_FRACTION: float = 0.6
+
+
+func _rot_adjusted_amount(amount: int, world_position: Vector3) -> int:
+	if amount <= 1:
+		return amount
+	var mire_grid: Node = _mire_grid()
+	if mire_grid == null:
+		return amount
+	var corruption: float = float(mire_grid.call(&"corruption_at", world_position))
+	if corruption <= 0.0:
+		return amount
+	var lost: int = floori(float(amount) * corruption * ROT_LOSS_FRACTION)
+	return maxi(1, amount - lost)
+
+
+func _mire_grid() -> Node:
+	if _mire_grid_node == null or not is_instance_valid(_mire_grid_node):
+		_mire_grid_node = get_node_or_null(^"/root/MireGrid")
+	return _mire_grid_node
 
 
 func _on_session_opened() -> void:

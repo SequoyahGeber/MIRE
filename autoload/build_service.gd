@@ -73,6 +73,7 @@ func _ready() -> void:
 	# The tick exists only to time a pending nav rebake; _request_nav_rebake() turns it on (F-099).
 	set_physics_process(false)
 	_register_commands()
+	_wire_mire_grid.call_deferred()
 
 
 
@@ -266,6 +267,37 @@ func placed_count() -> int:
 
 func placed_record(piece_name: StringName) -> Dictionary:
 	return (_placed.get(piece_name, {} as Dictionary) as Dictionary).duplicate()
+
+
+## Task 4.11's Mire consumer: every placed Ward's live position and radius, host-side —
+## `MireGrid`'s own ward-resistance provider seam (`set_ward_circles_provider`) calls this once per
+## tick. Re-walks `_placed` each call rather than caching: placement/destruction is rare compared to
+## the Mire's own 2s tick, so there is nothing worth caching against.
+func ward_radii() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for piece_name: StringName in _placed:
+		var record: Dictionary = _placed[piece_name]
+		var def: Resource = _definition(record.get("def", &""))
+		if def == null or not bool(def.call(&"is_ward")):
+			continue
+		var piece: Node3D = _container.get_node_or_null(NodePath(String(piece_name))) as Node3D
+		if piece == null:
+			continue
+		result.append({
+			"position": Vector2(piece.global_position.x, piece.global_position.z),
+			"radius": float(def.get(&"ward_radius_m")),
+		})
+	return result
+
+
+## `MireGrid` registers AFTER this autoload in project.godot, so `/root/MireGrid` does not exist yet
+## during this file's own `_ready()` — deferred so it runs once every autoload's `_ready()` has
+## already completed. A harness with no MireGrid (most of them) just leaves the provider unset,
+## which is `MireGrid`'s own documented "no wards" default.
+func _wire_mire_grid() -> void:
+	var mire_grid: Node = get_node_or_null(^"/root/MireGrid")
+	if mire_grid != null:
+		mire_grid.call(&"set_ward_circles_provider", Callable(self, "ward_radii"))
 
 
 # ── Spawning (D-023: built in code so every peer's tree is identical) ─────────────────────────────
