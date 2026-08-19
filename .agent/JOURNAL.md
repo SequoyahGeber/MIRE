@@ -4011,3 +4011,15 @@ Fixed _is_dodging()'s bool(NIL) crash by comparing == true instead of constructi
 Files: `systems/health/player_health.gd`
 
 Commit at time of writing: `40e847e`
+
+---
+
+### DONE · F-167 · lm · 2026-08-19T04:27:15+00:00
+
+**`tools/crafting_net_check.gd` fails (24/24) against a clean checkout of HEAD, independent of any in-flight change**
+
+recipes_for_station() sort_custom fix + crafting_net_check.gd's hardcoded-index-0 fix. agent godot --script tools/crafting_net_check.gd -> failures=0 (24/24 PASS), run twice.
+
+Files: `tools/crafting_net_check.gd`, `autoload/crafting_service.gd`, `ui/crafting/crafting_ui.gd`
+
+Commit at time of writing: `9c9a383`

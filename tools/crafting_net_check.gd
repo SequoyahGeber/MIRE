@@ -229,11 +229,22 @@ func _client_drive() -> void:
 	workbench.add_to_group(&"playtest_hollow_asset")
 	crafting_ui.call("poll_station")
 
-	var ui_in_range: bool = bool(crafting_ui.call("is_station_in_range"))
-	var ui_craftable_before: bool = bool(crafting_ui.call("is_recipe_craftable", 0))
-	var ui_requirements_before: String = String(crafting_ui.call("recipe_requirement_text", 0))
+	# The workbench now carries 11 recipes (task 3.3+); row order is alphabetical by id
+	# (recipes_for_station), not insertion order, so "stone_axe" is not necessarily row 0. A
+	# missing/renamed recipe leaves axe_row at -1, which the calls below degrade gracefully on
+	# (empty requirement text, uncraftable, request_craft_at() returns -1) — the driver's own
+	# checks against "2/2 Log · 3/3 Stone" etc. below already catch that case as real failures.
+	var axe_row: int = -1
+	for i in range(int(crafting_ui.call("recipe_row_count"))):
+		if StringName(crafting_ui.call("displayed_recipe_id", i)) == &"stone_axe":
+			axe_row = i
+			break
 
-	var craft_id: int = int(crafting_ui.call("request_craft_at", 0))
+	var ui_in_range: bool = bool(crafting_ui.call("is_station_in_range"))
+	var ui_craftable_before: bool = bool(crafting_ui.call("is_recipe_craftable", axe_row))
+	var ui_requirements_before: String = String(crafting_ui.call("recipe_requirement_text", axe_row))
+
+	var craft_id: int = int(crafting_ui.call("request_craft_at", axe_row))
 	# Captured before any answer can have arrived: a remote host cannot confirm inside the call.
 	var ui_waiting_status: String = String(crafting_ui.call("status_text"))
 	var craft_confirmed: bool = await _until(
@@ -253,10 +264,10 @@ func _client_drive() -> void:
 	)
 
 	var ui_confirmed_status: String = String(crafting_ui.call("status_text"))
-	var ui_requirements_after: String = String(crafting_ui.call("recipe_requirement_text", 0))
-	var ui_craftable_after: bool = bool(crafting_ui.call("is_recipe_craftable", 0))
+	var ui_requirements_after: String = String(crafting_ui.call("recipe_requirement_text", axe_row))
+	var ui_craftable_after: bool = bool(crafting_ui.call("is_recipe_craftable", axe_row))
 
-	var repeat_id: int = int(crafting_ui.call("request_craft_at", 0))
+	var repeat_id: int = int(crafting_ui.call("request_craft_at", axe_row))
 	var repeat_confirmed: bool = await _until(
 		func() -> bool: return confirmations.has(repeat_id), TIMEOUT_SEC
 	)

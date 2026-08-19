@@ -61,7 +61,11 @@ func recipes_for_station(station: StringName) -> Array[RecipeDef]:
 	var ids: Array[StringName] = []
 	for id: StringName in Registry.recipes:
 		ids.append(id)
-	ids.sort()
+	# StringName's `<` compares interned identity, not string content, so Array.sort() on a
+	# StringName array does NOT give alphabetical order (confirmed: sorting the same values as
+	# String gives "arrow, cleaver, iron_sword..."; as StringName it gives an unrelated order).
+	# That silently broke the CraftingUI row order once the workbench had more than one recipe.
+	ids.sort_custom(func(a: StringName, b: StringName) -> bool: return String(a) < String(b))
 	var result: Array[RecipeDef] = []
 	for id: StringName in ids:
 		var recipe: RecipeDef = Registry.get_recipe(id)

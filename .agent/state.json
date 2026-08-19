@@ -115,6 +115,11 @@
       "at": "2026-08-19T04:09:08+00:00",
       "task": "5.5"
     },
+    "tools/audio_import_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-19T04:26:43+00:00",
+      "task": "5.5"
+    },
     "tools/boss_check.gd": {
       "agent": "lp",
       "at": "2026-08-19T04:09:08+00:00",
@@ -221,7 +226,8 @@
         "tools/audio/render_music.py",
         "assets/audio/music/boss_stinger.ogg",
         "assets/audio/music/boss_stinger.ogg.import",
-        "project.godot"
+        "project.godot",
+        "tools/audio_import_check.gd"
       ],
       "notes": [
         {
@@ -522,9 +528,9 @@
     },
     "autoload/crafting_service.gd": {
       "agent": "lm",
-      "at": "2026-08-19T03:46:26+00:00",
-      "hash": "07886c537c88e074461a28f8dd574057d8ad3ae773a8c3b9fd05ab647fe79b68",
-      "task": "7.8"
+      "at": "2026-08-19T04:27:15+00:00",
+      "hash": "4c30c37066cef74da74783291030c6bdee9836557ba8eff0793f726818f02a97",
+      "task": "F-167"
     },
     "autoload/debug_console.gd": {
       "agent": "lp",
@@ -1398,11 +1404,6 @@
       "hash": "bd81c15a5980c402c6c03ef30af052b6c64532a2f813f76f2330b9e916a5fef1",
       "task": "3.4"
     },
-    "content/powerups/swift_stride.tres": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:27:04+00:00",
-      "task": "3.3"
-    },
     "content/powerups/the_landlord.tres": {
       "agent": "slate17",
       "at": "2026-08-18T21:26:59+00:00",
@@ -1715,11 +1716,6 @@
       "at": "2026-08-19T03:34:03+00:00",
       "hash": "3b4cb7c9b9aeab21a4ccbf4ce33b789a887ffd59872141026d46748e3f3e2089",
       "task": "6.9"
-    },
-    "core/util/mire_log.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:27:04+00:00",
-      "task": "3.3"
     },
     "docs/AI-WORKFLOW.md": {
       "agent": "yarrow21",
@@ -2356,9 +2352,10 @@
       "task": "3.2"
     },
     "tools/crafting_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-18T05:04:45+00:00",
-      "task": "3.1"
+      "agent": "lm",
+      "at": "2026-08-19T04:27:15+00:00",
+      "hash": "402e1ee2396a79d6d09643eacb08a2c443a12582a08399d756fb6292b1705498",
+      "task": "F-167"
     },
     "tools/crafting_ui_check.gd": {
       "agent": "lp",
@@ -2702,11 +2699,6 @@
       "at": "2026-08-18T04:53:36+00:00",
       "task": "F-078"
     },
-    "tools/powerup_net_check.gd": {
-      "agent": "gale6",
-      "at": "2026-08-18T04:27:04+00:00",
-      "task": "3.3"
-    },
     "tools/powerup_review_check.gd": {
       "agent": "lp",
       "at": "2026-08-18T05:35:30+00:00",
@@ -2904,9 +2896,10 @@
       "task": "F-086"
     },
     "ui/crafting/crafting_ui.gd": {
-      "agent": "kiln9",
-      "at": "2026-08-18T14:10:44+00:00",
-      "task": "F-099"
+      "agent": "lm",
+      "at": "2026-08-19T04:27:15+00:00",
+      "hash": "2439481058adbcbbd25adf41d262410ad52943c2773f9172e632ddd73cdb7159",
+      "task": "F-167"
     },
     "ui/hud/defeat_hud.gd": {
       "agent": "lm",
@@ -5605,9 +5598,11 @@
       "title": "`world/gen/authored_world.gd` has no `shipwreck` marker kind, so task 6.5's ExtractionShip is built but never reachable in the live Hollowmere map \u2014 same shape as F-146's chest gap"
     },
     "F-167": {
+      "done_at": "2026-08-19T04:27:15+00:00",
+      "done_by": "lm",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "done",
       "tier": "F",
       "title": "`tools/crafting_net_check.gd` fails (24/24) against a clean checkout of HEAD, independent of any in-flight change"
     },
@@ -5652,6 +5647,13 @@
       "status": "todo",
       "tier": "F",
       "title": "`UnlockService.is_content_unlocked()` (task 6.9) has no caller anywhere in the game \u2014 wiring the first real gate needs a cross-peer design decision, not just a call site"
+    },
+    "F-174": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "No dev machine can stand in for \"mid-range\" \u2014 `tools/perf_probe.gd`'s baseline is only ever measured on the fastest hardware in the project"
     }
   },
   "version": 1
