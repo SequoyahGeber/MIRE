@@ -1,6 +1,23 @@
 {
-  "claims": {},
-  "in_flight": {},
+  "claims": {
+    "docs/FINDINGS.md": {
+      "agent": "lp",
+      "at": "2026-08-19T14:52:16+00:00",
+      "task": "3.16-review",
+      "token": null
+    }
+  },
+  "in_flight": {
+    "3.16-review": {
+      "agent": "lp",
+      "files": [
+        "docs/FINDINGS.md"
+      ],
+      "notes": [],
+      "started": "2026-08-19T14:52:16+00:00",
+      "token": null
+    }
+  },
   "recent": {
     ".": {
       "agent": "lp",
@@ -4140,7 +4157,7 @@
       "est": "0.5",
       "milestone": "M3",
       "review_of": "3.16",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "T1",
       "title": "Review 3.16 @ d1c59dd \u2014 judge the commit, file findings, no edits"
     },
@@ -4296,10 +4313,12 @@
       "title": "Seeded island heightmap: layered noise + island falloff, deterministic RNG per subsystem"
     },
     "4.1-review": {
+      "done_at": "2026-08-19T14:52:42+00:00",
+      "done_by": "lm",
       "est": "0.5",
       "milestone": "M4",
       "review_of": "4.1",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review 4.1 @ daf9571 \u2014 judge the commit, file findings, no edits"
     },

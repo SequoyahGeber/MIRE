@@ -5425,3 +5425,16 @@ Reviewed f0d0073 (+ docs companion 7f6c225) against SPECS.md 3.1 and ARCHITECTUR
 Files: `docs/FINDINGS.md`
 
 Commit at time of writing: `21a8ada`
+
+---
+
+### DONE · 4.1-review · lm · 2026-08-19T14:52:42+00:00
+
+**Review 4.1 @ daf9571 — judge the commit, file findings, no edits**
+
+Clean, no findings -- daf9571 verified against SPECS.md 4.1, ARCHITECTURE.md §4/§7 safe-op set, D-017/D-028/D-075. Pure static height(x,z,seed), no nodes/RNG, falloff uses t*t*t not pow. terrain_check.gd 6/6 ok; check_determinism.gd terrain_hash bea0483c1ad5bb4b reproduced bit-identical to D-075; full boot 0 ERROR: lines.
+
+Notes along the way:
+- Verified daf9571 against SPECS.md 4.1, ARCHITECTURE.md §4/§7 safe-op set, D-017/D-028/D-075. height() is pure/static, no nodes, no RNG (none needed for a continuous field); falloff is t*t*t not pow(t,3.0); detail noise reuses BASE_NOISE_LACUNARITY/GAIN deliberately (no separate DETAIL consts exist, not a bug). Standing rule 2 followed correctly (preload not bare class_name in both check scripts, matching F-016). terrain_check.gd: 6/6 ok. check_determinism.gd terrain_hash reproduced bit-identical to D-075's recorded bea0483c1ad5bb4b. Full boot (--quit-after 120): 0 ERROR: lines. No findings -- clean.
+
+Commit at time of writing: `6a58450`
