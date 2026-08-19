@@ -440,36 +440,6 @@ instruction.
 
 ---
 
-### F-225 · `Enemy.alert()` bypasses `Boss._acquire_target()`'s override, so a boss pulled into a fight by a nearby ally's alert never engages until it first takes damage
-
-**Area:** enemies · **Severity:** medium · **Found:** 2026-08-19 by lm during 5.5-review
-
-`Boss` (`systems/enemies/boss.gd:49`) only leaves `DORMANT_PHASE` (-1) through `_update_phase()`,
-called from two places: `host_apply_damage()` (5.5's damage-seam override) and `_acquire_target()`'s
-override (`systems/enemies/boss.gd:100`, on the was-dormant transition). But `Enemy.alert()`
-(`systems/enemies/enemy.gd:386-393`) — the public method `_alert_nearby()` calls on every unengaged
-packmate within `alert_radius_m` when SOME OTHER enemy first acquires a target (5.1's pack-alerting
-feature) — sets `_target_peer`/`_target_node` directly and never routes through `_acquire_target()`.
-`Boss` does not override `alert()`.
-
-Concrete failure: a `Boss` standing within a regular `Enemy`'s `alert_radius_m` gets pulled into a
-fight the instant that Enemy acquires a player, via `alert()`. The boss then chases and attacks that
-player with `_target_peer` set, but `phase` stays at `DORMANT_PHASE` — `EventBus.boss_engaged` never
-fires (no music stinger), `Boss.is_engaged()` returns `false` (no health bar, `ui/hud/boss_health_hud.gd`
-stays hidden), and `_active_phase()` returns `null` so the boss fights with `EnemyDef`'s single fixed
-attack instead of its authored `BossPhaseDef.moves` — until it takes its first accepted hit, at which
-point `host_apply_damage()`'s `_update_phase()` call unconditionally exits dormant (`phase ==
-DORMANT_PHASE` short-circuits the `target_index > phase` check) and everything catches up. A boss a
-player never manages to land a hit on stays in this state for the whole encounter.
-
-`tools/boss_check.gd` sets its synthetic `BossDef`'s own `alert_radius_m` to `0.0` (line 396), which
-only suppresses the boss's own OUTGOING alert call — it does not exercise a nearby ally alerting the
-boss, so this path is untested. Fix shape: either override `alert()` on `Boss` the same way
-`_acquire_target()` is overridden (was-dormant check, then `_update_phase()`), or fold the was-dormant
-check into `phase`'s own setter/a `_target_peer` watcher so any path that sets a target reaches it.
-
----
-
 ### F-226 · `WaveSpawner.current_cycle()` is documented "readable on any peer" but is stuck at 1 forever on every client
 
 **Area:** waves/netcode · **Severity:** medium · **Found:** 2026-08-19 by lp during 5.9-review
@@ -523,6 +493,54 @@ one-line comment edit to match SPECS.md's own 58/336/5.8x.
 ---
 
 ## Resolved
+
+### F-225 · `Enemy.alert()` bypasses `Boss._acquire_target()`'s override, so a boss pulled into a fight by a nearby ally's alert never engages until it first takes damage — **fixed**
+
+**Area:** enemies · **Severity:** medium · **Found:** 2026-08-19 by lm during 5.5-review
+
+`Boss` (`systems/enemies/boss.gd:49`) only leaves `DORMANT_PHASE` (-1) through `_update_phase()`,
+called from two places: `host_apply_damage()` (5.5's damage-seam override) and `_acquire_target()`'s
+override (`systems/enemies/boss.gd:100`, on the was-dormant transition). But `Enemy.alert()`
+(`systems/enemies/enemy.gd:386-393`) — the public method `_alert_nearby()` calls on every unengaged
+packmate within `alert_radius_m` when SOME OTHER enemy first acquires a target (5.1's pack-alerting
+feature) — sets `_target_peer`/`_target_node` directly and never routes through `_acquire_target()`.
+`Boss` does not override `alert()`.
+
+Concrete failure: a `Boss` standing within a regular `Enemy`'s `alert_radius_m` gets pulled into a
+fight the instant that Enemy acquires a player, via `alert()`. The boss then chases and attacks that
+player with `_target_peer` set, but `phase` stays at `DORMANT_PHASE` — `EventBus.boss_engaged` never
+fires (no music stinger), `Boss.is_engaged()` returns `false` (no health bar, `ui/hud/boss_health_hud.gd`
+stays hidden), and `_active_phase()` returns `null` so the boss fights with `EnemyDef`'s single fixed
+attack instead of its authored `BossPhaseDef.moves` — until it takes its first accepted hit, at which
+point `host_apply_damage()`'s `_update_phase()` call unconditionally exits dormant (`phase ==
+DORMANT_PHASE` short-circuits the `target_index > phase` check) and everything catches up. A boss a
+player never manages to land a hit on stays in this state for the whole encounter.
+
+`tools/boss_check.gd` sets its synthetic `BossDef`'s own `alert_radius_m` to `0.0` (line 396), which
+only suppresses the boss's own OUTGOING alert call — it does not exercise a nearby ally alerting the
+boss, so this path is untested. Fix shape: either override `alert()` on `Boss` the same way
+`_acquire_target()` is overridden (was-dormant check, then `_update_phase()`), or fold the was-dormant
+check into `phase`'s own setter/a `_target_peer` watcher so any path that sets a target reaches it.
+
+---
+
+**Resolved 2026-08-19 by lp.** Fixed: `Boss.alert(peer_id)` now overrides `Enemy.alert()` the same way `_acquire_target()` is already
+overridden (D-116's pattern) — was-dormant check before `super.alert()`, `_update_phase()` after,
+gated on `_target_peer == peer_id` (the outcome, not the argument) since unlike `_acquire_target()`,
+`super.alert()` can silently no-op. `_update_phase()`'s doc comment now names `alert()` alongside its
+other two callers. New `tools/boss_check.gd::_check_alert_engages_boss()`: a boss with `aggro_radius_m`
+below the player's distance (so it can never self-acquire), pulled in only by a plain Enemy spotter's
+alert — before the fix `target_peer()` matched but `phase` stayed -1 and `boss_engaged` never fired;
+after, one `_step(spotter, ...)` (boss itself never stepped) takes phase -1 -> 0, `is_engaged()` true,
+`boss_engaged` fires once, zero damage dealt. Verified: `agent godot --script tools/boss_check.gd` ->
+`BOSS_CHECK failures=0`, all 30 assertions PASS (6 new + 24 pre-existing). The `ERROR: 2 resources
+still in use at exit` line is pre-existing engine shutdown noise, confirmed identical against HEAD via
+`agent baseline --script tools/boss_check.gd` (22 leaked ObjectDB there vs 12 here — teardown-order
+variance, not a regression). Swept: grepped every `_target_peer =` assignment in enemy.gd (4 total) —
+the other 2 only clear to 0 on death/lost-retention, no engagement implication, monotonic phase is
+deliberate. Grepped for other `extends Enemy` subclasses — Boss is the only one, no sibling class.
+Wrote the missing SPECS.md block (F-225) and flagged 5.5's own extension-point list as incomplete for
+having missed this path the first time. `docs/FINDINGS.md`/`docs/SPECS.md` both this task's own claim.
 
 ### F-224 · CommandService's per-client _resolved_requests dictionary never shrinks over a session — **fixed**
 

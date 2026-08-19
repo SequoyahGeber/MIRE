@@ -1,44 +1,6 @@
 {
-  "claims": {
-    "docs/FINDINGS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T14:35:26+00:00",
-      "task": "F-225",
-      "token": null
-    },
-    "docs/SPECS.md": {
-      "agent": "lp",
-      "at": "2026-08-19T14:35:26+00:00",
-      "task": "F-225",
-      "token": null
-    },
-    "systems/enemies/boss.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T14:35:26+00:00",
-      "task": "F-225",
-      "token": null
-    },
-    "tools/boss_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-19T14:35:26+00:00",
-      "task": "F-225",
-      "token": null
-    }
-  },
-  "in_flight": {
-    "F-225": {
-      "agent": "lp",
-      "files": [
-        "systems/enemies/boss.gd",
-        "tools/boss_check.gd",
-        "docs/FINDINGS.md",
-        "docs/SPECS.md"
-      ],
-      "notes": [],
-      "started": "2026-08-19T14:35:26+00:00",
-      "token": null
-    }
-  },
+  "claims": {},
+  "in_flight": {},
   "recent": {
     ".": {
       "agent": "lp",
@@ -1766,9 +1728,9 @@
     },
     "docs/FINDINGS.md": {
       "agent": "lp",
-      "at": "2026-08-19T14:33:03+00:00",
-      "hash": "bf6aa08487e1a90ee3cee72052042655fe895c4dd18911326dae25b128c1e125",
-      "task": "6.9-review",
+      "at": "2026-08-19T14:39:47+00:00",
+      "hash": "1f852d7ffa0d2bccb15d062c02689569d73e758bfb284dd3d6aea1815d2c6d66",
+      "task": "F-225",
       "token": null
     },
     "docs/ITEMS.md": {
@@ -1796,10 +1758,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-19T14:17:44+00:00",
-      "hash": "478a7a0aa3f78c0d75e799697625dc33c22aa02d1d119e1893e51b8d4e53187a",
-      "task": "F-224",
+      "agent": "lp",
+      "at": "2026-08-19T14:39:47+00:00",
+      "hash": "83a457e4e0d25deb3f0846b2c89c32d22ffa76b8c0af68c5424b3810dfd87481",
+      "task": "F-225",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -2011,10 +1973,10 @@
       "task": "6.1"
     },
     "systems/enemies/boss.gd": {
-      "agent": "lm",
-      "at": "2026-08-19T05:30:24+00:00",
-      "hash": "a1a138e5f553377fb8a60f013cf9c6fd87a5a90f35abe632999ecc2a1d9f9b1d",
-      "task": "F-168",
+      "agent": "lp",
+      "at": "2026-08-19T14:39:47+00:00",
+      "hash": "4d8bba053e3525a3df240a809aad2424283012274bae1a1f8489a76232f9b547",
+      "task": "F-225",
       "token": null
     },
     "systems/enemies/boss.gd.uid": {
@@ -2507,9 +2469,10 @@
     },
     "tools/boss_check.gd": {
       "agent": "lp",
-      "at": "2026-08-19T04:35:12+00:00",
-      "hash": "74db29bb39ae4bd26901b76cde059886e372c9db3cd0ec37e04d4b00d29b8b2e",
-      "task": "5.5"
+      "at": "2026-08-19T14:39:47+00:00",
+      "hash": "53c3d41a7b0ae34f2081334a72a1e5b38b3a30912930a98fd9d2f79703e9f2d8",
+      "task": "F-225",
+      "token": null
     },
     "tools/boss_check.gd.uid": {
       "agent": "lp",
@@ -6843,9 +6806,11 @@
       "title": "CommandService's per-client _resolved_requests dictionary never shrinks over a session"
     },
     "F-225": {
+      "done_at": "2026-08-19T14:39:47+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "`Enemy.alert()` bypasses `Boss._acquire_target()`'s override, so a boss pulled into a fight by a nearby ally's alert never engages until it first takes damage"
     },

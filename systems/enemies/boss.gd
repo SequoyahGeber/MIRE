@@ -104,9 +104,26 @@ func _acquire_target(peer_id: int, node: Node3D) -> void:
 		_update_phase()
 
 
-## Host-only (only ever reached through `host_apply_damage()`/`_acquire_target()`, both already
-## host-gated by their own callers). Phases only ever advance — there is no heal mechanic yet, but a
-## monotonic `phase` means one never has to reason about a boss stepping BACKWARD into an earlier
+## Extends `Enemy.alert()` (F-225) — 5.1's pack-alerting path, called on every unengaged packmate
+## within a fresh acquirer's `alert_radius_m` (`Enemy._alert_nearby()`). Without this override a boss
+## pulled into a fight this way set `_target_peer` directly and never went through `_acquire_target()`,
+## so it kept fighting with `phase` stuck at `DORMANT_PHASE` — no `boss_engaged` stinger, no health
+## bar, `EnemyDef`'s single fallback attack instead of the authored `BossPhaseDef.moves` — until its
+## first accepted hit forced `host_apply_damage()`'s own `_update_phase()` call to catch it up. Same
+## was-dormant guard `_acquire_target()`'s override uses above, but gated on `_target_peer` afterward
+## rather than the `peer_id` argument: unlike `_acquire_target()`, `super.alert()` can silently no-op
+## (already engaged, dead, an unowned client copy, no player resolved for `peer_id`), and this must
+## only advance the phase when the alert actually took.
+func alert(peer_id: int) -> void:
+	var was_dormant: bool = phase == DORMANT_PHASE
+	super.alert(peer_id)
+	if was_dormant and _target_peer == peer_id:
+		_update_phase()
+
+
+## Host-only (only ever reached through `host_apply_damage()`/`_acquire_target()`/`alert()`, all
+## already host-gated by their own callers). Phases only ever advance — there is no heal mechanic yet,
+## but a monotonic `phase` means one never has to reason about a boss stepping BACKWARD into an earlier
 ## moveset if one is ever added.
 func _update_phase() -> void:
 	var boss_def := definition as BOSS_DEF

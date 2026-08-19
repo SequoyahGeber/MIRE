@@ -5377,3 +5377,15 @@ Commit at time of writing: `bb11755`
 Clean, no findings -- 69dbe5a verified against SPECS.md 4.11, ARCHITECTURE.md §2.2 (Inventory/crafting, PlayerHealth's own hunger row, Mire grid, wave director all Host; no new authority anywhere per spec), D-099 (4.9-built-ahead-of-order, Ward split, WorldDeltaLog reuse). All four consumers checked against source: rotted yields reduce-only via _rot_adjusted_amount (never below 1, ROT_LOSS_FRACTION=0.6), Blight reuses DownedState.apply_damage() same as starvation, corrupted spawns only substitute the default enemy_id slot (guarded by base_id != enemy_id), Ward resistance wiring matches MireGrid's pre-authored seam exactly (signature, autoload order BuildService before MireGrid in project.godot, deferred _wire_mire_grid call). No bare autoload identifiers -- every cross-autoload reach is get_node_or_null(^"/root/X") or .call(). mire_interaction_check.gd: MIRE_INTERACTION_CHECK failures=0, 10/10 PASS, only the declared dummy-renderer material-null pattern in ERROR: output. Re-ran inventory_net_check.gd, player_health_net_check.gd, wave_spawner_check.gd, build_net_check.gd: all failures=0. Full boot (agent godot --quit-after 20): 0 ERROR:. F-158 (bog_crawler visual parity) was already filed and fixed in a later commit, consistent with the diff here.
 
 Commit at time of writing: `6cdcd7c`
+
+---
+
+### DONE · F-225 · lp · 2026-08-19T14:39:47+00:00
+
+**`Enemy.alert()` bypasses `Boss._acquire_target()`'s override, so a boss pulled into a fight by a nearby ally's alert never engages until it first takes damage**
+
+Fixed: Boss.alert() now overrides Enemy.alert() (D-116 pattern, was-dormant + _update_phase(), gated on the outcome not the argument since alert() can no-op). New tools/boss_check.gd::_check_alert_engages_boss(): boss with aggro_radius_m below player distance, pulled in only by a spotter's alert -- before the fix target set but phase stuck at -1/is_engaged false/no boss_engaged; after, one _step(spotter) alone takes phase -1->0, is_engaged true, boss_engaged fires once, zero damage dealt. Verified: agent godot --script tools/boss_check.gd -> BOSS_CHECK failures=0, 30/30 PASS. Re-ran enemy_check.gd/enemy_ai_check.gd/enemy_net_check.gd clean (enemy_check.gd's one flaky failure on first run was pre-existing noise, confirmed by 3 clean reruns, unrelated file). Swept: only 4 _target_peer= sites in enemy.gd, other 2 are death/retention clears (no engagement implication); Boss is the only extends Enemy subclass, no sibling class. Wrote the missing SPECS.md F-225 block and flagged 5.5's own extension-point list as incomplete. docs/FINDINGS.md moved to Resolved via agent resolve; findings_numbering_check.gd clean.
+
+Files: `systems/enemies/boss.gd`, `tools/boss_check.gd`, `docs/FINDINGS.md`, `docs/SPECS.md`
+
+Commit at time of writing: `afd6de3`

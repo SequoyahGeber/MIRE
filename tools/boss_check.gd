@@ -20,6 +20,12 @@ const BOSS_DEF := preload("res://systems/enemies/boss_def.gd")
 const BOSS_PHASE_DEF := preload("res://systems/enemies/boss_phase_def.gd")
 const BOSS_MOVE_DEF := preload("res://systems/enemies/boss_move_def.gd")
 const EVENT_BUS := preload("res://core/events/event_bus.gd")
+## Only for `_check_alert_engages_boss()` (F-225) — the plain packmate that ALERTS the boss, not the
+## boss itself, so `enemy_ai_check.gd`'s own `_make_def()`/`_spawn_enemy()` shape is mirrored rather
+## than reused (a second `--script` harness importing another's helpers is not an established
+## convention here, and this check already builds everything else it needs locally).
+const ENEMY_SCRIPT := preload("res://systems/enemies/enemy.gd")
+const ENEMY_DEF := preload("res://systems/enemies/enemy_def.gd")
 
 var failures: int = 0
 var _next_peer: int = 9000
@@ -35,6 +41,8 @@ func _run() -> void:
 
 	_check_content_validation()
 	await _check_engage_and_phases()
+	await process_frame
+	await _check_alert_engages_boss()
 	await process_frame
 	await _check_arena_leash()
 	await process_frame
@@ -137,6 +145,68 @@ func _check_engage_and_phases() -> void:
 	EVENT_BUS.unsubscribe_boss_phase_changed(on_phase)
 	EVENT_BUS.unsubscribe_boss_defeated(on_defeated)
 	_cleanup([boss, player])
+
+
+# ── F-225: a nearby ally's alert must engage the boss too, not just its own acquisition ─────────────
+
+
+## `_check_engage_and_phases()` above only exercises `_acquire_target()`'s own override — this proves
+## the OTHER path `_update_phase()` can be reached from, 5.1's pack-alerting (`Enemy._alert_nearby()`
+## calling `alert()` on every unengaged packmate in range). The boss here never perceives the player
+## itself — `aggro_radius_m` is set below the player's distance — so the only way it can end up
+## targeting anyone is the spotter's alert reaching `Boss.alert()`'s override. Before F-225's fix this
+## set `_target_peer` but left `phase` at `DORMANT_PHASE`, `is_engaged() == false`, and `boss_engaged`
+## never fired.
+func _check_alert_engages_boss() -> void:
+	var origin := Vector3(2500.0, 0.0, 0.0)
+	var boss_def: Resource = _make_boss_def([_make_phase(1.0, [])])
+	boss_def.set("aggro_radius_m", 1.0)  # too small to perceive the player on its own
+	boss_def.set("deaggro_radius_m", 1.0)
+	var boss: Node3D = _spawn_boss(boss_def, origin)
+
+	var spotter_def: Resource = ENEMY_DEF.new()
+	spotter_def.set("id", &"alert_spotter")
+	spotter_def.set("max_health", 10)
+	spotter_def.set("radius_m", 0.45)
+	spotter_def.set("height_m", 0.6)
+	spotter_def.set("move_speed", 4.0)
+	spotter_def.set("stop_distance_m", 1.0)
+	spotter_def.set("turn_speed_rad", 6.0)
+	spotter_def.set("aggro_radius_m", 18.0)
+	spotter_def.set("deaggro_radius_m", 26.0)
+	spotter_def.set("attack_range_m", 2.0)
+	spotter_def.set("attack_damage", 3)
+	spotter_def.set("attack_tell_seconds", 0.1)
+	spotter_def.set("attack_seconds", 0.1)
+	spotter_def.set("attack_recovery_seconds", 0.1)
+	spotter_def.set("vision_angle_deg", 360.0)
+	spotter_def.set("requires_line_of_sight", false)
+	spotter_def.set("alert_radius_m", 10.0)  # in range of the boss, spawned 6 m away below
+	spotter_def.set("max_concurrent_attackers", 2)
+	var spotter: CharacterBody3D = ENEMY_SCRIPT.new()
+	spotter.name = "AlertSpotter%d" % _next_peer
+	spotter.set("definition", spotter_def)
+	spotter.position = origin + Vector3(6.0, 0.0, 0.0)
+	root.add_child(spotter)
+
+	var player: Node3D = _spawn_player(origin + Vector3(0.0, 0.0, -8.0))
+
+	var engaged: Array = []
+	var on_engaged := func(boss_id: StringName, position: Vector3) -> void:
+		engaged.append([boss_id, position])
+	EVENT_BUS.subscribe_boss_engaged(on_engaged)
+
+	check(int(boss.get("phase")) == -1, "the boss starts dormant")
+	_step(spotter, 0.1)  # the spotter acquires the player and alerts the boss, one hop
+	check(int(spotter.call("target_peer")) == _peer_id(player), "the spotter acquires the player on its own")
+	check(int(boss.call("target_peer")) == _peer_id(player),
+		"the boss's target is set by the spotter's alert, same tick")
+	check(int(boss.get("phase")) == 0, "F-225: an alerted boss leaves DORMANT_PHASE, not just a damaged one")
+	check(bool(boss.call("is_engaged")), "…and is_engaged() reports true from the alert alone")
+	check(engaged.size() == 1, "…and boss_engaged fires exactly once, with no damage ever landed")
+
+	EVENT_BUS.unsubscribe_boss_engaged(on_engaged)
+	_cleanup([boss, spotter, player])
 
 
 # ── Arena leash ───────────────────────────────────────────────────────────────────────────────────

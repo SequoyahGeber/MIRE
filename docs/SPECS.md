@@ -1733,6 +1733,13 @@ reaches everything it needs via `super()` and inheritance, with zero edits to `e
 recording as the general pattern: a subclass that needs to extend ONE decision an existing host-owned
 state machine makes rarely needs the base file touched at all in GDScript — try overriding first,
 before claiming the file everyone else is also reaching for.
+**This task's own list of extension points was incomplete — `alert()` (5.1's pack-alerting path,
+`Enemy._alert_nearby()`'s target) is a SECOND place `_target_peer` gets newly set, parallel to
+`_acquire_target()` rather than routed through it, and shipped with no override, so an
+alerted-but-never-self-acquired boss stayed dormant until its first hit (F-225, fixed 2026-08-19). The
+lesson generalizes past this one task: when a subclass overrides "every place X happens" to extend a
+decision, grep for every assignment to the field X represents (`_target_peer =`, here), not just the
+call sites the overridden method's own doc comment happens to describe.**
 
 **Phases (`BossDef.phases: Array[BossPhaseDef]`).** Each `BossPhaseDef` carries an
 `hp_threshold_fraction` (descending order, phase 0 = 1.0 = full health), a `moves` array
@@ -6906,6 +6913,59 @@ genuine cross-process RPC round trip (host/client, always a real network `await`
 synchronously inside the call that returns the id), which is not this bug's shape. CommandService's
 `submit()` was the only place a request could resolve synchronously inside the same call that hands
 back its own id.
+
+**Resolved** — see `docs/FINDINGS.md`.
+
+---
+
+## F-225 · `Enemy.alert()` bypassed `Boss._acquire_target()`'s override, so a boss pulled into a fight by a nearby ally's alert never engaged until it first took damage
+
+**Claim:** `systems/enemies/boss.gd`, `tools/boss_check.gd`. Network authority: no new row — this is a
+gap in the existing "Enemies (spawn, AI, damage): **Host**" row (`docs/ARCHITECTURE.md` §2.2), same as
+5.5's own framework (D-116). `alert()` is host-only exactly like `_acquire_target()`/`host_apply_damage()`
+already are — `Enemy.alert()`'s own guard (`not _owns_simulation() ... return`) covers it.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**Ran the check before touching anything** (per the finding's own warning — `systems/enemies/enemy.gd`
+had 1 commit since filing): the commit was 6.9's `unlock_service.gd` work, nowhere near `alert()`. Read
+`Boss` (`systems/enemies/boss.gd`) directly instead of running a check first — no check exercised this
+path at all (`boss_check.gd`'s existing scenario sets its synthetic `BossDef.alert_radius_m` to `0.0`,
+which only suppresses the boss's own OUTGOING alert, per the finding). `Boss` still had no `alert()`
+override. The bug was live.
+
+**The fix:** `Boss.alert(peer_id)` now overrides `Enemy.alert()` the same way `_acquire_target()` is
+already overridden — was-dormant check before the call, `_update_phase()` after, mirroring D-116's
+established "extend one decision through `super()`, touch zero lines of `enemy.gd`" pattern exactly.
+One difference from `_acquire_target()`'s own override: that one gates the post-call `_update_phase()`
+on the `peer_id` argument alone, because `super._acquire_target()` always unconditionally sets
+`_target_peer` — it has no failure path. `super.alert()` does: it can silently no-op (already engaged,
+dead, an unowned client copy, no player resolved for `peer_id`), so `Boss.alert()` gates on
+`_target_peer == peer_id` afterward — the actual outcome, not the argument — to avoid engaging a boss
+whose alert was refused. `_update_phase()`'s own doc comment (listing which callers reach it, all
+host-gated by their own callers) now names `alert()` alongside `host_apply_damage()`/`_acquire_target()`.
+
+**Verify:** added `_check_alert_engages_boss()` to `tools/boss_check.gd` — a boss with `aggro_radius_m`
+set below the player's distance (so it can never perceive the player on its own) standing within a
+plain `Enemy` spotter's `alert_radius_m`. Before the fix: `boss.call("target_peer")` matched the player
+but `phase` stayed `-1` and `boss_engaged` never fired. After: `_step(spotter, 0.1)` alone (the boss
+itself is never stepped) takes the boss from `phase == -1` to `phase == 0`, `is_engaged() == true`, and
+`boss_engaged` fires exactly once — with zero damage ever dealt, closing exactly the gap the finding
+described. `.agent/bin/agent godot --script tools/boss_check.gd` → `BOSS_CHECK failures=0`, all 30
+assertions PASS (the 6 pre-existing plus this task's 6 new ones). The `ERROR: 2 resources still in use
+at exit` / `WARNING: N ObjectDB instances leaked at exit` lines are pre-existing engine shutdown noise,
+confirmed via `agent baseline --script tools/boss_check.gd` against HEAD (same `ERROR:` line, 22 leaked
+objects there vs. 12 here — teardown-order noise, not a regression from this fix).
+
+**Swept for the same shape:** grepped every `_target_peer = `/`_target_peer=` assignment in
+`enemy.gd` — four total. Two (`_acquire_target()`, now-fixed `alert()`) are acquisition paths and both
+now route through `Boss`'s override. The other two (`_enter_death()`, the held-target-invalid branch of
+`_resolve_target()`) only ever clear `_target_peer` to `0`, never acquire — clearing needs no
+`_update_phase()` call, since `phase` is deliberately monotonic (`boss.gd`'s own header: "there is no
+heal mechanic yet") and dropping a target must not un-engage a boss already mid-fight. Also grepped for
+any other `extends Enemy` in the repo — `Boss` is the only subclass, so there is no sibling class this
+same override-gap could recur in.
 
 **Resolved** — see `docs/FINDINGS.md`.
 
