@@ -6763,3 +6763,18 @@ Notes along the way:
 - Commit 519012e satisfies F-259: host-guarded run_restarted reset clears/refills roster, resets night/ambient/Cycle/Hunt state, reseeds with seeded RNG, adds no RPC or bare autoload identifier, and remains typed. Exact-commit baselines: wave_spawner_cycle_net_check failures=0 ERROR_COUNT=0; wave_spawner_check failures=0 ERROR_COUNT=0; run_restart_check's F-259 assertions all PASS, with only the documented pre-existing F-268 buildable failure (overall failures=1). Current HEAD: wave_spawner_check failures=0 ERROR_COUNT=0; run_restart_check failures=0 ERROR_COUNT=0. Current wave_spawner_cycle_net_check first run printed failures=0 but ERROR_COUNT=1 from JSON.parse_string racing the child result rewrite; 2 reruns and parent baseline were clean. Filed low-severity F-290; it is pre-existing and not introduced by 519012e.
 
 Commit at time of writing: `c64bc8d`
+
+---
+
+### DONE · F-236 · lp · 2026-08-20T06:06:44+00:00
+
+**Three shipped systems have essentially no content in them: the Cycle Modifier deck holds 1 card, the unlock tree 1 unlock, the ranged rack 1 weapon**
+
+Unlocks-third scope was already complete at HEAD (prior lp session, commit aee5266): 7 unlocks authored, schema-clean, each gating a real loot-table powerup; SPECS.md/DELEGATION.md/FINDINGS.md already reflect it. This dispatch's real contribution: found and fixed a regression in tools/unlock_check.gd (F-238's ExtractionHud, shipped after the check last passed, was left in blocks_gameplay_input by the check's own emit_run_extracted() shortcut, failing 3 menu assertions) — now EVENT_BUS.emit_run_restarted() resets it before _check_menu(). Verified: agent godot --script tools/unlock_check.gd -> UNLOCK_CHECK failures=0, run twice. F-236 stays under ## Open — content/ranged_weapons/ is still 1 file, not this task's scope. F-291 filed for the general class of check-fires-real-event fragility.
+
+Notes along the way:
+- Dispatch scoped to unlocks-third only was stale: a prior lp session (commit aee5266) already authored all six unlocks, wrote SPECS.md's F-236 block, and updated FINDINGS.md/DELEGATION.md — content/unlocks/ has 7 rows, schema-clean, each gating a real loot-table powerup. Re-verified via tools/unlock_check.gd and found a real regression instead: F-238's ExtractionHud (shipped 2026-08-19, after this check last passed) now subscribes to run_extracted and joins blocks_gameplay_input permanently once shown; unlock_check.gd's own emit_run_extracted() shortcut (to top up Salvage) was silently triggering it, so MainMenu._other_blocking_ui_open() refused every later set_open() and UNLOCK_CHECK failed with failures=3 (sanity: MainMenu opens / UnlockMenu opens / blocks gameplay input). Fixed by calling EVENT_BUS.emit_run_restarted() (the real next-run reset path) before _check_menu(). Verified twice: UNLOCK_CHECK failures=0. Filed F-291 for the general class (a check that fires a real EventBus event as a setup shortcut can be broken by any later feature that subscribes to it) — swept the other tools/*.gd callers of emit_run_extracted/emit_run_wiped, none share the symptom today. No new content authored — re-authoring would have duplicated/conflicted with already-shipped, already-good work.
+
+Files: `content/unlocks`, `systems/unlocks/unlock_def.gd`, `tools/unlock_check.gd`
+
+Commit at time of writing: `90323e0`

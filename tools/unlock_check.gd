@@ -91,6 +91,16 @@ func _run() -> void:
 	await _check_purchase_flow()
 	_check_content_gate()
 	await _check_chest_gate_unlocked()
+	# _check_spend_salvage()/_check_purchase_flow() both call EVENT_BUS.emit_run_extracted() as a
+	# shortcut to top up the balance — a real bus event, so F-238's ui/hud/extraction_hud.gd (a real
+	# subscriber, added after this check was originally written) shows its terminal summary overlay
+	# and joins `blocks_gameplay_input` for the rest of the process, same as a real extraction. Left
+	# alone, MainMenu._other_blocking_ui_open() then refuses every set_open(true) below for a reason
+	# that has nothing to do with UnlockMenu. emit_run_restarted() is the real "next run" reset path
+	# (ExtractionHud._on_run_restarted()) — firing it here is exactly what an actual new run does,
+	# not a test-only workaround, and every other run_restarted subscriber is a no-op on state this
+	# check never touched.
+	EVENT_BUS.emit_run_restarted()
 	_check_menu()
 	_check_save_versioning()
 
