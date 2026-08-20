@@ -861,6 +861,23 @@ needs the detector either way, so a reader hits a named exception instead of a s
 
 ---
 
+### F-284 · The both-map contract matrix never checks the authored map's spawn is standable
+
+**Area:** testing/worldgen · **Severity:** medium · **Found:** 2026-08-20 by lc1
+
+At review target `74aeb60`, `tools/world_contract_check.gd:165-166` calls
+`_check_procedural_specifics()` only when `procedural == true`, and the file's sole spawn-ground
+assertion lives inside that helper at `tools/world_contract_check.gd:198-202`. The authored half
+therefore checks no spawn position at all.
+
+That contradicts the 4.16/D-152 contract that the same loop fixtures — including a standable spawn
+— are asserted per map. Hollowmere's spawn can move into water or below terrain and
+`WORLD_CONTRACT_CHECK PASS` will remain green. Add an authored-map spawn source and assert it
+against the authored ground/layout, while keeping the procedural assertion on
+`ProceduralWorld.spawn_position`.
+
+---
+
 ## Resolved
 
 ### F-271 · ResourceScatter classifies a point's biome from height(), BiomeMap.biome_at() classifies from continent() — the same point resolves to two different biomes depending on which system asks — **fixed**

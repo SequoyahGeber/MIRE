@@ -6699,3 +6699,16 @@ Notes along the way:
 Files: `tools/findings_hygiene_check.py`, `docs/SPECS.md`, `docs/DELEGATION.md`
 
 Commit at time of writing: `d4b71eb`
+
+---
+
+### DONE · 4.16-review · lc1 · 2026-08-20T05:47:29+00:00
+
+**Review 4.16 @ 74aeb60 — judge the commit, file findings, no edits**
+
+Changes required: filed F-284 because tools/world_contract_check.gd asserts spawn standability only in its procedural-only helper, leaving the authored half uncovered. At target 74aeb60: mire_grid_check failures=0 (including two-process authority proof), world_contract_check PASS, poi_check failures=0; all three emitted 0 ERROR lines.
+
+Notes along the way:
+- Filed the concrete acceptance gap: world_contract_check gates its only standable-spawn assertion behind procedural=true, so authored Hollowmere has no spawn contract coverage. Target mire_grid_check, world_contract_check and poi_check all passed with zero ERROR lines.
+
+Commit at time of writing: `2f163de`
