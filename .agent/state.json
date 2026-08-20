@@ -128,14 +128,6 @@
     }
   },
   "in_flight": {
-    "F-268-review": {
-      "agent": "lc1",
-      "dispatched": true,
-      "files": [],
-      "notes": [],
-      "started": "2026-08-20T06:04:50+00:00",
-      "token": null
-    },
     "F-274": {
       "agent": "lm",
       "dispatched": true,
@@ -164,6 +156,14 @@
       ],
       "notes": [],
       "started": "2026-08-20T05:44:58+00:00",
+      "token": null
+    },
+    "F-276": {
+      "agent": "lp",
+      "dispatched": true,
+      "files": [],
+      "notes": [],
+      "started": "2026-08-20T06:07:12+00:00",
       "token": null
     }
   },
@@ -6606,10 +6606,12 @@
       "title": "F-243's restart never clears placed buildables \u2014 BuildService has no run_restarted subscription at all, and its own check has been failing at HEAD since the feature shipped"
     },
     "F-268-review": {
+      "done_at": "2026-08-20T06:07:39+00:00",
+      "done_by": "lc1",
       "est": "0.5",
       "milestone": "Findings",
       "review_of": "F-268",
-      "status": "in_flight",
+      "status": "done",
       "tier": "T1",
       "title": "Review F-268 @ c64bc8d \u2014 judge the commit, file findings, no edits"
     },
@@ -6679,7 +6681,7 @@
     "F-276": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "F-243 carries depleted Hollowmere resources into the next run"
     },
@@ -6780,6 +6782,13 @@
       "status": "todo",
       "tier": "F",
       "title": "wave_spawner_cycle_net_check can parse its result file mid-rewrite and emit an undeclared ERROR while reporting failures=0"
+    },
+    "F-291": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A `--script` check that fires a real `EventBus` event as a state-setup shortcut can be broken by an unrelated later feature that subscribes to the same event \u2014 **fixed in `tools/unlock_check.gd`, same class not yet swept project-wide**"
     }
   },
   "version": 1

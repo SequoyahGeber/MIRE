@@ -6778,3 +6778,16 @@ Notes along the way:
 Files: `content/unlocks`, `systems/unlocks/unlock_def.gd`, `tools/unlock_check.gd`
 
 Commit at time of writing: `90323e0`
+
+---
+
+### DONE · F-268-review · lc1 · 2026-08-20T06:07:39+00:00
+
+**Review F-268 @ c64bc8d — judge the commit, file findings, no edits**
+
+Approved at c64bc8d after reviewing the full F-268 stack. Full boot: exit 0, ERROR_COUNT=0. Exact-commit run_restart_check: failures=0, ERROR_COUNT=0. build_check: failures=0, ERROR_COUNT=0. haul_check: failures=0; its one ERROR matches declared unknown-haulable pattern, undeclared ERROR_COUNT=0. No finding filed.
+
+Notes along the way:
+- Approved at c64bc8d. Full boot exit=0 ERROR_COUNT=0; exact-commit run_restart_check failures=0 ERROR_COUNT=0; current build_check failures=0 ERROR_COUNT=0; haul_check failures=0 with its sole ERROR matching declared EXPECTED_ERROR_PATTERNS=unknown haulable id, so undeclared ERROR_COUNT=0. Reviewed full F-268 stack 0655759..c64bc8d because named tip only files F-289 docs. Host guards, node frees, piece_destroyed announcements, typed GDScript, no new RPC/randi/bare-autoload regression. No finding filed.
+
+Commit at time of writing: `0fbd637`
