@@ -2294,12 +2294,37 @@ def _open_orders():
             "lane": field("lane"),
             "model": field("model", ""),
             "effort": field("effort", ""),
+            "priority": _order_priority(field("priority", "")),
             "files": [x for x in (files.group(1).split() if files else []) if x],
         }
     return out
 
 
-ORDER_TEMPLATE = """<!-- lane:%(lane)s model:%(model)s effort:%(effort)s files:%(files)s -->
+ORDER_PRIORITY_DEFAULT = 5      # the middle of 1..9, so a director can push either way from here
+
+
+def _order_priority(raw):
+    """An order's drain rank: 1 runs first, 9 last, anything unreadable sits at the default."""
+    try:
+        return max(1, min(9, int(raw)))
+    except (TypeError, ValueError):
+        return ORDER_PRIORITY_DEFAULT
+
+
+def _drain_order(orders, lane):
+    """The ids a drain-mode chain should run, best first (F-314).
+
+    Sorting by task id alone ranked a lane's queue by *filing order* — the one attribute of an
+    order that says nothing about how much the work matters. With one dispatchable lane parking on
+    its five-hour wall after a task or two, queue position is days of latency, so four doc cleanups
+    sat ahead of a soft-locked client and an island that ships with crafting unreachable, purely
+    because they were filed first. Priority leads; the id still breaks ties, so an unprioritised
+    queue drains exactly as it did before."""
+    return [t for t, m in sorted(orders.items(), key=lambda kv: (kv[1]["priority"], kv[0]))
+            if m["lane"] == lane]
+
+
+ORDER_TEMPLATE = """<!-- lane:%(lane)s model:%(model)s effort:%(effort)s priority:%(priority)s files:%(files)s -->
 # Work order — %(tid)s  ·  lane %(lane)s  (%(account)s)
 
 You are **%(lane)s**, one of three worker lanes on MIRE. Your agent name is `%(agent)s` and it is
@@ -2466,7 +2491,7 @@ code: it is read as truth and never re-examined. Each of these has gone wrong on
 
 Fix what you can under your claim; file what you cannot reach."""
 
-REVIEW_TEMPLATE = """<!-- lane:%(lane)s model:%(model)s effort:%(effort)s review:%(tid)s files: -->
+REVIEW_TEMPLATE = """<!-- lane:%(lane)s model:%(model)s effort:%(effort)s priority:%(priority)s review:%(tid)s files: -->
 # Review order — %(tid)s  ·  lane %(lane)s  (%(account)s)
 
 You are **%(lane)s**, reviewing work another lane implemented. Your agent name is `%(agent)s`.
@@ -2529,7 +2554,8 @@ def cmd_order(args):
     courier; anything a lane needs that isn't in here is a bug in the docs, not a missing prompt."""
     require_director("order")
     if not args:
-        die('usage: agent order <task-id> [--lane LC1] [--files a.gd b.gd] [--verify "cmd"]')
+        die('usage: agent order <task-id> [--lane LC1] [--files a.gd b.gd] [--verify "cmd"]\n'
+            '                          [--priority 1-9]   1 drains first, 9 last, 5 default')
     st = load()
     tid = _require_task(st, args[0], "order")
     t = st["tasks"][tid]
@@ -2547,6 +2573,10 @@ def cmd_order(args):
         model = args[args.index("--model") + 1]
     if "--effort" in args:
         effort = args[args.index("--effort") + 1]
+    # 1 runs first, 9 last, 5 is the default — a queue nobody prioritises drains in id order exactly
+    # as it always did (F-314).
+    priority = _order_priority(args[args.index("--priority") + 1]) if "--priority" in args \
+        else ORDER_PRIORITY_DEFAULT
     review = "--review" in args
     fix = "--fix" in args
     sha = args[args.index("--sha") + 1] if "--sha" in args else "HEAD"
@@ -2697,6 +2727,7 @@ def cmd_order(args):
             "fixmode": REVIEW_FIX_MODE if fix else REVIEW_ONLY_MODE,
             "lane": lane, "account": account, "agent": lane.lower(), "tid": tid, "sha": sha,
             "model": model or lanes.get(lane, {}).get("model", "default"), "effort": effort,
+            "priority": priority,
             "verify": verify, "brief": _plain(cmd_brief, [tid]).strip(),
         }
         path = os.path.join(ORDERS, "%s-review.md" % tid.replace("/", "_"))
@@ -2712,6 +2743,7 @@ def cmd_order(args):
         "lane": lane, "account": account, "agent": lane.lower(), "tid": tid,
         "files": " ".join(files), "claim": claim, "verify": verify, "spec": spec_block,
         "model": model or lanes.get(lane, {}).get("model", "default"), "effort": effort,
+        "priority": priority,
         "brief": _plain(cmd_brief, [tid]).strip(),
     }
     path = _order_path(tid)
@@ -2791,7 +2823,7 @@ def cmd_saturate(args):
     orders = _open_orders()
     drain = not wanted                    # no ids means "drain this lane", including later arrivals
     if not wanted:
-        wanted = [t for t, m in sorted(orders.items()) if m["lane"] == lane]
+        wanted = _drain_order(orders, lane)
     if not wanted:
         die("no open orders for %s — write some with:  agent order <id> --lane %s" % (lane, lane))
 
@@ -2843,9 +2875,9 @@ def _wait_for_new_orders(lane, seen, grace=EMPTY_QUEUE_GRACE_SECONDS):
     deadline = time.time() + grace
     announced = False
     while time.time() < deadline:
-        fresh = [t for t, m in sorted(_open_orders().items())
-                 if m["lane"] == lane and t not in seen
-                 and load()["tasks"].get(t, {}).get("status") != "done"]
+        st_tasks = load()["tasks"]
+        fresh = [t for t in _drain_order(_open_orders(), lane)
+                 if t not in seen and st_tasks.get(t, {}).get("status") != "done"]
         if fresh:
             print("  %s· %d new order(s) arrived — continuing%s" % (C["dim"], len(fresh), C["x"]))
             return fresh
@@ -4063,11 +4095,14 @@ def cmd_report(args):
     queued = {k: v for k, v in orders.items()
               if st["tasks"].get(k, {}).get("status") != "done" and k not in st["in_flight"]}
     if queued:
-        print("\n%sOrders waiting%s" % (C["b"], C["x"]))
-        for tid, meta in sorted(queued.items()):
-            print("  %-7s → %-4s %s%s%s"
-                  % (tid, meta["lane"], C["dim"],
-                     st["tasks"].get(tid, {}).get("title", "")[:60], C["x"]))
+        print("\n%sOrders waiting%s  %sin drain order — p1 runs first, p9 last%s"
+              % (C["b"], C["x"], C["dim"], C["x"]))
+        # Printed in the order the lane will actually take them (F-314), so this list answers "what
+        # is LP doing next" rather than "what has the lowest F-number".
+        for tid, meta in sorted(queued.items(), key=lambda kv: (kv[1]["lane"], kv[1]["priority"], kv[0])):
+            print("  %-7s → %-4s p%d %s%s%s"
+                  % (tid, meta["lane"], meta["priority"], C["dim"],
+                     st["tasks"].get(tid, {}).get("title", "")[:56], C["x"]))
 
     # A task whose last journal word was a handoff, but which the board calls done, is the most
     # dangerous state this system can reach: it reads as finished work and nothing will ever be

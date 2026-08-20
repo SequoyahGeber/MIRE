@@ -931,6 +931,42 @@ def _(harness):
     return "6 stamp shapes tolerated; naive assumed UTC"
 
 
+@case("a lane's queue drains by priority, and by id only as a tie-break (F-314)")
+def _(harness):
+    mod = _load_harness(harness)
+    # The queue used to sort on task id alone, so a lane worked its orders in FILING order — with one
+    # dispatchable lane parking on its five-hour wall after a task or two, that put four doc cleanups
+    # ahead of a soft-locked client purely because they were filed first.
+    orders = {
+        "F-281": {"lane": "LP", "priority": 5},
+        "F-283": {"lane": "LP", "priority": 5},
+        "F-301": {"lane": "LP", "priority": 1},
+        "F-307": {"lane": "LP", "priority": 2},
+        "F-100": {"lane": "LC1", "priority": 1},      # another lane's work must not leak in
+    }
+    got = mod._drain_order(orders, "LP")
+    assert got == ["F-301", "F-307", "F-281", "F-283"], (
+        "expected priority first with id breaking ties, got %r" % (got,))
+    assert "F-100" not in got, "a different lane's order leaked into LP's queue"
+
+    # An unprioritised queue must behave exactly as it did before, or this change silently reorders
+    # every director's queue the day it lands.
+    flat = {t: {"lane": "LP", "priority": mod.ORDER_PRIORITY_DEFAULT}
+            for t in ("F-306", "F-264", "F-289")}
+    assert mod._drain_order(flat, "LP") == ["F-264", "F-289", "F-306"], (
+        "with no priorities set the drain order must stay plain id order")
+
+    # A header that says nothing, or says something unusable, sits at the default rather than
+    # sorting to one end of the queue by accident.
+    for raw in ("", "?", None, "banana", "0", "99"):
+        got = mod._order_priority(raw)
+        assert 1 <= got <= 9, "_order_priority(%r) returned %r, outside 1..9" % (raw, got)
+    assert mod._order_priority("") == mod.ORDER_PRIORITY_DEFAULT, (
+        "an order written before this field existed must keep the default rank")
+    assert mod._order_priority("1") == 1 and mod._order_priority("9") == 9
+    return "priority leads, id breaks ties, unreadable ranks default"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rev", help="test the harness as of this git revision instead of the working tree")
