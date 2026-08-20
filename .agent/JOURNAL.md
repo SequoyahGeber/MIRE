@@ -6836,3 +6836,20 @@ Notes along the way:
 Files: `ui/hud/defeat_hud.gd`, `ui/hud/extraction_hud.gd`, `tools/terminal_focus_check.gd`, `docs/SPECS.md`, `docs/DELEGATION.md`, `docs/FINDINGS.md`, `tools/terminal_focus_check.gd.uid`
 
 Commit at time of writing: `8754844`
+
+---
+
+### DONE · F-278 · lp · 2026-08-20T06:34:42+00:00
+
+**F-243 starts the next run at the previous run's time of day**
+
+DayNight now subscribes run_restarted and resets time_of_day to the authored run-start morning (captured in _ready(), not a second hard-coded 0.348), arming _replicate_elapsed so the reset reaches clients on the next tick. No new RPC, no PROTOCOL_VERSION bump. Deliberately NOT via host_set_time(): that seam crosses thresholds and day_started_at (0.25) sits between a night-time run end and 0.348, so it would hand CycleService a phantom elapsed day against the counter host_restart_run() just zeroed (D-166). The two-process check found the half the finding only flagged as 'check this': net_push_time is unreliable while run_restarted arrives over WorldDeltaLog's reliable ordered channel, so the reset push OVERTAKES the event that explains it and the client lerps backwards through dusk — 5 smeared frames measured with the event handler already in place. net_push_time now snaps on a >CLIENT_SNAP_THRESHOLD (0.1) jump, which also fixes the same smear on a 'time set' console jump. Proof: agent godot --script tools/day_night_restart_check.gd -> DAY_NIGHT_RESTART_CHECK failures=0, 23 PASS, 0 ERROR lines. Red proof: subscription+snap temporarily removed -> failures=5, exactly this finding's symptoms (clock stays 0.800 both restarts, night_started crossed ZERO times afterwards). Also fixed run_restart_net_check.gd's own F-278 assertion, which was is_equal_approx on a RUNNING clock two frames post-restart and could never have passed; now a 0.001 band, PASS at 0.34806. Neighbours green: day_night_check 0, day_night_net_check 0, cycle_check 0, run_restart_check 0, findings_numbering_check 0, boot --quit-after 120 with 0 ERROR lines. Closes F-281 item 3. Filed F-298 from the sweep (PlayerHealth._on_run_restarted is _owns_mutation()-gated, so a client keeps its own stamina/sprint lockout across a restart).
+
+Notes along the way:
+- The reset must NOT go through host_set_time(): that seam crosses thresholds on purpose, and day_started_at (0.25) sits between a night-time run end and the 0.348 morning, so CycleService._on_day_started() would bank a phantom elapsed day against the counter host_restart_run() just zeroed. Reset writes time_of_day directly and fires nothing.
+- Two-process check caught the real half: net_push_time is UNRELIABLE and run_restarted reaches a client over WorldDeltaLog's RELIABLE ORDERED channel, so the reset push routinely OVERTAKES the event that explains it. A client-side snap on run_restarted alone is not enough — the interpolator itself needs a discontinuity threshold (CLIENT_SNAP_THRESHOLD 0.1). Measured 5 smeared frames before that was added.
+- tools/run_restart_net_check.gd's F-278 assertion was is_equal_approx on a RUNNING clock two awaited frames after the restart — it could never have passed even with a correct fix (900s day advances 1.9e-5/tick, twice CMP_EPSILON). Loosened to a 0.001 band.
+
+Files: `systems/environment/day_night.gd`, `tools/day_night_restart_check.gd`, `tools/run_restart_net_check.gd`, `docs/DECISIONS.md`, `docs/SPECS.md`, `docs/FINDINGS.md`, `docs/DELEGATION.md`
+
+Commit at time of writing: `15efeed`

@@ -1,58 +1,28 @@
 {
   "claims": {
-    "docs/DECISIONS.md": {
-      "agent": "lp",
-      "at": "2026-08-20T06:31:18+00:00",
-      "task": "F-278",
+    "autoload/attunement_service.gd": {
+      "agent": "lm",
+      "at": "2026-08-20T06:33:22+00:00",
+      "task": "F-277",
       "token": null
     },
-    "systems/environment/day_night.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T06:23:24+00:00",
-      "task": "F-278",
-      "token": null
-    },
-    "tools/day_night_restart_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T06:26:10+00:00",
-      "task": "F-278",
-      "token": null
-    },
-    "tools/run_restart_net_check.gd": {
-      "agent": "lp",
-      "at": "2026-08-20T06:30:06+00:00",
-      "task": "F-278",
+    "ui/attunement/attunement_ui.gd": {
+      "agent": "lm",
+      "at": "2026-08-20T06:34:12+00:00",
+      "task": "F-277",
       "token": null
     }
   },
   "in_flight": {
-    "F-278": {
-      "agent": "lp",
+    "F-277": {
+      "agent": "lm",
       "dispatched": true,
       "files": [
-        "systems/environment/day_night.gd",
-        "tools/day_night_restart_check.gd",
-        "tools/run_restart_net_check.gd",
-        "docs/DECISIONS.md"
+        "autoload/attunement_service.gd",
+        "ui/attunement/attunement_ui.gd"
       ],
-      "notes": [
-        {
-          "at": "2026-08-20T06:30:58+00:00",
-          "by": "lp",
-          "text": "The reset must NOT go through host_set_time(): that seam crosses thresholds on purpose, and day_started_at (0.25) sits between a night-time run end and the 0.348 morning, so CycleService._on_day_started() would bank a phantom elapsed day against the counter host_restart_run() just zeroed. Reset writes time_of_day directly and fires nothing."
-        },
-        {
-          "at": "2026-08-20T06:30:58+00:00",
-          "by": "lp",
-          "text": "Two-process check caught the real half: net_push_time is UNRELIABLE and run_restarted reaches a client over WorldDeltaLog's RELIABLE ORDERED channel, so the reset push routinely OVERTAKES the event that explains it. A client-side snap on run_restarted alone is not enough \u2014 the interpolator itself needs a discontinuity threshold (CLIENT_SNAP_THRESHOLD 0.1). Measured 5 smeared frames before that was added."
-        },
-        {
-          "at": "2026-08-20T06:30:58+00:00",
-          "by": "lp",
-          "text": "tools/run_restart_net_check.gd's F-278 assertion was is_equal_approx on a RUNNING clock two awaited frames after the restart \u2014 it could never have passed even with a correct fix (900s day advances 1.9e-5/tick, twice CMP_EPSILON). Loosened to a 0.001 band."
-        }
-      ],
-      "started": "2026-08-20T06:20:37+00:00",
+      "notes": [],
+      "started": "2026-08-20T06:31:54+00:00",
       "token": null
     }
   },
@@ -1255,24 +1225,24 @@
       "token": "CLAUDE_CODE_SESSION_ID:72d3c94f-5a83-40d3-bdf6-48b0d6a35e7f"
     },
     "docs/DECISIONS.md": {
-      "agent": "lm",
-      "at": "2026-08-20T06:20:25+00:00",
-      "hash": "1a98dd7bc0155a0d90a5f408abcaf7dd38513ba815e189754a871347d92e2bda",
-      "task": "F-274",
+      "agent": "lp",
+      "at": "2026-08-20T06:34:42+00:00",
+      "hash": "85c70ed7af7aba61b389a8146e4254717faf562ed9c46a747fba8255f77ad98a",
+      "task": "F-278",
       "token": null
     },
     "docs/DELEGATION.md": {
-      "agent": "lm",
-      "at": "2026-08-20T06:31:22+00:00",
-      "hash": "c7d3ce64df7bfe46c6b1cf0c81ddd9419fc968ef02a060843d35bf946aeddb17",
-      "task": "F-275",
+      "agent": "lp",
+      "at": "2026-08-20T06:34:42+00:00",
+      "hash": "bf014814ea168fdf6a2ff689d83b850b18e31b2c58f8b3466c00921837211bfe",
+      "task": "F-278",
       "token": null
     },
     "docs/FINDINGS.md": {
-      "agent": "lm",
-      "at": "2026-08-20T06:31:22+00:00",
-      "hash": "c5f44d6ac7e21e8c2b8694cc98c8cf36215aaaa3bffd515777f8777be6899a2b",
-      "task": "F-275",
+      "agent": "lp",
+      "at": "2026-08-20T06:34:42+00:00",
+      "hash": "bfc167a86f7a2f944cc758d4a4a1fad49db884d151db3adc41bc7f6720b8a161",
+      "task": "F-278",
       "token": null
     },
     "docs/NEXT.md": {
@@ -1290,10 +1260,10 @@
       "token": "CLAUDE_CODE_SESSION_ID:7fea7368-2734-4f59-9d4a-147b2b5d903e"
     },
     "docs/SPECS.md": {
-      "agent": "lm",
-      "at": "2026-08-20T06:31:22+00:00",
-      "hash": "8152a32e9ffc586aaf83fdc52d0e79169f7badcc9eadc218f4742a8643033ca7",
-      "task": "F-275",
+      "agent": "lp",
+      "at": "2026-08-20T06:34:42+00:00",
+      "hash": "a94e09b9c9fbccff5a19510c5f9cea761c8c877d11f5cc68a011912898a7bb5f",
+      "task": "F-278",
       "token": null
     },
     "entities/player/player_camera.gd": {
@@ -1423,10 +1393,10 @@
       "token": null
     },
     "systems/environment/day_night.gd": {
-      "agent": "lm2",
-      "at": "2026-08-19T22:42:54+00:00",
-      "hash": "ce7fe1109370d2ad3b1db8634a643be8ef414d060ca0bc0b2b56ebba67c67751",
-      "task": "F-245",
+      "agent": "lp",
+      "at": "2026-08-20T06:34:42+00:00",
+      "hash": "da7230cb9350a1c8d5f5c576fe430a9f8ff6d83c0441ad72cb5c02b8d38c72dd",
+      "task": "F-278",
       "token": null
     },
     "systems/extraction/extraction_ship.gd": {
@@ -1870,6 +1840,13 @@
       "task": "F-220",
       "token": null
     },
+    "tools/day_night_restart_check.gd": {
+      "agent": "lp",
+      "at": "2026-08-20T06:34:42+00:00",
+      "hash": "e94f90211d3af6fadb74234e0ce633c35bbb4393c6834fcb2c4002a2e7eb9f93",
+      "task": "F-278",
+      "token": null
+    },
     "tools/decision_ref_check.py": {
       "agent": "lp",
       "at": "2026-08-19T15:31:50+00:00",
@@ -2186,10 +2163,10 @@
       "token": null
     },
     "tools/run_restart_net_check.gd": {
-      "agent": "lc1",
-      "at": "2026-08-20T05:31:06+00:00",
-      "hash": "e49a6f00010dc062dcc868d094eef690abb20198ad381be5fd099ddbcaf06bce",
-      "task": "F-243-review",
+      "agent": "lp",
+      "at": "2026-08-20T06:34:42+00:00",
+      "hash": "2d4419efbf6a3716f310c9789167893403efa91c5d305889ff7187f3393840a5",
+      "task": "F-278",
       "token": null
     },
     "tools/run_restart_net_check.gd.uid": {
@@ -6635,6 +6612,14 @@
       "tier": "F",
       "title": "F-243's terminal restart buttons are unreachable from a bare controller"
     },
+    "F-275-review": {
+      "est": "0.5",
+      "milestone": "Findings",
+      "review_of": "F-275",
+      "status": "todo",
+      "tier": "T1",
+      "title": "Review F-275 @ 15efeed \u2014 review and fix what you find"
+    },
     "F-276": {
       "done_at": "2026-08-20T06:20:00+00:00",
       "done_by": "lp",
@@ -6647,14 +6632,16 @@
     "F-277": {
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "todo",
+      "status": "in_flight",
       "tier": "F",
       "title": "F-243 clears Attunement effects but keeps the selection locked across runs"
     },
     "F-278": {
+      "done_at": "2026-08-20T06:34:42+00:00",
+      "done_by": "lp",
       "est": "\u2014",
       "milestone": "Findings",
-      "status": "in_flight",
+      "status": "done",
       "tier": "F",
       "title": "F-243 starts the next run at the previous run's time of day"
     },
@@ -6783,6 +6770,20 @@
       "status": "todo",
       "tier": "F",
       "title": "NetInterest.configure() installs authority-only visibility processing on every peer, so each client logs ERR_BUG from _update_spawn_visibility on join"
+    },
+    "F-297": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "AttunementUI's mandatory picker latches _picking on an unanswered request, leaving a no-dismiss panel with every button disabled"
+    },
+    "F-298": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "A client carries its own stamina and sprint lockout across a run restart \u2014 PlayerHealth's run_restarted handler is gated on _owns_mutation()"
     }
   },
   "version": 1

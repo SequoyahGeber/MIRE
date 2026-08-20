@@ -75,6 +75,68 @@ silently — see the constant's own doc comment for the exact list (replicated p
 
 ## Current state — check `.agent/BOARD.md` before pasting anything
 
+### 2026-08-20 — F-278 resolved: the day/night clock is run-scoped, and a client SNAPS to a host jump instead of interpolating backwards through it (lp)
+
+**What shipped.** `systems/environment/day_night.gd` subscribes `run_restarted` and resets
+`time_of_day` to the authored run-start morning. The clock was the last unreset item in D-149's
+enumeration with a live gameplay consequence: a run ends at night, so the next run started mid-night,
+the day COUNT (`CycleService._days_elapsed`, zeroed by `host_restart_run()`) disagreed with the clock
+from frame one, and `WaveSpawner` got no fresh `night_started` edge because that crossing happened
+during the PREVIOUS run — F-259 cleared the latch, and clearing a latch cannot re-fire a signal.
+
+**Two seams the next task builds against.**
+
+```gdscript
+DayNight.run_start_time_of_day() -> float   # the authored morning, captured in _ready() before
+                                            # anything moved the clock. Assert against this rather
+                                            # than re-typing 0.348.
+DayNight.CLIENT_SNAP_THRESHOLD: float = 0.1 # a push this far from the last one is a JUMP, not a tick
+```
+
+**The rule that matters beyond this file — an unreliable state push can overtake the reliable event
+that explains it.** `net_push_time` is unreliable; `run_restarted` reaches a client over
+`WorldDeltaLog`'s reliable ordered channel, which is head-of-line blocked behind everything else in
+it. So the reset push routinely lands FIRST, while `_client_target_time` still holds the ended run's
+night, and `_lerp_wrapped_unit()` takes the shortest way round — backwards through dusk and the
+afternoon the player just played. Snapping the interpolation source from the `run_restarted` handler
+is therefore necessary but **not sufficient**; measured at 5 smeared frames with that handler already
+in place. The receiver has to infer the discontinuity from the value itself. Do not design a system
+whose correctness depends on the reliable event winning that race. D-166.
+
+Adding a "this is a jump" parameter to the RPC would not have worked *and* would have cost a
+`PROTOCOL_VERSION` bump — `core/net/rpc_manifest.gd` scans RPC shape. `core/net/remote_interp.gd`
+already carried this exact pattern for player transforms as `TELEPORT_DISTANCE_M`; DayNight was the
+outlier, so the shape is house style, not an invention.
+
+**Do not route the reset through `host_set_time()`** (D-166). That seam crosses thresholds on
+purpose, and `day_started_at` (0.25) sits between a night-time run end and the 0.348 morning, so it
+would fire `day_started` and hand `CycleService` a phantom elapsed day against the counter
+`host_restart_run()` just zeroed. `tools/day_night_restart_check.gd` asserts the ABSENCE of both
+signals across two restarts, so that regression fails loudly.
+
+**New check — `tools/day_night_restart_check.gd`** (`DAY_NIGHT_RESTART_CHECK failures=0`, 23 PASS).
+Phase 1 solo: two restarts from 0.80, clock back to 0.348 each time, no threshold signal fired,
+`days_elapsed_this_cycle()` still 0, and a forward advance then crosses `night_started` exactly once.
+Phase 2 is a real second process, because the host branch of `_physics_process()` never touches the
+interpolation fields and no single process can observe a smear at all: the client samples its own
+clock EVERY FRAME across the restart and reports any frame inside a band only backwards
+interpolation can reach.
+
+**One existing check was wrong, not just incomplete.** `tools/run_restart_net_check.gd`'s F-278
+assertion was `is_equal_approx` on a RUNNING clock two awaited frames after the restart — a
+900-second day advances ~1.9e-5 per tick, twice `CMP_EPSILON`, so it could never have passed against
+any correct fix. Now a 0.001 band with the value printed. **If you are writing an assertion about a
+value some system advances every tick, a tolerance is not sloppiness — exact equality is the bug.**
+
+**F-281 is now down to one item.** Its enumeration listed `DayNight.time_of_day` (this, item 3),
+`HaulService`'s haulables (F-268's commit, item 2) and `AttunementService._selections` (item 1, still
+open and now F-277's). Only item 1 remains.
+
+**Filed: F-298**, from this task's sweep of every `"unreliable"` RPC —
+`PlayerHealth._on_run_restarted()` is gated on `_owns_mutation()`, so a client never reaches
+`_reset_local_cache()` and carries its own client-simulated stamina and sprint lockout into the next
+run. Same file and same handler as F-279; best fixed together.
+
 ### 2026-08-20 — F-275 resolved: both terminal run-summary overlays are operable from a bare controller, and the non-host's waiting label is inert rather than dead-focused (lm)
 
 **What shipped.** F-243's "Start Next Run" button existed on both terminal screens

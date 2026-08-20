@@ -5122,3 +5122,52 @@ point — is F-294. This is a `WorkerThreadPool` cost, not a frame cost: `chunk_
 under D-160's rule; `GOLDEN_BIOME` and `check_determinism`'s `terrain_hash` (`c20eed19b44270a1`) were
 deliberately left alone and still pass, which is what proves classification and the underlying
 heightmap layer were not touched.
+
+---
+
+### D-166 · 2026-08-20 · F-278: a run restart SETS the clock, it does not CROSS to it — and a client snaps to any host jump rather than interpolating toward it
+
+Two calls, both about `systems/environment/day_night.gd`, both easy to get backwards on a second
+pass. Neither is worth relitigating.
+
+**1 · The reset writes `time_of_day` directly and fires no threshold signal.** The obvious
+implementation is `host_set_time(_run_start_time_of_day)` — that method exists precisely to jump the
+clock, and its own header says the reason it is a seam at all is that it crosses thresholds on the
+way so a `time set dusk` really starts the night. That is exactly what makes it the wrong call here.
+A run ends at night (0.75+); the run-start morning is 0.348; `day_started_at` is 0.25 and therefore
+sits *between* them. Routing the reset through `host_set_time()` fires `day_started`, and
+`CycleService._on_day_started()` banks it as a full elapsed day — against `_days_elapsed`, which
+`host_restart_run()` zeroed three lines earlier. The clock/count disagreement F-278 exists to remove
+would come straight back, merely inverted. **A run BEGINS at morning; nothing crossed into it.** The
+new run's first `night_started` is produced the ordinary way, by the clock advancing forward over
+0.75 — which is the whole point of putting that crossing back in front of the clock, and is what
+WaveSpawner (F-259) needs, since clearing a latch cannot re-fire a signal that already fired during
+the previous run.
+
+`tools/day_night_restart_check.gd` asserts the *absence* of both signals across two restarts, so a
+later "simplification" to `host_set_time()` fails rather than silently costing a day.
+
+**2 · `net_push_time` snaps when the value jumped, and infers that from the value itself.** A client
+never runs its own clock — it lerps between the last two host snapshots through `_lerp_wrapped_unit()`,
+which takes the SHORTEST way round the wrap. The shortest way from 0.80 back to 0.348 is backwards
+through dusk and afternoon, so the one host motion interpolation renders *wrong* is a jump, and a
+restart is a jump. `CLIENT_SNAP_THRESHOLD = 0.1` splits the two cases with room to spare: the largest
+step a normally-advancing host can produce in one replication interval is
+`REPLICATE_INTERVAL_SEC / day_length` — 0.017 even at the 60-second minimum day, 0.001 at the shipped
+900 — while the jumps that need snapping (a restart, a `time set midnight` from noon) are 0.2 to 0.5.
+Nothing legitimate lands in between. This is the same shape `core/net/remote_interp.gd` already had
+for player transforms as `TELEPORT_DISTANCE_M`; DayNight was the outlier, not the innovator.
+
+**Why the inference and not a flag on the wire.** `core/net/rpc_manifest.gd` scans RPC *shape*, so a
+second parameter saying "this one is a jump" would be a `PROTOCOL_VERSION` bump — and it would not
+even work reliably, because the ordering is the actual problem. `net_push_time` is **unreliable**;
+`run_restarted` reaches a client over `WorldDeltaLog`'s **reliable ordered** channel. Reliable
+delivery is head-of-line blocked behind whatever else is in that channel, so the reset push routinely
+overtakes the event that explains it and lands while `_client_target_time` still holds the ended run's
+night. Measured, not theorised: `tools/day_night_restart_check.gd`'s client sampled 5 frames inside a
+band it can only reach by smearing, with the `run_restarted` snap already in place. The client-side
+`run_restarted` handler stays anyway — it is what makes the adoption immediate rather than up to a
+replication interval late — but the interpolator is what makes it correct.
+
+**The general form, for anyone pairing an unreliable state push with a reliable event:** the push can
+arrive first. Do not make the receiver's correctness depend on the event landing first.

@@ -168,8 +168,14 @@ func _run_solo_regressions() -> void:
 		_check(bool(attunement_ui.call("is_open")),
 			"restart reopens the mandatory run-start Attunement picker")
 	if day_night != null:
-		_check(is_equal_approx(float(day_night.get(&"time_of_day")), 0.348),
-			"restart returns the authoritative clock to the authored morning")
+		# Tolerance, not is_equal_approx: two frames were awaited above and the restarted run's clock
+		# is RUNNING, so the exact-equality form this started as could never pass — a 900-second day
+		# advances ~1.9e-5 per physics tick, twice CMP_EPSILON. The band is far tighter than the
+		# ~0.45 error F-278 was actually about, and `tools/day_night_restart_check.gd` pins the
+		# reset value itself with no frames in between.
+		_check(absf(float(day_night.get(&"time_of_day")) - 0.348) < 0.001,
+			"restart returns the authoritative clock to the authored morning (%.5f)"
+				% float(day_night.get(&"time_of_day")))
 	if player != null:
 		_check(player.global_position.distance_to(run_spawn) < 1.0,
 			"restart returns the local player to the run spawn")

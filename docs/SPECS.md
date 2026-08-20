@@ -9757,3 +9757,99 @@ request the host never answers, leaving that no-dismiss panel with no operable c
 to F-277's owner, who already holds that file's other restart defect.
 
 **Resolved** — see `docs/FINDINGS.md`.
+
+---
+
+## F-278 · F-243 starts the next run at the previous run's time of day
+
+**Claim:** `systems/environment/day_night.gd`, `tools/day_night_restart_check.gd` (new),
+`tools/run_restart_net_check.gd`. Network authority: **HOST**, `ARCHITECTURE.md` §2.2 "Day/night,
+wave director, Cycle state, active modifiers" row — unchanged by this task. The host owns
+`time_of_day`, advances it, and pushes it to clients over the existing unreliable `net_push_time`;
+clients only ever adopt. No new RPC, so no `PROTOCOL_VERSION` bump.
+
+**No spec existed for this finding** — writing it is this task's own first step, per this file's
+preamble.
+
+**The shape of the bug.** D-149 enumerated what a run restart resets and did not name the clock, so
+`DayNight` initialised `time_of_day` in `_ready()` and never again. `CycleService.host_restart_run()`
+zeroed `_days_elapsed` while the clock kept running from wherever the ended run stopped. Runs almost
+always end at night, so the next run began mid-night: the day COUNT and the clock disagreed from the
+first frame, the new run's first "day" was a partial one, and — the part with teeth — `WaveSpawner`
+never got a fresh `night_started` edge, because that crossing had already happened during the
+PREVIOUS run. F-259 cleared the latch, but clearing a latch cannot re-fire a signal.
+
+**The fix, in two halves. The second is the one that is easy to miss.**
+
+1. **Host.** `_on_run_restarted()` writes `time_of_day = _run_start_time_of_day` and arms
+   `_replicate_elapsed` at a full `REPLICATE_INTERVAL_SEC` so the reset reaches clients on the next
+   tick instead of up to a second later. `_run_start_time_of_day` is captured from the export in
+   `_ready()`, before anything moved the clock, so retuning the authored default retunes the restart
+   with it rather than leaving a second copy of `0.348` to drift. Resetting to morning puts the 0.75
+   crossing back IN FRONT of the clock, so the new run's first night arrives the ordinary way.
+
+   **Not through `host_set_time()`** — D-166, and the single thing not to "simplify" here. That seam
+   crosses thresholds on purpose; `day_started_at` (0.25) sits between a night-time run end and the
+   0.348 morning, so it would fire `day_started` and let `CycleService._on_day_started()` bank a
+   phantom elapsed day against the counter `host_restart_run()` zeroed three lines earlier. A run
+   BEGINS at morning; nothing crossed into it.
+
+2. **Client.** `net_push_time()` now snaps instead of interpolating when the incoming value is more
+   than `CLIENT_SNAP_THRESHOLD` (0.1 of a day) from the last one. A client never runs its own clock —
+   it lerps between the last two host snapshots through `_lerp_wrapped_unit()`, which takes the
+   SHORTEST way round the wrap, and the shortest way from 0.80 back to 0.348 is backwards through
+   dusk and the afternoon the player just played. Snapping the interpolation source from
+   `_on_run_restarted()` is **not sufficient on its own**: `net_push_time` is unreliable and
+   `run_restarted` reaches a client over `WorldDeltaLog`'s reliable ordered channel, which is
+   head-of-line blocked, so the reset push routinely overtakes the event that explains it. Measured
+   at 5 smeared frames with the event handler already in place. The threshold is unambiguous — a
+   normally-advancing host moves at most `REPLICATE_INTERVAL_SEC / day_length` per push, 0.017 at the
+   60-second minimum day and 0.001 at the shipped 900, while the jumps that need snapping (a restart,
+   a `time set midnight` from noon) are 0.2–0.5. `core/net/remote_interp.gd` already had this exact
+   pattern as `TELEPORT_DISTANCE_M`; DayNight was the outlier. The `run_restarted` handler stays too,
+   for the case where the event does win the race — it makes adoption immediate rather than up to an
+   interval late.
+
+**Verify:** `.agent/bin/agent godot --script tools/day_night_restart_check.gd` →
+`DAY_NIGHT_RESTART_CHECK failures=0`, 23 PASS, exit 0, no undeclared `ERROR:` lines. Two phases, and
+phase 2 is a second process for a reason no single process can substitute for:
+
+- **Phase 1 (solo/host, in-process).** Restarts twice from 0.80 through the real path
+  (`DefeatService.defeated` then `CycleService.host_restart_run()`) — twice because a reset that
+  works once and then latches is exactly the shape F-280 found elsewhere in this feature. Asserts the
+  clock returns to 0.348 each time, that NEITHER `day_started` nor `night_started` fired,
+  that `days_elapsed_this_cycle()` is still 0, and that advancing the restarted run forward then
+  crosses `night_started` exactly once — the WaveSpawner half of the finding, stated as a property.
+- **Phase 2 (a real connected client, second process).** The host branch of `_physics_process()`
+  never touches the interpolation fields, so nothing in one process can observe a smear at all. The
+  probe joins, adopts the ended run's night, and then samples its own `time_of_day` **every frame**
+  across the restart, counting any frame inside `(0.42, 0.78)` — a band its legitimate states (0.348
+  default below, 0.80 tracked above, and a first snapshot that snaps rather than lerps) cannot reach
+  by any route but interpolating backwards. 0 such frames, ending at 0.3493, still firing no
+  threshold signals. Its result file is read through a last-known-good cache so a mid-write parse is
+  one stale sample rather than a spurious failure (F-290).
+
+**Pre-fix proof.** `agent baseline` cannot help — the check script does not exist at HEAD, the same
+constraint F-261 and F-275 both hit. Instead the subscription and the snap were temporarily removed
+from the working copy (a copy kept aside; deliberately not `git stash`, which would touch other lanes'
+uncommitted work) and the same check run: **`failures=5`**, and they are exactly the finding's
+symptoms — the clock stays at 0.800 after both restarts, and advancing the "new" run forward crosses
+`night_started` **zero** times. Restored, same check, `failures=0`.
+
+**One check was fixed, not just added.** `tools/run_restart_net_check.gd:171` — the assertion that
+REPORTED this finding — used `is_equal_approx(time_of_day, 0.348)` two awaited frames after the
+restart, on a clock that is running. A 900-second day advances ~1.9e-5 per physics tick, twice
+`CMP_EPSILON`, so it could never have passed even against a correct fix. Loosened to a 0.001 band
+(still 450x tighter than the ~0.45 error this finding is about) with the observed value printed. It
+now reports the clock PASS at 0.34806; its remaining 4 failures are F-277 (2), F-279 and F-280.
+
+**Swept for the same shape.** Three greps, `--include=*.gd`. (a) Every other client-side interpolator
+over replicated state: only `core/net/remote_interp.gd`, which already snaps and needs nothing.
+(b) Every `_check_thresholds`/`_crossed` call site: both in this file. (c) Every `"unreliable"` RPC
+repo-wide: two, this one and `player_health.gd`'s advisory stamina report, which is not interpolated
+— but reading it surfaced a real sibling of the class, filed as **F-298**:
+`PlayerHealth._on_run_restarted()` is gated on `_owns_mutation()`, so a client never reaches
+`_reset_local_cache()` and carries its own client-simulated stamina and sprint lockout into the next
+run. Left to F-279's owner, who already holds that file's other restart defect.
+
+**Resolved** — see `docs/FINDINGS.md`. Closes item 3 of F-281 as well.

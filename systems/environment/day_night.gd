@@ -21,6 +21,8 @@ extends Node
 ## dusk), independent of playtest_atmosphere.gd's own 0..24 hour export — _apply_to_level() is the
 ## one place that converts between the two.
 
+const EVENT_BUS := preload("res://core/events/event_bus.gd")
+
 const REPLICATE_INTERVAL_SEC: float = 1.0
 
 ## Fraction of a day. 0.348 matches Atmosphere's own 8.35h default (8.35 / 24.0).
@@ -57,12 +59,22 @@ var _client_prev_time: float = 0.0
 var _client_target_time: float = 0.0
 var _client_since_update: float = 0.0
 var _has_client_snapshot: bool = false
+## F-278: the value a run STARTS at, captured from the export before anything has moved the clock,
+## so retuning `time_of_day`'s authored default retunes the restart with it rather than leaving a
+## second copy of 0.348 to drift out of sync.
+var _run_start_time_of_day: float = 0.348
 
 
 func _ready() -> void:
+	_run_start_time_of_day = time_of_day
 	set_physics_process(true)
 	_apply_to_level(time_of_day)
 	_register_commands()
+	EVENT_BUS.subscribe_run_restarted(_on_run_restarted)
+
+
+func _exit_tree() -> void:
+	EVENT_BUS.unsubscribe_run_restarted(_on_run_restarted)
 
 
 
@@ -121,6 +133,53 @@ func host_advance(delta: float) -> void:
 	if not _owns_mutation():
 		return
 	_advance_host(delta)
+
+
+# ── Run lifecycle (F-278 / F-281 item 3) ─────────────────────────────────────────────────────────
+
+
+## `time_of_day` is RUN-scoped state, and D-149's enumeration of what a restart resets did not name
+## it — so `CycleService.host_restart_run()` zeroed `_days_elapsed` while the clock kept running from
+## wherever the ended run stopped. Since a run almost always ends at night, the next run began mid-
+## night: the day COUNT and the clock disagreed from the first frame, the new run's first "day" was a
+## partial one, and WaveSpawner never got a fresh `night_started` edge because that crossing had
+## already happened during the PREVIOUS run (F-259 cleared the latch, but clearing a latch cannot
+## re-fire a signal). Resetting to the run-start morning puts the 0.75 crossing back in front of the
+## clock, so the edge arrives on its own the way it does in a first run.
+##
+## Unconditional on authority, like every other `run_restarted` subscriber in this codebase — but the
+## two peer roles reset different fields, and both halves matter:
+##
+##   · HOST — the authoritative clock itself, plus `_replicate_elapsed` armed at a full interval so
+##     the reset reaches clients on the NEXT tick instead of up to a second later. No new RPC: this
+##     rides `net_push_time`, DayNight's existing authority path, exactly as the finding asks.
+##   · CLIENT — its interpolation source, snapped to the same value. This is the half that is easy to
+##     miss. A client's `_advance_client()` lerps `_client_prev_time` -> `_client_target_time` through
+##     `_lerp_wrapped_unit()`, which always takes the SHORTEST way round; left alone, the host's
+##     backwards jump from ~0.80 to 0.348 would be served to the player as a full second of the sun
+##     visibly running BACKWARDS through dusk and afternoon before settling. Setting prev and target
+##     both to the reset value makes the lerp flat until the host's next snapshot lands, and that
+##     snapshot then interpolates forward from 0.348 like any other.
+##
+## Deliberately NOT `host_set_time()`, even though that is the seam for jumping the clock: it crosses
+## thresholds on the way, and `day_started_at` (0.25) sits between the typical night-time end of a run
+## and 0.348. `CycleService._on_day_started()` would take the reset as a full elapsed day and set
+## `_days_elapsed` to 1 the instant after `host_restart_run()` set it to 0 — the same clock/count
+## disagreement this fix exists to remove, merely inverted. A run BEGINS at morning; it does not cross
+## into it.
+func _on_run_restarted() -> void:
+	time_of_day = _run_start_time_of_day
+	_replicate_elapsed = REPLICATE_INTERVAL_SEC
+	_client_prev_time = _run_start_time_of_day
+	_client_target_time = _run_start_time_of_day
+	_client_since_update = 0.0
+	_apply_to_level(time_of_day)
+
+
+## The morning a run starts at — the authored `time_of_day` default, captured before the clock moved.
+## Read by `tools/day_night_restart_check.gd` so the assertion and the reset cannot drift apart.
+func run_start_time_of_day() -> float:
+	return _run_start_time_of_day
 
 
 func _resolve_day_length() -> float:
@@ -226,14 +285,37 @@ func _transport_call(method: StringName) -> Variant:
 # ── Replication (host -> clients, unreliable, ~1 Hz) ──────────────────────────────────────────────
 
 
+## F-278. A snapshot this much of a day away from the last one is a JUMP, not a tick, and gets
+## snapped to rather than interpolated toward. The bound is generous on both sides: the largest step
+## a normally-advancing host can produce in one interval is `REPLICATE_INTERVAL_SEC / day_length`,
+## which is 0.017 even at the 60-second minimum day and 0.001 at the shipped 900, while the jumps
+## that need snapping (a run restart back to morning, a `time set midnight` from noon) are 0.2 to
+## 0.5. Nothing legitimate lands in between.
+const CLIENT_SNAP_THRESHOLD: float = 0.1
+
+
 @rpc("authority", "call_remote", "unreliable")
 func net_push_time(value: float) -> void:
 	if _owns_mutation():
 		return
-	_client_prev_time = _client_target_time if _has_client_snapshot else value
+	# Signature deliberately unchanged (`core/net/rpc_manifest.gd` scans SHAPE, so a new parameter
+	# would be a PROTOCOL_VERSION bump): the client infers a discontinuity from the value itself
+	# rather than being told about one. That is what makes this robust to the delivery order the
+	# two-process check found — this push is UNRELIABLE and `run_restarted` reaches a client over
+	# WorldDeltaLog's RELIABLE ORDERED channel, so a reset push routinely overtakes the event that
+	# explains it, arriving while `_client_target_time` still holds the ended run's night. Without
+	# the snap the client spends up to a full interval lerping backwards through dusk and afternoon
+	# — `_lerp_wrapped_unit()` takes the shortest way round, and the shortest way from 0.80 to 0.348
+	# is straight back through the afternoon it just played.
+	var snap: bool = not _has_client_snapshot \
+		or absf(fposmod(value - _client_target_time + 0.5, 1.0) - 0.5) >= CLIENT_SNAP_THRESHOLD
+	_client_prev_time = value if snap else _client_target_time
 	_client_target_time = value
 	_client_since_update = 0.0
 	_has_client_snapshot = true
+	if snap:
+		time_of_day = value
+		_apply_to_level(time_of_day)
 
 
 # ── Commands (docs/COMMANDS.md §7 — task 3.16) ───────────────────────────────────────────────────
