@@ -5836,3 +5836,12 @@ reference. Applied in world/gen/island_heightmap.gd by quill5fa5c7.
 **Would change my mind:** Sequoyah walking a retuned island (a real 4.18 walk, not renders) and
 asking for more verticality back — the tune is three constants, so reversal is cheap and needs no
 structural change.
+
+**2026-08-20 second pass (same day, his next verdict):** "still wayyy too steep on the hills, im
+thinking like 3-5 hills on the whole island." Countable hills is a structure, not an amplitude, so
+the rolling-fBm interior is gone: the continent is now a near-flat plateau (`BASE_NOISE_WEIGHT
+0.25` damps the noise to ~±1 m of undulation) plus **3–5 PLACED seeded hills**
+(`IslandHeightmap.hills()` — smooth radial mounds, 26–52 m radius, 5–8 m lift, `maxf`-merged,
+placed by the same integer-mixing recipe as the lobes). The ridge window moved above the plateau
+(RIDGE_MASK 0.95–1.30) so cresting only touches hill tops. The reversal is still cheap: raise
+`BASE_NOISE_WEIGHT` back toward 1.0 and the rolling interior returns.

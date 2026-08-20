@@ -47,6 +47,32 @@ const FREQUENCY_SCALE: float = _FREQUENCY_REFERENCE_RADIUS / ISLAND_RADIUS
 ## as a massif; at 11, with the raised LAND_BIAS below, the interior settles around 5-12 m of
 ## gentle roll a player can sprint straight across.
 const HEIGHT_SCALE: float = 11.0
+
+## How much of the continental noise actually reaches the surface. His second verdict (2026-08-20,
+## same day, off the first retune's renders): "still wayyy too steep on the hills, im thinking like
+## 3-5 hills on the whole island." Rolling fBm everywhere is the wrong STRUCTURE for that, not just
+## the wrong amplitude — the interior is now a near-flat plateau (this weight damps the noise to
+## about ±1 m of undulation at the base frequency's ~38 m wavelength) and the hills are PLACED
+## landforms below (`HILL_*`), countable the way he counted them.
+const BASE_NOISE_WEIGHT: float = 0.25
+
+## THE HILLS (D-184, second pass) — 3 to 5 per island, placed, not emergent.
+##
+## Same recipe as `lobes()`/`islet_centres()`: positions from integer mixing on the direction
+## table, radii and heights from modulo spreads, all inside the D-017 safe set. Each hill is a
+## smooth radial mound (`t*t*(3-2t)` — smoothstep's polynomial, no libm); overlapping hills take
+## `maxf` like the lobe masks do, so two neighbours merge into a broader rise instead of stacking
+## into a peak. Slope stays around 7 m over 35+ m of run — a place you walk up without thinking.
+const HILL_COUNT_MIN: int = 3
+const HILL_COUNT_MAX: int = 5
+## Centre offset from the island's middle, as a fraction of ISLAND_RADIUS. Capped at 0.62 so a
+## hill's toe stays on the plateau rather than sliding into the coastal falloff.
+const HILL_OFFSET_MAX: float = 0.62
+const HILL_RADIUS_MIN: float = 26.0     # metres
+const HILL_RADIUS_MAX: float = 52.0
+const HILL_HEIGHT_MIN: float = 5.0      # metres of lift at the crown
+const HILL_HEIGHT_MAX: float = 8.0
+const HILL_SALT: int = 0x48C3D1
 ## Fraction of ISLAND_RADIUS where the falloff begins. Inside this, height is unmasked; outside,
 ## it tapers cubically to 0 at ISLAND_RADIUS.
 ##
@@ -104,8 +130,11 @@ const RIDGE_GAIN: float = 0.48
 const RIDGE_THRESHOLD: float = 0.18
 const RIDGE_GATHER: float = 1.7
 
-const RIDGE_MASK_START: float = 0.14
-const RIDGE_MASK_FULL: float = 0.52
+## Raised with the flat-plateau restructure: the plateau sits around 0.75 x HEIGHT_SCALE, so the
+## old 0.14/0.52 window put ridge texture on ALL of it. Starting just above the plateau confines
+## the cresting to the placed hills' upper slopes — the only high ground left.
+const RIDGE_MASK_START: float = 0.95
+const RIDGE_MASK_FULL: float = 1.30
 
 const BASE_NOISE_SALT: int = 0x5F10A
 const DETAIL_NOISE_SALT: int = 0x9E3779B9
@@ -248,9 +277,11 @@ static func world_radius() -> float:
 ## The highest ground this generator can produce, in metres.
 ##
 ## `HEIGHT_SCALE` is the noise's amplitude, not the peak: `LAND_BIAS` lifts the whole continent
-## before the scale is applied, and the ridged layer adds on top of that. Anything that sizes a
-## camera, a water plane, a chunk's vertical bounds or a check's invariant wants this number.
-const MAX_HEIGHT: float = (1.0 + LAND_BIAS) * HEIGHT_SCALE + RIDGE_WEIGHT
+## before the scale is applied, the tallest placed hill stands on that plateau, and the ridged
+## layer adds on top. Anything that sizes a camera, a water plane, a chunk's vertical bounds or a
+## check's invariant wants this number.
+const MAX_HEIGHT: float = (BASE_NOISE_WEIGHT + LAND_BIAS) * HEIGHT_SCALE \
+		+ HILL_HEIGHT_MAX + RIDGE_WEIGHT
 
 
 ## One per call, not shared — cheap to build, and a shared FastNoiseLite is not safe to sample from
@@ -313,6 +344,40 @@ static func _warp_point(x: float, z: float, world_seed: int) -> Vector2:
 	var warp_z := _make_noise(world_seed ^ SHAPE_WARP_SALT_Z, SHAPE_WARP_FREQUENCY, 3,
 		BASE_NOISE_LACUNARITY, BASE_NOISE_GAIN)
 	return _warp_point_with(x, z, warp_x, warp_z)
+
+
+## This seed's placed hills: (centre.x, centre.y, radius, height) per entry. Integer arithmetic
+## only, same portability contract as `lobes()`.
+static func hills(world_seed: int) -> Array[Vector4]:
+	var mixed: int = (world_seed ^ HILL_SALT) & 0x7FFFFFFF
+	var count: int = HILL_COUNT_MIN + (mixed % (HILL_COUNT_MAX - HILL_COUNT_MIN + 1))
+	var out: Array[Vector4] = []
+	for index in count:
+		var step: int = mixed / (5 + index * 19)
+		# Independent direction and offset per hill, same reasoning as lobes(): a fixed stride
+		# spaces them into a ring, and a ring of hills reads as a crater rim.
+		var direction: Vector2 = ISLET_DIRECTIONS[(step / (7 + index * 3)) % ISLET_DIRECTIONS.size()]
+		var offset: float = HILL_OFFSET_MAX * float(step % 13) / 12.0
+		var radius: float = HILL_RADIUS_MIN \
+			+ (HILL_RADIUS_MAX - HILL_RADIUS_MIN) * float(step % 29) / 28.0
+		var lift: float = HILL_HEIGHT_MIN \
+			+ (HILL_HEIGHT_MAX - HILL_HEIGHT_MIN) * float(step % 7) / 6.0
+		var centre: Vector2 = direction * (ISLAND_RADIUS * offset)
+		out.append(Vector4(centre.x, centre.y, radius, lift))
+	return out
+
+
+## Metres of placed-hill lift at `bent`. Smooth radial mounds, merged with `maxf` so neighbours
+## read as one broader rise; the profile is smoothstep's own polynomial, nothing outside D-017.
+static func _hill_lift(bent: Vector2, world_seed: int) -> float:
+	var lift: float = 0.0
+	for hill: Vector4 in hills(world_seed):
+		var distance: float = bent.distance_to(Vector2(hill.x, hill.y))
+		if distance >= hill.z:
+			continue
+		var t: float = 1.0 - distance / hill.z
+		lift = maxf(lift, hill.w * t * t * (3.0 - 2.0 * t))
+	return lift
 
 
 static func islet_centres(world_seed: int) -> Array[Vector2]:
@@ -560,7 +625,11 @@ static func shape_into(x: float, z: float, set: NoiseSet, world_seed: int, out: 
 	var jitter: float = set.coast_noise.get_noise_2d(x, z) * COAST_JITTER
 	out.bent = _warp_point_with(x, z, set.warp_x, set.warp_z)
 	out.mask = _island_mask_bent(out.bent, world_seed, jitter)
-	out.raw_continent = (set.base_noise.get_noise_2d(x, z) + LAND_BIAS) * HEIGHT_SCALE * out.mask
+	# Plateau + placed hills (D-184 second pass): the noise is damped to an undulation on a
+	# near-flat interior, and the hills are seeded landforms — both ride the island mask so the
+	# coast still tapers into the sea wherever this seed put it.
+	out.raw_continent = ((set.base_noise.get_noise_2d(x, z) * BASE_NOISE_WEIGHT + LAND_BIAS)
+		* HEIGHT_SCALE + _hill_lift(out.bent, world_seed)) * out.mask
 	out.channel = _river_channel(out.bent, world_seed)
 
 

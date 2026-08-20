@@ -94,6 +94,15 @@ lobed island with the river still cutting through; the spawn view is a sprintabl
 **If a later walk wants more verticality back**, D-184 names the reversal: it is those three
 constants, cheap to move.
 
+**Second pass, same day.** His next verdict: "still wayyy too steep… like 3-5 hills on the whole
+island." That is a STRUCTURE, so the fBm interior is gone: `BASE_NOISE_WEIGHT 0.25` flattens the
+plateau to ~±1 m and `IslandHeightmap.hills()` places 3–5 seeded smooth mounds (26–52 m radius,
+5–8 m lift, `maxf`-merged, lobes-style integer mixing) added into `raw_continent` in
+`shape_into()` — so biomes, ridge mask, scatter and the navmesh all see them as ordinary
+continent. Ridge window moved to 0.95–1.30 x HEIGHT_SCALE: cresting only on hill tops, the
+plateau stays clean. Same check suite green; fresh renders (seed 1856316070) in
+`assets/audit/terrain/`.
+
 
 ### 2026-08-20 — 4.19 DONE: the shipped map is procedural. Press Play and you get a generated island (quill5fa5c7)
 
