@@ -1417,6 +1417,33 @@ because a merge was outside its claim.
 
 ---
 
+### F-317 · A full headless boot of the shipped procedural map prints ~10 dummy-renderer RID ERROR lines from chunk mesh upload — windowed boots are clean, but the '0 stray ERROR lines' full-boot bar needs a headless caveat
+
+**Area:** worldgen · **Severity:** low · **Found:** 2026-08-20 by quill5fa5c7
+
+Since 4.19's cutover, `agent godot --quit-after 120` boots `levels/procedural_island.tscn`, and the
+ChunkStreamer's real streaming path runs under the dummy renderer. Meshes built on WorkerThreadPool
+threads (`ChunkMesher`, drained through `ChunkStreamer._upload_chunk`) trip the dummy renderer's
+mesh storage: "Attempting to initialize the wrong RID", "Parameter 'm' is null" from
+mesh_add_surface/mesh_set_blend_shape_*, "unimplemented base type encountered in renderer scene
+cull" (backtrace: chunk_streamer.gd:374 `_upload_chunk`), and one leaked DummyMesh RID at exit —
+about 10 lines total, first ~30s of boot.
+
+Measured 2026-08-20 by quill5fa5c7: headless boot of the procedural scene = 10 ERROR lines;
+headless boot of `res://levels/hollowmere.tscn` on the same tree = 0; **windowed boot of the
+procedural scene (`--windowed --quit-after 120`) = 0.** So this is the dummy renderer's inability
+to represent threaded mesh RIDs (the F-077/F-103 family), not a real defect in the streamer — the
+real-renderer path (what pressing Play uses) is clean, and `tools/procedural_world_check.gd` stays
+at 0 ERROR because it never anchors the streamer.
+
+What to do with it: either teach the "full boot, 0 stray ERROR lines" verification bar that a
+HEADLESS boot of a streaming map carries these ~10 known lines (grep them away by the four exact
+messages above), or run the full-boot gate `--windowed` now that the shipped map streams. Do NOT
+fix it by moving surface creation onto the main thread — D-074 benchmarked the threaded mesher and
+the direct/pooled split is deliberate.
+
+---
+
 ## Resolved
 
 ### F-315 · A drain chain silently stops draining the moment it re-executes for a harness change — **fixed**
