@@ -14,16 +14,31 @@
 > machine is now green, including `boss_check`'s exit-leak diagnostic (F-193) and `lobby_menu_check` (F-170),
 > both since resolved.
 >
-> **Findings: 23 under `## Open` (2026-08-20), and that sentence needs two corrections.** This
-> section said "7 open, and not one of them is code you can sit down and write" from 2026-08-19
-> until F-261's review re-counted it; both halves had stopped being true. Six are still the
-> hardware/external set — F-020, F-023, F-024, F-025 (Steam/LAN join, needs a second machine and a
-> real network), F-044 (the shared Godot import cache), F-174 (no dev machine here stands in for
-> mid-range). Eight more are already fixed and merely sit in the wrong section — that mismatch is
-> itself filed as **F-269**, and `agent board` hides them while `agent brief` still offers them, so
-> check an entry's own text before claiming it. The remaining nine ARE ordinary code work a lane can
-> pick up today: F-259, F-264, F-265, F-266, F-268, F-271, F-272, F-273, F-274. **The findings
-> backlog is a source of work again.**
+> **Findings: 34 under `## Open` (re-counted 2026-08-20 evening, by F-271's review).** This section
+> said "7 open, and not one of them is code you can sit down and write" from 2026-08-19 until
+> F-261's review re-counted it to 23; both of those numbers are now stale, in the direction that
+> matters — the day's fix lanes closed fourteen (F-259, F-268, F-269, F-271, F-274, F-275, F-276,
+> F-277, F-278, F-280, F-284, F-287, F-288, F-290) and filed more than that while doing it, because
+> a review that actually reads the code finds things. Six are still the hardware/external set —
+> F-020, F-023, F-024, F-025 (Steam/LAN join, needs a second machine and a real network), F-044 (the shared Godot
+> import cache), F-174 (no dev machine here stands in for mid-range). Two are fixed and merely sit
+> in the wrong section (F-236, F-299) — that mismatch is the recurring one filed as **F-269**, and
+> `agent board` hides them while `agent brief` still offers them, so check an entry's own text
+> before claiming it. **The other twenty-six ARE ordinary code work a lane can pick up today.**
+> Clusters worth knowing before you route any of them:
+>
+> - **The tooling itself is red or unwatched** — F-285/F-292 (`nav_bake_check` has had 4 failures at
+>   a clean HEAD since 4.13/4.14), F-293 (nothing enumerates and runs the `tools/` suite, so a red
+>   check sits at HEAD unnoticed — this is the one that makes the others possible), F-291, F-305.
+> - **The agent harness** — F-265, F-266, F-267, F-289, F-304: claim races, `ship` sweeping a
+>   sibling's uncommitted hunks, and `ship` structurally unable to stage `docs/FINDINGS.md`.
+> - **Procedural reseed leftovers**, all from F-258's fresh-seed restart — F-279, F-281, F-282,
+>   F-286, F-298.
+> - **Worldgen performance and correctness** — F-294 (per-sample Array rebuilds under every surface
+>   sample, doubled by F-274), F-295, F-296, F-300..F-303.
+> - **Seed replication and the record** — F-272 and F-273 (`seed_ready` is a run boundary now, and
+>   the re-broadcast still has no two-process proof), F-283 (three D-numbers each head two different
+>   decisions), F-264 (`Boss` duplicates `Enemy`'s lunge instead of reusing it).
 >
 > Count these from `docs/FINDINGS.md`'s `## Open` section, not from `state.json` or `agent report`:
 > the two disagree, which is what F-269 and F-270 are about. Note also that **D-144 is

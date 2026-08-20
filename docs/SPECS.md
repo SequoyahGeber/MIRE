@@ -9499,6 +9499,24 @@ agreed with D-144.
 **What it costs.** Every seed's scatter layout moves. That is the intended output of the task, not a
 regression — see D-163 for the measured size and why it is small today and will not stay small.
 
+**Superseded in part by F-274, one commit later (recorded here by F-271's review, per F-212 — a spec
+block that still describes the intent rather than the code is how ARCHITECTURE §5 came to describe a
+mechanism nobody built).** Two sentences above are no longer true at HEAD, and both changed for
+F-274's reasons, not because F-271 was wrong:
+
+- Fix step 1 says `position.y` keeps `IslandHeightmap.height_from_set()`. It does not — F-274 wired
+  the amplitude seam, so `_placement_at()` now takes `position.y` from
+  `BiomeMap.surface_from_set(world_x, world_z, noise_set, world_seed, table)`, and
+  `placements_for_chunk()` builds the `TerrainTable` once per chunk alongside the `NoiseSet`. The
+  D-163 half F-271 actually settled — the biome comes from `biome_at_from_set()` and never from the
+  `height` local — is untouched and still the point.
+- The acceptance line requiring `GOLDEN_POI`, `GOLDEN_AMPLITUDES` and `terrain_hash` to be UNCHANGED
+  was correct for F-271 and was met. F-274 then re-captured all three plus `GOLDEN_SCATTER`, and
+  says so in `tools/worldgen_noise_reuse_check.gd`'s provenance comment. `GOLDEN_BIOME` is the one
+  that has now survived F-261, F-271 and F-274 untouched, which is the useful invariant: biome
+  classification reads the continent and the moisture field and nothing else. Re-verified at HEAD by
+  this review — `RESOURCE_SCATTER_CHECK failures=0`, `WORLDGEN_NOISE_REUSE failures=0`.
+
 ---
 
 ## F-268 · F-243's restart never clears placed buildables — `BuildService` has no `run_restarted` subscription at all

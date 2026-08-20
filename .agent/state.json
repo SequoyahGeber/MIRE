@@ -752,10 +752,10 @@
       "token": null
     },
     "docs/ARCHITECTURE.md": {
-      "agent": "lm",
-      "at": "2026-08-19T14:59:41+00:00",
-      "hash": "fc6545690716744a0a99346534d210fcfe64d8ebb636260ab2bd41a547bfb284",
-      "task": "4.7-review",
+      "agent": "lp",
+      "at": "2026-08-20T11:21:16+00:00",
+      "hash": "7120037a697afef34457f233ab45ffa0c112f203a8fce536fa818b6764d6376f",
+      "task": "F-271-review",
       "token": null
     },
     "docs/ASSET_TRACKER.md": {
@@ -801,17 +801,17 @@
       "token": null
     },
     "docs/NEXT.md": {
-      "agent": "lm",
-      "at": "2026-08-20T05:29:07+00:00",
-      "hash": "5a5bb96f237f5594d098f932be41fc6855ae36acfae70bb893727bcd2e85a94c",
-      "task": "F-261-review",
+      "agent": "lp",
+      "at": "2026-08-20T11:21:16+00:00",
+      "hash": "e619b274cd1d24e612f8c8bf2270955f6b143ce5bc96786bbd55ba7d44ab676b",
+      "task": "F-271-review",
       "token": null
     },
     "docs/SPECS.md": {
       "agent": "lp",
-      "at": "2026-08-20T11:15:17+00:00",
-      "hash": "5768469e3fb1d1294479e3dae4404f8cd89cd2e0b3292c8fd9d20e4d75cb4db4",
-      "task": "F-290",
+      "at": "2026-08-20T11:21:16+00:00",
+      "hash": "816ae09f920491ec79c48b848df2bd8d5a6f1f0e0e983ebebdb41841f409cb69",
+      "task": "F-271-review",
       "token": null
     },
     "project.godot": {
@@ -5784,10 +5784,12 @@
       "title": "ResourceScatter classifies a point's biome from height(), BiomeMap.biome_at() classifies from continent() \u2014 the same point resolves to two different biomes depending on which system asks"
     },
     "F-271-review": {
+      "done_at": "2026-08-20T11:21:16+00:00",
+      "done_by": "lp",
       "est": "0.5",
       "milestone": "Findings",
       "review_of": "F-271",
-      "status": "todo",
+      "status": "done",
       "tier": "T1",
       "title": "Review F-271 @ cffbbdd \u2014 review and fix what you find"
     },
@@ -6052,6 +6054,20 @@
       "status": "todo",
       "tier": "F",
       "title": "EnvironmentVfx.foliage_mesh_count is a cumulative dressing tally, so it climbs by a whole island on every procedural reseed"
+    },
+    "F-304": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "27 tools/ probe transports still truncate-write a user:// file another process is polling \u2014 F-290's defect, narrower window"
+    },
+    "F-305": {
+      "est": "\u2014",
+      "milestone": "Findings",
+      "status": "todo",
+      "tier": "F",
+      "title": "tools/wave_spawner_check.gd intermittently emits 6 undeclared 'Parameter \"material\" is null' ERRORs while printing failures=0 and exiting 0"
     }
   },
   "version": 1
