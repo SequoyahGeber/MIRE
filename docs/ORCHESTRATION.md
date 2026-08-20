@@ -91,6 +91,14 @@ collision too, but only *after* a lane has spent quota getting to its first edit
 `--files` is optional. Without it the lane claims as it goes and collisions surface later, which is
 strictly worse — pass it when you know.
 
+`--priority 1..9` sets where the order lands in its lane's queue: **1 drains first, 9 last, 5 is the
+default**, and an order with no priority keeps plain task-id order, so a queue nobody ranks behaves
+exactly as it always did. Rank the queue whenever one lane is doing all the work — a drain sorted by
+F-number is sorted by *filing order*, the one attribute of an order that says nothing about how much
+the work matters, and with a lane parking on its five-hour wall after a task or two, queue position
+is days of latency rather than minutes (F-314). `agent report` prints "Orders waiting" in true drain
+order with each rank shown, so that list answers "what will this lane do next".
+
 ### `dispatch` — headless, one task at a time
 
 Never batch. One task per dispatch means a quota death costs at most one task.
@@ -227,9 +235,16 @@ If you have just been told "you are the director", this is your whole job:
 
 ```bash
 .agent/bin/agent start          # names you, prints the board
+.agent/bin/agent director --take  # claim the routing seat — nobody else may order/dispatch (D-145)
 .agent/bin/agent report         # lane health, quota windows, what's queued
 .agent/bin/agent collect        # what came back since last time — LEAD WITH THIS
 ```
+
+**Claim the seat first.** `order`, `dispatch` and `saturate` refuse anyone but the director, and
+until somebody takes it they are open to every session on the machine — which is how six unrouted
+orders reached the lanes in one day, costing a duplicate dispatch and nearly a wasted window on a
+finding a peer chat had already started (D-145). `agent director` shows who holds it; `--clear`
+releases it when you hand off.
 
 **You route and verify. You do not implement.** A director writing gameplay code has spent the
 project's most expensive quota on work a cheap lane does as well. Your output is orders, routing
